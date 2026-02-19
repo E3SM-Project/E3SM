@@ -1163,7 +1163,7 @@ module li_subglacial_hydro
       if (config_sgh_transition_flow) then
          ! Transition flow law from Hill et al. (2024), https://doi.org/10.1017/jog.2023.103
          do iEdge = 1, nEdges
-            if (gradMagPhiBaseEdge(iEdge) < SMALL_GRADPHI) then
+            if ((gradMagPhiBaseEdge(iEdge) < SMALL_GRADPHI) .or. (waterThicknessEdge(iEdge) <= 0.0_RKIND)) then
                effectiveConducEdge(iEdge) = 0.0_RKIND
             else
                effectiveConducEdge(iEdge) = kin_visc_water / (2.0_RKIND * flow_transition_param) * &
