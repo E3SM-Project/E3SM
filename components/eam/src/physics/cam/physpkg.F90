@@ -1315,9 +1315,6 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
 
        if (nstep > 0) then
 
-          ! Ensure the surface heat flux is zero for the idealized path
-          flx_heat = 0._r8
-
           ! Initialize energy conservation tracking
           call check_energy_timestep_init(phys_state(c), phys_tend(c), pbuf_get_chunk(pbuf2d, c))
 
