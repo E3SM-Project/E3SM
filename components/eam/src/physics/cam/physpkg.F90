@@ -192,7 +192,7 @@ subroutine phys_register
                       microp_scheme_out        = microp_scheme,   &
                       cld_macmic_num_steps_out = cld_macmic_num_steps, &
                       do_clubb_sgs_out         = do_clubb_sgs,     &
-		      do_shoc_sgs_out          = do_shoc_sgs, &
+                      do_shoc_sgs_out          = do_shoc_sgs, &
                       do_aerocom_ind3_out      = do_aerocom_ind3,  &
                       use_subcol_microp_out    = use_subcol_microp, &
                       state_debug_checks_out   = state_debug_checks, &
@@ -561,7 +561,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
                tptr3d, found, gridname='physgrid')
           if (found) then
              if (masterproc) write(iulog,*) trim(fieldname), ' initialized with Q'
-             if(dycore_is('LR')) call polar_average(pver, tptr3d) 	
+             if(dycore_is('LR')) call polar_average(pver, tptr3d)       
           else
              call endrun('  '//trim(subname)//' Error:  Q must be on Initial File')
           end if
@@ -629,7 +629,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
              do n = 1, dyn_time_lvls
                 call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
              end do
-             if(dycore_is('LR')) call polar_average(pver, tptr3d) 	
+             if(dycore_is('LR')) call polar_average(pver, tptr3d)       
           else
              call pbuf_set_field(pbuf2d, m, 0._r8)
              if (masterproc)  write(iulog,*) trim(fieldname), ' initialized to 0.0'
@@ -649,7 +649,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
        if(.not.found) then
           call infld('T', fh_ini, dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
                tptr3d, found, gridname='physgrid')
-          if(dycore_is('LR')) call polar_average(pver, tptr3d) 	
+          if(dycore_is('LR')) call polar_average(pver, tptr3d)  
           if (masterproc) write(iulog,*) trim(fieldname), ' initialized with T'
        end if
        do n = 1, dyn_time_lvls
@@ -779,7 +779,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 #if ( defined OFFLINE_DYN )
     use metdata,            only: metdata_phys_init
 #endif
-    use ionosphere,	    only: ionos_init  ! Initialization of ionosphere module (WACCM-X)
+    use ionosphere,         only: ionos_init  ! Initialization of ionosphere module (WACCM-X)
     use majorsp_diffusion,  only: mspd_init   ! Initialization of major species diffusion module (WACCM-X)
     use clubb_intr,         only: clubb_ini_cam
     use shoc_intr,          only: shoc_init_e3sm
@@ -1221,9 +1221,8 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
     use physics_buffer, only : physics_buffer_desc, pbuf_set_field, pbuf_get_chunk, pbuf_old_tim_idx
     use time_manager,     only: get_nstep
     use cam_diagnostics,  only: diag_phys_writeout
-    use check_energy,     only: check_energy_fix, check_energy_chng
+    use check_energy,     only: check_energy_fix, check_energy_chng, check_energy_timestep_init
     use dycore,           only: dycore_is
-
     !
     ! Input arguments
     !
@@ -1271,6 +1270,37 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
 
     call phys_getopts(ideal_phys_option_out=ideal_phys_option)
 
+    ! Idealized Path Sanity Initialization -- overwite default 'inf' values set in physics_state_alloc
+    if (ideal_phys .and. nstep == 1) then
+       do c = begchunk, endchunk
+          if (allocated(phys_state(c)%q)) phys_state(c)%q(:,:,:) = 0._r8
+
+          ! Zero all Carbon mass tracking and flux variables
+          phys_state(c)%tc_curr(:) = 0._r8
+          phys_state(c)%tc_init(:) = 0._r8
+          phys_state(c)%tc_mnst(:) = 0._r8
+          phys_state(c)%tc_prev(:) = 0._r8
+
+          phys_state(c)%c_flux_sfc(:) = 0._r8
+          phys_state(c)%c_flux_air(:) = 0._r8
+          phys_state(c)%c_flux_sff(:) = 0._r8
+          phys_state(c)%c_flux_lnd(:) = 0._r8
+          phys_state(c)%c_flux_ocn(:) = 0._r8
+
+          ! Zero monthly and integrated diagnostics
+          phys_state(c)%c_mflx_sfc(:) = 0._r8
+          phys_state(c)%c_mflx_air(:) = 0._r8
+          phys_state(c)%c_mflx_sff(:) = 0._r8
+          phys_state(c)%c_mflx_lnd(:) = 0._r8
+          phys_state(c)%c_mflx_ocn(:) = 0._r8
+          phys_state(c)%c_iflx_sfc(:) = 0._r8
+          phys_state(c)%c_iflx_air(:) = 0._r8
+          phys_state(c)%c_iflx_sff(:) = 0._r8
+          phys_state(c)%c_iflx_lnd(:) = 0._r8
+          phys_state(c)%c_iflx_ocn(:) = 0._r8
+       end do
+    end if
+
 !$OMP PARALLEL DO SCHEDULE(STATIC,1) &
 !$OMP PRIVATE (c, beg_chnk_cnt, flx_heat, end_chnk_cnt, sysclock_rate, sysclock_max, chunk_cost)
     do c=begchunk, endchunk
@@ -1283,18 +1313,28 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
        ! Dump dynamics variables to history buffers
        call diag_phys_writeout(phys_state(c))
 
-       if (dycore_is('LR') .or. dycore_is('SE') ) then
-          call check_energy_fix(phys_state(c), ptend(c), nstep, flx_heat)
-          call physics_update(phys_state(c), ptend(c), ztodt, phys_tend(c))
-          call check_energy_chng(phys_state(c), phys_tend(c), "chkengyfix", nstep, ztodt, &
-               zero, zero, zero, flx_heat)
-          call physics_ptend_dealloc(ptend(c))
-       end if
+       if (nstep > 0) then
 
-       if ( ideal_phys )then
-          call t_startf('tphysidl')
-          call tphysidl(ztodt, phys_state(c), phys_tend(c), trim(ideal_phys_option))
-          call t_stopf('tphysidl')
+          ! Ensure the surface heat flux is zero for the idealized path
+          flx_heat = 0._r8
+
+          ! Initialize energy conservation tracking
+          call check_energy_timestep_init(phys_state(c), phys_tend(c), pbuf_get_chunk(pbuf2d, c))
+
+          ! Apply energy fixer and state update for adiabatic runs
+          if (dycore_is('LR') .or. dycore_is('SE') ) then
+             call check_energy_fix(phys_state(c), ptend(c), nstep, flx_heat)
+             call physics_update(phys_state(c), ptend(c), ztodt, phys_tend(c))
+             call check_energy_chng(phys_state(c), phys_tend(c), "chkengyfix", nstep, ztodt, &
+                  zero, zero, zero, flx_heat)
+             call physics_ptend_dealloc(ptend(c))
+          end if
+
+          if ( ideal_phys ) then
+             call t_startf('tphysidl')
+             call tphysidl(ztodt, phys_state(c), phys_tend(c), trim(ideal_phys_option))
+             call t_stopf('tphysidl')
+          end if
        end if
 
        ! Save total enery after physics for energy conservation checks
@@ -2891,8 +2931,8 @@ end if
              call clubb_tend_cam(state,ptend,pbuf,diag,cld_macmic_ztodt,&
                 cmfmc, cam_in, cam_out, sgh30, macmic_it, cld_macmic_num_steps, &
                 dlf, det_s, det_ice, lcldo)
-	   endif
-   
+           endif
+
            if (do_shoc_sgs) then
              call shoc_tend_e3sm(state,ptend,pbuf,cld_macmic_ztodt,&
                 cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 

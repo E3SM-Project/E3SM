@@ -82,13 +82,13 @@ module check_energy
   logical  :: print_energy_errors = .false.
   character(len=16) :: microp_scheme 
 
-  real(r8) :: teout_glob           ! global mean energy of output state
-  real(r8) :: teinp_glob           ! global mean energy of input state
-  real(r8) :: tedif_glob           ! global mean energy difference
-  real(r8) :: psurf_glob           ! global mean surface pressure
-  real(r8) :: ptopb_glob           ! global mean top boundary pressure
-  real(r8) :: heat_glob            ! global mean heating rate
-  real(r8) :: ieflx_glob           ! global mean implied internal energy flux 
+  real(r8) :: teout_glob = 0._r8           ! global mean energy of output state
+  real(r8) :: teinp_glob = 0._r8           ! global mean energy of input state
+  real(r8) :: tedif_glob = 0._r8           ! global mean energy difference
+  real(r8) :: psurf_glob = 0._r8           ! global mean surface pressure
+  real(r8) :: ptopb_glob = 0._r8           ! global mean top boundary pressure
+  real(r8) :: heat_glob  = 0._r8           ! global mean heating rate
+  real(r8) :: ieflx_glob = 0._r8           ! global mean implied internal energy flux
 
 ! Physics buffer indices
   
@@ -266,9 +266,19 @@ end subroutine check_energy_get_integrals
        call add_default ('IEFLX', 1, ' ') 
     end if 
 
-    if(print_additional_diagn)then
-       do lchnk = begchunk, endchunk
-          ncol = state(lchnk)%ncol
+    heat_glob = 0._r8
+
+    do lchnk = begchunk, endchunk
+       ncol = state(lchnk)%ncol
+
+       ! Basic Energy/Water: Always init to 0 because allocation always sets these to 'inf'
+       state(lchnk)%te_ini(:ncol) = 0._r8
+       state(lchnk)%te_cur(:ncol) = 0._r8
+       state(lchnk)%tw_ini(:ncol) = 0._r8
+       state(lchnk)%tw_cur(:ncol) = 0._r8
+
+       ! Extended Diagnostics: Only init to 0 if we want them AND they exist
+       if (print_additional_diagn .and. allocated(state(lchnk)%te_before_physstep)) then
           state(lchnk)%te_before_physstep(:ncol) = 0._r8
           state(lchnk)%tw_before(:ncol)          = 0._r8
           state(lchnk)%deltaw_flux(:ncol)        = 0._r8
@@ -279,8 +289,9 @@ end subroutine check_energy_get_integrals
           state(lchnk)%cflx_diff(:ncol)          = 0._r8
           state(lchnk)%shf_raw(:ncol)            = 0._r8
           state(lchnk)%shf_diff(:ncol)           = 0._r8
-       enddo
-    endif
+       endif
+    enddo
+
   end subroutine check_energy_init
 
 !===============================================================================
@@ -304,12 +315,12 @@ end subroutine check_energy_get_integrals
     real(r8) :: wv(state%ncol)                     ! vertical integral of water (vapor)
     real(r8) :: wl(state%ncol)                     ! vertical integral of water (liquid)
     real(r8) :: wi(state%ncol)                     ! vertical integral of water (ice)
-    real(r8) :: te(state%ncol)       
+    real(r8) :: te(state%ncol)
     real(r8) :: tw(state%ncol)
 
-    integer lchnk                                  ! chunk identifier
-    integer ncol                                   ! number of atmospheric columns
-    integer  i,k                                   ! column, level indices
+    integer :: lchnk                               ! chunk identifier
+    integer :: ncol                                ! number of atmospheric columns
+    integer :: i                                   ! column, level indices
     real(r8) :: wr(state%ncol)                     ! vertical integral of rain
     real(r8) :: ws(state%ncol)                     ! vertical integral of snow
 !-----------------------------------------------------------------------
@@ -450,7 +461,7 @@ end subroutine check_energy_get_integrals
           write(iulog,"(a,a,i8,i5)") "significant en_conservation errors from process, nstep, chunk ", &
                 name, nstep, lchnk
           write(iulog,"(a5,2a10,6a15)") ' i', 'lat', 'lon', 'en', 'en_from_flux', 'diff', 'exptd diff', 'rerr', 'cum_diff'
-	  do i = 1,ncol
+          do i = 1,ncol
              if (abs(te_rer(i)) > 1.E-14_r8 ) then 
                 state%count = state%count + 1
                 write(iulog,"(i5,2f10.2,6e15.7)") i, state%lat(i), state%lon(i), te(i),te_xpd(i),te_dif(i),  &
@@ -486,7 +497,7 @@ end subroutine check_energy_get_integrals
   subroutine check_energy_gmean(state, pbuf2d, dtime, nstep)
 
     use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_get_chunk
-    
+    use shr_assert_mod, only: shr_assert
 !-----------------------------------------------------------------------
 ! Compute global mean total energy of physics input and output states
 !-----------------------------------------------------------------------
@@ -537,7 +548,17 @@ end subroutine check_energy_get_integrals
 
        ! Global mean total energy difference
        tedif_glob =  teinp_glob - teout_glob
-       heat_glob  = -tedif_glob/dtime * gravit / (psurf_glob - ptopb_glob)
+
+       ! Assert that energy difference is a valid number.
+       call shr_assert(tedif_glob == tedif_glob, "ERROR: tedif_glob is NaN in check_energy_gmean")
+       call shr_assert(abs(tedif_glob) < 1.e20_r8, "ERROR: tedif_glob is too large in check_energy_gmean")
+
+       ! Now that we know tedif_glob is safe, calculate the heat flux
+       if (dtime > 0._r8 .and. abs(psurf_glob - ptopb_glob) > 0.01_r8) then
+          heat_glob = -tedif_glob/dtime * gravit / (psurf_glob - ptopb_glob)
+       else
+          heat_glob = 0._r8
+       endif
 
        if (masterproc) then
           ! integrated state%te_cur is J/m2
@@ -840,6 +861,7 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 
     use cam_history, only: outfld
     use iop_data_mod, only: heat_glob_scm, single_column, use_replay
+    use shr_assert_mod, only: shr_assert
 
     type(physics_state), intent(in   ) :: state
     type(physics_ptend), intent(out)   :: ptend
@@ -855,6 +877,14 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 !-----------------------------------------------------------------------
     ncol = state%ncol
     lchnk = state%lchnk
+
+    ! Assert that the global heat fix is valid before applying.
+    ! If heat_glob is NaN or Infinite, the model is physically broken; fail fast.
+    call shr_assert(heat_glob == heat_glob, "ERROR: heat_glob is NaN in check_energy_fix")
+    call shr_assert(abs(heat_glob) < 1.e20_r8, "ERROR: heat_glob is too large in check_energy_fix")
+
+    ! Ensure we don't apply tendencies during the initialization pass
+    if (nstep == 0) return
 
     call physics_ptend_init(ptend, state%psetcols, 'chkenergyfix', ls=.true.)
 
@@ -891,7 +921,17 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     end do
 !!!    if (nstep > 0) write(iulog,*) "heat", heat_glob, eshflx(1)
 
+    ! Ensure the entire allocated buffer is clean to satisfy state checks
+    ! We zero out the padding columns (ncol+1:pcols) specifically.
+    if (pcols > ncol) then
+       ptend%s(ncol+1:pcols,:) = 0._r8
+       if (allocated(ptend%q)) ptend%q(ncol+1:pcols,:,:) = 0._r8
+       if (allocated(ptend%u)) ptend%u(ncol+1:pcols,:) = 0._r8
+       if (allocated(ptend%v)) ptend%v(ncol+1:pcols,:) = 0._r8
+    end if
+
     return
+
   end subroutine check_energy_fix
 
 
@@ -1015,7 +1055,7 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     integer ncol                                   ! number of atmospheric columns
     integer  i,k                                   ! column, level indices
     integer :: m                            ! tracer index
-    character(len=8) :: tracname   ! tracername
+    character(len=16) :: tracname   ! tracername
 !-----------------------------------------------------------------------
 !!$    if (.true.) return
 
@@ -1143,7 +1183,6 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 
     integer lchnk                                  ! chunk identifier
     integer ncol                                   ! number of atmospheric columns
-    integer  i,k                                   ! column, level indices
     real(r8) :: wr(state%ncol)                     ! vertical integral of rain
     real(r8) :: ws(state%ncol)                     ! vertical integral of snow
 !!...................................................................
@@ -1232,9 +1271,9 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     real(r8), intent(in   ) :: ztodt               ! 2 delta t (model time increment)
     real(r8), intent(in   ) :: prect(:)            ! (pcols) - precipitation
 
-    integer lchnk                                  ! chunk identifier
-    integer ncol                                   ! number of atmospheric columns
-    integer  i,k                                   ! column, level indices
+    integer :: lchnk                               ! chunk identifier
+    integer :: ncol                                ! number of atmospheric columns
+    integer :: i                                   ! column, level indices
 
 !!...................................................................
 
@@ -1277,12 +1316,12 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     real(r8), intent(inout) :: wr(ncol)     ! vertical integral of rain
     real(r8), intent(inout) :: ws(ncol)     ! vertical integral of snow
 
-! do not use in this version
+    ! do not use in this version
     real(r8), intent(inout), optional :: teloc(pcols,pver) 
     real(r8), intent(inout), optional :: psterm(pcols) 
 
-    integer, intent(in) :: ncol                   
-    integer :: i,k                            
+    integer, intent(in) :: ncol
+    integer :: i
 
     !if (icldliq > 1  .and.  icldice > 1 .and. irain > 1 .and. isnow > 1) then
        do i = 1, ncol
@@ -1322,8 +1361,7 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     real(r8), intent(inout), optional :: teloc(pver)
     real(r8), intent(inout), optional :: psterm
 
-    integer :: i,k
-
+    integer :: k
     ! Compute vertical integrals of dry static energy and water (vapor, liquid, ice)
     ke = 0._r8
     se = 0._r8
