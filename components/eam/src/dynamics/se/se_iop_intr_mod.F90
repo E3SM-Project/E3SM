@@ -684,6 +684,8 @@ subroutine crm_resolved_turb(elem,hvcoord,hybrid,t1,&
   real (kind=real_kind) :: thl2_res(np,np,nlev), qw2_res(np,np,nlev), qwthl_res(np,np,nlev)
   real (kind=real_kind) :: pres(nlev)
   integer :: ie, i, j, k
+  integer :: ix_liq = 2
+  ix_liq = 2
 
   ! Compute pressure for IOP observations
   do k=1,nlev
@@ -698,10 +700,15 @@ subroutine crm_resolved_turb(elem,hvcoord,hybrid,t1,&
       ! Compute potential temperature
       call get_pottemp(elem(ie),thetal,hvcoord,t1,1)
 
-      ! Compute liquid water potential temperature
-      thetal(:,:,k) = thetal(:,:,k) - (latvap/Cp)*(elem(ie)%state%Q(1:np,1:np,k,2))
-      ! Compute total water
-      qw(:,:,k) = elem(ie)%state%Q(1:np,1:np,k,1) + elem(ie)%state%Q(1:np,1:np,k,2)
+      ! Compute liquid water potential temperature and total water
+      if (pcnst >= 2) then
+         ! NDK Using a variable 'ix_liq' instead of the literal '2'
+         ! prevents the compiler from flagging a static bounds error.
+         thetal(:,:,k) = thetal(:,:,k) - (latvap/Cp)*(elem(ie)%state%Q(1:np,1:np,k,ix_liq))
+         qw(:,:,k)     = elem(ie)%state%Q(1:np,1:np,k,1) + elem(ie)%state%Q(1:np,1:np,k,ix_liq)
+      else
+         qw(:,:,k)     = elem(ie)%state%Q(1:np,1:np,k,1)
+      end if
 
       ! Initialize the global buffer
       global_shared_buf(ie,1) = 0.0_real_kind
@@ -734,9 +741,14 @@ subroutine crm_resolved_turb(elem,hvcoord,hybrid,t1,&
 
     ! Compute liquid water potential temperature
     do k=1,nlev
-      thetal(:,:,k) = thetal(:,:,k) - (latvap/Cp)*(elem(ie)%state%Q(1:np,1:np,k,2))
-      qw(:,:,k) = elem(ie)%state%Q(1:np,1:np,k,1) + elem(ie)%state%Q(1:np,1:np,k,2)
-    enddo
+      if (pcnst >= 2) then
+         ! NDK: Using 'ix_liq' avoids static bounds errors if liquid water is absent
+         thetal(:,:,k) = thetal(:,:,k) - (latvap/Cp)*(elem(ie)%state%Q(1:np,1:np,k,ix_liq))
+         qw(:,:,k)     = elem(ie)%state%Q(1:np,1:np,k,1) + elem(ie)%state%Q(1:np,1:np,k,ix_liq)
+      else
+         qw(:,:,k)     = elem(ie)%state%Q(1:np,1:np,k,1)
+      end if
+    end do
 
     ! Compute air density
     do k=1,nlev
