@@ -17,6 +17,7 @@ void Functions<S,D>::compute_cape_from_parcel(
   // Inputs
   const MemberType& team,
   const Workspace& workspace,
+  const ZmRuntimeOpt& runtime_opt,
   const Int& pver, // number of mid-point vertical levels
   const Int& pverp, // number of interface vertical levels
   const Int& num_cin, // num of negative buoyancy regions that are allowed before the conv. top and CAPE calc are completed
@@ -29,8 +30,6 @@ void Functions<S,D>::compute_cape_from_parcel(
   const Int& msemax_klev, // index of max MSE at parcel launch level
   const Real& lcl_pmid, // lifting condensation level (LCL) pressure
   const Int& lcl_klev, // lifting condensation level (LCL) index
-  const Real& tiedke_add, // tiedke adjustment parameter
-  const Real& lcl_pressure_threshold, // LCL pressure threshold
   // Inputs/Outputs
   const uview_1d<Real>& parcel_qsat, // parcel saturation mixing ratio
   const uview_1d<Real>& parcel_temp, // parcel temperature
@@ -69,8 +68,8 @@ void Functions<S,D>::compute_cape_from_parcel(
   // Calculate buoyancy
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_msg + 1, pver), [&] (const Int& k) {
     // Define buoyancy from launch level to equilibrium level
-    if (k <= msemax_klev && lcl_pmid >= lcl_pressure_threshold) {
-      buoyancy(k) = parcel_vtemp(k) - tv(k) + tiedke_add;
+    if (k <= msemax_klev && lcl_pmid >= ZMC::lcl_pressure_threshold) {
+      buoyancy(k) = parcel_vtemp(k) - tv(k) + runtime_opt.tiedke_add;
     } else {
       parcel_qsat(k) = sp_humidity(k);
       parcel_temp(k) = temperature(k);
@@ -81,7 +80,7 @@ void Functions<S,D>::compute_cape_from_parcel(
 
   // Find convective equilibrium level accounting for negative buoyancy levels
   for (Int k = num_msg + 2; k < pver; ++k) {
-    if (k < lcl_klev && lcl_pmid >= lcl_pressure_threshold) {
+    if (k < lcl_klev && lcl_pmid >= ZMC::lcl_pressure_threshold) {
       if (buoyancy(k + 1) > 0.0 && buoyancy(k) <= 0.0) {
         neg_buoyancy_cnt = ekat::impl::min(num_cin, neg_buoyancy_cnt + 1);
         eql_klev_tmp(neg_buoyancy_cnt - 1) = k;
@@ -93,7 +92,7 @@ void Functions<S,D>::compute_cape_from_parcel(
   for (Int n = 0; n < num_cin; ++n) {
     Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, num_msg + 1, pver),
       [&] (const Int& k, Real& cape_n) {
-        if (lcl_pmid >= lcl_pressure_threshold &&
+        if (lcl_pmid >= ZMC::lcl_pressure_threshold &&
             k <= msemax_klev && k > eql_klev_tmp(n)) {
           cape_n += ZMC::rdair * buoyancy(k) * std::log(pint(k + 1) / pint(k));
         }

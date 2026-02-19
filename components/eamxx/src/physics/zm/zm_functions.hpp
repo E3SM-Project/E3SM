@@ -91,6 +91,8 @@ struct Functions {
     static inline constexpr Real flux_factor = 1.e-12; // Small numerical regularization constant used in convective flux related calculations
 
     static inline constexpr Real mbsth = 1.e-15; // threshold below which we treat the mass fluxes as zero (in mb/s)
+
+    static inline constexpr Real lcl_pressure_threshold = 600.0; // if LCL pressure is lower => no convection and cape is zero
   };
 
   //----------------------------------------------------------------------------
