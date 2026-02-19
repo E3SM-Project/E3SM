@@ -38,17 +38,14 @@ void Functions<S,D>::compute_cape_from_parcel(
   Real& cape) // convective available potential energy
 {
   // Allocate temporary arrays
-  uview_1d<Real> buoyancy1d, cape_tmp1d, eql_klev_tmp1d;
+  uview_1d<Real> buoyancy, cape_tmp, eql_klev_tmpf;
   workspace.template take_many_contiguous_unsafe<3>(
     {"buoyancy", "cape_tmp", "eql_klev_tmp"},
-    {&buoyancy1d, &cape_tmp1d, &eql_klev_tmp1d});
+    {&buoyancy, &cape_tmp, &eql_klev_tmpf});
 
-  // Create 2D views from 1D workspace arrays
-  uview_1d<Real> buoyancy(buoyancy1d.data(), pver);
-  uview_1d<Real> cape_tmp(cape_tmp1d.data(), num_cin);
-  uview_1d<Int> eql_klev_tmp(reinterpret_cast<Int*>(eql_klev_tmp1d.data()), num_cin);
+  constexpr Real Rair = PC::Rair.value;
 
-  Int neg_buoyancy_cnt = 0;
+  uview_1d<Int> eql_klev_tmp(reinterpret_cast<Int*>(eql_klev_tmpf.data()), num_cin);
 
   // Initialize variables
   eql_klev = pver - 1;
@@ -79,14 +76,17 @@ void Functions<S,D>::compute_cape_from_parcel(
   team.team_barrier();
 
   // Find convective equilibrium level accounting for negative buoyancy levels
-  for (Int k = num_msg + 2; k < pver; ++k) {
-    if (k < lcl_klev && lcl_pmid >= ZMC::lcl_pressure_threshold) {
-      if (buoyancy(k + 1) > 0.0 && buoyancy(k) <= 0.0) {
-        neg_buoyancy_cnt = ekat::impl::min(num_cin, neg_buoyancy_cnt + 1);
-        eql_klev_tmp(neg_buoyancy_cnt - 1) = k;
+  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    Int neg_buoyancy_cnt = 0;
+    for (Int k = num_msg + 2; k < pver; ++k) {
+      if (k < lcl_klev && lcl_pmid >= ZMC::lcl_pressure_threshold) {
+        if (buoyancy(k + 1) > 0.0 && buoyancy(k) <= 0.0) {
+          neg_buoyancy_cnt = ekat::impl::min(num_cin, neg_buoyancy_cnt + 1);
+          eql_klev_tmp(neg_buoyancy_cnt - 1) = k;
+        }
       }
     }
-  }
+  });
 
   // Integrate buoyancy to obtain possible CAPE values
   for (Int n = 0; n < num_cin; ++n) {
@@ -94,25 +94,27 @@ void Functions<S,D>::compute_cape_from_parcel(
       [&] (const Int& k, Real& cape_n) {
         if (lcl_pmid >= ZMC::lcl_pressure_threshold &&
             k <= msemax_klev && k > eql_klev_tmp(n)) {
-          cape_n += ZMC::rdair * buoyancy(k) * std::log(pint(k + 1) / pint(k));
+          cape_n += Rair * buoyancy(k) * std::log(pint(k + 1) / pint(k));
         }
       }, cape_tmp(n));
   }
   team.team_barrier();
 
-  // Find maximum cape from all possible tentative CAPE values
-  for (Int n = 0; n < num_cin; ++n) {
-    if (cape_tmp(n) > cape) {
-      cape = cape_tmp(n);
-      eql_klev = eql_klev_tmp(n);
+  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    // Find maximum cape from all possible tentative CAPE values
+    for (Int n = 0; n < num_cin; ++n) {
+      if (cape_tmp(n) > cape) {
+        cape = cape_tmp(n);
+        eql_klev = eql_klev_tmp(n);
+      }
     }
-  }
 
-  // Apply limiter to ensure CAPE is positive
-  cape = ekat::impl::max(cape, 0.0);
+    // Apply limiter to ensure CAPE is positive
+    cape = ekat::impl::max(cape, 0.0);
+  });
 
   workspace.template release_many_contiguous<3>(
-    {&buoyancy1d, &cape_tmp1d, &eql_klev_tmp1d});
+    {&buoyancy, &cape_tmp, &eql_klev_tmpf});
 }
 
 } // namespace zm

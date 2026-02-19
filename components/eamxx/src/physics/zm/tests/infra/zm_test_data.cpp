@@ -757,6 +757,9 @@ void compute_cape_from_parcel(ComputeCapeFromParcelData& d)
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
+  WSM wsm(d.pver, 3, policy);
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+
   // unpack data scalars because we do not want the lambda to capture d
   const Int num_cin = d.num_cin;
   const Int num_msg = d.num_msg;
@@ -779,6 +782,8 @@ void compute_cape_from_parcel(ComputeCapeFromParcelData& d)
 
     ZMF::compute_cape_from_parcel(
       team,
+      wsm.get_workspace(team),
+      init_cp,
       pver,
       pverp,
       num_cin,

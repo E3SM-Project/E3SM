@@ -484,6 +484,8 @@ struct Functions {
   static void compute_cape_from_parcel(
     // Inputs
     const MemberType& team,
+    const Workspace& workspace,
+    const ZmRuntimeOpt& runtime_opt,
     const Int& pver, // number of mid-point vertical levels
     const Int& pverp, // number of interface vertical levels
     const Int& num_cin, // num of negative buoyancy regions that are allowed before the conv. top and CAPE calc are completed
