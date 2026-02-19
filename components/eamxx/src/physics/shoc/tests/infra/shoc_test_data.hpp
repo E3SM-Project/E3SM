@@ -316,10 +316,10 @@ struct ShocLengthData : public ShocTestGridDataBase {
   // Outputs
   Real *brunt, *shoc_mix;
 
-  ShocLengthData(Int shcol_, Int nlev_, Int nlevi_, bool shoc_1p5tke_) :
-    ShocTestGridDataBase({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &host_dx, &host_dy }, { &zt_grid, &dz_zt, &tke, &thv, &tk, &brunt, &shoc_mix }, { &zi_grid }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), shoc_1p5tke(shoc_1p5tke_) {}
+  ShocLengthData(Int shcol_, Int nlev_, Int nlevi_) :
+    ShocTestGridDataBase({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &host_dx, &host_dy }, { &zt_grid, &dz_zt, &tke, &thv, &brunt, &shoc_mix }, { &zi_grid }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
 
-  PTD_STD_DEF(ShocLengthData, 4, shcol, nlev, nlevi, shoc_1p5tke);
+  PTD_STD_DEF(ShocLengthData, 3, shcol, nlev, nlevi);
 };
 
 struct ComputeBruntShocLengthData : public PhysicsTestData {
@@ -367,16 +367,15 @@ struct ComputeConvTimeShocLengthData : public PhysicsTestData {
 struct ComputeShocMixShocLengthData : public PhysicsTestData {
   // Inputs
   Int shcol, nlev;
-  bool shoc_1p5tke;
-  Real *tke, *brunt, *zt_grid, *dz_zt, *tk, *l_inf;
+  Real *tke, *brunt, *zt_grid, *l_inf;
 
   // Outputs
   Real *shoc_mix;
 
-  ComputeShocMixShocLengthData(Int shcol_, Int nlev_, bool shoc_1p5tke_) :
-    PhysicsTestData({{ shcol_, nlev_ }, { shcol_ }}, {{ &tke, &brunt, &zt_grid, &dz_zt, &tk, &shoc_mix }, { &l_inf }}), shcol(shcol_), nlev(nlev_), shoc_1p5tke(shoc_1p5tke_) {}
+  ComputeShocMixShocLengthData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_ }}, {{ &tke, &brunt, &zt_grid, &shoc_mix }, { &l_inf }}), shcol(shcol_), nlev(nlev_) {}
 
-  PTD_STD_DEF(ComputeShocMixShocLengthData, 3, shcol, nlev, shoc_1p5tke);
+  PTD_STD_DEF(ComputeShocMixShocLengthData, 2, shcol, nlev);
 };
 
 struct CheckLengthScaleShocLengthData : public PhysicsTestData {
@@ -1016,8 +1015,8 @@ void compute_diag_third_shoc_moment_host(Int shcol, Int nlev, Int nlevi, bool sh
                                       Real* brunt_zi, Real* w_sec_zi, Real* thetal_zi,
                                       Real* w3);
 void shoc_pblintd_init_pot_host(Int shcol, Int nlev, Real* thl, Real* ql, Real* q, Real* thv);
-void compute_shoc_mix_shoc_length_host(Int nlev, Int shcol, bool shoc_1p5tke, Real* tke, Real* brunt,
-                                    Real* zt_grid, Real* dz_zt, Real* tk, Real* l_inf, Real* shoc_mix);
+void compute_shoc_mix_shoc_length_host(Int nlev, Int shcol, Real* tke, Real* brunt,
+                                    Real* zt_grid, Real* l_inf, Real* shoc_mix);
 void check_tke_host(Int shcol, Int nlev, Real* tke);
 void linear_interp_host(Real* x1, Real* x2, Real* y1, Real* y2, Int km1, Int km2, Int ncol, Real minthresh);
 void clipping_diag_third_shoc_moments_host(Int nlevi, Int shcol, Real *w_sec_zi,
@@ -1045,9 +1044,9 @@ void shoc_diag_obklen_host(Int shcol, Real* uw_sfc, Real* vw_sfc, Real* wthl_sfc
                         Real* thl_sfc, Real* cldliq_sfc, Real* qv_sfc, Real* ustar, Real* kbfs, Real* obklen);
 void shoc_pblintd_cldcheck_host(Int shcol, Int nlev, Int nlevi, Real* zi, Real* cldn, Real* pblh);
 void compute_shr_prod_host(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_wind, Real* v_wind, Real* sterm);
-void shoc_length_host(Int shcol, Int nlev, Int nlevi, bool shoc_1p5tke, Real* host_dx, Real* host_dy,
+void shoc_length_host(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy,
                    Real* zt_grid, Real* zi_grid, Real*dz_zt, Real* tke,
-                   Real* thv, Real* tk, Real*brunt, Real* shoc_mix);
+                   Real* thv, Real* shoc_mix);
 void shoc_energy_fixer_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* zt_grid,
                          Real* zi_grid, Real* se_b, Real* ke_b, Real* wv_b, Real* wl_b,
                          Real* se_a, Real* ke_a, Real* wv_a, Real* wl_a, Real* wthl_sfc,
