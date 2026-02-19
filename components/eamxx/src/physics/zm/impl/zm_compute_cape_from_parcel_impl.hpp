@@ -63,7 +63,7 @@ void Functions<S,D>::compute_cape_from_parcel(
   team.team_barrier();
 
   // Calculate buoyancy
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_msg + 1, pver), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_msg, pver), [&] (const Int& k) {
     // Define buoyancy from launch level to equilibrium level
     if (k <= msemax_klev && lcl_pmid >= ZMC::lcl_pressure_threshold) {
       buoyancy(k) = parcel_vtemp(k) - tv(k) + runtime_opt.tiedke_add;
@@ -78,7 +78,7 @@ void Functions<S,D>::compute_cape_from_parcel(
   // Find convective equilibrium level accounting for negative buoyancy levels
   Kokkos::single(Kokkos::PerTeam(team), [&] {
     Int neg_buoyancy_cnt = 0;
-    for (Int k = num_msg + 2; k < pver; ++k) {
+    for (Int k = num_msg + 1; k < pver; ++k) {
       if (k < lcl_klev && lcl_pmid >= ZMC::lcl_pressure_threshold) {
         if (buoyancy(k + 1) > 0.0 && buoyancy(k) <= 0.0) {
           neg_buoyancy_cnt = ekat::impl::min(num_cin, neg_buoyancy_cnt + 1);
@@ -90,7 +90,7 @@ void Functions<S,D>::compute_cape_from_parcel(
 
   // Integrate buoyancy to obtain possible CAPE values
   for (Int n = 0; n < num_cin; ++n) {
-    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, num_msg + 1, pver),
+    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, num_msg, pver),
       [&] (const Int& k, Real& cape_n) {
         if (lcl_pmid >= ZMC::lcl_pressure_threshold &&
             k <= msemax_klev && k > eql_klev_tmp(n)) {

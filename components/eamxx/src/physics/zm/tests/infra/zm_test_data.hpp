@@ -326,6 +326,19 @@ struct ComputeCapeFromParcelData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF(ComputeCapeFromParcelData, 6, pcols, ncol, pver, pverp, num_cin, num_msg);
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine);
+
+    // We don't want msemax_klev, lcl_klev, or eql_klev to be random
+    for (Int i = 0; i < pcols; ++i) {
+      msemax_klev[i] = pver / 2 + i;
+      lcl_klev[i]    = pver / 2 - i;
+      eql_klev[i]    = i + 1;
+    }
+  }
 };
 
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
