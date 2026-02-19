@@ -4,16 +4,11 @@
 #include "share/remap/vertical_remapper.hpp"
 
 namespace scream
-{
-
-/*
-* A remapper is used to interpolate fields on a separate vertical grid.
-* This remapper has three types of vertical interpolation that
-* are required by MAM4XX. We have ported the vertical
-* routines from EAM, and in this remapper,
-* we invoke the ported routines.
+/**
+ * @class VerticalRemapperExoColdensMAM4
+ * @brief Vertical remapper specialized for MAM4 Exo O3 column density field.
  */
-
+{
 class VerticalRemapperExoColdensMAM4 : public VerticalRemapper
 {
 public:
