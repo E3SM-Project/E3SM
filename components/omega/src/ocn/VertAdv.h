@@ -115,7 +115,7 @@ class VertAdv {
    /// Retrieve the default VertAdv
    static VertAdv *getDefault();
 
-   /// Retreive a VertAdv by name
+   /// Retrieve a VertAdv by name
    static VertAdv *get(std::string name);
 
    /// Read and set config options

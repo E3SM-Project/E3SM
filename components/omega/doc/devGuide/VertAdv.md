@@ -15,7 +15,7 @@ first. The default instance is retrieved by:
 VertAdv *DefVertAdv = VertAdv::getDefault();
 ```
 
-Additional instances can be created with the `create` method, which call the
+Additional instances can be created with the `create` method, which calls the
 constructor and places the new instance in a map identified with the label
 `Name`:
 ```

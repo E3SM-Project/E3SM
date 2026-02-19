@@ -203,7 +203,7 @@ int main(int argc, char *argv[]) {
       OMEGA_SCOPE(LocEOnC, DefDecomp->EdgesOnCell);
       OMEGA_SCOPE(LocESOnC, DefMesh->EdgeSignOnCell);
 
-      // Set unifrom values for layer thickness and velocity on edges of column
+      // Set uniform values for layer thickness and velocity on edges of column
       parallelFor(
           {NVertLayers}, KOKKOS_LAMBDA(int K) {
              for (int J = 0; J < NEdgesOnCell0; ++J) {

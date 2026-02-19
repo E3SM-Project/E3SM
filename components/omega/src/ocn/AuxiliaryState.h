@@ -53,7 +53,7 @@ class AuxiliaryState {
    // Create a non-default auxiliary state
    static AuxiliaryState *create(const std::string &Name, const HorzMesh *Mesh,
                                  Halo *MeshHalo, const VertCoord *VCoord,
-                                 VertAdv *Vadv, int NTracers,
+                                 VertAdv *VAdv, int NTracers,
                                  TimeInterval TimeStep);
 
    /// Get the default auxiliary state
@@ -87,7 +87,7 @@ class AuxiliaryState {
 
  private:
    AuxiliaryState(const std::string &Name, const HorzMesh *Mesh, Halo *MeshHalo,
-                  const VertCoord *VCoord, VertAdv *Vadv, int NTracers,
+                  const VertCoord *VCoord, VertAdv *VAdv, int NTracers,
                   TimeInterval TimeStep);
 
    AuxiliaryState(const AuxiliaryState &) = delete;

@@ -572,7 +572,7 @@ void VertAdv::computeVelocityVAdvTend(
 
 //------------------------------------------------------------------------------
 // Compute tracer tendency due to vertical advection, TimeStep is only needed
-// as an arugement for flux-corrected transport
+// as an argument for flux-corrected transport
 void VertAdv::computeTracerVAdvTend(
     const Array3DReal &TracerTend,     //< [inout] tracer tendencies
     const Array3DReal &Tracers,        //< [in] tracer array
