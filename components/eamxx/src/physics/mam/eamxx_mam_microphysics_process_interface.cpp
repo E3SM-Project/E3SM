@@ -486,12 +486,11 @@ void MAMMicrophysics::set_exo_coldens_reader()
   auto molec = Units::nondimensional();// example;
   auto cm2 = pow(m / 100,2);
   auto molec_cm2 = Units(molec/cm2,"molecules/cm2");
-  std::vector<std::string> exo_coldens_names={"O3_column_density"};
-  for(const auto &field_name : exo_coldens_names) {
-      Field field_exo(FieldIdentifier(field_name,layout,molec_cm2,grid_exo_coldens->name()));
-      field_exo.allocate_view();
-      exo_coldens_fields_.push_back(field_exo);
-  }
+  const std::string exo_coldens_name = "O3_column_density";
+  Field field_exo(
+      FieldIdentifier(exo_coldens_name, layout, molec_cm2, grid_exo_coldens->name()));
+  field_exo.allocate_view();
+  exo_coldens_fields_.push_back(field_exo);
 
   // Beg of any year, since we use yearly periodic timeline
   util::TimeStamp ref_ts_exo_coldens (1,1,1,0,0,0);
