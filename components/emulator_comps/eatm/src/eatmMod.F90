@@ -117,7 +117,7 @@ contains
     do k = 1, nc
       do j = 1, ny
         do i = 1, nx
-          inputs(1, k, i, j) = (inputs(1, k, i, j) + self%means(k)) / self%stds(k)
+          inputs(1, k, i, j) = (inputs(1, k, i, j) - self%means(k)) / self%stds(k)
         enddo
       enddo
     enddo

@@ -431,9 +431,9 @@ CONTAINS
         rainc(i, j) = 0.0_R8
         if (tbot(i, j) < tKFrz) then
           rainl(i, j) = 0.0_R8
-          snowl(i, j) = net_outputs(1, 37, i, j)
+          snowl(i, j) = max(net_outputs(1, 37, i, j), 0.0_R8)
         else
-          rainl(i, j) = net_outputs(1, 37, i, j)
+          rainl(i, j) = max(net_outputs(1, 37, i, j), 0.0_R8)
           snowl(i, j) = 0.0_R8
         endif
 
