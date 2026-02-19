@@ -4,13 +4,19 @@
 
 namespace scream
 {
-VerticalRemapperExoColdensMAM4::
-VerticalRemapperExoColdensMAM4 (const grid_ptr_type& src_grid,
-                  const grid_ptr_type& tgt_grid)
-:VerticalRemapper(src_grid,
-                  tgt_grid,
-                  true,
-                  false) {
+VerticalRemapperExoColdensMAM4::VerticalRemapperExoColdensMAM4(
+  const grid_ptr_type& src_grid,
+  const grid_ptr_type& tgt_grid)
+{
+  set_name("Vertical " + tgt_grid->name());
+
+  m_bwd_allowed = false;
+
+  EKAT_REQUIRE_MSG(
+    src_grid->get_2d_scalar_layout().congruent(tgt_grid->get_2d_scalar_layout()),
+    "Error! Source and target grid can only differ for their number of level.\n");
+
+  set_grids(src_grid, tgt_grid);
 }
 
 void VerticalRemapperExoColdensMAM4::remap_fwd_impl ()
@@ -25,8 +31,6 @@ void VerticalRemapperExoColdensMAM4::remap_fwd_impl ()
 
 void VerticalRemapperExoColdensMAM4::set_delta_pressure(const std::string& file_name, const Field& pint )
 {
-    using view_1d_host    = typename KT::view_1d<Real>::HostMirror;
-
     const auto pint_host = pint.get_view<const Real **, Host>();
     const Real ptop_ref=pint_host(0,0);
     constexpr Real hPa2Pa = 100;
@@ -65,9 +69,6 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt) const
   const auto dataout =  f_tgt.get_view<Real **>();
 
   const int ncols = m_src_grid->get_num_local_dofs();
-
-  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
-
   const Real delp = m_exo_delp;
   const int ki = m_exo_ki;
   const int kl = ki == 0 ? 0 : m_exo_ki - 1;
