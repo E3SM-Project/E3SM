@@ -282,10 +282,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
 
   KOKKOS_FUNCTION
   static void compute_shoc_mix_shoc_length(
-      const MemberType &team, const Int &nlev, const Scalar &length_fac, const bool &shoc_1p5tke,
+      const MemberType &team, const Int &nlev, const bool &shoc_1p5tke,
       const uview_1d<const Spack> &tke, const uview_1d<const Spack> &brunt,
-      const uview_1d<const Spack> &zt_grid, const uview_1d<const Spack> &dz_zt,
-      const uview_1d<const Spack> &tk, const Scalar &l_inf, const uview_1d<Spack> &shoc_mix);
+      const uview_1d<const Spack> &zt_grid, const Scalar &l_inf, const uview_1d<Spack> &shoc_mix);
 
   KOKKOS_FUNCTION
   static void check_tke(const MemberType &team, const Int &nlev, const uview_1d<Spack> &tke);
@@ -419,20 +418,20 @@ template <typename ScalarT, typename DeviceT> struct Functions {
 
   KOKKOS_FUNCTION
   static void shoc_length(const MemberType &team, const Int &nlev, const Int &nlevi,
-                          const Scalar &length_fac, const bool &shoc_1p5tke, const Scalar &dx,
+                          const Scalar &length_fac, const Scalar &dx,
                           const Scalar &dy, const uview_1d<const Spack> &zt_grid,
                           const uview_1d<const Spack> &zi_grid, const uview_1d<const Spack> &dz_zt,
                           const uview_1d<const Spack> &tke, const uview_1d<const Spack> &thv,
-                          const uview_1d<const Spack> &tk, const Workspace &workspace,
-                          const uview_1d<Spack> &brunt, const uview_1d<Spack> &shoc_mix);
+                          const Workspace &workspace, const uview_1d<Spack> &brunt,
+                          const uview_1d<Spack> &shoc_mix);
 #ifdef SCREAM_SHOC_SMALL_KERNELS
   static void shoc_length_disp(const Int &shcol, const Int &nlev, const Int &nlevi,
-                               const Scalar &length_fac, const bool &tke_1p5_closure,
+                               const Scalar &length_fac,
                                const view_1d<const Scalar> &dx, const view_1d<const Scalar> &dy,
                                const view_2d<const Spack> &zt_grid,
                                const view_2d<const Spack> &zi_grid,
                                const view_2d<const Spack> &dz_zt, const view_2d<const Spack> &tke,
-                               const view_2d<const Spack> &thv, const view_2d<const Spack> &tk,
+                               const view_2d<const Spack> &thv,
                                const WorkspaceMgr &workspace_mgr, const view_2d<Spack> &brunt,
                                const view_2d<Spack> &shoc_mix);
 #endif
