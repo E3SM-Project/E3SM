@@ -469,7 +469,7 @@ class TracerHighOrderHorzAdvOnCell {
       const I4 KEnd          = KStart + VecLength;
       const Real InvAreaCell = 1._Real / AreaCell(ICell);
       for (int K = KStart; K < KEnd; ++K)
-        Tend(L, ICell, K) = 0;
+         Tend(L, ICell, K) = 0;
 
       for (int I = 0; I < NEdgesOnCell(ICell); ++I) {
          const I4 IEdge = EdgesOnCell(ICell, I);
