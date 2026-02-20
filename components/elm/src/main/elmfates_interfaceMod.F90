@@ -77,6 +77,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_lch4
    use elm_varctl        , only : use_century_decomp
    use elm_varctl        , only : carbon_only,carbonnitrogen_only,carbonphosphorus_only
+   use elm_varctl        , only : fates_paramfile
    use elm_varcon        , only : tfrz
    use elm_varcon        , only : spval
    use elm_varcon        , only : denice
@@ -207,9 +208,6 @@ module ELMFatesInterfaceMod
 
    use FatesInterfaceTypesMod       , only : bc_in_type, bc_out_type
 
-   use ELMFatesParamInterfaceMod, only : fates_param_reader_ctsm_impl
-   use FatesParametersInterface, only : fates_param_reader_type
-   use FatesParametersInterface, only : fates_parameters_type
    
    use perf_mod          , only : t_startf, t_stopf
 
@@ -331,7 +329,7 @@ contains
     integer                                        :: pass_use_luh2
     integer                                        :: pass_masterproc
     logical                                        :: verbose_output
-    type(fates_param_reader_ctsm_impl)             :: var_reader
+
 
     if (use_fates) then
 
@@ -378,6 +376,8 @@ contains
        end if
        call set_fates_ctrlparms('masterproc',ival=pass_masterproc)
 
+       call set_fates_ctrlparms('parteh_mode',ival=fates_parteh_mode)
+       
     end if
 
     ! The following call reads in the parameter file
@@ -394,8 +394,8 @@ contains
     ! want fates to handle crops, so again, it should be ignored.
     ! (RGK 07-2022)
     
-    call SetFatesGlobalElements1(use_fates,natpft_size,0,var_reader)
-
+    call SetFatesGlobalElements1(use_fates,natpft_size,0,fates_paramfile)
+    
     natpft_size = fates_maxPatchesPerSite
     max_patch_per_col= max(natpft_size, numcft, maxpatch_urb)
 
@@ -476,7 +476,6 @@ contains
         call set_fates_ctrlparms('hlm_name',cval='ELM')
         call set_fates_ctrlparms('hio_ignore_val',rval=spval)
         call set_fates_ctrlparms('soilwater_ipedof',ival=get_ipedof(0))
-        call set_fates_ctrlparms('parteh_mode',ival=fates_parteh_mode)
         call set_fates_ctrlparms('seeddisp_cadence',ival=fates_seeddisp_cadence)
 
         call set_fates_ctrlparms('hist_hifrq_dimlevel',ival=fates_history_dimlevel(1))
@@ -842,7 +841,6 @@ contains
 
       use spmdMod,                  only : npes
       use decompMod,                only : procinfo
-      use FatesInterfaceMod,        only : FatesReportParameters
       use FatesParameterDerivedMod, only : param_derived
       use FatesInterfaceTypesMod,   only : numpft_fates => numpft
       use elm_varsur,               only : wt_nat_patch
@@ -1079,9 +1077,6 @@ contains
 
       call this%init_history_io(bounds_proc)
 
-      ! Report Fates Parameters (debug flag in lower level routines)
-      call FatesReportParameters(masterproc)
-      
       ! Fire data to send to FATES
       call create_fates_fire_data_method( this%fates_fire_data_method )
 
