@@ -104,6 +104,26 @@ int main(int argc, char *argv[]) {
       I4 VertexDegree   = DefMesh->VertexDegree;
       I4 NVertLayers    = DefVertCoord->NVertLayers;
 
+      // Rest bottom depth successful read
+      R8 MaxBathy = -1e10;
+      R8 MinBathy = 1e10;
+
+      for (int ICell = 0; ICell < NCellsOwned; ++ICell) {
+         if (DefVertCoord->BottomDepthH(ICell) < MinBathy) {
+            MinBathy = DefVertCoord->BottomDepthH(ICell);
+         }
+         if (DefVertCoord->BottomDepthH(ICell) > MaxBathy) {
+            MaxBathy = DefVertCoord->BottomDepthH(ICell);
+         }
+      }
+
+      if ((MinBathy > 0) && (MaxBathy < 11000.)) {
+         LOG_INFO("VertCoordTest: Bathy min/max test PASS");
+      } else {
+         ErrAll += Error(
+             ErrorCode::Fail, "VertCoordTest: Bathy min/max test FAIL");
+      }
+
       // Tests for computePressure
 
       Array2DReal LayerThickness("LayerThickness", NCellsSize, NVertLayers);
