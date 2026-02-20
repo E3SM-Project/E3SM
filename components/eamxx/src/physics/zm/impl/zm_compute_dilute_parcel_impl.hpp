@@ -39,18 +39,10 @@ void Functions<S,D>::compute_dilute_parcel(
   constexpr Real tscool = 0.0;
 
   // Allocate temporary arrays
-  uview_1d<Real> tmix1d, qtmix1d, qsmix1d, smix1d, xsh2o1d, ds_xsh2o1d, ds_freeze1d;
+  uview_1d<Real> tmix, qtmix, qsmix, smix, xsh2o, ds_xsh2o, ds_freeze;
   workspace.template take_many_contiguous_unsafe<7>(
     {"tmix", "qtmix", "qsmix", "smix", "xsh2o", "ds_xsh2o", "ds_freeze"},
-    {&tmix1d, &qtmix1d, &qsmix1d, &smix1d, &xsh2o1d, &ds_xsh2o1d, &ds_freeze1d});
-
-  uview_1d<Real> tmix(tmix1d.data(), pver);
-  uview_1d<Real> qtmix(qtmix1d.data(), pver);
-  uview_1d<Real> qsmix(qsmix1d.data(), pver);
-  uview_1d<Real> smix(smix1d.data(), pver);
-  uview_1d<Real> xsh2o(xsh2o1d.data(), pver);
-  uview_1d<Real> ds_xsh2o(ds_xsh2o1d.data(), pver);
-  uview_1d<Real> ds_freeze(ds_freeze1d.data(), pver);
+    {&tmix, &qtmix, &qsmix, &smix, &xsh2o, &ds_xsh2o, &ds_freeze});
 
   // Scalar variables for parcel properties
   Real mp = 0.0;
@@ -194,7 +186,7 @@ void Functions<S,D>::compute_dilute_parcel(
   }
 
   workspace.template release_many_contiguous<7>(
-    {&tmix1d, &qtmix1d, &qsmix1d, &smix1d, &xsh2o1d, &ds_xsh2o1d, &ds_freeze1d});
+    {&tmix, &qtmix, &qsmix, &smix, &xsh2o, &ds_xsh2o, &ds_freeze});
 }
 
 } // namespace zm
