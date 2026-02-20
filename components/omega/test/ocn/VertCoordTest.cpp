@@ -120,8 +120,8 @@ int main(int argc, char *argv[]) {
       if ((MinBathy > 0) && (MaxBathy < 11000.)) {
          LOG_INFO("VertCoordTest: Bathy min/max test PASS");
       } else {
-         ErrAll += Error(
-             ErrorCode::Fail, "VertCoordTest: Bathy min/max test FAIL");
+         ErrAll +=
+             Error(ErrorCode::Fail, "VertCoordTest: Bathy min/max test FAIL");
       }
 
       // Tests for computePressure
