@@ -665,6 +665,9 @@ void compute_dilute_parcel(ComputeDiluteParcelData& d)
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
+  WSM wsm(d.pver, 7, policy);
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+
   // unpack data scalars because we do not want the lambda to capture d
   const Int num_msg = d.num_msg;
   const Int pver = d.pver;
@@ -683,6 +686,8 @@ void compute_dilute_parcel(ComputeDiluteParcelData& d)
 
     ZMF::compute_dilute_parcel(
       team,
+      wsm.get_workspace(team),
+      init_cp,
       pver,
       num_msg,
       klaunch_d(i),

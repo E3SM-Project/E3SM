@@ -93,6 +93,10 @@ struct Functions {
     static inline constexpr Real mbsth = 1.e-15; // threshold below which we treat the mass fluxes as zero (in mb/s)
 
     static inline constexpr Real lcl_pressure_threshold = 600.0; // if LCL pressure is lower => no convection and cape is zero
+
+    static inline constexpr Int nit_lheat = 2; // Number of iterations for condensation/freezing loop
+
+    static inline  constexpr Real lwmax = 1.e-3; // maximum condesate that can be held in cloud before rainout
   };
 
   //----------------------------------------------------------------------------
@@ -464,6 +468,8 @@ struct Functions {
   static void compute_dilute_parcel(
     // Inputs
     const MemberType& team,
+    const Workspace& workspace,
+    const ZmRuntimeOpt& runtime_opt,
     const Int& pver, // number of mid-point vertical levels
     const Int& num_msg, // number of missing moisture levels at the top of model
     const Int& klaunch, // index of parcel launch level based on max MSE

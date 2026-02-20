@@ -295,6 +295,20 @@ struct ComputeDiluteParcelData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF(ComputeDiluteParcelData, 4, pcols, ncol, pver, num_msg);
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine, { {lcl_pmid, {590, 660}} });
+
+    // We don't want msemax_klev, lcl_klev, or eql_klev to be random
+    for (Int i = 0; i < pcols; ++i) {
+      lcl_klev[i]    = pver / 2 - i;
+      klaunch[i] = pver / 2 + i;
+      pblt[i]    = i + 1;
+    }
+  }
+
 };
 
 struct ComputeCapeFromParcelData : public PhysicsTestData {

@@ -34,10 +34,6 @@ void Functions<S,D>::compute_dilute_parcel(
   Real& lcl_temperature, // lifting condensation level (LCL) temperature
   Int& lcl_klev) // lifting condensation level (LCL) vertical index
 {
-  constexpr Int nit_lheat = 2;
-  constexpr Real lwmax = 1.e-3;
-  constexpr Real tscool = 0.0;
-
   // Allocate temporary arrays
   uview_1d<Real> tmix, qtmix, qsmix, smix, xsh2o, ds_xsh2o, ds_freeze;
   workspace.template take_many_contiguous_unsafe<7>(
@@ -52,7 +48,13 @@ void Functions<S,D>::compute_dilute_parcel(
   Real qtp0 = 0.0;
   Real mp0 = 0.0;
 
-  // Apply tpert_fix logic
+  //----------------------------------------------------------------------------
+  // The original ZM scheme only treated PBL-rooted convection. A PBL temperature
+  // perturbation (tpert) was then used to increase the parcel temperatue at launch
+  // level, which is in PBL. The dcape_ull or ull trigger enables ZM scheme to treat
+  // elevated convection with launch level above PBL. If parcel launch level is
+  // above PBL top, tempeature perturbation in PBL should not be able to influence
+  // it. In this situation, the temporary variable tpert_loc is reset to zero.
   Real tpert_loc = tpert;
   if (runtime_opt.tpert_fix && klaunch < pblt) {
     tpert_loc = 0.0;
@@ -74,12 +76,12 @@ void Functions<S,D>::compute_dilute_parcel(
   for (Int k = pver - 1; k >= num_msg + 1; --k) {
     if (k == klaunch) {
       // Initialize values at launch level
-      mp0 = 1.0;
-      qtp0 = sp_humidity(k);
+      mp0 = 1.0; // initial relative mass - value of 1.0 does not change for undilute (dmpdp=0)
+      qtp0 = sp_humidity(k); // initial total water - assuming subsaturated
       sp0 = entropy(temperature(k), pmid(k), qtp0);
       smix(k) = sp0;
       qtmix(k) = qtp0;
-      Real tfguess = temperature(k);
+      const Real tfguess = temperature(k);
       invert_entropy(team, smix(k), pmid(k), qtmix(k), tfguess, tmix(k), qsmix(k));
 
     } else if (k < klaunch) {
@@ -91,24 +93,26 @@ void Functions<S,D>::compute_dilute_parcel(
       const Real senv = entropy(tenv, penv, qtenv);
 
       // Determine fractional entrainment rate 1/pa given value 1/m
-      const Real dpdz = -(penv * PC::gravit.value) / (ZMC::rdair * tenv); // [mb/m]
+      const Real dpdz = -(penv * PC::gravit.value) / (PC::Rair.value * tenv); // [mb/m]
       const Real dzdp = 1.0 / dpdz; // [m/mb]
       const Real dmpdp = runtime_opt.dmpdz * dzdp; // Fractional entrainment [1/mb]
 
-      // Sum entrainment to current level
-      sp = sp - dmpdp * dp * senv;
-      qtp = qtp - dmpdp * dp * qtenv;
-      mp = mp - dmpdp * dp;
+      // sum entrainment to current level - entrain q,s out of intervening dp layers,
+      // assuming linear variation (i.e. entrain the mean of the 2 stored values)
+      sp  -= dmpdp * dp * senv;
+      qtp -= dmpdp * dp * qtenv;
+      mp  -= dmpdp * dp;
 
       // Entrain s and qt to next level
       smix(k) = (sp0 + sp) / (mp0 + mp);
       qtmix(k) = (qtp0 + qtp) / (mp0 + mp);
 
-      // Invert entropy
+      // Invert entropy from s and q to determine T and saturation-capped q of mixture
+      // temperature(i,k) used as a first guess so that it converges faster
       Real tfguess = tmix(k + 1);
       invert_entropy(team, smix(k), pmid(k), qtmix(k), tfguess, tmix(k), qsmix(k));
 
-      // Determine if we are at the LCL
+      // determine if we are at the LCL if this is first level where qsmix<=qtmix on ascending
       if (qsmix(k) <= qtmix(k) && qsmix(k + 1) > qtmix(k + 1)) {
         lcl_klev = k;
         const Real qxsk = qtmix(k) - qsmix(k);
@@ -126,6 +130,17 @@ void Functions<S,D>::compute_dilute_parcel(
     }
   }
 
+  //----------------------------------------------------------------------------
+  // We now have a profile of entropy and total water of the entraining parcel
+  // Varying with height from the launch level klaunch parcel=environment. To the
+  // top allowed level for the existence of convection. If we stop now it will
+  // provide some estimate of buoyancy without the effects of freezing/condensation.
+  //
+  // Instead, we will adjust these values such that the water held in vapor is
+  // <=qsmix. We assume that the cloud holds a certain amount of condensate (lwmax)
+  // and the rest is rained out (xsh2o). This provides latent heating to the
+  // mixed parcel and so this has to be added back to it.
+
   // Precipitation/freezing loop - iterate twice for accuracy
   for (Int k = pver - 1; k >= num_msg + 1; --k) {
     if (k == klaunch) {
@@ -137,22 +152,24 @@ void Functions<S,D>::compute_dilute_parcel(
 
     } else if (k < klaunch) {
       // Iterate nit_lheat times for s,qt changes
-      for (Int ii = 0; ii < nit_lheat; ++ii) {
-        // Rain (xsh2o) is excess condensate, bar lwmax
-        xsh2o(k) = ekat::impl::max(0.0, qtmix(k) - qsmix(k) - lwmax);
+      for (Int ii = 0; ii < ZMC::nit_lheat; ++ii) {
+        // Rain (xsh2o) is excess condensate, bar lwmax (accumulated loss from qtmix)
+        xsh2o(k) = ekat::impl::max(0.0, qtmix(k) - qsmix(k) - ZMC::lwmax);
 
-        // Contribution to ds from precip loss of condensate
+        // Contribution to ds from precip loss of condensate (accumulated change from smix)
         ds_xsh2o(k) = ds_xsh2o(k + 1) - PC::CpLiq.value * std::log(tmix(k) / PC::Tmelt.value) *
                       ekat::impl::max(0.0, xsh2o(k) - xsh2o(k + 1));
 
-        // Calculate entropy of freezing
+        // Calculate entropy of freezing => ( latice x amount of water involved ) / T
+
         // One off freezing of condensate
-        if (tmix(k) <= (PC::Tmelt.value + tscool) && ds_freeze(k + 1) == 0.0) {
+        if (tmix(k) <= PC::Tmelt.value && ds_freeze(k + 1) == 0.0) {
+          // entropy change from latent heat
           ds_freeze(k) = (PC::LatIce.value / tmix(k)) *
                          ekat::impl::max(0.0, qtmix(k) - qsmix(k) - xsh2o(k));
         }
 
-        if (tmix(k) <= PC::Tmelt.value + tscool && ds_freeze(k + 1) != 0.0) {
+        if (tmix(k) <= PC::Tmelt.value && ds_freeze(k + 1) != 0.0) {
           // Continual freezing of additional condensate
           ds_freeze(k) = ds_freeze(k + 1) + (PC::LatIce.value / tmix(k)) *
                          ekat::impl::max(0.0, qsmix(k + 1) - qsmix(k));
@@ -170,13 +187,14 @@ void Functions<S,D>::compute_dilute_parcel(
       }
 
       // Parcel temp is temp of mixture
+      // parcel virtual temp should be density temp with new_q total water
       parcel_temp(k) = tmix(k);
 
-      // parcel_vtemp=tprho in the presence of condensate
+      // parcel_vtemp=tprho in the presence of condensate (i.e. when new_q > qsmix)
       const Real new_q = qtmix(k) - xsh2o(k);
-      if (new_q > qsmix(k)) { // super-saturated so condensate present
+      if (new_q > qsmix(k)) { // super-saturated so condensate present - reduces buoyancy
         parcel_qsat(k) = qsmix(k);
-      } else { // just saturated/sub-saturated
+      } else { // just saturated/sub-saturated - no condensate virtual effects
         parcel_qsat(k) = new_q;
       }
 
