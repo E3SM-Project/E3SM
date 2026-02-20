@@ -4734,12 +4734,6 @@ contains
     ! cpl -> rof
     !----------------------------------------------------
     if (iamin_CPLALLROFID .and. rof_prognostic) then
-       call component_exch(rof, flow='x2c', &
-            infodata=infodata, infodata_string='cpl2rof_run', &
-            mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
-            timer_barrier='CPL:C2R_BARRIER', timer_comp_exch='CPL:C2R', &
-            timer_map_exch='CPL:c2r_rofx2rofr', timer_infodata_exch='CPL:c2r_infoexch')
-
        call component_exch_moab(rof(1), mbrxid, mrofid, 'x2c', seq_flds_x2r_fields, &
             infodata=infodata, infodata_string='cpl2rof_run', &
             mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
@@ -4759,19 +4753,11 @@ contains
     ! rof -> cpl
     !----------------------------------------------------------
     if (iamin_CPLALLROFID) then
-       call component_exch(rof, flow='c2x', &
-            infodata=infodata, infodata_string='rof2cpl_run', &
-            mpicom_barrier=mpicom_CPLALLROFID, run_barriers=run_barriers, &
-            timer_barrier='CPL:R2C_BARRIER', timer_comp_exch='CPL:R2C', &
-            timer_map_exch='CPL:r2c_rofr2rofx', timer_infodata_exch='CPL:r2c_infoexch')
-       ! this is for one hop
        call component_exch_moab(rof(1), mrofid, mbrxid, 'c2x', seq_flds_r2x_fields, &
             infodata=infodata, infodata_string='rof2cpl_run', &
             mpicom_barrier=mpicom_CPLALLROFID, run_barriers=run_barriers, &
             timer_barrier='CPL:R2C_BARRIER', timer_comp_exch='CPL:R2C', &
             timer_map_exch='CPL:r2c_rofr2rofx', timer_infodata_exch='CPL:r2c_infoexch')
-
-       !call prep_rof_migrate_moab(infodata)
     endif
 
     !----------------------------------------------------------
