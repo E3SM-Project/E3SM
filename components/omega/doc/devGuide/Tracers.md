@@ -87,7 +87,6 @@ auto [StartIndex, GroupLength] = GroupRange;
 // Get all tracers at the current time level (0)
 Array3DReal TracerArray = OMEGA::Tracers::getAll(0);
 
-
 OMEGA::parallelFor(
    "ComputeGroupTendency",
    {GroupLength, NCells, NVertLayers},
@@ -126,8 +125,9 @@ OMEGA itself, so users may not need to call them separately.
 
 ### `getAll` and `getAllHost`
 
-These functions return all device and host tracer arrays, respectively. If
-the specified `TimeLevel` does not exist, they will abort via `OMEGA_REQUIRE`.
+These functions return all device and host tracer arrays, respectively.
+If the specified `TimeLevel` does not exist, the program will abort with
+an error message.
 
 ```c++
 static HostArray3DReal getAllHost(
@@ -155,18 +155,16 @@ static I4 getGroupRange(
 ### `getByIndex` and `getHostByIndex`
 
 These functions return device and host tracer arrays, respectively, based
-on the `TracerIndex`. If the specified `TimeLevel` is invalid, they will abort 
-via `OMEGA_REQUIRE`. If the `TracerIndex` is invalid, they return a negative error code.
+on the `TracerIndex`. If the specified `TimeLevel` and/or `TracerIndex`
+does not exist, the program will abort with an error message.
 
 ```c++
-static I4 getByIndex(
-   Array2DReal &TracerArray, ///< [out] tracer device array
+static Array2DReal getByIndex(
    const I4 TimeLevel,  ///< [in] Time level index
    const I4 TracerIndex ///< [in] Global tracer index
 );
 
-static I4 getHostByIndex(
-   HostArray2DReal &TracerArrayH, ///< [out] tracer host array
+static HostArray2DReal getHostByIndex(
    const I4 TimeLevel,  ///< [in] Time level index
    const I4 TracerIndex ///< [in] Global tracer index
 );
