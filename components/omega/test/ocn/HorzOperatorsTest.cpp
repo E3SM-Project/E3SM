@@ -674,7 +674,7 @@ int testsecondderivativeoncellDetermineSphericalPatchGeometry(Real RTol) {
                          {20, 21, 25, 29, 28, 24}, {23, 24, 28, 32, 31, 27},
                          {26, 27, 31, 35, 34, 30}, {28, 29, 33, 37, 36, 32}};
    const int CtoC     = 1039230;
-   const int R        = 100 * CtoC;
+   const double R     = OMEGA::REarth;
    const R8 Pii       = 3.141592653589793_Real;
 
    // Project coordinates to sphere.
