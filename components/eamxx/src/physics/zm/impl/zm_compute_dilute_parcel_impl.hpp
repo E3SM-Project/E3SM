@@ -96,7 +96,7 @@ void Functions<S,D>::compute_dilute_parcel(
 
         // Determine fractional entrainment rate 1/pa given value 1/m
         const Real dpdz = -(penv * PC::gravit.value) / (PC::Rair.value * tenv); // [mb/m]
-        const Real dzdp = 1.0 / dpdz; // [m/mb]
+        const Real dzdp = 1 / dpdz; // [m/mb]
         const Real dmpdp = runtime_opt.dmpdz * dzdp; // Fractional entrainment [1/mb]
 
         // sum entrainment to current level - entrain q,s out of intervening dp layers,
@@ -150,7 +150,7 @@ void Functions<S,D>::compute_dilute_parcel(
         parcel_temp(k) = tmix(k);
         parcel_qsat(k) = sp_humidity(k);
         parcel_vtemp(k) = (parcel_temp(k) + runtime_opt.tpert_fac * tpert_loc) *
-          (1.0 + PC::ZVIR * parcel_qsat(k)) / (1.0 + parcel_qsat(k));
+          (1 + PC::ZVIR * parcel_qsat(k)) / (1 + parcel_qsat(k));
 
       } else if (k < klaunch) {
         // Iterate nit_lheat times for s,qt changes
@@ -201,7 +201,7 @@ void Functions<S,D>::compute_dilute_parcel(
         }
 
         parcel_vtemp(k) = (parcel_temp(k) + runtime_opt.tpert_fac * tpert_loc) *
-          (1.0 + PC::ZVIR * parcel_qsat(k)) / (1.0 + new_q);
+          (1 + PC::ZVIR * parcel_qsat(k)) / (1 + new_q);
       }
     }
   });

@@ -1,9 +1,12 @@
+#include "bfb_math.inc"
+
 module zm_conv_cape
    !----------------------------------------------------------------------------
    ! Purpose: CAPE calculation methods for ZM deep convection scheme
    !----------------------------------------------------------------------------
 #ifdef SCREAM_CONFIG_IS_CMAKE
    use zm_eamxx_bridge_params, only: r8, btype
+   use physics_share_f2c, only: scream_log
 #else
    use shr_kind_mod,     only: r8=>shr_kind_r8
 #endif
@@ -488,7 +491,7 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
                xsh2o(i,k) = max (0._r8, qtmix(i,k) - qsmix(i,k) - lwmax)
 
                ! contribution to ds from precip loss of condensate (accumulated change from smix)
-               ds_xsh2o(i,k) = ds_xsh2o(i,k+1) - zm_const%cpliq * log (tmix(i,k)/zm_const%tfreez) * max(0._r8,(xsh2o(i,k)-xsh2o(i,k+1)))
+               ds_xsh2o(i,k) = ds_xsh2o(i,k+1) - zm_const%cpliq * bfb_log(tmix(i,k)/zm_const%tfreez) * max(0._r8,(xsh2o(i,k)-xsh2o(i,k+1)))
 
                ! calculate entropy of freezing => ( latice x amount of water involved ) / T
 
@@ -625,7 +628,7 @@ subroutine compute_cape_from_parcel( pcols, ncol, pver, pverp, num_cin, num_msg,
          do i = 1,ncol
             if ( lcl_pmid(i).ge.lcl_pressure_threshold .and. &
                  k <= msemax_klev(i) .and. k > eql_klev_tmp(i,n)) then
-               cape_tmp(i,n) = cape_tmp(i,n) + zm_const%rdair*buoyancy(i,k)*log(pint(i,k+1)/pint(i,k))
+               cape_tmp(i,n) = cape_tmp(i,n) + zm_const%rdair*buoyancy(i,k)*bfb_log(pint(i,k+1)/pint(i,k))
             end if
          end do
       end do
