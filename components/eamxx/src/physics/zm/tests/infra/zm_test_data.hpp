@@ -330,7 +330,7 @@ struct ComputeCapeFromParcelData : public PhysicsTestData {
   template <typename Engine>
   void randomize(Engine& engine)
   {
-    PhysicsTestData::randomize(engine);
+    PhysicsTestData::randomize(engine, { {lcl_pmid, {590, 660}} });
 
     // We don't want msemax_klev, lcl_klev, or eql_klev to be random
     for (Int i = 0; i < pcols; ++i) {
