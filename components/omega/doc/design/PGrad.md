@@ -6,8 +6,8 @@
 The pressure gradient will be responsible for computing the horizontal gradients of both the pressure and geopotential terms for the non-Boussinesq primitive equations implemented in Omega.
 In the non-Boussinesq model, the conserved quantity is mass rather than volume.
 In Omega the prognostic variable $\tilde{h}$ is a pseudo thickness, rather than geometric thickness as in a Boussinesq model.
- Some non-Boussinesq models are written in pressure coordinates (e.g. [de Szoeke and Samelson 2002](https://journals.ametsoc.org/view/journals/phoc/32/7/1520-0485_2002_032_2194_tdbtba_2.0.co_2.xml).
- However, Omega is written in general vertical coordinates and can reference either pressure $p$ or distance $z$ in the vertical.
+Some non-Boussinesq models are written in pressure coordinates (e.g. [de Szoeke and Samelson 2002](https://journals.ametsoc.org/view/journals/phoc/32/7/1520-0485_2002_032_2194_tdbtba_2.0.co_2.xml).
+However, Omega is written in general vertical coordinates and can reference either pressure $p$ or distance $z$ in the vertical.
 In a pure pressure coordinate the pressure gradient term disappears (since the pressure does not vary along lines of constant pressure), just as how the geopotential term disappears in a pure z coordinate model.
 However, similar to MPAS-Ocean's support for tilted height coordinates, Omega will allow for tilted pressure coordinates.
 This means that Omega will need to compute both the pressure and geopotential gradients.
@@ -42,47 +42,52 @@ For split barotropic-baroclinic timestepping, the pressure gradient should provi
 The details of the barotropic pressure gradient will be added in a future design document for split time stepping.
 
 ## 3 Algorithmic Formulation
+In the layered non-Boussinesq equation solved in Omega, the pressure and geopotential gradient terms are taken along a generalized coordinate $r$:
+$$
+\alpha \nabla_z p + \nabla_z \Phi = \alpha\left( \nabla_r p - \frac{\partial r}{\partial z}\frac{\partial p}{\partial r}\nabla_r z\right) + \nabla_r \Phi - \frac{\partial r}{\partial z}\frac{\partial \Phi}{\partial r} \nabla_r z.
+$$
+Using the hydrostatic relation
+$$
+\frac{\partial p}{\partial z} &= - \rho g, \\
+\frac{\partial p}{\partial r}\frac{\partial r}{\partial z} &= - \rho g, \\
+\frac{\partial r}{\partial z} &= -\rho g \frac{\partial r}{\partial p}.
+$$
+to subtitute for $\partial r/\partial z$, and substituting $\Phi = gz + \phi_{TP} + \phi_{SAL}$ yields:
+$$
+\alpha \nabla_z p &= \alpha\left( \nabla_r p + \rho g \nabla_r z\right) + \nabla_r \Phi - \frac{\partial r}{\partial z}\frac{\partial gz}{\partial r} \nabla_r z, \\
+&= \alpha\nabla_r p + g \nabla_r z + \nabla_r \Phi - g \nabla_r z, \\
+&= \nabla_r \alpha p - p\nabla_r \alpha + g\nabla_r z + \nabla_r\left(\Phi - gz\right)\\
+&= \nabla_r\left(\alpha p + gz \right) - p\nabla_r\alpha + \nabla_r\left(\phi_{TP} + \phi_{SAL}\right). 
+$$
+The Montgomery potential is defined as:
+$$
+M = \alpha p + gz.
+$$
+
 ### 3.1 Centered Pressure Gradient
-In the layered non-Boussinesq  {ref}`momentum equation <omega-v1-momentum-eq>` solved in Omega, the pressure gradient tendency term for edge $e$ and layer $k$, $T^p_{e,k}$, includes the gradient of the geopotential, the gradient of a term involving pressure, and two terms evaluated at the cell interface:
-
+The tendency term for edge $e$ and layer $k$, $T^p_{e,k}$, is discretized as:
 $$
-T^p_{e,k} = - \left(\nabla \Phi \right)_{e,k} - \frac{1}{\left[\tilde{h}_k\right]_e} \nabla \left( \tilde{h}_k \alpha_k p_k \right) - \frac{1}{\left[\tilde{h}_k\right]_e} \left\{ \left[ \alpha p \nabla \tilde{z}\right]_{e,k}^\text{top} -  \left[ \alpha p \nabla \tilde{z}\right]_{e,k+1}^\text{top} \right\}.
+T^p_{e,k} &= \frac{1}{2}\left[\nabla M_{k+1/2} + \nabla M_{k-1/2}\right] - \left[p_k\right]_e \nabla\alpha_k + \nabla(\phi_{TP} + \phi_{SAL}), \\
 $$
-
-The geopotential and interface terms are necessary to account for tilted layers that occur when using a general vertical coordinate, where the gradient operator is taken along layers.
-Even for layers at constant pseudo-height (rather than geometric height), the geoponential gradient would still be non-zero as will the second term (unless density is constant along layers).
-In this equation, $\alpha_{i,k}$ is the specific volume, $p_{i,k}$ is the pressure, and $\Phi_{i,k}$ is the geopotential.
-These three quantities are evaluated at the mid-point of layer $k$ of cell $i$ in the first two terms and at the cell interfaces in the third term along with the interface pseudo-height, $\tilde{z}$.
+where the gradient of the Montgomery potential is evaluated at layer interfaces and then averaged to the cell mid point.
+In caclulating $M$ at the layer interfaces, $p$ and $z$ are evaluated at their natural interface locations, and $\alpha$, is held constant throughout the cell, i.e.,
+$$
+M_{k+1/2} &= \alpha_k p_{k+1/2} + gz_{k+1/2}\\
+M_{k-1/2} &= \alpha_k p_{k-1/2} + gz_{k-1/2}
+$$
 The discrete gradient operator at an edge is:
-
 $$
  \nabla {(\cdot)} = \frac{1}{d_e} \sum_{i\in CE(e)} -n_{e,i} (\cdot)_i,
 $$
-
 where $d_e$ is the distance between cell centers, $CE(e)$ are the cells on edge $e$, and $n_{e,i}$ is the sign of the edge normal with respect to cell $i$.
 The (cell-to-edge) horizontal averaging operator is:
-
 $$
  [\cdot]_e = \frac{1}{2}\sum_{i\in CE(e)} (\cdot)_i.
 $$
-
-The $\gamma_{e,k-1/2} \equiv \left[ \alpha p \nabla \tilde{z}\right]_{e,k}^\text{top}/\left[\tilde{h}_k\right]_e$ term is computed using a four point average for all interior layer interfaces with a two-point averaged used for the top and bottom interfaces.
-The interior interfaces are calculated as:
-$$
-\gamma_{e,k-1/2} = \frac{\sum_{i\in CE(e)} \alpha_{i,k} p_{i,k} h_{i,k} + \alpha_{i,k-1} p_{i,k-1} h_{i,k-1}}{d_e\sum_{i\in CE(e)} h_{i,k} + h_{i,k-1}} \sum_{i\in CE(e)} n_{e,i}\tilde{z}_{i,k-1/2} 
-$$
-with the top and bottom computed as:
-$$
-\gamma_{e,1/2} = \frac{\sum_{i\in CE(e)} \alpha_{i,k} p_{i,1} h_{i,1}}{d_e\sum_{i\in CE(e)} h_{i,1}} \sum_{i\in CE(e)} n_{e,i}\tilde{z}_{i,1/2}, \\
-\gamma_{e,K+1/2} = \frac{\sum_{i\in CE(e)} \alpha_{i,K} p_{i,k} h_{i,K}}{d_e\sum_{i\in CE(e)} h_{i,K}} \sum_{i\in CE(e)} n_{e,i}\tilde{z}_{i,K+1/2}. 
-$$
-
 Therefore, the centered pressure gradient will be calculated as:
-
 $$
- T^p_{e,k} = \frac{1}{d_e}\sum_{i\in CE(e)} n_{e,i} \Phi_{i,k} + \frac{2}{d_e\sum_{i \in CE(e)}\tilde{h}_{i,k}}\sum_{i \in CE(e)} n_{e,i} \tilde{h}_{i,k}\alpha_{i,k}p_{i,k} - \gamma_{e,k-1/2} + \gamma_{e,k+1/2}.
+ T^p_{e,k} = \frac{1}{2d_e}\left(\sum_{i\in CE(e)} -n_{e,i} M_{i,k+1/2} + \sum_{i\in CE(e)} -n_{e,i} M_{i,k-1/2}\right) + \frac{1}{2}\left(\sum_{i\in CE(e)} p_{i,k}\right)  \frac{1}{d_e} \sum_{i\in CE(e)} -n_{e,i}\alpha_{i,k} + \frac{1}{d_e} \sum_{i\in CE(e)} -n_{e,i} (\phi_{TP,i} + \phi_{SAL,i}).
 $$
-
 
 ### 3.2 High-order Pressure Gradient
 The high order pressure gradient will be based on the {ref}`full volume integral form <omega-v1-vh-momentum-reynolds2>` of the geopotential and pressure terms:
@@ -165,13 +170,10 @@ class PressureGrad{
 
         // Data required for computation (stored copies of HorzMesh/VCoord arrays)
         Array2DI4 CellsOnEdge;
-        Array1DReal DvEdge;
+        Array1DReal DcEdge;
         Array1DReal EdgeSignOnCell;
         Array1DI4 MinLayerEdgeBot;
         Array1DI4 MaxLaterEdgeTop;
-
-        // Array for interface produce needed in centered pressure gradient
-        Array2DReal InterfaceProduct;
 }
 ```
 The functions to compute the centered and high order pressure gradient terms will be implemented as functors and the pressure gradient class will have private instances of these classes.
@@ -214,14 +216,7 @@ class PressureGrad{
         // Main compute method
         void computePressureGrad(Array2DReal &Tend, const OceanState *State,
                                  const VertCoord *VCoord, const Eos *EqState,
-                                 const int TimeLevel);
-    private:
-        // Helper compute method
-        void computeInterfaceProduct(const Array2DReal &PressureMid,
-                                     const Array2DReal &SpecVol,
-                                     const Array2DReal &LayerThick,
-                                     const Array2DReal &ZInterface);
-
+                                 const int TimeLevel) const;
 }
 ```
 #### 4.2.1 Creation
@@ -279,10 +274,6 @@ void PressureGrad::computePressureGrad(const Array2DReal &Tend,
 
    if (PressureGradChoice == PressureGradType::Centered) {
 
-      // computes alpha*p*grad(z) term at edge interfaces
-      computeInterfaceProduct(PressureMid, SpecVol,
-                              LayerThick, ZInterface);
-
       // computes centered geopotential and pressure gradient tendency
       parallelForOuter(
           "pgrad-centered", {NEdgesAll},
@@ -295,8 +286,9 @@ void PressureGrad::computePressureGrad(const Array2DReal &Tend,
                  Team, KRange,
                  INNER_LAMBDA(int KChunk) {
                     LocCenteredPGrad(Tend, IEdge, KChunk, PressureMid,
-                                     Geopotential, LayerThick,
-                                     LocInterfaceProduct, SpecVol);
+                                     PressureInterface, ZInterface,
+                                     LocTidalPotential, LocSelfAttractionLoading,
+                                     SpecVol);
                  });
           });
 
@@ -337,15 +329,14 @@ static void erase(const std::string &Name);
 
 ## Verification and Testing
 
-### Test: Hydrostatic test with tilted layers
+### Unit Test: Hydrostatic test with tilted layers
 The pressure gradient term will be computed on an edge with two adjacent cells that have the same sea surface height, but internal layers that are tilted in terms of geometric height.
 The same linear temperature and salinity profiles will be used for both cells, thus the pressure gradient should be zero on the edge. 
 The pseudo-height (and specific volume) of the layers will be computed via iteration, where the pressure is updated in the EOS evaluation until convergence is reached.
 The pressure gradient term will be compared to the zero exact solution at progressively finer resolutions to evaluate convergence.
 
 ### Test: Spatial convergence to exact solution
-For given analytical functions of $\alpha$, $h$, and $z$, the spatial convergence of the pressure gradient can be assessed by computing errors on progressively finer meshes.
-This will be compared to an exact solution computed using a high-order quadrature.
+For given analytical functions of $T$, and $S$ and with specified $z$ layer spacing, the spatial convergence of the pressure gradient can be assessed by computing errors using a high-fidelity reference solution on progressively finer meshes.
 
 ### Test: Seamount test
 The seamount test in Polaris will be used to verify the pressure gradient's ability to preserve the resting state of fluid in a case with tilted layers.
