@@ -165,16 +165,20 @@ void Tendencies::readTendConfig(
       Err += TendConfig->get("DivFactor", this->VelocityHyperDiff.DivFactor);
       CHECK_ERROR_ABORT(Err, "Tendencies: DivFactor not found in TendConfig");
    }
-
-   if (TendConfig->existsVar("TracerHorzAdvTendencyEnable")) {
-      I4 Order = 1;
-      if (TendConfig->existsVar("TracerHorzAdvTendencyOrder"))
-         TendConfig->get("TracerHorzAdvTendencyOrder", Order);
-      if (Order == 1)
-         this->TracerHorzAdv.Enabled = true;
-      else if (Order == 2)
+   Err += TendConfig->get("TracerHorzAdvTendencyEnable",
+                          this->TracerHorzAdv.Enabled);
+   CHECK_ERROR_ABORT(Err,
+       "Tendencies: TracerHorzAdvTendencyEnable not found in TendConfig");
+   if (this->TracerHorzAdv.Enabled) {
+      I4 Order = 0;
+      Err += TendConfig->get("TracerHorzAdvTendencyOrder", Order);
+      CHECK_ERROR_ABORT(Err,
+          "Tendencies: TracerHorzAdvTendencyOrder not found in TendConfig");
+      if ( Order == 2 ) {
          this->TracerHighOrderHorzAdv.Enabled = true;
-      else {
+         this->TracerHorzAdv.Enabled = false;
+      }
+      if ( !(Order == 1 or Order == 2) ) {
          const std::string msg =
              "TracerHorzAdvTendencyOrder: Only values are 1 and 2, found " +
              std::to_string(Order);
