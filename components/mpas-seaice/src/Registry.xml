@@ -580,6 +580,14 @@
 		/>
 	</nml_record>
 	<nml_record name="velocity_solver" in_defaults="true">
+		<nml_option name="config_dynamics_area_minimum" type="real" default_value="1.0e-11" units="1"
+			description="Minimum sea-ice area for dynamics calculation."
+			possible_values="Any nonnegative number."
+		/>
+		<nml_option name="config_dynamics_mass_minimum" type="real" default_value="1.0e-10" units="kg m-3"
+			description="Minimum sea-ice and snow mass for dynamics calculation."
+			possible_values="Any nonnegative number."
+		/>
 		<nml_option name="config_dynamics_subcycle_number" type="integer" default_value="1" units="unitless"
 			description="The number of dynamics subcycles to perform per thermodynamic time step (config_dt)"
 			possible_values="Any positive integer."
@@ -737,6 +745,11 @@
 			description="If true use the level ice meltponds tracers."
 			possible_values="true or false"
 			icepack_name="tr_pond_lvl"
+		/>
+		<nml_option name="config_use_sealevel_meltponds" type="logical" default_value="false" units="unitless"
+			description="If true use the sea-level meltponds tracers."
+			possible_values="true or false"
+			icepack_name="tr_pond_sealvl"
 		/>
 		<nml_option name="config_use_topo_meltponds" type="logical" default_value="false" units="unitless"
 			description="If true use the topo meltpond tracers."
@@ -1663,12 +1676,32 @@
 			possible_values=""
 			icepack_name="dpscale"
 		/>
-		<nml_option name="config_min_meltwater_retained_fraction" type="real" default_value="0.15" units="unitless"
+		<nml_option name="config_min_meltwater_retained_fraction_lvlponds" type="real" default_value="0.15" units="unitless"
 			description="Minimum retained fraction of meltwater."
 			possible_values="Any real number between 0 and 1"
 			icepack_name="rfracmin"
 		/>
-		<nml_option name="config_max_meltwater_retained_fraction" type="real" default_value="1.0" units="unitless"
+		<nml_option name="config_max_meltwater_retained_fraction_lvlponds" type="real" default_value="1.0" units="unitless"
+			description="Maximum retained fraction of meltwater."
+			possible_values="Any real number between 0 and 1"
+			icepack_name="rfracmax"
+		/>
+		<nml_option name="config_min_meltwater_retained_fraction_sealvlponds" type="real" default_value="1.0" units="unitless"
+			description="Minimum retained fraction of meltwater."
+			possible_values="Any real number between 0 and 1"
+			icepack_name="rfracmin"
+		/>
+		<nml_option name="config_max_meltwater_retained_fraction_sealvlponds" type="real" default_value="1.0" units="unitless"
+			description="Maximum retained fraction of meltwater."
+			possible_values="Any real number between 0 and 1"
+			icepack_name="rfracmax"
+		/>
+		<nml_option name="config_min_meltwater_retained_fraction_topoponds" type="real" default_value="0.15" units="unitless"
+			description="Minimum retained fraction of meltwater."
+			possible_values="Any real number between 0 and 1"
+			icepack_name="rfracmin"
+		/>
+		<nml_option name="config_max_meltwater_retained_fraction_topoponds" type="real" default_value="1.0" units="unitless"
 			description="Maximum retained fraction of meltwater."
 			possible_values="Any real number between 0 and 1"
 			icepack_name="rfracmax"
@@ -1687,6 +1720,11 @@
 			description="Critical parameter for pond ice thickness."
 			possible_values=""
 			icepack_name="hp1"
+		/>
+		<nml_option name="config_sealevel_pond_equilibrium_fraction" type="real" default_value="0.27" units="unitless"
+			description="Equilibrium pond fraction for sea level parameterization."
+			possible_values="A real number between 0.0 and 1.0 inclusive."
+			icepack_name="apnd_sl"
 		/>
 	</nml_record>
 
@@ -1726,7 +1764,17 @@
 			possible_values="Any real number between 0 and 1."
 			icepack_name="phi_c_slow_mode"
 		/>
-		<nml_option name="config_macro_drainage_timescale" type="real" default_value="10." units="days"
+		<nml_option name="config_macro_drainage_timescale_lvlponds" type="real" default_value="10." units="days"
+			description="Timescale for macroscopic drainage."
+			possible_values="Any positive real number."
+			icepack_name="tscale_pnd_drain"
+		/>
+		<nml_option name="config_macro_drainage_timescale_sealvlponds" type="real" default_value="0.5" units="days"
+			description="Timescale for macroscopic drainage."
+			possible_values="Any positive real number."
+			icepack_name="tscale_pnd_drain"
+		/>
+		<nml_option name="config_macro_drainage_timescale_topoponds" type="real" default_value="10." units="days"
 			description="Timescale for macroscopic drainage."
 			possible_values="Any positive real number."
 			icepack_name="tscale_pnd_drain"
