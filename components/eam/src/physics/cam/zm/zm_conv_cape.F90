@@ -335,7 +335,6 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
    real(r8) new_q    ! hold value for total water after condensation/freezing adjustments
    real(r8) dp       ! layer thickness (center to center)
    real(r8) tfguess  ! first guess for entropy inversion
-   real(r8) tscool   ! super cooled temperature offset from freezing temperature when cloud water loading freezes
 
    real(r8) qxsk     ! LCL excess water @ k
    real(r8) qxskp1   ! LCL excess water @ k+1
@@ -353,7 +352,6 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
 
    !----------------------------------------------------------------------------
    ! initialize values
-   tscool      = 0._r8
    qtmix       = 0._r8
    smix        = 0._r8
    qtenv       = 0._r8
@@ -368,6 +366,7 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
    mp          = 0._r8
    new_q       = 0._r8
    new_s       = 0._r8
+
    !----------------------------------------------------------------------------
    ! The original ZM scheme only treated PBL-rooted convection. A PBL temperature
    ! perturbation (tpert) was then used to increase the parcel temperatue at launch
@@ -494,12 +493,12 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
                ! calculate entropy of freezing => ( latice x amount of water involved ) / T
 
                ! one off freezing of condensate
-               if (tmix(i,k) <= (zm_const%tfreez+tscool) .and. ds_freeze(i,k+1) == 0._r8) then
+               if (tmix(i,k) <= (zm_const%tfreez) .and. ds_freeze(i,k+1) == 0._r8) then
                   ! entropy change from latent heat
                   ds_freeze(i,k) = (zm_const%latice/tmix(i,k)) * max(0._r8,qtmix(i,k)-qsmix(i,k)-xsh2o(i,k))
                end if
 
-               if (tmix(i,k) <= zm_const%tfreez+tscool .and. ds_freeze(i,k+1) /= 0._r8) then
+               if (tmix(i,k) <= zm_const%tfreez .and. ds_freeze(i,k+1) /= 0._r8) then
                   ! continual freezing of additional condensate
                   ds_freeze(i,k) = ds_freeze(i,k+1)+(zm_const%latice/tmix(i,k)) * max(0._r8,(qsmix(i,k+1)-qsmix(i,k)))
                end if
