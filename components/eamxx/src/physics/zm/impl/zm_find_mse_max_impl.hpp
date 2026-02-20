@@ -42,30 +42,38 @@ void Functions<S,D>::find_mse_max(
 
   //----------------------------------------------------------------------------
   // Use parallel_reduce to find max moist static energy
-  Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, num_msg, bot_layer + 1),
-    [&] (const Int& k, Real& max_mse, Int& max_klev) {
+  if (pergro_active) {
+    // The need for current mse_max_val means this loop has to be serial
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      for (Int k = bot_layer; k >= num_msg; --k) {
+        // calculate moist static energy
+        const Real mse_env = PC::Cpair.value * temperature(k) +
+                             PC::gravit.value * zmid(k) +
+                             PC::LatVap.value * sp_humidity(k);
+        // Reset max moist static energy level when relative difference exceeds threshold
+        const Real pergro_rhd = (mse_env - mse_max_val) / (mse_env + mse_max_val);
+        if (k >= msemax_top_k && pergro_rhd > pergro_rhd_threshold) {
+          mse_max_val = mse_env;
+          msemax_klev = k;
+        }
+      }
+    });
+  }
+  else {
+    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, num_msg, bot_layer + 1),
+                            [&] (const Int& k, Real& max_mse, Int& max_klev) {
       // calculate moist static energy
       const Real mse_env = PC::Cpair.value * temperature(k) +
                            PC::gravit.value * zmid(k) +
                            PC::LatVap.value * sp_humidity(k);
-
-      if (pergro_active) {
-        // Reset max moist static energy level when relative difference exceeds threshold
-        const Real pergro_rhd = (mse_env - max_mse) / (mse_env + max_mse);
-        if (k >= msemax_top_k && pergro_rhd > pergro_rhd_threshold) {
-          max_mse = mse_env;
-          max_klev = k;
-        }
-      } else {
-        // find level and value of max moist static energy
-        if (k >= msemax_top_k && mse_env > max_mse) {
-          max_mse = mse_env;
-          max_klev = k;
-        }
+      // find level and value of max moist static energy
+      if (k >= msemax_top_k && mse_env > max_mse) {
+        max_mse = mse_env;
+        max_klev = k;
       }
     },
-    Kokkos::Max<Real>(mse_max_val), Kokkos::Max<Int>(msemax_klev)
-  );
+    Kokkos::Max<Real>(mse_max_val), Kokkos::Max<Int>(msemax_klev));
+  }
   team.team_barrier();
 }
 
