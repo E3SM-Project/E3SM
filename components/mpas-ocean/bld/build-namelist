@@ -526,6 +526,12 @@ add_default($nl, 'config_dt');
 add_default($nl, 'config_time_integrator');
 add_default($nl, 'config_number_of_time_levels');
 
+#################################
+# Namelist group: lateral_walls #
+#################################
+
+add_default($nl, 'config_wall_slip_factor');
+
 ########################
 # Namelist group: hmix #
 ########################
@@ -1899,6 +1905,7 @@ my @groups = qw(run_modes
                 io
                 decomposition
                 time_integration
+                lateral_walls
                 hmix
                 hmix_del2
                 hmix_del4
