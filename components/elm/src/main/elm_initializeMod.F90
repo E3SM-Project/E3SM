@@ -1069,7 +1069,7 @@ contains
        call get_clump_bounds(nc, bounds_clump)
        call PatchLoadBalance(bounds_clump, filter(nc)%num_nolakeurbanp, &
             filter(nc)%nolakeurbanp,canopystate_vars, &
-            alm_fates%fates(nc)%bc_out,alm_fates%f2hmap(nc)%hsites)
+            alm_fates%fates(nc)%bc_out,alm_fates%f2hmap(nc)%hsites,.true.)
     end do
     !$OMP END PARALLEL DO
        
