@@ -689,6 +689,14 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="xtime"/>')
             lines.append('    <stream name="mesh"/>')
             lines.append('    <var name="iceAreaCellCategory1"/>')
+            if ("WW3" in compset or "DWAV%FSD" in compset or "DWAV%ZEROS" in compset):
+                lines.append('    <var name="floeSizeDiameter"/> ')
+                lines.append('    <var name="waveSpectra"/> ')
+                lines.append('    <var name="dFloeSizeNewIce"/> ')
+                lines.append('    <var name="dFloeSizeLateralGrowth"/> ')
+                lines.append('    <var name="dFloeSizeLateralMelt"/> ')
+                lines.append('    <var name="dFloeSizeWeld"/> ')
+                lines.append('    <var name="dFloeSizeWaves"/> ')
             lines.append('</stream>')
             lines.append('')
             lines.append('<stream name="regionalStatisticsOutput"')
@@ -844,6 +852,14 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="snowVolumeCell"/>')
             lines.append('    <var name="uVelocityGeo"/>')
             lines.append('    <var name="vVelocityGeo"/>')
+            if ("WW3" in compset or "DWAV%FSD" in compset or "DWAV%ZEROS" in compset):
+                lines.append('    <var name="floeSizeDiameter"/> ')
+                lines.append('    <var name="waveSpectra"/> ')
+                lines.append('    <var name="dFloeSizeNewIce"/> ')
+                lines.append('    <var name="dFloeSizeLateralGrowth"/> ')
+                lines.append('    <var name="dFloeSizeLateralMelt"/> ')
+                lines.append('    <var name="dFloeSizeWeld"/> ')
+                lines.append('    <var name="dFloeSizeWaves"/> ')
             lines.append('</stream>')
             lines.append('')
             lines.append('<stream name="timeSeriesStatsDailyRestart"')
@@ -933,6 +949,18 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="pondAlbedoCell"/>')
             lines.append('    <var name="bareIceAlbedoCell"/>')
             lines.append('    <var name="pondAreaCell"/>')
+            if ("WW3" in compset or "DWAV%FSD" in compset or "DWAV%ZEROS" in compset):
+                lines.append('    <var name="floeSizeDiameter"/> ')
+                lines.append('    <var name="dFloeSizeNewIce"/> ')
+                lines.append('    <var name="dFloeSizeLateralGrowth"/> ')
+                lines.append('    <var name="dFloeSizeLateralMelt"/> ')
+                lines.append('    <var name="dFloeSizeWeld"/> ')
+                lines.append('    <var name="dFloeSizeWaves"/> ')
+                lines.append('    <var name="waveSpectra"/> ')
+
+            if ("WW3" in compset and "DOCN" in compset): # in D-cases
+                lines.append('    <var name="significantWaveHeight"/> ')
+
             if iceberg_mode != 'none':
                 lines.append('    <var name="bergFreshwaterFlux"/>')
                 lines.append('    <var name="bergLatentHeatFlux"/>')
