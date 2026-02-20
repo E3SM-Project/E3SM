@@ -4528,11 +4528,6 @@ contains
     !| cpl -> lnd
     !----------------------------------------------------
     if (iamin_CPLALLLNDID) then
-       call component_exch(lnd, flow='x2c', &
-            infodata=infodata, infodata_string='cpl2lnd_run', &
-            mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
-            timer_barrier='CPL:C2L_BARRIER', timer_comp_exch='CPL:C2L', &
-            timer_map_exch='CPL:c2l_lndx2lndl', timer_infodata_exch='CPL:c2l_infoexch')
        call component_exch_moab(lnd(1), mblxid, mlnid, 'x2c', seq_flds_x2l_fields, &
             infodata=infodata, infodata_string='cpl2lnd_run', &
             mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
@@ -4552,10 +4547,6 @@ contains
     !| lnd -> cpl
     !----------------------------------------------------------
     if (iamin_CPLALLLNDID) then
-       call component_exch(lnd, flow='c2x', infodata=infodata, infodata_string='lnd2cpl_run', &
-            mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
-            timer_barrier='CPL:L2C_BARRIER', timer_comp_exch='CPL:L2C', &
-            timer_map_exch='CPL:l2c_lndl2lndx', timer_infodata_exch='lnd2cpl_run')
        ! send from land to coupler,
        call component_exch_moab(lnd(1), mlnid, mblxid, 'c2x', seq_flds_l2x_fields, &
             infodata=infodata, infodata_string='lnd2cpl_run', &
