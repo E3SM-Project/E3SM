@@ -1095,19 +1095,23 @@
 		/>
 	</nml_record>
 	<nml_record name="land_ice" mode="init;forward">
+		<nml_option name="config_use_land_ice_pressure" type="logical" default_value=".false."
+					description="If .true. then applies landIcePressure field"
+					possible_values=".true. and .false."
+		/>
 		<nml_option name="config_land_ice_draft_mode" type="character" default_value="pressure-dependent"
 					description="Selects the mode in which land-ice draft is computed."
 					possible_values="'data', 'pressure-dependent'"
 		/>
 		<nml_option name="config_land_ice_rho_ocean" type="real" default_value="1028.0" units="kg m^-3"
-					description="ocean density used to calculate landIceDraft at floatation (assumed constant and uniform). Should be consistent with MALI's config_ocean_density when used to determine grounding line location. This is an alternative to the coupler variable effectiveDensityInLandIce which is not currently used."
+					description="ocean density used to calculate landIceDraft at floatation (assumed constant and uniform). Should be consistent with MALI's config_ocean_density when used to determine grounding line location."
 					possible_values="Any positive real number"
 		/>
 	</nml_record>
 	<nml_record name="land_ice_fluxes" mode="init;forward">
 		<nml_option name="config_land_ice_flux_mode" type="character" default_value="off"
-					description="Selects the mode in which land-ice fluxes are computed."
-					possible_values="'off','pressure_only', 'data', 'standalone','coupled'"
+					description="Selects the mode in which land-ice fluxes are computed. 'active' means that MPAS-Ocean will use the approach specified in 'config_land_ice_flux_formulation'."
+					possible_values="'off', 'data', 'active'"
 		/>
 		<nml_option name="config_land_ice_flux_formulation" type="character" default_value="Jenkins"
 					description="Name of land-ice flux formulation."
@@ -1801,7 +1805,6 @@
 		<package name="landIcePressurePKG" description="This package includes variables needed for runs with the sea surface depressed by land-ice pressure."/>
 		<package name="landIceFluxesPKG" description="This package includes varibles required for land ice thickness, momentum and tracer fluxes."/>
 		<package name="dataSubglacialRunoffFluxPKG" description="This package includes variables required for prescribed subglacial runoff flux at the grounding line into the ocean."/>
-		<package name="landIceCouplingPKG" description="This package includes varibles required for land ice coupling but not land ice fluxes in standalone mode."/>
 		<package name="landIceThermalForcing3DPKG" description="This package includes varibles required for passing a 3D thermal forcing field interpolated to z-levels to glc."/>
 		<package name="dataLandIceFluxesPKG" description="This package includes varibles related to prescribed freshwater and heat fluxes from land ice."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
@@ -1900,7 +1903,6 @@
 			<var name="vertCoordMovementWeights"/>
 			<var name="edgeMask"/>
 			<var name="cullCell"/>
-			<var name="effectiveDensityInLandIce"/>
 			<var_struct name="ecosysAuxiliary"/>
 			<var name="landIceMask"/>
 			<var name="landIcePressure"/>
@@ -2013,7 +2015,6 @@
 			<var name="layerThickness"/>
 			<var name="highFreqThickness"/>
 			<var name="lowFreqDivergence"/>
-			<var name="effectiveDensityInLandIce"/>
 			<var_struct name="ecosysAuxiliary"/>
 			<var name="landIceMask"/>
 			<var name="landIcePressure"/>
@@ -2132,7 +2133,6 @@
 			<var_array name="SSHGradient"/>
 			<var_array name="vertNonLocalFlux"/>
 			<var name="boundaryLayerDepth"/>
-			<var name="effectiveDensityInLandIce"/>
 			<var_struct name="ecosysAuxiliary"/>
 			<var name="accumulatedFrazilIceMass"/>
 			<var name="accumulatedFrazilIceSalinity"/>
@@ -2548,11 +2548,6 @@
 			 packages="splitTimeIntegrator"
 		/>
 
-		<!-- FIELD FOR LAND-ICE COUPLING -->
-		<var name="effectiveDensityInLandIce" type="real" dimensions="nCells Time" units="kg m^-3"
-			description="The effective ocean density within ice shelves based on Archimedes' principle."
-			packages="landIceCouplingPKG"
-		/>
 		<!-- FIELDS FOR GOTM -->
 		<var name="gotmVertViscTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^-1"
 			 description="GOTM: vertical viscosity defined at the cell center (horizontally) and top (vertically)"
@@ -4210,6 +4205,10 @@
 			description="Total flux of mass through the ocean surface that includes interface melt freeze and column averaged frazil freeze rate. Positive into ocean."
 			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
 		/>
+		<var name="landIceConductiveHeatFlux"  type="real" dimensions="nCells Time" units="W m^-2"
+			description="Conductive flux of heat into the ocean at land ice-ocean interface. Positive into ocean; always <=0 as a result of temperature gradients in ice."
+			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
+		/>
 		<var name="landIceHeatFlux"  type="real" dimensions="nCells Time" units="W m^-2"
 			description="Flux of heat into the ocean at land ice-ocean interface. Positive into ocean."
 			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
@@ -4220,7 +4219,7 @@
 			packages="landIceFluxesPKG"
 		/>
 		<!-- Output fields for land-ice coupling -->
-		<var_array name="avgLandIceBoundaryLayerTracers" type="real" dimensions="nCells Time" packages="landIceCouplingPKG">
+		<var_array name="avgLandIceBoundaryLayerTracers" type="real" dimensions="nCells Time" packages="landIceFluxesPKG">
 			<var name="avgLandIceBoundaryLayerTemperature" array_group="landIceBoundaryLayerValues" units="C"
 				description="The time-averaged temperature averaged over the sub-ice-shelf boundary layer"
 			/>
@@ -4228,7 +4227,7 @@
 				description="The time-averaged salinity averaged over the sub-ice-shelf boundary layer"
 			/>
 		</var_array>
-		<var_array name="avgLandIceTracerTransferVelocities" type="real" dimensions="nCells Time" packages="landIceCouplingPKG">
+		<var_array name="avgLandIceTracerTransferVelocities" type="real" dimensions="nCells Time" packages="landIceFluxesPKG">
 			<var name="avgLandIceHeatTransferVelocity" array_group="landIceTransferVelocityValues" units="m s^-1"
 				description="time-averaged friction velocity times nondimensional heat transfer coefficient"
 			/>
@@ -4236,10 +4235,6 @@
 				description="time-averaged friction velocity times nondimensional salt transfer coefficient"
 			/>
 		</var_array>
-		<var name="avgEffectiveDensityInLandIce" type="real" dimensions="nCells Time" units="kg m^-3"
-			description="The time-averaged effective ocean density within ice shelves based on Archimedes' principle."
-			packages="landIceCouplingPKG"
-		/>
 		<var name="avgThermalForcingAtZLevels" type="real" dimensions="nGlcZLevels nCells Time" units="C" packages="landIceThermalForcing3DPKG"
 			description="The time-averaged thermal forcing at predefined z-levels used for indirect OCN-GLC coupling in E3SM"
 		/>

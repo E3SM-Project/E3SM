@@ -927,17 +927,7 @@ contains
 
     call t_stopf ('mpaso_mct_init')
 
-    call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
-    if ( trim(config_land_ice_flux_mode) == 'off' .or. &
-         trim(config_land_ice_flux_mode) == 'pressure_only' .or. &
-         trim(config_land_ice_flux_mode) == 'data' .or. &
-         trim(config_land_ice_flux_mode) == 'standalone' ) then
-       ocn_c2_glcshelf = .false.
-    else if ( trim(config_land_ice_flux_mode) .eq. 'coupled' ) then
-       ocn_c2_glcshelf = .true.
-    else
-       call mpas_log_write('ERROR: unknown land_ice_flux_mode: ' // trim(config_land_ice_flux_mode), MPAS_LOG_CRIT)
-    end if
+    ocn_c2_glcshelf = .false.
     call seq_infodata_PutData(infodata, ocn_prognostic=.true., ocnrof_prognostic=.true., &
                               ocn_c2_glcshelf=ocn_c2_glcshelf)
 
@@ -2131,7 +2121,6 @@ contains
                                   riverFluxALKField,  &
                                   riverFluxFeField,   &
                                   landIceFreshwaterFluxField, &
-                                  landIceHeatFluxField, &
                                   landIceFractionField, &
                                   windSpeed10mField, &
                                   significantWaveHeightField, &
@@ -2191,7 +2180,6 @@ contains
                                                riverFluxALK,  &
                                                riverFluxFe,   &
                                                landIceFreshwaterFlux, &
-                                               landIceHeatFlux, &
                                                landIceFraction, &
                                                areaCell, &
                                                windSpeed10m, &
@@ -2316,7 +2304,6 @@ contains
       call mpas_pool_get_field(forcingPool, 'waveNetOceanMeridionalWindStress', waveNetOceanMeridionalWindStressField)
 
       call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
-      call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
       call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
       call mpas_pool_get_field(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracersField)
 
@@ -2351,7 +2338,6 @@ contains
       removedRiverRunoffFlux => removedRiverRunoffFluxField % array
       removedIceRunoffFlux => removedIceRunoffFluxField % array
       landIceFreshwaterFlux => landIceFreshwaterFluxField % array
-      landIceHeatFlux => landIceHeatFluxField % array
       landIceInterfaceTracers => landIceInterfaceTracersField % array
       landIceFraction => landIceFractionField % array
       windSpeed10m => windSpeed10mField % array
@@ -2625,9 +2611,6 @@ contains
         if ( landIceFreshwaterFluxField % isActive ) then
            !landIceFreshwaterFlux(i) = x2o_o % rAttr(index_x2o_Fogx_qicelo, n)
         end if
-        if ( landIceHeatFluxField % isActive ) then
-           !landIceHeatFlux(i) = x2o_o % rAttr(index_x2o_Fogx_qiceho, n)
-        end if
         if ( landIceInterfaceTracersField % isActive ) then
            !landIceInterfaceTracers(indexIT, i) = x2o_o % rAttr(index_x2o_Sg_blit, n)
            !landIceInterfaceTracers(indexIS, i) = x2o_o % rAttr(index_x2o_Sg_blis, n)
@@ -2803,7 +2786,6 @@ contains
    call mpas_pool_get_field(forcingPool, 'waveNetOceanMeridionalWindStress', waveNetOceanMeridionalWindStressField)
 
    call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
-   call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
    call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
    call mpas_pool_get_field(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracersField)
 
@@ -2967,9 +2949,6 @@ contains
 
    if ( landIceFreshwaterFluxField % isActive ) then
       call mpas_dmpar_exch_halo_field(landIceFreshwaterFluxField)
-   end if
-   if ( landIceHeatFluxField % isActive ) then
-      call mpas_dmpar_exch_halo_field(landIceHeatFluxField)
    end if
    if ( landIceInterfaceTracersField % isActive ) then
       call mpas_dmpar_exch_halo_field(landIceInterfaceTracersField)
@@ -3258,7 +3237,7 @@ contains
      end if
 
      ! Cryo fields
-     if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
+     if (trim(config_land_ice_flux_mode) == 'active' .or. trim(config_land_ice_flux_mode) == 'data') then
         call mpas_pool_get_array(forcingPool, 'avgLandIceFreshwaterFlux', avgLandIceFreshwaterFlux)
         call mpas_pool_get_array(forcingPool, 'avgLandIceHeatFlux', avgLandIceHeatFlux)
      endif
@@ -3327,7 +3306,7 @@ contains
        o2x_o % rAttr(index_o2x_Faoo_h2otemp, n) = avgTotalFreshWaterTemperatureFlux(i) * rho_sw * cp_sw
 
        ! Cryo fields
-       if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
+       if (trim(config_land_ice_flux_mode) == 'active' .or. trim(config_land_ice_flux_mode) == 'data') then
           o2x_o % rAttr(index_o2x_Foxo_ismw, n)  = avgLandIceFreshwaterFlux(i)
           o2x_o % rAttr(index_o2x_Foxo_ismh, n)  = avgLandIceHeatFlux(i)
        endif
@@ -3379,7 +3358,7 @@ contains
 
              o2x_o % rAttr(index_o2x_Fioo_q, n)  = 0.0_RKIND
              o2x_o % rAttr(index_o2x_Fioo_frazil, n) = 0.0_RKIND
-             if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
+             if (trim(config_land_ice_flux_mode) == 'active' .or. trim(config_land_ice_flux_mode) == 'data') then
                 o2x_o % rAttr(index_o2x_Foxo_q_li, n) = accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion / ocn_cpl_dt
                 o2x_o % rAttr(index_o2x_Foxo_frazil_li, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
              endif
@@ -3432,14 +3411,13 @@ contains
 !JW       o2x_o % rAttr(index_o2x_So_htv, n) = landIceHeatTransferVelocity(i)
 !JW       o2x_o % rAttr(index_o2x_So_stv, n) = landIceSaltTransferVelocity(i)
 
-       if ( trim(config_land_ice_flux_mode) .eq. 'standalone' .or. &
-            trim(config_land_ice_flux_mode) .eq. 'coupled'  ) then
-          o2x_o % rAttr(index_o2x_So_blt, n) = landIceBoundaryLayerTracers(indexBLT,i)
-          o2x_o % rAttr(index_o2x_So_bls, n) = landIceBoundaryLayerTracers(indexBLS,i)
-          o2x_o % rAttr(index_o2x_So_htv, n) = landIceTracerTransferVelocities(indexHeatTrans,i)
-          o2x_o % rAttr(index_o2x_So_stv, n) = landIceTracerTransferVelocities(indexSaltTrans,i)
-          o2x_o % rAttr(index_o2x_So_rhoeff, n) = 0.0_RKIND
-       endif
+!       if ( trim(config_land_ice_flux_mode) .eq. 'active' ) then
+!          o2x_o % rAttr(index_o2x_So_blt, n) = landIceBoundaryLayerTracers(indexBLT,i)
+!          o2x_o % rAttr(index_o2x_So_bls, n) = landIceBoundaryLayerTracers(indexBLS,i)
+!          o2x_o % rAttr(index_o2x_So_htv, n) = landIceTracerTransferVelocities(indexHeatTrans,i)
+!          o2x_o % rAttr(index_o2x_So_stv, n) = landIceTracerTransferVelocities(indexSaltTrans,i)
+!       endif
+
        if (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
           do iLevel = 1, nGlcZLevels
              if (avgThermalForcingAtZLevelsMask(ilevel, i) > 0.9_RKIND) then
@@ -3464,12 +3442,10 @@ contains
        !write(stderrUnit,*) 'o2x_o % rAttr(index_o2x_So_bls, n)=',o2x_o % rAttr(index_o2x_So_bls, n)
        !write(stderrUnit,*) 'o2x_o % rAttr(index_o2x_So_htv, n)=',o2x_o % rAttr(index_o2x_So_htv, n)
        !write(stderrUnit,*) 'o2x_o % rAttr(index_o2x_So_stv, n)=',o2x_o % rAttr(index_o2x_So_stv, n)
-       !write(stderrUnit,*) 'o2x_o % rAttr(index_o2x_So_rhoeff, n)=',o2x_o % rAttr(index_o2x_So_rhoeff, n)
        !o2x_o % rAttr(index_o2x_So_blt, n) = 0._r8
        !o2x_o % rAttr(index_o2x_So_bls, n) = 34.5_r8
        !o2x_o % rAttr(index_o2x_So_htv, n) = 1.e-4_r8
        !o2x_o % rAttr(index_o2x_So_stv, n) = 3.e-6_r8
-       !o2x_o % rAttr(index_o2x_So_rhoeff, n) = 1000._r8*9.81_r8*918._r8 !lithostatic pressure of 1km of ice
 
      end do
 
@@ -3867,7 +3843,6 @@ contains
                                   riverFluxALKField,  &
                                   riverFluxFeField,   &
                                   landIceFreshwaterFluxField, &
-                                  landIceHeatFluxField, &
                                   landIceFractionField, &
                                   windSpeed10mField, &
                                  significantWaveHeightField, &
@@ -3918,7 +3893,6 @@ contains
                                                riverFluxALK,  &
                                                riverFluxFe,   &
                                                landIceFreshwaterFlux, &
-                                               landIceHeatFlux, &
                                                landIceFraction, &
                                                areaCell, &
                                                windSpeed10m, &
@@ -4038,7 +4012,6 @@ contains
       call mpas_pool_get_field(forcingPool, 'peakWaveDirection', peakWaveDirectionField)
 
       call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
-      call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
       call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
       call mpas_pool_get_field(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracersField)
 
@@ -4073,7 +4046,6 @@ contains
       removedRiverRunoffFlux => removedRiverRunoffFluxField % array
       removedIceRunoffFlux => removedIceRunoffFluxField % array
       landIceFreshwaterFlux => landIceFreshwaterFluxField % array
-      landIceHeatFlux => landIceHeatFluxField % array
       landIceInterfaceTracers => landIceInterfaceTracersField % array
       landIceFraction => landIceFractionField % array
       windSpeed10m => windSpeed10mField % array
@@ -4306,9 +4278,6 @@ contains
         if ( landIceFreshwaterFluxField % isActive ) then
            !landIceFreshwaterFlux(i) = x2o_om(n, index_x2o_Fogx_qicelo)
         end if
-        if ( landIceHeatFluxField % isActive ) then
-           !landIceHeatFlux(i) = x2o_om(n, index_x2o_Fogx_qiceho)
-        end if
         if ( landIceInterfaceTracersField % isActive ) then
            !landIceInterfaceTracers(indexIT, i) = x2o_om(n, index_x2o_Sg_blit)
            !landIceInterfaceTracers(indexIS, i) = x2o_om(n, index_x2o_Sg_blis)
@@ -4475,7 +4444,6 @@ contains
    call mpas_pool_get_field(forcingPool, 'peakWaveDirection', peakWaveDirectionField)
 
    call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
-   call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
    call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
    call mpas_pool_get_field(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracersField)
 
@@ -4612,9 +4580,6 @@ contains
 
    if ( landIceFreshwaterFluxField % isActive ) then
       call mpas_dmpar_exch_halo_field(landIceFreshwaterFluxField)
-   end if
-   if ( landIceHeatFluxField % isActive ) then
-      call mpas_dmpar_exch_halo_field(landIceHeatFluxField)
    end if
    if ( landIceInterfaceTracersField % isActive ) then
       call mpas_dmpar_exch_halo_field(landIceInterfaceTracersField)
@@ -4869,7 +4834,7 @@ contains
      end if
 
      ! Cryo fields
-     if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
+     if (trim(config_land_ice_flux_mode) == 'active' .or. trim(config_land_ice_flux_mode) == 'data') then
         call mpas_pool_get_array(forcingPool, 'avgLandIceFreshwaterFlux', avgLandIceFreshwaterFlux)
         call mpas_pool_get_array(forcingPool, 'avgLandIceHeatFlux', avgLandIceHeatFlux)
      endif
@@ -4934,7 +4899,7 @@ contains
        o2x_om(n, index_o2x_Faoo_h2otemp) = avgTotalFreshWaterTemperatureFlux(i) * rho_sw * cp_sw
 
        ! Cryo fields
-       if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
+       if (trim(config_land_ice_flux_mode) == 'active' .or. trim(config_land_ice_flux_mode) == 'data') then
           o2x_om(n, index_o2x_Foxo_ismw)  = avgLandIceFreshwaterFlux(i)
           o2x_om(n, index_o2x_Foxo_ismh)  = avgLandIceHeatFlux(i)
        endif
@@ -4987,7 +4952,7 @@ contains
 
              o2x_om(n, index_o2x_Fioo_q)  = 0.0_RKIND
              o2x_om(n, index_o2x_Fioo_frazil) = 0.0_RKIND
-             if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
+             if (trim(config_land_ice_flux_mode) == 'active' .or. trim(config_land_ice_flux_mode) == 'data') then
                 if (saved_frazil_initialized .and. n <= saved_frazil_allocated_size) then
                    o2x_om(n, index_o2x_Foxo_q_li) = saved_accumulatedFrazilIceMass(n) * config_frazil_heat_of_fusion / ocn_cpl_dt
                    o2x_om(n, index_o2x_Foxo_frazil_li) = saved_accumulatedFrazilIceMass(n) / ocn_cpl_dt
@@ -5046,14 +5011,12 @@ contains
 !JW       o2x_om(n, index_o2x_So_htv) = landIceHeatTransferVelocity(i)
 !JW       o2x_om(n, index_o2x_So_stv) = landIceSaltTransferVelocity(i)
 
-       if ( trim(config_land_ice_flux_mode) .eq. 'standalone' .or. &
-            trim(config_land_ice_flux_mode) .eq. 'coupled'  ) then
-          o2x_om(n, index_o2x_So_blt) = landIceBoundaryLayerTracers(indexBLT,i)
-          o2x_om(n, index_o2x_So_bls) = landIceBoundaryLayerTracers(indexBLS,i)
-          o2x_om(n, index_o2x_So_htv) = landIceTracerTransferVelocities(indexHeatTrans,i)
-          o2x_om(n, index_o2x_So_stv) = landIceTracerTransferVelocities(indexSaltTrans,i)
-          o2x_om(n, index_o2x_So_rhoeff) = 0.0_RKIND
-       endif
+!       if ( trim(config_land_ice_flux_mode) .eq. 'active' ) then
+!          o2x_om(n, index_o2x_So_blt) = landIceBoundaryLayerTracers(indexBLT,i)
+!          o2x_om(n, index_o2x_So_bls) = landIceBoundaryLayerTracers(indexBLS,i)
+!          o2x_om(n, index_o2x_So_htv) = landIceTracerTransferVelocities(indexHeatTrans,i)
+!          o2x_om(n, index_o2x_So_stv) = landIceTracerTransferVelocities(indexSaltTrans,i)
+!       endif
 
        !Fyke: test
        !write(stderrUnit,*) 'n=',n
@@ -5061,12 +5024,10 @@ contains
        !write(stderrUnit,*) 'o2x_om(n, index_o2x_So_bls)=',o2x_om(n, index_o2x_So_bls)
        !write(stderrUnit,*) 'o2x_om(n, index_o2x_So_htv)=',o2x_om(n, index_o2x_So_htv)
        !write(stderrUnit,*) 'o2x_om(n, index_o2x_So_stv)=',o2x_om(n, index_o2x_So_stv)
-       !write(stderrUnit,*) 'o2x_om(n, index_o2x_So_rhoeff)=',o2x_om(n, index_o2x_So_rhoeff)
        !o2x_om(n, index_o2x_So_blt) = 0._r8
        !o2x_om(n, index_o2x_So_bls) = 34.5_r8
        !o2x_om(n, index_o2x_So_htv) = 1.e-4_r8
        !o2x_om(n, index_o2x_So_stv) = 3.e-6_r8
-       !o2x_om(n, index_o2x_So_rhoeff) = 1000._r8*9.81_r8*918._r8 !lithostatic pressure of 1km of ice
 
      end do
 

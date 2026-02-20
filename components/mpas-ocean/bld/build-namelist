@@ -853,6 +853,7 @@ if ($OCN_GLC_ISMF_COUPLING eq 'coupler') {
 # Namelist group: land_ice #
 ############################
 
+add_default($nl, 'config_use_land_ice_pressure');
 add_default($nl, 'config_land_ice_draft_mode');
 add_default($nl, 'config_land_ice_rho_ocean');
 
@@ -861,10 +862,10 @@ add_default($nl, 'config_land_ice_rho_ocean');
 ###################################
 
 if ($OCN_GLC_ISMF_COUPLING eq 'coupler') {
-	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"coupled");
+	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"active");
 	add_default($nl, 'config_frazil_under_land_ice', 'val'=>".true.");
 } elsif ($OCN_GLC_ISMF_COUPLING eq 'internal_mpaso') {
-	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"standalone");
+	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"active");
 	add_default($nl, 'config_frazil_under_land_ice', 'val'=>".true.");
 } elsif ($OCN_GLC_ISMF_COUPLING eq 'data_mpaso') {
 	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"data");
