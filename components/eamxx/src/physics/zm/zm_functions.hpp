@@ -453,6 +453,7 @@ struct Functions {
   static void find_mse_max(
     // Inputs
     const MemberType& team,
+    const ZmRuntimeOpt& runtime_opt,
     const Int& pver, // number of mid-point vertical levels
     const Int& num_msg, // number of missing moisture levels at the top of model
     const Int& msemax_top_k, // upper limit index of max MSE search

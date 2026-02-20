@@ -16,7 +16,6 @@ KOKKOS_FUNCTION
 void Functions<S,D>::find_mse_max(
   // Inputs
   const MemberType& team,
-  const Workspace& workspace,
   const ZmRuntimeOpt& runtime_opt,
   const Int& pver, // number of mid-point vertical levels
   const Int& num_msg, // number of missing moisture levels at the top of model
@@ -43,7 +42,7 @@ void Functions<S,D>::find_mse_max(
 
   //----------------------------------------------------------------------------
   // Use parallel_reduce to find max moist static energy
-  Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, num_msg + 1, bot_layer + 1),
+  Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, num_msg, bot_layer + 1),
     [&] (const Int& k, Real& max_mse, Int& max_klev) {
       // calculate moist static energy
       const Real mse_env = PC::Cpair.value * temperature(k) +

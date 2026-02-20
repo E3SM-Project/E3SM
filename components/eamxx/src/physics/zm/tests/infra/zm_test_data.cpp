@@ -37,8 +37,6 @@ void zm_common_init_bridge_f();
 
 void zm_common_finalize_bridge_f();
 
-void zm_find_mse_max_f(Int pcols, Int ncol, Int pver, Int num_msg, Int *msemax_top_k, bool pergro_active, Real *temperature, Real *zmid, Real *sp_humidity, Int *msemax_klev, Real *mse_max_val);
-
 void ientropy_bridge_f(Real s, Real p, Real qt, Real* t, Real* qst, Real tfg);
 
 void entropy_bridge_f(Real tk, Real p, Real qtot, Real* entropy);
@@ -81,22 +79,6 @@ void zm_finalize_cxx()
   ZMF::zm_finalize();
 }
 
-}
-
-void zm_find_mse_max(zm_data_find_mse_max& d){
-  d.transition<ekat::TransposeDirection::c2f>();
-  zm_find_mse_max_f( d.pcols,
-                     d.ncol,
-                     d.pver,
-                     d.num_msg,
-                     d.msemax_top_k,
-                     d.pergro_active,
-                     d.temperature,
-                     d.zmid,
-                     d.sp_humidity,
-                     d.msemax_klev,
-                     d.mse_max_val );
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void ientropy_f(IentropyData& d)
@@ -586,6 +568,8 @@ void find_mse_max(FindMseMaxData& d)
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+
   // unpack data scalars because we do not want the lambda to capture d
   const Int num_msg = d.num_msg;
   const Int pver = d.pver;
@@ -602,6 +586,7 @@ void find_mse_max(FindMseMaxData& d)
 
     ZMF::find_mse_max(
       team,
+      init_cp,
       pver,
       num_msg,
       msemax_top_k_d(i),
@@ -716,6 +701,7 @@ void compute_dilute_parcel(ComputeDiluteParcelData& d)
 
   zm_finalize_cxx();
 }
+
 void compute_cape_from_parcel_f(ComputeCapeFromParcelData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
