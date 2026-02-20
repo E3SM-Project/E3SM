@@ -27,14 +27,9 @@ void SPC::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   m_model_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_model_grid->name();
-
-  // Get bands info from file, and log it
-  const auto spc_data_file = m_params.get<std::string>("spc_data_file");
   
   // Define the different field layouts that will be used for this process
   auto scalar3d_mid    = m_model_grid->get_3d_scalar_layout(true);
-  auto scalar2d        = m_model_grid->get_2d_scalar_layout();
-  auto scalar1d_mid    = m_model_grid->get_vertical_layout(true);
 
   // Set of fields used strictly as input
   add_field<Required>("p_mid"      , scalar3d_mid, Pa,     grid_name, ps);
@@ -56,17 +51,7 @@ void SPC::initialize_impl (const RunType /* run_type */)
   auto spc_data_file = m_params.get<std::string>("spc_data_file");
   auto spc_map_file  = m_params.get<std::string>("spc_remap_file","");
 
-  // SPC doesn't really *need* pint, but DataInterpolation does. It's important to stress that
-  // NO FIELD VALUES from p_int are accessed in the DataInterpolation we build, since we
-  // don't remap any field on interfaces. But when the VerticalRemapper in the DataInterpolation
-  // is setup, pint must store the correct layout of a field defined at interfaces; it does not
-  // have to have COL dimension. It just need to have the ILEV tag in the layout AND have alloc
-  // properties compatible with SCREAM_PACK_SIZE.
-  // NOTE: we could just add p_int as a required field, but that would be misleading in the DAG
   auto pmid = get_field_in("p_mid");
-  Field pint(FieldIdentifier("p_int",m_model_grid->get_vertical_layout(false),Pa,m_model_grid->name()));
-  pint.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
-  pint.allocate_view();
 
   util::TimeStamp ref_ts (1,1,1,0,0,0); // Beg of any year, since we use yearly periodic timeline
   m_data_interpolation = std::make_shared<DataInterpolation>(m_model_grid,spc_fields);
@@ -90,7 +75,6 @@ void SPC::initialize_impl (const RunType /* run_type */)
   vremap_data.vr_type = DataInterpolation::Dynamic3DRef;
   vremap_data.pname = "PS";
   vremap_data.pmid = pmid;
-  vremap_data.pint = pint;
   m_data_interpolation->create_vert_remapper (vremap_data);
   m_data_interpolation->init_data_interval (start_of_step_ts());
 
@@ -98,7 +82,7 @@ void SPC::initialize_impl (const RunType /* run_type */)
   using FWI = FieldWithinIntervalCheck;
   const auto eps = std::numeric_limits<double>::epsilon();
 
-  add_postcondition_check<FWI>(get_field_out("o3_volume_mix_ratio"),m_model_grid,0,1e11,true,-1e11*eps);
+  add_postcondition_check<FWI>(get_field_out("o3_volume_mix_ratio"),m_model_grid,1e-36,1e-2,true);
 }
 
 // =========================================================================================

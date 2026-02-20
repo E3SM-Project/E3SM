@@ -9,10 +9,7 @@ namespace scream
 class DataInterpolation;
 
 /*
- * The class responsible to handle the calculation of the subgrid cloud fractions
- *
- * The AD should store exactly ONE instance of this class stored
- * in its list of subcomponents (the AD should make sure of this).
+ * The class responsible to handle the prescribed trace gas species
 */
 
 class SPC : public AtmosphereProcess
