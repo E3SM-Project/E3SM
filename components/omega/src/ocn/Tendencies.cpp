@@ -646,7 +646,7 @@ void Tendencies::computeTracerTendenciesOnly(
    } else if (VAdv->VertAdvChoice == VertAdvOption::FCT) {
       ThicknessForVAdv = AuxState->LayerThicknessAux.ProvThickness;
    }
-   VAdv->computeTracerVAdvTend(TracerTend, TracerArray, ThicknessForVAdv,
+   VAdv->computeTracerVAdvTend(LocTracerTend, TracerArray, ThicknessForVAdv,
                                TimeStep);
    Pacer::stop("Tend:computeTracerVAdvTend", 2);
 
