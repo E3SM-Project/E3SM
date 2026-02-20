@@ -26,7 +26,7 @@ struct UnitWrap::UnitTest<D>::TestComputeDiluteParcel : public UnitWrap::UnitTes
       ComputeDiluteParcelData(    4,    4,   72,     30),
       ComputeDiluteParcelData(    4,    4,   72,     20),
       ComputeDiluteParcelData(    4,    4,  128,     40),
-      ComputeDiluteParcelData(    4,    4,  128,     60),
+      ComputeDiluteParcelData(    4,    4,  128,     80),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ComputeDiluteParcelData);
