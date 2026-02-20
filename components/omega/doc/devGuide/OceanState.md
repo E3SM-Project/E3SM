@@ -68,7 +68,7 @@ for the device arrays and
 HostArray2DReal LayerThickH = State->getLayerThicknessH(TimeLevel);
 HostArray2DReal NormVelH = State->getNormalVelocityH(TimeLevel);
 ```
-for the host arrays. These functions return the arrays directly and will abort 
+for the host arrays. These functions return the arrays directly and will abort
 via `OMEGA_REQUIRE` if an invalid `TimeLevel` is provided.
 
 The time level convention is:
