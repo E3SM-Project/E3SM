@@ -3,8 +3,8 @@
  * @brief Factory for creating inference backends.
  */
 
-#ifndef E3SM_CREATE_BACKEND_HPP
-#define E3SM_CREATE_BACKEND_HPP
+#ifndef E3SM_EMULATOR_CREATE_INFERENCE_BACKEND_HPP
+#define E3SM_EMULATOR_CREATE_INFERENCE_BACKEND_HPP
 
 #include <memory>
 
@@ -25,4 +25,4 @@ create_backend(BackendType type, const InferenceConfig &config);
 } // namespace inference
 } // namespace emulator
 
-#endif // E3SM_CREATE_BACKEND_HPP
+#endif // E3SM_EMULATOR_CREATE_INFERENCE_BACKEND_HPP

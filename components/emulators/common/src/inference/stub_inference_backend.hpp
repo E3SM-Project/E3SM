@@ -3,8 +3,8 @@
  * @brief Stub inference backend for testing without ML dependencies.
  */
 
-#ifndef E3SM_STUB_BACKEND_HPP
-#define E3SM_STUB_BACKEND_HPP
+#ifndef E3SM_EMULATOR_STUB_INFERENCE_BACKEND_HPP
+#define E3SM_EMULATOR_STUB_INFERENCE_BACKEND_HPP
 
 #include "inference_backend.hpp"
 
@@ -39,4 +39,4 @@ public:
 } // namespace inference
 } // namespace emulator
 
-#endif // E3SM_STUB_BACKEND_HPP
+#endif // E3SM_EMULATOR_STUB_INFERENCE_BACKEND_HPP

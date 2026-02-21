@@ -3,8 +3,8 @@
  * @brief Abstract interface for neural network inference backends.
  */
 
-#ifndef E3SM_INFERENCE_BACKEND_HPP
-#define E3SM_INFERENCE_BACKEND_HPP
+#ifndef E3SM_EMULATOR_INFERENCE_BACKEND_HPP
+#define E3SM_EMULATOR_INFERENCE_BACKEND_HPP
 
 #include <string>
 
@@ -70,4 +70,4 @@ protected:
 } // namespace inference
 } // namespace emulator
 
-#endif // E3SM_INFERENCE_BACKEND_HPP
+#endif // E3SM_EMULATOR_INFERENCE_BACKEND_HPP

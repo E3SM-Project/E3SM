@@ -2,7 +2,7 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
-#include "create_backend.hpp"
+#include "create_inference_backend.hpp"
 
 namespace emulator {
 namespace inference {

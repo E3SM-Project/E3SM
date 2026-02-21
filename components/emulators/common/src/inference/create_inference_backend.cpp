@@ -3,8 +3,8 @@
  * @brief Factory for creating inference backends.
  */
 
-#include "create_backend.hpp"
-#include "stub_backend.hpp"
+#include "create_inference_backend.hpp"
+#include "stub_inference_backend.hpp"
 
 namespace emulator {
 namespace inference {

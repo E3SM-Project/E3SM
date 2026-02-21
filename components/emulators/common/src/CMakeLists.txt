@@ -2,8 +2,8 @@
 
 add_library(emulator_common
   emulator.cpp
-  inference/stub_backend.cpp
-  inference/create_backend.cpp
+  inference/stub_inference_backend.cpp
+  inference/create_inference_backend.cpp
 )
 
 target_compile_features(emulator_common PUBLIC cxx_std_17)

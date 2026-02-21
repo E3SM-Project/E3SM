@@ -6,7 +6,7 @@
  * requiring ML dependencies. Leaves outputs unchanged.
  */
 
-#include "stub_backend.hpp"
+#include "stub_inference_backend.hpp"
 
 namespace emulator {
 namespace inference {

@@ -6,8 +6,8 @@
  * for creating and retrieving emulator instances by name.
  */
 
-#ifndef EMULATOR_REGISTRY_HPP
-#define EMULATOR_REGISTRY_HPP
+#ifndef E3SM_EMULATOR_REGISTRY_HPP
+#define E3SM_EMULATOR_REGISTRY_HPP
 
 #include <any>
 #include <memory>
@@ -154,4 +154,4 @@ inline void cleanup_emulator_registry() {
 
 } // namespace emulator
 
-#endif // EMULATOR_REGISTRY_HPP
+#endif // E3SM_EMULATOR_REGISTRY_HPP
