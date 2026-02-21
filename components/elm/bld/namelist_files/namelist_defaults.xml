@@ -659,7 +659,7 @@ this mask will have smb calculated over the entire global land surface
 <!-- datasets for TOP solar radiation parameterization -->
 <!--  ***********  Resolution dependent:   *********** -->
 <!--ftopdat>same as fsurfdat </ftopdat-->
-<use_top_solar_rad>.false.</use_top_solar_rad>
+<use_top_solar_rad>.true.</use_top_solar_rad>
 
 <!-- SNICAR (SNow, ICe, and Aerosol Radiative model) datasets -->
 <!--  ***********  Resolution independent:   ***********  -->
