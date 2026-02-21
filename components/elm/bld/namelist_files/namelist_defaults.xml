@@ -126,8 +126,8 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c251006.nc</paramfile>
 <paramfile nu_com="ECA" use_fates=".true." use_crop=".false." >lnd/clm2/paramdata/clm_params.cbgc.c07292018.nc</paramfile>
 <paramfile nu_com="ECA" use_cn=".true." use_crop=".false." >lnd/clm2/paramdata/clm_params.cbgc.c07292018.nc</paramfile>
-<paramfile use_crop=".false." use_cn=".true."  >lnd/clm2/paramdata/clm_params_c211124.nc</paramfile>
-<paramfile use_crop=".false." use_fates=".true."  >lnd/clm2/paramdata/clm_params_c211124.nc</paramfile>
+<paramfile use_crop=".false." use_cn=".true."  >lnd/clm2/paramdata/clm_params_c211124_tuned.nc</paramfile>
+<paramfile use_crop=".false." use_fates=".true."  >lnd/clm2/paramdata/clm_params_c211124_tuned.nc</paramfile>
 <paramfile nu_com="RD" use_crop=".false." >lnd/clm2/paramdata/clm_params_c180524_phs.nc</paramfile>
 
 
@@ -425,7 +425,7 @@ lnd/clm2/surfdata_map/surfdata_48x96_simyr1850_c130927.nc</fsurdat>
 <fsurdat hgrid="r0125"  sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</fsurdat>
 <fsurdat hgrid="0.9x1.25"     sim_year="1850" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_0.9x1.25_simyr1850_c180306.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_0.9x1.25_simyr1850_c251023_with_TOP.nc</fsurdat>
 <fsurdat hgrid="1.9x2.5"      sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_1.9x2.5_simyr1850_c180306.nc</fsurdat>
 <fsurdat hgrid="10x15"        sim_year="1850" use_crop=".false." >
