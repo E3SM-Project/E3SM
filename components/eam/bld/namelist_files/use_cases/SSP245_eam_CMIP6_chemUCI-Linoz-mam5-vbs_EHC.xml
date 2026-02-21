@@ -81,7 +81,6 @@
 </rad_climate>
 
 <!-- Marine organic aerosol namelist settings -->
-<!-- Marine organic aerosol namelist settings -->
 <mam_mom_mixing_state>3</mam_mom_mixing_state>
 <mam_mom_cycle_yr  >1                                                                                    </mam_mom_cycle_yr  >
 <mam_mom_datapath  >'atm/cam/chem/trop_mam/marine_BGC/'                                                  </mam_mom_datapath  >
@@ -89,7 +88,7 @@
 <mam_mom_filename  >'monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc'                 </mam_mom_filename  > <!-- Using the 2000 file, for now -->
 <mam_mom_fixed_tod >0											 </mam_mom_fixed_tod >
 <mam_mom_fixed_ymd >0											 </mam_mom_fixed_ymd >
-<mam_mom_specifier >'chla:CHL1','mpoly:TRUEPOLYC','mprot:TRUEPROTC','mlip:TRUELIPC'			 </mam_mom_specifier >		 </mam_mom_specifier >
+<mam_mom_specifier >'chla:CHL1','mpoly:TRUEPOLYC','mprot:TRUEPROTC','mlip:TRUELIPC'			 </mam_mom_specifier >
 
 <!-- Stratospheric ozone (Linoz) updated using CMIP6 input4MIPS GHG concentrations -->
 <chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_Hist_SSP245_0003-2503_c20200808.nc</chlorine_loading_file>
