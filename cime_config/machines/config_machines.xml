@@ -225,7 +225,7 @@
 
       <modules compiler="intel">
         <command name="load">PrgEnv-intel/8.5.0</command>
-        <command name="unload">cray-libsci</command> <!-- tempororary change to allow this hotfix 2024.1.0 module to work -->
+        <command name="unload">cray-libsci</command> <!-- temporary change to allow this hotfix 2024.1.0 module to work -->
         <command name="load">intel/2024.1.0</command>
       </modules>
 
