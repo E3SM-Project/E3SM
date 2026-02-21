@@ -35,6 +35,9 @@
 <check_finidat_year_consistency>.false.</check_finidat_year_consistency>
 <check_finidat_pct_consistency>.true.</check_finidat_pct_consistency>
 <check_dynpft_consistency>.false.</check_dynpft_consistency>
+
 <do_transient_pfts>.false.</do_transient_pfts>
+<use_hydrstress>.true.</use_hydrstress>
+<do_transient_crops>.false.</do_transient_crops>
 
 </namelist_defaults>
