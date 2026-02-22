@@ -38,6 +38,8 @@
 
 <do_transient_pfts>.false.</do_transient_pfts>
 <do_transient_crops>.false.</do_transient_crops>
+<do_budgets>.true.</do_budgets>
+<do_harvest>.false.</do_harvest>
 
 <use_top_solar_rad>.true.</use_top_solar_rad>
 

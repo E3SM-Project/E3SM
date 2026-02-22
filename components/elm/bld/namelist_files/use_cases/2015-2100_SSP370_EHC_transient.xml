@@ -40,6 +40,7 @@
 <do_transient_pfts>.false.</do_transient_pfts>
 <use_hydrstress>.true.</use_hydrstress>
 <do_transient_crops>.false.</do_transient_crops>
+<do_budgets>.true.</do_budgets>
 
 <use_top_solar_rad>.true.</use_top_solar_rad>
 
