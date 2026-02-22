@@ -649,6 +649,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <cldfrac_liq       >0.0</cldfrac_liq>
     <sgs_buoy_flux     >0.0</sgs_buoy_flux>
     <eddy_diff_mom     >0.0</eddy_diff_mom>
+    <eddy_diff_heat    >0.0</eddy_diff_heat>
     <T_prev_micro_step >0.0</T_prev_micro_step>
     <qv_prev_micro_step>0.0</qv_prev_micro_step>
     <!-- Initialize microphysics fields not on IC to zero; note that this is consistent with EAM init -->
@@ -894,6 +895,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <mesh_file type="file">none</mesh_file>
     <mesh_file hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/inic/homme/conusx4v1.g</mesh_file>
     <mesh_file hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/CA_ne32_x32_v1.g</mesh_file>
+    <!-- Settings related to 3D turbulence -->
+    <do_3d_turbulence>false</do_3d_turbulence>
   </ctl_nl>
 
 </namelist_defaults>

@@ -43,6 +43,7 @@ struct SimulationParams
   int       transport_alg;
   bool      use_cpstar;
   bool      theta_hydrostatic_mode;   // Only for theta model
+  bool      do_3d_turbulence;
 
   double    dcmip16_mu;               // Only for theta model
   double    nu;
@@ -106,6 +107,7 @@ inline void SimulationParams::print (std::ostream& out) {
   out << "   transport_alg: " << transport_alg << "\n";
   out << "   disable_diagnostics: " << (disable_diagnostics ? "yes" : "no") << "\n";
   out << "   theta_hydrostatic_mode: " << (theta_hydrostatic_mode ? "yes" : "no") << "\n";
+  out << "   do_3d_turbulence: " << (do_3d_turbulence ? "yes" : "no") << "\n";
   out << "   prescribed_wind: " << (prescribed_wind ? "yes" : "no") << "\n";
   out << "   nsplit: " << nsplit << "\n";
   out << "   scale_factor: " << scale_factor << "\n";

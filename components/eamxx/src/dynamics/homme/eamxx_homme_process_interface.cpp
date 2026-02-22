@@ -176,6 +176,8 @@ void HommeDynamics::create_requests ()
   add_field<Computed>("p_dry_int",          pg_scalar3d_int, Pa,    pgn,N);
   add_field<Computed>("p_dry_mid",          pg_scalar3d_mid, Pa,    pgn,N);
   add_field<Computed>("omega",              pg_scalar3d_mid, Pa/s,  pgn,N);
+  add_field<Required>("eddy_diff_heat",     pg_scalar3d_mid, m2/s,  pgn,N);
+  add_field<Required>("eddy_diff_mom",      pg_scalar3d_mid, m2/s,  pgn,N);
 
   add_tracer<Updated >("qv", m_phys_grid, kg/kg, N);
   add_group<Updated>("tracers",pgn,N, MonolithicAlloc::Required);
@@ -210,6 +212,8 @@ void HommeDynamics::create_requests ()
   create_helper_field("phis_dyn",     {EL,       GP,GP},     {nelem,      NP,NP         }, dgn);
   create_helper_field("omega_dyn",    {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
   create_helper_field("Qdp_dyn",      {EL,TL,CMP,GP,GP,LEV}, {nelem,QTL,HOMMEXX_QSIZE_D,NP,NP,nlev_mid},dgn);
+  create_helper_field("Km_dyn",       {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
+  create_helper_field("Kh_dyn",       {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
 
   // For BFB restart, we need to read in the state on the dyn grid. The state above has NTL time slices,
   // but only one is really needed for restart. Therefore, we create "dynamic" subfields for
@@ -421,6 +425,10 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     m_d2p_remapper->register_field(get_internal_field("ps_dyn"), get_field_out("ps"));
     m_d2p_remapper->register_field(m_helper_fields.at("Q_dyn"),*get_group_out("Q",pgn).m_monolithic_field);
     m_d2p_remapper->register_field(m_helper_fields.at("omega_dyn"), get_field_out("omega"));
+
+    // Remap SHOC eddy diffusivities from physics grid to dynamics grid
+    m_p2d_remapper->register_field(get_field_in("eddy_diff_mom",pgn),m_helper_fields.at("Km_dyn"));
+    m_p2d_remapper->register_field(get_field_in("eddy_diff_heat",pgn),m_helper_fields.at("Kh_dyn"));
 
     m_p2d_remapper->registration_ends();
     m_d2p_remapper->registration_ends();
@@ -934,6 +942,17 @@ void HommeDynamics::init_homme_views () {
   // Homme has 3 components for FM, but the 3d (the omega forcing) is not computed
   // by EAMxx, so we set FM(3)=0 right away
   m_helper_fields.at("FM_dyn").get_component(2).deep_copy(0);
+
+  // SGS Eddy diffusivity for momentum
+  auto Km_in = m_helper_fields.at("Km_dyn").template get_view<Homme::Scalar*[NP][NP][NVL]>();
+  using turb_type_mom = std::remove_reference<decltype(derived.m_turb_diff_mom)>::type;
+  derived.m_turb_diff_mom = turb_type_mom(Km_in.data(), nelem);
+
+  // SGS Eddy diffusivity for heat
+  auto Kh_in = m_helper_fields.at("Kh_dyn").template get_view<Homme::Scalar*[NP][NP][NVL]>();
+  using turb_type_heat = std::remove_reference<decltype(derived.m_turb_diff_heat)>::type;
+  derived.m_turb_diff_heat = turb_type_heat(Kh_in.data(), nelem);
+
 }
 
 void HommeDynamics::restart_homme_state () {
