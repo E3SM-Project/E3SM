@@ -210,7 +210,8 @@ module ELMFatesInterfaceMod
    use dynFATESLandUseChangeMod, only : fates_harvest_luh_mass
 
    use FatesInterfaceTypesMod       , only : bc_in_type, bc_out_type
-
+   use decompMod             , only : fates_pproc
+   
    
    use perf_mod          , only : t_startf, t_stopf
 
@@ -2967,18 +2968,21 @@ contains
 
  ! ======================================================================================
  
- subroutine wrap_canopy_radiation(this, bounds_clump, surfalb_inst,nextsw_cday,declinp1)
+ subroutine wrap_canopy_radiation(this, bounds_clump, surfalb_inst,canopystate_vars,nextsw_cday,declinp1)
 
    use shr_orb_mod, only: shr_orb_cosz
-
+   use omp_lib
+   
     ! Arguments
     class(hlm_fates_interface_type), intent(inout) :: this
     type(bounds_type),  intent(in)             :: bounds_clump
     type(surfalb_type) , intent(inout)         :: surfalb_inst
+    type(canopystate_type)    , intent(in)  :: canopystate_vars
     real(r8),intent(in) :: nextsw_cday,declinp1
     
     ! locals
     integer                                    :: s,c,p,ifp,icp,nc,g
+    integer ::  it,np,f
 
     associate(&
          albgrd_col   =>    surfalb_inst%albgrd_col         , & !in
@@ -3016,8 +3020,6 @@ contains
 
        end if
 
-       
-       ! OMP PARALLEL DO PRIVATE (ifp,p) SCHEDULE(DYNAMIC, 1) if (use_fates)
        do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
           
           p = ifp+col_pp%pfti(c)
@@ -3027,16 +3029,38 @@ contains
              this%fates(nc)%bc_in(s)%fcansno_pa(ifp) = 0._r8
           end if
           
+          !call FatesNormalizedPatchRadiation(ifp, &
+          !     this%fates(nc)%sites(s), &
+          !     this%fates(nc)%bc_in(s),  &
+          !     this%fates(nc)%bc_out(s))
+          
+       end do
+
+       
+    end do
+
+    !$OMP PARALLEL num_threads(fates_pproc) PRIVATE (it,np,f,p,c,ifp,s)  if(fates_pproc>1)
+    it = 0
+    if(fates_pproc>1) then
+#ifdef _OPENMP
+       it = omp_get_thread_num()
+#endif
+    end if
+    np = canopystate_vars%patch_par(it)%npatch
+    patch_loop: do f = 1, np
+       p = canopystate_vars%patch_par(it)%patch_list(f)
+       if(veg_pp%is_fates(p))then
+          c = veg_pp%column(p)
+          ifp = p - col_pp%pfti(c)
+          s = this%f2hmap(nc)%hsites(c)
           call FatesNormalizedPatchRadiation(ifp, &
                this%fates(nc)%sites(s), &
                this%fates(nc)%bc_in(s),  &
                this%fates(nc)%bc_out(s))
-          
-       end do
-       ! OMP END PARALLEL DO
+       end if
+    end do patch_loop
+    !$OMP END PARALLEL
        
-    end do
-    
     !call FatesNormalizedCanopyRadiation( &
     !     this%fates(nc)%sites, &
     !     this%fates(nc)%bc_in,  &

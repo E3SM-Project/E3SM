@@ -982,6 +982,12 @@ contains
 
     call mpi_bcast (clump_pproc, 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (fates_pproc, 1, MPI_INTEGER, 0, mpicom, ier)
+
+#if (defined _OPENMP)
+    if(fates_pproc>1)then
+       call omp_set_max_active_levels(1)
+    end if
+#endif
     
     ! lateral connectivity
     call mpi_bcast (lateral_connectivity, 1, MPI_LOGICAL, 0, mpicom, ier)

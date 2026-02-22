@@ -1319,7 +1319,7 @@ contains
 
                call PatchLoadBalance(bounds_clump, filter(nc)%num_nolakeurbanp, &
                     filter(nc)%nolakeurbanp,canopystate_vars, &
-                    alm_fates%fates(nc)%bc_out,alm_fates%f2hmap(nc)%hsites)
+                    alm_fates%fates(nc)%bc_out,alm_fates%f2hmap(nc)%hsites,.false.)
                
            end if
        end if
@@ -1387,7 +1387,8 @@ contains
        ! for the two-stream radiation scheme.
        if (use_fates .and. .not.doalb .and. get_nstep() == 1 .and. nsrest == nsrStartup) then
           if ( trim(finidat) == '' .or. fates_radiation_model=='twostream') then
-             call alm_fates%wrap_canopy_radiation(bounds_clump,surfalb_vars,nextsw_cday,declinp1)
+             call alm_fates%wrap_canopy_radiation(bounds_clump,surfalb_vars, &
+                  canopystate_vars,nextsw_cday,declinp1)
           end if
        end if
        
