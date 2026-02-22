@@ -48,6 +48,9 @@ if (USE_PETSC)
   find_package(PETSc REQUIRED)
 endif()
 
+#TODO (AN): Make optinal with USE_FTORCH
+find_package(FTorch REQUIRED)
+
 find_package(PIO REQUIRED)
 find_package(MCT REQUIRED)
 find_package(CsmShare REQUIRED)
