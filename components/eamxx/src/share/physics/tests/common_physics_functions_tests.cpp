@@ -303,7 +303,7 @@ void run(std::mt19937_64& engine)
   p = pdf_pres(engine);
   const auto exner1 = PF::exner_function(p);
   const auto exner2 = PF::exner_function(p/2);
-  const auto factor = pow(2.0,Rd*inv_cp);
+  const auto factor = std::pow(sp(2.0),Rd*inv_cp);
   REQUIRE( Check::approx_equal(exner1,factor*exner2,test_tol) );
 
   // Potential temperature property tests:
