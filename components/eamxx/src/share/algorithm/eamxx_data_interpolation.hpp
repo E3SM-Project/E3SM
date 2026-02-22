@@ -54,6 +54,9 @@ public:
 
   void set_logger (const std::shared_ptr<ekat::logger::LoggerBase>& logger);
 
+  // Setup time database from input files. The reference timestamp is extracted from
+  // the time variable's units attribute in the files. Optionally, a ref_ts can be provided
+  // to use datasets from different years (e.g., use data from years 1850-1900 for runs in 2000-2050).
   void setup_time_database (const strvec_t& input_files,
                             const util::TimeLine timeline,
                             const TimeInterpType interp_type = Linear,

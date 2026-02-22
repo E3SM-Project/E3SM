@@ -9,6 +9,8 @@
 
 #include <fstream>
 #include <regex>
+#include <sstream>
+#include <cctype>
 
 namespace scream {
 
@@ -119,6 +121,75 @@ util::TimeStamp read_timestamp (const std::string& filename,
     ts.set_num_steps(scorpio::get_attribute<int>(filename,"GLOBAL",ts_name+"_nsteps"));
   }
   return ts;
+}
+
+util::TimeStamp parse_cf_time_units (const std::string& time_units)
+{
+  // Parse CF convention time units string (e.g., "seconds since 1970-01-01 00:00:00")
+  // Expected format: "<unit> since <YYYY-MM-DD> <HH:MM:SS>"
+  // where unit can be: seconds, minutes, hours, days
+  
+  // Find "since" keyword
+  auto since_pos = time_units.find("since");
+  EKAT_REQUIRE_MSG (since_pos != std::string::npos,
+      "Error! Time units string does not contain 'since' keyword.\n"
+      "  - time_units: " + time_units + "\n"
+      "  - expected format: '<unit> since <YYYY-MM-DD> <HH:MM:SS>'\n");
+  
+  // Extract the datetime part after "since"
+  std::string datetime_str = time_units.substr(since_pos + 5); // 5 = length of "since"
+  
+  // Trim leading whitespace
+  size_t start = datetime_str.find_first_not_of(" \t\n\r");
+  if (start != std::string::npos) {
+    datetime_str = datetime_str.substr(start);
+  }
+  
+  // Parse the datetime string
+  // Expected format: "YYYY-MM-DD HH:MM:SS" or "YYYY-MM-DD" or variations
+  // Note: month and day default to 1 (not 0) as that's a valid fallback if only year is provided
+  // The TimeStamp constructor will validate all values are in valid ranges
+  int year = 0, month = 1, day = 1, hour = 0, minute = 0, second = 0;
+  
+  // Find date and time parts
+  auto space_pos = datetime_str.find(' ');
+  std::string date_str = (space_pos != std::string::npos) ? datetime_str.substr(0, space_pos) : datetime_str;
+  std::string time_str = (space_pos != std::string::npos) ? datetime_str.substr(space_pos + 1) : "";
+  
+  // Parse date part (YYYY-MM-DD)
+  std::istringstream date_stream(date_str);
+  char sep;
+  date_stream >> year >> sep >> month >> sep >> day;
+  
+  EKAT_REQUIRE_MSG (date_stream.good() or date_stream.eof(),
+      "Error! Failed to parse date from time units string.\n"
+      "  - time_units: " + time_units + "\n"
+      "  - date_str: " + date_str + "\n"
+      "  - expected format: 'YYYY-MM-DD'\n"
+      "  Check that the date components are valid integers separated by '-'.\n");
+  
+  // Parse time part if present (HH:MM:SS or HH:MM:SS.fraction)
+  if (!time_str.empty()) {
+    if (!time_str.empty()) {
+      std::istringstream time_stream(time_str);
+      char sep1, sep2;
+      time_stream >> hour;
+      if (time_stream.peek() == ':') {
+        time_stream >> sep1 >> minute;
+        if (time_stream.peek() == ':') {
+          time_stream >> sep2;
+          // Read seconds as a double to handle fractional seconds, then truncate
+          double sec_with_frac;
+          time_stream >> sec_with_frac;
+          second = static_cast<int>(sec_with_frac);
+          // Note: fractional seconds are ignored as TimeStamp only supports integer seconds
+        }
+      }
+    }
+  }
+  
+  // Create and return the timestamp
+  return util::TimeStamp(year, month, day, hour, minute, second);
 }
 
 std::shared_ptr<AtmosphereDiagnostic>

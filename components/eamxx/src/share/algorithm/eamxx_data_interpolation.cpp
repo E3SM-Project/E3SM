@@ -280,11 +280,45 @@ setup_time_database (const strvec_t& input_files,
         "[DataInterpolation] Error! Input file contains no time variable.\n"
         " - file name: " + fname + "\n");
 
-    auto t_ref = ref_ts.is_valid() ? ref_ts : read_timestamp (fname,"reference_time_stamp");
+    // Get reference timestamp from time variable's units attribute
+    auto time_units = scorpio::get_attribute<std::string>(fname,"time","units");
+    
+    // Warn if reference_time_stamp attribute exists (deprecated and ignored)
+    if (scorpio::has_attribute(fname,"GLOBAL","reference_time_stamp")) {
+      m_logger->warn("The 'reference_time_stamp' global attribute in file '" + fname 
+                     + "' is deprecated and will be ignored.\n"
+                     + "         The time coordinate's 'units' attribute will be used instead.");
+    }
+    
+    // Parse the time variable's units attribute to extract the reference time
+    // If ref_ts was provided, use it instead (allows using datasets from different years)
+    util::TimeStamp t_ref;
+    if (ref_ts.is_valid()) {
+      t_ref = ref_ts;
+    } else {
+      t_ref = parse_cf_time_units(time_units);
+    }
+    
+    // Determine time multiplier from units (time values are in this unit)
+    int time_mult;
+    if (time_units.find("seconds") != std::string::npos) {
+      time_mult = 1;
+    } else if (time_units.find("minutes") != std::string::npos) {
+      time_mult = 60;
+    } else if (time_units.find("hours") != std::string::npos) {
+      time_mult = 3600;
+    } else if (time_units.find("days") != std::string::npos) {
+      time_mult = 86400;
+    } else {
+      EKAT_ERROR_MSG("[DataInterpolation] Error! Unsupported time units in file.\n"
+                     " - file name: " << fname << "\n"
+                     " - time units: " << time_units << "\n"
+                     " - supported units: seconds, minutes, hours, days\n");
+    }
 
     times.emplace_back();
     for (const auto& t : file_times) {
-      times.back().push_back(t_ref + t*constants::seconds_per_day);
+      times.back().push_back(t_ref + t*time_mult);
     }
     scorpio::release_file(fname);
 

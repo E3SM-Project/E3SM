@@ -245,9 +245,22 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
     const auto filename = list_of_files[ii];
     // Reference TimeStamp
     scorpio::register_file(filename,scorpio::FileMode::Read);
-    auto ts_file_start = read_timestamp(filename,"case_t0");
-    // Gather the units of time
+    
+    // Gather the units of time (needed for both timestamp and multiplier)
     auto time_units = scorpio::get_attribute<std::string>(filename,"time","units");
+    
+    // Warn if case_t0 attribute exists (deprecated and ignored)
+    if (scorpio::has_attribute(filename,"GLOBAL","case_t0")) {
+      m_logger->warn("The 'case_t0' global attribute in file '" + filename 
+                     + "' is deprecated and will be ignored.\n"
+                     + "         Please ensure the time coordinate's 'units' attribute "
+                     + "is correct for your needs.");
+    }
+    
+    // Parse the time variable's units attribute to extract the reference time
+    TimeStamp ts_file_start = parse_cf_time_units(time_units);
+    
+    // Determine time multiplier from units
     int time_mult;
     if (time_units.find("seconds") != std::string::npos) {
       time_mult = 1;

@@ -5,11 +5,14 @@ Currently, it is possible to nudge EAMxx to the output from a different EAMxx ru
 
 ## Data to nudge towards
 
-The user is expected to prepapre (and then use `atmchange` to point to) nudging data files that are compliant with EAMxx specification.
+The user is expected to prepare (and then use `atmchange` to point to) nudging data files that are compliant with EAMxx specification.
 In practice, this means that the data files must contain variable names known to EAMxx (only U, V, T_mid, and qv are supported now).
 The files can be specified with an explicit list or via pattern matching.
-The files must contain an arbitary global attribute `case_t0`, and it is recommended to be the same as the time dimension unit (the files must be time-dimensioned).
-The time dimension should be UNLIMITED.
+
+The files must contain a `time` dimension (which should be UNLIMITED) with a CF-compliant `units` attribute that specifies the reference time and time unit, such as `"days since 2000-01-01 00:00:00"` or `"seconds since 1970-01-01"`. The time values in the file are assumed to be in the unit specified in the `units` attribute (e.g., days, seconds, minutes, or hours).
+
+**Note:** The previously used `case_t0` global attribute is now deprecated and will be ignored if present. Please ensure your time coordinate has the correct `units` attribute.
+
 Finally, the dimension order must be such that `lev` is the last dimension, so most likely, the user must transpose the dimensions.
 
 ## Pressure in the nudging data
