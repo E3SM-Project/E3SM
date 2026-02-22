@@ -586,10 +586,12 @@
         <directive> -l filesystems=home:flare </directive>
       </directives>
       <queues>
-        <queue walltimemax="01:00:00" nodemin="1" nodemax="2" default="true">debug</queue>
-        <queue walltimemax="01:00:00" nodemin="3" nodemax="31">debug-scaling</queue>
-        <queue walltimemax="01:00:00" nodemin="1" nodemax="16">capacity</queue>
-        <queue walltimemax="01:00:00" nodemin="32" nodemax="10624">prod</queue>
+        <queue walltimemax="01:00:00"  nodemin="1"    nodemax="2"     strict="true" default="true">debug</queue>
+        <queue walltimemax="01:00:00"  nodemin="3"    nodemax="255"   strict="true">debug-scaling</queue>
+        <queue walltimemax="168:00:00" nodemin="1"    nodemax="16"    strict="true">capacity</queue>
+        <queue walltimemax="12:00:00"  nodemin="256"  nodemax="1024"  strict="true">prod</queue>
+        <queue walltimemax="18:00:00"  nodemin="1025" nodemax="1919"  strict="true">prod</queue>
+        <queue walltimemax="24:00:00"  nodemin="1920" nodemax="10624" strict="true">prod</queue>
       </queues>
     </batch_system>
     
