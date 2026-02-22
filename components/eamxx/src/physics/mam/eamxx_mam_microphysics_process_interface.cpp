@@ -6,6 +6,7 @@
 #include "readfiles/find_season_index_utils.hpp"
 #include "readfiles/photo_table_utils.cpp"
 #include "physics/mam/readfiles/vertical_remapper_mam4.hpp"
+#include "physics/mam/readfiles/vertical_remapper_exo_coldens.hpp"
 #include "share/algorithm/eamxx_data_interpolation.hpp"
 
 #include <ekat_team_policy_utils.hpp>
@@ -468,6 +469,48 @@ void MAMMicrophysics::set_linoz_reader(){
   data_interp_linoz_->create_vert_remapper (remap_data_linoz);
   data_interp_linoz_->init_data_interval (start_of_step_ts());
 }
+// set DataInterpolation object for elevated emissions reader.
+void MAMMicrophysics::set_exo_coldens_reader()
+{
+  using namespace ekat::units;
+  const auto pint = get_field_in("p_int");
+  // Exo column density fields read initialization
+  const std::string exo_coldens_file_name = m_params.get<std::string>("mam4_exo_coldens_file_name");
+  const std::string exo_coldens_map_file =
+        m_params.get<std::string>("aero_microphys_remap_file", "");
+  // get fields from FM.
+  auto grid_exo_coldens = grid_->clone("exo_grid",true);
+  grid_exo_coldens->reset_num_vertical_lev(1);
+  auto layout = grid_exo_coldens->get_3d_scalar_layout(true);
+
+  auto molec = Units::nondimensional();// example;
+  auto cm2 = pow(m / 100,2);
+  auto molec_cm2 = Units(molec/cm2,"molecules/cm2");
+  const std::string exo_coldens_name = "O3_column_density";
+  Field field_exo(
+      FieldIdentifier(exo_coldens_name, layout, molec_cm2, grid_exo_coldens->name()));
+  field_exo.allocate_view();
+  exo_coldens_fields_.push_back(field_exo);
+
+  // Beg of any year, since we use yearly periodic timeline
+  util::TimeStamp ref_ts_exo_coldens (1,1,1,0,0,0);
+  data_interp_exo_coldens_ = std::make_shared<DataInterpolation>(grid_exo_coldens,exo_coldens_fields_);
+  data_interp_exo_coldens_->setup_time_database ({exo_coldens_file_name},util::TimeLine::YearlyPeriodic,DataInterpolation::Linear, ref_ts_exo_coldens);
+  data_interp_exo_coldens_->create_horiz_remappers (exo_coldens_map_file=="none" ? "" : exo_coldens_map_file);
+  data_interp_exo_coldens_->set_logger(m_atm_logger);
+  DataInterpolation::VertRemapData remap_exo_coldens;
+  remap_exo_coldens.vr_type = DataInterpolation::Custom;
+  // We are using a custom remapper that invokes the MAM4XX routine
+  // for vertical interpolation.
+  auto grid_after_hremap = data_interp_exo_coldens_->get_grid_after_hremap();
+  auto vertical_remapper= std::make_shared<VerticalRemapperExoColdensMAM4>(grid_after_hremap, grid_exo_coldens);
+  vertical_remapper->set_delta_pressure(exo_coldens_file_name, pint);
+  remap_exo_coldens.custom_remapper=vertical_remapper;
+
+  data_interp_exo_coldens_->create_vert_remapper (remap_exo_coldens);
+  data_interp_exo_coldens_->init_data_interval (start_of_step_ts());
+
+}
 
 // set DataInterpolation object for elevated emissions reader.
 void MAMMicrophysics::set_elevated_emissions_reader()
@@ -602,7 +645,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
       {"mam4_microphysics_tendency_renaming_cloud_borne",
       "MAM4xx microphysics tendencies due to gas aerosol exchange (renaming cloud borne) [mixed units: mol/mol/s or #/mol/s]"},
 
-      {"mam4_gas_dry_deposition_flux", 
+      {"mam4_gas_dry_deposition_flux",
       "MAM4xx microphysics deposition flux [units: 1/cm^2/s]"},
     };
     // Add docstring to the fields with mixed units
@@ -660,6 +703,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   acos_cosine_zenith_host_ = view_1d_host("host_acos(cosine_zenith)", ncol_);
   acos_cosine_zenith_      = view_1d("device_acos(cosine_zenith)", ncol_);
 
+  set_exo_coldens_reader();
 }  // initialize_impl
 
 // ================================================================
@@ -804,6 +848,10 @@ void MAMMicrophysics::run_impl(const double dt) {
     oxidants[i] = get_field_out("oxid_"+var_names_oxi_[i]).get_view<Real **>();
   }
 
+  data_interp_exo_coldens_->run(end_of_step_ts());
+  // NOTE: we only have one field
+  // exo absorber columns [molecules/cm^2]
+  const auto o3_exo_col = exo_coldens_fields_[0].get_view<Real**>();
   // it's a bit wasteful to store this for all columns, but simpler from an
   // allocation perspective
   auto o3_col_dens = buffer_.scratch[8];
@@ -926,6 +974,7 @@ void MAMMicrophysics::run_impl(const double dt) {
         // convert column latitude to radians
         const Real rlats = col_lat * M_PI / 180.0;
 
+        const Real o3_col_deltas_0 = o3_exo_col(icol,0);
         // fetch column-specific atmosphere state data
         const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
         const auto wet_diameter_icol =
@@ -1066,7 +1115,7 @@ void MAMMicrophysics::run_impl(const double dt) {
             fraction_landuse_icol, index_season, clsmap_4, permute_4,
             offset_aerosol,
             dry_diameter_icol, wet_diameter_icol,
-            wetdens_icol, dry_atm.phis(icol), cmfdqr, prain_icol, nevapr_icol,
+            wetdens_icol, dry_atm.phis(icol), cmfdqr, prain_icol, nevapr_icol, o3_col_deltas_0,
             work_set_het_icol, drydep_data, diag_arrays, dvel_col, dflx_col, progs);
 
         team.team_barrier();
