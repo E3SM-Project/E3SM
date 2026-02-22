@@ -1,0 +1,142 @@
+{
+  "repo_notes": [
+    {
+      "content": ""
+    }
+  ],
+  "pages": [
+    {
+      "title": "Overview",
+      "purpose": "Introduce E3SM as an Earth System Model, its purpose, architecture, and main components",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "CIME Infrastructure",
+      "purpose": "Describe the Common Infrastructure for Modeling Earth framework that orchestrates E3SM components",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Machine and Computing Configuration",
+      "purpose": "Detail how E3SM configures itself for different HPC systems, including PE layouts, batch systems, and compiler settings",
+      "parent": "CIME Infrastructure",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Grid Configuration",
+      "purpose": "Explain how computational grids are defined and configured for different model components, particularly MPAS components",
+      "parent": "CIME Infrastructure",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Component Coupling",
+      "purpose": "Describe how different Earth system components exchange data and coordinate execution using MOAB mesh operations",
+      "parent": "CIME Infrastructure",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Component Models",
+      "purpose": "Overview of the major Earth system component models within E3SM and their configuration",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Atmosphere Models",
+      "purpose": "Detail the atmospheric component models including HOMME dynamics core and primitive equation modeling",
+      "parent": "Component Models",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Land Models",
+      "purpose": "Describe the E3SM Land Model (ELM) configuration, namelist system, and FATES integration",
+      "parent": "Component Models",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Land Ice Models",
+      "purpose": "Explain the MPAS-Albany Land Ice model including physics processes like calving, advection, and thermal evolution",
+      "parent": "Component Models",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Atmospheric Physics Processes",
+      "purpose": "Detail the key physical parameterizations including SHOC for atmospheric turbulence and cloud processes",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Aerosol Physics",
+      "purpose": "Describe the Modal Aerosol Module (MAM) physics processes in EAMxx including microphysics, optics, and deposition",
+      "parent": "Physics Processes",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Build System",
+      "purpose": "Explain how E3SM components are compiled and linked using CMake, including external dependencies and submodules",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Testing and Validation",
+      "purpose": "Describe the testing infrastructure, validation procedures, and specialized testing for features like nudging",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "EAMxx Input/Output System",
+      "purpose": "Detail how EAMxx handles data input, output, file management, and time interpolation using SCORPIO",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    }
+  ]
+}
