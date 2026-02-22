@@ -433,6 +433,38 @@ def buildnml(case, caseroot, compname):
                 logger.info("Creating surfdata_iESM_dyn.nc for non-startup run")
                 _ensure_copy(os.path.join(rundir, "surfdata_iESM.nc"), dyn_file)
 
+    # Add IAC coupling setting to user_nl_cpl
+    case_scripts_dir = os.path.join(caseroot, "case_scripts")
+    if os.path.isdir(case_scripts_dir):
+        user_nl_cpl_path = os.path.join(case_scripts_dir, "user_nl_cpl")
+        iac_setting = "add_iac_to_cplstate = .true."
+        
+        # Check if the file exists and if the setting is already present
+        setting_exists = False
+        if os.path.exists(user_nl_cpl_path):
+            try:
+                with open(user_nl_cpl_path, 'r') as f:
+                    content = f.read()
+                    if re.search(r'add_iac_to_cplstate\s*=\s*\.true\.', content, re.IGNORECASE):
+                        setting_exists = True
+            except Exception:
+                pass
+        
+        if not setting_exists:
+            # Append the setting to the file
+            try:
+                with open(user_nl_cpl_path, 'a') as f:
+                    if os.path.getsize(user_nl_cpl_path) > 0:
+                        f.write('\n')  # Add newline if file is not empty
+                    f.write(iac_setting + '\n')
+                logger.info("Added 'add_iac_to_cplstate = .true.' to user_nl_cpl")
+            except Exception as e:
+                logger.warning("Failed to add IAC setting to user_nl_cpl: {}".format(e))
+        else:
+            logger.info("IAC coupling setting already present in user_nl_cpl")
+    else:
+        logger.warning("case_scripts directory not found: {}".format(case_scripts_dir))
+
 ###############################################################################
 def _main_func():
 ###############################################################################
