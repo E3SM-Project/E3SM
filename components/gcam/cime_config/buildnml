@@ -439,29 +439,43 @@ def buildnml(case, caseroot, compname):
         user_nl_cpl_path = os.path.join(case_scripts_dir, "user_nl_cpl")
         iac_setting = "add_iac_to_cplstate = .true."
         
-        # Check if the file exists and if the setting is already present
+        # Check if the file exists and handle existing settings
         setting_exists = False
+        lines_to_write = []
+        
         if os.path.exists(user_nl_cpl_path):
             try:
                 with open(user_nl_cpl_path, 'r') as f:
-                    content = f.read()
-                    if re.search(r'add_iac_to_cplstate\s*=\s*\.true\.', content, re.IGNORECASE):
-                        setting_exists = True
+                    lines = f.readlines()
+                
+                for line in lines:
+                    stripped = line.strip()
+                    # Check for both commented and uncommented versions
+                    if re.search(r'^\s*!?\s*add_iac_to_cplstate\s*=\s*\.true\.', stripped, re.IGNORECASE):
+                        if not stripped.startswith('!'):
+                            setting_exists = True
+                            lines_to_write.append(line)  # Keep uncommented version
+                        # Skip commented versions (don't add to lines_to_write)
+                    else:
+                        lines_to_write.append(line)
+                        
             except Exception:
-                pass
+                lines_to_write = []
         
+        # Add the setting if it doesn't exist (uncommented)
         if not setting_exists:
-            # Append the setting to the file
-            try:
-                with open(user_nl_cpl_path, 'a') as f:
-                    if os.path.getsize(user_nl_cpl_path) > 0:
-                        f.write('\n')  # Add newline if file is not empty
-                    f.write(iac_setting + '\n')
-                logger.info("Added 'add_iac_to_cplstate = .true.' to user_nl_cpl")
-            except Exception as e:
-                logger.warning("Failed to add IAC setting to user_nl_cpl: {}".format(e))
-        else:
-            logger.info("IAC coupling setting already present in user_nl_cpl")
+            lines_to_write.append(iac_setting + '\n')
+            
+        # Write the updated content
+        try:
+            with open(user_nl_cpl_path, 'w') as f:
+                f.writelines(lines_to_write)
+            if not setting_exists:
+                logger.info("Added uncommented 'add_iac_to_cplstate = .true.' to user_nl_cpl")
+            else:
+                logger.info("IAC coupling setting already present and uncommented in user_nl_cpl")
+        except Exception as e:
+            logger.warning("Failed to update IAC setting in user_nl_cpl: {}".format(e))
     else:
         logger.warning("case_scripts directory not found: {}".format(case_scripts_dir))
 
