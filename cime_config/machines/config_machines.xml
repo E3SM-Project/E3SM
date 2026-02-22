@@ -4926,7 +4926,7 @@
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks"> -np {{ total_tasks }}</arg>
-        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_node }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to hwthread</arg>
+        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_node }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
       </arguments>
     </mpirun>
     <module_system type="none"/>
