@@ -277,7 +277,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
 
   KOKKOS_FUNCTION
   static void compute_shoc_mix_shoc_length(
-      const MemberType &team, const Int &nlev, const bool &shoc_1p5tke,
+      const MemberType &team, const Int &nlev, const Scalar &length_fac,
       const uview_1d<const Pack> &tke, const uview_1d<const Pack> &brunt,
       const uview_1d<const Pack> &zt_grid, const Scalar &l_inf, const uview_1d<Pack> &shoc_mix);
 
