@@ -71,6 +71,8 @@ class Tendencies {
    TracerDiffOnCell TracerDiffusion;
    TracerHyperDiffOnCell TracerHyperDiff;
 
+   std::string Name;
+
    // Methods to compute tendency groups
    void computeThicknessTendencies(const OceanState *State,
                                    const AuxiliaryState *AuxState,

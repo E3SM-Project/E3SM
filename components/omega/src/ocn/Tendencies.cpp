@@ -252,9 +252,14 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
 //------------------------------------------------------------------------------
 // Define fields associated with tendencies
 void Tendencies::defineFields() {
-   auto LayerThicknessTendFieldName = "LayerThicknessTend";
-   auto NormalVelocityTendFieldName = "NormalVelocityTend";
-   auto TracerTendFieldName         = "TracerTend";
+   std::string LayerThicknessTendFieldName = "LayerThicknessTend";
+   std::string NormalVelocityTendFieldName = "NormalVelocityTend";
+   std::string TracerTendFieldName         = "TracerTend";
+   if (Name != "Default") {
+      LayerThicknessTendFieldName.append(Name);
+      NormalVelocityTendFieldName.append(Name);
+      TracerTendFieldName.append(Name);
+   }   
 
    int NDims = 2;
    std::vector<std::string> DimNamesThickness(NDims);
@@ -281,7 +286,10 @@ void Tendencies::defineFields() {
                      "m/s^2", "sea_water_velocity_tendency", -9.99E+10,
                      9.99E+10, -9.99E+30, NDims, DimNamesVelocity);
 
-   auto TendGroupName = "Tendencies";
+   std::string TendGroupName = "Tendencies";
+   if (Name != "Default") {
+      TendGroupName.append(Name);
+   }
    auto TendGroup     = FieldGroup::create(TendGroupName);
 
    TendGroup->addField(LayerThicknessTendFieldName);
@@ -296,15 +304,15 @@ void Tendencies::defineFields() {
 
 //------------------------------------------------------------------------------
 // Construct a new group of tendencies
-Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
-                       const HorzMesh *Mesh,    ///< [in] Horizontal mesh
-                       VertCoord *VCoord,       ///< [in] Vertical coordinate
-                       VertAdv *VAdv,           ///< [in] Vertical advection
-                       PressureGrad *PGrad,     ///< [in] Pressure gradient
-                       Eos *EqState,            ///< [in] Equation of state
-                       int NTracersIn,          ///< [in] Number of tracers
-                       TimeInterval TimeStepIn, ///< [in] Time step
-                       Config *Options,         ///< [in] Configuration options
+Tendencies::Tendencies(const std::string &Name_, ///< [in] Name for tendencies
+                       const HorzMesh *Mesh,     ///< [in] Horizontal mesh
+                       VertCoord *VCoord,        ///< [in] Vertical coordinate
+                       VertAdv *VAdv,            ///< [in] Vertical advection
+                       PressureGrad *PGrad,      ///< [in] Pressure gradient
+                       Eos *EqState,             ///< [in] Equation of state
+                       int NTracersIn,           ///< [in] Number of tracers
+                       TimeInterval TimeStepIn,  ///< [in] Time step
+                       Config *Options,          ///< [in] Configuration options
                        CustomTendencyType InCustomThicknessTend,
                        CustomTendencyType InCustomVelocityTend)
     : Mesh(Mesh), VCoord(VCoord), VAdv(VAdv), ThicknessFluxDiv(Mesh, VCoord),
@@ -324,6 +332,8 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
    TracerTend = Array3DReal("TracerTend", NTracersIn, Mesh->NCellsSize,
                             VCoord->NVertLayers);
 
+   Name = Name_;
+
    NTracers = NTracersIn;
    TimeStep = TimeStepIn;
 
@@ -331,16 +341,16 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
 
 } // end constructor
 
-Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
-                       const HorzMesh *Mesh,    ///< [in] Horizontal mesh
-                       VertCoord *VCoord,       ///< [in] Vertical coordinate
-                       VertAdv *VAdv,           ///< [in] Vertical advection
-                       PressureGrad *PGrad,     ///< [in] Pressure gradient
-                       Eos *EqState,            ///< [in] Equation of state
-                       int NTracersIn,          ///< [in] Number of tracers
-                       TimeInterval TimeStepIn, ///< [in] Time step
-                       Config *Options)         ///< [in] Configuration options
-    : Tendencies(Name, Mesh, VCoord, VAdv, PGrad, EqState, NTracersIn, TimeStepIn, Options,
+Tendencies::Tendencies(const std::string &Name_, ///< [in] Name for tendencies
+                       const HorzMesh *Mesh,     ///< [in] Horizontal mesh
+                       VertCoord *VCoord,        ///< [in] Vertical coordinate
+                       VertAdv *VAdv,            ///< [in] Vertical advection
+                       PressureGrad *PGrad,      ///< [in] Pressure gradient
+                       Eos *EqState,             ///< [in] Equation of state
+                       int NTracersIn,           ///< [in] Number of tracers
+                       TimeInterval TimeStepIn,  ///< [in] Time step
+                       Config *Options)          ///< [in] Configuration options
+    : Tendencies(Name_, Mesh, VCoord, VAdv, PGrad, EqState, NTracersIn, TimeStepIn, Options,
                  CustomTendencyType{}, CustomTendencyType{}) {}
 
 //------------------------------------------------------------------------------
