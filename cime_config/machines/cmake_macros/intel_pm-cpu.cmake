@@ -47,3 +47,5 @@ if (NOT DEBUG)
 endif()
 string(APPEND FFLAGS " -DHAVE_ERF_INTRINSICS")
 string(APPEND CXXFLAGS " -fp-model=consistent")
+
+string (APPEND KOKKOS_OPTIONS " -DCMAKE_CXX_FLAGS='-include cstdint'")
