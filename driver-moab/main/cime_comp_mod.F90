@@ -4241,12 +4241,6 @@ contains
     ! cpl -> ocn
     !----------------------------------------------------
     if (iamin_CPLALLOCNID .and. ocn_prognostic) then
-       call component_exch(ocn, flow='x2c', &
-            infodata=infodata, infodata_string='cpl2ocn_run', &
-            mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
-            timer_barrier='CPL:C2O_BARRIER', timer_comp_exch='CPL:C2O', &
-            timer_map_exch='CPL:c2o_ocnx2ocno', timer_infodata_exch='CPL:c2o_infoexch')
-       ! will migrate the tag from coupler pes to component pes, on ocn mesh
        call component_exch_moab(ocn(1), mboxid, mpoid, 'x2c', seq_flds_x2o_fields, &
             infodata=infodata, infodata_string='cpl2ocn_run', &
             mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
@@ -4267,14 +4261,6 @@ contains
     ! ocn -> cpl
     !----------------------------------------------------------
     if (iamin_CPLALLOCNID) then
-       call component_exch(ocn, flow='c2x', &
-            infodata=infodata, infodata_string='ocn2cpl_run', &
-            mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
-            timer_barrier='CPL:O2CT_BARRIER', timer_comp_exch='CPL:O2CT', &
-            timer_map_exch='CPL:o2c_ocno2ocnx', timer_infodata_exch='CPL:o2c_infoexch')
-       ! send from ocn pes to coupler
-       ! call ocn_cpl_moab(ocn)
-       ! new way
        call component_exch_moab(ocn(1), mpoid, mboxid, 'c2x', seq_flds_o2x_fields, &
             infodata=infodata, infodata_string='ocn2cpl_run', &
             mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
