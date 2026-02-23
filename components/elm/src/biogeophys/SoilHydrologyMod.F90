@@ -473,7 +473,9 @@ contains
                 else
                    pscov = 2._r8
                 end if
-                rscov = (1._r8 - h2osoi_liq(c,1:3)/(denh2o*dz(c,1:3))/watsat(c,1:3))**(1._r8/pscov-0.5_r8)
+                do j = 1, 3
+                   rscov(j) = min(1._r8, max(1._r8 - h2osoi_liq(c,j)/(denh2o*dz(c,j))/watsat(c,j), 0.2_r8))**(1._r8/pscov-0.5_r8)
+                end do
                 if ( use_modified_infil ) then
                   qinmax=minval(10._r8**(-e_ice*(icefrac(c,1:3)))*hksat(c,1:3)*rscov)
                 else
