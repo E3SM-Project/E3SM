@@ -188,9 +188,12 @@ int main(int argc, char *argv[]) {
 
          LOG_INFO("NVertLayers = {}", NVertLayers);
          LOG_INFO("dC = {}", dC);
+         DefState->copyToHost(0);
+         HostArray2DReal LayerThickH;
+         DefState->getLayerThicknessH(LayerThickH,0);
          for (int i = 0; i < 2; ++i) {
             for (int k = 0; k < 2; ++k) {
-               LOG_INFO("LayerThick({}, {}) = {}", i, k, LayerThick(i, k));
+               LOG_INFO("LayerThick({}, {}) = {}", i, k, LayerThickH(i, k));
             }
          }
 
