@@ -23,6 +23,9 @@ module dead_mct_mod
 #ifdef HAVE_MOAB
   public :: dead_init_moab
   private :: define_reset_fields_moab
+  ! Saved grid dimensions per model index (1=atm..7=wav)
+  ! Used by dead_run_mct to reorder data for MOAB entity ordering
+  integer(IN) :: moab_nxg(7) = 0, moab_nyg(7) = 0
 #endif
 
 !===============================================================================
@@ -141,7 +144,9 @@ contains
     integer(IN)      , intent(in), optional    :: mbdomain    ! MOAB domain handle (only useful for MOAB coupler)
 #ifdef HAVE_MOAB
     integer(IN)      :: ierr        ! error code
-    integer(IN)      :: ent_type = 0    ! entity type: default = vertex
+    integer(IN)      :: ent_type    ! entity type: 0=vertex, 1=element
+    integer(IN)      :: ntri_run, tri_cnt, quad_cnt, j_run, gid_run
+    real(R8), allocatable :: data_ordered(:,:)  ! reordered data for MOAB
 #endif
 
     !--- local ---
@@ -182,13 +187,18 @@ contains
        ncomp = 7
     end select
 
+#ifdef HAVE_MOAB
+    ! Set entity type for MOAB tag operations: elements for all dead components
+    ent_type = 1  ! elements (all dead components have full RLL mesh)
+#endif
+
     lsize = mct_avect_lsize(x2d)
     nflds_d2x = mct_avect_nRattr(d2x)
     nflds_x2d = mct_avect_nRattr(x2d)
 
 #ifdef HAVE_MOAB
     flds_d2x = trim(mct_aVect_exportRList2c(d2x)) ! exportRListToChar
-    flds_x2d = trim(mct_aVect_exportRList2c(x2d)) ! exportRListToChar
+    !flds_x2d = trim(mct_aVect_exportRList2c(x2d)) ! exportRListToChar
 
     allocate(data_d2x(lsize,nflds_d2x))
    !  allocate(data_x2d(lsize,nflds_x2d))
@@ -200,7 +210,7 @@ contains
           do n=1,lsize
              d2x%rAttr(nf,n) = (nf+1) * 1.0_r8
 #ifdef HAVE_MOAB
-               data_d2x(n,nf) = d2x%rAttr(nf,n)
+             data_d2x(n,nf) = d2x%rAttr(nf,n)
 #endif
           enddo
        enddo
@@ -218,7 +228,7 @@ contains
                   *  sin (SHR_CONST_PI*lon/180.0_R8)       &
                   + (ncomp*10.0_R8)
 #ifdef HAVE_MOAB
-               data_d2x(n,nf) = d2x%rAttr(nf,n)
+               !data_d2x(n,nf) = d2x%rAttr(nf,n)
 #endif
           enddo
        enddo
@@ -256,33 +266,61 @@ contains
        ki = mct_aVect_indexRA(d2x,"Sg_icemask",perrWith=subname)
        d2x%rAttr(ki,:) = 1.0_R8
 #ifdef HAVE_MOAB
-       data_d2x(:,ki) = 1.0_R8
+       data_d2x(:,ki) = d2x%rAttr(ki,:)
 #endif
 
        ki = mct_aVect_indexRA(d2x,"Sg_icemask_coupled_fluxes",perrWith=subname)
        d2x%rAttr(ki,:) = 1.0_R8
 #ifdef HAVE_MOAB
-       data_d2x(:,ki) = 1.0_R8
+       data_d2x(:,ki) = d2x%rAttr(ki,:)
 #endif
 
        ki = mct_aVect_indexRA(d2x,"Sg_ice_covered",perrWith=subname)
        d2x%rAttr(ki,:) = 1.0_R8
 #ifdef HAVE_MOAB
-       data_d2x(:,ki) = 1.0_R8
+       data_d2x(:,ki) = d2x%rAttr(ki,:)
 #endif
     end select
 
 #ifdef HAVE_MOAB
     ! Import data into MOAB structures
-   !  call define_import_fields_moab(model, mpicom, gbuf, gsMap, logunit, ggrid, &
-   !       flds_x2d, flds_d2x, data_x2d, data_d2x, nxg, nyg)
-
-   !  print *, ' DEAD RUN MCT: setting MOAB tags for model ', trim(model), ' nflds_d2x=', nflds_d2x, ' lsize=', lsize
-    ierr = iMOAB_SetDoubleTagStorage ( mbdomain, trim(flds_d2x) // C_NULL_CHAR, lsize*nflds_d2x, &
-                                     ent_type, & ! NOTE: setting data on vertices
-                                     data_d2x)
+    ! For fullmesh (non-ATM), reorder data to match MOAB entity iteration order
+    ! (all MBTRI first, then all MBQUAD)
+    if (ent_type == 1 .and. moab_nxg(ncomp) > 0) then
+       ! Count triangle elements on this partition
+       ntri_run = 0
+       do n = 1, lsize
+          gid_run = int(gbuf(n, dead_grid_index))
+          j_run = (gid_run - 1) / moab_nxg(ncomp)
+          if (j_run == 0 .or. j_run == moab_nyg(ncomp) - 1) &
+             ntri_run = ntri_run + 1
+       enddo
+       ! Reorder: tris first, then quads
+       allocate(data_ordered(lsize, nflds_d2x))
+       tri_cnt = 0
+       quad_cnt = 0
+       do n = 1, lsize
+          gid_run = int(gbuf(n, dead_grid_index))
+          j_run = (gid_run - 1) / moab_nxg(ncomp)
+          if (j_run == 0 .or. j_run == moab_nyg(ncomp) - 1) then
+             tri_cnt = tri_cnt + 1
+             data_ordered(tri_cnt, :) = data_d2x(n, :)
+          else
+             quad_cnt = quad_cnt + 1
+             data_ordered(ntri_run + quad_cnt, :) = data_d2x(n, :)
+          endif
+       enddo
+       ierr = iMOAB_SetDoubleTagStorage ( mbdomain, trim(flds_d2x) // C_NULL_CHAR, lsize*nflds_d2x, &
+                                        ent_type, &
+                                        data_ordered)
+       deallocate(data_ordered)
+    else
+       ierr = iMOAB_SetDoubleTagStorage ( mbdomain, trim(flds_d2x) // C_NULL_CHAR, lsize*nflds_d2x, &
+                                        ent_type, &
+                                        data_d2x)
+    endif
     if (ierr > 0 )  &
-       call shr_sys_abort('Error: fail to set flds_d2x fields tag ', ierr)
+       call shr_sys_abort('Error: fail to set flds_d2x fields tag ')
 
     deallocate(data_d2x)
     !deallocate(data_x2d)
@@ -449,7 +487,9 @@ contains
     real(R8), pointer    :: data(:)     ! temporary
     integer(IN), pointer :: idata(:)    ! temporary
     real(R8), dimension(:), allocatable :: moab_vert_coords  ! temporary
-    logical          :: fullmesh =.false.
+    integer(IN), allocatable :: entity_order(:)  ! maps MOAB elem pos -> gbuf index
+    integer(IN)          :: midx        ! model index for moab_nxg/nyg
+    logical          :: fullmesh
 ! #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
 ! #endif
@@ -470,129 +510,281 @@ contains
     ! Remove the previously created vertex cloud; we will create a proper RLL mesh with vertices at corners
     ! This is done by deleting the mesh and starting fresh with corner-based vertices
 
-    etype = 0  ! vertices
-   !  if (trim(model) .ne. 'atm' .and. trim(model) .ne. 'lnd' .and. trim(model) .ne. 'rof') then
-   !    fullmesh = .true.
-   !    etype = 1  ! elements
-   !  end if
+    fullmesh = .true.
+    etype = 1  ! elements (all dead components create full RLL mesh)
+
+    ! Save grid dimensions per model for use in dead_run_mct
+    selectcase(model)
+    case('atm'); midx = 1
+    case('lnd'); midx = 2
+    case('ice'); midx = 3
+    case('ocn'); midx = 4
+    case('glc'); midx = 5
+    case('rof'); midx = 6
+    case('wav'); midx = 7
+    case default; midx = 0
+    end select
+    if (midx > 0) then
+       moab_nxg(midx) = nxg
+       moab_nyg(midx) = nyg
+    endif
 
     if (fullmesh) then
-       etype = 1  ! elements
-       ! Create RLL dual mesh: centroids (lat,lon) become element centers; vertices at corners
-       ! For nxg x nyg centroid grid, we need (nxg+1) x (nyg+1) corner vertices
-       ! Each centroid becomes a quad element using its 4 neighboring corners
+       ! Create RLL mesh with proper periodic longitude wrapping and polar vertices
+       ! For nxg x nyg element grid on a sphere:
+       !   - South pole: single vertex at lat=-90
+       !   - North pole: single vertex at lat=+90
+       !   - Interior vertices: nxg per latitude row (periodic in longitude)
+       !   - Pole row elements (j=0, j=nyg-1): triangles
+       !   - Interior elements: quads
        block
-          integer(IN)          :: nverts_total   ! total vertices in RLL mesh
+          integer(IN)          :: nverts_local   ! number of local vertices
           integer(IN)          :: nelems         ! number of elements
-          integer(IN), allocatable :: elem_conn(:,:)  ! element connectivity
-          integer(IN), allocatable :: vert_glid(:)    ! global IDs for vertices
-          integer(IN)          :: ie, iv, ix, iy, v0, v1, v2, v3
+          integer(IN), allocatable :: vert_gid(:)      ! global IDs for local vertices
+          real(R8), allocatable    :: vert_coords(:)   ! vertex coords in 3D (x,y,z)
+          integer(IN)          :: iv, ix, iy, vgid
           integer(IN)          :: elem_type
-          integer(IN), allocatable :: elem_conn_flat(:)
-          real(R8), allocatable :: vert_coords(:)     ! vertex coords in 3D
-          real(R8)             :: lat_c, lon_c, lat_v, lon_v
-          real(R8)             :: dlat, dlon          ! grid spacing
-          integer(IN)          :: i_global, j_global  ! global grid indices for centroid
-          logical, allocatable :: vert_in_local(:)    ! which vertices belong locally
+          real(R8)             :: dlat, dlon, lat_v, lon_v
+          integer(IN)          :: i_elem, j_elem  ! global element indices (0-based)
+          integer(IN)          :: elem_gid        ! global element ID (1-based)
+          integer(IN), allocatable :: vert_map(:) ! map from global vertex ID to local index
+          integer(IN)          :: max_vert_gid
+          integer(IN)          :: ntri_elems, nquad_elems, tri_idx, quad_idx
+          integer(IN), allocatable :: tri_conn(:), quad_conn(:)
+          integer(IN)          :: ix_r            ! right-side ix with wrapping
+          integer(IN)          :: vgid_sp, vgid_np ! south/north pole vertex global IDs
+          integer(IN)          :: vgid_bl, vgid_br, vgid_tl, vgid_tr
+          integer(IN), allocatable :: elem_gids(:)  ! element global IDs for MOAB tag
 
-          ! Grid spacing (approximate; valid for regular grid)
+          ! Grid spacing for regular lat-lon mesh
+          ! Note: gbuf longitudes start at 0 deg (from dead_setNewGrid)
           dlat = 180.0_R8 / real(nyg, R8)
           dlon = 360.0_R8 / real(nxg, R8)
 
-          ! Vertices in full RLL mesh (corners only exist if centroid exists locally or is adjacent)
-          nverts_total = (nxg + 1) * (nyg + 1)
-          nelems = nxg * nyg
+          nelems = lsize
 
-          allocate(vert_glid(nverts_total))
-          allocate(vert_in_local(nverts_total))
-          allocate(vert_coords(nverts_total * 3))
-          allocate(elem_conn(4, nelems))
-          allocate(elem_conn_flat(nelems * 4))
+          ! Global vertex ID scheme for periodic RLL mesh:
+          !   South pole vertex:  vgid_sp = 1
+          !   Non-pole vertex at column ix (0..nxg-1), row iy (1..nyg-1):
+          !     vgid = 2 + (iy - 1) * nxg + ix
+          !   North pole vertex:  vgid_np = 2 + (nyg - 1) * nxg
+          ! Total unique vertices = (nyg - 1) * nxg + 2
+          vgid_sp = 1
+          vgid_np = 2 + (nyg - 1) * nxg
+          max_vert_gid = vgid_np
 
-          ! Initialize: mark all vertices as non-local initially
-          vert_in_local = .false.
-          vert_coords = 0.0_R8
+          allocate(vert_map(max_vert_gid))
+          vert_map = 0
 
-          ! Loop through local centroid points and mark adjacent vertices
+          ! First pass: identify unique local vertices
+          nverts_local = 0
           do n = 1, lsize
-             lat_c = gbuf(n, dead_grid_lat)
-             lon_c = gbuf(n, dead_grid_lon)
-             ! Find global grid position (i_global, j_global) of this centroid in [0, nxg-1] x [0, nyg-1]
-             ! Use MCT global index to infer position
-             ! For simplicity, assume sequential ordering: centroid (i,j) has global index i + j*nxg
-             i_global = mod(n-1, nxg)
-             j_global = (n-1) / nxg
+             elem_gid = int(gbuf(n, dead_grid_index))
+             i_elem = mod(elem_gid - 1, nxg)      ! 0-based column
+             j_elem = (elem_gid - 1) / nxg         ! 0-based row
+             ix_r = mod(i_elem + 1, nxg)            ! right column with wrapping
 
-             ! Mark 4 corner vertices of this centroid's cell as local
-             ! Vertices are in [0, nxg] x [0, nyg], so corners of cell (i,j) are:
-             !   (i, j), (i+1, j), (i+1, j+1), (i, j+1)
-             do iy = j_global, j_global + 1
-                do ix = i_global, i_global + 1
-                   if (ix >= 0 .and. ix <= nxg .and. iy >= 0 .and. iy <= nyg) then
-                      iv = iy * (nxg + 1) + ix + 1  ! 1-indexed vertex ID
-                      vert_in_local(iv) = .true.
-                      ! Compute corner lat/lon (offset by half-grid spacing from centroid)
-                      lat_v = lat_c + (real(iy, R8) - real(j_global, R8) - 0.5_R8) * dlat
-                      lon_v = lon_c + (real(ix, R8) - real(i_global, R8) - 0.5_R8) * dlon
-                      ! Clamp lat to [-90, 90]
-                      lat_v = max(-90.0_R8, min(90.0_R8, lat_v))
-                      ! Convert to 3D spherical coords
-                      vert_coords(3*iv-2) = cos(lat_v * shr_const_pi / 180.0_R8) * cos(lon_v * shr_const_pi / 180.0_R8)
-                      vert_coords(3*iv-1) = cos(lat_v * shr_const_pi / 180.0_R8) * sin(lon_v * shr_const_pi / 180.0_R8)
-                      vert_coords(3*iv  ) = sin(lat_v * shr_const_pi / 180.0_R8)
-                      ! Global vertex ID = global grid position
-                      vert_glid(iv) = iy * (nxg + 1) + ix + 1
-                   endif
-                enddo
-             enddo
-          enddo
-
-          ! Create vertices for local mesh (only the ones marked as local)
-          allocate(moab_vert_coords(count(vert_in_local)*3))
-          iv = 0
-          do i = 1, nverts_total
-             if (vert_in_local(i)) then
-                iv = iv + 1
-                moab_vert_coords(3*iv-2:3*iv) = vert_coords(3*i-2:3*i)
+             if (j_elem == 0) then
+                ! South pole triangle: pole + 2 top-edge vertices at iy=1
+                vgid = vgid_sp
+                if (vert_map(vgid) == 0) then
+                   nverts_local = nverts_local + 1
+                   vert_map(vgid) = nverts_local
+                endif
+                vgid = 2 + i_elem                   ! (i_elem, iy=1)
+                if (vert_map(vgid) == 0) then
+                   nverts_local = nverts_local + 1
+                   vert_map(vgid) = nverts_local
+                endif
+                vgid = 2 + ix_r                     ! (ix_r, iy=1)
+                if (vert_map(vgid) == 0) then
+                   nverts_local = nverts_local + 1
+                   vert_map(vgid) = nverts_local
+                endif
+             else if (j_elem == nyg - 1) then
+                ! North pole triangle: 2 bottom-edge vertices at iy=nyg-1 + pole
+                vgid = 2 + (nyg - 2) * nxg + i_elem ! (i_elem, iy=nyg-1)
+                if (vert_map(vgid) == 0) then
+                   nverts_local = nverts_local + 1
+                   vert_map(vgid) = nverts_local
+                endif
+                vgid = 2 + (nyg - 2) * nxg + ix_r   ! (ix_r, iy=nyg-1)
+                if (vert_map(vgid) == 0) then
+                   nverts_local = nverts_local + 1
+                   vert_map(vgid) = nverts_local
+                endif
+                vgid = vgid_np
+                if (vert_map(vgid) == 0) then
+                   nverts_local = nverts_local + 1
+                   vert_map(vgid) = nverts_local
+                endif
+             else
+                ! Interior quad: 4 corner vertices
+                vgid = 2 + (j_elem - 1) * nxg + i_elem  ! BL (i_elem, j_elem)
+                if (vert_map(vgid) == 0) then
+                   nverts_local = nverts_local + 1
+                   vert_map(vgid) = nverts_local
+                endif
+                vgid = 2 + (j_elem - 1) * nxg + ix_r    ! BR (ix_r, j_elem)
+                if (vert_map(vgid) == 0) then
+                   nverts_local = nverts_local + 1
+                   vert_map(vgid) = nverts_local
+                endif
+                vgid = 2 + j_elem * nxg + ix_r           ! TR (ix_r, j_elem+1)
+                if (vert_map(vgid) == 0) then
+                   nverts_local = nverts_local + 1
+                   vert_map(vgid) = nverts_local
+                endif
+                vgid = 2 + j_elem * nxg + i_elem         ! TL (i_elem, j_elem+1)
+                if (vert_map(vgid) == 0) then
+                   nverts_local = nverts_local + 1
+                   vert_map(vgid) = nverts_local
+                endif
              endif
           enddo
-          ierr = iMOAB_CreateVertices(mbdomain, iv*3, 3, moab_vert_coords)
-          if (ierr .ne. 0) &
-             call shr_sys_abort('Error: fail to create corner vertices for RLL mesh')
-          deallocate(moab_vert_coords)
 
-          ! Create quad elements: each centroid becomes a quad using its 4 corner vertices
-          ie = 0
-          do n = 1, lsize
-             i_global = mod(n-1, nxg)
-             j_global = (n-1) / nxg
-             ! 4 corners of element (i,j): at vertex positions (i,j), (i+1,j), (i+1,j+1), (i,j+1)
-             v0 = j_global * (nxg + 1) + i_global + 1      ! (i, j)
-             v1 = j_global * (nxg + 1) + i_global + 1 + 1  ! (i+1, j)
-             v2 = (j_global+1) * (nxg + 1) + i_global + 1 + 1  ! (i+1, j+1)
-             v3 = (j_global+1) * (nxg + 1) + i_global + 1  ! (i, j+1)
+          ! Allocate arrays for vertices
+          allocate(vert_coords(nverts_local * 3))
+          allocate(vert_gid(nverts_local))
 
-             ie = ie + 1
-             elem_conn(1, ie) = v0 - 1  ! Convert to 0-indexed
-             elem_conn(2, ie) = v1 - 1
-             elem_conn(3, ie) = v2 - 1
-             elem_conn(4, ie) = v3 - 1
+          ! Compute vertex coordinates from global vertex IDs
+          ! Decode (ix, iy) from vgid and compute 3D Cartesian coords on unit sphere
+          do vgid = 1, max_vert_gid
+             if (vert_map(vgid) > 0) then
+                iv = vert_map(vgid)
+                vert_gid(iv) = vgid
+                if (vgid == vgid_sp) then
+                   ! South pole: lat = -90 deg
+                   lat_v = -0.5_R8 * shr_const_pi
+                   lon_v = 0.0_R8
+                else if (vgid == vgid_np) then
+                   ! North pole: lat = +90 deg
+                   lat_v = 0.5_R8 * shr_const_pi
+                   lon_v = 0.0_R8
+                else
+                   ! Non-pole vertex: decode ix, iy from vgid = 2 + (iy-1)*nxg + ix
+                   ix = mod(vgid - 2, nxg)
+                   iy = (vgid - 2) / nxg + 1
+                   ! Longitude starts at 0 deg (matching dead_setNewGrid convention)
+                   lat_v = (-90.0_R8 + real(iy, R8) * dlat) * shr_const_pi / 180.0_R8
+                   lon_v = real(ix, R8) * dlon * shr_const_pi / 180.0_R8
+                endif
+                vert_coords(3*iv-2) = cos(lat_v) * cos(lon_v)
+                vert_coords(3*iv-1) = cos(lat_v) * sin(lon_v)
+                vert_coords(3*iv  ) = sin(lat_v)
+             endif
           enddo
 
-          ! Flatten connectivity
-          elem_conn_flat = reshape(elem_conn, [nelems * 4])
-
-          ! Create elements
-          elem_type = 3  ! quad
-          ierr = iMOAB_CreateElements(mbdomain, lsize, elem_type, 4, elem_conn_flat, block_ID=1)
+          ! Create vertices in MOAB
+          ierr = iMOAB_CreateVertices(mbdomain, nverts_local*3, 3, vert_coords)
           if (ierr .ne. 0) &
-             call shr_sys_abort('Error: fail to create RLL quad elements')
+             call shr_sys_abort('Error: fail to create vertices for RLL mesh')
 
-          deallocate(elem_conn)
-          deallocate(elem_conn_flat)
-          deallocate(vert_coords)
-          deallocate(vert_glid)
-          deallocate(vert_in_local)
+          ! Count triangular (polar) and quad (interior) elements
+          ntri_elems = 0
+          nquad_elems = 0
+          do n = 1, lsize
+             elem_gid = int(gbuf(n, dead_grid_index))
+             j_elem = (elem_gid - 1) / nxg
+             if (j_elem == 0 .or. j_elem == nyg - 1) then
+                ntri_elems = ntri_elems + 1
+             else
+                nquad_elems = nquad_elems + 1
+             endif
+          enddo
+
+          allocate(tri_conn(max(ntri_elems * 3, 1)))
+          allocate(quad_conn(max(nquad_elems * 4, 1)))
+
+          ! Build element connectivity using 1-based local vertex indices
+          ! (iMOAB_CreateElements expects Fortran 1-based connectivity)
+          ! Also build element GLOBAL_ID array ordered as: tris first, then quads
+          ! (matching MOAB's entity iteration order: MBTRI before MBQUAD)
+          ! entity_order maps MOAB element position -> local gbuf index
+          allocate(elem_gids(nelems))
+          allocate(entity_order(nelems))
+          tri_idx = 0
+          quad_idx = 0
+          do n = 1, lsize
+             elem_gid = int(gbuf(n, dead_grid_index))
+             i_elem = mod(elem_gid - 1, nxg)
+             j_elem = (elem_gid - 1) / nxg
+             ix_r = mod(i_elem + 1, nxg)
+
+             if (j_elem == 0) then
+                ! South pole triangle: SP, (ix_r, iy=1), (i_elem, iy=1)
+                ! Winding order gives outward normal toward -z (correct at south pole)
+                tri_idx = tri_idx + 1
+                tri_conn(3*(tri_idx-1) + 1) = vert_map(vgid_sp)
+                tri_conn(3*(tri_idx-1) + 2) = vert_map(2 + ix_r)
+                tri_conn(3*(tri_idx-1) + 3) = vert_map(2 + i_elem)
+                elem_gids(tri_idx) = elem_gid
+                entity_order(tri_idx) = n
+             else if (j_elem == nyg - 1) then
+                ! North pole triangle: (i_elem, nyg-1), (ix_r, nyg-1), NP
+                tri_idx = tri_idx + 1
+                tri_conn(3*(tri_idx-1) + 1) = vert_map(2 + (nyg-2)*nxg + i_elem)
+                tri_conn(3*(tri_idx-1) + 2) = vert_map(2 + (nyg-2)*nxg + ix_r)
+                tri_conn(3*(tri_idx-1) + 3) = vert_map(vgid_np)
+                elem_gids(tri_idx) = elem_gid
+                entity_order(tri_idx) = n
+             else
+                ! Interior quad: BL, BR, TR, TL (counter-clockwise)
+                quad_idx = quad_idx + 1
+                vgid_bl = 2 + (j_elem - 1) * nxg + i_elem
+                vgid_br = 2 + (j_elem - 1) * nxg + ix_r
+                vgid_tr = 2 + j_elem * nxg + ix_r
+                vgid_tl = 2 + j_elem * nxg + i_elem
+                quad_conn(4*(quad_idx-1) + 1) = vert_map(vgid_bl)
+                quad_conn(4*(quad_idx-1) + 2) = vert_map(vgid_br)
+                quad_conn(4*(quad_idx-1) + 3) = vert_map(vgid_tr)
+                quad_conn(4*(quad_idx-1) + 4) = vert_map(vgid_tl)
+                elem_gids(ntri_elems + quad_idx) = elem_gid
+                entity_order(ntri_elems + quad_idx) = n
+             endif
+          enddo
+
+          ! Create triangular elements (polar caps) - MBTRI = 2
+          if (ntri_elems > 0) then
+             elem_type = 2  ! MBTRI
+             ierr = iMOAB_CreateElements(mbdomain, ntri_elems, elem_type, 3, tri_conn, block_ID=1)
+             if (ierr .ne. 0) &
+                call shr_sys_abort('Error: fail to create RLL triangle elements')
+          endif
+
+          ! Create quad elements (interior) - MBQUAD = 3
+          if (nquad_elems > 0) then
+             elem_type = 3  ! MBQUAD
+             ierr = iMOAB_CreateElements(mbdomain, nquad_elems, elem_type, 4, quad_conn, block_ID=2)
+             if (ierr .ne. 0) &
+                call shr_sys_abort('Error: fail to create RLL quad elements')
+          endif
+
+          deallocate(tri_conn, quad_conn)
+
+          ! Set GLOBAL_ID tag on vertices for parallel resolution
+          tagname='GLOBAL_ID'//C_NULL_CHAR
+          ierr = iMOAB_DefineTagStorage(mbdomain, tagname, 0, 1, tagindex)
+          if (ierr .ne. 0) &
+             call shr_sys_abort('Error: fail to define GLOBAL_ID tag for vertices')
+
+          ! Set GLOBAL_ID on vertices (etype=0)
+          ierr = iMOAB_SetIntTagStorage(mbdomain, tagname, nverts_local, 0, vert_gid)
+          if (ierr .ne. 0) &
+             call shr_sys_abort('Error: fail to set GLOBAL_ID tag for vertices')
+
+          ! Set GLOBAL_ID on elements (etype=1)
+          ! elem_gids is ordered: tris first, then quads (matches MOAB entity order)
+          ierr = iMOAB_SetIntTagStorage(mbdomain, tagname, nelems, 1, elem_gids)
+          if (ierr .ne. 0) &
+             call shr_sys_abort('Error: fail to set GLOBAL_ID tag for elements')
+
+          ! Resolve shared entities across MPI ranks using global vertex IDs
+          ierr = iMOAB_ResolveSharedEntities(mbdomain, nverts_local, vert_gid)
+          if (ierr .ne. 0) &
+             call shr_sys_abort('Error: fail to resolve shared entities')
+
+          deallocate(vert_coords, vert_gid, vert_map, elem_gids)
        end block
     else
 
@@ -612,37 +804,37 @@ contains
          call shr_sys_abort('Error: fail to create MOAB vertices in X-' // trim(model) // ' model')
       deallocate(moab_vert_coords)
 
-    end if
-
-    tagname='GLOBAL_ID'//C_NULL_CHAR
-    ierr = iMOAB_DefineTagStorage(mbdomain, tagname, &
-                                  0, & ! dense, integer
-                                  1, & ! number of components
-                                  tagindex )
-    if (ierr .ne. 0)  &
-       call shr_sys_abort('Error: fail to retrieve GLOBAL_ID tag ')
-
-    allocate(idata(lsize))
-    ! get list of global IDs for Dofs
-    call mct_gsMap_orderedPoints(gsMap, my_task, idata)
-
-    ierr = iMOAB_SetIntTagStorage ( mbdomain, tagname, lsize, &
-                                     etype, & ! vertex type
-                                     idata)
-    if (ierr .ne. 0)  &
-       call shr_sys_abort('Error: fail to set GLOBAL_ID tag ')
-
-    if (fullmesh) then
-      ierr = iMOAB_ResolveSharedEntities( mbdomain, lsize, idata );
+      tagname='GLOBAL_ID'//C_NULL_CHAR
+      ierr = iMOAB_DefineTagStorage(mbdomain, tagname, &
+                                    0, & ! dense, integer
+                                    1, & ! number of components
+                                    tagindex )
       if (ierr .ne. 0)  &
-         call shr_sys_abort('Error: fail to resolve shared entities')
+         call shr_sys_abort('Error: fail to retrieve GLOBAL_ID tag ')
+
+      allocate(idata(lsize))
+      ! get list of global IDs for Dofs
+      call mct_gsMap_orderedPoints(gsMap, my_task, idata)
+
+      ierr = iMOAB_SetIntTagStorage ( mbdomain, tagname, lsize, &
+                                       etype, & ! vertex type
+                                       idata)
+      if (ierr .ne. 0)  &
+         call shr_sys_abort('Error: fail to set GLOBAL_ID tag ')
+
+      deallocate(idata)
+
     end if
+
+   !  if (fullmesh) then
+   !    ierr = iMOAB_ResolveSharedEntities( mbdomain, lsize, idata );
+   !    if (ierr .ne. 0)  &
+   !       call shr_sys_abort('Error: fail to resolve shared entities')
+   !  end if
 
     ierr = iMOAB_UpdateMeshInfo( mbdomain )
     if (ierr .ne. 0)  &
       call shr_sys_abort('Error: fail to update mesh info ')
-
-    deallocate(idata)
 
     ierr = iMOAB_DefineTagStorage( mbdomain, "lat:lon:area:aream:frac:mask"//C_NULL_CHAR, &
                                      1, & ! dense, double
@@ -653,60 +845,94 @@ contains
 
     if (lsize .gt. 0) then
 
+         call define_reset_fields_moab(mbdomain, model, x2d, d2x, mpicom, logunit )
+
          allocate(data(lsize))
-         data(:) = gbuf(:,dead_grid_lat)
+
+         ! For fullmesh, reorder data to match MOAB entity iteration order
+         ! (all MBTRI first, then all MBQUAD). entity_order maps MOAB
+         ! element position -> local gbuf index.
+         if (fullmesh) then
+            do n = 1, lsize
+               data(n) = gbuf(entity_order(n), dead_grid_lat)
+            enddo
+         else
+            data(:) = gbuf(:,dead_grid_lat)
+         endif
          tagname='lat'//C_NULL_CHAR
          ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-                                          etype, & ! set data on vertices
+                                          etype, &
                                           data)
          if (ierr > 0 )  &
             call shr_sys_abort('Error: fail to set lat tag ')
 
-         data(:) = gbuf(:,dead_grid_lon)
+         if (fullmesh) then
+            do n = 1, lsize
+               data(n) = gbuf(entity_order(n), dead_grid_lon)
+            enddo
+         else
+            data(:) = gbuf(:,dead_grid_lon)
+         endif
          tagname='lon'//C_NULL_CHAR
          ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-                                          etype, & ! set data on vertices
+                                          etype, &
                                           data)
          if (ierr > 0 )  &
             call shr_sys_abort('Error: fail to set lon tag ')
 
-         data(:) = gbuf(:,dead_grid_area)
+         if (fullmesh) then
+            do n = 1, lsize
+               data(n) = gbuf(entity_order(n), dead_grid_area)
+            enddo
+         else
+            data(:) = gbuf(:,dead_grid_area)
+         endif
          tagname='area'//C_NULL_CHAR
          ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-                                          etype, & ! set data on elements
+                                          etype, &
                                           data)
          if (ierr > 0 )  &
             call shr_sys_abort('Error: fail to get area tag ')
 
          ! set the same data for aream (model area) as area
-         ! data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'aream'),:)
          tagname='aream'//C_NULL_CHAR
          ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-                                          etype, & ! set data on elements
+                                          etype, &
                                           data)
          if (ierr > 0 )  &
             call shr_sys_abort('Error: fail to set aream tag ')
 
-         data(:) = gbuf(:,dead_grid_mask)
+         if (fullmesh) then
+            do n = 1, lsize
+               data(n) = gbuf(entity_order(n), dead_grid_mask)
+            enddo
+         else
+            data(:) = gbuf(:,dead_grid_mask)
+         endif
          tagname='mask'//C_NULL_CHAR
          ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-                                          etype, & ! set data on elements
+                                          etype, &
                                           data)
          if (ierr > 0 )  &
             call shr_sys_abort('Error: fail to set mask tag ')
 
-         data(:) = gbuf(:,dead_grid_frac)
+         if (fullmesh) then
+            do n = 1, lsize
+               data(n) = gbuf(entity_order(n), dead_grid_frac)
+            enddo
+         else
+            data(:) = gbuf(:,dead_grid_frac)
+         endif
          tagname='frac'//C_NULL_CHAR
          ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-                                          etype, & ! set data on elements
+                                          etype, &
                                           data)
          if (ierr > 0 )  &
             call shr_sys_abort('Error: fail to set frac tag ')
 
          ! deallocate temporary arrays
          deallocate(data)
-
-         call define_reset_fields_moab(mbdomain, model, x2d, d2x, mpicom, logunit )
+         if (allocated(entity_order)) deallocate(entity_order)
 
     end if
 
@@ -778,11 +1004,7 @@ contains
     !
     call mpi_comm_rank(mpicom, my_task, ier)
 
-    etype = 0  ! vertices
-   !  if (trim(model) .ne. 'atm' .and. trim(model) .ne. 'lnd' .and. trim(model) .ne. 'rof') then
-   !    fullmesh = .true.
-   !    etype = 1  ! cells
-   !  end if
+    etype = 1  ! cells (all dead components use element-based tags)
 
     ! first define the tags for x2d and d2x fields
     ierr = iMOAB_DefineTagStorage( mbdomain, trim(flds_x2d)//C_NULL_CHAR, &

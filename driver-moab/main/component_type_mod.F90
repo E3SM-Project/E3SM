@@ -48,8 +48,9 @@ module component_type_mod
   public :: component_get_name
   public :: component_get_suffix
   public :: component_get_iamin_compid
+  public :: component_get_mbGridType
 
-! this is to replicate mct grid of a cx   
+! this is to replicate mct grid of a cx
   public :: expose_mct_grid_moab
 #ifdef MOABCOMP
   public :: compare_mct_av_moab_tag
@@ -78,8 +79,8 @@ module component_type_mod
      type(mct_aVect) , pointer       :: c2x_cc      => null()
      real(r8)        , pointer       :: drv2mdl(:)  => null() ! area correction factors
      real(r8)        , pointer       :: mdl2drv(:)  => null() ! area correction factors
-     integer                         :: mbApCCid ! moab app id on component side 
-     integer                         :: mbGridType ! 0 for PC, 1 for cell (ocean, ice)  
+     integer                         :: mbApCCid ! moab app id on component side
+     integer                         :: mbGridType ! 0 for PC, 1 for cell (ocean, ice)
      integer                         :: mblsize    ! size of local arrays
      !
      ! Union of coupler/component pes - used by exchange routines
@@ -235,6 +236,12 @@ contains
     component_get_mapper_Cx2c => comp%mapper_Cx2c
   end function component_get_mapper_Cx2c
 
+  function component_get_mbGridType(comp)
+    type(component_type), intent(in), target :: comp
+    integer :: component_get_mbGridType
+    component_get_mbGridType = comp%mbGridType
+  end function component_get_mbGridType
+
   subroutine check_fields(comp, comp_index)
     use shr_infnan_mod, only: shr_infnan_isnan
     use mct_mod, only: mct_avect_getrlist2c, mct_gsMap_orderedPoints
@@ -310,7 +317,7 @@ contains
     dims  = 3 ! store as 3d mesh
 
     call seq_comm_getinfo(CPLID, mpicom=mpicom_CPLID)
-    
+
     if (seq_comm_iamin(CPLID)) then
       call shr_mpi_commrank(mpicom_CPLID, iamcpl  , 'expose_mct_grid_moab')
       dom => component_get_dom_cx(comp)
@@ -416,7 +423,7 @@ contains
 #ifdef MOABCOMP
   ! assumes everything is on coupler pes here, to make sense
   subroutine compare_mct_av_moab_tag(comp, attrVect, mct_field, appId, tagname, ent_type, difference, first_time)
-    
+
     use shr_mpi_mod,       only: shr_mpi_sum
     use shr_kind_mod,     only:  CXX => shr_kind_CXX
     use shr_kind_mod    , only:  IN=>SHR_KIND_IN
@@ -424,16 +431,17 @@ contains
     use seq_comm_mct, only:   seq_comm_setptrs
     use iMOAB, only : iMOAB_DefineTagStorage,  iMOAB_GetDoubleTagStorage, &
        iMOAB_SetDoubleTagStorageWithGid, iMOAB_GetMeshInfo
-    
-    use iso_c_binding 
+
+    use iso_c_binding
 
     type(component_type), intent(in) :: comp
-    integer , intent(in) :: appId, ent_type
+    integer , intent(in) :: appId
+    integer , intent(inout) :: ent_type
     type(mct_aVect) , intent(in), pointer       :: attrVect
     type(mct_gsmap), pointer    :: gsmap
     character(*) , intent(in)       :: mct_field
     character(*) , intent(in)       :: tagname
-    integer(IN), pointer :: dof(:) 
+    integer(IN), pointer :: dof(:)
 
     real(r8)      , intent(out)     :: difference
     logical , intent(in)            :: first_time
@@ -446,14 +454,16 @@ contains
      integer                  :: tagtype, numco,  tagindex, ierr
      character(CXX)           :: tagname_mct
      !integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
-     
+
      real(r8) , allocatable :: values(:), mct_values(:)
      integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
      integer :: mpicom
      logical   :: iamroot
 
-
      character(*),parameter :: subName = '(compare_mct_av_moab_tag) '
+
+     ! NOTE: temporary
+     !ent_type = 0 ! vertex for land, 1 for cell for ocean and ice; we will only compare on the type of entities that are relevant for the component, so this is not a problem to hardcode here
 
      call seq_comm_setptrs(CPLID, mpicom=mpicom)
 
@@ -469,23 +479,23 @@ contains
      call mct_gsMap_orderedPoints(gsmap, my_task, dof)
 
      index_avfield     = mct_aVect_indexRA(attrVect,trim(mct_field))
-     values(:) = attrVect%rAttr(index_avfield,:) 
+     values(:) = attrVect%rAttr(index_avfield,:)
 
      tagname_mct = 'mct_'//trim(tagname)//C_NULL_CHAR
 
-     
      tagtype = 1 ! dense, double
      numco = 1
      if (first_time) then
         ierr = iMOAB_DefineTagStorage(appId, tagname_mct, tagtype, numco,  tagindex )
         if (ierr > 0 )  &
             call shr_sys_abort(subname//'Error: fail to define new tag for mct')
-     endif 
+     endif
      ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname_mct, nloc , ent_type, values, dof )
      if (ierr > 0 )  &
         call shr_sys_abort(subname//'Error: fail to set new tags')
 
      deallocate(values)
+
      ! now start comparing tags after set
      ierr  = iMOAB_GetMeshInfo ( appId, nvert, nvise, nbl, nsurf, nvisBC )
      if (ierr > 0 )  &
@@ -495,6 +505,14 @@ contains
      else if (ent_type .eq. 1) then
         mbSize = nvise(1)
      endif
+    !  mbSize = mbGetnCells(appId)
+
+     iamroot = seq_comm_iamroot(CPLID)
+     if (iamroot) then
+        print *, subname, 'SIZE CHECK: nloc (MCT) = ', nloc, ', mbSize (MOAB) = ', mbSize, &
+                 ', ent_type = ', ent_type, ', tag = ', trim(tagname)
+     endif
+
      allocate(values(mbSize))
      allocate(mct_values(mbSize))
 
@@ -504,20 +522,35 @@ contains
      ierr = iMOAB_GetDoubleTagStorage ( appId, tagname, mbSize , ent_type, values)
      if (ierr > 0 )  &
         call shr_sys_abort(subname//'Error: fail to get moab tag values')
-      
+
      values  = mct_values - values
 
      difference = dot_product(values, values)
+     ! Debug: check for problematic values
+     iamroot = seq_comm_iamroot(CPLID)
+     if (iamroot .and. difference > 1.e-14) then
+        nloc = count(abs(values) > 1.e-14)  ! count significant differences
+        print *, subname, 'DIFF DEBUG: elements with |diff| > 1e-10: ', nloc, ' out of ', mbSize
+        if (nloc > 0) then
+           print *, '  max |diff| = ', maxval(abs(values)), ' at index ', maxloc(abs(values))
+           print *, '  min |diff| = ', minval(abs(values)), ' at index ', minloc(abs(values))
+        endif
+     endif
+
      differenceg = 0. ! intel complained; why ?
      call shr_mpi_sum(difference,differenceg,mpicom,subname)
      difference = sqrt(differenceg)
-     iamroot = seq_comm_iamroot(CPLID)
-     if ( iamroot ) then
+     if (iamroot) then
         print * , subname, trim(comp%ntype), ' on cpl, difference on tag ', trim(tagname), ' = ', difference
+        if (difference > 1.e-10) then
+           print *, ' this is a large difference, investigate'
+           print *, ' values from mct: ', mct_values(1:5)
+           print *, ' values from moab: ', values(1:5)
+        endif
         !call shr_sys_abort(subname//'differences between mct and moab values')
      endif
      !deallocate(GlobalIds)
-     deallocate (dof) 
+     deallocate (dof)
      deallocate(values)
      deallocate(mct_values)
 
