@@ -268,6 +268,10 @@ lnd/clm2/surfdata_map/surfdata_u03-oi240-lr240_simyr1850_c260829.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_u03-oi240-lr240_simyr1950_c260829.nc</fsurdat>
  <fsurdat hgrid="u03-lr240"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_u03-oi240-lr240_simyr2010_c260829.nc</fsurdat>
+<!-- datasets for TOP solar radiation parameterization -->
+<!--  ***********  Resolution dependent:   *********** -->
+<!--ftopdat>same as fsurfdat </ftopdat-->
+<use_top_solar_rad>.false.</use_top_solar_rad>
 
 <!-- CAx32v1.pg2 -->
 <fsurdat hgrid="ne0np4_CAx32v1.pg2"   sim_year="2010" use_crop=".false." >
@@ -688,10 +692,6 @@ this mask will have smb calculated over the entire global land surface
 <flndtopo hgrid="r0125"     >lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</flndtopo>
 <flndtopo hgrid="ne30np4.pg2"      >lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1850_c210402.nc</flndtopo>
 
-<!-- datasets for TOP solar radiation parameterization -->
-<!--  ***********  Resolution dependent:   *********** -->
-<!--ftopdat>same as fsurfdat </ftopdat-->
-<use_top_solar_rad>.false.</use_top_solar_rad>
 
 <!-- Use the radiation parameterization for fine-scale topographic effects -->
 <use_finetop_rad>.false.</use_finetop_rad>
