@@ -852,7 +852,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    call ice_export_mct(i2x_i, errorCode)
+    call ice_export_mct(i2x_i%rAttr, errorCode)
     if (errorCode /= 0) then
        call mpas_log_write('Error in ice_export_mct', MPAS_LOG_CRIT)
     endif
@@ -884,7 +884,7 @@ contains
 !
 !   get intial state from driver
 !
-    call ice_import_mct(x2i_i, errorCode)
+    call ice_import_mct(x2i_i%rAttr, errorCode)
     if (errorCode /= 0) then
        call mpas_log_write('Error in ice_import_mct', MPAS_LOG_CRIT)
     endif
@@ -1236,7 +1236,7 @@ contains
 !      endif ! config_column_physics_type
 
       ! Import state from coupler
-      call ice_import_mct(x2i_i, ierr)
+      call ice_import_mct(x2i_i%rAttr, ierr)
 #ifdef HAVE_MOAB
       call ice_import_moab(Eclock)
 #ifdef MOABCOMP
@@ -1391,7 +1391,7 @@ contains
 
       ! Export state to coupler
       if (debugOn) call mpas_log_write('Exporting state', masterOnly=.true.)
-      call ice_export_mct(i2x_i, ierr)
+      call ice_export_mct(i2x_i%rAttr, ierr)
 #ifdef HAVE_MOAB
       call ice_export_moab(EClock)
 #ifdef MOABCOMP
@@ -2131,7 +2131,7 @@ contains
 
 ! !INPUT/OUTPUT PARAMETERS:
 
-    type(mct_aVect), intent(inout) :: x2i_i
+    real(kind=RKIND), intent(inout) :: x2i_i(:,:)
 
 ! !OUTPUT PARAMETERS:
 
@@ -2367,17 +2367,17 @@ contains
 
       do i = 1, nCellsSolve
         n = n + 1
-        seaSurfaceTemperature(i)       = x2i_i % rAttr(index_x2i_So_t, n)
-        seaSurfaceSalinity(i)          = x2i_i % rAttr(index_x2i_So_s, n)
+        seaSurfaceTemperature(i)       = x2i_i(index_x2i_So_t, n)
+        seaSurfaceSalinity(i)          = x2i_i(index_x2i_So_s, n)
 
 !        if (trim(config_column_physics_type) == "icepack") then
            seaFreezingTemperature(i) = icepack_sea_freezing_temperature(seaSurfaceSalinity(i))
 !        endif ! config_column_physics_type
 
-        uOceanVelocity(i)              = x2i_i % rAttr(index_x2i_So_u, n)
-        vOceanVelocity(i)              = x2i_i % rAttr(index_x2i_So_v, n)
-        seaSurfaceTiltU(i)             = x2i_i % rAttr(index_x2i_So_dhdx, n)
-        seaSurfaceTiltV(i)             = x2i_i % rAttr(index_x2i_So_dhdy, n)
+        uOceanVelocity(i)              = x2i_i(index_x2i_So_u, n)
+        vOceanVelocity(i)              = x2i_i(index_x2i_So_v, n)
+        seaSurfaceTiltU(i)             = x2i_i(index_x2i_So_dhdx, n)
+        seaSurfaceTiltV(i)             = x2i_i(index_x2i_So_dhdy, n)
 
         if (trim(config_ocean_surface_type) == "free") then ! free surface (MPAS-O)
 
@@ -2385,9 +2385,9 @@ contains
            ! when it is positive and frazilMassFlux is positive. Conversely, freezingMeltingPotential(i)
            ! is negative when there is the melting potential in which case frazilMassFlux is zero.
 
-           freezingMeltingPotential(i) = x2i_i % rAttr(index_x2i_Fioo_q, n)
+           freezingMeltingPotential(i) = x2i_i(index_x2i_Fioo_q, n)
 
-           frazilMassFlux              = x2i_i % rAttr(index_x2i_Fioo_frazil, n)
+           frazilMassFlux              = x2i_i(index_x2i_Fioo_frazil, n)
 
            ! Now determine the sea ice mass associated with the frazil heat flux given when
            ! freezingMeltingPotential(i) is positive. This produces a revised mass flux, given
@@ -2402,136 +2402,136 @@ contains
 
         else ! non-free surface (SOM)
 
-           freezingMeltingPotential(i) = x2i_i % rAttr(index_x2i_Fioo_q, n)
+           freezingMeltingPotential(i) = x2i_i(index_x2i_Fioo_q, n)
 
         endif
 
-        airLevelHeight(i)              = x2i_i % rAttr(index_x2i_Sa_z, n)
-        airPotentialTemperature(i)     = x2i_i % rAttr(index_x2i_Sa_ptem, n)
-        airTemperature(i)              = x2i_i % rAttr(index_x2i_Sa_tbot, n)
-        airSpecificHumidity(i)         = x2i_i % rAttr(index_x2i_Sa_shum, n)
-        airDensity(i)                  = x2i_i % rAttr(index_x2i_Sa_dens, n)
-        shortwaveVisibleDirectDown(i)  = x2i_i % rAttr(index_x2i_Faxa_swvdr, n)
-        shortwaveVisibleDiffuseDown(i) = x2i_i % rAttr(index_x2i_Faxa_swvdf, n)
-        shortwaveIRDirectDown(i)       = x2i_i % rAttr(index_x2i_Faxa_swndr, n)
-        shortwaveIRDiffuseDown(i)      = x2i_i % rAttr(index_x2i_Faxa_swndf, n)
-        longwaveDown(i)                = x2i_i % rAttr(index_x2i_Faxa_lwdn, n)
-        rainfallRate(i)                = x2i_i % rAttr(index_x2i_Faxa_rain, n)
-        snowfallRate(i)                = x2i_i % rAttr(index_x2i_Faxa_snow, n)
-        uAirVelocity(i)                = x2i_i % rAttr(index_x2i_Sa_u, n)
-        vAirVelocity(i)                = x2i_i % rAttr(index_x2i_Sa_v, n)
+        airLevelHeight(i)              = x2i_i(index_x2i_Sa_z, n)
+        airPotentialTemperature(i)     = x2i_i(index_x2i_Sa_ptem, n)
+        airTemperature(i)              = x2i_i(index_x2i_Sa_tbot, n)
+        airSpecificHumidity(i)         = x2i_i(index_x2i_Sa_shum, n)
+        airDensity(i)                  = x2i_i(index_x2i_Sa_dens, n)
+        shortwaveVisibleDirectDown(i)  = x2i_i(index_x2i_Faxa_swvdr, n)
+        shortwaveVisibleDiffuseDown(i) = x2i_i(index_x2i_Faxa_swvdf, n)
+        shortwaveIRDirectDown(i)       = x2i_i(index_x2i_Faxa_swndr, n)
+        shortwaveIRDiffuseDown(i)      = x2i_i(index_x2i_Faxa_swndf, n)
+        longwaveDown(i)                = x2i_i(index_x2i_Faxa_lwdn, n)
+        rainfallRate(i)                = x2i_i(index_x2i_Faxa_rain, n)
+        snowfallRate(i)                = x2i_i(index_x2i_Faxa_snow, n)
+        uAirVelocity(i)                = x2i_i(index_x2i_Sa_u, n)
+        vAirVelocity(i)                = x2i_i(index_x2i_Sa_v, n)
 
         ! set aerosols, if configured
         if (config_use_aerosols) then
            if (config_use_modal_aerosols) then
-              atmosAerosolFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_bcphodry, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_bcphidry, n)
-              atmosAerosolFlux(2,i) = x2i_i % rAttr(index_x2i_Faxa_bcphiwet, n)
+              atmosAerosolFlux(1,i) = x2i_i(index_x2i_Faxa_bcphodry, n) &
+                                    + x2i_i(index_x2i_Faxa_bcphidry, n)
+              atmosAerosolFlux(2,i) = x2i_i(index_x2i_Faxa_bcphiwet, n)
               ! combine all the dust into one category
-              atmosAerosolFlux(3,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet1, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstwet2, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstwet3, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstwet4, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstdry1, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstdry2, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstdry3, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstdry4, n)
+              atmosAerosolFlux(3,i) = x2i_i(index_x2i_Faxa_dstwet1, n) &
+                                    + x2i_i(index_x2i_Faxa_dstwet2, n) &
+                                    + x2i_i(index_x2i_Faxa_dstwet3, n) &
+                                    + x2i_i(index_x2i_Faxa_dstwet4, n) &
+                                    + x2i_i(index_x2i_Faxa_dstdry1, n) &
+                                    + x2i_i(index_x2i_Faxa_dstdry2, n) &
+                                    + x2i_i(index_x2i_Faxa_dstdry3, n) &
+                                    + x2i_i(index_x2i_Faxa_dstdry4, n)
            else
-              atmosAerosolFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_bcphodry, n)
-              atmosAerosolFlux(2,i) = x2i_i % rAttr(index_x2i_Faxa_bcphidry, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_bcphiwet, n)
+              atmosAerosolFlux(1,i) = x2i_i(index_x2i_Faxa_bcphodry, n)
+              atmosAerosolFlux(2,i) = x2i_i(index_x2i_Faxa_bcphidry, n) &
+                                    + x2i_i(index_x2i_Faxa_bcphiwet, n)
               ! combine all the dust into one category
-              atmosAerosolFlux(3,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet1, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstwet2, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstwet3, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstwet4, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstdry1, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstdry2, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstdry3, n) &
-                                    + x2i_i % rAttr(index_x2i_Faxa_dstdry4, n)
+              atmosAerosolFlux(3,i) = x2i_i(index_x2i_Faxa_dstwet1, n) &
+                                    + x2i_i(index_x2i_Faxa_dstwet2, n) &
+                                    + x2i_i(index_x2i_Faxa_dstwet3, n) &
+                                    + x2i_i(index_x2i_Faxa_dstwet4, n) &
+                                    + x2i_i(index_x2i_Faxa_dstdry1, n) &
+                                    + x2i_i(index_x2i_Faxa_dstdry2, n) &
+                                    + x2i_i(index_x2i_Faxa_dstdry3, n) &
+                                    + x2i_i(index_x2i_Faxa_dstdry4, n)
            endif
         endif
 
         ! set aerosols, if configured
         if (config_use_zaerosols .or. config_use_column_biogeochemistry) then
            call mpas_pool_get_array(biogeochemistry, 'oceanZAerosolConc', oceanZAerosolConc)
-           oceanZAerosolConc(1,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer1, n)
-           oceanZAerosolConc(2,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer2, n)
-           oceanZAerosolConc(3,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer3, n)
-           oceanZAerosolConc(4,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer4, n)
-           oceanZAerosolConc(5,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer5, n)
-           oceanZAerosolConc(6,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer6, n)
+           oceanZAerosolConc(1,i)        = 0.0_RKIND !x2i_i(index_x2i_So_zaer1, n)
+           oceanZAerosolConc(2,i)        = 0.0_RKIND !x2i_i(index_x2i_So_zaer2, n)
+           oceanZAerosolConc(3,i)        = 0.0_RKIND !x2i_i(index_x2i_So_zaer3, n)
+           oceanZAerosolConc(4,i)        = 0.0_RKIND !x2i_i(index_x2i_So_zaer4, n)
+           oceanZAerosolConc(5,i)        = 0.0_RKIND !x2i_i(index_x2i_So_zaer5, n)
+           oceanZAerosolConc(6,i)        = 0.0_RKIND !x2i_i(index_x2i_So_zaer6, n)
         end if
         if (config_use_zaerosols) then
            if (config_use_modal_aerosols) then
-              atmosBlackCarbonFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_bcphodry, n) &
-                                        + x2i_i % rAttr(index_x2i_Faxa_bcphidry, n)
-              atmosBlackCarbonFlux(2,i) = x2i_i % rAttr(index_x2i_Faxa_bcphiwet, n)
+              atmosBlackCarbonFlux(1,i) = x2i_i(index_x2i_Faxa_bcphodry, n) &
+                                        + x2i_i(index_x2i_Faxa_bcphidry, n)
+              atmosBlackCarbonFlux(2,i) = x2i_i(index_x2i_Faxa_bcphiwet, n)
               !combine wet and dry dust
-              atmosDustFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet1, n) &
-                                 + x2i_i % rAttr(index_x2i_Faxa_dstdry1, n)
-              atmosDustFlux(2,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet2, n) &
-                                 + x2i_i % rAttr(index_x2i_Faxa_dstdry2, n)
-              atmosDustFlux(3,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet3, n) &
-                                 + x2i_i % rAttr(index_x2i_Faxa_dstdry3, n)
-              atmosDustFlux(4,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet4, n) &
-                                 + x2i_i % rAttr(index_x2i_Faxa_dstdry4, n)
+              atmosDustFlux(1,i) = x2i_i(index_x2i_Faxa_dstwet1, n) &
+                                 + x2i_i(index_x2i_Faxa_dstdry1, n)
+              atmosDustFlux(2,i) = x2i_i(index_x2i_Faxa_dstwet2, n) &
+                                 + x2i_i(index_x2i_Faxa_dstdry2, n)
+              atmosDustFlux(3,i) = x2i_i(index_x2i_Faxa_dstwet3, n) &
+                                 + x2i_i(index_x2i_Faxa_dstdry3, n)
+              atmosDustFlux(4,i) = x2i_i(index_x2i_Faxa_dstwet4, n) &
+                                 + x2i_i(index_x2i_Faxa_dstdry4, n)
 
-              atmosWetDustFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet1, n)
-              atmosWetDustFlux(2,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet2, n)
-              atmosWetDustFlux(3,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet3, n)
-              atmosWetDustFlux(4,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet4, n)
+              atmosWetDustFlux(1,i) = x2i_i(index_x2i_Faxa_dstwet1, n)
+              atmosWetDustFlux(2,i) = x2i_i(index_x2i_Faxa_dstwet2, n)
+              atmosWetDustFlux(3,i) = x2i_i(index_x2i_Faxa_dstwet3, n)
+              atmosWetDustFlux(4,i) = x2i_i(index_x2i_Faxa_dstwet4, n)
 
-              atmosDryDustFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_dstdry1, n)
-              atmosDryDustFlux(2,i) = x2i_i % rAttr(index_x2i_Faxa_dstdry2, n)
-              atmosDryDustFlux(3,i) = x2i_i % rAttr(index_x2i_Faxa_dstdry3, n)
-              atmosDryDustFlux(4,i) = x2i_i % rAttr(index_x2i_Faxa_dstdry4, n)
+              atmosDryDustFlux(1,i) = x2i_i(index_x2i_Faxa_dstdry1, n)
+              atmosDryDustFlux(2,i) = x2i_i(index_x2i_Faxa_dstdry2, n)
+              atmosDryDustFlux(3,i) = x2i_i(index_x2i_Faxa_dstdry3, n)
+              atmosDryDustFlux(4,i) = x2i_i(index_x2i_Faxa_dstdry4, n)
            else
-              atmosBlackCarbonFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_bcphodry, n)
-              atmosBlackCarbonFlux(2,i) = x2i_i % rAttr(index_x2i_Faxa_bcphidry, n) &
-                                        + x2i_i % rAttr(index_x2i_Faxa_bcphiwet, n)
+              atmosBlackCarbonFlux(1,i) = x2i_i(index_x2i_Faxa_bcphodry, n)
+              atmosBlackCarbonFlux(2,i) = x2i_i(index_x2i_Faxa_bcphidry, n) &
+                                        + x2i_i(index_x2i_Faxa_bcphiwet, n)
               ! combine wet and dry dust
-              atmosDustFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet1, n) &
-                                 + x2i_i % rAttr(index_x2i_Faxa_dstdry1, n)
-              atmosDustFlux(2,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet2, n) &
-                                 + x2i_i % rAttr(index_x2i_Faxa_dstdry2, n)
-              atmosDustFlux(3,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet3, n) &
-                                 + x2i_i % rAttr(index_x2i_Faxa_dstdry3, n)
-              atmosDustFlux(4,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet4, n) &
-                                 + x2i_i % rAttr(index_x2i_Faxa_dstdry4, n)
+              atmosDustFlux(1,i) = x2i_i(index_x2i_Faxa_dstwet1, n) &
+                                 + x2i_i(index_x2i_Faxa_dstdry1, n)
+              atmosDustFlux(2,i) = x2i_i(index_x2i_Faxa_dstwet2, n) &
+                                 + x2i_i(index_x2i_Faxa_dstdry2, n)
+              atmosDustFlux(3,i) = x2i_i(index_x2i_Faxa_dstwet3, n) &
+                                 + x2i_i(index_x2i_Faxa_dstdry3, n)
+              atmosDustFlux(4,i) = x2i_i(index_x2i_Faxa_dstwet4, n) &
+                                 + x2i_i(index_x2i_Faxa_dstdry4, n)
 
-              atmosDryDustFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_dstdry1, n)
-              atmosDryDustFlux(2,i) = x2i_i % rAttr(index_x2i_Faxa_dstdry2, n)
-              atmosDryDustFlux(3,i) = x2i_i % rAttr(index_x2i_Faxa_dstdry3, n)
-              atmosDryDustFlux(4,i) = x2i_i % rAttr(index_x2i_Faxa_dstdry4, n)
+              atmosDryDustFlux(1,i) = x2i_i(index_x2i_Faxa_dstdry1, n)
+              atmosDryDustFlux(2,i) = x2i_i(index_x2i_Faxa_dstdry2, n)
+              atmosDryDustFlux(3,i) = x2i_i(index_x2i_Faxa_dstdry3, n)
+              atmosDryDustFlux(4,i) = x2i_i(index_x2i_Faxa_dstdry4, n)
 
-              atmosWetDustFlux(1,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet1, n)
-              atmosWetDustFlux(2,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet2, n)
-              atmosWetDustFlux(3,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet3, n)
-              atmosWetDustFlux(4,i) = x2i_i % rAttr(index_x2i_Faxa_dstwet4, n)
+              atmosWetDustFlux(1,i) = x2i_i(index_x2i_Faxa_dstwet1, n)
+              atmosWetDustFlux(2,i) = x2i_i(index_x2i_Faxa_dstwet2, n)
+              atmosWetDustFlux(3,i) = x2i_i(index_x2i_Faxa_dstwet3, n)
+              atmosWetDustFlux(4,i) = x2i_i(index_x2i_Faxa_dstwet4, n)
            endif
         endif
         ! import biogeochemistry fields, if configured
         if (config_use_column_biogeochemistry .and. config_couple_biogeochemistry_fields) then
-           oceanAlgaeConc(1,i)           = x2i_i % rAttr(index_x2i_So_algae1, n)
-           oceanAlgaeConc(2,i)           = x2i_i % rAttr(index_x2i_So_algae2, n)
-           oceanAlgaeConc(3,i)           = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_algae3, n)
-           oceanDOCConc(1,i)             = x2i_i % rAttr(index_x2i_So_doc1, n) * DOCPoolFractions(1)
-           oceanDOCConc(2,i)             = x2i_i % rAttr(index_x2i_So_doc2, n) * DOCPoolFractions(2)
+           oceanAlgaeConc(1,i)           = x2i_i(index_x2i_So_algae1, n)
+           oceanAlgaeConc(2,i)           = x2i_i(index_x2i_So_algae2, n)
+           oceanAlgaeConc(3,i)           = 0.0_RKIND !x2i_i(index_x2i_So_algae3, n)
+           oceanDOCConc(1,i)             = x2i_i(index_x2i_So_doc1, n) * DOCPoolFractions(1)
+           oceanDOCConc(2,i)             = x2i_i(index_x2i_So_doc2, n) * DOCPoolFractions(2)
            oceanDOCConc(3,i)             = 0.0_RKIND
-           oceanDICConc(1,i)             = x2i_i % rAttr(index_x2i_So_dic1, n)
-           oceanDONConc(1,i)             = x2i_i % rAttr(index_x2i_So_doc3, n) * DOCPoolFractions(3) &
+           oceanDICConc(1,i)             = x2i_i(index_x2i_So_dic1, n)
+           oceanDONConc(1,i)             = x2i_i(index_x2i_So_doc3, n) * DOCPoolFractions(3) &
               /carbonToNitrogenRatioDON(1)
-           oceanNitrateConc(i)           = x2i_i % rAttr(index_x2i_So_no3, n)
-           oceanSilicateConc(i)          = x2i_i % rAttr(index_x2i_So_sio3, n)
-           oceanAmmoniumConc(i)          = x2i_i % rAttr(index_x2i_So_nh4, n)
-           oceanDMSConc(i)               = x2i_i % rAttr(index_x2i_So_dms, n)
-           oceanDMSPConc(i)              = x2i_i % rAttr(index_x2i_So_dmsp, n)
-           oceanHumicsConc(i)            = x2i_i % rAttr(index_x2i_So_docr, n)
-           oceanParticulateIronConc(1,i) = x2i_i % rAttr(index_x2i_So_fep1, n)
-           oceanParticulateIronConc(2,i) = x2i_i % rAttr(index_x2i_So_fep2, n)
-           oceanDissolvedIronConc(1,i)   = x2i_i % rAttr(index_x2i_So_fed1, n)
-           oceanDissolvedIronConc(2,i)   = x2i_i % rAttr(index_x2i_So_fed2, n)
+           oceanNitrateConc(i)           = x2i_i(index_x2i_So_no3, n)
+           oceanSilicateConc(i)          = x2i_i(index_x2i_So_sio3, n)
+           oceanAmmoniumConc(i)          = x2i_i(index_x2i_So_nh4, n)
+           oceanDMSConc(i)               = x2i_i(index_x2i_So_dms, n)
+           oceanDMSPConc(i)              = x2i_i(index_x2i_So_dmsp, n)
+           oceanHumicsConc(i)            = x2i_i(index_x2i_So_docr, n)
+           oceanParticulateIronConc(1,i) = x2i_i(index_x2i_So_fep1, n)
+           oceanParticulateIronConc(2,i) = x2i_i(index_x2i_So_fep2, n)
+           oceanDissolvedIronConc(1,i)   = x2i_i(index_x2i_So_fed1, n)
+           oceanDissolvedIronConc(2,i)   = x2i_i(index_x2i_So_fed2, n)
         endif
       end do
 
@@ -2694,7 +2694,7 @@ contains
 !
 ! !INPUT/OUTPUT PARAMETERS:
 
-   type(mct_aVect)   , intent(inout) :: i2x_i
+   real(kind=RKIND)   , intent(inout) :: i2x_i(:,:)
 
 ! !OUTPUT PARAMETERS:
 
@@ -2811,7 +2811,7 @@ contains
 
    errorCode = 0
    n = 0
-   i2x_i % rAttr(: ,:) = 0.0_RKIND
+   i2x_i(: ,:) = 0.0_RKIND
    block_ptr => domain % blocklist
    do while(associated(block_ptr))
 
@@ -2958,81 +2958,81 @@ contains
               config_rotate_cartesian_grid)
 
          !-------states--------------------
-         i2x_i % rAttr(index_i2x_Si_ifrac ,n)    = ailohi
+         i2x_i(index_i2x_Si_ifrac ,n)    = ailohi
 
          if (config_use_data_icebergs) then
-            i2x_i % rAttr(index_i2x_Fioi_bergw,n) = bergFreshwaterFlux(i)
-            i2x_i % rAttr(index_i2x_Fioi_bergh,n) = bergLatentHeatFlux(i)
+            i2x_i(index_i2x_Fioi_bergw,n) = bergFreshwaterFlux(i)
+            i2x_i(index_i2x_Fioi_bergh,n) = bergLatentHeatFlux(i)
          endif
 
          if ( ailohi > 0.0_RKIND ) then
 
             !-------states--------------------
-            i2x_i % rAttr(index_i2x_Si_t     ,n)  = Tsrf
-            i2x_i % rAttr(index_i2x_Si_bpress,n)  = basalPressure
-            i2x_i % rAttr(index_i2x_Si_u10   ,n)  = atmosReferenceSpeed10m(i)
-            i2x_i % rAttr(index_i2x_Si_u10withgusts,n) = atmosReferenceSpeed10m(i)
-            i2x_i % rAttr(index_i2x_Si_tref  ,n)  = atmosReferenceTemperature2m(i)
-            i2x_i % rAttr(index_i2x_Si_qref  ,n)  = atmosReferenceHumidity2m(i)
-            i2x_i % rAttr(index_i2x_Si_snowh ,n)  = snowVolumeCell(i) / ailohi
-            i2x_i % rAttr(index_i2x_Si_ithick,n)  = iceVolumeCell(i) / ailohi
+            i2x_i(index_i2x_Si_t     ,n)  = Tsrf
+            i2x_i(index_i2x_Si_bpress,n)  = basalPressure
+            i2x_i(index_i2x_Si_u10   ,n)  = atmosReferenceSpeed10m(i)
+            i2x_i(index_i2x_Si_u10withgusts,n) = atmosReferenceSpeed10m(i)
+            i2x_i(index_i2x_Si_tref  ,n)  = atmosReferenceTemperature2m(i)
+            i2x_i(index_i2x_Si_qref  ,n)  = atmosReferenceHumidity2m(i)
+            i2x_i(index_i2x_Si_snowh ,n)  = snowVolumeCell(i) / ailohi
+            i2x_i(index_i2x_Si_ithick,n)  = iceVolumeCell(i) / ailohi
 
             !--- a/i fluxes computed by ice
-            i2x_i % rAttr(index_i2x_Faii_taux ,n) = tauxa
-            i2x_i % rAttr(index_i2x_Faii_tauy ,n) = tauya
-            i2x_i % rAttr(index_i2x_Faii_lat  ,n) = latentHeatFlux(i)
-            i2x_i % rAttr(index_i2x_Faii_sen  ,n) = sensibleHeatFlux(i)
-            i2x_i % rAttr(index_i2x_Faii_lwup ,n) = longwaveUp(i)
-            i2x_i % rAttr(index_i2x_Faii_evap ,n) = evaporativeWaterFlux(i)
-            i2x_i % rAttr(index_i2x_Faii_swnet,n) = absorbedShortwaveFlux(i)
-            i2x_i % rAttr(index_i2x_Faii_evap ,n) = evaporativeWaterFlux(i)
+            i2x_i(index_i2x_Faii_taux ,n) = tauxa
+            i2x_i(index_i2x_Faii_tauy ,n) = tauya
+            i2x_i(index_i2x_Faii_lat  ,n) = latentHeatFlux(i)
+            i2x_i(index_i2x_Faii_sen  ,n) = sensibleHeatFlux(i)
+            i2x_i(index_i2x_Faii_lwup ,n) = longwaveUp(i)
+            i2x_i(index_i2x_Faii_evap ,n) = evaporativeWaterFlux(i)
+            i2x_i(index_i2x_Faii_swnet,n) = absorbedShortwaveFlux(i)
+            i2x_i(index_i2x_Faii_evap ,n) = evaporativeWaterFlux(i)
 
             if (config_use_column_shortwave) then
-               i2x_i % rAttr(index_i2x_Si_avsdr ,n)  = albedoVisibleDirectCell(i)
-               i2x_i % rAttr(index_i2x_Si_anidr ,n)  = albedoIRDirectCell(i)
-               i2x_i % rAttr(index_i2x_Si_avsdf ,n)  = albedoVisibleDiffuseCell(i)
-               i2x_i % rAttr(index_i2x_Si_anidf ,n)  = albedoIRDiffuseCell(i)
+               i2x_i(index_i2x_Si_avsdr ,n)  = albedoVisibleDirectCell(i)
+               i2x_i(index_i2x_Si_anidr ,n)  = albedoIRDirectCell(i)
+               i2x_i(index_i2x_Si_avsdf ,n)  = albedoVisibleDiffuseCell(i)
+               i2x_i(index_i2x_Si_anidf ,n)  = albedoIRDiffuseCell(i)
 
-               i2x_i % rAttr(index_i2x_Faii_swnet,n) = absorbedShortwaveFlux(i)
+               i2x_i(index_i2x_Faii_swnet,n) = absorbedShortwaveFlux(i)
             endif
 
             ! i/o fluxes computed by ice, as well as additional freshwater and salt calculated at the last
             ! coupling import and needed to grow sea ice from frazil passed from the ocean model in the
             ! field frazilMassAdjust.
-            i2x_i % rAttr(index_i2x_Fioi_melth,n) = oceanHeatFlux(i)
-            i2x_i % rAttr(index_i2x_Fioi_swpen,n) = oceanShortwaveFlux(i)
-            i2x_i % rAttr(index_i2x_Fioi_meltw,n) = oceanFreshWaterFlux(i) + frazilMassAdjust(i)/ailohi
-            i2x_i % rAttr(index_i2x_Fioi_salt ,n) = oceanSaltFlux(i) + seaiceReferenceSalinity*0.001_RKIND*frazilMassAdjust(i)/ailohi
-            i2x_i % rAttr(index_i2x_Fioi_taux ,n) = tauxo
-            i2x_i % rAttr(index_i2x_Fioi_tauy ,n) = tauyo
+            i2x_i(index_i2x_Fioi_melth,n) = oceanHeatFlux(i)
+            i2x_i(index_i2x_Fioi_swpen,n) = oceanShortwaveFlux(i)
+            i2x_i(index_i2x_Fioi_meltw,n) = oceanFreshWaterFlux(i) + frazilMassAdjust(i)/ailohi
+            i2x_i(index_i2x_Fioi_salt ,n) = oceanSaltFlux(i) + seaiceReferenceSalinity*0.001_RKIND*frazilMassAdjust(i)/ailohi
+            i2x_i(index_i2x_Fioi_taux ,n) = tauxo
+            i2x_i(index_i2x_Fioi_tauy ,n) = tauyo
 
             ! export biogeochemistry fields, if configured
             if (config_use_column_biogeochemistry .and. config_couple_biogeochemistry_fields) then
                ! convert from mmol N/m^3 to mmol C/m^3
-               i2x_i % rAttr(index_i2x_Fioi_algae1,n) = oceanAlgaeFlux(1,i) * carbonToNitrogenRatioAlgae(1)
-               i2x_i % rAttr(index_i2x_Fioi_algae2,n) = oceanAlgaeFlux(2,i) * carbonToNitrogenRatioAlgae(2)
-               i2x_i % rAttr(index_i2x_Fioi_algae3,n) = oceanAlgaeFlux(3,i) * carbonToNitrogenRatioAlgae(3)
-               i2x_i % rAttr(index_i2x_Fioi_doc1  ,n) = oceanDOCFlux(1,i)
-               i2x_i % rAttr(index_i2x_Fioi_doc2  ,n) = oceanDOCFlux(2,i)
-               i2x_i % rAttr(index_i2x_Fioi_doc3  ,n) = oceanDONFlux(1,i) * carbonToNitrogenRatioDON(1)
-               i2x_i % rAttr(index_i2x_Fioi_dic1  ,n) = oceanDICFlux(1,i)
-               i2x_i % rAttr(index_i2x_Fioi_don1  ,n) = oceanDONFlux(1,i)
-               i2x_i % rAttr(index_i2x_Fioi_no3   ,n) = oceanNitrateFlux(i)
-               i2x_i % rAttr(index_i2x_Fioi_sio3  ,n) = oceanSilicateFlux(i)
-               i2x_i % rAttr(index_i2x_Fioi_nh4   ,n) = oceanAmmoniumFlux(i)
-               i2x_i % rAttr(index_i2x_Fioi_dms   ,n) = oceanDMSFlux(i)
-               i2x_i % rAttr(index_i2x_Fioi_dmspp ,n) = oceanDMSPpFlux(i)
-               i2x_i % rAttr(index_i2x_Fioi_dmspd ,n) = oceanDMSPdFlux(i)
-               i2x_i % rAttr(index_i2x_Fioi_docr  ,n) = oceanHumicsFlux(i)
+               i2x_i(index_i2x_Fioi_algae1,n) = oceanAlgaeFlux(1,i) * carbonToNitrogenRatioAlgae(1)
+               i2x_i(index_i2x_Fioi_algae2,n) = oceanAlgaeFlux(2,i) * carbonToNitrogenRatioAlgae(2)
+               i2x_i(index_i2x_Fioi_algae3,n) = oceanAlgaeFlux(3,i) * carbonToNitrogenRatioAlgae(3)
+               i2x_i(index_i2x_Fioi_doc1  ,n) = oceanDOCFlux(1,i)
+               i2x_i(index_i2x_Fioi_doc2  ,n) = oceanDOCFlux(2,i)
+               i2x_i(index_i2x_Fioi_doc3  ,n) = oceanDONFlux(1,i) * carbonToNitrogenRatioDON(1)
+               i2x_i(index_i2x_Fioi_dic1  ,n) = oceanDICFlux(1,i)
+               i2x_i(index_i2x_Fioi_don1  ,n) = oceanDONFlux(1,i)
+               i2x_i(index_i2x_Fioi_no3   ,n) = oceanNitrateFlux(i)
+               i2x_i(index_i2x_Fioi_sio3  ,n) = oceanSilicateFlux(i)
+               i2x_i(index_i2x_Fioi_nh4   ,n) = oceanAmmoniumFlux(i)
+               i2x_i(index_i2x_Fioi_dms   ,n) = oceanDMSFlux(i)
+               i2x_i(index_i2x_Fioi_dmspp ,n) = oceanDMSPpFlux(i)
+               i2x_i(index_i2x_Fioi_dmspd ,n) = oceanDMSPdFlux(i)
+               i2x_i(index_i2x_Fioi_docr  ,n) = oceanHumicsFlux(i)
                ! convert from umol Fe/m^3 to mmol Fe/m^3
-               i2x_i % rAttr(index_i2x_Fioi_fep1  ,n) = oceanParticulateIronFlux(1,i) / 1000._RKIND
-               i2x_i % rAttr(index_i2x_Fioi_fep2  ,n) = oceanParticulateIronFlux(2,i) / 1000._RKIND
-               i2x_i % rAttr(index_i2x_Fioi_fed1  ,n) = oceanDissolvedIronFlux(1,i) / 1000._RKIND
-               i2x_i % rAttr(index_i2x_Fioi_fed2  ,n) = oceanDissolvedIronFlux(2,i) / 1000._RKIND
+               i2x_i(index_i2x_Fioi_fep1  ,n) = oceanParticulateIronFlux(1,i) / 1000._RKIND
+               i2x_i(index_i2x_Fioi_fep2  ,n) = oceanParticulateIronFlux(2,i) / 1000._RKIND
+               i2x_i(index_i2x_Fioi_fed1  ,n) = oceanDissolvedIronFlux(1,i) / 1000._RKIND
+               i2x_i(index_i2x_Fioi_fed2  ,n) = oceanDissolvedIronFlux(2,i) / 1000._RKIND
             endif
             ! export dust, if configured kg/m2/s of dust
             if (config_use_zaerosols .and. config_couple_biogeochemistry_fields) &
-               i2x_i % rAttr(index_i2x_Fioi_dust1 ,n) = oceanDustIronFlux(i)
+               i2x_i(index_i2x_Fioi_dust1 ,n) = oceanDustIronFlux(i)
          endif
       enddo
 
