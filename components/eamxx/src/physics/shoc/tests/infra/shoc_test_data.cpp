@@ -699,7 +699,7 @@ void compute_shoc_mix_shoc_length_host(Int nlev, Int shcol, Real* tke, Real* bru
 
     const Real length_fac = 0.5;
     SHF::compute_shoc_mix_shoc_length(team, nlev, length_fac, tke_s, brunt_s, zt_grid_s,
-         shoc_mix_s);
+         l_inf_s, shoc_mix_s);
   });
 
   // Sync back to host
