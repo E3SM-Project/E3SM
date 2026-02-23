@@ -109,6 +109,10 @@ PressureGrad::PressureGrad(
           "PGrad: Unknown PressureGradType in config, defaulting to centered");
    }
 
+   // Temporary: initialization of tidal potential and SAL
+   TidalPotential = Array1DReal("TidalPotential", Mesh->NCellsSize);
+   SelfAttractionLoading = Array1DReal("SelfAttractionLoading", Mesh->NCellsSize);
+
 } // end constructor
 
 //------------------------------------------------------------------------------
@@ -161,6 +165,8 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
    OMEGA_SCOPE(LocHighOrderPGrad, HighOrderPGrad);
    OMEGA_SCOPE(LocMinLayerEdgeBot, MinLayerEdgeBot);
    OMEGA_SCOPE(LocMaxLayerEdgeTop, MaxLayerEdgeTop);
+   OMEGA_SCOPE(LocTidalPotential, TidalPotential);
+   OMEGA_SCOPE(LocSelfAttractionLoading, SelfAttractionLoading);
 
    const Array2DReal &PressureMid       = VCoord->PressureMid;
    const Array2DReal &PressureInterface = VCoord->PressureInterface;
@@ -184,7 +190,8 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
                     LocCenteredPGrad(Tend, IEdge, KChunk, PressureMid,
-                                     PressureInterface, ZInterface, LayerThick,
+                                     PressureInterface, ZInterface,
+                                     LocTidalPotential, LocSelfAttractionLoading,
                                      SpecVol);
                  });
           });
@@ -195,14 +202,16 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
       parallelForOuter(
           "pgrad-highorder", {NEdgesAll},
           KOKKOS_LAMBDA(I4 IEdge, const TeamMember &Team) {
-             const int KMin   = MinLayerEdgeBot(IEdge);
-             const int KMax   = MaxLayerEdgeTop(IEdge);
+             const int KMin = LocMinLayerEdgeBot(IEdge);
+             const int KMax = LocMaxLayerEdgeTop(IEdge);
              const int KRange = vertRange(KMin, KMax);
 
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
                     LocHighOrderPGrad(Tend, IEdge, KChunk, PressureMid,
-                                      Geopotential, SpecVol);
+                                      PressureInterface, ZInterface,
+                                      LocTidalPotential, LocSelfAttractionLoading,
+                                      SpecVol);
                  });
           });
    }
