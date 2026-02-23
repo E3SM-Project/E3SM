@@ -3121,30 +3121,32 @@ contains
    enddo ! nt
 
    ! Conservation check: verify that corrections were applied correctly
-   if (redirect_negative_qgwl_flag .and. abs(qgwl_to_redistribute) > 1.0e-15_r8) then
-       ! Sum up all the corrections that were applied
-       local_correction_sum = 0.0_r8
-       do nr = rtmCTL%begr, rtmCTL%endr
-           local_correction_sum = local_correction_sum + qgwl_correction_local(nr)
-       enddo
+   if (redirect_negative_qgwl_flag) then
+      if (abs(qgwl_to_redistribute) > 1.0e-15_r8) then
+          ! Sum up all the corrections that were applied
+          local_correction_sum = 0.0_r8
+          do nr = rtmCTL%begr, rtmCTL%endr
+              local_correction_sum = local_correction_sum + qgwl_correction_local(nr)
+          enddo
 
-       ! Use reprosum for bit-for-bit reproducibility
-       correction_local(1,1) = local_correction_sum
-       call shr_reprosum_calc(correction_local, correction_global, 1, 1, 1, commid=mpicom_rof)
-       global_correction_sum = correction_global(1)
+          ! Use reprosum for bit-for-bit reproducibility
+          correction_local(1,1) = local_correction_sum
+          call shr_reprosum_calc(correction_local, correction_global, 1, 1, 1, commid=mpicom_rof)
+          global_correction_sum = correction_global(1)
 
-       ! Check if total corrections match what we intended to redistribute
-       if (masterproc) then
-           conservation_error = abs(global_correction_sum - qgwl_to_redistribute)
-           if (conservation_error > 1.0e-10_r8) then
-               call shr_sys_flush(iulog)
-               write(iulog, '(A)') trim(subname)//' WARNING: QGWL redistribution error detected!'
-               write(iulog, '(A,ES24.16)') trim(subname)//'   Intended to redistribute = ', qgwl_to_redistribute
-               write(iulog, '(A,ES24.16)') trim(subname)//'   Actually redistributed   = ', global_correction_sum
-               write(iulog, '(A,ES24.16)') trim(subname)//'   Difference               = ', conservation_error
-               call shr_sys_flush(iulog)
-           endif
-       endif
+          ! Check if total corrections match what we intended to redistribute
+          if (masterproc) then
+              conservation_error = abs(global_correction_sum - qgwl_to_redistribute)
+              if (conservation_error > 1.0e-10_r8) then
+                  call shr_sys_flush(iulog)
+                  write(iulog, '(A)') trim(subname)//' WARNING: QGWL redistribution error detected!'
+                  write(iulog, '(A,ES24.16)') trim(subname)//'   Intended to redistribute = ', qgwl_to_redistribute
+                  write(iulog, '(A,ES24.16)') trim(subname)//'   Actually redistributed   = ', global_correction_sum
+                  write(iulog, '(A,ES24.16)') trim(subname)//'   Difference               = ', conservation_error
+                  call shr_sys_flush(iulog)
+              endif
+          endif
+      endif
    endif
 
    ! Deallocate qgwl_correction_local after use
