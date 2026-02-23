@@ -895,12 +895,12 @@ contains
             call shr_sys_abort('Error: fail to get area tag ')
 
          ! set the same data for aream (model area) as area
-         tagname='aream'//C_NULL_CHAR
-         ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-                                          etype, &
-                                          data)
-         if (ierr > 0 )  &
-            call shr_sys_abort('Error: fail to set aream tag ')
+         ! tagname='aream'//C_NULL_CHAR
+         ! ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
+         !                                  etype, &
+         !                                  data)
+         ! if (ierr > 0 )  &
+         !    call shr_sys_abort('Error: fail to set aream tag ')
 
          if (fullmesh) then
             do n = 1, lsize
