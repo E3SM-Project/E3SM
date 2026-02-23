@@ -896,7 +896,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    call ocn_export_mct(o2x_o, errorCode)
+    call ocn_export_mct(o2x_o % rAttr, errorCode)
     if (errorCode /= 0) then
        call mpas_log_write('ERROR in ocn_export_mct', MPAS_LOG_CRIT)
     endif
@@ -990,7 +990,7 @@ contains
 #endif
 #endif
 
-    call ocn_import_mct(x2o_o, errorCode)
+    call ocn_import_mct(x2o_o % rAttr, errorCode)
     if (errorCode /= 0) then
        call mpas_log_write('Error in ocn_import_mct', MPAS_LOG_CRIT)
     endif
@@ -1156,7 +1156,7 @@ contains
 #endif
 
       ! Import state from coupler
-      call ocn_import_mct(x2o_o, ierr)
+      call ocn_import_mct(x2o_o % rAttr, ierr)
       ! Import state from moab coupler
 #ifdef HAVE_MOAB
 
@@ -1405,7 +1405,7 @@ contains
 
       ! Export state to coupler
       if (debugOn) call mpas_log_write('Exporting ocean state')
-      call ocn_export_mct(o2x_o, ierr)
+      call ocn_export_mct(o2x_o % rAttr, ierr)
       if (debugOn) call mpas_log_write('Finished exporting ocean state')
 #ifdef HAVE_MOAB
       call ocn_export_moab(EClock)
@@ -2037,7 +2037,7 @@ contains
 
 ! !INPUT/OUTPUT PARAMETERS:
 
-    type(mct_aVect)   , intent(inout) :: x2o_o
+    real (kind=RKIND), intent(in) :: x2o_o(:,:)
 
 ! !OUTPUT PARAMETERS:
 
@@ -2476,54 +2476,54 @@ contains
         n = n + 1
         if ( windStressZonalField % isActive ) then
            if (config_momentum_use_active_wave) then     
-              windStressZonal(i) = x2o_o % rAttr(index_x2o_Foxx_taux, n) - (x2o_o % rAttr(index_x2o_Faww_Tawx, n) - x2o_o % rAttr(index_x2o_Fwow_Twox, n))
+              windStressZonal(i) = x2o_o(index_x2o_Foxx_taux, n) - (x2o_o(index_x2o_Faww_Tawx, n) - x2o_o(index_x2o_Fwow_Twox, n))
            else
-              windStressZonal(i) = x2o_o % rAttr(index_x2o_Foxx_taux, n)
+              windStressZonal(i) = x2o_o(index_x2o_Foxx_taux, n)
            endif
         end if
         if ( windStressMeridionalField % isActive ) then
            if (config_momentum_use_active_wave) then     
-              windStressMeridional(i) = x2o_o % rAttr(index_x2o_Foxx_tauy, n) - (x2o_o % rAttr(index_x2o_Faww_Tawy, n) - x2o_o % rAttr(index_x2o_Fwow_Twoy, n))
+              windStressMeridional(i) = x2o_o(index_x2o_Foxx_tauy, n) - (x2o_o(index_x2o_Faww_Tawy, n) - x2o_o(index_x2o_Fwow_Twoy, n))
            else
-              windStressMeridional(i) = x2o_o % rAttr(index_x2o_Foxx_tauy, n)
+              windStressMeridional(i) = x2o_o(index_x2o_Foxx_tauy, n)
            endif
         end if
 
         if ( latentHeatFluxField % isActive ) then
-           latentHeatFlux(i) = x2o_o % rAttr(index_x2o_Foxx_lat, n)
+           latentHeatFlux(i) = x2o_o(index_x2o_Foxx_lat, n)
         end if
         if ( sensibleHeatFluxField % isActive ) then
-           sensibleHeatFlux(i) = x2o_o % rAttr(index_x2o_Foxx_sen, n)
+           sensibleHeatFlux(i) = x2o_o(index_x2o_Foxx_sen, n)
         end if
         if ( longWaveHeatFluxUpField % isActive ) then
-           longWaveHeatFluxUp(i) = x2o_o % rAttr(index_x2o_Foxx_lwup, n)
+           longWaveHeatFluxUp(i) = x2o_o(index_x2o_Foxx_lwup, n)
         end if
         if ( longWaveHeatFluxDownField % isActive ) then
-           longWaveHeatFluxDown(i) = x2o_o % rAttr(index_x2o_Faxa_lwdn, n)
+           longWaveHeatFluxDown(i) = x2o_o(index_x2o_Faxa_lwdn, n)
         end if
         if ( evaporationFluxField % isActive ) then
-           evaporationFlux(i) = x2o_o % rAttr(index_x2o_Foxx_evap, n)
+           evaporationFlux(i) = x2o_o(index_x2o_Foxx_evap, n)
         end if
         if ( seaIceHeatFluxField % isActive ) then
-           seaIceHeatFlux(i) = x2o_o % rAttr(index_x2o_Fioi_melth, n)
+           seaIceHeatFlux(i) = x2o_o(index_x2o_Fioi_melth, n)
         end if
         if ( icebergHeatFluxField % isActive ) then
-           icebergHeatFlux(i) = x2o_o % rAttr(index_x2o_Fioi_bergh, n)
+           icebergHeatFlux(i) = x2o_o(index_x2o_Fioi_bergh, n)
         end if
         if ( snowFluxField % isActive ) then
-           snowFlux(i) = x2o_o % rAttr(index_x2o_Faxa_snow, n)
+           snowFlux(i) = x2o_o(index_x2o_Faxa_snow, n)
         end if
         if ( seaIceFreshWaterFluxField % isActive ) then
-           seaIceFreshWaterFlux(i) = x2o_o % rAttr(index_x2o_Fioi_meltw, n)
+           seaIceFreshWaterFlux(i) = x2o_o(index_x2o_Fioi_meltw, n)
         end if
         if ( icebergFreshWaterFluxField % isActive ) then
-           icebergFreshWaterFlux(i) = x2o_o % rAttr(index_x2o_Fioi_bergw, n)
+           icebergFreshWaterFlux(i) = x2o_o(index_x2o_Fioi_bergw, n)
         end if
         if ( seaIceSalinityFluxField % isActive ) then
-           seaIceSalinityFlux(i) = x2o_o % rAttr(index_x2o_Fioi_salt, n)
+           seaIceSalinityFlux(i) = x2o_o(index_x2o_Fioi_salt, n)
         end if
         if ( riverRunoffFluxField % isActive ) then
-           riverRunoffFlux(i) = x2o_o % rAttr(index_x2o_Foxx_rofl, n)
+           riverRunoffFlux(i) = x2o_o(index_x2o_Foxx_rofl, n)
            if (config_remove_ais_river_runoff) then
               if (latCell(i) < -1.04719666667_RKIND) then ! 60S in radians
                  removedRiverRunoffFlux(i) = riverRunoffFlux(i)
@@ -2533,7 +2533,7 @@ contains
            endif
         end if
         if ( iceRunoffFluxField % isActive ) then
-           iceRunoffFlux(i) = x2o_o % rAttr(index_x2o_Foxx_rofi, n)
+           iceRunoffFlux(i) = x2o_o(index_x2o_Foxx_rofi, n)
            if (config_remove_ais_ice_runoff) then
               if (latCell(i) < -0.99483767345_RKIND) then ! 57S in radians
                  removedIceRunoffFlux(i) = iceRunoffFlux(i)
@@ -2543,150 +2543,150 @@ contains
            endif
         end if
         if ( shortWaveHeatFluxField % isActive ) then
-           shortWaveHeatFlux(i) = max(x2o_o % rAttr(index_x2o_Foxx_swnet, n), 0.0_RKIND)
+           shortWaveHeatFlux(i) = max(x2o_o(index_x2o_Foxx_swnet, n), 0.0_RKIND)
         end if
 
         if ( rainFluxField % isActive ) then
-           rainFlux(i) = x2o_o % rAttr(index_x2o_Faxa_rain, n) * precFactor
+           rainFlux(i) = x2o_o(index_x2o_Faxa_rain, n) * precFactor
         end if
         if ( atmosphericPressureField % isActive ) then
-           atmosphericPressure(i) = x2o_o % rAttr(index_x2o_Sa_pslv,   n)
+           atmosphericPressure(i) = x2o_o(index_x2o_Sa_pslv,   n)
         end if
         if ( seaIcePressureField % isActive ) then
            ! Set seaIcePressure to be limited to 5m of pressure
-           seaIcePressure(i) =  min( x2o_o % rAttr(index_x2o_Si_bpress, n), config_density0 * gravity * 5.0_RKIND )
+           seaIcePressure(i) =  min( x2o_o(index_x2o_Si_bpress, n), config_density0 * gravity * 5.0_RKIND )
         end if
         if ( iceFractionField % isActive ) then
-           iceFraction(i) = x2o_o % rAttr(index_x2o_Si_ifrac, n)
+           iceFraction(i) = x2o_o(index_x2o_Si_ifrac, n)
         end if
 
         if (wav_ocn_coup == 'twoway') then
            if ( stokesDriftZonalWavenumberField % isActive ) then
-              stokesDriftZonalWavenumber(1,i) = x2o_o % rAttr(index_x2o_Sw_ustokes_wavenumber_1, n)
-              stokesDriftZonalWavenumber(2,i) = x2o_o % rAttr(index_x2o_Sw_ustokes_wavenumber_2, n)
-              stokesDriftZonalWavenumber(3,i) = x2o_o % rAttr(index_x2o_Sw_ustokes_wavenumber_3, n)
-              stokesDriftZonalWavenumber(4,i) = x2o_o % rAttr(index_x2o_Sw_ustokes_wavenumber_4, n)
-              stokesDriftZonalWavenumber(5,i) = x2o_o % rAttr(index_x2o_Sw_ustokes_wavenumber_5, n)
-              stokesDriftZonalWavenumber(6,i) = x2o_o % rAttr(index_x2o_Sw_ustokes_wavenumber_6, n)
+              stokesDriftZonalWavenumber(1,i) = x2o_o(index_x2o_Sw_ustokes_wavenumber_1, n)
+              stokesDriftZonalWavenumber(2,i) = x2o_o(index_x2o_Sw_ustokes_wavenumber_2, n)
+              stokesDriftZonalWavenumber(3,i) = x2o_o(index_x2o_Sw_ustokes_wavenumber_3, n)
+              stokesDriftZonalWavenumber(4,i) = x2o_o(index_x2o_Sw_ustokes_wavenumber_4, n)
+              stokesDriftZonalWavenumber(5,i) = x2o_o(index_x2o_Sw_ustokes_wavenumber_5, n)
+              stokesDriftZonalWavenumber(6,i) = x2o_o(index_x2o_Sw_ustokes_wavenumber_6, n)
            end if
            if ( stokesDriftMeridionalWavenumberField % isActive ) then
-              stokesDriftMeridionalWavenumber(1,i) = x2o_o % rAttr(index_x2o_Sw_vstokes_wavenumber_1, n)
-              stokesDriftMeridionalWavenumber(2,i) = x2o_o % rAttr(index_x2o_Sw_vstokes_wavenumber_2, n)
-              stokesDriftMeridionalWavenumber(3,i) = x2o_o % rAttr(index_x2o_Sw_vstokes_wavenumber_3, n)
-              stokesDriftMeridionalWavenumber(4,i) = x2o_o % rAttr(index_x2o_Sw_vstokes_wavenumber_4, n)
-              stokesDriftMeridionalWavenumber(5,i) = x2o_o % rAttr(index_x2o_Sw_vstokes_wavenumber_5, n)
-              stokesDriftMeridionalWavenumber(6,i) = x2o_o % rAttr(index_x2o_Sw_vstokes_wavenumber_6, n)
+              stokesDriftMeridionalWavenumber(1,i) = x2o_o(index_x2o_Sw_vstokes_wavenumber_1, n)
+              stokesDriftMeridionalWavenumber(2,i) = x2o_o(index_x2o_Sw_vstokes_wavenumber_2, n)
+              stokesDriftMeridionalWavenumber(3,i) = x2o_o(index_x2o_Sw_vstokes_wavenumber_3, n)
+              stokesDriftMeridionalWavenumber(4,i) = x2o_o(index_x2o_Sw_vstokes_wavenumber_4, n)
+              stokesDriftMeridionalWavenumber(5,i) = x2o_o(index_x2o_Sw_vstokes_wavenumber_5, n)
+              stokesDriftMeridionalWavenumber(6,i) = x2o_o(index_x2o_Sw_vstokes_wavenumber_6, n)
            end if
            if ( significantWaveHeightField % isActive ) then
-              significantWaveHeight(i) = x2o_o % rAttr(index_x2o_Sw_Hs, n)
+              significantWaveHeight(i) = x2o_o(index_x2o_Sw_Hs, n)
            end if
            if ( peakWaveFrequencyField % isActive ) then
-              peakWaveFrequency(i) = x2o_o % rAttr(index_x2o_Sw_Fp, n)
+              peakWaveFrequency(i) = x2o_o(index_x2o_Sw_Fp, n)
            end if
            if ( peakWaveDirectionField % isActive ) then
-              peakWaveDirection(i) = x2o_o % rAttr(index_x2o_Sw_Dp, n)
+              peakWaveDirection(i) = x2o_o(index_x2o_Sw_Dp, n)
            end if
            if ( z0wavField % isActive ) then
-              z0wav(i) = x2o_o % rAttr(index_x2o_Sw_Z0, n)
+              z0wav(i) = x2o_o(index_x2o_Sw_Z0, n)
            end if
            if ( ustarwavField % isActive ) then
-              ustarwav(i) = x2o_o % rAttr(index_x2o_Sw_Ustar, n)
+              ustarwav(i) = x2o_o(index_x2o_Sw_Ustar, n)
            end if
            if ( charnockSeaStateField % isActive ) then
-              charnockSeaState(i) = x2o_o % rAttr(index_x2o_Sw_Charn, n)
+              charnockSeaState(i) = x2o_o(index_x2o_Sw_Charn, n)
            end if
            if ( waveSupportedZonalWindStressField  % isActive ) then
-              waveSupportedZonalWindStress(i) = x2o_o % rAttr(index_x2o_Faww_Tawx, n)
+              waveSupportedZonalWindStress(i) = x2o_o(index_x2o_Faww_Tawx, n)
            end if
            if ( waveSupportedMeridionalWindStressField  % isActive ) then
-              waveSupportedMeridionalWindStress(i) = x2o_o % rAttr(index_x2o_Faww_Tawy, n)
+              waveSupportedMeridionalWindStress(i) = x2o_o(index_x2o_Faww_Tawy, n)
            end if
            if ( waveToOceanZonalWindStressField  % isActive ) then
-              waveToOceanZonalWindStress(i) = x2o_o % rAttr(index_x2o_Fwow_Twox, n)
+              waveToOceanZonalWindStress(i) = x2o_o(index_x2o_Fwow_Twox, n)
            end if
            if ( waveToOceanMeridionalWindStressField  % isActive ) then
-              waveToOceanMeridionalWindStress(i) = x2o_o % rAttr(index_x2o_Fwow_Twoy, n)
+              waveToOceanMeridionalWindStress(i) = x2o_o(index_x2o_Fwow_Twoy, n)
            end if
            if ( waveNetOceanZonalWindStressField  % isActive ) then
-              waveNetOceanZonalWindStress(i) = x2o_o % rAttr(index_x2o_Faow_Tocx, n)
+              waveNetOceanZonalWindStress(i) = x2o_o(index_x2o_Faow_Tocx, n)
            end if
            if ( waveNetOceanMeridionalWindStressField  % isActive ) then
-              waveNetOceanMeridionalWindStress(i) = x2o_o % rAttr(index_x2o_Faow_Tocy, n)
+              waveNetOceanMeridionalWindStress(i) = x2o_o(index_x2o_Faow_Tocy, n)
            end if
         endif
 
         if (config_cvmix_kpp_use_theory_wave .or. config_eke_correction_enable) then
            if ( windSpeed10mField% isActive ) then
-              windSpeed10m(i) = sqrt( x2o_o % rAttr(index_x2o_So_duu10n, n))
+              windSpeed10m(i) = sqrt( x2o_o(index_x2o_So_duu10n, n))
            end if
         endif
 
         if ( landIceFreshwaterFluxField % isActive ) then
-           !landIceFreshwaterFlux(i) = x2o_o % rAttr(index_x2o_Fogx_qicelo, n)
+           !landIceFreshwaterFlux(i) = x2o_o(index_x2o_Fogx_qicelo, n)
         end if
         if ( landIceHeatFluxField % isActive ) then
-           !landIceHeatFlux(i) = x2o_o % rAttr(index_x2o_Fogx_qiceho, n)
+           !landIceHeatFlux(i) = x2o_o(index_x2o_Fogx_qiceho, n)
         end if
         if ( landIceInterfaceTracersField % isActive ) then
-           !landIceInterfaceTracers(indexIT, i) = x2o_o % rAttr(index_x2o_Sg_blit, n)
-           !landIceInterfaceTracers(indexIS, i) = x2o_o % rAttr(index_x2o_Sg_blis, n)
+           !landIceInterfaceTracers(indexIT, i) = x2o_o(index_x2o_Sg_blit, n)
+           !landIceInterfaceTracers(indexIS, i) = x2o_o(index_x2o_Sg_blis, n)
         end if
         if ( landIceFractionField % isActive ) then
-           !landIceFraction(i) = x2o_o % rAttr(index_x2o_Sg_icemask, n)
+           !landIceFraction(i) = x2o_o(index_x2o_Sg_icemask, n)
         end if
         !if ( landIcePressureField % isActive ) then
-           !landIcePressure(i) = x2o_o % rAttr(index_x2o_Sg_lithop, n)
+           !landIcePressure(i) = x2o_o(index_x2o_Sg_lithop, n)
         !end if
 
         ! BGC fields
         if (config_use_ecosysTracers) then
            if ( windSpeedSquared10mField % isActive ) then
-              windSpeedSquared10m(i) = x2o_o % rAttr(index_x2o_So_duu10n, n)
+              windSpeedSquared10m(i) = x2o_o(index_x2o_So_duu10n, n)
            end if
            if ( atmosphericCO2Field % isActive ) then
               if ( config_ecosys_atm_co2_option == 'prognostic') then
-                 atmosphericCO2(i) = x2o_o % rAttr(index_x2o_Sa_co2prog, n)
+                 atmosphericCO2(i) = x2o_o(index_x2o_Sa_co2prog, n)
               else if ( config_ecosys_atm_co2_option == 'diagnostic') then
-                 atmosphericCO2(i) = x2o_o % rAttr(index_x2o_Sa_co2diag, n)
+                 atmosphericCO2(i) = x2o_o(index_x2o_Sa_co2diag, n)
               else if ( config_ecosys_atm_co2_option == 'bcrc') then
                  atmosphericCO2(i) = config_ecosys_atm_co2_constant_value
               else if ( config_ecosys_atm_co2_option == 'bcrd') then
                  atmosphericCO2(i) = config_ecosys_atm_co2_constant_value
               else if ( config_ecosys_atm_co2_option == 'bdrc') then
-                 atmosphericCO2(i) = x2o_o % rAttr(index_x2o_Sa_co2diag, n)
+                 atmosphericCO2(i) = x2o_o(index_x2o_Sa_co2diag, n)
               else if ( config_ecosys_atm_co2_option == 'bdrd') then
-                 atmosphericCO2(i) = x2o_o % rAttr(index_x2o_Sa_co2diag, n)
+                 atmosphericCO2(i) = x2o_o(index_x2o_Sa_co2diag, n)
               else
                  atmosphericCO2(i) = config_ecosys_atm_co2_constant_value
               end if
            end if
            if ( atmosphericCO2_ALT_CO2Field % isActive ) then
               if ( config_ecosys_atm_alt_co2_option == 'prognostic') then
-                 atmosphericCO2_ALT_CO2(i) = x2o_o % rAttr(index_x2o_Sa_co2prog, n)
+                 atmosphericCO2_ALT_CO2(i) = x2o_o(index_x2o_Sa_co2prog, n)
               else if ( config_ecosys_atm_alt_co2_option == 'diagnostic') then
-                 atmosphericCO2_ALT_CO2(i) = x2o_o % rAttr(index_x2o_Sa_co2diag, n)
+                 atmosphericCO2_ALT_CO2(i) = x2o_o(index_x2o_Sa_co2diag, n)
               else if ( config_ecosys_atm_alt_co2_option == 'bcrc') then
                  atmosphericCO2_ALT_CO2(i) = config_ecosys_atm_co2_constant_value
               else if ( config_ecosys_atm_alt_co2_option == 'bcrd') then
-                 atmosphericCO2_ALT_CO2(i) = x2o_o % rAttr(index_x2o_Sa_co2diag, n)
+                 atmosphericCO2_ALT_CO2(i) = x2o_o(index_x2o_Sa_co2diag, n)
               else if ( config_ecosys_atm_alt_co2_option == 'bdrc') then
                  atmosphericCO2_ALT_CO2(i) = config_ecosys_atm_co2_constant_value
               else if ( config_ecosys_atm_alt_co2_option == 'bdrd') then
-                 atmosphericCO2_ALT_CO2(i) = x2o_o % rAttr(index_x2o_Sa_co2diag, n)
+                 atmosphericCO2_ALT_CO2(i) = x2o_o(index_x2o_Sa_co2diag, n)
               else
                  atmosphericCO2_ALT_CO2(i) = config_ecosys_atm_co2_constant_value
               end if
            end if
 
            if (config_use_ecosysTracers_river_inputs_from_coupler) then
-             riverFluxNO3(i)  = x2o_o % rAttr(index_x2o_Foxx_rofDIN, n)
-             riverFluxPO4(i)  = x2o_o % rAttr(index_x2o_Foxx_rofDIP, n)
-             riverFluxDON(i)  = x2o_o % rAttr(index_x2o_Foxx_rofDON, n)
-             riverFluxDOP(i)  = x2o_o % rAttr(index_x2o_Foxx_rofDOP, n)
-             riverFluxSiO3(i) = x2o_o % rAttr(index_x2o_Foxx_rofDSi, n)
-             riverFluxDOC(i)  = x2o_o % rAttr(index_x2o_Foxx_rofDOC, n)
-             riverFluxDIC(i)  = x2o_o % rAttr(index_x2o_Foxx_rofDIC, n)
-             riverFluxFe(i)   = x2o_o % rAttr(index_x2o_Foxx_rofFe , n)
+             riverFluxNO3(i)  = x2o_o(index_x2o_Foxx_rofDIN, n)
+             riverFluxPO4(i)  = x2o_o(index_x2o_Foxx_rofDIP, n)
+             riverFluxDON(i)  = x2o_o(index_x2o_Foxx_rofDON, n)
+             riverFluxDOP(i)  = x2o_o(index_x2o_Foxx_rofDOP, n)
+             riverFluxSiO3(i) = x2o_o(index_x2o_Foxx_rofDSi, n)
+             riverFluxDOC(i)  = x2o_o(index_x2o_Foxx_rofDOC, n)
+             riverFluxDIC(i)  = x2o_o(index_x2o_Foxx_rofDIC, n)
+             riverFluxFe(i)   = x2o_o(index_x2o_Foxx_rofFe , n)
 
 ! convert from kgNutrient/(m2-s) to mmol/m3 m/s
              riverFactor = 1.e6_RKIND
@@ -2704,58 +2704,58 @@ contains
 
            if (config_use_ecosysTracers_sea_ice_coupling) then
               if ( iceFluxPhytoCField % isActive ) then
-                 iceFluxPhytoC(1,i) = x2o_o % rAttr(index_x2o_Fioi_algae1, n)
-                 iceFluxPhytoC(2,i) = x2o_o % rAttr(index_x2o_Fioi_algae2, n)
-                 iceFluxPhytoC(3,i) = x2o_o % rAttr(index_x2o_Fioi_algae3, n)
+                 iceFluxPhytoC(1,i) = x2o_o(index_x2o_Fioi_algae1, n)
+                 iceFluxPhytoC(2,i) = x2o_o(index_x2o_Fioi_algae2, n)
+                 iceFluxPhytoC(3,i) = x2o_o(index_x2o_Fioi_algae3, n)
               endif
               if ( iceFluxDICField % isActive ) then
-                 iceFluxDIC(i) = x2o_o % rAttr(index_x2o_Fioi_dic1, n)
+                 iceFluxDIC(i) = x2o_o(index_x2o_Fioi_dic1, n)
               endif
               if ( iceFluxNO3Field % isActive ) then
-                 iceFluxNO3(i) = x2o_o % rAttr(index_x2o_Fioi_no3, n)
+                 iceFluxNO3(i) = x2o_o(index_x2o_Fioi_no3, n)
               endif
               if ( iceFluxSiO3Field % isActive ) then
-                 iceFluxSiO3(i) = x2o_o % rAttr(index_x2o_Fioi_sio3, n)
+                 iceFluxSiO3(i) = x2o_o(index_x2o_Fioi_sio3, n)
               endif
               if ( iceFluxNH4Field % isActive ) then
-                 iceFluxNH4(i) = x2o_o % rAttr(index_x2o_Fioi_nh4, n)
+                 iceFluxNH4(i) = x2o_o(index_x2o_Fioi_nh4, n)
               endif
               if ( iceFluxDOCrField % isActive ) then
-                 iceFluxDOCr(i) = x2o_o % rAttr(index_x2o_Fioi_docr, n)
+                 iceFluxDOCr(i) = x2o_o(index_x2o_Fioi_docr, n)
               endif
               if ( iceFluxFeParticulateField % isActive ) then
-                 iceFluxFeParticulate(i) = x2o_o % rAttr(index_x2o_Fioi_fep1, n)
+                 iceFluxFeParticulate(i) = x2o_o(index_x2o_Fioi_fep1, n)
               endif
               if ( iceFluxFeDissolvedField % isActive ) then
-                 iceFluxFeDissolved(i) = x2o_o % rAttr(index_x2o_Fioi_fed1, n)
+                 iceFluxFeDissolved(i) = x2o_o(index_x2o_Fioi_fed1, n)
               endif
               if ( iceFluxDustField % isActive ) then
-                 iceFluxDust(i) = x2o_o % rAttr(index_x2o_Fioi_dust1, n)
+                 iceFluxDust(i) = x2o_o(index_x2o_Fioi_dust1, n)
               endif
               if ( iceFluxDOCField % isActive ) then
-                 iceFluxDOC(1,i) = x2o_o % rAttr(index_x2o_Fioi_doc1, n)
-                 iceFluxDOC(2,i) = x2o_o % rAttr(index_x2o_Fioi_doc2, n)
-                 iceFluxDOC(3,i) = x2o_o % rAttr(index_x2o_Fioi_doc3, n)
+                 iceFluxDOC(1,i) = x2o_o(index_x2o_Fioi_doc1, n)
+                 iceFluxDOC(2,i) = x2o_o(index_x2o_Fioi_doc2, n)
+                 iceFluxDOC(3,i) = x2o_o(index_x2o_Fioi_doc3, n)
               endif
               if ( iceFluxDONField % isActive ) then
-                 iceFluxDON(i) = x2o_o % rAttr(index_x2o_Fioi_don1, n)
+                 iceFluxDON(i) = x2o_o(index_x2o_Fioi_don1, n)
               endif
             endif
          endif
          if (config_use_DMSTracers .and. config_use_DMSTracers_sea_ice_coupling) then
            if ( iceFluxDMSField % isActive ) then
-              iceFluxDMS(i) = x2o_o % rAttr(index_x2o_Fioi_dms, n)
+              iceFluxDMS(i) = x2o_o(index_x2o_Fioi_dms, n)
            endif
            if ( iceFluxDMSPField % isActive ) then
               !JW TODO: dmspp? dmspd? the sum?
-              iceFluxDMSP(i) = x2o_o % rAttr(index_x2o_Fioi_dmspp, n)
+              iceFluxDMSP(i) = x2o_o(index_x2o_Fioi_dmspp, n)
            endif
          endif
 
         ! CFC fields
         if (config_use_CFCTracers) then
            if ( windSpeedSquared10mField % isActive ) then
-              windSpeedSquared10mCFC(i) = x2o_o % rAttr(index_x2o_So_duu10n, n)
+              windSpeedSquared10mCFC(i) = x2o_o(index_x2o_So_duu10n, n)
            end if
         end if
 
@@ -3099,7 +3099,7 @@ contains
 !
 ! !INPUT/OUTPUT PARAMETERS:
 
-   type(mct_aVect)   , intent(inout) :: o2x_o
+   real (kind=RKIND), intent(inout) :: o2x_o(:,:)
 
 ! !OUTPUT PARAMETERS:
 
@@ -3314,28 +3314,28 @@ contains
      do i = 1, nCellsSolve
        n = n + 1
 
-       o2x_o % rAttr(index_o2x_So_t, n) = avgTracersSurfaceValue(index_temperatureSurfaceValue, i)
-       o2x_o % rAttr(index_o2x_So_s, n) = avgTracersSurfaceValue(index_salinitySurfaceValue, i)
-       o2x_o % rAttr(index_o2x_So_u, n) = avgSurfaceVelocity(index_avgZonalSurfaceVelocity, i)
-       o2x_o % rAttr(index_o2x_So_v, n) = avgSurfaceVelocity(index_avgMeridionalSurfaceVelocity, i)
+       o2x_o(index_o2x_So_t, n) = avgTracersSurfaceValue(index_temperatureSurfaceValue, i)
+       o2x_o(index_o2x_So_s, n) = avgTracersSurfaceValue(index_salinitySurfaceValue, i)
+       o2x_o(index_o2x_So_u, n) = avgSurfaceVelocity(index_avgZonalSurfaceVelocity, i)
+       o2x_o(index_o2x_So_v, n) = avgSurfaceVelocity(index_avgMeridionalSurfaceVelocity, i)
 
-       o2x_o % rAttr(index_o2x_So_ssh, n)  = ssh(i)
-       o2x_o % rAttr(index_o2x_So_dhdx, n) = avgSSHGradient(index_avgZonalSSHGradient, i)
-       o2x_o % rAttr(index_o2x_So_dhdy, n) = avgSSHGradient(index_avgMeridionalSSHGradient, i)
+       o2x_o(index_o2x_So_ssh, n)  = ssh(i)
+       o2x_o(index_o2x_So_dhdx, n) = avgSSHGradient(index_avgZonalSSHGradient, i)
+       o2x_o(index_o2x_So_dhdy, n) = avgSSHGradient(index_avgMeridionalSSHGradient, i)
 
-       o2x_o % rAttr(index_o2x_Faoo_h2otemp, n) = avgTotalFreshWaterTemperatureFlux(i) * rho_sw * cp_sw
+       o2x_o(index_o2x_Faoo_h2otemp, n) = avgTotalFreshWaterTemperatureFlux(i) * rho_sw * cp_sw
 
        ! Cryo fields
        if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
-          o2x_o % rAttr(index_o2x_Foxo_ismw, n)  = avgLandIceFreshwaterFlux(i)
-          o2x_o % rAttr(index_o2x_Foxo_ismh, n)  = avgLandIceHeatFlux(i)
+          o2x_o(index_o2x_Foxo_ismw, n)  = avgLandIceFreshwaterFlux(i)
+          o2x_o(index_o2x_Foxo_ismh, n)  = avgLandIceHeatFlux(i)
        endif
        if (config_remove_ais_river_runoff) then
-          o2x_o % rAttr(index_o2x_Foxo_rrofl, n) = avgRemovedRiverRunoffFlux(i)
+          o2x_o(index_o2x_Foxo_rrofl, n) = avgRemovedRiverRunoffFlux(i)
        endif
        if (config_remove_ais_ice_runoff) then
-          o2x_o % rAttr(index_o2x_Foxo_rrofi, n) = avgRemovedIceRunoffFlux(i)
-          o2x_o % rAttr(index_o2x_Foxo_rrofih, n) = avgRemovedIceRunoffHeatFlux(i)
+          o2x_o(index_o2x_Foxo_rrofi, n) = avgRemovedIceRunoffFlux(i)
+          o2x_o(index_o2x_Foxo_rrofih, n) = avgRemovedIceRunoffHeatFlux(i)
        endif
 
        if ( frazilIceActive ) then
@@ -3371,16 +3371,16 @@ contains
 
              end if
 
-             o2x_o % rAttr(index_o2x_Fioo_q, n)  = seaIceEnergy(i) / ocn_cpl_dt
-             o2x_o % rAttr(index_o2x_Fioo_frazil, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
+             o2x_o(index_o2x_Fioo_q, n)  = seaIceEnergy(i) / ocn_cpl_dt
+             o2x_o(index_o2x_Fioo_frazil, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
 
           else
 
-             o2x_o % rAttr(index_o2x_Fioo_q, n)  = 0.0_RKIND
-             o2x_o % rAttr(index_o2x_Fioo_frazil, n) = 0.0_RKIND
+             o2x_o(index_o2x_Fioo_q, n)  = 0.0_RKIND
+             o2x_o(index_o2x_Fioo_frazil, n) = 0.0_RKIND
              if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
-                o2x_o % rAttr(index_o2x_Foxo_q_li, n) = accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion / ocn_cpl_dt
-                o2x_o % rAttr(index_o2x_Foxo_frazil_li, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
+                o2x_o(index_o2x_Foxo_q_li, n) = accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion / ocn_cpl_dt
+                o2x_o(index_o2x_Foxo_frazil_li, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
              endif
 
           end if
@@ -3394,64 +3394,64 @@ contains
        ! BGC fields
        if (config_use_ecosysTracers .and. index_o2x_Faoo_fco2_ocn /= 0) then
           ! convert from mmolC/m2/s to kg CO2/m2/s
-          o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = avgCO2_gas_flux(i)*44.e-6_RKIND
+          o2x_o(index_o2x_Faoo_fco2_ocn, n) = avgCO2_gas_flux(i)*44.e-6_RKIND
        endif
        if (config_use_ecosysTracers .and. config_use_ecosysTracers_sea_ice_coupling) then
-          o2x_o % rAttr(index_o2x_So_algae1, n) = max(0.0_RKIND,avgOceanSurfacePhytoC(1,i))
-          o2x_o % rAttr(index_o2x_So_algae2, n) = max(0.0_RKIND,avgOceanSurfacePhytoC(2,i))
-          o2x_o % rAttr(index_o2x_So_algae3, n) = max(0.0_RKIND,avgOceanSurfacePhytoC(3,i))
-          o2x_o % rAttr(index_o2x_So_dic1,   n) = max(0.0_RKIND,avgOceanSurfaceDIC(i))
-          o2x_o % rAttr(index_o2x_So_doc1,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
-          o2x_o % rAttr(index_o2x_So_doc2,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
-          o2x_o % rAttr(index_o2x_So_doc3,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
-          o2x_o % rAttr(index_o2x_So_don1,   n) = 0.0_RKIND
-          o2x_o % rAttr(index_o2x_So_no3,    n) = max(0.0_RKIND,avgOceanSurfaceNO3(i))
-          o2x_o % rAttr(index_o2x_So_sio3,   n) = max(0.0_RKIND,avgOceanSurfaceSiO3(i))
-          o2x_o % rAttr(index_o2x_So_nh4,    n) = max(0.0_RKIND,avgOceanSurfaceNH4(i))
-          o2x_o % rAttr(index_o2x_So_docr,   n) = max(0.0_RKIND,avgOceanSurfaceDOCr(i))
-          o2x_o % rAttr(index_o2x_So_fep1,   n) = max(0.0_RKIND,avgOceanSurfaceFeParticulate(i))
-          o2x_o % rAttr(index_o2x_So_fed1,   n) = max(0.0_RKIND,avgOceanSurfaceFeDissolved(i))
+          o2x_o(index_o2x_So_algae1, n) = max(0.0_RKIND,avgOceanSurfacePhytoC(1,i))
+          o2x_o(index_o2x_So_algae2, n) = max(0.0_RKIND,avgOceanSurfacePhytoC(2,i))
+          o2x_o(index_o2x_So_algae3, n) = max(0.0_RKIND,avgOceanSurfacePhytoC(3,i))
+          o2x_o(index_o2x_So_dic1,   n) = max(0.0_RKIND,avgOceanSurfaceDIC(i))
+          o2x_o(index_o2x_So_doc1,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
+          o2x_o(index_o2x_So_doc2,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
+          o2x_o(index_o2x_So_doc3,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
+          o2x_o(index_o2x_So_don1,   n) = 0.0_RKIND
+          o2x_o(index_o2x_So_no3,    n) = max(0.0_RKIND,avgOceanSurfaceNO3(i))
+          o2x_o(index_o2x_So_sio3,   n) = max(0.0_RKIND,avgOceanSurfaceSiO3(i))
+          o2x_o(index_o2x_So_nh4,    n) = max(0.0_RKIND,avgOceanSurfaceNH4(i))
+          o2x_o(index_o2x_So_docr,   n) = max(0.0_RKIND,avgOceanSurfaceDOCr(i))
+          o2x_o(index_o2x_So_fep1,   n) = max(0.0_RKIND,avgOceanSurfaceFeParticulate(i))
+          o2x_o(index_o2x_So_fed1,   n) = max(0.0_RKIND,avgOceanSurfaceFeDissolved(i))
        endif
        if (config_use_DMSTracers .and. config_use_DMSTracers_sea_ice_coupling) then
-          o2x_o % rAttr(index_o2x_So_dms,  n) = max(0.0_RKIND,avgOceanSurfaceDMS(i))
-          o2x_o % rAttr(index_o2x_So_dmsp, n) = max(0.0_RKIND,avgOceanSurfaceDMSP(i))
+          o2x_o(index_o2x_So_dms,  n) = max(0.0_RKIND,avgOceanSurfaceDMS(i))
+          o2x_o(index_o2x_So_dmsp, n) = max(0.0_RKIND,avgOceanSurfaceDMSP(i))
        endif
        if (config_use_MacroMoleculesTracers .and. config_use_MacroMoleculesTracers_sea_ice_coupling) then
-          o2x_o % rAttr(index_o2x_So_doc1, n) = max(0.0_RKIND,avgOceanSurfaceDOC(1,i))
-          o2x_o % rAttr(index_o2x_So_doc2, n) = max(0.0_RKIND,avgOceanSurfaceDOC(2,i))
-          o2x_o % rAttr(index_o2x_So_doc3, n) = max(0.0_RKIND,avgOceanSurfaceDOC(3,i))
-          o2x_o % rAttr(index_o2x_So_don1, n) = 0.0_RKIND
+          o2x_o(index_o2x_So_doc1, n) = max(0.0_RKIND,avgOceanSurfaceDOC(1,i))
+          o2x_o(index_o2x_So_doc2, n) = max(0.0_RKIND,avgOceanSurfaceDOC(2,i))
+          o2x_o(index_o2x_So_doc3, n) = max(0.0_RKIND,avgOceanSurfaceDOC(3,i))
+          o2x_o(index_o2x_So_don1, n) = 0.0_RKIND
        endif
-!      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = CO2Flux(i)
-!      o2x_o % rAttr(index_o2x_Faoo_fdms_ocn, n) = DMSFlux(i)
-!      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = surfaceUpwardCO2Flux(i)
+!      o2x_o(index_o2x_Faoo_fco2_ocn, n) = CO2Flux(i)
+!      o2x_o(index_o2x_Faoo_fdms_ocn, n) = DMSFlux(i)
+!      o2x_o(index_o2x_Faoo_fco2_ocn, n) = surfaceUpwardCO2Flux(i)
 
-!JW       o2x_o % rAttr(index_o2x_So_blt, n) = landIceBoundaryLayerTemperature(i)
-!JW       o2x_o % rAttr(index_o2x_So_bls, n) = landIceBoundaryLayerSalinity(i)
-!JW       o2x_o % rAttr(index_o2x_So_htv, n) = landIceHeatTransferVelocity(i)
-!JW       o2x_o % rAttr(index_o2x_So_stv, n) = landIceSaltTransferVelocity(i)
+!JW       o2x_o(index_o2x_So_blt, n) = landIceBoundaryLayerTemperature(i)
+!JW       o2x_o(index_o2x_So_bls, n) = landIceBoundaryLayerSalinity(i)
+!JW       o2x_o(index_o2x_So_htv, n) = landIceHeatTransferVelocity(i)
+!JW       o2x_o(index_o2x_So_stv, n) = landIceSaltTransferVelocity(i)
 
        if ( trim(config_land_ice_flux_mode) .eq. 'standalone' .or. &
             trim(config_land_ice_flux_mode) .eq. 'coupled'  ) then
-          o2x_o % rAttr(index_o2x_So_blt, n) = landIceBoundaryLayerTracers(indexBLT,i)
-          o2x_o % rAttr(index_o2x_So_bls, n) = landIceBoundaryLayerTracers(indexBLS,i)
-          o2x_o % rAttr(index_o2x_So_htv, n) = landIceTracerTransferVelocities(indexHeatTrans,i)
-          o2x_o % rAttr(index_o2x_So_stv, n) = landIceTracerTransferVelocities(indexSaltTrans,i)
-          o2x_o % rAttr(index_o2x_So_rhoeff, n) = 0.0_RKIND
+          o2x_o(index_o2x_So_blt, n) = landIceBoundaryLayerTracers(indexBLT,i)
+          o2x_o(index_o2x_So_bls, n) = landIceBoundaryLayerTracers(indexBLS,i)
+          o2x_o(index_o2x_So_htv, n) = landIceTracerTransferVelocities(indexHeatTrans,i)
+          o2x_o(index_o2x_So_stv, n) = landIceTracerTransferVelocities(indexSaltTrans,i)
+          o2x_o(index_o2x_So_rhoeff, n) = 0.0_RKIND
        endif
        if (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
           do iLevel = 1, nGlcZLevels
              if (avgThermalForcingAtZLevelsMask(ilevel, i) > 0.9_RKIND) then
                 ! Only use this time average if it is available almost all the time
                 ! Otherwise the time average is not representative.
-                o2x_o % rAttr(index_o2x_So_tf3d(iLevel), n) = avgThermalForcingAtZLevels(ilevel, i) / &
+                o2x_o(index_o2x_So_tf3d(iLevel), n) = avgThermalForcingAtZLevels(ilevel, i) / &
                         avgThermalForcingAtZLevelsMask(ilevel, i)
                 ! Consider this ocean cell valid (no need to continue carrying the time averaging fraction)
-                o2x_o % rAttr(index_o2x_So_tf3d_mask(iLevel), n) = 1.0_RKIND
+                o2x_o(index_o2x_So_tf3d_mask(iLevel), n) = 1.0_RKIND
              else
                 ! If we're not using this location, set value and mask to zero
-                o2x_o % rAttr(index_o2x_So_tf3d(iLevel), n) = 0.0_RKIND
-                o2x_o % rAttr(index_o2x_So_tf3d_mask(iLevel), n) = 0.0_RKIND
+                o2x_o(index_o2x_So_tf3d(iLevel), n) = 0.0_RKIND
+                o2x_o(index_o2x_So_tf3d_mask(iLevel), n) = 0.0_RKIND
              endif
           enddo
        endif
@@ -3459,16 +3459,16 @@ contains
 
        !Fyke: test
        !write(stderrUnit,*) 'n=',n
-       !write(stderrUnit,*) 'o2x_o % rAttr(index_o2x_So_blt, n)=',o2x_o % rAttr(index_o2x_So_blt, n)
-       !write(stderrUnit,*) 'o2x_o % rAttr(index_o2x_So_bls, n)=',o2x_o % rAttr(index_o2x_So_bls, n)
-       !write(stderrUnit,*) 'o2x_o % rAttr(index_o2x_So_htv, n)=',o2x_o % rAttr(index_o2x_So_htv, n)
-       !write(stderrUnit,*) 'o2x_o % rAttr(index_o2x_So_stv, n)=',o2x_o % rAttr(index_o2x_So_stv, n)
-       !write(stderrUnit,*) 'o2x_o % rAttr(index_o2x_So_rhoeff, n)=',o2x_o % rAttr(index_o2x_So_rhoeff, n)
-       !o2x_o % rAttr(index_o2x_So_blt, n) = 0._r8
-       !o2x_o % rAttr(index_o2x_So_bls, n) = 34.5_r8
-       !o2x_o % rAttr(index_o2x_So_htv, n) = 1.e-4_r8
-       !o2x_o % rAttr(index_o2x_So_stv, n) = 3.e-6_r8
-       !o2x_o % rAttr(index_o2x_So_rhoeff, n) = 1000._r8*9.81_r8*918._r8 !lithostatic pressure of 1km of ice
+       !write(stderrUnit,*) 'o2x_o(index_o2x_So_blt, n)=',o2x_o(index_o2x_So_blt, n)
+       !write(stderrUnit,*) 'o2x_o(index_o2x_So_bls, n)=',o2x_o(index_o2x_So_bls, n)
+       !write(stderrUnit,*) 'o2x_o(index_o2x_So_htv, n)=',o2x_o(index_o2x_So_htv, n)
+       !write(stderrUnit,*) 'o2x_o(index_o2x_So_stv, n)=',o2x_o(index_o2x_So_stv, n)
+       !write(stderrUnit,*) 'o2x_o(index_o2x_So_rhoeff, n)=',o2x_o(index_o2x_So_rhoeff, n)
+       !o2x_o(index_o2x_So_blt, n) = 0._r8
+       !o2x_o(index_o2x_So_bls, n) = 34.5_r8
+       !o2x_o(index_o2x_So_htv, n) = 1.e-4_r8
+       !o2x_o(index_o2x_So_stv, n) = 3.e-6_r8
+       !o2x_o(index_o2x_So_rhoeff, n) = 1000._r8*9.81_r8*918._r8 !lithostatic pressure of 1km of ice
 
      end do
 
@@ -4184,7 +4184,7 @@ contains
          ! Initialize this field
          windSpeed10m(:) = 0.0_RKIND
       endif
-! !  replace 'x2o_o % rAttr(' to 'x2o_om(n, '  and ', n)' with ')'
+! !  replace 'x2o_o(' to 'x2o_om(n, '  and ', n)' with ')'
       do i = 1, nCellsSolve
         n = n + 1
         if ( windStressZonalField % isActive ) then
@@ -4917,7 +4917,7 @@ contains
 !    call mpas_pool_get_array(forcingPool, 'DMSFlux', DMSFlux)
 !    call mpas_pool_get_array(forcingPool, 'surfaceUpwardCO2Flux', surfaceUpwardCO2Flux)
 
-! replace 'o2x_o % rAttr(' with 'o2x_om(n, ' and ', n)' with ')'
+! replace 'o2x_o(' with 'o2x_om(n, ' and ', n)' with ')'
      do i = 1, nCellsSolve
        n = n + 1
 
