@@ -257,10 +257,10 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
     auto engine = Base::get_engine();
 
     EddyDiffusivitiesData baseline_data[] = {
-      EddyDiffusivitiesData(10, 71, false),
-      EddyDiffusivitiesData(10, 12, false),
-      EddyDiffusivitiesData(7,  16, false),
-      EddyDiffusivitiesData(2, 7, false),
+      EddyDiffusivitiesData(10, 71),
+      EddyDiffusivitiesData(10, 12),
+      EddyDiffusivitiesData(7,  16),
+      EddyDiffusivitiesData(2, 7),
     };
 
     // Generate random input data

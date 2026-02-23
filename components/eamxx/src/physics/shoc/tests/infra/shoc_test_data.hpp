@@ -1045,7 +1045,7 @@ void shoc_pblintd_cldcheck_host(Int shcol, Int nlev, Int nlevi, Real* zi, Real* 
 void compute_shr_prod_host(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_wind, Real* v_wind, Real* sterm);
 void shoc_length_host(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy,
                    Real* zt_grid, Real* zi_grid, Real*dz_zt, Real* tke,
-                   Real* thv, Real* shoc_mix);
+                   Real* thv, Real* brunt, Real* shoc_mix);
 void shoc_energy_fixer_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* zt_grid,
                          Real* zi_grid, Real* se_b, Real* ke_b, Real* wv_b, Real* wl_b,
                          Real* se_a, Real* ke_a, Real* wv_a, Real* wl_a, Real* wthl_sfc,
@@ -1095,7 +1095,7 @@ void pblintd_check_pblh_host(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, 
 
 void pblintd_host(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh);
 void shoc_grid_host(Int shcol, Int nlev, Int nlevi, Real* zt_grid, Real* zi_grid, Real* pdel, Real* dz_zt, Real* dz_zi, Real* rho_zt);
-void eddy_diffusivities_host(Int nlev, Int shcol, bool shoc_1p5tke, Real* pblh, Real* zt_grid, Real* tabs, Real* shoc_mix, Real* sterm_zt, Real* isotropy,
+void eddy_diffusivities_host(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Real* tabs, Real* shoc_mix, Real* sterm_zt, Real* isotropy,
                           Real* tke, Real* tkh, Real* tk);
 void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, bool shoc_1p5tke, Real* wthv_sec, Real* shoc_mix, Real* dz_zi, Real* dz_zt, Real* pres,
                 Real* u_wind, Real* v_wind, Real* brunt, Real* obklen, Real* zt_grid, Real* zi_grid, Real* pblh, Real* tke,
