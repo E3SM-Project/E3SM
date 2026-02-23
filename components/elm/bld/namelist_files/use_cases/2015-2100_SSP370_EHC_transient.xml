@@ -27,7 +27,6 @@
 <stream_fldfilename_popdens>lnd/clm2/firedata/elmforc.ssp3_hdm_0.5x0.5_simyr1850-2101_c20200624.nc</stream_fldfilename_popdens>
 
 <!-- CMIP6 DECK compsets -->
-
 <fsurdat>lnd/clm2/surfdata_map/surfdata_0.9x1.25_SSP3_RCP70_simyr2015_c260223_with_TOP.nc</fsurdat>
 
 <!-- Add following for hybrid run of SSP370 continuing from a historical simulation -->

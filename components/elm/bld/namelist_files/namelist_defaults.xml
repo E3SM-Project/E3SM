@@ -243,6 +243,11 @@ sim_year="1850" glc_nec="0" use_crop=".false.">lnd/clm2/initdata/elmi.v3-SORRM.n
 sim_year="1850" glc_nec="0" use_crop=".false.">lnd/clm2/initdata_map/elmi.CNPRDCTCBCTOP.r025_RRSwISC6to18E3r5.1850.c20250325.nc
 </finidat>
 
+<!-- datasets for TOP solar radiation parameterization -->
+<!--  ***********  Resolution dependent:   *********** -->
+<!--ftopdat>same as fsurfdat </ftopdat-->
+<use_top_solar_rad>.false.</use_top_solar_rad>
+
 <!-- CAx32v1.pg2 -->
 <fsurdat hgrid="ne0np4_CAx32v1.pg2"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne0_CAx32.pg2_simyr2010_c220621.nc</fsurdat>
@@ -655,10 +660,6 @@ this mask will have smb calculated over the entire global land surface
 <flndtopo hgrid="r0125"     >lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</flndtopo>
 <flndtopo hgrid="ne30np4.pg2"      >lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1850_c210402.nc</flndtopo>
 
-<!-- datasets for TOP solar radiation parameterization -->
-<!--  ***********  Resolution dependent:   *********** -->
-<!--ftopdat>same as fsurfdat </ftopdat-->
-<use_top_solar_rad>.false.</use_top_solar_rad>
 
 <!-- SNICAR (SNow, ICe, and Aerosol Radiative model) datasets -->
 <!--  ***********  Resolution independent:   ***********  -->
