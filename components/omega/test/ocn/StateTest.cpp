@@ -24,6 +24,8 @@
 #include "OceanState.h"
 #include "OmegaKokkos.h"
 #include "Pacer.h"
+#include "PGrad.h"
+#include "Tendencies.h"
 #include "TimeStepper.h"
 #include "VertCoord.h"
 #include "mpi.h"
@@ -89,6 +91,9 @@ void initStateTest() {
 
    // Initialize Aux State variables
    AuxiliaryState::init();
+
+   // Initialize pressure gradient
+   PressureGrad::init(); 
 
    // Create tendencies
    Tendencies::init();
@@ -399,6 +404,7 @@ int main(int argc, char *argv[]) {
       OceanState::clear();
       Tracers::clear();
       AuxiliaryState::clear();
+      PressureGrad::clear();
       Tendencies::clear();
       TimeStepper::clear();
       HorzMesh::clear();
