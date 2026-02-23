@@ -845,7 +845,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
 
   KOKKOS_FUNCTION
   static void
-  eddy_diffusivities(const MemberType &team, const Int &nlev, const bool &shoc_1p5tke,
+  eddy_diffusivities(const MemberType &team, const Int &nlev,
                      const Scalar &Ckh, const Scalar &Ckm, const Scalar &pblh,
                      const uview_1d<const Pack> &zt_grid, const uview_1d<const Pack> &tabs,
                      const uview_1d<const Pack> &shoc_mix, const uview_1d<const Pack> &sterm_zt,

@@ -295,16 +295,15 @@ struct AdvSgsTkeData : public PhysicsTestData {
 struct EddyDiffusivitiesData : public PhysicsTestData {
   // Inputs
   Int shcol, nlev;
-  bool shoc_1p5tke;
   Real *pblh, *zt_grid, *tabs, *shoc_mix, *sterm_zt, *isotropy, *tke;
 
   // Outputs
   Real *tkh, *tk;
 
-  EddyDiffusivitiesData(Int shcol_, Int nlev_, bool shoc_1p5tke_) :
-    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &pblh }, { &zt_grid, &tabs, &shoc_mix, &sterm_zt, &isotropy, &tke, &tkh, &tk }}), shcol(shcol_), nlev(nlev_), shoc_1p5tke(shoc_1p5tke_) {}
+  EddyDiffusivitiesData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &pblh }, { &zt_grid, &tabs, &shoc_mix, &sterm_zt, &isotropy, &tke, &tkh, &tk }}), shcol(shcol_), nlev(nlev_) {}
 
-  PTD_STD_DEF(EddyDiffusivitiesData, 3, shcol, nlev, shoc_1p5tke);
+  PTD_STD_DEF(EddyDiffusivitiesData, 2, shcol, nlev);
 };
 
 struct ShocLengthData : public ShocTestGridDataBase {
