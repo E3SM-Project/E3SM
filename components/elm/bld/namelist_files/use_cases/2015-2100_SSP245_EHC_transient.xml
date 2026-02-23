@@ -27,7 +27,7 @@
 <stream_fldfilename_popdens>lnd/clm2/firedata/elmforc.ssp2_hdm_0.5x0.5_simyr1850-2101_c20200623.nc</stream_fldfilename_popdens>
 
 <!-- CMIP6 DECK compsets -->
-<fsurdat>lnd/clm2/surfdata_map/surfdata_0.9x1.25_SSP2_RCP45_simyr2015_c240125.nc </fsurdat>
+<fsurdat>lnd/clm2/surfdata_map/surfdata_0.9x1.25_SSP2_RCP45_simyr2015_c260223_with_TOP.nc</fsurdat>
 
 <!-- Add following for hybrid run of SSP245 continuing from a historical simulation -->
 

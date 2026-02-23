@@ -28,7 +28,7 @@
 
 <!-- CMIP6 DECK compsets -->
 
-<fsurdat>lnd/clm2/surfdata_map/surfdata_0.9x1.25_SSP3_RCP70_simyr2015_c240918.nc </fsurdat>
+<fsurdat>lnd/clm2/surfdata_map/surfdata_0.9x1.25_SSP3_RCP70_simyr2015_c260223_with_TOP.nc</fsurdat>
 
 <!-- Add following for hybrid run of SSP370 continuing from a historical simulation -->
 
