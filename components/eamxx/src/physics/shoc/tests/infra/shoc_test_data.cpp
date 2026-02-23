@@ -96,7 +96,7 @@ void adv_sgs_tke(AdvSgsTkeData& d)
 
 void eddy_diffusivities(EddyDiffusivitiesData& d)
 {
-  eddy_diffusivities_host(d.nlev, d.shcol, d.shoc_1p5tke, d.pblh, d.zt_grid, d.tabs, d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
+  eddy_diffusivities_host(d.nlev, d.shcol, d.pblh, d.zt_grid, d.tabs, d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
 }
 
 void shoc_length(ShocLengthData& d)
@@ -1467,7 +1467,7 @@ void shoc_length_host(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_
 
     // Hardcode runtime option for F90 tests.
     const Scalar length_fac = 0.5;
-    SHF::shoc_length(team,nlev,nlevi,length_fac,shoc_1p5tke,
+    SHF::shoc_length(team,nlev,nlevi,length_fac,
                      host_dx_s,host_dy_s,
                      zt_grid_s,zi_grid_s,dz_zt_s,tke_s,
                      thv_s,workspace,brunt_s,shoc_mix_s);
@@ -2675,7 +2675,7 @@ void shoc_grid_host(Int shcol, Int nlev, Int nlevi, Real* zt_grid, Real* zi_grid
   ekat::device_to_host({dz_zt, dz_zi, rho_zt}, std::vector<int>{shcol, shcol, shcol}, std::vector<int>{nlev, nlevi, nlev}, inout_views);
 }
 
-void eddy_diffusivities_host(Int nlev, Int shcol, bool shoc_1p5tke, Real* pblh, Real* zt_grid, Real* tabs, Real* shoc_mix, Real* sterm_zt,
+void eddy_diffusivities_host(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Real* tabs, Real* shoc_mix, Real* sterm_zt,
                           Real* isotropy, Real* tke, Real* tkh, Real* tk)
 {
   using SHF = Functions<Real, DefaultDevice>;
@@ -2734,7 +2734,7 @@ void eddy_diffusivities_host(Int nlev, Int shcol, bool shoc_1p5tke, Real* pblh, 
     const Real Ckh = 0.1;
     const Real Ckm = 0.1;
 
-    SHF::eddy_diffusivities(team, nlev, shoc_1p5tke, Ckh, Ckm, pblh_s, zt_grid_s, tabs_s, shoc_mix_s, sterm_zt_s, isotropy_s, tke_s, tkh_s, tk_s);
+    SHF::eddy_diffusivities(team, nlev, Ckh, Ckm, pblh_s, zt_grid_s, tabs_s, shoc_mix_s, sterm_zt_s, isotropy_s, tke_s, tkh_s, tk_s);
   });
 
   // Sync back to host
