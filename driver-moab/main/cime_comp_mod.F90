@@ -4812,11 +4812,6 @@ contains
     ! cpl -> ice
     !----------------------------------------------------
     if (iamin_CPLALLICEID .and. ice_prognostic) then
-       call component_exch(ice, flow='x2c', &
-            infodata=infodata, infodata_string='cpl2ice_run', &
-            mpicom_barrier=mpicom_CPLALLICEID, run_barriers=run_barriers, &
-            timer_barrier='CPL:C2I_BARRIER', timer_comp_exch='CPL:C2I', &
-            timer_map_exch='CPL:c2i_icex2icei', timer_infodata_exch='CPL:ice_infoexch')
        call component_exch_moab(ice(1), mbixid, mpsiid, 'x2c', seq_flds_x2i_fields, &
             infodata=infodata, infodata_string='cpl2ice_run', &
             mpicom_barrier=mpicom_CPLALLICEID, run_barriers=run_barriers, &
@@ -4837,17 +4832,6 @@ contains
     use seq_flds_mod , only : seq_flds_i2x_fields
     use seq_comm_mct , only : mpsiid, mbixid !
     if (iamin_CPLALLICEID) then
-       call component_exch(ice, flow='c2x', &
-            infodata=infodata, infodata_string='ice2cpl_run', &
-            mpicom_barrier=mpicom_CPLALLICEID, run_barriers=run_barriers, &
-            timer_barrier='CPL:I2C_BARRIER', timer_comp_exch='CPL:I2C', &
-            timer_map_exch='CPL:i2c_icei2icex', timer_infodata_exch='CPL:i2c_infoexch')
-
-       ! also call moab ice-ocn projection, which is just a migrate
-       ! this needs to happen between ice comp and ocn coupler directly
-       ! it needs to be called on the joint comm between ice and coupler
-       ! if we do a proper component_exch, then would need another hop, just on coupler pes
-       !  TODO when do we need to send from ice to ocn? Usually after ice run ?
        call component_exch_moab(ice(1), mpsiid, mbixid, 'c2x', seq_flds_i2x_fields, &
             infodata=infodata, infodata_string='ice2cpl_run', &
             mpicom_barrier=mpicom_CPLALLICEID, run_barriers=run_barriers, &
