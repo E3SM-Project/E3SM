@@ -677,8 +677,8 @@
 <tracer_cnst_type     ver="fixed_ch4">CYCLICAL</tracer_cnst_type>
 <tracer_cnst_cycle_yr ver="fixed_ch4">1995</tracer_cnst_cycle_yr>
 
-<prescribed_ghg_file      ver="fixed_ch4">CH4_1990-1999_clim_c090605.nc</prescribed_ghg_file>
-<prescribed_ghg_filelist  ver="fixed_ch4">filelist_c090605.txt</prescribed_ghg_filelist>
+<prescribed_ghg_file      ver="fixed_ch4">ch4_oxid_1.9x2.5_L26_1990-1999clim.c090804.nc</prescribed_ghg_file>
+<prescribed_ghg_filelist  ver="fixed_ch4">''</prescribed_ghg_filelist>
 <prescribed_ghg_datapath  ver="fixed_ch4">atm/cam/chem/methane</prescribed_ghg_datapath>
 <prescribed_ghg_type      ver="fixed_ch4">CYCLICAL</prescribed_ghg_type>
 <prescribed_ghg_cycle_yr  ver="fixed_ch4">1995</prescribed_ghg_cycle_yr>
