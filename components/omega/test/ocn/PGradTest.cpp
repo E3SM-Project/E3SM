@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
    
    {
       initPGradTest();
-      // Initialize PressureGrad manager
+      // Initialize default PressureGrad
       PressureGrad::init();
 
       
@@ -120,7 +120,9 @@ int main(int argc, char *argv[]) {
 
       I4 NVertLayers = 60;
       Real dC = 30000.0_Real;
-      for (int refinement = 0; refinement < 4; ++refinement) {
+      I4 NRefinements = 4;
+      HostArray1DReal RMSE("RMSE", NRefinements);
+      for (int refinement = 0; refinement < NRefinements; ++refinement) {
 
          LOG_INFO("PGradTest: Starting refinement level {}", refinement);
          VCoord->NVertLayers = NVertLayers;
@@ -253,15 +255,10 @@ int main(int argc, char *argv[]) {
          // compute pressure once more with converged LayerThick
          VCoord->computePressure(LayerThick, SurfacePressure);
 
-         // compute geopotential
-         //VCoord->computeZHeight(LayerThick, SpecVol);
-         Array1DReal SelfAttractionLoading("SelfAttractionLoading", NCellsAll);
-         Array1DReal TidalPotential("TidalPotential", NCellsAll);
-         deepCopy(TidalPotential, 0.0_Real);
-         deepCopy(SelfAttractionLoading, 0.0_Real);
-         VCoord->computeGeopotential(TidalPotential, SelfAttractionLoading);
+         // compute z levels
+         VCoord->computeZHeight(LayerThick, SpecVol);
 
-         // create PressureGrad instance 
+         // get PressureGrad instance 
          PressureGrad *DefPGrad = PressureGrad::getDefault();
          if (!DefPGrad) {
             LOG_INFO("PGrad: default instance not created by init");
@@ -270,24 +267,36 @@ int main(int argc, char *argv[]) {
          // compute pressure gradient
          deepCopy(Tend, 0.0_Real);
          DefPGrad->computePressureGrad(Tend, DefState, VCoord, DefEos, TimeLevel);
+
+         //compute errors
          Real max_value = 0.0_Real;
          parallelReduce({NEdgesAll, NVertLayers - 2},
                         KOKKOS_LAMBDA(int i, int k, Real &max) {
-                           Real val = Kokkos::abs(Tend(i + 1, k));
+                           Real val = Kokkos::abs(Tend(i, k + 1));
                            if (val > max) max = val;
                         }, Kokkos::Max<Real>(max_value)  );
          Real sum_value = 0.0_Real;
          parallelReduce({NEdgesAll, NVertLayers - 2},
                         KOKKOS_LAMBDA(int i, int k, Real &lsum) {
-                           lsum += Tend(i + 1, k) * Tend(i + 1, k);
+                           lsum += Tend(i, k + 1) * Tend(i, k + 1);
                         }, Kokkos::Sum<Real>(sum_value)  );
-         LOG_INFO("refinement level {}: max |Tend| = {}, average Tend = {}", refinement, max_value, std::sqrt(sum_value) / (NEdgesAll * (NVertLayers - 2)));
+         Real rmse = std::sqrt(sum_value / (NEdgesAll * (NVertLayers - 2)));
+         RMSE(refinement) = rmse;
+
+         LOG_INFO("refinement level {}: max |Tend| = {}, average Tend = {}", refinement, max_value, rmse);
 
          // coarsen for next iteration
          dC = dC * 2.0_Real;
          NVertLayers = NVertLayers / 2;
 
       } // refinement loop
+
+      // Test for second order convergence
+      if (RMSE(NRefinements) < RMSE(0) / pow(4.0_Real, NRefinements - 1)) {
+         RetVal = 0;
+      } else {
+         RetVal = 1;
+      }
 
       // cleanup
       PressureGrad::clear();
