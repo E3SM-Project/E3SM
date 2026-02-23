@@ -24,6 +24,7 @@
 #include "OceanState.h"
 #include "OmegaKokkos.h"
 #include "Pacer.h"
+#include "PGrad.h"
 #include "TimeMgr.h"
 #include "TimeStepper.h"
 #include "Tendencies.h"
@@ -103,6 +104,8 @@ void initIOStreamTest(Clock *&ModelClock // Model clock
    TmpErr = OceanState::init();
    if (TmpErr != 0)
       ABORT_ERROR("IOStreamTest: Error initializing OceanState");
+
+   PressureGrad::init();
 
    // Intialize Tendencies
    Tendencies::init();
@@ -224,6 +227,7 @@ int main(int argc, char **argv) {
 
    // Clean up environments
    TimeStepper::clear();
+   PressureGrad::clear();
    Tendencies::clear();
    Tracers::clear();
    OceanState::clear();
