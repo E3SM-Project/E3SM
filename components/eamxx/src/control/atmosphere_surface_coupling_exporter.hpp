@@ -134,19 +134,11 @@ protected:
   util::TimeInterpolation           m_time_interp;
   std::vector<std::string>          m_export_from_file_field_names;
 
-  // Views storing a 2d array with dims (num_cols,num_fields) for cpl export data.
-  // The field idx strides faster, since that's what mct does (so we can "view" the
-  // pointer to the whole a2x array from Fortran)
+  // Views storing a 2d array for cpl export data.
+  // MCT layout: (num_cols, num_fields) - field idx strides faster
+  // MOAB layout: (num_fields, num_cols) - column idx strides faster
   view_2d <DefaultDevice, Real> m_cpl_exports_view_d;
   uview_2d<HostDevice,    Real> m_cpl_exports_view_h;
-
-#ifdef HAVE_MOAB
-  // Views storing a 2d array with dims (num_fields, num_cols) for moab cpl export data.
-  // The field cols strides faster, since that's what moab does (so we can "view" the
-  // pointer to the whole a2x_am(:,:) array from Fortran)
-  view_2d <DefaultDevice, Real> m_moab_cpl_exports_view_d;
-  uview_2d<HostDevice,    Real> m_moab_cpl_exports_view_h;
-#endif
   // Array storing the field names for exports
   name_t*                   m_export_field_names;
   std::vector<std::string>  m_export_field_names_vector;
