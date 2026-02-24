@@ -180,12 +180,12 @@
     </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/usr/share/lmod/8.3.1/init/perl</init_path>
-      <init_path lang="python">/usr/share/lmod/8.3.1/init/python</init_path>
-      <init_path lang="sh">/usr/share/lmod/8.3.1/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/8.3.1/init/csh</init_path>
-      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/8.7.60/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/8.7.60/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/8.7.60/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/8.7.60/init/csh</init_path>
+      <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
 
@@ -218,36 +218,43 @@
       </modules>
 
       <modules compiler="gnu">
-        <command name="load">PrgEnv-gnu/8.5.0</command>
-        <command name="load">gcc-native/12.3</command>
-        <command name="load">cray-libsci/24.07.0</command>
+        <command name="load">PrgEnv-gnu/8.6.0</command>
+        <command name="load">gcc-native/14</command>
+        <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
       <modules compiler="intel">
-        <command name="load">PrgEnv-intel/8.5.0</command>
-        <command name="load">intel/2024.1.0</command>
+        <command name="load">PrgEnv-intel/8.6.0</command>
+        <command name="load">intel/2025.3</command>
       </modules>
 
       <modules compiler="nvidia">
         <command name="load">PrgEnv-nvidia</command>
-        <command name="load">nvidia/25.5</command>
-        <command name="load">cray-libsci/24.07.0</command>
+        <command name="load">nvidia/25.9</command>
+        <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
       <modules compiler="amdclang">
         <command name="load">PrgEnv-aocc</command>
         <command name="load">aocc/4.1.0</command>
-        <command name="load">cray-libsci/24.07.0</command>
+        <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
       <modules>
         <command name="load">craype-accel-host</command>
-        <command name="load">craype/2.7.32</command>
-        <command name="load">cray-mpich/8.1.30</command>
+        <command name="load">craype/2.7.35</command>
+        <command name="load">cray-mpich/9.0.1</command>
+        <command name="load">cmake/3.30.2</command>
+      </modules>
+      <modules DEBUG="TRUE"> <!-- https://github.com/E3SM-Project/E3SM/issues/8062 -->
         <command name="load">cray-hdf5-parallel/1.12.2.9</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
         <command name="load">cray-parallel-netcdf/1.12.3.13</command>
-        <command name="load">cmake/3.30.2</command>
+      </modules>
+      <modules DEBUG="FALSE">
+        <command name="load">cray-hdf5-parallel/1.14.3.7</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.19</command>
       </modules>
     </module_system>
 
@@ -267,8 +274,10 @@
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
       <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
+    </environment_variables>
+    <environment_variables DEBUG="TRUE">
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
@@ -375,12 +384,12 @@
     </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/usr/share/lmod/8.3.1/init/perl</init_path>
-      <init_path lang="python">/usr/share/lmod/8.3.1/init/python</init_path>
-      <init_path lang="sh">/usr/share/lmod/8.3.1/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/8.3.1/init/csh</init_path>
-      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/8.7.60/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/8.7.60/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/8.7.60/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/8.7.60/init/csh</init_path>
+      <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
 
@@ -413,13 +422,13 @@
       </modules>
 
       <modules compiler="gnu.*">
-        <command name="load">PrgEnv-gnu/8.5.0</command>
-        <command name="load">gcc-native/12.3</command>
+        <command name="load">PrgEnv-gnu/8.6.0</command>
+        <command name="load">gcc-native/14</command>
       </modules>
 
       <modules compiler="nvidia.*">
         <command name="load">PrgEnv-nvidia</command>
-        <command name="load">nvidia/25.5</command>
+        <command name="load">nvidia/25.9</command>
       </modules>
 
       <modules compiler="gnugpu">
@@ -430,7 +439,7 @@
       <modules compiler="nvidiagpu">
         <command name="load">cudatoolkit/12.9</command>
         <command name="load">craype-accel-nvidia80</command>
-        <command name="load">gcc-native-mixed/12.3</command>
+        <command name="load">gcc-native-mixed/14</command>
       </modules>
 
       <modules compiler="gnu">
@@ -442,13 +451,20 @@
       </modules>
 
       <modules>
-        <command name="load">cray-libsci/24.07.0</command>
-        <command name="load">craype/2.7.32</command>
-        <command name="load">cray-mpich/8.1.30</command>
-        <command name="load">cray-hdf5-parallel/1.14.3.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.13</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
+        <command name="load">cray-libsci/25.09.0</command>
+        <command name="load">craype/2.7.35</command>
+        <command name="load">cray-mpich/9.0.1</command>
         <command name="load">cmake/3.30.2</command>
+      </modules>
+      <modules DEBUG="TRUE"> <!-- https://github.com/E3SM-Project/E3SM/issues/8062 -->
+        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
+      </modules>
+      <modules DEBUG="FALSE">
+        <command name="load">cray-hdf5-parallel/1.14.3.7</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.19</command>
       </modules>
     </module_system>
 
@@ -467,6 +483,9 @@
       <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
+    </environment_variables>
+    <environment_variables DEBUG="TRUE">
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>

@@ -39,9 +39,7 @@ string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g")
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
     if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL "2025.0")
         #message(STATUS "ndk: Applying Intel 2025.3 sanitization workaround")
-        string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -init=none -check nouninit") # Applying Intel 2025.3 sanitization workaround (to revert -init=snan,arrays)
-        #string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -init=none")
-        #string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -check nouninit") # may be all that is needed
+        string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -check nouninit") # Applying Intel 2025.3 sanitization workaround
         #string(APPEND CMAKE_CXX_FLAGS_DEBUG " -fno-sanitize=all") #ndk or maybe just -fno-sanitize=memory ?
         #string(APPEND CMAKE_C_FLAGS_DEBUG " -fno-sanitize=all") #ndk
         #string(APPEND CMAKE_EXE_LINKER_FLAGS_DEBUG " -fno-sanitize=all") #ndk -- needed?
@@ -51,7 +49,6 @@ endif()
 
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
 string(APPEND CMAKE_CXX_FLAGS " -fp-model=precise") # and manually add precise
-
 string(APPEND CMAKE_Fortran_FLAGS " -fp-model=consistent -fimf-use-svml")
 #  string(APPEND FFLAGS " -qno-opt-dynamic-align")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -g -traceback")
