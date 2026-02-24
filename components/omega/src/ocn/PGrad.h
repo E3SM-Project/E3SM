@@ -39,8 +39,7 @@ class PressureGradCentered {
                                    const Array2DReal &ZInterface,
                                    const Array1DReal &TidalPotential,
                                    const Array1DReal &SelfAttractionLoading,
-                                   const Array2DReal &SpecVol
-                                   ) const {
+                                   const Array2DReal &SpecVol) const {
 
       const I4 KStart = chunkStart(KChunk, MinLayerEdgeBot(IEdge));
       const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerEdgeTop(IEdge));
@@ -49,8 +48,10 @@ class PressureGradCentered {
       const I4 ICell1      = CellsOnEdge(IEdge, 1);
       const Real InvDcEdge = 1.0_Real / DcEdge(IEdge);
 
-      Real GradGeoPot = (TidalPotential(ICell1) - TidalPotential(ICell0)) * InvDcEdge +
-                        (SelfAttractionLoading(ICell1) - SelfAttractionLoading(ICell0)) * InvDcEdge;
+      Real GradGeoPot =
+          (TidalPotential(ICell1) - TidalPotential(ICell0)) * InvDcEdge +
+          (SelfAttractionLoading(ICell1) - SelfAttractionLoading(ICell0)) *
+              InvDcEdge;
 
       for (int KVec = 0; KVec < KLen; ++KVec) {
          const I4 K = KStart + KVec;
@@ -76,8 +77,9 @@ class PressureGradCentered {
              (SpecVol(ICell1, K) - SpecVol(ICell0, K)) * InvDcEdge;
          Tend(IEdge, K) +=
              EdgeMask(IEdge, K) * (-GradMontPot + PGradAlpha - GradGeoPot);
-         //if (IEdge == 0)    
-         //LOG_INFO("IEdge {}, K {}: GradMontPot {}, PGradAlpha {}, Tend {}", IEdge, K, GradMontPot, PGradAlpha, Tend(IEdge, K));
+         // if (IEdge == 0)
+         // LOG_INFO("IEdge {}, K {}: GradMontPot {}, PGradAlpha {}, Tend {}",
+         // IEdge, K, GradMontPot, PGradAlpha, Tend(IEdge, K));
       }
    }
 
@@ -142,7 +144,8 @@ class PressureGrad {
    static PressureGrad *getDefault();
 
    // Get instance by name
-   static PressureGrad *get(const std::string &Name ///< [in] Name of PressureGrad
+   static PressureGrad *
+   get(const std::string &Name ///< [in] Name of PressureGrad
    );
 
    // Deallocates arrays and deletes instance
@@ -156,7 +159,7 @@ class PressureGrad {
    ~PressureGrad();
 
    // Compute pressure gradient tendencies and add into Tend array
-   void computePressureGrad(Array2DReal &Tend, const OceanState *State, 
+   void computePressureGrad(Array2DReal &Tend, const OceanState *State,
                             const VertCoord *VCoord, const Eos *EqState,
                             const int TimeLevel) const;
 
@@ -186,7 +189,8 @@ class PressureGrad {
 
    // Temporary: to be moveed to tidal forcing module in future
    Array1DReal TidalPotential; ///< Tidal potential for tidal forcing
-   Array1DReal SelfAttractionLoading; ///< Self attraction and loading for tidal forcing
+   Array1DReal
+       SelfAttractionLoading; ///< Self attraction and loading for tidal forcing
 
    // Instances of functors
    PressureGradCentered CenteredPGrad;

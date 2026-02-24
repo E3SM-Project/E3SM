@@ -259,7 +259,7 @@ void Tendencies::defineFields() {
       LayerThicknessTendFieldName.append(Name);
       NormalVelocityTendFieldName.append(Name);
       TracerTendFieldName.append(Name);
-   }   
+   }
 
    int NDims = 2;
    std::vector<std::string> DimNamesThickness(NDims);
@@ -290,7 +290,7 @@ void Tendencies::defineFields() {
    if (Name != "Default") {
       TendGroupName.append(Name);
    }
-   auto TendGroup     = FieldGroup::create(TendGroupName);
+   auto TendGroup = FieldGroup::create(TendGroupName);
 
    TendGroup->addField(LayerThicknessTendFieldName);
    TendGroup->addField(NormalVelocityTendFieldName);

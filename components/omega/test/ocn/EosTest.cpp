@@ -51,8 +51,8 @@ const Real GswBVFExpValue =
     0.02081197958166906; // Expected value from GSW-C library
 
 /// Test input values
-const Real Sa = 30.0;   // Absolute Salinity in g/kg
-const Real Ct = 10.0;   // Conservative Temperature in degC
+const Real Sa = 30.0;           // Absolute Salinity in g/kg
+const Real Ct = 10.0;           // Conservative Temperature in degC
 const Real P  = 1000.0 * Db2Pa; // Pressure in Pa
 
 const I4 KDisp  = 1;     // Displate parcel to K=1 for TEOS-10 eos
@@ -667,8 +667,9 @@ void checkValueGswcN2() {
    // Input arrays: length nz+1
    double Salt[4]  = {Sa - 1.0, Sa, Sa + 1.0}; // Absolute Salinity (g/kg)
    double Temp[4]  = {Ct + 15.0, Ct + 10.0,
-                      Ct + 5.0};            // Conservative Temperature (deg C)
-   double Press[4] = {P * Pa2Db, P * Pa2Db + 1.0, P * Pa2Db + 2.0}; // Pressure (dbar)
+                      Ct + 5.0}; // Conservative Temperature (deg C)
+   double Press[4] = {P * Pa2Db, P * Pa2Db + 1.0,
+                      P * Pa2Db + 2.0}; // Pressure (dbar)
 
    // Latitude (degrees north)
    double Latitude[4] = {0.0, 0.0, 0.0};

@@ -111,7 +111,8 @@ PressureGrad::PressureGrad(
 
    // Temporary: initialization of tidal potential and SAL
    TidalPotential = Array1DReal("TidalPotential", Mesh->NCellsSize);
-   SelfAttractionLoading = Array1DReal("SelfAttractionLoading", Mesh->NCellsSize);
+   SelfAttractionLoading =
+       Array1DReal("SelfAttractionLoading", Mesh->NCellsSize);
 
 } // end constructor
 
@@ -191,8 +192,8 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
                  Team, KRange, INNER_LAMBDA(int KChunk) {
                     LocCenteredPGrad(Tend, IEdge, KChunk, PressureMid,
                                      PressureInterface, ZInterface,
-                                     LocTidalPotential, LocSelfAttractionLoading,
-                                     SpecVol);
+                                     LocTidalPotential,
+                                     LocSelfAttractionLoading, SpecVol);
                  });
           });
 
@@ -202,16 +203,16 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
       parallelForOuter(
           "pgrad-highorder", {NEdgesAll},
           KOKKOS_LAMBDA(I4 IEdge, const TeamMember &Team) {
-             const int KMin = LocMinLayerEdgeBot(IEdge);
-             const int KMax = LocMaxLayerEdgeTop(IEdge);
+             const int KMin   = LocMinLayerEdgeBot(IEdge);
+             const int KMax   = LocMaxLayerEdgeTop(IEdge);
              const int KRange = vertRange(KMin, KMax);
 
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
                     LocHighOrderPGrad(Tend, IEdge, KChunk, PressureMid,
                                       PressureInterface, ZInterface,
-                                      LocTidalPotential, LocSelfAttractionLoading,
-                                      SpecVol);
+                                      LocTidalPotential,
+                                      LocSelfAttractionLoading, SpecVol);
                  });
           });
    }

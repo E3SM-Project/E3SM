@@ -23,8 +23,8 @@
 #include "MachEnv.h"
 #include "OceanState.h"
 #include "OmegaKokkos.h"
-#include "Pacer.h"
 #include "PGrad.h"
+#include "Pacer.h"
 #include "Tendencies.h"
 #include "TimeStepper.h"
 #include "VertCoord.h"
@@ -93,7 +93,7 @@ void initStateTest() {
    AuxiliaryState::init();
 
    // Initialize pressure gradient
-   PressureGrad::init(); 
+   PressureGrad::init();
 
    // Create tendencies
    Tendencies::init();

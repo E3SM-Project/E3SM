@@ -33,13 +33,14 @@
 
 #include "AuxiliaryState.h"
 #include "Config.h"
+#include "Eos.h"
 #include "HorzMesh.h"
 #include "OceanState.h"
+#include "PGrad.h"
 #include "TendencyTerms.h"
 #include "TimeMgr.h"
-#include "Eos.h"
-#include "PGrad.h"
 #include "VertAdv.h"
+#include "VertCoord.h"
 
 #include <functional>
 #include <memory>
@@ -154,10 +155,10 @@ class Tendencies {
    // Construct a new tendency object
    Tendencies(const std::string &Name, ///< [in] Name for tendencies
               const HorzMesh *Mesh,    ///< [in] Horizontal mesh
-              VertCoord *VCoord,              ///< [in] Vertical coordinate
-              VertAdv *VAdv,                  ///< [in] Vertical advection
-              PressureGrad *PGrad,            ///< [in] Pressure gradient
-              Eos *EqState,      ///< [in] Equation of state
+              VertCoord *VCoord,       ///< [in] Vertical coordinate
+              VertAdv *VAdv,           ///< [in] Vertical advection
+              PressureGrad *PGrad,     ///< [in] Pressure gradient
+              Eos *EqState,            ///< [in] Equation of state
               int NTracersIn,          ///< [in] Number of tracers
               TimeInterval TimeStep,   ///< [in] Time step
               Config *Options,         ///< [in] Configuration options
@@ -166,10 +167,10 @@ class Tendencies {
 
    Tendencies(const std::string &Name, ///< [in] Name for tendencies
               const HorzMesh *Mesh,    ///< [in] Horizontal mesh
-              VertCoord *VCoord,              ///< [in] Vertical coordinate
-              VertAdv *VAdv,                  ///< [in] Vertical advection
-              PressureGrad *PGrad,            ///< [in] Pressure gradient
-              Eos *EqState,      ///< [in] Equation of state
+              VertCoord *VCoord,       ///< [in] Vertical coordinate
+              VertAdv *VAdv,           ///< [in] Vertical advection
+              PressureGrad *PGrad,     ///< [in] Pressure gradient
+              Eos *EqState,            ///< [in] Equation of state
               int NTracersIn,          ///< [in] Number of tracers
               TimeInterval TimeStep,   ///< [in] Time step
               Config *Options          ///< [in] Configuration options
@@ -181,13 +182,13 @@ class Tendencies {
    Tendencies(const Tendencies &) = delete;
    Tendencies(Tendencies &&)      = delete;
 
-   const HorzMesh *Mesh;    ///< Pointer to horizontal mesh
+   const HorzMesh *Mesh; ///< Pointer to horizontal mesh
    VertCoord *VCoord;    ///< Pointer to vertical coordinate
    VertAdv *VAdv;        ///< Pointer to vertical advection
    PressureGrad *PGrad;  ///< Pointer to pressure gradient
    Eos *EqState;         ///< Pointer to equation of state
-   I4 NTracers;             ///< Number of tracers
-   TimeInterval TimeStep;   ///< Time step
+   I4 NTracers;          ///< Number of tracers
+   TimeInterval TimeStep; ///< Time step
 
    // Pointer to default tendencies
    static Tendencies *DefaultTendencies;

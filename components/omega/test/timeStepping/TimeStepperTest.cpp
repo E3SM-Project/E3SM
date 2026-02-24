@@ -29,8 +29,8 @@
 #include "MachEnv.h"
 #include "OceanState.h"
 #include "OmegaKokkos.h"
-#include "Pacer.h"
 #include "PGrad.h"
+#include "Pacer.h"
 #include "TendencyTerms.h"
 #include "TimeMgr.h"
 #include "Tracers.h"
@@ -191,9 +191,9 @@ int initTimeStepperTest(const std::string &mesh) {
    // Creating non-default state and auxiliary state to use only one vertical
    // layer
 
-   auto *DefMesh = HorzMesh::getDefault();
-   auto *DefHalo = Halo::getDefault();
-   auto *DefEos  = Eos::getInstance();
+   auto *DefMesh  = HorzMesh::getDefault();
+   auto *DefHalo  = Halo::getDefault();
+   auto *DefEos   = Eos::getInstance();
    auto *DefPGrad = PressureGrad::getDefault();
 
    int NTracers          = Tracers::getNumTracers();
