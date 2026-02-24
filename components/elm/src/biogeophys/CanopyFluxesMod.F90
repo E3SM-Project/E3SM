@@ -326,6 +326,8 @@ contains
                               ! from current iteration to previous, between sunlit and
                               ! shaded portions of the leaves [m/s]
 
+    real(r8) :: reldel_gs
+    real(r8) :: hmean_gs
     real(r8) :: t_end,t_start,w_end,w_start
     real(r8) :: w_diff(0:fates_pproc-1)
     real(r8) :: setup_overhead
@@ -346,10 +348,11 @@ contains
     ! We set the minum allowable difference in the conductance iteration
     ! to be equal to the maximum allowable stomatal resistance (this number is from fates)
     real(r8),parameter :: max_del_gs =  1._r8/2.e8_r8   ! [m/s]
+    real(r8),parameter :: max_reldel_gs = 0.05
+    
+    integer, parameter  :: itmax_stomata = 10
 
-    integer, parameter  :: itmax_stomata = 3
-
-    logical, parameter :: do_b4b = .true.  ! Set this true to reproduce results before
+    logical, parameter :: do_b4b = .false.  ! Set this true to reproduce results before
                                            ! refactoring the patch-loops
     
     !------------------------------------------------------------------------------
@@ -812,7 +815,7 @@ contains
       !$OMP                      efpot,rpp,wtaq,wtlq,snow_depth_c,fsno_dl, &
       !$OMP                      elai_dl,rdl,wtsqi,wtgq0,wtgaq,dc1,dc2,efsh,     &
       !$OMP                      efeold,erre,lw_grnd,dels,ecidif,tstar,    &
-      !$OMP                      qstar,thvstar,wc, iter_final,del_gs,w_start,w_end)  if(fates_pproc>1)
+      !$OMP                      qstar,thvstar,wc, iter_final,del_gs,reldel_gs,w_start,w_end)  if(fates_pproc>1)
 
       it = 0
       if(fates_pproc>1) then
@@ -1221,8 +1224,15 @@ contains
                del_gs = max( abs(1._r8/rssun(p)-1._r8/rssun_old(p)), &
                     abs(1._r8/rssha(p)-1._r8/rssha_old(p)) )
 
+               ! Let's use the harmonic mean of the conductances
+               ! which is the inverse of the sum of resistances
+               hmean_gs = 2._r8/(rssun(p)+rssha(p))
+               
+               reldel_gs = del_gs / hmean_gs
+               
                istoma_converge_if: if( do_b4b .or. &
-                    (del_gs < max_del_gs ) .or.  &
+                    !(del_gs < max_del_gs ) .or.  &
+                    (reldel_gs < max_reldel_gs) .or. &
                     (itstoma>=itmax_stomata) ) then
                   converge_stoma = .true.
 
