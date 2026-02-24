@@ -346,6 +346,12 @@
     <lname>1850_DATM%CRU_ELM%BGCDV_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
 
+
+ <compset>
+  <alias>I1850GSWCNPTOPPHSWFMCROP</alias> 
+  <lname>1850_DATM%GSWP3v1_ELM%CNPRDCTCBCTOPPHSWFMCROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+ </compset>
+
   <compset>
     <alias>ICRUELMBGCCROP</alias>
     <lname>2000_DATM%CRU_ELM%BGC-CROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
