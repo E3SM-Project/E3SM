@@ -1075,6 +1075,7 @@ subroutine  copy_aream_from_area(mbappid)
       type(mct_list)             :: temp_list
       integer                    :: nfields,nloc
       logical                    :: dead_comps
+      logical                    :: activate_atm_pg
       ! real(R8), allocatable, target :: values(:)
 
 
@@ -1110,6 +1111,7 @@ subroutine  copy_aream_from_area(mbappid)
       endif
 
       call seq_infodata_GetData(infodata,dead_comps=dead_comps)
+      activate_atm_pg = .false.
 
 !!!!!!!!!!!!!!!! ATMOSPHERE
       if ( comp%oneletterid == 'a' .and. maxMH /= -1) then
@@ -1123,8 +1125,15 @@ subroutine  copy_aream_from_area(mbappid)
          if (mphaid >= 0) then  ! component atm procs
             ierr  = iMOAB_GetMeshInfo ( mphaid, nvert, nvise, nbl, nsurf, nvisBC )
             comp%mbApCCid = mphaid ! phys atm
-            comp%mbGridType = 0 ! point cloud
-            comp%mblsize = nvert(1) ! point cloud
+            ! Auto-detect: dead FV ATM creates a full RLL mesh with cells,
+            ! while spectral ATM sends only a point cloud (vertices).
+            if (nvise(1) > 0) then
+               comp%mbGridType = 1 ! cell mesh (dead FV ATM)
+               comp%mblsize = nvise(1)
+            else
+               comp%mbGridType = 0 ! point cloud (spectral ATM)
+               comp%mblsize = nvert(1)
+            endif
          endif
 
 !!!!!!!! ON ATM COMPONENT
@@ -1163,6 +1172,22 @@ subroutine  copy_aream_from_area(mbappid)
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in receiving mesh on atm coupler '
                   call shr_sys_abort(subname//' ERROR in receiving mesh on atm coupler ')
+               endif
+               ! Check if received ATM mesh has cells (e.g., dead FV ATM creates
+               ! a full RLL mesh). Record this but DO NOT set atm_pg_active yet —
+               ! on X-case runs, component and coupler PEs overlap, and
+               ! FreeSenderBuffers below must use the ORIGINAL atm_pg_active
+               ! to know which app (mphaid vs mhpgid) did the send.
+               if (.not. atm_pg_active) then
+                  ierr = iMOAB_GetMeshInfo(mbaxid, nvert, nvise, nbl, nsurf, nvisBC)
+                  if (nvise(1) > 0) then
+                     activate_atm_pg = .true.
+                     if (seq_comm_iamroot(CPLID)) then
+                        write(logunit,*) subname, &
+                           ' Received ATM mesh with cells: will set atm_pg_active=true,', &
+                           ' nvert=', nvert(1), ' nvise=', nvise(1)
+                     endif
+                  endif
                endif
             !!!!  DATA ATM
             else
@@ -1212,13 +1237,23 @@ subroutine  copy_aream_from_area(mbappid)
             endif
          endif  ! component atm pes
 
+         ! Now safe to activate atm_pg_active after FreeSenderBuffers is done
+         if (activate_atm_pg) then
+            atm_pg_active = .true.
+         endif
+
 !!!!!  back to joint COMPONENT and CPL procs
          ! graph between atm phys, mphaid, and atm dyn on coupler, mbaxid
          ! phys atm group is mpigrp_old, coupler group is mpigrp_cplid
-         typeA = 2 ! point cloud for mphaid
+         ! typeA: entity matching type for ATM component mesh (mphaid)
+         ! For spectral ATM: point cloud (typeA=2), for dead FV ATM: cell mesh (typeA=3)
+         typeA = 2 ! default: point cloud for spectral ATM
+         if (mphaid >= 0 .and. comp%mbGridType == 1) then
+            typeA = 3 ! cell mesh (dead FV ATM has full RLL mesh)
+         endif
          typeB = 2 ! in spectral case, we will have just point cloud on coupler PEs
          if (atm_pg_active) then
-            typeB = 3 ! in this case, we will have cells associated with DOFs as GLOBAL_ID tag
+            typeB = 3 ! cell mesh (PG2 ATM or dead FV ATM with cells)
          endif
          ATM_PHYS_CID = 200 + id_old ! 200 + 5 for atm, see line  969   ATM_PHYS = 200 + ATMID ! in
                                     !  components/cam/src/cpl/atm_comp_mct.F90
@@ -1272,7 +1307,6 @@ subroutine  copy_aream_from_area(mbappid)
          if (mbaxid .ge. 0 ) then   !  coupler pes only
             ! copy aream from area in case atm_mesh
             call copy_aream_from_area(mbaxid)
-
          endif ! coupler pes
 
 #ifdef MOABDEBUG
@@ -1333,9 +1367,9 @@ subroutine  copy_aream_from_area(mbappid)
                   call shr_sys_abort(subname//' ERROR in sending ocean mesh to coupler ')
                endif
                if (dead_comps) then ! XOCN dead comps case
-                  ! in dead comps case, we need to set the grid type as point cloud
-                  comp%mbGridType = 0 ! vertices
-                  comp%mblsize = nvert(1) ! vertices
+                  ! dead comps now create full RLL mesh with elements
+                  comp%mbGridType = 1 ! cells
+                  comp%mblsize = nvise(1) ! cells
                else
                   comp%mbGridType = 1 ! cells
                   comp%mblsize = nvise(1) ! cells
@@ -1438,7 +1472,7 @@ subroutine  copy_aream_from_area(mbappid)
          ! in case of domain read, we need to compute the comm graph
 !!!!!!! on joint OCN and CPL procs
      !!!!! DATA OCN
-         if ( trim(ocn_domain) /= 'none' ) then
+         if ( trim(ocn_domain) /= 'none' .and. .not. dead_comps) then
             ! we are now on joint pes, compute comm graph between data ocn and coupler model ocn
             typeA = 2 ! point cloud on component PEs
             typeB = 3 ! full mesh on coupler pes, we just read it
@@ -1742,8 +1776,13 @@ subroutine  copy_aream_from_area(mbappid)
                call shr_sys_abort(subname//' ERROR in getting mesh info for lnd on coupler ')
             endif
             comp%mbApCCid = mlnid ! land
-            comp%mbGridType = 0 ! 0 or 1, pc or cells
-            comp%mblsize = nvert(1) ! vertices
+            if (dead_comps) then
+               comp%mbGridType = 1 ! dead comps create full mesh
+               comp%mblsize = nvise(1) ! cells
+            else
+               comp%mbGridType = 0 ! 0 or 1, pc or cells
+               comp%mblsize = nvert(1) ! vertices
+            endif
          endif
          if ( .not. mb_scm_land .and. .not. dead_comps ) then
             ! we are now on joint pes, compute comm graph between lnd and coupler model
@@ -1797,10 +1836,10 @@ subroutine  copy_aream_from_area(mbappid)
                ierr  = iMOAB_GetMeshInfo ( MPSIID, nvert, nvise, nbl, nsurf, nvisBC )
                comp%mbApCCid = MPSIID ! ice imoab app id
             endif
-            if ( trim(ice_domain) == 'none' .or. dead_comps ) then ! regular ice model
+            if ( trim(ice_domain) == 'none' ) then ! regular ice model
                if (dead_comps) then
-                  comp%mbGridType = 0 ! 0 or 1, pc or cells
-                  comp%mblsize = nvert(1) ! vertices
+                  comp%mbGridType = 1 ! dead comps create full mesh
+                  comp%mblsize = nvise(1) ! cells
                else
                   comp%mbGridType = 1 ! 0 or 1, pc or cells
                   comp%mblsize = nvise(1) ! cells
@@ -1821,7 +1860,7 @@ subroutine  copy_aream_from_area(mbappid)
             appname = "COUPLE_MPASSI"//C_NULL_CHAR
             ! migrated mesh gets another app id, moab moab sea ice to coupler (mbix)
             ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbixid)
-            if ( trim(ice_domain) == 'none' .or. dead_comps ) then ! regular ice model
+            if ( trim(ice_domain) == 'none' ) then ! regular ice model
                ierr = iMOAB_ReceiveMesh(mbixid, mpicom_join, mpigrp_old, id_old)
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in receiving ice mesh in coupler '
@@ -1852,25 +1891,16 @@ subroutine  copy_aream_from_area(mbappid)
                endif
             endif ! end data ice
 
-            if (MPI_COMM_NULL /= mpicom_old .and. (trim(ice_domain) == 'none' .or. dead_comps) ) then  ! we are on component pes again, release buffers
-               context_id = id_join
-               ierr = iMOAB_FreeSenderBuffers(MPSIID, context_id)
-               if (ierr .ne. 0) then
+            if (MPSIID .ge. 0) then  ! we are on component sea ice pes
+               if ( trim(ice_domain) == 'none' ) then
+                  context_id = id_join
+                  ierr = iMOAB_FreeSenderBuffers(MPSIID, context_id)
+                  if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in freeing buffers '
                   call shr_sys_abort(subname//' ERROR in freeing buffers ')
+                  endif
                endif
-           endif
-
-         ! if (MPSIID .ge. 0) then  ! we are on component sea ice pes
-         !    if ( trim(ice_domain) == 'none' .or. dead_comps ) then
-         !       context_id = id_join
-         !       ierr = iMOAB_FreeSenderBuffers(MPSIID, context_id)
-         !       if (ierr .ne. 0) then
-         !         write(logunit,*) subname,' error in freeing buffers '
-         !         call shr_sys_abort(subname//' ERROR in freeing buffers ')
-         !       endif
-         !    endif
-         ! endif
+            endif
 
             tagtype = 1  ! dense, double
             numco = 1 !  one value per cell / entity
@@ -1916,7 +1946,7 @@ subroutine  copy_aream_from_area(mbappid)
          endif
 
         ! in case of ice domain read, we need to compute the comm graph
-        if ( trim(ice_domain) /= 'none' ) then
+        if ( trim(ice_domain) /= 'none' .and. .not. dead_comps ) then
             ! we are now on joint pes, compute comm graph between data ice and coupler model ice
             typeA = 2 ! point cloud on component PEs
             typeB = 3 ! full mesh on coupler pes, we just read it
@@ -1956,8 +1986,13 @@ subroutine  copy_aream_from_area(mbappid)
          if (mrofid >= 0) then  ! component pes
             ierr  = iMOAB_GetMeshInfo ( mrofid, nvert, nvise, nbl, nsurf, nvisBC )
             comp%mbApCCid = mrofid !
-            comp%mbGridType = 0 ! 0 or 1, pc or cells
-            comp%mblsize = nvert(1) ! vertices
+            if (dead_comps) then
+               comp%mbGridType = 1 ! dead comps create full mesh
+               comp%mblsize = nvise(1) ! cells
+            else
+               comp%mbGridType = 0 ! 0 or 1, pc or cells
+               comp%mblsize = nvert(1) ! vertices
+            endif
          endif
 
          if (MPI_COMM_NULL /= mpicom_old .and. mrofid >= 0) then ! component pes, send mesh to coupler
@@ -2058,13 +2093,15 @@ subroutine  copy_aream_from_area(mbappid)
          endif
 
          ! we are now on joint pes, compute comm graph between rof and coupler model
-         typeA = 2 ! point cloud on component PEs
-         typeB = 3 ! full mesh on coupler pes, we just read it
-         ierr = iMOAB_ComputeCommGraph( mrofid, mbrxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
-             typeA, typeB, id_old, id_join)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in computing comm graph for rof model '
-            call shr_sys_abort(subname//' ERROR in computing comm graph for rof model ')
+         if (mrofid >= 0 .and. .not. dead_comps) then
+            typeA = 2 ! point cloud on component PEs
+            typeB = 3 ! full mesh on coupler pes, we just read it
+            ierr = iMOAB_ComputeCommGraph( mrofid, mbrxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+                typeA, typeB, id_old, id_join)
+            if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in computing comm graph for rof model '
+                call shr_sys_abort(subname//' ERROR in computing comm graph for rof model ')
+            endif
          endif
 
          tagname = 'area:lon:lat:frac:mask'//C_NULL_CHAR
