@@ -175,8 +175,9 @@ module seq_diag_mct
   integer(in),parameter :: f_wevap_HDO =42     ! water: evaporation
   integer(in),parameter :: f_wroff_HDO =43     ! water: runoff/flood
   integer(in),parameter :: f_wioff_HDO =44     ! water: frozen runoff
+  integer(in),parameter :: f_salt      =45     ! salt: salinity flux
 
-  integer(in),parameter :: f_size     = f_wioff_HDO   ! Total array size of all elements
+  integer(in),parameter :: f_size     = f_salt        ! Total array size of all elements
   integer(in),parameter :: f_a        = f_area        ! 1st index for area
   integer(in),parameter :: f_a_end    = f_area        ! last index for area
   integer(in),parameter :: f_h        = f_hfrz        ! 1st index for heat
@@ -190,6 +191,8 @@ module seq_diag_mct
   integer(in),parameter :: f_16O_end  = f_wioff_16O   ! Last index for 16O water isotope
   integer(in),parameter :: f_18O_end  = f_wioff_18O   ! Last index for 18O water isotope
   integer(in),parameter :: f_HDO_end  = f_wioff_HDO   ! Last index for HDO water isotope
+  integer(in),parameter :: f_s        = f_salt        ! 1st index for salt
+  integer(in),parameter :: f_s_end    = f_salt        ! last index for salt
 
   character(len=12),parameter :: fname(f_size) = &
 
@@ -203,7 +206,7 @@ module seq_diag_mct
        ' wfreeze_18O','   wmelt_18O','   wrain_18O','   wsnow_18O',                &
        '   wevap_18O',' wrunoff_18O',' wfrzrof_18O',                               &
        ' wfreeze_HDO','   wmelt_HDO','   wrain_HDO','   wsnow_HDO',                &
-       '   wevap_HDO',' wrunoff_HDO',' wfrzrof_HDO'/)
+       '   wevap_HDO',' wrunoff_HDO',' wfrzrof_HDO','        salt'/)
 
   !--- P for period ---
 
@@ -1624,6 +1627,7 @@ contains
           nf = f_wpolar; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_bergw,n)
           nf = f_wroff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Foxx_rofl,n)
           nf = f_wioff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Foxx_rofi,n)
+          nf = f_salt  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_salt,n)
 
 
           if ( flds_wiso_ocn )then
@@ -1777,6 +1781,7 @@ contains
           nf = f_hsen  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*i2x_i%rAttr(index_i2x_Faii_sen,n)
           nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*i2x_i%rAttr(index_i2x_Fioi_meltw,n)
           nf = f_wevap ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*i2x_i%rAttr(index_i2x_Faii_evap,n)
+          nf = f_salt  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*i2x_i%rAttr(index_i2x_Fioi_salt,n)
 
           if ( flds_wiso_ice )then
              nf = f_wmelt_16O;
@@ -1990,6 +1995,7 @@ contains
              if ( flds_wiso )then
                 dataGpr(iso0(1):isof(nisotopes),:,:) = dataGpr(iso0(1):isof(nisotopes),:,:) * 1.0e6_r8
              end if
+             dataGpr(f_s:f_s_end,:,:) = dataGpr(f_s:f_s_end,:,:) * 1.0e8_r8
              dataGpr = dataGpr/budg_ns
 
              if (iam /= 0) return
@@ -2081,6 +2087,17 @@ contains
                            sum(dataGpr(iso0(is):isof(is),ico,ip))
                    end do
                 end if
+
+                write(logunit,*) ' '
+                write(logunit,FAH) subname,trim(str)//' SALT BUDGET ((kg/s)/m^2*1e8): period = ',trim(pname(ip)),': date = ',cdate,sec
+                write(logunit,FA0) cname(ica),cname(icl),cname(icn),cname(ics),cname(ico),' *SUM*  '
+                do nf = f_s, f_s_end
+                   write(logunit,FA1)    fname(nf),dataGpr(nf,ica,ip),dataGpr(nf,icl,ip), &
+                        dataGpr(nf,icn,ip),dataGpr(nf,ics,ip),dataGpr(nf,ico,ip), &
+                        dataGpr(nf,ica,ip)+dataGpr(nf,icl,ip)+ &
+                        dataGpr(nf,icn,ip)+dataGpr(nf,ics,ip)+dataGpr(nf,ico,ip)
+                enddo
+                write(logunit,*) ' '
 
              enddo
           endif   ! plev
@@ -2187,6 +2204,21 @@ contains
                            -sum(dataGpr(iso0(is):isof(is),icas,ip))
                    end do
                 end if
+
+                write(logunit,*) ' '
+                write(logunit,FAH) subname,trim(str)//' SALT BUDGET (kg/m2s*1e8): period = ',trim(pname(ip)),': date = ',cdate,sec
+                write(logunit,FA0) cname(icar),cname(icxs),cname(icxr),cname(icas),' *SUM*  '
+                do nf = f_s, f_s_end
+                   write(logunit,FA1)    fname(nf),-dataGpr(nf,icar,ip),dataGpr(nf,icxs,ip), &
+                        dataGpr(nf,icxr,ip),-dataGpr(nf,icas,ip), &
+                        -dataGpr(nf,icar,ip)+dataGpr(nf,icxs,ip)+ &
+                        dataGpr(nf,icxr,ip)-dataGpr(nf,icas,ip)
+                enddo
+                write(logunit,FA1)    '   *SUM*',-sum(dataGpr(f_s:f_s_end,icar,ip)),sum(dataGpr(f_s:f_s_end,icxs,ip)), &
+                     sum(dataGpr(f_s:f_s_end,icxr,ip)),-sum(dataGpr(f_s:f_s_end,icas,ip)), &
+                     -sum(dataGpr(f_s:f_s_end,icar,ip))+sum(dataGpr(f_s:f_s_end,icxs,ip))+ &
+                     sum(dataGpr(f_s:f_s_end,icxr,ip))-sum(dataGpr(f_s:f_s_end,icas,ip))
+                write(logunit,*) ' '
              enddo
           endif   ! plev
 
@@ -2334,6 +2366,41 @@ contains
                         sum(dataGpr(iso0(is):isof(is),c_glc_gs,ip))
                 end do
              end if
+
+             write(logunit,*) ' '
+             write(logunit,FAH) subname,'NET SALT BUDGET (kg/m2s*1e8): period = ',trim(pname(ip)),': date = ',cdate,sec
+             write(logunit,FA0r) '     atm','     lnd','     rof','     ocn','  ice nh','  ice sh','     glc',' *SUM*  '
+             do nf = f_s, f_s_end
+                write(logunit,FA1r)   fname(nf),dataGpr(nf,c_atm_ar,ip)+dataGpr(nf,c_atm_as,ip), &
+                     dataGpr(nf,c_lnd_lr,ip)+dataGpr(nf,c_lnd_ls,ip), &
+                     dataGpr(nf,c_rof_rr,ip)+dataGpr(nf,c_rof_rs,ip), &
+                     dataGpr(nf,c_ocn_or,ip)+dataGpr(nf,c_ocn_os,ip), &
+                     dataGpr(nf,c_inh_ir,ip)+dataGpr(nf,c_inh_is,ip), &
+                     dataGpr(nf,c_ish_ir,ip)+dataGpr(nf,c_ish_is,ip), &
+                     dataGpr(nf,c_glc_gr,ip)+dataGpr(nf,c_glc_gs,ip), &
+                     dataGpr(nf,c_atm_ar,ip)+dataGpr(nf,c_atm_as,ip)+ &
+                     dataGpr(nf,c_lnd_lr,ip)+dataGpr(nf,c_lnd_ls,ip)+ &
+                     dataGpr(nf,c_rof_rr,ip)+dataGpr(nf,c_rof_rs,ip)+ &
+                     dataGpr(nf,c_ocn_or,ip)+dataGpr(nf,c_ocn_os,ip)+ &
+                     dataGpr(nf,c_inh_ir,ip)+dataGpr(nf,c_inh_is,ip)+ &
+                     dataGpr(nf,c_ish_ir,ip)+dataGpr(nf,c_ish_is,ip)+ &
+                     dataGpr(nf,c_glc_gr,ip)+dataGpr(nf,c_glc_gs,ip)
+             enddo
+             write(logunit,FA1r)'   *SUM*',sum(dataGpr(f_s:f_s_end,c_atm_ar,ip))+sum(dataGpr(f_s:f_s_end,c_atm_as,ip)), &
+                  sum(dataGpr(f_s:f_s_end,c_lnd_lr,ip))+sum(dataGpr(f_s:f_s_end,c_lnd_ls,ip)), &
+                  sum(dataGpr(f_s:f_s_end,c_rof_rr,ip))+sum(dataGpr(f_s:f_s_end,c_rof_rs,ip)), &
+                  sum(dataGpr(f_s:f_s_end,c_ocn_or,ip))+sum(dataGpr(f_s:f_s_end,c_ocn_os,ip)), &
+                  sum(dataGpr(f_s:f_s_end,c_inh_ir,ip))+sum(dataGpr(f_s:f_s_end,c_inh_is,ip)), &
+                  sum(dataGpr(f_s:f_s_end,c_ish_ir,ip))+sum(dataGpr(f_s:f_s_end,c_ish_is,ip)), &
+                  sum(dataGpr(f_s:f_s_end,c_glc_gr,ip))+sum(dataGpr(f_s:f_s_end,c_glc_gs,ip)), &
+                  sum(dataGpr(f_s:f_s_end,c_atm_ar,ip))+sum(dataGpr(f_s:f_s_end,c_atm_as,ip))+ &
+                  sum(dataGpr(f_s:f_s_end,c_lnd_lr,ip))+sum(dataGpr(f_s:f_s_end,c_lnd_ls,ip))+ &
+                  sum(dataGpr(f_s:f_s_end,c_rof_rr,ip))+sum(dataGpr(f_s:f_s_end,c_rof_rs,ip))+ &
+                  sum(dataGpr(f_s:f_s_end,c_ocn_or,ip))+sum(dataGpr(f_s:f_s_end,c_ocn_os,ip))+ &
+                  sum(dataGpr(f_s:f_s_end,c_inh_ir,ip))+sum(dataGpr(f_s:f_s_end,c_inh_is,ip))+ &
+                  sum(dataGpr(f_s:f_s_end,c_ish_ir,ip))+sum(dataGpr(f_s:f_s_end,c_ish_is,ip))+ &
+                  sum(dataGpr(f_s:f_s_end,c_glc_gr,ip))+sum(dataGpr(f_s:f_s_end,c_glc_gs,ip))
+              write(logunit,*) ' '
 
           endif
 
