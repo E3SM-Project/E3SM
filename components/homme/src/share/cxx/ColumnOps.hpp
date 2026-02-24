@@ -162,7 +162,7 @@ public:
     if (VECTOR_SIZE==1) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,1,NUM_PHYSICAL_LEV),
                            [=](const int& ilev) {
-        Scalar tmp = (x_m(ilev)*weights_m(ilev) + x_m(ilev-1)*weights_m(ilev-1)) / (2.0*weights_i(ilev));
+        Scalar tmp = (x_m(ilev)*weights_m(ilev-1) + x_m(ilev-1)*weights_m(ilev)) / (2.0*weights_i(ilev));
         combine<CM>(tmp,x_i(ilev),alpha,beta);
       });
       // Fix the top/bottom
@@ -178,21 +178,30 @@ public:
 
       // Try to use SIMD operations as much as possible: the last NUM_LEV-1 packs are treated uniformly, and can be vectorized
       for (int ilev=1; ilev<NUM_LEV; ++ilev) {
-        Scalar tmp = x_m(ilev)*weights_m(ilev);
-        tmp.shift_right(1);
-        tmp[0] = x_m(ilev-1)[VECTOR_END]*weights_m(ilev-1)[VECTOR_END];
-        tmp += x_m(ilev)*weights_m(ilev);
+        // Shift x_m and weights_m right to get k-1 values at position k
+        Scalar x_prev = x_m(ilev);
+        x_prev.shift_right(1);
+        x_prev[0] = x_m(ilev-1)[VECTOR_END];
+        Scalar w_prev = weights_m(ilev);
+        w_prev.shift_right(1);
+        w_prev[0] = weights_m(ilev-1)[VECTOR_END];
+        // Cross-weighted interpolation: x_m[k]*w_m[k-1] + x_m[k-1]*w_m[k]
+        Scalar tmp = x_m(ilev)*w_prev + x_prev*weights_m(ilev);
         tmp /= 2.0*weights_i(ilev);
         combine<CM>(tmp,x_i(ilev),alpha,beta);
       }
 
       // First pack does not have a previous pack, and the extrapolation of the 1st interface is x_i = x_m.
-      // Luckily, dp_i(0) = dp_m(0), and shift_right inserts leading 0's, so the formula is almost the same
-      Scalar tmp = x_m(0)*weights_m(0);
-      tmp.shift_right(1);
-      tmp += x_m(0)*weights_m(0);
-      tmp /= 2.0*weights_i(0);
-      combine<CM>(tmp, x_i(0), alpha, beta);
+      // shift_right inserts leading 0's, giving tmp[0]=0; the boundary fix below corrects x_i[0]=x_m[0].
+      {
+        Scalar x_prev = x_m(0);
+        x_prev.shift_right(1);
+        Scalar w_prev = weights_m(0);
+        w_prev.shift_right(1);
+        Scalar tmp = x_m(0)*w_prev + x_prev*weights_m(0);
+        tmp /= 2.0*weights_i(0);
+        combine<CM>(tmp, x_i(0), alpha, beta);
+      }
 
       // Fix top/bottom
       combine<CM>(x_m(0)[0], x_i(0)[0], alpha, beta);

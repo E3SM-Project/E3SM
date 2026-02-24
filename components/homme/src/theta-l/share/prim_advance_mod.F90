@@ -1162,10 +1162,10 @@ contains
      v_i(:,:,1:2,1) = elem(ie)%state%v(:,:,1:2,1,n0)  
      v_i(:,:,1:2,nlevp) = elem(ie)%state%v(:,:,1:2,nlev,n0)
      do k=2,nlev
-        v_i(:,:,1,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,n0) + &
-             dp3d(:,:,k-1)*elem(ie)%state%v(:,:,1,k-1,n0) ) / (2*dp3d_i(:,:,k))
-        v_i(:,:,2,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,n0) + &
-             dp3d(:,:,k-1)*elem(ie)%state%v(:,:,2,k-1,n0) ) / (2*dp3d_i(:,:,k))
+        v_i(:,:,1,k) = (dp3d(:,:,k-1)*elem(ie)%state%v(:,:,1,k,n0) + &
+             dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k-1,n0) ) / (2*dp3d_i(:,:,k))
+        v_i(:,:,2,k) = (dp3d(:,:,k-1)*elem(ie)%state%v(:,:,2,k,n0) + &
+             dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k-1,n0) ) / (2*dp3d_i(:,:,k))
      end do
      
      if (theta_hydrostatic_mode) then
