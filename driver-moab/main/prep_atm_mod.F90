@@ -303,9 +303,11 @@ contains
                write(logunit,*) subname, ' Initializing o2x tags: nfields=', nfields, ' nloc=', nloc
             endif
             ! Use 1D array for MOAB (Fortran will pass it correctly in column-major order)
+            ! Entity type: 1 (cells) for PG-active ATM, 0 (vertices) for point cloud ATM
             allocate(vals(nloc, nfields))
             vals = 0.0_R8
-            ierr = iMOAB_SetDoubleTagStorage(mbaxid, tagname, nloc*nfields, 1, vals(1,1))
+            ierr = iMOAB_SetDoubleTagStorage(mbaxid, tagname, nloc*nfields, &
+               merge(1, 0, atm_pg_active), vals(1,1))
             if (ierr .ne. 0) then
                write(logunit,*) subname,' WARNING: Could not initialize o2x tags, ierr=', ierr
                write(logunit,*) subname,' This may be OK if tags do not exist yet'
@@ -542,16 +544,27 @@ contains
             mapper_Fof2a%mbname = 'mapper_Fof2a'
 
             type1 = 3; !  fv for ocean and atm;
-            if (atm_pg_active) then !
-               type2 = 3
-            else
-               type2 = 2 ! PC cloud
-            endif
-            if (.not. samegrid_ao) then ! data-OCN case
-               ! we use the same intx, because the mesh will be the same, between mbofxid and mboxid
-               ierr = iMOAB_ComputeCommGraph( mbofxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+            if (.not. samegrid_ao) then
+               ! Coverage/intersection mesh always has FV cells with GLOBAL_IDs,
+               ! so type2 must be 3 (element-based matching), regardless of
+               ! atm_pg_active. Using type2=2 (vertex matching) here would cause
+               ! MOAB to match against vertex GLOBAL_IDs of mbintxoa instead of
+               ! element GLOBAL_IDs, leading to an incorrect comm graph and
+               ! heap corruption in iMOAB_ReceiveElementTag.
+               ierr = iMOAB_ComputeCommGraph( mbofxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, 3, &
                                           context_id, idintx)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing comm graph for Sof2a, mbofxid-mbintxoa'
+                  call shr_sys_abort(subname//' ERROR in computing comm graph for Sof2a, mbofxid-mbintxoa')
+               endif
             else
+               ! samegrid: comm graph to ATM mesh directly
+               ! type2 depends on ATM discretization (PC for spectral, FV for PG2)
+               if (atm_pg_active) then
+                  type2 = 3
+               else
+                  type2 = 2 ! PC cloud
+               endif
                ! this is a case appearing in the data ocean case --res ne4pg2_ne4pg2 --compset FAQP
                ! also in spectral case, monogrid --res ne4_ne4 --compset F2010-SCREAMv1 ( type2 is 2, point cloud )
                ierr = iMOAB_ComputeCommGraph( mbofxid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
@@ -578,13 +591,15 @@ contains
       endif
 
       ! Initialize i2x tags on mbaxid to 0.0 to match MCT behavior
+      ! Entity type: 1 (cells) for PG-active ATM, 0 (vertices) for point cloud ATM
       call mct_list_init(temp_list, seq_flds_i2x_fields)
       nfields = mct_list_nitem(temp_list)
       call mct_list_clean(temp_list)
       nloc = mbGetnCells(mbaxid)
       allocate(vals(nloc, nfields))
       vals = 0.0_R8
-      ierr = iMOAB_SetDoubleTagStorage(mbaxid, tagname, nloc*nfields, 1, vals(1,1))
+      ierr = iMOAB_SetDoubleTagStorage(mbaxid, tagname, nloc*nfields, &
+         merge(1, 0, atm_pg_active), vals(1,1))
       if (ierr .ne. 0) then
          if (iamroot_CPLID) then
             write(logunit,*) subname,' WARNING: Could not initialize i2x tags, ierr=', ierr
@@ -827,13 +842,15 @@ contains
          endif
 
          ! Initialize l2x tags on mbaxid to 0.0 to match MCT behavior
+         ! Entity type: 1 (cells) for PG-active ATM, 0 (vertices) for point cloud ATM
          call mct_list_init(temp_list, seq_flds_l2x_fields)
          nfields = mct_list_nitem(temp_list)
          call mct_list_clean(temp_list)
          nloc = mbGetnCells(mbaxid)
          allocate(vals(nloc, nfields))
          vals = 0.0_R8
-         ierr = iMOAB_SetDoubleTagStorage(mbaxid, tagname, nloc*nfields, 1, vals(1,1))
+         ierr = iMOAB_SetDoubleTagStorage(mbaxid, tagname, nloc*nfields, &
+            merge(1, 0, atm_pg_active), vals(1,1))
          if (ierr .ne. 0) then
             if (iamroot_CPLID) then
                write(logunit,*) subname,' WARNING: Could not initialize l2x tags, ierr=', ierr

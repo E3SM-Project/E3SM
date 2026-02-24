@@ -467,7 +467,7 @@ contains
     use seq_comm_mct,     only: mblxid ! iMOAB id for lnd migrated mesh to coupler pes
     use seq_comm_mct,     only: mbaxid ! iMOAB id for atm migrated mesh to coupler pes
     use seq_comm_mct,     only: mbrxid ! iMOAB id for rof migrated mesh to coupler pes
-    use seq_comm_mct,     only: atm_pg_active ! 
+    use seq_comm_mct,     only: atm_pg_active !
     !
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
@@ -522,7 +522,7 @@ contains
           dom_s%data%rAttr(km,:) = dom_s%data%rAttr(ka,:)
 
         ! TODO should actually compute aream from mesh model
-        ! we do a lot of unnecessary gymnastics, and very inefficient, because we have a 
+        ! we do a lot of unnecessary gymnastics, and very inefficient, because we have a
         ! different distribution compared to mct source grid atm
          tagtype = 1 ! dense, double
          tagname='aream'//C_NULL_CHAR
@@ -534,7 +534,7 @@ contains
          else ! this is true only for spectral atm now
             ent_type = 0 ! for pure spectral case, the atm is PC on coupler side
          endif
-          
+
          allocate(gids(nloc))
          gids = dom_s%data%iAttr(mct_aVect_indexIA(dom_s%data,"GlobGridNum"),:)
          ! ! now set data on the coupler side too
@@ -549,7 +549,7 @@ contains
          deallocate(data1)
          ! project now aream from atm to ocean.  This is a rearrange since samegrid_ao is true
          call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
-          
+
        else
           gsmap_s => component_get_gsmap_cx(ocn(1)) ! gsmap_ox
           gsmap_d => component_get_gsmap_cx(atm(1)) ! gsmap_ax
@@ -590,7 +590,7 @@ contains
                gsmap_s=gsmap_s, av_s=dom_s%data, avfld_s='aream', filefld_s='area_a', &
                string='rof2ocn ice aream initialization')
           call t_stopf('CPL:seq_map_readdata-rof2ocn_ice')
-          
+
        endif
        ! samegrid_ro = true not handled.  ROF always stub then?
     end if
@@ -600,7 +600,7 @@ contains
           dom_s  => component_get_dom_cx(atm(1))   !dom_ax
           dom_d  => component_get_dom_cx(lnd(1))   !dom_lx
           ! it should work for FV and spectral too
-          call seq_map_map(mapper_Sa2l, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream') 
+          call seq_map_map(mapper_Sa2l, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
        else
           gsmap_d => component_get_gsmap_cx(lnd(1)) ! gsmap_lx
           dom_d   => component_get_dom_cx(lnd(1))   ! dom_lx
