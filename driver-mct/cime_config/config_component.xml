@@ -1219,13 +1219,13 @@
   <!--  DOMAIN FILES (drv)                                          -->
   <!-- ======================================================================= -->
 
-  <entry id="ATM_DOMAIN_FILE">
+  <!-- <entry id="ATM_DOMAIN_FILE">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>atm domain file</desc>
-  </entry>
+  </entry> -->
 
   <entry id="ATM_DOMAIN_PATH">
     <type>char</type>
@@ -1235,13 +1235,13 @@
     <desc>path of atm domain file</desc>
   </entry>
 
-  <entry id="LND_DOMAIN_FILE">
+  <!-- <entry id="LND_DOMAIN_FILE">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>lnd domain file</desc>
-  </entry>
+  </entry> -->
 
   <entry id="LND_DOMAIN_PATH">
     <type>char</type>

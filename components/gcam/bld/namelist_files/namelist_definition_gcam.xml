@@ -4,7 +4,6 @@
 
 <namelist_definition>
 
-
 <entry id="case_name"
 	type="char*256"
 	category="gcam"
@@ -332,6 +331,54 @@ Region-level CO2 emission file from GCAM
 Downscaling methods for CO2 emission: 1. Linear; 2: Convergence
 </entry>
 
+<entry id="crop_addtreeonly"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Add only trees upon crop abandonment
+</entry>
+
+<entry id="crop_setherbfracrem"
+        type="real"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Herbaceous retention upon crop addition: 0 to 2, 1 is proportional to existing, 0 maximizes herbaceous
+</entry>
+
+<entry id="crop_setavailtreefracrem"
+        type="real"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Remaining tree availability upon crop abandonment: 0 to 2, 1 is proportional to avaailable, 0 maximizes forest
+</entry>
+
+<entry id="pasture_addtreeonly"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Add only trees upon pasture abandonment
+</entry>
+
+<entry id="pasture_setherbfracrem"
+        type="real"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Herbaceous retention upon pasture addition: 0 to 2, 1 is proportional to existing, 0 maximizes herbaceous
+</entry>
+
+<entry id="pasture_setavailtreefracrem"
+        type="real"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Remaining tree availability upon pasture abandonment: 0 to 2, 1 is proportional to avaailable, 0 maximizes forest
+</entry>
+
 <entry id="fdyndat_ehc"
         type="char*256"
         category="gcam"
@@ -346,6 +393,15 @@ Name of dynamic landuse timeseries file
 	group="gcam_inparm">
 If FALSE, scalars are calculated from npp/hr
 </entry>
+
+<entry id="scalar_source_dir"
+        type="char*256"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Directory containing previously saved scalar files (for use when read_scalars = .true.)
+</entry>
+
 
 <entry id="write_scalars"
         type="logical"  
@@ -394,6 +450,536 @@ GCAM is spunup to create baseline co2 and lu/wh files
         category="gcam"
         group="gcam_inparm">
 Default is true; false enables historical iac runs
+</entry>
+
+
+<entry id="mksrf_fgrid"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Out grid specification
+</entry>
+
+<entry id="map_fpft"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from pft data to out grid
+</entry>
+
+<entry id="map_fharvest"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from harvest data to out grid
+</entry>
+
+
+<entry id="map_fglacier"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from glacier data to out grid
+</entry>
+
+<entry id="map_fsoicol"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from soil color data to out grid
+</entry>
+
+<entry id="map_fsoiord"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from soil order data to out grid
+</entry>
+
+<entry id="map_furban"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from urban data to out grid
+</entry>
+
+<entry id="map_fmax"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from soil saturated data to out grid
+</entry>
+
+<entry id="map_forganic"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from soil organic carbon data to out grid
+</entry>
+
+<entry id="map_flai"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from lai data to out grid
+</entry>
+
+<entry id="map_flakwat"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from lake/water data to out grid
+</entry>
+
+<entry id="map_fwetlnd"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from wetland data to out grid
+</entry>
+
+<entry id="map_fvocef"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from volatile organic compound emission data to out grid
+</entry>
+
+<entry id="map_fsoitex"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from soil texture data to out grid
+</entry>
+
+<entry id="map_furbtopo"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from urban topo data to out grid
+</entry>
+
+<entry id="map_flndtopo"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from land topo data to out grid
+</entry>
+
+<entry id="map_fgdp"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from gdp data to out grid
+</entry>
+
+<entry id="map_fpeat"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from peat data to out grid
+</entry>
+
+<entry id="map_fabm"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from agricultural fire data to out grid
+</entry>
+
+<entry id="map_ftopostats"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from topo data to out grid
+</entry>
+
+<entry id="map_fvic"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from VIC parameters data to out grid
+</entry>
+
+<entry id="map_fch4"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from ch4 data to out grid
+</entry>
+
+<entry id="map_fphosphorus"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from phosphorus data to out grid
+</entry>
+
+<entry id="map_fgrvl"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from soil gravel content data to out grid
+</entry>
+
+<entry id="map_fslp10"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from slope data to out grid
+</entry>
+
+<entry id="map_fero"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Mapping file from erosion parameters data to out grid
+</entry>
+
+<entry id="mksrf_fvegtyp"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+Initialization file for pfts and harvest
+</entry>
+
+<entry id="mksrf_fglacier"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+glacier data
+</entry>
+
+<entry id="mksrf_fsoicol"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+soil color data
+</entry>
+
+<entry id="mksrf_fsoiord"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+soil order data
+</entry>
+
+<entry id="mksrf_furban"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+urban data
+</entry>
+
+<entry id="mksrf_fmax"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+soil saturated data
+</entry>
+
+<entry id="mksrf_forganic"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+soil organic carbon data
+</entry>
+
+<entry id="mksrf_flai"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+lai data
+</entry>
+
+<entry id="mksrf_flakwat"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+inland lake/water data
+</entry>
+
+<entry id="mksrf_fwetlnd"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+wetland data
+</entry>
+
+<entry id="mksrf_fvocef"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+volatile organic compound emission data
+</entry>
+
+<entry id="mksrf_fsoitex"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+soil texture data
+</entry>
+
+<entry id="mksrf_furbtopo"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+urban topo data
+</entry>
+
+<entry id="mksrf_flndtopo"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+land topo data
+</entry>
+
+<entry id="mksrf_fgdp"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+gdp data
+</entry>
+
+<entry id="mksrf_fpeat"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+peat data
+</entry>
+
+<entry id="mksrf_fabm"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+agricultural fire data
+</entry>
+
+<entry id="mksrf_ftopostats"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+topo data
+</entry>
+
+<entry id="mksrf_fvic"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+VIC parameters data
+</entry>
+
+<entry id="mksrf_fch4"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+ch4 data
+</entry>
+
+<entry id="mksrf_fphosphorus"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+phosphorus data
+</entry>
+
+<entry id="mksrf_fgrvl"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+soil gravel content data
+</entry>
+
+<entry id="mksrf_fslp10"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+slope data
+</entry>
+
+<entry id="mksrf_fero"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="mksrf"
+        valid_values="">
+erosion parameters data
+</entry>
+
+<entry id="mksrf_fdynuse"
+        type="char*256"
+        category="gcam"
+        group="mksrf"
+        valid_values="">
+Here, the name of grid specification file for LUT dynamic pft data; not actively used, but cannot be blank 
+</entry>
+
+<entry id="all_urban"
+        type="logical"
+        category="gcam"
+        group="mksrf"
+        valid_values="">
+Is entire area urban?
+</entry>
+
+<entry id="no_inlandwet"
+        type="logical"
+        category="gcam"
+        group="mksrf"
+        valid_values="">
+Is there no inland wetland?
+</entry>
+
+<entry id="outnc_double"
+        type="logical"
+        category="gcam"
+        group="mksrf"
+        valid_values="">
+Precision of generated ncdef files
+</entry>
+
+<entry id="nglcec"
+        type="integer"
+        category="gcam"
+        group="mksrf"
+        valid_values="">
+Specify glacier elevation classes
+</entry>
+
+<entry id="outnc_dims"
+        type="integer"
+        category="gcam"
+        group="mksrf"
+        valid_values="">
+Number of dimensions in generated ncdf files
+</entry>
+
+<entry id="fsurdat"
+        type="char*256"
+        category="gcam"
+        group="mksrf"
+        valid_values="">
+Generated surfdata file name
+</entry>
+
+<entry id="fsurlog"
+        type="char*256"
+        category="gcam"
+        group="mksrf"
+        valid_values="">
+Surfdata generation log name
+</entry>
+
+<entry id="fdyndat"
+        type="char*256"
+        category="gcam"
+        group="mksrf"
+        valid_values="">
+Generated landuse timeseries file name
+</entry>
+
+<entry id="hgrid" type="char*10" category="gcam"
+       group="default_settings"
+       valid_values="r0125,r05,0.1x0.1,0.5x0.5,10x10min,5x5min,360x720cru,0.9x1.25,1.9x2.5,19basin,1km-merge-10min">
+Horizontal grid resolutions for ehc input files
 </entry>
 
 </namelist_definition>

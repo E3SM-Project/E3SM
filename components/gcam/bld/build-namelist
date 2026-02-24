@@ -38,10 +38,11 @@ SYNOPSIS
 OPTIONS
      -help [or -h]            	   Print usage to STDOUT.					    
      -infile "filepath"       	   Specify a file or list of files (comma delimited) 	    
-                              	   containing namelists to read values from.			    
+                              	   containing namelists to read values from.\
      -namelist "namelist"     	   Specify namelist settings directly on the commandline by 	    
                               	   supplying a string containing FORTRAN namelist syntax
                               	      -namelist "&gcam_exp a=b/"		    
+     -use_case                     Specify a use case.  Default: present day climatology
      -print "level"           	   Print level for debugging:				    
                               	      0 = silent						    
                               	      1 = regular						    
@@ -56,6 +57,7 @@ Note: The precedence for setting the values of namelist variables is (highest to
       1. values set on the command-line using the -namelist option,
       2. values read from the file specified by -infile,
       3. values from the namelist defaults file.
+      4. values specified by the -use_case option,
 
 EOF
 }
@@ -85,7 +87,8 @@ my $outdirname = "$cwd";                  # Default name of output directory nam
 #-----------------------------------------------------------------------------------------------
 # Process command-line options.
 #
-my %opts = ( help        => 0,
+my %opts = ( config      => $cfg_cache,
+             help        => 0,
 	     silent      => 0,
 	     caseroot    => 0,
 	     scriptsroot => 0,
@@ -97,6 +100,7 @@ GetOptions(
     "h|help"        => \$opts{'help'},
     "infile=s"      => \$opts{'infile'},
     "namelist=s"    => \$opts{'namelist'},
+    "uc|use_case=s"             => \$opts{'use_case'},
     "print=i"       => \$opts{'print'},
     "simyr=i"       => \$opts{'simyr'},
     "caseroot=s"    => \$opts{'caseroot'},
@@ -129,24 +133,26 @@ print "print = $print";
 
 if ($print>=2) { print "Setting gcam configuration script directory to $cfgdir$eol"; }
 
+#### delete this cuz the config_cache is now created by configure
+
 #-----------------------------------------------------------------------------------------------
 # Create config_cache.xml file (needed below)
 # Apparently, this actually creates the config_cache.xml file, from the
 # various configs and inputs stored elsewhere.  Following mosart here...
 
-my $config_cache = "$CASEROOT/Buildconf/gcamconf/config_cache.xml";
-my  $fh = new IO::File;
-$fh->open(">$config_cache") or die "** can't open file: $config_cache\n";
-print $fh  <<"EOF";
-<?xml version="1.0"?>
-<config_definition>
-</config_definition>
-EOF
-$fh->close;
-if ($print>=1) { print "Wrote file $config_cache $eol"; }
-(-f "$config_cache")  or  die <<"EOF";
-** $ProgName - Cannot find configuration cache file: $config_cache\" **
-EOF
+#my $config_cache = "$CASEROOT/Buildconf/gcamconf/config_cache.xml";
+#my  $fh = new IO::File;
+#$fh->open(">$config_cache") or die "** can't open file: $config_cache\n";
+#print $fh  <<"EOF";
+#<?xml version="1.0"?>
+#<config_definition>
+#</config_definition>
+#EOF
+#$fh->close;
+#if ($print>=1) { print "Wrote file $config_cache $eol"; }
+#(-f "$config_cache")  or  die <<"EOF";
+#** $ProgName - Cannot find configuration cache file: $config_cache\" **
+#EOF
 
 #-----------------------------------------------------------------------------------------------
 # Make sure we can find required perl modules, definition, and defaults files.
@@ -218,8 +224,45 @@ require Build::Namelist;
 require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
+# Write out required local input files
+# DIN_LOC_ROOT is inputdata_rootdir - figure out a way to set that.
+###################################
+# Required xml variables           #
+####################################
+
+my %xmlvars = ();
+SetupTools::getxmlvars($CASEROOT, \%xmlvars);
+foreach my $attr (keys %xmlvars) {
+  $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
+}
+
+# This will be gcam specific, for required values.
+
+my $DIN_LOC_ROOT    = $xmlvars{'DIN_LOC_ROOT'};
+my $inputdata_rootdir = $DIN_LOC_ROOT;
+
 # Create a configuration object from the GCAM config_cache.xml file. 
-my $cfg = Build::Config->new('config_cache.xml');
+my $cfg = Build::Config->new($opts{'config'});
+
+my $nl_definition_file;
+my @usr_src_dirs = split ',', $cfg->get('usr_src');
+if (@usr_src_dirs) {
+    foreach my $dir (@usr_src_dirs) {
+	if (-f "$dir/namelist_definition_gcam.xml") {
+	    $nl_definition_file = "$dir/namelist_definition_gcam.xml";
+	    last;
+	}
+    }
+}
+if (! defined $nl_definition_file) {
+    # default location of namelist definition file
+    $nl_definition_file = "$cfgdir/namelist_files/namelist_definition_gcam.xml";
+    (-f "$nl_definition_file")  or  die <<"EOF";
+    ** $ProgName - ERROR: Cannot find namelist definition file \"$nl_definition_file\" **
+EOF
+}
+
+if ($print>=2) { print "Using namelist definition file $nl_definition_file$eol"; }
 
 # Create a namelist definition object.  This object provides a method for verifying that the
 # output namelist variables are in the definition file, and are output in the correct
@@ -229,9 +272,59 @@ my $definition = Build::NamelistDefinition->new($nl_definition_file);
 # Create a namelist defaults object.  This object provides default values for variables
 # contained in the input defaults file.  The configuration object provides attribute
 # values that are relevent for the GCAM for which the namelist is being produced.
-my $defaults = Build::NamelistDefaults->new( $nl_defaults_file, $cfg);
-$defaults->add( "$nl_defaults_file" );
 
+my $nl_defaults_file;
+if (@usr_src_dirs) {
+    foreach my $dir (@usr_src_dirs) {
+	if (-f "$dir/namelist_defaults_gcam.xml") {
+	    $nl_defaults_file = "$dir/namelist_defaults_gcam.xml";
+	    last;
+	}
+    }
+}
+if (! defined $nl_defaults_file) {
+    # default location of namelist defaults file
+    $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_gcam.xml";
+    (-f "$nl_defaults_file")  or  die <<"EOF";
+    ** $ProgName - ERROR: Cannot find namelist defaults file \"$nl_defaults_file\" **
+EOF
+}
+
+if ($print>=2) { print "Using namelist defaults file $nl_defaults_file$eol"; }
+
+my $defaults = Build::NamelistDefaults->new( $nl_defaults_file, $cfg);
+
+# $defaults->add( "$nl_defaults_file" );
+
+#-----------------------------------------------------------------------------------------------
+# Similarly to the namelist definition and defaults files, the use case file
+# may also come from the usr_src directories.  Determine the location of the 
+# use case file.
+
+my $use_case_file;
+if (defined $opts{'use_case'}) {
+
+    if (@usr_src_dirs) {
+	foreach my $dir (@usr_src_dirs) {
+	    if (-f "$dir/$opts{'use_case'}.xml") {
+		$use_case_file = "$dir/$opts{'use_case'}.xml";
+		last;
+	    }
+	}
+    }
+
+    if (! defined $use_case_file) {
+	# default location of namelist use case files
+	$opts{'use_case_dir'} = "$cfgdir/namelist_files/use_cases";
+	validate_use_case("commandline", \%opts);
+	$use_case_file = "$opts{'use_case_dir'}/$opts{'use_case'}.xml";
+    }
+
+    # if ($print>=2) { print "Using namelist use case file $use_case_file$eol"; }
+    print "Using namelist use case file $use_case_file$eol"
+}
+
+# -----------------------------------------------------------------------------------------------
 # Create an empty namelist object.  Add values to it in order of precedence.
 my $nl = Build::Namelist->new();
 
@@ -261,6 +354,39 @@ if (defined $opts{'namelist'}) {
     $nl->merge_nl($nl_arg_valid);
 }
 
+# Process the -use_case arg.
+# Declare global symbol $uc_defaults even if it's not defined, because we check whether it's
+# defined before using it in the get_default_value method below.
+
+my $uc_defaults;
+if (defined $use_case_file) {
+
+    # The use case definition is contained in an xml file with the same format as the defaults file.
+    # Create a new NamelistDefaults object.
+    $uc_defaults = Build::NamelistDefaults->new($use_case_file, $cfg);
+
+    # Loop over the variables specified in the use case.
+    # A defaults file may contain information for variables that are not namelist variables.
+    # Check each name in the defaults file, and add each namelist variable to the namelist.
+    my @vars = $uc_defaults->get_variable_names();
+    VAR: foreach my $var (@vars) {
+
+	# Query the definition to find which group the variable belongs to.  Skip if not found.
+	my $group = $definition->get_group_name($var);
+	if ($group) {
+	    # Get the value of $var from the use case defaults
+	    my $val = $uc_defaults->get_value($var);
+	    if (defined $val) {
+		add_default($nl, $var, 'val'=>$val);
+	    }
+	    # If the use case doesn't provide a default value, then just ignore.  This allows the
+	    # use case mechanism to provide defaults for some attributes (e.g. a specific grid), and
+	    # not for others.
+	}
+    }
+}
+
+#-----------------------------------------------------------------------------------------------
 # Process the -infile arg.
 if (defined $opts{'infile'}) {
    foreach my $infile ( split( /,/, $opts{'infile'} ) ) {
@@ -281,28 +407,6 @@ if (defined $opts{'infile'}) {
 }
 
 #-----------------------------------------------------------------------------------------------
-
-####################################
-# Required xml variables           #
-####################################
-
-my %xmlvars = ();
-SetupTools::getxmlvars($CASEROOT, \%xmlvars);
-foreach my $attr (keys %xmlvars) {
-  $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
-}
-
-# This will be gcam specific, for required values.
-
-# This seems to be set by the case, so it should be availble here.
-# I think I've found it in an env_run.xml file...
-# It's machine specific, too, so there we go - in the configs
-my $DIN_LOC_ROOT    = $xmlvars{'DIN_LOC_ROOT'};
-
-# For now, keep a couple examples in comments...
-#my $MOSART_MODE        = $xmlvars{'MOSART_MODE'};
-#my $MOSART_FLOOD_MODE  = $xmlvars{'MOSART_FLOOD_MODE'};
-# ...
 
 ####################################
 # namelist group: gcam_inparm       #
@@ -357,11 +461,20 @@ add_default($nl, 'gdp_gcam_file');
 add_default($nl, 'co2_gcam_file');
 add_default($nl, 'surface_co2_downscaling_method');
 
+# future (>= 2015) land conversion assumptions
+add_default($nl, 'crop_addtreeonly');
+add_default($nl, 'crop_setherbfracrem');
+add_default($nl, 'crop_setavailtreefracrem');
+add_default($nl, 'pasture_addtreeonly');
+add_default($nl, 'pasture_setherbfracrem');
+add_default($nl, 'pasture_setavailtreefracrem');
+
 # name of dynamic landuse timeseries file
 add_default($nl, 'fdyndat_ehc');
 
 # runtime options
 add_default($nl, 'read_scalars');
+add_default($nl, 'scalar_source_dir', 'val'=>'');
 add_default($nl, 'write_scalars');
 add_default($nl, 'write_co2');
 add_default($nl, 'elm_ehc_agyield_scaling');
@@ -369,6 +482,81 @@ add_default($nl, 'elm_ehc_carbon_scaling');
 add_default($nl, 'ehc_eam_co2_emissions');
 add_default($nl, 'gcam_spinup');
 add_default($nl, 'run_gcam');
+
+#####################################
+## namelist group: mksrf           ##
+#####################################
+
+# resolution dependent items
+add_default($nl, 'mksrf_fgrid');
+add_default($nl, 'map_fpft');
+add_default($nl, 'map_fharvest');
+add_default($nl, 'map_fglacier');
+add_default($nl, 'map_fsoicol');
+add_default($nl, 'map_fsoiord');
+add_default($nl, 'map_furban');
+add_default($nl, 'map_fmax');
+add_default($nl, 'map_forganic');
+add_default($nl, 'map_flai');
+add_default($nl, 'map_flakwat');
+add_default($nl, 'map_fwetlnd');
+add_default($nl, 'map_fvocef');
+add_default($nl, 'map_fsoitex');
+add_default($nl, 'map_furbtopo');
+add_default($nl, 'map_flndtopo');
+add_default($nl, 'map_fgdp');
+add_default($nl, 'map_fpeat');
+add_default($nl, 'map_fabm');
+add_default($nl, 'map_ftopostats');
+add_default($nl, 'map_fvic');
+add_default($nl, 'map_fch4');
+add_default($nl, 'map_fphosphorus');
+add_default($nl, 'map_fgrvl');
+add_default($nl, 'map_fslp10');
+add_default($nl, 'map_fero');
+
+# data files
+add_default($nl, 'mksrf_fvegtyp');
+add_default($nl, 'mksrf_fglacier');
+add_default($nl, 'mksrf_fsoicol');
+add_default($nl, 'mksrf_fsoiord');
+add_default($nl, 'mksrf_furban');
+add_default($nl, 'mksrf_fmax');
+add_default($nl, 'mksrf_forganic');
+add_default($nl, 'mksrf_flai');
+add_default($nl, 'mksrf_flakwat');
+add_default($nl, 'mksrf_fwetlnd');
+add_default($nl, 'mksrf_fvocef');
+add_default($nl, 'mksrf_fsoitex');
+add_default($nl, 'mksrf_furbtopo');
+add_default($nl, 'mksrf_flndtopo');
+add_default($nl, 'mksrf_fgdp');
+add_default($nl, 'mksrf_fpeat');
+add_default($nl, 'mksrf_fabm');
+add_default($nl, 'mksrf_ftopostats');
+add_default($nl, 'mksrf_fvic');
+add_default($nl, 'mksrf_fch4');
+add_default($nl, 'mksrf_fphosphorus');
+add_default($nl, 'mksrf_fgrvl');
+add_default($nl, 'mksrf_fslp10');
+add_default($nl, 'mksrf_fero');
+add_default($nl, 'mksrf_fdynuse');
+
+# logical switches
+add_default($nl, 'all_urban');
+add_default($nl, 'no_inlandwet');
+add_default($nl, 'outnc_double');
+
+# integer settings
+add_default($nl, 'nglcec');
+add_default($nl, 'outnc_dims');
+
+# generated file names
+add_default($nl, 'fsurdat');
+add_default($nl, 'fsurlog');
+add_default($nl, 'fdyndat');
+
+
 
 #-----------------------------------------------------------------------------------------------
 # Validate that the entire resultant namelist is valid
@@ -381,14 +569,30 @@ $definition->validate($nl);
 my $note = "";
 
 # gcam_in
-my @groups = qw(gcam_inparm);
+my @groups = qw(gcam_inparm mksrf);
 my $outfile = "./gcam_in";
 $nl->write($outfile, 'groups'=>\@groups, 'note'=>"$note" );
 if ($print>=2) { print "Writing gcam namelist to $outfile $eol"; }
 
+
 # Write out required local input files
 # DIN_LOC_ROOT is inputdata_rootdir - figure out a way to set that.
+# ###################################
+# # Required xml variables           #
+# ####################################
+
+# my %xmlvars = ();
+# SetupTools::getxmlvars($CASEROOT, \%xmlvars);
+# foreach my $attr (keys %xmlvars) {
+#   $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
+# }
+
+# # This will be gcam specific, for required values.
+
+# my $DIN_LOC_ROOT    = $xmlvars{'DIN_LOC_ROOT'};
+
 check_input_files($nl, $DIN_LOC_ROOT, "$CASEROOT/Buildconf/gcam.input_data_list");
+
 
 #===============================================================================================
 #===============================================================================================
@@ -625,7 +829,38 @@ sub valid_option {
 }
 
 #-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 
+sub validate_use_case {
+
+    my $source = shift;   # text string declaring the source of the options being validated
+    my $opts   = shift;   # reference to hash that contains the options
+
+    my ($opt, $old, @expect);
+    
+    # use_case
+    $opt = 'use_case';
+    if (defined $opts->{$opt}) {
+
+	# create the @expect array by listing the files in $use_case_dir
+	# and strip off the ".xml" part of the filename
+	@expect = ();
+	my @files = glob("$opts->{'use_case_dir'}/*.xml");
+	foreach my $file (@files) {
+	    $file =~ m{.*/(.*)\.xml};
+	    push @expect, $1;
+	}
+
+    print $file;
+	$old = $opts->{$opt};
+	$opts->{$opt} = valid_option($old, @expect)
+	    or die "$ProgName - ERROR: invalid value of $opt ($old) specified in $source\n".
+                   "expected one of: @expect\n";
+    }
+
+}
+
+#-------------------------------------------------------------------------------
 sub quote_string {
     my $str = shift;
     $str =~ s/^\s+//;
@@ -635,7 +870,3 @@ sub quote_string {
     }
     return $str;
 }
-
-
-
-

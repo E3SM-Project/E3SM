@@ -8,13 +8,6 @@
 <solar_data_file>atm/cam/solar/Solar_1850-2299_input4MIPS_c20181106.nc</solar_data_file>
 <solar_data_type>SERIAL</solar_data_type>
 
-<!-- Stratospheric aerosols from CMIP6 input4MIPS -->
-<prescribed_volcaero_datapath>atm/cam/volc                                             </prescribed_volcaero_datapath>
-<prescribed_volcaero_file    >CMIP_DOE-ACME_radiation_average_1850-2014_v3_c20171204.nc</prescribed_volcaero_file    >
-<prescribed_volcaero_filetype>VOLC_CMIP6					       </prescribed_volcaero_filetype>
-<prescribed_volcaero_type    >CYCLICAL						       </prescribed_volcaero_type    >
-<prescribed_volcaero_cycle_yr>1                                                        </prescribed_volcaero_cycle_yr>
-
 <!-- For comprehensive history -->
 <history_amwg>.true.</history_amwg>
 <history_aerosol>.true.</history_aerosol>
@@ -63,10 +56,21 @@
 <!-- Prescribed oxidants for aerosol chemistry.   Ozone is from CMIP6 input4MIPS file -->
 <tracer_cnst_type    >INTERP_MISSING_MONTHS</tracer_cnst_type>
 <tracer_cnst_datapath>atm/cam/chem/trop_mozart_aero/oxid</tracer_cnst_datapath>
-<tracer_cnst_file    >oxid_SSP245_1.9x2.5_L70_2015-2100_c20240301.nc</tracer_cnst_file>
+<tracer_cnst_file    >oxid_SSP245_1.9x2.5_L70_1849-2101_c20240228.nc</tracer_cnst_file>
+<tracer_cnst_specifier>'prsd_O3:O3','prsd_NO3:NO3','prsd_OH:OH'</tracer_cnst_specifier>
 <tracer_cnst_filelist>''</tracer_cnst_filelist>
 
-<!-- <tracer_cnst_filelist>this_field_is_not_used</tracer_cnst_filelist> -->
+<!-- rad_climate -->
+<rad_climate>
+  'A:H2OLNZ:H2O', 'N:O2:O2', 'N:CO2:CO2',
+  'A:O3:O3', 'A:N2OLNZ:N2O', 'A:CH4LNZ:CH4',
+  'N:CFC11:CFC11', 'N:CFC12:CFC12',
+  'M:mam5_mode1:$INPUTDATA_ROOT/atm/cam/physprops/mam4_mode1_rrtmg_aeronetdust_c141106.nc',
+  'M:mam5_mode2:$INPUTDATA_ROOT/atm/cam/physprops/mam4_mode2_rrtmg_c130628.nc',
+  'M:mam5_mode3:$INPUTDATA_ROOT/atm/cam/physprops/mam4_mode3_rrtmg_aeronetdust_c141106.nc',
+  'M:mam5_mode4:$INPUTDATA_ROOT/atm/cam/physprops/mam4_mode4_rrtmg_c130628.nc',
+  'M:mam5_mode5:$INPUTDATA_ROOT/atm/cam/physprops/mam5_mode5_rrtmg_sig1.2_dgnl.40_c03072023.nc'
+</rad_climate>
 
 <!-- Marine organic aerosol namelist settings -->
 <mam_mom_mixing_state>3</mam_mom_mixing_state>
@@ -81,12 +85,17 @@
 <!-- Stratospheric ozone (Linoz) updated using CMIP6 input4MIPS GHG concentrations -->
 <chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_Hist_SSP245_0003-2503_c20200808.nc</chlorine_loading_file>
 <chlorine_loading_type      >SERIAL</chlorine_loading_type>
-<linoz_data_file            >linoz_1850-2500_CMIP6_Hist_SSP245_10deg_58km_c20200808.nc</linoz_data_file>
+<linoz_data_file            >linv3_1849-2101_CMIP6_Hist_SSP245_10deg_58km_c20230705.nc</linoz_data_file>
 <linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            >INTERP_MISSING_MONTHS</linoz_data_type>
 
 <!-- Turn off ozone dry deposition, as Linoz O3v2 and ozone are not separated for now. Need to turn on ozone dry deposition when interactive tropospheric chemistry is implemented -->
-<drydep_list            >'H2O2', 'H2SO4', 'SO2'</drydep_list>
+<drydep_method       >'xactive_lnd'</drydep_method>
+<drydep_list         >'O3','H2O2','CH2O','CH3OOH','NO','NO2','HNO3','HO2NO2','PAN','CO','CH3COCH3','C2H5OOH','CH3CHO','H2SO4','SO2','NO3','N2O5','SOAG0','SOAG15','SOAG24','SOAG35','SOAG34','SOAG33','SOAG32','SOAG31'</drydep_list>
+<gas_wetdep_method   >'NEU'</gas_wetdep_method>
+<gas_wetdep_list     >'C2H5OOH','CH2O','CH3CHO','CH3OOH','H2O2','H2SO4','HNO3','HO2NO2','SO2','SOAG0','SOAG15','SOAG24','SOAG35','SOAG34','SOAG33','SOAG32','SOAG31'</gas_wetdep_list>
+<fstrat_efold_list>'CH2O', 'CH3O2', 'CH3OOH', 'PAN', 'CO', 'C2H6', 'C3H8', 'C2H4', 'ROHO2', 'CH3COCH3', 'C2H5O2', 'C2H5OOH', 'CH3CHO', 'CH3CO3', 'ISOP', 'ISOPO2', 'MVKMACR', 'MVKO2'</fstrat_efold_list>
+<fstrat_list         >''</fstrat_list>
 
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>2015-2100</sim_year>
@@ -102,5 +111,8 @@
 <co2_readFlux_fuel>.false.</co2_readFlux_fuel>
 <co2_readFlux_ocn>.true.</co2_readFlux_ocn>
 <co2flux_ocn_file>ocn/CMIP6_SSP245_ne30/fgco2_CESM2_SSP245_ne30pg2_2015-2100.nc'</co2flux_ocn_file>
+
+<!-- Set surface area density (SAD) variables -->
+<sad_type>SERIAL</sad_type>
 
 </namelist_defaults>
