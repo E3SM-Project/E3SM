@@ -118,6 +118,7 @@
       <command name="unload">aocc</command>
       <command name="unload">cudatoolkit</command>
       <command name="unload">climate-utils</command>
+      <command name="unload">cray-libsci</command>
       <command name="unload">craype-accel-nvidia80</command>
       <command name="unload">craype-accel-host</command>
       <command name="unload">perftools-base</command>
@@ -133,6 +134,7 @@
 
     <modules compiler="intel">
       <command name="load">PrgEnv-intel/8.3.3</command>
+      <command name="unload">cray-libsci</command>
       <command name="load">intel/2023.1.0</command>
     </modules>
 
@@ -167,6 +169,7 @@
   <environment_variables>
     <env name="MPICH_ENV_DISPLAY">1</env>
     <env name="MPICH_VERSION_DISPLAY">1</env>
+    <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
     <env name="OMP_STACKSIZE">128M</env>
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
@@ -174,6 +177,7 @@
     <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
     <env name="FI_CXI_RX_MATCH_MODE">software</env>
     <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
+    <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
   </environment_variables>
   <resource_limits>
     <resource name="RLIMIT_STACK">-1</resource>
