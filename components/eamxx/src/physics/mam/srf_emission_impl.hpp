@@ -1,9 +1,11 @@
 #ifndef SRF_EMISSION_IMPL_HPP
 #define SRF_EMISSION_IMPL_HPP
 
-#include "share/grid/remap/identity_remapper.hpp"
-#include "share/grid/remap/refining_remapper_p2p.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/remap/identity_remapper.hpp"
+#include "share/remap/refining_remapper_p2p.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
+
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream::mam_coupling {
 template <typename S, typename D>
@@ -120,8 +122,8 @@ void srfEmissFunctions<S, D>::perform_time_interpolation(
   const int nsectors = data_beg.data.nsectors;
   const int ncols    = data_beg.data.ncols;
   using ExeSpace     = typename KT::ExeSpace;
-  using ESU          = ekat::ExeSpaceUtils<ExeSpace>;
-  const auto policy  = ESU::get_default_team_policy(ncols, nsectors);
+  using TPF          = ekat::TeamPolicyFactory<ExeSpace>;
+  const auto policy  = TPF::get_default_team_policy(ncols, nsectors);
 
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const MemberType &team) {

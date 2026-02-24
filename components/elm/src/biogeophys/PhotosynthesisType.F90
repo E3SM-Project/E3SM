@@ -10,6 +10,7 @@ module PhotosynthesisType
   use elm_varcon     , only : spval
   use LandunitType   , only : lun_pp
   use VegetationType      , only : veg_pp
+  use ColumnDataType ,only : col_pp
   !
   implicit none
   save
@@ -420,7 +421,7 @@ contains
     type(bounds_type) , intent(in)    :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: p,l ! indices
+    integer :: p,c,l ! indices
     !-----------------------------------------------------------------------
 
     do p = bounds%begp, bounds%endp
@@ -454,7 +455,7 @@ contains
              this%c14_psnsha_patch(p) = 0._r8
           endif
        end if
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop &
+       if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p) &
             .or. lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec &
             .or. lun_pp%itype(l) == istwet) then
           if (use_c13) then
@@ -480,7 +481,7 @@ contains
     type(bounds_type) , intent(in)    :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: p,l ! indices
+    integer :: p,c,l ! indices
     !-----------------------------------------------------------------------
 
     do p = bounds%begp, bounds%endp
@@ -512,7 +513,7 @@ contains
              photosyns_vars%c14_psnsha_patch(p) = 0._r8
           endif
        end if
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop &
+       if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p) &
             .or. lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec &
             .or. lun_pp%itype(l) == istwet) then
           if (use_c13) then

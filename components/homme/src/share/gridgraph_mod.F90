@@ -149,7 +149,7 @@ contains
     type (GridVertex_t), intent(out)   :: vertex2
     type (GridVertex_t), intent(in)    :: vertex1
 
-    integer                            :: i,j,n
+    integer                            :: i,n
    
      n = SIZE(vertex1%nbrs)
 
@@ -208,7 +208,7 @@ contains
 
      implicit none
      type (GridVertex_t)           :: Vertex(:)
-     integer                       :: i,nelem
+     integer                       :: nelem
 
      nelem = SIZE(Vertex)
 
@@ -465,10 +465,8 @@ contains
     implicit none 
     type (GridVertex_t), intent(in),target :: Vertex(:)
   
-    integer        :: i,nvert
-    integer ::n_west, n_east, n_south, n_north, n_swest, n_seast, n_nwest, n_neast
-    integer ::w_west, w_east, w_south, w_north, w_swest, w_seast, w_nwest, w_neast
-    integer ::n, print_buf(90), nbr(8), j, k, start, cnt, nbrs_cnt(8)
+    integer :: i,nvert
+    integer :: n, print_buf(90), nbr(8), j, k, start, cnt, nbrs_cnt(8)
 
     nbr = (/ west, east, south, north, swest, seast, nwest, neast/)
 
@@ -544,7 +542,7 @@ contains
   type (GridEdge_t), intent(inout)       :: GridEdge(:)
   type (GridVertex_t), intent(in),target :: GridVertex(:)
 
-  integer                                :: i,j,k,iptr,m,n,wgtV,wgtP
+  integer                                :: i,j,k,iptr,m,n
   integer                                :: nelem,nelem_edge,inbr
   logical                                :: Verbose=.FALSE.
   integer                                :: mynbr_cnt, cnt, mystart, start

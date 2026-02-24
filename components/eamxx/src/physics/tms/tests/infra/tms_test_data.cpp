@@ -1,11 +1,6 @@
 #include "tms_test_data.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/ekat_pack_kokkos.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
-
-#include "share/util/eamxx_deep_copy.hpp"
+#include <ekat_team_policy_utils.hpp>
 
 #include <random>
 
@@ -31,11 +26,12 @@ void compute_tms_f(int ncols, int nlevs,
   using view_3d    = typename TMSFunc::view_3d<Spack>;
   using ExeSpace   = typename TMSFunc::KT::ExeSpace;
   using MemberType = typename TMSFunc::KT::MemberType;
+  using TPF        = ekat::TeamPolicyFactory<ExeSpace>;
 
   // Initialize Kokkos views, sync to device
   std::vector<view_1d> temp_d_1d(2);
   std::vector<view_2d> temp_d_2d(6);
-  ScreamDeepCopy::copy_to_device({sgh, landfrac}, ncols, temp_d_1d);
+  ekat::host_to_device({sgh, landfrac}, ncols, temp_d_1d);
   ekat::host_to_device({u_wind, v_wind, t_mid, p_mid, exner, z_mid},
                         ncols, nlevs, temp_d_2d, true);
 
@@ -58,7 +54,7 @@ void compute_tms_f(int ncols, int nlevs,
   const auto nlev_packs = ekat::npack<Spack>(nlevs);
   view_3d   horiz_wind_d("horiz_wind_d", ncols, 2, nlev_packs);
   view_2d_s tau_d("tau_d", ncols, 2);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols, nlev_packs);
+  const auto policy = TPF::get_default_team_policy(ncols, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const int i = team.league_rank();
     tau_d(i, 0) = taux_d(i);
@@ -87,7 +83,7 @@ void compute_tms_f(int ncols, int nlevs,
 
   // Sync back to host
   std::vector<view_1d> output_data = {ksrf_d, taux_d, tauy_d};
-  ScreamDeepCopy::copy_to_host({ksrf, taux, tauy}, ncols, output_data);
+  ekat::device_to_host({ksrf, taux, tauy}, ncols, output_data);
 }
 
 void compute_tms(ComputeTMSData& d)

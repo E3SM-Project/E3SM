@@ -20,9 +20,18 @@ if (compile_threaded)
   string(APPEND CMAKE_CXX_FLAGS " -qopenmp")
 endif()
 string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g")
+
+# Check for Intel LLVM (ifx) version 2025 or newer
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
+    if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL "2025.0")
+        #message(STATUS "ndk: Applying Intel 2025.3 sanitization workaround")
+        string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -init=none -check nouninit") # Applying Intel 2025.3 sanitization workaround (to revert -init=snan,arrays)
+    endif()
+endif()
+
+
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
 string(APPEND CMAKE_CXX_FLAGS " -fp-model=precise") # and manually add precise
-#message(STATUS "ndk CXXFLAGS=${CXXFLAGS}")
 
 string(APPEND CMAKE_Fortran_FLAGS " -fp-model=consistent -fimf-use-svml")
 #  string(APPEND FFLAGS " -qno-opt-dynamic-align")

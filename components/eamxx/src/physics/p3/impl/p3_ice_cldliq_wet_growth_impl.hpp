@@ -2,8 +2,8 @@
 #define P3_ICE_CLDLIQ_WET_GROWTH_IMPL_HPP
 
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "physics/share/physics_functions.hpp" // also for ETI not on GPU
-#include "physics/share/physics_saturation_impl.hpp"
+#include "share/physics/physics_functions.hpp" // also for ETI not on GPU
+#include "share/physics/physics_saturation_impl.hpp"
 
 namespace scream {
 namespace p3 {
@@ -21,13 +21,13 @@ void Functions<S,D>
   using physics = scream::physics::Functions<Scalar, Device>;
 
   constexpr Scalar qsmall = C::QSMALL;
-  constexpr Scalar tmelt  = C::Tmelt;
+  constexpr Scalar tmelt  = C::Tmelt.value;
   constexpr Scalar twopi  = C::Pi*2;
   constexpr Scalar zero   = C::ZERO;
   constexpr Scalar one    = C::ONE;
-  constexpr Scalar cpw    = C::CpLiq;
-  constexpr Scalar latvap = C::LatVap;
-  constexpr Scalar latice = C::LatIce;
+  constexpr Scalar cpw    = C::CpLiq.value;
+  constexpr Scalar latvap = C::LatVap.value;
+  constexpr Scalar latice = C::LatIce.value;
 
   const auto t_is_negative = temp < tmelt;
   const auto qi_incld_ge_small = qi_incld >= qsmall;

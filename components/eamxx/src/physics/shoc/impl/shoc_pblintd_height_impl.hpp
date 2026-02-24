@@ -33,7 +33,7 @@ void Functions<S,D>::pblintd_height(
   if (!check)
     return;
 
-  const auto ggr = C::gravit;
+  const auto ggr = C::gravit.value;
   const Scalar tiny = 1e-36;
   const Scalar fac = 100;
   const Scalar ricr = 0.3;

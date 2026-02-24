@@ -75,6 +75,9 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
       const std::map<std::string, std::pair<Real, Real>> &max_min_process);
   void set_buffer_scratch_to_zero(mam_coupling::Buffer &buffer);
 
+  //namelist variables (declared protected so that derived classes can access them)
+  bool use_prescribed_ozone_{false};  // use prescribed ozone from MAM4
+
  private:
   // The type of subcomponent
   // --------------------------------------------------------------------------

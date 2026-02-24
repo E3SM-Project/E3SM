@@ -29,7 +29,6 @@ module ocn_wetting_drying
 
    use ocn_constants
    use ocn_config
-   use ocn_diagnostics
    use ocn_diagnostics_variables
    use ocn_gm
    use ocn_mesh
@@ -54,6 +53,7 @@ module ocn_wetting_drying
 
    public :: ocn_wetting_drying_verify, ocn_prevent_drying_rk4
    public :: ocn_wetting_velocity_factor_on_cell_edges
+   public :: ocn_wetting_drying_update_land_ice
 
    !--------------------------------------------------------------------
    !
@@ -636,6 +636,57 @@ contains
       end if
 
    end subroutine ocn_wetting_velocity_factor_on_cell_edges!}}}
+
+   subroutine ocn_wetting_drying_update_land_ice(landIceFloatingMask, landIceFloatingFraction, err)
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      ! landIceDraftForSsh is supplied by diagnostic_variables
+
+      integer, dimension(:), intent(inout) :: &
+         landIceFloatingMask     !< Input/Output: land ice floating mask
+
+      real (kind=RKIND), dimension(:), intent(inout) :: &
+         landIceFloatingFraction !< Input/Output: land ice floating fraction
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iCell
+
+      err = 0
+
+      !$omp parallel
+      !$omp do schedule(runtime)
+      do iCell = 1, nCellsAll
+         if (landIceDraftForSsh(iCell) < -bottomDepth(iCell)) then
+            landIceFloatingMask(iCell) = 0
+            landIceFloatingFraction(iCell) = 0.0_RKIND
+         else
+            landIceFloatingMask(iCell) = 1
+            ! For a simulation with wetting and drying, we do not retain fractional floating areas
+            landIceFloatingFraction(iCell) = 1.0_RKIND
+         endif
+      enddo
+      !$omp end do
+      !$omp end parallel
+
+   end subroutine ocn_wetting_drying_update_land_ice
 
 end module ocn_wetting_drying
 

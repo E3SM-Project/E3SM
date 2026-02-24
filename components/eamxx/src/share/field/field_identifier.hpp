@@ -4,9 +4,9 @@
 #include "share/field/field_layout.hpp"
 #include "share/util/eamxx_data_type.hpp"
 
-#include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/util/ekat_units.hpp"
-#include "ekat/util/ekat_meta_utils.hpp"
+#include <ekat_string_utils.hpp>
+#include <ekat_units.hpp>
+#include <ekat_meta_utils.hpp>
 
 #include <vector>
 

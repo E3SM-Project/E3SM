@@ -2,7 +2,8 @@
 #define SHOC_TRIDIAG_SOLVER_IMPL_HPP
 
 #include "shoc_functions.hpp" // for ETI only but harmless for GPU
-#include "ekat/util/ekat_tridiag.hpp"
+
+#include <ekat_tridiag.hpp>
 
 namespace scream {
 namespace shoc {
@@ -21,7 +22,7 @@ void Functions<S,D>::vd_shoc_decomp(
   const uview_1d<Scalar>&       dl,
   const uview_1d<Scalar>&       d)
 {
-  const auto ggr = C::gravit;
+  const auto ggr = C::gravit.value;
 
   const auto skv_term = scalarize(kv_term);
   const auto stmpi = scalarize(tmpi);

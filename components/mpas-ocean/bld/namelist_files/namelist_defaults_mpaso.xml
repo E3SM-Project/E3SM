@@ -110,7 +110,7 @@
 <config_use_mom_del2 ocn_grid="FRISwISC04to60E3r1">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="FRISwISC02to60E3r1">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="FRISwISC01to60E3r1">.true.</config_use_mom_del2>
-<config_use_mom_del2 ocn_grid="RRSwISC6to18E3r5">.true.</config_use_mom_del2>
+<config_use_mom_del2 ocn_grid="RRSwISC6to18E3r5">.false.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="SOwISC12to30E3r3">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="SOwISC12to30E3r4">.true.</config_use_mom_del2>
 <config_mom_del2>10.0</config_mom_del2>
@@ -128,7 +128,7 @@
 <config_mom_del2 ocn_grid="FRISwISC04to60E3r1">154.0</config_mom_del2>
 <config_mom_del2 ocn_grid="FRISwISC02to60E3r1">77.0</config_mom_del2>
 <config_mom_del2 ocn_grid="FRISwISC01to60E3r1">38.5</config_mom_del2>
-<config_mom_del2 ocn_grid="RRSwISC6to18E3r5">100.0</config_mom_del2>
+<config_mom_del2 ocn_grid="RRSwISC6to18E3r5">0.0</config_mom_del2>
 <config_mom_del2 ocn_grid="SOwISC12to30E3r3">462.0</config_mom_del2>
 <config_mom_del2 ocn_grid="SOwISC12to30E3r4">462.0</config_mom_del2>
 <config_use_tracer_del2>.false.</config_use_tracer_del2>
@@ -165,6 +165,7 @@
 <config_mom_del4 ocn_grid="SOwISC12to30E3r3">1.18e10</config_mom_del4>
 <config_mom_del4 ocn_grid="SOwISC12to30E3r4">1.18e10</config_mom_del4>
 <config_mom_del4_div_factor>1.0</config_mom_del4_div_factor>
+<config_mom_del4_div_factor ocn_grid="RRSwISC6to18E3r5">10.0</config_mom_del4_div_factor>
 <config_use_tracer_del4>.false.</config_use_tracer_del4>
 <config_tracer_del4>0.0</config_tracer_del4>
 
@@ -291,6 +292,11 @@
 <config_GMRedi_Rossby_ramp_min>0.5</config_GMRedi_Rossby_ramp_min>
 <config_GMRedi_Rossby_ramp_max>3.0</config_GMRedi_Rossby_ramp_max>
 
+<!-- eddy_kinetic_energy_correction -->
+<config_eke_correction_enable>.false.</config_eke_correction_enable>
+<config_eke_alpha>-2.9e-3</config_eke_alpha>
+<config_eke_beta>0.008</config_eke_beta>
+
 <!-- eddy_parameterization -->
 <config_eddyMLD_dens_threshold>0.03</config_eddyMLD_dens_threshold>
 <config_eddyMLD_reference_depth>10</config_eddyMLD_reference_depth>
@@ -341,12 +347,16 @@
 <config_cvmix_kpp_use_enhanced_diff>.true.</config_cvmix_kpp_use_enhanced_diff>
 <config_cvmix_kpp_nonlocal_with_implicit_mix>.false.</config_cvmix_kpp_nonlocal_with_implicit_mix>
 <config_cvmix_kpp_use_theory_wave>.false.</config_cvmix_kpp_use_theory_wave>
+<config_cvmix_kpp_use_theory_wave ocn_grid="RRSwISC6to18E3r5">.true.</config_cvmix_kpp_use_theory_wave>
 <config_cvmix_kpp_langmuir_mixing_opt>'NONE'</config_cvmix_kpp_langmuir_mixing_opt>
+<config_cvmix_kpp_langmuir_mixing_opt ocn_grid="RRSwISC6to18E3r5">'LWF16'</config_cvmix_kpp_langmuir_mixing_opt>
 <config_cvmix_kpp_langmuir_entrainment_opt>'NONE'</config_cvmix_kpp_langmuir_entrainment_opt>
+<config_cvmix_kpp_langmuir_entrainment_opt ocn_grid="RRSwISC6to18E3r5">'LWF16'</config_cvmix_kpp_langmuir_entrainment_opt>
 <config_cvmix_kpp_use_active_wave>.false.</config_cvmix_kpp_use_active_wave>
 
 <!-- wave_coupling -->
 <config_use_active_wave>.false.</config_use_active_wave>
+<config_momentum_use_active_wave>.false.</config_momentum_use_active_wave>
 <config_n_stokes_drift_wavenumber_partitions>6</config_n_stokes_drift_wavenumber_partitions>
 
 <!-- gotm -->
@@ -371,6 +381,14 @@
 <config_use_sgr_opt_salt_prescribed>.false.</config_use_sgr_opt_salt_prescribed>
 <config_sgr_temperature_prescribed>0.0</config_sgr_temperature_prescribed>
 <config_sgr_salinity_prescribed>0.0</config_sgr_salinity_prescribed>
+
+<!-- precip_scaling -->
+<config_use_precip_scaling>.false.</config_use_precip_scaling>
+<config_precip_scaling_mode>'off'</config_precip_scaling_mode>
+<config_precip_scaling_initial_factor>1.0</config_precip_scaling_initial_factor>
+<config_precip_scaling_constant_factor>1.0</config_precip_scaling_constant_factor>
+<config_precip_scaling_history_years>1</config_precip_scaling_history_years>
+<config_precip_scaling_write_to_logfile>.false.</config_precip_scaling_write_to_logfile>
 
 <!-- coupling -->
 <config_remove_ais_river_runoff>.false.</config_remove_ais_river_runoff>
@@ -427,6 +445,20 @@
 <config_frazil_sea_ice_reference_salinity>4.0</config_frazil_sea_ice_reference_salinity>
 <config_frazil_maximum_freezing_temperature>0.0</config_frazil_maximum_freezing_temperature>
 <config_frazil_use_surface_pressure>.false.</config_frazil_use_surface_pressure>
+
+<!-- land_ice -->
+<config_land_ice_draft_mode>'pressure-dependent'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="oQU240wLI">'data'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="ECwISC30to60E1r2">'data'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="SOwISC12to60E2r4">'data'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="ECwISC30to60E2r1">'data'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="IcoswISC30E3r5">'data'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="FRISwISC08to60E3r1">'data'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="FRISwISC04to60E3r1">'data'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="FRISwISC02to60E3r1">'data'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="FRISwISC01to60E3r1">'data'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="RRSwISC6to18E3r5">'data'</config_land_ice_draft_mode>
+<config_land_ice_rho_ocean>1028</config_land_ice_rho_ocean>
 
 <!-- land_ice_fluxes -->
 <config_land_ice_flux_mode>'off'</config_land_ice_flux_mode>
@@ -509,6 +541,9 @@
 <config_flux_limiter>'monotonic'</config_flux_limiter>
 <config_remap_limiter>'monotonic'</config_remap_limiter>
 <config_thickness_flux_type>'centered'</config_thickness_flux_type>
+<config_use_spatially_variable_upwind>.false.</config_use_spatially_variable_upwind>
+<config_spatially_variable_upwind_hmin>5.0</config_spatially_variable_upwind_hmin>
+<config_spatially_variable_upwind_hmax>10.0</config_spatially_variable_upwind_hmax>
 
 <!-- bottom_drag -->
 <config_bottom_drag_mode>'implicit'</config_bottom_drag_mode>
@@ -759,6 +794,7 @@
 <config_use_ecosysTracers_ttd_forcing>.false.</config_use_ecosysTracers_ttd_forcing>
 <config_use_ecosysTracers_surface_value>.false.</config_use_ecosysTracers_surface_value>
 <config_use_ecosysTracers_river_inputs_from_coupler>.false.</config_use_ecosysTracers_river_inputs_from_coupler>
+<config_use_ecosys_frazil_tendencies>.false.</config_use_ecosys_frazil_tendencies>
 <config_use_ecosysTracers_sea_ice_coupling>.false.</config_use_ecosysTracers_sea_ice_coupling>
 <config_ecosysTracers_diagnostic_fields_level1>.false.</config_ecosysTracers_diagnostic_fields_level1>
 <config_ecosysTracers_diagnostic_fields_level2>.false.</config_ecosysTracers_diagnostic_fields_level2>

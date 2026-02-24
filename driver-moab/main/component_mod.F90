@@ -7,7 +7,7 @@ module component_mod
   use shr_kind_mod,     only: cs => SHR_KIND_CS
   use shr_kind_mod,     only: cl => SHR_KIND_CL
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
-  use shr_const_mod,    only: shr_const_cday
+  use shr_const_mod,    only: shr_const_cday, shr_const_isspval
   use shr_file_mod,     only: shr_file_setLogLevel, shr_file_setLogUnit
   use shr_file_mod,     only: shr_file_setIO, shr_file_getUnit
   use shr_scam_mod,     only: shr_scam_checkSurface
@@ -49,9 +49,7 @@ module component_mod
   public :: component_init_cx
   public :: component_init_aream
   public :: component_init_areacor
-#ifdef HAVE_MOAB
   public :: component_init_areacor_moab
-#endif
   public :: component_run                 ! mct and esmf versions
   public :: component_final               ! mct and esmf versions
   public :: component_exch
@@ -264,9 +262,7 @@ contains
           ! multiple by area ratio
           if (present(seq_flds_x2c_fluxes)) then
              call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
-#ifdef HAVE_MOAB
-             call factor_moab_comp(comp(eci), 'drv2mdl', seq_flds_x2c_fluxes)
-#endif
+             call factor_moab_comp(comp(eci), 'drv2mdl', seq_flds_x2c_fluxes, mask_spval=.true.)
           end if
 
           ! call the component's specific init phase
@@ -283,9 +279,7 @@ contains
           ! only done in second phase of atm init
           if (present(seq_flds_c2x_fluxes)) then
              call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
-#ifdef HAVE_MOAB
-             call factor_moab_comp(comp(eci), 'mdl2drv', seq_flds_c2x_fluxes)
-#endif
+             call factor_moab_comp(comp(eci), 'mdl2drv', seq_flds_c2x_fluxes, mask_spval=.true.)
           end if
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -463,16 +457,17 @@ contains
     use prep_ice_mod,       only : prep_ice_get_mapper_SFo2i
     use prep_glc_mod,       only : prep_glc_get_mapper_Sl2g
     use component_type_mod, only : atm, lnd, ice, ocn, rof, glc
-#ifdef HAVE_MOAB
     use iMOAB, only : iMOAB_DefineTagStorage,  iMOAB_GetDoubleTagStorage, &
                        iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh
 
     use iso_c_binding
     !   character(1024)         :: domain_file        ! file containing domain info (set my input)
     use seq_comm_mct,     only: mboxid ! iMOAB id for MPAS ocean migrated mesh to coupler pes
+    use seq_comm_mct,     only: mbixid ! iMOAB id for MPAS sea-ice migrated mesh to coupler pes
+    use seq_comm_mct,     only: mblxid ! iMOAB id for lnd migrated mesh to coupler pes
     use seq_comm_mct,     only: mbaxid ! iMOAB id for atm migrated mesh to coupler pes
     use seq_comm_mct,     only: mbrxid ! iMOAB id for rof migrated mesh to coupler pes
-#endif
+    use seq_comm_mct,     only: atm_pg_active ! 
     !
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
@@ -496,12 +491,10 @@ contains
     logical                  :: glc_present ! glc present flag
     integer                  :: ka,km
     character(*), parameter :: subname = '(component_init_aream)'
-#ifdef HAVE_MOAB
     integer                 :: tagtype, nloc, ent_type, tagindex, ierr
     character*100  tagname
     real(R8), allocatable, target :: data1(:)
     integer ,    allocatable :: gids(:) ! used for setting values associated with ids
-#endif
     !---------------------------------------------------------------
 
     ! Note that the following is assumed to hold - all gsmaps_cx for a given
@@ -525,9 +518,9 @@ contains
           dom_d  => component_get_dom_cx(ocn(1))   !dom_ox
           ka = mct_aVect_indexRa(dom_s%data, "area" )
           km = mct_aVect_indexRa(dom_s%data, "aream" )
+          ! copy atm area to ocn aream
           dom_s%data%rAttr(km,:) = dom_s%data%rAttr(ka,:)
 
-#ifdef HAVE_MOAB
         ! TODO should actually compute aream from mesh model
         ! we do a lot of unnecessary gymnastics, and very inefficient, because we have a 
         ! different distribution compared to mct source grid atm
@@ -536,10 +529,16 @@ contains
          nloc = mct_avect_lsize(dom_s%data)
          allocate(data1(nloc))
          data1 = dom_s%data%rAttr(ka,:)
-         ent_type = 1  ! element dense double tags
+         if (atm_pg_active) then
+            ent_type = 1  ! element dense double tags
+         else ! this is true only for spectral atm now
+            ent_type = 0 ! for pure spectral case, the atm is PC on coupler side
+         endif
+          
          allocate(gids(nloc))
          gids = dom_s%data%iAttr(mct_aVect_indexIA(dom_s%data,"GlobGridNum"),:)
          ! ! now set data on the coupler side too
+         ! put the mct atm area in the moab atm aream
          ierr = iMOAB_SetDoubleTagStorageWithGid ( mbaxid, tagname, nloc, ent_type, &
                                                     data1, gids)
          if (ierr .ne. 0) then
@@ -548,21 +547,8 @@ contains
          endif
          deallocate(gids)
          deallocate(data1)
-         ! project now aream on ocean (from atm)
-#endif
+         ! project now aream from atm to ocean.  This is a rearrange since samegrid_ao is true
          call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
-
-#ifdef HAVE_MOAB
-#ifdef MOABDEBUG
-         ierr = iMOAB_WriteMesh(mboxid, trim('recMeshOcnWithArea.h5m'//C_NULL_CHAR), &
-                                 trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in writing ocean mesh coupler '
-            call shr_sys_abort(subname//' ERROR in writing ocean mesh coupler ')
-         endif
-#endif
-#endif
-
           
        else
           gsmap_s => component_get_gsmap_cx(ocn(1)) ! gsmap_ox
@@ -584,6 +570,7 @@ contains
        dom_s  => component_get_dom_cx(ocn(1))   !dom_ox
        dom_d  => component_get_dom_cx(ice(1))   !dom_ix
 
+       ! copy aream from ocean to ice.  This is always a copy since ice and ocean have same mesh
        call seq_map_map(mapper_SFo2i, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
     endif
 
@@ -605,14 +592,15 @@ contains
           call t_stopf('CPL:seq_map_readdata-rof2ocn_ice')
           
        endif
+       ! samegrid_ro = true not handled.  ROF always stub then?
     end if
 
     if (lnd_present .and. atm_present) then
        if (samegrid_al) then
           dom_s  => component_get_dom_cx(atm(1))   !dom_ax
           dom_d  => component_get_dom_cx(lnd(1))   !dom_lx
-
-          call seq_map_map(mapper_Sa2l, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+          ! it should work for FV and spectral too
+          call seq_map_map(mapper_Sa2l, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream') 
        else
           gsmap_d => component_get_gsmap_cx(lnd(1)) ! gsmap_lx
           dom_d   => component_get_dom_cx(lnd(1))   ! dom_lx
@@ -644,6 +632,48 @@ contains
 
        endif
     endif
+#ifdef MOABDEBUG
+     if(mbaxid >=0 ) then
+         ierr = iMOAB_WriteMesh(mbaxid, trim('cplAtmWithAream.h5m'//C_NULL_CHAR), &
+                                 trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing atm mesh coupler '
+            call shr_sys_abort(subname//' ERROR in writing atm mesh coupler ')
+         endif
+     endif
+     if(mblxid >=0 ) then
+         ierr = iMOAB_WriteMesh(mblxid, trim('cplLndWithAream.h5m'//C_NULL_CHAR), &
+                                 trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing lnd mesh coupler '
+            call shr_sys_abort(subname//' ERROR in writing lnd mesh coupler ')
+         endif
+     endif
+     if(mboxid >=0 ) then
+         ierr = iMOAB_WriteMesh(mboxid, trim('cplOcnWithAream.h5m'//C_NULL_CHAR), &
+                                 trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing ocn mesh coupler '
+            call shr_sys_abort(subname//' ERROR in writing ocn mesh coupler ')
+         endif
+     endif
+     if(mbixid >=0 ) then
+        ierr = iMOAB_WriteMesh(mbixid, trim('cplIceWithAream.h5m'//C_NULL_CHAR), &
+                              trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+        if (ierr .ne. 0) then
+           write(logunit,*) subname,' error in writing ice mesh coupler '
+           call shr_sys_abort(subname//' ERROR in writing ice mesh coupler ')
+        endif
+     endif
+     if(mbrxid >=0 ) then
+         ierr = iMOAB_WriteMesh(mbrxid, trim('cplRofWithAream.h5m'//C_NULL_CHAR), &
+                                 trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing rof mesh coupler '
+            call shr_sys_abort(subname//' ERROR in writing rof mesh coupler ')
+         endif
+     endif
+#endif
 
   end subroutine component_init_aream
 
@@ -710,7 +740,7 @@ contains
 
   end subroutine component_init_areacor
 
-subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxes, seq_flds_c2x_fields)
+subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds_c2x_fluxes, seq_flds_c2x_fields)
   !---------------------------------------------------------------
    ! COMPONENT PES and CPL/COMPONENT (for exchange only)
    !
@@ -724,6 +754,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
    !
    ! Arguments
    type(component_type) , intent(inout) :: comp(:)
+   logical              , intent(in)    :: samegrid
    integer              , intent(in)    :: mbccid  ! comp side
    integer              , intent(in)    :: mbcxid  ! coupler side
    ! point cloud or FV type, to use vertices or cells for setting/getting the area tags and corrections
@@ -734,52 +765,61 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
    integer :: mpi_tag
    character(*), parameter :: subname = '(component_init_areacor_moab)'
    character(CXX)          :: tagname
+   character(CXX)   :: comment
    integer                 :: tagtype, numco,  tagindex, lsize, i, j, arrsize, ierr, nfields
    real (kind=r8) , allocatable :: areas (:,:), factors(:,:), vals(:,:) ! 2 tags values, area, aream,
-   real (kind=r8)  :: rarea, raream, rmask, fact
+   real (kind=r8)  :: rarea, raream, rmask, fact, rmin1, rmax1, rmin, rmax
    integer     nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
    type(mct_list) :: temp_list  ! used to count number of fields
+   integer :: mpicom
+   logical :: iamroot
+   character(len=*),parameter :: F0R = "(2A,2g25.17,A )"
    !---------------------------------------------------------------
 
    if (comp(1)%iamin_cplcompid) then
       tagname='aream'//C_NULL_CHAR
       ! bring on the comp side the aream from maps
       ! (it is either computed by mapping routine or read from mapping files)
-      call component_exch_moab(comp(1), mbcxid, mbccid, 1, tagname)
+      call component_exch_moab(comp(1), mbcxid, mbccid, 1, tagname, context_exch='aream')
 
       ! For only component pes
       if (comp(1)%iamin_compid) then
-             ! Allocate and initialize area correction factors on component processes
+         ! Allocate and initialize area correction factors on component processes
          ! get areas, first allocate memory
+         ! Side Note:: !!! TODO mblsize on component side is always the size of comp domain for mct, too
+         ! that is the whole point, we are using the same order, and the same grid size as mct driver
          lsize = comp(1)%mblsize
          allocate(areas (lsize, 3)) ! lsize is along grid; read mask too
          allocate(factors (lsize, 2))
-         factors = 1.0 ! initialize with 1.0 all factors; then maybe correct them
+
+         factors = 1.0_r8 ! initialize with 1.0 all factors;
          ! get areas
          tagname='area:aream:mask'//C_NULL_CHAR
          arrsize = 3 * lsize
-         ierr = iMOAB_GetDoubleTagStorage ( mbccid, tagname, arrsize , comp(1)%mbGridType, areas )
+         ierr = iMOAB_GetDoubleTagStorage ( mbccid, tagname, arrsize , comp(1)%mbGridType, areas(1,1) )
          if (ierr .ne. 0) then
            call shr_sys_abort(subname//' cannot get areas  ')
          endif
-         ! now compute the factors
-         do i=1,lsize
-            rmask = areas(i,3)
+         if (.not.samegrid) then  ! only correct if not monogrid (SCM case)
+           ! now compute the factors
+           do i=1,lsize
+              rmask = areas(i,3)
 
-            rarea  = areas(i, 1)
-            raream = areas(i, 2)
-            if ( abs(rmask) >= 1.0e-06) then
-               if (rarea * raream /= 0.0_R8) then
-                  factors(i,1) = rarea/raream
-                  factors(i,2)= 1.0_R8/factors(i,1)
-               else
-                  write(logunit,*) trim(subname),' ERROR area,aream= ', &
-                        rarea,raream,' in ',i,lsize
-                  call shr_sys_flush(logunit)
-                  call shr_sys_abort()
-               endif
-            endif
-         enddo
+              rarea  = areas(i, 1)
+              raream = areas(i, 2)
+              if ( abs(rmask) >= 1.0e-06) then
+                 if (rarea * raream /= 0.0_R8) then
+                    factors(i,1) = rarea/raream
+                    factors(i,2)= 1.0_R8/factors(i,1)
+                 else
+                    write(logunit,*) trim(subname),' ERROR area,aream= ', &
+                          rarea,raream,' in ',i,lsize
+                    call shr_sys_flush(logunit)
+                    call shr_sys_abort()
+                 endif
+              endif
+           enddo
+         endif ! if .not.samegrid
          ! set factors as tags
          ! define the tags mdl2drv and drv2mdl on component sides, and compute them based on area and aream
          tagname = 'mdl2drv:drv2mdl'//C_NULL_CHAR
@@ -790,24 +830,41 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
            call shr_sys_abort(subname//' cannot define correction tags')
          endif
          arrsize = 2 * lsize
-         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize , comp(1)%mbGridType, factors)
+         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize , comp(1)%mbGridType, factors(1,1))
          if (ierr .ne. 0) then
            call shr_sys_abort(subname//' cannot set correction area factors  ')
          endif
 
+! print the computed values for area factors
+         rmin1 = minval(factors(:,1))
+         rmax1 = maxval(factors(:,1))
+         mpicom = comp(1)%mpicom_compid
+         iamroot= comp(1)%iamroot_compid
+         call shr_mpi_min(rmin1,rmin,mpicom)
+         call shr_mpi_max(rmax1,rmax,mpicom)
+         comment = 'areafact_'//trim(comp(1)%name)
+         if (iamroot) write(logunit,F0R) trim(subname),' : min/max mdl2drv ',rmin,rmax,trim(comment)
+
+         rmin1 = minval(factors(:,2))
+         rmax1 = maxval(factors(:,2))
+         call shr_mpi_min(rmin1,rmin,mpicom)
+         call shr_mpi_max(rmax1,rmax,mpicom)
+         if (iamroot) write(logunit,F0R) trim(subname),' : min/max drv2mdl ',rmin,rmax,trim(comment)
+         if (iamroot) call shr_sys_flush(logunit)
+
           ! Area correct component initialization output fields
           ! need to multiply fluxes (correct them) with mdl2drv (factors(i,1))
-          ! so get all fluxes (tags) multiply with factor(i,1), according to mask
+          ! so get all fluxes (tags) multiplied with factors(i,1), according to mask
 
          call mct_list_init(temp_list, seq_flds_c2x_fluxes)
          nfields=mct_list_nitem (temp_list)
          call mct_list_clean(temp_list)
 
-
+         lsize = comp(1)%mblsize
          allocate(vals(lsize, nfields))
          tagname = trim(seq_flds_c2x_fluxes)//C_NULL_CHAR
          arrsize = lsize * nfields
-         ierr = iMOAB_GetDoubleTagStorage( mbccid, tagname, arrsize, comp(1)%mbGridType, vals )
+         ierr = iMOAB_GetDoubleTagStorage( mbccid, tagname, arrsize, comp(1)%mbGridType, vals(1,1) )
          if (ierr .ne. 0) then
            call shr_sys_abort(subname//' cannot get flux values:  '//tagname)
          endif
@@ -817,26 +874,22 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
             if ( abs(rmask) >= 1.0e-06) then
                fact = factors(i,1) ! mdl2drv tag
                do j=1,nfields
-                  vals(i,j) = fact*vals(i,j)
+                  vals(i,j) = vals(i,j) * fact
                enddo
             endif
          enddo
-         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize, comp(1)%mbGridType, vals)
+         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize, comp(1)%mbGridType, vals(1,1))
          if (ierr .ne. 0) then
             call shr_sys_abort(subname//' cannot set new flux values  ')
          endif
 
-         !    call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
-         ! send to coupler corrected values
-
-         ! call seq_map_map(comp(eci)%mapper_cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, msgtag=mpi_tag)
          deallocate(factors)
          deallocate(areas)
          deallocate(vals)
 
       endif
        ! send data to coupler exchange ? everything, not only fluxes ?
-      call component_exch_moab(comp(1), mbccid, mbcxid, 0, seq_flds_c2x_fields)
+      call component_exch_moab(comp(1), mbccid, mbcxid, 0, seq_flds_c2x_fields, context_exch='areacor')
    endif
 
   end subroutine component_init_areacor_moab
@@ -951,9 +1004,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
 
              if (comp_prognostic .and. firstloop .and. present(seq_flds_x2c_fluxes)) then
                 call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
-#ifdef HAVE_MOAB
-               call factor_moab_comp(comp(eci), 'drv2mdl', seq_flds_x2c_fluxes)
-#endif
+               call factor_moab_comp(comp(eci), 'drv2mdl', seq_flds_x2c_fluxes,mask_spval=.true.)
              end if
 
              call t_set_prefixf(comp(1)%oneletterid//":")
@@ -967,9 +1018,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
 
              if ((phase == 1) .and. present(seq_flds_c2x_fluxes)) then
                 call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
-#ifdef HAVE_MOAB
-               call factor_moab_comp(comp(eci), 'mdl2drv', seq_flds_c2x_fluxes)
-#endif
+               call factor_moab_comp(comp(eci), 'mdl2drv', seq_flds_c2x_fluxes,mask_spval=.true.)
              endif
 
              if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -1188,7 +1237,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
 
   end subroutine component_diag
 
-   subroutine factor_moab_comp(comp, type, seq_flds_fluxes)
+   subroutine factor_moab_comp(comp, type, seq_flds_fluxes, mask_spval)
       use ISO_C_BINDING, only : C_NULL_CHAR
       use shr_kind_mod      , only :  CXX => shr_kind_CXX
       use iMOAB  , only:  iMOAB_GetDoubleTagStorage, iMOAB_SetDoubleTagStorage
@@ -1196,13 +1245,20 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
       type(component_type)     , intent(inout) :: comp
       character(len=*)        , intent(in)               :: type
       character(len=*)        , intent(in) :: seq_flds_fluxes
+      logical, optional    ,intent(in)    :: mask_spval
 
       character(CXX)  :: tagname
       type(mct_list) :: temp_list  ! used to count number of fields
       integer        :: nfields, arrsize, ierr, i, j
       real (kind=r8) , allocatable ::  vals(:,:) ! tags values to be multiplied
       real (kind=r8) , allocatable ::  factors(:)
+      logical     :: lmspval        ! local mask spval
       character(*), parameter :: subname = '(factor_moab_comp)'
+
+      lmspval = .false.
+      if (present(mask_spval)) then
+         lmspval = mask_spval
+      endif
 
 
       call mct_list_init(temp_list, seq_flds_fluxes)
@@ -1221,15 +1277,25 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
       ! get vals, multiply, then reset them again
       tagname = trim(seq_flds_fluxes)//C_NULL_CHAR
       arrsize = comp%mblsize * nfields
-      ierr = iMOAB_GetDoubleTagStorage( comp%mbApCCid, tagname, arrsize , comp%mbGridType, vals)
+      ierr = iMOAB_GetDoubleTagStorage( comp%mbApCCid, tagname, arrsize , comp%mbGridType, vals(1,1))
       if (ierr .ne. 0) then
          call shr_sys_abort(subname//' cannot get fluxes  ' //trim(type))
       endif
-      do i=1,comp%mblsize
-         do j=1,nfields
-            vals(i,j) = factors(i) * vals(i,j)
+      if (lmspval) then
+         do i=1,comp%mblsize
+            do j=1,nfields
+              if (.not. shr_const_isspval(vals(i,j))) then
+                vals(i,j) = vals(i,j) * factors(i)
+              endif
+            enddo
          enddo
-      enddo
+      else
+         do i=1,comp%mblsize
+            do j=1,nfields
+                vals(i,j) = vals(i,j) * factors(i)
+            enddo
+         enddo
+      endif
 
       ierr = iMOAB_SetDoubleTagStorage( comp%mbApCCid, tagname, arrsize , comp%mbGridType, vals)
       if (ierr .ne. 0) then

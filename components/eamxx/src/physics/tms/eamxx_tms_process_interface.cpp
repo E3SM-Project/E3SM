@@ -1,9 +1,11 @@
 #include "eamxx_tms_process_interface.hpp"
 
 #include "physics/tms/tms_functions.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_units.hpp>
 
 #include <array>
 
@@ -18,7 +20,7 @@ TurbulentMountainStress::TurbulentMountainStress (const ekat::Comm& comm, const 
 }
 
 // =========================================================================================
-void TurbulentMountainStress::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void TurbulentMountainStress::create_requests()
 {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
@@ -30,7 +32,7 @@ void TurbulentMountainStress::set_grids(const std::shared_ptr<const GridsManager
   const auto m2 = pow(m,2);
 
   // Initialize grid from grids manager
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   EKAT_REQUIRE_MSG(grid_name=="physics_pg2",
                    "Error! TMS process can only be used with \"physics_pg2\" physics grid. "
@@ -67,6 +69,9 @@ void TurbulentMountainStress::initialize_impl (const RunType /* run_type */)
 // =========================================================================================
 void TurbulentMountainStress::run_impl (const double /* dt */)
 {
+  using TPF = ekat::TeamPolicyFactory<TMSFunctions::KT::ExeSpace>;
+  using PF  = scream::PhysicsFunctions<DefaultDevice>;
+
   // Helper views
   const auto pseudo_density = get_field_in("pseudo_density").get_view<const Spack**>();
   const auto qv             = get_field_in("qv").get_view<const Spack**>();
@@ -91,7 +96,7 @@ void TurbulentMountainStress::run_impl (const double /* dt */)
   const int nlevs = m_nlevs;
   const int nlev_packs = ekat::npack<Spack>(nlevs);
   // calculate_z_int contains a team-level parallel_scan, which requires a special policy
-  const auto scan_policy = ekat::ExeSpaceUtils<TMSFunctions::KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncols, nlev_packs);
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncols, nlev_packs);
   Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const TMSFunctions::KT::MemberType& team) {
     const int i = team.league_rank();
 

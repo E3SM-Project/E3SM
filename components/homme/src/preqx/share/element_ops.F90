@@ -222,6 +222,24 @@ contains
   end subroutine get_temperature
 
   !_____________________________________________________________________
+  subroutine get_hydro_pressure_i(p_i,dp,hvcoord)
+  !
+  implicit none
+
+  real (kind=real_kind), intent(out)  :: p_i(np,np,nlevp)
+  real (kind=real_kind), intent(in)   :: dp(np,np,nlev)
+  type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
+
+  integer :: k
+
+  p_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+  do k=1,nlev  ! SCAN
+     p_i(:,:,k+1)=p_i(:,:,k) + dp(:,:,k)
+  enddo
+
+  end subroutine get_hydro_pressure_i
+
+  !_____________________________________________________________________
   subroutine copy_state(elem,nin,nout)
   implicit none
   

@@ -190,9 +190,9 @@ subroutine iop_broadcast()
   call mpibcast(wfld,plev,mpir8,0,mpicom) 
   
   call mpibcast(divt,plev,mpir8,0,mpicom)
-  call mpibcast(divq,plev,mpir8,0,mpicom)
+  call mpibcast(divq,plev*pcnst,mpir8,0,mpicom)
   call mpibcast(divt3d,plev,mpir8,0,mpicom)
-  call mpibcast(divq3d,plev,mpir8,0,mpicom)
+  call mpibcast(divq3d,plev*pcnst,mpir8,0,mpicom)
   call mpibcast(scmlat,1,mpir8,0,mpicom)
   
 #endif

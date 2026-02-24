@@ -2,7 +2,6 @@
 ---
 filename_prefix: spa_standalone_output
 averaging_type: instant
-max_snapshots_per_file: ${NUM_STEPS}
 field_names:
   - aero_g_sw
   - aero_ssa_sw

@@ -10,7 +10,7 @@ time_stepping:
   run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
   number_of_steps: ${NUM_STEPS}
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [rrtmgp]
   rrtmgp:
     column_chunk_size: ${COL_CHUNK_SIZE}

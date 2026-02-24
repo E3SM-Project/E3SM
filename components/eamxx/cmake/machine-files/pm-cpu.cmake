@@ -1,9 +1,6 @@
 include(${CMAKE_CURRENT_LIST_DIR}/common.cmake)
 common_setup()
 
-include (${EKAT_MACH_FILES_PATH}/kokkos/amd-zen3.cmake)
-include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
-
 set(CMAKE_CXX_FLAGS "-DTHRUST_IGNORE_CUB_VERSION_CHECK" CACHE STRING "" FORCE)
 
 #message(STATUS "pm-cpu CMAKE_CXX_COMPILER_ID=${CMAKE_CXX_COMPILER_ID} CMAKE_Fortran_COMPILER_VERSION=${CMAKE_Fortran_COMPILER_VERSION}")

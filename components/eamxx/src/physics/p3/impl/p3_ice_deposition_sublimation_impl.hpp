@@ -2,7 +2,7 @@
 #define P3_ICE_DEPOSITION_SUBLIMATION_IMPL_HPP
 
 #include "p3_functions.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
 namespace scream {
 namespace p3 {
@@ -17,7 +17,7 @@ void Functions<S,D>
   const Smask& context)
 {
   constexpr Scalar QSMALL   = C::QSMALL;
-  constexpr Scalar T_zerodegc = C::T_zerodegc;
+  constexpr Scalar T_zerodegc = C::T_zerodegc.value;
 
   Spack qi_tend;   //temporary var for mass tend before splitting into sublim or depos
 

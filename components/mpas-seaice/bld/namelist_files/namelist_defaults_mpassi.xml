@@ -391,6 +391,9 @@
 <!-- snow -->
 <config_snow_redistribution_scheme>'ITDrdg'</config_snow_redistribution_scheme>
 <config_fallen_snow_radius>54.526</config_fallen_snow_radius>
+<config_snow_growth_wet_factor>4.22e5</config_snow_growth_wet_factor>
+<config_minimum_snow_growth_factor>0.0</config_minimum_snow_growth_factor>
+<config_snow_liq_saturation>0.033</config_snow_liq_saturation>
 <config_use_snow_liquid_ponds>true</config_use_snow_liquid_ponds>
 <config_new_snow_density>100.0</config_new_snow_density>
 <config_max_snow_density>450.0</config_max_snow_density>
@@ -420,6 +423,7 @@
 <config_slow_mode_critical_porosity>0.05</config_slow_mode_critical_porosity>
 <config_macro_drainage_timescale>10.</config_macro_drainage_timescale>
 <config_congelation_freezing_method>'two-step'</config_congelation_freezing_method>
+<config_congelation_freezing_method ice_grid="RRSwISC6to18E3r5">'one-step'</config_congelation_freezing_method>
 <config_congelation_ice_porosity>0.85</config_congelation_ice_porosity>
 
 <!-- itd -->
@@ -453,6 +457,7 @@
 <config_sea_freezing_temperature_type>'mushy'</config_sea_freezing_temperature_type>
 <config_ocean_surface_type>'free'</config_ocean_surface_type>
 <config_use_data_icebergs>false</config_use_data_icebergs>
+<config_iceberg_temperature>-4.0</config_iceberg_temperature>
 <config_scale_dib_by_removed_ice_runoff>false</config_scale_dib_by_removed_ice_runoff>
 <config_salt_flux_coupling_type>'constant'</config_salt_flux_coupling_type>
 <config_ice_ocean_drag_coefficient>0.00536</config_ice_ocean_drag_coefficient>

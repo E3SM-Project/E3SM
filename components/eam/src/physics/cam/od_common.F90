@@ -335,7 +335,7 @@ subroutine oro_drag_interface(state,    cam_in,   sgh,      pbuf,   dtime,  nm, 
   !get the layer index of pblh in layer for input in drag scheme
   pblh_idx = pbuf_get_index('pblh')
   call pbuf_get_field(pbuf, pblh_idx, pblh)
-  do i=1,pcols
+  do i=1,ncol
       kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-(state%phis(i)/gravit),pblh(i))
       kpbl2d_reverse_in(i)=pverp-kpbl2d_in(i)!pverp-k
   end do
@@ -392,13 +392,15 @@ function pblh_get_level_idx(height_array,pblheight)
   pblh_get_level_idx = -1
   found=.false.
   !get the pblh level index and return
-  do k = 1, pver
-    if((pblheight >= height_array(k+1).and.pblheight <height_array(k)))then
-      pblh_get_level_idx =  k+1
+  do k = 2, pver
+    if((pblheight >= height_array(k).and.pblheight <height_array(k-1)))then
+      pblh_get_level_idx =  k
       found=.true.
       return
     endif
   enddo
+
+  if (.not.found) call endrun('ERROR - pblh_get_level_idx: pbl top index not found')
 
 end function
 
@@ -967,8 +969,8 @@ subroutine od2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                        &
   !
   !--- calculate length of grid for flow-blocking drag
   !
-  delx=dxmeter
-  dely=dymeter  
+  delx(its:ite)=dxmeter(its:ite)
+  dely(its:ite)=dymeter(its:ite)
   !
   !
   !-----initialize arrays

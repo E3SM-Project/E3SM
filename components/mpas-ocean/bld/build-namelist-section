@@ -138,6 +138,14 @@ add_default($nl, 'config_GM_horizontal_ramp_max');
 add_default($nl, 'config_GMRedi_Rossby_ramp_min');
 add_default($nl, 'config_GMRedi_Rossby_ramp_max');
 
+##################################################
+# Namelist group: eddy_kinetic_energy_correction #
+##################################################
+
+add_default($nl, 'config_eke_correction_enable');
+add_default($nl, 'config_eke_alpha');
+add_default($nl, 'config_eke_beta');
+
 #########################################
 # Namelist group: eddy_parameterization #
 #########################################
@@ -203,6 +211,7 @@ add_default($nl, 'config_cvmix_kpp_use_active_wave');
 #################################
 
 add_default($nl, 'config_use_active_wave');
+add_default($nl, 'config_momentum_use_active_wave');
 add_default($nl, 'config_n_stokes_drift_wavenumber_partitions');
 
 ########################
@@ -233,6 +242,17 @@ add_default($nl, 'config_use_sgr_opt_temp_prescribed');
 add_default($nl, 'config_use_sgr_opt_salt_prescribed');
 add_default($nl, 'config_sgr_temperature_prescribed');
 add_default($nl, 'config_sgr_salinity_prescribed');
+
+##################################
+# Namelist group: precip_scaling #
+##################################
+
+add_default($nl, 'config_use_precip_scaling');
+add_default($nl, 'config_precip_scaling_mode');
+add_default($nl, 'config_precip_scaling_initial_factor');
+add_default($nl, 'config_precip_scaling_constant_factor');
+add_default($nl, 'config_precip_scaling_history_years');
+add_default($nl, 'config_precip_scaling_write_to_logfile');
 
 ############################
 # Namelist group: coupling #
@@ -305,6 +325,13 @@ add_default($nl, 'config_frazil_sea_ice_reference_salinity');
 add_default($nl, 'config_frazil_maximum_freezing_temperature');
 add_default($nl, 'config_frazil_use_surface_pressure');
 
+############################
+# Namelist group: land_ice #
+############################
+
+add_default($nl, 'config_land_ice_draft_mode');
+add_default($nl, 'config_land_ice_rho_ocean');
+
 ###################################
 # Namelist group: land_ice_fluxes #
 ###################################
@@ -338,6 +365,9 @@ add_default($nl, 'config_coef_3rd_order');
 add_default($nl, 'config_flux_limiter');
 add_default($nl, 'config_remap_limiter');
 add_default($nl, 'config_thickness_flux_type');
+add_default($nl, 'config_use_spatially_variable_upwind');
+add_default($nl, 'config_spatially_variable_upwind_hmin');
+add_default($nl, 'config_spatially_variable_upwind_hmax');
 
 ###############################
 # Namelist group: bottom_drag #
@@ -598,6 +628,7 @@ add_default($nl, 'config_use_ecosysTracers_idealAge_forcing');
 add_default($nl, 'config_use_ecosysTracers_ttd_forcing');
 add_default($nl, 'config_use_ecosysTracers_surface_value');
 add_default($nl, 'config_use_ecosysTracers_river_inputs_from_coupler');
+add_default($nl, 'config_use_ecosys_frazil_tendencies');
 add_default($nl, 'config_use_ecosysTracers_sea_ice_coupling');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level1');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level2');

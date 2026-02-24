@@ -3,7 +3,7 @@
 #define SHOC_DIAG_SECOND_MOMENTS_SRF_IMPL_HPP
 
 #include "shoc_functions.hpp" // for ETI only but harmless for GPU
-#include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
+#include "share/physics/physics_functions.hpp" // also for ETI not on GPUs
 
 namespace scream {
 namespace shoc {
@@ -23,7 +23,7 @@ void Functions<S,D>
  const auto one      = C::ONE;
  const auto zero     = C::ZERO;
  const auto third    = C::THIRD;
- const auto ggr      = C::gravit;
+ const auto ggr      = C::gravit.value;
  const auto basetemp = C::basetemp;
 
  ustar2 = std::sqrt(uw_sfc*uw_sfc+vw_sfc*vw_sfc);

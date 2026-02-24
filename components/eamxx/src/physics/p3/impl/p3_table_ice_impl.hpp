@@ -98,7 +98,7 @@ void Functions<S,D>
   // calculate scaled mean size for consistency with ice lookup table
   Spack dumlr(1);
   if (gt_small.any()) {
-    dumlr.set(gt_small, cbrt(qr/(C::Pi * C::RHO_H2O * nr)));
+    dumlr.set(gt_small, cbrt(qr/(C::Pi * C::RHO_H2O.value * nr)));
   }
   tab.dum3 = (log10(1*dumlr) + 5)*sp(10.70415);
   tab.dumj = IntSmallPack(tab.dum3);

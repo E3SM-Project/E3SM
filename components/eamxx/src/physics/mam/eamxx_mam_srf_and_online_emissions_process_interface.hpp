@@ -1,7 +1,7 @@
 #ifndef EAMXX_MAM_SRF_ONLINE_EMISS_HPP
 #define EAMXX_MAM_SRF_ONLINE_EMISS_HPP
 
-#include "share/grid/remap/abstract_remapper.hpp"
+#include "share/remap/abstract_remapper.hpp"
 #include "share/io/scorpio_input.hpp"
 
 // For MAM4 aerosol configuration
@@ -70,8 +70,7 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   std::string name() const { return "mam_srf_online_emissions"; }
 
   // grid
-  void set_grids(
-      const std::shared_ptr<const GridsManager> grids_manager) override;
+  void create_requests() override;
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override;

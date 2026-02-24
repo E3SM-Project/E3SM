@@ -87,7 +87,7 @@ contains
     real(r8) :: dth(bounds%begp:bounds%endp)     ! diff of virtual temp. between ref. height and surface
     real(r8) :: dthv                             ! diff of vir. poten. temp. between ref. height and surface
     real(r8) :: dqh(bounds%begp:bounds%endp)     ! diff of humidity between ref. height and surface
-    real(r8) :: obu(bounds%begp:bounds%endp)     ! Monin-Obukhov length (m)
+    real(r8) :: obu(bounds%begp:bounds%endp)     ! Obukhov length scale (m)
     real(r8) :: ur(bounds%begp:bounds%endp)      ! wind speed at reference height [m/s]
     real(r8) :: um(bounds%begp:bounds%endp)      ! wind speed including the stablity effect [m/s]
     real(r8) :: temp1(bounds%begp:bounds%endp)   ! relation for potential temperature profile
@@ -250,7 +250,7 @@ contains
          z0hg_patch(p) = z0hg_col(c)
          z0qg_patch(p) = z0qg_col(c)
 
-         ! Initialize Monin-Obukhov length and wind speed
+         ! Initialize Obukhov length scale and wind speed
 
          call MoninObukIni(ur(p), thv(c), dthv, zldis(p), z0mg_patch(p), um(p), obu(p))
          num_iter(p) = 0._r8
@@ -414,7 +414,7 @@ contains
 
          rh_ref2m(p) = min(100._r8, q_ref2m(p) / qsat_ref2m * 100._r8)
 
-         if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+         if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
             rh_ref2m_r(p) = rh_ref2m(p)
             t_ref2m_r(p) = t_ref2m(p)
          end if

@@ -24,8 +24,9 @@ initial_conditions:
   hetfrz_deposition_nucleation_tend: 0.1
   pbl_height : 1.0
   phis : 1.0
+  z_mam4_int : 0.0
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [homme,physics]
   schedule_type: sequential
   homme:

@@ -2,9 +2,10 @@
 #define SCREAM_P3_MICROPHYSICS_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/ekat_parameter_list.hpp"
 #include "physics/p3/p3_functions.hpp"
-#include "share/util/eamxx_common_physics_functions.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
+
+#include <ekat_parameter_list.hpp>
 
 #include <string>
 
@@ -51,8 +52,8 @@ public:
   // The name of the subcomponent
   std::string name () const { return "p3"; }
 
-  // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  // Create grid-dependent field requests
+  void create_requests ();
 
   /*--------------------------------------------------------------------------------------------*/
   // Most individual processes have a pre-processing step that constructs needed variables from
@@ -275,8 +276,8 @@ public:
       // Note: we need to ensure that only a single thread within the team is
       //       updating the mass value.
       Kokkos::single(Kokkos::PerTeam(team), [&] {
-        precip_liq_surf_mass(icol) += precip_liq_surf_flux(icol) * PC::RHO_H2O * m_dt;
-        precip_ice_surf_mass(icol) += precip_ice_surf_flux(icol) * PC::RHO_H2O * m_dt;
+        precip_liq_surf_mass(icol) += precip_liq_surf_flux(icol) * PC::RHO_H2O.value * m_dt;
+        precip_ice_surf_mass(icol) += precip_ice_surf_flux(icol) * PC::RHO_H2O.value * m_dt;
       });
 
       // If necessary, set appropriate boundary fluxes for energy and mass

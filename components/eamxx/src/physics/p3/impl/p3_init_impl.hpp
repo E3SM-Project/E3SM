@@ -3,8 +3,6 @@
 
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
 
-#include "ekat/util/ekat_file_utils.hpp"
-
 #include <fstream>
 
 namespace scream {
@@ -201,14 +199,14 @@ void compute_tables(const bool masterproc, MuRT& mu_r_table_vals, VNT& vn_table_
   revap_table_vals = revap_table_vals_nc;
 }
 
-template <bool IsRead, typename S>
-static void action(const ekat::FILEPtr& fid, S* data, const size_t size)
+template <typename StreamT, typename S>
+static void action(StreamT& stream, S* data, const size_t size)
 {
+  constexpr bool IsRead = std::is_same_v<StreamT,std::ifstream>;
   if constexpr (IsRead) {
-    ekat::read(data, size, fid);
-  }
-  else {
-    ekat::write(data, size, fid);
+    stream.read(reinterpret_cast<char*>(data),sizeof(S)*size);
+  } else {
+    stream.write(reinterpret_cast<const char*>(data),sizeof(S)*size);
   }
 }
 
@@ -227,8 +225,6 @@ void io_impl(const bool masterproc, const char* dir, MuRT& mu_r_table_vals, VNT&
 #endif
     ;
 
-  const char* rw_flag = IsRead ? "r" : "w";
-
   // Get host views
   auto mu_r_table_vals_h  = Kokkos::create_mirror_view(mu_r_table_vals);
   auto revap_table_vals_h = Kokkos::create_mirror_view(revap_table_vals);
@@ -242,16 +238,18 @@ void io_impl(const bool masterproc, const char* dir, MuRT& mu_r_table_vals, VNT&
   std::string vn_filename    = std::string(dir) + "/vn_table_vals_v2.dat" + extension;
   std::string vm_filename    = std::string(dir) + "/vm_table_vals_v2.dat" + extension;
 
-  ekat::FILEPtr mu_r_file(fopen(mu_r_filename.c_str(), rw_flag));
-  ekat::FILEPtr revap_file(fopen(revap_filename.c_str(), rw_flag));
-  ekat::FILEPtr vn_file(fopen(vn_filename.c_str(), rw_flag));
-  ekat::FILEPtr vm_file(fopen(vm_filename.c_str(), rw_flag));
+  using stream_t = std::conditional_t<IsRead,std::ifstream,std::ofstream>;
+
+  stream_t mu_r_file(mu_r_filename.c_str(), std::ios::binary);
+  stream_t revap_file(revap_filename.c_str(), std::ios::binary);
+  stream_t vn_file(vn_filename.c_str(), std::ios::binary);
+  stream_t vm_file(vm_filename, std::ios::binary);
 
   // Read files
-  action<IsRead>(mu_r_file, mu_r_table_vals_h.data(), mu_r_table_vals.size());
-  action<IsRead>(revap_file, revap_table_vals_h.data(), revap_table_vals.size());
-  action<IsRead>(vn_file, vn_table_vals_h.data(), vn_table_vals.size());
-  action<IsRead>(vm_file, vm_table_vals_h.data(), vm_table_vals.size());
+  action(mu_r_file, mu_r_table_vals_h.data(), mu_r_table_vals.size());
+  action(revap_file, revap_table_vals_h.data(), revap_table_vals.size());
+  action(vn_file, vn_table_vals_h.data(), vn_table_vals.size());
+  action(vm_file, vm_table_vals_h.data(), vm_table_vals.size());
 
   // Copy back to device
   if constexpr (IsRead) {

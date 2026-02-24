@@ -2,11 +2,10 @@
 #define SCREAM_HOMME_DYNAMICS_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/grid/remap/abstract_remapper.hpp"
+#include "share/remap/abstract_remapper.hpp"
 
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_workspace.hpp"
+#include <ekat_parameter_list.hpp>
+#include <ekat_pack.hpp>
 
 #include <string>
 
@@ -25,8 +24,6 @@ class HommeDynamics : public AtmosphereProcess
 {
   // Define some types needed by class
   using Pack = ekat::Pack<Real, SCREAM_PACK_SIZE>;
-  using IntPack = ekat::Pack<int, SCREAM_PACK_SIZE>;
-  using Mask = ekat::Mask<SCREAM_PACK_SIZE>;
 
   using KT = KokkosTypes<DefaultDevice>;
   template<typename ScalarT>
@@ -39,9 +36,6 @@ class HommeDynamics : public AtmosphereProcess
   using uview_1d = ekat::Unmanaged<view_1d<ST>>;
   template<typename ST>
   using uview_2d = ekat::Unmanaged<view_2d<ST>>;
-
-  using WorkspaceMgr = ekat::WorkspaceManager<Pack, DefaultDevice>;
-  using Workspace = WorkspaceMgr::Workspace;
 
 public:
 
@@ -56,7 +50,7 @@ public:
   std::string name () const { return "homme"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void create_requests ();
 
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public

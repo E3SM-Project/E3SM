@@ -29,6 +29,7 @@ module li_analysis_driver
    use li_constants
    use li_global_stats
    use li_regional_stats
+   use li_flux_gates
 
    implicit none
    private
@@ -131,6 +132,7 @@ contains
       call mpas_pool_create_pool(analysisMemberList)
       call mpas_pool_add_config(analysisMemberList, 'globalStats', 1)
       call mpas_pool_add_config(analysisMemberList, 'regionalStats', 1)
+      call mpas_pool_add_config(analysisMemberList, 'fluxGates', 1)
 
       ! DON'T EDIT BELOW HERE
 
@@ -736,6 +738,7 @@ contains
       integer, intent(in) :: timeLevel !< Input: Time level to compute with in analysis member
       character (len=*), intent(in) :: analysisMemberName !< Input: Name of analysis member
       integer, intent(out) :: iErr !< Output: Error code
+      integer, pointer :: nFluxGates
 
       integer :: nameLength, err_tmp
 
@@ -749,6 +752,10 @@ contains
       if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
         call li_compute_regional_stats(domain, analysisMemberName, timeLevel, err_tmp)
       end if
+      if ( analysisMemberName(1:nameLength) == 'fluxGates' ) then
+        call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nFluxGates', nFluxGates)
+        call li_compute_flux_across_gates(domain, analysisMemberName, timeLevel, nFluxGates, err_tmp)
+      endif
 
       iErr = ior(iErr, err_tmp)
 

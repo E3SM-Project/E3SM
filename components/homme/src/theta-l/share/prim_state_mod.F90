@@ -116,11 +116,9 @@ contains
                              fusum_local(nets:nete), fvsum_local(nets:nete), ftsum_local(nets:nete), fqsum_local(nets:nete), &
                              wsum_local(nets:nete), phisum_local(nets:nete), dpsum_local(nets:nete)
 
-    real (kind=real_kind) :: umin_p, vmin_p, tmin_p, qvmin_p(qsize_d),&
-         psmin_p, dpmin_p, TSmin_p
+    real (kind=real_kind) :: qvmin_p(qsize_d), psmin_p, dpmin_p, TSmin_p
 
-    real (kind=real_kind) :: umax_p, vmax_p, tmax_p, qvmax_p(qsize_d),&
-         psmax_p, dpmax_p, TSmax_p
+    real (kind=real_kind) :: qvmax_p(qsize_d), psmax_p, dpmax_p, TSmax_p
 
     real (kind=real_kind) :: usum_p, vsum_p, tsum_p, qvsum_p(qsize_d),&
          pssum_p, dpsum_p, thetasum_p, wsum_p
@@ -140,7 +138,6 @@ contains
     character(len=3)      :: which
  
     real(kind=real_kind) :: relvort
-    real(kind=real_kind) :: v1, v2, vco(np,np,2,nlev)
 
     real (kind=real_kind) :: time, time2,time1, scale, dt, dt_f
     real (kind=real_kind) :: IEvert1,IEvert2,PEvert1,PEvert2

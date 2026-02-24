@@ -2,7 +2,7 @@
 #define P3_EVAPORATE_RAIN_IMPL_HPP
 
 #include "p3_functions.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
 namespace scream {
 namespace p3 {
@@ -90,10 +90,10 @@ void Functions<S,D>
   nr_evap_tend = 0;
   const Scalar inv_dt = 1/dt;
   constexpr Scalar QSMALL   = C::QSMALL;
-  constexpr Scalar Tmelt  = C::Tmelt;
-  constexpr Scalar inv_cp = 1/C::Cpair;
-  constexpr Scalar latvap = C::LatVap;
-  constexpr Scalar latice = C::LatIce;
+  constexpr Scalar Tmelt  = C::Tmelt.value;
+  constexpr Scalar inv_cp = 1/C::Cpair.value;
+  constexpr Scalar latvap = C::LatVap.value;
+  constexpr Scalar latice = C::LatIce.value;
 
   //Compute absolute supersaturation.
   //Ignore the difference between clear-sky and cell-ave qv and T

@@ -28,20 +28,20 @@
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
-#include "physics/share/physics_constants.hpp"
-#include "share/util/eamxx_common_physics_functions.hpp"
+#include "share/physics/physics_constants.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/util/eamxx_column_ops.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
 
 // Ekat includes
-#include "ekat/ekat_assert.hpp"
-#include "ekat/kokkos//ekat_subview_utils.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_pack_kokkos.hpp"
-#include "ekat/ekat_scalar_traits.hpp"
-#include "ekat/util/ekat_units.hpp"
-#include "ekat/ekat_pack_utils.hpp"
-#include "ekat/ekat_workspace.hpp"
+#include <ekat_assert.hpp>
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_subview_utils.hpp>
+#include <ekat_pack.hpp>
+#include <ekat_math_utils.hpp>
+#include <ekat_units.hpp>
+#include <ekat_pack_utils.hpp>
+#include <ekat_workspace.hpp>
 
 namespace scream
 {
@@ -52,9 +52,7 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
   // This class needs Homme's context, so register as a user
   HommeContextUser::singleton().add_user();
 
-  ekat::any homme_nsteps;
-  homme_nsteps.reset<int>(-1);
-  m_restart_extra_data["homme_nsteps"] = homme_nsteps;
+  m_restart_extra_data["homme_nsteps"] = std::make_shared<std::any>(std::make_any<int>(-1));
 
   if (!is_parallel_inited_f90()) {
     // While we're here, we can init homme's parallel session
@@ -77,13 +75,13 @@ HommeDynamics::~HommeDynamics ()
   HommeContextUser::singleton().remove_user();
 }
 
-void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
+void HommeDynamics::create_requests ()
 {
   // Grab dynamics, physics, and physicsGLL grids
   const auto dgn = "dynamics";
-  m_dyn_grid = grids_manager->get_grid(dgn);
-  m_phys_grid = grids_manager->get_grid("physics");
-  m_cgll_grid = grids_manager->get_grid("physics_gll");
+  m_dyn_grid = m_grids_manager->get_grid(dgn);
+  m_phys_grid = m_grids_manager->get_grid("physics");
+  m_cgll_grid = m_grids_manager->get_grid("physics_gll");
 
   fv_phys_set_grids();
 
@@ -197,7 +195,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     add_field<Required>("ps",            rg_scalar2d    ,Pa,    rgn);
     add_field<Required>("phis",          rg_scalar2d    ,m2/s2, rgn);
     add_group<Required>("tracers",rgn,N, MonolithicAlloc::Required);
-    fv_phys_rrtmgp_active_gases_init(grids_manager);
+    fv_phys_rrtmgp_active_gases_init(m_grids_manager);
     // This is needed for the dp_ref init in initialize_homme_state.
     add_field<Computed>("pseudo_density",rg_scalar3d_mid,Pa,    rgn,N);
   }
@@ -227,20 +225,20 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   // NOTE: 'true' is for 'dynamic' subfield; the idx of the subfield slice will move
   //       during execution (this class will take care of moving it, by calling
   //       reset_subview_idx on each field).
-  add_internal_field (m_helper_fields.at("v_dyn").subfield(1,tl.n0,true));
-  add_internal_field (m_helper_fields.at("vtheta_dp_dyn").subfield(1,tl.n0,true));
-  add_internal_field (m_helper_fields.at("dp3d_dyn").subfield(1,tl.n0,true));
-  add_internal_field (m_helper_fields.at("phi_int_dyn").subfield(1,tl.n0,true));
-  add_internal_field (m_helper_fields.at("ps_dyn").subfield(1,tl.n0,true));
-  add_internal_field (m_helper_fields.at("Qdp_dyn").subfield(1,tl.n0_qdp,true));
+  add_internal_field (m_helper_fields.at("v_dyn").subfield(1,tl.n0,true),{"RESTART"});
+  add_internal_field (m_helper_fields.at("vtheta_dp_dyn").subfield(1,tl.n0,true),{"RESTART"});
+  add_internal_field (m_helper_fields.at("dp3d_dyn").subfield(1,tl.n0,true),{"RESTART"});
+  add_internal_field (m_helper_fields.at("phi_int_dyn").subfield(1,tl.n0,true),{"RESTART"});
+  add_internal_field (m_helper_fields.at("ps_dyn").subfield(1,tl.n0,true),{"RESTART"});
+  add_internal_field (m_helper_fields.at("Qdp_dyn").subfield(1,tl.n0_qdp,true),{"RESTART"});
   if (not params.theta_hydrostatic_mode) {
-    add_internal_field (m_helper_fields.at("w_int_dyn").subfield(1,tl.n0,true));
+    add_internal_field (m_helper_fields.at("w_int_dyn").subfield(1,tl.n0,true),{"RESTART"});
   }
 
   // The output manager pulls from the atm process fields. Add
   // helper fields for the case that a user request output.
   add_internal_field (m_helper_fields.at("omega_dyn"));
-  add_internal_field (m_helper_fields.at("phis_dyn"));
+  add_internal_field (m_helper_fields.at("phis_dyn"),{"RESTART"});
 
   if (not fv_phys_active()) {
     // Dynamics backs out tendencies from the states, and passes those to Homme.
@@ -248,13 +246,24 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     // is more convenient to use two different remappers: the pd remapper will
     // remap into Homme's forcing views, while the dp remapper will remap from
     // Homme's states.
-    m_p2d_remapper = grids_manager->create_remapper(m_phys_grid,m_dyn_grid);
-    m_d2p_remapper = grids_manager->create_remapper(m_dyn_grid,m_phys_grid);
+    m_p2d_remapper = m_grids_manager->create_remapper(m_phys_grid,m_dyn_grid);
+    m_d2p_remapper = m_grids_manager->create_remapper(m_dyn_grid,m_phys_grid);
   }
 
   // Create separate remapper for initial_conditions
-  m_ic_remapper = grids_manager->create_remapper(m_cgll_grid,m_dyn_grid);
-}
+  m_ic_remapper = m_grids_manager->create_remapper(m_cgll_grid,m_dyn_grid);
+
+  // Layout for 2D (1d horiz X 1d vertical) variable
+  const auto& grid_name = m_phys_grid->name();
+  // Boundary flux fields for energy and mass conservation checks
+  if (has_energy_fixer()) {
+    add_field<Computed>("vapor_flux", pg_scalar2d, kg/(m2*s), grid_name);
+    add_field<Computed>("water_flux", pg_scalar2d, m/s,     grid_name);
+    add_field<Computed>("ice_flux",   pg_scalar2d, m/s,     grid_name);
+    add_field<Computed>("heat_flux",  pg_scalar2d, W/m2,    grid_name);
+  }
+
+}//set_grids
 
 size_t HommeDynamics::requested_buffer_size_in_bytes() const
 {
@@ -468,7 +477,8 @@ void HommeDynamics::initialize_impl (const RunType run_type)
 
   // Initialize Rayleigh friction variables
   rayleigh_friction_init();
-}
+
+}//initialize_impl
 
 void HommeDynamics::run_impl (const double dt)
 {
@@ -507,8 +517,7 @@ void HommeDynamics::run_impl (const double dt)
 
     // Update nstep in the restart extra data, so it can be written to restart if needed.
     const auto& tl = c.get<Homme::TimeLevel>();
-    auto& nstep = ekat::any_cast<int>(m_restart_extra_data["homme_nsteps"]);
-    nstep = tl.nstep;
+    std::any_cast<int&>(*m_restart_extra_data["homme_nsteps"]) = tl.nstep;
 
     // Post process Homme's output, to produce what the rest of Atm expects
     Kokkos::fence();
@@ -675,6 +684,7 @@ void HommeDynamics::homme_post_process (const double dt) {
 
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   // Convert VTheta_dp->T, store T,uv, and possibly w in FT, FM,
   // compute p_int on ref grid.
@@ -695,8 +705,7 @@ void HommeDynamics::homme_post_process (const double dt) {
   const auto nlevs = m_phys_grid->get_num_vertical_levels();
   const auto npacks= ekat::npack<Pack>(nlevs);
 
-  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
-  const auto policy = ESU::get_thread_range_parallel_scan_team_policy(ncols,npacks);
+  const auto policy = TPF::get_thread_range_parallel_scan_team_policy(ncols,npacks);
 
   // Establish the boundary condition for the TOA
   const auto& hvcoord = c.get<Homme::HybridVCoord>();
@@ -747,11 +756,21 @@ void HommeDynamics::homme_post_process (const double dt) {
       // Store T at end of the dyn timestep (to back out tendencies later)
       T_prev(ilev) = T_val;
     });
-  });
+  }); //op()
 
   // Apply Rayleigh friction to update temperature and horiz_winds
   rayleigh_friction_apply(dt);
-}
+
+  if (has_energy_fixer()) {
+
+      get_field_out("vapor_flux").deep_copy(0);
+      get_field_out("ice_flux").deep_copy(0);
+      get_field_out("water_flux").deep_copy(0);
+      get_field_out("heat_flux").deep_copy(0);
+
+  }; //if fixer
+
+}//homme_post_proc
 
 void HommeDynamics::
 create_helper_field (const std::string& name,
@@ -773,12 +792,13 @@ create_helper_field (const std::string& name,
   Field f(id);
   f.get_header().get_alloc_properties().request_allocation(pack_size);
   f.allocate_view();
-  f.deep_copy(ekat::ScalarTraits<Real>::invalid());
+  f.deep_copy(ekat::invalid<Real>());
 
   m_helper_fields[name] = f;
 }
 
 void HommeDynamics::init_homme_views () {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   const auto& c = Homme::Context::singleton();
   auto& params  = c.get<Homme::SimulationParams>();
@@ -801,8 +821,7 @@ void HommeDynamics::init_homme_views () {
   const auto nlevs = m_phys_grid->get_num_vertical_levels();
   const auto npacks= ekat::npack<Pack>(nlevs);
 
-  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
-  const auto default_policy = ESU::get_default_team_policy(ncols,npacks);
+  const auto default_policy = TPF::get_default_team_policy(ncols,npacks);
 
   // Print homme's parameters, so user can see whether something wasn't set right.
   // TODO: make Homme::SimulationParams::print accept an ostream.
@@ -918,15 +937,18 @@ void HommeDynamics::init_homme_views () {
 }
 
 void HommeDynamics::restart_homme_state () {
-  // Safety checks: internal fields *should* have been restarted (and therefore have a valid timestamp)
+  // Safety checks: RESTART fields *should* have been restarted (and therefore have a valid timestamp)
   for (auto& f : get_internal_fields()) {
-    auto ts = f.get_header().get_tracking().get_time_stamp();
-    EKAT_REQUIRE_MSG(ts.is_valid(),
-        "Error! Found HommeDynamics internal field not restarted.\n"
-        "  - field name: " + f.get_header().get_identifier().name() + "\n");
+    const auto& track = f.get_header().get_tracking();
+    if (ekat::contains(track.get_groups_names(),"RESTART")) {
+      auto ts = track.get_time_stamp();
+      EKAT_REQUIRE_MSG(track.get_time_stamp().is_valid(),
+          "Error! Found HommeDynamics internal field not restarted.\n"
+          "  - field name: " + f.get_header().get_identifier().name() + "\n");
+    }
   }
 
-  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
   using PF = PhysicsFunctions<DefaultDevice>;
 
   const auto& dgn = m_dyn_grid->name();
@@ -942,9 +964,9 @@ void HommeDynamics::restart_homme_state () {
         auto& tl = c.get<Homme::TimeLevel>();
 
   // For BFB restarts, set nstep counter in Homme's TimeLevel to match the restarted value.
-  const auto& nstep = ekat::any_ptr_cast<int>(m_restart_extra_data["homme_nsteps"]);
-  tl.nstep = *nstep;
-  set_homme_param("num_steps",*nstep);
+  const auto& nstep = std::any_cast<const int&>(*m_restart_extra_data["homme_nsteps"]);
+  tl.nstep = nstep;
+  set_homme_param("num_steps",nstep);
 
   constexpr int NGP = HOMMEXX_NP;
   const int nlevs = m_phys_grid->get_num_vertical_levels();
@@ -1028,7 +1050,7 @@ void HommeDynamics::restart_homme_state () {
   auto p_mid_view  = get_field_out("p_mid").get_view<Pack**>();
   auto qv_view     = qv_prev_ref->get_view<Pack**>();
 
-  const auto policy = ESU::get_default_team_policy(ncols,npacks);
+  const auto policy = TPF::get_default_team_policy(ncols,npacks);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team){
     const int icol = team.league_rank();
 
@@ -1048,14 +1070,18 @@ void HommeDynamics::restart_homme_state () {
 
   // Erase also qv_prev_phys (if we created it).
   m_helper_fields.erase("qv_prev_phys");
+
+  // Update the time stamp of the fields we inited in here (to avoid triggering invalid output in IO)
+  get_field_out("pseudo_density",pgn).get_header().get_tracking().update_time_stamp(start_of_step_ts());
 }
 
 void HommeDynamics::initialize_homme_state () {
   // Some types
-  using ColOps = ColumnOps<DefaultDevice,Real>;
-  using PF = PhysicsFunctions<DefaultDevice>;
-  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
-  using EOS = Homme::EquationOfState;
+  using ColOps       = ColumnOps<DefaultDevice,Real>;
+  using PF           = PhysicsFunctions<DefaultDevice>;
+  using TPF          = ekat::TeamPolicyFactory<KT::ExeSpace>;
+  using EOS          = Homme::EquationOfState;
+  using WorkspaceMgr = ekat::WorkspaceManager<Pack, DefaultDevice>;
 
   const auto& rgn = m_cgll_grid->name();
 
@@ -1082,7 +1108,7 @@ void HommeDynamics::initialize_homme_state () {
   const auto ps_ref = get_field_in("ps",rgn).get_view<const Real*>();
   const auto hyai = hvcoord.hybrid_ai;
   const auto hybi = hvcoord.hybrid_bi;
-  const auto policy_dp = ESU::get_default_team_policy(ncols, nlevs);
+  const auto policy_dp = TPF::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_for(policy_dp, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int icol = team.league_rank();
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team,nlevs),
@@ -1120,13 +1146,13 @@ void HommeDynamics::initialize_homme_state () {
   const int n0  = tl.n0;
   const int n0_qdp  = tl.n0_qdp;
 
-  ekat::any_cast<int>(m_restart_extra_data["homme_nsteps"]) = tl.nstep;
+  std::any_cast<int&>(*m_restart_extra_data["homme_nsteps"]) = tl.nstep;
 
   const auto phis_dyn_view = m_helper_fields.at("phis_dyn").get_view<const Real***>();
   const auto phi_int_view = m_helper_fields.at("phi_int_dyn").get_view<Pack*****>();
   const auto hyai0 = hvcoord.hybrid_ai0;
   // Need two temporaries, for pi_mid and pi_int
-  const auto policy = ESU::get_thread_range_parallel_scan_team_policy(nelem*NGP*NGP,npacks_mid);
+  const auto policy = TPF::get_thread_range_parallel_scan_team_policy(nelem*NGP*NGP,npacks_mid);
   WorkspaceMgr wsm(npacks_int,2,policy);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int ie  =  team.league_rank() / (NGP*NGP);
@@ -1223,6 +1249,17 @@ void HommeDynamics::initialize_homme_state () {
 
   // Can clean up the IC remapper now.
   m_ic_remapper = nullptr;
+
+  // Update the time stamp of the fields we inited in here (to avoid triggering invalid output in IO)
+  get_field_out("pseudo_density",rgn).get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  get_internal_field("v_dyn").get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  get_internal_field("dp3d_dyn").get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  get_internal_field("ps_dyn").get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  get_internal_field("phis_dyn").get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  get_internal_field("vtheta_dp_dyn").get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  if (not params.theta_hydrostatic_mode) {
+    get_internal_field("w_int_dyn").get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  }
 }
 // =========================================================================================
 void HommeDynamics::
@@ -1271,6 +1308,7 @@ copy_dyn_states_to_all_timelevels () {
 //       for now we have two locations where we do this.
 void HommeDynamics::update_pressure(const std::shared_ptr<const AbstractGrid>& grid) {
   using ColOps = ColumnOps<DefaultDevice,Real>;
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   const auto ncols = grid->get_num_local_dofs();
   const auto nlevs = grid->get_num_vertical_levels();
@@ -1285,13 +1323,12 @@ void HommeDynamics::update_pressure(const std::shared_ptr<const AbstractGrid>& g
   const auto p_int_view = get_field_out("p_int",gn).get_view<Pack**>();
   const auto p_mid_view = get_field_out("p_mid",gn).get_view<Pack**>();
 
-  const auto qv_view        = get_field_in("qv").get_view<const Pack**>();
+  const auto qv_view        = get_field_in("qv",gn).get_view<const Pack**>();
   const auto dp_dry_view    = get_field_out("pseudo_density_dry").get_view<Pack**>();
   const auto p_dry_int_view = get_field_out("p_dry_int").get_view<Pack**>();
   const auto p_dry_mid_view = get_field_out("p_dry_mid").get_view<Pack**>();
 
-  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
-  const auto policy = ESU::get_thread_range_parallel_scan_team_policy(ncols,npacks);
+  const auto policy = TPF::get_thread_range_parallel_scan_team_policy(ncols,npacks);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int& icol = team.league_rank();
 

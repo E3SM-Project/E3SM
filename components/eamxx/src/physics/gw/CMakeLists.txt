@@ -1,34 +1,43 @@
-set(PATH_TO_LEGACY_GW ${SCREAM_BASE_DIR}/../eam/src/physics/cam/gw)
 set(GW_SRCS
-  ${PATH_TO_LEGACY_GW}/gw_utils.F90
-  ${PATH_TO_LEGACY_GW}/gw_common.F90
-  ${PATH_TO_LEGACY_GW}/gw_convect.F90
-  ${PATH_TO_LEGACY_GW}/gw_diffusion.F90
-  ${PATH_TO_LEGACY_GW}/gw_front.F90
-  ${PATH_TO_LEGACY_GW}/gw_oro.F90
-  ${PATH_TO_LEGACY_GW}/../vdiff_lu_solver.F90
-  ${CMAKE_CURRENT_SOURCE_DIR}/tests/infra/gw_iso_c.f90
+  eamxx_gw_process_interface.cpp
 )
 
 # Add ETI source files if not on CUDA/HIP
 if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
   list(APPEND GW_SRCS
-    eti/gw_gwd_compute_tendencies_from_stress_divergence.cpp
+    eti/gw_compute_tendencies_from_stress_divergence.cpp
+    eti/gw_prof.cpp
+    eti/gw_momentum_energy_conservation.cpp
+    eti/gw_compute_stress_profiles_and_diffusivities.cpp
+    eti/gw_project_tau.cpp
+    eti/gw_precalc_rhoi.cpp
+    eti/gw_drag_prof.cpp
+    eti/gw_front_project_winds.cpp
+    eti/gw_front_gw_sources.cpp
+    eti/gw_cm_src.cpp
+    eti/gw_convect_project_winds.cpp
+    eti/gw_heating_depth.cpp
+    eti/gw_storm_speed.cpp
+    eti/gw_convect_gw_sources.cpp
+    eti/gw_beres_src.cpp
+    eti/gw_ediff.cpp
+    eti/gw_diff_tend.cpp
+    eti/gw_oro_src.cpp
+    eti/gw_common_init.cpp
+    eti/gw_vd_lu_decomp.cpp
+    eti/gw_vd_lu_solve.cpp
+    eti/gw_convect_init.cpp
+    eti/gw_front_init.cpp
   ) # GW ETI SRCS
 endif()
 
 add_library(gw ${GW_SRCS})
-set_target_properties(gw PROPERTIES
-  Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
-)
 
 target_include_directories(gw PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_BINARY_DIR}/modules
   ${CMAKE_CURRENT_SOURCE_DIR}/impl
-  ${PATH_TO_LEGACY_GW}
 )
-target_link_libraries(gw physics_share scream_share)
+target_link_libraries(gw eamxx_physics_share scream_share)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

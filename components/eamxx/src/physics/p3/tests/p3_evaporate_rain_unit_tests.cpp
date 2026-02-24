@@ -1,12 +1,10 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-
 #include "p3_unit_tests_common.hpp"
+
+#include "share/core/eamxx_types.hpp"
 
 namespace scream {
 namespace p3 {
@@ -120,7 +118,7 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
     //for case with lots of evap, make sure doesn't overdeplete qr_incld
     Functions::evaporate_rain(qr_incld,qc_incld,nr_incld,qi_incld,
 			      //qv -> qv*0.1 to encourage lots of rain evap
-			      cld_frac_l,cld_frac_r,qv*0.1,qv_prev,qv_sat_l,qv_sat_i,
+			      cld_frac_l,cld_frac_r,qv*sp(0.1),qv_prev,qv_sat_l,qv_sat_i,
 			      ab,abi,epsr,epsi_tot,t,t_prev,dqsdt,dt,
 			      qrtend,nrtend);
     REQUIRE( qrtend[0] <= qr_incld[0]/dt);
@@ -129,8 +127,8 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
   } //end run_property
 
   void run_bfb() {
-    constexpr Scalar latvap = C::LatVap;
-    constexpr Scalar latice = C::LatIce;
+    constexpr Scalar latvap = C::LatVap.value;
+    constexpr Scalar latice = C::LatIce.value;
 
     //baseline generated data is input to the following
     //This subroutine has 20 args, only 18 are supplied here for invoking it as last 2 are intent-outs
@@ -176,7 +174,7 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        espd[i].read(Base::m_fid);
+        espd[i].read(Base::m_ifile);
       }
     }
 
@@ -251,7 +249,7 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        espd_host(s).write(Base::m_fid);
+        espd_host(s).write(Base::m_ofile);
       }
     }
   } // end run_bfb

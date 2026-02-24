@@ -1,0 +1,55 @@
+#!/bin/bash
+#
+# Test script for emulator_comps
+# Builds and runs unit tests
+#
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BUILD_DIR="${SCRIPT_DIR}/build"
+
+# Source utilities
+source "${SCRIPT_DIR}/scripts/colors.sh"
+source "${SCRIPT_DIR}/scripts/parse_args.sh"
+
+# Parse command line arguments
+parse_test_args "$@"
+
+# Clean only mode
+if [ "$CLEAN_ONLY" = true ]; then
+    print_status "Cleaning build directory..."
+    rm -rf "${BUILD_DIR}"
+    print_status "Done."
+    exit 0
+fi
+
+# Create build directory
+mkdir -p "${BUILD_DIR}"
+cd "${BUILD_DIR}"
+
+# Configure (only if needed)
+if [ ! -f "CMakeCache.txt" ]; then
+    print_status "Configuring CMake..."
+    cmake "${SCRIPT_DIR}" -DCMAKE_BUILD_TYPE=Release
+fi
+
+# Build
+print_status "Building..."
+cmake --build . --parallel
+
+# Build only mode - exit before running tests
+if [ "$BUILD_ONLY" = true ]; then
+    print_status "Build complete."
+    exit 0
+fi
+
+# Run tests
+print_status "Running tests..."
+if [ "$VERBOSE" = true ]; then
+    ctest --output-on-failure --verbose
+else
+    ctest --output-on-failure
+fi
+
+print_status "All tests passed!"

@@ -1,8 +1,9 @@
 #include "share/grid/abstract_grid.hpp"
 
 #include "share/field/field_utils.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
-#include <ekat/ekat_assert.hpp>
+#include <ekat_assert.hpp>
 
 #include <algorithm>
 #include <cstring>
@@ -11,17 +12,13 @@
 namespace scream
 {
 // Constructor(s) & Destructor
-AbstractGrid::
-AbstractGrid (const std::string& name,
-              const GridType type,
-              const int num_local_dofs,
-              const int num_vertical_lev,
-              const ekat::Comm& comm)
- : m_type (type)
- , m_name (name)
- , m_num_local_dofs (num_local_dofs)
- , m_num_vert_levs  (num_vertical_lev)
- , m_comm (comm)
+AbstractGrid::AbstractGrid(const std::string &name, const GridType type, const int num_local_dofs,
+                           const int num_vertical_lev, const ekat::Comm &comm)
+ : m_type(type),
+   m_name(name),
+   m_num_local_dofs(num_local_dofs),
+   m_num_vert_levs(num_vertical_lev),
+   m_comm(comm)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (m_num_local_dofs>=0, "Error! Number of local dofs must be non-negative.\n");
@@ -81,7 +78,7 @@ get_vertical_layout (const bool midpoints,
 {
   using namespace ShortFieldTagsNames;
   auto l = get_vertical_layout(midpoints);
-  l.append_dim(CMP,vector_dim,vec_dim_name);
+  l.prepend_dim(CMP,vector_dim,vec_dim_name);
   return l;
 }
 
@@ -237,7 +234,8 @@ bool AbstractGrid::is_unique () const {
   };
 
 
-  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
+  static std::mutex m;
+  std::lock_guard<std::mutex> lock(m); // Lock the mutex
   if (not m_is_unique_computed) {
     m_is_unique = compute_is_unique();
     m_is_unique_computed = true;
@@ -257,9 +255,10 @@ is_valid_layout (const FieldLayout& layout) const
     case LayoutType::Tensor0D:
       // 0d quantities are always ok
       return true;
-    case LayoutType::Scalar1D: [[fallthrough]];
-    case LayoutType::Vector1D:
+    case LayoutType::Scalar1D:
       return layout.congruent(get_vertical_layout(midpoints));
+    case LayoutType::Vector1D:
+      return layout.congruent(get_vertical_layout(midpoints,layout.get_vector_dim()));
     case LayoutType::Scalar2D:
       return layout.congruent(get_2d_scalar_layout());
     case LayoutType::Vector2D:
@@ -281,10 +280,11 @@ is_valid_layout (const FieldLayout& layout) const
 auto AbstractGrid::
 get_global_min_dof_gid () const ->gid_type
 {
-  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
+  static std::mutex m;
+  std::lock_guard<std::mutex> lock(m); // Lock the mutex
   // Lazy calculation
   if (m_global_min_dof_gid==std::numeric_limits<gid_type>::max()) {
-    m_global_min_dof_gid = field_min<gid_type>(m_dofs_gids,&get_comm());
+    m_global_min_dof_gid = field_min(m_dofs_gids,&get_comm()).as<gid_type>();
   }
   return m_global_min_dof_gid;
 }
@@ -292,10 +292,11 @@ get_global_min_dof_gid () const ->gid_type
 auto AbstractGrid::
 get_global_max_dof_gid () const ->gid_type
 {
-  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
+  static std::mutex m;
+  std::lock_guard<std::mutex> lock(m); // Lock the mutex
   // Lazy calculation
   if (m_global_max_dof_gid==-std::numeric_limits<gid_type>::max()) {
-    m_global_max_dof_gid = field_max<gid_type>(m_dofs_gids,&get_comm());
+    m_global_max_dof_gid = field_max(m_dofs_gids,&get_comm()).as<gid_type>();
   }
   return m_global_max_dof_gid;
 }
@@ -303,10 +304,11 @@ get_global_max_dof_gid () const ->gid_type
 auto AbstractGrid::
 get_global_min_partitioned_dim_gid () const ->gid_type
 {
-  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
+  static std::mutex m;
+  std::lock_guard<std::mutex> lock(m); // Lock the mutex
   // Lazy calculation
   if (m_global_min_partitioned_dim_gid==std::numeric_limits<gid_type>::max()) {
-    m_global_min_partitioned_dim_gid = field_min<gid_type>(m_partitioned_dim_gids,&get_comm());
+    m_global_min_partitioned_dim_gid = field_min(m_partitioned_dim_gids,&get_comm()).as<gid_type>();
   }
   return m_global_min_partitioned_dim_gid;
 }
@@ -314,10 +316,11 @@ get_global_min_partitioned_dim_gid () const ->gid_type
 auto AbstractGrid::
 get_global_max_partitioned_dim_gid () const ->gid_type
 {
-  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
+  static std::mutex m;
+  std::lock_guard<std::mutex> lock(m); // Lock the mutex
   // Lazy calculation
   if (m_global_max_partitioned_dim_gid==-std::numeric_limits<gid_type>::max()) {
-    m_global_max_partitioned_dim_gid = field_max<gid_type>(m_partitioned_dim_gids,&get_comm());
+    m_global_max_partitioned_dim_gid = field_max(m_partitioned_dim_gids,&get_comm()).as<gid_type>();
   }
   return m_global_max_partitioned_dim_gid;
 }
@@ -388,6 +391,76 @@ AbstractGrid::delete_geometry_data (const std::string& name)
       "  - geo data name: " + name + "\n");
 
   m_geo_fields.erase(name);
+}
+
+void AbstractGrid::
+read_geometry_data(const std::string& filename,
+                   const std::vector<std::string>& names,
+                   const std::map<std::string,std::string>& dim_to_ncdim)
+{
+  read_geometry_data(filename,names,names,dim_to_ncdim);
+}
+
+void AbstractGrid::
+read_geometry_data(const std::string& filename,
+                   const std::vector<std::string>& names,
+                   const std::vector<std::string>& nc_names,
+                   const std::map<std::string,std::string>& dim_to_ncdim)
+{
+  EKAT_REQUIRE_MSG (names.size()==nc_names.size(),
+      "[AbstractGrid] Error! Input names and nc_names sizes differ.\n"
+      "  - grid name: " + this->name() + "\n"
+      "  - geo data names: " + ekat::join(names,",") + "\n"
+      "  - nc vars names: " + ekat::join(nc_names,",") + "\n");
+  scorpio::register_file(filename,scorpio::Read);
+
+  for (size_t i=0; i<names.size(); ++i) {
+    EKAT_REQUIRE_MSG (has_geometry_data(names[i]),
+        "Error! Cannot read geometry data from file, since it is does not exist.\n"
+        "  - grid name: " + this->name() + "\n"
+        "  - geo data name: " + names[i] + "\n");
+
+    auto f = m_geo_fields.at(names[i]);
+    const auto& fl = f.get_header().get_identifier().get_layout();
+
+    // If one of the field tags corresponds to the partitioned dim, init the decomp
+    if (fl.has_tag(get_partitioned_dim_tag())) {
+      auto t = get_partitioned_dim_tag();
+      std::string dimname = has_special_tag_name(t)
+                          ? get_special_tag_name(t)
+                          : e2str(t);
+      auto gids_h = get_partitioned_dim_gids().get_view<const gid_type*,Host>();
+      auto min_gid = get_global_min_partitioned_dim_gid();
+      std::vector<scorpio::offset_t> offsets(m_num_local_dofs);
+      for (int idof=0; idof<m_num_local_dofs; ++idof) {
+        offsets[idof] = gids_h[idof] - min_gid;
+      }
+      std::string nc_dimname = dim_to_ncdim.count(dimname)==1 ? dim_to_ncdim.at(dimname) : dimname;
+      scorpio::set_dim_decomp(filename,nc_dimname,offsets);
+    }
+
+    switch (f.data_type()) {
+      case DataType::DoubleType:
+        scorpio::read_var(filename,nc_names[i],f.get_internal_view_data<double,Host>());
+        break;
+      case DataType::FloatType:
+        scorpio::read_var(filename,nc_names[i],f.get_internal_view_data<float,Host>());
+        break;
+      case DataType::IntType:
+        scorpio::read_var(filename,nc_names[i],f.get_internal_view_data<int,Host>());
+        break;
+      default:
+        EKAT_ERROR_MSG (
+            "Error! Unsupported/unrecognized data type while reading field from file.\n"
+            " - file name : " + filename + "\n"
+            " - field name: " + names[i] + "\n");
+    }
+
+    // Ensure data is up to date on device, since we read on host
+    f.sync_to_dev();
+  }
+
+  scorpio::release_file(filename);
 }
 
 void
@@ -465,6 +538,31 @@ AbstractGrid::get_unique_gids () const
   }
 
   return unique_dofs;
+}
+
+std::shared_ptr<AbstractGrid>
+AbstractGrid::get_aux_grid(const std::string& data_layout) const
+{
+  if (m_aux_grids.count(data_layout)==1) {
+    return m_aux_grids.at(data_layout);
+  } else {
+    return nullptr;
+  }
+}
+
+void AbstractGrid::
+set_aux_grid (const std::string& data_layout, const std::shared_ptr<AbstractGrid>& aux_grid)
+{
+  m_aux_grids[data_layout] = aux_grid;
+}
+
+std::vector<std::string> AbstractGrid::get_aux_grids_keys () const
+{
+  std::vector<std::string> keys;
+  for (const auto& it : m_aux_grids) {
+    keys.push_back(it.first);
+  }
+  return keys;
 }
 
 std::vector<int> AbstractGrid::
@@ -619,7 +717,8 @@ void AbstractGrid::create_dof_fields (const int scalar2d_layout_rank)
 auto AbstractGrid::get_gid2lid_map () const
  -> const std::map<gid_type,int>&
 {
-  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
+  static std::mutex m;
+  std::lock_guard<std::mutex> lock(m); // Lock the mutex
 
   int cur_sz = m_gid2lid.size();
   if (cur_sz<get_num_local_dofs()) {

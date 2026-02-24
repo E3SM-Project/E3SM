@@ -624,11 +624,7 @@ add_default($nl, 'config_recover_tracer_means_check');
 # Namelist group: column_package #
 ##################################
 
-if ($ice_bgc eq 'ice_bgc') {
-        add_default($nl, 'config_column_physics_type', 'val'=>"icepack");
-} else {
-        add_default($nl, 'config_column_physics_type');
-}
+add_default($nl, 'config_column_physics_type');
 add_default($nl, 'config_use_column_shortwave');
 add_default($nl, 'config_use_column_vertical_thermodynamics');
 if ($ice_bgc eq 'ice_bgc') {
@@ -659,7 +655,6 @@ add_default($nl, 'config_use_floe_size_distribution');
 # Namelist group: biogeochemistry #
 ###################################
 
-add_default($nl, 'config_use_shortwave_bioabsorption');
 add_default($nl, 'config_use_skeletal_biochemistry');
 if ($ice_bgc eq 'ice_bgc') {
         add_default($nl, 'config_use_vertical_biochemistry', 'val'=>".true.");
@@ -674,6 +669,8 @@ if ($ice_bgc eq 'ice_bgc') {
         add_default($nl, 'config_use_humics', 'val'=>".true.");
         add_default($nl, 'config_use_DON', 'val'=>".true.");
         add_default($nl, 'config_use_iron', 'val'=>".true.");
+	add_default($nl, 'config_use_shortwave_bioabsorption', 'val'=>".true.");
+	add_default($nl, 'config_use_zaerosols', 'val'=>".true.");
         add_default($nl, 'config_couple_biogeochemistry_fields');
 } else {
         add_default($nl, 'config_use_vertical_biochemistry', 'val'=>".false.");
@@ -688,14 +685,15 @@ if ($ice_bgc eq 'ice_bgc') {
         add_default($nl, 'config_use_humics', 'val'=>".false.");
         add_default($nl, 'config_use_DON', 'val'=>".false.");
         add_default($nl, 'config_use_iron', 'val'=>".false.");
+	add_default($nl, 'config_use_shortwave_bioabsorption');
+	add_default($nl, 'config_use_zaerosols');
         add_default($nl, 'config_couple_biogeochemistry_fields', 'val'=>".false.");
 }
+add_default($nl, 'config_use_atm_dust_file');
 add_default($nl, 'config_use_chlorophyll');
+add_default($nl, 'config_use_iron_solubility_file');
 add_default($nl, 'config_use_macromolecules');
 add_default($nl, 'config_use_modal_aerosols');
-add_default($nl, 'config_use_zaerosols');
-add_default($nl, 'config_use_atm_dust_file');
-add_default($nl, 'config_use_iron_solubility_file');
 add_default($nl, 'config_skeletal_bgc_flux_type');
 add_default($nl, 'config_scale_initial_vertical_bgc');
 add_default($nl, 'config_biogrid_bottom_molecular_sublayer');
@@ -848,6 +846,9 @@ add_default($nl, 'config_shortwave_redistribution_threshold');
 
 add_default($nl, 'config_snow_redistribution_scheme');
 add_default($nl, 'config_fallen_snow_radius');
+add_default($nl, 'config_snow_growth_wet_factor');
+add_default($nl, 'config_minimum_snow_growth_factor');
+add_default($nl, 'config_snow_liq_saturation');
 add_default($nl, 'config_use_snow_liquid_ponds');
 add_default($nl, 'config_new_snow_density');
 add_default($nl, 'config_max_snow_density');
@@ -938,6 +939,7 @@ if ($iceberg_mode eq 'data') {
 } else {
     add_default($nl, 'config_use_data_icebergs', 'val'=>"false");
 }
+add_default($nl, 'config_iceberg_temperature');
 add_default($nl, 'config_scale_dib_by_removed_ice_runoff');
 add_default($nl, 'config_salt_flux_coupling_type');
 add_default($nl, 'config_ice_ocean_drag_coefficient');

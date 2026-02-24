@@ -4,6 +4,8 @@ module elm_finalizeMod
   ! Performs land model cleanup
   !
   !
+  use SoilLittVertTranspMod, only : cleanupLitterTransportList
+
   implicit none
   save
   public   ! By default everything is public
@@ -23,11 +25,14 @@ contains
     ! !DESCRIPTION:
     ! Finalize land surface model
     !
+#ifdef HAVE_MOAB
+    use MOABGridType, only : elm_moab_finalize
+#endif
 #ifdef USE_PETSC_LIB
 #include <petsc/finclude/petsc.h>
 #endif
     ! !USES:
-    use elm_varctl             , only : use_vsfm
+    use elm_varctl             , only : use_vsfm, use_cn
 #ifdef USE_PETSC_LIB
     use petscsys
 #endif
@@ -36,6 +41,10 @@ contains
     implicit none
     !
 
+#ifdef HAVE_MOAB
+    call elm_moab_finalize()
+#endif
+
 #ifdef USE_PETSC_LIB
     PetscErrorCode        :: ierr
 
@@ -43,6 +52,9 @@ contains
        call PetscFinalize(ierr)
     endif
 #endif
+    if (use_cn) then
+       call cleanupLitterTransportList()
+    endif
 
   end subroutine final
 

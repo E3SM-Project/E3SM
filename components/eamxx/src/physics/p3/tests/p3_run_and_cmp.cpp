@@ -1,14 +1,10 @@
-#include "share/eamxx_types.hpp"
-#include "share/eamxx_session.hpp"
-#include "share/util/eamxx_utils.hpp"
-
 #include "p3_main_wrap.hpp"
 #include "p3_test_data.hpp"
 #include "p3_ic_cases.hpp"
 
-#include "ekat/util/ekat_file_utils.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
-#include "ekat/ekat_assert.hpp"
+#include "share/util/eamxx_utils.hpp"
+#include "share/core/eamxx_session.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <chrono>
 #include <vector>
@@ -77,8 +73,9 @@ struct Baseline {
   }
 
   Int generate_baseline (const std::string& filename) {
-    auto fid = ekat::FILEPtr(fopen(filename.c_str(), "w"));
-    EKAT_REQUIRE_MSG( fid, "generate_baseline can't write " << filename);
+    std::ofstream ofile (filename, std::ios::binary);
+    EKAT_REQUIRE_MSG (ofile.good(), "generate_baseline can't write '" + filename + "'\n");
+
     Int nerr = 0;
 
     Int total_duration_microsec = 0;
@@ -107,7 +104,7 @@ struct Baseline {
           }
 
           if (ps.repeat == 0) {
-            write(fid, d); // Save the fields to the baseline file.
+            write(ofile, d); // Save the fields to the baseline file.
           }
         }
       }
@@ -122,10 +119,10 @@ struct Baseline {
   }
 
   Int run_and_cmp (const std::string& filename, const double& tol, bool no_baseline) {
-    ekat::FILEPtr fid;
+    std::ifstream ifile;
     if (!no_baseline) {
-      fid = ekat::FILEPtr(fopen(filename.c_str(), "r"));
-      EKAT_REQUIRE_MSG( fid, "generate_baseline can't read " << filename);
+      ifile.open(filename,std::ios::binary);
+      EKAT_REQUIRE_MSG( ifile.good(), "run_and_cmp can't read '" + filename + "'\n");
     }
     Int nerr = 0, ne;
     int case_num = 0;
@@ -152,7 +149,7 @@ struct Baseline {
           P3F::p3_init();
           for (int it=0; it<ps.nsteps; it++) {
             std::cout << "--- checking case # " << case_num << ", timestep # " << it+1 << " of " << ps.nsteps << " ---\n" << std::flush;
-            read(fid, d_ref);
+            read(ifile, d_ref);
             p3_main_wrap(*d);
             ne = compare(tol, d_ref, d);
             if (ne) std::cout << "Ref impl failed.\n";
@@ -184,32 +181,33 @@ private:
 
   std::vector<ParamSet> params_;
 
-  static void write (const ekat::FILEPtr& fid, const P3Data::Ptr& d) {
+  static void write (std::ofstream& ofile, const P3Data::Ptr& d) {
     P3DataIterator fdi(d);
     for (Int i = 0, n = fdi.nfield(); i < n; ++i) {
       const auto& f = fdi.getfield(i);
-      ekat::write(&f.dim, 1, fid);
-      ekat::write(f.extent, f.dim, fid);
-      ekat::write(f.data, f.size, fid);
+      impl::write_scalars(ofile,f.dim);
+      impl::write_scalars(ofile,f.extent);
+      impl::write_scalars(ofile,f.data,f.size);
     }
   }
 
-  static void read (const ekat::FILEPtr& fid, const P3Data::Ptr& d) {
+  static void read (std::ifstream& ifile, const P3Data::Ptr& d) {
     P3DataIterator fdi(d);
     for (Int i = 0, n = fdi.nfield(); i < n; ++i) {
       const auto& f = fdi.getfield(i);
-      int dim, ds[3];
-      ekat::read(&dim, 1, fid);
+      int dim;
+      impl::read_scalars(ifile,dim);
       EKAT_REQUIRE_MSG(dim == f.dim,
                       "For field " << f.name << " read expected dim " <<
                       f.dim << " but got " << dim);
-      ekat::read(ds, dim, fid);
+      int extents[3];
+      impl::read_scalars(ifile,extents);
       for (int i = 0; i < dim; ++i)
-        EKAT_REQUIRE_MSG(ds[i] == f.extent[i],
+        EKAT_REQUIRE_MSG(extents[i] == f.extent[i],
                         "For field " << f.name << " read expected dim "
                         << i << " to have extent " << f.extent[i] << " but got "
-                        << ds[i]);
-      ekat::read(f.data, f.size, fid);
+                        << extents[i]);
+      impl::read_scalars(ifile,f.data, f.size);
     // The code below is to force a result difference. This is used by the
     // scream/scripts internal testing to verify that various DIFFs are detected.
 #if defined(SCREAM_FORCE_RUN_DIFF)

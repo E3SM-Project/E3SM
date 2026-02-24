@@ -13,8 +13,8 @@
 #include "share/grid/se_grid.hpp"
 #include "share/util/eamxx_utils.hpp"
 
-#include "ekat/ekat_pack_utils.hpp"
-#include "ekat/ekat_assert.hpp"
+#include <ekat_pack_utils.hpp>
+#include <ekat_assert.hpp>
 
 namespace {
 
@@ -181,7 +181,7 @@ subfields_info_has_changed (const std::map<int,SubviewInfo>& subfield_info,
 }
 
 void PhysicsDynamicsRemapper::
-update_subfields_views (const std::map<int,SubviewInfo>& subfield_info,
+update_subfields_views (std::map<int,SubviewInfo>& subfield_info,
                         const ViewsRepo& repo,
                         const std::vector<Field>& fields) const
 {
@@ -205,10 +205,12 @@ update_subfields_views (const std::map<int,SubviewInfo>& subfield_info,
     }
   };
 
-  for (const auto& it : subfield_info) {
-    const auto& f = fields[it.first];
-    if ( not(it.second==f.get_header().get_alloc_properties().get_subview_info()) ){
-      get_view(it.first,fields[it.first]);
+  for (auto& [fname, svi] : subfield_info) {
+    const auto& f = fields[fname];
+    const auto& new_svi = f.get_header().get_alloc_properties().get_subview_info();
+    if ( not(svi==new_svi) ) {
+      get_view(fname,f);
+      svi = new_svi;
     }
   }
   Kokkos::deep_copy(repo.views,  repo.h_views);

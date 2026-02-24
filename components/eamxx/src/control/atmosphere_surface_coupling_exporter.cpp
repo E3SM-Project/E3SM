@@ -1,7 +1,9 @@
 #include "atmosphere_surface_coupling_exporter.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_units.hpp>
 
 #include <iomanip>
 
@@ -16,11 +18,11 @@ SurfaceCouplingExporter::SurfaceCouplingExporter (const ekat::Comm& comm, const 
 
 }
 // =========================================================================================
-void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void SurfaceCouplingExporter::create_requests()
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs();       // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
@@ -87,7 +89,7 @@ void SurfaceCouplingExporter::create_helper_field (const std::string& name,
   Field f(id);
   f.get_header().get_alloc_properties().request_allocation();
   f.allocate_view();
-  f.deep_copy(ekat::ScalarTraits<Real>::invalid());
+  f.deep_copy(ekat::invalid<Real>());
 
   m_helper_fields[name] = f;
 }
@@ -266,7 +268,7 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
         ++m_num_from_file_exports;
         --m_num_from_model_exports;
         auto& f_helper = m_helper_fields.at(fname);
-	// We want to add the field as a deep copy so that the helper_fields are automatically updated.
+        // We want to add the field as a deep copy so that the helper_fields are automatically updated.
         m_time_interp.add_field(f_helper.alias(rname), true);
         m_export_from_file_field_names.push_back(fname);
       }
@@ -288,9 +290,9 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
       for (size_t ii=0; ii<export_constant_fields.size(); ii++) {
         auto fname = export_constant_fields[ii];
         // Find the index for this field in the list of export fields.
-	auto v_loc = std::find(m_export_field_names_vector.begin(),m_export_field_names_vector.end(),fname);
-	EKAT_REQUIRE_MSG(v_loc != m_export_field_names_vector.end(), "ERROR!! surface_coupling_exporter::init - prescribed_constants has field with name " << fname << " which can't be found in set of exported fields\n.");
-	auto idx = v_loc - m_export_field_names_vector.begin();
+        auto v_loc = std::find(m_export_field_names_vector.begin(),m_export_field_names_vector.end(),fname);
+        EKAT_REQUIRE_MSG(v_loc != m_export_field_names_vector.end(), "ERROR!! surface_coupling_exporter::init - prescribed_constants has field with name " << fname << " which can't be found in set of exported fields\n.");
+        auto idx = v_loc - m_export_field_names_vector.begin();
         // This field should not have been set to anything else yet (recall FROM_MODEL is the default)
         EKAT_REQUIRE_MSG(m_export_source_h(idx)==FROM_MODEL,"Error! surface_coupling_exporter::init - attempting to set field " + fname + " export type, which has already been set.  Please check namelist options");
         m_export_source_h(idx) = CONSTANT;
@@ -364,7 +366,9 @@ void SurfaceCouplingExporter::set_from_file_exports()
 // index query in the below.
 void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool called_during_initialization)
 {
-  using PC = physics::Constants<Real>;
+  using PF  = scream::PhysicsFunctions<DefaultDevice>;
+  using PC  = physics::Constants<Real>;
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   const auto& p_int                = get_field_in("p_int").get_view<const Real**>();
   const auto& pseudo_density       = get_field_in("pseudo_density").get_view<const Spack**>();
@@ -432,7 +436,7 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
 
   // Preprocess exports
   auto export_source = m_export_source;
-  const auto setup_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(num_cols, num_levs);
+  const auto setup_policy = TPF::get_thread_range_parallel_scan_team_policy(num_cols, num_levs);
   Kokkos::parallel_for(setup_policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) {
     const int i = team.league_rank();
 
@@ -440,10 +444,12 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
     const auto qv_i             = ekat::subview(qv, i);
     const auto T_mid_i          = ekat::subview(T_mid, i);
     const auto p_mid_i          = ekat::subview(p_mid, i);
+    const auto p_int_i          = ekat::subview(p_int, i);
     const auto pseudo_density_i = ekat::subview(pseudo_density, i);
     const auto dz_i             = ekat::subview(dz, i);
 
     const auto s_p_mid_i = ekat::scalarize(p_mid_i);
+    const auto s_p_int_i = ekat::scalarize(p_int_i);
     const auto s_T_mid_i = ekat::scalarize(T_mid_i);
     const auto z_int_i = ekat::subview(z_int, i);
     const auto z_mid_i = ekat::subview(z_mid, i);
@@ -487,7 +493,12 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
     }
 
     if (export_source(idx_Sa_ptem)==FROM_MODEL) {
-      Sa_ptem(i) = PF::calculate_theta_from_T(s_T_mid_i(num_levs-1), s_p_mid_i(num_levs-1));
+      // WARNING - THE FOLLOWING IS A HACK
+      // To make the flux calculations within the component coupler consistent with EAM we need to
+      // provide theta based on an exner function that evaluates to 1 at the bottom interface.
+      // To accomplish this we calculate a theta that replaces the reference pressure (P0) for exner
+      // with the pressure of the lowest interface level => s_p_int_i(num_levs)
+      Sa_ptem(i) = s_T_mid_i(num_levs-1) / pow( s_p_mid_i(num_levs-1)/s_p_int_i(num_levs), PC::RD.value*PC::INV_CP.value);
     }
 
     if (export_source(idx_Sa_pbot)==FROM_MODEL) {
@@ -518,8 +529,8 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
       // Precipitation has units of kg/m2, and Faxa_rainl/snowl
       // need units mm/s. Here, 1000 converts m->mm, dt has units s, and
       // rho_h2o has units kg/m3.
-      if (export_source(idx_Faxa_rainl)==FROM_MODEL) { Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O); }
-      if (export_source(idx_Faxa_snowl)==FROM_MODEL) { Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O); }
+      if (export_source(idx_Faxa_rainl)==FROM_MODEL) { Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O.value); }
+      if (export_source(idx_Faxa_snowl)==FROM_MODEL) { Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O.value); }
     }
   });
   // Variables that are already surface vars in the ATM can just be copied directly.

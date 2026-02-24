@@ -1,11 +1,12 @@
 #ifndef SCREAM_IMPORTER_HPP
 #define SCREAM_IMPORTER_HPP
 
-#include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "share/atm_process/SCDataManager.hpp"
-
 #include "surface_coupling_utils.hpp"
+
+#include "share/atm_process/atmosphere_process.hpp"
+#include "share/data_managers/SCDataManager.hpp"
+
+#include <ekat_parameter_list.hpp>
 
 #include <string>
 
@@ -47,7 +48,7 @@ public:
   std::string name () const { return "SurfaceCouplingImporter"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void create_requests ();
 
   // Function which performes the import to scream fields.
   // If calling in initialize_impl(), set

@@ -2,9 +2,8 @@
 #define SCREAM_P3_FUNCTIONS_F90_HPP
 
 #include "physics/p3/p3_functions.hpp"
-#include "physics/share/physics_test_data.hpp"
-#include "share/eamxx_types.hpp"
-#include "ekat/util/ekat_file_utils.hpp"
+#include "share/physics/physics_test_data.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <array>
 #include <utility>

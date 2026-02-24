@@ -1,2 +1,5 @@
 #!/bin/bash
-#placeholder until tests can be renamed
+#on polaris, reduce 4->2 nodes to get into multi-submit debug q
+if [ `./xmlquery --value MACH` == polaris ]&&[ `./xmlquery --value NTASKS_ATM` == 64 ]; then
+  ./xmlchange NTASKS=32
+fi

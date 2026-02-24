@@ -860,6 +860,10 @@ if ($rad_pkg eq 'rrtmgp') {
   add_default($nl,'fixed_total_solar_irradiance');
 }
 
+if ($rad_pkg eq 'rrtmg') {
+  add_default($nl, 'rad_asym_splt')
+}
+
 #
 # Simulated years: sim_year and sim_year_start
 #
@@ -3732,6 +3736,11 @@ add_default($nl, 'is_output_interactive_volc');
 add_default($nl, 'mam_amicphys_optaa'); #for enabling amicphys code in eam
 add_default($nl, 'n_so4_monolayers_pcage'); #number of so4(+nh4) monolayers needed to "age" a carbon particle
 
+#cutoff diameter for larger accum mode particles renamed to the strat coarse mode 
+add_default($nl, 'dp_cut_accum_rename') if (get_default_value('dp_cut_accum_rename')); 
+#threshold diameter for all accum mode particles transferred to the strat coarse mode
+add_default($nl, 'dp_xferall_thresh_accum_rename') if (get_default_value('dp_xferall_thresh_accum_rename')); 
+
 # Microphysics scheme
 add_default($nl, 'use_subcol_microp');
 add_default($nl, 'microp_scheme');
@@ -4030,7 +4039,8 @@ add_default($nl, 'zmconv_mx_bot_lyr_adj');
 add_default($nl, 'zmconv_dmpdz');
 add_default($nl, 'zmconv_tp_fac');
 add_default($nl, 'zmconv_alfa');
-add_default($nl, 'zmconv_trigdcape_ull');
+add_default($nl, 'zmconv_trig_dcape');
+add_default($nl, 'zmconv_trig_ull');
 add_default($nl, 'zmconv_microp');
 add_default($nl, 'zmconv_clos_dyn_adj');
 add_default($nl, 'zmconv_tpert_fix');
@@ -4084,19 +4094,21 @@ if ($chem =~ /_mam/ or $chem =~ /_bam/ or $chem =~ /trop_/) {
     else {
 	add_default($nl, 'dust_emis_fact');
     }
+    #dstemislimitswitch hardwired to false in the code. Add below only if its value is set
+    add_default($nl,'dstemislimitswitch') if (get_default_value('dstemislimitswitch'));
 }
 
 # Gravity wave drag settings
 if ($waccm_phys or $cfg->get('nlev') >= 60) {
     # Spectral gravity waves are part of WACCM physics, and also drive the
     # QBO in the high vertical resolution configuration.
-    add_default($nl, 'use_gw_oro'    , 'val'=>'.true.');
+    add_default($nl, 'use_gw_oro');
     add_default($nl, 'use_gw_front'  , 'val'=>'.true.');
     add_default($nl, 'use_gw_convect', 'val'=>'.true.');
-    add_default($nl, 'use_od_ls', 'val'=>'.false.');
-    add_default($nl, 'use_od_bl', 'val'=>'.false.');
-    add_default($nl, 'use_od_ss', 'val'=>'.false.');
-    add_default($nl, 'use_od_fd', 'val'=>'.false.');
+    add_default($nl, 'use_od_ls');
+    add_default($nl, 'use_od_bl');
+    add_default($nl, 'use_od_ss');
+    add_default($nl, 'use_od_fd');
 } else {
     add_default($nl, 'use_gw_oro'    , 'val'=>'.true.');
     add_default($nl, 'use_gw_front'  , 'val'=>'.false.');
@@ -4127,6 +4139,9 @@ if ($nl->get_value('use_gw_convect') =~ /$TRUE/io) {
     add_default($nl, 'gw_drag_file');
 }
 
+# this correction is disabled in the released version E3SMv3 and prior versions
+add_default($nl, 'use_fgf_pgrad_correction', 'val'=>'.false.');
+add_default($nl, 'use_fgf_zgrad_correction', 'val'=>'.false.');
 add_default($nl, 'use_gw_energy_fix'    , 'val'=>'.true.');
 
 
@@ -4226,6 +4241,7 @@ if ($cfg->get('dyn') =~ /se/) {
     foreach my $var (@vars) {
 	add_default($nl, $var);
     }
+    add_default($nl,'tom_sponge_start') if (get_default_value('tom_sponge_start'));
 }
 
 # Defaults for history output

@@ -4,8 +4,10 @@
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "physics/rrtmgp/eamxx_rrtmgp_interface.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
+
+#include <ekat_parameter_list.hpp>
+#include <ekat_string_utils.hpp>
+
 #include <string>
 
 namespace scream {
@@ -58,7 +60,7 @@ public:
   std::string name () const { return "rrtmgp"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grid_manager);
+  void create_requests ();
 
 // NOTE: cannot use lambda functions for CUDA devices if these are protected!
 public:
@@ -132,7 +134,7 @@ public:
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
-    static constexpr int num_1d_ncol        = 10;
+    static constexpr int num_1d_ncol        = 8;
     static constexpr int num_2d_nlay        = 16;
     static constexpr int num_2d_nlay_p1     = 23;
     static constexpr int num_2d_nswbands    = 2;
@@ -144,8 +146,6 @@ public:
     static constexpr int num_3d_nlay_nlwgpts = 1;
 
     // 1d size (ncol)
-    ureal1dk cosine_zenith;
-    ureal1dk mu0_k;
     ureal1dk sfc_alb_dir_vis_k;
     ureal1dk sfc_alb_dir_nir_k;
     ureal1dk sfc_alb_dif_vis_k;

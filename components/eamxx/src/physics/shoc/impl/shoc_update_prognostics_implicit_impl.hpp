@@ -132,7 +132,7 @@ void Functions<S,D>::update_prognostics_implicit(
 
   // compute surface fluxes for liq. potential temp, water and tke
   {
-    const auto cmnfac = dtime*(C::gravit*rho_zi_s(nlevi-1)*rdp_zt_s(nlev-1));
+    const auto cmnfac = dtime*(C::gravit.value*rho_zi_s(nlevi-1)*rdp_zt_s(nlev-1));
     Kokkos::single(Kokkos::PerTeam(team), [&] () {
       thetal_s(nlev-1) += cmnfac*wthl_sfc;
       qw_s(nlev-1)     += cmnfac*wqw_sfc;

@@ -29,6 +29,8 @@ public :: &
    set_additional_diagn_in_phys_control, &! set switch for additional diagn
    waccmx_is
 
+logical, public :: iac_present = .false. ! true if EHC component is active in the run
+
 ! Private module data
 
 character(len=16), parameter :: unset_str = 'UNSET'
@@ -123,6 +125,8 @@ integer           :: mam_amicphys_optaa   = 0          ! <= 0 -- use old microph
                                                        !                                    newnuc, and coag routines) 
                                                        !  > 0 -- use new microphysics code (single call to amicphys routine)
 real(r8)          :: n_so4_monolayers_pcage = huge(1.0_r8) ! number of so4(+nh4) monolayers needed to "age" a carbon particle
+real(r8)          :: dp_cut_accum_rename = huge(1.0_r8) ! cutoff diameter for larger accum mode particles renamed to the strat coarse mode
+real(r8)          :: dp_xferall_thresh_accum_rename = huge(1.0_r8) ! threshold diameter for all accum mode particles transferred to the strat coarse mode 
 real(r8)          :: micro_mg_accre_enhan_fac = huge(1.0_r8) !!Accretion enhancement factor
 logical           :: liqcf_fix            = .false.    ! liq cld fraction fix calc.                     
 logical           :: regen_fix            = .false.    ! aerosol regeneration bug fix for ndrop.F90 
@@ -170,6 +174,9 @@ logical, public, protected :: use_gw_front = .false.
 ! Convective
 logical, public, protected :: use_gw_convect = .false.
 
+! Frontogenesis gradient correction options
+logical, public, protected :: use_fgf_pgrad_correction = .false.
+logical, public, protected :: use_fgf_zgrad_correction = .false.
 !GW energy fix
 logical, public, protected :: use_gw_energy_fix = .false.
 
@@ -254,12 +261,13 @@ subroutine phys_ctl_readnl(nlfile)
       use_qqflx_fixer, & 
       print_fixer_message, & 
       use_hetfrz_classnuc, use_gw_oro, use_gw_front, use_gw_convect, &
-      use_gw_energy_fix, &
+      use_fgf_pgrad_correction,use_fgf_zgrad_correction, use_gw_energy_fix, &
       use_od_ls,use_od_bl,use_od_ss,use_od_fd,&
       cld_macmic_num_steps, micro_do_icesupersat, &
       fix_g1_err_ndrop, ssalt_tuning, resus_fix, convproc_do_aer, &
       convproc_do_gas, convproc_method_activate, liqcf_fix, regen_fix, demott_ice_nuc, pergro_mods, pergro_test_active, &
-      mam_amicphys_optaa, n_so4_monolayers_pcage,micro_mg_accre_enhan_fac, &
+      mam_amicphys_optaa, n_so4_monolayers_pcage, dp_cut_accum_rename, &
+      dp_xferall_thresh_accum_rename, micro_mg_accre_enhan_fac, &
       cflx_cpl_opt, &
       l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
       l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad, prc_coef1,prc_exp,prc_exp1,cld_sed,mg_prc_coeff_fix, &
@@ -373,6 +381,8 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(use_hetfrz_classnuc,             1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_oro,                      1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_front,                    1 , mpilog,  0, mpicom)
+   call mpibcast(use_fgf_pgrad_correction,        1 , mpilog,  0, mpicom)
+   call mpibcast(use_fgf_zgrad_correction,        1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_convect,                  1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_energy_fix,               1 , mpilog,  0, mpicom)
    call mpibcast(use_od_ls,                       1 , mpilog,  0, mpicom)
@@ -387,6 +397,8 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(convproc_method_activate,        1 , mpiint,  0, mpicom)
    call mpibcast(mam_amicphys_optaa,              1 , mpiint,  0, mpicom)
    call mpibcast(n_so4_monolayers_pcage,          1 , mpir8,   0, mpicom)
+   call mpibcast(dp_cut_accum_rename,             1 , mpir8,   0, mpicom)
+   call mpibcast(dp_xferall_thresh_accum_rename,  1 , mpir8,   0, mpicom)
    call mpibcast(micro_mg_accre_enhan_fac,        1 , mpir8,   0, mpicom)
    call mpibcast(liqcf_fix,                       1 , mpilog,  0, mpicom)
    call mpibcast(regen_fix,                       1 , mpilog,  0, mpicom)
@@ -421,6 +433,12 @@ subroutine phys_ctl_readnl(nlfile)
 
    ! Defaults for PBL and microphysics are set in build-namelist.  Check here that
    ! values have been set to guard against problems with hand edited namelists.
+
+   ! check frontal gwd gradient correction options
+   if (use_fgf_pgrad_correction .and. use_fgf_zgrad_correction) then
+      write(iulog,*)'phys_setopts: use_fgf_pgrad_correction and use_fgf_zgrad_correction cannot both be true'
+      call endrun('phys_setopts: use_fgf_pgrad_correction and use_fgf_zgrad_correction cannot both be true')
+   end if
 
    ! WACCM-X run option set in build-namelist. Check for valid values
    if (.not. (waccmx_opt == 'ionosphere' .or. waccmx_opt == 'neutral' .or. waccmx_opt == 'off')) then
@@ -618,6 +636,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         cld_macmic_num_steps_out, micro_do_icesupersat_out, &
                         fix_g1_err_ndrop_out, ssalt_tuning_out,resus_fix_out,convproc_do_aer_out,  &
                         convproc_do_gas_out, convproc_method_activate_out, mam_amicphys_optaa_out, n_so4_monolayers_pcage_out, &
+                        dp_cut_accum_rename_out, dp_xferall_thresh_accum_rename_out, &
                         micro_mg_accre_enhan_fac_out, liqcf_fix_out, regen_fix_out,demott_ice_nuc_out, pergro_mods_out, pergro_test_active_out &
                        ,cflx_cpl_opt_out &
                        ,l_tracer_aero_out, l_vdiff_out, l_rayleigh_out, l_gw_drag_out, l_ac_energy_chk_out  &
@@ -710,6 +729,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    integer,           intent(out), optional :: convproc_method_activate_out 
    integer,           intent(out), optional :: mam_amicphys_optaa_out
    real(r8),          intent(out), optional :: n_so4_monolayers_pcage_out
+   real(r8),          intent(out), optional :: dp_cut_accum_rename_out
+   real(r8),          intent(out), optional :: dp_xferall_thresh_accum_rename_out
    real(r8),          intent(out), optional :: micro_mg_accre_enhan_fac_out
    logical,           intent(out), optional :: liqcf_fix_out       
    logical,           intent(out), optional :: regen_fix_out       
@@ -816,6 +837,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(convproc_method_activate_out ) ) convproc_method_activate_out = convproc_method_activate
    if ( present(mam_amicphys_optaa_out  ) ) mam_amicphys_optaa_out  = mam_amicphys_optaa
    if ( present(n_so4_monolayers_pcage_out  ) ) n_so4_monolayers_pcage_out = n_so4_monolayers_pcage
+   if ( present(dp_cut_accum_rename_out ) ) dp_cut_accum_rename_out  = dp_cut_accum_rename
+   if ( present(dp_xferall_thresh_accum_rename_out ) ) dp_xferall_thresh_accum_rename_out = dp_xferall_thresh_accum_rename
    if ( present(micro_mg_accre_enhan_fac_out)) micro_mg_accre_enhan_fac_out = micro_mg_accre_enhan_fac
    if ( present(liqcf_fix_out           ) ) liqcf_fix_out            = liqcf_fix      
    if ( present(regen_fix_out           ) ) regen_fix_out            = regen_fix      

@@ -5,8 +5,6 @@ _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","
 sys.path.append(_CIMEROOT)
 
 from CIME.utils import expect
-from yaml_utils import make_array
-
 
 ###############################################################################
 class MockCase(object):
@@ -197,7 +195,7 @@ def refine_type(entry, force_type=None):
         else:
             result = []
 
-        return make_array(result, elem_type)
+        return result
 
     # Not an array (or no force type passed)
     elem_type = force_type
@@ -502,7 +500,9 @@ def resolve_inheritance(root, elem):
                         for child in elem:
                             if child.tag==entry.tag:
                                 expect (att not in child.attrib.keys(),
-                                        f"Do not set '{att}' attribute when parent node already specifies it.")
+                                        f"Do not set '{att}' attribute when parent node already specifies it."
+                                        f" parent node: {parent.tag}\n"
+                                        f" child node : {entry.tag}")
                                 child.attrib[att] = parent_type
 
     for child in elem:

@@ -12,7 +12,7 @@ initial_conditions:
   filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [dynamics]
   dynamics:
     type: homme

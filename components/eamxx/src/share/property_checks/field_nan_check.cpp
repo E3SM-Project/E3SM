@@ -2,8 +2,6 @@
 #include "share/field/field_utils.hpp"
 #include "share/util//eamxx_array_utils.hpp"
 
-#include "ekat/util/ekat_math_utils.hpp"
-
 namespace scream
 {
 
@@ -51,7 +49,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
       {
         auto v = f.template get_strided_view<const_ST*>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int i, int& result) {
-          if (ekat::is_invalid(v(i))) {
+          if (Kokkos::isnan(v(i))) {
             result = i;
           }
         }, max_t(invalid_idx));
@@ -63,7 +61,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j;
           unflatten_idx(idx,extents,i,j);
-          if (ekat::is_invalid(v(i,j))) {
+          if (Kokkos::isnan(v(i,j))) {
             result = idx;
           }
         }, max_t(invalid_idx));
@@ -75,7 +73,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k;
           unflatten_idx(idx,extents,i,j,k);
-          if (ekat::is_invalid(v(i,j,k))) {
+          if (Kokkos::isnan(v(i,j,k))) {
             result = idx;
           }
         }, max_t(invalid_idx));
@@ -87,7 +85,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k,l;
           unflatten_idx(idx,extents,i,j,k,l);
-          if (ekat::is_invalid(v(i,j,k,l))) {
+          if (Kokkos::isnan(v(i,j,k,l))) {
             result = idx;
           }
         }, max_t(invalid_idx));
@@ -99,7 +97,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k,l,m;
           unflatten_idx(idx,extents,i,j,k,l,m);
-          if (ekat::is_invalid(v(i,j,k,l,m))) {
+          if (Kokkos::isnan(v(i,j,k,l,m))) {
             result = idx;
           }
         }, max_t(invalid_idx));
@@ -111,7 +109,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k,l,m,n;
           unflatten_idx(idx,extents,i,j,k,l,m,n);
-          if (ekat::is_invalid(v(i,j,k,l,m,n))) {
+          if (Kokkos::isnan(v(i,j,k,l,m,n))) {
             result = idx;
           }
         }, max_t(invalid_idx));
@@ -175,8 +173,6 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check() const {
   const auto& f = fields().front();
 
   switch (f.data_type()) {
-    case DataType::IntType:
-      return check_impl<int>();
     case DataType::FloatType:
       return check_impl<float>();
     case DataType::DoubleType:

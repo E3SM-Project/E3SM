@@ -24,8 +24,8 @@ void Functions<S,D>
 {
   constexpr Scalar QSMALL          = C::QSMALL;
   constexpr Scalar INV_RHO_RIMEMAX = C::INV_RHO_RIMEMAX;
-  constexpr Scalar latvap          = C::LatVap;
-  constexpr Scalar latice          = C::LatIce;
+  constexpr Scalar latvap          = C::LatVap.value;
+  constexpr Scalar latice          = C::LatIce.value;
 
   if(use_hetfrz_classnuc){
     qc.set(context, qc + (-qcheti_cnt-qicnt-qc2qi_collect_tend-qc2qr_ice_shed_tend-qc2qi_berg_tend)*dt);
@@ -97,7 +97,7 @@ void Functions<S,D>
   //   and bm such that rho_rim (qm/bm) --> rho_liq during melting.
   // ==
 
-  constexpr Scalar INV_CP = C::INV_CP;
+  constexpr Scalar INV_CP = C::INV_CP.value;
   if(use_hetfrz_classnuc){
     qv.set(context, qv + (-qv2qi_vapdep_tend+qi2qv_sublim_tend-qv2qi_nucleat_tend-qinuc_cnt)*dt);
     th_atm.set(context, th_atm + inv_exner * ((qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend+qinuc_cnt) * (latvap+latice) * INV_CP +
@@ -125,8 +125,8 @@ void Functions<S,D>
 {
   constexpr Scalar NCCNST = C::NCCNST;
   constexpr int IPARAM    = C::IPARAM;
-  constexpr Scalar INV_CP = C::INV_CP;
-  constexpr Scalar latvap       = C::LatVap;
+  constexpr Scalar INV_CP = C::INV_CP.value;
+  constexpr Scalar latvap = C::LatVap.value;
 
   qc.set(context, qc + (-qc2qr_accret_tend-qc2qr_autoconv_tend)*dt);
   qr.set(context, qr + (qc2qr_accret_tend+qc2qr_autoconv_tend-qr2qv_evap_tend)*dt);

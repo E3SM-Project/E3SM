@@ -1,10 +1,10 @@
 #include "atmosphere_surface_coupling_importer.hpp"
 
 #include "share/property_checks/field_within_interval_check.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_assert.hpp>
+#include <ekat_units.hpp>
 
 #include <array>
 
@@ -17,11 +17,11 @@ SurfaceCouplingImporter::SurfaceCouplingImporter (const ekat::Comm& comm, const 
 
 }
 // =========================================================================================
-void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void SurfaceCouplingImporter::create_requests()
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
 
   m_num_cols = m_grid->get_num_local_dofs();      // Number of columns on this rank
@@ -62,6 +62,8 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Computed>("sst",              scalar2d, K,       grid_name);
   //dust fluxes [kg/m^2/s]: Four flux values for eacch column
   add_field<Computed>("dstflx",           vector4d, kg/m2/s, grid_name);
+  // the correction term for air sea surface water thermo fixer
+  add_field<Computed>("h2otemp",          scalar2d, W/m2,    grid_name);
 
 }
 // =========================================================================================
@@ -229,8 +231,8 @@ void SurfaceCouplingImporter::overwrite_iop_imports (const bool called_during_in
   // TODO: this is using the TS from the beg of the step. Should it use end_of_step_ts() instead?
   m_iop_data_manager->read_iop_file_data(start_of_step_ts());
 
-  static constexpr Real latvap = C::LatVap;
-  static constexpr Real stebol = C::stebol;
+  static constexpr Real latvap = C::LatVap.value;
+  static constexpr Real stebol = C::stebol.value;
 
   const auto& col_info_h = m_column_info_h;
   const auto& col_info_d = m_column_info_d;

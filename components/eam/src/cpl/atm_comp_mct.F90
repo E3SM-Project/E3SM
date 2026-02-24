@@ -90,13 +90,13 @@ module atm_comp_mct
 
   private :: atm_setgsmap_mct
   private :: atm_domain_mct
-  private :: atm_read_srfrest_mct
-  private :: atm_write_srfrest_mct
 #ifdef HAVE_MOAB
   private :: atm_read_srfrest_moab
   private :: atm_write_srfrest_moab
+#else
+  private :: atm_read_srfrest_mct
+  private :: atm_write_srfrest_mct
 #endif
-
 !--------------------------------------------------------------------------
 ! Private data
 !--------------------------------------------------------------------------
@@ -107,10 +107,7 @@ module atm_comp_mct
   integer, parameter  :: nlen = 256     ! Length of character strings
   character(len=nlen) :: fname_srf_cam  ! surface restart filename
   character(len=nlen) :: pname_srf_cam  ! surface restart full pathname
-#ifdef HAVE_MOAB
-  character(len=nlen) :: moab_fname_srf_cam  ! surface restart filename
-  character(len=nlen) :: moab_pname_srf_cam  ! surface restart full pathname
-#endif
+
   ! Filename specifier for restart surface file
   character(len=cl) :: rsfilename_spec_cam
 
@@ -140,6 +137,9 @@ CONTAINS
 !================================================================================
 
   subroutine atm_init_mct( EClock, cdata_a, x2a_a, a2x_a, NLFilename )
+
+    use phys_control,     only: iac_present
+    use shr_log_mod      , only : errMsg => shr_log_errMsg
 
     !-----------------------------------------------------------------------
     !
@@ -314,8 +314,16 @@ CONTAINS
             single_column=single_column, scmlat=scmlat, scmlon=scmlon,                &
             scm_multcols=scm_multcols,                                                &
             orb_eccen=eccen, orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr, &
-            lnd_present=lnd_present, ocn_present=ocn_present,                         &
+            lnd_present=lnd_present, ocn_present=ocn_present, iac_present=iac_present, & 
             perpetual=perpetual_run, perpetual_ymd=perpetual_ymd)
+
+       ! Don't read in co2 data if iac is present
+       ! Currently, iac is always prognostic if it is present - may need to
+       ! check this if this changes
+       if (iac_present .and. co2_readFlux_fuel) then
+          call endrun('co2_readFlux_fuel should be false as it is not supported if EHC component is present'//errMsg(__FILE__, __LINE__))
+       end if
+
        !
        ! Get nsrest from startup type methods
        !
@@ -507,12 +515,15 @@ CONTAINS
           call atm_export_moab(Eclock, cam_out)
 #endif
        else ! if (StepNo != 0) then
-
+          
+#ifdef HAVE_MOAB
+          call t_startf('atm_read_srfrest_moab')
+          call atm_read_srfrest_moab ( EClock )
+          call t_stopf('atm_read_srfrest_moab')
+#else
           call t_startf('atm_read_srfrest_mct')
           call atm_read_srfrest_mct( EClock, x2a_a, a2x_a )
           call t_stopf('atm_read_srfrest_mct')
-#ifdef HAVE_MOAB
-          call atm_read_srfrest_moab ( EClock )
 #endif
 
           ! Sent .true. as an optional argument so that restart_init is set to .true.  in atm_import
@@ -652,7 +663,7 @@ CONTAINS
 
     call t_startf ('CAM_import')
 ! move moab import after regular atm import, so it would be in charge
-    call atm_import( x2a_a%rattr, cam_in )
+    call atm_import( x2a_a%rattr, cam_in)
 #ifdef HAVE_MOAB
 
 #ifdef MOABCOMP
@@ -767,13 +778,15 @@ CONTAINS
     ! Write merged surface data restart file if appropriate
 
     if (rstwr_sync) then
+       
+#ifdef HAVE_MOAB
+       call atm_write_srfrest_moab(yr_spec=yr_sync, &
+            mon_spec=mon_sync, day_spec=day_sync, sec_spec=tod_sync)
+#else
        call t_startf('atm_write_srfrest_mct')
        call atm_write_srfrest_mct( x2a_a, a2x_a, &
             yr_spec=yr_sync, mon_spec=mon_sync, day_spec=day_sync, sec_spec=tod_sync)
        call t_stopf('atm_write_srfrest_mct')
-#ifdef HAVE_MOAB
-       call atm_write_srfrest_moab(yr_spec=yr_sync, &
-            mon_spec=mon_sync, day_spec=day_sync, sec_spec=tod_sync)
 #endif
     end if
 
@@ -1011,11 +1024,11 @@ CONTAINS
         curr_day=day_spec, curr_tod=sec_spec )
    fname_srf_cam = interpret_filename_spec( rsfilename_spec_cam, case=get_restcase(), &
         yr_spec=yr_spec, mon_spec=mon_spec, day_spec=day_spec, sec_spec= sec_spec )
-   moab_fname_srf_cam = 'moab_'//trim(fname_srf_cam)
-   moab_pname_srf_cam = trim(get_restartdir() )//trim(moab_fname_srf_cam)
-   call getfil(moab_pname_srf_cam, moab_fname_srf_cam)
 
-   call cam_pio_openfile(File, moab_fname_srf_cam, 0)
+   pname_srf_cam = trim(get_restartdir() )//trim(fname_srf_cam)
+   call getfil(pname_srf_cam, fname_srf_cam)
+
+   call cam_pio_openfile(File, fname_srf_cam, 0)
 
    call pio_initdecomp(pio_subsystem, pio_double, (/ngcols/), global_ids, iodesc)
 
@@ -1125,13 +1138,12 @@ CONTAINS
 
    ! Determine and open surface restart dataset
 
-      ! Determine and open surface restart dataset
+   fname_srf_cam = interpret_filename_spec( rsfilename_spec_cam, &
+   yr_spec=yr_spec, mon_spec=mon_spec, day_spec=day_spec, sec_spec= sec_spec )
 
-   moab_fname_srf_cam = 'moab_'//trim(fname_srf_cam)
-
-   call cam_pio_createfile(File, trim(moab_fname_srf_cam))
+   call cam_pio_createfile(File, trim(fname_srf_cam))
    if (masterproc) then
-      write(iulog,*)'create file :', trim(moab_fname_srf_cam)
+      write(iulog,*)'create file :', trim(fname_srf_cam)
    end if
 
    call pio_initdecomp(pio_subsystem, pio_double, (/ngcols/), global_ids, iodesc)
@@ -1239,7 +1251,6 @@ CONTAINS
          yr_spec=yr_spec, mon_spec=mon_spec, day_spec=day_spec, sec_spec= sec_spec )
     pname_srf_cam = trim(get_restartdir() )//fname_srf_cam
     call getfil(pname_srf_cam, fname_srf_cam)
-
     call cam_pio_openfile(File, fname_srf_cam, 0)
     call pio_initdecomp(pio_subsystem, pio_double, (/ngcols/), dof, iodesc)
     allocate(tmp(size(dof)))
@@ -1309,6 +1320,7 @@ CONTAINS
     type(io_desc_t)           :: iodesc
     character(CL)             :: itemc       ! string converted to char
     type(mct_string)          :: mstring     ! mct char type
+    character(len=nlen)       :: tmp_fname_srf_cam 
     !-----------------------------------------------------------------------
 
     ! Determine and open surface restart dataset

@@ -3,19 +3,18 @@
 
 #include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 #include <physics/mam/mam_coupling.hpp>
-#include <share/util/eamxx_common_physics_functions.hpp>
 
 #include "readfiles/tracer_reader_utils.hpp"
 // For calling MAM4 processes
 #include <mam4xx/mam4.hpp>
 #include <string>
 
-namespace scream {
 
+namespace scream {
+class DataInterpolation;
 // The process responsible for handling MAM4 aerosol microphysics. The AD
 // stores exactly ONE instance of this class in its list of subcomponents.
 class MAMMicrophysics final : public MAMGenericInterface {
-  using PF = scream::PhysicsFunctions<DefaultDevice>;
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
   // views for single- and multi-column data
@@ -44,8 +43,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
   std::string name() const { return "mam_aero_microphysics"; }
 
   // grid
-  void set_grids(
-      const std::shared_ptr<const GridsManager> grids_manager) override;
+  void create_requests() override;
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override;
@@ -61,6 +59,9 @@ class MAMMicrophysics final : public MAMGenericInterface {
   void finalize_impl(){/*Do nothing*/};
 
  private:
+  // Output extra mam4xx diagnostics.
+  bool extra_mam4_aero_microphys_diags_ = false;
+
   // The orbital year, used for zenith angle calculations:
   // If > 0, use constant orbital year for duration of simulation
   // If < 0, use year from timestamp for orbital parameters
@@ -76,12 +77,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
 
   struct Config {
     // stratospheric chemistry parameters
-    struct {
-      int o3_lbl;   // number of layers with ozone decay from the surface
-      Real o3_sfc;  // set from namelist input linoz_sfc
-      Real o3_tau;  // set from namelist input linoz_tau
-      Real psc_T;   // set from namelist input linoz_psc_T
-    } linoz;
+    mam4::microphysics::LinozConf linoz;
 
     // aqueous chemistry parameters
     mam4::mo_setsox::Config setsox;
@@ -102,36 +98,31 @@ class MAMMicrophysics final : public MAMGenericInterface {
   // surface albedo: shortwave, direct
   const_view_1d d_sfc_alb_dir_vis_;
 
-  mam_coupling::TracerTimeState linoz_time_state_;
+
   view_2d work_photo_table_;
   std::vector<Real> chlorine_values_;
   std::vector<int> chlorine_time_secs_;
   view_3d photo_rates_;
+  // names of oxi variants
+  std::vector<std::string> var_names_oxi_;
+  // names of linoz field
+  std::vector<std::string> var_names_linoz_;
 
-  // invariants members
-  mam_coupling::TracerTimeState trace_time_state_;
-  std::shared_ptr<AtmosphereInput> TracerDataReader_;
-  std::shared_ptr<AbstractRemapper> TracerHorizInterp_;
-  mam_coupling::TracerData tracer_data_;
+  // data interpolation object for oxi invariants
+  std::shared_ptr<DataInterpolation>    data_interp_oxid_;
+  void set_oxid_reader();
+  // data interpolation object for linoz fields
+  std::shared_ptr<DataInterpolation>    data_interp_linoz_;
+  void set_linoz_reader();
   view_3d invariants_;
-  std::string oxid_file_name_;
-  view_2d cnst_offline_[4];
-
-  // linoz reader
-  std::shared_ptr<AtmosphereInput> LinozDataReader_;
-  std::shared_ptr<AbstractRemapper> LinozHorizInterp_;
-  mam_coupling::TracerData linoz_data_;
-  std::string linoz_file_name_;
-
   // Vertical emission uses 9 files, here I am using std::vector to stote
   // instance of each file.
-  mam_coupling::TracerTimeState elevated_emiss_time_state_[mam4::gas_chemistry::extcnt];
-  std::vector<std::shared_ptr<AtmosphereInput>> ElevatedEmissionsDataReader_;
-  std::vector<std::shared_ptr<AbstractRemapper>> ElevatedEmissionsHorizInterp_;
-  std::vector<std::string> extfrc_lst_;
-  std::vector<mam_coupling::TracerData> elevated_emis_data_;
-  std::map<std::string, std::string> elevated_emis_file_name_;
   std::map<std::string, std::vector<std::string>> elevated_emis_var_names_;
+  // data interpolation object for elevated emissions
+  std::vector<std::shared_ptr<DataInterpolation>> data_interp_elevated_emissions_;
+  void set_elevated_emissions_reader();
+  std::vector<std::string> extfrc_lst_;
+
   view_3d extfrc_;
   mam_coupling::ForcingHelper forcings_[mam4::gas_chemistry::extcnt];
 
@@ -160,6 +151,17 @@ class MAMMicrophysics final : public MAMGenericInterface {
   void init_temporary_views();
   int len_temporary_views_{0};
 
+  void add_io_docstring_to_fields_with_mixed_units(const std::map<std::string, std::string> &flds) {
+    using str_atts_t = std::map<std::string,std::string>;
+    for (const auto &pair : flds) {
+      // Get the field, and add a docstring to its string attributes
+      // This is used to document that the field contains heterogeneous
+      // quantities, i.e., species have different units.
+      auto &f = get_field_out(pair.first);
+      auto &io_str_atts = f.get_header().get_extra_data<str_atts_t>("io: string attributes");
+      io_str_atts["doc"] = pair.second;
+    }
+  }
 };  // MAMMicrophysics
 
 }  // namespace scream

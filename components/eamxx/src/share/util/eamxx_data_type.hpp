@@ -3,7 +3,7 @@
 
 #include "share/util/eamxx_utils.hpp"
 
-#include <ekat/ekat_assert.hpp>
+#include <ekat_kernel_assert.hpp>
 
 #include <string>
 
@@ -24,22 +24,23 @@ enum class DataType {
 };
 
 template<typename ST>
+KOKKOS_INLINE_FUNCTION
 DataType get_data_type () {
   // if statements are compiled out
-  if (std::is_same<ST,int>::value) {
+  if constexpr (std::is_same<ST,int>::value) {
     return DataType::IntType;
-  } else if (std::is_same<ST,float>::value) {
+  } else if constexpr (std::is_same<ST,float>::value) {
     return DataType::FloatType;
-  } else if (std::is_same<ST,double>::value) {
+  } else if constexpr (std::is_same<ST,double>::value) {
     return DataType::DoubleType;
   } else {
-    EKAT_ERROR_MSG ("Error! Unsupported data type.\n"
-        " - typeid(ST): " + std::string(typeid(ST).name()) + "\n");
+    EKAT_KERNEL_ERROR_MSG ("Error! Unsupported data type.\n");
+    return DataType::Invalid;
   }
-  return DataType::Invalid;
 }
 
-inline bool is_narrowing_conversion (const DataType from, const DataType to) {
+KOKKOS_INLINE_FUNCTION
+bool is_narrowing_conversion (const DataType from, const DataType to) {
   return (from==DataType::FloatType || from==DataType::DoubleType) && to==DataType::IntType;
 }
 

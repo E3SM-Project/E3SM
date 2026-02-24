@@ -1,0 +1,4 @@
+./xmlchange DATM_CLMNCEP_YR_START=1958
+./xmlchange DATM_CLMNCEP_YR_END=1958
+./xmlchange DROF_STRM_YR_START=1958
+./xmlchange DROF_STRM_YR_END=1958

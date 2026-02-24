@@ -22,21 +22,36 @@ void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
   // Some diagnostics need the timestep, store in case.
   m_dt = dt;
 
-  // Set the timestamp of the diagnostic to the most
-  // recent timestamp among the inputs
+  // Set the timestamp of the diagnostic to the most recent timestamp among the inputs
+  // NOTE: it's a corner case, but it can happen that the diag has NO input fields.
+  //       This can happen for BinaryOpsDiag, in the case where both args are physics
+  //       constants. In that case, we assume the diagnostic can be pre-computed
+  //       during initialiation, so that every call to compute_diagnostic sees
+  //       ts==m_last_eval_ts, and does nothing.
   const auto& inputs = get_fields_in();
-  util::TimeStamp ts;
-  for (const auto& f : inputs) {
-    const auto& fts = f.get_header().get_tracking().get_time_stamp();
-    if (not ts.is_valid() || ts<fts) {
-      ts = fts;
+  util::TimeStamp ts = m_last_eval_ts;
+  if (inputs.size()>0) {
+    for (const auto& f : inputs) {
+      const auto& fts = f.get_header().get_tracking().get_time_stamp();
+      if (not ts.is_valid() || ts<fts) {
+        ts = fts;
+      }
     }
+
+    // If all inputs have invalid timestamps, we have a problem.
+    auto fname = [](const Field& f) { return f.name(); };
+    EKAT_REQUIRE_MSG (ts.is_valid(),
+        "Error! All inputs to diagnostic have invalid timestamp.\n"
+        "  - Diag name: " + name() + "\n"
+        "  - Diag field name: " + m_diagnostic_output.name() + "\n"
+        "  - Diag inputs names: " + ekat::join(inputs,fname,",") + "\n");
+
   }
 
-  // If all inputs have invalid timestamps, we have a problem.
-  EKAT_REQUIRE_MSG (ts.is_valid(),
-      "Error! All inputs to diagnostic have invalid timestamp.\n"
-      "  - Diag name: " + name() + "\n");
+  if (ts==m_last_eval_ts) {
+    // No need to compute the diag again
+    return;
+  }
 
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 
@@ -46,6 +61,8 @@ void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
   // to something invalid, which can be used by downstream classes to determine
   // if the diag has been successfully computed or not.
   compute_diagnostic_impl ();
+
+  m_last_eval_ts = ts;
 }
 
 void AtmosphereDiagnostic::run_impl (const double dt) {
@@ -62,14 +79,14 @@ set_required_field_impl (const Field& f) {
   //       While we fix all diags, this method will at least
   //       throw an error if the pack size that the diag "requested"
   //       is not compatible with the field alloc props.
-  for (const auto& it : get_required_field_requests()) {
-    if (it.fid.name()==f.name()) {
+  for (const auto& r : get_field_requests()) {
+    if (r.fid.name()==f.name()) {
       const auto& fap = f.get_header().get_alloc_properties();
-      EKAT_REQUIRE_MSG (fap.get_largest_pack_size()>=it.pack_size,
+      EKAT_REQUIRE_MSG (fap.get_largest_pack_size()>=r.pack_size,
           "Error! Diagnostic input field cannot accommodate the needed pack size.\n"
           "  - diag field: " + m_diagnostic_output.name() + "\n"
           "  - input field: " + f.name() + "\n"
-          "  - requested pack size: " + std::to_string(it.pack_size) + "\n"
+          "  - requested pack size: " + std::to_string(r.pack_size) + "\n"
           "  - field max pack size: " + std::to_string(fap.get_largest_pack_size()) + "\n");
       break;
     }

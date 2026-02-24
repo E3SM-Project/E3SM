@@ -1,12 +1,11 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-#include "physics/share/physics_constants.hpp"
 #include "p3_unit_tests_common.hpp"
+
+#include "share/physics/physics_constants.hpp"
+#include "share/core/eamxx_types.hpp"
 
 namespace scream {
 namespace p3 {
@@ -84,7 +83,7 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation : public UnitWrap::Un
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        baseline_data[i].read(Base::m_fid);
+        baseline_data[i].read(Base::m_ifile);
       }
     }
 
@@ -145,13 +144,13 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation : public UnitWrap::Un
         REQUIRE( (d_cxx.qi2qv_sublim_tend==0 || d_cxx.qv + d_cxx.qi2qv_sublim_tend*d_cxx.inv_dt <= d_cxx.qv_sat_i) );
 
         //if T>frz, berg and vapdep should be 0:
-        REQUIRE( (d_cxx.T_atm<C::T_zerodegc || d_cxx.qc2qi_berg_tend==0) );
-        REQUIRE( (d_cxx.T_atm<C::T_zerodegc || d_cxx.qv2qi_vapdep_tend==0) );
+        REQUIRE( (d_cxx.T_atm<C::T_zerodegc.value || d_cxx.qc2qi_berg_tend==0) );
+        REQUIRE( (d_cxx.T_atm<C::T_zerodegc.value || d_cxx.qv2qi_vapdep_tend==0) );
       }
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        cxx_host(s).write(Base::m_fid);
+        cxx_host(s).write(Base::m_ofile);
       }
     }
   } // run_bfb

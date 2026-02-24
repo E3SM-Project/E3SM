@@ -327,13 +327,29 @@ CONTAINS
        call shr_sys_abort('Error: fail to update mesh info ')
  
     allocate(data(lsize))
-    ierr = iMOAB_DefineTagStorage( mlnid, "area:aream:frac:mask"//C_NULL_CHAR, &
+    ierr = iMOAB_DefineTagStorage( mlnid, "lat:lon:area:aream:frac:mask"//C_NULL_CHAR, &
                                      1, & ! dense, double
                                      1, & ! number of components
                                      tagindex )
     if (ierr > 0 )  &
        call shr_sys_abort('Error: fail to create tag: area:aream:frac:mask' )
  
+    data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'lat'),:)
+    tagname='lat'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsize, &
+                                    0, & ! set data on vertices
+                                    data)
+    if (ierr > 0 )  &
+       call shr_sys_abort('Error: fail to set lat tag ')
+
+    data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'lon'),:)
+    tagname='lon'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsize, &
+                                    0, & ! set data on vertices
+                                    data)
+    if (ierr > 0 )  &
+       call shr_sys_abort('Error: fail to set lon tag ')
+
     data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'area'),:)
     tagname='area'//C_NULL_CHAR
     ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsize, &

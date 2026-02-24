@@ -26,6 +26,15 @@ module ice_import_export
   use ice_prescribed_mod
   use ice_cpl_indices
   use perf_mod        , only: t_startf, t_stopf, t_barrierf
+#ifdef HAVE_MOAB
+  use iMOAB,            only: iMOAB_SetDoubleTagStorage, iMOAB_GetDoubleTagStorage, iMOAB_WriteMesh
+  use seq_timemgr_mod , only: seq_timemgr_EClockGetData
+  use esmf            , only: ESMF_clock
+  use seq_comm_mct,     only: MPSIID! id of moab sea ice app
+  use shr_kind_mod     , only : CXX => SHR_KIND_CXX
+  use seq_flds_mod     , only : seq_flds_x2i_fields, seq_flds_i2x_fields
+  use iso_c_binding
+#endif
   implicit none
   public
 
@@ -484,5 +493,509 @@ contains
     enddo        !iblk
 
   end subroutine ice_export
+
+#ifdef HAVE_MOAB
+   subroutine  ice_export_moab(i2x_im, EClock, totalmbls) ! 
+   !-----------------------------------------------------
+    !
+    ! Arguments
+      real(r8), intent(inout) :: i2x_im(:,:)
+      type(ESMF_Clock)         , intent(inout) :: EClock
+      integer, intent(in)   :: totalmbls
+      !
+      ! Local Variables
+      integer :: i, j, iblk, n, ij 
+      integer :: ilo, ihi, jlo, jhi !beginning and end of physical domain
+      integer (kind=int_kind)                                :: icells ! number of ocean/ice cells
+      integer (kind=int_kind), dimension (nx_block*ny_block) :: indxi  ! compressed indices in i
+      integer (kind=int_kind), dimension (nx_block*ny_block) :: indxj  ! compressed indices in i
+  
+      real (kind=dbl_kind), dimension(nx_block,ny_block,max_blocks) :: &
+           Tsrf  &      ! surface temperature
+           ,  tauxa &      ! atmo/ice stress
+           ,  tauya &
+           ,  tauxo &      ! ice/ocean stress
+           ,  tauyo &
+           ,  ailohi       ! fractional ice area
+  
+      real (kind=dbl_kind) :: &
+           workx, worky           ! tmps for converting grid
+  
+      type(block)        :: this_block                           ! block information for current block
+      logical :: flag
+      integer :: ierr, cur_lnd_stepno
+      character(CXX) ::  tagname ! hold all fields names
+      integer        :: ent_type  ! for setting/getting data 
+#ifdef MOABDEBUG
+      character*100 outfile, wopts, lnum
+#endif
+      character(len=32), parameter :: subname = 'ice_export_moab'
+      !-----------------------------------------------------
+  
+      flag=.false.
+  
+      !calculate ice thickness from aice and vice. Also
+      !create Tsrf from the first tracer (trcr) in ice_state.F
+  
+      !$OMP PARALLEL DO PRIVATE(iblk,i,j,workx,worky)
+      do iblk = 1, nblocks
+         do j = 1, ny_block
+            do i = 1, nx_block
+  
+               ! ice fraction
+               ailohi(i,j,iblk) = min(aice(i,j,iblk), c1)
+  
+               ! surface temperature
+               Tsrf(i,j,iblk)  = Tffresh + trcr(i,j,1,iblk)             !Kelvin (original ???)
+  
+               ! wind stress  (on POP T-grid:  convert to lat-lon)
+               workx = strairxT(i,j,iblk)                             ! N/m^2
+               worky = strairyT(i,j,iblk)                             ! N/m^2
+               tauxa(i,j,iblk) = workx*cos(ANGLET(i,j,iblk)) &
+                               - worky*sin(ANGLET(i,j,iblk))
+               tauya(i,j,iblk) = worky*cos(ANGLET(i,j,iblk)) &
+                               + workx*sin(ANGLET(i,j,iblk))
+  
+               ! ice/ocean stress (on POP T-grid:  convert to lat-lon)
+               workx = -strocnxT(i,j,iblk)                            ! N/m^2
+               worky = -strocnyT(i,j,iblk)                            ! N/m^2
+               tauxo(i,j,iblk) = workx*cos(ANGLET(i,j,iblk)) &
+                               - worky*sin(ANGLET(i,j,iblk))
+               tauyo(i,j,iblk) = worky*cos(ANGLET(i,j,iblk)) &
+                               + workx*sin(ANGLET(i,j,iblk))
+  
+            enddo
+         enddo
+      enddo
+      !$OMP END PARALLEL DO
+  
+      do iblk = 1, nblocks
+         do j = 1, ny_block
+            do i = 1, nx_block
+               if (tmask(i,j,iblk) .and. ailohi(i,j,iblk) < c0 ) then
+                  flag = .true.
+               endif
+            end do
+         end do
+      end do
+      if (flag) then
+         do iblk = 1, nblocks
+            do j = 1, ny_block
+               do i = 1, nx_block
+                  if (tmask(i,j,iblk) .and. ailohi(i,j,iblk) < c0 ) then
+                     write(nu_diag,*) &
+                          ' (ice) send: ERROR ailohi < 0.0 ',i,j,ailohi(i,j,iblk)
+                     call shr_sys_flush(nu_diag)
+                  endif
+               end do
+            end do
+         end do
+      endif
+  
+      ! Fill export state i2x_i
+  
+      i2x_im(:,:) = spval_dbl
+  
+      n=0
+      do iblk = 1, nblocks
+         this_block = get_block(blocks_ice(iblk),iblk)         
+         ilo = this_block%ilo
+         ihi = this_block%ihi
+         jlo = this_block%jlo
+         jhi = this_block%jhi
+  
+         do j = jlo, jhi
+            do i = ilo, ihi
+  
+               n = n+1
+  
+               !-------states-------------------- 
+               i2x_im(n, index_i2x_Si_ifrac)    = ailohi(i,j,iblk)   
+  
+               if ( tmask(i,j,iblk) .and. ailohi(i,j,iblk) > c0 ) then
+                  !-------states-------------------- 
+                  i2x_im(n, index_i2x_Si_t    )    = Tsrf(i,j,iblk)
+                  i2x_im(n, index_i2x_Si_avsdr)    = alvdr(i,j,iblk)
+                  i2x_im(n, index_i2x_Si_anidr)    = alidr(i,j,iblk)
+                  i2x_im(n, index_i2x_Si_avsdf)    = alvdf(i,j,iblk)
+                  i2x_im(n, index_i2x_Si_anidf)    = alidf(i,j,iblk)
+                  i2x_im(n, index_i2x_Si_u10 )     = Uref(i,j,iblk)
+                  i2x_im(n, index_i2x_Si_tref )    = Tref(i,j,iblk)
+                  i2x_im(n, index_i2x_Si_qref )    = Qref(i,j,iblk)
+                  i2x_im(n, index_i2x_Si_snowh)    = vsno(i,j,iblk) &
+                       / ailohi(i,j,iblk)
+  
+                  !--- a/i fluxes computed by ice
+                  i2x_im(n, index_i2x_Faii_taux)   = tauxa(i,j,iblk)    
+                  i2x_im(n, index_i2x_Faii_tauy)   = tauya(i,j,iblk)    
+                  i2x_im(n, index_i2x_Faii_lat )   = flat(i,j,iblk)     
+                  i2x_im(n, index_i2x_Faii_sen )   = fsens(i,j,iblk)    
+                  i2x_im(n, index_i2x_Faii_lwup)   = flwout(i,j,iblk)   
+                  i2x_im(n, index_i2x_Faii_evap)   = evap(i,j,iblk)     
+                  i2x_im(n, index_i2x_Faii_swnet)  = fswabs(i,j,iblk)
+  
+                  !--- i/o fluxes computed by ice
+                  i2x_im(n, index_i2x_Fioi_melth)   = fhocn(i,j,iblk)
+                  i2x_im(n, index_i2x_Fioi_swpen)   = fswthru(i,j,iblk) ! hf from melting          
+                  i2x_im(n, index_i2x_Fioi_meltw)   = fresh(i,j,iblk)   ! h2o flux from melting    ???
+                  i2x_im(n, index_i2x_Fioi_salt)   = fsalt(i,j,iblk)   ! salt flux from melting   ???
+                  i2x_im(n, index_i2x_Fioi_taux)   = tauxo(i,j,iblk)   ! stress : i/o zonal       ???
+                  i2x_im(n, index_i2x_Fioi_tauy)   = tauyo(i,j,iblk)   ! stress : i/o meridional  ???
+               end if
+            enddo    !i
+         enddo    !j
+      enddo        !iblk
+
+      tagname=trim(seq_flds_i2x_fields)//C_NULL_CHAR
+      ent_type = 0 ! vertices only, from now on
+      ierr = iMOAB_SetDoubleTagStorage (MPSIID, tagname, totalmbls , ent_type, i2x_im(:,1) )
+      if (ierr > 0 )  then
+         call shr_sys_abort( subname//' Error: fail to set moab i2x '// trim(seq_flds_i2x_fields) )
+      endif
+      call seq_timemgr_EClockGetData( EClock, stepno=cur_lnd_stepno )
+#ifdef MOABDEBUG
+      write(lnum,"(I0.2)")cur_lnd_stepno
+      outfile = 'ice_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(MPSIID, outfile, wopts)
+      if (ierr > 0 )  then
+         call shr_sys_abort( subname//' fail to write the cice mesh file with data')
+      endif
+#endif
+
+   end subroutine ice_export_moab
+
+   subroutine ice_import_moab(x2i_im, EClock, totalmblsimp)
+
+      !-----------------------------------------------------
+      ! Arguments
+      real(r8), allocatable, intent(inout) :: x2i_im(:,:)
+      type(ESMF_Clock)         , intent(inout) :: EClock
+      integer, intent(in) :: totalmblsimp
+      !
+      ! Local variables
+      integer     :: i, j, iblk, n
+      integer     :: ilo, ihi, jlo, jhi !beginning and end of physical domain
+      type(block) :: this_block         ! block information for current block
+      integer,parameter                :: nflds=18,nfldv=6
+      real (kind=dbl_kind),allocatable :: aflds(:,:,:,:)
+      real (kind=dbl_kind)             :: workx, worky
+      logical (kind=log_kind)          :: first_call = .true.
+      character(CXX) ::  tagname ! hold all fields names
+      integer        :: ent_type  ! for setting/getting data 
+      integer :: ierr, cur_lnd_stepno
+      character(len=32), parameter :: subname = 'ice_import_moab'
+#ifdef MOABDEBUG
+      character*100 outfile, wopts, lnum
+#endif
+      !-----------------------------------------------------
+  
+      ! retrieve data from moab tags
+      tagname=trim(seq_flds_x2i_fields)//C_NULL_CHAR
+      ent_type = 0 ! vertices 
+      ierr = iMOAB_GetDoubleTagStorage ( MPSIID, tagname, totalmblsimp , ent_type, x2i_im(1,1) )
+      if (ierr > 0 )  then
+         call shr_sys_abort( subname//' Error: fail to get seq_flds_x2i_fields for ice moab instance on component ') 
+      endif
+
+      ! Note that the precipitation fluxes received  from the coupler
+      ! are in units of kg/s/m^2 which is what CICE requires.
+      ! Note also that the read in below includes only values needed
+      ! by the thermodynamic component of CICE.  Variables uocn, vocn,
+      ! ss_tltx, and ss_tlty are excluded. Also, because the SOM and
+      ! DOM don't  compute SSS.   SSS is not read in and is left at
+      ! the initilized value (see ice_flux.F init_coupler_flux) of
+      ! 34 ppt
+  
+      ! Use aflds to gather the halo updates of multiple fields
+      ! Need to separate the scalar from the vector halo updates  
+      allocate(aflds(nx_block,ny_block,nflds,nblocks))
+      aflds = c0
+  
+      n=0
+      do iblk = 1, nblocks
+         this_block = get_block(blocks_ice(iblk),iblk)         
+         ilo = this_block%ilo
+         ihi = this_block%ihi
+         jlo = this_block%jlo
+         jhi = this_block%jhi
+  
+         do j = jlo, jhi
+            do i = ilo, ihi
+  
+               n = n+1
+               aflds(i,j, 1,iblk)   = x2i_im(n, index_x2i_So_t)
+               aflds(i,j, 2,iblk)   = x2i_im(n, index_x2i_So_s)
+               aflds(i,j, 3,iblk)   = x2i_im(n, index_x2i_Sa_z)
+               aflds(i,j, 4,iblk)   = x2i_im(n, index_x2i_Sa_ptem)
+               aflds(i,j, 5,iblk)   = x2i_im(n, index_x2i_Sa_tbot)
+               aflds(i,j, 6,iblk)   = x2i_im(n, index_x2i_Sa_shum)
+               aflds(i,j, 7,iblk)   = x2i_im(n, index_x2i_Sa_dens)
+               aflds(i,j, 8,iblk)   = x2i_im(n, index_x2i_Fioo_q)
+               aflds(i,j, 9,iblk)   = x2i_im(n, index_x2i_Faxa_swvdr)
+               aflds(i,j,10,iblk)   = x2i_im(n, index_x2i_Faxa_swndr)
+               aflds(i,j,11,iblk)   = x2i_im(n, index_x2i_Faxa_swvdf)
+               aflds(i,j,12,iblk)   = x2i_im(n, index_x2i_Faxa_swndf)
+               aflds(i,j,13,iblk)   = x2i_im(n, index_x2i_Faxa_lwdn)
+               aflds(i,j,14,iblk)   = x2i_im(n, index_x2i_Faxa_rain)
+               aflds(i,j,15,iblk)   = x2i_im(n, index_x2i_Faxa_snow)
+               if (index_x2i_Sa_wsresp == 0) then
+                  aflds(i,j,16,iblk) = 0._dbl_kind
+               else
+                  aflds(i,j,16,iblk) = x2i_im(n, index_x2i_Sa_wsresp)
+               end if
+               if (index_x2i_Sa_tau_est == 0) then
+                  aflds(i,j,17,iblk) = 0._dbl_kind
+               else
+                  aflds(i,j,17,iblk) = x2i_im(n, index_x2i_Sa_tau_est)
+               end if
+               if (index_x2i_Sa_ugust == 0) then
+                  aflds(i,j,18,iblk) = 0._dbl_kind
+               else
+                  aflds(i,j,18,iblk) = x2i_im(n, index_x2i_Sa_ugust)
+               end if
+            enddo    !i
+         enddo    !j
+  
+      enddo        !iblk
+  
+      if (.not.prescribed_ice) then
+         call t_startf ('cice_imp_halo')
+         call ice_HaloUpdate(aflds, halo_info, field_loc_center, &
+              field_type_scalar)
+         call t_stopf ('cice_imp_halo')
+      endif
+  
+      !$OMP PARALLEL DO PRIVATE(iblk,i,j)
+      do iblk = 1, nblocks
+         do j = 1,ny_block
+            do i = 1,nx_block
+               sst  (i,j,iblk)   = aflds(i,j, 1,iblk)
+               sss  (i,j,iblk)   = aflds(i,j, 2,iblk)
+               zlvl (i,j,iblk)   = aflds(i,j, 3,iblk)
+               potT (i,j,iblk)   = aflds(i,j, 4,iblk)
+               Tair (i,j,iblk)   = aflds(i,j, 5,iblk)
+               Qa   (i,j,iblk)   = aflds(i,j, 6,iblk)
+               rhoa (i,j,iblk)   = aflds(i,j, 7,iblk)
+               frzmlt (i,j,iblk) = aflds(i,j, 8,iblk)
+               swvdr(i,j,iblk)   = aflds(i,j, 9,iblk)
+               swidr(i,j,iblk)   = aflds(i,j,10,iblk)
+               swvdf(i,j,iblk)   = aflds(i,j,11,iblk)
+               swidf(i,j,iblk)   = aflds(i,j,12,iblk)
+               flw  (i,j,iblk)   = aflds(i,j,13,iblk)
+               frain(i,j,iblk)   = aflds(i,j,14,iblk)
+               fsnow(i,j,iblk)   = aflds(i,j,15,iblk)
+            enddo    !i
+         enddo    !j
+      enddo        !iblk
+      !$OMP END PARALLEL DO
+  
+      deallocate(aflds)
+      allocate(aflds(nx_block,ny_block,nfldv,nblocks))
+      aflds = c0
+  
+      n=0
+      do iblk = 1, nblocks
+         this_block = get_block(blocks_ice(iblk),iblk)
+         ilo = this_block%ilo
+         ihi = this_block%ihi
+         jlo = this_block%jlo
+         jhi = this_block%jhi
+  
+         do j = jlo, jhi
+            do i = ilo, ihi
+               n = n+1
+               aflds(i,j, 1,iblk)   = x2i_im(n, index_x2i_So_u)
+               aflds(i,j, 2,iblk)   = x2i_im(n, index_x2i_So_v)
+               aflds(i,j, 3,iblk)   = x2i_im(n, index_x2i_Sa_u)
+               aflds(i,j, 4,iblk)   = x2i_im(n, index_x2i_Sa_v)
+               aflds(i,j, 5,iblk)   = x2i_im(n, index_x2i_So_dhdx)
+               aflds(i,j, 6,iblk)   = x2i_im(n, index_x2i_So_dhdy)
+            enddo
+         enddo
+      enddo
+  
+      if (.not.prescribed_ice) then
+         call t_startf ('cice_imp_halo')
+         call ice_HaloUpdate(aflds, halo_info, field_loc_center, &
+              field_type_vector)
+         call t_stopf ('cice_imp_halo')
+      endif
+  
+      !$OMP PARALLEL DO PRIVATE(iblk,i,j)
+      do iblk = 1, nblocks
+         do j = 1,ny_block
+            do i = 1,nx_block
+               uocn (i,j,iblk)   = aflds(i,j, 1,iblk)
+               vocn (i,j,iblk)   = aflds(i,j, 2,iblk)
+               uatm (i,j,iblk)   = aflds(i,j, 3,iblk)
+               vatm (i,j,iblk)   = aflds(i,j, 4,iblk)
+               ss_tltx(i,j,iblk) = aflds(i,j, 5,iblk)
+               ss_tlty(i,j,iblk) = aflds(i,j, 6,iblk)
+            enddo    !i
+         enddo    !j
+      enddo        !iblk
+      !$OMP END PARALLEL DO
+  
+      deallocate(aflds)
+  
+      !-------------------------------------------------------
+      ! Set aerosols from coupler 
+      !-------------------------------------------------------
+  
+      n=0
+      do iblk = 1, nblocks
+         this_block = get_block(blocks_ice(iblk),iblk)         
+         ilo = this_block%ilo
+         ihi = this_block%ihi
+         jlo = this_block%jlo
+         jhi = this_block%jhi
+  
+         do j = jlo, jhi
+            do i = ilo, ihi
+  
+               n = n+1
+  
+#ifdef MODAL_AER
+              !HW++ modal treatment
+  
+              ! BC species 1 (=intersitial/external BC)
+              faero(i,j,1,iblk) = x2i_im(n, index_x2i_Faxa_bcphodry) &
+                                + x2i_im(n, index_x2i_Faxa_bcphidry)
+  
+              ! BC species 2 (=cloud_water/within-ice BC)
+              faero(i,j,2,iblk) = x2i_im(n, index_x2i_Faxa_bcphiwet)
+  
+              ! Combine all of the dust into one category
+              faero(i,j,3,iblk) = x2i_im(n, index_x2i_Faxa_dstwet1) &
+                                + x2i_im(n, index_x2i_Faxa_dstdry1) &
+                                + x2i_im(n, index_x2i_Faxa_dstwet2) &
+                                + x2i_im(n, index_x2i_Faxa_dstdry2) &
+                                + x2i_im(n, index_x2i_Faxa_dstwet3) &
+                                + x2i_im(n, index_x2i_Faxa_dstdry3) &
+                                + x2i_im(n, index_x2i_Faxa_dstwet4) &
+                                + x2i_im(n, index_x2i_Faxa_dstdry4)
+              !mgf--
+#else
+              ! bulk treatment
+  
+               faero(i,j,1,iblk) = x2i_im(n, index_x2i_Faxa_bcphodry)
+  
+               faero(i,j,2,iblk) = x2i_im(n, index_x2i_Faxa_bcphidry) &
+                    + x2i_im(n, index_x2i_Faxa_bcphiwet)
+               ! Combine all of the dust into one category
+               faero(i,j,3,iblk) = x2i_im(n, index_x2i_Faxa_dstwet1) &
+                    + x2i_im(n, index_x2i_Faxa_dstdry1) &
+                    + x2i_im(n, index_x2i_Faxa_dstwet2) &
+                    + x2i_im(n, index_x2i_Faxa_dstdry2) &
+                    + x2i_im(n, index_x2i_Faxa_dstwet3) &
+                    + x2i_im(n, index_x2i_Faxa_dstdry3) &
+                    + x2i_im(n, index_x2i_Faxa_dstwet4) &
+                    + x2i_im(n, index_x2i_Faxa_dstdry4)
+  
+#endif
+  !HW +++
+            enddo    !i
+         enddo    !j
+  
+      enddo        !iblk
+  
+  
+      !-----------------------------------------------------------------
+      ! rotate zonal/meridional vectors to local coordinates
+      ! compute data derived quantities
+      !-----------------------------------------------------------------
+  
+      ! Vector fields come in on T grid, but are oriented geographically
+      ! need to rotate to pop-grid FIRST using ANGLET
+      ! then interpolate to the U-cell centers  (otherwise we
+      ! interpolate across the pole)
+      ! use ANGLET which is on the T grid !
+  
+      call t_startf ('cice_imp_ocn')
+      !$OMP PARALLEL DO PRIVATE(iblk,i,j,workx,worky)
+      do iblk = 1, nblocks
+  
+         do j = 1,ny_block
+            do i = 1,nx_block
+  
+               ! ocean
+               workx      = uocn  (i,j,iblk) ! currents, m/s 
+               worky      = vocn  (i,j,iblk)
+               uocn(i,j,iblk) = workx*cos(ANGLET(i,j,iblk)) & ! convert to POP grid 
+                    + worky*sin(ANGLET(i,j,iblk))
+               vocn(i,j,iblk) = worky*cos(ANGLET(i,j,iblk)) &
+                    - workx*sin(ANGLET(i,j,iblk))
+  
+               workx      = ss_tltx  (i,j,iblk)           ! sea sfc tilt, m/m
+               worky      = ss_tlty  (i,j,iblk)
+               ss_tltx(i,j,iblk) = workx*cos(ANGLET(i,j,iblk)) & ! convert to POP grid 
+                    + worky*sin(ANGLET(i,j,iblk))
+               ss_tlty(i,j,iblk) = worky*cos(ANGLET(i,j,iblk)) &
+                    - workx*sin(ANGLET(i,j,iblk))
+  
+               sst(i,j,iblk) = sst(i,j,iblk) - Tffresh       ! sea sfc temp (C)
+               Tf (i,j,iblk) = -1.8_dbl_kind                 ! hardwired for NCOM
+               !         Tf (i,j,iblk) = -depressT*sss(i,j,iblk)       ! freezing temp (C)
+               !         Tf (i,j,iblk) = -depressT*max(sss(i,j,iblk),ice_ref_salinity)
+  
+            enddo
+         enddo
+      enddo
+      !$OMP END PARALLEL DO
+      call t_stopf ('cice_imp_ocn')
+  
+      ! Interpolate ocean dynamics variables from T-cell centers to 
+      ! U-cell centers.
+  
+      if (.not.prescribed_ice) then
+         call t_startf ('cice_imp_t2u')
+         call t2ugrid_vector(uocn)
+         call t2ugrid_vector(vocn)
+         call t2ugrid_vector(ss_tltx)
+         call t2ugrid_vector(ss_tlty)
+         call t_stopf ('cice_imp_t2u')
+      end if
+  
+      ! Atmosphere variables are needed in T cell centers in
+      ! subroutine stability and are interpolated to the U grid
+      ! later as necessary.
+  
+      call t_startf ('cice_imp_atm')
+      !$OMP PARALLEL DO PRIVATE(iblk,i,j,workx,worky)
+      do iblk = 1, nblocks
+         do j = 1, ny_block
+            do i = 1, nx_block
+  
+               ! atmosphere
+               workx      = uatm(i,j,iblk) ! wind velocity, m/s
+               worky      = vatm(i,j,iblk) 
+               uatm (i,j,iblk) = workx*cos(ANGLET(i,j,iblk)) & ! convert to POP grid
+                               + worky*sin(ANGLET(i,j,iblk))   ! note uatm, vatm, wind
+               vatm (i,j,iblk) = worky*cos(ANGLET(i,j,iblk)) & ! are on the T-grid here
+                    - workx*sin(ANGLET(i,j,iblk))
+  
+               wind (i,j,iblk) = sqrt(uatm(i,j,iblk)**2 + vatm(i,j,iblk)**2)
+               fsw  (i,j,iblk) = swvdr(i,j,iblk) + swvdf(i,j,iblk) &
+                               + swidr(i,j,iblk) + swidf(i,j,iblk)
+            enddo
+         enddo
+      enddo
+      !$OMP END PARALLEL DO
+      call t_stopf ('cice_imp_atm')  
+
+      call seq_timemgr_EClockGetData( EClock, stepno=cur_lnd_stepno )
+#ifdef MOABDEBUG
+      write(lnum,"(I0.2)")cur_lnd_stepno
+      outfile = 'ice_import_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(MPSIID, outfile, wopts)
+      if (ierr > 0 )  then
+         call shr_sys_abort( subname//' Error: fail to the moab ice mesh before import ') 
+      endif
+        
+#endif
+   end subroutine ice_import_moab
+#endif
 
 end module ice_import_export

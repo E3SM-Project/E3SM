@@ -26,3 +26,6 @@ set(MPIFC "ftn")
 set(SCC "cc")
 set(SCXX "CC")
 set(SFC "ftn")
+
+set(AMDGPU_TARGETS "gfx90a" CACHE STRING "")
+set(GPU_TARGETS "gfx90a" CACHE STRING "")

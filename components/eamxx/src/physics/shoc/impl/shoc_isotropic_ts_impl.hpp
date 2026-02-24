@@ -28,8 +28,8 @@ void Functions<S,D>
   const uview_1d<Spack>&       isotropy)
 {
 
-  //constants from physics/share
-  static constexpr  Scalar ggr = C::gravit;
+  //constants from share/physics
+  static constexpr  Scalar ggr = C::gravit.value;
 
   //Declare constants
          const     Scalar lambda_low    = lambda_low_in; 

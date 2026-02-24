@@ -131,7 +131,7 @@ void Functions<S,D>
 
     Kokkos::single(
       Kokkos::PerTeam(team), [&] () {
-        precip_liq_surf = prt_accum * C::INV_RHO_H2O * inv_dt;
+        precip_liq_surf = prt_accum * C::INV_RHO_H2O.value * inv_dt;
       });
   }
 

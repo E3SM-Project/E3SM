@@ -1,13 +1,11 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-#include "share/eamxx_types.hpp"
-#include "physics/share/physics_functions.hpp"
-
 #include "p3_unit_tests_common.hpp"
+
+#include "share/physics/physics_functions.hpp"
+#include "share/core/eamxx_types.hpp"
 
 namespace scream {
 namespace p3 {
@@ -23,9 +21,9 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation : public UnitWrap::U
 
     using physics = scream::physics::Functions<Scalar, Device>;
 
-    constexpr Scalar inv_cp       = C::INV_CP;
-    constexpr Scalar latvap       = C::LatVap;
-    constexpr Scalar latice       = C::LatIce;
+    constexpr Scalar inv_cp       = C::INV_CP.value;
+    constexpr Scalar latvap       = C::LatVap.value;
+    constexpr Scalar latice       = C::LatIce.value;
 
     //Start with reasonable values
     //============================
@@ -89,8 +87,8 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation : public UnitWrap::U
 
   void run_bfb()
   {
-    constexpr Scalar latvap = C::LatVap;
-    constexpr Scalar latice = C::LatIce;
+    constexpr Scalar latvap = C::LatVap.value;
+    constexpr Scalar latice = C::LatIce.value;
 
     auto engine = Base::get_engine();
 
@@ -125,7 +123,7 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation : public UnitWrap::U
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        baseline_data[i].read(Base::m_fid);
+        baseline_data[i].read(Base::m_ifile);
       }
     }
 
@@ -178,7 +176,7 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation : public UnitWrap::U
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        cxx_host(s).write(Base::m_fid);
+        cxx_host(s).write(Base::m_ofile);
       }
     }
   } // run_bfb

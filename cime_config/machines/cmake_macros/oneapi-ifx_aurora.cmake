@@ -3,3 +3,4 @@ string(APPEND CMAKE_EXE_LINKER_FLAGS " -lmkl_intel_lp64 -lmkl_sequential -lmkl_c
 if (compile_threaded)
   string(APPEND CMAKE_EXE_LINKER_FLAGS " -fiopenmp -fopenmp-targets=spir64")
 endif()
+set(Kokkos_ENABLE_SYCL FALSE CACHE BOOL "")

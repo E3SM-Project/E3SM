@@ -221,16 +221,15 @@ subroutine phys_grid_ctem_init
 
    if (.not.do_tem_diags) return
 
-   call addfld ('PSzm',horiz_only, 'A','m s-1',  'Zonal-Mean surface pressure', gridname='ctem_zavg_phys' )
-   call addfld ('Uzm',  (/'lev'/), 'A','m s-1',  'Zonal-Mean zonal wind', gridname='ctem_zavg_phys' )
-   call addfld ('Vzm',  (/'lev'/), 'A','m s-1',  'Zonal-Mean meridional wind', gridname='ctem_zavg_phys' )
-   call addfld ('Wzm',  (/'lev'/), 'A','m s-1',  'Zonal-Mean vertical wind', gridname='ctem_zavg_phys' )
-   call addfld ('THzm', (/'lev'/), 'A','K',      'Zonal-Mean potential temp', gridname='ctem_zavg_phys' )
-   call addfld ('VTHzm',(/'lev'/), 'A','K m s-1','Meridional Heat Flux:', gridname='ctem_zavg_phys')
-   call addfld ('WTHzm',(/'lev'/), 'A','K m s-1','Vertical Heat Flux:', gridname='ctem_zavg_phys')
-   call addfld ('UVzm', (/'lev'/), 'A','m2 s-2', 'Meridional Flux of Zonal Momentum', gridname='ctem_zavg_phys')
-   call addfld ('UWzm', (/'lev'/), 'A','m2 s-2', 'Vertical Flux of Zonal Momentum', gridname='ctem_zavg_phys')
-   call addfld ('THphys',(/'lev'/), 'A', 'K',    'Potential temp', gridname='physgrid' )
+   call addfld('PSzm', horiz_only, 'A','Pa',      "Zonal-Mean Surface Pressure", gridname='ctem_zavg_phys' )
+   call addfld('Uzm',   (/'lev'/), 'A','m s-1',   "Zonal-Mean Zonal Wind", gridname='ctem_zavg_phys' )
+   call addfld('Vzm',   (/'lev'/), 'A','m s-1',   "Zonal-Mean Meridional Wind", gridname='ctem_zavg_phys' )
+   call addfld('Wzm',   (/'lev'/), 'A','Pa s-1',  "Zonal-Mean Vertical Wind", gridname='ctem_zavg_phys' )
+   call addfld('THzm',  (/'lev'/), 'A','K',       "Zonal-Mean Potential Temp", gridname='ctem_zavg_phys' )
+   call addfld('VTHzm', (/'lev'/), 'A','K m s-1', "Zonal-Mean Meridional Heat Flux i.e. zonal_mean(v'theta')", gridname='ctem_zavg_phys')
+   call addfld('WTHzm', (/'lev'/), 'A','K Pa s-1',"Zonal-Mean Vertical Heat Flux i.e. zonal_mean(w'theta')", gridname='ctem_zavg_phys')
+   call addfld('UVzm',  (/'lev'/), 'A','m2 s-2',  "Zonal-Mean Meridional Flux of Zonal Momentum i.e. zonal_mean(u'v')", gridname='ctem_zavg_phys')
+   call addfld('UWzm',  (/'lev'/), 'A','Pa m s-2',"Zonal-Mean Vertical Flux of Zonal Momentum i.e. zonal_mean(u'w')", gridname='ctem_zavg_phys')
 
 end subroutine phys_grid_ctem_init
 
@@ -249,16 +248,20 @@ subroutine phys_grid_ctem_diags(phys_state)
    real(r8) :: v(pcols,pver,begchunk:endchunk)
    real(r8) :: w(pcols,pver,begchunk:endchunk)
 
+   real(r8) :: uv(pcols,pver,begchunk:endchunk)
+   real(r8) :: uw(pcols,pver,begchunk:endchunk)
+   real(r8) :: vth(pcols,pver,begchunk:endchunk)
+   real(r8) :: wth(pcols,pver,begchunk:endchunk)
+
    real(r8) :: pszm(pcols,begchunk:endchunk)
 
    real(r8) :: uzm(pcols,pver,begchunk:endchunk)
    real(r8) :: vzm(pcols,pver,begchunk:endchunk)
    real(r8) :: wzm(pcols,pver,begchunk:endchunk)
-
-   real(r8) :: ud(pcols,pver,begchunk:endchunk)
-   real(r8) :: vd(pcols,pver,begchunk:endchunk)
-   real(r8) :: wd(pcols,pver,begchunk:endchunk)
-   real(r8) :: thd(pcols,pver,begchunk:endchunk)
+   real(r8) :: uvzm(pcols,pver,begchunk:endchunk)
+   real(r8) :: uwzm(pcols,pver,begchunk:endchunk)
+   real(r8) :: vthzm(pcols,pver,begchunk:endchunk)
+   real(r8) :: wthzm(pcols,pver,begchunk:endchunk)
 
    real(r8) :: uvp(pcols,pver,begchunk:endchunk)
    real(r8) :: uwp(pcols,pver,begchunk:endchunk)
@@ -296,32 +299,39 @@ subroutine phys_grid_ctem_diags(phys_state)
       u(:ncol,:,lchnk) =  phys_state(lchnk)%u(:ncol,:)
       v(:ncol,:,lchnk) =  phys_state(lchnk)%v(:ncol,:)
    end do
+   ! calculate the product of the variables
+   do lchnk = begchunk,endchunk
+      ncol = phys_state(lchnk)%ncol
+      do k = 1,pver
+         uv(:ncol,k,lchnk)  = u(:ncol,k,lchnk) * v(:ncol,k,lchnk)
+         uw(:ncol,k,lchnk)  = u(:ncol,k,lchnk) * w(:ncol,k,lchnk)
+         vth(:ncol,k,lchnk) = v(:ncol,k,lchnk) * theta(:ncol,k,lchnk)
+         wth(:ncol,k,lchnk) = w(:ncol,k,lchnk) * theta(:ncol,k,lchnk)
+      end do
+   end do
 
    ! zonal means evaluated on the physics grid (3D) to be used in the deviations calculation below
-   pszm(:,:)   = zmean_fld_2D(ps(:,:))
-   uzm(:,:,:)  = zmean_fld_3D(u(:,:,:))
-   vzm(:,:,:)  = zmean_fld_3D(v(:,:,:))
-   wzm(:,:,:)  = zmean_fld_3D(w(:,:,:))
-   thzm(:,:,:) = zmean_fld_3D(theta(:,:,:))
-
-   ! diagnostic output
-   do lchnk = begchunk, endchunk
-      call outfld( 'THphys', theta(:,:,lchnk), pcols, lchnk)
-   end do
+   pszm(:,:)    = zmean_fld_2D(ps(:,:))
+   uzm(:,:,:)   = zmean_fld_3D(u(:,:,:))
+   vzm(:,:,:)   = zmean_fld_3D(v(:,:,:))
+   wzm(:,:,:)   = zmean_fld_3D(w(:,:,:))
+   thzm(:,:,:)  = zmean_fld_3D(theta(:,:,:))
+   uvzm(:,:,:)  = zmean_fld_3D(uv(:,:,:))
+   uwzm(:,:,:)  = zmean_fld_3D(uw(:,:,:))
+   vthzm(:,:,:) = zmean_fld_3D(vth(:,:,:))
+   wthzm(:,:,:) = zmean_fld_3D(wth(:,:,:))
 
    do lchnk = begchunk,endchunk
       ncol = phys_state(lchnk)%ncol
       do k = 1,pver
-         ! zonal deviations
-         thd(:ncol,k,lchnk) = theta(:ncol,k,lchnk) - thzm(:ncol,k,lchnk)
-         ud(:ncol,k,lchnk)  = u(:ncol,k,lchnk)     - uzm(:ncol,k,lchnk)
-         vd(:ncol,k,lchnk)  = v(:ncol,k,lchnk)     - vzm(:ncol,k,lchnk)
-         wd(:ncol,k,lchnk)  = w(:ncol,k,lchnk)     - wzm(:ncol,k,lchnk)
-         ! fluxes
-         uvp(:ncol,k,lchnk)  = ud(:ncol,k,lchnk) * vd(:ncol,k,lchnk)
-         uwp(:ncol,k,lchnk)  = ud(:ncol,k,lchnk) * wd(:ncol,k,lchnk)
-         vthp(:ncol,k,lchnk) = vd(:ncol,k,lchnk) * thd(:ncol,k,lchnk)
-         wthp(:ncol,k,lchnk) = wd(:ncol,k,lchnk) * thd(:ncol,k,lchnk)
+         ! zmean(u'v') = zmean(uv) - zmean(u)*zmean(v)
+         ! NOTE - the previous method involved explicitly calcalating the the perturbations from
+         ! the zonal mean (i.e. u - zmean(u) ), but this was found to be the source of excessive
+         ! noise in the diagnostic outputs. The new method yields much smoother results.
+         uvp(:ncol,k,lchnk)  =  uvzm(:ncol,k,lchnk) - uzm(:ncol,k,lchnk) *  vzm(:ncol,k,lchnk)
+         uwp(:ncol,k,lchnk)  =  uwzm(:ncol,k,lchnk) - uzm(:ncol,k,lchnk) *  wzm(:ncol,k,lchnk)
+         vthp(:ncol,k,lchnk) = vthzm(:ncol,k,lchnk) - vzm(:ncol,k,lchnk) * thzm(:ncol,k,lchnk)
+         wthp(:ncol,k,lchnk) = wthzm(:ncol,k,lchnk) - wzm(:ncol,k,lchnk) * thzm(:ncol,k,lchnk)
       end do
    end do
 
@@ -331,9 +341,8 @@ subroutine phys_grid_ctem_diags(phys_state)
    call ZAobj%binAvg(vthp, vthza)
    call ZAobj%binAvg(wthp, wthza)
 
-
-   if (any(abs(uvza)>1.e20_r8))  call endrun(prefix//'bad values in uvza')
-   if (any(abs(uwza)>1.e20_r8))  call endrun(prefix//'bad values in uwza')
+   if (any(abs(uvza) >1.e20_r8)) call endrun(prefix//'bad values in uvza')
+   if (any(abs(uwza) >1.e20_r8)) call endrun(prefix//'bad values in uwza')
    if (any(abs(vthza)>1.e20_r8)) call endrun(prefix//'bad values in vthza')
    if (any(abs(wthza)>1.e20_r8)) call endrun(prefix//'bad values in wthza')
 
@@ -344,20 +353,20 @@ subroutine phys_grid_ctem_diags(phys_state)
    call ZAobj%binAvg(thzm, thza)
 
    if (any(abs(psza)>1.e20_r8)) call endrun(prefix//'bad values in psza')
-   if (any(abs(uza)>1.e20_r8))  call endrun(prefix//'bad values in uza')
-   if (any(abs(vza)>1.e20_r8))  call endrun(prefix//'bad values in vza')
-   if (any(abs(wza)>1.e20_r8))  call endrun(prefix//'bad values in wza')
+   if (any(abs(uza) >1.e20_r8)) call endrun(prefix//'bad values in uza')
+   if (any(abs(vza) >1.e20_r8)) call endrun(prefix//'bad values in vza')
+   if (any(abs(wza) >1.e20_r8)) call endrun(prefix//'bad values in wza')
    if (any(abs(thza)>1.e20_r8)) call endrun(prefix//'bad values in thza')
 
    ! diagnostic output
    do j = 1,nzalat
-      call outfld('PSzm',psza(j),1,j)
-      call outfld('Uzm',uza(j,:),1,j)
-      call outfld('Vzm',vza(j,:),1,j)
-      call outfld('Wzm',wza(j,:),1,j)
-      call outfld('THzm',thza(j,:),1,j)
-      call outfld('UVzm',uvza(j,:),1,j)
-      call outfld('UWzm',uwza(j,:),1,j)
+      call outfld('PSzm', psza(j),   1,j)
+      call outfld('Uzm',  uza(j,:),  1,j)
+      call outfld('Vzm',  vza(j,:),  1,j)
+      call outfld('Wzm',  wza(j,:),  1,j)
+      call outfld('THzm', thza(j,:), 1,j)
+      call outfld('UVzm', uvza(j,:), 1,j)
+      call outfld('UWzm', uwza(j,:), 1,j)
       call outfld('VTHzm',vthza(j,:),1,j)
       call outfld('WTHzm',wthza(j,:),1,j)
    end do

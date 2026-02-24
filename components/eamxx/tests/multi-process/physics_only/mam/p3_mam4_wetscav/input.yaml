@@ -8,7 +8,7 @@ time_stepping:
   run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
   number_of_steps: ${NUM_STEPS}
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [mac_mic, mam4_wetscav]
   schedule_type: sequential
   mac_mic:
@@ -53,6 +53,7 @@ initial_conditions:
   hetfrz_immersion_nucleation_tend: 0.1
   hetfrz_contact_nucleation_tend: 0.1
   hetfrz_deposition_nucleation_tend: 0.1
+  z_mam4_int : 0.0
 
 # The parameters for I/O control
 scorpio:

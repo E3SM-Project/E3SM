@@ -1,13 +1,10 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/util/ekat_arch.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-
 #include "p3_unit_tests_common.hpp"
+
+#include "share/core/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -239,7 +236,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        cwdc[i].read(Base::m_fid);
+        cwdc[i].read(Base::m_ifile);
       }
     }
 
@@ -303,7 +300,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        cwdc_host(s).write(Base::m_fid);
+        cwdc_host(s).write(Base::m_ofile);
       }
     }
   }
@@ -346,7 +343,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        iwdc[i].read(Base::m_fid);
+        iwdc[i].read(Base::m_ifile);
       }
     }
 
@@ -411,7 +408,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        iwdc_host(s).write(Base::m_fid);
+        iwdc_host(s).write(Base::m_ofile);
       }
     }
   }
@@ -454,7 +451,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        rwdc[i].read(Base::m_fid);
+        rwdc[i].read(Base::m_ifile);
       }
     }
 
@@ -508,7 +505,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        rwdc_host(s).write(Base::m_fid);
+        rwdc_host(s).write(Base::m_ofile);
       }
     }
   }
@@ -531,8 +528,8 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce : public UnitWrap::UnitT
     constexpr Scalar nmltratio     = C::nmltratio;
     constexpr Scalar dt            = 1.8000E+03;
     constexpr bool   do_predict_nc = true;
-    constexpr Scalar latvap        = C::LatVap;
-    constexpr Scalar latice        = C::LatIce;
+    constexpr Scalar latvap        = C::LatVap.value;
+    constexpr Scalar latice        = C::LatIce.value;
 
     //baseline generated data is input to the following
     P3UpdatePrognosticIceData pupidc[max_pack_size] = {
@@ -645,7 +642,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce : public UnitWrap::UnitT
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        pupidc[i].read(Base::m_fid);
+        pupidc[i].read(Base::m_ifile);
       }
     }
 
@@ -754,7 +751,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce : public UnitWrap::UnitT
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        pupidc_host(s).write(Base::m_fid);
+        pupidc_host(s).write(Base::m_ofile);
       }
     }
   }
@@ -769,8 +766,8 @@ template <typename D>
 struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables : public UnitWrap::UnitTest<D>::Base
 {
   void get_time_space_phys_variables_unit_bfb_tests() {
-    constexpr Scalar latvap = C::LatVap;
-    constexpr Scalar latice = C::LatIce;
+    constexpr Scalar latvap = C::LatVap.value;
+    constexpr Scalar latice = C::LatIce.value;
 
     //baseline generated data is input to the following
     GetTimeSpacePhysVarsData gtspvd[max_pack_size] = {
@@ -804,7 +801,7 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables : public UnitWrap::U
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        gtspvd[i].read(Base::m_fid);
+        gtspvd[i].read(Base::m_ifile);
       }
     }
 
@@ -875,7 +872,7 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables : public UnitWrap::U
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        gtspvd_host(s).write(Base::m_fid);
+        gtspvd_host(s).write(Base::m_ofile);
       }
     }
   }
@@ -889,7 +886,7 @@ template <typename D>
 struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq : public UnitWrap::UnitTest<D>::Base
 {
   void update_prognostic_liquid_unit_bfb_tests() {
-    constexpr Scalar latvap = C::LatVap;
+    constexpr Scalar latvap = C::LatVap.value;
 
     //baseline generated data is input to the following
     P3UpdatePrognosticLiqData pupldc[max_pack_size] = {
@@ -970,7 +967,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq : public UnitWrap::UnitT
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        pupldc[i].read(Base::m_fid);
+        pupldc[i].read(Base::m_ifile);
       }
     }
 
@@ -1056,7 +1053,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq : public UnitWrap::UnitT
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        pupldc_host(s).write(Base::m_fid);
+        pupldc_host(s).write(Base::m_ofile);
       }
     }
   }
@@ -1107,7 +1104,7 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi : public UnitWrap:
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        dc[i].read(Base::m_fid);
+        dc[i].read(Base::m_ifile);
       }
     }
 
@@ -1142,7 +1139,7 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi : public UnitWrap:
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        dc_host(s).write(Base::m_fid);
+        dc_host(s).write(Base::m_ofile);
       }
     }
   }

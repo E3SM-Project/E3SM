@@ -215,8 +215,14 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     character(len=MAX_FILE_LEN) :: mesh_file
     integer :: se_ftype, se_limiter_option
     integer :: se_nsplit
-    integer :: interp_nlat, interp_nlon, interp_gridtype, interp_type
-    integer :: i, ii, j
+    integer :: interp_nlat, interp_nlon, interp_gridtype
+    integer :: i, ii
+#if !defined(CAM) && !defined(SCREAM)
+#if !defined(HOMME_WITHOUT_PIOLIBRARY)
+    integer :: j
+#endif
+    integer :: interp_type
+#endif
     integer  :: ierr
     character(len=80) :: errstr, arg
     real(kind=real_kind) :: dt_max, se_tstep
@@ -454,18 +460,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     ne              = 0
     ne_x              = 0
     ne_y              = 0
-    transport_alg = 0
-    semi_lagrange_cdr_alg = 3
-    semi_lagrange_cdr_check = .false.
-    semi_lagrange_hv_q = 1
-    semi_lagrange_nearest_point_lev = 256
-    semi_lagrange_halo = 2
-    semi_lagrange_trajectory_nsubstep = 0
-    semi_lagrange_trajectory_nvelocity = -1
-    semi_lagrange_diagnostics = 0
     disable_diagnostics = .false.
-    se_fv_phys_remap_alg = 1
-    internal_diagnostics_level = 0
     planar_slice = .false.
 
     theta_hydrostatic_mode = .true.    ! for preqx, this must be .true.
@@ -576,20 +571,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
            test_case(1:13)== "jw_baroclinic"  .or. &
            test_case(1:5) == "dcmip"          .or. &
            test_case(1:5) == "mtest"          .or. &
-           test_case      == "planar_hydro_gravity_wave"            .or. &
-           test_case      == "planar_nonhydro_gravity_wave"           .or. &
-           test_case      == "planar_hydro_mtn_wave"            .or. &
-           test_case      == "planar_nonhydro_mtn_wave"           .or. &
-           test_case      == "planar_schar_mtn_wave"            .or. &
-           test_case      == "planar_rising_bubble"             .or. &
-           test_case      == "planar_rising_bubble_pg2"         .or. &
-           test_case      == "planar_density_current"             .or. &
-           test_case      == "planar_baroclinic_instab"             .or. &
-           test_case      == "planar_moist_rising_bubble"            .or. &
-           test_case      == "planar_moist_density_current"            .or. &
-           test_case      == "planar_moist_baroclinic_instab"            .or. &
-           test_case      == "planar_tropical_cyclone"             .or. &
-           test_case      == "planar_supercell"             .or. &
+           test_case(1:6) == "planar"         .or. &
            test_case(1:4) == "asp_")  then
          write(iulog,*) "reading vertical namelist..."
 

@@ -9,7 +9,7 @@ initial_conditions:
   V: [2.0, 3.0]
   Z: "A"
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [dummy1, dummy2, dummy3]
   schedule_type: sequential
 
@@ -31,6 +31,7 @@ grids_manager:
   grids_names: ["point_grid"]
   point_grid:
     type: point_grid
+    aliases: ["physics"]
     number_of_global_columns: 24
     number_of_vertical_levels: 3
 ...

@@ -11,14 +11,9 @@ MACRO(THETAL_KOKKOS_SETUP)
   SET(TEST_SRC_DIR      ${HOMME_SOURCE_DIR}/src/test_src)
   SET(ARKODE_DIR        ${HOMME_SOURCE_DIR}/src/arkode)
 
-  SET(UTILS_TIMING_SRC_DIR  ${HOMME_SOURCE_DIR}/utils/cime/CIME/non_py/src/timing)
-  SET(UTILS_TIMING_DIR      ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
-
   # Make INCLUDE_DIRS global so the tests can access it
   SET (EXEC_LIB_INCLUDE_DIRS
     ${TARGET_DIR}/cxx
-    ${UTILS_TIMING_SRC_DIR}
-    ${UTILS_TIMING_DIR}
     ${SRC_SHARE_DIR}/cxx
     ${SRC_SHARE_DIR}/compose
     ${HOMME_BINARY_DIR}/src/share/cxx
@@ -35,9 +30,6 @@ MACRO(THETAL_KOKKOS_SETUP)
   # Find F90 files in share and test directories
   # TODO: share files among different theta folders
   SET (TARGET_F90
-    ${THETA_SHARE_DIR}/bndry_mod.F90
-    ${THETA_SHARE_DIR}/derivative_mod.F90
-    ${THETA_SHARE_DIR}/edge_mod.F90
     ${THETA_SHARE_DIR}/element_ops.F90
     ${THETA_SHARE_DIR}/eos.F90
     ${THETA_SHARE_DIR}/model_init_mod.F90
@@ -54,19 +46,19 @@ MACRO(THETAL_KOKKOS_SETUP)
   )
 
   SET (SRC_SHARE_F90
-    ${SRC_SHARE_DIR}/bndry_mod_base.F90
+    ${SRC_SHARE_DIR}/bndry_mod.F90
     ${SRC_SHARE_DIR}/cg_mod.F90
     ${SRC_SHARE_DIR}/compose_mod.F90
     ${SRC_SHARE_DIR}/compose_test_mod.F90
     ${SRC_SHARE_DIR}/coordinate_systems_mod.F90
     ${SRC_SHARE_DIR}/control_mod.F90
     ${SRC_SHARE_DIR}/cube_mod.F90
-    ${SRC_SHARE_DIR}/derivative_mod_base.F90
+    ${SRC_SHARE_DIR}/derivative_mod.F90
     ${SRC_SHARE_DIR}/dimensions_mod.F90
     ${SRC_SHARE_DIR}/dof_mod.F90
     ${SRC_SHARE_DIR}/domain_mod.F90
     ${SRC_SHARE_DIR}/edgetype_mod.F90
-    ${SRC_SHARE_DIR}/edge_mod_base.F90
+    ${SRC_SHARE_DIR}/edge_mod.F90
     ${SRC_SHARE_DIR}/element_mod.F90
     ${SRC_SHARE_DIR}/gllfvremap_mod.F90
     ${SRC_SHARE_DIR}/gllfvremap_util_mod.F90
@@ -130,6 +122,7 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${TEST_SRC_DIR}/dcmip2016-tropical-cyclone.F90
     ${TEST_SRC_DIR}/held_suarez_mod.F90
     ${TEST_SRC_DIR}/dry_planar.F90
+    ${TEST_SRC_DIR}/planar_transport.F90
     ${TEST_SRC_DIR}/moist_planar.F90
     ${TEST_SRC_DIR}/mtests.F90
   )

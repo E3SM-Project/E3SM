@@ -22,6 +22,9 @@ module elm_cpl_indices
                                   ! (from coupler) - must equal maxpatch_glcmec from namelist
   integer , parameter, private:: glc_nec_max = 100
 
+  integer , parameter, private :: iac_npft_max = 30  ! just for allocation
+  integer , parameter, private :: iac_nharvest_max = 5  ! just for allocation
+  
   ! lnd -> drv (required)
 
   integer, public ::index_l2x_Flrl_rofsur     ! lnd->rtm input liquid surface fluxes
@@ -74,6 +77,11 @@ module elm_cpl_indices
 
   integer, public :: nflds_l2x = 0
 
+  ! IAC coupling
+  integer, public ::index_l2x_Sl_hr(0:iac_npft_max)  = 0
+  integer, public ::index_l2x_Sl_npp(0:iac_npft_max)  = 0
+  integer, public ::index_l2x_Sl_pftwgt(0:iac_npft_max)  = 0
+
   ! drv -> lnd (required)
 
   integer, public ::index_x2l_Sa_z            ! bottom atm level height
@@ -120,6 +128,8 @@ module elm_cpl_indices
   integer, public ::index_x2l_Flrr_deficit    ! rtm->lnd supply deficit
   integer, public ::index_x2l_Sr_h2orof       ! rtm->lnd floodplain inundation volume
   integer, public ::index_x2l_Sr_frac_h2orof  ! rtm->lnd floodplain inundation fraction
+  integer, public ::index_x2l_So_ssh          ! ocn->lnd sea surface height
+  integer, public ::index_x2l_So_frac_h2oocn  ! ocn->lnd coastal inundation fraction
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
   integer, public ::index_x2l_Sg_frac(0:glc_nec_max)   = 0   ! Fraction of glacier from glc model
@@ -128,7 +138,12 @@ module elm_cpl_indices
   
   integer, public ::index_x2l_Sg_icemask
   integer, public ::index_x2l_Sg_icemask_coupled_fluxes
-  
+
+  ! IAC -> lnd
+  integer, public ::index_x2l_Sz_pct_pft(0:iac_npft_max)  = 0
+  integer, public ::index_x2l_Sz_pct_pft_prev(0:iac_npft_max)  = 0 
+  integer, public ::index_x2l_Sz_harvest_frac(0:iac_nharvest_max)  = 0
+ 
   integer, public :: nflds_x2l = 0
 
   !-----------------------------------------------------------------------
@@ -144,13 +159,14 @@ contains
     !
     ! !USES:
     use seq_flds_mod   , only: seq_flds_x2l_fields, seq_flds_l2x_fields,       &
-                               lnd_rof_two_way, rof_sed
+                               lnd_rof_two_way, ocn_lnd_one_way, rof_sed
     use mct_mod        , only: mct_aVect, mct_aVect_init, mct_avect_indexra
     use mct_mod        , only: mct_aVect_clean, mct_avect_nRattr
     use seq_drydep_mod , only: drydep_fields_token, lnd_drydep
     use shr_megan_mod  , only: shr_megan_fields_token, shr_megan_mechcomps_n
     use shr_fan_mod    , only: shr_fan_fields_token, shr_fan_to_atm
-    use elm_varctl     , only: use_voc
+    use elm_varctl     , only: use_voc, iac_present
+    use elm_varpar     , only: iac_npft, iac_nharvest
     !
     ! !ARGUMENTS:
     implicit none
@@ -162,8 +178,8 @@ contains
     ! !LOCAL VARIABLES:
     type(mct_aVect)   :: l2x      ! temporary, land to coupler
     type(mct_aVect)   :: x2l      ! temporary, coupler to land
-    integer           :: num 
-    character(len= 2) :: cnum
+    integer           :: num, p
+    character(len= 2) :: cnum, cpft
     character(len=64) :: name
     character(len=32) :: subname = 'elm_cpl_indices_set'  ! subroutine name
     !-----------------------------------------------------------------------
@@ -301,6 +317,10 @@ contains
        index_x2l_Sr_h2orof     = mct_avect_indexra(x2l,'Sr_h2orof')
        index_x2l_Sr_frac_h2orof= mct_avect_indexra(x2l,'Sr_frac_h2orof')
     endif
+    if (ocn_lnd_one_way) then
+       index_x2l_So_ssh        = mct_avect_indexra(x2l,'So_ssh')
+       index_x2l_So_frac_h2oocn= mct_avect_indexra(x2l,'So_frac_h2oocn')
+    endif
 
     !-------------------------------------------------------------
     ! glc coupling
@@ -346,6 +366,32 @@ contains
           index_l2x_Flgl_qice(num) = mct_avect_indexra(l2x,trim(name))
        end do
     end if
+
+    !---------------------------------
+    ! IAC coupling
+    !---------------------------------
+
+    if (iac_present) then
+      do p = 0,iac_npft-1
+          write(cpft,'(I0)') p
+         cpft=trim(cpft)
+         index_l2x_Sl_hr(p) = mct_avect_indexra(l2x,trim('Sl_hr_pft' // cpft))
+         index_l2x_Sl_npp(p) = mct_avect_indexra(l2x,trim('Sl_npp_pft' // cpft))
+         index_l2x_Sl_pftwgt(p) = mct_avect_indexra(l2x,trim('Sl_pftwgt_pft' // cpft))
+       
+         ! iac pfts to land
+         name = 'Sz_pct_pft' // cpft
+         index_x2l_Sz_pct_pft(p) = mct_avect_indexra(x2l,trim(name))
+         name = 'Sz_pct_pft_prev' // cpft
+         index_x2l_Sz_pct_pft_prev(p) = mct_avect_indexra(x2l,trim(name))
+
+         ! iac harvest to land
+         if (p < iac_nharvest) then
+            name = 'Sz_harvest_frac' // cpft
+            index_x2l_Sz_harvest_frac(p) = mct_avect_indexra(x2l,trim(name))
+         end if
+      enddo
+    endif
 
     call mct_aVect_clean(x2l)
     call mct_aVect_clean(l2x)

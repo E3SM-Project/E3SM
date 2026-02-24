@@ -3,15 +3,17 @@
 #include "control/atmosphere_driver.hpp"
 #include "control/atmosphere_surface_coupling_importer.hpp"
 #include "control/atmosphere_surface_coupling_exporter.hpp"
-#include "diagnostics/register_diagnostics.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/field/field_manager.hpp"
+#include "share/diagnostics/register_diagnostics.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/eamxx_types.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_types.hpp"
 
-#include <ekat/ekat_parse_yaml_file.hpp>
-#include <ekat/util/ekat_test_utils.hpp>
+#include <ekat_yaml.hpp>
+#include <ekat_view_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 #include <iomanip>
 
@@ -20,7 +22,6 @@ namespace scream {
 using vos_type = std::vector<std::string>;
 using vor_type = std::vector<Real>;
 constexpr Real test_tol = std::numeric_limits<Real>::epsilon()*1e4;
-constexpr Real FillValue = -99999.0;
 
 // Test function for prescribed values
 Real test_func(const int col, const int t) {
@@ -91,8 +92,6 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   om_pl.set("filename_prefix",std::string("surface_coupling_forcing"));
   om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", std::string("INSTANT"));
-  om_pl.set("max_snapshots_per_file",2);
-  om_pl.set<double>("fill_value",FillValue);
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",std::string("nsteps"));
   ctrl_pl.set("frequency",1);
@@ -260,24 +259,24 @@ void test_imports(const FieldManager& fm,
 
     // The following are only imported during run phase. If this test is called
     // during initialization, all values should be the default value.
-    // TODO: Why are some of these FillValue and others are 0.0?  For the former,
-    // they are gathered from output it seems, so they take the FillValue.  While
-    // the few ones with 0.0 seem to take there initial value from the field initialization
-    // which is 0.0 I believe.  Still, based on the comment none of these should be read in
-    // yet right?
     if (called_directly_after_init) {
-      EKAT_REQUIRE(sfc_alb_dir_vis(i)  == FillValue);
-      EKAT_REQUIRE(sfc_alb_dir_nir(i)  == FillValue);
-      EKAT_REQUIRE(sfc_alb_dif_vis(i)  == FillValue);
-      EKAT_REQUIRE(sfc_alb_dif_nir(i)  == FillValue);
+      // Right now, FieldManager allocates fields without setting a special value
+      // for uninitialized, so it just gets whatever is the default allocation.
+      // If we change what the FM does, we need to change this value.
+      const Real UninitedValue = 0.0;
+
+      EKAT_REQUIRE(sfc_alb_dir_vis(i)  == UninitedValue);
+      EKAT_REQUIRE(sfc_alb_dir_nir(i)  == UninitedValue);
+      EKAT_REQUIRE(sfc_alb_dif_vis(i)  == UninitedValue);
+      EKAT_REQUIRE(sfc_alb_dif_nir(i)  == UninitedValue);
       EKAT_REQUIRE(surf_radiative_T(i) == 0.0);
       EKAT_REQUIRE(T_2m(i)             == 0.0);
       EKAT_REQUIRE(qv_2m(i)            == 0.0);
       EKAT_REQUIRE(wind_speed_10m(i)   == 0.0);
       EKAT_REQUIRE(snow_depth_land(i)  == 0.0);
-      EKAT_REQUIRE(surf_lw_flux_up(i)  == FillValue);
-      EKAT_REQUIRE(ocnfrac(i)          == FillValue);
-      EKAT_REQUIRE(landfrac(i)         == FillValue);
+      EKAT_REQUIRE(surf_lw_flux_up(i)  == UninitedValue);
+      EKAT_REQUIRE(ocnfrac(i)          == UninitedValue);
+      EKAT_REQUIRE(landfrac(i)         == UninitedValue);
     } else {
       EKAT_REQUIRE(sfc_alb_dir_vis(i)  == import_constant_multiple_view(0 )*import_data_view(i, import_cpl_indices_view(0)));
       EKAT_REQUIRE(sfc_alb_dir_nir(i)  == import_constant_multiple_view(1 )*import_data_view(i, import_cpl_indices_view(1)));
@@ -303,8 +302,10 @@ void test_exports(const FieldManager& fm,
                   const int dt,
                   const bool called_directly_after_init = false)
 {
-  using PF = PhysicsFunctions<DefaultDevice>;
-  using PC = physics::Constants<Real>;
+  using PF       = PhysicsFunctions<DefaultDevice>;
+  using PC       = physics::Constants<Real>;
+  using ExeSpace = typename KokkosTypes<DefaultDevice>::ExeSpace;
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
 
   // Some computed fields rely on calculations that are done in the AD.
   // Recompute here and verify that they were exported correctly.
@@ -331,8 +332,7 @@ void test_exports(const FieldManager& fm,
   KokkosTypes<DefaultDevice>::view_1d<Real> Faxa_rainl("Faxa_rainl", ncols);
   KokkosTypes<DefaultDevice>::view_1d<Real> Faxa_snowl("Faxa_snowl", ncols);
 
-  const auto setup_policy =
-      ekat::ExeSpaceUtils<KokkosTypes<DefaultDevice>::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncols, nlevs);
+  const auto setup_policy = TPF::get_thread_range_parallel_scan_team_policy(ncols, nlevs);
   Kokkos::parallel_for(setup_policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KokkosTypes<DefaultDevice>::ExeSpace>::member_type& team) {
     const int i = team.league_rank();
 
@@ -361,13 +361,19 @@ void test_exports(const FieldManager& fm,
     const Real T_int_bot = PF::calculate_surface_air_T(T_mid_i(nlevs-1),z_mid_i(nlevs-1));
 
     Sa_z(i)       = z_mid_i(nlevs-1);
-    Sa_ptem(i)    = PF::calculate_theta_from_T(T_mid_i(nlevs-1), p_mid_i(nlevs-1));
     Sa_dens(i)    = PF::calculate_density(pseudo_density_i(nlevs-1), dz_i(nlevs-1));
     Sa_pslv(i)    = PF::calculate_psl(T_int_bot, p_int_i(nlevs), phis(i));
 
+    // WARNING - THE FOLLOWING IS A HACK
+    // To make the flux calculations within the component coupler consistent with EAM we need to
+    // provide theta based on an exner function that evaluates to 1 at the bottom interface.
+    // To accomplish this we calculate a theta that replaces the reference pressure (P0) for exner
+    // with the pressure of the lowest interface level => p_int_i(nlevs)
+    Sa_ptem(i) = T_mid_i(nlevs-1) / pow( p_mid_i(nlevs-1)/p_int_i(nlevs), PC::RD.value*PC::INV_CP.value);
+
     if (not called_directly_after_init) {
-      Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O);
-      Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O);
+      Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O.value);
+      Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O.value);
     }
   });
 
@@ -456,7 +462,7 @@ TEST_CASE("surface-coupling", "") {
   // Load ad parameter list
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
-  parse_yaml_file(fname,ad_params);
+  ekat::parse_yaml_file(fname,ad_params);
 
   // Parameters
   auto& ts          = ad_params.sublist("time_stepping");
@@ -471,7 +477,7 @@ TEST_CASE("surface-coupling", "") {
   // This requires us to add a sublist to the parsed AD params yaml list.
   std::uniform_real_distribution<Real> pdf_real_constant_data(0.0,1.0);
 
-  auto& ap_params     = ad_params.sublist("atmosphere_processes");
+  auto& ap_params     = ad_params.sublist("eamxx");
   auto& sc_exp_params = ap_params.sublist("surface_coupling_exporter");
   // Set up forcing to a constant value
   const Real Faxa_swndf_const = pdf_real_constant_data(engine);

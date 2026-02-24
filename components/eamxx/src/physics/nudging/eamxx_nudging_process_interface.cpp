@@ -1,13 +1,13 @@
 #include "eamxx_nudging_process_interface.hpp"
 
 #include "share/util/eamxx_universal_constants.hpp"
-#include "share/grid/remap/refining_remapper_p2p.hpp"
+#include "share/remap/refining_remapper_p2p.hpp"
 #include "share/util/eamxx_utils.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
-#include <ekat/util/ekat_lin_interp.hpp>
-#include <ekat/util/ekat_math_utils.hpp>
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <ekat_lin_interp.hpp>
+#include <ekat_math_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream
 {
@@ -55,11 +55,11 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
 }
 
 // =========================================================================================
-void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void Nudging::create_requests()
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
@@ -114,7 +114,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   if (num_cols_src != num_cols_global) {
     // If differing cols, check if remap file is provided
     EKAT_REQUIRE_MSG(m_refine_remap_file != "no-file-given",
-                     "Error! Nudging::set_grids - the number of columns in the nudging data file "
+                     "Error! Nudging::create_requests - the number of columns in the nudging data file "
                      << std::to_string(num_cols_src) << " does not match the number of columns in the "
                      << "model grid " << std::to_string(num_cols_global) << ".  Please check the "
                      << "nudging data file and/or the model grid.");
@@ -124,17 +124,17 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     int num_cols_remap_b = scorpio::get_dimlen(m_refine_remap_file,"n_b");
     // Then, check if n_a (source) and n_b (target) are consistent
     EKAT_REQUIRE_MSG(num_cols_remap_a == num_cols_src,
-                     "Error! Nudging::set_grids - the number of columns in the nudging data file "
+                     "Error! Nudging::create_requests - the number of columns in the nudging data file "
                      << std::to_string(num_cols_src) << " does not match the number of columns in the "
                      << "mapfile " << std::to_string(num_cols_remap_a) << ".  Please check the "
                      << "nudging data file and/or the mapfile.");
     EKAT_REQUIRE_MSG(num_cols_remap_b == num_cols_global,
-                     "Error! Nudging::set_grids - the number of columns in the model grid "
+                     "Error! Nudging::create_requests - the number of columns in the model grid "
                      << std::to_string(num_cols_global) << " does not match the number of columns in the "
                      << "mapfile " << std::to_string(num_cols_remap_b) << ".  Please check the "
                      << "model grid and/or the mapfile.");
     EKAT_REQUIRE_MSG(m_use_weights == false,
-                     "Error! Nudging::set_grids - it seems that the user intends to use both nuding "
+                     "Error! Nudging::create_requests - it seems that the user intends to use both nuding "
                      << "from coarse data as well as weighted nudging simultaneously. This is not supported. "
                      << "If the user wants to use both at their own risk, the user should edit the source code "
                      << "by deleting this error message.");
@@ -145,7 +145,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     // but print a warning if the user provided a mapfile
     if (m_refine_remap_file != "no-file-given") {
       m_atm_logger->warn(
-           "[Nudging::set_grids] Warning! Map file provided, but it is not needed.\n"
+           "[Nudging::create_requests] Warning! Map file provided, but it is not needed.\n"
            "  - num cols in nudging data file: " + std::to_string(num_cols_src) + "\n"
            "  - num cols in model grid       : " + std::to_string(num_cols_global) + "\n"
            " Please, make sure the nudging data file and/or model grid are correct.\n"
@@ -154,7 +154,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     // If the user gives us the vertical cutoff, warn them
     if (m_refine_remap_vert_cutoff > 0.0) {
       m_atm_logger->warn(
-          "[Nudging::set_grids] Warning! Non-zero vertical cutoff provided, but it is not needed\n"
+          "[Nudging::create_requests] Warning! Non-zero vertical cutoff provided, but it is not needed\n"
           " - vertical cutoff: " + std::to_string(m_refine_remap_vert_cutoff) + "\n"
           " Please, check your settings. This parameter is only needed if we are remapping.");
     }
@@ -322,7 +322,7 @@ void Nudging::run_impl (const double dt)
   using KT            = KokkosTypes<DefaultDevice>;
   using RangePolicy   = typename KT::RangePolicy;
   using MemberType    = typename KT::MemberType;
-  using ESU           = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF           = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
   using PackT         = ekat::Pack<Real,1>;
   using view_1d       = KT::view_1d<PackT>;
   using view_2d       = KT::view_2d<PackT>;
@@ -344,21 +344,17 @@ void Nudging::run_impl (const double dt)
     const auto fl = f.get_header().get_identifier().get_layout();
     const auto v  = f.get_view<Real**>();
 
-    Real var_fill_value = constants::DefaultFillValue<Real>().value;
-    // Query the helper field for the fill value, if not present use default
-    if (f.get_header().has_extra_data("mask_value")) {
-      var_fill_value = f.get_header().get_extra_data<Real>("mask_value");
-    }
+    constexpr Real fill_value = constants::fill_value<Real>;
 
     const int ncols = fl.dim(0);
     const int nlevs = fl.dim(1);
-    const auto thresh = std::abs(var_fill_value)*0.0001;
+    const auto thresh = std::abs(fill_value)*0.0001;
     auto lambda = KOKKOS_LAMBDA(const int icol) {
       int first_good = nlevs;
       int last_good = -1;
       for (int k=0; k<nlevs; ++k) {
-        if (std::abs(v(icol,k)-var_fill_value)>thresh) {
-          // This entry is substantially different from var_fill_value, so it's good
+        if (std::abs(v(icol,k)-fill_value)>thresh) {
+          // This entry is substantially different from fill_value, so it's good
           first_good = ekat::impl::min(first_good,k);
           last_good  = ekat::impl::max(last_good,k);
         }
@@ -437,7 +433,7 @@ void Nudging::run_impl (const double dt)
       });
     };
 
-    auto policy = ESU::get_default_team_policy(ncols,nlevs_src);
+    auto policy = TPF::get_default_team_policy(ncols,nlevs_src);
     Kokkos::parallel_for("", policy, copy_3d);
   };
 
@@ -476,7 +472,7 @@ void Nudging::run_impl (const double dt)
   using LI = ekat::LinInterp<Real,1>;
   const int nlevs_tgt = m_num_levs;
   LI vert_interp(ncols,nlevs_src+2,nlevs_tgt);
-  const auto policy_vinterp = ESU::get_default_team_policy(ncols, nlevs_tgt);
+  const auto policy_vinterp = TPF::get_default_team_policy(ncols, nlevs_tgt);
   auto p_tgt = get_field_in("p_mid").get_view<const PackT**>();
   Kokkos::parallel_for("nudging_vert_interp_setup_loop", policy_vinterp,
     KOKKOS_LAMBDA(const MemberType& team) {
@@ -552,7 +548,7 @@ Field Nudging::create_helper_field (const std::string& name,
   Field f(id);
   f.get_header().get_alloc_properties().request_allocation(ps);
   f.allocate_view();
-  f.deep_copy(ekat::ScalarTraits<Real>::invalid());
+  f.deep_copy(ekat::invalid<Real>());
 
   m_helper_fields[name] = f;
   return m_helper_fields[name];

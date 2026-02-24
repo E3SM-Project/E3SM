@@ -36,7 +36,7 @@ module sl_advection
   integer :: dep_points_ndim
 
   ! For use in make_positive. Set at initialization to a function of hvcoord%dp0.
-  real(kind=real_kind) :: dp_tol, deta_tol
+  real(kind=real_kind) :: dp_tol, deta_tol, db_deta(nlevp)
 
   public :: prim_advec_tracers_observe_velocity_ALE, prim_advec_tracers_remap_ALE, &
        &    sl_init1, sl_vertically_remap_tracers, sl_unittest
@@ -54,8 +54,8 @@ module sl_advection
   real(kind=real_kind), dimension(:,:,:,:,:), allocatable :: minq, maxq  ! (np,np,nlev,qsize,nelemd)
 
   ! Trajectory velocity data.
-  real(kind=real_kind), dimension(:,:,:,:,:), allocatable :: vnode, vdep ! (ndim,np,np,nlev,nelemd)
-  real(kind=real_kind), allocatable :: dep_points_all(:,:,:,:,:)         ! (ndim,np,np,nlev,nelemd)
+  real(kind=real_kind), dimension(:,:,:,:,:), allocatable :: vnode, vdep ! (ndim[+1],np,np,nlev,nelemd)
+  real(kind=real_kind), allocatable :: dep_points_all(:,:,:,:,:)         ! (ndim,    np,np,nlev,nelemd)
 
   type :: velocity_record_t
      integer :: nvel
@@ -116,10 +116,10 @@ contains
 
   subroutine sl_init1(par, elem)
     use interpolate_mod,        only : interpolate_tracers_init
-    use control_mod,            only : transport_alg, semi_lagrange_cdr_alg, cubed_sphere_map, &
-         nu_q, semi_lagrange_hv_q, semi_lagrange_cdr_check, semi_lagrange_trajectory_nsubstep, &
+    use control_mod,            only : transport_alg, semi_lagrange_cdr_alg, &
+         nu_q, semi_lagrange_hv_q, semi_lagrange_trajectory_nsubstep, &
          semi_lagrange_trajectory_nvelocity, geometry, dt_remap_factor, dt_tracer_factor, &
-         semi_lagrange_halo
+         semi_lagrange_halo, semi_lagrange_diagnostics
     use element_state,          only : timelevels
     use coordinate_systems_mod, only : cartesian3D_t
     use perf_mod, only: t_startf, t_stopf
@@ -139,7 +139,9 @@ contains
        is_sphere = trim(geometry) /= 'plane'
        enhanced_trajectory = semi_lagrange_trajectory_nsubstep > 0
        dep_points_ndim = 3
-       if (enhanced_trajectory .and. independent_time_steps) dep_points_ndim = 4
+       if (enhanced_trajectory .and. independent_time_steps) then
+          dep_points_ndim = 4
+       end if
        nslots = nlev*qsize
        do ie = 1, size(elem)
           ! Provide a point inside the target element.
@@ -164,8 +166,8 @@ contains
        allocate(minq(np,np,nlev,qsize,size(elem)), maxq(np,np,nlev,qsize,size(elem)), &
             &   dep_points_all(dep_points_ndim,np,np,nlev,size(elem)))
        if (enhanced_trajectory) then
-          allocate(vnode(dep_points_ndim,np,np,nlev,size(elem)), &
-               &   vdep (dep_points_ndim,np,np,nlev,size(elem)))
+          allocate(vnode(dep_points_ndim,  np,np,nlev,size(elem)), &
+               &   vdep (dep_points_ndim+1,np,np,nlev,size(elem)))
        end if
        call init_velocity_record(size(elem), dt_tracer_factor, dt_remap_factor, &
             semi_lagrange_trajectory_nsubstep, semi_lagrange_trajectory_nvelocity, &
@@ -181,7 +183,7 @@ contains
              write(iulog,'(a,i3,i3,i3)') &
                   'COMPOSE> dt_tracer_factor, dt_remap_factor, halo:', &
                   dt_tracer_factor, dt_remap_factor, semi_lagrange_halo
-             write(iulog,'(a,i3,i3)') &
+             write(iulog,'(a,i3,i3,i3)') &
                   'COMPOSE> use enhanced trajectory; nsub, nvel:', &
                   semi_lagrange_trajectory_nsubstep, vrec%nvel
           end if
@@ -192,14 +194,15 @@ contains
   end subroutine sl_init1
 
   subroutine sl_get_params(nu_q_out, hv_scaling, hv_q, hv_subcycle_q, limiter_option_out, &
-       cdr_check, geometry_type, trajectory_nsubstep) bind(c)
+       cdr_check, geometry_type, trajectory_nsubstep, trajectory_nvelocity, diagnostics) bind(c)
     use control_mod, only: semi_lagrange_hv_q, hypervis_subcycle_q, semi_lagrange_cdr_check, &
-         nu_q, hypervis_scaling, limiter_option, geometry, semi_lagrange_trajectory_nsubstep
+         nu_q, hypervis_scaling, limiter_option, geometry, semi_lagrange_trajectory_nsubstep, &
+         semi_lagrange_trajectory_nvelocity, semi_lagrange_diagnostics
     use iso_c_binding, only: c_int, c_double
 
     real(c_double), intent(out) :: nu_q_out, hv_scaling
     integer(c_int), intent(out) :: hv_q, hv_subcycle_q, limiter_option_out, cdr_check, &
-         geometry_type, trajectory_nsubstep
+         geometry_type, trajectory_nsubstep, trajectory_nvelocity, diagnostics
 
     nu_q_out = nu_q
     hv_scaling = hypervis_scaling
@@ -211,6 +214,8 @@ contains
     geometry_type = 0 ! sphere
     if (trim(geometry) == "plane") geometry_type = 1
     trajectory_nsubstep = semi_lagrange_trajectory_nsubstep
+    trajectory_nvelocity = semi_lagrange_trajectory_nvelocity
+    diagnostics = semi_lagrange_diagnostics
   end subroutine sl_get_params
 
   subroutine init_velocity_record(nelemd, dtf, drf_param, nsub, nvel_param, v, error)
@@ -310,7 +315,7 @@ contains
     integer              , intent(in   ) :: nets
     integer              , intent(in   ) :: nete
 
-    integer :: nstore, islot, slot, k, ie
+    integer :: islot, slot, k, ie
 
     if (vrec%nvel == 2) return
 
@@ -340,7 +345,6 @@ contains
 
   subroutine prim_advec_tracers_remap_ALE(elem, deriv, hvcoord, hybrid, dt, tl, nets, nete)
     use coordinate_systems_mod, only : cartesian3D_t, cartesian2D_t
-    use dimensions_mod,         only : max_neigh_edges
     use interpolate_mod,        only : interpolate_tracers, minmax_tracers
     use control_mod,            only : dt_tracer_factor, nu_q, transport_alg, semi_lagrange_hv_q, &
          semi_lagrange_cdr_alg, semi_lagrange_cdr_check, semi_lagrange_trajectory_nsubstep
@@ -359,7 +363,7 @@ contains
     integer              , intent(in   ) :: nets
     integer              , intent(in   ) :: nete
 
-    integer :: i,j,k,l,n,q,ie,n0_qdp,np1_qdp
+    integer :: k,n,q,ie,n0_qdp,np1_qdp
     integer :: scalar_q_bounds, info
     logical :: slmm, cisl, qos, sl_test, independent_time_steps
     logical(kind=c_bool) :: h2d, d2h
@@ -693,7 +697,7 @@ contains
     real (kind=real_kind)   ,intent(in)   :: dt
     logical                 ,intent(in)   :: normalize
 
-    integer                               :: i,j, d
+    integer                               :: i,j
     type (cartesian3D_t)                  :: c3d
     real (kind=real_kind)                 :: uxyz (np,np,3), norm
 
@@ -800,7 +804,7 @@ contains
     use derivative_mod , only : derivative_t
     use bndry_mod      , only : bndry_exchangev
     use perf_mod       , only : t_startf, t_stopf                          ! _EXTERNAL
-    use control_mod    , only : nu_q, nu_p, hypervis_subcycle_q
+    use control_mod    , only : nu_q, hypervis_subcycle_q
     implicit none
     type (element_t)     , intent(inout), target :: elem(:)
     type (hvcoord_t)     , intent(in   )         :: hvcoord
@@ -815,7 +819,6 @@ contains
 
     ! local
     real (kind=real_kind), dimension(np,np,nlev,nq,nets:nete) :: Qtens
-    real (kind=real_kind), dimension(np,np,nlev             ) :: dp
     real (kind=real_kind) :: dt
     integer :: k , ie , ic , q
 
@@ -897,7 +900,7 @@ contains
     type (derivative_t)  , intent(in) :: deriv
 
     ! local
-    integer :: k,kptr,i,j,ie,ic,q
+    integer :: k,ie,q
     real (kind=real_kind), dimension(np,np) :: lap_p
     logical var_coef1
 
@@ -1001,10 +1004,10 @@ contains
     ! sign. Note also that a straightforward first-order accurate formula is
     !     z(x0,t1) = z0 + dt w(p0,th) + O(dt^2).
 
-    use control_mod, only: dt_remap_factor
     use derivative_mod, only: derivative_t, gradient_sphere
+#if 0
     use kinds, only: iulog
-
+#endif
     type (hybrid_t), intent(in) :: hybrid
     type (element_t), intent(in) :: elem
     integer, intent(in) :: ie
@@ -1019,7 +1022,7 @@ contains
     real(real_kind), dimension(np,np) :: dps, ptp0, v1, v2, divdp
     real(real_kind), dimension(np,np,2) :: grad, vdp
     real(real_kind) :: dp_neg_min
-    integer :: i, j, k, k1, k2, d, t
+    integer :: k, k1, k2, d, t
 
 #ifndef NDEBUG
     if (abs(hvcoord%hybi(1)) > 10*eps .or. hvcoord%hyai(nlevp) > 10*eps) then
@@ -1217,7 +1220,7 @@ contains
     real(kind=real_kind), intent(in) :: dt_q
     type (TimeLevel_t), intent(in) :: tl
 
-    integer :: ie, i, j, k, q, n0_qdp, np1_qdp
+    integer :: ie, i, j, q, n0_qdp, np1_qdp
 
     call t_startf('SLMM vertical remap')
     call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
@@ -1254,7 +1257,7 @@ contains
     real(rt), parameter :: xs(3) = (/-one, zero, half/)
     integer, parameter :: n = 3, ntrial = 10
 
-    real(rt) :: a, b, c, x, y1, y2, alpha, ys(3), xsi(np,np,n), ysi(np,np,n), &
+    real(rt) :: a, b, c, x, y1, alpha, ys(3), xsi(np,np,n), ysi(np,np,n), &
          xi(np,np), y2i(np,np)
     integer :: i, j, trial, nerr
 
@@ -1345,12 +1348,18 @@ contains
     logical, intent(in) :: independent_time_steps
 
 #ifdef HOMME_ENABLE_COMPOSE
-    integer :: step, ie, info, limiter_active_count
-    real(real_kind) :: alpha(2), dtsub
+    integer :: step, ie, info, limiter_active_count, k, i, j
+    real(real_kind) :: alpha(2), dtsub, a, p(3)
+    real(real_kind), allocatable :: ptmp(:,:,:,:,:), vtmp(:,:,:,:,:)
 
     call t_startf('SLMM_trajectory')
 
-    call slmm_set_hvcoord(hvcoord%etai(1), hvcoord%etai(nlevp), hvcoord%etam)
+    if (deta_tol < 0) then
+       ! Benign write race. Constants are only written, and at least one thread
+       ! must enter this block.
+       call init_constants(hvcoord)
+    end if
+    call slmm_set_hvcoord(hvcoord%etai, hvcoord%etam)
 
     ! Set dep_points_all to level-midpoint arrival points.
     call init_dep_points_all(elem, hvcoord, nets, nete, independent_time_steps)
@@ -1380,8 +1389,21 @@ contains
           call update_dep_points_all(independent_time_steps, dtsub, nets, nete, vnode)
        else
           ! Fill vdep.
-          call slmm_calc_v_departure(nets, nete, step, dtsub, dep_points_all, &
-               &                     dep_points_ndim, vnode, vdep, info)
+          call slmm_interp_v_update(nets, nete, step, dtsub, dep_points_all, &
+               &                    dep_points_ndim, vnode, vdep, info)
+
+          ! Interpolate eta_dot at interfaces. The support data are not midpoint
+          ! data, though; rather, they're interface data collected at different
+          ! horizontal points. Thus, to be clear, this is not
+          ! midpoint-to-interface interpolation of eta_dot.
+          do ie = nets, nete
+             do k = 2,nlev
+                a =  (hvcoord%etai(k) - hvcoord%etam(k-1)) / &
+                     (hvcoord%etam(k) - hvcoord%etam(k-1))
+                vdep(4,:,:,k,ie) = (1-a)*vdep(5,:,:,k-1,ie) + &
+                     &                a *vdep(4,:,:,k  ,ie)
+             end do
+          end do
 
           ! Using vdep, update dep_points_all to departure points.
           call update_dep_points_all(independent_time_steps, dtsub, nets, nete, vdep)
@@ -1396,8 +1418,8 @@ contains
        if (iand(semi_lagrange_diagnostics, 1) /= 0) then
           limiter_active_count = ParallelSum(limiter_active_count, hybrid)
           if (limiter_active_count > 0 .and. hybrid%masterthread) then
-             write(iulog, '(a,i11)') 'COMPOSE> limiter_active_count', &
-                  limiter_active_count
+             write(iulog, '(a,i11,i11)') 'COMPOSE> nstep, limiter_active_count:', &
+                  tl%nstep, limiter_active_count
           end if
        end if
     end if
@@ -1428,8 +1450,9 @@ contains
                 dep_points_all(1:3,i,j,k,ie) = dep_points_all(1:3,i,j,1,ie)
              end do
              if (independent_time_steps) then
+                ! hvcoord%etai(k), k = 1 and nlevp, are not used.
                 do k = 1, nlev
-                   dep_points_all(4,i,j,k,ie) = hvcoord%etam(k)
+                   dep_points_all(4,i,j,k,ie) = hvcoord%etai(k)
                 end do
              end if
           end do
@@ -1512,8 +1535,8 @@ contains
     integer :: t
 
     if (independent_time_steps) then
-       call calc_eta_dot_ref_mid(elem, deriv, tl, hvcoord, alpha, &
-            &                    v1, dp1, v2, dp2, eta_dot)
+       call calc_eta_dot_ref(elem, deriv, tl, hvcoord, alpha, &
+            &                v1, dp1, v2, dp2, eta_dot)
     else
        eta_dot = zero
     end if
@@ -1530,14 +1553,12 @@ contains
     call calc_vel_horiz_formula_node_ref_mid( &
          &  elem, deriv, hvcoord, dtsub, vsph, eta_dot, vnode)
     if (independent_time_steps) then
-       call calc_eta_dot_formula_node_ref_mid( &
+       call calc_eta_dot_formula_node_ref_int( &
             elem, deriv, hvcoord, dtsub, vsph, eta_dot, vnode)
     end if
   end subroutine calc_nodal_velocities
 
-  subroutine calc_eta_dot_ref_mid(elem, deriv, tl, hvcoord, alpha, v1, dp1, v2, dp2, eta_dot)
-    ! Compute eta_dot at midpoint nodes at the start and end of the substep.
-
+  subroutine calc_eta_dot_ref(elem, deriv, tl, hvcoord, alpha, v1, dp1, v2, dp2, eta_dot)
     type (element_t), intent(in) :: elem
     type (derivative_t), intent(in) :: deriv
     type (TimeLevel_t), intent(in) :: tl
@@ -1566,22 +1587,20 @@ contains
        do k = 2,nlev
           eta_dot(:,:,k,t) = hvcoord%hybi(k)*w1 - eta_dot(:,:,k,t)
        end do
-       ! Transform eta_dot_dpdn at interfaces to eta_dot at midpoints using the
-       ! formula
-       !     eta_dot = eta_dot_dpdn/(A_eta p0 + B_eta ps)
-       !            a= eta_dot_dpdn diff(eta)/(diff(A) p0 + diff(B) ps).
-       !   Compute ps.
+       ! Compute ps.
        w1 = hvcoord%hyai(1)*hvcoord%ps0 + &
             &    (1 - alpha(t))*sum(dp1, 3) + &
             &         alpha(t) *sum(dp2, 3)
-       do k = 1,nlev
-          eta_dot(:,:,k,t) = half*(eta_dot(:,:,k,t) + eta_dot(:,:,k+1,t)) &
-               &             * (hvcoord%etai(k+1) - hvcoord%etai(k)) &
-               &             / (  (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 &
-               &                + (hvcoord%hybi(k+1) - hvcoord%hybi(k))*w1)
+       ! Transform eta_dot_dpdn at interfaces to eta_dot at midpoints using the
+       ! formula
+       !     eta_dot = eta_dot_dpdn/(A_eta p0 + B_eta ps).
+       ! Use p_eta = A_eta p0 + B_eta ps = p0 + B_eta (ps - p0).
+       do k = 2,nlev
+          eta_dot(:,:,k,t) = eta_dot(:,:,k,t) / &
+               &             (hvcoord%ps0 + db_deta(k)*(w1 - hvcoord%ps0))
        end do
     end do
-  end subroutine calc_eta_dot_ref_mid
+  end subroutine calc_eta_dot_ref
 
   subroutine calc_vel_horiz_formula_node_ref_mid( &
        elem, deriv, hvcoord, dtsub, vsph, eta_dot, vnode)
@@ -1618,7 +1637,8 @@ contains
              w2 = hvcoord%etam(k) ! derivative at this eta value
              call eval_lagrange_poly_derivative(3, w3, vsph(:,:,d,k-1:k+1,t0), w2, w1)
           end if
-          vfsph(:,:,d) = vfsph(:,:,d) - dtsub*eta_dot(:,:,k,t1)*w1
+          vfsph(:,:,d) = vfsph(:,:,d) - &
+               dtsub*half*(eta_dot(:,:,k,t1) + eta_dot(:,:,k+1,t1))*w1
        end do
        ! Finish the formula.
        vfsph = half*vfsph
@@ -1629,7 +1649,7 @@ contains
     end do
   end subroutine calc_vel_horiz_formula_node_ref_mid
 
-  subroutine calc_eta_dot_formula_node_ref_mid( &
+  subroutine calc_eta_dot_formula_node_ref_int( &
        elem, deriv, hvcoord, dtsub, vsph, eta_dot, vnode)
 
     type (element_t), intent(in) :: elem
@@ -1640,43 +1660,28 @@ contains
 
     integer, parameter :: t0 = 1, t1 = 2
     
-    real(real_kind) :: vfsph(np,np,2), w1(np,np), w2(np,np), w3(np,np,3), w4(np,np,3)
-    integer :: k, d, i, k1, k2
+    real(real_kind) :: w1(np,np), w2(np,np), w3(np,np,3), w4(np,np,2), a
+    integer :: k, i, k1, k2
 
-    do k = 1, nlev
-       w2 = hvcoord%etam(k)
-       if (k == 1 .or. k == nlev) then
-          if (k == 1) then
-             w3(:,:,1) = hvcoord%etai(1)
-             w4(:,:,1) = zero
-             do i = 1, 2
-                w3(:,:,i+1) = hvcoord%etam(i)
-                w4(:,:,i+1) = eta_dot(:,:,i,t0)
-             end do
-          else
-             do i = 1, 2
-                w3(:,:,i) = hvcoord%etam(nlev-2+i)
-                w4(:,:,i) = eta_dot(:,:,nlev-2+i,t0)
-             end do
-             w3(:,:,3) = hvcoord%etai(nlevp)
-             w4(:,:,3) = zero
-          end if
-          call eval_lagrange_poly_derivative(3, w3, w4, w2, w1)
-       else
-          k1 = k-1
-          k2 = k+1
-          do i = 1, 3
-             w3(:,:,i) = hvcoord%etam(k1-1+i)
-          end do
-          call eval_lagrange_poly_derivative(k2-k1+1, w3, eta_dot(:,:,k1:k2,t0), w2, w1)
-       end if
+    vnode(4,:,:,1) = zero
+    do k = 2, nlev
+       w2 = hvcoord%etai(k)
+       k1 = k-1
+       k2 = k+1
+       do i = 1, 3
+          w3(:,:,i) = hvcoord%etai(k1-1+i)
+       end do
+       call eval_lagrange_poly_derivative(3, w3, eta_dot(:,:,k1:k2,t0), w2, w1)
        w3(:,:,1:2) = gradient_sphere(eta_dot(:,:,k,t0), deriv, elem%Dinv)
+       ! Linearly interp horiz velocity to interfaces.
+       a = (hvcoord%etai(k) - hvcoord%etam(k-1)) / (hvcoord%etam(k) - hvcoord%etam(k-1))
+       w4 = (1 - a)*vsph(:,:,:,k-1,t1) + a*vsph(:,:,:,k,t1)
        vnode(4,:,:,k) = &
             half*(eta_dot(:,:,k,t0) + eta_dot(:,:,k,t1) &
-            &     - dtsub*(vsph(:,:,1,k,t1)*w3(:,:,1) + vsph(:,:,2,k,t1)*w3(:,:,2) &
+            &     - dtsub*(w4(:,:,1)*w3(:,:,1) + w4(:,:,2)*w3(:,:,2) &
             &              + eta_dot(:,:,k,t1)*w1))
     end do
-  end subroutine calc_eta_dot_formula_node_ref_mid
+  end subroutine calc_eta_dot_formula_node_ref_int
 
   subroutine update_dep_points_all(independent_time_steps, dtsub, nets, nete, vdep)
     ! Determine the departure points corresponding to the reference grid's
@@ -1689,7 +1694,7 @@ contains
     integer, intent(in) :: nets, nete
     real(real_kind), intent(in) :: vdep(:,:,:,:,:)
 
-    real(real_kind) :: norm, p(3)
+    real(real_kind) :: norm, p(3), eta_dot_kp1
     integer :: ie, k, j, i
 
     do ie = nets, nete
@@ -1730,34 +1735,37 @@ contains
     real(real_kind), intent(inout) :: dep_points_all(:,:,:,:,:)
     integer, intent(inout) :: limcnt
 
-    real(real_kind) :: deta_ref(nlevp), w1(np,np), v1(np,np,nlev), &
-         &             v2(np,np,nlevp), p(3)
+    real(real_kind) :: detam_ref(nlevp), detai_ref(nlev), w1(np,np), &
+         &             v1(np,np,nlev), v2(np,np,nlevp), p(3)
     integer :: ie, i, j, k, d
 
-    call set_deta_tol(hvcoord)
-
-    deta_ref(1) = hvcoord%etam(1) - hvcoord%etai(1)
+    detam_ref(1) = hvcoord%etam(1) - hvcoord%etai(1)
     do k = 2, nlev
-       deta_ref(k) = hvcoord%etam(k) - hvcoord%etam(k-1)
+       detam_ref(k) = hvcoord%etam(k) - hvcoord%etam(k-1)
     end do
-    deta_ref(nlevp) = hvcoord%etai(nlevp) - hvcoord%etam(nlev)
+    detam_ref(nlevp) = hvcoord%etai(nlevp) - hvcoord%etam(nlev)
+    do k = 1, nlev
+       detai_ref(k) = hvcoord%etai(k+1) - hvcoord%etai(k)
+    end do
 
     do ie = nets, nete
        ! Surface pressure.
        w1 = hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,tl%np1), 3)
 
        ! Reconstruct Lagrangian levels at t1 on arrival column:
-       !     eta_arr_int = I[eta_ref_mid([0,eta_dep_mid,1])](eta_ref_int)
-       call limit_etam(hvcoord, deta_ref, dep_points_all(4,:,:,:,ie), v1, limcnt)
+       !     eta_arr_int = I[eta_ref_int(eta_dep_int)](eta_ref_int)
+       call limit_etai(hvcoord, detai_ref, dep_points_all(4,:,:,:,ie), v1, limcnt)
        v2(:,:,1) = hvcoord%etai(1)
        v2(:,:,nlevp) = hvcoord%etai(nlevp)
-       call eta_interp_eta(hvcoord, v1, hvcoord%etam, &
+       call eta_interp_eta(hvcoord, &
+            &              nlevp-2, v1(:,:,2:nlev), hvcoord%etai(2:nlev), &
             &              nlevp-2, hvcoord%etai(2:nlev), v2(:,:,2:nlev))
        call eta_to_dp(hvcoord, w1, v2, elem(ie)%derived%divdp)
 
        ! Compute Lagrangian level midpoints at t1 on arrival column:
-       !     eta_arr_mid = I[eta_ref_mid([0,eta_dep_mid,1])](eta_ref_mid)
-       call eta_interp_eta(hvcoord, v1, hvcoord%etam, &
+       !     eta_arr_mid = I[eta_ref_int(eta_dep_int)](eta_ref_mid)
+       call eta_interp_eta(hvcoord, &
+            &              nlevp-2, v1(:,:,2:nlev), hvcoord%etai(2:nlev), &
             &              nlev, hvcoord%etam, v2(:,:,1:nlev))
        dep_points_all(4,:,:,:,ie) = v2(:,:,1:nlev)
 
@@ -1784,46 +1792,68 @@ contains
     end do
   end subroutine interp_departure_points_to_floating_level_midpoints
 
-  subroutine set_deta_tol(hvcoord)
+  subroutine init_constants(hvcoord)
     type (hvcoord_t), intent(in) :: hvcoord
 
     real(real_kind) :: deta_ave
-    integer :: k
 
     if (deta_tol >= 0) return
 
     ! Benign write race condition. A thread might see eta_tol < 0 and set it
     ! here even as another thread does the same. But because there is no read
-    ! and only one value to write, the redundant writes don't matter.
+    ! and only one value to write, the redundant writes don't matter. At least
+    ! one thread must see eta_tol < 0.
 
     deta_ave = (hvcoord%etai(nlev+1) - hvcoord%etai(1)) / nlev
     deta_tol = 10_real_kind*eps*deta_ave
-  end subroutine set_deta_tol
 
-  subroutine limit_etam(hvcoord, deta_ref, eta, eta_lim, cnt)
+    call estimate_derivative(nlevp, hvcoord%etai, hvcoord%hybi, db_deta)
+  end subroutine init_constants
+
+  subroutine estimate_derivative(n, x, y, y_x)
+    ! Weighted average of the two 1-sided finite differences. In infinite
+    ! precision, the values for indices 2:n-1 are the same as
+    ! eval_lagrange_poly_derivative with three support points.
+    
+    integer, intent(in) :: n
+    real(real_kind), intent(in) :: x(n), y(n)
+    real(real_kind), intent(out) :: y_x(n)
+
+    integer :: k
+    real(real_kind) :: dx1, dx2, a
+
+    y_x(1) = (y(2) - y(1)) / (x(2) - x(1))
+    do k = 2, n-1
+       dx1 = x(k) - x(k-1)
+       dx2 = x(k+1) - x(k)
+       a = dx2/(dx1 + dx2)
+       y_x(k) = a*(y(k) - y(k-1))/dx1 + (1-a)*(y(k+1) - y(k))/dx2
+    end do
+    y_x(n) = (y(n) - y(n-1)) / (x(n) - x(n-1))
+  end subroutine estimate_derivative
+
+  subroutine limit_etai(hvcoord, deta_ref, eta, eta_lim, cnt)
     type (hvcoord_t), intent(in) :: hvcoord
-    real(real_kind), intent(in) :: deta_ref(nlevp), eta(np,np,nlev)
+    real(real_kind), intent(in) :: deta_ref(nlev), eta(np,np,nlev)
     real(real_kind), intent(out) :: eta_lim(np,np,nlev)
     integer, intent(inout) :: cnt
 
-    real(real_kind) :: deta(nlevp)
+    real(real_kind) :: deta(nlev)
     integer :: i, j, k
     logical :: ok
 
     do j = 1, np
        do i = 1, np
-          ! Check nonmonotonicity in eta.
-          ok = eta(i,j,1) - hvcoord%etai(1) >= deta_tol
-          if (ok) then
-             do k = 2, nlev
-                if (eta(i,j,k) - eta(i,j,k-1) < deta_tol) then
-                   ok = .false.
-                   exit
-                end if
-             end do
-             if (ok) then
-                ok = hvcoord%etai(nlevp) - eta(i,j,nlev) >= deta_tol
+          ! Check for nonmonotonicity in eta.
+          ok = .true.
+          do k = 2, nlev
+             if (eta(i,j,k) - eta(i,j,k-1) < deta_tol) then
+                ok = .false.
+                exit
              end if
+          end do
+          if (ok) then
+             ok = hvcoord%etai(nlevp) - eta(i,j,nlev) >= deta_tol
           end if
           ! eta is monotonically increasing, so don't need to do anything
           ! further.
@@ -1832,33 +1862,30 @@ contains
              cycle
           end if
           
-          deta(1) = eta(i,j,1) - hvcoord%etai(1)
-          do k = 2, nlev
-             deta(k) = eta(i,j,k) - eta(i,j,k-1)
+          do k = 1, nlev-1
+             deta(k) = eta(i,j,k+1) - eta(i,j,k)
           end do
-          deta(nlevp) = hvcoord%etai(nlevp) - eta(i,j,nlev)
-          ! [0, etam(1)] and [etam(nlev),1] are half levels, but deta_tol is so
-          ! small there's no reason not to use it as a lower bound for these.
+          deta(nlev) = hvcoord%etai(nlevp) - eta(i,j,nlev)
           cnt = cnt + 1
-          call deta_caas(nlevp, deta_ref, deta_tol, deta)
-          eta_lim(i,j,1) = hvcoord%etai(1) + deta(1)
-          do k = 2, nlev
-             eta_lim(i,j,k) = eta_lim(i,j,k-1) + deta(k)
+          call deta_caas(nlev, deta_ref, deta_tol, deta)
+          eta_lim(i,j,1) = eta(i,j,1)
+          do k = 1, nlev-1
+             eta_lim(i,j,k+1) = eta_lim(i,j,k) + deta(k)
           end do
        end do
     end do
-  end subroutine limit_etam
+  end subroutine limit_etai
 
-  subroutine deta_caas(nlp, deta_ref, lo, deta)
-    integer, intent(in) :: nlp
-    real(real_kind), intent(in) :: deta_ref(nlp), lo
-    real(real_kind), intent(inout) :: deta(nlp)
+  subroutine deta_caas(nl, deta_ref, lo, deta)
+    integer, intent(in) :: nl
+    real(real_kind), intent(in) :: deta_ref(nl), lo
+    real(real_kind), intent(inout) :: deta(nl)
 
-    real(real_kind) :: nerr, w(nlp)
+    real(real_kind) :: nerr, w(nl)
     integer :: k
 
     nerr = zero
-    do k = 1, nlp
+    do k = 1, nl
        if (deta(k) < lo) then
           nerr = nerr + (deta(k) - lo)
           deta(k) = lo
@@ -1909,25 +1936,25 @@ contains
     end do
   end subroutine linterp
 
-  subroutine eta_interp_eta(hvcoord, x, y, ni, xi, yi)
+  subroutine eta_interp_eta(hvcoord, n, x, y, ni, xi, yi)
     type (hvcoord_t), intent(in) :: hvcoord
-    real(real_kind), intent(in) :: x(np,np,nlev), y(nlev)
-    integer, intent(in) :: ni
+    integer, intent(in) :: n, ni
+    real(real_kind), intent(in) :: x(np,np,n), y(n)
     real(real_kind), intent(in) :: xi(ni)
     real(real_kind), intent(out) :: yi(np,np,ni)
 
-    real(real_kind) :: x01(nlev+2), y01(nlev+2)
+    real(real_kind) :: x01(n+2), y01(n+2)
     integer :: i, j
 
     x01(1) = hvcoord%etai(1)
-    x01(nlev+2) = hvcoord%etai(nlevp)
+    x01(n+2) = hvcoord%etai(nlevp)
     y01(1) = hvcoord%etai(1)
-    y01(2:nlev+1) = y
-    y01(nlev+2) = hvcoord%etai(nlevp)
+    y01(2:n+1) = y
+    y01(n+2) = hvcoord%etai(nlevp)
     do j = 1, np
        do i = 1, np
-          x01(2:nlev+1) = x(i,j,:)
-          call linterp(nlev+2, x01, y01, &
+          x01(2:n+1) = x(i,j,:)
+          call linterp(n+2, x01, y01, &
                &       ni, xi, yi(i,j,:), &
                &       'eta_interp_eta')
        end do
@@ -2025,35 +2052,35 @@ contains
 #endif
   end subroutine dss_vnode
 
-  subroutine dss_divdp(elem, nets, nete, hybrid)
-    type (element_t), intent(inout) :: elem(:)
-    type (hybrid_t), intent(in) :: hybrid
-    integer, intent(in) :: nets, nete
+!   subroutine dss_divdp(elem, nets, nete, hybrid)
+!     type (element_t), intent(inout) :: elem(:)
+!     type (hybrid_t), intent(in) :: hybrid
+!     integer, intent(in) :: nets, nete
 
-    integer :: ie, k
+!     integer :: ie, k
 
-    do ie = nets, nete
-       do k = 1, nlev
-          elem(ie)%derived%divdp(:,:,k) = elem(ie)%derived%divdp(:,:,k)* &
-               &                          elem(ie)%spheremp*elem(ie)%rspheremp
-       end do
-       call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%divdp, &
-            &              nlev, 0, nlev)
-    end do
+!     do ie = nets, nete
+!        do k = 1, nlev
+!           elem(ie)%derived%divdp(:,:,k) = elem(ie)%derived%divdp(:,:,k)* &
+!                &                          elem(ie)%spheremp*elem(ie)%rspheremp
+!        end do
+!        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%divdp, &
+!             &              nlev, 0, nlev)
+!     end do
 
-    call t_startf('SLMM_bexchV')
-    call bndry_exchangeV(hybrid, edge_g)
-    call t_stopf('SLMM_bexchV')
+!     call t_startf('SLMM_bexchV')
+!     call bndry_exchangeV(hybrid, edge_g)
+!     call t_stopf('SLMM_bexchV')
 
-    do ie = nets, nete
-       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%divdp, &
-            &                nlev, 0, nlev)
-    end do
+!     do ie = nets, nete
+!        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%divdp, &
+!             &                nlev, 0, nlev)
+!     end do
 
-#if (defined HORIZ_OPENMP)
-    !$omp barrier
-#endif
-  end subroutine dss_divdp
+! #if (defined HORIZ_OPENMP)
+!     !$omp barrier
+! #endif
+!   end subroutine dss_divdp
 
   function assert(b, msg) result(nerr)
     use kinds, only: iulog
@@ -2072,6 +2099,37 @@ contains
     write(iulog,'(a,a)') 'COMPOSE> sl_advection ASSERT: ', trim(s)
     nerr = 1
   end function assert
+
+  function test_estimate_derivative() result (nerr)
+    integer :: nerr
+
+    integer, parameter :: n = 3
+    real(real_kind), parameter :: x(3) = (/ -0.3, 0.1, 1.1 /)
+
+    real(real_kind) :: y(n), y_x_true(n), y_x_est(n)
+
+    integer :: k
+
+    nerr = 0
+
+    ! Linear.
+    do k = 1, n
+       y(k) = -1.2*x(k) + 0.7
+       y_x_true(k) = -1.2
+    end do
+    call estimate_derivative(n, x, y, y_x_est)
+    do k = 1, n
+       if (abs(y_x_est(k) - y_x_true(k)) > 10*eps) nerr = nerr + 1
+    end do
+
+    ! Quadratic.
+    do k = 1, n
+       y(k) = 0.7*x(k)**2 - 1.2*x(k) + 0.7
+       y_x_true(k) = 1.4*x(k) - 1.2
+    end do
+    call estimate_derivative(n, x, y, y_x_est)
+    if (abs(y_x_est(2) - y_x_true(2)) > 10*eps) nerr = nerr + 1
+  end function test_estimate_derivative
 
   function test_linterp() result (nerr)
     integer, parameter :: n = 128, ni = 111
@@ -2347,13 +2405,14 @@ contains
     end subroutine cleanup
   end function test_init_velocity_record
 
-  subroutine sl_unittest(par, hvcoord)
+  subroutine sl_unittest(par, hvcoord, nerr)
     use kinds, only: iulog
 
     type (parallel_t), intent(in) :: par
     type (hvcoord_t), intent(in) :: hvcoord
+    integer, intent(out) :: nerr
 
-    integer :: n(6)
+    integer :: n(7)
 
     n(1) = test_lagrange()
     n(2) = test_reconstruct_and_limit_dp()
@@ -2361,9 +2420,11 @@ contains
     n(4) = test_linterp()
     n(5) = test_eta_to_dp(hvcoord)
     n(6) = test_init_velocity_record()
+    n(7) = test_estimate_derivative()
 
-    if (sum(n) > 0 .and. par%masterproc) then
-       write(iulog,'(a,6i2)') 'COMPOSE> sl_unittest FAIL ', n
+    nerr = sum(n)
+    if (nerr > 0 .and. par%masterproc) then
+       write(iulog,'(a,7i2)') 'COMPOSE> sl_unittest FAIL ', n
     end if
   end subroutine sl_unittest
 

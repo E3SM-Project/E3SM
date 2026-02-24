@@ -1,7 +1,7 @@
 #ifndef SCREAM_P3_DATA_HPP
 #define SCREAM_P3_DATA_HPP
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <memory>
 #include <vector>

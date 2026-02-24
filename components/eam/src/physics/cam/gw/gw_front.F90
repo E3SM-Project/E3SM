@@ -15,6 +15,10 @@ save
 public :: gw_front_init
 public :: gw_cm_src
 
+! Only public for testing
+public :: gw_front_project_winds
+public :: gw_front_gw_sources
+
 ! Tuneable settings.
 
 ! Frontogenesis function critical threshold.
@@ -60,6 +64,7 @@ subroutine gw_front_init(taubgnd, frontgfc_in, kfront_in, errstring)
   kfront = kfront_in
 
   ! Allocate and calculate fav.
+  if (allocated(fav)) deallocate(fav)
   allocate(fav(-pgwv:pgwv), stat=ierr, errmsg=errstring)
   if (ierr /= 0) return
 
@@ -223,7 +228,7 @@ subroutine gw_cm_src(ncol, ngwv, kbot, u, v, frontgf, &
 
   ! Set phase speeds as reference speeds plus the wind speed at the source
   ! level.
-  c = spread(cref, 1, ncol) + spread(abs(ubi(:,kbot)),2,2*ngwv+1)
+  c = spread(cref, 1, ncol) + spread(abs(ubi(:,kbot)),2,2*pgwv+1)
 
 end subroutine gw_cm_src
 

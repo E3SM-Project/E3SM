@@ -2,10 +2,11 @@
 #define SCREAM_SHOC_MACROPHYSICS_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/ekat_parameter_list.hpp"
 #include "physics/shoc/shoc_functions.hpp"
-#include "share/util/eamxx_common_physics_functions.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
+
+#include <ekat_parameter_list.hpp>
 
 #include <string>
 
@@ -62,7 +63,7 @@ public:
   std::string name () const { return "shoc"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void create_requests ();
 
   /*--------------------------------------------------------------------------------------------*/
   // Most individual processes have a pre-processing step that constructs needed variables from
@@ -77,8 +78,8 @@ public:
       const int i = team.league_rank();
 
       const Real zvir = C::ZVIR;
-      const Real cpair = C::Cpair;
-      const Real ggr = C::gravit;
+      const Real cpair = C::Cpair.value;
+      const Real ggr = C::gravit.value;
       const Real inv_ggr = 1/ggr;
       const Real mintke = SC::mintke;
 

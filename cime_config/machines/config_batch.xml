@@ -203,7 +203,6 @@
       <directive> -l select={{ num_nodes }} </directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
       <directive> -j oe </directive>
-      <directive> -V </directive>
     </directives>
   </batch_system>
 
@@ -223,13 +222,6 @@
   </batch_system>
 
   <!-- for lawrence livermore computing -->
-  <batch_system MACH="ruby" type="slurm">
-    <queues>
-      <queue walltimemax="24:00:00" nodemax="520" default="true">pbatch</queue>
-      <queue walltimemax="01:00:00" nodemax="12">pdebug</queue>
-    </queues>
-  </batch_system>
-
   <batch_system MACH="dane" type="slurm">
     <queues>
       <queue walltimemax="24:00:00" nodemax="520" default="true">pbatch</queue>
@@ -319,6 +311,32 @@
     </directives>
   </batch_system>
 
+  <batch_system type="frontier_slurm" >
+    <batch_query per_job_arg="-j">squeue</batch_query>
+    <batch_submit>sbatch</batch_submit>
+    <batch_cancel>scancel</batch_cancel>
+    <batch_directive>#SBATCH</batch_directive>
+    <jobid_pattern>(\d+)$</jobid_pattern>
+    <depend_string>--dependency=afterok:jobid</depend_string>
+    <depend_allow_string>--dependency=afterany:jobid</depend_allow_string>
+    <depend_separator>:</depend_separator>
+    <walltime_format>%H:%M:%S</walltime_format>
+    <batch_mail_flag>--mail-user</batch_mail_flag>
+    <batch_mail_type_flag>--mail-type</batch_mail_type_flag>
+    <batch_mail_type>none, all, begin, end, fail</batch_mail_type>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="batch"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
+    <directives>
+      <directive> --job-name={{ job_id }}</directive>
+      <directive> --nodes={{ num_nodes }}</directive>
+      <directive> --output={{ job_id }}.%j </directive>
+      <directive> --exclusive </directive>
+    </directives>
+  </batch_system>
+
   <batch_system type="slurm_single_node" >
     <batch_query per_job_arg="-j">squeue</batch_query>
     <batch_submit>sbatch</batch_submit>
@@ -397,8 +415,9 @@
       <directive> -l select={{ num_nodes }}:mpiprocs={{ tasks_per_node }} </directive>
     </directives>
     <queues>
-      <queue walltimemax="00:30:00" jobmin="1" jobmax="8" strict="true" default="true">debug</queue>
-      <queue walltimemax="00:30:00" jobmin="9" jobmax="737" strict="true">compute</queue>
+      <queue walltimemax="01:00:00" nodemin="1" nodemax="8"   strict="true" default="true">debug</queue>
+      <queue walltimemax="72:00:00" nodemin="9" nodemax="805" strict="true">compute</queue>
+      <queue walltimemax="72:00:00" nodemin="1" nodemax="12"  strict="true">bigmem</queue>
     </queues>
   </batch_system>
 
@@ -435,7 +454,7 @@
       <queue walltimemax="00:45:00" nodemax="1792" strict="true">preempt</queue>
       <queue walltimemax="00:45:00" nodemax="1792" strict="true">shared</queue>
       <queue walltimemax="00:45:00" nodemax="1792" strict="true">overrun</queue>
-      <queue walltimemax="00:15:00" nodemax="8" strict="true">debug</queue>
+      <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
 
@@ -478,7 +497,9 @@
     <queues>
       <queue walltimemax="00:45:00" nodemax="150" default="true">regular</queue>
       <queue walltimemax="00:45:00" nodemax="150" strict="true">preempt</queue>
-      <queue walltimemax="00:15:00" nodemax="8" strict="true">debug</queue>
+      <queue walltimemax="00:30:00" nodemax="150" strict="true">shared</queue>
+      <queue walltimemax="00:30:00" nodemax="150" strict="true">overrun</queue>
+      <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
 
@@ -490,6 +511,8 @@
       <!-- Note: walltime is not the max walltime, but the default - see NERSC docs for Q limits, https://docs.nersc.gov/jobs/policy/ -->
       <queue walltimemax="00:30:00" nodemax="256" default="true">regular</queue>
       <queue walltimemax="00:30:00" nodemax="256" strict="true">preempt</queue>
+      <queue walltimemax="00:30:00" nodemax="256" strict="true">shared</queue>
+      <queue walltimemax="00:30:00" nodemax="256" strict="true">overrun</queue>
       <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
@@ -519,7 +542,9 @@
     <queues>
       <queue walltimemax="00:45:00" nodemax="150" default="true">regular</queue>
       <queue walltimemax="00:45:00" nodemax="150" strict="true">preempt</queue>
-      <queue walltimemax="00:15:00" nodemax="8" strict="true">debug</queue>
+      <queue walltimemax="00:30:00" nodemax="150" strict="true">shared</queue>
+      <queue walltimemax="00:30:00" nodemax="150" strict="true">overrun</queue>
+      <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
 
@@ -529,6 +554,9 @@
     </directives>
     <queues>
       <queue walltimemax="00:30:00" nodemax="256" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="256" strict="true">preempt</queue>
+      <queue walltimemax="00:30:00" nodemax="256" strict="true">shared</queue>
+      <queue walltimemax="00:30:00" nodemax="256" strict="true">overrun</queue>
       <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
@@ -552,20 +580,24 @@
     </batch_system>
 
     <batch_system MACH="aurora" type="pbspro">
-      <batch_submit>/lus/flare/projects/E3SM_Dec/tools/qsub/throttle</batch_submit>
+      <batch_submit>/lus/flare/projects/E3SMinput/tools/qsub/throttle</batch_submit>
+      <jobid_pattern>(\d+)\.aurora-pbs</jobid_pattern>
       <directives>
         <directive> -l filesystems=home:flare </directive>
       </directives>
       <queues>
-        <queue walltimemax="01:00:00" nodemin="1"    nodemax="2" default="true">debug</queue>
-        <queue walltimemax="01:00:00" nodemin="3"    nodemax="31"   >debug-scaling</queue>
-        <queue walltimemax="01:00:00" nodemin="32"   nodemax="2048" >prod</queue>
-        <queue walltimemax="01:00:00" nodemin="2049" nodemax="10624">prod-large</queue>
+        <queue walltimemax="01:00:00"  nodemin="1"    nodemax="2"     strict="true" default="true">debug</queue>
+        <queue walltimemax="01:00:00"  nodemin="3"    nodemax="255"   strict="true">debug-scaling</queue>
+        <queue walltimemax="168:00:00" nodemin="1"    nodemax="16"    strict="true">capacity</queue>
+        <queue walltimemax="12:00:00"  nodemin="256"  nodemax="1024"  strict="true">prod</queue>
+        <queue walltimemax="18:00:00"  nodemin="1025" nodemax="1919"  strict="true">prod</queue>
+        <queue walltimemax="24:00:00"  nodemin="1920" nodemax="10624" strict="true">prod</queue>
       </queues>
     </batch_system>
     
     <batch_system MACH="polaris" type="pbspro">
       <batch_submit>/grand/E3SMinput/soft/qsub/throttle</batch_submit>
+      <jobid_pattern>(\d+)\.polaris-pbs</jobid_pattern>
       <directives>
         <directive> -l filesystems=home:grand:eagle </directive>
       </directives>
@@ -575,6 +607,17 @@
         <queue walltimemin="00:05:00" walltimemax="03:00:00" nodemin="10"  nodemax="24"  strict="true">prod</queue>
         <queue walltimemin="00:05:00" walltimemax="06:00:00" nodemin="25"  nodemax="99"  strict="true">prod</queue>
         <queue walltimemin="00:05:00" walltimemax="24:00:00" nodemin="100" nodemax="496" strict="true">prod</queue>
+      </queues>
+    </batch_system>
+
+    <batch_system MACH="crux" type="pbspro">
+      <batch_submit>/grand/E3SMinput/soft/qsub/throttle</batch_submit>
+      <directives>
+        <directive> -l filesystems=home:grand:eagle </directive>
+      </directives>
+      <queues>
+        <queue walltimemin="00:05:00" walltimemax="02:00:00" nodemin="1" nodemax="8"   strict="true" default="true">debug</queue>
+        <queue walltimemin="00:05:00" walltimemax="24:00:00" nodemin="9" nodemax="184" strict="true">workq-route</queue>
       </queues>
     </batch_system>
 
@@ -725,6 +768,20 @@
          </queues>
    </batch_system>
 
+
+   <batch_system MACH="cades-baseline" type="slurm" >
+         <submit_args>
+           <arg flag="-A CLI185"/>
+           <arg flag="--mem=0G"/>
+           <arg flag="--ntasks-per-node 128"/>
+         </submit_args>
+         <queues>
+            <queue walltimemax="24:00" default="true">batch_ccsi</queue>
+            <!-- note: if above limited by computing resources, can use the following -->
+            <!-- <queue walltimemax="24:00" default="true">batch</queue> -->
+         </queues>
+   </batch_system>
+
    <batch_system MACH="itasca" type="pbs">
      <queues>
        <queue walltimemax="24:00" default="true">batch</queue>
@@ -774,15 +831,19 @@
      </queues>
    </batch_system>
 
-   <batch_system MACH="frontier" type="slurm">
+   <batch_system MACH="frontier" type="frontier_slurm">
     <batch_submit>sbatch</batch_submit>
      <directives>
        <directive> --core-spec=$SHELL{tpn=`./xmlquery --value MAX_TASKS_PER_NODE`; if [[ $tpn > 56 ]]; then echo "64-$tpn"|bc; else echo 8; fi; }</directive>
+     </directives>
+     <directives queue="debug">
+       <directive> -q debug</directive>
      </directives>
      <queues>
        <queue strict="true" nodemin="1" nodemax="91" walltimemax="2:00:00" default="true">batch</queue>
        <queue strict="true" nodemin="92" nodemax="183" walltimemax="6:00:00">batch</queue>
        <queue strict="true" nodemin="184" nodemax="9408" walltimemax="12:00:00">batch</queue>
+       <queue strict="true" nodemin="1" nodemax="4" walltimemax="2:00:00">debug</queue>
      </queues>
    </batch_system>
 
@@ -827,16 +888,6 @@
     <queues>
       <queue walltimemax="01:00:00" default="true">lr6</queue>
     </queues>
-   </batch_system>
-
-   <batch_system MACH="gcp12" type="slurm" >
-     <queues>
-       <queue walltimemax="01:30:00" default="true">c2dh112</queue>   <!-- c2d-highcpu-112     1.88984 -->
-       <queue walltimemax="01:30:00" default="true">c2d32</queue>     <!-- c2d-standard-32     0.30794 -->
-       <queue walltimemax="01:30:00" default="true">c2d56</queue>     <!-- c2d-standard-56     0.53889 -->
-       <queue walltimemax="01:30:00" default="true">c2o60</queue>     <!-- "old" c2-compute-60 0.28428 -->
-       <queue walltimemax="01:30:00" default="true">compute</queue>   <!-- c2d-standard-112    1.07776 -->
-     </queues>
    </batch_system>
 
   <!-- modex is PBS -->

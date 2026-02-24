@@ -8,7 +8,7 @@ module SoilFluxesMod
   use shr_log_mod	, only : errMsg => shr_log_errMsg
   use decompMod		, only : bounds_type
   use abortutils	, only : endrun
-  use elm_varctl	, only : iulog, use_firn_percolation_and_compaction
+  use elm_varctl	, only : iulog, use_firn_percolation_and_compaction, use_finetop_rad
   use perfMod_GPU
   use elm_varpar	, only : nlevsno, nlevgrnd, nlevurb, max_patch_per_col
   use atm2lndType	, only : atm2lnd_type
@@ -21,6 +21,7 @@ module SoilFluxesMod
   use ColumnDataType    , only : col_es, col_ef, col_ws
   use VegetationType    , only : veg_pp
   use VegetationDataType, only : veg_ef, veg_wf
+  use GridcellType      , only : grc_pp
 
   use timeinfoMod , only : dtime_mod
   !
@@ -49,6 +50,7 @@ contains
     use landunit_varcon  , only : istsoil, istcrop
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv
     use subgridAveMod    , only : p2c
+    use shr_const_mod      , only : SHR_CONST_PI
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -63,7 +65,7 @@ contains
     type(canopystate_type) , intent(in)    :: canopystate_vars
     type(energyflux_type)  , intent(inout) :: energyflux_vars
     real(r8) :: dtime                                              ! land model time step (sec)
-
+    real(r8) :: slope_rad, deg2rad
 
     !
     ! !LOCAL VARIABLES:
@@ -159,9 +161,12 @@ contains
          eflx_lh_vege            => veg_ef%eflx_lh_vege      , & ! Output: [real(r8) (:)   ]  veg evaporation heat flux (W/m**2) [+ to atm]
          eflx_lh_vegt            => veg_ef%eflx_lh_vegt      , & ! Output: [real(r8) (:)   ]  veg transpiration heat flux (W/m**2) [+ to atm]
          eflx_lh_grnd            => veg_ef%eflx_lh_grnd      , & ! Output: [real(r8) (:)   ]  ground evaporation heat flux (W/m**2) [+ to atm]
-         errsoi_col              => col_ef%errsoi              , & ! Output: [real(r8) (:)   ]  column-level soil/lake energy conservation error (W/m**2)
-         errsoi_patch            => veg_ef%errsoi              & ! Output: [real(r8) (:)   ]  pft-level soil/lake energy conservation error (W/m**2)
+         errsoi_col              => col_ef%errsoi            , & ! Output: [real(r8) (:)   ]  column-level soil/lake energy conservation error (W/m**2)
+         errsoi_patch            => veg_ef%errsoi            , & ! Output: [real(r8) (:)   ]  pft-level soil/lake energy conservation error (W/m**2)
+         slope_deg               => grc_pp%slope_deg           &
          )
+
+      deg2rad = SHR_CONST_PI/180._r8
 
          dtime = dtime_mod
       event = 'bgp2_loop_1'
@@ -282,13 +287,21 @@ contains
             lw_grnd=(frac_sno_eff(c)*tssbef(c,col_pp%snl(c)+1)**4 &
                  +(1._r8-frac_sno_eff(c)-frac_h2osfc(c))*tssbef(c,1)**4 &
                  +frac_h2osfc(c)*t_h2osfc_bef(c)**4)
+            
+            if (use_finetop_rad) then
+               slope_rad = slope_deg(g) * deg2rad
+               eflx_soil_grnd(p) = ((1._r8- frac_sno_eff(c))*sabg_soil(p) + frac_sno_eff(c)*sabg_snow(p)) + dlrad(p) &
+                    + (1-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) &
+                    - emg(c)*sb*lw_grnd/cos(slope_rad)- emg(c)*sb*t_grnd0(c)**3*(4._r8*tinc(c))/cos(slope_rad) &
+                    - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
+            else
+               eflx_soil_grnd(p) = ((1._r8- frac_sno_eff(c))*sabg_soil(p) + frac_sno_eff(c)*sabg_snow(p)) + dlrad(p) &
+                    + (1-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) &
+                    - emg(c)*sb*lw_grnd - emg(c)*sb*t_grnd0(c)**3*(4._r8*tinc(c)) &
+                    - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
+            endif
 
-            eflx_soil_grnd(p) = ((1._r8- frac_sno_eff(c))*sabg_soil(p) + frac_sno_eff(c)*sabg_snow(p)) + dlrad(p) &
-                 + (1-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) &
-                 - emg(c)*sb*lw_grnd - emg(c)*sb*t_grnd0(c)**3*(4._r8*tinc(c)) &
-                 - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
-
-            if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+            if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
                eflx_soil_grnd_r(p) = eflx_soil_grnd(p)
             end if
          else
@@ -301,9 +314,9 @@ contains
             ! Include transpiration term because needed for pervious road
             ! and wasteheat and traffic flux
             eflx_soil_grnd(p) = sabg(p) + dlrad(p) &
-                 - eflx_lwrad_net(p) - eflx_lwrad_del(p) &
-                 - (eflx_sh_grnd(p) + qflx_evap_soi(p)*htvp(c) + qflx_tran_veg(p)*hvap) &
-                 + eflx_wasteheat_patch(p) + eflx_heat_from_ac_patch(p) + eflx_traffic_patch(p)
+                - eflx_lwrad_net(p) - eflx_lwrad_del(p) &
+                - (eflx_sh_grnd(p) + qflx_evap_soi(p)*htvp(c) + qflx_tran_veg(p)*hvap) &
+                + eflx_wasteheat_patch(p) + eflx_heat_from_ac_patch(p) + eflx_traffic_patch(p)
             eflx_soil_grnd_u(p) = eflx_soil_grnd(p)
          end if
 
@@ -312,7 +325,7 @@ contains
          eflx_sh_tot(p) = eflx_sh_veg(p) + eflx_sh_grnd(p)
          qflx_evap_tot(p) = qflx_evap_veg(p) + qflx_evap_soi(p)
          eflx_lh_tot(p)= hvap*qflx_evap_veg(p) + htvp(c)*qflx_evap_soi(p)
-         if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+         if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
             eflx_lh_tot_r(p)= eflx_lh_tot(p)
             eflx_sh_tot_r(p)= eflx_sh_tot(p)
          else if (lun_pp%urbpoi(l)) then
@@ -377,7 +390,7 @@ contains
          errsoi_patch(p) =  errsoi_patch(p)+eflx_h2osfc_to_snow_col(c)
          ! For urban sunwall, shadewall, and roof columns, the "soil" energy balance check
          ! must include the heat flux from the interior of the building.
-         if (col_pp%itype(c)==icol_sunwall .or. col_pp%itype(c)==icol_shadewall .or. col_pp%itype(c)==icol_roof) then
+         if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall .or. col_pp%itype(c) == icol_roof) then
             errsoi_patch(p) = errsoi_patch(p) + eflx_building_heat(c)
          end if
       end do
@@ -426,13 +439,21 @@ contains
                  +(1._r8-frac_sno_eff(c)-frac_h2osfc(c))*tssbef(c,1)**4 &
                  +frac_h2osfc(c)*t_h2osfc_bef(c)**4)
 
-            eflx_lwrad_out(p) = ulrad(p) &
-                 + (1-frac_veg_nosno(p))*(1.-emg(c))*forc_lwrad(t) &
-                 + (1-frac_veg_nosno(p))*emg(c)*sb*lw_grnd &
-                 + 4._r8*emg(c)*sb*t_grnd0(c)**3*tinc(c)
+            if (use_finetop_rad) then
+               slope_rad = slope_deg(g) * deg2rad
+               eflx_lwrad_out(p) = ulrad(p) &
+                    + (1-frac_veg_nosno(p))*(1.-emg(c))*forc_lwrad(t) &
+                    + (1-frac_veg_nosno(p))*emg(c)*sb*lw_grnd / cos(slope_rad) &
+                    + 4._r8*emg(c)*sb*t_grnd0(c)**3*tinc(c) / cos(slope_rad)
+            else
+               eflx_lwrad_out(p) = ulrad(p) &
+                    + (1-frac_veg_nosno(p))*(1.-emg(c))*forc_lwrad(t) &
+                    + (1-frac_veg_nosno(p))*emg(c)*sb*lw_grnd &
+                    + 4._r8*emg(c)*sb*t_grnd0(c)**3*tinc(c)
+            endif
 
             eflx_lwrad_net(p) = eflx_lwrad_out(p) - forc_lwrad(t)
-            if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+            if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
                eflx_lwrad_net_r(p) = eflx_lwrad_out(p) - forc_lwrad(t)
                eflx_lwrad_out_r(p) = eflx_lwrad_out(p)
             end if

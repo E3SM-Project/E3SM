@@ -44,6 +44,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates
    use elm_varctl        , only : use_vertsoilc
    use elm_varctl        , only : fates_spitfire_mode
+   use elm_varctl        , only : use_fates_managed_fire
    use elm_varctl        , only : fates_harvest_mode
    use elm_varctl        , only : fates_parteh_mode
    use elm_varctl        , only : fates_seeddisp_cadence
@@ -75,6 +76,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : fates_history_dimlevel
    use elm_varctl        , only : use_lch4
    use elm_varctl        , only : use_century_decomp
+   use elm_varctl        , only : carbon_only,carbonnitrogen_only,carbonphosphorus_only
    use elm_varcon        , only : tfrz
    use elm_varcon        , only : spval
    use elm_varcon        , only : denice
@@ -269,6 +271,8 @@ module ELMFatesInterfaceMod
       procedure, public :: prep_canopyfluxes
       procedure, public :: wrap_canopy_radiation
       procedure, public :: wrap_WoodProducts
+      procedure, public :: wrap_FatesAtmosphericCarbonFluxes
+      procedure, public :: wrap_FatesCarbonStocks
       procedure, public :: wrap_update_hifrq_hist
       procedure, public :: TransferZ0mDisp
       procedure, public :: InterpFileInputs  ! Interpolate inputs from files
@@ -438,6 +442,7 @@ contains
      integer                                        :: pass_hydro_solver
      integer                                        :: pass_radiation_model
      integer                                        :: pass_electron_transport_model
+     integer                                        :: pass_managed_fire
      
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
@@ -497,17 +502,6 @@ contains
            call set_fates_ctrlparms('decomp_method',cval='CTC')
         end if
 
-        ! ELM ALWAYS has nitrogen and phosphorus "on"
-        ! These may be in a non-limiting status (ie when supplements)
-        ! are added, but they are always allocated and cycled non-the less
-        ! FATES may want to interact differently with other models
-        ! that don't even have these arrays allocated.
-        ! FATES also checks that if NO3 is cycled in ELM, then
-        ! any plant affinity parameters are checked.
-
-        call set_fates_ctrlparms('nitrogen_spec',ival=1)
-        call set_fates_ctrlparms('phosphorus_spec',ival=1)
-        
         if(is_restart() .or. nsrest == nsrBranch) then
            pass_is_restart = 1
         else
@@ -544,12 +538,20 @@ contains
         ! we will always pass 0 or 1.
         ! But.. we do have to define these modes, for now.
 
-
+        ! Pass spitfire mode values
         call set_fates_ctrlparms('spitfire_mode',ival=fates_spitfire_mode)
         call set_fates_ctrlparms('sf_nofire_def',ival=no_fire)
         call set_fates_ctrlparms('sf_scalar_lightning_def',ival=scalar_lightning)
         call set_fates_ctrlparms('sf_successful_ignitions_def',ival=successful_ignitions)
         call set_fates_ctrlparms('sf_anthro_ignitions_def',ival=anthro_ignitions)
+
+        ! Pass managed fire mode value
+        if (use_fates_managed_fire) then
+           pass_managed_fire = 1
+        else
+           pass_managed_fire = 0
+        end if
+        call set_fates_ctrlparms('use_managed_fire',ival=pass_managed_fire)
 
         ! FATES logging and harvest modes
         pass_logging = 0
@@ -930,7 +932,7 @@ contains
             ! INTERF-TODO: WE HAVE NOT FILTERED OUT FATES SITES ON INACTIVE COLUMNS.. YET
             ! NEED A RUN-TIME ROUTINE THAT CLEARS AND REWRITES THE SITE LIST
 
-            if ( (lun_pp%itype(l) == istsoil) .and. (col_pp%active(c)) ) then
+            if ( (col_pp%is_soil(c)) .and. (col_pp%active(c)) ) then
                s = s + 1
                collist(s) = c
                this%f2hmap(nc)%hsites(c) = s
@@ -1164,7 +1166,7 @@ contains
       integer  :: nlevsoil                 ! number of soil layers at the site
       integer  :: ier                      ! allocate status code
       real(r8) :: s_node, smp_node         ! local for relative water content and potential
-      
+      logical  :: nitr_suppl,phos_suppl    ! Is ELM currently supplementing N or P?
       real(r8), pointer :: lnfm24(:)       ! 24-hour averaged lightning data
       real(r8), pointer :: gdp_lf_col(:)          ! gdp data
 
@@ -1329,8 +1331,26 @@ contains
 
       ! Nutrient uptake fluxes have been accumulating with each short
       ! timestep, here, we unload them from the boundary condition
-      ! structures into the cohort structures.
-      call UnPackNutrientAquisitionBCs(this%fates(nc)%sites, this%fates(nc)%bc_in)
+      ! structures into the cohort structures.  We also tell
+      ! fates the current supplementation status (used for dynamic rooting)
+
+      if(carbon_only)then
+         nitr_suppl = .true.
+         phos_suppl = .true.
+      else
+         if(carbonnitrogen_only)then
+            phos_suppl = .true.
+         else
+            phos_suppl = .false.
+         end if
+         if(carbonphosphorus_only)then
+            nitr_suppl = .true.
+         else
+            nitr_suppl = .false.
+         end if
+      end if
+      
+      call UnPackNutrientAquisitionBCs(this%fates(nc)%sites, this%fates(nc)%bc_in, nitr_suppl, phos_suppl)
       
       ! Distribute any seeds from neighboring gridcells into the current gridcell
       ! Global seed availability array populated by WrapGlobalSeedDispersal call
@@ -1424,6 +1444,10 @@ contains
       do s = 1, this%fates(nc)%nsites
          c = this%f2hmap(nc)%fcolumn(s)
 
+         call FluxIntoLitterPools(this%fates(nc)%sites(s), &
+                                  this%fates(nc)%bc_in(s), &
+                                  this%fates(nc)%bc_out(s))
+         
          col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
               col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) + &
               this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nlevdecomp) * dtime
@@ -1957,13 +1981,6 @@ contains
                         this%fates(nc)%bc_out(s), &
                         is_restarting = .true.)
 
-                  ! This call sends internal fates variables into the
-                  ! output boundary condition structures. Note: this is called
-                  ! internally in fates dynamics as well.
-
-                  call FluxIntoLitterPools(this%fates(nc)%sites(s), &
-                       this%fates(nc)%bc_in(s), &
-                       this%fates(nc)%bc_out(s))
                end do
 
                if(use_fates_sp)then
@@ -2211,13 +2228,6 @@ contains
                    this%fates(nc)%bc_out(s), &
                    is_restarting = .false.)
 
-              ! This call sends internal fates variables into the
-              ! output boundary condition structures. Note: this is called
-              ! internally in fates dynamics as well.
-
-              call FluxIntoLitterPools(this%fates(nc)%sites(s), &
-                   this%fates(nc)%bc_in(s), &
-                   this%fates(nc)%bc_out(s))
            end do
 
            ! ------------------------------------------------------------------------
@@ -2742,8 +2752,6 @@ contains
    integer                                        :: nc
 
    associate(&
-         gpp     => col_cf%gpp    , &
-         ar     => col_cf%ar    , &
          hrv_deadstemc_to_prod10c     => col_cf%hrv_deadstemc_to_prod10c    , &
          hrv_deadstemc_to_prod100c    => col_cf%hrv_deadstemc_to_prod100c)
  
@@ -2757,15 +2765,102 @@ contains
        hrv_deadstemc_to_prod10c(c)  = this%fates(nc)%bc_out(s)%hrv_deadstemc_to_prod10c
        hrv_deadstemc_to_prod100c(c) = this%fates(nc)%bc_out(s)%hrv_deadstemc_to_prod100c
 
-       ! Pass LUC related C fluxes which are calculated in FATES [gC m-2 s-1]
-       gpp(c) = this%fates(nc)%bc_out(s)%gpp_site*g_per_kg
-       ar(c) = this%fates(nc)%bc_out(s)%ar_site*g_per_kg
-
     end do
 
     end associate
     return
  end subroutine wrap_WoodProducts
+
+ ! ======================================================================================
+
+ subroutine wrap_FatesAtmosphericCarbonFluxes(this, bounds_clump, fc, filterc)
+
+   ! summarize the high-level fluxes that integrate information from both
+   ! FATES and outside-of-FATES decomposition and product decay code.
+   
+   use FatesConstantsMod     , only : g_per_kg
+
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   type(bounds_type)              , intent(in)    :: bounds_clump
+   integer                        , intent(in)    :: fc                   ! size of column filter
+   integer                        , intent(in)    :: filterc(fc)          ! column filter
+   
+   ! Locacs
+   integer                                        :: s,c,icc
+   integer                                        :: nc
+
+   associate(&
+        nep     => col_cf%nep    , &
+        nee     => col_cf%nee    , &
+        nbp     => col_cf%nbp    , &
+        product_closs => col_cf%product_closs ,  &
+        hr     => col_cf%hr)
+ 
+    nc = bounds_clump%clump_index
+    ! Loop over columns
+    do icc = 1,fc
+       c = filterc(icc)
+       s = this%f2hmap(nc)%hsites(c)
+
+       nep(c) = this%fates(nc)%bc_out(s)%gpp_site*g_per_kg &
+            - this%fates(nc)%bc_out(s)%ar_site*g_per_kg &
+            - hr(c)
+
+       nbp(c) = nep(c) &
+            - this%fates(nc)%bc_out(s)%grazing_closs_to_atm_si*g_per_kg &
+            - this%fates(nc)%bc_out(s)%fire_closs_to_atm_si*g_per_kg &
+            - product_closs(c)
+
+       nee(c) = -nbp(c)
+
+    end do
+
+    end associate
+    return
+ end subroutine wrap_FatesAtmosphericCarbonFluxes
+
+ ! ======================================================================================
+ 
+ subroutine wrap_FatesCarbonStocks(this, bounds_clump, fc, filterc)
+
+   ! summarize the high-level fluxes that integrate information from both
+   ! FATES and outside-of-FATES decomposition and product decay code.
+   
+   use FatesConstantsMod     , only : g_per_kg
+
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   type(bounds_type)              , intent(in)    :: bounds_clump
+   integer                        , intent(in)    :: fc                   ! size of column filter
+   integer                        , intent(in)    :: filterc(fc)          ! column filter
+   
+   ! Locacs
+   integer                                        :: s,c,icc
+   integer                                        :: nc
+
+   associate(&
+        totecosysc     => col_cs%totecosysc, &
+        totlitc        => col_cs%totlitc, &
+        totsomc        => col_cs%totsomc, &
+        totprodc       => col_cs%totprodc)
+ 
+    nc = bounds_clump%clump_index
+    ! Loop over columns
+    do icc = 1,fc
+       c = filterc(icc)
+       s = this%f2hmap(nc)%hsites(c)
+
+       totecosysc(c) = totsomc(c) + totlitc(c) + totprodc(c) + &
+            this%fates(nc)%bc_out(s)%veg_c_si + &
+            this%fates(nc)%bc_out(s)%litter_cwd_c_si + &
+            this%fates(nc)%bc_out(s)%seed_c_si
+ 
+    end do
+
+    end associate
+    return
+  end subroutine wrap_FatesCarbonStocks
 
  ! ======================================================================================
  
@@ -3250,7 +3345,7 @@ end subroutine wrap_update_hifrq_hist
    use FatesIOVariableKindMod, only : site_coage_r8, site_coage_pft_r8
    use FatesIOVariableKindMod, only : site_can_r8, site_cnlf_r8, site_cnlfpft_r8
    use FatesIOVariableKindMod, only : site_cdpf_r8, site_cdsc_r8, site_cdam_r8
-   use FatesIOVariableKindMod, only : site_landuse_r8, site_lulu_r8
+   use FatesIOVariableKindMod, only : site_landuse_r8, site_lulu_r8, site_lupft_r8
    use FatesIODimensionsMod, only : fates_bounds_type
 
 
@@ -3352,7 +3447,7 @@ end subroutine wrap_update_hifrq_hist
              site_scagpft_r8, site_agepft_r8, site_elem_r8, site_elpft_r8, &
              site_elcwd_r8, site_elage_r8, site_coage_r8, site_coage_pft_r8, &
              site_agefuel_r8,site_cdsc_r8, site_cdpf_r8, site_cdam_r8, &
-             site_landuse_r8, site_lulu_r8)
+             site_landuse_r8, site_lulu_r8, site_lupft_r8)
 
            d_index = fates_hist%dim_kinds(dk_index)%dim2_index
            dim2name = fates_hist%dim_bounds(d_index)%name
@@ -3709,6 +3804,9 @@ end subroutine wrap_update_hifrq_hist
 
    fates%lulu_begin = 1
    fates%lulu_end   = n_landuse_cats * n_landuse_cats
+
+   fates%lupft_begin = 1
+   fates%lupft_end   = n_landuse_cats * numpft_fates
 
  end subroutine hlm_bounds_to_fates_bounds
 

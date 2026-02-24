@@ -1,6 +1,8 @@
 #ifndef EAMXX_MAM_SRF_AND_ONLINE_EMISSIONS_FUNCTIONS_HPP
 #define EAMXX_MAM_SRF_AND_ONLINE_EMISSIONS_FUNCTIONS_HPP
 
+#include <ekat_team_policy_utils.hpp>
+
 namespace scream {
 
 namespace {
@@ -14,13 +16,12 @@ using const_view_2d = typename KT::template view_2d<const Real>;
 //-------- Inititlize gas and aerosol fluxes ------
 void init_fluxes(const int &ncol,
                  view_2d &constituent_fluxes) {  // input-output
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   constexpr int pcnst     = mam4::aero_model::pcnst;
   const int gas_start_ind = mam4::utils::gasses_start_ind();
 
-  const auto policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(
-          ncol, pcnst - gas_start_ind);
+  const auto policy = TPF::get_default_team_policy(ncol, pcnst - gas_start_ind);
 
   // Parallel loop over all the columns
   Kokkos::parallel_for(

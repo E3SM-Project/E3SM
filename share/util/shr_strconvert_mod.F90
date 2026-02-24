@@ -59,106 +59,90 @@ end interface toString
 
 contains
 
-pure function i4ToString(input, format_string) result(string)
+pure character(len=cs) function i4ToString(input, format_string)
   integer(i4), intent(in) :: input
   character(len=*), intent(in), optional :: format_string
-  character(len=:), allocatable :: string
-
-  character(len=cs) :: buffer
 
   if (present(format_string)) then
-     write(buffer, format_string) input
+     write(i4ToString, format_string) input
   else
      ! For most compilers, these two statements are equivalent to a format of
      ! '(I0)', but that's not technically in the standard.
-     write(buffer, '(I11)') input
-     buffer = adjustl(buffer)
+     write(i4ToString, '(I11)') input
+     i4ToString = adjustl(i4ToString)
   end if
 
-  allocate(string, source=trim(buffer))
+  i4ToString = trim(i4ToString)
 
 end function i4ToString
 
-pure function i8ToString(input, format_string) result(string)
+pure character(len=cs) function i8ToString(input, format_string)
   integer(i8), intent(in) :: input
   character(len=*), intent(in), optional :: format_string
-  character(len=:), allocatable :: string
-
-  character(len=cs) :: buffer
 
   if (present(format_string)) then
-     write(buffer, format_string) input
+     write(i8ToString, format_string) input
   else
      ! For most compilers, these two statements are equivalent to a format of
      ! '(I0)', but that's not technically in the standard.
-     write(buffer, '(I20)') input
-     buffer = adjustl(buffer)
+     write(i8ToString, '(I20)') input
+     i8ToString = adjustl(i8ToString)
   end if
 
-  allocate(string, source=trim(buffer))
+  i8ToString = trim(i8ToString)
 
 end function i8ToString
 
-pure function r4ToString(input, format_string) result(string)
+pure character(len=cs) function r4ToString(input, format_string)
   real(r4), intent(in) :: input
   character(len=*), intent(in), optional :: format_string
-  character(len=:), allocatable :: string
-
-  character(len=cs) :: buffer
 
   if (present(format_string)) then
-     write(buffer, format_string) input
+     write(r4ToString, format_string) input
   else
-     write(buffer, '(ES15.8 E2)') input
-     buffer = adjustl(buffer)
+     write(r4ToString, '(ES15.8 E2)') input
+     r4ToString = adjustl(r4ToString)
      ! Deal with the fact that the "+" sign is optional by simply adding it if
      ! it is not present, so that the default format is standardized across
      ! compilers.
      ! Assumes that compilers do not treat the sign bit on NaN values specially.
-     if (.not. isnan(input) .and. all(buffer(1:1) /= ["-", "+"])) then
-        buffer = "+" // trim(buffer)
+     if (.not. isnan(input) .and. all(r4ToString(1:1) /= ["-", "+"])) then
+        r4ToString = "+" // trim(r4ToString)
      end if
   end if
 
-  allocate(string, source=trim(buffer))
+  r4ToString = trim(r4ToString)
 
 end function r4ToString
 
-pure function r8ToString(input, format_string) result(string)
+pure character(len=cs) function r8ToString(input, format_string)
   real(r8), intent(in) :: input
   character(len=*), intent(in), optional :: format_string
-  character(len=:), allocatable :: string
-
-  character(len=cs) :: buffer
 
   if (present(format_string)) then
-     write(buffer, format_string) input
+     write(r8ToString, format_string) input
   else
-     write(buffer, '(ES24.16 E3)') input
-     buffer = adjustl(buffer)
+     write(r8ToString, '(ES24.16 E3)') input
+     r8ToString = adjustl(r8ToString)
      ! Deal with the fact that the "+" sign is optional by simply adding it if
      ! it is not present, so that the default format is standardized across
      ! compilers.
      ! Assumes that compilers do not treat the sign bit on NaN values specially.
-     if (.not. isnan(input) .and. all(buffer(1:1) /= ["-", "+"])) then
-        buffer = "+" // trim(buffer)
+     if (.not. isnan(input) .and. all(r8ToString(1:1) /= ["-", "+"])) then
+        r8ToString = "+" // trim(r8ToString)
      end if
   end if
 
-  allocate(string, source=trim(buffer))
+  r8ToString = trim(r8ToString)
 
 end function r8ToString
 
-pure function logicalToString(input) result(string)
+pure character(len=cs) function logicalToString(input)
   logical, intent(in) :: input
-  character(len=:), allocatable :: string
-
-  ! We could use a write statement, but this is easier.
-  allocate(character(len=1) :: string)
   if (input) then
-     string = "T"
+     logicalToString = "T"
   else
-     string = "F"
+     logicalToString = "F"
   end if
 
 end function logicalToString

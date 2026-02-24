@@ -219,8 +219,9 @@ contains
          col_endcb                 =>    col_cs%endcb                    , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
          col_errcb                 =>    col_cs%errcb                    ,  & ! Output: [real(r8) (:) ]  carbon balance error for the timestep (gC/m**2)
          hr                        =>    col_cf%hr                       , &  ! Input: heterotrophic respiration flux (gC/m2/s)
-         litfall                   =>    col_cf%litfall )                     ! Input: carbon flux from litterfall (particularly fates) ( gc/m2/s)
-
+         litfall                   =>    col_cf%litfall                  , &  ! Input: carbon flux from litterfall (particularly fates) ( gc/m2/s)
+         hrv_deadstemc_to_prod10c  =>    col_cf%hrv_deadstemc_to_prod10c , &  ! Input: harvest of wood to 10-year product pool (gC/m2/s)
+         hrv_deadstemc_to_prod100c =>    col_cf%hrv_deadstemc_to_prod100c )   ! Input: harvest of wood to 100-year product pool (gC/m2/s)
 
       ! set time steps
       dt = real( get_step_size(), r8 )
@@ -238,10 +239,10 @@ contains
          ! a change in the total stock. So hwere we assume that
          ! the fates stocks are 0 for simplicity, and are only
          ! concerned that the changes in the soil stocks (including
-         ! fragmented litter, match the fluxes in and out of fates
+         ! fragmented litter) and wood product pools, match the fluxes in and out of fates
          if(use_fates) then
 
-            col_cinputs  = litfall(c)
+            col_cinputs  = litfall(c) + hrv_deadstemc_to_prod10c(c) + hrv_deadstemc_to_prod100c(c)
 
             col_coutputs = er(c)
 
@@ -860,7 +861,6 @@ contains
     !
     integer             :: g, nstep
     real(r8)            :: dt
-    real(r8), parameter :: error_tol = 1.e-8_r8
     !-----------------------------------------------------------------------
 
     associate(                                                       &
@@ -900,13 +900,15 @@ contains
          grc_er                    => grc_cf%er                    , & ! Output: [real(r8) (:) ] (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
          grc_fire_closs            => grc_cf%fire_closs            , & ! Output: [real(r8) (:) ] (gC/m2/s) total column-level fire C loss
          grc_prod1c_loss           => grc_cf%prod1_loss            , & ! Output: [real(r8) (:) ] (gC/m2/s) crop leafc harvested
-         grc_prod10c_loss          => grc_cf%prod10_loss           , & ! Output: [real(r8) (:) ] (gC/m2/s) 10-year wood C harvested
-         grc_prod100c_loss         => grc_cf%prod100_loss          , & ! Output: [real(r8) (:) ] (gC/m2/s) 100-year wood C harvested 
+         grc_prod10c_loss          => grc_cf%prod10_loss           , & ! Output: [real(r8) (:) ] (gC/m2/s) 10-year wood C lost
+         grc_prod100c_loss         => grc_cf%prod100_loss          , & ! Output: [real(r8) (:) ] (gC/m2/s) 100-year wood C lost
          grc_hrv_xsmrpool_to_atm   => grc_cf%hrv_xsmrpool_to_atm   , & ! Output: [real(r8) (:) ] (gC/m2/s) excess MR pool harvest mortality
          grc_som_c_leached         => grc_cf%som_c_leached         , & ! Output: [real(r8) (:) ] (gC/m^2/s)total SOM C loss from vertical transport
          grc_som_c_yield           => grc_cf%somc_yield            , & ! Output: [real(r8) (:) ] (gC/m^2/s)total SOM C loss by erosion
          grc_cinputs               => grc_cf%cinputs               , & ! Output: [real(r8) (:) ] (gC/m2/s) column-level C inputs
          grc_coutputs              => grc_cf%coutputs              , & ! Output: [real(r8) (:) ] (gC/m2/s) column-level C outputs
+         grc_hrv_deadstemc_to_prod10c  => grc_cf%hrv_deadstemc_to_prod10c , & ! Output: [real(r8) (:) ] (gC/m2/s) 10-year wood C harvested
+         grc_hrv_deadstemc_to_prod100c => grc_cf%hrv_deadstemc_to_prod100c, & ! Output: [real(r8) (:) ] (gC/m2/s) 100-year wood C harvested
          beg_totpftc               => grc_cs%beg_totpftc          , & ! Input: [real(r8) (:)] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
          beg_cwdc                  => grc_cs%beg_cwdc             , & ! Input: [real(r8) (:)] (gC/m2) total column coarse woody debris carbon
          beg_totsomc               => grc_cs%beg_totsomc          , & ! Input: [real(r8) (:)] (gC/m2) total column soil organic matter carbon
@@ -956,7 +958,13 @@ contains
 
       if (use_fates) then 
         call c2g(bounds, col_cf%litfall(bounds%begc:bounds%endc), grc_cinputs(bounds%begg:bounds%endg), &
-               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+             c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+
+        call c2g(bounds, col_cf%hrv_deadstemc_to_prod10c(bounds%begc:bounds%endc), grc_hrv_deadstemc_to_prod10c(bounds%begg:bounds%endg), &
+             c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+
+        call c2g(bounds, col_cf%hrv_deadstemc_to_prod100c(bounds%begc:bounds%endc), grc_hrv_deadstemc_to_prod100c(bounds%begg:bounds%endg), &
+             c2l_scale_type = 'unity', l2g_scale_type = 'unity')
       end if 
          
       dt = real( get_step_size(), r8 )
@@ -966,7 +974,9 @@ contains
 
          if (.not. use_fates) then 
            grc_cinputs(g) = grc_gpp(g) + grc_dwt_seedc_to_leaf(g) + grc_dwt_seedc_to_deadstem(g)
-         end if 
+         else
+           grc_cinputs(g) = grc_cinputs(g) + grc_hrv_deadstemc_to_prod10c(g) + grc_hrv_deadstemc_to_prod100c(g)
+         end if
 
          grc_coutputs(g) = grc_er(g) + grc_fire_closs(g) + grc_hrv_xsmrpool_to_atm(g) + &
               grc_prod1c_loss(g) + grc_prod10c_loss(g) + grc_prod100c_loss(g) - grc_som_c_leached(g) + &
@@ -978,7 +988,7 @@ contains
 
          grc_errcb(g) = (grc_cinputs(g) - grc_coutputs(g))*dt - (end_totc(g) - beg_totc(g))
 
-         if (abs(grc_errcb(g)) > error_tol .and. nstep > 1) then
+         if (abs(grc_errcb(g)) > balance_check_tolerance .and. nstep > 1) then
             write(iulog,*)'grid cbalance error = ', grc_errcb(g), g
             write(iulog,*)'Latdeg,Londeg       = ', grc_pp%latdeg(g), grc_pp%londeg(g)
             write(iulog,*)'input               = ', grc_cinputs(g)*dt

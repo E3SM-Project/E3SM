@@ -2,8 +2,8 @@
 #define P3_ICE_MELTING_IMPL_HPP
 
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
-#include "physics/share/physics_saturation_impl.hpp"
+#include "share/physics/physics_functions.hpp" // also for ETI not on GPUs
+#include "share/physics/physics_saturation_impl.hpp"
 
 namespace scream {
 namespace p3 {
@@ -28,9 +28,9 @@ void Functions<S,D>
 
   const auto Pi     = C::Pi;
   const auto QSMALL = C::QSMALL;
-  const auto Tmelt  = C::Tmelt;
-  const auto latvap = C::LatVap;
-  const auto latice = C::LatIce;
+  const auto Tmelt  = C::Tmelt.value;
+  const auto latvap = C::LatVap.value;
+  const auto latice = C::LatIce.value;
 
   //Find cells above freezing AND which have ice
   const auto has_melt_qi = (qi_incld >= QSMALL ) && (T_atm > Tmelt) && context;

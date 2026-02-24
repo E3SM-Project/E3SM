@@ -240,6 +240,18 @@
     </desc>
   </entry>
 
+  <entry id="nlmaps_atm2srf_conserve">
+    <type>char</type>
+    <valid_values>.true.,.false.</valid_values>
+    <default_value>.false.</default_value>
+    <values match="last">
+      <value grid="a%ne120np4.+oi%RRSwISC6to18E3r5">.true.</value>
+    </values>
+    <group>seq_infodata_inparm</group>
+    <file>env_run.xml</file>
+    <desc>Conservative nlmaps from atm to surface</desc>
+  </entry>
+
   <!-- ===================================================================== -->
   <!-- component coupling options and frequencies -->
   <!-- ===================================================================== -->
@@ -592,7 +604,8 @@
       <value compset="_EAM.*_ELM.*MPASO">8</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne4np4">6</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne11np4">4</value>
-      <value compset="_EAM.*_ELM.*MPASO" grid="a%ne120np4">8</value>
+      <value compset="_EAM.*_ELM.*MPASO" grid="a%ne120np4">24</value>
+      <value compset=".*_ELM.*MPASO" grid="oi%RRSwISC6to18E3r5_r%r025">24</value>
       <value compset="20TR_" grid="a%ne4np4">$ATM_NCPL</value>
     </values>
     <group>run_coupling</group>
@@ -629,21 +642,19 @@
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <values match="last">
-      <value compset="DATM.+POP\d">TRUE</value>
-      <value compset="DATM.+DOCN%IAF">TRUE</value>
+      <value compset="DATM%IAF">TRUE</value>
+      <value compset="DATM%NYF">TRUE</value>
     </values>
     <group>run_component_cpl</group>
     <file>env_run.xml</file>
     <desc>
-      Only used for compsets with DATM and POP (currently C, G and J):
-      If true, compute albedos to work with daily avg SW down
-      If false (default), albedos are computed with the assumption that downward
+      Only used for compsets with DATM and MPASO (currently C, G and J):
+      If FALSE (default), albedos are computed with the assumption that downward
       solar radiation from the atm component has a diurnal cycle and zenith-angle
       dependence. This is normally the case when using an active atm component
-      If true, albedos are computed with the assumption that downward
+      If TRUE, albedos are computed with the assumption that downward
       solar radiation from the atm component is a daily average quantity and
-      does not have a zenith-angle dependence. This is often the case when
-      using a data atm component. Only used for compsets with DATM and POP (currently C, G and J).
+      does not have a zenith-angle dependence.
       NOTE: This should really depend on the datm forcing and not the compset per se.
       So, for example, whether it is set in a J compset should depend on
       what datm forcing is used.
@@ -775,11 +786,16 @@
       <value compset="^20TR.+CMIP6-LULC"                        >284.317</value>
       <value compset="^20TR.+CMIP6-VOLC"                        >284.317</value>
       <value compset="^SSP.+CMIP6"                              >0.000001</value>
+      <value compset="^SSP245.+CMIP6"			                    	>0.000001</value>
+      <value compset="^SSP370.+CMIP6"				                    >0.000001</value>
       <value compset="^20TR.*BGC%BCRC"                          >284.317</value>
       <value compset="^20TR.*BGC%BCRD"                          >284.317</value>
       <value compset="^20TR.*BGC%BDRC"                          >284.317</value>
       <value compset="^20TR.*BGC%BDRD"                          >284.317</value>
       <value compset="^SSP585.*BGC%B"                           >284.317</value>  
+      <value compset="^1850.*CMIP7"                             >284.297</value>
+      <value compset="^1850.*CMIP7.+4xCO2"                      >1137.188</value>
+      <value compset="^2010.+CMIP7"                             >388.901</value>
       <!-- Override values based on EAM (WACCM) chemistry -->
       <value compset="EAM%W"				>0.000001</value>
       <value compset="EAM%SSOA"				>0.000001</value>
@@ -924,6 +940,8 @@
     <default_value>1</default_value>
     <values match="last">
       <value compset=".+EAM%CMIP6"				>2</value>
+      <value compset=".+CMIP7_EAM"				>2</value>
+      <value compset=".+CMIP7_DATM%CPLHIST"			>2</value>
       <value compset=".+EAM%MMF"				>2</value>
     </values>
     <group>shr_dust_nl</group>
@@ -946,6 +964,7 @@
     <desc compset="AMIP_">AMIP for stand-alone cam:</desc>
     <desc compset="SSP585_">Future transient using CMIP6 SSP5_8.5 scenario:</desc>
     <desc compset="SSP370_">Future transient using CMIP6 SSP3_7.0 scenario:</desc>
+    <desc compset="SSP245_">Future transient using CMIP6 SSP2_4.5 scenario:</desc>
     <desc compset="C2R[68]_">CCMI REFC2 1950 to 2100 transient:</desc>
     <desc compset="C2R4_">CCMI REFC2 2004 to 2100 transient:</desc>
     <desc compset="4804_">1948 to 2004 transient:</desc>
