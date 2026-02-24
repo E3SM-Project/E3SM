@@ -219,23 +219,21 @@
       </modules>
 
       <modules compiler="gnu">
-        <command name="load">cpe/23.12</command>
         <command name="load">PrgEnv-gnu/8.5.0</command>
         <command name="load">gcc-native/12.3</command>
         <command name="load">cray-libsci/24.07.0</command>
       </modules>
 
       <modules compiler="intel">
-      <command name="load">cpe/23.12</command>
-      <command name="load">PrgEnv-intel/8.5.0</command>
-      <command name="unload">cray-libsci</command>
-      <command name="load">intel/2023.2.0</command>
+        <command name="load">PrgEnv-intel/8.5.0</command>
+        <command name="unload">cray-libsci</command> <!-- tempororary change to allow this hotfix 2024.1.0 module to work -->
+        <command name="load">intel/2024.1.0</command>
       </modules>
 
       <modules compiler="nvidia">
-      <command name="load">PrgEnv-nvidia</command>
-      <command name="load">nvidia/25.5</command>
-      <command name="load">cray-libsci/24.07.0</command>
+        <command name="load">PrgEnv-nvidia</command>
+        <command name="load">nvidia/25.5</command>
+        <command name="load">cray-libsci/24.07.0</command>
       </modules>
 
       <modules compiler="amdclang">
@@ -243,15 +241,16 @@
         <command name="load">aocc/4.1.0</command>
         <command name="load">cray-libsci/24.07.0</command>
       </modules>
+
       <modules>
-	 <command name="load">cray-mpich/8.1.28</command>
-	 <command name="load">craype-accel-host</command>
-	 <command name="load">craype/2.7.30</command>
-	 <command name="load">cray-hdf5-parallel/1.12.2.9</command>
-	 <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
-	 <command name="load">cray-parallel-netcdf/1.12.3.9</command>
-	 <command name="load">cmake/3.30.2</command>
-       </modules>
+        <command name="load">craype-accel-host</command>
+        <command name="load">craype/2.7.32</command>
+        <command name="load">cray-mpich/8.1.30</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
+        <command name="load">cmake/3.30.2</command>
+      </modules>
     </module_system>
 
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -278,16 +277,16 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
-    <environment_variables compiler="intel" mpilib="mpich">
-      <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/intel-2023.2.0/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.2/cray-mpich-8.1.28/intel-2023.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
-      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.2/intel-2023.2.0; else echo "$BLOSC2_ROOT"; fi}</env>
-      <!--env name="H5Z_BLOSC2_ROOT">$SHELL{if [ -z "$H5Z_BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/h5z-blosc2/2.0.0/intel-2024.1.0; else echo "$H5Z_BLOSC2_ROOT"; fi}</env-->
-      <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/mgard/1.5.2/intel-2023.2.0; else echo "$MGARD_ROOT"; fi}</env>
-      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/sz/2.1.12.5/intel-2023.2.0; else echo "$SZ_ROOT"; fi}</env>
-      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/zfp/1.0.1/intel-2023.2.0; else echo "$ZFP_ROOT"; fi}</env>
-      <!--env name="H5Z_ZFP_ROOT">$SHELL{if [ -z "$H5Z_ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/h5z-zfp/1.1.1/intel-2024.1.0; else echo "$H5Z_ZFP_ROOT"; fi}</env-->
-    </environment_variables>
+    <!-- <environment_variables compiler="intel" mpilib="mpich"> -->
+    <!--   <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/intel-2023.2.0/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env> -->
+    <!--   <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.2/cray-mpich-8.1.28/intel-2023.2.0; else echo "$ADIOS2_ROOT"; fi}</env> -->
+    <!--   <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.2/intel-2023.2.0; else echo "$BLOSC2_ROOT"; fi}</env> -->
+    <!--   <!-\-env name="H5Z_BLOSC2_ROOT">$SHELL{if [ -z "$H5Z_BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/h5z-blosc2/2.0.0/intel-2024.1.0; else echo "$H5Z_BLOSC2_ROOT"; fi}</env-\-> -->
+    <!--   <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/mgard/1.5.2/intel-2023.2.0; else echo "$MGARD_ROOT"; fi}</env> -->
+    <!--   <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/sz/2.1.12.5/intel-2023.2.0; else echo "$SZ_ROOT"; fi}</env> -->
+    <!--   <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/zfp/1.0.1/intel-2023.2.0; else echo "$ZFP_ROOT"; fi}</env> -->
+    <!--   <!-\-env name="H5Z_ZFP_ROOT">$SHELL{if [ -z "$H5Z_ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/h5z-zfp/1.1.1/intel-2024.1.0; else echo "$H5Z_ZFP_ROOT"; fi}</env-\-> -->
+    <!-- </environment_variables> -->
     <environment_variables compiler="gnu" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/gcc-native-12.3/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.2/cray-mpich-8.1.28/gcc-native-12.3; else echo "$ADIOS2_ROOT"; fi}</env>
