@@ -44,9 +44,9 @@ the currently available tendency terms:
 | | ViscDel4 | horizontal biharmonic mixing coefficient for normal velocity
 | | DivFactor | scale factor for the divergence term
 | TracerHorzAdvOnCell | TracerHorzAdvTendencyEnable | enable/disable term
-| | TracerHorzAdvTendencyOrder | 1 for standard linear advection
+| | HorzTracerFluxOrder | 1 for standard linear advection
 | TracerHighOrderHorzAdvOnCell | TracerHorzAdvTendencyEnable | enable/disable term
-| | TracerHorzAdvTendencyOrder | 2 for second order advection algorithm
+| | HorzTracerFluxOrder | 2 for second order advection algorithm
 | TracerDiffOnCell | TracerDiffTendencyEnable | enable/disable term
 | | EddyDiff2 | horizontal diffusion coefficient
 | TracerHyperDiffOnCell | TracerHyperDiffTendencyEnable | enable/disable term
@@ -91,13 +91,13 @@ $$
 $$
 Where $u$ is $\mathbf{V}\cdot\mathbf{n}$ where $\mathbf{n}$ is the unit normal along the edge being evaluated and $F$ is the evaluation
 of $\psi$ for the elements on each side of the edge being evaluated.
-This is used when the TracerHorzAdvOnCell user option is active and TracerHorzAdvTendencyOrder is 1.
+This is used when the TracerHorzAdvOnCell user option is active and HorzTracerFluxOrder is 1.
 To make the comparison to higher order methods explicit, this first order method is equivalent to defining $\psi$ as a linear function,
 $\psi = c_0 + c_x x + c_y y$, between the two elements sharing the edge $i$ and taking the directed derivative along the edge.
 
 
 For higher order flux calculations, higher order derivatives of $\psi$ are needed and for the user option of
-TracerHorzAdvOnCell along with TracerHorzAdvTendencyOrder set to 2, a quadratic approximation of $\psi$ is used,
+TracerHorzAdvOnCell along with HorzTracerFluxOrder set to 2, a quadratic approximation of $\psi$ is used,
 $$
 \psi = c_0 + c_x x + c_y y + c_{xx} x^2 + c_{xy} xy + c_{yy} y^2,
 $$

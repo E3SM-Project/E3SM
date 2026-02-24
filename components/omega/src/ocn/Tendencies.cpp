@@ -171,17 +171,16 @@ void Tendencies::readTendConfig(
        Err, "Tendencies: TracerHorzAdvTendencyEnable not found in TendConfig");
    if (this->TracerHorzAdv.Enabled) {
       I4 Order = 0;
-      Err += TendConfig->get("TracerHorzAdvTendencyOrder", Order);
+      Err += TendConfig->get("HorzTracerFluxOrder", Order);
       CHECK_ERROR_ABORT(
-          Err,
-          "Tendencies: TracerHorzAdvTendencyOrder not found in TendConfig");
+          Err, "Tendencies: HorzTracerFluxOrder not found in TendConfig");
       if (Order == 2) {
          this->TracerHighOrderHorzAdv.Enabled = true;
          this->TracerHorzAdv.Enabled          = false;
       }
       if (!(Order == 1 or Order == 2)) {
          const std::string msg =
-             "TracerHorzAdvTendencyOrder: Only values are 1 and 2, found " +
+             "HorzTracerFluxOrder: Only values are 1 and 2, found " +
              std::to_string(Order);
          ABORT_ERROR(msg);
       }

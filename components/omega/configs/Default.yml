@@ -44,7 +44,7 @@ Omega:
     BottomDragTendencyEnable: false
     BottomDragCoeff: 0.0
     TracerHorzAdvTendencyEnable: true
-    TracerHorzAdvTendencyOrder: 1
+    HorzTracerFluxOrder: 1
     TracerDiffTendencyEnable: true
     EddyDiff2: 10.0
     TracerHyperDiffTendencyEnable: true
