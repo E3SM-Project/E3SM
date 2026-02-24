@@ -3,8 +3,8 @@
  * @brief Abstract base class for all E3SM emulators.
  */
 
-#ifndef EMULATOR_HPP
-#define EMULATOR_HPP
+#ifndef E3SM_EMULATOR_HPP
+#define E3SM_EMULATOR_HPP
 
 #include <string>
 
@@ -67,4 +67,4 @@ protected:
 
 } // namespace emulator
 
-#endif // EMULATOR_HPP
+#endif // E3SM_EMULATOR_HPP

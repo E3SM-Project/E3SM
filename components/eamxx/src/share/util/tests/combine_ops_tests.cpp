@@ -34,14 +34,9 @@ TEST_CASE ("combine_ops") {
   combine<Replace>(two,x,1,0);
   REQUIRE ( (x==two).all() );
 
-  combine<Update>(two,x,2.0,1.0);
+  combine<Update>(two,x,sp(2.0),sp(1.0));
   REQUIRE ( (x==six).all() );
-  combine<Update,true>(fv,x,2.0,1.0);
-  if (not (x==six).all() ) {
-    std::cout << "x: " << x << "\n";
-    std::cout << " x[0]: " << std::setprecision(18) << x[0] << "\n";
-    std::cout << "fv[0]: " << std::setprecision(18) << fv[0] << "\n";
-  }
+  combine<Update,true>(fv,x,sp(2.0),sp(1.0));
   REQUIRE ( (x==six).all() );
 
   x = two;
