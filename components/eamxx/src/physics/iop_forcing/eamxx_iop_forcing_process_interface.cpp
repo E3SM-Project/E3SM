@@ -2,9 +2,9 @@
 
 #include "share/field/field_utils.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
-#include "ekat/util/ekat_lin_interp.hpp"
 
 #include <ekat_math_utils.hpp>
+#include <ekat_lin_interp.hpp>
 
 namespace scream
 {
@@ -149,85 +149,114 @@ void IOPForcing::initialize_impl (const RunType run_type)
 }
 // =========================================================================================
 // =========================================================================================
-// =========================================================================================
-// Inline helper for scalar 1D linear interpolation
-KOKKOS_FUNCTION
-inline Real linear_interp_1d(const Real* x, const Real* f, const int n, const Real x_interp) {
-  if (x_interp <= x[0]) return f[0];
-  if (x_interp >= x[n-1]) return f[n-1];
 
-  for (int i = 0; i < n-1; ++i) {
-    if (x_interp >= x[i] && x_interp <= x[i+1]) {
-      Real t = (x_interp - x[i]) / (x[i+1] - x[i]);
-      return (1.0 - t) * f[i] + t * f[i+1];
-    }
-  }
-  return f[n-1]; // fallback
-}
-
-// =========================================================================================
-// Main semi-Lagrangian subsidence routine
 KOKKOS_FUNCTION
 void IOPForcing::
-advance_iop_subsidence(const MemberType& team,
-                       const int nlevs,
-                       const Real dt,
-                       const Real ps,
-                       const view_1d<const Pack>& ref_p_mid,
-                       const view_1d<const Pack>& ref_p_int,
-                       const view_1d<const Pack>& ref_p_del,
-                       const view_1d<const Pack>& omega,
-                       const Workspace& workspace,
-                       const view_1d<Pack>& u,
-                       const view_1d<Pack>& v,
-                       const view_1d<Pack>& T,
-                       const view_2d<Pack>& Q)
+advance_iop_subsidence (const MemberType& team,
+                        const int nlevs,
+                        const Real dt,
+                        const Real ps,
+                        const view_1d<const Pack>& ref_p_mid,
+                        const view_1d<const Pack>& ref_p_int,
+                        const view_1d<const Pack>& ref_p_del,
+                        const view_1d<const Pack>& omega,
+                        const Workspace& workspace,
+                        const view_1d<Pack>& u,
+                        const view_1d<Pack>& v,
+                        const view_1d<Pack>& T,
+                        const view_2d<Pack>& Q)
 {
-  constexpr Real Rair = C::Rair.value;
+  constexpr Real Rair  = C::Rair.value;
   constexpr Real Cpair = C::Cpair.value;
 
   const int n_q_tracers = Q.extent_int(0);
 
-  // Scalar views for pack-based inputs
-  auto s_ref_p_mid = ekat::scalarize(ref_p_mid);
-  auto s_omega     = ekat::scalarize(omega);
-  auto s_u         = ekat::scalarize(u);
-  auto s_v         = ekat::scalarize(v);
-  auto s_T         = ekat::scalarize(T);
-  auto s_Q         = ekat::scalarize(Q);
+  // --- Workspace temporaries (must be pre-requested with size nlevs) ---
+  auto p_dep = workspace.take("iop_p_dep");
 
-  const Real* x_ptr     = s_ref_p_mid.data();
-  const Real* omega_ptr = s_omega.data();
-  Real* u_ptr           = s_u.data();
-  Real* v_ptr           = s_v.data();
-  Real* T_ptr           = s_T.data();
-  Real* Q_ptr           = s_Q.data();
+  auto u_old = workspace.take("iop_u_old");
+  auto v_old = workspace.take("iop_v_old");
+  auto T_old = workspace.take("iop_T_old");
+
+  auto u_new = workspace.take("iop_u_new");
+  auto v_new = workspace.take("iop_v_new");
+  auto T_new = workspace.take("iop_T_new");
+
+  auto q_old = workspace.take("iop_q_old");
+  auto q_new = workspace.take("iop_q_new");
+
+  // Copy current state into *_old
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
+    u_old(k) = u(k);
+    v_old(k) = v(k);
+    T_old(k) = T(k);
+  });
+  team.team_barrier();
+
+  // Build departure pressure vector (x_tgt). Clamp so LinInterp never sees out-of-range.
+  const Pack pmin = ref_p_mid(0);
+  const Pack pmax = ref_p_mid(nlevs-1);
 
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
-    const Real p_ref   = x_ptr[k];
-    const Real omega_k = omega_ptr[k];
-    const Real p_dep   = p_ref - dt * omega_k;
-
-    // Note that I know I should probably be using ekat's linear interp
-    //  routine but I couldn't figure out for the life of me how to interface
-    //  with this without getting an onslaught of compile issues.  HELP!?
-
-    // Interpolate u, v, T at departure level
-    u_ptr[k] = linear_interp_1d(x_ptr, u_ptr, nlevs, p_dep);
-    v_ptr[k] = linear_interp_1d(x_ptr, v_ptr, nlevs, p_dep);
-    T_ptr[k] = linear_interp_1d(x_ptr, T_ptr, nlevs, p_dep);
-
-    // Add thermal expansion correction
-    T_ptr[k] *= 1.0 + (dt * Rair / Cpair) * omega_k / p_ref;
-
-    // Interpolate each tracer
-    for (int m = 0; m < n_q_tracers; ++m) {
-      Real* tracer_ptr = &Q_ptr[m * nlevs];
-      tracer_ptr[k] = linear_interp_1d(x_ptr, tracer_ptr, nlevs, p_dep);
-    }
+    Pack p = ref_p_mid(k) - dt * omega(k);
+    p = ekat::max(pmin, ekat::min(pmax, p));
+    p_dep(k) = p;
   });
-}
+  team.team_barrier();
 
+  // --- Use LinInterp exactly like the EAMxx example ---
+  // ncol=1, nlev_src=nlevs, nlev_tgt=nlevs
+  ekat::LinInterp<Real, Pack::n> interp(1, nlevs, nlevs);
+
+  interp.setup(team, ref_p_mid, p_dep);
+
+  interp.lin_interp(team, ref_p_mid, p_dep, u_old, u_new);
+  interp.lin_interp(team, ref_p_mid, p_dep, v_old, v_new);
+  interp.lin_interp(team, ref_p_mid, p_dep, T_old, T_new);
+  team.team_barrier();
+
+  // Thermal expansion correction + write back u/v/T
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
+    T_new(k) *= 1.0 + (dt * Rair / Cpair) * omega(k) / ref_p_mid(k);
+    u(k) = u_new(k);
+    v(k) = v_new(k);
+    T(k) = T_new(k);
+  });
+  team.team_barrier();
+
+  // Tracers (one at a time to keep workspace small)
+  for (int m = 0; m < n_q_tracers; ++m) {
+    const auto q_m = Kokkos::subview(Q, m, Kokkos::ALL());
+
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
+      q_old(k) = q_m(k);
+    });
+    team.team_barrier();
+
+    // setup already valid for (ref_p_mid -> p_dep); reuse it
+    interp.lin_interp(team, ref_p_mid, p_dep, q_old, q_new);
+    team.team_barrier();
+
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
+      q_m(k) = q_new(k);
+    });
+    team.team_barrier();
+  }
+
+  // Release in reverse-ish order (pattern used in EAMxx)
+  workspace.release(q_new);
+  workspace.release(q_old);
+
+  workspace.release(T_new);
+  workspace.release(v_new);
+  workspace.release(u_new);
+
+  workspace.release(T_old);
+  workspace.release(v_old);
+  workspace.release(u_old);
+
+  workspace.release(p_dep);
+}
 
 
 // =========================================================================================
