@@ -7,6 +7,7 @@
 #define E3SM_EMULATOR_HPP
 
 #include <string>
+#include "emulator_c_api.hpp"
 
 namespace emulator {
 
@@ -51,6 +52,21 @@ public:
   const std::string &name() const { return m_name; }
   bool is_initialized() const { return m_initialized; }
   int step_count() const { return m_step_count; }
+
+  // New virtuals for grid / coupling
+  virtual void set_grid_data(const EmulatorGridDesc& grid) = 0;
+  virtual void setup_coupling(const EmulatorCouplingDesc& cpl) = 0;
+  virtual void init_coupling_indices(const std::string &export_fields,
+                             const std::string &import_fields) = 0;
+
+  // Optionally: virtual accessors if Fortran needs them
+  virtual int get_num_local_cols() const = 0;
+  virtual int get_num_global_cols() const = 0;
+  virtual int get_nx() const = 0;
+  virtual int get_ny() const = 0;
+  virtual void get_local_col_gids(int* gids) const = 0;
+  virtual void get_cols_latlon(double* lat, double* lon) const = 0;
+  virtual void get_cols_area(double* area) const = 0;
 
 protected:
   // Virtual methods for derived classes

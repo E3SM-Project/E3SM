@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(emulators LANGUAGES CXX)
+project(emulators LANGUAGES CXX Fortran)
 
 # Path to externals (relative to this file)
 get_filename_component(E3SM_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
@@ -11,9 +11,9 @@ option(BUILD_EMULATOR_TESTS "Build emulator unit tests" OFF)
 # standalone mode so we don't try to compile Fortran sources (the project
 # only declares CXX).  When included from the full E3SM build Fortran
 # is already enabled by the parent project.
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  set(STANDALONE_MODE ON CACHE BOOL "Standalone build (CXX only, no Fortran)" FORCE)
-endif()
+# if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+#   set(STANDALONE_MODE ON CACHE BOOL "Standalone build (CXX only, no Fortran)" FORCE)
+# endif()
 
 if(BUILD_EMULATOR_TESTS)
   # Catch2 from ekat
@@ -32,3 +32,4 @@ endif()
 # Add subdirectories
 add_subdirectory(common)
 add_subdirectory(eatm)
+add_subdirectory(driver)

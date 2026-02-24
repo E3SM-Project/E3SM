@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 set(EATM_CXX_SOURCES
   src/atm.cpp
-  src/atm_f2c.cpp
+  # src/atm_f2c.cpp
 )
 
 set(EATM_CXX_HEADERS
@@ -10,8 +10,8 @@ set(EATM_CXX_HEADERS
 )
 
 set(EATM_F90_SOURCES
-  src/atm_comp_mct.F90
-  src/atm_f2c.F90
+  # src/atm_comp_mct.F90
+  # src/atm_f2c.F90
 )
 
 if(STANDALONE_MODE)

@@ -17,6 +17,7 @@
 
 #include "atm.hpp"
 #include "emulator_registry.hpp"
+#include "emulator_c_api.hpp"
 #include <fstream>
 #include <string>
 #include <mpi.h>
@@ -44,38 +45,33 @@ const emulator::EmulatorAtm &get_atm_const() {
 
 extern "C" {
 
-void emulator_atm_create_instance(const int f_comm, const int comp_id,
-                                  const char *input_file,
-                                  const char *log_file,
-                                  const int run_type,
-                                  const int start_ymd,
-                                  const int start_tod) {
+void emulator_atm_create_instance(const EmulatorCreateConfig& cfg) {
   // Open log file on master rank (Fortran already opened it,
   // so we append).  Non-master ranks skip file logging.
   int rank = 0;
-  MPI_Comm_rank(MPI_Comm_f2c(f_comm), &rank);
-  if (rank == 0 && log_file && log_file[0] != '\0') {
-    s_log_stream.open(log_file, std::ios::app);
+  MPI_Comm_rank(MPI_Comm_f2c(cfg.f_comm), &rank);
+  if (rank == 0 && cfg.log_file && cfg.log_file[0] != '\0') {
+    s_log_stream.open(cfg.log_file, std::ios::app);
     s_log_open = s_log_stream.is_open();
     if (s_log_open) {
       s_log_stream << "(eatm_f2c) create_instance: "
-                   << "comp_id=" << comp_id
-                   << " run_type=" << run_type
-                   << " start_ymd=" << start_ymd
-                   << " start_tod=" << start_tod
+                   << "comp_id=" << cfg.comp_id
+                   << " run_type=" << cfg.run_type
+                   << " start_ymd=" << cfg.start_ymd
+                   << " start_tod=" << cfg.start_tod
                    << std::endl;
     }
   }
 
   // Derive unique instance name from comp_id (multi-instance safe)
-  s_instance_name = "eatm_" + std::to_string(comp_id);
+  s_instance_name = "eatm_" + std::to_string(cfg.comp_id);
 
   auto &reg = emulator::EmulatorRegistry::instance();
   auto &atm = reg.create<emulator::EmulatorAtm>(s_instance_name);
 
-  std::string inf = input_file ? input_file : "";
-  atm.create_instance(f_comm, comp_id, inf, run_type,
-                      start_ymd, start_tod);
+  std::string inf = cfg.input_file ? cfg.input_file : "";
+  atm.create_instance(cfg.f_comm, cfg.comp_id, inf, cfg.run_type,
+                      cfg.start_ymd, cfg.start_tod);
 
   if (s_log_open) {
     s_log_stream << "(eatm_f2c) create_instance done: "
@@ -93,8 +89,8 @@ void emulator_atm_set_grid_data(const int nx, const int ny,
                                 const double *lat,
                                 const double *lon,
                                 const double *area) {
-  get_atm().set_grid_data(nx, ny, num_local_cols, num_global_cols,
-                          col_gids, lat, lon, area);
+  // get_atm().set_grid_data(nx, ny, num_local_cols, num_global_cols,
+  //                         col_gids, lat, lon, area);
 }
 
 void emulator_atm_init_coupling_indices(const char *export_fields,

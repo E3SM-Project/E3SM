@@ -7,6 +7,7 @@
  */
 
 #include "atm.hpp"
+#include "emulator_c_api.hpp"
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -88,22 +89,16 @@ void EmulatorAtm::create_instance(int comm, int comp_id,
   }
 }
 
-void EmulatorAtm::set_grid_data(int nx, int ny,
-                                int num_local_cols,
-                                int num_global_cols,
-                                const int *col_gids,
-                                const double *lat,
-                                const double *lon,
-                                const double *area) {
-  m_nx = nx;
-  m_ny = ny;
-  m_num_local_cols = num_local_cols;
-  m_num_global_cols = num_global_cols;
+void EmulatorAtm::set_grid_data(const EmulatorGridDesc& grid) {
+  m_nx = grid.nx;
+  m_ny = grid.ny;
+  m_num_local_cols = grid.num_local_cols;
+  m_num_global_cols = grid.num_global_cols;
 
-  m_col_gids.assign(col_gids, col_gids + num_local_cols);
-  m_lat.assign(lat, lat + num_local_cols);
-  m_lon.assign(lon, lon + num_local_cols);
-  m_area.assign(area, area + num_local_cols);
+  m_col_gids.assign(grid.col_gids, grid.col_gids + grid.num_local_cols);
+  m_lat.assign(grid.lat, grid.lat + grid.num_local_cols);
+  m_lon.assign(grid.lon, grid.lon + grid.num_local_cols);
+  m_area.assign(grid.area, grid.area + grid.num_local_cols);
 }
 
 void EmulatorAtm::init_coupling_indices(
@@ -115,16 +110,12 @@ void EmulatorAtm::init_coupling_indices(
   (void)import_fields;
 }
 
-void EmulatorAtm::setup_coupling(double *import_data,
-                                 double *export_data,
-                                 int num_imports,
-                                 int num_exports,
-                                 int field_size) {
-  m_import_data = import_data;
-  m_export_data = export_data;
-  m_num_imports = num_imports;
-  m_num_exports = num_exports;
-  (void)field_size;
+void EmulatorAtm::setup_coupling(const EmulatorCouplingDesc& cpl) {
+  m_import_data = cpl.import_data;
+  m_export_data = cpl.export_data;
+  m_num_imports = cpl.num_imports;
+  m_num_exports = cpl.num_exports;
+  (void)cpl.field_size;
 }
 
 void EmulatorAtm::get_local_col_gids(int *gids) const {

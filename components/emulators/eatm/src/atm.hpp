@@ -11,6 +11,7 @@
 #define EMULATOR_ATM_HPP
 
 #include "emulator.hpp"
+#include "emulator_c_api.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -58,36 +59,30 @@ public:
   /**
    * @brief Set grid decomposition data from driver.
    */
-  void set_grid_data(int nx, int ny,
-                     int num_local_cols, int num_global_cols,
-                     const int *col_gids,
-                     const double *lat, const double *lon,
-                     const double *area);
+  void set_grid_data(const EmulatorGridDesc& grid) override;
 
   /**
    * @brief Initialize coupling field indices from MCT field lists.
    */
   void init_coupling_indices(const std::string &export_fields,
-                             const std::string &import_fields);
+                             const std::string &import_fields) override;
 
   /**
    * @brief Set up coupling buffer pointers from MCT.
    */
-  void setup_coupling(double *import_data, double *export_data,
-                      int num_imports, int num_exports,
-                      int field_size);
+  void setup_coupling(const EmulatorCouplingDesc& cpl) override;
 
   // =========================================================================
   // Accessors
   // =========================================================================
 
-  int get_num_local_cols() const { return m_num_local_cols; }
-  int get_num_global_cols() const { return m_num_global_cols; }
-  int get_nx() const { return m_nx; }
-  int get_ny() const { return m_ny; }
-  void get_local_col_gids(int *gids) const;
-  void get_cols_latlon(double *lat, double *lon) const;
-  void get_cols_area(double *area) const;
+  int get_num_local_cols() const override { return m_num_local_cols; }
+  int get_num_global_cols() const override { return m_num_global_cols; }
+  int get_nx() const override { return m_nx; }
+  int get_ny() const override { return m_ny; }
+  void get_local_col_gids(int *gids) const override;
+  void get_cols_latlon(double *lat, double *lon) const override;
+  void get_cols_area(double *area) const override;
 
 protected:
   // Virtual methods from Emulator base
