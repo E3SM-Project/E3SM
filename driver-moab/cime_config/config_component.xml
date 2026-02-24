@@ -1085,8 +1085,8 @@
 
   <entry id="GLC_GRID">
     <type>char</type>
-    <valid_values>mpas.aisgis20km,mpas.ais20km,mpas.ais8to30km,mpas.ais4to20km,mpas.gis20km,mpas.gis4to40km,mpas.gis1to10km,mpas.gis1to10kmR2,null</valid_values>
-    <default_value>mpas.gis20km</default_value>
+    <valid_values>mpas.aisgis20km,mpas.ais20km,mpas.ais8to30km,mpas.ais4to20km,mpas.gis4to40km,mpas.gis1to10km,mpas.gis1to10kmR2,null</valid_values>
+    <default_value>mpas.gis4to40km</default_value>
     <group>build_grid</group>
     <file>env_build.xml</file>
     <desc>glacier (glc) grid - DO NOT EDIT (for experts only)</desc>
@@ -2782,7 +2782,7 @@
 
   <entry id="PIO_TYPENAME">
     <type>char</type>
-    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,netcdf4z,adios,adiosc,hdf5,default</valid_values>
+    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,netcdf4z,adios,adiosc,hdf5,hdf5c,default</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>

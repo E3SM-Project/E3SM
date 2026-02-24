@@ -1857,6 +1857,7 @@ f"""template<typename S, typename D>
         all_scalar_names = [scalar_name for scalar_name, _ in all_scalars]
         scalar_comments = "// " + ", ".join([('{} (output, set to zero)'.format(name) if name in out_scalar_names else name) for name in all_scalar_names])
 
+        # Collect all array data with similar dims. Start will real data and add int and bool arrays
         all_data = dict(real_data)
         for type_data in [int_data, bool_data]:
             for k, v in type_data.items():
@@ -1865,6 +1866,7 @@ f"""template<typename S, typename D>
                 else:
                     all_data[k] = v
 
+        # For each batch of data with matching dims, confirm size and loop over it to check against baselines
         for _, data in all_data.items():
             for datum in data:
                 check_arrays += f"        REQUIRE(d_baseline.total(d_baseline.{data[0]}) == d_test.total(d_test.{datum}));\n"

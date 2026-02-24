@@ -16,7 +16,7 @@ KOKKOS_FUNCTION
 void Functions<S,D>::
 get_cloud_dsd2(
   const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
-  const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, 
+  const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1,
   const Smask& context)
 {
   lamc.set(context   , 0);
@@ -105,10 +105,10 @@ get_rain_dsd2 (
     lamr.set(qr_gt_small, cbrt(mass_to_d3_factor * nr_lim / qr));
 
     // check for slope
-    const auto lammax = (mu_r+1.)*sp(1.e+5);
+    const auto lammax = (mu_r+sp(1.))*sp(1.e+5);
     //Below, 500 is inverse of max allowable number-weighted mean raindrop size=2mm
     //Since breakup is explicitly included, mean raindrop size can be relatively small
-    const auto lammin = (mu_r+1.)*500; 
+    const auto lammin = (mu_r+sp(1.))*500;
 
     // apply lambda limiters for rain
     const auto lt = qr_gt_small && (lamr < lammin);

@@ -99,4 +99,18 @@ subroutine zm_transport_tracer_bridge_f(pcols, pver, doconvtran, q, ncnst, mu, m
   call zm_transport_tracer(pcols, pver, doconvtran, q, ncnst, mu, md, du, eu, ed, dp, jt, mx, ideep, il1g, il2g, fracis, dqdt, dpdry, dt)
 end subroutine zm_transport_tracer_bridge_f
 
+subroutine zm_transport_momentum_bridge_f(pcols, ncol, pver, pverp, wind_in, nwind, mu, md, du, eu, ed, dp, jt, mx, ideep, il1g, il2g, wind_tend, pguall, pgdall, icwu, icwd, dt, seten) bind(C)
+  use zm_transport, only : zm_transport_momentum
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp, nwind, il1g, il2g
+  real(kind=c_real) , intent(in), dimension(pcols, pver, nwind) :: wind_in
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: mu, md, du, eu, ed, dp
+  integer(kind=c_int) , intent(in), dimension(pcols) :: jt, mx, ideep
+  real(kind=c_real) , intent(out), dimension(pcols, pver, nwind) :: wind_tend, pguall, pgdall, icwu, icwd
+  real(kind=c_real) , value, intent(in) :: dt
+  real(kind=c_real) , intent(out), dimension(pcols, pver) :: seten
+
+  call zm_transport_momentum(pcols, ncol, pver, pverp, wind_in, nwind, mu, md, du, eu, ed, dp, jt, mx, ideep, il1g, il2g, wind_tend, pguall, pgdall, icwu, icwd, dt, seten)
+end subroutine zm_transport_momentum_bridge_f
+
 end module zm_c2f_bridge

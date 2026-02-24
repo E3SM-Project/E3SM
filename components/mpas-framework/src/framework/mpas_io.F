@@ -240,7 +240,9 @@ module mpas_io
           ioformat /= MPAS_IO_PNETCDF .and. &
           ioformat /= MPAS_IO_PNETCDF5 .and. &
           ioformat /= MPAS_IO_ADIOS .and. &
-          ioformat /= MPAS_IO_ADIOSC) then
+          ioformat /= MPAS_IO_ADIOSC .and. &
+          ioformat /= MPAS_IO_HDF5 .and. &
+          ioformat /= MPAS_IO_HDF5C) then
          if (present(ierr)) ierr = MPAS_IO_ERR_INVALID_FORMAT
          return
       end if
@@ -280,6 +282,24 @@ module mpas_io
 #else
             call mpas_log_write( &
                'ERROR Building with HAVE_ADIOS=false but ADIOSC (ADIOS+Compression) format was requested in a stream', &
+               MPAS_LOG_CRIT)
+#endif
+         else if (ioformat == MPAS_IO_HDF5) then
+#ifdef HAVE_HDF5
+            pio_iotype = PIO_iotype_hdf5
+            pio_mode = 0
+#else
+            call mpas_log_write( &
+               'ERROR Building with HAVE_HDF5=false but HDF5 format was requested in a stream', &
+               MPAS_LOG_CRIT)
+#endif
+         else if (ioformat == MPAS_IO_HDF5C) then
+#ifdef HAVE_HDF5
+            pio_iotype = PIO_iotype_hdf5c
+            pio_mode = 0
+#else
+            call mpas_log_write( &
+               'ERROR Building with HAVE_HDF5=false but HDF5C (HDF5+Compression) format was requested in a stream', &
                MPAS_LOG_CRIT)
 #endif
          else if (ioformat == MPAS_IO_NETCDF) then
