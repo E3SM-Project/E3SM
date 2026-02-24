@@ -125,8 +125,6 @@ int initTendenciesTest(const std::string &mesh) {
    Tracers::init();
    VertAdv::init();
 
-   // VertCoord::init2();
-
    int StateErr = OceanState::init();
    if (StateErr != 0) {
       Err++;
