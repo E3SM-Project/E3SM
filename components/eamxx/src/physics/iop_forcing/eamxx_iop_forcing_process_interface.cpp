@@ -81,7 +81,7 @@ size_t IOPForcing::requested_buffer_size_in_bytes() const
   // Number of bytes needed by the WorkspaceManager passed to shoc_main
   const int nlevi_packs  = ekat::npack<Pack>(m_num_levs+1);
   const auto policy      = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
-  const size_t wsm_bytes = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 7+m_num_tracers, policy);
+  const size_t wsm_bytes = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 7+20+m_num_tracers, policy);
 
   return wsm_bytes;
 }
@@ -100,7 +100,7 @@ void IOPForcing::init_buffers(const ATMBufferManager &buffer_manager)
   m_buffer.wsm_data = mem;
 
   const auto policy       = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
-  const size_t wsm_npacks = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 7+m_num_tracers, policy)/sizeof(Pack);
+  const size_t wsm_npacks = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 7+20+m_num_tracers, policy)/sizeof(Pack);
   mem += wsm_npacks;
 
   size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
@@ -139,7 +139,7 @@ void IOPForcing::initialize_impl (const RunType run_type)
   // Setup WSM for internal local variables
   const auto nlevi_packs = ekat::npack<Pack>(m_num_levs+1);
   const auto policy = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
-  m_workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 7+m_num_tracers, policy);
+  m_workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 7+20+m_num_tracers, policy);
 
   // Compute field for horizontal contraction weights (1/num_global_dofs)
   const auto iop_nudge_tq = m_iop_data_manager->get_params().get<bool>("iop_nudge_tq");
@@ -172,18 +172,19 @@ advance_iop_subsidence (const MemberType& team,
   const int n_q_tracers = Q.extent_int(0);
 
   // --- Workspace temporaries (must be pre-requested with size nlevs) ---
-  auto p_dep = workspace.take("iop_p_dep");
+  auto p_dep = uview_1d<Pack>();
+  auto u_old = uview_1d<Pack>();
+  auto v_old = uview_1d<Pack>();
+  auto T_old = uview_1d<Pack>();
+  auto u_new = uview_1d<Pack>();
+  auto v_new = uview_1d<Pack>();
+  auto T_new = uview_1d<Pack>();
+  auto q_old = uview_1d<Pack>();
+  auto q_new = uview_1d<Pack>();
 
-  auto u_old = workspace.take("iop_u_old");
-  auto v_old = workspace.take("iop_v_old");
-  auto T_old = workspace.take("iop_T_old");
-
-  auto u_new = workspace.take("iop_u_new");
-  auto v_new = workspace.take("iop_v_new");
-  auto T_new = workspace.take("iop_T_new");
-
-  auto q_old = workspace.take("iop_q_old");
-  auto q_new = workspace.take("iop_q_new");
+  workspace.take_many_contiguous_unsafe<9>(
+{"iop_p_dep","iop_u_old","iop_v_old","iop_T_old","iop_u_new","iop_v_new","iop_T_new","iop_q_old","iop_q_new"},
+  {&p_dep,     &u_old,     &v_old,     &T_old,     &u_new,     &v_new,     &T_new,     &q_old,     &q_new});
 
   // Copy current state into *_old
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
@@ -206,8 +207,10 @@ advance_iop_subsidence (const MemberType& team,
 
   // --- Use LinInterp exactly like the EAMxx example ---
   // ncol=1, nlev_src=nlevs, nlev_tgt=nlevs
-  ekat::LinInterp<Real, Pack::n> interp(1, nlevs, nlevs);
+//  ekat::LinInterp<Real, Pack::n> interp(1, nlevs, nlevs);
 
+  const auto nlev_packs = ekat::npack<Pack>(nlevs);
+  ekat::LinInterp<Real, Pack::n> interp(1, nlev_packs, nlev_packs);
   interp.setup(team, ref_p_mid, p_dep);
 
   interp.lin_interp(team, ref_p_mid, p_dep, u_old, u_new);
@@ -243,19 +246,8 @@ advance_iop_subsidence (const MemberType& team,
     team.team_barrier();
   }
 
-  // Release in reverse-ish order (pattern used in EAMxx)
-  workspace.release(q_new);
-  workspace.release(q_old);
-
-  workspace.release(T_new);
-  workspace.release(v_new);
-  workspace.release(u_new);
-
-  workspace.release(T_old);
-  workspace.release(v_old);
-  workspace.release(u_old);
-
-  workspace.release(p_dep);
+  workspace.release_many_contiguous<9>(
+  {&p_dep,&u_old,&v_old,&T_old,&u_new,&v_new,&T_new,&q_old,&q_new});
 }
 
 
