@@ -355,45 +355,63 @@ This relation is frequently used in discretized fluxes and conservation equation
 
 ### Decomposition
 
-In this document, two decompositions will be critical.  The first decomposition is
+In this document, two decompositions will be critical.
+
+The first decomposition is
 
 $$
 \varphi(x,y,z,t) = \overline{\varphi}^{\tilde{z}}_k(x,y,t) + \delta \varphi(x,y,z,t)
 $$ (vertical-decomposition)
 
-which is a density weighted vertical integral based upon [](#def-layer-average) and the deviation from this value within the layer.
+which is a density-weighted vertical layer average based upon [](#def-layer-average) and the deviation from this value within the layer.
 
-The second decomposition is
+The second decomposition separates each field into a resolved and unresolved component,
 
 $$
-\varphi = \left<\varphi\right> + \varphi^\prime
-$$ (reynolds-definition)
+\varphi = \left<\varphi\right> + \varphi^\prime,
+$$ (resolved-unresolved-definition)
 
-which is the traditional Reynolds' average and deviation from this value.
+where:
 
-The fundamental ocean model equations are most often Reynolds' averaged to derive the sub gridscale stresses. Each variable is decomposed into an average over a sufficiently large sample of turbulent processes, which allows for a meaningful fluctuating component [[](#reynolds-definition)]. Commonly, the Reynolds' average is thought of as a time average, but an ensemble average is equally valid.  In fact, the ensemble and time averaging can be thought of as equivalent, given that a sufficiently long time average will effectively average over variations in the flow that could be thought of as an ensemble.  Given the functions are continuous, the averaging operator can be passed through derivatives and integrals without corrections and an average of products with a single perturbation quantity is zero.
+- $\left<\varphi\right>$ denotes the **resolved (layer-mean / grid-resolved) component**, obtained by projection onto the resolved space,
+- $\varphi^\prime$ denotes the **unresolved component**, defined such that
+  $$
+  \left<\varphi^\prime\right> = 0.
+  $$
 
-The Reynolds' average is most commonly denoted by an overbar. However, to disambiguate from the definition of the bar as the vertical density weighted average, the Reynolds' average herein is denoted by $< . >$.
+This decomposition is introduced to identify subgrid-scale (SGS) fluxes that require parameterization. It should be interpreted as a resolved/unresolved (coarse-grained) split consistent with the model’s prognostic layer-averaged variables, rather than strictly as a time or ensemble Reynolds average.
 
-The Reynolds' approach is an attractive approach for Boussinesq ocean models since the fundamental equations do not include products of spatially variable density and tracer, pressure, or momentum.  When the ocean model is non Boussinesq, products of spatially varying density and other fields (e.g., tracer) arise and create difficulties, producing a term like $\left<\rho^\prime {\mathbf u}^\prime\right>$ which is difficult to parameterize. However, given the definition of our chosen pseudo-height, the density terms are wrapped up in $\tilde{z}$ and once again a Reynolds' approach can be cleanly used.
+The projection operator is linear and commutes with spatial derivatives and integrals in the same manner assumed for Reynolds averaging. Products satisfy
+
+$$
+\left< \varphi \psi \right>
+=
+\left< \varphi \right>\left< \psi \right>
++
+\left< \varphi^\prime \psi^\prime \right>,
+$$
+
+which serves to expose SGS flux terms.
 
 ### Averaging
 
-The quantity being averaged in [](#def-layer-average) is arbitrary. For example, this equation can apply equally to a Reynolds' averaged quantity, e.g.,
+The quantity being averaged in [](#def-layer-average) is arbitrary. For example, the layer average may be applied to resolved quantities,
 
 $$
 \overline{\left<\varphi\right>}^{\tilde{z}}_k(x,y,t) =
 \frac{1}{\tilde{h}_k} \int_{\tilde{z}_{k}^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left<\varphi\right> d\tilde{z}.
 $$ (def-layer-average-reynolds)
 
-Additionally, for the decomposition related to vertical averaging, we will encounter terms such as ${\overline \varphi}^{\tilde{z}}_k \delta\varphi$ that need to be vertical averaged.  Using [](#def-layer-average) we have
+Additionally, for the decomposition related to vertical averaging, we will encounter terms such as ${\overline \varphi}^{\tilde{z}}_k \delta\varphi$ that need to be vertically averaged. Using [](#def-layer-average) we have
 
 $$
-\overline{{\overline \varphi}^{\tilde{z}}_k \delta\varphi}^{\tilde{z}}_k &= \frac{\int_{{\tilde z}_{k}^{\text{bot}}}^{{\tilde z}_k^{\text{top}}} {\overline \varphi}^{\tilde{z}}_k \delta \varphi d{\tilde z}}
-     {\int_{{\tilde z}_{k}^{\text{bot}}}^{{\tilde z}_k^{\text{top}}} d{\tilde z}} \\
-     &= {\overline \varphi}^{\tilde{z}}_k \frac{\int_{{\tilde z}_{k}^{\text{bot}}}^{{\tilde z}_k^{\text{top}}} \delta \varphi d{\tilde z}}
-     {\int_{{\tilde z}_{k}^{\text{bot}}}^{{\tilde z}_k^{\text{top}}} d{\tilde z}} \\
-     &= 0,
+\overline{{\overline \varphi}^{\tilde{z}}_k \delta\varphi}^{\tilde{z}}_k
+=
+{\overline \varphi}^{\tilde{z}}_k
+\frac{\int_{{\tilde z}_{k}^{\text{bot}}}^{{\tilde z}_k^{\text{top}}} \delta \varphi d{\tilde z}}
+     {\int_{{\tilde z}_{k}^{\text{bot}}}^{{\tilde z}_k^{\text{top}}} d{\tilde z}}
+=
+0,
 $$ (delta-vert-average)
 
 where the last equality is true by definition.
@@ -402,7 +420,8 @@ where the last equality is true by definition.
 
 ### Tracer & Mass
 
-We first Reynolds' average [](#vh-tracer-pseudo) and given the definition of the operator we can move the averaging past the derivatives and integrals without correction terms to yield
+We first apply the resolved/unresolved decomposition to [](#vh-tracer-pseudo).
+Because the projection operator is linear and commutes with spatial derivatives and integrals, we may move it through the spatial integrals without correction terms to yield
 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left<\varphi\right> \, d\tilde{z} \, dA
@@ -572,7 +591,7 @@ $$
 & = -\int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left({\bf f} \times \mathbf{u} + \frac{1}{\rho} \nabla p + \nabla \Phi \right) \, d\tilde{z} \, dA.
 $$ (vh-momentum-forces)
 
-As with the tracer derivation, we next Reynolds' average [](#vh-momentum-forces),
+As with the tracer derivation, we next apply [](#resolved-unresolved-definition) to [](#vh-momentum-forces) to identify subgrid-scale (SGS) fluxes,
 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left< {\bf u} \right> \, d\tilde{z} \, dA
@@ -582,7 +601,7 @@ $$
 & = -\int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \, \left< {\bf f} \times \mathbf{u} + \frac{1}{\rho} \nabla p + \nabla \Phi \right> \, d\tilde{z} \, dA.
 $$ (vh-momentum-reynolds1)
 
-Here we have also moved the Reynolds' average through the spatial integrals given the properties of the averaging.  Next we do a Reynolds' decomposition, this yields
+Here we have also moved the Reynolds' average through the spatial integrals given the properties of the averaging.  Next we decompose the nonlinear products into resolved and unresolved components, this yields
 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left< {\bf u} \right> \, d\tilde{z} \, dA
@@ -685,6 +704,8 @@ $$
 & = - \, \overline{\left< \alpha \right> \nabla \left< p \right> + \left< \alpha' \nabla p' \right> + \nabla \left<\Phi\right>}^{\tilde{z}}_k.
 $$ (layer-momentum-final)
 
+The term $\left< \alpha' \nabla p' \right>$ arises from decomposing the nonlinear product $\alpha \nabla p$ into resolved and unresolved components. In the present formulation, we do not introduce a separate parameterization for this term. It is assumed to be small relative to the resolved pressure–gravity acceleration under weak density variability and small dynamic pressure fluctuations. The pressure gradient force is instead computed directly from the hydrostatic pressure and equation of state, consistent with the finite-volume discretization.
+
 The $\delta X$ terms in the layered equations are vertical deviations from the vertical layer average of a given quantity $X$.  We will assume these deviations are small and products of these deviations are even smaller.  Thus we will ignore most of these terms in Omega.  The exception is the pressure gradient force.  At this time we will assume piecewise constant approximations of the vertically continuous system, which is appropriate for the simple pressure gradient force targeted for early versions of Omega.  This assumption will be revisited at a later date.  We also note that these terms could potentially serve as a bridge to multiscale fluxes, as resolution is increased, these $\delta X$ terms would get larger, but likely only for significantly higher resolution (e.g. 10s of meters).  However, these terms would have to be further analyzed and developed as these terms are only deviations from layer averages, not temporal averages as in the Reynolds' approach.
 
 (notational-simplifications)=
@@ -692,7 +713,7 @@ The $\delta X$ terms in the layered equations are vertical deviations from the v
 
 Throughout the rest of this document, we will
 
-1. Drop the $< >$ notation around single variables and note that all variables are assumed to be Reynolds' averaged.  Turbulent correlations will retain the angle bracket notation.
+1. Drop the $< >$ notation around single variables and interpret all prognostic variables as resolved (layer-mean) quantities. Covariance terms of the form $\left< X' Y' \right>$ denote unresolved (subgrid-scale) fluxes that must be parameterized.
 2. Change the vertical density weighted average notation from $\overline{\varphi}^{\tilde{z}}_k$ to the more simple $\varphi_k$.  Thus, any subscript $k$ implies a layer average.
 3. Define a total vertical velocity across the pseudo height surface as $\tilde{W}_{tr} \equiv \tilde{w}_{tr} - \tilde{u}$.  As a reminder $\tilde{u}$ is the projection of the normal velocity onto the normal vector to the pseudo height surface, in many cases this can be a very small correction to $\tilde{w}_{tr}$.
 
@@ -725,8 +746,6 @@ $$
 & + \frac{1}{\tilde{h}_k}  \left\{ \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{ u}^\prime \right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} - \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{ u}^\prime \right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \right\} \\
 & = - \left(\alpha \nabla p + \nabla \Phi \right)_k.
 $$ (layer-momentum-final-simple)
-
-**XSAD: why do we drop $\left< \alpha' \nabla p' \right>$??**
 
 In [](#layer-tracer-final-simple) and [](#layer-momentum-final-simple) we have not combined turbulent flux terms (e.g., $\left<\varphi^\prime \tilde{W}_{tr}^\prime \right>$) as the two terms that comprise this term ($\left< \varphi^\prime {\tilde w}_{tr}^{\prime} \right>$ and $\left< \varphi^\prime \tilde{ u}^{\prime}\right>$) are fundamentally different processes that must be modeled separately.
 
@@ -845,17 +864,29 @@ $$
 in this relation, we have moved the subscript $k$ off the variable itself to prevent confusion with the layer average.  With this definition, [](#discrete-mom-flux-sloping) goes to zero for flat layer surfaces.
 
 #### Vertical velocity dissipation
-The vertical turbulent momentum stress is most commonly parameterized as a down-gradient process, i.e.,
+The vertical turbulent momentum stress is most commonly parameterized as a down-gradient process, which for a z-coordinate model is given as,
 
 $$
-\left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> \right]_{e,k} = -\frac{\nu_v \rho}{\rho_0} \left[\frac{\partial u}{\partial \tilde{z}}\right]_{e,k}
+\left<u^\prime w^\prime \right> = -\nu_v \frac{\partial u}{\partial z}
 $$
+
+where $\nu_v$ is the parameterized vertical viscosity.
+
+For our pseudo-height coordinate the momentum stress is,
+
+$$
+\left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> \right]_{e,k} = -\tilde{\nu_v} \left[\frac{\partial u}{\partial \tilde{z}}\right]_{e,k}
+$$
+
+where $\tilde{\nu}_v \equiv \frac{\nu_v \rho}{\rho_0}$.
 
 Plugging this relation into the last part of [](#discrete-momentum)
 
 $$
-\frac{1}{\left[\tilde{h}_{i,k}\right]_{e,k}}  \left\{ \left[ \nu_v \left[\frac{\partial u}{\partial \tilde{z}}\right]_{e,k} \right]_{e,k} - \left[ \nu_v \left[\frac{\partial u}{\partial \tilde{z}}\right]_{e,k} \right]_{e,k+1}  \right\}
+-\frac{1}{\left[\tilde{h}_k\right]_e} \left\{ \left[\left<u^\prime \tilde{w}_{tr}^\prime\right> \right]_{e,k} - \left[\left<u^\prime \tilde{w}_{tr}^\prime\right> \right]_{e,k+1} \right\} = \frac{1}{\left[\tilde{h}_{i,k}\right]_{e,k}}  \left\{ \left[ \tilde{\nu_v} \right]_{e,k} \left[\frac{\partial u}{\partial \tilde{z}}\right]_{e,k} - \left[ \tilde{\nu_v} \right]_{e,k+1} \left[\frac{\partial u}{\partial \tilde{z}}\right]_{e,k} \right\}
 $$ (discrete-mom-vert-diff)
+
+Here $\left[ \tilde{\nu_v} \right]_{e,k} $ is the vertical viscosity interpolated to a given edge.
 
 ##### Vertical derivatives in a finite volume framework
 
@@ -900,7 +931,7 @@ where $0.5 \left(\tilde{h}_k + \tilde{h}_{k+1}\right)$ is the distance between $
 With this, we can now fully discretize [](#discrete-mom-vert-diff) as
 
 $$
--\frac{1}{\left[\tilde{h}_k\right]_e} \left\{ \left[\left<u^\prime \tilde{w}_{tr}^\prime\right> \right]_{e,k} - \left[\left<u^\prime \tilde{w}_{tr}^\prime\right> \right]_{e,k+1} \right\} = -\frac{1}{\left[\tilde{h}_k\right]_e} \left\{ \frac{\left(u_{e,k-1} - u_{e,k}\right)}{0.5 \left(\tilde{h}_{k-1} + \tilde{h}_{k}\right)} - \frac{\left(u_{e,k} - u_{e,k+1}\right)}{0.5 \left(\tilde{h}_k + \tilde{h}_{k+1}\right)} \right\}.
+-\frac{1}{\left[\tilde{h}_k\right]_e} \left\{ \left[\left<u^\prime \tilde{w}_{tr}^\prime\right> \right]_{e,k} - \left[\left<u^\prime \tilde{w}_{tr}^\prime\right> \right]_{e,k+1} \right\} = -\frac{1}{\left[\tilde{h}_k\right]_{e,k}} \left\{ \left[\tilde{\nu_v} \right]_{e,k} \frac{\left(u_{e,k-1} - u_{e,k}\right)}{0.5 \left(\tilde{h}_{k-1} + \tilde{h}_{k}\right)} - \left[\tilde{\nu_v} \right]_{e,k+1} \frac{\left(u_{e,k} - u_{e,k+1}\right)}{0.5 \left(\tilde{h}_k + \tilde{h}_{k+1}\right)} \right\}.
 $$ (final-vert-vel-dissipation)
 
 This form can be interfaced with the Omega [tridiagonal solver](TridiagonalSolver.md) routine.
