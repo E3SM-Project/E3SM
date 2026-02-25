@@ -418,7 +418,8 @@ class TracerHorzAdvOnCell {
 // Tracer high order horizontal advection term
 class TracerHighOrderHorzAdvOnCell {
  public:
-   bool Enabled = false;
+   bool Enabled       = false;
+   bool ForceLowOrder = false;
    // coefficient for blending high-order terms
    Real Coef3rdOrder = 0.25;
    TracerHighOrderHorzAdvOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
@@ -431,7 +432,7 @@ class TracerHighOrderHorzAdvOnCell {
       const I4 KEnd   = KStart + VecLength;
       for (int K = KStart; K < KEnd; ++K)
          HighOrderFlxHorz(L, IEdge, K) = 0;
-      if (AdvMaskHighOrder(IEdge)) {
+      if (!ForceLowOrder && AdvMaskHighOrder(IEdge)) {
          for (int I = 0; I < NAdvCellsForEdge(IEdge); ++I) {
             const I4 ICell = AdvCellsForEdge(IEdge, I);
             for (int K = KStart; K < KEnd; ++K) {
