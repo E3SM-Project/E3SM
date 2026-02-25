@@ -17,6 +17,9 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm, const ekat::ParameterLi
  : MAMGenericInterface(comm, params),
    aero_config_()
 {
+  config_.n_so4_monolayers_pcage =
+    m_params.get<int>("mam4_number_so4_monolayers_to_age_carbon_particle",8);
+
   config_.amicphys.do_cond   = m_params.get<bool>("mam4_do_cond");
   config_.amicphys.do_rename = m_params.get<bool>("mam4_do_rename");
   config_.amicphys.do_newnuc = m_params.get<bool>("mam4_do_newnuc");
@@ -1054,8 +1057,10 @@ void MAMMicrophysics::run_impl(const double dt) {
         // Output: values are dvel, dflx
         // Input/Output: progs::stateq, progs::qqcw
         team.team_barrier();
+        const unsigned n_so4_monolayers_pcage = config.n_so4_monolayers_pcage;
         mam4::microphysics::perform_atmospheric_chemistry_and_microphysics(
-            team, dt, rlats, sfc_temperature(icol), sfc_pressure(icol),
+            team, dt, rlats, n_so4_monolayers_pcage,
+            sfc_temperature(icol), sfc_pressure(icol),
             wind_speed, rain, solar_flux, cnst_offline_icol, forcings_in, atm,
             photo_table,  config.setsox, config.amicphys,
              zenith_angle(icol), d_sfc_alb_dir_vis(icol),
@@ -1077,11 +1082,11 @@ void MAMMicrophysics::run_impl(const double dt) {
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, offset_aerosol, pcnst), [&](int ispc) {
           constituent_fluxes(icol, ispc) -= dflx_col[ispc - offset_aerosol];
         });
-	if (diag_arrays_gas_dry_deposition_flux.size()) {
+        if (diag_arrays_gas_dry_deposition_flux.size()) {
           Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_gas_aerosol_constituents), [&](int ispc) {
             diag_arrays_gas_dry_deposition_flux[ispc] = dflx_col[ispc];
           });
-	}
+        }
       });  // parallel_for for the column loop
   Kokkos::fence();
 
