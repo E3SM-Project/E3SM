@@ -65,9 +65,9 @@ class Tendencies {
    VelocityHyperDiffOnEdge VelocityHyperDiff;
    WindForcingOnEdge WindForcing;
    BottomDragOnEdge BottomDrag;
+   TracerHorzAdvOnCell TracerHorzAdv;
    TracerDiffOnCell TracerDiffusion;
    TracerHyperDiffOnCell TracerHyperDiff;
-   TracerHighOrderHorzAdvOnCell TracerHighOrderHorzAdv;
 
    // Methods to compute tendency groups
    void computeThicknessTendencies(const OceanState *State,

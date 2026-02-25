@@ -365,14 +365,14 @@ class BottomDragOnEdge {
    Array1DI4 MaxLayerEdgeTop;
 };
 
-// Tracer high order horizontal advection term
-class TracerHighOrderHorzAdvOnCell {
+// Tracer horizontal advection term
+class TracerHorzAdvOnCell {
  public:
    bool Enabled       = false;
    bool ForceLowOrder = false;
    // coefficient for blending high-order terms
    Real Coef3rdOrder = 0.25;
-   TracerHighOrderHorzAdvOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
+   TracerHorzAdvOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
    void init();
    KOKKOS_FUNCTION void operator()(const I4 L, const I4 IEdge, const I4 KChunk,
                                    const Array3DReal &TracerCell,

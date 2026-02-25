@@ -882,7 +882,7 @@ int testTracerHorzAdvOnCell(int NVertLayers, int NTracers, Real RTol) {
    // Compute numerical result
    Array3DReal NumTrFluxDiv("NumTrFluxDiv", NTracers, Mesh->NCellsOwned,
                             NVertLayers);
-   TracerHighOrderHorzAdvOnCell TrHorzAdvOnC(Mesh, VCoord);
+   TracerHorzAdvOnCell TrHorzAdvOnC(Mesh, VCoord);
    TrHorzAdvOnC.init();
    TrHorzAdvOnC.ForceLowOrder = true;
 

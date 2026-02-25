@@ -71,8 +71,8 @@ BottomDragOnEdge::BottomDragOnEdge(const HorzMesh *Mesh,
       NVertLayers(VCoord->NVertLayers), EdgeMask(VCoord->EdgeMask),
       MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop) {}
 
-TracerHighOrderHorzAdvOnCell::TracerHighOrderHorzAdvOnCell(
-    const HorzMesh *Mesh, const VertCoord *VCoord)
+TracerHorzAdvOnCell::TracerHorzAdvOnCell(const HorzMesh *Mesh,
+                                         const VertCoord *VCoord)
     : HorzontalMesh(Mesh),
       NAdvCellsForEdge("NumberOfCellsContribToAdvectionAtEdge",
                        Mesh->NEdgesAll),
@@ -111,7 +111,7 @@ TracerHyperDiffOnCell::TracerHyperDiffOnCell(const HorzMesh *Mesh,
       MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
       MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop) {}
 
-void TracerHighOrderHorzAdvOnCell::init() {
+void TracerHorzAdvOnCell::init() {
    const HorzMesh *Mesh = this->HorzontalMesh;
    const auto MaxEdges2 = Mesh->MaxEdges2;
    const auto NEdgesAll = Mesh->NEdgesAll;

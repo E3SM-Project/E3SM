@@ -218,17 +218,17 @@ int initTimeStepperTest(const std::string &mesh) {
    }
 
    // Disable all other tendencies
-   TestTendencies->ThicknessFluxDiv.Enabled       = false;
-   TestTendencies->PotientialVortHAdv.Enabled     = false;
-   TestTendencies->KEGrad.Enabled                 = false;
-   TestTendencies->SSHGrad.Enabled                = false;
-   TestTendencies->VelocityDiffusion.Enabled      = false;
-   TestTendencies->VelocityHyperDiff.Enabled      = false;
-   TestTendencies->TracerHighOrderHorzAdv.Enabled = false;
-   TestTendencies->TracerDiffusion.Enabled        = false;
-   TestTendencies->TracerHyperDiff.Enabled        = false;
-   TestTendencies->WindForcing.Enabled            = false;
-   TestTendencies->BottomDrag.Enabled             = false;
+   TestTendencies->ThicknessFluxDiv.Enabled   = false;
+   TestTendencies->PotientialVortHAdv.Enabled = false;
+   TestTendencies->KEGrad.Enabled             = false;
+   TestTendencies->SSHGrad.Enabled            = false;
+   TestTendencies->VelocityDiffusion.Enabled  = false;
+   TestTendencies->VelocityHyperDiff.Enabled  = false;
+   TestTendencies->TracerHorzAdv.Enabled      = false;
+   TestTendencies->TracerDiffusion.Enabled    = false;
+   TestTendencies->TracerHyperDiff.Enabled    = false;
+   TestTendencies->WindForcing.Enabled        = false;
+   TestTendencies->BottomDrag.Enabled         = false;
 
    return Err;
 }
