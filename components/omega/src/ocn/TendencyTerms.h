@@ -420,11 +420,9 @@ class TracerHighOrderHorzAdvOnCell {
  public:
    bool Enabled = false;
    // coefficient for blending high-order terms
-   Real coef3rdOrder = 0.25;
-
+   Real Coef3rdOrder = 0.25;
    TracerHighOrderHorzAdvOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
    void init();
-
    KOKKOS_FUNCTION void operator()(const I4 L, const I4 IEdge, const I4 KChunk,
                                    const Array3DReal &TracerCell,
                                    const Array2DReal &FluxLayerThickEdge,
@@ -437,27 +435,27 @@ class TracerHighOrderHorzAdvOnCell {
          for (int I = 0; I < NAdvCellsForEdge(IEdge); ++I) {
             const I4 ICell = AdvCellsForEdge(IEdge, I);
             for (int K = KStart; K < KEnd; ++K) {
-               const Real normalThicknessFlux =
+               const Real NormalThicknessFlux =
                    FluxLayerThickEdge(IEdge, K) * NormVelEdge(IEdge, K);
-               const Real tracerWgt =
+               const Real TracerWgt =
                    (AdvCoefs(I, IEdge) +
-                    coef3rdOrder * std::copysign(1._Real, normalThicknessFlux) *
+                    Coef3rdOrder * std::copysign(1._Real, NormalThicknessFlux) *
                         AdvCoefs3rd(I, IEdge)) *
-                   normalThicknessFlux;
+                   NormalThicknessFlux;
                HighOrderFlxHorz(L, IEdge, K) +=
-                   tracerWgt * TracerCell(L, ICell, K);
+                   TracerWgt * TracerCell(L, ICell, K);
             }
          }
       } else {
          for (int K = KStart; K < KEnd; ++K) {
             const I4 JCell0 = CellsOnEdge(IEdge, 0);
             const I4 JCell1 = CellsOnEdge(IEdge, 1);
-            const Real normalThicknessFlux =
+            const Real NormalThicknessFlux =
                 FluxLayerThickEdge(IEdge, K) * NormVelEdge(IEdge, K);
-            const Real tracerWgt =
-                DvEdge(IEdge) * 0.5_Real * normalThicknessFlux;
+            const Real TracerWgt =
+                DvEdge(IEdge) * 0.5_Real * NormalThicknessFlux;
             HighOrderFlxHorz(L, IEdge, K) +=
-                tracerWgt *
+                TracerWgt *
                 (TracerCell(L, JCell1, K) + TracerCell(L, JCell0, K));
          }
       }
