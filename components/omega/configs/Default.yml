@@ -24,6 +24,8 @@ Omega:
     NTimeLevels: 2
   Advection:
     FluxThicknessType: Center
+    HorzTracerFluxOrder: 2
+    Coef3rdOrder: 0.25
   WindStress:
     InterpType: Isotropic
   VertCoord:
@@ -43,8 +45,6 @@ Omega:
     BottomDragTendencyEnable: false
     BottomDragCoeff: 0.0
     TracerHorzAdvTendencyEnable: true
-    HorzTracerFluxOrder: 2
-    HorzTracerCoef3rdOrder: 0.25
     TracerDiffTendencyEnable: true
     EddyDiff2: 10.0
     TracerHyperDiffTendencyEnable: true

@@ -69,7 +69,8 @@ void Tendencies::init() {
        create("Default", DefHorzMesh, DefVertCoord, NTracers, &TendConfig,
               CustomThickTend, CustomVelTend);
 
-   DefaultTendencies->readTendConfig(&TendConfig);
+   DefaultTendencies->readConfig(OmegaConfig);
+
    if (DefaultTendencies->TracerHorzAdv.Enabled)
       DefaultTendencies->TracerHorzAdv.init();
 } // end init
@@ -122,58 +123,65 @@ Tendencies *Tendencies::get(const std::string &Name ///< [in] Name of tendencies
 
 //------------------------------------------------------------------------------
 // read and set config options
-void Tendencies::readTendConfig(
-    Config *TendConfig ///< [in] Tendencies subconfig
+void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
 ) {
    Error Err; // error code
 
-   Err += TendConfig->get("ThicknessFluxTendencyEnable",
-                          this->ThicknessFluxDiv.Enabled);
+   Config TendConfig("Tendencies");
+   Err += OmegaConfig->get(TendConfig);
+   CHECK_ERROR_ABORT(Err, "Tendencies: Tendencies group not found in Config");
+
+   Err += TendConfig.get("ThicknessFluxTendencyEnable",
+                         this->ThicknessFluxDiv.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: ThicknessFluxTendencyEnable not found in TendConfig");
 
-   Err += TendConfig->get("PVTendencyEnable", this->PotientialVortHAdv.Enabled);
+   Err += TendConfig.get("PVTendencyEnable", this->PotientialVortHAdv.Enabled);
    CHECK_ERROR_ABORT(Err,
                      "Tendencies: PVTendencyEnable not found in TendConfig");
 
-   Err += TendConfig->get("KETendencyEnable", this->KEGrad.Enabled);
+   Err += TendConfig.get("KETendencyEnable", this->KEGrad.Enabled);
    CHECK_ERROR_ABORT(Err,
                      "Tendencies: KETendencyEnable not found in TendConfig");
 
-   Err += TendConfig->get("SSHTendencyEnable", this->SSHGrad.Enabled);
+   Err += TendConfig.get("SSHTendencyEnable", this->SSHGrad.Enabled);
    CHECK_ERROR_ABORT(Err,
                      "Tendencies: SSHTendencyEnable not found in TendConfig");
 
-   Err += TendConfig->get("VelDiffTendencyEnable",
-                          this->VelocityDiffusion.Enabled);
+   Err +=
+       TendConfig.get("VelDiffTendencyEnable", this->VelocityDiffusion.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: VelDiffTendencyEnable not found in TendConfig");
 
-   Err += TendConfig->get("VelHyperDiffTendencyEnable",
-                          this->VelocityHyperDiff.Enabled);
+   Err += TendConfig.get("VelHyperDiffTendencyEnable",
+                         this->VelocityHyperDiff.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: VelHyperDiffTendencyEnable not found in TendConfig");
 
    if (this->VelocityDiffusion.Enabled) {
-      Err += TendConfig->get("ViscDel2", this->VelocityDiffusion.ViscDel2);
+      Err += TendConfig.get("ViscDel2", this->VelocityDiffusion.ViscDel2);
       CHECK_ERROR_ABORT(Err, "Tendencies: ViscDel2 not found in TendConfig");
    }
 
    if (this->VelocityHyperDiff.Enabled) {
-      Err += TendConfig->get("ViscDel4", this->VelocityHyperDiff.ViscDel4);
+      Err += TendConfig.get("ViscDel4", this->VelocityHyperDiff.ViscDel4);
       CHECK_ERROR_ABORT(Err, "Tendencies: ViscDel4 not found in TendConfig");
-      Err += TendConfig->get("DivFactor", this->VelocityHyperDiff.DivFactor);
+      Err += TendConfig.get("DivFactor", this->VelocityHyperDiff.DivFactor);
       CHECK_ERROR_ABORT(Err, "Tendencies: DivFactor not found in TendConfig");
    }
-   Err += TendConfig->get("TracerHorzAdvTendencyEnable",
-                          this->TracerHorzAdv.Enabled);
+   Err += TendConfig.get("TracerHorzAdvTendencyEnable",
+                         this->TracerHorzAdv.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: TracerHorzAdvTendencyEnable not found in TendConfig");
    if (this->TracerHorzAdv.Enabled) {
+      Config AdvectConfig("Advection");
+      Err += OmegaConfig->get(AdvectConfig);
+      CHECK_ERROR_ABORT(Err, "Tendencies: Advection group not in Config");
+
       I4 Order = 0;
-      Err += TendConfig->get("HorzTracerFluxOrder", Order);
+      Err += AdvectConfig.get("HorzTracerFluxOrder", Order);
       CHECK_ERROR_ABORT(
-          Err, "Tendencies: HorzTracerFluxOrder not found in TendConfig");
+          Err, "Tendencies: HorzTracerFluxOrder not found in AdvectConfig");
       OMEGA_REQUIRE(Order >= 2 && Order <= 4,
                     "HorzTracerFluxOrder: Only values are 2, 3, 4, found {}",
                     Order);
@@ -183,46 +191,45 @@ void Tendencies::readTendConfig(
          this->TracerHorzAdv.Coef3rdOrder  = 0;
       }
       if (Order == 3) {
-         Err += TendConfig->get("HorzTracerCoef3rdOrder",
-                                TracerHorzAdv.Coef3rdOrder);
+         Err += AdvectConfig.get("Coef3rdOrder", TracerHorzAdv.Coef3rdOrder);
          CHECK_ERROR_ABORT(
-             Err, "Tendencies: HorzTracerCoef3rdOrder not found in TendConfig");
+             Err, "Tendencies: Coef3rdOrder not found in AdvectConfig");
       }
       if (Order == 4) {
          this->TracerHorzAdv.Coef3rdOrder = 0;
       }
    }
-   Err += TendConfig->get("TracerDiffTendencyEnable",
-                          this->TracerDiffusion.Enabled);
+   Err += TendConfig.get("TracerDiffTendencyEnable",
+                         this->TracerDiffusion.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: TracerDiffTendencyEnable not found in TendConfig");
 
    Err +=
-       TendConfig->get("WindForcingTendencyEnable", this->WindForcing.Enabled);
+       TendConfig.get("WindForcingTendencyEnable", this->WindForcing.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: WindForcingTendencyEnable not found in TendConfig");
 
-   Err += TendConfig->get("BottomDragTendencyEnable", this->BottomDrag.Enabled);
+   Err += TendConfig.get("BottomDragTendencyEnable", this->BottomDrag.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: BottomDragTendencyEnable not found in TendConfig");
 
-   Err += TendConfig->get("BottomDragCoeff", this->BottomDrag.Coeff);
+   Err += TendConfig.get("BottomDragCoeff", this->BottomDrag.Coeff);
    CHECK_ERROR_ABORT(Err,
                      "Tendencies: BottomDragCoeff not found in TendConfig");
 
    if (this->TracerDiffusion.Enabled) {
-      Err += TendConfig->get("EddyDiff2", this->TracerDiffusion.EddyDiff2);
+      Err += TendConfig.get("EddyDiff2", this->TracerDiffusion.EddyDiff2);
       CHECK_ERROR_ABORT(Err, "Tendencies: EddyDiff2 not found in TendConfig");
    }
 
-   Err += TendConfig->get("TracerHyperDiffTendencyEnable",
-                          this->TracerHyperDiff.Enabled);
+   Err += TendConfig.get("TracerHyperDiffTendencyEnable",
+                         this->TracerHyperDiff.Enabled);
    CHECK_ERROR_ABORT(
        Err,
        "Tendencies: TracerHyperDiffTendencyEnable not found in TendConfig");
 
    if (this->TracerHyperDiff.Enabled) {
-      Err += TendConfig->get("EddyDiff4", this->TracerHyperDiff.EddyDiff4);
+      Err += TendConfig.get("EddyDiff4", this->TracerHyperDiff.EddyDiff4);
       CHECK_ERROR_ABORT(Err, "Tendencies: EddyDiff4 not found in TendConfig");
    }
 }
