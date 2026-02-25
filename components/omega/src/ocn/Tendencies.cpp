@@ -687,22 +687,6 @@ void Tendencies::computeTracerTendencies(
 
    Pacer::start("Tend:computeTracerTendencies", 1);
 
-   Pacer::start("Tend:computeTracerAuxEdge", 2);
-   parallelForOuter(
-       "computeTracerAuxEdge", {NTracers, Mesh->NEdgesAll},
-       KOKKOS_LAMBDA(int LTracer, int IEdge, const TeamMember &Team) {
-          const int KMin   = MinLayerEdgeBot(IEdge);
-          const int KMax   = MaxLayerEdgeTop(IEdge);
-          const int KRange = vertRangeChunked(KMin, KMax);
-          parallelForInner(
-              Team, KRange, INNER_LAMBDA(int KChunk) {
-                 TracerAux.computeVarsOnEdge(LTracer, IEdge, KChunk,
-                                             NormalVelEdge, LayerThickCell,
-                                             TracerArray);
-              });
-       });
-   Pacer::stop("Tend:computeTracerAuxEdge", 2);
-
    const auto &MeanLayerThickEdge =
        AuxState->LayerThicknessAux.MeanLayerThickEdge;
    Pacer::start("Tend:computeTracerAuxCell", 2);

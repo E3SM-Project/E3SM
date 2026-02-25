@@ -71,16 +71,6 @@ BottomDragOnEdge::BottomDragOnEdge(const HorzMesh *Mesh,
       NVertLayers(VCoord->NVertLayers), EdgeMask(VCoord->EdgeMask),
       MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop) {}
 
-TracerHorzAdvOnCell::TracerHorzAdvOnCell(const HorzMesh *Mesh,
-                                         const VertCoord *VCoord)
-    : NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
-      CellsOnEdge(Mesh->CellsOnEdge), EdgeSignOnCell(Mesh->EdgeSignOnCell),
-      DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell),
-      EdgeMask(VCoord->EdgeMask), MinLayerCell(VCoord->MinLayerCell),
-      MaxLayerCell(VCoord->MaxLayerCell),
-      MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
-      MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop) {}
-
 TracerHighOrderHorzAdvOnCell::TracerHighOrderHorzAdvOnCell(
     const HorzMesh *Mesh, const VertCoord *VCoord)
     : HorzontalMesh(Mesh),
