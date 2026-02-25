@@ -141,6 +141,10 @@ create_diagnostic (const std::string& diag_field_name,
   std::regex aerocom_cld ("AeroComCld(Top|Bot)$");
   std::regex vap_flux ("(Meridional|Zonal)VapFlux$");
   std::regex backtend (generic_field + "_atm_backtend$");
+  std::regex backtend2 (generic_field + "_atm_backtend2$");
+  std::regex backtend2_product (generic_field + "_atm_backtend2_product$");
+  std::string num_val = R"(([+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?))";
+  std::regex osc_intermittency (generic_field + "_nf" + num_val + "_mac(\\d+)_atm_osc_intermittency$");
   std::regex pot_temp ("(Liq)?PotentialTemperature$");
   std::regex vert_layer ("(z|geopotential|height)_(mid|int)$");
   std::regex horiz_avg (generic_field + "_horiz_avg$");
@@ -197,6 +201,20 @@ create_diagnostic (const std::string& diag_field_name,
     diag_name = "AtmBackTendDiag";
     params.set("grid_name",grid->name());
     params.set<std::string>("tendency_name",matches[1].str());
+  } else if (std::regex_search(diag_field_name,matches,backtend2)) {
+    diag_name = "AtmBackTend2";
+    params.set("grid_name",grid->name());
+    params.set<std::string>("tendency_name",matches[1].str());
+  } else if (std::regex_search(diag_field_name,matches,backtend2_product)) {
+    diag_name = "AtmBacktend2Product";
+    params.set("grid_name",grid->name());
+    params.set<std::string>("tendency_name",matches[1].str());
+  } else if (std::regex_search(diag_field_name,matches,osc_intermittency)) {
+    diag_name = "AtmOscIntermittency";
+    params.set("grid_name",grid->name());
+    params.set<std::string>("tendency_name",matches[1].str());
+    params.set<std::string>("noise_floor",  matches[2].str());
+    params.set<std::string>("min_alt_count",matches[3].str());
   } else if (std::regex_search(diag_field_name,matches,pot_temp)) {
     diag_name = "PotentialTemperature";
     params.set<std::string>("temperature_kind", matches[1].str()!="" ? matches[1].str() : std::string("Tot"));

@@ -24,6 +24,9 @@
 #include "number_path.hpp"
 #include "aerocom_cld.hpp"
 #include "atm_backtend.hpp"
+#include "atm_backtend2.hpp"
+#include "atm_backtend2_product.hpp"
+#include "atm_osc_intermittency.hpp"
 #include "horiz_avg.hpp"
 #include "vert_contract.hpp"
 #include "vert_derivative.hpp"
@@ -58,6 +61,9 @@ inline void register_diagnostics () {
   diag_factory.register_product("NumberPath",&create_atmosphere_diagnostic<NumberPathDiagnostic>);
   diag_factory.register_product("AeroComCld",&create_atmosphere_diagnostic<AeroComCld>);
   diag_factory.register_product("AtmBackTendDiag",&create_atmosphere_diagnostic<AtmBackTendDiag>);
+  diag_factory.register_product("AtmBacktend2",&create_atmosphere_diagnostic<AtmBacktend2>);
+  diag_factory.register_product("AtmBacktend2Product",&create_atmosphere_diagnostic<AtmBacktend2Product>);
+  diag_factory.register_product("AtmOscIntermittency",&create_atmosphere_diagnostic<AtmOscIntermittency>);
   diag_factory.register_product("HorizAvgDiag",&create_atmosphere_diagnostic<HorizAvgDiag>);
   diag_factory.register_product("VertContractDiag",&create_atmosphere_diagnostic<VertContractDiag>);
   diag_factory.register_product("VertDerivativeDiag",&create_atmosphere_diagnostic<VertDerivativeDiag>);

@@ -2,6 +2,9 @@ add_library (eamxx_diagnostics
   aerocom_cld.cpp
   aodvis.cpp
   atm_backtend.cpp
+  atm_backtend2.cpp
+  atm_backtend2_product.cpp
+  atm_osc_intermittency.cpp
   atm_density.cpp
   binary_ops.cpp
   dry_static_energy.cpp

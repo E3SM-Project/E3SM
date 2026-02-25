@@ -13,7 +13,7 @@ AtmBackTendDiag(const ekat::Comm &comm,
                    "Error! AtmBackTendDiag requires 'tendency_name' in its "
                    "input parameters.\n");
 
-  m_name = m_params.get<std::string>("tendency_name");
+  m_name = params.get<std::string>("tendency_name");
 }
 
 void AtmBackTendDiag::
