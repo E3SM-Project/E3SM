@@ -52,12 +52,14 @@ public:
   const std::string &name() const { return m_name; }
   bool is_initialized() const { return m_initialized; }
   int step_count() const { return m_step_count; }
+  void print_info(std::ostream& os) const;
 
   // New virtuals for grid / coupling
   virtual void set_grid_data(const EmulatorGridDesc& grid) = 0;
   virtual void setup_coupling(const EmulatorCouplingDesc& cpl) = 0;
   virtual void init_coupling_indices(const std::string &export_fields,
                              const std::string &import_fields) = 0;
+
 
   // Optionally: virtual accessors if Fortran needs them
   virtual int get_num_local_cols() const = 0;
@@ -73,6 +75,7 @@ protected:
   virtual void init_impl() = 0;
   virtual void run_impl(int dt) = 0;
   virtual void final_impl() = 0;
+  virtual void print_extra_info(std::ostream& os) const {}
 
   EmulatorType m_type;
   int m_id;

@@ -86,6 +86,7 @@ void  emulator_setup_coupling(void* handle,
 void  emulator_init(void* handle);
 void  emulator_run(void* handle, int dt);
 void  emulator_finalize(void* handle);
+void  emulator_print_info(void* handle);
 
 } // extern "C"
 #endif

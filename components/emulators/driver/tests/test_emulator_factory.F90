@@ -10,7 +10,7 @@ program test_emulator_factory
   type(emulator_create_cfg)    :: cfg
   type(emulator_grid_desc)     :: grid
   type(emulator_coupling_desc) :: cpl
-  type(c_ptr)                  :: handle
+  type(emulator_handle)        :: emulators(3)
   integer(c_int)               :: dt
   integer                      :: ierr, nprocs
   integer(c_int)               :: fcomm
@@ -73,31 +73,44 @@ program test_emulator_factory
   !----------------------------------------
   ! Call emulator_create("atm")
   !----------------------------------------
-  handle = emulator_create("atm"//c_null_char, cfg)
+  block
+     integer :: i
+     character(len=3) :: names(3)
+     names = [character(len=3) :: "atm", "ocn", "atm"]
+     do i = 1, 3
+        cfg%comp_id = i
+        emulators(i)%h = emulator_create(names(i)//c_null_char, cfg)
 
-  if (.not. c_associated(handle)) then
-     print *, "ERROR: emulator_create returned NULL handle for 'atm'"
-     stop 1
-  else
-     print *, "OK: emulator_create returned non-null handle for 'atm'"
-  end if
+        if (.not. c_associated(emulators(i)%h) .and. names(i) == "atm" ) then
+           print *, "ERROR: emulator_create returned NULL emulators(i)%h for 'atm'"
+           stop 1
+         else if( .not. c_associated(emulators(i)%h) .and. names(i) .ne. "atm") then
+            print *, "OK: null handle for " // names(i)
+            cycle
+        else
+           print *, "OK: emulator_create returned non-null emulators(i)%h for 'atm'"
+        end if
 
-  call emulator_set_grid_data(handle, grid)
-  call emulator_setup_coupling(handle, cpl)
+        call emulator_set_grid_data(emulators(i)%h, grid)
+        call emulator_setup_coupling(emulators(i)%h, cpl)
 
-  !----------------------------------------
-  ! Init / run / finalize
-  !----------------------------------------
-  call emulator_init(handle)
+        !----------------------------------------
+        ! Init / run / finalize
+        !----------------------------------------
+        call emulator_init(emulators(i)%h)
+        call emulator_print_info(emulators(i)%h)
+     end do
 
-  dt = 3600_c_int
-  call emulator_run(handle, dt)
-  call emulator_finalize(handle)
+     dt = 3600_c_int
+      do i = 1, size(emulators)
+         if (.not. c_associated(emulators(i)%h)) cycle
+        call emulator_run(emulators(i)%h, dt)
+        call emulator_finalize(emulators(i)%h)
+     end do
+  end block
 
   print *, "OK: basic emulator lifecycle completed"
 
-#ifdef USE_MPI
   call MPI_Finalize(ierr)
-#endif
 
 end program test_emulator_factory

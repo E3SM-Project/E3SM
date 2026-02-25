@@ -41,7 +41,7 @@ void *emulator_create(const char *kind, const EmulatorCreateConfig *cfg) {
     s_log_stream.open(cfg->log_file, std::ios::app);
     s_log_open = s_log_stream.is_open();
     if (s_log_open) {
-      s_log_stream << "(eatm_f2c) create_instance: "
+      s_log_stream << "(emulator_create) create_instance: "
                    << "comp_id=" << cfg->comp_id
                    << " run_type=" << cfg->run_type
                    << " start_ymd=" << cfg->start_ymd
@@ -54,14 +54,14 @@ void *emulator_create(const char *kind, const EmulatorCreateConfig *cfg) {
                                                   std::to_string(cfg->comp_id));
     // Configure it
     atm.create_instance(cfg->f_comm, cfg->comp_id,
-                        cfg->input_file ? cfg->input_file : "", cfg->run_type,
+                        cfg->input_file ? cfg->input_file : "", 
+                        cfg->log_file ? cfg->log_file : "",
+                        cfg->run_type,
                         cfg->start_ymd, cfg->start_tod);
 
     emulator::Emulator *base = &atm;
     if (s_log_open) {
-      s_log_stream << "(emulator_factory) create_instance done: "
-                   << "nx=" << atm.get_nx() << " ny=" << atm.get_ny()
-                   << " ncols=" << atm.get_num_global_cols() << std::endl;
+      s_log_stream << "(emulator_factory) create_instance done!"<< std::endl;
     }
     // return opaque pointer to Fortran
     return static_cast<void *>(base);

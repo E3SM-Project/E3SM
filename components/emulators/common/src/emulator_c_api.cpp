@@ -2,12 +2,13 @@
 #include "emulator.hpp"
 
 #include <cstring>
+#include <iostream>
 extern "C" {
 
 void emulator_set_grid_data(void* handle,
                             const EmulatorGridDesc* grid) {
-  auto* emu = static_cast<emulator::Emulator*>(handle);  // <-- cast #2
-  emu->set_grid_data(*grid);  // virtual → EmulatorAtm::set_grid_data
+  auto* emu = static_cast<emulator::Emulator*>(handle);
+  emu->set_grid_data(*grid);
 }
 
 void emulator_setup_coupling(void* handle,
@@ -18,18 +19,22 @@ void emulator_setup_coupling(void* handle,
 
 void emulator_init(void* handle) {
   auto* emu = static_cast<emulator::Emulator*>(handle);
-  emu->initialize();          // calls init_impl()
+  emu->initialize();
 }
 
 void emulator_run(void* handle, int dt) {
   auto* emu = static_cast<emulator::Emulator*>(handle);
-  emu->run(dt);               // calls run_impl()
+  emu->run(dt);
 }
 
 void emulator_finalize(void* handle) {
   auto* emu = static_cast<emulator::Emulator*>(handle);
-  emu->finalize();            // calls final_impl()
+  emu->finalize();
 }
 
+void emulator_print_info(void *handle){
+  auto* emu = static_cast<emulator::Emulator*>(handle);
+  emu->print_info(std::cout);
+}
 
 } // extern "C"

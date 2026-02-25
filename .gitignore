@@ -58,3 +58,5 @@ components/eamxx/src/python/dist
 
 # Emulator Components
 components/emulators/build
+**/Testing/**
+**/.cache/**

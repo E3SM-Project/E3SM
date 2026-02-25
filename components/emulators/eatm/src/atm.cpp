@@ -22,6 +22,7 @@ EmulatorAtm::EmulatorAtm()
 
 void EmulatorAtm::create_instance(int comm, int comp_id,
                                   const std::string &input_file,
+                                   const std::string &log_file,
                                   int run_type, int start_ymd,
                                   int start_tod) {
   m_comm = comm;

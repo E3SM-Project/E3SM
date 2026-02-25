@@ -54,6 +54,7 @@ public:
    */
   void create_instance(int comm, int comp_id,
                        const std::string &input_file,
+                       const std::string &log_file,
                        int run_type, int start_ymd, int start_tod);
 
   /**
@@ -89,6 +90,7 @@ protected:
   void init_impl() override;
   void run_impl(int dt) override;
   void final_impl() override;
+  void print_extra_info(std::ostream& os) const override {};
 
 private:
   // =========================================================================
@@ -116,6 +118,7 @@ private:
   // =========================================================================
   int m_comm = 0;              ///< MPI communicator
   std::string m_input_file;    ///< Path to atm_in config file
+  std::string m_log_file;      ///< Path to log file
   int m_run_type = 0;          ///< Run type (startup/continue/branch)
 
   // =========================================================================
