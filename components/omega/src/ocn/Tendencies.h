@@ -67,7 +67,6 @@ class Tendencies {
    BottomDragOnEdge BottomDrag;
    TracerDiffOnCell TracerDiffusion;
    TracerHyperDiffOnCell TracerHyperDiff;
-   TracerHorzAdvOnCell TracerHorzAdv;
    TracerHighOrderHorzAdvOnCell TracerHighOrderHorzAdv;
 
    // Methods to compute tendency groups

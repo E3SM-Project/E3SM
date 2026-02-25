@@ -166,23 +166,30 @@ void Tendencies::readTendConfig(
       CHECK_ERROR_ABORT(Err, "Tendencies: DivFactor not found in TendConfig");
    }
    Err += TendConfig->get("TracerHorzAdvTendencyEnable",
-                          this->TracerHorzAdv.Enabled);
+                          this->TracerHighOrderHorzAdv.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: TracerHorzAdvTendencyEnable not found in TendConfig");
-   if (this->TracerHorzAdv.Enabled) {
+   if (this->TracerHighOrderHorzAdv.Enabled) {
       I4 Order = 0;
       Err += TendConfig->get("HorzTracerFluxOrder", Order);
       CHECK_ERROR_ABORT(
           Err, "Tendencies: HorzTracerFluxOrder not found in TendConfig");
+      OMEGA_REQUIRE(Order >= 2 && Order <= 4,
+                    "HorzTracerFluxOrder: Only values are 2, 3, 4, found {}",
+                    Order);
+
       if (Order == 2) {
-         this->TracerHighOrderHorzAdv.Enabled = true;
-         this->TracerHorzAdv.Enabled          = false;
+         this->TracerHighOrderHorzAdv.ForceLowOrder = true;
+         this->TracerHighOrderHorzAdv.Coef3rdOrder  = 0;
       }
-      if (!(Order == 1 or Order == 2)) {
-         const std::string msg =
-             "HorzTracerFluxOrder: Only values are 1 and 2, found " +
-             std::to_string(Order);
-         ABORT_ERROR(msg);
+      if (Order == 3) {
+         Err += TendConfig->get("HorzTracerCoef3rdOrder",
+                                TracerHighOrderHorzAdv.Coef3rdOrder);
+         CHECK_ERROR_ABORT(
+             Err, "Tendencies: HorzTracerCoef3rdOrder not found in TendConfig");
+      }
+      if (Order == 4) {
+         this->TracerHighOrderHorzAdv.Coef3rdOrder = 0;
       }
    }
    Err += TendConfig->get("TracerDiffTendencyEnable",
@@ -202,11 +209,6 @@ void Tendencies::readTendConfig(
    Err += TendConfig->get("BottomDragCoeff", this->BottomDrag.Coeff);
    CHECK_ERROR_ABORT(Err,
                      "Tendencies: BottomDragCoeff not found in TendConfig");
-
-   Err += TendConfig->get("TracerHorzAdvTendencyEnable",
-                          this->TracerHorzAdv.Enabled);
-   CHECK_ERROR_ABORT(
-       Err, "Tendencies: TracerHorzAdvTendencyEnable not found in TendConfig");
 
    if (this->TracerDiffusion.Enabled) {
       Err += TendConfig->get("EddyDiff2", this->TracerDiffusion.EddyDiff2);
@@ -238,9 +240,8 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
       PotientialVortHAdv(Mesh, VCoord), KEGrad(Mesh, VCoord),
       SSHGrad(Mesh, VCoord), VelocityDiffusion(Mesh, VCoord),
       VelocityHyperDiff(Mesh, VCoord), WindForcing(Mesh, VCoord),
-      BottomDrag(Mesh, VCoord), TracerHorzAdv(Mesh, VCoord),
-      TracerDiffusion(Mesh, VCoord), TracerHyperDiff(Mesh, VCoord),
-      TracerHighOrderHorzAdv(Mesh, VCoord),
+      BottomDrag(Mesh, VCoord), TracerDiffusion(Mesh, VCoord),
+      TracerHyperDiff(Mesh, VCoord), TracerHighOrderHorzAdv(Mesh, VCoord),
       CustomThicknessTend(InCustomThicknessTend),
       CustomVelocityTend(InCustomVelocityTend) {
 
@@ -512,7 +513,6 @@ void Tendencies::computeTracerTendenciesOnly(
     TimeInstant Time                ///< [in] Time
 ) {
    OMEGA_SCOPE(LocTracerTend, TracerTend);
-   OMEGA_SCOPE(LocTracerHorzAdv, TracerHorzAdv);
    OMEGA_SCOPE(LocTracerHighOrderHorzAdv, TracerHighOrderHorzAdv);
    OMEGA_SCOPE(LocTracerDiffusion, TracerDiffusion);
    OMEGA_SCOPE(LocTracerHyperDiff, TracerHyperDiff);
@@ -537,27 +537,9 @@ void Tendencies::computeTracerTendenciesOnly(
        });
 
    // compute tracer horizotal advection
-   const Array2DReal &NormalVelEdge = State->NormalVelocity[VelTimeLevel];
-   const Array3DReal &HTracersEdge  = AuxState->TracerAux.HTracersEdge;
+   Array2DReal NormalVelEdge = State->getNormalVelocity(VelTimeLevel);
    const Array2DReal &FluxLayerThickEdge =
        AuxState->LayerThicknessAux.FluxLayerThickEdge;
-   if (LocTracerHorzAdv.Enabled) {
-      Pacer::start("Tend:tracerHorzAdv", 2);
-      parallelForOuter(
-          {NTracers, Mesh->NCellsAll},
-          KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
-             const int KMin   = MinLayerCell(ICell);
-             const int KMax   = MaxLayerCell(ICell);
-             const int KRange = vertRangeChunked(KMin, KMax);
-
-             parallelForInner(
-                 Team, KRange, INNER_LAMBDA(int KChunk) {
-                    LocTracerHorzAdv(LocTracerTend, L, ICell, KChunk,
-                                     NormalVelEdge, HTracersEdge);
-                 });
-          });
-      Pacer::stop("Tend:tracerHorzAdv", 2);
-   }
    if (LocTracerHighOrderHorzAdv.Enabled) {
       Pacer::start("Tend:TracerHighOrderHorzAdv", 2);
       parallelForOuter(
