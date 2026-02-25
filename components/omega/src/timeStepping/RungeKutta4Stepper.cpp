@@ -69,18 +69,13 @@ void RungeKutta4Stepper::doStep(OceanState *State,   // model state
                                 TimeInstant &SimTime // current simulation time
 ) const {
 
-   int Err = 0;
-
    const MPI_Comm Comm = MeshHalo->getComm();
 
    const int CurLevel  = 0;
    const int NextLevel = 1;
 
-   Array3DReal NextTracerArray, CurTracerArray;
-   Err = Tracers::getAll(CurTracerArray, CurLevel);
-   Err = Tracers::getAll(NextTracerArray, NextLevel);
-   if (Err != 0)
-      ABORT_ERROR("RungeKutte4 doStep: error retrieving tracers.");
+   Array3DReal CurTracerArray  = Tracers::getAll(CurLevel);
+   Array3DReal NextTracerArray = Tracers::getAll(NextLevel);
 
    for (int Stage = 0; Stage < NStages; ++Stage) {
       const TimeInstant StageTime = SimTime + RKC[Stage] * TimeStep;

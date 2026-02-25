@@ -71,7 +71,7 @@ class Tracers {
    static I4 CurTimeIndex; ///< Time dimension array index for current level
 
    /// get the time level index
-   static I4 getTimeIndex(I4 &TimeIndex, const I4 TimeLevel);
+   static I4 getTimeIndex(const I4 TimeLevel);
 
    /// locally defines all tracers but do not allocates memory
    static I4
@@ -116,41 +116,36 @@ class Tracers {
    );
 
    /// get a device array for all tracers
-   static I4 getAll(Array3DReal &TracerArray, ///< [out] tracer device array
-                    const I4 TimeLevel        ///< [in] time level index
+   static Array3DReal getAll(const I4 TimeLevel ///< [in] time level index
    );
 
    /// get a device array by tracer index
-   static I4 getByIndex(Array2DReal &TracerArray, ///< [out] tracer device array
-                        const I4 TimeLevel,       ///< [in] time level index
-                        const I4 TracerIndex      ///< [in] global tracer index
+   static Array2DReal
+   getByIndex(const I4 TimeLevel,  ///< [in] time level index
+              const I4 TracerIndex ///< [in] global tracer index
    );
 
    /// get a device array by tracer name
-   static I4
-   getByName(Array2DReal &TracerArray,     ///< [out] tracer device array
-             const I4 TimeLevel,           ///< [in] time level index
+   static Array2DReal
+   getByName(const I4 TimeLevel,           ///< [in] time level index
              const std::string &TracerName ///< [in] global tracer name
    );
 
    /// get a host array for all tracers
-   static I4
-   getAllHost(HostArray3DReal &TracerArrayH, ///< [out] tracer host array
-              const I4 TimeLevel             ///< [in] time level index
+   static HostArray3DReal
+   getAllHost(const I4 TimeLevel ///< [in] time level index
    );
 
    /// get a host array by tracer index
-   static I4
-   getHostByIndex(HostArray2DReal &TracerArrayH, ///< [out] tracer host array
-                  const I4 TimeLevel,            ///< [in] time level index
-                  const I4 TracerIndex           ///< [in] global tracer index
+   static HostArray2DReal
+   getHostByIndex(const I4 TimeLevel,  ///< [in] time level index
+                  const I4 TracerIndex ///< [in] global tracer index
    );
 
    /// get a host array by tracer name
-   static I4
-   getHostByName(HostArray2DReal &TracerArrayH, ///< [out] tracer host array
-                 const I4 TimeLevel,            ///< [in] time level index
-                 const std::string &TracerName  ///< [in] global tracer name
+   static HostArray2DReal getHostByName( ///< [out] tracer host array
+       const I4 TimeLevel,               ///< [in] time level index
+       const std::string &TracerName     ///< [in] global tracer name
    );
 
    /// get a field by tracer index. If not found, returns nullptr
@@ -203,11 +198,11 @@ class Tracers {
    //---------------------------------------------------------------------------
 
    /// Copy tracers variables from host to device
-   static I4 copyToDevice(const I4 TimeLevel ///< [in] tracer time level
+   static void copyToDevice(const I4 TimeLevel ///< [in] tracer time level
    );
 
    /// Copy tracers variables from device to host
-   static I4 copyToHost(const I4 TimeLevel ///< [in] tracer time level
+   static void copyToHost(const I4 TimeLevel ///< [in] tracer time level
    );
 
    //---------------------------------------------------------------------------

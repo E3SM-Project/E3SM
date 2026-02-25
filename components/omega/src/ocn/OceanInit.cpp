@@ -193,10 +193,7 @@ int initOmegaModules(MPI_Comm Comm) {
    if (Err != 0) {
       ABORT_ERROR("Error updating tracer halo after restart");
    }
-   Err = Tracers::copyToHost(CurTimeLevel);
-   if (Err != 0) {
-      ABORT_ERROR("Error updating tracer device arrays after restart");
-   }
+   Tracers::copyToHost(CurTimeLevel);
 
    return Err;
 

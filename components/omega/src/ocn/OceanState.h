@@ -54,7 +54,7 @@ class OceanState {
    I4 CurTimeIndex; ///< Time dimension array index for current level
 
    /// Get the current time level index associated with a time level
-   I4 getTimeIndex(I4 &TimeIndex, const I4 TimeLevel) const;
+   I4 getTimeIndex(const I4 TimeLevel) const;
 
  public:
    // Variables
@@ -110,29 +110,28 @@ class OceanState {
    );
 
    /// Get layer thickness device array at given time level
-   I4 getLayerThickness(Array2DReal &LayerThick, const I4 TimeLevel) const;
+   Array2DReal getLayerThickness(const I4 TimeLevel) const;
 
    /// Get layer thickness host array at given time level
-   I4 getLayerThicknessH(HostArray2DReal &LayerThickH,
-                         const I4 TimeLevel) const;
+   HostArray2DReal getLayerThicknessH(const I4 TimeLevel) const;
 
    /// Get normal velocity device array at given time level
-   I4 getNormalVelocity(Array2DReal &NormVel, const I4 TimeLevel) const;
+   Array2DReal getNormalVelocity(const I4 TimeLevel) const;
 
    /// Get normal velocity host array at given time level
-   I4 getNormalVelocityH(HostArray2DReal &NormVelH, const I4 TimeLevel) const;
+   HostArray2DReal getNormalVelocityH(const I4 TimeLevel) const;
 
    /// Exchange halo
-   I4 exchangeHalo(const I4 TimeLevel);
+   void exchangeHalo(const I4 TimeLevel);
 
    /// Swap time levels to update state arrays
    void updateTimeLevels();
 
    /// Copy state variables from host to device
-   I4 copyToDevice(const I4 TimeLevel);
+   void copyToDevice(const I4 TimeLevel);
 
    /// Copy state variables from device to host
-   I4 copyToHost(const I4 TimeLevel);
+   void copyToHost(const I4 TimeLevel);
 
    /// Destructor - deallocates all memory and deletes an OceanState
    ~OceanState();

@@ -56,10 +56,9 @@ struct DecayVelocityTendency {
                    const AuxiliaryState *AuxState, int ThickTimeLevel,
                    int VelTimeLevel, TimeInstant Time) const {
 
-      auto *Mesh       = HorzMesh::getDefault();
-      auto NVertLayers = NormalVelTend.extent_int(1);
-      Array2DReal NormalVelEdge;
-      State->getNormalVelocity(NormalVelEdge, VelTimeLevel);
+      auto *Mesh                = HorzMesh::getDefault();
+      auto NVertLayers          = NormalVelTend.extent_int(1);
+      Array2DReal NormalVelEdge = State->getNormalVelocity(VelTimeLevel);
 
       OMEGA_SCOPE(LocCoeff, Coeff);
 
@@ -73,15 +72,12 @@ struct DecayVelocityTendency {
 int initState() {
    int Err = 0;
 
-   auto *Mesh  = HorzMesh::getDefault();
-   auto *State = OceanState::get("TestState");
-   Array3DReal TracerArray;
-   Err = Tracers::getAll(TracerArray, 0);
+   auto *Mesh              = HorzMesh::getDefault();
+   auto *State             = OceanState::get("TestState");
+   Array3DReal TracerArray = Tracers::getAll(0);
 
-   Array2DReal LayerThickCell;
-   Array2DReal NormalVelEdge;
-   State->getLayerThickness(LayerThickCell, 0);
-   State->getNormalVelocity(NormalVelEdge, 0);
+   Array2DReal LayerThickCell = State->getLayerThickness(0);
+   Array2DReal NormalVelEdge  = State->getNormalVelocity(0);
 
    // Initially set thickness and velocity and tracers to 1
    deepCopy(LayerThickCell, 1);
@@ -94,18 +90,15 @@ int initState() {
 int createExactSolution(Real TimeEnd) {
    int Err = 0;
 
-   auto *DefHalo = Halo::getDefault();
-   auto *DefMesh = HorzMesh::getDefault();
-   Array3DReal TracerArray;
-   Err = Tracers::getAll(TracerArray, 0);
+   auto *DefHalo           = Halo::getDefault();
+   auto *DefMesh           = HorzMesh::getDefault();
+   Array3DReal TracerArray = Tracers::getAll(0);
 
    auto *ExactState =
        OceanState::create("Exact", DefMesh, DefHalo, NVertLayers, 1);
 
-   Array2DReal LayerThickCell;
-   Array2DReal NormalVelEdge;
-   ExactState->getLayerThickness(LayerThickCell, 0);
-   ExactState->getNormalVelocity(NormalVelEdge, 0);
+   Array2DReal LayerThickCell = ExactState->getLayerThickness(0);
+   Array2DReal NormalVelEdge  = ExactState->getNormalVelocity(0);
 
    // There are no thickness tendencies in this test, so exact thickness ==
    // initial thickness
@@ -124,10 +117,8 @@ ErrorMeasures computeErrors() {
    const auto *State      = OceanState::get("TestState");
    const auto *ExactState = OceanState::get("Exact");
 
-   Array2DReal NormalVelEdge;
-   Array2DReal ExactNormalVelEdge;
-   State->getNormalVelocity(NormalVelEdge, 0);
-   ExactState->getNormalVelocity(ExactNormalVelEdge, 0);
+   Array2DReal NormalVelEdge      = State->getNormalVelocity(0);
+   Array2DReal ExactNormalVelEdge = ExactState->getNormalVelocity(0);
 
    // Only velocity errors matters, because thickness remains constant
    ErrorMeasures VelErrors;

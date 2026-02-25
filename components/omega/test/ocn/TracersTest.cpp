@@ -236,14 +236,7 @@ int main(int argc, char *argv[]) {
 
       // intialize tracer elements of all time levels
       for (I4 TimeLevel = 1; TimeLevel + NTimeLevels > 1; --TimeLevel) {
-         HostArray3DReal TempHostArray;
-         Err = Tracers::getAllHost(TempHostArray, TimeLevel);
-         if (Err != 0) {
-            LOG_ERROR("getAllHost(TempHostArray, TimeLevel) returns non-zero "
-                      "code: {}",
-                      Err);
-            RetVal += 1;
-         }
+         HostArray3DReal TempHostArray = Tracers::getAllHost(TimeLevel);
 
          for (I4 Tracer = 0; Tracer < NTracers; ++Tracer) {
             for (I4 Cell = 0; Cell < NCellsSize; Cell++) {
@@ -263,11 +256,7 @@ int main(int argc, char *argv[]) {
       Array3DReal RefArray =
           Array3DReal("RefArray", NTracers, NCellsSize, NVertLayers);
 
-      Err = Tracers::getAll(RefArray, 1);
-      if (Err != 0) {
-         LOG_ERROR("getAll(RefArray, 1) returns non-zero code: {}", Err);
-         RetVal += 1;
-      }
+      RefArray = Tracers::getAll(1);
 
       // deepCopy(RefArray, RefArray); TODO: remove this
 
@@ -284,12 +273,7 @@ int main(int argc, char *argv[]) {
       Tracers::updateTimeLevels();
 
       // getAll of current time level(0) should return the same to RefArray
-      Array3DReal CurArray;
-      Err = Tracers::getAll(CurArray, 0);
-      if (Err != 0) {
-         LOG_ERROR("getAll(CurArray, 0) returns non-zero code: {}", Err);
-         RetVal += 1;
-      }
+      Array3DReal CurArray = Tracers::getAll(0);
 
       count = -1;
 
@@ -318,14 +302,7 @@ int main(int argc, char *argv[]) {
          std::string TracerName;
          Tracers::getName(TracerName, Tracer);
 
-         Array2DReal CurTracer;
-         Err = Tracers::getByName(CurTracer, 0, TracerName);
-         if (Err != 0) {
-            LOG_ERROR("getByName(CurTracer, 0, TracerName) returns non-zero "
-                      "code: {}",
-                      Err);
-            RetVal += 1;
-         }
+         Array2DReal CurTracer = Tracers::getByName(0, TracerName);
 
          count = -1;
 
@@ -418,11 +395,10 @@ int main(int argc, char *argv[]) {
 
       count = 0;
 
-      Array2DReal SaltTracerByName;
-      Err = Tracers::getByName(SaltTracerByName, 1, "Salinity");
+      Array2DReal SaltTracerByName = Tracers::getByName(1, "Salinity");
 
-      Array2DReal SaltTracerByIndexVar;
-      Err = Tracers::getByIndex(SaltTracerByIndexVar, 1, Tracers::IndxSalt);
+      Array2DReal SaltTracerByIndexVar =
+          Tracers::getByIndex(1, Tracers::IndxSalt);
 
       count = -1;
 
@@ -452,14 +428,7 @@ int main(int argc, char *argv[]) {
          std::string TracerName;
          Tracers::getName(TracerName, Tracer);
 
-         HostArray2DReal TestHostArray;
-         Err = Tracers::getHostByName(TestHostArray, 1, TracerName);
-         if (Err != 0) {
-            LOG_ERROR("getHostByName(TestHostArray, 1, TracerName) returns "
-                      "non-zero code: {}",
-                      Err);
-            RetVal += 1;
-         }
+         HostArray2DReal TestHostArray = Tracers::getHostByName(1, TracerName);
 
          for (I4 Cell = 0; Cell < NCellsOwned; Cell++) {
             for (I4 Vert = 0; Vert < NVertLayers; Vert++) {

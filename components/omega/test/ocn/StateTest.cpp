@@ -126,10 +126,10 @@ int checkHost(OceanState *RefState, OceanState *TstState, int RefTimeLevel,
               int TstTimeLevel) {
 
    int count = 0;
-   HostArray2DReal LayerThicknessHRef;
-   HostArray2DReal LayerThicknessHTst;
-   RefState->getLayerThicknessH(LayerThicknessHRef, RefTimeLevel);
-   TstState->getLayerThicknessH(LayerThicknessHTst, TstTimeLevel);
+   HostArray2DReal LayerThicknessHRef =
+       RefState->getLayerThicknessH(RefTimeLevel);
+   HostArray2DReal LayerThicknessHTst =
+       TstState->getLayerThicknessH(TstTimeLevel);
    for (int Cell = 0; Cell < RefState->NCellsAll; Cell++) {
       for (int Layer = 0; Layer < RefState->NVertLayers; Layer++) {
          if (LayerThicknessHRef(Cell, Layer) !=
@@ -139,10 +139,10 @@ int checkHost(OceanState *RefState, OceanState *TstState, int RefTimeLevel,
       }
    }
 
-   HostArray2DReal NormalVelocityHRef;
-   HostArray2DReal NormalVelocityHTst;
-   RefState->getNormalVelocityH(NormalVelocityHRef, RefTimeLevel);
-   TstState->getNormalVelocityH(NormalVelocityHTst, TstTimeLevel);
+   HostArray2DReal NormalVelocityHRef =
+       RefState->getNormalVelocityH(RefTimeLevel);
+   HostArray2DReal NormalVelocityHTst =
+       TstState->getNormalVelocityH(TstTimeLevel);
    for (int Edge = 0; Edge < RefState->NEdgesAll; Edge++) {
       for (int Layer = 0; Layer < RefState->NVertLayers; Layer++) {
          if (NormalVelocityHRef(Edge, Layer) !=
@@ -161,10 +161,8 @@ int checkDevice(OceanState *RefState, OceanState *TstState, int RefTimeLevel,
                 int TstTimeLevel) {
 
    int count1;
-   Array2DReal LayerThicknessRef;
-   Array2DReal LayerThicknessTst;
-   RefState->getLayerThickness(LayerThicknessRef, RefTimeLevel);
-   TstState->getLayerThickness(LayerThicknessTst, TstTimeLevel);
+   Array2DReal LayerThicknessRef = RefState->getLayerThickness(RefTimeLevel);
+   Array2DReal LayerThicknessTst = TstState->getLayerThickness(TstTimeLevel);
    parallelReduce(
        "reduce", {RefState->NCellsAll, RefState->NVertLayers},
        KOKKOS_LAMBDA(int Cell, int Layer, int &Accum) {
@@ -176,10 +174,8 @@ int checkDevice(OceanState *RefState, OceanState *TstState, int RefTimeLevel,
        count1);
 
    int count2;
-   Array2DReal NormalVelocityRef;
-   Array2DReal NormalVelocityTst;
-   RefState->getNormalVelocity(NormalVelocityRef, RefTimeLevel);
-   TstState->getNormalVelocity(NormalVelocityTst, TstTimeLevel);
+   Array2DReal NormalVelocityRef = RefState->getNormalVelocity(RefTimeLevel);
+   Array2DReal NormalVelocityTst = TstState->getNormalVelocity(TstTimeLevel);
    parallelReduce(
        "reduce", {RefState->NCellsAll, RefState->NVertLayers},
        KOKKOS_LAMBDA(int Cell, int Layer, int &Accum) {
@@ -234,14 +230,11 @@ int main(int argc, char *argv[]) {
       }
 
       // Get default state arrays and check for reasonable values
-      HostArray2DReal LayerThickHDef;
-      HostArray2DReal NormalVelocityHDef;
-      Array2DReal LayerThickDef;
-      Array2DReal NormalVelocityDef;
-      DefState->getLayerThicknessH(LayerThickHDef, CurTime);
-      DefState->getLayerThickness(LayerThickDef, CurTime);
-      DefState->getNormalVelocityH(NormalVelocityHDef, CurTime);
-      DefState->getNormalVelocity(NormalVelocityDef, CurTime);
+      HostArray2DReal LayerThickHDef = DefState->getLayerThicknessH(CurTime);
+      HostArray2DReal NormalVelocityHDef =
+          DefState->getNormalVelocityH(CurTime);
+      Array2DReal LayerThickDef     = DefState->getLayerThickness(CurTime);
+      Array2DReal NormalVelocityDef = DefState->getNormalVelocity(CurTime);
 
       int Count1 = 0;
       int Count2 = 0;
@@ -282,17 +275,15 @@ int main(int argc, char *argv[]) {
                      NTimeLevels);
          }
 
-         // Create test arrays
-         HostArray2DReal LayerThickHRef;
-         HostArray2DReal LayerThickHTst;
-         HostArray2DReal NormalVelocityHRef;
-         HostArray2DReal NormalVelocityHTst;
+         // Create test arrays and fill reference and test states at current
+         // time with Default state
+         HostArray2DReal LayerThickHRef = RefState->getLayerThicknessH(CurTime);
+         HostArray2DReal LayerThickHTst = TstState->getLayerThicknessH(CurTime);
+         HostArray2DReal NormalVelocityHRef =
+             RefState->getNormalVelocityH(CurTime);
+         HostArray2DReal NormalVelocityHTst =
+             TstState->getNormalVelocityH(CurTime);
 
-         // Fill reference and test states at current time with Default state
-         RefState->getLayerThicknessH(LayerThickHRef, CurTime);
-         TstState->getLayerThicknessH(LayerThickHTst, CurTime);
-         RefState->getNormalVelocityH(NormalVelocityHRef, CurTime);
-         TstState->getNormalVelocityH(NormalVelocityHTst, CurTime);
          for (int Cell = 0; Cell < NCellsAll; Cell++) {
             for (int Layer = 0; Layer < NVertLayers; Layer++) {
                LayerThickHRef(Cell, Layer) = LayerThickHDef(Cell, Layer);
@@ -312,10 +303,10 @@ int main(int argc, char *argv[]) {
 
          // Fill reference and test states at next time levels with the
          // Default state + 1
-         RefState->getLayerThicknessH(LayerThickHRef, NewTime);
-         TstState->getLayerThicknessH(LayerThickHTst, NewTime);
-         RefState->getNormalVelocityH(NormalVelocityHRef, NewTime);
-         TstState->getNormalVelocityH(NormalVelocityHTst, NewTime);
+         LayerThickHRef     = RefState->getLayerThicknessH(NewTime);
+         LayerThickHTst     = TstState->getLayerThicknessH(NewTime);
+         NormalVelocityHRef = RefState->getNormalVelocityH(NewTime);
+         NormalVelocityHTst = TstState->getNormalVelocityH(NewTime);
          for (int Cell = 0; Cell < NCellsAll; Cell++) {
             for (int Layer = 0; Layer < NVertLayers; Layer++) {
                LayerThickHRef(Cell, Layer) = LayerThickHDef(Cell, Layer) + 1;
