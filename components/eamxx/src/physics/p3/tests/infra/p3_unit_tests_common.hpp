@@ -77,7 +77,7 @@ struct UnitWrap {
     // Put struct decls here
     struct TestTableIce;
     struct TestTable3;
-    struct TestBackToCellAverage;
+    struct TestP3BackToCellAverage;
     struct TestFind;
     struct TestUpwind;
     struct TestGenSed;
