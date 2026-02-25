@@ -18,7 +18,7 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm, const ekat::ParameterLi
    aero_config_()
 {
   config_.n_so4_monolayers_pcage =
-    m_params.get<int>("mam4_number_so4_monolayers_to_age_carbon_particle",8);
+    m_params.get<unsigned>("mam4_number_so4_monolayers_to_age_carbon_particle",8);
 
   config_.amicphys.do_cond   = m_params.get<bool>("mam4_do_cond");
   config_.amicphys.do_rename = m_params.get<bool>("mam4_do_rename");
