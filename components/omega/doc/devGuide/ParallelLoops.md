@@ -192,7 +192,7 @@ a 3D array in parallel using hierarchical parallelism.
    Array3DReal A("A", N1, N2, N3);
    parallelForOuter(
        {N1, N2}, KOKKOS_LAMBDA(int J1, int J2, const TeamMember &Team) {
-        parallelForInner(Team, N3, INNER_LAMBDA(Int J3) {
+        parallelForInner(Team, N3, INNER_LAMBDA(int J3) {
           A(J1, J2, J3) = J1 + J2 + J3;
         });
     });
@@ -204,7 +204,7 @@ diagonal of a square matrix one can do:
    Array2DReal M("M", N, N);
    parallelForOuter(
        {N}, KOKKOS_LAMBDA(int J1, const TeamMember &Team) {
-        parallelForInner(Team, J1, INNER_LAMBDA(Int J2) {
+        parallelForInner(Team, J1, INNER_LAMBDA(int J2) {
           M(J1, J2) = J1 + J2;
         });
     });
@@ -220,7 +220,7 @@ in a 2D array might be done as follows.
    parallelForOuter(
        {N1, N2}, KOKKOS_LAMBDA(int J1, int J2, const TeamMember &Team) {
         Real SumD3;
-        parallelReduceInner(Team, N3, INNER_LAMBDA(Int J3, Real &Accum) {
+        parallelReduceInner(Team, N3, INNER_LAMBDA(int J3, Real &Accum) {
             Accum += A(J1, J2, J3);
         }, SumD3);
         B(J1, J2) = SumD3;
@@ -234,10 +234,10 @@ For example, to additionally compute and store maxima along the third dimension 
    parallelForOuter(
        {N1, N2}, KOKKOS_LAMBDA(int J1, int J2, const TeamMember &Team) {
         Real SumD3, MaxD3;
-        parallelReduceInner(Team, N3, INNER_LAMBDA(Int J3, Real &AccumSum, Real &AccumMax) {
+        parallelReduceInner(Team, N3, INNER_LAMBDA(int J3, Real &AccumSum, Real &AccumMax) {
             AccumSum += A(J1, J2, J3);
-            AccumMax = Kokkos::Max(AccumMax, A(J1, J2, J3));
-        }, SumN3, MaxN3);
+            AccumMax = Kokkos::max(AccumMax, A(J1, J2, J3));
+        }, SumD3, Kokkos::Max<Real>(MaxD3));
         B(J1, J2) = SumD3;
         C(J1, J2) = MaxD3;
     });
@@ -254,7 +254,7 @@ be done as follows.
    Array3DReal D("D", N1, N2, N3);
    parallelForOuter(
        {N1, N2}, KOKKOS_LAMBDA(int J1, int J2, const TeamMember &Team) {
-       parallelScanInner(Team, N1, INNER_LAMBDA(Int J3, Real &Accum, bool IsFinal) {
+       parallelScanInner(Team, N3, INNER_LAMBDA(int J3, Real &Accum, bool IsFinal) {
             Accum += A(J1, J2, J3);
             if (IsFinal) {
               D(J1, J2, J3) = Accum;
@@ -267,7 +267,7 @@ before the `if` statement. That is, it performs an inclusive scan. To compute an
 simply move the addition after the `if` statement.
 ```c++
   Real FinalScanValue;
-  parallelScanInner(Team, N1, INNER_LAMBDA(Int J3, Real &Accum, bool IsFinal) {
+  parallelScanInner(Team, N3, INNER_LAMBDA(int J3, Real &Accum, bool IsFinal) {
        if (IsFinal) {
          D(J1, J2, J3) = Accum;
        }
@@ -280,19 +280,20 @@ and only one-dimensional index range can be used. In contrast to `parallelReduce
 `parallelScanInner` supports only sum-based scans and only one scan variable.
 
 ### parallelSearchInner
-To search an index range in parallel for the first index where a given condition occurs Omega
-provides the `parallelSearchInner` function.
+To search an index range in parallel for the first index at which a given condition occurs,
+Omega provides the `parallelSearchInner` function.
 For example, the following code finds, for each row of a matrix, the first column index where
 the matrix element is above a certain threshold. If no element matches the condition then
 `parallelSearchInner` returns `-1`.
 ```c++
    Array2DReal M("M", N1, N2);
-   Array1DI3 ThresholdIdx("ThresholdIdx", N1);
+   Array1DI4 ThresholdIdx("ThresholdIdx", N1);
+   const Real Threshold = 0.5;
    parallelForOuter(
        {N1}, KOKKOS_LAMBDA(int J1, const TeamMember &Team) {
 
        int Idx;
-       parallelSearchInner(Team, N2, INNER_LAMBDA(Int J2) {
+       parallelSearchInner(Team, N2, INNER_LAMBDA(int J2) {
             return M(J1, J2) > Threshold;
        }, Idx);
 
