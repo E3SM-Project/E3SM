@@ -1142,6 +1142,16 @@
       <mask>gx1v6</mask>
     </model_grid>
 
+   <model_grid alias="ne0vr28natlref_ne0vr28natlref_t12" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne0np4_vr28natlref</grid>
+      <grid name="lnd">ne0np4_vr28natlref</grid>
+      <grid name="ocnice">ne0np4_vr28natlref</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>tx0.1v2</mask>
+    </model_grid>
+
     <model_grid alias="conusx4v1_conusx4v1" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne0np4_conus_x4v1_lowcon</grid>
       <grid name="lnd">ne0np4_conus_x4v1_lowcon</grid>
@@ -3704,6 +3714,8 @@
       <file grid="lnd" mask="oARRM60to10">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oARRM60to10.210630.nc</file>
       <file grid="atm" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_RRSwISC6to18E3r5.250429.nc</file>
       <file grid="lnd" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_RRSwISC6to18E3r5.250429.nc</file>
+      <file grid="lnd" mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_tx01.201025.nc</file>
+      <file grid="atm" mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_tx01.201025.nc</file>
       <desc>r0125 is 1/8 degree river routing grid:</desc>
     </domain>
 
@@ -3912,6 +3924,8 @@
     <domain name="ne0np4_vr28natlref">
       <nx>119603</nx>
       <ny>1</ny>
+      <file grid="atm|lnd" mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.lnd.ne0np4natlanticref.ne30x4_tx01.180424.nc</file>
+      <file grid="ocnice"  mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.ocn.ne0np4natlanticref.ne30x4_tx01.180424.nc</file>
       <file grid="atm|lnd" mask="MAB45to5rr1">$DIN_LOC_ROOT/share/domains/domain.lnd.ne0np4natlanticref_MAB45to5rr1.20260204.nc</file>
       <file grid="ocnice"  mask="MAB45to5rr1">$DIN_LOC_ROOT/share/domains/domain.ocn.ne0np4natlanticref_MAB45to5rr1.20260204.nc</file>
       <desc>ne0np4VR28.NATLREF is a Spectral Elem 1-deg grid with a 1/4 deg refined region over the Atlantic Ocean:</desc>
@@ -4931,6 +4945,16 @@
       <map name="ATM2LND_SMAPNAME">cpl/gridmaps/vr28natlref/map_ne0np4natlanticref_to_r0125_esmfbilin.20260204.nc</map>
       <map name="LND2ATM_FMAPNAME">cpl/gridmaps/r0125/map_r0125_to_ne0np4natlanticref_esmfaave.20260204.nc</map>
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/r0125/map_r0125_to_ne0np4natlanticref_esmfaave.20260204.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_vr28natlref" rof_grid="r0125">
+      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/vr28natlref/map_ne0np4natlanticref_to_r0125_esmfaave.20260204.nc</map>
+      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/vr28natlref/map_ne0np4natlanticref_to_r0125_esmfaave.20260204.nc</map>
+    </gridmap>
+
+    <gridmap lnd_grid="ne0np4_vr28natlref" rof_grid="r0125">
+      <map name="LND2ROF_FMAPNAME">cpl/gridmaps/vr28natlref/map_ne0np4natlanticref_to_r0125_esmfaave.20260204.nc</map>
+      <map name="ROF2LND_FMAPNAME">cpl/gridmaps/r0125/map_r0125_to_ne0np4natlanticref_esmfaave.20260204.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne0np4_arcticx4v1.pg2" lnd_grid="r0125">
