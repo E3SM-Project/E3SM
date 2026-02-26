@@ -925,9 +925,9 @@ module li_subglacial_hydro
       integer, pointer :: nVertices
       integer :: iEdge, cell1, cell2
       integer :: i, j, iVertex, iCell
-      real (kind=RKIND) :: velSign
       integer :: numGroundedCells
       real(kind=RKIND), parameter :: SMALL_CONDUC = 1.0e-30_RKIND
+      real(kind=RKIND), parameter :: SMALL_VELOCITY = 1.0e-20_RKIND
       integer :: err_tmp
       
       err = 0
@@ -1195,9 +1195,16 @@ module li_subglacial_hydro
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
          waterVelocity(iEdge) = -1.0_RKIND * effectiveConducEdge(iEdge) * hydropotentialBaseSlopeNormal(iEdge)
-         velSign = sign(1.0_RKIND, waterVelocity(iEdge))
-         waterThicknessEdgeUpwind(iEdge) = max(velSign * waterThickness(cell1),   &
-                     velSign * (-1.0_RKIND) * waterThickness(cell2))
+
+
+         if (waterVelocity(iEdge) > SMALL_VELOCITY) then
+            waterThicknessEdgeUpwind(iEdge) = waterThickness(cell1)
+         elseif (waterVelocity(iEdge) < -SMALL_VELOCITY) then
+            waterThicknessEdgeUpwind(iEdge) = waterThickness(cell2)
+         else
+            waterThicknessEdgeUpwind(iEdge) = max(waterThickness(cell1), waterThickness(cell2))
+         endif
+
 
          ! advective flux
          waterFluxAdvec(iEdge) = waterVelocity(iEdge) * waterThicknessEdgeUpwind(iEdge)
