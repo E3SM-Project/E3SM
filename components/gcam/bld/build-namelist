@@ -320,7 +320,7 @@ add_default($nl, 'num_lat');
 add_default($nl, 'num_lon');
 add_default($nl, 'num_gcam_energy_regions');
 add_default($nl, 'num_gcam_land_regions');
-add_default($nl, 'num_iac2elm_landtypes');
+add_default($nl, 'num_ehc2elm_landtypes');
 add_default($nl, 'num_emiss_sectors');
 add_default($nl, 'num_emiss_ctys');
 add_default($nl, 'num_periods');
