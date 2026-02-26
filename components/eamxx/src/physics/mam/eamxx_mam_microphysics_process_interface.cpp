@@ -17,9 +17,12 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm, const ekat::ParameterLi
  : MAMGenericInterface(comm, params),
    aero_config_()
 {
-  config_.n_so4_monolayers_pcage =
-    m_params.get<unsigned>("mam4_number_so4_monolayers_to_age_carbon_particle",8);
-
+  const int n_so4_monolayers_pcage =
+    m_params.get<int>("mam4_number_so4_monolayers_to_age_carbon_particle",8);
+  EKAT_REQUIRE_MSG(0 <= n_so4_monolayers_pcage,
+                   "Error: mam4_number_so4_monolayers_to_age_carbon_particle " <<
+		   "must be non-negative. Found:" << n_so4_monolayers_pcage << "\n");
+  config_.n_so4_monolayers_pcage = static_cast<unsigned>(n_so4_monolayers_pcage);
   config_.amicphys.do_cond   = m_params.get<bool>("mam4_do_cond");
   config_.amicphys.do_rename = m_params.get<bool>("mam4_do_rename");
   config_.amicphys.do_newnuc = m_params.get<bool>("mam4_do_newnuc");
