@@ -2743,6 +2743,9 @@
     <environment_variables BUILD_THREADED="TRUE" compiler="gnu">
       <env name="OMP_PLACES">cores</env>
     </environment_variables>
+    <environment_variables compiler="oneapi-ifx" mpilib="openmpi">
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/chrysalis/intel-oneapi-compilers-2025.2.0; else echo "$MOAB_ROOT"; fi}</env>
+    </environment_variables>
     <environment_variables compiler="intel" mpilib="openmpi">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/chrysalis/intel; else echo "$MOAB_ROOT"; fi}</env>
       <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /lcrc/group/e3sm/soft/albany/2024.03.26/intel/20.0.4; else echo "$Albany_ROOT"; fi}</env>
