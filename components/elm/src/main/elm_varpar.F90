@@ -21,7 +21,7 @@ module elm_varpar
 
   ! Note - model resolution is read in from the surface dataset
   integer, parameter :: numharvest = 5 ! number of harvest types
-  integer, parameter :: iac_npft = 17  ! number of veg pfts (index 0 for bare ground)
+  integer, parameter :: iac_npft = 51  ! number of veg pfts (index 0 for bare ground)
   integer, parameter :: iac_nharvest = 5 ! number of harvest types in ehc
 
   integer, parameter :: nlev_equalspace   = 15
