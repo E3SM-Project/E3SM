@@ -12,10 +12,10 @@ SET(SYCL_LINK_FLAGS "-fsycl -fsycl-device-code-split=per_kernel -fsycl-targets=s
 
 if (COMPILER MATCHES ".*gpu.*") # oneapi-ifxgpu
   include (${EKAT_MACH_FILES_PATH}/kokkos/intel-pvc.cmake)
-  set(CMAKE_CXX_FLAGS  " --intel -mlong-double-64 ${SYCL_COMPILE_FLAGS}" CACHE STRING "" FORCE)
-  set(CMAKE_EXE_LINKER_FLAGS  " -lifcore --intel -mlong-double-64 ${SYCL_LINK_FLAGS} -fortlib" CACHE STRING "" FORCE)
+  set(CMAKE_CXX_FLAGS  " -mlong-double-64 ${SYCL_COMPILE_FLAGS}" CACHE STRING "" FORCE)
+  set(CMAKE_EXE_LINKER_FLAGS  " -lifcore -mlong-double-64 ${SYCL_LINK_FLAGS} -fortlib" CACHE STRING "" FORCE)
 else() # oneapi-ifx
   include (${EKAT_MACH_FILES_PATH}/kokkos/serial.cmake)
-  set(CMAKE_CXX_FLAGS  " --intel -mlong-double-64" CACHE STRING "" FORCE)
-  set(CMAKE_EXE_LINKER_FLAGS  " -lifcore --intel -mlong-double-64 -fortlib" CACHE STRING "" FORCE)
+  set(CMAKE_CXX_FLAGS  " -mlong-double-64" CACHE STRING "" FORCE)
+  set(CMAKE_EXE_LINKER_FLAGS  " -lifcore -mlong-double-64 -fortlib" CACHE STRING "" FORCE)
 endif()
