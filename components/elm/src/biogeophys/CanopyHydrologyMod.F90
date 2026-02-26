@@ -29,7 +29,8 @@ module CanopyHydrologyMod
   use elm_varcon        , only : snw_rds_min
   use pftvarcon         , only : irrigated
   use GridcellType      , only : grc_pp
-  use timeinfoMod       , only : dtime_mod
+  use timeinfoMod, only : dtime_mod
+  use domainMod ,only : ldomain_gpu
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -93,6 +94,7 @@ contains
     end if
     ! Broadcast namelist variables read in
     call shr_mpi_bcast(oldfflag, mpicom)
+    !$acc update device(oldfflag) 
 
    end subroutine CanopyHydrology_readnl
 
@@ -362,8 +364,8 @@ contains
              end if
              ! Urban sunwall and shadewall have no intercepted precipitation
           else
-             qflx_prec_grnd_snow(p) = 0.
-             qflx_prec_grnd_rain(p) = 0.
+             qflx_prec_grnd_snow = 0._r8
+             qflx_prec_grnd_rain = 0._r8
              qflx_dirct_rain(p) = 0._r8
              qflx_leafdrip(p) = 0._r8
           end if
@@ -410,14 +412,14 @@ contains
                         endif	
                      endif			   
                      qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p) ! actual irrigation, including groundwater irrigation
-                     qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p)   
+                     qflx_prec_grnd_rain = qflx_prec_grnd_rain + qflx_real_irrig(p)   
                   end if		
                end if       
             else  ! one way coupling
                qflx_surf_irrig(p) = f_surf(g,tpu_ind)*qflx_irrig(p)
                qflx_grnd_irrig(p) = f_grd(g,tpu_ind)*qflx_irrig(p)
                qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p)
-               qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p) 
+               qflx_prec_grnd_rain = qflx_prec_grnd_rain + qflx_real_irrig(p) 
                qflx_over_supply(p) = 0._r8
                qflx_supply(p) = 0._r8 !no water supplied by MOSART 
             end if

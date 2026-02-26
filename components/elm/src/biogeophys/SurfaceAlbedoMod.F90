@@ -135,8 +135,8 @@ contains
     real(r8) :: ws              (bounds%begp:bounds%endp)                                 ! fraction of LAI+SAI that is SAI
     real(r8) :: blai(bounds%begp:bounds%endp)              ! lai buried by snow: tlai - elai
     real(r8) :: bsai(bounds%begp:bounds%endp)              ! sai buried by snow: tsai - esai
-    real(r8) :: sza,saa,deg2rad,slope_rad,aspect_rad
-
+    real(r8) :: sza,saa,slope_rad,aspect_rad
+    real(r8), parameter ::  deg2rad = SHR_CONST_PI/180._r8
     real(r8) :: coszen_gcell    (bounds%begg:bounds%endg)                                 ! cosine solar zenith angle for next time step (grc)
     real(r8) :: coszen_patch    (bounds%begp:bounds%endp)                                 ! cosine solar zenith angle for next time step (pft)
     real(r8) :: cosinc_gcell    (bounds%begg:bounds%endg)                                 ! cosine solar incidence angle to local surface for next time step (grc)
@@ -241,7 +241,6 @@ contains
 
     ! Cosine solar zenith angle for next time step
 
-    deg2rad = SHR_CONST_PI/180._r8
     if (.not. use_finetop_rad) then
        do g = bounds%begg,bounds%endg
           coszen_gcell(g) = shr_orb_cosz (nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), declinp1)
@@ -332,8 +331,8 @@ contains
 
        call SoilAlbedo(bounds, &
             num_nourbanc, filter_nourbanc, &
-         cosinc_col(bounds%begc:bounds%endc), &
-         albsnd(bounds%begc:bounds%endc, :), &
+            cosinc_col(bounds%begc:bounds%endc), &
+            albsnd(bounds%begc:bounds%endc, :), &
             albsni(bounds%begc:bounds%endc, :), &
             lakestate_vars, surfalb_vars)
 
@@ -398,8 +397,7 @@ contains
 
        ! BC FORCING CALCULATIONS
           flg_slr = 1; ! direct-beam
-          if (use_snicar_ad) then
-              call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
+          call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
                                 cosinc_col(bounds%begc:bounds%endc), &
                                 flg_slr, &
                                 h2osno_liq(bounds%begc:bounds%endc, :), &
@@ -409,23 +407,10 @@ contains
                                 albsfc(bounds%begc:bounds%endc, :), &
                                 albsnd_bc(bounds%begc:bounds%endc, :), &
                                 foo_snw(bounds%begc:bounds%endc, :, :) )
-          else
-                call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                             cosinc_col(bounds%begc:bounds%endc), &
-                             flg_slr, &
-                             h2osno_liq(bounds%begc:bounds%endc, :), &
-                             h2osno_ice(bounds%begc:bounds%endc, :), &
-                             snw_rds_in(bounds%begc:bounds%endc, :), &
-                             mss_cnc_aer_in_frc_bc(bounds%begc:bounds%endc, :, :), &
-                             albsfc(bounds%begc:bounds%endc, :), &
-                             albsnd_bc(bounds%begc:bounds%endc, :), &
-                             foo_snw(bounds%begc:bounds%endc, :, :) )
 
-          endif ! end if use_snicar_ad
 
           flg_slr = 2; ! diffuse
-          if (use_snicar_ad) then
-              call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
+          call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
                                 cosinc_col(bounds%begc:bounds%endc), &
                                 flg_slr, &
                                 h2osno_liq(bounds%begc:bounds%endc, :), &
@@ -435,18 +420,6 @@ contains
                                 albsfc(bounds%begc:bounds%endc, :), &
                                 albsni_bc(bounds%begc:bounds%endc, :), &
                                 foo_snw(bounds%begc:bounds%endc, :, :) )
-          else
-              call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                             cosinc_col(bounds%begc:bounds%endc), &
-                             flg_slr, &
-                             h2osno_liq(bounds%begc:bounds%endc, :), &
-                             h2osno_ice(bounds%begc:bounds%endc, :), &
-                             snw_rds_in(bounds%begc:bounds%endc, :), &
-                             mss_cnc_aer_in_frc_bc(bounds%begc:bounds%endc, :, :), &
-                             albsfc(bounds%begc:bounds%endc, :), &
-                             albsni_bc(bounds%begc:bounds%endc, :), &
-                             foo_snw(bounds%begc:bounds%endc, :, :) )
-          endif ! end if use_snicar_ad
 
        ! 2. OC input array:
        !  set BC and dust concentrations, so OC_FRC=[(BC+OC+dust)-(BC+dust)]
@@ -460,8 +433,7 @@ contains
 
        ! OC FORCING CALCULATIONS
           flg_slr = 1; ! direct-beam
-          if (use_snicar_ad) then
-              call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
+          call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
                                 cosinc_col(bounds%begc:bounds%endc), &
                                 flg_slr, &
                                 h2osno_liq(bounds%begc:bounds%endc, :), &
@@ -471,22 +443,9 @@ contains
                                 albsfc(bounds%begc:bounds%endc, :), &
                                 albsnd_oc(bounds%begc:bounds%endc, :), &
                                 foo_snw(bounds%begc:bounds%endc, :, :) )
-          else
-              call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                             cosinc_col(bounds%begc:bounds%endc), &
-                             flg_slr, &
-                             h2osno_liq(bounds%begc:bounds%endc, :), &
-                             h2osno_ice(bounds%begc:bounds%endc, :), &
-                             snw_rds_in(bounds%begc:bounds%endc, :), &
-                             mss_cnc_aer_in_frc_oc(bounds%begc:bounds%endc, :, :), &
-                             albsfc(bounds%begc:bounds%endc, :), &
-                             albsnd_oc(bounds%begc:bounds%endc, :), &
-                             foo_snw(bounds%begc:bounds%endc, :, :) )
-          endif ! end if use_snicar_ad
 
           flg_slr = 2; ! diffuse
-          if (use_snicar_ad) then
-              call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
+          call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
                                 cosinc_col(bounds%begc:bounds%endc), &
                                 flg_slr, &
                                 h2osno_liq(bounds%begc:bounds%endc, :), &
@@ -496,18 +455,6 @@ contains
                                 albsfc(bounds%begc:bounds%endc, :), &
                                 albsni_oc(bounds%begc:bounds%endc, :), &
                                 foo_snw(bounds%begc:bounds%endc, :, :) )
-          else
-              call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                             cosinc_col(bounds%begc:bounds%endc), &
-                             flg_slr, &
-                             h2osno_liq(bounds%begc:bounds%endc, :), &
-                             h2osno_ice(bounds%begc:bounds%endc, :), &
-                             snw_rds_in(bounds%begc:bounds%endc, :), &
-                             mss_cnc_aer_in_frc_oc(bounds%begc:bounds%endc, :, :), &
-                             albsfc(bounds%begc:bounds%endc, :), &
-                             albsni_oc(bounds%begc:bounds%endc, :), &
-                             foo_snw(bounds%begc:bounds%endc, :, :) )
-          endif ! end if use_snicar_ad
        endif
 
        ! 3. DUST input array:
@@ -521,8 +468,7 @@ contains
 
        ! DUST FORCING CALCULATIONS
           flg_slr = 1; ! direct-beam
-          if (use_snicar_ad) then
-              call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
+          call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
                                 cosinc_col(bounds%begc:bounds%endc), &
                                 flg_slr, &
                                 h2osno_liq(bounds%begc:bounds%endc, :), &
@@ -532,22 +478,9 @@ contains
                                 albsfc(bounds%begc:bounds%endc, :), &
                                 albsnd_dst(bounds%begc:bounds%endc, :), &
                                 foo_snw(bounds%begc:bounds%endc, :, :) )
-          else
-              call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                             cosinc_col(bounds%begc:bounds%endc), &
-                             flg_slr, &
-                             h2osno_liq(bounds%begc:bounds%endc, :), &
-                             h2osno_ice(bounds%begc:bounds%endc, :), &
-                             snw_rds_in(bounds%begc:bounds%endc, :), &
-                             mss_cnc_aer_in_frc_dst(bounds%begc:bounds%endc, :, :), &
-                             albsfc(bounds%begc:bounds%endc, :), &
-                             albsnd_dst(bounds%begc:bounds%endc, :), &
-                             foo_snw(bounds%begc:bounds%endc, :, :) )
-          endif ! end if use_snicar_ad
 
           flg_slr = 2; ! diffuse
-          if (use_snicar_ad) then
-              call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
+          call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
                                 cosinc_col(bounds%begc:bounds%endc), &
                                 flg_slr, &
                                 h2osno_liq(bounds%begc:bounds%endc, :), &
@@ -557,24 +490,11 @@ contains
                                 albsfc(bounds%begc:bounds%endc, :), &
                                 albsni_dst(bounds%begc:bounds%endc, :), &
                                 foo_snw(bounds%begc:bounds%endc, :, :) )
-          else
-              call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                             cosinc_col(bounds%begc:bounds%endc), &
-                             flg_slr, &
-                             h2osno_liq(bounds%begc:bounds%endc, :), &
-                             h2osno_ice(bounds%begc:bounds%endc, :), &
-                             snw_rds_in(bounds%begc:bounds%endc, :), &
-                             mss_cnc_aer_in_frc_dst(bounds%begc:bounds%endc, :, :), &
-                             albsfc(bounds%begc:bounds%endc, :), &
-                             albsni_dst(bounds%begc:bounds%endc, :), &
-                             foo_snw(bounds%begc:bounds%endc, :, :)  )
-          endif ! end if use_snicar_ad
 
        ! 4. ALL AEROSOL FORCING CALCULATION
        ! (pure snow albedo)
           flg_slr = 1; ! direct-beam
-          if (use_snicar_ad) then
-              call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
+          call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
                                 cosinc_col(bounds%begc:bounds%endc), &
                                 flg_slr, &
                                 h2osno_liq(bounds%begc:bounds%endc, :), &
@@ -584,22 +504,9 @@ contains
                                 albsfc(bounds%begc:bounds%endc, :), &
                                 albsnd_pur(bounds%begc:bounds%endc, :), &
                                 foo_snw(bounds%begc:bounds%endc, :, :) )
-          else
-              call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                             cosinc_col(bounds%begc:bounds%endc), &
-                             flg_slr, &
-                             h2osno_liq(bounds%begc:bounds%endc, :), &
-                             h2osno_ice(bounds%begc:bounds%endc, :), &
-                             snw_rds_in(bounds%begc:bounds%endc, :), &
-                             mss_cnc_aer_in_frc_pur(bounds%begc:bounds%endc, :, :), &
-                             albsfc(bounds%begc:bounds%endc, :), &
-                             albsnd_pur(bounds%begc:bounds%endc, :), &
-                             foo_snw(bounds%begc:bounds%endc, :, :) )
-          endif ! end if use_snicar_ad
 
           flg_slr = 2; ! diffuse
-          if (use_snicar_ad) then
-              call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
+          call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
                                 cosinc_col(bounds%begc:bounds%endc), &
                                 flg_slr, &
                                 h2osno_liq(bounds%begc:bounds%endc, :), &
@@ -609,25 +516,12 @@ contains
                                 albsfc(bounds%begc:bounds%endc, :), &
                                 albsni_pur(bounds%begc:bounds%endc, :), &
                                 foo_snw(bounds%begc:bounds%endc, :, :) )
-          else
-              call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                             cosinc_col(bounds%begc:bounds%endc), &
-                             flg_slr, &
-                             h2osno_liq(bounds%begc:bounds%endc, :), &
-                             h2osno_ice(bounds%begc:bounds%endc, :), &
-                             snw_rds_in(bounds%begc:bounds%endc, :), &
-                             mss_cnc_aer_in_frc_pur(bounds%begc:bounds%endc, :, :), &
-                             albsfc(bounds%begc:bounds%endc, :), &
-                             albsni_pur(bounds%begc:bounds%endc, :), &
-                             foo_snw(bounds%begc:bounds%endc, :, :) )
-          endif ! end if use_snicar_ad
     end if !end if use_snicar_frc
 
 
     ! CLIMATE FEEDBACK CALCULATIONS, ALL AEROSOLS:
        flg_slr = 1; ! direct-beam
-       if (use_snicar_ad) then
-           call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
+       call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
                              cosinc_col(bounds%begc:bounds%endc), &
                              flg_slr, &
                              h2osno_liq(bounds%begc:bounds%endc, :), &
@@ -637,22 +531,9 @@ contains
                              albsfc(bounds%begc:bounds%endc, :), &
                              albsnd(bounds%begc:bounds%endc, :), &
                              flx_absd_snw(bounds%begc:bounds%endc, :, :) )
-       else
-            call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                           cosinc_col(bounds%begc:bounds%endc), &
-                           flg_slr, &
-                           h2osno_liq(bounds%begc:bounds%endc, :), &
-                           h2osno_ice(bounds%begc:bounds%endc, :), &
-                           snw_rds_in(bounds%begc:bounds%endc, :), &
-                           mss_cnc_aer_in_fdb(bounds%begc:bounds%endc, :, :), &
-                           albsfc(bounds%begc:bounds%endc, :), &
-                           albsnd(bounds%begc:bounds%endc, :), &
-                           flx_absd_snw(bounds%begc:bounds%endc, :, :) )
-       endif ! end if use_snicar_ad
 
        flg_slr = 2; ! diffuse
-       if (use_snicar_ad) then
-           call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
+       call SNICAR_AD_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
                              cosinc_col(bounds%begc:bounds%endc), &
                              flg_slr, &
                              h2osno_liq(bounds%begc:bounds%endc, :), &
@@ -662,18 +543,6 @@ contains
                              albsfc(bounds%begc:bounds%endc, :), &
                              albsni(bounds%begc:bounds%endc, :), &
                              flx_absi_snw(bounds%begc:bounds%endc, :, :) )
-       else
-            call SNICAR_RT(flg_snw_ice, bounds, num_nourbanc, filter_nourbanc,    &
-                           cosinc_col(bounds%begc:bounds%endc), &
-                           flg_slr, &
-                           h2osno_liq(bounds%begc:bounds%endc, :), &
-                           h2osno_ice(bounds%begc:bounds%endc, :), &
-                           snw_rds_in(bounds%begc:bounds%endc, :), &
-                           mss_cnc_aer_in_fdb(bounds%begc:bounds%endc, :, :), &
-                           albsfc(bounds%begc:bounds%endc, :), &
-                           albsni(bounds%begc:bounds%endc, :), &
-                           flx_absi_snw(bounds%begc:bounds%endc, :, :) )
-       endif ! end if use_snicar_ad
 
     ! ground albedos and snow-fraction weighting of snow absorption factors
     do ib = 1, nband
@@ -962,11 +831,7 @@ contains
     ! Calculate surface albedos and fluxes
     ! Only perform on vegetated pfts where coszen > 0
     if(use_fates)then
-#ifndef _OPENACC
-
        call alm_fates%wrap_canopy_radiation(bounds,surfalb_vars,nextsw_cday,declinp1)
-
-#endif
     else
     
       if (use_top_solar_rad) then

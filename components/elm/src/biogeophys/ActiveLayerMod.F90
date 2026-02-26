@@ -15,6 +15,7 @@ module ActiveLayerMod
   use ColumnDataType  , only : col_es, col_ws
   use LandunitType    , only : lun_pp
   use landunit_varcon , only : ilowcenpoly, iflatcenpoly, ihighcenpoly
+  use timeinfoMod 
   !
   implicit none
   save
@@ -23,12 +24,11 @@ module ActiveLayerMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public:: alt_calc
   !-----------------------------------------------------------------------
-  
+
 contains
 
   !-----------------------------------------------------------------------
-  subroutine alt_calc(num_soilc, filter_soilc, &
-       temperature_vars, canopystate_vars) 
+  subroutine alt_calc(num_soilc, filter_soilc, canopystate_vars) 
     !
     ! !DESCRIPTION:
     !  define active layer thickness similarly to frost_table, except set as deepest thawed layer and define on nlevgrnd
@@ -45,6 +45,7 @@ contains
     !  initialized to valid values, so I think this is okay.
     !
     ! !USES:
+    !$acc routine seq
     use shr_const_mod    , only : SHR_CONST_TKFRZ
     use elm_varpar       , only : nlevgrnd
     use elm_time_manager , only : get_curr_date, get_step_size
@@ -54,7 +55,6 @@ contains
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(temperature_type) , intent(in)    :: temperature_vars
     type(canopystate_type) , intent(inout) :: canopystate_vars
     !
     ! !LOCAL VARIABLES:
@@ -94,9 +94,13 @@ contains
 
       ! on a set annual timestep, update annual maxima
       ! make this 1 January for NH columns, 1 July for SH columns
-      call get_curr_date(year, mon, day, sec)
-      dtime =  get_step_size()
-      if ( (mon .eq. 1) .and. (day .eq. 1) .and. ( sec / dtime .eq. 1) ) then
+      ! call get_curr_date(year, mon, day, sec)
+      dtime =  int(dtime_mod)
+      year = year_curr 
+      mon = mon_curr
+      day = day_curr 
+      sec = secs_curr
+      if ( (mon .eq. 1) .and. (day .eq. 1) .and. ( sec / int(dtime) .eq. 1) ) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             g = col_pp%gridcell(c)
