@@ -65,10 +65,8 @@ int initState() {
    std::vector<std::string> DimNamesThickness(NDims);
    DimNamesThickness[0] = "NCells";
 
-   Array2DReal LayerThickCell;
-   Array2DReal NormalVelEdge;
-   Err += State->getLayerThickness(LayerThickCell, 0);
-   Err += State->getNormalVelocity(NormalVelEdge, 0);
+   Array2DReal LayerThickCell = State->getLayerThickness(0);
+   Array2DReal NormalVelEdge  = State->getNormalVelocity(0);
 
    Array3DReal TracersArray = Tracers::getAll(0);
    const auto &TracersCell  = TracersArray;

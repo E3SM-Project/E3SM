@@ -162,12 +162,9 @@ int main(int argc, char *argv[]) {
          I4 TimeLevel = 0;
 
          // get state and tracer arrays
-         Array2DReal LayerThick;
-         DefState->getLayerThickness(LayerThick, TimeLevel);
-         Array2DReal Temp;
-         Array2DReal Salinity;
-         Err = Tracers::getByName(Temp, TimeLevel, "Temperature");
-         Err = Tracers::getByName(Salinity, TimeLevel, "Salinity");
+         Array2DReal LayerThick = DefState->getLayerThickness(TimeLevel);
+         Array2DReal Temp       = Tracers::getByName(TimeLevel, "Temperature");
+         Array2DReal Salinity   = Tracers::getByName(TimeLevel, "Salinity");
 
          // set Z interface and mid-point locations
          Real ZBottom      = -1000.0_Real;
@@ -198,8 +195,7 @@ int main(int argc, char *argv[]) {
          LOG_INFO("NVertLayers = {}", NVertLayers);
          LOG_INFO("dC = {}", dC);
          DefState->copyToHost(0);
-         HostArray2DReal LayerThickH;
-         DefState->getLayerThicknessH(LayerThickH, 0);
+         HostArray2DReal LayerThickH = DefState->getLayerThicknessH(TimeLevel);
          for (int i = 0; i < 2; ++i) {
             for (int k = 0; k < 2; ++k) {
                LOG_INFO("LayerThick({}, {}) = {}", i, k, LayerThickH(i, k));

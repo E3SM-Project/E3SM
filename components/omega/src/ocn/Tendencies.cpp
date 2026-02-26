@@ -13,6 +13,7 @@
 #include "Eos.h"
 #include "Error.h"
 #include "Field.h"
+#include "OceanState.h"
 #include "PGrad.h"
 #include "Pacer.h"
 #include "TimeStepper.h"
@@ -601,21 +602,17 @@ void Tendencies::computeVelocityTendenciesOnly(
 
    // Compute pressure gradient
    if (PGrad->Enabled) {
-      I4 Err;
-      Array2DReal Temp;
-      Array2DReal Salinity;
-      Array2DReal LayerThick;
 
       // Temporary handling of surface pressure
       Array1DReal SurfacePressure("SurfacePressure", Mesh->NCellsSize);
       deepCopy(SurfacePressure, 0.0_Real);
 
       Pacer::start("Tend:pressureGradTerm", 2);
-      State->getLayerThickness(LayerThick, VelTimeLevel);
+      Array2DReal LayerThick = State->getLayerThickness(VelTimeLevel);
       VCoord->computePressure(LayerThick, SurfacePressure);
       OMEGA_SCOPE(LocPressureMid, VCoord->PressureMid);
-      Err = Tracers::getByName(Temp, VelTimeLevel, "Temperature");
-      Err = Tracers::getByName(Salinity, VelTimeLevel, "Salinity");
+      Array2DReal Temp     = Tracers::getByName(VelTimeLevel, "Temperature");
+      Array2DReal Salinity = Tracers::getByName(VelTimeLevel, "Salinity");
 
       EqState->computeSpecVol(Temp, Salinity, LocPressureMid);
 
