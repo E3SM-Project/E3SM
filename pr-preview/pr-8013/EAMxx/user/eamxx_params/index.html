@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
     
     
       
@@ -3473,6 +3473,8 @@
       
         
       
+        
+      
     
     
     
@@ -3530,6 +3532,34 @@
     
   
     Autoconversion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../technical/physics/p3/back_to_cell_average/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Back to Cell Average
   
 
     
@@ -6118,6 +6148,52 @@
 </ul>
 </li>
 <li>spa::compute_tendencies:<ul>
+<li>description: list of computed fields/groups for which this process will back out tendencies</li>
+<li>type: array(string)</li>
+</ul>
+</li>
+</ul>
+<h2 id="spc">spc</h2>
+<ul>
+<li>spc::spc_remap_file:<ul>
+<li>description: File containing mapping data from the grid of spc_data_file to the model grid. Unused if the grid is the same.</li>
+<li>type: file</li>
+</ul>
+</li>
+<li>spc::spc_data_file:<ul>
+<li>description: File containing chemistry data. Must be on same grid as the atm, or a coarser one</li>
+<li>type: file</li>
+</ul>
+</li>
+<li>spc::number_of_subcycles:<ul>
+<li>description: how many times to subcycle this atm process</li>
+<li>type: <strong>MISSING</strong></li>
+<li>constraints: gt 0</li>
+</ul>
+</li>
+<li>spc::enable_precondition_checks:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>spc::enable_postcondition_checks:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>spc::repair_log_level:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: string</li>
+<li>valid values: trace,debug,info,warn</li>
+</ul>
+</li>
+<li>spc::internal_diagnostics_level:<ul>
+<li>description: Whether to print hashes of the atm proc fields: 0=no, 1=yes (lump fields), 2=yes (individual fields)</li>
+<li>type: integer</li>
+<li>valid values: 0,1,2</li>
+</ul>
+</li>
+<li>spc::compute_tendencies:<ul>
 <li>description: list of computed fields/groups for which this process will back out tendencies</li>
 <li>type: array(string)</li>
 </ul>
