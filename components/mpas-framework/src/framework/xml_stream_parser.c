@@ -518,6 +518,63 @@ int unknown_attribute_check(ezxml_t xml, const char *tag_name, const char **allo
 
 /*********************************************************************************
  *
+ *  Function: has_child_tag_name
+ *
+ *  Returns non-zero if child_name appears in the allowed_names list.
+ *
+ *********************************************************************************/
+int has_child_tag_name(const char *child_name, const char **allowed_names, int n_allowed)
+{
+	int i;
+
+	for (i = 0; i < n_allowed; i++) {
+		if (strcmp(child_name, allowed_names[i]) == 0) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+
+/*********************************************************************************
+ *
+ *  Function: unknown_child_check
+ *
+ *  Checks that all child tags of an element are part of an allowed list.
+ *
+ *********************************************************************************/
+int unknown_child_check(ezxml_t xml, const char *tag_name, const char **allowed_names, int n_allowed)
+{
+	ezxml_t child;
+	const char *stream_name;
+	char msgbuf[MSGSIZE];
+
+	if (xml == NULL || xml->child == NULL) {
+		return 0;
+	}
+
+	stream_name = ezxml_attr(xml, "name");
+
+	for (child = xml->child; child != NULL; child = child->ordered) {
+		if (!has_child_tag_name(child->name, allowed_names, n_allowed)) {
+			if (stream_name != NULL) {
+				snprintf(msgbuf, MSGSIZE, "tag \"%s\" with name \"%s\" has unrecognized child tag \"%s\".", tag_name, stream_name, child->name);
+			}
+			else {
+				snprintf(msgbuf, MSGSIZE, "tag \"%s\" has unrecognized child tag \"%s\".", tag_name, child->name);
+			}
+			fmt_err(msgbuf);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+
+/*********************************************************************************
+ *
  *  Function: uniqueness_check
  *
  *  Checks that two streams have unique name and filename_template attributes
@@ -580,31 +637,54 @@ int check_streams(ezxml_t streams)
 		"reference_time", "record_interval", "precision", "packages", "clobber_mode", "useMissingValMask", "io_type"
 	};
 	static const char *member_attrs[] = {"name", "packages"};
+	static const char *top_children[] = {"stream", "immutable_stream"};
+	static const char *stream_children[] = {"file", "var", "var_array", "var_struct", "stream"};
+	static const char *no_children[] = {};
 	char msgbuf[MSGSIZE];
+
+	if (unknown_child_check(streams, "streams", top_children, 2) != 0) {
+		return 1;
+	}
 
 
 	/* Check immutable streams */
 	for (stream_xml = ezxml_child(streams, "immutable_stream"); stream_xml; stream_xml = ezxml_next(stream_xml)) {
+		if (unknown_child_check(stream_xml, "immutable_stream", stream_children, 5) != 0) {
+			return 1;
+		}
+
 		if (unknown_attribute_check(stream_xml, "immutable_stream", stream_attrs, 13) != 0) {
 			return 1;
 		}
 
 		for (var_xml = ezxml_child(stream_xml, "var"); var_xml; var_xml = ezxml_next(var_xml)) {
+			if (unknown_child_check(var_xml, "var", no_children, 0) != 0) {
+				return 1;
+			}
 			if (unknown_attribute_check(var_xml, "var", member_attrs, 2) != 0) {
 				return 1;
 			}
 		}
 		for (vararray_xml = ezxml_child(stream_xml, "var_array"); vararray_xml; vararray_xml = ezxml_next(vararray_xml)) {
+			if (unknown_child_check(vararray_xml, "var_array", no_children, 0) != 0) {
+				return 1;
+			}
 			if (unknown_attribute_check(vararray_xml, "var_array", member_attrs, 2) != 0) {
 				return 1;
 			}
 		}
 		for (varstruct_xml = ezxml_child(stream_xml, "var_struct"); varstruct_xml; varstruct_xml = ezxml_next(varstruct_xml)) {
+			if (unknown_child_check(varstruct_xml, "var_struct", no_children, 0) != 0) {
+				return 1;
+			}
 			if (unknown_attribute_check(varstruct_xml, "var_struct", member_attrs, 2) != 0) {
 				return 1;
 			}
 		}
 		for (substream_xml = ezxml_child(stream_xml, "stream"); substream_xml; substream_xml = ezxml_next(substream_xml)) {
+			if (unknown_child_check(substream_xml, "stream", no_children, 0) != 0) {
+				return 1;
+			}
 			if (unknown_attribute_check(substream_xml, "stream", member_attrs, 2) != 0) {
 				return 1;
 			}
@@ -629,31 +709,50 @@ int check_streams(ezxml_t streams)
 	for (stream_xml = ezxml_child(streams, "stream"); stream_xml; stream_xml = ezxml_next(stream_xml)) {
 		name = ezxml_attr(stream_xml, "name");
 
+		if (unknown_child_check(stream_xml, "stream", stream_children, 5) != 0) {
+			return 1;
+		}
+
 		if (unknown_attribute_check(stream_xml, "stream", stream_attrs, 13) != 0) {
 			return 1;
 		}
 
 		for (test_xml = ezxml_child(stream_xml, "file"); test_xml; test_xml = ezxml_next(test_xml)) {
+			if (unknown_child_check(test_xml, "file", no_children, 0) != 0) {
+				return 1;
+			}
 			if (unknown_attribute_check(test_xml, "file", member_attrs, 2) != 0) {
 				return 1;
 			}
 		}
 		for (var_xml = ezxml_child(stream_xml, "var"); var_xml; var_xml = ezxml_next(var_xml)) {
+			if (unknown_child_check(var_xml, "var", no_children, 0) != 0) {
+				return 1;
+			}
 			if (unknown_attribute_check(var_xml, "var", member_attrs, 2) != 0) {
 				return 1;
 			}
 		}
 		for (vararray_xml = ezxml_child(stream_xml, "var_array"); vararray_xml; vararray_xml = ezxml_next(vararray_xml)) {
+			if (unknown_child_check(vararray_xml, "var_array", no_children, 0) != 0) {
+				return 1;
+			}
 			if (unknown_attribute_check(vararray_xml, "var_array", member_attrs, 2) != 0) {
 				return 1;
 			}
 		}
 		for (varstruct_xml = ezxml_child(stream_xml, "var_struct"); varstruct_xml; varstruct_xml = ezxml_next(varstruct_xml)) {
+			if (unknown_child_check(varstruct_xml, "var_struct", no_children, 0) != 0) {
+				return 1;
+			}
 			if (unknown_attribute_check(varstruct_xml, "var_struct", member_attrs, 2) != 0) {
 				return 1;
 			}
 		}
 		for (substream_xml = ezxml_child(stream_xml, "stream"); substream_xml; substream_xml = ezxml_next(substream_xml)) {
+			if (unknown_child_check(substream_xml, "stream", no_children, 0) != 0) {
+				return 1;
+			}
 			if (unknown_attribute_check(substream_xml, "stream", member_attrs, 2) != 0) {
 				return 1;
 			}
