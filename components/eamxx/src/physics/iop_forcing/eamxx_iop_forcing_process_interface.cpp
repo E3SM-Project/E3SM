@@ -171,7 +171,9 @@ advance_iop_subsidence (const MemberType& team,
 
   const int n_q_tracers = Q.extent_int(0);
 
-  // --- Workspace temporaries (must be pre-requested with size nlevs) ---
+  const int nlev_packs = ekat::npack<Pack>(nlevs);
+
+  // Workspace temporaries (pack-length views, i.e., length == nlevi_packs in practice)
   auto p_dep = uview_1d<Pack>();
   auto u_old = uview_1d<Pack>();
   auto v_old = uview_1d<Pack>();
@@ -183,11 +185,12 @@ advance_iop_subsidence (const MemberType& team,
   auto q_new = uview_1d<Pack>();
 
   workspace.take_many_contiguous_unsafe<9>(
-{"iop_p_dep","iop_u_old","iop_v_old","iop_T_old","iop_u_new","iop_v_new","iop_T_new","iop_q_old","iop_q_new"},
-  {&p_dep,     &u_old,     &v_old,     &T_old,     &u_new,     &v_new,     &T_new,     &q_old,     &q_new});
+    {"iop_p_dep","iop_u_old","iop_v_old","iop_T_old",
+     "iop_u_new","iop_v_new","iop_T_new","iop_q_old","iop_q_new"},
+    {&p_dep, &u_old, &v_old, &T_old, &u_new, &v_new, &T_new, &q_old, &q_new});
 
-  // Copy current state into *_old
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
+  // Copy current state into *_old  (PACK INDEX SPACE)
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
     u_old(k) = u(k);
     v_old(k) = v(k);
     T_old(k) = T(k);
@@ -196,20 +199,16 @@ advance_iop_subsidence (const MemberType& team,
 
   // Build departure pressure vector (x_tgt). Clamp so LinInterp never sees out-of-range.
   const Pack pmin = ref_p_mid(0);
-  const Pack pmax = ref_p_mid(nlevs-1);
+  const Pack pmax = ref_p_mid(nlev_packs-1);
 
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
     Pack p = ref_p_mid(k) - dt * omega(k);
     p = ekat::max(pmin, ekat::min(pmax, p));
     p_dep(k) = p;
   });
   team.team_barrier();
 
-  // --- Use LinInterp exactly like the EAMxx example ---
-  // ncol=1, nlev_src=nlevs, nlev_tgt=nlevs
-//  ekat::LinInterp<Real, Pack::n> interp(1, nlevs, nlevs);
-
-  const auto nlev_packs = ekat::npack<Pack>(nlevs);
+  // LinInterp expects pack-level extents
   ekat::LinInterp<Real, Pack::n> interp(1, nlev_packs, nlev_packs);
   interp.setup(team, ref_p_mid, p_dep);
 
@@ -218,36 +217,37 @@ advance_iop_subsidence (const MemberType& team,
   interp.lin_interp(team, ref_p_mid, p_dep, T_old, T_new);
   team.team_barrier();
 
-  // Thermal expansion correction + write back u/v/T
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
+  // Thermal expansion correction + write back (PACK INDEX SPACE)
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
+    // Pack-wise correction is fine (per-lane)
     T_new(k) *= 1.0 + (dt * Rair / Cpair) * omega(k) / ref_p_mid(k);
+
     u(k) = u_new(k);
     v(k) = v_new(k);
     T(k) = T_new(k);
   });
   team.team_barrier();
 
-  // Tracers (one at a time to keep workspace small)
+  // Tracers
   for (int m = 0; m < n_q_tracers; ++m) {
-    const auto q_m = Kokkos::subview(Q, m, Kokkos::ALL());
+    const auto q_m = Kokkos::subview(Q, m, Kokkos::ALL()); // q_m is uview_1d<Pack> length nlev_packs
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
       q_old(k) = q_m(k);
     });
     team.team_barrier();
 
-    // setup already valid for (ref_p_mid -> p_dep); reuse it
     interp.lin_interp(team, ref_p_mid, p_dep, q_old, q_new);
     team.team_barrier();
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
       q_m(k) = q_new(k);
     });
     team.team_barrier();
   }
 
   workspace.release_many_contiguous<9>(
-  {&p_dep,&u_old,&v_old,&T_old,&u_new,&v_new,&T_new,&q_old,&q_new});
+    {&p_dep,&u_old,&v_old,&T_old,&u_new,&v_new,&T_new,&q_old,&q_new});
 }
 
 
