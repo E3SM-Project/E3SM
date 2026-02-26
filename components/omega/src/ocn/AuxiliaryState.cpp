@@ -222,22 +222,6 @@ void AuxiliaryState::computeAll(const OceanState *State,
 
    computeMomAux(State, ThickTimeLevel, VelTimeLevel);
 
-   Pacer::start("AuxState:edgeAuxState4", 2);
-   parallelForOuter(
-       "edgeAuxState4", {NTracers, Mesh->NEdgesAll},
-       KOKKOS_LAMBDA(int LTracer, int IEdge, const TeamMember &Team) {
-          const int KMin   = MinLayerEdgeBot(IEdge);
-          const int KMax   = MaxLayerEdgeTop(IEdge);
-          const int KRange = vertRangeChunked(KMin, KMax);
-          parallelForInner(
-              Team, KRange, INNER_LAMBDA(int KChunk) {
-                 LocTracerAux.computeVarsOnEdge(LTracer, IEdge, KChunk,
-                                                NormalVelEdge, LayerThickCell,
-                                                TracerArray);
-              });
-       });
-   Pacer::stop("AuxState:edgeAuxState4", 2);
-
    const auto &MeanLayerThickEdge = LayerThicknessAux.MeanLayerThickEdge;
 
    Pacer::start("AuxState:cellAuxState4", 2);
@@ -351,19 +335,6 @@ void AuxiliaryState::readConfigOptions(Config *OmegaConfig) {
       this->LayerThicknessAux.FluxThickEdgeChoice = FluxThickEdgeOption::Upwind;
    } else {
       ABORT_ERROR("AuxiliaryState: Unknown FluxThicknessType requested");
-   }
-
-   std::string FluxTracerTypeStr;
-   Err += AdvectConfig.get("FluxTracerType", FluxTracerTypeStr);
-   CHECK_ERROR_ABORT(
-       Err, "AuxiliaryState: FluxTracerType not found in AdvectConfig");
-
-   if (FluxTracerTypeStr == "Center") {
-      this->TracerAux.TracersOnEdgeChoice = FluxTracerEdgeOption::Center;
-   } else if (FluxTracerTypeStr == "Upwind") {
-      this->TracerAux.TracersOnEdgeChoice = FluxTracerEdgeOption::Upwind;
-   } else {
-      ABORT_ERROR("AuxiliaryState: Unknown FluxTracerType requested");
    }
 
    Config WindStressConfig("WindStress");

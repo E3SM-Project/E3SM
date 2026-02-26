@@ -368,60 +368,11 @@ class BottomDragOnEdge {
 // Tracer horizontal advection term
 class TracerHorzAdvOnCell {
  public:
-   bool Enabled = false;
-
-   TracerHorzAdvOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
-
-   KOKKOS_FUNCTION void operator()(const Array3DReal &Tend, const I4 L,
-                                   const I4 ICell, const I4 KChunk,
-                                   const Array2DReal &NormVelEdge,
-                                   const Array3DReal &HTracersOnEdge) const {
-
-      const I4 KStartCell = chunkStart(KChunk, MinLayerCell(ICell));
-      const I4 KLenCell = chunkLength(KChunk, KStartCell, MaxLayerCell(ICell));
-      const I4 KEndCell = KStartCell + KLenCell - 1;
-      const Real InvAreaCell  = 1._Real / AreaCell(ICell);
-      Real HAdvTmp[VecLength] = {0};
-      for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
-         const I4 JEdge      = EdgesOnCell(ICell, J);
-         const I4 KStartEdge = Kokkos::max(KStartCell, MinLayerEdgeBot(JEdge));
-         const I4 KEndEdge   = Kokkos::min(KEndCell, MaxLayerEdgeTop(JEdge));
-
-         for (int K = KStartEdge; K <= KEndEdge; ++K) {
-            const I4 KVec = K - KStartCell;
-            HAdvTmp[KVec] -= EdgeMask(JEdge, K) * DvEdge(JEdge) *
-                             EdgeSignOnCell(ICell, J) *
-                             HTracersOnEdge(L, JEdge, K) *
-                             NormVelEdge(JEdge, K) * InvAreaCell;
-         }
-      }
-      for (int KVec = 0; KVec < KLenCell; ++KVec) {
-         const I4 K = KStartCell + KVec;
-         Tend(L, ICell, K) -= HAdvTmp[KVec];
-      }
-   }
-
- private:
-   Array1DI4 NEdgesOnCell;
-   Array2DI4 EdgesOnCell;
-   Array2DI4 CellsOnEdge;
-   Array2DReal EdgeSignOnCell;
-   Array1DReal DvEdge;
-   Array1DReal AreaCell;
-   Array2DReal EdgeMask;
-   Array1DI4 MinLayerCell;
-   Array1DI4 MaxLayerCell;
-   Array1DI4 MinLayerEdgeBot;
-   Array1DI4 MaxLayerEdgeTop;
-};
-
-// Tracer high order horizontal advection term
-class TracerHighOrderHorzAdvOnCell {
- public:
-   bool Enabled = false;
+   bool Enabled       = false;
+   bool ForceLowOrder = false;
    // coefficient for blending high-order terms
    Real Coef3rdOrder = 0.25;
-   TracerHighOrderHorzAdvOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
+   TracerHorzAdvOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
    void init();
    KOKKOS_FUNCTION void operator()(const I4 L, const I4 IEdge, const I4 KChunk,
                                    const Array3DReal &TracerCell,
@@ -431,7 +382,7 @@ class TracerHighOrderHorzAdvOnCell {
       const I4 KEnd   = KStart + VecLength;
       for (int K = KStart; K < KEnd; ++K)
          HighOrderFlxHorz(L, IEdge, K) = 0;
-      if (AdvMaskHighOrder(IEdge)) {
+      if (!ForceLowOrder && AdvMaskHighOrder(IEdge)) {
          for (int I = 0; I < NAdvCellsForEdge(IEdge); ++I) {
             const I4 ICell = AdvCellsForEdge(IEdge, I);
             for (int K = KStart; K < KEnd; ++K) {

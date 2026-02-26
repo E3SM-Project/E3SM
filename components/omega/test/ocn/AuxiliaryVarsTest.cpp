@@ -730,7 +730,6 @@ int testTracerAuxVars(const Array2DReal &LayerThickCell,
    const auto VCoord = VertCoord::getDefault();
 
    TracerAuxVars TracerAux("", Mesh, VCoord, NTracers);
-   TracerAux.TracersOnEdgeChoice = FluxTracerEdgeOption::Upwind;
 
    // Set input arrays
 
@@ -744,32 +743,6 @@ int testTracerAuxVars(const Array2DReal &LayerThickCell,
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.layerThickness(X, Y); },
        LayerThickEdge, Geom, Mesh, OnEdge);
-
-   // Compute exact HTracerEdge
-
-   Array3DReal ExactHTrEdge("ExactHTrEdge", NTracers, Mesh->NEdgesOwned,
-                            NVertLayers);
-   Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.thickTracer(X, Y); },
-       ExactHTrEdge, Geom, Mesh, OnEdge, ExchangeHalos::No);
-
-   // Compute numerical HTracersEdge
-
-   parallelFor(
-       {NTracers, Mesh->NEdgesOwned, NVertLayers},
-       KOKKOS_LAMBDA(int L, int IEdge, int KLayer) {
-          TracerAux.computeVarsOnEdge(L, IEdge, KLayer, NormalVelEdge,
-                                      LayerThickCell, TracersOnCell);
-       });
-
-   // Compute error measures and check errors for HTracersEdge
-
-   const auto &NumHTrEdge = TracerAux.HTracersEdge;
-
-   ErrorMeasures HTracerErrors;
-   Err += computeErrors(HTracerErrors, NumHTrEdge, ExactHTrEdge, Mesh, OnEdge);
-   Err += checkErrors("AuxVarsTest", "HTracers", HTracerErrors,
-                      Setup.ExpectedHTracerErrors, RTol);
 
    // Compute exact Del2TracerCell
 

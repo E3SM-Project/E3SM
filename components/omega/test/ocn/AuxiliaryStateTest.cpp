@@ -185,7 +185,6 @@ int testAuxState() {
    deepCopy(DefAuxState->VelocityDel2Aux.Del2DivCell, NAN);
    deepCopy(DefAuxState->VelocityDel2Aux.Del2RelVortVertex, NAN);
 
-   deepCopy(DefAuxState->TracerAux.HTracersEdge, NAN);
    deepCopy(DefAuxState->TracerAux.Del2TracersCell, NAN);
 
    // compute auxiliary variables
@@ -293,14 +292,6 @@ int testAuxState() {
    if (!Kokkos::isfinite(Del2RelVortVertexSum)) {
       Err++;
       LOG_ERROR("AuxStateTest: Del2RelVortVertex FAIL");
-   }
-
-   const Real HTracersESum =
-       sum(DefAuxState->TracerAux.HTracersEdge, NTracers, NEdgesOwned,
-           VCoord->MinLayerEdgeBot, VCoord->MaxLayerEdgeTop);
-   if (!Kokkos::isfinite(HTracersESum)) {
-      Err++;
-      LOG_ERROR("AuxStateTest: HTracersOnEdge FAIL");
    }
 
    const Real Del2TracersCSum =
