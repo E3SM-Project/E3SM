@@ -22,7 +22,7 @@ module elm_cpl_indices
                                   ! (from coupler) - must equal maxpatch_glcmec from namelist
   integer , parameter, private:: glc_nec_max = 100
 
-  integer , parameter, private :: iac_npft_max = 30  ! just for allocation
+  integer , parameter, private :: iac_npft_max = 51  ! just for allocation
   integer , parameter, private :: iac_nharvest_max = 5  ! just for allocation
   
   ! lnd -> drv (required)
