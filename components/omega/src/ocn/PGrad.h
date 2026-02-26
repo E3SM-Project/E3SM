@@ -77,9 +77,6 @@ class PressureGradCentered {
              (SpecVol(ICell1, K) - SpecVol(ICell0, K)) * InvDcEdge;
          Tend(IEdge, K) +=
              EdgeMask(IEdge, K) * (-GradMontPot + PGradAlpha - GradGeoPot);
-         // if (IEdge == 0)
-         // LOG_INFO("IEdge {}, K {}: GradMontPot {}, PGradAlpha {}, Tend {}",
-         // IEdge, K, GradMontPot, PGradAlpha, Tend(IEdge, K));
       }
    }
 
