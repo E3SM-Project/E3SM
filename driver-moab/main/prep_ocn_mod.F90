@@ -1818,6 +1818,23 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
       endif
     enddo
 
+    ! Zero out ROF contribution fields when ROF is not active to avoid
+    ! propagating the MOAB uninitialized default value (-1e+10)
+    ! Docn with SOM will use Foxx_rofi to update So_t so has to be
+    ! a physical value.
+    if (.not. rof_c2_ocn_saved) then
+       x2o_om(:, index_x2o_Foxx_rofi) = 0._R8
+       x2o_om(:, index_x2o_Foxx_rofl) = 0._R8
+       if (index_x2o_Foxx_rofi_16O /= 0) then
+          x2o_om(:, index_x2o_Foxx_rofl_16O) = 0._R8
+          x2o_om(:, index_x2o_Foxx_rofi_16O) = 0._R8
+          x2o_om(:, index_x2o_Foxx_rofl_18O) = 0._R8
+          x2o_om(:, index_x2o_Foxx_rofi_18O) = 0._R8
+          x2o_om(:, index_x2o_Foxx_rofl_HDO) = 0._R8
+          x2o_om(:, index_x2o_Foxx_rofi_HDO) = 0._R8
+       endif
+    endif
+
     tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
     arrsize = naflds * lsize !        allocate (a2x_om (lsize, naflds))
     ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, a2x_om)
