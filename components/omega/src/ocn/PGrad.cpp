@@ -76,9 +76,7 @@ PressureGrad::PressureGrad(
     const HorzMesh *Mesh,    ///< [in] Horizontal mesh
     const VertCoord *VCoord, ///< [in] Vertical coordinate
     Config *Options)         ///< [in] Configuration options
-    : CellsOnEdge(Mesh->CellsOnEdge), DcEdge(Mesh->DcEdge),
-      EdgeSignOnCell(Mesh->EdgeSignOnCell),
-      MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
+    : MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
       MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop), CenteredPGrad(Mesh, VCoord),
       HighOrderPGrad(Mesh, VCoord) {
 

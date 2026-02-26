@@ -177,12 +177,9 @@ class PressureGrad {
    I4 NVertLayers   = 0;
    I4 NVertLayersP1 = 0;
 
-   // Data required for computation (stored copies of mesh/VCoord arrays)
-   Array2DI4 CellsOnEdge;      ///< cells surrounding each edge
-   Array1DReal DcEdge;         ///< distance between cell centers across edge
-   Array2DReal EdgeSignOnCell; ///< orientation of edge relative to cell
-   Array1DI4 MinLayerEdgeBot;  ///< min vertical layer on each edge
-   Array1DI4 MaxLayerEdgeTop;  ///< max vertical layer on each edge
+   // Data required for computation (stored copies of VCoord arrays)
+   Array1DI4 MinLayerEdgeBot; ///< min vertical layer on each edge
+   Array1DI4 MaxLayerEdgeTop; ///< max vertical layer on each edge
 
    // Temporary: to be moveed to tidal forcing module in future
    Array1DReal TidalPotential; ///< Tidal potential for tidal forcing
