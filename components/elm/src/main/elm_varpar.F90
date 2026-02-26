@@ -21,7 +21,7 @@ module elm_varpar
 
   ! Note - model resolution is read in from the surface dataset
   integer, parameter :: numharvest = 5 ! number of harvest types
-  integer, parameter :: iac_npft = 17  ! number of veg pfts (index 0 for bare ground)
+  integer, parameter :: iac_npft = 51  ! number of veg pfts (index 0 for bare ground)
   integer, parameter :: iac_nharvest = 5 ! number of harvest types in ehc
 
   integer, parameter :: nlev_equalspace   = 15
@@ -268,9 +268,9 @@ contains
    ! Consistency checks for EHC coupling
    if (iac_present) then
       ! EHC number of PFTs consistency checks
-      if (mxpft_nc + 1 <= iac_npft) then
-         write(iulog,*) 'ERROR: mxpft_nc + 1 = ', mxpft_nc + 1, ' is less than or equal to iac_npft = ', iac_npft
-         call shr_sys_abort('ERROR: mxpft_nc + 1 should be greater than iac_npft')
+      if ((mxpft + 1) .ne. iac_npft) then
+         write(iulog,*) 'ERROR: mxpft + 1 = ', mxpft + 1, ' is not equal to iac_npft = ', iac_npft
+         call shr_sys_abort('ERROR: mxpft + 1 should be equal to iac_npft')
       endif
 
       !EHC number of harvests consistency checks
