@@ -1234,7 +1234,6 @@ contains
   end subroutine InitColdGhost
 
 #else
-
   !------------------------------------------------------------------------
   subroutine InitColdGhost(this, bounds_proc)
     !
