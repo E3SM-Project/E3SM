@@ -970,6 +970,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   //NOTE: we need to initialize photo_rates_
   Kokkos::deep_copy(photo_rates_,0.0);
   // loop over atmosphere columns and compute aerosol microphysics
+  const unsigned n_so4_monolayers_pcage =8;
 
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl", policy,
@@ -988,6 +989,8 @@ void MAMMicrophysics::run_impl(const double dt) {
         const auto dry_diameter_icol =
             ekat::subview(dry_geometric_mean_diameter_i, icol);
         const auto wetdens_icol = ekat::subview(wetdens, icol);
+
+        const auto zi   = ekat::subview(dry_atm.z_iface, icol);
 
         // fetch column-specific subviews into aerosol prognostics
         mam4::Prognostics progs =
@@ -1124,6 +1127,7 @@ void MAMMicrophysics::run_impl(const double dt) {
             offset_aerosol,
             dry_diameter_icol, wet_diameter_icol,
             wetdens_icol, dry_atm.phis(icol), cmfdqr, prain_icol, nevapr_icol, o3_col_deltas_0,
+            zi,
             work_set_het_icol, drydep_data, diag_arrays, dvel_col, dflx_col, progs);
 
         team.team_barrier();
