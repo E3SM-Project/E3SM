@@ -1077,17 +1077,15 @@ CONTAINS
           call shr_mpi_max(rtmp,tbotmax,mpicom,'datm_tbot',all=.true.)
           rtmp = maxval(x2a%rAttr(kanidr,:))
           call shr_mpi_max(rtmp,anidrmax,mpicom,'datm_ani',all=.true.)
-          !write(logunit,*) 'stdew:',stdew
           if (stdew > 0) then
              rtmp = maxval(avstrm%rAttr(stdew,:))
-             !write(logunit,*)'rtmp:',rtmp
              call shr_mpi_max(rtmp,tdewmax,mpicom,'datm_tdew',all=.true.)
           endif
-          !if (my_task == master_task) then
-          !   write(logunit,*) trim(subname),' tbotmax: ',tbotmax
-          !   write(logunit,*) trim(subname), 'tdewmax: ',tdewmax,stdew
-          !   write(logunit,*) trim(subname), 'anidrmax: ',anidrmax
-          !end if
+          if (my_task == master_task) then
+             write(logunit,*) trim(subname),' tbotmax: ',tbotmax
+             !write(logunit,*) trim(subname), 'tdewmax: ',tdewmax,stdew
+             write(logunit,*) trim(subname), 'anidrmax: ',anidrmax
+          end if
        endif
        lsize = mct_avect_lsize(a2x)
        do n = 1,lsize
