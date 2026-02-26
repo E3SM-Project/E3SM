@@ -575,6 +575,32 @@ int unknown_child_check(ezxml_t xml, const char *tag_name, const char **allowed_
 
 /*********************************************************************************
  *
+ *  Function: check_streams_root
+ *
+ *  Checks that the root element of the streams XML is <streams>.
+ *
+ *********************************************************************************/
+int check_streams_root(ezxml_t streams)
+{
+	char msgbuf[MSGSIZE];
+
+	if (streams == NULL || streams->name == NULL) {
+		fmt_err("run-time I/O config has an invalid or missing root element.");
+		return 1;
+	}
+
+	if (strcmp(streams->name, "streams") != 0) {
+		snprintf(msgbuf, MSGSIZE, "run-time I/O config root element must be \"streams\" but found \"%s\".", streams->name);
+		fmt_err(msgbuf);
+		return 1;
+	}
+
+	return 0;
+}
+
+
+/*********************************************************************************
+ *
  *  Function: uniqueness_check
  *
  *  Checks that two streams have unique name and filename_template attributes
@@ -641,6 +667,10 @@ int check_streams(ezxml_t streams)
 	static const char *stream_children[] = {"file", "var", "var_array", "var_struct", "stream"};
 	static const char *no_children[] = {};
 	char msgbuf[MSGSIZE];
+
+	if (check_streams_root(streams) != 0) {
+		return 1;
+	}
 
 	if (unknown_child_check(streams, "streams", top_children, 2) != 0) {
 		return 1;
