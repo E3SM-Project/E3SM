@@ -461,6 +461,63 @@ int attribute_check(ezxml_t stream)
 
 /*********************************************************************************
  *
+ *  Function: has_attribute_name
+ *
+ *  Returns non-zero if attr_name appears in the allowed_names list.
+ *
+ *********************************************************************************/
+int has_attribute_name(const char *attr_name, const char **allowed_names, int n_allowed)
+{
+	int i;
+
+	for (i = 0; i < n_allowed; i++) {
+		if (strcmp(attr_name, allowed_names[i]) == 0) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+
+/*********************************************************************************
+ *
+ *  Function: unknown_attribute_check
+ *
+ *  Checks that all attributes of a tag are part of an allowed list.
+ *
+ *********************************************************************************/
+int unknown_attribute_check(ezxml_t xml, const char *tag_name, const char **allowed_names, int n_allowed)
+{
+	int i;
+	const char *stream_name;
+	char msgbuf[MSGSIZE];
+
+	if (xml == NULL || xml->attr == NULL) {
+		return 0;
+	}
+
+	stream_name = ezxml_attr(xml, "name");
+
+	for (i = 0; xml->attr[i] != NULL; i += 2) {
+		if (!has_attribute_name(xml->attr[i], allowed_names, n_allowed)) {
+			if (stream_name != NULL) {
+				snprintf(msgbuf, MSGSIZE, "tag \"%s\" with name \"%s\" has unrecognized attribute \"%s\".", tag_name, stream_name, xml->attr[i]);
+			}
+			else {
+				snprintf(msgbuf, MSGSIZE, "tag \"%s\" has unrecognized attribute \"%s\".", tag_name, xml->attr[i]);
+			}
+			fmt_err(msgbuf);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+
+/*********************************************************************************
+ *
  *  Function: uniqueness_check
  *
  *  Checks that two streams have unique name and filename_template attributes
@@ -512,13 +569,47 @@ int check_streams(ezxml_t streams)
 	ezxml_t stream2_xml;
 	ezxml_t test_xml;
 	ezxml_t test2_xml;
+	ezxml_t var_xml;
+	ezxml_t vararray_xml;
+	ezxml_t varstruct_xml;
+	ezxml_t substream_xml;
 	const char *name;
 	const char *filename;
+	static const char *stream_attrs[] = {
+		"name", "type", "filename_template", "filename_interval", "input_interval", "output_interval",
+		"reference_time", "record_interval", "precision", "packages", "clobber_mode", "useMissingValMask", "io_type"
+	};
+	static const char *member_attrs[] = {"name", "packages"};
 	char msgbuf[MSGSIZE];
 
 
 	/* Check immutable streams */
 	for (stream_xml = ezxml_child(streams, "immutable_stream"); stream_xml; stream_xml = ezxml_next(stream_xml)) {
+		if (unknown_attribute_check(stream_xml, "immutable_stream", stream_attrs, 13) != 0) {
+			return 1;
+		}
+
+		for (var_xml = ezxml_child(stream_xml, "var"); var_xml; var_xml = ezxml_next(var_xml)) {
+			if (unknown_attribute_check(var_xml, "var", member_attrs, 2) != 0) {
+				return 1;
+			}
+		}
+		for (vararray_xml = ezxml_child(stream_xml, "var_array"); vararray_xml; vararray_xml = ezxml_next(vararray_xml)) {
+			if (unknown_attribute_check(vararray_xml, "var_array", member_attrs, 2) != 0) {
+				return 1;
+			}
+		}
+		for (varstruct_xml = ezxml_child(stream_xml, "var_struct"); varstruct_xml; varstruct_xml = ezxml_next(varstruct_xml)) {
+			if (unknown_attribute_check(varstruct_xml, "var_struct", member_attrs, 2) != 0) {
+				return 1;
+			}
+		}
+		for (substream_xml = ezxml_child(stream_xml, "stream"); substream_xml; substream_xml = ezxml_next(substream_xml)) {
+			if (unknown_attribute_check(substream_xml, "stream", member_attrs, 2) != 0) {
+				return 1;
+			}
+		}
+
 		if (attribute_check(stream_xml) != 0) {
 			return 1;
 		}	
@@ -537,6 +628,36 @@ int check_streams(ezxml_t streams)
 	/* Check mutable streams */
 	for (stream_xml = ezxml_child(streams, "stream"); stream_xml; stream_xml = ezxml_next(stream_xml)) {
 		name = ezxml_attr(stream_xml, "name");
+
+		if (unknown_attribute_check(stream_xml, "stream", stream_attrs, 13) != 0) {
+			return 1;
+		}
+
+		for (test_xml = ezxml_child(stream_xml, "file"); test_xml; test_xml = ezxml_next(test_xml)) {
+			if (unknown_attribute_check(test_xml, "file", member_attrs, 2) != 0) {
+				return 1;
+			}
+		}
+		for (var_xml = ezxml_child(stream_xml, "var"); var_xml; var_xml = ezxml_next(var_xml)) {
+			if (unknown_attribute_check(var_xml, "var", member_attrs, 2) != 0) {
+				return 1;
+			}
+		}
+		for (vararray_xml = ezxml_child(stream_xml, "var_array"); vararray_xml; vararray_xml = ezxml_next(vararray_xml)) {
+			if (unknown_attribute_check(vararray_xml, "var_array", member_attrs, 2) != 0) {
+				return 1;
+			}
+		}
+		for (varstruct_xml = ezxml_child(stream_xml, "var_struct"); varstruct_xml; varstruct_xml = ezxml_next(varstruct_xml)) {
+			if (unknown_attribute_check(varstruct_xml, "var_struct", member_attrs, 2) != 0) {
+				return 1;
+			}
+		}
+		for (substream_xml = ezxml_child(stream_xml, "stream"); substream_xml; substream_xml = ezxml_next(substream_xml)) {
+			if (unknown_attribute_check(substream_xml, "stream", member_attrs, 2) != 0) {
+				return 1;
+			}
+		}
 
 		if (attribute_check(stream_xml) != 0) {
 			return 1;
@@ -1090,6 +1211,11 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		return;
 	}
 
+	if (xml_syntax_check(xml_buf, bufsize) != 0) {
+		*status = 1;
+		return;
+	}
+
 	streams = ezxml_parse_str(xml_buf, bufsize);
 	if (!streams) {
 		snprintf(msgbuf, MSGSIZE, "Problems encountered while parsing run-time I/O config file %s", fname);
@@ -1097,6 +1223,11 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 		*status = 1;
 		return;
 	}	
+
+	if (check_streams(streams) != 0) {
+		*status = 1;
+		return;
+	}
 
 	err = 0;
 
