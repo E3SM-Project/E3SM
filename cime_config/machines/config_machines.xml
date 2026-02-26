@@ -3509,11 +3509,13 @@
       <executable>mpiexec</executable>
       <!--executable>numactl -m 2-3 mpiexec</executable--><!--for HBM runs-->
       <arguments>
-        <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
+        <arg name="total_num_tasks">--label -np {{ total_tasks }}</arg>
         <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
-        <arg name="ranks_bind">--cpu-bind $ENV{RANKS_BIND}</arg>
-        <arg name="threads_per_rank">-d $ENV{OMP_NUM_THREADS} $ENV{RLIMITS}</arg>
-        <arg name="gpu_maps">$ENV{GPU_TILE_COMPACT}</arg>
+        <arg name="threads_per_rank">-d $ENV{OMP_NUM_THREADS}</arg>
+        <arg name="cpu_bind">--cpu-bind $ENV{CPU_BIND}</arg>
+        <arg name="gpu_bind">--gpu-bind $ENV{GPU_BIND}</arg>
+        <arg name="mem_bind">--mem-bind $ENV{MEM_BIND}</arg>
+        <arg name="rlimits">$ENV{RLIMITS}</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
@@ -3565,8 +3567,9 @@
         <env name="romio_cb_write">disable</env>
         <env name="GATOR_INITIAL_MB">4000MB</env>
         <env name="GATOR_DISABLE">0</env>
-        <env name="GPU_TILE_COMPACT">/lus/flare/projects/E3SMinput/tools/mpi_wrapper_utils/gpu_tile_compact.sh</env>
-        <env name="RANKS_BIND">list:1-8:9-16:17-24:25-32:33-40:41-48:53-60:61-68:69-76:77-84:85-92:93-100 --gpu-bind list:0.0:0.1:1.0:1.1:2.0:2.1:3.0:3.1:4.0:4.1:5.0:5.1 --mem-bind list:0:0:0:0:0:0:1:1:1:1:1:1</env>
+        <env name="CPU_BIND">list:1-8:9-16:17-24:25-32:33-40:41-48:53-60:61-68:69-76:77-84:85-92:93-100</env>
+        <env name="GPU_BIND">list:0.0:0.1:1.0:1.1:2.0:2.1:3.0:3.1:4.0:4.1:5.0:5.1</env>
+        <env name="MEM_BIND">list:0:0:0:0:0:0:1:1:1:1:1:1</env>
         <env name="ZES_ENABLE_SYSMAN">1</env>
         <!-- default is ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE: enable this to run 4 MPI/tile or 48 MPI/node
         <env name="ZEX_NUMBER_OF_CCS">0:4,1:4,2:4,3:4:4:4,5:4</env>-->
@@ -3577,8 +3580,9 @@
         <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
         <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
         <env name="MPIR_CVAR_ENABLE_GPU">0</env>
-        <env name="GPU_TILE_COMPACT"> </env>
-        <env name="RANKS_BIND">core</env>
+        <env name="CPU_BIND">core</env>
+        <env name="GPU_BIND">none</env>
+        <env name="MEM_BIND">local</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
         <env name="KMP_AFFINITY">granularity=core,balanced</env>
