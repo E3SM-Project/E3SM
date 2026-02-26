@@ -568,7 +568,7 @@ include(EkatMpiUtils)
 DisableMpiCxxBindings()
 
 if (SCREAM_DOUBLE_PRECISION)
-  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+  if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "Intel" OR CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
     set(SCREAM_Fortran_FLAGS -real-size 64)
   elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "Cray")
     set(SCREAM_Fortran_FLAGS -s default32 -eZ)
