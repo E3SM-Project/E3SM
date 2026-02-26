@@ -2110,9 +2110,12 @@ subroutine  copy_aream_from_area(mbappid)
        if (direction .eq. 'c2x') then
           source_id = comp%compid
           target_id = comp%cplcompid
-       else ! direction eq 'x2c'
+       else if (direction .eq. 'x2c') then
           source_id = comp%cplcompid
           target_id = comp%compid
+       else
+          call shr_sys_abort(subname//' invalid direction in component_exch_moab: '// &
+     &                         trim(direction))
        endif
 
        !---------------------------------------------------------------------------
