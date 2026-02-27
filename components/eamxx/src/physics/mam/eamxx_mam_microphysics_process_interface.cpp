@@ -11,6 +11,8 @@
 
 #include <ekat_team_policy_utils.hpp>
 
+#define MICRO_SMALL_KERNELS
+#include <physics/mam/eamxx_mam_microphysics_process_functions.cpp>
 namespace scream
 {
 
@@ -356,6 +358,9 @@ int MAMMicrophysics::get_len_temporary_views() {
   const int photo_table_len = get_photo_table_work_len(photo_table_);
   const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
   constexpr int extcnt      = mam4::gas_chemistry::extcnt;
+  constexpr int pcnst              = mam4::pcnst;
+  constexpr int gas_pcnst = mam_coupling::gas_pcnst();
+  constexpr int nmodes = mam4::AeroConfig::num_modes();
   int work_len              = 0;
   // work_photo_table_
   work_len += ncol_ * photo_table_len;
@@ -367,12 +372,27 @@ int MAMMicrophysics::get_len_temporary_views() {
   work_len += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
   // extfrc_
   work_len += ncol_ * nlev_ * extcnt;
+  //state_q_, qqcw_pcnst_
+  work_len += 2*ncol_ * nlev_*pcnst;
+  //qq_, qqcw_, vmr_,vmr0_, vmrcw_
+  work_len += 5 * ncol_ * nlev_*gas_pcnst;
+  // het_rates_
+  work_len += ncol_ * nlev_*gas_pcnst;
+  //   vmr_pregas_ vmr_precld_
+  work_len += 2* ncol_ * nlev_*gas_pcnst;
+  // dqdt_aqso4_, dqdt_aqh2so4_
+  work_len += 2*ncol_ *nlev_*gas_pcnst;
+  // dgncur_awet_, dgncur_a_, wetdens_;
+  work_len += 3*ncol_ *nlev_*nmodes;
   return work_len;
 }
 void MAMMicrophysics::init_temporary_views() {
   const int photo_table_len = get_photo_table_work_len(photo_table_);
   const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
   constexpr int extcnt      = mam4::gas_chemistry::extcnt;
+  constexpr int pcnst              = mam4::pcnst;
+  constexpr int gas_pcnst = mam_coupling::gas_pcnst();
+  constexpr int nmodes = mam4::AeroConfig::num_modes();
   auto work_ptr             = (Real *)buffer_.temporary_views.data();
 
   work_photo_table_ = view_2d(work_ptr, ncol_, photo_table_len);
@@ -386,6 +406,39 @@ void MAMMicrophysics::init_temporary_views() {
   work_ptr += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
   extfrc_ = view_3d(work_ptr, ncol_, nlev_, extcnt);
   work_ptr += ncol_ * nlev_ * extcnt;
+  state_q_=view_3d(work_ptr, ncol_, nlev_, pcnst );
+  work_ptr += ncol_ * nlev_*pcnst;
+  qqcw_pcnst_=view_3d(work_ptr, ncol_, nlev_,pcnst );
+  work_ptr += ncol_ * nlev_*pcnst;
+  qq_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ * nlev_*gas_pcnst;
+  qqcw_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ * nlev_*gas_pcnst;
+  vmr_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ * nlev_*gas_pcnst;
+  vmr0_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ * nlev_*gas_pcnst;
+  vmrcw_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ * nlev_*gas_pcnst;
+  het_rates_ = view_3d(work_ptr, ncol_, nlev_, gas_pcnst );
+  work_ptr += ncol_ *nlev_*gas_pcnst;
+
+  vmr_pregas_ = view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ *nlev_*gas_pcnst;
+  vmr_precld_ =view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ *nlev_*gas_pcnst;
+
+  dqdt_aqso4_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ *nlev_*gas_pcnst;
+  dqdt_aqh2so4_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ *nlev_*gas_pcnst;
+
+  dgncur_awet_ = view_3d(work_ptr, ncol_, nlev_,nmodes );
+  work_ptr += ncol_ *nlev_*nmodes;
+  dgncur_a_ = view_3d(work_ptr, ncol_, nlev_,nmodes );
+  work_ptr += ncol_ *nlev_*nmodes;
+  wetdens_ = view_3d(work_ptr, ncol_, nlev_,nmodes );
+  work_ptr += ncol_ *nlev_*nmodes;
 
   // Error check
   // NOTE: workspace_provided can be larger than workspace_used, but let's try
@@ -737,6 +790,7 @@ void MAMMicrophysics::run_impl(const double dt) {
 
   //----------- Variables from microphysics scheme -------------
 
+#ifndef MICRO_SMALL_KERNELS
   // Evaporation from stratiform rain [kg/kg/s]
   const auto &nevapr = get_field_in("nevapr").get_view<const Real **>();
 
@@ -812,6 +866,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     gas_aero_exchange_renaming_cloud_borne = get_field_out("mam4_microphysics_tendency_renaming_cloud_borne").get_view<Real***>();
     gas_dry_deposition_flux = get_field_out("mam4_gas_dry_deposition_flux").get_view<Real**>();
   }
+#endif
 
   // climatology data for linear stratospheric chemistry
   // ozone (climatology) [vmr]
@@ -848,6 +903,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     linoz_dPmL_dO3col = linoz_views[6];
     linoz_cariolle_pscs = linoz_views[7];
   }
+#ifndef MICRO_SMALL_KERNELS  
   constexpr int num_oxidants=4;
   view_2d oxidants[num_oxidants];
   for (size_t i = 0; i < var_names_oxi_.size(); ++i) {
@@ -874,6 +930,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   for (size_t i = 0; i < elevated_emis_var_names_.size(); ++i) {
     data_interp_elevated_emissions_[i]->run(end_of_step_ts());
   }
+#ifndef MICRO_SMALL_KERNELS
   const_view_1d &col_latitudes     = col_latitudes_;
   const_view_1d &d_sfc_alb_dir_vis = d_sfc_alb_dir_vis_;
 
@@ -885,6 +942,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   const auto &work_photo_table                = work_photo_table_;
   const auto &photo_rates                     = photo_rates_;
   const auto &invariants   = invariants_;
+#endif
   // Compute orbital parameters; these are used both for computing
   // the solar zenith angle.
   // Note: We are following the RRTMGP EAMxx interface to compute the zenith
@@ -941,9 +999,10 @@ void MAMMicrophysics::run_impl(const double dt) {
   constexpr int num_gas_aerosol_constituents = mam_coupling::gas_pcnst();
 
   const auto &extfrc   = extfrc_;
-  const auto &forcings = forcings_;
   constexpr int extcnt = mam4::gas_chemistry::extcnt;
 
+#ifndef MICRO_SMALL_KERNELS
+  const auto &forcings = forcings_;
   const int offset_aerosol = mam4::utils::gasses_start_ind();
   Real adv_mass_kg_per_moles[num_gas_aerosol_constituents];
   // NOTE: Making copies of clsmap_4 and permute_4 to fix undefined arrays on
@@ -970,6 +1029,12 @@ void MAMMicrophysics::run_impl(const double dt) {
   //NOTE: we need to initialize photo_rates_
   Kokkos::deep_copy(photo_rates_,0.0);
   // loop over atmosphere columns and compute aerosol microphysics
+#endif
+
+  // loop over atmosphere columns and compute aerosol microphysics
+#if defined(MICRO_SMALL_KERNELS)
+    run_small_kernels_microphysics(dt, eccf);
+#else
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -1143,6 +1208,7 @@ void MAMMicrophysics::run_impl(const double dt) {
         }
       });  // parallel_for for the column loop
   Kokkos::fence();
+ #endif
 
   auto extfrc_fm = get_field_out("mam4_external_forcing").get_view<Real***>();
 
