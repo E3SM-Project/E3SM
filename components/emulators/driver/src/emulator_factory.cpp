@@ -13,22 +13,10 @@
 
 namespace {
 
-// Instance name derived from comp_id (supports multi-instance)
-static std::string s_instance_name;
-
 // Minimal log stream – opened once on master rank, points to atm.log
 static std::ofstream s_log_stream;
 static bool s_log_open = false;
 
-emulator::EmulatorAtm &get_atm() {
-  return emulator::EmulatorRegistry::instance().get_mut<emulator::EmulatorAtm>(
-      s_instance_name);
-}
-
-const emulator::EmulatorAtm &get_atm_const() {
-  return emulator::EmulatorRegistry::instance().get<emulator::EmulatorAtm>(
-      s_instance_name);
-}
 
 } // anonymous namespace
 extern "C" {

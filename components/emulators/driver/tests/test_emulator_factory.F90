@@ -91,21 +91,21 @@ program test_emulator_factory
            print *, "OK: emulator_create returned non-null emulators(i)%h for 'atm'"
         end if
 
-        call emulator_set_grid_data(emulators(i)%h, grid)
-        call emulator_setup_coupling(emulators(i)%h, cpl)
+        call emulators(i)%set_grid_data(grid)
+        call emulators(i)%setup_coupling(cpl)
 
         !----------------------------------------
         ! Init / run / finalize
         !----------------------------------------
-        call emulator_init(emulators(i)%h)
-        call emulator_print_info(emulators(i)%h)
+        call emulators(i)%initialize()
+        call emulators(i)%print_info()
      end do
 
      dt = 3600_c_int
       do i = 1, size(emulators)
          if (.not. c_associated(emulators(i)%h)) cycle
-        call emulator_run(emulators(i)%h, dt)
-        call emulator_finalize(emulators(i)%h)
+        call emulators(i)%run(dt)
+        call emulators(i)%finalize()
      end do
   end block
 

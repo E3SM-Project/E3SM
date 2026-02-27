@@ -83,6 +83,8 @@ void  emulator_set_grid_data(void* handle,
 void  emulator_setup_coupling(void* handle,
                               EmulatorCouplingDesc* cpl);
 
+void emulator_init_coupling_indices(void* handle, const char* import_fields, const char* export_fields);
+
 void  emulator_init(void* handle);
 void  emulator_run(void* handle, int dt);
 void  emulator_finalize(void* handle);

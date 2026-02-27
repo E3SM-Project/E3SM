@@ -25,7 +25,10 @@ module atm_comp_mct
                                shr_file_setLogUnit
    use shr_sys_mod,      only: shr_sys_flush
    use iso_c_binding
-   use emulator_atm_f2c
+   use emulator_f_api, only : emulator_grid_desc, emulator_create_cfg, emulator_coupling_desc, &
+                  create_config, create_grid_desc, create_coupler_desc
+   use emulator_f2c_api
+   use emulator_handle_mod, only : emulator_handle
 
    implicit none
    private
@@ -43,6 +46,8 @@ module atm_comp_mct
    integer(IN), parameter :: master_task = 0
    integer                :: atm_log_unit
 
+   !NOTE:  make this allocatable to do multiple emulators at once
+   type(emulator_handle) :: emulators
 CONTAINS
 
    !=========================================================================
@@ -61,9 +66,15 @@ CONTAINS
       character(CL) :: run_type
       character(kind=c_char, len=256), target :: input_file_c
       character(kind=c_char, len=256), target :: log_file_c
+      character(kind=c_char, len=256), target :: import_fields_c
+      character(kind=c_char, len=256), target :: export_fields_c
       character(len=256) :: log_file_f
       integer(c_int) :: run_type_c
       integer :: shrlogunit
+      real(c_double), pointer :: lat_ptr(:),lon_ptr(:), imp_ptr(:), exp_ptr(:),area_ptr(:)
+      integer(c_int), pointer :: gids_ptr(:)
+      type(emulator_create_cfg)    :: cfg
+      type(emulator_coupling_desc) :: cpl
 
       call seq_cdata_setptrs(cdata, &
          id=ATM_ID, mpicom=mpicom_atm, &
@@ -121,10 +132,12 @@ CONTAINS
          inquire(unit=atm_log_unit, name=log_file_f)
          log_file_c = trim(log_file_f)//C_NULL_CHAR
       endif
+      
+      cfg = create_config(f_comm=mpicom_atm,comp_id=ATM_ID,run_type=run_type_c,&
+            start_ymd=cur_ymd, start_tod=cur_tod,&
+            input_file=input_file_c, log_file=log_file_c)
 
-      call emulator_atm_create_instance( &
-         mpicom_atm, ATM_ID, input_file_c, &
-         log_file_c, run_type_c, cur_ymd, cur_tod)
+      emulators%h = emulator_create(kind='atm',cfg=cfg)
 
       ! Setup MCT gsMap
       call atm_SetGSMap_mct(mpicom_atm, ATM_ID, gsMap_atm)
@@ -141,18 +154,23 @@ CONTAINS
       call mct_aVect_zero(x2a)
       call mct_aVect_zero(a2x)
 
+
+      export_fields_c = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+      import_fields_c = trim(seq_flds_x2a_fields)//C_NULL_CHAR)
       ! Initialize coupling indices in C++
-      call emulator_atm_init_coupling_indices( &
-         trim(seq_flds_a2x_fields)//C_NULL_CHAR, &
-         trim(seq_flds_x2a_fields)//C_NULL_CHAR)
+
+      call emulators%init_coupling_indices( &
+         import_fields=import_fields_c, &
+         export_fields=export_fields_c(1))
+
+      cpl = create_coupler_desc(import_data=x2a%rAttr,export_data=a2x%rAttr,&
+               num_imports=mct_aVect_nRattr(x2a),num_exports=mct_aVect_nRattr(a2x),field_size=lsize)
 
       ! Setup coupling buffers
-      call emulator_atm_setup_coupling( &
-         c_loc(x2a%rAttr), c_loc(a2x%rAttr), &
-         mct_aVect_nRattr(x2a), mct_aVect_nRattr(a2x), lsize)
+      call emulators%setup_coupling(cpl)
 
       ! Initialize the emulator
-      call emulator_atm_init()
+      call emulators%initialize()
 
       call seq_infodata_PutData(infodata, &
          atm_nx=emulator_atm_get_nx(), &
@@ -195,7 +213,7 @@ CONTAINS
       call shr_file_getLogUnit(shrlogunit)
       call shr_file_setLogUnit(atm_log_unit)
 
-      call emulator_atm_run(dt)
+      call emulators%run(int(dt,c_int))
 
       call seq_infodata_PutData(infodata, &
          nextsw_cday=nextsw_cday)
@@ -217,7 +235,7 @@ CONTAINS
          call shr_sys_flush(atm_log_unit)
       endif
 
-      call emulator_atm_finalize()
+      call emulators%finalize()
 
       if (my_task == master_task) then
          write(atm_log_unit,*) '(eatm) atm_final_mct complete'
@@ -227,8 +245,12 @@ CONTAINS
    end subroutine atm_final_mct
 
    !=========================================================================
-   subroutine atm_SetGSMap_mct(mpicom_atm, ATMID, GSMap_atm)
+   subroutine atm_SetGSMap_mct(emu, mpicom_atm, ATMID, GSMap_atm)
 
+      use, intrinsic :: iso_c_binding, only : c_int
+      use emulator_handle_mod, only : emulator_handle
+
+      type(emulator_handle), intent(inout) :: emu
       integer,         intent(in)  :: mpicom_atm
       integer,         intent(in)  :: ATMID
       type(mct_gsMap), intent(out) :: GSMap_atm
@@ -236,12 +258,14 @@ CONTAINS
       integer(c_int) :: num_local_cols, num_global_cols
       integer(c_int), allocatable, target :: col_gids(:)
 
-      num_local_cols  = emulator_atm_get_num_local_cols()
-      num_global_cols = emulator_atm_get_num_global_cols()
+      ! Query grid sizes from emulator
+      num_local_cols  = emu%num_local_cols()
+      num_global_cols = emu%num_global_cols()
 
       allocate(col_gids(num_local_cols))
-      call emulator_atm_get_local_cols_gids(c_loc(col_gids))
 
+      ! Get local global-IDs from emulator
+      call emu%get_local_col_gids(col_gids)
       call mct_gsMap_init(GSMap_atm, col_gids, mpicom_atm, &
          ATMID, num_local_cols, num_global_cols)
 
@@ -250,14 +274,23 @@ CONTAINS
    end subroutine atm_SetGSMap_mct
 
    !=========================================================================
-   subroutine atm_domain_mct(lsize, gsMap_atm, dom_atm)
+   subroutine atm_domain_mct(emu, lsize, gsMap_atm, dom_atm)
 
+      use, intrinsic :: iso_c_binding, only : c_int
+      use emulator_handle_mod, only : emulator_handle
+      use shr_kind_mod, only : R8
+
+      type(emulator_handle), intent(inout) :: emu
       integer,          intent(in)    :: lsize
       type(mct_gsMap),  intent(in)    :: gsMap_atm
       type(mct_gGrid),  intent(inout) :: dom_atm
 
       integer,  pointer :: idata(:)
       real(R8), pointer :: data1(:), data2(:)
+      type(emulator_grid_desc) :: grid
+
+      integer(c_int) :: num_local_cols, num_global_cols
+      integer(c_int) :: nx, ny, grid_type
 
       allocate(data1(lsize))
       allocate(data2(lsize))
@@ -267,23 +300,23 @@ CONTAINS
          OtherChars='area:aream:mask:frac', &
          lsize=lsize)
 
+      ! Global column ids for local points
       call mct_gsMap_orderedPoints(gsMap_atm, my_task, idata)
-      call mct_gGrid_importIAttr(dom_atm, 'GlobGridNum', &
-         idata, lsize)
+      call mct_gGrid_importIAttr(dom_atm, 'GlobGridNum', idata, lsize)
 
       data1(:) = -9999.0_R8
-      call mct_gGrid_importRAttr(dom_atm, "lat", data1, lsize)
-      call mct_gGrid_importRAttr(dom_atm, "lon", data1, lsize)
+      call mct_gGrid_importRAttr(dom_atm, "lat",  data1, lsize)
+      call mct_gGrid_importRAttr(dom_atm, "lon",  data1, lsize)
       call mct_gGrid_importRAttr(dom_atm, "area", data1, lsize)
-      call mct_gGrid_importRAttr(dom_atm, "aream", data1, lsize)
+      call mct_gGrid_importRAttr(dom_atm, "aream",data1, lsize)
 
-      call emulator_atm_get_cols_latlon(c_loc(data1), &
-         c_loc(data2))
+      ! Get geometry from emulator via type-bound procedures
+      call emu%get_cols_latlon(data1, data2)
       call mct_gGrid_importRAttr(dom_atm, "lat", data1, lsize)
       call mct_gGrid_importRAttr(dom_atm, "lon", data2, lsize)
 
-      call emulator_atm_get_cols_area(c_loc(data1))
-      call mct_gGrid_importRAttr(dom_atm, "area", data1, lsize)
+      call emu%get_cols_area(data1)
+      call mct_gGrid_importRAttr(dom_atm, "area",  data1, lsize)
       call mct_gGrid_importRAttr(dom_atm, "aream", data1, lsize)
 
       data1(:) = 1.0_R8
