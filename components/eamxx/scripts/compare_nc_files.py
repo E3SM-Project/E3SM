@@ -136,10 +136,13 @@ class CompareNcFiles(object):
             if self._allow_transpose:
               rvar_sliced = rvar_sliced.transpose(*lvar_sliced.dims)
 
-            equal = (lvar_sliced.data==rvar_sliced.data).all()
-            if not equal:
+            # Apply tolerance when comparing
+            diff = np.abs(lvar_sliced.data - rvar_sliced.data)
+            not_close = diff > (self._tol + self._tol * np.abs(rvar_sliced.data))
+            where = np.argwhere(not_close)
+            if where.size > 0:
                 rse = np.sqrt((lvar_sliced.data-rvar_sliced.data)**2)
-                nonmatch_count = np.count_nonzero(rse)
+                nonmatch_count = np.count_nonzero(not_close)
                 print (f" Comparison failed. Values differ at {nonmatch_count} out of {rse.size} locations.\n"
                       f"  - input comparison: {expr}\n"
                       f'  - max L2 error, {rse.max()}\n'
