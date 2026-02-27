@@ -164,16 +164,16 @@ advance_iop_subsidence (const MemberType& team,
                         const view_1d<Pack>& u,
                         const view_1d<Pack>& v,
                         const view_1d<Pack>& T,
-                        const view_2d<Pack>& Q)
+                        const view_2d<Pack>& Q,
+                        const ekat::LinInterp<Real, Pack::n>* interp)
 {
   constexpr Real Rair  = C::Rair.value;
   constexpr Real Cpair = C::Cpair.value;
 
   const int n_q_tracers = Q.extent_int(0);
+  const int nlev_packs  = ekat::npack<Pack>(nlevs);
 
-  const int nlev_packs = ekat::npack<Pack>(nlevs);
-
-  // Workspace temporaries (pack-length views, i.e., length == nlevi_packs in practice)
+  // Workspace temporaries (pack-length views)
   auto p_dep = uview_1d<Pack>();
   auto u_old = uview_1d<Pack>();
   auto v_old = uview_1d<Pack>();
@@ -189,7 +189,7 @@ advance_iop_subsidence (const MemberType& team,
      "iop_u_new","iop_v_new","iop_T_new","iop_q_old","iop_q_new"},
     {&p_dep, &u_old, &v_old, &T_old, &u_new, &v_new, &T_new, &q_old, &q_new});
 
-  // Copy current state into *_old  (PACK INDEX SPACE)
+  // Copy current state into *_old (PACK INDEX SPACE)
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
     u_old(k) = u(k);
     v_old(k) = v(k);
@@ -197,7 +197,7 @@ advance_iop_subsidence (const MemberType& team,
   });
   team.team_barrier();
 
-  // Build departure pressure vector (x_tgt). Clamp so LinInterp never sees out-of-range.
+  // Build departure pressure vector (x_tgt). Clamp to input range.
   const Pack pmin = ref_p_mid(0);
   const Pack pmax = ref_p_mid(nlev_packs-1);
 
@@ -208,20 +208,18 @@ advance_iop_subsidence (const MemberType& team,
   });
   team.team_barrier();
 
-  // LinInterp expects pack-level extents
-  ekat::LinInterp<Real, Pack::n> interp(1, nlev_packs, nlev_packs);
-  interp.setup(team, ref_p_mid, p_dep);
+  // IMPORTANT: no constructor here. interp is created outside the device lambda.
+  auto* interp_nc = const_cast<ekat::LinInterp<Real, Pack::n>*>(interp);
+  interp->setup(team, ref_p_mid, p_dep);
 
-  interp.lin_interp(team, ref_p_mid, p_dep, u_old, u_new);
-  interp.lin_interp(team, ref_p_mid, p_dep, v_old, v_new);
-  interp.lin_interp(team, ref_p_mid, p_dep, T_old, T_new);
+  interp->lin_interp(team, ref_p_mid, p_dep, u_old, u_new);
+  interp->lin_interp(team, ref_p_mid, p_dep, v_old, v_new);
+  interp->lin_interp(team, ref_p_mid, p_dep, T_old, T_new);
   team.team_barrier();
 
-  // Thermal expansion correction + write back (PACK INDEX SPACE)
+  // Thermal expansion correction + write back
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
-    // Pack-wise correction is fine (per-lane)
     T_new(k) *= 1.0 + (dt * Rair / Cpair) * omega(k) / ref_p_mid(k);
-
     u(k) = u_new(k);
     v(k) = v_new(k);
     T(k) = T_new(k);
@@ -230,14 +228,14 @@ advance_iop_subsidence (const MemberType& team,
 
   // Tracers
   for (int m = 0; m < n_q_tracers; ++m) {
-    const auto q_m = Kokkos::subview(Q, m, Kokkos::ALL()); // q_m is uview_1d<Pack> length nlev_packs
+    const auto q_m = Kokkos::subview(Q, m, Kokkos::ALL());
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
       q_old(k) = q_m(k);
     });
     team.team_barrier();
 
-    interp.lin_interp(team, ref_p_mid, p_dep, q_old, q_new);
+    interp->lin_interp(team, ref_p_mid, p_dep, q_old, q_new);
     team.team_barrier();
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
@@ -367,6 +365,8 @@ void IOPForcing::run_impl (const double dt)
   auto wsm = m_workspace_mgr;
   auto num_levs = m_num_levs;
 
+  ekat::LinInterp<Real, Pack::n> subs_interp(1, nlev_packs, nlev_packs);
+
   // Apply IOP forcing
   Kokkos::parallel_for("apply_iop_forcing", policy_iop, KOKKOS_LAMBDA (const MemberType& team) {
     const int icol  =  team.league_rank();
@@ -399,7 +399,7 @@ void IOPForcing::run_impl (const double dt)
 
     if (iop_dosubsidence) {
     // Compute subsidence due to large-scale forcing
-      advance_iop_subsidence(team, num_levs, dt, ps_i, ref_p_mid, ref_p_int, ref_p_del, omega, ws, u_i, v_i, T_mid_i, Q_i);
+      advance_iop_subsidence(team, num_levs, dt, ps_i, ref_p_mid, ref_p_int, ref_p_del, omega, ws, u_i, v_i, T_mid_i, Q_i, &subs_interp);
     }
 
     // Update T and qv according to large scale forcing as specified in IOP file.
