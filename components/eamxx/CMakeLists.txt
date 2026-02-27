@@ -276,31 +276,6 @@ option (EAMXX_ENABLE_PYTHON "Whether to enable interfaces to python via pybind11
 set(SCREAM_PACK_SIZE ${DEFAULT_PACK_SIZE} CACHE STRING
   "The number of scalars in a scream::pack::Pack and Mask. Larger packs have good performance on conditional-free loops due to improved caching.")
 
-# Besides the the main pack size, we have a couple of other pack sizes used across EAMxx
-# For some routines, SKX may have better performance with pack_size=1
-set(SCREAM_SMALL_PACK_SIZE ${SCREAM_PACK_SIZE} CACHE STRING
-  "The number of scalars in a scream::pack::SmallPack and SmallMask. Smaller packs can have better performance in loops with conditionals since more of the packs will have masks with uniform value.")
-set(SCREAM_POSSIBLY_NO_PACK "${Kokkos_ARCH_SKX}" CACHE BOOL
-  "Set possibly-no-pack to this value. You can set it to something else to restore packs on SKX for testing.")
-
-if (SCREAM_POSSIBLY_NO_PACK)
-  set (SCREAM_POSSIBLY_NO_PACK_SIZE 1)
-else()
-  set (SCREAM_POSSIBLY_NO_PACK_SIZE ${SCREAM_PACK_SIZE})
-endif ()
-
-function (check_pack_size master_pack_size pack_size name)
-  math (EXPR PACK_MODULO "${master_pack_size} % ${pack_size}")
-  if ((pack_size GREATER master_pack_size) OR (NOT PACK_MODULO EQUAL 0))
-    message (FATAL_ERROR "Invalid '${name}' size of ${pack_size}. Needs to be <= ${master_pack_size} and be a factor of it")
-  endif()
-endfunction ()
-
-# Checks on pack sizes relative to the master one:
-check_pack_size(${SCREAM_PACK_SIZE} ${SCREAM_SMALL_PACK_SIZE} "small pack")
-# This one is an internal check, as the user cannot set SCREAM_POSSIBLY_NO_PACK_SIZE now.
-check_pack_size(${SCREAM_PACK_SIZE} ${SCREAM_POSSIBLY_NO_PACK_SIZE} "possibly no pack")
-
 ####################################################################
 #                      Input-data locations                        #
 ####################################################################
@@ -630,8 +605,6 @@ print_var(SCREAM_MIMIC_GPU)
 print_var(SCREAM_FPE)
 print_var(SCREAM_NUM_VERTICAL_LEV)
 print_var(SCREAM_PACK_SIZE)
-print_var(SCREAM_SMALL_PACK_SIZE)
-print_var(SCREAM_POSSIBLY_NO_PACK_SIZE)
 print_var(SCREAM_LINK_FLAGS)
 print_var(SCREAM_FPMODEL)
 print_var(SCREAM_LIB_ONLY)

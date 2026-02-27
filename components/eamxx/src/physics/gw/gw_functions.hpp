@@ -31,7 +31,7 @@ struct Functions
   template <typename S>
   using BigPack = ekat::Pack<S,SCREAM_PACK_SIZE>;
   template <typename S>
-  using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
+  using SmallPack = ekat::Pack<S,SCREAM_PACK_SIZE>;
 
   using IntSmallPack = SmallPack<Int>;
   using Pack = BigPack<Scalar>;

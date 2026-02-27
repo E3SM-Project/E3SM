@@ -37,7 +37,7 @@ void run_phys()
   using ekat::repack;
   using TPF = ekat::TeamPolicyFactory<ExeSpace>;
 
-  constexpr auto SPS = SCREAM_SMALL_PACK_SIZE;
+  constexpr auto SPS = SCREAM_PACK_SIZE;
 
   static const Int nfield = 2;
 

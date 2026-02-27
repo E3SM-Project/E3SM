@@ -35,7 +35,7 @@ class SurfaceCouplingExporter : public AtmosphereProcess
 public:
 
   using KT      = ekat::KokkosTypes<DefaultDevice>;
-  using Spack   = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>;
+  using Spack   = ekat::Pack<Real,SCREAM_PACK_SIZE>;
 
   template<typename DevT, typename DataT>
   using view_1d = typename KokkosTypes<DevT>::template view_1d<DataT>;

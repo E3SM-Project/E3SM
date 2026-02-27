@@ -26,7 +26,7 @@ struct Functions {
   using Device = DeviceT;
 
   template <typename S> using BigPack = ekat::Pack<S,SCREAM_PACK_SIZE>;
-  template <typename S> using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
+  template <typename S> using SmallPack = ekat::Pack<S,SCREAM_PACK_SIZE>;
 
   using SPackInt = SmallPack<Int>;
   using BPack    = BigPack<Scalar>;
