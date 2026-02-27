@@ -37,6 +37,9 @@ site
 #Ignore Mac folder files
 .DS_Store
 
+# Ignore compiled output files
+a.out
+
 #Ignore vscode dir
 .vscode
 
