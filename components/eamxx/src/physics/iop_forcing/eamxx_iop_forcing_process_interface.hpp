@@ -9,6 +9,7 @@
 
 #include <ekat_parameter_list.hpp>
 #include <ekat_workspace.hpp>
+#include <ekat_lin_interp.hpp>
 
 #include <string>
 
@@ -86,7 +87,8 @@ protected:
                                      const view_1d<Pack>& u,
                                      const view_1d<Pack>& v,
                                      const view_1d<Pack>& T,
-                                     const view_2d<Pack>& Q);
+                                     const view_2d<Pack>& Q,
+                                     const ekat::LinInterp<Real, Pack::n>* interp);
 
   // Apply large scale forcing for temperature and water vapor as provided by the IOP file
   KOKKOS_FUNCTION
