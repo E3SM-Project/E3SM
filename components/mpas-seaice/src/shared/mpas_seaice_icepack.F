@@ -3445,6 +3445,9 @@ subroutine init_column_waves(domain)
        icestate, &
        floe_size_distribution, &
        wave_coupling
+     
+    character(len=strKIND), pointer :: &
+       config_wave_spec_type
 
     ! dimensions
     integer, pointer :: &
@@ -3494,6 +3497,7 @@ subroutine init_column_waves(domain)
 
        !MPAS_pool_get* calls
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+       call MPAS_pool_get_config(block % configs, "config_wave_spec_type",config_wave_spec_type)
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
@@ -3522,7 +3526,6 @@ subroutine init_column_waves(domain)
        call MPAS_pool_get_array(floe_size_distribution, "floeSizeBinCenter", floeSizeBinCenter)
        call MPAS_pool_get_array(floe_size_distribution, "dFloeSizeWaves", dFloeSizeWaves)
        call MPAS_pool_get_array(floe_size_distribution, "floeSizeDiameter",floeSizeDiameter)
-
        call MPAS_pool_get_array(wave_coupling, "waveSpectra", waveSpectra)
        call MPAS_pool_get_array(wave_coupling, "waveFrequency", waveFrequency)
        call MPAS_pool_get_array(wave_coupling, "waveFreqBinWidth", waveFreqBinWidth)
@@ -3539,6 +3542,7 @@ subroutine init_column_waves(domain)
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           call icepack_step_wavefracture(&
+                  wave_spec_type = config_wave_spec_type, &
                   dt = dynamicsTimeStep, &
                   nfreq = nFrequencies, &
                   aice = iceAreaCell(iCell), &
@@ -10713,8 +10717,7 @@ subroutine init_column_waves(domain)
          config_sea_freezing_temperature_type, &
          config_skeletal_bgc_flux_type, &
          config_snow_redistribution_scheme, &
-         config_wave_spec_type, &
-         config_wave_height_type
+         config_wave_spec_type
 
     logical, pointer :: &
          config_use_snicar_ad, &
@@ -11094,7 +11097,6 @@ subroutine init_column_waves(domain)
     call MPAS_pool_get_config(domain % configs, "config_floeshape", config_floeshape)
     call MPAS_pool_get_config(domain % configs, "config_use_column_waves", config_use_column_waves)
     call MPAS_pool_get_config(domain % configs, "config_wave_spec_type", config_wave_spec_type)
-    call MPAS_pool_get_config(domain % configs, "config_wave_height_type", config_wave_height_type)
     call MPAS_pool_get_config(domain % configs, "config_nFrequencies", config_nFrequencies)
     call MPAS_pool_get_subpool(domain % blocklist % structs, "wave_coupling", wave_coupling)
     call MPAS_pool_get_subpool(domain % blocklist % structs, "floe_size_distribution", floe_size_distribution)
@@ -11375,7 +11377,6 @@ subroutine init_column_waves(domain)
          floeshape_in            = config_floeshape, &
          wave_spec_in            = config_use_column_waves, & 
          wave_spec_type_in       = config_wave_spec_type, &
-         wave_height_type_in     = config_wave_height_type, &
          nfreq_in                = config_nFrequencies, & 
          dpscale_in              = config_pond_flushing_factor, &
          rfracmin_in             = config_min_meltwater_retained_fraction, &
