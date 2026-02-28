@@ -1,0 +1,147 @@
+#!/bin/run.sh 
+#build_script :'run.sh :L
+#const = over-Stackflow :buffering..., :'run.sh'@User/bin/Bash/ :run-on :'Run'' ':'' '::'Runs':'' :s.
+#tests :Run :Test'@'.'Travis :
+:Build::
+case="master/tycoon/rollercoaster.yml :
+
+MENU
+
+Get things done
+Business overview
+Banking
+Get paid & pay
+Customers & leads
+Commerce
+Payroll
+Bookkeeping
+Taxes
+Apps
+
+More (0)
+BOOKMARKS
+
+Bank transactions
+Live Bookkeeping
+PPP center
+Capital
+Business overview
+Cash flow
+Reports
+Workers' comp
+Vendors
+Tags
+Sales tax
+Rules
+Reconcile
+Receipts
+QuickBooks Checking
+Products & services
+Payouts
+Payment links
+Orders
+My policies
+Find apps
+Contractors
+App transactions
+All sales
+Menu settings
+ZACHRY TYLER WOOD
+My th.pdf_100X_flattened.docx.pddf > Exports > sample > module > RUNETIME.ENVIROMENT > Setup.exe > Security.md > CODE_OF_CONDUCT > intuit > -quip > ranger.yml
+We're sorry, we can't find the page you requested.
+You may have incorrectly typed the address (URL) or clicked on an outdated link.
+Z
+ZACHRYTWOOD ZACHRYTYLERWOODADMINISTRATOR
+cr12753750.00bitore341731337@gmail.com
+Manage your Intuit Account
+// For more accurate diagnostics, you can use an undefined arithmetic operation
+// detector such as the clang-based tool:
+//
+// "IOC: An Integer Overflow Checker for C/C++"
+//
+// Available at: http://embed.cs.utah.edu/ioc/
+// detector such as the clang's undefined behaviour checker.
+// See also: http://clang.llvm.org/docs/UsersManual.html#controlling-code-generation
+//
+// It might also be useful to use Google's AddressSanitizer to detect
+// stack buffer overruns, which valgrind can't currently detect.
+  2  
+src/test/netbase_tests.cpp
+@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(netbase_lookupnumeric)
+
+BOOST_AUTO_TEST_CASE(onioncat_test)
+{
+    // values from http://www.cypherpunk.at/onioncat/wiki/OnionCat
+    // values from https://web.archive.org/web/20121122003543/http://www.cypherpunk.at/onioncat/wiki/OnionCat
+    CNetAddr addr1("5wyqrzbvrdsumnok.onion");
+    CNetAddr addr2("FD87:D87E:EB43:edb1:8e4:3588:e546:35ca");
+    BOOST_CHECK(addr1 == addr2);
+0 comments on commit 3cb1edb
+case="master.A_WCYCL1850.ne4_oQU240.baseline"
+compset="A_WCYCL1850"
+res="ne4_oQU240"
+
+log_dir="${HOME}/projects/e3sm/scratch/$case"
+
+shopt -s extglob
+shopt -s nullglob
+
+function command_yellow
+{
+    echo -e "\e[33m\$ $1\e[0m"
+    eval $1
+    return $?
+}
+
+function command_yellow_rc
+{
+    command_yellow "$1"
+    rc=$?
+    if [ $rc -ne 0 ]; then
+        exit $rc
+    fi
+}
+
+function print_bldlog
+{
+    bldlog=$1
+    bldlog_path=(${log_dir}/bld/$bldlog.bldlog.+([[:digit:]])-+([[:digit:]]))
+    if [ -n "${bldlog_path}" ]; then
+        command_yellow "cat ${bldlog_path}"
+    fi
+}
+
+function print_runlog
+{
+    runlog=$1
+    runlog_path=(${log_dir}/run/$runlog.log.+([[:digit:]])-+([[:digit:]]))
+    if [ -n "${runlog_path}" ]; then
+        command_yellow "cat ${runlog_path}"
+        return 1
+    else
+        return 0
+    fi
+}
+
+command_yellow_rc "mkdir -p $HOME/projects/e3sm/cesm-inputdata"
+command_yellow_rc "cd cime/scripts"
+command_yellow_rc "./create_newcase --case $case --compset $compset --res $res"
+command_yellow_rc "cd $case"
+command_yellow_rc "./xmlchange GMAKE_J=2"
+command_yellow_rc "./case.setup"
+command_yellow "./case.build -v"
+rc=$?
+if [ $rc -ne 0 ]; then
+    print_bldlog "e3sm"
+    print_bldlog "csm_share"
+    print_bldlog "pio"
+    print_bldlog "mct"
+    print_bldlog "gptl"
+    exit $rc
+fi
+
+# Unfortunately, case.submit always return 0, even if it fails.
+# To find out if it succeeded, we check if the run log has been gzipped.
+#command_yellow "./case.submit"
+#print_runlog "e3sm"
+#exit $?
