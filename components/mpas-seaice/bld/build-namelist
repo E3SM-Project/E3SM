@@ -697,7 +697,7 @@ if ($wave_comp eq 'ww3' or $wave_comp eq 'dwav') {
 	add_default($nl, 'config_wave_spec_type','val'=>"constant");
 	add_default($nl, 'config_wave_height_type','val'=>"coupled");
 } else {
-        add_default($nl,'config_wave_spec_type');
+	add_default($nl,'config_wave_spec_type');
 	add_default($nl,'config_wave_height_type');
 }
 
@@ -1304,7 +1304,7 @@ my @groups = qw(seaice_model
                 advection
                 column_package
                 column_tracers
-		wave_config
+                wave_config
                 biogeochemistry
                 shortwave
                 snow

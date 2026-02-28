@@ -2841,7 +2841,7 @@
 		     type="real"
 		     dimensions="nFloeCategories nCategories nCells Time"
 		     units="1"
-		     description="Floe Size Distribution"
+		     description="Full Floe Size Distribution"
 		/>
 		<var name="iceAge"
 		     type="real"
@@ -4175,53 +4175,75 @@
 		     type="real"
 		     dimensions="nFloeCategories"
 		     icepack_name="floe_rad_l"
+		     units="m"
+		     description="Floe Size Distribution Bin Lower Boundary"
 		/>
 		<var name="floeSizeBinCenter"
 		     type="real"
 		     dimensions="nFloeCategories"
 		     icepack_name="floe_rad_c"
+		     units="m"
+		     description="Floe Size Distribution Bin Center"
 		/>
 		<var name="floeSizeBinWidth"
 		     type="real"
 		     dimensions="nFloeCategories"
 		     icepack_name="floe_binwidth"
+		     units="m"
+		     description="Floe Size Distribution Bin Widths"
 		/>
 		<var name="floeDistribution"
 		     type="real"
 		     dimensions="nFloeCategories"
+		     units="1"
+		     description="Initialization array for Floe Size Distribution"
 		/>
 		<var name="floeDistCat"
 		     type="real"
 		     dimensions="nFloeCategories nCategories"
+		     units="1"
+		     description="Initialization Array for Floe Size Distribution per Thickness category"
 		/>
 		<var name="dFloeSizeNewIce"
 		     type="real"
 		     dimensions="nFloeCategories nCells Time"
 		     icepack_name="d_afsd_newi"
+		     units="1"
+		     description="change in FSD due to New Ice."
 		/>
 		<var name="dFloeSizeLateralGrowth"
 		     type="real"
 		     dimensions="nFloeCategories nCells Time"
 		     icepack_name="d_afsd_latg"
+		     units="1"
+		     description="change in FSD due to Lateral Growth."
 		/>
 		<var name="dFloeSizeLateralMelt"
 		     type="real"
 		     dimensions="nFloeCategories nCells Time"
 		     icepack_name="d_afsd_latm"
+		     units="1"
+		     description="change in FSD due to Lateral Melting."
 		/>
 		<var name="dFloeSizeWaves"
 		     type="real"
 		     dimensions="nFloeCategories nCells Time"
 		     icepack_name="d_afsd_wave"
+		     units="1"
+		     description="change in FSD due to Wave Breaking."
 		/>
 		<var name="dFloeSizeWeld"
 		     type="real"
 		     dimensions="nFloeCategories nCells Time"
 		     icepack_name="d_afsd_weld"
+		     units="1"
+		     description="change in FSD due to Welding."
 		/>
 		<var name="floeSizeDiameter"
 		     type="real"
 		     dimensions="nCells Time"
+		     units="m"
+		     description="Represenative Floe Size Diameter"
 		/>
 
 	</var_struct>
@@ -4232,21 +4254,29 @@
 		     type="real"
 		     dimensions="nFrequencies Time"
 		     icepack_name="wavefreq"
+		     units="s-1"
+		     description="Wave Frequencies"
 		/>
 		<var name="waveFreqBinWidth"
 		     type="real"
 		     dimensions="nFrequencies Time"
 		     icepack_name="dwavefreq"
+		     units="s-1"
+		     description="Bin Widths of Wave Frequencies"
 		/>
 		<var name="significantWaveHeight"
 		     type="real"
 		     dimensions="nCells Time"
 		     icepack_name="wave_sig_ht"
+		     units="m"
+		     description="Significant Wave Height"
 		/>
 		<var name="waveSpectra"
 		     type="real"
 		     dimensions="nFrequencies nCells Time"
 		     icepack_name="wave_spectrum"
+		     units="m2 Hz-1"
+		     description="Wave Power per frequency bin (direction integrated)"
 		/>
         </var_struct>
 
