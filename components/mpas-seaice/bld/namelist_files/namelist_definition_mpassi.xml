@@ -941,13 +941,13 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_wave_spec_type" type="char*1024"
 	category="wave_config" group="wave_config">
-Wave Spectra input type.
+The type of wave spectra input.
 Default = 'none'. Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_wave_height_type" type="char*1024"
 	category="wave_config" group="wave_config">
-Wave Height input type.
+The type of wave height input.
 Default = 'internal'. Defined in namelist_defaults.xml
 </entry>
 
