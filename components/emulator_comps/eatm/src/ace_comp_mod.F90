@@ -16,9 +16,7 @@ module ace_comp_mod
     torch_delete, &
     torch_kFloat32, &
     torch_model_load, &
-    torch_tensor_print, &
     torch_model_forward, &
-    torch_tensor_from_array, &
     torch_tensor_from_blob
 
   use, intrinsic :: iso_c_binding, only: c_loc, c_int64_t, c_int
@@ -152,7 +150,6 @@ CONTAINS
 
     if (t_modulo .eq. 0) then
 
-      ! populate net_imports array with IC/restart data passed to coupler for initializtion
       call ace_eatm_import()
 
       net_inputs_nn = net_inputs
@@ -163,24 +160,28 @@ CONTAINS
       call torch_tensor_from_blob(&
         input_tensor(1), &
         c_loc(net_inputs_nn), &
-        4_c_int, &
-        input_tensor_shape, &
-        tensor_layout, &
-        torch_kFloat32, &
-        torch_kCPU &
+        ndims=4_c_int, &
+        tensor_shape=input_tensor_shape, &
+        layout=tensor_layout, &
+        dtype=torch_kFloat32, &
+        device_type=torch_kCPU &
       )
       call torch_tensor_from_blob(&
         output_tensor(1), &
         c_loc(net_outputs), &
-        4_c_int, &
-        output_tensor_shape, &
-        tensor_layout, &
-        torch_kFloat32, &
-        torch_kCPU &
+        ndims=4_c_int, &
+        tensor_shape=output_tensor_shape, &
+        layout=tensor_layout, &
+        dtype=torch_kFloat32, &
+        device_type=torch_kCPU &
       )
 
       ! run inference
       call torch_model_forward(ace_model, input_tensor, output_tensor)
+
+      ! Clean up C++ pointers
+      call torch_delete(input_tensor)
+      call torch_delete(output_tensor)
 
       ! denormalize
       call denormalizer%denormalize(net_outputs)
@@ -213,8 +214,6 @@ CONTAINS
 
   subroutine ace_comp_finalize()
     call torch_delete(ace_model)
-    call torch_delete(input_tensor)
-    call torch_delete(output_tensor)
 
     call finalize_normalizer(normalizer)
     call finalize_normalizer(denormalizer)
