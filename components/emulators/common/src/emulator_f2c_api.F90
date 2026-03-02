@@ -19,7 +19,6 @@ module emulator_f2c_api
       end subroutine emulator_set_grid_data
 
       subroutine emulator_setup_coupling(handle, cpl) bind(c)
-         use emulator_f_api, only: emulator_coupling_desc
          import :: c_ptr, emulator_coupling_desc
          type(c_ptr), value, intent(in) :: handle
          type(emulator_coupling_desc), intent(in) :: cpl

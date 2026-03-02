@@ -11,9 +11,9 @@ option(BUILD_EMULATOR_TESTS "Build emulator unit tests" OFF)
 # standalone mode so we don't try to compile Fortran sources (the project
 # only declares CXX).  When included from the full E3SM build Fortran
 # is already enabled by the parent project.
-# if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-#   set(STANDALONE_MODE ON CACHE BOOL "Standalone build (CXX only, no Fortran)" FORCE)
-# endif()
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  set(STANDALONE_MODE ON CACHE BOOL "Standalone build (CXX only, no Fortran)" FORCE)
+endif()
 
 if(BUILD_EMULATOR_TESTS)
   # Catch2 from ekat
