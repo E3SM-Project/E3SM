@@ -970,8 +970,6 @@ void MAMMicrophysics::run_impl(const double dt) {
   //NOTE: we need to initialize photo_rates_
   Kokkos::deep_copy(photo_rates_,0.0);
   // loop over atmosphere columns and compute aerosol microphysics
-  const unsigned n_so4_monolayers_pcage =8;
-
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
