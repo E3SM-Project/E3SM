@@ -134,6 +134,7 @@ CONTAINS
 
        allocate(net_inputs(1, n_input_channels, lsize_x, lsize_y))
        allocate(net_outputs(1, n_output_channels, lsize_x, lsize_y))
+       allocate(net_inputs_nn(1, n_input_channels, lsize_x, lsize_y))
 
        ! initialize the interpolater struct
        allocate(eatm_intrp%t_im1(n_output_channels, lsize_x, lsize_y))
@@ -356,6 +357,7 @@ CONTAINS
     deallocate(swnet)
 
     deallocate(net_inputs)
+    deallocate(net_inputs_nn)
     deallocate(net_outputs)
 
     deallocate(eatm_intrp%t_im1)

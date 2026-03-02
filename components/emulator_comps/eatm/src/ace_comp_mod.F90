@@ -155,13 +155,14 @@ CONTAINS
       ! populate net_imports array with IC/restart data passed to coupler for initializtion
       call ace_eatm_import()
 
+      net_inputs_nn = net_inputs
       ! normalize, can probably happen after tensor is made becuase it's a pointer
-      call normalizer%normalize(net_inputs)
+      call normalizer%normalize(net_inputs_nn)
 
       ! create input/output tensors based off net input/output arrays
       call torch_tensor_from_blob(&
         input_tensor(1), &
-        c_loc(net_inputs), &
+        c_loc(net_inputs_nn), &
         4_c_int, &
         input_tensor_shape, &
         tensor_layout, &
@@ -335,16 +336,15 @@ CONTAINS
         ! net_inputs(1,  1, i, j) = lndfrac(i, j)            ! ACE2-EAMv3: LANDFRAC
         ! net_inputs(1,  2, i, j) = ocnfrac(i, j)            ! ACE2-EAMv3: OCNFRAC
         ! net_inputs(1,  3, i, j) = icefrac(i, j)            ! ACE2-EAMv3: ICEFRAC
-        net_inputs(1,  1, i, j) = net_inputs(1,  1, i, j)  ! ACE2-EAMv3: LANDFRAC
-        net_inputs(1,  2, i, j) = net_inputs(1,  2, i, j)  ! ACE2-EAMv3: OCNFRAC
-        net_inputs(1,  3, i, j) = net_inputs(1,  3, i, j)  ! ACE2-EAMv3: ICEFRAC
-        net_inputs(1,  4, i, j) = net_inputs(1, 4, i, j)   ! ACE2-EAMv3: PHIS
+
+        ! net_inputs(1,  4, i, j) = net_inputs(1, 4, i, j)   ! ACE2-EAMv3: PHIS
+        ! net_inputs(1,  5, i, j) = net_inputs(1, 5, i, j)   ! ACE2-EAMv3: SOLIN
         ! -----------------------------------------------------------------------
         ! TODO (AN): Evolve `SOLIN`, `PS`, and TS fileds intime
         ! -----------------------------------------------------------------------
-        net_inputs(1,  5, i, j) = net_inputs(1, 5, i, j)   ! ACE2-EAMv3: SOLIN
         net_inputs(1,  6, i, j) = net_outputs(1, 1, i, j)  ! ACE2-EAMv3: PS
-        ! use landfrac as weights...
+        ! use landfrac as weights to paint in ACE TS over land
+        ! net_inputs(1,  7, i, j) = ts(i, j) + lndfrac(i, j) * net_outputs(1, 2, i, j)  ! ACE2-EAMv3: TS
         net_inputs(1,  7, i, j) = net_outputs(1, 2, i, j)  ! ACE2-EAMv3: TS
         ! For 3D fields just advance through with time
         net_inputs(1,  8, i, j) = net_outputs(1,  3, i, j) ! ACE2-EAMv3: T_0

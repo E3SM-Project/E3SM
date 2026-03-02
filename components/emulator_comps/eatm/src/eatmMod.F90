@@ -69,6 +69,7 @@ module eatmMod
 
   !
   real(kind=R4), dimension(:, :, :, :), allocatable, target, public :: net_inputs
+  real(kind=R4), dimension(:, :, :, :), allocatable, target, public :: net_inputs_nn
   real(kind=R4), dimension(:, :, :, :), allocatable, target, public :: net_outputs
 
   character(CS), public :: myModelName = 'atm'   ! user defined model name
