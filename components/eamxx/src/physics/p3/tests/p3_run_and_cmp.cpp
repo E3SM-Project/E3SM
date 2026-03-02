@@ -92,7 +92,7 @@ struct Baseline {
                     << ", dt=" << d->dt << ", ts=" << d->it
                     << ", predict_nc=" << d->do_predict_nc
                     << ", prescribed_CCN=" << d->do_prescribed_CCN
-                    << ", small_packn=" << SCREAM_PACK_SIZE
+                    << ", packn=" << SCREAM_PACK_SIZE
                     << std::endl;
         }
 

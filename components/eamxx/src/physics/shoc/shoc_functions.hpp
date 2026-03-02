@@ -31,14 +31,12 @@ template <typename ScalarT, typename DeviceT> struct Functions {
   using Scalar = ScalarT;
   using Device = DeviceT;
 
-  template <typename S> using BigPack   = ekat::Pack<S, SCREAM_PACK_SIZE>;
-  template <typename S> using SmallPack = ekat::Pack<S, SCREAM_PACK_SIZE>;
+  template <typename S> using Pack      = ekat::Pack<S, SCREAM_PACK_SIZE>;
 
-  using IntSmallPack = SmallPack<Int>;
-  using Pack         = BigPack<Scalar>;
-  using Spack        = SmallPack<Scalar>;
+  using IntSmallPack = Pack<Int>;
+  using Spack        = Pack<Scalar>;
 
-  using Mask  = ekat::Mask<Pack::n>;
+  using Mask  = ekat::Mask<Spack::n>;
   using Smask = ekat::Mask<Spack::n>;
 
   using KT = ekat::KokkosTypes<Device>;

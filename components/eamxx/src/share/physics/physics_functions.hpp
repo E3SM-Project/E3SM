@@ -34,19 +34,16 @@ struct Functions
   using Device = DeviceT;
 
   template <typename S>
-  using BigPack = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
-  template <typename S>
-  using SmallPack = ekat::Pack<S,SCREAM_PACK_SIZE>;
+  using Pack = ekat::Pack<S,SCREAM_PACK_SIZE>;
 
-  using IntSmallPack = SmallPack<Int>;
-  using Pack         = BigPack<Scalar>;
-  using Spack        = SmallPack<Scalar>;
+  using IntSmallPack = Pack<Int>;
+  using Spack        = Pack<Scalar>;
 
   template <typename S>
-  using Mask = ekat::Mask<Pack::n>;
+  using Mask = ekat::Mask<Spack::n>;
 
   template <typename S>
-  using SmallMask = ekat::Mask<SmallPack<S>::n>;
+  using SmallMask = ekat::Mask<Pack<S>::n>;
 
   using Smask = SmallMask<Scalar>;
 

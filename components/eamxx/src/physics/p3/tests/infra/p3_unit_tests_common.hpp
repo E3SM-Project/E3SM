@@ -52,7 +52,7 @@ struct UnitWrap {
     using view_dnu_table     = typename Functions::view_dnu_table;
     using Scalar             = typename Functions::Scalar;
     using Spack              = typename Functions::Spack;
-    using Pack               = typename Functions::Pack;
+    using Pack               = typename Functions::Spack;
     using IntSmallPack       = typename Functions::IntSmallPack;
     using Smask              = typename Functions::Smask;
     using TableIce           = typename Functions::TableIce;

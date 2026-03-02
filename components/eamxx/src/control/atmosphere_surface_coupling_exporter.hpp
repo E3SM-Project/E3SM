@@ -35,7 +35,7 @@ class SurfaceCouplingExporter : public AtmosphereProcess
 public:
 
   using KT      = ekat::KokkosTypes<DefaultDevice>;
-  using Spack   = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+  using Pack   = ekat::Pack<Real,SCREAM_PACK_SIZE>;
 
   template<typename DevT, typename DataT>
   using view_1d = typename KokkosTypes<DevT>::template view_1d<DataT>;
@@ -68,9 +68,9 @@ public:
     static constexpr int num_2d_vector_mid = 2;
     static constexpr int num_2d_vector_int = 1;
 
-    uview_2d<DefaultDevice, Spack> dz;
-    uview_2d<DefaultDevice, Spack> z_mid;
-    uview_2d<DefaultDevice, Spack> z_int;
+    uview_2d<DefaultDevice, Pack> dz;
+    uview_2d<DefaultDevice, Pack> z_mid;
+    uview_2d<DefaultDevice, Pack> z_int;
   };
 
   // Function which performes the export from scream fields,

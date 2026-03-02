@@ -25,12 +25,10 @@ struct Functions {
   using Scalar = ScalarT;
   using Device = DeviceT;
 
-  template <typename S> using BigPack = ekat::Pack<S,SCREAM_PACK_SIZE>;
-  template <typename S> using SmallPack = ekat::Pack<S,SCREAM_PACK_SIZE>;
+  template <typename S> using Pack = ekat::Pack<S,SCREAM_PACK_SIZE>;
 
-  using SPackInt = SmallPack<Int>;
-  using BPack    = BigPack<Scalar>;
-  using Spack    = SmallPack<Scalar>;
+  using SPackInt = Pack<Int>;
+  using Spack    = Pack<Scalar>;
 
   using PF  = scream::PhysicsFunctions<DefaultDevice>;
   using PC  = scream::physics::Constants<Real>;

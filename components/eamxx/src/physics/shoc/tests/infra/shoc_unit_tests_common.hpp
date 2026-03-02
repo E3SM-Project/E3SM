@@ -44,7 +44,7 @@ struct UnitWrap {
     using Functions          = scream::shoc::Functions<Real, Device>;
     using Scalar             = typename Functions::Scalar;
     using Spack              = typename Functions::Spack;
-    using Pack               = typename Functions::Pack;
+    using Pack               = typename Functions::Spack;
     using IntSmallPack       = typename Functions::IntSmallPack;
     using Smask              = typename Functions::Smask;
     using C                  = typename Functions::C;

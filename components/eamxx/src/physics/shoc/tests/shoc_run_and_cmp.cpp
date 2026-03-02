@@ -76,7 +76,7 @@ struct Baseline {
           std::cout << "Running SHOC with ni=" << d->shcol << ", nk=" << d->nlev
                     << ", dt=" << d->dtime << ", ts=" << ps.nsteps;
 
-          std::cout << ", small_packn=" << SCREAM_PACK_SIZE;
+          std::cout << ", packn=" << SCREAM_PACK_SIZE;
           std::cout << std::endl;
         }
 
