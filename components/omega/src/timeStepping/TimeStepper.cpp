@@ -217,7 +217,10 @@ void TimeStepper::erase(const std::string &Name) {
 }
 
 // Remove all time steppers
-void TimeStepper::clear() { AllTimeSteppers.clear(); }
+void TimeStepper::clear() {
+   AllTimeSteppers.clear();
+   DefaultTimeStepper = nullptr; // prevent dangling pointer
+}
 
 //------------------------------------------------------------------------------
 // Initialize the default time stepper in two phases

@@ -172,7 +172,7 @@ void OceanState::clear() {
 
    AllOceanStates.clear(); // removes all states from the list and in
                            // the process, calls the destructors for each
-
+   DefaultOceanState = nullptr; // prevent dangling pointer
 } // end clear
 
 //------------------------------------------------------------------------------

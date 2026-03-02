@@ -450,6 +450,7 @@ void VertCoord::clear() {
    AllVertCoords.clear(); // removes all VertCoords from the list and in the
                           // process, calls the destructors for each
 
+   DefaultVertCoord = nullptr; // prevent dangling pointer
 } // end clear
 
 //------------------------------------------------------------------------------
