@@ -11,6 +11,7 @@ time_stepping:
 eamxx:
   atm_procs_list: [mam4_aero_microphys]
   mam4_aero_microphys:
+   mam4_number_so4_monolayers_to_age_carbon_particle: 8
    mam4_do_cond: true
    mam4_do_newnuc: true
    mam4_do_coag: true

@@ -275,6 +275,7 @@
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
       <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
+      <env name="STK_UNKNOWN_PATTERN_EXCHANGER">Prepost</env> <!-- issue with STK -->
     </environment_variables>
     <environment_variables DEBUG="TRUE">
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
@@ -302,8 +303,8 @@
       <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/sz/2.1.12.5/gcc-native-12.3; else echo "$SZ_ROOT"; fi}</env>
       <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/zfp/1.0.1/gcc-native-12.3; else echo "$ZFP_ROOT"; fi}</env>
       <env name="BLA_VENDOR">Generic</env>
-      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2024.03.26/gcc/11.2.0; else echo "$Albany_ROOT"; fi}</env>
-      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/15.1.1/gcc/11.2.0; else echo "$Trilinos_ROOT"; fi}</env>
+      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2025.11.14/gcc/12.3; else echo "$Albany_ROOT"; fi}</env>
+      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/2025.10.01/gcc/12.3; else echo "$Trilinos_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/nvidia-24.5/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
@@ -3099,6 +3100,8 @@
       <env name="PATH">/lcrc/group/e3sm/soft/improv/pnetcdf/1.14.1/gcc-12.3.0/openmpi-4.1.6/bin:/lcrc/group/e3sm/soft/improv/netcdf-fortran/4.6.1b/gcc-12.3.0/openmpi-4.1.6/bin:/lcrc/group/e3sm/soft/improv/netcdf-c/4.9.2b/gcc-12.3.0/openmpi-4.1.6/bin:/lcrc/group/e3sm/soft/improv/openmpi/4.1.6/gcc-12.3.0/bin:/lcrc/group/e3sm/soft/perl/improv/bin:$ENV{PATH}</env>
       <env name="LD_LIBRARY_PATH">$SHELL{lp=/lcrc/group/e3sm/soft/improv/netlib-lapack/3.12.0/gcc-12.3.0:/lcrc/group/e3sm/soft/improv/pnetcdf/1.14.1/gcc-12.3.0/openmpi-4.1.6/lib:/lcrc/group/e3sm/soft/improv/netcdf-fortran/4.6.1b/gcc-12.3.0/openmpi-4.1.6/lib:/lcrc/group/e3sm/soft/improv/netcdf-c/4.9.2b/gcc-12.3.0/openmpi-4.1.6/lib:/opt/pbs/lib:/lcrc/group/e3sm/soft/improv/openmpi/4.1.6/gcc-12.3.0/lib; if [ -z "$LD_LIBRARY_PATH" ]; then echo $lp; else echo "$lp:$LD_LIBRARY_PATH"; fi}</env>
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/improv/gnu; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="LAPACK_ROOT">$SHELL{if [ -z "$LAPACK_ROOT" ]; then echo /lcrc/group/e3sm/soft/improv/netlib-lapack/3.12.0/gcc-12.3.0; else echo "$LAPACK_ROOT"; fi}</env>
+      <env name="BLAS_ROOT">$SHELL{if [ -z "$BLAS_ROOT" ]; then echo /lcrc/group/e3sm/soft/improv/netlib-lapack/3.12.0/gcc-12.3.0; else echo "$BLAS_ROOT"; fi}</env>
       <env name="OMPI_MCA_sharedfp">^lockedfile,individual</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
@@ -3311,7 +3314,7 @@
     <CHARGE_ACCOUNT>E3SMinput</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR>/grand/E3SMinput/polaris/</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/eagle/$PROJECT/$USER/scratch</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/eagle/$PROJECT/$USER/scratch/polaris</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/grand/E3SMinput/data</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/grand/E3SMinput/data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
@@ -3618,11 +3621,11 @@
     <OS>Linux</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS> 
-    <PROJECT>crocus</PROJECT>
-    <CHARGE_ACCOUNT>crocus</CHARGE_ACCOUNT>
+    <PROJECT>E3SMinput</PROJECT>
+    <CHARGE_ACCOUNT>E3SMinput</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR>/grand/E3SMinput/crux/</SAVE_TIMING_DIR>  
-    <SAVE_TIMING_DIR_PROJECTS>crocus</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/eagle/$PROJECT/$USER/e3sm_scratch</CIME_OUTPUT_ROOT>
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>/eagle/$PROJECT/$USER/scratch/crux</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/grand/E3SMinput/data</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/grand/E3SMinput/data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>

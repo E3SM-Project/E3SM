@@ -131,10 +131,10 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <paramfile nu_com="RD" use_crop=".false." >lnd/clm2/paramdata/clm_params_c180524_phs.nc</paramfile>
 
 
-<!-- ================================================================== -->
-<!-- FATES default parameter file                                       -->
-<!-- ================================================================== -->
-<fates_paramfile >lnd/clm2/paramdata/fates_params_api.41.0.0_14pft_c250813.nc</fates_paramfile>
+<!-- ======================================================================== -->
+<!-- FATES default parameter file (path relative to E3SM/components/elm/)     -->
+<!-- ======================================================================== -->
+<fates_paramfile >src/external_models/fates/parameter_files/fates_params_default.json</fates_paramfile>
 
 <!-- soil order related parameters (relative to {csmdata}) -->
 <fsoilordercon             >lnd/clm2/paramdata/CNP_parameters_c131108.nc</fsoilordercon>
@@ -637,9 +637,7 @@ this mask will have smb calculated over the entire global land surface
 <fglcmask hgrid="ne30np4" glc_grid="--ANYTHING--">lnd/clm2/griddata/glcmaskdata_ne30np4_GIS_AIS_171002.nc</fglcmask>
 
 <!-- MALI grids -->
-<fglcmask hgrid="0.9x1.25" glc_grid="mpas.gis20km">glc/cism/griddata/glcmaskdata_0.9x1.25_Gland5km.nc</fglcmask>  <!-- the CISM one works fine for this mesh -->
 <fglcmask hgrid="0.9x1.25" glc_grid="mpas.ais20km">lnd/clm2/griddata/glcmaskdata_0.9x1.25_60S.nc</fglcmask>
-<fglcmask hgrid="r05"      glc_grid="mpas.gis20km">lnd/clm2/griddata/glcmaskdata_0.5x0.5_GIS_AIS.nc</fglcmask>
 <fglcmask hgrid="r05"      glc_grid="mpas.gis1to10km">lnd/clm2/griddata/glcmaskdata_0.5x0.5_GIS_AIS.nc</fglcmask>
 <fglcmask hgrid="r025"     glc_grid="mpas.gis1to10km">lnd/clm2/griddata/glcmaskdata_r025_GIS_AIS.20240910.nc</fglcmask>
 <fglcmask hgrid="r0125"    glc_grid="mpas.gis1to10km">lnd/clm2/griddata/glcmaskdata_r0125_GIS_AIS.210407.nc</fglcmask>

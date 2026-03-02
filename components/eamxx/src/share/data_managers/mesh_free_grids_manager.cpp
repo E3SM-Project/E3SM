@@ -69,6 +69,7 @@ build_se_grid (const std::string& name, ekat::ParameterList& params)
   se_grid = std::make_shared<SEGrid>(name,num_local_elems,num_gp,num_vertical_levels,m_comm);
 
   // Set up the degrees of freedom.
+  auto gid_base = params.get<int>("gid_base",0);
   auto dof_gids  = se_grid->get_dofs_gids();
   auto elem_gids = se_grid->get_partitioned_dim_gids();
   auto lid2idx   = se_grid->get_lid_to_idx_map();
@@ -87,7 +88,7 @@ build_se_grid (const std::string& name, ekat::ParameterList& params)
     for (int igp = 0; igp < num_gp; ++igp) {
       for (int jgp = 0; jgp < num_gp; ++jgp) {
         int idof = ie*num_gp*num_gp + igp*num_gp + jgp;
-        int gid = offset + idof;
+        int gid = offset + idof + gid_base;
         host_dofs(idof) = gid;
         host_lid2idx(idof, 0) = ie;
         host_lid2idx(idof, 1) = igp;
@@ -112,7 +113,8 @@ build_point_grid (const std::string& name, ekat::ParameterList& params)
 {
   const int num_global_cols = params.get<int>("number_of_global_columns");
   const int num_vertical_levels = params.get<int>("number_of_vertical_levels");
-  auto pt_grid = create_point_grid(name,num_global_cols,num_vertical_levels,m_comm);
+  const int gid_base = params.get<int>("gid_base",0);
+  auto pt_grid = create_point_grid(name,num_global_cols,num_vertical_levels,m_comm,gid_base);
 
   const auto units = ekat::units::Units::nondimensional();
 
@@ -297,7 +299,7 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
 std::shared_ptr<GridsManager>
 create_mesh_free_grids_manager (const ekat::Comm& comm, const int num_local_elems,
                                 const int num_gp, const int num_vertical_levels,
-                                const int num_global_cols)
+                                const int num_global_cols, const int gid_base)
 {
   ekat::ParameterList gm_params;
   std::vector<std::string> grids_names;
@@ -308,6 +310,7 @@ create_mesh_free_grids_manager (const ekat::Comm& comm, const int num_local_elem
     pl.set("number_of_local_elements",num_local_elems);
     pl.set("number_of_gauss_points",num_gp);
     pl.set("number_of_vertical_levels",num_vertical_levels);
+    pl.set("gid_base",gid_base);
   }
   if (num_global_cols>0) {
     grids_names.push_back("point_grid");
@@ -315,6 +318,7 @@ create_mesh_free_grids_manager (const ekat::Comm& comm, const int num_local_elem
     pl.set("type",std::string("point_grid"));
     pl.set("number_of_global_columns",num_global_cols);
     pl.set("number_of_vertical_levels",num_vertical_levels);
+    pl.set("gid_base",gid_base);
   }
   gm_params.set("grids_names",grids_names);
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
