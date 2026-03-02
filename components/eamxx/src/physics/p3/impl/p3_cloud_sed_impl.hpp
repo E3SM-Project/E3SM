@@ -85,7 +85,7 @@ void Functions<S,D>
       Kokkos::parallel_reduce(
         Kokkos::TeamVectorRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
           const int pk = kmin + pk_;
-          const auto range_pack = ekat::range<IntSmallPack>(pk*Pack::n);
+          const auto range_pack = ekat::range<IntPack>(pk*Pack::n);
           const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
           const auto qc_gt_small = range_mask && qc_incld(pk) > qsmall;
           if (qc_gt_small.any()) {

@@ -61,7 +61,7 @@ void Functions<S,D>
       w_sec_k,    w_sec_km1,
       tke_k,      tke_km1;
 
-    auto range_pack = ekat::range<IntSmallPack>(k*Pack::n);
+    auto range_pack = ekat::range<IntPack>(k*Pack::n);
     auto range_pack_m1 = range_pack;
     auto range_pack_m2 = range_pack;
     // index for _km1 should never go below 0

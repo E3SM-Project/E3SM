@@ -42,7 +42,7 @@ void Functions<S,D>::shoc_grid(
     // Compute shifts
     Pack zi_grid_k, zi_grid_kp1, zt_grid_k, zt_grid_km1;
 
-    auto range_pack = ekat::range<IntSmallPack>(k*Pack::n);
+    auto range_pack = ekat::range<IntPack>(k*Pack::n);
     auto range_pack_m1 = range_pack;
     // index for _km1 should never go below 0
     range_pack_m1.set(range_pack < 1, 1);

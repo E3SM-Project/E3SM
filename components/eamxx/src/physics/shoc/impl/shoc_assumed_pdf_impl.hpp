@@ -150,7 +150,7 @@ void Functions<S,D>::shoc_assumed_pdf(
       shoc_assumed_pdf_compute_temperature(thl1_1,pval, Tl1_1);
       shoc_assumed_pdf_compute_temperature(thl1_2,pval, Tl1_2);
 
-      const auto index_range = ekat::range<IntSmallPack>(k*Pack::n);
+      const auto index_range = ekat::range<IntPack>(k*Pack::n);
       const Mask active_entries = (index_range < nlev);
 
       // Do NaN Checking here

@@ -59,7 +59,7 @@ void Functions<S,D>::pblintd_height(
   Int max_indx = Kokkos::reduction_identity<Int>::max();
   Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, lower_pack_indx, upper_pack_indx+1),
                           [&] (const Int& k, Int& local_max) {
-    auto indices_pack = ekat::range<IntSmallPack>(k*Pack::n);
+    auto indices_pack = ekat::range<IntPack>(k*Pack::n);
     const auto in_range = (indices_pack < nlev-1 && indices_pack >= nlev-npbl);
 
     Pack vvk(0);

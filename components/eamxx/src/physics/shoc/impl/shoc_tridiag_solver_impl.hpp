@@ -37,11 +37,11 @@ void Functions<S,D>::vd_shoc_decomp(
 
     // Compute shift of kv_term and tmpi
     Pack kv_term_k, kv_term_kp1, tmpi_k, tmpi_kp1;
-    const auto range_pack = ekat::range<IntSmallPack>(k*Pack::n);
+    const auto range_pack = ekat::range<IntPack>(k*Pack::n);
 
     // Original code was: auto shift_range = range_pack; but that caused mysterious test
     // failures on blake.
-    IntSmallPack shift_range;
+    IntPack shift_range;
     vector_simd
     for (int s = 0; s < Pack::n; ++s) {
       shift_range[s] = range_pack[s];

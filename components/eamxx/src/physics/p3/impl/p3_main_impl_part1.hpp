@@ -100,7 +100,7 @@ void Functions<S,D>
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
 
-    const auto range_pack = ekat::range<IntSmallPack>(k*Pack::n);
+    const auto range_pack = ekat::range<IntPack>(k*Pack::n);
     const auto range_mask = range_pack < nk;
 
     rho(k)          = dpres(k)/dz(k) / g;

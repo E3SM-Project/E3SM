@@ -105,7 +105,7 @@ void Functions<S,D>
        Kokkos::TeamVectorRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
 
         const int pk = kmin + pk_;
-        const auto range_pack = ekat::range<IntSmallPack>(pk*Pack::n);
+        const auto range_pack = ekat::range<IntPack>(pk*Pack::n);
         const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
         const auto qr_gt_small = range_mask && qr_incld(pk) > qsmall;
         if (qr_gt_small.any()) {
@@ -143,7 +143,7 @@ void Functions<S,D>
       Kokkos::parallel_for(
        Kokkos::TeamVectorRange(team, kmax-kmin+1), [&] (int pk_) {
         const int pk = kmin + pk_;
-        const auto range_pack = ekat::range<IntSmallPack>(pk*Pack::n);
+        const auto range_pack = ekat::range<IntPack>(pk*Pack::n);
         const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
         auto index_pack = range_pack-1;
         const auto lt_zero = index_pack < 0;

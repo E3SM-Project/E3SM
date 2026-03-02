@@ -61,7 +61,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
   using Device = DeviceT;
 
   using Pack         = ekat::Pack<Scalar, SCREAM_PACK_SIZE>;
-  using IntSmallPack = ekat::Pack<Int, SCREAM_PACK_SIZE>;
+  using IntPack = ekat::Pack<Int, SCREAM_PACK_SIZE>;
 
   using Mask = ekat::Mask<Pack::n>;
 
@@ -369,17 +369,17 @@ template <typename ScalarT, typename DeviceT> struct Functions {
   // -- Table3 --
 
   struct Table3 {
-    IntSmallPack dumii, dumjj;
+    IntPack dumii, dumjj;
     Pack rdumii, rdumjj;
   };
 
   struct TableIce {
-    IntSmallPack dumi, dumjj, dumii, dumzz;
+    IntPack dumi, dumjj, dumii, dumzz;
     Pack dum1, dum4, dum5, dum6;
   };
 
   struct TableRain {
-    IntSmallPack dumj;
+    IntPack dumj;
     Pack dum3;
   };
 

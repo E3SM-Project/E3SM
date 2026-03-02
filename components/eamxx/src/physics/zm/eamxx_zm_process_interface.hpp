@@ -22,7 +22,7 @@ class ZMDeepConvection : public AtmosphereProcess
 
   using Scalar               = typename ZMF::Scalar;
   using Pack                = typename ZMF::Pack;
-  using SPackInt             = typename ZMF::SPackInt;
+  using IntPack             = typename ZMF::IntPack;
 
   public:
 

@@ -138,7 +138,7 @@ void Functions<S,D>
         Kokkos::TeamVectorRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
 
         const int pk = kmin + pk_;
-        const auto range_pack = ekat::range<IntSmallPack>(pk*Pack::n);
+        const auto range_pack = ekat::range<IntPack>(pk*Pack::n);
         const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
         const auto qi_gt_small = range_mask && qi_incld(pk) > qsmall;
         if (qi_gt_small.any()) {
@@ -242,7 +242,7 @@ void Functions<S,D>
     const int pk = kmin + pk_;
 
     // Set up masks
-    const auto range_pack    = ekat::range<IntSmallPack>(pk*Pack::n);
+    const auto range_pack    = ekat::range<IntPack>(pk*Pack::n);
     const auto range_mask    = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
     const auto t_lt_homogf   = T_atm(pk) < T_homogfrz;
     const auto qc_ge_small   = range_mask && t_lt_homogf && qc(pk) >= qsmall;

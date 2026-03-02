@@ -80,7 +80,7 @@ void Functions<S,D>::shoc_energy_fixer(
 
   // Limit the energy fixer to find highest layer where SHOC is active.
   // Find first level where tke is higher than lowest threshold.
-  static_assert(static_cast<int>(Pack::n)==static_cast<int>(IntSmallPack::n),
+  static_assert(static_cast<int>(Pack::n)==static_cast<int>(IntPack::n),
                 "SHOC: violated assumption in parallel reduce.");
   Int shoctop = 0;
   const auto nlevm2_packs = ekat::npack<Pack>(nlev-2);
@@ -89,7 +89,7 @@ void Functions<S,D>::shoc_energy_fixer(
     // Find the minimum index corresponding to mintke!=tke(indx).
     // Here we set all indices s.t. tke==mintke to nlev-2 since
     // we require shoctop <= nlev-2
-    auto local_indices = ekat::range<IntSmallPack>(k*IntSmallPack::n);
+    auto local_indices = ekat::range<IntPack>(k*IntPack::n);
     local_indices.set(tke(k)==mintke, nlev-2);
     const Int min_indx = ekat::min(local_indices);
 
@@ -105,7 +105,7 @@ void Functions<S,D>::shoc_energy_fixer(
   const int shoctop_pack = shoctop/Pack::n;
   const auto nlev_packs = ekat::npack<Pack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, shoctop_pack, nlev_packs), [&] (const Int& k) {
-    auto range_pack = ekat::range<IntSmallPack>(k*Pack::n);
+    auto range_pack = ekat::range<IntPack>(k*Pack::n);
 
     host_dse(k).set(range_pack >= shoctop && range_pack < nlev, host_dse(k)-se_dis*ggr);
   });

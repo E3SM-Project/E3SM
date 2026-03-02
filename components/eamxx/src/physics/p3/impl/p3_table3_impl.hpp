@@ -55,7 +55,7 @@ void Functions<S,D>
     auto rdumjj = mu_r + 1;
     rdumjj = max(rdumjj, 1);
     rdumjj = min(rdumjj, 10);
-    IntSmallPack dumjj(rdumjj);
+    IntPack dumjj(rdumjj);
     dumjj  = max(dumjj, 1);
     dumjj  = min(dumjj, 9);
     tab.rdumjj.set(context, rdumjj);

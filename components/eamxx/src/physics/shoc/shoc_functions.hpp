@@ -32,7 +32,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
   using Device = DeviceT;
 
   using Pack         = ekat::Pack<Scalar, SCREAM_PACK_SIZE>;
-  using IntSmallPack = ekat::Pack<Int, SCREAM_PACK_SIZE>;
+  using IntPack = ekat::Pack<Int, SCREAM_PACK_SIZE>;
 
   using Mask = ekat::Mask<Pack::n>;
 

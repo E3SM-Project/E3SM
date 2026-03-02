@@ -25,7 +25,7 @@ class P3Microphysics : public AtmosphereProcess
   using P3F          = p3::Functions<Real, DefaultDevice>;
   using Pack         = typename P3F::Pack;
   using Mask         = typename P3F::Mask;
-  using IntSpack     = typename P3F::IntSmallPack;
+  using IntPack     = typename P3F::IntPack;
   using PF           = scream::PhysicsFunctions<DefaultDevice>;
   using PC           = physics::Constants<Real>;
   using KT           = ekat::KokkosTypes<DefaultDevice>;
@@ -127,7 +127,7 @@ public:
           // Get the cld_frac_t_in(icol, ilev-1) entries
           const auto& cld_frac_t_in_s = ekat::scalarize(ekat::subview(cld_frac_t_in, icol));
           Pack cld_frac_t_in_k, cld_frac_t_in_km1;
-          auto range_pack1 = ekat::range<IntSpack>(ipack*Pack::n);
+          auto range_pack1 = ekat::range<IntPack>(ipack*Pack::n);
           auto range_pack2 = range_pack1;
           range_pack2.set(range_pack1 < 1, 1); // don't want the shift to go below zero. we mask out that result anyway
           ekat::index_and_shift<-1>(cld_frac_t_in_s, range_pack2, cld_frac_t_in_k, cld_frac_t_in_km1);

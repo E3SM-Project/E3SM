@@ -30,7 +30,7 @@ void Functions<S,D>::linear_interp(
   if (km1 == km2+1) {
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, km2_pack), [&] (const Int& k2) {
       Pack x1, x1s, y1, y1s; // s->-1 shift
-      auto indx_pack = ekat::range<IntSmallPack>(k2*Pack::n + 1);
+      auto indx_pack = ekat::range<IntPack>(k2*Pack::n + 1);
 
       // Avoid reading out of bounds for x1/y1
       indx_pack.set(indx_pack>=km1, km1-1);
@@ -50,7 +50,7 @@ void Functions<S,D>::linear_interp(
     // are doing the ||4.
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, km2_pack), [&] (const Int& k2) {
       Pack x1, x1s, y1, y1s; // s->-1 shift
-      auto indx_pack = ekat::range<IntSmallPack>(k2*Pack::n);
+      auto indx_pack = ekat::range<IntPack>(k2*Pack::n);
       indx_pack.set(indx_pack < 1, 1); // special shift for 0 boundary case
       indx_pack.set(indx_pack >= km2-1, km1-1); // special shift for top boundary case
       ekat::index_and_shift<-1>(sx1, indx_pack, x1, x1s);

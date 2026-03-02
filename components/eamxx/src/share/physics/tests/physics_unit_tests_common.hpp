@@ -43,7 +43,7 @@ struct UnitWrap {
     using Functions          = scream::physics::Functions<Real, Device>;
     using Scalar             = typename Functions::Scalar;
     using Pack               = typename Functions::Pack;
-    using IntSmallPack       = typename Functions::IntSmallPack;
+    using IntPack       = typename Functions::IntPack;
     using Mask               = typename Functions::Mask;
     using C                  = typename Functions::C;
 

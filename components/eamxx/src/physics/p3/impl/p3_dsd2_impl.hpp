@@ -45,7 +45,7 @@ get_cloud_dsd2(
 
     // interpolate for mass distribution spectral shape parameter (for SB warm processes)
     if (P3C::iparam == 1) {
-      IntSmallPack dumi = IntSmallPack(mu_c) - 1;
+      IntPack dumi = IntPack(mu_c) - 1;
       Pack dnu0, dnu1;
       ekat::index_and_shift<1>(dnu, dumi, dnu0, dnu1);
       nu.set(qc_gt_small, dnu0 + (dnu1 - dnu0) * (mu_c - Pack(dumi) - 1));

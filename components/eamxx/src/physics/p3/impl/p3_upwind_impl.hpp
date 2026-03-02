@@ -50,7 +50,7 @@ void Functions<S,D>
     Kokkos::PerTeam(team), [&] () {
       const Int k = k_top_pack;
       {
-        const auto range_pack = ekat::range<IntSmallPack>(k_top_pack*Pack::n);
+        const auto range_pack = ekat::range<IntPack>(k_top_pack*Pack::n);
         const auto mask = range_pack > kmax_scalar || range_pack < kmin_scalar;
         if (mask.any()) {
           for (int f = 0; f < nfield; ++f) {

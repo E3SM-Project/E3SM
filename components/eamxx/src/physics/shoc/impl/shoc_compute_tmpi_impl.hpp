@@ -23,7 +23,7 @@ void Functions<S,D>
 
   const Int nlev_pack = ekat::npack<Pack>(nlevi);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
-    const auto mask  = ekat::range<IntSmallPack>(k*Pack::n) > 0;
+    const auto mask  = ekat::range<IntPack>(k*Pack::n) > 0;
     if (mask.any()) {
       tmpi(k).set(mask, dtime*(ggr*rho_zi(k))/dz_zi(k));
     }

@@ -132,7 +132,7 @@ void Functions<S,D>
     Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
 
     //compute mask to identify padded values in packs, which shouldn't be used in calculations
-    const auto range_pack = ekat::range<IntSmallPack>(k*Pack::n);
+    const auto range_pack = ekat::range<IntPack>(k*Pack::n);
     const auto range_mask = range_pack < nk;
 
     // if relatively dry and no hydrometeors at this level, skip to end of k-loop (i.e. skip this level)

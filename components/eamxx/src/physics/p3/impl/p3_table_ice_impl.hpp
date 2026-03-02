@@ -39,7 +39,7 @@ void Functions<S,D>
 
   const auto lookup_table_1a_dum1_c = P3C::lookup_table_1a_dum1_c;
   tab.dum1 = (log10(qi/ni)+18) * lookup_table_1a_dum1_c - 10;
-  tab.dumi = IntSmallPack(tab.dum1);
+  tab.dumi = IntPack(tab.dum1);
 
   // set limits (to make sure the calculated index doesn't exceed range of lookup table)
   tab.dum1 = min(tab.dum1, static_cast<Scalar>(P3C::isize));
@@ -49,7 +49,7 @@ void Functions<S,D>
 
   // find index for rime mass fraction
   tab.dum4  = (qm/qi)*3 + 1;
-  tab.dumii = IntSmallPack(tab.dum4);
+  tab.dumii = IntPack(tab.dum4);
 
   // set limits
   tab.dum4  = min(tab.dum4, static_cast<Scalar>(P3C::rimsize));
@@ -65,7 +65,7 @@ void Functions<S,D>
   tab.dum5.set(rhop_gt_650, (rhop-650)*sp(0.004) + 4);
 
   // set limits
-  tab.dumjj = IntSmallPack(tab.dum5);
+  tab.dumjj = IntPack(tab.dum5);
   tab.dum5  = min(tab.dum5, static_cast<Scalar>(P3C::densize));
   tab.dum5  = max(tab.dum5, sp(1.));
   tab.dumjj = max(1, tab.dumjj);
@@ -101,7 +101,7 @@ void Functions<S,D>
     dumlr.set(gt_small, cbrt(qr/(C::Pi * C::RHO_H2O.value * nr)));
   }
   tab.dum3 = (log10(1*dumlr) + 5)*sp(10.70415);
-  tab.dumj = IntSmallPack(tab.dum3);
+  tab.dumj = IntPack(tab.dum3);
 
   // set limits
   tab.dum3 = min(tab.dum3, static_cast<Scalar>(P3C::rcollsize));
@@ -125,7 +125,7 @@ typename Functions<S,D>::Pack Functions<S,D>
   using ekat::index;
 
   Pack proc;
-  IntSmallPack idxpk(idx);
+  IntPack idxpk(idx);
 
   if (!context.any()) return proc;
 
@@ -170,7 +170,7 @@ typename Functions<S,D>::Pack Functions<S,D>
   using ekat::index;
 
   Pack proc;
-  IntSmallPack idxpk(idx);
+  IntPack idxpk(idx);
 
   if (!context.any()) return proc;
 

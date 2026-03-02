@@ -41,7 +41,7 @@ Int Functions<S,D>::shoc_init(
     const int end_pack_indx   = nbot_shoc/Pack::n+1;
     Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, begin_pack_indx, end_pack_indx),
                                                     [&] (const Int& k, Int& local_max) {
-      auto range = ekat::range<IntSmallPack>(k*Pack::n);
+      auto range = ekat::range<IntPack>(k*Pack::n);
       auto condition = (range >= ntop_shoc && range < nbot_shoc);
       if (condition.any()) {
         condition = condition && pref_mid(k) >= pblmaxp;

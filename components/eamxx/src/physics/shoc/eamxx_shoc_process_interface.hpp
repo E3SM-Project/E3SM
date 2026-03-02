@@ -31,7 +31,7 @@ class SHOCMacrophysics : public scream::AtmosphereProcess
   using SC           = scream::shoc::Constants<Real>;
 
   using Pack                = typename SHF::Pack;
-  using IntSmallPack         = typename SHF::IntSmallPack;
+  using IntPack         = typename SHF::IntPack;
   using Mask                = typename SHF::Mask;
   using view_1d_int          = typename KT::template view_1d<Int>;
   using view_1d              = typename SHF::view_1d<Real>;
@@ -93,7 +93,7 @@ public:
         // Inverse of Exner. In non-rel builds, assert that exner != 0 when in range before computing.
         const Pack exner = PF::exner_function(p_mid(i,k));
         const Mask nonzero = (exner != 0);
-        EKAT_KERNEL_ASSERT((nonzero || !(ekat::range<IntSmallPack>(k*Pack::n) < nlev)).all());
+        EKAT_KERNEL_ASSERT((nonzero || !(ekat::range<IntPack>(k*Pack::n) < nlev)).all());
         inv_exner(i,k).set(nonzero, 1/exner);
 
         tke(i,k) = ekat::max(mintke, tke(i,k));

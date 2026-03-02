@@ -35,7 +35,7 @@ void Functions<S,D>
   //compute shear production term
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
 
-    auto range_pack1 = ekat::range<IntSmallPack>(k*Pack::n);
+    auto range_pack1 = ekat::range<IntPack>(k*Pack::n);
     const auto active_range = range_pack1 > 0 && range_pack1 < nlev;
     if (active_range.any()) {
       const Pack grid_dz = 1/dz_zi(k);

@@ -27,7 +27,7 @@ void Functions<S,D>
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     // Calculate shift
     Pack invar1_s, invar1_sm1, invar2_s, invar2_sm1;
-    auto range_pack1 = ekat::range<IntSmallPack>(k*Pack::n);
+    auto range_pack1 = ekat::range<IntPack>(k*Pack::n);
     auto range_pack2 = range_pack1;
     range_pack2.set(range_pack1 < 1, 1); // don't want the shift to go below zero. we mask out that result anyway
     ekat::index_and_shift<-1>(sinvar1, range_pack2, invar1_s, invar1_sm1);
