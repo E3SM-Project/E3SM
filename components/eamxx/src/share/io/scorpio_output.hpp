@@ -232,6 +232,12 @@ protected:
   bool m_track_avg_cnt = false;
   bool m_latlon_output = false;
   std::string m_decomp_dimname = "";
+  std::string m_fp_precision = "real"; // floating point precision for output
+
+  // Type-bridge fields for write time: used when m_fp_precision differs from
+  // the native Real type. The conversion Real→fp_precision happens on the
+  // device via the Field API (Kokkos-parallel) before the host-side scorpio write.
+  strmap_t<Field> m_write_fields;
 
   std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger =
       console_logger(ekat::logger::LogLevel::warn);

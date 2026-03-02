@@ -330,6 +330,8 @@ void Field::deep_copy (const Field& x)
   } else if (data_type()==DataType::FloatType) {
     if (x.data_type()==DataType::FloatType)
       update_impl<CM,false,float,float>(x,1,0);
+    else if (x.data_type()==DataType::DoubleType)
+      update_impl<CM,false,float,double>(x,1,0);
     else
       update_impl<CM,false,float,int>(x,1,0);
   } else if (data_type()==DataType::DoubleType) {
@@ -503,11 +505,15 @@ void Field::max (const Field& x)
     if (fill_aware) {
       if (x.data_type()==DataType::FloatType)
         return update_impl<CM,true,float,float>(x,1,1);
+      else if (x.data_type()==DataType::DoubleType)
+        return update_impl<CM,true,float,double>(x,1,1);
       else
         return update_impl<CM,true,float,int>(x,1,1);
     } else {
       if (x.data_type()==DataType::FloatType)
         return update_impl<CM,false,float,float>(x,1,1);
+      else if (x.data_type()==DataType::DoubleType)
+        return update_impl<CM,false,float,double>(x,1,1);
       else
         return update_impl<CM,false,float,int>(x,1,1);
     }
@@ -551,11 +557,15 @@ void Field::min (const Field& x)
     if (fill_aware) {
       if (x.data_type()==DataType::FloatType)
         return update_impl<CM,true,float,float>(x,1,1);
+      else if (x.data_type()==DataType::DoubleType)
+        return update_impl<CM,true,float,double>(x,1,1);
       else
         return update_impl<CM,true,float,int>(x,1,1);
     } else {
       if (x.data_type()==DataType::FloatType)
         return update_impl<CM,false,float,float>(x,1,1);
+      else if (x.data_type()==DataType::DoubleType)
+        return update_impl<CM,false,float,double>(x,1,1);
       else
         return update_impl<CM,false,float,int>(x,1,1);
     }
@@ -604,11 +614,15 @@ update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta)
     if (fill_aware) {
       if (x.data_type()==DataType::FloatType)
         return update_impl<CM,true,float,float>(x,a,b);
+      else if (x.data_type()==DataType::DoubleType)
+        return update_impl<CM,true,float,double>(x,a,b);
       else
         return update_impl<CM,true,float,int>(x,a,b);
     } else {
       if (x.data_type()==DataType::FloatType)
         return update_impl<CM,false,float,float>(x,a,b);
+      else if (x.data_type()==DataType::DoubleType)
+        return update_impl<CM,false,float,double>(x,a,b);
       else
         return update_impl<CM,false,float,int>(x,a,b);
     }

@@ -157,8 +157,20 @@ void SCMInput::read_variables (const int time_index)
     auto& f_io = m_io_fields[i];
     const auto& name = f_io.name();
 
-    // Read the data
-    scorpio::read_var(m_filename,name,f_io.get_internal_view_data<Real,Host>(),time_index);
+    // Read the data, dispatching on the field's actual data type
+    // (which matches the file's storage type after init_scorpio_structures)
+    switch (f_io.data_type()) {
+      case DataType::FloatType:
+        scorpio::read_var(m_filename,name,f_io.get_internal_view_data<float,Host>(),time_index);
+        break;
+      case DataType::DoubleType:
+        scorpio::read_var(m_filename,name,f_io.get_internal_view_data<double,Host>(),time_index);
+        break;
+      default:
+        EKAT_ERROR_MSG ("Error! Unsupported/unrecognized data type while reading field from file.\n"
+            " - file name : " + m_filename + "\n"
+            " - field name: " + name + "\n");
+    }
 
     auto& f = m_fields[i];
     if (m_comm.rank() == m_closest_col_info.mpi_rank) {
@@ -187,7 +199,9 @@ void SCMInput::init_scorpio_structures()
 {
   using namespace ShortFieldTagsNames;
 
-  // Check variables are in the input file
+  // Check variables are in the input file, and ensure m_io_fields have the
+  // correct data type matching the file's storage type.
+  bool need_rebuild = false;
   for (const auto& f : m_io_fields) {
     const auto& layout = f.get_header().get_identifier().get_layout();
     auto dim_names = layout.names();
@@ -227,8 +241,42 @@ void SCMInput::init_scorpio_structures()
         " - extent from file: " + std::to_string(file_len) + "\n");
     }
 
-    // Ensure that we can read the var using Real data type
-    scorpio::change_var_dtype (m_filename,f.name(),"real");
+    // Check if field dtype matches file's nc_dtype
+    DataType file_dtype;
+    if (var.nc_dtype=="float") {
+      file_dtype = DataType::FloatType;
+    } else if (var.nc_dtype=="double") {
+      file_dtype = DataType::DoubleType;
+    } else {
+      file_dtype = DataType::IntType;
+    }
+    if (file_dtype != f.data_type()) {
+      need_rebuild = true;
+    }
+  }
+
+  // If any field's dtype differs from the file's, rebuild m_io_fields
+  // with correctly-typed fields (type-bridge fields).
+  if (need_rebuild) {
+    std::vector<Field> new_io_fields;
+    for (const auto& f : m_io_fields) {
+      const auto& var = scorpio::get_var(m_filename, f.name());
+      DataType file_dtype;
+      if (var.nc_dtype=="float") {
+        file_dtype = DataType::FloatType;
+      } else if (var.nc_dtype=="double") {
+        file_dtype = DataType::DoubleType;
+      } else {
+        file_dtype = DataType::IntType;
+      }
+      const auto& fid = f.get_header().get_identifier();
+      FieldIdentifier new_fid(fid.name(),fid.get_layout(),fid.get_units(),
+                              fid.get_grid_name(),file_dtype);
+      Field new_f(new_fid);
+      new_f.allocate_view();
+      new_io_fields.push_back(new_f);
+    }
+    m_io_fields = new_io_fields;
   }
 
   // Set decompositions for the variables
