@@ -219,10 +219,10 @@
       </modules>
 
       <modules compiler="gnu">
-        <command name="load">pytorch/2.6.0</command>
         <command name="load">PrgEnv-gnu/8.5.0</command>
         <command name="load">gcc-native/12.3</command>
         <command name="load">cray-libsci/24.07.0</command>
+        <command name="load">pytorch/2.8.0</command>
       </modules>
 
       <modules compiler="intel">
@@ -269,7 +269,7 @@
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
+      <env name="LD_LIBRARY_PATH">/global/common/software/nersc9/pytorch/2.8.0/lib/python3.12/site-packages/nvidia/nccl/lib:$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
       <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
@@ -330,7 +330,7 @@
     </environment_variables>
     <environment_variables compiler="gnu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnu; else echo "$MOAB_ROOT"; fi}</env>
-      <env name="FTorch_ROOT">$SHELL{if [ -z "$FTorch_ROOT" ]; then echo /global/cfs/cdirs/e3sm/FTorch; else echo "$FTorch_ROOT"; fi}</env>
+      <env name="FTorch_ROOT">$SHELL{if [ -z "$FTorch_ROOT" ]; then echo /global/cfs/cdirs/e3sm/anolan/FTorch_v1.0.0-pytorch_v2.8.0; else echo "$FTorch_ROOT"; fi}</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
