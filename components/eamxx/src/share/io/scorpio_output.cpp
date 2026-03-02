@@ -987,6 +987,35 @@ setup_output_file(const std::string& filename,
   // Register variables with netCDF file.  Must come after dimensions are registered.
   register_variables(filename,fp_precision,mode);
 
+  // If fp_precision requires a type different from Real (for write-time bridge),
+  // ensure m_write_fields is populated for any fields not already covered.
+  // This is needed for streams whose m_fp_precision differs from fp_precision
+  // (e.g., geo data streams using the quick constructor with m_fp_precision="real").
+  DataType write_dtype;
+  if (fp_precision=="float" or fp_precision=="single") {
+    write_dtype = DataType::FloatType;
+  } else if (fp_precision=="double") {
+    write_dtype = DataType::DoubleType;
+  } else {
+    write_dtype = DataType::RealType;
+  }
+  if (write_dtype != DataType::RealType) {
+    auto fm = m_field_mgrs[Scorpio];
+    for (const auto& fname : m_fields_names) {
+      if (m_write_fields.count(fname) == 0) {
+        const auto& f = fm->get_field(fname);
+        const auto& fid = f.get_header().get_identifier();
+        if (fid.data_type() != write_dtype) {
+          FieldIdentifier write_fid(fid.name(),fid.get_layout(),fid.get_units(),
+                                    fid.get_grid_name(),write_dtype);
+          Field write_f(write_fid);
+          write_f.allocate_view();
+          m_write_fields[fname] = write_f;
+        }
+      }
+    }
+  }
+
   // Set the offsets of the local dofs in the global vector.
   set_decompositions(filename);
 }
