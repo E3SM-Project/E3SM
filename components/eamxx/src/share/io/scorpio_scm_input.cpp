@@ -199,6 +199,24 @@ void SCMInput::init_scorpio_structures()
 {
   using namespace ShortFieldTagsNames;
 
+  // Helper to convert a scorpio nc_dtype string to DataType
+  auto nc_dtype_to_data_type = [&](const std::string& nc_dtype,
+                                    const std::string& varname) -> DataType {
+    if (nc_dtype=="float") {
+      return DataType::FloatType;
+    } else if (nc_dtype=="double") {
+      return DataType::DoubleType;
+    } else if (nc_dtype=="int" or nc_dtype=="int64") {
+      return DataType::IntType;
+    } else {
+      EKAT_ERROR_MSG ("Error! Unsupported file variable data type.\n"
+          " - filename : " + m_filename + "\n"
+          " - varname  : " + varname + "\n"
+          " - nc_dtype : " + nc_dtype + "\n");
+    }
+    return DataType::RealType; // unreachable
+  };
+
   // Check variables are in the input file, and ensure m_io_fields have the
   // correct data type matching the file's storage type.
   bool need_rebuild = false;
@@ -242,14 +260,7 @@ void SCMInput::init_scorpio_structures()
     }
 
     // Check if field dtype matches file's nc_dtype
-    DataType file_dtype;
-    if (var.nc_dtype=="float") {
-      file_dtype = DataType::FloatType;
-    } else if (var.nc_dtype=="double") {
-      file_dtype = DataType::DoubleType;
-    } else {
-      file_dtype = DataType::IntType;
-    }
+    const auto file_dtype = nc_dtype_to_data_type(var.nc_dtype, f.name());
     if (file_dtype != f.data_type()) {
       need_rebuild = true;
     }
@@ -261,14 +272,7 @@ void SCMInput::init_scorpio_structures()
     std::vector<Field> new_io_fields;
     for (const auto& f : m_io_fields) {
       const auto& var = scorpio::get_var(m_filename, f.name());
-      DataType file_dtype;
-      if (var.nc_dtype=="float") {
-        file_dtype = DataType::FloatType;
-      } else if (var.nc_dtype=="double") {
-        file_dtype = DataType::DoubleType;
-      } else {
-        file_dtype = DataType::IntType;
-      }
+      const auto file_dtype = nc_dtype_to_data_type(var.nc_dtype, f.name());
       const auto& fid = f.get_header().get_identifier();
       FieldIdentifier new_fid(fid.name(),fid.get_layout(),fid.get_units(),
                               fid.get_grid_name(),file_dtype);

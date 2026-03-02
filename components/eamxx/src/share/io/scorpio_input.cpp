@@ -280,6 +280,24 @@ void AtmosphereInput::init_scorpio_structures()
     scorpio::mark_dim_as_time(m_filename,"time");
   }
 
+  // Helper to convert a scorpio nc_dtype string to DataType
+  auto nc_dtype_to_data_type = [&](const std::string& nc_dtype,
+                                    const std::string& varname) -> DataType {
+    if (nc_dtype=="float") {
+      return DataType::FloatType;
+    } else if (nc_dtype=="double") {
+      return DataType::DoubleType;
+    } else if (nc_dtype=="int" or nc_dtype=="int64") {
+      return DataType::IntType;
+    } else {
+      EKAT_ERROR_MSG ("Error! Unsupported file variable data type.\n"
+          " - filename : " + m_filename + "\n"
+          " - varname  : " + varname + "\n"
+          " - nc_dtype : " + nc_dtype + "\n");
+    }
+    return DataType::RealType; // unreachable
+  };
+
   // Check variables are in the input file, and ensure the scorpio FM
   // has fields with the correct data type (matching the file's storage type).
   // If the file stores a variable in a different precision than the user's field,
@@ -324,19 +342,7 @@ void AtmosphereInput::init_scorpio_structures()
 
     // Check if the field's dtype matches the file's nc_dtype. If not, we
     // need to rebuild m_fm_for_scorpio with a correctly-typed field.
-    DataType file_dtype;
-    if (var.nc_dtype=="float") {
-      file_dtype = DataType::FloatType;
-    } else if (var.nc_dtype=="double") {
-      file_dtype = DataType::DoubleType;
-    } else if (var.nc_dtype=="int" or var.nc_dtype=="int64") {
-      file_dtype = DataType::IntType;
-    } else {
-      EKAT_ERROR_MSG ("Error! Unsupported file variable data type.\n"
-          " - filename : " + m_filename + "\n"
-          " - varname  : " + name + "\n"
-          " - nc_dtype : " + var.nc_dtype + "\n");
-    }
+    const auto file_dtype = nc_dtype_to_data_type(var.nc_dtype, name);
     if (file_dtype!=f->data_type()) {
       need_rebuild_fm = true;
     }
@@ -349,14 +355,7 @@ void AtmosphereInput::init_scorpio_structures()
     for (const auto& sname : m_fields_names) {
       auto f_user = m_fm_from_user->get_field(sname);
       const auto& var = scorpio::get_var(m_filename,sname);
-      DataType file_dtype;
-      if (var.nc_dtype=="float") {
-        file_dtype = DataType::FloatType;
-      } else if (var.nc_dtype=="double") {
-        file_dtype = DataType::DoubleType;
-      } else {
-        file_dtype = DataType::IntType;
-      }
+      const auto file_dtype = nc_dtype_to_data_type(var.nc_dtype, sname);
       if (file_dtype==f_user.data_type()) {
         // The user field has the right dtype; check if we can still alias
         const auto& fh  = f_user.get_header();
