@@ -165,7 +165,7 @@ advance_iop_subsidence (const MemberType& team,
                         const view_1d<Pack>& v,
                         const view_1d<Pack>& T,
                         const view_2d<Pack>& Q,
-                        const ekat::LinInterp<Real, Pack::n>* interp)
+                        ekat::LinInterp<Real, Pack::n>& interp)
 {
   constexpr Real Rair  = C::Rair.value;
   constexpr Real Cpair = C::Cpair.value;
@@ -197,7 +197,6 @@ advance_iop_subsidence (const MemberType& team,
   });
   team.team_barrier();
 
-  // Build departure pressure vector (x_tgt). Clamp to input range.
   const Pack pmin = ref_p_mid(0);
   const Pack pmax = ref_p_mid(nlev_packs-1);
 
@@ -208,13 +207,11 @@ advance_iop_subsidence (const MemberType& team,
   });
   team.team_barrier();
 
-  // IMPORTANT: no constructor here. interp is created outside the device lambda.
-  auto* interp_nc = const_cast<ekat::LinInterp<Real, Pack::n>*>(interp);
-  interp->setup(team, ref_p_mid, p_dep);
+  interp.setup(team, ref_p_mid, p_dep);   // This line is sus
 
-  interp->lin_interp(team, ref_p_mid, p_dep, u_old, u_new);
-  interp->lin_interp(team, ref_p_mid, p_dep, v_old, v_new);
-  interp->lin_interp(team, ref_p_mid, p_dep, T_old, T_new);
+  interp.lin_interp(team, ref_p_mid, p_dep, u_old, u_new);
+  interp.lin_interp(team, ref_p_mid, p_dep, v_old, v_new);
+  interp.lin_interp(team, ref_p_mid, p_dep, T_old, T_new);
   team.team_barrier();
 
   // Thermal expansion correction + write back
@@ -235,7 +232,7 @@ advance_iop_subsidence (const MemberType& team,
     });
     team.team_barrier();
 
-    interp->lin_interp(team, ref_p_mid, p_dep, q_old, q_new);
+    interp.lin_interp(team, ref_p_mid, p_dep, q_old, q_new);
     team.team_barrier();
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
@@ -397,9 +394,11 @@ void IOPForcing::run_impl (const double dt)
     ColOps::compute_midpoint_delta(team, num_levs, ref_p_int, ref_p_del);
     team.team_barrier();
 
+    auto interp_local = subs_interp;
+
     if (iop_dosubsidence) {
     // Compute subsidence due to large-scale forcing
-      advance_iop_subsidence(team, num_levs, dt, ps_i, ref_p_mid, ref_p_int, ref_p_del, omega, ws, u_i, v_i, T_mid_i, Q_i, &subs_interp);
+      advance_iop_subsidence(team, num_levs, dt, ps_i, ref_p_mid, ref_p_int, ref_p_del, omega, ws, u_i, v_i, T_mid_i, Q_i, interp_local);
     }
 
     // Update T and qv according to large scale forcing as specified in IOP file.
