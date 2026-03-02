@@ -1,5 +1,6 @@
 #include "emulator_c_api.hpp"
 #include "emulator.hpp"
+#include "emulator_registry.hpp"
 
 #include <cstring>
 #include <iostream>
@@ -35,6 +36,18 @@ void emulator_finalize(void* handle) {
 void emulator_print_info(void *handle){
   auto* emu = static_cast<emulator::Emulator*>(handle);
   emu->print_info(std::cout);
+}
+
+void emulator_destroy(void* handle) {
+  if (!handle) return;
+  auto* emu = static_cast<emulator::Emulator*>(handle);
+  // In the standalone/driver path objects live in the EmulatorRegistry;
+  // remove_by_name drops the shared_ptr and runs the destructor.
+  // In the full E3SM path (atm_factory.cpp) objects are raw-new'd and
+  // not registered, so fall back to a direct delete.
+  if (!emulator::EmulatorRegistry::instance().remove_by_name(emu->name())) {
+    delete emu;
+  }
 }
 void emulator_init_coupling_indices(void* handle, const char* import_fields, const char* export_fields){
   auto* emu = static_cast<emulator::Emulator*>(handle);

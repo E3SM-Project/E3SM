@@ -2,8 +2,16 @@ cmake_minimum_required(VERSION 3.16)
 
 set(EMULATORATM_CXX_SOURCES
   src/atm.cpp
-  src/atm_f2c.cpp
 )
+
+# In the full E3SM build, atm_comp_mct.F90 calls emulator_create.
+# Provide it directly in this library to avoid a circular dependency on
+# emulator_driver. In STANDALONE_MODE the symbol comes from
+# emulator_driver/src/emulator_factory.cpp instead.
+# TODO: get rid of this hacky workaround?!
+if(NOT STANDALONE_MODE)
+  list(APPEND EMULATORATM_CXX_SOURCES src/atm_factory.cpp)
+endif()
 
 set(EMULATORATM_CXX_HEADERS
   src/atm.hpp
@@ -38,9 +46,16 @@ target_include_directories(emulatoratm PUBLIC
 # Link to common emulator framework
 target_link_libraries(emulatoratm PUBLIC emulator_common)
 
-# MPI is required for both standalone and full builds
-find_package(MPI REQUIRED)
+# MPI is required for both standalone and full builds.
+# Request Fortran component so the Fortran MPI libraries are available when
+# atm_comp_mct.F90 is compiled (non-standalone mode).
+find_package(MPI REQUIRED COMPONENTS CXX Fortran)
 target_link_libraries(emulatoratm PUBLIC MPI::MPI_CXX)
+if(NOT STANDALONE_MODE)
+  # atm_comp_mct.F90 uses MPI; link the Fortran MPI library explicitly to
+  # avoid missing symbols on toolchains that separate CXX and Fortran MPI.
+  target_link_libraries(emulatoratm PUBLIC MPI::MPI_Fortran)
+endif()
 
 # C++17 required
 target_compile_features(emulatoratm PUBLIC cxx_std_17)

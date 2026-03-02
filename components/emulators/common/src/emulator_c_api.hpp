@@ -90,5 +90,16 @@ void  emulator_run(void* handle, int dt);
 void  emulator_finalize(void* handle);
 void  emulator_print_info(void* handle);
 
+/**
+ * @brief Destroy an emulator instance created by emulator_create.
+ *
+ * Removes the instance from the EmulatorRegistry, which drops the
+ * shared_ptr reference and runs the C++ destructor.  Call this after
+ * emulator_finalize (or instead of it when error-aborting).
+ *
+ * @param handle Opaque pointer previously returned by emulator_create.
+ */
+void  emulator_destroy(void* handle);
+
 } // extern "C"
 #endif

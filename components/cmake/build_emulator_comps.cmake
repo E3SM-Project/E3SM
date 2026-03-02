@@ -2,6 +2,11 @@
 # Handles all emulator components: EMULATORATM, EMULATOROCN
 # Similar pattern to build_eamxx.cmake
 
+# Capture this file's directory at include-time.
+# CMAKE_CURRENT_LIST_DIR inside a function body is evaluated at *call* time
+# (i.e. it becomes the caller's directory), so we must snapshot it here.
+set(_EMULATOR_BUILD_COMPS_DIR ${CMAKE_CURRENT_LIST_DIR})
+
 function(build_emulator_comps)
 
   # Check if any emulator component is being built
@@ -25,12 +30,12 @@ function(build_emulator_comps)
     message(STATUS "=================================================================")
     message(STATUS "  Components: EMULATORATM=${EMULATORATM_FOUND} EMULATOROCN=${EMULATOROCN_FOUND}")
 
-    include(${CMAKE_SOURCE_DIR}/cmake/common_setup.cmake)
+    include(${_EMULATOR_BUILD_COMPS_DIR}/common_setup.cmake)
 
     #---------------------------------------------------------------------------
     # Build emulator_comps using add_subdirectory
     #---------------------------------------------------------------------------
-    set(EMULATOR_COMPS_DIR ${CMAKE_SOURCE_DIR}/emulators)
+    set(EMULATOR_COMPS_DIR ${_EMULATOR_BUILD_COMPS_DIR}/../emulators)
     if(EXISTS ${EMULATOR_COMPS_DIR}/CMakeLists.txt)
       message(STATUS "  Including emulator components from:")
       message(STATUS "    ${EMULATOR_COMPS_DIR}")
@@ -50,15 +55,16 @@ function(build_emulator_comps)
     # emulator components to link against the emulator libraries
     set(EMULATOR_COMPS_BUILT TRUE CACHE INTERNAL "Emulator components were built")
     set(EMULATOR_COMMON_LIB emulator_common CACHE INTERNAL "Common emulator library")
+    set(EMULATOR_DRIVER_LIB emulator_driver CACHE INTERNAL "Emulator driver library")
     set(EMULATORATM_LIB emulatoratm CACHE INTERNAL "EMULATORATM library")
     set(EMULATOROCN_LIB emulatorocn CACHE INTERNAL "EMULATOROCN library")
 
-    # Create aliases for common component class names so build_model.cmake works
+    # Alias emulatoratm as the 'atm' component target so that build_model.cmake
+    # links against libemulatoratm.a, which in the full E3SM build includes
+    # emulator_create (atm_factory.cpp) directly — no circular dep on
+    # emulator_driver.
     if(EMULATORATM_FOUND AND TARGET emulatoratm)
       add_library(atm ALIAS emulatoratm)
-    endif()
-    if(EMULATOROCN_FOUND AND TARGET emulatorocn)
-      add_library(ocn ALIAS emulatorocn)
     endif()
 
     #---------------------------------------------------------------------------

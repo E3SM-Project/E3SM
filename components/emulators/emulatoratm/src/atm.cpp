@@ -8,6 +8,7 @@
 
 #include "atm.hpp"
 #include "emulator_c_api.hpp"
+#include <algorithm>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -28,6 +29,7 @@ void EmulatorAtm::create_instance(int comm, int comp_id,
   m_comm = comm;
   m_id = comp_id;  // set base class ID
   m_input_file = input_file;
+  m_log_file = log_file;
   m_run_type = run_type;
   (void)start_ymd;
   (void)start_tod;

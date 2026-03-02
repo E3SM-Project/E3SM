@@ -25,6 +25,12 @@ program test_emulator_factory
   real(c_double), pointer :: lat_ptr(:),lon_ptr(:), imp_ptr(:), exp_ptr(:),area_ptr(:)
   integer(c_int), pointer :: gids_ptr(:)
 
+  ! Null-terminated C strings whose storage persists beyond create_config.
+  ! Using named target variables avoids dangling pointers from string
+  ! expression temporaries.
+  character(kind=c_char, len=5),  target :: input_file_c
+  character(kind=c_char, len=9),  target :: log_file_c
+
   !----------------------------------------
   ! MPI init (if needed)
   !----------------------------------------
@@ -46,9 +52,11 @@ program test_emulator_factory
   !----------------------------------------
   ! create config
   !----------------------------------------
+  input_file_c = 'test'//c_null_char
+  log_file_c   = 'test_log'//c_null_char
   cfg = create_config(f_comm=fcomm,comp_id=1_c_int,run_type=0_c_int,&
             start_ymd=20000101_c_int, start_tod=0_c_int,&
-            input_file='test'//c_null_char, log_file="test_log"//c_null_char)
+            input_file=input_file_c, log_file=log_file_c)
   
   block
    integer(c_int) :: grid_type = 0_c_int, i
