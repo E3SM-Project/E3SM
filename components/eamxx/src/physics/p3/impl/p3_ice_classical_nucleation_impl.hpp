@@ -13,13 +13,13 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_classical_nucleation(
-  const Spack& frzimm, const Spack& frzcnt,
-  const Spack& frzdep, const Spack& rho,
-  const Spack& qc_incld, const Spack& nc_incld,
+  const Pack& frzimm, const Pack& frzcnt,
+  const Pack& frzdep, const Pack& rho,
+  const Pack& qc_incld, const Pack& nc_incld,
   const int Iflag,
-  Spack& ncheti_cnt, Spack& qcheti_cnt,
-  Spack& nicnt, Spack& qicnt,
-  Spack& ninuc_cnt, Spack& qinuc_cnt)
+  Pack& ncheti_cnt, Pack& qcheti_cnt,
+  Pack& nicnt, Pack& qicnt,
+  Pack& ninuc_cnt, Pack& qinuc_cnt)
 {
   constexpr Scalar pi       = C::Pi;
   constexpr Scalar rho_h2o  = C::RHO_H2O.value;
@@ -31,12 +31,12 @@ void Functions<S,D>
   // TODO: Verify if 1.0e-18 can be unified with other "small" numeric literals
   constexpr Scalar  mi0     = 4.0*piov3*900.0*1.0e-18; // BAD_CONSTANT!
 
-  const Spack Zero(0.0);
+  const Pack Zero(0.0);
   // minimum mass of new crystal due to freezing of cloud droplets done
   // externally (kg)
 
   const Scalar mi0l_min = (4.0/3.0)*pi*rho_h2o*(4.0e-6)*(4.0e-6)*(4.0e-6);
-  Spack mi0l = qc_incld/ekat::max(nc_incld,sp(1.0e6)/rho);
+  Pack mi0l = qc_incld/ekat::max(nc_incld,sp(1.0e6)/rho);
   mi0l = ekat::max(mi0l_min, mi0l);
 
   const auto mask = qc_incld > qsmall;

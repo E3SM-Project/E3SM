@@ -14,9 +14,9 @@ namespace p3 {
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::lookup (const Spack& mu_r,
-          const Spack& lamr, Table3& tab,
-          const Smask& context)
+::lookup (const Pack& mu_r,
+          const Pack& lamr, Table3& tab,
+          const Mask& context)
 {
   // find location in scaled mean size space
   const auto dum1 = (mu_r+1) / lamr;
@@ -66,10 +66,10 @@ void Functions<S,D>
 
 template <typename S, typename D>
 KOKKOS_FUNCTION
-typename Functions<S,D>::Spack Functions<S,D>
+typename Functions<S,D>::Pack Functions<S,D>
 ::apply_table (const view_2d_table& table,
                const Table3& tab3) {
-  const auto rdumii_m_dumii = tab3.rdumii - Spack(tab3.dumii);
+  const auto rdumii_m_dumii = tab3.rdumii - Pack(tab3.dumii);
   const auto t_im1_jm1 = index(table, tab3.dumii-1, tab3.dumjj-1);
   // Linear interpolant.
   const auto dum1 = (t_im1_jm1 + rdumii_m_dumii *
@@ -79,7 +79,7 @@ typename Functions<S,D>::Spack Functions<S,D>
   const auto dum2 = (t_im1_j + rdumii_m_dumii *
                      (index(table, tab3.dumii, tab3.dumjj) - t_im1_j));
   // Linear interpolation in other direction to complete bilinear interpolant.
-  return dum1 + (tab3.rdumjj - Spack(tab3.dumjj)) * (dum2 - dum1);
+  return dum1 + (tab3.rdumjj - Pack(tab3.dumjj)) * (dum2 - dum1);
 }
 
 template <typename S, typename D>

@@ -63,12 +63,12 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
 
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init pack inputs
-      Spack rho, dv, mu, sc, mu_r, lamr, cdistr, cdist, qr_incld, qc_incld;
+      Pack rho, dv, mu, sc, mu_r, lamr, cdistr, cdist, qr_incld, qc_incld;
 
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         rho[s]      = self_device(vs).rho;
         dv[s]       = self_device(vs).dv;
         mu[s]       = self_device(vs).mu;
@@ -81,11 +81,11 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
         qc_incld[s] = self_device(vs).qc_incld;
       }
 
-      Spack epsr{0.0}, epsc{0.0};
+      Pack epsr{0.0}, epsc{0.0};
       Functions::calc_liq_relaxation_timescale(revap_table_vals, rho, self_device(0).f1r, self_device(0).f2r, dv,
         mu, sc, mu_r, lamr, cdistr, cdist, qr_incld, qc_incld, epsr, epsc);
 
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         self_device(vs).epsr = epsr[s];
         self_device(vs).epsc = epsc[s];
       }

@@ -20,13 +20,9 @@ struct CldFractionFunctions
   using Scalar = ScalarT;
   using Device = DeviceT;
 
-  template <typename S>
-  using Pack = ekat::Pack<S,SCREAM_PACK_SIZE>;
+  using Pack = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
 
-  using Spack = Pack<Scalar>;
-
-  using Mask = ekat::Mask<Spack::n>;
-  using Smask = ekat::Mask<Spack::n>;
+  using Mask = ekat::Mask<Pack::n>;
 
   using KT = KokkosTypes<Device>;
   using MemberType = typename KT::MemberType;
@@ -43,28 +39,28 @@ struct CldFractionFunctions
     const Int nk,
     const Real ice_threshold,
     const Real ice_4out_threshold,
-    const view_2d<const Spack>& qi, 
-    const view_2d<const Spack>& liq_cld_frac, 
-    const view_2d<Spack>& ice_cld_frac, 
-    const view_2d<Spack>& tot_cld_frac,
-    const view_2d<Spack>& ice_cld_frac_4out, 
-    const view_2d<Spack>& tot_cld_frac_4out);
+    const view_2d<const Pack>& qi, 
+    const view_2d<const Pack>& liq_cld_frac, 
+    const view_2d<Pack>& ice_cld_frac, 
+    const view_2d<Pack>& tot_cld_frac,
+    const view_2d<Pack>& ice_cld_frac_4out, 
+    const view_2d<Pack>& tot_cld_frac_4out);
 
   KOKKOS_FUNCTION
   static void calc_icefrac( 
     const MemberType& team,
     const Int& nk,
     const Real& threshold,
-    const uview_1d<const Spack>& qi,
-    const uview_1d<Spack>&       ice_cld_frac);
+    const uview_1d<const Pack>& qi,
+    const uview_1d<Pack>&       ice_cld_frac);
 
   KOKKOS_FUNCTION
   static void calc_totalfrac( 
     const MemberType& team,
     const Int& nk,
-    const uview_1d<const Spack>& liq_cld_frac,
-    const uview_1d<const Spack>& ice_cld_frac,
-    const uview_1d<Spack>&       tot_cld_frac);
+    const uview_1d<const Pack>& liq_cld_frac,
+    const uview_1d<const Pack>& ice_cld_frac,
+    const uview_1d<Pack>&       tot_cld_frac);
 
 }; // struct Functions
 

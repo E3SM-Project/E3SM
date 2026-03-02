@@ -28,14 +28,10 @@ struct Functions
   using Scalar = ScalarT;
   using Device = DeviceT;
 
-  template <typename S>
-  using Pack = ekat::Pack<S,SCREAM_PACK_SIZE>;
+  using Pack         = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
+  using IntSmallPack = ekat::Pack<Int,SCREAM_PACK_SIZE>;
 
-  using IntSmallPack = Pack<Int>;
-  using Spack = Pack<Scalar>;
-
-  using Mask = ekat::Mask<Spack::n>;
-  using Smask = ekat::Mask<Spack::n>;
+  using Mask = ekat::Mask<Pack::n>;
 
   using KT = KokkosTypes<Device>;
 

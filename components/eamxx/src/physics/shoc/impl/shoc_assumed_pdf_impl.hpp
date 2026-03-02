@@ -42,32 +42,32 @@ void Functions<S,D>::shoc_assumed_pdf(
   const MemberType&            team,
   const Int&                   nlev,
   const Int&                   nlevi,
-  const uview_1d<const Spack>& thetal,
-  const uview_1d<const Spack>& qw,
-  const uview_1d<const Spack>& w_field,
-  const uview_1d<const Spack>& thl_sec,
-  const uview_1d<const Spack>& qw_sec,
+  const uview_1d<const Pack>& thetal,
+  const uview_1d<const Pack>& qw,
+  const uview_1d<const Pack>& w_field,
+  const uview_1d<const Pack>& thl_sec,
+  const uview_1d<const Pack>& qw_sec,
   const Scalar&                dtime,
   const bool&                  extra_diags,
-  const uview_1d<const Spack>& wthl_sec,
-  const uview_1d<const Spack>& w_sec,
-  const uview_1d<const Spack>& wqw_sec,
-  const uview_1d<const Spack>& qwthl_sec,
-  const uview_1d<const Spack>& w3,
-  const uview_1d<const Spack>& pres,
-  const uview_1d<const Spack>& zt_grid,
-  const uview_1d<const Spack>& zi_grid,
+  const uview_1d<const Pack>& wthl_sec,
+  const uview_1d<const Pack>& w_sec,
+  const uview_1d<const Pack>& wqw_sec,
+  const uview_1d<const Pack>& qwthl_sec,
+  const uview_1d<const Pack>& w3,
+  const uview_1d<const Pack>& pres,
+  const uview_1d<const Pack>& zt_grid,
+  const uview_1d<const Pack>& zi_grid,
   const Workspace&             workspace,
-  const uview_1d<Spack>&       shoc_cond,
-  const uview_1d<Spack>&       shoc_evap,
-  const uview_1d<Spack>&       shoc_cldfrac,
-  const uview_1d<Spack>&       shoc_ql,
-  const uview_1d<Spack>&       wqls,
-  const uview_1d<Spack>&       wthv_sec,
-  const uview_1d<Spack>&       shoc_ql2)
+  const uview_1d<Pack>&       shoc_cond,
+  const uview_1d<Pack>&       shoc_evap,
+  const uview_1d<Pack>&       shoc_cldfrac,
+  const uview_1d<Pack>&       shoc_ql,
+  const uview_1d<Pack>&       wqls,
+  const uview_1d<Pack>&       wthv_sec,
+  const uview_1d<Pack>&       shoc_ql2)
 {
   // Define temporary variables
-  uview_1d<Spack> wthl_sec_zt, wqw_sec_zt, w3_zt,
+  uview_1d<Pack> wthl_sec_zt, wqw_sec_zt, w3_zt,
                   thl_sec_zt, qwthl_sec_zt, qw_sec_zt;
   workspace.template take_many_contiguous_unsafe<6>(
     {"wthl_sec_zt", "wqw_sec_zt", "w3_zt",
@@ -93,7 +93,7 @@ void Functions<S,D>::shoc_assumed_pdf(
 
   // The following is morally a const var, but there are issues with
   // gnu and std=c++14. The macro ConstExceptGnu is defined in ekat_kokkos_types.hpp.
-  ConstExceptGnu Int nlev_pack = ekat::npack<Spack>(nlev);
+  ConstExceptGnu Int nlev_pack = ekat::npack<Pack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     // Initialize cloud variables to zero
     shoc_cldfrac(k) = 0;
@@ -120,17 +120,17 @@ void Functions<S,D>::shoc_assumed_pdf(
     const auto sqrtqt = ekat::max(rt_tol,ekat::sqrt(qwsec));
 
     // Find parameters for vertical velocity
-    Spack Skew_w, w1_1, w1_2, w2_1, w2_2, a;
+    Pack Skew_w, w1_1, w1_2, w2_1, w2_2, a;
     shoc_assumed_pdf_vv_parameters(w_first, w2sec, w3var, w_tol_sqd, Skew_w, w1_1, w1_2, w2_1, w2_2, a);
 
     // Find parameters for thetal
-    Spack thl1_1, thl1_2, thl2_1, thl2_2, sqrtthl2_1, sqrtthl2_2;
+    Pack thl1_1, thl1_2, thl2_1, thl2_2, sqrtthl2_1, sqrtthl2_2;
     shoc_assumed_pdf_thl_parameters(wthlsec,sqrtw2,sqrtthl,thlsec,thl_first,w1_1,w1_2,Skew_w,a,
                                     thl_tol, w_thresh,
                                     thl1_1, thl1_2, thl2_1, thl2_2, sqrtthl2_1, sqrtthl2_2);
 
     // Find parameters for total water mixing ratio
-    Spack qw1_1, qw1_2, qw2_1, qw2_2, sqrtqw2_1, sqrtqw2_2;
+    Pack qw1_1, qw1_2, qw2_1, qw2_2, sqrtqw2_1, sqrtqw2_2;
     shoc_assumed_pdf_qw_parameters(wqwsec, sqrtw2, Skew_w, sqrtqt, qwsec, w1_2, w1_1, qw_first, a,
                                    rt_tol, w_thresh,
                                    qw1_1, qw1_2, qw2_1, qw2_2, sqrtqw2_1, sqrtqw2_2);
@@ -140,22 +140,22 @@ void Functions<S,D>::shoc_assumed_pdf(
     shoc_assumed_pdf_tilde_to_real(w_first, sqrtw2, w1_2);
 
      // Find within-plume correlations.
-      Spack r_qwthl_1;
+      Pack r_qwthl_1;
       shoc_assumed_pdf_inplume_correlations(sqrtqw2_1, sqrtthl2_1, a, sqrtqw2_2, sqrtthl2_2, qwthlsec,
                                             qw1_1, qw_first, thl1_1, thl_first, qw1_2, thl1_2,
                                             r_qwthl_1);
 
       // Begin to compute cloud property statistics
-      Spack Tl1_1, Tl1_2;
+      Pack Tl1_1, Tl1_2;
       shoc_assumed_pdf_compute_temperature(thl1_1,pval, Tl1_1);
       shoc_assumed_pdf_compute_temperature(thl1_2,pval, Tl1_2);
 
-      const auto index_range = ekat::range<IntSmallPack>(k*Spack::n);
-      const Smask active_entries = (index_range < nlev);
+      const auto index_range = ekat::range<IntSmallPack>(k*Pack::n);
+      const Mask active_entries = (index_range < nlev);
 
       // Do NaN Checking here
-      const Smask is_nan_Tl1_1 = isnan(Tl1_1) && active_entries;
-      const Smask is_nan_Tl1_2 = isnan(Tl1_2) && active_entries;
+      const Mask is_nan_Tl1_1 = isnan(Tl1_1) && active_entries;
+      const Mask is_nan_Tl1_2 = isnan(Tl1_2) && active_entries;
       if (is_nan_Tl1_1.any() || is_nan_Tl1_2.any()) {
         Kokkos::printf("WARNING: NaN Detected in Tl1_1 or Tl1_2!\n");
         for (int i=0; i<is_nan_Tl1_1.n; i++) {
@@ -180,8 +180,8 @@ void Functions<S,D>::shoc_assumed_pdf(
       }
 
       // Check to ensure Tl1_1 and Tl1_2 are not excessively small, set to threshold value if so.
-      const Smask is_small_Tl1_1 = (Tl1_1 <= Tl_min) && active_entries;
-      const Smask is_small_Tl1_2 = (Tl1_2 <= Tl_min) && active_entries;
+      const Mask is_small_Tl1_1 = (Tl1_1 <= Tl_min) && active_entries;
+      const Mask is_small_Tl1_2 = (Tl1_2 <= Tl_min) && active_entries;
       if( is_small_Tl1_1.any() ) {
         Tl1_1.set(is_small_Tl1_1,Tl_min);
         int n_mask = 0;
@@ -204,13 +204,13 @@ void Functions<S,D>::shoc_assumed_pdf(
       }
 
       // Compute qs and beta
-      Spack qs1, qs2, beta1, beta2;
+      Pack qs1, qs2, beta1, beta2;
       shoc_assumed_pdf_compute_qs(Tl1_1, Tl1_2, pval, active_entries, qs1, beta1, qs2, beta2);
 
       // Cloud computations
 
       // Compute s terms.
-      Spack s1, std_s1, qn1, C1, ql1, s2, std_s2, qn2, C2, ql2;
+      Pack s1, std_s1, qn1, C1, ql1, s2, std_s2, qn2, C2, ql2;
 
       // First plume
       shoc_assumed_pdf_compute_s(qw1_1, qs1, beta1, pval, thl2_1, qw2_1,
@@ -219,7 +219,7 @@ void Functions<S,D>::shoc_assumed_pdf(
 
       // Second plume
       // Only compute variables of the second plume if the two plumes are not equal
-      const Smask equal(qw1_1==qw1_2 && thl2_1==thl2_2 && qs1==qs2);
+      const Mask equal(qw1_1==qw1_2 && thl2_1==thl2_2 && qs1==qs2);
       std_s2.set(equal, std_s1);
       s2.set(equal, s1);
       C2.set(equal, C1);

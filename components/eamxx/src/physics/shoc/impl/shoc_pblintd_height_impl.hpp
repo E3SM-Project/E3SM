@@ -20,14 +20,14 @@ void Functions<S,D>::pblintd_height(
   const MemberType& team,
   const Int& nlev,
   const Int& npbl,
-  const uview_1d<const Spack>& z,
-  const uview_1d<const Spack>& u,
-  const uview_1d<const Spack>& v,
+  const uview_1d<const Pack>& z,
+  const uview_1d<const Pack>& u,
+  const uview_1d<const Pack>& v,
   const Scalar& ustar,
-  const uview_1d<const Spack>& thv,
+  const uview_1d<const Pack>& thv,
   const Scalar& thv_ref,
   Scalar& pblh,
-  const uview_1d<Spack>& rino,
+  const uview_1d<Pack>& rino,
   bool& check)
 {
   if (!check)
@@ -52,17 +52,17 @@ void Functions<S,D>::pblintd_height(
   if (lower_indx >= upper_indx) {
     return;
   }
-  const Int lower_pack_indx = lower_indx/Spack::n;
-  const Int upper_pack_indx = upper_indx/Spack::n;
+  const Int lower_pack_indx = lower_indx/Pack::n;
+  const Int upper_pack_indx = upper_indx/Pack::n;
 
   // Compute rino values and find max index k s.t. rino(k) >= ricr
   Int max_indx = Kokkos::reduction_identity<Int>::max();
   Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, lower_pack_indx, upper_pack_indx+1),
                           [&] (const Int& k, Int& local_max) {
-    auto indices_pack = ekat::range<IntSmallPack>(k*Spack::n);
+    auto indices_pack = ekat::range<IntSmallPack>(k*Pack::n);
     const auto in_range = (indices_pack < nlev-1 && indices_pack >= nlev-npbl);
 
-    Spack vvk(0);
+    Pack vvk(0);
     vvk.set(in_range,
             ekat::max(tiny,
                       ekat::square(u(k) - s_u(nlev-1)) +

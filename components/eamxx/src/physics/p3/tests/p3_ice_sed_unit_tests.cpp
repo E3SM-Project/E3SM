@@ -84,23 +84,23 @@ void run_bfb_calc_bulk_rhime()
 
   // Calc bulk rime from a kernel and copy results back to host
   Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-    const Int offset = i * Spack::n;
+    const Int offset = i * Pack::n;
 
     // Init pack inputs
-    Spack qi_tot, qi_rim, bi_rim;
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    Pack qi_tot, qi_rim, bi_rim;
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       qi_tot[s] = cbrr_device(vs).qi_tot;
       qi_rim[s] = cbrr_device(vs).qi_rim;
       bi_rim[s] = cbrr_device(vs).bi_rim;
     }
 
-    Smask gt_small(qi_tot > qsmall);
-    Spack rho_rime = Functions::calc_bulk_rho_rime(
+    Mask gt_small(qi_tot > qsmall);
+    Pack rho_rime = Functions::calc_bulk_rho_rime(
         qi_tot, qi_rim, bi_rim, p3::Functions<Real, DefaultDevice>::P3Runtime(),
         gt_small);
 
     // Copy results back into views
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       cbrr_device(vs).qi_rim   = qi_rim[s];
       cbrr_device(vs).bi_rim   = bi_rim[s];
       cbrr_device(vs).rho_rime = rho_rime[s];

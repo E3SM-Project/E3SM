@@ -53,7 +53,7 @@ void run_phys()
     const auto lrho = repack<PS>(rho), linv_rho = repack<PS>(inv_rho), linv_dz = repack<PS>(inv_dz);
 
     Kokkos::Array<view_1d<Pack>, nfield> flux, V, r;
-    Kokkos::Array<uview_1d<Spack>, nfield> lflux, lV, lr;
+    Kokkos::Array<uview_1d<Pack>, nfield> lflux, lV, lr;
     const auto init_array = [&] (const std::string& /* name */, const Int& i, decltype(flux)& f,
                                  decltype(lflux)& lf) {
       f[i] = view_1d<Pack>("f", npack);

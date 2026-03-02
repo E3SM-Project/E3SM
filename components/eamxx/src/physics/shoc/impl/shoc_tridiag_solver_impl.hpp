@@ -13,9 +13,9 @@ KOKKOS_FUNCTION
 void Functions<S,D>::vd_shoc_decomp(
   const MemberType&            team,
   const Int&                   nlev,
-  const uview_1d<const Spack>& kv_term,
-  const uview_1d<const Spack>& tmpi,
-  const uview_1d<const Spack>& rdp_zt,
+  const uview_1d<const Pack>& kv_term,
+  const uview_1d<const Pack>& tmpi,
+  const uview_1d<const Pack>& rdp_zt,
   const Scalar&                dtime,
   const Scalar&                flux,
   const uview_1d<Scalar>&       du,
@@ -27,23 +27,23 @@ void Functions<S,D>::vd_shoc_decomp(
   const auto skv_term = scalarize(kv_term);
   const auto stmpi = scalarize(tmpi);
 
-  const Int nlev_pack = ekat::npack<Spack>(nlev);
+  const Int nlev_pack = ekat::npack<Pack>(nlev);
 
   // Compute entries of the tridiagonal system
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
 
     // Compute local diagonals
-    Spack du_k, dl_k, d_k;
+    Pack du_k, dl_k, d_k;
 
     // Compute shift of kv_term and tmpi
-    Spack kv_term_k, kv_term_kp1, tmpi_k, tmpi_kp1;
-    const auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
+    Pack kv_term_k, kv_term_kp1, tmpi_k, tmpi_kp1;
+    const auto range_pack = ekat::range<IntSmallPack>(k*Pack::n);
 
     // Original code was: auto shift_range = range_pack; but that caused mysterious test
     // failures on blake.
     IntSmallPack shift_range;
     vector_simd
-    for (int s = 0; s < Spack::n; ++s) {
+    for (int s = 0; s < Pack::n; ++s) {
       shift_range[s] = range_pack[s];
     }
 
@@ -67,7 +67,7 @@ void Functions<S,D>::vd_shoc_decomp(
     d_k.set(range_pack == nlev-1, d_k + flux*dtime*ggr*rdp_zt(k));
 
     // Diagonals must be scalar in nlev.
-    for (Int p=0; p<Spack::n && range_pack[p]<nlev; ++p) {
+    for (Int p=0; p<Pack::n && range_pack[p]<nlev; ++p) {
       du(range_pack[p]) = du_k[p];
       dl(range_pack[p]) = dl_k[p];
       d (range_pack[p]) = d_k [p];
@@ -82,7 +82,7 @@ void Functions<S,D>::vd_shoc_solve(
   const uview_1d<Scalar>& du,
   const uview_1d<Scalar>& dl,
   const uview_1d<Scalar>& d,
-  const uview_2d<Spack>&  var)
+  const uview_2d<Pack>&  var)
 {
 #ifdef EKAT_DEFAULT_BFB
   ekat::tridiag::bfb(team, dl, d, du, var);

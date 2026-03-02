@@ -15,22 +15,22 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::back_to_cell_average(
-  const Spack& cld_frac_l, const Spack& cld_frac_r,
-  const Spack& cld_frac_i, Spack& qc2qr_accret_tend, Spack& qr2qv_evap_tend,
-  Spack& qc2qr_autoconv_tend, Spack& nc_accret_tend, Spack& nc_selfcollect_tend,
-  Spack& nc2nr_autoconv_tend, Spack& nr_selfcollect_tend, Spack& nr_evap_tend,
-  Spack& ncautr,
-  Spack& qi2qv_sublim_tend, Spack& nr_ice_shed_tend, Spack& qc2qi_hetero_freeze_tend,
-  Spack& qr2qi_collect_tend, Spack& qc2qr_ice_shed_tend, Spack& qi2qr_melt_tend,
-  Spack& qc2qi_collect_tend, Spack& qr2qi_immers_freeze_tend, Spack& ni2nr_melt_tend,
-  Spack& nc_collect_tend, Spack& ncshdc, Spack& nc2ni_immers_freeze_tend,
-  Spack& nr_collect_tend, Spack& ni_selfcollect_tend, Spack& qv2qi_vapdep_tend,
-  Spack& nr2ni_immers_freeze_tend, Spack& ni_sublim_tend, Spack& qv2qi_nucleat_tend,
-  Spack& ni_nucleat_tend, Spack& qc2qi_berg_tend,
-  Spack& ncheti_cnt, Spack& qcheti_cnt, Spack& nicnt, Spack& qicnt, Spack& ninuc_cnt,
-  Spack& qinuc_cnt, const Smask& context, const P3Runtime& runtime_options)
+  const Pack& cld_frac_l, const Pack& cld_frac_r,
+  const Pack& cld_frac_i, Pack& qc2qr_accret_tend, Pack& qr2qv_evap_tend,
+  Pack& qc2qr_autoconv_tend, Pack& nc_accret_tend, Pack& nc_selfcollect_tend,
+  Pack& nc2nr_autoconv_tend, Pack& nr_selfcollect_tend, Pack& nr_evap_tend,
+  Pack& ncautr,
+  Pack& qi2qv_sublim_tend, Pack& nr_ice_shed_tend, Pack& qc2qi_hetero_freeze_tend,
+  Pack& qr2qi_collect_tend, Pack& qc2qr_ice_shed_tend, Pack& qi2qr_melt_tend,
+  Pack& qc2qi_collect_tend, Pack& qr2qi_immers_freeze_tend, Pack& ni2nr_melt_tend,
+  Pack& nc_collect_tend, Pack& ncshdc, Pack& nc2ni_immers_freeze_tend,
+  Pack& nr_collect_tend, Pack& ni_selfcollect_tend, Pack& qv2qi_vapdep_tend,
+  Pack& nr2ni_immers_freeze_tend, Pack& ni_sublim_tend, Pack& qv2qi_nucleat_tend,
+  Pack& ni_nucleat_tend, Pack& qc2qi_berg_tend,
+  Pack& ncheti_cnt, Pack& qcheti_cnt, Pack& nicnt, Pack& qicnt, Pack& ninuc_cnt,
+  Pack& qinuc_cnt, const Mask& context, const P3Runtime& runtime_options)
 {
-  Spack ir_cldm, il_cldm, lr_cldm, cld_frac_glaciated;
+  Pack ir_cldm, il_cldm, lr_cldm, cld_frac_glaciated;
   ir_cldm = min(cld_frac_i,cld_frac_r); // Intersection of ICE and RAIN cloud
   il_cldm = min(cld_frac_i,cld_frac_l); // Intersection of ICE and LIQUID cloud
   lr_cldm = min(cld_frac_l,cld_frac_r); // Intersection of LIQUID and RAIN cloud

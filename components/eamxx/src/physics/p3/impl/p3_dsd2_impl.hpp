@@ -15,9 +15,9 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::
 get_cloud_dsd2(
-  const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
-  const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1,
-  const Smask& context)
+  const Pack& qc, Pack& nc, Pack& mu_c, const Pack& rho, Pack& nu,
+  const view_dnu_table& dnu, Pack& lamc, Pack& cdist, Pack& cdist1,
+  const Mask& context)
 {
   lamc.set(context   , 0);
   cdist.set(context  , 0);
@@ -33,7 +33,7 @@ get_cloud_dsd2(
     constexpr Scalar cons1  = C::CONS1;
     // set minimum nc to prevent floating point error
     {
-      Spack mu_c_local;
+      Pack mu_c_local;
       nc.set(qc_gt_small, max(nc, nsmall));
       mu_c_local = sp(0.0005714)*(nc * sp(1.e-6) * rho) + sp(0.2714);
       mu_c_local = 1/(mu_c_local * mu_c_local) - 1;
@@ -46,21 +46,21 @@ get_cloud_dsd2(
     // interpolate for mass distribution spectral shape parameter (for SB warm processes)
     if (P3C::iparam == 1) {
       IntSmallPack dumi = IntSmallPack(mu_c) - 1;
-      Spack dnu0, dnu1;
+      Pack dnu0, dnu1;
       ekat::index_and_shift<1>(dnu, dumi, dnu0, dnu1);
-      nu.set(qc_gt_small, dnu0 + (dnu1 - dnu0) * (mu_c - Spack(dumi) - 1));
+      nu.set(qc_gt_small, dnu0 + (dnu1 - dnu0) * (mu_c - Pack(dumi) - 1));
     }
 
     // calculate lamc
     lamc.set(qc_gt_small, cbrt(cons1 * nc * (mu_c + 3) * (mu_c + 2) * (mu_c + 1) / qc));
 
     // apply lambda limiters
-    Spack lammin = (mu_c + 1)*sp(2.5e+4); // min: 40 micron mean diameter
-    Spack lammax = (mu_c + 1)*sp(1.e+6);   // max:  1 micron mean diameter
+    Pack lammin = (mu_c + 1)*sp(2.5e+4); // min: 40 micron mean diameter
+    Pack lammax = (mu_c + 1)*sp(1.e+6);   // max:  1 micron mean diameter
 
-    Smask lamc_lt_min = lamc < lammin && qc_gt_small;
-    Smask lamc_gt_max = lamc > lammax && qc_gt_small;
-    Smask min_or_max = lamc_lt_min || lamc_gt_max;
+    Mask lamc_lt_min = lamc < lammin && qc_gt_small;
+    Mask lamc_gt_max = lamc > lammax && qc_gt_small;
+    Mask min_or_max = lamc_lt_min || lamc_gt_max;
     lamc.set(lamc_lt_min, lammin);
     lamc.set(lamc_gt_max, lammax);
 
@@ -75,10 +75,10 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::
 get_rain_dsd2 (
-  const Spack& qr, Spack& nr, Spack& mu_r,
-  Spack& lamr,
+  const Pack& qr, Pack& nr, Pack& mu_r,
+  Pack& lamr,
   const P3Runtime& runtime_options,
-  const Smask& context)
+  const Mask& context)
 {
   constexpr auto nsmall = C::NSMALL;
   constexpr auto qsmall = C::QSMALL;
@@ -129,9 +129,9 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::
 get_cdistr_logn0r (
-  const Spack& qr, const Spack& nr, const Spack& mu_r,
-  const Spack& lamr, Spack& cdistr, Spack& logn0r,
-  const Smask& context)
+  const Pack& qr, const Pack& nr, const Pack& mu_r,
+  const Pack& lamr, Pack& cdistr, Pack& logn0r,
+  const Mask& context)
 {
   constexpr auto qsmall = C::QSMALL;
 

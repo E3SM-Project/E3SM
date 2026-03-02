@@ -14,9 +14,9 @@ void Functions<S,D>
 ::integ_column_stability(
   const MemberType&            team,
   const Int&                   nlev,
-  const uview_1d<const Spack>& dz_zt,
-  const uview_1d<const Spack>& pres,
-  const uview_1d<const Spack>& brunt,
+  const uview_1d<const Pack>& dz_zt,
+  const uview_1d<const Pack>& pres,
+  const uview_1d<const Pack>& brunt,
   Scalar&                      brunt_int)
 {
   using RU = ekat::ReductionUtils<typename KT::ExeSpace>;
@@ -25,12 +25,12 @@ void Functions<S,D>
   static constexpr Scalar troppres = 80000;
 
   brunt_int = RU::view_reduction(team,0,nlev,
-                                 [&] (const int k) -> Spack {
+                                 [&] (const int k) -> Pack {
 
     //calculate only when pressure is > troposphere pressure
     auto press_gt_troppress = (pres(k) > troppres);
 
-    Spack return_val(0); //initialize return value for brunt_int
+    Pack return_val(0); //initialize return value for brunt_int
     return_val.set(press_gt_troppress, dz_zt(k) * brunt(k));// compute brunt_int for each column
 
     return return_val ;

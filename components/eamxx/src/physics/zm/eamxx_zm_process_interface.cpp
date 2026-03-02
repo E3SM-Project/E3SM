@@ -30,7 +30,7 @@ void ZMDeepConvection::create_requests ()
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  constexpr int pack_size = Spack::n;
+  constexpr int pack_size = Pack::n;
 
   // Gather runtime options from file
   zm_opts.load_runtime_options(m_params);
@@ -140,7 +140,7 @@ void ZMDeepConvection::initialize_impl (const RunType)
 /*------------------------------------------------------------------------------------------------*/
 void ZMDeepConvection::run_impl (const double dt)
 {
-  const int nlev_mid_packs   = ekat::npack<Spack>(m_nlev);
+  const int nlev_mid_packs   = ekat::npack<Pack>(m_nlev);
 
   // calculate_z_int() contains a team-level parallel_scan, which requires a special policy
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
@@ -154,22 +154,22 @@ void ZMDeepConvection::run_impl (const double dt)
 
   // variables not updated by ZM
   const auto& phis        = get_field_in("phis")          .get_view<const Real*>();
-  const auto& p_mid       = get_field_in("p_mid")         .get_view<const Spack**>();
-  const auto& p_int       = get_field_in("p_int")         .get_view<const Spack**>();
-  const auto& p_del       = get_field_in("pseudo_density").get_view<const Spack**>();
-  const auto& omega       = get_field_in("omega")         .get_view<const Spack**>();
-  const auto& cldfrac     = get_field_in("cldfrac_tot")   .get_view<const Spack**>();
+  const auto& p_mid       = get_field_in("p_mid")         .get_view<const Pack**>();
+  const auto& p_int       = get_field_in("p_int")         .get_view<const Pack**>();
+  const auto& p_del       = get_field_in("pseudo_density").get_view<const Pack**>();
+  const auto& omega       = get_field_in("omega")         .get_view<const Pack**>();
+  const auto& cldfrac     = get_field_in("cldfrac_tot")   .get_view<const Pack**>();
   const auto& pblh        = get_field_in("pbl_height")    .get_view<const Real*>();
   const auto& landfrac    = get_field_in("landfrac")      .get_view<const Real*>();
-  const auto& thl_sec     = get_field_in("thl_sec")       .get_view<const Spack**>();
-  const auto& qc          = get_field_in("qc")            .get_view<const Spack**>();
+  const auto& thl_sec     = get_field_in("thl_sec")       .get_view<const Pack**>();
+  const auto& qc          = get_field_in("qc")            .get_view<const Pack**>();
 
   // variables updated by ZM
-  const auto& T_mid       = get_field_out("T_mid")        .get_view<Spack**>();
-  const auto& qv          = get_field_out("qv")           .get_view<Spack**>();
+  const auto& T_mid       = get_field_out("T_mid")        .get_view<Pack**>();
+  const auto& qv          = get_field_out("qv")           .get_view<Pack**>();
   const auto& hwinds_fld  = get_field_out("horiz_winds");
-  const auto& uwind       = hwinds_fld.get_component(0)   .get_view<Spack**>();
-  const auto& vwind       = hwinds_fld.get_component(1)   .get_view<Spack**>();
+  const auto& uwind       = hwinds_fld.get_component(0)   .get_view<Pack**>();
+  const auto& vwind       = hwinds_fld.get_component(1)   .get_view<Pack**>();
 
   const auto& precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real*>();
   const auto& precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real*>();
@@ -288,10 +288,10 @@ void ZMDeepConvection::run_impl (const double dt)
   });
 
   // 3D output (vertically resolved)
-  const auto& zm_T_mid_tend = get_field_out("zm_T_mid_tend")  .get_view<Spack**>();
-  const auto& zm_qv_tend    = get_field_out("zm_qv_tend")     .get_view<Spack**>();
-  const auto& zm_u_tend     = get_field_out("zm_u_tend")      .get_view<Spack**>();
-  const auto& zm_v_tend     = get_field_out("zm_v_tend")      .get_view<Spack**>();
+  const auto& zm_T_mid_tend = get_field_out("zm_T_mid_tend")  .get_view<Pack**>();
+  const auto& zm_qv_tend    = get_field_out("zm_qv_tend")     .get_view<Pack**>();
+  const auto& zm_u_tend     = get_field_out("zm_u_tend")      .get_view<Pack**>();
+  const auto& zm_v_tend     = get_field_out("zm_v_tend")      .get_view<Pack**>();
   Kokkos::parallel_for("zm_update_precip",KT::RangePolicy(0, m_ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int idx) {
     const int i = idx/nlev_mid_packs;
     const int k = idx%nlev_mid_packs;
@@ -313,19 +313,19 @@ void ZMDeepConvection::finalize_impl ()
 
 size_t ZMDeepConvection::requested_buffer_size_in_bytes() const
 {
-  const int nlev_mid_packs = ekat::npack<Spack>(m_nlev);
-  const int nlev_int_packs = ekat::npack<Spack>(m_nlev+1);
+  const int nlev_mid_packs = ekat::npack<Pack>(m_nlev);
+  const int nlev_int_packs = ekat::npack<Pack>(m_nlev+1);
   size_t zm_buffer_size = 0;
 
   zm_buffer_size+= ZMF::ZmInputState::num_1d_intgr * sizeof(Int)   * m_ncol;
   zm_buffer_size+= ZMF::ZmInputState::num_1d_scalr * sizeof(Scalar)* m_ncol;
-  zm_buffer_size+= ZMF::ZmInputState::num_2d_midlv * sizeof(Spack) * m_ncol * nlev_mid_packs;
-  zm_buffer_size+= ZMF::ZmInputState::num_2d_intfc * sizeof(Spack) * m_ncol * nlev_int_packs;
+  zm_buffer_size+= ZMF::ZmInputState::num_2d_midlv * sizeof(Pack) * m_ncol * nlev_mid_packs;
+  zm_buffer_size+= ZMF::ZmInputState::num_2d_intfc * sizeof(Pack) * m_ncol * nlev_int_packs;
 
   zm_buffer_size+= ZMF::ZmOutputTend::num_1d_intgr * sizeof(Int)   * m_ncol;
   zm_buffer_size+= ZMF::ZmOutputTend::num_1d_scalr * sizeof(Scalar)* m_ncol;
-  zm_buffer_size+= ZMF::ZmOutputTend::num_2d_midlv * sizeof(Spack) * m_ncol * nlev_mid_packs;
-  zm_buffer_size+= ZMF::ZmOutputTend::num_2d_intfc * sizeof(Spack) * m_ncol * nlev_int_packs;
+  zm_buffer_size+= ZMF::ZmOutputTend::num_2d_midlv * sizeof(Pack) * m_ncol * nlev_mid_packs;
+  zm_buffer_size+= ZMF::ZmOutputTend::num_2d_intfc * sizeof(Pack) * m_ncol * nlev_int_packs;
 
   int num_f_mid  = (9+6);
   int num_f_int  = (2+3);
@@ -342,8 +342,8 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   auto buffer_chk = ( buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes() );
   EKAT_REQUIRE_MSG(buffer_chk,"Error! Buffers size not sufficient.\n");
 
-  const int nlev_mid_packs = ekat::npack<Spack>(m_nlev);
-  const int nlev_int_packs = ekat::npack<Spack>(m_nlev+1);
+  const int nlev_mid_packs = ekat::npack<Pack>(m_nlev);
+  const int nlev_int_packs = ekat::npack<Pack>(m_nlev+1);
 
   constexpr auto num_1d_intgr = ZMF::ZmInputState::num_1d_intgr + ZMF::ZmOutputTend::num_1d_intgr;
   constexpr auto num_1d_scalr = ZMF::ZmInputState::num_1d_scalr + ZMF::ZmOutputTend::num_1d_scalr;
@@ -416,14 +416,14 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
     r_mem += v->size();
   }
   //----------------------------------------------------------------------------
-  Spack* spk_mem = reinterpret_cast<Spack*>(r_mem);
+  Pack* spk_mem = reinterpret_cast<Pack*>(r_mem);
   // ***************************************************************************
   // TEMPORARY
   // ***************************************************************************
-  // Spack* spk_mem = reinterpret_cast<Spack*>(scl_mem);
+  // Pack* spk_mem = reinterpret_cast<Pack*>(scl_mem);
   //----------------------------------------------------------------------------
   // device 2D views on mid-point levels
-  ZMF::uview_2d<Spack>* ptrs_2d_midlv[num_2d_midlv]           = { &zm_input.z_mid,
+  ZMF::uview_2d<Pack>* ptrs_2d_midlv[num_2d_midlv]           = { &zm_input.z_mid,
                                                                   &zm_input.z_del,
                                                                   &zm_output.tend_t,
                                                                   &zm_output.tend_qv,
@@ -433,18 +433,18 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                   &zm_output.snow_prod,
                                                                 };
   for (auto& v : ptrs_2d_midlv) {
-    *v = ZMF::uview_2d<Spack>(spk_mem, m_ncol, nlev_mid_packs);
+    *v = ZMF::uview_2d<Pack>(spk_mem, m_ncol, nlev_mid_packs);
     spk_mem += v->size();
   }
   //----------------------------------------------------------------------------
   // device 2D views on interface levels
-  ZMF::uview_2d<Spack>* ptrs_2d_intfc[num_2d_intfc]           = { &zm_input.z_int,
+  ZMF::uview_2d<Pack>* ptrs_2d_intfc[num_2d_intfc]           = { &zm_input.z_int,
                                                                   &zm_output.prec_flux,
                                                                   &zm_output.snow_flux,
                                                                   &zm_output.mass_flux,
                                                                 };
   for (auto& v : ptrs_2d_intfc) {
-    *v = ZMF::uview_2d<Spack>(spk_mem, m_ncol, nlev_int_packs);
+    *v = ZMF::uview_2d<Pack>(spk_mem, m_ncol, nlev_int_packs);
     spk_mem += v->size();
   }
   //----------------------------------------------------------------------------

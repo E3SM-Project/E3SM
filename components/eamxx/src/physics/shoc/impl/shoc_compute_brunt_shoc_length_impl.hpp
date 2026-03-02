@@ -12,19 +12,19 @@ void Functions<S,D>::compute_brunt_shoc_length(
   const MemberType&            team,
   const Int&                   nlev,
   const Int&                   nlevi,
-  const uview_1d<const Spack>& dz_zt,
-  const uview_1d<const Spack>& thv,
-  const uview_1d<const Spack>& thv_zi,
-  const uview_1d<Spack>&       brunt)
+  const uview_1d<const Pack>& dz_zt,
+  const uview_1d<const Pack>& thv,
+  const uview_1d<const Pack>& thv_zi,
+  const uview_1d<Pack>&       brunt)
 {
   const auto ggr = C::gravit.value;
   const auto s_thv_zi = scalarize(thv_zi);
 
-  const Int nlev_pack = ekat::npack<Spack>(nlev);
+  const Int nlev_pack = ekat::npack<Pack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     // Calculate thv_zi shift
-    Spack thv_zi_k, thv_zi_kp1;
-    auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
+    Pack thv_zi_k, thv_zi_kp1;
+    auto range_pack1 = ekat::range<IntSmallPack>(k*Pack::n);
     auto range_pack2 = range_pack1;
     range_pack2.set(range_pack1 >= (nlevi-1), nlevi-2);
     ekat::index_and_shift<1>(s_thv_zi, range_pack2, thv_zi_k, thv_zi_kp1);

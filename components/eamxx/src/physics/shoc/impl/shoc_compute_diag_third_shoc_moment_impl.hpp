@@ -15,21 +15,21 @@ void Functions<S,D>
   const Int& nlevi,
   const Scalar& c_diag_3rd_mom,
   const bool& shoc_1p5tke,
-  const uview_1d<const Spack>& w_sec,
-  const uview_1d<const Spack>& thl_sec,
-  const uview_1d<const Spack>& wthl_sec,
-  const uview_1d<const Spack>& tke,
-  const uview_1d<const Spack>& dz_zt,
-  const uview_1d<const Spack>& dz_zi,
-  const uview_1d<const Spack>& isotropy_zi,
-  const uview_1d<const Spack>& brunt_zi,
-  const uview_1d<const Spack>& w_sec_zi,
-  const uview_1d<const Spack>& thetal_zi,
-  const uview_1d<Spack>& w3)
+  const uview_1d<const Pack>& w_sec,
+  const uview_1d<const Pack>& thl_sec,
+  const uview_1d<const Pack>& wthl_sec,
+  const uview_1d<const Pack>& tke,
+  const uview_1d<const Pack>& dz_zt,
+  const uview_1d<const Pack>& dz_zi,
+  const uview_1d<const Pack>& isotropy_zi,
+  const uview_1d<const Pack>& brunt_zi,
+  const uview_1d<const Pack>& w_sec_zi,
+  const uview_1d<const Pack>& thetal_zi,
+  const uview_1d<Pack>& w3)
 {
   const auto ggr = C::gravit.value;
 
-  const Int nlev_pack = ekat::npack<Spack>(nlev);
+  const Int nlev_pack = ekat::npack<Pack>(nlev);
 
   // Scalarize views for shifts and single entry access
   const auto s_dz_zt = scalarize(dz_zt);
@@ -54,14 +54,14 @@ void Functions<S,D>
     const Scalar a5 = sp(0.6)/(c_diag_3rd_mom*(3+5*c_diag_3rd_mom));
 
     // Calculate shifts
-    Spack
+    Pack
       dz_zt_k,    dz_zt_km1,
       wthl_sec_k, wthl_sec_km1, wthl_sec_kp1,
       thl_sec_k,  thl_sec_km1,  thl_sec_kp1,
       w_sec_k,    w_sec_km1,
       tke_k,      tke_km1;
 
-    auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
+    auto range_pack = ekat::range<IntSmallPack>(k*Pack::n);
     auto range_pack_m1 = range_pack;
     auto range_pack_m2 = range_pack;
     // index for _km1 should never go below 0
@@ -96,10 +96,10 @@ void Functions<S,D>
         const auto bet2      = ggr/thetal_zi(k);
 
         // Compute f0 to f5 terms
-        const Spack thl_sec_diff = thl_sec_km1 - thl_sec_kp1;
-        const Spack wthl_sec_diff = wthl_sec_km1 - wthl_sec_kp1;
-        const Spack wsec_diff = w_sec_km1 - w_sec(k);
-        const Spack tke_diff = tke_km1 - tke(k);
+        const Pack thl_sec_diff = thl_sec_km1 - thl_sec_kp1;
+        const Pack wthl_sec_diff = wthl_sec_km1 - wthl_sec_kp1;
+        const Pack wsec_diff = w_sec_km1 - w_sec(k);
+        const Pack tke_diff = tke_km1 - tke(k);
 
         const auto f0 = thedz2*ekat::cube(bet2)*((iso*iso)*(iso*iso))*wthl_sec_k*thl_sec_diff;
         const auto f1 = thedz2*ekat::square(bet2)*ekat::cube(iso)*(wthl_sec_k*wthl_sec_diff+sp(0.5)*w_sec_zi(k)*thl_sec_diff);
@@ -109,15 +109,15 @@ void Functions<S,D>
         const auto f5 = thedz*iso*w_sec_zi(k)*wsec_diff;
 
         // Compute omega terms
-        const auto omega0 = a4/Spack(1-a5*buoy_sgs2);
+        const auto omega0 = a4/Pack(1-a5*buoy_sgs2);
         const auto omega1 = omega0/(2*c_diag_3rd_mom);
         const auto omega2 = omega1*f3+sp(5.0/4.0)*omega0*f4;
 
         // Compute the x0, y0, x1, y1 terms
-        const auto x0 = (a2*buoy_sgs2*(Spack(1)-a3*buoy_sgs2))/(Spack(1)-(a1+a3)*buoy_sgs2);
-        const auto y0 = (2*a2*buoy_sgs2*x0)/(Spack(1)-a3*buoy_sgs2);
-        const auto x1 = (a0*f0+a1*f1+a2*(Spack(1)-a3*buoy_sgs2)*f2)/(Spack(1)-(a1+a3)*buoy_sgs2);
-        const auto y1 = (2*a2*(buoy_sgs2*x1+(a0/a1)*f0+f1))/(Spack(1)-a3*buoy_sgs2);
+        const auto x0 = (a2*buoy_sgs2*(Pack(1)-a3*buoy_sgs2))/(Pack(1)-(a1+a3)*buoy_sgs2);
+        const auto y0 = (2*a2*buoy_sgs2*x0)/(Pack(1)-a3*buoy_sgs2);
+        const auto x1 = (a0*f0+a1*f1+a2*(Pack(1)-a3*buoy_sgs2)*f2)/(Pack(1)-(a1+a3)*buoy_sgs2);
+        const auto y1 = (2*a2*(buoy_sgs2*x1+(a0/a1)*f0+f1))/(Pack(1)-a3*buoy_sgs2);
 
         // Compute the aa0, aa1 terms
         const auto aa0 = omega0*x0+omega1*y0;
@@ -125,7 +125,7 @@ void Functions<S,D>
 
         // Finally, compute the third moment of w
         w3(k).set(active_range,
-                (aa1-sp(1.2)*x1-sp(1.5)*f5)/(Spack(c_diag_3rd_mom)-sp(1.2)*x0+aa0));
+                (aa1-sp(1.2)*x1-sp(1.5)*f5)/(Pack(c_diag_3rd_mom)-sp(1.2)*x0+aa0));
 		
       }
     }
