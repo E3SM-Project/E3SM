@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Build runtime configuration for EATM.
+"""Build runtime configuration for EMULATORATM.
 """
 
 import logging
@@ -30,7 +30,7 @@ def _create_atm_in(case, confdir, inst_string):
     domain_path = case.get_value("ATM_DOMAIN_PATH")
 
     with open(output_file, "w", encoding="utf-8") as f:
-        f.write("# EATM configuration\n")
+        f.write("# EMULATORATM configuration\n")
         f.write("mode: stub\n")
         f.write(f"grid: {grid}\n")
         f.write(f"nx: {case.get_value('ATM_NX')}\n")
@@ -40,15 +40,15 @@ def _create_atm_in(case, confdir, inst_string):
         elif domain_file:
             f.write(f"domain_file: {domain_file}\n")
 
-    logger.info("Generated EATM configuration: %s", output_file)
+    logger.info("Generated EMULATORATM configuration: %s", output_file)
     return output_file
 
 
 def buildnml(case, caseroot, compname):
     """ build the namelist """
-    if compname != "eatm":
+    if compname != "emulatoratm":
         raise AttributeError(
-            f"Expected compname 'eatm', got '{compname}'"
+            f"Expected compname 'emulatoratm', got '{compname}'"
         )
 
     rundir = case.get_value("RUNDIR")
@@ -62,7 +62,7 @@ def buildnml(case, caseroot, compname):
         os.makedirs(confdir)
 
     data_list_path = os.path.join(
-        caseroot, "Buildconf", "eatm.input_data_list")
+        caseroot, "Buildconf", "emulatoratm.input_data_list")
     if os.path.exists(data_list_path):
         os.remove(data_list_path)
 
@@ -90,7 +90,7 @@ def buildnml(case, caseroot, compname):
 def _main_func():
     caseroot = parse_input(sys.argv)
     with Case(caseroot) as case:
-        buildnml(case, caseroot, "eatm")
+        buildnml(case, caseroot, "emulatoratm")
 
 
 if __name__ == "__main__":

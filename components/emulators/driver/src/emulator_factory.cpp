@@ -38,7 +38,7 @@ void *emulator_create(const char *kind, const EmulatorCreateConfig *cfg) {
   }
 
   if (std::strcmp(kind, "atm") == 0) {
-    auto &atm = reg.create<emulator::EmulatorAtm>("eatm_" +
+    auto &atm = reg.create<emulator::EmulatorAtm>("emulatoratm_" +
                                                   std::to_string(cfg->comp_id));
     // Configure it
     atm.create_instance(cfg->f_comm, cfg->comp_id,

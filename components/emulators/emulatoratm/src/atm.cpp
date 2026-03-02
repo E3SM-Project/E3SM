@@ -18,7 +18,7 @@
 namespace emulator {
 
 EmulatorAtm::EmulatorAtm()
-    : Emulator(EmulatorType::ATM_COMP, -1, "eatm") {}
+    : Emulator(EmulatorType::ATM_COMP, -1, "emulatoratm") {}
 
 void EmulatorAtm::create_instance(int comm, int comp_id,
                                   const std::string &input_file,
@@ -177,7 +177,7 @@ void EmulatorAtm::final_impl() {
   // TODO: Finalize inference backend
 
   // TODO: Deallocate field storage
-  std::cout << "eatm c++ side ... bye!" << std::endl;
+  std::cout << "emulatoratm c++ side ... bye!" << std::endl;
 }
 
 // =========================================================================

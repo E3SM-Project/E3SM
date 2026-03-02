@@ -7,8 +7,8 @@
  * atmosphere-specific coupling, field management, and inference.
  */
 
-#ifndef EMULATOR_ATM_HPP
-#define EMULATOR_ATM_HPP
+#ifndef EMULATORATM_HPP
+#define EMULATORATM_HPP
 
 #include "emulator.hpp"
 #include "emulator_c_api.hpp"
@@ -132,4 +132,4 @@ private:
 
 } // namespace emulator
 
-#endif // EMULATOR_ATM_HPP
+#endif // EMULATORATM_HPP

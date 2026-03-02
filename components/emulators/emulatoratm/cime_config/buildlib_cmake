@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Build CIME component model library for EATM.
+Build CIME component model library for EMULATORATM.
 """
 
 import sys
@@ -21,9 +21,9 @@ from CIME.case import Case  # noqa: E402
 
 
 def buildlib(bldroot, libroot, case, compname=None):
-    """ Build the eatm component library """
+    """ Build the emulatoratm component library """
     if compname is None:
-        compname = "eatm"
+        compname = "emulatoratm"
 
     build_cime_component_lib(case, compname, libroot, bldroot)
 

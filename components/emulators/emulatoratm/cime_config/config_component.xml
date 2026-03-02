@@ -4,33 +4,33 @@
 
   <entry id="COMP_ATM">
      <type>char</type>
-     <valid_values>eatm</valid_values>
-     <default_value>eatm</default_value>
+     <valid_values>emulatoratm</valid_values>
+     <default_value>emulatoratm</default_value>
      <group>case_comp</group>
      <file>env_case.xml</file>
      <desc>Name of atm component</desc>
   </entry>
 
-  <entry id="EATM_MODE">
+  <entry id="EMULATORATM_MODE">
     <type>char</type>
     <valid_values>ACTIVE,NULL</valid_values>
     <default_value>ACTIVE</default_value>
     <values>
-      <value compset="_EATM.*">ACTIVE</value>
+      <value compset="_EMULATORATM.*">ACTIVE</value>
       <value grid="a%null">NULL</value>
     </values>
-    <group>build_component_eatm</group>
+    <group>build_component_emulatoratm</group>
     <file>env_build.xml</file>
-    <desc>mode for eatm model, NULL means eatm is turned off</desc>
+    <desc>mode for emulatoratm model, NULL means emulatoratm is turned off</desc>
   </entry>
 
   <description>
-    <desc compset="_EATM">EATM:</desc>
+    <desc compset="_EMULATORATM">EMULATORATM:</desc>
   </description>
 
   <help>
     =========================================
-    EATM naming conventions
+    EMULATORATM naming conventions
     =========================================
   </help>
 

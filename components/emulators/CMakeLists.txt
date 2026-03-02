@@ -31,5 +31,5 @@ endif()
 
 # Add subdirectories
 add_subdirectory(common)
-add_subdirectory(eatm)
+add_subdirectory(emulatoratm)
 add_subdirectory(driver)

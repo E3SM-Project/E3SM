@@ -1,30 +1,29 @@
 # Emulator Components build configuration
-# Handles all emulator components: EATM, EOCN
+# Handles all emulator components: EMULATORATM, EMULATOROCN
 # Similar pattern to build_eamxx.cmake
 
 function(build_emulator_comps)
 
   # Check if any emulator component is being built
-  set(EATM_FOUND FALSE)
-  set(EOCN_FOUND FALSE)
-  set(EICE_FOUND FALSE)
+  set(EMULATORATM_FOUND FALSE)
+  set(EMULATOROCN_FOUND FALSE)
 
-  if (COMP_NAMES MATCHES ".*eatm.*")
-    set(EATM_FOUND TRUE)
+  if (COMP_NAMES MATCHES ".*emulatoratm.*")
+    set(EMULATORATM_FOUND TRUE)
   endif()
-  if (COMP_NAMES MATCHES ".*eocn.*")
-    set(EOCN_FOUND TRUE)
+  if (COMP_NAMES MATCHES ".*emulatorocn.*")
+    set(EMULATOROCN_FOUND TRUE)
   endif()
 
 
   # Only proceed if at least one emulator component is used
-  if (EATM_FOUND OR EOCN_FOUND)
+  if (EMULATORATM_FOUND OR EMULATOROCN_FOUND)
     
     message(STATUS "")
     message(STATUS "=================================================================")
     message(STATUS "  Building Emulator Components Framework")
     message(STATUS "=================================================================")
-    message(STATUS "  Components: EATM=${EATM_FOUND} EOCN=${EOCN_FOUND}")
+    message(STATUS "  Components: EMULATORATM=${EMULATORATM_FOUND} EMULATOROCN=${EMULATOROCN_FOUND}")
 
     include(${CMAKE_SOURCE_DIR}/cmake/common_setup.cmake)
 
@@ -51,26 +50,26 @@ function(build_emulator_comps)
     # emulator components to link against the emulator libraries
     set(EMULATOR_COMPS_BUILT TRUE CACHE INTERNAL "Emulator components were built")
     set(EMULATOR_COMMON_LIB emulator_common CACHE INTERNAL "Common emulator library")
-    set(EMULATOR_EATM_LIB eatm CACHE INTERNAL "EATM library")
-    set(EMULATOR_EOCN_LIB eocn CACHE INTERNAL "EOCN library")
+    set(EMULATORATM_LIB emulatoratm CACHE INTERNAL "EMULATORATM library")
+    set(EMULATOROCN_LIB emulatorocn CACHE INTERNAL "EMULATOROCN library")
 
     # Create aliases for common component class names so build_model.cmake works
-    if(EATM_FOUND AND TARGET eatm)
-      add_library(atm ALIAS eatm)
+    if(EMULATORATM_FOUND AND TARGET emulatoratm)
+      add_library(atm ALIAS emulatoratm)
     endif()
-    if(EOCN_FOUND AND TARGET eocn)
-      add_library(ocn ALIAS eocn)
+    if(EMULATOROCN_FOUND AND TARGET emulatorocn)
+      add_library(ocn ALIAS emulatorocn)
     endif()
 
     #---------------------------------------------------------------------------
     # Export list of emulator components (for SKIP_COMPS in CMakeLists.txt)
     #---------------------------------------------------------------------------
     set(_EMULATOR_COMP_NAMES "")
-    if(EATM_FOUND)
-      list(APPEND _EMULATOR_COMP_NAMES "eatm")
+    if(EMULATORATM_FOUND)
+      list(APPEND _EMULATOR_COMP_NAMES "emulatoratm")
     endif()
-    if(EOCN_FOUND)
-      list(APPEND _EMULATOR_COMP_NAMES "eocn")
+    if(EMULATOROCN_FOUND)
+      list(APPEND _EMULATOR_COMP_NAMES "emulatorocn")
     endif()
 
     set(EMULATOR_COMP_NAMES ${_EMULATOR_COMP_NAMES} PARENT_SCOPE)

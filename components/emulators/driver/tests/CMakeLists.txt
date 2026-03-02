@@ -29,3 +29,8 @@ endif()
 
 add_test(NAME emulator_factory_basic
          COMMAND test_emulator_factory)
+
+# On Cray systems GPU-aware MPI is enabled by default but requires GTL to
+# be linked. Disable it for unit tests which don't need GPU MPI transfers.
+set_tests_properties(emulator_factory_basic PROPERTIES
+  ENVIRONMENT "MPICH_GPU_SUPPORT_ENABLED=0")
