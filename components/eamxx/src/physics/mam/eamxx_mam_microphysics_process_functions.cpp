@@ -11,6 +11,7 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
   const int nlev = nlev_;
   //
 
+
   constexpr int num_oxidants=mam4::mo_setinv::num_tracer_cnst;
   view_2d oxidants[num_oxidants];
   for (size_t i = 0; i < var_names_oxi_.size(); ++i) {
@@ -485,6 +486,7 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
   const auto& config_setsox = config.setsox;
   const auto& dqdt_aqso4 = dqdt_aqso4_;
   const auto& dqdt_aqh2so4 = dqdt_aqh2so4_;
+  const unsigned n_so4_monolayers_pcage = config.n_so4_monolayers_pcage;
 
   Kokkos::parallel_for(
     "MAMMicrophysics::run_impl::setsox_single_level", policy,
@@ -652,7 +654,7 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
     // coagulation)
     mam4::microphysics::modal_aero_amicphys_intr(
         // in
-        config_amicphys, dt, temp, pmid, pdel, zm, pblh, qv, cldfrac,
+        config_amicphys, dt, n_so4_monolayers_pcage, temp, pmid, pdel, zm, pblh, qv, cldfrac,
         // out
         vmr_kk, vmrcw_kk,
         // diagnostics (out)
