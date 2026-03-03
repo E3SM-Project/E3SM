@@ -17,18 +17,12 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm, const ekat::ParameterLi
  : MAMGenericInterface(comm, params),
    aero_config_()
 {
-<<<<<<< HEAD
   const int n_so4_monolayers_pcage =
     m_params.get<int>("mam4_number_so4_monolayers_to_age_carbon_particle",8);
   EKAT_REQUIRE_MSG(0 <= n_so4_monolayers_pcage,
                    "Error: mam4_number_so4_monolayers_to_age_carbon_particle " <<
-		   "must be non-negative. Found:" << n_so4_monolayers_pcage << "\n");
+                   "must be non-negative. Found:" << n_so4_monolayers_pcage << "\n");
   config_.n_so4_monolayers_pcage = static_cast<unsigned>(n_so4_monolayers_pcage);
-=======
-  config_.n_so4_monolayers_pcage = 
-	  m_params.get<int>("mam4_number_so4_monolayers_to_age_carbonn_particle",8);
-
->>>>>>> 4b26a68707 (Change interface to match new function signature.)
   config_.amicphys.do_cond   = m_params.get<bool>("mam4_do_cond");
   config_.amicphys.do_rename = m_params.get<bool>("mam4_do_rename");
   config_.amicphys.do_newnuc = m_params.get<bool>("mam4_do_newnuc");
@@ -1066,10 +1060,10 @@ void MAMMicrophysics::run_impl(const double dt) {
         // Output: values are dvel, dflx
         // Input/Output: progs::stateq, progs::qqcw
         team.team_barrier();
-	const unsigned n_so4_monolayers_pcage = config.n_so4_monolayers_pcage;
+        const unsigned n_so4_monolayers_pcage = config.n_so4_monolayers_pcage;
         mam4::microphysics::perform_atmospheric_chemistry_and_microphysics(
             team, dt, rlats, n_so4_monolayers_pcage,
-	    sfc_temperature(icol), sfc_pressure(icol),
+            sfc_temperature(icol), sfc_pressure(icol),
             wind_speed, rain, solar_flux, cnst_offline_icol, forcings_in, atm,
             photo_table,  config.setsox, config.amicphys,
             zenith_angle(icol), d_sfc_alb_dir_vis(icol),
