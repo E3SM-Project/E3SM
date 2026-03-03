@@ -101,7 +101,7 @@ void GWDrag::initialize_impl (const RunType) {
 
 /*------------------------------------------------------------------------------------------------*/
 void GWDrag::run_impl (const double dt) {
-  const int nlev_mid_packs   = ekat::npack<Spack>(m_nlev);
+  const int nlev_mid_packs = ekat::npack<Spack>(m_nlev);
   //----------------------------------------------------------------------------
   // get fields
 
@@ -126,25 +126,25 @@ void GWDrag::run_impl (const double dt) {
   // // calculate altitude on interfaces (z_int) and mid-points (z_mid)
 
   // // create temporaries to avoid "Implicit capture" warning
-  // const auto loc_zm_input_p_mid = zm_input.p_mid;
-  // const auto loc_zm_input_p_del = zm_input.p_del;
-  // const auto loc_zm_input_T_mid = zm_input.T_mid;
-  // const auto loc_zm_input_qv    = zm_input.qv;
-  // auto loc_zm_input_z_mid = zm_input.z_mid;
-  // auto loc_zm_input_z_del = zm_input.z_del;
-  // auto loc_zm_input_z_int = zm_input.z_int;
+  // const auto loc_p_mid = p_mid;
+  // const auto loc_p_del = p_del;
+  // const auto loc_T_mid = T_mid;
+  // const auto loc_qv    = qv;
+  // auto loc_z_mid = m_buffer.z_mid;
+  // auto loc_z_del = m_buffer.z_del;
+  // auto loc_z_int = m_buffer.z_int;
   // auto loc_nlev = m_nlev;
 
   // Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
   //   const int i = team.league_rank();
-  //   const auto p_mid_i = ekat::subview(loc_zm_input_p_mid, i);
-  //   const auto p_del_i = ekat::subview(loc_zm_input_p_del, i);
-  //   const auto T_mid_i = ekat::subview(loc_zm_input_T_mid, i);
-  //   const auto qv_i    = ekat::subview(loc_zm_input_qv,    i);
-  //   auto z_mid_i = ekat::subview(loc_zm_input_z_mid, i);
-  //   auto z_del_i = ekat::subview(loc_zm_input_z_del, i);
-  //   auto z_int_i = ekat::subview(loc_zm_input_z_int, i);
-  //   auto z_surf = 0.0; // ZM expects z_mid & z_int to be altitude above the surface
+  //   const auto p_mid_i = ekat::subview(loc_p_mid, i);
+  //   const auto p_del_i = ekat::subview(loc_p_del, i);
+  //   const auto T_mid_i = ekat::subview(loc_T_mid, i);
+  //   const auto qv_i    = ekat::subview(loc_qv,    i);
+  //   auto z_mid_i = ekat::subview(loc_z_mid, i);
+  //   auto z_del_i = ekat::subview(loc_z_del, i);
+  //   auto z_int_i = ekat::subview(loc_z_int, i);
+  //   auto z_surf = 0.0; // z_mid & z_int are altitude above the surface
   //   PF::calculate_dz(team, p_del_i, p_mid_i, T_mid_i, qv_i, z_del_i);
   //   team.team_barrier();
   //   PF::calculate_z_int(team, loc_nlev, z_del_i, z_surf, z_int_i);
@@ -281,20 +281,8 @@ size_t GWDrag::requested_buffer_size_in_bytes() const
   const int nlev_int_packs = ekat::npack<Spack>(m_nlev+1);
   size_t gw_buffer_size = 0;
 
-  // zm_buffer_size+= ZMF::ZmInputState::num_1d_intgr * sizeof(Int)   * m_ncol;
-  // zm_buffer_size+= ZMF::ZmInputState::num_1d_scalr * sizeof(Scalar)* m_ncol;
-  // zm_buffer_size+= ZMF::ZmInputState::num_2d_midlv * sizeof(Spack) * m_ncol * nlev_mid_packs;
-  // zm_buffer_size+= ZMF::ZmInputState::num_2d_intfc * sizeof(Spack) * m_ncol * nlev_int_packs;
-
-  // zm_buffer_size+= ZMF::ZmOutputTend::num_1d_intgr * sizeof(Int)   * m_ncol;
-  // zm_buffer_size+= ZMF::ZmOutputTend::num_1d_scalr * sizeof(Scalar)* m_ncol;
-  // zm_buffer_size+= ZMF::ZmOutputTend::num_2d_midlv * sizeof(Spack) * m_ncol * nlev_mid_packs;
-  // zm_buffer_size+= ZMF::ZmOutputTend::num_2d_intfc * sizeof(Spack) * m_ncol * nlev_int_packs;
-
-  // int num_f_mid  = (9+6);
-  // int num_f_int  = (2+3);
-  // zm_buffer_size+= num_f_mid * sizeof(Real) * m_ncol * m_nlev;
-  // zm_buffer_size+= num_f_int * sizeof(Real) * m_ncol * (m_nlev+1);
+  gw_buffer_size += Buffer::num_2d_mid_views*m_ncols*nlev_mid_packs*sizeof(Pack);
+  gw_buffer_size += Buffer::num_2d_int_views*m_ncols*nlev_int_packs*sizeof(Pack);
 
   return gw_buffer_size;
 }
@@ -304,13 +292,30 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
   auto buffer_chk = ( buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes() );
   EKAT_REQUIRE_MSG(buffer_chk,"Error! Buffers size not sufficient.\n");
   //----------------------------------------------------------------------------
-  // ???
+  Pack* mem = reinterpret_cast<Pack*>(buffer_manager.get_memory());
+  const int nlev_mid_packs = ekat::npack<Spack>(m_nlev);
+  const int nlev_int_packs = ekat::npack<Spack>(m_nlev+1);
   //----------------------------------------------------------------------------
-  // Real* total_mem = reinterpret_cast<Real*>(spk_mem);
-  // size_t used_mem = (reinterpret_cast<Real*>(total_mem) - buffer_manager.get_memory())*sizeof(Real);
-  // auto mem_chk = ( used_mem == requested_buffer_size_in_bytes() );
-  // EKAT_REQUIRE_MSG(mem_chk,"Error! Used memory != requested memory for ZMDeepConvection.");
+  uview_2d* buffer_mid_view_ptrs[Buffer::num_2d_midpoint_views] = {
+    &m_buffer.z_del,
+    &m_buffer.z_mid
+  };
+  for (int i=0; i<Buffer::num_2d_midpoint_views; ++i) {
+    *buffer_mid_view_ptrs[i] = uview_2d(mem, m_ncols, nlev_packs);
+    mem += buffer_mid_view_ptrs[i]->size();
+  }
   //----------------------------------------------------------------------------
+  uview_2d* buffer_int_view_ptrs[Buffer::num_2d_interface_views] = {
+    &m_buffer.z_int
+  };
+  for (int i=0; i<Buffer::num_2d_interface_views; ++i) {
+    *buffer_int_view_ptrs[i] = uview_2d(mem, m_ncols, nlevi_packs);
+    mem += buffer_int_view_ptrs[i]->size();
+  }
+  //----------------------------------------------------------------------------
+  size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
+  EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
+                   "Error! Used memory != requested memory for TurbulentMountainStress.");
 }
 /*------------------------------------------------------------------------------------------------*/
 void GWDrag::finalize_impl ()

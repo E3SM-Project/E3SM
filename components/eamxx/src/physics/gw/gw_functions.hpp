@@ -91,7 +91,7 @@ struct Functions
     bool use_gw_frontal    = false;
     bool use_gw_orographic = false;
 
-    // ??? gw_drag_file
+    std::string gw_drag_file;
     
     Real gw_orographic_eff;
 
@@ -113,18 +113,15 @@ struct Functions
     Real tndmax;            // Max wind tend from stress divergence (before efficiency) = huge(1._r8)
 
     void load_runtime_options(ekat::ParameterList& params) {
-      use_gw_convect = params.get<bool>("use_gw_convect", use_gw_convect);
-      use_gw_frontal = params.get<bool>("use_gw_frontal", use_gw_frontal);
+      use_gw_convect    = params.get<bool>("use_gw_convect", use_gw_convect);
+      use_gw_frontal    = params.get<bool>("use_gw_frontal", use_gw_frontal);
       use_gw_orographic = params.get<bool>("use_gw_orographic", use_gw_orographic);
-
-      // gw_drag_file = params.get<???>("gw_drag_file", gw_drag_file);
-      pgwv                       = params.get<int>("pgwv", pgwv);
-      dc                         = params.get<Real>("gw_dc", gw_dc);
-      tau_0_ubc                  = params.get<bool>("tau_0_ubc", tau_0_ubc);
-      fcrit2                     = params.get<Real>("fcrit2", fcrit2);
-      
-      gw_orographic_eff          = params.get<Real>("gw_orographic_eff", gw_orographic_eff);
-      
+      gw_drag_file      = params.get<std::string>("gw_drag_file", gw_drag_file);
+      pgwv              = params.get<int>("pgwv", pgwv);
+      dc                = params.get<Real>("gw_dc", gw_dc);
+      tau_0_ubc         = params.get<bool>("tau_0_ubc", tau_0_ubc);
+      fcrit2            = params.get<Real>("fcrit2", fcrit2);
+      gw_orographic_eff = params.get<Real>("gw_orographic_eff", gw_orographic_eff);
     }
   };
 

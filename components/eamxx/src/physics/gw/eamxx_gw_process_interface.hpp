@@ -45,6 +45,13 @@ class GWDrag : public AtmosphereProcess
     // Set the grid
     void create_requests ();
 
+    // Structure for storing local variables initialized using the ATMBufferManager
+    struct Buffer {
+      static constexpr int num_2d_mid_views = 2;
+      static constexpr int num_2d_int_views = 1;
+      uview_2d z_mid, z_int, z_del;
+    };
+
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
   protected:
@@ -62,6 +69,9 @@ class GWDrag : public AtmosphereProcess
 
     // Set local variables using memory provided by the ATMBufferManager
     void init_buffers(const ATMBufferManager &buffer_manager);
+
+    // Struct which contains local variables
+    Buffer m_buffer;
 
     std::shared_ptr<const AbstractGrid> m_grid;
     int m_ncol;
