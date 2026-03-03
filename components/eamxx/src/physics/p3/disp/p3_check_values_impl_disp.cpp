@@ -8,7 +8,7 @@ namespace p3 {
 
 template <>
 void Functions<Real, DefaultDevice>
-::check_values_disp(const uview_2d<const Spack>& qv, const uview_2d<const Spack>& temp, const Int& ktop, const Int& kbot,
+::check_values_disp(const uview_2d<const Pack>& qv, const uview_2d<const Pack>& temp, const Int& ktop, const Int& kbot,
                const Int& timestepcount, const bool& force_abort, const Int& source_ind,
                const uview_2d<const Scalar>& col_loc, const Int& nj, const Int& nk)
 {
@@ -16,7 +16,7 @@ void Functions<Real, DefaultDevice>
   using ExeSpace = typename KT::ExeSpace;
   using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
 
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
   const auto policy = TPF::get_default_team_policy(nj, nk_pack);
 
   Kokkos::parallel_for(

@@ -20,28 +20,28 @@ void Functions<Real,DefaultDevice>
   const Scalar&                Ckh,
   const Scalar&                Ckm,
   const bool&                  shoc_1p5tke,
-  const view_2d<const Spack>&  wthv_sec,
-  const view_2d<const Spack>&  shoc_mix,
-  const view_2d<const Spack>&  dz_zi,
-  const view_2d<const Spack>&  dz_zt,
-  const view_2d<const Spack>&  pres,
-  const view_2d<const Spack>&  tabs,
-  const view_2d<const Spack>&  u_wind,
-  const view_2d<const Spack>&  v_wind,
-  const view_2d<const Spack>&  brunt,
-  const view_2d<const Spack>&  zt_grid,
-  const view_2d<const Spack>&  zi_grid,
+  const view_2d<const Pack>&  wthv_sec,
+  const view_2d<const Pack>&  shoc_mix,
+  const view_2d<const Pack>&  dz_zi,
+  const view_2d<const Pack>&  dz_zt,
+  const view_2d<const Pack>&  pres,
+  const view_2d<const Pack>&  tabs,
+  const view_2d<const Pack>&  u_wind,
+  const view_2d<const Pack>&  v_wind,
+  const view_2d<const Pack>&  brunt,
+  const view_2d<const Pack>&  zt_grid,
+  const view_2d<const Pack>&  zi_grid,
   const view_1d<const Scalar>& pblh,
   const WorkspaceMgr&          workspace_mgr,
-  const view_2d<Spack>&        tke,
-  const view_2d<Spack>&        tk,
-  const view_2d<Spack>&        tkh,
-  const view_2d<Spack>&        isotropy)
+  const view_2d<Pack>&        tke,
+  const view_2d<Pack>&        tk,
+  const view_2d<Pack>&        tkh,
+  const view_2d<Pack>&        isotropy)
 {
   using ExeSpace = typename KT::ExeSpace;
   using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
 
-  const auto nlev_packs = ekat::npack<Spack>(nlev);
+  const auto nlev_packs = ekat::npack<Pack>(nlev);
   const auto policy = TPF::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();

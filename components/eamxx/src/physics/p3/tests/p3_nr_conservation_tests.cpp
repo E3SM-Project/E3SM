@@ -43,11 +43,11 @@ struct UnitWrap::UnitTest<D>::TestNrConservation : public UnitWrap::UnitTest<D>:
 
     // Get data from cxx. Run nr_conservation from a kernel and copy results back to host
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init pack inputs
-      Spack nc2nr_autoconv_tend, ncshdc, ni2nr_melt_tend, nr, nr2ni_immers_freeze_tend, nr_collect_tend, nr_evap_tend, nr_ice_shed_tend, nr_selfcollect_tend;
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      Pack nc2nr_autoconv_tend, ncshdc, ni2nr_melt_tend, nr, nr2ni_immers_freeze_tend, nr_collect_tend, nr_evap_tend, nr_ice_shed_tend, nr_selfcollect_tend;
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         nc2nr_autoconv_tend[s] = cxx_device(vs).nc2nr_autoconv_tend;
         ncshdc[s] = cxx_device(vs).ncshdc;
         ni2nr_melt_tend[s] = cxx_device(vs).ni2nr_melt_tend;
@@ -62,7 +62,7 @@ struct UnitWrap::UnitTest<D>::TestNrConservation : public UnitWrap::UnitTest<D>:
       Functions::nr_conservation(nr, ni2nr_melt_tend, nr_ice_shed_tend, ncshdc, nc2nr_autoconv_tend, cxx_device(offset).dt, cxx_device(offset).nmltratio, nr_collect_tend, nr2ni_immers_freeze_tend, nr_selfcollect_tend, nr_evap_tend);
 
       // Copy spacks back into cxx_device view
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         cxx_device(vs).nr2ni_immers_freeze_tend = nr2ni_immers_freeze_tend[s];
         cxx_device(vs).nr_collect_tend = nr_collect_tend[s];
         cxx_device(vs).nr_evap_tend = nr_evap_tend[s];

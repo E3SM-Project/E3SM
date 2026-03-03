@@ -14,10 +14,10 @@ namespace shoc {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::pblintd_surf_temp(const Int& nlev, const Int& nlevi, const Int& npbl,
-      const uview_1d<const Spack>& z, const Scalar& ustar,
+      const uview_1d<const Pack>& z, const Scalar& ustar,
       const Scalar& obklen, const Scalar& kbfs,
-      const uview_1d<const Spack>& thv, Scalar& tlv,
-      Scalar& pblh, bool& check, const uview_1d<Spack>& rino)
+      const uview_1d<const Pack>& thv, Scalar& tlv,
+      Scalar& pblh, bool& check, const uview_1d<Pack>& rino)
 {
   // const parameter for Diagnosis of PBL depth
   const Scalar fak   =  8.5;

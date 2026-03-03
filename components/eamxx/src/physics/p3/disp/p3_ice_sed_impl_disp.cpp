@@ -9,23 +9,23 @@ namespace p3 {
 template <>
 void Functions<Real,DefaultDevice>
 ::ice_sedimentation_disp(
-  const uview_2d<const Spack>& rho,
-  const uview_2d<const Spack>& inv_rho,
-  const uview_2d<const Spack>& rhofaci,
-  const uview_2d<const Spack>& cld_frac_i,
-  const uview_2d<const Spack>& inv_dz,
+  const uview_2d<const Pack>& rho,
+  const uview_2d<const Pack>& inv_rho,
+  const uview_2d<const Pack>& rhofaci,
+  const uview_2d<const Pack>& cld_frac_i,
+  const uview_2d<const Pack>& inv_dz,
   const WorkspaceManager& workspace_mgr,
   const Int& nj, const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& inv_dt,
-  const uview_2d<Spack>& qi,
-  const uview_2d<Spack>& qi_incld,
-  const uview_2d<Spack>& ni,
-  const uview_2d<Spack>& ni_incld,
-  const uview_2d<Spack>& qm,
-  const uview_2d<Spack>& qm_incld,
-  const uview_2d<Spack>& bm,
-  const uview_2d<Spack>& bm_incld,
-  const uview_2d<Spack>& qi_tend,
-  const uview_2d<Spack>& ni_tend,
+  const uview_2d<Pack>& qi,
+  const uview_2d<Pack>& qi_incld,
+  const uview_2d<Pack>& ni,
+  const uview_2d<Pack>& ni_incld,
+  const uview_2d<Pack>& qm,
+  const uview_2d<Pack>& qm_incld,
+  const uview_2d<Pack>& bm,
+  const uview_2d<Pack>& bm_incld,
+  const uview_2d<Pack>& qi_tend,
+  const uview_2d<Pack>& ni_tend,
   const view_ice_table& ice_table_vals,
   const uview_1d<Scalar>& precip_ice_surf,
   const uview_1d<bool>& nucleationPossible,
@@ -35,7 +35,7 @@ void Functions<Real,DefaultDevice>
   using ExeSpace = typename KT::ExeSpace;
   using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
 
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
   const auto policy = TPF::get_default_team_policy(nj, nk_pack);
   // p3_ice_sedimentation loop
   Kokkos::parallel_for("p3_ice_sedimentation",
@@ -61,25 +61,25 @@ void Functions<Real,DefaultDevice>
 template <>
 void Functions<Real,DefaultDevice>
 ::homogeneous_freezing_disp(
-  const uview_2d<const Spack>& T_atm,
-  const uview_2d<const Spack>& inv_exner,
+  const uview_2d<const Pack>& T_atm,
+  const uview_2d<const Pack>& inv_exner,
   const Int& nj, const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir,
-  const uview_2d<Spack>& qc,
-  const uview_2d<Spack>& nc,
-  const uview_2d<Spack>& qr,
-  const uview_2d<Spack>& nr,
-  const uview_2d<Spack>& qi,
-  const uview_2d<Spack>& ni,
-  const uview_2d<Spack>& qm,
-  const uview_2d<Spack>& bm,
-  const uview_2d<Spack>& th_atm,
+  const uview_2d<Pack>& qc,
+  const uview_2d<Pack>& nc,
+  const uview_2d<Pack>& qr,
+  const uview_2d<Pack>& nr,
+  const uview_2d<Pack>& qi,
+  const uview_2d<Pack>& ni,
+  const uview_2d<Pack>& qm,
+  const uview_2d<Pack>& bm,
+  const uview_2d<Pack>& th_atm,
   const uview_1d<bool>& nucleationPossible,
   const uview_1d<bool>& hydrometeorsPresent)
 {
   using ExeSpace = typename KT::ExeSpace;
   using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
 
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
   const auto policy = TPF::get_default_team_policy(nj, nk_pack);
   // p3_cloud_sedimentation loop
   Kokkos::parallel_for(

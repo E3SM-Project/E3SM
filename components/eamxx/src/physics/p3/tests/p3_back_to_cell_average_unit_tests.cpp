@@ -210,20 +210,20 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
     runtime_options.use_separate_ice_liq_frac = use_separate_ice_liq_frac;
 
     const Int num_cases = cases_dev.extent_int(0);
-    const Int num_packs = (num_cases + Spack::n - 1) / Spack::n;
+    const Int num_packs = (num_cases + Pack::n - 1) / Pack::n;
 
     Kokkos::parallel_for("p3_back_to_cell_average_sweep", num_packs,
                          KOKKOS_LAMBDA(const Int& ipack) {
-      const Int offset = ipack * Spack::n;
+      const Int offset = ipack * Pack::n;
 
-      Spack cld_frac_l, cld_frac_r, cld_frac_i;
-#define DECL_PACK(name, scale) Spack name;
+      Pack cld_frac_l, cld_frac_r, cld_frac_i;
+#define DECL_PACK(name, scale) Pack name;
       BACK_TO_CELL_AVERAGE_TENDENCY_LIST(DECL_PACK)
 #undef DECL_PACK
 
-      Smask context;
+      Mask context;
 
-      for (Int s = 0; s < Spack::n; ++s) {
+      for (Int s = 0; s < Pack::n; ++s) {
         const Int idx = offset + s;
         if (idx < num_cases) {
           const auto& d = cases_dev(idx);
@@ -245,10 +245,10 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
         }
       }
 
-      const Spack ir_cldm = min(cld_frac_i, cld_frac_r);
-      const Spack il_cldm = min(cld_frac_i, cld_frac_l);
-      const Spack lr_cldm = min(cld_frac_l, cld_frac_r);
-      const Spack cld_frac_glaciated = max(Real(1e-4), cld_frac_i - il_cldm);
+      const Pack ir_cldm = min(cld_frac_i, cld_frac_r);
+      const Pack il_cldm = min(cld_frac_i, cld_frac_l);
+      const Pack lr_cldm = min(cld_frac_l, cld_frac_r);
+      const Pack cld_frac_glaciated = max(Real(1e-4), cld_frac_i - il_cldm);
 
       Functions::back_to_cell_average(
         cld_frac_l, cld_frac_r, cld_frac_i,
@@ -265,7 +265,7 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
         ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt,
         context, runtime_options);
 
-      for (Int s = 0; s < Spack::n; ++s) {
+      for (Int s = 0; s < Pack::n; ++s) {
         const Int idx = offset + s;
         if (idx < num_cases) {
           auto& d = cases_dev(idx);
@@ -363,15 +363,15 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
     runtime_options.use_separate_ice_liq_frac = false;
 
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& ipack) {
-      const Int offset = ipack * Spack::n;
+      const Int offset = ipack * Pack::n;
 
-      Spack cld_frac_l, cld_frac_r, cld_frac_i;
-#define DECL_PACK(name, scale) Spack name;
+      Pack cld_frac_l, cld_frac_r, cld_frac_i;
+#define DECL_PACK(name, scale) Pack name;
       BACK_TO_CELL_AVERAGE_TENDENCY_LIST(DECL_PACK)
 #undef DECL_PACK
-      Smask context;
+      Mask context;
 
-      for (Int s = 0; s < Spack::n; ++s) {
+      for (Int s = 0; s < Pack::n; ++s) {
         const Int vs = offset + s;
         const auto& d = device_data(vs);
         cld_frac_l[s] = d.cld_frac_l;
@@ -398,7 +398,7 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
         ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt,
         context, runtime_options);
 
-      for (Int s = 0; s < Spack::n; ++s) {
+      for (Int s = 0; s < Pack::n; ++s) {
         const Int vs = offset + s;
         auto& d = device_data(vs);
 #define STORE_BFB_OUTPUT(name, scale) d.name = name[s];
@@ -599,7 +599,7 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
   // Verifies .set(context, ...) masking semantics: context=false lanes must
   // retain their input tendency values even when neighboring lanes are active.
   void run_context_mask_checks() {
-    const int num_cases = 2 * Spack::n;
+    const int num_cases = 2 * Pack::n;
     const Real identity_tol = 10 * std::numeric_limits<Real>::epsilon();
     const Real absolute_floor = kAbsoluteFloor;
 
@@ -611,7 +611,7 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
       c.cld_frac_i = (i % 3) * 0.3;
       c.cld_frac_l = ((i + 1) % 4) * 0.25;
       c.cld_frac_r = ((i + 2) % 5) * 0.2;
-      c.context = (i < Spack::n) ? ((i % 2) == 0) : ((i % 2) == 1);
+      c.context = (i < Pack::n) ? ((i % 2) == 0) : ((i % 2) == 1);
       set_case_inputs(c, 2e-6 * (i + 1));
       apply_alternating_sign_pattern(c, i);
     }

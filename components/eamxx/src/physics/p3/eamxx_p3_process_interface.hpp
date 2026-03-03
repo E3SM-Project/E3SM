@@ -23,19 +23,18 @@ namespace scream
 class P3Microphysics : public AtmosphereProcess
 {
   using P3F          = p3::Functions<Real, DefaultDevice>;
-  using Spack        = typename P3F::Spack;
-  using Smask        = typename P3F::Smask;
-  using IntSpack     = typename P3F::IntSmallPack;
-  using Pack         = ekat::Pack<Real,Spack::n>;
+  using Pack         = typename P3F::Pack;
+  using Mask         = typename P3F::Mask;
+  using IntPack     = typename P3F::IntPack;
   using PF           = scream::PhysicsFunctions<DefaultDevice>;
   using PC           = physics::Constants<Real>;
   using KT           = ekat::KokkosTypes<DefaultDevice>;
-  using WSM          = ekat::WorkspaceManager<Spack, KT::Device>;
+  using WSM          = ekat::WorkspaceManager<Pack, KT::Device>;
 
   using view_1d  = typename P3F::view_1d<Real>;
   using view_1d_const  = typename P3F::view_1d<const Real>;
-  using view_2d  = typename P3F::view_2d<Spack>;
-  using view_2d_const  = typename P3F::view_2d<const Spack>;
+  using view_2d  = typename P3F::view_2d<Pack>;
+  using view_2d_const  = typename P3F::view_2d<const Pack>;
   using sview_2d = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
 
   using uview_1d  = Unmanaged<view_1d>;
@@ -69,17 +68,17 @@ public:
     void operator()(const KT::MemberType& team) const {
       const int icol = team.league_rank();
 
-      const auto npack = ekat::npack<Spack>(m_nlev);
+      const auto npack = ekat::npack<Pack>(m_nlev);
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npack), [&] (const Int& ipack) {
 
         // The ipack slice of input variables used more than once
-        const Spack& pmid_pack(pmid(icol,ipack));
-        const Spack& T_atm_pack(T_atm(icol,ipack));
-        const Spack& cld_frac_t_in_pack(cld_frac_t_in(icol,ipack));
-        const Spack& cld_frac_l_in_pack(cld_frac_l_in(icol,ipack));
-        const Spack& cld_frac_i_in_pack(cld_frac_i_in(icol,ipack));
-        const Spack& pseudo_density_pack(pseudo_density(icol,ipack));
-        const Spack& pseudo_density_dry_pack(pseudo_density_dry(icol,ipack));
+        const Pack& pmid_pack(pmid(icol,ipack));
+        const Pack& T_atm_pack(T_atm(icol,ipack));
+        const Pack& cld_frac_t_in_pack(cld_frac_t_in(icol,ipack));
+        const Pack& cld_frac_l_in_pack(cld_frac_l_in(icol,ipack));
+        const Pack& cld_frac_i_in_pack(cld_frac_i_in(icol,ipack));
+        const Pack& pseudo_density_pack(pseudo_density(icol,ipack));
+        const Pack& pseudo_density_dry_pack(pseudo_density_dry(icol,ipack));
 
         //compute dz from full pressure
         dz(icol,ipack) = PF::calculate_dz(pseudo_density_pack, pmid_pack, T_atm_pack, qv(icol,ipack));
@@ -127,8 +126,8 @@ public:
         if ( not runtime_opts.set_cld_frac_r_to_one ) {
           // Get the cld_frac_t_in(icol, ilev-1) entries
           const auto& cld_frac_t_in_s = ekat::scalarize(ekat::subview(cld_frac_t_in, icol));
-          Spack cld_frac_t_in_k, cld_frac_t_in_km1;
-          auto range_pack1 = ekat::range<IntSpack>(ipack*Spack::n);
+          Pack cld_frac_t_in_k, cld_frac_t_in_km1;
+          auto range_pack1 = ekat::range<IntPack>(ipack*Pack::n);
           auto range_pack2 = range_pack1;
           range_pack2.set(range_pack1 < 1, 1); // don't want the shift to go below zero. we mask out that result anyway
           ekat::index_and_shift<-1>(cld_frac_t_in_s, range_pack2, cld_frac_t_in_k, cld_frac_t_in_km1);
@@ -232,13 +231,13 @@ public:
 
       const auto npack = m_npack;
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npack), [&] (const Int& ipack) {
-        const Spack& pseudo_density_pack(pseudo_density(icol,ipack));
-        const Spack& pseudo_density_dry_pack(pseudo_density_dry(icol,ipack));
+        const Pack& pseudo_density_pack(pseudo_density(icol,ipack));
+        const Pack& pseudo_density_dry_pack(pseudo_density_dry(icol,ipack));
 
         // Update the atmospheric temperature and the previous temperature.
         {
           // this computes rescaled dT
-          const Spack T_atm_before_p3 = T_atm(icol,ipack);
+          const Pack T_atm_before_p3 = T_atm(icol,ipack);
           T_atm(icol,ipack)  = (PF::calculate_T_from_theta(th_atm(icol,ipack),pmid(icol,ipack)) - T_atm_before_p3)
                              * pseudo_density_dry(icol,ipack) / pseudo_density(icol,ipack);
           // add rescaled dT to T
@@ -428,7 +427,7 @@ public:
 
     suview_2d col_location;
 
-    Spack* wsm_data;
+    Pack* wsm_data;
   };
 
 protected:
@@ -468,7 +467,7 @@ protected:
   p3_postamble             p3_postproc;
 
   // WSM for internal local variables
-  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr;
+  ekat::WorkspaceManager<Pack, KT::Device> workspace_mgr;
 
   std::shared_ptr<const AbstractGrid>   m_grid;
   // Iteration count is internal to P3 and keeps track of the number of times p3_main has been called.

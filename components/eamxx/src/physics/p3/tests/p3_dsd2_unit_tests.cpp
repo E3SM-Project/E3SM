@@ -67,21 +67,21 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
 
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init pack inputs
-      Spack qc, rho, nc;
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      Pack qc, rho, nc;
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         qc[s]    = gcdd_device(vs).qc;
         rho[s]   = gcdd_device(vs).rho;
         nc[s]    = gcdd_device(vs).nc_in;
       }
 
-      Spack mu_c(0.0), nu(0.0), lamc(0.0), cdist(0.0), cdist1(0.0);
+      Pack mu_c(0.0), nu(0.0), lamc(0.0), cdist(0.0), cdist1(0.0);
       Functions::get_cloud_dsd2(qc, nc, mu_c, rho, nu, dnu, lamc, cdist, cdist1);
 
       // Copy results back into views
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         gcdd_device(vs).nc_out = nc[s];
         gcdd_device(vs).mu_c   = mu_c[s];
         gcdd_device(vs).nu     = nu[s];
@@ -158,22 +158,22 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
 
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init pack inputs
-      Spack qr, cld_frac_r, nr;
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      Pack qr, cld_frac_r, nr;
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         qr[s]    = grdd_device(vs).qr;
         nr[s]    = grdd_device(vs).nr_in;
       }
 
-      Spack mu_r(0.0), lamr(0.0), cdistr(0.0), logn0r(0.0);
+      Pack mu_r(0.0), lamr(0.0), cdistr(0.0), logn0r(0.0);
       Functions::get_rain_dsd2(qr, nr, mu_r, lamr,
                                p3::Functions<Real,DefaultDevice>::P3Runtime());
       Functions::get_cdistr_logn0r(qr, nr, mu_r, lamr, cdistr, logn0r);
 
       // Copy results back into views
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         grdd_device(vs).nr_out = nr[s];
         grdd_device(vs).mu_r = mu_r[s];
         grdd_device(vs).lamr = lamr[s];

@@ -14,11 +14,11 @@ namespace p3 {
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::rain_immersion_freezing(const Spack& T_atm, const Spack& lamr,
-                          const Spack& mu_r, const Spack& cdistr,
-                          const Spack& qr_incld, Spack& qr2qi_immers_freeze_tend, Spack& nr2ni_immers_freeze_tend,
+::rain_immersion_freezing(const Pack& T_atm, const Pack& lamr,
+                          const Pack& mu_r, const Pack& cdistr,
+                          const Pack& qr_incld, Pack& qr2qi_immers_freeze_tend, Pack& nr2ni_immers_freeze_tend,
                           const P3Runtime& runtime_options,
-			  const Smask& context)
+			  const Mask& context)
 {
   constexpr Scalar qsmall     = C::QSMALL;
   constexpr Scalar T_rainfrz  = C::T_rainfrz.value;

@@ -38,7 +38,7 @@ void SurfaceCouplingExporter::create_requests()
   FieldLayout scalar3d_layout_mid { {COL,LEV},     {m_num_cols,    m_num_levs  } };
   FieldLayout scalar3d_layout_int { {COL,ILEV},    {m_num_cols,    m_num_levs+1} };
 
-  constexpr int ps = Spack::n;
+  constexpr int ps = Pack::n;
 
   // These fields are required for computation/exports
   add_field<Required>("p_int",                scalar3d_layout_int,  Pa,     grid_name);
@@ -97,21 +97,21 @@ void SurfaceCouplingExporter::create_helper_field (const std::string& name,
 size_t SurfaceCouplingExporter::requested_buffer_size_in_bytes() const
 {
   // Number of Reals needed by local views in the interface
-  return Buffer::num_2d_vector_mid*m_num_cols*ekat::npack<Spack>(m_num_levs)*sizeof(Spack) +
-         Buffer::num_2d_vector_int*m_num_cols*ekat::npack<Spack>(m_num_levs+1)*sizeof(Spack);
+  return Buffer::num_2d_vector_mid*m_num_cols*ekat::npack<Pack>(m_num_levs)*sizeof(Pack) +
+         Buffer::num_2d_vector_int*m_num_cols*ekat::npack<Pack>(m_num_levs+1)*sizeof(Pack);
 }
 // =========================================================================================
 void SurfaceCouplingExporter::init_buffers(const ATMBufferManager &buffer_manager)
 {
-  const int nlev_packs       = ekat::npack<Spack>(m_num_levs);
-  const int nlevi_packs      = ekat::npack<Spack>(m_num_levs+1);
+  const int nlev_packs       = ekat::npack<Pack>(m_num_levs);
+  const int nlevi_packs      = ekat::npack<Pack>(m_num_levs+1);
 
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(), "Error! Buffers size not sufficient.\n");
 
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
 
   // 2d views packed views
-  Spack* s_mem = reinterpret_cast<Spack*>(mem);
+  Pack* s_mem = reinterpret_cast<Pack*>(mem);
 
   m_buffer.dz = decltype(m_buffer.dz)(s_mem, m_num_cols, nlev_packs);
   s_mem += m_buffer.dz.size();
@@ -371,12 +371,12 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   const auto& p_int                = get_field_in("p_int").get_view<const Real**>();
-  const auto& pseudo_density       = get_field_in("pseudo_density").get_view<const Spack**>();
-  const auto& qv                   = get_field_in("qv").get_view<const Spack**>();
-  const auto& T_mid                = get_field_in("T_mid").get_view<const Spack**>();
+  const auto& pseudo_density       = get_field_in("pseudo_density").get_view<const Pack**>();
+  const auto& qv                   = get_field_in("qv").get_view<const Pack**>();
+  const auto& T_mid                = get_field_in("T_mid").get_view<const Pack**>();
   // TODO: This will need to change if we ever switch from horiz_winds to U and V
   const auto& horiz_winds          = get_field_in("horiz_winds").get_view<const Real***>();
-  const auto& p_mid                = get_field_in("p_mid").get_view<const Spack**>();
+  const auto& p_mid                = get_field_in("p_mid").get_view<const Pack**>();
   const auto& phis                 = get_field_in("phis").get_view<const Real*>();
   const auto& sfc_flux_dir_nir     = get_field_in("sfc_flux_dir_nir").get_view<const Real*>();
   const auto& sfc_flux_dir_vis     = get_field_in("sfc_flux_dir_vis").get_view<const Real*>();

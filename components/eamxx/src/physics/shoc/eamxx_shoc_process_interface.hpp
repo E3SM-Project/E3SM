@@ -30,21 +30,21 @@ class SHOCMacrophysics : public scream::AtmosphereProcess
   using KT           = ekat::KokkosTypes<DefaultDevice>;
   using SC           = scream::shoc::Constants<Real>;
 
-  using Spack                = typename SHF::Spack;
-  using IntSmallPack         = typename SHF::IntSmallPack;
-  using Smask                = typename SHF::Smask;
+  using Pack                = typename SHF::Pack;
+  using IntPack         = typename SHF::IntPack;
+  using Mask                = typename SHF::Mask;
   using view_1d_int          = typename KT::template view_1d<Int>;
   using view_1d              = typename SHF::view_1d<Real>;
   using view_1d_const        = typename SHF::view_1d<const Real>;
-  using view_2d              = typename SHF::view_2d<SHF::Spack>;
-  using view_2d_const        = typename SHF::view_2d<const Spack>;
+  using view_2d              = typename SHF::view_2d<SHF::Pack>;
+  using view_2d_const        = typename SHF::view_2d<const Pack>;
   using sview_2d             = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
   using sview_2d_const       = typename KokkosTypes<DefaultDevice>::template view_2d<const Real>;
-  using view_3d              = typename SHF::view_3d<Spack>;
-  using view_3d_const        = typename SHF::view_3d<const Spack>;
-  using view_3d_strided       = typename SHF::view_3d_strided<Spack>;
+  using view_3d              = typename SHF::view_3d<Pack>;
+  using view_3d_const        = typename SHF::view_3d<const Pack>;
+  using view_3d_strided       = typename SHF::view_3d_strided<Pack>;
 
-  using WSM = ekat::WorkspaceManager<Spack, KT::Device>;
+  using WSM = ekat::WorkspaceManager<Pack, KT::Device>;
 
   template<typename ScalarT>
   using uview_1d = Unmanaged<typename KT::template view_1d<ScalarT>>;
@@ -83,7 +83,7 @@ public:
       const Real inv_ggr = 1/ggr;
       const Real mintke = SC::mintke;
 
-      const int nlev_packs = ekat::npack<Spack>(nlev);
+      const int nlev_packs = ekat::npack<Pack>(nlev);
 
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const Int& k) {
 
@@ -91,9 +91,9 @@ public:
         cldfrac_liq_prev(i,k)=cldfrac_liq(i,k);
 
         // Inverse of Exner. In non-rel builds, assert that exner != 0 when in range before computing.
-        const Spack exner = PF::exner_function(p_mid(i,k));
-        const Smask nonzero = (exner != 0);
-        EKAT_KERNEL_ASSERT((nonzero || !(ekat::range<IntSmallPack>(k*Spack::n) < nlev)).all());
+        const Pack exner = PF::exner_function(p_mid(i,k));
+        const Mask nonzero = (exner != 0);
+        EKAT_KERNEL_ASSERT((nonzero || !(ekat::range<IntPack>(k*Pack::n) < nlev)).all());
         inv_exner(i,k).set(nonzero, 1/exner);
 
         tke(i,k) = ekat::max(mintke, tke(i,k));
@@ -132,8 +132,8 @@ public:
       PF::calculate_z_mid(team,nlev,z_int_s,z_mid_s);
       team.team_barrier();
 
-      const int nlevi_v = nlev/Spack::n;
-      const int nlevi_p = nlev%Spack::n;
+      const int nlevi_v = nlev/Pack::n;
+      const int nlevi_p = nlev%Pack::n;
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const Int& k) {
         zt_grid(i,k) = z_mid(i,k) - z_int(i, nlevi_v)[nlevi_p];
         zi_grid(i,k) = z_int(i,k) - z_int(i, nlevi_v)[nlevi_p];
@@ -275,7 +275,7 @@ public:
       const Real inv_qc_relvar_max = 10;
       const Real inv_qc_relvar_min = 0.001;
 
-      const int nlev_packs = ekat::npack<Spack>(nlev);
+      const int nlev_packs = ekat::npack<Pack>(nlev);
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const Int& k) {
         // See comment in SHOCPreprocess::operator() about the necessity of *_copy views
         tke(i,k) = tke_copy(i,k);
@@ -297,8 +297,8 @@ public:
         }
 
         // Temperature
-        const Spack dse_ik(dse(i,k));
-        const Spack z_mid_ik(z_mid(i,k));
+        const Pack dse_ik(dse(i,k));
+        const Pack z_mid_ik(z_mid(i,k));
         const Real  phis_i(phis(i));
         T_mid(i,k) = PF::calculate_temperature_from_dse(dse_ik,z_mid_ik,phis_i);
 
@@ -411,50 +411,50 @@ public:
     uview_1d<Real> wstar;
 #endif
 
-    uview_1d<Spack> pref_mid;
+    uview_1d<Pack> pref_mid;
 
-    uview_2d<Spack> unused;  // Placeholder for unused views
-    uview_2d<Spack> z_mid;
-    uview_2d<Spack> z_int;
-    uview_2d<Spack> rrho;
-    uview_2d<Spack> rrho_i;
-    uview_2d<Spack> thv;
-    uview_2d<Spack> dz;
-    uview_2d<Spack> zt_grid;
-    uview_2d<Spack> zi_grid;
-    uview_2d<Spack> wtracer_sfc;
-    uview_2d<Spack> wm_zt;
-    uview_2d<Spack> inv_exner;
-    uview_2d<Spack> thlm;
-    uview_2d<Spack> qw;
-    uview_2d<Spack> dse;
-    uview_2d<Spack> tke_copy;
-    uview_2d<Spack> qc_copy;
-    uview_2d<Spack> shoc_ql2;
-    uview_2d<Spack> shoc_mix;
-    uview_2d<Spack> isotropy;
-    uview_2d<Spack> w_sec;
-    uview_2d<Spack> thl_sec;
-    uview_2d<Spack> qw_sec;
-    uview_2d<Spack> qwthl_sec;
-    uview_2d<Spack> wthl_sec;
-    uview_2d<Spack> wqw_sec;
-    uview_2d<Spack> wtke_sec;
-    uview_2d<Spack> uw_sec;
-    uview_2d<Spack> vw_sec;
-    uview_2d<Spack> w3;
-    uview_2d<Spack> wqls_sec;
-    uview_2d<Spack> brunt;
+    uview_2d<Pack> unused;  // Placeholder for unused views
+    uview_2d<Pack> z_mid;
+    uview_2d<Pack> z_int;
+    uview_2d<Pack> rrho;
+    uview_2d<Pack> rrho_i;
+    uview_2d<Pack> thv;
+    uview_2d<Pack> dz;
+    uview_2d<Pack> zt_grid;
+    uview_2d<Pack> zi_grid;
+    uview_2d<Pack> wtracer_sfc;
+    uview_2d<Pack> wm_zt;
+    uview_2d<Pack> inv_exner;
+    uview_2d<Pack> thlm;
+    uview_2d<Pack> qw;
+    uview_2d<Pack> dse;
+    uview_2d<Pack> tke_copy;
+    uview_2d<Pack> qc_copy;
+    uview_2d<Pack> shoc_ql2;
+    uview_2d<Pack> shoc_mix;
+    uview_2d<Pack> isotropy;
+    uview_2d<Pack> w_sec;
+    uview_2d<Pack> thl_sec;
+    uview_2d<Pack> qw_sec;
+    uview_2d<Pack> qwthl_sec;
+    uview_2d<Pack> wthl_sec;
+    uview_2d<Pack> wqw_sec;
+    uview_2d<Pack> wtke_sec;
+    uview_2d<Pack> uw_sec;
+    uview_2d<Pack> vw_sec;
+    uview_2d<Pack> w3;
+    uview_2d<Pack> wqls_sec;
+    uview_2d<Pack> brunt;
 #ifdef SCREAM_SHOC_SMALL_KERNELS
-    uview_2d<Spack> rho_zt;
-    uview_2d<Spack> shoc_qv;
-    uview_2d<Spack> tabs;
-    uview_2d<Spack> dz_zt;
-    uview_2d<Spack> dz_zi;
-    uview_2d<Spack> tkh;
+    uview_2d<Pack> rho_zt;
+    uview_2d<Pack> shoc_qv;
+    uview_2d<Pack> tabs;
+    uview_2d<Pack> dz_zt;
+    uview_2d<Pack> dz_zi;
+    uview_2d<Pack> tkh;
 #endif
 
-    Spack* wsm_data;
+    Pack* wsm_data;
   };
 
 #ifndef KOKKOS_ENABLE_CUDA
@@ -512,7 +512,7 @@ protected:
   SHOCPostprocess shoc_postprocess;
 
   // WSM for internal local variables
-  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr;
+  ekat::WorkspaceManager<Pack, KT::Device> workspace_mgr;
 
   std::shared_ptr<const AbstractGrid>   m_grid;
 }; // class SHOCMacrophysics

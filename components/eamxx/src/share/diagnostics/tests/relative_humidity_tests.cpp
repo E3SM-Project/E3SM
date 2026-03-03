@@ -158,8 +158,8 @@ void run(std::mt19937_64& engine)
     rh_f.deep_copy(0);
     const auto& rh_v = rh_f.get_view<Pack**>();
     using physics = scream::physics::Functions<Real, DefaultDevice>;
-    using Smask = ekat::Mask<Pack::n>;
-    Smask range_mask(true);
+    using Mask = ekat::Mask<Pack::n>;
+    Mask range_mask(true);
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
 

@@ -23,7 +23,7 @@ void CldFraction::create_requests()
 {
   using namespace ekat::units;
   using CldFractionFunc = cld_fraction::CldFractionFunctions<Real, DefaultDevice>;
-  using Spack           = CldFractionFunc::Spack;
+  using Pack           = CldFractionFunc::Pack;
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
@@ -40,7 +40,7 @@ void CldFraction::create_requests()
   auto scalar3d_layout_mid = m_grid->get_3d_scalar_layout(true);
 
   // Set of fields used strictly as input
-  constexpr int ps = Spack::n;
+  constexpr int ps = Pack::n;
   add_tracer<Required>("qi", m_grid, kg/kg, ps);
   add_field<Required>("cldfrac_liq", scalar3d_layout_mid, nondim, grid_name,ps);
 
@@ -140,14 +140,14 @@ void CldFraction::run_impl (const double /* dt */)
 #endif
 
   using CldFractionFunc = cld_fraction::CldFractionFunctions<Real, DefaultDevice>;
-  using Spack = CldFractionFunc::Spack;
+  using Pack = CldFractionFunc::Pack;
 
-  auto qi_v                = qi.get_view<const Spack**>();
-  auto liq_cld_frac_v      = liq_cld_frac.get_view<const Spack**>();
-  auto ice_cld_frac_v      = ice_cld_frac.get_view<Spack**>();
-  auto tot_cld_frac_v      = tot_cld_frac.get_view<Spack**>();
-  auto ice_cld_frac_4out_v = ice_cld_frac_4out.get_view<Spack**>();
-  auto tot_cld_frac_4out_v = tot_cld_frac_4out.get_view<Spack**>();
+  auto qi_v                = qi.get_view<const Pack**>();
+  auto liq_cld_frac_v      = liq_cld_frac.get_view<const Pack**>();
+  auto ice_cld_frac_v      = ice_cld_frac.get_view<Pack**>();
+  auto tot_cld_frac_v      = tot_cld_frac.get_view<Pack**>();
+  auto ice_cld_frac_4out_v = ice_cld_frac_4out.get_view<Pack**>();
+  auto tot_cld_frac_4out_v = tot_cld_frac_4out.get_view<Pack**>();
 
   CldFractionFunc::main(m_num_cols,m_num_levs,m_icecloud_threshold,m_icecloud_for_analysis_threshold,
     qi_v,liq_cld_frac_v,ice_cld_frac_v,tot_cld_frac_v,ice_cld_frac_4out_v,tot_cld_frac_4out_v);
