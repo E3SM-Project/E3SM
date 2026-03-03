@@ -81,7 +81,7 @@ size_t IOPForcing::requested_buffer_size_in_bytes() const
   // Number of bytes needed by the WorkspaceManager passed to shoc_main
   const int nlevi_packs  = ekat::npack<Pack>(m_num_levs+1);
   const auto policy      = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
-  const size_t wsm_bytes = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 7+20+m_num_tracers, policy);
+  const size_t wsm_bytes = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 12+m_num_tracers, policy);
 
   return wsm_bytes;
 }
@@ -100,7 +100,7 @@ void IOPForcing::init_buffers(const ATMBufferManager &buffer_manager)
   m_buffer.wsm_data = mem;
 
   const auto policy       = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
-  const size_t wsm_npacks = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 7+20+m_num_tracers, policy)/sizeof(Pack);
+  const size_t wsm_npacks = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 12+m_num_tracers, policy)/sizeof(Pack);
   mem += wsm_npacks;
 
   size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
@@ -139,7 +139,7 @@ void IOPForcing::initialize_impl (const RunType run_type)
   // Setup WSM for internal local variables
   const auto nlevi_packs = ekat::npack<Pack>(m_num_levs+1);
   const auto policy = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
-  m_workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 7+20+m_num_tracers, policy);
+  m_workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 12+m_num_tracers, policy);
 
   // Compute field for horizontal contraction weights (1/num_global_dofs)
   const auto iop_nudge_tq = m_iop_data_manager->get_params().get<bool>("iop_nudge_tq");
@@ -173,45 +173,31 @@ advance_iop_subsidence (const MemberType& team,
   const int n_q_tracers = Q.extent_int(0);
   const int nlev_packs  = ekat::npack<Pack>(nlevs);
 
+  uview_1d<Pack> p_dep, u_new, v_new, T_new, q_new;
+
   // Workspace temporaries (pack-length views)
-  auto p_dep = uview_1d<Pack>();
-  auto u_old = uview_1d<Pack>();
-  auto v_old = uview_1d<Pack>();
-  auto T_old = uview_1d<Pack>();
-  auto u_new = uview_1d<Pack>();
-  auto v_new = uview_1d<Pack>();
-  auto T_new = uview_1d<Pack>();
-  auto q_old = uview_1d<Pack>();
-  auto q_new = uview_1d<Pack>();
+  //auto p_dep = uview_1d<Pack>();
+  //auto u_new = uview_1d<Pack>();
+  //auto v_new = uview_1d<Pack>();
+  //auto T_new = uview_1d<Pack>();
+  //auto q_new = uview_1d<Pack>();
 
-  workspace.take_many_contiguous_unsafe<9>(
-    {"iop_p_dep","iop_u_old","iop_v_old","iop_T_old",
-     "iop_u_new","iop_v_new","iop_T_new","iop_q_old","iop_q_new"},
-    {&p_dep, &u_old, &v_old, &T_old, &u_new, &v_new, &T_new, &q_old, &q_new});
+  // temporary workspace variables
+  workspace.take_many_contiguous_unsafe<5>(
+    {"iop_p_dep","iop_u_new","iop_v_new","iop_T_new","iop_q_new"},
+    {&p_dep, &u_new, &v_new, &T_new, &q_new});
 
-  // Copy current state into *_old (PACK INDEX SPACE)
+  // Compute Departure Points using large-scale vertical velocity
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
-    u_old(k) = u(k);
-    v_old(k) = v(k);
-    T_old(k) = T(k);
+    p_dep(k) = ref_p_mid(k) - dt * omega(k);
   });
   team.team_barrier();
 
-  const Pack pmin = ref_p_mid(0);
-  const Pack pmax = ref_p_mid(nlev_packs-1);
+  interp.setup(team, ref_p_mid, p_dep);   // This line is suspect
 
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
-    Pack p = ref_p_mid(k) - dt * omega(k);
-    p = ekat::max(pmin, ekat::min(pmax, p));
-    p_dep(k) = p;
-  });
-  team.team_barrier();
-
-  interp.setup(team, ref_p_mid, p_dep);   // This line is sus
-
-  interp.lin_interp(team, ref_p_mid, p_dep, u_old, u_new);
-  interp.lin_interp(team, ref_p_mid, p_dep, v_old, v_new);
-  interp.lin_interp(team, ref_p_mid, p_dep, T_old, T_new);
+  interp.lin_interp(team, ref_p_mid, p_dep, u, u_new);
+  interp.lin_interp(team, ref_p_mid, p_dep, v, v_new);
+  interp.lin_interp(team, ref_p_mid, p_dep, T, T_new);
   team.team_barrier();
 
   // Thermal expansion correction + write back
@@ -227,12 +213,7 @@ advance_iop_subsidence (const MemberType& team,
   for (int m = 0; m < n_q_tracers; ++m) {
     const auto q_m = Kokkos::subview(Q, m, Kokkos::ALL());
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
-      q_old(k) = q_m(k);
-    });
-    team.team_barrier();
-
-    interp.lin_interp(team, ref_p_mid, p_dep, q_old, q_new);
+    interp.lin_interp(team, ref_p_mid, p_dep, q_m, q_new);
     team.team_barrier();
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
@@ -241,8 +222,8 @@ advance_iop_subsidence (const MemberType& team,
     team.team_barrier();
   }
 
-  workspace.release_many_contiguous<9>(
-    {&p_dep,&u_old,&v_old,&T_old,&u_new,&v_new,&T_new,&q_old,&q_new});
+  workspace.release_many_contiguous<5>(
+    {&p_dep,&u_new,&v_new,&T_new,&q_new});
 }
 
 
