@@ -7,7 +7,7 @@ module shr_moab_mod
 
  use shr_sys_mod,      only: shr_sys_abort
  use seq_comm_mct,     only: logunit
- use seq_comm_mct,     only: atm_pg_active, mbaxid,mb_scm_land,mblxid
+ use seq_comm_mct,     only: atm_pg_active, mbaxid,mb_scm_land,mblxid,mb_dead_comps
  use shr_kind_mod,     only: CXX => shr_kind_CXX
  use shr_kind_mod    , only: R8 => SHR_KIND_R8
  use iso_c_binding
@@ -55,8 +55,8 @@ contains
    endif
 
    ! only case on coupler side that we actually want number of vertices is when we use spectral atm
-   if ((.not. atm_pg_active .and. (mbaxid .eq. moabid)) .or. &
-       (mb_scm_land .and. (mblxid .eq. moabid))) then
+   if (((.not. atm_pg_active .and. (mbaxid .eq. moabid)) .or. &
+       (mb_scm_land .and. (mblxid .eq. moabid))) .and. .not. mb_dead_comps) then
     mbGetnCells = nvert(1)
    else
     mbGetnCells = nvise(1)
@@ -91,8 +91,8 @@ contains
     character(*), parameter   :: subname = '(mbGetCellTagVals) '
 !-----------------------------------------------------------------------
 !
-    if ((.not. atm_pg_active .and. (mbaxid .eq. mbid)) .or. &
-       (mb_scm_land .and. (mblxid .eq. mbid))) then
+    if (((.not. atm_pg_active .and. (mbaxid .eq. mbid)) .or. &
+       (mb_scm_land .and. (mblxid .eq. mbid))) .and. .not. mb_dead_comps) then
       ent_type = 0
     else
       ent_type = 1
@@ -135,8 +135,8 @@ contains
 !-----------------------------------------------------------------------
 !
 
-    if ((.not. atm_pg_active .and. (mbaxid .eq. mbid)) .or. &
-       (mb_scm_land .and. (mblxid .eq. mbid))) then
+    if (((.not. atm_pg_active .and. (mbaxid .eq. mbid)) .or. &
+       (mb_scm_land .and. (mblxid .eq. mbid))) .and. .not. mb_dead_comps) then
       ent_type = 0
     else
       ent_type = 1

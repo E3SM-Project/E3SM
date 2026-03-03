@@ -468,6 +468,7 @@ contains
     use seq_comm_mct,     only: mbaxid ! iMOAB id for atm migrated mesh to coupler pes
     use seq_comm_mct,     only: mbrxid ! iMOAB id for rof migrated mesh to coupler pes
     use seq_comm_mct,     only: atm_pg_active !
+    use seq_comm_mct,     only: mb_dead_comps
     !
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
@@ -529,7 +530,7 @@ contains
          nloc = mct_avect_lsize(dom_s%data)
          allocate(data1(nloc))
          data1 = dom_s%data%rAttr(ka,:)
-         if (atm_pg_active) then
+         if (atm_pg_active .or. mb_dead_comps) then
             ent_type = 1  ! element dense double tags
          else ! this is true only for spectral atm now
             ent_type = 0 ! for pure spectral case, the atm is PC on coupler side
@@ -778,8 +779,8 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
 
    if (comp(1)%iamin_cplcompid) then
       tagname='aream'//C_NULL_CHAR
-      ! bring on the comp side the aream from maps
-      ! (it is either computed by mapping routine or read from mapping files)
+      ! Bring on the component side the aream from maps.
+      ! For dead X-cases this keeps area-correction factors aligned with MCT.
       call component_exch_moab(comp(1), mbcxid, mbccid, 1, tagname, context_exch='aream')
 
       ! For only component pes

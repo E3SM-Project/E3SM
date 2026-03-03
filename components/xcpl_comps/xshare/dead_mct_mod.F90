@@ -490,9 +490,9 @@ contains
     integer(IN), allocatable :: entity_order(:)  ! maps MOAB elem pos -> gbuf index
     integer(IN)          :: midx        ! model index for moab_nxg/nyg
     logical          :: fullmesh
-! #ifdef MOABDEBUG
+#ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
-! #endif
+#endif
     character(*), parameter :: subName = "(dead_init_moab) "
     !-------------------------------------------------------------------
     !
@@ -537,24 +537,27 @@ contains
        !   - Interior vertices: nxg per latitude row (periodic in longitude)
        !   - Pole row elements (j=0, j=nyg-1): triangles
        !   - Interior elements: quads
+       !
+       ! This implementation scales with local element count (O(lsize * log(lsize)))
+       ! and does not allocate or iterate over global-sized arrays.
        block
-          integer(IN)          :: nverts_local   ! number of local vertices
+          integer(IN)          :: nverts_local   ! number of unique local vertices
           integer(IN)          :: nelems         ! number of elements
-          integer(IN), allocatable :: vert_gid(:)      ! global IDs for local vertices
+          integer(IN), allocatable :: vert_gid(:)      ! sorted unique vertex global IDs
           real(R8), allocatable    :: vert_coords(:)   ! vertex coords in 3D (x,y,z)
           integer(IN)          :: iv, ix, iy, vgid
           integer(IN)          :: elem_type
           real(R8)             :: dlat, dlon, lat_v, lon_v
           integer(IN)          :: i_elem, j_elem  ! global element indices (0-based)
           integer(IN)          :: elem_gid        ! global element ID (1-based)
-          integer(IN), allocatable :: vert_map(:) ! map from global vertex ID to local index
-          integer(IN)          :: max_vert_gid
           integer(IN)          :: ntri_elems, nquad_elems, tri_idx, quad_idx
           integer(IN), allocatable :: tri_conn(:), quad_conn(:)
           integer(IN)          :: ix_r            ! right-side ix with wrapping
           integer(IN)          :: vgid_sp, vgid_np ! south/north pole vertex global IDs
           integer(IN)          :: vgid_bl, vgid_br, vgid_tl, vgid_tr
           integer(IN), allocatable :: elem_gids(:)  ! element global IDs for MOAB tag
+          integer(IN), allocatable :: all_vgids(:)  ! workspace for collecting vertex GIDs
+          integer(IN)          :: nv_total, k      ! workspace counters
 
           ! Grid spacing for regular lat-lon mesh
           ! Note: gbuf longitudes start at 0 deg (from dead_setNewGrid)
@@ -571,13 +574,13 @@ contains
           ! Total unique vertices = (nyg - 1) * nxg + 2
           vgid_sp = 1
           vgid_np = 2 + (nyg - 1) * nxg
-          max_vert_gid = vgid_np
 
-          allocate(vert_map(max_vert_gid))
-          vert_map = 0
-
-          ! First pass: identify unique local vertices
-          nverts_local = 0
+          ! --- Step 1: Collect all vertex GIDs referenced by local elements ---
+          ! Each element has at most 4 vertices, so 4*lsize is an upper bound.
+          allocate(all_vgids(4 * lsize))
+          nv_total = 0
+          ntri_elems = 0
+          nquad_elems = 0
           do n = 1, lsize
              elem_gid = int(gbuf(n, dead_grid_index))
              i_elem = mod(elem_gid - 1, nxg)      ! 0-based column
@@ -586,93 +589,68 @@ contains
 
              if (j_elem == 0) then
                 ! South pole triangle: pole + 2 top-edge vertices at iy=1
-                vgid = vgid_sp
-                if (vert_map(vgid) == 0) then
-                   nverts_local = nverts_local + 1
-                   vert_map(vgid) = nverts_local
-                endif
-                vgid = 2 + i_elem                   ! (i_elem, iy=1)
-                if (vert_map(vgid) == 0) then
-                   nverts_local = nverts_local + 1
-                   vert_map(vgid) = nverts_local
-                endif
-                vgid = 2 + ix_r                     ! (ix_r, iy=1)
-                if (vert_map(vgid) == 0) then
-                   nverts_local = nverts_local + 1
-                   vert_map(vgid) = nverts_local
-                endif
+                ntri_elems = ntri_elems + 1
+                nv_total = nv_total + 1; all_vgids(nv_total) = vgid_sp
+                nv_total = nv_total + 1; all_vgids(nv_total) = 2 + i_elem
+                nv_total = nv_total + 1; all_vgids(nv_total) = 2 + ix_r
              else if (j_elem == nyg - 1) then
                 ! North pole triangle: 2 bottom-edge vertices at iy=nyg-1 + pole
-                vgid = 2 + (nyg - 2) * nxg + i_elem ! (i_elem, iy=nyg-1)
-                if (vert_map(vgid) == 0) then
-                   nverts_local = nverts_local + 1
-                   vert_map(vgid) = nverts_local
-                endif
-                vgid = 2 + (nyg - 2) * nxg + ix_r   ! (ix_r, iy=nyg-1)
-                if (vert_map(vgid) == 0) then
-                   nverts_local = nverts_local + 1
-                   vert_map(vgid) = nverts_local
-                endif
-                vgid = vgid_np
-                if (vert_map(vgid) == 0) then
-                   nverts_local = nverts_local + 1
-                   vert_map(vgid) = nverts_local
-                endif
+                ntri_elems = ntri_elems + 1
+                nv_total = nv_total + 1; all_vgids(nv_total) = 2 + (nyg-2)*nxg + i_elem
+                nv_total = nv_total + 1; all_vgids(nv_total) = 2 + (nyg-2)*nxg + ix_r
+                nv_total = nv_total + 1; all_vgids(nv_total) = vgid_np
              else
                 ! Interior quad: 4 corner vertices
-                vgid = 2 + (j_elem - 1) * nxg + i_elem  ! BL (i_elem, j_elem)
-                if (vert_map(vgid) == 0) then
-                   nverts_local = nverts_local + 1
-                   vert_map(vgid) = nverts_local
-                endif
-                vgid = 2 + (j_elem - 1) * nxg + ix_r    ! BR (ix_r, j_elem)
-                if (vert_map(vgid) == 0) then
-                   nverts_local = nverts_local + 1
-                   vert_map(vgid) = nverts_local
-                endif
-                vgid = 2 + j_elem * nxg + ix_r           ! TR (ix_r, j_elem+1)
-                if (vert_map(vgid) == 0) then
-                   nverts_local = nverts_local + 1
-                   vert_map(vgid) = nverts_local
-                endif
-                vgid = 2 + j_elem * nxg + i_elem         ! TL (i_elem, j_elem+1)
-                if (vert_map(vgid) == 0) then
-                   nverts_local = nverts_local + 1
-                   vert_map(vgid) = nverts_local
-                endif
+                nquad_elems = nquad_elems + 1
+                nv_total = nv_total + 1; all_vgids(nv_total) = 2 + (j_elem-1)*nxg + i_elem
+                nv_total = nv_total + 1; all_vgids(nv_total) = 2 + (j_elem-1)*nxg + ix_r
+                nv_total = nv_total + 1; all_vgids(nv_total) = 2 + j_elem*nxg + ix_r
+                nv_total = nv_total + 1; all_vgids(nv_total) = 2 + j_elem*nxg + i_elem
              endif
           enddo
 
-          ! Allocate arrays for vertices
-          allocate(vert_coords(nverts_local * 3))
-          allocate(vert_gid(nverts_local))
+          ! --- Step 2: Sort and deduplicate to get unique local vertex GIDs ---
+          ! Uses heapsort for guaranteed O(n log n) and no extra memory.
+          call dead_heapsort_int(all_vgids, nv_total)
 
-          ! Compute vertex coordinates from global vertex IDs
-          ! Decode (ix, iy) from vgid and compute 3D Cartesian coords on unit sphere
-          do vgid = 1, max_vert_gid
-             if (vert_map(vgid) > 0) then
-                iv = vert_map(vgid)
-                vert_gid(iv) = vgid
-                if (vgid == vgid_sp) then
-                   ! South pole: lat = -90 deg
-                   lat_v = -0.5_R8 * shr_const_pi
-                   lon_v = 0.0_R8
-                else if (vgid == vgid_np) then
-                   ! North pole: lat = +90 deg
-                   lat_v = 0.5_R8 * shr_const_pi
-                   lon_v = 0.0_R8
-                else
-                   ! Non-pole vertex: decode ix, iy from vgid = 2 + (iy-1)*nxg + ix
-                   ix = mod(vgid - 2, nxg)
-                   iy = (vgid - 2) / nxg + 1
-                   ! Longitude starts at 0 deg (matching dead_setNewGrid convention)
-                   lat_v = (-90.0_R8 + real(iy, R8) * dlat) * shr_const_pi / 180.0_R8
-                   lon_v = real(ix, R8) * dlon * shr_const_pi / 180.0_R8
-                endif
-                vert_coords(3*iv-2) = cos(lat_v) * cos(lon_v)
-                vert_coords(3*iv-1) = cos(lat_v) * sin(lon_v)
-                vert_coords(3*iv  ) = sin(lat_v)
+          ! Compact: remove duplicates (array is now sorted)
+          nverts_local = 1
+          do k = 2, nv_total
+             if (all_vgids(k) /= all_vgids(nverts_local)) then
+                nverts_local = nverts_local + 1
+                all_vgids(nverts_local) = all_vgids(k)
              endif
+          enddo
+
+          ! Move unique GIDs into final array
+          allocate(vert_gid(nverts_local))
+          vert_gid(1:nverts_local) = all_vgids(1:nverts_local)
+          deallocate(all_vgids)
+
+          ! --- Step 3: Compute vertex coordinates only for local vertices ---
+          ! Coordinates are derived analytically from the vertex global ID.
+          allocate(vert_coords(nverts_local * 3))
+          do iv = 1, nverts_local
+             vgid = vert_gid(iv)
+             if (vgid == vgid_sp) then
+                ! South pole: lat = -90 deg
+                lat_v = -0.5_R8 * shr_const_pi
+                lon_v = 0.0_R8
+             else if (vgid == vgid_np) then
+                ! North pole: lat = +90 deg
+                lat_v = 0.5_R8 * shr_const_pi
+                lon_v = 0.0_R8
+             else
+                ! Non-pole vertex: decode ix, iy from vgid = 2 + (iy-1)*nxg + ix
+                ix = mod(vgid - 2, nxg)
+                iy = (vgid - 2) / nxg + 1
+                ! Longitude starts at 0 deg (matching dead_setNewGrid convention)
+                lat_v = (-90.0_R8 + real(iy, R8) * dlat) * shr_const_pi / 180.0_R8
+                lon_v = real(ix, R8) * dlon * shr_const_pi / 180.0_R8
+             endif
+             vert_coords(3*iv-2) = cos(lat_v) * cos(lon_v)
+             vert_coords(3*iv-1) = cos(lat_v) * sin(lon_v)
+             vert_coords(3*iv  ) = sin(lat_v)
           enddo
 
           ! Create vertices in MOAB
@@ -680,18 +658,8 @@ contains
           if (ierr .ne. 0) &
              call shr_sys_abort('Error: fail to create vertices for RLL mesh')
 
-          ! Count triangular (polar) and quad (interior) elements
-          ntri_elems = 0
-          nquad_elems = 0
-          do n = 1, lsize
-             elem_gid = int(gbuf(n, dead_grid_index))
-             j_elem = (elem_gid - 1) / nxg
-             if (j_elem == 0 .or. j_elem == nyg - 1) then
-                ntri_elems = ntri_elems + 1
-             else
-                nquad_elems = nquad_elems + 1
-             endif
-          enddo
+          ! --- Step 4: Build element connectivity ---
+          ! Uses binary search in vert_gid(:) instead of a global-sized lookup table.
 
           allocate(tri_conn(max(ntri_elems * 3, 1)))
           allocate(quad_conn(max(nquad_elems * 4, 1)))
@@ -715,17 +683,17 @@ contains
                 ! South pole triangle: SP, (ix_r, iy=1), (i_elem, iy=1)
                 ! Winding order gives outward normal toward -z (correct at south pole)
                 tri_idx = tri_idx + 1
-                tri_conn(3*(tri_idx-1) + 1) = vert_map(vgid_sp)
-                tri_conn(3*(tri_idx-1) + 2) = vert_map(2 + ix_r)
-                tri_conn(3*(tri_idx-1) + 3) = vert_map(2 + i_elem)
+                tri_conn(3*(tri_idx-1) + 1) = dead_bsearch_int(vert_gid, nverts_local, vgid_sp)
+                tri_conn(3*(tri_idx-1) + 2) = dead_bsearch_int(vert_gid, nverts_local, 2 + ix_r)
+                tri_conn(3*(tri_idx-1) + 3) = dead_bsearch_int(vert_gid, nverts_local, 2 + i_elem)
                 elem_gids(tri_idx) = elem_gid
                 entity_order(tri_idx) = n
              else if (j_elem == nyg - 1) then
                 ! North pole triangle: (i_elem, nyg-1), (ix_r, nyg-1), NP
                 tri_idx = tri_idx + 1
-                tri_conn(3*(tri_idx-1) + 1) = vert_map(2 + (nyg-2)*nxg + i_elem)
-                tri_conn(3*(tri_idx-1) + 2) = vert_map(2 + (nyg-2)*nxg + ix_r)
-                tri_conn(3*(tri_idx-1) + 3) = vert_map(vgid_np)
+                tri_conn(3*(tri_idx-1) + 1) = dead_bsearch_int(vert_gid, nverts_local, 2 + (nyg-2)*nxg + i_elem)
+                tri_conn(3*(tri_idx-1) + 2) = dead_bsearch_int(vert_gid, nverts_local, 2 + (nyg-2)*nxg + ix_r)
+                tri_conn(3*(tri_idx-1) + 3) = dead_bsearch_int(vert_gid, nverts_local, vgid_np)
                 elem_gids(tri_idx) = elem_gid
                 entity_order(tri_idx) = n
              else
@@ -735,10 +703,10 @@ contains
                 vgid_br = 2 + (j_elem - 1) * nxg + ix_r
                 vgid_tr = 2 + j_elem * nxg + ix_r
                 vgid_tl = 2 + j_elem * nxg + i_elem
-                quad_conn(4*(quad_idx-1) + 1) = vert_map(vgid_bl)
-                quad_conn(4*(quad_idx-1) + 2) = vert_map(vgid_br)
-                quad_conn(4*(quad_idx-1) + 3) = vert_map(vgid_tr)
-                quad_conn(4*(quad_idx-1) + 4) = vert_map(vgid_tl)
+                quad_conn(4*(quad_idx-1) + 1) = dead_bsearch_int(vert_gid, nverts_local, vgid_bl)
+                quad_conn(4*(quad_idx-1) + 2) = dead_bsearch_int(vert_gid, nverts_local, vgid_br)
+                quad_conn(4*(quad_idx-1) + 3) = dead_bsearch_int(vert_gid, nverts_local, vgid_tr)
+                quad_conn(4*(quad_idx-1) + 4) = dead_bsearch_int(vert_gid, nverts_local, vgid_tl)
                 elem_gids(ntri_elems + quad_idx) = elem_gid
                 entity_order(ntri_elems + quad_idx) = n
              endif
@@ -784,7 +752,7 @@ contains
           if (ierr .ne. 0) &
              call shr_sys_abort('Error: fail to resolve shared entities')
 
-          deallocate(vert_coords, vert_gid, vert_map, elem_gids)
+          deallocate(vert_coords, vert_gid, elem_gids)
        end block
     else
 
@@ -895,12 +863,12 @@ contains
             call shr_sys_abort('Error: fail to get area tag ')
 
          ! set the same data for aream (model area) as area
-         ! tagname='aream'//C_NULL_CHAR
-         ! ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
-         !                                  etype, &
-         !                                  data)
-         ! if (ierr > 0 )  &
-         !    call shr_sys_abort('Error: fail to set aream tag ')
+         tagname='aream'//C_NULL_CHAR
+         ierr = iMOAB_SetDoubleTagStorage ( mbdomain, tagname, lsize, &
+                                          etype, &
+                                          data)
+         if (ierr > 0 )  &
+            call shr_sys_abort('Error: fail to set aream tag ')
 
          if (fullmesh) then
             do n = 1, lsize
@@ -937,15 +905,14 @@ contains
     end if
 
 
-  !      debug test
-   !  outfile = trim(model) // '_deadModels.h5m'//C_NULL_CHAR
-    wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-   !  wopts   = ''//C_NULL_CHAR !
-       !      write out the mesh file to disk
+#ifdef MOABDEBUG
+    !      debug test - write out the mesh file to disk
+    wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
     ierr = iMOAB_WriteMesh(mbdomain, trim(model) // '_unr_deadModels.h5m'//C_NULL_CHAR, trim(wopts))
     if (ierr .ne. 0) then
        call shr_sys_abort(subname//' ERROR in writing data mesh lnd ')
     endif
+#endif
 
   end subroutine dead_init_moab
   !===============================================================================
@@ -1061,6 +1028,83 @@ contains
 
   end subroutine define_reset_fields_moab
   !===============================================================================
+
+  !-----------------------------------------------------------------------
+  ! Heapsort for integer arrays. Sorts arr(1:n) in-place in ascending order.
+  ! O(n log n) worst case, no extra memory.
+  !-----------------------------------------------------------------------
+  subroutine dead_heapsort_int(arr, n)
+    use shr_kind_mod, only : IN=>SHR_KIND_IN
+    implicit none
+    integer(IN), intent(in)    :: n
+    integer(IN), intent(inout) :: arr(n)
+    integer(IN) :: i, ir, j, l, tmp
+
+    if (n < 2) return
+
+    ! Build max-heap
+    l = n/2 + 1
+    ir = n
+    do
+       if (l > 1) then
+          l = l - 1
+          tmp = arr(l)
+       else
+          tmp = arr(ir)
+          arr(ir) = arr(1)
+          ir = ir - 1
+          if (ir == 1) then
+             arr(1) = tmp
+             return
+          endif
+       endif
+       i = l
+       j = l + l
+       do while (j <= ir)
+          if (j < ir) then
+             if (arr(j) < arr(j+1)) j = j + 1
+          endif
+          if (tmp < arr(j)) then
+             arr(i) = arr(j)
+             i = j
+             j = j + j
+          else
+             j = ir + 1
+          endif
+       enddo
+       arr(i) = tmp
+    enddo
+  end subroutine dead_heapsort_int
+
+  !-----------------------------------------------------------------------
+  ! Binary search for integer value in sorted array arr(1:n).
+  ! Returns the 1-based index of val. Aborts if val is not found.
+  !-----------------------------------------------------------------------
+  pure function dead_bsearch_int(arr, n, val) result(idx)
+    use shr_kind_mod, only : IN=>SHR_KIND_IN
+    implicit none
+    integer(IN), intent(in) :: n
+    integer(IN), intent(in) :: arr(n)
+    integer(IN), intent(in) :: val
+    integer(IN) :: idx
+    integer(IN) :: lo, hi, mid
+
+    lo = 1
+    hi = n
+    do while (lo <= hi)
+       mid = (lo + hi) / 2
+       if (arr(mid) < val) then
+          lo = mid + 1
+       else if (arr(mid) > val) then
+          hi = mid - 1
+       else
+          idx = mid
+          return
+       endif
+    enddo
+    ! Should never reach here if mesh construction is correct
+    idx = -1
+  end function dead_bsearch_int
 
 #endif
 

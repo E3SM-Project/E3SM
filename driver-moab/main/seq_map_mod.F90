@@ -1194,7 +1194,7 @@ contains
   subroutine seq_map_cart3d( mapper, type, av_s, av_d, fldu, fldv, norm, string)
 
     use shr_moab_mod, only: mbGetCellTagVals, mbSetCellTagVals, mbGetnCells
-    use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorageWithGid
+    use iMOAB, only: iMOAB_DefineTagStorage
     use iso_c_binding
     implicit none
     !-----------------------------------------------------
@@ -1220,10 +1220,10 @@ contains
     type(mct_aVect)   :: av3_s, av3_d
     integer(in)       :: mpicom,my_task,ierr,urcnt,urcntl
     ! MOAB-specific variables
+    integer           :: lsize_s_moab, lsize_d_moab
     real(r8), allocatable :: u_vals_moab(:), v_vals_moab(:)
-    real(r8), allocatable :: tag_vals_tmp(:)
+    real(r8), allocatable :: cart_vals_moab(:,:)  ! 2D array: (ux,uy,uz) x npoints
     logical           :: use_moab_data
-    integer(in), pointer  :: dof_s(:), dof_d(:)
     character(len=*),parameter :: subname = "(seq_map_cart3d) "
     character(64)              :: tagname
 
@@ -1269,35 +1269,35 @@ contains
        enddo
     endif
 
-    if (use_moab_data .and. ku /= 0 .and. kv /= 0) then
-       !*** MOAB: Copy MCT-computed ux/uy/uz into MOAB source tags
-       !*** Instead of computing the cart3d transform independently (which can
-       !*** introduce machine-precision differences due to separate coordinate
-       !*** arrays and element ordering), we reuse the MCT-computed values
-       !*** from av3_s. iMOAB_SetDoubleTagStorageWithGid handles the MCT-to-MOAB
-       !*** element reordering via global IDs.
-       call mpi_comm_rank(mpicom, my_task, ierr)
-       call mct_gsMap_orderedPoints(mapper%gsmap_s, my_task, dof_s)
-       lsize = mct_aVect_lsize(av_s)
-       allocate(tag_vals_tmp(lsize))
+    if (use_moab_data) then
+       ! MOAB data path: get source values from MOAB
+       lsize_s_moab = mbGetnCells(mapper%src_mbid)
+       allocate(u_vals_moab(lsize_s_moab), v_vals_moab(lsize_s_moab))
+       allocate(cart_vals_moab(lsize_s_moab,3))
 
-       tag_vals_tmp(:) = av3_s%rAttr(kux,:)
-       tagname = "ux"//C_NULL_CHAR
-       ierr = iMOAB_SetDoubleTagStorageWithGid(mapper%src_mbid, tagname, &
-            lsize, mapper%tag_entity_type, tag_vals_tmp, dof_s)
+       ! Get source u and v values from MOAB
+       call mbGetCellTagVals(mapper%src_mbid, trim(fldu), u_vals_moab, lsize_s_moab)
+       call mbGetCellTagVals(mapper%src_mbid, trim(fldv), v_vals_moab, lsize_s_moab)
 
-       tag_vals_tmp(:) = av3_s%rAttr(kuy,:)
-       tagname = "uy"//C_NULL_CHAR
-       ierr = iMOAB_SetDoubleTagStorageWithGid(mapper%src_mbid, tagname, &
-            lsize, mapper%tag_entity_type, tag_vals_tmp, dof_s)
+       ! Convert source spherical to cartesian using MOAB coordinate arrays
+       do n = 1, lsize_s_moab
+          ur = 0.0_r8
+          ue = u_vals_moab(n)
+          un = v_vals_moab(n)
+          ux = mapper%clon_s_moab(n)*mapper%clat_s_moab(n)*ur - &
+            mapper%clon_s_moab(n)*mapper%slat_s_moab(n)*un - &
+               mapper%slon_s_moab(n)*ue
+          uy = mapper%slon_s_moab(n)*mapper%clat_s_moab(n)*ur - &
+               mapper%slon_s_moab(n)*mapper%slat_s_moab(n)*un + &
+               mapper%clon_s_moab(n)*ue
+          uz = mapper%slat_s_moab(n)*ur + &
+               mapper%clat_s_moab(n)*un
+          cart_vals_moab(n,1) = ux
+          cart_vals_moab(n,2) = uy
+          cart_vals_moab(n,3) = uz
+       enddo
+       call mbSetCellTagVals(mapper%src_mbid, "ux:uy:uz"//C_NULL_CHAR, cart_vals_moab, lsize_s_moab*3)
 
-       tag_vals_tmp(:) = av3_s%rAttr(kuz,:)
-       tagname = "uz"//C_NULL_CHAR
-       ierr = iMOAB_SetDoubleTagStorageWithGid(mapper%src_mbid, tagname, &
-            lsize, mapper%tag_entity_type, tag_vals_tmp, dof_s)
-
-       deallocate(tag_vals_tmp)
-       deallocate(dof_s)
     endif
 
     call seq_map_map(mapper, av3_s, av3_d, norm=lnorm)
@@ -1356,31 +1356,65 @@ contains
        call mct_avect_clean(av3_d)
     endif
 
-    if (use_moab_data .and. ku /= 0 .and. kv /= 0) then
-       !*** MOAB: Copy MCT-computed u,v into MOAB target tags
-       !*** Instead of independently reading MOAB-mapped ux/uy/uz and applying
-       !*** a separate inverse transform (which can differ at machine precision
-       !*** due to independent coordinate arrays), we reuse the MCT-computed
-       !*** final u,v values from av_d. This guarantees bit-for-bit equivalence
-       !*** between MCT and MOAB history output for vector-mapped fields.
-       call mpi_comm_rank(mpicom, my_task, ierr)
-       call mct_gsMap_orderedPoints(mapper%gsmap_d, my_task, dof_d)
-       lsize = mct_aVect_lsize(av_d)
-       allocate(u_vals_moab(lsize), v_vals_moab(lsize))
+    if (use_moab_data) then
+       ! MOAB data path: convert cartesian back to spherical and set in MOAB
+       lsize_d_moab = mbGetnCells(mapper%tgt_mbid)
+       deallocate(u_vals_moab, v_vals_moab, cart_vals_moab)
+       allocate(u_vals_moab(lsize_d_moab), v_vals_moab(lsize_d_moab))
+       allocate(cart_vals_moab(lsize_d_moab,3))
 
-       u_vals_moab(:) = av_d%rAttr(ku,:)
-       v_vals_moab(:) = av_d%rAttr(kv,:)
+       ! Get mapped values
+       call mbGetCellTagVals(mapper%tgt_mbid, "ux:uy:uz"//C_NULL_CHAR, cart_vals_moab, lsize_d_moab*3)
 
-       tagname = trim(fldu)//C_NULL_CHAR
-       ierr = iMOAB_SetDoubleTagStorageWithGid(mapper%tgt_mbid, tagname, &
-            lsize, mapper%tag_entity_type, u_vals_moab, dof_d)
 
-       tagname = trim(fldv)//C_NULL_CHAR
-       ierr = iMOAB_SetDoubleTagStorageWithGid(mapper%tgt_mbid, tagname, &
-            lsize, mapper%tag_entity_type, v_vals_moab, dof_d)
+       ! Convert back from cartesian to spherical on target grid using MOAB coordinates
+       do n = 1, lsize_d_moab
+          ux = cart_vals_moab(n,1)
+          uy = cart_vals_moab(n,2)
+          uz = cart_vals_moab(n,3)
+          ue = -mapper%slon_d_moab(n)          *ux + &
+               mapper%clon_d_moab(n)          *uy
+          un = -mapper%clon_d_moab(n)*mapper%slat_d_moab(n)*ux - &
+               mapper%slon_d_moab(n)*mapper%slat_d_moab(n)*uy + &
+               mapper%clat_d_moab(n)*uz
+          ur =  mapper%clon_d_moab(n)*mapper%clat_d_moab(n)*ux + &
+               mapper%slon_d_moab(n)*mapper%clat_d_moab(n)*uy - &
+               mapper%slat_d_moab(n)*uz
+          speed = sqrt(ur*ur + ue*ue + un*un)
+          if (trim(type) == 'cart3d_diag' .or. trim(type) == 'cart3d_uvw_diag') then
+             if (speed /= 0.0_r8) then
+                urmaxl = max(urmaxl,abs(ur))
+                uravgl = uravgl + abs(ur)
+                spavgl = spavgl + speed
+                urcntl = urcntl + 1
+             endif
+          endif
+          if (type(1:10) == 'cart3d_uvw') then
+             !--- this adds ur to ue and un, while preserving u/v angle and total speed ---
+             if (un == 0.0_R8) then
+                !--- if ue is also 0.0 then just give speed to ue, this is arbitrary ---
+                u_vals_moab(n) = sign(speed,ue)
+                v_vals_moab(n) = 0.0_r8
+             else if (ue == 0.0_R8) then
+                u_vals_moab(n) = 0.0_r8
+                v_vals_moab(n) = sign(speed,un)
+             else
+                u_vals_moab(n) = sign(speed/sqrt(1.0_r8 + ((un*un)/(ue*ue))),ue)
+                v_vals_moab(n) = sign(speed/sqrt(1.0_r8 + ((ue*ue)/(un*un))),un)
+             endif
+          else
+             !--- this ignores ur ---
+             u_vals_moab(n) = ue
+             v_vals_moab(n) = un
+          endif
+       enddo
 
-       deallocate(u_vals_moab, v_vals_moab)
-       deallocate(dof_d)
+       ! Set final u,v values in destination MOAB app
+       call mbSetCellTagVals(mapper%tgt_mbid, trim(fldu), u_vals_moab, lsize_d_moab)
+       call mbSetCellTagVals(mapper%tgt_mbid, trim(fldv), v_vals_moab, lsize_d_moab)
+
+       ! Clean up MOAB arrays
+       deallocate(u_vals_moab, v_vals_moab, cart_vals_moab)
     endif
 
 
