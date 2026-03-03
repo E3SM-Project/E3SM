@@ -81,7 +81,7 @@ size_t IOPForcing::requested_buffer_size_in_bytes() const
   // Number of bytes needed by the WorkspaceManager passed to shoc_main
   const int nlevi_packs  = ekat::npack<Pack>(m_num_levs+1);
   const auto policy      = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
-  const size_t wsm_bytes = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 12+m_num_tracers, policy);
+  const size_t wsm_bytes = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 8+m_num_tracers, policy);
 
   return wsm_bytes;
 }
@@ -100,7 +100,7 @@ void IOPForcing::init_buffers(const ATMBufferManager &buffer_manager)
   m_buffer.wsm_data = mem;
 
   const auto policy       = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
-  const size_t wsm_npacks = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 12+m_num_tracers, policy)/sizeof(Pack);
+  const size_t wsm_npacks = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 8+m_num_tracers, policy)/sizeof(Pack);
   mem += wsm_npacks;
 
   size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
@@ -139,7 +139,7 @@ void IOPForcing::initialize_impl (const RunType run_type)
   // Setup WSM for internal local variables
   const auto nlevi_packs = ekat::npack<Pack>(m_num_levs+1);
   const auto policy = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
-  m_workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 12+m_num_tracers, policy);
+  m_workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 8+m_num_tracers, policy);
 
   // Compute field for horizontal contraction weights (1/num_global_dofs)
   const auto iop_nudge_tq = m_iop_data_manager->get_params().get<bool>("iop_nudge_tq");
@@ -219,8 +219,6 @@ advance_iop_subsidence (const MemberType& team,
   workspace.release_many_contiguous<5>(
     {&p_dep,&u_new,&v_new,&T_new,&q_new});
 }
-
-
 // =========================================================================================
 KOKKOS_FUNCTION
 void IOPForcing::
@@ -337,7 +335,9 @@ void IOPForcing::run_impl (const double dt)
   auto wsm = m_workspace_mgr;
   auto num_levs = m_num_levs;
 
-  ekat::LinInterp<Real, Pack::n> subs_interp(1, nlev_packs, nlev_packs);
+  const auto ncols = m_grid->get_num_local_dofs();
+
+  ekat::LinInterp<Real, Pack::n> subs_interp(ncols, nlev_packs, nlev_packs);
 
   // Apply IOP forcing
   Kokkos::parallel_for("apply_iop_forcing", policy_iop, KOKKOS_LAMBDA (const MemberType& team) {
