@@ -173,14 +173,8 @@ advance_iop_subsidence (const MemberType& team,
   const int n_q_tracers = Q.extent_int(0);
   const int nlev_packs  = ekat::npack<Pack>(nlevs);
 
+  // Workspace temporaries
   uview_1d<Pack> p_dep, u_new, v_new, T_new, q_new;
-
-  // Workspace temporaries (pack-length views)
-  //auto p_dep = uview_1d<Pack>();
-  //auto u_new = uview_1d<Pack>();
-  //auto v_new = uview_1d<Pack>();
-  //auto T_new = uview_1d<Pack>();
-  //auto q_new = uview_1d<Pack>();
 
   // temporary workspace variables
   workspace.take_many_contiguous_unsafe<5>(
@@ -193,7 +187,7 @@ advance_iop_subsidence (const MemberType& team,
   });
   team.team_barrier();
 
-  interp.setup(team, ref_p_mid, p_dep);   // This line is suspect
+  interp.setup(team, ref_p_mid, p_dep);
 
   interp.lin_interp(team, ref_p_mid, p_dep, u, u_new);
   interp.lin_interp(team, ref_p_mid, p_dep, v, v_new);
