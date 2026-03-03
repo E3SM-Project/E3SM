@@ -4940,8 +4940,6 @@ contains
 
   subroutine cime_run_update_fractions()
 
-    use seq_comm_mct, only: mbaxid
-
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:FRACSET_BARRIER')
        call t_drvstartf ('CPL:FRACSET',cplrun=.true.,barrier=mpicom_CPLID)

@@ -468,6 +468,7 @@ contains
     use seq_comm_mct,     only: mbaxid ! iMOAB id for atm migrated mesh to coupler pes
     use seq_comm_mct,     only: mbrxid ! iMOAB id for rof migrated mesh to coupler pes
     use seq_comm_mct,     only: atm_pg_active !
+    use seq_comm_mct,     only: mb_dead_comps
     !
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
@@ -529,7 +530,7 @@ contains
          nloc = mct_avect_lsize(dom_s%data)
          allocate(data1(nloc))
          data1 = dom_s%data%rAttr(ka,:)
-         if (atm_pg_active) then
+         if (atm_pg_active .or. mb_dead_comps) then
             ent_type = 1  ! element dense double tags
          else ! this is true only for spectral atm now
             ent_type = 0 ! for pure spectral case, the atm is PC on coupler side

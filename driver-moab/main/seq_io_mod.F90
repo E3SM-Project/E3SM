@@ -33,7 +33,7 @@ module seq_io_mod
   use shr_sys_mod,  only: shr_sys_abort
   use seq_comm_mct, only: logunit, CPLID, seq_comm_setptrs
   use seq_comm_mct, only: seq_comm_namelen, seq_comm_name
-  use seq_comm_mct, only: mbaxid, atm_pg_active,mblxid,mb_scm_land
+  use seq_comm_mct, only: mbaxid, atm_pg_active,mblxid,mb_scm_land,mb_dead_comps
   use seq_flds_mod, only : seq_flds_lookup
   use mct_mod           ! mct wrappers
   use pio
@@ -1717,15 +1717,14 @@ contains
     write(logunit,*) subname, 'lnx, lny, mbxid ',  lnx, lny, mbxid
 #endif
 
-    ! check for dead components (ideally need infodata)
-    ! we will instead just check if ng = 0 but ngv > 0
-    ! to imply that this is a pure point cloud mesh with no cells
-    if (ng .eq. 0 .and. ngv .gt. 0) dead_comps = .true.
+    ! Use global dead_comps flag from seq_comm_mct (set during cplcomp_moab_Init)
+    dead_comps = mb_dead_comps
 
     ! get the local size ns
     ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
-    if ((.not. atm_pg_active .and. (mbaxid .eq. mbxid)) .or. &
-       (mb_scm_land .and. (mblxid .eq. mbxid)) .or. dead_comps) then
+    if (((.not. atm_pg_active .and. (mbaxid .eq. mbxid)) &
+       .or. (mb_scm_land .and. (mblxid .eq. mbxid)) .or. nvise(1) .eq. 0) &
+       .and. .not. dead_comps) then
       ent_type = 0
       ns = nvert(1) ! local vertices
       lnx = ngv ! number of global vertices
@@ -1837,7 +1836,7 @@ contains
              else
                tagname = trim(field)//C_NULL_CHAR
                if (ns > 0 ) then
-                  ierr = iMOAB_GetDoubleTagStorage (mbxid, tagname, ns , ent_type, data1)
+                  ierr = iMOAB_GetDoubleTagStorage (mbxid, tagname, ns, ent_type, data1)
                   if (ierr .ne. 0) then
                      write(logunit,*) subname,' ERROR: cannot get tag data ', trim(tagname)
                      call shr_sys_abort(subname//'cannot get tag data ')
@@ -2741,8 +2740,8 @@ contains
     ierr = iMOAB_GetGlobalInfo( mbxid, ngv, ng)
     lny = 1 ! do we need 2 var, or just 1
     ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
-    if ((.not. atm_pg_active .and. (mbaxid .eq. mbxid)) .or. &
-       (mb_scm_land .and. (mblxid .eq. mbxid))) then
+    if (((.not. atm_pg_active .and. (mbaxid .eq. mbxid)) .or. &
+       (mb_scm_land .and. (mblxid .eq. mbxid))) .and. .not. mb_dead_comps) then
       ent_type = 0
       ns = nvert(1) ! local vertices
       lnx = ngv ! number of global vertices

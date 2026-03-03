@@ -238,7 +238,7 @@ CONTAINS
     type(mct_gGrid)        , pointer :: ggrid
     integer(IN)                      :: shrlogunit     ! original log unit
     integer(IN)                      :: shrloglev      ! original log level
-     
+    character(CL)                    :: case_name      ! case name 
     real(R8)                         :: orbEccen       ! orb eccentricity (unit-less)
     real(R8)                         :: orbMvelpp      ! orb moving vernal eq (radians)
     real(R8)                         :: orbLambm0      ! orb mean long of perhelion (radians)

@@ -34,6 +34,7 @@ module prep_atm_mod
   use seq_comm_mct, only : mbintxla ! iMOAB id for intx mesh between land and atmosphere
   use seq_comm_mct, only : seq_comm_getinfo => seq_comm_setptrs
   use seq_comm_mct, only : num_moab_exports
+  use seq_comm_mct, only : mb_dead_comps
 
   !use dimensions_mod, only : np     ! for atmosphere
 #ifdef MOABCOMP
@@ -127,8 +128,7 @@ contains
 
    use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
    iMOAB_WriteMesh , iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights, &
-   iMOAB_DefineTagStorage, iMOAB_MigrateMapMesh, iMOAB_SetDoubleTagStorage
-   use shr_moab_mod, only: mbGetnCells
+   iMOAB_DefineTagStorage, iMOAB_MigrateMapMesh
    !---------------------------------------------------------------
    ! Description
    ! Initialize module attribute vectors and  mappers
@@ -150,6 +150,7 @@ contains
    logical                          :: ice_present    ! .true.  => ice is present
    logical                          :: lnd_present    ! .true.  => lnd is prsent
    logical                          :: cpl_compute_maps_online    ! .true.  => maps are computed online
+   logical                          :: dead_comps    ! .true. => all comps are dead, so we need to be careful in map init and moab intx
    character(CL)                    :: ocn_gnam       ! ocn grid
    character(CL)                    :: atm_gnam       ! atm grid
    character(CL)                    :: lnd_gnam       ! lnd grid
@@ -173,9 +174,6 @@ contains
    integer                  :: context_id ! we will use a special context for the extra flux ocean instance
    logical                  :: no_match ! used to force a new mapper
    integer                  :: arearead ! to signal read of area_a or area_b, or both
-   type(mct_list)           :: temp_list ! for counting fields
-   integer                  :: nfields, nloc ! for initializing tags
-   real(R8), allocatable    :: vals(:,:) ! for initializing tags to zero
 
    !---------------------------------------------------------------
 
@@ -188,7 +186,8 @@ contains
       ocn_gnam=ocn_gnam,             &
       lnd_gnam=lnd_gnam,             &
       cpl_compute_maps_online=cpl_compute_maps_online, &
-      esmf_map_flag=esmf_map_flag)
+      esmf_map_flag=esmf_map_flag, &
+      dead_comps=dead_comps)
 
    allocate(mapper_So2a)
    allocate(mapper_Sof2a)
@@ -294,30 +293,6 @@ contains
                call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_o2x_fields')
             endif
 
-            ! Initialize o2x tags on mbaxid to 0.0 to match MCT behavior
-            call mct_list_init(temp_list, seq_flds_o2x_fields)
-            nfields = mct_list_nitem(temp_list)
-            call mct_list_clean(temp_list)
-            nloc = mbGetnCells(mbaxid)
-            if (iamroot_CPLID) then
-               write(logunit,*) subname, ' Initializing o2x tags: nfields=', nfields, ' nloc=', nloc
-            endif
-            ! Use 1D array for MOAB (Fortran will pass it correctly in column-major order)
-            ! Entity type: 1 (cells) for PG-active ATM, 0 (vertices) for point cloud ATM
-            allocate(vals(nloc, nfields))
-            vals = 0.0_R8
-            ierr = iMOAB_SetDoubleTagStorage(mbaxid, tagname, nloc*nfields, &
-               merge(1, 0, atm_pg_active), vals(1,1))
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' WARNING: Could not initialize o2x tags, ierr=', ierr
-               write(logunit,*) subname,' This may be OK if tags do not exist yet'
-            else
-               if (iamroot_CPLID) then
-                  write(logunit,*) subname, ' Successfully initialized', nfields, ' o2x tags to 0.0'
-               endif
-            endif
-            deallocate(vals)
-
 
             if (.not. samegrid_ao) then ! most cases
 
@@ -348,7 +323,7 @@ contains
                   endif
 ! endif for MOABDEBUG
 #endif
-                  if (atm_pg_active) then
+                  if (atm_pg_active .or. mb_dead_comps) then
                      dm2 = "fv"//C_NULL_CHAR
                      dofnameT="GLOBAL_ID"//C_NULL_CHAR
                      orderT = 1 !  fv-fv
@@ -418,7 +393,7 @@ contains
                ! permutation operator, we will compute a communication graph between ATM and OCN DoFs on the
                ! coupler.
                type1 = 3;  ! FV mesh on coupler OCN
-               if (atm_pg_active) then
+               if (atm_pg_active .or. mb_dead_comps) then
                   type2 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
                else
                   type2 = 2 ! from now on, spectral is on PC on coupler side, too; no mapping allowed, just reorder?
@@ -514,11 +489,6 @@ contains
             ! OCN for the intersection of OCN-ATM context (coverage)
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
 
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in computing comm graph for second hop, ocnf -atm'
-               call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocnf-atm')
-            endif
-
             ! we identified the app mbofxid with !id_join = id_join + 1000! kind of random
             ! line 1267 in cplcomp_exchange_mod.F90
             context_id = ocn(1)%cplcompid + 1000
@@ -560,7 +530,7 @@ contains
             else
                ! samegrid: comm graph to ATM mesh directly
                ! type2 depends on ATM discretization (PC for spectral, FV for PG2)
-               if (atm_pg_active) then
+               if (atm_pg_active .or. dead_comps) then
                   type2 = 3
                else
                   type2 = 2 ! PC cloud
@@ -589,27 +559,6 @@ contains
          write(logunit,*) subname,' error in defining tags for seq_flds_i2x_fields'
          call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_i2x_fields')
       endif
-
-      ! Initialize i2x tags on mbaxid to 0.0 to match MCT behavior
-      ! Entity type: 1 (cells) for PG-active ATM, 0 (vertices) for point cloud ATM
-      call mct_list_init(temp_list, seq_flds_i2x_fields)
-      nfields = mct_list_nitem(temp_list)
-      call mct_list_clean(temp_list)
-      nloc = mbGetnCells(mbaxid)
-      allocate(vals(nloc, nfields))
-      vals = 0.0_R8
-      ierr = iMOAB_SetDoubleTagStorage(mbaxid, tagname, nloc*nfields, &
-         merge(1, 0, atm_pg_active), vals(1,1))
-      if (ierr .ne. 0) then
-         if (iamroot_CPLID) then
-            write(logunit,*) subname,' WARNING: Could not initialize i2x tags, ierr=', ierr
-         endif
-      else
-         if (iamroot_CPLID) then
-            write(logunit,*) subname, ' Successfully initialized', nfields, ' i2x tags to 0.0'
-         endif
-      endif
-      deallocate(vals)
 
       if (ice_c2_atm) then
          if (iamroot_CPLID) then
@@ -694,7 +643,7 @@ contains
 
             if (compute_maps_online_i2a) then
                volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
-               if (atm_pg_active) then
+               if (atm_pg_active .or. mb_dead_comps) then
                   dm2 = "fv"//C_NULL_CHAR
                   dofnameT="GLOBAL_ID"//C_NULL_CHAR
                   orderT = 1 !  fv-fv
@@ -814,7 +763,7 @@ contains
          mapper_Fi2a%mbname = 'mapper_Fi2a'
          if ( samegrid_ao ) then ! this case can appear in cice case
             type1 = 3 !  fv for ice
-            if (atm_pg_active) then
+            if (atm_pg_active .or. mb_dead_comps) then
                type2 = 3
             else
                type2 = 2 ! this is spectral case , PC cloud for atm
@@ -840,27 +789,6 @@ contains
             write(logunit,*) subname,' error in defining tags for seq_flds_l2x_fields'
             call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_l2x_fields')
          endif
-
-         ! Initialize l2x tags on mbaxid to 0.0 to match MCT behavior
-         ! Entity type: 1 (cells) for PG-active ATM, 0 (vertices) for point cloud ATM
-         call mct_list_init(temp_list, seq_flds_l2x_fields)
-         nfields = mct_list_nitem(temp_list)
-         call mct_list_clean(temp_list)
-         nloc = mbGetnCells(mbaxid)
-         allocate(vals(nloc, nfields))
-         vals = 0.0_R8
-         ierr = iMOAB_SetDoubleTagStorage(mbaxid, tagname, nloc*nfields, &
-            merge(1, 0, atm_pg_active), vals(1,1))
-         if (ierr .ne. 0) then
-            if (iamroot_CPLID) then
-               write(logunit,*) subname,' WARNING: Could not initialize l2x tags, ierr=', ierr
-            endif
-         else
-            if (iamroot_CPLID) then
-               write(logunit,*) subname, ' Successfully initialized', nfields, ' l2x tags to 0.0'
-            endif
-         endif
-         deallocate(vals)
       endif
 
       ! needed for domain checking
@@ -936,7 +864,7 @@ contains
 #endif
                   ! need to compute weigths
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
-                  if (atm_pg_active) then
+                  if (atm_pg_active .or. mb_dead_comps) then
                      dm2 = "fv"//C_NULL_CHAR
                      dofnameT="GLOBAL_ID"//C_NULL_CHAR
                      orderT = 1 !  fv-fv
@@ -1010,7 +938,7 @@ contains
                ! land is point cloud in this case, type1 = 2
                call seq_comm_getinfo(CPLID, mpigrp=mpigrp_CPLID) ! make sure we have the right MPI group
                type1 = 3 !  full mesh for land now
-               if (atm_pg_active) then
+               if (atm_pg_active .or. mb_dead_comps) then
                   type2 = 3  ! fv for target atm
                else
                   type2 = 2  ! point cloud for spectral
@@ -1185,7 +1113,7 @@ contains
                write(logunit,*) subname,' error in getting info '
                call shr_sys_abort(subname//' error in getting info ')
        endif
-       if (atm_pg_active) then
+       if (atm_pg_active .or. mb_dead_comps) then
           lsize = nvise(1) ! number of active cells
        else
           lsize = nvert(1) ! for the spectral case, everything is pc from now on
@@ -1398,10 +1326,10 @@ contains
     endif  ! end first-time
 
     !  Get data from MOAB
-    if (atm_pg_active) then
-       ent_type = 1 ! cells
+    if (atm_pg_active .or. mb_dead_comps) then
+       ent_type = 1 ! cells (PG atmosphere or dead comps FV mesh)
     else
-       ent_type = 0 ! vertices, it is PC
+       ent_type = 0 ! vertices, spectral point cloud
     endif
     tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
     arrsize = naflds * lsize
@@ -1438,14 +1366,6 @@ contains
     ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, fractions_am)
     if (ierr .ne. 0) then
          call shr_sys_abort(subname//' error in getting fractions_am from atm instance ')
-    endif
-
-    ! DEBUG: Print what we read
-    if (iamroot .and. first_time) then
-       write(logunit,*) subname, ' Read fractions from mbaxid:'
-       write(logunit,*) '  fractions_am(1,:) = ', fractions_am(1,1:5)
-       write(logunit,*) '  Using klf index = ', klf, ' (', trim(fracstr), ')'
-       call shr_sys_flush(logunit)
     endif
 
     if (mboxid > 0) then ! retrieve projection only when ox is active ?
@@ -1669,10 +1589,10 @@ contains
     ! loop over all fields in seq_flds_x2a_fields
     call mct_list_init(temp_list ,seq_flds_x2a_fields)
     size_list=mct_list_nitem (temp_list)
-    if (atm_pg_active) then
-       ent_type = 1 ! cell for atm, atm_pg_active
+    if (atm_pg_active .or. mb_dead_comps) then
+       ent_type = 1 ! cell for PG atmosphere or dead comps
     else
-       ent_type = 0 ! vertices is spectral case
+       ent_type = 0 ! vertices in spectral case
     endif
     if (iamroot) print *, subname, num_moab_exports, trim(seq_flds_x2a_fields)
     do index_list = 1, size_list
