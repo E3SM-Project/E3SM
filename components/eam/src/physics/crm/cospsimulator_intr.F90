@@ -1061,6 +1061,7 @@ CONTAINS
 
     ! Number of columns in this physics chunk
     ncol = state%ncol
+    cosp_status = ""
 
     ! Construct COSP output derived type.
     call t_startf('cosp_construct_cosp_outputs')
@@ -2579,6 +2580,11 @@ CONTAINS
                Np(:,k,:,1:nHydro), cospstateIN%pfull, cospstateIN%at,                &
                cospstateIN%qv, cospIN%z_vol_cloudsat(1:nPoints,k,:),                 &
                cospIN%kr_vol_cloudsat(1:nPoints,k,:))
+
+          ! Force tiny negative numerical noise to 0.0 to satisfy COSP range checks
+          where (cospIN%kr_vol_cloudsat(1:nPoints,k,:) < 0.0_wp)
+             cospIN%kr_vol_cloudsat(1:nPoints,k,:) = 0.0_wp
+          end where
 
           ! At each model level, what fraction of the precipitation is frozen?
           where(mr_hydro(:,k,:,I_LSRAIN) .gt. 0 .or. mr_hydro(:,k,:,I_LSSNOW) .gt. 0 .or. &
