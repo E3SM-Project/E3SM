@@ -9,10 +9,8 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
   const auto policy =
       TPF::get_default_team_policy(ncol_, nlev_);
   const int nlev = nlev_;
-  //
-
-
   constexpr int num_oxidants=mam4::mo_setinv::num_tracer_cnst;
+
   view_2d oxidants[num_oxidants];
   for (size_t i = 0; i < var_names_oxi_.size(); ++i) {
     oxidants[i] = get_field_out("oxid_"+var_names_oxi_[i]).get_view<Real **>();
@@ -141,34 +139,23 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
 
 
   const auto& o3_col_dens = buffer_.scratch[8];
+  const auto o3_exo_col = exo_coldens_fields_[0].get_view<Real**>();
+  // FIXME: review len of work_set_het.
   const auto& work_set_het  = work_set_het_;
+  const int o3_ndx = static_cast<int>(mam4::GasId::O3);
+  
   Kokkos::parallel_for(
     "MAMMicrophysics::run_impl::compute_o3_column_density", policy,
     KOKKOS_LAMBDA(const ThreadTeam &team) {
     const int icol     = team.league_rank();   // column index
     // calculate o3 column densities (first component of col_dens in Fortran
     // code)
-    auto o3_col_dens_i = ekat::subview(o3_col_dens, icol);
-    const auto& invariants_icol = ekat::subview(invariants, icol);
+    auto o3_col_dens_icol = ekat::subview(o3_col_dens, icol);
     const auto& atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
-    const auto& vmr_icol = ekat::subview(vmr,icol);
-    const auto work_set_het_icol = ekat::subview(work_set_het, icol);
-    auto work_set_het_ptr = (Real *)work_set_het_icol.data();
-    const auto& o3_col_deltas  = view_1d(work_set_het_ptr, mam4::nlev + 1);
-    // NOTE: if we need o2 column densities, set_ub_col and setcol must be changed
-    const int nlev = mam4::nlev;
-    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](const int kk) {
-      const Real pdel = atm.hydrostatic_dp(kk);
-      const auto vmr_kk = ekat::subview(vmr_icol,kk);
-      const auto invariants_k = ekat::subview(invariants_icol,kk);
-      // compute the change in o3 density for this column above its neighbor
-      mam4::mo_photo::set_ub_col(o3_col_deltas(kk + 1),     // out
-                               vmr_kk.data(), invariants_k.data(), pdel); // out
-    });
-    team.team_barrier();
-    // sum the o3 column deltas to densities
-    mam4::mo_photo::setcol(team, o3_col_deltas.data(), // in
-                         o3_col_dens_i);        // out
+    const auto& vmr_icol = ekat::subview(vmr,icol);  
+    // const auto vmr_icol_o3 = Kokkos::subview(vmr_icol, Kokkos::ALL(), o3_ndx);
+    mam4::microphysics::compute_o3_column_density(
+      team, atm.hydrostatic_dp, vmr_icol, o3_exo_col(icol, 0), o3_ndx, o3_col_dens_icol);
   });
   // set o3_col_dens ends
 
@@ -666,7 +653,7 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
         // in
         vmr0_kk, vmr_pregas_kk, vmr_precld_kk, dgncur_a_kk, dgncur_awet_kk, wetdens_kk);
       });
-    });
+    }); 
 
     // modal_aero_amicphys_intr ends
 
@@ -687,10 +674,9 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
        });
     });
     // vmr2mmr_cw ends
-
     // linoz
     if (config.linoz.compute) {
-
+      // NOTE: we only have one field  
       // climatology data for linear stratospheric chemistry
       // ozone (climatology) [vmr]
       view_2d linoz_o3_clim =  buffer_.scratch[0];
@@ -710,6 +696,7 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
       view_2d linoz_cariolle_pscs = buffer_.scratch[7];
       const auto& linoz_conf=config.linoz;
       const int o3_ndx = static_cast<int>(mam4::GasId::O3);
+      
       Kokkos::parallel_for(
     "MAMMicrophysics::run_impl::linoz", policy,
     KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -720,30 +707,29 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
       // convert column latitude to radians
       const Real rlats = col_lat * M_PI / 180.0;
       mam4::microphysics::LinozData linoz_data;
-      if (config.linoz.compute) {
-          linoz_data.linoz_o3_clim_icol = ekat::subview(linoz_o3_clim, icol);
-          linoz_data.linoz_t_clim_icol  = ekat::subview(linoz_t_clim, icol);
-          linoz_data.linoz_o3col_clim_icol =
-            ekat::subview(linoz_o3col_clim, icol);
-          linoz_data.linoz_PmL_clim_icol = ekat::subview(linoz_PmL_clim, icol);
-          linoz_data.linoz_dPmL_dO3_icol = ekat::subview(linoz_dPmL_dO3, icol);
-          linoz_data.linoz_dPmL_dT_icol  = ekat::subview(linoz_dPmL_dT, icol);
-          linoz_data.linoz_dPmL_dO3col_icol =
-            ekat::subview(linoz_dPmL_dO3col, icol);
-          linoz_data.linoz_cariolle_pscs_icol =
-            ekat::subview(linoz_cariolle_pscs, icol);
-      }
+      linoz_data.linoz_o3_clim_icol = ekat::subview(linoz_o3_clim, icol);
+      linoz_data.linoz_t_clim_icol  = ekat::subview(linoz_t_clim, icol);
+      linoz_data.linoz_o3col_clim_icol = ekat::subview(linoz_o3col_clim, icol);
+      linoz_data.linoz_PmL_clim_icol = ekat::subview(linoz_PmL_clim, icol);
+      linoz_data.linoz_dPmL_dO3_icol = ekat::subview(linoz_dPmL_dO3, icol);
+      linoz_data.linoz_dPmL_dT_icol  = ekat::subview(linoz_dPmL_dT, icol);
+      linoz_data.linoz_dPmL_dO3col_icol = ekat::subview(linoz_dPmL_dO3col, icol);
+      linoz_data.linoz_cariolle_pscs_icol = ekat::subview(linoz_cariolle_pscs, icol);
       const auto& vmr_icol = ekat::subview(vmr,icol);
 
+       //Find tropopause (or quit simulation if not found) as extinction should be
+      // applied only above tropopause */
+      const int ilev_tropp = mam4::aer_rad_props::tropopause_or_quit(atm.pressure, atm.interface_pressure,
+          atm.temperature,  atm.height, ekat::subview(dry_atm.z_iface, icol));
+      // Part 1: LINOZ chemistry
       Kokkos::parallel_for(
-       Kokkos::TeamVectorRange(team, nlev),
+       Kokkos::TeamVectorRange(team, ilev_tropp),
        [&](const int kk) {
       //-----------------
       // LINOZ chemistry
       //-----------------
       const Real temp = atm.temperature(kk);
       const Real pmid = atm.pressure(kk);
-      const Real pdel = atm.hydrostatic_dp(kk);
 
       // the following things are diagnostics, which we're not
       // including in the first rev
@@ -765,26 +751,29 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
           linoz_data.linoz_cariolle_pscs_icol(kk), linoz_conf.chlorine_loading,
           linoz_conf.psc_T,
           // out
-          vmr_kk[o3_ndx],
+          vmr_kk(o3_ndx),
           // outputs that are not used
           do3_linoz, do3_linoz_psc, ss_o3, o3col_du_diag, o3clim_linoz_diag,
           zenith_angle_degrees);
+        });
 
-      // Update source terms above the ozone decay threshold
-      if (kk >= nlev - linoz_conf.o3_lbl) {
-        const Real o3l_vmr_old = vmr_kk(o3_ndx);
-        Real do3mass = 0;
-        const Real o3l_vmr_new =
-            mam4::lin_strat_chem::lin_strat_sfcsink_kk(dt, pdel,          // in
-                                                       o3l_vmr_old,       // in
-                                                       linoz_conf.o3_sfc, // in
-                                                       linoz_conf.o3_tau, // in
-                                                       do3mass);          // out
-        // Update the mixing ratio (vmr) for O3
-        vmr_kk(o3_ndx) = o3l_vmr_new;
-      }
-        });
-        });
+      Kokkos::parallel_for(
+        Kokkos::TeamVectorRange(team, nlev - linoz_conf.o3_lbl, nlev),
+        [&](const int kk) {
+          const Real pdel = atm.hydrostatic_dp(kk);
+          const auto& vmr_kk = ekat::subview(vmr_icol,kk);
+          const Real o3l_vmr_old = vmr_kk(o3_ndx);
+          Real do3mass = 0;
+          const Real o3l_vmr_new =
+              mam4::lin_strat_chem::lin_strat_sfcsink_kk(
+                  dt, pdel,           // in
+                  o3l_vmr_old,        // in
+                  linoz_conf.o3_sfc,  // in
+                  linoz_conf.o3_tau,  // in
+                  do3mass);           // out
+          vmr_kk(o3_ndx) = o3l_vmr_new;
+      });
+    });
 
     }
     // linoz ends
