@@ -902,18 +902,20 @@ void MAMMicrophysics::run_impl(const double dt) {
     linoz_dPmL_dT = linoz_views[5];
     linoz_dPmL_dO3col = linoz_views[6];
     linoz_cariolle_pscs = linoz_views[7];
+  
+    
   }
+
+  data_interp_exo_coldens_->run(end_of_step_ts());  
+  
 #ifndef MICRO_SMALL_KERNELS  
   constexpr int num_oxidants=4;
   view_2d oxidants[num_oxidants];
   for (size_t i = 0; i < var_names_oxi_.size(); ++i) {
     oxidants[i] = get_field_out("oxid_"+var_names_oxi_[i]).get_view<Real **>();
   }
-
-  data_interp_exo_coldens_->run(end_of_step_ts());
-  // NOTE: we only have one field
-  // exo absorber columns [molecules/cm^2]
-  const auto o3_exo_col = exo_coldens_fields_[0].get_view<Real**>();
+#endif
+  
   // it's a bit wasteful to store this for all columns, but simpler from an
   // allocation perspective
   auto o3_col_dens = buffer_.scratch[8];
@@ -1035,6 +1037,9 @@ void MAMMicrophysics::run_impl(const double dt) {
 #if defined(MICRO_SMALL_KERNELS)
     run_small_kernels_microphysics(dt, eccf);
 #else
+   // NOTE: we only have one field
+  // exo absorber columns [molecules/cm^2]
+  const auto o3_exo_col = exo_coldens_fields_[0].get_view<Real**>();
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
