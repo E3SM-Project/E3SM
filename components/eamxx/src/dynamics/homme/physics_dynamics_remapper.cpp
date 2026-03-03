@@ -152,10 +152,6 @@ initialize_device_variables()
         pap.template is_compatible<pack_type>() &&
         dap.template is_compatible<pack_type>()) {
       h_pack_alloc_property(i) = AllocPropType::PackAlloc;
-    } else if (is_field_3d &&
-               pap.template is_compatible<small_pack_type>() &&
-               dap.template is_compatible<small_pack_type>()) {
-      h_pack_alloc_property(i) = AllocPropType::SmallPackAlloc;
     } else {
       h_pack_alloc_property(i) = AllocPropType::RealAlloc;
     }
@@ -660,11 +656,6 @@ operator()(const RemapFwdTag&, const MT& team) const
         team.team_barrier();
 
         local_remap_fwd_3d<pack_type>(team);
-      } else if (m_pack_alloc_property(i) == AllocPropType::SmallPackAlloc) {
-        set_dyn_to_zero<small_pack_type>(team);
-        team.team_barrier();
-
-        local_remap_fwd_3d<small_pack_type>(team);
       } else {
         set_dyn_to_zero<Real>(team);
         team.team_barrier();
@@ -694,8 +685,6 @@ operator()(const RemapBwdTag&, const MT& team) const
     case etoi(LayoutType::Vector3D):
       if (m_pack_alloc_property(i) == AllocPropType::PackAlloc) {
         local_remap_bwd_3d<pack_type>(team);
-      } else if (m_pack_alloc_property(i) == AllocPropType::SmallPackAlloc) {
-        local_remap_bwd_3d<small_pack_type>(team);
       } else {
         local_remap_bwd_3d<Real>(team);
       }

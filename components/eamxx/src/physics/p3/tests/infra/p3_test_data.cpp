@@ -337,14 +337,14 @@ void calc_first_order_upwind_step_host_impl(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack = typename P3F::Spack;
-  using view_1d = typename P3F::view_1d<Spack>;
+  using Pack = typename P3F::Pack;
+  using view_1d = typename P3F::view_1d<Pack>;
   using KT = typename P3F::KT;
   using ExeSpace = typename KT::ExeSpace;
   using TPF = ekat::TeamPolicyFactory<ExeSpace>;
   using MemberType = typename P3F::MemberType;
-  using view_1d_ptr_array = typename P3F::view_1d_ptr_array<Spack, N>;
-  using uview_1d = typename P3F::uview_1d<Spack>;
+  using view_1d_ptr_array = typename P3F::view_1d_ptr_array<Pack, N>;
+  using uview_1d = typename P3F::uview_1d<Pack>;
 
   EKAT_REQUIRE_MSG(kts == 1, "kts must be 1, got " << kts);
 
@@ -355,7 +355,7 @@ void calc_first_order_upwind_step_host_impl(
   k_qxtop -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 
   // Setup views
   std::vector<view_1d> temp_d(3);
@@ -402,16 +402,16 @@ void generalized_sedimentation_host_impl(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack = typename P3F::Spack;
+  using Pack = typename P3F::Pack;
   using Singlep = typename ekat::Pack<Real, 1>;
-  using view_1d = typename P3F::view_1d<Spack>;
+  using view_1d = typename P3F::view_1d<Pack>;
   using view_1ds = typename P3F::view_1d<Singlep>;
   using KT = typename P3F::KT;
   using ExeSpace = typename KT::ExeSpace;
   using TPF = ekat::TeamPolicyFactory<ExeSpace>;
   using MemberType = typename P3F::MemberType;
-  using view_1d_ptr_array = typename P3F::view_1d_ptr_array<Spack, N>;
-  using uview_1d = typename P3F::uview_1d<Spack>;
+  using view_1d_ptr_array = typename P3F::view_1d_ptr_array<Pack, N>;
+  using uview_1d = typename P3F::uview_1d<Pack>;
   using ekat::host_to_device;
   using ekat::device_to_host;
 
@@ -425,7 +425,7 @@ void generalized_sedimentation_host_impl(
   *k_qxbot -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 
   // Set up views
   std::vector<view_1d> temp_d(3);
@@ -534,8 +534,8 @@ void cloud_sedimentation_host(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack = typename P3F::Spack;
-  using view_1d = typename P3F::view_1d<Spack>;
+  using Pack = typename P3F::Pack;
+  using view_1d = typename P3F::view_1d<Pack>;
   using KT = typename P3F::KT;
   using ExeSpace = typename KT::ExeSpace;
   using TPF = ekat::TeamPolicyFactory<ExeSpace>;
@@ -550,7 +550,7 @@ void cloud_sedimentation_host(
   kbot -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 
   // Set up views
   const auto dnu = P3F::p3_init().dnu_table_vals;
@@ -577,7 +577,7 @@ void cloud_sedimentation_host(
 
   // Call core function from kernel
   auto policy = TPF::get_default_team_policy(1, nk_pack);
-  ekat::WorkspaceManager<Spack> wsm(rho_d.extent(0), 4, policy);
+  ekat::WorkspaceManager<Pack> wsm(rho_d.extent(0), 4, policy);
   Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& precip_liq_surf_k) {
 
     P3F::cloud_sedimentation(
@@ -603,8 +603,8 @@ void ice_sedimentation_host(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack      = typename P3F::Spack;
-  using view_1d    = typename P3F::view_1d<Spack>;
+  using Pack      = typename P3F::Pack;
+  using view_1d    = typename P3F::view_1d<Pack>;
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using TPF = ekat::TeamPolicyFactory<ExeSpace>;
@@ -619,7 +619,7 @@ void ice_sedimentation_host(
   kbot -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 
   // Set up views
   std::vector<view_1d> temp_d(IceSedData::NUM_ARRAYS);
@@ -647,7 +647,7 @@ void ice_sedimentation_host(
   // Call core function from kernel
   auto ice_table_vals = P3F::p3_init().ice_table_vals;
   auto policy = TPF::get_default_team_policy(1, nk_pack);
-  ekat::WorkspaceManager<Spack> wsm(rho_d.extent(0), 6, policy);
+  ekat::WorkspaceManager<Pack> wsm(rho_d.extent(0), 6, policy);
   Real my_precip_ice_surf = 0;
   Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& precip_ice_surf_k) {
 
@@ -676,8 +676,8 @@ void rain_sedimentation_host(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack      = typename P3F::Spack;
-  using view_1d    = typename P3F::view_1d<Spack>;
+  using Pack      = typename P3F::Pack;
+  using view_1d    = typename P3F::view_1d<Pack>;
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using TPF = ekat::TeamPolicyFactory<ExeSpace>;
@@ -692,7 +692,7 @@ void rain_sedimentation_host(
   kbot -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 
   // Set up views
   std::vector<view_1d> temp_d(RainSedData::NUM_ARRAYS);
@@ -723,7 +723,7 @@ void rain_sedimentation_host(
   auto vn_table_vals = tables.vn_table_vals;
   auto vm_table_vals = tables.vm_table_vals;
   auto policy = TPF::get_default_team_policy(1, nk_pack);
-  ekat::WorkspaceManager<Spack> wsm(rho_d.extent(0), 4, policy);
+  ekat::WorkspaceManager<Pack> wsm(rho_d.extent(0), 4, policy);
   Real my_precip_liq_surf = 0;
   Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& precip_liq_surf_k) {
 
@@ -752,8 +752,8 @@ void homogeneous_freezing_host(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack      = typename P3F::Spack;
-  using view_1d    = typename P3F::view_1d<Spack>;
+  using Pack      = typename P3F::Pack;
+  using view_1d    = typename P3F::view_1d<Pack>;
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using TPF = ekat::TeamPolicyFactory<ExeSpace>;
@@ -768,7 +768,7 @@ void homogeneous_freezing_host(
   kbot -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 
   // Set up views
   std::vector<view_1d> temp_d(HomogeneousFreezingData::NUM_ARRAYS-1);
@@ -811,8 +811,8 @@ void check_values_host(Real* qv, Real* temp, Int kstart, Int kend,
                     Int timestepcount, bool force_abort, Int source_ind, Real* col_loc)
 {
   using P3F        = Functions<Real, DefaultDevice>;
-  using Spack      = typename P3F::Spack;
-  using view_1d    = typename P3F::view_1d<Spack>;
+  using Pack      = typename P3F::Pack;
+  using view_1d    = typename P3F::view_1d<Pack>;
   using suview_1d  = typename P3F::uview_1d<Real>;
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
@@ -825,7 +825,7 @@ void check_values_host(Real* qv, Real* temp, Int kstart, Int kend,
   kstart -= 1;
   kend -= 1;
   const Int nk = (kend - kstart) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
   std::vector<view_1d> cvd_d(CheckValuesData::NUM_ARRAYS+1);
 
   ekat::host_to_device({qv, temp, col_loc}, std::vector<Int>{nk, nk, 3}, cvd_d);
@@ -854,8 +854,8 @@ void p3_main_part1_host(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack      = typename P3F::Spack;
-  using view_1d    = typename P3F::view_1d<Spack>;
+  using Pack      = typename P3F::Pack;
+  using view_1d    = typename P3F::view_1d<Pack>;
   using bview_1d   = typename P3F::view_1d<bool>;
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
@@ -871,7 +871,7 @@ void p3_main_part1_host(
   kbot -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 
   // Set up views
   std::vector<view_1d> temp_d(P3MainPart1Data::NUM_ARRAYS);
@@ -971,8 +971,8 @@ void p3_main_part2_host(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack      = typename P3F::Spack;
-  using view_1d    = typename P3F::view_1d<Spack>;
+  using Pack      = typename P3F::Pack;
+  using view_1d    = typename P3F::view_1d<Pack>;
   using bview_1d   = typename P3F::view_1d<bool>;
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
@@ -988,7 +988,7 @@ void p3_main_part2_host(
   kbot -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
   const Real max_total_ni = 740.0e3;  // Hard-code this value for F90 comparison
 
   // Set up views
@@ -1180,8 +1180,8 @@ void p3_main_part3_host(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack      = typename P3F::Spack;
-  using view_1d    = typename P3F::view_1d<Spack>;
+  using Pack      = typename P3F::Pack;
+  using view_1d    = typename P3F::view_1d<Pack>;
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using TPF = ekat::TeamPolicyFactory<ExeSpace>;
@@ -1196,7 +1196,7 @@ void p3_main_part3_host(
   kbot -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
   const Real max_total_ni = 740.0e3;  // Hard-code this value for F90 comparison
 
   // Set up views
@@ -1289,10 +1289,10 @@ Int p3_main_host(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack      = typename P3F::Spack;
+  using Pack      = typename P3F::Pack;
   using KT         = typename P3F::KT;
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
-  using view_2d    = typename P3F::view_2d<Spack>;
+  using view_2d    = typename P3F::view_2d<Pack>;
   using sview_1d   = typename P3F::view_1d<Real>;
   using sview_2d   = typename P3F::view_2d<Real>;
 
@@ -1438,8 +1438,8 @@ Int p3_main_host(
   view_2d qr_evap_tend_d("qr_evap_tend_d",nj,nk);
 
   Kokkos::parallel_for(nj, KOKKOS_LAMBDA(const Int& i) {
-    precip_liq_surf_d(i) = precip_liq_surf_temp_d(0, i / Spack::n)[i % Spack::n];
-    precip_ice_surf_d(i) = precip_ice_surf_temp_d(0, i / Spack::n)[i % Spack::n];
+    precip_liq_surf_d(i) = precip_liq_surf_temp_d(0, i / Pack::n)[i % Pack::n];
+    precip_ice_surf_d(i) = precip_ice_surf_temp_d(0, i / Pack::n)[i % Pack::n];
 
     for (int j = 0; j < 3; ++j) {
       col_location_d(i, j) = i+1;
@@ -1465,7 +1465,7 @@ Int p3_main_host(
       qc_sedim_d, qr_sedim_d, qi_sedim_d,
   };
 
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 #ifdef SCREAM_P3_SMALL_KERNELS
   view_2d
     mu_r("mu_r", nj, nk_pack), T_atm("T_atm", nj, nk_pack), lamr("lamr", nj, nk_pack), logn0r("logn0r", nj, nk_pack), nu("nu", nj, nk_pack),
@@ -1501,7 +1501,7 @@ Int p3_main_host(
 
   // Create local workspace
   const auto policy = TPF::get_default_team_policy(nj, nk_pack);
-  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nk_pack, 52, policy);
+  ekat::WorkspaceManager<Pack, KT::Device> workspace_mgr(nk_pack, 52, policy);
 
   auto elapsed_microsec = P3F::p3_main(runtime_options, prog_state, diag_inputs, diag_outputs, infrastructure,
                                        history_only, lookup_tables,
@@ -1511,8 +1511,8 @@ Int p3_main_host(
                                        workspace_mgr, nj, nk);
 
   Kokkos::parallel_for(nj, KOKKOS_LAMBDA(const Int& i) {
-    precip_liq_surf_temp_d(0, i / Spack::n)[i % Spack::n] = precip_liq_surf_d(i);
-    precip_ice_surf_temp_d(0, i / Spack::n)[i % Spack::n] = precip_ice_surf_d(i);
+    precip_liq_surf_temp_d(0, i / Pack::n)[i % Pack::n] = precip_liq_surf_d(i);
+    precip_ice_surf_temp_d(0, i / Pack::n)[i % Pack::n] = precip_ice_surf_d(i);
   });
 
   // Sync back to host

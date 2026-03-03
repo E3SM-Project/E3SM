@@ -10,7 +10,7 @@ namespace p3 {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::rain_evap_tscale_weight(const Spack& dt_over_tau, Spack& weight, const Smask& context)
+::rain_evap_tscale_weight(const Pack& dt_over_tau, Pack& weight, const Mask& context)
 {
   /*
     Returns weighting between 0 and 1 for how much of the instantaneous
@@ -26,8 +26,8 @@ void Functions<S,D>
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::rain_evap_equilib_tend(const Spack& A_c,const Spack& ab,const Spack& tau_eff,
-			 const Spack& tau_r, Spack& tend, const Smask& context)
+::rain_evap_equilib_tend(const Pack& A_c,const Pack& ab,const Pack& tau_eff,
+			 const Pack& tau_r, Pack& tend, const Mask& context)
 {
   /*
     In equilibrium, the total evaporation must balance the tendency A_c from
@@ -46,8 +46,8 @@ void Functions<S,D>
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::rain_evap_instant_tend(const Spack& ssat_r, const Spack& ab, const Spack& tau_r,
-			 Spack& tend, const Smask& context)
+::rain_evap_instant_tend(const Pack& ssat_r, const Pack& ab, const Pack& tau_r,
+			 Pack& tend, const Mask& context)
 {
   /*
     The instantaneous rain evap tendency is just the absolute supersaturation
@@ -65,13 +65,13 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::evaporate_rain(
-  const Spack& qr_incld, const Spack& qc_incld, const Spack& nr_incld, const Spack& qi_incld,
-  const Spack& cld_frac_l, const Spack& cld_frac_r, const Spack& qv, const Spack& qv_prev,
-  const Spack& qv_sat_l, const Spack& qv_sat_i, const Spack& ab, const Spack& abi,
-  const Spack& epsr, const Spack& epsi_tot, const Spack& t_atm, const Spack& t_atm_prev,
-  const Spack& dqsdt, const Scalar& dt,
-  Spack& qr2qv_evap_tend, Spack& nr_evap_tend,
-  const Smask& context)
+  const Pack& qr_incld, const Pack& qc_incld, const Pack& nr_incld, const Pack& qi_incld,
+  const Pack& cld_frac_l, const Pack& cld_frac_r, const Pack& qv, const Pack& qv_prev,
+  const Pack& qv_sat_l, const Pack& qv_sat_i, const Pack& ab, const Pack& abi,
+  const Pack& epsr, const Pack& epsi_tot, const Pack& t_atm, const Pack& t_atm_prev,
+  const Pack& dqsdt, const Scalar& dt,
+  Pack& qr2qv_evap_tend, Pack& nr_evap_tend,
+  const Mask& context)
 {
   /* Evaporation is basically (qv - sv_sat)/(tau_eff*ab) where tau_eff
      is the total effective supersaturation removal timescale
@@ -99,14 +99,14 @@ void Functions<S,D>
   //Ignore the difference between clear-sky and cell-ave qv and T
   //because micro lacks the info to reliably reconstruct macrophys
   //subgrid variability
-  Spack ssat_r = qv - qv_sat_l;
+  Pack ssat_r = qv - qv_sat_l;
 
   //Cloud fraction in clear-sky conditions has been set to mincld
   //to avoid divide-by-zero problems. Because rain evap only happens
   //in rainy portions outside cloud, setting clear-sky cloud fraction
   //to mincld reduces evaporating area. We fix that here by computing
   //a temporary cloud fraction which is zero if cloud condensate is small.
-  Spack cld_frac;
+  Pack cld_frac;
   const auto set_cld_frac_zero = (qc_incld + qi_incld) < sp(1.e-6) && context;
   cld_frac.set(set_cld_frac_zero, 0);
   cld_frac.set(!set_cld_frac_zero && context, cld_frac_l);
@@ -114,14 +114,14 @@ void Functions<S,D>
   //Only evaporate in the rainy area outside cloud when subsaturated
   //Note: ignoring case where cell initially supersaturated but other
   //processes would make it subsaturated within 1 timestep.
-  const Smask qr_ge_qsmall = qr_incld >= QSMALL;
-  const Smask is_subsat = ssat_r < 0;
-  const Smask is_evap_area = cld_frac_r > cld_frac;
-  const Smask is_rain_evap = qr_ge_qsmall && is_subsat && is_evap_area && context;
+  const Mask qr_ge_qsmall = qr_incld >= QSMALL;
+  const Mask is_subsat = ssat_r < 0;
+  const Mask is_evap_area = cld_frac_r > cld_frac;
+  const Mask is_rain_evap = qr_ge_qsmall && is_subsat && is_evap_area && context;
   if (is_rain_evap.any()){
 
     //if qr_incld<QSMALL, epsr=0 causes div by 0 error for tau_r even though it isn't used.
-    Spack tau_r(0);
+    Pack tau_r(0);
     tau_r.set(is_rain_evap, 1/epsr);
 
     //Compute total effective inverse saturation removal timescale eps_eff
@@ -131,9 +131,9 @@ void Functions<S,D>
     //it from being relative to ice to liquid instead. Also compute the constant source/sink
     //term A_c for analytic integration. See Eq C3 and C4 of Morrison+Milbrandt 2015
     //https://doi.org/10.1175/JAS-D-14-0065.1, respectively.
-    const Smask is_freezing = t_atm < Tmelt && context;
-    const Smask not_freezing = !is_freezing && context;
-    Spack eps_eff, A_c;
+    const Mask is_freezing = t_atm < Tmelt && context;
+    const Mask not_freezing = !is_freezing && context;
+    Pack eps_eff, A_c;
     if (is_freezing.any()){
       eps_eff.set(is_freezing,epsr + epsi_tot*(1 + (latvap+latice)*inv_cp*dqsdt)/abi);
       A_c.set(is_freezing,(qv - qv_prev)*inv_dt - dqsdt*(t_atm-t_atm_prev)*inv_dt
@@ -146,11 +146,11 @@ void Functions<S,D>
 
     //Set lower bound on eps_eff to prevent division by zero
     eps_eff.set(eps_eff<1e-20 && context, 1e-20);
-    const Spack tau_eff = 1/eps_eff;
+    const Pack tau_eff = 1/eps_eff;
 
     //If qr is posive but tiny, evap all qr if subsaturated at all.
-    Smask is_qr_tiny = qr_incld < 1e-12 && qv/qv_sat_l < 0.999;
-    const Smask not_qr_tiny = !is_qr_tiny && is_rain_evap;
+    Mask is_qr_tiny = qr_incld < 1e-12 && qv/qv_sat_l < 0.999;
+    const Mask not_qr_tiny = !is_qr_tiny && is_rain_evap;
     is_qr_tiny = is_qr_tiny && is_rain_evap;
     if (is_qr_tiny.any()){
       qr2qv_evap_tend.set(is_qr_tiny,qr_incld*inv_dt );
@@ -160,7 +160,7 @@ void Functions<S,D>
     //instantaneous and equilibrium evap rates with weighting timescale tscale_weight. L'Hospital's
     //rull shows tscale_weight is 1 in the limit of small dt. It approaches 0 as dt gets big.
     if (not_qr_tiny.any()){
-      Spack tscale_weight, equilib_tend, instant_tend;
+      Pack tscale_weight, equilib_tend, instant_tend;
       rain_evap_tscale_weight(dt/tau_eff,tscale_weight,is_rain_evap);
       rain_evap_equilib_tend(A_c,ab,tau_eff,tau_r,equilib_tend,is_rain_evap);
       rain_evap_instant_tend(ssat_r, ab, tau_r,instant_tend,is_rain_evap);
@@ -174,7 +174,7 @@ void Functions<S,D>
     //Limit evap from exceeding saturation deficit. Analytic integration
     //would prevent this from happening if A_c was part of microphysics
     //timestepping, but it isn't.
-    const Smask is_overevap=qr2qv_evap_tend > -ssat_r*inv_dt/ab && is_rain_evap;
+    const Mask is_overevap=qr2qv_evap_tend > -ssat_r*inv_dt/ab && is_rain_evap;
     qr2qv_evap_tend.set(is_overevap, -ssat_r*inv_dt/ab );
 
     //To maintain equilibrium, the equilibrium evaporation tendency must be

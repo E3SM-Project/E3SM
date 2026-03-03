@@ -64,11 +64,11 @@ void cloud_water_autoconversion_unit_bfb_tests() {
 
   // Run the lookup from a kernel and copy results back to host
   Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-    const Int offset = i * Spack::n;
+    const Int offset = i * Pack::n;
 
     // Init pack inputs
-    Spack rho, inv_rho, qc_incld, nc_incld, qr_incld, mu_c, nu, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, inv_qc_relvar;
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    Pack rho, inv_rho, qc_incld, nc_incld, qr_incld, mu_c, nu, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, inv_qc_relvar;
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       rho[s]                 = cwadc_device(vs).rho;
       qc_incld[s]            = cwadc_device(vs).qc_incld;
       nc_incld[s]            = cwadc_device(vs).nc_incld;
@@ -84,7 +84,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         p3::Functions<Real,DefaultDevice>::P3Runtime());
 
     // Copy results back into views
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       cwadc_device(vs).rho                 = rho[s];
       cwadc_device(vs).qc_incld            = qc_incld[s];
       cwadc_device(vs).nc_incld            = nc_incld[s];
@@ -257,14 +257,14 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     Kokkos::deep_copy(rho_dev, rho_host);
     Kokkos::deep_copy(inv_qc_relvar_dev, inv_qc_relvar_host);
 
-    const int pack_size = Spack::n;
+    const int pack_size = Pack::n;
     const int num_packs = (num_cases + pack_size - 1) / pack_size;
 
     Kokkos::parallel_for("P3_Property_Test_Kernel", num_packs, KOKKOS_LAMBDA(const Int& ip) {
       const int offset = ip * pack_size;
       
-      Spack rho, qc, nc, inv_qc_relvar;
-      Spack qc2qr, nc2nr, ncautr;
+      Pack rho, qc, nc, inv_qc_relvar;
+      Pack qc2qr, nc2nr, ncautr;
       
       bool any_valid = false;
       for (int s = 0; s < pack_size; ++s) {
@@ -508,19 +508,19 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         Real alpha = (Real)i / (Real)(n_qc - 1);
         Real qc = std::pow(10.0, -6.0 + alpha * 4.0);
         
-        Spack s_rho(1.0), s_qc(qc), s_nc(fixed_nc);
-        Spack s_rate_1, s_rate_2, dummy;
+        Pack s_rho(1.0), s_qc(qc), s_nc(fixed_nc);
+        Pack s_rate_1, s_rate_2, dummy;
         
         // Run 1: Homogeneous
         Functions::cloud_water_autoconversion(
-            s_rho, s_qc, s_nc, Spack(1.0), 
+            s_rho, s_qc, s_nc, Pack(1.0), 
             s_rate_1, dummy, dummy, 
             p3::Functions<Real,DefaultDevice>::P3Runtime()
         );
         
         // Run 2: High Variance
         Functions::cloud_water_autoconversion(
-            s_rho, s_qc, s_nc, Spack(0.1), 
+            s_rho, s_qc, s_nc, Pack(0.1), 
             s_rate_2, dummy, dummy, 
             p3::Functions<Real,DefaultDevice>::P3Runtime()
         );

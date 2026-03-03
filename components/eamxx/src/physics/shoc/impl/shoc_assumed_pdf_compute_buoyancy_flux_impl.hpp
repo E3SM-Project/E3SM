@@ -16,11 +16,11 @@ namespace shoc {
 template<typename S, typename D>
 KOKKOS_INLINE_FUNCTION
 void Functions<S,D>::shoc_assumed_pdf_compute_buoyancy_flux(
-  const Spack& wthlsec,
-  const Spack& wqwsec,
-  const Spack& pval,
-  const Spack& wqls,
-  Spack&       wthv_sec)
+  const Pack& wthlsec,
+  const Pack& wqwsec,
+  const Pack& pval,
+  const Pack& wqls,
+  Pack&       wthv_sec)
 {
   const Scalar basepres = C::P0.value;
   const Scalar rair     = C::Rair.value;

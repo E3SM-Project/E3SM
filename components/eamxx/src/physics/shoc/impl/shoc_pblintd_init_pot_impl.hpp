@@ -13,8 +13,8 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 ::shoc_pblintd_init_pot(
     const MemberType& team, const Int& nlev,
-    const view_1d<const Spack>& thl, const view_1d<const Spack>& ql, const view_1d<const Spack>& q,
-    const view_1d<Spack>& thv)
+    const view_1d<const Pack>& thl, const view_1d<const Pack>& ql, const view_1d<const Pack>& q,
+    const view_1d<Pack>& thv)
 {
    // Compute virtual potential temperature
    const auto lcond = C::LatVap.value;
@@ -22,7 +22,7 @@ void Functions<S,D>
    const auto eps   = C::ZVIR;
    const auto one   = C::ONE;
 
-   const Int nlev_pack = ekat::npack<Spack>(nlev);
+   const Int nlev_pack = ekat::npack<Pack>(nlev);
 
    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const int& k) {
      const auto th = thl(k) + (lcond/cp)*ql(k);

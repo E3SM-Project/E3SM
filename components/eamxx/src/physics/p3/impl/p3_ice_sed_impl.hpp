@@ -13,33 +13,33 @@ namespace p3 {
 
 template <typename S, typename D>
 KOKKOS_FUNCTION
-typename Functions<S,D>::Spack
+typename Functions<S,D>::Pack
 Functions<S,D>
 ::calc_bulk_rho_rime(
-  const Spack& qi_tot, Spack& qi_rim, Spack& bi_rim,
+  const Pack& qi_tot, Pack& qi_rim, Pack& bi_rim,
   const P3Runtime& runtime_options,
-  const Smask& context)
+  const Mask& context)
 {
   constexpr Scalar bsmall       = C::BSMALL;
   constexpr Scalar qsmall       = C::QSMALL;
   const Scalar min_rime_rho     = runtime_options.min_rime_rho;
   const Scalar max_rime_rho     = runtime_options.max_rime_rho;
 
-  Spack rho_rime(0);
+  Pack rho_rime(0);
 
-  Smask bi_rim_gt_small = (bi_rim >= bsmall) && context;
-  Smask bi_rim_lt_small = (bi_rim <  bsmall) && context;
+  Mask bi_rim_gt_small = (bi_rim >= bsmall) && context;
+  Mask bi_rim_lt_small = (bi_rim <  bsmall) && context;
   if (bi_rim_gt_small.any()) {
     rho_rime.set(bi_rim_gt_small, qi_rim / bi_rim);
   }
 
-  Smask rho_rime_lt_min = rho_rime < min_rime_rho;
-  Smask rho_rime_gt_max = rho_rime > max_rime_rho;
+  Mask rho_rime_lt_min = rho_rime < min_rime_rho;
+  Mask rho_rime_gt_max = rho_rime > max_rime_rho;
 
   // impose limits on rho_rime;  adjust bi_rim if needed
   rho_rime.set(bi_rim_gt_small && rho_rime_lt_min, min_rime_rho);
   rho_rime.set(bi_rim_gt_small && rho_rime_gt_max, max_rime_rho);
-  Smask adjust = bi_rim_gt_small && (rho_rime_gt_max || rho_rime_lt_min);
+  Mask adjust = bi_rim_gt_small && (rho_rime_gt_max || rho_rime_lt_min);
   if (adjust.any()) {
     bi_rim.set(adjust, qi_rim / rho_rime);
   }
@@ -49,14 +49,14 @@ Functions<S,D>
   rho_rime.set(bi_rim_lt_small, 0);
 
   // set upper constraint qi_rim <= qi_tot
-  Smask qi_rim_gt_qi = (qi_rim > qi_tot) && (rho_rime > 0) && context;
+  Mask qi_rim_gt_qi = (qi_rim > qi_tot) && (rho_rime > 0) && context;
   if (qi_rim_gt_qi.any()) {
     qi_rim.set(qi_rim_gt_qi, qi_tot);
     bi_rim.set(qi_rim_gt_qi, qi_rim / rho_rime);
   }
 
   // impose consistency
-  Smask qi_rim_lt_small = (qi_rim < qsmall) && context;
+  Mask qi_rim_lt_small = (qi_rim < qsmall) && context;
   qi_rim.set(qi_rim_lt_small, 0);
   bi_rim.set(qi_rim_lt_small, 0);
 
@@ -67,35 +67,35 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_sedimentation(
-  const uview_1d<const Spack>& rho,
-  const uview_1d<const Spack>& inv_rho,
-  const uview_1d<const Spack>& rhofaci,
-  const uview_1d<const Spack>& cld_frac_i,
-  const uview_1d<const Spack>& inv_dz,
+  const uview_1d<const Pack>& rho,
+  const uview_1d<const Pack>& inv_rho,
+  const uview_1d<const Pack>& rhofaci,
+  const uview_1d<const Pack>& cld_frac_i,
+  const uview_1d<const Pack>& inv_dz,
   const MemberType& team,
   const Workspace& workspace,
   const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& inv_dt,
-  const uview_1d<Spack>& qi,
-  const uview_1d<Spack>& qi_incld,
-  const uview_1d<Spack>& ni,
-  const uview_1d<Spack>& ni_incld,
-  const uview_1d<Spack>& qm,
-  const uview_1d<Spack>& qm_incld,
-  const uview_1d<Spack>& bm,
-  const uview_1d<Spack>& bm_incld,
-  const uview_1d<Spack>& qi_tend,
-  const uview_1d<Spack>& ni_tend,
+  const uview_1d<Pack>& qi,
+  const uview_1d<Pack>& qi_incld,
+  const uview_1d<Pack>& ni,
+  const uview_1d<Pack>& ni_incld,
+  const uview_1d<Pack>& qm,
+  const uview_1d<Pack>& qm_incld,
+  const uview_1d<Pack>& bm,
+  const uview_1d<Pack>& bm_incld,
+  const uview_1d<Pack>& qi_tend,
+  const uview_1d<Pack>& ni_tend,
   const view_ice_table& ice_table_vals,
   Scalar& precip_ice_surf,
   const P3Runtime& runtime_options)
 {
   // Get temporary workspaces needed for the ice-sed calculation
-  uview_1d<Spack> V_qit, V_nit, flux_nit, flux_bir, flux_qir, flux_qit;
+  uview_1d<Pack> V_qit, V_nit, flux_nit, flux_bir, flux_qir, flux_qit;
   workspace.template take_many_contiguous_unsafe<6>(
     {"V_qit", "V_nit", "flux_nit", "flux_bir", "flux_qir", "flux_qit"},
     {&V_qit, &V_nit, &flux_nit, &flux_bir, &flux_qir, &flux_qit});
 
-  const view_1d_ptr_array<Spack, 4>
+  const view_1d_ptr_array<Pack, 4>
     fluxes_ptr = {&flux_qit, &flux_nit, &flux_qir, &flux_bir},
     vs_ptr     = {&V_qit, &V_nit, &V_qit, &V_qit},
     qnr_ptr    = {&qi, &ni, &qm, &bm};
@@ -131,14 +131,14 @@ void Functions<S,D>
       team.team_barrier();
 
       // Convert top/bot to pack indices
-      ekat::impl::set_min_max(k_qxbot, k_qxtop, kmin, kmax, Spack::n);
+      ekat::impl::set_min_max(k_qxbot, k_qxtop, kmin, kmax, Pack::n);
 
       // compute Vq, Vn (get values from lookup table)
       Kokkos::parallel_reduce(
         Kokkos::TeamVectorRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
 
         const int pk = kmin + pk_;
-        const auto range_pack = ekat::range<IntSmallPack>(pk*Spack::n);
+        const auto range_pack = ekat::range<IntPack>(pk*Pack::n);
         const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
         const auto qi_gt_small = range_mask && qi_incld(pk) > qsmall;
         if (qi_gt_small.any()) {
@@ -193,7 +193,7 @@ void Functions<S,D>
     });
   }
 
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, nk_pack), [&] (int pk) {
       qi_tend(pk) = (qi(pk) - qi_tend(pk)) * inv_dt; // Liq. sedimentation tendency, measure
@@ -208,19 +208,19 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::homogeneous_freezing(
-  const uview_1d<const Spack>& T_atm,
-  const uview_1d<const Spack>& inv_exner,
+  const uview_1d<const Pack>& T_atm,
+  const uview_1d<const Pack>& inv_exner,
   const MemberType& team,
   const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir,
-  const uview_1d<Spack>& qc,
-  const uview_1d<Spack>& nc,
-  const uview_1d<Spack>& qr,
-  const uview_1d<Spack>& nr,
-  const uview_1d<Spack>& qi,
-  const uview_1d<Spack>& ni,
-  const uview_1d<Spack>& qm,
-  const uview_1d<Spack>& bm,
-  const uview_1d<Spack>& th_atm)
+  const uview_1d<Pack>& qc,
+  const uview_1d<Pack>& nc,
+  const uview_1d<Pack>& qr,
+  const uview_1d<Pack>& nr,
+  const uview_1d<Pack>& qi,
+  const uview_1d<Pack>& ni,
+  const uview_1d<Pack>& qm,
+  const uview_1d<Pack>& bm,
+  const uview_1d<Pack>& th_atm)
 {
   constexpr Scalar qsmall          = C::QSMALL;
   constexpr Scalar nsmall          = C::NSMALL;
@@ -234,7 +234,7 @@ void Functions<S,D>
 
   // Convert top/bot to pack indices
   Int kmin, kmax;
-  ekat::impl::set_min_max(kbot, ktop, kmin, kmax, Spack::n);
+  ekat::impl::set_min_max(kbot, ktop, kmin, kmax, Pack::n);
 
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, kmax-kmin+1), [&] (int pk_) {
@@ -242,13 +242,13 @@ void Functions<S,D>
     const int pk = kmin + pk_;
 
     // Set up masks
-    const auto range_pack    = ekat::range<IntSmallPack>(pk*Spack::n);
+    const auto range_pack    = ekat::range<IntPack>(pk*Pack::n);
     const auto range_mask    = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
     const auto t_lt_homogf   = T_atm(pk) < T_homogfrz;
     const auto qc_ge_small   = range_mask && t_lt_homogf && qc(pk) >= qsmall;
     const auto qr_ge_small   = range_mask && t_lt_homogf && qr(pk) >= qsmall;
 
-    Spack Qc_nuc(qc(pk)), Qr_nuc(qr(pk)), Nc_nuc(max(nc(pk), nsmall)), Nr_nuc(max(nr(pk), nsmall));
+    Pack Qc_nuc(qc(pk)), Qr_nuc(qr(pk)), Nc_nuc(max(nc(pk), nsmall)), Nr_nuc(max(nr(pk), nsmall));
 
     qm(pk).set(qc_ge_small, qm(pk) + Qc_nuc);
     qi(pk).set(qc_ge_small, qi(pk) + Qc_nuc);

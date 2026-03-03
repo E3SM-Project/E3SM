@@ -33,22 +33,10 @@ struct Functions
   using Scalar = ScalarT;
   using Device = DeviceT;
 
-  template <typename S>
-  using BigPack = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
-  template <typename S>
-  using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
+  using Pack         = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
+  using IntPack = ekat::Pack<Int,SCREAM_PACK_SIZE>;
 
-  using IntSmallPack = SmallPack<Int>;
-  using Pack         = BigPack<Scalar>;
-  using Spack        = SmallPack<Scalar>;
-
-  template <typename S>
   using Mask = ekat::Mask<Pack::n>;
-
-  template <typename S>
-  using SmallMask = ekat::Mask<SmallPack<S>::n>;
-
-  using Smask = SmallMask<Scalar>;
 
   using KT = KokkosTypes<Device>;
 
@@ -69,13 +57,13 @@ struct Functions
 
   using MemberType = typename KT::MemberType;
 
-  using Workspace = typename ekat::WorkspaceManager<Spack, Device>::Workspace;
+  using Workspace = typename ekat::WorkspaceManager<Pack, Device>::Workspace;
 
   //
   // --------- Functions ---------
   //
 
-  // For all functions, range_mask represents a mask on the Spack variables which
+  // For all functions, range_mask represents a mask on the Pack variables which
   // determines which elements are active (not masked).
 
   //  compute saturation vapor pressure
@@ -83,29 +71,29 @@ struct Functions
   //  t is input in units of k.
   //  ice refers to saturation with respect to liquid (false) or ice (true)
   KOKKOS_FUNCTION
-  static Spack polysvp1(const Spack& t, const bool ice, const Smask& range_mask, const char* caller=nullptr);
+  static Pack polysvp1(const Pack& t, const bool ice, const Mask& range_mask, const char* caller=nullptr);
 
   //  compute saturation vapor pressure using Murphy and Koop(2005) formulation
   //  MurphyKoop_svp returned in units of pa.
   //  t is input in units of k.
   //  ice refers to saturation with respect to liquid (false) or ice (true)
   KOKKOS_FUNCTION
-  static Spack MurphyKoop_svp(const Spack& t, const bool ice, const Smask& range_mask, const char* caller=nullptr);
+  static Pack MurphyKoop_svp(const Pack& t, const bool ice, const Mask& range_mask, const char* caller=nullptr);
 
   // Calls a function to obtain the saturation vapor pressure, and then computes
   // and returns the dry saturation mixing ratio, with respect to either liquid or ice,
   // depending on value of 'ice'
   KOKKOS_FUNCTION
-  static Spack qv_sat_dry(const Spack& t_atm, const Spack& p_atm, const bool ice, const Smask& range_mask, const SaturationFcn func_idx = MurphyKoop, const char* caller=nullptr);
+  static Pack qv_sat_dry(const Pack& t_atm, const Pack& p_atm, const bool ice, const Mask& range_mask, const SaturationFcn func_idx = MurphyKoop, const char* caller=nullptr);
 
   // Calls qv_sat_dry and converts it to wet mixing ratio
   KOKKOS_FUNCTION
-  static Spack qv_sat_wet(const Spack& t_atm, const Spack& p_atm, const bool ice, const Smask& range_mask, const Spack& dp_wet, const Spack& dp_dry, 
+  static Pack qv_sat_wet(const Pack& t_atm, const Pack& p_atm, const bool ice, const Mask& range_mask, const Pack& dp_wet, const Pack& dp_dry, 
                           const SaturationFcn func_idx = MurphyKoop, const char* caller=nullptr);
 
   //checks temperature for negatives and NaNs
   KOKKOS_FUNCTION
-  static void check_temperature(const Spack& t_atm, const char* caller, const Smask& range_mask);
+  static void check_temperature(const Pack& t_atm, const char* caller, const Mask& range_mask);
 
 };
 
