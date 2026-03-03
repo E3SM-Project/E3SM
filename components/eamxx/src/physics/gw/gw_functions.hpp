@@ -129,7 +129,7 @@ struct Functions
     bool use_gw_convect    = false;
     bool use_gw_frontal    = false;
     bool use_gw_orographic = false;
-    
+
     Real gw_orographic_eff;
 
     bool orographic_only;   // this changes the order of operations (normally false)
@@ -154,6 +154,7 @@ struct Functions
     // but we'll keep it hard coded to false and passed to various routines just
     // in case we revert back to using these grids in the future.
     bool do_taper = false;
+
   };
 
   // -----------------------------------------------------------------------------------------------
@@ -183,6 +184,7 @@ struct Functions
     //   gw_convect_plev_src_wind   = params.get<Real>("gw_convect_plev_src_wind", gw_convect_plev_src_wind);
     //   use_gw_convect_old         = params.get<bool>("use_gw_convect_old", use_gw_convect_old);
     // }
+
   };
 
   // -----------------------------------------------------------------------------------------------
@@ -201,7 +203,6 @@ struct Functions
     //   frontgfc            = params.get<Real>("gw_frontal_fgfc", frontgfc);
     //   gw_frontal_eff      = params.get<Real>("gw_frontal_eff", gw_frontal_eff);
     // }
-
   };
 
   // -----------------------------------------------------------------------------------------------
