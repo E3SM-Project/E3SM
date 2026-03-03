@@ -57,12 +57,15 @@ class GWDrag : public AtmosphereProcess
 
     void finalize_impl   ();
 
+    // Computes total number of bytes needed for local variables
+    size_t requested_buffer_size_in_bytes() const;
+
+    // Set local variables using memory provided by the ATMBufferManager
+    void init_buffers(const ATMBufferManager &buffer_manager);
+
     std::shared_ptr<const AbstractGrid> m_grid;
     int m_ncol;
     int m_nlev;
-
-    // Structures for arguments to ZM
-    GWF::gw_runtime_opt gw_opts;
 
 }; // class GWDrag
 
