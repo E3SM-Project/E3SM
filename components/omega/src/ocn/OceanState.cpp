@@ -170,8 +170,8 @@ void OceanState::erase(std::string InName // [in] name of state to remove
 // Removes all states to clean up before exit
 void OceanState::clear() {
 
-   AllOceanStates.clear(); // removes all states from the list and in
-                           // the process, calls the destructors for each
+   AllOceanStates.clear();      // removes all states from the list and in
+                                // the process, calls the destructors for each
    DefaultOceanState = nullptr; // prevent dangling pointer
 } // end clear
 
