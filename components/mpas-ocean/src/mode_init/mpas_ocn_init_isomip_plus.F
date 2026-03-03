@@ -107,7 +107,7 @@ contains
       integer, dimension(:), pointer :: minLevelCell, maxLevelCell
 
       real(kind=RKIND), dimension(:), pointer :: refBottomDepth, &
-                                                 fCell, fEdge, fVertex, effectiveDensityInLandIce, xCell, &
+                                                 fCell, fEdge, fVertex, xCell, &
                                                  refZMid, refLayerThickness
 
       real(kind=RKIND), dimension(:,:), pointer :: layerThickness
@@ -300,11 +300,6 @@ contains
         fCell(:) = config_isomip_plus_coriolis_parameter
         fEdge(:) = config_isomip_plus_coriolis_parameter
         fVertex(:) = config_isomip_plus_coriolis_parameter
-
-        if(config_land_ice_flux_mode == 'coupled') then
-          call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensityInLandIce, 1)
-          effectiveDensityInLandIce(:) = config_isomip_plus_effective_density
-        end if
 
         block_ptr => block_ptr % next
       end do
@@ -684,9 +679,9 @@ contains
 
 
       call mpas_pool_get_config(configPool, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
-      if(config_land_ice_flux_mode .ne. 'standalone' .and. config_land_ice_flux_mode .ne. 'coupled') then
-         call mpas_log_write( 'Validation failed for isomip_plus. config_land_ice_flux_mode must either'// &
-            ' be standalone or coupled.', MPAS_LOG_CRIT)
+      if(config_land_ice_flux_mode .ne. 'active') then
+         call mpas_log_write( 'Validation failed for isomip_plus. config_land_ice_flux_mode must be'// &
+            ' active.', MPAS_LOG_CRIT)
          iErr = 1
          return
       end if

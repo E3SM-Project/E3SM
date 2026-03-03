@@ -69,7 +69,6 @@ module ocn_surface_land_ice_fluxes
 
    logical :: &
       landIceDataOn ,         &! flag to determine if using data (prescribed) fluxes
-      landIceStandaloneOn,    &! flag to determine if using standalone fluxes
       landIceCoupledOn,       &! flag to determine if using fluxes from the coupler
       useHollandJenkinsAdvDiff ! use Holland-Jenkins advection-diffusion
 
@@ -498,6 +497,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceFloatingFraction, &
                                                   landIceSurfaceTemperature, &
                                                   landIceFreshwaterFlux, &
+                                                  landIceConductiveHeatFlux, &
                                                   landIceHeatFlux, heatFluxToLandIce
 
       real (kind=RKIND), dimension(:), pointer :: frazilIceFreshwaterFlux, landIceFreshwaterFluxTotal
@@ -524,7 +524,7 @@ contains
 
       err = 0
 
-      if (.not. (landIceStandaloneOn .or. landIceDataOn)) return
+      if (.not. (landIceFluxesOn .or. landIceDataOn)) return
 
       call mpas_timer_start("land_ice_build_arrays")
 
@@ -534,16 +534,15 @@ contains
       call mpas_pool_get_array(forcingPool, 'frazilIceFreshwaterFlux', frazilIceFreshwaterFlux)
       call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFluxTotal', landIceFreshwaterFluxTotal)
       call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
+      call mpas_pool_get_array(forcingPool, 'heatFluxToLandIce', heatFluxToLandIce)
 
       nCells = nCellsArray( size(nCellsArray) )
 
-      if (landIceStandaloneOn) then
+      if (landIceFluxesOn .and. .not. landIceDataOn) then
 
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
          call mpas_pool_get_array(forcingPool, 'landIceFloatingFraction', landIceFloatingFraction)
          call mpas_pool_get_array(forcingPool, 'landIceHeatFlux', landIceHeatFlux)
-         call mpas_pool_get_array(forcingPool, 'heatFluxToLandIce', heatFluxToLandIce)
-
 
          call mpas_pool_get_array(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracers)
          call mpas_pool_get_dimension(forcingPool, &
@@ -656,8 +655,10 @@ contains
                   heatFluxToLandIce(iCell) = freezeIceHeatFlux(iCell)
                end do
             else ! not using Holland and Jenkins advection/diffusion
-               call compute_melt_fluxes( &
+               call mpas_pool_get_array(forcingPool, 'landIceConductiveHeatFlux', landIceConductiveHeatFlux)
+               call compute_melt_fluxes_with_conduction( &
                   landIceFloatingMask, &
+                  landIceConductiveHeatFlux, &
                   landIceBoundaryLayerTracers(indexBLT,:), &
                   landIceBoundaryLayerTracers(indexBLS,:), &
                   landIceTracerTransferVelocities(indexHeatTrans,:), &
@@ -696,7 +697,7 @@ contains
                      freezeIceHeatFlux)
          end if
 
-      end if ! landIceStandaloneOn
+      end if ! landIceFluxesOn
 
       ! Add frazil and interface melt/freeze to get total fresh water flux
       if ( associated(frazilIceFreshwaterFlux) ) then
@@ -779,7 +780,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       nCells = nCellsArray( size(nCellsArray) )
 
-      if (landIceStandaloneOn .or. landIceDataOn) then
+      if (landIceFluxesOn .or. landIceDataOn) then
         call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMassNew, 2)
         call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMassOld, 1)
         call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
@@ -789,13 +790,13 @@ contains
         end do
       end if
 
-      if (landIceStandaloneOn) then
+      if (landIceFluxesOn .and. .not. landIceDataOn) then
         call mpas_pool_get_array(forcingPool, 'heatFluxToLandIce', heatFluxToLandIce)
         call mpas_pool_get_array(statePool, 'accumulatedLandIceHeat', accumulatedLandIceHeatNew, 2)
         call mpas_pool_get_array(statePool, 'accumulatedLandIceHeat', accumulatedLandIceHeatOld, 1)
         ! accumulate land-ice heat
         do iCell = 1, nCells
-          accumulatedLandIceHeatNew(iCell) = accumulatedLandIceHeatOld(iCell) + dt*heatFluxToLandIce(iCell)
+          accumulatedLandIceHeatNew(iCell) = accumulatedLandIceHeatOld(iCell) - dt*heatFluxToLandIce(iCell)
         end do
       end if
 
@@ -835,48 +836,32 @@ contains
       isomipOn         = .false.
       jenkinsOn        = .false.
       hollandJenkinsOn = .false.
+      landIcePressureOn = .false.
       cpLandIce        = 0.0_RKIND
       rhoLandIce       = 0.0_RKIND
       ISOMIPgammaT     = 0.0_RKIND
 
       !*** Determine whether land ice fluxes are on
 
+      if ( config_use_land_ice_pressure ) &
+         landIcePressureOn = .true.
+
       select case (trim(config_land_ice_flux_mode))
       case ('data','Data','DATA')
-         landIcePressureOn = .true.
          landIceFluxesOn = .true.
          landIceDataOn = .true.
-         landIceStandaloneOn = .false.
-         landIceCoupledOn = .false.
-      case ('standalone','Standalone','STANDALONE')
-         landIcePressureOn = .true.
+      case ('active','Active','ACTIVE')
          landIceFluxesOn = .true.
          landIceDataOn = .false.
-         landIceStandaloneOn = .true.
-         landIceCoupledOn = .false.
-      case ('coupled','Coupled','COUPLED')
-         landIcePressureOn = .true.
-         landIceFluxesOn = .true.
-         landIceDataOn = .false.
-         landIceStandaloneOn = .false.
-         landIceCoupledOn = .true.
-      case ('pressure_only','Pressure_Only','PRESSURE_ONLY')
-         landIcePressureOn = .true.
-         landIceFluxesOn = .false.
-         landIceDataOn = .false.
-         landIceStandaloneOn = .false.
-         landIceCoupledOn = .false.
       case ('off','Off','OFF')
-         landIcePressureOn = .false.
          landIceFluxesOn = .false.
          landIceDataOn = .false.
-         landIceStandaloneOn = .false.
-         landIceCoupledOn = .false.
       case default
          call mpas_log_write( ' Error: Incorrect choice of config_land_ice_flux_mode: '// config_land_ice_flux_mode)
          err = 1
          return
       end select
+      call mpas_log_write( ' Choice of config_land_ice_flux_mode: '// config_land_ice_flux_mode)
 
       !*** Determine which flux formulation to use
 
@@ -1041,7 +1026,12 @@ contains
       !   2. the diffusion (if any) of heat into the ice, based on temperature difference between
       !      the reference point in the ice (either the surface or the middle of the bottom layer)
       !      and the interface
-      outIceHeatFlux(iCell) = -cpLandIce*outFreshwaterFlux(iCell)*outInterfaceTemperature(iCell)
+      ! NB: sign convention is the same as outOceanHeatFlux, positive into the ocean
+      if (outFreshwaterFlux(iCell) > 0) then ! melting
+         outIceHeatFlux(iCell) = cpLandIce*outInterfaceTemperature(iCell)*outFreshwaterFlux(iCell)
+      else
+         outIceHeatFlux(iCell) = cp_sw*outInterfaceTemperature(iCell)*outFreshwaterFlux(iCell)
+      endif
     end do
     !$omp end do
     !$omp end parallel
@@ -1049,6 +1039,134 @@ contains
   !--------------------------------------------------------------------
 
   end subroutine compute_melt_fluxes !}}}
+
+  subroutine compute_melt_fluxes_with_conduction( &
+    mask, &
+    landIceConductiveHeatFlux, &
+    oceanTemperature, &
+    oceanSalinity, &
+    oceanHeatTransferVelocity, &
+    oceanSaltTransferVelocity, &
+    interfacePressure, &
+    outInterfaceTemperature, &
+    outInterfaceSalinity, &
+    outFreshwaterFlux, &
+    outOceanHeatFlux, &
+    outIceHeatFlux, &
+    nCells, &
+    err) !{{{
+
+    !-----------------------------------------------------------------
+    !
+    ! input variables
+    !
+    !-----------------------------------------------------------------
+
+    integer, dimension(:), intent(in) :: &
+      mask                         !< Input: mask for land-ice fluxes
+
+    real (kind=RKIND), dimension(:), intent(in) :: &
+      landIceConductiveHeatFlux, & !< Input: conductive heat flux into the base of ice
+      oceanTemperature, &          !< Input: ocean temperature in top layer
+      oceanSalinity, &             !< Input: ocean salinity in top layer
+      oceanHeatTransferVelocity, & !< Input: ocean heat transfer velocity
+      oceanSaltTransferVelocity, & !< Input: ocean salt transfer velocity
+      interfacePressure            !< Input: pressure at the ice-ocean interface
+
+    integer, intent(in) :: nCells !< Input: number of cells in each array
+
+    !-----------------------------------------------------------------
+    !
+    ! output variables
+    !
+    !-----------------------------------------------------------------
+
+    real (kind=RKIND), dimension(:), intent(out) :: &
+      outInterfaceTemperature, & !< Output: ice/ocean temperature at the interface
+      outInterfaceSalinity, &    !< Output: ocean salinity at the interface
+      outFreshwaterFlux, &   !< Output: ocean thickness flux (melt rate)
+      outOceanHeatFlux, & !< Output: the temperature flux into the ocean
+      outIceHeatFlux      !< Output: the temperature flux into the ice
+
+    integer, intent(out) :: err !< Output: Error flag
+
+    !-----------------------------------------------------------------
+    !
+    ! local variables
+    !
+    !-----------------------------------------------------------------
+
+    real (kind=RKIND), dimension(:), allocatable :: outAdvectiveHeatFlux
+
+    real (kind=RKIND) :: T0, transferVelocityRatio, Tlatent, a, b, c, &
+                         dTf_dS
+    integer :: iCell
+
+    real (kind=RKIND), parameter :: minInterfaceSalinity = 0.001_RKIND
+
+    err = 0
+    Tlatent = latent_heat_fusion_mks/cp_sw
+
+    allocate(outAdvectiveHeatFlux(nCells))
+
+    !$omp parallel
+    !$omp do schedule(runtime) private(T0, dTf_dS, transferVelocityRatio, a, b, c)
+    do iCell = 1, nCells
+      if (mask(iCell) == 0) cycle
+
+      T0 = ocn_freezing_temperature(salinity=0.0_RKIND, pressure=interfacePressure(iCell), &
+                                    inLandIceCavity=.true.)
+      dTf_dS = ocn_freezing_temperature_salinity_deriv(salinity=0.0_RKIND, pressure=interfacePressure(iCell), &
+                                                       inLandIceCavity=.true.)
+
+      transferVelocityRatio = oceanSaltTransferVelocity(iCell)/oceanHeatTransferVelocity(iCell)
+
+      a = -dTf_dS
+      b = transferVelocityRatio*Tlatent + oceanTemperature(iCell) - T0 + &
+          landIceConductiveHeatFlux(iCell) / (rho_sw * cp_sw * oceanHeatTransferVelocity(iCell))
+      c = -transferVelocityRatio*Tlatent*max(oceanSalinity(iCell), 0.0_RKIND)
+
+      ! a is non-negative; c is strictly non-positive so we never get imaginary roots.
+      ! Since a can be zero, we need a solution of the quadratic equation for 1/Si instead of Si.
+      ! Following: https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
+      ! Since a and -c are are non-negative, the term in the square root is also always >= |b|.
+      ! In all reasonable cases, b will be strictly positive, since transferVelocityRatio*Tlatent ~ 2 C,
+      ! T0 ~ -1.8 C and oceanTemperature should never be able to get below about -3 C
+      ! As long as either b or both a and c are greater than zero, the strictly non-negative root is
+      outInterfaceSalinity(iCell) = max(-(2.0_RKIND*c)/(b + sqrt(b**2 - 4.0_RKIND*a*c)), minInterfaceSalinity)
+
+      outInterfaceTemperature(iCell) = dTf_dS*outInterfaceSalinity(iCell)+T0
+
+      outFreshwaterFlux(iCell) = rho_sw*oceanSaltTransferVelocity(iCell) &
+        * (oceanSalinity(iCell)/outInterfaceSalinity(iCell) - 1.0_RKIND)
+
+      if (outFreshwaterFlux(iCell) > 0) then ! melting
+         outAdvectiveHeatFlux(iCell) = cpLandIce*outInterfaceTemperature(iCell)*outFreshwaterFlux(iCell)
+      else
+         outAdvectiveHeatFlux(iCell) = cp_sw*outInterfaceTemperature(iCell)*outFreshwaterFlux(iCell)
+      endif
+      ! The heat fluxes that determine the temperature tendency:
+      !   1. the advection of meltwater into the top layer (or removal for freezing)
+      !   2. the turbulent transfer of heat across the boundary layer, based on the thermal driving
+      ! Applied as: tracersSurfaceFlux(1, iCell) += landIceHeatFlux(iCell)/(rho_sw*cp_sw)
+      outOceanHeatFlux(iCell) = outAdvectiveHeatFlux(iCell) + &
+         -rho_sw*cp_sw*oceanHeatTransferVelocity(iCell)*(oceanTemperature(iCell)-outInterfaceTemperature(iCell))
+
+      ! the temperature fluxes across the ice-ocean interface are:
+      !   1. the advection of ice at the interface temperature out of the domain due to melting
+      !      (or in due to freezing)
+      !   2. the diffusion (if any) of heat into the ice, based on temperature difference between
+      !      the reference point in the ice (either the surface or the middle of the bottom layer)
+      !      and the interface
+      ! NB: sign convention is the same as outOceanHeatFlux, positive into the ocean
+      outIceHeatFlux(iCell) = outAdvectiveHeatFlux(iCell) + landIceConductiveHeatFlux(iCell)
+    end do
+    !$omp end do
+    !$omp end parallel
+
+  !--------------------------------------------------------------------
+
+  end subroutine compute_melt_fluxes_with_conduction !}}}
 
 
 !***********************************************************************
@@ -1187,7 +1305,8 @@ contains
       ! Since we're considering only melting and ignoring diffusion,
       ! the ice loses heat simply by the loss of ice mass at the data
       ! (surface?) ice temperature
-      outIceHeatFlux(iCell) = -cpLandIce*outFreshwaterFlux(iCell)*iceTemperature(iCell)
+      ! NB: sign convention is the same as outOceanHeatFlux, positive into the ocean
+      outIceHeatFlux(iCell) = cpLandIce*outFreshwaterFlux(iCell)*iceTemperature(iCell)
     end do
     !$omp end do
     !$omp end parallel
