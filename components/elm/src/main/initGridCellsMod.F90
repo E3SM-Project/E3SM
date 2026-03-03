@@ -718,6 +718,9 @@ contains
     call CheckGhostSubgridHierarchy()
 #endif
 
+#ifdef HAVE_MOAB
+    call initGhostColumnsMOAB()
+#endif
   end subroutine initGhostGridcells
 
 #ifdef USE_PETSC_LIB
@@ -1330,4 +1333,56 @@ contains
 #endif
 !^ifdef USE_PETSC_LIB
 
+
+#if HAVE_MOAB
+  !------------------------------------------------------------------------
+  subroutine initGhostColumnsMOAB()
+    !
+    ! DESCRIPTION
+    !
+    use decompMod        , only : get_proc_bounds
+    use domainLateralMod , only : ldomain_lateral, GridLevelIntegerDataHaloExchange
+    !
+    implicit none
+    !
+    ! LOCAL VARIABLES
+    type(bounds_type)  :: bounds_proc ! temporary
+    integer, pointer   :: num_nat_veg_columns(:)
+    integer            :: g, c
+    integer, parameter :: icol_nat_veg = 1
+
+    call get_proc_bounds(bounds_proc)
+
+    allocate(num_nat_veg_columns(bounds_proc%begg:bounds_proc%endg_all))
+    num_nat_veg_columns(:) = 0
+
+    ! for owned grid cells, save the number of naturally vegetated soil columns
+    do c = bounds_proc%begc, bounds_proc%endc
+       g = col_pp%gridcell(c)
+
+       if (col_pp%itype(c) == icol_nat_veg) then
+          if (num_nat_veg_columns(g) /= 0) then
+             call endrun(msg='ERROR: initGhostColumnsMOAB only supports the one natural soil column per grid cell')
+          else
+             num_nat_veg_columns(g) = num_nat_veg_columns(g) + 1
+          end if
+       end if
+
+    end do
+
+    ! do the halo exchange
+    call GridLevelIntegerDataHaloExchange(ldomain_lateral, bounds_proc%begg, bounds_proc%endg, bounds_proc%endg_all, num_nat_veg_columns)
+
+    ! for ghost columns, set mapping to ghost grid cell
+    c = bounds_proc%endc
+    do g = bounds_proc%endg + 1, bounds_proc%endg_all
+       if (num_nat_veg_columns(g) > 0) then
+          c = c + 1
+          col_pp%gridcell(c) = g
+          col_pp%itype(c)    = icol_nat_veg
+       endif
+    end do
+
+  end subroutine initGhostColumnsMOAB
+#endif
 end module initGridCellsMod
