@@ -54,21 +54,6 @@ struct Functions
   using Workspace        = typename WorkspaceManager::Workspace;
 
   // -----------------------------------------------------------------------------------------------
-  // run-time options
-  struct gw_runtime_opt {
-    gw_runtime_opt() = default;
-    bool use_gw_convect = false;
-    bool use_gw_frontal = false;
-    bool use_gw_orogrph = false;
-
-    void load_runtime_options(ekat::ParameterList& params) {
-      use_gw_convect = params.get<bool>("use_gw_convect", use_gw_convect);
-      use_gw_frontal = params.get<bool>("use_gw_frontal", use_gw_frontal);
-      use_gw_orogrph = params.get<bool>("use_gw_orogrph", use_gw_orogrph);
-    }
-  };
-
-  // -----------------------------------------------------------------------------------------------
   // GW constants
   struct GWC {
     // Index the cardinal directions
@@ -101,6 +86,15 @@ struct Functions
   struct GwCommonInit {
     GwCommonInit() : initialized(false) {}
     bool initialized;       // flag to indicate if initialize has been called
+    
+    bool use_gw_convect    = false;
+    bool use_gw_frontal    = false;
+    bool use_gw_orographic = false;
+
+    // ??? gw_drag_file
+    
+    Real gw_orographic_eff;
+
     bool orographic_only;   // this changes the order of operations (normally false)
     int pver;               // Number of levels in the atmosphere
     int pgwv;               // Maximum number of waves allowed (i.e. wavenumbers are -pgwv:pgwv).
@@ -117,6 +111,21 @@ struct Functions
     Real effkwv;            // Effective wavenumber = huge(1._r8)
     view_1d<Real> alpha;    // Newtonian cooling coefficients
     Real tndmax;            // Max wind tend from stress divergence (before efficiency) = huge(1._r8)
+
+    void load_runtime_options(ekat::ParameterList& params) {
+      use_gw_convect = params.get<bool>("use_gw_convect", use_gw_convect);
+      use_gw_frontal = params.get<bool>("use_gw_frontal", use_gw_frontal);
+      use_gw_orographic = params.get<bool>("use_gw_orographic", use_gw_orographic);
+
+      // gw_drag_file = params.get<???>("gw_drag_file", gw_drag_file);
+      pgwv                       = params.get<int>("pgwv", pgwv);
+      dc                         = params.get<Real>("gw_dc", gw_dc);
+      tau_0_ubc                  = params.get<bool>("tau_0_ubc", tau_0_ubc);
+      fcrit2                     = params.get<Real>("fcrit2", fcrit2);
+      
+      gw_orographic_eff          = params.get<Real>("gw_orographic_eff", gw_orographic_eff);
+      
+    }
   };
 
   // -----------------------------------------------------------------------------------------------
@@ -128,6 +137,24 @@ struct Functions
     int maxuh;          // Dimension for mean wind in heating
     int k_src_wind;     // Index for level for storm/steering flow (usually 700 mb)
     view_3d<Real> mfcc; // Table of source spectra
+
+    Real gw_convect_eff;             // Efficiency of convective GW tendencies
+    Real gw_convect_hcf;             // Convective heating rate conversion factor
+    Real gw_convect_hdepth_scale;    // Scaling factor for convective heating depth
+    Real gw_convect_hdepth_min;      // Minimum hdepth for for convective GWD spectrum lookup table [km]
+    Real gw_convect_storm_speed_min; // Minimum convective storm speed for convective GWD [m/s]
+    Real gw_convect_plev_src_wind;   // Reference pressure level for source wind for convective GWD [Pa]
+    bool use_gw_convect_old;         // Switch to enable legacy behavior
+
+    void load_runtime_options(ekat::ParameterList& params) {
+      gw_convect_eff             = params.get<Real>("gw_convect_eff", gw_convect_eff);
+      gw_convect_hcf             = params.get<Real>("gw_convect_hcf", gw_convect_hcf);
+      gw_convect_hdepth_scale    = params.get<Real>("gw_convect_hdepth_scale", gw_convect_hdepth_scale);
+      gw_convect_hdepth_min      = params.get<Real>("gw_convect_hdepth_min", gw_convect_hdepth_min);
+      gw_convect_storm_speed_min = params.get<Real>("gw_convect_storm_speed_min", gw_convect_storm_speed_min);
+      gw_convect_plev_src_wind   = params.get<Real>("gw_convect_plev_src_wind", gw_convect_plev_src_wind);
+      use_gw_convect_old         = params.get<bool>("use_gw_convect_old", use_gw_convect_old);
+    }
   };
 
   // -----------------------------------------------------------------------------------------------
@@ -138,6 +165,12 @@ struct Functions
     Real frontgfc;      // Frontogenesis function critical threshold
     Int kfront;         // Level to check frontogenesis func to launch waves
     view_1d<Real> fav;  // Avg of gaussian over gw spectrum bins, mult. by BG source strength (taubgnd)
+    Real gw_frontal_eff;// Efficiency of frontal GW tendencies
+    void load_runtime_options(ekat::ParameterList& params) {
+      taubgnd             = params.get<Real>("gw_frontal_taubgnd", taubgnd);
+      frontgfc            = params.get<Real>("gw_frontal_fgfc", frontgfc);
+      gw_frontal_eff      = params.get<Real>("gw_frontal_eff", gw_frontal_eff);
+    }
   };
 
   // -----------------------------------------------------------------------------------------------

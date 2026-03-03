@@ -276,9 +276,26 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- Gravity Wave Drag -->
     <gw inherit="atm_proc_base">
-      <use_gw_convect type="logical" doc="flag for convective GWD">false</use_gw_convect>
-      <use_gw_frontal type="logical" doc="flag for frontal GWD">false</use_gw_frontal>
-      <use_gw_orogrph type="logical" doc="flag for orographic GWD">false</use_gw_orogrph>
+      <use_gw_convect type="logical" doc="Flag for convective GWD">false</use_gw_convect>
+      <use_gw_frontal type="logical" doc="Flag for frontal GWD">false</use_gw_frontal>
+      <use_gw_orogrph type="logical" doc="Flag for orographic GWD">false</use_gw_orogrph>
+      <gw_drag_file type="array(string)" doc="GW source spectra file">${DIN_LOC_ROOT}/atm/waccm/gw/newmfspectra40_dc25.nc</gw_drag_file>
+      <pgwv type="integer" doc="Maximum number of waves allowed">32</pgwv>
+      <gw_dc type="real" doc="Bin width for spectrum">2.5</gw_dc>
+      <tau_0_ubc type="logical" doc="flag to enforce an upper boundary condition of tau=0">false</tau_0_ubc>
+      <fcrit2 type="real" doc="Critical Froude number">1.0</fcrit2>
+      <gw_orogrph_eff type="real" doc="Efficiency of orographic GW tendencies">0.375</gw_orogrph_eff>
+      <gw_frontal_taubgnd type="real" doc="Background stress source strength for frontal GW scheme">2.5E-3</taubgnd>
+      <gw_frontal_eff type="real" doc="Efficiency of frontal GW tendencies">1.0</gw_frontal_eff>
+      <gw_frontal_fgfc hgrid="ne30np4.pg2"  type="real" doc="Frontogenesis function critical threshold for frontal GW scheme">1.25E-15</gw_frontal_fgfc>
+      <gw_frontal_fgfc hgrid="ne120np4.pg2" type="real" doc="Frontogenesis function critical threshold for frontal GW scheme">2.00E-14</gw_frontal_fgfc>
+      <gw_convect_eff type="real" doc="Efficiency of convective GW tendencies">0.35</gw_convect_eff>
+      <gw_convect_hcf type="real" doc="Convective heating rate conversion factor">10.0</gw_convect_hcf>
+      <gw_convect_hdepth_scale type="real" doc="Scaling factor for convective heating depth">0.50</gw_convect_hdepth_scale>
+      <gw_convect_hdepth_min type="real" doc="Minimum hdepth for for convective GWD spectrum lookup table [km]">2.5</gw_convect_hdepth_min>
+      <gw_convect_storm_speed_min type="real" doc="Minimum convective storm speed for convective GWD [m/s]">10.0</gw_convect_storm_speed_min>
+      <gw_convect_plev_src_wind type="real" doc="Reference pressure level for source wind for convective GWD [Pa]">70000</gw_convect_plev_src_wind>
+      <use_gw_convect_old type="logical" doc="Switch to enable legacy behavior">false</use_gw_convect_old>
     </gw>
 
     <!-- Basic options for each mam4 atm process -->
