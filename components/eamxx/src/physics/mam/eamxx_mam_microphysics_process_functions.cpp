@@ -281,6 +281,12 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
   view_2d constituent_fluxes =
       get_field_out("constituent_fluxes").get_view<Real **>();
 
+  view_2d mam4_gas_dry_deposition_flux;
+  if (extra_mam4_aero_microphys_diags_) {
+    mam4_gas_dry_deposition_flux =
+      get_field_out("mam4_gas_dry_deposition_flux").get_view<Real **>();
+  }
+
   // Ice precip [kg/m2]
   const const_view_1d precip_ice_surf_mass =
       get_field_in("precip_ice_surf_mass").get_view<const Real *>();
@@ -386,6 +392,14 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, offset_aerosol, pcnst), [&](int ispc) {
           constituent_fluxes(icol, ispc) -= dflx_col(ispc - offset_aerosol);
         });
+
+        if (mam4_gas_dry_deposition_flux.size()) {
+          Kokkos::parallel_for(
+            Kokkos::TeamVectorRange(team, num_gas_aerosol_constituents),
+            [&](const int ispc) {
+              mam4_gas_dry_deposition_flux(icol, ispc) = dflx_col(ispc);
+            });
+        }
     });
 
 

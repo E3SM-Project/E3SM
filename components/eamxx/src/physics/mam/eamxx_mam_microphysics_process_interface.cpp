@@ -916,11 +916,12 @@ void MAMMicrophysics::run_impl(const double dt) {
   for (size_t i = 0; i < var_names_oxi_.size(); ++i) {
     oxidants[i] = get_field_out("oxid_"+var_names_oxi_[i]).get_view<Real **>();
   }
-#endif
-  
   // it's a bit wasteful to store this for all columns, but simpler from an
   // allocation perspective
   auto o3_col_dens = buffer_.scratch[8];
+#endif
+  
+
 
   /* Gather time and state information for interpolation */
   const auto ts = end_of_step_ts();
