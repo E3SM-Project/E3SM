@@ -15,6 +15,7 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
   for (size_t i = 0; i < var_names_oxi_.size(); ++i) {
     oxidants[i] = get_field_out("oxid_"+var_names_oxi_[i]).get_view<Real **>();
   }
+  
 
   // set external forcing
   constexpr int extcnt = mam4::gas_chemistry::extcnt;
@@ -675,25 +676,38 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
     });
     // vmr2mmr_cw ends
     // linoz
-    if (config.linoz.compute) {
-      // NOTE: we only have one field  
+    if (config_.linoz.compute) {
       // climatology data for linear stratospheric chemistry
       // ozone (climatology) [vmr]
-      view_2d linoz_o3_clim =  buffer_.scratch[0];
+      view_2d linoz_o3_clim;
       // column o3 above box (climatology) [Dobson Units (DU)]
-      view_2d linoz_o3col_clim = buffer_.scratch[1];
+      view_2d linoz_o3col_clim;
       // temperature (climatology) [K]
-      view_2d linoz_t_clim = buffer_.scratch[2];
+      view_2d linoz_t_clim;
       // P minus L (climatology) [vmr/s]
-      view_2d linoz_PmL_clim = buffer_.scratch[3];
+      view_2d linoz_PmL_clim;
       // sensitivity of P minus L to O3 [1/s]
-      view_2d linoz_dPmL_dO3 = buffer_.scratch[4];
+      view_2d linoz_dPmL_dO3;
       // sensitivity of P minus L to T3 [K]
-      view_2d linoz_dPmL_dT = buffer_.scratch[5];
+      view_2d linoz_dPmL_dT;
       // sensitivity of P minus L to overhead O3 column [vmr/DU]
-      view_2d linoz_dPmL_dO3col = buffer_.scratch[6];
+      view_2d linoz_dPmL_dO3col;
       // Cariolle parameter for PSC loss of ozone [1/s]
-      view_2d linoz_cariolle_pscs = buffer_.scratch[7];
+      view_2d linoz_cariolle_pscs;
+      view_2d linoz_views[8];
+      data_interp_linoz_->run(end_of_step_ts());
+      for (size_t i = 0; i < var_names_linoz_.size(); ++i) {
+        linoz_views[i] = get_field_out(var_names_linoz_[i]).get_view<Real **>();
+      }
+      linoz_o3_clim = linoz_views[0];
+      linoz_o3col_clim = linoz_views[1];
+      linoz_t_clim = linoz_views[2];
+      linoz_PmL_clim = linoz_views[3];
+      linoz_dPmL_dO3 = linoz_views[4];
+      linoz_dPmL_dT = linoz_views[5];
+      linoz_dPmL_dO3col = linoz_views[6];
+      linoz_cariolle_pscs = linoz_views[7];
+
       const auto& linoz_conf=config.linoz;
       const int o3_ndx = static_cast<int>(mam4::GasId::O3);
       

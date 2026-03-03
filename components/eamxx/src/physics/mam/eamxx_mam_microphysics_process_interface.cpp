@@ -867,7 +867,9 @@ void MAMMicrophysics::run_impl(const double dt) {
     gas_dry_deposition_flux = get_field_out("mam4_gas_dry_deposition_flux").get_view<Real**>();
   }
 #endif
-
+  
+  data_interp_oxid_->run(end_of_step_ts());
+#ifndef MICRO_SMALL_KERNELS
   // climatology data for linear stratospheric chemistry
   // ozone (climatology) [vmr]
   view_2d linoz_o3_clim;
@@ -887,7 +889,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   view_2d linoz_cariolle_pscs;
   view_2d linoz_views[8];
 
-  data_interp_oxid_->run(end_of_step_ts());
+  
 
   if (config_.linoz.compute) {
     data_interp_linoz_->run(end_of_step_ts());
@@ -905,7 +907,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   
     
   }
-
+#endif
   data_interp_exo_coldens_->run(end_of_step_ts());  
   
 #ifndef MICRO_SMALL_KERNELS  
