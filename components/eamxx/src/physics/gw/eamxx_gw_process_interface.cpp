@@ -1054,12 +1054,12 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
 /*------------------------------------------------------------------------------------------------*/
 size_t GWDrag::requested_buffer_size_in_bytes() const
 {
-  const int nlev_mid_packs = ekat::npack<Spack>(m_nlev);
-  const int nlev_int_packs = ekat::npack<Spack>(m_nlev+1);
+  const int nlev_mid_packs = ekat::npack<Pack>(m_nlev);
+  const int nlev_int_packs = ekat::npack<Pack>(m_nlev+1);
   size_t gw_buffer_size = 0;
 
-  gw_buffer_size += Buffer::num_2d_mid_views*m_ncols*nlev_mid_packs*sizeof(Pack);
-  gw_buffer_size += Buffer::num_2d_int_views*m_ncols*nlev_int_packs*sizeof(Pack);
+  gw_buffer_size += Buffer::num_2d_mid_views*m_ncol*nlev_mid_packs*sizeof(Pack);
+  gw_buffer_size += Buffer::num_2d_int_views*m_ncol*nlev_int_packs*sizeof(Pack);
 
   return gw_buffer_size;
 }
@@ -1070,23 +1070,23 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
   EKAT_REQUIRE_MSG(buffer_chk,"Error! Buffers size not sufficient.\n");
   //----------------------------------------------------------------------------
   Pack* mem = reinterpret_cast<Pack*>(buffer_manager.get_memory());
-  const int nlev_mid_packs = ekat::npack<Spack>(m_nlev);
-  const int nlev_int_packs = ekat::npack<Spack>(m_nlev+1);
+  const int nlev_mid_packs = ekat::npack<Pack>(m_nlev);
+  const int nlev_int_packs = ekat::npack<Pack>(m_nlev+1);
   //----------------------------------------------------------------------------
-  uview_2d* buffer_mid_view_ptrs[Buffer::num_2d_midpoint_views] = {
+  uview_2d* buffer_mid_view_ptrs[Buffer::num_2d_mid_views] = {
     &m_buffer.z_del,
     &m_buffer.z_mid
   };
-  for (int i=0; i<Buffer::num_2d_midpoint_views; ++i) {
-    *buffer_mid_view_ptrs[i] = uview_2d(mem, m_ncols, nlev_packs);
+  for (int i=0; i<Buffer::num_2d_mid_views; ++i) {
+    *buffer_mid_view_ptrs[i] = uview_2d(mem, m_ncol, nlev_mid_packs);
     mem += buffer_mid_view_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
-  uview_2d* buffer_int_view_ptrs[Buffer::num_2d_interface_views] = {
+  uview_2d* buffer_int_view_ptrs[Buffer::num_2d_int_views] = {
     &m_buffer.z_int
   };
-  for (int i=0; i<Buffer::num_2d_interface_views; ++i) {
-    *buffer_int_view_ptrs[i] = uview_2d(mem, m_ncols, nlevi_packs);
+  for (int i=0; i<Buffer::num_2d_int_views; ++i) {
+    *buffer_int_view_ptrs[i] = uview_2d(mem, m_ncol, nlev_int_packs);
     mem += buffer_int_view_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
