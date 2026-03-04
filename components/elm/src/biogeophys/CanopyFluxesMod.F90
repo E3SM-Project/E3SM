@@ -211,7 +211,7 @@ contains
     real(r8) :: wtalq(bounds%begp:bounds%endp)       ! normalized latent heat cond. for air and leaf [-]
     real(r8) :: wtgaq                                ! normalized latent heat cond. for air and ground [-]
     real(r8) :: el(bounds%begp:bounds%endp)          ! vapor pressure on leaf surface [pa]
-    real(r8) :: deldT                                ! derivative of "el" on "t_veg" [pa/K]
+    real(r8) :: deldT                                ! derivative of "el" on "t_veg" [pa/K] (dummy)
     real(r8) :: qsatl(bounds%begp:bounds%endp)       ! leaf specific humidity [kg/kg]
     real(r8) :: qsatldT(bounds%begp:bounds%endp)     ! derivative of "qsatl" on "t_veg"
     real(r8) :: e_ref2m                              ! 2 m height surface saturated vapor pressure [Pa]
@@ -348,7 +348,7 @@ contains
     ! We set the minum allowable difference in the conductance iteration
     ! to be equal to the maximum allowable stomatal resistance (this number is from fates)
     real(r8),parameter :: max_del_gs =  1._r8/2.e8_r8   ! [m/s]
-    real(r8),parameter :: max_reldel_gs = 0.05
+    real(r8),parameter :: max_reldel_gs = 0.02
     
     integer, parameter  :: itmax_stomata = 10
 
@@ -801,31 +801,34 @@ contains
 
       totp(:) = 0
       
-      !write(iulog,*) 'filterp:',filterp(1:fn)
-
       ! Recommended for this section:
-      ! export OMP_PROC_BIND=close
-      ! export OMP_WAIT_POLICY=PASSIVE    (so we don't slow down the rest of the model...)
-
+      ! export OMP_PROC_BIND=spread
+      ! export OMP_WAIT_POLICY=PASSIVE
+#ifdef _OPENMP
       t_start = omp_get_wtime()
       w_diff(:) = 0.
+#endif      
       !$OMP PARALLEL num_threads(fates_pproc) PRIVATE (it,np,f,p,c,t,g,itstoma,itlef,converge_stoma, &
       !$OMP                      converge_tveg,cf,w,csoilb,ri,csoilcn,  &
       !$OMP                      ricsoilc,wta,wtl,wtshi,wtg0,wtga,rppdry, &
       !$OMP                      efpot,rpp,wtaq,wtlq,snow_depth_c,fsno_dl, &
       !$OMP                      elai_dl,rdl,wtsqi,wtgq0,wtgaq,dc1,dc2,efsh,     &
       !$OMP                      efeold,erre,lw_grnd,dels,ecidif,tstar,    &
-      !$OMP                      qstar,thvstar,wc, iter_final,del_gs,reldel_gs,w_start,w_end)  if(fates_pproc>1)
+      !$OMP                      qstar,thvstar,wc, iter_final,del_gs,reldel_gs,w_start,w_end, &
+      !$OMP                      delt,delt_snow,delt_soil,delt_h2osfc,delq_snow,delq_soil, &
+      !$OMP                      delq_h2osfc,slope_rad, e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)  if(fates_pproc>1)
 
       it = 0
+      w_start = 0
       if(fates_pproc>1) then
 #ifdef _OPENMP
          it = omp_get_thread_num()
+         w_start = omp_get_wtime()
 #endif
       end if
 
       np = canopystate_vars%patch_par(it)%npatch
-      w_start = omp_get_wtime()
+      
       patch_loop: do f = 1, np
 
          p = canopystate_vars%patch_par(it)%patch_list(f)
@@ -1197,7 +1200,7 @@ contains
 
                      if ( (.not. (det(p) < dtmin .and. dele(p) < dlemin) .or. &
                           (implicit_stress .and. abs(tau_diff(p)) >= dtaumin)) .and. &
-                          (itlef < itmax)) then
+                          (itlef <= itmax)) then
                         converge_tveg = .false.
                      else
                         converge_tveg = .true.
@@ -1227,8 +1230,12 @@ contains
                ! Let's use the harmonic mean of the conductances
                ! which is the inverse of the sum of resistances
                hmean_gs = 2._r8/(rssun(p)+rssha(p))
-               
                reldel_gs = del_gs / hmean_gs
+               
+               ! (x/1)/(1/y)
+               ! y
+               reldel_gs = max( rssun(p)*abs(1._r8/rssun(p)-1._r8/rssun_old(p)), &
+                                rssha(p)*abs(1._r8/rssha(p)-1._r8/rssha_old(p)))
                
                istoma_converge_if: if( do_b4b .or. &
                     !(del_gs < max_del_gs ) .or.  &
@@ -1260,46 +1267,6 @@ contains
                end if istoma_converge_if
             end do iterate_stoma
             
-         end if if_filterp
-      end do patch_loop
-
-      w_end = omp_get_wtime()
-      w_diff(it) = (w_end-w_start)
-            
-      !$OMP END PARALLEL
-
-      t_end = omp_get_wtime()
-      
-      setup_overhead = maxval(w_diff)/(t_end - t_start)
-
-      do f=0,fates_pproc-1
-         npatch(f) = canopystate_vars%patch_par(f)%npatch
-      end do
-      !write(iulog,'(A)') '---------------------'
-      !      write(iulog,'(A,2x,F7.5,1x,A)')  "Group time:   ", t_end - t_start, "s"
-      !write(iulog,'(A,2x,F7.5)')  "Setup Efficiency:   ", setup_overhead
-      !write(iulog,'(A,*(2x,I3))') "Worker patch: ",npatch(:)
-      !write(iulog,'(A,*(2x,F7.5))') "Balance Efficiency: ",(minval(w_diff(:))+0.00001)/maxval(w_diff(:))
-      
-      call t_stop_lnd(event)
-
-      if(sum(totp).ne.fn)then
-         write(iulog,*) 'totp should equal fn...',sum(totp),fn
-         write(iulog,*) 'filterp:',filterp(1:fn)
-         do it=0,fates_pproc-1
-            np = canopystate_vars%patch_par(it)%npatch
-            write(iulog,*) 'patch_list: ',canopystate_vars%patch_par(it)%patch_list(1:np)
-            write(iulog,*) 'totp(it): ',totp(it)
-         end do
-         stop
-      end if
-      
-      do f = 1, fn
-         p = filterp(f)
-         c = veg_pp%column(p)
-         t = veg_pp%topounit(p)
-         g = veg_pp%gridcell(p)
-
          ! Energy balance check in canopy
 
          lw_grnd=(frac_sno(c)*t_soisno(c,snl(c)+1)**4 &
@@ -1397,33 +1364,73 @@ contains
                     ' wind_speed_adj= ',wind_speed_adj(p),' iter_final= ',iter_final
             end if
          end if
-
-      end do
-
-      if ( use_fates ) then
-
+         if ( use_fates ) then
+            
 #ifndef _OPENACC
-        call alm_fates%WrapAccumulateFluxes(bounds,fn,filterp(1:fn))
-        call alm_fates%wrap_hydraulics_drive(bounds,fn,filterp(1:fn),soilstate_vars, &
-             solarabs_vars,energyflux_vars)
+            ! Calculate non-leaf respiration terms
+            ! and accumulate fluxes
+            call alm_fates%WrapAccumulateFluxes(bounds,p)
 #endif
-      else
-
-         ! Determine total photosynthesis
-         call PhotosynthesisTotal(fn, filterp, &
-              atm2lnd_vars, cnstate_vars, canopystate_vars, photosyns_vars)
-      end if
-      
-      ! Report high energy balance errors
-      do f = 1, fn
-         p = filterp(f)
-         if (abs(err(p)) > 0.1_r8) then
-            write(iulog,*) 'energy balance in canopy ',p,', err=',err(p)
          end if
-      end do
 
-    end associate
-  end subroutine CanopyFluxes
+      end if if_filterp
+         
+   end do patch_loop
+
+#ifdef _OPENMP
+   w_end = omp_get_wtime()
+   w_diff(it) = (w_end-w_start)
+#endif
+   
+   !$OMP END PARALLEL
+
+#ifdef _OPENMP
+   t_end = omp_get_wtime()
+   setup_overhead = maxval(w_diff)/(t_end - t_start)
+   do f=0,fates_pproc-1
+      npatch(f) = canopystate_vars%patch_par(f)%npatch
+   end do
+   !write(iulog,'(A)') '---------------------'
+   !      write(iulog,'(A,2x,F7.5,1x,A)')  "Group time:   ", t_end - t_start, "s"
+   !write(iulog,'(A,2x,F7.5)')  "Setup Efficiency:   ", setup_overhead
+   !write(iulog,'(A,*(2x,I3))') "Worker patch: ",npatch(:)
+   !write(iulog,'(A,*(2x,F7.5))') "Balance Efficiency: ",(minval(w_diff(:))+0.00001)/maxval(w_diff(:))
+#endif
+   
+   call t_stop_lnd(event)
+   
+   if(sum(totp).ne.fn)then
+      write(iulog,*) 'totp should equal fn...',sum(totp),fn
+      write(iulog,*) 'filterp:',filterp(1:fn)
+      do it=0,fates_pproc-1
+         np = canopystate_vars%patch_par(it)%npatch
+         write(iulog,*) 'patch_list: ',canopystate_vars%patch_par(it)%patch_list(1:np)
+         write(iulog,*) 'totp(it): ',totp(it)
+      end do
+      stop
+   end if
+      
+   if ( use_fates ) then
+#ifndef _OPENACC
+      call alm_fates%wrap_hydraulics_drive(bounds,fn,filterp(1:fn),soilstate_vars, &
+           solarabs_vars,energyflux_vars)
+#endif
+   else
+      ! Determine total photosynthesis
+      call PhotosynthesisTotal(fn, filterp, &
+           atm2lnd_vars, cnstate_vars, canopystate_vars, photosyns_vars)
+   end if
+      
+   ! Report high energy balance errors
+   do f = 1, fn
+      p = filterp(f)
+      if (abs(err(p)) > 0.1_r8) then
+         write(iulog,*) 'energy balance in canopy ',p,', err=',err(p)
+      end if
+   end do
+   
+ end associate
+end subroutine CanopyFluxes
 
   ! =========================================================================
   

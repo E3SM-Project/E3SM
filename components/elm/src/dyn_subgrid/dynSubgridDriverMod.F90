@@ -144,13 +144,19 @@ contains
        call dyncrop_interp(bounds, crop_vars)
     end if
 
+    ! THIS SHOULD FASTER THAN PARALLEL DO  (RGK)
+    !! OMP PARALLEL num_threads(nclumps) PRIVATE (nc, bounds_clump) if(nclumps>1)
+    !! nc = omp_get_thread_num()
+    
     !$OMP PARALLEL DO PRIVATE (nc, bounds_clump) if(nclumps>1)
     do nc = 1, nclumps
        call get_clump_bounds(nc, bounds_clump)
        call dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
     end do
-    !$OMP END PARALLEL DO
 
+    !$OMP END PARALLEL DO
+    !! OMP END PARALLEL
+    
   end subroutine dynSubgrid_init
 
   !-----------------------------------------------------------------------

@@ -176,7 +176,7 @@ module ELMFatesInterfaceMod
    use FatesPlantRespPhotosynthMod, only : FatesCondPhotoPatch
    use FatesPlantRespPhotosynthMod, only : FatesPlantRespPatch
    use FatesPlantRespPhotosynthMod, only : FatesPlantRespPhotosynthDrive
-   use EDAccumulateFluxesMod , only : AccumulateFluxes_ED
+   use EDAccumulateFluxesMod , only : FatesAccumulatePatchFluxes
    use FatesSoilBGCFluxMod   , only : UnPackNutrientAquisitionBCs
    use FatesSoilBGCFluxMod   , only : FluxIntoLitterPools
    use PRTGenericMod, only : prt_cnp_flex_allom_hyp
@@ -270,7 +270,6 @@ module ELMFatesInterfaceMod
       procedure, public :: wrap_btran
       procedure, public :: wrap_photosynthesis
       procedure, public :: WrapPatchPhotosynthesis
-      procedure, public :: wrap_accumulatefluxes
       procedure, public :: WrapAccumulateFluxes
       procedure, public :: prep_canopyfluxes
       procedure, public :: wrap_canopy_radiation
@@ -2376,17 +2375,16 @@ contains
      integer                                        :: c,s
      integer                                        :: nc
 
+     if (.not.use_fates_planthydro) return
+        
      nc = bounds_clump%clump_index
      do s = 1, this%fates(nc)%nsites
-        ! filter flag == 1 means that this patch has not been called for photosynthesis
-        this%fates(nc)%bc_in(s)%filter_photo_pa(:) = 1
 
         ! set transpiration input boundary condition to zero. The exposed
         ! vegetation filter may not even call every patch.
-        if (use_fates_planthydro) then
-           this%fates(nc)%bc_in(s)%qflx_transp_pa(:) = 0._r8
-        end if
-
+        
+        this%fates(nc)%bc_in(s)%qflx_transp_pa(:) = 0._r8
+        
      end do
   end subroutine prep_canopyfluxes
 
@@ -2778,67 +2776,32 @@ contains
 
   ! ======================================================================================
 
-  subroutine WrapAccumulateFluxes(this, bounds_clump, fn, filterp)
+  subroutine WrapAccumulateFluxes(this, bounds_clump, p)
 
    ! !ARGUMENTS:
    class(hlm_fates_interface_type), intent(inout) :: this
    type(bounds_type)              , intent(in)    :: bounds_clump
-   integer                        , intent(in)    :: fn                   ! size of pft filter
-   integer                        , intent(in)    :: filterp(fn)          ! pft filter
+   integer                        , intent(in)    :: p
 
    ! Locals
-   integer                                        :: s,c,p,ifp,icp
+   integer                                        :: s,c,ifp
    real(r8)                                       :: dtime
    integer                                        :: nc
 
    dtime = real(get_step_size(),r8)
    nc = bounds_clump%clump_index
-   ! Run a check on the filter
-   do icp = 1,fn
-       p = filterp(icp)
-       c = veg_pp%column(p)
-       s = this%f2hmap(nc)%hsites(c)
-       ifp = p-col_pp%pfti(c)
-       call FatesPlantRespPatch(ifp,this%fates(nc)%sites(s),this%fates(nc)%bc_in(s),dtime)
-    end do
+   c = veg_pp%column(p)
+   s = this%f2hmap(nc)%hsites(c)
+   ifp = p-col_pp%pfti(c)
+
+   call FatesPlantRespPatch(ifp,this%fates(nc)%sites(s),this%fates(nc)%bc_in(s),dtime)
    
-    dtime = real(get_step_size(),r8)
-
-    call  AccumulateFluxes_ED(this%fates(nc)%nsites,  &
-                               this%fates(nc)%sites, &
-                               this%fates(nc)%bc_in,  &
-                               this%fates(nc)%bc_out, &
-                               dtime)
-    return
-  end subroutine WrapAccumulateFluxes
-  
- ! ======================================================================================
-
- subroutine wrap_accumulatefluxes(this, bounds_clump, fn, filterp)
-
-   ! !ARGUMENTS:
-   class(hlm_fates_interface_type), intent(inout) :: this
-   type(bounds_type)              , intent(in)    :: bounds_clump
-   integer                        , intent(in)    :: fn                   ! size of pft filter
-   integer                        , intent(in)    :: filterp(fn)          ! pft filter
-
-   ! Locals
-   integer                                        :: s,c,p,ifp,icp
-   real(r8)                                       :: dtime
-   integer                                        :: nc
-
-   nc = bounds_clump%clump_index
-   
-   dtime = real(get_step_size(),r8)
-   
-   call  AccumulateFluxes_ED(this%fates(nc)%nsites,  &
-        this%fates(nc)%sites, &
-        this%fates(nc)%bc_in,  &
-        this%fates(nc)%bc_out, &
-        dtime)
+   call FatesAccumulatePatchFluxes(ifp,this%fates(nc)%sites(s), dtime)
+    
+    
    return
- end subroutine wrap_accumulatefluxes
-
+ end subroutine WrapAccumulateFluxes
+  
  ! ======================================================================================
 
  subroutine wrap_WoodProducts(this, bounds_clump, fc, filterc)
@@ -3756,7 +3719,8 @@ end subroutine wrap_update_hifrq_hist
    real(r8) :: dtime
    integer  :: nlevsoil
 
-
+   !this%fates(nc)%bc_in(s)%qflx_transp_pa(:) = 0._r8
+   
    if ( .not.use_fates_planthydro ) return
 
    nc = bounds_clump%clump_index

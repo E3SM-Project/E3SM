@@ -200,7 +200,7 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-    if (.not.use_fates .and. nclumps > numg) then
+    if (nclumps > numg) then
        write(iulog,*) 'decompInit_moab(): Number of clumps exceeds number ', &
             'of land grid cells',nclumps,numg
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -459,7 +459,7 @@ contains
             'of land grid cells',npes,numg
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
-    if (.not.use_fates .and. nclumps > numg) then
+    if (nclumps > numg) then
        write(iulog,*) 'decompInit_lnd(): Number of clumps exceeds number ', &
             'of land grid cells',nclumps,numg
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -762,7 +762,7 @@ contains
             'of land grid cells',npes,numg
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
-    if (.not.use_fates .and. nclumps > numg) then
+    if (nclumps > numg) then
        write(iulog,*) 'decompInit_lnd(): Number of clumps exceeds number ', &
             'of land grid cells',nclumps,numg
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -1923,7 +1923,7 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-    if (.not.use_fates .and. nclumps > numg) then
+    if (nclumps > numg) then
        write(iulog,*) trim(subname) // '(): Number of clumps exceeds number ', &
             'of land grid cells',nclumps,numg
        call endrun(msg=errMsg(__FILE__, __LINE__))
