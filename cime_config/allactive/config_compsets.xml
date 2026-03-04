@@ -437,6 +437,11 @@
 </compset>
 
 <compset>
+  <alias>CRYO2010</alias>
+  <lname>2010SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%DIB_MPASO%IBPISMF_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
   <alias>CRYO1850-DISMF</alias>
   <lname>1850SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%DIB_MPASO%IBDISMF_MOSART_SGLC_SWAV</lname>
 </compset>
