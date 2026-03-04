@@ -33,7 +33,7 @@ FUTURE WORK:
 directly
 14. Merge kernels so that we are not calling one from another
 16. improve the way qqcw is populated
-17.delete fence mentioned by Luca
+17. delete fence mentioned by Luca
 -----------------------------------------------------------------
 */
 
