@@ -54,6 +54,7 @@ struct FieldGroup {
 
   FieldGroup& operator= (const FieldGroup& src) = default;
 
+  const std::string& name () const { return m_info->m_group_name; }
   const std::string& grid_name () const;
 
   // The fields in this group
