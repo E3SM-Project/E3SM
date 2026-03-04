@@ -1,0 +1,359 @@
+ss[11pt]{report}
+
+\usepackage{epsf,amsmath,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{color}
+\usepackage{natbib}
+
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\textheight}{8in}
+\setlength{\topmargin}{0.5in}
+
+\newcommand{\ds}{\displaystyle}
+\setlength{\parskip}{1.2ex}
+\setlength{\parindent}{0mm}
+\newcommand{\bea}{\begin{eqnarray}}
+\newcommand{\eea}{\end{eqnarray}}
+\newcommand{\nn}{\nonumber}
+
+\usepackage{minted}
+
+\def\Mark#1{{\textcolor{red}{\bf \textit{By Mark: } #1}}} % new text
+\def\Phillip#1{{\textcolor{cyan}{\bf \textit{By PhilW: } #1}}} % new text
+\def\Steven#1{{\textcolor{blue}{\bf \textit{By Steven: } #1}}} % new text
+\def\Luke#1{{\textcolor{green}{\bf \textit{By Luke: } #1}}} % new text
+\def\Comment#1{{\textcolor{magenta}{\bf \textit{Comment: } #1}}} % new text
+\begin{document}
+
+\title{MPAS-O Ocean Tides Design Document}
+\author{Phillip Wolfram, Brian Arbic}
+
+
+ 
+\maketitle
+\tableofcontents
+
+%-----------------------------------------------------------------------
+
+\chapter{Summary}
+
+Extract information from \url{https://acme-climate.atlassian.net/wiki/spaces/NGDW/pages/830701637/E3SM+Tidal+process+scoping}
+
+Tides are an ubiquitous contributor to global ocean flows, with effects on local sea level rise and coupled climate interactions on air-sea fluxes and ocean-sea ice processes.  They operate at large time scales and have periodicity from approximately 3-6 hrs to 19 years and occur on long wave lengths in the global ocean but in estuaries can be modified to be limited to smaller scales, e.g., tidal river networks. 
+
+Tides fundamentally are a gravity wave process arising from a variety of forcing mechanisms including:
+\begin{enumerate}
+\item Astronomical forcing via gravity (e.g., sun and moon)
+\item Gravitational self-attraction
+\item Loading of the solid earth
+\item Shallow-water wave transport and interactions
+\item Coriolis "forcing"
+\item Basin dynamics (e.g., land constraining the flow)
+\item Wind effects
+\item Storm surge interactions
+\item River and wind wave forcing
+\end{enumerate}
+
+\section{MPAS-O contributions}
+\begin{enumerate}
+\item barotropic tide
+\item regional sea level rise contribution due to regional tides
+\item baroclinic tide
+\item momentum dissipation due to tides (e.g., in CVmix)
+\item strongly affects transport, mixing, inundation due to hurricanes, and geomorphology in inland and coastal waters
+\end{enumerate}
+
+\section{MPAS-Sea ice contributions}
+\begin{enumerate}
+    \item Gradients of tidal currents cause periodic convergence / divergence of ice pack for an "ice accordion" for net ice production in fall and net ice loss in spring / summer (Koentopp et al., 2005 cited in Padman et al, (2018): Ocean Tide Influences on the Antarctic and Greenland Ice Sheets)
+    \item Hibler et al. 2006 - Moderate resolution M2 baroatropic tidal modeling the Arctic Ocean
+    Holloway and Proshutinsky, 2007 - General description on how tides affect the ice-ocean component of the Arctic
+    \item Kagan and Sofina, 2010 - Impact of sea ice on tides in the Arctic
+    \item Killett et al, 2011 - Observations of Arctic Ocean tides
+    \item Kowalik and Proshutinsky, 1994 - The classic Arctic tides book chapter
+    \item Lindsay, 2002 - Tidal signature from in-situ SHEBA observations
+    \item Roberts et al. 2015 - High-frequency ice-ocean coupling (the rotary wavelet analysis applied here would be used in our work)
+    \item St.Laurent et al. 2008 - Tides in Hudson Bay
+    \item Zhang et al, 2010 -Tides included, but not analyzed, in Bering Strait through-flow
+    \item Lyard, 1997 - Finite element modeling of Arctic Ocean tides
+\end{enumerate}
+
+\section{MALI}
+Brief summary from  Padman et al, (2018): Ocean Tide Influences on the Antarctic and Greenland Ice Sheets:
+\begin{enumerate}
+\item tides modify water properties coming in contact with ice shelf
+\item seaward of grounding zone, ice shelves float hydrostatically and respond instantaneously to the tide
+\item current variance under Ross Ice Shelf accounted for approximately half its variance (Arzeno et al, 2014), e.g., modulating melt flux a diurnal tidal period and spring-neap scale of 2 weeks
+\item can periodically unground ice shelf in grounding zone
+\item contribute to ice flexure to alter subglacial hydrological connections
+\item contribute to crevasse formation 
+\item influence sediment flowing across grounding line to form grounding zone wedges
+\item modify time-averaged backstress resisting outflow of glacial ice
+\item feedbacks that require inclusion for accurate modeling:
+\begin{itemize}
+\item tide height changes due to ice dynamics
+\item tidal currents effect on ocean mixing and ice shelf basal melting
+\end{itemize}
+\item Some of these processes would require a Stokes stress balance to include accurately
+\item Tides can also induce elastic response in the ice shelf/sheet which current models ignore
+\item Tidal time scales are shorter than typical ice sheet time steps, even at high resolution, but ice sheet models could be run with shorter time steps (for correspondingly increased cost)
+\end{enumerate}
+
+%The purpose of this section is to summarize what capability is to be added to the MPAS system through this design process. It should be clear what new code will do that the current code does not. Summarizing the primary challenges with respect to software design and implementation is also appropriate for this section. Finally, this statement should contain general statement with regard to what is ``success.''
+
+%figure template
+%\begin{figure}
+%  \center{\includegraphics[width=14cm]{./Figure1.pdf}}
+%  \caption{A graphical representation of the discrete boundary.}
+%  \label{Figure1}
+%\end{figure} 
+
+\section{Science Questions}
+\begin{enumerate}
+    \item Climate change of barotropic tide at century scale
+    \item Regional sea level rise impacts
+    \item Role of regional coastal drag on affecting regional tides
+    \item Estuarine dynamics and comparison with observations with the Surface Water Ocean Topography (SWOT) mission
+    \item Tidal effects on sea ice and ice shelves in a changing climate
+    
+\end{enumerate}
+
+
+%-----------------------------------------------------------------------
+
+\chapter{Requirements}
+
+\section{Requirement: Simulate barotropic tidal signature and compare against altimetry observations}
+Date last modified: 2018/10/10 \\
+Contributors: Phillip Wolfram and Brian Arbic\\
+
+Validate global tidal simulation against accurate altimeter-constrained tide models such as TPXO or others.
+
+\section{Requirement: Simulate five largest harmonic constituents M2, S2, N2, K1, O1 from astronomical forcing}
+Date last modified: 2018/10/23 \\
+Contributors: Phillip Wolfram and Brian Arbic\\
+
+Five largest tidal constituents need to be included in MPAS-O to represent the bulk of the energy and the energy dissipation of the barotropic tide.
+
+
+%-----------------------------------------------------------------------
+
+\chapter{Algorithmic Formulations}
+
+\section{Astronomical forcing}
+
+The Newtonian equilibrium tidal potential is given by $\eta_{EQ}$.  For the three largest semidiurnal tidal constituents, $\eta_{EQ}$ is given by equation (5) from \citet{chassignet_primer_2018} for $i=$ M$_{2}$, S$_{2}$, N$_{2}$ (applied 3 times and summed together), viz:
+\begin{equation}
+\eta_{EQ,i} = Af(t_{ref})(1+k_2-h_2)\cos^2(\phi)\cos\left[\omega(t-t_{ref}) + \chi(t_{ref}) + \nu(t_{ref}) + 2\lambda\right],
+\label{eq:Eq5}
+\end{equation}
+
+where the tidal amplitude is $A$, $f(t_{ref})$ is the the nodal factor accounting for the small modulations of amplitude (computed about once per year), $f(t_{ref})$ is slow modulation of amplitude (computed about once per year), the Love numbers $k_2$ and $h_2$ respectively account for the deformation of the solid earth due to the astronomical tidal forcing and the perturbation gravitational potential due to this deformation, $\phi$ is latitude, $\omega$ is tidal frequency, $t_{ref}$ is a reference time (often taken to be the beginning of a model run), $\chi(t_{ref})$ is the astronomical argument, and $\nu(t_ref)$ is the nodal factor accounting for the small modulations of phase, and $\lambda$ is longitude.
+
+For the diurnal constituents, the equilibrium tide is given by equation (6) of \citet{chassignet_primer_2018}, applied twice for $j=$ K$_{1}$ and O$_{1}$, viz:
+
+\begin{equation}
+\eta_{EQ,j} = A f(t_{ref}) (1+k_2-h_2)\sin(2\phi)\cos\left[\omega(t-t_{ref}) + \chi(t_{ref}) + \nu(t_{ref}) + \lambda \right].
+\label{eq:Eq6}
+\end{equation}
+
+Nodal factors 
+$\chi$, $f$, and $\nu$ are detailed in subsection \ref{sec:AstrArg}.
+%(Book chapter doesn't give astronomical arguments, but Brian has matlab code for nodal factors and astronomical arguments Ask Richard for most recent code for nodal factors?)
+Precision on decimals in Table \ref{tab:astronimcalFactors}, which gives the values of $\omega$, $A$, $1+k_2-h_2$, and period for the ten largest tidal consitutents, is deemed of acceptable accuracy to start (personal communication with Brian Arbic).
+
+\begin{table}
+\begin{tabular}{|c|c|c|c|c|}
+\hline 
+Constituent & $\omega\;\left(10^{-4}\,s^{-1}\right)$ & $A\;\left(\textrm{cm}\right)$ & $1+k_{2}-h_{2}$ & Period (solar days)\tabularnewline
+\hline 
+\hline 
+$\textrm{M}_{m}$ & 0.026392 & 2.2191 & 0.693 & 27.5546\tabularnewline
+\hline 
+$\textrm{M}_{f}$ & 0.053234 & 4.2041 & 0.693 & 13.6608\tabularnewline
+\hline 
+$\textrm{Q}_{1}$ & 0.6495854 & 1.9273 & 0.695 & 1.1195\tabularnewline
+\hline 
+$\textrm{O}_{1}$ & 0.6759774 & 10.0661 & 0.695 & 1.0758\tabularnewline
+\hline 
+$\textrm{P}_{1}$ & 0.7252295 & 4.6848 & 0.706 & 1.0027\tabularnewline
+\hline 
+$\textrm{K}_{1}$ & 0.7292117 & 14.1565 & 0.736 & 0.9973\tabularnewline
+\hline 
+$\textrm{N}_{2}$ & 1.378797 & 4.6397 & 0.693 & 0.5274\tabularnewline
+\hline 
+$\textrm{M}_{2}$ & 1.405189 & 24.2334 & 0.693 & 0.5175\tabularnewline
+\hline 
+$\textrm{S}_{2}$ & 1.454441 & 11.2743 & 0.693 & 0.5000\tabularnewline
+\hline 
+$\textrm{K}_{2}$ & 1.458423 & 3.0684 & 0.693 & 0.4986\tabularnewline
+\hline 
+\end{tabular}
+\label{tab:astronimcalFactors}
+\caption{Constituent-dependent frequencies $\omega$, astronomical forcing amplitudes A, and Love number combinations $1 + k_2 − h_2$ used to compute equilibrium tide $\eta_{EQ}$. The periods $2\pi/\omega$ are also given. Reproduced from Table 1 of \citet{chassignet_primer_2018,
+arbic2004accuracy}.}
+\end{table}
+
+An efficient computation can be obtained by computing
+maps of $\cos^2(\phi)$ and $\sin(2\phi)$ as static in time maps at model initialization.  Static maps of $\sin \lambda$, $\cos \lambda$, $\sin 2\lambda$, and $\cos 2 \lambda$ should also be computed.  One can see that all of these static maps are needed, through application of trigonometric identities to Equations \ref{eq:Eq5} and \ref{eq:Eq6}.
+
+
+\subsection{Astronomical arguments}
+\label{sec:AstrArg}
+
+Brian's matlab code has been provided for calculating $\chi$, $f$, and $\nu$ given ephemerides in code listings \ref{listing:ephermides} and \ref{listing:RayArgs}.
+$\chi$ is the astronomical argument computed from $t_{ref}$ for each constituent, and is typically updated once a year). Physically, the $\chi$ factors are related to the positions of the Sun and Moon at a particular time. 
+
+The recommend formulation is the one by Ray, e.g., in Code Listing \ref{listing:RayArgs} for $\nu$, $f$, and $\chi$; $s$,$h$,$p$, and $N$ essentially correspond to locations of Sun and Moon. 
+
+%Code for $A$, $\xi$, $\nu$ can be provided.
+
+\begin{listing}[t]
+\begin{minted}[mathescape,
+               linenos,
+               numbersep=5pt,
+               frame=lines,
+               framesep=2mm]{matlab}
+
+
+% Compute ephemerides for 5 constituents (units degrees)
+
+  [h0,s0,p0,N0,T0,time_mjd0]=ray_arguments(dummy_year,1);
+  clear dummy_year
+
+  chi_m2=2*h0-2*s0;
+  chi_s2=0;
+  chi_n2=2*h0-3*s0+p0;
+  chi_k1=h0+90;
+  chi_o1=h0-2*s0-90;
+
+  % Compute nodal factors for 5 constituents:
+
+  f_m2=1.000-0.037*cosd(N0);
+  f_s2=1;
+  f_n2=f_m2;
+  f_k1=1.006+0.115*cosd(N0);
+  f_o1=1.009+0.187*cosd(N0);
+
+  nu_m2=-2.1*sind(N0);
+  nu_s2=0;
+  nu_n2=u_m2;
+  nu_k1=-8.9*sind(N0);
+  nu_o1=10.8*sind(N0);
+  
+  % best to use Ray (write before publication to make sure 
+  % it is the most recent version, don't use 
+  % schwiderski_arguments from 1980 
+  % (polynomial fits, so this makes sense)
+\end{minted}
+\caption{Computation of ephemerides}
+\label{listing:ephermides}
+\end{listing}
+
+\begin{listing}[b]
+\begin{minted}[mathescape,
+               linenos,
+               numbersep=5pt,
+               frame=lines,
+               framesep=2mm]{matlab}
+function [h,s,p,N,T,time_mjd]=ray_arguments(y,d);
+
+% y = year number (i.e. 2003)
+% d = day number (1-366)
+
+inty=floor((y-1857)/4)-1;
+
+time_mjd=365*(y-1858)+inty-(31+28+31+30+31+30+31+31+30+31+17) + 1;
+
+T=time_mjd-51544.4993;
+
+s=218.3164+13.17639648*T;
+
+h=280.4661+0.98564736*T;
+
+p=83.3535+0.11140353*T;
+
+N=125.0445 - 0.05295377*T;
+
+%s,h,p,N essentially correspond to locations of 
+% sun / moon (but with complexity).  
+% compare_arguments.m does a comparison.
+\end{minted}
+\caption{Ray arguments computation}
+\label{listing:RayArgs}
+\end{listing}
+
+\section{Self-attraction and loading}
+
+Self-attraction and loading (SAL) constituent static file maps should be derived for SAL amplitude and phase from FES, for $k=$ M$_2$, S$_2$, N$_2$, K$_1$, and O$_1$.  The maps can be used to compute $\eta_{SAL}$ as a sum, e.g., equation (12) from \citet{chassignet_primer_2018},
+
+\begin{equation}
+   \eta_{k,SAL}(\phi,\lambda) = A_m(\phi,\lambda)f(t_{ref})\cos\left[\omega (t-t_{ref}) + \chi(t_{ref}) + \nu(t_{ref}) - \phi_p(\phi,\lambda)}\right],
+\label{eq:SAL}
+\end{equation}
+where $A_m(\phi,\lambda)$ is the amplitude of the SAL of the $k$ constituent as a function of latitude ($\lambda$) and longitude ($\phi$) and $\phi_p(\phi,\lambda)$ is the phase of SAL as function of lat/lon.
+Equation \ref{eq:SAL} takes amplitude and phase maps that provide a prediction with amplitude and phase using nodal factors and astronomical arguments (see section \ref{sec:AstrArg}).
+
+The self-attraction and loading harmonic constituents $A_m$ and $\phi_p$ can be derived from a harmonic analysis of self-attraction and loading maps produced by global tidal models, e.g., TPXO (\url{http://volkov.oce.orst.edu/tides/global.html}) or TUGO-m (\url{http://sirocco.obs-mip.fr/ocean-models/tugo/}).
+
+% TPXO data not clear, but Brian Arbic has some of the self-attraction and loading files.  Jay or Alan from HYCOM.
+
+State of the art tidal models worthy for consideration for use of self-attraction and loading maps:
+
+\begin{enumerate}
+\item Richard Ray has state of the art (GOT model)
+\item Egbert and Erofeeva 
+\item FES 
+\item TPXO
+\end{enumerate}
+
+Brian Arbic can also provide self-attraction and loading maps from older versions of the GOT model.  These should be perfectly adequate to begin, since barotropic tide models were quite accurate in early versions of GOT.
+
+Once $\eta_{EQ}$ and $\eta_{SAL}$ are obtained, they can be used in an ocean model.  For instance, in a shallow water model, we replace the term $\nabla \eta$ in the momentum equation with a gradient of $\eta$ referenced to the equilibrium tide and self-attraction and loading terms, viz:
+
+\begin{equation}
+    \nabla\eta \rightarrow \nabla\left( \eta - \eta_{EQ} - \eta_{SAL}\right)
+\end{equation}
+
+In essence, the equilibrium tide and self-attraction and loading terms reset the reference against which pressure gradients are computed.
+
+
+%-----------------------------------------------------------------------
+
+\chapter{Design and Implementation}
+
+
+%-----------------------------------------------------------------------
+
+\chapter{Testing}
+
+\section{Testing and Validation}
+
+Validation between the model and observational datasets can be performed via a tidal harmonic analysis.  For example, from \citep{chassignet_primer_2018} equations 13 to 16, if 
+
+\begin{equation}
+    D^2 = \left< (\eta_{model} - \eta_{obs})^{2} \right>
+\end{equation}
+where $\left< \cdot \right>$ is a time average over an integer number of tidal periods, then 
+\begin{equation}
+    D^2 = \frac{1}{2}\left(A_{model}^2 + A_{obs}^2\right) - A_{model}A_{obs}\cos\left(\phi_{model} - \phi_{obs}\right),
+\end{equation}
+where $A_{model}$ and $A_{obs}$ are the model and observational amplitudes and $\phi_{model}$ and $\phi_{obs}$ are the model and observational phases, respectively.
+
+Area-weighted versions, e.g., equation 16 in \citep{chassignet_primer_2018}, are computed as 
+\begin{equation}
+    D^2 = \frac{\int \int \left< \left(\eta_{model} - \eta_{obs}\right)^2\right>dA}{\int \int dA}
+\end{equation}
+
+Observations should be compared to tidal altimetry data.
+%-----------------------------------------------------------------------
+\bibliographystyle{unsrtnat}
+\bibliography{tides}
+
+
+\end{document}
+
+
