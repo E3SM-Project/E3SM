@@ -147,30 +147,27 @@ bool AtmosphereProcessGroup::has_process(const std::string& name) const {
   return false;
 }
 
-void AtmosphereProcessGroup::create_requests () {
-
+void AtmosphereProcessGroup::create_requests ()
+{
   // The atm process group (APG) simply 'concatenates' required/computed
-  // fields of the stored process. There is a single exception to this
-  // rule, in case of sequential splitting: if an atm proc requires a
-  // field that is computed by a previous atm proc in the group, that
-  // field is not exposed as a required field of the group.
-  const bool seq_splitting = m_group_schedule_type==ScheduleType::Sequential;
+  // fields of the stored process.
   for (auto& atm_proc : m_atm_processes) {
     atm_proc->set_grids(m_grids_manager);
 
-    // Add inputs/outputs to the list of inputs of the group
-    for (const auto& ap_req : atm_proc->get_field_requests()) {
-      bool already_computed = has_field(ap_req.fid.name(),ap_req.fid.get_grid_name(),Computed);
-      auto& req = m_field_requests.emplace_back(ap_req);
-      if (seq_splitting and req.usage & Required and already_computed)
-        req.usage = Computed;
-    }
-    for (const auto& ap_req : atm_proc->get_group_requests()) {
-      bool already_computed = has_group(ap_req.name,ap_req.grid,Computed);
-      auto& req = m_group_requests.emplace_back(ap_req);
-      if (seq_splitting and req.usage & Required and already_computed)
-        req.usage = Computed;
-    }
+    // Add field/group requests of this AP to the list of field/group requests of this APG
+    m_field_requests.insert(m_field_requests.end(),
+                            atm_proc->get_field_requests().begin(),
+                            atm_proc->get_field_requests().end());
+
+    m_group_requests.insert(m_group_requests.end(),
+                            atm_proc->get_group_requests().begin(),
+                            atm_proc->get_group_requests().end());
+    // for (const auto& ap_req : atm_proc->get_group_requests()) {
+    //   bool already_computed = has_group(ap_req.name,ap_req.grid,Computed);
+    //   auto& req = m_group_requests.emplace_back(ap_req);
+    //   if (seq_splitting and req.usage & Required and already_computed)
+    //     req.usage = Computed;
+    // }
   }
 }
 
@@ -406,7 +403,8 @@ void AtmosphereProcessGroup::pre_process_tracer_requests () {
   }
 }
 
-void AtmosphereProcessGroup::initialize_impl (const RunType run_type) {
+void AtmosphereProcessGroup::initialize_impl (const RunType run_type)
+{
   for (auto& atm_proc : m_atm_processes) {
     atm_proc->initialize(start_of_step_ts(),run_type);
 #ifdef SCREAM_HAS_MEMORY_USAGE
@@ -415,6 +413,93 @@ void AtmosphereProcessGroup::initialize_impl (const RunType run_type) {
     m_comm.all_reduce(&my_mem_usage,&max_mem_usage,1,MPI_MAX);
     m_atm_logger->debug("[EAMxx::initialize::"+atm_proc->name()+"] memory usage: " + std::to_string(max_mem_usage) + "MB");
 #endif
+  }
+
+  if (m_group_schedule_type==ScheduleType::Sequential) {
+    // We need to make sure we are not exposing more inputs than we actually need.
+    // In the create_requests phase, we agglomerated all requests from all procs.
+    // However, it is possible that a proc has a Required field/group that is
+    // the Computed field/group of a previous process. And we need to check both
+    // field and groups, as a Required field may be Computed as part of a group
+    // in a prev process (or viceversa, all group members are Computed fields
+    // of prev processes)
+
+    // First, find out the first process that requires/computes each field/group
+    // NOTE: emplace(str,int) leaves the entry untouched if it already exists
+    strmap_t<strmap_t<int>> field_first_customer;
+    strmap_t<strmap_t<int>> group_first_customer;
+    strmap_t<strmap_t<int>> field_first_provider;
+    strmap_t<strmap_t<int>> group_first_provider;
+    int nprocs = m_atm_processes.size();
+    for (int i=0; i<nprocs; ++i) {
+      const auto& ap = m_atm_processes[i];
+      for (const auto& f : ap->get_fields_in()) {
+        const auto& grid = f.get_header().get_identifier().get_grid_name();
+        field_first_customer[f.name()].emplace(grid,i);
+      }
+      for (const auto& f : ap->get_fields_out()) {
+        const auto& grid = f.get_header().get_identifier().get_grid_name();
+        field_first_provider[f.name()].emplace(grid,i);
+      }
+      for (const auto& g : ap->get_groups_in()) {
+        group_first_customer[g.name()].emplace(g.grid_name(),i);
+      }
+      for (const auto& g : ap->get_groups_out()) {
+        group_first_provider[g.name()].emplace(g.grid_name(),i);
+        for (const auto& fn : g.m_info->m_fields_names) {
+          field_first_provider[fn].emplace(g.grid_name(),i);
+        }
+      }
+    }
+
+    // Now for each field/group, check if first_customer comes after the first provider.
+    // If so, we must remove the field/group from the inputs of this group
+    for (const auto& [fn,grid2customer] : field_first_customer) {
+      for (const auto& [gn,customer_id] : grid2customer) {
+        // If NO process provides this field on this grid, or if the 1st provider comes AFTER
+        // the 1st customer, then it is TRULY a requirement, and we can move on
+        if (field_first_provider[fn].count(gn)==0 or
+            field_first_provider[fn][gn] >= customer_id)
+          continue;
+
+        // If we got here, the 1st customer of this field comes AFTER a provider.
+        // Hence, this is NOT an input to the APG, and we must remove it.
+        m_fields_in.erase(m_fields_in_iterators[fn][gn]);
+        m_fields_in_iterators[fn].erase(gn);
+      }
+    }
+
+    for (const auto& [group,grid2customer] : group_first_customer) {
+      for (const auto& [grid,customer_id] : grid2customer) {
+        bool remove = false;
+        if (group_first_provider[group].count(grid)==1 and
+            group_first_provider[group][grid] < customer_id)
+          remove = true;
+
+        if (field_first_provider[group].count(grid)==1 and
+            field_first_provider[group][grid] < customer_id)
+          remove = true;
+
+        if (not remove) {
+          // No prev process computes the group (or the monolithic field as a Field)
+          // Check if ALL fields are individually computed before this proc
+          remove = true;
+          auto g = m_groups_in_iterators[group][grid];
+          for (const auto& [fn,f] : g->m_individual_fields) {
+            if (field_first_provider[fn].count(grid)==0 or
+                field_first_provider[fn][grid] >= customer_id) {
+              remove = false;
+              break;
+            }
+          }
+        }
+
+        if (remove) {
+          m_groups_in.erase(m_groups_in_iterators[group][grid]);
+          m_groups_in_iterators[group].erase(grid);
+        }
+      }
+    }
   }
 }
 
@@ -470,7 +555,8 @@ set_group_impl (const FieldGroup& group)
   }
 }
 
-void AtmosphereProcessGroup::set_field_impl (const Field& f) {
+void AtmosphereProcessGroup::set_field_impl (const Field& f)
+{
   const auto& fid = f.get_header().get_identifier();
   for (auto atm_proc : m_atm_processes) {
     if (atm_proc->has_field(fid.name(),fid.get_grid_name())) {

@@ -548,6 +548,10 @@ private:
   strmap_t<strmap_t<group_it>>  m_groups_out_iterators;
   strmap_t<strmap_t<field_it>>  m_internal_fields_iterators;
 
+  // The APG class needs to manipulate the input fields/groups pointers, and it is WAY easier
+  // to simply grant that class access to the pointers maps above.
+  friend class AtmosphereProcessGroup;
+
   // List of property checks for fields
   std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_precondition_checks;
   std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_postcondition_checks;
