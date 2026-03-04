@@ -158,6 +158,7 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/cxx/ComposeTransportImplEnhancedTrajectoryTests.cpp
     ${SRC_SHARE_DIR}/cxx/ComposeTransportImplVerticalRemap.cpp
     ${SRC_SHARE_DIR}/cxx/ComposeTransportImplHypervis.cpp
+    ${SRC_SHARE_DIR}/cxx/ComposeTransportImplHorizTurb.cpp
     ${SRC_SHARE_DIR}/cxx/ComposeTransportImplTest2D.cpp
     ${SRC_SHARE_DIR}/cxx/GllFvRemap.cpp
     ${SRC_SHARE_DIR}/cxx/GllFvRemapImpl.cpp
