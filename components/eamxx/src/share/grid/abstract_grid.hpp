@@ -162,21 +162,20 @@ public:
   // Get geometry-related fields
   Field get_geometry_data(const std::string &name) const;
 
-  // Create geometry data, throws if already existing. Returns writable field
-  Field create_geometry_data(const FieldIdentifier &fid, const int pack_size = 1);
-  Field
-  create_geometry_data(const std::string &name, const FieldLayout &layout,
-                       const ekat::units::Units &units = ekat::units::Units::invalid(),
-                       const DataType data_type = DataType::RealType, const int pack_size = 1)
-  {
-    return create_geometry_data(FieldIdentifier(name, layout, units, this->name(), data_type),
-                                pack_size);
-  }
-
-  // Sets pre-existing field as geometry data.
-  // NOTE: setter is const, since we do allow adding new data even if grid is const
+  // Create geometry data, throws if already existing. Returned field is writable
+  // NOTE: the methods are const, since we do allow adding new data to grids.
   //       E.g., this allows atm procs to define coordinate vars for dimensions
-  //       peculiar to that process
+  //       peculiar to that process.
+  template<typename ST>
+  Field create_geometry_data(const std::string &name, const FieldLayout &layout,
+                             const ekat::units::Units &units = ekat::units::Units::invalid(),
+                             const int pack_size = 1) const
+  {
+    return create_geometry_data(name,layout,units,get_data_type<ST>(),pack_size);
+  }
+  Field create_geometry_data(const std::string &name, const FieldLayout &layout,
+                             const ekat::units::Units &units = ekat::units::Units::invalid(),
+                             const DataType data_type = DataType::RealType, const int pack_size = 1) const;
   void set_geometry_data(const Field &f) const;
   void delete_geometry_data(const std::string &name);
 

@@ -77,11 +77,11 @@ void run_bfb()
 
   // Run the lookup from a kernel and copy results back to host
   Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-    const Int offset = i * Spack::n;
+    const Int offset = i * Pack::n;
 
     // Init pack inputs
-    Spack T_atm, lamc, mu_c, cdist1, qc_incld,inv_qc_relvar;
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    Pack T_atm, lamc, mu_c, cdist1, qc_incld,inv_qc_relvar;
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       T_atm[s]        = device_data(vs).T_atm;
       lamc[s]         = device_data(vs).lamc;
       mu_c[s]         = device_data(vs).mu_c;
@@ -90,8 +90,8 @@ void run_bfb()
       inv_qc_relvar[s]= device_data(vs).inv_qc_relvar;
     }
 
-    Spack qc2qi_hetero_freeze_tend{0.0};
-    Spack nc2ni_immers_freeze_tend{0.0};
+    Pack qc2qi_hetero_freeze_tend{0.0};
+    Pack nc2ni_immers_freeze_tend{0.0};
 
     Functions::cldliq_immersion_freezing(
         T_atm, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar,
@@ -99,7 +99,7 @@ void run_bfb()
         p3::Functions<Real,DefaultDevice>::P3Runtime());
 
     // Copy results back into views
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       device_data(vs).qc2qi_hetero_freeze_tend  = qc2qi_hetero_freeze_tend[s];
       device_data(vs).nc2ni_immers_freeze_tend  = nc2ni_immers_freeze_tend[s];
     }

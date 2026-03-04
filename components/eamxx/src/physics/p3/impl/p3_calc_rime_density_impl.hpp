@@ -15,12 +15,12 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::calc_rime_density(
-  const Spack& T_atm, const Spack& rhofaci,
-  const Spack& table_val_qi_fallspd, const Spack& acn,
-  const Spack& lamc, const Spack& mu_c,
-  const Spack& qc_incld, const Spack& qc2qi_collect_tend,
-  Spack& vtrmi1, Spack& rho_qm_cloud,
-  const Smask& context)
+  const Pack& T_atm, const Pack& rhofaci,
+  const Pack& table_val_qi_fallspd, const Pack& acn,
+  const Pack& lamc, const Pack& mu_c,
+  const Pack& qc_incld, const Pack& qc2qi_collect_tend,
+  Pack& vtrmi1, Pack& rho_qm_cloud,
+  const Mask& context)
 {
   constexpr Scalar qsmall   = C::QSMALL;
   constexpr Scalar T_zerodegc = C::T_zerodegc.value;
@@ -40,14 +40,14 @@ void Functions<S,D>
     if (qc2qi_collect_tend_and_qc_not_small_and_t_freezing.any()) {
 
       // Droplet fall speed (using Stokes' formulation, with analytic soln).
-      Spack Vt_qc = acn * tgamma(4+bcn+mu_c) /
+      Pack Vt_qc = acn * tgamma(4+bcn+mu_c) /
         (pow(lamc, bcn) * tgamma(4+mu_c));
 
       // Use mass-weighted mean size
-      Spack D_c = (4 + mu_c) / lamc;
-      Spack V_impact = abs(vtrmi1-Vt_qc);
-      Spack inv_Tc = 1/min(sp(-0.001), T_atm-T_zerodegc);
-      Spack Ri = max(1, min(sp(-0.5e+6) * D_c * V_impact * inv_Tc, 12));
+      Pack D_c = (4 + mu_c) / lamc;
+      Pack V_impact = abs(vtrmi1-Vt_qc);
+      Pack inv_Tc = 1/min(sp(-0.001), T_atm-T_zerodegc);
+      Pack Ri = max(1, min(sp(-0.5e+6) * D_c * V_impact * inv_Tc, 12));
 
       const auto Ri_le_8 = (Ri <= sp(8.0));
       rho_qm_cloud.set(qc2qi_collect_tend_and_qc_not_small_and_t_freezing and Ri_le_8,

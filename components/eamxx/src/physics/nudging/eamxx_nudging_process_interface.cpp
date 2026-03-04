@@ -1,7 +1,7 @@
 #include "eamxx_nudging_process_interface.hpp"
 
 #include "share/util/eamxx_universal_constants.hpp"
-#include "share/remap/refining_remapper_p2p.hpp"
+#include "share/remap/horizontal_remapper.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
@@ -215,8 +215,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   grid_tmp->reset_num_vertical_lev(m_num_src_levs);
 
   if (m_refine_remap) {
-    // P2P remapper
-    m_horiz_remapper = std::make_shared<RefiningRemapperP2P>(grid_tmp, m_refine_remap_file);
+    m_horiz_remapper = std::make_shared<HorizontalRemapper>(grid_tmp, m_refine_remap_file);
   } else {
     // We set up an IdentityRemapper, specifying that tgt is an alias
     // of src, so that the remap method will do nothing

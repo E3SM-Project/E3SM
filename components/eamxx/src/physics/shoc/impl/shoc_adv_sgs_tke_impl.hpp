@@ -19,13 +19,13 @@ void Functions<S,D>
   const Int&                   nlev,
   const Real&                  dtime,
   const bool&                  shoc_1p5tke,
-  const uview_1d<const Spack>& shoc_mix,
-  const uview_1d<const Spack>& wthv_sec,
-  const uview_1d<const Spack>& sterm_zt,
-  const uview_1d<const Spack>& tk,
-  const uview_1d<const Spack>& brunt,
-  const uview_1d<Spack>&       tke,
-  const uview_1d<Spack>&       a_diss)
+  const uview_1d<const Pack>& shoc_mix,
+  const uview_1d<const Pack>& wthv_sec,
+  const uview_1d<const Pack>& sterm_zt,
+  const uview_1d<const Pack>& tk,
+  const uview_1d<const Pack>& brunt,
+  const uview_1d<Pack>&       tke,
+  const uview_1d<Pack>&       a_diss)
 {
 
   //Shared constants
@@ -33,7 +33,7 @@ void Functions<S,D>
   static constexpr Scalar basetemp = C::basetemp;
   static constexpr Scalar mintke   = scream::shoc::Constants<Real>::mintke;
   static constexpr Scalar maxtke   = scream::shoc::Constants<Real>::maxtke;
-  Spack a_prod_bu;
+  Pack a_prod_bu;
 
   //declare some constants
   static constexpr Scalar Cs  = 0.15;
@@ -43,7 +43,7 @@ void Functions<S,D>
   static constexpr Scalar Ce2 = Ce/sp(0.7)*sp(0.51);
   static constexpr Scalar Cee = Ce1 + Ce2;
 
-  const Int nlev_pack = ekat::npack<Spack>(nlev);
+  const Int nlev_pack = ekat::npack<Pack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
 
     // Compute buoyant production term
@@ -59,7 +59,7 @@ void Functions<S,D>
     tke(k) = ekat::max(0,tke(k));
 
     // Shear production term, use diffusivity from previous timestep
-    const Spack a_prod_sh = tk(k)*sterm_zt(k);
+    const Pack a_prod_sh = tk(k)*sterm_zt(k);
 
     // Dissipation term
     a_diss(k)=Cee/shoc_mix(k)*ekat::pow(tke(k),sp(1.5));

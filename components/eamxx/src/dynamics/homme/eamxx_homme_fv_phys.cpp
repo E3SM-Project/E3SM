@@ -247,7 +247,7 @@ void HommeDynamics
   const auto rnc = m_cgll_grid->get_num_local_dofs();
   const auto pnc = m_phys_grid->get_num_local_dofs();
   const auto nlev = m_cgll_grid->get_num_vertical_levels();
-  constexpr int ps = SCREAM_SMALL_PACK_SIZE;
+  constexpr int ps = SCREAM_PACK_SIZE;
   for (const auto& e : trace_gases_workaround.get_active_gases()) {
     add_field<Required>(e, FieldLayout({COL,LEV},{rnc,nlev}), mol/mol, rgn, ps);
     // 'Updated' rather than just 'Computed' so that it gets written to the

@@ -16,10 +16,10 @@ namespace shoc {
 template<typename S, typename D>
 KOKKOS_INLINE_FUNCTION
 void Functions<S,D>::shoc_assumed_pdf_compute_sgs_liquid(
-  const Spack& a,
-  const Spack& ql1,
-  const Spack& ql2,
-  Spack&       shoc_ql)
+  const Pack& a,
+  const Pack& ql1,
+  const Pack& ql2,
+  Pack&       shoc_ql)
 {
   shoc_ql = ekat::max(0, a*ql1 + (1 - a)*ql2);
 }

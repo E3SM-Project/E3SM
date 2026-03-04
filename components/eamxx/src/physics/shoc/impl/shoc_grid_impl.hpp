@@ -23,12 +23,12 @@ void Functions<S,D>::shoc_grid(
   const MemberType&            team,
   const Int&                   nlev,
   const Int&                   nlevi,
-  const uview_1d<const Spack>& zt_grid,
-  const uview_1d<const Spack>& zi_grid,
-  const uview_1d<const Spack>& pdel,
-  const uview_1d<Spack>&       dz_zt,
-  const uview_1d<Spack>&       dz_zi,
-  const uview_1d<Spack>&       rho_zt)
+  const uview_1d<const Pack>& zt_grid,
+  const uview_1d<const Pack>& zi_grid,
+  const uview_1d<const Pack>& pdel,
+  const uview_1d<Pack>&       dz_zt,
+  const uview_1d<Pack>&       dz_zi,
+  const uview_1d<Pack>&       rho_zt)
 {
   const auto ggr = C::gravit.value;
 
@@ -36,13 +36,13 @@ void Functions<S,D>::shoc_grid(
   const auto s_zt_grid = ekat::scalarize(zt_grid);
   const auto s_dz_zi   = ekat::scalarize(dz_zi);
 
-  const Int nlev_pack = ekat::npack<Spack>(nlev);
+  const Int nlev_pack = ekat::npack<Pack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
 
     // Compute shifts
-    Spack zi_grid_k, zi_grid_kp1, zt_grid_k, zt_grid_km1;
+    Pack zi_grid_k, zi_grid_kp1, zt_grid_k, zt_grid_km1;
 
-    auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
+    auto range_pack = ekat::range<IntPack>(k*Pack::n);
     auto range_pack_m1 = range_pack;
     // index for _km1 should never go below 0
     range_pack_m1.set(range_pack < 1, 1);

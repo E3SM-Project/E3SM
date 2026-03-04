@@ -20,14 +20,14 @@ void Functions<S,D>::eddy_diffusivities(
   const Scalar&                 Ckh,
   const Scalar&                 Ckm,
   const Scalar&                pblh,
-  const uview_1d<const Spack>& zt_grid,
-  const uview_1d<const Spack>& tabs,
-  const uview_1d<const Spack>& shoc_mix,
-  const uview_1d<const Spack>& sterm_zt,
-  const uview_1d<const Spack>& isotropy,
-  const uview_1d<const Spack>& tke,
-  const uview_1d<Spack>&       tkh,
-  const uview_1d<Spack>&       tk)
+  const uview_1d<const Pack>& zt_grid,
+  const uview_1d<const Pack>& tabs,
+  const uview_1d<const Pack>& shoc_mix,
+  const uview_1d<const Pack>& sterm_zt,
+  const uview_1d<const Pack>& isotropy,
+  const uview_1d<const Pack>& tke,
+  const uview_1d<Pack>&       tkh,
+  const uview_1d<Pack>&       tk)
 {
   // Parameters
 
@@ -42,12 +42,12 @@ void Functions<S,D>::eddy_diffusivities(
 
   const auto s_tabs = ekat::scalarize(tabs);
 
-  const Int nlev_pack = ekat::npack<Spack>(nlev);
+  const Int nlev_pack = ekat::npack<Pack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     // If surface layer temperature is running away, apply extra mixing
     //   based on traditional stable PBL diffusivities that are not damped
     //   by stability functions.
-    const Smask condition = (zt_grid(k) < pblh+pbl_trans) && (s_tabs(nlev-1) < tabs_crit);
+    const Mask condition = (zt_grid(k) < pblh+pbl_trans) && (s_tabs(nlev-1) < tabs_crit);
     tkh(k).set(condition, Ckh_s*ekat::square(shoc_mix(k))*ekat::sqrt(sterm_zt(k)));
     tk(k).set(condition,  Ckm_s*ekat::square(shoc_mix(k))*ekat::sqrt(sterm_zt(k)));
 
