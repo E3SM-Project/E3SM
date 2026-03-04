@@ -81,7 +81,7 @@ size_t IOPForcing::requested_buffer_size_in_bytes() const
   // Number of bytes needed by the WorkspaceManager passed to shoc_main
   const int nlevi_packs  = ekat::npack<Pack>(m_num_levs+1);
   const auto policy      = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
-  const size_t wsm_bytes = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 8+m_num_tracers, policy);
+  const size_t wsm_bytes = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 8, policy);
 
   return wsm_bytes;
 }
@@ -100,7 +100,7 @@ void IOPForcing::init_buffers(const ATMBufferManager &buffer_manager)
   m_buffer.wsm_data = mem;
 
   const auto policy       = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
-  const size_t wsm_npacks = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 8+m_num_tracers, policy)/sizeof(Pack);
+  const size_t wsm_npacks = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 8, policy)/sizeof(Pack);
   mem += wsm_npacks;
 
   size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
@@ -139,7 +139,7 @@ void IOPForcing::initialize_impl (const RunType run_type)
   // Setup WSM for internal local variables
   const auto nlevi_packs = ekat::npack<Pack>(m_num_levs+1);
   const auto policy = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
-  m_workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 8+m_num_tracers, policy);
+  m_workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 8, policy);
 
   // Compute field for horizontal contraction weights (1/num_global_dofs)
   const auto iop_nudge_tq = m_iop_data_manager->get_params().get<bool>("iop_nudge_tq");
@@ -147,7 +147,6 @@ void IOPForcing::initialize_impl (const RunType run_type)
   const Real one_over_num_dofs = 1.0/m_grid->get_num_global_dofs();
   if (iop_nudge_tq or iop_nudge_uv) m_helper_fields.at("horiz_mean_weights").deep_copy(one_over_num_dofs);
 }
-// =========================================================================================
 // =========================================================================================
 
 KOKKOS_FUNCTION
@@ -173,6 +172,8 @@ advance_iop_subsidence (const MemberType& team,
   const int n_q_tracers = Q.extent_int(0);
   const int nlev_packs  = ekat::npack<Pack>(nlevs);
 
+  const int icol  =  team.league_rank();
+
   // Workspace temporaries
   uview_1d<Pack> p_dep, u_new, v_new, T_new, q_new;
 
@@ -189,9 +190,9 @@ advance_iop_subsidence (const MemberType& team,
 
   interp.setup(team, ref_p_mid, p_dep);
 
-  interp.lin_interp(team, ref_p_mid, p_dep, u, u_new);
-  interp.lin_interp(team, ref_p_mid, p_dep, v, v_new);
-  interp.lin_interp(team, ref_p_mid, p_dep, T, T_new);
+  interp.lin_interp(team, ref_p_mid, p_dep, u, u_new, icol);
+  interp.lin_interp(team, ref_p_mid, p_dep, v, v_new, icol);
+  interp.lin_interp(team, ref_p_mid, p_dep, T, T_new, icol);
   team.team_barrier();
 
   // Thermal expansion correction + write back
@@ -207,7 +208,7 @@ advance_iop_subsidence (const MemberType& team,
   for (int m = 0; m < n_q_tracers; ++m) {
     const auto q_m = Kokkos::subview(Q, m, Kokkos::ALL());
 
-    interp.lin_interp(team, ref_p_mid, p_dep, q_m, q_new);
+    interp.lin_interp(team, ref_p_mid, p_dep, q_m, q_new, icol);
     team.team_barrier();
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
@@ -337,7 +338,7 @@ void IOPForcing::run_impl (const double dt)
 
   const auto ncols = m_grid->get_num_local_dofs();
 
-  ekat::LinInterp<Real, Pack::n> subs_interp(ncols, nlev_packs, nlev_packs);
+  ekat::LinInterp<Real, Pack::n> subs_interp(ncols, num_levs, num_levs);
 
   // Apply IOP forcing
   Kokkos::parallel_for("apply_iop_forcing", policy_iop, KOKKOS_LAMBDA (const MemberType& team) {
