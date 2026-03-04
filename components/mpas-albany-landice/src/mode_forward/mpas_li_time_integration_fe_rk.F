@@ -663,6 +663,8 @@ module li_time_integration_fe_rk
       deallocate(passiveTracer3dPrev)
       deallocate(passiveTracer3d)
       deallocate(cellMaskPrev)
+      deallocate(edgeMaskPrev)
+      deallocate(vertexMaskPrev)
       deallocate(sfcMassBalAccum)
       deallocate(basalMassBalAccum)
       deallocate(groundedSfcMassBalAccum)
