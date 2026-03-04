@@ -1043,7 +1043,46 @@ process_requested_fields()
   auto fm_model = m_field_mgrs[FromModel];
   auto fm_grid = m_field_mgrs[FromModel]->get_grid();
 
-  // First, find out which field names are just aliases
+  // First, find intermediate-only fields declared with the ':=:' syntax.
+  // These are created and added to the field manager (so dependents can use them),
+  // but are NOT registered with scorpio and do NOT appear in NC output.
+  std::set<std::string> intermediate_names;
+  for (auto& name : m_fields_names) {
+    auto sep3 = name.find(":=:");
+    if (sep3 != std::string::npos) {
+      auto alias = name.substr(0, sep3);
+      auto orig  = name.substr(sep3 + 3);
+      EKAT_REQUIRE_MSG(!alias.empty() && !orig.empty(),
+          "Error! Invalid intermediate field request. Should be 'alias:=:original'.\n"
+          " - request: " + name + "\n");
+      EKAT_REQUIRE_MSG (m_alias_to_orig.count(alias)==0,
+          "Error! Intermediate-only alias conflicts with an existing alias.\n"
+          " - stream name: " + m_stream_name + "\n"
+          " - alias: " + alias + "\n");
+      m_alias_to_orig[alias] = orig;
+      intermediate_names.insert(alias);
+      name = "";  // mark for removal from m_fields_names
+    }
+  }
+  // Remove blanked entries (intermediate-only fields)
+  {
+    std::vector<std::string> tmp;
+    for (const auto& n : m_fields_names)
+      if (!n.empty()) tmp.push_back(n);
+    m_fields_names = std::move(tmp);
+  }
+
+  // Check that no intermediate name also appears as a regular output field
+  for (const auto& iname : intermediate_names) {
+    for (const auto& fname : m_fields_names) {
+      EKAT_REQUIRE_MSG(fname != iname,
+          "Error! A field declared as intermediate-only (':=:') also appears as a regular output.\n"
+          " - stream name: " + m_stream_name + "\n"
+          " - field name: " + iname + "\n");
+    }
+  }
+
+  // Next, find out which field names are just aliases (using ':=' syntax)
   for (auto& name : m_fields_names) {
     auto tokens = ekat::split(name,":=");
     EKAT_REQUIRE_MSG(tokens.size()==2 or tokens.size()==1,
@@ -1165,6 +1204,11 @@ process_requested_fields()
   std::set<std::string> remaining(m_fields_names.begin(),m_fields_names.end());
   for (const auto& it : m_alias_to_orig) {
     remaining.insert(it.second);
+  }
+  // Intermediate-only fields must also be resolved (created and added to fm_model
+  // so that dependent diagnostics can use them), even though they won't be output.
+  for (const auto& n : intermediate_names) {
+    remaining.insert(n);
   }
   while (not done) {
     // We can't add-to/rm-form a std:;set while iterating on it, as that could

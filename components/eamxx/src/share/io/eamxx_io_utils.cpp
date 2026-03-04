@@ -132,6 +132,19 @@ create_diagnostic (const std::string& diag_field_name,
   // Start with a generic for a field name allowing for all letters, all numbers, dash, dot, plus, minus, product, and division
   // Escaping all the special ones just in case
   std::string generic_field = "([A-Za-z0-9_.+\\-\\*\\÷]+)";
+
+  // ── Built-in aliases ──────────────────────────────────────────────────────
+  // Recognized shorthand patterns expand to canonical composable expressions.
+  // Checked before all other regexes; expansion recurses into create_diagnostic.
+  {
+    std::smatch alias_matches;
+    std::regex bt (generic_field + "_atm_backtend$");
+    if (std::regex_search(diag_field_name, alias_matches, bt)) {
+      const auto f = alias_matches[1].str();
+      return create_diagnostic(f + "_minus_" + f + "_prev_over_dt", grid);
+    }
+    // More built-in aliases may be added here.
+  }
   std::regex field_at_l (R"()" + generic_field + R"(_at_(lev_(\d+)|model_(top|bot))$)");
   std::regex field_at_p (R"()" + generic_field + R"(_at_(\d+(\.\d+)?)(hPa|mb|Pa)$)");
   std::regex field_at_h (R"()" + generic_field + R"(_at_(\d+(\.\d+)?)(m)_above_(sealevel|surface)$)");
@@ -140,7 +153,8 @@ create_diagnostic (const std::string& diag_field_name,
   std::regex number_path ("(Ice|Liq|Rain)NumberPath$");
   std::regex aerocom_cld ("AeroComCld(Top|Bot)$");
   std::regex vap_flux ("(Meridional|Zonal)VapFlux$");
-  std::regex backtend (generic_field + "_atm_backtend$");
+  std::regex field_prev (generic_field + "_prev$");
+  std::regex field_over_dt (generic_field + "_over_dt$");
   std::regex pot_temp ("(Liq)?PotentialTemperature$");
   std::regex vert_layer ("(z|geopotential|height)_(mid|int)$");
   std::regex horiz_avg (generic_field + "_horiz_avg$");
@@ -193,10 +207,12 @@ create_diagnostic (const std::string& diag_field_name,
   } else if (std::regex_search(diag_field_name,matches,vap_flux)) {
     diag_name = "VaporFlux";
     params.set<std::string>("wind_component",matches[1].str());
-  } else if (std::regex_search(diag_field_name,matches,backtend)) {
-    diag_name = "AtmBackTendDiag";
+  } else if (std::regex_search(diag_field_name,matches,field_over_dt)) {
+    // NOTE: _over_dt must be checked before binary_ops to prevent "X_over_dt" from being
+    // misinterpreted as BinaryOpsDiag(X, over, dt).
+    diag_name = "FieldOverDtDiag";
     params.set("grid_name",grid->name());
-    params.set<std::string>("tendency_name",matches[1].str());
+    params.set<std::string>("field_name",matches[1].str());
   } else if (std::regex_search(diag_field_name,matches,pot_temp)) {
     diag_name = "PotentialTemperature";
     params.set<std::string>("temperature_kind", matches[1].str()!="" ? matches[1].str() : std::string("Tot"));
@@ -251,6 +267,13 @@ create_diagnostic (const std::string& diag_field_name,
     params.set<std::string>("arg1", matches[1].str());
     params.set<std::string>("arg2", matches[3].str());
     params.set<std::string>("binary_op", matches[2].str());
+  }
+  // NOTE: field_prev must be checked AFTER binary_ops so that "X_minus_X_prev"
+  // is parsed as BinaryOpsDiag(X, minus, X_prev) rather than FieldPrevDiag(X_minus_X).
+  else if (std::regex_search(diag_field_name,matches,field_prev)) {
+    diag_name = "FieldPrevDiag";
+    params.set("grid_name",grid->name());
+    params.set<std::string>("field_name",matches[1].str());
   }
   else if (std::regex_search(diag_field_name,matches,histogram)) {
     diag_name = "HistogramDiag";
