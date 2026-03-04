@@ -9,7 +9,6 @@ namespace {
 
 TEST_CASE("field_group") {
   using namespace scream;
-  using namespace ekat::units;
   using namespace ShortFieldTagsNames;
   using FID = FieldIdentifier;
   using FL  = FieldLayout;
@@ -18,7 +17,7 @@ TEST_CASE("field_group") {
   constexpr int ndims = 4;
   constexpr int nlevs = 8;
 
-  FID fid ("V",FL({COL,CMP,LEV},{ncols,ndims,nlevs}),Units::nondimensional(),"the_grid");
+  FID fid ("V",FL({COL,CMP,LEV},{ncols,ndims,nlevs}));
   Field f (fid);
   f.allocate_view();
 

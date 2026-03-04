@@ -269,7 +269,7 @@ void AtmosphereProcess::setup_step_tendencies (const std::string& default_grid) 
 
     const auto& tname = this->name() + "_" + fn + "_tend";
 
-    const auto fn_gn = fn + "@" + f.get_header().get_identifier().get_grid_name();
+    const auto fn_gn = fn + "@" + gn;
 
     // Create tend and start-of-step fields
     auto& tend = m_proc_tendencies[fn_gn] = f.clone(tname);
@@ -278,9 +278,10 @@ void AtmosphereProcess::setup_step_tendencies (const std::string& default_grid) 
   }
 }
 
-void AtmosphereProcess::set_required_field (const Field& f) {
+void AtmosphereProcess::set_required_field (const Field& f, const std::string& grid)
+{
   // Sanity check
-  EKAT_REQUIRE_MSG (has_required_field(f.get_header().get_identifier()),
+  EKAT_REQUIRE_MSG (has_required_field(f.name(),grid),
     "Error! Input field is not required by this atm process.\n"
     "    field id: " + f.get_header().get_identifier().get_id_string() + "\n"
     "    atm process: " + this->name() + "\n"
@@ -297,14 +298,15 @@ void AtmosphereProcess::set_required_field (const Field& f) {
     add_me_as_customer(f);
   }
 
-  set_required_field_impl (f);
+  set_required_field_impl (f,grid);
 
-  add_py_fields(f);
+  add_py_fields(f,grid);
 }
 
-void AtmosphereProcess::set_computed_field (const Field& f) {
+void AtmosphereProcess::set_computed_field (const Field& f, const std::string& grid)
+{
   // Sanity check
-  EKAT_REQUIRE_MSG (has_computed_field(f.get_header().get_identifier()),
+  EKAT_REQUIRE_MSG (has_computed_field(f.name(),grid),
     "Error! Input field is not computed by this atm process.\n"
     "   field id: " + f.get_header().get_identifier().get_id_string() + "\n"
     "   atm process: " + this->name() + "\n"
@@ -321,17 +323,18 @@ void AtmosphereProcess::set_computed_field (const Field& f) {
     add_me_as_provider(f);
   }
 
-  set_computed_field_impl (f);
+  set_computed_field_impl (f,grid);
 
-  add_py_fields(f);
+  add_py_fields(f,grid);
 }
 
-void AtmosphereProcess::set_required_group (const FieldGroup& group) {
+void AtmosphereProcess::set_required_group (const FieldGroup& group, const std::string& grid)
+{
   // Sanity check
-  EKAT_REQUIRE_MSG (has_required_group(group.m_info->m_group_name,group.grid_name()),
+  EKAT_REQUIRE_MSG (has_required_group(group.m_info->m_group_name,grid),
     "Error! This atmosphere process does not require the input group.\n"
     "   group name: " + group.m_info->m_group_name + "\n"
-    "   grid name : " + group.grid_name() + "\n"
+    "   grid name : " + grid + "\n"
     "   atm process: " + this->name() + "\n"
     "Something is wrong up the call stack. Please, contact developers.\n");
 
@@ -350,17 +353,18 @@ void AtmosphereProcess::set_required_group (const FieldGroup& group) {
     }
   }
 
-  set_required_group_impl(group);
+  set_required_group_impl(group,grid);
 
-  add_py_fields(group);
+  add_py_fields(group,grid);
 }
 
-void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
+void AtmosphereProcess::set_computed_group (const FieldGroup& group, const std::string& grid)
+{
   // Sanity check
-  EKAT_REQUIRE_MSG (has_computed_group(group.m_info->m_group_name,group.grid_name()),
+  EKAT_REQUIRE_MSG (has_computed_group(group.m_info->m_group_name,grid),
     "Error! This atmosphere process does not compute the input group.\n"
     "   group name: " + group.m_info->m_group_name + "\n"
-    "   grid name : " + group.grid_name() + "\n"
+    "   grid name : " + grid + "\n"
     "   atm process: " + this->name() + "\n"
     "Something is wrong up the call stack. Please, contact developers.\n");
 
@@ -379,9 +383,9 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
     }
   }
 
-  set_computed_group_impl(group);
+  set_computed_group_impl(group,grid);
 
-  add_py_fields(group);
+  add_py_fields(group,grid);
 }
 
 void AtmosphereProcess::run_property_check (const prop_check_ptr&       property_check,
@@ -553,27 +557,19 @@ void AtmosphereProcess::compute_step_tendencies () {
   stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
 }
 
-bool AtmosphereProcess::has_required_field (const FieldIdentifier& id) const {
-  return has_required_field(id.name(),id.get_grid_name());
-}
-
-bool AtmosphereProcess::has_required_field (const std::string& name, const std::string& grid_name) const
+bool AtmosphereProcess::has_required_field (const FieldIdentifier& id) const
 {
   for (const auto& r : m_field_requests) {
-    if (r.fid.name()==name and r.fid.get_grid_name()==grid_name and r.usage & Required)
+    if (r.fid==id)
       return true;
   }
   return false;
 }
 
-bool AtmosphereProcess::has_computed_field (const FieldIdentifier& id) const {
-  return has_computed_field(id.name(),id.get_grid_name());
-}
-
-bool AtmosphereProcess::has_computed_field (const std::string& name, const std::string& grid_name) const
+bool AtmosphereProcess::has_computed_field (const FieldIdentifier& id) const
 {
   for (const auto& r : m_field_requests) {
-    if (r.fid.name()==name and r.fid.get_grid_name()==grid_name and r.usage & Computed)
+    if (r.fid==id)
       return true;
   }
   return false;
@@ -825,8 +821,11 @@ add_column_conservation_check(const prop_check_ptr &prop_check, const CheckFailH
 }
 
 void AtmosphereProcess::set_fields_and_groups_pointers () {
+  auto find_freq = [&](const FieldIdentifier& fid) {
+  };
   for (auto& f : m_fields_in) {
     const auto& fid = f.get_header().get_identifier();
+
     m_fields_in_pointers[fid.name()][fid.get_grid_name()] = &f;
   }
   for (auto& f : m_fields_out) {

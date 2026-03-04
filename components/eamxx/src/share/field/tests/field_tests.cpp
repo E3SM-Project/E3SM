@@ -14,7 +14,6 @@ namespace {
 TEST_CASE("field", "") {
   using namespace scream;
   using namespace ShortFieldTagsNames;
-  using namespace ekat::units;
 
   using P4 = ekat::Pack<Real,4>;
   using P8 = ekat::Pack<Real,8>;
@@ -25,7 +24,7 @@ TEST_CASE("field", "") {
   std::vector<FieldTag> tags = {COL,LEV};
   std::vector<int> dims = {3,24};
 
-  FieldIdentifier fid ("field_1", {tags,dims}, m/s,"some_grid");
+  FieldIdentifier fid ("field_1", {tags,dims});
 
   // Check if we can extract a reshaped view
   SECTION ("reshape") {
@@ -175,7 +174,7 @@ TEST_CASE("field", "") {
     // rank-0
     std::vector<FieldTag> t0 = {};
     std::vector<int> d0 = {};
-    FieldIdentifier fid0("scalar_0d",{t0,d0},m/s,"some_grid");
+    FieldIdentifier fid0("scalar_0d",{t0,d0});
     Field f0(fid0);
     f0.allocate_view();
     f0.deep_copy(1.5);
@@ -186,7 +185,7 @@ TEST_CASE("field", "") {
     std::vector<FieldTag> t1 = {COL,CMP,LEV};
     std::vector<int> d1 = {3,2,24};
 
-    FieldIdentifier fid1("vec_3d",{t1,d1},m/s,"some_grid");
+    FieldIdentifier fid1("vec_3d",{t1,d1});
 
     Field f1(fid1);
     f1.allocate_view();
@@ -228,12 +227,12 @@ TEST_CASE("field", "") {
 
   SECTION ("rank0_field") {
     // Create 0d field
-    FieldIdentifier fid0("f_0d", FieldLayout({},{}), Units::nondimensional(), "dummy_grid");
+    FieldIdentifier fid0("f_0d", FieldLayout({},{}));
     Field f0(fid0);
     f0.allocate_view();
 
     // Create 1d field
-    FieldIdentifier fid1("f_1d", FieldLayout({COL}, {5}), Units::nondimensional(), "dummy_grid");
+    FieldIdentifier fid1("f_1d", FieldLayout({COL}, {5}));
     Field f1(fid1);
     f1.allocate_view();
 

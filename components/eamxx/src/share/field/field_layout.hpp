@@ -141,6 +141,9 @@ public:
   FieldLayout& reset_dim (const int idim, const int extent);
   FieldLayout& reset_dim (const FieldTag t, const int extent, const bool throw_if_not_found = true);
 
+  FieldLayout& add_vector_dim (const int extent);
+  FieldLayout& add_vector_dim (const int extent, const std::string& name);
+
   // These overload allow to remove/rename dims *if found*. They won't throw if layout does not have them
   FieldLayout& strip_dims (const std::vector<FieldTag>& tags); // Does not throw if not found
   FieldLayout& rename_dims (const std::map<FieldTag,std::string>& new_names); // Does not throw if not found

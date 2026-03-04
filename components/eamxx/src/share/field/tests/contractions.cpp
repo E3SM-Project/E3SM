@@ -12,7 +12,6 @@ namespace scream {
 
 TEST_CASE("field_contractions") {
   using namespace ShortFieldTagsNames;
-  using namespace ekat::units;
 
   // The following two functions are used in both horiz_contraction and
   // vert_contraction below
@@ -33,7 +32,7 @@ TEST_CASE("field_contractions") {
     int dim2 = 17;
 
     // Set a weight field
-    FieldIdentifier f00("f", {{COL}, {dim0}}, m / s, "g");
+    FieldIdentifier f00("f", {{COL}, {dim0}});
     Field field00(f00);
     field00.allocate_view();
     field00.sync_to_host();
@@ -45,10 +44,10 @@ TEST_CASE("field_contractions") {
     field00.sync_to_dev();
 
     // Create (random) sample fields
-    FieldIdentifier fsc("f", {{}, {}}, m / s, "g");  // scalar
-    FieldIdentifier f10("f", {{COL, CMP}, {dim0, dim1}}, m / s, "g");
-    FieldIdentifier f11("f", {{COL, LEV}, {dim0, dim2}}, m / s, "g");
-    FieldIdentifier f20("f", {{COL, CMP, LEV}, {dim0, dim1, dim2}}, m / s, "g");
+    FieldIdentifier fsc("f", {{}, {}});  // scalar
+    FieldIdentifier f10("f", {{COL, CMP}, {dim0, dim1}});
+    FieldIdentifier f11("f", {{COL, LEV}, {dim0, dim2}});
+    FieldIdentifier f20("f", {{COL, CMP, LEV}, {dim0, dim1, dim2}});
     Field fieldsc(fsc);
     Field field10(f10);
     Field field11(f11);
@@ -62,10 +61,10 @@ TEST_CASE("field_contractions") {
     randomize_uniform(field11, seed++);
     randomize_uniform(field20, seed++);
 
-    FieldIdentifier F_x("fx", {{COL}, {dim0}}, m / s, "g");
-    FieldIdentifier F_y("fy", {{LEV}, {dim2}}, m / s, "g");
-    FieldIdentifier F_z("fz", {{CMP}, {dim1}}, m / s, "g");
-    FieldIdentifier F_w("fyz", {{CMP, LEV}, {dim1, dim2}}, m / s, "g");
+    FieldIdentifier F_x("fx", {{COL}, {dim0}});
+    FieldIdentifier F_y("fy", {{LEV}, {dim2}});
+    FieldIdentifier F_z("fz", {{CMP}, {dim1}});
+    FieldIdentifier F_w("fyz", {{CMP, LEV}, {dim1, dim2}});
 
     Field field_x(F_x);
     Field field_y(F_y);
@@ -203,7 +202,7 @@ TEST_CASE("field_contractions") {
       int dim2 = lev_tag == LEV ? 225 : 226;
 
       // Set a weight field
-      FieldIdentifier f00("f", {{lev_tag}, {dim2}}, m / s, "g");
+      FieldIdentifier f00("f", {{lev_tag}, {dim2}});
       Field field00(f00);
       field00.allocate_view();
       field00.sync_to_host();
@@ -216,11 +215,10 @@ TEST_CASE("field_contractions") {
       field00.sync_to_dev();
 
       // Create (random) sample fields
-      FieldIdentifier fsc("f", {{}, {}}, m / s, "g");  // scalar
-      FieldIdentifier f10("f", {{COL, lev_tag}, {dim0, dim2}}, m / s, "g");
-      FieldIdentifier f11("f", {{CMP, lev_tag}, {dim1, dim2}}, m / s, "g");
-      FieldIdentifier f20("f", {{COL, CMP, lev_tag}, {dim0, dim1, dim2}}, m / s,
-                          "g");
+      FieldIdentifier fsc("f", {{}, {}});  // scalar
+      FieldIdentifier f10("f", {{COL, lev_tag}, {dim0, dim2}});
+      FieldIdentifier f11("f", {{CMP, lev_tag}, {dim1, dim2}});
+      FieldIdentifier f20("f", {{COL, CMP, lev_tag}, {dim0, dim1, dim2}});
       Field fieldsc(fsc);
       Field field10(f10);
       Field field11(f11);
@@ -234,9 +232,9 @@ TEST_CASE("field_contractions") {
       randomize_uniform(field11, seed++);
       randomize_uniform(field20, seed++);
 
-      FieldIdentifier F_x("fx", {{COL}, {dim0}}, m / s, "g");
-      FieldIdentifier F_y("fy", {{CMP}, {dim1}}, m / s, "g");
-      FieldIdentifier F_z("fz", {{COL, CMP}, {dim0, dim1}}, m / s, "g");
+      FieldIdentifier F_x("fx", {{COL}, {dim0}});
+      FieldIdentifier F_y("fy", {{CMP}, {dim1}});
+      FieldIdentifier F_z("fz", {{COL, CMP}, {dim0, dim1}});
 
       Field field_x(F_x);
       Field field_y(F_y);
@@ -255,15 +253,13 @@ TEST_CASE("field_contractions") {
       Field result;
 
       // Add test for invalid rank-2 weight field layout
-      FieldIdentifier bad_w("bad_w", {{CMP, lev_tag}, {dim1, dim2}}, m / s,
-                            "g");
+      FieldIdentifier bad_w("bad_w", {{CMP, lev_tag}, {dim1, dim2}});
       Field bad_weight(bad_w);
       bad_weight.allocate_view();
       REQUIRE_THROWS(vert_contraction(result, field20, bad_weight));
 
       // Add test for mismatched weight field dimensions
-      FieldIdentifier wrong_size_w(
-          "wrong_w", {{COL, lev_tag}, {dim0 + 1, dim2}}, m / s, "g");
+      FieldIdentifier wrong_size_w("wrong_w", {{COL, lev_tag}, {dim0 + 1, dim2}});
       Field wrong_weight(wrong_size_w);
       wrong_weight.allocate_view();
       REQUIRE_THROWS(vert_contraction(result, field20, wrong_weight));

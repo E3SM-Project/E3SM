@@ -20,10 +20,10 @@ FieldNaNCheck (const Field& f,
       "  - Field name: " + f.name() << "\n"
       "  - Field rank: " + std::to_string(f.rank()) + "\n");
 
-  EKAT_REQUIRE_MSG (grid==nullptr || f.get_header().get_identifier().get_grid_name()==grid->name(),
-      "Error! The name of the input grid does not match the grid name stored in the field identifier.\n"
+  EKAT_REQUIRE_MSG (grid==nullptr || grid->is_valid_layout(f.get_header().get_identifier().get_layout()),
+      "Error! The layout of the field does not seem to be compatible with the stored grid.\n"
       "  - Field name: " + f.name() + "\n"
-      "  - Field grid name: " + f.get_header().get_identifier().get_grid_name() + "\n"
+      "  - Field layout: " + f.get_header().get_identifier().get_layout().to_string() + "\n"
       "  - Input grid name: " + grid->name() + "\n");
 
   // We can't repair NaN's.

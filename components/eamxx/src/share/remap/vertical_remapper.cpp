@@ -1,7 +1,6 @@
 #include "vertical_remapper.hpp"
 
 #include "share/grid/point_grid.hpp"
-#include "share/io/scorpio_input.hpp"
 #include "share/field/field_tag.hpp"
 #include "share/field/field_identifier.hpp"
 #include "share/util/eamxx_timing.hpp"
@@ -32,7 +31,7 @@ create_tgt_grid (const grid_ptr_type& src_grid,
 
   // Gather the pressure level data for vertical remapping
   auto layout = tgt_grid->get_vertical_layout(true);
-  Field p_tgt(FieldIdentifier("p_levs",layout,ekat::units::Pa,tgt_grid->name()));
+  Field p_tgt(FieldIdentifier("p_levs",layout,ekat::units::Pa));
   p_tgt.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
   p_tgt.allocate_view();
   scorpio::read_var(map_file,"p_levs",p_tgt.get_view<Real*,Host>().data());
@@ -201,7 +200,7 @@ registration_ends_impl ()
           auto nondim = ekat::units::Units::nondimensional();
           // Create this src/tgt mask fields, and assign them to these src/tgt fields extra data
 
-          FieldIdentifier mask_fid (mask_name, tgt_layout, nondim, m_tgt_grid->name() );
+          FieldIdentifier mask_fid (mask_name, tgt_layout, nondim);
           mask  = Field (mask_fid);
           mask.allocate_view();
         }

@@ -16,7 +16,7 @@ TEST_CASE("exceptions") {
   const int nlevs = 16;
   auto grid = create_test_grid(comm,num_lcols,nlevs);
 
-  FieldIdentifier fid("f",grid->get_2d_scalar_layout(),ekat::units::m,"");
+  FieldIdentifier fid("f",grid->get_2d_scalar_layout());
   SECTION ("field_not_allocated") {
     Field f(fid);
 

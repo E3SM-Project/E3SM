@@ -49,13 +49,11 @@ public:
 
   FieldIdentifier (const std::string& name,
                    const layout_type& layout,
-                   const Units& units,
-                   const std::string& grid_name);
-
+                   const Units& units = Units::invalid(),
+                   const DataType data_type = DataType::RealType);
+  // Callse the above with units set to invalid
   FieldIdentifier (const std::string& name,
                    const layout_type& layout,
-                   const Units& units,
-                   const std::string& grid_name,
                    const DataType data_type);
 
   // Delete assignment, to prevent overwriting identifiers sneakyly
@@ -67,7 +65,6 @@ public:
   const std::string&      name           () const { return m_name;      }
   const layout_type&      get_layout     () const { return m_layout;   }
   const Units&            get_units      () const { return m_units;     }
-  const std::string&      get_grid_name  () const { return m_grid_name; }
   DataType                data_type      () const { return m_data_type; }
 
   // Returns a copy of this identifier, but with a different name
@@ -91,8 +88,6 @@ protected:
   layout_type     m_layout;
 
   Units           m_units;
-
-  ci_string       m_grid_name;
 
   DataType        m_data_type;
 

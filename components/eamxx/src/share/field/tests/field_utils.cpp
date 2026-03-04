@@ -17,7 +17,6 @@ namespace {
 TEST_CASE("field_utils") {
   using namespace scream;
   using namespace ShortFieldTagsNames;
-  using namespace ekat::units;
   using kt = KokkosTypes<DefaultDevice>;
 
   using P8 = ekat::Pack<Real,8>;
@@ -28,7 +27,7 @@ TEST_CASE("field_utils") {
   std::vector<FieldTag> tags = {COL,LEV};
   std::vector<int> dims = {3,24};
 
-  FieldIdentifier fid ("field_1", {tags,dims}, m/s,"some_grid");
+  FieldIdentifier fid ("field_1", {tags,dims});
   Field f1(fid);
   f1.get_header().get_alloc_properties().request_allocation(P8::n);
   f1.allocate_view();
@@ -37,8 +36,8 @@ TEST_CASE("field_utils") {
     // create two fields with rank-0 and get their views
     std::vector<FieldTag> tags_0 = {};
     std::vector<int> dims_0      = {};
-    FieldIdentifier fid_01("field_01", {tags_0, dims_0}, m / s, "some_grid");
-    FieldIdentifier fid_02("field_02", {tags_0, dims_0}, m / s, "some_grid");
+    FieldIdentifier fid_01("field_01", {tags_0, dims_0});
+    FieldIdentifier fid_02("field_02", {tags_0, dims_0});
     Field f01(fid_01);
     Field f02(fid_02);
     f01.allocate_view();
@@ -103,7 +102,6 @@ TEST_CASE("field_utils") {
     using namespace ShortFieldTagsNames;
     using IPDF = std::uniform_int_distribution<int>;
 
-    auto nondim = Units::nondimensional();
     int seed = get_random_test_seed();
     std::mt19937_64 engine(seed);
 
@@ -112,17 +110,17 @@ TEST_CASE("field_utils") {
     const int nlevs = IPDF(3,9)(engine); // between 3-9 levels
 
     // Create 1d, 2d, 3d fields with a level dimension, and set all to 1
-    FieldIdentifier fid1 ("f_1d",   FieldLayout({LEV},           {nlevs}),               nondim, "");
-    FieldIdentifier fid2a("f_2d_a", FieldLayout({CMP, LEV},      {ncmps, nlevs}),        nondim, "");
-    FieldIdentifier fid2b("f_2d_b", FieldLayout({COL, LEV},      {ncols, nlevs}),        nondim, "");
-    FieldIdentifier fid3 ("f_3d",   FieldLayout({COL, CMP, LEV}, {ncols, ncmps, nlevs}), nondim, "");
+    FieldIdentifier fid1 ("f_1d",   FieldLayout({LEV},           {nlevs}));
+    FieldIdentifier fid2a("f_2d_a", FieldLayout({CMP, LEV},      {ncmps, nlevs}));
+    FieldIdentifier fid2b("f_2d_b", FieldLayout({COL, LEV},      {ncols, nlevs}));
+    FieldIdentifier fid3 ("f_3d",   FieldLayout({COL, CMP, LEV}, {ncols, ncmps, nlevs}));
     Field f1(fid1), f2a(fid2a), f2b(fid2b), f3(fid3);
     f1.allocate_view(), f2a.allocate_view(), f2b.allocate_view(), f3.allocate_view();
     f1.deep_copy(1), f2a.deep_copy(1), f2b.deep_copy(1), f3.deep_copy(1);
 
     // We need GIDs for fields with COL component. This test is not over
     // multiple ranks, so just set as [0, ncols-1].
-    Field gids(FieldIdentifier("gids", FieldLayout({COL}, {ncols}), Units::nondimensional(), "", DataType::IntType));
+    Field gids(FieldIdentifier("gids", FieldLayout({COL}, {ncols}), DataType::IntType));
     gids.allocate_view();
     auto gids_data = gids.get_internal_view_data<int,Host>();
     std::iota(gids_data, gids_data+ncols, 0);
@@ -130,7 +128,7 @@ TEST_CASE("field_utils") {
 
     // Create masks s.t. only last 3 levels are perturbed. For variety,
     // 1d and 2d fields will use lambda mask and 3 field will use a view.
-    FieldIdentifier pmask_fid("pmask",fid1.get_layout(),nondim,"",DataType::IntType);
+    FieldIdentifier pmask_fid("pmask",fid1.get_layout(),DataType::IntType);
     Field pmask(pmask_fid,true);
     auto pmask_h = pmask.get_view<int*,Host>();
     for (int i=0; i<nlevs; ++i) {
@@ -209,7 +207,6 @@ TEST_CASE("field_utils") {
 
 TEST_CASE ("print_field_hyperslab") {
   using namespace scream;
-  using namespace ekat::units;
 
   using namespace ShortFieldTagsNames;
   using IPDF = std::uniform_int_distribution<int>;
@@ -238,7 +235,7 @@ TEST_CASE ("print_field_hyperslab") {
   std::vector<int>      dims = {nel,ncmp,ngp,ngp,nlev};
   int pack_size = std::min(SCREAM_PACK_SIZE,4);
 
-  FieldIdentifier fid ("f", {tags,dims}, kg, "some_grid");
+  FieldIdentifier fid ("f", {tags,dims});
   Field f (fid);
   f.get_header().get_alloc_properties().request_allocation(pack_size);
   f.allocate_view();
@@ -334,12 +331,12 @@ TEST_CASE ("transpose") {
   std::vector<int>      dims3d = {ncols,ncmp1,nlevs};
   std::vector<int>      dims4d = {ncols,ncmp1,ncmp2,nlevs};
 
-  FieldIdentifier fid1d  ("foo", {tags1d,dims1d}, u1, "some_grid");
-  FieldIdentifier fid2d  ("foo", {tags2d,dims2d}, u1, "some_grid");
-  FieldIdentifier fid3d  ("foo", {tags3d,dims3d}, u1, "some_grid");
-  FieldIdentifier fid3di ("foo", {tags3d,dims3d}, u1, "some_grid", DataType::IntType);
-  FieldIdentifier fid4d  ("foo", {tags4d,dims4d}, u1, "some_grid");
-  FieldIdentifier fid2du2("foo", {tags4d,dims4d}, u2, "some_grid");
+  FieldIdentifier fid1d  ("foo", {tags1d,dims1d}, u1);
+  FieldIdentifier fid2d  ("foo", {tags2d,dims2d}, u1);
+  FieldIdentifier fid3d  ("foo", {tags3d,dims3d}, u1);
+  FieldIdentifier fid3di ("foo", {tags3d,dims3d}, u1, DataType::IntType);
+  FieldIdentifier fid4d  ("foo", {tags4d,dims4d}, u1);
+  FieldIdentifier fid2du2("foo", {tags4d,dims4d}, u2);
 
   SECTION ("exceptions") {
     Field f2d  (fid2d);

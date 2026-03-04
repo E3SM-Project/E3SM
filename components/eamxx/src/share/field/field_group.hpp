@@ -54,7 +54,7 @@ struct FieldGroup {
 
   FieldGroup& operator= (const FieldGroup& src) = default;
 
-  const std::string& grid_name () const;
+  // const std::string& grid_name () const;
 
   // The fields in this group
   std::map<ci_string,std::shared_ptr<Field>> m_individual_fields;
@@ -74,12 +74,12 @@ private:
   void copy_fields (const FieldGroup& src);
 };
 
-// We use this to find a FieldGroup in a std container.
-// We do NOT allow two entries with same group name and grid name in such containers.
-inline bool operator== (const FieldGroup& lhs, const FieldGroup& rhs) {
-  return lhs.m_info->m_group_name == rhs.m_info->m_group_name &&
-         lhs.grid_name() == rhs.grid_name();
-}
+// // We use this to find a FieldGroup in a std container.
+// // We do NOT allow two entries with same group name and grid name in such containers.
+// inline bool operator== (const FieldGroup& lhs, const FieldGroup& rhs) {
+//   return lhs.m_info->m_group_name == rhs.m_info->m_group_name &&
+//          lhs.grid_name() == rhs.grid_name();
+// }
 
 } // namespace scream
 

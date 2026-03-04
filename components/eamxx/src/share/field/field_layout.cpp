@@ -290,6 +290,34 @@ FieldLayout& FieldLayout::reset_dim (const FieldTag t, const int extent, const b
   return *this;
 }
 
+FieldLayout& FieldLayout::add_vector_dim (const int extent)
+{
+  using namespace ShortFieldTagsNames;
+  return add_vector_dim(extent,e2str(CMP));
+}
+
+FieldLayout& FieldLayout::add_vector_dim (const int extent, const std::string& name)
+{
+  using namespace ShortFieldTagsNames;
+
+  EKAT_REQUIRE_MSG (not is_vector_layout() and not is_tensor_layout(),
+      "Error! Cannot add a vector dimension to this layout, since it is not a scalar layout.\n"
+      " - current layout: " + to_string() + "\n");
+
+  if (m_type==LayoutType::Scalar0D or m_type==LayoutType::Vector0D or m_type==LayoutType::Tensor0D or
+      m_type==LayoutType::Scalar1D or m_type==LayoutType::Vector1D) {
+    prepend_dim(CMP,extent,name);
+  } else if (m_tags[0]==COL or m_tags[0]==EL) {
+    m_tags.insert(m_tags.begin()+1,CMP);
+    m_dims.insert(m_dims.begin()+1,extent);
+    m_names.insert(m_names.begin()+1,name);
+  } else {
+    EKAT_ERROR_MSG ("[FieldLayout::add_vector_dim] Error! Unrecognized/unsupported layout.\n"
+                    " - current layout: " + to_string() + "\n");
+  }
+  return *this;
+}
+
 void FieldLayout::set_extents () {
   m_extents = decltype(m_extents)("",m_rank);
   m_extents_h = Kokkos::create_mirror_view(m_extents);

@@ -170,7 +170,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
       m_iop_field_type.insert({iop_varname, IOPFieldType::FromFile});
 
       // Allocate field for variable
-      FieldIdentifier fid(iop_varname, fl, ekat::units::Units::nondimensional(), "");
+      FieldIdentifier fid(iop_varname, fl);
       const auto field_rank = fl.rank();
       EKAT_REQUIRE_MSG(field_rank <= 1,
                        "Error! Unexpected field rank "+std::to_string(field_rank)+" for iop file fields.\n");
@@ -245,7 +245,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
 
   // If we have the vertical component of T/Q forcing, define 3d forcing as a computed field.
   if (has_iop_field("vertdivT")) {
-    FieldIdentifier fid("divT3d", fl_vector, ekat::units::Units::nondimensional(), "");
+    FieldIdentifier fid("divT3d", fl_vector);
     Field field(fid);
     field.get_header().get_alloc_properties().request_allocation(Pack::n);
     field.allocate_view();
@@ -253,7 +253,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
     m_iop_field_type.insert({"divT3d", IOPFieldType::Computed});
   }
   if (has_iop_field("vertdivq")) {
-    FieldIdentifier fid("divq3d", fl_vector, ekat::units::Units::nondimensional(), "");
+    FieldIdentifier fid("divq3d", fl_vector);
     Field field(fid);
     field.get_header().get_alloc_properties().request_allocation(Pack::n);
     field.allocate_view();
@@ -327,9 +327,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
                     "Error! Using IOP file requires variable \"lev\".\n");
   const auto file_levs = scorpio::get_dimlen(iop_file, "lev");
   FieldIdentifier fid("iop_file_pressure",
-                      FieldLayout({FieldTag::LevelMidPoint}, {file_levs+1}),
-                      ekat::units::Units::nondimensional(),
-                      "");
+                      FieldLayout({FieldTag::LevelMidPoint}, {file_levs+1}));
   Field iop_file_pressure(fid);
   iop_file_pressure.get_header().get_alloc_properties().request_allocation(Pack::n);
   iop_file_pressure.allocate_view();
@@ -343,9 +341,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
 
   // Create model pressure helper field (values will be computed
   // in read_iop_file_data())
-  FieldIdentifier model_pres_fid("model_pressure",
-                                  fl_vector,
-                                  ekat::units::Units::nondimensional(), "");
+  FieldIdentifier model_pres_fid("model_pressure",fl_vector);
   Field model_pressure(model_pres_fid);
   model_pressure.get_header().get_alloc_properties().request_allocation(Pack::n);
   model_pressure.allocate_view();
@@ -563,9 +559,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
       // value for surface.
       FieldIdentifier fid(file_varname+"_iop_file",
                           FieldLayout({FieldTag::LevelMidPoint},
-                          {adjusted_file_levs}),
-                          ekat::units::Units::nondimensional(),
-                          "");
+                          {adjusted_file_levs}));
       Field iop_file_field(fid);
       iop_file_field.get_header().get_alloc_properties().request_allocation(Pack::n);
       iop_file_field.allocate_view();
@@ -699,7 +693,7 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr, const std::string& grid_
   view_2d<Real> T_mid, qv, nc, qc, qi, ni;
   view_3d<Real> horiz_winds;
 
-  Real ps_iop;
+  Real ps_iop {};
   view_1d<Real> t_iop, u_iop, v_iop, qv_iop, nc_iop, qc_iop, qi_iop, ni_iop;
 
   if (set_ps) {

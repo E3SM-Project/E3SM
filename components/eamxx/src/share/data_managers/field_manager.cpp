@@ -22,11 +22,11 @@ FieldManager (const std::shared_ptr<const GridsManager>& gm,
   EKAT_REQUIRE_MSG (m_grids_mgr!=nullptr,
       "Error! Input grids manager pointer is not valid.");
 
-  // For each grid, initialize maps
+  // For each grid, initialize maps, so that they have an entry for each grid
   for (auto gname : m_grids_mgr->get_grid_names()) {
-    m_fields[gname] = std::map<ci_string,std::shared_ptr<Field>>();
-    m_field_groups[gname] = std::map<ci_string, std::shared_ptr<FieldGroup>>();
-    m_group_requests[gname] = std::map<std::string, std::set<GroupRequest>>();
+    m_fields[gname] = {};
+    m_field_groups[gname] = {};
+    m_group_requests[gname] = {};
   }
 
   if (m_repo_state==RepoState::Closed) {
@@ -43,7 +43,7 @@ void FieldManager::register_field (const FieldRequest& req)
   m_repo_state = RepoState::Open;
 
   const auto& id = req.fid;
-  const auto& grid_name = id.get_grid_name();
+  const auto& grid_name = req.grid;
 
   // Make sure this FM contains a grid corresponding to the input grid name
   EKAT_REQUIRE_MSG(m_grids_mgr->has_grid(grid_name),
@@ -122,7 +122,7 @@ void FieldManager::register_group (const GroupRequest& req)
 
   // Groups have to be handled once registration is over, so for now simply store the request,
   // and create an empty group info (if it does not already exist)
-  m_group_requests[req.grid][req.name].insert(req);
+  m_group_requests[req.grid][req.name].push_back(req);
 
   auto& group_info = m_field_group_info[req.name];
   if (not group_info) {
@@ -627,8 +627,8 @@ void FieldManager::registration_ends ()
         auto nondim = ekat::units::Units::nondimensional();
 
         // Allocate cluster field
-        FieldIdentifier c_fid(cluster_name,c_layout,nondim,cluster_grid->name());
-        register_field(c_fid);
+        FieldIdentifier c_fid(cluster_name,c_layout,nondim);
+        register_field(FieldRequest(c_fid,cluster_grid_name));
         const auto& C = m_fields.at(cluster_grid_name).at(c_fid.name());
 
         // Scan all fields in this cluster, get their alloc props, and make sure
@@ -772,7 +772,14 @@ void FieldManager::clean_up(const std::string& grid_name) {
 }
 
 void FieldManager::add_field (const Field& f) {
-  const auto& grid_name = f.get_header().get_identifier().get_grid_name();
+  EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
+    "Error! More than one grid exists for FieldManager, must specify grid name to add the field to the proper repo.\n"
+    "  - Field name: " + f.name() + "\n"
+    "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n");
+}
+
+void FieldManager::add_field (const Field& f, const std::string& grid_name)
+{
 
   // This method has a few restrictions on the input field.
   EKAT_REQUIRE_MSG(m_grids_mgr->has_grid(grid_name),
@@ -867,12 +874,12 @@ void FieldManager::pre_process_monolithic_group_requests () {
         // to the layout on the src grid
         const auto src_fid = m_fields.at(registered_grid).at(field_name)->get_header().get_identifier();
         const auto fl = m_grids_mgr->get_grid(grid_name)->equivalent_layout(src_fid.get_layout());
-        FieldIdentifier fid(field_name, fl, src_fid.get_units(), grid_name);
+        FieldIdentifier fid(field_name, fl, src_fid.get_units());
 
         // Register the field for each group req
         for (auto greq : m_group_requests.at(grid_name).at(group_name)) {
-          FieldRequest req(fid, greq.name, greq.pack_size);
-          register_field(req);
+          FieldRequest req(fid, greq.name);
+          register_field(req.set_ps(greq.pack_size));
         }
       }
     }

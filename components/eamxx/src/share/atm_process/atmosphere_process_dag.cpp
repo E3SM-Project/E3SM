@@ -127,9 +127,6 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
     // If verbosity is >= 1, add layout info
     if (verbosity>0) {
       // If verbosity is >= 2, add grid name
-      if (verbosity>1) {
-        s += " [" + fid.get_grid_name() + "]";
-      }
       s += " <";
       for (auto t : fid.get_layout().tags()) {
         s += e2str(t);
@@ -145,7 +142,7 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
       // Remove last ',' and add ')'.
       s.back() = ')';
 
-      if (verbosity>2) {
+      if (verbosity>1) {
         s += " [" + fid.get_units().to_string() + "]";
       }
     }

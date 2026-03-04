@@ -16,7 +16,6 @@ namespace scream {
 
 TEST_CASE("pyfield", "") {
   using namespace ShortFieldTagsNames;
-  using namespace ekat::units;
 
   auto& ps = PySession::get();
   ps.initialize();
@@ -31,7 +30,7 @@ TEST_CASE("pyfield", "") {
   std::filesystem::path curr_file(__FILE__);
   ps.add_path(curr_file.parent_path().string());
 
-  FieldIdentifier fid ("field", {tags,dims}, m/s,"some_grid");
+  FieldIdentifier fid ("field", {tags,dims});
   Field f1 (fid);
   f1.allocate_view();
 

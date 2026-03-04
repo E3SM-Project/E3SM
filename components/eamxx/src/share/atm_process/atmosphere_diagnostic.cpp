@@ -70,7 +70,7 @@ void AtmosphereDiagnostic::run_impl (const double dt) {
 }
 
 void AtmosphereDiagnostic::
-set_required_field_impl (const Field& f) {
+set_required_field_impl (const Field& f, const std::string& grid) {
   // Check that the field has the pack size that was requested
   // TODO: I don't think diagnostics should "request" a pack size.
   //       Diags should work with whatever the AD is storing.
@@ -94,12 +94,12 @@ set_required_field_impl (const Field& f) {
 }
 
 void AtmosphereDiagnostic::
-set_computed_field_impl (const Field& /* f */) {
+set_computed_field_impl (const Field& /* f */, const std::string& /* grid */) {
   EKAT_ERROR_MSG("Error! Diagnostics are not allowed to compute fields. See " + name() + ".\n");
 }
 
 void AtmosphereDiagnostic::
-set_computed_group_impl (const FieldGroup& /* group */) {
+set_computed_group_impl (const FieldGroup& /* g */, const std::string& /* grid */) {
   EKAT_ERROR_MSG("Error! Diagnostics are not allowed to compute field groups. See " + name() + ".\n");
 }
 

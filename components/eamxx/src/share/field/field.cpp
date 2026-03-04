@@ -90,15 +90,10 @@ Field::alias (const std::string& name) const {
 
 Field
 Field::clone(const std::string& name) const {
-  return clone(name, get_header().get_identifier().get_grid_name());
-}
-
-Field
-Field::clone(const std::string& name, const std::string& grid_name) const {
   // Create new field
   const auto& my_fid = get_header().get_identifier();
   FieldIdentifier fid(name,my_fid.get_layout(),my_fid.get_units(),
-                      grid_name,my_fid.data_type());
+                      my_fid.data_type());
   Field f(fid);
 
   // Ensure alloc props match
@@ -134,7 +129,7 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
         "Error! Subview dimension index must be either 0 or 1.\n");
 
   // Create identifier for subfield
-  FieldIdentifier sf_id(sf_name,lt.clone().strip_dim(idim),sf_units,id.get_grid_name(),id.data_type());
+  FieldIdentifier sf_id(sf_name,lt.clone().strip_dim(idim),sf_units,id.data_type());
 
   // Create empty subfield, then set header and views
   // Note: we can access protected members, since it's the same type
@@ -190,7 +185,7 @@ Field Field::subfield(const std::string& sf_name,
   sf_layout.reset_dim(idim, index_end - index_beg);
 
   // Create identifier for subfield
-  FieldIdentifier sf_id(sf_name, sf_layout, sf_units, id.get_grid_name(), id.data_type());
+  FieldIdentifier sf_id(sf_name, sf_layout, sf_units, id.data_type());
 
   // Create empty subfield, then set header and views
   // Note: we can access protected members, since it's the same type

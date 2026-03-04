@@ -71,20 +71,20 @@ TEST_CASE("field_identifier", "") {
   std::vector<int> dims1 = {2, 3, 4};
   std::vector<int> dims2 = {2, 4, 3};
 
-  FieldIdentifier fid1 ("field_1", {tags1,dims1}, kg, "some_grid");
-  FieldIdentifier fid2 ("field_1", {tags1,dims1}, kg, "some_grid");
-  FieldIdentifier fid3 ("field_1", {tags1,dims2}, kg, "some_grid");
-  FieldIdentifier fid4 ("field_2", {tags1,dims2}, kg, "some_grid");
-  FieldIdentifier fid5 ("field_2", {tags2,dims2}, kg, "some_grid");
-  FieldIdentifier fid6 ("field_2", {tags2,dims2}, m, "some_grid");
-  FieldIdentifier fid7 ("field_2", {tags2,dims2}, m, "some_other_grid");
+  FieldIdentifier fid1 ("field_1", {tags1,dims1}, kg);
+  FieldIdentifier fid2 ("field_1", {tags1,dims1}, kg);
+  FieldIdentifier fid3 ("field_1", {tags1,dims2}, kg);
+  FieldIdentifier fid4 ("field_2", {tags1,dims2}, kg);
+  FieldIdentifier fid5 ("field_2", {tags2,dims2}, kg);
+  FieldIdentifier fid6 ("field_2", {tags2,dims2}, m);
+  FieldIdentifier fid7 ("field_2", {tags2,dims2});
 
   REQUIRE (fid1==fid2);
   REQUIRE (fid2!=fid3);
   REQUIRE (fid3!=fid4);
   REQUIRE (fid4!=fid5);
   REQUIRE (fid5!=fid6);
-  REQUIRE (fid6!=fid7);
+  REQUIRE (fid7.get_units()==Units::invalid());
 
   // Check that has_tag option works
   REQUIRE(fid1.get_layout().has_tag(CMP));

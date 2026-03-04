@@ -62,17 +62,11 @@ MassAndEnergyConservationCheck (const ekat::Comm& comm,
   }
 
   //allocate Fields for fixer reductions
-  using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
-
-  //this does not exist, why? cause it can be a LEV or a COL array?
-  //FieldLayout scalar1d = m_grid->get_1d_scalar_layout();
-  FieldLayout scalar1d{{COL}, {m_num_cols}};
-  FieldIdentifier s1_fid("s1", scalar1d, kg / kg, m_grid->name());
+  FieldLayout horiz_scalar = m_grid->get_2d_scalar_layout();
+  FieldIdentifier s1_fid("s1", horiz_scalar);
   field_version_s1 = Field(s1_fid);
 
   field_version_s1.allocate_view();
-
 }
 
 void MassAndEnergyConservationCheck::compute_current_mass ()

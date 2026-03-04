@@ -35,10 +35,10 @@ FieldWithinIntervalCheck (const Field& f,
   EKAT_ASSERT_MSG(lower_bound <= upper_bound,
                   "lower_bound must be less than or equal to upper_bound.");
 
-  EKAT_REQUIRE_MSG (grid==nullptr || f.get_header().get_identifier().get_grid_name()==grid->name(),
-      "Error! The name of the input grid does not match the grid name stored in the field identifier.\n"
+  EKAT_REQUIRE_MSG (grid==nullptr || grid->is_valid_layout(f.get_header().get_identifier().get_layout()),
+      "Error! The layout of the field does not seem to be compatible with the stored grid.\n"
       "  - Field name: " + f.name() + "\n"
-      "  - Field grid name: " + f.get_header().get_identifier().get_grid_name() + "\n"
+      "  - Field layout: " + f.get_header().get_identifier().get_layout().to_string() + "\n"
       "  - Input grid name: " + grid->name() + "\n");
 
   set_fields ({f},{can_repair});

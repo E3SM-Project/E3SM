@@ -60,14 +60,14 @@ create_field(const std::string& name,
                  : grid->get_2d_scalar_layout ())
           : (vec ? grid->get_3d_vector_layout (mid,vec_dim)
                  : grid->get_3d_scalar_layout (mid));
-  FieldIdentifier fid(name,fl,units,grid->name());
+  FieldIdentifier fid(name,fl,units);
   Field f(fid);
   f.get_header().get_alloc_properties().request_allocation(ps);
   f.allocate_view();
 
   if (create_mask) {
     // Set a mask (1=filled, 0=valid) to be used in testing the results
-    FieldIdentifier mask_id("is_filled",fl,units,grid->name(),DataType::IntType);
+    FieldIdentifier mask_id("is_filled",fl,units,DataType::IntType);
     Field mask(mask_id);
     mask.allocate_view();
     mask.deep_copy(0); // Init with "all good"
@@ -368,7 +368,7 @@ TEST_CASE ("vertical_remapper") {
   auto create_pint = [&](const auto& grid, const bool one_d, const Real ptop, const Real pbot) {
     auto layout = one_d ? grid->get_vertical_layout(false)
                         : grid->get_3d_scalar_layout(false);
-    FieldIdentifier fid("p_int",layout,ekat::units::Pa,grid->name());
+    FieldIdentifier fid("p_int",layout,ekat::units::Pa);
     Field pint (fid);
     pint.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     pint.allocate_view();
@@ -403,7 +403,7 @@ TEST_CASE ("vertical_remapper") {
     int nlevs = layout.dims().back()-1;
     layout.strip_dim(ILEV);
     layout.append_dim(LEV,nlevs);
-    FieldIdentifier fid("p_mid",layout,ekat::units::Pa,fid_int.get_grid_name());
+    FieldIdentifier fid("p_mid",layout,ekat::units::Pa);
     Field pmid(fid);
     pmid.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     pmid.allocate_view();

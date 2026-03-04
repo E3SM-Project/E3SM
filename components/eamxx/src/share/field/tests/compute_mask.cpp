@@ -10,7 +10,6 @@ TEST_CASE ("compute_mask") {
 
   const int ncols = 10;
   const int nlevs = 128;
-  const auto units = ekat::units::Units::nondimensional();
 
   // Create fields
   std::vector<FieldTag> tags3d = {COL, CMP, LEV};
@@ -18,11 +17,11 @@ TEST_CASE ("compute_mask") {
   std::vector<int>      dims3d = {ncols,2,nlevs};
   std::vector<int>      dims2d = {ncols,nlevs};
 
-  FieldIdentifier fid0d ("foo", {}, units, "some_grid");
-  FieldIdentifier fid0di ("foo", {}, units, "some_grid",DataType::IntType);
-  FieldIdentifier fid3d ("foo", {tags3d,dims3d}, units, "some_grid");
-  FieldIdentifier fid3di ("foo", {tags3d,dims3d}, units, "some_grid", DataType::IntType);
-  FieldIdentifier fid2d ("foo", {tags2d,dims2d}, units, "some_grid");
+  FieldIdentifier fid0d ("foo", {});
+  FieldIdentifier fid0di ("foo", {},DataType::IntType);
+  FieldIdentifier fid3d ("foo", {tags3d,dims3d});
+  FieldIdentifier fid3di ("foo", {tags3d,dims3d}, DataType::IntType);
+  FieldIdentifier fid2d ("foo", {tags2d,dims2d});
 
   SECTION ("exceptions") {
     // Test compute_mask exception handling

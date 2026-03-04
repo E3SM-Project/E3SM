@@ -10,7 +10,6 @@ namespace scream {
 
 TEST_CASE("field_reductions") {
   using namespace ShortFieldTagsNames;
-  using namespace ekat::units;
   using kt = KokkosTypes<DefaultDevice>;
 
   using P8 = ekat::Pack<Real,8>;
@@ -20,7 +19,7 @@ TEST_CASE("field_reductions") {
   std::vector<FieldTag> tags = {COL,LEV};
   std::vector<int> dims = {3,24};
 
-  FieldIdentifier fid ("field_1", {tags,dims}, m/s,"some_grid");
+  FieldIdentifier fid ("field_1", {tags,dims});
   Field f1(fid);
   f1.get_header().get_alloc_properties().request_allocation(P8::n);
   f1.allocate_view();

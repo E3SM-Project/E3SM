@@ -151,10 +151,10 @@ public:
   //       overriding the corresponding _impl method should be enough. The class
   //       AtmosphereProcessGroup is the big exception to this, since it needs
   //       to perform some extra action *before* setting the field/group.
-  virtual void set_required_field (const Field& f);
-  virtual void set_computed_field (const Field& f);
-  virtual void set_required_group (const FieldGroup& group);
-  virtual void set_computed_group (const FieldGroup& group);
+  virtual void set_required_field (const Field& f, const std::string& grid);
+  virtual void set_computed_field (const Field& f, const std::string& grid);
+  virtual void set_required_group (const FieldGroup& group, const std::string& grid);
+  virtual void set_computed_group (const FieldGroup& group, const std::string& grid);
 
   // These methods check that some properties are satisfied before/after
   // the run_impl method is called.
@@ -205,10 +205,8 @@ public:
   virtual const std::list<Field>& get_internal_fields  () const { return m_internal_fields; }
 
   // Whether this atm proc requested the field/group as in/out, via a FieldRequest/GroupRequest.
-  bool has_required_field (const FieldIdentifier& id) const;
-  bool has_required_field (const std::string& name, const std::string& grid_name) const;
-  bool has_computed_field (const FieldIdentifier& id) const;
-  bool has_computed_field (const std::string& name, const std::string& grid_name) const;
+  bool has_required_field (const std::string& name, const std::string& grid) const;
+  bool has_computed_field (const std::string& name, const std::string& grid) const;
   bool has_required_group (const std::string& name, const std::string& grid) const;
   bool has_computed_group (const std::string& name, const std::string& grid) const;
 
@@ -329,46 +327,53 @@ protected:
 
   // Field requests
   template<RequestType RT>
-  void add_field (const std::string& name, const std::string& grid_name,
-                  const std::list<std::string>& groups, const int ps = 1)
-  { add_field<RT>(FieldRequest(name,grid_name,groups,ps)); }
-  template<RequestType RT>
-  void add_field (const std::string& name, const std::string& grid_name, const int ps = 1)
-  { add_field<RT>(name,grid_name,{},ps);}
+  FieldRequest& add_field (const FieldIdentifier& fid, const std::string& grid_name,
+                           const int pack_size = 1)
+  {
+    return m_field_requests.emplace_back(fid,grid_name).add_usage(RT).set_ps(pack_size);
+  }
 
   template<RequestType RT>
-  void add_field (const std::string& name, const FieldLayout& layout,
-                  const ekat::units::Units& u, const std::string& grid_name,
-                  const int ps = 1)
-  { add_field<RT>(FieldIdentifier(name,layout,u,grid_name),ps); }
+  FieldRequest& add_field (const std::string& name, const std::string& grid_name)
+  {
+    return add_field<RT>(FieldRequest(name,grid_name));
+  }
 
   template<RequestType RT>
-  void add_field (const std::string& name, const FieldLayout& layout,
-                  const ekat::units::Units& u, const std::string& grid_name,
-                  const std::string& group, const int ps = 1)
-  { add_field<RT>(FieldIdentifier(name,layout,u,grid_name),group,ps); }
+  FieldRequest& add_field (const std::string& name, const FieldLayout& layout,
+                           const ekat::units::Units& u, const std::string& grid_name,
+                           const int pack_size = 1)
+  {
+    return add_field<RT>(FieldIdentifier(name,layout,u),grid_name,pack_size);
+  }
 
-  template<RequestType RT>
-  void add_field (const std::string& name, const FieldLayout& layout,
-                  const ekat::units::Units& u, const std::string& grid_name,
-                  const std::list<std::string>& groups, const int ps = 1)
-  { add_field<RT>(FieldIdentifier(name,layout,u,grid_name),groups,ps); }
+  // template<RequestType RT>
+  // void add_field (const std::string& name, const FieldLayout& layout,
+  //                 const ekat::units::Units& u, const std::string& grid_name,
+  //                 const std::string& group, const int ps = 1)
+  // { add_field<RT>(FieldIdentifier(name,layout,u),grid_name,group,ps); }
 
-  template<RequestType RT>
-  void add_field (const FieldIdentifier& fid, const std::string& group, const int ps = 1)
-  { add_field<RT>(FieldRequest(fid,group,ps)); }
+  // template<RequestType RT>
+  // void add_field (const std::string& name, const FieldLayout& layout,
+  //                 const ekat::units::Units& u, const std::string& grid_name,
+  //                 const std::list<std::string>& groups, const int ps = 1)
+  // { add_field<RT>(FieldIdentifier(name,layout,u),grid_name,groups,ps); }
 
-  template<RequestType RT>
-  void add_field (const FieldIdentifier& fid, const std::list<std::string>& groups)
-  { add_field<RT>(FieldRequest(fid,groups)); }
+  // template<RequestType RT>
+  // void add_field (const FieldIdentifier& fid, const std::string& grid_name, const std::string& group, const int ps = 1)
+  // { add_field<RT>(FieldRequest(fid,group,ps)); }
 
-  template<RequestType RT>
-  void add_field (const FieldIdentifier& fid, const int ps = 1)
-  { add_field<RT>(FieldRequest(fid,ps)); }
+  // template<RequestType RT>
+  // void add_field (const FieldIdentifier& fid, const std::string& grid_name, const std::list<std::string>& groups)
+  // { add_field<RT>(FieldRequest(fid,grid_name,groups)); }
 
-  template<RequestType RT>
-  void add_field (const FieldIdentifier& fid, const std::list<std::string>& groups, const int ps)
-  { add_field<RT>(FieldRequest(fid,groups,ps)); }
+  // template<RequestType RT>
+  // void add_field (const FieldIdentifier& fid, const std::string& grid_name, const int ps = 1)
+  // { add_field<RT>(FieldRequest(fid,grid_name,ps)); }
+
+  // template<RequestType RT>
+  // void add_field (const FieldIdentifier& fid, const std::string& grid_name, const std::list<std::string>& groups, const int ps)
+  // { add_field<RT>(FieldRequest(fid,grid_name,groups,ps)); }
 
   // Specialization for add_field to tracer group
   template<RequestType RT>
@@ -385,45 +390,51 @@ protected:
       tracer_groups.push_back("non_turbulence_advected_tracers");
     }
 
-    FieldIdentifier fid(name, grid->get_3d_scalar_layout(true), u, grid->name());
-    FieldRequest req(fid, tracer_groups, ps);
-    req.calling_process = this->name();
-
-    add_field<RT>(req);
+    FieldIdentifier fid(name, grid->get_3d_scalar_layout(true), u);
+    return add_field<RT>(fid,grid->name())
+            .set_groups(tracer_groups)
+            .set_ps(ps)
+            .set_caller(this->name());
   }
 
   // Group requests
   template<RequestType RT>
-  void add_group (const std::string& name, const std::string& grid_name,
-                  const MonolithicAlloc b = MonolithicAlloc::NotRequired)
-  { add_group<RT> (GroupRequest(name,grid_name,b)); }
-
-  template<RequestType RT>
-  void add_group (const std::string& name, const std::string& grid_name,
-                  const int pack_size, const MonolithicAlloc b = MonolithicAlloc::NotRequired)
-  { add_group<RT> (GroupRequest(name,grid_name,pack_size,b)); }
-
-  template<RequestType RT>
-  void add_field (const FieldRequest& req)
+  GroupRequest& add_group (const std::string& name, const std::string& grid_name,
+                           const MonolithicAlloc b = MonolithicAlloc::NotRequired)
   {
-    // Since we use C-style enum, let's avoid invalid integers casts
-    static_assert(RT==Required || RT==Computed || RT==Updated,
-                  "Error! Invalid request type in call to add_field.\n");
-
-    auto& r = m_field_requests.emplace_back(req);
-    r.usage = RT;
+    return m_group_requests.emplace_back(name,grid_name).add_usage(RT).set_alloc(b);
   }
 
   template<RequestType RT>
-  void add_group (const GroupRequest& req)
+  GroupRequest& add_group (const std::string& name, const std::string& grid_name,
+                           const int pack_size, const MonolithicAlloc b = MonolithicAlloc::NotRequired)
   {
-    // Since we use C-style enum, let's avoid invalid integers casts
-    static_assert(RT==Required || RT==Updated || RT==Computed,
-        "Error! Invalid request type in call to add_group.\n");
-
-    auto& r = m_group_requests.emplace_back(req);
-    r.usage = RT;
+    return add_group<RT> (name,grid_name,b).set_ps(pack_size);
   }
+
+  // template<RequestType RT>
+  // FieldRequest& add_field (const FieldRequest& req)
+  // {
+  //   // Since we use C-style enum, let's avoid invalid integers casts
+  //   static_assert(RT==Required || RT==Computed || RT==Updated,
+  //                 "Error! Invalid request type in call to add_field.\n");
+
+  //   auto& r = m_field_requests.emplace_back(req);
+  //   r.usage = RT;
+  // }
+
+  // template<RequestType RT>
+  // GroupRequest& add_group (const GroupRequest& req)
+  // {
+  //   // Since we use C-style enum, let's avoid invalid integers casts
+  //   static_assert(RT==Required || RT==Updated || RT==Computed,
+  //       "Error! Invalid request type in call to add_group.\n");
+
+  //   auto& r = m_group_requests.emplace_back(req);
+  //   r.usage = RT;
+
+  //   return r;
+  // }
 
   // Override this method to initialize the derived
   virtual void initialize_impl(const RunType run_type) = 0;
@@ -452,13 +463,13 @@ protected:
   // actions, such as extra fields bookkeeping, extra checks, or create copies.
   // Since most derived classes do not need to perform additional actions,
   // we provide empty implementations.
-  virtual void set_required_field_impl (const Field& /* f */) {}
-  virtual void set_computed_field_impl (const Field& /* f */) {}
-  virtual void set_required_group_impl (const FieldGroup& /* group */) {}
-  virtual void set_computed_group_impl (const FieldGroup& /* group */) {}
+  virtual void set_required_field_impl (const Field& /* f */, const std::string& /* grid */) {}
+  virtual void set_computed_field_impl (const Field& /* f */, const std::string& /* grid */) {}
+  virtual void set_required_group_impl (const FieldGroup& /* group */, const std::string& /* grid */) {}
+  virtual void set_computed_group_impl (const FieldGroup& /* group */, const std::string& /* grid */) {}
 
   // Adds a field to the list of internal fields, possibly adding it to the given groups
-  void add_internal_field (const Field& f, const std::vector<std::string>& groups = {});
+  void add_internal_field (const Field& f, const std::string& grid, const std::vector<std::string>& groups = {});
 
   // These methods set up an extra pointer in the m_[fields|groups]_[in|out]_pointers,
   // for convenience of use (e.g., use a short name for a field/group).
@@ -619,8 +630,8 @@ protected:
   std::list<FieldRequest>   m_field_requests;
   std::list<GroupRequest>   m_group_requests;
 
-  void add_py_fields (const Field& f);
-  void add_py_fields (const FieldGroup& g);
+  void add_py_fields (const Field& f, const std::string& grid);
+  void add_py_fields (const FieldGroup& g, const std::string& grid);
 #ifdef EAMXX_HAS_PYTHON
 
   // NOTE: we need to use std::any instead of pybind11::XYZ to avoid

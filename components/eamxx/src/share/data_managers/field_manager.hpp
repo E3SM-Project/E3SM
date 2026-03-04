@@ -64,6 +64,7 @@ public:
   // but still leverage the FM class for certain features (e.g., I/O).
   // NOTE: the repo must be in closed state, and the FieldManager must not already
   //       store a field with the same name.
+  void add_field (const Field& f, const std::string& grid_name);
   void add_field (const Field& f);
 
   // Adds $field_name on $grid_name to group $group_name (creating the group, if necessary).
@@ -77,7 +78,6 @@ public:
     return add_to_group(field_name, m_grids_mgr->get_repo().begin()->second->name(),group_name);
   }
   void add_to_group (const std::string& field_name, const std::string& grid_name, const std::string& group_name);
-  void add_to_group (const identifier_type& id, const std::string& group_name) { add_to_group(id.name(), id.get_grid_name(), group_name); }
 
   // Query for a particular field or group of fields
   bool has_field (const std::string& field_name, const std::string& grid_name) const;
@@ -98,7 +98,6 @@ public:
   }
 
   Field get_field (const std::string& name, const std::string& grid_name) const;
-  Field get_field (const identifier_type& id) const { return get_field(id.name(), id.get_grid_name()); }
   Field get_field (const std::string& name) const {
     EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
       "Error! More than one grid exists for FieldManager, must specify grid name to get field.\n"
@@ -108,7 +107,6 @@ public:
   }
 
   Field& get_field (const std::string& name, const std::string& grid_name);
-  Field& get_field (const identifier_type& id) { return get_field(id.name(), id.get_grid_name()); }
   Field& get_field (const std::string& name) {
     EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
       "Error! More than one grid exists for FieldManager, must specify grid name to get field.\n"
@@ -179,7 +177,7 @@ protected:
   // need all groups to be registered in order to start analyzing
   // the groups request (due to groups possibly having 'parents').
   // So store GroupRequest objects during registration phase.
-  std::map<std::string, std::map<std::string, std::set<GroupRequest>>> m_group_requests;
+  std::map<std::string, std::map<std::string, std::list<GroupRequest>>> m_group_requests;
 
   // The grids where the fields in this FM live
   std::shared_ptr<const GridsManager> m_grids_mgr;

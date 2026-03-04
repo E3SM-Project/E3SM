@@ -215,7 +215,7 @@ void HorizontalRemapper::create_ov_fields ()
     }
 
     const auto layout = fid.get_layout().clone().reset_dim(0,num_ov_gids);
-    FieldIdentifier ov_fid (fid.name(),layout,fid.get_units(),ov_gn,dt);
+    FieldIdentifier ov_fid (fid.name(),layout,fid.get_units(),dt);
 
     auto& ov_f = m_ov_fields.emplace_back(ov_fid);
 

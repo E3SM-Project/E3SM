@@ -37,15 +37,14 @@ TEST_CASE("field_mgr", "") {
 
   std::vector<int> bad_dims = {2,4,4};
 
-  FID fid1_1("field1", {tags1, dims1},  m/s, "grid1");
-  FID fid1_2("field1", {tags1, dims2},  m/s, "grid2");
-  FID fid2_1("field2", {tags2, dims3},  m/s, "grid1");
-  FID fid2_2("field2", {tags2, dims4},  m/s, "grid2");
+  FID fid1_1("field1", {tags1, dims1},  m/s);
+  FID fid1_2("field1", {tags1, dims2},  m/s);
+  FID fid2_1("field2", {tags2, dims3},  m/s);
+  FID fid2_2("field2", {tags2, dims4},  m/s);
 
   const auto km = 1000*m;
-  FID bad1("field1", {tags1, dims1},  m/s, "grid3"); // Bad grid
-  FID bad2("field1", {tags1, dims1}, km/s, "grid1"); // Bad units
-  FID bad3("field2", {tags1, dims2},  m/s, "grid1"); // Bad layout
+  FID bad1("field1", {tags1, dims1}, km/s); // Bad units
+  FID bad2("field2", {tags1, dims2},  m/s); // Bad layout
 
   ekat::Comm comm(MPI_COMM_WORLD);
   auto g1 = create_point_grid("grid1",ncols1*comm.size(),nlevs1,comm);
@@ -54,17 +53,16 @@ TEST_CASE("field_mgr", "") {
   FieldManager field_mgr(gm);
 
   // === Valid registration calls === //
-  field_mgr.register_field(FR(fid1_1,Pack1::n));
-  field_mgr.register_field(FR{fid1_2,Pack2::n});
-  field_mgr.register_field(FR{fid2_1});
-  field_mgr.register_field(FR{fid2_1,"group_1"});
-  field_mgr.register_field(FR{fid1_2,SL{"group_1", "group_2"}});
-  field_mgr.register_field(FR{fid2_2});
+  field_mgr.register_field(FR(fid1_1,"grid1",Pack1::n));
+  field_mgr.register_field(FR{fid1_2,"grid2",Pack2::n});
+  field_mgr.register_field(FR{fid2_1,"grid1"});
+  field_mgr.register_field(FR{fid2_1,"grid1","group_1"});
+  field_mgr.register_field(FR{fid1_2,"grid2",SL{"group_1", "group_2"}});
+  field_mgr.register_field(FR{fid2_2,"grid2"});
 
   // === Invalid registration calls === //
-  REQUIRE_THROWS(field_mgr.register_field(FR{bad1}));
-  REQUIRE_THROWS(field_mgr.register_field(FR{bad2}));
-  REQUIRE_THROWS(field_mgr.register_field(FR{bad2}));
+  REQUIRE_THROWS(field_mgr.register_field(FR{bad1,"grid1"}));
+  REQUIRE_THROWS(field_mgr.register_field(FR{bad2,"grid1"}));
 
   // Cannot add external fields while registration is happening
   REQUIRE_THROWS(field_mgr.add_field(Field(fid1_1)));
@@ -72,29 +70,28 @@ TEST_CASE("field_mgr", "") {
   field_mgr.registration_ends();
 
   // Should not be able to register fields anymore
-  REQUIRE_THROWS(field_mgr.register_field(FR{fid1_1}));
+  REQUIRE_THROWS(field_mgr.register_field(FR{fid1_1,"grid1"}));
 
-  FID new_fid("new_field", {tags1, dims1},  m/s, "grid1");
+  FID new_fid("new_field", {tags1, dims1},  m/s);
   REQUIRE_THROWS (field_mgr.add_field(Field(new_fid))); // Not allocated
 
   REQUIRE (field_mgr.get_repo("grid1").size()==2);
   REQUIRE (field_mgr.get_repo("grid2").size()==2);
 
   // Get all fields
-  auto f1_1 = field_mgr.get_field(fid1_1);
-  auto f1_2 = field_mgr.get_field(fid1_2);
-  auto f2_1 = field_mgr.get_field(fid2_1);
-  auto f2_2 = field_mgr.get_field(fid2_2);
+  auto f1_1 = field_mgr.get_field(fid1_1.name(),"grid1");
+  auto f1_2 = field_mgr.get_field(fid1_2.name(),"grid2");
+  auto f2_1 = field_mgr.get_field(fid2_1.name(),"grid1");
+  auto f2_2 = field_mgr.get_field(fid2_2.name(),"grid2");
 
   // Verify both get_field methods match
-  REQUIRE (f1_1 == field_mgr.get_field(fid1_1.name(), fid1_1.get_grid_name()));
-  REQUIRE (f1_2 == field_mgr.get_field(fid1_2.name(), fid1_2.get_grid_name()));
-  REQUIRE (f2_1 == field_mgr.get_field(fid2_1.name(), fid2_1.get_grid_name()));
-  REQUIRE (f2_2 == field_mgr.get_field(fid2_2.name(), fid2_2.get_grid_name()));
+  REQUIRE (f1_1 == field_mgr.get_field(fid1_1.name(), "grid1"));
+  REQUIRE (f1_2 == field_mgr.get_field(fid1_2.name(), "grid2"));
+  REQUIRE (f2_1 == field_mgr.get_field(fid2_1.name(), "grid1"));
+  REQUIRE (f2_2 == field_mgr.get_field(fid2_2.name(), "grid2"));
 
   // Try to get invalid fields
   REQUIRE_THROWS(field_mgr.get_field("bad", "grid1"));    // Not in the field_mgr
-  REQUIRE_THROWS(field_mgr.get_field(bad1));              // Not in field_mgr
   REQUIRE_THROWS(field_mgr.get_field("field1", "grid3")); // Wrong grid
 
   // Check that the groups names are in the header. While at it, make sure that case insensitive works fine.
@@ -135,7 +132,6 @@ TEST_CASE("field_mgr", "") {
 }
 
 TEST_CASE("tracers_group", "") {
-  using namespace ekat::units;
   using namespace ShortFieldTagsNames;
   using FR  = FieldRequest;
 
@@ -147,55 +143,49 @@ TEST_CASE("tracers_group", "") {
   std::vector<int> dims1 = {ncols1,nlevs};
   std::vector<int> dims2 = {ncols2,nlevs};
 
-  const auto nondim = Units::nondimensional();
-
-  const std::string gn1 = "grid1";
-  const std::string gn2 = "grid2";
-
-  FieldIdentifier qv_id("qv", {tags, dims1}, nondim, gn1);
-  FieldIdentifier a_id("a", {tags, dims1}, nondim, gn1);
-  FieldIdentifier b_id("b", {tags, dims2}, nondim, gn2);
-  FieldIdentifier c_id("c", {tags, dims1}, nondim, gn1);
+  FieldIdentifier qv_id("qv", {tags, dims1});
+  FieldIdentifier a_id("a", {tags, dims1});
+  FieldIdentifier b_id("b", {tags, dims2});
+  FieldIdentifier c_id("c", {tags, dims1});
 
   ekat::Comm comm(MPI_COMM_WORLD);
-  auto g1 = create_point_grid(gn1,ncols1*comm.size(),nlevs,comm);
-  auto g2 = create_point_grid(gn2,ncols2*comm.size(),nlevs,comm);
+  auto g1 = create_point_grid("grid1",ncols1*comm.size(),nlevs,comm);
+  auto g2 = create_point_grid("grid2",ncols2*comm.size(),nlevs,comm);
   auto gm = std::make_shared<LibraryGridsManager>(g1, g2);
   FieldManager field_mgr(gm);
 
   using los = std::list<std::string>;
-  field_mgr.register_field(FR{qv_id,"tracers"});
-  field_mgr.register_field(FR{a_id,"tracers"});
-  field_mgr.register_field(FR{b_id,los{"tracers", "subtracers"}});
-  field_mgr.register_field(FR{c_id,los{"tracers", "subtracers"}});
+  field_mgr.register_field(FR{qv_id,"grid1","tracers"});
+  field_mgr.register_field(FR{a_id,"grid1","tracers"});
+  field_mgr.register_field(FR{b_id,"grid2",los{"tracers", "subtracers"}});
+  field_mgr.register_field(FR{c_id,"grid1",los{"tracers", "subtracers"}});
 
-  field_mgr.register_group(GroupRequest("tracers",gn1,MonolithicAlloc::Required));
-  field_mgr.register_group(GroupRequest("tracers",gn2,MonolithicAlloc::Required));
-  field_mgr.register_group(GroupRequest("subtracers",gn1,MonolithicAlloc::Required));
-  //field_mgr.register_group(GroupRequest("subtracers",gn2,MonolithicAlloc::Required));
+  field_mgr.register_group(GroupRequest("tracers","grid1",MonolithicAlloc::Required));
+  field_mgr.register_group(GroupRequest("tracers","grid2",MonolithicAlloc::Required));
+  field_mgr.register_group(GroupRequest("subtracers","grid1",MonolithicAlloc::Required));
 
   field_mgr.registration_ends();
 
-  auto T1 = field_mgr.get_field("tracers", gn1);
-  auto qv1 = field_mgr.get_field("qv", gn1);
-  auto a1 = field_mgr.get_field("a", gn1);
-  auto b1 = field_mgr.get_field("b", gn1);
-  auto c1 = field_mgr.get_field("c", gn1);
-  auto T2 = field_mgr.get_field("tracers", gn2);
-  auto qv2 = field_mgr.get_field("qv", gn2);
-  auto a2 = field_mgr.get_field("a", gn2);
-  auto b2 = field_mgr.get_field("b", gn2);
-  auto c2 = field_mgr.get_field("c", gn2);
+  auto T1 = field_mgr.get_field("tracers", "grid1");
+  auto qv1 = field_mgr.get_field("qv", "grid1");
+  auto a1 = field_mgr.get_field("a", "grid1");
+  auto b1 = field_mgr.get_field("b", "grid1");
+  auto c1 = field_mgr.get_field("c", "grid1");
+  auto T2 = field_mgr.get_field("tracers", "grid2");
+  auto qv2 = field_mgr.get_field("qv", "grid2");
+  auto a2 = field_mgr.get_field("a", "grid2");
+  auto b2 = field_mgr.get_field("b", "grid2");
+  auto c2 = field_mgr.get_field("c", "grid2");
 
   // No subtracer field should exist since it is not
   // a parent of any field.
-  REQUIRE_THROWS (field_mgr.get_field("subtracers", gn1));
-  REQUIRE_THROWS (field_mgr.get_field("subtracers", gn2));
+  REQUIRE_THROWS (field_mgr.get_field("subtracers", "grid1"));
+  REQUIRE_THROWS (field_mgr.get_field("subtracers", "grid2"));
 
   // The field_mgr should have allocated the group as a monolith
-  auto tracers1 = field_mgr.get_field_group("tracers", gn1);
-  auto tracers2 = field_mgr.get_field_group("tracers", gn2);
-  auto subtracers = field_mgr.get_field_group("subtracers", gn1);
+  auto tracers1 = field_mgr.get_field_group("tracers", "grid1");
+  auto tracers2 = field_mgr.get_field_group("tracers", "grid2");
+  auto subtracers = field_mgr.get_field_group("subtracers", "grid1");
   REQUIRE (tracers1.m_info->m_monolithic_allocation);
   REQUIRE (tracers2.m_info->m_monolithic_allocation);
   REQUIRE (subtracers.m_info->m_monolithic_allocation);

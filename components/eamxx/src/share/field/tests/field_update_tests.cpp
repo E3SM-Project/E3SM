@@ -10,7 +10,6 @@ namespace {
 
 TEST_CASE ("update") {
   using namespace scream;
-  using namespace ekat::units;
 
   using namespace ShortFieldTagsNames;
 
@@ -26,8 +25,8 @@ TEST_CASE ("update") {
   std::vector<FieldTag> tags = {COL, CMP, LEV};
   std::vector<int>      dims = {ncol,ncmp,nlev};
 
-  FieldIdentifier fid_r ("fr", {tags,dims}, kg, "some_grid", DataType::RealType);
-  FieldIdentifier fid_i ("fi", {tags,dims}, kg, "some_grid", DataType::IntType);
+  FieldIdentifier fid_r ("fr", {tags,dims});
+  FieldIdentifier fid_i ("fi", {tags,dims}, DataType::IntType);
   Field f_real (fid_r);
   Field f_int  (fid_i);
   f_real.allocate_view();

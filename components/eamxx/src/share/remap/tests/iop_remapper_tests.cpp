@@ -24,26 +24,24 @@ Field create_field (const std::string& name,
                     const bool midpoints,
                     const int seed)
 {
-  const auto u = ekat::units::Units::nondimensional();
-  const auto& gn = grid.name();
   Field f;
   switch (lt) {
     case LayoutType::Scalar2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout()));  break;
     case LayoutType::Vector2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(vec_dim),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(vec_dim)));  break;
     case LayoutType::Tensor2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_tensor_layout({tens_dim1,tens_dim2}),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_tensor_layout({tens_dim1,tens_dim2})));  break;
     case LayoutType::Scalar3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(midpoints),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(midpoints)));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     case LayoutType::Vector3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(midpoints,vec_dim),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(midpoints,vec_dim)));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     case LayoutType::Tensor3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_tensor_layout(midpoints,{tens_dim1,tens_dim2}),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_tensor_layout(midpoints,{tens_dim1,tens_dim2})));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     default:

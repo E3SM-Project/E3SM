@@ -11,22 +11,20 @@ namespace scream {
 
 Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid)
 {
-  const auto u = ekat::units::Units::nondimensional();
-  const auto& gn = grid.name();
   const auto  ndims = 2;
   Field f;
   switch (lt) {
     case LayoutType::Scalar1D:
-      f = Field(FieldIdentifier(name,grid.get_vertical_layout(true),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_vertical_layout(true)));  break;
     case LayoutType::Scalar2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout()));  break;
     case LayoutType::Vector2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(ndims),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(ndims)));  break;
     case LayoutType::Scalar3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(true),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(true)));  break;
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     case LayoutType::Vector3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(false,ndims),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(false,ndims)));  break;
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     default:
       EKAT_ERROR_MSG ("Invalid layout type for this unit test.\n");
@@ -61,7 +59,7 @@ Field all_gather_field (const Field& f, const ekat::Comm& comm) {
   int my_cols = dims[0];;
   comm.all_reduce(&my_cols, &dims.front(), 1, MPI_SUM );
   FieldLayout gfl(tags,dims);
-  FieldIdentifier gfid("g" + f.name(),gfl,fid.get_units(),fid.get_grid_name(),fid.data_type());
+  FieldIdentifier gfid("g" + f.name(),gfl,fid.data_type());
   Field gf(gfid);
   gf.allocate_view();
   f.sync_to_host();
@@ -186,8 +184,8 @@ TEST_CASE ("refining_remapper") {
   {
     auto r = std::make_shared<HorizontalRemapper>(tgt_grid,filename);
     auto src_grid = r->get_src_grid();
-    Field bad_src(FieldIdentifier("",src_grid->get_2d_scalar_layout(),ekat::units::m,src_grid->name(),DataType::IntType));
-    Field bad_tgt(FieldIdentifier("",tgt_grid->get_2d_scalar_layout(),ekat::units::m,tgt_grid->name(),DataType::IntType));
+    Field bad_src(FieldIdentifier("",src_grid->get_2d_scalar_layout(),DataType::IntType));
+    Field bad_tgt(FieldIdentifier("",tgt_grid->get_2d_scalar_layout(),DataType::IntType));
     CHECK_THROWS (r->register_field(bad_src,bad_tgt)); // not allocated
     bad_src.allocate_view();
     bad_tgt.allocate_view();

@@ -114,7 +114,7 @@ Field transpose (const Field& src)
 {
   const auto& src_id = src.get_header().get_identifier();
   FieldIdentifier id(src_id.name()+"_transpose", src_id.get_layout().transpose(),
-                     src_id.get_units(), src_id.get_grid_name(),
+                     src_id.get_units(),
                      src_id.data_type());
   Field ft (id,true);
   transpose(src,ft);

@@ -27,18 +27,18 @@ FieldGroup::get_const () const {
   return gr;
 }
 
-const std::string& FieldGroup::grid_name () const {
-  EKAT_REQUIRE_MSG(m_individual_fields.size()>0 || m_monolithic_field,
-      "Error! Cannot establish the group grid name until fields have been added.\n");
+// const std::string& FieldGroup::grid_name () const {
+//   EKAT_REQUIRE_MSG(m_individual_fields.size()>0 || m_monolithic_field,
+//       "Error! Cannot establish the group grid name until fields have been added.\n");
 
-  if (m_monolithic_field) {
-    const auto& id = m_monolithic_field->get_header().get_identifier();
-    return id.get_grid_name();
-  } else {
-    const auto& id = m_individual_fields.begin()->second->get_header().get_identifier();
-    return id.get_grid_name();
-  }
-}
+//   if (m_monolithic_field) {
+//     const auto& id = m_monolithic_field->get_header().get_identifier();
+//     return id.get_grid_name();
+//   } else {
+//     const auto& id = m_individual_fields.begin()->second->get_header().get_identifier();
+//     return id.get_grid_name();
+//   }
+// }
 
 void FieldGroup::copy_fields (const FieldGroup& src) {
   m_monolithic_field = src.m_monolithic_field;

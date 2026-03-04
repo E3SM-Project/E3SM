@@ -11,7 +11,6 @@ namespace {
 TEST_CASE("field", "") {
   using namespace scream;
   using namespace ShortFieldTagsNames;
-  using namespace ekat::units;
 
   auto seed = get_random_test_seed();
 
@@ -20,7 +19,7 @@ TEST_CASE("field", "") {
     std::vector<FieldTag> t1 = {COL, CMP, CMP, LEV};
     std::vector<int> d1 = {3, 10, 2, 24};
 
-    FieldIdentifier fid1("4d", {t1, d1}, m / s, "some_grid");
+    FieldIdentifier fid1("4d", {t1, d1});
 
     Field f1(fid1);
     f1.allocate_view();
@@ -50,7 +49,7 @@ TEST_CASE("field", "") {
       // ==============
       std::vector<FieldTag> t1 = {COL};
       std::vector<int> d1 = {11};
-      FieldIdentifier fid1("1d", {t1, d1}, m / s, "some_grid");
+      FieldIdentifier fid1("1d", {t1, d1});
 
       Field f1(fid1);
       f1.allocate_view();
@@ -74,7 +73,7 @@ TEST_CASE("field", "") {
     SECTION("2D multi-slice") {
       std::vector<FieldTag> t2 = {COL, CMP};
       std::vector<int> d2 = {5, 10};
-      FieldIdentifier fid2("2d", {t2, d2}, m / s, "some_grid");
+      FieldIdentifier fid2("2d", {t2, d2});
 
       Field f2(fid2);
       f2.allocate_view();
@@ -107,7 +106,7 @@ TEST_CASE("field", "") {
       // ==============
       std::vector<FieldTag> t3 = {COL, CMP, LEV};
       std::vector<int> d3 = {5, 10, 2};
-      FieldIdentifier fid3("3d", {t3, d3}, m / s, "some_grid");
+      FieldIdentifier fid3("3d", {t3, d3});
 
       Field f3(fid3);
       f3.allocate_view();
@@ -157,7 +156,7 @@ TEST_CASE("field", "") {
       // ==============
       std::vector<FieldTag> t4 = {COL, CMP, CMP, LEV};
       std::vector<int> d4 = {5, 10, 2, 23};
-      FieldIdentifier fid4("4d", {t4, d4}, m / s, "some_grid");
+      FieldIdentifier fid4("4d", {t4, d4});
 
       Field f4(fid4);
       f4.allocate_view();
@@ -199,7 +198,7 @@ TEST_CASE("field", "") {
       // ==============
       std::vector<FieldTag> t5 = {EL, CMP, GP, GP, LEV};
       std::vector<int> d5 = {5, 10, 4, 2, 23};
-      FieldIdentifier fid5("5d", {t5, d5}, m / s, "some_grid");
+      FieldIdentifier fid5("5d", {t5, d5});
 
       Field f5(fid5);
       f5.allocate_view();
@@ -245,7 +244,7 @@ TEST_CASE("field", "") {
       // ==============
       std::vector<FieldTag> t6 = {EL, TL, CMP, GP, GP, LEV};
       std::vector<int> d6 = {5, 10, 4, 2, 9, 23};
-      FieldIdentifier fid6("6d", {t6, d6}, m / s, "some_grid");
+      FieldIdentifier fid6("6d", {t6, d6});
 
       Field f6(fid6);
       f6.allocate_view();
@@ -303,7 +302,7 @@ TEST_CASE("field", "") {
       // ==============
       std::vector<FieldTag> t3 = {COL, CMP, LEV};
       std::vector<int> d3 = {5, 10, 2};
-      FieldIdentifier fid3("3d", {t3, d3}, m / s, "some_grid");
+      FieldIdentifier fid3("3d", {t3, d3});
 
       Field f3a(fid3);
       f3a.allocate_view();
@@ -341,7 +340,7 @@ TEST_CASE("field", "") {
     std::vector<FieldTag> t1 = {COL, CMP, CMP, LEV};
     std::vector<int> d1 = {3, vec_dim, 2, 24};
 
-    FieldIdentifier fid1("4d", {t1, d1}, m / s, "some_grid");
+    FieldIdentifier fid1("4d", {t1, d1});
 
     Field f1(fid1);
     f1.allocate_view();
@@ -383,7 +382,7 @@ TEST_CASE("field", "") {
     std::vector<FieldTag> tags_2 = {COL, CMP, LEV};
     std::vector<int> dims_2 = {3, 2, 24};
 
-    FieldIdentifier fid_2("vec_3d", {tags_2, dims_2}, m / s, "some_grid");
+    FieldIdentifier fid_2("vec_3d", {tags_2, dims_2});
 
     Field f_vec(fid_2);
     f_vec.allocate_view();
@@ -419,7 +418,6 @@ TEST_CASE ("sync_subfields") {
   // syncing a subfield to host/device will not sync the data of the other subfields.
 
   using namespace scream;
-  using namespace ekat::units;
   using namespace ShortFieldTagsNames;
   using FID = FieldIdentifier;
   using FL  = FieldLayout;
@@ -429,7 +427,7 @@ TEST_CASE ("sync_subfields") {
   constexpr int nlevs = 8;
 
   // Create field with (col, cmp, lev)
-  FID fid ("V",FL({COL,CMP,LEV},{ncols,ndims,nlevs}),Units::nondimensional(),"the_grid",DataType::IntType);
+  FID fid ("V",FL({COL,CMP,LEV},{ncols,ndims,nlevs}),DataType::IntType);
   Field f (fid);
   f.allocate_view();
 
