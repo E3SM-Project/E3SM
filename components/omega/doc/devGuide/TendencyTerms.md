@@ -41,3 +41,4 @@ implemented:
 - `TracerHighOrderHorzAdvOnCell`
 - `TracerDiffOnCell`
 - `TracerHyperDiffOnCell`
+- `SurfaceTracerRestoringOnCell`

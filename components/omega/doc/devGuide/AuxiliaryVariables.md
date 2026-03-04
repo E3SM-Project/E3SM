@@ -104,3 +104,5 @@ The following auxiliary variable groups are currently implemented:
 | WindForcingAuxVars |  ZonalStressCell ||
 ||  MeridStressCell ||
 ||  NormalStressEdge ||
+| SurfTracerRestAuxVars | SurfTracerRestValuesCell ||
+|| TracersMonthlySurfClimoCell ||
