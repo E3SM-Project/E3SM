@@ -300,10 +300,9 @@ void AtmosphereInput::init_scorpio_structures()
 
   // Check variables are in the input file, and ensure the scorpio FM
   // has fields with the correct data type (matching the file's storage type).
-  // If the file stores a variable in a different precision than the user's field,
-  // we create a type-bridge field in m_fm_for_scorpio so that scorpio_interface
+  // If the file stores a variable in a different precision than the field,
+  // update it in-place to a type-bridge field so that scorpio_interface
   // can read directly without any type conversion.
-  bool need_rebuild_fm = false;
   for (const auto & [name, f] : m_fm_for_scorpio->get_repo()) {
     const auto& layout = f->get_header().get_identifier().get_layout();
 
@@ -340,45 +339,15 @@ void AtmosphereInput::init_scorpio_structures()
         " - extent from file: " + std::to_string(file_len) + "\n");
     }
 
-    // Check if the field's dtype matches the file's nc_dtype. If not, we
-    // need to rebuild m_fm_for_scorpio with a correctly-typed field.
+    // If the field's dtype doesn't match the file's nc_dtype, update the
+    // field in-place to a type-bridge field with the correct dtype.
     const auto file_dtype = nc_dtype_to_data_type(var.nc_dtype, name);
     if (file_dtype!=f->data_type()) {
-      need_rebuild_fm = true;
+      const auto& fid = f->get_header().get_identifier();
+      FieldIdentifier bridge_fid(fid.name(),fid.get_layout(),fid.get_units(),
+                                 fid.get_grid_name(),file_dtype);
+      *f = Field(bridge_fid,true);
     }
-  }
-
-  // If any field's dtype differs from the file's, rebuild the scorpio FM
-  // with correctly-typed fields (type-bridge fields).
-  if (need_rebuild_fm) {
-    auto new_fm = std::make_shared<FieldManager>(m_io_grid,RepoState::Closed);
-    for (const auto& sname : m_fields_names) {
-      auto f_user = m_fm_from_user->get_field(sname);
-      const auto& var = scorpio::get_var(m_filename,sname);
-      const auto file_dtype = nc_dtype_to_data_type(var.nc_dtype, sname);
-      if (file_dtype==f_user.data_type()) {
-        // The user field has the right dtype; check if we can still alias
-        const auto& fh  = f_user.get_header();
-        const auto& fap = fh.get_alloc_properties();
-        bool can_alias = fh.get_parent()==nullptr && fap.get_padding()==0;
-        if (can_alias) {
-          new_fm->add_field(f_user);
-        } else {
-          Field copy(f_user.get_header().get_identifier());
-          copy.allocate_view();
-          new_fm->add_field(copy);
-        }
-      } else {
-        // Need a type-bridge field with the file's dtype
-        const auto& fid = f_user.get_header().get_identifier();
-        FieldIdentifier bridge_fid(fid.name(),fid.get_layout(),fid.get_units(),
-                                   fid.get_grid_name(),file_dtype);
-        Field bridge(bridge_fid);
-        bridge.allocate_view();
-        new_fm->add_field(bridge);
-      }
-    }
-    m_fm_for_scorpio = new_fm;
   }
 
   // Set decompositions for the variables
