@@ -550,8 +550,12 @@ void AtmosphereProcessGroup::
 set_group_impl (const FieldGroup& group)
 {
   for (auto atm_proc : m_atm_processes) {
-    if (atm_proc->has_group(group.m_info->m_group_name,group.grid_name()))
-      atm_proc->set_group(group);
+    for (const auto& r : atm_proc->get_group_requests()) {
+      if (r.name==group.name() and r.grid==group.grid_name()) {
+        atm_proc->set_group(group);
+        break;
+      }
+    }
   }
 }
 
@@ -559,8 +563,12 @@ void AtmosphereProcessGroup::set_field_impl (const Field& f)
 {
   const auto& fid = f.get_header().get_identifier();
   for (auto atm_proc : m_atm_processes) {
-    if (atm_proc->has_field(fid.name(),fid.get_grid_name())) {
-      atm_proc->set_field(f);
+    for (const auto& r : atm_proc->get_field_requests()) {
+      if (r.fid==fid or
+          (r.incomplete and r.fid.name()==fid.name() and r.fid.get_grid_name()==fid.get_grid_name())) {
+        atm_proc->set_field(f);
+        break;
+      }
     }
   }
 }

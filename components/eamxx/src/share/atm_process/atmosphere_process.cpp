@@ -545,21 +545,23 @@ void AtmosphereProcess::compute_step_tendencies () {
 bool AtmosphereProcess::
 has_field (const std::string& name, const std::string& grid, const RequestType usage_mask) const
 {
-  for (const auto& r : m_field_requests) {
-    if (r.fid.name()==name and r.fid.get_grid_name()==grid and r.usage & usage_mask)
-      return true;
-  }
-  return false;
+  bool required = m_fields_in_iterators.count(name)==1 and
+                  m_fields_in_iterators.at(name).count(grid)==1;
+  bool computed = m_fields_out_iterators.count(name)==1 and
+                  m_fields_out_iterators.at(name).count(grid)==1;
+  return ((usage_mask & Computed) ? computed : true) and
+         ((usage_mask & Required) ? required : true);
 }
 
 bool AtmosphereProcess::
 has_group (const std::string& name, const std::string& grid, const RequestType usage_mask) const
 {
-  for (const auto& r : m_group_requests) {
-    if (r.name==name and r.grid==grid and r.usage & usage_mask)
-      return true;
-  }
-  return false;
+  bool required = m_groups_in_iterators.count(name)==1 and
+                  m_groups_in_iterators.at(name).count(grid)==1;
+  bool computed = m_groups_out_iterators.count(name)==1 and
+                  m_groups_out_iterators.at(name).count(grid)==1;
+  return ((usage_mask & Computed) ? computed : true) and
+         ((usage_mask & Required) ? required : true);
 }
 
 void AtmosphereProcess::log (const LogLevel lev, const std::string& msg) const {
@@ -730,7 +732,8 @@ add_precondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
                        has_group(fid.name(),fid.get_grid_name(),Computed),
         "Error! Input property check can repair a non-computed field.\n"
         "  - Atmosphere process name: " + name() + "\n"
-        "  - Property check name: " + pc->name() + "\n");
+        "  - Property check name: " + pc->name() + "\n"
+        "  - Field name: " + ptr->name() + "\n");
   }
   m_precondition_checks.push_back(std::make_pair(cfh,pc));
 }
@@ -777,7 +780,8 @@ add_postcondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
                        has_group(fid.name(),fid.get_grid_name(),Computed),
         "Error! Input property check can repair a non-computed field.\n"
         "  - Atmosphere process name: " + name() + "\n"
-        "  - Property check name: " + pc->name() + "\n");
+        "  - Property check name: " + pc->name() + "\n"
+        "  - Field name: " + ptr->name() + "\n");
   }
   m_postcondition_checks.push_back(std::make_pair(cfh,pc));
 }
