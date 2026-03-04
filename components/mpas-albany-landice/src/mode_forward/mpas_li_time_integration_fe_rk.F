@@ -671,6 +671,7 @@ module li_time_integration_fe_rk
       deallocate(groundedBasalMassBalAccum)
       deallocate(floatingBasalMassBalAccum)
       deallocate(fluxAcrossGroundingLineAccum)
+      deallocate(fluxAcrossGroundingLineOnCellsAccum)
       deallocate(calvingThicknessAccum)
    !--------------------------------------------------------------------
    end subroutine li_time_integrator_forwardeuler_rungekutta
