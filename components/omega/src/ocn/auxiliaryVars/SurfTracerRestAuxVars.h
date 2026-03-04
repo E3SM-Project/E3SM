@@ -14,6 +14,7 @@ namespace OMEGA {
 class SurfTracerRestAuxVars {
  public:
    Array2DReal SurfTracerRestValuesCell;
+   Array2DReal TracersMonthlySurfClimoCell;
    Real MaxDiff = 100.0; // maximum allowed difference for restoring
    /// Need to add under sea ice restoring option when that is available
 
@@ -22,24 +23,19 @@ class SurfTracerRestAuxVars {
                          const I4 NTracers);
 
    KOKKOS_FUNCTION void
-   computeVarsOnCells(int L, int ICell, int KChunk,
-                      const Array3DReal &TracerCell,
-                      const Array2DReal &TracersMonthlySurfClimoCell) const {
+   computeVarsOnCells(int L, int ICell, const Array3DReal &TracerCell) const {
 
-      if (KChunk == 0) {
-         const I4 K = MinLayerCell(ICell);
+      const I4 K = MinLayerCell(ICell);
 
-         Real DeltaTracer;
-         if ((TracersMonthlySurfClimoCell(L, ICell) - TracerCell(L, ICell, K)) >
-             MaxDiff) {
-            SurfTracerRestValuesCell(L, ICell) = MaxDiff;
-         } else if ((TracersMonthlySurfClimoCell(L, ICell) -
-                     TracerCell(L, ICell, K)) < -MaxDiff) {
-            SurfTracerRestValuesCell(L, ICell) = -MaxDiff;
-         } else {
-            SurfTracerRestValuesCell(L, ICell) =
-                TracersMonthlySurfClimoCell(L, ICell) - TracerCell(L, ICell, K);
-         }
+      if ((TracersMonthlySurfClimoCell(L, ICell) - TracerCell(L, ICell, K)) >
+          MaxDiff) {
+         SurfTracerRestValuesCell(L, ICell) = MaxDiff;
+      } else if ((TracersMonthlySurfClimoCell(L, ICell) -
+                  TracerCell(L, ICell, K)) < -MaxDiff) {
+         SurfTracerRestValuesCell(L, ICell) = -MaxDiff;
+      } else {
+         SurfTracerRestValuesCell(L, ICell) =
+             TracersMonthlySurfClimoCell(L, ICell) - TracerCell(L, ICell, K);
       }
    }
 

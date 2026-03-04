@@ -29,8 +29,8 @@ AuxiliaryState::AuxiliaryState(const std::string &Name, const HorzMesh *Mesh,
       VorticityAux(stripDefault(Name), Mesh, VCoord),
       VelocityDel2Aux(stripDefault(Name), Mesh, VCoord),
       WindForcingAux(stripDefault(Name), Mesh),
-      TracerAux(stripDefault(Name), Mesh, VCoord, NTracers) { //,
-   // SurfTracerRestAux(stripDefault(Name), Mesh, VCoord, NTracers) {
+      TracerAux(stripDefault(Name), Mesh, VCoord, NTracers),
+      SurfTracerRestAux(stripDefault(Name), Mesh, VCoord, NTracers) {
 
    GroupName = "AuxiliaryState";
    if (Name != "Default") {
@@ -46,7 +46,7 @@ AuxiliaryState::AuxiliaryState(const std::string &Name, const HorzMesh *Mesh,
    VelocityDel2Aux.registerFields(GroupName, AuxMeshName);
    WindForcingAux.registerFields(GroupName, AuxMeshName);
    TracerAux.registerFields(GroupName, AuxMeshName);
-   // SurfTracerRestAux.registerFields(GroupName, AuxMeshName);
+   SurfTracerRestAux.registerFields(GroupName, AuxMeshName);
 }
 
 // Destructor. Unregisters the fields with IOStreams and destroys this auxiliary
@@ -58,7 +58,7 @@ AuxiliaryState::~AuxiliaryState() {
    VelocityDel2Aux.unregisterFields();
    WindForcingAux.unregisterFields();
    TracerAux.unregisterFields();
-   // SurfTracerRestAux.unregisterFields();
+   SurfTracerRestAux.unregisterFields();
 
    FieldGroup::destroy(GroupName);
 }
@@ -233,7 +233,7 @@ void AuxiliaryState::computeAll(const OceanState *State,
 
    OMEGA_SCOPE(LocLayerThicknessAux, LayerThicknessAux);
    OMEGA_SCOPE(LocTracerAux, TracerAux);
-   // OMEGA_SCOPE(LocSurfTracerRestAux, SurfTracerRestAux);
+   OMEGA_SCOPE(LocSurfTracerRestAux, SurfTracerRestAux);
 
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
@@ -282,22 +282,13 @@ void AuxiliaryState::computeAll(const OceanState *State,
        });
    Pacer::stop("AuxState:cellAuxState4", 2);
 
-   // Pacer::start("AuxState:cellAuxState5", 2);
-   // parallelForOuter(
-   //     "cellAuxState5", {NTracers, Mesh->NCellsAll},
-   //     KOKKOS_LAMBDA(int LTracer, int ICell, const TeamMember &Team) {
-   //        const int KMin   = MinLayerCell(ICell);
-   //        const int KMax   = MaxLayerCell(ICell);
-   //        const int KRange = vertRangeChunked(KMin, KMax);
-
-   //       parallelForInner(
-   //           Team, KRange, INNER_LAMBDA(int KChunk) {
-   //              LocSurfTracerRestAux.computeVarsOnCells(
-   //                  LTracer, ICell, KChunk, TracerArray,
-   //                  TracersMonthlySurfClimoArray);
-   //           });
-   //    });
-   // Pacer::stop("AuxState:cellAuxState5", 2);
+   Pacer::start("AuxState:cellAuxState5", 2);
+   parallelFor(
+       "cellAuxState5", {NTracers, Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int LTracer, int ICell) {
+          LocSurfTracerRestAux.computeVarsOnCells(LTracer, ICell, TracerArray);
+       });
+   Pacer::stop("AuxState:cellAuxState5", 2);
 
    Pacer::stop("AuxState:computeAll", 1);
 }
@@ -419,17 +410,12 @@ void AuxiliaryState::readConfigOptions(Config *OmegaConfig) {
       ABORT_ERROR("AuxiliaryState: Unknown InterpType requested");
    }
 
-   // Config SurfRestConfig("SurfaceRestoring");
-   // Err += OmegaConfig->get(SurfRestConfig);
+   Config SurfRestConfig("SurfaceRestoring");
+   Err += OmegaConfig->get(SurfRestConfig);
 
-   // Err += SurfRestConfig.get("MaxDiff", SurfTracerRestAux.MaxDiff);
-   // CHECK_ERROR_ABORT(
-   //     Err, "AuxiliaryState: MaxDiff not found in SurfaceRestoringConfig");
-   // Err += SurfRestConfig.get("PistonVelocity",
-   // Tendencies::getDefault()->SurfaceTracerRestoring.PistonVelocity);
-   // CHECK_ERROR_ABORT(
-   //     Err, "AuxiliaryState: PistonVelocity not found in
-   //     SurfaceRestoringConfig");
+   Err += SurfRestConfig.get("MaxDiff", this->SurfTracerRestAux.MaxDiff);
+   CHECK_ERROR_ABORT(
+       Err, "AuxiliaryState: MaxDiff not found in SurfaceRestoringConfig");
 }
 
 //------------------------------------------------------------------------------

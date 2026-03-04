@@ -142,12 +142,17 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
 ) {
    Error Err; // error code
 
+   // we need access to the top-level Omega config when pulling values
+   // from other sections such as SurfaceRestoring
+   Config *OmegaConfig = Config::getOmegaConfig();
+   
    Config TendConfig("Tendencies");
    Err += OmegaConfig->get(TendConfig);
    CHECK_ERROR_ABORT(Err, "Tendencies: Tendencies group not found in Config");
 
    Err += TendConfig.get("ThicknessFluxTendencyEnable",
                          this->ThicknessFluxDiv.Enabled);
+
    CHECK_ERROR_ABORT(
        Err, "Tendencies: ThicknessFluxTendencyEnable not found in TendConfig");
 
@@ -252,7 +257,7 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
    Err += TendConfig.get("PressureGradTendencyEnable", this->PGrad->Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: PressureGradTendencyEnable not found in TendConfig");
-
+   
    Err += TendConfig.get("SurfaceTracerRestoringEnable",
                          this->SurfaceTracerRestoring.Enabled);
    CHECK_ERROR_ABORT(
@@ -838,11 +843,8 @@ void Tendencies::computeTracerTendenciesOnly(
                                        TracersMonthlySurfClimo, TracerArray);
           });
       Pacer::stop("Tend:surfaceTracerRestoring", 2);
-   } else if (LocSurfaceTracerRestoring.Enabled && NTracersToRestore == 0) {
-      ABORT_ERROR("Tendencies: SurfaceTracerRestoring is enabled but "
-                  "TracerIdsToRestore is empty");
    }
-
+   
    Pacer::stop("Tend:computeTracerTendenciesOnly", 1);
 } // end tracer tendency compute
 

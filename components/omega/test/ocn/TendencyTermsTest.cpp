@@ -58,6 +58,7 @@ struct TestSetupPlane {
                                               0.00290978146207349032};
    ErrorMeasures ExpectedTrDel4Errors      = {0.00508833446725232875,
                                               0.00523080740758275625};
+   ErrorMeasures ExpectedSurfTrRestErrors  = {0, 0};
    ErrorMeasures ExpectedWindForcingErrors = {0, 0};
    ErrorMeasures ExpectedBottomDragErrors  = {0.033848740052302935,
                                               0.01000133508329411};
@@ -197,6 +198,7 @@ struct TestSetupSphere {
                                               0.005105510870642706};
    ErrorMeasures ExpectedTrDel4Errors      = {0.0008646345116716073,
                                               0.0007118574326665881};
+   ErrorMeasures ExpectedSurfTrRestErrors  = {0, 0};
    ErrorMeasures ExpectedWindForcingErrors = {0, 0};
    ErrorMeasures ExpectedBottomDragErrors  = {0.0015333449035655053,
                                               0.0014897009917655022};
@@ -1011,6 +1013,80 @@ int testTracerHyperDiffOnCell(int NVertLayers, int NTracers, Real RTol) {
    return Err;
 } // end testTracerHyperDiffOnCell
 
+int testSurfaceTracerRestoringOnCell(int NVertLayers, int NTracers, Real RTol) {
+
+   I4 Err = 0;
+   TestSetup Setup;
+
+   const auto Mesh   = HorzMesh::getDefault();
+   const auto VCoord = VertCoord::getDefault();
+
+   // Compute exact result: zero everywhere except at surface layer where it
+   // equals PistonVelocity * input field
+   Array3DReal ExactSurfRest("ExactSurfRest", NTracers, Mesh->NCellsOwned,
+                             NVertLayers);
+   // Initialize exact array to zero
+   deepCopy(ExactSurfRest, 0);
+
+   // Create temporary array for input field (scalarA)
+   Array2DReal InputField("InputField", Mesh->NCellsSize, 1);
+   // Set input array (surface tracer restoring values at each cell)
+   Array2DReal SurfTracerRestValuesCell("SurfTracerRestValuesCell", NTracers,
+                                        Mesh->NCellsSize, NVertLayers);
+   deepCopy(InputField, 0);
+   deepCopy(SurfTracerRestValuesCell, 0);
+
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarA(X, Y); },
+       InputField, Geom, Mesh, OnCell);
+
+   // Set exact array at surface layer only
+   // The functor modifies Tend(L, ICell, MinLayerCell(ICell)) when KChunk==0
+   // We need access to MinLayerCell to set exact values correctly
+   // For now, use a straightforward approach: set all MinLayer indices to 0
+   // (topmost layer) in the numerical computation loop
+   SurfaceTracerRestoringOnCell SurfRestOnC(Mesh, VCoord);
+
+   // Set the exact array at the minimum layer for each cell
+   // For this test we assume the minimum layer index is 0 (surface).  The
+   // exact result will therefore only be non-zero at KLayer==0 and equal to
+   // PistonVelocity * input field.  Perform the computation directly on the
+   // device rather than staging data on the host.
+   parallelFor(
+       {NTracers, Mesh->NCellsOwned}, KOKKOS_LAMBDA(int L, int ICell) {
+          SurfTracerRestValuesCell(L, ICell) = InputField(ICell, 0);
+          ExactSurfRest(L, ICell, 0) =
+              SurfRestOnC.PistonVelocity * InputField(ICell, 0);
+       });
+
+   // Compute numerical result: initialize to zero and apply functor
+   Array3DReal NumSurfRest("NumSurfRest", NTracers, Mesh->NCellsOwned,
+                           NVertLayers);
+   deepCopy(NumSurfRest, 0);
+
+   // Loop over all KChunk values to verify functor only modifies at KChunk==0
+   parallelFor(
+       {NTracers, Mesh->NCellsOwned, NVertLayers},
+       KOKKOS_LAMBDA(int L, int ICell, int KLayer) {
+          SurfRestOnC(NumSurfRest, L, ICell, KLayer, SurfTracerRestValuesCell);
+       });
+
+   // Compute errors
+   ErrorMeasures SurfRestErrors;
+   Err +=
+       computeErrors(SurfRestErrors, NumSurfRest, ExactSurfRest, Mesh, OnCell);
+
+   // Check error values (expect zero error)
+   Err += checkErrors("TendencyTermsTest", "SurfaceTracerRestoring",
+                      SurfRestErrors, Setup.ExpectedSurfTrRestErrors, RTol);
+
+   if (Err == 0) {
+      LOG_INFO("TendencyTermsTest: SurfaceTracerRestoring PASS");
+   }
+
+   return Err;
+} // end testSurfaceTracerRestoringOnCell
+
 void initTendTest(const std::string &MeshFile, int NVertLayers) {
 
    Error Err;
@@ -1090,6 +1166,8 @@ int tendencyTermsTest(const std::string &MeshFile = DefaultMeshFile) {
    Err += testTracerDiffOnCell(NVertLayers, NTracers, RTol);
 
    Err += testTracerHyperDiffOnCell(NVertLayers, NTracers, RTol);
+
+   Err += testSurfaceTracerRestoringOnCell(NVertLayers, NTracers, RTol);
 
    if (Err == 0) {
       LOG_INFO("TendencyTermsTest: Successful completion");

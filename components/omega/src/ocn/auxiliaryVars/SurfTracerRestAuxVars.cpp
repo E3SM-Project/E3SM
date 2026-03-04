@@ -12,6 +12,9 @@ SurfTracerRestAuxVars::SurfTracerRestAuxVars(const std::string &AuxStateSuffix,
                                              const I4 NTracers)
     : SurfTracerRestValuesCell("SurfTracerRestValuesCell" + AuxStateSuffix,
                                NTracers, Mesh->NCellsSize),
+      TracersMonthlySurfClimoCell("TracersMonthlySurfClimoCell" +
+                                      AuxStateSuffix,
+                                  NTracers, Mesh->NCellsSize),
       MinLayerCell(VCoord->MinLayerCell) {}
 
 void SurfTracerRestAuxVars::registerFields(
@@ -30,7 +33,7 @@ void SurfTracerRestAuxVars::registerFields(
       DimSuffix = MeshName;
    }
 
-   // Zonal wind stress
+   // Tracers surface restoring values
    DimNames[0] = "NTracers";
    DimNames[1] = "NCells" + DimSuffix;
    auto SurfTracerRestValuesCellField =
