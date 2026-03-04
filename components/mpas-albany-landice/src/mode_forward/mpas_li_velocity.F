@@ -326,7 +326,6 @@ contains
       call mpas_dmpar_field_halo_exch(domain, 'thickness')
       call mpas_timer_stop("halo updates")
 
-      ! Update mask just to be safe (might be redundant)
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
