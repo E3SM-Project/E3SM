@@ -446,7 +446,7 @@ protected:
   // Adds a field to the list of internal fields, possibly adding it to the given groups
   void add_internal_field (const Field& f, const std::vector<std::string>& groups = {});
 
-  // These methods set up an extra pointer in the m_[fields|groups]_[in|out]_pointers,
+  // These methods set up an extra pointer in the m_[fields|groups]_[in|out]_iterators,
   // for convenience of use (e.g., use a short name for a field/group).
   // Note: these methods do *not* create a copy of the field/group.
   void alias_field_in (const std::string& field_name,
@@ -538,13 +538,15 @@ private:
   strmap_t<Field>    m_start_of_step_fields;
 
   // These maps help to retrieve a field/group stored in the lists above. E.g.,
-  //   auto ptr = m_field_in_pointers[field_name][grid_name];
-  // then *ptr is a field in m_fields_in, with name $field_name, on grid $grid_name.
-  strmap_t<strmap_t<Field*>>      m_fields_in_pointers;
-  strmap_t<strmap_t<Field*>>      m_fields_out_pointers;
-  strmap_t<strmap_t<FieldGroup*>> m_groups_in_pointers;
-  strmap_t<strmap_t<FieldGroup*>> m_groups_out_pointers;
-  strmap_t<strmap_t<Field*>>      m_internal_fields_pointers;
+  //   auto it = m_field_in_iterators[field_name][grid_name];
+  // then *it is a field in m_fields_in, with name $field_name, on grid $grid_name.
+  using field_it = typename std::list<Field>::iterator;
+  using group_it = typename std::list<FieldGroup>::iterator;
+  strmap_t<strmap_t<field_it>>  m_fields_in_iterators;
+  strmap_t<strmap_t<field_it>>  m_fields_out_iterators;
+  strmap_t<strmap_t<group_it>>  m_groups_in_iterators;
+  strmap_t<strmap_t<group_it>>  m_groups_out_iterators;
+  strmap_t<strmap_t<field_it>>  m_internal_fields_iterators;
 
   // List of property checks for fields
   std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_precondition_checks;

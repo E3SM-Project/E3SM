@@ -295,16 +295,13 @@ void AtmosphereProcess::set_field (const Field& f)
     "Something is wrong up the call stack. Please, contact developers.\n");
 
   // Store in input or output fields (or both), depending on how we requested it
-  auto& ptr_in  = m_fields_in_pointers[fid.name()][fid.get_grid_name()];
-  auto& ptr_out = m_fields_out_pointers[fid.name()][fid.get_grid_name()];
-
-  if (usage & Required) {
-    // TODO: should we error out if ptr_in is already nonnull?
-    ptr_in = &m_fields_in.emplace_back(f.get_const());
+  if (usage & Required and m_fields_in_iterators[fid.name()].count(fid.get_grid_name())==0) {
+    m_fields_in.emplace_back(f.get_const());
+    m_fields_in_iterators[fid.name()][fid.get_grid_name()] = std::prev(m_fields_in.end());
   }
-  if (usage & Computed) {
-    // TODO: should we error out if ptr_out is already nonnull?
-    ptr_out = &m_fields_out.emplace_back(f);
+  if (usage & Computed and m_fields_out_iterators[fid.name()].count(fid.get_grid_name())==0) {
+    m_fields_out.emplace_back(f);
+    m_fields_out_iterators[fid.name()][fid.get_grid_name()] = std::prev(m_fields_out.end());
   }
 
   // AtmosphereProcessGroup is just a "container" of *real* atm processes,
@@ -318,7 +315,7 @@ void AtmosphereProcess::set_field (const Field& f)
   }
 
   // If we don't claim to compute the field, provide the read-only field to the derived class.
-  set_field_impl (usage & Computed ? *ptr_out : *ptr_in);
+  set_field_impl (usage & Computed ? f : f.get_const());
 
   add_py_fields(f);
 }
@@ -343,14 +340,13 @@ void AtmosphereProcess::set_group (const FieldGroup& group)
     "Something is wrong up the call stack. Please, contact developers.\n");
 
   // Store in input or output fields (or both), depending on how we requested it
-  auto& ptr_in  = m_groups_in_pointers[name][grid];
-  auto& ptr_out = m_groups_out_pointers[name][grid];
-
-  if (usage & Required and not ptr_in) {
-    ptr_in = &m_groups_in.emplace_back(group.get_const());
+  if (usage & Required and m_groups_in_iterators[name].count(grid)==0) {
+    m_groups_in.emplace_back(group.get_const());
+    m_groups_in_iterators[name][grid] = std::prev(m_groups_in.end());
   }
-  if (usage & Computed and not ptr_out) {
-    ptr_out = &m_groups_out.emplace_back(group);
+  if (usage & Computed and m_groups_out_iterators[name].count(grid)==0) {
+    m_groups_out.emplace_back(group);
+    m_groups_out_iterators[name][grid] = std::prev(m_groups_out.end());
   }
 
   // AtmosphereProcessGroup is just a "container" of *real* atm processes,
@@ -372,7 +368,7 @@ void AtmosphereProcess::set_group (const FieldGroup& group)
   }
 
   // If we don't claim to compute the group, provide the read-only group to the derived class.
-  set_group_impl (usage & Computed ? *ptr_out : *ptr_in);
+  set_group_impl (usage & Computed ? group : group.get_const());
 
   add_py_fields(group);
 }
@@ -606,7 +602,8 @@ void AtmosphereProcess::
 add_internal_field (const Field& f, const std::vector<std::string>& groups)
 {
   auto& fi = m_internal_fields.emplace_back(f);
-  m_internal_fields_pointers[fi.name()][fi.get_header().get_identifier().get_grid_name()] = &fi;
+  auto it = std::prev(m_internal_fields.end());
+  m_internal_fields_iterators[fi.name()][fi.get_header().get_identifier().get_grid_name()] = it;
   for (const auto& gn : groups) {
     fi.get_header().get_tracking().add_group(gn);
   }
@@ -801,7 +798,7 @@ alias_field_in (const std::string& field_name,
                 const std::string& alias_name)
 {
   try {
-    m_fields_in_pointers[alias_name][grid_name] = m_fields_in_pointers.at(field_name).at(grid_name);
+    m_fields_in_iterators[alias_name][grid_name] = m_fields_in_iterators.at(field_name).at(grid_name);
   } catch (const std::out_of_range&) {
     // std::out_of_range message would not help detecting where
     // the exception originated, so print a more meaningful message.
@@ -818,7 +815,7 @@ alias_field_out (const std::string& field_name,
                  const std::string& alias_name)
 {
   try {
-    m_fields_out_pointers[alias_name][grid_name] = m_fields_out_pointers.at(field_name).at(grid_name);
+    m_fields_out_iterators[alias_name][grid_name] = m_fields_out_iterators.at(field_name).at(grid_name);
   } catch (const std::out_of_range&) {
     // std::out_of_range message would not help detecting where
     // the exception originated, so print a more meaningful message.
@@ -835,7 +832,7 @@ alias_group_in (const std::string& group_name,
                 const std::string& alias_name)
 {
   try {
-    m_groups_in_pointers[alias_name][grid_name] = m_groups_in_pointers.at(group_name).at(grid_name);
+    m_groups_in_iterators[alias_name][grid_name] = m_groups_in_iterators.at(group_name).at(grid_name);
   } catch (const std::out_of_range&) {
     // std::out_of_range message would not help detecting where
     // the exception originated, so print a more meaningful message.
@@ -852,7 +849,7 @@ alias_group_out (const std::string& group_name,
                  const std::string& alias_name)
 {
   try {
-    m_groups_out_pointers[alias_name][grid_name] = m_groups_out_pointers.at(group_name).at(grid_name);
+    m_groups_out_iterators[alias_name][grid_name] = m_groups_out_iterators.at(group_name).at(grid_name);
   } catch (const std::out_of_range&) {
     // std::out_of_range message would not help detecting where
     // the exception originated, so print a more meaningful message.
@@ -866,7 +863,7 @@ alias_group_out (const std::string& group_name,
 Field& AtmosphereProcess::
 get_field_in_impl(const std::string& field_name, const std::string& grid_name) const {
   try {
-    return *m_fields_in_pointers.at(field_name).at(grid_name);
+    return *m_fields_in_iterators.at(field_name).at(grid_name);
   } catch (const std::out_of_range&) {
     // std::out_of_range message would not help detecting where
     // the exception originated, so print a more meaningful message.
@@ -883,7 +880,7 @@ get_field_in_impl(const std::string& field_name, const std::string& grid_name) c
 Field& AtmosphereProcess::
 get_field_in_impl(const std::string& field_name) const {
   try {
-    auto& copies = m_fields_in_pointers.at(field_name);
+    auto& copies = m_fields_in_iterators.at(field_name);
     EKAT_REQUIRE_MSG (copies.size()==1,
         "Error! Attempt to find input field providing only the name,\n"
         "       but multiple copies (on different grids) are present.\n"
@@ -906,7 +903,7 @@ get_field_in_impl(const std::string& field_name) const {
 Field& AtmosphereProcess::
 get_field_out_impl(const std::string& field_name, const std::string& grid_name) const {
   try {
-    return *m_fields_out_pointers.at(field_name).at(grid_name);
+    return *m_fields_out_iterators.at(field_name).at(grid_name);
   } catch (const std::out_of_range&) {
     // std::out_of_range message would not help detecting where
     // the exception originated, so print a more meaningful message.
@@ -923,7 +920,7 @@ get_field_out_impl(const std::string& field_name, const std::string& grid_name) 
 Field& AtmosphereProcess::
 get_field_out_impl(const std::string& field_name) const {
   try {
-    auto& copies = m_fields_out_pointers.at(field_name);
+    auto& copies = m_fields_out_iterators.at(field_name);
     EKAT_REQUIRE_MSG (copies.size()==1,
         "Error! Attempt to find output field providing only the name,\n"
         "       but multiple copies (on different grids) are present.\n"
@@ -946,7 +943,7 @@ get_field_out_impl(const std::string& field_name) const {
 FieldGroup& AtmosphereProcess::
 get_group_in_impl(const std::string& group_name, const std::string& grid_name) const {
   try {
-    return *m_groups_in_pointers.at(group_name).at(grid_name);
+    return *m_groups_in_iterators.at(group_name).at(grid_name);
   } catch (const std::out_of_range&) {
     // std::out_of_range message would not help detecting where
     // the exception originated, so print a more meaningful message.
@@ -963,7 +960,7 @@ get_group_in_impl(const std::string& group_name, const std::string& grid_name) c
 FieldGroup& AtmosphereProcess::
 get_group_in_impl(const std::string& group_name) const {
   try {
-    auto& copies = m_groups_in_pointers.at(group_name);
+    auto& copies = m_groups_in_iterators.at(group_name);
     EKAT_REQUIRE_MSG (copies.size()==1,
         "Error! Attempt to find input group providing only the name,\n"
         "       but multiple copies (on different grids) are present.\n"
@@ -986,7 +983,7 @@ get_group_in_impl(const std::string& group_name) const {
 FieldGroup& AtmosphereProcess::
 get_group_out_impl(const std::string& group_name, const std::string& grid_name) const {
   try {
-    return *m_groups_out_pointers.at(group_name).at(grid_name);
+    return *m_groups_out_iterators.at(group_name).at(grid_name);
   } catch (const std::out_of_range&) {
     // std::out_of_range message would not help detecting where
     // the exception originated, so print a more meaningful message.
@@ -1003,7 +1000,7 @@ get_group_out_impl(const std::string& group_name, const std::string& grid_name) 
 FieldGroup& AtmosphereProcess::
 get_group_out_impl(const std::string& group_name) const {
   try {
-    auto& copies = m_groups_out_pointers.at(group_name);
+    auto& copies = m_groups_out_iterators.at(group_name);
     EKAT_REQUIRE_MSG (copies.size()==1,
         "Error! Attempt to find output group providing only the name,\n"
         "       but multiple copies (on different grids) are present.\n"
@@ -1026,7 +1023,7 @@ get_group_out_impl(const std::string& group_name) const {
 Field& AtmosphereProcess::
 get_internal_field_impl(const std::string& field_name, const std::string& grid_name) const {
   try {
-    return *m_internal_fields_pointers.at(field_name).at(grid_name);
+    return *m_internal_fields_iterators.at(field_name).at(grid_name);
   } catch (const std::out_of_range&) {
     // std::out_of_range message would not help detecting where
     // the exception originated, so print a more meaningful message.
@@ -1043,7 +1040,7 @@ get_internal_field_impl(const std::string& field_name, const std::string& grid_n
 Field& AtmosphereProcess::
 get_internal_field_impl(const std::string& field_name) const {
   try {
-    auto& copies = m_internal_fields_pointers.at(field_name);
+    auto& copies = m_internal_fields_iterators.at(field_name);
     EKAT_REQUIRE_MSG (copies.size()==1,
         "Error! Attempt to find internal field providing only the name,\n"
         "       but multiple copies (on different grids) are present.\n"
@@ -1066,39 +1063,39 @@ get_internal_field_impl(const std::string& field_name) const {
 void AtmosphereProcess
 ::remove_field (const std::string& field_name, const std::string& grid_name) {
   typedef std::list<Field>::iterator It;
-  const auto rmf = [&] (std::list<Field>& fields, strmap_t<strmap_t<Field*>>& ptrs) {
+  const auto rmf = [&] (std::list<Field>& fields, strmap_t<strmap_t<field_it>>& ptrs) {
     std::vector<It> rm_its;
     for (It it = fields.begin(); it != fields.end(); ++it) {
       const auto& fid = it->get_header().get_identifier();
       if (fid.name() == field_name and fid.get_grid_name() == grid_name) {
         rm_its.push_back(it);
-        ptrs[field_name][grid_name] = nullptr;
+        ptrs[field_name].erase(grid_name);
       }
     }
     for (auto& it : rm_its) fields.erase(it);
   };
-  rmf(m_fields_in, m_fields_in_pointers);
-  rmf(m_fields_out, m_fields_out_pointers);
-  rmf(m_internal_fields, m_internal_fields_pointers);
+  rmf(m_fields_in, m_fields_in_iterators);
+  rmf(m_fields_out, m_fields_out_iterators);
+  rmf(m_internal_fields, m_internal_fields_iterators);
 }
 
 void AtmosphereProcess
 ::remove_group (const std::string& group_name, const std::string& grid_name) {
   typedef std::list<FieldGroup>::iterator It;
-  const auto rmg = [&] (std::list<FieldGroup>& fields, strmap_t<strmap_t<FieldGroup*>>& ptrs) {
+  const auto rmg = [&] (std::list<FieldGroup>& fields, strmap_t<strmap_t<group_it>>& ptrs) {
     std::vector<It> rm_its;
     for (It it = fields.begin(); it != fields.end(); ++it) {
       if (it->m_info->m_group_name == group_name and it->grid_name() == grid_name) {
         rm_its.push_back(it);
-        ptrs[group_name][grid_name] = nullptr;
+        ptrs[group_name].erase(grid_name);
         for (auto& kv : it->m_individual_fields)
           remove_field(kv.first, grid_name);
       }
     }
     for (auto& it : rm_its) fields.erase(it);
   };
-  rmg(m_groups_in, m_groups_in_pointers);
-  rmg(m_groups_out, m_groups_out_pointers);
+  rmg(m_groups_in, m_groups_in_iterators);
+  rmg(m_groups_out, m_groups_out_iterators);
 }
 
 void AtmosphereProcess::compute_column_conservation_checks_data (const double dt)
