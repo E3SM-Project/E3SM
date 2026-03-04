@@ -29,8 +29,10 @@ class GWDrag : public AtmosphereProcess
   using PC  = scream::physics::Constants<Real>;
 
   using Scalar   = typename GWF::Scalar;
-  using Spack    = typename GWF::Spack;
-  using SPackInt = typename GWF::SPackInt;
+  using Pack     = typename GWF::Pack;
+  using IntPack  = typename GWF::IntPack;
+
+  using uview_2d = GWF::uview_2d<Pack>;
 
   public:
     // Constructors

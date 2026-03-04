@@ -278,14 +278,14 @@ be lost if SCREAM_HACK_XML is not enabled.
     <gw inherit="atm_proc_base">
       <use_gw_convect type="logical" doc="Flag for convective GWD">false</use_gw_convect>
       <use_gw_frontal type="logical" doc="Flag for frontal GWD">false</use_gw_frontal>
-      <use_gw_orogrph type="logical" doc="Flag for orographic GWD">false</use_gw_orogrph>
+      <use_gw_orographic type="logical" doc="Flag for orographic GWD">false</use_gw_orographic>
       <gw_drag_file type="array(string)" doc="GW source spectra file">${DIN_LOC_ROOT}/atm/waccm/gw/newmfspectra40_dc25.nc</gw_drag_file>
       <pgwv type="integer" doc="Maximum number of waves allowed">32</pgwv>
       <gw_dc type="real" doc="Bin width for spectrum">2.5</gw_dc>
       <tau_0_ubc type="logical" doc="flag to enforce an upper boundary condition of tau=0">false</tau_0_ubc>
       <fcrit2 type="real" doc="Critical Froude number">1.0</fcrit2>
       <gw_orogrph_eff type="real" doc="Efficiency of orographic GW tendencies">0.375</gw_orogrph_eff>
-      <gw_frontal_taubgnd type="real" doc="Background stress source strength for frontal GW scheme">2.5E-3</taubgnd>
+      <gw_frontal_taubgnd type="real" doc="Background stress source strength for frontal GW scheme">2.5E-3</gw_frontal_taubgnd>
       <gw_frontal_eff type="real" doc="Efficiency of frontal GW tendencies">1.0</gw_frontal_eff>
       <gw_frontal_fgfc hgrid="ne30np4.pg2"  type="real" doc="Frontogenesis function critical threshold for frontal GW scheme">1.25E-15</gw_frontal_fgfc>
       <gw_frontal_fgfc hgrid="ne120np4.pg2" type="real" doc="Frontogenesis function critical threshold for frontal GW scheme">2.00E-14</gw_frontal_fgfc>
