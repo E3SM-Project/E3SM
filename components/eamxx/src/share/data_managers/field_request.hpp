@@ -14,6 +14,26 @@ enum RequestType {
   Updated  = 3,  // For convenience, triggers Required+Computed
 };
 
+// Allow bitwise op on request types
+inline RequestType& operator&= (RequestType& lhs, RequestType rhs)
+{
+  lhs = static_cast<RequestType>(static_cast<int>(lhs) & static_cast<int>(rhs));
+  return lhs;
+}
+inline RequestType& operator|= (RequestType& lhs, RequestType rhs)
+{
+  lhs = static_cast<RequestType>(static_cast<int>(lhs) | static_cast<int>(rhs));
+  return lhs;
+}
+inline RequestType operator& (RequestType lhs, RequestType rhs)
+{
+  return static_cast<RequestType>(static_cast<int>(lhs) & static_cast<int>(rhs));
+}
+inline RequestType operator| (RequestType lhs, RequestType rhs)
+{
+  return static_cast<RequestType>(static_cast<int>(lhs) | static_cast<int>(rhs));
+}
+
 // Whether a tracer should be advected by both Dynamics
 // and Turbulance, or only by Dynamics
 enum TracerAdvection {
