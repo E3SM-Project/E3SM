@@ -1,7 +1,8 @@
 add_library (eamxx_diagnostics
   aerocom_cld.cpp
   aodvis.cpp
-  atm_backtend.cpp
+  field_prev.cpp
+  field_over_dt.cpp
   atm_density.cpp
   binary_ops.cpp
   dry_static_energy.cpp

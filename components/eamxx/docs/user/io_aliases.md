@@ -65,6 +65,28 @@ alias of the former.
 are preserved from the original fields, and `alias_of`
 is added to the netcdf files to document aliasing
 
+## Intermediate-only fields (`:=:` syntax)
+
+Sometimes a diagnostic is only needed as a building block for another
+diagnostic, and you do not want it written to the NetCDF output file.
+Use `alias:=:original` (note the extra colon) to declare such fields:
+
+```yaml
+field_names:
+  - "MyDiag:=:T_mid_times_p_mid"   # computed but NOT written to NC
+  - "MyDiagSqrd:=MyDiag_times_MyDiag"  # uses MyDiag; IS written to NC
+```
+
+`MyDiag` is created and registered in the internal field manager so that
+`MyDiagSqrd` can depend on it, but it does not appear in the output file.
+Only `MyDiagSqrd` is written.
+
+Rules:
+- A name declared with `:=:` must not also appear as a regular output field.
+- The same alias name cannot be used for both `:=:` and `:=`.
+- The expression after `:=:` is resolved with the same composable-diagnostic
+  parser as any other field name.
+
 ## Caveats
 
 Currently, a field can be requested only once in a single stream,
