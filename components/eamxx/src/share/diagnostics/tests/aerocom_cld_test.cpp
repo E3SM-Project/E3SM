@@ -140,17 +140,17 @@ TEST_CASE("aerocom_cld") {
 
     diag->set_grids(gm);
 
-    diag->set_required_field(tm);
-    diag->set_required_field(pd);
-    diag->set_required_field(pm);
-    diag->set_required_field(qv);
-    diag->set_required_field(qc);
-    diag->set_required_field(qi);
-    diag->set_required_field(ec);
-    diag->set_required_field(ei);
-    diag->set_required_field(cd);
-    diag->set_required_field(nc);
-    diag->set_required_field(ni);
+    diag->set_field(tm);
+    diag->set_field(pd);
+    diag->set_field(pm);
+    diag->set_field(qv);
+    diag->set_field(qc);
+    diag->set_field(qi);
+    diag->set_field(ec);
+    diag->set_field(ei);
+    diag->set_field(cd);
+    diag->set_field(nc);
+    diag->set_field(ni);
 
     diag->initialize(t0, RunType::Initial);
 

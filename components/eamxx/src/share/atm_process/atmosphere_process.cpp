@@ -129,7 +129,6 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
     m_atm_logger->flush(); // During init, flush often (to help debug crashes)
   }
 
-  set_fields_and_groups_pointers();
   m_start_of_step_ts = m_end_of_step_ts = t0;
   initialize_impl(run_type);
 
@@ -245,10 +244,6 @@ void AtmosphereProcess::setup_step_tendencies (const std::string& default_grid) 
     return;
   }
 
-  // This method will be called again during initialize (it's ok, it's cheap)
-  // But we need to have it called now, so we can use "get_field_out" below.
-  set_fields_and_groups_pointers ();
-
   // Allow to request tendency of a field on a particular grid
   // by using the syntax 'field_name@grid_name'
   auto field_grid = [&] (const std::string& tn) -> std::pair<std::string,std::string>{
@@ -278,108 +273,106 @@ void AtmosphereProcess::setup_step_tendencies (const std::string& default_grid) 
   }
 }
 
-void AtmosphereProcess::set_required_field (const Field& f) {
-  // Sanity check
-  EKAT_REQUIRE_MSG (has_required_field(f.get_header().get_identifier()),
-    "Error! Input field is not required by this atm process.\n"
-    "    field id: " + f.get_header().get_identifier().get_id_string() + "\n"
-    "    atm process: " + this->name() + "\n"
-    "Something is wrong up the call stack. Please, contact developers.\n");
-
-  if (not ekat::contains(m_fields_in,f)) {
-    m_fields_in.emplace_back(f);
+void AtmosphereProcess::set_field (const Field& f)
+{
+  const auto& fid = f.get_header().get_identifier();
+  RequestType usage = Invalid;
+  for (const auto& r : m_field_requests) {
+    bool same = r.incomplete
+              ? fid.name()==r.fid.name() and fid.get_grid_name()==r.fid.get_grid_name()
+              : fid==r.fid;
+    if (same) {
+      usage = r.usage;
+      break;
+    }
   }
 
-  // AtmosphereProcessGroup is just a "container" of *real* atm processes,
-  // so don't add me as customer if I'm an atm proc group.
-  if (this->type()!=AtmosphereProcessType::Group) {
-    // Add myself as customer to the field
-    add_me_as_customer(f);
-  }
-
-  set_required_field_impl (f);
-
-  add_py_fields(f);
-}
-
-void AtmosphereProcess::set_computed_field (const Field& f) {
   // Sanity check
-  EKAT_REQUIRE_MSG (has_computed_field(f.get_header().get_identifier()),
-    "Error! Input field is not computed by this atm process.\n"
+  EKAT_REQUIRE_MSG (usage != Invalid,
+    "Error! Input field is not used by this atm process.\n"
     "   field id: " + f.get_header().get_identifier().get_id_string() + "\n"
     "   atm process: " + this->name() + "\n"
     "Something is wrong up the call stack. Please, contact developers.\n");
 
-  if (not ekat::contains(m_fields_out,f)) {
-    m_fields_out.emplace_back(f);
+  // Store in input or output fields (or both), depending on how we requested it
+  auto& ptr_in  = m_fields_in_pointers[fid.name()][fid.get_grid_name()];
+  auto& ptr_out = m_fields_out_pointers[fid.name()][fid.get_grid_name()];
+
+  if (usage & Required) {
+    // TODO: should we error out if ptr_in is already nonnull?
+    ptr_in = &m_fields_in.emplace_back(f.get_const());
+  }
+  if (usage & Computed) {
+    // TODO: should we error out if ptr_out is already nonnull?
+    ptr_out = &m_fields_out.emplace_back(f);
   }
 
   // AtmosphereProcessGroup is just a "container" of *real* atm processes,
   // so don't add me as provider if I'm an atm proc group.
   if (this->type()!=AtmosphereProcessType::Group) {
-    // Add myself as provider for the field
-    add_me_as_provider(f);
+    // Add myself as provider and/or customer for the field
+    if (usage & Computed)
+      add_me_as_provider(f);
+    if (usage & Required)
+      add_me_as_customer(f);
   }
 
-  set_computed_field_impl (f);
+  // If we don't claim to compute the field, provide the read-only field to the derived class.
+  set_field_impl (usage & Computed ? *ptr_out : *ptr_in);
 
   add_py_fields(f);
 }
 
-void AtmosphereProcess::set_required_group (const FieldGroup& group) {
+void AtmosphereProcess::set_group (const FieldGroup& group)
+{
+  RequestType usage = Invalid;
+  const auto& name = group.m_info->m_group_name;
+  const auto& grid = group.grid_name();
+  for (const auto& r : m_group_requests) {
+    if (r.name==name and r.grid==grid) {
+      usage = r.usage;
+      break;
+    }
+  }
   // Sanity check
-  EKAT_REQUIRE_MSG (has_required_group(group.m_info->m_group_name,group.grid_name()),
-    "Error! This atmosphere process does not require the input group.\n"
+  EKAT_REQUIRE_MSG (usage != Invalid,
+    "Error! Input field group is not used by this atm process.\n"
     "   group name: " + group.m_info->m_group_name + "\n"
     "   grid name : " + group.grid_name() + "\n"
     "   atm process: " + this->name() + "\n"
     "Something is wrong up the call stack. Please, contact developers.\n");
 
-  if (not ekat::contains(m_groups_in,group)) {
-    m_groups_in.emplace_back(group);
-    // AtmosphereProcessGroup is just a "container" of *real* atm processes,
-    // so don't add me as customer if I'm an atm proc group.
-    if (this->type()!=AtmosphereProcessType::Group) {
-      if (group.m_monolithic_field) {
+  // Store in input or output fields (or both), depending on how we requested it
+  auto& ptr_in  = m_groups_in_pointers[name][grid];
+  auto& ptr_out = m_groups_out_pointers[name][grid];
+
+  if (usage & Required and not ptr_in) {
+    ptr_in = &m_groups_in.emplace_back(group.get_const());
+  }
+  if (usage & Computed and not ptr_out) {
+    ptr_out = &m_groups_out.emplace_back(group);
+  }
+
+  // AtmosphereProcessGroup is just a "container" of *real* atm processes,
+  // so don't add me as customer/provider if this is an APG
+  if (this->type()!=AtmosphereProcessType::Group) {
+    if (group.m_monolithic_field) {
+      if (usage & Computed)
+        add_me_as_provider(*group.m_monolithic_field);
+      if (usage & Required)
         add_me_as_customer(*group.m_monolithic_field);
-      } else {
-        for (auto& it : group.m_individual_fields) {
+    } else {
+      for (auto& it : group.m_individual_fields) {
+        if (usage & Computed)
+          add_me_as_provider(*it.second);
+        if (usage & Required)
           add_me_as_customer(*it.second);
         }
-      }
     }
   }
 
-  set_required_group_impl(group);
-
-  add_py_fields(group);
-}
-
-void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
-  // Sanity check
-  EKAT_REQUIRE_MSG (has_computed_group(group.m_info->m_group_name,group.grid_name()),
-    "Error! This atmosphere process does not compute the input group.\n"
-    "   group name: " + group.m_info->m_group_name + "\n"
-    "   grid name : " + group.grid_name() + "\n"
-    "   atm process: " + this->name() + "\n"
-    "Something is wrong up the call stack. Please, contact developers.\n");
-
-  if (not ekat::contains(m_groups_out,group)) {
-    m_groups_out.emplace_back(group);
-    // AtmosphereProcessGroup is just a "container" of *real* atm processes,
-    // so don't add me as provider if I'm an atm proc group.
-    if (this->type()!=AtmosphereProcessType::Group) {
-      if (group.m_monolithic_field) {
-        add_me_as_provider(*group.m_monolithic_field);
-      } else {
-        for (auto& it : group.m_individual_fields) {
-          add_me_as_provider(*it.second);
-        }
-      }
-    }
-  }
-
-  set_computed_group_impl(group);
+  // If we don't claim to compute the group, provide the read-only group to the derived class.
+  set_group_impl (usage & Computed ? *ptr_out : *ptr_in);
 
   add_py_fields(group);
 }
@@ -553,45 +546,21 @@ void AtmosphereProcess::compute_step_tendencies () {
   stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
 }
 
-bool AtmosphereProcess::has_required_field (const FieldIdentifier& id) const {
-  return has_required_field(id.name(),id.get_grid_name());
-}
-
-bool AtmosphereProcess::has_required_field (const std::string& name, const std::string& grid_name) const
+bool AtmosphereProcess::
+has_field (const std::string& name, const std::string& grid, const RequestType usage_mask) const
 {
   for (const auto& r : m_field_requests) {
-    if (r.fid.name()==name and r.fid.get_grid_name()==grid_name and r.usage & Required)
+    if (r.fid.name()==name and r.fid.get_grid_name()==grid and r.usage & usage_mask)
       return true;
   }
   return false;
 }
 
-bool AtmosphereProcess::has_computed_field (const FieldIdentifier& id) const {
-  return has_computed_field(id.name(),id.get_grid_name());
-}
-
-bool AtmosphereProcess::has_computed_field (const std::string& name, const std::string& grid_name) const
-{
-  for (const auto& r : m_field_requests) {
-    if (r.fid.name()==name and r.fid.get_grid_name()==grid_name and r.usage & Computed)
-      return true;
-  }
-  return false;
-}
-
-bool AtmosphereProcess::has_required_group (const std::string& name, const std::string& grid) const
+bool AtmosphereProcess::
+has_group (const std::string& name, const std::string& grid, const RequestType usage_mask) const
 {
   for (const auto& r : m_group_requests) {
-    if (r.name==name and r.grid==grid and r.usage & Required)
-      return true;
-  }
-  return false;
-}
-
-bool AtmosphereProcess::has_computed_group (const std::string& name, const std::string& grid) const
-{
-  for (const auto& r : m_group_requests) {
-    if (r.name==name and r.grid==grid and r.usage & Computed)
+    if (r.name==name and r.grid==grid and r.usage & usage_mask)
       return true;
   }
   return false;
@@ -634,8 +603,10 @@ void AtmosphereProcess::add_me_as_customer (const Field& f) {
 }
 
 void AtmosphereProcess::
-add_internal_field (const Field& f, const std::vector<std::string>& groups) {
+add_internal_field (const Field& f, const std::vector<std::string>& groups)
+{
   auto& fi = m_internal_fields.emplace_back(f);
+  m_internal_fields_pointers[fi.name()][fi.get_header().get_identifier().get_grid_name()] = &fi;
   for (const auto& gn : groups) {
     fi.get_header().get_tracking().add_group(gn);
   }
@@ -758,8 +729,8 @@ add_precondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
   // update a field, without that appearing in the dag.
   for (const auto& ptr : pc->repairable_fields()) {
     const auto& fid = ptr->get_header().get_identifier();
-    EKAT_REQUIRE_MSG (
-        has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
+    EKAT_REQUIRE_MSG ( has_field(fid.name(),fid.get_grid_name(),Computed) or
+                       has_group(fid.name(),fid.get_grid_name(),Computed),
         "Error! Input property check can repair a non-computed field.\n"
         "  - Atmosphere process name: " + name() + "\n"
         "  - Property check name: " + pc->name() + "\n");
@@ -805,8 +776,8 @@ add_postcondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
   // update a field, without that appearing in the dag.
   for (const auto& ptr : pc->repairable_fields()) {
     const auto& fid = ptr->get_header().get_identifier();
-    EKAT_REQUIRE_MSG (
-        has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
+    EKAT_REQUIRE_MSG ( has_field(fid.name(),fid.get_grid_name(),Computed) or
+                       has_group(fid.name(),fid.get_grid_name(),Computed),
         "Error! Input property check can repair a non-computed field.\n"
         "  - Atmosphere process name: " + name() + "\n"
         "  - Property check name: " + pc->name() + "\n");
@@ -822,43 +793,6 @@ add_column_conservation_check(const prop_check_ptr &prop_check, const CheckFailH
                    "\" has already been added.");
 
   m_conservation = std::make_pair(cfh,prop_check);
-}
-
-void AtmosphereProcess::set_fields_and_groups_pointers () {
-  for (auto& f : m_fields_in) {
-    const auto& fid = f.get_header().get_identifier();
-    m_fields_in_pointers[fid.name()][fid.get_grid_name()] = &f;
-  }
-  for (auto& f : m_fields_out) {
-    const auto& fid = f.get_header().get_identifier();
-    m_fields_out_pointers[fid.name()][fid.get_grid_name()] = &f;
-  }
-  for (auto& g : m_groups_in) {
-    const auto& group_name = g.m_info->m_group_name;
-    m_groups_in_pointers[group_name][g.grid_name()] = &g;
-    // Also add pointers for individual fields in the group and monolithic field (if present)
-    for (const auto& [fn,fp] : g.m_individual_fields) {
-      m_fields_in_pointers[fn][g.grid_name()] = fp.get();
-    }
-    if (g.m_monolithic_field) {
-      m_fields_in_pointers[group_name][g.grid_name()] = g.m_monolithic_field.get();
-    }
-  }
-  for (auto& g : m_groups_out) {
-    const auto& group_name = g.m_info->m_group_name;
-    m_groups_out_pointers[group_name][g.grid_name()] = &g;
-    // Also add pointers for individual fields in the group and monolithic field (if present)
-    for (const auto& [fn,fp] : g.m_individual_fields) {
-      m_fields_out_pointers[fn][g.grid_name()] = fp.get();
-    }
-    if (g.m_monolithic_field) {
-      m_fields_out_pointers[group_name][g.grid_name()] = g.m_monolithic_field.get();
-    }
-  }
-  for (auto& f : m_internal_fields) {
-    const auto& fid = f.get_header().get_identifier();
-    m_internal_fields_pointers[fid.name()][fid.get_grid_name()] = &f;
-  }
 }
 
 void AtmosphereProcess::

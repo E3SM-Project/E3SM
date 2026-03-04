@@ -95,8 +95,8 @@ TEST_CASE("field_at_level")
     diag_mid->set_grids(gm);
     diag_int->set_grids(gm);
 
-    diag_mid->set_required_field(f_mid_1);
-    diag_int->set_required_field(f_int);
+    diag_mid->set_field(f_mid_1);
+    diag_int->set_field(f_int);
 
     diag_mid->initialize(t0,RunType::Initial);
     diag_int->initialize(t0,RunType::Initial);

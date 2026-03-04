@@ -129,7 +129,7 @@ void SHOCMacrophysics::create_requests()
 
 // =========================================================================================
 void SHOCMacrophysics::
-set_computed_group_impl (const FieldGroup& group)
+set_group_impl (const FieldGroup& group)
 {
   EKAT_REQUIRE_MSG(group.m_info->size() >= 3,
                    "Error! Shoc requires at least 3 tracers (tke, qv, qc) as inputs.");

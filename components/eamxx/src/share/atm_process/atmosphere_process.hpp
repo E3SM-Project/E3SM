@@ -19,16 +19,17 @@
 #include <ekat_string_utils.hpp>
 #include <ekat_logger.hpp>
 
+#ifdef EAMXX_HAS_PYTHON
 namespace pybind11 {
 class array;
 }
+#endif
 
 #include <memory>
 #include <string>
 #include <set>
 #include <any>
 #include <list>
-#include <any>
 
 namespace scream
 {
@@ -147,14 +148,8 @@ public:
   // corresponding set_xyz_impl method(s).
   // Note: this method will be called *after* set_grids, but *before* initialize.
   //       You are *guaranteed* that the views in the field/group are allocated by now.
-  // Note: you are *unlikely* to need to override these methods. In 99.99% of the cases,
-  //       overriding the corresponding _impl method should be enough. The class
-  //       AtmosphereProcessGroup is the big exception to this, since it needs
-  //       to perform some extra action *before* setting the field/group.
-  virtual void set_required_field (const Field& f);
-  virtual void set_computed_field (const Field& f);
-  virtual void set_required_group (const FieldGroup& group);
-  virtual void set_computed_group (const FieldGroup& group);
+  void set_field (const Field& f);
+  void set_group (const FieldGroup& group);
 
   // These methods check that some properties are satisfied before/after
   // the run_impl method is called.
@@ -182,7 +177,6 @@ public:
     return m_conservation;
   }
 
-
   void init_step_tendencies ();
   void compute_step_tendencies ();
 
@@ -202,15 +196,12 @@ public:
   const std::list<FieldGroup>& get_groups_out () const { return m_groups_out; }
 
   // The base class does not store internal fields.
-  virtual const std::list<Field>& get_internal_fields  () const { return m_internal_fields; }
+  const std::list<Field>& get_internal_fields  () const { return m_internal_fields; }
 
-  // Whether this atm proc requested the field/group as in/out, via a FieldRequest/GroupRequest.
-  bool has_required_field (const FieldIdentifier& id) const;
-  bool has_required_field (const std::string& name, const std::string& grid_name) const;
-  bool has_computed_field (const FieldIdentifier& id) const;
-  bool has_computed_field (const std::string& name, const std::string& grid_name) const;
-  bool has_required_group (const std::string& name, const std::string& grid) const;
-  bool has_computed_group (const std::string& name, const std::string& grid) const;
+  // Whether this atm proc requested the field/group with a usage compatible with the mask
+  // By default, mask=Updated, so that any version of the field works
+  bool has_field (const std::string& name, const std::string& grid, const RequestType usage_mask = Updated) const;
+  bool has_group (const std::string& name, const std::string& grid, const RequestType usage_mask = Updated) const;
 
   // Computes total number of bytes needed for local variables
   virtual size_t requested_buffer_size_in_bytes () const { return 0; }
@@ -231,7 +222,6 @@ public:
         Field& get_field_in(const std::string& field_name, const std::string& grid_name);
   const Field& get_field_in(const std::string& field_name) const;
         Field& get_field_in(const std::string& field_name);
-
   const Field& get_field_out(const std::string& field_name, const std::string& grid_name) const;
         Field& get_field_out(const std::string& field_name, const std::string& grid_name);
   const Field& get_field_out(const std::string& field_name) const;
@@ -241,7 +231,6 @@ public:
         FieldGroup& get_group_in(const std::string& group_name, const std::string& grid_name);
   const FieldGroup& get_group_in(const std::string& group_name) const;
         FieldGroup& get_group_in(const std::string& group_name);
-
   const FieldGroup& get_group_out(const std::string& group_name, const std::string& grid_name) const;
         FieldGroup& get_group_out(const std::string& group_name, const std::string& grid_name);
   const FieldGroup& get_group_out(const std::string& group_name) const;
@@ -446,24 +435,20 @@ protected:
   void add_me_as_provider (const Field& f);
   void add_me_as_customer (const Field& f);
 
-  // The base class already registers the required/computed/updated fields/groups in
-  // the set_required/computed_field and set_required/computed_group routines.
+  // The base class registers the fields/groups in set_field and set_group routines.
   // These impl methods provide a way for derived classes to add more specialized
   // actions, such as extra fields bookkeeping, extra checks, or create copies.
   // Since most derived classes do not need to perform additional actions,
   // we provide empty implementations.
-  virtual void set_required_field_impl (const Field& /* f */) {}
-  virtual void set_computed_field_impl (const Field& /* f */) {}
-  virtual void set_required_group_impl (const FieldGroup& /* group */) {}
-  virtual void set_computed_group_impl (const FieldGroup& /* group */) {}
+  virtual void set_field_impl (const Field& /* f */) {}
+  virtual void set_group_impl (const FieldGroup& /* g */) {}
 
   // Adds a field to the list of internal fields, possibly adding it to the given groups
   void add_internal_field (const Field& f, const std::vector<std::string>& groups = {});
 
   // These methods set up an extra pointer in the m_[fields|groups]_[in|out]_pointers,
   // for convenience of use (e.g., use a short name for a field/group).
-  // Note: these methods do *not* create a copy of the field/group. Also, notice that
-  //       these methods need to be called *after* set_fields_and_groups_pointers().
+  // Note: these methods do *not* create a copy of the field/group.
   void alias_field_in (const std::string& field_name,
                        const std::string& grid_name,
                        const std::string& alias_name);
@@ -511,9 +496,6 @@ protected:
   void remove_group(const std::string& group_name, const std::string& grid_name);
 
 private:
-  // Called from initialize, this method creates the m_[fields|groups]_[in|out]_pointers
-  // maps, which are used inside the get_[field|group]_[in|out] methods.
-  void set_fields_and_groups_pointers ();
 
   // Getters that can be called on both const and non-const objects
   Field& get_field_in_impl(const std::string& field_name, const std::string& grid_name) const;
@@ -545,10 +527,10 @@ private:
   //       sanity checks and any setup/cleanup logic.
 
   // Store input/output/internal fields and groups.
-  std::list<FieldGroup>   m_groups_in;
-  std::list<FieldGroup>   m_groups_out;
   std::list<Field>        m_fields_in;
   std::list<Field>        m_fields_out;
+  std::list<FieldGroup>   m_groups_in;
+  std::list<FieldGroup>   m_groups_out;
   std::list<Field>        m_internal_fields;
 
   // Data structures necessary to compute tendencies of updated fields
@@ -558,11 +540,11 @@ private:
   // These maps help to retrieve a field/group stored in the lists above. E.g.,
   //   auto ptr = m_field_in_pointers[field_name][grid_name];
   // then *ptr is a field in m_fields_in, with name $field_name, on grid $grid_name.
+  strmap_t<strmap_t<Field*>>      m_fields_in_pointers;
+  strmap_t<strmap_t<Field*>>      m_fields_out_pointers;
   strmap_t<strmap_t<FieldGroup*>> m_groups_in_pointers;
   strmap_t<strmap_t<FieldGroup*>> m_groups_out_pointers;
-  strmap_t<strmap_t<Field*>> m_fields_in_pointers;
-  strmap_t<strmap_t<Field*>> m_fields_out_pointers;
-  strmap_t<strmap_t<Field*>> m_internal_fields_pointers;
+  strmap_t<strmap_t<Field*>>      m_internal_fields_pointers;
 
   // List of property checks for fields
   std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_precondition_checks;

@@ -69,8 +69,10 @@ void AtmosphereDiagnostic::run_impl (const double dt) {
   compute_diagnostic(dt);
 }
 
-void AtmosphereDiagnostic::
-set_required_field_impl (const Field& f) {
+void AtmosphereDiagnostic::set_field_impl (const Field& f)
+{
+  // Check that the field is not writable, as we diags do not "compute" fields
+  // in the FieldRequest sense..
   // Check that the field has the pack size that was requested
   // TODO: I don't think diagnostics should "request" a pack size.
   //       Diags should work with whatever the AD is storing.
@@ -81,10 +83,13 @@ set_required_field_impl (const Field& f) {
   //       is not compatible with the field alloc props.
   for (const auto& r : get_field_requests()) {
     if (r.fid.name()==f.name()) {
+      EKAT_REQUIRE_MSG(not (r.usage & Computed),
+          "Error! Diagnostics are not allowed to compute fields.\n"
+          " - diag name: " + name() + ".\n");
       const auto& fap = f.get_header().get_alloc_properties();
       EKAT_REQUIRE_MSG (fap.get_largest_pack_size()>=r.pack_size,
           "Error! Diagnostic input field cannot accommodate the needed pack size.\n"
-          "  - diag field: " + m_diagnostic_output.name() + "\n"
+          "  - diag name: " + name() + "\n"
           "  - input field: " + f.name() + "\n"
           "  - requested pack size: " + std::to_string(r.pack_size) + "\n"
           "  - field max pack size: " + std::to_string(fap.get_largest_pack_size()) + "\n");
@@ -93,14 +98,17 @@ set_required_field_impl (const Field& f) {
   }
 }
 
-void AtmosphereDiagnostic::
-set_computed_field_impl (const Field& /* f */) {
-  EKAT_ERROR_MSG("Error! Diagnostics are not allowed to compute fields. See " + name() + ".\n");
-}
-
-void AtmosphereDiagnostic::
-set_computed_group_impl (const FieldGroup& /* group */) {
-  EKAT_ERROR_MSG("Error! Diagnostics are not allowed to compute field groups. See " + name() + ".\n");
+void AtmosphereDiagnostic::set_group_impl (const FieldGroup& group)
+{
+  // Check this is NOT a computed group
+  for (const auto& r : get_group_requests()) {
+    if (r.name==group.m_info->m_group_name and r.grid==group.grid_name()) {
+      EKAT_REQUIRE_MSG(not (r.usage & Computed),
+          "Error! Diagnostics are not allowed to compute fields.\n"
+          " - diag name: " + name() + ".\n");
+      break;
+    }
+  }
 }
 
 } // namespace scream

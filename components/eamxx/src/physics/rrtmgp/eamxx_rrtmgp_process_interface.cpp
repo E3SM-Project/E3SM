@@ -525,11 +525,11 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0, 500.0,false);
 
   // VMR of n2 and co is currently prescribed as a constant value, read from file
-  if (has_computed_field("n2_volume_mix_ratio",m_grid->name())) {
+  if (has_field("n2_volume_mix_ratio",m_grid->name(),Computed)) {
     auto n2_vmr = get_field_out("n2_volume_mix_ratio").get_view<Real**>();
     Kokkos::deep_copy(n2_vmr, m_params.get<double>("n2vmr", 0.7906));
   }
-  if (has_computed_field("co_volume_mix_ratio",m_grid->name())) {
+  if (has_field("co_volume_mix_ratio",m_grid->name(),Computed)) {
     auto co_vmr = get_field_out("co_volume_mix_ratio").get_view<Real**>();
     Kokkos::deep_copy(co_vmr, m_params.get<double>("covmr", 1.0e-7));
   }

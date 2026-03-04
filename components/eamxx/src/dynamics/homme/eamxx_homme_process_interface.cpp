@@ -538,7 +538,7 @@ void HommeDynamics::finalize_impl (/* what inputs? */)
 }
 
 
-void HommeDynamics::set_computed_group_impl (const FieldGroup& group)
+void HommeDynamics::set_group_impl (const FieldGroup& group)
 {
   const auto& c = Homme::Context::singleton();
         auto& tracers = c.get<Homme::Tracers>();

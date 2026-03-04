@@ -118,7 +118,7 @@ protected:
   // In particular, we absolutely need to store it *before* the call to
   // requested_buffer_size_in_bytes, where Homme::ForcingFunctor queries
   // Homme::Tracers for qsize.
-  void set_computed_group_impl (const FieldGroup& group);
+  void set_group_impl (const FieldGroup& group);
 
   // Computes total number of bytes needed for local variables
   size_t requested_buffer_size_in_bytes() const;

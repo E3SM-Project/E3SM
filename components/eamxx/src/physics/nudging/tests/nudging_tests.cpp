@@ -19,10 +19,7 @@ create_nudging (const ekat::Comm& comm,
   nudging->set_grids(gm);
   for (const auto& req : nudging->get_field_requests()) {
     auto f = fm->get_field(req.fid.name());
-    if (req.usage & Required)
-      nudging->set_required_field(f.get_const());
-    if (req.usage & Computed)
-      nudging->set_computed_field(f);
+    nudging->set_field(f);
   }
   nudging->initialize(t0,RunType::Initial);
 

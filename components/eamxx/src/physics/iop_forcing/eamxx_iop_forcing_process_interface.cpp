@@ -57,7 +57,7 @@ IOPForcing::create_requests()
 }
 // =========================================================================================
 void IOPForcing::
-set_computed_group_impl (const FieldGroup& group)
+set_group_impl (const FieldGroup& group)
 {
   EKAT_REQUIRE_MSG(group.m_info->size() >= 1,
                    "Error! IOPForcing requires at least qv as tracer input.\n");

@@ -139,8 +139,8 @@ TEST_CASE("vert_derivative") {
     diag1_m.sync_to_dev();
 
     // Calculate weighted avg through diagnostics
-    dp_vert_derivative->set_required_field(fin2);
-    dp_vert_derivative->set_required_field(dp);
+    dp_vert_derivative->set_field(fin2);
+    dp_vert_derivative->set_field(dp);
     dp_vert_derivative->initialize(t0, RunType::Initial);
     dp_vert_derivative->compute_diagnostic();
     auto dp_vert_derivative_f = dp_vert_derivative->get_diagnostic();

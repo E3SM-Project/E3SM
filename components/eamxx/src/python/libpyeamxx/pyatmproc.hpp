@@ -59,15 +59,10 @@ struct PyAtmProc {
 
   void create_fields () {
     // Create  fields that are input/output to the atm proc
-    for (const auto& req : ap->get_required_field_requests()) {
+    for (const auto& req : ap->get_field_requests()) {
       const auto& fn = req.fid.name();
       auto it_bool = fields.emplace(fn,PyField(req.fid,req.pack_size));
-      ap->set_required_field(it_bool.first->second.f.get_const());
-    }
-    for (const auto& req : ap->get_computed_field_requests()) {
-      const auto& fn = req.fid.name();
-      auto it_bool = fields.emplace(fn,PyField(req.fid,req.pack_size));
-      ap->set_computed_field(it_bool.first->second.f);
+      ap->set_field(it_bool.first->second.f);
     }
   }
 

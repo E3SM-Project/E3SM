@@ -86,8 +86,8 @@ TEST_CASE("aodvis") {
     ekat::ParameterList params;
     auto diag = diag_factory.create("AerosolOpticalDepth550nm", comm, params);
     diag->set_grids(gm);
-    diag->set_required_field(tau);
-    diag->set_required_field(sunlit);
+    diag->set_field(tau);
+    diag->set_field(sunlit);
     diag->initialize(t0, RunType::Initial);
 
     auto sun_h = sunlit.get_view<Real *, Host>();

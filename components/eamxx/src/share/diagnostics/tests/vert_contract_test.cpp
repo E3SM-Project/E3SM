@@ -193,8 +193,8 @@ TEST_CASE("vert_contract") {
     vert_contraction(diag1_m, fin2, dp_scaled);
 
     // Calculate weighted avg through diagnostics
-    dp_weighted_avg->set_required_field(fin2);
-    dp_weighted_avg->set_required_field(dp);
+    dp_weighted_avg->set_field(fin2);
+    dp_weighted_avg->set_field(dp);
     dp_weighted_avg->initialize(t0, RunType::Initial);
     dp_weighted_avg->compute_diagnostic();
     auto dp_weighted_avg_f = dp_weighted_avg->get_diagnostic();
@@ -206,8 +206,8 @@ TEST_CASE("vert_contract") {
     // calculate weighted sum directly
     vert_contraction(diag2_m, fin3, dp_scaled);
     // Calculate weighted sum through diagnostics
-    dp_weighted_sum->set_required_field(fin3);
-    dp_weighted_sum->set_required_field(dp);
+    dp_weighted_sum->set_field(fin3);
+    dp_weighted_sum->set_field(dp);
     dp_weighted_sum->initialize(t0, RunType::Initial);
     dp_weighted_sum->compute_diagnostic();
     auto dp_weighted_sum_f = dp_weighted_sum->get_diagnostic();
@@ -220,7 +220,7 @@ TEST_CASE("vert_contract") {
     vert_contraction(diag1_m, fin2, dp_ones);
 
     // Calculate unweighted sum through diagnostics
-    unweighted_sum->set_required_field(fin2);
+    unweighted_sum->set_field(fin2);
     unweighted_sum->initialize(t0, RunType::Initial);
     unweighted_sum->compute_diagnostic();
     auto unweighted_sum_f = unweighted_sum->get_diagnostic();
@@ -243,7 +243,7 @@ TEST_CASE("vert_contract") {
     // calculate unweighted avg directly
     vert_contraction(diag2_m, fin3, dp_ones_scaled);
     // Calculate unweighted avg through diagnostics
-    unweighted_avg->set_required_field(fin3);
+    unweighted_avg->set_field(fin3);
     unweighted_avg->initialize(t0, RunType::Initial);
     unweighted_avg->compute_diagnostic();
     auto unweighted_avg_f = unweighted_avg->get_diagnostic();

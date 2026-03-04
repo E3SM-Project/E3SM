@@ -114,8 +114,8 @@ TEST_CASE("field_at_height")
     pl.set("grid_name",grid->name());
     auto diag = factory.create("FieldAtheight",comm,pl);
     diag->set_grids(gm);
-    diag->set_required_field(f);
-    diag->set_required_field(z);
+    diag->set_field(f);
+    diag->set_field(z);
     diag->initialize(t0,RunType::Initial);
     diag->compute_diagnostic();
     diag->get_diagnostic().sync_to_host();
