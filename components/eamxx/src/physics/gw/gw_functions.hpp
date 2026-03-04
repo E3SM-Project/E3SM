@@ -26,15 +26,8 @@ struct Functions
   using Scalar = ScalarT;
   using Device = DeviceT;
 
-  template <typename S> using BigPack = ekat::Pack<S,SCREAM_PACK_SIZE>;
-  template <typename S> using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
-
-  using SPackInt = SmallPack<Int>;
-  using Pack = BigPack<Scalar>;
-  using Spack = SmallPack<Scalar>;
-
-  using Mask = ekat::Mask<BigPack<Scalar>::n>;
-  using Smask = ekat::Mask<SmallPack<Scalar>::n>;
+  using Pack    = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
+  using IntPack = ekat::Pack<Int,SCREAM_PACK_SIZE>;
 
   using KT = KokkosTypes<Device>;
 
@@ -118,7 +111,7 @@ struct Functions
       use_gw_orographic = params.get<bool>("use_gw_orographic", use_gw_orographic);
       gw_drag_file      = params.get<std::string>("gw_drag_file", gw_drag_file);
       pgwv              = params.get<int>("pgwv", pgwv);
-      dc                = params.get<Real>("gw_dc", gw_dc);
+      dc                = params.get<Real>("gw_dc", dc);
       tau_0_ubc         = params.get<bool>("tau_0_ubc", tau_0_ubc);
       fcrit2            = params.get<Real>("fcrit2", fcrit2);
       gw_orographic_eff = params.get<Real>("gw_orographic_eff", gw_orographic_eff);
@@ -159,6 +152,7 @@ struct Functions
   struct GwFrontInit {
     GwFrontInit() : initialized(false) {}
     bool initialized;   // Tell us if initialize has been called
+    Real taubgnd;       // Background stress source strength for frontal GW scheme
     Real frontgfc;      // Frontogenesis function critical threshold
     Int kfront;         // Level to check frontogenesis func to launch waves
     view_1d<Real> fav;  // Avg of gaussian over gw spectrum bins, mult. by BG source strength (taubgnd)
