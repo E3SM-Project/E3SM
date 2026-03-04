@@ -25,7 +25,7 @@ create_requests()
   auto vector3d = grid->get_3d_vector_layout(true,2);
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("horiz_winds", vector3d, Pa, grid_name);
+  add_field<Required>("horiz_winds", vector3d, m/s, grid_name);
 
   // Construct and allocate the 3d wind_speed field
   FieldIdentifier fid (name(), scalar3d, m/s, grid_name);
