@@ -278,13 +278,8 @@ void AtmosphereProcess::set_field (const Field& f)
   const auto& fid = f.get_header().get_identifier();
   RequestType usage = Invalid;
   for (const auto& r : m_field_requests) {
-    bool same = r.incomplete
-              ? fid.name()==r.fid.name() and fid.get_grid_name()==r.fid.get_grid_name()
-              : fid==r.fid;
-    if (same) {
-      usage = r.usage;
-      break;
-    }
+    if (fid.name()==r.fid.name() and fid.get_grid_name()==r.fid.get_grid_name())
+      usage |= r.usage;
   }
 
   // Sanity check
@@ -315,7 +310,10 @@ void AtmosphereProcess::set_field (const Field& f)
   }
 
   // If we don't claim to compute the field, provide the read-only field to the derived class.
-  set_field_impl (usage & Computed ? f : f.get_const());
+  // Atm proc groups need to get the non-const field itself, as they will call set_field on the
+  // individual procs, and the base Atm proc class will then take care of getting the const-nonconst
+  auto f_for_impl = (usage & Computed) or type()==AtmosphereProcessType::Group ? f : f.get_const();
+  set_field_impl (f_for_impl);
 
   add_py_fields(f);
 }
@@ -327,8 +325,7 @@ void AtmosphereProcess::set_group (const FieldGroup& group)
   const auto& grid = group.grid_name();
   for (const auto& r : m_group_requests) {
     if (r.name==name and r.grid==grid) {
-      usage = r.usage;
-      break;
+      usage |= r.usage;
     }
   }
   // Sanity check
@@ -368,7 +365,10 @@ void AtmosphereProcess::set_group (const FieldGroup& group)
   }
 
   // If we don't claim to compute the group, provide the read-only group to the derived class.
-  set_group_impl (usage & Computed ? group : group.get_const());
+  // Atm proc groups need to get the non-const group itself, as they will call set_group on the
+  // individual procs, and the base Atm proc class will then take care of getting the const-nonconst
+  auto g_for_impl = (usage & Computed) or type()==AtmosphereProcessType::Group ? group : group.get_const();
+  set_group_impl (g_for_impl);
 
   add_py_fields(group);
 }
