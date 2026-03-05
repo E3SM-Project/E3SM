@@ -154,10 +154,7 @@ void IOPForcing::
 advance_iop_subsidence (const MemberType& team,
                         const int nlevs,
                         const Real dt,
-                        const Real ps,
                         const view_1d<const Pack>& ref_p_mid,
-                        const view_1d<const Pack>& ref_p_int,
-                        const view_1d<const Pack>& ref_p_del,
                         const view_1d<const Pack>& omega,
                         const Workspace& workspace,
                         const view_1d<Pack>& u,
@@ -374,7 +371,7 @@ void IOPForcing::run_impl (const double dt)
 
     if (iop_dosubsidence) {
     // Compute subsidence due to large-scale forcing
-      advance_iop_subsidence(team, num_levs, dt, ps_i, ref_p_mid, ref_p_int, ref_p_del, omega, ws, u_i, v_i, T_mid_i, Q_i, interp_local);
+      advance_iop_subsidence(team, num_levs, dt, ref_p_mid, omega, ws, u_i, v_i, T_mid_i, Q_i, interp_local);
     }
 
     // Update T and qv according to large scale forcing as specified in IOP file.
