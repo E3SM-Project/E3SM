@@ -169,10 +169,8 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
 
    const Array2DReal &PressureMid       = VCoord->PressureMid;
    const Array2DReal &PressureInterface = VCoord->PressureInterface;
-   const Array2DReal &Geopotential      = VCoord->GeopotentialMid;
    const Array2DReal &SpecVol           = EqState->SpecVol;
    const Array2DReal &ZInterface        = VCoord->ZInterface;
-   const Array2DReal &ZMid              = VCoord->ZMid;
    Array2DReal LayerThick               = State->getLayerThickness(TimeLevel);
 
    if (PressureGradChoice == PressureGradType::Centered) {

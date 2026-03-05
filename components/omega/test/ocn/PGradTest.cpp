@@ -87,7 +87,6 @@ void initPGradTest() {
 
 int main(int argc, char *argv[]) {
    int RetVal = 0;
-   int Err;
 
    MPI_Init(&argc, &argv);
    Kokkos::initialize();
@@ -99,13 +98,10 @@ int main(int argc, char *argv[]) {
       // Initialize default PressureGrad
       PressureGrad::init();
 
-      MachEnv *DefEnv      = MachEnv::getDefault();
       HorzMesh *DefMesh    = HorzMesh::getDefault();
       VertCoord *VCoord    = VertCoord::getDefault();
       OceanState *DefState = OceanState::getDefault();
-      Decomp *DefDecomp    = Decomp::getDefault();
       Eos *DefEos          = Eos::getInstance();
-      Config *Options      = Config::getOmegaConfig();
 
       // create arrays: Tend on edges, Pressure/Geopotential/SpecVol on cells
       Array2DReal Tend("Tend", DefMesh->NEdgesSize, VCoord->NVertLayers);
@@ -147,7 +143,6 @@ int main(int argc, char *argv[]) {
 
          auto &CellsOnEdge = DefMesh->CellsOnEdge;
          auto &DcEdge      = DefMesh->DcEdge;
-         auto &EdgeMask    = VCoord->EdgeMask;
          parallelFor(
              {NEdgesAll}, KOKKOS_LAMBDA(int i) {
                 CellsOnEdge(i, 0) = 0;
