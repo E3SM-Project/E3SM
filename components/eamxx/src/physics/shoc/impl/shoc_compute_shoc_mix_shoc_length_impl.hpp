@@ -13,13 +13,13 @@ void Functions<S,D>
   const MemberType&            team,
   const Int&                   nlev,
   const Scalar&                length_fac,
-  const uview_1d<const Spack>& tke,
-  const uview_1d<const Spack>& brunt,
-  const uview_1d<const Spack>& zt_grid,
+  const uview_1d<const Pack>& tke,
+  const uview_1d<const Pack>& brunt,
+  const uview_1d<const Pack>& zt_grid,
   const Scalar&                l_inf,
-  const uview_1d<Spack>&       shoc_mix)
+  const uview_1d<Pack>&       shoc_mix)
 {
-  const Int nlev_pack = ekat::npack<Spack>(nlev);
+  const Int nlev_pack = ekat::npack<Pack>(nlev);
   const auto maxlen = scream::shoc::Constants<Scalar>::maxlen;
   const auto vk = C::Karman;
 
@@ -27,8 +27,8 @@ void Functions<S,D>
   const Scalar tscale = 400;
 
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
-    const Spack tkes = ekat::sqrt(tke(k));
-    const Spack brunt2 = ekat::max(0, brunt(k));
+    const Pack tkes = ekat::sqrt(tke(k));
+    const Pack brunt2 = ekat::max(0, brunt(k));
 
     shoc_mix(k) = ekat::min(maxlen,
                             sp(2.8284)*(ekat::sqrt(1/((1/(tscale*tkes*vk*zt_grid(k)))

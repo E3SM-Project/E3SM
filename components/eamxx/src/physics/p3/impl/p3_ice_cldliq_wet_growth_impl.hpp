@@ -12,11 +12,11 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_cldliq_wet_growth(
-  const Spack& rho, const Spack& temp, const Spack& pres, const Spack& rhofaci, const Spack& table_val_qi2qr_melting,
-  const Spack& table_val_qi2qr_vent_melt, const Spack& dv,
-  const Spack& kap, const Spack& mu, const Spack& sc, const Spack& qv, const Spack& qc_incld,
-  const Spack& qi_incld, const Spack& ni_incld, const Spack& qr_incld,
-  Smask& log_wetgrowth, Spack& qr2qi_collect_tend, Spack& qc2qi_collect_tend, Spack& qc_growth_rate, Spack& nr_ice_shed_tend, Spack& qc2qr_ice_shed_tend, const Smask& context)
+  const Pack& rho, const Pack& temp, const Pack& pres, const Pack& rhofaci, const Pack& table_val_qi2qr_melting,
+  const Pack& table_val_qi2qr_vent_melt, const Pack& dv,
+  const Pack& kap, const Pack& mu, const Pack& sc, const Pack& qv, const Pack& qc_incld,
+  const Pack& qi_incld, const Pack& ni_incld, const Pack& qr_incld,
+  Mask& log_wetgrowth, Pack& qr2qi_collect_tend, Pack& qc2qi_collect_tend, Pack& qc_growth_rate, Pack& nr_ice_shed_tend, Pack& qc2qr_ice_shed_tend, const Mask& context)
 {
   using physics = scream::physics::Functions<Scalar, Device>;
 
@@ -37,11 +37,11 @@ void Functions<S,D>
   const auto any_if     = qi_incld_ge_small && qc_qr_incld_ge_small && t_is_negative && context;
   const auto any_if_col = any_if && qc2qi_collect_tend_qr2qi_collect_tend_ge_small && context;
 
-  const Spack zerodeg{tmelt};
+  const Pack zerodeg{tmelt};
 
-  Spack qsat0{0.};
-  Spack dum{0.};
-  Spack dum1{0.};
+  Pack qsat0{0.};
+  Pack dum{0.};
+  Pack dum1{0.};
 
   if (any_if.any()) {
     qsat0 = physics::qv_sat_dry( zerodeg,pres, false, context, physics::MurphyKoop, "p3::ice_cldliq_wet_growth" );

@@ -16,14 +16,14 @@ void Functions<S,D>
   const Scalar&                length_fac,
   const Scalar&                dx,
   const Scalar&                dy,
-  const uview_1d<const Spack>& zt_grid,
-  const uview_1d<const Spack>& zi_grid,
-  const uview_1d<const Spack>& dz_zt,
-  const uview_1d<const Spack>& tke,
-  const uview_1d<const Spack>& thv,
+  const uview_1d<const Pack>& zt_grid,
+  const uview_1d<const Pack>& zi_grid,
+  const uview_1d<const Pack>& dz_zt,
+  const uview_1d<const Pack>& tke,
+  const uview_1d<const Pack>& thv,
   const Workspace&             workspace,
-  const uview_1d<Spack>&       brunt,
-  const uview_1d<Spack>&       shoc_mix)
+  const uview_1d<Pack>&       brunt,
+  const uview_1d<Pack>&       shoc_mix)
 {
   // Define temporary variable
   auto thv_zi = workspace.take("thv_zi");

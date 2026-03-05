@@ -13,11 +13,11 @@ namespace p3 {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::nc_conservation(const Spack& nc, const Spack& nc_selfcollect_tend, const Real& dt, Spack& nc_collect_tend, 
-Spack& nc2ni_immers_freeze_tend, Spack& nc_accret_tend, Spack& nc2nr_autoconv_tend, Spack& ncheti_cnt, Spack& nicnt, 
-const bool& use_hetfrz_classnuc, const Smask& context)
+void Functions<S,D>::nc_conservation(const Pack& nc, const Pack& nc_selfcollect_tend, const Real& dt, Pack& nc_collect_tend, 
+Pack& nc2ni_immers_freeze_tend, Pack& nc_accret_tend, Pack& nc2nr_autoconv_tend, Pack& ncheti_cnt, Pack& nicnt, 
+const bool& use_hetfrz_classnuc, const Mask& context)
 {
-  Spack sink_nc;
+  Pack sink_nc;
   if (use_hetfrz_classnuc){
     sink_nc = (nc_collect_tend + ncheti_cnt + nc_accret_tend + nc2nr_autoconv_tend + nicnt)*dt;
   }

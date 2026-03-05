@@ -16,17 +16,17 @@ namespace shoc {
 template<typename S, typename D>
 KOKKOS_INLINE_FUNCTION
 void Functions<S,D>::shoc_assumed_pdf_compute_cloud_liquid_variance(
-  const Spack& a,
-  const Spack& s1,
-  const Spack& ql1,
-  const Spack& C1,
-  const Spack& std_s1,
-  const Spack& s2,
-  const Spack& ql2,
-  const Spack& C2,
-  const Spack& std_s2,
-  const Spack& shoc_ql,
-  Spack&       shoc_ql2)
+  const Pack& a,
+  const Pack& s1,
+  const Pack& ql1,
+  const Pack& C1,
+  const Pack& std_s1,
+  const Pack& s2,
+  const Pack& ql2,
+  const Pack& C2,
+  const Pack& std_s2,
+  const Pack& shoc_ql,
+  Pack&       shoc_ql2)
 {
   shoc_ql2 = ekat::max(0, a*(s1*ql1 + C1*ekat::square(std_s1))
                           + (1 - a)*(s2*ql2 + C2*ekat::square(std_s2))

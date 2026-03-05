@@ -9,7 +9,7 @@
 
 namespace scream {
 
-const int packsize = SCREAM_SMALL_PACK_SIZE;
+const int packsize = SCREAM_PACK_SIZE;
 using Pack         = ekat::Pack<Real,packsize>;
 
 std::shared_ptr<GridsManager>

@@ -11,7 +11,7 @@ set(MACROS_DIR ${CASEROOT}/cmake_macros)
 set(UNIVERSAL_MACRO ${MACROS_DIR}/universal.cmake)
 set(COMPILER_MACRO ${MACROS_DIR}/${COMPILER}.cmake)
 set(MACHINE_MACRO ${MACROS_DIR}/${MACH}.cmake)
-set(COMPILER_MACHINE_MACRO ${MACROS_DIR}/${COMPILER}_${MACH}.cmake)
+set(COMPILER_MACHINE_MACRO ${MACROS_DIR}/${MACH}_${COMPILER}.cmake)
 set(POST_PROCESS_MACRO ${SRCROOT}/cime_config/machines/cmake_macros/post_process.cmake)
 
 if (CONVERT_TO_MAKE)

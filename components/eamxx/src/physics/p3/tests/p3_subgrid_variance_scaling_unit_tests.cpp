@@ -61,7 +61,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling : public UnitWrap::Un
 
         RangePolicy my_policy(0,1);
         Kokkos::parallel_for(my_policy,KOKKOS_LAMBDA(int /* i */){
-            Spack scalings = Functions::subgrid_variance_scaling(Spack(relvar),expon );
+            Pack scalings = Functions::subgrid_variance_scaling(Pack(relvar),expon );
 
             //all elements of scalings are identical. just copy 1 back to host.
             scaling_device(0) = scalings[0];
@@ -89,8 +89,8 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling : public UnitWrap::Un
     Scalar tol = C::macheps * 1e3; //1e3 is scale factor to make pass, essentially an estimate of numerical error
 
     //Get value from C++ code
-    const Spack relvars(relvar);
-    Spack c_scaling = Functions::subgrid_variance_scaling(relvars,1.0);
+    const Pack relvars(relvar);
+    Pack c_scaling = Functions::subgrid_variance_scaling(relvars,1.0);
 
     if ( std::abs(c_scaling[0] -  1) > tol ){
       Kokkos::printf("subgrid_variance_scaling should be 1 for expon=1, but is %e. "
@@ -105,8 +105,8 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling : public UnitWrap::Un
     Scalar tol = C::macheps * 1e3; //1e3 is scale factor to make pass, essentially an estimate of numerical error
 
     //Get value from C++ code
-    const Spack ones(1);
-    Spack c_scaling = Functions::subgrid_variance_scaling(ones,4.0);
+    const Pack ones(1);
+    Pack c_scaling = Functions::subgrid_variance_scaling(ones,4.0);
 
     Real fact = std::tgamma(5.0); //factorial(n) = gamma(n+1)
 
@@ -129,10 +129,10 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling : public UnitWrap::Un
                                      9.1,9.5,9.8,10.};
 
   for (Int s = 0; s < 16; ++s) {
-    Spack relvars=Spack(relvar_info[s]);
+    Pack relvars=Pack(relvar_info[s]);
 
     //Get value from C++ code
-    Spack c_scaling = Functions::subgrid_variance_scaling(relvars,3.0);
+    Pack c_scaling = Functions::subgrid_variance_scaling(relvars,3.0);
 
     //Get analytic expected value
     Real targ=1+3/relvar_info[s] + 2/std::pow(relvar_info[s],2.0);
@@ -161,7 +161,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling : public UnitWrap::Un
      */
     int nerr = 0;
 
-    //functions below use Spack size <16 but can't deal w/ exceptions on GPU, so do it here.
+    //functions below use Pack size <16 but can't deal w/ exceptions on GPU, so do it here.
     auto policy = TPF::get_default_team_policy(1, 1);
     Kokkos::parallel_reduce("SGSvarScaling::run", policy,
       KOKKOS_LAMBDA(const MemberType& /* team */, int& errors) {

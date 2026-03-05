@@ -76,6 +76,11 @@ class MAMMicrophysics final : public MAMGenericInterface {
   double m_orbital_mvelp;  // Vernal Equinox Mean Longitude of Perihelion
 
   struct Config {
+    // Number of so4(+nh4) monolayers needed to "age" a carbon particle.
+    // In E3SM this is read in from an input file and is 8 by default.
+    // From input parameter mam4_number_so4_monolayers_to_age_carbon_particle
+    unsigned n_so4_monolayers_pcage = 8;
+
     // stratospheric chemistry parameters
     mam4::microphysics::LinozConf linoz;
 
