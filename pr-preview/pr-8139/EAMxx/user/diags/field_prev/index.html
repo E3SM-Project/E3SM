@@ -15,7 +15,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
     
     
       
@@ -4669,9 +4669,22 @@ requests:</p>
 the saved value is written to output. This means <code>X_prev</code> always reflects the
 state of <code>X</code> at the beginning of the current timestep (i.e., before any
 processes have modified it in the current step).</p>
-<p>On the very first diagnostic evaluation — before <code>init_timestep</code> has been
-called — the output is filled with the standard EAMxx fill value
-(<code>constants::fill_value&lt;Real&gt;</code>).</p>
+<p><strong>First-step initialisation for derived diagnostics</strong></p>
+<p>When <code>X</code> is itself a computed diagnostic (rather than a raw model field) it
+may not have been evaluated yet when <code>init_timestep</code> runs at the start of the
+first step.  In that case the <code>init_timestep</code> call does nothing (the source
+has no valid timestamp, so there is nothing to capture).</p>
+<p>By the time <code>compute_diagnostic</code> is called — during the output phase, after
+model physics and prerequisite diagnostics have been evaluated — <code>X</code> will have
+a valid timestamp.  The diagnostic then uses the current value of <code>X</code> as a
+stand-in for "X at t=0", producing:</p>
+<div class="highlight"><pre><span></span><code>X_prev = X(t=0)   →   X − X_prev = 0 on the first step
+</code></pre></div>
+<p>This conservative initialisation prevents fill-value contamination from
+propagating into downstream arithmetic (e.g. products of fill-value-sized
+numbers overflow to Inf in single precision).</p>
+<p>From the second step onward <code>X_prev</code> reflects the normally captured
+start-of-step value.</p>
 <h2 id="example">Example</h2>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">  </span><span class="c1"># T_mid has units K</span>
@@ -4687,7 +4700,7 @@ called — the output is filled with the standard EAMxx fill value
   model fields are resolved before diagnostics are considered.</li>
 <li>Only fields with <code>Real</code> data type are supported.</li>
 </ul>
-<p>Contact developers on github if you have additional questions.</p>
+<p>Contact developers on GitHub if you have additional questions.</p>
 
 
 

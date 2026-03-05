@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
     
     
       
@@ -4990,11 +4990,13 @@ Use <code>alias:=:original</code> (note the extra colon) to declare such fields:
 <p><code>MyDiag</code> is created and registered in the internal field manager so that
 <code>MyDiagSqrd</code> can depend on it, but it does not appear in the output file.
 Only <code>MyDiagSqrd</code> is written.</p>
-<p>Rules:
-- A name declared with <code>:=:</code> must not also appear as a regular output field.
-- The same alias name cannot be used for both <code>:=:</code> and <code>:=</code>.
-- The expression after <code>:=:</code> is resolved with the same composable-diagnostic
-  parser as any other field name.</p>
+<p>Rules:</p>
+<ul>
+<li>A name declared with <code>:=:</code> must not also appear as a regular output field.</li>
+<li>The same alias name cannot be used for both <code>:=:</code> and <code>:=</code>.</li>
+<li>The expression after <code>:=:</code> is resolved with the same composable-diagnostic
+  parser as any other field name.</li>
+</ul>
 <h2 id="caveats">Caveats</h2>
 <p>Currently, a field can be requested only once in a single stream,
 but we do allow requesting the same field again but with an alias</p>
