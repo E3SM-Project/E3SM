@@ -2366,10 +2366,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#intermediate-only-fields-syntax" class="md-nav__link">
+  <a href="#intermediate-only-fields-aliases-section" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Intermediate-only fields (:=: syntax)
+        Intermediate-only fields (aliases section)
       
     </span>
   </a>
@@ -4799,10 +4799,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#intermediate-only-fields-syntax" class="md-nav__link">
+  <a href="#intermediate-only-fields-aliases-section" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Intermediate-only fields (:=: syntax)
+        Intermediate-only fields (aliases section)
       
     </span>
   </a>
@@ -4979,23 +4979,27 @@ are preserved from the original fields, and <code>alias_of</code>
 is added to the netcdf files to document aliasing</p>
 </li>
 </ol>
-<h2 id="intermediate-only-fields-syntax">Intermediate-only fields (<code>:=:</code> syntax)</h2>
+<h2 id="intermediate-only-fields-aliases-section">Intermediate-only fields (<code>aliases</code> section)</h2>
 <p>Sometimes a diagnostic is only needed as a building block for another
 diagnostic, and you do not want it written to the NetCDF output file.
-Use <code>alias:=:original</code> (note the extra colon) to declare such fields:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;MyDiag:=:T_mid_times_p_mid&quot;</span><span class="w">   </span><span class="c1"># computed but NOT written to NC</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;MyDiagSqrd:=MyDiag_times_MyDiag&quot;</span><span class="w">  </span><span class="c1"># uses MyDiag; IS written to NC</span>
+Declare such fields in an <code>aliases</code> subsection of the per-grid block:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">fields</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">physics_pg2</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">aliases</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;MyDiag:=T_mid_times_p_mid&quot;</span><span class="w">       </span><span class="c1"># computed but NOT written to NC</span>
+<span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;MyDiagSqrd:=MyDiag_times_MyDiag&quot;</span><span class="w"> </span><span class="c1"># uses MyDiag; IS written to NC</span>
 </code></pre></div>
 <p><code>MyDiag</code> is created and registered in the internal field manager so that
 <code>MyDiagSqrd</code> can depend on it, but it does not appear in the output file.
 Only <code>MyDiagSqrd</code> is written.</p>
+<p>The <code>aliases</code> section uses the same <code>alias:=original</code> syntax as
+<code>field_names</code> entries, and the expression on the right-hand side is
+resolved with the same composable-diagnostic parser.</p>
 <p>Rules:</p>
 <ul>
-<li>A name declared with <code>:=:</code> must not also appear as a regular output field.</li>
-<li>The same alias name cannot be used for both <code>:=:</code> and <code>:=</code>.</li>
-<li>The expression after <code>:=:</code> is resolved with the same composable-diagnostic
-  parser as any other field name.</li>
+<li>A name declared in <code>aliases</code> must not also appear in <code>field_names</code>.</li>
+<li>The same alias name cannot appear in both <code>aliases</code> and <code>field_names</code>.</li>
 </ul>
 <h2 id="caveats">Caveats</h2>
 <p>Currently, a field can be requested only once in a single stream,

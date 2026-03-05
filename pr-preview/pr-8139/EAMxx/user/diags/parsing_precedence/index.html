@@ -4748,29 +4748,34 @@ resolved as <code>FieldPrevDiag(X)</code>.  A bare <code>X_prev</code> (no opera
 still resolves as <code>FieldPrevDiag(X)</code> because <code>binary_ops</code> does not match
 (there is no operator keyword in the string).</p>
 <h2 id="worked-example-the-bt-family">Worked example: the <code>bt</code> family</h2>
-<div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">  </span><span class="c1"># bt1 = atmospheric backward tendency of f</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bt1:=f_minus_f_prev_over_dt</span>
-<span class="w">  </span><span class="c1"># Parsing:</span>
-<span class="w">  </span><span class="c1">#   _over_dt suffix matched first → FieldOverDtDiag( f_minus_f_prev )</span>
-<span class="w">  </span><span class="c1">#   f_minus_f_prev → BinaryOpsDiag( f, minus, f_prev )</span>
-<span class="w">  </span><span class="c1">#   f_prev → FieldPrevDiag( f )</span>
-<span class="w">  </span><span class="c1"># Result: (f(t1) − f(t0)) / (t1 − t0)</span>
+<div class="highlight"><pre><span></span><code><span class="nt">fields</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">physics_pg2</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">aliases</span><span class="p">:</span>
+<span class="w">      </span><span class="c1"># bt1 is an intermediate — needed by bt2 and bt_prod but not written to NC</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bt1:=f_minus_f_prev_over_dt</span>
+<span class="w">      </span><span class="c1"># Parsing:</span>
+<span class="w">      </span><span class="c1">#   _over_dt suffix matched first → FieldOverDtDiag( f_minus_f_prev )</span>
+<span class="w">      </span><span class="c1">#   f_minus_f_prev → BinaryOpsDiag( f, minus, f_prev )</span>
+<span class="w">      </span><span class="c1">#   f_prev → FieldPrevDiag( f )</span>
+<span class="w">      </span><span class="c1"># Result: (f(t1) − f(t0)) / (t1 − t0)</span>
 
-<span class="w">  </span><span class="c1"># bt2 = tendency of the tendency</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bt2:=bt1_minus_bt1_prev</span>
-<span class="w">  </span><span class="c1"># Only one &quot;minus&quot; token → BinaryOpsDiag( bt1, minus, bt1_prev )</span>
-<span class="w">  </span><span class="c1"># bt1_prev → FieldPrevDiag( bt1 )</span>
+<span class="w">      </span><span class="c1"># bt2 = tendency of the tendency (also intermediate)</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bt2:=bt1_minus_bt1_prev</span>
+<span class="w">      </span><span class="c1"># Only one &quot;minus&quot; token → BinaryOpsDiag( bt1, minus, bt1_prev )</span>
+<span class="w">      </span><span class="c1"># bt1_prev → FieldPrevDiag( bt1 )</span>
 
-<span class="w">  </span><span class="c1"># bt_prod = product of the two tendencies</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bt_prod:=bt1_times_bt2</span>
+<span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
+<span class="w">      </span><span class="c1"># bt_prod = product of the two tendencies — IS written to NC</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bt_prod:=bt1_times_bt2</span>
 
-<span class="w">  </span><span class="c1"># bt_osc_count = indicator that bt_prod is negative (tendency oscillating)</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bt_osc_count:=count_where_bt_prod_lt_0</span>
-<span class="w">  </span><span class="c1"># ConditionalSampling: input=count, condition_field=bt_prod, op=lt, value=0</span>
+<span class="w">      </span><span class="c1"># bt_osc_count = indicator that bt_prod is negative (tendency oscillating)</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bt_osc_count:=count_where_bt_prod_lt_0</span>
+<span class="w">      </span><span class="c1"># ConditionalSampling: input=count, condition_field=bt_prod, op=lt, value=0</span>
 </code></pre></div>
-<p>The <code>:=</code> alias syntax names each sub-expression before composing further,
-giving you full control over evaluation order.</p>
+<p>The <code>aliases</code> section names intermediate sub-expressions that are needed
+as inputs to other diagnostics but should not appear in the output file.
+The <code>field_names</code> section lists what actually gets written to NetCDF.
+Use <code>:=</code> in both sections to give a convenient name to a complex expression.</p>
 <h2 id="avoiding-ambiguity">Avoiding ambiguity</h2>
 <p>Use <code>:=</code> aliases to break complex expressions into named sub-expressions.
 This is always clearer than relying on implicit precedence.</p>
