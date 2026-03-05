@@ -60,30 +60,35 @@ still resolves as `FieldPrevDiag(X)` because `binary_ops` does not match
 ## Worked example: the `bt` family
 
 ```yaml
-field_names:
-  # bt1 = atmospheric backward tendency of f
-  - bt1:=f_minus_f_prev_over_dt
-  # Parsing:
-  #   _over_dt suffix matched first → FieldOverDtDiag( f_minus_f_prev )
-  #   f_minus_f_prev → BinaryOpsDiag( f, minus, f_prev )
-  #   f_prev → FieldPrevDiag( f )
-  # Result: (f(t1) − f(t0)) / (t1 − t0)
+fields:
+  physics_pg2:
+    aliases:
+      # bt1 is an intermediate — needed by bt2 and bt_prod but not written to NC
+      - bt1:=f_minus_f_prev_over_dt
+      # Parsing:
+      #   _over_dt suffix matched first → FieldOverDtDiag( f_minus_f_prev )
+      #   f_minus_f_prev → BinaryOpsDiag( f, minus, f_prev )
+      #   f_prev → FieldPrevDiag( f )
+      # Result: (f(t1) − f(t0)) / (t1 − t0)
 
-  # bt2 = tendency of the tendency
-  - bt2:=bt1_minus_bt1_prev
-  # Only one "minus" token → BinaryOpsDiag( bt1, minus, bt1_prev )
-  # bt1_prev → FieldPrevDiag( bt1 )
+      # bt2 = tendency of the tendency (also intermediate)
+      - bt2:=bt1_minus_bt1_prev
+      # Only one "minus" token → BinaryOpsDiag( bt1, minus, bt1_prev )
+      # bt1_prev → FieldPrevDiag( bt1 )
 
-  # bt_prod = product of the two tendencies
-  - bt_prod:=bt1_times_bt2
+    field_names:
+      # bt_prod = product of the two tendencies — IS written to NC
+      - bt_prod:=bt1_times_bt2
 
-  # bt_osc_count = indicator that bt_prod is negative (tendency oscillating)
-  - bt_osc_count:=count_where_bt_prod_lt_0
-  # ConditionalSampling: input=count, condition_field=bt_prod, op=lt, value=0
+      # bt_osc_count = indicator that bt_prod is negative (tendency oscillating)
+      - bt_osc_count:=count_where_bt_prod_lt_0
+      # ConditionalSampling: input=count, condition_field=bt_prod, op=lt, value=0
 ```
 
-The `:=` alias syntax names each sub-expression before composing further,
-giving you full control over evaluation order.
+The `aliases` section names intermediate sub-expressions that are needed
+as inputs to other diagnostics but should not appear in the output file.
+The `field_names` section lists what actually gets written to NetCDF.
+Use `:=` in both sections to give a convenient name to a complex expression.
 
 ## Avoiding ambiguity
 

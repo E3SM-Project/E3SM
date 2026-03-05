@@ -220,6 +220,11 @@ protected:
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and
   // the global ids.
   strvec_t m_fields_names;
+  // Intermediate-only aliases declared in the 'aliases' YAML section.
+  // Each entry has the form "alias:=original". These fields are created and
+  // registered in the field manager so that other diagnostics can depend on
+  // them, but they are NOT written to the NC output file.
+  strvec_t m_intermediate_aliases;
   strmap_t<Field> m_field_to_avg_count;
   std::vector<Field> m_avg_counts;
   strmap_t<std::string> m_field_to_avg_cnt_suffix;
