@@ -82,6 +82,7 @@ field_names:
 Only `MyDiagSqrd` is written.
 
 Rules:
+
 - A name declared with `:=:` must not also appear as a regular output field.
 - The same alias name cannot be used for both `:=:` and `:=`.
 - The expression after `:=:` is resolved with the same composable-diagnostic

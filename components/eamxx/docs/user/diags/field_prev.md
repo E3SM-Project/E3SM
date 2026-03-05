@@ -9,7 +9,7 @@ before and after a process updates a field within a single timestep.
 To use this diagnostic, suffix a field name `X` with `_prev` in the output
 requests:
 
-```
+```none
 X_prev
 ```
 
@@ -23,9 +23,28 @@ the saved value is written to output. This means `X_prev` always reflects the
 state of `X` at the beginning of the current timestep (i.e., before any
 processes have modified it in the current step).
 
-On the very first diagnostic evaluation — before `init_timestep` has been
-called — the output is filled with the standard EAMxx fill value
-(`constants::fill_value<Real>`).
+**First-step initialisation for derived diagnostics**
+
+When `X` is itself a computed diagnostic (rather than a raw model field) it
+may not have been evaluated yet when `init_timestep` runs at the start of the
+first step.  In that case the `init_timestep` call does nothing (the source
+has no valid timestamp, so there is nothing to capture).
+
+By the time `compute_diagnostic` is called — during the output phase, after
+model physics and prerequisite diagnostics have been evaluated — `X` will have
+a valid timestamp.  The diagnostic then uses the current value of `X` as a
+stand-in for "X at t=0", producing:
+
+```
+X_prev = X(t=0)   →   X − X_prev = 0 on the first step
+```
+
+This conservative initialisation prevents fill-value contamination from
+propagating into downstream arithmetic (e.g. products of fill-value-sized
+numbers overflow to Inf in single precision).
+
+From the second step onward `X_prev` reflects the normally captured
+start-of-step value.
 
 ## Example
 
@@ -45,4 +64,4 @@ field_names:
   model fields are resolved before diagnostics are considered.
 - Only fields with `Real` data type are supported.
 
-Contact developers on github if you have additional questions.
+Contact developers on GitHub if you have additional questions.

@@ -7,9 +7,9 @@ is itself parsed normally.
 
 ## Reference table
 
-| User request   | Expands to                         | Meaning                                        |
-|----------------|------------------------------------|------------------------------------------------|
-| `X_atm_backtend` | `X_minus_X_prev_over_dt`         | Atmospheric backward tendency of X: (X − X_prev) / dt |
+| User request     | Expands to               | Meaning                                               |
+|------------------|--------------------------|-------------------------------------------------------|
+| `X_atm_backtend` | `X_minus_X_prev_over_dt` | Atmospheric backward tendency of X: (X − X_prev) / dt |
 
 ## Example
 

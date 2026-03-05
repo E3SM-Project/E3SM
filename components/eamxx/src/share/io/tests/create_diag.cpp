@@ -108,7 +108,7 @@ TEST_CASE("create_diag")
     REQUIRE (d2->get_params().get<std::string>("wind_component")=="Zonal");
   }
 
-  SECTION ("atm_tend") {
+  SECTION ("atm_backtend") {
     // _atm_backtend is a built-in alias: X_atm_backtend → X_minus_X_prev_over_dt
     // The returned diagnostic is FieldOverDtDiag with field_name = "BlaH_123_minus_BlaH_123_prev"
     auto d1 = create_diagnostic("BlaH_123_atm_backtend",grid);
