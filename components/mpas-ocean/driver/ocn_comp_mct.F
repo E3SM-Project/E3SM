@@ -1850,7 +1850,7 @@ contains
                                                peakWaveDirection
                                                !landIcePressure
 
-   real (kind=RKIND), dimension(:), pointer :: latCell
+   real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
 
    real (kind=RKIND), dimension(:,:), pointer :: iceFluxPhytoC, &
                                                  iceFluxDOC, &
@@ -1983,6 +1983,7 @@ contains
       !landIcePressure => landIcePressureField % array
 
       call mpas_pool_get_array(meshPool, 'latCell', latCell)
+      call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
       ! BGC fields
@@ -2138,8 +2139,14 @@ contains
         end if
         if ( iceRunoffFluxField % isActive ) then
            iceRunoffFlux(i) = x2o_o % rAttr(index_x2o_Foxx_rofi, n)
-           if(iceRunoffFlux(n) < 0.0_RKIND) then
-               call shr_sys_abort ('Error: incoming rofi_F is negative')
+           if(iceRunoffFlux(i) < 0.0_RKIND) then
+               if(iceRunoffFlux(i) < -1.0e-8_RKIND) then
+                  write(6,*) 'WARNING: large negative rofi_F =', &
+                     iceRunoffFlux(i), ' at cell i=', i, &
+                     ' lat=', latCell(i)*180.0_RKIND/3.14159265358979_RKIND, &
+                     ' lon=', lonCell(i)*180.0_RKIND/3.14159265358979_RKIND
+               end if
+               iceRunoffFlux(i) = 0.0_RKIND
            end if
            if (config_remove_ais_ice_runoff) then
               if (latCell(i) < -1.04719666667_RKIND) then ! 60S in radians
@@ -3359,7 +3366,7 @@ contains
                                                peakWaveDirection
                                                !landIcePressure
 
-   real (kind=RKIND), dimension(:), pointer :: latCell
+   real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
 
    real (kind=RKIND), dimension(:,:), pointer :: iceFluxPhytoC, &
                                                  iceFluxDOC, &
@@ -3516,6 +3523,7 @@ contains
       !landIcePressure => landIcePressureField % array
 
       call mpas_pool_get_array(meshPool, 'latCell', latCell)
+      call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
       ! BGC fields
@@ -3671,8 +3679,14 @@ contains
         end if
         if ( iceRunoffFluxField % isActive ) then
            iceRunoffFlux(i) = x2o_om(n, index_x2o_Foxx_rofi)
-           if(iceRunoffFlux(n) < 0.0_RKIND) then
-               call shr_sys_abort ('Error: incoming rofi_F is negative')
+           if(iceRunoffFlux(i) < 0.0_RKIND) then
+               if(iceRunoffFlux(i) < -1.0e-8_RKIND) then
+                  write(6,*) 'WARNING: large negative rofi_F =', &
+                     iceRunoffFlux(i), ' at cell i=', i, &
+                     ' lat=', latCell(i)*180.0_RKIND/3.14159265358979_RKIND, &
+                     ' lon=', lonCell(i)*180.0_RKIND/3.14159265358979_RKIND
+               end if
+               iceRunoffFlux(i) = 0.0_RKIND
            end if
            if (config_remove_ais_ice_runoff) then
               if (latCell(i) < -1.04719666667_RKIND) then ! 60S in radians
