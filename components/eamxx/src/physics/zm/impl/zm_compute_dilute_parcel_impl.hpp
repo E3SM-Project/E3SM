@@ -42,10 +42,10 @@ void Functions<S,D>::compute_dilute_parcel(
 
   //----------------------------------------------------------------------------
   // The original ZM scheme only treated PBL-rooted convection. A PBL temperature
-  // perturbation (tpert) was then used to increase the parcel temperatue at launch
+  // perturbation (tpert) was then used to increase the parcel temperature at launch
   // level, which is in PBL. The dcape_ull or ull trigger enables ZM scheme to treat
   // elevated convection with launch level above PBL. If parcel launch level is
-  // above PBL top, tempeature perturbation in PBL should not be able to influence
+  // above PBL top, temperature perturbation in PBL should not be able to influence
   // it. In this situation, the temporary variable tpert_loc is reset to zero.
   Real tpert_loc = tpert;
   if (runtime_opt.tpert_fix && klaunch < pblt) {
