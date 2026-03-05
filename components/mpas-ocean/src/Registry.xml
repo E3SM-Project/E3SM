@@ -496,12 +496,16 @@
 					possible_values="Any non-negative real value."
 		/>
 		<nml_option name="config_cvmix_background_scheme" type="character" default_value="constant"
-					description="Scheme for background diffusivity, 'constant' for constant with depth and space, 'BryanLewis' for vertically variable, 'none' for no background diffusivity"
+					description="Scheme for background diffusivity, 'constant' for constant with depth and space, 'latitude-dependent' for latitude dependence and constant in depth, 'BryanLewis' for vertically variable, 'none' for no background diffusivity"
 					possible_values="'constant', 'BryanLewis', and 'none'"
 		/>
 		<nml_option name="config_cvmix_background_diffusion" type="real" default_value="1.0e-5" units="m^2 s^-1"
-					description="Background vertical diffusion applied to tracer quantities"
+					description="Background vertical diffusion applied to tracer quantities. For 'latitude-dependent' this is the maximum value"
 					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_cvmix_background_diffusion_max_latitude" type="real" default_value="-50" units="degrees"
+					description="For 'latitude-dependent' this is the maximum latitude at which background diffusivity is non-zero"
+					possible_values="Any real value between -90 and 90."
 		/>
 		<nml_option name="config_cvmix_background_diffusion_passive" type="real" default_value="1.0e-5" units="m^2 s^-1"
 					description="Background vertical diffusion applied to passive tracer quantities"

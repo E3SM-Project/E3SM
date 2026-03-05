@@ -72,7 +72,8 @@ module ocn_vmix_cvmix
    integer, parameter ::                 & ! supported cvmix background schemes
       cvmixBackgroundTypeNone = 0,       & ! no background scheme
       cvmixBackgroundTypeConstant = 1,   & ! Constant background scheme
-      cvmixBackgroundTypeBryanLewis = 2    ! Bryan Lewis background scheme
+      cvmixBackgroundTypeBryanLewis = 2,  &! Bryan Lewis background scheme
+      cvmixBackgroundTypeLatDep = 3        ! Latitude Dependent background scheme
 
    integer :: cvmixShearMixingChoice       ! user choice of vmix shear mixing scheme
 
@@ -172,7 +173,8 @@ contains
       real (kind=RKIND), dimension(:), allocatable, target :: RiSmoothed, BVFSmoothed, OBLDepths, interfaceForcings
       logical :: bulkRichardsonFlag
 
-      real (kind=RKIND) :: langmuirEnhancementFactor, alphaAngle
+      real (kind=RKIND) :: langmuirEnhancementFactor, alphaAngle, latitudeFactor, latDegrees, diffMidDegrees
+      real (kind=RKIND), parameter :: diffWidthDegrees = 2.0_RKIND
 
       real(kind=RKIND), dimension(:,:), pointer :: stokesDriftZonalWavenumber
       real(kind=RKIND), dimension(:,:), pointer :: stokesDriftMeridionalWavenumber
@@ -279,6 +281,27 @@ contains
                vertViscTopOfCell(k, iCell) = vertViscTopOfCell(k, iCell) + config_cvmix_background_viscosity
                vertDiffTopOfCell(k, iCell) = vertDiffTopOfCell(k, iCell) + config_cvmix_background_diffusion
             end do
+         end do
+         !$omp end do
+         !$omp end parallel
+      elseif (cvmixBackgroundChoice == cvmixBackgroundTypeLatDep) then
+         diffMidDegrees = config_cvmix_background_diffusion_max_latitude - 2 * diffWidthDegrees
+         !$omp parallel
+         !$omp do schedule(runtime) private(k, latitudeFactor, latDegrees)
+         do iCell = 1, nCells
+            do k = 1, nVertLevelsP1
+               vertViscTopOfCell(k, iCell) = vertViscTopOfCell(k, iCell) + config_cvmix_background_viscosity
+            end do
+            latitudeFactor = 0.0_RKIND
+            latDegrees = latCell(iCell) * 180.0_RKIND / pi
+            if (latDegrees < config_cvmix_background_diffusion_max_latitude) then
+               latitudeFactor = 0.5_RKIND * (1.0_RKIND + &
+                  TANH((diffMidDegrees - latDegrees) / diffWidthDegrees) )
+               do k = 1, nVertLevelsP1
+                  vertDiffTopOfCell(k, iCell) = vertDiffTopOfCell(k, iCell) + &
+                     latitudeFactor * config_cvmix_background_diffusion
+               end do
+            end if
          end do
          !$omp end do
          !$omp end parallel
@@ -955,6 +978,10 @@ contains
 
          cvmixBackgroundChoice = cvmixBackgroundTypeConstant
 
+      case ('latitude-dependent', 'latdep', 'Latdep', 'latdDep', 'LatDep', 'LATDEP')
+
+         cvmixBackgroundChoice = cvmixBackgroundTypeLatDep
+
       case ('bryanlewis', 'bryanLewis', 'BryanLewis', 'BRYANLEWIS')
 
          cvmixBackgroundChoice = cvmixBackgroundTypeBryanLewis
@@ -994,7 +1021,8 @@ contains
       !
       ! initialize background mixing
       !
-      if ( cvmixBackgroundChoice == cvmixBackgroundTypeConstant ) then
+      if ( cvmixBackgroundChoice == cvmixBackgroundTypeConstant  .or. &
+           cvmixBackgroundChoice == cvmixBackgroundTypeLatDep ) then
            call cvmix_init_bkgnd( &
                   bkgnd_Tdiff = config_cvmix_background_diffusion, &
                   bkgnd_Mdiff = config_cvmix_background_viscosity, &
@@ -1007,7 +1035,7 @@ contains
       if (config_use_cvmix_shear) then
         if (cvmixBackgroundChoice == cvmixBackgroundTypeNone .and. cvmixShearMixingChoice == cvmixShearMixingTypePP) then
             call mpas_log_write("config_use_cvmix_shear cannot be used with with config_cvmix_shear_mixing_scheme = 'PP'" &
-                 // "       without config_cvmix_background_scheme = 'constant' or 'BryanLewis'", MPAS_LOG_CRIT)
+                 // "       without config_cvmix_background_scheme = 'constant', 'LatDep' or 'BryanLewis'", MPAS_LOG_CRIT)
             err = 1
             return
         end if
