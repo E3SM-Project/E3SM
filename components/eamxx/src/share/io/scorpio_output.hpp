@@ -152,6 +152,12 @@ public:
     return m_io_grid;
   }
 
+  const std::vector<std::string>&
+  get_intermediate_aliases() const
+  {
+    return m_intermediate_aliases;
+  }
+
   void set_logger(const std::shared_ptr<ekat::logger::LoggerBase> &atm_logger);
 
 protected:
