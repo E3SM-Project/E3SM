@@ -547,7 +547,7 @@ module li_time_integration_fe_rk
             cellMask(:) = cellMaskPrev(:)
             edgeMask(:) = edgeMaskPrev(:)
             vertexMask(:) = vertexMaskPrev(:)
-            call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
+            call li_velocity_solve(domain, solveVelo=.true., updateMask=.false., err=err_tmp)
             err = ior(err, err_tmp)
          endif
 ! *** end RK loop ***
@@ -637,7 +637,7 @@ module li_time_integration_fe_rk
 
 ! === Solve velocity for final state =====================
       if (solveVeloAfterCalving) then
-         call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
+         call li_velocity_solve(domain, solveVelo=.true., updateMask=.true., err=err_tmp)
          err = ior(err, err_tmp)
       endif
 
