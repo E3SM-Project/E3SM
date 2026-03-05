@@ -24,9 +24,9 @@ struct UnitWrap::UnitTest<D>::TestComputeDiluteCape : public UnitWrap::UnitTest<
     ComputeDiluteCapeData baseline_data[] = {
       //                    pcols, ncol, pver, pverp, num_cin, num_msg, calc_msemax_klev, use_input_tq_mx
       ComputeDiluteCapeData(    4,    4,   72,    73,      10,      30,            false, false),
-      ComputeDiluteCapeData(    4,    4,   72,    73,      10,      30,            false, true),
-      ComputeDiluteCapeData(    4,    4,   72,    73,      10,      30,            true,  false),
-      ComputeDiluteCapeData(    4,    4,   72,    73,      10,      30,            true,  true),
+      ComputeDiluteCapeData(    4,    4,   72,    73,      10,      40,            false, true),
+      ComputeDiluteCapeData(    4,    4,   128,  129,      10,      70,            true,  false),
+      ComputeDiluteCapeData(    4,    4,   128,  129,      10,      80,            true,  true),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ComputeDiluteCapeData);

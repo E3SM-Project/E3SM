@@ -32,7 +32,6 @@ void Functions<S,D>::compute_dilute_cape(
   const bool& calc_msemax_klev, // true for normal procedure, otherwise use prev_msemax_klev from 1st call
   const Int& prev_msemax_klev, // values of msemax_klev from previous call for dcape closure
   const bool& use_input_tq_mx, // if .true., use input values of prev_msemax_klev, q_mx, t_mx in the CAPE calculation
-  const bool& pergro_active, // flag for perturbation growth test (pergro)
   // Inputs/Outputs
   const uview_1d<Real>& parcel_qsat, // parcel saturation mixing ratio
   Int& msemax_klev, // index of max MSE at parcel launch level
@@ -56,8 +55,11 @@ void Functions<S,D>::compute_dilute_cape(
   //   Raymond, D. J., and A. M. Blyth, 1992: Extension of the Stochastic Mixing
   //     Model to Cumulonimbus Clouds. J. Atmos. Sci., 49, 1968–1983
   //----------------------------------------------------------------------------
-  // Local variables
-  constexpr Real ull_upper_launch_pressure = 600.0; // upper search limit for unrestricted launch level (ULL)
+#ifdef PERGRO
+  const bool pergro_active = true;
+#else
+  const bool pergro_active = false;
+#endif
 
   // Allocate temporary arrays
   uview_1d<Real> sp_humidity, temperature, tv, parcel_vtemp;
@@ -96,7 +98,7 @@ void Functions<S,D>::compute_dilute_cape(
   //----------------------------------------------------------------------------
   // calculate virtual temperature
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver), [&] (const Int& k) {
-    tv(k) = temperature(k) * (1.0 + PC::ZVIR * sp_humidity(k)) / (1.0 + sp_humidity(k));
+    tv(k) = temperature(k) * (1 + PC::ZVIR * sp_humidity(k)) / (1 + sp_humidity(k));
   });
   team.team_barrier();
 
@@ -114,9 +116,9 @@ void Functions<S,D>::compute_dilute_cape(
   if (runtime_opt.trig_ull) {
     pblt_ull = 0;
     Kokkos::single(Kokkos::PerTeam(team), [&] () {
-      for (Int k = pver - 2; k >= num_msg + 1; --k) {
-        if ((pmid(k) <= ull_upper_launch_pressure) &&
-            (pmid(k + 1) > ull_upper_launch_pressure)) {
+      for (Int k = pver - 2; k >= num_msg; --k) {
+        if ((pmid(k)    <= ZMC::ull_upper_launch_pressure) &&
+            (pmid(k + 1) > ZMC::ull_upper_launch_pressure)) {
           pblt_ull = k;
         }
       }
@@ -134,7 +136,7 @@ void Functions<S,D>::compute_dilute_cape(
     } else {
       msemax_top_k = pblt;
     }
-    find_mse_max(team, workspace, runtime_opt, pver, num_msg, msemax_top_k, pergro_active,
+    find_mse_max(team, runtime_opt, pver, num_msg, msemax_top_k, pergro_active,
                  temperature, zmid, sp_humidity,
                  msemax_klev, mse_max_val);
   }

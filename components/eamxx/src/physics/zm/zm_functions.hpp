@@ -97,6 +97,8 @@ struct Functions {
     static inline constexpr Int nit_lheat = 2; // Number of iterations for condensation/freezing loop
 
     static inline  constexpr Real lwmax = 1.e-3; // maximum condesate that can be held in cloud before rainout
+
+    static inline constexpr Real ull_upper_launch_pressure = 600.0; // upper search limit for unrestricted launch level (ULL)
   };
 
   //----------------------------------------------------------------------------
@@ -423,6 +425,7 @@ struct Functions {
     // Inputs
     const MemberType& team,
     const Workspace& workspace,
+    const ZmRuntimeOpt& runtime_opt,
     const Int& pver, // number of mid-point vertical levels
     const Int& pverp, // number of interface vertical levels
     const Int& num_cin, // num of negative buoyancy regions that are allowed before the conv. top and CAPE calc are completed

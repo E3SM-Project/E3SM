@@ -467,7 +467,8 @@ void compute_dilute_cape(ComputeDiluteCapeData& d)
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
-  WSM wsm(d.pverp, 12, policy);
+  WSM wsm(d.pver, 11, policy);
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
 
   // unpack data scalars because we do not want the lambda to capture d
   const Int num_cin = d.num_cin;
@@ -493,6 +494,7 @@ void compute_dilute_cape(ComputeDiluteCapeData& d)
     ZMF::compute_dilute_cape(
       team,
       wsm.get_workspace(team),
+      init_cp,
       pver,
       pverp,
       num_cin,
