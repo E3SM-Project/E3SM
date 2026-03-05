@@ -9,7 +9,7 @@ namespace scream {
 /*
  * This diagnostic stores the value of a given field at the beginning
  * of the previous timestep. Users can request X_prev for any field X
- * to capture the start-of-timestep value before model updates occur.
+ * to capture the prior start-of-timestep value before model updates occur.
  */
 
 class FieldPrevDiag : public AtmosphereDiagnostic {

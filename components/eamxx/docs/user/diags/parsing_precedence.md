@@ -38,14 +38,14 @@ control — how composite names are parsed.
 
 The binary-ops regex is:
 
-```
+```none
 ([A-Za-z0-9_.+\-\*\÷]+)_(plus|minus|times|over)_([A-Za-z0-9_.+\-\*\÷]+)$
 ```
 
 The first group is greedy.  For a string with multiple operator tokens, the
 **rightmost** operator becomes the outermost (lowest-precedence) operation:
 
-```
+```none
 A_minus_B_over_C  →  (A_minus_B) over C  →  (A − B) / C
 ```
 
@@ -95,7 +95,7 @@ This is always clearer than relying on implicit precedence.
 We propose `__` (double-underscore) as an explicit precedence grouper in a
 future parser version.  Example:
 
-```
+```none
 f_minus__f_prev_over_dt__
 ```
 

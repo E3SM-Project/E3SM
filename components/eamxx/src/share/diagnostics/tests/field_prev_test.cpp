@@ -74,13 +74,43 @@ TEST_CASE("field_prev") {
   diag->set_required_field(qc);
   diag->initialize(t0, RunType::Initial);
 
-  // Run diag before any init_timestep call: should return fill_value
+  // Run diag before any init_timestep call: qc already has a valid t0
+  // timestamp, so the fallback path returns X(t=0) = qc rather than fill_value.
   diag->compute_diagnostic();
   auto diag_f = diag->get_diagnostic();
+  REQUIRE(views_are_equal(diag_f, qc));
 
-  auto fill_field = qc.clone();
-  fill_field.deep_copy(constants::fill_value<Real>);
-  REQUIRE(views_are_equal(diag_f, fill_field));
+  // Simulate a derived diagnostic whose source has no valid timestamp at
+  // init_timestep time (i.e. it hasn't been computed yet on step 1).
+  // After init_timestep the source is computed and gets a valid timestamp;
+  // the diagnostic should then return the current source value (X_prev = X(t=0))
+  // rather than fill_value or stale zeros — this is the key test for the
+  // "first step of a derived _prev field" correctness.
+  {
+    Field qc_uninit(qc_fid);
+    qc_uninit.allocate_view();  // zero-initialized, no valid timestamp
+
+    ekat::ParameterList p2;
+    p2.set("grid_name", grid->name());
+    p2.set<std::string>("field_name", "qc_uninit");
+    auto diag2 = diag_factory.create("FieldPrevDiag", comm, p2);
+    diag2->set_grids(gm);
+    diag2->set_required_field(qc_uninit);
+    diag2->initialize(t0, RunType::Initial);
+
+    // init_timestep: source has no valid timestamp → no capture
+    diag2->init_timestep(t0);
+
+    // Source is now "computed" (gets a valid timestamp and random values),
+    // simulating what the output manager does before calling this diagnostic.
+    qc_uninit.get_header().get_tracking().update_time_stamp(t0);
+    randomize_uniform(qc_uninit, seed++, 0, 200);
+
+    // Fallback: m_f_prev invalid, source now valid → returns current source value
+    diag2->compute_diagnostic();
+    auto diag2_f = diag2->get_diagnostic();
+    REQUIRE(views_are_equal(diag2_f, qc_uninit));
+  }
 
   constexpr int ntests = 10;
 
