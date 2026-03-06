@@ -4699,6 +4699,21 @@ control — how composite names are parsed.</p>
 <h2 id="priority-order-highest-to-lowest">Priority order (highest to lowest)</h2>
 <ol>
 <li>
+<p><strong>Plain model field</strong> — the output layer first checks whether the name
+   exists directly in the model field manager (FM).  If it does, no diagnostic
+   parsing is performed at all; the field is used as-is.</p>
+</li>
+<li>
+<p><strong>User-defined <code>:=</code> aliases</strong> — if the name was declared as a <code>:=</code> alias in
+   the output YAML, it is resolved to the aliased field or expression before
+   any diagnostic parsing.</p>
+</li>
+</ol>
+<p>Items 3–9 below apply only when the name is not found by steps 1–2, i.e.
+   they describe the priority order <em>inside</em> the diagnostic parser
+   (<code>create_diagnostic</code>).</p>
+<ol>
+<li>
 <p><strong>Built-in aliases</strong> — recognized shorthands expand before anything else.
    E.g., <code>X_atm_backtend</code> → <code>X_minus_X_prev_over_dt</code>.
    See <a href="../builtin_aliases/">Built-in aliases</a>.</p>
@@ -4728,7 +4743,7 @@ control — how composite names are parsed.</p>
 <p><strong>Histograms</strong> — <code>X_histogram_&lt;bin_config&gt;</code>.</p>
 </li>
 <li>
-<p><strong>Plain field or diagnostic name</strong> — the string is looked up directly in the
+<p><strong>Plain diagnostic name</strong> — the string is looked up directly in the
    atmosphere-diagnostic factory.</p>
 </li>
 </ol>
