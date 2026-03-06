@@ -58,10 +58,9 @@ field_names:
 ## Caveats
 
 - The `_prev` suffix is stripped to identify the tracked field. If the model
-  has a registered field whose name literally ends in `_prev`, the diagnostic
-  parser will attempt to resolve it as a `FieldPrevDiag` rather than a direct
-  field lookup. In practice this is unlikely to cause conflicts because literal
-  model fields are resolved before diagnostics are considered.
+  has a registered field whose name literally ends in `_prev`, it will be
+  output directly as a model field (model fields are resolved before
+  diagnostics are considered), not treated as a `FieldPrevDiag`.
 - Only fields with `Real` data type are supported.
 
 Contact developers on GitHub if you have additional questions.
