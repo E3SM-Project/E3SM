@@ -4595,6 +4595,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Behavior">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#first-step-initialisation-for-derived-diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        First-step initialisation for derived diagnostics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4669,7 +4686,7 @@ requests:</p>
 the saved value is written to output. This means <code>X_prev</code> always reflects the
 state of <code>X</code> at the beginning of the current timestep (i.e., before any
 processes have modified it in the current step).</p>
-<p><strong>First-step initialisation for derived diagnostics</strong></p>
+<h3 id="first-step-initialisation-for-derived-diagnostics">First-step initialisation for derived diagnostics</h3>
 <p>When <code>X</code> is itself a computed diagnostic (rather than a raw model field) it
 may not have been evaluated yet when <code>init_timestep</code> runs at the start of the
 first step.  In that case the <code>init_timestep</code> call does nothing (the source
