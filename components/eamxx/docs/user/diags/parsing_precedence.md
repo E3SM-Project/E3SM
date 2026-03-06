@@ -106,15 +106,3 @@ Use `:=` in both sections to give a convenient name to a complex expression.
 
 Use `:=` aliases to break complex expressions into named sub-expressions.
 This is always clearer than relying on implicit precedence.
-
-## Future proposal: `__` grouping marker
-
-We propose `__` (double-underscore) as an explicit precedence grouper in a
-future parser version.  Example:
-
-```none
-f_minus__f_prev_over_dt__
-```
-
-would parse as `f − (f_prev / dt)` rather than `(f − f_prev) / dt`.
-This is not yet implemented; use named aliases today.
