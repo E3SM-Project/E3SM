@@ -35,7 +35,7 @@ model physics and prerequisite diagnostics have been evaluated — `X` will have
 a valid timestamp.  The diagnostic then uses the current value of `X` as a
 stand-in for "X at t=0", producing:
 
-```
+```none
 X_prev = X(t=0)   →   X − X_prev = 0 on the first step
 ```
 
