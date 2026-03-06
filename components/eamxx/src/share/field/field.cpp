@@ -8,7 +8,8 @@ namespace
 {
 void update_checks (const Field& y, const Field* x = nullptr,
                     const ScalarWrapper* alpha = nullptr,
-                    const ScalarWrapper* beta = nullptr)
+                    const ScalarWrapper* beta = nullptr,
+                    bool allow_narrowing = false)
 {
   // Check output field is writable
   EKAT_REQUIRE_MSG (not y.is_read_only(),
@@ -28,6 +29,12 @@ void update_checks (const Field& y, const Field* x = nullptr,
   // to the data type of Y does not require narrowing
   EKAT_REQUIRE_MSG (not is_narrowing_conversion(x_dt,y_dt),
       "Error! Right hand side data type may be narrowed when converted to x data type.\n"
+      " - rhs data type: " + e2str(x_dt) + "\n"
+      " - lhs data type: " + e2str(y_dt) + "\n");
+  // Disallow double→float precision-loss unless caller explicitly opts in via allow_narrowing
+  EKAT_REQUIRE_MSG (allow_narrowing or not (x_dt==DataType::DoubleType and y_dt==DataType::FloatType),
+      "Error! Updating a float field from a double field would lose precision.\n"
+      "       Use deep_copy(src, true) to explicitly allow this narrowing conversion.\n"
       " - rhs data type: " + e2str(x_dt) + "\n"
       " - lhs data type: " + e2str(y_dt) + "\n");
   EKAT_REQUIRE_MSG (not is_narrowing_conversion(a_dt,y_dt),
@@ -317,10 +324,10 @@ void Field::deep_copy (const ScalarWrapper value) {
   }
 }
 
-void Field::deep_copy (const Field& x)
+void Field::deep_copy (const Field& x, bool allow_narrowing)
 {
-  // Check consistency of inputs
-  update_checks(*this,&x,nullptr,nullptr);
+  // Check consistency of inputs (allow_narrowing enables intentional double→float)
+  update_checks(*this,&x,nullptr,nullptr,allow_narrowing);
 
   // We do an update with y = 0*y + 1*x
   // NOTE: we do NOT use fill_aware, so we end up with y=x REGARDLESS of x's content
@@ -330,6 +337,8 @@ void Field::deep_copy (const Field& x)
   } else if (data_type()==DataType::FloatType) {
     if (x.data_type()==DataType::FloatType)
       update_impl<CM,false,float,float>(x,1,0);
+    else if (x.data_type()==DataType::DoubleType)
+      update_impl<CM,false,float,double>(x,1,0);
     else
       update_impl<CM,false,float,int>(x,1,0);
   } else if (data_type()==DataType::DoubleType) {

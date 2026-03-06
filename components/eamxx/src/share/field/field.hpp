@@ -210,7 +210,7 @@ public:
   void deep_copy (const ScalarWrapper value, const Field& mask);
 
   // Copy the data from one field to this field (on device ONLY)
-  void deep_copy (const Field& src);
+  void deep_copy (const Field& src, bool allow_narrowing = false);
 
   // Updates this field y as y=beta*y + alpha*x
   // See share/util/eamxx_combine_ops.hpp for more details on CombineMode options

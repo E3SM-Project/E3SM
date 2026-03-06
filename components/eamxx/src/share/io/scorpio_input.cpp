@@ -280,7 +280,29 @@ void AtmosphereInput::init_scorpio_structures()
     scorpio::mark_dim_as_time(m_filename,"time");
   }
 
-  // Check variables are in the input file
+  // Helper to convert a scorpio nc_dtype string to DataType
+  auto nc_dtype_to_data_type = [&](const std::string& nc_dtype,
+                                    const std::string& varname) -> DataType {
+    if (nc_dtype=="float") {
+      return DataType::FloatType;
+    } else if (nc_dtype=="double") {
+      return DataType::DoubleType;
+    } else if (nc_dtype=="int" or nc_dtype=="int64") {
+      return DataType::IntType;
+    } else {
+      EKAT_ERROR_MSG ("Error! Unsupported file variable data type.\n"
+          " - filename : " + m_filename + "\n"
+          " - varname  : " + varname + "\n"
+          " - nc_dtype : " + nc_dtype + "\n");
+    }
+    return DataType::RealType; // unreachable
+  };
+
+  // Check variables are in the input file, and ensure the scorpio FM
+  // has fields with the correct data type (matching the file's storage type).
+  // If the file stores a variable in a different precision than the field,
+  // update it in-place to a type-bridge field so that scorpio_interface
+  // can read directly without any type conversion.
   for (const auto & [name, f] : m_fm_for_scorpio->get_repo()) {
     const auto& layout = f->get_header().get_identifier().get_layout();
 
@@ -317,8 +339,15 @@ void AtmosphereInput::init_scorpio_structures()
         " - extent from file: " + std::to_string(file_len) + "\n");
     }
 
-    // Ensure that we can read the var using Real data type
-    scorpio::change_var_dtype (m_filename,name,"real");
+    // If the field's dtype doesn't match the file's nc_dtype, update the
+    // field in-place to a type-bridge field with the correct dtype.
+    const auto file_dtype = nc_dtype_to_data_type(var.nc_dtype, name);
+    if (file_dtype!=f->data_type()) {
+      const auto& fid = f->get_header().get_identifier();
+      FieldIdentifier bridge_fid(fid.name(),fid.get_layout(),fid.get_units(),
+                                 fid.get_grid_name(),file_dtype);
+      *f = Field(bridge_fid,true);
+    }
   }
 
   // Set decompositions for the variables

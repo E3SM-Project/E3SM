@@ -19,12 +19,14 @@ add_library(eamxx_field
   eti/field_update_impl_double_double.cpp
   eti/field_update_impl_double_float.cpp
   eti/field_update_impl_double_int.cpp
+  eti/field_update_impl_float_double.cpp
   eti/field_update_impl_float_float.cpp
   eti/field_update_impl_float_int.cpp
   eti/field_update_impl_int_int.cpp
   eti/field_update_impl_double_double_fill_aware.cpp
   eti/field_update_impl_double_float_fill_aware.cpp
   eti/field_update_impl_double_int_fill_aware.cpp
+  eti/field_update_impl_float_double_fill_aware.cpp
   eti/field_update_impl_float_float_fill_aware.cpp
   eti/field_update_impl_float_int_fill_aware.cpp
   eti/field_update_impl_int_int_fill_aware.cpp

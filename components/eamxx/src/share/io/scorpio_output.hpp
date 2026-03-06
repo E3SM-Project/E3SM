@@ -232,6 +232,20 @@ protected:
   bool m_track_avg_cnt = false;
   bool m_latlon_output = false;
   std::string m_decomp_dimname = "";
+  std::string m_fp_precision = "real"; // floating point precision for output
+
+  // Type-bridge fields for write time: used when m_fp_precision differs from
+  // the native Real type. The conversion Real→fp_precision happens on the
+  // device via the Field API (Kokkos-parallel) before the host-side scorpio write.
+  strmap_t<Field> m_write_fields;
+
+  // Helper fields for accumulation: used when m_fp_precision differs from Real
+  // and avg_type is not Instant. Before each max/min/update accumulation step,
+  // the model field (Real) is deep-copied into a helper at output precision so
+  // that accumulation is at the target precision. One helper per unique layout
+  // (fields with the same layout alias the same helper to save memory).
+  std::vector<Field> m_helpers;     // unique helpers, one per layout
+  strmap_t<int>      m_field_to_helper; // field_name → index in m_helpers
 
   std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger =
       console_logger(ekat::logger::LogLevel::warn);

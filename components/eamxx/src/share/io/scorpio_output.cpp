@@ -102,6 +102,9 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
 
   auto gm = field_mgr->get_grids_manager();
 
+  // Store the floating point precision for output (defaults to "real")
+  m_fp_precision = params.get<std::string>("floating_point_precision","real");
+
   // Figure out what kind of averaging is requested
   auto avg_type = params.get<std::string>("averaging_type");
   m_avg_type    = str2avg(avg_type);
@@ -321,7 +324,22 @@ void AtmosphereOutput::init()
       (m_io_grid->get_global_max_dof_gid()-m_io_grid->get_global_min_dof_gid()+1)==m_io_grid->get_num_global_dofs(),
       "Error! In order for IO to work, the grid must (globally) have dof gids in interval [gid_0,gid_0+num_global_dofs).\n");
 
-  // Create FM for scorpio. The fields in this FM are guaranteed to NOT have parents/padding
+  // Determine the write dtype for regular (non-checkpoint) output.
+  // If this differs from Real, we pre-allocate type-bridge write fields
+  // so that the conversion (Real→fp_precision) is done on the device
+  // via the Field API before the host-to-host scorpio write.
+  DataType write_dtype;
+  if (m_fp_precision=="float" or m_fp_precision=="single") {
+    write_dtype = DataType::FloatType;
+  } else if (m_fp_precision=="double") {
+    write_dtype = DataType::DoubleType;
+  } else {
+    // "real": same as the native Real type
+    write_dtype = DataType::RealType;
+  }
+
+  // Create FM for scorpio. The fields in this FM are guaranteed to NOT have parents/padding.
+  // They always use the native Real type (which is also used for checkpoints).
   auto fm_scorpio = m_field_mgrs[Scorpio] = std::make_shared<FieldManager>(fm_after_hr->get_grid(),RepoState::Closed);
   for (size_t i = 0; i < m_fields_names.size(); ++i) {
     const auto& fname = m_fields_names[i];
@@ -342,6 +360,37 @@ void AtmosphereOutput::init()
       fm_scorpio->add_field(copy);
     } else {
       fm_scorpio->add_field(f);
+    }
+
+    // If the write dtype differs from Real, pre-allocate a type-bridge write field.
+    // This field will be used at write time to convert Real→write_dtype on the device.
+    // For non-Instant output, also allocate a helper field for accumulation conversion.
+    if (write_dtype != DataType::RealType) {
+      FieldIdentifier write_fid(fid.name(),fid.get_layout(),fid.get_units(),
+                                fid.get_grid_name(),write_dtype);
+      Field write_f(write_fid);
+      write_f.allocate_view();
+      m_write_fields[fname] = write_f;
+
+      // For non-Instant output, create a helper field for accumulation.
+      // Reuse an existing helper if one with the same layout already exists.
+      if (m_avg_type != OutputAvgType::Instant) {
+        const auto& layout = fid.get_layout();
+        int helper_idx = -1;
+        for (int ih = 0; ih < (int)m_helpers.size(); ++ih) {
+          if (m_helpers[ih].get_header().get_identifier().get_layout() == layout) {
+            helper_idx = ih;
+            break;
+          }
+        }
+        if (helper_idx == -1) {
+          FieldIdentifier helper_fid(fid.name() + "_helper", layout, fid.get_units(),
+                                     fid.get_grid_name(), write_dtype);
+          m_helpers.push_back(Field(helper_fid, true));
+          helper_idx = m_helpers.size() - 1;
+        }
+        m_field_to_helper[fname] = helper_idx;
+      }
     }
 
     // Store the field layout, so that calls to setup_output_file are easier
@@ -561,11 +610,35 @@ run (const std::string& filename,
       case OutputAvgType::Instant:
         f_out.deep_copy(f_in);  break; // Note: if f_in aliases f_out, this is a no-op
       case OutputAvgType::Max:
-        f_out.max(f_in);        break;
+        if (m_field_to_helper.count(field_name)) {
+          auto& f_helper = m_helpers[m_field_to_helper.at(field_name)];
+          f_helper.get_header().set_may_be_filled(f_in.get_header().may_be_filled());
+          f_helper.deep_copy(f_in, true); // convert Real→helper precision (allow_narrowing)
+          f_out.max(f_helper);
+        } else {
+          f_out.max(f_in);
+        }
+        break;
       case OutputAvgType::Min:
-        f_out.min(f_in);        break;
+        if (m_field_to_helper.count(field_name)) {
+          auto& f_helper = m_helpers[m_field_to_helper.at(field_name)];
+          f_helper.get_header().set_may_be_filled(f_in.get_header().may_be_filled());
+          f_helper.deep_copy(f_in, true);
+          f_out.min(f_helper);
+        } else {
+          f_out.min(f_in);
+        }
+        break;
       case OutputAvgType::Average:
-        f_out.update(f_in,1,1); break;
+        if (m_field_to_helper.count(field_name)) {
+          auto& f_helper = m_helpers[m_field_to_helper.at(field_name)];
+          f_helper.get_header().set_may_be_filled(f_in.get_header().may_be_filled());
+          f_helper.deep_copy(f_in, true);
+          f_out.update(f_helper, 1, 1);
+        } else {
+          f_out.update(f_in, 1, 1);
+        }
+        break;
       default:
         EKAT_ERROR_MSG ("Unexpected/unsupported averaging type.\n");
     }
@@ -587,12 +660,43 @@ run (const std::string& filename,
         }
       }
 
-      // Bring data to host
-      f_out.sync_to_host();
-
-      // Write to file
+      // Bring data to host and write to file.
+      // For regular output (not checkpoint), if write fields are available,
+      // use them to convert Real→output precision on the device first.
+      // For checkpoint output, write directly with Real precision.
       auto func_start = std::chrono::steady_clock::now();
-      scorpio::write_var(filename,field_name,f_out.get_internal_view_data<Real,Host>());
+      if (output_step and m_write_fields.count(field_name)) {
+        // Type-bridge: convert Real→output precision on device, then write
+        auto& f_write = m_write_fields.at(field_name);
+        f_write.deep_copy(f_out, true); // Real→float (or other) on device, allow narrowing
+        f_write.sync_to_host();
+        switch (f_write.data_type()) {
+          case DataType::FloatType:
+            scorpio::write_var(filename,field_name,f_write.get_internal_view_data<float,Host>());
+            break;
+          case DataType::DoubleType:
+            scorpio::write_var(filename,field_name,f_write.get_internal_view_data<double,Host>());
+            break;
+          default:
+            EKAT_ERROR_MSG ("Error! Unrecognized/unsupported data type for output field.\n"
+                "  - field name: " + field_name + "\n");
+        }
+      } else {
+        // Write directly with Real precision (regular output where fp_precision==Real,
+        // or checkpoint output which always uses Real precision)
+        f_out.sync_to_host();
+        switch (f_out.data_type()) {
+          case DataType::FloatType:
+            scorpio::write_var(filename,field_name,f_out.get_internal_view_data<float,Host>());
+            break;
+          case DataType::DoubleType:
+            scorpio::write_var(filename,field_name,f_out.get_internal_view_data<double,Host>());
+            break;
+          default:
+            EKAT_ERROR_MSG ("Error! Unrecognized/unsupported data type for output field.\n"
+                "  - field name: " + field_name + "\n");
+        }
+      }
       auto func_finish = std::chrono::steady_clock::now();
       auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
       duration_write += duration_loc.count();
@@ -729,10 +833,6 @@ register_variables(const std::string& filename,
     const auto& dimnames = m_vars_dims.at(field_name);
     std::string units = fid.get_units().to_string();
 
-    // TODO  Need to change dtype to allow for other variables.
-    // Currently the field_manager only stores Real variables so it is not an issue,
-    // but in the future if non-Real variables are added we will want to accomodate that.
-
     if (mode==scorpio::FileMode::Append) {
       // Simply check that the var is in the file, and has the right properties
       EKAT_REQUIRE_MSG (scorpio::has_var(filename,field_name),
@@ -760,7 +860,7 @@ register_variables(const std::string& filename,
           "  - var time dep from file: " + (var.time_dep ? "yes" : "no") + "\n");
     } else {
       scorpio::define_var (filename, field_name, units, dimnames,
-                            "real",fp_precision, m_add_time_dim);
+                            fp_precision, fp_precision, m_add_time_dim);
 
       // Add FillValue as an attribute of each variable
       // FillValue is a protected metadata, do not add it if it already existed
@@ -931,6 +1031,55 @@ setup_output_file(const std::string& filename,
 
   // Register variables with netCDF file.  Must come after dimensions are registered.
   register_variables(filename,fp_precision,mode);
+
+  // If fp_precision requires a type different from Real (for write-time bridge),
+  // ensure m_write_fields and m_helpers are populated for any fields not already covered.
+  // This is needed for streams whose m_fp_precision differs from fp_precision
+  // (e.g., geo data streams using the quick constructor with m_fp_precision="real").
+  DataType write_dtype;
+  if (fp_precision=="float" or fp_precision=="single") {
+    write_dtype = DataType::FloatType;
+  } else if (fp_precision=="double") {
+    write_dtype = DataType::DoubleType;
+  } else {
+    write_dtype = DataType::RealType;
+  }
+  if (write_dtype != DataType::RealType) {
+    auto fm = m_field_mgrs[Scorpio];
+    for (const auto& fname : m_fields_names) {
+      if (m_write_fields.count(fname) == 0) {
+        const auto& f = fm->get_field(fname);
+        const auto& fid = f.get_header().get_identifier();
+        if (fid.data_type() != write_dtype) {
+          FieldIdentifier write_fid(fid.name(),fid.get_layout(),fid.get_units(),
+                                    fid.get_grid_name(),write_dtype);
+          Field write_f(write_fid);
+          write_f.allocate_view();
+          m_write_fields[fname] = write_f;
+        }
+      }
+      // Also create helper fields for non-Instant accumulation if not yet present
+      if (m_avg_type != OutputAvgType::Instant and m_field_to_helper.count(fname) == 0) {
+        const auto& f = fm->get_field(fname);
+        const auto& fid = f.get_header().get_identifier();
+        const auto& layout = fid.get_layout();
+        int helper_idx = -1;
+        for (int ih = 0; ih < (int)m_helpers.size(); ++ih) {
+          if (m_helpers[ih].get_header().get_identifier().get_layout() == layout) {
+            helper_idx = ih;
+            break;
+          }
+        }
+        if (helper_idx == -1) {
+          FieldIdentifier helper_fid(fid.name() + "_helper", layout, fid.get_units(),
+                                     fid.get_grid_name(), write_dtype);
+          m_helpers.push_back(Field(helper_fid, true));
+          helper_idx = m_helpers.size() - 1;
+        }
+        m_field_to_helper[fname] = helper_idx;
+      }
+    }
+  }
 
   // Set the offsets of the local dofs in the global vector.
   set_decompositions(filename);
