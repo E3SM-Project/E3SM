@@ -588,7 +588,7 @@ contains
                   dt)
     end if !if(.not.use_elm_interface)
 
-    call t_stopf('SoilLittDecompAlloc')
+    call t_stop_lnd(event)
 
     event = 'SoilLittDecompAlloc2'
     call t_start_lnd(event)
