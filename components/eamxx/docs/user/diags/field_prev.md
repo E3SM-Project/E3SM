@@ -23,7 +23,7 @@ the saved value is written to output. This means `X_prev` always reflects the
 state of `X` at the beginning of the current timestep (i.e., before any
 processes have modified it in the current step).
 
-**First-step initialisation for derived diagnostics**
+### First-step initialisation for derived diagnostics
 
 When `X` is itself a computed diagnostic (rather than a raw model field) it
 may not have been evaluated yet when `init_timestep` runs at the start of the
