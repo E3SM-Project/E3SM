@@ -497,7 +497,8 @@ CONTAINS
              ocnfrac(i,j) = x2a_a%rAttr(index_x2a_Sf_ofrac,n)
           end if
           if (index_x2a_Sf_lfrac>0) then
-             lndfrac(i,j) = x2a_a%rAttr(index_x2a_Sf_lfrac,n)
+             !lndfrac(i,j) = x2a_a%rAttr(index_x2a_Sf_lfrac,n)
+             lndfrac(i, j) = max(0.0_R8, 1.0_R8 - ocnfrac(i, j) - icefrac(i, j))
           end if
        end do
     end do
