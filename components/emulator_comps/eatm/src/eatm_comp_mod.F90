@@ -15,6 +15,7 @@ module eatm_comp_mod
   use eatmMod
   use eatmSpmdMod
   use eatmIO
+  use eatm_restart_mod
   use ace_comp_mod
 
   ! !PUBLIC TYPES:
@@ -161,6 +162,10 @@ CONTAINS
           endif
           call shr_mpi_bcast(restart_file,mpicom_atm,'restart_file')
 
+          if (masterproc) then
+            call eatm_restart_file_read(restart_file)
+          endif
+
           call shr_sys_flush(logunit_atm)
        endif
 
@@ -270,6 +275,10 @@ CONTAINS
           write(nu,'(a)') restart_file
           close(nu)
           call shr_file_freeUnit(nu)
+       endif
+
+       if (masterproc) then
+          call eatm_restart_file_write(restart_file, date_str, stepno)
        endif
 
        call shr_sys_flush(logunit_atm)
