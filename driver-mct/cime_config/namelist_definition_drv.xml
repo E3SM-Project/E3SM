@@ -13,22 +13,22 @@
           since Fortran is case insensitive.
      type
           An abbreviation of the fortran declaration for the variable.
-	  Valid declarations are:
+    Valid declarations are:
              char, integer, logical, real
-	  Any of these types may be followed by a comma separated list of
-	  integers enclosed in parenthesis to indicate an array.
-	  The current namelist validation code only distinquishes between
-	  string and non-string types.
+    Any of these types may be followed by a comma separated list of
+    integers enclosed in parenthesis to indicate an array.
+    The current namelist validation code only distinquishes between
+    string and non-string types.
      input_pathname
           Only include this attribute to indicate that the variable
           contains the pathname of an input dataset that resides in the
           CIME inputdata directory tree.
 
-	  The recognized values are
+    The recognized values are
            "abs"  - an absolute  pathname is required
-	   "rel:var_name"  - the  pathname is relative and that
+     "rel:var_name"  - the  pathname is relative and that
             the namelist variable "var_name" contains the absolute
-	    root directory.
+      root directory.
            "mapping" - the absolute inputdata path is specified and
             will be included in the cpl.inputdata_list
      category
@@ -1433,7 +1433,7 @@
       default: true
     </desc>
     <values>
-	<value>.true.</value>
+  <value>.true.</value>
     </values>
   </entry>
 
@@ -1603,10 +1603,12 @@
     <values>
       <value>$EPS_AGRID</value>
       <value atm_grid="ne0np4_northamericax4v1">3.e-10</value>
+      <value atm_grid="ne64np4.pg2"   lnd_grid="64np4.pg2"    >1.e-11</value>
+      <value atm_grid="ne120np4.pg2"  lnd_grid="120np4.pg2"   >1.e-10</value>
+      <value atm_grid="ne128np4.pg2"  lnd_grid="128np4.pg2"   >1.e-10</value>
+      <value atm_grid="ne256np4.pg2"  lnd_grid="ne256np4.pg2" >1.e-10</value>
+      <value atm_grid="ne512np4.pg2"  lnd_grid="ne512np4.pg2" >1.e-10</value>
       <value atm_grid="ne1024np4.pg2" lnd_grid="ne1024np4.pg2">1.e-10</value>
-      <value atm_grid="ne120np4.pg2" lnd_grid="ne120np4.pg2">1.e-10</value>
-      <value atm_grid="ne256np4.pg2" lnd_grid="ne256np4.pg2">1.e-10</value>
-      <value atm_grid="ne512np4.pg2" lnd_grid="ne512np4.pg2">1.e-10</value>
     </values>
   </entry>
 
@@ -5673,9 +5675,9 @@
       1 = Zender et al. (2003) as in E3SMv1 and v2.
       2 = Kok et al. (2014) for E3SMv3
     </desc>
-	  <values>
-		  <value>1</value>
-	  </values>
+    <values>
+      <value>1</value>
+    </values>
   </entry>
 
 </entry_id>
