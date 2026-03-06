@@ -6,30 +6,42 @@ control — how composite names are parsed.
 
 ## Priority order (highest to lowest)
 
-1. **Built-in aliases** — recognized shorthands expand before anything else.
+1. **Plain model field** — the output layer first checks whether the name
+   exists directly in the model field manager (FM).  If it does, no diagnostic
+   parsing is performed at all; the field is used as-is.
+
+2. **User-defined `:=` aliases** — if the name was declared as a `:=` alias in
+   the output YAML, it is resolved to the aliased field or expression before
+   any diagnostic parsing.
+
+   Items 3–9 below apply only when the name is not found by steps 1–2, i.e.
+   they describe the priority order *inside* the diagnostic parser
+   (`create_diagnostic`).
+
+3. **Built-in aliases** — recognized shorthands expand before anything else.
    E.g., `X_atm_backtend` → `X_minus_X_prev_over_dt`.
    See [Built-in aliases](builtin_aliases.md).
 
-2. **`_over_dt` suffix** — checked before binary ops to prevent `X_over_dt`
+4. **`_over_dt` suffix** — checked before binary ops to prevent `X_over_dt`
    from being misinterpreted as `BinaryOpsDiag(X, over, dt)`.
 
-3. **Specific named patterns** — `_at_<level>`, `_at_<pressure>`, `_at_<height>`,
+5. **Specific named patterns** — `_at_<level>`, `_at_<pressure>`, `_at_<height>`,
    `_horiz_avg`, `_vert_avg`, `_vert_sum`, `_zonal_avg`, `_pvert_derivative`,
    `_zvert_derivative`, `_where_..._op_val` (conditional sampling), etc.
 
-4. **Binary ops** — `A_(plus|minus|times|over)_B`.
+6. **Binary ops** — `A_(plus|minus|times|over)_B`.
    The first capture group is *greedy*, so the left operand extends as far as
    possible: `A_minus_B_over_C` parses as `(A_minus_B) over C`, i.e., `(A−B)/C`.
    Binary ops are checked **before** `_prev` so that `X_minus_X_prev` correctly
    resolves as `BinaryOpsDiag(X, minus, X_prev)` rather than
    `FieldPrevDiag(X_minus_X)`.
 
-5. **`_prev` suffix** — checked after binary ops so that the right-hand operand
+7. **`_prev` suffix** — checked after binary ops so that the right-hand operand
    of a binary op can itself be a `_prev` field.
 
-6. **Histograms** — `X_histogram_<bin_config>`.
+8. **Histograms** — `X_histogram_<bin_config>`.
 
-7. **Plain field or diagnostic name** — the string is looked up directly in the
+9. **Plain diagnostic name** — the string is looked up directly in the
    atmosphere-diagnostic factory.
 
 ## Key rules
