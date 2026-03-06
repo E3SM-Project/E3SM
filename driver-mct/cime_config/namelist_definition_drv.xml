@@ -17,7 +17,7 @@
              char, integer, logical, real
     Any of these types may be followed by a comma separated list of
     integers enclosed in parenthesis to indicate an array.
-    The current namelist validation code only distinquishes between
+    The current namelist validation code only distinguishes between
     string and non-string types.
      input_pathname
           Only include this attribute to indicate that the variable
