@@ -332,9 +332,9 @@ CONTAINS
 
     do j = 1, lsize_y
       do i = 1, lsize_x
-        ! net_inputs(1,  1, i, j) = lndfrac(i, j)            ! ACE2-EAMv3: LANDFRAC
-        ! net_inputs(1,  2, i, j) = ocnfrac(i, j)            ! ACE2-EAMv3: OCNFRAC
-        ! net_inputs(1,  3, i, j) = icefrac(i, j)            ! ACE2-EAMv3: ICEFRAC
+        net_inputs(1,  1, i, j) = lndfrac(i, j)            ! ACE2-EAMv3: LANDFRAC
+        net_inputs(1,  2, i, j) = ocnfrac(i, j)            ! ACE2-EAMv3: OCNFRAC
+        net_inputs(1,  3, i, j) = icefrac(i, j)            ! ACE2-EAMv3: ICEFRAC
 
         ! net_inputs(1,  4, i, j) = net_inputs(1, 4, i, j)   ! ACE2-EAMv3: PHIS
         ! net_inputs(1,  5, i, j) = net_inputs(1, 5, i, j)   ! ACE2-EAMv3: SOLIN
@@ -343,8 +343,8 @@ CONTAINS
         ! -----------------------------------------------------------------------
         net_inputs(1,  6, i, j) = net_outputs(1, 1, i, j)  ! ACE2-EAMv3: PS
         ! use landfrac as weights to paint in ACE TS over land
-        ! net_inputs(1,  7, i, j) = ts(i, j) + lndfrac(i, j) * net_outputs(1, 2, i, j)  ! ACE2-EAMv3: TS
-        net_inputs(1,  7, i, j) = net_outputs(1, 2, i, j)  ! ACE2-EAMv3: TS
+        net_inputs(1,  7, i, j) = ts(i, j) + lndfrac(i, j) * net_outputs(1, 2, i, j)  ! ACE2-EAMv3: TS
+        ! net_inputs(1,  7, i, j) = net_outputs(1, 2, i, j)  ! ACE2-EAMv3: TS
         ! For 3D fields just advance through with time
         net_inputs(1,  8, i, j) = net_outputs(1,  3, i, j) ! ACE2-EAMv3: T_0
         net_inputs(1,  9, i, j) = net_outputs(1,  4, i, j) ! ACE2-EAMv3: T_1
