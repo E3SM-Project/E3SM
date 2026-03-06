@@ -364,12 +364,33 @@ void AtmosphereOutput::init()
 
     // If the write dtype differs from Real, pre-allocate a type-bridge write field.
     // This field will be used at write time to convert Real→write_dtype on the device.
+    // For non-Instant output, also allocate a helper field for accumulation conversion.
     if (write_dtype != DataType::RealType) {
       FieldIdentifier write_fid(fid.name(),fid.get_layout(),fid.get_units(),
                                 fid.get_grid_name(),write_dtype);
       Field write_f(write_fid);
       write_f.allocate_view();
       m_write_fields[fname] = write_f;
+
+      // For non-Instant output, create a helper field for accumulation.
+      // Reuse an existing helper if one with the same layout already exists.
+      if (m_avg_type != OutputAvgType::Instant) {
+        const auto& layout = fid.get_layout();
+        int helper_idx = -1;
+        for (int ih = 0; ih < (int)m_helpers.size(); ++ih) {
+          if (m_helpers[ih].get_header().get_identifier().get_layout() == layout) {
+            helper_idx = ih;
+            break;
+          }
+        }
+        if (helper_idx == -1) {
+          FieldIdentifier helper_fid(fid.name() + "_helper", layout, fid.get_units(),
+                                     fid.get_grid_name(), write_dtype);
+          m_helpers.push_back(Field(helper_fid, true));
+          helper_idx = m_helpers.size() - 1;
+        }
+        m_field_to_helper[fname] = helper_idx;
+      }
     }
 
     // Store the field layout, so that calls to setup_output_file are easier
@@ -589,11 +610,35 @@ run (const std::string& filename,
       case OutputAvgType::Instant:
         f_out.deep_copy(f_in);  break; // Note: if f_in aliases f_out, this is a no-op
       case OutputAvgType::Max:
-        f_out.max(f_in);        break;
+        if (m_field_to_helper.count(field_name)) {
+          auto& f_helper = m_helpers[m_field_to_helper.at(field_name)];
+          f_helper.get_header().set_may_be_filled(f_in.get_header().may_be_filled());
+          f_helper.deep_copy(f_in, true); // convert Real→helper precision (allow_narrowing)
+          f_out.max(f_helper);
+        } else {
+          f_out.max(f_in);
+        }
+        break;
       case OutputAvgType::Min:
-        f_out.min(f_in);        break;
+        if (m_field_to_helper.count(field_name)) {
+          auto& f_helper = m_helpers[m_field_to_helper.at(field_name)];
+          f_helper.get_header().set_may_be_filled(f_in.get_header().may_be_filled());
+          f_helper.deep_copy(f_in, true);
+          f_out.min(f_helper);
+        } else {
+          f_out.min(f_in);
+        }
+        break;
       case OutputAvgType::Average:
-        f_out.update(f_in,1,1); break;
+        if (m_field_to_helper.count(field_name)) {
+          auto& f_helper = m_helpers[m_field_to_helper.at(field_name)];
+          f_helper.get_header().set_may_be_filled(f_in.get_header().may_be_filled());
+          f_helper.deep_copy(f_in, true);
+          f_out.update(f_helper, 1, 1);
+        } else {
+          f_out.update(f_in, 1, 1);
+        }
+        break;
       default:
         EKAT_ERROR_MSG ("Unexpected/unsupported averaging type.\n");
     }
@@ -623,7 +668,7 @@ run (const std::string& filename,
       if (output_step and m_write_fields.count(field_name)) {
         // Type-bridge: convert Real→output precision on device, then write
         auto& f_write = m_write_fields.at(field_name);
-        f_write.deep_copy(f_out); // Real→float (or other) on device
+        f_write.deep_copy(f_out, true); // Real→float (or other) on device, allow narrowing
         f_write.sync_to_host();
         switch (f_write.data_type()) {
           case DataType::FloatType:
@@ -988,7 +1033,7 @@ setup_output_file(const std::string& filename,
   register_variables(filename,fp_precision,mode);
 
   // If fp_precision requires a type different from Real (for write-time bridge),
-  // ensure m_write_fields is populated for any fields not already covered.
+  // ensure m_write_fields and m_helpers are populated for any fields not already covered.
   // This is needed for streams whose m_fp_precision differs from fp_precision
   // (e.g., geo data streams using the quick constructor with m_fp_precision="real").
   DataType write_dtype;
@@ -1012,6 +1057,26 @@ setup_output_file(const std::string& filename,
           write_f.allocate_view();
           m_write_fields[fname] = write_f;
         }
+      }
+      // Also create helper fields for non-Instant accumulation if not yet present
+      if (m_avg_type != OutputAvgType::Instant and m_field_to_helper.count(fname) == 0) {
+        const auto& f = fm->get_field(fname);
+        const auto& fid = f.get_header().get_identifier();
+        const auto& layout = fid.get_layout();
+        int helper_idx = -1;
+        for (int ih = 0; ih < (int)m_helpers.size(); ++ih) {
+          if (m_helpers[ih].get_header().get_identifier().get_layout() == layout) {
+            helper_idx = ih;
+            break;
+          }
+        }
+        if (helper_idx == -1) {
+          FieldIdentifier helper_fid(fid.name() + "_helper", layout, fid.get_units(),
+                                     fid.get_grid_name(), write_dtype);
+          m_helpers.push_back(Field(helper_fid, true));
+          helper_idx = m_helpers.size() - 1;
+        }
+        m_field_to_helper[fname] = helper_idx;
       }
     }
   }

@@ -3,11 +3,9 @@
 
 namespace scream {
 
-template void Field::update_impl<CombineMode::Replace,  false, float, double>(const Field&, const float, const float);
-template void Field::update_impl<CombineMode::Update,   false, float, double>(const Field&, const float, const float);
-template void Field::update_impl<CombineMode::Multiply, false, float, double>(const Field&, const float, const float);
-template void Field::update_impl<CombineMode::Divide,   false, float, double>(const Field&, const float, const float);
-template void Field::update_impl<CombineMode::Max,      false, float, double>(const Field&, const float, const float);
-template void Field::update_impl<CombineMode::Min,      false, float, double>(const Field&, const float, const float);
+// Only CombineMode::Replace is needed: deep_copy with allow_narrowing=true is the
+// only intentional path for float←double (write-time precision conversion in IO).
+template void Field::update_impl<CombineMode::Replace, false, float, double>(const Field&, const float, const float);
 
 } // namespace scream
+
