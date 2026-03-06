@@ -9,6 +9,13 @@
 #  endforeach()
 #endif()
 
+# https://github.com/E3SM-Project/E3SM/issues/8036
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM" AND
+    CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL "2025.0" AND
+    DEBUG)
+  e3sm_add_flags("eam/src/physics/cosp2/external/src/simulator/MISR_simulator/MISR_simulator.F90" "-init=zero")
+endif()
+
 
 
 
