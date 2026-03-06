@@ -4647,17 +4647,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#future-proposal-__-grouping-marker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Future proposal: __ grouping marker
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -4794,13 +4783,6 @@ Use <code>:=</code> in both sections to give a convenient name to a complex expr
 <h2 id="avoiding-ambiguity">Avoiding ambiguity</h2>
 <p>Use <code>:=</code> aliases to break complex expressions into named sub-expressions.
 This is always clearer than relying on implicit precedence.</p>
-<h2 id="future-proposal-__-grouping-marker">Future proposal: <code>__</code> grouping marker</h2>
-<p>We propose <code>__</code> (double-underscore) as an explicit precedence grouper in a
-future parser version.  Example:</p>
-<div class="highlight"><pre><span></span><code>f_minus__f_prev_over_dt__
-</code></pre></div>
-<p>would parse as <code>f − (f_prev / dt)</code> rather than <code>(f − f_prev) / dt</code>.
-This is not yet implemented; use named aliases today.</p>
 
 
 
