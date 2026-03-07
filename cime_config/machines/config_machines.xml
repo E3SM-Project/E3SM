@@ -3184,6 +3184,116 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="tuo">
+    <DESC>LLNL Linux Cluster, AMD Instinct MI300A processors (96 cores/node, 4 accelerators/node), 512 GB memory, 1144 compute nodes</DESC>
+    <NODENAME_REGEX>tuolumne.*</NODENAME_REGEX>
+    <OS>Linux</OS>
+    <COMPILERS>gnugpu,gnu</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <PROJECT>e3smtest</PROJECT>
+    <CIME_OUTPUT_ROOT>/p/lustre2/$USER/e3sm_scratch/tuo</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/p/vast1/e3sm/ccsm3data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/p/vast1/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/p/lustre2/$USER/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/p/lustre2/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/usr/workspace/e3sm/apps/cprnc</CCSM_CPRNC>
+    <GMAKE_J>14</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>flux</BATCH_SYSTEM>
+    <SUPPORTED_BY>boutte3 -at- llnl.gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>96</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>96</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>flux run</executable>
+      <arguments>
+	<arg name="label"> --label-io</arg>
+	<arg name="debug"> -o mpibind=verbose:1</arg>
+	<arg name="num_tasks"> -N{{ num_nodes }} -n4 -g1 --exclusive</arg>
+    	</arguments>
+    </mpirun>
+    <module_system type="module" allow_error="true">
+      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
+      <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
+      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <modules>
+        <command name="unload">cpe</command>
+        <command name="unload">cray-hdf5-parallel</command>
+        <command name="unload">cray-netcdf-hdf5parallel</command>
+        <command name="unload">cray-parallel-netcdf</command>
+        <command name="unload">cray-netcdf</command>
+        <command name="unload">cray-hdf5</command>
+        <command name="unload">PrgEnv-gnu</command>
+        <command name="unload">PrgEnv-intel</command>
+        <command name="unload">PrgEnv-nvidia</command>
+        <command name="unload">PrgEnv-cray</command>
+        <command name="unload">PrgEnv-aocc</command>
+        <command name="unload">gcc-native</command>
+        <command name="unload">intel</command>
+        <command name="unload">intel-oneapi</command>
+        <command name="unload">nvidia</command>
+        <command name="unload">aocc</command>
+        <command name="unload">cray-libsci</command>
+        <command name="unload">matlab</command>
+        <command name="unload">perftools-base</command>
+        <command name="unload">perftools</command>
+        <command name="unload">darshan</command>
+      </modules>
+      <modules compiler="gnu.*">
+	<command name="load">PrgEnv-gnu/8.6.0</command>
+	<command name="load">gcc-native/12.2</command>
+	<command name="load">cray-libsci/24.11.0</command>
+	<command name="load">craype-x86-trento</command>
+      </modules>
+      <modules compiler="gnugpu">
+	<command name="load">craype-accel-amd-gfx942</command>
+      </modules>
+      <modules>
+	<command name="load">cmake/3.24.2</command>
+	<command name="load">rocm/6.3.0</command>
+	<command name="load">cray-mpich/9.0.1</command>
+	<command name="load">cray-hdf5-parallel/1.12.2.11</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.9.0.11</command>
+	<command name="load">cray-parallel-netcdf/1.12.3.13</command> 
+      </modules>
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
+    <environment_variables>
+      <env name="MPICH_ENV_DISPLAY">1</env>
+      <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
+      <env name="FI_CXI_RX_MATCH_MODE">hybrid</env>
+      <!-- <env name="MPICH_COLL_SYNC">MPI_Bcast</env> -->
+      <env name="HDF5_ROOT">$ENV{HDF5_ROOT}</env>
+      <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
+      <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
+    </environment_variables>
+    <environment_variables compiler="gnugpu">
+      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
+      <env name="MPICH_CXX">$SHELL{which hipcc}</env>
+      <env name="HSA_XNACK">1</env>
+      <env name="MPICH_SMP_SINGLE_COPY_MODE">XPMEM</env>
+    </environment_variables>
+    <environment_variables BUILD_THREADED="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+    </environment_variables>
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
+  </machine>
+
   <machine MACH="jlse">
     <DESC>ANL experimental/evaluation cluster, batch system is cobalt</DESC>
     <NODENAME_REGEX>jlse.*</NODENAME_REGEX>
