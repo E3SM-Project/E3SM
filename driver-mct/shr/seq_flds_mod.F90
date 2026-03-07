@@ -2249,13 +2249,15 @@ contains
     call metadata_set(attname, longname, stdname, units)
 
     ! Sea ice floe Size
-    call seq_flds_add(i2x_states,"Si_ifloe")
-    if (wav_ice_coup .eq. 'twoway') call seq_flds_add(x2w_states,"Si_ifloe")
-    longname = 'Sea ice floe size'
-    stdname  = 'sea_ice_floe_size'
-    units    = 'm'
-    attname  = 'Si_ifloe'
-    call metadata_set(attname, longname, stdname, units)
+    if (wav_ice_coup .eq. 'twoway') then
+       call seq_flds_add(i2x_states,"Si_ifloe")
+       call seq_flds_add(x2w_states,"Si_ifloe")
+       longname = 'Sea ice floe size'
+       stdname  = 'sea_ice_floe_size'
+       units    = 'm'
+       attname  = 'Si_ifloe'
+       call metadata_set(attname, longname, stdname, units)
+    endif
 
     ! Significant Wave Height
     if (wav_ocn_coup .eq. 'twoway' .or. wav_ice_coup .eq. 'twoway') then

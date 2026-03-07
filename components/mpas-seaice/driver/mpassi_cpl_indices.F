@@ -158,7 +158,6 @@ contains
     index_i2x_Si_qref       = mct_avect_indexra(i2x,'Si_qref')
     index_i2x_Si_ifrac      = mct_avect_indexra(i2x,'Si_ifrac')
     index_i2x_Si_ithick     = mct_avect_indexra(i2x,'Si_ithick')
-    index_i2x_Si_ifloe      = mct_avect_indexra(i2x,'Si_ifloe')
     index_i2x_Si_avsdr      = mct_avect_indexra(i2x,'Si_avsdr')
     index_i2x_Si_anidr      = mct_avect_indexra(i2x,'Si_anidr')
     index_i2x_Si_avsdf      = mct_avect_indexra(i2x,'Si_avsdf')
@@ -202,6 +201,10 @@ contains
     index_i2x_Fioi_fed1     = mct_avect_indexra(i2x,'Fioi_fed1',perrWith='quiet')
     index_i2x_Fioi_fed2     = mct_avect_indexra(i2x,'Fioi_fed2',perrWith='quiet')
     index_i2x_Fioi_dust1    = mct_avect_indexra(i2x,'Fioi_dust1',perrWith='quiet')
+    
+    if (wav_ice_coup .eq. 'twoway') then
+      index_i2x_Si_ifloe      = mct_avect_indexra(i2x,'Si_ifloe')
+    endif
 
     index_x2i_So_t          = mct_avect_indexra(x2i,'So_t')
     index_x2i_So_s          = mct_avect_indexra(x2i,'So_s')
