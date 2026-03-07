@@ -18,7 +18,7 @@
     </mach>
   </grid>
   <grid name="a%ne4np4">
-    <mach name="pm-gpu|muller-gpu|alvarez-gpu">
+    <mach name="pm-gpu|muller-gpu|alvarez-gpu|tuo">
       <pes compset=".*EAM.+ELM.+DOCN" pesize="any">
         <comment>pm-gpu: ne4 eamxx F case, 1 nodes, 4x1</comment>
         <ntasks>
@@ -118,7 +118,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4">
-    <mach name="pm-gpu|muller-gpu|alvarez-gpu">
+    <mach name="pm-gpu|muller-gpu|alvarez-gpu|tuo">
       <pes compset=".*EAM.+ELM.+DOCN" pesize="any">
         <comment>pm-gpu: ne30 eamxx F case, 2 nodes, 4x1</comment>
         <ntasks>
@@ -199,7 +199,7 @@
     </mach>
   </grid>
   <grid name="a%ne120np4">
-    <mach name="pm-gpu|muller-gpu|alvarez-gpu">
+    <mach name="pm-gpu|muller-gpu|alvarez-gpu|tuo">
       <pes compset=".*EAM.+ELM.+DOCN" pesize="any">
         <comment>pm-gpu: ne120 eamxx F case, 8 nodes, 4x1</comment>
         <ntasks>
@@ -220,7 +220,7 @@
     </mach>
   </grid>
   <grid name="a%ne256np4">
-    <mach name="pm-gpu|muller-gpu|alvarez-gpu">
+    <mach name="pm-gpu|muller-gpu|alvarez-gpu|tuo">
       <pes compset=".*EAM.+ELM.+DOCN" pesize="any">
         <comment>pm-gpu: ne256 eamxx F case, 32 nodes, 4x1, 16 threads for LND/ICE</comment>
         <ntasks>
@@ -241,7 +241,7 @@
     </mach>
   </grid>
   <grid name="a%ne512np4">
-    <mach name="pm-gpu|muller-gpu|alvarez-gpu">
+    <mach name="pm-gpu|muller-gpu|alvarez-gpu|tuo">
       <pes compset=".*EAM.+ELM.+DOCN" pesize="any">
         <comment>pm-gpu: ne512 eamxx F case, 128 nodes, 4x1, 16 threads for LND/ICE</comment>
         <ntasks>
@@ -262,7 +262,7 @@
     </mach>
   </grid>
   <grid name="a%ne1024np4">
-    <mach name="pm-gpu|muller-gpu|alvarez-gpu">
+    <mach name="pm-gpu|muller-gpu|alvarez-gpu|tuo">
       <pes compset=".*EAM.+ELM.+DOCN" pesize="any">
         <comment>pm-gpu: ne1024 eamxx F case, 512 nodes, 4x1, 16 threads for LND/ICE</comment>
         <ntasks>
@@ -306,7 +306,7 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="pm-gpu|muller-gpu|alvarez-gpu">
+    <mach name="pm-gpu|muller-gpu|alvarez-gpu|tuo">
       <pes compset="any" pesize="any">
         <comment>pm-gpu conus 2 nodes, 4x1 except 16 threads in LND</comment>
         <ntasks>
