@@ -228,6 +228,36 @@
       <queue walltimemax="01:00:00" nodemax="20">pdebug</queue>
     </queues>
   </batch_system>
+
+  <batch_system type="flux" >
+    <batch_query>flux job info</batch_query>
+    <batch_submit>flux batch</batch_submit>
+    <batch_cancel>flux job cancel</batch_cancel>
+    <batch_directive># flux:</batch_directive>
+    <jobid_pattern>(\w+)$</jobid_pattern>
+    <depend_string>--dependency=afterok:jobid</depend_string>
+    <depend_allow_string>--dependency=afterany:jobid</depend_allow_string>
+    <depend_separator>:</depend_separator>
+    <walltime_format>%Mm</walltime_format>
+    <submit_args>
+      <arg flag="--time" name="60m"/>
+      <arg flag="--queue" name="$JOB_QUEUE"/>
+      <arg flag="--bank" name="$PROJECT"/>
+    </submit_args>
+    <directives>
+      <directive> --job-name={{ job_id }}</directive>
+      <directive> --output={{ job_id }}.%j</directive>
+      <directive> --nodes={{ num_nodes }}</directive>
+      <directive> --exclusive</directive>
+    </directives>
+  </batch_system>
+
+  <batch_system MACH="tuo" type="flux">
+    <queues>
+      <queue walltimemax="24:00:00" nodemax="520" default="true">pbatch</queue>
+      <queue walltimemax="01:00:00" nodemax="20">pdebug</queue>
+    </queues>
+  </batch_system>
   <!-- for lawrence livermore computing -->
 
   <!-- for NERSC machines: perlmutter etc -->
