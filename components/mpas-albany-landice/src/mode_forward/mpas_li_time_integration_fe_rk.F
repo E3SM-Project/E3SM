@@ -157,6 +157,7 @@ module li_time_integration_fe_rk
                                                         damage3dPrev
       integer, pointer :: nVertLevels
       integer, pointer :: nCells, nEdges
+      integer, pointer :: albanyVelocityError
       integer :: iCell1, iCell2, iEdge, theGroundedCell
       integer, dimension(:), pointer :: edgeMask, cellMask
       real (kind=RKIND), pointer :: deltat, config_ice_density
@@ -197,6 +198,7 @@ module li_time_integration_fe_rk
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
       call mpas_pool_get_array(velocityPool, 'fluxAcrossGroundingLineOnCells', fluxAcrossGroundingLineOnCells)
+      call mpas_pool_get_array(velocityPool, 'albanyVelocityError', albanyVelocityError)
       call mpas_pool_get_array(geometryPool, 'groundedToFloatingThickness', groundedToFloatingThickness)
       call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
       call mpas_pool_get_array(geometryPool, 'calvingThicknessFromThreshold', calvingThicknessFromThreshold)
@@ -207,6 +209,7 @@ module li_time_integration_fe_rk
       calvingThickness(:) = 0.0_RKIND
       calvingThicknessFromThreshold(:) = 0.0_RKIND
       calvingVelocity(:) = 0.0_RKIND
+      albanyVelocityError = 0
 
       allocate(temperaturePrev(nVertLevels, nCells+1))
       allocate(waterFracPrev(nVertLevels, nCells+1))
