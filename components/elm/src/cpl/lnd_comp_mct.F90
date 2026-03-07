@@ -849,6 +849,7 @@ contains
 
   end subroutine lnd_domain_mct
 
+#ifdef HAVE_MOAB
   subroutine init_moab_land(bounds, LNDID)
     use seq_flds_mod     , only :  seq_flds_l2x_fields, seq_flds_x2l_fields
     use shr_kind_mod     , only : CXX => SHR_KIND_CXX
@@ -1032,5 +1033,8 @@ contains
     endif
 
   end subroutine init_moab_land
+
+! endif for ifdef HAVE_MOAB
+#endif
 
 end module lnd_comp_mct
