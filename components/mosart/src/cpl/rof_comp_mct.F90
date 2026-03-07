@@ -66,10 +66,8 @@ module rof_comp_mct
   use ESMF
 #ifdef HAVE_MOAB
   use seq_comm_mct,     only : mrofid ! id of moab rof app
-  use seq_comm_mct,     only : seq_comm_compare_mb_mct ! for debugging
-  use seq_comm_mct,      only: num_moab_exports
   use iso_c_binding
-  use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage
+  use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_GetDoubleTagStorage
 #endif
 !
 ! PUBLIC MEMBER FUNCTIONS:
@@ -92,11 +90,11 @@ module rof_comp_mct
 !
 #ifdef HAVE_MOAB
   private :: init_moab_rof   ! create moab mesh (cloud of points)
-  private :: rof_export_moab          ! Export the river runoff model data to the MOAB coupler
-  private :: rof_import_moab          ! import the river runoff model data from the MOAB coupler
   integer , private :: mblsize, totalmbls, totalmbls_r
-  real (r8) , allocatable, private :: r2x_rm(:,:)  !  moab fields, similar to r2x_r transpose ! used in export to coupler
-  real (r8) , allocatable, private :: x2r_rm(:,:)  !  moab fields, similar to x2r_r transpose ! used in import from coupler
+  real (r8) , allocatable, private :: r2x_rm(:,:)   !  moab fields, similar to r2x_r transpose ! used in export to coupler
+  real (r8) , allocatable, private :: r2x_rm_t(:,:) !  field-major export array passed to rof_export_mct
+  real (r8) , allocatable, private :: x2r_rm(:,:)   !  moab fields, similar to x2r_r transpose ! used in import from coupler
+  real(r8)  , allocatable, private :: x2r_rm_t(:,:)
 #endif
 ! PRIVATE DATA MEMBERS:
 
@@ -167,8 +165,8 @@ contains
 
 #ifdef HAVE_MOAB
     character*100 outfile, wopts
-    integer :: ierr, tagtype, numco,  tagindex 
-    character(CXX) ::  tagname ! for fields 
+    integer :: ierr, tagtype, numco,  tagindex
+    character(CXX) ::  tagname ! for fields
     integer ::  ent_type
 #endif
     !---------------------------------------------------------------------------
@@ -307,9 +305,7 @@ contains
        call mct_aVect_init(r2x_r, rList=seq_flds_r2x_fields, lsize=lsize)
        call mct_aVect_zero(r2x_r) 
        
-       ! Create mct river runoff export state
-       call rof_export_mct( r2x_r )
-
+       ! Inititalize MOAB
 #ifdef HAVE_MOAB
        call init_moab_rof(mpicom_rof, ROFID)
 
@@ -317,9 +313,11 @@ contains
        mblsize = lsize
        nsend = mct_avect_nRattr(r2x_r)
        totalmbls = mblsize * nsend ! size of the double array
-       allocate (r2x_rm(lsize, nsend) )
+       allocate (r2x_rm(nsend, mblsize) )
+    ! array for transpose
+       allocate(r2x_rm_t(mblsize, nsend) )
 
-      ! define tags according to the seq_flds_r2x_fields 
+    ! define seq_flds_r2x_fields tags
        tagtype = 1  ! dense, double
        numco = 1 !  one value per cell / entity
        tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
@@ -328,18 +326,20 @@ contains
            call shr_sys_abort( sub//' ERROR: cannot define tags fro seq_flds_r2x_fields in moab' )
        end if
 
-       ! set those fields to 0 in moab
+     ! set those fields to 0 in moab
        r2x_rm = 0._r8
        ent_type = 0 ! rof is point cloud on this side
        ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, totalmbls , ent_type, r2x_rm)
        if (ierr > 0 )  &
           call shr_sys_abort( sub//' Error: fail to set to 0 seq_flds_x2r_fields ')
 
-       ! allocate now the import from coupler array
+     ! allocate now the import from coupler array
        nrecv = mct_avect_nRattr(x2r_r)
        totalmbls_r = mblsize * nrecv ! size of the double array
-       allocate (x2r_rm(lsize, nrecv) )
-      ! define tags according to the seq_flds_x2r_fields 
+       allocate (x2r_rm(mblsize, nrecv) )
+
+       allocate(x2r_rm_t( nrecv, mblsize) )
+     ! define tags according to the seq_flds_x2r_fields
        tagtype = 1  ! dense, double
        numco = 1 !  one value per cell / entity
        tagname = trim(seq_flds_x2r_fields)//C_NULL_CHAR
@@ -353,12 +353,21 @@ contains
        ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, totalmbls_r , ent_type, x2r_rm)
        if (ierr > 0 )  &
           call shr_sys_abort( sub//' Error: fail to set to 0 seq_flds_x2r_fields ')
-  ! also load initial data to moab tags, fill with some initial data
-       call rof_export_moab(EClock)
-
-!  endif HAVE_MOAB
 #endif
-    else
+
+       ! define initial export state
+#ifdef HAVE_MOAB
+       call rof_export_mct(r2x_rm)
+       r2x_rm_t = transpose(r2x_rm)
+       tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage(mrofid, tagname, totalmbls, ent_type, r2x_rm_t)
+       if (ierr > 0) &
+          call shr_sys_abort(sub//' Error: fail to set initial moab '//trim(seq_flds_r2x_fields))
+
+#else
+       call rof_export_mct( r2x_r%rAttr )
+#endif
+    else ! not prognostic (but still called)
        call seq_infodata_PutData(infodata, rofice_present=.false.)
     end if
 
@@ -431,13 +440,10 @@ contains
     character(len=32), parameter    :: sub = "rof_run_mct"
     !-------------------------------------------------------
 
-#ifdef MOABCOMP
-    real(r8)                 :: difference
-    type(mct_list) :: temp_list
-    integer :: size_list, index_list, ent_type
-    type(mct_string)    :: mctOStr  !
-    character(CXX) ::tagname, mct_field, modelStr
-#endif 
+#ifdef HAVE_MOAB
+    integer :: ent_type, ierr
+    character(CXX) :: tagname
+#endif
 
 #if (defined _MEMTRACE)
     if(masterproc) then
@@ -456,31 +462,20 @@ contains
          curr_ymd=ymd, curr_tod=tod_sync,  &
          curr_yr=yr_sync, curr_mon=mon_sync, curr_day=day_sync)
 
-    ! Map MCT to land data type (output is totrunin, subrunin)
+    ! import data from coupler
     call t_startf ('lc_rof_import')
-    call rof_import_mct( x2r_r)
-    call t_stopf ('lc_rof_import')
 #ifdef HAVE_MOAB
-
-#ifdef MOABCOMP
-    ! loop over all fields in seq_flds_x2r_fields
-    call mct_list_init(temp_list ,seq_flds_x2r_fields)
-    size_list=mct_list_nitem (temp_list)
-    ent_type = 0 ! entity type is vertex for phys atm
-    if (masterproc) print *, num_moab_exports, trim(seq_flds_x2r_fields), ' rof import check'
-    modelStr='rof run'
-    do index_list = 1, size_list
-      call mct_list_get(mctOStr,index_list,temp_list)
-      mct_field = mct_string_toChar(mctOStr)
-      tagname= trim(mct_field)//C_NULL_CHAR
-      call seq_comm_compare_mb_mct(modelStr, mpicom_rof, x2r_r, mct_field,  mrofid, tagname, ent_type, difference)
-    enddo
-    call mct_list_clean(temp_list)
-
+    tagname = trim(seq_flds_x2r_fields)//C_NULL_CHAR
+    ent_type = 0 ! vertices, point cloud
+    ierr = iMOAB_GetDoubleTagStorage(mrofid, tagname, totalmbls_r, ent_type, x2r_rm)
+    if (ierr > 0) &
+       call shr_sys_abort(sub//'Error: fail to get seq_flds_x2r_fields for rof moab mesh')
+    x2r_rm_t = transpose(x2r_rm)
+    call rof_import_mct(x2r_rm_t)
+#else
+    call rof_import_mct( x2r_r%rAttr)
 #endif
-
-    call rof_import_moab(EClock )
-#endif
+    call t_stopf ('lc_rof_import')
     
 
     ! Run mosart (input is *runin, output is rtmCTL%runoff)
@@ -490,12 +485,18 @@ contains
     rstwr = seq_timemgr_RestartAlarmIsOn( EClock )
     call Rtmrun(rstwr,nlend,rdate)
 
-    ! Map roff data to MCT datatype (input is rtmCTL%runoff, output is r2x_r)
+    ! export data to coupler data
     call t_startf ('lc_rof_export')
-    call rof_export_mct( r2x_r )
 #ifdef HAVE_MOAB
-    ! Map roff data to MOAB datatype ; load fields/tags in MOAB from rtmCTL%runoff 
-    call rof_export_moab(EClock)
+    call rof_export_mct( r2x_rm)
+    r2x_rm_t = transpose(r2x_rm)
+    tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
+    ent_type = 0 ! vertices
+    ierr = iMOAB_SetDoubleTagStorage(mrofid, tagname, totalmbls, ent_type, r2x_rm_t)
+    if (ierr > 0) &
+       call shr_sys_abort(sub//' Error: fail to set moab '//trim(seq_flds_r2x_fields))
+#else
+    call rof_export_mct( r2x_r%rAttr )
 #endif
     call t_stopf ('lc_rof_export')
 
@@ -545,9 +546,12 @@ contains
 
    ! fill this in
 #ifdef HAVE_MOAB
-    ! deallocate moab fields array
+    ! deallocate moab fields arrays
     if (mrofid > 0) then
       deallocate (r2x_rm)
+      deallocate (r2x_rm_t)
+      deallocate (x2r_rm)
+      deallocate (x2r_rm_t)
     endif
 #endif
   end subroutine rof_final_mct
@@ -711,7 +715,7 @@ contains
     !
     ! ARGUMENTS:
     implicit none
-    type(mct_aVect), intent(inout) :: x2r_r         
+    real(r8), intent(in) :: x2r_r(:,:)
     !
     ! LOCAL VARIABLES
     integer :: n2, n, nt, begr, endr, nliq, nfrz, nmud, nsan
@@ -762,53 +766,53 @@ contains
     do n = begr,endr
        n2 = n - begr + 1
 
-       rtmCTL%qsur(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofsur,n2) * (rtmCTL%area(n)*0.001_r8)
-       rtmCTL%qsub(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofsub,n2) * (rtmCTL%area(n)*0.001_r8)
-       rtmCTL%qgwl(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofgwl,n2) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qsur(n,nliq) = x2r_r(index_x2r_Flrl_rofsur,n2) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qsub(n,nliq) = x2r_r(index_x2r_Flrl_rofsub,n2) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qgwl(n,nliq) = x2r_r(index_x2r_Flrl_rofgwl,n2) * (rtmCTL%area(n)*0.001_r8)
        if (index_x2r_Flrl_rofdto > 0) then
-          rtmCTL%qdto(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofdto,n2) * (rtmCTL%area(n)*0.001_r8)
+          rtmCTL%qdto(n,nliq) = x2r_r(index_x2r_Flrl_rofdto,n2) * (rtmCTL%area(n)*0.001_r8)
        else
           rtmCTL%qdto(n,nliq) = 0.0_r8
        endif
        if (wrmflag) then
-          rtmCTL%qdem(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_demand,n2) / TUnit%domainfrac(n) * (rtmCTL%area(n)*0.001_r8)
+          rtmCTL%qdem(n,nliq) = x2r_r(index_x2r_Flrl_demand,n2) / TUnit%domainfrac(n) * (rtmCTL%area(n)*0.001_r8)
        else
           rtmCTL%qdem(n,nliq) = 0.0_r8
        endif
-       rtmCTL%qsur(n,nfrz) = x2r_r%rAttr(index_x2r_Flrl_rofi,n2) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qsur(n,nfrz) = x2r_r(index_x2r_Flrl_rofi,n2) * (rtmCTL%area(n)*0.001_r8)
        rtmCTL%qsub(n,nfrz) = 0.0_r8
        rtmCTL%qgwl(n,nfrz) = 0.0_r8
        rtmCTL%qdto(n,nfrz) = 0.0_r8
        rtmCTL%qdem(n,nfrz) = 0.0_r8
 
        if (index_x2r_So_ssh>0) then
-          rtmCTL%ssh(n)       = x2r_r%rAttr(index_x2r_So_ssh,n2)
+          rtmCTL%ssh(n)       = x2r_r(index_x2r_So_ssh,n2)
        end if
 
        if(heatflag) then
-          rtmCTL%Tqsur(n) = x2r_r%rAttr(index_x2r_Flrl_Tqsur,n2)
-          rtmCTL%Tqsub(n) = x2r_r%rAttr(index_x2r_Flrl_Tqsub,n2)
+          rtmCTL%Tqsur(n) = x2r_r(index_x2r_Flrl_Tqsur,n2)
+          rtmCTL%Tqsub(n) = x2r_r(index_x2r_Flrl_Tqsub,n2)
           THeat%Tqsur(n) = rtmCTL%Tqsur(n)
           THeat%Tqsub(n) = rtmCTL%Tqsub(n)
        
-          THeat%forc_t(n) = x2r_r%rAttr(index_x2r_Sa_tbot,n2)
-          THeat%forc_pbot(n) = x2r_r%rAttr(index_x2r_Sa_pbot,n2)
-          tmp1 = x2r_r%rAttr(index_x2r_Sa_u   ,n2)
-          tmp2 = x2r_r%rAttr(index_x2r_Sa_v   ,n2)
+          THeat%forc_t(n) = x2r_r(index_x2r_Sa_tbot,n2)
+          THeat%forc_pbot(n) = x2r_r(index_x2r_Sa_pbot,n2)
+          tmp1 = x2r_r(index_x2r_Sa_u   ,n2)
+          tmp2 = x2r_r(index_x2r_Sa_v   ,n2)
           THeat%forc_wind(n) = sqrt(tmp1*tmp1 + tmp2*tmp2)
-          THeat%forc_lwrad(n)= x2r_r%rAttr(index_x2r_Faxa_lwdn ,n2)
-          THeat%forc_solar(n)= x2r_r%rAttr(index_x2r_Faxa_swvdr,n2) + x2r_r%rAttr(index_x2r_Faxa_swvdf,n2) + &
-                               x2r_r%rAttr(index_x2r_Faxa_swndr,n2) + x2r_r%rAttr(index_x2r_Faxa_swndf,n2)
-          shum = x2r_r%rAttr(index_x2r_Sa_shum,n2)
+          THeat%forc_lwrad(n)= x2r_r(index_x2r_Faxa_lwdn ,n2)
+          THeat%forc_solar(n)= x2r_r(index_x2r_Faxa_swvdr,n2) + x2r_r(index_x2r_Faxa_swvdf,n2) + &
+                               x2r_r(index_x2r_Faxa_swndr,n2) + x2r_r(index_x2r_Faxa_swndf,n2)
+          shum = x2r_r(index_x2r_Sa_shum,n2)
           THeat%forc_vp(n)   = shum * THeat%forc_pbot(n)  / (0.622_r8 + 0.378_r8 * shum)
-          THeat%coszen(n)    = x2r_r%rAttr(index_x2r_coszen_str,n2)
+          THeat%coszen(n)    = x2r_r(index_x2r_coszen_str,n2)
        end if
 
        rtmCTL%qsur(n,nmud) = 0.0_r8
        rtmCTL%qsur(n,nsan) = 0.0_r8
 
        if (index_x2r_Flrl_inundinf > 0) then
-          rtmCTL%inundinf(n) = x2r_r%rAttr(index_x2r_Flrl_inundinf,n2) * (rtmCTL%area(n)*0.001_r8)
+          rtmCTL%inundinf(n) = x2r_r(index_x2r_Flrl_inundinf,n2) * (rtmCTL%area(n)*0.001_r8)
        endif
 
     enddo
@@ -816,7 +820,7 @@ contains
     if(sediflag) then
         do n = begr,endr
            n2 = n - begr + 1
-           rtmCTL%qsur(n,nmud) = x2r_r%rAttr(index_x2r_Flrl_rofmud,n2) * (rtmCTL%area(n)) ! kg/m2/s --> kg/s for sediment
+           rtmCTL%qsur(n,nmud) = x2r_r(index_x2r_Flrl_rofmud,n2) * (rtmCTL%area(n)) ! kg/m2/s --> kg/s for sediment
            rtmCTL%qsur(n,nsan) = 0.0_r8
         enddo
     end if
@@ -834,7 +838,7 @@ contains
     !
     ! ARGUMENTS:
     implicit none
-    type(mct_aVect), intent(inout) :: r2x_r  ! Runoff to coupler export state
+    real(r8), intent(inout) :: r2x_r(:,:)  ! Runoff to coupler export state
     !
     ! LOCAL VARIABLES
     integer :: ni, n, nt, nliq, nfrz
@@ -858,7 +862,7 @@ contains
        call shr_sys_abort()
     endif
 
-    r2x_r%rattr(:,:) = 0._r8
+    r2x_r(:,:) = 0._r8
 
     if (first_time) then
        if (masterproc) then
@@ -876,13 +880,13 @@ contains
        ! separate liquid and ice runoff
        do n = rtmCTL%begr,rtmCTL%endr
           ni = ni + 1
-          r2x_r%rAttr(index_r2x_Forr_rofl,ni) =  rtmCTL%direct(n,nliq) / (rtmCTL%area(n)*0.001_r8)
-          r2x_r%rAttr(index_r2x_Forr_rofi,ni) =  rtmCTL%direct(n,nfrz) / (rtmCTL%area(n)*0.001_r8)
+          r2x_r(index_r2x_Forr_rofl,ni) =  rtmCTL%direct(n,nliq) / (rtmCTL%area(n)*0.001_r8)
+          r2x_r(index_r2x_Forr_rofi,ni) =  rtmCTL%direct(n,nfrz) / (rtmCTL%area(n)*0.001_r8)
           if (rtmCTL%mask(n) >= 2) then
              ! liquid and ice runoff are treated separately - this is what goes to the ocean
-             r2x_r%rAttr(index_r2x_Forr_rofl,ni) = r2x_r%rAttr(index_r2x_Forr_rofl,ni) + &
+             r2x_r(index_r2x_Forr_rofl,ni) = r2x_r(index_r2x_Forr_rofl,ni) + &
                 rtmCTL%runoff(n,nliq) / (rtmCTL%area(n)*0.001_r8)
-             r2x_r%rAttr(index_r2x_Forr_rofi,ni) = r2x_r%rAttr(index_r2x_Forr_rofi,ni) + &
+             r2x_r(index_r2x_Forr_rofi,ni) = r2x_r(index_r2x_Forr_rofi,ni) + &
                 rtmCTL%runoff(n,nfrz) / (rtmCTL%area(n)*0.001_r8)
              if (ni > rtmCTL%lnumr) then
                 write(iulog,*) sub, ' : ERROR runoff count',n,ni
@@ -890,18 +894,18 @@ contains
              endif
 ! note runoff has already been divided by area so do not need to do it again for nutrient flux
              if (data_bgc_fluxes_to_ocean_flag) then
-               tmp1 = r2x_r%rAttr(index_r2x_Forr_rofl,ni)
-               r2x_r%rAttr(index_r2x_Forr_rofDIN,ni) =  tmp1*rtmCTL%concDIN(n)
-               r2x_r%rAttr(index_r2x_Forr_rofDIP,ni) =  tmp1*rtmCTL%concDIP(n)
-               r2x_r%rAttr(index_r2x_Forr_rofDON,ni) =  tmp1*rtmCTL%concDON(n)
-               r2x_r%rAttr(index_r2x_Forr_rofDOP,ni) =  tmp1*rtmCTL%concDOP(n)
-               r2x_r%rAttr(index_r2x_Forr_rofDOC,ni) =  tmp1*rtmCTL%concDOC(n)
-               r2x_r%rAttr(index_r2x_Forr_rofPP ,ni) =  tmp1*rtmCTL%concPP(n)
-               r2x_r%rAttr(index_r2x_Forr_rofDSi,ni) =  tmp1*rtmCTL%concDSi(n)
-               r2x_r%rAttr(index_r2x_Forr_rofPOC,ni) =  tmp1*rtmCTL%concPOC(n)
-               r2x_r%rAttr(index_r2x_Forr_rofPN ,ni) =  tmp1*rtmCTL%concPN(n)
-               r2x_r%rAttr(index_r2x_Forr_rofDIC,ni) =  tmp1*rtmCTL%concDIC(n)
-               r2x_r%rAttr(index_r2x_Forr_rofFe,ni)  =  tmp1*rtmCTL%concFe(n)
+               tmp1 = r2x_r(index_r2x_Forr_rofl,ni)
+               r2x_r(index_r2x_Forr_rofDIN,ni) =  tmp1*rtmCTL%concDIN(n)
+               r2x_r(index_r2x_Forr_rofDIP,ni) =  tmp1*rtmCTL%concDIP(n)
+               r2x_r(index_r2x_Forr_rofDON,ni) =  tmp1*rtmCTL%concDON(n)
+               r2x_r(index_r2x_Forr_rofDOP,ni) =  tmp1*rtmCTL%concDOP(n)
+               r2x_r(index_r2x_Forr_rofDOC,ni) =  tmp1*rtmCTL%concDOC(n)
+               r2x_r(index_r2x_Forr_rofPP ,ni) =  tmp1*rtmCTL%concPP(n)
+               r2x_r(index_r2x_Forr_rofDSi,ni) =  tmp1*rtmCTL%concDSi(n)
+               r2x_r(index_r2x_Forr_rofPOC,ni) =  tmp1*rtmCTL%concPOC(n)
+               r2x_r(index_r2x_Forr_rofPN ,ni) =  tmp1*rtmCTL%concPN(n)
+               r2x_r(index_r2x_Forr_rofDIC,ni) =  tmp1*rtmCTL%concDIC(n)
+               r2x_r(index_r2x_Forr_rofFe,ni)  =  tmp1*rtmCTL%concFe(n)
              end if
 
           endif
@@ -910,10 +914,10 @@ contains
        ! liquid and ice runoff added to liquid runoff, ice runoff is zero
        do n = rtmCTL%begr,rtmCTL%endr
           ni = ni + 1
-          r2x_r%rAttr(index_r2x_Forr_rofl,ni) =  &
+          r2x_r(index_r2x_Forr_rofl,ni) =  &
              (rtmCTL%direct(n,nfrz)+rtmCTL%direct(n,nliq)) / (rtmCTL%area(n)*0.001_r8)
           if (rtmCTL%mask(n) >= 2) then
-             r2x_r%rAttr(index_r2x_Forr_rofl,ni) = r2x_r%rAttr(index_r2x_Forr_rofl,ni) + &
+             r2x_r(index_r2x_Forr_rofl,ni) = r2x_r(index_r2x_Forr_rofl,ni) + &
                 (rtmCTL%runoff(n,nfrz)+rtmCTL%runoff(n,nliq)) / (rtmCTL%area(n)*0.001_r8)
              if (ni > rtmCTL%lnumr) then
                 write(iulog,*) sub, ' : ERROR runoff count',n,ni
@@ -921,18 +925,18 @@ contains
              endif
 ! note runoff has already been divided by area so do not need to do it again for nutrient flux
              if (data_bgc_fluxes_to_ocean_flag) then
-               tmp1 = r2x_r%rAttr(index_r2x_Forr_rofl,ni)
-               r2x_r%rAttr(index_r2x_Forr_rofDIN,ni) =  tmp1*rtmCTL%concDIN(n)
-               r2x_r%rAttr(index_r2x_Forr_rofDIP,ni) =  tmp1*rtmCTL%concDIP(n)
-               r2x_r%rAttr(index_r2x_Forr_rofDON,ni) =  tmp1*rtmCTL%concDON(n)
-               r2x_r%rAttr(index_r2x_Forr_rofDOP,ni) =  tmp1*rtmCTL%concDOP(n)
-               r2x_r%rAttr(index_r2x_Forr_rofDOC,ni) =  tmp1*rtmCTL%concDOC(n)
-               r2x_r%rAttr(index_r2x_Forr_rofPP ,ni) =  tmp1*rtmCTL%concPP(n)
-               r2x_r%rAttr(index_r2x_Forr_rofDSi,ni) =  tmp1*rtmCTL%concDSi(n)
-               r2x_r%rAttr(index_r2x_Forr_rofPOC,ni) =  tmp1*rtmCTL%concPOC(n)
-               r2x_r%rAttr(index_r2x_Forr_rofPN ,ni) =  tmp1*rtmCTL%concPN(n)
-               r2x_r%rAttr(index_r2x_Forr_rofDIC,ni) =  tmp1*rtmCTL%concDIC(n)
-               r2x_r%rAttr(index_r2x_Forr_rofFe,ni)  =  tmp1*rtmCTL%concFe(n)
+               tmp1 = r2x_r(index_r2x_Forr_rofl,ni)
+               r2x_r(index_r2x_Forr_rofDIN,ni) =  tmp1*rtmCTL%concDIN(n)
+               r2x_r(index_r2x_Forr_rofDIP,ni) =  tmp1*rtmCTL%concDIP(n)
+               r2x_r(index_r2x_Forr_rofDON,ni) =  tmp1*rtmCTL%concDON(n)
+               r2x_r(index_r2x_Forr_rofDOP,ni) =  tmp1*rtmCTL%concDOP(n)
+               r2x_r(index_r2x_Forr_rofDOC,ni) =  tmp1*rtmCTL%concDOC(n)
+               r2x_r(index_r2x_Forr_rofPP ,ni) =  tmp1*rtmCTL%concPP(n)
+               r2x_r(index_r2x_Forr_rofDSi,ni) =  tmp1*rtmCTL%concDSi(n)
+               r2x_r(index_r2x_Forr_rofPOC,ni) =  tmp1*rtmCTL%concPOC(n)
+               r2x_r(index_r2x_Forr_rofPN ,ni) =  tmp1*rtmCTL%concPN(n)
+               r2x_r(index_r2x_Forr_rofDIC,ni) =  tmp1*rtmCTL%concDIC(n)
+               r2x_r(index_r2x_Forr_rofFe,ni)  =  tmp1*rtmCTL%concFe(n)
              end if
           endif
        end do
@@ -943,14 +947,14 @@ contains
     ni = 0
     do n = rtmCTL%begr, rtmCTL%endr
        ni = ni + 1
-       r2x_r%rattr(index_r2x_Flrr_flood,ni)   = -rtmCTL%flood(n) / (rtmCTL%area(n)*0.001_r8)
-       r2x_r%rattr(index_r2x_Flrr_volr,ni)    = (Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)) / rtmCTL%area(n)
-       r2x_r%rattr(index_r2x_Flrr_volrmch,ni) = Trunoff%wr(n,nliq) / rtmCTL%area(n)
-       r2x_r%rattr(index_r2x_Flrr_supply,ni)  = 0._r8
-       r2x_r%rattr(index_r2x_Flrr_deficit,ni)  = 0._r8
+       r2x_r(index_r2x_Flrr_flood,ni)   = -rtmCTL%flood(n) / (rtmCTL%area(n)*0.001_r8)
+       r2x_r(index_r2x_Flrr_volr,ni)    = (Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)) / rtmCTL%area(n)
+       r2x_r(index_r2x_Flrr_volrmch,ni) = Trunoff%wr(n,nliq) / rtmCTL%area(n)
+       r2x_r(index_r2x_Flrr_supply,ni)  = 0._r8
+       r2x_r(index_r2x_Flrr_deficit,ni)  = 0._r8
        if (wrmflag) then
-          r2x_r%rattr(index_r2x_Flrr_supply,ni)  = StorWater%Supply(n) / (rtmCTL%area(n)*0.001_r8)   !converted to mm/s
-          r2x_r%rattr(index_r2x_Flrr_deficit,ni)  = (abs(rtmCTL%qdem(n,nliq)) - abs(StorWater%Supply(n))) / (rtmCTL%area(n)*0.001_r8)   !send deficit back to ELM
+          r2x_r(index_r2x_Flrr_supply,ni)  = StorWater%Supply(n) / (rtmCTL%area(n)*0.001_r8)   !converted to mm/s
+          r2x_r(index_r2x_Flrr_deficit,ni)  = (abs(rtmCTL%qdem(n,nliq)) - abs(StorWater%Supply(n))) / (rtmCTL%area(n)*0.001_r8)   !send deficit back to ELM
        endif
     end do
 
@@ -958,8 +962,8 @@ contains
       ni = 0
       do n = rtmCTL%begr, rtmCTL%endr
         ni = ni + 1
-        r2x_r%rattr(index_r2x_Sr_h2orof,ni)      = rtmCTL%inundwf(n) / (rtmCTL%area(n)*0.001_r8) ! m^3 to mm
-        r2x_r%rattr(index_r2x_Sr_frac_h2orof,ni) = rtmCTL%inundff(n)
+        r2x_r(index_r2x_Sr_h2orof,ni)      = rtmCTL%inundwf(n) / (rtmCTL%area(n)*0.001_r8) ! m^3 to mm
+        r2x_r(index_r2x_Sr_frac_h2orof,ni) = rtmCTL%inundff(n)
       enddo
     endif
 
@@ -1133,277 +1137,8 @@ contains
   end subroutine init_moab_rof
 
 
-subroutine rof_export_moab(EClock)
- ! copy 
-     !---------------------------------------------------------------------------
-    ! DESCRIPTION:
-    ! Send the runoff model export state to the coupler
-    ! convert from m3/s to kg/m2s
-    !
-    ! ARGUMENTS:
-   use seq_comm_mct,      only: mrofid  ! id of moab rof app
-
-   use iMOAB,  only       :  iMOAB_WriteMesh
-   implicit none
-   !
-   type(ESMF_Clock) , intent(inout) :: EClock    ! Input synchronization clock from driver
-   ! LOCAL VARIABLES
-   integer :: ni, n, nt, nliq, nfrz, lsz, ierr, ent_type
-   logical,save :: first_time = .true.
-   character(len=32), parameter :: sub = 'rof_export_moab'
-
-   character*100 outfile, wopts, localmeshfile, lnum
-   character(CXX) :: tagname
-   integer :: cur_rof_stepno
-   !---------------------------------------------------------------------------
-   nliq = 0
-    nfrz = 0
-    do nt = 1,nt_rtm
-       if (trim(rtm_tracers(nt)) == 'LIQ') then
-          nliq = nt
-       endif
-       if (trim(rtm_tracers(nt)) == 'ICE') then
-          nfrz = nt
-       endif
-    enddo
-    if (nliq == 0 .or. nfrz == 0) then
-       write(iulog,*) trim(sub),': ERROR in rtm_tracers LIQ ICE ',nliq,nfrz,rtm_tracers
-       call shr_sys_abort()
-    endif
-
-    r2x_rm = 0._r8
-
-    if (first_time) then
-       if (masterproc) then
-       if ( ice_runoff )then
-          write(iulog,*)'Snow capping will flow out in frozen river runoff'
-       else
-          write(iulog,*)'Snow capping will flow out in liquid river runoff'
-       endif
-       endif
-       first_time = .false.
-    end if
-
-    ni = 0
-    if ( ice_runoff )then
-       ! separate liquid and ice runoff
-       do n = rtmCTL%begr,rtmCTL%endr
-          ni = ni + 1
-          r2x_rm(ni,index_r2x_Forr_rofl) =  rtmCTL%direct(n,nliq) / (rtmCTL%area(n)*0.001_r8)
-          r2x_rm(ni,index_r2x_Forr_rofi) =  rtmCTL%direct(n,nfrz) / (rtmCTL%area(n)*0.001_r8)
-          if (rtmCTL%mask(n) >= 2) then
-             ! liquid and ice runoff are treated separately - this is what goes to the ocean
-             r2x_rm(ni,index_r2x_Forr_rofl) = r2x_rm(ni,index_r2x_Forr_rofl) + &
-                rtmCTL%runoff(n,nliq) / (rtmCTL%area(n)*0.001_r8)
-             r2x_rm(ni,index_r2x_Forr_rofi) = r2x_rm(ni,index_r2x_Forr_rofi) + &
-                rtmCTL%runoff(n,nfrz) / (rtmCTL%area(n)*0.001_r8)
-             if (ni > rtmCTL%lnumr) then
-                write(iulog,*) sub, ' : ERROR runoff count',n,ni
-                call shr_sys_abort( sub//' : ERROR runoff > expected' )
-             endif
-          endif
-       end do
-    else
-       ! liquid and ice runoff added to liquid runoff, ice runoff is zero
-       do n = rtmCTL%begr,rtmCTL%endr
-          ni = ni + 1
-          r2x_rm(ni,index_r2x_Forr_rofl) =  &
-             (rtmCTL%direct(n,nfrz)+rtmCTL%direct(n,nliq)) / (rtmCTL%area(n)*0.001_r8)
-          if (rtmCTL%mask(n) >= 2) then
-             r2x_rm(ni,index_r2x_Forr_rofl) = r2x_rm(ni,index_r2x_Forr_rofl) + &
-                (rtmCTL%runoff(n,nfrz)+rtmCTL%runoff(n,nliq)) / (rtmCTL%area(n)*0.001_r8)
-             if (ni > rtmCTL%lnumr) then
-                write(iulog,*) sub, ' : ERROR runoff count',n,ni
-                call shr_sys_abort( sub//' : ERROR runoff > expected' )
-             endif
-          endif
-       end do
-    end if
-
-    ! Flooding back to land, sign convention is positive in land->rof direction
-    ! so if water is sent from rof to land, the flux must be negative.
-    ni = 0
-    do n = rtmCTL%begr, rtmCTL%endr
-       ni = ni + 1
-       r2x_rm(ni,index_r2x_Flrr_flood)   = -rtmCTL%flood(n) / (rtmCTL%area(n)*0.001_r8)
-       r2x_rm(ni,index_r2x_Flrr_volr)    = (Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)) / rtmCTL%area(n)
-       r2x_rm(ni,index_r2x_Flrr_volrmch) = Trunoff%wr(n,nliq) / rtmCTL%area(n)
-       r2x_rm(ni,index_r2x_Flrr_supply)  = 0._r8
-       r2x_rm(ni,index_r2x_Flrr_deficit)  = 0._r8
-       if (wrmflag) then
-          r2x_rm(ni,index_r2x_Flrr_supply)  = StorWater%Supply(n) / (rtmCTL%area(n)*0.001_r8)   !converted to mm/s
-          r2x_rm(ni,index_r2x_Flrr_deficit)  = (abs(rtmCTL%qdem(n,nliq)) - abs(StorWater%Supply(n))) / (rtmCTL%area(n)*0.001_r8)   !send deficit back to ELM
-       endif
-    end do
-
-   tagname=trim(seq_flds_r2x_fields)//C_NULL_CHAR
-   ent_type = 0 ! vertices
-   ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, totalmbls , ent_type, r2x_rm(1,1) )
-   if (ierr > 0 )  &
-      call shr_sys_abort( sub//' Error: fail to set moab '// trim(seq_flds_r2x_fields) )
-   call seq_timemgr_EClockGetData( EClock, stepno=cur_rof_stepno )
-#ifdef MOABDEBUG
-      write(lnum,"(I0.2)")cur_rof_stepno
-      outfile = 'rof_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
-      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-      ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
-      if (ierr > 0 )  &
-        call shr_sys_abort( sub//' fail to write the runoff mesh file with data')
-#endif
-
-! end copy
-end subroutine rof_export_moab
-
-!====================================================================================
- 
-  subroutine rof_import_moab( EClock )
-
-    use iMOAB, only : iMOAB_GetDoubleTagStorage, iMOAB_WriteMesh
-    !---------------------------------------------------------------------------
-    ! DESCRIPTION:
-    ! Obtain the runoff input from the moab coupler
-    ! convert from kg/m2s to m3/s
-    !
-    ! ARGUMENTS:
-    implicit none
-    type(ESMF_Clock) , intent(inout) :: EClock    ! Input synchronization clock from driver
-     
-    !
-    ! LOCAL VARIABLES
-    integer :: n2, n, nt, begr, endr, nliq, nfrz, nmud, nsan
-    real(R8) :: tmp1, tmp2
-    real(R8) :: shum
-    character(CXX) ::  tagname ! 
-    integer  :: ent_type, ierr
-    integer :: cur_rof_stepno
-
-    character(len=32), parameter :: sub = 'rof_import_moab'
-    !---------------------------------------------------------------------------
-#ifdef MOABDEBUG
-    character*100 outfile, wopts, lnum
-#endif
-
-    call seq_timemgr_EClockGetData( EClock, stepno=cur_rof_stepno )
-#ifdef MOABDEBUG
-    write(lnum,"(I0.2)")cur_rof_stepno
-    outfile = 'rof_import_'//trim(lnum)//'.h5m'//C_NULL_CHAR
-    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-    ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
-    if (ierr > 0 )  then
-       call shr_sys_abort(sub//'Error: fail to write rof state')
-    endif
-#endif   
-
-    ! populate the array x2r_rm with data from MOAB tags
-    tagname=trim(seq_flds_x2r_fields)//C_NULL_CHAR
-    ent_type = 0 ! vertices, point cloud
-    ierr = iMOAB_GetDoubleTagStorage ( mrofid, tagname, totalmbls_r , ent_type, x2r_rm )
-    if ( ierr > 0) then
-      call shr_sys_abort(sub//'Error: fail to get  seq_flds_a2x_fields for atm physgrid moab mesh')
-    endif
-
-    ! Note that ***runin are fluxes
-    nliq = 0
-    nfrz = 0
-    nmud = 0
-    nsan = 0
-    do nt = 1,nt_rtm
-       if (trim(rtm_tracers(nt)) == 'LIQ') then
-          nliq = nt
-       endif
-       if (trim(rtm_tracers(nt)) == 'ICE') then
-          nfrz = nt
-       endif
-       if (trim(rtm_tracers(nt)) == 'MUD') then
-          nmud = nt
-       endif
-       if (trim(rtm_tracers(nt)) == 'SAN') then
-          nsan = nt
-       endif
-    enddo
-    if (nliq == 0) then
-       write(iulog,*) trim(sub),': ERROR in rtm_tracers LIQ',nliq,rtm_tracers
-       call shr_sys_abort()
-    endif
-    if (nfrz == 0) then
-       write(iulog,*) trim(sub),': ERROR in rtm_tracers ICE',nfrz,rtm_tracers
-       call shr_sys_abort()
-    endif
-    if (nmud == 0) then
-       write(iulog,*) trim(sub),': ERROR in rtm_tracers MUD',nmud,rtm_tracers
-       call shr_sys_abort()
-    endif
-    if (nsan == 0) then
-       write(iulog,*) trim(sub),': ERROR in rtm_tracers SAN',nsan,rtm_tracers
-       call shr_sys_abort()
-    endif
-
-  ! %rAttr( -> m(n2,    ,n2) -> )
-    begr = rtmCTL%begr
-    endr = rtmCTL%endr
-    do n = begr,endr
-       n2 = n - begr + 1
-
-       rtmCTL%qsur(n,nliq) = x2r_rm(n2,index_x2r_Flrl_rofsur) * (rtmCTL%area(n)*0.001_r8)
-       rtmCTL%qsub(n,nliq) = x2r_rm(n2,index_x2r_Flrl_rofsub) * (rtmCTL%area(n)*0.001_r8)
-       rtmCTL%qgwl(n,nliq) = x2r_rm(n2,index_x2r_Flrl_rofgwl) * (rtmCTL%area(n)*0.001_r8)
-       if (index_x2r_Flrl_rofdto > 0) then
-          rtmCTL%qdto(n,nliq) = x2r_rm(n2,index_x2r_Flrl_rofdto) * (rtmCTL%area(n)*0.001_r8)
-       else
-          rtmCTL%qdto(n,nliq) = 0.0_r8
-       endif
-       if (wrmflag) then
-          rtmCTL%qdem(n,nliq) = x2r_rm(n2,index_x2r_Flrl_demand) / TUnit%domainfrac(n) * (rtmCTL%area(n)*0.001_r8)
-       else
-          rtmCTL%qdem(n,nliq) = 0.0_r8
-       endif
-       rtmCTL%qsur(n,nfrz) = x2r_rm(n2,index_x2r_Flrl_rofi) * (rtmCTL%area(n)*0.001_r8)
-       rtmCTL%qsub(n,nfrz) = 0.0_r8
-       rtmCTL%qgwl(n,nfrz) = 0.0_r8
-       rtmCTL%qdto(n,nfrz) = 0.0_r8
-       rtmCTL%qdem(n,nfrz) = 0.0_r8
-
-       if(heatflag) then
-          rtmCTL%Tqsur(n) = x2r_rm(n2,index_x2r_Flrl_Tqsur)
-          rtmCTL%Tqsub(n) = x2r_rm(n2,index_x2r_Flrl_Tqsub)
-          THeat%Tqsur(n) = rtmCTL%Tqsur(n)
-          THeat%Tqsub(n) = rtmCTL%Tqsub(n)
-       
-          THeat%forc_t(n) = x2r_rm(n2,index_x2r_Sa_tbot)
-          THeat%forc_pbot(n) = x2r_rm(n2,index_x2r_Sa_pbot)
-          tmp1 = x2r_rm(n2,index_x2r_Sa_u   )
-          tmp2 = x2r_rm(n2,index_x2r_Sa_v   )
-          THeat%forc_wind(n) = sqrt(tmp1*tmp1 + tmp2*tmp2)
-          THeat%forc_lwrad(n)= x2r_rm(n2,index_x2r_Faxa_lwdn )
-          THeat%forc_solar(n)= x2r_rm(n2,index_x2r_Faxa_swvdr) + x2r_rm(n2,index_x2r_Faxa_swvdf) + &
-                               x2r_rm(n2,index_x2r_Faxa_swndr) + x2r_rm(n2,index_x2r_Faxa_swndf)
-          shum = x2r_rm(n2,index_x2r_Sa_shum)
-          THeat%forc_vp(n)   = shum * THeat%forc_pbot(n)  / (0.622_r8 + 0.378_r8 * shum)
-          THeat%coszen(n)    = x2r_rm(n2,index_x2r_coszen_str)
-       end if
-
-
-       rtmCTL%qsur(n,nmud) = 0.0_r8
-       rtmCTL%qsur(n,nsan) = 0.0_r8
-
-       if (index_x2r_Flrl_inundinf > 0) then
-          rtmCTL%inundinf(n) = x2r_rm(n2,index_x2r_Flrl_inundinf) * (rtmCTL%area(n)*0.001_r8)
-       endif
-
-    enddo
-
-    if(sediflag) then
-        do n = begr,endr
-           n2 = n - begr + 1
-           rtmCTL%qsur(n,nmud) = x2r_rm(n2,index_x2r_Flrl_rofmud) * (rtmCTL%area(n)) ! kg/m2/s --> kg/s for sediment
-           rtmCTL%qsur(n,nsan) = 0.0_r8
-        enddo
-    end if
-
-  end subroutine rof_import_moab
-
 
 ! end #ifdef HAVE_MOAB
-#endif 
+#endif
 
 end module rof_comp_mct
