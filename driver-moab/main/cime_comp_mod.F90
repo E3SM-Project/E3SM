@@ -697,7 +697,7 @@ module cime_comp_mod
 
 #ifdef MOABDEBUG
 ! allocate to get data frpm moab
-  real(r8) ,  private, pointer :: moab_tag_vals(:,:) ! various tags for debug purposes 
+  real(r8) ,  private, pointer :: moab_tag_vals(:,:) ! various tags for debug purposes
   integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3), arrsize, ent_type
   character(100) :: tagname
   type(mct_aVect) , pointer :: a2x_aa => null()
@@ -2190,28 +2190,23 @@ contains
     if (atm_present) call component_init_areacor(atm, areafact_samegrid, seq_flds_a2x_fluxes)
     ! send initial data to coupler
     if (atm_present) call component_init_areacor_moab(atm, areafact_samegrid, mphaid, mbaxid, seq_flds_a2x_fluxes, seq_flds_a2x_fields)
-    ! component_exch_moab(atm(1), mphaid, mbaxid, 0, seq_flds_a2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (lnd_present) call component_init_areacor(lnd, areafact_samegrid, seq_flds_l2x_fluxes)
     ! MOABTODO : lnd is vertex or cell ?
     if (lnd_present) call component_init_areacor_moab(lnd, areafact_samegrid, mlnid, mblxid, seq_flds_l2x_fluxes, seq_flds_l2x_fields)
-    !component_exch_moab(lnd(1), mlnid, mblxid, 0, seq_flds_l2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (rof_present) call component_init_areacor(rof, areafact_samegrid, seq_flds_r2x_fluxes)
     if (rof_present) call component_init_areacor_moab(rof, areafact_samegrid, mrofid, mbrxid, seq_flds_r2x_fluxes, seq_flds_r2x_fields)
-    !component_exch_moab(rof(1), mrofid, mbrxid, 0, seq_flds_r2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (ocn_present) call component_init_areacor(ocn, areafact_samegrid, seq_flds_o2x_fluxes)
     if (ocn_present) call component_init_areacor_moab(ocn, areafact_samegrid, mpoid, mboxid, seq_flds_o2x_fluxes, seq_flds_o2x_fields)
-    ! component_exch_moab(ocn(1), mpoid, mboxid, 0, seq_flds_o2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (ice_present) call component_init_areacor(ice, areafact_samegrid, seq_flds_i2x_fluxes)
     if (ice_present) call component_init_areacor_moab(ice, areafact_samegrid, mpsiid, mbixid, seq_flds_i2x_fluxes, seq_flds_i2x_fields)
-    !component_exch_moab(ice(1), mpsiid, mbixid, 0, seq_flds_i2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (glc_present) call component_init_areacor(glc, areafact_samegrid, seq_flds_g2x_fluxes)
@@ -2464,7 +2459,7 @@ contains
              endif
           endif
 
-          call component_diag(infodata, atm, flow='x2c', comment='send atm', info_debug=info_debug)
+          call component_diag(infodata, atm, flow='x2c', comment='send ALB atm', info_debug=info_debug)
 
        endif
 
@@ -2486,12 +2481,8 @@ contains
        endif
 
        ! Send atm input data from coupler pes to atm pes
-       if (atm_prognostic) then
-          call component_exch(atm, flow='x2c', infodata=infodata, &
-               infodata_string='cpl2atm_init')
-          ! moab too
-          call component_exch_moab(atm(1), mbaxid, mphaid, 1, seq_flds_x2a_fields)
-       endif
+       call component_exch_moab(atm(1), mbaxid, mphaid, 'x2c', seq_flds_x2a_fields, &
+            infodata=infodata, infodata_string='cpl2atm_init')
 
        ! Set atm init phase to 2 for all atm instances on component instance pes
        do eai = 1,num_inst_atm
@@ -2507,10 +2498,8 @@ contains
             seq_flds_c2x_fluxes=seq_flds_a2x_fluxes)
 
        ! Send atm output data from atm pes to cpl pes
-       call component_exch(atm, flow='c2x', infodata=infodata, &
-            infodata_string='atm2cpl_init')
-       !
-       call component_exch_moab(atm(1), mphaid, mbaxid, 0, seq_flds_a2x_fields)
+       call component_exch_moab(atm(1), mphaid, mbaxid, 'c2x', seq_flds_a2x_fields, &
+            infodata=infodata, infodata_string='atm2cpl_init')
 
        if (iamin_CPLID) then
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -4167,12 +4156,12 @@ contains
     !----------------------------------------------------------
 
     if (iamin_CPLALLATMID .and. atm_prognostic) then
-       call component_exch(atm, flow='x2c', infodata=infodata, infodata_string='cpl2atm_run', &
+       ! will migrate the tag from coupler pes to component pes, on atm mesh
+       call component_exch_moab(atm(1), mbaxid, mphaid, 'x2c', seq_flds_x2a_fields, &
+            infodata=infodata, infodata_string='cpl2atm_run', &
             mpicom_barrier=mpicom_CPLALLATMID, run_barriers=run_barriers, &
             timer_barrier='CPL:C2A_BARRIER', timer_comp_exch='CPL:C2A', &
             timer_map_exch='CPL:c2a_atmx2atmg', timer_infodata_exch='CPL:c2a_infoexch')
-       ! will migrate the tag from coupler pes to component pes, on atm mesh
-       call component_exch_moab(atm(1), mbaxid, mphaid, 1, seq_flds_x2a_fields)
     endif
 
   end subroutine cime_run_atm_setup_send
@@ -4186,13 +4175,12 @@ contains
     !| atm -> cpl
     !----------------------------------------------------------
     if (iamin_CPLALLATMID) then
-       call component_exch(atm, flow='c2x', infodata=infodata, infodata_string='atm2cpl_run', &
+       ! will migrate the tag from component pes to coupler pes, on atm mesh
+       call component_exch_moab(atm(1), mphaid, mbaxid, 'c2x', seq_flds_a2x_fields, &
+            infodata=infodata, infodata_string='atm2cpl_run', &
             mpicom_barrier=mpicom_CPLALLATMID, run_barriers=run_barriers, &
             timer_barrier='CPL:A2C_BARRIER', timer_comp_exch='CPL:A2C', &
             timer_map_exch='CPL:a2c_atma2atmx', timer_infodata_exch='CPL:a2c_infoexch')
-
-       ! will migrate the tag from component pes to coupler pes, on atm mesh
-       call component_exch_moab(atm(1), mphaid, mbaxid, 0, seq_flds_a2x_fields)
     endif
 
     !----------------------------------------------------------
@@ -4214,19 +4202,6 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        call t_drvstopf  ('CPL:ATMPOST',cplrun=.true.)
     endif
-
-   !  ! send projected data from atm to ocean mesh, after projection in coupler
-   !  if (iamin_CPLALLOCNID .and. ocn_c2_atm) then
-   !     ! migrate that tag from coupler pes to ocean pes
-   !     call prep_ocn_migrate_moab(infodata)
-   !  endif
-
-   !  ! send projected data from atm to land mesh, after projection in coupler
-   !  if (iamin_CPLALLLNDID .and. atm_c2_lnd) then
-   !     ! migrate that tag from coupler pes to ocean pes
-   !     call prep_lnd_migrate_moab(infodata)
-   !  endif
-
 
   end subroutine cime_run_atm_recv_post
 
@@ -4276,13 +4251,11 @@ contains
     ! cpl -> ocn
     !----------------------------------------------------
     if (iamin_CPLALLOCNID .and. ocn_prognostic) then
-       call component_exch(ocn, flow='x2c', &
+       call component_exch_moab(ocn(1), mboxid, mpoid, 'x2c', seq_flds_x2o_fields, &
             infodata=infodata, infodata_string='cpl2ocn_run', &
             mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
             timer_barrier='CPL:C2O_BARRIER', timer_comp_exch='CPL:C2O', &
             timer_map_exch='CPL:c2o_ocnx2ocno', timer_infodata_exch='CPL:c2o_infoexch')
-       ! will migrate the tag from coupler pes to component pes, on ocn mesh
-       call component_exch_moab(ocn(1), mboxid, mpoid, 1, seq_flds_x2o_fields)
 
     endif
 
@@ -4298,15 +4271,11 @@ contains
     ! ocn -> cpl
     !----------------------------------------------------------
     if (iamin_CPLALLOCNID) then
-       call component_exch(ocn, flow='c2x', &
+       call component_exch_moab(ocn(1), mpoid, mboxid, 'c2x', seq_flds_o2x_fields, &
             infodata=infodata, infodata_string='ocn2cpl_run', &
             mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
             timer_barrier='CPL:O2CT_BARRIER', timer_comp_exch='CPL:O2CT', &
             timer_map_exch='CPL:o2c_ocno2ocnx', timer_infodata_exch='CPL:o2c_infoexch')
-       ! send from ocn pes to coupler
-       ! call ocn_cpl_moab(ocn)
-       ! new way
-       call component_exch_moab(ocn(1), mpoid, mboxid, 0, seq_flds_o2x_fields)
     endif
 
     !----------------------------------------------------------
@@ -4555,12 +4524,11 @@ contains
     !| cpl -> lnd
     !----------------------------------------------------
     if (iamin_CPLALLLNDID) then
-       call component_exch(lnd, flow='x2c', &
+       call component_exch_moab(lnd(1), mblxid, mlnid, 'x2c', seq_flds_x2l_fields, &
             infodata=infodata, infodata_string='cpl2lnd_run', &
             mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
             timer_barrier='CPL:C2L_BARRIER', timer_comp_exch='CPL:C2L', &
             timer_map_exch='CPL:c2l_lndx2lndl', timer_infodata_exch='CPL:c2l_infoexch')
-       call component_exch_moab(lnd(1), mblxid, mlnid, 1, seq_flds_x2l_fields)
     endif
 
   end subroutine cime_run_lnd_setup_send
@@ -4575,12 +4543,12 @@ contains
     !| lnd -> cpl
     !----------------------------------------------------------
     if (iamin_CPLALLLNDID) then
-       call component_exch(lnd, flow='c2x', infodata=infodata, infodata_string='lnd2cpl_run', &
+       ! send from land to coupler,
+       call component_exch_moab(lnd(1), mlnid, mblxid, 'c2x', seq_flds_l2x_fields, &
+            infodata=infodata, infodata_string='lnd2cpl_run', &
             mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
             timer_barrier='CPL:L2C_BARRIER', timer_comp_exch='CPL:L2C', &
             timer_map_exch='CPL:l2c_lndl2lndx', timer_infodata_exch='lnd2cpl_run')
-       ! send from land to coupler,
-       call component_exch_moab(lnd(1), mlnid, mblxid, 0, seq_flds_l2x_fields)
     endif
 
     !----------------------------------------------------------
@@ -4762,13 +4730,11 @@ contains
     ! cpl -> rof
     !----------------------------------------------------
     if (iamin_CPLALLROFID .and. rof_prognostic) then
-       call component_exch(rof, flow='x2c', &
+       call component_exch_moab(rof(1), mbrxid, mrofid, 'x2c', seq_flds_x2r_fields, &
             infodata=infodata, infodata_string='cpl2rof_run', &
             mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
             timer_barrier='CPL:C2R_BARRIER', timer_comp_exch='CPL:C2R', &
             timer_map_exch='CPL:c2r_rofx2rofr', timer_infodata_exch='CPL:c2r_infoexch')
-
-       call component_exch_moab(rof(1), mbrxid, mrofid, 1, seq_flds_x2r_fields)
     endif
 
   end subroutine cime_run_rof_setup_send
@@ -4783,15 +4749,11 @@ contains
     ! rof -> cpl
     !----------------------------------------------------------
     if (iamin_CPLALLROFID) then
-       call component_exch(rof, flow='c2x', &
+       call component_exch_moab(rof(1), mrofid, mbrxid, 'c2x', seq_flds_r2x_fields, &
             infodata=infodata, infodata_string='rof2cpl_run', &
             mpicom_barrier=mpicom_CPLALLROFID, run_barriers=run_barriers, &
             timer_barrier='CPL:R2C_BARRIER', timer_comp_exch='CPL:R2C', &
             timer_map_exch='CPL:r2c_rofr2rofx', timer_infodata_exch='CPL:r2c_infoexch')
-       ! this is for one hop
-       call component_exch_moab(rof(1), mrofid, mbrxid, 0, seq_flds_r2x_fields)
-
-       !call prep_rof_migrate_moab(infodata)
     endif
 
     !----------------------------------------------------------
@@ -4860,12 +4822,11 @@ contains
     ! cpl -> ice
     !----------------------------------------------------
     if (iamin_CPLALLICEID .and. ice_prognostic) then
-       call component_exch(ice, flow='x2c', &
+       call component_exch_moab(ice(1), mbixid, mpsiid, 'x2c', seq_flds_x2i_fields, &
             infodata=infodata, infodata_string='cpl2ice_run', &
             mpicom_barrier=mpicom_CPLALLICEID, run_barriers=run_barriers, &
             timer_barrier='CPL:C2I_BARRIER', timer_comp_exch='CPL:C2I', &
             timer_map_exch='CPL:c2i_icex2icei', timer_infodata_exch='CPL:ice_infoexch')
-       call component_exch_moab(ice(1), mbixid, mpsiid, 1, seq_flds_x2i_fields)
     endif
 
   end subroutine cime_run_ice_setup_send
@@ -4881,18 +4842,11 @@ contains
     use seq_flds_mod , only : seq_flds_i2x_fields
     use seq_comm_mct , only : mpsiid, mbixid !
     if (iamin_CPLALLICEID) then
-       call component_exch(ice, flow='c2x', &
+       call component_exch_moab(ice(1), mpsiid, mbixid, 'c2x', seq_flds_i2x_fields, &
             infodata=infodata, infodata_string='ice2cpl_run', &
             mpicom_barrier=mpicom_CPLALLICEID, run_barriers=run_barriers, &
             timer_barrier='CPL:I2C_BARRIER', timer_comp_exch='CPL:I2C', &
-            timer_map_exch='CPL:i2c_icei2icex', timer_infodata_exch='CPL:i2c_infoexch')
-
-       ! also call moab ice-ocn projection, which is just a migrate
-       ! this needs to happen between ice comp and ocn coupler directly
-       ! it needs to be called on the joint comm between ice and coupler
-       ! if we do a proper component_exch, then would need another hop, just on coupler pes
-       !  TODO when do we need to send from ice to ocn? Usually after ice run ?
-       call component_exch_moab(ice(1), mpsiid, mbixid, 0, seq_flds_i2x_fields) ! this migrates all fields from ice to coupler
+            timer_map_exch='CPL:i2c_icei2icex', timer_infodata_exch='CPL:i2c_infoexch') ! this migrates all fields from ice to coupler
     endif
 
     !----------------------------------------------------------

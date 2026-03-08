@@ -68,11 +68,10 @@ module ice_comp_mct
 
 #ifdef HAVE_MOAB
   use iso_c_binding
+  use shr_kind_mod,       only: CXX => SHR_KIND_CXX
   use seq_comm_mct,       only: MPSIID! id of moab sea ice app
   use seq_comm_mct,       only: num_moab_exports
-#ifdef MOABCOMP 
-  use seq_comm_mct , only: seq_comm_compare_mb_mct
-#endif
+  use iMOAB,              only: iMOAB_SetDoubleTagStorage, iMOAB_GetDoubleTagStorage
 #ifdef MOABDEBUG
   use iMOAB        , only: iMOAB_WriteMesh
 #endif
@@ -104,9 +103,11 @@ module ice_comp_mct
   private :: init_moab_cice   ! create moab mesh (cloud of points)
   integer , private :: mblsize, nsend, totalmbls
   real (r8) , allocatable, private :: i2x_im(:,:) ! for tags to be set in MOAB
+  real (r8) , allocatable, private :: i2x_im_t(:,:) ! for tags to be set in MOAB
 
   integer :: nrecv, totalmblsimp
   real (r8) , allocatable, private :: x2i_im(:,:) ! for tags from MOAB
+  real (r8) , allocatable, private :: x2i_im_t(:,:) ! for tags from MOAB
 
   integer  :: mpicom_ice_moab ! used also for mpi-reducing the difference between moab tags and mct avs
   integer :: rank2
@@ -185,6 +186,10 @@ contains
     integer            :: mpicom_loc  ! temporary mpicom
     logical (kind=log_kind) :: atm_aero
     real(r8) :: mrss, mrss0,msize,msize0
+#ifdef HAVE_MOAB
+    integer :: ent_type
+    character(CXX) :: tagname
+#endif
     character(len=*), parameter  :: SubName = "ice_init_mct"
 ! !REVISION HISTORY:
 ! Author: Mariana Vertenstein
@@ -378,6 +383,7 @@ contains
 
        call mct_rearr_init(gsmap_ice, gsmap_extend, MPI_COMM_ICE, rearr_ice2iloc)
        call mct_rearr_init(gsmap_extend, gsmap_ice, MPI_COMM_ICE, rearr_iloc2ice)
+
        call mct_aVect_init(x2i_iloc, rList=seq_flds_x2i_fields, lsize=lsize_loc)
        call mct_aVect_zero(x2i_iloc)
        call mct_aVect_init(i2x_iloc, rList=seq_flds_i2x_fields, lsize=lsize_loc)
@@ -403,12 +409,17 @@ contains
     mblsize = lsize
     nsend = mct_avect_nRattr(i2x_i)
     totalmbls = mblsize * nsend ! size of the double array
-    allocate (i2x_im(lsize, nsend) )
-    i2x_im(:,:) = -1.0E10_r8
+    allocate (i2x_im( nsend, mblsize) )
+    allocate (i2x_im_t(mblsize, nsend) )
+    i2x_im(:,:) = 0._r8
+    i2x_im_t(:,:) = 0._r8
+
     nrecv = mct_avect_nRattr(x2i_i) ! number of fields retrived from MOAB tags, based on names from seq_flds_x2l_fields
     totalmblsimp = mblsize * nrecv ! size of the double array to fill with data from MOAB
-    allocate (x2i_im(lsize, nrecv) )
+    allocate (x2i_im(mblsize, nrecv) )
+    allocate (x2i_im_t(nrecv, mblsize) )
     x2i_im(:,:) = 0._r8
+    x2i_im_t(:,:) = 0._r8
     if (my_task == master_task) then
       write(nu_diag,*) SubName, ' mblsize= ',mblsize,' nsend, nrecv for moab:', nsend, nrecv
     end if
@@ -438,9 +449,15 @@ contains
        call ice_setdef_mct ( i2x_i )
        call mct_rearr_rearrange(i2x_iloc, i2x_i, rearr_iloc2ice)
     else
-       call ice_export (i2x_i%rattr)  !Send initial state to driver
 #ifdef HAVE_MOAB
-       call ice_export_moab( i2x_im, ECLock, totalmbls)
+       call ice_export (i2x_im)
+       i2x_im_t = transpose(i2x_im)
+       tagname=trim(seq_flds_i2x_fields)//C_NULL_CHAR
+       ent_type = 0
+       ierr = iMOAB_SetDoubleTagStorage(MPSIID, tagname, totalmbls, ent_type, i2x_im_t)
+       if (ierr > 0) call shr_sys_abort(subname//' Error: fail to set moab i2x data')
+#else
+       call ice_export (i2x_i%rattr)  !Send initial state to driver
 #endif
     endif
     call seq_infodata_PutData( infodata, ice_prognostic=.true., &
@@ -527,13 +544,12 @@ contains
 
     real(r8) :: mrss, mrss0,msize,msize0
     logical, save :: first_time = .true.
-#ifdef MOABCOMP
-    real(r8)                 :: difference
-    type(mct_list) :: temp_list
-    integer :: size_list, index_list, ent_type
-    type(mct_string)    :: mctOStr  !
-    character(100) ::tagname, mct_field, modelStr
-#endif 
+#ifdef HAVE_MOAB
+    integer :: ent_type
+    integer :: ierr=0
+    character(CXX) :: tagname
+    real(r8), allocatable :: Av(:,:)
+#endif
 !
 ! !REVISION HISTORY:
 ! Author: Jacob Sewall, Mariana Vertenstein
@@ -588,26 +604,17 @@ contains
        call mct_rearr_rearrange(x2i_i, x2i_iloc, rearr_ice2iloc)
        call ice_import( x2i_iloc%rattr )
     else
-       call ice_import( x2i_i%rattr )
 #ifdef HAVE_MOAB
-#ifdef MOABCOMP
-       ! loop over all fields in seq_flds_x2l_fields
-       call mct_list_init(temp_list ,seq_flds_x2i_fields)
-       size_list=mct_list_nitem (temp_list)
-       ent_type = 0 ! entity type is vertex for cice, always
-       if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2i_fields), ' lnd import check'
-       do index_list = 1, size_list
-         call mct_list_get(mctOStr,index_list,temp_list)
-         mct_field = mct_string_toChar(mctOStr)
-         tagname= trim(mct_field)//C_NULL_CHAR
-         modelStr = 'cice run import'
-         call seq_comm_compare_mb_mct(modelStr, mpicom_ice_moab, x2i_i, mct_field,  MPSIID, tagname, ent_type, difference)
-       enddo
-       call mct_list_clean(temp_list)
-   
+       ! Retrieve MOAB tags, transpose from (lsize, nrecv) to (nrecv, lsize)
+       tagname=trim(seq_flds_x2i_fields)//C_NULL_CHAR
+       ent_type = 0
+       ierr = iMOAB_GetDoubleTagStorage(MPSIID, tagname, totalmblsimp, ent_type, x2i_im(:,1))
+       if (ierr > 0) call shr_sys_abort(subname//' Error: fail to get moab x2i data')
+       x2i_im_t = transpose(x2i_im)
+       call ice_import( x2i_im_t )
+#else
+       call ice_import( x2i_i%rattr )
 #endif
-       call ice_import_moab( x2i_im, EClock, totalmblsimp )
-#endif 
        
 
     endif
@@ -840,9 +847,16 @@ contains
        call ice_setdef_mct ( i2x_i )
        call mct_rearr_rearrange(i2x_iloc, i2x_i, rearr_iloc2ice)
     else
-       call ice_export ( i2x_i%rattr )
 #ifdef HAVE_MOAB
-       call ice_export_moab( i2x_im, EClock, totalmbls)
+       call ice_export ( i2x_im )
+       ! Transpose from (nsend, lsize) to (lsize, nsend) and set MOAB tags
+       i2x_im_t = transpose(i2x_im)
+       tagname=trim(seq_flds_i2x_fields)//C_NULL_CHAR
+       ent_type = 0
+       ierr = iMOAB_SetDoubleTagStorage(MPSIID, tagname, totalmbls, ent_type, i2x_im_t)
+       if (ierr > 0) call shr_sys_abort(subname//' Error: fail to set moab i2x data')
+#else
+       call ice_export ( i2x_i%rattr )
 #endif
     endif
     call ice_timer_stop(timer_cplsend)
@@ -1496,6 +1510,7 @@ end function restart_filename
   subroutine init_moab_cice(infodata)   ! create moab mesh (cloud of points)
    ! create moab point cloud
     use shr_kind_mod     , only : CXX => SHR_KIND_CXX
+    use shr_kind_mod     , only : CS => SHR_KIND_CS
     use iMOAB        , only: iMOAB_CreateVertices, iMOAB_WriteMesh, iMOAB_RegisterApplication, &
     iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
     iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo
@@ -1515,9 +1530,9 @@ end function restart_filename
     real(r8), dimension(:), allocatable  :: latv, lonv, area, frac, mask
     integer   :: iv, ilat, ilon, igdx, ierr, tagindex, nxg, nyg
     integer   :: tagtype, numco, ent_type, mbtype, block_ID
-    character*100 outfile, wopts
+    character(CS) outfile, wopts
     character(CXX) ::  tagname ! hold all fields
-    character*32  appname
+    character(CS)  appname
 
     call mpi_comm_rank(mpicom_ice_moab,iam,ierr)
     ! define a MOAB app for ELM

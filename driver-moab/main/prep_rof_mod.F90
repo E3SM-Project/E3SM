@@ -31,6 +31,8 @@ module prep_rof_mod
   use component_type_mod, only: ocn ! used for context for projection towards ocean from rof !
   use prep_lnd_mod, only: prep_lnd_get_mapper_Fr2l
   use map_lnd2rof_irrig_mod, only: map_lnd2rof_irrig
+  use shr_moab_mod , only: mbGetnCells
+
 
   use iso_c_binding
 #ifdef MOABCOMP
@@ -514,15 +516,15 @@ contains
           write(logunit,*) subname,' error in getting info '
           call shr_sys_abort(subname//' error in getting info ')
        endif
-       ! land is fully cell now
-       lsize_am = nvise(1)
+       ! get size of mesh
+       lsize_am = mbGetnCells(mbaxid)
        allocate(a2racc_am(lsize_am, nfields_sh_ar))
        allocate(a2x_am2(lsize_am, nfields_sh_ar)) ! this will be obtained from atm instance
        if(iamroot_CPLID) then
-          write(logunit,*) subname,' sharedFieldsAtmRof=', trim(sharedFieldsAtmRof)
-           write(logunit,*) subname,' number of fields shared=', nfields_sh_ar
-          write(logunit,*) subname,' seq_flds_a2x_fields_to_rof=', trim(seq_flds_a2x_fields_to_rof)
-          write(logunit,*) subname,' lsize_am=', lsize_am
+          write(logunit,*) subname,' sharedFieldsAtmRof = ', trim(sharedFieldsAtmRof)
+           write(logunit,*) subname,' number of fields shared = ', nfields_sh_ar
+          write(logunit,*) subname,' seq_flds_a2x_fields_to_rof = ', trim(seq_flds_a2x_fields_to_rof)
+          write(logunit,*) subname,' lsize_am = ', lsize_am
        endif
        a2racc_am(:,:) = 0.
        a2racc_am_cnt = 0
@@ -584,7 +586,6 @@ contains
             ! because we will project fields from atm to rof grid, we need to define
             ! rof a2x fields to rof grid on coupler side
 
-            
 
             ! if we are not loading maps from disk, compute the intersection mesh between
             ! ATM and ROF meshes
@@ -694,7 +695,7 @@ contains
             mapper_Sa2r%mbname = 'mapper_Sa2r'
 
             if (samegrid_ar) then
-               ! graph was already computed earlier 
+               ! graph was already computed earlier
                mapper_Sa2r%intx_context = rof(1)%cplcompid
             else
                ! If loading map from disk, then load the scalar map as well
@@ -713,9 +714,9 @@ contains
                      call shr_sys_abort(subname//' ERROR in migrating ATM mesh based on ATM-ROF map')
                   endif
                end if
-               
-                              ! we also need to compute the comm graph for the second hop, from the atm on coupler to the
-                     ! atm for the intersection of ATM-ROF context (coverage)
+
+               ! we also need to compute the comm graph for the second hop, from the atm on coupler to the
+               ! atm for the intersection of ATM-ROF context (coverage)
                call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID)
                if (atm_pg_active) then
                   type1 = 3; !  FV for both rof and atm; FV-CGLL does not work anyway

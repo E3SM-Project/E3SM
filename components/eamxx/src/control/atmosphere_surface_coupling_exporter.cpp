@@ -134,17 +134,16 @@ void SurfaceCouplingExporter::setup_surface_coupling_data(const SCDataManager &s
                   "Error! More SCREAM exports than actual cpl exports.\n");
   EKAT_ASSERT_MSG(m_num_cols == sc_data_manager.get_field_size(), "Error! Surface Coupling exports need to have size ncols.");
 
-  // The export data is of size ncols,num_cpl_exports. All other data is of size num_scream_exports
+#ifdef HAVE_MOAB
+  // MOAB layout: (num_cpl_exports, ncols) - column idx strides faster
+  m_cpl_exports_view_h = decltype(m_cpl_exports_view_h) (sc_data_manager.get_field_data_ptr(),
+                                                         m_num_cpl_exports, m_num_cols);
+#else
+  // MCT layout: (ncols, num_cpl_exports) - field idx strides faster
   m_cpl_exports_view_h = decltype(m_cpl_exports_view_h) (sc_data_manager.get_field_data_ptr(),
                                                          m_num_cols, m_num_cpl_exports);
-  m_cpl_exports_view_d = Kokkos::create_mirror_view(DefaultDevice(), m_cpl_exports_view_h);
-
-#ifdef HAVE_MOAB
-  // The export data is of size num_cpl_exports,ncols. All other data is of size num_scream_exports
-  m_moab_cpl_exports_view_h = decltype(m_moab_cpl_exports_view_h) (sc_data_manager.get_field_data_moab_ptr(),
-                                                         m_num_cpl_exports, m_num_cols);
-  m_moab_cpl_exports_view_d = Kokkos::create_mirror_view(DefaultDevice(), m_moab_cpl_exports_view_h);
 #endif
+  m_cpl_exports_view_d = Kokkos::create_mirror_view(DefaultDevice(), m_cpl_exports_view_h);
 
   m_export_field_names = new name_t[m_num_scream_exports];
   std::memcpy(m_export_field_names, sc_data_manager.get_field_name_ptr(), m_num_scream_exports*32*sizeof(char));
@@ -549,12 +548,6 @@ void SurfaceCouplingExporter::do_export_to_cpl(const bool called_during_initiali
   // Any field not exported by scream, or not exported
   // during initialization, is set to 0.0
   Kokkos::deep_copy(m_cpl_exports_view_d, 0.0);
-#ifdef HAVE_MOAB
-  // Any field not exported by scream, or not exported
-  // during initialization, is set to 0.0
-  Kokkos::deep_copy(m_moab_cpl_exports_view_d, 0.0);
-  const auto moab_cpl_exports_view_d = m_moab_cpl_exports_view_d;
-#endif
   const auto cpl_exports_view_d = m_cpl_exports_view_d;
   const int  num_exports        = m_num_scream_exports;
   const int  num_cols           = m_num_cols;
@@ -570,29 +563,15 @@ void SurfaceCouplingExporter::do_export_to_cpl(const bool called_during_initiali
     // if this is during initialization, check whether or not the field should be exported
     bool do_export = (not called_during_initialization || info.transfer_during_initialization);
     if (do_export) {
-      cpl_exports_view_d(icol,info.cpl_indx) = info.constant_multiple*info.data[offset];
-    }
-  });
 #ifdef HAVE_MOAB
-  Kokkos::parallel_for(export_policy, KOKKOS_LAMBDA(const int& i) {
-    const int ifield = i / num_cols;
-    const int icol   = i % num_cols;
-    const auto& info = col_info(ifield);
-    const auto offset = icol*info.col_stride + info.col_offset;
-
-    // if this is during initialization, check whether or not the field should be exported
-    bool do_export = (not called_during_initialization || info.transfer_during_initialization);
-    if (do_export) {
-      moab_cpl_exports_view_d(info.cpl_indx, icol) = info.constant_multiple*info.data[offset];
+      cpl_exports_view_d(info.cpl_indx, icol) = info.constant_multiple*info.data[offset];
+#else
+      cpl_exports_view_d(icol,info.cpl_indx) = info.constant_multiple*info.data[offset];
+#endif
     }
   });
-#endif
   // Deep copy fields from device to cpl host array
   Kokkos::deep_copy(m_cpl_exports_view_h,m_cpl_exports_view_d);
-#ifdef HAVE_MOAB
-  // Deep copy fields from device to cpl host array
-  Kokkos::deep_copy(m_moab_cpl_exports_view_h,m_moab_cpl_exports_view_d);
-#endif
 
 }
 // =========================================================================================
