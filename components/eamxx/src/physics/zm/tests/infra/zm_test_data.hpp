@@ -361,6 +361,18 @@ struct ZmConvMcspCalculateShearData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF(ZmConvMcspCalculateShearData, 3, pcols, ncol, pver);
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine, { {state_pmid, {600e2-1000, 600e2+1000}} });
+
+    // Make sure each column is sorted
+    for (Int c = 0; c < pcols; ++c) {
+      std::sort(state_pmid + (c*pver), state_pmid + ((c+1)*pver));
+    }
+  }
+
 };
 
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
