@@ -39,14 +39,23 @@ retrieval.
 ```c++
 class Tendencies{
  public:
+   // Arrays for accumulating tendencies
    Array2DReal LayerThicknessTend;
    Array2DReal NormalVelocityTend;
+   Array3DReal TracerTend;
+   // Instances of tendency terms
    ThicknessFluxDivOnCell ThicknessFluxDiv;
    PotentialVortHAdvOnEdge PotientialVortHAdv;
    KEGradOnEdge KEGrad;
    SSHGradOnEdge SSHGrad;
    VelocityDiffusionOnEdge VelocityDiffusion;
    VelocityHyperDiffOnEdge VelocityHyperDiff;
+   WindForcingOnEdge WindForcing;
+   BottomDragOnEdge BottomDrag;
+   TracerDiffOnCell TracerDiffusion;
+   TracerHyperDiffOnCell TracerHyperDiff;
+   TracerHorzAdvOnCell TracerHorzAdv;
+   TracerHighOrderHorzAdvOnCell TracerHighOrderHorzAdv;
  private:
    static Tendencies *DefaultTendencies;
    static std::map<std::string, std::unique_ptr<Tendencies>> AllTendencies;
@@ -79,29 +88,29 @@ Tendencies* Tendencies::create(const std::string &Name, const HorzMesh *Mesh, in
 #### 4.2.2 Initialization
 The init method will create the default tendencies and return an error code:
 ```c++
-int Tendencies::init();
+static void Tendencies::init();
 ```
 
 #### 4.2.3 Retrieval
 There will be methods for getting the default and non-default tendencies instances:
 ```c++
-Tendencies *Tendencies::getDefault();
-Tendencies *Tendencies::get(const std::string &Name);
+static Tendencies *Tendencies::getDefault();
+static Tendencies *Tendencies::get(const std::string &Name);
 ```
 
 #### 4.2.4 Computation
 The 'computeAll' method will compute and accumulate all layer thickness and normal velocity tendencies using the ocean
 state and auxiliary state from a given time level:
 ```c++
-void Tendencies::computeAllTendencies(const OceanState *State, const AuxilaryState *AuxState, int TimeLevel);
+void Tendencies::computeAllTendencies(const OceanState *State, const AuxilaryState *AuxState, const Array3DReal &TracerArray, int TimeLevel, int VelTimeLevel, TimeInstant Time);
 ```
 The layer thickness tendencies will be computed with a method:
 ```c++
-void Tendencies::computeThicknessTendencies(const OceanState *State, const AuxilaryState *AuxState, int TimeLevel);
+void Tendencies::computeThicknessTendencies(const OceanState *State, const AuxilaryState *AuxState, int TimeLevel, int VelTimeLevel, TimeInstant Time);
 ```
 The normal velocity tendencies will be computed with a method:
 ```c++
-void Tendencies::computeVelocityTendencies(const OceanState *State, const AuxilaryState *AuxState, int TimeLevel);
+void Tendencies::computeVelocityTendencies(const OceanState *State, const AuxilaryState *AuxState, int TimeLevel, int VelTimeLevel, TimeInstant Time);
 ```
 
 
@@ -111,8 +120,8 @@ when they are no longer in scope. The erase method
 will remove a named tendencies instance, whereas the clear method will remove all of
 them. Both will call the destructor in the process.
 ```c++
-void Tendencies::erase(const std::string &Name);
-void Tendencies::clear();
+static void Tendencies::erase(const std::string &Name);
+static void Tendencies::clear();
 ```
 
 ## 5 Verification and Testing

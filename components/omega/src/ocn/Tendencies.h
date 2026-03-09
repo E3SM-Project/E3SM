@@ -144,7 +144,7 @@ class Tendencies {
    );
 
    // read and set config options
-   void readTendConfig(Config *TendConfig);
+   void readConfig(Config *OmegaConfig);
 
  private:
    // Construct a new tendency object

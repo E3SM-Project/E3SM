@@ -15,10 +15,12 @@
 //
 //===-----------------------------------------------------------------------===/
 #include "TendencyTerms.h"
+#include "Config.h"
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
 #include "Error.h"
+#include "Field.h"
 #include "GlobalConstants.h"
 #include "Halo.h"
 #include "HorzMesh.h"
@@ -27,6 +29,8 @@
 #include "OceanTestCommon.h"
 #include "OmegaKokkos.h"
 #include "Pacer.h"
+#include "TimeStepper.h"
+#include "Tracers.h"
 #include "VertCoord.h"
 #include "mpi.h"
 
@@ -48,8 +52,8 @@ struct TestSetupPlane {
                                               0.00134354611117262161};
    ErrorMeasures ExpectedLaplaceErrors     = {0.00113090174765822192,
                                               0.00134324628763667899};
-   ErrorMeasures ExpectedTrHAdvErrors      = {0.00205864372747571571,
-                                              0.00172418025417940784};
+   ErrorMeasures ExpectedTrHAdvErrors      = {0.0029211089892916243,
+                                              0.0024583038518548855};
    ErrorMeasures ExpectedTrDel2Errors      = {0.00334357193650093847,
                                               0.00290978146207349032};
    ErrorMeasures ExpectedTrDel4Errors      = {0.00508833446725232875,
@@ -189,8 +193,8 @@ struct TestSetupSphere {
                                               0.0015218320661105702};
    ErrorMeasures ExpectedLaplaceErrors     = {0.28193638497826856,
                                               0.270546491554748};
-   ErrorMeasures ExpectedTrHAdvErrors      = {0.013227657020868148,
-                                              0.0038723934782890863};
+   ErrorMeasures ExpectedTrHAdvErrors      = {0.013259410329645643,
+                                              0.004094907022292395};
    ErrorMeasures ExpectedTrDel2Errors      = {0.04865718541236144,
                                               0.005105510870642706};
    ErrorMeasures ExpectedTrDel4Errors      = {0.0008646345116716073,
@@ -285,12 +289,12 @@ struct TestSetupSphere {
    }
 
    KOKKOS_FUNCTION Real scalarC(Real Lon, Real Lat) const {
-      return -(Radius / 2) * std::sqrt(3 / 2 / Pi) * std::cos(Lat) *
+      return -(Radius / 2) * std::sqrt(3. / 2. / Pi) * std::cos(Lat) *
              std::cos(Lon);
    }
 
    KOKKOS_FUNCTION Real tracerHyperDiff(Real Lon, Real Lat) const {
-      return std::sqrt(3 / 2 / Pi) * std::cos(Lat) * std::cos(Lon) / Radius;
+      return std::sqrt(3. / 2. / Pi) * std::cos(Lat) * std::cos(Lon) / Radius;
    }
 
    KOKKOS_FUNCTION Real windForcingX(Real Lon, Real Lat,
@@ -864,21 +868,34 @@ int testTracerHorzAdvOnCell(int NVertLayers, int NTracers, Real RTol) {
        },
        NormalVelocity, EdgeComponent::Normal, Geom, Mesh);
 
-   Array3DReal HTrOnEdge("HTrOnEdge", NTracers, Mesh->NEdgesSize, NVertLayers);
+   Array3DReal TrCell("TrCell", NTracers, Mesh->NCellsSize, NVertLayers);
+   Array2DReal ThickEdge("ThickEdh", Mesh->NEdgesSize, NVertLayers);
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return -Setup.layerThick(X, Y); },
-       HTrOnEdge, Geom, Mesh, OnEdge);
+       TrCell, Geom, Mesh, OnCell);
+
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return 1; }, ThickEdge, Geom, Mesh,
+       OnEdge);
 
    // Compute numerical result
    Array3DReal NumTrFluxDiv("NumTrFluxDiv", NTracers, Mesh->NCellsOwned,
                             NVertLayers);
    TracerHorzAdvOnCell TrHorzAdvOnC(Mesh, VCoord);
+   TrHorzAdvOnC.init();
+   TrHorzAdvOnC.ForceLowOrder = true;
+
+   parallelFor(
+       {NTracers, Mesh->NEdgesAll, NVertLayers},
+       KOKKOS_LAMBDA(int L, int IEdge, int KLayer) {
+          TrHorzAdvOnC(L, IEdge, KLayer, TrCell, ThickEdge, NormalVelocity);
+       });
+
    parallelFor(
        {NTracers, Mesh->NCellsOwned, NVertLayers},
        KOKKOS_LAMBDA(int L, int ICell, int KLayer) {
-          TrHorzAdvOnC(NumTrFluxDiv, L, ICell, KLayer, NormalVelocity,
-                       HTrOnEdge);
+          TrHorzAdvOnC(NumTrFluxDiv, L, ICell, KLayer);
        });
 
    ErrorMeasures TrHAdvErrors;
@@ -1013,8 +1030,10 @@ void initTendTest(const std::string &MeshFile, int NVertLayers) {
    initLogging(DefEnv);
 
    // Open config file
-   Config("Omega");
+   Config::Initialize();
    Config::readAll("omega.yml");
+
+   TimeStepper::init1();
 
    IO::init(DefComm);
 
@@ -1030,13 +1049,17 @@ void initTendTest(const std::string &MeshFile, int NVertLayers) {
    // initialize vertical coordinate, do not read stream and use local
    // NVertLayers value
    VertCoord::init(false, NVertLayers);
+   Tracers::init();
 
 } // end initTendTest
 
 void finalizeTendTest() {
+   Tracers::clear();
    HorzMesh::clear();
    VertCoord::clear();
+   Field::clear();
    Dimension::clear();
+   TimeStepper::clear();
    Halo::clear();
    Decomp::clear();
    MachEnv::removeAll();
@@ -1049,7 +1072,7 @@ int tendencyTermsTest(const std::string &MeshFile = DefaultMeshFile) {
 
    initTendTest(MeshFile, NVertLayers);
 
-   int NTracers = 3;
+   int NTracers = Tracers::getNumTracers();
 
    const Real RTol = sizeof(Real) == 4 ? 2e-2 : 1e-5;
 

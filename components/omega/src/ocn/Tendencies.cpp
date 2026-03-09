@@ -13,6 +13,7 @@
 #include "Error.h"
 #include "Pacer.h"
 #include "Tracers.h"
+#include <string>
 
 namespace OMEGA {
 
@@ -68,8 +69,10 @@ void Tendencies::init() {
        create("Default", DefHorzMesh, DefVertCoord, NTracers, &TendConfig,
               CustomThickTend, CustomVelTend);
 
-   DefaultTendencies->readTendConfig(&TendConfig);
+   DefaultTendencies->readConfig(OmegaConfig);
 
+   if (DefaultTendencies->TracerHorzAdv.Enabled)
+      DefaultTendencies->TracerHorzAdv.init();
 } // end init
 
 //------------------------------------------------------------------------------
@@ -120,91 +123,113 @@ Tendencies *Tendencies::get(const std::string &Name ///< [in] Name of tendencies
 
 //------------------------------------------------------------------------------
 // read and set config options
-void Tendencies::readTendConfig(
-    Config *TendConfig ///< [in] Tendencies subconfig
+void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
 ) {
    Error Err; // error code
 
-   Err += TendConfig->get("ThicknessFluxTendencyEnable",
-                          this->ThicknessFluxDiv.Enabled);
+   Config TendConfig("Tendencies");
+   Err += OmegaConfig->get(TendConfig);
+   CHECK_ERROR_ABORT(Err, "Tendencies: Tendencies group not found in Config");
+
+   Err += TendConfig.get("ThicknessFluxTendencyEnable",
+                         this->ThicknessFluxDiv.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: ThicknessFluxTendencyEnable not found in TendConfig");
 
-   Err += TendConfig->get("PVTendencyEnable", this->PotientialVortHAdv.Enabled);
+   Err += TendConfig.get("PVTendencyEnable", this->PotientialVortHAdv.Enabled);
    CHECK_ERROR_ABORT(Err,
                      "Tendencies: PVTendencyEnable not found in TendConfig");
 
-   Err += TendConfig->get("KETendencyEnable", this->KEGrad.Enabled);
+   Err += TendConfig.get("KETendencyEnable", this->KEGrad.Enabled);
    CHECK_ERROR_ABORT(Err,
                      "Tendencies: KETendencyEnable not found in TendConfig");
 
-   Err += TendConfig->get("SSHTendencyEnable", this->SSHGrad.Enabled);
+   Err += TendConfig.get("SSHTendencyEnable", this->SSHGrad.Enabled);
    CHECK_ERROR_ABORT(Err,
                      "Tendencies: SSHTendencyEnable not found in TendConfig");
 
-   Err += TendConfig->get("VelDiffTendencyEnable",
-                          this->VelocityDiffusion.Enabled);
+   Err +=
+       TendConfig.get("VelDiffTendencyEnable", this->VelocityDiffusion.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: VelDiffTendencyEnable not found in TendConfig");
 
-   Err += TendConfig->get("VelHyperDiffTendencyEnable",
-                          this->VelocityHyperDiff.Enabled);
+   Err += TendConfig.get("VelHyperDiffTendencyEnable",
+                         this->VelocityHyperDiff.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: VelHyperDiffTendencyEnable not found in TendConfig");
 
    if (this->VelocityDiffusion.Enabled) {
-      Err += TendConfig->get("ViscDel2", this->VelocityDiffusion.ViscDel2);
+      Err += TendConfig.get("ViscDel2", this->VelocityDiffusion.ViscDel2);
       CHECK_ERROR_ABORT(Err, "Tendencies: ViscDel2 not found in TendConfig");
    }
 
    if (this->VelocityHyperDiff.Enabled) {
-      Err += TendConfig->get("ViscDel4", this->VelocityHyperDiff.ViscDel4);
+      Err += TendConfig.get("ViscDel4", this->VelocityHyperDiff.ViscDel4);
       CHECK_ERROR_ABORT(Err, "Tendencies: ViscDel4 not found in TendConfig");
-      Err += TendConfig->get("DivFactor", this->VelocityHyperDiff.DivFactor);
+      Err += TendConfig.get("DivFactor", this->VelocityHyperDiff.DivFactor);
       CHECK_ERROR_ABORT(Err, "Tendencies: DivFactor not found in TendConfig");
    }
-
-   Err += TendConfig->get("TracerHorzAdvTendencyEnable",
-                          this->TracerHorzAdv.Enabled);
+   Err += TendConfig.get("TracerHorzAdvTendencyEnable",
+                         this->TracerHorzAdv.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: TracerHorzAdvTendencyEnable not found in TendConfig");
+   if (this->TracerHorzAdv.Enabled) {
+      Config AdvectConfig("Advection");
+      Err += OmegaConfig->get(AdvectConfig);
+      CHECK_ERROR_ABORT(Err, "Tendencies: Advection group not in Config");
 
-   Err += TendConfig->get("TracerDiffTendencyEnable",
-                          this->TracerDiffusion.Enabled);
+      I4 Order = 0;
+      Err += AdvectConfig.get("HorzTracerFluxOrder", Order);
+      CHECK_ERROR_ABORT(
+          Err, "Tendencies: HorzTracerFluxOrder not found in AdvectConfig");
+      OMEGA_REQUIRE(Order >= 2 && Order <= 4,
+                    "HorzTracerFluxOrder: Only values are 2, 3, 4, found {}",
+                    Order);
+
+      if (Order == 2) {
+         this->TracerHorzAdv.ForceLowOrder = true;
+         this->TracerHorzAdv.Coef3rdOrder  = 0;
+      }
+      if (Order == 3) {
+         Err += AdvectConfig.get("Coef3rdOrder", TracerHorzAdv.Coef3rdOrder);
+         CHECK_ERROR_ABORT(
+             Err, "Tendencies: Coef3rdOrder not found in AdvectConfig");
+      }
+      if (Order == 4) {
+         this->TracerHorzAdv.Coef3rdOrder = 0;
+      }
+   }
+   Err += TendConfig.get("TracerDiffTendencyEnable",
+                         this->TracerDiffusion.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: TracerDiffTendencyEnable not found in TendConfig");
 
    Err +=
-       TendConfig->get("WindForcingTendencyEnable", this->WindForcing.Enabled);
+       TendConfig.get("WindForcingTendencyEnable", this->WindForcing.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: WindForcingTendencyEnable not found in TendConfig");
 
-   Err += TendConfig->get("BottomDragTendencyEnable", this->BottomDrag.Enabled);
+   Err += TendConfig.get("BottomDragTendencyEnable", this->BottomDrag.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: BottomDragTendencyEnable not found in TendConfig");
 
-   Err += TendConfig->get("BottomDragCoeff", this->BottomDrag.Coeff);
+   Err += TendConfig.get("BottomDragCoeff", this->BottomDrag.Coeff);
    CHECK_ERROR_ABORT(Err,
                      "Tendencies: BottomDragCoeff not found in TendConfig");
 
-   Err += TendConfig->get("TracerHorzAdvTendencyEnable",
-                          this->TracerHorzAdv.Enabled);
-   CHECK_ERROR_ABORT(
-       Err, "Tendencies: TracerHorzAdvTendencyEnable not found in TendConfig");
-
    if (this->TracerDiffusion.Enabled) {
-      Err += TendConfig->get("EddyDiff2", this->TracerDiffusion.EddyDiff2);
+      Err += TendConfig.get("EddyDiff2", this->TracerDiffusion.EddyDiff2);
       CHECK_ERROR_ABORT(Err, "Tendencies: EddyDiff2 not found in TendConfig");
    }
 
-   Err += TendConfig->get("TracerHyperDiffTendencyEnable",
-                          this->TracerHyperDiff.Enabled);
+   Err += TendConfig.get("TracerHyperDiffTendencyEnable",
+                         this->TracerHyperDiff.Enabled);
    CHECK_ERROR_ABORT(
        Err,
        "Tendencies: TracerHyperDiffTendencyEnable not found in TendConfig");
 
    if (this->TracerHyperDiff.Enabled) {
-      Err += TendConfig->get("EddyDiff4", this->TracerHyperDiff.EddyDiff4);
+      Err += TendConfig.get("EddyDiff4", this->TracerHyperDiff.EddyDiff4);
       CHECK_ERROR_ABORT(Err, "Tendencies: EddyDiff4 not found in TendConfig");
    }
 }
@@ -222,8 +247,8 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
       PotientialVortHAdv(Mesh, VCoord), KEGrad(Mesh, VCoord),
       SSHGrad(Mesh, VCoord), VelocityDiffusion(Mesh, VCoord),
       VelocityHyperDiff(Mesh, VCoord), WindForcing(Mesh, VCoord),
-      BottomDrag(Mesh, VCoord), TracerHorzAdv(Mesh, VCoord),
-      TracerDiffusion(Mesh, VCoord), TracerHyperDiff(Mesh, VCoord),
+      BottomDrag(Mesh, VCoord), TracerDiffusion(Mesh, VCoord),
+      TracerHyperDiff(Mesh, VCoord), TracerHorzAdv(Mesh, VCoord),
       CustomThicknessTend(InCustomThicknessTend),
       CustomVelocityTend(InCustomVelocityTend) {
 
@@ -500,6 +525,8 @@ void Tendencies::computeTracerTendenciesOnly(
    OMEGA_SCOPE(LocTracerHyperDiff, TracerHyperDiff);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
+   OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
+   OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
 
    Pacer::start("Tend:computeTracerTendenciesOnly", 1);
 
@@ -517,21 +544,32 @@ void Tendencies::computeTracerTendenciesOnly(
        });
 
    // compute tracer horizotal advection
-   Array2DReal NormalVelEdge       = State->getNormalVelocity(VelTimeLevel);
-   const Array3DReal &HTracersEdge = AuxState->TracerAux.HTracersEdge;
+   Array2DReal NormalVelEdge = State->getNormalVelocity(VelTimeLevel);
+   const Array2DReal &FluxLayerThickEdge =
+       AuxState->LayerThicknessAux.FluxLayerThickEdge;
    if (LocTracerHorzAdv.Enabled) {
       Pacer::start("Tend:tracerHorzAdv", 2);
+      parallelForOuter(
+          {NTracers, Mesh->NEdgesAll},
+          KOKKOS_LAMBDA(int L, int IEdge, const TeamMember &Team) {
+             const int KMin   = MinLayerEdgeBot(IEdge);
+             const int KMax   = MaxLayerEdgeTop(IEdge);
+             const int KRange = vertRangeChunked(KMin, KMax);
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    LocTracerHorzAdv(L, IEdge, KChunk, TracerArray,
+                                     FluxLayerThickEdge, NormalVelEdge);
+                 });
+          });
       parallelForOuter(
           {NTracers, Mesh->NCellsAll},
           KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
              const int KMin   = MinLayerCell(ICell);
              const int KMax   = MaxLayerCell(ICell);
              const int KRange = vertRangeChunked(KMin, KMax);
-
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
-                    LocTracerHorzAdv(LocTracerTend, L, ICell, KChunk,
-                                     NormalVelEdge, HTracersEdge);
+                    LocTracerHorzAdv(LocTracerTend, L, ICell, KChunk);
                  });
           });
       Pacer::stop("Tend:tracerHorzAdv", 2);
@@ -655,22 +693,6 @@ void Tendencies::computeTracerTendencies(
 
    Pacer::start("Tend:computeTracerTendencies", 1);
 
-   Pacer::start("Tend:computeTracerAuxEdge", 2);
-   parallelForOuter(
-       "computeTracerAuxEdge", {NTracers, Mesh->NEdgesAll},
-       KOKKOS_LAMBDA(int LTracer, int IEdge, const TeamMember &Team) {
-          const int KMin   = MinLayerEdgeBot(IEdge);
-          const int KMax   = MaxLayerEdgeTop(IEdge);
-          const int KRange = vertRangeChunked(KMin, KMax);
-          parallelForInner(
-              Team, KRange, INNER_LAMBDA(int KChunk) {
-                 TracerAux.computeVarsOnEdge(LTracer, IEdge, KChunk,
-                                             NormalVelEdge, LayerThickCell,
-                                             TracerArray);
-              });
-       });
-   Pacer::stop("Tend:computeTracerAuxEdge", 2);
-
    const auto &MeanLayerThickEdge =
        AuxState->LayerThicknessAux.MeanLayerThickEdge;
    Pacer::start("Tend:computeTracerAuxCell", 2);
@@ -705,9 +727,6 @@ void Tendencies::computeAllTendencies(
     int VelTimeLevel,               ///< [in] Time level
     TimeInstant Time                ///< [in] Time
 ) {
-
-   Pacer::start("Tend:computeAllTendencies", 1);
-
    AuxState->computeAll(State, TracerArray, ThickTimeLevel, VelTimeLevel);
    computeThicknessTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
                                   Time);
@@ -715,9 +734,6 @@ void Tendencies::computeAllTendencies(
                                  Time);
    computeTracerTendenciesOnly(State, AuxState, TracerArray, ThickTimeLevel,
                                VelTimeLevel, Time);
-
-   Pacer::stop("Tend:computeAllTendencies", 1);
-
 } // end all tendency compute
 
 } // end namespace OMEGA

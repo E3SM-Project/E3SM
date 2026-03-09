@@ -24,7 +24,8 @@ Omega:
     NTimeLevels: 2
   Advection:
     FluxThicknessType: Center
-    FluxTracerType: Center
+    HorzTracerFluxOrder: 2
+    Coef3rdOrder: 0.25
   WindStress:
     InterpType: Isotropic
   VertCoord:

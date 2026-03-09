@@ -39,24 +39,25 @@ The class contains private member variables for any constant data that are defin
 Each tendency term will have a `bool` variable which can be set to enable/disable the computation of the tendency.
 
 ```c++
-class ThicknessFluxDivergenceOnCell {
+class ThicknessFluxDivOnCell {
   public:
 
     bool enabled = false;
 
-    ThicknessFluxDivergenceOnCell(const HorzMesh *Mesh, Config *Options);
+    ThicknessFluxDivOnCell(const HorzMesh *Mesh, Config *Options);
 
     KOKKOS_FUNCTION void operator()(Array2DReal &Tend
                                     int ICell,
                                     int KChunk,
-                                    const Array2DReal &ThicknessFlux);
+                                    const Array2DReal &ThicknessFlux,
+                                    const Array2DReal &NormalVelEdge);
 
   private:
     Array1DI4 NEdgesOnCell;
     Array2DI4 EdgesOnCell;
-    Array1DR8 DvEdge;
-    Array1DR8 AreaCell;
-    Array2DR8 EdgeSignOnCell;
+    Array1DReal DvEdge;
+    Array1DReal AreaCell;
+    Array2DReal EdgeSignOnCell;
 };
 ```
 
@@ -66,13 +67,10 @@ class ThicknessFluxDivergenceOnCell {
 Tendency functor constructors are responsible for initializing the private member variables:
 
 ```c++
-ThicknessFluxDivergenceOnCell::ThicknessFluxDivergenceOnCell(HorzMesh const *Mesh, Config *Options)
+ThicknessFluxDivOnCell::ThicknessFluxDivOnCell(HorzMesh const *Mesh)
     : NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
       DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell),
-      EdgeSignOnCell(Mesh->EdgeSignOnCell) {
-
-    enabled = Options->get("ThicknessFluxTendencyEnable")
-}
+      EdgeSignOnCell(Mesh->EdgeSignOnCell) { }
 ```
 
 #### 4.2.2 operator
@@ -80,17 +78,27 @@ The operator method implements the tendency computation for a chunk of vertical 
 The inner loop over a chunk of vertical layers enables CPU vectorization.
 
 ```c++
-KOKKOS_FUNCTION void ThicknessFluxDivergenceOnCell::operator()(Array2DReal &Tend
-                                                               int ICell,
-                                                               int KChunk,
-                                                               const Array2DReal &ThicknessFlux)  const {
-   const Real InvAreaCell = 1. / AreaCell(iCell);
-   for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
-      const int JEdge = EdgesOnCell(ICell, J);
-      for (int K = KChunk * VecLength; K < (KChunk + 1) * VecLength; ++K) {
-         Tend(ICell, K) -= DvEdge(JEdge) * EdgeSignOnCell(ICell, J) * ThicknessFlux(JEdge, K) * InvAreaCell;
-      }
-   }
+KOKKOS_FUNCTION void ThicknessFluxDivOnCell::operator()(Array2DReal &Tend
+                                                        int ICell,
+                                                        int KChunk,
+                                                        const Array2DReal &ThicknessFlux,
+                                                        const Array2DReal &NormalVelEdge)  const {
+    const I4 KStart        = KChunk * VecLength;
+    const Real InvAreaCell = 1._Real / AreaCell(ICell);
+    Real DivTmp[VecLength] = {0};
+    for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
+       const I4 JEdge = EdgesOnCell(ICell, J);
+       for (int KVec = 0; KVec < VecLength; ++KVec) {
+          const I4 K = KStart + KVec;
+          DivTmp[KVec] -= DvEdge(JEdge) * EdgeSignOnCell(ICell, J) *
+                          ThicknessFlux(JEdge, K) * NormalVelEdge(JEdge, K) *
+                          InvAreaCell;
+       }
+    }
+    for (int KVec = 0; KVec < VecLength; ++KVec) {
+       const I4 K = KStart + KVec;
+       Tend(ICell, K) -= DivTmp[KVec];
+    }
 }
 ```
 

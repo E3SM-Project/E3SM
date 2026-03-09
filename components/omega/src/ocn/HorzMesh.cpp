@@ -17,7 +17,6 @@
 #include "Error.h"
 #include "IO.h"
 #include "Logging.h"
-#include "MachEnv.h"
 #include "OmegaKokkos.h"
 
 namespace OMEGA {
@@ -46,19 +45,21 @@ void HorzMesh::init() {
 
 HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
                    Decomp *MeshDecomp       //< [in] Decomp for the new mesh
-) {
-
+                   )
+    : CellID(MeshDecomp->CellID) ///< global cell ID for each local cell
+{
    MeshName = Name;
 
    // Retrieve mesh files name from Decomp
    MeshFileName = MeshDecomp->MeshFileName;
 
    // Retrieve mesh cell/edge/vertex totals from Decomp
-   NCellsHalo  = MeshDecomp->NCellsHalo;
-   NCellsHaloH = MeshDecomp->NCellsHaloH;
-   NCellsOwned = MeshDecomp->NCellsOwned;
-   NCellsAll   = MeshDecomp->NCellsAll;
-   NCellsSize  = MeshDecomp->NCellsSize;
+   NCellsHalo   = MeshDecomp->NCellsHalo;
+   NCellsHaloH  = MeshDecomp->NCellsHaloH;
+   NCellsOwned  = MeshDecomp->NCellsOwned;
+   NCellsAll    = MeshDecomp->NCellsAll;
+   NCellsSize   = MeshDecomp->NCellsSize;
+   NCellsGlobal = MeshDecomp->NCellsGlobal;
 
    NEdgesHalo     = MeshDecomp->NEdgesHalo;
    NEdgesHaloH    = MeshDecomp->NEdgesHaloH;
@@ -67,6 +68,7 @@ HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
    NEdgesSize     = MeshDecomp->NEdgesSize;
    MaxCellsOnEdge = MeshDecomp->MaxCellsOnEdge;
    MaxEdges       = MeshDecomp->MaxEdges;
+   NEdgesGlobal   = MeshDecomp->NEdgesGlobal;
 
    NVerticesHalo  = MeshDecomp->NVerticesHalo;
    NVerticesHaloH = MeshDecomp->NVerticesHaloH;

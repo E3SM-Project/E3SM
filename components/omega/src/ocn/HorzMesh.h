@@ -98,6 +98,7 @@ class HorzMesh {
    I4 NCellsOwned;            ///< Number of cells owned by this task
    I4 NCellsAll;  ///< Total number of local cells (owned + all halo)
    I4 NCellsSize; ///< Array size (incl padding, bndy cell) for cell arrays
+   I4 NCellsGlobal;
 
    Array1DI4 NEdgesHalo;      ///< num cells owned+halo for halo layer
    HostArray1DI4 NEdgesHaloH; ///< num cells owned+halo for halo layer
@@ -106,7 +107,8 @@ class HorzMesh {
    I4 NEdgesSize;     ///< Array length (incl padding, bndy) for edge dim
    I4 MaxCellsOnEdge; ///< Max number of cells sharing an edge
    I4 MaxEdges;       ///< Max number of edges around a cell
-   I4 MaxEdges2;      ///< Max number of edges around a cell x2
+   I4 NEdgesGlobal;
+   I4 MaxEdges2; ///< Max number of edges around a cell x2
 
    Array1DI4 NVerticesHalo;      ///< num cells owned+halo for halo layer
    HostArray1DI4 NVerticesHaloH; ///< num cells owned+halo for halo layer
@@ -147,6 +149,7 @@ class HorzMesh {
    Array2DI4 EdgesOnVertex;      ///< Indx of edges sharing vertex as endpoint
    HostArray2DI4 EdgesOnVertexH; ///< Indx of edges sharing vertex as endpoint
 
+   Array1DI4 CellID; ///< global cell ID for each local cell
    // Coordinates
 
    Array1DReal XCell;      ///< X Coordinates of cell centers (m)
