@@ -511,6 +511,17 @@ struct Functions {
     Int& eql_klev, // index of equilibrium level (i.e. cloud top)
     Real& cape); // convective available potential energy
 
+  KOKKOS_FUNCTION
+  static void zm_conv_mcsp_calculate_shear(
+    // Inputs
+    const MemberType& team,
+    const Int& pver, // number of mid-point vertical levels
+    const uview_1d<const Real>& state_pmid, // physics state mid-point pressure
+    const uview_1d<const Real>& state_u, // physics state u momentum
+    const uview_1d<const Real>& state_v, // physics state v momentum
+    // Outputs
+    Real& mcsp_shear);
+
   //
   // --------- Members ---------
   //
@@ -533,5 +544,6 @@ struct Functions {
 # include "impl/zm_find_mse_max_impl.hpp"
 # include "impl/zm_compute_dilute_parcel_impl.hpp"
 # include "impl/zm_compute_cape_from_parcel_impl.hpp"
+# include "impl/zm_zm_conv_mcsp_calculate_shear_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP

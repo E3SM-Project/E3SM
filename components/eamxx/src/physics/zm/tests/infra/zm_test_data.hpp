@@ -340,6 +340,29 @@ struct ComputeCapeFromParcelData : public PhysicsTestData {
   }
 };
 
+struct ZmConvMcspCalculateShearData : public PhysicsTestData {
+  // Inputs
+  Int pcols, ncol, pver;
+  Real *state_pmid, *state_u, *state_v;
+
+  // Outputs
+  Real *mcsp_shear;
+
+  ZmConvMcspCalculateShearData(Int pcols_, Int ncol_, Int pver_) :
+    PhysicsTestData({
+      {pcols_, pver_},
+      {pcols_}
+    },
+    {
+      {&state_pmid, &state_u, &state_v},
+      {&mcsp_shear}
+    }),
+    pcols(pcols_), ncol(ncol_), pver(pver_)
+  {}
+
+  PTD_STD_DEF(ZmConvMcspCalculateShearData, 3, pcols, ncol, pver);
+};
+
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
 void ientropy_f(IentropyData& d);
 void ientropy(IentropyData& d);
@@ -357,6 +380,8 @@ void compute_dilute_parcel_f(ComputeDiluteParcelData& d);
 void compute_dilute_parcel(ComputeDiluteParcelData& d);
 void compute_cape_from_parcel_f(ComputeCapeFromParcelData& d);
 void compute_cape_from_parcel(ComputeCapeFromParcelData& d);
+void zm_conv_mcsp_calculate_shear_f(ZmConvMcspCalculateShearData& d);
+void zm_conv_mcsp_calculate_shear(ZmConvMcspCalculateShearData& d);
 // End glue function decls
 
 }  // namespace zm

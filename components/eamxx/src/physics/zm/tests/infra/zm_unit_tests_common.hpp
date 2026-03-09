@@ -73,6 +73,7 @@ struct UnitWrap {
     struct TestFindMseMax;
     struct TestComputeDiluteParcel;
     struct TestComputeCapeFromParcel;
+    struct TestZmConvMcspCalculateShear;
   }; // UnitWrap
 };
 

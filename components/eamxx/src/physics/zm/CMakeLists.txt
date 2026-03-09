@@ -53,6 +53,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
     eti/zm_find_mse_max.cpp
     eti/zm_compute_dilute_parcel.cpp
     eti/zm_compute_cape_from_parcel.cpp
+    eti/zm_zm_conv_mcsp_calculate_shear.cpp
   ) # ZM ETI SRCS
 endif()
 

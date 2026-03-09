@@ -52,6 +52,8 @@ void find_mse_max_bridge_f(Int pcols, Int ncol, Int pver, Int num_msg, Int* msem
 void compute_dilute_parcel_bridge_f(Int pcols, Int ncol, Int pver, Int num_msg, Int* klaunch, Real* pmid, Real* temperature, Real* sp_humidity, Real* tpert, Int* pblt, Real* parcel_temp, Real* parcel_vtemp, Real* parcel_qsat, Real* lcl_pmid, Real* lcl_temperature, Int* lcl_klev);
 
 void compute_cape_from_parcel_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int num_cin, Int num_msg, Real* temperature, Real* tv, Real* zmid, Real* sp_humidity, Real* pint, Int* msemax_klev, Real* lcl_pmid, Int* lcl_klev, Real* parcel_qsat, Real* parcel_temp, Real* parcel_vtemp, Int* eql_klev, Real* cape);
+
+void zm_conv_mcsp_calculate_shear_bridge_f(Int pcols, Int ncol, Int pver, Real* state_pmid, Real* state_u, Real* state_v, Real* mcsp_shear);
 } // extern "C" : end _f decls
 
 // Inits and finalizes are not intended to be called outside this comp unit
@@ -805,6 +807,64 @@ void compute_cape_from_parcel(ComputeCapeFromParcelData& d)
 
   std::vector<view1di_d> vec1di_out = {eql_klev_d};
   ekat::device_to_host({d.eql_klev}, d.pcols, vec1di_out);
+
+  zm_finalize_cxx();
+}
+void zm_conv_mcsp_calculate_shear_f(ZmConvMcspCalculateShearData& d)
+{
+  d.transition<ekat::TransposeDirection::c2f>();
+  zm_common_init_f();
+  zm_conv_mcsp_calculate_shear_bridge_f(d.pcols, d.ncol, d.pver, d.state_pmid, d.state_u, d.state_v, d.mcsp_shear);
+  zm_common_finalize_f();
+  d.transition<ekat::TransposeDirection::f2c>();
+}
+
+void zm_conv_mcsp_calculate_shear(ZmConvMcspCalculateShearData& d)
+{
+  zm_common_init();
+
+  // create device views and copy
+  std::vector<view1dr_d> vec1dr_in(1);
+  ekat::host_to_device({d.mcsp_shear}, d.pcols, vec1dr_in);
+
+  std::vector<view2dr_d> vec2dr_in(3);
+  ekat::host_to_device({d.state_pmid, d.state_u, d.state_v}, d.pcols, d.pver, vec2dr_in);
+
+  view1dr_d
+    mcsp_shear_d(vec1dr_in[0]);
+
+  view2dr_d
+    state_pmid_d(vec2dr_in[0]),
+    state_u_d(vec2dr_in[1]),
+    state_v_d(vec2dr_in[2]);
+
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
+
+  // unpack data scalars because we do not want the lambda to capture d
+  const Int ncol = d.ncol;
+  const Int pver = d.pver;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto state_pmid_c = ekat::subview(state_pmid_d, i);
+    const auto state_u_c = ekat::subview(state_u_d, i);
+    const auto state_v_c = ekat::subview(state_v_d, i);
+
+    ZMF::zm_conv_mcsp_calculate_shear(
+      team,
+      pver,
+      state_pmid_c,
+      state_u_c,
+      state_v_c,
+      mcsp_shear_d(i));
+  });
+
+  // Now get arrays
+  std::vector<view1dr_d> vec1dr_out = {mcsp_shear_d};
+  ekat::device_to_host({d.mcsp_shear}, d.pcols, vec1dr_out);
 
   zm_finalize_cxx();
 }
