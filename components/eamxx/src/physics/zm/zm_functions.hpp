@@ -95,6 +95,8 @@ struct Functions {
     static inline constexpr Real lwmax = 1.e-3; // maximum condensate that can be held in cloud before rainout
 
     static inline constexpr Real ull_upper_launch_pressure = 600.0; // upper search limit for unrestricted launch level (ULL)
+
+    static inline constexpr Real MCSP_storm_speed_pref = 600e2; // pressure level for winds in MCSP calculation [Pa]
   };
 
   //----------------------------------------------------------------------------
