@@ -112,6 +112,10 @@ public:
   // determining turbulence advection property
   void pre_process_tracer_requests ();
 
+  // Once all field/groups are set, we can go through our inputs/outputs list and prune
+  // inputs that are actually outputs of previous process in the group
+  void remove_unnecessary_inputs ();
+
 protected:
 
   // The initialization, run, and finalization methods

@@ -414,93 +414,6 @@ void AtmosphereProcessGroup::initialize_impl (const RunType run_type)
     m_atm_logger->debug("[EAMxx::initialize::"+atm_proc->name()+"] memory usage: " + std::to_string(max_mem_usage) + "MB");
 #endif
   }
-
-  if (m_group_schedule_type==ScheduleType::Sequential) {
-    // We need to make sure we are not exposing more inputs than we actually need.
-    // In the create_requests phase, we agglomerated all requests from all procs.
-    // However, it is possible that a proc has a Required field/group that is
-    // the Computed field/group of a previous process. And we need to check both
-    // field and groups, as a Required field may be Computed as part of a group
-    // in a prev process (or viceversa, all group members are Computed fields
-    // of prev processes)
-
-    // First, find out the first process that requires/computes each field/group
-    // NOTE: emplace(str,int) leaves the entry untouched if it already exists
-    strmap_t<strmap_t<int>> field_first_customer;
-    strmap_t<strmap_t<int>> group_first_customer;
-    strmap_t<strmap_t<int>> field_first_provider;
-    strmap_t<strmap_t<int>> group_first_provider;
-    int nprocs = m_atm_processes.size();
-    for (int i=0; i<nprocs; ++i) {
-      const auto& ap = m_atm_processes[i];
-      for (const auto& f : ap->get_fields_in()) {
-        const auto& grid = f.get_header().get_identifier().get_grid_name();
-        field_first_customer[f.name()].emplace(grid,i);
-      }
-      for (const auto& f : ap->get_fields_out()) {
-        const auto& grid = f.get_header().get_identifier().get_grid_name();
-        field_first_provider[f.name()].emplace(grid,i);
-      }
-      for (const auto& g : ap->get_groups_in()) {
-        group_first_customer[g.name()].emplace(g.grid_name(),i);
-      }
-      for (const auto& g : ap->get_groups_out()) {
-        group_first_provider[g.name()].emplace(g.grid_name(),i);
-        for (const auto& fn : g.m_info->m_fields_names) {
-          field_first_provider[fn].emplace(g.grid_name(),i);
-        }
-      }
-    }
-
-    // Now for each field/group, check if first_customer comes after the first provider.
-    // If so, we must remove the field/group from the inputs of this group
-    for (const auto& [fn,grid2customer] : field_first_customer) {
-      for (const auto& [gn,customer_id] : grid2customer) {
-        // If NO process provides this field on this grid, or if the 1st provider comes AFTER
-        // the 1st customer, then it is TRULY a requirement, and we can move on
-        if (field_first_provider[fn].count(gn)==0 or
-            field_first_provider[fn][gn] >= customer_id)
-          continue;
-
-        // If we got here, the 1st customer of this field comes AFTER a provider.
-        // Hence, this is NOT an input to the APG, and we must remove it.
-        m_fields_in.erase(m_fields_in_iterators[fn][gn]);
-        m_fields_in_iterators[fn].erase(gn);
-      }
-    }
-
-    for (const auto& [group,grid2customer] : group_first_customer) {
-      for (const auto& [grid,customer_id] : grid2customer) {
-        bool remove = false;
-        if (group_first_provider[group].count(grid)==1 and
-            group_first_provider[group][grid] < customer_id)
-          remove = true;
-
-        if (field_first_provider[group].count(grid)==1 and
-            field_first_provider[group][grid] < customer_id)
-          remove = true;
-
-        if (not remove) {
-          // No prev process computes the group (or the monolithic field as a Field)
-          // Check if ALL fields are individually computed before this proc
-          remove = true;
-          auto g = m_groups_in_iterators[group][grid];
-          for (const auto& [fn,f] : g->m_individual_fields) {
-            if (field_first_provider[fn].count(grid)==0 or
-                field_first_provider[fn][grid] >= customer_id) {
-              remove = false;
-              break;
-            }
-          }
-        }
-
-        if (remove) {
-          m_groups_in.erase(m_groups_in_iterators[group][grid]);
-          m_groups_in_iterators[group].erase(grid);
-        }
-      }
-    }
-  }
 }
 
 void AtmosphereProcessGroup::run_impl (const double dt) {
@@ -544,6 +457,179 @@ void AtmosphereProcessGroup::finalize_impl (/* what inputs? */) {
     m_atm_logger->debug("[EAMxx::finalize::"+atm_proc->name()+"] memory usage: " + std::to_string(max_mem_usage) + "MB");
 #endif
   }
+}
+
+void AtmosphereProcessGroup::remove_unnecessary_inputs()
+{
+  if (m_group_schedule_type!=ScheduleType::Sequential)
+    return;
+
+  // We need to make sure we are not exposing more inputs than we actually need.
+  // In the create_requests phase, we agglomerated all requests from all procs.
+  // However, it is possible that a proc has a Required field/group that is
+  // the Computed field/group of a previous process. And we need to check both
+  // field and groups, as a Required field may be Computed as part of a group
+  // in a prev process (or viceversa, all group members are Computed fields
+  // of prev processes)
+
+  // First, if any inner proc is an APG itself, make sure THEY remove their unnecessary inputs
+  for (auto ap : m_atm_processes) {
+    if (ap->type()==AtmosphereProcessType::Group)
+      std::dynamic_pointer_cast<AtmosphereProcessGroup>(ap)->remove_unnecessary_inputs();
+  }
+
+  // Second, find out the first process that requires/computes each field/group
+  // NOTE: emplace(str,int) leaves the entry untouched if it already exists
+  strmap_t<strmap_t<int>> field_first_customer;
+  strmap_t<strmap_t<int>> group_first_customer;
+  strmap_t<strmap_t<int>> field_first_provider;
+  strmap_t<strmap_t<int>> group_first_provider;
+  int nprocs = m_atm_processes.size();
+  std::cout << name() << "::remove_unnecessary_inputs\n";
+  for (int i=0; i<nprocs; ++i) {
+    const auto& ap = m_atm_processes[i];
+    for (const auto& f : ap->get_fields_in()) {
+      const auto& grid = f.get_header().get_identifier().get_grid_name();
+      field_first_customer[f.name()].emplace(grid,i);
+      if (f.name()=="cldfrac_liq_prev") {
+        std::cout << "proc " << ap->name() << " seems to need " << f.name() << " on grid " << grid << "\n";
+      }
+    }
+    for (const auto& f : ap->get_fields_out()) {
+      const auto& grid = f.get_header().get_identifier().get_grid_name();
+      field_first_provider[f.name()].emplace(grid,i);
+    }
+    for (const auto& g : ap->get_groups_in()) {
+      group_first_customer[g.name()].emplace(g.grid_name(),i);
+    }
+    for (const auto& g : ap->get_groups_out()) {
+      group_first_provider[g.name()].emplace(g.grid_name(),i);
+      for (const auto& fn : g.m_info->m_fields_names) {
+        field_first_provider[fn].emplace(g.grid_name(),i);
+      }
+    }
+  }
+
+  // std::cout << "APG=" << name() << ", pre-erase providers/customers:\n";
+  // std::cout << " field_providers:\n";
+  // for (auto it1 : field_first_provider) {
+  //   for (auto it2 : it1.second) {
+  //     std::cout << "  " << it1.first << "[" << it2.first << "]: " << m_atm_processes[it2.second]->name() << "\n";
+  //   }
+  // }
+  // std::cout << " group_providers:\n";
+  // for (auto it1 : group_first_provider) {
+  //   for (auto it2 : it1.second) {
+  //     std::cout << "  " << it1.first << "[" << it2.first << "]: " << m_atm_processes[it2.second]->name() << "\n";
+  //   }
+  // }
+  // std::cout << " field_customers:\n";
+  // for (auto it1 : field_first_customer) {
+  //   for (auto it2 : it1.second) {
+  //     std::cout << "  " << it1.first << "[" << it2.first << "]: " << m_atm_processes[it2.second]->name() << "\n";
+  //   }
+  // }
+  // std::cout << " group_customers:\n";
+  // for (auto it1 : group_first_customer) {
+  //   for (auto it2 : it1.second) {
+  //     std::cout << "  " << it1.first << "[" << it2.first << "]: " << m_atm_processes[it2.second]->name() << "\n";
+  //   }
+  // }
+  auto erase_dep = [](auto& dep_in, auto& dep_in_iterators,
+                      const std::string& name, const std::string& grid)
+  {
+    dep_in.erase(dep_in_iterators[name][grid]);
+    dep_in_iterators[name].erase(grid);
+  };
+
+  // Now for each field/group, check if first_customer comes after the first provider.
+  // If so, we must remove the field/group from the inputs of this group
+  for (auto it=m_fields_in.begin(); it!=m_fields_in.end(); ) {
+    const auto grid = it->get_header().get_identifier().get_grid_name();
+
+    if (field_first_customer.count(it->name())==0) {
+      // This can happen if the 1st customer was itself a group,
+      // which itself removed this field as an unnecessary input
+      erase_dep(m_fields_in,m_fields_in_iterators,it->name(),grid);
+    }
+
+    // Perhaps redundant, but better be safe
+    EKAT_REQUIRE_MSG (field_first_customer.count(it->name())==1 and field_first_customer[it->name()].count(grid)==1,
+        "[AtmosphereProcessGroup::remove_unnecessary_inputs]\n"
+        "  Error! Something went wrong while tracking unnecessary inputs. Please, contact developers.\n"
+        "   - process name: " + name() + "\n"
+        "   - input name  : " + it->name() + "\n");
+    auto customer_id = field_first_customer[it->name()][grid];
+    
+    // If NO process provides this field on this grid, or if the 1st provider comes AFTER
+    // the 1st customer, then it is TRULY a requirement, and we can move on
+    if (field_first_provider[it->name()].count(grid)==0 or
+        field_first_provider[it->name()][grid] >= customer_id) {
+      ++it;
+      continue;
+    }
+
+    // If we got here, the 1st customer of this field comes AFTER a provider.
+    // Hence, this is NOT an input to the APG, and we must remove it.
+    printf("removing %s[%s] required by proc %s, as it is computed by %s\n",
+        it->name().c_str(),grid.c_str(),m_atm_processes[customer_id]->name().c_str(),
+        m_atm_processes[field_first_provider[it->name()][grid]]->name().c_str());
+    erase_dep(m_fields_in,m_fields_in_iterators,it->name(),grid);
+  }
+
+  for (auto it=m_groups_in.begin(); it!=m_groups_in.end(); ) {
+    const auto grid = it->grid_name();
+
+    if (field_first_customer.count(it->name())==0) {
+      // This can happen if the 1st customer was itself a group,
+      // which itself removed this group as an unnecessary input
+      erase_dep(m_fields_in,m_fields_in_iterators,it->name(),grid);
+    }
+
+    // Perhaps redundant, but better be safe
+    EKAT_REQUIRE_MSG (field_first_customer.count(it->name())==1 and field_first_customer[it->name()].count(grid)==1,
+        "[AtmosphereProcessGroup::remove_unnecessary_inputs]\n"
+        "  Error! Something went wrong while tracking unnecessary inputs. Please, contact developers.\n"
+        "   - process name: " + name() + "\n"
+        "   - input name  : " + it->name() + "\n");
+
+    auto customer_id = field_first_customer[it->name()][grid];
+    
+    bool remove = false;
+    if (group_first_provider[it->name()].count(grid)==1 and
+        group_first_provider[it->name()][grid] < customer_id) {
+      remove = true;
+    } else if (field_first_provider[it->name()].count(grid)==1 and
+               field_first_provider[it->name()][grid] < customer_id) {
+      remove = true;
+    } else {
+      // No prev process computes the it->name() (or the monolithic field as a Field)
+      // Check if ALL fields are individually computed before this proc
+      remove = true;
+      for (const auto& [fn,f] : it->m_individual_fields) {
+        if (field_first_provider[fn].count(grid)==0 or
+            field_first_provider[fn][grid] >= customer_id) {
+          remove = false;
+          break;
+        }
+      }
+    }
+
+    if (remove) {
+      erase_dep(m_groups_in,m_groups_in_iterators,it->name(),grid);
+    } else {
+      ++it;
+    }
+  }
+  std::cout << "final list of inputs for " << name() << ":\n";
+  std::cout << " fields:";
+  for (auto f : m_fields_in) {
+    std::cout << " " << f.name();
+  } std::cout << "\n";
+  std::cout << " groups:";
+  for (auto g : m_groups_in) {
+    std::cout << " " << g.name();
+  } std::cout << "\n";
 }
 
 void AtmosphereProcessGroup::

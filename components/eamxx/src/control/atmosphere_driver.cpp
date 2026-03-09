@@ -608,6 +608,14 @@ void AtmosphereDriver::create_fields()
     }
   }
 
+  // Up to know, atm proc groups listed as inputs the "union" of their inner procs inputs.
+  // However, inputs of proc 2 may be outputs of proc 1. The reason APG's could not detect
+  // this during set_grids is that the content of field groups is not known until all
+  // fields have been requested by all procs. Now that we created field/groups and set them
+  // in the procs, the APG's can do a check and REMOVE from their inputs the fields/groups
+  // that are computed internally before being used as an input by a following process
+  m_atm_process_group->remove_unnecessary_inputs();
+
   // Now go through the input fields/groups to the atm proc group,
   // and mark them as part of the RESTART group.
   for (const auto& f : m_atm_process_group->get_fields_in()) {
@@ -1065,6 +1073,8 @@ void AtmosphereDriver::set_initial_conditions ()
       // for this field in the parameter file.
       if (ic_pl.isType<double>(fname) or ic_pl.isType<std::vector<double>>(fname)) {
         // Initial condition is a constant
+        // std::cout << "  init with constant\n";
+
         initialize_constant_field(fid, ic_pl);
 
         // Note: f is const, so we can't modify the tracking. So get the same field from the fm
@@ -1073,6 +1083,7 @@ void AtmosphereDriver::set_initial_conditions ()
       } else if (ic_pl.isType<std::string>(fname)) {
         // Initial condition is a string
         ic_fields_to_copy.push_back(fid);
+        // std::cout << "  init from string\n";
       } else {
         EKAT_ERROR_MSG ("ERROR: invalid assignment for variable " + fname + ", only scalar "
                         "double or string, or vector double arguments are allowed");
@@ -1116,6 +1127,7 @@ void AtmosphereDriver::set_initial_conditions ()
       if (c.size()==0) {
         // If this field is the parent of other subfields, we only read from file the subfields.
         if (not ekat::contains(this_grid_ic_fnames,fname)) {
+          // std::cout << "  init from nc file\n";
           this_grid_ic_fnames.push_back(fname);
           m_fields_inited[grid_name].push_back(fname);
         }
@@ -1143,6 +1155,7 @@ void AtmosphereDriver::set_initial_conditions ()
   // First the individual input fields...
   m_atm_logger->debug("    [EAMxx] Processing input fields ...");
   for (const auto& f : m_atm_process_group->get_fields_in()) {
+    // std::cout << "AD, processing IC field " + f.name() + "...\n";
     process_ic_field (f);
   }
   m_atm_logger->debug("    [EAMxx] Processing input fields ... done!");
