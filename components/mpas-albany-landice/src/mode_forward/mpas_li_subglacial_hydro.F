@@ -2104,6 +2104,8 @@ module li_subglacial_hydro
       integer, pointer :: nCellsSolve
       integer :: iCell, iEdgeOnCell, iEdge
 
+      err = 0
+
       call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
