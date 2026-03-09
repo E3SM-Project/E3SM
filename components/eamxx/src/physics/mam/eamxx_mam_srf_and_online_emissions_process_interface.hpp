@@ -145,6 +145,9 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
     // Sector names in file
     std::vector<std::string> sectors;
 
+    // Species-specific scale factor
+    Real scale_factor = 1.0;
+
     // Data structure for reading interpolation
     std::shared_ptr<AbstractRemapper> horizInterp_;
     std::shared_ptr<AtmosphereInput> dataReader_;

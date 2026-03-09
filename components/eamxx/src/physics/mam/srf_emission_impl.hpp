@@ -175,6 +175,7 @@ template <typename S, typename D>
 void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
     std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
     const int time_index,  // zero-based
+    const Real scale_factor,
     AbstractRemapper &srfEmiss_horiz_interp, srfEmissInput &srfEmiss_input) {
   using namespace ShortFieldTagsNames;
 
@@ -197,13 +198,16 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
   // Recall, the fields are registered in the order: ps, ccn3, g_sw, ssa_sw,
   // tau_sw, tau_lw
 
-  // Read fields from the file
+  // Read fields from the file, applying scale factors
   for(int i = 0; i < srfEmiss_horiz_interp.get_num_fields(); ++i) {
     auto sector =
         srfEmiss_horiz_interp.get_tgt_field(i).get_view<const Real *>();
     const auto emiss =
         Kokkos::subview(srfEmiss_input.data.emiss_sectors, i, Kokkos::ALL());
-    Kokkos::deep_copy(emiss, sector);
+    Kokkos::parallel_for("update surface emissions", srfEmiss_input.data.ncols,
+        KOKKOS_LAMBDA(const int icol) {
+      emiss(icol) = scale_factor * sector(icol);
+    });
   }
 
   Kokkos::fence();
