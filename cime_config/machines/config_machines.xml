@@ -3137,11 +3137,11 @@
     <COMPILERS>gnugpu,gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3smtest</PROJECT>
-    <CIME_OUTPUT_ROOT>/p/lustre2/$USER/e3sm_scratch/tuo</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/p/lustre5/$USER/e3sm_scratch/tuo</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/p/vast1/e3sm/ccsm3data/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/p/vast1/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/p/lustre2/$USER/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/p/lustre2/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+    <DOUT_S_ROOT>/p/lustre5/$USER/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/p/lustre5/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/usr/workspace/e3sm/apps/cprnc</CCSM_CPRNC>
     <GMAKE_J>14</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
