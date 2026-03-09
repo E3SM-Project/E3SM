@@ -99,25 +99,19 @@ subroutine zm_conv_mcsp_calculate_shear( pcols, ncol, pver, state_pmid, state_u,
    ! Local variables
    integer  :: i
    real(r8), dimension(pcols) :: storm_u         ! u wind at storm reference level set by MCSP_storm_speed_pref
-   real(r8), dimension(pcols) :: storm_v         ! v wind at storm reference level set by MCSP_storm_speed_pref
-   real(r8), dimension(pcols) :: storm_u_shear   ! u shear at storm reference level set by MCSP_storm_speed_pref
-   real(r8), dimension(pcols) :: storm_v_shear   ! v shear at storm reference level set by MCSP_storm_speed_pref
+
    !----------------------------------------------------------------------------
    ! Interpolate wind to pressure level specified by MCSP_storm_speed_pref
    call vertinterp( ncol, pcols, pver, state_pmid, MCSP_storm_speed_pref, state_u, storm_u )
-   call vertinterp( ncol, pcols, pver, state_pmid, MCSP_storm_speed_pref, state_v, storm_v )
 
    !----------------------------------------------------------------------------
    ! calculate low-level shear
    do i = 1,ncol
       if (state_pmid(i,pver).gt.MCSP_storm_speed_pref) then
-         storm_u_shear(i) = storm_u(i)-state_u(i,pver)
-         storm_v_shear(i) = storm_v(i)-state_v(i,pver)
+         mcsp_shear(i) = storm_u(i)-state_u(i,pver)
       else
-         storm_u_shear(i) = -999
-         storm_v_shear(i) = -999
+         mcsp_shear(i) = -999
       end if
-      mcsp_shear(i) = storm_u_shear(i)
    end do
 
    !----------------------------------------------------------------------------
