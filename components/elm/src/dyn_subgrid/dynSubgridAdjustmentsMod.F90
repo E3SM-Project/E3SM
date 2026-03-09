@@ -561,6 +561,7 @@ contains
       retransn           => veg_ns%retransn (p) , &
       npool              => veg_ns%npool    (p) , &
       ntrunc             => veg_ns%ntrunc   (p)   , &
+      plant_n_buffer     => veg_ns%plant_n_buffer(p), &
       dispvegn           => veg_ns%dispvegn (p) , &
       storvegn           => veg_ns%storvegn (p) , &
       totvegn            => veg_ns%totvegn  (p) , &
@@ -753,22 +754,28 @@ contains
          var               = npool                , &
          flux_out_grc_area = conv_nflux  )
 
-    ! 24) DISPVEGN_PATCH
+    ! 24) PLANT_N_BUFFER_PATCH
+    call update_patch_state(patch_state_updater,       &
+         p,c, &
+         var    = plant_n_buffer,  &
+         flux_out_grc_area = conv_nflux  )
+
+    ! 25) DISPVEGN_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c              , &
          var               = dispvegn  )
 
-    ! 25) STORVEGN_PATCH
+    ! 26) STORVEGN_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                         , &
          var               = storvegn  )
 
-    ! 26) TOTVEGN_PATCH
+    ! 27) TOTVEGN_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c   , &
          var               = totvegn  )
 
-    ! 27) TOTPFTN_PATCH
+    ! 28) TOTPFTN_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c, &
          var    = totpftn  )
@@ -836,6 +843,7 @@ contains
       sminn_vr            => col_ns%sminn_vr ,  &
       smin_nh4_vr         => col_ns%smin_nh4_vr  , &
       smin_no3_vr         => col_ns%smin_no3_vr  , &
+      plant_n_buffer      => col_ns%plant_n_buffer, &
       prod1n              => col_ns%prod1n       , &
       prod10n             => col_ns%prod10n      , &
       prod100n            => col_ns%prod100n     , &
@@ -916,6 +924,17 @@ contains
             var         = smin_no3_vr(begc:endc, j) , &
             adjustment  = adjustment_one_level(begc:endc))
     end do
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = plant_n_buffer(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
@@ -1265,6 +1284,7 @@ contains
       retransp           => veg_ps%retransp (p) ,&
       ppool              => veg_ps%ppool    (p), &
       ptrunc             => veg_ps%ptrunc   (p)   , &
+      plant_p_buffer     => veg_ps%plant_p_buffer(p), &
       dispvegp           => veg_ps%dispvegp (p) , &
       storvegp           => veg_ps%storvegp (p) , &
       totvegp            => veg_ps%totvegp  (p) , &
@@ -1456,22 +1476,28 @@ contains
          var               = ppool                , &
          flux_out_grc_area = conv_pflux  )
 
-    ! 24) DISPVEGP_PATCH
+    ! 24) PLANT_P_BUFFER_PATCH
+    call update_patch_state(patch_state_updater,       &
+         p,c, &
+         var    = plant_p_buffer,  &
+         flux_out_grc_area = conv_pflux  )
+
+    ! 25) DISPVEGP_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                      , &
          var               = dispvegp  )
 
-    ! 25) STORVEGP_PATCH
+    ! 26) STORVEGP_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                    , &
          var               = storvegp  )
 
-    ! 26) TOTVEGP_PATCH
+    ! 27) TOTVEGP_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c             , &
          var               = totvegp  )
 
-    ! 27) TOTPFTP_PATCH
+    ! 28) TOTPFTP_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                   , &
          var               = totpftp  )
