@@ -35,18 +35,22 @@ void Functions<S,D>::zm_conv_mcsp_calculate_shear(
 
   //----------------------------------------------------------------------------
   // Interpolate wind to pressure level specified by MCSP_storm_speed_pref
-  // Linear interpolation: find k such that state_pmid(k+1) <= MCSP_storm_speed_pref <= state_pmid(k)
-  Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    // Find the interpolation indices
-    Int k_below = pver - 1; // default to lowest level
-    for (Int k = 0; k < pver - 1; ++k) {
-      if (state_pmid(k) >= ZMC::MCSP_storm_speed_pref && state_pmid(k + 1) < ZMC::MCSP_storm_speed_pref) {
-        k_below = k;
-        break;
-      }
-    }
 
-    // Linear interpolation
+  // Find the interpolation indices using parallel reduction
+  Int k_below = pver - 1; // default to lowest level
+  Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, pver - 1),
+    [&] (const Int& k, Int& min_k) {
+      if (state_pmid(k) >= ZMC::MCSP_storm_speed_pref && state_pmid(k + 1) < ZMC::MCSP_storm_speed_pref) {
+        if (k < min_k) {
+          min_k = k;
+        }
+      }
+    },
+    Kokkos::Min<Int>(k_below));
+  team.team_barrier();
+
+  // Linear interpolation
+  Kokkos::single(Kokkos::PerTeam(team), [&] () {
     if (k_below < pver - 1) {
       const Real p_above = state_pmid(k_below);
       const Real p_below = state_pmid(k_below + 1);
