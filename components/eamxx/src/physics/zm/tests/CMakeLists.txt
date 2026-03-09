@@ -11,6 +11,7 @@ set(ZM_TESTS_SRCS
   zm_find_mse_max_tests.cpp
   zm_compute_dilute_parcel_tests.cpp
   zm_compute_cape_from_parcel_tests.cpp
+  zm_zm_conv_mcsp_calculate_shear_tests.cpp
 ) # ZM_TESTS_SRCS
 
 # All tests should understand the same baseline args

@@ -170,4 +170,15 @@ subroutine compute_cape_from_parcel_bridge_f(pcols, ncol, pver, pverp, num_cin, 
 
   call compute_cape_from_parcel(pcols, ncol, pver, pverp, num_cin, num_msg, temperature, tv, zmid, sp_humidity, pint, msemax_klev, lcl_pmid, lcl_klev, zm_const, zm_param, parcel_qsat, parcel_temp, parcel_vtemp, eql_klev, cape)
 end subroutine compute_cape_from_parcel_bridge_f
+
+subroutine zm_conv_mcsp_calculate_shear_bridge_f(pcols, ncol, pver, state_pmid, state_u, state_v, mcsp_shear) bind(C)
+  use zm_conv_mcsp, only : zm_conv_mcsp_calculate_shear
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: state_pmid, state_u, state_v
+  real(kind=c_real) , intent(out), dimension(pcols) :: mcsp_shear
+
+  call zm_conv_mcsp_calculate_shear(pcols, ncol, pver, state_pmid, state_u, state_v, mcsp_shear)
+end subroutine zm_conv_mcsp_calculate_shear_bridge_f
+
 end module zm_c2f_bridge
