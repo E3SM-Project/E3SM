@@ -19,9 +19,6 @@ f"""#include "catch2/catch.hpp"
 
 #include "{phys}_unit_tests_common.hpp"
 
-#include <ekat_pack.hpp>
-#include <ekat_team_policy_utils.hpp>
-
 namespace scream {{
 namespace {phys} {{
 namespace unit_test {{

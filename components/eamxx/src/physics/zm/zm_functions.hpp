@@ -96,7 +96,7 @@ struct Functions {
 
     static inline constexpr Int nit_lheat = 2; // Number of iterations for condensation/freezing loop
 
-    static inline  constexpr Real lwmax = 1.e-3; // maximum condensate that can be held in cloud before rainout
+    static inline constexpr Real lwmax = 1.e-3; // maximum condensate that can be held in cloud before rainout
 
     static inline constexpr Real ull_upper_launch_pressure = 600.0; // upper search limit for unrestricted launch level (ULL)
   };

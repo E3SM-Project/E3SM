@@ -41,7 +41,7 @@ void Functions<S,D>::find_mse_max(
   const Int bot_layer = pver - 1 - runtime_opt.mx_bot_lyr_adj; // set lower limit to search for launch level with max MSE
 
   //----------------------------------------------------------------------------
-  // Use parallel_reduce to find max moist static energy
+  // Perform a serial search to find max moist static energy
   // The need for current mse_max_val means this loop has to be serial
   Kokkos::single(Kokkos::PerTeam(team), [&] {
     for (Int k = bot_layer; k >= num_msg; --k) {
