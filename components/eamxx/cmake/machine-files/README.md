@@ -55,9 +55,13 @@ SCREAM_MACHINE will be set to `${mach}` not `${mach}-${compiler}`.
 
 ### Integration with E3SM/CIME
 
-When eamxx is being build as a component within an E3SM case,
-these machine files will still be used. It will prefer a
-${mach}-${compiler}.cmake over a plain ${mach}.cmake file.
+When eamxx is being built as a component within an E3SM case,
+these machine files are optional. The CIME build system will look
+for a matching machine file, preferring a ${mach}-${compiler}.cmake
+over a plain ${mach}.cmake file. If neither is found, it falls back
+to common.cmake (which sets SCREAM_MACHINE and includes the EKAT
+machine file if available), and the machine configuration from
+cime_config/machines is used instead.
 
 ### Gotchas
 
