@@ -761,6 +761,7 @@ module li_core
       real(kind=RKIND) :: deltatTemp
 
       integer :: err, err_tmp, globalErr
+      integer, pointer :: albanyVelocityError
       logical :: solveVelo
 
       integer, dimension(:), pointer :: vertexMask
@@ -815,6 +816,9 @@ module li_core
       end do
 
       ! Initial velocity solve
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
+      call mpas_pool_get_array(velocityPool, 'albanyVelocityError', albanyVelocityError)
+      albanyVelocityError = 0
       call li_velocity_solve(domain, solveVelo=solveVelo, err=err_tmp)
       err = ior(err, err_tmp)
 

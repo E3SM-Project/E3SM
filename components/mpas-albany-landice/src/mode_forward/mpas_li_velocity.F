@@ -659,7 +659,7 @@ contains
          ! ---
          ! --- Calculate strain rates on cell centers
          ! ---
-         call calculate_strain_rates_and_stresses(meshPool, geometryPool, thermalPool, scratchPool, velocityPool, err)
+         call calculate_strain_rates_and_stresses(meshPool, geometryPool, thermalPool, scratchPool, velocityPool, err_tmp)
          err = ior(err, err_tmp)
 
          block => block % next
