@@ -1023,9 +1023,9 @@
     </mach>
   </grid>
   <grid name="a%ne30np4">
-    <mach name="summit|ascent|aurora">
+    <mach name="summit|ascent|polaris|aurora">
       <pes compset="any" pesize="any">
-        <comment>summit|ascent|aurora: any compset on ne30np4 grid</comment>
+        <comment>summit|ascent|polaris|aurora: any compset on ne30np4 grid</comment>
         <ntasks>
           <ntasks_atm>-2</ntasks_atm>
           <ntasks_lnd>-2</ntasks_lnd>
@@ -1038,7 +1038,7 @@
         </ntasks>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+SGLC.+SWAV.+BGC.*" pesize="any">
-        <comment>summit|ascent: BGC compset on ne30np4 grid</comment>
+        <comment>summit|ascent|polaris: BGC compset on ne30np4 grid</comment>
         <MAX_TASKS_PER_NODE>42</MAX_TASKS_PER_NODE>
         <MAX_MPITASKS_PER_NODE>42</MAX_MPITASKS_PER_NODE>
         <ntasks>
@@ -1063,7 +1063,7 @@
         </nthrds>
       </pes>
       <pes compset=".*SCREAM.*" pesize="any">
-        <comment>summit|ascent: SCREAM atm compset on ne30np4 grid</comment>
+        <comment>summit|ascent|polaris: SCREAM atm compset on ne30np4 grid</comment>
         <MAX_TASKS_PER_NODE>42</MAX_TASKS_PER_NODE>
         <MAX_MPITASKS_PER_NODE>42</MAX_MPITASKS_PER_NODE>
         <ntasks>
@@ -2163,9 +2163,9 @@
   </grid>
   <!-- SMS_Ld1_PS.northamericax4v1pg2_r025_IcoswISC30E3r5.WCYCL1850.pm-cpu_intel.allactive-wcprodrrm_1850 -->
   <grid name="a%ne0np4_northamericax4v1.pg2_l%.+_oi%IcoswISC30E3r5">
-    <mach name="improv|crux">
+    <mach name="improv|crux|polaris">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="S">
-        <comment>improv|crux+allactive: RRM-WCYCL on 10 nodes</comment>
+        <comment>improv|crux|polaris+allactive: RRM-WCYCL on 10 nodes</comment>
         <ntasks>
           <ntasks_atm>-8</ntasks_atm>
           <ntasks_cpl>-8</ntasks_cpl>
