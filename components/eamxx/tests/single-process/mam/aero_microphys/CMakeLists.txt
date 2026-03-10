@@ -28,6 +28,7 @@ set (TEST_INPUT_FILES
      scream/mam4xx/linoz/ne2np4/linoz2010_2010JPL_CMIP6_10deg_58km_ne2np4_c20250923.nc
      scream/mam4xx/invariants/ne2np4/oxid_ne2np4_L26_2015_c20250923.nc
      scream/mam4xx/linoz/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc
+     scream/mam4xx/linoz/ne2np4/exo_coldens_ne2np4_c20251206.nc
      scream/mam4xx/photolysis/RSF_GT200nm_v3.0_c080811.nc
      scream/mam4xx/photolysis/temp_prs_GT200nm_JPL10_c130206.nc
      scream/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so2_elev_ne2np4_2010_clim_c20250627.nc
