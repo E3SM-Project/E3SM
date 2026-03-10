@@ -642,7 +642,7 @@ void Tendencies::computeTracerTendenciesOnly(
    // compute tracer tendencies from vertical advection
    Array2DReal ThicknessForVAdv;
    if (VAdv->VertAdvChoice == VertAdvOption::Standard) {
-      State->getLayerThickness(ThicknessForVAdv, ThickTimeLevel);
+      ThicknessForVAdv = State->getLayerThickness(ThickTimeLevel);
    } else if (VAdv->VertAdvChoice == VertAdvOption::FCT) {
       ThicknessForVAdv = AuxState->LayerThicknessAux.ProvThickness;
    }
