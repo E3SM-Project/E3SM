@@ -69,11 +69,11 @@ module controlMod
                         use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch, &
                         vsfm_lateral_model_type, vsfm_include_seepage_bc, &
                         use_hydrstress, lateral_connectivity, domain_decomp_type, &
-                        use_IM2_hillslope_hydrology, use_petsc_thermal_model, &
+                        use_petsc_thermal_model, &
                         do_budgets, budget_inst, budget_daily, budget_month, &
                         budget_ann, budget_ltann, budget_ltend, &
-                        use_lnd_rof_two_way, use_ocn_lnd_one_way, &
-                        use_modified_infil, use_polygonal_tundra, use_arctic_init, &
+                        use_lnd_rof_two_way, &
+                        use_modified_infil, &
                         iundef, nsrest, rundef, scmlat, scmlon, single_column, &
                         source, version, rpntdir, rpntfil, nlfilename_in, &
                         finidat_interp_source, finidat_interp_dest, caseid, ctitle, &
@@ -86,20 +86,15 @@ module controlMod
                         use_fates_ed_prescribed_phys, use_fates_inventory_init, &
                         fates_inventory_ctrl_filename, use_fates_fixed_biogeog, &
                         use_fates_nocomp, use_fates_sp, use_fates_luh, &
-                        use_fates_lupft, use_fates_potentialveg, use_fates_managed_fire, &
+                        use_fates_lupft, use_fates_potentialveg, &
                         fluh_timeseries, flandusepftdat, fates_parteh_mode, &
                         fates_seeddisp_cadence, use_fates_tree_damage, &
-                        use_fates_daylength_factor, fates_photosynth_acclimation, &
-                        fates_stomatal_model, fates_stomatal_assimilation, &
-                        fates_leafresp_model, fates_cstarvation_model, &
-                        fates_regeneration_model, fates_hydro_solver, &
-                        fates_radiation_model, fates_electron_transport_model, &
                         fates_history_dimlevel, elm_varctl_set, &
                         use_nofire, use_lch4, use_vertsoilc, use_extralakelayers, &
                         use_vichydro, use_century_decomp, use_cn, use_crop, &
                         use_snicar_frc, use_snicar_ad, use_firn_percolation_and_compaction, &
                         use_extrasnowlayers, use_T_rho_dependent_snowthk, &
-                        use_vancouver, use_mexicocity, use_noio, use_finetop_rad
+                        use_vancouver, use_mexicocity, use_noio
   !
   ! !PUBLIC TYPES:
   implicit none
