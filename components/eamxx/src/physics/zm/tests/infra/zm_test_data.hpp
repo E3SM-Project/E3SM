@@ -196,6 +196,12 @@ struct ComputeDiluteCapeData : public PhysicsTestData {
   void randomize(Engine& engine)
   {
     PhysicsTestData::randomize(engine, { {pmid, {590, 660}}, {temperature_in, {200, 300}}, {sp_humidity_in, {.004, .018}} });
+
+    // Make sure each column is sorted
+    for (Int c = 0; c < pcols; ++c) {
+      std::sort(pmid + (c*pver), pmid + ((c+1)*pver));
+    }
+
   }
 
 };
@@ -282,8 +288,12 @@ struct ComputeDiluteParcelData : public PhysicsTestData {
       klaunch[i] = pver / 2 + i;
       pblt[i]    = i + 1;
     }
-  }
 
+    // Make sure each column is sorted
+    for (Int c = 0; c < pcols; ++c) {
+      std::sort(pmid + (c*pver), pmid + ((c+1)*pver));
+    }
+  }
 };
 
 struct ComputeCapeFromParcelData : public PhysicsTestData {
