@@ -841,7 +841,6 @@ void zm_conv_mcsp_calculate_shear(ZmConvMcspCalculateShearData& d)
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
   // unpack data scalars because we do not want the lambda to capture d
-  const Int ncol = d.ncol;
   const Int pver = d.pver;
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
