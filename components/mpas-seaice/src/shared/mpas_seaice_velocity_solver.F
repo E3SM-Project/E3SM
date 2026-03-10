@@ -127,7 +127,9 @@ contains
     real(kind=RKIND), pointer :: &
          dynamicsTimeStep, &
          elasticTimeStep, &
-         config_dt
+         config_dt, &
+         config_dynamics_area_minimum, &
+         config_dynamics_mass_minimum
 
     integer, pointer :: &
          config_dynamics_subcycle_number, &
@@ -138,8 +140,6 @@ contains
          ierr
 
     ! set up min area and mass for velocity solver
-    seaiceAreaMinimum = seaicePuny
-    seaiceMassMinimum = 10.0_RKIND*seaicePuny
 
     ! set up the dynamically locked cell mask
     call dynamically_locked_cell_mask(domain)
@@ -151,6 +151,8 @@ contains
        call MPAS_pool_get_config(blockPtr % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(blockPtr % configs, "config_dynamics_subcycle_number", config_dynamics_subcycle_number)
        call MPAS_pool_get_config(blockPtr % configs, "config_elastic_subcycle_number", config_elastic_subcycle_number)
+       call MPAS_pool_get_config(blockPtr % configs, "config_dynamics_area_minimum", config_dynamics_area_minimum)
+       call MPAS_pool_get_config(blockPtr % configs, "config_dynamics_mass_minimum", config_dynamics_mass_minimum)
 
        call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
        call MPAS_pool_get_array(velocitySolverPool, "dynamicsTimeStep", dynamicsTimeStep)
@@ -159,6 +161,9 @@ contains
        dynamicsTimeStep = config_dt / real(config_dynamics_subcycle_number,RKIND)
 
        elasticTimeStep = dynamicsTimeStep / real(config_elastic_subcycle_number,RKIND)
+
+       seaiceAreaMinimum = config_dynamics_area_minimum
+       seaiceMassMinimum = config_dynamics_mass_minimum
 
        blockPtr => blockPtr % next
     enddo

@@ -567,6 +567,22 @@ Default: Defined in namelist_defaults.xml
 
 <!-- velocity_solver -->
 
+<entry id="config_dynamics_area_minimum" type="real"
+	category="velocity_solver" group="velocity_solver">
+Minimum sea-ice area for dynamics calculation.
+
+Valid values: Any nonnegative number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_dynamics_mass_minimum" type="real"
+	category="velocity_solver" group="velocity_solver">
+Minimum sea-ice and snow mass for dynamics calculation.
+
+Valid values: Any nonnegative number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_dynamics_subcycle_number" type="integer"
 	category="velocity_solver" group="velocity_solver">
 The number of dynamics subcycles to perform per thermodynamic time step (config_dt)
@@ -859,6 +875,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_use_level_meltponds" type="logical"
 	category="column_tracers" group="column_tracers">
 If true use the level ice meltponds tracers.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_sealevel_meltponds" type="logical"
+	category="column_tracers" group="column_tracers">
+If true use the sea-level meltponds tracers.
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -2340,7 +2364,7 @@ Valid values:
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_min_meltwater_retained_fraction" type="real"
+<entry id="config_min_meltwater_retained_fraction_lvlponds" type="real"
 	category="meltponds" group="meltponds">
 Minimum retained fraction of meltwater.
 
@@ -2348,7 +2372,39 @@ Valid values: Any real number between 0 and 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_max_meltwater_retained_fraction" type="real"
+<entry id="config_min_meltwater_retained_fraction_sealvlponds" type="real"
+	category="meltponds" group="meltponds">
+Minimum retained fraction of meltwater.
+
+Valid values: Any real number between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_min_meltwater_retained_fraction_topoponds" type="real"
+	category="meltponds" group="meltponds">
+Minimum retained fraction of meltwater.
+
+Valid values: Any real number between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_max_meltwater_retained_fraction_lvlponds" type="real"
+	category="meltponds" group="meltponds">
+Maximum retained fraction of meltwater.
+
+Valid values: Any real number between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_max_meltwater_retained_fraction_sealvlponds" type="real"
+	category="meltponds" group="meltponds">
+Maximum retained fraction of meltwater.
+
+Valid values: Any real number between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_max_meltwater_retained_fraction_topoponds" type="real"
 	category="meltponds" group="meltponds">
 Maximum retained fraction of meltwater.
 
@@ -2380,6 +2436,13 @@ Valid values:
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_sealevel_pond_equilibrium_fraction" type="real"
+	category="meltponds" group="meltponds">
+Equilibrium pond fraction for sea level parameterization.
+
+Valid values:
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- thermodynamics -->
 
@@ -2439,7 +2502,23 @@ Valid values: Any real number between 0 and 1.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_macro_drainage_timescale" type="real"
+<entry id="config_macro_drainage_timescale_lvlponds" type="real"
+	category="thermodynamics" group="thermodynamics">
+Timescale for macroscopic drainage.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_macro_drainage_timescale_sealvlponds" type="real"
+	category="thermodynamics" group="thermodynamics">
+Timescale for macroscopic drainage.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_macro_drainage_timescale_topoponds" type="real"
 	category="thermodynamics" group="thermodynamics">
 Timescale for macroscopic drainage.
 
