@@ -256,22 +256,6 @@ void AuxiliaryState::computeAll(const OceanState *State,
        });
    Pacer::stop("AuxState:cellAuxState3", 2);
 
-   Pacer::start("AuxState:edgeAuxState4", 2);
-   parallelForOuter(
-       "edgeAuxState4", {NTracers, Mesh->NEdgesAll},
-       KOKKOS_LAMBDA(int LTracer, int IEdge, const TeamMember &Team) {
-          const int KMin   = MinLayerEdgeBot(IEdge);
-          const int KMax   = MaxLayerEdgeTop(IEdge);
-          const int KRange = vertRangeChunked(KMin, KMax);
-          parallelForInner(
-              Team, KRange, INNER_LAMBDA(int KChunk) {
-                 LocTracerAux.computeVarsOnEdge(LTracer, IEdge, KChunk,
-                                                NormalVelEdge, LayerThickCell,
-                                                TracerArray);
-              });
-       });
-   Pacer::stop("AuxState:edgeAuxState4", 2);
-
    const auto &MeanLayerThickEdge = LayerThicknessAux.MeanLayerThickEdge;
 
    Pacer::start("AuxState:cellAuxState4", 2);
