@@ -487,7 +487,7 @@ void Tendencies::computeVelocityTendenciesOnly(
 
    Pacer::start("Tend:computeVelocityVAdvTend", 2);
    // Compute velocity tendency from vertical advection
-   VAdv->computeVelocityVAdvTend(NormalVelocityTend, NormalVelEdge,
+   VAdv->computeVelocityVAdvTend(NormalVelocityTend, NormVelEdge,
                                  FluxLayerThickEdge);
    Pacer::stop("Tend:computeVelocityVAdvTend", 2);
 
