@@ -1,4 +1,3 @@
-#include <numeric>
 #include <physics/mam/eamxx_mam_srf_and_online_emissions_process_interface.hpp>
 
 // For surface and online emission functions
