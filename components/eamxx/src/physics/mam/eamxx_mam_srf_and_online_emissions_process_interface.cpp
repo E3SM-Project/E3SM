@@ -1,3 +1,4 @@
+#include <numeric>
 #include <physics/mam/eamxx_mam_srf_and_online_emissions_process_interface.hpp>
 
 // For surface and online emission functions
@@ -442,7 +443,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
 
     // Update time state and if the month has changed, update the data.
     srfEmissFunc::update_srfEmiss_timestate(
-        ispec_srf.dataReader_, ts, *ispec_srf.horizInterp_,
+        ispec_srf.dataReader_, ts, *ispec_srf.horizInterp_, ispec_srf.scale_factor,
         // output
         ispec_srf.timeState_, ispec_srf.data_start_, ispec_srf.data_end_);
 

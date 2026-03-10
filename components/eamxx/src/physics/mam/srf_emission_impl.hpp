@@ -218,18 +218,10 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
 }  // END update_srfEmiss_data_from_file
 
 template <typename S, typename D>
-void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
-    std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
-    const int time_index,  // zero-based
-    AbstractRemapper &srfEmiss_horiz_interp, srfEmissInput &srfEmiss_input) {
-  update_srfEmiss_data_from_file(scorpio_reader, ts, time_index, 1.0, srfEmiss_horiz_interp, srfEmiss_input);
-}  // END update_srfEmiss_data_from_file
-
-template <typename S, typename D>
 void srfEmissFunctions<S, D>::update_srfEmiss_timestate(
     std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
-    AbstractRemapper &srfEmiss_horiz_interp, srfEmissTimeState &time_state,
-    srfEmissInput &srfEmiss_beg, srfEmissInput &srfEmiss_end) {
+    AbstractRemapper &srfEmiss_horiz_interp, const Real scale_factor,
+    srfEmissTimeState &time_state, srfEmissInput &srfEmiss_beg, srfEmissInput &srfEmiss_end) {
   // Now we check if we have to update the data that changes monthly
   // NOTE:  This means that srfEmiss assumes monthly data to update.  Not
   //        any other frequency.
@@ -251,7 +243,7 @@ void srfEmissFunctions<S, D>::update_srfEmiss_timestate(
     //       to be assigned.  A timestep greater than a month is very unlikely
     //       so we will proceed.
     int next_month = (time_state.current_month + 1) % 12;
-    update_srfEmiss_data_from_file(scorpio_reader, ts, next_month,
+    update_srfEmiss_data_from_file(scorpio_reader, ts, next_month, scale_factor,
                                    srfEmiss_horiz_interp, srfEmiss_end);
   }
 

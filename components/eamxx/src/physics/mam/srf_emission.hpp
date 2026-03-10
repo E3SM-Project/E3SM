@@ -91,15 +91,9 @@ struct srfEmissFunctions {
       const Real scale_factor, // applied to file data
       AbstractRemapper &srfEmiss_horiz_interp, srfEmissInput &srfEmiss_input);
 
-  static void update_srfEmiss_data_from_file(
-      std::shared_ptr<AtmosphereInput> &scorpio_reader,
-      const util::TimeStamp &ts,
-      const int time_index,  // zero-based
-      AbstractRemapper &srfEmiss_horiz_interp, srfEmissInput &srfEmiss_input);
-
   static void update_srfEmiss_timestate(
       std::shared_ptr<AtmosphereInput> &scorpio_reader,
-      const util::TimeStamp &ts, AbstractRemapper &srfEmiss_horiz_interp,
+      const util::TimeStamp &ts, AbstractRemapper &srfEmiss_horiz_interp, const Real scale_factor,
       srfEmissTimeState &time_state, srfEmissInput &srfEmiss_beg,
       srfEmissInput &srfEmiss_end);
 
