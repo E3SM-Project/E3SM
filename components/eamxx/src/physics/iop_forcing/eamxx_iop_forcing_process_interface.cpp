@@ -174,7 +174,7 @@ advance_iop_subsidence (const MemberType& team,
   // Workspace temporaries
   uview_1d<Pack> p_dep, u_new, v_new, T_new, q_new;
 
-  // temporary workspace variables
+  // allocate temporaries from workspace
   workspace.take_many_contiguous_unsafe<5>(
     {"iop_p_dep","iop_u_new","iop_v_new","iop_T_new","iop_q_new"},
     {&p_dep, &u_new, &v_new, &T_new, &q_new});
@@ -199,7 +199,6 @@ advance_iop_subsidence (const MemberType& team,
     v(k) = v_new(k);
     T(k) = T_new(k);
   });
-  team.team_barrier();
 
   // Tracers
   for (int m = 0; m < n_q_tracers; ++m) {
@@ -211,7 +210,6 @@ advance_iop_subsidence (const MemberType& team,
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
       q_m(k) = q_new(k);
     });
-    team.team_barrier();
   }
 
   workspace.release_many_contiguous<5>(
