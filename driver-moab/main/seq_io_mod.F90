@@ -1712,10 +1712,6 @@ contains
     ! find out the number of global cells, needed for defining the variables length
     ierr = iMOAB_GetGlobalInfo( mbxid, ngv, ng)
     lny = 1
-#ifdef MOABCOMP
-    write(logunit,*) subname, 'lnx, lny, mbxid ',  lnx, lny, mbxid 
-#endif
-
 
     ! get the local size ns
     ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
@@ -1740,10 +1736,6 @@ contains
     if (present(nt)) then
        frame = nt
     endif
-#ifdef MOABCOMP
-    write(logunit,*) subname, ' ent_type, ns ', ent_type, ns  
-    write(logunit,*) subname, ' tag_list ', trim(tag_list)  
-#endif
     if (lwhead) then
        if (present(dims2din)) then
           dimid2(1)=dims2din(1)
@@ -2743,18 +2735,12 @@ contains
     ! it is needed to overwrite that for land, ng is too small
     !  ( for ne4pg2 it is 201 instead of 384)
     if (present(nx)) then
-#ifdef MOABCOMP
-       if (iam==0) write(logunit,*) subname, ' nx present: ', nx  
-#endif
        lnx = nx 
     endif
     allocate(data1(ns))
     allocate(data_reorder(ns))
     allocate(dof(ns))
     allocate(dof_reorder(ns))
-#ifdef MOABCOMP
-    if (iam==0) write(logunit,*) subname, ' ns, lnx ', ns, lnx, ' dname ', trim(dname)  
-#endif
 
    ! note: size of dof is ns
     tagname = 'GLOBAL_ID'//C_NULL_CHAR
@@ -2765,9 +2751,6 @@ contains
           call shr_sys_abort(subname//'cannot get dofs ')
        endif
     endif
-#ifdef MOABCOMP
-   if (iam==0) write(logunit,*) subname, ' dofs on iam=0: ', dof  
-#endif
    allocate(indx(ns))
    call IndexSet(ns, indx)
    call IndexSort(ns, indx, dof, descend=.false.)
@@ -2775,9 +2758,6 @@ contains
    do ix=1,ns
       dof_reorder(ix) = dof(indx(ix)) ! 
    enddo
-#ifdef MOABCOMP
-   if (iam==0) write(logunit,*) subname, ' dof_reorder on iam=0: ', dof_reorder
-#endif
    deallocate(dof)
 
    do index_list = 1, size_list
@@ -2812,12 +2792,6 @@ contains
           do ix=1,ns
              data_reorder(indx(ix)) = data1(ix) ! or is it data_reorder(ix) = data1(indx(ix)) ? 
           enddo
-#ifdef MOABCOMP
-          if (iam==0 .and. index_list==1) then
-             write(logunit,*) subname, 'data1   ',  data1
-             write(logunit,*) subname, 'data_reorder   ',  data_reorder
-          endif
-#endif
           if (present(matrix)) then
             !matrix(:, index_list)  = data_reorder(:) ! 
             do ix = 1,ns

@@ -36,9 +36,6 @@ module prep_atm_mod
   use seq_comm_mct, only : num_moab_exports
 
   !use dimensions_mod, only : np     ! for atmosphere
-#ifdef MOABCOMP
-  use component_type_mod, only:  compare_mct_av_moab_tag
-#endif
 
   use iso_c_binding
 
@@ -1081,12 +1078,6 @@ contains
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
 #endif
-#ifdef MOABCOMP
-    real(r8)                 :: difference
-    type(mct_list) :: temp_list
-    integer :: size_list, index_list
-    type(mct_string)    :: mctOStr  !
-#endif
 
     character(*), parameter   :: subname = '(prep_atm_mrg_moab) '
     !-----------------------------------------------------------------------
@@ -1573,39 +1564,6 @@ contains
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting x2a_am array in atm merging ')
     endif
-#ifdef MOABCOMP
-  !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
-    x2a_a => component_get_x2c_cx(atm(1))
-
-    ! loop over all fields in seq_flds_x2a_fields
-    call mct_list_init(temp_list ,seq_flds_x2a_fields)
-    size_list=mct_list_nitem (temp_list)
-    if (atm_pg_active) then
-       ent_type = 1 ! cell for atm, atm_pg_active
-    else
-       ent_type = 0 ! vertices is spectral case
-    endif
-    if (iamroot) print *, subname, num_moab_exports, trim(seq_flds_x2a_fields)
-    do index_list = 1, size_list
-      call mct_list_get(mctOStr,index_list,temp_list)
-      mct_field = mct_string_toChar(mctOStr)
-      tagname= trim(mct_field)//C_NULL_CHAR
-      call compare_mct_av_moab_tag(atm(1), x2a_a, mct_field,  mbaxid, tagname, ent_type, difference, first_time)
-    enddo
-    call mct_list_clean(temp_list)
-
-    ! loop over all fields in seq_flds_o2x_fields
-    call mct_list_init(temp_list ,seq_flds_o2x_fields)
-    size_list=mct_list_nitem (temp_list)
-    if (iamroot) print *, subname, num_moab_exports, trim(seq_flds_o2x_fields)
-    do index_list = 1, size_list
-      call mct_list_get(mctOStr,index_list,temp_list)
-      mct_field = mct_string_toChar(mctOStr)
-      tagname= trim(mct_field)//C_NULL_CHAR
-      call compare_mct_av_moab_tag(atm(1), o2x_a, mct_field,  mbaxid, tagname, ent_type, difference, first_time)
-    enddo
-    call mct_list_clean(temp_list)
-#endif
 
 #ifdef MOABDEBUG
     if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure

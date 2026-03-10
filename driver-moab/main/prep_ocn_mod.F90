@@ -37,9 +37,6 @@ module prep_ocn_mod
   use mct_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
-#ifdef MOABCOMP
-  use component_type_mod, only:  compare_mct_av_moab_tag
-#endif
   use component_type_mod, only: ocn, atm, ice, rof, wav, glc
   use iso_c_binding
 
@@ -1358,13 +1355,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
 #endif
-#ifdef MOABCOMP
-    character(CXX) :: mct_field
-    real(R8)                 :: difference
-    type(mct_list) :: temp_list
-    integer :: size_list, index_list
-    type(mct_string)    :: mctOStr  !
-#endif
 
 ! for moab, local allocatable arrays for each field, size of local ocean mesh
 ! these are the fields that are merged, in general
@@ -2101,21 +2091,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
       call shr_sys_abort(subname//' error in setting shared_values array on ocean instance')
     endif
 
-#ifdef MOABCOMP
-    x2o_o => component_get_x2c_cx(ocn(1))
-    ! loop over all fields in seq_flds_x2o_fields
-    call mct_list_init(temp_list ,seq_flds_x2o_fields)
-    size_list=mct_list_nitem (temp_list)
-    ent_type = 1 ! cell for ocean
-    if (iamroot) print *, num_moab_exports, trim(seq_flds_x2o_fields)
-    do index_list = 1, size_list
-      call mct_list_get(mctOStr,index_list,temp_list)
-      mct_field = mct_string_toChar(mctOStr)
-      tagname= trim(mct_field)//C_NULL_CHAR
-      call compare_mct_av_moab_tag(ocn(1), x2o_o, mct_field,  mboxid, tagname, ent_type, difference, first_time)
-    enddo
-    call mct_list_clean(temp_list)
-#endif
 
 #ifdef MOABDEBUG
     if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
@@ -2975,11 +2950,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
     integer         :: ierr
-#endif
-#ifdef MOABCOMP
-     character*100             :: tagname, mct_field
-     integer :: ent_type
-     real*8 :: difference
 #endif
     ! Arguments
     character(len=*), intent(in) :: timer
