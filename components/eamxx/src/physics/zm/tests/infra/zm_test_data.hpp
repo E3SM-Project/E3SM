@@ -191,6 +191,13 @@ struct ComputeDiluteCapeData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF(ComputeDiluteCapeData, 8, pcols, ncol, pver, pverp, num_cin, num_msg, calc_msemax_klev, use_input_tq_mx);
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine, { {pmid, {590, 660}}, {temperature_in, {200, 300}}, {sp_humidity_in, {.004, .018}} });
+  }
+
 };
 
 struct FindMseMaxData : public PhysicsTestData {
@@ -267,7 +274,7 @@ struct ComputeDiluteParcelData : public PhysicsTestData {
   template <typename Engine>
   void randomize(Engine& engine)
   {
-    PhysicsTestData::randomize(engine, { {lcl_pmid, {590, 660}} });
+    PhysicsTestData::randomize(engine, { {lcl_pmid, {590, 660}}, {temperature, {200, 300}}, {pmid, {590, 660}}, {sp_humidity, {.004, .018}} });
 
     // We don't want msemax_klev, lcl_klev, or eql_klev to be random
     for (Int i = 0; i < pcols; ++i) {
@@ -312,7 +319,7 @@ struct ComputeCapeFromParcelData : public PhysicsTestData {
   template <typename Engine>
   void randomize(Engine& engine)
   {
-    PhysicsTestData::randomize(engine, { {lcl_pmid, {590, 660}} });
+    PhysicsTestData::randomize(engine, { {lcl_pmid, {590, 660}}, {temperature, {200, 300}}, {sp_humidity, {.004, .018}} });
 
     // We don't want msemax_klev, lcl_klev, or eql_klev to be random
     for (Int i = 0; i < pcols; ++i) {

@@ -430,7 +430,7 @@ struct Functions {
     const Int& pverp, // number of interface vertical levels
     const Int& num_cin, // num of negative buoyancy regions that are allowed before the conv. top and CAPE calc are completed
     const Int& num_msg, // index of highest level convection is allowed
-    const uview_1d<const Real>& sp_humidity_in, // specific humidity
+    const uview_1d<const Real>& sp_humidity_in, // specific humidity [kg/kg]
     const uview_1d<const Real>& temperature_in, // temperature
     const uview_1d<const Real>& zmid, // altitude/height at mid-levels
     const uview_1d<const Real>& pmid, // pressure at mid-levels
