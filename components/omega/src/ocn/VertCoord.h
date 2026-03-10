@@ -164,8 +164,6 @@ class VertCoord {
 
    HostArray1DReal BottomDepthH;
 
-   Real Rho0; // reference density
-
    // VertCoord instance name and FieldGroup names
    std::string Name;
    std::string InitGroupName;
