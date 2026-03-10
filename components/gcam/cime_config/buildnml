@@ -278,7 +278,6 @@ def buildnml(case, caseroot, compname):
     case_name = _extract_case_name_from_gcam_in(rundir)
     scenario_dir = _scenario_dir_from_case_name(case_name)
     gcam_rdir = os.path.join(gcam_idir, "restart", scenario_dir, mach)
-    expect(os.path.isdir(gcam_rdir), "GCAM restart dir missing: {}".format(gcam_rdir))
 
     # === Symlinks formerly created by the run script ===
     _ensure_symlink(os.path.join(gcam_idir, "input"),
@@ -314,6 +313,7 @@ def buildnml(case, caseroot, compname):
         # Model will write restart.* files if needed
     else:
         # For each restart.* file in gcam_rdir, copy only if not present in rundir
+        expect(os.path.isdir(gcam_rdir), "GCAM restart dir missing: {}".format(gcam_rdir))
         for src in glob.glob(os.path.join(gcam_rdir, "restart.*")):
             fname = os.path.basename(src)
             dst = os.path.join(rundir, fname)

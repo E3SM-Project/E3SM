@@ -2789,6 +2789,7 @@
       <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
+      <grid name="iac">r05</grid>
       <mask>IcoswISC30E3r5</mask>
     </model_grid>
 
