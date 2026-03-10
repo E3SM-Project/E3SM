@@ -48,7 +48,6 @@ module component_mod
   public :: component_init_cc            ! mct and esmf versions
   public :: component_init_cx
   public :: component_init_aream
-  public :: component_init_areacor
   public :: component_init_areacor_moab
   public :: component_run                 ! mct and esmf versions
   public :: component_final               ! mct and esmf versions
@@ -261,7 +260,6 @@ contains
           ! only done in second phase of atm init
           ! multiple by area ratio
           if (present(seq_flds_x2c_fluxes)) then
-             call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
              call factor_moab_comp(comp(eci), 'drv2mdl', seq_flds_x2c_fluxes, mask_spval=.true.)
           end if
 
@@ -278,7 +276,6 @@ contains
 
           ! only done in second phase of atm init
           if (present(seq_flds_c2x_fluxes)) then
-             call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
              call factor_moab_comp(comp(eci), 'mdl2drv', seq_flds_c2x_fluxes, mask_spval=.true.)
           end if
 
@@ -679,67 +676,6 @@ contains
 
   !===============================================================================
 
-  subroutine component_init_areacor(comp, samegrid, seq_flds_c2x_fluxes)
-    !---------------------------------------------------------------
-    ! COMPONENT PES and CPL/COMPONENT (for exchange only)
-    !
-    ! Uses
-    use seq_domain_mct, only : seq_domain_areafactinit
-    !
-    ! Arguments
-    type(component_type) , intent(inout) :: comp(:)
-    logical              , intent(in)    :: samegrid
-    character(len=*)     , intent(in)    :: seq_flds_c2x_fluxes
-    !
-    ! Local Variables
-    integer :: eci, num_inst
-    integer :: mpi_tag
-    character(*), parameter :: subname = '(component_init_areacor)'
-    !---------------------------------------------------------------
-
-    num_inst = size(comp)
-    do eci = 1,num_inst
-
-       ! For joint cpl-component pes
-       if (comp(eci)%iamin_cplcompid) then
-
-          ! Map component domain from coupler to component processes
-          ! to send aream to components.
-          if ( num_inst > 1) then
-             mpi_tag = comp(eci)%cplcompid*100+eci*10+5
-          else
-             mpi_tag = comp(eci)%cplcompid*10000+eci*10+5
-          end if
-          call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%dom_cx%data, comp(eci)%dom_cc%data, msgtag=mpi_tag)
-
-          ! For only component pes
-          if (comp(eci)%iamin_compid) then
-
-             ! Allocate and initialize area correction factors on component processes
-             ! Note that the following call allocates comp(eci)%mld2drv(:) and comp(eci)%drv2mdl(:)
-             call seq_domain_areafactinit(comp(eci)%dom_cc,           &
-                  comp(eci)%mdl2drv, comp(eci)%drv2mdl, samegrid, &
-                  comp(eci)%mpicom_compid, comp(eci)%iamroot_compid,  &
-                  'areafact_'//comp(eci)%oneletterid//'_'//trim(comp(eci)%name))
-
-             ! Area correct component initialization output fields
-             call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
-
-          endif
-
-          ! Map corrected initial component AVs from component to coupler pes
-          if (num_inst > 1) then
-              mpi_tag = comp(eci)%cplcompid*100+eci*10+7
-          else
-              mpi_tag = comp(eci)%cplcompid*10000+eci*10+7
-          end if
-          call seq_map_map(comp(eci)%mapper_cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, msgtag=mpi_tag)
-
-       endif
-    enddo
-
-  end subroutine component_init_areacor
-
 subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds_c2x_fluxes, seq_flds_c2x_fields)
   !---------------------------------------------------------------
    ! COMPONENT PES and CPL/COMPONENT (for exchange only)
@@ -1003,7 +939,6 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
              if (drv_threading) call seq_comm_setnthreads(comp(1)%nthreads_compid)
 
              if (comp_prognostic .and. firstloop .and. present(seq_flds_x2c_fluxes)) then
-                call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
                call factor_moab_comp(comp(eci), 'drv2mdl', seq_flds_x2c_fluxes,mask_spval=.true.)
              end if
 
@@ -1017,7 +952,6 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
              call t_unset_prefixf()
 
              if ((phase == 1) .and. present(seq_flds_c2x_fluxes)) then
-                call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
                call factor_moab_comp(comp(eci), 'mdl2drv', seq_flds_c2x_fluxes,mask_spval=.true.)
              endif
 
