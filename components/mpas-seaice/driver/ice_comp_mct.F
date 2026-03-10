@@ -3022,8 +3022,10 @@ contains
             i2x_i % rAttr(index_i2x_Fioi_bergh,n) = bergLatentHeatFlux(i)
          endif
 
-         if (config_use_floe_size_distribution) then
-            i2x_i % rAttr(index_i2x_Si_ifloe, n)  = floeSizeDiameter(i)
+         if (wav_ice_coup == 'twoway') then
+            if (config_use_floe_size_distribution) then
+               i2x_i % rAttr(index_i2x_Si_ifloe, n)  = floeSizeDiameter(i)
+            endif
          endif
 
          if ( ailohi > 0.0_RKIND ) then
