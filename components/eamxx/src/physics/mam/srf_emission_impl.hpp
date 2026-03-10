@@ -218,6 +218,14 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
 }  // END update_srfEmiss_data_from_file
 
 template <typename S, typename D>
+void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
+    std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
+    const int time_index,  // zero-based
+    AbstractRemapper &srfEmiss_horiz_interp, srfEmissInput &srfEmiss_input) {
+  update_srfEmiss_data_from_file(scorpio_reader, ts, time_index, 1.0, srfEmiss_horiz_interp, srfEmiss_input);
+}  // END update_srfEmiss_data_from_file
+
+template <typename S, typename D>
 void srfEmissFunctions<S, D>::update_srfEmiss_timestate(
     std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
     AbstractRemapper &srfEmiss_horiz_interp, srfEmissTimeState &time_state,
