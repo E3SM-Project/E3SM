@@ -3554,8 +3554,7 @@ subroutine init_column_waves(domain)
                   wavefreq = waveFrequency(:), &
                   dwavefreq = waveFreqBinWidth(:), &
                   trcrn = tracerArrayCategory, &
-                  d_afsd_wave = dFloeSizeWaves(:,iCell), &
-                  wave_height = significantWaveHeight(iCell))
+                  d_afsd_wave = dFloeSizeWaves(:,iCell))
 
           call get_cice_tracer_array_category(block, ciceTracerObject, &
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
