@@ -155,6 +155,7 @@ In this formulation:
 
 [Griffies 2018](https://doi.org/10.2307/j.ctv301gzg) p. 37  argues for the use of pseudo-velocities, which he calls the density-weighted velocity, for non-Boussinesq models.
 Griffies recommends a value of $\rho_0=1035$ kg/m$^3$, following p. 47 of [Gill (1982)](https://doi.org/10.1016/S0074-6142(08)60028-5), because ocean density varies less than 2% from that value.
+However, for compatibility with the rest of E3SM, we have decided to use $\rho_0=1026$, the value of [SHR_CONST_RHOSW](https://github.com/E3SM-Project/E3SM/blob/935c7d24b1d7542337fab6f1e58443f18354f62c/share/util/shr_const_mod.F90#L47).
 
 The use of a constant $\rho_0$ in defining pseudo-height does not imply the Boussinesq approximation. In Boussinesq models, $\rho$ is set to $\rho_0$ everywhere except in the buoyancy term (i.e., the vertical pressure gradient or gravitational forcing). Here, by contrast, we retain the full $\rho$ in all terms, and use $\rho_0$ only as a normalization constant—for example, so that $d\tilde{z} \approx dz$ when $\rho \approx \rho_0$. This preserves full mass conservation while making vertical units more intuitive.
 
