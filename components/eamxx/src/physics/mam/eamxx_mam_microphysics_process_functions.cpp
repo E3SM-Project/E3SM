@@ -299,10 +299,11 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
 
     const auto work_set_het_icol = ekat::subview(work_set_het, icol);
     auto work_set_het_ptr = (Real *)work_set_het_icol.data();
-    // deposition velocity [1/cm/s]
+    
+    // deposition flux [1/cm^2/s]
     const auto& dflx_col = view_1d(work_set_het_ptr, num_gas_aerosol_constituents);
     work_set_het_ptr += num_gas_aerosol_constituents;
-    // deposition flux [1/cm^2/s]
+    // deposition velocity [1/cm/s]
     const auto& dvel_col = view_1d(work_set_het_ptr, num_gas_aerosol_constituents);
     work_set_het_ptr += num_gas_aerosol_constituents;
 
@@ -361,11 +362,6 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
       const auto qq_icol = ekat::subview(qq,icol);
       const auto qq_sfc = ekat::subview(qq_icol,surface_lev);
 
-
-
-      Kokkos::parallel_for(
-       Kokkos::TeamVectorRange(team, nlev),
-       [&](const int kk) {
        mam4::mo_drydep::drydep_xactive(
         drydep_data,
         fraction_landuse_icol, // fraction of land use for column by land type
@@ -384,7 +380,8 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
         dvel_col.data(),             // deposition velocity [1/cm/s]
         dflx_col.data()              // deposition flux [1/cm^2/s]
       );
-      });
+      team.team_barrier();
+
       // Update constituent fluxes with gas drydep fluxes (dflx)
         // FIXME: Possible units mismatch (dflx is in kg/cm2/s but
         // constituent_fluxes is kg/m2/s) (Following mimics Fortran code
