@@ -11,19 +11,22 @@ namespace zm {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestIentropy : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestFindMseMax : public UnitWrap::UnitTest<D>::Base {
 
   void run_bfb()
   {
     auto engine = Base::get_engine();
 
     // Set up inputs
-    IentropyData baseline_data[] = {
-      //              s,    p,  qt, tfg, t (output, set to zero), qst (output, set to zero)
-      IentropyData(3000, 1000, .01, 270, 0                      , 0),
+    FindMseMaxData baseline_data[] = {
+      //             pcols, ncol, pver, num_msg, pergro_active
+      FindMseMaxData(    4,    4,   72 ,      30, false),
+      FindMseMaxData(    4,    4,   72,       30, true),
+      FindMseMaxData(    4,    4,   128,      30, false),
+      FindMseMaxData(    4,    4,   128,      30, true),
     };
 
-    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(IentropyData);
+    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(FindMseMaxData);
 
     // Generate random input data
     // Alternatively, you can use the baseline_data constructors/initializer lists to hardcode data
@@ -33,8 +36,11 @@ struct UnitWrap::UnitTest<D>::TestIentropy : public UnitWrap::UnitTest<D>::Base 
 
     // Create copies of data for use by test. Needs to happen before read calls so that
     // inout data is in original state
-    IentropyData test_data[] = {
-      IentropyData(baseline_data[0]),
+    FindMseMaxData test_data[] = {
+      FindMseMaxData(baseline_data[0]),
+      FindMseMaxData(baseline_data[1]),
+      FindMseMaxData(baseline_data[2]),
+      FindMseMaxData(baseline_data[3]),
     };
 
     // Read baseline data
@@ -47,20 +53,24 @@ struct UnitWrap::UnitTest<D>::TestIentropy : public UnitWrap::UnitTest<D>::Base 
     // Get data from test
     for (auto& d : test_data) {
       if (this->m_baseline_action == GENERATE) {
-        ientropy_f(d);
+        find_mse_max_f(d);
       }
       else {
-        ientropy(d);
+        find_mse_max(d);
       }
     }
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
-        IentropyData& d_baseline = baseline_data[i];
-        IentropyData& d_test = test_data[i];
-        REQUIRE(d_baseline.t == d_test.t);
-        REQUIRE(d_baseline.qst == d_test.qst);
+        FindMseMaxData& d_baseline = baseline_data[i];
+        FindMseMaxData& d_test = test_data[i];
+        REQUIRE(d_baseline.total(d_baseline.mse_max_val) == d_test.total(d_test.mse_max_val));
+        REQUIRE(d_baseline.total(d_baseline.mse_max_val) == d_test.total(d_test.msemax_klev));
+        for (Int k = 0; k < d_baseline.total(d_baseline.mse_max_val); ++k) {
+          REQUIRE(d_baseline.mse_max_val[k] == d_test.mse_max_val[k]);
+          REQUIRE(d_baseline.msemax_klev[k] == d_test.msemax_klev[k]);
+        }
       }
     }
     else if (this->m_baseline_action == GENERATE) {
@@ -78,9 +88,9 @@ struct UnitWrap::UnitTest<D>::TestIentropy : public UnitWrap::UnitTest<D>::Base 
 
 namespace {
 
-TEST_CASE("ientropy_bfb", "[zm]")
+TEST_CASE("find_mse_max_bfb", "[zm]")
 {
-  using TestStruct = scream::zm::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIentropy;
+  using TestStruct = scream::zm::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestFindMseMax;
 
   TestStruct t;
   t.run_bfb();
