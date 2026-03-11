@@ -1061,7 +1061,7 @@ CONTAINS
 
     ! Number of columns in this physics chunk
     ncol = state%ncol
-    cosp_status = ""
+    cosp_status = ""  ! Initialize to prevent false error detections from uninitialized memory
 
     ! Construct COSP output derived type.
     call t_startf('cosp_construct_cosp_outputs')
@@ -2603,8 +2603,13 @@ CONTAINS
                cospstateIN%qv, cospIN%z_vol_cloudsat(1:nPoints,k,:),                 &
                cospIN%kr_vol_cloudsat(1:nPoints,k,:))
 
-          ! Numerical safety rail: quickbeam_optics can produce small negative
-          ! values (noise) that trigger COSP range checks, especially with Intel 2025.
+          ! Numerical safety rail: the avint integration in quickbeam_optics can produce
+          ! small negative values for kr_vol_cloudsat (radar attenuation coefficient) when
+          ! drop size distributions have sharp gradients at low concentrations. This occurs
+          ! because avint uses overlapping parabolas that can overshoot below zero.
+          ! Intel 2025 FMA optimizations exacerbate this behavior.
+          ! Physically, radar attenuation is non-negative (signals can only be attenuated,
+          ! not amplified), so clipping to 0 is physically correct and removes numerical noise.
           where (cospIN%kr_vol_cloudsat(1:nPoints,k,:) < 0.0_wp)
              cospIN%kr_vol_cloudsat(1:nPoints,k,:) = 0.0_wp
           end where
