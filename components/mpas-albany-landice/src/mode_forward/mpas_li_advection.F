@@ -47,7 +47,8 @@ module li_advection
    public :: li_advection_thickness_tracers, &
              li_layer_normal_velocity, &
              li_update_geometry, &
-             li_grounded_to_floating
+             li_grounded_to_floating, &
+             li_apply_ismip6_atmosphere_forcing
 
    !--------------------------------------------------------------------
    !
@@ -1097,6 +1098,72 @@ module li_advection
 
     end subroutine apply_mass_balance
 
+
+!***********************************************************************
+!
+!  routine li_apply_ismip6_atmosphere_forcing
+!
+!> \brief   Build effective SMB and applied SAT from ISMIP6-style fields.
+!> \details
+!>  If config_apply_smb_sat_lapse_rate is enabled, compute
+!>  elevation-change corrections only.
+!>  Incoming sfcMassBal and surfaceAirTemperature are assumed to already
+!>  include any anomaly correction from preprocessing.
+!
+!-----------------------------------------------------------------------
+   subroutine li_apply_ismip6_atmosphere_forcing(domain, err)
+
+      type (domain_type), intent(inout) :: domain
+      integer, intent(out) :: err
+
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: geometryPool, thermalPool
+
+      logical, pointer :: config_apply_smb_sat_lapse_rate
+
+      real (kind=RKIND), dimension(:), pointer :: upperSurface
+      real (kind=RKIND), dimension(:), pointer :: sfcMassBal
+      real (kind=RKIND), dimension(:), pointer :: sfcMassBalLapseRate
+      real (kind=RKIND), dimension(:), pointer :: surfaceElevationRef
+
+      real (kind=RKIND), dimension(:), pointer :: surfaceAirTemperature
+      real (kind=RKIND), dimension(:), pointer :: surfaceAirTemperatureApplied
+      real (kind=RKIND), dimension(:), pointer :: surfaceAirTemperatureLapseRate
+
+      err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_apply_smb_sat_lapse_rate', &
+                    config_apply_smb_sat_lapse_rate)
+      if (.not. config_apply_smb_sat_lapse_rate) then
+         return
+      endif
+
+      block => domain % blocklist
+      do while (associated(block))
+
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+
+         call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
+         call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
+         call mpas_pool_get_array(geometryPool, 'sfcMassBalLapseRate', sfcMassBalLapseRate)
+         call mpas_pool_get_array(geometryPool, 'surfaceElevationRef', surfaceElevationRef)
+
+         call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
+         call mpas_pool_get_array(thermalPool, 'surfaceAirTemperatureApplied', surfaceAirTemperatureApplied)
+         call mpas_pool_get_array(thermalPool, 'surfaceAirTemperatureLapseRate', surfaceAirTemperatureLapseRate)
+
+         sfcMassBal(:) = sfcMassBal(:) + &
+                         sfcMassBalLapseRate(:) * (upperSurface(:) - surfaceElevationRef(:))
+
+         surfaceAirTemperatureApplied(:) = surfaceAirTemperature(:) + &
+                                           surfaceAirTemperatureLapseRate(:) * (upperSurface(:) - surfaceElevationRef(:))
+
+         block => block % next
+      end do
+
+   end subroutine li_apply_ismip6_atmosphere_forcing
+
 !***********************************************************************
 !
 !  subroutine tracer_setup
@@ -1179,7 +1246,7 @@ module li_advection
            layerThickness
 
       real (kind=RKIND), dimension(:), pointer :: &
-           surfaceAirTemperature,   & ! surface air temperature
+            surfaceAirTemperatureApplied,   & ! surface air temperature used by physics
            basalTemperature           ! basal ice temperature
 
       real (kind=RKIND), dimension(:), pointer :: &
@@ -1216,7 +1283,7 @@ module li_advection
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
       call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
       call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
-      call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
+      call mpas_pool_get_array(thermalPool, 'surfaceAirTemperatureApplied', surfaceAirTemperatureApplied)
       call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
 
       ! get config variables
@@ -1235,10 +1302,10 @@ module li_advection
       !     before calling this subroutine.
       ! (3) Surface and basal temperature (or enthalpy) are not transported, but their
       !     values are applied to new accumulation at either surface.
-      ! (4) In most cases the surface temperature is equal to min(surfaceAirTemperature, 273.15),
+      ! (4) In most cases the surface temperature is equal to min(surfaceAirTemperatureApplied, 273.15),
       !     so we could set surfaceTracers to surfaceTemperature.  But if a positive SMB
       !     is applied to a previously ice-free cell, then surfaceTemperature has not yet been
-      !     initialized to the correct value, so we explicitly use min(surfaceAirTemperature, 273.15).
+      !     initialized to the correct value, so we explicitly use min(surfaceAirTemperatureApplied, 273.15).
 
       iTracer = 0    ! initialize the tracer index
 
@@ -1265,7 +1332,7 @@ module li_advection
 
          ! set enthalpy of new ice at upper and lower surfaces
          ! convert temperature to enthalpy assuming waterFrac = 0 for new ice
-         surfaceTracers(iTracer,:) = min(surfaceAirTemperature(:), kelvin_to_celsius) * config_ice_density*cp_ice
+         surfaceTracers(iTracer,:) = min(surfaceAirTemperatureApplied(:), kelvin_to_celsius) * config_ice_density*cp_ice
          basalTracers(iTracer,:) = basalTemperature(:) * config_ice_density*cp_ice
 
       elseif (trim(config_thermal_solver) == 'temperature') then  ! advect temperature
@@ -1277,7 +1344,7 @@ module li_advection
          advectedTracers(iTracer,:,:) = temperature(:,:)
 
          ! set enthalpy of new ice at upper and lower surfaces
-         surfaceTracers(iTracer,:) = min(surfaceAirTemperature(:), kelvin_to_celsius)
+         surfaceTracers(iTracer,:) = min(surfaceAirTemperatureApplied(:), kelvin_to_celsius)
          basalTracers(iTracer,:) = basalTemperature(:)
 
       endif

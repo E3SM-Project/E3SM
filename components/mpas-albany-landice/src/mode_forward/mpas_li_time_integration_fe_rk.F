@@ -251,6 +251,9 @@ module li_time_integration_fe_rk
 
 ! === Prepare for advection (including CFL checks) ===========
 ! This has to come first currently, because it sets the time step!
+      call li_apply_ismip6_atmosphere_forcing(domain, err_tmp)
+      err = ior(err, err_tmp)
+
       call mpas_timer_start("advection prep")
       call prepare_advection(domain, err_tmp)
       err = ior(err, err_tmp)
@@ -658,7 +661,6 @@ module li_time_integration_fe_rk
       deallocate(calvingThicknessAccum)
    !--------------------------------------------------------------------
    end subroutine li_time_integrator_forwardeuler_rungekutta
-
 
 
 !***********************************************************************

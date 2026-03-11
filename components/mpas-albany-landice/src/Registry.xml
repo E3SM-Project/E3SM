@@ -139,6 +139,10 @@
                     description="Mask to zero out sfcMassBalApplied in regions where there is no ice at the timestep."
                     possible_values=".true. or .false."
         />
+		<nml_option name="config_apply_smb_sat_lapse_rate" type="logical" default_value=".false." units="unitless"
+			    description="If true, apply SMB and SAT elevation-change (lapse-rate) corrections in MALI using ISMIP6 atmospheric forcing guidance (Atmospheric forcing section): https://theghub.org/groups/ismip6/wiki/MainPage/ISMIP6ProjectionsGreenland?version=3"
+			    possible_values=".true. or .false."
+		/>
 <!-- This option to be implemented in the future.
 		<nml_option name="config_allow_additional_advance" type="logical" default_value=".true." units="none"
 		            description="Determines whether ice can advance beyond its initial extent"
@@ -1293,6 +1297,12 @@ is the value of that variable from the *previous* time level!
                 <var name="sfcMassBal" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
                      description="potential surface mass balance"
                 />
+                <var name="sfcMassBalLapseRate" type="real" dimensions="nCells Time" units="kg m^-2 s^-1 m^-1" default_value="0.0"
+                     description="vertical gradient dSMBdz used for SMB elevation-change correction"
+                />
+                <var name="surfaceElevationRef" type="real" dimensions="nCells Time" units="m" default_value="0.0"
+                     description="reference surface elevation h_ref used for SMB and SAT elevation-change corrections"
+                />
                 <var name="sfcMassBalApplied" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
                      description="applied surface mass balance"
                 />
@@ -1746,6 +1756,12 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="surfaceAirTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
                      description="air temperature at the ice sheet surface"
+                />
+                <var name="surfaceAirTemperatureLapseRate" type="real" dimensions="nCells Time" units="K m^-1" default_value="0.0"
+                     description="vertical gradient dTdz used for SAT elevation-change correction"
+                />
+                <var name="surfaceAirTemperatureApplied" type="real" dimensions="nCells Time" units="K" default_value="273.15"
+                     description="air temperature at the ice sheet surface after model-side lapse-rate adjustment"
                 />
                 <var name="surfaceTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
                      description="temperature at upper ice service"

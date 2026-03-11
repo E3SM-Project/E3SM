@@ -117,7 +117,7 @@ module li_thermal
 
       logical, pointer :: &
            config_print_thermal_info,  &
-           config_do_restart
+          config_do_restart
 
       character(len=StrKIND), pointer :: &
            config_thermal_solver,                 & ! solver option ('temperature' or 'enthalpy')
@@ -159,7 +159,7 @@ module li_thermal
            enthalpy                    ! interior ice enthalpy (J m^{-3})
 
       real (kind=RKIND), dimension(:), pointer :: &
-           surfaceAirTemperature,    & ! surface air temperature (K)
+           surfaceAirTemperature,    & ! raw/input surface air temperature (K)
            surfaceTemperature,       & ! surface ice temperature (K)
            basalTemperature            ! basal ice temperature (K)
 
@@ -413,7 +413,7 @@ module li_thermal
                     nVertLevels,                   &
                     layerCenterSigma,              &
                     thickness(iCell),              &
-                    surfaceAirTemperature(iCell),  &
+                  surfaceAirTemperature(iCell),  &
                     temperature(:,iCell),          &
                     waterFrac(:,iCell),            &
                     surfaceTemperature(iCell),     &
@@ -658,7 +658,7 @@ module li_thermal
            nVertLevels                 ! number of vertical layers
 
       logical, pointer :: &
-           config_print_thermal_info   ! if true, print debug info
+          config_print_thermal_info   ! if true, print debug info
 
       character(len=StrKIND), pointer :: &
            config_thermal_solver       ! option for thermal solver
@@ -694,7 +694,8 @@ module li_thermal
       real (kind=RKIND), dimension(:), pointer :: &
            surfaceTemperature,       & ! surface ice temperature (K)
            basalTemperature,         & ! basal ice temperature (K)
-           surfaceAirTemperature,    & ! surface air temperature (K)
+           surfaceAirTemperature,    & ! raw/input surface air temperature (K)
+           surfaceAirTemperatureApplied,    & ! surface air temperature used by physics (K)
            basalHeatFlux,            & ! basal heat flux into the ice (W m^{-2}, positive upward)
            basalFrictionFlux,        & ! basal frictional flux into the ice (W m^{-2})
            surfaceConductiveFlux,    & ! conductive heat flux at the upper surface (W m^{-2}, positive down)
@@ -817,6 +818,7 @@ module li_thermal
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
          call mpas_pool_get_array(thermalPool, 'basalTemperature',   basalTemperature)
          call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
+         call mpas_pool_get_array(thermalPool, 'surfaceAirTemperatureApplied', surfaceAirTemperatureApplied)
          call mpas_pool_get_array(thermalPool, 'surfaceConductiveFlux', surfaceConductiveFlux)
          call mpas_pool_get_array(thermalPool, 'basalConductiveFlux', basalConductiveFlux)
          call mpas_pool_get_array(thermalPool, 'basalHeatFlux', basalHeatFlux)
@@ -856,7 +858,6 @@ module li_thermal
          ! === mechanical heating terms now calculated in li_velocity_solve ===
          ! (this makes restarts easier because just heatDissipation and basalFrictionFlux
          !  need to be restart variables, rather than all of their inputs.)
-
          ! ================================
          select case(config_thermal_solver)
          ! ================================
@@ -874,7 +875,7 @@ module li_thermal
             ! Convert temperature from Kelvin to Celsius to avoid repeated use of kelvin_to_celsius below
             ! (Convert back at the end.)
             temperature(:,:) = temperature(:,:) - kelvin_to_celsius
-            surfaceAirTemperature(:) = surfaceAirTemperature(:) - kelvin_to_celsius
+            surfaceAirTemperatureApplied(:) = surfaceAirTemperatureApplied(:) - kelvin_to_celsius
             surfaceTemperature(:) = surfaceTemperature(:) - kelvin_to_celsius
             basalTemperature(:) = basalTemperature(:) - kelvin_to_celsius
 
@@ -891,7 +892,7 @@ module li_thermal
                do iCell = 1, nCellsSolve
                   if (indexToCellID(iCell) == config_stats_cell_ID) then
                      call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
-                     call mpas_log_write('surfaceAirTemperature = $r', realArgs=(/surfaceAirTemperature(iCell)/))
+                     call mpas_log_write('surfaceAirTemperatureApplied = $r', realArgs=(/surfaceAirTemperatureApplied(iCell)/))
                      call mpas_log_write(' ')
                      call mpas_log_write('Initial column temperatures, indexToCellID = $i', intArgs=(/indexToCellID(iCell)/))
                      call mpas_log_write("0 $r", realArgs=(/surfaceTemperature(iCell)/))
@@ -917,7 +918,7 @@ module li_thermal
 
                   ! Set surface temperature (Celsius)
 
-                  surfaceTemperature(iCell) = min(0.0_RKIND, surfaceAirTemperature(iCell))
+                  surfaceTemperature(iCell) = min(0.0_RKIND, surfaceAirTemperatureApplied(iCell))
 
                   ! For floating ice, set the basal temperature to the freezing temperature of seawater.
                   ! Values based on Ocean Water Freezing Point Calculator with S = 35 PSU
@@ -1268,7 +1269,7 @@ module li_thermal
 
             ! Convert temperatures from Celsius back to Kelvin
             temperature(:,:) = temperature(:,:) + kelvin_to_celsius
-            surfaceAirTemperature(:) = surfaceAirTemperature(:) + kelvin_to_celsius
+            surfaceAirTemperatureApplied(:) = surfaceAirTemperatureApplied(:) + kelvin_to_celsius
             surfaceTemperature(:) = surfaceTemperature(:) + kelvin_to_celsius
             basalTemperature(:) = basalTemperature(:) + kelvin_to_celsius
 
