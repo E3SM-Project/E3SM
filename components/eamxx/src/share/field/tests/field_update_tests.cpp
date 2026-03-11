@@ -6,6 +6,8 @@
 #include "share/field/field_utils.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 
+#include <chrono>
+
 namespace {
 
 TEST_CASE ("update") {
@@ -256,6 +258,56 @@ TEST_CASE ("update") {
       f2.deep_copy(1);
       f2.update(f3,1,1);
       REQUIRE (views_are_equal(f2,one));
+    }
+  }
+}
+
+TEST_CASE ("fv_aware_perf_check")
+{
+  using namespace scream;
+  using namespace ekat::units;
+
+  using namespace ShortFieldTagsNames;
+
+  constexpr int ncmp = 2;
+  constexpr int nlev = 128;
+
+  printf("field layout: (ncol,%d,%d)\n",ncmp,nlev);
+
+  for (int ncol : {250, 500, 1000, 2000}) {
+    printf(" - ncol: %d\n",ncol);
+
+    std::vector<FieldTag> tags = {COL, CMP, LEV};
+    std::vector<int>      dims = {ncol,ncmp,nlev};
+    FieldIdentifier fid ("", FieldLayout(tags,dims), m/s, "some_grid");
+
+    Field x(fid.alias("x"),true);
+    Field y(fid.alias("y"),true);
+
+    {
+      x.get_header().set_may_be_filled(true);
+      y.get_header().set_may_be_filled(true);
+      y.deep_copy(1);
+      x.deep_copy(2);
+
+      auto start = std::chrono::steady_clock::now();
+      y.update(x,2,1);
+      auto end = std::chrono::steady_clock::now();
+      auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+      printf("   - fill-aware: %ld us\n",duration.count());
+    }
+
+    {
+      x.get_header().set_may_be_filled(false);
+      y.get_header().set_may_be_filled(false);
+      y.deep_copy(1);
+      x.deep_copy(2);
+
+      auto start = std::chrono::steady_clock::now();
+      y.update(x,2,1);
+      auto end = std::chrono::steady_clock::now();
+      auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+      printf("   - non-fill-aware: %ld us\n",duration.count());
     }
   }
 }
