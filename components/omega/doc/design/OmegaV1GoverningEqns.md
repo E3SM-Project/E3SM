@@ -34,7 +34,7 @@ This document describes the governing equations for the layered ocean model, whi
 The requirements in the [Omega-0 design document](OmegaV0ShallowWater) still apply. Additional design requirements for Omega-1 are:
 
 ### Omega will be a hydrostatic, non-Boussinesq ocean model.
-Omega will adopt a non-Boussinesq formulation, meaning it retains the full, spatially and temporally varying fluid density $\rho({\bf x}, t)$ in all governing equations. This ensures exact mass conservation, as opposed to volume conservation in Boussinesq models that approximate density as a constant reference value $\rho_0$ outside the pressure gradient. The equations are derived in terms of layer-integrated mass per unit area (see [layered equations](#Layer Equations)), and no approximation is made that filters out compressibility or density variations.
+Omega will adopt a non-Boussinesq formulation, meaning it retains the full, spatially and temporally varying fluid density $\rho({\bf x}, t)$ in all governing equations. This ensures exact mass conservation, as opposed to volume conservation in Boussinesq models that approximate density as a constant reference value $\rho_0$ outside the pressure gradient. The equations are derived in terms of layer-integrated mass per unit area (see [layered equations](#layer-equations)), and no approximation is made that filters out compressibility or density variations.
 
 The model also assumes hydrostatic balance in the vertical momentum equation, which is a standard and well-justified simplification for large-scale geophysical flows. In such regimes, vertical accelerations are typically small compared to the vertical pressure gradient and gravitational forces. This assumption simplifies the dynamics and removes most sound waves while retaining fidelity for the mesoscale to planetary-scale ocean circulation that Omega is designed to simulate.
 
@@ -155,6 +155,7 @@ In this formulation:
 
 [Griffies 2018](https://doi.org/10.2307/j.ctv301gzg) p. 37  argues for the use of pseudo-velocities, which he calls the density-weighted velocity, for non-Boussinesq models.
 Griffies recommends a value of $\rho_0=1035$ kg/m$^3$, following p. 47 of [Gill (1982)](https://doi.org/10.1016/S0074-6142(08)60028-5), because ocean density varies less than 2% from that value.
+However, for compatibility with the rest of E3SM, we have decided to use $\rho_0=1026$, the value of [SHR_CONST_RHOSW](https://github.com/E3SM-Project/E3SM/blob/935c7d24b1d7542337fab6f1e58443f18354f62c/share/util/shr_const_mod.F90#L47).
 
 The use of a constant $\rho_0$ in defining pseudo-height does not imply the Boussinesq approximation. In Boussinesq models, $\rho$ is set to $\rho_0$ everywhere except in the buoyancy term (i.e., the vertical pressure gradient or gravitational forcing). Here, by contrast, we retain the full $\rho$ in all terms, and use $\rho_0$ only as a normalization constant—for example, so that $d\tilde{z} \approx dz$ when $\rho \approx \rho_0$. This preserves full mass conservation while making vertical units more intuitive.
 
@@ -355,54 +356,74 @@ This relation is frequently used in discretized fluxes and conservation equation
 
 ### Decomposition
 
-In this document, two decompositions will be critical.  The first decomposition is
+In this document, two decompositions will be critical.
+
+The first decomposition is
 
 $$
 \varphi(x,y,z,t) = \overline{\varphi}^{\tilde{z}}_k(x,y,t) + \delta \varphi(x,y,z,t)
 $$ (vertical-decomposition)
 
-which is a density weighted vertical integral based upon [](#def-layer-average) and the deviation from this value within the layer.
+which is a density-weighted vertical layer average based upon [](#def-layer-average) and the deviation from this value within the layer.
 
-The second decomposition is
+The second decomposition separates each field into a resolved and unresolved component,
 
 $$
-\varphi = \left<\varphi\right> + \varphi^\prime
-$$ (reynolds-definition)
+\varphi = \left<\varphi\right> + \varphi^\prime,
+$$ (resolved-unresolved-definition)
 
-which is the traditional Reynolds' average and deviation from this value.
+where:
 
-The fundamental ocean model equations are most often Reynolds' averaged to derive the sub gridscale stresses. Each variable is decomposed into an average over a sufficiently large sample of turbulent processes, which allows for a meaningful fluctuating component [[](#reynolds-definition)]. Commonly, the Reynolds' average is thought of as a time average, but an ensemble average is equally valid.  In fact, the ensemble and time averaging can be thought of as equivalent, given that a sufficiently long time average will effectively average over variations in the flow that could be thought of as an ensemble.  Given the functions are continuous, the averaging operator can be passed through derivatives and integrals without corrections and an average of products with a single perturbation quantity is zero.
+- $\left<\varphi\right>$ denotes the **resolved (layer-mean / grid-resolved) component**, obtained by projection onto the resolved space,
+- $\varphi^\prime$ denotes the **unresolved component**, defined such that
+  $$
+  \left<\varphi^\prime\right> = 0.
+  $$
 
-The Reynolds' average is most commonly denoted by an overbar. However, to disambiguate from the definition of the bar as the vertical density weighted average, the Reynolds' average herein is denoted by $< . >$.
+This decomposition is introduced to identify subgrid-scale (SGS) fluxes that require parameterization. It should be interpreted as a resolved/unresolved (coarse-grained) split consistent with the model’s prognostic layer-averaged variables, rather than strictly as a time or ensemble Reynolds average.
 
-The Reynolds' approach is an attractive approach for Boussinesq ocean models since the fundamental equations do not include products of spatially variable density and tracer, pressure, or momentum.  When the ocean model is non Boussinesq, products of spatially varying density and other fields (e.g., tracer) arise and create difficulties, producing a term like $\left<\rho^\prime {\mathbf u}^\prime\right>$ which is difficult to parameterize. However, given the definition of our chosen pseudo-height, the density terms are wrapped up in $\tilde{z}$ and once again a Reynolds' approach can be cleanly used.
+The projection operator is linear and commutes with spatial derivatives and integrals in the same manner assumed for Reynolds averaging. Products satisfy
+
+$$
+\left< \varphi \psi \right>
+=
+\left< \varphi \right>\left< \psi \right>
++
+\left< \varphi^\prime \psi^\prime \right>,
+$$
+
+which serves to expose SGS flux terms.
 
 ### Averaging
 
-The quantity being averaged in [](#def-layer-average) is arbitrary. For example, this equation can apply equally to a Reynolds' averaged quantity, e.g.,
+The quantity being averaged in [](#def-layer-average) is arbitrary. For example, the layer average may be applied to resolved quantities,
 
 $$
 \overline{\left<\varphi\right>}^{\tilde{z}}_k(x,y,t) =
 \frac{1}{\tilde{h}_k} \int_{\tilde{z}_{k}^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left<\varphi\right> d\tilde{z}.
 $$ (def-layer-average-reynolds)
 
-Additionally, for the decomposition related to vertical averaging, we will encounter terms such as ${\overline \varphi}^{\tilde{z}}_k \delta\varphi$ that need to be vertical averaged.  Using [](#def-layer-average) we have
+Additionally, for the decomposition related to vertical averaging, we will encounter terms such as ${\overline \varphi}^{\tilde{z}}_k \delta\varphi$ that need to be vertically averaged. Using [](#def-layer-average) we have
 
 $$
-\overline{{\overline \varphi}^{\tilde{z}}_k \delta\varphi}^{\tilde{z}}_k &= \frac{\int_{{\tilde z}_{k}^{\text{bot}}}^{{\tilde z}_k^{\text{top}}} {\overline \varphi}^{\tilde{z}}_k \delta \varphi d{\tilde z}}
-     {\int_{{\tilde z}_{k}^{\text{bot}}}^{{\tilde z}_k^{\text{top}}} d{\tilde z}} \\
-     &= {\overline \varphi}^{\tilde{z}}_k \frac{\int_{{\tilde z}_{k}^{\text{bot}}}^{{\tilde z}_k^{\text{top}}} \delta \varphi d{\tilde z}}
-     {\int_{{\tilde z}_{k}^{\text{bot}}}^{{\tilde z}_k^{\text{top}}} d{\tilde z}} \\
-     &= 0,
+\overline{{\overline \varphi}^{\tilde{z}}_k \delta\varphi}^{\tilde{z}}_k
+=
+{\overline \varphi}^{\tilde{z}}_k
+\frac{\int_{{\tilde z}_{k}^{\text{bot}}}^{{\tilde z}_k^{\text{top}}} \delta \varphi d{\tilde z}}
+     {\int_{{\tilde z}_{k}^{\text{bot}}}^{{\tilde z}_k^{\text{top}}} d{\tilde z}}
+=
+0,
 $$ (delta-vert-average)
 
 where the last equality is true by definition.
 
+(layer-equations)=
 ## 9. Layer Equations
 
 ### Tracer & Mass
 
-We first Reynolds' average [](#vh-tracer-pseudo) and given the definition of the operator we can move the averaging past the derivatives and integrals without correction terms to yield
+We first apply the resolved/unresolved decomposition to [](#vh-tracer-pseudo).
+Because the projection operator is linear and commutes with spatial derivatives and integrals, we may move it through the spatial integrals without correction terms to yield
 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left<\varphi\right> \, d\tilde{z} \, dA
@@ -412,7 +433,7 @@ $$
 & = 0.
 $$ (Aintegral-tracer-first-reynolds)
 
-Next, we use a Reynolds' decomposition on any terms involving products inside a Reynolds' average,
+Next, we use the resolved/unresolved decomposition on any terms involving products inside a resolved component projection,
 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}_{k}^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left<\varphi \right> \, d\tilde{z} \, dA
@@ -477,7 +498,7 @@ $$
 & - \left\{ \left[\left< \varphi^\prime {\tilde w}_{tr}^{\prime} \right> - \left< \varphi^\prime \tilde{ u}^{\prime}\right> \right]_{{\tilde z}={\tilde z}_{k}^{\text{top}}} - \left[\left< \varphi^\prime {\tilde w}_{tr}^{\prime} \right> - \left< \varphi^\prime \tilde{ u}^{\prime}\right> \right]_{{\tilde z}={\tilde z}_{k}^{\text{bot}}}\right\}.
 $$ (layer-tracer)
 
-A few notes on the layer-averaged tracer equation. In this complete form, it includes three types of fluctuating quantities that must be dealt with: (1) the layer averaged, Reynolds' averaged horizontal turbulent flux $\left( \overline{\left<\varphi^{\prime} {\bf u}^{\prime}\right>}^{\tilde{z}}_k \right)$, (2) the Reynolds' average vertical turbulent flux $\left( \left< \varphi^\prime {\tilde w}_{tr}^{\prime} \right> - \left< \varphi^\prime \tilde{u}^{\prime}\right> \right)$, and (3) the layer-averaged product of deviations from the layer-integrated variables $\left(\overline{\delta \varphi \delta {\bf u}}^{\tilde{z}}_k \right)$. The details of the first two quantities will be discussed later in this document and follow-on design documents. The terms involving perturbations from the layer integrated quantity are necessary to extend beyond piecewise constant represenation of variables. In this equation, variables with no overline are the full field variable at the interfaces.
+A few notes on the layer-averaged tracer equation. In this complete form, it includes three types of fluctuating quantities that must be dealt with: (1) the layer averaged horizontal turbulent flux $\left( \overline{\left<\varphi^{\prime} {\bf u}^{\prime}\right>}^{\tilde{z}}_k \right)$, (2) the vertical turbulent flux $\left( \left< \varphi^\prime {\tilde w}_{tr}^{\prime} \right> - \left< \varphi^\prime \tilde{u}^{\prime}\right> \right)$, and (3) the layer-averaged product of deviations from the layer-integrated variables $\left(\overline{\delta \varphi \delta {\bf u}}^{\tilde{z}}_k \right)$. The details of the first two quantities will be discussed later in this document and follow-on design documents. The terms involving perturbations from the layer integrated quantity are necessary to extend beyond piecewise constant represenation of variables. In this equation, variables with no overline are the full field variable at the interfaces.
 
 The mass equation is identical to the tracer equation with $\varphi=1$.
 
@@ -491,118 +512,135 @@ $$
 = 0.
 $$ (layer-mass)
 
+### Pressure Gradient Force
+
+Before deriving the layered momentum equation, we collect the pressure and gravitational contributions into a single **pressure gradient force (PGF)** in our pseudo-height framework. This subsection establishes the continuous form of the horizontal PGF per unit mass and serves as the target for the subsequent finite-volume, layer-averaged derivation.
+
+Recall from [](#vh-momentum-pseudo) that the horizontal momentum equation is written in terms of
+
+- a **body force per unit mass** $\mathbf{b}_\perp$, and
+- a **traction** vector $\boldsymbol{\tau}$ that enters the weak form as $\boldsymbol{\tau}/\rho$,
+
+so that all terms in the equation have the units of acceleration.
+
+In the finite-volume formulation, pressure acts on the boundary of a control volume $\mathcal{R}$ through the traction
+$\boldsymbol{\tau}_p = -p\,\mathbf{n}$, where $\mathbf{n}$ is the outward unit normal. The net pressure force on $\mathcal{R}$ is therefore
+
+$$
+\mathbf{F}_p(\mathcal{R})
+=
+\int_{\partial\mathcal{R}} \boldsymbol{\tau}_p\,dS
+=
+-\int_{\partial\mathcal{R}} p\,\mathbf{n}\,dS .
+$$ (pgf-pressure-traction)
+
+Using the divergence theorem, this surface integral may be written equivalently as a volume integral of a force per unit volume,
+
+$$
+-\int_{\partial\mathcal{R}} p\,\mathbf{n}\,dS
+=
+-\int_{\mathcal{R}} \nabla p \, dV .
+$$ (pgf-pressure-volume)
+
+Interpreting $-\nabla p$ as a force per unit volume, the corresponding pressure acceleration (body force per unit mass) is
+
+$$
+\mathbf{b}_{p}
+=
+-\frac{1}{\rho}\,\nabla p .
+$$ (pgf-pressure-accel)
+
+Note that one should **not** apply the divergence theorem directly to $\boldsymbol{\tau}_p/\rho$; the divergence theorem applies to the physical traction $\boldsymbol{\tau}_p$ (force per unit area). The division by $\rho$ to obtain an acceleration is performed after forming the pressure force.
+
+Gravity acts as a body force per unit mass $-\nabla\Phi$, so the combined pressure–gravity acceleration is
+
+$$
+\mathbf{b}_{\text{PGF},\perp}
+=
+-\,\frac{1}{\rho}\,\nabla p \;-\; \nabla \Phi .
+$$ (pgf-continuous)
+
+In Omega, the operator $\nabla$ denotes the **horizontal gradient along layers**, following the convention adopted throughout this section. It should not be interpreted as a gradient taken at constant geometric height $z$ or constant pseudo-height $\tilde{z}$.
+
+Under the hydrostatic approximation [](#hydrostatic), the form of the horizontal pressure–gravity force in [](#pgf-continuous) is valid for *any* choice of vertical coordinate, provided the horizontal gradient is taken consistently with that coordinate. In particular, although the horizontal gradient of $\Phi$ vanishes in $z$-level coordinates in the absence of tides, self-attraction, and loading, the combined expression in [](#pgf-continuous) remains the correct horizontal pressure–gravity force when written using the appropriate along-layer gradient operator.
+
+When inserted into the weak, finite-volume form of the momentum equation, $\mathbf{b}_{\text{PGF},\perp}$ represents the combined effect of pressure traction and gravitational body force. In the next subsection, we will layer-average [](#pgf-continuous) over the pseudo-height thickness of each layer and combine it with the advective and Coriolis terms to obtain the layered horizontal momentum equation. The resulting horizontal pressure-gradient force in Omega must be a consistent finite-volume discretization of [](#pgf-continuous), together with additional metric terms associated with sloping layer interfaces.
+
 ### Momentum
 
 We now derive the horizontal momentum equation in our non-Boussinesq, hydrostatic framework, following the same finite-volume approach used for mass and tracer conservation.
 
-We specify the body forces:
+As established in the preceding **Pressure Gradient Force** subsection, the combined horizontal pressure–gravity acceleration is
+$-\,\rho^{-1}\nabla p - \nabla \Phi$ when written using the appropriate along-layer horizontal gradient operator $\nabla$; in the finite-volume derivation below we retain the same physics by treating gravity as a body force and pressure as a surface traction.
+
+We specify the body forces, including the pressure term, as:
 
 $$
-\mathbf{b}_{\perp} = - \left({\bf f} \times \mathbf{u} + \nabla \Phi \right).
+\mathbf{b}_{\perp} = - \left({\bf f} \times \mathbf{u} + \frac{1}{\rho} \nabla p + \nabla \Phi \right).
 $$ (body-forces)
 
 The first term on the right hand side is the **Coriolis force**, where $ \mathbf{f} $ is the vector Coriolis vector (e.g., $ f \hat{\mathbf{z}} $ on the sphere).
 
-The second term on the right hand side represents the **gravitational force**, expressed in terms of the two-dimensional along-layer gradient of the gravitational potential $ \Phi(x, y, z, t) $, which may include effects such as tides and self-attraction and loading.  Because layers may tilt, this gradient is not taken at constant $z$ or $\tilde{z}$; instead it is the projection of $\nabla_{3D}\Phi$ onto the tangent plane of the layer surface.
+The second and third terms are $\mathbf{b}_{\text{PGF},\perp}$ from the previous subsection.
 
-Going forward, $\nabla$ without a subscript will be used to represent along-layer gradients.
-
-We neglect viscous stresses and take the stress tensor to be purely isotropic pressure, so the traction vector on any surface is
-
-$$
-{\bf \tau} = - p \mathbf{n},
-$$ (surface-forces-perp)
-
-where $\mathbf{n}$ is the outward unit normal. In the horizontally projected momentum equation, only the horizontal component appears:
-
-$$
-{\bf \tau}_\perp = - p \mathbf{n}_\perp,
-$$ (surface-forces)
-
-where $\mathbf{n}_\perp$ is the horizontal projection of $\mathbf{n}$. On vertical side walls, $\mathbf{n}_\perp = \mathbf{n}$; on sloping top and bottom interfaces, $\mathbf{n}_\perp \approx - \nabla \tilde{z}$.
-
-Substituting these into [](#vh-momentum-pseudo), we arrive at:
+Substituting [](#body-forces) and the traction terms in [](#vh-momentum-pseudo), we arrive at:
 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} {\bf u} \, d\tilde{z} \, dA
 & + \int_{\partial A} \left( \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} {\bf u} \otimes {\bf u} \, d\tilde{z} \right) \cdot \mathbf{n}_\perp \, dl \\
 & + \int_A \, {\bf u} \left[ \tilde{w}_{tr} - \tilde{\bf u} \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA
 - \int_A \, {\bf u} \left[ \tilde{w}_{tr} - \tilde{\bf u} \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA \\
-& = -\int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left({\bf f} \times \mathbf{u} + \nabla \Phi \right) \, d\tilde{z} \, dA
-- \int_{\partial A} \left( \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \frac{p}{\rho} \, d\tilde{z} \right) \mathbf{n}_\perp dl \\
-& + \int_A \left[ \frac{p}{\rho} \nabla \tilde{z}_k^{\text{top}} \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA
-- \int_A \left[ \frac{p}{\rho} \nabla \tilde{z}_k^{\text{bot}} \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA.
+& = -\int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left({\bf f} \times \mathbf{u} + \frac{1}{\rho} \nabla p + \nabla \Phi \right) \, d\tilde{z} \, dA.
 $$ (vh-momentum-forces)
 
-In this equation:
-
-- The first two terms are the body forces explained above.
-- The final terms are the **pressure force**, which acts on the boundary surfaces and is naturally expressed as a surface integral. It gives rise to both horizontal pressure gradients and contributions from sloping surfaces.
-- A negative sign is included for the pressure terms derived from the surface force terms. According to [Leishman 2025](https://eaglepubs.erau.edu/introductiontoaerospaceflightvehicles/chapter/conservation-of-momentum-momentum-equation/#chapter-260-section-2), Chapter 21, equation 2, "the negative sign indicates that the force is inward and in the opposite direction to the unit normal vector area, which always points *outward* by convention". Also see discussion in [Kundu et al. 2016](https://doi.org/10.1016/C2012-0-00611-4) page 104 and equation 4.26.
-
-As with the tracer derivation, we next Reynolds' average [](#vh-momentum-forces),
+As with the tracer derivation, we next apply [](#resolved-unresolved-definition) to [](#vh-momentum-forces) to identify subgrid-scale (SGS) fluxes,
 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left< {\bf u} \right> \, d\tilde{z} \, dA
 & + \int_{\partial A} \left( \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left< {\bf u} \otimes {\bf u} \right> \, d\tilde{z} \right) \cdot \mathbf{n}_\perp \, dl \\
 & + \int_A \,\left< {\bf u} \left[ \tilde{w}_{tr} - \tilde{\bf u} \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \right> \, dA
 - \int_A \, \left< {\bf u} \left[ \tilde{w}_{tr} - \tilde{\bf u} \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \right> \, dA \\
-& = -\int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \, \left< {\bf f} \times \mathbf{u} + \nabla \Phi \right> \, d\tilde{z} \, dA
-- \int_{\partial A} \left( \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left< \frac{p}{\rho} \right> \, d\tilde{z} \right) \mathbf{n}_\perp dl \\
-& + \int_A \left[ \left< \frac{p}{\rho} \nabla \tilde{z}_k^{\text{top}} \right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA
-- \int_A \left[ \left< \frac{p}{\rho} \nabla \tilde{z}_k^{\text{bot}} \right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA.
+& = -\int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \, \left< {\bf f} \times \mathbf{u} + \frac{1}{\rho} \nabla p + \nabla \Phi \right> \, d\tilde{z} \, dA.
 $$ (vh-momentum-reynolds1)
 
-Here we have also moved the Reynolds' average through the spatial integrals given the properties of the averaging.  Next we do a Reynolds' decomposition, this yields
+Here we have also moved the resolved component projection operator through the spatial integrals given the properties of the operator.  Next we decompose the nonlinear products into resolved and unresolved components, this yields
 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left< {\bf u} \right> \, d\tilde{z} \, dA
 & + \int_{\partial A} \left( \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left( \left< {\bf u} \right> \otimes \left< {\bf u} \right> + \left< {\bf u}^\prime \otimes {\bf u}^\prime \right> \right) \, d\tilde{z} \right) \cdot \mathbf{n}_\perp dl \, dl \\
 & + \int_A \, \left[ \left(\left< {\bf u} \right> \left< \tilde{w}_{tr} \right> + \left<{\bf u}^\prime \tilde{w}_{tr}^\prime \right> \right) - \left(\left<{\bf u}\right> \left<\tilde{\bf u}\right> + \left< {\bf u}^\prime \tilde{\bf u}^\prime \right> \right) \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA \\
 & - \int_A \, \left[ \left(\left< {\bf u} \right> \left< \tilde{w}_{tr} \right> + \left<{\bf u}^\prime \tilde{w}_{tr}^\prime \right> \right) - \left(\left<{\bf u}\right> \left<\tilde{\bf u}\right> + \left< {\bf u}^\prime \tilde{\bf u}^\prime \right> \right) \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA  \\
-& = - \int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \, \left( {\bf f} \times \left<\mathbf{u}\right> + \nabla \left<\Phi\right> \right) \, d\tilde{z} \, dA \\
-& - \int_{\partial A} \left( \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left(\left< \alpha \right> \left<p \right> + \left<\alpha^\prime p^\prime\right> \right) \, d\tilde{z} \right) \mathbf{n}_\perp dl \\
-& + \int_A \left[ \left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{top}} \right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{top}}\right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA \\
-& - \int_A \left[ \left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{bot}} \right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{bot}}\right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA.
+& = - \int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \, \left( {\bf f} \times \left<\mathbf{u}\right> + \left< \alpha \right> \nabla \left< p \right> + \left< \alpha' \nabla p' \right> + \nabla \left<\Phi\right> \right) \, d\tilde{z} \, dA.
 $$ (vh-momentum-reynolds2)
 
-In [](#vh-momentum-reynolds2) we have also used $\alpha = \frac{1}{\rho}$ for notation conciseness.  The definition of the layer average [](#def-layer-average-reynolds) is now utilized on terms with vertical integrals to yield
+In [](#vh-momentum-reynolds2), we have also used $\alpha = \frac{1}{\rho}$ for notation conciseness.  The definition of the layer average [](#def-layer-average-reynolds) is now utilized on terms with vertical integrals to yield
 
 $$
 \frac{d}{dt} \int_A \tilde{h}_k \overline{\left< {\bf u} \right>}^{\tilde{z}}_k  \, dA
 & + \int_{\partial A} \tilde{h}_k \left( \overline{\left< {\bf u} \right> \otimes \left< {\bf u} \right>}^{\tilde{z}}_k + \overline{\left< {\bf u}^\prime \otimes {\bf u}^\prime \right>}^{\tilde{z}}_k  \right) \cdot {\bf n}_\perp \, dl \\
 & + \int_A \, \left[ \left(\left< {\bf u} \right> \left< \tilde{w}_{tr} \right> + \left<{\bf u}^\prime \tilde{w}_{tr}^\prime \right> \right) - \left(\left<{\bf u}\right> \left<\tilde{\bf u}\right> + \left< {\bf u}^\prime \tilde{\bf u}^\prime \right> \right) \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA \\
 & - \int_A \, \left[ \left(\left< {\bf u} \right> \left< \tilde{w}_{tr} \right> + \left<{\bf u}^\prime \tilde{w}_{tr}^\prime \right> \right) - \left(\left<{\bf u}\right> \left<\tilde{\bf u}\right> + \left< {\bf u}^\prime \tilde{\bf u}^\prime \right> \right) \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA  \\
-& = - \int_A \, \tilde{h}_k \overline{\left( {\bf f} \times \left<\mathbf{u}\right> + \nabla \left<\Phi\right> \right)}^{\tilde{z}}_k \, dA \\
-& - \int_{\partial A} \tilde{h}_k \left( \overline{\left< \alpha \right> \left<p \right>}^{\tilde{z}}_k + \overline{\left<\alpha^\prime p^\prime\right>}^{\tilde{z}}_k \right) \mathbf{n}_\perp dl \\
-& + \int_A \left[ \left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{top}} \right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{top}} \right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA \\
-& - \int_A \left[ \left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{bot}} \right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{bot}} \right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA.
+& = - \int_A \, \tilde{h}_k \overline{\left( {\bf f} \times \left<\mathbf{u}\right> + \left< \alpha \right> \nabla \left< p \right> + \left< \alpha' \nabla p' \right> + \nabla \left<\Phi\right> \right)}^{\tilde{z}}_k \, dA.
 $$ (vh-momentum-reynolds-lay-avg)
 
-The next step is to decompose vertical averages of products. This yields
+The next step is to decompose vertical averages of products.  However we retain the PGF terms as a product because approximating them as products of vertical averages can lead to large inaccuracies. The result is
 
 $$
 \frac{d}{dt} \int_{A} \tilde{h}_k \overline{\left< {\bf u} \right>}^{\tilde{z}}_k  \, dA
 & + \int_{\partial A} \tilde{h}_k \left( \overline{\left< {\bf u} \right>}^{\tilde{z}}_k \otimes \overline{\left< {\bf u} \right>}^{\tilde{z}}_k + \overline{\delta {\bf u} \otimes \delta {\bf u}}^{\tilde{z}}_k + \overline{\left< {\bf u}^\prime \otimes {\bf u}^\prime \right>}^{\tilde{z}}_k  \right) \cdot {\bf n}_\perp \, dl \\
 & + \int_A \, \left[ \left(\left< {\bf u} \right> \left< \tilde{w}_{tr} \right> + \left<{\bf u}^\prime \tilde{w}_{tr}^\prime \right> \right) - \left(\left<{\bf u}\right> \left<\tilde{\bf u}\right> + \left< {\bf u}^\prime \tilde{\bf u}^\prime \right> \right) \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA \\
 & - \int_A \, \left[ \left(\left< {\bf u} \right> \left< \tilde{w}_{tr} \right> + \left<{\bf u}^\prime \tilde{w}_{tr}^\prime \right> \right) - \left(\left<{\bf u}\right> \left<\tilde{\bf u}\right> + \left< {\bf u}^\prime \tilde{\bf u}^\prime \right> \right) \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA  \\
-& = - \int_A \, \tilde{h}_k \overline{\left( {\bf f} \times \left<\mathbf{u}\right> + \nabla \left<\Phi\right> \right)}^{\tilde{z}}_k \, dA \\
-& - \int_{\partial A} \tilde{h}_k \left( \overline{\left< \alpha \right>}^{\tilde{z}}_k \overline{\left<p \right>}^{\tilde{z}}_k + \overline{\delta \alpha \delta p}^{\tilde{z}}_k+ \overline{\left<\alpha^\prime p^\prime\right>}^{\tilde{z}}_k \right) \mathbf{n}_\perp dl \\
-& + \int_A \left[\left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{top}} \right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{top}} \right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \, dA \\
-& - \int_A \left[\left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{bot}} \right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{bot}} \right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \, dA.
+& = - \int_A \, \tilde{h}_k \overline{\left( {\bf f} \times \left<\mathbf{u}\right> + \left< \alpha \right> \nabla \left< p \right> + \left< \alpha' \nabla p' \right> + \nabla \left<\Phi\right> \right)}^{\tilde{z}}_k \, dA.
 $$ (vh-momentum-reynolds-lay-avg2)
 
 We next use the Divergence theorem on the surface integrals and combine terms into fewer integrals on each side of the equation.
 
 $$
-\int_A \bigl\{ \frac{\partial\tilde{h}_k \overline{\left< {\bf u} \right>}^{\tilde{z}}_k}{\partial t}
+\int_A \Bigl\{ \frac{\partial\tilde{h}_k \overline{\left< {\bf u} \right>}^{\tilde{z}}_k}{\partial t}
 & + \nabla \cdot \left[ \tilde{h}_k \left(\overline{\left< {\bf u} \right>}^{\tilde{z}}_k \otimes \overline{\left< {\bf u} \right>}^{\tilde{z}}_k + \overline{\delta {\bf u} \otimes \delta {\bf u}}^{\tilde{z}}_k + \overline{\left< {\bf u}^\prime \otimes {\bf u}^\prime \right>}^{\tilde{z}}_k  \right) \right] \\
 & + \left[ \left(\left< {\bf u} \right> \left< \tilde{w}_{tr} \right> + \left<{\bf u}^\prime \tilde{w}_{tr}^\prime \right> \right) - \left(\left<{\bf u}\right> \left<\tilde{\bf u}\right> + \left< {\bf u}^\prime \tilde{\bf u}^\prime \right> \right) \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \\
-& - \left[ \left(\left< {\bf u} \right> \left< \tilde{w}_{tr} \right> + \left<{\bf u}^\prime \tilde{w}_{tr}^\prime \right> \right) - \left(\left<{\bf u}\right> \left<\tilde{\bf u}\right> + \left< {\bf u}^\prime \tilde{\bf u}^\prime \right> \right) \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \bigr\} \, dA \\
-& = - \int_A \bigl\{ \, \tilde{h}_k \overline{\left( {\bf f} \times \left<\mathbf{u}\right> + \nabla \left<\Phi\right> \right)}^{\tilde{z}}_k \\
-& - \nabla \left[ \tilde{h}_k \left( \overline{\left< \alpha \right>}^{\tilde{z}}_k \overline{\left<p \right>}^{\tilde{z}}_k + \overline{\delta \alpha \delta p}^{\tilde{z}}_k+ \overline{\left<\alpha^\prime p^\prime\right>}^{\tilde{z}}_k \right) \right] \\
-& + \left[ \left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{top}} \right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{top}} \right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \\
-& - \left[ \left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{bot}} \right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{bot}} \right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}}\bigr\} \, dA.
+& - \left[ \left(\left< {\bf u} \right> \left< \tilde{w}_{tr} \right> + \left<{\bf u}^\prime \tilde{w}_{tr}^\prime \right> \right) - \left(\left<{\bf u}\right> \left<\tilde{\bf u}\right> + \left< {\bf u}^\prime \tilde{\bf u}^\prime \right> \right) \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \Bigr\} \, dA \\
+& = - \int_A \left\{ \, \tilde{h}_k \overline{\left( {\bf f} \times \left<\mathbf{u}\right> + \left< \alpha \right> \nabla \left< p \right> + \left< \alpha' \nabla p' \right> + \nabla \left<\Phi\right> \right)}^{\tilde{z}}_k \right\} \, dA.
 $$ (vh-momentum-reynolds-lay-avg3)
 
 Since the equation is fully inside the integral, the equation is true for any area and therefore we can write the layer averaged momentum equation as
@@ -612,10 +650,7 @@ $$
 & + \nabla \cdot \left[ \tilde{h}_k \left( \overline{\left< {\bf u} \right>}^{\tilde{z}}_k \otimes \overline{\left< {\bf u} \right>}^{\tilde{z}}_k + \overline{\delta {\bf u} \otimes \delta {\bf u}}^{\tilde{z}}_k + \overline{\left< {\bf u}^\prime \otimes {\bf u}^\prime \right>}^{\tilde{z}}_k  \right) \right] \\
 & + \left[ \left(\left< {\bf u} \right> \left< \tilde{w}_{tr} \right> + \left<{\bf u}^\prime \tilde{w}_{tr}^\prime \right> \right) - \left(\left<{\bf u}\right> \left<\tilde{\bf u}\right> + \left< {\bf u}^\prime \tilde{\bf u}^\prime \right> \right) \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \\
 & - \left[ \left(\left< {\bf u} \right> \left< \tilde{w}_{tr} \right> + \left<{\bf u}^\prime \tilde{w}_{tr}^\prime \right> \right) - \left(\left<{\bf u}\right> \left<\tilde{\bf u}\right> + \left< {\bf u}^\prime \tilde{\bf u}^\prime \right> \right) \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \\
-& = - \, \tilde{h}_k \overline{\left( {\bf f} \times \left<\mathbf{u}\right> + \nabla \left<\Phi\right> \right)}^{\tilde{z}}_k \\
-& - \nabla \left[ \tilde{h}_k \left( \overline{\left< \alpha \right>}^{\tilde{z}}_k \overline{\left<p \right>}^{\tilde{z}}_k + \overline{\delta \alpha \delta p}^{\tilde{z}}_k+ \overline{\left<\alpha^\prime p^\prime\right>}^{\tilde{z}}_k \right) \right] \\
-& + \left[ \left< \alpha \right> \left<p \cdot \nabla \tilde{z}_k^{\text{top}}\right> + \left<\alpha^\prime \left(p \cdot \nabla \tilde{z}_k^{\text{top}} \right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \\
-& - \left[ \left< \alpha \right> \left<p \cdot \nabla \tilde{z}_k^{\text{bot}}\right> + \left<\alpha^\prime \left(p \cdot \nabla \tilde{z}_k^{\text{bot}} \right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}}.
+& = - \, \tilde{h}_k \overline{\left( {\bf f} \times \left<\mathbf{u}\right> + \left< \alpha \right> \nabla \left< p \right> + \left< \alpha' \nabla p' \right> + \nabla \left<\Phi\right> \right)}^{\tilde{z}}_k.
 $$ (vh-momentum-v1)
 
 The product rule is used on the first two terms of [](#vh-momentum-v1) and then we multiply [](#layer-mass) by $\overline{\mathbf{u}}^{\tilde{z}}_k$ and subtract it from [](#vh-momentum-v1).  This yields
@@ -625,10 +660,7 @@ $$
 & + \tilde{h}_k \overline{\left< {\bf u} \right>}^{\tilde{z}}_k \cdot \nabla \overline{\left< {\bf u} \right>}^{\tilde{z}}_k + \nabla \cdot \left[ \tilde{h}_k \left(\overline{\delta {\bf u} \otimes \delta {\bf u}}^{\tilde{z}}_k + \overline{\left< {\bf u}^\prime \otimes {\bf u}^\prime \right>}^{\tilde{z}}_k  \right) \right] \\
 & + \left(\left<\mathbf{u}\right> - \overline{\left<\mathbf{u}\right>}^{\tilde{z}}_k\right) \left\{ \left[ \left<\tilde{w}_{tr}\right> - \left<\tilde{\bf u}\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} - \left[ \left<\tilde{w}_{tr}\right> - \left<\tilde{\bf u}\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \right\} \\
 & + \left\{ \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{\bf u}^\prime \right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} - \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{\bf u}^\prime \right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \right\} \\
-& = - \, \tilde{h}_k \overline{\left( {\bf f} \times \left<\mathbf{u}\right> + \nabla \left<\Phi\right> \right)}^{\tilde{z}}_k \\
-& - \nabla \left[ \tilde{h}_k \left( \overline{\left< \alpha \right>}^{\tilde{z}}_k \overline{\left<p \right>}^{\tilde{z}}_k + \overline{\delta \alpha \delta p}^{\tilde{z}}_k+ \overline{\left<\alpha^\prime p^\prime\right>}^{\tilde{z}}_k \right) \right] \\
-& + \left[ \left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{top}} \right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{top}} \right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \\
-& -  \left[ \left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{bot}} \right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{bot}} \right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}}.
+& = - \, \tilde{h}_k \overline{\left( {\bf f} \times \left<\mathbf{u}\right> + \left< \alpha \right> \nabla \left< p \right> + \left< \alpha' \nabla p' \right> + \nabla \left<\Phi\right> \right)}^{\tilde{z}}_k.
 $$ (vh-momentum-v2)
 
 The previous equation is divided by $\tilde{h}_k$,
@@ -638,10 +670,7 @@ $$
 & + \overline{\left< {\bf u} \right>}^{\tilde{z}}_k \cdot \nabla \overline{\left< {\bf u} \right>}^{\tilde{z}}_k + \frac{1}{\tilde{h}_k} \nabla \cdot \left[ \tilde{h}_k \left(\overline{\delta {\bf u} \otimes \delta {\bf u}}^{\tilde{z}}_k + \overline{\left< {\bf u}^\prime \otimes {\bf u}^\prime \right>}^{\tilde{z}}_k  \right) \right] \\
 & + \frac{1}{\tilde{h}_k} \left(\left<\mathbf{u}\right> - \overline{\left<\mathbf{u}\right>}^{\tilde{z}}_k\right) \left\{ \left[ \left<\tilde{w}_{tr}\right> - \left<\tilde{\bf u}\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} - \left[ \left<\tilde{w}_{tr}\right> - \left<\tilde{\bf u}\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \right\} \\
 & + \frac{1}{\tilde{h}_k} \left\{ \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{\bf u}^\prime \right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} - \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{\bf u}^\prime \right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \right\} \\
-& = - \, \overline{\left( {\bf f} \times \left<\mathbf{u}\right> + \nabla \left<\Phi\right> \right)}^{\tilde{z}}_k \\
-& - \frac{1}{\tilde{h}_k} \nabla \left[ \tilde{h}_k \left( \overline{\left< \alpha \right>}^{\tilde{z}}_k \overline{\left<p \right>}^{\tilde{z}}_k + \overline{\delta \alpha \delta p}^{\tilde{z}}_k+ \overline{\left<\alpha^\prime p^\prime\right>}^{\tilde{z}}_k \right) \right] \\
-& + \frac{1}{\tilde{h}_k} \left[ \left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{top}}\right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{top}} \right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} \\
-& - \frac{1}{\tilde{h}_k} \left[ \left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{bot}}\right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{bot}} \right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}}.
+& = - \, \overline{\left( {\bf f} \times \left<\mathbf{u}\right> + \left< \alpha \right> \nabla \left< p \right> + \left< \alpha' \nabla p' \right> + \nabla \left<\Phi\right> \right)}^{\tilde{z}}_k.
 $$ (vh-momentum-v3)
 
 
@@ -674,10 +703,10 @@ $$
 & + \zeta_a {\overline{\left<{\bf u}\right>}^{\tilde{z}}_k}^{\perp} + \nabla K + \frac{1}{\tilde{h}_k} \nabla \cdot \left[ \tilde{h}_k \left(\overline{\delta {\bf u} \otimes \delta {\bf u}}^{\tilde{z}}_k + \overline{\left< {\bf u}^\prime \otimes {\bf u}^\prime \right>}^{\tilde{z}}_k  \right) \right] \\
 & + \frac{1}{\tilde{h}_k} \left\{ \left[\left(\left<\mathbf{u}\right> - \overline{\left<\mathbf{u}\right>}^{\tilde{z}}_k\right) \left\{\left<\tilde{w}_{tr}\right> - \left<\tilde{\bf u}\right> \right\} \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} - \left[  \left(\left<\mathbf{u}\right> - \overline{\left<\mathbf{u}\right>}^{\tilde{z}}_k\right) \left\{\left<\tilde{w}_{tr}\right> - \left<\tilde{\bf u}\right> \right\} \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \right\} \\
 & + \frac{1}{\tilde{h}_k}  \left\{ \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{\bf u}^\prime \right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} - \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{\bf u}^\prime \right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \right\} \\
-& = - \, \overline{\nabla \left<\Phi\right>}^{\tilde{z}}_k - \frac{1}{\tilde{h}_k} \nabla \left[ \tilde{h}_k \left( \overline{\left< \alpha \right>}^{\tilde{z}}_k \overline{\left<p \right>}^{\tilde{z}}_k + \overline{\delta \alpha \delta p}^{\tilde{z}}_k+ \overline{\left<\alpha^\prime p^\prime\right>}^{\tilde{z}}_k \right) \right] \\
-& + \frac{1}{\tilde{h}_k} \left\{ \left[ \left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{top}}\right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{top}} \right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}}
--  \left[ \left< \alpha \right> \left<p \nabla \tilde{z}_k^{\text{bot}}\right> + \left<\alpha^\prime \left(p \nabla \tilde{z}_k^{\text{bot}} \right)^\prime\right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \right\}.
+& = - \, \overline{\left< \alpha \right> \nabla \left< p \right> + \left< \alpha' \nabla p' \right> + \nabla \left<\Phi\right>}^{\tilde{z}}_k.
 $$ (layer-momentum-final)
+
+The term $\left< \alpha' \nabla p' \right>$ arises from decomposing the nonlinear product $\alpha \nabla p$ into resolved and unresolved components. In the present formulation, we do not introduce a separate parameterization for this term. It is assumed to be small relative to the resolved pressure–gravity acceleration under weak density variability and small dynamic pressure fluctuations. The pressure gradient force is instead computed directly from the hydrostatic pressure and equation of state, consistent with the finite-volume discretization.
 
 The $\delta X$ terms in the layered equations are vertical deviations from the vertical layer average of a given quantity $X$.  We will assume these deviations are small and products of these deviations are even smaller.  Thus we will ignore most of these terms in Omega.  The exception is the pressure gradient force.  At this time we will assume piecewise constant approximations of the vertically continuous system, which is appropriate for the simple pressure gradient force targeted for early versions of Omega.  This assumption will be revisited at a later date.  We also note that these terms could potentially serve as a bridge to multiscale fluxes, as resolution is increased, these $\delta X$ terms would get larger, but likely only for significantly higher resolution (e.g. 10s of meters).  However, these terms would have to be further analyzed and developed as these terms are only deviations from layer averages, not temporal averages as in the Reynolds' approach.
 
@@ -686,7 +715,7 @@ The $\delta X$ terms in the layered equations are vertical deviations from the v
 
 Throughout the rest of this document, we will
 
-1. Drop the $< >$ notation around single variables and note that all variables are assumed to be Reynolds' averaged.  Turbulent correlations will retain the angle bracket notation.
+1. Drop the $< >$ notation around single variables and interpret all prognostic variables as resolved (layer-mean) quantities. Covariance terms of the form $\left< X' Y' \right>$ denote unresolved (subgrid-scale) fluxes that must be parameterized.
 2. Change the vertical density weighted average notation from $\overline{\varphi}^{\tilde{z}}_k$ to the more simple $\varphi_k$.  Thus, any subscript $k$ implies a layer average.
 3. Define a total vertical velocity across the pseudo height surface as $\tilde{W}_{tr} \equiv \tilde{w}_{tr} - \tilde{u}$.  As a reminder $\tilde{u}$ is the projection of the normal velocity onto the normal vector to the pseudo height surface, in many cases this can be a very small correction to $\tilde{w}_{tr}$.
 
@@ -717,9 +746,7 @@ $$
 & + \zeta_a {{\bf u}_k}^{\perp} + \nabla K + \frac{1}{\tilde{h}_k} \nabla \cdot \left[ \tilde{h}_k \left< {\bf u}^\prime \otimes {\bf u}^\prime \right>_k \right] \\
 & + \frac{1}{\tilde{h}_k} \left\{ \left[\left(\mathbf{u} - \mathbf{u}_k\right) \left\{\tilde{W}_{tr} \right\} \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} - \left[  \left(\mathbf{u} - \mathbf{u}_k\right) \left\{\tilde{W}_{tr} \right\} \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \right\} \\
 & + \frac{1}{\tilde{h}_k}  \left\{ \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{ u}^\prime \right> \right]_{\tilde{z} = \tilde{z}_k^{\text{top}}} - \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{ u}^\prime \right> \right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \right\} \\
-& = - \left(\nabla \Phi \right)_k - \frac{1}{\tilde{h}_k} \nabla \left[ \tilde{h}_k \alpha_k p_k \right] \\
-& + \frac{1}{\tilde{h}_k} \left\{ \left[ \alpha p \nabla \tilde{z}_k^{\text{top}}\right]_{\tilde{z} = \tilde{z}_k^{\text{top}}}
--  \left[ \alpha p \nabla \tilde{z}_k^{\text{bot}}\right]_{\tilde{z} = \tilde{z}_k^{\text{bot}}} \right\}.
+& = - \left(\alpha \nabla p + \nabla \Phi \right)_k.
 $$ (layer-momentum-final-simple)
 
 In [](#layer-tracer-final-simple) and [](#layer-momentum-final-simple) we have not combined turbulent flux terms (e.g., $\left<\varphi^\prime \tilde{W}_{tr}^\prime \right>$) as the two terms that comprise this term ($\left< \varphi^\prime {\tilde w}_{tr}^{\prime} \right>$ and $\left< \varphi^\prime \tilde{ u}^{\prime}\right>$) are fundamentally different processes that must be modeled separately.
@@ -757,8 +784,8 @@ $$
 \frac{\partial u_{e,k}}{\partial t}
 & + \left[ {\bf k} \cdot \nabla \times u_{e,k} +f_v\right]_e\left(u_{e,k}^{\perp}\right) + \left[\nabla K\right]_e  \\
 & + \frac{1}{\left[\tilde{h}_{i,k}\right]_e} \left\{ \left[\left(u - u_k\right) \left\{\tilde{W}_{tr} \right\} \right]_{e,k}^\text{top} - \left[  \left(u - u_k\right) \left\{\tilde{W}_{tr} \right\} \right]_{e,k+1}^\text{top} \right\} \\
-& = - \left(\nabla \Phi \right)_{e,k} - \frac{1}{\left[\tilde{h}_k\right]_e} \nabla \left( \tilde{h}_k \alpha_k p_k \right) + \frac{1}{\left[\tilde{h}_k\right]_e} \left\{ \left[ \alpha p \nabla \tilde{z}^{\text{top}}\right]_{e,k}^\text{top} -  \left[ \alpha p \nabla \tilde{z}^{\text{bot}}\right]_{e,k+1}^\text{top} \right\} \\
-&  - \frac{1}{\left[\tilde{h}_{i,k}\right]_e} \nabla \cdot \left( \tilde{h}_k \left< {\bf u}^\prime \otimes {\bf u}^\prime \right>_k \right) - \frac{1}{\left[\tilde{h}_{i,k}\right]_e^\text{top}}  \left\{ \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{ u}^\prime \right> \right]_{e,k}^\text{top} - \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{ u}^\prime \right> \right]_{e,k+1}^\text{top} \right\}.
+& = - \left(\alpha \nabla p + \nabla \Phi \right)_{e,k} - \frac{1}{\left[\tilde{h}_{i,k}\right]_e} \nabla \cdot \left( \tilde{h}_k \left< {\bf u}^\prime \otimes {\bf u}^\prime \right>_k \right) \\
+& - \frac{1}{\left[\tilde{h}_{i,k}\right]_e^\text{top}}  \left\{ \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{ u}^\prime \right> \right]_{e,k}^\text{top} - \left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> - \left< \mathbf{u}^\prime \tilde{ u}^\prime \right> \right]_{e,k+1}^\text{top} \right\}.
 $$ (discrete-momentum)
 
 **Diagnostic Relations:**
@@ -775,7 +802,7 @@ $$
 z_{i,k}^{top} = z_{i}^{floor} + \rho_0 \sum_{k'=k}^{K_{max}} \alpha_{i,k'} \tilde{h}_{i,k'}
 $$ (discrete-z)
 
-We refer to these as the discrete equations, but time derivatives remain continuous. The time discretization is described in the [time stepping design document](TimeStepping.md). The velocity, mass-thickness, and tracers are solved prognostically using [](discrete-momentum), [](discrete-mass), [](discrete-tracer). At the new time, these variables are used to compute pressure [](discrete-pressure), specific volume [](discrete-eos), and z-locations [](discrete-z). Additional variables are computed diagnostically at the new time: $\mathbf{u}^{\perp}$, $K$, $\zeta_a$, $z^{mid}$, $\Phi$, etc. The initial geopotential is simply $\Phi=gz$, but additional gravitational terms may be added later.
+We refer to these as the discrete equations, but time derivatives remain continuous. The time discretization is described in the [time stepping design document](TimeStepping.md). The velocity, mass-thickness, and tracers are solved prognostically using [](#discrete-momentum), [](#discrete-mass), [](#discrete-tracer). At the new time, these variables are used to compute pressure [](#discrete-pressure), specific volume [](#discrete-eos), and z-locations [](#discrete-z). Additional variables are computed diagnostically at the new time: $\mathbf{u}^{\perp}$, $K$, $\zeta_a$, $z^{mid}$, $\Phi$, etc. The initial geopotential is simply $\Phi=gz$, but additional gravitational terms may be added later.
 
 The horizontal operators $\nabla$, $\nabla\cdot$, and $\nabla \times$ are now in their discrete form. In the TRiSK design, gradients ($\nabla$) map cell centers to edges; divergence ($\nabla \cdot$) maps edge quantities to cells; and curl ($\nabla \times$) maps edges to vertices. The exact form of operators and interpolation stencils remain the same as those given in {ref}`Omega-0 operator formulation <33-operator-formulation>` The discrete version of terms common with Omega-0, such as advection, potential vorticity, and $\nabla K$, can be found in {ref}`Omega-0 Momentum Terms <34-momentum-terms>` and {ref}`Omega-0 Thickness and Tracer Terms <35-thickness-and-tracer-terms>`.
 
@@ -839,17 +866,29 @@ $$
 in this relation, we have moved the subscript $k$ off the variable itself to prevent confusion with the layer average.  With this definition, [](#discrete-mom-flux-sloping) goes to zero for flat layer surfaces.
 
 #### Vertical velocity dissipation
-The vertical turbulent momentum stress is most commonly parameterized as a down-gradient process, i.e.,
+The vertical turbulent momentum stress is most commonly parameterized as a down-gradient process, which for a z-coordinate model is given as,
 
 $$
-\left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> \right]_{e,k} = -\frac{\nu_v \rho}{\rho_0} \left[\frac{\partial u}{\partial \tilde{z}}\right]_{e,k}
+\left<u^\prime w^\prime \right> = -\nu_v \frac{\partial u}{\partial z}
 $$
+
+where $\nu_v$ is the parameterized vertical viscosity.
+
+For our pseudo-height coordinate the momentum stress is,
+
+$$
+\left[ \left<\mathbf{u}^\prime \tilde{w}_{tr}^\prime \right> \right]_{e,k} = -\tilde{\nu_v} \left[\frac{\partial u}{\partial \tilde{z}}\right]_{e,k}
+$$
+
+where $\tilde{\nu}_v \equiv \frac{\nu_v \rho}{\rho_0}$.
 
 Plugging this relation into the last part of [](#discrete-momentum)
 
 $$
-\frac{1}{\left[\tilde{h}_{i,k}\right]_{e,k}}  \left\{ \left[ \nu_v \left[\frac{\partial u}{\partial \tilde{z}}\right]_{e,k} \right]_{e,k} - \left[ \nu_v \left[\frac{\partial u}{\partial \tilde{z}}\right]_{e,k} \right]_{e,k+1}  \right\}
+-\frac{1}{\left[\tilde{h}_k\right]_e} \left\{ \left[\left<u^\prime \tilde{w}_{tr}^\prime\right> \right]_{e,k} - \left[\left<u^\prime \tilde{w}_{tr}^\prime\right> \right]_{e,k+1} \right\} = \frac{1}{\left[\tilde{h}_{i,k}\right]_{e,k}}  \left\{ \left[ \tilde{\nu_v} \right]_{e,k} \left[\frac{\partial u}{\partial \tilde{z}}\right]_{e,k} - \left[ \tilde{\nu_v} \right]_{e,k+1} \left[\frac{\partial u}{\partial \tilde{z}}\right]_{e,k} \right\}
 $$ (discrete-mom-vert-diff)
+
+Here $\left[ \tilde{\nu_v} \right]_{e,k} $ is the vertical viscosity interpolated to a given edge.
 
 ##### Vertical derivatives in a finite volume framework
 
@@ -894,7 +933,7 @@ where $0.5 \left(\tilde{h}_k + \tilde{h}_{k+1}\right)$ is the distance between $
 With this, we can now fully discretize [](#discrete-mom-vert-diff) as
 
 $$
--\frac{1}{\left[\tilde{h}_k\right]_e} \left\{ \left[\left<u^\prime \tilde{w}_{tr}^\prime\right> \right]_{e,k} - \left[\left<u^\prime \tilde{w}_{tr}^\prime\right> \right]_{e,k+1} \right\} = -\frac{1}{\left[\tilde{h}_k\right]_e} \left\{ \frac{\left(u_{e,k-1} - u_{e,k}\right)}{0.5 \left(\tilde{h}_{k-1} + \tilde{h}_{k}\right)} - \frac{\left(u_{e,k} - u_{e,k+1}\right)}{0.5 \left(\tilde{h}_k + \tilde{h}_{k+1}\right)} \right\}.
+-\frac{1}{\left[\tilde{h}_k\right]_e} \left\{ \left[\left<u^\prime \tilde{w}_{tr}^\prime\right> \right]_{e,k} - \left[\left<u^\prime \tilde{w}_{tr}^\prime\right> \right]_{e,k+1} \right\} = -\frac{1}{\left[\tilde{h}_k\right]_{e,k}} \left\{ \left[\tilde{\nu_v} \right]_{e,k} \frac{\left(u_{e,k-1} - u_{e,k}\right)}{0.5 \left(\tilde{h}_{k-1} + \tilde{h}_{k}\right)} - \left[\tilde{\nu_v} \right]_{e,k+1} \frac{\left(u_{e,k} - u_{e,k+1}\right)}{0.5 \left(\tilde{h}_k + \tilde{h}_{k+1}\right)} \right\}.
 $$ (final-vert-vel-dissipation)
 
 This form can be interfaced with the Omega [tridiagonal solver](TridiagonalSolver.md) routine.
@@ -1058,7 +1097,7 @@ Table 1. Definition of variables. Geometric variables may be found in the {ref}`
 |$K_{min}$ | shallowest active layer |  |
 |$K_{max}$ | deepest active layer |  |
 |$K_{i,k}$  | kinetic energy    | m$^2$ s$^{-2}$  | cell     | KineticEnergyCell  |$K = \left\| {\bf u} \right\|^2 / 2$ |
-|$p_{i,k}$ | pressure | Pa | cell | Pressure | see [](discrete-pressure) |
+|$p_{i,k}$ | pressure | Pa | cell | Pressure | see [](#discrete-pressure) |
 |$p^{floor}_i$ | bottom pressure | Pa | cell | PFloor | pressure at ocean floor
 |$p^{surf}_i$ | surface pressure | Pa | cell | PSurface | due to atm. pressure, sea ice, ice shelves
 |$q_{v,k}$ | potential vorticity         | m$^{-1}$ s$^{-1}$    | vertex   | PotentialVorticity  |$q = \left(\zeta+f\right)/\tilde{h}$ |
@@ -1074,7 +1113,7 @@ Table 1. Definition of variables. Geometric variables may be found in the {ref}`
 |$\tilde{w}_{tr\ i,k}$ | net vertical transport through a moving surface | m s$^{-1}$ | cell  | NetVertTransportVelocity | volume transport per m$^2$ |
 |$\tilde{W}_{tr\ i,k}$ | total vertical velocity across a pseudo height surface | m s$^{-1}$ | cell | TotalVertTransportVelocity | $\tilde{W}_{tr} \equiv \tilde{w}_{tr} - \tilde{u}$  |
 |$\tilde{z}$ | vertical coordinate (pseudo-height) | m | - | | positive upward |
-|$\tilde{z}^{top}_{i,k}$ | layer top $\tilde{z}$-location | m | cell | ZTop | see [](discrete-z) |
+|$\tilde{z}^{top}_{i,k}$ | layer top $\tilde{z}$-location | m | cell | ZTop | see [](#discrete-z) |
 |$\tilde{z}^{mid}_{i,k}$ | layer mid-depth $\tilde{z}$-location | m | cell | ZMid |
 |$\tilde{z}^{surf}_{i}$ | ocean surface $\tilde{z}$-location | m | cell | ZSurface |
 |$\tilde{z}^{floor}_{i}$ | ocean floor $\tilde{z}$-location | m | cell | ZFloor |
