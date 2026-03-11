@@ -1470,7 +1470,9 @@ CONTAINS
            do ix = 1,crm_nx_rad
              do i = 1,ncol
                j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
+
                k = pver - iz + 1
+
                ! Mixing ratios
                mr_lsliq(j,k) = crm_qc(i,ix,iy,iz)
                mr_lsice(j,k) = crm_qi(i,ix,iy,iz)
@@ -2205,6 +2207,8 @@ CONTAINS
        ! Sum up precipitation rates. If not using preciitation fluxes, mixing ratios are 
        ! stored in _rate variables.
        allocate(ls_p_rate(nPoints,nLevels),cv_p_rate(nPoints,Nlevels))
+       ls_p_rate = 0.0_wp
+       cv_p_rate = 0.0_wp
        if(use_precipitation_fluxes) then
           ls_p_rate(:,1:nLevels) = fl_lsrainIN + fl_lssnowIN + fl_lsgrplIN
           cv_p_rate(:,1:nLevels) = fl_ccrainIN + fl_ccsnowIN
@@ -2215,6 +2219,7 @@ CONTAINS
        
        ! Call PREC_SCOPS
        allocate(frac_prec(nPoints,nColumns,nLevels))
+       frac_prec = 0.0_wp
        call prec_scops(nPoints,nLevels,nColumns,ls_p_rate,cv_p_rate,cospIN%frac_out,frac_prec)
        deallocate(ls_p_rate,cv_p_rate)
              
@@ -2343,7 +2348,9 @@ CONTAINS
              end if
           enddo
        enddo
-             
+
+       ! This ensures that no matter what the CRM or interpolation produced,
+       ! the optics routine only sees physically valid (non-negative) mass.
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
        ! Convert precipitation fluxes to mixing ratios
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2496,6 +2503,16 @@ CONTAINS
                 MODIS_opticalThicknessIce(nPoints,nColumns,nLevels),                     &
                 MODIS_opticalThicknessSnow(nPoints,nColumns,nLevels))
 
+       MODIS_cloudWater           = 0.0_wp
+       MODIS_cloudIce             = 0.0_wp
+       MODIS_cloudSnow            = 0.0_wp
+       MODIS_waterSize            = 0.0_wp
+       MODIS_iceSize              = 0.0_wp
+       MODIS_snowSize             = 0.0_wp
+       MODIS_opticalThicknessLiq  = 0.0_wp
+       MODIS_opticalThicknessIce  = 0.0_wp
+       MODIS_opticalThicknessSnow = 0.0_wp
+
        ! Cloud water
        call cosp_simulator_optics(nPoints,nColumns,nLevels,cospIN%frac_out,              &
             mr_hydro(:,:,:,I_CVCLIQ),mr_hydro(:,:,:,I_LSCLIQ),MODIS_cloudWater)
@@ -2558,7 +2575,7 @@ CONTAINS
     real(wp), dimension(npoints,ncolumns,nlvgrid) :: fracPrecipIce_statGrid
     real(wp), dimension(npoints,nlevels)          :: g_vol
     integer :: i, j, k
-                                               
+
        ! Compute gaseous absorption (assume identical for each subcolun)
        g_vol(:,:)=0._wp
        do i = 1, nPoints
@@ -2572,16 +2589,22 @@ CONTAINS
           end do
        end do
 
+       Np = 0.0_wp
+       cospIN%kr_vol_cloudsat = 0.0_wp
+       cospIN%z_vol_cloudsat  = 0.0_wp
+
        ! Loop over all subcolumns
        fracPrecipIce(:,:,:) = 0._wp
        do k=1,nColumns
+
           call quickbeam_optics(sd, cospIN%rcfg_cloudsat, nPoints, nLevels, R_UNDEF, &
                mr_hydro(:,k,:,1:nHydro)*1000._wp, Reff(:,k,:,1:nHydro)*1.e6_wp,      &
                Np(:,k,:,1:nHydro), cospstateIN%pfull, cospstateIN%at,                &
                cospstateIN%qv, cospIN%z_vol_cloudsat(1:nPoints,k,:),                 &
                cospIN%kr_vol_cloudsat(1:nPoints,k,:))
 
-          ! Force tiny negative numerical noise to 0.0 to satisfy COSP range checks
+          ! Numerical safety rail: quickbeam_optics can produce small negative
+          ! values (noise) that trigger COSP range checks, especially with Intel 2025.
           where (cospIN%kr_vol_cloudsat(1:nPoints,k,:) < 0.0_wp)
              cospIN%kr_vol_cloudsat(1:nPoints,k,:) = 0.0_wp
           end where
@@ -2614,6 +2637,7 @@ CONTAINS
   ! SUBROUTINE construct_cospIN
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   subroutine construct_cospIN(npoints,ncolumns,nlevels,y)
+    use cosp_kinds, only: wp
     ! Inputs
     integer,intent(in) :: &
          npoints,  & ! Number of horizontal gridpoints
@@ -2651,12 +2675,35 @@ CONTAINS
              y%fracPrecipIce(npoints,   ncolumns))
     allocate(y%rcfg_cloudsat)
 
+    y%tau_067             = 0.0_wp
+    y%emiss_11            = 0.0_wp
+    y%frac_out            = 0.0_wp
+    y%betatot_calipso     = 0.0_wp
+    y%betatot_ice_calipso = 0.0_wp
+    y%fracLiq             = 0.0_wp
+    y%betatot_liq_calipso = 0.0_wp
+    y%tautot_calipso      = 0.0_wp
+    y%tautot_ice_calipso  = 0.0_wp
+    y%tautot_liq_calipso  = 0.0_wp
+    y%asym                = 0.0_wp
+    y%ss_alb              = 0.0_wp
+    y%beta_mol_calipso    = 0.0_wp
+    y%tau_mol_calipso     = 0.0_wp
+    y%tautot_S_ice        = 0.0_wp
+    y%tautot_S_liq        = 0.0_wp
+    y%fracPrecipIce       = 0.0_wp
+
+    y%kr_vol_cloudsat     = 0.0_wp
+    y%z_vol_cloudsat      = 0.0_wp
+    y%g_vol_cloudsat      = 0.0_wp
+
   end subroutine construct_cospIN
   
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   ! SUBROUTINE construct_cospstateIN
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     
   subroutine construct_cospstateIN(npoints,nlevels,nchan,y)
+    use cosp_kinds, only: wp
     ! Inputs
     integer,intent(in) :: &
          npoints, & ! Number of horizontal gridpoints
@@ -2676,6 +2723,28 @@ CONTAINS
              y%fl_snow(nPoints,nLevels),y%fl_rain(nPoints,nLevels),y%seaice(npoints),    &
              y%tca(nPoints,nLevels),y%hgt_matrix_half(npoints,nlevels))
 
+    y%sunlit           = 0
+    y%land             = 0
+    y%skt              = 0.0_wp
+    y%at               = 0.0_wp
+    y%pfull            = 0.0_wp
+    y%phalf            = 0.0_wp
+    y%qv               = 0.0_wp
+    y%o3               = 0.0_wp
+    y%hgt_matrix       = 0.0_wp
+    y%hgt_matrix_half  = 0.0_wp
+    y%u_sfc            = 0.0_wp
+    y%lat              = 0.0_wp
+    y%lon              = 0.0_wp
+    y%emis_sfc         = 0.0_wp
+    y%cloudIce         = 0.0_wp
+    y%cloudLiq         = 0.0_wp
+    y%surfelev         = 0.0_wp
+    y%fl_snow          = 0.0_wp
+    y%fl_rain          = 0.0_wp
+    y%seaice           = 0.0_wp
+    y%tca              = 0.0_wp
+
   end subroutine construct_cospstateIN
   ! ######################################################################################
   ! SUBROUTINE construct_cosp_outputs
@@ -2683,6 +2752,7 @@ CONTAINS
   ! This subroutine allocates output fields based on input logical flag switches.
   ! ######################################################################################  
   subroutine construct_cosp_outputs(Npoints,Ncolumns,Nlevels,Nlvgrid,Nchan,x)
+    use cosp_kinds, only: wp
     ! Inputs
     integer,intent(in) :: &
          Npoints,         & ! Number of sampled points
@@ -2706,6 +2776,16 @@ CONTAINS
        allocate(x%isccp_meantb(Npoints))
        allocate(x%isccp_meantbclr(Npoints))
        allocate(x%isccp_meanalbedocld(Npoints))
+
+       x%isccp_boxtau        = 0.0_wp
+       x%isccp_boxptop       = 0.0_wp
+       x%isccp_fq            = 0.0_wp
+       x%isccp_totalcldarea  = 0.0_wp
+       x%isccp_meanptop      = 0.0_wp
+       x%isccp_meantaucld    = 0.0_wp
+       x%isccp_meantb        = 0.0_wp
+       x%isccp_meantbclr     = 0.0_wp
+       x%isccp_meanalbedocld = 0.0_wp
     end if
 
     ! MISR simulator
@@ -2716,9 +2796,14 @@ CONTAINS
        !        outputs.
        allocate(x%misr_dist_model_layertops(Npoints,numMISRHgtBins))
        allocate(x%misr_meanztop(Npoints))
-       allocate(x%misr_cldarea(Npoints))    
+       allocate(x%misr_cldarea(Npoints))
+
+       x%misr_fq                   = 0.0_wp
+       x%misr_dist_model_layertops = 0.0_wp
+       x%misr_meanztop             = 0.0_wp
+       x%misr_cldarea              = 0.0_wp
     end if
-    
+
     ! MODIS simulator
     if (lmodis_sim) then
        allocate(x%modis_Cloud_Fraction_Total_Mean(Npoints))
@@ -2739,8 +2824,29 @@ CONTAINS
        allocate(x%modis_Liquid_Water_Path_Mean(Npoints))
        allocate(x%modis_Ice_Water_Path_Mean(Npoints))
        allocate(x%modis_Optical_Thickness_vs_Cloud_Top_Pressure(nPoints,numModisTauBins,numMODISPresBins))
-       allocate(x%modis_Optical_thickness_vs_ReffLIQ(nPoints,numMODISTauBins,numMODISReffLiqBins))   
+       allocate(x%modis_Optical_thickness_vs_ReffLIQ(nPoints,numMODISTauBins,numMODISReffLiqBins))
        allocate(x%modis_Optical_Thickness_vs_ReffICE(nPoints,numMODISTauBins,numMODISReffIceBins))
+
+       x%modis_Cloud_Fraction_Total_Mean     = 0.0_wp
+       x%modis_Cloud_Fraction_Water_Mean     = 0.0_wp
+       x%modis_Cloud_Fraction_Ice_Mean       = 0.0_wp
+       x%modis_Cloud_Fraction_High_Mean      = 0.0_wp
+       x%modis_Cloud_Fraction_Mid_Mean       = 0.0_wp
+       x%modis_Cloud_Fraction_Low_Mean       = 0.0_wp
+       x%modis_Optical_Thickness_Total_Mean  = 0.0_wp
+       x%modis_Optical_Thickness_Water_Mean  = 0.0_wp
+       x%modis_Optical_Thickness_Ice_Mean    = 0.0_wp
+       x%modis_Optical_Thickness_Total_LogMean = 0.0_wp
+       x%modis_Optical_Thickness_Water_LogMean = 0.0_wp
+       x%modis_Optical_Thickness_Ice_LogMean   = 0.0_wp
+       x%modis_Cloud_Particle_Size_Water_Mean  = 0.0_wp
+       x%modis_Cloud_Particle_Size_Ice_Mean    = 0.0_wp
+       x%modis_Cloud_Top_Pressure_Total_Mean   = 0.0_wp
+       x%modis_Liquid_Water_Path_Mean          = 0.0_wp
+       x%modis_Ice_Water_Path_Mean             = 0.0_wp
+       x%modis_Optical_Thickness_vs_Cloud_Top_Pressure = 0.0_wp
+       x%modis_Optical_thickness_vs_ReffLIQ            = 0.0_wp
+       x%modis_Optical_Thickness_vs_ReffICE            = 0.0_wp
     end if
     
     ! CALIPSO simulator
@@ -2749,7 +2855,7 @@ CONTAINS
        allocate(x%calipso_beta_tot(Npoints,Ncolumns,Nlevels))
        allocate(x%calipso_srbval(SR_BINS+1))
        allocate(x%calipso_cfad_sr(Npoints,SR_BINS,Nlvgrid))
-       allocate(x%calipso_betaperp_tot(Npoints,Ncolumns,Nlevels))  
+       allocate(x%calipso_betaperp_tot(Npoints,Ncolumns,Nlevels))
        allocate(x%calipso_lidarcld(Npoints,Nlvgrid))
        allocate(x%calipso_cldlayer(Npoints,LIDAR_NCAT))        
        allocate(x%calipso_lidarcldphase(Npoints,Nlvgrid,6))
@@ -2782,6 +2888,13 @@ CONTAINS
        allocate(x%radar_lidar_tcc(Npoints))
        allocate(x%cloudsat_precip_cover(Npoints,nCloudsatPrecipClass))
        allocate(x%cloudsat_pia(Npoints))
+
+       x%cloudsat_Ze_tot        = 0.0_wp
+       x%cloudsat_cfad_ze       = 0.0_wp
+       x%lidar_only_freq_cloud  = 0.0_wp
+       x%radar_lidar_tcc        = 0.0_wp
+       x%cloudsat_precip_cover  = 0.0_wp
+       x%cloudsat_pia           = 0.0_wp
     end if
 
   end subroutine construct_cosp_outputs
