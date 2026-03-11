@@ -234,7 +234,7 @@ contains
                           pres,presf,temp,beta_mol,betatot,tau_mol,tautot,  &
                           tautot_S_liq,tautot_S_ice,betatot_ice,betatot_liq,         &
                           tautot_ice,tautot_liq)
-
+    use ieee_arithmetic, only: ieee_is_nan
     ! ####################################################################################
     ! NOTE: Using "grav" from cosp_constants.f90, instead of grav=9.81, introduces
     ! changes of up to 2% in atb532 adn 0.003% in parasolRefl and lidarBetaMol532. 
@@ -289,7 +289,7 @@ contains
     REAL(WP),dimension(npoints,nlev+1)              :: zheight          
     REAL(WP),dimension(npoints,nlev,npart)          :: rad_part,kp_part,qpart,alpha_part,tau_part
 
-    INTEGER                                         :: i,k,icol
+    INTEGER                                         :: i,j,k,icol
     
     ! Local data
     REAL(WP),PARAMETER :: rhoice     = 0.5e+03    ! Density of ice (kg/m3) 
@@ -346,11 +346,38 @@ contains
     rad_part(1:npoints,1:nlev,INDX_CVLIQ)  = cv_radliq(1:npoints,1:nlev)
     rad_part(1:npoints,1:nlev,INDX_CVICE)  = cv_radice(1:npoints,1:nlev)    
     rad_part(1:npoints,1:nlev,INDX_LSSNOW) = ls_radsnow(1:npoints,1:nlev)
-    rad_part(:,:,:) = MAX(rad_part(:,:,:),0._wp)
-    rad_part(:,:,:) = MIN(rad_part(:,:,:),70.0e-6_wp)
-    ls_radsnow(:,:) = MAX(ls_radsnow(:,:),0._wp)
-    ls_radsnow(:,:) = MIN(ls_radsnow(:,:),1000.e-6_wp)   
-    
+
+    do i = 1, npart
+       do k = 1, nlev
+          do j = 1, npoints
+             ! FIRST: Check for NaN without triggering hardware exception
+             if (ieee_is_nan(rad_part(j,k,i))) then
+                rad_part(j,k,i) = 0._wp
+             else
+                ! SECOND: Only perform numerical comparison if confirmed NOT a NaN
+                if (.not.(rad_part(j,k,i) > 0._wp)) then
+                   rad_part(j,k,i) = 0._wp
+                elseif (rad_part(j,k,i) > 70.0e-6_wp) then
+                   rad_part(j,k,i) = 70.0e-6_wp
+                endif
+             endif
+          enddo
+       enddo
+    enddo
+    do k = 1, nlev
+       do j = 1, npoints
+          if (ieee_is_nan(ls_radsnow(j,k))) then
+             ls_radsnow(j,k) = 0._wp
+          else
+             if (.not.(ls_radsnow(j,k) > 0._wp)) then
+                ls_radsnow(j,k) = 0._wp
+             elseif (ls_radsnow(j,k) > 1000.0e-6_wp) then
+                ls_radsnow(j,k) = 1000.0e-6_wp
+             endif
+          endif
+       enddo
+    enddo
+
     ! Density (clear-sky air)
     rhoair(1:npoints,1:nlev) = pres(1:npoints,1:nlev)/(rd*temp(1:npoints,1:nlev))
     
