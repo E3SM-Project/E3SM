@@ -34,7 +34,7 @@ This document describes the governing equations for the layered ocean model, whi
 The requirements in the [Omega-0 design document](OmegaV0ShallowWater) still apply. Additional design requirements for Omega-1 are:
 
 ### Omega will be a hydrostatic, non-Boussinesq ocean model.
-Omega will adopt a non-Boussinesq formulation, meaning it retains the full, spatially and temporally varying fluid density $\rho({\bf x}, t)$ in all governing equations. This ensures exact mass conservation, as opposed to volume conservation in Boussinesq models that approximate density as a constant reference value $\rho_0$ outside the pressure gradient. The equations are derived in terms of layer-integrated mass per unit area (see [layered equations](#Layer Equations)), and no approximation is made that filters out compressibility or density variations.
+Omega will adopt a non-Boussinesq formulation, meaning it retains the full, spatially and temporally varying fluid density $\rho({\bf x}, t)$ in all governing equations. This ensures exact mass conservation, as opposed to volume conservation in Boussinesq models that approximate density as a constant reference value $\rho_0$ outside the pressure gradient. The equations are derived in terms of layer-integrated mass per unit area (see [layered equations](#layer-equations)), and no approximation is made that filters out compressibility or density variations.
 
 The model also assumes hydrostatic balance in the vertical momentum equation, which is a standard and well-justified simplification for large-scale geophysical flows. In such regimes, vertical accelerations are typically small compared to the vertical pressure gradient and gravitational forces. This assumption simplifies the dynamics and removes most sound waves while retaining fidelity for the mesoscale to planetary-scale ocean circulation that Omega is designed to simulate.
 
@@ -416,6 +416,7 @@ $$ (delta-vert-average)
 
 where the last equality is true by definition.
 
+(layer-equations)=
 ## 9. Layer Equations
 
 ### Tracer & Mass
@@ -431,7 +432,7 @@ $$
 & = 0.
 $$ (Aintegral-tracer-first-reynolds)
 
-Next, we use a Reynolds' decomposition on any terms involving products inside a Reynolds' average,
+Next, we use the resolved/unresolved decomposition on any terms involving products inside a resolved component projection,
 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}_{k}^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left<\varphi \right> \, d\tilde{z} \, dA
@@ -496,7 +497,7 @@ $$
 & - \left\{ \left[\left< \varphi^\prime {\tilde w}_{tr}^{\prime} \right> - \left< \varphi^\prime \tilde{ u}^{\prime}\right> \right]_{{\tilde z}={\tilde z}_{k}^{\text{top}}} - \left[\left< \varphi^\prime {\tilde w}_{tr}^{\prime} \right> - \left< \varphi^\prime \tilde{ u}^{\prime}\right> \right]_{{\tilde z}={\tilde z}_{k}^{\text{bot}}}\right\}.
 $$ (layer-tracer)
 
-A few notes on the layer-averaged tracer equation. In this complete form, it includes three types of fluctuating quantities that must be dealt with: (1) the layer averaged, Reynolds' averaged horizontal turbulent flux $\left( \overline{\left<\varphi^{\prime} {\bf u}^{\prime}\right>}^{\tilde{z}}_k \right)$, (2) the Reynolds' average vertical turbulent flux $\left( \left< \varphi^\prime {\tilde w}_{tr}^{\prime} \right> - \left< \varphi^\prime \tilde{u}^{\prime}\right> \right)$, and (3) the layer-averaged product of deviations from the layer-integrated variables $\left(\overline{\delta \varphi \delta {\bf u}}^{\tilde{z}}_k \right)$. The details of the first two quantities will be discussed later in this document and follow-on design documents. The terms involving perturbations from the layer integrated quantity are necessary to extend beyond piecewise constant represenation of variables. In this equation, variables with no overline are the full field variable at the interfaces.
+A few notes on the layer-averaged tracer equation. In this complete form, it includes three types of fluctuating quantities that must be dealt with: (1) the layer averaged horizontal turbulent flux $\left( \overline{\left<\varphi^{\prime} {\bf u}^{\prime}\right>}^{\tilde{z}}_k \right)$, (2) the vertical turbulent flux $\left( \left< \varphi^\prime {\tilde w}_{tr}^{\prime} \right> - \left< \varphi^\prime \tilde{u}^{\prime}\right> \right)$, and (3) the layer-averaged product of deviations from the layer-integrated variables $\left(\overline{\delta \varphi \delta {\bf u}}^{\tilde{z}}_k \right)$. The details of the first two quantities will be discussed later in this document and follow-on design documents. The terms involving perturbations from the layer integrated quantity are necessary to extend beyond piecewise constant represenation of variables. In this equation, variables with no overline are the full field variable at the interfaces.
 
 The mass equation is identical to the tracer equation with $\varphi=1$.
 
@@ -514,7 +515,7 @@ $$ (layer-mass)
 
 Before deriving the layered momentum equation, we collect the pressure and gravitational contributions into a single **pressure gradient force (PGF)** in our pseudo-height framework. This subsection establishes the continuous form of the horizontal PGF per unit mass and serves as the target for the subsequent finite-volume, layer-averaged derivation.
 
-Recall from [](vh-momentum-pseudo) that the horizontal momentum equation is written in terms of
+Recall from [](#vh-momentum-pseudo) that the horizontal momentum equation is written in terms of
 
 - a **body force per unit mass** $\mathbf{b}_\perp$, and
 - a **traction** vector $\boldsymbol{\tau}$ that enters the weak form as $\boldsymbol{\tau}/\rho$,
@@ -560,9 +561,9 @@ $$ (pgf-continuous)
 
 In Omega, the operator $\nabla$ denotes the **horizontal gradient along layers**, following the convention adopted throughout this section. It should not be interpreted as a gradient taken at constant geometric height $z$ or constant pseudo-height $\tilde{z}$.
 
-Under the hydrostatic approximation [](hydrostatic), the form of the horizontal pressure–gravity force in [](pgf-continuous) is valid for *any* choice of vertical coordinate, provided the horizontal gradient is taken consistently with that coordinate. In particular, although the horizontal gradient of $\Phi$ vanishes in $z$-level coordinates in the absence of tides, self-attraction, and loading, the combined expression in [](pgf-continuous) remains the correct horizontal pressure–gravity force when written using the appropriate along-layer gradient operator.
+Under the hydrostatic approximation [](#hydrostatic), the form of the horizontal pressure–gravity force in [](#pgf-continuous) is valid for *any* choice of vertical coordinate, provided the horizontal gradient is taken consistently with that coordinate. In particular, although the horizontal gradient of $\Phi$ vanishes in $z$-level coordinates in the absence of tides, self-attraction, and loading, the combined expression in [](#pgf-continuous) remains the correct horizontal pressure–gravity force when written using the appropriate along-layer gradient operator.
 
-When inserted into the weak, finite-volume form of the momentum equation, $\mathbf{b}_{\text{PGF},\perp}$ represents the combined effect of pressure traction and gravitational body force. In the next subsection, we will layer-average [](pgf-continuous) over the pseudo-height thickness of each layer and combine it with the advective and Coriolis terms to obtain the layered horizontal momentum equation. The resulting horizontal pressure-gradient force in Omega must be a consistent finite-volume discretization of [](pgf-continuous), together with additional metric terms associated with sloping layer interfaces.
+When inserted into the weak, finite-volume form of the momentum equation, $\mathbf{b}_{\text{PGF},\perp}$ represents the combined effect of pressure traction and gravitational body force. In the next subsection, we will layer-average [](#pgf-continuous) over the pseudo-height thickness of each layer and combine it with the advective and Coriolis terms to obtain the layered horizontal momentum equation. The resulting horizontal pressure-gradient force in Omega must be a consistent finite-volume discretization of [](#pgf-continuous), together with additional metric terms associated with sloping layer interfaces.
 
 ### Momentum
 
@@ -581,7 +582,7 @@ The first term on the right hand side is the **Coriolis force**, where $ \mathbf
 
 The second and third terms are $\mathbf{b}_{\text{PGF},\perp}$ from the previous subsection.
 
-Substituting (body-forces) and (surface-forces) into [](#vh-momentum-pseudo), we arrive at:
+Substituting [](#body-forces) and the traction terms in [](#vh-momentum-pseudo), we arrive at:
 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} {\bf u} \, d\tilde{z} \, dA
@@ -601,7 +602,7 @@ $$
 & = -\int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \, \left< {\bf f} \times \mathbf{u} + \frac{1}{\rho} \nabla p + \nabla \Phi \right> \, d\tilde{z} \, dA.
 $$ (vh-momentum-reynolds1)
 
-Here we have also moved the Reynolds' average through the spatial integrals given the properties of the averaging.  Next we decompose the nonlinear products into resolved and unresolved components, this yields
+Here we have also moved the resolved component projection operator through the spatial integrals given the properties of the operator.  Next we decompose the nonlinear products into resolved and unresolved components, this yields
 
 $$
 \frac{d}{dt} \int_A \int_{\tilde{z}_k^{\text{bot}}}^{\tilde{z}_k^{\text{top}}} \left< {\bf u} \right> \, d\tilde{z} \, dA
@@ -800,7 +801,7 @@ $$
 z_{i,k}^{top} = z_{i}^{floor} + \rho_0 \sum_{k'=k}^{K_{max}} \alpha_{i,k'} \tilde{h}_{i,k'}
 $$ (discrete-z)
 
-We refer to these as the discrete equations, but time derivatives remain continuous. The time discretization is described in the [time stepping design document](TimeStepping.md). The velocity, mass-thickness, and tracers are solved prognostically using [](discrete-momentum), [](discrete-mass), [](discrete-tracer). At the new time, these variables are used to compute pressure [](discrete-pressure), specific volume [](discrete-eos), and z-locations [](discrete-z). Additional variables are computed diagnostically at the new time: $\mathbf{u}^{\perp}$, $K$, $\zeta_a$, $z^{mid}$, $\Phi$, etc. The initial geopotential is simply $\Phi=gz$, but additional gravitational terms may be added later.
+We refer to these as the discrete equations, but time derivatives remain continuous. The time discretization is described in the [time stepping design document](TimeStepping.md). The velocity, mass-thickness, and tracers are solved prognostically using [](#discrete-momentum), [](#discrete-mass), [](#discrete-tracer). At the new time, these variables are used to compute pressure [](#discrete-pressure), specific volume [](#discrete-eos), and z-locations [](#discrete-z). Additional variables are computed diagnostically at the new time: $\mathbf{u}^{\perp}$, $K$, $\zeta_a$, $z^{mid}$, $\Phi$, etc. The initial geopotential is simply $\Phi=gz$, but additional gravitational terms may be added later.
 
 The horizontal operators $\nabla$, $\nabla\cdot$, and $\nabla \times$ are now in their discrete form. In the TRiSK design, gradients ($\nabla$) map cell centers to edges; divergence ($\nabla \cdot$) maps edge quantities to cells; and curl ($\nabla \times$) maps edges to vertices. The exact form of operators and interpolation stencils remain the same as those given in {ref}`Omega-0 operator formulation <33-operator-formulation>` The discrete version of terms common with Omega-0, such as advection, potential vorticity, and $\nabla K$, can be found in {ref}`Omega-0 Momentum Terms <34-momentum-terms>` and {ref}`Omega-0 Thickness and Tracer Terms <35-thickness-and-tracer-terms>`.
 
@@ -1095,7 +1096,7 @@ Table 1. Definition of variables. Geometric variables may be found in the {ref}`
 |$K_{min}$ | shallowest active layer |  |
 |$K_{max}$ | deepest active layer |  |
 |$K_{i,k}$  | kinetic energy    | m$^2$ s$^{-2}$  | cell     | KineticEnergyCell  |$K = \left\| {\bf u} \right\|^2 / 2$ |
-|$p_{i,k}$ | pressure | Pa | cell | Pressure | see [](discrete-pressure) |
+|$p_{i,k}$ | pressure | Pa | cell | Pressure | see [](#discrete-pressure) |
 |$p^{floor}_i$ | bottom pressure | Pa | cell | PFloor | pressure at ocean floor
 |$p^{surf}_i$ | surface pressure | Pa | cell | PSurface | due to atm. pressure, sea ice, ice shelves
 |$q_{v,k}$ | potential vorticity         | m$^{-1}$ s$^{-1}$    | vertex   | PotentialVorticity  |$q = \left(\zeta+f\right)/\tilde{h}$ |
@@ -1111,7 +1112,7 @@ Table 1. Definition of variables. Geometric variables may be found in the {ref}`
 |$\tilde{w}_{tr\ i,k}$ | net vertical transport through a moving surface | m s$^{-1}$ | cell  | NetVertTransportVelocity | volume transport per m$^2$ |
 |$\tilde{W}_{tr\ i,k}$ | total vertical velocity across a pseudo height surface | m s$^{-1}$ | cell | TotalVertTransportVelocity | $\tilde{W}_{tr} \equiv \tilde{w}_{tr} - \tilde{u}$  |
 |$\tilde{z}$ | vertical coordinate (pseudo-height) | m | - | | positive upward |
-|$\tilde{z}^{top}_{i,k}$ | layer top $\tilde{z}$-location | m | cell | ZTop | see [](discrete-z) |
+|$\tilde{z}^{top}_{i,k}$ | layer top $\tilde{z}$-location | m | cell | ZTop | see [](#discrete-z) |
 |$\tilde{z}^{mid}_{i,k}$ | layer mid-depth $\tilde{z}$-location | m | cell | ZMid |
 |$\tilde{z}^{surf}_{i}$ | ocean surface $\tilde{z}$-location | m | cell | ZSurface |
 |$\tilde{z}^{floor}_{i}$ | ocean floor $\tilde{z}$-location | m | cell | ZFloor |
