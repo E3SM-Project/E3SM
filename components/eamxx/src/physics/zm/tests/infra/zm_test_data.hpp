@@ -13,51 +13,6 @@
 namespace scream {
 namespace zm {
 
-struct zm_data_find_mse_max : public PhysicsTestData {
-  // Inputs
-  Int  pcols;
-  Int  ncol;
-  Int  pver;
-  Int  num_msg;
-  bool pergro_active;
-
-  Int  *msemax_top_k;
-  Real *temperature;
-  Real *zmid;
-  Real *sp_humidity;
-
-  // Inputs/Outputs
-  Int  *msemax_klev;
-  Real *mse_max_val;
-
-  // Constructor
-  zm_data_find_mse_max(Int pcols_, Int ncol_, Int pver_, Int num_msg_, bool pergro_active_)
-    : PhysicsTestData(
-        // dims: group by type and shape.
-        {
-          {pcols_, pver_},           // (Real, 2D)
-          {pcols_},                  // (Real, 1D)
-          {pcols_}                   // (Int, 1D)
-        },
-        // reals: group pointers by shape, in order of appearance above
-        {
-          {&temperature, &zmid, &sp_humidity}, // (pcols, pver)
-          {&mse_max_val}                       // (pcols)
-        },
-        // ints: group pointers by shape, in order of appearance above
-        {
-          {&msemax_top_k, &msemax_klev}        // (pcols)
-        },
-        // bools: if you have 1D bool arrays, list here (none in this case)
-        {}
-      ),
-      pcols(pcols_), ncol(ncol_), pver(pver_), num_msg(num_msg_), pergro_active(pergro_active_)
-  {}
-
-  PTD_STD_DEF(zm_data_find_mse_max, 5, pcols, ncol, pver, num_msg, pergro_active);
-
-};
-
 struct IentropyData : public PhysicsTestData {
   // Inputs
   Real s, p, qt, tfg;
@@ -203,8 +158,189 @@ struct ZmTransportMomentumData : public PhysicsTestData {
   }
 };
 
+struct ComputeDiluteCapeData : public PhysicsTestData {
+  // Inputs
+  Int pcols, ncol, pver, pverp, num_cin, num_msg;
+  Int *pblt, *prev_msemax_klev;
+  Real *sp_humidity_in, *temperature_in, *zmid, *pmid, *pint, *tpert;
+  bool calc_msemax_klev, use_input_tq_mx;
+
+  // Inputs/Outputs
+  Int *msemax_klev, *lcl_klev, *eql_klev;
+  Real *parcel_qsat, *cape, *q_mx, *t_mx;
+
+  // Outputs
+  Real *parcel_temp, *lcl_temperature;
+
+  ComputeDiluteCapeData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Int num_cin_, Int num_msg_, bool calc_msemax_klev_, bool use_input_tq_mx_) :
+    PhysicsTestData({
+      {pcols_, pver_},
+      {pcols_, pverp_},
+      {pcols_},
+      {pcols_}
+    },
+    {
+      {&sp_humidity_in, &temperature_in, &zmid, &pmid, &parcel_temp, &parcel_qsat},
+      {&pint},
+      {&tpert, &lcl_temperature, &cape, &q_mx, &t_mx}
+    },
+    {
+      {&pblt, &msemax_klev, &lcl_klev, &eql_klev, &prev_msemax_klev}
+    }),
+    pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), num_cin(num_cin_), num_msg(num_msg_), calc_msemax_klev(calc_msemax_klev_), use_input_tq_mx(use_input_tq_mx_)
+  {}
+
+  PTD_STD_DEF(ComputeDiluteCapeData, 8, pcols, ncol, pver, pverp, num_cin, num_msg, calc_msemax_klev, use_input_tq_mx);
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine, { {pmid, {590, 660}}, {temperature_in, {200, 300}}, {sp_humidity_in, {.004, .018}} });
+
+    // Make sure each column is sorted
+    for (Int c = 0; c < pcols; ++c) {
+      std::sort(pmid + (c*pver), pmid + ((c+1)*pver));
+    }
+
+  }
+
+};
+
+struct FindMseMaxData : public PhysicsTestData {
+  // Inputs
+  Int pcols, ncol, pver, num_msg;
+  Int *msemax_top_k;
+  Real *temperature, *zmid, *sp_humidity;
+  bool pergro_active;
+
+  // Inputs/Outputs
+  Int *msemax_klev;
+  Real *mse_max_val;
+
+  FindMseMaxData(Int pcols_, Int ncol_, Int pver_, Int num_msg_, bool pergro_active_) :
+    PhysicsTestData({
+      {pcols_, pver_},
+      {pcols_},
+      {pcols_}
+    },
+    {
+      {&temperature, &zmid, &sp_humidity},
+      {&mse_max_val}
+    },
+    {
+      {&msemax_top_k, &msemax_klev}
+    }),
+    pcols(pcols_), ncol(ncol_), pver(pver_), num_msg(num_msg_), pergro_active(pergro_active_)
+  {}
+
+  PTD_STD_DEF(FindMseMaxData, 5, pcols, ncol, pver, num_msg, pergro_active);
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine);
+
+    // We don't want msemax_klev, lcl_klev, or eql_klev to be random
+    for (Int i = 0; i < pcols; ++i) {
+      msemax_klev[i] = pver / 2 + i;
+      msemax_top_k[i]    = i + 1;
+    }
+  }
+
+};
+
+struct ComputeDiluteParcelData : public PhysicsTestData {
+  // Inputs
+  Int pcols, ncol, pver, num_msg;
+  Int *klaunch, *pblt;
+  Real *pmid, *temperature, *sp_humidity, *tpert;
+
+  // Inputs/Outputs
+  Int *lcl_klev;
+  Real *parcel_temp, *parcel_vtemp, *parcel_qsat, *lcl_pmid, *lcl_temperature;
+
+  ComputeDiluteParcelData(Int pcols_, Int ncol_, Int pver_, Int num_msg_) :
+    PhysicsTestData({
+      {pcols_, pver_},
+      {pcols_},
+      {pcols_}
+    },
+    {
+      {&pmid, &temperature, &sp_humidity, &parcel_temp, &parcel_vtemp, &parcel_qsat},
+      {&tpert, &lcl_pmid, &lcl_temperature}
+    },
+    {
+      {&klaunch, &pblt, &lcl_klev}
+    }),
+    pcols(pcols_), ncol(ncol_), pver(pver_), num_msg(num_msg_)
+  {}
+
+  PTD_STD_DEF(ComputeDiluteParcelData, 4, pcols, ncol, pver, num_msg);
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine, { {lcl_pmid, {590, 660}}, {temperature, {200, 300}}, {pmid, {590, 660}}, {sp_humidity, {.004, .018}} });
+
+    // We don't want msemax_klev, lcl_klev, or eql_klev to be random
+    for (Int i = 0; i < pcols; ++i) {
+      lcl_klev[i]    = pver / 2 - i;
+      klaunch[i] = pver / 2 + i;
+      pblt[i]    = i + 1;
+    }
+
+    // Make sure each column is sorted
+    for (Int c = 0; c < pcols; ++c) {
+      std::sort(pmid + (c*pver), pmid + ((c+1)*pver));
+    }
+  }
+};
+
+struct ComputeCapeFromParcelData : public PhysicsTestData {
+  // Inputs
+  Int pcols, ncol, pver, pverp, num_cin, num_msg;
+  Int *msemax_klev, *lcl_klev;
+  Real *temperature, *tv, *zmid, *sp_humidity, *pint, *lcl_pmid;
+
+  // Inputs/Outputs
+  Int *eql_klev;
+  Real *parcel_qsat, *parcel_temp, *parcel_vtemp, *cape;
+
+  ComputeCapeFromParcelData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Int num_cin_, Int num_msg_) :
+    PhysicsTestData({
+      {pcols_, pver_},
+      {pcols_, pverp_},
+      {pcols_},
+      {pcols_}
+    },
+    {
+      {&temperature, &tv, &zmid, &sp_humidity, &parcel_qsat, &parcel_temp, &parcel_vtemp},
+      {&pint},
+      {&lcl_pmid, &cape}
+    },
+    {
+      {&msemax_klev, &lcl_klev, &eql_klev}
+    }),
+    pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), num_cin(num_cin_), num_msg(num_msg_)
+  {}
+
+  PTD_STD_DEF(ComputeCapeFromParcelData, 6, pcols, ncol, pver, pverp, num_cin, num_msg);
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine, { {lcl_pmid, {590, 660}}, {temperature, {200, 300}}, {sp_humidity, {.004, .018}} });
+
+    // We don't want msemax_klev, lcl_klev, or eql_klev to be random
+    for (Int i = 0; i < pcols; ++i) {
+      msemax_klev[i] = pver / 2 + i;
+      lcl_klev[i]    = pver / 2 - i;
+      eql_klev[i]    = i + 1;
+    }
+  }
+};
+
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
-void zm_find_mse_max(zm_data_find_mse_max& d);
 void ientropy_f(IentropyData& d);
 void ientropy(IentropyData& d);
 void entropy_f(EntropyData& d);
@@ -213,6 +349,14 @@ void zm_transport_tracer_f(ZmTransportTracerData& d);
 void zm_transport_tracer(ZmTransportTracerData& d);
 void zm_transport_momentum_f(ZmTransportMomentumData& d);
 void zm_transport_momentum(ZmTransportMomentumData& d);
+void compute_dilute_cape_f(ComputeDiluteCapeData& d);
+void compute_dilute_cape(ComputeDiluteCapeData& d);
+void find_mse_max_f(FindMseMaxData& d);
+void find_mse_max(FindMseMaxData& d);
+void compute_dilute_parcel_f(ComputeDiluteParcelData& d);
+void compute_dilute_parcel(ComputeDiluteParcelData& d);
+void compute_cape_from_parcel_f(ComputeCapeFromParcelData& d);
+void compute_cape_from_parcel(ComputeCapeFromParcelData& d);
 // End glue function decls
 
 }  // namespace zm

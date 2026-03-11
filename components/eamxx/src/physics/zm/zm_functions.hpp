@@ -87,6 +87,14 @@ struct Functions {
     static inline constexpr Real flux_factor = 1.e-12; // Small numerical regularization constant used in convective flux related calculations
 
     static inline constexpr Real mbsth = 1.e-15; // threshold below which we treat the mass fluxes as zero (in mb/s)
+
+    static inline constexpr Real lcl_pressure_threshold = 600.0; // if LCL pressure is lower => no convection and cape is zero
+
+    static inline constexpr Int nit_lheat = 2; // Number of iterations for condensation/freezing loop
+
+    static inline constexpr Real lwmax = 1.e-3; // maximum condensate that can be held in cloud before rainout
+
+    static inline constexpr Real ull_upper_launch_pressure = 600.0; // upper search limit for unrestricted launch level (ULL)
   };
 
   //----------------------------------------------------------------------------
@@ -377,11 +385,7 @@ struct Functions {
     // Outputs
     const uview_2d<Real>& dqdt);            // output tendency array
 
-  //
-  // --------- Members ---------
-  //
-  inline static ZmRuntimeOpt s_common_init;
-  KOKKOS_FUNCTION
+    KOKKOS_FUNCTION
   static void zm_transport_momentum(
     // Inputs
     const MemberType& team,
@@ -411,6 +415,106 @@ struct Functions {
     const uview_2d<Real>& icwu, // in-cloud winds in updraft
     const uview_2d<Real>& icwd, // in-cloud winds in downdraft
     const uview_1d<Real>& seten); // dry static energy tendency);
+
+  KOKKOS_FUNCTION
+  static void compute_dilute_cape(
+    // Inputs
+    const MemberType& team,
+    const Workspace& workspace,
+    const ZmRuntimeOpt& runtime_opt,
+    const Int& pver, // number of mid-point vertical levels
+    const Int& pverp, // number of interface vertical levels
+    const Int& num_cin, // num of negative buoyancy regions that are allowed before the conv. top and CAPE calc are completed
+    const Int& num_msg, // index of highest level convection is allowed
+    const uview_1d<const Real>& sp_humidity_in, // specific humidity [kg/kg]
+    const uview_1d<const Real>& temperature_in, // temperature
+    const uview_1d<const Real>& zmid, // altitude/height at mid-levels
+    const uview_1d<const Real>& pmid, // pressure at mid-levels
+    const uview_1d<const Real>& pint, // pressure at interfaces
+    const Int& pblt, // index of pbl top used as upper limit index of max MSE search
+    const Real& tpert, // perturbation temperature by pbl processes
+    const bool& calc_msemax_klev, // true for normal procedure, otherwise use prev_msemax_klev from 1st call
+    const Int& prev_msemax_klev, // values of msemax_klev from previous call for dcape closure
+    const bool& use_input_tq_mx, // if .true., use input values of prev_msemax_klev, q_mx, t_mx in the CAPE calculation
+    // Inputs/Outputs
+    const uview_1d<Real>& parcel_qsat, // parcel saturation mixing ratio
+    Int& msemax_klev, // index of max MSE at parcel launch level
+    Int& lcl_klev, // index of lifting condensation level (i.e. cloud bottom)
+    Int& eql_klev, // index of equilibrium level (i.e. cloud top)
+    Real& cape, // convective available potential energy
+    Real& q_mx, // specified sp humidity to apply at level of max MSE if use_input_tq_mx=.true.
+    Real& t_mx, // specified temperature to apply at level of max MSE if use_input_tq_mx=.true.)
+    // Outputs
+    const uview_1d<Real>& parcel_temp, // parcel temperature
+    Real& lcl_temperature); // lifting condensation level (LCL) temperature
+
+  KOKKOS_FUNCTION
+  static void find_mse_max(
+    // Inputs
+    const MemberType& team,
+    const ZmRuntimeOpt& runtime_opt,
+    const Int& pver, // number of mid-point vertical levels
+    const Int& num_msg, // number of missing moisture levels at the top of model
+    const Int& msemax_top_k, // upper limit index of max MSE search
+    const bool& pergro_active, // flag for perturbation growth test (pergro)
+    const uview_1d<const Real>& temperature, // environement temperature
+    const uview_1d<const Real>& zmid, // height/altitude at mid-levels
+    const uview_1d<const Real>& sp_humidity, // specific humidity
+    // Inputs/Outputs
+    Int& msemax_klev, // index of max MSE at parcel launch level
+    Real& mse_max_val); // value of max MSE at parcel launch level
+
+  KOKKOS_FUNCTION
+  static void compute_dilute_parcel(
+    // Inputs
+    const MemberType& team,
+    const Workspace& workspace,
+    const ZmRuntimeOpt& runtime_opt,
+    const Int& pver, // number of mid-point vertical levels
+    const Int& num_msg, // number of missing moisture levels at the top of model
+    const Int& klaunch, // index of parcel launch level based on max MSE
+    const uview_1d<const Real>& pmid, // ambient env pressure at cell center
+    const uview_1d<const Real>& temperature, // ambient env temperature at cell center
+    const uview_1d<const Real>& sp_humidity, // ambient env specific humidity at cell center
+    const Real& tpert, // PBL temperature perturbation
+    const Int& pblt, // index of pbl depth
+    // Inputs/Outputs
+    const uview_1d<Real>& parcel_temp, // Parcel temperature
+    const uview_1d<Real>& parcel_vtemp, // Parcel virtual temperature
+    const uview_1d<Real>& parcel_qsat, // Parcel water vapour (sat value above lcl)
+    Real& lcl_pmid, // lifting condensation level (LCL) pressure
+    Real& lcl_temperature, // lifting condensation level (LCL) temperature
+    Int& lcl_klev); // lifting condensation level (LCL) vertical index
+
+  KOKKOS_FUNCTION
+  static void compute_cape_from_parcel(
+    // Inputs
+    const MemberType& team,
+    const Workspace& workspace,
+    const ZmRuntimeOpt& runtime_opt,
+    const Int& pver, // number of mid-point vertical levels
+    const Int& pverp, // number of interface vertical levels
+    const Int& num_cin, // num of negative buoyancy regions that are allowed before the conv. top and CAPE calc are completed
+    const Int& num_msg, // number of missing moisture levels at the top of model
+    const uview_1d<const Real>& temperature, // temperature
+    const uview_1d<const Real>& tv, // virtual temperature
+    const uview_1d<const Real>& zmid, // height/altitude at mid-levels
+    const uview_1d<const Real>& sp_humidity, // specific humidity
+    const uview_1d<const Real>& pint, // pressure at interfaces
+    const Int& msemax_klev, // index of max MSE at parcel launch level
+    const Real& lcl_pmid, // lifting condensation level (LCL) pressure
+    const Int& lcl_klev, // lifting condensation level (LCL) index
+    // Inputs/Outputs
+    const uview_1d<Real>& parcel_qsat, // parcel saturation mixing ratio
+    const uview_1d<Real>& parcel_temp, // parcel temperature
+    const uview_1d<Real>& parcel_vtemp, // parcel virtual temperature
+    Int& eql_klev, // index of equilibrium level (i.e. cloud top)
+    Real& cape); // convective available potential energy
+
+  //
+  // --------- Members ---------
+  //
+  inline static ZmRuntimeOpt s_common_init;
 }; // struct Functions
 
 } // namespace zm
@@ -425,5 +529,9 @@ struct Functions {
 # include "impl/zm_entropy_impl.hpp"
 # include "impl/zm_zm_transport_tracer_impl.hpp"
 # include "impl/zm_zm_transport_momentum_impl.hpp"
+# include "impl/zm_compute_dilute_cape_impl.hpp"
+# include "impl/zm_find_mse_max_impl.hpp"
+# include "impl/zm_compute_dilute_parcel_impl.hpp"
+# include "impl/zm_compute_cape_from_parcel_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP
