@@ -1159,8 +1159,9 @@ CONTAINS
          if (inflags1(4)) then
             ICEI(IX,IY) = x2w0%rattr(index_x2w_Si_ifrac,gindex)
             ICEP1(IX,IY) = x2w0%rattr(index_x2w_Si_ithick,gindex)
-            ICEP5(IX,IY) = x2w0%rattr(index_x2w_Si_ifloe,gindex)
-
+            if (wav_ice_coup .eq. 'twoway') then
+               ICEP5(IX,IY) = x2w0%rattr(index_x2w_Si_ifloe,gindex)
+            endif 
          endif
 
       enddo
