@@ -114,6 +114,7 @@ void MAMSrfOnlineEmiss::create_requests() {
   dms.data_file    = m_params.get<std::string>("srf_emis_specifier_for_dms");
   dms.species_name = "dms";
   dms.sectors      = {"DMS"};
+  dms.scale_factor = m_params.get<Real>("srf_emis_scale_factor_for_dms", 1.0);
   srf_emiss_species_.push_back(dms);  // add to the vector
 
   //--------------------------------------------------------------------
@@ -327,7 +328,8 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //--------------------------------------------------------------------
   for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
     srfEmissFunc::update_srfEmiss_data_from_file(
-        ispec_srf.dataReader_, start_of_step_ts(), curr_month, *ispec_srf.horizInterp_,
+        ispec_srf.dataReader_, start_of_step_ts(), curr_month,
+        ispec_srf.scale_factor, *ispec_srf.horizInterp_,
         ispec_srf.data_end_);  // output
   }
 
@@ -440,7 +442,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
 
     // Update time state and if the month has changed, update the data.
     srfEmissFunc::update_srfEmiss_timestate(
-        ispec_srf.dataReader_, ts, *ispec_srf.horizInterp_,
+        ispec_srf.dataReader_, ts, *ispec_srf.horizInterp_, ispec_srf.scale_factor,
         // output
         ispec_srf.timeState_, ispec_srf.data_start_, ispec_srf.data_end_);
 
