@@ -1,6 +1,6 @@
-# Guide to making good scream/eamxx machine files.
+# Guide to making good scream/eamxx machine files
 
-### Basics
+## Basics
 
 A machine file is a cmake macro preload file that makes life
 better for developers because, instead of having to set loads of
@@ -13,13 +13,15 @@ can also be useful (but are optional) for eamxx standalone builds.
 The eamxx standalone scripts infrastructure expects that a machine
 file is available.
 
-### Making a machine file
+## Making a machine file
 
 Machine files should have this at the top:
-```
+
+```cmake
 include(${CMAKE_CURRENT_LIST_DIR}/common.cmake)
 common_setup()
 ```
+
 This will set SCREAM_MACHINE and look for an EKAT machine file
 for this machine. An EKAT machine file is not necessary, but
 you'll need to set up EKAT mpi info and kokkos stuff if EKAT
@@ -40,26 +42,30 @@ can always set Kokkos and MPI stuff by hand.
 NOTE: If CIME is not aware of this machine, `SCREAM_INPUT_ROOT`
 must be set here.
 
-### Making a machine+compiler file
+## Making a machine+compiler file
 
 You can have compiler-specific machine files if multiple compilers
 are likely to be used on a machine. You'll want to name this file
 `${mach}-{compiler}.cmake` and the first line should include the
 generic machine file:
 
-```
+```cmake
 include(${CMAKE_CURRENT_LIST_DIR}/${mach}.cmake)
 ```
 
 SCREAM_MACHINE will be set to `${mach}` not `${mach}-${compiler}`.
 
-### Integration with E3SM/CIME
+## Integration with E3SM/CIME
 
-When eamxx is being build as a component within an E3SM case,
-these machine files will still be used. It will prefer a
-${mach}-${compiler}.cmake over a plain ${mach}.cmake file.
+When eamxx is being built as a component within an E3SM case,
+these machine files are optional. The CIME build system will look
+for a matching machine file, preferring a ${mach}-${compiler}.cmake
+over a plain ${mach}.cmake file. If neither is found, it falls back
+to common.cmake (which sets SCREAM_MACHINE and includes the EKAT
+machine file if available), and the machine configuration from
+cime_config/machines is used instead.
 
-### Gotchas
+## Gotchas
 
 Due to multiple layers of machine files and even build systems (in
 the case of CIME), it is difficult to know what CACHE variables
