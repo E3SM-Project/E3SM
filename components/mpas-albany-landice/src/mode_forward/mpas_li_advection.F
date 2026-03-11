@@ -48,7 +48,7 @@ module li_advection
              li_layer_normal_velocity, &
              li_update_geometry, &
              li_grounded_to_floating, &
-             li_apply_ismip6_atmosphere_forcing
+             li_apply_atm_lapse_rate
 
    !--------------------------------------------------------------------
    !
@@ -952,8 +952,7 @@ module li_advection
       ! If positive, then add the SMB to the top layer, conserving mass*tracer products
       ! If negative, then melt from the top down until the melting term is used up or the ice is gone
 
-      ! Initialize applied SMB and BMB fields
-      sfcMassBalApplied(:) = sfcMassBal(:)
+      ! Initialize applied BMB field
       basalMassBalApplied(:) = basalMassBal(:)
 
       do iCell = 1, nCells
@@ -1101,7 +1100,7 @@ module li_advection
 
 !***********************************************************************
 !
-!  routine li_apply_ismip6_atmosphere_forcing
+!  routine li_apply_atm_lapse_rate
 !
 !> \brief   Build effective SMB and applied SAT from ISMIP6-style fields.
 !> \details
@@ -1111,7 +1110,7 @@ module li_advection
 !>  include any anomaly correction from preprocessing.
 !
 !-----------------------------------------------------------------------
-   subroutine li_apply_ismip6_atmosphere_forcing(domain, err)
+   subroutine li_apply_atm_lapse_rate(domain, err)
 
       type (domain_type), intent(inout) :: domain
       integer, intent(out) :: err
@@ -1123,6 +1122,7 @@ module li_advection
 
       real (kind=RKIND), dimension(:), pointer :: upperSurface
       real (kind=RKIND), dimension(:), pointer :: sfcMassBal
+      real (kind=RKIND), dimension(:), pointer :: sfcMassBalApplied
       real (kind=RKIND), dimension(:), pointer :: sfcMassBalLapseRate
       real (kind=RKIND), dimension(:), pointer :: surfaceElevationRef
 
@@ -1134,9 +1134,6 @@ module li_advection
 
       call mpas_pool_get_config(liConfigs, 'config_apply_smb_sat_lapse_rate', &
                     config_apply_smb_sat_lapse_rate)
-      if (.not. config_apply_smb_sat_lapse_rate) then
-         return
-      endif
 
       block => domain % blocklist
       do while (associated(block))
@@ -1146,6 +1143,7 @@ module li_advection
 
          call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
          call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
+         call mpas_pool_get_array(geometryPool, 'sfcMassBalApplied', sfcMassBalApplied)
          call mpas_pool_get_array(geometryPool, 'sfcMassBalLapseRate', sfcMassBalLapseRate)
          call mpas_pool_get_array(geometryPool, 'surfaceElevationRef', surfaceElevationRef)
 
@@ -1153,16 +1151,22 @@ module li_advection
          call mpas_pool_get_array(thermalPool, 'surfaceAirTemperatureApplied', surfaceAirTemperatureApplied)
          call mpas_pool_get_array(thermalPool, 'surfaceAirTemperatureLapseRate', surfaceAirTemperatureLapseRate)
 
-         sfcMassBal(:) = sfcMassBal(:) + &
-                         sfcMassBalLapseRate(:) * (upperSurface(:) - surfaceElevationRef(:))
+         ! Always initialize applied fields from raw forcing fields.
+         sfcMassBalApplied(:) = sfcMassBal(:)
+         surfaceAirTemperatureApplied(:) = surfaceAirTemperature(:)
 
-         surfaceAirTemperatureApplied(:) = surfaceAirTemperature(:) + &
-                                           surfaceAirTemperatureLapseRate(:) * (upperSurface(:) - surfaceElevationRef(:))
+         if (config_apply_smb_sat_lapse_rate) then
+            sfcMassBalApplied(:) = sfcMassBalApplied(:) + &
+                                   sfcMassBalLapseRate(:) * (upperSurface(:) - surfaceElevationRef(:))
+
+            surfaceAirTemperatureApplied(:) = surfaceAirTemperatureApplied(:) + &
+                                              surfaceAirTemperatureLapseRate(:) * (upperSurface(:) - surfaceElevationRef(:))
+         endif
 
          block => block % next
       end do
 
-   end subroutine li_apply_ismip6_atmosphere_forcing
+   end subroutine li_apply_atm_lapse_rate
 
 !***********************************************************************
 !
