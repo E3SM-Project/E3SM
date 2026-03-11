@@ -39,6 +39,15 @@ enum class CombineMode {
   Min         // out = min(beta*out,alpha*in)
 };
 
+// How to handle FillValue values in combine operations.
+// NOTE: CombineMode::Replace will ALWAYS set result=newVal,
+//       regardless of fill value handling
+enum FillValueHandling : int {
+  None = 0,   // treat just like any other number
+  IgnoreRhs,  // ignore rhs when equal to FV
+  Absorbing   // FV op X = FV, and X op FV = FV, for all X
+};
+
 namespace impl {
 
 // Small helper functions to combine a new value with an old one.
