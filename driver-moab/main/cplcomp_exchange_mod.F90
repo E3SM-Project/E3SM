@@ -1955,22 +1955,22 @@ subroutine  copy_aream_from_area(mbappid)
             endif
          endif
 
-         if (MPI_COMM_NULL /= mpicom_old .and. mrofid >= 0) then ! component pes, send mesh to coupler
-            if (dead_comps .or. trim(rof_domain) == 'none') then ! full river model
+         if (dead_comps) then ! full river model
+            if (MPI_COMM_NULL /= mpicom_old .and. mrofid >= 0) then ! component pes, send mesh to coupler
                ierr = iMOAB_SendMesh(mrofid, mpicom_join, mpigrp_cplid, id_join, partMethod)
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in sending river mesh to coupler '
                   call shr_sys_abort(subname//' ERROR in sending river mesh to coupler')
                endif
-            endif
-         endif ! component pes
+            endif ! component pes
+         endif
 
          ! Coupler side: register application and receive/load mesh
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
             appname = "COUPLE_MROF"//C_NULL_CHAR
             ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbrxid)
 
-            if (dead_comps .or. trim(rof_domain) == 'none') then
+            if (dead_comps) then
                ! migrated mesh gets another app id, moab rof to coupler (mbrx)
                ! Receive mesh from river component
                ierr = iMOAB_ReceiveMesh(mbrxid, mpicom_join, mpigrp_old, id_old)
@@ -2043,7 +2043,7 @@ subroutine  copy_aream_from_area(mbappid)
          endif  ! coupler pes
 
          ! Free buffers on component side after send completes
-         if (mrofid >= 0 .and. (dead_comps .or. trim(rof_domain) == 'none') ) then
+         if (mrofid >= 0 .and. dead_comps) then
             context_id = id_join
             ierr = iMOAB_FreeSenderBuffers(mrofid, context_id)
             if (ierr .ne. 0) then
@@ -2054,16 +2054,13 @@ subroutine  copy_aream_from_area(mbappid)
 
          ! we are now on joint pes, compute comm graph between rof and coupler model
          ! typeA=3 for dead comps (full mesh), typeA=2 for regular rof (point cloud)
+         ! typeB=3 always: coupler always has full mesh (loaded from file or received from dead comp)
          if (dead_comps) then
             typeA = 3 ! full mesh on component PEs in dead comps
             typeB = 3 ! full mesh on coupler pes (received from component)
          else
             typeA = 2 ! point cloud on component PEs
-            if (trim(rof_domain) == 'none') then
-               typeB = 2 ! point cloud on coupler pes (received from component)
-            else
-               typeB = 3 ! full mesh on coupler pes (loaded from domain file)
-            endif
+            typeB = 3 ! full mesh on coupler pes (loaded from domain file)
          endif
          ierr = iMOAB_ComputeCommGraph( mrofid, mbrxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
                typeA, typeB, id_old, id_join)
