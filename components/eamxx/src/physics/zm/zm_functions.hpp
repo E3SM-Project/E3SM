@@ -520,7 +520,6 @@ struct Functions {
     const Int& pver, // number of mid-point vertical levels
     const uview_1d<const Real>& state_pmid, // physics state mid-point pressure
     const uview_1d<const Real>& state_u, // physics state u momentum
-    const uview_1d<const Real>& state_v, // physics state v momentum
     // Outputs
     Real& mcsp_shear);
 
