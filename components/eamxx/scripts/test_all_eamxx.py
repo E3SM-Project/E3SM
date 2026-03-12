@@ -610,6 +610,9 @@ class TestAllScream(object):
         cmake_config = self.generate_cmake_config(test, for_ctest=True)
         ctest_config = self.generate_ctest_config(cmake_config, [], test)
 
+        success, out, err = run_cmd("echo $PATH | sed 's/:/\\n/g'", from_dir=test_dir, arg_stdout=None, arg_stderr=None, verbose=True)
+        print(f"here's the PATH content:\n{out}")
+
         if self._config_only:
             ctest_config += "-DCONFIG_ONLY=TRUE"
 
