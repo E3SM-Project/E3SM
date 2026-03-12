@@ -154,7 +154,6 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
     auto o3_col_dens_icol = ekat::subview(o3_col_dens, icol);
     const auto& atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
     const auto& vmr_icol = ekat::subview(vmr,icol);  
-    // const auto vmr_icol_o3 = Kokkos::subview(vmr_icol, Kokkos::ALL(), o3_ndx);
     mam4::microphysics::compute_o3_column_density(
       team, atm.hydrostatic_dp, vmr_icol, o3_exo_col(icol, 0), o3_ndx, o3_col_dens_icol);
   });
