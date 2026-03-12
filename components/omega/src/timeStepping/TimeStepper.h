@@ -62,11 +62,24 @@ enum class TimeStepperType {
    Invalid
 };
 
+/// An enum describing how a state variable should be prescribed from the
+/// reference time level
+enum class PrescribeStateType {
+    None,
+    Init,
+    Invalid
+};
+
 //------------------------------------------------------------------------------
 // Utility routine
 /// Translate string for time stepper type into enum
 TimeStepperType getTimeStepperFromStr(
     const std::string &InString ///< [in] choice of time stepping method
+);
+
+/// Translate string for prescribe state type into enum
+PrescribeStateType getPrescribeStateTypeFromStr(
+    const std::string &InString ///< [in] choice of prescribe method
 );
 
 //------------------------------------------------------------------------------
@@ -277,6 +290,10 @@ class TimeStepper {
    /// Time step
    TimeInterval TimeStep;
 
+    /// Prescribe state configuration
+    PrescribeStateType PrescribeThicknessMode;
+    PrescribeStateType PrescribeVelocityMode;
+
    /// Start time
    TimeInstant StartTime;
 
@@ -320,6 +337,9 @@ class TimeStepper {
    static TimeStepper *DefaultTimeStepper;
    /// All defined time steppers
    static std::map<std::string, std::unique_ptr<TimeStepper>> AllTimeSteppers;
+    /// Prescribe modes parsed from config
+    static PrescribeStateType DefaultPrescribeThicknessMode;
+    static PrescribeStateType DefaultPrescribeVelocityMode;
 };
 
 } // namespace OMEGA
