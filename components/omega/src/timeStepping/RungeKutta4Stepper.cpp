@@ -88,6 +88,7 @@ void RungeKutta4Stepper::doStep(OceanState *State,   // model state
                                     CurLevel, CurLevel, StageTime);
          updateStateByTend(State, NextLevel, State, CurLevel,
                            RKB[Stage] * TimeStep);
+         prescribeState(State, NextLevel, State, CurLevel);
          accumulateTracersUpdate(NextTracerArray, RKB[Stage] * TimeStep);
       } else {
          // every other stage does:
@@ -96,6 +97,7 @@ void RungeKutta4Stepper::doStep(OceanState *State,   // model state
          // q^{n+1} += RKB[stage] * dt * R^{(s)}
          updateStateByTend(ProvisState, CurLevel, State, CurLevel,
                            RKA[Stage] * TimeStep);
+         prescribeState(State, NextLevel, State, CurLevel);
          updateTracersByTend(ProvisTracers, CurTracerArray, ProvisState,
                              CurLevel, State, CurLevel, RKA[Stage] * TimeStep);
 
@@ -109,6 +111,7 @@ void RungeKutta4Stepper::doStep(OceanState *State,   // model state
                                     CurLevel, CurLevel, CurLevel, StageTime);
          updateStateByTend(State, NextLevel, State, NextLevel,
                            RKB[Stage] * TimeStep);
+         prescribeState(State, NextLevel, State, CurLevel);
          accumulateTracersUpdate(NextTracerArray, RKB[Stage] * TimeStep);
       }
    }

@@ -56,6 +56,8 @@ void RungeKutta2Stepper::doStep(OceanState *State,   // model state
    updateTracersByTend(NextTracerArray, CurTracerArray, State, NextLevel, State,
                        CurLevel, TimeStep);
 
+   prescribeState(State, NextLevel, State, CurLevel);
+
    // Update time levels (New -> Old) of prognostic variables with halo
    // exchanges
    const MPI_Comm Comm = MeshHalo->getComm();
