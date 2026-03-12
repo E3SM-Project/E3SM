@@ -68,6 +68,10 @@ env:
   # For the weekly run, we test using the kokkos develop branch
   kokkos_dev_test: ${{ github.event_name == 'schedule' && github.event.schedule == '0 7 * * 1' || (github.event_name == 'workflow_dispatch' && inputs.use_kokkos_dev) }}
 
+defaults:
+  run:
+    shell: bash --login {0}
+
 jobs:
   gcc-openmp:
     if: |
