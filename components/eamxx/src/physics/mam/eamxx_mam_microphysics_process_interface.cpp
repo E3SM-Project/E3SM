@@ -10,8 +10,6 @@
 #include "share/algorithm/eamxx_data_interpolation.hpp"
 
 #include <ekat_team_policy_utils.hpp>
-
-#define MICRO_SMALL_KERNELS
 #include <physics/mam/eamxx_mam_microphysics_process_functions.cpp>
 namespace scream
 {
@@ -769,159 +767,15 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMMicrophysics::run_impl(const double dt) {
-  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
-
   const int ncol = ncol_;
   const int nlev = nlev_;
-
-  //NOTE: get_default_team_policy produces a team size of 96 (nlev=72).
-  // This interface hangs with this team size. Therefore,
-  // let's use a team size of nlev.
-#ifdef EKAT_ENABLE_GPU
-       const int team_size=nlev;
-#else
-       const int team_size=1;
-#endif
-  const auto policy = TPF::get_default_team_policy(ncol, team_size);
 
   // preprocess input -- needs a scan for the calculation of atm height
   pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);
   Kokkos::fence();
-
-  //----------- Variables from microphysics scheme -------------
-
-#ifndef MICRO_SMALL_KERNELS
-  // Evaporation from stratiform rain [kg/kg/s]
-  const auto &nevapr = get_field_in("nevapr").get_view<const Real **>();
-
-  // Stratiform rain production rate [kg/kg/s]
-  const auto &prain =
-      get_field_in("precip_total_tend").get_view<const Real **>();
-
-  const auto wet_geometric_mean_diameter_i =
-      get_field_in("dgnumwet").get_view<const Real ***>();
-  const auto dry_geometric_mean_diameter_i =
-      get_field_in("dgnum").get_view<const Real ***>();
-  const auto wetdens = get_field_in("wetdens").get_view<const Real ***>();
-
-  // U wind component [m/s]
-  const const_view_2d u_wind =
-      get_field_in("horiz_winds").get_component(0).get_view<const Real **>();
-
-  // V wind component [m/s]
-  const const_view_2d v_wind =
-      get_field_in("horiz_winds").get_component(1).get_view<const Real **>();
-
-  // Liquid precip [kg/m2]
-  const const_view_1d precip_liq_surf_mass =
-      get_field_in("precip_liq_surf_mass").get_view<const Real *>();
-
-  // Ice precip [kg/m2]
-  const const_view_1d precip_ice_surf_mass =
-      get_field_in("precip_ice_surf_mass").get_view<const Real *>();
-
-  // Fractional land use [fraction]
-  const const_view_2d fraction_landuse =
-      get_field_in("fraction_landuse").get_view<const Real **>();
-
-  // Downwelling solar flux at the surface [w/m2]
-  const const_view_2d sw_flux_dn =
-      get_field_in("SW_flux_dn").get_view<const Real **>();
-
-  // Constituent fluxes of gas and aerosol species
-  view_2d constituent_fluxes =
-      get_field_out("constituent_fluxes").get_view<Real **>();
-
-  // Surface temperature [K]
-  const const_view_1d sfc_temperature =
-      get_field_in("surf_radiative_T").get_view<const Real *>();
-
-  // Surface pressure [Pa]
-  const const_view_1d sfc_pressure =
-      get_field_in("ps").get_view<const Real *>();
-
-  // Snow depth on land [m]
-  const const_view_1d snow_depth_land =
-      get_field_in("snow_depth_land").get_view<const Real *>();
-
-  // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
-  view_2d dqdt_so4_aqueous_chemistry, dqdt_h2so4_uptake, gas_dry_deposition_flux;
-  view_3d gas_phase_chemistry_dvmrdt, aqueous_chemistry_dvmrdt;
-  view_3d aqso4_incloud_mmr_tendency, aqh2so4_incloud_mmr_tendency;
-  view_3d gas_aero_exchange_condensation, gas_aero_exchange_renaming,
-          gas_aero_exchange_nucleation, gas_aero_exchange_coagulation,
-          gas_aero_exchange_renaming_cloud_borne;
-
-  if (extra_mam4_aero_microphys_diags_) {
-    dqdt_so4_aqueous_chemistry = get_field_out("dqdt_so4_aqueous_chemistry").get_view<Real **>();
-    dqdt_h2so4_uptake = get_field_out("dqdt_h2so4_uptake").get_view<Real **>();
-    gas_phase_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_gas_phase_chemistry").get_view<Real ***>();
-    aqueous_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_aqueous_chemistry").get_view<Real ***>();
-    aqso4_incloud_mmr_tendency   = get_field_out("mam4_microphysics_tendency_aqso4").get_view<Real ***>();
-    aqh2so4_incloud_mmr_tendency = get_field_out("mam4_microphysics_tendency_aqh2so4").get_view<Real ***>();
-    gas_aero_exchange_condensation = get_field_out("mam4_microphysics_tendency_condensation").get_view<Real***>();
-    gas_aero_exchange_renaming = get_field_out("mam4_microphysics_tendency_renaming").get_view<Real***>();
-    gas_aero_exchange_nucleation = get_field_out("mam4_microphysics_tendency_nucleation").get_view<Real***>();
-    gas_aero_exchange_coagulation = get_field_out("mam4_microphysics_tendency_coagulation").get_view<Real***>();
-    gas_aero_exchange_renaming_cloud_borne = get_field_out("mam4_microphysics_tendency_renaming_cloud_borne").get_view<Real***>();
-    gas_dry_deposition_flux = get_field_out("mam4_gas_dry_deposition_flux").get_view<Real**>();
-  }
-#endif
   
   data_interp_oxid_->run(end_of_step_ts());
-#ifndef MICRO_SMALL_KERNELS
-  // climatology data for linear stratospheric chemistry
-  // ozone (climatology) [vmr]
-  view_2d linoz_o3_clim;
-  // column o3 above box (climatology) [Dobson Units (DU)]
-  view_2d linoz_o3col_clim;
-  // temperature (climatology) [K]
-  view_2d linoz_t_clim;
-  // P minus L (climatology) [vmr/s]
-  view_2d linoz_PmL_clim;
-  // sensitivity of P minus L to O3 [1/s]
-  view_2d linoz_dPmL_dO3;
-  // sensitivity of P minus L to T3 [K]
-  view_2d linoz_dPmL_dT;
-  // sensitivity of P minus L to overhead O3 column [vmr/DU]
-  view_2d linoz_dPmL_dO3col;
-  // Cariolle parameter for PSC loss of ozone [1/s]
-  view_2d linoz_cariolle_pscs;
-  view_2d linoz_views[8];
-
-  
-
-  if (config_.linoz.compute) {
-    data_interp_linoz_->run(end_of_step_ts());
-    for (size_t i = 0; i < var_names_linoz_.size(); ++i) {
-      linoz_views[i] = get_field_out(var_names_linoz_[i]).get_view<Real **>();
-    }
-    linoz_o3_clim = linoz_views[0];
-    linoz_o3col_clim = linoz_views[1];
-    linoz_t_clim = linoz_views[2];
-    linoz_PmL_clim = linoz_views[3];
-    linoz_dPmL_dO3 = linoz_views[4];
-    linoz_dPmL_dT = linoz_views[5];
-    linoz_dPmL_dO3col = linoz_views[6];
-    linoz_cariolle_pscs = linoz_views[7];
-  
-    
-  }
-#endif
   data_interp_exo_coldens_->run(end_of_step_ts());  
-  
-#ifndef MICRO_SMALL_KERNELS  
-  constexpr int num_oxidants=4;
-  view_2d oxidants[num_oxidants];
-  for (size_t i = 0; i < var_names_oxi_.size(); ++i) {
-    oxidants[i] = get_field_out("oxid_"+var_names_oxi_[i]).get_view<Real **>();
-  }
-  // it's a bit wasteful to store this for all columns, but simpler from an
-  // allocation perspective
-  auto o3_col_dens = buffer_.scratch[8];
-#endif
-  
-
 
   /* Gather time and state information for interpolation */
   const auto ts = end_of_step_ts();
@@ -935,19 +789,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   for (size_t i = 0; i < elevated_emis_var_names_.size(); ++i) {
     data_interp_elevated_emissions_[i]->run(end_of_step_ts());
   }
-#ifndef MICRO_SMALL_KERNELS
-  const_view_1d &col_latitudes     = col_latitudes_;
-  const_view_1d &d_sfc_alb_dir_vis = d_sfc_alb_dir_vis_;
 
-  mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
-  mam_coupling::AerosolState &dry_aero = dry_aero_;
-
-  mam4::mo_photo::PhotoTableData &photo_table = photo_table_;
-  const Config &config                        = config_;
-  const auto &work_photo_table                = work_photo_table_;
-  const auto &photo_rates                     = photo_rates_;
-  const auto &invariants   = invariants_;
-#endif
   // Compute orbital parameters; these are used both for computing
   // the solar zenith angle.
   // Note: We are following the RRTMGP EAMxx interface to compute the zenith
@@ -1000,223 +842,13 @@ void MAMMicrophysics::run_impl(const double dt) {
     }
     Kokkos::deep_copy(acos_cosine_zenith_, acos_cosine_zenith_host_);
   }
-  const auto zenith_angle = acos_cosine_zenith_;
+
   constexpr int num_gas_aerosol_constituents = mam_coupling::gas_pcnst();
 
   const auto &extfrc   = extfrc_;
   constexpr int extcnt = mam4::gas_chemistry::extcnt;
 
-#ifndef MICRO_SMALL_KERNELS
-  const auto &forcings = forcings_;
-  const int offset_aerosol = mam4::utils::gasses_start_ind();
-  Real adv_mass_kg_per_moles[num_gas_aerosol_constituents];
-  // NOTE: Making copies of clsmap_4 and permute_4 to fix undefined arrays on
-  // the device.
-  int clsmap_4[num_gas_aerosol_constituents], permute_4[num_gas_aerosol_constituents];
-  for(int i = 0; i < num_gas_aerosol_constituents; ++i) {
-    // NOTE: state_q is kg/kg-dry-air; adv_mass is in g/mole.
-    // Convert adv_mass to kg/mole as vmr_from_mmr function uses
-    // molec_weight_dry_air with kg/mole units
-    adv_mass_kg_per_moles[i] = mam4::gas_chemistry::adv_mass[i] / 1e3;
-    clsmap_4[i]              = mam4::gas_chemistry::clsmap_4[i];
-    permute_4[i]             = mam4::gas_chemistry::permute_4[i];
-  }
-  const auto &cmfdqr       = cmfdqr_;
-  const auto &work_set_het = work_set_het_;
-  const mam4::seq_drydep::Data drydep_data =
-      mam4::seq_drydep::set_gas_drydep_data();
-  const auto qv                = wet_atm_.qv;
-  const int month              = start_of_step_ts().get_month();  // 1-based
-  const int surface_lev        = nlev - 1;                 // Surface level
-  const auto &index_season_lai = index_season_lai_;
-  const int pcnst              = mam4::pcnst;
-  const bool extra_mam4_aero_microphys_diags  = extra_mam4_aero_microphys_diags_;
-  //NOTE: we need to initialize photo_rates_
-  Kokkos::deep_copy(photo_rates_,0.0);
-  // loop over atmosphere columns and compute aerosol microphysics
-#endif
-
-  // loop over atmosphere columns and compute aerosol microphysics
-#if defined(MICRO_SMALL_KERNELS)
-    run_small_kernels_microphysics(dt, eccf);
-#else
-   // NOTE: we only have one field
-  // exo absorber columns [molecules/cm^2]
-  const auto o3_exo_col = exo_coldens_fields_[0].get_view<Real**>();
-  Kokkos::parallel_for(
-      "MAMMicrophysics::run_impl", policy,
-      KOKKOS_LAMBDA(const ThreadTeam &team) {
-        const int icol     = team.league_rank();   // column index
-        const Real col_lat = col_latitudes(icol);  // column latitude (degrees?)
-
-        // convert column latitude to radians
-        const Real rlats = col_lat * M_PI / 180.0;
-
-        const Real o3_col_deltas_0 = o3_exo_col(icol,0);
-        // fetch column-specific atmosphere state data
-        const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
-        const auto wet_diameter_icol =
-            ekat::subview(wet_geometric_mean_diameter_i, icol);
-        const auto dry_diameter_icol =
-            ekat::subview(dry_geometric_mean_diameter_i, icol);
-        const auto wetdens_icol = ekat::subview(wetdens, icol);
-
-        const auto zi   = ekat::subview(dry_atm.z_iface, icol);
-
-        // fetch column-specific subviews into aerosol prognostics
-        mam4::Prognostics progs =
-            mam_coupling::aerosols_for_column(dry_aero, icol);
-
-        const auto invariants_icol = ekat::subview(invariants, icol);
-        mam4::mo_setext::Forcing forcings_in[extcnt];
-
-        for(int i = 0; i < extcnt; ++i) {
-          const int nsectors       = forcings[i].nsectors;
-          const int frc_ndx        = forcings[i].frc_ndx;
-          const auto file_alt_data = forcings[i].file_alt_data;
-
-          forcings_in[i].nsectors = nsectors;
-          forcings_in[i].frc_ndx  = frc_ndx;
-          // We may need to move this line where we read files.
-          forcings_in[i].file_alt_data = file_alt_data;
-          for(int isec = 0; isec < forcings[i].nsectors; ++isec) {
-            const auto& field = forcings[i].fields[isec];
-            forcings_in[i].fields_data[isec] = ekat::subview(field, icol);
-          }
-        }  // extcnt for loop
-
-        const auto extfrc_icol = ekat::subview(extfrc, icol);
-
-        view_1d cnst_offline_icol[mam4::mo_setinv::num_tracer_cnst];
-        for (size_t i = 0; i < num_oxidants; i++)
-        {
-          cnst_offline_icol[i] = ekat::subview(oxidants[i], icol);
-        }
-
-        // calculate o3 column densities (first component of col_dens in Fortran
-        // code)
-        auto o3_col_dens_i = ekat::subview(o3_col_dens, icol);
-        const auto &work_photo_table_icol =
-            ekat::subview(work_photo_table, icol);
-
-        const auto &photo_rates_icol = ekat::subview(photo_rates, icol);
-
-        mam4::microphysics::LinozData linoz_data;
-        if (config.linoz.compute) {
-          linoz_data.linoz_o3_clim_icol = ekat::subview(linoz_o3_clim, icol);
-          linoz_data.linoz_t_clim_icol  = ekat::subview(linoz_t_clim, icol);
-          linoz_data.linoz_o3col_clim_icol =
-            ekat::subview(linoz_o3col_clim, icol);
-          linoz_data.linoz_PmL_clim_icol = ekat::subview(linoz_PmL_clim, icol);
-          linoz_data.linoz_dPmL_dO3_icol = ekat::subview(linoz_dPmL_dO3, icol);
-          linoz_data.linoz_dPmL_dT_icol  = ekat::subview(linoz_dPmL_dT, icol);
-          linoz_data.linoz_dPmL_dO3col_icol =
-            ekat::subview(linoz_dPmL_dO3col, icol);
-          linoz_data.linoz_cariolle_pscs_icol =
-            ekat::subview(linoz_cariolle_pscs, icol);
-        }
-        const auto nevapr_icol       = ekat::subview(nevapr, icol);
-        const auto prain_icol        = ekat::subview(prain, icol);
-        const auto work_set_het_icol = ekat::subview(work_set_het, icol);
-        view_1d diag_arrays_gas_dry_deposition_flux;
-        mam4::MicrophysDiagnosticArrays diag_arrays;
-        if (extra_mam4_aero_microphys_diags) {
-          diag_arrays.dqdt_so4_aqueous_chemistry = ekat::subview(dqdt_so4_aqueous_chemistry, icol);
-          diag_arrays.dqdt_h2so4_uptake          = ekat::subview(dqdt_h2so4_uptake, icol);
-          diag_arrays.gas_phase_chemistry_dvmrdt = ekat::subview(gas_phase_chemistry_dvmrdt, icol);
-
-          diag_arrays.aqueous_chemistry_dvmrdt   = ekat::subview(aqueous_chemistry_dvmrdt, icol);
-          diag_arrays.aqso4_incloud_mmr_tendency = ekat::subview(aqso4_incloud_mmr_tendency, icol);
-          diag_arrays.aqh2so4_incloud_mmr_tendency = ekat::subview(aqh2so4_incloud_mmr_tendency, icol);
-
-          diag_arrays.gas_aero_exchange_condensation = ekat::subview(gas_aero_exchange_condensation, icol);
-          diag_arrays.gas_aero_exchange_renaming = ekat::subview(gas_aero_exchange_renaming, icol);
-          diag_arrays.gas_aero_exchange_nucleation = ekat::subview(gas_aero_exchange_nucleation, icol);
-          diag_arrays.gas_aero_exchange_coagulation = ekat::subview(gas_aero_exchange_coagulation, icol);
-          diag_arrays.gas_aero_exchange_renaming_cloud_borne = ekat::subview(gas_aero_exchange_renaming_cloud_borne, icol);
-          diag_arrays_gas_dry_deposition_flux = ekat::subview(gas_dry_deposition_flux, icol);
-        }
-        // Wind speed at the surface
-        const Real wind_speed =
-            haero::sqrt(u_wind(icol, surface_lev) * u_wind(icol, surface_lev) +
-                        v_wind(icol, surface_lev) * v_wind(icol, surface_lev));
-
-        // Total rain at the surface
-        const Real rain =
-            precip_liq_surf_mass(icol) + precip_ice_surf_mass(icol);
-
-        // Snow depth on land [m]
-        const Real snow_height = snow_depth_land(icol);
-
-        // Downwelling solar flux at the surface (value at interface) [w/m2]
-        const Real solar_flux = sw_flux_dn(icol, surface_lev + 1);
-
-        Real fraction_landuse_icol[mam4::mo_drydep::n_land_type];
-        for(int i = 0; i < mam4::mo_drydep::n_land_type; ++i) {
-          fraction_landuse_icol[i] = fraction_landuse(icol, i);
-        }
-        int index_season[mam4::mo_drydep::n_land_type];
-        {
-          //-------------------------------------------------------------------------------------
-          // define which season (relative to Northern hemisphere climate)
-          //-------------------------------------------------------------------------------------
-
-          //-------------------------------------------------------------------------------------
-          // define season index based on fixed LAI
-          //-------------------------------------------------------------------------------------
-          for(int lt = 0; lt < mam4::mo_drydep::n_land_type; ++lt) {
-            index_season[lt] = index_season_lai(icol, month - 1);
-          }
-
-          //-------------------------------------------------------------------------------------
-          // special case for snow covered terrain
-          //-------------------------------------------------------------------------------------
-          if(snow_height > 0.01) {  // BAD_CONSTANT
-            for(int lt = 0; lt < mam4::mo_drydep::n_land_type; ++lt) {
-              index_season[lt] = 3;
-            }
-          }
-        }
-        // These output values need to be put somewhere:
-        Real dflx_col[num_gas_aerosol_constituents] = {};  // deposition flux [1/cm^2/s]
-        Real dvel_col[num_gas_aerosol_constituents] = {};  // deposition velocity [1/cm/s]
-        // Output: values are dvel, dflx
-        // Input/Output: progs::stateq, progs::qqcw
-        team.team_barrier();
-        const unsigned n_so4_monolayers_pcage = config.n_so4_monolayers_pcage;
-        mam4::microphysics::perform_atmospheric_chemistry_and_microphysics(
-            team, dt, rlats, n_so4_monolayers_pcage,
-            sfc_temperature(icol), sfc_pressure(icol),
-            wind_speed, rain, solar_flux, cnst_offline_icol, forcings_in, atm,
-            photo_table,  config.setsox, config.amicphys,
-             zenith_angle(icol), d_sfc_alb_dir_vis(icol),
-            o3_col_dens_i, photo_rates_icol, extfrc_icol, invariants_icol,
-            work_photo_table_icol,
-            config.linoz, linoz_data,
-             eccf, adv_mass_kg_per_moles,
-            fraction_landuse_icol, index_season, clsmap_4, permute_4,
-            offset_aerosol,
-            dry_diameter_icol, wet_diameter_icol,
-            wetdens_icol, dry_atm.phis(icol), cmfdqr, prain_icol, nevapr_icol, o3_col_deltas_0,
-            zi,
-            work_set_het_icol, drydep_data, diag_arrays, dvel_col, dflx_col, progs);
-
-        team.team_barrier();
-        // Update constituent fluxes with gas drydep fluxes (dflx)
-        // FIXME: Possible units mismatch (dflx is in kg/cm2/s but
-        // constituent_fluxes is kg/m2/s) (Following mimics Fortran code
-        // behavior but we should look into it)
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, offset_aerosol, pcnst), [&](int ispc) {
-          constituent_fluxes(icol, ispc) -= dflx_col[ispc - offset_aerosol];
-        });
-        if (diag_arrays_gas_dry_deposition_flux.size()) {
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_gas_aerosol_constituents), [&](int ispc) {
-            diag_arrays_gas_dry_deposition_flux[ispc] = dflx_col[ispc];
-          });
-        }
-      });  // parallel_for for the column loop
-  Kokkos::fence();
- #endif
+  run_small_kernels_microphysics(dt, eccf);
 
   auto extfrc_fm = get_field_out("mam4_external_forcing").get_view<Real***>();
 
