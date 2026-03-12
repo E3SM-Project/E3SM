@@ -74,6 +74,7 @@ struct UnitWrap {
     struct TestComputeDiluteParcel;
     struct TestComputeCapeFromParcel;
     struct TestZmConvMcspCalculateShear;
+    struct TestZmConvMcspTend;
   }; // UnitWrap
 };
 
