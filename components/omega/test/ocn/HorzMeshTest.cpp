@@ -368,28 +368,6 @@ int main(int argc, char *argv[]) {
          LOG_INFO("HorzMeshTest: Vertex lon/lat test PASS");
       }
 
-      // Test bounds of bathymetry
-      // Find minimum and maximum values of the bottom depth
-      // and compares to reasonable values
-      // Tests that the bottom depth has been read in correctly
-      R8 MaxBathy = -1e10;
-      R8 MinBathy = 1e10;
-      for (int Cell = 0; Cell < LocCells; Cell++) {
-         if (Mesh->BottomDepthH(Cell) < MinBathy) {
-            MinBathy = Mesh->BottomDepthH(Cell);
-         }
-         if (Mesh->BottomDepthH(Cell) > MaxBathy) {
-            MaxBathy = Mesh->BottomDepthH(Cell);
-         }
-      }
-
-      if ((MinBathy > 0) && (MaxBathy < 11000.0)) {
-         LOG_INFO("HorzMeshTest: Bathy min/max test PASS");
-      } else {
-         RetVal += 1;
-         LOG_INFO("HorzMeshTest: Bathy min/max test FAIL");
-      }
-
       // Test cell areas
       // Find the global sum of all the local cell areas
       // and compares to reasonable value for Earth's ocean area

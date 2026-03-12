@@ -17,6 +17,7 @@ class LayerThicknessAuxVars {
    Array2DReal FluxLayerThickEdge;
    Array2DReal MeanLayerThickEdge;
    Array2DReal SshCell;
+   Array2DReal ProvThickness;
 
    FluxThickEdgeOption FluxThickEdgeChoice;
 
@@ -63,9 +64,10 @@ class LayerThicknessAuxVars {
       }
    }
 
-   KOKKOS_FUNCTION void
-   computeVarsOnCells(int ICell, int KChunk,
-                      const Array2DReal &LayerThickCell) const {
+   KOKKOS_FUNCTION void computeVarsOnCells(int ICell, int KChunk,
+                                           const Array2DReal &LayerThickCell,
+                                           const Array2DReal &NormalVelEdge,
+                                           const Real Dt) const {
 
       // Temporary for stacked shallow water
       const int KStart = chunkStart(KChunk, MinLayerCell(ICell));
@@ -76,14 +78,24 @@ class LayerThicknessAuxVars {
          SshCell(ICell, K) = LayerThickCell(ICell, K) - BottomDepth(ICell);
       }
 
-      /*
-      Real TotalThickness = 0.0;
-      for (int K = 0; K < NVertLayers; K++) {
-         TotalThickness += LayerThickCell(ICell, K);
+      Real TmpProv[VecLength] = {0.};
+
+      Real DtInvAreaCell = Dt / AreaCell(ICell);
+      for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
+         const I4 JEdge = EdgesOnCell(ICell, J);
+         const Real Factor =
+             DtInvAreaCell * DvEdge(JEdge) * EdgeSignOnCell(ICell, J);
+         for (int KVec = 0; KVec < KLen; ++KVec) {
+            const int K = KStart + KVec;
+            TmpProv[KVec] +=
+                Factor * FluxLayerThickEdge(JEdge, K) * NormalVelEdge(JEdge, K);
+         }
       }
 
-      SshCell(ICell) = TotalThickness - BottomDepth(ICell);
-      */
+      for (int KVec = 0; KVec < KLen; ++KVec) {
+         const int K             = KStart + KVec;
+         ProvThickness(ICell, K) = LayerThickCell(ICell, K) + TmpProv[KVec];
+      }
    }
 
    void registerFields(const std::string &AuxGroupName,
@@ -91,6 +103,11 @@ class LayerThicknessAuxVars {
    void unregisterFields() const;
 
  private:
+   Array1DReal AreaCell;
+   Array1DReal DvEdge;
+   Array1DI4 NEdgesOnCell;
+   Array2DI4 EdgesOnCell;
+   Array2DReal EdgeSignOnCell;
    Array2DI4 CellsOnEdge;
    Array1DReal BottomDepth;
    Array1DI4 MinLayerEdgeBot;

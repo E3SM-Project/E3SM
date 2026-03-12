@@ -494,3 +494,14 @@ add_omega_test(
     ocn/VertMixTest.cpp
     "-n;4"
 )
+
+##################
+# VAdv test
+##################
+
+add_omega_test(
+    VERTADV_TEST
+    testVertAdv.exe
+    ocn/VertAdvTest.cpp
+    "-n;1"
+)

@@ -168,6 +168,10 @@ int initTimeStepperTest(const std::string &mesh) {
    auto *DefVertCoord = VertCoord::getDefault();
 
    Tracers::init();
+
+   VertAdv::init();
+   auto *DefVAdv = VertAdv::getDefault();
+
    AuxiliaryState::init();
    Tendencies::init();
 
@@ -195,8 +199,10 @@ int initTimeStepperTest(const std::string &mesh) {
       LOG_ERROR("TimeStepperTest: error creating test state");
    }
 
-   auto *TestAuxState = AuxiliaryState::create("TestAuxState", DefMesh, DefHalo,
-                                               DefVertCoord, NTracers);
+   TimeInterval ZeroTimeStep; // Zero-length time step placeholder
+   auto *TestAuxState =
+       AuxiliaryState::create("TestAuxState", DefMesh, DefHalo, DefVertCoord,
+                              DefVAdv, NTracers, ZeroTimeStep);
 
    Config *OmegaConfig = Config::getOmegaConfig();
    TestAuxState->readConfigOptions(OmegaConfig);
@@ -210,8 +216,8 @@ int initTimeStepperTest(const std::string &mesh) {
 
    // Creating non-default tendencies with custom velocity tendencies
    auto *TestTendencies = Tendencies::create(
-       "TestTendencies", DefMesh, DefVertCoord, NTracers, &Options,
-       Tendencies::CustomTendencyType{}, DecayVelocityTendency{});
+       "TestTendencies", DefMesh, DefVertCoord, DefVAdv, NTracers, ZeroTimeStep,
+       &Options, Tendencies::CustomTendencyType{}, DecayVelocityTendency{});
    if (!TestTendencies) {
       Err++;
       LOG_ERROR("TimeStepperTest: error creating test tendencies");
@@ -229,6 +235,9 @@ int initTimeStepperTest(const std::string &mesh) {
    TestTendencies->TracerHyperDiff.Enabled    = false;
    TestTendencies->WindForcing.Enabled        = false;
    TestTendencies->BottomDrag.Enabled         = false;
+   DefVAdv->ThickVertAdvEnabled               = false;
+   DefVAdv->VelVertAdvEnabled                 = false;
+   DefVAdv->TracerVertAdvEnabled              = false;
 
    return Err;
 }
@@ -269,6 +278,7 @@ void finalizeTimeStepperTest() {
    Tendencies::clear();
    AuxiliaryState::clear();
    OceanState::clear();
+   VertAdv::clear();
    VertCoord::clear();
    HorzMesh::clear();
    Dimension::clear();

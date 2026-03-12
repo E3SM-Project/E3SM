@@ -553,6 +553,7 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
    // Exchange halos since stream only reads owned cells
    MeshHalo->exchangeFullArrayHalo(MinLayerCell, OnCell);
    MeshHalo->exchangeFullArrayHalo(MaxLayerCell, OnCell);
+   MeshHalo->exchangeFullArrayHalo(BottomDepth, OnCell);
 
    // The index ICell = NCellsAll represents an inactive cell
    OMEGA_SCOPE(LocNCellsAll, NCellsAll);

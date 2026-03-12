@@ -37,7 +37,7 @@
 #include "OceanState.h"
 #include "TendencyTerms.h"
 #include "TimeMgr.h"
-#include "VertCoord.h"
+#include "VertAdv.h"
 
 #include <functional>
 #include <memory>
@@ -151,7 +151,9 @@ class Tendencies {
    Tendencies(const std::string &Name, ///< [in] Name for tendencies
               const HorzMesh *Mesh,    ///< [in] Horizontal mesh
               const VertCoord *VCoord, ///< [in] Vertical coordinate
+              VertAdv *VAdv,           ///< [in] Vertical advection
               int NTracersIn,          ///< [in] Number of tracers
+              TimeInterval TimeStep,   ///< [in] Time step
               Config *Options,         ///< [in] Configuration options
               CustomTendencyType InCustomThicknessTend,
               CustomTendencyType InCustomVelocityTend);
@@ -159,7 +161,9 @@ class Tendencies {
    Tendencies(const std::string &Name, ///< [in] Name for tendencies
               const HorzMesh *Mesh,    ///< [in] Horizontal mesh
               const VertCoord *VCoord, ///< [in] Vertical coordinate
+              VertAdv *VAdv,           ///< [in] Vertical advection
               int NTracersIn,          ///< [in] Number of tracers
+              TimeInterval TimeStep,   ///< [in] Time step
               Config *Options          ///< [in] Configuration options
    );
 
@@ -169,7 +173,9 @@ class Tendencies {
 
    const HorzMesh *Mesh;    ///< Pointer to horizontal mesh
    const VertCoord *VCoord; ///< Pointer to vertical coordinate
+   VertAdv *VAdv;           ///< Pointer to vertical advection
    I4 NTracers;             ///< Number of tracers
+   TimeInterval TimeStep;   ///< Time step
 
    // Pointer to default tendencies
    static Tendencies *DefaultTendencies;

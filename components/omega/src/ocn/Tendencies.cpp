@@ -12,7 +12,9 @@
 #include "CustomTendencyTerms.h"
 #include "Error.h"
 #include "Pacer.h"
+#include "TimeStepper.h"
 #include "Tracers.h"
+#include "VertAdv.h"
 #include <string>
 
 namespace OMEGA {
@@ -21,13 +23,15 @@ Tendencies *Tendencies::DefaultTendencies = nullptr;
 std::map<std::string, std::unique_ptr<Tendencies>> Tendencies::AllTendencies;
 
 //------------------------------------------------------------------------------
-// Initialize the tendencies. Assumes that HorzMesh and VertCoord has alread
-// been initialized.
+// Initialize the tendencies. Assumes that HorzMesh, VertCoord, VertAdv, and
+// TimeStepper  has already been initialized.
 void Tendencies::init() {
    Error Err; // error code
 
-   HorzMesh *DefHorzMesh   = HorzMesh::getDefault();
-   VertCoord *DefVertCoord = VertCoord::getDefault();
+   HorzMesh *DefHorzMesh       = HorzMesh::getDefault();
+   VertCoord *DefVertCoord     = VertCoord::getDefault();
+   VertAdv *DefVertAdv         = VertAdv::getDefault();
+   TimeStepper *DefTimeStepper = TimeStepper::getDefault();
 
    I4 NTracers = Tracers::getNumTracers();
 
@@ -64,10 +68,12 @@ void Tendencies::init() {
 
    } // end if UseCustomTendency
 
+   TimeInterval TimeStep = DefTimeStepper->getTimeStep();
+
    // Ceate default tendencies
    Tendencies::DefaultTendencies =
-       create("Default", DefHorzMesh, DefVertCoord, NTracers, &TendConfig,
-              CustomThickTend, CustomVelTend);
+       create("Default", DefHorzMesh, DefVertCoord, DefVertAdv, NTracers,
+              TimeStep, &TendConfig, CustomThickTend, CustomVelTend);
 
    DefaultTendencies->readConfig(OmegaConfig);
 
@@ -239,11 +245,13 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
 Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
                        const HorzMesh *Mesh,    ///< [in] Horizontal mesh
                        const VertCoord *VCoord, ///< [in] Vertical coordinate
+                       VertAdv *VAdv,           ///< [in] Vertical advection
                        int NTracersIn,          ///< [in] Number of tracers
+                       TimeInterval TimeStepIn, ///< [in] Time step
                        Config *Options,         ///< [in] Configuration options
                        CustomTendencyType InCustomThicknessTend,
                        CustomTendencyType InCustomVelocityTend)
-    : Mesh(Mesh), VCoord(VCoord), ThicknessFluxDiv(Mesh, VCoord),
+    : Mesh(Mesh), VCoord(VCoord), VAdv(VAdv), ThicknessFluxDiv(Mesh, VCoord),
       PotientialVortHAdv(Mesh, VCoord), KEGrad(Mesh, VCoord),
       SSHGrad(Mesh, VCoord), VelocityDiffusion(Mesh, VCoord),
       VelocityHyperDiff(Mesh, VCoord), WindForcing(Mesh, VCoord),
@@ -261,16 +269,19 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
                             VCoord->NVertLayers);
 
    NTracers = NTracersIn;
+   TimeStep = TimeStepIn;
 
 } // end constructor
 
 Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
                        const HorzMesh *Mesh,    ///< [in] Horizontal mesh
                        const VertCoord *VCoord, ///< [in] Vertical coordinate
+                       VertAdv *VAdv,           ///< [in] Vertical advection
                        int NTracersIn,          ///< [in] Number of tracers
+                       TimeInterval TimeStepIn, ///< [in] Time step
                        Config *Options)         ///< [in] Configuration options
-    : Tendencies(Name, Mesh, VCoord, NTracersIn, Options, CustomTendencyType{},
-                 CustomTendencyType{}) {}
+    : Tendencies(Name, Mesh, VCoord, VAdv, NTracersIn, TimeStepIn, Options,
+                 CustomTendencyType{}, CustomTendencyType{}) {}
 
 //------------------------------------------------------------------------------
 // Compute tendencies for layer thickness equation
@@ -324,6 +335,11 @@ void Tendencies::computeThicknessTendenciesOnly(
           });
       Pacer::stop("Tend:thicknessFluxDiv", 2);
    }
+
+   Pacer::start("Tend:computeThicknessVAdvTend", 2);
+   // Compute thickness tendency from vertical advection
+   VAdv->computeThicknessVAdvTend(LayerThicknessTend);
+   Pacer::stop("Tend:computeThicknessVAdvTend", 2);
 
    if (CustomThicknessTend) {
       Pacer::start("Tend:customThicknessTend", 2);
@@ -468,6 +484,12 @@ void Tendencies::computeVelocityTendenciesOnly(
           });
       Pacer::stop("Tend:velocityHyperDiff", 2);
    }
+
+   Pacer::start("Tend:computeVelocityVAdvTend", 2);
+   // Compute velocity tendency from vertical advection
+   VAdv->computeVelocityVAdvTend(NormalVelocityTend, NormVelEdge,
+                                 FluxLayerThickEdge);
+   Pacer::stop("Tend:computeVelocityVAdvTend", 2);
 
    // Compute wind forcing
    const auto &NormalStressEdge = AuxState->WindForcingAux.NormalStressEdge;
@@ -615,6 +637,18 @@ void Tendencies::computeTracerTendenciesOnly(
           });
       Pacer::stop("Tend:tracerHyperDiff", 2);
    }
+
+   Pacer::start("Tend:computeTracerVAdvTend", 2);
+   // compute tracer tendencies from vertical advection
+   Array2DReal ThicknessForVAdv;
+   if (VAdv->VertAdvChoice == VertAdvOption::Standard) {
+      ThicknessForVAdv = State->getLayerThickness(ThickTimeLevel);
+   } else if (VAdv->VertAdvChoice == VertAdvOption::FCT) {
+      ThicknessForVAdv = AuxState->LayerThicknessAux.ProvThickness;
+   }
+   VAdv->computeTracerVAdvTend(LocTracerTend, TracerArray, ThicknessForVAdv,
+                               TimeStep);
+   Pacer::stop("Tend:computeTracerVAdvTend", 2);
 
    Pacer::stop("Tend:computeTracerTendenciesOnly", 1);
 } // end tracer tendency compute

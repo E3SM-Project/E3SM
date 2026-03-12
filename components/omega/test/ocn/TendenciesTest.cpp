@@ -123,8 +123,7 @@ int initTendenciesTest(const std::string &mesh) {
    HorzMesh::init();
    VertCoord::init();
    Tracers::init();
-
-   // VertCoord::init2();
+   VertAdv::init();
 
    int StateErr = OceanState::init();
    if (StateErr != 0) {
@@ -156,10 +155,14 @@ int testTendencies() {
 
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
+   const auto VAdv     = VertAdv::getDefault();
    VCoord->NVertLayers = 12;
    // test creation of another tendencies
+
+   TimeInterval ZeroTimeStep; // Zero-length time step placeholder
    Config *Options = Config::getOmegaConfig();
-   Tendencies::create("TestTendencies", Mesh, VCoord, 3, Options);
+   Tendencies::create("TestTendencies", Mesh, VCoord, VAdv, 3, ZeroTimeStep,
+                      Options);
 
    // test retrievel of another tendencies
    if (Tendencies::get("TestTendencies")) {
@@ -234,6 +237,7 @@ void finalizeTendenciesTest() {
    Tracers::clear();
    AuxiliaryState::clear();
    OceanState::clear();
+   VertAdv::clear();
    VertCoord::clear();
    HorzMesh::clear();
    Field::clear();

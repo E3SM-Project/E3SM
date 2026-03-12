@@ -23,7 +23,6 @@ This includes the following variables:
 | XCell, YCell, ZCell | Cartesian coordinates of cell centers | m |
 | XEdge, YEdge, ZEdge | Cartesian coordinates of edge centers | m |
 | XVertex, YVertex, ZVertex | Cartesian coordinates of vertices | m |
-| BottomDepth | Depth of the bottom of the ocean at cell centers | m |
 | FCell, FEdge, FVertex | Coriolis parameter at cell centers/edges/vertices | radians/s |
 | LonCell, LatCell | Longitude/latitude coordinates of cell centers | radians |
 | LonEdge, LatEdge | Longitude/latitude coordinates of edge centers | radians |

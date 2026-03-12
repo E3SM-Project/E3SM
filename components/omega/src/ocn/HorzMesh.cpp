@@ -113,9 +113,6 @@ HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
    // Read x/y/z and lon/lat coordinates for cells, edges, and vertices
    readCoordinates();
 
-   // Read the cell-centered bottom depth
-   readBottomDepth();
-
    // Read the mesh areas, lengths, and angles
    readMeasurements();
 
@@ -442,12 +439,6 @@ void HorzMesh::readCoordinates() {
 } // end readCoordinates
 
 //------------------------------------------------------------------------------
-// Read the cell-centered bottom depth
-void HorzMesh::readBottomDepth() {
-   readCellArray(BottomDepthH, "bottomDepth");
-} // end readDepth
-
-//------------------------------------------------------------------------------
 // Read the mesh areas (cell, triangle, and kite),
 // lengths (between centers and vertices), and edge angles
 void HorzMesh::readMeasurements() {
@@ -602,7 +593,6 @@ void HorzMesh::copyToDevice() {
    AngleEdge         = createDeviceMirrorCopy(AngleEdgeH);
    WeightsOnEdge     = createDeviceMirrorCopy(WeightsOnEdgeH);
    FVertex           = createDeviceMirrorCopy(FVertexH);
-   BottomDepth       = createDeviceMirrorCopy(BottomDepthH);
    FEdge             = createDeviceMirrorCopy(FEdgeH);
    XCell             = createDeviceMirrorCopy(XCellH);
    YCell             = createDeviceMirrorCopy(YCellH);

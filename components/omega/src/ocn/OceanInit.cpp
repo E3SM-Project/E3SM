@@ -26,6 +26,7 @@
 #include "TimeMgr.h"
 #include "TimeStepper.h"
 #include "Tracers.h"
+#include "VertAdv.h"
 #include "VertCoord.h"
 
 #include "mpi.h"
@@ -131,6 +132,7 @@ int initOmegaModules(MPI_Comm Comm) {
    HorzMesh::init();
    VertCoord::init();
    Tracers::init();
+   VertAdv::init();
    AuxiliaryState::init();
    Tendencies::init();
    TimeStepper::init2();

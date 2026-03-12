@@ -3,6 +3,7 @@
 #include "Field.h"
 #include "Logging.h"
 #include "Pacer.h"
+#include "TimeStepper.h"
 
 namespace OMEGA {
 
@@ -19,9 +20,10 @@ static std::string stripDefault(const std::string &Name) {
 // fields with IOStreams
 AuxiliaryState::AuxiliaryState(const std::string &Name, const HorzMesh *Mesh,
                                Halo *MeshHalo, const VertCoord *VCoord,
-                               int NTracers)
-    : Mesh(Mesh), MeshHalo(MeshHalo), VCoord(VCoord), Name(stripDefault(Name)),
-      KineticAux(stripDefault(Name), Mesh, VCoord),
+                               VertAdv *VAdv, int NTracers,
+                               TimeInterval TimeStep)
+    : Mesh(Mesh), MeshHalo(MeshHalo), VCoord(VCoord), VAdv(VAdv),
+      Name(stripDefault(Name)), KineticAux(stripDefault(Name), Mesh, VCoord),
       LayerThicknessAux(stripDefault(Name), Mesh, VCoord),
       VorticityAux(stripDefault(Name), Mesh, VCoord),
       VelocityDel2Aux(stripDefault(Name), Mesh, VCoord),
@@ -79,6 +81,9 @@ void AuxiliaryState::computeMomAux(const OceanState *State, int ThickTimeLevel,
    OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
    OMEGA_SCOPE(MaxLayerEdgeBot, VCoord->MaxLayerEdgeBot);
    OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
+
+   R8 TimeStepSeconds;
+   TimeStep.get(TimeStepSeconds, TimeUnits::Seconds);
 
    Pacer::start("AuxState:computeMomAux", 1);
 
@@ -194,11 +199,19 @@ void AuxiliaryState::computeMomAux(const OceanState *State, int ThickTimeLevel,
 
           parallelForInner(
               Team, KRange, INNER_LAMBDA(int KChunk) {
-                 LocLayerThicknessAux.computeVarsOnCells(ICell, KChunk,
-                                                         LayerThickCell);
+                 LocLayerThicknessAux.computeVarsOnCells(
+                     ICell, KChunk, LayerThickCell, NormalVelEdge,
+                     TimeStepSeconds);
               });
        });
    Pacer::stop("AuxState:cellAuxState3", 2);
+
+   Pacer::start("AuxState:computeVerticalVelocity", 2);
+
+   const auto &FluxLayerThickEdge = LayerThicknessAux.FluxLayerThickEdge;
+   VAdv->computeVerticalVelocity(NormalVelEdge, FluxLayerThickEdge);
+
+   Pacer::stop("AuxState:computeVerticalVelocity", 2);
 
    Pacer::stop("AuxState:computeMomAux", 1);
 }
@@ -212,15 +225,36 @@ void AuxiliaryState::computeAll(const OceanState *State,
 
    const int NTracers = TracerArray.extent_int(0);
 
+   OMEGA_SCOPE(LocLayerThicknessAux, LayerThicknessAux);
    OMEGA_SCOPE(LocTracerAux, TracerAux);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
    OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
    OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
 
+   R8 TimeStepSeconds;
+   TimeStep.get(TimeStepSeconds, TimeUnits::Seconds);
+
    Pacer::start("AuxState:computeAll", 1);
 
    computeMomAux(State, ThickTimeLevel, VelTimeLevel);
+
+   Pacer::start("AuxState:cellAuxState3", 2);
+   parallelForOuter(
+       "cellAuxState3", {Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
+          const int KMin   = MinLayerCell(ICell);
+          const int KMax   = MaxLayerCell(ICell);
+          const int KRange = vertRangeChunked(KMin, KMax);
+
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 LocLayerThicknessAux.computeVarsOnCells(
+                     ICell, KChunk, LayerThickCell, NormalVelEdge,
+                     TimeStepSeconds);
+              });
+       });
+   Pacer::stop("AuxState:cellAuxState3", 2);
 
    const auto &MeanLayerThickEdge = LayerThicknessAux.MeanLayerThickEdge;
 
@@ -252,8 +286,9 @@ void AuxiliaryState::computeAll(const OceanState *State,
 // Create a non-default auxiliary state
 AuxiliaryState *AuxiliaryState::create(const std::string &Name,
                                        const HorzMesh *Mesh, Halo *MeshHalo,
-                                       const VertCoord *VCoord,
-                                       const int NTracers) {
+                                       const VertCoord *VCoord, VertAdv *VAdv,
+                                       const int NTracers,
+                                       TimeInterval TimeStep) {
    if (AllAuxStates.find(Name) != AllAuxStates.end()) {
       LOG_ERROR("Attempted to create a new AuxiliaryState with name {} but it "
                 "already exists",
@@ -261,24 +296,27 @@ AuxiliaryState *AuxiliaryState::create(const std::string &Name,
       return nullptr;
    }
 
-   auto *NewAuxState =
-       new AuxiliaryState(Name, Mesh, MeshHalo, VCoord, NTracers);
+   auto *NewAuxState = new AuxiliaryState(Name, Mesh, MeshHalo, VCoord, VAdv,
+                                          NTracers, TimeStep);
    AllAuxStates.emplace(Name, NewAuxState);
 
    return NewAuxState;
 }
 
-// Create the default auxiliary state. Assumes that HorzMesh, VertCoord and
-// Halo have been initialized.
+// Create the default auxiliary state. Assumes that HorzMesh, VertCoord,
+// VertAdv, and Halo have been initialized.
 void AuxiliaryState::init() {
-   const HorzMesh *DefMesh    = HorzMesh::getDefault();
-   Halo *DefHalo              = Halo::getDefault();
-   const VertCoord *DefVCoord = VertCoord::getDefault();
+   const HorzMesh *DefMesh           = HorzMesh::getDefault();
+   Halo *DefHalo                     = Halo::getDefault();
+   const VertCoord *DefVCoord        = VertCoord::getDefault();
+   VertAdv *DefVAdv                  = VertAdv::getDefault();
+   const TimeStepper *DefTimeStepper = TimeStepper::getDefault();
 
-   int NTracers = Tracers::getNumTracers();
+   int NTracers          = Tracers::getNumTracers();
+   TimeInterval TimeStep = DefTimeStepper->getTimeStep();
 
-   AuxiliaryState::DefaultAuxState =
-       AuxiliaryState::create("Default", DefMesh, DefHalo, DefVCoord, NTracers);
+   AuxiliaryState::DefaultAuxState = AuxiliaryState::create(
+       "Default", DefMesh, DefHalo, DefVCoord, DefVAdv, NTracers, TimeStep);
 
    Config *OmegaConfig = Config::getOmegaConfig();
    DefaultAuxState->readConfigOptions(OmegaConfig);
