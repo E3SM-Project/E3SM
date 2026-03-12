@@ -850,14 +850,12 @@ void zm_conv_mcsp_calculate_shear(ZmConvMcspCalculateShearData& d)
     // after this.
     const auto state_pmid_c = ekat::subview(state_pmid_d, i);
     const auto state_u_c = ekat::subview(state_u_d, i);
-    const auto state_v_c = ekat::subview(state_v_d, i);
 
     ZMF::zm_conv_mcsp_calculate_shear(
       team,
       pver,
       state_pmid_c,
       state_u_c,
-      state_v_c,
       mcsp_shear_d(i));
   });
 

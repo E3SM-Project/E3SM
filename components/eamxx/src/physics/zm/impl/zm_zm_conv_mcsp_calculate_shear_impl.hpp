@@ -19,7 +19,6 @@ void Functions<S,D>::zm_conv_mcsp_calculate_shear(
   const Int& pver, // number of mid-point vertical levels
   const uview_1d<const Real>& state_pmid, // physics state mid-point pressure
   const uview_1d<const Real>& state_u, // physics state u momentum
-  const uview_1d<const Real>& state_v, // physics state v momentum
   // Outputs
   Real& mcsp_shear)
 {
@@ -55,6 +54,7 @@ void Functions<S,D>::zm_conv_mcsp_calculate_shear(
       storm_u = state_u(pver - 1);
     }
     else {
+      EKAT_KERNEL_ASSERT(k_below < pver-1);
       const Real dpu = ZMC::MCSP_storm_speed_pref - state_pmid(k_below);
       const Real dpl = state_pmid(k_below+1) - ZMC::MCSP_storm_speed_pref;
       storm_u = (state_u(k_below)*dpl + state_u(k_below+1)*dpu) / (dpl + dpu);
