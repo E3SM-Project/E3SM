@@ -278,7 +278,8 @@ def buildnml(case, caseroot, compname):
     case_name = _extract_case_name_from_gcam_in(rundir)
     scenario_dir = _scenario_dir_from_case_name(case_name)
     gcam_rdir = os.path.join(gcam_idir, "restart", scenario_dir, mach)
-    expect(os.path.isdir(gcam_rdir), "GCAM restart dir missing: {}".format(gcam_rdir))
+    # Skip restart directory check since we don't use restart files
+    # expect(os.path.isdir(gcam_rdir), "GCAM restart dir missing: {}".format(gcam_rdir))
 
     # === Symlinks formerly created by the run script ===
     _ensure_symlink(os.path.join(gcam_idir, "input"),
@@ -309,30 +310,13 @@ def buildnml(case, caseroot, compname):
         gcam_spinup = _get_gcam_spinup(gcam_in_path)
 
     if gcam_spinup:
-        # Do not read or copy restart.* files; do not overwrite protection for existing
-        logger.info("gcam_spinup = .true.; skipping all restart.* file handling and overwrite protection")
+        # Do not read or copy restart.* files when gcam_spinup = .true.
+        logger.info("gcam_spinup = .true.; skipping all restart.* file handling")
         # Model will write restart.* files if needed
     else:
-        # For each restart.* file in gcam_rdir, copy only if not present in rundir
-        for src in glob.glob(os.path.join(gcam_rdir, "restart.*")):
-            fname = os.path.basename(src)
-            dst = os.path.join(rundir, fname)
-            if not os.path.exists(dst):
-                _ensure_copy(src, dst)
-            # else: file exists in rundir, use as is
-
-    # Helper function to parse gcam_spinup from gcam_in
-    def _get_gcam_spinup(path):
-        pat = re.compile(r"^\s*gcam_spinup\s*=\s*\.([Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee])\." )
-        try:
-            with open(path, 'r') as fh:
-                for line in fh:
-                    m = pat.match(line)
-                    if m:
-                        return m.group(1).lower() == "true"
-        except Exception:
-            pass
-        return False
+        # gcam_spinup = .false. but we still don't want to look for restart files
+        # This ensures restart files are never copied regardless of gcam_spinup setting
+        logger.info("restart.* file handling disabled - not looking for restart files")
 
     # Static files into run dir (with target names) - use copies for these files
     _ensure_copy(os.path.join(ldir, "iESM_Ref_CropPast2015_c10142019.nc"),
