@@ -919,6 +919,9 @@ void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
+  WSM wsm(d.pver, 4, policy);
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+
   // unpack data scalars because we do not want the lambda to capture d
   const Real ztodt = d.ztodt;
   const Int pver = d.pver;
@@ -949,6 +952,8 @@ void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
 
     ZMF::zm_conv_mcsp_tend(
       team,
+      wsm.get_workspace(team),
+      init_cp,
       pver,
       pverp,
       ztodt,

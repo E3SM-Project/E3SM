@@ -526,6 +526,8 @@ struct Functions {
   static void zm_conv_mcsp_tend(
     // Inputs
     const MemberType& team,
+    const Workspace& workspace,
+    const ZmRuntimeOpt& runtime_opt,
     const Int& pver, // number of mid-point vertical levels
     const Int& pverp, // number of interface vertical levels
     const Real& ztodt, // 2x physics time step
