@@ -204,6 +204,31 @@ class TimeStepper {
        TimeInterval Coeff  ///< [in] time-related coeff for tendency
    ) const;
 
+       /// Resets the layer thickness at the working time level to the initial
+       /// condition stored at the reference time level.
+       void prescribeThickness(
+           OceanState *State1, ///< [out] destination state
+           int TimeLevel1,     ///< [in] time level index of the reference data
+           OceanState *State2, ///< [in] source state (initial condition)
+           int TimeLevel2      ///< [in] time level index of the destination data
+       ) const;
+
+       /// Resets the velocity at the working time level to the initial condition.
+       void prescribeVelocity(
+           OceanState *State1, ///< [out] destination state
+           int TimeLevel1,     ///< [in] time level index of the reference data
+           OceanState *State2, ///< [in] source state (initial condition)
+           int TimeLevel2      ///< [in] time level index of the destination data
+       ) const;
+
+       /// Reset thickness and velocity to their initial values
+       void prescribeState(
+           OceanState *State1, ///< [out] destination state
+           int TimeLevel1,     ///< [in] time level index of the reference data
+           OceanState *State2, ///< [in] source state (initial condition)
+           int TimeLevel2      ///< [in] time level index of the destination data
+       ) const;
+
    /// Updates tracers
    /// NextTracers = (CurTracers * LayerThickness2(TimeLevel2)) +
    ///               Coeff * TracersTend) / LayerThickness1(TimeLevel1)
