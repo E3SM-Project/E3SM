@@ -5,6 +5,26 @@
 Omega's build system is constructed using the CMake build tool,
 offering a strong foundation for managing the building process.
 
+This page describes how to build Omega in general (outside Polaris or within
+other workflows).
+
+## If You Are Using Polaris
+
+If you are already using Polaris to set up tasks or suites, you typically do
+not need to build Omega manually. In that workflow, use Polaris auto-build
+during `polaris setup` or `polaris suite`.
+
+- Polaris quick start (developers):
+  <https://docs.e3sm.org/polaris/main/developers_guide/quick_start.html>
+- Building E3SM components:
+  <https://docs.e3sm.org/polaris/main/developers_guide/quick_start.html#building-e3sm-components>
+- `omega_pr` suite:
+  <https://docs.e3sm.org/polaris/main/users_guide/ocean/suites.html#omega-pr-suite>
+
+Standalone/manual and Polaris-based build workflows are both supported.
+
+## General Build Overview
+
 The Omega build system has two modes: standalone and E3SM component.
 
 For standalone build, the Omega build creates a generic E3SM case and
