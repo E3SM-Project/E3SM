@@ -92,7 +92,7 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   //----------------------------------------------------------------------------
   // calculate shear
 
-  zm_conv_mcsp_calculate_shear(team, workspace, pver, state_pmid, state_u, state_v, mcsp_shear);
+  zm_conv_mcsp_calculate_shear(team, pver, state_pmid, state_u, mcsp_shear);
 
   //----------------------------------------------------------------------------
   // calculate mass weighted column average tendencies from ZM
