@@ -85,6 +85,12 @@ jobs:
         build_type: [sp, dbg, fpe, opt]
     name: gcc-openmp / ${{ matrix.build_type }}
     steps:
+      - name: print path
+        run: |
+          echo "PATH: $PATH" | sed 's/:/\n/g'
+      - name: print full env
+        run: |
+          env
       - name: Check out the repository
         uses: actions/checkout@v6
         with:
