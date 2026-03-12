@@ -920,7 +920,7 @@ contains
 
          ! Allocate the mapping that points columns to FATES sites, 0 is NA
          allocate(this%f2hmap(nc)%hsites(bounds_clump%begc:bounds_clump%endc))
-
+         
          ! Initialize all columns with a zero index, which indicates no FATES site
          this%f2hmap(nc)%hsites(:) = 0
 
@@ -1059,11 +1059,11 @@ contains
             call InitHydrSites(this%fates(nc)%sites,this%fates(nc)%bc_in)
          end if
 
-         if( this%fates(nc)%nsites == 0 ) then
-            write(iulog,*) 'Clump ',nc,' had no valid FATES sites'
-            write(iulog,*) 'This will likely cause problems until code is improved'
-            call endrun(msg=errMsg(sourcefile, __LINE__))
-         end if
+         !if( this%fates(nc)%nsites == 0 ) then
+         !   write(iulog,*) 'Clump ',nc,' had no valid FATES sites'
+         !   write(iulog,*) 'This will likely cause problems until code is improved'
+         !   call endrun(msg=errMsg(sourcefile, __LINE__))
+         !end if
 
          ! Set patch itypes on natural veg columns to nonsense
          ! This will force a crash if the model outside of FATES tries to think

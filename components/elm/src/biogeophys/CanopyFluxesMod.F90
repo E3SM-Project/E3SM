@@ -1552,6 +1552,9 @@ end subroutine CanopyFluxes
     
   end subroutine sort_tasks
 
+  !call PatchLoadBalance(bounds_clump, filter(nc)%num_nolakeurbanp, &
+  !                  filter(nc)%nolakeurbanp,canopystate_vars, &
+  !                  alm_fates%fates(nc)%bc_out,alm_fates%f2hmap(nc)%hsites,.false.)
   
   subroutine PatchLoadBalance(bounds,  num_nolakeurbanp, filter_nolakeurbanp, canopystate_vars, fates_bc_out, fates_hsites, is_coldstart)
 
@@ -1560,7 +1563,7 @@ end subroutine CanopyFluxes
     integer                   , intent(in)    :: filter_nolakeurbanp(:) ! patch filter for non-lake, non-urban points
     type(canopystate_type)    , intent(inout) :: canopystate_vars
     type(bc_out_type)         , intent(in)    :: fates_bc_out(:)
-    integer                   , intent(in)    :: fates_hsites(:)
+    integer                   , intent(in)    :: fates_hsites(bounds%begc:)
     logical                   , intent(in)    :: is_coldstart
     
     integer  :: filterp(bounds%endp-bounds%begp+1)
@@ -1584,34 +1587,44 @@ end subroutine CanopyFluxes
     if(is_coldstart)then
        do p = bounds%begp,bounds%endp
           c = veg_pp%column(p)
-          s = fates_hsites(c)
-          fn = fn + 1
-          filterp(fn) = p
-          load_size(fn) = 1
+          if(col_pp%is_soil(c) .and. col_pp%active(c))then
+             fn = fn + 1
+             filterp(fn) = p
+             load_size(fn) = 1
+          end if
        end do
     else
        do p = bounds%begp,bounds%endp
           c = veg_pp%column(p)
-          s = fates_hsites(c)
-          
-          if(veg_pp%is_veg(p)) then
-             fn = fn + 1
-             filterp(fn) = p
-             if(veg_pp%is_fates(p))then
-                ifp = p - col_pp%pfti(c)
-                load_size(fn) = fates_bc_out(s)%load_size(ifp)
-             else
+
+          if(col_pp%is_soil(c) .and. col_pp%active(c))then
+             if(.not.veg_pp%is_fates(p))then
+                fn = fn + 1
+                filterp(fn) = p
                 load_size(fn) = bl_default
+             else
+                ! If this patch is under FATES jurisdiction
+                ! we only include it in the list if this
+                ! is actually an active FATES patch
+                ! is_fates determines jurisdiction, is_veg
+                ! determines active or not active
+                if(veg_pp%is_veg(p)) then
+                   s = fates_hsites(c)
+                   fn = fn + 1
+                   filterp(fn) = p
+                   ifp = p - col_pp%pfti(c)
+                   load_size(fn) = fates_bc_out(s)%load_size(ifp)
+                end if
              end if
           end if
        end do
     end if
        
-    if(fn==0)then
-       write(iulog,*)'fn:',fn
-       write(iulog,*)'is_veg:',veg_pp%is_veg(bounds%begp:bounds%endp)
-       stop
-    end if
+    !if(fn==0)then
+    !   write(iulog,*)'fn:',fn
+    !   write(iulog,*)'is_veg:',veg_pp%is_veg(bounds%begp:bounds%endp)
+    !   stop
+    !end if
 
     !!fn = 0
     !!do f = 1,np
