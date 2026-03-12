@@ -11,6 +11,7 @@ module ace_comp_mod
 
   use ftorch, only: &
     torch_kCPU, &
+    torch_kCUDA, &
     torch_model, &
     torch_tensor, &
     torch_delete, &
@@ -55,7 +56,7 @@ module ace_comp_mod
   integer(c_int) :: tensor_layout(4)
 
   ! TODO (AN): Parse from namelist
-  character(len=*), parameter :: torchscript_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace2_EAMv3_ckpt_traced.tar"
+  character(len=*), parameter :: torchscript_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace2_EAMv3_ckpt-CUDA_traced.tar"
   character(len=*), parameter :: norm_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace2_EAMv3_normalize.nc"
   character(len=*), parameter :: denorm_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace2_EAMv3_denormalize.nc"
   save
@@ -90,7 +91,7 @@ CONTAINS
     call ace_read_ic()
 
     ! load the traced model
-    call torch_model_load(ace_model, torchscript_file, torch_kCPU)
+    call torch_model_load(ace_model, torchscript_file, torch_kCUDA)
 
     ! load the restart data (i.e. prognostic state) associated with IC
     call ace_read_restart()
@@ -164,7 +165,7 @@ CONTAINS
         tensor_shape=input_tensor_shape, &
         layout=tensor_layout, &
         dtype=torch_kFloat32, &
-        device_type=torch_kCPU &
+        device_type=torch_kCUDA &
       )
       call torch_tensor_from_blob(&
         output_tensor(1), &
