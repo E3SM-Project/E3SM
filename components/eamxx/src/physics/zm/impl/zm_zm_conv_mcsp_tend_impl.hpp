@@ -92,24 +92,25 @@ void Functions<S,D>::zm_conv_mcsp_tend(
 
   //----------------------------------------------------------------------------
   // calculate mass weighted column average tendencies from ZM
-  // This is inherently serial due to accumulation
 
-  Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    zm_depth = 0.0;
-    if (jctop != pver - 1) {
-      // integrate pressure and ZM tendencies over column
-      for (Int k = jctop; k < pver; ++k) {
-        zm_avg_tend_s += ptend_zm_s(k) * state_pdel(k);
-        zm_avg_tend_q += ptend_zm_q(k) * state_pdel(k);
-        pdel_sum += state_pdel(k);
-      }
-      // normalize integrated ZM tendencies by total mass
-      zm_avg_tend_s /= pdel_sum;
-      zm_avg_tend_q /= pdel_sum;
-      // calculate diagnostic zm_depth
-      zm_depth = state_pint(pver) - state_pmid(jctop);
-    }
-  });
+  zm_depth = 0.0;
+  if (jctop != pver - 1) {
+    // integrate pressure and ZM tendencies over column using parallel reduction
+    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, jctop, pver),
+      [&] (const Int& k, Real& tend_s_sum, Real& tend_q_sum, Real& pdel_tot) {
+        tend_s_sum += ptend_zm_s(k) * state_pdel(k);
+        tend_q_sum += ptend_zm_q(k) * state_pdel(k);
+        pdel_tot += state_pdel(k);
+      },
+      zm_avg_tend_s, zm_avg_tend_q, pdel_sum);
+    team.team_barrier();
+
+    // normalize integrated ZM tendencies by total mass
+    zm_avg_tend_s /= pdel_sum;
+    zm_avg_tend_q /= pdel_sum;
+    // calculate diagnostic zm_depth
+    zm_depth = state_pint(pver) - state_pmid(jctop);
+  }
   team.team_barrier();
 
   //----------------------------------------------------------------------------
@@ -124,23 +125,25 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   //----------------------------------------------------------------------------
   // calculate MCSP tendencies
 
-  Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    // check that ZM produced tendencies over a depth that exceeds the threshold
-    if (zm_depth >= ZMC::MCSP_conv_depth_min) {
-      // check that ZM provided a non-zero column total heating
-      if (zm_avg_tend_s > 0.0) {
-        // check that there is sufficient wind shear to justify coherent organization
-        if (std::abs(mcsp_shear) >= ZMC::MCSP_shear_min &&
-            std::abs(mcsp_shear) < ZMC::MCSP_shear_max) {
-          for (Int k = jctop; k < pver; ++k) {
+  // check that ZM produced tendencies over a depth that exceeds the threshold
+  if (zm_depth >= ZMC::MCSP_conv_depth_min) {
+    // check that ZM provided a non-zero column total heating
+    if (zm_avg_tend_s > 0.0) {
+      // check that there is sufficient wind shear to justify coherent organization
+      if (std::abs(mcsp_shear) >= ZMC::MCSP_shear_min &&
+          std::abs(mcsp_shear) < ZMC::MCSP_shear_max) {
+
+        // Calculate tendencies and integrate them using parallel reduce
+        Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, jctop, pver),
+          [&] (const Int& k, Real& avg_s, Real& avg_q, Real& avg_k) {
 
             // See eq 7-8 of Moncrieff et al. (2017) - also eq (5) of Moncrieff & Liu (2006)
             const Real pdepth_mid_k = state_pint(pver) - state_pmid(k);
             const Real pdepth_total = state_pint(pver) - state_pmid(jctop);
 
             // specify the assumed vertical structure
-            if (do_mcsp_t) mcsp_tend_s(k) = -1.0 * runtime_opt.mcsp_t_coeff * std::sin(2.0 * PC::Pi * (pdepth_mid_k / pdepth_total));
-            if (do_mcsp_q) mcsp_tend_q(k) = -1.0 * runtime_opt.mcsp_q_coeff * std::sin(2.0 * PC::Pi * (pdepth_mid_k / pdepth_total));
+            if (do_mcsp_t) mcsp_tend_s(k) = -1 * runtime_opt.mcsp_t_coeff * std::sin(2 * PC::Pi * (pdepth_mid_k / pdepth_total));
+            if (do_mcsp_q) mcsp_tend_q(k) = -1 * runtime_opt.mcsp_q_coeff * std::sin(2 * PC::Pi * (pdepth_mid_k / pdepth_total));
             if (do_mcsp_u) mcsp_tend_u(k) = runtime_opt.mcsp_u_coeff * (std::cos(PC::Pi * (pdepth_mid_k / pdepth_total)));
             if (do_mcsp_v) mcsp_tend_v(k) = runtime_opt.mcsp_v_coeff * (std::cos(PC::Pi * (pdepth_mid_k / pdepth_total)));
 
@@ -149,36 +152,30 @@ void Functions<S,D>::zm_conv_mcsp_tend(
             if (do_mcsp_q) mcsp_tend_q(k) = zm_avg_tend_q * mcsp_tend_q(k);
 
             // integrate the DSE/qv tendencies for energy/mass fixer
-            if (do_mcsp_t) mcsp_avg_tend_s += mcsp_tend_s(k) * state_pdel(k) / pdel_sum;
-            if (do_mcsp_q) mcsp_avg_tend_q += mcsp_tend_q(k) * state_pdel(k) / pdel_sum;
+            if (do_mcsp_t) avg_s += mcsp_tend_s(k) * state_pdel(k) / pdel_sum;
+            if (do_mcsp_q) avg_q += mcsp_tend_q(k) * state_pdel(k) / pdel_sum;
 
             // integrate the change in kinetic energy (KE) for energy fixer
             if (do_mcsp_u || do_mcsp_v) {
-              const Real tend_k = (2.0 * mcsp_tend_u(k) * ztodt * state_u(k) + mcsp_tend_u(k) * mcsp_tend_u(k) * ztodt * ztodt
-                                  + 2.0 * mcsp_tend_v(k) * ztodt * state_v(k) + mcsp_tend_v(k) * mcsp_tend_v(k) * ztodt * ztodt) / 2.0 / ztodt;
-              mcsp_avg_tend_k += tend_k * state_pdel(k) / pdel_sum;
+              const Real tend_k = (2 * mcsp_tend_u(k) * ztodt * state_u(k) + mcsp_tend_u(k) * mcsp_tend_u(k) * ztodt * ztodt
+                                  + 2 * mcsp_tend_v(k) * ztodt * state_v(k) + mcsp_tend_v(k) * mcsp_tend_v(k) * ztodt * ztodt) / 2 / ztodt;
+              avg_k += tend_k * state_pdel(k) / pdel_sum;
             }
-          } // k = jctop, pver
-        } // shear threshold
-      } // zm_avg_tend_s > 0
-    } // zm_depth >= ZMC::MCSP_conv_depth_min
-  });
-  team.team_barrier();
+          },
+          mcsp_avg_tend_s, mcsp_avg_tend_q, mcsp_avg_tend_k);
+        team.team_barrier();
+      } // shear threshold
+    } // zm_avg_tend_s > 0
+  } // zm_depth >= MCSP_conv_depth_min
 
   //----------------------------------------------------------------------------
   // calculate final output tendencies
 
   mcsp_freq = 0.0;
 
-  Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    for (Int k = jctop; k < pver; ++k) {
-
-      // update frequency if ZMC::MCSP contributes any tendency in the column
-      if (std::abs(mcsp_tend_s(k)) > 0.0 || std::abs(mcsp_tend_q(k)) > 0.0 ||
-          std::abs(mcsp_tend_u(k)) > 0.0 || std::abs(mcsp_tend_v(k)) > 0.0) {
-        mcsp_freq = 1.0;
-      }
-
+  // Calculate final tendencies and check frequency in a single parallel_reduce
+  Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, jctop, pver),
+    [&] (const Int& k, Real& local_freq) {
       // subtract mass weighted average tendencies for energy/mass conservation
       mcsp_dt_out(k) = mcsp_tend_s(k) - mcsp_avg_tend_s;
       mcsp_dq_out(k) = mcsp_tend_q(k) - mcsp_avg_tend_q;
@@ -199,8 +196,15 @@ void Functions<S,D>::zm_conv_mcsp_tend(
 
       // adjust units for diagnostic outputs
       if (do_mcsp_t) mcsp_dt_out(k) = mcsp_dt_out(k) / PC::Cpair.value;
-    }
-  });
+
+      // update frequency if MCSP contributes any tendency in the column
+      if (std::abs(mcsp_tend_s(k)) > 0.0 || std::abs(mcsp_tend_q(k)) > 0.0 ||
+          std::abs(mcsp_tend_u(k)) > 0.0 || std::abs(mcsp_tend_v(k)) > 0.0) {
+        local_freq = 1.0;
+      }
+    },
+    Kokkos::Max<Real>(mcsp_freq));
+  team.team_barrier();
 
   workspace.template release_many_contiguous<4>(
     {&mcsp_tend_s, &mcsp_tend_q, &mcsp_tend_u, &mcsp_tend_v});
