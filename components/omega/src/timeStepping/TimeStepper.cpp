@@ -575,7 +575,7 @@ void TimeStepper::prescribeVelocity(OceanState *State1, int TimeLevel1,
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
                     const int K = KMin + KChunk;
-                    NormalVel1(IEdge, K) = NormalVel2(IEdge, K);
+                    NormalVel2(IEdge, K) = NormalVel1(IEdge, K);
                  });
           });
       return;
