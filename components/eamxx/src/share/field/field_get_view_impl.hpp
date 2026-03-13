@@ -254,16 +254,12 @@ auto Field::get_ND_view () const
 // This prevents the decl in field_impl.hpp from being compiled for every TU.
 
 #define EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(T1,T2) \
-extern template void Field::update_impl<CombineMode::Update,  true, T1, T2>(const Field&, const T1, const T1);  \
-extern template void Field::update_impl<CombineMode::Multiply,true, T1, T2>(const Field&, const T1, const T1);  \
-extern template void Field::update_impl<CombineMode::Divide,  true, T1, T2>(const Field&, const T1, const T1);  \
-extern template void Field::update_impl<CombineMode::Update,  false, T1, T2>(const Field&, const T1, const T1); \
-extern template void Field::update_impl<CombineMode::Multiply,false, T1, T2>(const Field&, const T1, const T1); \
-extern template void Field::update_impl<CombineMode::Divide,  false, T1, T2>(const Field&, const T1, const T1); \
-extern template void Field::update_impl<CombineMode::Max, true, T1, T2>(const Field&, const T1, const T1);      \
-extern template void Field::update_impl<CombineMode::Min, true, T1, T2>(const Field&, const T1, const T1);      \
-extern template void Field::update_impl<CombineMode::Max, false, T1, T2>(const Field&, const T1, const T1);     \
-extern template void Field::update_impl<CombineMode::Min, false, T1, T2>(const Field&, const T1, const T1)
+extern template void Field::update_impl<CombineMode::Replace,  T1, T2>(const Field&, const T1, const T1, FillValueHandling); \
+extern template void Field::update_impl<CombineMode::Update,   T1, T2>(const Field&, const T1, const T1, FillValueHandling); \
+extern template void Field::update_impl<CombineMode::Multiply, T1, T2>(const Field&, const T1, const T1, FillValueHandling); \
+extern template void Field::update_impl<CombineMode::Divide,   T1, T2>(const Field&, const T1, const T1, FillValueHandling); \
+extern template void Field::update_impl<CombineMode::Max,      T1, T2>(const Field&, const T1, const T1, FillValueHandling); \
+extern template void Field::update_impl<CombineMode::Min,      T1, T2>(const Field&, const T1, const T1, FillValueHandling)
 
 #define EAMXX_FIELD_ETI_DECL_DEEP_COPY(T) \
 extern template void Field::deep_copy_impl<true,T>(const T, const Field&); \

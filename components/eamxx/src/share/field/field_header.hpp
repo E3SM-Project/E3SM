@@ -89,7 +89,7 @@ public:
   //   - they have the same parent field and their subview info (form alloc prop) are the same
   bool is_aliasing (const FieldHeader& rhs) const;
 
-  bool may_be_filled () const { return has_extra_data("may_be_filled") and get_extra_data<bool>("may_be_filled"); }
+  bool may_be_filled () const { return get_extra_data<bool>("may_be_filled"); }
   void set_may_be_filled (const bool value) { set_extra_data("may_be_filled",value); }
   FillValueHandling fill_value_handling () const { return get_extra_data<FillValueHandling>("fill_value_handling"); }
   void set_fill_value_handling (FillValueHandling fvh) { set_extra_data("fill_value_handling",fvh); }

@@ -15,7 +15,12 @@ FieldHeader::FieldHeader (const identifier_type& id)
   // if it already exist before adding string attributes for io.
   using stratts_t = std::map<std::string,std::string>;
   set_extra_data("io: string attributes",stratts_t());
+
+  // Set fill-value related metadata. By default, when *this is the LHS of an expression,
+  // we treat FV in the RHS as any other number. Accordingly, we don't assume the field
+  // may contain FV entries
   set_extra_data("fill_value_handling",FillValueHandling::None);
+  set_extra_data("may_be_filled",false);
 }
 
 void FieldHeader::

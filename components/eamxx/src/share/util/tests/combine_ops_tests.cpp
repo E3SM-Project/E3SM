@@ -36,32 +36,32 @@ TEST_CASE ("combine_ops") {
 
   combine<Update>(two,x,sp(2.0),sp(1.0));
   REQUIRE ( (x==six).all() );
-  combine<Update,true>(fv,x,sp(2.0),sp(1.0));
+  combine<Update>(fv,x,sp(2.0),sp(1.0),IgnoreRhs);
   REQUIRE ( (x==six).all() );
 
   x = two;
   combine<Multiply>(two,x,1,1);
   REQUIRE ( (x==four).all() );
-  combine<Multiply,true>(fv,x,1,1);
+  combine<Multiply>(fv,x,1,1,IgnoreRhs);
   REQUIRE ( (x==four).all() );
 
   x = four;
   combine<Divide>(two,x,1,1);
   REQUIRE ( (x==two).all() );
-  combine<Divide,true>(fv,x,1,1);
+  combine<Divide>(fv,x,1,1,IgnoreRhs);
   REQUIRE ( (x==two).all() );
 
   x = two;
   combine<Max>(four,x,1,1);
   REQUIRE ( (x==four).all() );
-  combine<Max,true>(fv,x,1,1);
+  combine<Max>(fv,x,1,1,IgnoreRhs);
   REQUIRE ( (x==four).all() );
 
   x = four;
   combine<Min>(two,x,1,1);
   REQUIRE ( (x==two).all() );
   x = fv_times_ten;
-  combine<Min,true>(fv,x,1,1);
+  combine<Min>(fv,x,1,1,IgnoreRhs);
   REQUIRE ( (x==fv_times_ten).all() );
 }
 

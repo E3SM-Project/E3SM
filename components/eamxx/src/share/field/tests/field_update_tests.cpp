@@ -139,12 +139,27 @@ TEST_CASE ("update") {
       f4.min(f3);
       REQUIRE (views_are_equal(f3, f4));
 
-      // Check that updating with rhs==fill_value ignores the rhs
+      // Check IgnoreRhs: with rhs==fill_value, we ignore the rhs
       f3.deep_copy(constants::fill_value<Real>);
-      f3.get_header().set_may_be_filled(true);
+      f2.get_header().set_fill_value_handling(FillValueHandling::IgnoreRhs);
       f2.deep_copy(1.0);
       f2.max(f3);
       REQUIRE (views_are_equal(f2,one));
+
+      // Check Absorbing: rhs==fill_value absorbs to fill_value
+      Field fv = one.clone();
+      fv.deep_copy(constants::fill_value<Real>);
+      f3.deep_copy(constants::fill_value<Real>);
+      f2.get_header().set_fill_value_handling(FillValueHandling::Absorbing);
+      f2.deep_copy(1.0);
+      f2.max(f3);
+      REQUIRE (views_are_equal(f2, fv));
+
+      // Check Absorbing: lhs==fill_value stays fill_value even with normal rhs
+      f3.deep_copy(2.0);
+      f2.deep_copy(constants::fill_value<Real>);
+      f2.max(f3);
+      REQUIRE (views_are_equal(f2, fv));
     }
 
     SECTION ("int") {
@@ -163,12 +178,27 @@ TEST_CASE ("update") {
       f4.min(f3);
       REQUIRE (views_are_equal(f3, f4));
 
-      // Check that updating with rhs==fill_value ignores the rhs
+      // Check IgnoreRhs: with rhs==fill_value, we ignore the rhs
       f3.deep_copy(constants::fill_value<int>);
-      f3.get_header().set_may_be_filled(true);
+      f2.get_header().set_fill_value_handling(FillValueHandling::IgnoreRhs);
       f2.deep_copy(1);
       f2.max(f3);
       REQUIRE (views_are_equal(f2,one));
+
+      // Check Absorbing: rhs==fill_value absorbs to fill_value
+      Field fv = one.clone();
+      fv.deep_copy(constants::fill_value<int>);
+      f3.deep_copy(constants::fill_value<int>);
+      f2.get_header().set_fill_value_handling(FillValueHandling::Absorbing);
+      f2.deep_copy(1);
+      f2.max(f3);
+      REQUIRE (views_are_equal(f2, fv));
+
+      // Check Absorbing: lhs==fill_value stays fill_value even with normal rhs
+      f3.deep_copy(2);
+      f2.deep_copy(constants::fill_value<int>);
+      f2.max(f3);
+      REQUIRE (views_are_equal(f2, fv));
     }
   }
 
@@ -215,18 +245,30 @@ TEST_CASE ("update") {
       f3.update(f_real,2,0);
       REQUIRE (views_are_equal(f3,f2));
 
-      // Check that updating with rhs==fill_value ignores the rhs
+      // Check IgnoreRhs: with rhs==fill_value, we ignore the rhs
       Field one = f_real.clone();
       one.deep_copy(1.0);
 
       f3.deep_copy(constants::fill_value<Real>);
-      f3.get_header().set_may_be_filled(true);
+      f2.get_header().set_fill_value_handling(FillValueHandling::IgnoreRhs);
       f2.deep_copy(1.0);
       f2.update(f3,1,1);
-      if (not views_are_equal(f2,one)) {
-        print_field_hyperslab(f2);
-      }
       REQUIRE (views_are_equal(f2,one));
+
+      // Check Absorbing: rhs==fill_value absorbs to fill_value
+      Field fv = one.clone();
+      fv.deep_copy(constants::fill_value<Real>);
+      f3.deep_copy(constants::fill_value<Real>);
+      f2.get_header().set_fill_value_handling(FillValueHandling::Absorbing);
+      f2.deep_copy(1.0);
+      f2.update(f3,1,1);
+      REQUIRE (views_are_equal(f2, fv));
+
+      // Check Absorbing: lhs==fill_value stays fill_value even with normal rhs
+      f3.deep_copy(1.0);
+      f2.deep_copy(constants::fill_value<Real>);
+      f2.update(f3,1,1);
+      REQUIRE (views_are_equal(f2, fv));
     }
 
     SECTION ("int") {
@@ -247,15 +289,30 @@ TEST_CASE ("update") {
       f3.update(f_int,2,0);
       REQUIRE (views_are_equal(f3,f2));
 
-      // Check that updating with rhs==fill_value ignores the rhs
+      // Check IgnoreRhs: with rhs==fill_value, we ignore the rhs
       Field one = f_int.clone();
       one.deep_copy(1);
 
       f3.deep_copy(constants::fill_value<int>);
-      f3.get_header().set_may_be_filled(true);
+      f2.get_header().set_fill_value_handling(FillValueHandling::IgnoreRhs);
       f2.deep_copy(1);
       f2.update(f3,1,1);
       REQUIRE (views_are_equal(f2,one));
+
+      // Check Absorbing: rhs==fill_value absorbs to fill_value
+      Field fv = one.clone();
+      fv.deep_copy(constants::fill_value<int>);
+      f3.deep_copy(constants::fill_value<int>);
+      f2.get_header().set_fill_value_handling(FillValueHandling::Absorbing);
+      f2.deep_copy(1);
+      f2.update(f3,1,1);
+      REQUIRE (views_are_equal(f2, fv));
+
+      // Check Absorbing: lhs==fill_value stays fill_value even with normal rhs
+      f3.deep_copy(1);
+      f2.deep_copy(constants::fill_value<int>);
+      f2.update(f3,1,1);
+      REQUIRE (views_are_equal(f2, fv));
     }
   }
 }

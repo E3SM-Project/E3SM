@@ -317,11 +317,10 @@ protected:
   void sync_views_impl () const;
 
   // The field manipulation methods call these two, with ST matching this field data type.
-  // Note: use_fill/use_mask are used to resolve some if statements in the impl at compile time
-  template<bool use_mask, typename ST>
-  void deep_copy_impl (const ST value, const Field& mask);
+  template<typename ST>
+  void deep_copy_impl (const ST value, const Field* mask = nullptr);
 
-  template<CombineMode CM, bool use_fill, typename ST, typename STX>
+  template<CombineMode CM, typename ST, typename STX>
   void update_impl (const Field& x, const ST alpha, const ST beta);
 
   template<HostOrDevice HD>
