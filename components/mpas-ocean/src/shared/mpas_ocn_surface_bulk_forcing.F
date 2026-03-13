@@ -843,9 +843,9 @@ contains
 
            ! Accumulate fluxes that use the freezing point
 ! mrp performance note: should call ocn_freezing_temperature just once here
-           seaIceTemperatureFlux(iCell) = seaIceFreshWaterFlux(iCell) * &
-               ocn_freezing_temperature( tracerGroup(index_salinity_flux, minLevelCell(iCell), iCell), pressure=0.0_RKIND, &
-                                         inLandIceCavity=.false.) / rho_sw
+
+           ! Already included in seaIceHeatFlux deriving from Icepack
+           seaIceTemperatureFlux(iCell) = 0.0_RKIND
 
            surfaceTemperatureFluxWithoutRunoff = rainTemperatureFlux(iCell) + evapTemperatureFlux(iCell) + &
                                                  seaIceTemperatureFlux(iCell)
