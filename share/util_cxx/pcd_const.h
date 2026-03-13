@@ -10,52 +10,92 @@
 namespace pcd {
 
 // pcd.yaml version and institution information
-const std::string pcdversion = "0.0.2";
+const std::string pcdversion = "0.1.0";
 const std::string pcdinstitution = "E3SM Project";
 
 // mathematical constants
-constexpr double pi = 3.141592653589793;                                         // ASHandbook1964
-constexpr double e = 2.718281828459045;                                          // ASHandbook1964
-constexpr double em_gamma = 0.5772156649015329;                                  // ASHandbook1964
-constexpr double radian = 57.29577951308232;                                     // ASHandbook1964
-constexpr double degree = 0.017453292519943295;                                  // ASHandbook1964
-constexpr double square_root_of_2 = 1.4142135623730951;                          // ASHandbook1964
-constexpr double square_root_of_3 = 1.7320508075688772;                          // ASHandbook1964
+constexpr double pi = 3.141592653589793;                    // ASHandbook1964
+constexpr double e = 2.718281828459045;                     // ASHandbook1964
+constexpr double em_gamma = 0.5772156649015329;             // ASHandbook1964
+constexpr double radian = 57.29577951308232;                // [degree] ASHandbook1964
+constexpr double degree = 0.017453292519943295;             // [rad] ASHandbook1964
+constexpr double square_root_of_2 = 1.4142135623730951;     // [rad] ASHandbook1964
+constexpr double square_root_of_3 = 1.7320508075688772;     // [rad] ASHandbook1964
 
 // universal_physical constants
-constexpr double speed_of_light_in_vacuum = 299792458;                           // NIST_CODATA2022
-constexpr double newtonian_gravitation_constant = 6.6743e-11;                    // NIST_CODATA2022
-constexpr double standard_acceleration_of_gravity = 9.80665;                     // NIST_CODATA2022
-constexpr double standard_atmosphere = 101325;                                   // NIST_CODATA2022
-constexpr double avogadro_constant = 6.02214076e+23;                             // NIST_CODATA2022
-constexpr double boltzmann_constant = 1.380649e-23;                              // NIST_CODATA2022
-constexpr double stefan_boltzmann_constant = 5.670374419e-08;                    // NIST_CODATA2022
-constexpr double planck_constant = 6.62607015e-34;                               // NIST_CODATA2022
-constexpr double molar_gas_constant = 8.314462618;                               // NIST_CODATA2022
-constexpr double molar_volume_of_ideal_gas = 0.02271095464;                      // NIST_CODATA2022
+constexpr double speed_of_light_in_vacuum = 299792458;            // [m s-1] NIST_CODATA2022
+constexpr double newtonian_gravitation_constant = 6.6743e-11;     // [m3 kg-1 s-2] NIST_CODATA2022
+constexpr double standard_acceleration_of_gravity = 9.80665;      // [m s-2] NIST_CODATA2022
+constexpr double standard_atmosphere = 101325;                    // [Pa] NIST_CODATA2022
+constexpr double avogadro_constant = 6.02214076e+23;              // [mol-1] NIST_CODATA2022
+constexpr double boltzmann_constant = 1.380649e-23;               // [J K-1] NIST_CODATA2022
+constexpr double stefan_boltzmann_constant = 5.670374419e-08;     // [W m-2 K-4] NIST_CODATA2022
+constexpr double planck_constant = 6.62607015e-34;                // [J Hz-1] NIST_CODATA2022
+constexpr double molar_gas_constant = 8.314462618;                // [J mol-1 K-1] NIST_CODATA2022
+constexpr double molar_volume_of_ideal_gas = 0.02271095464;       // [m3 mol-1] NIST_CODATA2022
+
+// chemical_molar_masses constants
+constexpr double carbon_molar_mass_reference = 0.0120107;             // [kg mol-1] IUPAC1997
+constexpr double oxygen_molar_mass_reference = 0.0159994;             // [kg mol-1] IUPAC1997
+constexpr double carbon_dioxide_molar_mass_reference = 0.0440095;     // [kg mol-1] IUPAC1997
 
 // earth_physical constants
-constexpr double geocentric_gravitational_constant = 3986005E+08;                // GRS80
-constexpr double semimajor_axis = 6378137;                                       // GRS80
-constexpr double dynamic_form_factor = 108263E-08;                               // GRS80
-constexpr double angular_velocity = 7292115E-11;                                 // GRS80
-constexpr double semiminor_axis = 6356752.3141;                                  // GRS80
-constexpr double flattening = 0.00335281068118;                                  // GRS80
-constexpr double reciprocal_flattening = 298.257222101;                          // GRS80
-constexpr double mean_radius = 6371008.7714;                                     // GRS80
-constexpr double radius_of_sphere_of_same_surface = 6371007.181;                 // GRS80
-constexpr double radius_of_sphere_of_same_volume = 6371000.79;                   // GRS80
+constexpr double geocentric_gravitational_constant = 3986005E+08;     // [m3 s-2] GRS80
+constexpr double semimajor_axis = 6378137;                            // [m] GRS80
+constexpr double dynamic_form_factor = 108263E-08;                    // GRS80
+constexpr double angular_velocity = 7292115E-11;                      // [rad s-1] GRS80
+constexpr double semiminor_axis = 6356752.3141;                       // [m] GRS80
+constexpr double flattening = 0.00335281068118;                       // GRS80
+constexpr double reciprocal_flattening = 298.257222101;               // GRS80
+constexpr double mean_radius = 6371008.7714;                          // [m] GRS80
+constexpr double radius_of_sphere_of_same_surface = 6371007.181;      // [m] GRS80
+constexpr double radius_of_sphere_of_same_volume = 6371000.79;        // [m] GRS80
 
 // solar constants
-constexpr double total_solar_irradiance = 1360.8;                                // TIM_SORCE_2005
+constexpr double total_solar_irradiance = 1360.8;     // [W m-2] TIM_SORCE_2005
 
 // water constants
-constexpr double water_molar_mass = 18.015268;                                   // IAPWS_95
-constexpr double water_specific_gas_constant = 0.46151805;                       // IAPWS_95
-constexpr double water_triple_point_temperature = 273.16;                        // IAPWS_95
-constexpr double water_triple_point_pressure = 611.655;                          // IAPWS_95
-constexpr double liquid_water_triple_point_density = 999.793;                    // IAPWS_95
-constexpr double vapor_water_triple_point_density = 0.00485458;                  // IAPWS_95
+constexpr double water_molar_mass = 0.018015268;                           // [kg mol-1] IAPWS_95
+constexpr double water_specific_gas_constant = 0.46151805;                 // [kJ kg-1 K-1] IAPWS_95
+constexpr double water_triple_point_temperature = 273.16;                  // [K] IAPWS_95
+constexpr double water_triple_point_pressure = 611.655;                    // [Pa] IAPWS_95
+constexpr double liquid_water_triple_point_density = 999.793;              // [kg m-3] IAPWS_95
+constexpr double vapor_water_triple_point_density = 0.00485458;            // [kg m-3] IAPWS_95
+constexpr double pure_water_freezing_temperature_reference = 273.15;       // [K] CGPM1948_1954
+constexpr double pure_water_density_reference = 1000.0;                    // [kg m-3] Gill_1982
+constexpr double pure_water_specific_heat_capacity_reference = 4188.0;     // [J kg-1 K-1] Smithsonian1951
+constexpr double latent_heat_of_fusion_reference = 333700.0;               // [J kg-1] CRC2018
+constexpr double latent_heat_of_vaporization_reference = 2501000.0;        // [J kg-1] Smithsonian1951
+constexpr double latent_heat_of_sublimation_reference = 2834700.0;         // [J kg-1] Smithsonian1951
+
+// earth_atmosphere constants
+constexpr double dry_air_molar_mass_reference = 0.028966;                                       // [kg mol-1] Smithsonian1951
+constexpr double water_vapor_molar_mass_reference = 0.018016;                                   // [kg mol-1] Smithsonian1951
+constexpr double dry_air_specific_gas_constant_reference = 287.0421396810053;                   // [J kg-1 K-1] US_StdAtm_1976
+constexpr double water_vapor_specific_gas_constant_reference = 461.50436378774424;              // [J kg-1 K-1] US_StdAtm_1976
+constexpr double dry_air_density_at_standard_temperature_and_pressure = 1.2923190576466714;     // [kg m-3] US_StdAtm_1976
+constexpr double dry_air_specific_heat_capacity_reference = 1004.64;                            // [J kg-1 K-1] Smithsonian1951
+constexpr double water_vapor_specific_heat_capacity_reference = 1810.0;                         // [J kg-1 K-1] Smithsonian1951
+
+// earth_seawater constants
+constexpr double seawater_density_reference = 1026.0;                               // [kg m-3] Gill_1982
+constexpr double seawater_specific_heat_capacity_reference = 3996.0;                // [J kg-1 K-1] Gill_1982
+constexpr double ocean_reference_salinity = 34.7;                                   // [g kg-1] Levitus1982
+constexpr double speed_of_sound_in_seawater_reference = 1500.0;                     // [m s-1] Gill_1982
+constexpr double vsmow_ratio_18o_to_16o = 0.0020052;                                // IAEA1995
+constexpr double vsmow_ratio_17o_to_16o = 0.000379;                                 // IAEA1995
+constexpr double vsmow_fraction_16o_of_total_oxygen = 0.997628;                     // IAEA1995
+constexpr double vsmow_ratio_2h_to_1h = 0.00015576;                                 // IAEA1995
+constexpr double vsmow_ratio_3h_to_1h = 1.85e-06;                                   // IAEA1995
+constexpr double vsmow_fraction_1h_of_total_hydrogen = 0.99984426;                  // IAEA1995
+constexpr double sea_ice_density_reference = 917.0;                                 // [kg m-3] Smithsonian1951
+constexpr double sea_ice_specific_heat_capacity_reference = 2117.27;                // [J kg-1 K-1] Smithsonian1951
+constexpr double sea_ice_thermal_conductivity_reference = 2.1;                      // [W m-1 K-1] MaykutUntersteiner1971
+constexpr double sea_ice_reference_salinity = 4.0;                                  // [g kg-1] Untersteiner1961
+constexpr double sea_ice_thermal_diffusivity_reference = 1.086373973376595e-06;     // [m2 s-1] CuffeyPaterson2010
+
+// isotopic_standards constants
+constexpr double pee_dee_belemnite_ratio_13c_to_12c = 0.0112372;     // Craig1957
 
 } // namespace pcd 
 #endif // PHYSICAL_CONSTANTS_DICTIONARY
