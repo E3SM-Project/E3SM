@@ -445,8 +445,20 @@ contains
        samegrid_ro, samegrid_lg)
 
     !---------------------------------------------------------------
-    ! Description
-    ! Update (read) aream in domains where appropriate - ON cpl pes
+    ! Initialize the model area (aream) field in each component domain
+    ! on the coupler PEs by propagating area values across component
+    ! boundaries where grids are shared.  Mapping order:
+    !   - atm -> ocn  (when samegrid_ao; rearrange only)
+    !   - ocn -> ice  (always; ice and ocean share the same mesh)
+    !   - atm -> lnd  (when samegrid_al)
+    !   - lnd -> glc  (when samegrid_lg)
+    ! When rof_c2_ocn is true and the rof and ocn grids differ,
+    ! the rof domain is obtained for later use.
+    ! Under MOABDEBUG, each updated mesh is written to an HDF5 file
+    ! for diagnostic purposes.
+    !
+    ! NOTE: in driver-mct, this routine would re-open mapping weight files and just
+    ! read the areas.  driver-moab has already read in all the areas during the mapping init
     !
     ! Uses
     use prep_ocn_mod,       only : prep_ocn_get_mapper_Fa2o
@@ -467,15 +479,14 @@ contains
     use seq_comm_mct,     only: atm_pg_active ! 
     !
     ! Arguments
-    type (seq_infodata_type) , intent(inout) :: infodata
-    logical                  , intent(in)    :: rof_c2_ocn
-    logical                  , intent(in)    :: samegrid_ao
-    logical                  , intent(in)    :: samegrid_al
-    logical                  , intent(in)    :: samegrid_ro
-    logical                  , intent(in)    :: samegrid_lg  ! lnd & glc on same grid
+    type (seq_infodata_type) , intent(inout) :: infodata      ! coupler information/metadata
+    logical                  , intent(in)    :: rof_c2_ocn    ! true if rof couples directly to ocn
+    logical                  , intent(in)    :: samegrid_ao   ! true if atm and ocn share the same grid
+    logical                  , intent(in)    :: samegrid_al   ! true if atm and lnd share the same grid
+    logical                  , intent(in)    :: samegrid_ro   ! true if rof and ocn share the same grid
+    logical                  , intent(in)    :: samegrid_lg   ! true if lnd and glc share the same grid
     !
     ! Local variables
-    type(mct_gsmap), pointer :: gsmap_s, gsmap_d
     type(mct_ggrid), pointer :: dom_s, dom_d
     type(seq_map)  , pointer :: mapper_Fa2o
     type(seq_map)  , pointer :: mapper_Sa2l
@@ -489,9 +500,7 @@ contains
     integer                  :: ka,km
     character(*), parameter :: subname = '(component_init_aream)'
     integer                 :: tagtype, nloc, ent_type, tagindex, ierr
-    character*100  tagname
-    real(R8), allocatable, target :: data1(:)
-    integer ,    allocatable :: gids(:) ! used for setting values associated with ids
+    character(CL)  tagname
     !---------------------------------------------------------------
 
     ! Note that the following is assumed to hold - all gsmaps_cx for a given
@@ -517,49 +526,8 @@ contains
           km = mct_aVect_indexRa(dom_s%data, "aream" )
           ! copy atm area to ocn aream
           dom_s%data%rAttr(km,:) = dom_s%data%rAttr(ka,:)
-
-        ! TODO should actually compute aream from mesh model
-        ! we do a lot of unnecessary gymnastics, and very inefficient, because we have a 
-        ! different distribution compared to mct source grid atm
-         tagtype = 1 ! dense, double
-         tagname='aream'//C_NULL_CHAR
-         nloc = mct_avect_lsize(dom_s%data)
-         allocate(data1(nloc))
-         data1 = dom_s%data%rAttr(ka,:)
-         if (atm_pg_active) then
-            ent_type = 1  ! element dense double tags
-         else ! this is true only for spectral atm now
-            ent_type = 0 ! for pure spectral case, the atm is PC on coupler side
-         endif
-          
-         allocate(gids(nloc))
-         gids = dom_s%data%iAttr(mct_aVect_indexIA(dom_s%data,"GlobGridNum"),:)
-         ! ! now set data on the coupler side too
-         ! put the mct atm area in the moab atm aream
-         ierr = iMOAB_SetDoubleTagStorageWithGid ( mbaxid, tagname, nloc, ent_type, &
-                                                    data1, gids)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in setting the aream tag on atm '
-            call shr_sys_abort(subname//' ERROR in setting aream tag on atm ')
-         endif
-         deallocate(gids)
-         deallocate(data1)
-         ! project now aream from atm to ocean.  This is a rearrange since samegrid_ao is true
-         call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
-          
-       else
-          gsmap_s => component_get_gsmap_cx(ocn(1)) ! gsmap_ox
-          gsmap_d => component_get_gsmap_cx(atm(1)) ! gsmap_ax
-          dom_s   => component_get_dom_cx(ocn(1))   ! dom_ox
-          dom_d   => component_get_dom_cx(atm(1))   ! dom_ax
-
-          call t_startf('CPL:seq_map_readdata-ocn2atm')
-          call seq_map_readdata('seq_maps.rc','ocn2atm_fmapname:', mpicom_CPLID, CPLID, &
-               gsmap_s=gsmap_s, av_s=dom_s%data, avfld_s='aream', filefld_s='area_a', &
-               gsmap_d=gsmap_d, av_d=dom_d%data, avfld_d='aream', filefld_d='area_b', &
-               string='ocn2atm aream initialization')
-          call t_stopf('CPL:seq_map_readdata-ocn2atm')
-
+          ! project now aream from atm to ocean.  This is a rearrange since samegrid_ao is true
+          call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
        endif
     endif
 
@@ -573,23 +541,11 @@ contains
 
     if (rof_c2_ocn) then
        if (.not.samegrid_ro) then
-          gsmap_s => component_get_gsmap_cx(rof(1)) ! gsmap_rx
           dom_s   => component_get_dom_cx(rof(1))   ! dom_rx
 
-          call t_startf('CPL:seq_map_readdata-rof2ocn_liq')
-          call seq_map_readdata('seq_maps.rc', 'rof2ocn_liq_rmapname:',mpicom_CPLID, CPLID, &
-               gsmap_s=gsmap_s, av_s=dom_s%data, avfld_s='aream', filefld_s='area_a', &
-               string='rof2ocn liq aream initialization')
-          call t_stopf('CPL:seq_map_readdata-rof2ocn_liq')
-
-          call t_startf('CPL:seq_map_readdata-rof2ocn_ice')
-          call seq_map_readdata('seq_maps.rc', 'rof2ocn_ice_rmapname:',mpicom_CPLID, CPLID, &
-               gsmap_s=gsmap_s, av_s=dom_s%data, avfld_s='aream', filefld_s='area_a', &
-               string='rof2ocn ice aream initialization')
-          call t_stopf('CPL:seq_map_readdata-rof2ocn_ice')
-          
        endif
        ! samegrid_ro = true not handled.  ROF always stub then?
+       ! TODO:  handle this for unified mesh?
     end if
 
     if (lnd_present .and. atm_present) then
@@ -598,16 +554,6 @@ contains
           dom_d  => component_get_dom_cx(lnd(1))   !dom_lx
           ! it should work for FV and spectral too
           call seq_map_map(mapper_Sa2l, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream') 
-       else
-          gsmap_d => component_get_gsmap_cx(lnd(1)) ! gsmap_lx
-          dom_d   => component_get_dom_cx(lnd(1))   ! dom_lx
-
-          call t_startf('CPL:seq_map_readdata-atm2lnd')
-          call seq_map_readdata('seq_maps.rc','atm2lnd_fmapname:',mpicom_CPLID, CPLID, &
-               gsmap_d=gsmap_d, av_d=dom_d%data, avfld_d='aream', filefld_d='area_b', &
-               string='atm2lnd aream initialization')
-          call t_stopf('CPL:seq_map_readdata-atm2lnd')
-
        endif
     end if
 
@@ -617,16 +563,6 @@ contains
           dom_d  => component_get_dom_cx(glc(1))   !dom_gx
 
           call seq_map_map(mapper_Sl2g, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
-       else
-          gsmap_d => component_get_gsmap_cx(glc(1)) ! gsmap_gx
-          dom_d   => component_get_dom_cx(glc(1))   ! dom_gx
-
-          call t_startf('CPL:seq_map_readdata-lnd2glc')
-          call seq_map_readdata('seq_maps.rc','lnd2glc_fmapname:',mpicom_CPLID, CPLID, &
-               gsmap_d=gsmap_d, av_d=dom_d%data, avfld_d='aream', filefld_d='area_b', &
-               string='lnd2glc aream initialization')
-          call t_stopf('CPL:seq_map_readdata-lnd2glc')
-
        endif
     endif
 #ifdef MOABDEBUG
