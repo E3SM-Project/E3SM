@@ -59,6 +59,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
   void finalize_impl(){/*Do nothing*/};
 
  private:
+  void run_small_kernels_microphysics(const double dt, const double eccf);
   // Output extra mam4xx diagnostics.
   bool extra_mam4_aero_microphys_diags_ = false;
 
@@ -158,6 +159,13 @@ class MAMMicrophysics final : public MAMGenericInterface {
   int get_len_temporary_views();
   void init_temporary_views();
   int len_temporary_views_{0};
+
+  view_3d state_q_, qqcw_pcnst_, qq_, qqcw_, vmr_,vmr0_, vmrcw_;
+  view_3d het_rates_, vmr_pregas_, vmr_precld_;
+
+  view_3d dqdt_aqso4_,dqdt_aqh2so4_;
+
+  view_3d dgncur_awet_, dgncur_a_, wetdens_;
 
   void add_io_docstring_to_fields_with_mixed_units(const std::map<std::string, std::string> &flds) {
     using str_atts_t = std::map<std::string,std::string>;
