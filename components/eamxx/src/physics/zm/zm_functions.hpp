@@ -97,6 +97,12 @@ struct Functions {
     static inline constexpr Real ull_upper_launch_pressure = 600.0; // upper search limit for unrestricted launch level (ULL)
 
     static inline constexpr Real MCSP_storm_speed_pref = 600e2; // pressure level for winds in MCSP calculation [Pa]
+
+    static inline constexpr Real MCSP_conv_depth_min = 700e2; // pressure thickness of convective heating [Pa]
+
+    static inline constexpr Real MCSP_shear_min = 3.0;   // min shear value for MCSP to be active
+
+    static inline constexpr Real MCSP_shear_max = 200.0; // max shear value for MCSP to be active
   };
 
   //----------------------------------------------------------------------------
