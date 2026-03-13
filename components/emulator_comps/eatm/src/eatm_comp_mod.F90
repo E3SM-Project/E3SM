@@ -70,6 +70,8 @@ CONTAINS
     character(CL) :: calendar    ! calendar type
     character(CL) :: flds_strm
 
+    character(len=*), parameter :: initial_condition_file = "/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/initial_conditions/1971010100_time_1.nc"
+
     !--- formats ---
     character(*), parameter :: F00   = "('(eatm_comp_init) ',8a)"
     character(*), parameter :: F0L   = "('(eatm_comp_init) ',a, l2)"
@@ -167,23 +169,17 @@ CONTAINS
           endif
 
           call shr_sys_flush(logunit_atm)
+       else
+          if (masterproc) then
+            ! startup, so read initial condition file
+            call eatm_restart_file_read(initial_condition_file)
+          endif
        endif
-
-       if (read_restart) then
-          call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
-          call seq_timemgr_EClockGetData( EClock, stepno=stepno, dtime=idt )
-          call seq_timemgr_EClockGetData( EClock, calendar=calendar )
-       endif
-
     !----------------------------------------------------------------------------
     ! Set initial atm state
     !----------------------------------------------------------------------------
-    !JW IC file?
-    ! populate all fields to zero OR from ACE IC if it's present
     call t_startf ('eatm_grid')
 
-    ! based on a list in the compset, we should know the emulator
-    ! then call the correct read_ic / init based on that.
     call ace_comp_init(ggrid)
 
     call t_stopf ('eatm_grid')
