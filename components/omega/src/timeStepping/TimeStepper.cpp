@@ -551,7 +551,8 @@ void TimeStepper::prescribeThickness(OceanState *State1, int TimeLevel1,
 
 //------------------------------------------------------------------------------
 void TimeStepper::prescribeVelocity(OceanState *State1, int TimeLevel1,
-                                    OceanState *State2, int TimeLevel2) const {
+                           OceanState *State2, int TimeLevel2,
+                           const TimeInstant &SimTime) const {
 
    if (PrescribeVelocityMode == PrescribeStateType::None) {
       return;
@@ -583,9 +584,10 @@ void TimeStepper::prescribeVelocity(OceanState *State1, int TimeLevel1,
 
 //------------------------------------------------------------------------------
 void TimeStepper::prescribeState(OceanState *State1, int TimeLevel1,
-                                 OceanState *State2, int TimeLevel2) const {
+                                 OceanState *State2, int TimeLevel2,
+                                 const TimeInstant &SimTime) const {
    prescribeThickness(State1, TimeLevel1, State2, TimeLevel2);
-   prescribeVelocity(State1, TimeLevel1, State2, TimeLevel2);
+   prescribeVelocity(State1, TimeLevel1, State2, TimeLevel2, SimTime);
 }
 
 //------------------------------------------------------------------------------

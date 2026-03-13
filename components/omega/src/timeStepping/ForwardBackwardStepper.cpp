@@ -69,7 +69,8 @@ void ForwardBackwardStepper::doStep(
                        State, ThickCurLevel, TimeStep);
 
    prescribeThickness(State, NextLevel, State, CurLevel);
-   prescribeVelocity(State, NextLevel, State, CurLevel);
+   prescribeVelocity(State, NextLevel, State, CurLevel,
+                     SimTime + TimeStep);
 
    // Update time levels (New -> Old) of prognostic variables with halo
    // exchanges

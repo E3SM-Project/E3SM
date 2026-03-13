@@ -228,18 +228,20 @@ class TimeStepper {
 
        /// Resets the velocity at the working time level to the initial condition.
        void prescribeVelocity(
-           OceanState *State1, ///< [out] destination state
-           int TimeLevel1,     ///< [in] time level index of the reference data
-           OceanState *State2, ///< [in] source state (initial condition)
-           int TimeLevel2      ///< [in] time level index of the destination data
+           OceanState *State1,        ///< [out] destination state
+           int TimeLevel1,            ///< [in] time level index of the reference data
+           OceanState *State2,        ///< [in] source state (initial condition)
+           int TimeLevel2,            ///< [in] time level index of the destination data
+           const TimeInstant &SimTime ///< [in] current simulation time
        ) const;
 
        /// Reset thickness and velocity to their initial values
        void prescribeState(
-           OceanState *State1, ///< [out] destination state
-           int TimeLevel1,     ///< [in] time level index of the reference data
-           OceanState *State2, ///< [in] source state (initial condition)
-           int TimeLevel2      ///< [in] time level index of the destination data
+           OceanState *State1,        ///< [out] destination state
+           int TimeLevel1,            ///< [in] time level index of the reference data
+           OceanState *State2,        ///< [in] source state (initial condition)
+           int TimeLevel2,            ///< [in] time level index of the destination data
+           const TimeInstant &SimTime ///< [in] current simulation time
        ) const;
 
    /// Updates tracers
