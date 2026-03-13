@@ -783,6 +783,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   const Real chlorine_loading = scream::mam_coupling::chlorine_loading_advance(
       ts, chlorine_values_, chlorine_time_secs_);
     config_.linoz.chlorine_loading=chlorine_loading;
+    data_interp_linoz_->run(end_of_step_ts());
   }
 
   for (size_t i = 0; i < elevated_emis_var_names_.size(); ++i) {
