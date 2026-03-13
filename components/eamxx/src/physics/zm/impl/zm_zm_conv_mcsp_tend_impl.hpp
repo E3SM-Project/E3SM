@@ -48,10 +48,6 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   //----------------------------------------------------------------------------
   // Purpose: perform MCSP tendency calculations
   //----------------------------------------------------------------------------
-  // Local variables
-  constexpr Real MCSP_conv_depth_min = 700e2; // pressure thickness of convective heating [Pa]
-  constexpr Real mcsp_shear_min = 3.0;   // min shear value for MCSP to be active
-  constexpr Real mcsp_shear_max = 200.0; // max shear value for MCSP to be active
 
   if (!runtime_opt.mcsp_enabled) return;
 
@@ -130,12 +126,12 @@ void Functions<S,D>::zm_conv_mcsp_tend(
 
   Kokkos::single(Kokkos::PerTeam(team), [&] () {
     // check that ZM produced tendencies over a depth that exceeds the threshold
-    if (zm_depth >= MCSP_conv_depth_min) {
+    if (zm_depth >= ZMC::MCSP_conv_depth_min) {
       // check that ZM provided a non-zero column total heating
       if (zm_avg_tend_s > 0.0) {
         // check that there is sufficient wind shear to justify coherent organization
-        if (std::abs(mcsp_shear) >= mcsp_shear_min &&
-            std::abs(mcsp_shear) < mcsp_shear_max) {
+        if (std::abs(mcsp_shear) >= ZMC::MCSP_shear_min &&
+            std::abs(mcsp_shear) < ZMC::MCSP_shear_max) {
           for (Int k = jctop; k < pver; ++k) {
 
             // See eq 7-8 of Moncrieff et al. (2017) - also eq (5) of Moncrieff & Liu (2006)
@@ -165,7 +161,7 @@ void Functions<S,D>::zm_conv_mcsp_tend(
           } // k = jctop, pver
         } // shear threshold
       } // zm_avg_tend_s > 0
-    } // zm_depth >= MCSP_conv_depth_min
+    } // zm_depth >= ZMC::MCSP_conv_depth_min
   });
   team.team_barrier();
 
@@ -177,7 +173,7 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   Kokkos::single(Kokkos::PerTeam(team), [&] () {
     for (Int k = jctop; k < pver; ++k) {
 
-      // update frequency if MCSP contributes any tendency in the column
+      // update frequency if ZMC::MCSP contributes any tendency in the column
       if (std::abs(mcsp_tend_s(k)) > 0.0 || std::abs(mcsp_tend_q(k)) > 0.0 ||
           std::abs(mcsp_tend_u(k)) > 0.0 || std::abs(mcsp_tend_v(k)) > 0.0) {
         mcsp_freq = 1.0;
