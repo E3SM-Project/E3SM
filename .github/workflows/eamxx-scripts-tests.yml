@@ -35,6 +35,10 @@ env:
   # Submit to cdash only for nightlies or if the user explicitly forced a submission via workflow dispatch
   submit: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.submit) }}
 
+defaults:
+  run:
+    shell: bash --login {0}
+
 jobs:
   cpu-gcc:
     runs-on:  [self-hosted, gcc, ghci-snl-cpu]

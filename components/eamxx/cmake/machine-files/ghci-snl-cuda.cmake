@@ -18,4 +18,3 @@ set(SCREAM_TEST_MAX_RANKS 2 CACHE STRING "Upper limit on ranks for mpi tests")
 
 # Enable python tests
 option (EAMXX_ENABLE_PYTHON "Whether to enable python interface from eamxx" ON)
-set (Python_EXECUTABLE "/usr/bin/python3" CACHE STRING "")
