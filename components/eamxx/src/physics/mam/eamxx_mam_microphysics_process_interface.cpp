@@ -10,7 +10,6 @@
 #include "share/algorithm/eamxx_data_interpolation.hpp"
 
 #include <ekat_team_policy_utils.hpp>
-#include <physics/mam/eamxx_mam_microphysics_process_functions.cpp>
 namespace scream
 {
 
