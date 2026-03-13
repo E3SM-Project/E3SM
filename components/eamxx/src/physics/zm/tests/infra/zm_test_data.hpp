@@ -410,11 +410,12 @@ struct ZmConvMcspTendData : public PhysicsTestData {
   template <typename Engine>
   void randomize(Engine& engine)
   {
-    PhysicsTestData::randomize(engine, { {state_pmid, {600e2-1000, 600e2+1000}} });
+    PhysicsTestData::randomize(engine, { {state_pmid, {600e2-1000, 600e2+1000}}, {state_pint, {1300e2 - 1000, 1300e2 + 1000}}, {state_u, {50, 150}} });
 
     // Make sure each column is sorted
     for (Int c = 0; c < pcols; ++c) {
       std::sort(state_pmid + (c*pver), state_pmid + ((c+1)*pver));
+      std::sort(state_pint + (c*(pver+1)), state_pint + ((c+1)*(pver+1)));
     }
   }
 };

@@ -132,7 +132,6 @@ void Functions<S,D>::zm_conv_mcsp_tend(
       // check that there is sufficient wind shear to justify coherent organization
       if (std::abs(mcsp_shear) >= ZMC::MCSP_shear_min &&
           std::abs(mcsp_shear) < ZMC::MCSP_shear_max) {
-
         // Calculate tendencies and integrate them using parallel reduce
         Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, jctop, pver),
           [&] (const Int& k, Real& avg_s, Real& avg_q, Real& avg_k) {
@@ -201,6 +200,9 @@ void Functions<S,D>::zm_conv_mcsp_tend(
       if (std::abs(mcsp_tend_s(k)) > 0.0 || std::abs(mcsp_tend_q(k)) > 0.0 ||
           std::abs(mcsp_tend_u(k)) > 0.0 || std::abs(mcsp_tend_v(k)) > 0.0) {
         local_freq = 1.0;
+      }
+      else {
+        local_freq = 0.0;
       }
     },
     Kokkos::Max<Real>(mcsp_freq));
