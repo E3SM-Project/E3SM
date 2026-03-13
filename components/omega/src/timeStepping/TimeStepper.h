@@ -67,6 +67,8 @@ enum class TimeStepperType {
 enum class PrescribeStateType {
     None,
     Init,
+    NonDivergent,
+    Divergent,
     Invalid
 };
 

@@ -10,6 +10,7 @@
 #include "ForwardBackwardStepper.h"
 #include "RungeKutta2Stepper.h"
 #include "RungeKutta4Stepper.h"
+#include "Logging.h"
 
 namespace OMEGA {
 //------------------------------------------------------------------------------
@@ -64,12 +65,15 @@ PrescribeStateType getPrescribeVelocityTypeFromStr(const std::string &InString) 
 
    if (InString == "None") {
       return PrescribeStateType::None;
-   }
-   if (InString == "Init") {
+   }else if (InString == "Init") {
       return PrescribeStateType::Init;
+   }else if (InString == "NonDivergent") {
+      return PrescribeStateType::NonDivergent;
+   }else if (InString == "Divergent") {
+      return PrescribeStateType::Divergent;
    }
 
-   ABORT_ERROR("PrescribeStateType should be 'None' or 'Init' for velocity but got {}",
+   ABORT_ERROR("PrescribeStateType should be 'None', 'Init', 'NonDivergent' or 'Divergent' for velocity but got {}",
                InString);
    return PrescribeStateType::Invalid;
 }
@@ -576,6 +580,94 @@ void TimeStepper::prescribeVelocity(OceanState *State1, int TimeLevel1,
                  Team, KRange, INNER_LAMBDA(int KChunk) {
                     const int K = KMin + KChunk;
                     NormalVel2(IEdge, K) = NormalVel1(IEdge, K);
+                 });
+          });
+      return;
+   } else if (PrescribeVelocityMode == PrescribeStateType::NonDivergent) {
+      Array2DReal NormalVel2 = State2->getNormalVelocity(TimeLevel2);
+
+      OMEGA_SCOPE(LatEdge, Mesh->LatEdgeH);
+      OMEGA_SCOPE(LonEdge, Mesh->LonEdgeH);
+      OMEGA_SCOPE(AngleEdge, Mesh->AngleEdgeH);
+      OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBotH);
+      OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTopH);
+
+      const Clock *ModelClock = StepClock.get();
+      R8 ElapsedTimeSec;
+      TimeInterval ElapsedTimeInterval = SimTime - ModelClock->getCurrentTime();
+      ElapsedTimeInterval.get(ElapsedTimeSec, TimeUnits::Seconds);
+
+      const R8 Tau     = 12. * Day2Sec; // 12 days in seconds
+      const R8 TSim    = ElapsedTimeSec;
+
+      parallelForOuter(
+          "prescribeVelocityNonDivergent", {Mesh->NEdgesAll},
+          KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
+             const int KMin   = MinLayerEdgeBot(IEdge);
+             const int KMax   = MaxLayerEdgeTop(IEdge);
+             const int KRange = vertRange(KMin, KMax);
+
+             const R8 lon_p =
+                 LonEdge(IEdge) - 2.0 * Pi * TSim / Tau;
+             const R8 u = (10.0 / Tau) *
+                          (Kokkos::pow(sin(lon_p), 2) *
+                           sin(2.0 * LatEdge(IEdge)) *
+                           cos(Pi * TSim / Tau) +
+                           2.0 * Pi * cos(LatEdge(IEdge)));
+             const R8 v = (10.0 / Tau) * sin(2.0 * lon_p) *
+                          cos(LatEdge(IEdge)) * cos(Pi * TSim / Tau);
+             const R8 normalVel = REarth * (
+                 u * cos(AngleEdge(IEdge)) + v * sin(AngleEdge(IEdge)));
+
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    const int K = KMin + KChunk;
+                    NormalVel2(IEdge, K) = normalVel;
+                 });
+          });
+      return;
+   } else if (PrescribeVelocityMode == PrescribeStateType::Divergent) {
+      Array2DReal NormalVel2 = State2->getNormalVelocity(TimeLevel2);
+
+      OMEGA_SCOPE(LatEdge, Mesh->LatEdgeH);
+      OMEGA_SCOPE(LonEdge, Mesh->LonEdgeH);
+      OMEGA_SCOPE(AngleEdge, Mesh->AngleEdgeH);
+      OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBotH);
+      OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTopH);
+
+      const Clock *ModelClock = StepClock.get();
+      R8 ElapsedTimeSec;
+      TimeInterval ElapsedTimeInterval = SimTime - ModelClock->getCurrentTime();
+      ElapsedTimeInterval.get(ElapsedTimeSec, TimeUnits::Seconds);
+
+      const R8 Tau     = 12. * Day2Sec; // 14 days in seconds
+      const R8 TSim    = ElapsedTimeSec;
+
+      parallelForOuter(
+          "prescribeVelocityDivergent", {Mesh->NEdgesAll},
+          KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
+             const int KMin   = MinLayerEdgeBot(IEdge);
+             const int KMax   = MaxLayerEdgeTop(IEdge);
+             const int KRange = vertRange(KMin, KMax);
+
+             const R8 lon_p =
+                 LonEdge(IEdge) - 2.0 * Pi * TSim / Tau;
+             const R8 u = (1.0 / Tau) *
+                          (-10.0 / 2.0) * Kokkos::pow(sin(lon_p / 2), 2) *
+                          sin(2.0 * LatEdge(IEdge)) *
+                          Kokkos::pow(cos(LatEdge(IEdge)), 2) *
+                          cos(Pi * TSim / Tau) +
+                          2.0 * Pi * cos(LatEdge(IEdge));
+             const R8 v = (10.0 / (4 * Tau)) *
+                          sin(lon_p) * Kokkos::pow(cos(LatEdge(IEdge)), 3) *
+                          cos(Pi * TSim / Tau);
+             const R8 normalVel = REarth * (
+                 u * cos(AngleEdge(IEdge)) + v * sin(AngleEdge(IEdge)));
+
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    const int K = KMin + KChunk;
+                    NormalVel2(IEdge, K) = normalVel;
                  });
           });
       return;
