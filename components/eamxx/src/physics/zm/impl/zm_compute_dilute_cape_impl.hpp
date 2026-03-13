@@ -162,7 +162,7 @@ void Functions<S,D>::compute_dilute_cape(
   //----------------------------------------------------------------------------
   // calculate CAPE
   compute_cape_from_parcel(team, workspace, runtime_opt, pver, pverp, num_cin, num_msg,
-                          temperature, tv, zmid, sp_humidity, pint,
+                          temperature, tv, sp_humidity, pint,
                           msemax_klev, lcl_pmid, lcl_klev,
                           parcel_qsat, parcel_temp, parcel_vtemp,
                           eql_klev, cape);

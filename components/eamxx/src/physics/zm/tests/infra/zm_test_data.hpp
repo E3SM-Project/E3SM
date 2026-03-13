@@ -300,7 +300,7 @@ struct ComputeCapeFromParcelData : public PhysicsTestData {
   // Inputs
   Int pcols, ncol, pver, pverp, num_cin, num_msg;
   Int *msemax_klev, *lcl_klev;
-  Real *temperature, *tv, *zmid, *sp_humidity, *pint, *lcl_pmid;
+  Real *temperature, *tv, *sp_humidity, *pint, *lcl_pmid;
 
   // Inputs/Outputs
   Int *eql_klev;
@@ -314,7 +314,7 @@ struct ComputeCapeFromParcelData : public PhysicsTestData {
       {pcols_}
     },
     {
-      {&temperature, &tv, &zmid, &sp_humidity, &parcel_qsat, &parcel_temp, &parcel_vtemp},
+      {&temperature, &tv, &sp_humidity, &parcel_qsat, &parcel_temp, &parcel_vtemp},
       {&pint},
       {&lcl_pmid, &cape}
     },

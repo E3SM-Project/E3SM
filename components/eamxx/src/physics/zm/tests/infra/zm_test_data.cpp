@@ -51,7 +51,7 @@ void find_mse_max_bridge_f(Int pcols, Int ncol, Int pver, Int num_msg, Int* msem
 
 void compute_dilute_parcel_bridge_f(Int pcols, Int ncol, Int pver, Int num_msg, Int* klaunch, Real* pmid, Real* temperature, Real* sp_humidity, Real* tpert, Int* pblt, Real* parcel_temp, Real* parcel_vtemp, Real* parcel_qsat, Real* lcl_pmid, Real* lcl_temperature, Int* lcl_klev);
 
-void compute_cape_from_parcel_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int num_cin, Int num_msg, Real* temperature, Real* tv, Real* zmid, Real* sp_humidity, Real* pint, Int* msemax_klev, Real* lcl_pmid, Int* lcl_klev, Real* parcel_qsat, Real* parcel_temp, Real* parcel_vtemp, Int* eql_klev, Real* cape);
+void compute_cape_from_parcel_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int num_cin, Int num_msg, Real* temperature, Real* tv, Real* sp_humidity, Real* pint, Int* msemax_klev, Real* lcl_pmid, Int* lcl_klev, Real* parcel_qsat, Real* parcel_temp, Real* parcel_vtemp, Int* eql_klev, Real* cape);
 
 void zm_conv_mcsp_calculate_shear_bridge_f(Int pcols, Int ncol, Int pver, Real* state_pmid, Real* state_u, Real* state_v, Real* mcsp_shear);
 } // extern "C" : end _f decls
@@ -710,7 +710,7 @@ void compute_cape_from_parcel_f(ComputeCapeFromParcelData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
   zm_common_init_f();
-  compute_cape_from_parcel_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.num_cin, d.num_msg, d.temperature, d.tv, d.zmid, d.sp_humidity, d.pint, d.msemax_klev, d.lcl_pmid, d.lcl_klev, d.parcel_qsat, d.parcel_temp, d.parcel_vtemp, d.eql_klev, d.cape);
+  compute_cape_from_parcel_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.num_cin, d.num_msg, d.temperature, d.tv, d.sp_humidity, d.pint, d.msemax_klev, d.lcl_pmid, d.lcl_klev, d.parcel_qsat, d.parcel_temp, d.parcel_vtemp, d.eql_klev, d.cape);
   zm_common_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -726,7 +726,7 @@ void compute_cape_from_parcel(ComputeCapeFromParcelData& d)
   std::vector<view2dr_d> vec2dr_in(8);
   std::vector<int> vec2dr_in_0_sizes = {d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols};
   std::vector<int> vec2dr_in_1_sizes = {d.pver, d.pver, d.pver, d.pverp, d.pver, d.pver, d.pver, d.pver};
-  ekat::host_to_device({d.parcel_qsat, d.parcel_temp, d.parcel_vtemp, d.pint, d.sp_humidity, d.temperature, d.tv, d.zmid}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
+  ekat::host_to_device({d.parcel_qsat, d.parcel_temp, d.parcel_vtemp, d.pint, d.sp_humidity, d.temperature, d.tv}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
 
   std::vector<view1di_d> vec1di_in(3);
   ekat::host_to_device({d.eql_klev, d.lcl_klev, d.msemax_klev}, d.pcols, vec1di_in);
@@ -768,7 +768,6 @@ void compute_cape_from_parcel(ComputeCapeFromParcelData& d)
     // after this.
     const auto temperature_c = ekat::subview(temperature_d, i);
     const auto tv_c = ekat::subview(tv_d, i);
-    const auto zmid_c = ekat::subview(zmid_d, i);
     const auto sp_humidity_c = ekat::subview(sp_humidity_d, i);
     const auto pint_c = ekat::subview(pint_d, i);
     const auto parcel_qsat_c = ekat::subview(parcel_qsat_d, i);
@@ -785,7 +784,6 @@ void compute_cape_from_parcel(ComputeCapeFromParcelData& d)
       num_msg,
       temperature_c,
       tv_c,
-      zmid_c,
       sp_humidity_c,
       pint_c,
       msemax_klev_d(i),

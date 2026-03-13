@@ -50,10 +50,9 @@ real(r8) function entropy(TK, p, qtot, zm_const)
    e = qv*p / (zm_const%epsilo+qv)
 
    ! calculate entropy per unit mass of dry air - Eq. 1
-   entropy = (  zm_const%cpair &
-              + qtot*zm_const%cpliq)*log(TK/zm_const%tfreez) &
-              - zm_const%rdair*log( (p-e)/pref &
-             ) + L*qv/TK - qv*zm_const%rh2o*log(qv/qst)
+   entropy = ( zm_const%cpair + qtot*zm_const%cpliq)*log(TK/zm_const%tfreez) &
+             - zm_const%rdair*log( (p-e)/pref) &
+             + L*qv/TK - qv*zm_const%rh2o*log(qv/qst)
 
 end function entropy
 

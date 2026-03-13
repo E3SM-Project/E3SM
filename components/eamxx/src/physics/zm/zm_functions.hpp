@@ -500,7 +500,6 @@ struct Functions {
     const Int& num_msg, // number of missing moisture levels at the top of model
     const uview_1d<const Real>& temperature, // temperature
     const uview_1d<const Real>& tv, // virtual temperature
-    const uview_1d<const Real>& zmid, // height/altitude at mid-levels
     const uview_1d<const Real>& sp_humidity, // specific humidity
     const uview_1d<const Real>& pint, // pressure at interfaces
     const Int& msemax_klev, // index of max MSE at parcel launch level
