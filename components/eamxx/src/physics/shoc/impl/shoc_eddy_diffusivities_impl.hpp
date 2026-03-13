@@ -16,7 +16,6 @@ KOKKOS_FUNCTION
 void Functions<S,D>::eddy_diffusivities(
   const MemberType&            team,
   const Int&                   nlev,
-  const bool&                  shoc_1p5tke,
   const Scalar&                 Ckh,
   const Scalar&                 Ckm,
   const Scalar&                pblh,
@@ -51,16 +50,8 @@ void Functions<S,D>::eddy_diffusivities(
     tkh(k).set(condition, Ckh_s*ekat::square(shoc_mix(k))*ekat::sqrt(sterm_zt(k)));
     tk(k).set(condition,  Ckm_s*ekat::square(shoc_mix(k))*ekat::sqrt(sterm_zt(k)));
 
-    if (shoc_1p5tke){
-      // Revert to a standard 1.5 TKE closure for eddy diffusivities
-      tkh(k).set(!condition, Ckh*shoc_mix(k)*ekat::sqrt(tke(k)));
-      tk(k).set(!condition,  Ckm*shoc_mix(k)*ekat::sqrt(tke(k)));
-    }
-    else{
-      // Default SHOC definition of eddy diffusivity for heat and momentum
-      tkh(k).set(!condition, Ckh*isotropy(k)*tke(k));
-      tk(k).set(!condition,  Ckm*isotropy(k)*tke(k));
-    }
+    tkh(k).set(!condition, Ckh*isotropy(k)*tke(k));
+    tk(k).set(!condition,  Ckm*isotropy(k)*tke(k));
   });
 }
 

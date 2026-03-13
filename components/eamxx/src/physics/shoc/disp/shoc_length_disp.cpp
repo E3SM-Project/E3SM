@@ -13,7 +13,6 @@ void Functions<Real,DefaultDevice>
   const Int&                   nlev,
   const Int&                   nlevi,
   const Scalar&                length_fac,
-  const bool&                  shoc_1p5tke,
   const view_1d<const Scalar>& dx,
   const view_1d<const Scalar>& dy,
   const view_2d<const Pack>&  zt_grid,
@@ -21,7 +20,6 @@ void Functions<Real,DefaultDevice>
   const view_2d<const Pack>&  dz_zt,
   const view_2d<const Pack>&  tke,
   const view_2d<const Pack>&  thv,
-  const view_2d<const Pack>&  tk,
   const WorkspaceMgr&          workspace_mgr,
   const view_2d<Pack>&        brunt,
   const view_2d<Pack>&        shoc_mix)
@@ -36,14 +34,13 @@ void Functions<Real,DefaultDevice>
 
     auto workspace       = workspace_mgr.get_workspace(team);
 
-    shoc_length(team, nlev, nlevi, length_fac, shoc_1p5tke,
+    shoc_length(team, nlev, nlevi, length_fac,
                 dx(i), dy(i),
                 ekat::subview(zt_grid, i),
                 ekat::subview(zi_grid, i),
                 ekat::subview(dz_zt, i),
                 ekat::subview(tke, i),
                 ekat::subview(thv, i),
-                ekat::subview(tk, i),
                 workspace,
                 ekat::subview(brunt, i),
                 ekat::subview(shoc_mix, i));
