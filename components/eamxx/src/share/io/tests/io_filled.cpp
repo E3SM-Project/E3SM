@@ -89,7 +89,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
     FID fid("f_"+std::to_string(fl.size()),fl,units,grid->name());
     Field f(fid);
     f.allocate_view();
-    f.deep_copy(0.0); // For the "filled" field we start with a filled value.
+    f.deep_copy(0.0);
     f.get_header().get_tracking().update_time_stamp(t0);
     fm->add_field(f);
   }
