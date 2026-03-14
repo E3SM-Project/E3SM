@@ -4577,19 +4577,23 @@ module li_calving
 !
 !    routine li_flood_fill
 !
-!> \brief  Flood fill routine to differentiate ice sheet from icebergs, critically damaged regions, etc. 
-!> The calling routine defines the seedMask to specify the initial masked region, and the growMask 
+!> \brief  Flood fill for MPAS meshes
+!> \author Trevor Hillebrand and Matthew Hoffman
+!> \date   March 2021
+!> \details
+!> Flood fill routine to differentiate ice sheet from icebergs, critically damaged regions, etc.
+!> The calling routine defines the seedMask to specify the initial masked region, and the growMask
 !> to specify the potential region to be filled by the flood-fill routine. The flood-fill routine
-!> then adds the contiguous areas of the growMask to the seedMask, which is passed back to the 
+!> then adds the contiguous areas of the growMask to the seedMask, which is passed back to the
 !> calling routine for application.
 !> The calling routine must use the fields seedMask and growMask in the scratch pool in Registry.
 !> This is because the halo updates in this routine are hard-coded to use those field names.
 !> Because those two fields are scratch variables, the calling routine needs to be responsible
 !> for allocating (and populating) those fields prior to calling this routine, and then deallocating
 !> them afterwards.
-!> \author Trevor Hillebrand and Matthew Hoffman
-!> \date   March 2021
-!> \details 
+!> This routine currently retrieves mesh and scratch pools only from domain % blocklist (the first
+!> block) and therefore assumes one block per MPI task. Configurations with config_number_of_blocks
+!> greater than the number of MPI tasks (multiple blocks per task) are not supported for this routine.
 !-----------------------------------------------------------------------
    subroutine li_flood_fill(domain)
       !-----------------------------------------------------------------
