@@ -723,9 +723,9 @@ void compute_cape_from_parcel(ComputeCapeFromParcelData& d)
   std::vector<view1dr_d> vec1dr_in(2);
   ekat::host_to_device({d.cape, d.lcl_pmid}, d.pcols, vec1dr_in);
 
-  std::vector<view2dr_d> vec2dr_in(8);
-  std::vector<int> vec2dr_in_0_sizes = {d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols};
-  std::vector<int> vec2dr_in_1_sizes = {d.pver, d.pver, d.pver, d.pverp, d.pver, d.pver, d.pver, d.pver};
+  std::vector<view2dr_d> vec2dr_in(7);
+  std::vector<int> vec2dr_in_0_sizes = {d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols};
+  std::vector<int> vec2dr_in_1_sizes = {d.pver, d.pver, d.pver, d.pverp, d.pver, d.pver, d.pver};
   ekat::host_to_device({d.parcel_qsat, d.parcel_temp, d.parcel_vtemp, d.pint, d.sp_humidity, d.temperature, d.tv}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
 
   std::vector<view1di_d> vec1di_in(3);
