@@ -11,19 +11,22 @@ namespace zm {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestEntropy : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestZmConvMcspCalculateShear : public UnitWrap::UnitTest<D>::Base {
 
   void run_bfb()
   {
     auto engine = Base::get_engine();
 
     // Set up inputs
-    EntropyData baseline_data[] = {
-      //          tk, p, qtot, entropy (output, set to zero)
-      EntropyData(270,  1000,    .01, 0),
+    ZmConvMcspCalculateShearData baseline_data[] = {
+      //                       pcols, ncol, pver
+      ZmConvMcspCalculateShearData(4,    4,  72),
+      ZmConvMcspCalculateShearData(4,    4,  128),
+      ZmConvMcspCalculateShearData(4,    4,  72),
+      ZmConvMcspCalculateShearData(4,    4,  128),
     };
 
-    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(EntropyData);
+    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ZmConvMcspCalculateShearData);
 
     // Generate random input data
     // Alternatively, you can use the baseline_data constructors/initializer lists to hardcode data
@@ -33,8 +36,11 @@ struct UnitWrap::UnitTest<D>::TestEntropy : public UnitWrap::UnitTest<D>::Base {
 
     // Create copies of data for use by test. Needs to happen before read calls so that
     // inout data is in original state
-    EntropyData test_data[] = {
-      EntropyData(baseline_data[0]),
+    ZmConvMcspCalculateShearData test_data[] = {
+      ZmConvMcspCalculateShearData(baseline_data[0]),
+      ZmConvMcspCalculateShearData(baseline_data[1]),
+      ZmConvMcspCalculateShearData(baseline_data[2]),
+      ZmConvMcspCalculateShearData(baseline_data[3]),
     };
 
     // Read baseline data
@@ -47,19 +53,22 @@ struct UnitWrap::UnitTest<D>::TestEntropy : public UnitWrap::UnitTest<D>::Base {
     // Get data from test
     for (auto& d : test_data) {
       if (this->m_baseline_action == GENERATE) {
-        entropy_f(d);
+        zm_conv_mcsp_calculate_shear_f(d);
       }
       else {
-        entropy(d);
+        zm_conv_mcsp_calculate_shear(d);
       }
     }
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
-        EntropyData& d_baseline = baseline_data[i];
-        EntropyData& d_test = test_data[i];
-        REQUIRE(d_baseline.entropy == d_test.entropy);
+        ZmConvMcspCalculateShearData& d_baseline = baseline_data[i];
+        ZmConvMcspCalculateShearData& d_test = test_data[i];
+        REQUIRE(d_baseline.total(d_baseline.mcsp_shear) == d_test.total(d_test.mcsp_shear));
+        for (Int k = 0; k < d_baseline.total(d_baseline.mcsp_shear); ++k) {
+          REQUIRE(d_baseline.mcsp_shear[k] == d_test.mcsp_shear[k]);
+        }
       }
     }
     else if (this->m_baseline_action == GENERATE) {
@@ -77,9 +86,9 @@ struct UnitWrap::UnitTest<D>::TestEntropy : public UnitWrap::UnitTest<D>::Base {
 
 namespace {
 
-TEST_CASE("entropy_bfb", "[zm]")
+TEST_CASE("zm_conv_mcsp_calculate_shear_bfb", "[zm]")
 {
-  using TestStruct = scream::zm::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestEntropy;
+  using TestStruct = scream::zm::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestZmConvMcspCalculateShear;
 
   TestStruct t;
   t.run_bfb();

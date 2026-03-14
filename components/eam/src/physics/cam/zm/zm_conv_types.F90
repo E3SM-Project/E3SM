@@ -140,8 +140,8 @@ subroutine zm_const_set_for_testing(zm_const)
    zm_const%grav     = 9.80616_r8
    zm_const%rgrav    = 1.0_r8/9.80616_r8
    zm_const%rdair    = 287.042_r8 ! Needs to match eamxx const Rair, otherwise rgas/mwdair
-   zm_const%rh2o     = rgas/mwwv
-   zm_const%zvir     = zm_const%rh2o/zm_const%rdair - 1.0_r8
+   zm_const%rh2o     = 461.505_r8 ! Needs to match eamxx, otherwise rgas/mwwv
+   zm_const%zvir     = (rgas/mwwv)/zm_const%rdair - 1.0_r8
    zm_const%cpair    = 1.00464e3_r8
    zm_const%cpwv     = 1.810e3_r8
    zm_const%cpliq    = 4.188e3_r8

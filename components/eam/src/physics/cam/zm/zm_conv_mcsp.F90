@@ -7,7 +7,7 @@ module zm_conv_mcsp
    !          capability has not been extensively tested
    !----------------------------------------------------------------------------
    ! References:
-   ! 
+   !
    !   Moncrieff, M. W., & Liu, C. (2006). Representing convective organization in
    !     prediction models by a hybrid strategy. J. Atmos. Sci., 63, 3404–3420.
    !     https://doi.org/10.1175/JAS3812.1
@@ -17,9 +17,9 @@ module zm_conv_mcsp
    !     and precipitation in E3SMv1. Part I: Mesoscale heating. J. Adv.
    !     Mod. Earth Sys., 13, e2020MS002401, https://doi.org/10.1029/2020MS002401
    !
-   !   Moncrieff, M. W., C. Liu, and P. Bogenschutz, 2017: Simulation, Modeling, 
-   !     and Dynamically Based Parameterization of Organized Tropical Convection 
-   !     for Global Climate Models. J. Atmos. Sci., 74, 1363–1380, 
+   !   Moncrieff, M. W., C. Liu, and P. Bogenschutz, 2017: Simulation, Modeling,
+   !     and Dynamically Based Parameterization of Organized Tropical Convection
+   !     for Global Climate Models. J. Atmos. Sci., 74, 1363–1380,
    !     https://doi.org/10.1175/JAS-D-16-0166.1.
    !
    !   Moncrieff, M. W. (2019). Toward a Dynamical Foundation for Organized Convection
@@ -42,6 +42,9 @@ module zm_conv_mcsp
    public :: zm_conv_mcsp_init ! Initialize MCSP output fields
    public :: zm_conv_mcsp_tend ! Perform MCSP tendency calculations
    public :: zm_conv_mcsp_hist ! Write diagnostic quantities to history files
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   public :: zm_conv_mcsp_calculate_shear ! just for testing
+#endif
 
    real(r8), parameter :: MCSP_storm_speed_pref = 600e2_r8 ! pressure level for winds in MCSP calculation [Pa]
    real(r8), parameter :: MCSP_conv_depth_min   = 700e2_r8 ! pressure thickness of convective heating [Pa]
@@ -96,25 +99,19 @@ subroutine zm_conv_mcsp_calculate_shear( pcols, ncol, pver, state_pmid, state_u,
    ! Local variables
    integer  :: i
    real(r8), dimension(pcols) :: storm_u         ! u wind at storm reference level set by MCSP_storm_speed_pref
-   real(r8), dimension(pcols) :: storm_v         ! v wind at storm reference level set by MCSP_storm_speed_pref
-   real(r8), dimension(pcols) :: storm_u_shear   ! u shear at storm reference level set by MCSP_storm_speed_pref
-   real(r8), dimension(pcols) :: storm_v_shear   ! v shear at storm reference level set by MCSP_storm_speed_pref
+
    !----------------------------------------------------------------------------
    ! Interpolate wind to pressure level specified by MCSP_storm_speed_pref
    call vertinterp( ncol, pcols, pver, state_pmid, MCSP_storm_speed_pref, state_u, storm_u )
-   call vertinterp( ncol, pcols, pver, state_pmid, MCSP_storm_speed_pref, state_v, storm_v )
 
    !----------------------------------------------------------------------------
    ! calculate low-level shear
    do i = 1,ncol
       if (state_pmid(i,pver).gt.MCSP_storm_speed_pref) then
-         storm_u_shear(i) = storm_u(i)-state_u(i,pver)
-         storm_v_shear(i) = storm_v(i)-state_v(i,pver)
+         mcsp_shear(i) = storm_u(i)-state_u(i,pver)
       else
-         storm_u_shear(i) = -999
-         storm_v_shear(i) = -999
+         mcsp_shear(i) = -999
       end if
-      mcsp_shear(i) = storm_u_shear(i)
    end do
 
    !----------------------------------------------------------------------------
@@ -182,7 +179,7 @@ subroutine zm_conv_mcsp_tend( pcols, ncol, pver, pverp, &
    real(r8), dimension(pcols,pver) :: mcsp_tend_v     ! MCSP tendency before energy fixer for v wind
 
    real(r8), dimension(pcols)      :: mcsp_avg_tend_s ! mass weighted column average MCSP tendency of DSE
-   real(r8), dimension(pcols)      :: mcsp_avg_tend_q ! mass weighted column average MCSP tendency of qv 
+   real(r8), dimension(pcols)      :: mcsp_avg_tend_q ! mass weighted column average MCSP tendency of qv
    real(r8), dimension(pcols)      :: mcsp_avg_tend_k ! mass weighted column average MCSP tendency of kinetic energy
 
    logical :: do_mcsp_t = .false.   ! internal flag to enable tendency calculations
@@ -210,7 +207,7 @@ subroutine zm_conv_mcsp_tend( pcols, ncol, pver, pverp, &
    mcsp_avg_tend_s(1:ncol) = 0
    mcsp_avg_tend_q(1:ncol) = 0
    mcsp_avg_tend_k(1:ncol) = 0
-   
+
    mcsp_tend_s(1:ncol,1:pver) = 0
    mcsp_tend_q(1:ncol,1:pver) = 0
    mcsp_tend_u(1:ncol,1:pver) = 0
@@ -248,7 +245,7 @@ subroutine zm_conv_mcsp_tend( pcols, ncol, pver, pverp, &
    !----------------------------------------------------------------------------
    ! Note: To conserve total energy we need to account for the kinteic energy tendency
    ! which we can obtain from the velocity tendencies based on the following:
-   !   KE_new = (u_new^2 + v_new^2)/2 
+   !   KE_new = (u_new^2 + v_new^2)/2
    !          = [ (u_old+du)^2 + (v_old+dv)^2 ]/2
    !          = [ ( u_old^2 + 2*u_old*du + du^2 ) + ( v_old^2 + 2*v_old*dv + dv^2 ) ]/2
    !          = ( u_old^2 + v_old^2 )/2 + ( 2*u_old*du + du^2 + 2*v_old*dv + dv^2 )/2
@@ -319,7 +316,7 @@ subroutine zm_conv_mcsp_tend( pcols, ncol, pver, pverp, &
          end if
 
          ! subtract mass weighted average tendencies for energy/mass conservation
-         mcsp_dt_out(i,k) = mcsp_tend_s(i,k) - mcsp_avg_tend_s(i) 
+         mcsp_dt_out(i,k) = mcsp_tend_s(i,k) - mcsp_avg_tend_s(i)
          mcsp_dq_out(i,k) = mcsp_tend_q(i,k) - mcsp_avg_tend_q(i)
          mcsp_du_out(i,k) = mcsp_tend_u(i,k)
          mcsp_dv_out(i,k) = mcsp_tend_v(i,k)

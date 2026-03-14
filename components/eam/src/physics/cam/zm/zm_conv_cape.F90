@@ -206,7 +206,7 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
    !----------------------------------------------------------------------------
    ! calculate CAPE
    call compute_cape_from_parcel( pcols, ncol, pver, pverp, num_cin, num_msg, &
-                                  temperature, tv, zmid, sp_humidity, pint, &
+                                  temperature, tv, sp_humidity, pint, &
                                   msemax_klev, lcl_pmid, lcl_klev, &
                                   zm_const, zm_param, &
                                   parcel_qsat, parcel_temp, parcel_vtemp, &
@@ -546,7 +546,7 @@ end subroutine compute_dilute_parcel
 !===================================================================================================
 
 subroutine compute_cape_from_parcel( pcols, ncol, pver, pverp, num_cin, num_msg, &
-                                     temperature, tv, zmid, sp_humidity, pint, &
+                                     temperature, tv, sp_humidity, pint, &
                                      msemax_klev, lcl_pmid, lcl_klev, &
                                      zm_const, zm_param, &
                                      parcel_qsat, parcel_temp, parcel_vtemp, &
@@ -563,7 +563,6 @@ subroutine compute_cape_from_parcel( pcols, ncol, pver, pverp, num_cin, num_msg,
    integer,                         intent(in   ) :: num_msg      ! number of missing moisture levels at the top of model
    real(r8), dimension(pcols,pver), intent(in   ) :: temperature  ! temperature
    real(r8), dimension(pcols,pver), intent(in   ) :: tv           ! virtual temperature
-   real(r8), dimension(pcols,pver), intent(in   ) :: zmid         ! height/altitude at mid-levels
    real(r8), dimension(pcols,pver), intent(in   ) :: sp_humidity  ! specific humidity
    real(r8), dimension(pcols,pverp),intent(in   ) :: pint         ! pressure at interfaces
    integer,  dimension(pcols),      intent(in   ) :: msemax_klev  ! index of max MSE at parcel launch level

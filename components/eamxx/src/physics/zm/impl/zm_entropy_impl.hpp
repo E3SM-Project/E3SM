@@ -44,10 +44,10 @@ Real Functions<S,D>::entropy(
   e = qv*p / (PC::ep_2.value + qv);
 
   // calculate entropy per unit mass of dry air - Eq. 1
-  return (
+  return
     (PC::Cpair.value + qtot*PC::CpLiq.value)*std::log(tk/PC::Tmelt.value)
     - PC::Rair.value*std::log( (p-e)/ZMC::pref)
-    + L*qv/tk - qv*PC::RH2O.value*std::log(qv/qst));
+    + L*qv/tk - qv*PC::RH2O.value*std::log(qv/qst);
 }
 
 } // namespace zm
