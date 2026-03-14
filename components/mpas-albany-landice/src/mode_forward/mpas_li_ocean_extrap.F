@@ -951,7 +951,7 @@ contains
       
       ! Main difference between TF parameterization is how we collapse into 2d, which happens in mpas_li_ice_shelt_melt.F
       do iCell = 1, nCells
-         if (config_TF_iceberg_melt == 'off') then
+         if ( (config_TF_iceberg_melt == 'off') .or. ( (config_TF_iceberg_melt == 'mask') .and. (icebergFjordMask(iCell) == 0) ) ) then
 
             ! From Jenkins 2011 and Slater 2020
             do iLayer = 1, nISMIP6OceanLayers
