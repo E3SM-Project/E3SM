@@ -16,43 +16,33 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
   for (size_t i = 0; i < var_names_oxi_.size(); ++i) {
     oxidants[i] = get_field_out("oxid_"+var_names_oxi_[i]).get_view<Real **>();
   }
+  // set external forcing
+  // Flatten the (mm, isec) host loops into fixed-size arrays captured by
+  // value inside the gas_phase_chemistry kernel, where extfrc_k is computed
+  // inline to avoid a separate kernel launch and HBM buffer round-trip.
   Kokkos::fence();
   start_timer("MAMMicrophysics::run_impl::forcing");
-  // set external forcing
   constexpr int extcnt = mam4::gas_chemistry::extcnt;
   const auto& extfrc = extfrc_;
-  Kokkos::deep_copy(extfrc,0.0);
+  constexpr int max_forcing_entries =
+      extcnt * mam_coupling::MAX_SECTION_NUM_FORCING;
+  Kokkos::Array<int,     max_forcing_entries> forcing_nn{};
+  Kokkos::Array<int,     max_forcing_entries> forcing_alt{};
+  Kokkos::Array<view_2d, max_forcing_entries> forcing_fields{};
+  int nfrc = 0;
   for (int mm = 0; mm < extcnt; ++mm) {
-    // Fortran to C++ indexing
     const int nn = forcings_[mm].frc_ndx - 1;
     for (int isec = 0; isec < forcings_[mm].nsectors; ++isec) {
-    const auto& field = forcings_[mm].fields[isec];
-    if (forcings_[mm].file_alt_data) {
-      Kokkos::parallel_for(
-        "MAMMicrophysics::run_impl::forcing", policy,
-        KOKKOS_LAMBDA(const ThreadTeam &team) {
-        const int icol     = team.league_rank();   // column index
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev),
-         [&](int kk) {
-          extfrc(icol,kk,nn) += field(icol,nlev - 1 - kk);
-        });
-      });
-
-   } else {
-     Kokkos::parallel_for(
-      "MAMMicrophysics::run_impl::forcing", policy,
-      KOKKOS_LAMBDA(const ThreadTeam &team) {
-      const int icol     = team.league_rank();   // column index
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
-        extfrc(icol,kk,nn) += field(icol,kk);
-      });
-    });
-   }
-  } // isec
-  }   // end mm
-  stop_timer("MAMMicrophysics::run_impl::forcing");
+      forcing_nn[nfrc]     = nn;
+      forcing_alt[nfrc]    = forcings_[mm].file_alt_data ? 1 : 0;
+      forcing_fields[nfrc] = forcings_[mm].fields[isec];
+      ++nfrc;
+    }
+  }
+  const int nfrc_total = nfrc;
+  start_timer("MAMMicrophysics::run_impl::forcing");
+  // set external forcing ends (applied inline in gas_phase_chemistry below)
   Kokkos::fence();
-  // set external forcing ends
 
   // set invariants
   const auto& invariants = invariants_;
@@ -455,14 +445,22 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
       const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
       const auto &photo_rates_icol = ekat::subview(photo_rates, icol);
       const auto invariants_icol = ekat::subview(invariants, icol);
-      const auto extfrc_icol = ekat::subview(extfrc, icol);
       const auto het_rates_icol = ekat::subview(het_rates, icol);
       const auto& vmr_icol = ekat::subview(vmr, icol);
 
       Kokkos::parallel_for(
        Kokkos::TeamVectorRange(team, nlev),
        [&](const int kk) {
-        const auto &extfrc_k = ekat::subview(extfrc_icol, kk);
+        // Compute per-level forcing inline into a register-local array,
+        // avoiding a separate HBM buffer round-trip through extfrc_.
+        // Write back to extfrc_ so the diagnostic output field remains valid.
+        Real extfrc_k[mam4::gas_chemistry::extcnt] = {};
+        for (int ifrc = 0; ifrc < nfrc_total; ++ifrc)
+          extfrc_k[forcing_nn[ifrc]] +=
+              forcing_alt[ifrc] ? forcing_fields[ifrc](icol, nlev - 1 - kk)
+                                : forcing_fields[ifrc](icol, kk);
+        for (int nn = 0; nn < mam4::gas_chemistry::extcnt; ++nn)
+          extfrc(icol, nn, kk) = extfrc_k[nn];
         const auto &invariants_k = ekat::subview(invariants_icol, kk);
         const auto &photo_rates_k = ekat::subview(photo_rates_icol, kk);
         const auto &het_rates_k = ekat::subview(het_rates_icol, kk);
@@ -471,7 +469,7 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
         const auto &vmr_kk = ekat::subview(vmr_icol, kk);
         mam4::microphysics::gas_phase_chemistry(
         // in
-        temperature, dt, photo_rates_k.data(), extfrc_k.data(), invariants_k.data(),
+        temperature, dt, photo_rates_k.data(), extfrc_k, invariants_k.data(),
         clsmap_4, permute_4, het_rates_k.data(),
         // out
         vmr_kk);
