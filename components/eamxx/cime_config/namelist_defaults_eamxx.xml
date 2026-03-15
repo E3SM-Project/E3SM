@@ -600,15 +600,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <number_of_subcycles hgrid="ne0np4_conus_x4v1_lowcon">5</number_of_subcycles>
     </mac_aero_mic>
 
-    <cosp inherit="atm_proc_base">
-      <cosp_subcolumns doc="Number of subcolumns to use for COSP simulators; cosp_subcolumns=1 implies no subcolumn sampling">10</cosp_subcolumns>
-      <cosp_subcolumns hgrid="ne1024np4">1</cosp_subcolumns>  <!-- No subcolumn sampling at satellite pixel scales -->
-      <cosp_subcolumns hgrid="ne512np4" >1</cosp_subcolumns>  <!-- No subcolumn sampling at satellite pixel scales -->
-      <cosp_subcolumns hgrid="ne256np4" >1</cosp_subcolumns>  <!-- No subcolumn sampling at satellite pixel scales -->
-      <!-- Frequency at which to call COSP; positive values interpreted as number of steps, negative as number of hours -->
-      <cosp_frequency>1</cosp_frequency>
-      <cosp_frequency_units valid_values="steps,hours">hours</cosp_frequency_units>
-    </cosp>
+    <!-- COSP is now a diagnostic, triggered by requesting its fields in output YAML.
+         cosp_subcolumns defaults to 10 in the COSP diagnostic constructor. -->
 
     <!-- Turbulent Mountain Stress -->
     <tms inherit="atm_proc_base"/>

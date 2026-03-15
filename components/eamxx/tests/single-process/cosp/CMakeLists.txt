@@ -5,7 +5,7 @@ set (FIXTURES_BASE_NAME ${TEST_BASE_NAME}_generate_output_nc_files)
 
 # Create the test
 CreateADUnitTest(${TEST_BASE_NAME}
-  LABELS cosp physics
+  LABELS cosp diagnostics
   LIBS eamxx_cosp
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}

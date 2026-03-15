@@ -9,10 +9,8 @@ time_stepping:
   number_of_steps: ${NUM_STEPS}
 
 eamxx:
-  atm_procs_list: [cosp]
-  cosp:
-    cosp_frequency: ${NUM_STEPS}
-    cosp_frequency_units: steps
+  # COSP is a diagnostic, no physics processes needed
+  atm_procs_list: []
 
 
 grids_manager:
