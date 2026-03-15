@@ -137,6 +137,13 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
             m_fields_names.clear();
           }
         }
+        if (pl.isParameter("aliases")) {
+          if (pl.isType<vos_t>("aliases")) {
+            m_intermediate_aliases = pl.get<vos_t>("aliases");
+          } else {
+            m_intermediate_aliases.push_back(pl.get<std::string>("aliases"));
+          }
+        }
       }
     }
     EKAT_REQUIRE_MSG (grid_found,
@@ -982,7 +989,37 @@ process_requested_fields()
   auto fm_model = m_field_mgrs[FromModel];
   auto fm_grid = m_field_mgrs[FromModel]->get_grid();
 
-  // First, find out which field names are just aliases
+  // Process intermediate-only fields declared in the 'aliases' YAML section.
+  // Each entry has the form "alias:=original". These are created and registered
+  // in the field manager so that dependents can use them, but are NOT written
+  // to the NC output file.
+  std::set<std::string> intermediate_names;
+  for (const auto& spec : m_intermediate_aliases) {
+    auto tokens = ekat::split(spec, ":=");
+    EKAT_REQUIRE_MSG(tokens.size()==2 && !tokens[0].empty() && !tokens[1].empty(),
+        "Error! Invalid entry in 'aliases' section. Should be 'alias:=original'.\n"
+        " - entry: " + spec + "\n");
+    const auto& alias = tokens[0];
+    const auto& orig  = tokens[1];
+    EKAT_REQUIRE_MSG(m_alias_to_orig.count(alias)==0,
+        "Error! Intermediate alias conflicts with an existing alias.\n"
+        " - stream name: " + m_stream_name + "\n"
+        " - alias: " + alias + "\n");
+    m_alias_to_orig[alias] = orig;
+    intermediate_names.insert(alias);
+  }
+
+  // Check that no intermediate name also appears as a regular output field
+  for (const auto& iname : intermediate_names) {
+    for (const auto& fname : m_fields_names) {
+      EKAT_REQUIRE_MSG(fname != iname,
+          "Error! A field declared in the 'aliases' section also appears in 'field_names'.\n"
+          " - stream name: " + m_stream_name + "\n"
+          " - field name: " + iname + "\n");
+    }
+  }
+
+  // Next, find out which field names are just aliases (using ':=' syntax)
   for (auto& name : m_fields_names) {
     auto tokens = ekat::split(name,":=");
     EKAT_REQUIRE_MSG(tokens.size()==2 or tokens.size()==1,
@@ -1104,6 +1141,11 @@ process_requested_fields()
   std::set<std::string> remaining(m_fields_names.begin(),m_fields_names.end());
   for (const auto& it : m_alias_to_orig) {
     remaining.insert(it.second);
+  }
+  // Intermediate-only fields must also be resolved (created and added to fm_model
+  // so that dependent diagnostics can use them), even though they won't be output.
+  for (const auto& n : intermediate_names) {
+    remaining.insert(n);
   }
   while (not done) {
     // We can't add-to/rm-form a std:;set while iterating on it, as that could

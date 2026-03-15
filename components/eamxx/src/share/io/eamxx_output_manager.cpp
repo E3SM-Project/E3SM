@@ -860,6 +860,17 @@ setup_file (      IOFileSpecs& filespecs,
     scorpio::set_attribute(filename,"GLOBAL","fp_precision",fp_precision);
     set_file_header(filespecs);
 
+    // Collect intermediate-only aliases from all output streams and write them
+    // as a global attribute for documentation purposes.
+    std::vector<std::string> all_aliases;
+    for (const auto& s : m_output_streams) {
+      for (const auto& a : s->get_intermediate_aliases()) {
+        all_aliases.push_back(a);
+      }
+    }
+    scorpio::set_attribute(filename,"GLOBAL","aliases",
+                           all_aliases.empty() ? "None" : ekat::join(all_aliases,", "));
+
     const auto& pc_names = m_params.get<std::vector<std::string>>("constants",{});
     const auto& pc_dict = physics::Constants<Real>::dictionary();
     for (const auto& n: pc_names) {

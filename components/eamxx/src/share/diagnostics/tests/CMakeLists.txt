@@ -74,6 +74,12 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   # Test atm_tend
   CreateDiagTest(atm_backtend "atm_backtend_test.cpp")
 
+  # Test field_prev
+  CreateDiagTest(field_prev "field_prev_test.cpp")
+
+  # Test field_over_dt
+  CreateDiagTest(field_over_dt "field_over_dt_test.cpp")
+
   # Test horizontal averaging
   CreateDiagTest(horiz_avg "horiz_avg_test.cpp" MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
