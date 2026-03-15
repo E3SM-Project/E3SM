@@ -104,7 +104,7 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
       std::string MPASDimName  = "nVertLevels";
 
       // Open the mesh file for reading (assume IO has already been initialized)
-      IO::openFile(MeshFileID, MeshFileName, IO::ModeRead);
+      IO::openFileRead(MeshFileID, MeshFileName);
 
       // Set NVertLayers
       I4 NVertLayersID;

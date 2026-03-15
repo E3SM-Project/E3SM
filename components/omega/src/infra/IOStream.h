@@ -62,6 +62,8 @@
 ///      UsePointerFile: false
 ///      Filename: ocn.hist.$SimTime
 ///      Mode: write
+///      # File format is only needed if differs from default (pnetcdf)
+///      # FileFormat: adios
 ///      IfExists: replace
 ///      Precision: double
 ///      Freq: 1
@@ -76,6 +78,8 @@
 ///      UsePointerFile: false
 ///      Filename: ocn.hifreq.$Y-$M
 ///      Mode: write
+///      # File format is only needed if differs from default (pnetcdf)
+///      # FileFormat: adios
 ///      IfExists: append
 ///      Precision: single
 ///      Freq: 10
@@ -116,6 +120,7 @@ class IOStream {
    std::string Filename;     ///< filename or filename template (with path)
    bool FilenameIsTemplate;  ///< true if the filename is a template
    IO::IfExists ExistAction; ///< action if file exists (write only)
+   IO::FileFmt FileFormat;   ///< file format (eg pnetcdf, hdf5, adios)
 
    IO::Mode Mode;        ///< mode (read or write)
    bool ReducePrecision; ///< flag to use 32-bit precision for 64-bit floats
@@ -155,8 +160,17 @@ class IOStream {
                       Clock *&ModelClock    ///< [inout] Omega model clock
    );
 
-   /// Define all dimensions used. Returns a map of dimension names to defined
-   /// dimension IDs.
+   /// Read all dimensions from an input file and determine the dimension ID.
+   /// The file must be in data mode.
+   void readAllDims(
+       int FileID, ///< [in] id assigned to the IO file
+       std::map<std::string, int> &AllDimIDs ///< [out] dim name, assigned ID
+   );
+
+   /// Define all dimensions used. If some dimensions have already be read
+   /// from the file (ie when appending to an existing file), only the dims
+   /// not already read will be defined. The file must be in define mode.
+   /// A map of all dimension IDs is returned.
    void defineAllDims(
        int FileID, ///< [in] id assigned to the IO file
        std::map<std::string, int> &AllDimIDs ///< [out] dim name, assigned ID

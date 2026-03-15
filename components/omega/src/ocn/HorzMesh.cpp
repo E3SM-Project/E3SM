@@ -101,7 +101,7 @@ HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
    EdgesOnVertex  = MeshDecomp->EdgesOnVertex;
 
    // Open the mesh file for reading (assume IO has already been initialized)
-   IO::openFile(MeshFileID, MeshFileName, IO::ModeRead);
+   IO::openFileRead(MeshFileID, MeshFileName);
 
    // Create Omega Dimensions associated with this mesh
    createDimensions(MeshDecomp);

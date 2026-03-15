@@ -407,6 +407,12 @@ void IOStream::create(const std::string &StreamName, //< [in] name of stream
    // Add filename to stream
    NewStream->Filename = StreamFilename;
 
+   // Set file format - the FileFmtFromString will return the
+   // default file format if it was unknown or absent from config
+   std::string InFormatStr;
+   Error FmtErr          = StreamConfig.get("FileFormat", InFormatStr);
+   NewStream->FileFormat = IO::FileFmtFromString(InFormatStr);
+
    // Set flag to reduce precision for double precision reals. If no flag
    // present, assume full (double) precision
    std::string PrecisionString;
@@ -622,15 +628,16 @@ void IOStream::create(const std::string &StreamName, //< [in] name of stream
 } // End IOStream create
 
 //------------------------------------------------------------------------------
-// Define all dimensions used. Returns a map of dimension names to defined
-// dimension IDs.
-void IOStream::defineAllDims(
+// Read all dimensions in an existing file and assigs the dimension ID
+// The input file must be in data mode.
+void IOStream::readAllDims(
     int FileID,                           ///< [in] id assigned to the IO file
     std::map<std::string, int> &AllDimIDs ///< [out] dim name, assigned ID
 ) {
 
    Error Err;
 
+   // loop over all expected dimensions
    for (auto IDim = Dimension::begin(); IDim != Dimension::end(); ++IDim) {
       std::string DimName = IDim->first;
       // For back compatibility, we also allow an older name (typically
@@ -645,7 +652,7 @@ void IOStream::defineAllDims(
       I4 Length = IDim->second->getLengthGlobal();
       I4 DimID;
 
-      // First check to see if the dimension already exists in the file
+      // Read the dimension from the file
       I4 InLength;
       Err = IO::getDimFromFile(FileID, DimName, DimID, InLength);
       if (Err.isFail()) { // dim not found
@@ -654,24 +661,46 @@ void IOStream::defineAllDims(
       }
 
       // If dim is found, use this DimID and check the length for consistency
+      // If dim is not found, skip the dimension and it will be added later
+      // if needed.
       if (Err.isSuccess()) {
+         AllDimIDs[DimName] = DimID;
          if (InLength != Length and Length != IO::Unlimited)
             ABORT_ERROR("Inconsistent length for dimension {} in stream {}",
                         DimName, Name);
+      }
 
-         // If dim is not found, define the dimension from the dim class if
-         // it is a write operation, otherwise assume the dimension is not
-         // needed
-      } else {
+   } // end loop over all dims
 
-         if (Mode == IO::Mode::ModeWrite) {
-            DimID = IO::defineDim(FileID, DimName, Length);
-         }
+   return;
 
-      } // end if found in file
+} // End readAllDims
 
-      // Add the DimID to map for later use
-      AllDimIDs[DimName] = DimID;
+//------------------------------------------------------------------------------
+// Define all dimensions used. If some dimensions have already be read
+// from the file (ie when appending to an existing file), only the dims
+// not already read will be defined. The file must be in define mode.
+// A map of all dimension IDs is returned.
+void IOStream::defineAllDims(
+    int FileID,                           ///< [in] id assigned to the IO file
+    std::map<std::string, int> &AllDimIDs ///< [out] dim name, assigned ID
+) {
+
+   Error Err;
+
+   // Loop over all dimensions to be defined
+   for (auto IDim = Dimension::begin(); IDim != Dimension::end(); ++IDim) {
+      std::string DimName = IDim->first;
+
+      // First check to see if the dimension already exists in the dim map
+      auto DimFound = AllDimIDs.find(DimName);
+
+      // If it doesn't already exist, define the new dimension and add the ID.
+      if (DimFound == AllDimIDs.end()) {
+         I4 Length          = IDim->second->getLengthGlobal();
+         I4 DimID           = IO::defineDim(FileID, DimName, Length);
+         AllDimIDs[DimName] = DimID;
+      }
 
    } // end loop over all dims
 
@@ -2285,7 +2314,7 @@ Error IOStream::readStream(
 
    // Open input file
    int InFileID;
-   IO::openFile(InFileID, InFileName, Mode, IO::DefaultFileFmt, ExistAction);
+   IO::openFileRead(InFileID, InFileName, FileFormat);
 
    // Read any requested global metadata
    for (auto Iter = ReqMetadata.begin(); Iter != ReqMetadata.end(); ++Iter) {
@@ -2343,7 +2372,7 @@ Error IOStream::readStream(
 
    // Get dimensions from file and check that file has same dimension lengths
    std::map<std::string, int> AllDimIDs;
-   defineAllDims(InFileID, AllDimIDs);
+   readAllDims(InFileID, AllDimIDs);
 
    // For each field in the contents, define field and read field data
    for (auto IFld = Contents.begin(); IFld != Contents.end(); ++IFld) {
@@ -2438,8 +2467,15 @@ void IOStream::writeStream(
 
    // Open output file
    int OutFileID;
-   IO::openFile(OutFileID, OutFileName, Mode, IO::DefaultFileFmt, ExistAction);
-   bool NeedEndDef = false; // check if we need to call end-define-mode
+   bool DefineMode;
+   IO::openFileWrite(OutFileID, OutFileName, DefineMode, ExistAction,
+                     FileFormat);
+
+   // If this is an existing file, read and check dimensions from current file
+   // and assign dimIDs. Otherwise, dimensions will be added later.
+   std::map<std::string, int> AllDimIDs;
+   if (!DefineMode)
+      readAllDims(OutFileID, AllDimIDs);
 
    // For files with multiple frames or time slices, we need to determine the
    // default Frame number for time-dependent fields. If the frame/time already
@@ -2448,51 +2484,56 @@ void IOStream::writeStream(
    // next frame in the sequence.
    Frame = 0; // default is one frame in file
    if (Multiframe) {
-      // Get the current number of frames in the file - the length of the
-      // unlimited time dimension
-      I4 TimeDimID;
-      I4 NFrames;
-      Err = IO::getDimFromFile(OutFileID, "time", TimeDimID, NFrames);
-      if (Err.isFail() or NFrames == 0) {
-         // If there is an error, we assume this is a new file in which
-         // the dimension has not yet been written. Similarly, if NFrames is 0,
-         // no frames have yet been written. In both cases, this is the first
-         // frame in the file.
+      // If a new file was created (and is in define mode), this must be the
+      // first frame
+      if (DefineMode) {
          Frame = 0;
       } else {
-         // If there are frames in the file, we read the elapsed time for each
-         // frame to determine whether the current slice already exists. If
-         // equal (within roundoff), the slice exists and we overwrite with
-         // the current frame. Otherwise, increment to the next frame
-         R8 FrameTime;
-         int TmpID;
-         std::vector<int> TmpDimLengths; // empty dim length for scalar time
-         for (int IFrame = 0; IFrame < NFrames; ++IFrame) {
-            Err = IO::readNDVar(&FrameTime, "time", OutFileID, TmpID, IFrame,
-                                &TmpDimLengths);
-            CHECK_ERROR_ABORT(Err, "Error reading frame time in {}",
+         // Otherwise get the current number of frames in the file - the length
+         // the unlimited time dimension
+         I4 TimeDimID;
+         I4 NFrames;
+         Err = IO::getDimFromFile(OutFileID, "time", TimeDimID, NFrames);
+         // If time was not found, we assume the dimension has not yet been
+         // written to the old file and Frame should be 0.
+         // Similarly, if NFrames is 0, no frames have yet been
+         // written. In both cases, this is the first frame in the file.
+         if (Err.isFail() or NFrames == 0) {
+            Frame = 0;
+         } else {
+            // If there are frames in the file, we read the elapsed time for
+            // each frame to determine whether the current slice already exists.
+            // If equal (within roundoff), the slice exists and we overwrite
+            // with the current frame. Otherwise, increment to the next frame
+            R8 FrameTime;
+            int TmpID;
+            std::vector<int> TmpDimLengths; // empty dim length for scalar time
+            for (int IFrame = 0; IFrame < NFrames; ++IFrame) {
+               Err = IO::readNDVar(&FrameTime, "time", OutFileID, TmpID, IFrame,
+                                   &TmpDimLengths);
+               CHECK_ERROR_ABORT(Err, "Error reading frame time in {}",
+                                 OutFileName);
+               if (std::abs(ElapsedTimeR8 - FrameTime) < 1.e-5) { // overwrite
+                  Frame = IFrame;
+                  break;
+               } else if (ElapsedTimeR8 > FrameTime) { // move to next frame
+                  Frame = IFrame + 1;
+               } else { // time is earlier but doesn't match any frames
+                  ABORT_ERROR("Existing multiframe file {} appears to be using "
+                              "different time intervals or is from the wrong "
+                              "time period",
                               OutFileName);
-            if (std::abs(ElapsedTimeR8 - FrameTime) < 1.e-5) { // overwrite
-               Frame = IFrame;
-               break;
-            } else if (ElapsedTimeR8 > FrameTime) { // move to next frame
-               Frame = IFrame + 1;
-            } else { // time is earlier but doesn't match any frames
-               ABORT_ERROR("Existing multiframe file {} appears to be using "
-                           "different time intervals or is from the wrong "
-                           "time period",
-                           OutFileName);
-            } // end if elapsed time matches
-         } // end loop over existing frames
-      } // end if nframes
+               } // end if elapsed time matches
+            } // end loop over existing frames
+         } // end if nframes
+      } // end if DefineMode/NewFile
    } // end if multiframe
 
    // Write Metadata for global metadata (Code and Simulation)
    // Only needs to be written for a new file
-   if (Frame < 1) {
+   if (DefineMode) {
       writeFieldMeta(CodeMeta, OutFileID, IO::GlobalID);
       writeFieldMeta(SimMeta, OutFileID, IO::GlobalID);
-      NeedEndDef = true;
    }
 
    // Create and write a field for any global data that is file or time
@@ -2507,16 +2548,19 @@ void IOStream::writeStream(
       SimTimeName = SimTimeName + std::to_string(Frame);
       FileField->addMetadata(SimTimeName, SimTimeStr);
    }
-   // Write and then destroy temporary field
-   if (!NeedEndDef) { // in data-mode, need to redef
+
+   // Must be in define mode to write metadata
+   if (!DefineMode) {
       PIOc_redef(OutFileID);
-      NeedEndDef = true;
+      DefineMode = true;
    }
+
+   // Write and then destroy temporary field
    writeFieldMeta("FileField", OutFileID, IO::GlobalID);
    Field::destroy("FileField");
 
-   // Assign dimension IDs for all defined dimensions
-   std::map<std::string, int> AllDimIDs;
+   // Assign dimension IDs for all defined dimensions that have not been read
+   // from the file.
    defineAllDims(OutFileID, AllDimIDs);
 
    // Define each field and write field metadata
@@ -2563,12 +2607,12 @@ void IOStream::writeStream(
       // Now we can write the field metadata
       if (Frame < 1) { // only write if it's the first time
          writeFieldMeta(FieldName, OutFileID, FieldID);
-         NeedEndDef = true;
       }
    }
-   if (NeedEndDef) {
-      IO::endDefinePhase(OutFileID);
-   }
+
+   // We need to exit define mode before writing data
+   IO::endDefinePhase(OutFileID);
+   DefineMode = false;
 
    // Now write data arrays for all fields in contents
    for (auto IFld = Contents.begin(); IFld != Contents.end(); ++IFld) {
@@ -2801,8 +2845,7 @@ std::string IOStream::buildFilename(
       Outfile.replace(Pos, 2, SSec);
    }
 
-   // Add netcdf suffix
-   Outfile = Outfile + ".nc";
+   // Suffix should be added by PIO
 
    return Outfile;
 

@@ -216,8 +216,9 @@ int main(int argc, char *argv[]) {
 
       // Open a file for output
       int OutFileID;
-      IO::openFile(OutFileID, "IOTest.nc", IO::ModeWrite, IO::FmtDefault,
-                   IO::IfExists::Replace);
+      bool NewFile;
+      IO::openFileWrite(OutFileID, "IOTest.nc", NewFile, IO::IfExists::Replace,
+                        IO::FmtDefault);
 
       // Define array dimensions
       int DimCellID;
@@ -366,8 +367,8 @@ int main(int argc, char *argv[]) {
 
       // Re-open to write additional frames for multi-frame fields
       // Open a file for output
-      IO::openFile(OutFileID, "IOTest.nc", IO::ModeWrite, IO::FmtDefault,
-                   IO::IfExists::Append);
+      IO::openFileWrite(OutFileID, "IOTest.nc", NewFile, IO::IfExists::Append,
+                        IO::FmtDefault);
 
       // write second frame data
       IO::writeNDVar(RefR8Time.data(), OutFileID, VarIDR8Time, 1, &DimLengths);
@@ -379,7 +380,7 @@ int main(int argc, char *argv[]) {
 
       // Open a file for reading to verify read/write
       int InFileID;
-      IO::openFile(InFileID, "IOTest.nc", IO::ModeRead);
+      IO::openFileRead(InFileID, "IOTest.nc");
 
       // Get dimension lengths to verify read/write of dimension info
       I4 NVertLayersID;
