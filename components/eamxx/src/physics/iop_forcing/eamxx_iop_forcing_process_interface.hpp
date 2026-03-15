@@ -9,6 +9,7 @@
 
 #include <ekat_parameter_list.hpp>
 #include <ekat_workspace.hpp>
+#include <ekat_lin_interp.hpp>
 
 #include <string>
 
@@ -77,16 +78,14 @@ protected:
   static void advance_iop_subsidence(const KT::MemberType& team,
                                      const int nlevs,
                                      const Real dt,
-                                     const Real ps,
                                      const view_1d<const Pack>& pmid,
-                                     const view_1d<const Pack>& pint,
-                                     const view_1d<const Pack>& pdel,
                                      const view_1d<const Pack>& omega,
                                      const Workspace& workspace,
                                      const view_1d<Pack>& u,
                                      const view_1d<Pack>& v,
                                      const view_1d<Pack>& T,
-                                     const view_2d<Pack>& Q);
+                                     const view_2d<Pack>& Q,
+                                     ekat::LinInterp<Real, Pack::n>& interp);
 
   // Apply large scale forcing for temperature and water vapor as provided by the IOP file
   KOKKOS_FUNCTION
