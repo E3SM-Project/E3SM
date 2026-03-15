@@ -1,68 +1,56 @@
 #ifndef SCREAM_COSP_HPP
 #define SCREAM_COSP_HPP
 
-#include "share/atm_process/atmosphere_process.hpp"
+#include "share/atm_process/atmosphere_diagnostic.hpp"
 
 #include <ekat_parameter_list.hpp>
 
 #include <string>
+#include <vector>
 
 namespace scream
 {
 
 /*
- * The class responsible to handle the calculation of COSP diagnostics
- * The AD should store exactly ONE instance of this class stored
- * in its list of subcomponents (the AD should make sure of this).
+ * COSP (CFMIP Observation Simulator Package) diagnostic.
+ * Simulates satellite observations from model state for comparison
+ * with real satellite data. Produces multiple output fields:
+ *   isccp_cldtot, isccp_ctptau, modis_ctptau, misr_cthtau
+ *
+ * This is a multi-output diagnostic: the output manager creates it
+ * when any of its output fields are requested in the output YAML.
+ * COSP runs at the frequency determined by the output stream.
 */
 
-class Cosp : public AtmosphereProcess
+class Cosp : public AtmosphereDiagnostic
 {
 
 public:
   // Constructors
   Cosp (const ekat::Comm& comm, const ekat::ParameterList& params);
 
-  // The type of subcomponent
-  AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
+  // The name of the diagnostic
+  std::string name () const { return "Cosp"; }
 
-  // The name of the subcomponent
-  std::string name () const { return "cosp"; }
-
-  // Set the grid
+  // Set the grid and declare fields
   void create_requests ();
 
-  inline bool cosp_do(const int icosp, const int nstep) {
-      // If icosp == 0, then never do cosp;
-      // Otherwise, we always call cosp at the first step,
-      // and afterwards we do cosp if the timestep is divisible
-      // by icosp
-      if (icosp == 0) {
-          return false;
-      } else {
-          return ( (nstep == 0) || (nstep % icosp == 0) );
-      }
-  }
-
+  // Return all diagnostic output field names
+  std::vector<std::string> get_diagnostic_names () const override;
 
 protected:
 
-  // The three main overrides for the subcomponent
   void initialize_impl (const RunType run_type);
 #ifdef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
 public:
 #endif
-  void run_impl        (const double dt);
+  void compute_diagnostic_impl ();
 protected:
   void finalize_impl   ();
 
-  // cosp frequency; positive is interpreted as number of steps, negative as number of hours
-  int m_cosp_frequency;
-  ekat::CaseInsensitiveString m_cosp_frequency_units;
-
-  // Keep track of field dimensions and the iteration count
-  Int m_num_cols; 
+  // Keep track of field dimensions
+  Int m_num_cols;
   Int m_num_subcols;
   Int m_num_levs;
   Int m_num_tau = 7;
@@ -71,7 +59,7 @@ protected:
 
   std::shared_ptr<const AbstractGrid> m_grid;
 
-  // TODO: use atm buffer instead
+  // Scratch fields for height computation
   Field m_z_mid;
   Field m_z_int;
 }; // class Cosp
