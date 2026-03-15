@@ -192,6 +192,9 @@ void BinaryOpsDiag::initialize_impl(const RunType /*run_type*/)
   FieldIdentifier d_fid(diag_name, dl, diag_units, gn);
   m_diagnostic_output = Field(d_fid,true);
 
+  // Ensure that, if any of the inputs is fv, the diag will have fv entries
+  m_diagnostic_output.get_header().set_fill_value_handling(Absorbing);
+
   if (not m_arg1_is_field and not m_arg2_is_field) {
     // We can pre-compute the diag now
     compute_diagnostic_impl();
