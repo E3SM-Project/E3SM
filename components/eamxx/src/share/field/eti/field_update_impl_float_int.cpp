@@ -3,11 +3,11 @@
 
 namespace scream {
 
-template void Field::update_impl<CombineMode::Replace,  false, float, int>(const Field&, const float, const float);
-template void Field::update_impl<CombineMode::Update,   false, float, int>(const Field&, const float, const float);
-template void Field::update_impl<CombineMode::Multiply, false, float, int>(const Field&, const float, const float);
-template void Field::update_impl<CombineMode::Divide,   false, float, int>(const Field&, const float, const float);
-template void Field::update_impl<CombineMode::Max,      false, float, int>(const Field&, const float, const float);
-template void Field::update_impl<CombineMode::Min,      false, float, int>(const Field&, const float, const float);
+template void Field::update_impl<false, CombineMode::Replace,  float, int>(const Field&, const float, const float, const Field*);
+template void Field::update_impl<false, CombineMode::Update,   float, int>(const Field&, const float, const float, const Field*);
+template void Field::update_impl<false, CombineMode::Multiply, float, int>(const Field&, const float, const float, const Field*);
+template void Field::update_impl<false, CombineMode::Divide,   float, int>(const Field&, const float, const float, const Field*);
+template void Field::update_impl<false, CombineMode::Max,      float, int>(const Field&, const float, const float, const Field*);
+template void Field::update_impl<false, CombineMode::Min,      float, int>(const Field&, const float, const float, const Field*);
 
 } // namespace scream

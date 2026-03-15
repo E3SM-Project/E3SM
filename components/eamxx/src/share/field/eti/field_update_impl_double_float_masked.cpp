@@ -1,0 +1,13 @@
+#include "share/field/field.hpp"
+#include "share/field/field_update_impl.hpp"
+
+namespace scream {
+
+template void Field::update_impl<true, CombineMode::Replace,  double, float>(const Field&, const double, const double, const Field*);
+template void Field::update_impl<true, CombineMode::Update,   double, float>(const Field&, const double, const double, const Field*);
+template void Field::update_impl<true, CombineMode::Multiply, double, float>(const Field&, const double, const double, const Field*);
+template void Field::update_impl<true, CombineMode::Divide,   double, float>(const Field&, const double, const double, const Field*);
+template void Field::update_impl<true, CombineMode::Max,      double, float>(const Field&, const double, const double, const Field*);
+template void Field::update_impl<true, CombineMode::Min,      double, float>(const Field&, const double, const double, const Field*);
+
+} // namespace scream
