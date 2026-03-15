@@ -1,9 +1,12 @@
+#include "bfb_math.inc"
+
 module zm_conv_util
    !----------------------------------------------------------------------------
    ! Purpose: utility methods for ZM deep convection scheme
    !----------------------------------------------------------------------------
 #ifdef SCREAM_CONFIG_IS_CMAKE
    use zm_eamxx_bridge_params, only: r8
+   use physics_share_f2c, only: scream_log
 #else
    use shr_kind_mod,     only: r8=>shr_kind_r8
 #endif
@@ -50,9 +53,9 @@ real(r8) function entropy(TK, p, qtot, zm_const)
    e = qv*p / (zm_const%epsilo+qv)
 
    ! calculate entropy per unit mass of dry air - Eq. 1
-   entropy = ( zm_const%cpair + qtot*zm_const%cpliq)*log(TK/zm_const%tfreez) &
-             - zm_const%rdair*log( (p-e)/pref) &
-             + L*qv/TK - qv*zm_const%rh2o*log(qv/qst)
+   entropy = ( zm_const%cpair + qtot*zm_const%cpliq)*bfb_log(TK/zm_const%tfreez) &
+             - zm_const%rdair*bfb_log( (p-e)/pref) &
+             + L*qv/TK - qv*zm_const%rh2o*bfb_log(qv/qst)
 
 end function entropy
 
