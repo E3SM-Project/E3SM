@@ -6,6 +6,7 @@ if (NOT DEFINED PROJECT_NAME)
   cmake_policy(SET CMP0057 NEW)
   set(SCREAM_CIME_BUILD FALSE)
 
+  
   # Print the sha of the last commit (useful to double check which version was tested on CDash)
   execute_process (COMMAND git rev-parse HEAD
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
