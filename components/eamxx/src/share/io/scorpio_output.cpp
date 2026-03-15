@@ -948,26 +948,35 @@ compute_diagnostics(const bool allow_invalid_fields)
       EKAT_REQUIRE_MSG (computable or allow_invalid_fields,
         "Error! Cannot compute a diagnostic. One dependency has an invalid timestamp.\n"
         " - stream name: " + m_stream_name + "\n"
-        " - diag name: " + diag->get_diagnostic().name() + "\n"
+        " - diag name: " + diag->name() + "\n"
         " - dep  name: " + f.name() + "\n");
     }
 
-    auto d = diag->get_diagnostic();
     if (computable) {
       diag->compute_diagnostic();
     }
 
-    bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
-
-    EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
-      "Error! Failed to compute diagnostic.\n"
-      " - diag name: " + diag->get_diagnostic().name() + "\n");
-
-    if (not computed) {
-      // The diag was either not computable or it may have failed to compute
-      // (e.g., t=0 output with a flux-like diag).
-      // If we're allowing invalid fields, then we should simply set diag=fill_value
-      d.deep_copy(constants::fill_value<float>);
+    if (diag->is_multi_output()) {
+      // Multi-output diagnostic: check/fill all output fields
+      for (const auto& dname : diag->get_diagnostic_names()) {
+        auto d = diag->get_diagnostic(dname);
+        bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
+        EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
+          "Error! Failed to compute diagnostic.\n"
+          " - diag name: " + dname + "\n");
+        if (not computed) {
+          d.deep_copy(constants::fill_value<float>);
+        }
+      }
+    } else {
+      auto d = diag->get_diagnostic();
+      bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
+      EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
+        "Error! Failed to compute diagnostic.\n"
+        " - diag name: " + diag->get_diagnostic().name() + "\n");
+      if (not computed) {
+        d.deep_copy(constants::fill_value<float>);
+      }
     }
   }
 }
@@ -1049,10 +1058,9 @@ process_requested_fields()
     diag->initialize(util::TimeStamp(),RunType::Initial);
   };
 
-  auto check_diag_avg_cnt = [&](const std::shared_ptr<AtmosphereDiagnostic>& diag) {
-    // Set the diag field in the FM
-    auto diag_field = diag->get_diagnostic();
-
+  // Helper to check avg_cnt for a single diagnostic output field
+  auto check_diag_avg_cnt_field = [&](const std::shared_ptr<AtmosphereDiagnostic>& diag,
+                                      Field diag_field) {
     // Add the field to the diag group
     diag_field.get_header().get_tracking().add_group("diagnostic");
 
@@ -1083,6 +1091,16 @@ process_requested_fields()
     // If specified, set avg_cnt tracking for this diagnostic.
     if (m_track_avg_cnt) {
       m_field_to_avg_cnt_suffix.emplace(diag_field.name(),diag_avg_cnt_name);
+    }
+  };
+
+  auto check_diag_avg_cnt = [&](const std::shared_ptr<AtmosphereDiagnostic>& diag) {
+    if (diag->is_multi_output()) {
+      for (const auto& dname : diag->get_diagnostic_names()) {
+        check_diag_avg_cnt_field(diag, diag->get_diagnostic(dname));
+      }
+    } else {
+      check_diag_avg_cnt_field(diag, diag->get_diagnostic());
     }
   };
   
@@ -1131,6 +1149,16 @@ process_requested_fields()
         if (not diag) {
           // First time we run into this diag. Create it
           diag = create_diagnostic(name,fm_model->get_grid());
+
+          // For multi-output diagnostics, pre-populate the repo
+          // for all output field names so sibling fields reuse the same instance
+          if (diag->is_multi_output()) {
+            for (const auto& dname : diag->get_diagnostic_names()) {
+              if (m_diag_repo.find(dname) == m_diag_repo.end()) {
+                m_diag_repo[dname] = diag;
+              }
+            }
+          }
         }
         // Add its deps to the list of fields to process (if not already in fm_model)
         bool deps_met = true;
@@ -1150,8 +1178,32 @@ process_requested_fields()
           }
           check_diag_avg_cnt (diag);
           remove_these.insert(name);
-          fm_model->add_field(diag->get_diagnostic());
-          m_diagnostics.push_back(diag);
+
+          if (diag->is_multi_output()) {
+            // Add all output fields to the FM so they're available
+            for (const auto& dname : diag->get_diagnostic_names()) {
+              auto f = diag->get_diagnostic(dname);
+              if (not fm_model->has_field(dname)) {
+                fm_model->add_field(f);
+              }
+              // Remove sibling field names from remaining if present
+              remove_these.insert(dname);
+            }
+          } else {
+            fm_model->add_field(diag->get_diagnostic());
+          }
+
+          // Only push the diagnostic once (avoid duplicates for multi-output)
+          bool already_added = false;
+          for (const auto& existing : m_diagnostics) {
+            if (existing.get() == diag.get()) {
+              already_added = true;
+              break;
+            }
+          }
+          if (not already_added) {
+            m_diagnostics.push_back(diag);
+          }
         }
       }
     }
