@@ -29,15 +29,6 @@ constexpr int num_output_steps = 5;
 constexpr Real fill_value = constants::fill_value<Real>;
 constexpr Real fill_threshold = 0.5;
 
-void set (const Field& f, const double v) {
-  auto data = f.get_internal_view_data<Real,Host>();
-  auto nscalars = f.get_header().get_alloc_properties().get_num_scalars();
-  for (int i=0; i<nscalars; ++i) {
-    data[i] = v;
-  }
-  f.sync_to_dev();
-}
-
 int get_dt (const std::string& freq_units) {
   int dt;
   if (freq_units=="nsteps") {
@@ -98,9 +89,8 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
     FID fid("f_"+std::to_string(fl.size()),fl,units,grid->name());
     Field f(fid);
     f.allocate_view();
-    f.deep_copy(0.0); // For the "filled" field we start with a filled value.
+    f.deep_copy(0.0);
     f.get_header().get_tracking().update_time_stamp(t0);
-    f.get_header().set_may_be_filled(true);
     fm->add_field(f);
   }
 
@@ -157,7 +147,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
     Real setval = ((n+1) % 2 == 0) ? 1.0*(n+1) : fill_value;
     for (const auto& n : fnames) {
       auto f = fm->get_field(n);
-      set(f,setval);
+      f.deep_copy(setval);
     }
 
     // Run output manager
@@ -224,15 +214,15 @@ void read (const std::string& avg_type, const std::string& freq_units,
       auto f  = fm->get_field(fn);
       if (avg_type=="MIN") {
         Real test_val = ((n+1)*freq%2==0) ? n*freq+1 : n*freq+2;
-        set(f0,test_val);
+        f0.deep_copy(test_val);
         REQUIRE (views_are_equal(f,f0));
       } else if (avg_type=="MAX") {
         Real test_val = ((n+1)*freq%2==0) ? (n+1)*freq : (n+1)*freq-1;
-        set(f0,test_val);
+        f0.deep_copy(test_val);
         REQUIRE (views_are_equal(f,f0));
       } else if (avg_type=="INSTANT") {
         Real test_val = (n*freq%2==0) ? n*freq : fill_value;
-        set(f0,test_val);
+        f0.deep_copy(test_val);
         REQUIRE (views_are_equal(f,f0));
       } else { // Is avg_type = AVERAGE
         // Note, for AVERAGE type output with filling we need to check that the
@@ -243,7 +233,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
         Real M = freq/2 + (n%2==0 ? 0.0 :  1.0);
         Real a = n*freq + (n%2==0 ? 0.0 : -1.0);
         test_val = (M/freq > fill_threshold) ? a + (M+1.0) : fill_value;
-        set(f0,test_val);
+        f0.deep_copy(test_val);
         REQUIRE (views_are_equal(f,f0));
       }
     }

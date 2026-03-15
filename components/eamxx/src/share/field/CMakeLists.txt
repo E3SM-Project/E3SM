@@ -22,12 +22,6 @@ add_library(eamxx_field
   eti/field_update_impl_float_float.cpp
   eti/field_update_impl_float_int.cpp
   eti/field_update_impl_int_int.cpp
-  eti/field_update_impl_double_double_fill_aware.cpp
-  eti/field_update_impl_double_float_fill_aware.cpp
-  eti/field_update_impl_double_int_fill_aware.cpp
-  eti/field_update_impl_float_float_fill_aware.cpp
-  eti/field_update_impl_float_int_fill_aware.cpp
-  eti/field_update_impl_int_int_fill_aware.cpp
   utils/compute_mask.cpp
   utils/horiz_contraction.cpp
   utils/perturb.cpp

@@ -3,7 +3,8 @@
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "share/physics/physics_constants.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/data_managers/library_grids_manager.hpp"
+#include "share/grid/point_grid.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 
@@ -13,18 +14,9 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
                                         const int nlevs) {
   const int num_global_cols = ncols * comm.size();
 
-  using vos_t = std::vector<std::string>;
-  ekat::ParameterList gm_params;
-  gm_params.set("grids_names", vos_t{"point_grid"});
-  auto &pl = gm_params.sublist("point_grid");
-  pl.set<std::string>("type", "point_grid");
-  pl.set("aliases", vos_t{"physics"});
-  pl.set<int>("number_of_global_columns", num_global_cols);
-  pl.set<int>("number_of_vertical_levels", nlevs);
-
-  auto gm = create_mesh_free_grids_manager(comm, gm_params);
-  gm->build_grids();
-
+  auto grid = create_point_grid("physics",num_global_cols,nlevs,comm);
+  auto gm = std::make_shared<LibraryGridsManager>();
+  gm->add_grids(grid);
   return gm;
 }
 
@@ -139,6 +131,73 @@ TEST_CASE("binary_ops") {
   // redundant, why not
   qc.update(qv, 1, 1);
   views_are_equal(qc, plus_diag_f);
+}
+
+TEST_CASE ("check_fv_handling") {
+  using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+  util::TimeStamp t0({2024, 1, 1}, {0, 0, 0});
+  const int ncols_lcl = 5;
+  const int nlevs = 4;
+
+  auto gm = create_gm(comm,ncols_lcl,nlevs);
+  auto grid = gm->get_grid("physics");
+
+  auto layout = grid->get_3d_scalar_layout(true);
+  Field f1 (FieldIdentifier("f1",layout,m/s,grid->name()),true);
+  Field f2 (FieldIdentifier("f2",layout,m/s,grid->name()),true);
+  f1.get_header().get_tracking().update_time_stamp(t0);
+  f2.get_header().get_tracking().update_time_stamp(t0);
+
+  ekat::ParameterList params;
+  params.set("grid_name", grid->name());
+  params.set<std::string>("arg1", "f1");
+  params.set<std::string>("arg2", "f2");
+  params.set<std::string>("binary_op", "times");
+
+  auto diag = std::make_shared<BinaryOpsDiag>(comm, params);
+  diag->set_grids(gm);
+
+  diag->set_required_field(f1);
+  diag->set_required_field(f2);
+
+  diag->initialize(t0,RunType::Initial);
+
+  constexpr auto fv = constants::fill_value<Real>;
+  Real value1 = 3.0;
+  Real value2 = 4.0;
+
+  auto fill = f1.clone("fill");
+  auto good = f1.clone("good");
+  fill.deep_copy(fv);
+  good.deep_copy(value1*value2);
+
+  auto t = t0;
+  auto d = diag->get_diagnostic();
+  for (auto v1 : {fv, value1} ) {
+    f1.get_header().set_may_be_filled(v1==fv);
+    f1.deep_copy(v1);
+    for (auto v2 : {fv, value2}) {
+      f2.get_header().set_may_be_filled(v2==fv);
+      f2.deep_copy(v2);
+
+      diag->compute_diagnostic();
+
+      // Update inputs timestamp, so diag doesn't get "cached"
+      t += 1;
+      f1.get_header().get_tracking().update_time_stamp(t);
+      f2.get_header().get_tracking().update_time_stamp(t);
+
+      // BinaryOps uses FillValueHandling::Absorbing
+      if (v1==fv or v2==fv) {
+        REQUIRE (views_are_equal(d,fill));
+      } else {
+        REQUIRE (views_are_equal(d,good));
+      }
+    }
+  }
 }
 
 }  // namespace scream

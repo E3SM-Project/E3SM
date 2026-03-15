@@ -29,12 +29,6 @@ transfer_extra_data(const scream::Field &src, scream::Field &tgt)
   for (const auto &[name, val] : src_atts) {
     dst_atts[name] = val;
   }
-
-  // Transfer whether or not this field MAY contain fill_value (to trigger usage of the
-  // proper implementation of Field update methods
-  if (src.get_header().may_be_filled()) {
-    tgt.get_header().set_may_be_filled(true);
-  }
 };
 
 // Note: this is also declared in eamxx_scorpio_interface.cpp. Move it somewhere else?
@@ -338,6 +332,7 @@ void AtmosphereOutput::init()
         fh.get_parent()!=nullptr) {
       Field copy(fid);
       copy.allocate_view();
+      copy.get_header().set_fill_value_handling(IgnoreRhs); // When we accum, we ignore FV entries in RHS
       transfer_extra_data (f,copy);
       fm_scorpio->add_field(copy);
     } else {
@@ -547,14 +542,14 @@ run (const std::string& filename,
     const auto& f_in  = fm_after_hr->get_field(field_name);
           auto& f_out = fm_scorpio->get_field(field_name);
 
-    // Safety check: if a field may contain fill values and we are computing an Average,
+    // Safety check: if we are computing an Average and we are tracking the count,
     // we must have created an avg-count tracking field; otherwise division by the raw
     // number of steps would bias the result wherever fill values occurred.
-    if (m_avg_type==OutputAvgType::Average && f_in.get_header().may_be_filled()) {
+    if (m_avg_type==OutputAvgType::Average && m_track_avg_cnt) {
       EKAT_REQUIRE_MSG(m_field_to_avg_count.count(field_name),
-        "[AtmosphereOutput::run] Error! Averaging a fill-aware field without avg-count tracking.\n"
+        "[AtmosphereOutput::run] Error! No avg-count tracking field for this field.\n"
         " - field name : " + field_name + "\n"
-        "This indicates the field was marked may_be_filled after output initialization or tracking logic missed it." );
+        "Please, contact developers.\n");
     }
 
     switch (m_avg_type) {
