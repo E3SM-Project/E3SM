@@ -28,7 +28,7 @@ Currently, weighted nudging is only supported if the user provides the nudging d
 To enable nudging as a process, one must declare it in the `atm_procs_list` runtime parameter.
 
 ```shell
-./atmchange physics::atm_procs_list="mac_aero_mic,rrtmgp,cosp,nudging"
+./atmchange physics::atm_procs_list="mac_aero_mic,rrtmgp,nudging"
 ```
 
 The following options are needed to specify the nudging.

@@ -308,17 +308,17 @@ $ ./atmquery physics::atm_procs_list
 
 where "mac_aero_mic" is itself an atmosphere process group, consisting of
 macrophysics, aerosols, and microphysics processes.
-If one wanted to add the "cosp" atmosphere process to this list, and change the
+If one wanted to add the "tms" atmosphere process to this list, and change the
 number of its subcycles, it could do so via
 
 ``` {.shell .copy}
-$ ./atmchange physics::atm_procs_list+=cosp
+$ ./atmchange physics::atm_procs_list+=tms
 [...]
-$ ./atmchange cosp::number_of_subcycles=3
+$ ./atmchange tms::number_of_subcycles=3
 ```
 
 Notice that if we swapped the two commands, we would get an error,
-since the node "cosp" is not present in the XML generated from the defaults
+since the node "tms" is not present in the XML generated from the defaults
 until we decide to add it.
 
 It is also possible to declare a new (empty) atmosphere process group,

@@ -24,7 +24,6 @@
     │   ├── mct_coupling/
     │   ├── physics/
     │   │   ├── cld_fraction/
-    │   │   ├── cosp/
     │   │   ├── iop_forcing/
     │   │   ├── mam/
     │   │   ├── nudging/
@@ -87,19 +86,15 @@
     Broadly, here's where things are located:
     
     - `control`: Contains the atmosphere driver and basic tests for it.
-    - `diagnostics`: A collection of simple classes used to compute diagnostic
-      quantities.
+    - `diagnostics`: A collection of classes used to compute diagnostic
+      quantities, including the COSP satellite simulator package (`cosp/`
+      subdirectory).
     - `dynamics`: Home the files implementing the necessary interfaces between
       EAMxx and the HOMME non-hydrostatic dycore.
         - ***Note:*** HOMME itself is in components/homme
     - `mct_coupling`: Glue code for embedding EAMxx within E3SM as an atmosphere
       component using the MCT coupler.
     - `physics`: Source code for physics-related atmospheric processes, including
-        - `cosp`: Diagnostic-only[^diag] package used for computing
-        radiation-related quantities.
-        [^diag]:
-            ***Diagnostic:*** Refers to quantities or variables that are not
-            inputs to any part of the model but capture useful descriptive data.
         - `iop_forcing`: "Intensive Observation Period" package that can be used
         in conjunction with the Doubly-Periodic (DP) configuration of SCREAM.
         - `mam`: Contains the high-performance **M**odal **A**erosol **M**odel,
