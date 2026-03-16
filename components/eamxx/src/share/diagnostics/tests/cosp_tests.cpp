@@ -115,10 +115,14 @@ TEST_CASE("cosp_diagnostic")
     auto pd_h   = pseudo_density.get_view<Real**, Host>();
     auto qv_h   = qv.get_view<Real**, Host>();
 
-    const Real p_surf = 101325.0;  // Surface pressure [Pa]
     const Real p_top  = 100.0;     // Top pressure [Pa]
 
     for (int icol = 0; icol < nlcols; ++icol) {
+      // Vary surface pressure across columns; COSP Fortran internally
+      // divides by (max_psurf - min_psurf) across columns, so identical
+      // surface pressures cause division by zero.
+      const Real p_surf = 101325.0 + icol * 50.0;
+
       // Interface pressures: evenly spaced in log(p)
       for (int k = 0; k <= nlevs; ++k) {
         Real frac = static_cast<Real>(k) / nlevs;
