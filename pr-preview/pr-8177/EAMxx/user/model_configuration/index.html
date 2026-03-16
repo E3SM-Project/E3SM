@@ -5184,7 +5184,8 @@ $<span class="w"> </span>./atmquery<span class="w"> </span>--grep<span class="w"
 <span class="w">    </span>sc_export::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
 </code></pre></div>
 <p>Since the XML file stores constraints on the parameter value
-(like its type or valid values), attempting to use the wrong type will cause an error:</p>
+(like its type or valid values),
+attempting to use the wrong type will cause an error:</p>
 <div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>--type<span class="w"> </span>se_ne
 <span class="w">    </span>namelist_defaults::ctl_nl::se_ne:<span class="w"> </span>integer
 $<span class="w"> </span>./atmchange<span class="w"> </span><span class="nv">se_ne</span><span class="o">=</span>hello
@@ -5272,7 +5273,7 @@ will be removed from the generated <code>namelist_defaults.xml</code>
 with each YAML file associated to a different output stream (i.e., a file).
 In order to add an output stream,
 one needs to run <code>atmchange output_yaml_files+=/path/to/my/output/yaml</code>
-(more information on how to use <code>atmchange</code> can be found <a href="#changing-model-inputs-atmchange">here</a>).
+(more information on how to use <code>atmchange</code> can be found in the <a href="#changing-model-inputs-atmchange">atmchange section</a>).
 During the <code>buildnml</code> phase of the case management system, these YAML files
 will be copied into the RUNDIR/data folder.
 During this process, the files will be parsed, and any CIME-related
