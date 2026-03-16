@@ -20,9 +20,8 @@ COSP runs at the frequency specified by the output stream that requests its
 fields (e.g., hourly, daily). There are no separate frequency controls.
 
 COSP uses 10 subcolumns by default for internal subcolumn sampling using
-`SCOPS`/`PREC_SCOPS`. A value of 1 implies *no* subcolumn sampling.
-High resolution cases (e.g., `ne1024`) should disable subcolumn sampling,
-while lower resolutions (e.g., `ne30`) should use subcolumn sampling.
+`SCOPS`/`PREC_SCOPS`. The subcolumn count is not currently user-configurable
+through the output YAML; it defaults to 10 for all grid resolutions.
 
 A minimal output configuration example:
 

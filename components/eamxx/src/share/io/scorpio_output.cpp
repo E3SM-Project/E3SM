@@ -978,7 +978,7 @@ compute_diagnostics(const bool allow_invalid_fields)
       bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
       EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
         "Error! Failed to compute diagnostic.\n"
-        " - diag name: " + diag->get_diagnostic().name() + "\n");
+        " - diag name: " + d.name() + "\n");
       if (not computed) {
         d.deep_copy(constants::fill_value<float>);
       }

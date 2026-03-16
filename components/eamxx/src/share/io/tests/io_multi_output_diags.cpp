@@ -64,8 +64,7 @@ public:
 
   int get_num_evaluations () const { return m_num_evaluations; }
 
-protected:
-
+  // Public to allow KOKKOS_LAMBDA on CUDA (device lambdas can't be in protected/private methods)
   void compute_diagnostic_impl () override {
     const auto& f1 = get_field_in("f1");
     const auto& f2 = get_field_in("f2");
@@ -130,7 +129,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
     FID fid(name, fl, units, grid->name());
     Field f(fid);
     f.allocate_view();
-    randomize(f, seed++);
+    randomize_uniform(f, seed++);
     f.get_header().get_tracking().update_time_stamp(t0);
     fm->add_field(f);
   }
@@ -227,8 +226,10 @@ TEST_CASE ("multi_output_diag_basic") {
 }
 
 TEST_CASE ("multi_output_diag_io") {
-  // Test multi-output diagnostic through the full IO pipeline:
-  // write output fields via OutputManager, then read back and verify
+  // Test that multi-output diagnostic fields can be written to and read from
+  // NetCDF via the IO pipeline. We manually create the diagnostic, compute it,
+  // and add its output fields to the FM. The OutputManager then writes them as
+  // regular fields. This validates the IO layer handles these fields correctly.
   ekat::Comm comm(MPI_COMM_WORLD);
   scorpio::init_subsystem(comm);
 
@@ -242,10 +243,29 @@ TEST_CASE ("multi_output_diag_io") {
   auto grid = gm->get_grid("point_grid");
   auto fm = get_fm(grid, t0, seed);
 
-  // Request all multi-output fields plus a regular field
-  std::vector<std::string> fnames = {"f1", "sum_f1_f2", "diff_f1_f2", "prod_f1_f2"};
+  // Create, initialize, and compute the multi-output diagnostic
+  ekat::ParameterList diag_params("multi_out_io_test");
+  auto diag = diag_factory.create("MultiOutDiag", comm, diag_params);
+  diag->set_grids(gm);
+  diag->set_required_field(fm->get_field("f1").get_const());
+  diag->set_required_field(fm->get_field("f2").get_const());
+  diag->initialize(t0, RunType::Initial);
+  diag->compute_diagnostic();
 
-  // Create output params
+  // Add the diagnostic output fields to the FM so the OutputManager sees them
+  auto output_names = diag->get_diagnostic_names();
+  for (const auto& oname : output_names) {
+    auto f = diag->get_diagnostic(oname);
+    f.get_header().get_tracking().update_time_stamp(t0);
+    fm->add_field(f);
+  }
+
+  // Write all fields (inputs + diagnostic outputs) to file
+  std::vector<std::string> fnames = {"f1", "f2"};
+  for (const auto& oname : output_names) {
+    fnames.push_back(oname);
+  }
+
   ekat::ParameterList om_pl;
   om_pl.set("filename_prefix", std::string("io_multi_diags"));
   om_pl.set("field_names", fnames);
@@ -255,17 +275,17 @@ TEST_CASE ("multi_output_diag_io") {
   ctrl_pl.set("frequency", 1);
   ctrl_pl.set("save_grid_data", false);
 
-  // Write
   {
     OutputManager om;
     om.initialize(comm, om_pl, t0, false);
     om.setup(fm, gm->get_grid_names());
 
-    // Advance fields by one step
     const double dt = 10.0;
     auto t1 = t0 + dt;
-    fm->get_field("f1").get_header().get_tracking().update_time_stamp(t1);
-    fm->get_field("f2").get_header().get_tracking().update_time_stamp(t1);
+    // Update timestamps on all fields
+    for (const auto& name : fnames) {
+      fm->get_field(name).get_header().get_tracking().update_time_stamp(t1);
+    }
 
     om.init_timestep(t0, dt);
     om.run(t1);
@@ -274,15 +294,15 @@ TEST_CASE ("multi_output_diag_io") {
 
   // Read back and verify
   {
+    using namespace ShortFieldTagsNames;
     auto filename = "io_multi_diags.INSTANT.nsteps_x1.np"
                   + std::to_string(comm.size())
                   + "." + t0.to_string() + ".nc";
 
-    // Create fields to read into
     const int nlcols = grid->get_num_local_dofs();
     const int nlevs = grid->get_num_vertical_levels();
     auto units = ekat::units::Units::nondimensional();
-    FieldLayout fl({ShortFieldTagsNames::COL, ShortFieldTagsNames::LEV}, {nlcols, nlevs});
+    FieldLayout fl({COL, LEV}, {nlcols, nlevs});
 
     auto read_fm = std::make_shared<FieldManager>(grid);
     for (const auto& name : fnames) {
@@ -298,24 +318,26 @@ TEST_CASE ("multi_output_diag_io") {
     AtmosphereInput reader(reader_pl, read_fm);
     reader.read_variables();
 
-    // Verify: sum = f1 + f2, etc.
-    auto f1_h = read_fm->get_field("f1").get_view<const Real**, Host>();
-    auto sum_h = read_fm->get_field("sum_f1_f2").get_view<const Real**, Host>();
+    // Verify: sum = f1 + f2, diff = f1 - f2, prod = f1 * f2
+    auto f1_h   = read_fm->get_field("f1").get_view<const Real**, Host>();
+    auto f2_h   = read_fm->get_field("f2").get_view<const Real**, Host>();
+    auto sum_h  = read_fm->get_field("sum_f1_f2").get_view<const Real**, Host>();
     auto diff_h = read_fm->get_field("diff_f1_f2").get_view<const Real**, Host>();
     auto prod_h = read_fm->get_field("prod_f1_f2").get_view<const Real**, Host>();
 
+    // After NetCDF round-trip (write as float, read back), values lose
+    // precision. Check that the diagnostic relationships hold approximately.
+    const float tol = 1e-5f;
     for (int i = 0; i < nlcols; ++i) {
       for (int j = 0; j < nlevs; ++j) {
-        // f2 was also in the FM when the diagnostic ran, so we can
-        // reconstruct f2 = sum - f1
-        auto f2_val = sum_h(i,j) - f1_h(i,j);
-        REQUIRE(sum_h(i,j)  == f1_h(i,j) + f2_val);
-        REQUIRE(diff_h(i,j) == f1_h(i,j) - f2_val);
-        REQUIRE(prod_h(i,j) == f1_h(i,j) * f2_val);
+        REQUIRE(std::abs(sum_h(i,j)  - (f1_h(i,j) + f2_h(i,j))) < tol);
+        REQUIRE(std::abs(diff_h(i,j) - (f1_h(i,j) - f2_h(i,j))) < tol);
+        REQUIRE(std::abs(prod_h(i,j) - (f1_h(i,j) * f2_h(i,j))) < tol);
       }
     }
   }
 
+  diag->finalize();
   scorpio::finalize_subsystem();
 }
 

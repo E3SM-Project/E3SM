@@ -195,7 +195,7 @@ void Cosp::compute_diagnostic_impl ()
   auto isccp_cldtot_h = m_diagnostic_outputs.at("isccp_cldtot").get_view<Real*, Host>();
   auto isccp_ctptau_h = m_diagnostic_outputs.at("isccp_ctptau").get_view<Real***, Host>();
   auto modis_ctptau_h = m_diagnostic_outputs.at("modis_ctptau").get_view<Real***, Host>();
-  auto misr_cthtau_h  = m_diagnostic_outputs.at("misr_cthtau"). get_view<Real***, Host>();
+  auto misr_cthtau_h  = m_diagnostic_outputs.at("misr_cthtau").get_view<Real***, Host>();
 
   Real emsfc_lw = 0.99;
   CospFunc::main(

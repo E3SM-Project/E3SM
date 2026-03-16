@@ -31,6 +31,7 @@ TEST_CASE("cosp_diagnostic")
 {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
+  using namespace ekat::prefixes;
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
