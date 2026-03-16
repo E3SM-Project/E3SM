@@ -249,7 +249,8 @@ $ ./atmquery --grep number_of_subcycles
 ```
 
 Since the XML file stores constraints on the parameter value
-(like its type or valid values), attempting to use the wrong type will cause an error:
+(like its type or valid values),
+attempting to use the wrong type will cause an error:
 
 ``` {.shell .copy}
 $ ./atmquery --type se_ne
