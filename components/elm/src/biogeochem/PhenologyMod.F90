@@ -3777,7 +3777,7 @@ contains
                           + frootp_to_litter(p) * fr_flig(ivt(p)) * wt_col * froot_prof(p,j)
 
 
-                     ! Rhizome litter carbon fluxes. Assume similar to fine roots (B Sulman)
+                     ! Rhizome litter carbon fluxes. Assume similar to fine roots 
                      phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
                           + livecrootc_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * croot_prof(p,j)
                      phenology_c_to_litr_cel_c(c,j) = phenology_c_to_litr_cel_c(c,j) &

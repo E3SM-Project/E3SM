@@ -986,9 +986,7 @@ contains
                  (f3*(1._r8-f4)*(1._r8+f2))/cpdw
 
          else
-            !c_allometry(p) = (1._r8+g1)*(1._r8+f1+f3)    ! B Sulman: Let graminoids allocate rhizomes (all livecroot) using stem_leaf parameter
-            c_allometry(p) = 1._r8+g1+f1+f1*g1+f3+f3*g1  ! B Sulman: Let graminoids allocate rhizomes (all livecroot) using stem_leaf parameter
-            ! a note for above 2 lines of code: mathematically they're same, but the first (commented out) may cause one land developer test failure.
+            c_allometry(p) = 1._r8+g1+f1+f1*g1+f3+f3*g1
             n_allometry(p) = 1._r8/cnl + f1/cnfr
             if(cnlw>0) n_allometry(p) = n_allometry(p) + f3/cnlw ! Rhizomes
             p_allometry(p) = 1._r8/cpl + f1/cpfr
@@ -3688,7 +3686,7 @@ contains
           cpool_to_deadcrootc(p)         = nlc * f2 * f3 * (1._r8 - f4) * fcur
           cpool_to_deadcrootc_storage(p) = nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur)
        else
-          ! Assume "stem" allocation in graminoids goes to rhizomes which are all live wood (B Sulman)
+          ! Assume "stem" allocation in graminoids goes to rhizomes which are all live wood
           cpool_to_livecrootc(p)         = nlc * f3 * fcur
           cpool_to_livecrootc_storage(p) = nlc * f3 * (1._r8 - fcur)
        end if
@@ -3725,7 +3723,7 @@ contains
           npool_to_deadcrootn(p)         = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * fcur
           npool_to_deadcrootn_storage(p) = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
        elseif (cnlw > 0.0_r8) then
-          ! Assume "stem" allocation in graminoids goes to rhizomes which are all live wood (B Sulman)
+          ! Assume "stem" allocation in graminoids goes to rhizomes which are all live wood
           npool_to_livecrootn(p)         = (nlc * f3 / cnlw ) * fcur
           npool_to_livecrootn_storage(p) = (nlc * f3 / cnlw ) * (1._r8 - fcur)
        end if
@@ -3762,7 +3760,7 @@ contains
           ppool_to_deadcrootp(p)         = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* fcur
           ppool_to_deadcrootp_storage(p) = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* (1._r8 - fcur)
        elseif (cplw > 0.0_r8) then
-          ! Assume "stem" allocation in graminoids goes to rhizomes which are all live wood (B Sulman)
+          ! Assume "stem" allocation in graminoids goes to rhizomes which are all live wood
           ppool_to_livecrootp(p)         = (nlc * f3 / cplw ) * fcur
           ppool_to_livecrootp_storage(p) = (nlc * f3 / cplw ) * (1._r8 - fcur)
        end if
