@@ -75,13 +75,9 @@ void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
 
     // If all inputs have invalid timestamps, we have a problem.
     auto fname = [](const Field& f) { return f.name(); };
-    auto diag_name_str = is_multi_output()
-        ? name()
-        : m_diagnostic_output.name();
     EKAT_REQUIRE_MSG (ts.is_valid(),
         "Error! All inputs to diagnostic have invalid timestamp.\n"
         "  - Diag name: " + name() + "\n"
-        "  - Diag field name: " + diag_name_str + "\n"
         "  - Diag inputs names: " + ekat::join(inputs,fname,",") + "\n");
 
   }
@@ -124,15 +120,12 @@ set_required_field_impl (const Field& f) {
   //       While we fix all diags, this method will at least
   //       throw an error if the pack size that the diag "requested"
   //       is not compatible with the field alloc props.
-  auto diag_name_str = is_multi_output()
-      ? name()
-      : m_diagnostic_output.name();
   for (const auto& r : get_field_requests()) {
     if (r.fid.name()==f.name()) {
       const auto& fap = f.get_header().get_alloc_properties();
       EKAT_REQUIRE_MSG (fap.get_largest_pack_size()>=r.pack_size,
           "Error! Diagnostic input field cannot accommodate the needed pack size.\n"
-          "  - diag field: " + diag_name_str + "\n"
+          "  - diag name: " + name() + "\n"
           "  - input field: " + f.name() + "\n"
           "  - requested pack size: " + std::to_string(r.pack_size) + "\n"
           "  - field max pack size: " + std::to_string(fap.get_largest_pack_size()) + "\n");
