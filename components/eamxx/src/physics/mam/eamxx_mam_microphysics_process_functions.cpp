@@ -517,9 +517,10 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
   const auto& dqdt_aqh2so4 = dqdt_aqh2so4_;
   const unsigned n_so4_monolayers_pcage = config.n_so4_monolayers_pcage;
 
+  if (config_.compute_setsox) {
   MAM_START_TIMER("MAMMicrophysics::run_impl::setsox_single_level");
   Kokkos::parallel_for(
-    "MAMMicrophysics::run_impl::setsox_single_level", policy,
+    "MAMMicrophysics::run_impl::setsox", policy,
     KOKKOS_LAMBDA(const ThreadTeam &team) {
 
     const int icol     = team.league_rank();   // column index
@@ -592,6 +593,7 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
       });
       MAM_STOP_TIMER("MAMMicrophysics::run_impl::aqueous_chemistry_dvmrdt");
     }
+  } // compute_setsox
     //setsox_single_level ends
 
     // modal_aero_amicphys_intr

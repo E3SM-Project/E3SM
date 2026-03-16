@@ -47,6 +47,8 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm, const ekat::ParameterLi
 
   config_.compute_gas_phase_chemistry =
     m_params.get<bool>("mam4_do_gas_phase_chemistry", true);
+  config_.compute_setsox =
+    m_params.get<bool>("mam4_do_setsox", true);
 
   // LINOZ namelist parameters
   // Compute LINOZ only for prognostic Ozone (i.e. !use_prescribed_ozone_)
