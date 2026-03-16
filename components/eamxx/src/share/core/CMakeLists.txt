@@ -57,12 +57,22 @@ if (EAMXX_ENABLE_PYTHON)
     message (FATAL_ERROR "You must set Python_EXECUTABLE to point to a valid python3 interpreter")
   endif()
 
+  message ("py exec: ${Python_EXECUTABLE}")
+  execute_process(
+    COMMAND "${Python_EXECUTABLE}" --version
+    RESULT_VARIABLE check_result
+    OUTPUT_VARIABLE check_out
+    ERROR_VARIABLE check_out
+  )
+  message("version output: ${check_out}")
   execute_process(
     COMMAND "${Python_EXECUTABLE}" -c "import sys; assert sys.version_info >= (3,9), 'Python version must be >= 3.9'"
     RESULT_VARIABLE python_version_check_result
-    ERROR_VARIABLE python_version_check_error
+    OUTPUT_VARIABLE check_out
+    ERROR_VARIABLE check_out
   )
   if (python_version_check_result)
+      message("output: ${check_out}")
       message(FATAL_ERROR "Python version check failed: ${python_version_check_error}")
   endif()
 
