@@ -4795,9 +4795,8 @@ produced by the RRTMGP and P3 processes, so those must be in your
 <p>COSP runs at the frequency specified by the output stream that requests its
 fields (e.g., hourly, daily). There are no separate frequency controls.</p>
 <p>COSP uses 10 subcolumns by default for internal subcolumn sampling using
-<code>SCOPS</code>/<code>PREC_SCOPS</code>. A value of 1 implies <em>no</em> subcolumn sampling.
-High resolution cases (e.g., <code>ne1024</code>) should disable subcolumn sampling,
-while lower resolutions (e.g., <code>ne30</code>) should use subcolumn sampling.</p>
+<code>SCOPS</code>/<code>PREC_SCOPS</code>. The subcolumn count is not currently user-configurable
+through the output YAML; it defaults to 10 for all grid resolutions.</p>
 <p>A minimal output configuration example:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">averaging_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">average</span>
 <span class="nt">fields</span><span class="p">:</span>
