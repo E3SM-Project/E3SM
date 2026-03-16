@@ -280,8 +280,13 @@ AtmosphereOutput::
   //       to prevent two output streams creating the same diag. So when this
   //       destructor runs, it's fine to clean up this static var
   for (auto d : m_diagnostics) {
-    const auto& name = d->get_diagnostic().name();
-    m_diag_repo.erase(name);
+    if (d->is_multi_output()) {
+      for (const auto& dname : d->get_diagnostic_names()) {
+        m_diag_repo.erase(dname);
+      }
+    } else {
+      m_diag_repo.erase(d->get_diagnostic().name());
+    }
   }
 }
 
