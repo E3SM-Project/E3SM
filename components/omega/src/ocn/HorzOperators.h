@@ -211,9 +211,8 @@ class SecondDerivativeOnCell {
                                    const int ICell) const {
       const int NEdges = NEdgesOnCell(ICell);
       if (MaxMaxEdges < NEdges)
-         printf("Error: Number of edges on cell:%d exceeds maximum "
-                "expected:%d for cell:%d",
-                NEdges, MaxMaxEdges, ICell);
+         Kokkos::abort("SecondDerivativeOnCell: number of edges on cell "
+                       "exceeds MaxMaxEdges");
 
       // check to see if we are reaching outside the halo
       auto CellList = Kokkos::subview(CellListCell, ICell, Kokkos::ALL);
@@ -421,11 +420,8 @@ class MasksAndCoefficients {
    KOKKOS_INLINE_FUNCTION static void sort_by_key(Array2DI4 &vec, const I4 low,
                                                   const I4 high) {
       if (low > high) {
-         printf(
-             "Error: MasksAndCoefficients::sort_by_key called with invalid "
-             "bounds (low=%d, high=%d)\n",
-             low, high);
-         return;
+         Kokkos::abort("MasksAndCoefficients::sort_by_key called with invalid "
+                       "bounds");
       }
 
       if (low == high)
