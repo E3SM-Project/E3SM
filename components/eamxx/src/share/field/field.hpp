@@ -91,7 +91,7 @@ public:
   static constexpr int MaxRank = 6;
 
   // Constructor(s)
-  Field () = default;
+  Field ();
   explicit Field (const identifier_type& id, bool allocate = false);
   Field (const Field& src) = default;
   ~Field () = default;

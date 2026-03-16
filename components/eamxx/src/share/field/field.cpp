@@ -59,6 +59,17 @@ void update_checks (const Field& y, const Field* x = nullptr,
 } // anonymous namespace
 
 Field::
+Field ()
+ : Field (identifier_type("UNSET",
+                          FieldLayout::invalid(),
+                          ekat::units::Units::invalid(),
+                          "UNKNOWN",
+                          DataType::Invalid))
+{
+  // Nothing to do here
+}
+
+Field::
 Field (const identifier_type& id, bool allocate)
 {
   m_header = std::make_shared<FieldHeader>(id);

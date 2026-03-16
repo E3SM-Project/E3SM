@@ -260,6 +260,17 @@ TEST_CASE("field", "") {
       REQUIRE(v1(i) == v0());
     }
   }
+  SECTION ("default ctor") {
+    // Default constructor should create a field with a valid header
+    Field f;
+    REQUIRE (f.get_header_ptr() != nullptr);
+    REQUIRE (f.name() == "UNSET");
+    REQUIRE (f.get_header().get_identifier().get_grid_name() == "UNKNOWN");
+    REQUIRE (f.data_type() == DataType::Invalid);
+    REQUIRE (not f.is_allocated());
+    // Attempting to allocate should fail
+    REQUIRE_THROWS (f.allocate_view());
+  }
 }
 
 } // anonymous namespace
