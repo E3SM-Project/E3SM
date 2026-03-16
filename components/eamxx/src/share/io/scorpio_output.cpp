@@ -11,6 +11,7 @@
 #include <ekat_string_utils.hpp>
 #include <ekat_units.hpp>
 
+#include <algorithm>
 #include <numeric>
 
 namespace
@@ -949,7 +950,8 @@ compute_diagnostics(const bool allow_invalid_fields)
       EKAT_REQUIRE_MSG (computable or allow_invalid_fields,
         "Error! Cannot compute a diagnostic. One dependency has an invalid timestamp.\n"
         " - stream name: " + m_stream_name + "\n"
-        " - diag name: " + diag->name() + "\n"
+        " - diag class: " + diag->name() + "\n"
+        " - diag field(s): " + ekat::join(diag->get_diagnostic_names(),",") + "\n"
         " - dep  name: " + f.name() + "\n");
     }
 
@@ -962,6 +964,7 @@ compute_diagnostics(const bool allow_invalid_fields)
       bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
       EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
         "Error! Failed to compute diagnostic.\n"
+        " - diag class: " + diag->name() + "\n"
         " - diag name: " + dname + "\n");
       if (not computed) {
         d.deep_copy(constants::fill_value<float>);
@@ -1173,14 +1176,7 @@ process_requested_fields()
           }
 
           // Only push the diagnostic once (avoid duplicates for multi-output)
-          bool already_added = false;
-          for (const auto& existing : m_diagnostics) {
-            if (existing.get() == diag.get()) {
-              already_added = true;
-              break;
-            }
-          }
-          if (not already_added) {
+          if (std::find(m_diagnostics.begin(),m_diagnostics.end(),diag)==m_diagnostics.end()) {
             m_diagnostics.push_back(diag);
           }
         }
