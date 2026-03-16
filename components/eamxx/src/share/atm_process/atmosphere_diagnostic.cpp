@@ -54,11 +54,14 @@ std::vector<std::string> AtmosphereDiagnostic::get_diagnostic_names () const {
       names.push_back(k);
     }
     return names;
-  }
-  if (m_diagnostic_output.get_header_ptr() != nullptr) {
+  } else if (m_diagnostic_output.get_header_ptr() != nullptr) {
     return {m_diagnostic_output.name()};
+  } else {
+    EKAT_ERROR_MSG ("Error! No diagnostic output fields found.\n"
+      "  - diag name: " + name() + "\n"
+      "  Diagnostic output must be set before calling get_diagnostic_names().\n");
   }
-  return {};
+  return {}; // silence no-return warning
 }
 
 void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
