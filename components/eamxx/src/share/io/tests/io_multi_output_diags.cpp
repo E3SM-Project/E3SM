@@ -157,8 +157,6 @@ TEST_CASE ("multi_output_diag_basic") {
   auto diag = diag_factory.create("MultiOutDiag", comm, params);
   diag->set_grids(gm);
 
-  // Verify multi-output interface
-  REQUIRE(diag->is_multi_output());
   auto names = diag->get_diagnostic_names();
   REQUIRE(names.size() == 3);
   REQUIRE(names[0] == "sum_f1_f2");

@@ -64,11 +64,6 @@ public:
   // Multi-output diagnostics should override this.
   virtual std::vector<std::string> get_diagnostic_names () const;
 
-  // Whether this diagnostic produces multiple output fields
-  bool is_multi_output () const {
-    return m_diagnostic_outputs.size() > 1;
-  }
-
   // Allows the diagnostic to save some start-of-step quantity (e.g., in case
   // we need to compute tendencies, or accumulated stuff)
   virtual void init_timestep (const util::TimeStamp& /* start_of_step */) {}
