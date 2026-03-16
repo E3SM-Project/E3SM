@@ -2446,10 +2446,7 @@ contains
              xao_ax => prep_aoflux_get_xao_ax()
              if (associated(xao_ax)) then
                 ! will call prep_atm_merge for each instance.
-                call  prep_atm_mrg(infodata, &
-                     fractions_ax=fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:init_atminit')
-                     ! MOAB
-                call  prep_atm_mrg_moab(infodata, xao_ax)
+                call  prep_atm_mrg_moab(infodata, xao_ax, timer_mrg='CPL:init_atminit')
              endif
           endif
 
@@ -4133,9 +4130,7 @@ contains
           call prep_atm_calc_z2x_ax(fractions_zx, timer='CPL:atmprep_iac2atm')
        endif
        if (associated(xao_ax)) then
-          call prep_atm_mrg(infodata, fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:atmprep_mrgx2a')
-          ! call moab atm merge too
-          call  prep_atm_mrg_moab(infodata, xao_ax)
+          call  prep_atm_mrg_moab(infodata, xao_ax, timer_mrg='CPL:atmprep_mrgx2a')
        endif
 
        call component_diag(infodata, atm, flow='x2c', comment= 'send atm', info_debug=info_debug, &
@@ -4317,7 +4312,7 @@ contains
        endif
 
 
-       call prep_iac_mrg(infodata, fractions_zx, timer_mrg='CPL:iacprep_mrgx2z')
+      ! call prep_iac_mrg(infodata, fractions_zx, timer_mrg='CPL:iacprep_mrgx2z')
 
        call component_diag(infodata, iac, flow='x2c', comment= 'send iac', &
             info_debug=info_debug, timer_diag='CPL:iacprep_diagav')
@@ -4408,10 +4403,7 @@ contains
        if (ocn_prognostic) then
           ! ocn prep-merge
           xao_ox => prep_aoflux_get_xao_ox()
-          call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
-
-          ! moab version
-          call prep_ocn_mrg_moab(infodata, xao_ox)
+          call prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
 
           ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
           call prep_ocn_accum(timer='CPL:atmocnp_accum')
@@ -4503,8 +4495,7 @@ contains
        endif
 
        if (lnd_prognostic) then
-          call prep_lnd_mrg(infodata, timer_mrg='CPL:lndprep_mrgx2l')
-          call prep_lnd_mrg_moab(infodata)
+          call prep_lnd_mrg_moab(infodata, timer_mrg='CPL:lndprep_mrgx2l')
 
           call component_diag(infodata, lnd, flow='x2c', comment= 'send lnd', &
                info_debug=info_debug, timer_diag='CPL:lndprep_diagav')
@@ -4709,9 +4700,7 @@ contains
        if (atm_c2_rof) call prep_rof_calc_a2r_rx(timer='CPL:rofprep_atm2rof')
 
        if (ocn_c2_rof) call prep_rof_calc_o2r_rx(timer='CPL:rofprep_ocn2rof')
-       call prep_rof_mrg(infodata, fractions_rx, timer_mrg='CPL:rofprep_mrgx2r', cime_model=cime_model)
-       !moab version
-       call prep_rof_mrg_moab(infodata, cime_model=cime_model)
+       call prep_rof_mrg_moab(infodata, timer_mrg='CPL:rofprep_mrgx2r')
 
        call component_diag(infodata, rof, flow='x2c', comment= 'send rof', &
             info_debug=info_debug, timer_diag='CPL:rofprep_diagav')
@@ -4801,9 +4790,7 @@ contains
       !     call prep_ice_calc_a2x_ix(a2x_ox, timer='CPL:iceprep_atm2ice')
       !  endif
 
-       call prep_ice_mrg(infodata, timer_mrg='CPL:iceprep_mrgx2i')
-
-       call prep_ice_mrg_moab(infodata,rof_c2_ice)
+       call prep_ice_mrg_moab(infodata, rof_c2_ice, timer_mrg='CPL:iceprep_mrgx2i')
 
        call component_diag(infodata, ice, flow='x2c', comment= 'send ice', &
             info_debug=info_debug, timer_diag='CPL:iceprep_diagav')
@@ -4877,7 +4864,7 @@ contains
        if (ocn_c2_wav) call prep_wav_calc_o2x_wx(timer='CPL:wavprep_ocn2wav')
        if (ice_c2_wav) call prep_wav_calc_i2x_wx(timer='CPL:wavprep_ice2wav')
 
-       call prep_wav_mrg(infodata, fractions_wx, timer_mrg='CPL:wavprep_mrgx2w')
+       !call prep_wav_mrg(infodata, fractions_wx, timer_mrg='CPL:wavprep_mrgx2w')
 
        call component_diag(infodata, wav, flow='x2c', comment= 'send wav', &
             info_debug=info_debug, timer_diag='CPL:wavprep_diagav')

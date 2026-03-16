@@ -36,7 +36,6 @@ module prep_ice_mod
   !--------------------------------------------------------------------------
 
   public :: prep_ice_init
-  public :: prep_ice_mrg
   public :: prep_ice_mrg_moab
 
   public :: prep_ice_calc_a2x_ix
@@ -58,8 +57,6 @@ module prep_ice_mod
   !--------------------------------------------------------------------------
   ! Private interfaces
   !--------------------------------------------------------------------------
-
-  private :: prep_ice_merge
 
   !--------------------------------------------------------------------------
   ! Private data
@@ -322,264 +319,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_ice_mrg(infodata, timer_mrg)
-
-    !---------------------------------------------------------------
-    ! Description
-    ! Prepare run phase, including running the merge
-    !
-    ! Arguments
-    type(seq_infodata_type) , intent(in)    :: infodata
-    character(len=*)        , intent(in)    :: timer_mrg
-    !
-    ! Local Variables
-    integer                  :: eoi, eai, egi, eii, eri
-    real(r8)                 :: flux_epbalfact ! adjusted precip factor
-    type(mct_avect), pointer :: x2i_ix
-    character(*), parameter  :: subname = '(prep_ice_mrg)'
-    !---------------------------------------------------------------
-
-    call seq_infodata_GetData(infodata, &
-         flux_epbalfact=flux_epbalfact)
-
-    call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
-    do eii = 1,num_inst_ice
-       ! Use fortran mod to address ensembles in merge
-       eai = mod((eii-1),num_inst_atm) + 1
-       eoi = mod((eii-1),num_inst_ocn) + 1
-       eri = mod((eii-1),num_inst_rof) + 1
-       egi = mod((eii-1),num_inst_glc) + 1
-
-       ! Apply correction to precipitation of requested driver namelist
-       x2i_ix   => component_get_x2c_cx(ice(eii))  ! This is actually modifying x2i_ix
-       call prep_ice_merge(flux_epbalfact, a2x_ix(eai), o2x_ix(eoi), r2x_ix(eri), g2x_ix(egi), &
-            x2i_ix)
-    enddo
-    call t_drvstopf (trim(timer_mrg))
-
-  end subroutine prep_ice_mrg
-
-  !================================================================================================
-
-  subroutine prep_ice_merge(flux_epbalfact, a2x_i, o2x_i, r2x_i, g2x_i, x2i_i )
-
-    !-----------------------------------------------------------------------
-    !
-    ! Arguments
-    real(r8)        , intent(inout) :: flux_epbalfact
-    type(mct_aVect) , intent(in)    :: a2x_i
-    type(mct_aVect) , intent(in)    :: o2x_i
-    type(mct_aVect) , intent(in)    :: r2x_i
-    type(mct_aVect) , intent(in)    :: g2x_i
-    type(mct_aVect) , intent(inout) :: x2i_i
-    !
-    ! Local variables
-    integer       :: i,i1,o1,lsize
-    integer       :: niflds
-    integer, save :: index_a2x_Faxa_rainc
-    integer, save :: index_a2x_Faxa_rainl
-    integer, save :: index_a2x_Faxa_snowc
-    integer, save :: index_a2x_Faxa_snowl
-    integer, save :: index_g2x_Figg_rofi
-    integer, save :: index_r2x_Firr_rofi
-    integer, save :: index_x2i_Faxa_rain
-    integer, save :: index_x2i_Faxa_snow
-    integer, save :: index_x2i_Fixx_rofi
-    !wiso fields:
-    integer, save :: index_a2x_Faxa_rainc_16O
-    integer, save :: index_a2x_Faxa_rainl_16O
-    integer, save :: index_a2x_Faxa_snowc_16O
-    integer, save :: index_a2x_Faxa_snowl_16O
-    integer, save :: index_x2i_Faxa_rain_16O
-    integer, save :: index_x2i_Faxa_snow_16O
-    integer, save :: index_a2x_Faxa_rainc_18O
-    integer, save :: index_a2x_Faxa_rainl_18O
-    integer, save :: index_a2x_Faxa_snowc_18O
-    integer, save :: index_a2x_Faxa_snowl_18O
-    integer, save :: index_x2i_Faxa_rain_18O
-    integer, save :: index_x2i_Faxa_snow_18O
-    integer, save :: index_a2x_Faxa_rainc_HDO
-    integer, save :: index_a2x_Faxa_rainl_HDO
-    integer, save :: index_a2x_Faxa_snowc_HDO
-    integer, save :: index_a2x_Faxa_snowl_HDO
-    integer, save :: index_x2i_Faxa_rain_HDO
-    integer, save :: index_x2i_Faxa_snow_HDO
-    logical, save :: first_time = .true.
-    logical       :: iamroot
-    character(CL),allocatable :: mrgstr(:)   ! temporary string
-    character(CL) :: field   ! string converted to char
-    type(mct_aVect_sharedindices),save :: o2x_sharedindices
-    type(mct_aVect_sharedindices),save :: a2x_sharedindices
-    type(mct_aVect_sharedindices),save :: g2x_sharedindices
-    character(*), parameter   :: subname = '(prep_ice_merge) '
-    !-----------------------------------------------------------------------
-
-    call seq_comm_getdata(CPLID, iamroot=iamroot)
-    lsize = mct_aVect_lsize(x2i_i)
-
-    if (first_time) then
-       niflds = mct_aVect_nRattr(x2i_i)
-
-       allocate(mrgstr(niflds))
-       index_a2x_Faxa_snowc = mct_aVect_indexRA(a2x_i,'Faxa_snowc')
-       index_a2x_Faxa_snowl = mct_aVect_indexRA(a2x_i,'Faxa_snowl')
-       index_a2x_Faxa_rainc = mct_aVect_indexRA(a2x_i,'Faxa_rainc')
-       index_a2x_Faxa_rainl = mct_aVect_indexRA(a2x_i,'Faxa_rainl')
-       index_g2x_Figg_rofi  = mct_aVect_indexRA(g2x_i,'Figg_rofi')
-       index_r2x_Firr_rofi  = mct_aVect_indexRA(r2x_i,'Firr_rofi')
-       index_x2i_Faxa_rain  = mct_aVect_indexRA(x2i_i,'Faxa_rain' )
-       index_x2i_Faxa_snow  = mct_aVect_indexRA(x2i_i,'Faxa_snow' )
-       index_x2i_Fixx_rofi  = mct_aVect_indexRA(x2i_i,'Fixx_rofi')
-
-       ! Water isotope fields
-       index_a2x_Faxa_snowc_16O = mct_aVect_indexRA(a2x_i,'Faxa_snowc_16O', perrWith='quiet')
-       index_a2x_Faxa_snowl_16O = mct_aVect_indexRA(a2x_i,'Faxa_snowl_16O', perrWith='quiet')
-       index_a2x_Faxa_rainc_16O = mct_aVect_indexRA(a2x_i,'Faxa_rainc_16O', perrWith='quiet')
-       index_a2x_Faxa_rainl_16O = mct_aVect_indexRA(a2x_i,'Faxa_rainl_16O', perrWith='quiet')
-       index_x2i_Faxa_rain_16O  = mct_aVect_indexRA(x2i_i,'Faxa_rain_16O',  perrWith='quiet' )
-       index_x2i_Faxa_snow_16O  = mct_aVect_indexRA(x2i_i,'Faxa_snow_16O',  perrWith='quiet' )
-
-       index_a2x_Faxa_snowc_18O = mct_aVect_indexRA(a2x_i,'Faxa_snowc_18O', perrWith='quiet')
-       index_a2x_Faxa_snowl_18O = mct_aVect_indexRA(a2x_i,'Faxa_snowl_18O', perrWith='quiet')
-       index_a2x_Faxa_rainc_18O = mct_aVect_indexRA(a2x_i,'Faxa_rainc_18O', perrWith='quiet')
-       index_a2x_Faxa_rainl_18O = mct_aVect_indexRA(a2x_i,'Faxa_rainl_18O', perrWith='quiet')
-       index_x2i_Faxa_rain_18O  = mct_aVect_indexRA(x2i_i,'Faxa_rain_18O',  perrWith='quiet' )
-       index_x2i_Faxa_snow_18O  = mct_aVect_indexRA(x2i_i,'Faxa_snow_18O',  perrWith='quiet' )
-
-       index_a2x_Faxa_snowc_HDO = mct_aVect_indexRA(a2x_i,'Faxa_snowc_HDO', perrWith='quiet')
-       index_a2x_Faxa_snowl_HDO = mct_aVect_indexRA(a2x_i,'Faxa_snowl_HDO', perrWith='quiet')
-       index_a2x_Faxa_rainc_HDO = mct_aVect_indexRA(a2x_i,'Faxa_rainc_HDO', perrWith='quiet')
-       index_a2x_Faxa_rainl_HDO = mct_aVect_indexRA(a2x_i,'Faxa_rainl_HDO', perrWith='quiet')
-       index_x2i_Faxa_rain_HDO  = mct_aVect_indexRA(x2i_i,'Faxa_rain_HDO',  perrWith='quiet' )
-       index_x2i_Faxa_snow_HDO  = mct_aVect_indexRA(x2i_i,'Faxa_snow_HDO',  perrWith='quiet' )
-
-       do i = 1,niflds
-          field = mct_aVect_getRList2c(i, x2i_i)
-          mrgstr(i) = subname//'x2i%'//trim(field)//' ='
-       enddo
-
-       call mct_aVect_setSharedIndices(o2x_i, x2i_i, o2x_SharedIndices)
-       call mct_aVect_setSharedIndices(a2x_i, x2i_i, a2x_SharedIndices)
-       call mct_aVect_setSharedIndices(g2x_i, x2i_i, g2x_SharedIndices)
-
-       !--- document copy operations ---
-       do i=1,o2x_SharedIndices%shared_real%num_indices
-          i1=o2x_SharedIndices%shared_real%aVindices1(i)
-          o1=o2x_SharedIndices%shared_real%aVindices2(i)
-          field = mct_aVect_getRList2c(i1, o2x_i)
-          mrgstr(o1) = trim(mrgstr(o1))//' = o2x%'//trim(field)
-       enddo
-       do i=1,a2x_SharedIndices%shared_real%num_indices
-          i1=a2x_SharedIndices%shared_real%aVindices1(i)
-          o1=a2x_SharedIndices%shared_real%aVindices2(i)
-          field = mct_aVect_getRList2c(i1, a2x_i)
-          mrgstr(o1) = trim(mrgstr(o1))//' = a2x%'//trim(field)
-       enddo
-       do i=1,g2x_SharedIndices%shared_real%num_indices
-          i1=g2x_SharedIndices%shared_real%aVindices1(i)
-          o1=g2x_SharedIndices%shared_real%aVindices2(i)
-          field = mct_aVect_getRList2c(i1, g2x_i)
-          mrgstr(o1) = trim(mrgstr(o1))//' = g2x%'//trim(field)
-       enddo
-
-       !--- document manual merges ---
-       mrgstr(index_x2i_Faxa_rain) = trim(mrgstr(index_x2i_Faxa_rain))//' = '// &
-            '(a2x%Faxa_rainc + a2x%Faxa_rainl)*flux_epbalfact'
-       mrgstr(index_x2i_Faxa_snow) = trim(mrgstr(index_x2i_Faxa_snow))//' = '// &
-            '(a2x%Faxa_snowc + a2x%Faxa_snowl)*flux_epbalfact'
-       mrgstr(index_x2i_Fixx_rofi) = trim(mrgstr(index_x2i_Fixx_rofi))//' = '// &
-            '(g2x%Figg_rofi + r2x%Firr_rofi)*flux_epbalfact'
-
-       !--- water isotope document manual merges ---
-       if ( index_x2i_Faxa_rain_16O /= 0 ) then
-          mrgstr(index_x2i_Faxa_rain_16O) = trim(mrgstr(index_x2i_Faxa_rain_16O))//' = '// &
-               '(a2x%Faxa_rainc_16O + a2x%Faxa_rainl_16O)*flux_epbalfact'
-          mrgstr(index_x2i_Faxa_snow_16O) = trim(mrgstr(index_x2i_Faxa_snow_16O))//' = '// &
-               '(a2x%Faxa_snowc_16O + a2x%Faxa_snowl_16O)*flux_epbalfact'
-       end if
-       if ( index_x2i_Faxa_rain_18O /= 0 ) then
-          mrgstr(index_x2i_Faxa_rain_18O) = trim(mrgstr(index_x2i_Faxa_rain_18O))//' = '// &
-               '(a2x%Faxa_rainc_18O + a2x%Faxa_rainl_18O)*flux_epbalfact'
-          mrgstr(index_x2i_Faxa_snow_18O) = trim(mrgstr(index_x2i_Faxa_snow_18O))//' = '// &
-               '(a2x%Faxa_snowc_18O + a2x%Faxa_snowl_18O)*flux_epbalfact'
-       end if
-       if ( index_x2i_Faxa_rain_HDO /= 0 ) then
-          mrgstr(index_x2i_Faxa_rain_HDO) = trim(mrgstr(index_x2i_Faxa_rain_HDO))//' = '// &
-               '(a2x%Faxa_rainc_HDO + a2x%Faxa_rainl_HDO)*flux_epbalfact'
-          mrgstr(index_x2i_Faxa_snow_HDO) = trim(mrgstr(index_x2i_Faxa_snow_HDO))//' = '// &
-               '(a2x%Faxa_snowc_HDO + a2x%Faxa_snowl_HDO)*flux_epbalfact'
-       end if
-
-    endif
-
-    !    call mct_aVect_copy(aVin=o2x_i, aVout=x2i_i, vector=mct_usevector)
-    !    call mct_aVect_copy(aVin=a2x_i, aVout=x2i_i, vector=mct_usevector)
-    !    call mct_aVect_copy(aVin=g2x_i, aVout=x2i_i, vector=mct_usevector)
-    call mct_aVect_copy(aVin=o2x_i, aVout=x2i_i, vector=mct_usevector, sharedIndices=o2x_SharedIndices)
-    call mct_aVect_copy(aVin=a2x_i, aVout=x2i_i, vector=mct_usevector, sharedIndices=a2x_SharedIndices)
-    call mct_aVect_copy(aVin=g2x_i, aVout=x2i_i, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
-
-    ! Merge total snow and precip for ice input
-    ! Scale total precip and runoff by flux_epbalfact
-
-    do i = 1,lsize
-       x2i_i%rAttr(index_x2i_Faxa_rain,i) = a2x_i%rAttr(index_a2x_Faxa_rainc,i) + &
-            a2x_i%rAttr(index_a2x_Faxa_rainl,i)
-       x2i_i%rAttr(index_x2i_Faxa_snow,i) = a2x_i%rAttr(index_a2x_Faxa_snowc,i) + &
-            a2x_i%rAttr(index_a2x_Faxa_snowl,i)
-       x2i_i%rAttr(index_x2i_Fixx_rofi,i) = g2x_i%rAttr(index_g2x_Figg_rofi,i) + &
-            r2x_i%rAttr(index_r2x_Firr_rofi,i)
-
-       x2i_i%rAttr(index_x2i_Faxa_rain,i) = x2i_i%rAttr(index_x2i_Faxa_rain,i) * flux_epbalfact
-       x2i_i%rAttr(index_x2i_Faxa_snow,i) = x2i_i%rAttr(index_x2i_Faxa_snow,i) * flux_epbalfact
-       x2i_i%rAttr(index_x2i_Fixx_rofi,i) = x2i_i%rAttr(index_x2i_Fixx_rofi,i) * flux_epbalfact
-
-       ! For water isotopes
-       if ( index_x2i_Faxa_rain_16O /= 0 ) then
-          x2i_i%rAttr(index_x2i_Faxa_rain_16O,i) = a2x_i%rAttr(index_a2x_Faxa_rainc_16O,i) + &
-               a2x_i%rAttr(index_a2x_Faxa_rainl_16O,i)
-          x2i_i%rAttr(index_x2i_Faxa_snow_16O,i) = a2x_i%rAttr(index_a2x_Faxa_snowc_16O,i) + &
-               a2x_i%rAttr(index_a2x_Faxa_snowl_16O,i)
-
-          x2i_i%rAttr(index_x2i_Faxa_rain_16O,i) = x2i_i%rAttr(index_x2i_Faxa_rain_16O,i) * flux_epbalfact
-          x2i_i%rAttr(index_x2i_Faxa_snow_16O,i) = x2i_i%rAttr(index_x2i_Faxa_snow_16O,i) * flux_epbalfact
-       end if
-       if ( index_x2i_Faxa_rain_18O /= 0 ) then
-          x2i_i%rAttr(index_x2i_Faxa_rain_18O,i) = a2x_i%rAttr(index_a2x_Faxa_rainc_18O,i) + &
-               a2x_i%rAttr(index_a2x_Faxa_rainl_18O,i)
-          x2i_i%rAttr(index_x2i_Faxa_snow_18O,i) = a2x_i%rAttr(index_a2x_Faxa_snowc_18O,i) + &
-               a2x_i%rAttr(index_a2x_Faxa_snowl_18O,i)
-
-          x2i_i%rAttr(index_x2i_Faxa_rain_18O,i) = x2i_i%rAttr(index_x2i_Faxa_rain_18O,i) * flux_epbalfact
-          x2i_i%rAttr(index_x2i_Faxa_snow_18O,i) = x2i_i%rAttr(index_x2i_Faxa_snow_18O,i) * flux_epbalfact
-       end if
-       if ( index_x2i_Faxa_rain_HDO /= 0 ) then
-          x2i_i%rAttr(index_x2i_Faxa_rain_HDO,i) = a2x_i%rAttr(index_a2x_Faxa_rainc_HDO,i) + &
-               a2x_i%rAttr(index_a2x_Faxa_rainl_HDO,i)
-          x2i_i%rAttr(index_x2i_Faxa_snow_HDO,i) = a2x_i%rAttr(index_a2x_Faxa_snowc_HDO,i) + &
-               a2x_i%rAttr(index_a2x_Faxa_snowl_HDO,i)
-
-          x2i_i%rAttr(index_x2i_Faxa_rain_HDO,i) = x2i_i%rAttr(index_x2i_Faxa_rain_HDO,i) * flux_epbalfact
-          x2i_i%rAttr(index_x2i_Faxa_snow_HDO,i) = x2i_i%rAttr(index_x2i_Faxa_snow_HDO,i) * flux_epbalfact
-       end if
-
-    end do
-
-    if (first_time) then
-       if (iamroot) then
-          write(logunit,'(A)') subname//' Summary:'
-          do i = 1,niflds
-             write(logunit,'(A)') trim(mrgstr(i))
-          enddo
-       endif
-       deallocate(mrgstr)
-    endif
-
-    first_time = .false.
-
-  end subroutine prep_ice_merge
-
-  subroutine prep_ice_mrg_moab(infodata, rof_c2_ice)
+  subroutine prep_ice_mrg_moab(infodata, rof_c2_ice, timer_mrg)
     use iMOAB , only : iMOAB_GetDoubleTagStorage, &
     iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh, iMOAB_GetMeshInfo
 
@@ -588,6 +328,7 @@ contains
     ! Arguments
     type(seq_infodata_type) , intent(in)    :: infodata
     logical,                   intent(in)    :: rof_c2_ice ! .true.  => rof to ice coupling on
+    character(len=*)        , intent(in)    :: timer_mrg
     !
     ! Local variables
     real(r8)        :: flux_epbalfact
@@ -648,6 +389,7 @@ contains
 
     character(*), parameter   :: subname = '(prep_ice_mrg_moab) '
     !-----------------------------------------------------------------------
+    call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
     call seq_infodata_GetData(infodata, &
          flux_epbalfact=flux_epbalfact)
 
@@ -894,6 +636,7 @@ contains
     endif
 #endif
 
+    call t_drvstopf (trim(timer_mrg))
 
   end subroutine prep_ice_mrg_moab
 

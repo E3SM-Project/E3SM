@@ -52,7 +52,6 @@ module prep_lnd_mod
   !--------------------------------------------------------------------------
 
   public :: prep_lnd_init
-  public :: prep_lnd_mrg
   ! moab version
   public :: prep_lnd_mrg_moab
 
@@ -77,7 +76,6 @@ module prep_lnd_mod
   ! Private interfaces
   !--------------------------------------------------------------------------
 
-  private :: prep_lnd_merge
   private :: prep_lnd_set_glc2lnd_fields
 
   !--------------------------------------------------------------------------
@@ -725,40 +723,11 @@ contains
 
   !================================================================================================
 
-  subroutine prep_lnd_mrg(infodata, timer_mrg)
-
-    !---------------------------------------------------------------
-    ! Description
-    ! Prepare run phase, including running the merge
-    !
-    ! Arguments
-    type(seq_infodata_type) , intent(in) :: infodata
-    character(len=*)     , intent(in)    :: timer_mrg
-    !
-    ! Local Variables
-    integer                  :: eai, eri, egi, eli
-    type(mct_aVect), pointer :: x2l_lx
-    character(*), parameter  :: subname = '(prep_lnd_mrg)'
-    !---------------------------------------------------------------
-
-    call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
-    do eli = 1,num_inst_lnd
-       ! Use fortran mod to address ensembles in merge
-       eai = mod((eli-1),num_inst_atm) + 1
-       eri = mod((eli-1),num_inst_rof) + 1
-       egi = mod((eli-1),num_inst_glc) + 1
-
-       x2l_lx => component_get_x2c_cx(lnd(eli))  ! This is actually modifying x2l_lx
-       call prep_lnd_merge( a2x_lx(eai), r2x_lx(eri), g2x_lx(egi), x2l_lx )
-    enddo
-    call t_drvstopf (trim(timer_mrg))
-
-  end subroutine prep_lnd_mrg
-
 ! this does almost nothing now, except documenting
-  subroutine prep_lnd_mrg_moab (infodata)
+  subroutine prep_lnd_mrg_moab (infodata, timer_mrg)
 
     type(seq_infodata_type) , intent(in) :: infodata
+    character(len=*)        , intent(in) :: timer_mrg
 
 
     type(mct_avect) , pointer   :: a2x_l  ! used just for indexing
@@ -789,6 +758,8 @@ contains
     integer :: ierr
 #endif
     !-----------------------------------------------------------------------
+
+    call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
 
     call seq_comm_getdata(CPLID, iamroot=iamroot)
 
@@ -861,86 +832,9 @@ contains
 
 #endif
 
+    call t_drvstopf (trim(timer_mrg))
+
   end subroutine prep_lnd_mrg_moab
-  !================================================================================================
-
-  subroutine prep_lnd_merge( a2x_l, r2x_l, g2x_l, x2l_l )
-    !---------------------------------------------------------------
-    ! Description
-    ! Create input land state directly from atm, runoff and glc outputs
-    !
-    ! Arguments
-    type(mct_aVect), intent(in)     :: a2x_l
-    type(mct_aVect), intent(in)     :: r2x_l
-    type(mct_aVect), intent(in)     :: g2x_l
-    type(mct_aVect), intent(inout)  :: x2l_l
-    !-----------------------------------------------------------------------
-    integer       :: nflds,i,i1,o1
-    logical       :: iamroot
-    logical, save :: first_time = .true.
-    character(CL),allocatable :: mrgstr(:)   ! temporary string
-    character(CL) :: field   ! string converted to char
-    type(mct_aVect_sharedindices),save :: a2x_sharedindices
-    type(mct_aVect_sharedindices),save :: r2x_sharedindices
-    type(mct_aVect_sharedindices),save :: g2x_sharedindices
-    character(*), parameter   :: subname = '(prep_lnd_merge) '
-
-    !-----------------------------------------------------------------------
-
-    call seq_comm_getdata(CPLID, iamroot=iamroot)
-
-    if (first_time) then
-       nflds = mct_aVect_nRattr(x2l_l)
-
-       allocate(mrgstr(nflds))
-       do i = 1,nflds
-          field = mct_aVect_getRList2c(i, x2l_l)
-          mrgstr(i) = subname//'x2l%'//trim(field)//' ='
-       enddo
-
-       call mct_aVect_setSharedIndices(a2x_l, x2l_l, a2x_SharedIndices)
-       call mct_aVect_setSharedIndices(r2x_l, x2l_l, r2x_SharedIndices)
-       call mct_aVect_setSharedIndices(g2x_l, x2l_l, g2x_SharedIndices)
-
-       !--- document copy operations ---
-       do i=1,a2x_SharedIndices%shared_real%num_indices
-          i1=a2x_SharedIndices%shared_real%aVindices1(i)
-          o1=a2x_SharedIndices%shared_real%aVindices2(i)
-          field = mct_aVect_getRList2c(i1, a2x_l)
-          mrgstr(o1) = trim(mrgstr(o1))//' = a2x%'//trim(field)
-       enddo
-       do i=1,r2x_SharedIndices%shared_real%num_indices
-          i1=r2x_SharedIndices%shared_real%aVindices1(i)
-          o1=r2x_SharedIndices%shared_real%aVindices2(i)
-          field = mct_aVect_getRList2c(i1, r2x_l)
-          mrgstr(o1) = trim(mrgstr(o1))//' = r2x%'//trim(field)
-       enddo
-       do i=1,g2x_SharedIndices%shared_real%num_indices
-          i1=g2x_SharedIndices%shared_real%aVindices1(i)
-          o1=g2x_SharedIndices%shared_real%aVindices2(i)
-          field = mct_aVect_getRList2c(i1, g2x_l)
-          mrgstr(o1) = trim(mrgstr(o1))//' = g2x%'//trim(field)
-       enddo
-    endif
-
-    call mct_aVect_copy(aVin=a2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=a2x_SharedIndices)
-    call mct_aVect_copy(aVin=r2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=r2x_SharedIndices)
-    call mct_aVect_copy(aVin=g2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
-
-    if (first_time) then
-       if (iamroot) then
-          write(logunit,'(A)') subname//' Summary:'
-          do i = 1,nflds
-             write(logunit,'(A)') trim(mrgstr(i))
-          enddo
-       endif
-       deallocate(mrgstr)
-    endif
-
-    first_time = .false.
-
-  end subroutine prep_lnd_merge
-
   !================================================================================================
 
   subroutine prep_lnd_calc_a2x_lx(timer)
