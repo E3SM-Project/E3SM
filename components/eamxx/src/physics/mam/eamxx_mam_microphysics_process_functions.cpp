@@ -5,7 +5,7 @@
 
 // Conditionally enable fine-grained micro-physics timers.
 // Compile with -DMICRO_TIMER to activate.
-#define MICRO_TIMER
+// #define MICRO_TIMER
 
 #ifdef MICRO_TIMER
 #  define MAM_START_TIMER(name) do { start_timer(name); } while(0)
@@ -422,6 +422,8 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
     // Store mixing ratios before gas chemistry changes the mixing ratios
     const auto& vmr0 = vmr0_;
     Kokkos::deep_copy(vmr0,vmr);
+
+    if (config_.compute_gas_phase_chemistry) {
     // NOTE: Making copies of clsmap_4 and permute_4 to fix undefined arrays on
     // the device.
     int clsmap_4[num_gas_aerosol_constituents], permute_4[num_gas_aerosol_constituents];
@@ -499,6 +501,7 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
     });
      MAM_STOP_TIMER("MAMMicrophysics::run_impl::gas_phase_chemistry_dvmrdt");
   }
+    } // compute_gas_phase_chemistry
   // gas_phase_chemistry ends
 
   // setsox_single_level

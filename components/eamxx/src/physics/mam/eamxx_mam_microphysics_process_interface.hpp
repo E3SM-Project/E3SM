@@ -82,6 +82,9 @@ class MAMMicrophysics final : public MAMGenericInterface {
     // From input parameter mam4_number_so4_monolayers_to_age_carbon_particle
     unsigned n_so4_monolayers_pcage = 8;
 
+    // turn on/off gas phase chemistry (namelist: mam4_do_gas_phase_chemistry)
+    bool compute_gas_phase_chemistry = true;
+
     // stratospheric chemistry parameters
     mam4::microphysics::LinozConf linoz;
 
