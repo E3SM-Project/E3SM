@@ -18,7 +18,7 @@ Cosp::Cosp (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereDiagnostic(comm, params)
 {
   // How many subcolumns to use for COSP
-  m_num_subcols = m_params.get<Int>("cosp_subcolumns", 10);
+  m_num_subcols = m_params.get<int>("cosp_subcolumns", 10);
 }
 
 // =========================================================================================

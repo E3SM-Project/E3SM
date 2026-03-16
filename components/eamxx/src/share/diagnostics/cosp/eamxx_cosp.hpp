@@ -50,12 +50,12 @@ protected:
   void finalize_impl   ();
 
   // Keep track of field dimensions
-  Int m_num_cols;
-  Int m_num_subcols;
-  Int m_num_levs;
-  Int m_num_tau = 7;
-  Int m_num_ctp = 7;
-  Int m_num_cth = 16;
+  int m_num_cols;
+  int m_num_subcols;
+  int m_num_levs;
+  int m_num_tau = 7;
+  int m_num_ctp = 7;
+  int m_num_cth = 16;
 
   std::shared_ptr<const AbstractGrid> m_grid;
 
