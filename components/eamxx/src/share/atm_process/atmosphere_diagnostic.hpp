@@ -3,6 +3,10 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 
+#include <map>
+#include <string>
+#include <vector>
+
 namespace scream
 {
 
@@ -10,16 +14,18 @@ namespace scream
  * A class representing an atmosphere diagnostic.
  * Diagnostics are similar to atmosphere processes in that
  * they take field(s) as input and produce some output.
- * 
+ *
  * This subclass definition makes a few distinctions that are
  * unique to diagnostics.
- * 
+ *
  * 1) Fields from the field manager can only be accessed as "Required".
  *    Meaning that an atmosphere diagnostic can not compute or update
  *    a field in the field manager.
  *    - note, if you want to update something in the field manager it
  *            should happen in an atmosphere process.
- * 2) Diagnostics produce a single field output.
+ * 2) Diagnostics produce one or more field outputs.
+ *    Single-output diagnostics use m_diagnostic_output.
+ *    Multi-output diagnostics use the m_diagnostic_outputs map.
  *    Typically the field output will be to buffered memory, meaning it
  *    could be overwritten later in the simulation.
  *    A diagnostic output is meant to be used for OUTPUT or a PROPERTY CHECK.
@@ -48,8 +54,20 @@ public:
     return s;
   }
 
-  // Getting the diagnostic output
+  // Getting diagnostic output(s)
+  // Single-output diagnostics use get_diagnostic() with no args.
+  // Multi-output diagnostics use get_diagnostic(name) and get_diagnostic_names().
   Field get_diagnostic () const;
+  Field get_diagnostic (const std::string& name) const;
+
+  // Return the names of all diagnostic output fields.
+  // Multi-output diagnostics should override this.
+  virtual std::vector<std::string> get_diagnostic_names () const;
+
+  // Whether this diagnostic produces multiple output fields
+  bool is_multi_output () const {
+    return m_diagnostic_outputs.size() > 1;
+  }
 
   // Allows the diagnostic to save some start-of-step quantity (e.g., in case
   // we need to compute tendencies, or accumulated stuff)
@@ -73,8 +91,15 @@ protected:
   // Some diagnostics will need the timestep, store here.
   double m_dt;
 
-  // Diagnostics are meant to return a field
+  // Single-output diagnostics store their output here.
+  // These two storages are mutually exclusive:
+  // - Single-output diags populate m_diagnostic_output directly
+  // - Multi-output diags populate m_diagnostic_outputs map in create_requests()
+  // Public accessors check both.
   Field m_diagnostic_output;
+
+  // Multi-output diagnostics store their outputs here (keyed by field name).
+  std::map<std::string, Field> m_diagnostic_outputs;
 
   // Timestamp of the last diag evaluation
   util::TimeStamp m_last_eval_ts;

@@ -10,12 +10,55 @@ AtmosphereDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
   // Nothing to do here
 }
 
-// Function to retrieve the diagnostic output which is stored in m_diagnostic_output
+// Single-output accessor: returns m_diagnostic_output for single-output diags,
+// or the sole entry from the map for single-entry multi-output diags.
 Field AtmosphereDiagnostic::get_diagnostic () const {
+  // Just in case, check if we populated m_diagnostics_outputs with a single field
+  if (!m_diagnostic_outputs.empty()) {
+    EKAT_REQUIRE_MSG (m_diagnostic_outputs.size() == 1,
+        "Error! get_diagnostic() (no args) requires exactly one output field.\n"
+        "  - diag name: " + name() + "\n"
+        "  - num outputs: " + std::to_string(m_diagnostic_outputs.size()) + "\n");
+    EKAT_REQUIRE_MSG (m_diagnostic_outputs.begin()->second.is_allocated(),
+        "Error! Getting a diagnostic field before it is allocated.\n");
+    return m_diagnostic_outputs.begin()->second;
+  }
   EKAT_REQUIRE_MSG (m_diagnostic_output.is_allocated(),
       "Error! Getting a diagnostic field before it is allocated is suspicious at best.\n"
       "       We chose to throw an error, but if this is a legit use, please, contact developers.\n");
   return m_diagnostic_output;
+}
+
+// Named accessor: checks map first, falls back to m_diagnostic_output
+Field AtmosphereDiagnostic::get_diagnostic (const std::string& fname) const {
+  auto it = m_diagnostic_outputs.find(fname);
+  if (it != m_diagnostic_outputs.end()) {
+    EKAT_REQUIRE_MSG (it->second.is_allocated(),
+        "Error! Getting diagnostic field '" + fname + "' before it is allocated.\n");
+    return it->second;
+  }
+  EKAT_REQUIRE_MSG (m_diagnostic_output.get_header_ptr() != nullptr &&
+                    m_diagnostic_output.name() == fname,
+      "Error! Diagnostic output field '" + fname + "' not found in " + name() + ".\n");
+  EKAT_REQUIRE_MSG (m_diagnostic_output.is_allocated(),
+      "Error! Getting diagnostic field '" + fname + "' before it is allocated.\n");
+  return m_diagnostic_output;
+}
+
+// Return all diagnostic output field names
+std::vector<std::string> AtmosphereDiagnostic::get_diagnostic_names () const {
+  if (!m_diagnostic_outputs.empty()) {
+    std::vector<std::string> names;
+    names.reserve(m_diagnostic_outputs.size());
+    for (const auto& [k,v] : m_diagnostic_outputs) {
+      names.push_back(k);
+    }
+    return names;
+  }
+  if (m_diagnostic_output.get_header_ptr() != nullptr) {
+    return {m_diagnostic_output.name()};
+  }
+  return {};
 }
 
 void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
@@ -43,7 +86,6 @@ void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
     EKAT_REQUIRE_MSG (ts.is_valid(),
         "Error! All inputs to diagnostic have invalid timestamp.\n"
         "  - Diag name: " + name() + "\n"
-        "  - Diag field name: " + m_diagnostic_output.name() + "\n"
         "  - Diag inputs names: " + ekat::join(inputs,fname,",") + "\n");
 
   }
@@ -53,7 +95,14 @@ void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
     return;
   }
 
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
+  // Update timestamps on all output fields
+  if (!m_diagnostic_outputs.empty()) {
+    for (auto& [k,f] : m_diagnostic_outputs) {
+      f.get_header().get_tracking().update_time_stamp(ts);
+    }
+  } else {
+    m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
+  }
 
   // Note: call the impl method *after* setting the diag time stamp.
   // Some derived classes may "refuse" to compute the diag, due to some
@@ -84,7 +133,7 @@ set_required_field_impl (const Field& f) {
       const auto& fap = f.get_header().get_alloc_properties();
       EKAT_REQUIRE_MSG (fap.get_largest_pack_size()>=r.pack_size,
           "Error! Diagnostic input field cannot accommodate the needed pack size.\n"
-          "  - diag field: " + m_diagnostic_output.name() + "\n"
+          "  - diag name: " + name() + "\n"
           "  - input field: " + f.name() + "\n"
           "  - requested pack size: " + std::to_string(r.pack_size) + "\n"
           "  - field max pack size: " + std::to_string(fap.get_largest_pack_size()) + "\n");
