@@ -206,17 +206,17 @@ void call_function_dropmixnuc(
     const int top_lev, const bool &enable_aero_vertical_mix,
 
     // Following outputs are all diagnostics
-    MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot],
-    MAMAci::view_2d coltend_cw[mam4::ndrop::ncnst_tot], MAMAci::view_2d qcld,
+    MAMAci::view_3d coltend,
+    MAMAci::view_3d coltend_cw, MAMAci::view_2d qcld,
     MAMAci::view_2d ndropcol, MAMAci::view_2d ndropmix, MAMAci::view_2d nsource,
     MAMAci::view_2d wtke, MAMAci::view_3d ccn,
 
     // ## outputs to be used by other processes ##
     // qqcw_fld_work should be directly assigned to the cloud borne aerosols
-    MAMAci::view_2d qqcw_fld_work[mam4::ndrop::ncnst_tot],
+    MAMAci::view_3d qqcw_fld_work,
 
     // ptend_q are the tendencies to the interstitial aerosols
-    MAMAci::view_2d ptend_q[mam4::aero_model::pcnst],
+    MAMAci::view_3d ptend_q,
 
     // factnum is used by the hetrozenous freezing
     MAMAci::view_3d factnum,
@@ -225,8 +225,9 @@ void call_function_dropmixnuc(
     MAMAci::view_2d tendnd,
 
     // ## work arrays ##
-    MAMAci::view_2d raercol_cw[mam4::ndrop::pver][2],
-    MAMAci::view_2d raercol[mam4::ndrop::pver][2], MAMAci::view_3d state_q_work,
+    MAMAci::view_4d raercol_cw, 
+    MAMAci::view_4d raercol, 
+    MAMAci::view_3d state_q_work,
     MAMAci::view_3d nact, MAMAci::view_3d mact,
     MAMAci::view_2d dropmixnuc_scratch_mem[MAMAci::dropmix_scratch_]) {
   using CO = scream::ColumnOps<DefaultDevice, Real>;
@@ -243,30 +244,14 @@ void call_function_dropmixnuc(
   // ## Declare local variables for class variables
   //(FIXME: GPU hack, revisit this)
   //----------------------------------------------------------------------
-  MAMAci::view_2d loc_raercol_cw[mam4::ndrop::pver][2];
-  MAMAci::view_2d loc_raercol[mam4::ndrop::pver][2];
+  MAMAci::view_4d loc_raercol_cw = raercol_cw;
+  MAMAci::view_4d loc_raercol = raercol;
   MAMAci::view_2d loc_qqcw[mam4::ndrop::ncnst_tot];
-  MAMAci::view_2d loc_ptend_q[mam4::aero_model::pcnst];
-  MAMAci::view_2d loc_coltend[mam4::ndrop::ncnst_tot];
-  MAMAci::view_2d loc_coltend_cw[mam4::ndrop::ncnst_tot];
+  MAMAci::view_3d loc_ptend_q = ptend_q;
+  MAMAci::view_3d loc_coltend = coltend;
+  MAMAci::view_3d loc_coltend_cw = coltend_cw;
 
-  for(int i = 0; i < mam4::ndrop::pver; ++i) {
-    for(int j = 0; j < 2; ++j) {
-      loc_raercol_cw[i][j] = raercol_cw[i][j];
-      loc_raercol[i][j]    = raercol[i][j];
-    }
-  }
-
-  for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
-    loc_coltend[i]    = coltend[i];
-    loc_coltend_cw[i] = coltend_cw[i];
-  }
-
-  for(int i = 0; i < mam4::aero_model::pcnst; ++i) loc_ptend_q[i] = ptend_q[i];
-
-  MAMAci::view_2d qqcw_fld_work_loc[25];
-  for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i)
-    qqcw_fld_work_loc[i] = qqcw_fld_work[i];
+  MAMAci::view_3d qqcw_fld_work_loc = qqcw_fld_work;
 
   MAMAci::view_3d state_q_work_loc = state_q_work;
 
@@ -321,28 +306,12 @@ void call_function_dropmixnuc(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
         // for (int icol=0; icol<5; ++icol){
-        mam4::ndrop::View1D raercol_cw_view[mam4::ndrop::pver][2];
-        mam4::ndrop::View1D raercol_view[mam4::ndrop::pver][2];
-        for(int i = 0; i < mam4::ndrop::pver; ++i) {
-          for(int j = 0; j < 2; ++j) {
-            raercol_cw_view[i][j] = ekat::subview(loc_raercol_cw[i][j], icol);
-            raercol_view[i][j]    = ekat::subview(loc_raercol[i][j], icol);
-          }
-        }
-        mam4::ColumnView qqcw_view[mam4::ndrop::ncnst_tot];
-        for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
-          qqcw_view[i] = ekat::subview(qqcw_fld_work_loc[i], icol);
-        }
-        mam4::ColumnView ptend_q_view[mam4::aero_model::pcnst];
-        for(int i = 0; i < mam4::aero_model::pcnst; ++i) {
-          ptend_q_view[i] = ekat::subview(loc_ptend_q[i], icol);
-        }
-        mam4::ColumnView coltend_view[mam4::ndrop::ncnst_tot],
-            coltend_cw_view[mam4::ndrop::ncnst_tot];
-        for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
-          coltend_view[i]    = ekat::subview(loc_coltend[i], icol);
-          coltend_cw_view[i] = ekat::subview(loc_coltend_cw[i], icol);
-        }
+        MAMAci::view_3d raercol_cw_view = ekat::subview(loc_raercol_cw, icol);
+	MAMAci::view_3d raercol_view    = ekat::subview(loc_raercol, icol);
+        MAMAci::view_2d qqcw_view       = ekat::subview(qqcw_fld_work_loc, icol);
+        MAMAci::view_2d ptend_q_view    = ekat::subview(loc_ptend_q, icol);
+        MAMAci::view_2d coltend_view    = ekat::subview(loc_coltend, icol);
+        MAMAci::view_2d coltend_cw_view = ekat::subview(loc_coltend_cw, icol);
 
         // To construct state_q, we need fields from Prognostics (aerosols)
         //  and Atmosphere (water species such as qv, qc etc.)
@@ -369,21 +338,13 @@ void call_function_dropmixnuc(
         constexpr auto pver = mam4::ndrop::pver;
         Kokkos::parallel_for(
             Kokkos::TeamVectorRange(team, pver), [&](int klev) {
-              Real state_q_at_lev_col[mam4::aero_model::pcnst] = {};
-
-              // get state_q at a grid cell (col,lev)
-              // NOTE: The order of species in state_q_at_lev_col
-              // is the same as in E3SM state%q array
-              mam4::utils::extract_stateq_from_prognostics(
-                  progs_at_col, haero_atm, state_q_at_lev_col, klev);
 
               // get the start index for aerosols species in the state_q array
-              int istart = mam4::utils::aero_start_ind();
-
-              // create colum views of state_q
-              for(int icnst = istart; icnst < mam4::aero_model::pcnst;
-                  ++icnst) {
-                state_q_work_loc(icol, klev, icnst) = state_q_at_lev_col[icnst];
+              const int istart = mam4::utils::aero_start_ind();
+              for (int m = 0, s = istart; m < mam4::AeroConfig::num_modes(); ++m, ++s) {
+                for (int a = 0; a < mam4::num_species_mode(m); ++a, ++s) 
+                  state_q_work_loc(icol, klev, s) = progs_at_col.q_aero_i[m][a](klev);
+                state_q_work_loc(icol, klev, s) = progs_at_col.n_mode_i[m](klev);
               }
 
               // get qqcw at a grid cell (col,lev)
@@ -391,12 +352,12 @@ void call_function_dropmixnuc(
               // dropmixnuc. To mimic that, we are using the following for-loops
               int ind_qqcw = 0;
               for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-                qqcw_view[ind_qqcw](klev) =
+                qqcw_view(ind_qqcw, klev) =
                     dry_aero.cld_aero_nmr[m](icol, klev);
                 ++ind_qqcw;
                 for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
                   if(dry_aero.cld_aero_mmr[m][a].data()) {
-                    qqcw_view[ind_qqcw](klev) =
+                    qqcw_view(ind_qqcw, klev) =
                         dry_aero.cld_aero_mmr[m][a](icol, klev);
                     ++ind_qqcw;
                   }
@@ -439,16 +400,16 @@ void call_function_dropmixnuc(
 
 // Update cloud borne aerosols
 void update_cloud_borne_aerosols(
-    const MAMAci::view_2d qqcw_fld_work[mam4::ndrop::ncnst_tot], const int nlev,
+    const MAMAci::view_3d qqcw_fld_work, const int nlev,
     // output
     mam_coupling::AerosolState &dry_aero) {
   int ind_qqcw = 0;
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-    Kokkos::deep_copy(dry_aero.cld_aero_nmr[m], qqcw_fld_work[ind_qqcw]);
+    Kokkos::deep_copy(dry_aero.cld_aero_nmr[m], ekat::subview(qqcw_fld_work, ind_qqcw));
     ++ind_qqcw;
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       if(dry_aero.cld_aero_mmr[m][a].data()) {
-        Kokkos::deep_copy(dry_aero.cld_aero_mmr[m][a], qqcw_fld_work[ind_qqcw]);
+        Kokkos::deep_copy(dry_aero.cld_aero_mmr[m][a], ekat::subview(qqcw_fld_work, ind_qqcw));
         ++ind_qqcw;
       }
     }
@@ -458,7 +419,7 @@ void update_cloud_borne_aerosols(
 // Update interstitial aerosols using tendencies- cols and levs
 void update_interstitial_aerosols(
     haero::ThreadTeamPolicy team_policy,
-    const MAMAci::view_2d ptend_q[mam4::aero_model::pcnst], const int nlev,
+    const MAMAci::view_3d ptend_q, const int nlev,
     const Real dt,
     // output
     mam_coupling::AerosolState &dry_aero) {
@@ -472,14 +433,13 @@ void update_interstitial_aerosols(
       auto aero_mmr = dry_aero.int_aero_mmr[m][a];
 
       if(aero_mmr.data()) {
-        const auto ptend_view = ptend_q[s_idx];
         Kokkos::parallel_for(
             team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
               const int icol = team.league_rank();
               // update values for all levs at this column
               Kokkos::parallel_for(
                   Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
-                    aero_mmr(icol, kk) += ptend_view(icol, kk) * dt;
+                    aero_mmr(icol, kk) += ptend_q(icol, s_idx, kk) * dt;
                   });
             });
         // update index for the next species (only if aero_mmr.data() is True)
@@ -488,14 +448,13 @@ void update_interstitial_aerosols(
     }
     auto aero_nmr =
         dry_aero.int_aero_nmr[m];  // number mixing ratio for mode "m"
-    const auto ptend_view = ptend_q[s_idx];
     Kokkos::parallel_for(
         team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
           const int icol = team.league_rank();
           // update values for all levs at this column
           Kokkos::parallel_for(
               Kokkos::TeamVectorRange(team, nlev),
-              [&](int kk) { aero_nmr(icol, kk) += ptend_view(icol, kk) * dt; });
+              [&](int kk) { aero_nmr(icol, kk) += ptend_q(icol, s_idx, kk) * dt; });
         });
     ++s_idx;  // update index for the next species
   }
