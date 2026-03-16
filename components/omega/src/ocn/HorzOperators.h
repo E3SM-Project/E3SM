@@ -420,7 +420,15 @@ class MasksAndCoefficients {
    // (recursive device calls are rejected by DPC++).
    KOKKOS_INLINE_FUNCTION static void sort_by_key(Array2DI4 &vec, const I4 low,
                                                   const I4 high) {
-      if (low >= high)
+      if (low > high) {
+         printf(
+             "Error: MasksAndCoefficients::sort_by_key called with invalid "
+             "bounds (low=%d, high=%d)\n",
+             low, high);
+         return;
+      }
+
+      if (low == high)
          return;
 
       for (I4 i = low + 1; i <= high; ++i) {
