@@ -54,6 +54,12 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
+  ## Test multi-output diagnostic output
+  CreateUnitTest(io_multi_output_diags "io_multi_output_diags.cpp"
+    LIBS eamxx_io LABELS io diagnostics
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
   # Test output on SE grid
   CreateUnitTest(io_se_grid "io_se_grid.cpp"
     LIBS eamxx_io LABELS io
