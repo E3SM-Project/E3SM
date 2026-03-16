@@ -5,8 +5,10 @@
 
 // Conditionally enable fine-grained micro-physics timers.
 // Compile with -DMICRO_TIMER to activate.
+#define MICRO_TIMER
+
 #ifdef MICRO_TIMER
-#  define MAM_START_TIMER(name) do { Kokkos::fence(); start_timer(name); } while(0)
+#  define MAM_START_TIMER(name) do { start_timer(name); } while(0)
 #  define MAM_STOP_TIMER(name)  do { stop_timer(name); Kokkos::fence(); } while(0)
 #else
 #  define MAM_START_TIMER(name) ((void)0)
