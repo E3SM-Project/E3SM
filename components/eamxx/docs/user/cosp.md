@@ -6,47 +6,26 @@ Currently, minimal outputs from the ISCCP, MODIS, and MISR simulators have been 
 
 ## Running with COSP
 
-Turning COSP on simply requires adding the `cosp` process to `atm_procs_list`
-via `atmchange` in a case directory:
+COSP is implemented as a diagnostic in EAMxx. It is automatically triggered
+when any of its output fields are requested in an output YAML file. There is
+no need to add COSP to `atm_procs_list` — simply request COSP fields in your
+output configuration.
 
-```shell
-./atmchange physics::atm_procs_list="mac_aero_mic,rrtmgp,cosp"
-```
+COSP requires radiation fields (`dtau067`, `dtau105`, `cldfrac_rad`) and
+microphysics fields (`eff_radius_qc`, `eff_radius_qi`) as inputs. These are
+produced by the RRTMGP and P3 processes, so those must be in your
+`atm_procs_list`.
 
-Additionally, the frequency at which COSP is run can be configured via `atmchange`:
+COSP runs at the frequency specified by the output stream that requests its
+fields (e.g., hourly, daily). There are no separate frequency controls.
 
-```shell
-./atmchange physics::cosp::cosp_frequency_units="steps"
-./atmchange physics::cosp::cosp_frequency=1
-```
+COSP uses 10 subcolumns by default for internal subcolumn sampling using
+`SCOPS`/`PREC_SCOPS`. The subcolumn count is not currently user-configurable
+through the output YAML; it defaults to 10 for all grid resolutions.
 
-COSP can be run with or without subcolumn sampling.
-This is configured by changing the `cosp_subcolumns` namelist variable via `atmchange`.
-A value of 1 implies *no* subcolumn sampling, while values greater than 1
-specify the number
-of subcolumns to use for subcolumn sampling (assuming maximum-random overlap).
-E.g.,
+A minimal output configuration example:
 
-```shell
-./atmchange physics::cosp:cosp_subcolumns=1
-```
-
-would disable subcolumn sampling, while
-
-```shell
-./atmchange physics::cosp::cosp_subcolumns=10
-```
-
-would use 10 subcolumns for the COSP internal subcolumn sampling using `SCOPS`/`PREC_SCOPS`.
-The default for high resolution cases (e.g., `ne1024`) should be to *not* use
-subcolumns, while lower resolutions (e.g., `ne30`) should enable subcolumn sampling.
-
-Output streams need to be added manually.
-A minimal example:
-
-```shell
-./atmchange output_yaml_files=eamxx_daily_output.yaml
-cat << EOF > eamxx_cosp_daily_output.yaml
+```yaml
 averaging_type: average
 fields:
   physics_pg2:
@@ -60,7 +39,6 @@ filename_prefix: eamxx
 output_control:
   frequency: 1
   frequency_units: ndays
-EOF
 ```
 
 ## Available output fields

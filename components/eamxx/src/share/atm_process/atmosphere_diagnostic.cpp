@@ -18,6 +18,41 @@ Field AtmosphereDiagnostic::get_diagnostic () const {
   return m_diagnostic_output;
 }
 
+// Function to retrieve a specific diagnostic output by name (multi-output diagnostics)
+Field AtmosphereDiagnostic::get_diagnostic (const std::string& fname) const {
+  auto it = m_diagnostic_outputs.find(fname);
+  EKAT_REQUIRE_MSG (it != m_diagnostic_outputs.end(),
+      "Error! Diagnostic output field '" + fname + "' not found in " + name() + ".\n"
+      "       Available outputs: " + [&]() {
+        std::string s;
+        for (const auto& [k,v] : m_diagnostic_outputs) {
+          if (!s.empty()) s += ", ";
+          s += k;
+        }
+        return s;
+      }() + "\n");
+  EKAT_REQUIRE_MSG (it->second.is_allocated(),
+      "Error! Getting diagnostic field '" + fname + "' before it is allocated.\n");
+  return it->second;
+}
+
+// Return all diagnostic output field names
+std::vector<std::string> AtmosphereDiagnostic::get_diagnostic_names () const {
+  if (!m_diagnostic_outputs.empty()) {
+    std::vector<std::string> names;
+    names.reserve(m_diagnostic_outputs.size());
+    for (const auto& [k,v] : m_diagnostic_outputs) {
+      names.push_back(k);
+    }
+    return names;
+  }
+  // Single-output fallback
+  if (m_diagnostic_output.is_allocated()) {
+    return {m_diagnostic_output.name()};
+  }
+  return {};
+}
+
 void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
   // Some diagnostics need the timestep, store in case.
   m_dt = dt;
@@ -43,7 +78,6 @@ void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
     EKAT_REQUIRE_MSG (ts.is_valid(),
         "Error! All inputs to diagnostic have invalid timestamp.\n"
         "  - Diag name: " + name() + "\n"
-        "  - Diag field name: " + m_diagnostic_output.name() + "\n"
         "  - Diag inputs names: " + ekat::join(inputs,fname,",") + "\n");
 
   }
@@ -53,7 +87,14 @@ void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
     return;
   }
 
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
+  // Update timestamps on all output fields
+  if (is_multi_output()) {
+    for (auto& [k,f] : m_diagnostic_outputs) {
+      f.get_header().get_tracking().update_time_stamp(ts);
+    }
+  } else {
+    m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
+  }
 
   // Note: call the impl method *after* setting the diag time stamp.
   // Some derived classes may "refuse" to compute the diag, due to some
@@ -84,7 +125,7 @@ set_required_field_impl (const Field& f) {
       const auto& fap = f.get_header().get_alloc_properties();
       EKAT_REQUIRE_MSG (fap.get_largest_pack_size()>=r.pack_size,
           "Error! Diagnostic input field cannot accommodate the needed pack size.\n"
-          "  - diag field: " + m_diagnostic_output.name() + "\n"
+          "  - diag name: " + name() + "\n"
           "  - input field: " + f.name() + "\n"
           "  - requested pack size: " + std::to_string(r.pack_size) + "\n"
           "  - field max pack size: " + std::to_string(fap.get_largest_pack_size()) + "\n");
@@ -104,4 +145,3 @@ set_computed_group_impl (const FieldGroup& /* group */) {
 }
 
 } // namespace scream
-

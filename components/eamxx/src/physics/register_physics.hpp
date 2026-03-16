@@ -38,9 +38,6 @@
 #include "physics/mam/eamxx_mam_srf_and_online_emissions_process_interface.hpp"
 #include "physics/mam/eamxx_mam_constituent_fluxes_interface.hpp"
 #endif
-#ifdef EAMXX_HAS_COSP
-#include "physics/cosp/eamxx_cosp.hpp"
-#endif
 #ifdef EAMXX_HAS_TMS
 #include "physics/tms/eamxx_tms_process_interface.hpp"
 #endif
@@ -87,9 +84,6 @@ inline void register_physics () {
   proc_factory.register_product("mam4_wetscav",&create_atmosphere_process<MAMWetscav>);
   proc_factory.register_product("mam4_srf_online_emiss",&create_atmosphere_process<MAMSrfOnlineEmiss>);
   proc_factory.register_product("mam4_constituent_fluxes",&create_atmosphere_process<MAMConstituentFluxes>);
-#endif
-#ifdef EAMXX_HAS_COSP
-  proc_factory.register_product("Cosp",&create_atmosphere_process<Cosp>);
 #endif
 #ifdef EAMXX_HAS_TMS
   proc_factory.register_product("tms",&create_atmosphere_process<TurbulentMountainStress>);
