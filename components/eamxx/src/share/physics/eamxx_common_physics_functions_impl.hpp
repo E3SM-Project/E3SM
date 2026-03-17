@@ -636,6 +636,13 @@ void PhysicsFunctions<DeviceT>::apply_rayleigh_friction (const MemberType& team,
   });
 }
 
+template<typename DeviceT>
+KOKKOS_INLINE_FUNCTION
+Real PhysicsFunctions<DeviceT>::calculate_gustiness_speed(const Real& tke)
+{
+  return std::sqrt((sp(2.)/sp(3.)) * tke);
+}
+
 } // namespace scream
 
 #endif // SCREAM_COMMON_PHYSICS_IMPL_HPP
