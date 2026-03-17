@@ -53,7 +53,7 @@ void Functions<S,D>::compute_dilute_parcel(
   }
 
   // Initialize arrays
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver), [&] (const Int& k) {
     tmix(k) = 0.0;
     qtmix(k) = 0.0;
     qsmix(k) = 0.0;

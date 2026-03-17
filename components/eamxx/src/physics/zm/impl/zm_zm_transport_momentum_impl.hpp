@@ -70,7 +70,7 @@ void Functions<S,D>::zm_transport_momentum(
     mflux(mflux_1d.data(), nwind, pverp);
 
   // Initialize outputs
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver*nwind), [&] (const Int& idx) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver*nwind), [&] (const Int& idx) {
     const Int k = idx / nwind;
     const Int m = idx % nwind;
     wind_tend(k,m) = 0.0;
@@ -92,7 +92,7 @@ void Functions<S,D>::zm_transport_momentum(
   team.team_barrier();
 
   // Loop over each wind component using team parallelism
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nwind), [&] (const Int& m) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nwind), [&] (const Int& m) {
 
     // Gather up the winds
     for (Int k = 0; k < pver; ++k) {
@@ -223,7 +223,7 @@ void Functions<S,D>::zm_transport_momentum(
   //----------------------------------------------------------------------------
   // Need to add an energy fix to account for the dissipation of kinetic energy
   // Formulation follows from Boville and Bretherton (2003) - modified by Phil Rasch
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ktm, pver), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, ktm, pver), [&] (const Int& k) {
     const Int km1 = ekat::impl::max(0, k-1);
     const Int kp1 = ekat::impl::min(pver-1, k+1);
 
