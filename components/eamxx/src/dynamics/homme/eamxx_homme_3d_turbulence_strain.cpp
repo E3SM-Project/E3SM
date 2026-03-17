@@ -34,10 +34,10 @@ auto horiz_wind_to_cart_component(
     const int icart,
     const int igp,
     const int jgp,
-    const int ilev)
+    const int ilev_pack)
 {
-  const auto u = v_dyn(ie,tl,0,igp,jgp,ilev);
-  const auto v = v_dyn(ie,tl,1,igp,jgp,ilev);
+  const auto u = v_dyn(ie,tl,0,igp,jgp,ilev_pack);
+  const auto v = v_dyn(ie,tl,1,igp,jgp,ilev_pack);
 
   return vec_sph2cart(ie,0,icart,igp,jgp) * u
        + vec_sph2cart(ie,1,icart,igp,jgp) * v;
@@ -49,57 +49,43 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
 {
   using namespace Homme;
 
-  constexpr int NGP = HOMMEXX_NP;
-  constexpr int NVL = HOMMEXX_NUM_LEV;
+  constexpr int NGP  = HOMMEXX_NP;
+  constexpr int VLEN = VECTOR_SIZE;
 
-  const auto& c        = Context::singleton();
-  const auto& state    = c.get<ElementsState>();
-  const auto& geom     = c.get<ElementsGeometry>();
-  const auto& ref_fe   = c.get<ReferenceElement>();
-  const auto& tl       = c.get<TimeLevel>();
+  const auto& c      = Context::singleton();
+  const auto& state  = c.get<ElementsState>();
+  const auto& geom   = c.get<ElementsGeometry>();
+  const auto& ref_fe = c.get<ReferenceElement>();
+  const auto& tl     = c.get<TimeLevel>();
 
-  const int nelem = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
-  const int n0    = tl.n0;
+  const int nelem      = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
+  const int n0         = tl.n0;
+  const int nlev_pack  = state.m_v.extent_int(5);
 
-  // Output views:
-  //   grad_Ux_dyn(ie,dir,igp,jgp,ilev), dir=0,1
-  //   grad_Uy_dyn(ie,dir,igp,jgp,ilev)
-  //   grad_Uz_dyn(ie,dir,igp,jgp,ilev)
+  // Store outputs as scalar Real fields.
+  auto grad_Ux_dyn = m_helper_fields.at("grad_Ux_dyn").template get_view<Real*****>();
+  auto grad_Uy_dyn = m_helper_fields.at("grad_Uy_dyn").template get_view<Real*****>();
+  auto grad_Uz_dyn = m_helper_fields.at("grad_Uz_dyn").template get_view<Real*****>();
 
-  auto grad_Ux_dyn = m_helper_fields.at("grad_Ux_dyn").template get_view<Homme::Scalar*[2][NGP][NGP][NVL]>();
-  auto grad_Uy_dyn = m_helper_fields.at("grad_Uy_dyn").template get_view<Homme::Scalar*[2][NGP][NGP][NVL]>();
-  auto grad_Uz_dyn = m_helper_fields.at("grad_Uz_dyn").template get_view<Homme::Scalar*[2][NGP][NGP][NVL]>();
+  const int nlev_scalar = grad_Ux_dyn.extent_int(4);
 
-  const auto dvv             = ref_fe.get_deriv();
-  const auto dinv            = geom.m_dinv;
-  const auto vec_sph2cart    = geom.m_vec_sph2cart;
+  const auto dvv              = ref_fe.get_deriv();
+  const auto dinv             = geom.m_dinv;
+  const auto vec_sph2cart     = geom.m_vec_sph2cart;
   const Real scale_factor_inv = 1.0 / geom.m_scale_factor;
 
-  // Flatten over element, GLL point, and level.
+  // Flatten over element, GLL point, and PACKED vertical level.
   Kokkos::parallel_for(
       "compute_horizontal_derivs_of_car_velocity",
-      Kokkos::RangePolicy<KT::ExeSpace>(0, nelem*NGP*NGP*NVL),
+      Kokkos::RangePolicy<KT::ExeSpace>(0, nelem*NGP*NGP*nlev_pack),
       KOKKOS_LAMBDA (const int idx) {
 
-    const int ie   =  idx / (NGP*NGP*NVL);
-    const int rem1 =  idx % (NGP*NGP*NVL);
-    const int igp  =  rem1 / (NGP*NVL);
-    const int rem2 =  rem1 % (NGP*NVL);
-    const int jgp  =  rem2 / NVL;
-    const int ilev =  rem2 % NVL;
-
-    // ------------------------------------------------------------------
-    // Compute the two intermediate directional derivatives for each of
-    // the three Cartesian velocity components.
-    //
-    // This mirrors HOMME's gradient_sphere algebra:
-    //   temp0(igp,jgp) = sum_k dvv(jgp,k) * scalar(igp,k)
-    //   temp1(igp,jgp) = sum_k dvv(igp,k) * scalar(k,jgp)
-    // then
-    //   grad(h,igp,jgp) = dinv(h,0,igp,jgp)*temp0 + dinv(h,1,igp,jgp)*temp1
-    //
-    // Here scalar is one of Ux, Uy, Uz.
-    // ------------------------------------------------------------------
+    const int ie        =  idx / (NGP*NGP*nlev_pack);
+    const int rem1      =  idx % (NGP*NGP*nlev_pack);
+    const int igp       =  rem1 / (NGP*nlev_pack);
+    const int rem2      =  rem1 % (NGP*nlev_pack);
+    const int jgp       =  rem2 / nlev_pack;
+    const int ilev_pack =  rem2 % nlev_pack;
 
     Scalar dsdx_Ux = 0.0;
     Scalar dsdy_Ux = 0.0;
@@ -108,21 +94,23 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
     Scalar dsdx_Uz = 0.0;
     Scalar dsdy_Uz = 0.0;
 
+    // Put winds into cartesian coordinates.  Note that this initial implementation
+    //  is going to ignore vertical velocity for simplicity.  Will add later.
     for (int kgp = 0; kgp < NGP; ++kgp) {
       const Scalar Ux_row = horiz_wind_to_cart_component(
-          state.m_v, vec_sph2cart, ie, n0, 0, igp, kgp, ilev);
+          state.m_v, vec_sph2cart, ie, n0, 0, igp, kgp, ilev_pack);
       const Scalar Ux_col = horiz_wind_to_cart_component(
-          state.m_v, vec_sph2cart, ie, n0, 0, kgp, jgp, ilev);
+          state.m_v, vec_sph2cart, ie, n0, 0, kgp, jgp, ilev_pack);
 
       const Scalar Uy_row = horiz_wind_to_cart_component(
-          state.m_v, vec_sph2cart, ie, n0, 1, igp, kgp, ilev);
+          state.m_v, vec_sph2cart, ie, n0, 1, igp, kgp, ilev_pack);
       const Scalar Uy_col = horiz_wind_to_cart_component(
-          state.m_v, vec_sph2cart, ie, n0, 1, kgp, jgp, ilev);
+          state.m_v, vec_sph2cart, ie, n0, 1, kgp, jgp, ilev_pack);
 
       const Scalar Uz_row = horiz_wind_to_cart_component(
-          state.m_v, vec_sph2cart, ie, n0, 2, igp, kgp, ilev);
+          state.m_v, vec_sph2cart, ie, n0, 2, igp, kgp, ilev_pack);
       const Scalar Uz_col = horiz_wind_to_cart_component(
-          state.m_v, vec_sph2cart, ie, n0, 2, kgp, jgp, ilev);
+          state.m_v, vec_sph2cart, ie, n0, 2, kgp, jgp, ilev_pack);
 
       dsdx_Ux += dvv(jgp,kgp) * Ux_row;
       dsdy_Ux += dvv(igp,kgp) * Ux_col;
@@ -143,17 +131,26 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
 
     // Final transformed horizontal gradients in the local 2-dir basis.
     for (int h = 0; h < 2; ++h) {
-      grad_Ux_dyn(ie,h,igp,jgp,ilev) =
+      const Scalar gx =
           dinv(ie,h,0,igp,jgp) * dsdx_Ux
         + dinv(ie,h,1,igp,jgp) * dsdy_Ux;
 
-      grad_Uy_dyn(ie,h,igp,jgp,ilev) =
+      const Scalar gy =
           dinv(ie,h,0,igp,jgp) * dsdx_Uy
         + dinv(ie,h,1,igp,jgp) * dsdy_Uy;
 
-      grad_Uz_dyn(ie,h,igp,jgp,ilev) =
+      const Scalar gz =
           dinv(ie,h,0,igp,jgp) * dsdx_Uz
         + dinv(ie,h,1,igp,jgp) * dsdy_Uz;
+
+      for (int s = 0; s < VLEN; ++s) {
+        const int ilev = ilev_pack*VLEN + s;
+        if (ilev < nlev_scalar) {
+          grad_Ux_dyn(ie,h,igp,jgp,ilev) = gx[s];
+          grad_Uy_dyn(ie,h,igp,jgp,ilev) = gy[s];
+          grad_Uz_dyn(ie,h,igp,jgp,ilev) = gz[s];
+        }
+      }
     }
   });
 
