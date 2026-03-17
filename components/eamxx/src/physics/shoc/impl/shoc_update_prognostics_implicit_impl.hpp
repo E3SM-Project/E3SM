@@ -140,18 +140,18 @@ void Functions<S,D>::update_prognostics_implicit(
     wtke_sfc = ustar*ustar*ustar;
 
     // Recalculate ksrf with perturbed winds and stresses.
-    uw += uw_sfc_pert;
-    vw += vw_sfc_pert;
+    const Scalar uw_pert = uw + uw_sfc_pert;
+    const Scalar vw_pert = vw + vw_sfc_pert;
 
-    taux = rho*uw;
-    tauy = rho*vw;
+    const Scalar taux_pert = rho*uw_pert;
+    const Scalar tauy_pert = rho*vw_pert;
 
-    u_wind_sfc += um_pert_s(nlev-1);
-    v_wind_sfc += vm_pert_s(nlev-1);
+    const Scalar u_wind_sfc_pert = u_wind_sfc + um_pert_s(nlev-1);
+    const Scalar v_wind_sfc_pert = v_wind_sfc + vm_pert_s(nlev-1);
 
-    ws = ekat::impl::max(std::sqrt((u_wind_sfc*u_wind_sfc) + v_wind_sfc*v_wind_sfc), wsmin);
-    tau = std::sqrt(taux*taux + tauy*tauy);
-    ksrf_pert = ekat::impl::max(tau/ws, ksrfmin);
+    const Scalar ws_pert = ekat::impl::max(std::sqrt((u_wind_sfc_pert*u_wind_sfc_pert) + v_wind_sfc_pert*v_wind_sfc_pert), wsmin);
+    const Scalar tau_pert = std::sqrt(taux_pert*taux_pert + tauy_pert*tauy_pert);
+    ksrf_pert = ekat::impl::max(tau_pert/ws_pert, ksrfmin);
   }
 
   // compute surface fluxes for liq. potential temp, water and tke
