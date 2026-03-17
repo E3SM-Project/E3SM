@@ -114,7 +114,7 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   std::list<std::string> vnames = {"isccp_cldtot", "isccp_ctptau", "modis_ctptau", "misr_cthtau"};
   for (const auto& field_name : vnames) {
     // the mask here is just the sunlit mask, so set it
-    get_field_out(field_name).get_header().set_extra_data("mask_field", get_field_in("sunlit_mask"));
+    get_field_out(field_name).get_header().set_extra_data("valid_mask", get_field_in("sunlit_mask"));
     get_field_out(field_name).get_header().set_may_be_filled(true);
   }
 }

@@ -138,6 +138,9 @@ protected:
   // Send/recv persistent requests
   std::vector<MPI_Request>  m_send_req;
   std::vector<MPI_Request>  m_recv_req;
+
+  // Given a mask name, find the position it was registered in
+  std::map<std::string,int> m_mask_to_idx;
 };
 
 } // namespace scream

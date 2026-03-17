@@ -41,7 +41,7 @@ create_requests()
 }
 
 void AODVis::initialize_impl(const RunType /*run_type*/) {
-  m_diagnostic_output.get_header().set_extra_data("mask_field", get_field_in("sunlit_mask"));
+  m_diagnostic_output.get_header().set_extra_data("valid_mask", get_field_in("sunlit_mask"));
 }
 
 void AODVis::compute_diagnostic_impl() {

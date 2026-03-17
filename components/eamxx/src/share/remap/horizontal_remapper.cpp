@@ -96,78 +96,82 @@ HorizontalRemapper::
 void HorizontalRemapper::
 registration_ends_impl ()
 {
+  using namespace ShortFieldTagsNames;
+
   if (m_track_mask) {
     // We store masks (src-tgt) here, and register them AFTER we parse all currently registered fields.
     // That makes the for loop below easier, since we can take references without worrring that they
     // would get invalidated. In fact, if you call register_field inside the loop, the src/tgt fields
     // vectors will grow, which may cause reallocation and references invalidation
-    std::vector<std::pair<Field,Field>> masks;
 
-    auto get_mask_idx = [&](const FieldIdentifier& src_mask_fid) {
+    // NOTE: there are quite a few "mask" fields here, so let's recap:
+    //  - src/tgt_mask: these are the int-valued fields attached to src/tgt field
+    //  - src/tgt_mask_real: these are the real-valued fields that we remap, to correctly rescale tgt fields later
 
-      // Masks will be registered AFTER all fields, so the 1st mask will
-      // be right after the last registered "regular" field.
-      int idx = 0;
-      for (const auto& it : masks) {
-        if (it.first.get_header().get_identifier()==src_mask_fid) {
-          return idx;
-        }
-        ++idx;
-      }
-      return -1;
-    };
+    // Keep a map, so we can recycle tgt grid masks for fields with same layout
+    std::map<std::string,Field> tgt_masks;
 
-    for (int i=0; i<m_num_fields; ++i) {
+    // Store copy, since we'll register more fields as we process masks
+    int num_orig_fields = m_num_fields;
+    for (int i=0; i<num_orig_fields; ++i) {
       const auto& src = m_src_fields[i];
             auto& tgt = m_tgt_fields[i];
-      if (not src.get_header().has_extra_data("mask_field"))
+      if (not src.get_header().has_extra_data("valid_mask"))
         continue;
 
-      const auto& src_mask = src.get_header().get_extra_data<Field>("mask_field");
-
-      // Make sure fields representing masks are not themselves meant to be masked.
-      EKAT_REQUIRE_MSG(not src_mask.get_header().has_extra_data("mask_field"),
-          "Error! A mask field cannot be itself masked.\n"
-          "  - field name: " + src.name() + "\n"
-          "  - mask field name: " + src_mask.name() + "\n");
+      const auto& src_mask = src.get_header().get_extra_data<Field>("valid_mask");
 
       // Check that the mask field has the correct layout
       const auto& f_lt = src.get_header().get_identifier().get_layout();
       const auto& m_lt = src_mask.get_header().get_identifier().get_layout();
-      using namespace ShortFieldTagsNames;
-      EKAT_REQUIRE_MSG(f_lt.has_tag(COL) == m_lt.has_tag(COL),
-          "Error! Incompatible field and mask layouts.\n"
-          "  - field name: " + src.name() + "\n"
-          "  - field layout: " + f_lt.to_string() + "\n"
-          "  - mask layout: " + m_lt.to_string() + "\n");
-      EKAT_REQUIRE_MSG(f_lt.has_tag(LEV) == m_lt.has_tag(LEV),
+      EKAT_REQUIRE_MSG(f_lt == m_lt,
           "Error! Incompatible field and mask layouts.\n"
           "  - field name: " + src.name() + "\n"
           "  - field layout: " + f_lt.to_string() + "\n"
           "  - mask layout: " + m_lt.to_string() + "\n");
 
-      // If it's the first time we find this mask, store it, so we can register later
-      const auto& src_mask_fid = src_mask.get_header().get_identifier();
-      int mask_idx = get_mask_idx(src_mask_fid);
-      if (mask_idx==-1) {
-        Field tgt_mask(create_tgt_fid(src_mask_fid));
-        auto src_pack_size = src_mask.get_header().get_alloc_properties().get_largest_pack_size();
-        tgt_mask.get_header().get_alloc_properties().request_allocation(src_pack_size);
-        tgt_mask.allocate_view();
-
-        masks.push_back(std::make_pair(src_mask,tgt_mask));
-        mask_idx = masks.size()-1;
+      if (not m_lt.has_tag(COL)) {
+        // This field doesn't really need to be remapped, so tgt can use the same mask field as src
+        tgt.get_header().set_extra_data("valid_mask",src_mask);
+        continue;
       }
-      tgt.get_header().set_extra_data("mask_field",masks[mask_idx].second);
-    }
 
-    // Add all masks to the fields to remap
-    for (const auto& it : masks) {
-      register_field(it.first,it.second);
+      if (tgt_masks.count(src_mask.name())==1) {
+        // There was another src field with the same src mask, which was already registerred. Recycle it.
+        const auto& tgt_mask = tgt_masks.at(src_mask.name());
+        tgt.get_header().set_extra_data("valid_mask",tgt_mask);
+        continue;
+      }
+
+      // Make sure fields representing masks are not themselves meant to be masked.
+      EKAT_REQUIRE_MSG(not src_mask.get_header().has_extra_data("valid_mask"),
+          "Error! A mask field cannot be itself masked.\n"
+          "  - field name: " + src.name() + "\n"
+          "  - mask field name: " + src_mask.name() + "\n");
+
+      auto ps = src.get_header().get_alloc_properties().get_largest_pack_size();
+
+      // Create the real-valued mask field, to use during remap
+      const auto& src_fid = src_mask.get_header().get_identifier();
+      FieldIdentifier src_fid_r (src_fid.name(),m_lt,src_fid.get_units(),src_fid.get_grid_name(),DataType::RealType);
+      Field src_mask_real(src_fid_r);
+      src_mask_real.get_header().get_alloc_properties().request_allocation(ps);
+      src_mask_real.allocate_view();
+
+      // Store the index of this field
+      m_mask_to_idx[src_mask.name()] = m_num_fields;
+
+      // Create the int-valued tgt mask from the newly created real-valued tgt mask
+      auto tgt_mask_real = register_field_from_src(src_mask_real);
+      auto tgt_fid_r = tgt_mask_real.get_header().get_identifier();
+      FieldIdentifier tgt_fid (tgt_fid_r.name(),tgt_fid_r.get_layout(),src_fid.get_units(),tgt_fid_r.get_grid_name(),DataType::IntType);
+      Field tgt_mask(tgt_fid);
+      tgt_mask.get_header().get_alloc_properties().request_allocation(ps);
+      tgt_mask.allocate_view();
+      tgt_masks[src_mask.name()] = tgt_mask;
+      tgt.get_header().set_extra_data("valid_mask",tgt_mask);
     }
   }
-
-  using namespace ShortFieldTagsNames;
 
   m_needs_remap.resize(m_num_fields,1);
   for (int i=0; i<m_num_fields; ++i) {
@@ -266,16 +270,18 @@ void HorizontalRemapper::remap_fwd_impl ()
     const auto& x = coarsen ? m_src_fields[i] : m_ov_fields[i];
     const auto& y = coarsen ? m_ov_fields[i] : m_tgt_fields[i];
 
-    const bool masked = m_track_mask and x.get_header().has_extra_data("mask_field");
+    const bool masked = m_track_mask and x.get_header().has_extra_data("valid_mask");
     if (masked) {
       // Pass the mask to the local_mat_vec routine
-      const auto& mask = x.get_header().get_extra_data<Field>("mask_field");
+      const auto& mask = x.get_header().get_extra_data<Field>("valid_mask");
+      auto& real_mask = m_src_fields[m_mask_to_idx.at(mask.name())];
+      real_mask.deep_copy(mask); // copy src mask into the real-valued src mask field
 
       // If possible, dispatch kernel with SCREAM_PACK_SIZE
       if (can_pack_field(x) and can_pack_field(y) and can_pack_field(mask)) {
-        local_mat_vec<SCREAM_PACK_SIZE>(x,y,mask);
+        local_mat_vec<SCREAM_PACK_SIZE>(x,y,real_mask);
       } else {
-        local_mat_vec<1>(x,y,mask);
+        local_mat_vec<1>(x,y,real_mask);
       }
     } else {
       // If possible, dispatch kernel with SCREAM_PACK_SIZE
@@ -301,17 +307,20 @@ void HorizontalRemapper::remap_fwd_impl ()
         "  - send rank: " + std::to_string(comm.rank()) + "\n");
   }
 
-  // Rescale any fields that had the mask applied.
+  // Rescale any fields that had the mask applied, and compute tgt field mask by comparing tgt_mask_real against threshold
   if (m_track_mask) {
     for (int i=0; i<m_num_fields; ++i) {
-      const auto& f_tgt = m_tgt_fields[i];
-      if (f_tgt.get_header().has_extra_data("mask_field")) {
-        // Then this field did use a mask
-        const auto& mask = f_tgt.get_header().get_extra_data<Field>("mask_field");
-        if (can_pack_field(f_tgt) and can_pack_field(mask)) {
-          rescale_masked_fields<SCREAM_PACK_SIZE>(f_tgt,mask);
+      auto& f_tgt = m_tgt_fields[i];
+      if (f_tgt.get_header().has_extra_data("valid_mask")) {
+        auto& mask = f_tgt.get_header().get_extra_data<Field>("valid_mask");
+        auto& real_mask = m_tgt_fields[m_mask_to_idx.at(mask.name())];
+        // TODO:
+        //  1. compute mask=real_mask>thresh via compute_mask
+        //  2. replace rescale_masked_fields with f_tgt.scale_inv(real_mask,mask) once it's available
+        if (can_pack_field(f_tgt) and can_pack_field(real_mask)) {
+          rescale_masked_fields<SCREAM_PACK_SIZE>(f_tgt,real_mask);
         } else {
-          rescale_masked_fields<1>(f_tgt,mask);
+          rescale_masked_fields<1>(f_tgt,real_mask);
         }
       }
     }
@@ -446,7 +455,7 @@ local_mat_vec (const Field& x, const Field& y) const
 
 template<int PackSize>
 void HorizontalRemapper::
-rescale_masked_fields (const Field& x, const Field& mask) const
+rescale_masked_fields (const Field& x, const Field& real_mask) const
 {
   if (m_timers_enabled)
     start_timer(name()+" rescale");
@@ -455,6 +464,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
   using MemberType  = typename KT::MemberType;
   using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
   using Pack        = ekat::Pack<Real,PackSize>;
+  using Mask        = ekat::Mask<PackSize>;
   using PackInfo    = ekat::PackInfo<PackSize>;
 
   constexpr auto fill_val = constants::fill_value<Real>;
@@ -464,6 +474,8 @@ rescale_masked_fields (const Field& x, const Field& mask) const
   const int ncols = m_tgt_grid->get_num_local_dofs();
   const Real mask_threshold = std::numeric_limits<Real>::epsilon();  // TODO: Should we not hardcode the threshold for simply masking out the column.
 
+  Pack fv_pack(fill_val);
+  auto& mask = x.get_header().get_extra_data<Field>("valid_mask");
   switch (rank) {
     case 1:
     {
@@ -471,11 +483,13 @@ rescale_masked_fields (const Field& x, const Field& mask) const
       // therefore allowing the 1d field to be a subfield of a 2d field
       // along the 2nd dimension.
       auto x_view =    x.get_strided_view<      Real*>();
-      auto m_view = mask.get_strided_view<const Real*>();
+      auto mr_view = real_mask.get_view<const Real*>();
+      auto m_view = mask.get_view<int*>();
       Kokkos::parallel_for(RangePolicy(0,ncols),
                            KOKKOS_LAMBDA(const int& icol) {
-        if (m_view(icol)>mask_threshold) {
-          x_view(icol) /= m_view(icol);
+        m_view(icol) = mr_view(icol)>mask_threshold;
+        if (m_view(icol)) {
+          x_view(icol) /= mr_view(icol);
         } else {
           x_view(icol) = fill_val;
         }
@@ -485,105 +499,61 @@ rescale_masked_fields (const Field& x, const Field& mask) const
     case 2:
     {
       auto x_view =    x.get_view<      Pack**>();
-      bool mask1d = mask.rank()==1;
-      view_1d<const Real> mask_1d;
-      view_2d<const Pack> mask_2d;
-      // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
-      // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
-      if (mask.rank()==1) {
-        mask_1d = mask.get_view<const Real*>();
-      } else {
-        mask_2d = mask.get_view<const Pack**>();
-      }
+      auto mr_view = real_mask.get_view<const Pack**>();
+      auto m_view = mask.get_view<Mask**>();
       const int dim1 = PackInfo::num_packs(layout.dim(1));
       auto policy = TPF::get_default_team_policy(ncols,dim1);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto icol = team.league_rank();
         auto x_sub = ekat::subview(x_view,icol);
-        if (mask1d) {
-          auto mask = mask_1d(icol);
-          if (mask>mask_threshold) {
-            Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
-                                [&](const int j){
-                x_sub(j) /= mask;
-            });
+        auto mr_sub = ekat::subview(mr_view,icol);
+        auto m_sub = ekat::subview(m_view,icol);
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
+                            [&](const int j){
+          m_sub(j) = mr_sub(j) > mask_threshold;                  
+          if (m_sub(j).any()) {
+            x_sub(j).set(m_sub(j),x_sub(j)/mr_sub(j),fv_pack);
+          } else {
+            x_sub(j) = fv_pack;
           }
-        } else {
-          auto m_sub = ekat::subview(mask_2d,icol);
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
-                              [&](const int j){
-            auto masked = m_sub(j) > mask_threshold;
-            if (masked.any()) {
-              x_sub(j).set(masked,x_sub(j)/m_sub(j));
-            }
-            x_sub(j).set(!masked,fill_val);
-          });
-        }
+        });
       });
       break;
     }
     case 3:
     {
       auto x_view =    x.get_view<      Pack***>();
-      bool mask1d = mask.rank()==1;
-      view_1d<const Real> mask_1d;
-      view_2d<const Pack> mask_2d;
-      // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
-      // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
-      if (mask.rank()==1) {
-        mask_1d = mask.get_view<const Real*>();
-      } else {
-        mask_2d = mask.get_view<const Pack**>();
-      }
+      auto mr_view = real_mask.get_view<const Pack***>();
+      auto m_view = mask.get_view<Mask***>();
       const int dim1 = layout.dim(1);
       const int dim2 = PackInfo::num_packs(layout.dim(2));
       auto policy = TPF::get_default_team_policy(ncols,dim1*dim2);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto icol = team.league_rank();
-        if (mask1d) {
-          auto mask = mask_1d(icol);
-          if (mask>mask_threshold) {
-            Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2),
-                                [&](const int idx){
-              const int j = idx / dim2;
-              const int k = idx % dim2;
-              auto x_sub = ekat::subview(x_view,icol,j);
-              x_sub(k) /= mask;
-            });
+        auto x_sub = ekat::subview(x_view,icol);
+        auto mr_sub = ekat::subview(mr_view,icol);
+        auto m_sub = ekat::subview(m_view,icol);
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2),
+                            [&](const int idx){
+          const int j = idx / dim2;
+          const int k = idx % dim2;
+          m_sub(j,k) = mr_sub(j,k) > mask_threshold;                  
+          if (m_sub(j,k).any()) {
+            x_sub(j,k).set(m_sub(j,k),x_sub(j,k)/mr_sub(j,k),fv_pack);
+          } else {
+            x_sub(j,k) = fv_pack;
           }
-        } else {
-          auto m_sub      = ekat::subview(mask_2d,icol);
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2),
-                              [&](const int idx){
-            const int j = idx / dim2;
-            const int k = idx % dim2;
-            auto x_sub = ekat::subview(x_view,icol,j);
-            auto masked = m_sub(k) > mask_threshold;
-
-            if (masked.any()) {
-              x_sub(k).set(masked,x_sub(k)/m_sub(k));
-            }
-            x_sub(k).set(!masked,fill_val);
-          });
-        }
+        });
       });
       break;
     }
     case 4:
     {
       auto x_view = x.get_view<Pack****>();
-      bool mask1d = mask.rank()==1;
-      view_1d<const Real> mask_1d;
-      view_2d<const Pack> mask_2d;
-      // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
-      // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
-      if (mask.rank()==1) {
-        mask_1d = mask.get_view<const Real*>();
-      } else {
-        mask_2d = mask.get_view<const Pack**>();
-      }
+      auto mr_view = real_mask.get_view<const Pack****>();
+      auto m_view = mask.get_view<Mask****>();
       const int dim1 = layout.dim(1);
       const int dim2 = layout.dim(2);
       const int dim3 = PackInfo::num_packs(layout.dim(3));
@@ -591,34 +561,21 @@ rescale_masked_fields (const Field& x, const Field& mask) const
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto icol = team.league_rank();
-        if (mask1d) {
-          auto mask = mask_1d(icol);
-          if (mask>mask_threshold) {
-            Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2*dim3),
-                                [&](const int idx){
-              const int j = (idx / dim3) / dim2;
-              const int k = (idx / dim3) % dim2;
-              const int l =  idx % dim3;
-              auto x_sub = ekat::subview(x_view,icol,j,k);
-              x_sub(l) /= mask;
-            });
+        auto x_sub = ekat::subview(x_view,icol);
+        auto mr_sub = ekat::subview(mr_view,icol);
+        auto m_sub = ekat::subview(m_view,icol);
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2*dim3),
+                            [&](const int idx){
+          const int j = (idx / dim3) / dim2;
+          const int k = (idx / dim3) % dim2;
+          const int l =  idx % dim3;
+          m_sub(j,k,l) = mr_sub(j,k,l) > mask_threshold;                  
+          if (m_sub(j,k,l).any()) {
+            x_sub(j,k,l).set(m_sub(j,k,l),x_sub(j,k,l)/mr_sub(j,k,l),fv_pack);
+          } else {
+            x_sub(j,k,l) = fv_pack;
           }
-        } else {
-          auto m_sub      = ekat::subview(mask_2d,icol);
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2*dim3),
-                              [&](const int idx){
-            const int j = (idx / dim3) / dim2;
-            const int k = (idx / dim3) % dim2;
-            const int l =  idx % dim3;
-            auto x_sub = ekat::subview(x_view,icol,j,k);
-            auto masked = m_sub(l) > mask_threshold;
-
-            if (masked.any()) {
-              x_sub(l).set(masked,x_sub(l)/m_sub(l));
-            }
-            x_sub(l).set(!masked,fill_val);
-          });
-        }
+        });
       });
       break;
     }
@@ -650,21 +607,22 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
     // Note: in each case, handle 1st contribution to each row separately,
     //       using = instead of +=. This allows to avoid doing an extra
     //       loop to zero out y before the mat-vec.
+    // Note: we ASSUME mask fields are ALWAYS contiguous (they are not subfields)
     case 1:
     {
       // Unlike get_view, get_strided_view returns a LayoutStride view,
       // therefore allowing the 1d field to be a subfield of a 2d field
       // along the 2nd dimension.
-      auto x_view    =    x.get_strided_view<const Real*>();
-      auto y_view    =    y.get_strided_view<      Real*>();
-      auto mask_view = mask.get_strided_view<const Real*>();
+      auto x_view = x.get_strided_view<const Real*>();
+      auto y_view = y.get_strided_view<      Real*>();
+      auto m_view = mask.get_view<const Real*>();
       Kokkos::parallel_for(RangePolicy(0,nrows),
                            KOKKOS_LAMBDA(const int& row) {
         const auto beg = row_offsets(row);
         const auto end = row_offsets(row+1);
-        y_view(row) = weights(beg)*x_view(col_lids(beg))*mask_view(col_lids(beg));
+        y_view(row) = weights(beg)*x_view(col_lids(beg))*m_view(col_lids(beg));
         for (int icol=beg+1; icol<end; ++icol) {
-          y_view(row) += weights(icol)*x_view(col_lids(icol))*mask_view(col_lids(icol));
+          y_view(row) += weights(icol)*x_view(col_lids(icol))*m_view(col_lids(icol));
         }
       });
       break;
@@ -673,16 +631,7 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
     {
       auto x_view = x.get_view<const Pack**>();
       auto y_view = y.get_view<      Pack**>();
-      view_1d<const Real> mask_1d;
-      view_2d<const Pack> mask_2d;
-      // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
-      // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
-      bool mask1d = mask.rank()==1;
-      if (mask1d) {
-        mask_1d = mask.get_view<const Real*>();
-      } else {
-        mask_2d = mask.get_view<const Pack**>();
-      }
+      auto m_view = mask.get_view<const Pack**>();
       const int dim1 = PackInfo::num_packs(src_layout.dim(1));
       auto policy = TPF::get_default_team_policy(nrows,dim1);
       Kokkos::parallel_for(policy,
@@ -693,11 +642,9 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
         const auto end = row_offsets(row+1);
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
                             [&](const int j){
-          y_view(row,j) = weights(beg)*x_view(col_lids(beg),j) *
-                          (mask1d ? mask_1d (col_lids(beg)) : mask_2d(col_lids(beg),j));
+          y_view(row,j) = weights(beg)*x_view(col_lids(beg),j)*m_view(col_lids(beg),j);
           for (int icol=beg+1; icol<end; ++icol) {
-            y_view(row,j) += weights(icol)*x_view(col_lids(icol),j) *
-                          (mask1d ? mask_1d (col_lids(icol)) : mask_2d(col_lids(icol),j));
+            y_view(row,j) += weights(icol)*x_view(col_lids(icol),j)*m_view(col_lids(icol),j);
           }
         });
       });
@@ -707,17 +654,7 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
     {
       auto x_view = x.get_view<const Pack***>();
       auto y_view = y.get_view<      Pack***>();
-      // Note, the mask is still assumed to be defined on COLxLEV so still only 2D for case 3.
-      view_1d<const Real> mask_1d;
-      view_2d<const Pack> mask_2d;
-      bool mask1d = mask.rank()==1;
-      // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
-      // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
-      if (mask1d) {
-        mask_1d = mask.get_view<const Real*>();
-      } else {
-        mask_2d = mask.get_view<const Pack**>();
-      }
+      auto m_view = mask.get_view<const Pack***>();
       const int dim1 = src_layout.dim(1);
       const int dim2 = PackInfo::num_packs(src_layout.dim(2));
       auto policy = TPF::get_default_team_policy(nrows,dim1*dim2);
@@ -731,11 +668,9 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
                             [&](const int idx){
           const int j = idx / dim2;
           const int k = idx % dim2;
-          y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k) * 
-                          (mask1d ? mask_1d (col_lids(beg)) : mask_2d(col_lids(beg),k));
+          y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k)*m_view(col_lids(beg),j,k);
           for (int icol=beg+1; icol<end; ++icol) {
-            y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k) *
-                          (mask1d ? mask_1d (col_lids(icol)) : mask_2d(col_lids(icol),k));
+            y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k)*m_view(col_lids(icol),j,k);
           }
         });
       });
@@ -745,17 +680,7 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
     {
       auto x_view = x.get_view<const Pack****>();
       auto y_view = y.get_view<      Pack****>();
-      // Note, the mask is still assumed to be defined on COLxLEV so still only 2D for case 3.
-      view_1d<const Real> mask_1d;
-      view_2d<const Pack> mask_2d;
-      bool mask1d = mask.rank()==1;
-      // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
-      // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
-      if (mask1d) {
-        mask_1d = mask.get_view<const Real*>();
-      } else {
-        mask_2d = mask.get_view<const Pack**>();
-      }
+      auto m_view = mask.get_view<const Pack****>();
       const int dim1 = src_layout.dim(1);
       const int dim2 = src_layout.dim(2);
       const int dim3 = PackInfo::num_packs(src_layout.dim(3));
@@ -771,11 +696,9 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
           const int j = (idx / dim3) / dim2;
           const int k = (idx / dim3) % dim2;
           const int l =  idx % dim3;
-          y_view(row,j,k,l) = weights(beg)*x_view(col_lids(beg),j,k,l) * 
-                          (mask1d ? mask_1d (col_lids(beg)) : mask_2d(col_lids(beg),l));
+          y_view(row,j,k,l) = weights(beg)*x_view(col_lids(beg),j,k,l)*m_view(col_lids(beg),j,k,l);
           for (int icol=beg+1; icol<end; ++icol) {
-            y_view(row,j,k,l) += weights(icol)*x_view(col_lids(icol),j,k,l) *
-                          (mask1d ? mask_1d (col_lids(icol)) : mask_2d(col_lids(icol),l));
+            y_view(row,j,k,l) += weights(icol)*x_view(col_lids(icol),j,k,l)*m_view(col_lids(icol),j,k,l);
           }
         });
       });

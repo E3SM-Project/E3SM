@@ -109,7 +109,7 @@ TEST_CASE("aodvis") {
 
     const auto tau_h  = tau.get_view<const Real ***, Host>();
     const auto aod_hf = diag->get_diagnostic();
-    const auto aod_mask = aod_hf.get_header().get_extra_data<Field>("mask_field");
+    const auto aod_mask = aod_hf.get_header().get_extra_data<Field>("valid_mask");
 
     Field aod_tf = diag->get_diagnostic().clone();
     auto aod_t = aod_tf.get_view<Real *, Host>();

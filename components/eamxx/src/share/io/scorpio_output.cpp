@@ -500,7 +500,7 @@ run (const std::string& filename,
       //    if we later need it. E.g, if no AvgCount AND no hremap, we don't need it.
       //////////////////////////////////////////////////////
       auto field = fm_after_hr->get_field(fname);
-      auto mask  = count.get_header().get_extra_data<Field>("mask");
+      auto mask  = count.get_header().get_extra_data<Field>("valid_mask");
 
       // Find where the field is NOT equal to fill_value
       compute_mask(field,constants::fill_value<Real>,Comparison::NE,mask);
@@ -579,7 +579,7 @@ run (const std::string& filename,
 
           f_out.scale_inv(avg_count);
 
-          const auto& mask = avg_count.get_header().get_extra_data<Field>("mask");
+          const auto& mask = avg_count.get_header().get_extra_data<Field>("valid_mask");
           f_out.deep_copy(constants::fill_value<Real>,mask);
         } else {
           // Divide by steps count only when the summation is complete
@@ -679,7 +679,7 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const Field
 
   // We will use a helper field for updating cnt, so store it inside the field header
   auto mask = count.clone(count.name()+"_mask");
-  count.get_header().set_extra_data("mask",mask);
+  count.get_header().set_extra_data("valid_mask",mask);
 
   m_avg_counts.push_back(count);
   m_field_to_avg_count[name] = count;
@@ -1018,12 +1018,12 @@ process_requested_fields()
   // Helper lambda to check if this fm_model field should trigger avg count
   auto check_for_avg_cnt = [&](const Field& f) {
     // We need avg-count tracking for any averaged (non-instant) field that:
-    //  - supplies explicit mask info (mask_data or mask_field), OR
+    //  - supplies explicit mask info (mask_data or mask), OR
     //  - is marked as potentially containing fill values (may_be_filled()).
     // Without this, fill-aware updates skip fill_value during accumulation (good)
     // but we would still divide by the raw nsteps, biasing the result low.
     if (m_avg_type!=OutputAvgType::Instant) {
-      const bool has_mask = f.get_header().has_extra_data("mask_data") || f.get_header().has_extra_data("mask_field");
+      const bool has_mask = f.get_header().has_extra_data("mask_data") || f.get_header().has_extra_data("valid_mask");
       const bool may_be_filled = f.get_header().may_be_filled();
       if (has_mask || may_be_filled) {
         m_track_avg_cnt = true;

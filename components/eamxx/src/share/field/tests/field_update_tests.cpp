@@ -75,7 +75,7 @@ TEST_CASE ("update") {
     }
 
     // Compute mask where f1>0 (should be all even cols)
-    auto mask = f_int.clone("mask");
+    auto mask = f_int.clone("valid_mask");
     compute_mask(f1,0,Comparison::GT,mask);
 
     // Set f3=1 where mask=1
