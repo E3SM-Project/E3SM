@@ -474,17 +474,16 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
   // gas_phase_chemistry ends
 
   // setsox_single_level
-  const Config &config                        = config_;
   const auto& vmr_pregas =vmr_pregas_;
   const auto& vmr_precld=vmr_precld_;
   Kokkos::deep_copy(vmr_pregas, vmr);
   Kokkos::deep_copy(vmr_precld, vmrcw );
 
   const auto& vmr_bef_aq_chem = vmr_pregas;
-  const auto& config_setsox = config.setsox;
+  const auto& config_setsox = config_.setsox;
   const auto& dqdt_aqso4 = dqdt_aqso4_;
   const auto& dqdt_aqh2so4 = dqdt_aqh2so4_;
-  const unsigned n_so4_monolayers_pcage = config.n_so4_monolayers_pcage;
+  const unsigned n_so4_monolayers_pcage = config_.n_so4_monolayers_pcage;
 
   if (config_.compute_setsox) {
   Kokkos::parallel_for(
@@ -601,7 +600,7 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
 
     const bool extra_mam4_aero_microphys_diags  = extra_mam4_aero_microphys_diags_;
 
-    const auto& config_amicphys = config.amicphys;
+    const auto& config_amicphys = config_.amicphys;
      Kokkos::parallel_for(
     "MAMMicrophysics::run_impl::modal_aero_amicphys_intr", policy,
     KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -720,7 +719,7 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
       linoz_dPmL_dO3col = linoz_views[6];
       linoz_cariolle_pscs = linoz_views[7];
 
-      const auto& linoz_conf=config.linoz;
+      const auto& linoz_conf=config_.linoz;
       const int o3_ndx = static_cast<int>(mam4::GasId::O3);
       
       Kokkos::parallel_for(
