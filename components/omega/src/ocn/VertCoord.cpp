@@ -819,7 +819,6 @@ void VertCoord::computePressure(
     const Array1DReal &SurfacePressure // [in] surface pressure
 ) {
 
-   OMEGA_SCOPE(LocRhoSw, RhoSw);
    OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
    OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
    OMEGA_SCOPE(LocPressInterf, PressureInterface);
@@ -837,7 +836,7 @@ void VertCoord::computePressure(
               Team, KRange, INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
                  const I4 KLyr = K + KMin;
                  Real Increment =
-                     Gravity * LocRhoSw * LayerThickness(ICell, KLyr);
+                     Gravity * RhoSw * LayerThickness(ICell, KLyr);
                  Accum += Increment;
 
                  if (IsFinal) {
@@ -861,7 +860,6 @@ void VertCoord::computeZHeight(
     const Array2DReal &SpecVol         // [in] specific volume
 ) {
 
-   OMEGA_SCOPE(LocRhoSw, RhoSw);
    OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
    OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
    OMEGA_SCOPE(LocZInterf, ZInterface);
@@ -879,8 +877,8 @@ void VertCoord::computeZHeight(
           parallelScanInner(
               Team, KRange, INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
                  const I4 KLyr = KMax - K;
-                 Real DZ       = LocRhoSw * SpecVol(ICell, KLyr) *
-                           LayerThickness(ICell, KLyr);
+                 Real DZ =
+                     RhoSw * SpecVol(ICell, KLyr) * LayerThickness(ICell, KLyr);
                  Accum += DZ;
                  if (IsFinal) {
                     LocZInterf(ICell, KLyr) = -LocBotDepth(ICell) + Accum;
@@ -934,7 +932,6 @@ void VertCoord::computeGeopotential(
 // reductions and a parallel_for over the active layers within a column.
 void VertCoord::computeTargetThickness() {
 
-   OMEGA_SCOPE(LocRhoSw, RhoSw);
    OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
    OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
    OMEGA_SCOPE(LocLayerThickTarget, LayerThicknessTarget);
@@ -951,7 +948,7 @@ void VertCoord::computeTargetThickness() {
 
           Real Coeff =
               (LocPressInterf(ICell, KMax + 1) - LocPressInterf(ICell, KMin)) /
-              (Gravity * LocRhoSw);
+              (Gravity * RhoSw);
 
           Real SumWh   = 0;
           Real SumRefH = 0;
