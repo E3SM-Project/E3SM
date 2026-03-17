@@ -3192,7 +3192,7 @@
       </modules>
       <modules compiler="gnu.*">
 	<command name="load">PrgEnv-gnu/8.6.0</command>
-	<command name="load">gcc-native/12.2</command>
+	<command name="load">gcc-native/13.2</command>
 	<command name="load">cray-libsci/24.11.0</command>
 	<command name="load">craype-x86-trento</command>
       </modules>
@@ -3219,15 +3219,14 @@
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
       <env name="FI_CXI_RX_MATCH_MODE">hybrid</env>
-      <!-- <env name="MPICH_COLL_SYNC">MPI_Bcast</env> -->
       <env name="HDF5_ROOT">$ENV{HDF5_ROOT}</env>
       <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
       <env name="LD_LIRBARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
+      <env name="MPICH_CXX">/opt/rocm-6.3.0/bin/hipcc</env>
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
-      <env name="MPICH_CXX">$SHELL{which hipcc}</env>
       <env name="HSA_XNACK">1</env>
       <env name="MPICH_SMP_SINGLE_COPY_MODE">XPMEM</env>
     </environment_variables>
