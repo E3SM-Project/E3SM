@@ -18,7 +18,7 @@ using ScratchMemSpace = ExecSpace::scratch_memory_space;
 using Kokkos::MemoryUnmanaged;
 using Kokkos::PerTeam;
 using Kokkos::TeamThreadRange;
-using RealScratchArray =
+using ArrayScratch1DReal =
     Kokkos::View<Real *, ScratchMemSpace, Kokkos::MemoryUnmanaged>;
 
 /// team_size for hierarchical parallelism
