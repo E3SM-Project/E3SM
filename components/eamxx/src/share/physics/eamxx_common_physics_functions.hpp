@@ -356,6 +356,22 @@ struct PhysicsFunctions
   KOKKOS_INLINE_FUNCTION
   static Real calculate_gustiness_speed(const Real& tke);
 
+  //-----------------------------------------------------------------------------------------------
+  // Calculate the approximate derivative of current wind speed with respect to magnitude of
+  // surface stress at the previous time step. Specifically, the derivative of the component of
+  // wind speed in the direction of the surface stress.
+  // INPUTS:
+  // taux is the u component of surface stress (Pa)
+  // tauy is the v component of surface stress (Pa)
+  // um_pert_diff is the u component of a response to perturbation of size tau_pert_mag (m/s)
+  // vm_pert_diff is the v component of a response to perturbation of size tau_pert_mag (m/s)
+  // RETURNS:
+  // Sensitivity in m/s/Pa.
+  //-----------------------------------------------------------------------------------------------
+  KOKKOS_INLINE_FUNCTION
+  static Real calculate_wind_speed_sensitivity(const Real& taux, const Real& tauy,
+                                               const Real& um_pert_diff, const Real& vm_pert_diff);
+
   // ---------------------------------------------------------------- //
   //                     Whole column Functions                       //
   // ---------------------------------------------------------------- //

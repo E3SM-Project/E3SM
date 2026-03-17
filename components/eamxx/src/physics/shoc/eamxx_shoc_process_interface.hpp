@@ -164,23 +164,20 @@ public:
       upwp_sfc(i) = surf_mom_flux(i,0)/rrho_i(i,nlevi_v)[nlevi_p];
       vpwp_sfc(i) = surf_mom_flux(i,1)/rrho_i(i,nlevi_v)[nlevi_p];
 
-      // Apply perturbation in direction of existing wind.
-      const auto pert_scale_fac = C::tau_pert_mag /
-        std::sqrt(surf_mom_flux(i,0)*surf_mom_flux(i,0) + surf_mom_flux(i,1)*surf_mom_flux(i,1));
-      upwp_sfc_pert(i) = upwp_sfc(i) * pert_scale_fac;
-      vpwp_sfc_pert(i) = vpwp_sfc(i) * pert_scale_fac;
-      // If stress is too small, don't trust direction information, and instead apply perturbation
-      // entirely in the u direction.
-      const auto stress_is_small = (surf_mom_flux(i,0) < 1.e-12 && surf_mom_flux(i,1) < 1.e-12);
-      if (stress_is_small.any()) {
-        upwp_sfc_pert(i).set(stress_is_small, tau_pert_mag / rrho_i(i,nlevi_v)[nlevi_p]);
-        vpwp_sfc_pert(i).set(stress_is_small, 0);
+      const auto stress_is_small = (std::abs(surf_mom_flux(i,0)) < 1.e-12
+                                    && std::abs(surf_mom_flux(i,1)) < 1.e-12);
+      if (stress_is_small) {
+        // If stress is too small, don't trust direction information, and instead apply perturbation
+        // entirely in the u direction.
+        upwp_sfc_pert(i) = C::tau_pert_mag / rrho_i(i,nlevi_v)[nlevi_p];
+        vpwp_sfc_pert(i) = 0;
+      } else {
+        // Apply perturbation in direction of existing wind.
+        const auto pert_scale_fac = C::tau_pert_mag /
+          std::sqrt(surf_mom_flux(i,0)*surf_mom_flux(i,0) + surf_mom_flux(i,1)*surf_mom_flux(i,1));
+        upwp_sfc_pert(i) = upwp_sfc(i) * pert_scale_fac;
+        vpwp_sfc_pert(i) = vpwp_sfc(i) * pert_scale_fac;
       }
-
-      const int num_qtracer_packs = ekat::npack<Spack>(num_qtracers);
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_qtracer_packs), [&] (const Int& q) {
-        wtracer_sfc(i,q) = 0;
-      });
     } // operator
 
     // Local variables
@@ -244,7 +241,7 @@ public:
                        const view_2d& wm_zt_,const view_2d& inv_exner_,const view_2d& thlm_,const view_2d& qw_,
                        const view_2d& cldfrac_liq_, const view_2d& cldfrac_liq_prev_,
                        const view_1d& upwp_sfc_pert_,const view_1d& vpwp_sfc_pert_,
-                       const view_2d& um_pert_, const view_2dt& vm_pert_,
+                       const view_2d& um_pert_, const view_2d& vm_pert_,
                        const view_2d_const& um_pert_diff_, const view_2d_const& vm_pert_diff_)
     {
       ncol = ncol_;
@@ -437,16 +434,16 @@ public:
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
 #ifndef SCREAM_SHOC_SMALL_KERNELS
-    static constexpr int num_1d_scalar_ncol = 4;
+    static constexpr int num_1d_scalar_ncol = 6;
 #else
-    static constexpr int num_1d_scalar_ncol = 15;
+    static constexpr int num_1d_scalar_ncol = 17;
 #endif
     static constexpr int num_1d_scalar_nlev = 1;
 #ifndef SCREAM_SHOC_SMALL_KERNELS
-    static constexpr int num_2d_vector_mid  = 19;
+    static constexpr int num_2d_vector_mid  = 21;
     static constexpr int num_2d_vector_int  = 12;
 #else
-    static constexpr int num_2d_vector_mid  = 23;
+    static constexpr int num_2d_vector_mid  = 25;
     static constexpr int num_2d_vector_int  = 13;
 #endif
     static constexpr int num_2d_vector_tr   = 1;

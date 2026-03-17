@@ -643,6 +643,23 @@ Real PhysicsFunctions<DeviceT>::calculate_gustiness_speed(const Real& tke)
   return std::sqrt((sp(2.)/sp(3.)) * tke);
 }
 
+template<typename DeviceT>
+KOKKOS_INLINE_FUNCTION
+Real PhysicsFunctions<DeviceT>::calculate_wind_speed_sensitivity(const Real& taux,
+                                                                 const Real& tauy,
+                                                                 const Real& um_pert_diff,
+                                                                 const Real& vm_pert_diff)
+{
+  using C = scream::physics::Constants<Real>;
+
+  if (std::abs(taux) < 1.e-12 && std::abs(tauy) < 1.e-12) {
+    return std::max(um_pert_diff / C::tau_pert_mag, 0.);
+  } else {
+    const Real denominator = std::sqrt(taux*taux + tauy*tauy) * C::tau_pert_mag;
+    return std::max(((um_pert_diff * taux) + (vm_pert_diff * tauy)), 0.) / denominator;
+  }
+}
+
 } // namespace scream
 
 #endif // SCREAM_COMMON_PHYSICS_IMPL_HPP

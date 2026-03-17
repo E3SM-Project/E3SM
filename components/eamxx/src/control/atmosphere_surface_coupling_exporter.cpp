@@ -34,6 +34,7 @@ void SurfaceCouplingExporter::create_requests()
   using namespace ShortFieldTagsNames;
 
   FieldLayout scalar2d_layout     { {COL   },      {m_num_cols                 } };
+  FieldLayout vector2d_layout     { {COL,CMP},     {m_num_cols, 2,             } };
   FieldLayout vector3d_layout     { {COL,CMP,LEV}, {m_num_cols, 2, m_num_levs  } };
   FieldLayout scalar3d_layout_mid { {COL,LEV},     {m_num_cols,    m_num_levs  } };
   FieldLayout scalar3d_layout_int { {COL,ILEV},    {m_num_cols,    m_num_levs+1} };
@@ -60,9 +61,10 @@ void SurfaceCouplingExporter::create_requests()
   // Required for implicit flux coupling
   add_field<Required>("um_pert_diff",         scalar3d_layout_mid,  m/s,    grid_name, "ACCUMULATED");
   add_field<Required>("vm_pert_diff",         scalar3d_layout_mid,  m/s,    grid_name, "ACCUMULATED");
+  add_field<Required>("surf_mom_flux",        vector2d_layout,      N/m2,   grid_name);
   add_field<Required>("tau_est",              scalar2d_layout,      Pa,     grid_name);
   // Required for ugust
-  add_tracer<Required>("tke",                 scalar3d_layout_mid,  m2/s2,  grid_name, ps);
+  add_tracer<Required>("tke",                 m_grid,               m2/s2,  ps);
 
   create_helper_field("Sa_z",       scalar2d_layout, grid_name);
   create_helper_field("Sa_u",       scalar2d_layout, grid_name);
@@ -396,10 +398,11 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
   const auto& precip_liq_surf_mass = get_field_in("precip_liq_surf_mass").get_view<const Real*>();
   const auto& precip_ice_surf_mass = get_field_in("precip_ice_surf_mass").get_view<const Real*>();
 
-  const auto& um_pert_diff         = get_field_in("um_pert_diff").get_view<const Spack**>();
-  const auto& vm_pert_diff         = get_field_in("vm_pert_diff").get_view<const Spack**>();
+  const auto& um_pert_diff         = get_field_in("um_pert_diff").get_view<const Pack**>();
+  const auto& vm_pert_diff         = get_field_in("vm_pert_diff").get_view<const Pack**>();
+  const auto& surf_mom_flux        = get_field_in("surf_mom_flux").get_view<const Real**>();
   const auto& tau_est              = get_field_in("tau_est").get_view<const Real*>();
-  const auto& tke                  = get_field_in("tke").get_view<const Spack**>();
+  const auto& tke                  = get_field_in("tke").get_view<const Pack**>();
 
   const auto Sa_z       = m_helper_fields.at("Sa_z").get_view<Real*>();
   const auto Sa_u       = m_helper_fields.at("Sa_u").get_view<Real*>();
@@ -563,10 +566,9 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
       const auto s_um_pert_diff_i = ekat::scalarize(um_pert_diff_i);
       const auto vm_pert_diff_i = ekat::subview(vm_pert_diff, i);
       const auto s_vm_pert_diff_i = ekat::scalarize(vm_pert_diff_i);
-      // Note use of total wind difference; alternative approach would be to project
-      // onto direction of wind stress (used in EAMv3 version).
-      Sa_wsresp(i) = std::sqrt(um_pert_diff(num_levs-1)*um_pert_diff(num_levs-1)
-                               + vm_pert_diff(num_levs-1)*vm_pert_diff(num_levs-1)) / PC::tau_pert_mag;
+      const auto surf_mom_flux_i = ekat::subview(surf_mom_flux, i);
+      Sa_wsresp(i) = PF::calculate_wind_speed_sensitivity(surf_mom_flux_i(0), surf_mom_flux_i(1),
+                                                          s_um_pert_diff_i(num_levs-1), s_vm_pert_diff_i(num_levs-1));
     }
   });
   // Variables that are already surface vars in the ATM can just be copied directly.
