@@ -89,6 +89,7 @@ initialize_impl (const RunType /*run_type*/)
   FieldIdentifier mask_fid (mask_name,mlayout, nondim, gname, DataType::IntType);
   Field diag_mask(mask_fid,true);
   m_diagnostic_output.get_header().set_extra_data("valid_mask",diag_mask);
+  m_diagnostic_output.get_header().set_may_be_filled(true);
 
   using stratts_t = std::map<std::string,std::string>;
 
