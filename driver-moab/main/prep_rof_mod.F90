@@ -51,11 +51,6 @@ module prep_rof_mod
   public :: prep_rof_accum_ocn_moab
   public :: prep_rof_accum_avg_moab
 
-  public :: prep_rof_accum_lnd
-  public :: prep_rof_accum_atm
-  public :: prep_rof_accum_ocn
-  public :: prep_rof_accum_avg
-
   public :: prep_rof_calc_l2r_rx
   public :: prep_rof_calc_a2r_rx
   public :: prep_rof_calc_o2r_rx
@@ -858,50 +853,24 @@ contains
 
   end subroutine prep_rof_init
 
-  !================================================================================================
-  subroutine prep_rof_accum_lnd(timer)
-
-    !---------------------------------------------------------------
-    ! Description
-    ! Accumulate land input to river component
-    !
-    ! Arguments
-    character(len=*), intent(in) :: timer
-    !
-    ! Local Variables
-    integer :: eli
-    type(mct_aVect), pointer :: l2x_lx
-    character(*), parameter  :: subname = '(prep_rof_accum_lnd)'
-    !---------------------------------------------------------------
-
-    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-    do eli = 1,num_inst_lnd
-       l2x_lx => component_get_c2x_cx(lnd(eli))
-       if (l2racc_lx_cnt == 0) then
-          call mct_avect_copy(l2x_lx, l2racc_lx(eli))
-       else
-          call mct_avect_accum(l2x_lx, l2racc_lx(eli))
-       endif
-    end do
-    l2racc_lx_cnt = l2racc_lx_cnt + 1
-    call t_drvstopf (trim(timer))
-
-  end subroutine prep_rof_accum_lnd
-
 !================================================================================================
-  subroutine prep_rof_accum_lnd_moab()
+  subroutine prep_rof_accum_lnd_moab(timer)
 
    use iMOAB , only :  iMOAB_GetDoubleTagStorage
    !---------------------------------------------------------------
    ! Description
    ! Accumulate land input to river component
    !
+   ! Arguments
+   character(len=*), intent(in) :: timer
    !
    ! Local Variables
    character(CXX) ::tagname
    integer :: arrsize, ent_type, ierr
    character(*), parameter  :: subname = '(prep_rof_accum_lnd_moab)'
    !---------------------------------------------------------------
+
+   call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
 
    ! do eli = 1,num_inst_lnd
    !    l2x_lx => component_get_c2x_cx(lnd(eli))
@@ -926,57 +895,31 @@ contains
       l2racc_lm = l2racc_lm + l2x_lm2
    endif
    l2racc_lm_cnt = l2racc_lm_cnt + 1
+   call t_drvstopf (trim(timer))
 
  end subroutine prep_rof_accum_lnd_moab
 
   !================================================================================================
 
-  subroutine prep_rof_accum_atm(timer)
-
-    !---------------------------------------------------------------
-    ! Description
-    ! Accumulate atmosphere input to river component
-    !
-    ! Arguments
-    character(len=*), intent(in) :: timer
-    !
-    ! Local Variables
-    integer :: eai
-    type(mct_aVect), pointer :: a2x_ax
-    character(*), parameter  :: subname = '(prep_rof_accum_atm)'
-    !---------------------------------------------------------------
-
-    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-
-    do eai = 1,num_inst_atm
-       a2x_ax => component_get_c2x_cx(atm(eai))
-       if (a2racc_ax_cnt == 0) then
-          call mct_avect_copy(a2x_ax, a2racc_ax(eai))
-       else
-          call mct_avect_accum(a2x_ax, a2racc_ax(eai))
-       endif
-    end do
-    a2racc_ax_cnt = a2racc_ax_cnt + 1
-
-    call t_drvstopf (trim(timer))
-
-  end subroutine prep_rof_accum_atm
-
 !================================================================================================
 
-  subroutine prep_rof_accum_atm_moab()
+  subroutine prep_rof_accum_atm_moab(timer)
 
    use iMOAB , only :  iMOAB_GetDoubleTagStorage
    !---------------------------------------------------------------
    ! Description
    ! Accumulate atmosphere input to river component
    !
+   ! Arguments
+   character(len=*), intent(in) :: timer
    !
    ! Local Variables
    character(CXX) ::tagname
    integer :: arrsize, ent_type, ierr
    character(*), parameter  :: subname = '(prep_rof_accum_atm_moab)'
    !---------------------------------------------------------------
+
+   call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
 
    tagname = trim(sharedFieldsAtmRof)//C_NULL_CHAR
    arrsize = nfields_sh_ar * lsize_am
@@ -992,75 +935,28 @@ contains
       a2racc_am = a2racc_am + a2x_am2
    endif
    a2racc_am_cnt = a2racc_am_cnt + 1
-   !---------------------------------------------------------------
-
-   ! call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-
-   ! do eai = 1,num_inst_atm
-   !    a2x_ax => component_get_c2x_cx(atm(eai))
-   !    if (a2racc_ax_cnt == 0) then
-   !       call mct_avect_copy(a2x_ax, a2racc_ax(eai))
-   !    else
-   !       call mct_avect_accum(a2x_ax, a2racc_ax(eai))
-   !    endif
-   ! end do
-   ! a2racc_ax_cnt = a2racc_ax_cnt + 1
-
+   call t_drvstopf (trim(timer))
 
  end subroutine prep_rof_accum_atm_moab
 
   !================================================================================================
-  subroutine prep_rof_accum_ocn(timer)
+subroutine prep_rof_accum_ocn_moab(timer)
 
-    !---------------------------------------------------------------
-    ! Description
-    ! Accumulate ocean input to river component
-    !
-    ! Arguments
-    character(len=*), intent(in) :: timer
-    !
-    ! Local Variables
-    integer :: eoi
-    type(mct_aVect), pointer :: o2x_ox
-    character(*), parameter  :: subname = '(prep_rof_accum_ocn)'
-    !---------------------------------------------------------------
-
-    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-
-    do eoi = 1,num_inst_ocn
-       o2x_ox => component_get_c2x_cx(ocn(eoi))
-       if (o2racc_ox_cnt == 0) then
-          call mct_avect_copy(o2x_ox, o2racc_ox(eoi))
-       else
-          call mct_avect_accum(o2x_ox, o2racc_ox(eoi))
-       endif
-    end do
-    o2racc_ox_cnt = o2racc_ox_cnt + 1
-
-    call t_drvstopf (trim(timer))
-
-  end subroutine prep_rof_accum_ocn
-
-subroutine prep_rof_accum_ocn_moab()
-
-    !---------------------------------------------------------------
-    ! Description
-    ! Accumulate ocean input to river component
-    !
-    !
-    ! Local Variables
-
-use iMOAB , only :  iMOAB_GetDoubleTagStorage
+   use iMOAB , only :  iMOAB_GetDoubleTagStorage
    !---------------------------------------------------------------
    ! Description
-   ! Accumulate atmosphere input to river component
+   ! Accumulate ocean input to river component
    !
+   ! Arguments
+   character(len=*), intent(in) :: timer
    !
    ! Local Variables
    character(CXX) ::tagname
    integer :: arrsize, ent_type, ierr
-    character(*), parameter  :: subname = '(prep_rof_accum_ocn_moab)'
+   character(*), parameter  :: subname = '(prep_rof_accum_ocn_moab)'
    !---------------------------------------------------------------
+
+   call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
 
    tagname = trim(sharedFieldsOcnRof)//C_NULL_CHAR
    arrsize = nfields_sh_or * lsize_om
@@ -1076,72 +972,13 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
       o2racc_om = o2racc_om + o2r_om2
    endif
    o2racc_om_cnt = o2racc_om_cnt + 1
-
-
-    !---------------------------------------------------------------
-
-
-   !  do eoi = 1,num_inst_ocn
-   !     o2x_ox => component_get_c2x_cx(ocn(eoi))
-   !     if (o2racc_ox_cnt == 0) then
-   !        call mct_avect_copy(o2x_ox, o2racc_ox(eoi))
-   !     else
-   !        call mct_avect_accum(o2x_ox, o2racc_ox(eoi))
-   !     endif
-   !  end do
-   !  o2racc_ox_cnt = o2racc_ox_cnt + 1
-
+   call t_drvstopf (trim(timer))
 
   end subroutine prep_rof_accum_ocn_moab
 
-  !================================================================================================
-
-  subroutine prep_rof_accum_avg(timer)
-
-    !---------------------------------------------------------------
-    ! Description
-    ! Finalize accumulation of land input to river component
-    !
-    ! Arguments
-    character(len=*), intent(in) :: timer
-    !
-    ! Local Variables
-    integer :: eri, eli, eai, eoi
-    character(*), parameter :: subname = '(prep_rof_accum_avg)'
-    !---------------------------------------------------------------
-
-    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-    if(l2racc_lx_cnt > 1) then
-       do eri = 1,num_inst_rof
-          eli = mod((eri-1),num_inst_lnd) + 1
-          call mct_avect_avg(l2racc_lx(eli),l2racc_lx_cnt)
-       enddo
-    endif
-    l2racc_lx_cnt = 0
-
-    if((a2racc_ax_cnt > 1) .and. rof_heat) then
-       do eri = 1,num_inst_rof
-          eai = mod((eri-1),num_inst_atm) + 1
-          call mct_avect_avg(a2racc_ax(eai),a2racc_ax_cnt)
-       enddo
-    endif
-    a2racc_ax_cnt = 0
-
-    if(o2racc_ox_cnt > 1) then
-       do eri = 1,num_inst_rof
-          eoi = mod((eri-1),num_inst_ocn) + 1
-          call mct_avect_avg(o2racc_ox(eoi),o2racc_ox_cnt)
-       enddo
-    endif
-    o2racc_ox_cnt = 0
-
-    call t_drvstopf (trim(timer))
-
-  end subroutine prep_rof_accum_avg
-
  !================================================================================================
 
-  subroutine prep_rof_accum_avg_moab(ocn_c2_rof)
+  subroutine prep_rof_accum_avg_moab(timer, ocn_c2_rof)
 
     !---------------------------------------------------------------
     ! Description
@@ -1149,6 +986,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     use iMOAB, only : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
     use seq_comm_mct, only : num_moab_exports ! for debug
     ! Arguments
+    character(len=*), intent(in) :: timer
     logical,intent(in) :: ocn_c2_rof
     !
     ! Local Variables
@@ -1160,6 +998,8 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
 #endif
     character(*), parameter :: subname = '(prep_rof_accum_avg_moab)'
     !---------------------------------------------------------------
+
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     if(l2racc_lm_cnt > 1) then
        ravg = 1.0_R8/real(l2racc_lm_cnt, R8)
        l2racc_lm = l2racc_lm * ravg
@@ -1242,6 +1082,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
      endif
     endif
 #endif
+    call t_drvstopf (trim(timer))
 
   end subroutine prep_rof_accum_avg_moab
 

@@ -51,9 +51,7 @@ module prep_ocn_mod
   public :: prep_ocn_init
   public :: prep_ocn_mrg_moab
 
-  public :: prep_ocn_accum
   public :: prep_ocn_accum_moab
-  public :: prep_ocn_accum_avg
   public :: prep_ocn_accum_avg_moab
 
   public :: prep_ocn_calc_a2x_ox
@@ -162,7 +160,7 @@ module prep_ocn_mod
   ! between xao and x2o
   character(CXX) :: shared_fields_xao_x2o
   ! will need some array to hold the data for copying
-  real(R8) , allocatable, save :: shared_values(:) ! will be the size of shared indices * lsize
+  real(R8) , allocatable :: shared_values(:) ! will be the size of shared indices * lsize
   integer    :: size_of_shared_values
 
   logical                  :: iamin_CPLALLICEID     ! pe associated with CPLALLICEID
@@ -986,38 +984,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_ocn_accum(timer)
-    !---------------------------------------------------------------
-    ! Description
-    ! Accumulate ocn inputs
-    ! Form partial sum of tavg ocn inputs (virtual "send" to ocn)
-    ! NOTE: this is done AFTER the call to the merge in prep_ocn_mrg
-    !
-    ! Arguments
-    character(len=*)        , intent(in) :: timer
-    !
-    ! Local Variables
-    integer :: eoi
-    type(mct_avect) , pointer   :: x2o_ox
-    character(*)    , parameter :: subname = '(prep_ocn_accum)'
-    !---------------------------------------------------------------
-
-    call t_drvstartf (trim(timer), barrier=mpicom_CPLID)
-    do eoi = 1,num_inst_ocn
-       x2o_ox => component_get_x2c_cx(ocn(eoi))
-
-       if (x2oacc_ox_cnt == 0) then
-          call mct_avect_copy(x2o_ox, x2oacc_ox(eoi))
-       else
-          call mct_avect_accum(x2o_ox, x2oacc_ox(eoi))
-       endif
-    enddo
-    x2oacc_ox_cnt = x2oacc_ox_cnt + 1
-    call t_drvstopf  (trim(timer))
-
-  end subroutine prep_ocn_accum
-
-  subroutine prep_ocn_accum_moab()
+  subroutine prep_ocn_accum_moab(timer)
     !---------------------------------------------------------------
     ! Description
     ! Accumulate ocn inputs
@@ -1025,6 +992,7 @@ contains
     ! NOTE: this is done AFTER the call to the merge in prep_ocn_mrg
     use iMOAB, only : iMOAB_GetDoubleTagStorage
     ! Arguments
+    character(len=*)        , intent(in) :: timer
     !
     ! Local Variables
     integer   :: ent_type, ierr
@@ -1032,6 +1000,7 @@ contains
     character(*)    , parameter :: subname = '(prep_ocn_accum_moab)'
     !---------------------------------------------------------------
 
+    call t_drvstartf (trim(timer), barrier=mpicom_CPLID)
     ! this method is called after merge, so it is not really necessary, because
     ! x2o_om should be saved between these calls
     tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
@@ -1049,49 +1018,23 @@ contains
     endif
 
     x2oacc_om_cnt = x2oacc_om_cnt + 1
+    call t_drvstopf  (trim(timer))
 
   end subroutine prep_ocn_accum_moab
 
 
   !================================================================================================
 
-  subroutine prep_ocn_accum_avg(timer_accum)
+subroutine prep_ocn_accum_avg_moab(timer_accum)
     !---------------------------------------------------------------
     ! Description
     ! Finish accumulation ocn inputs
     !
-    ! Arguments
-    character(len=*), intent(in)    :: timer_accum
-    !
-    ! Local Variables
-    integer :: eoi
-    type(mct_avect), pointer :: x2o_ox
-    character(*), parameter  :: subname = '(prep_ocn_accum_avg)'
-    !---------------------------------------------------------------
-
-    call t_drvstartf (trim(timer_accum), barrier=mpicom_CPLID)
-    do eoi = 1,num_inst_ocn
-       ! temporary formation of average
-       if (x2oacc_ox_cnt > 1) then
-          call mct_avect_avg(x2oacc_ox(eoi), x2oacc_ox_cnt)
-       end if
-
-       ! ***NOTE***THE FOLLOWING ACTUALLY MODIFIES x2o_ox
-       x2o_ox   => component_get_x2c_cx(ocn(eoi))
-       call mct_avect_copy(x2oacc_ox(eoi), x2o_ox)
-    enddo
-    x2oacc_ox_cnt = 0
-    call t_drvstopf (trim(timer_accum))
-
-  end subroutine prep_ocn_accum_avg
-
-subroutine prep_ocn_accum_avg_moab()
-    !---------------------------------------------------------------
-    ! Description
-    ! Finish accumulation ocn inputs
-    !
-    ! Arguments
     use iMOAB, only : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
+    !
+    ! Arguments
+    character(len=*), intent(in) :: timer_accum
+    !
     ! Local Variables
     integer   :: ent_type, ierr
     integer noflds, lsize ! used for restart case only?
@@ -1103,6 +1046,7 @@ subroutine prep_ocn_accum_avg_moab()
 #endif
     !---------------------------------------------------------------
 
+    call t_drvstartf (trim(timer_accum), barrier=mpicom_CPLID)
        ! temporary formation of average
        if (x2oacc_om_cnt > 1) then
           !call mct_avect_avg(x2oacc_ox(eoi), x2oacc_ox_cnt)
@@ -1140,6 +1084,7 @@ subroutine prep_ocn_accum_avg_moab()
 #endif
 
     x2oacc_om_cnt = 0
+    call t_drvstopf (trim(timer_accum))
 
   end subroutine prep_ocn_accum_avg_moab
 
