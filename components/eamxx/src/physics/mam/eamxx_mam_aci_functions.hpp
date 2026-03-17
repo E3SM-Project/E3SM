@@ -405,11 +405,11 @@ void update_cloud_borne_aerosols(
     mam_coupling::AerosolState &dry_aero) {
   int ind_qqcw = 0;
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-    Kokkos::deep_copy(dry_aero.cld_aero_nmr[m], ekat::subview(qqcw_fld_work, ind_qqcw));
+    Kokkos::deep_copy(dry_aero.cld_aero_nmr[m], Kokkos::subview(qqcw_fld_work, Kokkos::ALL(), ind_qqcw, Kokkos::ALL()));
     ++ind_qqcw;
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       if(dry_aero.cld_aero_mmr[m][a].data()) {
-        Kokkos::deep_copy(dry_aero.cld_aero_mmr[m][a], ekat::subview(qqcw_fld_work, ind_qqcw));
+        Kokkos::deep_copy(dry_aero.cld_aero_mmr[m][a], Kokkos::subview(qqcw_fld_work, Kokkos::ALL(), ind_qqcw, Kokkos::ALL()));
         ++ind_qqcw;
       }
     }
