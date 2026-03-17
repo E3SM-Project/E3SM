@@ -165,46 +165,44 @@ Real runDiffManufactured(int NCells) {
           U(ICell)          = manufacturedSolution(XCell(ICell), 0);
        });
 
-   TeamPolicy Policy = TriDiagDiffSolver::makeTeamPolicy(1, NCells);
+   auto LConfig = TriDiagDiffSolver::makeLaunchConfig(1, NCells);
 
    // Integrate in time with backward Euler
    for (int Step = 0; Step < NSteps; ++Step) {
       const Real Time     = Step * TimeStep;
       const Real TimeNext = (Step + 1) * TimeStep;
 
-      Kokkos::parallel_for(
-          Policy, KOKKOS_LAMBDA(const TeamMember &Member) {
+      parallelForOuter(
+          LConfig, KOKKOS_LAMBDA(int, const TeamMember &Member) {
              TriDiagDiffScratch Scratch(Member, NCells);
 
              // Setup the system to be solved
-             Kokkos::parallel_for(
-                 TeamThreadRange(Member, NCells), [=](int ICell) {
-                    for (int IVec = 0; IVec < VecLength; ++IVec) {
+             parallelForInner(Member, NCells, [=](int ICell) {
+                for (int IVec = 0; IVec < VecLength; ++IVec) {
 
-                       // Forcing term from the manufactured solution
-                       const Real F =
-                           manufacturedForcing(XCell(ICell), TimeNext);
+                   // Forcing term from the manufactured solution
+                   const Real F = manufacturedForcing(XCell(ICell), TimeNext);
 
-                       Scratch.H(ICell, IVec) = LayerThick(ICell);
+                   Scratch.H(ICell, IVec) = LayerThick(ICell);
 
-                       if (ICell == NCells - 1) {
-                          // Boundary condition
-                          const Real XBnd = XVertex(ICell + 1);
-                          const Real BoundaryCoeff =
-                              -(2 + Kokkos::sin(XBnd)) * Kokkos::tan(XBnd);
-                          Scratch.H(ICell, IVec) -= TimeStep * BoundaryCoeff;
-                          Scratch.G(ICell, IVec) = 0;
-                       } else {
-                          const Real AvgLayerThick =
-                              (LayerThick(ICell + 1) + LayerThick(ICell)) / 2;
-                          Scratch.G(ICell, IVec) =
-                              Diffusivity(ICell + 1) * TimeStep / AvgLayerThick;
-                       }
-                       // RHS
-                       Scratch.X(ICell, IVec) =
-                           LayerThick(ICell) * (U(ICell) + TimeStep * F);
-                    }
-                 });
+                   if (ICell == NCells - 1) {
+                      // Boundary condition
+                      const Real XBnd = XVertex(ICell + 1);
+                      const Real BoundaryCoeff =
+                          -(2 + Kokkos::sin(XBnd)) * Kokkos::tan(XBnd);
+                      Scratch.H(ICell, IVec) -= TimeStep * BoundaryCoeff;
+                      Scratch.G(ICell, IVec) = 0;
+                   } else {
+                      const Real AvgLayerThick =
+                          (LayerThick(ICell + 1) + LayerThick(ICell)) / 2;
+                      Scratch.G(ICell, IVec) =
+                          Diffusivity(ICell + 1) * TimeStep / AvgLayerThick;
+                   }
+                   // RHS
+                   Scratch.X(ICell, IVec) =
+                       LayerThick(ICell) * (U(ICell) + TimeStep * F);
+                }
+             });
 
              // Solve the system
              Member.team_barrier();
@@ -212,9 +210,9 @@ Real runDiffManufactured(int NCells) {
              Member.team_barrier();
 
              // Store the solution
-             Kokkos::parallel_for(
-                 TeamThreadRange(Member, NCells),
-                 [=](int ICell) { U(ICell) = Scratch.X(ICell, 0); });
+             parallelForInner(Member, NCells, [=](int ICell) {
+                U(ICell) = Scratch.X(ICell, 0);
+             });
           });
    }
 
@@ -318,45 +316,42 @@ Real runDiffusionStability(bool UseGeneralSolver, Real DiffValue) {
    for (int Step = 0; Step < NSteps; ++Step) {
 
       if (UseGeneralSolver) {
-         TeamPolicy Policy = TriDiagSolver::makeTeamPolicy(1, NCells);
+         auto LConfig = TriDiagSolver::makeLaunchConfig(1, NCells);
 
-         Kokkos::parallel_for(
-             Policy, KOKKOS_LAMBDA(const TeamMember &Member) {
+         parallelForOuter(
+             LConfig, KOKKOS_LAMBDA(int, const TeamMember &Member) {
                 TriDiagScratch Scratch(Member, NCells);
 
                 // Setup the system to be solved in the form expected by the
                 // general tridiagonal solver
-                Kokkos::parallel_for(
-                    TeamThreadRange(Member, NCells), [=](int ICell) {
-                       for (int IVec = 0; IVec < VecLength; ++IVec) {
+                parallelForInner(Member, NCells, [=](int ICell) {
+                   for (int IVec = 0; IVec < VecLength; ++IVec) {
 
-                          if (ICell < NCells - 1) {
-                             const Real AvgLayerThick =
-                                 (LayerThick(ICell + 1) + LayerThick(ICell)) /
-                                 2;
-                             Scratch.DU(ICell, IVec) = -Diffusivity(ICell + 1) *
-                                                       TimeStep / AvgLayerThick;
-                          } else {
-                             Scratch.DU(ICell, IVec) = 0;
-                          }
+                      if (ICell < NCells - 1) {
+                         const Real AvgLayerThick =
+                             (LayerThick(ICell + 1) + LayerThick(ICell)) / 2;
+                         Scratch.DU(ICell, IVec) =
+                             -Diffusivity(ICell + 1) * TimeStep / AvgLayerThick;
+                      } else {
+                         Scratch.DU(ICell, IVec) = 0;
+                      }
 
-                          if (ICell > 0) {
-                             const Real AvgLayerThick =
-                                 (LayerThick(ICell) + LayerThick(ICell - 1)) /
-                                 2;
-                             Scratch.DL(ICell, IVec) =
-                                 -Diffusivity(ICell) * TimeStep / AvgLayerThick;
-                          } else {
-                             Scratch.DL(ICell, IVec) = 0;
-                          }
+                      if (ICell > 0) {
+                         const Real AvgLayerThick =
+                             (LayerThick(ICell) + LayerThick(ICell - 1)) / 2;
+                         Scratch.DL(ICell, IVec) =
+                             -Diffusivity(ICell) * TimeStep / AvgLayerThick;
+                      } else {
+                         Scratch.DL(ICell, IVec) = 0;
+                      }
 
-                          Scratch.D(ICell, IVec) = LayerThick(ICell) -
-                                                   Scratch.DU(ICell, IVec) -
-                                                   Scratch.DL(ICell, IVec);
+                      Scratch.D(ICell, IVec) = LayerThick(ICell) -
+                                               Scratch.DU(ICell, IVec) -
+                                               Scratch.DL(ICell, IVec);
 
-                          Scratch.X(ICell, IVec) = LayerThick(ICell) * U(ICell);
-                       }
-                    });
+                      Scratch.X(ICell, IVec) = LayerThick(ICell) * U(ICell);
+                   }
+                });
 
                 // Solve the system
                 Member.team_barrier();
@@ -364,38 +359,36 @@ Real runDiffusionStability(bool UseGeneralSolver, Real DiffValue) {
                 Member.team_barrier();
 
                 // Save the solution
-                Kokkos::parallel_for(
-                    TeamThreadRange(Member, NCells),
-                    [=](int ICell) { U(ICell) = Scratch.X(ICell, 0); });
+                parallelForInner(Member, NCells, [=](int ICell) {
+                   U(ICell) = Scratch.X(ICell, 0);
+                });
              });
       } else {
-         TeamPolicy Policy = TriDiagDiffSolver::makeTeamPolicy(1, NCells);
+         auto LConfig = TriDiagDiffSolver::makeLaunchConfig(1, NCells);
 
-         Kokkos::parallel_for(
-             Policy, KOKKOS_LAMBDA(const TeamMember &Member) {
+         parallelForOuter(
+             LConfig, KOKKOS_LAMBDA(int, const TeamMember &Member) {
                 TriDiagDiffScratch Scratch(Member, NCells);
 
                 // Setup the system to be solved in the form expected by the
                 // specialized diffusion tridiagonal solver
-                Kokkos::parallel_for(
-                    TeamThreadRange(Member, NCells), [=](int ICell) {
-                       for (int IVec = 0; IVec < VecLength; ++IVec) {
+                parallelForInner(Member, NCells, [=](int ICell) {
+                   for (int IVec = 0; IVec < VecLength; ++IVec) {
 
-                          Scratch.H(ICell, IVec) = LayerThick(ICell);
+                      Scratch.H(ICell, IVec) = LayerThick(ICell);
 
-                          if (ICell < NCells - 1) {
-                             const Real AvgLayerThick =
-                                 (LayerThick(ICell + 1) + LayerThick(ICell)) /
-                                 2;
-                             Scratch.G(ICell, IVec) = Diffusivity(ICell + 1) *
-                                                      TimeStep / AvgLayerThick;
-                          } else {
-                             Scratch.G(ICell, IVec) = 0;
-                          }
+                      if (ICell < NCells - 1) {
+                         const Real AvgLayerThick =
+                             (LayerThick(ICell + 1) + LayerThick(ICell)) / 2;
+                         Scratch.G(ICell, IVec) =
+                             Diffusivity(ICell + 1) * TimeStep / AvgLayerThick;
+                      } else {
+                         Scratch.G(ICell, IVec) = 0;
+                      }
 
-                          Scratch.X(ICell, IVec) = LayerThick(ICell) * U(ICell);
-                       }
-                    });
+                      Scratch.X(ICell, IVec) = LayerThick(ICell) * U(ICell);
+                   }
+                });
 
                 // Solve the system
                 Member.team_barrier();
@@ -403,9 +396,9 @@ Real runDiffusionStability(bool UseGeneralSolver, Real DiffValue) {
                 Member.team_barrier();
 
                 // Store the solution
-                Kokkos::parallel_for(
-                    TeamThreadRange(Member, NCells),
-                    [=](int ICell) { U(ICell) = Scratch.X(ICell, 0); });
+                parallelForInner(Member, NCells, [=](int ICell) {
+                   U(ICell) = Scratch.X(ICell, 0);
+                });
              });
       }
    }

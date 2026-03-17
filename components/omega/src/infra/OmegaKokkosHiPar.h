@@ -16,7 +16,6 @@ using TeamPolicy      = Kokkos::TeamPolicy<ExecSpace>;
 using TeamMember      = TeamPolicy::member_type;
 using ScratchMemSpace = ExecSpace::scratch_memory_space;
 using Kokkos::PerTeam;
-using Kokkos::TeamThreadRange;
 using ArrayScratch1DReal =
     Kokkos::View<Real *, ScratchMemSpace, Kokkos::MemoryUnmanaged>;
 

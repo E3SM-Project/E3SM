@@ -57,11 +57,10 @@ struct ThomasSolver {
 
    // Create a Kokkos team policy for solving NBatch systems of size NRow
    // and set scratch size
-   static TeamPolicy makeTeamPolicy(int NBatch, int NRow) {
-      TeamPolicy Policy((NBatch + VecLength - 1) / VecLength, 1, 1);
-      Policy.set_scratch_size(
-          0, Kokkos::PerTeam(4 * NRow * VecLength * sizeof(Real)));
-      return Policy;
+   static LaunchConfig<1> makeLaunchConfig(int NBatch, int NRow) {
+      const int NTeams   = (NBatch + VecLength - 1) / VecLength;
+      const int NScratch = 4 * NRow * VecLength;
+      return LaunchConfig({NTeams}, 1, TeamScratch<Real>(NScratch));
    }
 
    // Solve the system defined in the scratch data argument `Scratch`
@@ -101,11 +100,11 @@ struct ThomasSolver {
       const int NBatch = X.extent_int(0);
       const int NRow   = X.extent_int(1);
 
-      TeamPolicy Policy = makeTeamPolicy(NBatch, NRow);
+      auto LConfig = makeLaunchConfig(NBatch, NRow);
 
-      Kokkos::parallel_for(
-          Policy, KOKKOS_LAMBDA(const TeamMember &Member) {
-             const int IStart = Member.league_rank() * VecLength;
+      parallelForOuter(
+          LConfig, KOKKOS_LAMBDA(const int IChunk, const TeamMember &Member) {
+             const int IStart = IChunk * VecLength;
 
              TriDiagScratch Scratch(Member, NRow);
 
@@ -140,11 +139,9 @@ struct PCRSolver {
 
    // Create a Kokkos team policy for solving NBatch systems of size NRow
    // and set scratch size
-   static TeamPolicy makeTeamPolicy(int NBatch, int NRow) {
-      TeamPolicy Policy(NBatch, NRow, 1);
-      Policy.set_scratch_size(
-          0, Kokkos::PerTeam(4 * NRow * VecLength * sizeof(Real)));
-      return Policy;
+   static LaunchConfig<1> makeLaunchConfig(int NBatch, int NRow) {
+      const int NScratch = 4 * NRow * VecLength;
+      return LaunchConfig({NBatch}, NRow, TeamScratch<Real>(NScratch));
    }
 
    // Solve the system defined in the scratch data argument `Scratch`
@@ -218,13 +215,12 @@ struct PCRSolver {
    static void solve(const Array2DReal &DL, const Array2DReal &D,
                      const Array2DReal &DU, const Array2DReal &X) {
 
-      const int NBatch  = X.extent_int(0);
-      const int NRow    = X.extent_int(1);
-      TeamPolicy Policy = makeTeamPolicy(NBatch, NRow);
+      const int NBatch = X.extent_int(0);
+      const int NRow   = X.extent_int(1);
+      auto LConfig     = makeLaunchConfig(NBatch, NRow);
 
-      Kokkos::parallel_for(
-          Policy, KOKKOS_LAMBDA(const TeamMember &Member) {
-             const int I = Member.league_rank();
+      parallelForOuter(
+          LConfig, KOKKOS_LAMBDA(int I, const TeamMember &Member) {
              const int K = Member.team_rank();
 
              TriDiagScratch Scratch(Member, NRow);
@@ -264,11 +260,10 @@ struct ThomasDiffusionSolver {
 
    // Create a Kokkos team policy for solving NBatch systems of size NRow
    // and set scratch size
-   static TeamPolicy makeTeamPolicy(int NBatch, int NRow) {
-      TeamPolicy Policy((NBatch + VecLength - 1) / VecLength, 1, 1);
-      Policy.set_scratch_size(
-          0, Kokkos::PerTeam(4 * NRow * VecLength * sizeof(Real)));
-      return Policy;
+   static LaunchConfig<1> makeLaunchConfig(int NBatch, int NRow) {
+      const int NTeams   = (NBatch + VecLength - 1) / VecLength;
+      const int NScratch = 4 * NRow * VecLength;
+      return LaunchConfig({NTeams}, 1, TeamScratch<Real>(NScratch));
    }
 
    // Solve the system defined in the scratch data argument `Scratch`
@@ -327,11 +322,11 @@ struct ThomasDiffusionSolver {
       const int NBatch = X.extent_int(0);
       const int NRow   = X.extent_int(1);
 
-      TeamPolicy Policy = makeTeamPolicy(NBatch, NRow);
+      auto LConfig = makeLaunchConfig(NBatch, NRow);
 
-      Kokkos::parallel_for(
-          Policy, KOKKOS_LAMBDA(const TeamMember &Member) {
-             const int IStart = Member.league_rank() * VecLength;
+      parallelForOuter(
+          LConfig, KOKKOS_LAMBDA(int IChunk, const TeamMember &Member) {
+             const int IStart = IChunk * VecLength;
 
              TriDiagDiffScratch Scratch(Member, NRow);
 
@@ -365,11 +360,9 @@ struct PCRDiffusionSolver {
 
    // Create a Kokkos team policy for solving NBatch systems of size NRow
    // and set scratch size
-   static TeamPolicy makeTeamPolicy(int NBatch, int NRow) {
-      TeamPolicy Policy(NBatch, NRow, 1);
-      Policy.set_scratch_size(
-          0, Kokkos::PerTeam(4 * NRow * VecLength * sizeof(Real)));
-      return Policy;
+   static LaunchConfig<1> makeLaunchConfig(int NBatch, int NRow) {
+      const int NScratch = 4 * NRow * VecLength;
+      return LaunchConfig({NBatch}, NRow, TeamScratch<Real>(NScratch));
    }
 
    // Solve the system defined in the scratch data argument `Scratch`
@@ -461,10 +454,9 @@ struct PCRDiffusionSolver {
       const int NBatch = X.extent_int(0);
       const int NRow   = X.extent_int(1);
 
-      TeamPolicy Policy = makeTeamPolicy(NBatch, NRow);
-      Kokkos::parallel_for(
-          Policy, KOKKOS_LAMBDA(const TeamMember &Member) {
-             const int I = Member.league_rank();
+      auto LConfig = makeLaunchConfig(NBatch, NRow);
+      parallelForOuter(
+          LConfig, KOKKOS_LAMBDA(int I, const TeamMember &Member) {
              const int K = Member.team_rank();
 
              TriDiagDiffScratch Scratch(Member, NRow);
