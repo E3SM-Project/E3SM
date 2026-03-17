@@ -31,7 +31,7 @@ public:
   ExecViewManaged<Real * [2][2][NP][NP]>  m_metinv;
   ExecViewManaged<Real * [NP][NP]>        m_metdet;
   ExecViewManaged<Real * [2][2][NP][NP]>  m_tensorvisc;
-  ExecViewManaged<Real * [2][3][NP][NP]>  m_vec_sph2cart;
+  ExecViewManaged<Real * [3][3][NP][NP]>  m_vec_sph2cart;
 
   // Prescribed surface geopotential height at eta = 1
   ExecViewManaged<Real *    [NP][NP]> m_phis;

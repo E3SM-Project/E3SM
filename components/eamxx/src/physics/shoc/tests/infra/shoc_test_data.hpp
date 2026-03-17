@@ -938,6 +938,37 @@ struct ComputeShocTempData : public PhysicsTestData {
   PTD_STD_DEF(ComputeShocTempData, 2, shcol, nlev);
 };
 
+struct ComputeVerticalShearTermsData : public PhysicsTestData {
+  // Inputs
+  Int shcol, nlev, nlevi;
+  Real *dz_zi, *zi_grid;
+  Real *u_wind, *v_wind, *w_field, *zt_grid;
+
+  // Outputs
+  Real *du_dz_m, *dv_dz_m, *dw_dz_m;
+
+  ComputeVerticalShearTermsData(Int shcol_, Int nlev_, Int nlevi_) :
+    PhysicsTestData({{ shcol_, nlevi_ }, { shcol_, nlev_ }},
+                    {{ &dz_zi, &zi_grid }, { &u_wind, &v_wind, &w_field, &zt_grid, &du_dz_m, &dv_dz_m, &dw_dz_m }}),
+    shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
+
+  PTD_STD_DEF(ComputeVerticalShearTermsData, 3, shcol, nlev, nlevi);
+};
+
+struct AssembleShocShearStrain3dData : public PhysicsTestData {
+  Int shcol, nlev;
+  Real *shear_strain3d_components;
+  Real *du_dz_m, *dv_dz_m, *dw_dz_m;
+  Real *shear_strain3d;
+
+  AssembleShocShearStrain3dData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_, 6, nlev_ }, { shcol_, nlev_ }},
+                    {{ &shear_strain3d_components }, { &du_dz_m, &dv_dz_m, &dw_dz_m, &shear_strain3d }}),
+    shcol(shcol_), nlev(nlev_) {}
+
+  PTD_STD_DEF(AssembleShocShearStrain3dData, 2, shcol, nlev);
+};
+
 // Glue functions to call from host with the Data struct
 
 void shoc_grid                                      (ShocGridData& d);
@@ -994,6 +1025,8 @@ void pblintd_surf_temp(PblintdSurfTempData& d);
 void pblintd_check_pblh(PblintdCheckPblhData& d);
 void pblintd(PblintdData& d);
 void compute_shoc_temperature(ComputeShocTempData& d);
+void compute_vertical_shear_terms(ComputeVerticalShearTermsData& d);
+void assemble_shoc_shear_strain3d(AssembleShocShearStrain3dData& d);
 
 // Call from host
 
@@ -1073,6 +1106,14 @@ void integ_column_stability_host(Int nlev, Int shcol, Real *dz_zt,
 void isotropic_ts_host(Int nlev, Int shcol, Real* brunt_int, Real* tke,
                     Real* a_diss, Real* brunt, Real* isotropy);
 void dp_inverse_host(Int nlev, Int shcol, Real *rho_zt, Real *dz_zt, Real *rdp_zt);
+void compute_vertical_shear_terms_host(Int nlev, Int nlevi, Int shcol,
+                                       Real* dz_zi, Real* u_wind, Real* v_wind, Real* w_field,
+                                       Real* zt_grid, Real* zi_grid,
+                                       Real* du_dz_m, Real* dv_dz_m, Real* dw_dz_m);
+void assemble_shoc_shear_strain3d_host(Int shcol, Int nlev,
+                                       Real* shear_strain3d_components,
+                                       Real* du_dz_m, Real* dv_dz_m, Real* dw_dz_m,
+                                       Real* shear_strain3d);
 
 int shoc_init_host(Int nlev, Real* pref_mid, Int nbot_shoc, Int ntop_shoc);
 Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, Real* host_dx, Real* host_dy, Real* thv,

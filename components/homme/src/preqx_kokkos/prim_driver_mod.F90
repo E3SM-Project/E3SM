@@ -134,7 +134,7 @@ contains
     real (kind=real_kind), target, dimension(np,np,2,2)     :: elem_D, elem_Dinv, elem_metinv, elem_tensorvisc
     real (kind=real_kind), target, dimension(np,np)         :: elem_spheremp, elem_rspheremp, elem_metdet
     real (kind=real_kind), target, dimension(np,np)         :: elem_state_phis, elem_fcor
-    real (kind=real_kind), target, dimension(np,np,3,2)     :: elem_vec_sph2cart
+    real (kind=real_kind), target, dimension(np,np,3,3)     :: elem_vec_sph2cart
     integer :: ie
 
     ! Initialize the 2d element arrays in C++
