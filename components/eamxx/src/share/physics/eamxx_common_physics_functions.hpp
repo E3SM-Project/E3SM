@@ -345,6 +345,17 @@ struct PhysicsFunctions
   static void apply_rayleigh_friction(const Real dt, const ScalarT& otau,
                                       ScalarT& u_wind, ScalarT& v_wind, ScalarT& T_mid);
 
+  //-----------------------------------------------------------------------------------------------
+  // Calculate a characteristic gustiness speed from turbulent kinetic energy (TKE).
+  // This does not (yet) include gustiness sourced from the deep convection parameterization.
+  // INPUTS:
+  // TKE is turbulent kinetic energy in (m/s)^2, i.e. (up^2 + vp^2 + wp^2)/2.
+  // RETURNS:
+  // Gustiness speed in m/s.
+  //-----------------------------------------------------------------------------------------------
+  KOKKOS_INLINE_FUNCTION
+  static Real calculate_gustiness_speed(const Real& tke);
+
   // ---------------------------------------------------------------- //
   //                     Whole column Functions                       //
   // ---------------------------------------------------------------- //
