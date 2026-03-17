@@ -108,9 +108,6 @@ registration_ends_impl ()
     //  - src/tgt_mask: these are the int-valued fields attached to src/tgt field
     //  - src/tgt_mask_real: these are the real-valued fields that we remap, to correctly rescale tgt fields later
 
-    // Keep a map, so we can recycle tgt grid masks for fields with same layout
-    std::map<std::string,Field> tgt_masks;
-
     // Store copy, since we'll register more fields as we process masks
     int num_orig_fields = m_num_fields;
     for (int i=0; i<num_orig_fields; ++i) {
@@ -136,12 +133,16 @@ registration_ends_impl ()
         continue;
       }
 
-      if (tgt_masks.count(src_mask.name())==1) {
+      const auto& mask_name = src_mask.name();
+
+      if (m_name_to_tgt_int_mask.count(mask_name)==1) {
         // There was another src field with the same src mask, which was already registerred. Recycle it.
-        const auto& tgt_mask = tgt_masks.at(src_mask.name());
+        const auto& tgt_mask = m_name_to_tgt_int_mask.at(mask_name);
         tgt.get_header().set_extra_data("valid_mask",tgt_mask);
         continue;
       }
+
+      m_name_to_src_int_mask[src_mask.name()] = src_mask;
 
       // Make sure fields representing masks are not themselves meant to be masked.
       EKAT_REQUIRE_MSG(not src_mask.get_header().has_extra_data("valid_mask"),
@@ -153,23 +154,23 @@ registration_ends_impl ()
 
       // Create the real-valued mask field, to use during remap
       const auto& src_fid = src_mask.get_header().get_identifier();
-      FieldIdentifier src_fid_r (src_fid.name(),m_lt,src_fid.get_units(),src_fid.get_grid_name(),DataType::RealType);
+      FieldIdentifier src_fid_r (src_fid.name()+"_real",m_lt,src_fid.get_units(),src_fid.get_grid_name(),DataType::RealType);
       Field src_mask_real(src_fid_r);
       src_mask_real.get_header().get_alloc_properties().request_allocation(ps);
       src_mask_real.allocate_view();
-
-      // Store the index of this field
-      m_mask_to_idx[src_mask.name()] = m_num_fields;
+      m_name_to_src_real_mask[mask_name] = src_mask_real;
 
       // Create the int-valued tgt mask from the newly created real-valued tgt mask
       auto tgt_mask_real = register_field_from_src(src_mask_real);
-      auto tgt_fid_r = tgt_mask_real.get_header().get_identifier();
-      FieldIdentifier tgt_fid (tgt_fid_r.name(),tgt_fid_r.get_layout(),src_fid.get_units(),tgt_fid_r.get_grid_name(),DataType::IntType);
+      m_name_to_tgt_real_mask[mask_name] = tgt_mask_real;
+
+      auto tgt_fid = create_tgt_fid(src_fid);
       Field tgt_mask(tgt_fid);
       tgt_mask.get_header().get_alloc_properties().request_allocation(ps);
       tgt_mask.allocate_view();
-      tgt_masks[src_mask.name()] = tgt_mask;
       tgt.get_header().set_extra_data("valid_mask",tgt_mask);
+
+      m_name_to_tgt_int_mask[mask_name] = tgt_mask;
     }
   }
 
@@ -248,8 +249,16 @@ void HorizontalRemapper::remap_fwd_impl ()
   // Helper function, to establish if a field can be handled with packs
   auto can_pack_field = [](const Field& f) {
     const auto& ap = f.get_header().get_alloc_properties();
-    return (ap.get_last_extent() % SCREAM_PACK_SIZE) == 0;
+    return ap.get_largest_pack_size() >= SCREAM_PACK_SIZE;
   };
+
+  if (m_track_mask) {
+    // Before any MPI or mat-vec, ensure real-valued mask matches the int-valued mask
+    for (const auto& [name, int_mask] : m_name_to_src_int_mask) {
+      auto real_mask = m_name_to_src_real_mask.at(name);
+      real_mask.deep_copy(int_mask);
+    }
+  }
 
   bool coarsen = m_remap_data->m_coarsening;
 
@@ -272,16 +281,11 @@ void HorizontalRemapper::remap_fwd_impl ()
 
     const bool masked = m_track_mask and x.get_header().has_extra_data("valid_mask");
     if (masked) {
-      // Pass the mask to the local_mat_vec routine
-      const auto& mask = x.get_header().get_extra_data<Field>("valid_mask");
-      auto& real_mask = m_src_fields[m_mask_to_idx.at(mask.name())];
-      real_mask.deep_copy(mask); // copy src mask into the real-valued src mask field
-
       // If possible, dispatch kernel with SCREAM_PACK_SIZE
-      if (can_pack_field(x) and can_pack_field(y) and can_pack_field(mask)) {
-        local_mat_vec<SCREAM_PACK_SIZE>(x,y,real_mask);
+      if (can_pack_field(x) and can_pack_field(y)) {
+        local_mat_vec_masked<SCREAM_PACK_SIZE>(x,y);
       } else {
-        local_mat_vec<1>(x,y,real_mask);
+        local_mat_vec_masked<1>(x,y);
       }
     } else {
       // If possible, dispatch kernel with SCREAM_PACK_SIZE
@@ -312,8 +316,8 @@ void HorizontalRemapper::remap_fwd_impl ()
     for (int i=0; i<m_num_fields; ++i) {
       auto& f_tgt = m_tgt_fields[i];
       if (f_tgt.get_header().has_extra_data("valid_mask")) {
-        auto& mask = f_tgt.get_header().get_extra_data<Field>("valid_mask");
-        auto& real_mask = m_tgt_fields[m_mask_to_idx.at(mask.name())];
+        const auto& mask_name = f_tgt.get_header().get_extra_data<Field>("valid_mask").name();
+        const auto& real_mask = m_name_to_tgt_real_mask.at(mask_name);
         // TODO:
         //  1. compute mask=real_mask>thresh via compute_mask
         //  2. replace rescale_masked_fields with f_tgt.scale_inv(real_mask,mask) once it's available
@@ -482,7 +486,7 @@ rescale_masked_fields (const Field& x, const Field& real_mask) const
       // Unlike get_view, get_strided_view returns a LayoutStride view,
       // therefore allowing the 1d field to be a subfield of a 2d field
       // along the 2nd dimension.
-      auto x_view =    x.get_strided_view<      Real*>();
+      auto x_view = x.get_strided_view<Real*>();
       auto mr_view = real_mask.get_view<const Real*>();
       auto m_view = mask.get_view<int*>();
       Kokkos::parallel_for(RangePolicy(0,ncols),
@@ -498,7 +502,7 @@ rescale_masked_fields (const Field& x, const Field& real_mask) const
     }
     case 2:
     {
-      auto x_view =    x.get_view<      Pack**>();
+      auto x_view = x.get_view<Pack**>();
       auto mr_view = real_mask.get_view<const Pack**>();
       auto m_view = mask.get_view<Mask**>();
       const int dim1 = PackInfo::num_packs(layout.dim(1));
@@ -523,7 +527,7 @@ rescale_masked_fields (const Field& x, const Field& real_mask) const
     }
     case 3:
     {
-      auto x_view =    x.get_view<      Pack***>();
+      auto x_view = x.get_view<Pack***>();
       auto mr_view = real_mask.get_view<const Pack***>();
       auto m_view = mask.get_view<Mask***>();
       const int dim1 = layout.dim(1);
@@ -586,7 +590,7 @@ rescale_masked_fields (const Field& x, const Field& real_mask) const
 
 template<int PackSize>
 void HorizontalRemapper::
-local_mat_vec (const Field& x, const Field& y, const Field& mask) const
+local_mat_vec_masked (const Field& x, const Field& y) const
 {
   if (m_timers_enabled)
     start_timer(name()+" mat-vec (masked)");
@@ -598,6 +602,8 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
   using PackInfo    = ekat::PackInfo<PackSize>;
 
   const auto& src_layout = x.get_header().get_identifier().get_layout();
+  const auto& mask_name = x.get_header().get_extra_data<Field>("valid_mask").name();
+  const auto& mask = m_name_to_src_real_mask.at(mask_name);
   const int rank = src_layout.rank();
   const int nrows  = m_remap_data->m_overlap_grid->get_num_local_dofs();
   auto row_offsets = m_remap_data->m_row_offsets;
