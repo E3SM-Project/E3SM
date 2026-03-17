@@ -30,27 +30,64 @@ constexpr int OMEGA_TEAMSIZE = 1;
 #define INNER_LAMBDA [=]
 // #define INNER_LAMBDA [&]
 
+template <class... T> struct TeamScratch {
+   size_t BytesPerTeam = 0;
+
+   TeamScratch() = default;
+
+   template <int N> TeamScratch(const int (&NVals)[N]) {
+      static_assert(N == sizeof...(T));
+      int I = 0;
+      ((BytesPerTeam += sizeof(T) * NVals[I++]), ...);
+   }
+
+   TeamScratch(int NVals) : TeamScratch({{NVals}}) {}
+};
+
+template <int N> struct LaunchConfig {
+   std::array<int, N> UpperBounds;
+   int TeamSize;
+   size_t ScratchBytesPerTeam;
+
+   template <class... T>
+   LaunchConfig(const int (&UpperBoundsIn)[N], int TeamSize,
+                const TeamScratch<T...> &Scratch)
+       : TeamSize(TeamSize), ScratchBytesPerTeam(Scratch.BytesPerTeam) {
+      std::copy(std::begin(UpperBoundsIn), std::end(UpperBoundsIn),
+                std::begin(UpperBounds));
+   }
+
+   template <class... T>
+   LaunchConfig(const int (&UpperBounds)[N], const TeamScratch<T...> &Scratch)
+       : LaunchConfig(UpperBounds, OMEGA_TEAMSIZE, Scratch) {}
+
+   LaunchConfig(const int (&UpperBounds)[N], int TeamSize)
+       : LaunchConfig(UpperBounds, TeamSize, TeamScratch<>{}) {}
+
+   LaunchConfig(const int (&UpperBounds)[N])
+       : LaunchConfig(UpperBounds, OMEGA_TEAMSIZE, TeamScratch<>{}) {}
+};
+
 KOKKOS_INLINE_FUNCTION void teamBarrier(const TeamMember &Team) {
    Team.team_barrier();
 }
 
-// parallelForOuter: with label
+// parallelForOuter: with label and with launch config
 template <int N, class F>
 inline void parallelForOuter(const std::string &Label,
-                             const int (&UpperBounds)[N], F &&Functor,
-                             int ScratchValsPerTeam = 0) {
+                             const LaunchConfig<N> &Config, F &&Functor) {
 
-   auto LinFunctor = LinearIdxWrapper{std::forward<F>(Functor), UpperBounds};
-   int LinBound    = 1;
+   auto LinFunctor =
+       LinearIdxWrapper{std::forward<F>(Functor), Config.UpperBounds};
+   int LinBound = 1;
    for (int Rank = 0; Rank < N; ++Rank) {
-      LinBound *= UpperBounds[Rank];
+      LinBound *= Config.UpperBounds[Rank];
    }
 
-   auto Policy = TeamPolicy(LinBound, OMEGA_TEAMSIZE);
+   auto Policy = TeamPolicy(LinBound, Config.TeamSize);
 
-   if (ScratchValsPerTeam > 0) {
-      Policy.set_scratch_size(
-          0, Kokkos::PerTeam(ScratchValsPerTeam * sizeof(Real)));
+   if (Config.ScratchBytesPerTeam > 0) {
+      Policy.set_scratch_size(0, Kokkos::PerTeam(Config.ScratchBytesPerTeam));
    }
 
    Kokkos::parallel_for(
@@ -60,12 +97,23 @@ inline void parallelForOuter(const std::string &Label,
        });
 }
 
-// parallelForOuter: without label
+// parallelForOuter: without label and with launch config
 template <int N, class F>
-inline void parallelForOuter(const int (&UpperBounds)[N], F &&Functor,
-                             int ScratchValsPerTeam = 0) {
-   parallelForOuter("", UpperBounds, std::forward<F>(Functor),
-                    ScratchValsPerTeam);
+inline void parallelForOuter(const LaunchConfig<N> &Config, F &&Functor) {
+   parallelForOuter("", Config, std::forward<F>(Functor));
+}
+
+// parallelForOuter: with label and with array bounds
+template <int N, class F>
+inline void parallelForOuter(const std::string &Label,
+                             const int (&UpperBounds)[N], F &&Functor) {
+   parallelForOuter(Label, LaunchConfig(UpperBounds), std::forward<F>(Functor));
+}
+
+// parallelForOuter: without label and with array bounds
+template <int N, class F>
+inline void parallelForOuter(const int (&UpperBounds)[N], F &&Functor) {
+   parallelForOuter("", LaunchConfig(UpperBounds), std::forward<F>(Functor));
 }
 
 // This struct is used to get the right accumulator type to be used in

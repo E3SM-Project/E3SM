@@ -124,16 +124,17 @@ template <class F, int Rank> struct LinearIdxWrapper : F {
    static_assert(Rank >= 1 && Rank <= 5, "LinearIdxWrapper supports ranks 1-5");
    using F::operator();
 
-   LinearIdxWrapper(F &&Functor, const int (&Bounds)[Rank])
-       : F(std::move(Functor)) {
-      computeStrides(Bounds);
+   template <class Array>
+   LinearIdxWrapper(F &&Functor, Array &&Bounds) : F(std::move(Functor)) {
+      computeStrides(std::forward<Array>(Bounds));
    }
 
-   LinearIdxWrapper(const F &Functor, const int (&Bounds)[Rank]) : F(Functor) {
-      computeStrides(Bounds);
+   template <class Array>
+   LinearIdxWrapper(const F &Functor, Array &&Bounds) : F(Functor) {
+      computeStrides(std::forward<Array>(Bounds));
    }
 
-   void computeStrides(const int (&Bounds)[Rank]) {
+   template <class Array> void computeStrides(Array &&Bounds) {
       if constexpr (Rank > 1) {
          Strides[Rank - 2] = Bounds[Rank - 1];
          for (int I = Rank - 3; I >= 0; --I) {
@@ -198,6 +199,12 @@ template <class F, int Rank> struct LinearIdxWrapper : F {
    int Strides[Rank - 1];
 #endif
 };
+
+// Deduction guides for deducing Rank
+template <class F, int Rank>
+LinearIdxWrapper(F, const int (&)[Rank]) -> LinearIdxWrapper<F, Rank>;
+template <class F, size_t Rank>
+LinearIdxWrapper(F, std::array<int, Rank>) -> LinearIdxWrapper<F, Rank>;
 
 } // end namespace OMEGA
 
