@@ -83,8 +83,8 @@ void SHOCMacrophysics::create_requests()
   add_field<Updated>("cldfrac_liq",   scalar3d_mid, nondim,  grid_name, ps);
   add_tracer<Updated>("tke", m_grid, m2/s2, ps);
   add_tracer<Updated>("qc",  m_grid, kg/kg, ps);
-  add_field<Updated>("um_pert_diff",  scalar3d_layout_mid, m/s,     grid_name, "ACCUMULATED");
-  add_field<Updated>("vm_pert_diff",  scalar3d_layout_mid, m/s,     grid_name, "ACCUMULATED");
+  add_field<Updated>("um_pert_diff",  scalar3d_mid, m/s,     grid_name, "ACCUMULATED");
+  add_field<Updated>("vm_pert_diff",  scalar3d_mid, m/s,     grid_name, "ACCUMULATED");
 
   // Output variables
   add_field<Computed>("pbl_height",    scalar2d    , m,            grid_name);
@@ -94,7 +94,7 @@ void SHOCMacrophysics::create_requests()
   add_field<Computed>("cldfrac_liq_prev", scalar3d_mid, nondim,      grid_name, ps);
   add_field<Computed>("ustar",            scalar2d,     m/s,         grid_name, ps);
   add_field<Computed>("obklen",           scalar2d,     m,           grid_name, ps);
-  add_field<Computed>("tau_est",       scalar2d_layout_col,  Pa,         grid_name);
+  add_field<Computed>("tau_est",          scalar2d,     Pa,          grid_name);
 
   // thl_sec is needed for ZM deep convection
   add_field<Computed>("thl_sec", scalar3d_int, pow(K,2), grid_name, ps);
@@ -187,8 +187,8 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   // 1d scalar views
   using scalar_view_t = decltype(m_buffer.wpthlp_sfc);
   scalar_view_t* _1d_scalar_view_ptrs[Buffer::num_1d_scalar_ncol] =
-    {&m_buffer.wpthlp_sfc, &m_buffer.wprtp_sfc, &m_buffer.upwp_sfc, &m_buffer.vpwp_sfc
-     &m_buffer.upwp_sfc_pert, &m_buffer_vpwp_sfc_pert,
+    {&m_buffer.wpthlp_sfc, &m_buffer.wprtp_sfc, &m_buffer.upwp_sfc, &m_buffer.vpwp_sfc,
+     &m_buffer.upwp_sfc_pert, &m_buffer.vpwp_sfc_pert,
 #ifdef SCREAM_SHOC_SMALL_KERNELS
      , &m_buffer.se_b, &m_buffer.ke_b, &m_buffer.wv_b, &m_buffer.wl_b
      , &m_buffer.se_a, &m_buffer.ke_a, &m_buffer.wv_a, &m_buffer.wl_a
@@ -299,8 +299,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto& inv_qc_relvar       = get_field_out("inv_qc_relvar").get_view<Pack**>();
   const auto& phis                = get_field_in("phis").get_view<const Real*>();
   const auto& tau_est             = get_field_out("tau_est").get_view<Real*>();
-  const auto& um_pert_diff        = get_field_out("um_pert_diff").get_view<Spack**>();
-  const auto& vm_pert_diff        = get_field_out("vm_pert_diff").get_view<Spack**>();
+  const auto& um_pert_diff        = get_field_out("um_pert_diff").get_view<Pack**>();
+  const auto& vm_pert_diff        = get_field_out("vm_pert_diff").get_view<Pack**>();
 
   // Alias local variables from temporary buffer
   auto z_mid       = m_buffer.z_mid;
