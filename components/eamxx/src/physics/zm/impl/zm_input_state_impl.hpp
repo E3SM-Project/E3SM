@@ -33,28 +33,40 @@ void Functions<S,D>::ZmInputState::transpose(int ncol, int nlev_mid)
     const auto loc_f_z_int   = f_z_int;
     const auto loc_f_p_int   = f_p_int;
 
+    const auto loc_z_mid     = z_mid;
+    const auto loc_p_mid     = p_mid;
+    const auto loc_p_del     = p_del;
+    const auto loc_T_mid     = T_mid;
+    const auto loc_qv        = qv;
+    const auto loc_uwind     = uwind;
+    const auto loc_vwind     = vwind;
+    const auto loc_omega     = omega;
+    const auto loc_cldfrac   = cldfrac;
+    const auto loc_z_int     = z_int;
+    const auto loc_p_int     = p_int;
+
     //----------------------------------------------------------------------
     // mid-point level variables
     Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int i) {
       const int icol = i/nlev_mid_packs;
       const int klev = i%nlev_mid_packs;
-      loc_f_z_mid   (icol,klev) = z_mid   (icol,klev/Pack::n)[klev%Pack::n];
-      loc_f_p_mid   (icol,klev) = p_mid   (icol,klev/Pack::n)[klev%Pack::n];
-      loc_f_p_del   (icol,klev) = p_del   (icol,klev/Pack::n)[klev%Pack::n];
-      loc_f_T_mid   (icol,klev) = T_mid   (icol,klev/Pack::n)[klev%Pack::n];
-      loc_f_qv      (icol,klev) = qv      (icol,klev/Pack::n)[klev%Pack::n];
-      loc_f_uwind   (icol,klev) = uwind   (icol,klev/Pack::n)[klev%Pack::n];
-      loc_f_vwind   (icol,klev) = vwind   (icol,klev/Pack::n)[klev%Pack::n];
-      loc_f_omega   (icol,klev) = omega   (icol,klev/Pack::n)[klev%Pack::n];
-      loc_f_cldfrac (icol,klev) = cldfrac (icol,klev/Pack::n)[klev%Pack::n];
+      loc_f_z_mid   (icol,klev) = loc_z_mid   (icol,klev/Pack::n)[klev%Pack::n];
+      loc_f_p_mid   (icol,klev) = loc_p_mid   (icol,klev/Pack::n)[klev%Pack::n];
+      loc_f_p_del   (icol,klev) = loc_p_del   (icol,klev/Pack::n)[klev%Pack::n];
+      loc_f_T_mid   (icol,klev) = loc_T_mid   (icol,klev/Pack::n)[klev%Pack::n];
+      loc_f_qv      (icol,klev) = loc_qv      (icol,klev/Pack::n)[klev%Pack::n];
+      loc_f_uwind   (icol,klev) = loc_uwind   (icol,klev/Pack::n)[klev%Pack::n];
+      loc_f_vwind   (icol,klev) = loc_vwind   (icol,klev/Pack::n)[klev%Pack::n];
+      loc_f_omega   (icol,klev) = loc_omega   (icol,klev/Pack::n)[klev%Pack::n];
+      loc_f_cldfrac (icol,klev) = loc_cldfrac (icol,klev/Pack::n)[klev%Pack::n];
     });
 
     // interface level variables
     Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_int_packs), KOKKOS_LAMBDA (const int i) {
       const int icol = i/nlev_int_packs;
       const int klev = i%nlev_int_packs;
-      f_z_int   (icol,klev) = z_int   (icol,klev/Pack::n)[klev%Pack::n];
-      f_p_int   (icol,klev) = p_int   (icol,klev/Pack::n)[klev%Pack::n];
+      f_z_int   (icol,klev) = loc_z_int   (icol,klev/Pack::n)[klev%Pack::n];
+      f_p_int   (icol,klev) = loc_p_int   (icol,klev/Pack::n)[klev%Pack::n];
     });
 
     //----------------------------------------------------------------------
