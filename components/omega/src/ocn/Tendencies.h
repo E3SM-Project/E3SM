@@ -187,9 +187,9 @@ class Tendencies {
    VertAdv *VAdv;        ///< Pointer to vertical advection
    CustomTendencyType CustomThicknessTend;
    CustomTendencyType CustomVelocityTend;
-   Eos *EqState;        ///< Pointer to equation of state
-   PressureGrad *PGrad; ///< Pointer to pressure gradient
-   I4 NTracers;         ///< Number of tracers
+   Eos *EqState;          ///< Pointer to equation of state
+   PressureGrad *PGrad;   ///< Pointer to pressure gradient
+   I4 NTracers;           ///< Number of tracers
    TimeInterval TimeStep; ///< Time step
 
    // Pointer to default tendencies

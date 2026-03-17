@@ -77,9 +77,9 @@ void Tendencies::init() {
    TimeInterval TimeStep = DefTimeStepper->getTimeStep();
 
    // Ceate default tendencies
-   Tendencies::DefaultTendencies =
-       create("Default", DefHorzMesh, DefVertCoord, DefVertAdv, DefPGrad, DefEos,
-              NTracers, TimeStep, &TendConfig, CustomThickTend, CustomVelTend);
+   Tendencies::DefaultTendencies = create(
+       "Default", DefHorzMesh, DefVertCoord, DefVertAdv, DefPGrad, DefEos,
+       NTracers, TimeStep, &TendConfig, CustomThickTend, CustomVelTend);
 
    DefaultTendencies->readConfig(OmegaConfig);
 
@@ -245,7 +245,7 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
       CHECK_ERROR_ABORT(Err, "Tendencies: EddyDiff4 not found in TendConfig");
    }
 
-   Err += TendConfig->get("PressureGradTendencyEnable", this->PGrad->Enabled);
+   Err += TendConfig.get("PressureGradTendencyEnable", this->PGrad->Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: PressureGradTendencyEnable not found in TendConfig");
 }
@@ -351,8 +351,9 @@ Tendencies::Tendencies(const std::string &Name_, ///< [in] Name for tendencies
                        int NTracersIn,           ///< [in] Number of tracers
                        TimeInterval TimeStepIn,  ///< [in] Time step
                        Config *Options)          ///< [in] Configuration options
-    : Tendencies(Name_, Mesh, VCoord, VAdv, PGrad, EqState, NTracersIn, TimeStepIn, Options,
-                 CustomTendencyType{}, CustomTendencyType{}) {}
+    : Tendencies(Name_, Mesh, VCoord, VAdv, PGrad, EqState, NTracersIn,
+                 TimeStepIn, Options, CustomTendencyType{},
+                 CustomTendencyType{}) {}
 
 //------------------------------------------------------------------------------
 // Compute tendencies for layer thickness equation
