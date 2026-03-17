@@ -68,7 +68,7 @@ void Cosp::create_requests()
   add_field<Required>("surf_radiative_T", scalar2d    , K,      grid_name);
   //add_field<Required>("surfelev",    scalar2d    , m,      grid_name);
   //add_field<Required>("landmask",    scalar2d    , nondim, grid_name);
-  add_field<Required>("sunlit_mask",       scalar2d    , nondim, grid_name);
+  add_field<Required>(FieldIdentifier("sunlit_mask", scalar2d, nondim, grid_name, DataType::IntType));
   add_field<Required>("p_mid",             scalar3d_mid, Pa,     grid_name);
   add_field<Required>("p_int",             scalar3d_int, Pa,     grid_name);
   //add_field<Required>("height_mid",  scalar3d_mid, m,      grid_name);
@@ -98,10 +98,9 @@ void Cosp::create_requests()
   add_field<Computed>("misr_cthtau", scalar4d_cthtau, percent, grid_name, 1);
 
   // We can allocate these now
-  m_z_mid = Field(FieldIdentifier("z_mid",scalar3d_mid,m,grid_name));
-  m_z_int = Field(FieldIdentifier("z_int",scalar3d_int,m,grid_name));
-  m_z_mid.allocate_view();
-  m_z_int.allocate_view();
+  m_z_mid = Field(FieldIdentifier("z_mid",scalar3d_mid,m,grid_name),true);
+  m_z_int = Field(FieldIdentifier("z_int",scalar3d_int,m,grid_name),true);
+  m_sunlit_real = Field(FieldIdentifier("sunlit_mask_real",scalar2d,nondim,grid_name),true);
 }
 
 // =========================================================================================
@@ -150,7 +149,6 @@ void Cosp::run_impl (const double dt)
     get_field_in("qv").sync_to_host();
     get_field_in("qc").sync_to_host();
     get_field_in("qi").sync_to_host();
-    get_field_in("sunlit_mask").sync_to_host();
     get_field_in("surf_radiative_T").sync_to_host();
     get_field_in("T_mid").sync_to_host();
     get_field_in("p_mid").sync_to_host();
@@ -161,6 +159,8 @@ void Cosp::run_impl (const double dt)
     get_field_in("dtau067").sync_to_host();
     get_field_in("dtau105").sync_to_host();
 
+    m_sunlit_real.deep_copy(get_field_in("sunlit_mask"));
+    m_sunlit_real.sync_to_host();
     // Compute z_mid
     const auto T_mid_d = get_field_in("T_mid").get_view<const Real**>();
     const auto qv_d  = get_field_in("qv").get_view<const Real**>();
@@ -211,7 +211,7 @@ void Cosp::run_impl (const double dt)
     const auto p_mid_h   = get_field_in("p_mid").get_view<const Real**,Host>();
     const auto qc_h      = get_field_in("qc").get_view<const Real**, Host>();
     const auto qi_h      = get_field_in("qi").get_view<const Real**, Host>();
-    const auto sunlit_h  = get_field_in("sunlit_mask").get_view<const Real*, Host>();
+    const auto sunlit_h  = m_sunlit_real.get_view<const Real*, Host>();
     const auto skt_h     = get_field_in("surf_radiative_T").get_view<const Real*, Host>();
     const auto p_int_h   = get_field_in("p_int").get_view<const Real**, Host>();
     const auto cldfrac_h = get_field_in("cldfrac_rad").get_view<const Real**, Host>();
