@@ -110,6 +110,10 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     view_1d<const Scalar> uw_sfc;
     // Surface momentum flux (v-direction) [m2/s2]
     view_1d<const Scalar> vw_sfc;
+    // Perturbation to surface momentum flux (u-direction) [m2/s2]
+    view_1d<const Scalar> uw_sfc_pert;
+    // Perturbation to surface momentum flux (v-direction) [m2/s2]
+    view_1d<const Scalar> vw_sfc_pert;
     // Surface flux for tracers [varies]
     view_2d<const Pack> wtracer_sfc;
     // Inverse of the exner function [-]
@@ -142,6 +146,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     view_2d<Pack> shoc_cldfrac;
     // cloud liquid mixing ratio [kg/kg]
     view_2d<Pack> shoc_ql;
+    // Perturbation in winds due to surface perturbation [m/s]
+    view_2d<Pack>  um_pert;
+    view_2d<Pack>  vm_pert;
   };
 
   // This struct stores output only views for shoc_main.
@@ -490,7 +497,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Scalar &wthl_sfc, const Scalar &wqw_sfc, const uview_1d<const Pack> &wtracer_sfc,
       const Workspace &workspace, const uview_1d<Pack> &thetal, const uview_1d<Pack> &qw,
       const uview_2d_strided<Pack> &tracer, const uview_1d<Pack> &tke,
-      const uview_1d<Pack> &u_wind, const uview_1d<Pack> &v_wind);
+      const uview_1d<Pack> &u_wind, const uview_1d<Pack> &v_wind,
+      const Scalar& uw_sfc_pert, const Scalar& vw_sfc_pert,
+      const uview_1d<Pack>& um_pert, const uview_1d<Pack>& vm_pert);
 #ifdef SCREAM_SHOC_SMALL_KERNELS
   static void update_prognostics_implicit_disp(
       const Int &shcol, const Int &nlev, const Int &nlevi, const Int &num_tracer,
@@ -502,7 +511,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const view_1d<const Scalar> &wqw_sfc, const view_2d<const Pack> &wtracer_sfc,
       const WorkspaceMgr &workspace_mgr, const view_2d<Pack> &thetal, const view_2d<Pack> &qw,
       const view_3d_strided<Pack> &tracer, const view_2d<Pack> &tke, const view_2d<Pack> &u_wind,
-      const view_2d<Pack> &v_wind);
+      const view_2d<Pack> &v_wind, const view_1d<const Scalar>& uw_sfc_pert, const view_1d<const Scalar>& vw_sfc_pert,
+      const uview_2d<Pack>& um_pert, const uview_2d<Pack>& vm_pert);
 #endif
 
   KOKKOS_FUNCTION
@@ -710,7 +720,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_1d<Pack> &wthl_sec, const uview_1d<Pack> &wqw_sec,
       const uview_1d<Pack> &wtke_sec, const uview_1d<Pack> &uw_sec, const uview_1d<Pack> &vw_sec,
       const uview_1d<Pack> &w3, const uview_1d<Pack> &wqls_sec, const uview_1d<Pack> &brunt,
-      const uview_1d<Pack> &isotropy);
+      const uview_1d<Pack> &isotropy,
+      const Scalar& uw_sfc_pert, const Scalar& vw_sfc_pert, const uview_1d<Pack>& um_pert,
+      const uview_1d<Pack>& vm_pert);
 #else
   static void shoc_main_internal(
       const Int &shcol,        // Number of columns
@@ -752,6 +764,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const view_2d<Pack> &wqw_sec, const view_2d<Pack> &wtke_sec, const view_2d<Pack> &uw_sec,
       const view_2d<Pack> &vw_sec, const view_2d<Pack> &w3, const view_2d<Pack> &wqls_sec,
       const view_2d<Pack> &brunt, const view_2d<Pack> &isotropy,
+      const view_1d<const Scalar>& uw_sfc_pert, const view_1d<const Scalar>& vw_sfc_pert,
+      const view_2d<Pack>& um_pert, const view_2d<Pack>& vm_pert,
       // Temporaries
       const view_1d<Scalar> &se_b, const view_1d<Scalar> &ke_b, const view_1d<Scalar> &wv_b,
       const view_1d<Scalar> &wl_b, const view_1d<Scalar> &se_a, const view_1d<Scalar> &ke_a,

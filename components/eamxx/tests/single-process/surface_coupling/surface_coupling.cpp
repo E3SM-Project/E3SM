@@ -529,7 +529,7 @@ TEST_CASE("surface-coupling", "") {
   // cpl fields (in addition to the required scream imports/exports), then assign a random, non-repeating
   // cpl index for each field in [0, num_cpl_fields).
   const int num_scream_imports = 16;
-  const int num_scream_exports = 17;
+  const int num_scream_exports = 20;
   KokkosTypes<HostDevice>::view_1d<int> additional_import_exports("additional_import_exports", 2);
   ekat::genRandArray(additional_import_exports, engine, pdf_int_additional_fields);
   atm_comm.broadcast(additional_import_exports.data(),2,0);
@@ -602,6 +602,9 @@ TEST_CASE("surface-coupling", "") {
   std::strcpy(export_names[14], "Faxa_swvdf" );
   std::strcpy(export_names[15], "Faxa_swnet" );
   std::strcpy(export_names[16], "Faxa_lwdn"  );
+  std::strcpy(export_names[17], "Sa_wsresp"  );
+  std::strcpy(export_names[18], "Sa_tau_est" );
+  std::strcpy(export_names[19], "Sa_ugust"   );
 
   // Setup the import/export data. This is meant to replicate the structures coming
   // from mct_coupling/eamxx_cpl_indices.F90
