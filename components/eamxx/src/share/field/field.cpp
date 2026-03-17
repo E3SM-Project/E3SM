@@ -151,6 +151,12 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
     sf.initialize_contiguous_helper_field();
   }
 
+  if (m_header->has_extra_data("valid_mask")) {
+    const auto& mask = m_header->get_extra_data<Field>("valid_mask");
+    const auto& mfid = mask.get_header().get_identifier();
+    sf.m_header->set_extra_data("valid_mask",mask.subfield(mask.name(),mfid.get_units(),idim,index,dynamic));
+  }
+
   return sf;
 }
 
