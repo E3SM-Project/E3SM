@@ -43,6 +43,29 @@ auto horiz_wind_to_cart_component(
        + vec_sph2cart(ie,1,icart,igp,jgp) * v;
 }
 
+template <typename GradViewType, typename VecSph2CartViewType>
+KOKKOS_INLINE_FUNCTION
+Real cart_grad_to_local_component(
+    const GradViewType& grad_Ux_dyn,
+    const GradViewType& grad_Uy_dyn,
+    const GradViewType& grad_Uz_dyn,
+    const VecSph2CartViewType& vec_sph2cart,
+    const int ie,
+    const int idir,   // local velocity component index: 0,1
+    const int jdir,   // local derivative direction index: 0,1
+    const int igp,
+    const int jgp,
+    const int ilev)
+{
+  // grad_U[xyz]_dyn(ie,jdir,igp,jgp,ilev) are the Cartesian velocity-component
+  // gradients with respect to local horizontal direction jdir.
+  //
+  // Project that Cartesian gradient vector back onto the local basis idir.
+  return vec_sph2cart(ie,idir,0,igp,jgp) * grad_Ux_dyn(ie,jdir,igp,jgp,ilev)
+       + vec_sph2cart(ie,idir,1,igp,jgp) * grad_Uy_dyn(ie,jdir,igp,jgp,ilev)
+       + vec_sph2cart(ie,idir,2,igp,jgp) * grad_Uz_dyn(ie,jdir,igp,jgp,ilev);
+}
+
 } // anonymous namespace
 
 void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
@@ -152,6 +175,80 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
         }
       }
     }
+  });
+
+  Kokkos::fence();
+}
+
+void HommeDynamics::contract_to_local_strain2 ()
+{
+  using namespace Homme;
+
+  constexpr int NGP  = HOMMEXX_NP;
+  constexpr int NLEV = HOMMEXX_NUM_LEV;
+
+  const auto& c      = Context::singleton();
+  const auto& geom   = c.get<ElementsGeometry>();
+
+  const int nelem = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
+
+  // These were written out as scalar Real fields in
+  // compute_horizontal_derivs_of_car_velocity().
+  auto grad_Ux_dyn = m_helper_fields.at("grad_Ux_dyn").template get_view<Real*****>();
+  auto grad_Uy_dyn = m_helper_fields.at("grad_Uy_dyn").template get_view<Real*****>();
+  auto grad_Uz_dyn = m_helper_fields.at("grad_Uz_dyn").template get_view<Real*****>();
+
+  // Output scalar field: strain2_dyn(ie,igp,jgp,ilev)
+  auto strain2_dyn = m_helper_fields.at("strain2_dyn").template get_view<Real****>();
+
+  const auto vec_sph2cart = geom.m_vec_sph2cart;
+
+  Kokkos::parallel_for(
+      "contract_to_local_strain2",
+      Kokkos::RangePolicy<KT::ExeSpace>(0, nelem*NGP*NGP*NLEV),
+      KOKKOS_LAMBDA (const int idx) {
+
+    const int ie   =  idx / (NGP*NGP*NLEV);
+    const int rem1 =  idx % (NGP*NGP*NLEV);
+    const int igp  =  rem1 / (NGP*NLEV);
+    const int rem2 =  rem1 % (NGP*NLEV);
+    const int jgp  =  rem2 / NLEV;
+    const int ilev =  rem2 % NLEV;
+
+    // Reconstruct the local 2x2 velocity-gradient tensor:
+    //
+    //   A(i,j) = d u_i / d x_j
+    //
+    // where i,j = 0,1 are the two local horizontal directions.
+    const Real A00 = cart_grad_to_local_component(
+        grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
+        vec_sph2cart, ie, 0, 0, igp, jgp, ilev);
+
+    const Real A01 = cart_grad_to_local_component(
+        grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
+        vec_sph2cart, ie, 0, 1, igp, jgp, ilev);
+
+    const Real A10 = cart_grad_to_local_component(
+        grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
+        vec_sph2cart, ie, 1, 0, igp, jgp, ilev);
+
+    const Real A11 = cart_grad_to_local_component(
+        grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
+        vec_sph2cart, ie, 1, 1, igp, jgp, ilev);
+
+    // Symmetric strain tensor S = 0.5 * (A + A^T)
+    const Real S00 = A00;
+    const Real S11 = A11;
+    const Real S01 = 0.5 * (A01 + A10);
+
+    // Horizontal-only strain magnitude:
+    //
+    //   strain2 = 2 * S_ij S_ij
+    //           = 2 * (S00^2 + 2*S01^2 + S11^2)
+    //
+    // using only local horizontal directions i,j = 0,1.
+    strain2_dyn(ie,igp,jgp,ilev) =
+        2.0 * (S00*S00 + 2.0*S01*S01 + S11*S11);
   });
 
   Kokkos::fence();

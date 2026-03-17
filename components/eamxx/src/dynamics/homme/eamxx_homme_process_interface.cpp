@@ -214,10 +214,11 @@ void HommeDynamics::create_requests ()
   create_helper_field("Qdp_dyn",      {EL,TL,CMP,GP,GP,LEV}, {nelem,QTL,HOMMEXX_QSIZE_D,NP,NP,nlev_mid},dgn);
   create_helper_field("Km_dyn",       {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
   create_helper_field("Kh_dyn",       {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
-  create_helper_field("grad_Ux_dyn",  {EL,CMP,GP,GP,LEV},    {nelem,2,    NP,NP,nlev_mid}, dgn);
-  create_helper_field("grad_Uy_dyn",  {EL,CMP,GP,GP,LEV},    {nelem,2,    NP,NP,nlev_mid}, dgn);
-  create_helper_field("grad_Uz_dyn",  {EL,CMP,GP,GP,LEV},    {nelem,2,    NP,NP,nlev_mid}, dgn);
- 
+  create_helper_field("grad_Ux_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
+  create_helper_field("grad_Uy_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
+  create_helper_field("grad_Uz_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
+  create_helper_field("strain2_dyn",  {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
+
   // For BFB restart, we need to read in the state on the dyn grid. The state above has NTL time slices,
   // but only one is really needed for restart. Therefore, we create "dynamic" subfields for
   // the state fields. This allows to save/read only the single slice needed
@@ -529,7 +530,7 @@ void HommeDynamics::run_impl (const double dt)
     // This is where we will compute the strain term needed for Shear Production of TKE
     //if (do_3d_turbulence){
       compute_horizontal_derivs_of_car_velocity();
-    //  contract_to_local_strain2();
+      contract_to_local_strain2();
     //}
 
     // Update nstep in the restart extra data, so it can be written to restart if needed.
