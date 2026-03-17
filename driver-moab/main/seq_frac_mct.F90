@@ -164,10 +164,6 @@ module seq_frac_mct
 
   use seq_comm_mct, only : mbaxid  !           iMOAB id for atm migrated mesh to coupler pes
   use seq_comm_mct, only : mblxid !            iMOAB app id for lnd on cpl pes
-#ifdef MOABDEBUG
-  use seq_comm_mct, only : mblx2id !           iMOAB id for land mesh instanced from MCT on coupler pes
-  use seq_comm_mct, only : mbox2id !           iMOAB id for ocn mesh instanced from MCT on coupler pes
-#endif
   use seq_comm_mct, only : mboxid !            iMOAB app id for ocn on cpl pes
   use seq_comm_mct, only : mbofxid !           iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
   use seq_comm_mct, only : mbixid !            iMOAB for sea-ice migrated to coupler
@@ -333,10 +329,6 @@ contains
     integer id_join ! used for example for atm%cplcompid
     integer :: mpicom ! we are on coupler PES here
     integer :: my_task !
-#ifdef MOABDEBUG
-    integer :: mbix2id ! just for debugging to expose ice mct to compare with ocn mct
-    ! are they the same or not?
-#endif
     character(30)            :: outfile, wopts
 
 
@@ -452,15 +444,7 @@ contains
 
          deallocate(tagValues)
        endif
-#ifdef MOABDEBUG
-       ! mblx2id is the id for moab app exposing land cpl 
-       if(mblxid > 0) then
-           call expose_mct_grid_moab(lnd, mblx2id)
-       endif
-       if (mbixid > 0 ) then
-           call expose_mct_grid_moab(ice, mbix2id)
-       endif
-#endif
+
       ! set lfrin to the domain frac
        kk = mct_aVect_indexRA(fractions_l,"lfrin",perrWith=subName)
        kf = mct_aVect_indexRA(dom_l%data ,"frac" ,perrWith=subName)
@@ -612,10 +596,7 @@ contains
        lSize = mct_aVect_lSize(dom_o%data)
        call mct_aVect_init(fractions_o,rList=fraclist_o,lsize=lsize)
        call mct_aVect_zero(fractions_o)
-#ifdef MOABDEBUG
-       ! initialize ocn imoab app on mct grid
-       call expose_mct_grid_moab(ocn, mbox2id) ! will use then to set the data on it , for debugging
-#endif
+
        if (mboxid .ge. 0  ) then ! //
          tagname = trim(fraclist_o)//C_NULL_CHAR ! 'afrac:ifrac:ofrac:ifrad:ofrad'
          tagtype = 1  ! dense, double

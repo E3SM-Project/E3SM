@@ -206,10 +206,7 @@ module cime_comp_mod
 
   use shr_moab_mod
 
-#ifdef MOABDEBUGMCT
-  ! --- expose grid with MOAB
-  use component_type_mod , only: expose_mct_grid_moab
-#endif
+
 
   use iso_c_binding
 
@@ -1454,9 +1451,7 @@ contains
      seq_flds_o2x_fields, seq_flds_r2x_fields, seq_flds_i2x_fields
     use seq_comm_mct , only :  mphaid, mbaxid, mlnid, mblxid,  mrofid, mbrxid, mpoid, mboxid,  mpsiid, mbixid
     use seq_comm_mct,        only: num_moab_exports  ! used to count the steps for moab files
-#ifdef MOABDEBUGMCT
-    integer :: dummy_iMOAB
-#endif
+
     integer :: nfields, numpts
     type(mct_list) :: temp_list
 
@@ -2631,33 +2626,7 @@ contains
        call shr_sys_flush(logunit)
     endif
 
-#ifdef MOABDEBUGMCT
-    if (iamroot_CPLID )then
-       write(logunit,*) ' '
-       write(logunit,F00) ' start output mct data with MOAB '
-       write(logunit,*) ' '
-       call shr_sys_flush(logunit)
-    endif
-    if (atm_present) then
-      call expose_mct_grid_moab(atm(1), dummy_iMOAB)
-    endif
-    if (lnd_present) then
-      call expose_mct_grid_moab(lnd(1), dummy_iMOAB)
-    endif
-    if (ocn_present) then
-      call expose_mct_grid_moab(ocn(1), dummy_iMOAB)
-    endif
-    if (ice_present) then
-      call expose_mct_grid_moab(ice(1), dummy_iMOAB)
-    endif
-    if (rof_present) then
-      call expose_mct_grid_moab(rof(1), dummy_iMOAB)
-    endif
-    if (glc_present) then
-      call expose_mct_grid_moab(glc(1), dummy_iMOAB)
-    endif
 
-#endif
 
     call t_adj_detailf(-1)
     call t_stopf('CPL:cime_init')
