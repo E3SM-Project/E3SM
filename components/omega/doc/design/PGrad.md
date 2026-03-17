@@ -57,7 +57,7 @@ $$
 \alpha \nabla_z p &= \alpha\left( \nabla_r p + \rho g \nabla_r z\right) + \nabla_r \Phi - \frac{\partial r}{\partial z}\frac{\partial gz}{\partial r} \nabla_r z, \\
 &= \alpha\nabla_r p + g \nabla_r z + \nabla_r \Phi - g \nabla_r z, \\
 &= \nabla_r \alpha p - p\nabla_r \alpha + g\nabla_r z + \nabla_r\left(\Phi - gz\right)\\
-&= \nabla_r\left(\alpha p + gz \right) - p\nabla_r\alpha + \nabla_r\left(\phi_{TP} + \phi_{SAL}\right). 
+&= \nabla_r\left(\alpha p + gz \right) - p\nabla_r\alpha + \nabla_r\left(\phi_{TP} + \phi_{SAL}\right).
 $$
 The Montgomery potential is defined as:
 $$
@@ -223,7 +223,7 @@ class PressureGrad{
 
 The `create` method will be responsible for calling the constructor which will, store any static mesh information as private variables and handle the retrieval of the user-specified pressure gradient option.
 ```c++
-PressureGrad *PressureGrad::create(const std::string &Name, 
+PressureGrad *PressureGrad::create(const std::string &Name,
                                    const HorzMesh *Mesh,
                                    const VertCoord *VCoord,
                                    Config *Options);
@@ -293,7 +293,7 @@ void PressureGrad::computePressureGrad(const Array2DReal &Tend,
           });
 
    } else {
-      
+
       // computes high-order geopotential and pressure gradient tendency
       parallelForOuter(
           "pgrad-highorder", {NEdgesAll},
@@ -331,7 +331,7 @@ static void erase(const std::string &Name);
 
 ### Unit Test: Hydrostatic test with tilted layers
 The pressure gradient term will be computed on an edge with two adjacent cells that have the same sea surface height, but internal layers that are tilted in terms of geometric height.
-The same linear temperature and salinity profiles will be used for both cells, thus the pressure gradient should be zero on the edge. 
+The same linear temperature and salinity profiles will be used for both cells, thus the pressure gradient should be zero on the edge.
 The pseudo-height (and specific volume) of the layers will be computed via iteration, where the pressure is updated in the EOS evaluation until convergence is reached.
 The pressure gradient term will be compared to the zero exact solution at progressively finer resolutions to evaluate convergence.
 
