@@ -32,7 +32,11 @@ void Functions<Real,DefaultDevice>
   const view_3d_strided<Pack>& tracer,
   const view_2d<Pack>&        tke,
   const view_2d<Pack>&        u_wind,
-  const view_2d<Pack>&        v_wind)
+  const view_2d<Pack>&        v_wind,
+  const view_1d<const Scalar>& uw_sfc_pert,
+  const view_1d<const Scalar>& vw_sfc_pert,
+  const view_2d<Pack>&        um_pert,
+  const view_2d<Pack>&        vm_pert)
 {
   using ExeSpace = typename KT::ExeSpace;
   using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
@@ -63,7 +67,11 @@ void Functions<Real,DefaultDevice>
                                 Kokkos::subview(tracer, i, Kokkos::ALL(), Kokkos::ALL()),
                                 ekat::subview(tke, i),
                                 ekat::subview(u_wind, i),
-                                ekat::subview(v_wind, i));
+                                ekat::subview(v_wind, i),
+                                uw_sfc(i),
+                                vw_sfc(i),
+                                ekat::subview(um_pert, i),
+                                ekat::subview(vm_pert, i));
   });
 }
 

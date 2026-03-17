@@ -37,7 +37,11 @@ void Functions<S,D>::update_prognostics_implicit(
   const uview_2d_strided<Pack>& qtracers,
   const uview_1d<Pack>&       tke,
   const uview_1d<Pack>&       u_wind,
-  const uview_1d<Pack>&       v_wind)
+  const uview_1d<Pack>&       v_wind,
+  const Scalar&               uw_sfc_pert,
+  const Scalar&               vw_sfc_pert,
+  const uview_1d<Pack>&       um_pert,
+  const uview_1d<Pack>&       vm_pert)
 {
   // Define temporary variables via the WorkspaceManager
 
@@ -66,10 +70,13 @@ void Functions<S,D>::update_prognostics_implicit(
   const int n_trac_slots = num_qtracers_transpose_packs*Pack::n;
 
   const auto wind_slot    = workspace.template take_macro_block<Scalar>("wind_slot",n_wind_slots);
+  const auto wind_pert_slot = workspace.template take_macro_block<Scalar>("wind_pert_slot",n_wind_slots);
   const auto tracers_slot = workspace.template take_macro_block<Scalar>("tracers_slot",n_trac_slots);
 
   // Reshape 2d views
   const auto wind_rhs     = uview_2d<Pack>(reinterpret_cast<Pack*>(wind_slot.data()),
+                                            nlev, num_wind_transpose_packs);
+  const auto wind_pert_rhs = uview_2d<Pack>(reinterpret_cast<Pack*>(wind_pert_slot.data()),
                                             nlev, num_wind_transpose_packs);
   const auto qtracers_rhs  = uview_2d<Pack>(reinterpret_cast<Pack*>(tracers_slot.data()),
                                             nlev, num_qtracers_transpose_packs);
@@ -85,6 +92,9 @@ void Functions<S,D>::update_prognostics_implicit(
   const auto tke_s          = ekat::scalarize(tke);
   const auto qtracers_rhs_s = ekat::scalarize(qtracers_rhs);
   const auto wtracer_sfc_s  = ekat::scalarize(wtracer_sfc);
+  const auto um_pert_s      = ekat::scalarize(um_pert);
+  const auto vm_pert_s      = ekat::scalarize(vm_pert);
+  const auto wind_pert_rhs_s = ekat::scalarize(wind_pert_rhs);
 
   // linearly interpolate tkh, tk, and air density onto the interface grids
   linear_interp(team,zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,0);
@@ -106,7 +116,7 @@ void Functions<S,D>::update_prognostics_implicit(
 
   // compute terms needed for the implicit surface stress (ksrf)
   // and tke flux calc (wtke_sfc)
-  Scalar ksrf, wtke_sfc;
+  Scalar ksrf, wtke_sfc, ksrf_pert;
   {
     const Scalar wsmin = 1;
     const Scalar ksrfmin = 1e-4;
@@ -128,6 +138,20 @@ void Functions<S,D>::update_prognostics_implicit(
 
     const Scalar ustar = ekat::impl::max(std::sqrt(std::sqrt(uw*uw + vw*vw)), ustarmin);
     wtke_sfc = ustar*ustar*ustar;
+
+    // Recalculate ksrf with perturbed winds and stresses.
+    uw += uw_sfc_pert;
+    vw += vw_sfc_pert;
+
+    taux = rho*uw;
+    tauy = rho*vw;
+
+    u_wind_sfc += um_pert_s(nlev-1);
+    v_wind_sfc += vm_pert_s(nlev-1);
+
+    ws = ekat::impl::max(std::sqrt((u_wind_sfc*u_wind_sfc) + v_wind_sfc*v_wind_sfc), wsmin);
+    tau = std::sqrt(taux*taux + tauy*tauy);
+    ksrf_pert = ekat::impl::max(tau/ws, ksrfmin);
   }
 
   // compute surface fluxes for liq. potential temp, water and tke
@@ -146,11 +170,14 @@ void Functions<S,D>::update_prognostics_implicit(
     });
   }
 
-  // Store RHS values in wind_rhs and qtracers_rhs for 1st and 2nd solve respectively
+  // Store RHS values in wind_rhs, wind_pert_rhs, and qtracers_rhs for 1st, 2nd, and 3rd solve respectively
   team.team_barrier();
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
     wind_rhs_s(k,0) = u_wind_s(k);
     wind_rhs_s(k,1) = v_wind_s(k);
+
+    wind_pert_rhs_s(k,0) = u_wind_s(k) + um_pert_s(k);
+    wind_pert_rhs_s(k,1) = v_wind_s(k) + vm_pert_s(k);
 
     // The rhs version of the tracers is the transpose of the input/output layout
     const auto lev_idx = k/Pack::n;
@@ -173,6 +200,16 @@ void Functions<S,D>::update_prognostics_implicit(
     vd_shoc_solve(team, du, dl, d, wind_rhs);
   }
 
+  // march um_pert and vm_pert one step forward using implicit solver
+  {
+    // Call decomp for momentum variables
+    vd_shoc_decomp(team, nlev, tk_zi, tmpi, rdp_zt, dtime, ksrf_pert, du, dl, d);
+
+    // Solve
+    team.team_barrier();
+    vd_shoc_solve(team, du, dl, d, wind_pert_rhs);
+  }
+
   // march temperature, total water, tke,and tracers one step forward using implicit solver
   {
     // Call decomp for thermo variables. Fluxes applied explicitly, so zero
@@ -191,6 +228,9 @@ void Functions<S,D>::update_prognostics_implicit(
     u_wind_s(k) = wind_rhs_s(k, 0);
     v_wind_s(k) = wind_rhs_s(k, 1);
 
+    um_pert_s(k) = wind_pert_rhs_s(k, 0) - u_wind_s(k);
+    vm_pert_s(k) = wind_pert_rhs_s(k, 1) - v_wind_s(k);
+
     // Transpose tracers back to  input/output layout
     const auto lev_idx = k/Pack::n;
     const auto pack_idx = k%Pack::n;
@@ -207,6 +247,7 @@ void Functions<S,D>::update_prognostics_implicit(
   team.team_barrier();
   workspace.template release_macro_block<Scalar>(tracers_slot,n_trac_slots);
   workspace.template release_macro_block<Scalar>(wind_slot,n_wind_slots);
+  workspace.template release_macro_block<Scalar>(wind_pert_slot,n_wind_slots);
   workspace.template release_many_contiguous<3,Scalar>(
     {&du_workspace, &dl_workspace, &d_workspace});
   workspace.template release_many_contiguous<5>(

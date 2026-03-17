@@ -83,6 +83,8 @@ void SHOCMacrophysics::create_requests()
   add_field<Updated>("cldfrac_liq",   scalar3d_mid, nondim,  grid_name, ps);
   add_tracer<Updated>("tke", m_grid, m2/s2, ps);
   add_tracer<Updated>("qc",  m_grid, kg/kg, ps);
+  add_field<Updated>("um_pert_diff",  scalar3d_layout_mid, m/s,     grid_name, "ACCUMULATED");
+  add_field<Updated>("vm_pert_diff",  scalar3d_layout_mid, m/s,     grid_name, "ACCUMULATED");
 
   // Output variables
   add_field<Computed>("pbl_height",    scalar2d    , m,            grid_name);
@@ -92,6 +94,7 @@ void SHOCMacrophysics::create_requests()
   add_field<Computed>("cldfrac_liq_prev", scalar3d_mid, nondim,      grid_name, ps);
   add_field<Computed>("ustar",            scalar2d,     m/s,         grid_name, ps);
   add_field<Computed>("obklen",           scalar2d,     m,           grid_name, ps);
+  add_field<Computed>("tau_est",       scalar2d_layout_col,  Pa,         grid_name);
 
   // thl_sec is needed for ZM deep convection
   add_field<Computed>("thl_sec", scalar3d_int, pow(K,2), grid_name, ps);
@@ -185,6 +188,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   using scalar_view_t = decltype(m_buffer.wpthlp_sfc);
   scalar_view_t* _1d_scalar_view_ptrs[Buffer::num_1d_scalar_ncol] =
     {&m_buffer.wpthlp_sfc, &m_buffer.wprtp_sfc, &m_buffer.upwp_sfc, &m_buffer.vpwp_sfc
+     &m_buffer.upwp_sfc_pert, &m_buffer_vpwp_sfc_pert,
 #ifdef SCREAM_SHOC_SMALL_KERNELS
      , &m_buffer.se_b, &m_buffer.ke_b, &m_buffer.wv_b, &m_buffer.wl_b
      , &m_buffer.se_a, &m_buffer.ke_a, &m_buffer.wv_a, &m_buffer.wl_a
@@ -210,7 +214,8 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   spack_2d_view_t* _2d_spack_mid_view_ptrs[Buffer::num_2d_vector_mid] = {
     &m_buffer.z_mid, &m_buffer.rrho, &m_buffer.thv, &m_buffer.dz, &m_buffer.zt_grid, &m_buffer.wm_zt, &m_buffer.unused,
     &m_buffer.inv_exner, &m_buffer.thlm, &m_buffer.qw, &m_buffer.dse, &m_buffer.tke_copy, &m_buffer.qc_copy,
-    &m_buffer.shoc_ql2, &m_buffer.shoc_mix, &m_buffer.isotropy, &m_buffer.w_sec, &m_buffer.wqls_sec, &m_buffer.brunt
+    &m_buffer.shoc_ql2, &m_buffer.shoc_mix, &m_buffer.isotropy, &m_buffer.w_sec, &m_buffer.wqls_sec, &m_buffer.brunt,
+    &m_buffer.um_pert, &m_buffer.vm_pert
 #ifdef SCREAM_SHOC_SMALL_KERNELS
     , &m_buffer.rho_zt, &m_buffer.shoc_qv, &m_buffer.tabs, &m_buffer.dz_zt
 #endif
@@ -293,6 +298,9 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto& tk                  = get_field_out("eddy_diff_mom").get_view<Pack**>();
   const auto& inv_qc_relvar       = get_field_out("inv_qc_relvar").get_view<Pack**>();
   const auto& phis                = get_field_in("phis").get_view<const Real*>();
+  const auto& tau_est             = get_field_out("tau_est").get_view<Real*>();
+  const auto& um_pert_diff        = get_field_out("um_pert_diff").get_view<Spack**>();
+  const auto& vm_pert_diff        = get_field_out("vm_pert_diff").get_view<Spack**>();
 
   // Alias local variables from temporary buffer
   auto z_mid       = m_buffer.z_mid;
@@ -301,6 +309,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   auto wprtp_sfc   = m_buffer.wprtp_sfc;
   auto upwp_sfc    = m_buffer.upwp_sfc;
   auto vpwp_sfc    = m_buffer.vpwp_sfc;
+  auto upwp_sfc_pert = m_buffer.upwp_sfc_pert;
+  auto vpwp_sfc_pert = m_buffer.vpwp_sfc_pert;
   auto rrho        = m_buffer.rrho;
   auto rrho_i      = m_buffer.rrho_i;
   auto thv         = m_buffer.thv;
@@ -316,6 +326,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   auto tke_copy    = m_buffer.tke_copy;
   auto qc_copy     = m_buffer.qc_copy;
   auto shoc_ql2    = m_buffer.shoc_ql2;
+  auto um_pert     = m_buffer.um_pert;
+  auto vm_pert     = m_buffer.vm_pert;
 
   // For now, set z_int(i,nlevs) = z_surf = 0
   const Real z_surf = 0.0;
@@ -333,7 +345,9 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_evap,
                                 surf_mom_flux,qtracers,qv,qc,qc_copy,tke,tke_copy,z_mid,z_int,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
-                                wtracer_sfc,wm_zt,inv_exner,thlm,qw, cldfrac_liq, cldfrac_liq_prev);
+                                wtracer_sfc,wm_zt,inv_exner,thlm,qw, cldfrac_liq, cldfrac_liq_prev,
+                                upwp_sfc_pert, vpwp_sfc_pert, um_pert, vm_pert,
+                                um_pert_diff, vm_pert_diff);
 
   // Input Variables:
   input.zt_grid     = shoc_preprocess.zt_grid;
@@ -347,6 +361,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   input.wqw_sfc     = shoc_preprocess.wprtp_sfc;
   input.uw_sfc      = shoc_preprocess.upwp_sfc;
   input.vw_sfc      = shoc_preprocess.vpwp_sfc;
+  input.uw_sfc_pert = shoc_preprocess.upwp_sfc_pert;
+  input.vw_sfc_pert = shoc_preprocess.vpwp_sfc_pert;
   input.wtracer_sfc = shoc_preprocess.wtracer_sfc;
   input.inv_exner   = shoc_preprocess.inv_exner;
   input.phis        = phis;
@@ -362,6 +378,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   input_output.tk           = tk;
   input_output.shoc_cldfrac = cldfrac_liq;
   input_output.shoc_ql      = qc_copy;
+  input_output.um_pert      = shoc_preprocess.um_pert;
+  input_output.vm_pert      = shoc_preprocess.vm_pert;
 
   // Output Variables
   output.pblh     = get_field_out("pbl_height").get_view<Real*>();
@@ -416,7 +434,9 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   shoc_postprocess.set_variables(m_num_cols,m_num_levs,
                                  rrho,qv,qw,qc,qc_copy,tke,tke_copy,qtracers,shoc_ql2,
                                  cldfrac_liq,inv_qc_relvar,
-                                 T_mid, dse, z_mid, phis);
+                                 T_mid, dse, z_mid, phis,
+                                 surf_mom_flux, tau_est, um_pert, vm_pert,
+                                 um_pert_diff, vm_pert_diff);
 
   if (has_column_conservation_check()) {
     const auto& vapor_flux = get_field_out("vapor_flux").get_view<Real*>();
@@ -437,6 +457,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   add_postcondition_check<LowerBound>(get_field_out("pbl_height"),m_grid,0);
   add_postcondition_check<Interval>(get_field_out("cldfrac_liq"),m_grid,0.0,1.0,false);
   add_postcondition_check<LowerBound>(get_field_out("tke"),m_grid,0);
+  add_postcondition_check<LowerBound>(get_field_out("tau_est"),m_grid,0);
   // For qv, ensure it doesn't get negative, by allowing repair of any neg value.
   // TODO: use a repairable lb that clips only "small" negative values
   add_postcondition_check<Interval>(get_field_out("qv"),m_grid,0,0.2,true);
