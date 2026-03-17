@@ -65,8 +65,8 @@ void Functions<S,D>::ZmInputState::transpose(int ncol, int nlev_mid)
     Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_int_packs), KOKKOS_LAMBDA (const int i) {
       const int icol = i/nlev_int_packs;
       const int klev = i%nlev_int_packs;
-      f_z_int   (icol,klev) = loc_z_int   (icol,klev/Pack::n)[klev%Pack::n];
-      f_p_int   (icol,klev) = loc_p_int   (icol,klev/Pack::n)[klev%Pack::n];
+      loc_f_z_int   (icol,klev) = loc_z_int   (icol,klev/Pack::n)[klev%Pack::n];
+      loc_f_p_int   (icol,klev) = loc_p_int   (icol,klev/Pack::n)[klev%Pack::n];
     });
 
     //----------------------------------------------------------------------
