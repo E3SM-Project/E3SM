@@ -35,8 +35,9 @@ using TriDiagDiffSolver = ThomasDiffusionSolver;
 #endif
 
 // Type of real array of size (NRow, VecLength) in the scratch memory space
-using TriDiagScratchArray = Kokkos::View<Real *[VecLength], MemLayout,
-                                         ScratchMemSpace, MemoryUnmanaged>;
+using TriDiagScratchArray =
+    Kokkos::View<Real *[VecLength], MemLayout, ScratchMemSpace,
+                 Kokkos::MemoryUnmanaged>;
 
 // Scratch data for general tridiagonal solver
 struct TriDiagScratch {

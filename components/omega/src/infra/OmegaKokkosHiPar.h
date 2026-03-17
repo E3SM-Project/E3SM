@@ -15,7 +15,6 @@ namespace OMEGA {
 using TeamPolicy      = Kokkos::TeamPolicy<ExecSpace>;
 using TeamMember      = TeamPolicy::member_type;
 using ScratchMemSpace = ExecSpace::scratch_memory_space;
-using Kokkos::MemoryUnmanaged;
 using Kokkos::PerTeam;
 using Kokkos::TeamThreadRange;
 using ArrayScratch1DReal =
