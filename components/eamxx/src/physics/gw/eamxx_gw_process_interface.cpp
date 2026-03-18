@@ -3,6 +3,7 @@
 
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include <ekat_assert.hpp>
 #include <ekat_units.hpp>
@@ -22,11 +23,6 @@ void GWDrag::create_requests() {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
   constexpr int pack_size = Pack::n;
-
-  // retrieve runtime options
-  GWF::s_common_init.load_runtime_options(m_params);
-  GWF::s_convect_init.load_runtime_options(m_params);
-  GWF::s_front_init.load_runtime_options(m_params);
 
   m_grid = m_grids_manager->get_grid("physics");
 
@@ -77,28 +73,52 @@ void GWDrag::create_requests() {
 
 /*------------------------------------------------------------------------------------------------*/
 void GWDrag::initialize_impl (const RunType) {
+
+  // std::string gw_drag_file = m_params.get<std::string>("gw_drag_file");
+  // scorpio::register_file(fname,scorpio::FileMode::Read);
+  // scorpio::read_var(fname,"bnd_limits_wavenumber",bounds.get_view<Real**,Host>().data());
+  // scorpio::release_file(fname);
+
+  // retrieve runtime options
+  // GWF::s_common_init.load_runtime_options(m_params);
+  // GWF::s_convect_init.load_runtime_options(m_params);
+  // GWF::s_front_init.load_runtime_options(m_params);
+
+  // defaults for gw_common_init()
+  bool do_molec_diff_default = false; // Flag for molecular diffusion
+  int nbot_molec_default = 0;         // bottom level for molecular diffusion
+  int ktop_default = 0;               // Top level for gravity waves.
+  Real kwv_default = 6.28e-5;         // Effective horizontal wave number (100 km wavelength)
+
+  // calculate interface reference pressures
+  const auto hyai = m_grid->get_geometry_data("hyai").get_view<const Real*>();
+  const auto hybi = m_grid->get_geometry_data("hybi").get_view<const Real*>();
+  Kokkos::View<Real*, Kokkos::HostSpace> pref_int("pref_int", hyai.size());
+  // Kokkos::parallel_for(Kokkos::RangePolicy<>(0, m_nlev+1), KOKKOS_LAMBDA (const int k) {
+  Kokkos::parallel_for("calculate_pref_int", 
+    Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, hyai.size()), 
+    KOKKOS_LAMBDA (const int k) {
+      pref_int(k) = PC::P0.value * hyai(k) + PC::P0.value * hybi(k);
+  });
+  Kokkos::fence();
+
+
+  GWF::gw_common_init( m_params, 
+                       m_nlev,
+                       pref_int,
+                       do_molec_diff_default,
+                       nbot_molec_default,
+                       ktop_default,
+                       kwv_default);
+
+  // GWF::gw_convect_init( m_params,
+  // GWF::gw_front_init( m_params,
+
   // Set property checks for fields in this process
   using Interval = FieldWithinIntervalCheck;
   using LowerBound = FieldLowerBoundCheck;
   add_postcondition_check<Interval>(get_field_out("T_mid"),       m_grid,100.0,400.0,false);
   add_postcondition_check<Interval>(get_field_out("horiz_winds"), m_grid,-200.0, 200.0,false);
-
-  // // Set phase speeds
-  // cref = (/ (dc * l, l = -pgwv, pgwv) /)
-
-  // GWF::gw_common_init( m_nlev,
-  //                      pgwv,
-  //                      dc,
-  //                      cref_in,
-  //                      orographic_only_in,
-  //                      do_molec_diff_in,
-  //                      tau_0_ubc_in,
-  //                      nbot_molec_in,
-  //                      ktop_in,
-  //                      kbotbg_in,
-  //                      fcrit2_in,
-  //                      kwv_in,
-  //                      alpha_in );
 }
 
 /*------------------------------------------------------------------------------------------------*/

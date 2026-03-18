@@ -72,6 +72,51 @@ struct Functions
     static constexpr Real heating_altitude_max = 20e3;  // max altitude [m] to check for max heating
     static constexpr Real orohmin = 10;                 // min surface displacement height for orographic waves
     static constexpr Real orovmin = 2;                  // min wind speed for orographic waves
+    static constexpr Real kbotbg_pref_max = 50000.0;    // pressure limit for setting kbotbg
+
+    static constexpr int nalph = 66;
+
+    // Levels of pre-calculated Newtonian cooling (1/day)
+    static inline constexpr std::array<Real, nalph> alpha0 = {
+        1.896007    , 1.196965    , 0.7251356   , 0.6397463   ,
+        0.5777858   , 0.5712274   , 0.6836302   , 0.6678557   ,
+        0.5683219   , 0.4754283   , 0.3960519   , 0.332022    ,
+        0.2497581   , 0.168667    , 0.1323903   , 0.1257139   ,
+        0.1069889   , 0.09873954  , 0.09215571  , 0.09398635  ,
+        0.1061087   , 0.1294598   , 0.1544743   , 0.1648226   ,
+        0.1687332   , 0.1691513   , 0.1664987   , 0.159048    ,
+        0.149292    , 0.1351563   , 0.1174998   , 0.09913579  ,
+        0.08300615  , 0.0707      , 0.0615588   , 0.0542623   ,
+        0.0478562   , 0.04132157  , 0.03454087  , 0.02296682  ,
+        0.006723819 , 0.02164464  , 0.05756261  , 0.003844868 ,
+        0.02929285  , 0.006627098 , 0.04558291  , 0.02042176  ,
+        0.00000000  , 0.005880283 , 0.00689498  , 0.01343466  ,
+        0.00000000  , 0.03415992  , 0.02855049  , 0.01688839  ,
+        0.0272628   , 0.02772121  , 0.02135626  , 0.04863235  ,
+        0.04568304  , 0.00000000  , 0.009604108 , 0.00000000  ,
+        0.00000000  , 0.00000000
+    };
+
+    // Pressure levels that were used to calculate alpha0 (hPa)
+    static inline constexpr std::array<Real, nalph> alpha_pressure_mb = {
+        5.11075e-6  , 9.8269e-6   , 1.620185e-5 , 2.671225e-5  ,
+        4.4041e-5   , 7.261275e-5 , 1.19719e-4  , 1.9738e-4    ,
+        3.254225e-4 , 5.365325e-4 , 8.846025e-4 , 0.001458458  ,
+        0.002404575 , 0.00397825  , 0.006556825 , 0.01081382   ,
+        0.017898    , 0.02955775  , 0.04873075  , 0.07991075   ,
+        0.1282732   , 0.19812     , 0.292025    , 0.4101675    ,
+        0.55347     , 0.73048     , 0.9559475   , 1.244795     ,
+        1.61285     , 2.079325    , 2.667425    , 3.404875     ,
+        4.324575    , 5.4654      , 6.87285     , 8.599725     ,
+        10.70705    , 13.26475    , 16.35175    , 20.05675     ,
+        24.479      , 29.728      , 35.92325    , 43.19375     ,
+        51.6775     , 61.5205     , 72.8745     , 85.65715     ,
+        100.5147    , 118.2503    , 139.1154    , 163.6621     ,
+        192.5399    , 226.5132    , 266.4812    , 313.5013     ,
+        368.818     , 433.8952    , 510.4553    , 600.5242     ,
+        696.7963    , 787.7021    , 867.1607    , 929.6489     ,
+        970.5548    , 992.5561
+    };
   };
 
   // -----------------------------------------------------------------------------------------------
@@ -84,7 +129,7 @@ struct Functions
     bool use_gw_frontal    = false;
     bool use_gw_orographic = false;
 
-    std::string gw_drag_file;
+    // std::string gw_drag_file;
     
     Real gw_orographic_eff;
 
@@ -105,17 +150,17 @@ struct Functions
     view_1d<Real> alpha;    // Newtonian cooling coefficients
     Real tndmax;            // Max wind tend from stress divergence (before efficiency) = huge(1._r8)
 
-    void load_runtime_options(ekat::ParameterList& params) {
-      use_gw_convect    = params.get<bool>("use_gw_convect", use_gw_convect);
-      use_gw_frontal    = params.get<bool>("use_gw_frontal", use_gw_frontal);
-      use_gw_orographic = params.get<bool>("use_gw_orographic", use_gw_orographic);
-      gw_drag_file      = params.get<std::string>("gw_drag_file", gw_drag_file);
-      pgwv              = params.get<int>("pgwv", pgwv);
-      dc                = params.get<Real>("gw_dc", dc);
-      tau_0_ubc         = params.get<bool>("tau_0_ubc", tau_0_ubc);
-      fcrit2            = params.get<Real>("fcrit2", fcrit2);
-      gw_orographic_eff = params.get<Real>("gw_orographic_eff", gw_orographic_eff);
-    }
+    // void load_runtime_options(ekat::ParameterList& params) {
+    //   use_gw_convect    = params.get<bool>("use_gw_convect", use_gw_convect);
+    //   use_gw_frontal    = params.get<bool>("use_gw_frontal", use_gw_frontal);
+    //   use_gw_orographic = params.get<bool>("use_gw_orographic", use_gw_orographic);
+    //   // gw_drag_file      = params.get<std::string>("gw_drag_file", gw_drag_file);
+    //   pgwv              = params.get<int>("pgwv", pgwv);
+    //   dc                = params.get<Real>("gw_dc", dc);
+    //   tau_0_ubc         = params.get<bool>("tau_0_ubc", tau_0_ubc);
+    //   fcrit2            = params.get<Real>("fcrit2", fcrit2);
+    //   gw_orographic_eff = params.get<Real>("gw_orographic_eff", gw_orographic_eff);
+    // }
   };
 
   // -----------------------------------------------------------------------------------------------
@@ -220,6 +265,16 @@ struct Functions
     const Real& fcrit2_in,
     const Real& kwv_in,
     const uview_1d<const Real>& alpha_in);
+
+  static void gw_common_init(
+    // Inputs
+    ekat::ParameterList& params,
+    const Int& pver_in,
+    Kokkos::View<Real*, Kokkos::HostSpace> pref_int,
+    const bool& do_molec_diff_in,
+    const Int& nbot_molec_in,
+    const Int& ktop_in,
+    const Real& kwv_in);
 
   static void gw_convect_init(
     // Inputs
