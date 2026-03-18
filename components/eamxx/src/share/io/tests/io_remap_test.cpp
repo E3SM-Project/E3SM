@@ -229,61 +229,30 @@ TEST_CASE("io_remap_test","io_remap_test")
   Vi_f.sync_to_dev();
   print (" -> Create source data ... done\n",io_comm);
 
-  // Setup remapped output streams and run them
-  print (" -> Create output ... \n",io_comm);
   register_diagnostics();
-  OutputManager om_source, om_vert, om_horiz, om_vert_horiz;
   const int p_ref = (int)set_pressure(p_top, p_bot, nlevs_src+1,nlevs_src-1);
 
-  print ("    -> source data ... \n",io_comm);
-  auto source_remap_control = set_output_params("remap_source",remap_filename,p_ref,false,false);
-  om_source.initialize(io_comm,source_remap_control,t0,false);
-  om_source.setup(field_manager,gm->get_grid_names());
-  io_comm.barrier();
-  om_source.init_timestep(t0,dt);
-  om_source.run(t0+dt);
-  om_source.finalize();
-  print ("    -> source data ... done\n",io_comm);
-
-  print ("    -> vertical remap ... \n",io_comm);
-  auto vert_remap_control = set_output_params("remap_vertical",remap_filename,p_ref,true,false);
-  om_vert.initialize(io_comm,vert_remap_control,t0,false);
-  om_vert.setup(field_manager,gm->get_grid_names());
-  io_comm.barrier();
-  om_vert.init_timestep(t0,dt);
-  om_vert.run(t0+dt);
-  om_vert.finalize();
-  print ("    -> vertical remap ... done\n",io_comm);
-
-  print ("    -> horizontal remap ... \n",io_comm);
-  auto horiz_remap_control = set_output_params("remap_horizontal",remap_filename,p_ref,false,true);
-  om_horiz.initialize(io_comm,horiz_remap_control,t0,false);
-  om_horiz.setup(field_manager,gm->get_grid_names());
-  io_comm.barrier();
-  om_horiz.init_timestep(t0,dt);
-  om_horiz.run(t0+dt);
-  om_horiz.finalize();
-  print ("    -> horizontal remap ... done\n",io_comm);
-
-  print ("    -> vertical-horizontal remap ... \n",io_comm);
-  auto vert_horiz_remap_control = set_output_params("remap_vertical_horizontal",remap_filename,p_ref,true,true);
-  om_vert_horiz.initialize(io_comm,vert_horiz_remap_control,t0,false);
-  om_vert_horiz.setup(field_manager,gm->get_grid_names());
-  io_comm.barrier();
-  om_vert_horiz.init_timestep(t0,dt);
-  om_vert_horiz.run(t0+dt);
-  om_vert_horiz.finalize();
-  print ("    -> vertical-horizontal remap ... done\n",io_comm);
-  print (" -> Create output ... done\n",io_comm);
-
-
+  // Setup remapped output streams, run them, then check results
   // Confirm that remapped fields are correct.
   print (" -> Test Remapped Output ... \n",io_comm);
   std::vector<std::string> fnames = {"Y_flat","Y_mid","Y_int","V_mid","V_int"};
 
   // ------------------------------------------------------------------------------------------------------
-  //                                    ---  Vertical Remapping ---
-  {
+  SECTION ("vertical") {
+    print (" -> vertical remap ... \n",io_comm);
+    print ("   -> create output ...\n",io_comm);
+
+    OutputManager om_vert;
+    auto vert_remap_control = set_output_params("remap_vertical",remap_filename,p_ref,true,false);
+    om_vert.initialize(io_comm,vert_remap_control,t0,false);
+    om_vert.setup(field_manager,gm->get_grid_names());
+    io_comm.barrier();
+    om_vert.init_timestep(t0,dt);
+    om_vert.run(t0+dt);
+    om_vert.finalize();
+    print ("   -> create output ... done\n",io_comm);
+
+    print ("   -> check results ...\n",io_comm);
     // Note, the vertical remapper defaults to a mask value of std numeric limits scaled by 0.1;
     print ("    -> vertical remap ... \n",io_comm);
     auto gm_vert   = get_test_gm(io_comm,ncols_src,nlevs_tgt);
@@ -347,13 +316,25 @@ TEST_CASE("io_remap_test","io_remap_test")
         }
       }
     }
-    print ("    -> vertical remap ... done\n",io_comm);
+    print ("   -> check results ... done\n",io_comm);
+    print (" -> vertical remap ... done\n",io_comm);
   }
-  // ------------------------------------------------------------------------------------------------------
-  //                                    ---  Horizontal Remapping ---
-  {
+
+  SECTION ("horizontal") {
+    print (" -> horizontal remap ... \n",io_comm);
+    print ("   -> create output ...\n",io_comm);
+    OutputManager om_horiz;
+    auto horiz_remap_control = set_output_params("remap_horizontal",remap_filename,p_ref,false,true);
+    om_horiz.initialize(io_comm,horiz_remap_control,t0,false);
+    om_horiz.setup(field_manager,gm->get_grid_names());
+    io_comm.barrier();
+    om_horiz.init_timestep(t0,dt);
+    om_horiz.run(t0+dt);
+    om_horiz.finalize();
+    print ("   -> create output ... done\n",io_comm);
+
+    print ("   -> check results ...\n",io_comm);
     // Note, the vertical remapper defaults to a mask value of std numeric limits scaled by 0.1;
-    print ("    -> horizontal remap ... \n",io_comm);
     auto gm_horiz   = get_test_gm(io_comm,ncols_tgt,nlevs_src);
     auto grid_horiz = gm_horiz->get_grid("point_grid");
     auto fm_horiz   = get_test_fm(grid_horiz,false,p_ref);
@@ -432,12 +413,24 @@ TEST_CASE("io_remap_test","io_remap_test")
       }
       REQUIRE(approx(Ys_v_horiz(ii), Ys_exp));
     }
-    print ("    -> horizontal remap ... done\n",io_comm);
+    print ("   -> check results ... done\n",io_comm);
+    print (" -> horizontal remap ... done\n",io_comm);
   }
-  // ------------------------------------------------------------------------------------------------------
-  //                                ---  Vertical + Horizontal Remapping ---
-  {
-    print ("    -> vertical + horizontal remap ... \n",io_comm);
+  
+  SECTION ("vertical_horizontal") {
+    print (" -> vertical + horizontal remap ... \n",io_comm);
+    print ("   -> create output ...\n",io_comm);
+    OutputManager om_vert_horiz;
+    auto vert_horiz_remap_control = set_output_params("remap_vertical_horizontal",remap_filename,p_ref,true,true);
+    om_vert_horiz.initialize(io_comm,vert_horiz_remap_control,t0,false);
+    om_vert_horiz.setup(field_manager,gm->get_grid_names());
+    io_comm.barrier();
+    om_vert_horiz.init_timestep(t0,dt);
+    om_vert_horiz.run(t0+dt);
+    om_vert_horiz.finalize();
+    print ("   -> create output ... done\n",io_comm);
+
+    print ("   -> check results ...\n",io_comm);
     auto gm_vh   = get_test_gm(io_comm,ncols_tgt,nlevs_tgt);
     auto grid_vh = gm_vh->get_grid("point_grid");
     auto fm_vh   = get_test_fm(grid_vh,true,p_ref);
@@ -545,7 +538,8 @@ TEST_CASE("io_remap_test","io_remap_test")
       }
       REQUIRE(approx(Ys_v_vh(ii), Ys_exp));
     }
-    print ("    -> vertical + horizontal remap ... done\n",io_comm);
+    print ("   -> check results ... done\n",io_comm);
+    print (" -> vertical-horizontal remap ... done\n",io_comm);
   }
   // ------------------------------------------------------------------------------------------------------
   // All Done
