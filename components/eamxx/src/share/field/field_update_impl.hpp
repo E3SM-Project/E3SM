@@ -140,7 +140,7 @@ cvh (LhsView lhs, RhsView rhs,
   helper.run(dims);
 }
 
-template<typename LhsView, typename MaskView>
+template<typename LhsView, typename MaskView, bool negate_mask>
 struct SetValueMasked
 {
   using exec_space = typename LhsView::traits::execution_space;
@@ -182,45 +182,50 @@ struct SetValueMasked
     }
   }
 
+  // In the following bool(mask(..)) returns true if mask!=0.
+  // So doing bool(mask(..))!=negate_mask returns true if
+  //  - mask!=0 and we don't need to negate the mask
+  //  - mask==0 and we need to negate the mask
+
   KOKKOS_INLINE_FUNCTION
   void operator() (int i) const {
     if constexpr (N==0) {
-      auto& lhs_ref = lhs();
-      lhs_ref = mask() ? value : lhs_ref;
+      if (bool(mask())!=negate_mask)
+        lhs() = value;
     } else {
-      auto& lhs_ref = lhs(i);
-      lhs_ref = mask(i) ? value : lhs_ref;
+      if (bool(mask(i))!=negate_mask)
+        lhs(i) = value;
     }
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j) const {
-    auto& lhs_ref = lhs(i,j);
-    lhs_ref = mask(i,j) ? value : lhs_ref;
+    if (bool(mask(i,j))!=negate_mask)
+      lhs(i,j) = value;
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k) const {
-    auto& lhs_ref = lhs(i,j,k);
-    lhs_ref = mask(i,j,k) ? value : lhs_ref;
+    if (bool(mask(i,j,k))!=negate_mask)
+      lhs(i,j,k) = value;
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k, int l) const {
-    auto& lhs_ref = lhs(i,j,k,l);
-    lhs_ref = mask(i,j,k,l) ? value : lhs_ref;
+    if (bool(mask(i,j,k,l))!=negate_mask)
+      lhs(i,j,k,l) = value;
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k, int l, int m) const {
-    auto& lhs_ref = lhs(i,j,k,l,m);
-    lhs_ref = mask(i,j,k,l,m) ? value : lhs_ref;
+    if (bool(mask(i,j,k,l,m))!=negate_mask)
+      lhs(i,j,k,l,m) = value;
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k, int l, int m, int n) const {
-    auto& lhs_ref = lhs(i,j,k,l,m,n);
-    lhs_ref = mask(i,j,k,l,m,n) ? value : lhs_ref;
+    if (bool(mask(i,j,k,l,m,n))!=negate_mask)
+      lhs(i,j,k,l,m,n) = value;
   }
 
   ST value;
@@ -228,14 +233,14 @@ struct SetValueMasked
   MaskView mask;
 };
 
-template<typename LhsView, typename MaskView = LhsView>
+template<bool negate_mask, typename LhsView, typename MaskView = LhsView>
 void
 svm (LhsView lhs,
      typename LhsView::traits::value_type value,
      const std::vector<int>& dims,
      MaskView mask = MaskView())
 {
-  SetValueMasked <LhsView, MaskView> helper;
+  SetValueMasked <LhsView, MaskView, negate_mask> helper;
   helper.lhs = lhs;
   helper.mask = mask;
   helper.value = value;
@@ -414,7 +419,7 @@ update_impl (const Field& x, const ST alpha, const ST beta, const Field* mask)
   Kokkos::fence();
 }
 
-template<bool masked, typename ST>
+template<bool masked, bool negate_mask, typename ST>
 void Field::deep_copy_impl (const ST value, const Field* mask)
 {
   const auto& layout = get_header().get_identifier().get_layout();
@@ -426,11 +431,11 @@ void Field::deep_copy_impl (const ST value, const Field* mask)
     case 0:
       if constexpr (masked) {
         if (contig)
-          details::svm(get_view<ST>(),value,dims,
-                       mask->get_view<const int>());
+          details::svm<negate_mask>(get_view<ST>(),value,dims,
+                                    mask->get_view<const int>());
         else
-          details::svm(get_strided_view<ST>(),value,dims,
-                       mask->get_view<const int>());
+          details::svm<negate_mask>(get_strided_view<ST>(),value,dims,
+                                    mask->get_view<const int>());
       } else {
         if (contig)
           Kokkos::deep_copy(get_view<ST>(),value);
@@ -441,11 +446,11 @@ void Field::deep_copy_impl (const ST value, const Field* mask)
     case 1:
       if constexpr (masked) {
         if (contig)
-          details::svm(get_view<ST*>(),value,dims,
-                       mask->get_view<const int*>());
+          details::svm<negate_mask>(get_view<ST*>(),value,dims,
+                                    mask->get_view<const int*>());
         else
-          details::svm(get_strided_view<ST*>(),value,dims,
-                       mask->get_view<const int*>());
+          details::svm<negate_mask>(get_strided_view<ST*>(),value,dims,
+                                    mask->get_view<const int*>());
       } else {
         if (contig)
           Kokkos::deep_copy(get_view<ST*>(),value);
@@ -456,11 +461,11 @@ void Field::deep_copy_impl (const ST value, const Field* mask)
     case 2:
       if constexpr (masked) {
         if (contig)
-          details::svm(get_view<ST**>(),value,dims,
-                       mask->get_view<const int**>());
+          details::svm<negate_mask>(get_view<ST**>(),value,dims,
+                                    mask->get_view<const int**>());
         else
-          details::svm(get_strided_view<ST**>(),value,dims,
-                       mask->get_view<const int**>());
+          details::svm<negate_mask>(get_strided_view<ST**>(),value,dims,
+                                    mask->get_view<const int**>());
       } else {
         if (contig)
           Kokkos::deep_copy(get_view<ST**>(),value);
@@ -471,11 +476,11 @@ void Field::deep_copy_impl (const ST value, const Field* mask)
     case 3:
       if constexpr (masked) {
         if (contig)
-          details::svm(get_view<ST***>(),value,dims,
-                       mask->get_view<const int***>());
+          details::svm<negate_mask>(get_view<ST***>(),value,dims,
+                                    mask->get_view<const int***>());
         else
-          details::svm(get_strided_view<ST***>(),value,dims,
-                       mask->get_view<const int***>());
+          details::svm<negate_mask>(get_strided_view<ST***>(),value,dims,
+                                    mask->get_view<const int***>());
       } else {
         if (contig)
           Kokkos::deep_copy(get_view<ST***>(),value);
@@ -486,11 +491,11 @@ void Field::deep_copy_impl (const ST value, const Field* mask)
     case 4:
       if constexpr (masked) {
         if (contig)
-          details::svm(get_view<ST****>(),value,dims,
-                       mask->get_view<const int****>());
+          details::svm<negate_mask>(get_view<ST****>(),value,dims,
+                                    mask->get_view<const int****>());
         else
-          details::svm(get_strided_view<ST****>(),value,dims,
-                       mask->get_view<const int****>());
+          details::svm<negate_mask>(get_strided_view<ST****>(),value,dims,
+                                    mask->get_view<const int****>());
       } else {
         if (contig)
           Kokkos::deep_copy(get_view<ST****>(),value);
@@ -501,11 +506,11 @@ void Field::deep_copy_impl (const ST value, const Field* mask)
     case 5:
       if constexpr (masked) {
         if (contig)
-          details::svm(get_view<ST*****>(),value,dims,
-                       mask->get_view<const int*****>());
+          details::svm<negate_mask>(get_view<ST*****>(),value,dims,
+                                    mask->get_view<const int*****>());
         else
-          details::svm(get_strided_view<ST*****>(),value,dims,
-                       mask->get_view<const int*****>());
+          details::svm<negate_mask>(get_strided_view<ST*****>(),value,dims,
+                                    mask->get_view<const int*****>());
       } else {
         if (contig)
           Kokkos::deep_copy(get_view<ST*****>(),value);
@@ -516,11 +521,11 @@ void Field::deep_copy_impl (const ST value, const Field* mask)
     case 6:
       if constexpr (masked) {
         if (contig)
-          details::svm(get_view<ST******>(),value,dims,
-                       mask->get_view<const int******>());
+          details::svm<negate_mask>(get_view<ST******>(),value,dims,
+                                    mask->get_view<const int******>());
         else
-          details::svm(get_strided_view<ST******>(),value,dims,
-                       mask->get_view<const int******>());
+          details::svm<negate_mask>(get_strided_view<ST******>(),value,dims,
+                                    mask->get_view<const int******>());
       } else {
         if (contig)
           Kokkos::deep_copy(get_view<ST******>(),value);

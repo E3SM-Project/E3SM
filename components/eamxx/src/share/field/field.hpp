@@ -208,7 +208,7 @@ public:
 
   // Set the field to a constant value (on device view ONLY)
   void deep_copy (const ScalarWrapper value);
-  void deep_copy (const ScalarWrapper value, const Field& mask);
+  void deep_copy (const ScalarWrapper value, const Field& mask, const bool negate_mask = false);
 
   // Copy the data from one field to this field (on device ONLY)
   void deep_copy (const Field& src);
@@ -323,7 +323,7 @@ protected:
   void sync_views_impl () const;
 
   // The field manipulation methods call these two, with ST matching this field data type.
-  template<bool masked, typename ST>
+  template<bool masked, bool negate_mask = false, typename ST>
   void deep_copy_impl (const ST value, const Field* mask = nullptr);
 
   template<bool masked, CombineMode CM, typename ST, typename STX>

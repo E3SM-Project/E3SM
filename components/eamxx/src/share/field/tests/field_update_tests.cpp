@@ -78,13 +78,14 @@ TEST_CASE ("update") {
     auto mask = f_int.clone("valid_mask");
     compute_mask(f1,0,Comparison::GT,mask);
 
-    // Set f3=1 where mask=1
+    // Set f3=1 where mask=1, and f3=2 where mask=0
     f3.deep_copy(1,mask);
+    f3.deep_copy(2,mask,true);
 
     auto one = f1.subfield(0,0).clone("one");
-    auto zero = f1.subfield(0,0).clone("zero");
+    auto two = f1.subfield(0,0).clone("two");
     one.deep_copy(1);
-    zero.deep_copy(0);
+    two.deep_copy(2);
 
     // Check
     for (int icol=0; icol<ncol; ++ icol) {
@@ -92,7 +93,7 @@ TEST_CASE ("update") {
       if (icol % 2 == 0) {
         REQUIRE (views_are_equal(f3i,one));
       } else {
-        REQUIRE (views_are_equal(f3i,zero));
+        REQUIRE (views_are_equal(f3i,two));
       }
     }
   }
