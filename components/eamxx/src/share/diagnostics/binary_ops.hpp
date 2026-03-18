@@ -33,6 +33,9 @@ class BinaryOpsDiag : public AtmosphereDiagnostic {
 
   bool m_arg1_is_field;
   bool m_arg2_is_field;
+
+  bool m_arg1_has_mask = false;
+  bool m_arg2_has_mask = false;
 };  // class BinaryOpsDiag
 
 }  // namespace scream

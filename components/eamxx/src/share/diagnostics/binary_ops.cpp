@@ -35,65 +35,107 @@ ekat::units::Units apply_binary_op(const ekat::units::Units& a, const ekat::unit
   }
   return ekat::units::Units::invalid();
 }
-// apply binary operation on two input fields
-void apply_binary_op(Field& d, const Field& a, const Real b, const int op_code){
+// apply binary operation as "field OP scalar"
+void apply_binary_op(Field& d, const Field& a, const Real b, const int op_code, const Field* mask = nullptr)
+{
   switch (op_code) {
     case OP_PLUS:
       d.deep_copy(b);
-      d.update(a,1,1);
+      if (mask)
+        d.update(a,1,1,*mask);
+      else
+        d.update(a,1,1);
       break;
     case OP_MINUS:
       d.deep_copy(b);
-      d.update(a,1,-1);
+      if (mask)
+        d.update(a,1,-1,*mask);
+      else
+        d.update(a,1,-1);
       break;
     case OP_TIMES:
-      d.deep_copy(a);
-      d.scale(b);
+      d.deep_copy(b);
+      if (mask)
+        d.scale(a,*mask);
+      else
+        d.scale(a);
       break;
     case OP_OVER:
-      d.deep_copy(a);
-      d.scale(1 / b);
+      d.deep_copy(1 / b);
+      if (mask)
+        d.scale(a,*mask);
+      else
+        d.scale(a);
       break;
     default:
       EKAT_ERROR_MSG("Error! Unrecognized/unsupported binary op code (" + std::to_string(op_code) + ")\n");
   }
 }
-void apply_binary_op(Field& d, const Real a, const Field& b, const int op_code){
+void apply_binary_op(Field& d, const Real a, const Field& b, const int op_code, const Field* mask = nullptr)
+{
   switch (op_code) {
     case OP_PLUS:
       d.deep_copy(a);
-      d.update(b,1,1);
+      if (mask)
+        d.update(b,1,1,*mask);
+      else
+        d.update(b,1,1);
       break;
     case OP_MINUS:
       d.deep_copy(a);
-      d.update(b,-1,1);
+      if (mask)
+        d.update(b,-1,1,*mask);
+      else
+        d.update(b,-1,1);
       break;
     case OP_TIMES:
       d.deep_copy(a);
-      d.scale(b);
+      if (mask)
+        d.scale(b,*mask);
+      else
+        d.scale(b);
       break;
     case OP_OVER:
       d.deep_copy(a);
-      d.scale_inv(b);
+      if (mask)
+        d.scale_inv(b,*mask);
+      else
+        d.scale_inv(b);
       break;
     default:
       EKAT_ERROR_MSG("Error! Unrecognized/unsupported binary op code (" + std::to_string(op_code) + ")\n");
   }
 }
-void apply_binary_op(Field& d, const Field& a, const Field& b, const int op_code){
-  d.deep_copy(a);
+void apply_binary_op(Field& d, const Field& a, const Field& b, const int op_code, const Field* mask = nullptr)
+{
+  if (mask)
+    d.deep_copy(a,*mask);
+  else
+    d.deep_copy(a);
   switch (op_code) {
     case OP_PLUS:
-      d.update(b, 1, 1); // addition
+      if (mask)
+        d.update(b, 1, 1, *mask); // addition
+      else
+        d.update(b, 1, 1); // addition
       break;
     case OP_MINUS:
-      d.update(b, -1, 1); // subtraction
+      if (mask)
+        d.update(b, -1, 1, *mask); // addition
+      else
+        d.update(b, -1, 1); // addition
       break;
     case OP_TIMES:
-      d.scale(b); // multiplication
+      if (mask)
+        d.scale(b,*mask); // multiplication
+      else
+        d.scale(b); // multiplication
       break;
     case OP_OVER:
-      d.scale_inv(b); // division
+      if (mask)
+        d.scale_inv(b,*mask); // division
+      else
+        d.scale_inv(b); // division
       break;
     default:
       EKAT_ERROR_MSG("Error! Unrecognized/unsupported binary op code (" + std::to_string(op_code) + ")\n");
@@ -197,24 +239,64 @@ void BinaryOpsDiag::initialize_impl(const RunType /*run_type*/)
     compute_diagnostic_impl();
     m_diagnostic_output.get_header().get_tracking().update_time_stamp(start_of_step_ts());
   }
+
+  m_arg1_has_mask = m_arg1_is_field and get_field_in(m_arg1_name).get_header().has_extra_data("valid_mask");
+  m_arg2_has_mask = m_arg2_is_field and get_field_in(m_arg2_name).get_header().has_extra_data("valid_mask");
+
+  if (m_arg1_has_mask and m_arg2_has_mask) {
+    // The diag mask will be the logical AND of the two, so it must be a DIFFERENT field
+    const auto& m1 = get_field_in(m_arg2_name).get_header().get_extra_data<Field>("valid_mask");
+    auto mdiag = m1.clone(m_diagnostic_output.name()+"_valid_mask");
+    m_diagnostic_output.get_header().set_extra_data("valid_mask",mdiag);
+  } else if (m_arg1_has_mask) {
+    // Only arg1 has a mask. The diag mask is THE SAME as the arg's one, and can alias it
+    const auto& m1 = get_field_in(m_arg1_name).get_header().get_extra_data<Field>("valid_mask");
+    auto mdiag = m1.alias(m_diagnostic_output.name()+"_valid_mask");
+    m_diagnostic_output.get_header().set_extra_data("valid_mask",mdiag);
+  } else if (m_arg2_has_mask) {
+    // Only arg2 has a mask. The diag mask is THE SAME as the arg's one, and can alias it
+    const auto& m2 = get_field_in(m_arg2_name).get_header().get_extra_data<Field>("valid_mask");
+    auto mdiag = m2.alias(m_diagnostic_output.name()+"_valid_mask");
+    m_diagnostic_output.get_header().set_extra_data("valid_mask",mdiag);
+  }
 }
 
 void BinaryOpsDiag::compute_diagnostic_impl()
 {
   const auto& dict = physics::Constants<Real>::dictionary();
+
+  // Check if the bin op will have to be masked. If both fields are masked,
+  // we'll also have to compute mask's entries
+  Field* mask = nullptr;
+  if (m_diagnostic_output.get_header().has_extra_data("valid_mask"))
+    mask = &m_diagnostic_output.get_header().get_extra_data<Field>("valid_mask");
+
+  // If both args are masked, we first need to compute the output mask
+  if (m_arg1_has_mask and m_arg2_has_mask) {
+    auto m1 = get_field_in(m_arg1_name).get_header().get_extra_data<Field>("valid_mask");
+    auto m2 = get_field_in(m_arg2_name).get_header().get_extra_data<Field>("valid_mask");
+    mask->deep_copy(m1);
+    mask->scale(m2);
+  }
+
+  if (mask) {
+    // Init entries with fill value
+    m_diagnostic_output.deep_copy(constants::fill_value<Real>);
+  }
+
   if (m_arg1_is_field and m_arg2_is_field) {
     const auto& f1 = get_field_in(m_arg1_name);
     const auto& f2 = get_field_in(m_arg2_name);
-    apply_binary_op(m_diagnostic_output, f1, f2, m_binary_op_code);
+    apply_binary_op(m_diagnostic_output, f1, f2, m_binary_op_code,mask);
   } else if (m_arg1_is_field) {
     const auto& f1 = get_field_in(m_arg1_name);
     const auto  c2 = dict.at(m_arg2_name).value;
-    apply_binary_op(m_diagnostic_output, f1, c2, m_binary_op_code);
+    apply_binary_op(m_diagnostic_output, f1, c2, m_binary_op_code,mask);
   } else if (m_arg2_is_field) {
     // We can do scale/scale_inv for * and /, but for + and - we must deep copy arg2 first
     const auto  c1 = physics::Constants<Real>::dictionary().at(m_arg1_name).value;
     const auto& f2 = get_field_in(m_arg2_name);
-    apply_binary_op(m_diagnostic_output, c1, f2, m_binary_op_code);
+    apply_binary_op(m_diagnostic_output, c1, f2, m_binary_op_code,mask);
   } else {
     const auto  c1 = dict.at(m_arg1_name).value;
     const auto  c2 = dict.at(m_arg2_name).value;

@@ -3,7 +3,8 @@
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "share/physics/physics_constants.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/data_managers/library_grids_manager.hpp"
+#include "share/grid/point_grid.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 
@@ -13,18 +14,9 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
                                         const int nlevs) {
   const int num_global_cols = ncols * comm.size();
 
-  using vos_t = std::vector<std::string>;
-  ekat::ParameterList gm_params;
-  gm_params.set("grids_names", vos_t{"point_grid"});
-  auto &pl = gm_params.sublist("point_grid");
-  pl.set<std::string>("type", "point_grid");
-  pl.set("aliases", vos_t{"physics"});
-  pl.set<int>("number_of_global_columns", num_global_cols);
-  pl.set<int>("number_of_vertical_levels", nlevs);
-
-  auto gm = create_mesh_free_grids_manager(comm, gm_params);
-  gm->build_grids();
-
+  auto grid = create_point_grid("physics",num_global_cols,nlevs,comm);
+  auto gm = std::make_shared<LibraryGridsManager>();
+  gm->add_grids(grid);
   return gm;
 }
 
@@ -139,6 +131,120 @@ TEST_CASE("binary_ops") {
   // redundant, why not
   qc.update(qv, 1, 1);
   views_are_equal(qc, plus_diag_f);
+}
+
+TEST_CASE ("inputs_have_mask") {
+  using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+  util::TimeStamp t0({2024, 1, 1}, {0, 0, 0});
+  const int ncols = 5;
+
+  int seed = get_random_test_seed();
+
+  auto gm = create_gm(comm,ncols,1);
+  auto grid = gm->get_grid("physics");
+
+  auto layout = grid->get_2d_scalar_layout();
+  FieldIdentifier fid1("f1",layout,m/s,grid->name());
+  FieldIdentifier fid2("f2",layout,m/s,grid->name());
+  FieldIdentifier mfid("m",layout,m/s,grid->name(),DataType::IntType);
+
+  auto create_diag = [&](const Field& f1, const Field& f2) {
+    ekat::ParameterList params;
+    params.set("grid_name", grid->name());
+    params.set<std::string>("arg1", "f1");
+    params.set<std::string>("arg2", "f2");
+    params.set<std::string>("binary_op", "times");
+
+    auto diag = std::make_shared<BinaryOpsDiag>(comm, params);
+    diag->set_grids(gm);
+
+    diag->set_required_field(f1);
+    diag->set_required_field(f2);
+
+    diag->initialize(t0,RunType::Initial);
+    return diag;
+  };
+
+  constexpr auto fv = constants::fill_value<Real>;
+
+  typename Field::view_host_t<const int*> empty;
+  for (auto mask1 : {false, true}) {
+    Field f1 (fid1,true);
+    f1.get_header().get_tracking().update_time_stamp(t0);
+    randomize_uniform(f1,seed++,0,1);
+
+    Field m1;
+    if (mask1) {
+      m1 = Field(mfid,true);
+      randomize_uniform(m1,seed++,0,1);
+      f1.get_header().set_extra_data("valid_mask",m1);
+    }
+
+    for (auto mask2 : {false, true}) {
+      Field f2 (fid2,true);
+      f2.get_header().get_tracking().update_time_stamp(t0);
+      randomize_uniform(f2,seed++,0,1);
+
+      Field m2;
+      if (mask2) {
+        m2 = Field(mfid,true);
+        randomize_uniform(m2,seed++,0,1);
+        f2.get_header().set_extra_data("valid_mask",m2);
+      }
+
+      auto diag = create_diag(f1,f2);
+      diag->compute_diagnostic();
+
+      auto d = diag->get_diagnostic();
+      d.sync_to_host();
+      auto dm = mask1 or mask2 ? d.get_header().get_extra_data<Field>("valid_mask") : Field{};
+
+      auto dh  = d.get_view<const Real*,Host>();
+      auto f1h = f1.get_view<const Real*,Host>();
+      auto f2h = f2.get_view<const Real*,Host>();
+
+      auto dmh = mask1 or mask2 ? dm.get_view<const int*,Host>() : empty;
+      auto m1h = mask1 ? m1.get_view<const int*,Host>() : empty;
+      auto m2h = mask2 ? m2.get_view<const int*,Host>() : empty;
+
+      if (mask1 and mask2) {
+        for (int i=0; i<ncols; ++i) {
+          if (m1h[i] and m2h[i])
+            REQUIRE (dh[i]==f1h[i]*f2h[i]);
+          else
+            REQUIRE (dh[i]==fv);
+
+          // Also check that diag mask is the prod of input masks
+          REQUIRE (dmh[i]==m1h[i]*m2h[i]);
+        }
+      } else if (mask1) {
+        for (int i=0; i<ncols; ++i) {
+          if (m1h[i])
+            REQUIRE (dh[i]==f1h[i]*f2h[i]);
+          else
+            REQUIRE (dh[i]==fv);
+        }
+        // Diag mask should alias f1's
+        REQUIRE (dm.is_aliasing(m1));
+      } else if (mask2) {
+        for (int i=0; i<ncols; ++i) {
+          if (m2h[i])
+            REQUIRE (dh[i]==f1h[i]*f2h[i]);
+          else
+            REQUIRE (dh[i]==fv);
+        }
+        // Diag mask should alias f2's
+        REQUIRE (dm.is_aliasing(m2));
+      } else {
+        for (int i=0; i<ncols; ++i) {
+          REQUIRE (dh[i]==f1h[i]*f2h[i]);
+        }
+      }
+    }
+  }
 }
 
 }  // namespace scream
