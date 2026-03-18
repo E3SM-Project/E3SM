@@ -57,13 +57,9 @@ void FieldManager::register_field (const FieldRequest& req)
 
   // Get or create the new field
   if (!has_field(id.name(), grid_name)) {
-
-    EKAT_REQUIRE_MSG (id.data_type()==field_valid_data_types().at<Real>(),
-        "Error! While refactoring, we only allow the Field data type to be Real.\n"
-        "       If you're done with refactoring, go back and fix things.\n");
     m_fields[grid_name][id.name()] = std::make_shared<Field>(id);
   } else {
-    // Make sure the input field has the same layout and units as the field already stored.
+    // Make sure the input field has the same layout, units, and data type as the field already stored.
     // TODO: this is the easiest way to ensure everyone uses the same units.
     //       However, in the future, we *may* allow different units, providing
     //       the users with conversion routines perhaps.
@@ -79,6 +75,12 @@ void FieldManager::register_field (const FieldRequest& req)
         "         - input id:  " + id.get_id_string() + "\n"
         "         - stored id: " + id0.get_id_string() + "\n"
         "       Please, check and make sure all atmosphere processes use the same layout for a given field.\n");
+
+    EKAT_REQUIRE_MSG(id.data_type()==id0.data_type(),
+        "Error! Field '" + id.name() + "' already registered with different data_type:\n"
+        "         - input id:  " + id.get_id_string() + "\n"
+        "         - stored id: " + id0.get_id_string() + "\n"
+        "       Please, check and make sure all atmosphere processes use the same data_type for a given field.\n");
   }
 
   // Make sure the field can accommodate the requested value type
