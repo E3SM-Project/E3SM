@@ -8,7 +8,7 @@ list(APPEND INCLUDES "core_ocean/gotm/include")
 # check if lapack is linked
 if (LAPACK_FOUND AND BLAS_FOUND)
   list(APPEND CPPDEFS "-DUSE_LAPACK")
-  list(APPEND LIBRARIES BLAS::BLAS LAPACK::LAPACK)
+  list(APPEND LIBRARIES LAPACK::LAPACK BLAS::BLAS)
 endif()
 
 if (USE_PETSC)
