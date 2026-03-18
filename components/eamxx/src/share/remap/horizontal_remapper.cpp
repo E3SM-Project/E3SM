@@ -4,6 +4,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
 #include "share/field/field.hpp"
+#include "share/field/field_utils.hpp"
 #include "share/util/eamxx_timing.hpp"
 
 #include <ekat_team_policy_utils.hpp>
@@ -313,19 +314,14 @@ void HorizontalRemapper::remap_fwd_impl ()
 
   // Rescale any fields that had the mask applied, and compute tgt field mask by comparing tgt_mask_real against threshold
   if (m_track_mask) {
+    const Real mask_threshold = std::numeric_limits<Real>::epsilon();  // TODO: make this configurable
     for (int i=0; i<m_num_fields; ++i) {
       auto& f_tgt = m_tgt_fields[i];
       if (f_tgt.get_header().has_extra_data("valid_mask")) {
-        const auto& mask_name = f_tgt.get_header().get_extra_data<Field>("valid_mask").name();
-        const auto& real_mask = m_name_to_tgt_real_mask.at(mask_name);
-        // TODO:
-        //  1. compute mask=real_mask>thresh via compute_mask
-        //  2. replace rescale_masked_fields with f_tgt.scale_inv(real_mask,mask) once it's available
-        if (can_pack_field(f_tgt) and can_pack_field(real_mask)) {
-          rescale_masked_fields<SCREAM_PACK_SIZE>(f_tgt,real_mask);
-        } else {
-          rescale_masked_fields<1>(f_tgt,real_mask);
-        }
+        auto& mask = f_tgt.get_header().get_extra_data<Field>("valid_mask");
+        const auto& real_mask = m_name_to_tgt_real_mask.at(mask.name());
+        compute_mask(real_mask,mask_threshold,Comparison::GE,mask);
+        f_tgt.scale_inv(real_mask,mask);
       }
     }
   }
@@ -455,137 +451,6 @@ local_mat_vec (const Field& x, const Field& y) const
   }
   if (m_timers_enabled)
     stop_timer(name()+" mat-vec");
-}
-
-template<int PackSize>
-void HorizontalRemapper::
-rescale_masked_fields (const Field& x, const Field& real_mask) const
-{
-  if (m_timers_enabled)
-    start_timer(name()+" rescale");
-
-  using RangePolicy = typename KT::RangePolicy;
-  using MemberType  = typename KT::MemberType;
-  using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
-  using Pack        = ekat::Pack<Real,PackSize>;
-  using Mask        = ekat::Mask<PackSize>;
-  using PackInfo    = ekat::PackInfo<PackSize>;
-
-  constexpr auto fill_val = constants::fill_value<Real>;
-
-  const auto& layout = x.get_header().get_identifier().get_layout();
-  const int rank = layout.rank();
-  const int ncols = m_tgt_grid->get_num_local_dofs();
-  const Real mask_threshold = std::numeric_limits<Real>::epsilon();  // TODO: Should we not hardcode the threshold for simply masking out the column.
-
-  Pack fv_pack(fill_val);
-  auto& mask = x.get_header().get_extra_data<Field>("valid_mask");
-  switch (rank) {
-    case 1:
-    {
-      // Unlike get_view, get_strided_view returns a LayoutStride view,
-      // therefore allowing the 1d field to be a subfield of a 2d field
-      // along the 2nd dimension.
-      auto x_view = x.get_strided_view<Real*>();
-      auto mr_view = real_mask.get_view<const Real*>();
-      auto m_view = mask.get_view<int*>();
-      Kokkos::parallel_for(RangePolicy(0,ncols),
-                           KOKKOS_LAMBDA(const int& icol) {
-        m_view(icol) = mr_view(icol)>mask_threshold;
-        if (m_view(icol)) {
-          x_view(icol) /= mr_view(icol);
-        } else {
-          x_view(icol) = fill_val;
-        }
-      });
-      break;
-    }
-    case 2:
-    {
-      auto x_view = x.get_view<Pack**>();
-      auto mr_view = real_mask.get_view<const Pack**>();
-      auto m_view = mask.get_view<Mask**>();
-      const int dim1 = PackInfo::num_packs(layout.dim(1));
-      auto policy = TPF::get_default_team_policy(ncols,dim1);
-      Kokkos::parallel_for(policy,
-                           KOKKOS_LAMBDA(const MemberType& team) {
-        const auto icol = team.league_rank();
-        auto x_sub = ekat::subview(x_view,icol);
-        auto mr_sub = ekat::subview(mr_view,icol);
-        auto m_sub = ekat::subview(m_view,icol);
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
-                            [&](const int j){
-          m_sub(j) = mr_sub(j) > mask_threshold;                  
-          if (m_sub(j).any()) {
-            x_sub(j).set(m_sub(j),x_sub(j)/mr_sub(j),fv_pack);
-          } else {
-            x_sub(j) = fv_pack;
-          }
-        });
-      });
-      break;
-    }
-    case 3:
-    {
-      auto x_view = x.get_view<Pack***>();
-      auto mr_view = real_mask.get_view<const Pack***>();
-      auto m_view = mask.get_view<Mask***>();
-      const int dim1 = layout.dim(1);
-      const int dim2 = PackInfo::num_packs(layout.dim(2));
-      auto policy = TPF::get_default_team_policy(ncols,dim1*dim2);
-      Kokkos::parallel_for(policy,
-                           KOKKOS_LAMBDA(const MemberType& team) {
-        const auto icol = team.league_rank();
-        auto x_sub = ekat::subview(x_view,icol);
-        auto mr_sub = ekat::subview(mr_view,icol);
-        auto m_sub = ekat::subview(m_view,icol);
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2),
-                            [&](const int idx){
-          const int j = idx / dim2;
-          const int k = idx % dim2;
-          m_sub(j,k) = mr_sub(j,k) > mask_threshold;                  
-          if (m_sub(j,k).any()) {
-            x_sub(j,k).set(m_sub(j,k),x_sub(j,k)/mr_sub(j,k),fv_pack);
-          } else {
-            x_sub(j,k) = fv_pack;
-          }
-        });
-      });
-      break;
-    }
-    case 4:
-    {
-      auto x_view = x.get_view<Pack****>();
-      auto mr_view = real_mask.get_view<const Pack****>();
-      auto m_view = mask.get_view<Mask****>();
-      const int dim1 = layout.dim(1);
-      const int dim2 = layout.dim(2);
-      const int dim3 = PackInfo::num_packs(layout.dim(3));
-      auto policy = TPF::get_default_team_policy(ncols,dim1*dim2*dim3);
-      Kokkos::parallel_for(policy,
-                           KOKKOS_LAMBDA(const MemberType& team) {
-        const auto icol = team.league_rank();
-        auto x_sub = ekat::subview(x_view,icol);
-        auto mr_sub = ekat::subview(mr_view,icol);
-        auto m_sub = ekat::subview(m_view,icol);
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2*dim3),
-                            [&](const int idx){
-          const int j = (idx / dim3) / dim2;
-          const int k = (idx / dim3) % dim2;
-          const int l =  idx % dim3;
-          m_sub(j,k,l) = mr_sub(j,k,l) > mask_threshold;                  
-          if (m_sub(j,k,l).any()) {
-            x_sub(j,k,l).set(m_sub(j,k,l),x_sub(j,k,l)/mr_sub(j,k,l),fv_pack);
-          } else {
-            x_sub(j,k,l) = fv_pack;
-          }
-        });
-      });
-      break;
-    }
-  }
-  if (m_timers_enabled)
-    stop_timer(name()+" rescale");
 }
 
 template<int PackSize>

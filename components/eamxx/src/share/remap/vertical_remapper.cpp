@@ -221,9 +221,6 @@ registration_ends_impl ()
             " - tgt field name: " + tgt.name() + "\n");
 
         tgt.get_header().set_extra_data("valid_mask",mask);
-
-        // Since we do mask (at top and/or bot), the tgt field MAY be contain fill_value entries
-        tgt.get_header().set_may_be_filled(true);
       }
     } else {
       // If a field does not have LEV or ILEV it may still have fill_value tracking assigned from somewhere else.
@@ -235,9 +232,6 @@ registration_ends_impl ()
             " - tgt field name: " + tgt.name() + "\n");
         auto src_mask = src.get_header().get_extra_data<Field>("valid_mask");
         tgt.get_header().set_extra_data("valid_mask",src_mask);
-      }
-      if (src.get_header().may_be_filled()) {
-        tgt.get_header().set_may_be_filled(true);
       }
     }
   }
@@ -439,7 +433,6 @@ void VerticalRemapper::remap_fwd_impl ()
       }
     }
   }
-
 }
 
 template<int Packsize>
