@@ -58,7 +58,7 @@ class Tendencies {
 
    // Instances of tendency terms
    ThicknessFluxDivOnCell ThicknessFluxDiv;
-   PotentialVortHAdvOnEdge PotientialVortHAdv;
+   PotentialVortHAdvOnEdge PotentialVortHAdv;
    KEGradOnEdge KEGrad;
    SSHGradOnEdge SSHGrad;
    VelocityDiffusionOnEdge VelocityDiffusion;
