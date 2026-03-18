@@ -61,6 +61,7 @@ inline int get_type_size (const DataType data_type) {
     case DataType::IntType:    return sizeof(int);
     case DataType::FloatType:  return sizeof(float);
     case DataType::DoubleType: return sizeof(double);
+    case DataType::Invalid:    return 0;
     default:
       EKAT_ERROR_MSG("Error! Unsupported DataType value.\n");
   }
