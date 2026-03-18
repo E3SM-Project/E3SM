@@ -35,13 +35,18 @@ SET (USE_QUEUING FALSE CACHE BOOL "")
 # for standalone HOMME builds:
 SET(CPRNC_DIR /global/cfs/cdirs/e3sm/tools/cprnc CACHE FILEPATH "")
 
+SET (HOMMEXX_BFB_TESTING      TRUE CACHE BOOL "")
+SET (BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")
+SET (BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")
+SET (HOMME_TESTING_PROFILE    "short" CACHE STRING "")
+
 SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
 IF(DEFINED ENV{MKLROOT})
   SET (HOMME_USE_MKL "TRUE" CACHE FILEPATH "")
   # turn on additional intel compiler flags
-  SET (ADD_Fortran_FLAGS "-traceback" CACHE STRING "")
-  SET (ADD_C_FLAGS       "-traceback" CACHE STRING "")
-  SET (ADD_CXX_FLAGS     "-traceback" CACHE STRING "")
+  SET (ADD_Fortran_FLAGS "-traceback -fp-model strict -O1" CACHE STRING "")
+  SET (ADD_C_FLAGS       "-traceback -fp-model strict -O1" CACHE STRING "")
+  SET (ADD_CXX_FLAGS     "-traceback -fp-model strict -O1" CACHE STRING "")
 ENDIF()
 
 
