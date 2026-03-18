@@ -2422,11 +2422,11 @@ contains
           nt = 1
           do nr = rtmCTL%begr,rtmCTL%endr
               if(TUnit_lake_r%lake_flg(nr) >=1) then
-                 budget_terms(bv_lake_i,nt) = budget_terms(bv_lake_i,nt) + TLake_r%V_str(nr)
+                 budget_terms(bv_lake_i,nt) = budget_terms(bv_lake_i,nt) + TLake_r%V_str(nr) * TUnit%frac(nr)
                  vlake_i(nr) = TLake_r%V_str(nr)
               end if
               if(TUnit_lake_t%lake_flg(nr) >=1) then
-                 budget_terms(bv_lake_i,nt) = budget_terms(bv_lake_i,nt) + TLake_t%V_str(nr)
+                 budget_terms(bv_lake_i,nt) = budget_terms(bv_lake_i,nt) + TLake_t%V_str(nr) * TUnit%frac(nr)
                  vlake_i(nr) = TLake_t%V_str(nr)
               end if
           enddo
@@ -3370,15 +3370,15 @@ contains
           nt = 1
           do nr = rtmCTL%begr,rtmCTL%endr
              if(TUnit_lake_r%lake_flg(nr) >=1) then
-                 budget_terms(bv_lake_f,nt) = budget_terms(bv_lake_f,nt) + TLake_r%V_str(nr)
-                 budget_terms(br_lake_prcp,nt) = budget_terms(br_lake_prcp,nt) + rtmCTL%lake_r_prcp_nt1(nr)*delt_coupling           ! (Sum up lake surface precipitation.)
-                 budget_terms(br_lake_evap,nt) = budget_terms(br_lake_evap,nt) + rtmCTL%lake_r_evap_nt1(nr)*delt_coupling           ! (Sum up lake surface evaporation.)
+                 budget_terms(bv_lake_f,nt) = budget_terms(bv_lake_f,nt) + TLake_r%V_str(nr) * TUnit%frac(nr)
+                 budget_terms(br_lake_prcp,nt) = budget_terms(br_lake_prcp,nt) + rtmCTL%lake_r_prcp_nt1(nr)*delt_coupling * TUnit%frac(nr)
+                 budget_terms(br_lake_evap,nt) = budget_terms(br_lake_evap,nt) + rtmCTL%lake_r_evap_nt1(nr)*delt_coupling * TUnit%frac(nr)
                  vlake_f(nr) = TLake_r%V_str(nr)
              end if
              if(TUnit_lake_t%lake_flg(nr) >=1) then
-                 budget_terms(bv_lake_f,nt) = budget_terms(bv_lake_f,nt) + TLake_t%V_str(nr)
-                 budget_terms(br_lake_prcp,nt) = budget_terms(br_lake_prcp,nt) + rtmCTL%lake_t_prcp_nt1(nr)*delt_coupling           ! (Sum up lake surface precipitation.)
-                 budget_terms(br_lake_evap,nt) = budget_terms(br_lake_evap,nt) + rtmCTL%lake_t_evap_nt1(nr)*delt_coupling           ! (Sum up lake surface evaporation.)
+                 budget_terms(bv_lake_f,nt) = budget_terms(bv_lake_f,nt) + TLake_t%V_str(nr) * TUnit%frac(nr)
+                 budget_terms(br_lake_prcp,nt) = budget_terms(br_lake_prcp,nt) + rtmCTL%lake_t_prcp_nt1(nr)*delt_coupling * TUnit%frac(nr)
+                 budget_terms(br_lake_evap,nt) = budget_terms(br_lake_evap,nt) + rtmCTL%lake_t_evap_nt1(nr)*delt_coupling * TUnit%frac(nr)
                  vlake_f(nr) = TLake_t%V_str(nr)
              end if
           enddo
@@ -3605,7 +3605,8 @@ contains
                                                                              (budget_global(bv_wh_f,nt)-budget_global(bv_wh_i,nt) + &
                                                                               budget_global(bv_wt_f,nt)-budget_global(bv_wt_i,nt) + &
                                                                               budget_global(bv_wr_f,nt)-budget_global(bv_wr_i,nt) + &
-                                                                              budget_global(bv_dstor_f,nt)-budget_global(bv_dstor_i,nt)),&
+                                                                              budget_global(bv_dstor_f,nt)-budget_global(bv_dstor_i,nt) + &
+                                                                              budget_global(bv_lake_f,nt)-budget_global(bv_lake_i,nt)),&
                                                                               ' (should be zero)'
              endif           
              write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volume   init = ',nt,budget_global(bv_volt_i,nt)
@@ -3643,6 +3644,7 @@ contains
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x input check   = ',nt,budget_input - &
                                                                              (budget_global(br_qsur,nt)+budget_global(br_qsub,nt)+ &
                                                                               budget_global(br_qgwl,nt)+budget_global(br_qdto,nt)+ &
+                                                                              budget_global(br_lake_prcp,nt)+ &
                                                                               budget_global(br_ehexch,nt)+budget_global(br_etexch,nt)+ &
                                                                               budget_global(br_erexch,nt)), ' (should be zero)'
                                                                              ! + budget_global(br_qdem,nt)), commented out by Tian 3/13/2018
@@ -3662,7 +3664,8 @@ contains
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x output check  = ',nt,budget_output - &
                                                                              (budget_global(br_ocnout,nt) + budget_global(br_direct,nt) + &
                                                                               budget_global(br_flood,nt) + &
-                                                                              budget_global(bv_dsupp_f,nt)-budget_global(bv_dsupp_i,nt)), &
+                                                                              budget_global(bv_dsupp_f,nt)-budget_global(bv_dsupp_i,nt) + &
+                                                                              budget_global(br_lake_evap,nt)), &
                                                                              ' (should be zero)'
            endif
            if (budget_write) then
