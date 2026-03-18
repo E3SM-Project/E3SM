@@ -121,19 +121,6 @@ void GWDrag::initialize_impl (const RunType) {
   add_postcondition_check<Interval>(get_field_out("T_mid"),       m_grid,100.0,400.0,false);
   add_postcondition_check<Interval>(get_field_out("horiz_winds"), m_grid,-200.0, 200.0,false);
 
-  // GWF::gw_common_init( m_nlev,
-  //                      pgwv,
-  //                      dc,
-  //                      cref_in,
-  //                      orographic_only_in,
-  //                      do_molec_diff_in,
-  //                      tau_0_ubc_in,
-  //                      nbot_molec_in,
-  //                      ktop_in,
-  //                      kbotbg_in,
-  //                      fcrit2_in,
-  //                      kwv_in,
-  //                      alpha_in );
 }
 
 /*------------------------------------------------------------------------------------------------*/
