@@ -35,12 +35,12 @@ module HydrologyDrainageMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine HydrologyDrainage(bounds,    &
-       num_nolakec, filter_nolakec,       &
-       num_hydrologyc, filter_hydrologyc, &
-       num_urbanc, filter_urbanc,         &
-       num_do_smb_c, filter_do_smb_c,     &
-       atm2lnd_vars, glc2lnd_vars,    &
+  subroutine HydrologyDrainage(bounds,           &
+       num_nolakec, filter_nolakec,              &
+       num_hydrologyc, filter_hydrologyc,        &
+       num_urbanc, filter_urbanc,                &
+       num_do_smb_c, filter_do_smb_c,            &
+       atm2lnd_vars, glc2lnd_vars, ocn2lnd_vars, &
        soilhydrology_vars, soilstate_vars )
     ! !DESCRIPTION:
     ! Calculates soil/snow hydrology with drainage (subsurface runoff)
@@ -56,6 +56,7 @@ contains
     use TopounitType       , only : top_pp
     use TopounitDataType   , only : top_ws
     use atm2lndType      , only : atm2lnd_type
+    use ocn2lndType      , only : ocn2lnd_type
     use elm_varpar       , only : nlevgrnd, nlevurb, nlevsoi
     use SoilHydrologyMod , only : ELMVICMap, Drainage
     use elm_varctl       , only : use_vsfm, use_IM2_hillslope_hydrology
@@ -72,6 +73,7 @@ contains
     integer                  , intent(in)    :: filter_do_smb_c(:)   ! column filter for bare land SMB columns
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
     type(glc2lnd_type)       , intent(in)    :: glc2lnd_vars
+    type(ocn2lnd_type)       , intent(in)    :: ocn2lnd_vars
     type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
     type(soilstate_type)     , intent(inout) :: soilstate_vars
 
@@ -114,6 +116,7 @@ contains
          qflx_drain_perched     => col_wf%qflx_drain_perched      , & ! Output: [real(r8) (:)   ]  sub-surface runoff from perched zwt (mm H2O /s)
          qflx_rsub_sat          => col_wf%qflx_rsub_sat           , & ! Output: [real(r8) (:)   ]  soil saturation excess [mm h2o/s]
          qflx_drain             => col_wf%qflx_drain              , & ! Output: [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)
+         qflx_lnd2ocn           =>    col_wf%qflx_lnd2ocn         , & ! Output: [real(r8) (:)   ] lateral flow from lnd to ocn (mm H2O /s)
          qflx_surf              => col_wf%qflx_surf               , & ! Output: [real(r8) (:)   ]  surface runoff (mm H2O /s)
          qflx_infl              => col_wf%qflx_infl               , & ! Output: [real(r8) (:)   ]  infiltration (mm H2O /s)
          qflx_qrgwl             => col_wf%qflx_qrgwl              , & ! Output: [real(r8) (:)   ]  qflx_surf at glaciers, wetlands, lakes
@@ -147,7 +150,7 @@ contains
       if (.not. use_vsfm) then
          call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
               num_urbanc, filter_urbanc,&
-              soilhydrology_vars, soilstate_vars, dtime)
+              soilhydrology_vars, soilstate_vars, ocn2lnd_vars, dtime)
       endif
 
 #ifndef _OPENACC
@@ -222,7 +225,7 @@ contains
          qflx_glcice_frz(c) = 0._r8
          qflx_glcice_frz_diag(c) = 0._r8
 
-         if (lun_pp%itype(l)==istice .and. qflx_snwcp_ice(c) > 0.0_r8) then
+         if (lun_pp%itype(l) == istice .and. qflx_snwcp_ice(c) > 0.0_r8) then
                qflx_glcice_frz_diag(c) = qflx_snwcp_ice(c)
                qflx_glcice_diag(c) = qflx_glcice_diag(c) + qflx_glcice_frz_diag(c)
          endif
@@ -239,7 +242,7 @@ contains
            if (glc_dyn_runoff_routing(g)) qflx_snwcp_ice(c) = 0._r8
          end if
 
-         !if (lun_pp%itype(l)==istice) then
+         !if (lun_pp%itype(l) == istice) then
          !      qflx_glcice_frz_diag(c) = qflx_snwcp_ice(c)
          !      qflx_glcice_diag(c) = qflx_glcice_diag(c) + qflx_glcice_frz_diag(c)
          !endif
@@ -259,14 +262,15 @@ contains
          tpu_ind = top_pp%topo_grc_ind(t)  !Get topounit index on the grid
          g = col_pp%gridcell(c)
 
-         if (lun_pp%itype(l)==istwet .or. lun_pp%itype(l)==istice      &
-                                  .or. lun_pp%itype(l)==istice_mec) then
+         if (lun_pp%itype(l) == istwet .or. lun_pp%itype(l) == istice      &
+                                  .or. lun_pp%itype(l) == istice_mec) then
 
             qflx_drain(c)         = 0._r8
             qflx_drain_perched(c) = 0._r8
             qflx_h2osfc_surf(c)   = 0._r8
             qflx_surf(c)          = 0._r8
             qflx_infl(c)          = 0._r8
+            qflx_lnd2ocn(c)       = 0._r8
             qflx_qrgwl(c) = forc_rain(t) + forc_snow(t) + qflx_floodg(g) - qflx_evap_tot(c) - qflx_snwcp_ice(c) - &
                  (endwb(c)-begwb(c))/dtime
 
@@ -276,7 +280,7 @@ contains
             ! glc_dyn_runoff_routing = true: in this case, melting ice runs off, and excess
             ! snow is sent to CISM, where it is converted to ice. These corrections are
             ! done here:
-            if (glc_dyn_runoff_routing(g) .and. lun_pp%itype(l)==istice_mec) then
+            if (glc_dyn_runoff_routing(g) .and. lun_pp%itype(l) == istice_mec) then
             ! this allows GLC melt to runoff to qflx_qrgwl! 
 
                ! If glc_dyn_runoff_routing=T, add meltwater from istice_mec ice columns to the runoff.
@@ -333,12 +337,12 @@ contains
 
          qflx_runoff(c) = qflx_drain(c) + qflx_surf(c)  + qflx_h2osfc_surf(c) + qflx_qrgwl(c) + qflx_drain_perched(c)
 
-         if ((lun_pp%itype(l)==istsoil .or. lun_pp%itype(l)==istcrop) .and. col_pp%active(c)) then
+         if ((col_pp%is_soil(c) .or. col_pp%is_crop(c)) .and. col_pp%active(c)) then
             qflx_irr_demand(c) = -1.0_r8 * f_surf(g,tpu_ind)*qflx_irrig(c) !surface water demand send to MOSART
          end if
          if (lun_pp%urbpoi(l)) then
             qflx_runoff_u(c) = qflx_runoff(c)
-         else if (lun_pp%itype(l)==istsoil .or. lun_pp%itype(l)==istcrop) then
+         else if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
             qflx_runoff_r(c) = qflx_runoff(c)
          end if
 

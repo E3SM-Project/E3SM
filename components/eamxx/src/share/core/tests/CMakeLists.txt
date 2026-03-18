@@ -32,10 +32,10 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
 
   # Ensure that FPE *do* throw when we expect them to
   if (SCREAM_FPE)
-    CreateUnitTestExec (fpe_check "fpe_check.cpp"
+    CreateUnitTest (fpe_check "fpe_check.cpp"
       WILL_FAIL LABELS "check")
   else()
-    CreateUnitTestExec (fpe_check "fpe_check.cpp"
+    CreateUnitTest (fpe_check "fpe_check.cpp"
       LABELS "check")
   endif()
 endif()

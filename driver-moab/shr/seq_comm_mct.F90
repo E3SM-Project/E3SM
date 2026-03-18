@@ -227,6 +227,7 @@ module seq_comm_mct
   integer, public :: mbintxao ! iMOAB id for intersection mesh between ocean and atmosphere
   integer, public :: mbintxoa ! iMOAB id for intersection mesh between atmosphere and ocean
   integer, public :: mblxid   ! iMOAB id for land mesh migrated to coupler pes
+  logical, public :: mb_scm_land = .false. ! land will be migrated if this is true, for scm case; usually one point only
 !!#ifdef MOABDEBUG
   integer, public :: mblx2id   ! iMOAB id for land mesh instanced from MCT on coupler pes
   integer, public :: mbox2id   ! iMOAB id for ocn mesh instanced from MCT on coupler pes

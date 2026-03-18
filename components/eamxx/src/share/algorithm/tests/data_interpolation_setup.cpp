@@ -25,7 +25,7 @@ TEST_CASE ("data_interpolation_setup")
       "Error! You should run the data_interpolation_setup test with ONE rank.\n");
 
   // Create grid
-  std::shared_ptr<const AbstractGrid> grid = create_point_grid("pg",ngcols,nlevs,comm);
+  std::shared_ptr<const AbstractGrid> grid = create_point_grid("pg",ngcols,nlevs,comm,1);
 
   // Create and setup two files, so we can test both YearlyPeriodic and LinearHistory
   std::vector<std::string> files = {
@@ -147,23 +147,24 @@ TEST_CASE ("data_interpolation_setup")
 
   std::vector<int> col(nnz), row(nnz);
   std::vector<double> S(nnz);
+  int gid_base = 1;
   for (int i=0,nnz=0; i<ngdofs_tgt; ++i) {
     if (i % 2 == 0) {
       // Fine grid point also in the src grid: only diag entry
-      col[nnz] = i / 2;
-      row[nnz] = i;
+      col[nnz] = gid_base + i / 2;
+      row[nnz] = gid_base + i;
         S[nnz] = 1.0;
 
       ++nnz;
     } else {
       // Add 0.5 times the left src dof and 0.5 times the right src dof
-      col[nnz] = i / 2;
-      row[nnz] = i;
+      col[nnz] = gid_base + i / 2;
+      row[nnz] = gid_base + i;
         S[nnz] = 0.5;
       ++nnz;
 
-      col[nnz] = (i / 2) + 1;
-      row[nnz] = i;
+      col[nnz] = gid_base + (i / 2) + 1;
+      row[nnz] = gid_base + i;
         S[nnz] = 0.5;
       ++nnz;
     }

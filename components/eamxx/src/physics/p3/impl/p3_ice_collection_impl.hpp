@@ -10,16 +10,16 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_cldliq_collection(
-  const Spack& rho, const Spack& temp,
-  const Spack& rhofaci, const Spack& table_val_qc2qi_collect,
-  const Spack& qi_incld, const Spack& qc_incld,
-  const Spack& ni_incld, const Spack& nc_incld,
-  Spack& qc2qi_collect_tend, Spack& nc_collect_tend, Spack& qc2qr_ice_shed_tend, Spack& ncshdc,
+  const Pack& rho, const Pack& temp,
+  const Pack& rhofaci, const Pack& table_val_qc2qi_collect,
+  const Pack& qi_incld, const Pack& qc_incld,
+  const Pack& ni_incld, const Pack& nc_incld,
+  Pack& qc2qi_collect_tend, Pack& nc_collect_tend, Pack& qc2qr_ice_shed_tend, Pack& ncshdc,
   const P3Runtime& runtime_options,
-  const Smask& context)
+  const Mask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
-  constexpr Scalar tmelt  = C::Tmelt;
+  constexpr Scalar tmelt  = C::Tmelt.value;
 
   // set up masks
   const auto t_is_negative        = temp <= tmelt;
@@ -55,17 +55,17 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_rain_collection(
-  const Spack& rho, const Spack& temp,
-  const Spack& rhofaci, const Spack& logn0r,
-  const Spack& table_val_nr_collect, const Spack& table_val_qr2qi_collect,
-  const Spack& qi_incld, const Spack& ni_incld,
-  const Spack& qr_incld,
-  Spack& qr2qi_collect_tend, Spack& nr_collect_tend,
+  const Pack& rho, const Pack& temp,
+  const Pack& rhofaci, const Pack& logn0r,
+  const Pack& table_val_nr_collect, const Pack& table_val_qr2qi_collect,
+  const Pack& qi_incld, const Pack& ni_incld,
+  const Pack& qr_incld,
+  Pack& qr2qi_collect_tend, Pack& nr_collect_tend,
   const P3Runtime& runtime_options,
-  const Smask& context)
+  const Mask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
-  constexpr Scalar tmelt  = C::Tmelt;
+  constexpr Scalar tmelt  = C::Tmelt.value;
 
   // Set up masks
   const auto t_is_negative        = temp <= tmelt;
@@ -105,11 +105,11 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_self_collection(
-  const Spack& rho, const Spack& rhofaci,
-  const Spack& table_val_ni_self_collect, const Spack& eii,
-  const Spack& qm_incld, const Spack& qi_incld,
-  const Spack& ni_incld, Spack& ni_selfcollect_tend,
-  const Smask& context)
+  const Pack& rho, const Pack& rhofaci,
+  const Pack& table_val_ni_self_collect, const Pack& eii,
+  const Pack& qm_incld, const Pack& qi_incld,
+  const Pack& ni_incld, Pack& ni_selfcollect_tend,
+  const Mask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar zero = C::ZERO;
@@ -118,12 +118,12 @@ void Functions<S,D>
   const auto qm_incld_positive = qm_incld > zero && context;
   const auto qi_incld_ge_small = qi_incld >= qsmall && context;
 
-  Spack tmp1{0.0};
-  Spack Eii_fact{0.0};
-  Smask tmp1_lt_six{0};
-  Smask tmp1_ge_six{0};
-  Smask tmp1_lt_nine{0};
-  Smask tmp1_ge_nine{0};
+  Pack tmp1{0.0};
+  Pack Eii_fact{0.0};
+  Mask tmp1_lt_six{0};
+  Mask tmp1_ge_six{0};
+  Mask tmp1_lt_nine{0};
+  Mask tmp1_ge_nine{0};
 
   if (qi_incld_ge_small.any()) {
     // Determine additional collection efficiency factor to be applied to ice-ice collection.

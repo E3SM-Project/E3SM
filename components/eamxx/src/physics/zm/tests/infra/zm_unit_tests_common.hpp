@@ -48,10 +48,10 @@ struct UnitWrap {
 
     using Functions          = scream::zm::Functions<Real, Device>;
     using Scalar             = typename Functions::Scalar;
-    using Spack              = typename Functions::Spack;
+    using Pack              = typename Functions::Pack;
 
     static constexpr Int max_pack_size = 16;
-    static constexpr Int num_test_itrs = max_pack_size / Spack::n;
+    static constexpr Int num_test_itrs = max_pack_size / Pack::n;
 
     struct Base : public UnitBase {
 
@@ -65,8 +65,15 @@ struct UnitWrap {
     };
 
     // Put struct decls here
-    struct Test_zm_find_mse_max;
-    
+    struct TestIentropy;
+    struct TestEntropy;
+    struct TestZmTransportTracer;
+    struct TestZmTransportMomentum;
+    struct TestComputeDiluteCape;
+    struct TestFindMseMax;
+    struct TestComputeDiluteParcel;
+    struct TestComputeCapeFromParcel;
+    struct TestZmConvMcspCalculateShear;
   }; // UnitWrap
 };
 

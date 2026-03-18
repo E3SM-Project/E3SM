@@ -386,7 +386,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
 
     integer (in), pointer   :: l2racc_lm_cnt
     integer (in)   :: nx_lnd ! will be used if land and atm are on same grid
-    integer (in)   ::  ierr, dummy
+    integer (in)   ::  ierr, ngv
 
     real(r8), dimension(:,:), pointer  :: p_x2oacc_om
     real(r8), dimension(:,:), pointer  :: p_o2racc_om
@@ -453,12 +453,12 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
         if (lnd_present) then
              if(samegrid_al) then
                 ! nx for land will be from global nb atmosphere
-                ierr = iMOAB_GetGlobalInfo(mbaxid, dummy, nx_lnd) ! max id for land will come from atm
+                ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nx_lnd) ! max id for land will come from atm
                 call seq_io_read(moab_rest_file, mblxid, 'fractions_lx', &
                    'afrac:lfrac:lfrin', nx=nx_lnd)
              else if(samegrid_lr) then
                ! nx for land will be from global nb rof
-               ierr = iMOAB_GetGlobalInfo(mbrxid, dummy, nx_lnd) ! max id for land will come from rof
+               ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nx_lnd) ! max id for land will come from rof
                call seq_io_read(moab_rest_file, mblxid, 'fractions_lx', &
                   'afrac:lfrac:lfrin', nx=nx_lnd)
              else ! is this ever true  ? 
@@ -474,13 +474,13 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
              p_l2racc_lm => prep_rof_get_l2racc_lm()
              if(samegrid_al) then
                 ! nx for land will be from global nb atmosphere
-                ierr = iMOAB_GetGlobalInfo(mbaxid, dummy, nx_lnd) ! max id for land will come from atm
+                ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nx_lnd) ! max id for land will come from atm
                 call seq_io_read(moab_rest_file, mblxid, 'l2racc_lx', &
                  trim(tagname), &
                  matrix = p_l2racc_lm, nx=nx_lnd)
              else if(samegrid_lr) then
                ! nx for land will be from global nb rof
-               ierr = iMOAB_GetGlobalInfo(mbrxid, dummy, nx_lnd) ! max id for land will come from rof
+               ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nx_lnd) ! max id for land will come from rof
                call seq_io_read(moab_rest_file, mblxid, 'l2racc_lx', &
                 trim(tagname), &
                 matrix = p_l2racc_lm, nx=nx_lnd)
@@ -1013,7 +1013,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
 
     integer (in), pointer   :: l2racc_lm_cnt
     integer (in)   :: nx_lnd ! will be used if land and atm are on same grid
-    integer (in)   ::  ierr, dummy
+    integer (in)   ::  ierr, ngv
 
     real(r8), dimension(:,:), pointer  :: p_x2oacc_om
     real(r8), dimension(:,:), pointer  :: p_o2racc_om
@@ -1192,13 +1192,13 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
           if (lnd_present) then
              if(samegrid_al) then
                 ! nx for land will be from global nb atmosphere
-                ierr = iMOAB_GetGlobalInfo(mbaxid, dummy, nx_lnd) ! max id for land will come from atm
+                ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nx_lnd) ! max id for land will come from atm
                 call seq_io_write(rest_file, mblxid, 'fractions_lx', &
                  'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
                   whead=whead, wdata=wdata, nx=nx_lnd)
              else if(samegrid_lr) then
                ! nx for land will be from global nb atmosphere
-               ierr = iMOAB_GetGlobalInfo(mbrxid, dummy, nx_lnd) ! max id for land will come from rof
+               ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nx_lnd) ! max id for land will come from rof
                call seq_io_write(rest_file, mblxid, 'fractions_lx', &
                 'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
                  whead=whead, wdata=wdata, nx=nx_lnd)
@@ -1220,13 +1220,13 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
              p_l2racc_lm => prep_rof_get_l2racc_lm()
              if(samegrid_al) then
                 ! nx for land will be from global nb atmosphere
-                ierr = iMOAB_GetGlobalInfo(mbaxid, dummy, nx_lnd) ! max id for land will come from atm
+                ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nx_lnd) ! max id for land will come from atm
                 call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
                  trim(tagname), &
                  whead=whead, wdata=wdata, matrix = p_l2racc_lm, nx=nx_lnd)
              else if(samegrid_lr) then
                ! nx for land will be from global nb atmosphere
-               ierr = iMOAB_GetGlobalInfo(mbrxid, dummy, nx_lnd) ! max id for land will come from rof
+               ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nx_lnd) ! max id for land will come from rof
                call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
                 trim(tagname), &
                 whead=whead, wdata=wdata, matrix = p_l2racc_lm, nx=nx_lnd)

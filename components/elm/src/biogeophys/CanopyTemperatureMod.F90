@@ -13,7 +13,7 @@ module CanopyTemperatureMod
   use shr_kind_mod         , only : r8 => shr_kind_r8
   use shr_const_mod        , only : SHR_CONST_PI
   use decompMod            , only : bounds_type
-  use elm_varctl           , only : iulog, use_fates
+  use elm_varctl           , only : iulog, use_fates, use_finetop_rad
   use PhotosynthesisMod    , only : Photosynthesis, PhotosynthesisTotal, Fractionation
   use elm_instMod          , only : alm_fates
   use SurfaceResistanceMod , only : calc_soilevap_stress
@@ -29,6 +29,7 @@ module CanopyTemperatureMod
   use ColumnDataType       , only : col_es, col_ef, col_ws
   use VegetationType       , only : veg_pp
   use VegetationDataType   , only : veg_es, veg_ef, veg_wf
+  use GridcellType         , only : grc_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -74,6 +75,7 @@ contains
     use column_varcon      , only : icol_road_imperv, icol_road_perv
     use landunit_varcon    , only : istice, istice_mec, istwet, istsoil, istdlak, istcrop, istdlak
     use elm_varpar         , only : nlevgrnd, nlevurb, nlevsno, nlevsoi
+    use shr_const_mod   , only : SHR_CONST_PI
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -109,6 +111,7 @@ contains
     real(r8) :: vol_ice      ! partial volume of ice lens in layer
     real(r8) :: vol_liq      ! partial volume of liquid water in layer
     real(r8) :: fh2o_eff(bounds%begc:bounds%endc) ! effective surface water fraction (i.e. seen by atm)
+    real(r8) :: slope_rad, deg2rad
     !------------------------------------------------------------------------------
 
     associate(                                                          &
@@ -200,6 +203,7 @@ contains
          tssbef           =>    col_es%t_ssbef                          & ! Output: [real(r8) (:,:) ] soil/snow temperature before update (K)
          )
 
+      deg2rad = SHR_CONST_PI/180._r8
       do j = -nlevsno+1, nlevgrnd
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
@@ -244,7 +248,7 @@ contains
          if (lun_pp%itype(l)/=istwet .AND. lun_pp%itype(l)/=istice  &
               .AND. lun_pp%itype(l)/=istice_mec) then
 
-            if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+            if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
                wx   = (h2osoi_liq(c,1)/denh2o+h2osoi_ice(c,1)/denice)/dz(c,1)
                fac  = min(1._r8, wx/watsat(c,1))
                fac  = max( fac, 0.01_r8 )
@@ -297,7 +301,7 @@ contains
          end if
 
          ! compute humidities individually for snow, soil, h2osfc for vegetated landunits
-         if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+         if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
 
             call QSat(t_soisno(c,snl(c)+1), forc_pbot(t), eg, degdT, qsatg, qsatgdT)
             if (qsatg > forc_q(t) .and. forc_q(t) > qsatg) then
@@ -354,7 +358,7 @@ contains
          ! Urban emissivities are currently read in from data file
 
          if (.not. urbpoi(l)) then
-            if (lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
+            if (lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec) then
                emg(c) = 0.97_r8
             else
                emg(c) = (1._r8-frac_sno(c))*0.96_r8 + frac_sno(c)*0.97_r8
@@ -409,20 +413,22 @@ contains
 
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
+         g = veg_pp%gridcell(p)
 
          ! Initial set (needed for history tape fields)
 
          eflx_sh_tot(p) = 0._r8
          l = veg_pp%landunit(p)
+
          if (urbpoi(l)) then
             eflx_sh_tot_u(p) = 0._r8
-         else if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+         else if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
             eflx_sh_tot_r(p) = 0._r8
          end if
          eflx_lh_tot(p) = 0._r8
          if (urbpoi(l)) then
             eflx_lh_tot_u(p) = 0._r8
-         else if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+         else if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
             eflx_lh_tot_r(p) = 0._r8
          end if
          eflx_sh_veg(p) = 0._r8
@@ -439,7 +445,12 @@ contains
          ! Vegetation Emissivity
 
          avmuir = 1._r8
-         emv(p) = 1._r8-exp(-(elai(p)+esai(p))/avmuir)
+         if (use_finetop_rad .and. (.not. lun_pp%urbpoi(l))) then
+            slope_rad = grc_pp%slope_deg(g) * deg2rad
+            emv(p) = 1._r8-exp(-(elai(p)+esai(p))*cos(slope_rad)/avmuir)
+         else
+            emv(p) = 1._r8-exp(-(elai(p)+esai(p))/avmuir)
+         endif
 
          z0mv(p)   = z0m(p)
          z0hv(p)   = z0mv(p)
@@ -454,7 +465,7 @@ contains
             t = veg_pp%topounit(p)
             l = veg_pp%landunit(p)
             c = veg_pp%column(p)
-            if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+            if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
                if (frac_veg_nosno(p) == 0) then
                   forc_hgt_u_patch(p) = forc_hgt_u(t) + z0mg(c) + displa(p)
                   forc_hgt_t_patch(p) = forc_hgt_t(t) + z0mg(c) + displa(p)

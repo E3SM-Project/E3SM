@@ -90,7 +90,7 @@ void run(std::mt19937_64& engine)
 
     // Set the required fields for the diagnostic.
     std::map<std::string,Field> input_fields;
-    for (const auto& req : diag->get_required_field_requests()) {
+    for (const auto& req : diag->get_field_requests()) {
       Field f(req.fid);
       f.allocate_view();
       f.get_header().get_tracking().update_time_stamp(t0);
@@ -135,7 +135,7 @@ void run(std::mt19937_64& engine)
       Field qv_vert_integrated_flux_u_f = diag_out.clone();
       qv_vert_integrated_flux_u_f.deep_copy(0);
       const auto& qv_vert_integrated_flux_u_v = qv_vert_integrated_flux_u_f.get_view<Real*>();
-      constexpr Real g = PC::gravit;
+      constexpr Real g = PC::gravit.value;
       int comp = which_comp=="Zonal" ? 0 : 1;
 
       Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {

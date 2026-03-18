@@ -33,7 +33,7 @@ CONFIG = {
 ###############################################################################
 def test_cmake_cache_contents(test_obj, build_name, cache_var, expected_value):
 ###############################################################################
-    cache_file = TEST_DIR.parent.joinpath("ctest-build", build_name, "CMakeCache.txt")
+    cache_file = TEST_DIR.parent / "ctest-build" / test_obj.get_machine().name / build_name / "CMakeCache.txt"
     test_obj.assertTrue(cache_file.is_file(), f"Missing cache file {cache_file}") # pylint: disable=no-member
 
     grep_output = run_cmd_assert_result(test_obj, f"grep ^{cache_var} CMakeCache.txt", from_dir=cache_file.parent)
@@ -44,7 +44,7 @@ def test_cmake_cache_contents(test_obj, build_name, cache_var, expected_value):
 ###############################################################################
 def test_baseline_has_sha(test_obj, test_dir, build_name, expected_sha):
 ###############################################################################
-    baseline_sha_file = test_dir.parent/"ctest-build"/"baselines"/build_name/"baseline_git_sha"
+    baseline_sha_file = test_dir.parent/"ctest-build"/test_obj.get_machine().name/"baselines"/build_name/"baseline_git_sha"
     test_obj.assertTrue(baseline_sha_file.exists())
     with baseline_sha_file.open("r", encoding="utf-8") as fd:
         baseline_sha = fd.read().strip()
@@ -124,6 +124,9 @@ class TestBaseOuter: # Hides the TestBase class from test scanner
 
             self._results = TEST_DIR.joinpath("results")
             self._results.mkdir(parents=True, exist_ok=True) # pylint: disable=no-member
+
+        def get_machine(self):
+            return self._machine
 
         def get_cmd(self, cmd, machine):
             return cmd.replace("$machine", machine.name).replace("$results", str(self._results))
@@ -389,7 +392,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         """
         if self._full:
 
-            # Start a couple new tests, baselines will be generated in ctest-build/baselines
+            # Start a couple new tests, baselines will be generated in ctest-build/$machine/baselines
             env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_GIT_HEAD=FAKE1"
             opts = "-b LOCAL -g -t dbg -t sp"
             cmd = self.get_cmd(f"{env} ./test-all-eamxx -m $machine {opts}",

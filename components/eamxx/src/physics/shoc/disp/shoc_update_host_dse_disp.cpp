@@ -11,17 +11,17 @@ void Functions<Real,DefaultDevice>
 ::update_host_dse_disp(
   const Int& shcol,
   const Int& nlev,
-  const view_2d<const Spack>& thlm,
-  const view_2d<const Spack>& shoc_ql,
-  const view_2d<const Spack>& inv_exner,
-  const view_2d<const Spack>& zt_grid,
+  const view_2d<const Pack>& thlm,
+  const view_2d<const Pack>& shoc_ql,
+  const view_2d<const Pack>& inv_exner,
+  const view_2d<const Pack>& zt_grid,
   const view_1d<const Scalar>& phis,
-  const view_2d<Spack>& host_dse)
+  const view_2d<Pack>& host_dse)
 {
   using ExeSpace = typename KT::ExeSpace;
   using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
 
-  const auto nlev_packs = ekat::npack<Spack>(nlev);
+  const auto nlev_packs = ekat::npack<Pack>(nlev);
   const auto policy = TPF::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();

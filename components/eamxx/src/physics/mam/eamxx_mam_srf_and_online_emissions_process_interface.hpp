@@ -70,8 +70,7 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   std::string name() const { return "mam_srf_online_emissions"; }
 
   // grid
-  void set_grids(
-      const std::shared_ptr<const GridsManager> grids_manager) override;
+  void create_requests() override;
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override;
@@ -145,6 +144,9 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
 
     // Sector names in file
     std::vector<std::string> sectors;
+
+    // Species-specific scale factor
+    Real scale_factor = 1.0;
 
     // Data structure for reading interpolation
     std::shared_ptr<AbstractRemapper> horizInterp_;

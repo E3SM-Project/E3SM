@@ -324,6 +324,7 @@ contains
     ! Setup function pointers for MALI core and domain types
     call li_setup_core(corelist)
     call li_setup_domain(domain)
+    domain % domainID = 0
 
     ! ===========
     ! Initialize log manager

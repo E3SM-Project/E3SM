@@ -1083,6 +1083,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
     # We will also change the 'output_yaml_files' entry in scream_input.yaml,
     # to point to the copied files in $rundir/data
     output_yaml_files = []
+    file_signatures = []
     scream_input_file = os.path.join(rundir,'data','scream_input.yaml')
     scream_input = yaml.load(open(scream_input_file,"r"),Loader=yaml.SafeLoader)
 
@@ -1138,6 +1139,26 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
                    f"   frequency_units: {units}\n"
                    f"   ATM_NCPL: {case.get_value('ATM_NCPL')}\n"
                    f" This yields dt_atm={dt_atm} > dt_output={dt_out}. Please, adjust 'frequency' and/or 'frequency_units'\n")
+        
+        # Check for duplicate output file signatures
+        prefix = content['filename_prefix']
+        avg_type = content['averaging_type'].upper()
+        freq = content['output_control']['frequency']
+        units = content['output_control']['frequency_units']
+        signature = (prefix, avg_type, freq, units)
+        for prev_fn, prev_sig in file_signatures:
+            expect(signature != prev_sig,
+                f"Duplicate output file configuration detected!\n"
+                f"  File 1: {prev_fn}\n"
+                f"  File 2: {fn}\n"
+                f"  Both would generate files with:\n"
+                f"    - averaging_type: {avg_type}\n"
+                f"    - frequency: {freq}\n"
+                f"    - frequency_units: {units}\n"
+                f"    - filename_prefix: {prefix}\n"
+                f"  This would cause both outputs to write to the same NetCDF file.\n"
+                f"  Please modify one of the YAML files to use a different prefix or output frequency.")            
+        file_signatures.append((fn, signature))
 
         ordered_dump(content, open(dst_yaml, "w"))
 

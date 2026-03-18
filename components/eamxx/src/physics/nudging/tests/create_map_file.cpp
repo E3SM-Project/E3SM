@@ -33,18 +33,19 @@ TEST_CASE("create_map_file")
 
   std::vector<int> col(nnz), row(nnz);
   std::vector<double> S(nnz);
+  const int gid_base = 1;
   for (int i=0; i<ngdofs_src; ++i) {
-    col[i] = i;
-    row[i] = i;
+    col[i] = gid_base + i;
+    row[i] = gid_base + i;
       S[i] = 1.0;
   }
   for (int i=0; i<ngdofs_src-1; ++i) {
-    col[ngdofs_src+2*i] = i;
-    row[ngdofs_src+2*i] = ngdofs_src+i;
+    col[ngdofs_src+2*i] = gid_base + i;
+    row[ngdofs_src+2*i] = gid_base + ngdofs_src+i;
       S[ngdofs_src+2*i] = 0.5;
 
-    col[ngdofs_src+2*i+1] = i+1;
-    row[ngdofs_src+2*i+1] = ngdofs_src+i;
+    col[ngdofs_src+2*i+1] = gid_base + i+1;
+    row[ngdofs_src+2*i+1] = gid_base + ngdofs_src+i;
       S[ngdofs_src+2*i+1] = 0.5;
   }
 

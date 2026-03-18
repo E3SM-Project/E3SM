@@ -19,22 +19,22 @@ void Functions<S,D>::diag_third_shoc_moments(
   const Int&                   nlevi,
   const Scalar&                c_diag_3rd_mom,
   const bool&                  shoc_1p5tke,
-  const uview_1d<const Spack>& w_sec,
-  const uview_1d<const Spack>& thl_sec,
-  const uview_1d<const Spack>& wthl_sec,
-  const uview_1d<const Spack>& isotropy,
-  const uview_1d<const Spack>& brunt,
-  const uview_1d<const Spack>& thetal,
-  const uview_1d<const Spack>& tke,
-  const uview_1d<const Spack>& dz_zt,
-  const uview_1d<const Spack>& dz_zi,
-  const uview_1d<const Spack>& zt_grid,
-  const uview_1d<const Spack>& zi_grid,
+  const uview_1d<const Pack>& w_sec,
+  const uview_1d<const Pack>& thl_sec,
+  const uview_1d<const Pack>& wthl_sec,
+  const uview_1d<const Pack>& isotropy,
+  const uview_1d<const Pack>& brunt,
+  const uview_1d<const Pack>& thetal,
+  const uview_1d<const Pack>& tke,
+  const uview_1d<const Pack>& dz_zt,
+  const uview_1d<const Pack>& dz_zi,
+  const uview_1d<const Pack>& zt_grid,
+  const uview_1d<const Pack>& zi_grid,
   const Workspace&             workspace,
-  const uview_1d<Spack>&       w3)
+  const uview_1d<Pack>&       w3)
 {
   // Define temporary variables
-  uview_1d<Spack> isotropy_zi, w_sec_zi, brunt_zi, thetal_zi;
+  uview_1d<Pack> isotropy_zi, w_sec_zi, brunt_zi, thetal_zi;
   workspace.template take_many_contiguous_unsafe<4>(
     {"isotropy_zi",  "w_sec_zi", "brunt_zi", "thetal_zi"},
     {&isotropy_zi, &w_sec_zi, &brunt_zi, &thetal_zi});

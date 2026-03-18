@@ -441,10 +441,10 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
   // (if needed)
   const auto policy      =
   ekat::TeamPolicyFactory<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
-  const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
-  const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
+  const int n_wind_slots = ekat::npack<Pack>(2)*Pack::n;
+  const int n_trac_slots = ekat::npack<Pack>(m_num_tracers+3)*Pack::n;
   const int wsm_size     = WSM::get_total_bytes_needed(nlevi_packs,
-  13+(n_wind_slots+n_trac_slots), policy)/sizeof(Spack); mem += wsm_size;
+  13+(n_wind_slots+n_trac_slots), policy)/sizeof(Pack); mem += wsm_size;
   */
 
   // return the number of bytes allocated

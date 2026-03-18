@@ -76,11 +76,11 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing : public UnitWrap::UnitTest<D>::
 
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init pack inputs
-      Spack qc, qr, qi, qm, nc, nr, ni, bm, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r;
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      Pack qc, qr, qi, qm, nc, nr, ni, bm, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r;
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         qc[s]             = self_device(vs).qc;
         qr[s]             = self_device(vs).qr;
         qi[s]             = self_device(vs).qi;
@@ -94,14 +94,14 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing : public UnitWrap::UnitTest<D>::
         inv_cld_frac_r[s] = self_device(vs).inv_cld_frac_r;
       }
       // outputs
-      Spack qc_incld{0.}, qr_incld{0.}, qi_incld{0.}, qm_incld{0.};
-      Spack nc_incld{0.}, nr_incld{0.}, ni_incld{0.}, bm_incld{0.};
+      Pack qc_incld{0.}, qr_incld{0.}, qi_incld{0.}, qm_incld{0.};
+      Pack nc_incld{0.}, nr_incld{0.}, ni_incld{0.}, bm_incld{0.};
 
       Functions::calculate_incloud_mixingratios(qc, qr, qi, qm, nc, nr, ni, bm, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r,
                                                 qc_incld, qr_incld, qi_incld, qm_incld,
                                                 nc_incld, nr_incld, ni_incld, bm_incld);
 
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         self_device(vs).qc_incld = qc_incld[s];
         self_device(vs).qr_incld = qr_incld[s];
         self_device(vs).qi_incld = qi_incld[s];

@@ -263,17 +263,19 @@ CONTAINS
 #endif
 
     call scream_setup_surface_coupling (c_loc(import_field_names), c_loc(import_cpl_indices), &
-                                        c_loc(x2a%rAttr), &
 #ifdef HAVE_MOAB
                                         c_loc(x2a_am),  &
+#else
+                                        c_loc(x2a%rAttr), &
 #endif
                                         c_loc(import_vector_components), &
                                         c_loc(import_constant_multiple), c_loc(do_import_during_init), &
                                         num_cpl_imports, num_scream_imports, import_field_size, &
                                         c_loc(export_field_names), c_loc(export_cpl_indices), &
-                                        c_loc(a2x%rAttr), &
 #ifdef HAVE_MOAB
                                         c_loc(a2x_am),  &
+#else
+                                        c_loc(a2x%rAttr), &
 #endif
                                         c_loc(export_vector_components), &
                                         c_loc(export_constant_multiple), c_loc(do_export_during_init), &

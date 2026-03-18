@@ -31,26 +31,26 @@ void Functions<S,D>::shoc_tke(
   const Scalar&                Ckh,
   const Scalar&                Ckm,
   const bool&                  shoc_1p5tke,
-  const uview_1d<const Spack>& wthv_sec,
-  const uview_1d<const Spack>& shoc_mix,
-  const uview_1d<const Spack>& dz_zi,
-  const uview_1d<const Spack>& dz_zt,
-  const uview_1d<const Spack>& pres,
-  const uview_1d<const Spack>& tabs,
-  const uview_1d<const Spack>& u_wind,
-  const uview_1d<const Spack>& v_wind,
-  const uview_1d<const Spack>& brunt,
-  const uview_1d<const Spack>& zt_grid,
-  const uview_1d<const Spack>& zi_grid,
+  const uview_1d<const Pack>& wthv_sec,
+  const uview_1d<const Pack>& shoc_mix,
+  const uview_1d<const Pack>& dz_zi,
+  const uview_1d<const Pack>& dz_zt,
+  const uview_1d<const Pack>& pres,
+  const uview_1d<const Pack>& tabs,
+  const uview_1d<const Pack>& u_wind,
+  const uview_1d<const Pack>& v_wind,
+  const uview_1d<const Pack>& brunt,
+  const uview_1d<const Pack>& zt_grid,
+  const uview_1d<const Pack>& zi_grid,
   const Scalar&                pblh,
   const Workspace&             workspace,
-  const uview_1d<Spack>&       tke,
-  const uview_1d<Spack>&       tk,
-  const uview_1d<Spack>&       tkh,
-  const uview_1d<Spack>&       isotropy)
+  const uview_1d<Pack>&       tke,
+  const uview_1d<Pack>&       tk,
+  const uview_1d<Pack>&       tkh,
+  const uview_1d<Pack>&       isotropy)
 {
   // Define temporary variables
-  uview_1d<Spack> sterm_zt, a_diss, sterm;
+  uview_1d<Pack> sterm_zt, a_diss, sterm;
   workspace.template take_many_contiguous_unsafe<3>(
     {"sterm_zt", "a_diss", "sterm"},
     {&sterm_zt, &a_diss, &sterm});

@@ -283,7 +283,7 @@ contains
        ! (if there is one)
        ! (However, currently [as of 5-9-13] the code won't let you run with transient
        ! Patches combined with create_crop_landunit anyway, so it's a moot point.)
-       if (lun_pp%itype(l) == istsoil) then
+       if (veg_pp%is_on_soil_col(p)) then
           m = veg_pp%itype(p)
 
           ! Note that the following assignment assumes that all Patches share a single column

@@ -13,16 +13,14 @@ if (.not. isvar("np")) then
    print("NPTS not specified on command line. Using default 4.")
 end if
 
-template = name + "_tmp.nc"
+template = name + "_tmp1.nc"
 output = name + "_scrip.nc"
 system("rm -f "+output)
 print("input: "+template+" output:"+output)
  
 
 fin   = addfile(template,"r")   ;
-if (ne .gt. 512) then
-  setfileoption("nc","Format","NetCDF4")
-end if
+setfileoption("nc","Format","NetCDF4")
 fout  = addfile(output,"c")   ;
 
 grid_size = dimsizes(fin->lat)
@@ -104,7 +102,7 @@ if (grid_corners .gt. 0) then
   end do
 end if
 
-grid_imask = new ( (/grid_size/), "double")
+grid_imask = new ( (/grid_size/), "integer")
 grid_imask = 1
 grid_imask!0 = "grid_size"
 

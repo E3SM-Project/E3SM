@@ -248,8 +248,8 @@ create_diagnostic (const std::string& diag_field_name,
   else if (std::regex_search(diag_field_name,matches,binary_ops)) {
     diag_name = "BinaryOpsDiag";
     params.set("grid_name", grid->name());
-    params.set<std::string>("field_1", matches[1].str());
-    params.set<std::string>("field_2", matches[3].str());
+    params.set<std::string>("arg1", matches[1].str());
+    params.set<std::string>("arg2", matches[3].str());
     params.set<std::string>("binary_op", matches[2].str());
   }
   else if (std::regex_search(diag_field_name,matches,histogram)) {

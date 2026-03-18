@@ -12,14 +12,13 @@ VertContractDiag::VertContractDiag(const ekat::Comm &comm,
                                    const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {}
 
-void VertContractDiag::set_grids(
-    const std::shared_ptr<const GridsManager> grids_manager) {
+void VertContractDiag::create_requests() {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
   const auto &fn = m_params.get<std::string>("field_name");
   const auto &gn = m_params.get<std::string>("grid_name");
-  const auto g   = grids_manager->get_grid(gn);
+  const auto g   = m_grids_manager->get_grid(gn);
 
   add_field<Required>(fn, gn);
 
@@ -185,7 +184,7 @@ void VertContractDiag::compute_diagnostic_impl() {
 
   // update the weights; if weighting by dp, we need to scale by 1/g
   if (m_weighting_method == "dp") {
-    auto g = scream::physics::Constants<Real>::gravit;
+    auto g = scream::physics::Constants<Real>::gravit.value;
     m_weighting.update(get_field_in("pseudo_density"), 1 / g, sp(0.0));
   } else if (m_weighting_method == "dz") {
     // TODO: for some reason the dz field keeps getting set to 0

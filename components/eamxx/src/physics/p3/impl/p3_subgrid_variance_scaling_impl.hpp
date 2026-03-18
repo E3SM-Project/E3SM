@@ -8,8 +8,8 @@ namespace p3 {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-typename Functions<S,D>::Spack
-Functions<S,D>::subgrid_variance_scaling(const Spack& relvar, const Scalar& expon)
+typename Functions<S,D>::Pack
+Functions<S,D>::subgrid_variance_scaling(const Pack& relvar, const Scalar& expon)
 {
   /* We assume subgrid variations in qc follow a gamma distribution with inverse
      relative variance relvar = 1/(var(qc)/qc**2). In this case, if the tendency
@@ -45,8 +45,8 @@ Functions<S,D>::subgrid_variance_scaling(const Spack& relvar, const Scalar& expo
 
   // Compute result
   //============================================
-  Spack result;
-  Spack exponent=Spack(expon);
+  Pack result;
+  Pack exponent=Pack(expon);
   result=tgamma( relvar+exponent ) / ( tgamma(relvar)*pow(relvar,exponent) );
 
   return result;

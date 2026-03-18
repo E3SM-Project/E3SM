@@ -72,7 +72,7 @@ void run(std::mt19937_64& engine)
 
   // Set the required fields for the diagnostic.
   std::map<std::string,Field> input_fields;
-  for (const auto& req : diag_total->get_required_field_requests()) {
+  for (const auto& req : diag_total->get_field_requests()) {
     Field f(req.fid);
     f.get_header().get_alloc_properties().request_allocation();
     f.allocate_view();
@@ -128,7 +128,7 @@ void run(std::mt19937_64& engine)
   auto precip_total_v = precip_total_f.get_view<Real*>();
   auto precip_liq_v   = precip_liq_f.get_view<Real*>();
   auto precip_ice_v   = precip_ice_f.get_view<Real*>();
-  const auto rhodt = PC::RHO_H2O*dt;
+  const Real rhodt = PC::RHO_H2O.value*dt;
   Kokkos::parallel_for("precip_total_surf_mass_flux_test",
                        typename KT::RangePolicy(0,ncols),
                        KOKKOS_LAMBDA(const int& icol) {

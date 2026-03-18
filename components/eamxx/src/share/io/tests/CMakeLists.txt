@@ -101,4 +101,26 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     LIBS eamxx_io LABELS io
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
+
+  ## Test latlon output
+  set(MAP_FILE map_ne30pg2_to_20x40_20260112.nc)
+  set(MAP_FILE_FULL ${SCREAM_INPUT_ROOT}/atm/scream/maps/${MAP_FILE})
+
+  GetInputFile ("scream/maps/${MAP_FILE}")
+  CreateUnitTest(io_latlon_write "io_latlon.cpp"
+    LIBS eamxx_io LABELS io
+    MPI_RANKS ${SCREAM_TEST_MAX_RANKS}
+    EXE_ARGS --args --map-file=${MAP_FILE_FULL}
+    FIXTURES_SETUP latlon_output
+  )
+
+  add_test (
+    NAME io_latlon_check
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/check_latlon_output.py
+      --mask-cols 1 # Do not compare the 1x1 cols groups in the latlon grid corners
+      --map-file ${MAP_FILE_FULL}
+      --out-file ./io_latlon.INSTANT.nsteps_x1.np${SCREAM_TEST_MAX_RANKS}.2000.nc
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  set_tests_properties(io_latlon_check PROPERTIES FIXTURES_REQUIRED latlon_output)
+
 endif()

@@ -14,6 +14,8 @@ public:
   {
     EKAT_REQUIRE_MSG (remapper!=nullptr, "Error! Null pointer for inner remapper.\n");
 
+    set_name("Inverse " + remapper->name());
+
     set_grids(remapper->get_tgt_grid(),remapper->get_src_grid());
 
     m_remapper = remapper;

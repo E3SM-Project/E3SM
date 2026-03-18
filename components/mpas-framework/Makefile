@@ -527,6 +527,10 @@ ifeq "$(HAVE_ADIOS)" "true"
 	override CPPFLAGS += -DHAVE_ADIOS
 endif
 
+ifeq "$(HAVE_HDF5)" "true"
+	override CPPFLAGS += -DHAVE_HDF5
+endif
+
 #
 # Regardless of PIO library version, look for a lib subdirectory of PIO path
 # NB: PIO_LIB is used later, so we don't just set LIBS directly

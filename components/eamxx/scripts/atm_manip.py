@@ -167,7 +167,7 @@ def get_xml_nodes(xml_root, name):
     return result
 
 ###############################################################################
-def modify_ap_list(group, ap_list_str, append_this, defaults_xml=None):
+def modify_ap_list(group, ap_list_str, append_this, remove_this=False, defaults_xml=None):
 ###############################################################################
     """
     Modify the atm_procs_list entry of this XML node (which is an atm proc group).
@@ -196,24 +196,46 @@ def modify_ap_list(group, ap_list_str, append_this, defaults_xml=None):
     >>> node = ET.Element("my_group")
     >>> node.append(ET.Element("atm_procs_list"))
     >>> get_child(node,"atm_procs_list").text = ""
-    >>> modify_ap_list(node,"p1,p2",False,defaults)
+    >>> modify_ap_list(node,"p1,p2",False,False,defaults)
     True
     >>> get_child(node,"atm_procs_list").text
     'p1,p2'
-    >>> modify_ap_list(node,"p1",True,defaults)
+    >>> modify_ap_list(node,"p1",True,False,defaults)
     True
     >>> get_child(node,"atm_procs_list").text
     'p1,p2,p1'
-    >>> modify_ap_list(node,"p1,p3",False,defaults)
+    >>> modify_ap_list(node,"p1",False,True,defaults)
+    True
+    >>> get_child(node,"atm_procs_list").text
+    'p2,p1'
+    >>> modify_ap_list(node,"p1,p3",False,False,defaults)
     Traceback (most recent call last):
     SystemExit: ERROR: Cannot modify ap list for group 'my_group'
     Process 'p3' not found in XML tree 'dummy_defaults'
+    >>> modify_ap_list(node,"p3",False,True,defaults)
+    Traceback (most recent call last):
+    SystemExit: ERROR: Cannot remove 'p3' from atm_procs_list of group 'my_group': not found in current list 'p2,p1'
     """
     curr_apl = get_child(group,"atm_procs_list")
+
+    ap_list = ap_list_str.split(",")
+
+    if remove_this:
+        curr_list = curr_apl.text.split(",") if curr_apl.text else []
+        for ap in ap_list:
+            expect(ap in curr_list,
+                   f"Cannot remove '{ap}' from atm_procs_list of group '{group.tag}': "
+                   f"not found in current list '{curr_apl.text}'")
+            curr_list.remove(ap)
+        new_text = ','.join(curr_list)
+        if curr_apl.text == new_text:
+            return False
+        curr_apl.text = new_text
+        return True
+
     if curr_apl.text==ap_list_str:
         return False
 
-    ap_list = ap_list_str.split(",")
     expect (len(ap_list)==len(set(ap_list)),
             "Input list of atm procs contains repetitions")
 
@@ -257,7 +279,7 @@ def is_locked(xml_root, node):
     return False
 
 ###############################################################################
-def apply_change(xml_root, node, new_value, append_this):
+def apply_change(xml_root, node, new_value, append_this, remove_this=False):
 ###############################################################################
     any_change = False
 
@@ -266,7 +288,7 @@ def apply_change(xml_root, node, new_value, append_this):
     if node.tag=="atm_procs_list":
         parent_map = create_parent_map(xml_root)
         group = get_parents(node,parent_map)[-1]
-        return modify_ap_list (group,new_value,append_this)
+        return modify_ap_list(group, new_value, append_this, remove_this)
 
     if append_this:
 
@@ -289,6 +311,27 @@ def apply_change(xml_root, node, new_value, append_this):
 
         any_change = True
 
+    elif remove_this:
+
+        expect (not is_locked(xml_root, node), f"Cannot change {node.tag}, it is locked")
+        expect ("type" in node.attrib.keys(),
+                f"Error! Missing type information for {node.tag}")
+        type_ = node.attrib["type"]
+        expect (is_array_type(type_),
+                "Error! Can only remove with array types.\n"
+                f"    - name: {node.tag}\n"
+                f"    - type: {type_}")
+
+        curr_list = [v.strip() for v in node.text.split(",")] if node.text else []
+        remove_list = [v.strip() for v in new_value.split(",")]
+        for v in remove_list:
+            expect (v in curr_list,
+                    f"Error! Value '{v}' not found in {node.tag}. "
+                    f"Current value: {node.text}")
+            curr_list.remove(v)
+        node.text = ",".join(curr_list)
+        any_change = True
+
     elif node.text != new_value:
         expect (not is_locked(xml_root, node), f"Cannot change {node.tag}, it is locked")
         check_value(node,new_value)
@@ -302,25 +345,34 @@ def parse_change(change):
 ###############################################################################
     """
     >>> parse_change("a+=2")
-    ('a', '2', True)
+    ('a', '2', True, False)
+    >>> parse_change("a-=2")
+    ('a', '2', False, True)
     >>> parse_change("a=hello")
-    ('a', 'hello', False)
+    ('a', 'hello', False, False)
     """
     tokens = change.split('+=')
     if len(tokens)==2:
         append_this = True
+        remove_this = False
     else:
         append_this = False
-        tokens = change.split('=')
+        tokens = change.split('-=')
+        if len(tokens)==2:
+            remove_this = True
+        else:
+            remove_this = False
+            tokens = change.split('=')
 
     expect (len(tokens)==2,
         f"Invalid change request '{change}'. Valid formats are:\n"
         f"  - A[::B[...]=value\n"
-        f"  - A[::B[...]+=value  (implies append for this change)")
+        f"  - A[::B[...]+=value  (implies append for this change)\n"
+        f"  - A[::B[...]-=value  (implies removal for this change, arrays only)")
     node_name = tokens[0]
     new_value = tokens[1]
 
-    return node_name,new_value,append_this
+    return node_name,new_value,append_this,remove_this
 
 ###############################################################################
 def atm_config_chg_impl(xml_root, change):
@@ -369,6 +421,7 @@ def atm_config_chg_impl(xml_root, change):
     SystemExit: ERROR: Invalid change request 'prop1->2'. Valid formats are:
       - A[::B[...]=value
       - A[::B[...]+=value  (implies append for this change)
+      - A[::B[...]-=value  (implies removal for this change, arrays only)
     >>> ################ INVALID TYPE #######################
     >>> atm_config_chg_impl(tree,'prop2=two')
     Traceback (most recent call last):
@@ -417,6 +470,25 @@ def atm_config_chg_impl(xml_root, change):
     True
     >>> get_xml_nodes(tree,'e')[0].text
     'one, two'
+    >>> ################ TEST REMOVE -= #################
+    >>> atm_config_chg_impl(tree,'a-=2')
+    True
+    >>> get_xml_nodes(tree,'a')[0].text
+    '1,3,4'
+    >>> atm_config_chg_impl(tree,'a-=1,3')
+    True
+    >>> get_xml_nodes(tree,'a')[0].text
+    '4'
+    >>> ################ ERROR, remove from non-array
+    >>> atm_config_chg_impl(tree,'c-=1')
+    Traceback (most recent call last):
+    SystemExit: ERROR: Error! Can only remove with array types.
+        - name: c
+        - type: int
+    >>> ################ ERROR, remove value not in list
+    >>> atm_config_chg_impl(tree,'b-=9')
+    Traceback (most recent call last):
+    SystemExit: ERROR: Error! Value '9' not found in b. Current value: 1
     >>> ################ Test locked ##################
     >>> atm_config_chg_impl(tree, 'lprop2=yo')
     Traceback (most recent call last):
@@ -428,14 +500,14 @@ def atm_config_chg_impl(xml_root, change):
     Traceback (most recent call last):
     SystemExit: ERROR: Cannot change lprop4, it is locked
     """
-    node_name, new_value, append_this = parse_change(change)
+    node_name, new_value, append_this, remove_this = parse_change(change)
     matches = get_xml_nodes(xml_root, node_name)
 
     expect(len(matches) > 0, f"{node_name} did not match any items")
 
     any_change = False
     for node in matches:
-        any_change |= apply_change(xml_root, node, new_value, append_this)
+        any_change |= apply_change(xml_root, node, new_value, append_this, remove_this)
 
     return any_change
 

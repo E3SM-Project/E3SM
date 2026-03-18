@@ -87,7 +87,7 @@ namespace {
 void gw_common_init_f(GwCommonInit& init)
 {
   // Expects init has already been transitioned to f90
-  gw_common_init_bridge_f(init.pver, init.pgwv, init.dc, init.cref, init.orographic_only, init.do_molec_diff, init.tau_0_ubc, init.nbot_molec, init.ktop, init.kbotbg, init.fcrit2, init.kwv, GWC::gravit, GWC::Rair, init.alpha);
+  gw_common_init_bridge_f(init.pver, init.pgwv, init.dc, init.cref, init.orographic_only, init.do_molec_diff, init.tau_0_ubc, init.nbot_molec, init.ktop, init.kbotbg, init.fcrit2, init.kwv, GWC::gravit.value, GWC::Rair.value, init.alpha);
 }
 
 // Wrapper around gw_init for cxx
@@ -1659,7 +1659,7 @@ void gw_ediff_f(GwEdiffData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
   gw_common_init_f(d.init);
-  gw_ediff_bridge_f(d.ncol, d.kbot, d.ktop, d.tend_level, d.gwut, d.ubm, d.nm, d.rho, d.dt, GWC::gravit, d.pmid, d.rdpm, d.c, d.egwdffi, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze);
+  gw_ediff_bridge_f(d.ncol, d.kbot, d.ktop, d.tend_level, d.gwut, d.ubm, d.nm, d.rho, d.dt, GWC::gravit.value, d.pmid, d.rdpm, d.c, d.egwdffi, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
@@ -1964,7 +1964,7 @@ void vd_lu_decomp_f(VdLuDecompData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
   gw_common_init_f(d.init);
-  vd_lu_decomp_bridge_f(d.ncol, d.ksrf, d.kv, d.tmpi, d.rpdel, d.ztodt, GWC::gravit, d.cc_top, d.ntop, d.nbot, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze);
+  vd_lu_decomp_bridge_f(d.ncol, d.ksrf, d.kv, d.tmpi, d.rpdel, d.ztodt, GWC::gravit.value, d.cc_top, d.ntop, d.nbot, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 

@@ -15,10 +15,10 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::droplet_self_collection(
-  const Spack&, const Spack&,
-  const Spack& qc_incld, const Spack&,
-  const Spack&, const Spack&, Spack& nc_selfcollect_tend,
-  const Smask& context)
+  const Pack&, const Pack&,
+  const Pack& qc_incld, const Pack&,
+  const Pack&, const Pack&, Pack& nc_selfcollect_tend,
+  const Mask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
 

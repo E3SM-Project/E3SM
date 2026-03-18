@@ -44,22 +44,22 @@ void Functions<S,D>::pblintd(
   const Int&                   nlev,
   const Int&                   nlevi,
   const Int&                   npbl,
-  const uview_1d<const Spack>& z,
-  const uview_1d<const Spack>& zi,
-  const uview_1d<const Spack>& thl,
-  const uview_1d<const Spack>& ql,
-  const uview_1d<const Spack>& q,
-  const uview_1d<const Spack>& u,
-  const uview_1d<const Spack>& v,
+  const uview_1d<const Pack>& z,
+  const uview_1d<const Pack>& zi,
+  const uview_1d<const Pack>& thl,
+  const uview_1d<const Pack>& ql,
+  const uview_1d<const Pack>& q,
+  const uview_1d<const Pack>& u,
+  const uview_1d<const Pack>& v,
   const Scalar&                ustar,
   const Scalar&                obklen,
   const Scalar&                kbfs,
-  const uview_1d<const Spack>& cldn,
+  const uview_1d<const Pack>& cldn,
   const Workspace&             workspace,
   Scalar&                      pblh)
 {
   // Define temporary variables
-  uview_1d<Spack> rino, thv;
+  uview_1d<Pack> rino, thv;
   workspace.template take_many_contiguous_unsafe<2>(
     {"rino", "thv"},
     {&rino, &thv});

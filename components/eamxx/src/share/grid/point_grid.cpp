@@ -143,14 +143,15 @@ std::shared_ptr<PointGrid>
 create_point_grid (const std::string& grid_name,
                    const int num_global_cols,
                    const int num_vertical_lev,
-                   const ekat::Comm& comm)
+                   const ekat::Comm& comm,
+                   const int gid_base)
 {
   // Compute how many columns are owned by this rank
   const int num_procs = comm.size();
 
   auto num_my_cols = num_global_cols / num_procs;
   int remainder   = num_global_cols % num_procs;
-  int dof_offset  = num_my_cols*comm.rank();
+  int dof_offset  = num_my_cols*comm.rank() + gid_base;
   if (comm.rank() < remainder) {
     ++num_my_cols;
     dof_offset += comm.rank();

@@ -36,7 +36,7 @@ be the `eamxx_inject_ash_process_interface.<x>pp` files, located at
       }
       std::string name() const override { return "MAMInjectAsh"; }
       void
-      set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
+      create_requests() override;
 
     protected:
       void initialize_impl(const RunType run_type) override;
@@ -63,10 +63,9 @@ be the `eamxx_inject_ash_process_interface.<x>pp` files, located at
         : AtmosphereProcess(comm, params) {
       [...]
     }
-    void MAMInjectAsh::set_grids(
-        const std::shared_ptr<const GridsManager> grids_manager) {
+    void MAMInjectAsh::create_requests() {
       constexpr auto kg = ekat::units::kg;
-      auto grid = grids_manager->get_grid("physics");
+      auto grid = m_grids_manager->get_grid("physics");
       add_tracer<Updated>("ash", grid, kg / kg);
       lat = grid->get_geometry_data("lat");
       lon = grid->get_geometry_data("lon");

@@ -1,7 +1,6 @@
 #include <catch2/catch.hpp>
 
 #include "share/remap/vertical_remapper.hpp"
-#include "share/remap/coarsening_remapper.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_timing.hpp"
@@ -26,7 +25,7 @@ void print (const std::string& fmt, const ekat::Comm& comm, Args&&... args) {
 // Overload for when there are no additional arguments
 void print(const std::string& fmt, const ekat::Comm& comm) {
   if (comm.am_i_root()) {
-    printf(fmt.c_str());
+    printf("%s",fmt.c_str());
   }
 }
 

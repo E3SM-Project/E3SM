@@ -43,6 +43,7 @@ module elm_instMod
   use VOCEmissionMod             , only : vocemis_type
   use atm2lndType                , only : atm2lnd_type
   use lnd2atmType                , only : lnd2atm_type
+  use ocn2lndType                , only : ocn2lnd_type
   use lnd2glcMod                 , only : lnd2glc_type
   use glc2lndMod                 , only : glc2lnd_type
   use glcDiagnosticsMod          , only : glc_diagnostics_type
@@ -121,6 +122,7 @@ module elm_instMod
   type(surfalb_type)                                  :: surfalb_vars
   type(surfrad_type)                                  :: surfrad_vars
   type(atm2lnd_type)                                  :: atm2lnd_vars
+  type(ocn2lnd_type)                                  :: ocn2lnd_vars
   type(glc2lnd_type)                                  :: glc2lnd_vars
   type(lnd2atm_type)                                  :: lnd2atm_vars
   type(lnd2glc_type)                                  :: lnd2glc_vars
@@ -314,10 +316,10 @@ contains
        g = col_pp%gridcell(c)
 
        if (.not. use_extrasnowlayers) then ! original 5 layer shallow snowpack model
-           if (lun_pp%itype(l)==istice) then
+           if (lun_pp%itype(l) == istice) then
                h2osno_col(c) = h2osno_max
-           elseif (lun_pp%itype(l)==istice_mec .or. &
-               (lun_pp%itype(l)==istsoil .and. ldomain%glcmask(g) > 0._r8)) then
+           elseif (lun_pp%itype(l) == istice_mec .or. &
+               (col_pp%is_soil(c) .and. ldomain%glcmask(g) > 0._r8)) then
                ! Initialize a non-zero snow thickness where the ice sheet can/potentially operate.
                ! Using glcmask to capture all potential vegetated points around GrIS (ideally
                ! we would use icemask from CISM, but that isn't available until after initialization.)
@@ -346,11 +348,11 @@ contains
            ! a small amount of snow in places that are likely to be snow-covered for much or
            ! all of the year.
            ! amschnei@uci.edu: Initializing "deep firn" for glacier columns
-           if (lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
+           if (lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec) then
               ! land ice (including multiple elevation classes, i.e. glacier_mec)
               h2osno_col(c) = 0.5_r8*h2osno_max   ! start with half full snow column, representing deep firn
               snow_depth_col(c)  = h2osno_col(c) / bdfirn
-           else if (lun_pp%itype(l)==istsoil .and. grc_pp%latdeg(g) >= 44._r8) then
+           else if (col_pp%is_soil(c) .and. grc_pp%latdeg(g) >= 44._r8) then
               ! Northern hemisphere seasonal snow
               h2osno_col(c) = 50._r8
               snow_depth_col(c) = h2osno_col(c) / bdsno
@@ -392,6 +394,8 @@ contains
 
     call atm2lnd_vars%Init( bounds_proc )
     call lnd2atm_vars%Init( bounds_proc )
+
+    call ocn2lnd_vars%Init( bounds_proc )
 
     ! Initialize glc2lnd and lnd2glc even if running without create_glacier_mec_landunit,
     ! because at least some variables (such as the icemask) are referred to in code that

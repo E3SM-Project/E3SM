@@ -497,8 +497,8 @@ CONTAINS
 #ifdef MOABDEBUG
     use iMOAB, only: iMOAB_WriteMesh
 #endif
-    use seq_flds_mod    , only: seq_flds_l2x_fields 
-    use seq_flds_mod    , only: moab_set_tag_from_av
+    use seq_flds_mod    , only: seq_flds_l2x_fields
+    use shr_moab_mod    , only: moab_set_tag_from_av
 #endif
 
     implicit none

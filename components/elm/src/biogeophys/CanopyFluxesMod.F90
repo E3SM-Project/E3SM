@@ -14,7 +14,7 @@ module CanopyFluxesMod
   use shr_log_mod           , only : errMsg => shr_log_errMsg
   use abortutils            , only : endrun
   use elm_varctl            , only : iulog, use_cn, use_lch4, use_c13, use_c14, use_fates
-  use elm_varctl            , only : use_hydrstress
+  use elm_varctl            , only : use_hydrstress, use_finetop_rad
   use elm_varpar            , only : nlevgrnd, nlevsno
   use elm_varcon            , only : namep
   use elm_varcon            , only : mm_epsilon
@@ -100,6 +100,7 @@ contains
     use elm_varcon         , only : isecspday, degpsec
     use pftvarcon          , only : irrigated
     use elm_varcon         , only : c14ratio
+    use shr_const_mod      , only : SHR_CONST_PI
 
     !NEW
     use elm_varsur         , only : firrig
@@ -314,7 +315,7 @@ contains
     real(r8) :: tau_diff(bounds%begp:bounds%endp) ! Difference from previous iteration tau
     real(r8) :: prev_tau(bounds%begp:bounds%endp) ! Previous iteration tau
     real(r8) :: prev_tau_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tau
-
+    real(r8) :: slope_rad, deg2rad
     character(len=64) :: event !! timing event
 
     ! Indices for raw and rah
@@ -329,6 +330,7 @@ contains
          snl                  => col_pp%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers
          dayl                 => grc_pp%dayl                                  , & ! Input:  [real(r8) (:)   ]  daylength (s)
          max_dayl             => grc_pp%max_dayl                              , & ! Input:  [real(r8) (:)   ]  maximum daylength for this grid cell (s)
+         slope_deg            => grc_pp%slope_deg                             , &
 
          forc_lwrad           => top_af%lwrad                              , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)                       
          forc_q               => top_as%qbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)                                 
@@ -516,7 +518,7 @@ contains
       end if
 #endif
 
-
+      deg2rad = SHR_CONST_PI/180._r8
       ! Initialize
       do f = 1, fn
          p = filterp(f)
@@ -701,6 +703,11 @@ contains
          bir(p) = - (2._r8-emv(p)*(1._r8-emg(c))) * emv(p) * sb
          cir(p) =   emv(p)*emg(c)*sb
 
+         if (use_finetop_rad) then
+            slope_rad = slope_deg(g) * deg2rad
+            bir(p) = bir(p) / cos(slope_rad)
+            cir(p) = cir(p) / cos(slope_rad)
+         endif
          ! Saturated vapor pressure, specific humidity, and their derivatives
          ! at the leaf surface
 
@@ -1269,15 +1276,25 @@ contains
 
          ! Downward longwave radiation below the canopy
 
-         dlrad(p) = (1._r8-emv(p))*emg(c)*forc_lwrad(t) + &
-              emv(p)*emg(c)*sb*tlbef(p)**3*(tlbef(p) + 4._r8*dt_veg(p))
-
+         if (use_finetop_rad) then
+            slope_rad = slope_deg(g) * deg2rad
+            dlrad(p) = (1._r8-emv(p))*emg(c)*forc_lwrad(t) + &
+                  emv(p)*emg(c)*sb*tlbef(p)**3*(tlbef(p) + 4._r8*dt_veg(p))/cos(slope_rad)
+         else
+            dlrad(p) = (1._r8-emv(p))*emg(c)*forc_lwrad(t) + &
+                  emv(p)*emg(c)*sb*tlbef(p)**3*(tlbef(p) + 4._r8*dt_veg(p))
+         endif
          ! Upward longwave radiation above the canopy
-
-         ulrad(p) = ((1._r8-emg(c))*(1._r8-emv(p))*(1._r8-emv(p))*forc_lwrad(t) &
-              + emv(p)*(1._r8+(1._r8-emg(c))*(1._r8-emv(p)))*sb*tlbef(p)**3*(tlbef(p) + &
-              4._r8*dt_veg(p)) + emg(c)*(1._r8-emv(p))*sb*lw_grnd)
-
+         if (use_finetop_rad) then
+            slope_rad = slope_deg(g) * deg2rad
+            ulrad(p) = ((1._r8-emg(c))*(1._r8-emv(p))*(1._r8-emv(p))*forc_lwrad(t) &
+                + emv(p)*(1._r8+(1._r8-emg(c))*(1._r8-emv(p)))*sb*tlbef(p)**3*(tlbef(p) + &
+                4._r8*dt_veg(p))/cos(slope_rad) + emg(c)*(1._r8-emv(p))*sb*lw_grnd/cos(slope_rad))
+         else
+            ulrad(p) = ((1._r8-emg(c))*(1._r8-emv(p))*(1._r8-emv(p))*forc_lwrad(t) &
+                + emv(p)*(1._r8+(1._r8-emg(c))*(1._r8-emv(p)))*sb*tlbef(p)**3*(tlbef(p) + &
+                4._r8*dt_veg(p)) + emg(c)*(1._r8-emv(p))*sb*lw_grnd)
+         endif
          ! Derivative of soil energy flux with respect to soil temperature
 
          cgrnds(p) = cgrnds(p) + cpair*forc_rho(t)*wtg(p)*wtal(p)

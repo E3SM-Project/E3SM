@@ -11,6 +11,7 @@ ANONYMOUS:
         Regularization Value: 1.0e-4
     LandIce BCs:
       BC 0:
+        Cubature Degree: 4
         Basal Friction Coefficient:
           Type: Power Law
           Power Exponent: 1.0
@@ -30,7 +31,10 @@ ANONYMOUS:
       Line Search:
         Full Step:
           Full Step: 1.0e+00
-        Method: Backtrack
+        Method: Polynomial
+        Polynomial:
+          Recovery Step: 1.0e-3
+          Minimum Step: 1.0e-3
       Solver Options:
         Status Test Check Type: Minimal
       Status Tests:
@@ -140,7 +144,7 @@ ANONYMOUS:
                       Aggregates: UncoupledAggregationFact2
                     myTogglePFact:
                       factory: TogglePFactory
-                      'semicoarsen: number of levels': 2
+                      'semicoarsen: number of levels': 1
                       TransferFactories:
                         P1: mySemiCoarsenPFact1
                         P2: mySaPFact2

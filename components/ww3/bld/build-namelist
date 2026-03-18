@@ -354,7 +354,7 @@ if ($NML_TYPE eq "ww3_grid") {
     add_default($nl, 'timesteps%dtkth');
     add_default($nl, 'timesteps%dtmin');
 
-    add_default($nl, 'grid%name');
+    add_default($nl, 'grid%name', 'val'=>"'${WAV_GRID}'");
     add_default($nl, 'grid%nml');
     add_default($nl, 'grid%type');
     add_default($nl, 'grid%coord');
@@ -387,11 +387,6 @@ if ($NML_TYPE eq "ww3_grid_nml") {
     add_default($nl, 'unrot');
 
     add_default($nl, 'ussp', 'val'=>"1");
-    #add_default($nl, 'iussp', 'val'=>"3");
-    #add_default($nl, 'stk_wn', 'val'=>"0.04,0.11,0.3305");
-    #add_default($nl, 'stk_wn', 'val'=>"0.025,0.08,0.16,0.35");
-    #add_default($nl, 'iussp', 'val'=>"4");
-    #add_default($nl, 'stk_wn', 'val'=>"0.025,0.08,0.16,0.35");
     add_default($nl, 'iussp', 'val'=>"6");
     add_default($nl, 'stk_wn', 'val'=>"0.01,0.03,0.06,0.1,0.2,0.35");
 

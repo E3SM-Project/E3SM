@@ -62,6 +62,10 @@
 <ncdata dyn="se" hgrid="ne4np4"   nlev="80"  ic_ymd="101" >atm/cam/inic/homme/eami_mam4_Linoz_ne4np4_L80_c20231010.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="80"  ic_ymd="101" >atm/cam/inic/homme/eami_mam4_Linoz_ne30np4_L80_c20231010.nc</ncdata>
 
+<ncdata dyn="se" hgrid="ne32np4"  nlev="80"  ic_ymd="101" >atm/cam/inic/homme/v3.LR.amip_0101.eam.i.2000-01-01-00000.ne32np4.20251001.nc</ncdata>
+<ncdata dyn="se" hgrid="ne64np4"  nlev="80"  ic_ymd="101" >atm/cam/inic/homme/v3.LR.amip_0101.eam.i.2000-01-01-00000.ne64np4.20251001.nc</ncdata>
+<ncdata dyn="se" hgrid="ne128np4" nlev="80"  ic_ymd="101" >atm/cam/inic/homme/v3.LR.amip_0101.eam.i.2000-01-01-00000.ne128np4.20251001.nc</ncdata>
+
 <!-- Initial conditions for DYAMOND1 (2016-08-01) and DYAMOND2 (2020-01-20) hindcast campaign -->
 <!-- Spun-up F-case initial conditions do not exist for these grids -->
 <ncdata hgrid="ne1024np4" nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L128_v20191116.nc</ncdata>
@@ -604,8 +608,8 @@
 <nox_emis_file  chem="waccm_mozart_mam3">atm/cam/chem/emis/1992-2010/emissions.NO.surface.1.9x2.5_c110426.nc</nox_emis_file>
 <co_emis_file   chem="waccm_mozart_mam3">atm/cam/chem/emis/1992-2010/emissions.CO.surface.1.9x2.5_c110426.nc</co_emis_file>
 <ch2o_emis_file chem="waccm_mozart_mam3">atm/cam/chem/emis/1992-2010/emissions.CH2O.surface.1.9x2.5_c110426.nc</ch2o_emis_file>
-<dms_emis_file	chem="waccm_mozart_mam3">atm/cam/chem/trop_mozart_aero/emis/aerocom_mam3_dms_surf_2000_c120315.nc</dms_emis_file>
-<so2_emis_file	chem="waccm_mozart_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so2_surf_2000_c120315.nc</so2_emis_file>
+<dms_emis_file  chem="waccm_mozart_mam3">atm/cam/chem/trop_mozart_aero/emis/aerocom_mam3_dms_surf_2000_c120315.nc</dms_emis_file>
+<so2_emis_file  chem="waccm_mozart_mam3">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so2_surf_2000_c120315.nc</so2_emis_file>
 
 <nox_emis_file  chem="waccm_mozart_sulfur">atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_NOx_1850-2000_1.9x2.5.c090728.nc</nox_emis_file>
 <co_emis_file   chem="waccm_mozart_sulfur">atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_CO_1850-2000_1.9x2.5.c090728.nc</co_emis_file>
@@ -613,7 +617,7 @@
 <so2_emis_file  chem="waccm_mozart_sulfur">atm/cam/chem/1850-2000_emis/IPCC_emissions_houw_SO2_1850-2000_1.9x2.5.c090522.nc</so2_emis_file> 
 
 <!-- super_fast Chemistry emissions -->
-<ch2o_emis_file	   chem="super_fast_llnl">atm/cam/chem/trop_mozart/emis/emissions.CH2O.surface.T42LR.nc</ch2o_emis_file>
+<ch2o_emis_file    chem="super_fast_llnl">atm/cam/chem/trop_mozart/emis/emissions.CH2O.surface.T42LR.nc</ch2o_emis_file>
 <co_emis_file      chem="super_fast_llnl">atm/cam/chem/trop_mozart/emis/emissions.CO.surface.T42LR.nc</co_emis_file>
 <dms_emis_file     chem="super_fast_llnl">atm/cam/chem/trop_mozart/emis/emissions.DMS.surface.T42LR.nc</dms_emis_file>
 <nox_emis_file     chem="super_fast_llnl">atm/cam/chem/trop_mozart/emis/emissions.NO.surface.T42LR.nc</nox_emis_file>
@@ -632,9 +636,9 @@
 
 <!-- modal aerosol emissions -->
 <nh3_emis_file     ver="mam">atm/cam/chem/trop_mozart_aero/emis/emis_NH3_2000_c111014.nc</nh3_emis_file>
-<dms_emis_file	   ver="mam">atm/cam/chem/trop_mozart_aero/emis/aerocom_mam3_dms_surf_2000_c120315.nc</dms_emis_file>
-<so2_emis_file	   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so2_surf_2000_c120315.nc</so2_emis_file>
-<soag_emis_file	   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_soag_1.5_surf_2000_c130422.nc</soag_emis_file>
+<dms_emis_file     ver="mam">atm/cam/chem/trop_mozart_aero/emis/aerocom_mam3_dms_surf_2000_c120315.nc</dms_emis_file>
+<so2_emis_file     ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so2_surf_2000_c120315.nc</so2_emis_file>
+<soag_emis_file    ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_soag_1.5_surf_2000_c130422.nc</soag_emis_file>
 <bc_a1_emis_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_surf_2000_c120315.nc</bc_a1_emis_file>
 <bc_a3_emis_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_surf_2000_c120315.nc</bc_a3_emis_file>
 <bc_a4_emis_file   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_surf_2000_c120315.nc</bc_a4_emis_file>
@@ -936,9 +940,9 @@
   
 <!-- P3 specific namelist variables (for v3 version of P3) -->
 <micro_p3_lookup_dir    clubb_sgs="1" microphys="p3"> atm/cam/physprops </micro_p3_lookup_dir>
-<micro_p3_tableversion  clubb_sgs="1" microphys="p3">  4.1.2 	</micro_p3_tableversion>
+<micro_p3_tableversion  clubb_sgs="1" microphys="p3">  4.1.2  </micro_p3_tableversion>
 <micro_tend_output      clubb_sgs="1" microphys="p3"> .false.  </micro_tend_output>
-<p3_autocon_coeff    	  clubb_sgs="1" microphys="p3">  30500.0D0   </p3_autocon_coeff>
+<p3_autocon_coeff       clubb_sgs="1" microphys="p3">  30500.0D0   </p3_autocon_coeff>
 <p3_qc_autocon_expon    clubb_sgs="1" microphys="p3">  3.19D0   </p3_qc_autocon_expon>
 <p3_nc_autocon_expon    clubb_sgs="1" microphys="p3">  -1.40D0   </p3_nc_autocon_expon>
 <p3_accret_coeff        clubb_sgs="1" microphys="p3">  117.25D0   </p3_accret_coeff>
@@ -1046,7 +1050,7 @@
 <dust_emis_fact          hgrid="ne45np4"   phys="cam5"                  >1.38D0</dust_emis_fact>
 <dust_emis_fact          hgrid="ne120np4"  phys="cam5"                  >1.2D0</dust_emis_fact>
 
-<dust_emis_fact                                         chem="trop_bam"	>4.2D0 </dust_emis_fact>
+<dust_emis_fact                                         chem="trop_bam" >4.2D0 </dust_emis_fact>
 <dust_emis_fact                            phys="cam5"                  >0.35D0</dust_emis_fact>
 <dust_emis_fact          hgrid="0.47x0.63" phys="cam5"                  >0.45D0</dust_emis_fact>
 <dust_emis_fact          hgrid="0.23x0.31" phys="cam5"                  >0.45D0</dust_emis_fact>
@@ -1235,8 +1239,8 @@
 <zmconv_c0_ocn                                                        > 0.0030D0 </zmconv_c0_ocn>
 <zmconv_c0_ocn                  hgrid="ne120np4" phys="default"       > 0.0035D0 </zmconv_c0_ocn>
 
-<zmconv_tau			                                                      > 3600</zmconv_tau>
-<zmconv_alfa			                                                      > 0.1</zmconv_alfa>
+<zmconv_tau                                                           > 3600</zmconv_tau>
+<zmconv_alfa                                                            > 0.1</zmconv_alfa>
 
 <zmconv_ke                                                            > 3.0E-6 </zmconv_ke>
 <zmconv_ke      dyn="se"                                           > 1.0E-6 </zmconv_ke>

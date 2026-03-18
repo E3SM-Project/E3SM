@@ -48,8 +48,8 @@ public:
 
   std::string name() const override { return "MyDiag"; }
 
-  void set_grids (const std::shared_ptr<const GridsManager> gm) override {
-    const auto grid = gm->get_grid("point_grid");
+  void create_requests () override {
+    const auto grid = m_grids_manager->get_grid("point_grid");
     const auto& grid_name = grid->name();
     auto units = ekat::units::Units::nondimensional();
     auto layout = grid->get_3d_scalar_layout(true);

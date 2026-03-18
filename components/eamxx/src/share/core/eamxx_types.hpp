@@ -1,7 +1,7 @@
 #ifndef SCREAM_TYPES_HPP
 #define SCREAM_TYPES_HPP
 
-#include "eamxx_config.h"
+#include "eamxx_config.hpp"
 
 #include <ekat_kokkos_types.hpp>
 

@@ -12,7 +12,7 @@ class CompareNcFiles(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self,src_file,tgt_file=None,compare=None):
+    def __init__(self,src_file,tgt_file=None,tolerance=0,compare=None):
     ###########################################################################
 
         self._src_file = pathlib.Path(src_file).resolve().absolute()
@@ -20,6 +20,7 @@ class CompareNcFiles(object):
                 "Error! File '{}' does not exist.".format(self._src_file))
 
         self._compare  = compare
+        self._tol = tolerance
 
         if tgt_file is None:
             self._tgt_file = self._src_file
@@ -122,19 +123,17 @@ class CompareNcFiles(object):
             lvals = self.slice_variable(lvar,lvar[:],lslices)
             rvals = self.slice_variable(rvar,rvar[:],rslices)
 
-            if not np.array_equal(lvals,rvals):
-                #  print (f"lvals: {lvals}")
-                #  print (f"rvals: {rvals}")
-                item = np.argwhere(lvals!=rvals)[0]
-                rval = self.slice_variable(rvar,rvals,
-                                           [[idim,slice] for idim,slice in enumerate(item)])
-                lval = self.slice_variable(lvar,lvals,
-                                           [[idim,slice] for idim,slice in enumerate(item)])
-                loc = ",".join([str(i+1) for i in item])
+            diff = np.abs(lvals-rvals)
+            not_close = diff > (self._tol + self._tol*np.abs(rvals))
+            where = np.argwhere(not_close)
+            if where.size > 0:
+                idx = where[0]
+                lval = lvals[tuple(idx)]
+                rval = rvals[tuple(idx)]
                 print (f" Comparison failed. Values differ.\n"
                        f"  - input comparison: {expr}\n"
-                       f'  - upon slicing, {lname}({loc}) = {lval}\n'
-                       f'  - upon slicing, {rname}({loc}) = {rval}')
+                       f'  - upon slicing, {lname}({tuple(idx)}) = {lval}\n'
+                       f'  - upon slicing, {rname}({tuple(idx)}) = {rval}')
                 success = False
 
         return success

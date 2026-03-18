@@ -161,7 +161,8 @@ CONTAINS
         trim(datamode) == 'IAF'                 .or. &
         trim(datamode) == 'SOM'                 .or. & ! Traditional slab ocean
         trim(datamode) == 'RSO'                 .or. & ! Relaxed slab ocean
-        trim(datamode) == 'SOM_AQUAP') then            ! Aquaplanet slab ocean
+        trim(datamode) == 'SOM_AQUAP'           .or. & ! Aquaplanet slab ocean
+        trim(datamode) == 'GTSM') then
        if (my_task == master_task) then
           write(logunit,F00) ' docn datamode = ',trim(datamode)
        end if

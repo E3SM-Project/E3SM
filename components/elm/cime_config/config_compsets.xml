@@ -982,6 +982,13 @@
     <lname>2000_DATM%1PT_ELM%SP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>	  
 
+  <!---One way OCN to LND   -->
+
+  <compset>
+    <alias>GTSM2ELM</alias>
+    <lname>2000_DATM%GSWP3v1_ELM_SICE_DOCN%GTSM_SROF_SGLC_SWAV</lname>
+  </compset>    
+
   <entries>
     <entry id="RUN_STARTDATE">
       <values>

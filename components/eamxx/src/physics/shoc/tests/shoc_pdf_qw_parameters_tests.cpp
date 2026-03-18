@@ -84,15 +84,15 @@ struct UnitWrap::UnitTest<D>::TestShocQwParameters {
     REQUIRE(SDS.w1_1 > 0);
     REQUIRE(SDS.w1_2 < 0);
     if (SDS.skew_w > 0){
-      REQUIRE(abs(SDS.w1_1) > abs(SDS.w1_2));
+      REQUIRE(std::abs(SDS.w1_1) > std::abs(SDS.w1_2));
       REQUIRE(SDS.a < 0.5);
     }
     else if (SDS.skew_w < 0){
-      REQUIRE(abs(SDS.w1_1) < abs(SDS.w1_2));
+      REQUIRE(std::abs(SDS.w1_1) < std::abs(SDS.w1_2));
       REQUIRE(SDS.a > 0.5);
     }
     else if (SDS.skew_w == 0){
-      REQUIRE(abs(SDS.w1_1) == abs(SDS.w1_2));
+      REQUIRE(std::abs(SDS.w1_1) == std::abs(SDS.w1_2));
       REQUIRE(SDS.a == 0);
     }
 
@@ -100,7 +100,7 @@ struct UnitWrap::UnitTest<D>::TestShocQwParameters {
     shoc_assumed_pdf_qw_parameters(SDS);
 
     // Save absolute difference between the two gaussian moistures
-    Real qwgaus_diff_result1 = abs(qvconv*SDS.qw1_2 - qvconv*SDS.qw1_1);
+    Real qwgaus_diff_result1 = std::abs(qvconv*SDS.qw1_2 - qvconv*SDS.qw1_1);
 
     // Now laod up value for the large wqwsec test
     SDS.wqwsec = wqwsec_large;
@@ -109,7 +109,7 @@ struct UnitWrap::UnitTest<D>::TestShocQwParameters {
     shoc_assumed_pdf_qw_parameters(SDS);
 
     // Save absolute difference between the two gaussian temps
-    Real qwgaus_diff_result2 = abs(qvconv*SDS.qw1_2 - qvconv*SDS.qw1_1);
+    Real qwgaus_diff_result2 = std::abs(qvconv*SDS.qw1_2 - qvconv*SDS.qw1_1);
 
     // Now check the result
     REQUIRE(qwgaus_diff_result2 > qwgaus_diff_result1);

@@ -20,7 +20,7 @@ template<typename S, typename D>
 Int Functions<S,D>::shoc_init(
   const Int&                  nbot_shoc,
   const Int&                  ntop_shoc,
-  const view_1d<const Spack>& pref_mid)
+  const view_1d<const Pack>& pref_mid)
 {
   using ExeSpace = typename KT::ExeSpace;
   using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
@@ -37,11 +37,11 @@ Int Functions<S,D>::shoc_init(
 
     Int npbl_val = 1;
 
-    const int begin_pack_indx = ntop_shoc/Spack::n;
-    const int end_pack_indx   = nbot_shoc/Spack::n+1;
+    const int begin_pack_indx = ntop_shoc/Pack::n;
+    const int end_pack_indx   = nbot_shoc/Pack::n+1;
     Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, begin_pack_indx, end_pack_indx),
                                                     [&] (const Int& k, Int& local_max) {
-      auto range = ekat::range<IntSmallPack>(k*Spack::n);
+      auto range = ekat::range<IntPack>(k*Pack::n);
       auto condition = (range >= ntop_shoc && range < nbot_shoc);
       if (condition.any()) {
         condition = condition && pref_mid(k) >= pblmaxp;
@@ -93,61 +93,61 @@ void Functions<S,D>::shoc_main_internal(
   // Input Variables
   const Scalar&                dx,
   const Scalar&                dy,
-  const uview_1d<const Spack>& zt_grid,
-  const uview_1d<const Spack>& zi_grid,
-  const uview_1d<const Spack>& pres,
-  const uview_1d<const Spack>& presi,
-  const uview_1d<const Spack>& pdel,
-  const uview_1d<const Spack>& thv,
-  const uview_1d<const Spack>& w_field,
+  const uview_1d<const Pack>& zt_grid,
+  const uview_1d<const Pack>& zi_grid,
+  const uview_1d<const Pack>& pres,
+  const uview_1d<const Pack>& presi,
+  const uview_1d<const Pack>& pdel,
+  const uview_1d<const Pack>& thv,
+  const uview_1d<const Pack>& w_field,
   const Scalar&                wthl_sfc,
   const Scalar&                wqw_sfc,
   const Scalar&                uw_sfc,
   const Scalar&                vw_sfc,
-  const uview_1d<const Spack>& wtracer_sfc,
-  const uview_1d<const Spack>& inv_exner,
+  const uview_1d<const Pack>& wtracer_sfc,
+  const uview_1d<const Pack>& inv_exner,
   const Scalar&                phis,
   // Workspace/Local Variables
   const Workspace&             workspace,
   // Input/Output Variables
-  const uview_1d<Spack>&       host_dse,
-  const uview_1d<Spack>&       tke,
-  const uview_1d<Spack>&       thetal,
-  const uview_1d<Spack>&       qw,
-  const uview_1d<Spack>&       u_wind,
-  const uview_1d<Spack>&       v_wind,
-  const uview_1d<Spack>&       wthv_sec,
-  const uview_2d_strided<Spack>& qtracers,
-  const uview_1d<Spack>&       tk,
-  const uview_1d<Spack>&       shoc_cldfrac,
-  const uview_1d<Spack>&       shoc_ql,
+  const uview_1d<Pack>&       host_dse,
+  const uview_1d<Pack>&       tke,
+  const uview_1d<Pack>&       thetal,
+  const uview_1d<Pack>&       qw,
+  const uview_1d<Pack>&       u_wind,
+  const uview_1d<Pack>&       v_wind,
+  const uview_1d<Pack>&       wthv_sec,
+  const uview_2d_strided<Pack>& qtracers,
+  const uview_1d<Pack>&       tk,
+  const uview_1d<Pack>&       shoc_cldfrac,
+  const uview_1d<Pack>&       shoc_ql,
   // Output Variables
   Scalar&                      pblh,
   Scalar&                      ustar,
   Scalar&                      obklen,
-  const uview_1d<Spack>&       shoc_ql2,
-  const uview_1d<Spack>&       tkh,
+  const uview_1d<Pack>&       shoc_ql2,
+  const uview_1d<Pack>&       tkh,
   // Diagnostic Output Variables
-  const uview_1d<Spack>&       shoc_cond,
-  const uview_1d<Spack>&       shoc_evap,
-  const uview_1d<Spack>&       shoc_mix,
-  const uview_1d<Spack>&       w_sec,
-  const uview_1d<Spack>&       thl_sec,
-  const uview_1d<Spack>&       qw_sec,
-  const uview_1d<Spack>&       qwthl_sec,
-  const uview_1d<Spack>&       wthl_sec,
-  const uview_1d<Spack>&       wqw_sec,
-  const uview_1d<Spack>&       wtke_sec,
-  const uview_1d<Spack>&       uw_sec,
-  const uview_1d<Spack>&       vw_sec,
-  const uview_1d<Spack>&       w3,
-  const uview_1d<Spack>&       wqls_sec,
-  const uview_1d<Spack>&       brunt,
-  const uview_1d<Spack>&       isotropy)
+  const uview_1d<Pack>&       shoc_cond,
+  const uview_1d<Pack>&       shoc_evap,
+  const uview_1d<Pack>&       shoc_mix,
+  const uview_1d<Pack>&       w_sec,
+  const uview_1d<Pack>&       thl_sec,
+  const uview_1d<Pack>&       qw_sec,
+  const uview_1d<Pack>&       qwthl_sec,
+  const uview_1d<Pack>&       wthl_sec,
+  const uview_1d<Pack>&       wqw_sec,
+  const uview_1d<Pack>&       wtke_sec,
+  const uview_1d<Pack>&       uw_sec,
+  const uview_1d<Pack>&       vw_sec,
+  const uview_1d<Pack>&       w3,
+  const uview_1d<Pack>&       wqls_sec,
+  const uview_1d<Pack>&       brunt,
+  const uview_1d<Pack>&       isotropy)
 {
 
   // Define temporary variables
-  uview_1d<Spack> rho_zt, shoc_qv, shoc_tabs, dz_zt, dz_zi;
+  uview_1d<Pack> rho_zt, shoc_qv, shoc_tabs, dz_zt, dz_zi;
   workspace.template take_many_and_reset<5>(
     {"rho_zt", "shoc_qv", "shoc_tabs", "dz_zt", "dz_zi"},
     {&rho_zt, &shoc_qv, &shoc_tabs, &dz_zt, &dz_zi});
@@ -355,57 +355,57 @@ void Functions<S,D>::shoc_main_internal(
   // Input Variables
   const view_1d<const Scalar>& dx,
   const view_1d<const Scalar>& dy,
-  const view_2d<const Spack>& zt_grid,
-  const view_2d<const Spack>& zi_grid,
-  const view_2d<const Spack>& pres,
-  const view_2d<const Spack>& presi,
-  const view_2d<const Spack>& pdel,
-  const view_2d<const Spack>& thv,
-  const view_2d<const Spack>& w_field,
+  const view_2d<const Pack>& zt_grid,
+  const view_2d<const Pack>& zi_grid,
+  const view_2d<const Pack>& pres,
+  const view_2d<const Pack>& presi,
+  const view_2d<const Pack>& pdel,
+  const view_2d<const Pack>& thv,
+  const view_2d<const Pack>& w_field,
   const view_1d<const Scalar>& wthl_sfc,
   const view_1d<const Scalar>& wqw_sfc,
   const view_1d<const Scalar>& uw_sfc,
   const view_1d<const Scalar>& vw_sfc,
-  const view_2d<const Spack>& wtracer_sfc,
-  const view_2d<const Spack>& inv_exner,
+  const view_2d<const Pack>& wtracer_sfc,
+  const view_2d<const Pack>& inv_exner,
   const view_1d<const Scalar>& phis,
   // Workspace Manager
   WorkspaceMgr&      workspace_mgr,
   // Input/Output Variables
-  const view_2d<Spack>&       host_dse,
-  const view_2d<Spack>&       tke,
-  const view_2d<Spack>&       thetal,
-  const view_2d<Spack>&       qw,
-  const uview_2d<Spack>&      u_wind,
-  const uview_2d<Spack>&      v_wind,
-  const view_2d<Spack>&       wthv_sec,
-  const view_3d_strided<Spack>& qtracers,
-  const view_2d<Spack>&       tk,
-  const view_2d<Spack>&       shoc_cldfrac,
-  const view_2d<Spack>&       shoc_ql,
+  const view_2d<Pack>&       host_dse,
+  const view_2d<Pack>&       tke,
+  const view_2d<Pack>&       thetal,
+  const view_2d<Pack>&       qw,
+  const uview_2d<Pack>&      u_wind,
+  const uview_2d<Pack>&      v_wind,
+  const view_2d<Pack>&       wthv_sec,
+  const view_3d_strided<Pack>& qtracers,
+  const view_2d<Pack>&       tk,
+  const view_2d<Pack>&       shoc_cldfrac,
+  const view_2d<Pack>&       shoc_ql,
   // Output Variables
   const view_1d<Scalar>&      pblh,
   const view_1d<Scalar>&      ustar,
   const view_1d<Scalar>&      obklen,
-  const view_2d<Spack>&       shoc_ql2,
-  const view_2d<Spack>&       tkh,
+  const view_2d<Pack>&       shoc_ql2,
+  const view_2d<Pack>&       tkh,
   // Diagnostic Output Variables
-  const view_2d<Spack>&       shoc_cond,
-  const view_2d<Spack>&       shoc_evap,
-  const view_2d<Spack>&       shoc_mix,
-  const view_2d<Spack>&       w_sec,
-  const view_2d<Spack>&       thl_sec,
-  const view_2d<Spack>&       qw_sec,
-  const view_2d<Spack>&       qwthl_sec,
-  const view_2d<Spack>&       wthl_sec,
-  const view_2d<Spack>&       wqw_sec,
-  const view_2d<Spack>&       wtke_sec,
-  const view_2d<Spack>&       uw_sec,
-  const view_2d<Spack>&       vw_sec,
-  const view_2d<Spack>&       w3,
-  const view_2d<Spack>&       wqls_sec,
-  const view_2d<Spack>&       brunt,
-  const view_2d<Spack>&       isotropy,
+  const view_2d<Pack>&       shoc_cond,
+  const view_2d<Pack>&       shoc_evap,
+  const view_2d<Pack>&       shoc_mix,
+  const view_2d<Pack>&       w_sec,
+  const view_2d<Pack>&       thl_sec,
+  const view_2d<Pack>&       qw_sec,
+  const view_2d<Pack>&       qwthl_sec,
+  const view_2d<Pack>&       wthl_sec,
+  const view_2d<Pack>&       wqw_sec,
+  const view_2d<Pack>&       wtke_sec,
+  const view_2d<Pack>&       uw_sec,
+  const view_2d<Pack>&       vw_sec,
+  const view_2d<Pack>&       w3,
+  const view_2d<Pack>&       wqls_sec,
+  const view_2d<Pack>&       brunt,
+  const view_2d<Pack>&       isotropy,
   // Temporaries
   const view_1d<Scalar>& se_b,
   const view_1d<Scalar>& ke_b,
@@ -418,11 +418,11 @@ void Functions<S,D>::shoc_main_internal(
   const view_1d<Scalar>& kbfs,
   const view_1d<Scalar>& ustar2,
   const view_1d<Scalar>& wstar,
-  const view_2d<Spack>& rho_zt,
-  const view_2d<Spack>& shoc_qv,
-  const view_2d<Spack>& shoc_tabs,
-  const view_2d<Spack>& dz_zt,
-  const view_2d<Spack>& dz_zi)
+  const view_2d<Pack>& rho_zt,
+  const view_2d<Pack>& shoc_qv,
+  const view_2d<Pack>& shoc_tabs,
+  const view_2d<Pack>& dz_zt,
+  const view_2d<Pack>& dz_zi)
 {
   // Scalarize some views for single entry access
   const auto s_thetal  = ekat::scalarize(thetal);
@@ -632,7 +632,7 @@ Int Functions<S,D>::shoc_main(
   using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
 
   // SHOC main loop
-  const auto nlev_packs = ekat::npack<Spack>(nlev);
+  const auto nlev_packs = ekat::npack<Pack>(nlev);
   const auto policy = TPF::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();

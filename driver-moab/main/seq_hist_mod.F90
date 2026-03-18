@@ -46,7 +46,6 @@ module seq_hist_mod
   use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_r2x_fields,seq_flds_dom_fields
   use seq_flds_mod, only: seq_flds_l2x_fields, seq_flds_x2a_fields, seq_flds_x2i_fields
   use seq_flds_mod, only: seq_flds_x2l_fields, seq_flds_x2r_fields
-  use iMOAB,            only: iMOAB_GetGlobalInfo
   use shr_moab_mod,      only: mbGetnCells,mbGetCellTagVals
 
   use component_type_mod

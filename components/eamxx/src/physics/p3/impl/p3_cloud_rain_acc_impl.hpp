@@ -16,12 +16,12 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::cloud_rain_accretion(
-  const Spack& rho, const Spack& inv_rho,
-  const Spack& qc_incld, const Spack& nc_incld,
-  const Spack& qr_incld, const Spack& inv_qc_relvar,
-  Spack& qc2qr_accret_tend, Spack& nc_accret_tend,
+  const Pack& rho, const Pack& inv_rho,
+  const Pack& qc_incld, const Pack& nc_incld,
+  const Pack& qr_incld, const Pack& inv_qc_relvar,
+  Pack& qc2qr_accret_tend, Pack& nc_accret_tend,
   const P3Runtime& runtime_options,
-  const Smask& context)
+  const Mask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
 
@@ -29,7 +29,7 @@ void Functions<S,D>
   const Scalar accretion_qc_exponent = runtime_options.accretion_qc_exponent;
   const Scalar accretion_qr_exponent = runtime_options.accretion_qr_exponent;
 
-  Spack sgs_var_coef;
+  Pack sgs_var_coef;
   // sgs_var_coef = subgrid_variance_scaling(inv_qc_relvar, sp(1.15) );
   sgs_var_coef = 1;
 

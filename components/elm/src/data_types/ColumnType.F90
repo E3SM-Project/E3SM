@@ -76,6 +76,11 @@ module ColumnType
      logical, pointer :: is_fates(:) => null() ! True if this column is associated with a FATES active column
                                                ! False if otherwise. If fates is turned off, this array is
                                                ! all false
+
+     logical, pointer :: is_soil(:) => null()  ! True if the column is a soil
+     logical, pointer :: is_crop(:) => null()  ! True if the column is a crop
+     logical, pointer :: is_lake(:) => null()  ! True if the column is a lake
+
    contains
 
      procedure, public :: Init => col_pp_init
@@ -139,6 +144,10 @@ contains
     ! Assume that columns are not fates columns until fates initialization begins
     allocate(this%is_fates(begc:endc)); this%is_fates(:) = .false.
 
+    allocate(this%is_soil (begc:endc)); this%is_soil (:) = .false.
+    allocate(this%is_crop (begc:endc)); this%is_crop (:) = .false.
+    allocate(this%is_lake (begc:endc)); this%is_lake (:) = .false.
+
   end subroutine col_pp_init
 
   !------------------------------------------------------------------------
@@ -178,6 +187,9 @@ contains
     deallocate(this%meangradz     )
     deallocate(this%hydrologically_active)
     deallocate(this%is_fates)
+    deallocate(this%is_soil)
+    deallocate(this%is_crop)
+    deallocate(this%is_lake)
 
   end subroutine col_pp_clean
 

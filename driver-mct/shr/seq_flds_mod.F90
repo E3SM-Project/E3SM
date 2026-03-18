@@ -161,10 +161,12 @@ module seq_flds_mod
   logical            :: rof2ocn_nutrients   ! .true. if the runoff model passes nutrient fields to the ocn
   logical            :: lnd_rof_two_way     ! .true. if land-river two-way coupling turned on
   logical            :: ocn_rof_two_way     ! .true. if river-ocean two-way coupling turned on
+  logical            :: ocn_lnd_one_way     ! .true. if ocean to land one-way coupling turned on
   logical            :: rof_sed             ! .true. if river model includes sediment
   logical            :: add_iac_to_cplstate  ! .true. if iac fields are added to coupler history files
   character(len=CS)  :: wav_ocn_coup     ! 'twoway' if wave-ocean two-way coupling turned on
-
+  character(len=CS)  :: wav_atm_coup     ! 'twoway' if wave-atm two-way coupling turned on
+  character(len=CS)  :: wav_ice_coup     ! 'twoway' if wave-ice two-way coupling turned on
   !----------------------------------------------------------------------------
   ! metadata
   !----------------------------------------------------------------------------
@@ -206,6 +208,8 @@ module seq_flds_mod
   character(CXX) :: seq_flds_x2o_fluxes
   character(CXX) :: seq_flds_o2x_states_to_rof
   character(CXX) :: seq_flds_o2x_fluxes_to_rof
+  character(CXX) :: seq_flds_o2x_states_to_lnd
+  character(CXX) :: seq_flds_o2x_fluxes_to_lnd
 
   character(CXX) :: seq_flds_g2x_states
   character(CXX) :: seq_flds_g2x_states_to_lnd
@@ -269,6 +273,7 @@ module seq_flds_mod
   character(CXX) :: seq_flds_o2x_fields_to_rof
   character(CXX) :: seq_flds_z2x_fields
   character(CXX) :: seq_flds_x2z_fields
+  character(CXX) :: seq_flds_o2x_fields_to_lnd
 
   !----------------------------------------------------------------------------
   ! component names
@@ -345,6 +350,8 @@ contains
     character(CXX) :: o2x_fluxes = ''
     character(CXX) :: o2x_states_to_rof = ''
     character(CXX) :: o2x_fluxes_to_rof = ''
+    character(CXX) :: o2x_states_to_lnd = ''
+    character(CXX) :: o2x_fluxes_to_lnd = ''
     character(CXX) :: x2o_states = ''
     character(CXX) :: x2o_fluxes = ''
     character(CXX) :: g2x_states = ''
@@ -409,8 +416,8 @@ contains
          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, flds_polar, flds_tf, &
          glc_nec, glc_nzoc, ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
          nan_check_component_fields, rof_heat, atm_flux_method, atm_gustiness, &
-         rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, rof_sed, &
-         wav_ocn_coup, add_iac_to_cplstate
+         rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, ocn_lnd_one_way, rof_sed, &
+         wav_ocn_coup, wav_atm_coup, wav_ice_coup, add_iac_to_cplstate
 
     ! user specified new fields
     integer,  parameter :: nfldmax = 200
@@ -454,8 +461,11 @@ contains
        rof2ocn_nutrients = .false.
        lnd_rof_two_way   = .false.
        ocn_rof_two_way   = .false.
+       ocn_lnd_one_way   = .false.
        rof_sed   = .false.
        wav_ocn_coup = 'none'
+       wav_atm_coup = 'none'
+       wav_ice_coup = 'none'
        add_iac_to_cplstate = .false.
 
        unitn = shr_file_getUnit()
@@ -492,8 +502,11 @@ contains
     call shr_mpi_bcast(rof2ocn_nutrients, mpicom)
     call shr_mpi_bcast(lnd_rof_two_way,   mpicom)
     call shr_mpi_bcast(ocn_rof_two_way,   mpicom)
+    call shr_mpi_bcast(ocn_lnd_one_way,   mpicom)
     call shr_mpi_bcast(rof_sed,   mpicom)
     call shr_mpi_bcast(wav_ocn_coup, mpicom)
+    call shr_mpi_bcast(wav_atm_coup, mpicom)
+    call shr_mpi_bcast(wav_ice_coup, mpicom)
     call shr_mpi_bcast(add_iac_to_cplstate, mpicom)
 
     call glc_elevclass_init(glc_nec)
@@ -687,7 +700,7 @@ contains
        call seq_flds_add(x2r_states,"Sa_u")
        call seq_flds_add(a2x_states_to_rof,"Sa_u")
     endif
-    call seq_flds_add(x2w_states,"Sa_u")
+    if (wav_atm_coup .ne. 'none') call seq_flds_add(x2w_states,"Sa_u")
     longname = 'Zonal wind at the lowest model level'
     stdname  = 'eastward_wind'
     units    = 'm s-1'
@@ -702,7 +715,7 @@ contains
        call seq_flds_add(x2r_states,"Sa_v")
        call seq_flds_add(a2x_states_to_rof,"Sa_v")
     endif
-    call seq_flds_add(x2w_states,"Sa_v")
+    if (wav_atm_coup .ne. 'none')  call seq_flds_add(x2w_states,"Sa_v")
     longname = 'Meridional wind at the lowest model level'
     stdname  = 'northward_wind'
     units    = 'm s-1'
@@ -751,7 +764,7 @@ contains
        call seq_flds_add(x2r_states,"Sa_tbot")
        call seq_flds_add(a2x_states_to_rof,"Sa_tbot")
     endif
-    call seq_flds_add(x2w_states,"Sa_tbot")
+    if (wav_atm_coup .ne. 'none') call seq_flds_add(x2w_states,"Sa_tbot")
     longname = 'Temperature at the lowest model level'
     stdname  = 'air_temperature'
     units    = 'K'
@@ -1552,7 +1565,7 @@ contains
     ! Fractional ice coverage wrt ocean
     call seq_flds_add(i2x_states,"Si_ifrac")
     call seq_flds_add(x2o_states,"Si_ifrac")
-    call seq_flds_add(x2w_states,"Si_ifrac")
+    if (wav_ice_coup .ne. 'none') call seq_flds_add(x2w_states,"Si_ifrac")
     longname = 'Fractional ice coverage wrt ocean'
     stdname  = 'sea_ice_area_fraction'
     units    = '1'
@@ -1768,12 +1781,27 @@ contains
     call seq_flds_add(o2x_states,"So_ssh")
     call seq_flds_add(x2r_states,"So_ssh")
     call seq_flds_add(o2x_states_to_rof,"So_ssh")
+    if (ocn_lnd_one_way) then
+      call seq_flds_add(x2l_states,"So_ssh") ! ocn -> lnd one-way coupling
+      call seq_flds_add(o2x_states_to_lnd,"So_ssh")
+    endif
     if (wav_ocn_coup .ne. 'none') call seq_flds_add(x2w_states,'So_ssh')
     longname = 'Sea surface height'
     stdname  = 'sea_surface_height'
     units    = 'm'
     attname  = 'So_ssh'
     call metadata_set(attname, longname, stdname, units)
+
+    if (ocn_lnd_one_way) then
+      call seq_flds_add(o2x_states,"So_frac_h2oocn")
+      call seq_flds_add(x2l_states,"So_frac_h2oocn")
+      call seq_flds_add(o2x_states_to_lnd,"So_frac_h2oocn")
+      longname = 'Oceanic inundation fraction'
+      stdname  = 'oceanic_inundation_fraction'
+      units    = '-'
+      attname  = 'So_frac_h2oocn'
+      call metadata_set(attname, longname, stdname, units)
+    endif
 
     ! Meridional sea surface slope
     call seq_flds_add(o2x_states,"So_dhdy")
@@ -2210,7 +2238,7 @@ contains
 
     ! Sea ice thickness
     call seq_flds_add(i2x_states,"Si_ithick")
-    call seq_flds_add(x2w_states,"Si_ithick")
+    if (wav_ice_coup .ne. 'none') call seq_flds_add(x2w_states,"Si_ithick")
     longname = 'Sea ice thickness'
     stdname  = 'sea_ice_thickness'
     units    = 'm'
@@ -2547,6 +2575,14 @@ contains
     ! wav->ocn and ocn->wav
     !-----------------------------
     if (wav_ocn_coup == 'twoway') then
+       call seq_flds_add(w2x_states,'Sw_Hs')
+       call seq_flds_add(x2o_states,'Sw_Hs')
+       longname = 'Significant wave height'
+       stdname  = 'significant_wave_height'
+       units    = 'm'
+       attname  = 'Sw_Hs'
+       call metadata_set(attname, longname, stdname, units)
+       
        call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_1')
        call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_1')
        longname = 'Partitioned Stokes drift u component, wavenumber 1'
@@ -2643,14 +2679,6 @@ contains
        attname  = 'Sw_vstokes_wavenumber_6'
        call metadata_set(attname, longname, stdname, units)
 
-       call seq_flds_add(w2x_states,'Sw_Hs')
-       call seq_flds_add(x2o_states,'Sw_Hs')
-       longname = 'Significant wave height'
-       stdname  = 'significant_wave_height'
-       units    = 'm'
-       attname  = 'Sw_Hs'
-       call metadata_set(attname, longname, stdname, units)
-
        call seq_flds_add(w2x_states,'Sw_Fp')
        call seq_flds_add(x2o_states,'Sw_Fp')
        longname = 'Peak wave frequency'
@@ -2665,6 +2693,80 @@ contains
        stdname  = 'peak_wave_direction'
        units    = 'deg'
        attname  = 'Sw_Dp'
+       call metadata_set(attname, longname, stdname, units)
+    
+       call seq_flds_add(w2x_fluxes,'Faww_Tawx')
+       call seq_flds_add(x2o_fluxes,'Faww_Tawx')
+       longname = 'Zonal wave supported stress'
+       stdname  = 'Zonal_wave_supported_stress'
+       units    = 'N m-2'
+       attname  = 'Faww_Tawx'
+       call metadata_set(attname, longname, stdname, units)
+
+       call seq_flds_add(w2x_fluxes,'Faww_Tawy')
+       call seq_flds_add(x2o_fluxes,'Faww_Tawy')
+       longname = 'Meridional wave supported wind stress'
+       stdname  = 'Meridional_wave_supported_wind_stress'
+       units    = 'N m-2'
+       attname  = 'Faww_Tawy'
+       call metadata_set(attname, longname, stdname, units)
+
+       call seq_flds_add(w2x_fluxes,'Fwow_Twox')
+       call seq_flds_add(x2o_fluxes,'Fwow_Twox')
+       longname = 'Zonal wave to ocean wind stress'
+       stdname  = 'Zonal_wave_to_ocean_wind_stress'
+       units    = 'N m-2'
+       attname  = 'Fwow_Twox'
+       call metadata_set(attname, longname, stdname, units)
+
+       call seq_flds_add(w2x_fluxes,'Fwow_Twoy')
+       call seq_flds_add(x2o_fluxes,'Fwow_Twoy')
+       longname = 'Meridional wave to ocean wind stress'
+       stdname  = 'Meridional_wave_to_ocean_wind_stress'
+       units    = 'N m-2'
+       attname  = 'Fwow_Twoy'
+       call metadata_set(attname, longname, stdname, units)
+
+       call seq_flds_add(w2x_fluxes,'Faow_Tocx')
+       call seq_flds_add(x2o_fluxes,'Faow_Tocx')
+       longname = 'Zonal Net ocean wind stress by wave model'
+       stdname  = 'Zonal_net_ocean_wind_stress_wavemodel'
+       units    = 'N m-2'
+       attname  = 'Faow_Tocx'
+       call metadata_set(attname, longname, stdname, units)
+
+       call seq_flds_add(w2x_fluxes,'Faow_Tocy')
+       call seq_flds_add(x2o_fluxes,'Faow_Tocy')
+       longname = 'Meridional Net ocean wind stress by wave model'
+       stdname  = 'Meridional_net_ocean_wind_stress_wavemodel'
+       units    = 'N m-2'
+       attname  = 'Faow_Tocy'
+       call metadata_set(attname, longname, stdname, units)
+    endif
+
+    if (wav_atm_coup == 'twoway' .or. wav_ocn_coup == 'twoway') then
+       call seq_flds_add(w2x_states,'Sw_Charn')
+       if (wav_ocn_coup == 'twoway') call seq_flds_add(x2o_states,'Sw_Charn')
+       longname = 'Charnock coefficent based on sea state'
+       stdname  = 'Charnock_coefficent_based_on_sea_state'
+       units    = ''
+       attname  = 'Sw_Charn'
+       call metadata_set(attname, longname, stdname, units)
+
+       call seq_flds_add(w2x_states,'Sw_Ustar')
+       if (wav_ocn_coup == 'twoway') call seq_flds_add(x2o_states,'Sw_Ustar')
+       longname = 'Friction Velocity based on sea state'
+       stdname  = 'Frcition_velocity_based_on_sea_state'
+       units    = ''
+       attname  = 'Sw_Ustar'
+       call metadata_set(attname, longname, stdname, units)
+       
+       call seq_flds_add(w2x_states,'Sw_Z0')
+       if (wav_ocn_coup == 'twoway') call seq_flds_add(x2o_states,'Sw_Z0')
+       longname = 'Surface Roughness Length based on wave state'
+       stdname  = 'Surface_roughness_length_based_on_wave_state'
+       units    = ''
+       attname  = 'Sw_Z0'
        call metadata_set(attname, longname, stdname, units)
     endif
 
@@ -4154,6 +4256,8 @@ contains
     seq_flds_r2o_ice_fluxes = trim(r2o_ice_fluxes)
     seq_flds_o2x_states_to_rof = trim(o2x_states_to_rof)
     seq_flds_o2x_fluxes_to_rof = trim(o2x_fluxes_to_rof)
+    seq_flds_o2x_states_to_lnd = trim(o2x_states_to_lnd)
+    seq_flds_o2x_fluxes_to_lnd = trim(o2x_fluxes_to_lnd)
 
     if (seq_comm_iamroot(ID)) then
        write(logunit,*) subname//': seq_flds_a2x_states= ',trim(seq_flds_a2x_states)
@@ -4209,6 +4313,7 @@ contains
        write(logunit,*) subname//': seq_flds_z2x_fluxes= ',trim(seq_flds_z2x_fluxes)
        write(logunit,*) subname//': seq_flds_x2z_states= ',trim(seq_flds_x2z_states)
        write(logunit,*) subname//': seq_flds_x2z_fluxes= ',trim(seq_flds_x2z_fluxes)
+       write(logunit,*) subname//': seq_flds_o2x_states_to_lnd=',trim(seq_flds_o2x_states_to_lnd)
     end if
 
     call catFields(seq_flds_dom_fields, seq_flds_dom_coord , seq_flds_dom_other )
@@ -4236,6 +4341,7 @@ contains
     call catFields(seq_flds_o2x_fields_to_rof, seq_flds_o2x_states_to_rof, seq_flds_o2x_fluxes_to_rof)
     call catFields(seq_flds_z2x_fields, seq_flds_z2x_states, seq_flds_z2x_fluxes)
     call catFields(seq_flds_x2z_fields, seq_flds_x2z_states, seq_flds_x2z_fluxes)
+    call catFields(seq_flds_o2x_fields_to_lnd, seq_flds_o2x_states_to_lnd, seq_flds_o2x_fluxes_to_lnd)
 
   end subroutine seq_flds_set
 

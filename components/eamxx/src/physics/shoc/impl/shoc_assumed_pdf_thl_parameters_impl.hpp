@@ -18,23 +18,23 @@ namespace shoc {
 template<typename S, typename D>
 KOKKOS_INLINE_FUNCTION
 void Functions<S,D>::shoc_assumed_pdf_thl_parameters(
-  const Spack& wthlsec,
-  const Spack& sqrtw2,
-  const Spack& sqrtthl,
-  const Spack& thlsec,
-  const Spack& thl_first,
-  const Spack& w1_1,
-  const Spack& w1_2,
-  const Spack& Skew_w,
-  const Spack& a,
+  const Pack& wthlsec,
+  const Pack& sqrtw2,
+  const Pack& sqrtthl,
+  const Pack& thlsec,
+  const Pack& thl_first,
+  const Pack& w1_1,
+  const Pack& w1_2,
+  const Pack& Skew_w,
+  const Pack& a,
   const Scalar thl_tol,
   const Scalar w_thresh,
-  Spack&       thl1_1,
-  Spack&       thl1_2,
-  Spack&       thl2_1,
-  Spack&       thl2_2,
-  Spack&       sqrtthl2_1,
-  Spack&       sqrtthl2_2)
+  Pack&       thl1_1,
+  Pack&       thl1_2,
+  Pack&       thl2_1,
+  Pack&       thl2_2,
+  Pack&       sqrtthl2_1,
+  Pack&       sqrtthl2_2)
 {
   thl1_1 = thl_first;
   thl1_2 = thl_first;
@@ -43,12 +43,12 @@ void Functions<S,D>::shoc_assumed_pdf_thl_parameters(
   sqrtthl2_1 = 0;
   sqrtthl2_2 = 0;
 
-  const Smask condition =  thlsec > (thl_tol*thl_tol) && ekat::abs(w1_2 - w1_1) > w_thresh;
+  const Mask condition =  thlsec > (thl_tol*thl_tol) && ekat::abs(w1_2 - w1_1) > w_thresh;
 
-  const Spack corrtest1 = ekat::max(-1, ekat::min(1, wthlsec/(sqrtw2*sqrtthl)));
-  const Spack tmp_val_1(-corrtest1/w1_1), tmp_val_2(-corrtest1/w1_2);
+  const Pack corrtest1 = ekat::max(-1, ekat::min(1, wthlsec/(sqrtw2*sqrtthl)));
+  const Pack tmp_val_1(-corrtest1/w1_1), tmp_val_2(-corrtest1/w1_2);
 
-  Spack Skew_thl(0);
+  Pack Skew_thl(0);
   if (SC::dothetal_skew == true) {
     const auto tsign = ekat::abs(tmp_val_1 - tmp_val_2);
     Skew_thl.set(tsign>sp(0.4), sp(1.2)*Skew_w);

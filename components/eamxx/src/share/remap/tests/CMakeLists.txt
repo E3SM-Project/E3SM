@@ -12,15 +12,8 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     LIBS eamxx_remap
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
-  if (EAMXX_ENABLE_EXPERIMENTAL_CODE)
-    # Test refining remap (RMA version)
-    CreateUnitTest(refining_remapper_rma "refining_remapper_rma_tests.cpp"
-      LIBS eamxx_remap
-      MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
-  endif()
-
-  # Test refining remap (P2P version)
-  CreateUnitTest(refining_remapper_p2p "refining_remapper_p2p_tests.cpp"
+  # Test refining remap
+  CreateUnitTest(refining_remapper "refining_remapper_tests.cpp"
     LIBS eamxx_remap
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 

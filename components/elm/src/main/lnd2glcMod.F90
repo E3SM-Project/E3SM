@@ -182,7 +182,7 @@ contains
       if (lun_pp%itype(l) == istice_mec) then
          n = col_itype_to_icemec_class(col_pp%itype(c))
          flux_normalization = 1.0_r8
-      else if (lun_pp%itype(l) == istsoil) then
+      else if (col_pp%is_soil(c)) then
          n = 0  !0-level index (bareland information)
          flux_normalization = bareland_normalization(c)
       else

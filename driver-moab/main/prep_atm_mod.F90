@@ -393,7 +393,7 @@ contains
                if (atm_pg_active) then
                   type2 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
                else
-                  type2 = 1 ! This projection works (CGLL to FV), but reverse does not (FV - CGLL)
+                  type2 = 2 ! from now on, spectral is on PC on coupler side, too; no mapping allowed, just reorder?
                endif
                ierr = iMOAB_ComputeCommGraph( mboxid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                       ocn(1)%cplcompid, atm(1)%cplcompid )
@@ -515,14 +515,19 @@ contains
             mapper_Fof2a%weight_identifier = wgtIdFo2a
             mapper_Fof2a%mbname = 'mapper_Fof2a'
 
-            type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
-            type2 = 3;
+            type1 = 3; !  fv for ocean and atm; 
+            if (atm_pg_active) then !
+               type2 = 3
+            else
+               type2 = 2 ! PC cloud 
+            endif
             if (.not. samegrid_ao) then ! data-OCN case
                ! we use the same intx, because the mesh will be the same, between mbofxid and mboxid
                ierr = iMOAB_ComputeCommGraph( mbofxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                           context_id, idintx)
             else
                ! this is a case appearing in the data ocean case --res ne4pg2_ne4pg2 --compset FAQP
+               ! also in spectral case, monogrid --res ne4_ne4 --compset F2010-SCREAMv1 ( type2 is 2, point cloud )
                ierr = iMOAB_ComputeCommGraph( mbofxid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                       context_id, atm(1)%cplcompid )
                if (ierr .ne. 0) then
@@ -748,8 +753,12 @@ contains
          mapper_Fi2a%weight_identifier = wgtIdFi2a
          mapper_Fi2a%mbname = 'mapper_Fi2a'
          if ( samegrid_ao ) then ! this case can appear in cice case
-            type1 = 3; !  fv for ice and atm;
-            type2 = 3;
+            type1 = 3 !  fv for ice 
+            if (atm_pg_active) then
+               type2 = 3
+            else
+               type2 = 2 ! this is spectral case , PC cloud for atm
+            endif
             ierr = iMOAB_ComputeCommGraph( mbixid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                        ice(1)%cplcompid, atm(1)%cplcompid )
             if (ierr .ne. 0) then
@@ -905,8 +914,8 @@ contains
 
                endif
 
-               type1 = 3; !  fv for lnd and atm; fv-cgll does not work anyway
-               type2 = 3;
+               type1 = 3 !  fv for lnd and atm; fv-cgll does not work anyway
+               type2 = 3
                ierr = iMOAB_ComputeCommGraph( mblxid, mbintxla, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                           lnd(1)%cplcompid, idintx)
                if (ierr .ne. 0) then
@@ -919,8 +928,12 @@ contains
                ! so we compute just a comm graph, between lnd and atm dofs, on the coupler; target is atm
                ! land is point cloud in this case, type1 = 2
                call seq_comm_getinfo(CPLID, mpigrp=mpigrp_CPLID) ! make sure we have the right MPI group
-               type1 = 3; !  full mesh for land now
-               type2 = 3;  ! fv for target atm
+               type1 = 3 !  full mesh for land now
+               if (atm_pg_active) then
+                  type2 = 3  ! fv for target atm
+               else
+                  type2 = 2  ! point cloud for spectral
+               endif
                ierr = iMOAB_ComputeCommGraph( mblxid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                         lnd(1)%cplcompid, atm(1)%cplcompid)
                if (ierr .ne. 0) then
@@ -1033,6 +1046,7 @@ contains
     integer  :: n,ka,ki,kl,ko,kx,kof,kif,klf,klf_st,i,i1,o1
     integer, save :: lsize
     integer, save  :: index_x2a_Sf_lfrac, index_x2a_Sf_ifrac, index_x2a_Sf_ofrac
+    integer, save  :: index_x2a_Si_snowh
     character(CL) :: atm_gnam, lnd_gnam
     character(CL) :: fracstr, fracstr_st
 
@@ -1063,6 +1077,7 @@ contains
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
     character(CXX) ::tagname, mct_field
     integer :: ent_type, ierr, arrsize
+    logical :: single_column,lnd_present
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
 #endif
@@ -1077,6 +1092,7 @@ contains
     !-----------------------------------------------------------------------
     !
     call seq_comm_getdata(CPLID, iamroot=iamroot)
+    call seq_infodata_getdata(infodata,single_column=single_column,lnd_present=lnd_present)
 
     if (first_time) then
 
@@ -1088,7 +1104,11 @@ contains
                write(logunit,*) subname,' error in getting info '
                call shr_sys_abort(subname//' error in getting info ')
        endif
-       lsize = nvise(1) ! number of active cells
+       if (atm_pg_active) then
+          lsize = nvise(1) ! number of active cells
+       else
+          lsize = nvert(1) ! for the spectral case, everything is pc from now on
+       endif
        ! mct avs are used just for their fields metadata, not the actual reals
        ! (name of the fields)
        ! need these always, not only the first time
@@ -1105,6 +1125,7 @@ contains
        index_x2a_Sf_lfrac = mct_aVect_indexRA(x2a_a,'Sf_lfrac')
        index_x2a_Sf_ifrac = mct_aVect_indexRA(x2a_a,'Sf_ifrac')
        index_x2a_Sf_ofrac = mct_aVect_indexRA(x2a_a,'Sf_ofrac')
+       index_x2a_Si_snowh = mct_aVect_indexRA(x2a_a,'Si_snowh')
 
        !ngflds = mct_aVect_nRattr(g2x_o)
        allocate(fractions_am(lsize,5)) ! there are 5 fractions 'afrac:ifrac:ofrac:lfrac:lfrin'
@@ -1296,7 +1317,11 @@ contains
     endif  ! end first-time
 
     !  Get data from MOAB
-    ent_type = 1 ! cells
+    if (atm_pg_active) then
+       ent_type = 1 ! cells
+    else
+       ent_type = 0 ! vertices, it is PC 
+    endif
     tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
     arrsize = naflds * lsize
     ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, x2a_am)
@@ -1334,32 +1359,48 @@ contains
          call shr_sys_abort(subname//' error in getting fractions_am from atm instance ')
     endif
 
-    tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
-    arrsize = noflds * lsize !        allocate (o2x_am (lsize, noflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, o2x_am)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in getting o2x_am array ')
+    if (mboxid > 0) then ! retrieve projection only when ox is active ?
+       tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
+       arrsize = noflds * lsize !        allocate (o2x_am (lsize, noflds))
+       ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, o2x_am)
+       if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting o2x_am array ')
+       endif
+    else ! o2x_am will still be used in merge so make sure its 0 when no ocean
+       o2x_am(:,:)=0.0_r8
+    endif
+    
+    if (mbixid > 0) then
+       tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+       arrsize = niflds * lsize !        allocate (i2x_am (lsize, niflds))
+       ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, i2x_am)
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' error in getting i2x_am array ')
+       endif
+    else ! i2x_am will still be used in merge so make sure its 0 when no sea ice
+       i2x_am(:,:)=0.0_r8
     endif
 
-    tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
-    arrsize = niflds * lsize !        allocate (i2x_am (lsize, niflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, i2x_am)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in getting i2x_am array ')
+    if (mblxid > 0) then !
+       tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
+       arrsize = nlflds * lsize !        allocate (l2x_am (lsize, nlflds))
+       ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, l2x_am)
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' error in getting l2x_am array ')
+       endif
+    else ! l2x_am will still be used in merge so make sure its 0 when no land
+       l2x_am(:,:)=0.0_r8
     endif
 
-    tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
-    arrsize = nlflds * lsize !        allocate (l2x_am (lsize, nlflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, l2x_am)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in getting l2x_am array ')
-    endif
-
-    tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
-    arrsize = nxflds * lsize !        allocate (xao_am (lsize, nxflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, xao_am)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in getting xao_om array ')
+    if (mboxid > 0) then
+       tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
+       arrsize = nxflds * lsize !        allocate (xao_am (lsize, nxflds))
+       ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, xao_am)
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' error in getting xao_om array ')
+       endif
+    else ! xao_am will still be used in merge so make sure its 0 when no ocean
+       xao_am(:,:)=0.0_r8
     endif
 
 
@@ -1367,6 +1408,8 @@ contains
        x2a_am(n, index_x2a_Sf_lfrac) = fractions_am(n, klf) ! x2a_a%rAttr(index_x2a_Sf_lfrac,n) = fractions_a%Rattr(klf,n)
        x2a_am(n, index_x2a_Sf_ifrac) = fractions_am(n, kif) ! x2a_a%rAttr(index_x2a_Sf_ifrac,n) = fractions_a%Rattr(kif,n)
        x2a_am(n, index_x2a_Sf_ofrac) = fractions_am(n, kof) ! x2a_a%rAttr(index_x2a_Sf_ofrac,n) = fractions_a%Rattr(kof,n)
+       ! zero out Si_snowh for single column to match MCT
+       if(single_column) x2a_am(n, index_x2a_Si_snowh) = 0.0_r8
     end do
 
     !--- document fraction operations ---
@@ -1420,12 +1463,6 @@ contains
 #endif
        enddo
     endif  ! first time
-
-    ! we need to do something equivalent, to copy in a2x_am the tags from those shared indices
-    ! call mct_aVect_copy(aVin=l2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=l2x_SharedIndices)
-    !call mct_aVect_copy(aVin=o2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=o2x_SharedIndices)
-    !call mct_aVect_copy(aVin=i2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=i2x_SharedIndices)
-    !call mct_aVect_copy(aVin=xao_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=xao_SharedIndices)
 
     ! If flux to atm is coming only from the ocean (based on field being in o2x_a) -
     ! -- then scale by both ocean and ice fraction
@@ -1494,6 +1531,13 @@ contains
                 end if
              end if
           endif
+          ! if no land, make sure any 'Fall' fluxes that are not merged are 0.
+          ! e.g. dust fluxes
+          if(.not.lnd_present) then
+            if((lindx(ka)>0) .and. .not.lstate(ka) .and. .not.lmerge(ka)) then
+               x2a_am(n,ka) = 0.0_r8
+            endif
+          endif
           if (iindx(ka) > 0 .and. fraci > 0._r8) then
              if (imerge(ka)) then
                 x2a_am(n, ka) = x2a_am(n, ka) + i2x_am(n, iindx(ka)) * fraci
@@ -1536,7 +1580,11 @@ contains
     ! loop over all fields in seq_flds_x2a_fields
     call mct_list_init(temp_list ,seq_flds_x2a_fields)
     size_list=mct_list_nitem (temp_list)
-    ent_type = 1 ! cell for atm, atm_pg_active
+    if (atm_pg_active) then
+       ent_type = 1 ! cell for atm, atm_pg_active
+    else
+       ent_type = 0 ! vertices is spectral case
+    endif
     if (iamroot) print *, subname, num_moab_exports, trim(seq_flds_x2a_fields)
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)
@@ -1549,7 +1597,6 @@ contains
     ! loop over all fields in seq_flds_o2x_fields
     call mct_list_init(temp_list ,seq_flds_o2x_fields)
     size_list=mct_list_nitem (temp_list)
-    ent_type = 1 ! cell for atm, atm_pg_active
     if (iamroot) print *, subname, num_moab_exports, trim(seq_flds_o2x_fields)
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)

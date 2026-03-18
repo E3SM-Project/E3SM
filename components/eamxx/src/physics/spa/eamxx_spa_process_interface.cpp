@@ -18,14 +18,14 @@ SPA::SPA (const ekat::Comm& comm, const ekat::ParameterList& params)
 }
 
 // =========================================================================================
-void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void SPA::create_requests()
 {
   using namespace ekat::units;
 
   constexpr auto nondim = Units::nondimensional();
   constexpr int ps = SCREAM_PACK_SIZE;
 
-  m_model_grid = grids_manager->get_grid("physics");
+  m_model_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_model_grid->name();
 
   // Get bands info from file, and log it
@@ -86,7 +86,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
 
   util::TimeStamp ref_ts (1,1,1,0,0,0); // Beg of any year, since we use yearly periodic timeline
   m_data_interpolation = std::make_shared<DataInterpolation>(m_model_grid,spa_fields);
-  m_data_interpolation->setup_time_database ({spa_data_file},util::TimeLine::YearlyPeriodic, ref_ts);
+  m_data_interpolation->setup_time_database ({spa_data_file},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts);
 
   if (m_iop_data_manager!=nullptr) {
     // IOP cases cannot have a remap file. We will create a IOPRemapper as the horiz remapper

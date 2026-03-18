@@ -14,15 +14,15 @@ void Functions<S,D>
   const Int&                   nlev,
   const Scalar&                length_fac,
   const bool&                  shoc_1p5tke,
-  const uview_1d<const Spack>& tke,
-  const uview_1d<const Spack>& brunt,
-  const uview_1d<const Spack>& zt_grid,
-  const uview_1d<const Spack>& dz_zt,
-  const uview_1d<const Spack>& tk,
+  const uview_1d<const Pack>& tke,
+  const uview_1d<const Pack>& brunt,
+  const uview_1d<const Pack>& zt_grid,
+  const uview_1d<const Pack>& dz_zt,
+  const uview_1d<const Pack>& tk,
   const Scalar&                l_inf,
-  const uview_1d<Spack>&       shoc_mix)
+  const uview_1d<Pack>&       shoc_mix)
 {
-  const Int nlev_pack = ekat::npack<Spack>(nlev);
+  const Int nlev_pack = ekat::npack<Pack>(nlev);
   const auto maxlen = scream::shoc::Constants<Scalar>::maxlen;
   const auto vk = C::Karman;
 
@@ -30,8 +30,8 @@ void Functions<S,D>
   const Scalar tscale = 400;
 
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
-    const Spack tkes = ekat::sqrt(tke(k));
-    const Spack brunt2 = ekat::max(0, brunt(k));
+    const Pack tkes = ekat::sqrt(tke(k));
+    const Pack brunt2 = ekat::max(0, brunt(k));
 
     if (shoc_1p5tke){
       // If 1.5 TKE closure then set length scale to vertical grid spacing for
@@ -42,12 +42,12 @@ void Functions<S,D>
       const auto stable_mask = brunt(k) > 0;
 
       // To avoid FPE when calculating sqrt(brunt), set brunt_tmp=0 in the case brunt<1.
-      Spack brunt_tmp(stable_mask, brunt(k));
+      Pack brunt_tmp(stable_mask, brunt(k));
 
       // Define length scale for stable cells
-      const auto length_tmp = ekat::sqrt(0.76*tk(k)/0.1/ekat::sqrt(brunt_tmp + 1.e-10));
+      const auto length_tmp = ekat::sqrt(sp(0.76)*tk(k)/sp(0.1)/ekat::sqrt(brunt_tmp + sp(1.e-10)));
       // Limit the stability corrected length scale between 0.1*dz and dz
-	    const auto limited_len = ekat::min(dz_zt(k),ekat::max(0.1*dz_zt(k),length_tmp));
+	    const auto limited_len = ekat::min(dz_zt(k),ekat::max(sp(0.1)*dz_zt(k),length_tmp));
 
       // Set length scale to vertical grid if unstable, otherwise the stability adjusted value.
       shoc_mix(k).set(stable_mask, limited_len, dz_zt(k));

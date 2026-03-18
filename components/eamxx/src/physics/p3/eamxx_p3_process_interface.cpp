@@ -19,7 +19,7 @@ P3Microphysics::P3Microphysics(const ekat::Comm& comm, const ekat::ParameterList
 }
 
 // =========================================================================================
-void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void P3Microphysics::create_requests()
 {
   using namespace ekat::units;
   using namespace ekat::prefixes;
@@ -30,7 +30,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   auto micron = micro*m;
   auto m2 = pow(m,2);
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
@@ -167,16 +167,16 @@ size_t P3Microphysics::requested_buffer_size_in_bytes() const
 {
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
-  const Int nk_pack    = ekat::npack<Spack>(m_num_levs);
-  const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
+  const Int nk_pack    = ekat::npack<Pack>(m_num_levs);
+  const Int nk_pack_p1 = ekat::npack<Pack>(m_num_levs+1);
 
   // Number of Reals needed by local views in the interface
   const size_t interface_request =
       // 1d view scalar, size (ncol)
       Buffer::num_1d_scalar*m_num_cols*sizeof(Real) +
       // 2d view packed, size (ncol, nlev_packs)
-      Buffer::num_2d_vector*m_num_cols*nk_pack*sizeof(Spack) +
-      Buffer::num_2dp1_vector*m_num_cols*nk_pack_p1*sizeof(Spack) +
+      Buffer::num_2d_vector*m_num_cols*nk_pack*sizeof(Pack) +
+      Buffer::num_2dp1_vector*m_num_cols*nk_pack_p1*sizeof(Pack) +
       // 2d view scalar, size (ncol, 3)
       m_num_cols*3*sizeof(Real);
 
@@ -210,11 +210,11 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   m_buffer.col_location = decltype(m_buffer.col_location)(mem, m_num_cols, 3);
   mem += m_buffer.col_location.size();
 
-  Spack* s_mem = reinterpret_cast<Spack*>(mem);
+  Pack* s_mem = reinterpret_cast<Pack*>(mem);
 
   // 2d packed views
-  const Int nk_pack    = ekat::npack<Spack>(m_num_levs);
-  const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
+  const Int nk_pack    = ekat::npack<Pack>(m_num_levs);
+  const Int nk_pack_p1 = ekat::npack<Pack>(m_num_levs+1);
 
   using spack_2d_view_t = decltype(m_buffer.inv_exner);
   spack_2d_view_t* _2d_spack_mid_view_ptrs[Buffer::num_2d_vector] = {
@@ -255,7 +255,7 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   // Compute workspace manager size to check used memory
   // vs. requested memory
   const auto policy  = TPF::get_default_team_policy(m_num_cols, nk_pack);
-  const int wsm_size = WSM::get_total_bytes_needed(nk_pack_p1, 52, policy)/sizeof(Spack);
+  const int wsm_size = WSM::get_total_bytes_needed(nk_pack_p1, 52, policy)/sizeof(Pack);
   s_mem += wsm_size;
 
   size_t used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
@@ -294,8 +294,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   // Initialize all of the structures that are passed to p3_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
-  const Int nk_pack = ekat::npack<Spack>(m_num_levs);
-  const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
+  const Int nk_pack = ekat::npack<Pack>(m_num_levs);
+  const Int nk_pack_p1 = ekat::npack<Pack>(m_num_levs+1);
   const  auto& pmid           = get_field_in("p_mid").get_view<const Pack**>();
   const  auto& pmid_dry       = get_field_in("p_dry_mid").get_view<const Pack**>();
   const  auto& pseudo_density = get_field_in("pseudo_density").get_view<const Pack**>();

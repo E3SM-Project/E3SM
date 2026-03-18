@@ -53,7 +53,7 @@ void Functions<S,D>::vd_lu_decomp(
   // tridiagonal matrix as defined by the implicit diffusion equation.
   team.team_barrier();
   Kokkos::single(Kokkos::PerTeam(team), [&] {
-    const Real dnom = 1 / (1 + decomp_cc(nbot) + ksrf*ztodt*C::gravit*rpdel(nbot));
+    const Real dnom = 1 / (1 + decomp_cc(nbot) + ksrf*ztodt*C::gravit.value*rpdel(nbot));
     decomp_dnom(nbot) = dnom;
     decomp_ze(nbot)   = decomp_cc(nbot) * dnom;
 

@@ -484,7 +484,7 @@ contains
             !write (iulog,*) 'WARNING: SOIL/CROP column with wtgcell <= 0 or inactive... within the domain'
             !write (iulog,*) 'ELM-- PFLOTRAN does not include such a SOIL/CROP column, AND will skip it'
 
-         elseif ( .not.(ltype(l)==istsoil .or. ltype(l)==istcrop) ) then
+         elseif ( .not.(col_pp%is_soil(c) .or. col_pp%is_crop(c)) ) then
             !write (iulog,*) 'WARNING: non-SOIL/CROP column found in filter%num_soilc: nc, l, ltype', nc, l, ltype(l)
             !write (iulog,*) 'ELM-- PFLOTRAN does not include such a SOIL/CROP column, AND will skip it'
 
@@ -548,7 +548,7 @@ contains
       g = cgridcell(c)
 
       gcount = g - bounds%begg + 1
-      if ((.not.(ltype(l)==istsoil)) .and. (.not.(ltype(l)==istcrop)) ) then
+      if ((.not.(col_pp%is_soil(c))) .and. (.not.(col_pp%is_crop(c))) ) then
          !write (iulog,*) 'WARNING: Land Unit type of Non-SOIL/CROP... within the domain'
          !write (iulog,*) 'ELM-- PFLOTRAN does not support this land unit at present, AND will skip it'
 
@@ -598,7 +598,7 @@ contains
       g = cgridcell(c)
       gcount = g-bounds%begg+1
 
-      if( (ltype(l)==istsoil .or. ltype(l)==istcrop) .and. &
+      if( (col_pp%is_soil(c) .or. col_pp%is_crop(c)) .and. &
           (cactive(c) .and. cwtgcell(c)>0._r8) ) then
          mapped_gid(gcount) = grc_pp%gindex(g)      ! this is the globally grid-index, i.e. 'an' in its original calculation
 
@@ -1856,7 +1856,7 @@ contains
       g = cgridcell(c)
       l = clandunit(c)
 
-      if ( (ltype(l)==istsoil .or. ltype(l)==istcrop) .and. &
+      if ( (col_pp%is_soil(c) .or. col_pp%is_crop(c)) .and. &
            (cactive(c) .and. cwtgcell(c)>0._r8) ) then        ! skip inactive or zero-weighted column (may be not needed, but in case)
 
 #ifdef COLUMN_MODE

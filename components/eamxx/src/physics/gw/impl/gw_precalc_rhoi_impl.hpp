@@ -47,12 +47,12 @@ void Functions<S,D>::gwd_precalc_rhoi(
     {"rhoi_kludge", "decomp_ca", "decomp_cc", "decomp_dnom", "decomp_ze", "q_nostride", "qtgw_nostride"},
     {&rhoi_kludge, &decomp_ca, &decomp_cc, &decomp_dnom, &decomp_ze, &q_nostride, &qtgw_nostride});
 
-  rhoi_kludge(0) = pint(0) / (C::Rair * t(0));
+  rhoi_kludge(0) = pint(0) / (C::Rair.value * t(0));
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, 1, pver), [&] (const int k) {
-      rhoi_kludge(k) = pint(k) * 2 / (C::Rair * (t(k) + t(k-1)));
+      rhoi_kludge(k) = pint(k) * 2 / (C::Rair.value * (t(k) + t(k-1)));
     });
-  rhoi_kludge(pver) = pint(pver) / (C::Rair * t(pver-1));
+  rhoi_kludge(pver) = pint(pver) / (C::Rair.value * t(pver-1));
 
   // Calculate effective diffusivity and LU decomposition for the
   // vertical diffusion solver.

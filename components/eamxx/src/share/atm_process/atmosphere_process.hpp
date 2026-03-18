@@ -7,9 +7,9 @@
 #include "share/data_managers/SCDataManager.hpp"
 #include "share/data_managers/grids_manager.hpp"
 #include "share/data_managers/field_manager.hpp"
+#include "share/data_managers/field_request.hpp"
 #include "share/property_checks/property_check.hpp"
 #include "share/field/field_identifier.hpp"
-#include "share/field/field_request.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_group.hpp"
 
@@ -103,7 +103,13 @@ public:
   // Give the grids manager to the process, so it can grab its grid
   // Upon return, the atm proc should have a valid and complete list
   // of in/out/inout FieldRequest and GroupRequest.
-  virtual void set_grids (const std::shared_ptr<const GridsManager> grids_manager) = 0;
+  // This method stores the grids manager and calls the purely virtual
+  // create_requests() method that derived classes must implement.
+  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+
+  // Derived classes must override this method to create their field/group requests.
+  // This is called by set_grids after storing the grids manager.
+  virtual void create_requests () = 0;
 
   // These are the three main interfaces:
   //   - the initialize method sets up all the stuff the process needs in order to run,
@@ -183,10 +189,8 @@ public:
   // These methods allow the AD to figure out what each process needs, with very fine
   // grain detail. See field_request.hpp for more info on what FieldRequest and GroupRequest
   // are, and field_group.hpp for what groups of fields are.
-  const std::list<FieldRequest>& get_required_field_requests () const { return m_required_field_requests; }
-  const std::list<FieldRequest>& get_computed_field_requests () const { return m_computed_field_requests; }
-  const std::list<GroupRequest>& get_required_group_requests () const { return m_required_group_requests; }
-  const std::list<GroupRequest>& get_computed_group_requests () const { return m_computed_group_requests; }
+  const std::list<FieldRequest>& get_field_requests () const { return m_field_requests; }
+  const std::list<GroupRequest>& get_group_requests () const { return m_group_requests; }
 
   // These sets allow to get all the actual in/out fields stored by the atm proc
   // Note: if an atm proc requires a group, then all the fields in the group, as well as
@@ -406,18 +410,8 @@ protected:
     static_assert(RT==Required || RT==Computed || RT==Updated,
                   "Error! Invalid request type in call to add_field.\n");
 
-    switch (RT) {
-      case Required:
-        m_required_field_requests.push_back(req);
-        break;
-      case Computed:
-        m_computed_field_requests.push_back(req);
-        break;
-      case Updated:
-        m_required_field_requests.push_back(req);
-        m_computed_field_requests.push_back(req);
-        break;
-    }
+    auto& r = m_field_requests.emplace_back(req);
+    r.usage = RT;
   }
 
   template<RequestType RT>
@@ -426,20 +420,10 @@ protected:
     // Since we use C-style enum, let's avoid invalid integers casts
     static_assert(RT==Required || RT==Updated || RT==Computed,
         "Error! Invalid request type in call to add_group.\n");
-    switch (RT) {
-      case Required:
-        m_required_group_requests.push_back(req);
-        break;
-      case Computed:
-        m_computed_group_requests.push_back(req);
-        break;
-      case Updated:
-        m_required_group_requests.push_back(req);
-        m_computed_group_requests.push_back(req);
-        break;
-    }
-  }
 
+    auto& r = m_group_requests.emplace_back(req);
+    r.usage = RT;
+  }
 
   // Override this method to initialize the derived
   virtual void initialize_impl(const RunType run_type) = 0;
@@ -628,11 +612,12 @@ protected:
   // IOP object
   iop_data_ptr m_iop_data_manager;
 
-  // The list of in/out field/group requests.
-  std::list<FieldRequest>   m_required_field_requests;
-  std::list<FieldRequest>   m_computed_field_requests;
-  std::list<GroupRequest>   m_required_group_requests;
-  std::list<GroupRequest>   m_computed_group_requests;
+  // Grids manager
+  std::shared_ptr<const GridsManager> m_grids_manager;
+
+  // A map grid_name->requests for in/out field/group.
+  std::list<FieldRequest>   m_field_requests;
+  std::list<GroupRequest>   m_group_requests;
 
   void add_py_fields (const Field& f);
   void add_py_fields (const FieldGroup& g);

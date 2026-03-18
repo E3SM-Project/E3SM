@@ -782,6 +782,7 @@ contains
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('manunitro',manunitro, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if (.not. readv) then
+         if (masterproc) &
          write(iulog,*) trim(subname),' WARNING: manunitro  NOT in parameter file. Try to use fertnitro instead.'
          call ncd_io('fertnitro',manunitro, 'read', ncid, readvar=readv, posNOTonfile=.true.)
          if ( .not. readv ) call endrun(msg=' ERROR: both manunitro and fertnitro not in parameter file'//errMsg(__FILE__, __LINE__))

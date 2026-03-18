@@ -10,7 +10,7 @@ module cplcomp_exchange_mod
   use component_type_mod
   use seq_flds_mod, only: seq_flds_dom_coord, seq_flds_dom_other
   use seq_flds_mod, only: seq_flds_dom_fields
-  use seq_flds_mod, only: seq_flds_a2x_ext_fields, seq_flds_a2x_fields, seq_flds_x2a_fields ! 
+  use seq_flds_mod, only: seq_flds_a2x_fields, seq_flds_x2a_fields ! 
   use seq_flds_mod, only: seq_flds_o2x_fields ! needed for MOAB init of ocean fields o2x to be able to transfer to coupler
   use seq_flds_mod, only: seq_flds_x2o_fields ! needed for MOAB init of ocean fields x2o to be able to transfer from coupler
   use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_x2i_fields ! needed for MOAB init of ice fields x2o on coupler side, to save them
@@ -24,6 +24,7 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : mhpgid         !    iMOAB app id for atm pgx grid, on atm pes
   use seq_comm_mct, only : atm_pg_active  ! flag if PG mesh instanced
   use seq_comm_mct, only : mlnid , mblxid !    iMOAB app id for land , on land pes and coupler pes
+  use seq_comm_mct, only : mb_scm_land    !  logical used to identify land scm case; moab will migrate land then
   use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
   use seq_comm_mct, only : MPSIID, mbixid  !  sea-ice on comp pes and on coupler pes
   use seq_comm_mct, only : mrofid, mbrxid  ! iMOAB id of moab rof app on comp pes and on coupler too
@@ -34,7 +35,6 @@ module cplcomp_exchange_mod
   implicit none
   private  ! except
 #include <mpif.h>
-#include "moab/MOABConfig.h"
   save
 
   !--------------------------------------------------------------------------
@@ -133,10 +133,12 @@ contains
           if (flow == 'c2x') then
              mapper%gsmap_s => component_get_gsmap_cc(comp)
              mapper%gsmap_d => component_get_gsmap_cx(comp)
+             mapper%mapfile = "compc2x"
           end if
           if (flow == 'x2c') then
              mapper%gsmap_s => component_get_gsmap_cx(comp)
              mapper%gsmap_d => component_get_gsmap_cc(comp)
+             mapper%mapfile = "compx2c"
           end if
        endif
 
@@ -192,10 +194,12 @@ contains
        if (flow == 'c2x') then
           mapper%gsmap_s => component_get_gsmap_cc(comp)
           mapper%gsmap_d => component_get_gsmap_cx(comp)
+          mapper%mapfile = "compc2x"
        end if
        if (flow == 'x2c') then
           mapper%gsmap_s => component_get_gsmap_cx(comp)
           mapper%gsmap_d => component_get_gsmap_cc(comp)
+          mapper%mapfile = "compx2c"
        end if
        call seq_map_gsmapcheck(gsmap_s_join, gsmap_d_join)
        call mct_rearr_init(gsmap_s_join, gsmap_d_join, mpicom_join, mapper%rearr)
@@ -995,12 +999,18 @@ subroutine  copy_aream_from_area(mbappid)
       integer :: ierr, ent_type
 
       ! copy aream from area
-      if (mbappid >= 0) then  ! coupler atm procs
+      if (mbappid >= 0) then  ! coupler procs
          ierr  = iMOAB_GetMeshInfo ( mbappid, nvert, nvise, nbl, nsurf, nvisBC )
-         arrSize  = nvise(1) ! cells
+         if (.not.atm_pg_active) then
+            ! this is the spectral monogrid case
+            arrSize  = nvert(1) ! cells
+            ent_type = 0 ! vertices
+         else
+            arrSize  = nvise(1) ! cells
+            ent_type = 1 ! cells
+         endif
          allocate(tagValues(arrSize))
          tagname = 'area'//C_NULL_CHAR
-         ent_type = 1 ! cells
          ierr  = iMOAB_GetDoubleTagStorage( mbappid, tagname, arrsize , ent_type, tagValues )
          tagname = 'aream'//C_NULL_CHAR
          ierr  = iMOAB_SetDoubleTagStorage( mbappid, tagname, arrsize , ent_type, tagValues )
@@ -1059,7 +1069,7 @@ subroutine  copy_aream_from_area(mbappid)
       character(CXX)           :: tagname
       character(CXX)           :: newlist
       integer                  nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
-      logical                  :: rof_present, lnd_prognostic
+      logical                  :: rof_present, lnd_prognostic, single_column, scm_multcols
       real(r8),    allocatable    :: tagValues(:) ! used for setting aream tags for atm domain read case
       integer                     :: arrsize ! for the size of tagValues
       type(mct_list)             :: temp_list
@@ -1079,12 +1089,10 @@ subroutine  copy_aream_from_area(mbappid)
       mpicom_old  = comp%mpicom_compid
       mpicom_join = comp%mpicom_cplcompid
 
-      partMethod = 0 ! trivial partitioning
+      ! partMethod = 0 ! trivial partitioning
+      partMethod = 2 ! it is better to use RCB for atmosphere and ocean (needs MOAB_HAVE_ZOLTAN)
       context_id = -1 ! original sends/receives, so the context is -1
                      ! needed only to free send buffers
-#ifdef MOAB_HAVE_ZOLTAN
-      partMethod = 2 ! it is better to use RCB for atmosphere and ocean too
-#endif
 
       call seq_comm_getinfo(ID_old ,mpicom=mpicom_old)
       call seq_comm_getinfo(ID_new ,mpicom=mpicom_new)
@@ -1108,7 +1116,6 @@ subroutine  copy_aream_from_area(mbappid)
          ! find atm mesh/domain file if it exists; it would be for data atm model (atm_prognostic false)
          call seq_infodata_GetData(infodata,atm_mesh = atm_mesh)
 
-
 !!!!!!!! ON ATM COMPONENT
          if (mphaid >= 0) then  ! component atm procs
             ierr  = iMOAB_GetMeshInfo ( mphaid, nvert, nvise, nbl, nsurf, nvisBC )
@@ -1122,11 +1129,12 @@ subroutine  copy_aream_from_area(mbappid)
          !  send mesh to coupler
          !!!!  FULL ATM
             if ( trim(atm_mesh) == 'none' ) then ! full model
-               if (atm_pg_active) then !  change : send the pg2 mesh, not coarse mesh, when atm pg active
+               if (atm_pg_active) then !  change : send the point cloud phys grid mesh, not coarse mesh, 
+                                       !     when atm pg active
                   ierr = iMOAB_SendMesh(mhpgid, mpicom_join, mpigrp_cplid, id_join, partMethod)
                else
                   ! still use the mhid, original coarse mesh
-                  ierr = iMOAB_SendMesh(mhid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+                  ierr = iMOAB_SendMesh(mphaid, mpicom_join, mpigrp_cplid, id_join, partMethod)
                endif
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in sending mesh from atm comp '
@@ -1145,6 +1153,9 @@ subroutine  copy_aream_from_area(mbappid)
             endif
             !!!!  FULL ATM
             if ( trim(atm_mesh) == 'none' ) then ! full atm
+               ! will receive either pg2 mesh, or point cloud mesh corresponding to GLL points 
+               ! (mphaid app) for spectral case
+               ! this cannot be used for maps (either computed online or read)
                ierr = iMOAB_ReceiveMesh(mbaxid, mpicom_join, mpigrp_old, id_old)
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in receiving mesh on atm coupler '
@@ -1181,14 +1192,15 @@ subroutine  copy_aream_from_area(mbappid)
          !  iMOAB_FreeSenderBuffers needs to be called after receiving the mesh
 
 !!!!!!!!  ATM COMPONENT
-         if (mhid .ge. 0) then  ! we are on component atm pes
+         if (mphaid .ge. 0) then  ! we are on component atm pes
    !!!!! FULL ATM
             if ( trim(atm_mesh) == 'none' ) then  ! full atmosphere
                context_id = id_join
                if (atm_pg_active) then! we send mesh from mhpgid app
                   ierr = iMOAB_FreeSenderBuffers(mhpgid, context_id)
                else
-                  ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
+                  ! we send mesh from point cloud data
+                  ierr = iMOAB_FreeSenderBuffers(mphaid, context_id)
                endif
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in freeing send buffers '
@@ -1201,7 +1213,7 @@ subroutine  copy_aream_from_area(mbappid)
          ! graph between atm phys, mphaid, and atm dyn on coupler, mbaxid
          ! phys atm group is mpigrp_old, coupler group is mpigrp_cplid
          typeA = 2 ! point cloud for mphaid
-         typeB = 1 ! spectral elements
+         typeB = 2 ! in spectral case, we will have just point cloud on coupler PEs 
          if (atm_pg_active) then
             typeB = 3 ! in this case, we will have cells associated with DOFs as GLOBAL_ID tag
          endif
@@ -1209,6 +1221,8 @@ subroutine  copy_aream_from_area(mbappid)
                                     !  components/cam/src/cpl/atm_comp_mct.F90
                                     !  components/data_comps/datm/src/atm_comp_mct.F90 ! line 177 !! 
 
+         ! this is not needed for migrating point cloud to point cloud !
+         ! it is needed only after migrating pg2 mesh to cpupler 
          ierr = iMOAB_ComputeCommGraph( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
              typeA, typeB, ATM_PHYS_CID, id_join) ! ID_JOIN is now 6 
 
@@ -1218,21 +1232,18 @@ subroutine  copy_aream_from_area(mbappid)
          if (mbaxid .ge. 0 ) then   !  coupler pes
             tagtype = 1  ! dense, double
 
-            if (atm_pg_active) then
-              tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
-              numco = 1 !  usually 1 value per cell
-            else ! this is not supported now, but leave it here
-              tagname = trim(seq_flds_a2x_ext_fields)//C_NULL_CHAR ! MOAB versions of a2x for spectral
-              numco = 16 ! np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
-            endif
+            tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+            numco = 1 !  usually 1 value per cell
 
             ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining tags on atm on coupler '
                call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
+            
+            tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
+            numco = 1 !  usually 1 value per cell
 
-            tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR ! TODO should be also x2a_ext for spectral case 
             ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining tags seq_flds_x2a_fields on atm on coupler '
@@ -1240,19 +1251,25 @@ subroutine  copy_aream_from_area(mbappid)
             endif
 
             !add the normalization tag
+            
             tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
+            numco = 1 !  usually 1 value per cell
+
             ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on atm on coupler '
                call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
-            ! also, frac, area,  masks has to come from atm mphaid, not from domain file reader
-            ! this is hard to digest :(
-            tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-            ! TODO:  this should be called on the joint procs, not coupler only.
-            call component_exch_moab(comp, mphaid, mbaxid, 0, tagname, context_exch='doma')
+         endif ! coupler pes
+         ! also, frac, area,  masks has to come from atm mphaid, not from domain file reader
+         ! this is hard to digest :(
+         tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
+         ! TODO:  this should be called on the joint procs, not coupler only.
+         call component_exch_moab(comp, mphaid, mbaxid, 'c2x', tagname, context_exch='doma')
+         if (mbaxid .ge. 0 ) then   !  coupler pes only 
             ! copy aream from area in case atm_mesh
             call copy_aream_from_area(mbaxid)
+
          endif ! coupler pes
 
 #ifdef MOABDEBUG
@@ -1425,7 +1442,7 @@ subroutine  copy_aream_from_area(mbappid)
             ! also, frac, area,  masks has to come from ocean mpoid, not from domain file reader
             ! this is hard to digest :(
             tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-            call component_exch_moab(comp, mpoid, mboxid, 0, tagname, context_exch='domo')
+            call component_exch_moab(comp, mpoid, mboxid, 'c2x', tagname, context_exch='domo')
          endif 
 
 !!!!!!!!!!! OCEAN 2nd COPY
@@ -1541,7 +1558,13 @@ subroutine  copy_aream_from_area(mbappid)
          call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
          call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
          call seq_infodata_GetData(infodata,rof_present=rof_present, lnd_prognostic=lnd_prognostic)
-
+         call seq_infodata_GetData(infodata,single_column=single_column, &
+	 scm_multcols=scm_multcols)
+         if (single_column .or. scm_multcols) then
+            ! turn on mb_scm_land
+            mb_scm_land = .true. ! we identified a scm case for land, we will migrate mesh, not read 
+                                   ! the domain file anymore
+         endif 
          ! use land full mesh 
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
             appname = "COUPLE_LAND"//C_NULL_CHAR
@@ -1551,27 +1574,60 @@ subroutine  copy_aream_from_area(mbappid)
                write(logunit,*) subname,' error in registering coupler land '
                call shr_sys_abort(subname//' ERROR in registering coupler land')
             endif
-            ! do not receive the mesh anymore, read it from file, then pair it with mlnid, component land PC mesh
-            ! similar to rof mosart mesh  
-            ! do not cull in case of data land, like all other data models
-            ! for regular land model, cull, because the lnd component culls too
-            if (lnd_prognostic) then
-               ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION'//C_NULL_CHAR
-            else
-               ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION;NO_CULLING'//C_NULL_CHAR
+         endif
+
+         if (mb_scm_land) then
+             !  change : send the point cloud land mesh (1 point usually) 
+             !     when mb_scm_land
+            if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (land)
+               !  send mesh to coupler then
+               ierr = iMOAB_SendMesh(mlnid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in sending mesh from lnd comp '
+                  call shr_sys_abort(subname//' ERROR in sending mesh from lnd comp')
+               endif
             endif
-            call seq_infodata_GetData(infodata,lnd_domain=lnd_domain)
-            outfile = trim(lnd_domain)//C_NULL_CHAR
-            nghlay = 0 ! no ghost layers 
-            if (seq_comm_iamroot(CPLID) ) then
-               write(logunit, *) "loading land domain file from file: ", trim(lnd_domain), &
-                 " with options: ", trim(ropts)
+            if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+               ierr = iMOAB_ReceiveMesh(mblxid, mpicom_join, mpigrp_old, id_old)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in receiving mesh from lnd comp '
+                  call shr_sys_abort(subname//' ERROR in receiving mesh from lnd comp')
+               endif
             endif
-            ierr = iMOAB_LoadMesh(mblxid, outfile, ropts, nghlay)
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in reading land coupler mesh from ', trim(lnd_domain)
-               call shr_sys_abort(subname//' ERROR in reading land coupler mesh')
-            endif
+            if (MPI_COMM_NULL /= mpicom_old) then  ! we are on component lnd pes again, release buffers    
+               context_id = id_join
+               ierr = iMOAB_FreeSenderBuffers(mlnid, context_id)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in freeing buffers '
+                  call shr_sys_abort(subname//' ERROR in freeing buffers ')
+               endif 
+           endif
+         else
+            if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+               ! do not receive the mesh anymore, read it from file, then pair it with mlnid, component land PC mesh
+               ! similar to rof mosart mesh  
+               ! do not cull in case of data land, like all other data models
+               ! for regular land model, cull, because the lnd component culls too
+               if (lnd_prognostic) then
+                  ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION'//C_NULL_CHAR
+               else
+                  ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION;NO_CULLING'//C_NULL_CHAR
+               endif
+               call seq_infodata_GetData(infodata,lnd_domain=lnd_domain)
+               outfile = trim(lnd_domain)//C_NULL_CHAR
+               nghlay = 0 ! no ghost layers 
+               if (seq_comm_iamroot(CPLID) ) then
+                  write(logunit, *) "loading land domain file from file: ", trim(lnd_domain), &
+                  " with options: ", trim(ropts)
+               endif
+               ierr = iMOAB_LoadMesh(mblxid, outfile, ropts, nghlay)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in reading land coupler mesh from ', trim(lnd_domain)
+                  call shr_sys_abort(subname//' ERROR in reading land coupler mesh')
+               endif
+            endif 
+         endif
+         if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
             ! need to add global id tag to the app, it will be used in restart
             tagtype = 0  ! dense, integer
             numco = 1
@@ -1605,11 +1661,16 @@ subroutine  copy_aream_from_area(mbappid)
                nfields=mct_list_nitem (temp_list)
                if (nfields > 0) then
                  ierr  = iMOAB_GetMeshInfo ( mblxid, nvert, nvise, nbl, nsurf, nvisBC )
-                 arrsize = nvise(1)*nfields
+                 if (mb_scm_land) then
+                    arrsize = nvert(1)*nfields
+                    ent_type = 0 ! cell
+                 else
+                    arrsize = nvise(1)*nfields
+                    ent_type = 1 ! cell
+                 endif
                  allocate(tagValues(arrsize))
                  tagname = trim(newlist)//C_NULL_CHAR
                  tagValues = 0.0_r8
-                 ent_type = 1 ! cells
                  ierr = iMOAB_SetDoubleTagStorage ( mblxid, tagname, arrsize , ent_type, tagValues)
                  if (ierr .ne. 0) then
                     write(logunit,*) subname,' error in zeroing Flrr tags on land', ierr
@@ -1630,24 +1691,29 @@ subroutine  copy_aream_from_area(mbappid)
 
          endif ! end of coupler pes
 
-         ! we are now on joint pes, compute comm graph between lnd and coupler model 
-         typeA = 2 ! point cloud on component PEs, land
-         typeB = 3 ! full mesh on coupler pes, we just read it
+        
          if (mlnid >= 0) then
             ierr  = iMOAB_GetMeshInfo ( mlnid, nvert, nvise, nbl, nsurf, nvisBC )
-            comp%mbApCCid = mlnid ! phys atm 
-            comp%mbGridType = typeA - 2 ! 0 or 1, pc or cells 
+            comp%mbApCCid = mlnid ! land
+            comp%mbGridType = 0 ! 0 or 1, pc or cells
             comp%mblsize = nvert(1) ! vertices
          endif
-         ierr = iMOAB_ComputeCommGraph( mlnid, mblxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
-             typeA, typeB, id_old, id_join) 
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in computing comm graph for lnd model '
-            call shr_sys_abort(subname//' ERROR in computing comm graph for lnd model ')
+         if ( .not. mb_scm_land ) then
+            ! we are now on joint pes, compute comm graph between lnd and coupler model 
+            typeA = 2 ! point cloud on component PEs, land
+            typeB = 3 ! full mesh on coupler pes, we just read it
+            ierr = iMOAB_ComputeCommGraph( mlnid, mblxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+               typeA, typeB, id_old, id_join) 
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing comm graph for lnd model '
+               call shr_sys_abort(subname//' ERROR in computing comm graph for lnd model ')
+            endif
          endif
-
          tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-         call component_exch_moab(comp, mlnid, mblxid, 0, tagname, context_exch='doml')
+         call component_exch_moab(comp, mlnid, mblxid, 'c2x', tagname, context_exch='doml')
+         if (mblxid > 0) then ! on coupler pes only
+            call copy_aream_from_area(mblxid)
+         endif
 
 #ifdef MOABDEBUG
             outfile = 'recMeshLand.h5m'//C_NULL_CHAR
@@ -1800,7 +1866,7 @@ subroutine  copy_aream_from_area(mbappid)
             ! also, frac, area,  masks has to come from ice MPSIID , not from domain file reader
             ! this is hard to digest :(
             tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-            call component_exch_moab(comp, MPSIID, mbixid, 0, tagname, context_exch='domi')
+            call component_exch_moab(comp, MPSIID, mbixid, 'c2x', tagname, context_exch='domi')
          endif 
 #ifdef MOABDEBUG
   !      debug test
@@ -1895,10 +1961,12 @@ subroutine  copy_aream_from_area(mbappid)
          endif
 
          tagname = 'area:lon:lat:frac:mask'//C_NULL_CHAR
-         call component_exch_moab(comp, mrofid, mbrxid, 0, tagname, context_exch='domr')
+         call component_exch_moab(comp, mrofid, mbrxid, 'c2x', tagname, context_exch='domr')
          ! copy aream from area in all cases
          ! initialize aream from area; it may have different values in the end, or reset again
-         call copy_aream_from_area(mbrxid)
+         if (mbrxid > 0) then ! on coupler pes only
+            call copy_aream_from_area(mbrxid)
+         endif
 #ifdef MOABDEBUG
          if (mbrxid >= 0) then
             outfile = 'recMeshRof.h5m'//C_NULL_CHAR
@@ -1916,93 +1984,247 @@ subroutine  copy_aream_from_area(mbappid)
    end subroutine cplcomp_moab_Init
 
 
-  ! can exchange data between mesh in component and mesh on coupler.  Either way.
-  ! used in first hop of 2-hop
-  subroutine component_exch_moab(comp, mbAPPid1, mbAppid2, direction, fields, context_exch )
+  !===============================================================================
+  ! component_exch_moab
+  !
+  ! PURPOSE:
+  !   Exchange field data (tags) between component and coupler meshes using iMOAB.
+  !   This routine handles bidirectional data transfer in the first hop of a 2-hop
+  !   exchange pattern for MOAB-based coupling.
+  !
+  ! DESCRIPTION:
+  !   This subroutine coordinates MPI-based field data exchange between MOAB mesh
+  !   applications on component PEs and coupler PEs. It uses iMOAB's send/receive
+  !   infrastructure to transfer tagged data, manages communication buffers, and
+  !   provides optional timing and debugging capabilities.
+  !
+  ! FLOW:
+  !   1. Execute optional barrier timing
+  !   2. Start exchange and map timers
+  !   3. Determine source/target IDs based on direction (c2x or x2c)
+  !   4. Send field tags from source mesh application
+  !   5. Receive field tags at target mesh application
+  !   6. Free sender communication buffers
+  !   7. Stop map timer
+  !   8. Exchange infodata if provided
+  !   9. Stop exchange timer
+  !   10. Optional debug output (if MOABDEBUG defined)
+  !
+  ! ARGUMENTS:
+  !   comp              - component type containing MPI communicator info
+  !   mbAPPid1          - iMOAB application ID for first mesh (sender or receiver)
+  !   mbAppid2          - iMOAB application ID for second mesh (receiver or sender)
+  !   direction         - data flow direction: 'c2x' (component->coupler) or
+  !                       'x2c' (coupler->component)
+  !   fields            - colon-separated list of field names to exchange
+  !   context_exch      - optional context string for debugging output
+  !   infodata          - optional metadata exchange object
+  !   infodata_string   - optional string for infodata exchange
+  !   mpicom_barrier    - optional MPI communicator for barriers
+  !   run_barriers      - optional flag to enable/disable barriers
+  !   timer_barrier     - optional timer name for barrier timing
+  !   timer_comp_exch   - optional timer name for component exchange
+  !   timer_map_exch    - optional timer name for mapping exchange
+  !   timer_infodata_exch - optional timer name for infodata exchange
+  !
+  ! NOTES:
+  !   - For atmosphere component, component-side ID is adjusted by +200 to handle
+  !     point cloud representation
+  !   - Sender buffers are freed after data transfer to conserve memory
+  !   - Debug output writes mesh files when MOABDEBUG is defined
+  !
+  !===============================================================================
+  subroutine component_exch_moab(comp, mbAPPid1, mbAppid2, direction, fields, context_exch, &
+       infodata, infodata_string, mpicom_barrier, run_barriers, &
+       timer_barrier, timer_comp_exch, timer_map_exch, timer_infodata_exch)
 
    use iMOAB ,  only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_WriteMesh, iMOAB_FreeSenderBuffers
    use seq_comm_mct, only :  num_moab_exports ! for debugging
    use ISO_C_BINDING, only : C_NULL_CHAR
    use shr_kind_mod      , only :  CXX => shr_kind_CXX
+   use seq_infodata_mod, only: seq_infodata_exchange, seq_infodata_type
+   use t_drv_timers_mod
    !---------------------------------------------------------------
-    ! Description
-    ! send tags (fields) from component to coupler or from coupler to component
 
     type(component_type)     , intent(in)           :: comp
-    ! direction 0 is from component to coupler; 1 is from coupler to component
-    integer,                   intent(in)           :: mbAPPid1, mbAppid2, direction
+    ! direction 'c2x' is from component to coupler; 'x2c' is from coupler to component
+    integer,                   intent(in)           :: mbAPPid1, mbAppid2
+    character(len=*)         , intent(in)           :: direction
     character(CXX)           , intent(in)           :: fields
     character(len=*)        ,  intent(in), optional :: context_exch
+    type(seq_infodata_type) , intent(inout), optional :: infodata
+    character(len=*)        , intent(in), optional :: infodata_string
+    integer                 , intent(in), optional :: mpicom_barrier
+    logical                 , intent(in), optional :: run_barriers
+    character(len=*)        , intent(in), optional :: timer_barrier
+    character(len=*)        , intent(in), optional :: timer_comp_exch
+    character(len=*)        , intent(in), optional :: timer_map_exch
+    character(len=*)        , intent(in), optional :: timer_infodata_exch
 
     character(*), parameter :: subname = '(component_exch_moab)'
     integer :: id_join, source_id, target_id, ierr
     integer :: mpicom_join
     character(CXX)              :: tagname
-    character*100 outfile, wopts, lnum, dir
+    character*100 outfile, wopts, lnum
 
-  ! how to get mpicomm for joint comp + coupler
-    id_join = comp%cplcompid
-    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
-!
-    tagName = trim(fields)//C_NULL_CHAR
+    !---------------------------------------------------------------------------
+    ! Optional barrier timing for performance analysis
+    !---------------------------------------------------------------------------
+    if (present(timer_barrier)) then
+       if (present(run_barriers)) then
+          if (run_barriers) then
+             call t_drvstartf (trim(timer_barrier))
+             call mpi_barrier(comp%mpicom_cplallcompid, ierr)
+             call t_drvstopf (trim(timer_barrier))
+          endif
+       endif
+    end if
 
-    if (direction .eq. 0) then
-       source_id = comp%compid
-       target_id = comp%cplcompid
-    else ! direction eq 1
-       source_id = comp%cplcompid
-       target_id = comp%compid
-    endif
-    ! for atm, add 200 to component side, because we will involve always the point cloud
-    ! we are not supporting anymore the spectral case, at least for the time being
-    ! we need to fix fv-cgll projection first
-    if (comp%oneletterid == 'a' .and. direction .eq. 0 ) then
-       source_id = source_id + 200
-    endif
-    if (comp%oneletterid == 'a' .and. direction .eq. 1 ) then
-       target_id = target_id + 200
-    endif
-    if (mbAPPid1 .ge. 0) then !  we are on the sending pes
-       ! basically, use the initial partitioning
-       ierr = iMOAB_SendElementTag(mbAPPid1, tagName, mpicom_join, target_id)
-       if (ierr .ne. 0) then
-          call shr_sys_abort(subname//' cannot send element tag: '//trim(tagName))
+    !---------------------------------------------------------------------------
+    ! Start performance timers for component exchange and mapping
+    !---------------------------------------------------------------------------
+    if (present(timer_comp_exch)) then
+      if (present(mpicom_barrier)) then
+         call t_drvstartf (trim(timer_comp_exch), cplcom=.true., barrier=mpicom_barrier)
+      end if
+    end if
+
+    if (comp%iamin_cplcompid) then
+       if (present(timer_map_exch)) then
+          call t_drvstartf (trim(timer_map_exch), barrier=comp%mpicom_cplcompid)
+       end if
+
+       !---------------------------------------------------------------------------
+       ! Get joint communicator spanning both component and coupler PEs
+       !---------------------------------------------------------------------------
+       id_join = comp%cplcompid
+       call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
+
+       ! Prepare tag name with C null terminator for iMOAB interface
+       tagName = trim(fields)//C_NULL_CHAR
+
+       !---------------------------------------------------------------------------
+       ! Determine source and target IDs based on data flow direction
+       ! c2x: component to coupler, x2c: coupler to component
+       !---------------------------------------------------------------------------
+       if (direction .eq. 'c2x') then
+          source_id = comp%compid
+          target_id = comp%cplcompid
+       else if (direction .eq. 'x2c') then
+          source_id = comp%cplcompid
+          target_id = comp%compid
+       else
+          call shr_sys_abort(subname//' invalid direction in component_exch_moab: '// &
+     &                         trim(direction))
        endif
-    endif
-    if ( mbAPPid2 .ge. 0 ) then !  we are on receiving end
-       ierr = iMOAB_ReceiveElementTag(mbAPPid2, tagName, mpicom_join, source_id)
-       if (ierr .ne. 0) then
-          call shr_sys_abort(subname//' cannot receive element tag: '//trim(tagName))
+
+       !---------------------------------------------------------------------------
+       ! Special handling for atmosphere: add 200 to component-side ID
+       ! This offset accounts for the point cloud representation used in
+       ! atmosphere physics (vs spectral dynamics). The +200 convention matches
+       ! the ATM_PHYS_CID offset used elsewhere in the coupler code.
+       !---------------------------------------------------------------------------
+       if (comp%oneletterid == 'a' .and. direction .eq. 'c2x' ) then
+          source_id = source_id + 200
        endif
+       if (comp%oneletterid == 'a' .and. direction .eq. 'x2c' ) then
+          target_id = target_id + 200
+       endif
+
+       !---------------------------------------------------------------------------
+       ! Send field tags from source mesh application
+       ! Only PEs with valid mbAPPid1 participate in sending
+       !---------------------------------------------------------------------------
+       if (mbAPPid1 .ge. 0) then !  we are on the sending pes
+          ierr = iMOAB_SendElementTag(mbAPPid1, tagName, mpicom_join, target_id)
+          if (ierr .ne. 0) then
+             call shr_sys_abort(subname//' cannot send element tag: '//trim(tagName))
+          endif
+       endif
+
+       !---------------------------------------------------------------------------
+       ! Receive field tags at target mesh application
+       ! Only PEs with valid mbAPPid2 participate in receiving
+       !---------------------------------------------------------------------------
+       if ( mbAPPid2 .ge. 0 ) then !  we are on receiving end
+          ierr = iMOAB_ReceiveElementTag(mbAPPid2, tagName, mpicom_join, source_id)
+          if (ierr .ne. 0) then
+             call shr_sys_abort(subname//' cannot receive element tag: '//trim(tagName))
+          endif
+       endif
+
+       !---------------------------------------------------------------------------
+       ! Free sender communication buffers to conserve memory
+       ! Important for large-scale runs to avoid memory buildup
+       !---------------------------------------------------------------------------
+       if (mbAPPid1 .ge. 0) then
+          ierr = iMOAB_FreeSenderBuffers(mbAPPid1, target_id)
+          if (ierr .ne. 0) then
+             call shr_sys_abort(subname//' cannot free sender buffers')
+          endif
+       endif
+
+       !---------------------------------------------------------------------------
+       ! Stop map exchange timer
+       !---------------------------------------------------------------------------
+       if (present(timer_map_exch)) then
+          call t_drvstopf (trim(timer_map_exch))
+       end if
     endif
 
-!     ! we can now free the sender buffers
-    if (mbAPPid1 .ge. 0) then
-       ierr = iMOAB_FreeSenderBuffers(mbAPPid1, target_id)
-       if (ierr .ne. 0) then
-          call shr_sys_abort(subname//' cannot free sender buffers')
-       endif
-    endif
+    !---------------------------------------------------------------------------
+    ! Exchange infodata (metadata) if provided
+    ! Infodata contains runtime configuration and state information
+    !---------------------------------------------------------------------------
+    if (present(timer_infodata_exch)) then
+       if (present(mpicom_barrier)) then
+          call t_drvstartf (trim(timer_infodata_exch), barrier=mpicom_barrier)
+       end if
+    end if
     
+    if (present(infodata) .and. present(infodata_string)) then
+       if (direction == 'c2x') then  ! component to coupler
+          if (comp%iamin_cplcompid) then
+             call seq_infodata_exchange(infodata, comp%cplcompid, trim(infodata_string))
+          end if
+       else  ! x2c: coupler to component
+          if (comp%iamin_cplallcompid) then
+             call seq_infodata_exchange(infodata, comp%cplallcompid, trim(infodata_string))
+          end if
+       endif
+    end if
+
+    if (present(timer_infodata_exch)) then
+       call t_drvstopf (trim(timer_infodata_exch))
+    end if
+
+    !---------------------------------------------------------------------------
+    ! Stop component exchange timer
+    !---------------------------------------------------------------------------
+    if (present(timer_comp_exch)) then
+       if (present(mpicom_barrier)) then
+          call t_drvstopf (trim(timer_comp_exch), cplcom=.true.)
+       end if
+    end if
+
+    !---------------------------------------------------------------------------
+    ! Debug output: write mesh files when MOABDEBUG is defined
+    ! Useful for visualizing data exchange and debugging coupling issues
+    !---------------------------------------------------------------------------
 #ifdef MOABDEBUG
-    if (direction .eq. 0 ) then
-       dir = 'c2x'
-    else
-       dir = 'x2c'
-    endif
     write(lnum,"(I0.2)") num_moab_exports
     if (seq_comm_iamroot(CPLID) ) then
-       write(logunit,'(A)') subname//' '//comp%ntype//' at moab count '//trim(lnum)//' called in direction '//trim(dir)//' for fields '//trim(tagname)
+       write(logunit,'(A)') subname//' '//comp%ntype//' at moab count '//trim(lnum)//' called in direction '//trim(direction)//' for fields '//trim(tagname)
     endif
+
+    ! Write received mesh data to HDF5 file for visualization/debugging
     if (mbAPPid2 .ge. 0 ) then !  we are on receiving pes, for sure
-      ! number_proj = number_proj+1 ! count the number of projections
-      
       if (present(context_exch)) then
-         outfile = comp%ntype//'_'//trim(context_exch)//'_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+         outfile = comp%ntype//'_'//trim(context_exch)//'_'//trim(direction)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       else
-         outfile = comp%ntype//'_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+         outfile = comp%ntype//'_'//trim(direction)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       endif
-      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(mbAPPid2, trim(outfile), trim(wopts))
       if (ierr .ne. 0) then
           call shr_sys_abort(subname//' cannot write file '// outfile)

@@ -413,8 +413,8 @@ CONTAINS
     use iMOAB, only: iMOAB_WriteMesh
 #endif
 #ifdef HAVE_MOAB
-    use seq_flds_mod    , only: seq_flds_r2x_fields 
-    use seq_flds_mod    , only: moab_set_tag_from_av
+    use seq_flds_mod    , only: seq_flds_r2x_fields
+    use shr_moab_mod    , only: moab_set_tag_from_av
 #endif
     ! !DESCRIPTION:  run method for drof model
     implicit none

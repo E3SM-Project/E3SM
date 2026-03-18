@@ -33,7 +33,7 @@ void compute_heating_rate (
     heating_rate(icol,ilay) = (
       flux_up(icol,ilay+1) - flux_up(icol,ilay) -
       flux_dn(icol,ilay+1) + flux_dn(icol,ilay)
-                               ) * physconst::gravit / (physconst::Cpair * pdel(icol,ilay));
+                               ) * physconst::gravit.value / (physconst::Cpair.value * pdel(icol,ilay));
                                   ));
 }
 

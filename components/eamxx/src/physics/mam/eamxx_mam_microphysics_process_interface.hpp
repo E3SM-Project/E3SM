@@ -43,8 +43,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
   std::string name() const { return "mam_aero_microphysics"; }
 
   // grid
-  void set_grids(
-      const std::shared_ptr<const GridsManager> grids_manager) override;
+  void create_requests() override;
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override;
@@ -77,6 +76,11 @@ class MAMMicrophysics final : public MAMGenericInterface {
   double m_orbital_mvelp;  // Vernal Equinox Mean Longitude of Perihelion
 
   struct Config {
+    // Number of so4(+nh4) monolayers needed to "age" a carbon particle.
+    // In E3SM this is read in from an input file and is 8 by default.
+    // From input parameter mam4_number_so4_monolayers_to_age_carbon_particle
+    unsigned n_so4_monolayers_pcage = 8;
+
     // stratospheric chemistry parameters
     mam4::microphysics::LinozConf linoz;
 
@@ -116,6 +120,9 @@ class MAMMicrophysics final : public MAMGenericInterface {
   std::shared_ptr<DataInterpolation>    data_interp_linoz_;
   void set_linoz_reader();
   view_3d invariants_;
+  std::shared_ptr<DataInterpolation>    data_interp_exo_coldens_;
+  std::vector<Field> exo_coldens_fields_;
+  void set_exo_coldens_reader();
   // Vertical emission uses 9 files, here I am using std::vector to stote
   // instance of each file.
   std::map<std::string, std::vector<std::string>> elevated_emis_var_names_;

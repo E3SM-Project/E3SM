@@ -70,6 +70,9 @@ module VegetationType
      integer , pointer :: mxy           (:) => null() ! m index for laixy(i,j,m),etc. (undefined for special landunits)
      logical , pointer :: active        (:) => null() ! true=>do computations on this patch
 
+     logical, pointer  :: is_on_soil_col(:) => null() ! true, if it is on a column that is soil
+     logical, pointer  :: is_on_crop_col(:) => null() ! ture, if it is on a column that is assocaited with crops
+
      ! Fates relevant types
      logical , pointer :: is_veg            (:) => null() ! This is an ACTIVE fates patch
      logical , pointer :: is_bareground     (:) => null() ! ?
@@ -122,6 +125,9 @@ contains
     allocate(this%mxy       (begp:endp)); this%mxy         (:) = ispval
     allocate(this%active    (begp:endp)); this%active      (:) = .false.
 
+    allocate(this%is_on_soil_col(begp:endp)); this%is_on_soil_col(:) = .false.
+    allocate(this%is_on_crop_col(begp:endp)); this%is_on_crop_col(:) = .false.
+
     allocate(this%is_fates   (begp:endp)); this%is_fates   (:) = .false.
     if (use_fates) then
        allocate(this%is_veg  (begp:endp)); this%is_veg  (:) = .false.
@@ -153,6 +159,9 @@ contains
     deallocate(this%itype     )
     deallocate(this%mxy       )
     deallocate(this%active    )
+
+    deallocate(this%is_on_soil_col)
+    deallocate(this%is_on_crop_col)
 
 	 deallocate(this%is_fates)
     if (use_fates) then

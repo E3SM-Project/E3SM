@@ -9,13 +9,13 @@ namespace scream {
 VertDerivativeDiag::VertDerivativeDiag(const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {}
 
-void VertDerivativeDiag::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void VertDerivativeDiag::create_requests() {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
   const auto &fn = m_params.get<std::string>("field_name");
   const auto &gn = m_params.get<std::string>("grid_name");
-  const auto g   = grids_manager->get_grid(gn);
+  const auto g   = m_grids_manager->get_grid(gn);
 
   add_field<Required>(fn, gn);
 

@@ -23,7 +23,7 @@ void Functions<S,D>
  const auto one      = C::ONE;
  const auto zero     = C::ZERO;
  const auto third    = C::THIRD;
- const auto ggr      = C::gravit;
+ const auto ggr      = C::gravit.value;
  const auto basetemp = C::basetemp;
 
  ustar2 = std::sqrt(uw_sfc*uw_sfc+vw_sfc*vw_sfc);

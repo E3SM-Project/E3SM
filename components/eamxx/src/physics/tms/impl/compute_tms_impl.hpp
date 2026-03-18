@@ -23,14 +23,14 @@ void Functions<S,D>::compute_tms(
   using C  = physics::Constants<Scalar>;
 
   // Define some constants used
-  const Scalar horomin = 1;          // Minimum value of subgrid orographic height for mountain stress [ m ]
-  const Scalar z0max   = 100;        // Maximum value of z_0 for orography [ m ]
-  const Scalar dv2min  = 0.01;       // Minimum shear squared [ m2/s2 ]
-  const Scalar orocnst = C::orocnst; // Converts from standard deviation to height [ no unit ]
-  const Scalar z0fac   = C::z0fac;   // Factor determining z_0 from orographic standard deviation [ no unit ]
-  const Scalar karman  = C::Karman;  // von Karman constant
-  const Scalar gravit  = C::gravit;  // Acceleration due to gravity
-  const Scalar rair    = C::Rair;    // Gas constant for dry air
+  const Scalar horomin = 1;                // Minimum value of subgrid orographic height for mountain stress [ m ]
+  const Scalar z0max   = 100;              // Maximum value of z_0 for orography [ m ]
+  const Scalar dv2min  = 0.01;             // Minimum shear squared [ m2/s2 ]
+  const Scalar orocnst = C::orocnst;       // Converts from standard deviation to height [ no unit ]
+  const Scalar z0fac   = C::z0fac;         // Factor determining z_0 from orographic standard deviation [ no unit ]
+  const Scalar karman  = C::Karman;        // von Karman constant
+  const Scalar gravit  = C::gravit.value;  // Acceleration due to gravity
+  const Scalar rair    = C::Rair.value;    // Gas constant for dry air
 
   // Loop over columns
   const typename KT::RangePolicy policy (0,ncols);

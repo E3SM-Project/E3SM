@@ -50,8 +50,14 @@ nav:
       - 'Atmosphere Processes': 'developer/processes.md'
       - 'Input/Output': 'developer/io.md'
       - 'Third-party Libraries': 'developer/TPLs.md'
+    - 'How to':
+      - 'Wrap Torch emulators': 'developer/torch_support.md'
   - 'Technical Guide':
     - 'Overview': 'technical/index.md'
+    - 'Physics':
+      - 'P3':
+        - 'Autoconversion': 'technical/physics/p3/autoconversion.md'
+        - 'Back to Cell Average': 'technical/physics/p3/back_to_cell_average.md'
     - 'AeroCom cloud top': 'technical/aerocom_cldtop.md'
 
 edit_uri: ""

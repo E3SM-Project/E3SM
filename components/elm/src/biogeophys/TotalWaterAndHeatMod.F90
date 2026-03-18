@@ -267,7 +267,7 @@ contains
     do fc = 1, num_nolakec
        c = filter_nolakec(fc)
        l = col_pp%landunit(c)
-       if ( (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop          )  &
+       if ( (col_pp%is_soil(c) .or. col_pp%is_crop(c)          )  &
             .or. (lun_pp%itype(l) == istwet                                   )  &
             .or. (lun_pp%itype(l) == istice                                   )  &
             .or. (lun_pp%itype(l) == istice_mec                               )  &
@@ -276,7 +276,7 @@ contains
        end if
        l = col_pp%landunit(c)
 
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then   ! note: soil specified at LU level
+       if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then   ! note: soil specified at LU level
           do p = col_pp%pfti(c),col_pp%pftf(c) ! loop over patches
              if (veg_pp%active(p)) then
                 liquid_mass(c) = liquid_mass(c) + h2ocan_patch(p) * veg_pp%wtcol(p)
@@ -564,7 +564,7 @@ contains
           c = filter_nolakec(fc)
           l = col_pp%landunit(c)
 
-          if (col_pp%itype(c)==icol_sunwall .or. col_pp%itype(c)==icol_shadewall) then
+          if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall) then
              has_h2o = .false.
              if (j <= nlevurb) then
                 heat_dry_mass(c) = heat_dry_mass(c) + &

@@ -1217,7 +1217,7 @@ static void compute_aerocom_cloudtop(
          * from grid-mean to in-cloud, but after that, the
          * calculation follows the general logic */
         auto cdnc = nc(icol, ilay) * p_del(icol, ilay) /
-          z_del(icol, ilay) / physconst::gravit /
+          z_del(icol, ilay) / physconst::gravit.value /
           cldfrac_tot(icol, ilay);
         cdnc_at_cldtop(icol) += cdnc * aerocom_phi * aerocom_wts;
         // eff_radius_qc_at_cldtop
@@ -1264,7 +1264,7 @@ static void mixing_ratio_to_cloud_mass(
     if (cloud_fraction(icol,ilay) > 0) {
       // Compute layer-integrated cloud mass (per unit area)
       auto incloud_mixing_ratio = std::min(mixing_ratio(icol,ilay) / std::max(0.0001, cloud_fraction(icol,ilay)), 0.005);
-      cloud_mass(icol,ilay) = incloud_mixing_ratio * dp(icol,ilay) / physconst::gravit;
+      cloud_mass(icol,ilay) = incloud_mixing_ratio * dp(icol,ilay) / physconst::gravit.value;
     } else {
       cloud_mass(icol,ilay) = 0;
     }

@@ -14,12 +14,12 @@ void Functions<S,D>
 ::shoc_energy_integrals(
   const MemberType&            team,
   const Int&                   nlev,
-  const uview_1d<const Spack>& host_dse,
-  const uview_1d<const Spack>& pdel,
-  const uview_1d<const Spack>& rtm,
-  const uview_1d<const Spack>& rcm,
-  const uview_1d<const Spack>& u_wind,
-  const uview_1d<const Spack>& v_wind,
+  const uview_1d<const Pack>& host_dse,
+  const uview_1d<const Pack>& pdel,
+  const uview_1d<const Pack>& rtm,
+  const uview_1d<const Pack>& rcm,
+  const uview_1d<const Pack>& u_wind,
+  const uview_1d<const Pack>& v_wind,
   Scalar&                      se_int,
   Scalar&                      ke_int,
   Scalar&                      wv_int,
@@ -27,7 +27,7 @@ void Functions<S,D>
 {
   using RU = ekat::ReductionUtils<typename KT::ExeSpace>;
 
-  const auto ggr = C::gravit;
+  const auto ggr = C::gravit.value;
 
   // The team_barriers protect what we think is unexpected behavior in
   // Kokkos::parallel_reduce. We expect not to need these based on the semantics
@@ -43,28 +43,28 @@ void Functions<S,D>
 
   // Compute se_int
   se_int = RU::view_reduction(team,0,nlev,
-                                [&] (const int k) -> Spack {
+                                [&] (const int k) -> Pack {
     return host_dse(k)*pdel(k)/ggr;
   });
   team.team_barrier();
 
   // Compute ke_int
   ke_int = RU::view_reduction(team,0,nlev,
-                                [&] (const int k) -> Spack {
+                                [&] (const int k) -> Pack {
     return sp(0.5)*(ekat::square(u_wind(k))+ekat::square(v_wind(k)))*pdel(k)/ggr;
   });
   team.team_barrier();
 
   // Compute wv_int
   wv_int = RU::view_reduction(team,0,nlev,
-                                [&] (const int k) -> Spack {
+                                [&] (const int k) -> Pack {
     return (rtm(k)-rcm(k))*pdel(k)/ggr;
   });
   team.team_barrier();
 
   // Compute wl_int
   wl_int = RU::view_reduction(team,0,nlev,
-                                [&] (const int k) -> Spack {
+                                [&] (const int k) -> Pack {
     return rcm(k)*pdel(k)/ggr;
   });
   team.team_barrier();

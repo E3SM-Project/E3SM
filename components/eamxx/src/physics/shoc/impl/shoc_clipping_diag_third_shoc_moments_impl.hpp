@@ -12,14 +12,14 @@ void Functions<S,D>
 ::clipping_diag_third_shoc_moments(
   const MemberType& team,
   const Int& nlevi,
-  const uview_1d<const Spack>& w_sec_zi,
-  const uview_1d<Spack>& w3)
+  const uview_1d<const Pack>& w_sec_zi,
+  const uview_1d<Pack>& w3)
 {
-  const Int nlevi_pack = ekat::npack<Spack>(nlevi);
+  const Int nlevi_pack = ekat::npack<Pack>(nlevi);
 
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevi_pack), [&] (const Int& k) {
     const auto w3clip = scream::shoc::Constants<Scalar>::w3clip;
-    Spack tsign(1);
+    Pack tsign(1);
 
     const auto theterm = w_sec_zi(k);
     const auto cond    = w3clip*ekat::sqrt(2*ekat::cube(theterm));

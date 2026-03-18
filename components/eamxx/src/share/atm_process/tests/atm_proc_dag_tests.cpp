@@ -86,10 +86,10 @@ public:
   // The type of the atm proc
   AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }
 
-  void set_grids (const std::shared_ptr<const GridsManager> gm) {
+  void create_requests () {
     using namespace ekat::units;
 
-    const auto grid = gm->get_grid(m_grid_name);
+    const auto grid = m_grids_manager->get_grid(m_grid_name);
     const auto lt = grid->get_3d_scalar_layout(true);
 
     add_field<Required>("Temperature tendency",lt,K/s,m_grid_name);
@@ -109,10 +109,10 @@ public:
   // The type of the atm proc
   AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
 
-  void set_grids (const std::shared_ptr<const GridsManager> gm) {
+  void create_requests () {
     using namespace ekat::units;
 
-    const auto grid = gm->get_grid(m_grid_name);
+    const auto grid = m_grids_manager->get_grid(m_grid_name);
     const auto lt = grid->get_3d_scalar_layout (true);
 
     add_field<Required>("Temperature",lt,K,m_grid_name);
@@ -132,10 +132,10 @@ public:
   // The type of the atm proc
   AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
 
-  void set_grids (const std::shared_ptr<const GridsManager> gm) {
+  void create_requests () {
     using namespace ekat::units;
 
-    const auto grid = gm->get_grid(m_grid_name);
+    const auto grid = m_grids_manager->get_grid(m_grid_name);
     const auto phys_lt = grid->get_3d_scalar_layout (true);
 
     add_field<Required>("Temperature",phys_lt,K,m_grid_name);
@@ -157,10 +157,10 @@ public:
   // The type of the atm proc
   AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
 
-  void set_grids (const std::shared_ptr<const GridsManager> gm) {
+  void create_requests () {
     using namespace ekat::units;
 
-    const auto grid = gm->get_grid(m_grid_name);
+    const auto grid = m_grids_manager->get_grid(m_grid_name);
     const auto lt = grid->get_2d_scalar_layout ();
 
     add_field<Updated>("Field A",lt,K,m_grid_name);
@@ -200,11 +200,7 @@ TEST_CASE("atm_proc_dag", "") {
     -> std::map<std::string,Field>
   {
     std::map<std::string,Field> fields;
-    for (auto r : ap.get_required_field_requests()) {
-      fields[r.fid.name()] = Field(r.fid);
-      fields[r.fid.name()].allocate_view();
-    }
-    for (auto r : ap.get_computed_field_requests()) {
+    for (auto r : ap.get_field_requests()) {
       fields[r.fid.name()] = Field(r.fid);
       fields[r.fid.name()].allocate_view();
     }
@@ -214,11 +210,11 @@ TEST_CASE("atm_proc_dag", "") {
   auto create_and_set_fields = [&] (AtmosphereProcess& ap)
   {
     auto fields = create_fields(ap);
-    for (auto r : ap.get_required_field_requests()) {
-      ap.set_required_field(fields.at(r.fid.name()));
-    }
-    for (auto r : ap.get_computed_field_requests()) {
-      ap.set_computed_field(fields.at(r.fid.name()));
+    for (auto r : ap.get_field_requests()) {
+      if (r.usage & Required)
+        ap.set_required_field(fields.at(r.fid.name()).get_const());
+      if (r.usage & Computed)
+        ap.set_computed_field(fields.at(r.fid.name()));
     }
   };
 

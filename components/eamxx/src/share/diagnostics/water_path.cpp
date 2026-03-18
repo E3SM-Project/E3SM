@@ -33,13 +33,13 @@ WaterPathDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
 }
 
 void WaterPathDiagnostic::
-set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+create_requests()
 {
   using namespace ekat::units;
 
   auto m2 = pow (m,2);
 
-  auto grid  = grids_manager->get_grid("physics");
+  auto grid  = m_grids_manager->get_grid("physics");
   const auto& grid_name = grid->name();
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
@@ -64,7 +64,7 @@ void WaterPathDiagnostic::compute_diagnostic_impl()
   using MT  = typename KT::MemberType;
   using TPF = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
 
-  constexpr Real g = PC::gravit;
+  constexpr Real g = PC::gravit.value;
 
   const auto wp     = m_diagnostic_output.get_view<Real*>();
   const auto q      = get_field_in(m_qname).get_view<const Real**>();

@@ -88,9 +88,6 @@ public:
   void setup_surface_coupling_data_manager(SurfaceCouplingTransferType transfer_type,
                                            const int num_cpl_fields, const int num_scream_fields,
                                            const int field_size, Real* data_ptr,
-#ifdef HAVE_MOAB
-                                           Real* data_ptr_moab,
-#endif
                                            char* names_ptr, int* cpl_indices_ptr, int* vec_comps_ptr,
                                            Real* constant_multiple_ptr, bool* do_transfer_during_init_ptr);
 
@@ -191,6 +188,10 @@ protected:
                               const std::string& file_name);
   void register_groups ();
 
+  template<typename T>
+  using strmap_t = std::map<std::string,T>;
+  using strvec_t = std::vector<std::string>;
+
   field_mgr_ptr                             m_field_mgr;
 
   std::shared_ptr<AtmosphereProcessGroup>   m_atm_process_group;
@@ -255,7 +256,7 @@ protected:
   // Current simulation casename
   std::string m_casename;
   // maps grid name to a vector of its initialized fields
-  std::map<std::string, std::vector<std::string>> m_fields_inited;
+  strmap_t<strvec_t> m_fields_inited;
 };
 
 }  // namespace control

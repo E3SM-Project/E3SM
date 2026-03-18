@@ -11,15 +11,15 @@ void Functions<Real,DefaultDevice>
 ::compute_shoc_temperature_disp(
   const Int&                  shcol,
   const Int&                  nlev,
-  const view_2d<const Spack>& thetal,
-  const view_2d<const Spack>& ql,
-  const view_2d<const Spack>& inv_exner,
-  const view_2d<Spack>&       tabs)
+  const view_2d<const Pack>& thetal,
+  const view_2d<const Pack>& ql,
+  const view_2d<const Pack>& inv_exner,
+  const view_2d<Pack>&       tabs)
 {
   using ExeSpace = typename KT::ExeSpace;
   using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
 
-  const auto nlev_packs = ekat::npack<Spack>(nlev);
+  const auto nlev_packs = ekat::npack<Pack>(nlev);
   const auto policy = TPF::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();

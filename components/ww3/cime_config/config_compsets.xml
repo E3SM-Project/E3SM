@@ -15,13 +15,18 @@
   </compset>
 
   <compset>
-    <alias>VWW3-CFSv2</alias>
-    <lname>2000_DATM%CFSv2_SLND_SICE_SOCN_SROF_SGLC_WW3%sp36x36</lname>
+    <alias>VWW3-JRA1p5</alias>
+    <lname>2000_DATM%JRA-1p5_SLND_SICE_SOCN_SROF_SGLC_WW3%sp36x36</lname>
   </compset>
 
   <compset>
-    <alias>VWW3-CFSR</alias>
-    <lname>2000_DATM%CFSR_SLND_SICE_SOCN_SROF_SGLC_WW3%sp36x36</lname>
+    <alias>F2010-WW3</alias>
+    <lname>2010_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_WW3%sp36x36</lname>
+  </compset>
+  
+  <compset>
+    <alias>F20TR-WW3</alias>
+    <lname>20TR_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_WW3%sp36x36</lname>
   </compset>
 
   <compset>

@@ -62,7 +62,7 @@ def atm_config_chg(changes, reset=False, buffer_only=False):
     # Before applying/buffering changes, at the very least check the syntax
     for c in changes:
         # This will throw if the syntax is bad
-        _, _, _ = parse_change(c)
+        _, _, _, _ = parse_change(c)
 
     # If buffer_only=True, we must assume there were changes (we can't check).
     # Otherwise, we'll assume no changes, and if we find one, we'll adjust
@@ -107,6 +107,9 @@ OR
 
     \033[1;32m# Change params foo to 'hi' and append 'there' to bar (only works if both are unambiguous)\033[0m
     > {0} foo=hi bar+=there
+
+    \033[1;32m# Remove 'item' from array param baz (only works if baz is unambiguous)\033[0m
+    > {0} baz-=item
 """.format(pathlib.Path(args[0]).name),
         description=description,
         formatter_class=GoodFormatter

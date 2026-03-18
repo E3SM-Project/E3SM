@@ -24,13 +24,12 @@ MAMDryDep::MAMDryDep(const ekat::Comm &comm, const ekat::ParameterList &params)
 // ================================================================
 //  SET_GRIDS
 // ================================================================
-void MAMDryDep::set_grids(
-    const std::shared_ptr<const GridsManager> grids_manager) {
+void MAMDryDep::create_requests() {
   using namespace ekat::units;
 
   // set grid for all the inputs and outputs
   // use physics grid
-  grid_ = grids_manager->get_grid("physics");
+  grid_ = m_grids_manager->get_grid("physics");
 
   // Name of the grid
   const auto &grid_name = grid_->name();

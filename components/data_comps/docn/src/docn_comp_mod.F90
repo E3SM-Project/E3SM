@@ -69,9 +69,9 @@ module docn_comp_mod
   real(R8),parameter :: latice  = shr_const_latice      ! latent heat of fusion
   real(R8),parameter :: ocnsalt = shr_const_ocn_ref_sal ! ocean reference salinity
 
-  integer(IN)   :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp  ! field indices
+  integer(IN)   :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp,kssh,kh2o ! field indices
   integer(IN)   :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
-  integer(IN)   :: kh,kqbot,kfraz,kssh,kh2ot
+  integer(IN)   :: kh,kqbot,kfraz,kh2ot
   integer(IN)   :: k10uu           ! index for u10
   integer(IN)   :: kRSO_bckgrd_sst ! index for background SST (relaxed slab ocean)
   integer(IN)   :: index_lat, index_lon
@@ -90,14 +90,17 @@ module docn_comp_mod
 #endif
 
   !--------------------------------------------------------------------------
-  integer(IN)     , parameter :: ktrans = 8
-  character(12)   , parameter :: avifld(1:ktrans) = &
-       (/ "t           ","u           ","v           ","dhdx        ",&
-          "dhdy        ","s           ","h           ","qbot        "/)
-  character(12)   , parameter  :: avofld(1:ktrans) = &
-       (/ "So_t        ","So_u        ","So_v        ","So_dhdx     ",&
-          "So_dhdy     ","So_s        ","strm_h      ","strm_qbot   "/)
+  integer(IN)     , parameter :: ktrans = 10
+  character(14)   , parameter :: avifld(1:ktrans) = &
+       (/ "t             ","u             ","v             ","dhdx          ",&
+          "dhdy          ","s             ","h             ","qbot          ",&
+          "ssh           ","frac_h2oocn   "/)
+  character(14)   , parameter  :: avofld(1:ktrans) = &
+       (/ "So_t          ","So_u          ","So_v          ","So_dhdx       ",&
+          "So_dhdy       ","So_s          ","strm_h        ","strm_qbot     ",&
+          "So_ssh        ","So_frac_h2oocn"/)
   character(len=*),parameter :: flds_strm = 'strm_h:strm_qbot:So_t'
+
   !--------------------------------------------------------------------------
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -127,7 +130,6 @@ CONTAINS
     use pio        , only : iosystem_desc_t
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
 #ifdef HAVE_MOAB
-#include "moab/MOABConfig.h"
     use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
                      iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
                      iMOAB_ResolveSharedEntities, iMOAB_CreateVertices, &
@@ -227,6 +229,8 @@ CONTAINS
            datamode == 'SOM_AQUAP' .or. datamode == 'SST_AQUAP_CONSTANT' ) then
           ! Special logic for either prescribed or som aquaplanet - overwrite and
           call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar, reset_domain_mask=.true.)
+       elseif (trim(datamode) == 'GTSM') then
+          call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar, dmodel_domain_fracname_from_stream='frac')
        else
           call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar)
        end if
@@ -289,6 +293,7 @@ CONTAINS
     kq    = mct_aVect_indexRA(o2x,'Fioo_q') ! ocn freezing melting potential
     kfraz = mct_aVect_indexRA(o2x,'Fioo_frazil') ! ocn frazil
     kh2ot = mct_aVect_indexRA(o2x,'Faoo_h2otemp') ! ocn frazil
+    kh2o  = mct_aVect_indexRA(o2x,'So_frac_h2oocn', perrwith='quiet')
 
     call mct_aVect_init(x2o, rList=seq_flds_x2o_fields, lsize=lsize)
     call mct_aVect_zero(x2o)
@@ -557,7 +562,8 @@ CONTAINS
     use iMOAB, only: iMOAB_GetMeshInfo, &
                      iMOAB_SetDoubleTagStorage, &
                      iMOAB_WriteMesh
-    use seq_flds_mod, only: moab_set_tag_from_av
+    use shr_moab_mod, only: moab_set_tag_from_av, moab_set_av_from_tag
+    use seq_flds_mod    , only: seq_flds_o2x_fields
 #endif
 
     implicit none
@@ -608,9 +614,12 @@ CONTAINS
          swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
 
 #ifdef HAVE_MOAB
+    type(mct_list) :: temp_list
+    type(mct_string)    :: mctOStr
     integer :: ierr     ! error code
+    integer :: index_list, size_list
     integer :: kgg
-    character*100  tagname
+    character*100  tagname, mct_field
     integer tagindex
     real(R8), allocatable, target :: data(:)
 #ifdef MOABDEBUG
@@ -645,6 +654,35 @@ CONTAINS
     call t_barrierf('docn_BARRIER',mpicom)
     call t_startf('docn')
 
+#ifdef HAVE_MOAB
+    if (.not. firstcall) then
+       ! Copy x2o data from MOAB mesh at the beginning of the run method
+       lsize = mct_avect_lsize(x2o)
+       allocate(data(lsize))
+
+       tagname = 'Foxx_swnet'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2o, kswnet, mpoid, data, lsize)
+       tagname = 'Foxx_lwup'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2o, klwup, mpoid, data, lsize)
+       tagname = 'Foxx_sen'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2o, ksen, mpoid, data, lsize)
+       tagname = 'Foxx_lat'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2o, klat, mpoid, data, lsize)
+       tagname = 'Foxx_rofi'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2o, krofi, mpoid, data, lsize)
+       tagname = 'Faxa_lwdn'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2o, klwdn, mpoid, data, lsize)
+       tagname = 'Faxa_snow'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2o, ksnow, mpoid, data, lsize)
+       tagname = 'Fioi_melth'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2o, kmelth, mpoid, data, lsize)
+       tagname = 'So_duu10n'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2o, k10uu, mpoid, data, lsize)
+
+       deallocate(data)
+    end if
+#endif
+
     !--- defaults, copy all fields from streams to o2x ---
 
     lsize = mct_avect_lsize(o2x)
@@ -661,6 +699,12 @@ CONTAINS
        o2x%rAttr(kq   ,n) = 0.0_R8
 ! make sure frazil is 0. MPAS-seaice will still use it.
        o2x%rAttr(kfraz,n) = 0.0_R8
+       if (kssh /= 0) then
+         o2x%rAttr(kssh, n) = 0.0_R8
+       endif
+       if (kh2o /= 0) then
+         o2x%rAttr(kh2o, n) = 0.0_R8
+       endif
        if (kswp /= 0) then
           o2x%rAttr(kswp ,n) = swp
        end if
@@ -902,64 +946,51 @@ CONTAINS
              somtp(n) = o2x%rAttr(kt,n)                                        ! save temp
           enddo
        endif   ! firstcall
-
+    case('GTSM')
+       lsize = mct_avect_lsize(o2x)
+       do n = 1,lsize
+          if (ksomask /= 0) then
+             o2x%rAttr(ksomask, n) = ggrid%data%rAttr(kfrac,n)
+          end if
+          o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
+          o2x%rAttr(ks   ,n) = ocnsalt
+          o2x%rAttr(ku   ,n) = 0.0_R8
+          o2x%rAttr(kv   ,n) = 0.0_R8
+          o2x%rAttr(kdhdx,n) = 0.0_R8
+          o2x%rAttr(kdhdy,n) = 0.0_R8
+          o2x%rAttr(kq   ,n) = 0.0_R8
+          if (kssh /= 0) then
+            o2x%rAttr(kssh, n) = o2x%rAttr(kssh, n)
+          endif
+          if (kh2o /= 0) then
+             if (o2x%rAttr(kh2o, n) < 0.0_R8) then
+                o2x%rAttr(kh2o, n) = 0.0_R8 ! Inundation cannot be negative
+             else
+                o2x%rAttr(kh2o, n) = o2x%rAttr(kh2o, n)
+             endif
+          endif
+          if (kswp /= 0) then
+             o2x%rAttr(kswp ,n) = swp
+          end if
+       enddo
     end select
 
     call t_stopf('docn_datamode')
 
 #ifdef HAVE_MOAB
-
-   allocate(data(lsize))
-   data(:) = 0.0
-
-   ! set dense double tags on vertices of the temporary DOCN app
-   ! first set o2x data
-   call moab_set_tag_from_av('So_t'//C_NULL_CHAR, o2x, kt, mpoid, data, lsize) 
-
-   call moab_set_tag_from_av('So_s'//C_NULL_CHAR, o2x, ks, mpoid, data, lsize)
-
-   call moab_set_tag_from_av( 'So_u'//C_NULL_CHAR, o2x, ku, mpoid, data, lsize)
-
-   call moab_set_tag_from_av( 'So_v'//C_NULL_CHAR, o2x, kv, mpoid, data, lsize)
-
-   call moab_set_tag_from_av( 'So_ssh'//C_NULL_CHAR, o2x, kssh, mpoid, data, lsize)
-
-   call moab_set_tag_from_av( 'So_dhdx'//C_NULL_CHAR, o2x, kdhdx, mpoid, data, lsize)
-
-   call moab_set_tag_from_av( 'So_dhdy'//C_NULL_CHAR, o2x, kdhdy, mpoid, data, lsize)
-
-   call moab_set_tag_from_av( 'Fioo_q'//C_NULL_CHAR, o2x, kq, mpoid, data, lsize)
-
-   call moab_set_tag_from_av( 'Fioo_frazil'//C_NULL_CHAR, o2x, kfraz, mpoid, data, lsize)
-
-   call moab_set_tag_from_av( 'Faoo_h2otemp'//C_NULL_CHAR, o2x, kh2ot, mpoid, data, lsize)
-
-   if (kswp /= 0) then
-      call moab_set_tag_from_av( 'So_fswpen'//C_NULL_CHAR, o2x, kswp, mpoid, data, lsize)
-   endif
-
-   ! next set x2o data
-   call moab_set_tag_from_av( 'Foxx_swnet'//C_NULL_CHAR, x2o, kswnet, mpoid, data, lsize)
-
-   call moab_set_tag_from_av( 'Foxx_lwup'//C_NULL_CHAR, x2o, klwup, mpoid, data, lsize)
-
-   call moab_set_tag_from_av( 'Foxx_sen'//C_NULL_CHAR, x2o, ksen, mpoid, data, lsize)
-
-   call moab_set_tag_from_av( 'Foxx_lat'//C_NULL_CHAR, x2o, klat, mpoid, data, lsize)
-
-   call moab_set_tag_from_av( 'Foxx_rofi'//C_NULL_CHAR, x2o, krofi, mpoid, data, lsize)
-
-   call moab_set_tag_from_av( 'Faxa_lwdn'//C_NULL_CHAR, x2o, klwdn, mpoid, data, lsize)
-
-   call moab_set_tag_from_av( 'Faxa_snow'//C_NULL_CHAR, x2o, ksnow, mpoid, data, lsize)
-
-   call moab_set_tag_from_av( 'Fioi_melth'//C_NULL_CHAR, x2o, kmelth, mpoid, data, lsize)
-
-   ! next set avstrm data
-   call moab_set_tag_from_av( 'strm_h'//C_NULL_CHAR, avstrm, kh, mpoid, data, lsize)
-
-   call moab_set_tag_from_av( 'strm_qbot'//C_NULL_CHAR, avstrm, kqbot, mpoid, data, lsize)
-
+    ! Copy o2x data to MOAB mesh
+    lsize = mct_avect_lsize(o2x)
+    allocate(data(lsize))
+    call mct_list_init(temp_list, seq_flds_o2x_fields)
+    size_list = mct_list_nitem(temp_list)
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr, index_list, temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname = trim(mct_field)//C_NULL_CHAR
+      call moab_set_tag_from_av(tagname, o2x, index_list, mpoid, data, lsize)
+    enddo
+    call mct_list_clean(temp_list)
+    deallocate(data)
 
 #ifdef MOABDEBUG
     call seq_timemgr_EClockGetData( EClock, stepno=cur_docn_stepno )
