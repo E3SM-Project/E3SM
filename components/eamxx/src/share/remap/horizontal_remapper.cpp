@@ -111,25 +111,26 @@ registration_ends_impl ()
     // Store copy, since we'll register more fields as we process masks
     int num_orig_fields = m_num_fields;
     for (int i=0; i<num_orig_fields; ++i) {
-      const auto& src = m_src_fields[i];
-            auto& tgt = m_tgt_fields[i];
-      if (not src.get_header().has_extra_data("valid_mask"))
+      const auto& src_hdr = m_src_fields[i].get_header();
+            auto& tgt_hdr = m_tgt_fields[i].get_header();
+      if (not src_hdr.has_extra_data("valid_mask"))
         continue;
 
-      const auto& src_mask = src.get_header().get_extra_data<Field>("valid_mask");
+      const auto& f_name = src_hdr.get_identifier().name();
+      const auto& src_mask = src_hdr.get_extra_data<Field>("valid_mask");
 
       // Check that the mask field has the correct layout
-      const auto& f_lt = src.get_header().get_identifier().get_layout();
+      const auto& f_lt = src_hdr.get_identifier().get_layout();
       const auto& m_lt = src_mask.get_header().get_identifier().get_layout();
       EKAT_REQUIRE_MSG(f_lt == m_lt,
           "Error! Incompatible field and mask layouts.\n"
-          "  - field name: " + src.name() + "\n"
+          "  - field name: " + f_name + "\n"
           "  - field layout: " + f_lt.to_string() + "\n"
           "  - mask layout: " + m_lt.to_string() + "\n");
 
       if (not m_lt.has_tag(COL)) {
         // This field doesn't really need to be remapped, so tgt can use the same mask field as src
-        tgt.get_header().set_extra_data("valid_mask",src_mask);
+        tgt_hdr.set_extra_data("valid_mask",src_mask);
         continue;
       }
 
@@ -138,7 +139,7 @@ registration_ends_impl ()
       if (m_name_to_tgt_int_mask.count(mask_name)==1) {
         // There was another src field with the same src mask, which was already registerred. Recycle it.
         const auto& tgt_mask = m_name_to_tgt_int_mask.at(mask_name);
-        tgt.get_header().set_extra_data("valid_mask",tgt_mask);
+        tgt_hdr.set_extra_data("valid_mask",tgt_mask);
         continue;
       }
 
@@ -147,10 +148,10 @@ registration_ends_impl ()
       // Make sure fields representing masks are not themselves meant to be masked.
       EKAT_REQUIRE_MSG(not src_mask.get_header().has_extra_data("valid_mask"),
           "Error! A mask field cannot be itself masked.\n"
-          "  - field name: " + src.name() + "\n"
+          "  - field name: " + f_name + "\n"
           "  - mask field name: " + src_mask.name() + "\n");
 
-      auto ps = src.get_header().get_alloc_properties().get_largest_pack_size();
+      auto ps = src_hdr.get_alloc_properties().get_largest_pack_size();
 
       // Create the real-valued mask field, to use during remap
       const auto& src_fid = src_mask.get_header().get_identifier();
@@ -168,7 +169,7 @@ registration_ends_impl ()
       Field tgt_mask(tgt_fid);
       tgt_mask.get_header().get_alloc_properties().request_allocation(ps);
       tgt_mask.allocate_view();
-      tgt.get_header().set_extra_data("valid_mask",tgt_mask);
+      tgt_hdr.set_extra_data("valid_mask",tgt_mask);
 
       m_name_to_tgt_int_mask[mask_name] = tgt_mask;
     }
