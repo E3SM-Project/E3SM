@@ -514,6 +514,11 @@
   <lname>20TRSOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_MALI_SWAV</lname>
 </compset>
 
+<compset>
+  <alias>BGWCYCL2010</alias>
+  <lname>2010_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_MALI_SWAV</lname>
+</compset>
+
 <!-- EAMXX fully coupled compset -->
 
 <compset>
