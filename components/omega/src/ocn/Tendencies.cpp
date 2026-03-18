@@ -91,7 +91,10 @@ Tendencies::~Tendencies() {
 
 //------------------------------------------------------------------------------
 // Removes all tendencies instances before exit
-void Tendencies::clear() { AllTendencies.clear(); } // end clear
+void Tendencies::clear() {
+   AllTendencies.clear();
+   DefaultTendencies = nullptr; // prevent dangling pointer
+} // end clear
 
 //------------------------------------------------------------------------------
 // Removes tendencies from list by name

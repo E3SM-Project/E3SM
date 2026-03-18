@@ -26,9 +26,7 @@ VelocityDel2AuxVars::VelocityDel2AuxVars(const std::string &AuxStateSuffix,
       MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop),
       MinLayerVertexBot(VCoord->MinLayerVertexBot),
       MaxLayerVertexTop(VCoord->MaxLayerVertexTop),
-      MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell)
-
-{}
+      MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell) {}
 
 void VelocityDel2AuxVars::registerFields(const std::string &AuxGroupName,
                                          const std::string &MeshName) const {

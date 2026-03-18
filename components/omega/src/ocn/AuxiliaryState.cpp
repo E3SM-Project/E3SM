@@ -351,7 +351,10 @@ void AuxiliaryState::erase(const std::string &Name) {
 }
 
 // Remove all auxiliary states
-void AuxiliaryState::clear() { AllAuxStates.clear(); }
+void AuxiliaryState::clear() {
+   AllAuxStates.clear();
+   DefaultAuxState = nullptr; // prevent dangling pointer
+}
 
 // Read and set config options
 void AuxiliaryState::readConfigOptions(Config *OmegaConfig) {

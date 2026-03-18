@@ -185,6 +185,7 @@ void HorzMesh::clear() {
    AllHorzMeshes.clear(); // removes all meshes from the list and in
                           // the porcess, calls the destructors for each
 
+   DefaultHorzMesh = nullptr; // prevent dangling pointer
 } // end clear
 
 //------------------------------------------------------------------------------
