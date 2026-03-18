@@ -74,6 +74,7 @@ void SHOCMacrophysics::create_requests()
   add_field<Required>("p_int",          scalar3d_int, Pa,    grid_name, ps);
   add_field<Required>("pseudo_density", scalar3d_mid, Pa,    grid_name, ps);
   add_field<Required>("phis",           scalar2d    , m2/s2, grid_name);
+  add_field<Required>("strain2d",       scalar3d_mid, /s2,   grid_name, ps);
 
   // Input/Output variables
   add_field<Updated>("horiz_winds",   vector3d_mid,   m/s,     grid_name, ps);
@@ -270,6 +271,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.Ckh           = m_params.get<double>("coeff_kh");
   runtime_options.Ckm           = m_params.get<double>("coeff_km");
   runtime_options.shoc_1p5tke   = m_params.get<bool>("shoc_1p5tke");
+  runtime_options.do_3d_turb    = m_params.get<bool>("do_3d_turbulence");
   runtime_options.extra_diags   = m_params.get<bool>("extra_shoc_diags");
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
@@ -282,6 +284,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto& surf_sens_flux      = get_field_in("surf_sens_flux").get_view<const Real*>();
   const auto& surf_evap           = get_field_in("surf_evap").get_view<const Real*>();
   const auto& surf_mom_flux       = get_field_in("surf_mom_flux").get_view<const Real**>();
+  const auto& strain2             = get_field_in("strain2").get_view<const Pack**>();
   const auto& qtracers            = get_group_out("turbulence_advected_tracers").m_monolithic_field->get_strided_view<Pack***>();
   const auto& qc                  = get_field_out("qc").get_view<Pack**>();
   const auto& qv                  = get_field_out("qv").get_view<Pack**>();
@@ -349,6 +352,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   input.wtracer_sfc = shoc_preprocess.wtracer_sfc;
   input.inv_exner   = shoc_preprocess.inv_exner;
   input.phis        = phis;
+  input.strain2     = strain2;
 
   // Input/Output Variables
   input_output.host_dse     = shoc_preprocess.shoc_s;

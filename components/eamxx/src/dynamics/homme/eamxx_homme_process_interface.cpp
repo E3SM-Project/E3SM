@@ -178,6 +178,7 @@ void HommeDynamics::create_requests ()
   add_field<Computed>("omega",              pg_scalar3d_mid, Pa/s,  pgn,N);
   add_field<Required>("eddy_diff_heat",     pg_scalar3d_mid, m2/s,  pgn,N);
   add_field<Required>("eddy_diff_mom",      pg_scalar3d_mid, m2/s,  pgn,N);
+  add_field<Computed>("tke_shear_strain",   pg_scalar3d_mid, /s2,   pgn,N);
 
   add_tracer<Updated >("qv", m_phys_grid, kg/kg, N);
   add_group<Updated>("tracers",pgn,N, MonolithicAlloc::Required);
@@ -433,6 +434,9 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     // Remap SHOC eddy diffusivities from physics grid to dynamics grid
     m_p2d_remapper->register_field(get_field_in("eddy_diff_mom",pgn),m_helper_fields.at("Km_dyn"));
     m_p2d_remapper->register_field(get_field_in("eddy_diff_heat",pgn),m_helper_fields.at("Kh_dyn"));
+
+    // Remap strain term of TKE Shear production from dynamics to physics grid
+    m_d2p_remapper->register_field(m_helper_fields.at("strain2_dyn",get_field_out("tke_shear_strain"));
 
     m_p2d_remapper->registration_ends();
     m_d2p_remapper->registration_ends();
@@ -962,6 +966,11 @@ void HommeDynamics::init_homme_views () {
   auto Kh_in = m_helper_fields.at("Kh_dyn").template get_view<Homme::Scalar*[NP][NP][NVL]>();
   using turb_type_heat = std::remove_reference<decltype(derived.m_turb_diff_heat)>::type;
   derived.m_turb_diff_heat = turb_type_heat(Kh_in.data(), nelem);
+
+  // SGS TKE strain term
+  auto strain2_in = m_helper_fields.at("strain2_dyn").template get_view<Homme::Scalar*[NP][NP][NVL]>();
+  using turb_type_strain2 = std::remove_reference<decltype(derived.m_turb_strain2)>::type;
+  derived.m_turb_strain2 = turb_type_strain2(strain2_in.data(), nelem);
 
 }
 

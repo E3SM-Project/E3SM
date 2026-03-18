@@ -31,7 +31,9 @@ void Functions<S,D>::shoc_tke(
   const Scalar&                Ckh,
   const Scalar&                Ckm,
   const bool&                  shoc_1p5tke,
+  const bool&                  do_3d_turb,
   const uview_1d<const Pack>& wthv_sec,
+  const uview_1d<const Pack>& strain2,
   const uview_1d<const Pack>& shoc_mix,
   const uview_1d<const Pack>& dz_zi,
   const uview_1d<const Pack>& dz_zt,
@@ -61,7 +63,7 @@ void Functions<S,D>::shoc_tke(
 
   // Compute shear production term, which is on interface levels
   // This follows the methods of Bretheron and Park (2010)
-  compute_shr_prod(team,nlevi,nlev,dz_zi,u_wind,v_wind,sterm);
+  compute_shr_prod(team,do_3d_turb,nlevi,nlev,dz_zi,strain2,u_wind,v_wind,sterm);
 
   // Interpolate shear term from interface to thermo grid
   team.team_barrier();

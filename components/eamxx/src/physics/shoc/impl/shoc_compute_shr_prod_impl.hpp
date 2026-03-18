@@ -16,9 +16,11 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 ::compute_shr_prod(
   const MemberType&            team,
+  const bool&                  do_3d_turb,
   const Int&                   nlevi,
   const Int&                   nlev,
   const uview_1d<const Pack>& dz_zi,
+  const uview_1d<const Pack>& strain2,
   const uview_1d<const Pack>& u_wind,
   const uview_1d<const Pack>& v_wind,
   const uview_1d<Pack>&       sterm)

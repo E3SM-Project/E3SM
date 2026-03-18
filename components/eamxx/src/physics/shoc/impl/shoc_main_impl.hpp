@@ -89,6 +89,7 @@ void Functions<S,D>::shoc_main_internal(
   const Scalar&                Ckh,
   const Scalar&                Ckm,
   const bool&                  shoc_1p5tke,
+  const bool&                  do_3d_turb,
   const bool&                  extra_diags,
   // Input Variables
   const Scalar&                dx,
@@ -107,6 +108,7 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<const Pack>& wtracer_sfc,
   const uview_1d<const Pack>& inv_exner,
   const Scalar&                phis,
+  const uview_1d<const Pack>& strain2,
   // Workspace/Local Variables
   const Workspace&             workspace,
   // Input/Output Variables
@@ -224,7 +226,8 @@ void Functions<S,D>::shoc_main_internal(
     shoc_tke(team,nlev,nlevi,dtime,               // Input
 	     lambda_low,lambda_high,lambda_slope, // Runtime options
 	     lambda_thresh,Ckh,Ckm,shoc_1p5tke,   // Runtime options
-	     wthv_sec,                            // Input
+             do_3d_turb,                          // Runtime options
+	     wthv_sec,strain2,                    // Input
              shoc_mix,dz_zi,dz_zt,pres,shoc_tabs, // Input
              u_wind,v_wind,brunt,zt_grid,         // Input
              zi_grid,pblh,                        // Input
@@ -369,6 +372,7 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<const Pack>& wtracer_sfc,
   const view_2d<const Pack>& inv_exner,
   const view_1d<const Scalar>& phis,
+  const view_2d<const Pack>& strain2,
   // Workspace Manager
   WorkspaceMgr&      workspace_mgr,
   // Input/Output Variables
@@ -491,7 +495,8 @@ void Functions<S,D>::shoc_main_internal(
     shoc_tke_disp(shcol,nlev,nlevi,dtime,               // Input
 	          lambda_low,lambda_high,lambda_slope,  // Runtime options
 		  lambda_thresh,Ckh,Ckm,shoc_1p5tke,    // Runtime options
-                  wthv_sec,                             // Input
+                  do_3d_turb,                           // Runtime options
+                  wthv_sec,strain2,                     // Input
                   shoc_mix,dz_zi,dz_zt,pres,shoc_tabs,  // Input
                   u_wind,v_wind,brunt,zt_grid,          // Input
                   zi_grid,pblh,                         // Input
