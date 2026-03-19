@@ -642,9 +642,12 @@ be lost if SCREAM_HACK_XML is not enabled.
     <filename hgrid="ne30np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</filename>
     <filename hgrid="ne30np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L128_20221004.nc</filename>
     <filename hgrid="ne30np4" nlev="72" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam_ne30np4L72_c20240623.nc</filename>
+    <filename hgrid="ne30np4" nlev="128" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam_ne30np4L128_c20240924.nc</filename>
     <filename hgrid="ne32np4"  nlev="128">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne32np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20251001.nc</filename>
     <filename hgrid="ne64np4"  nlev="128">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne64np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20251001.nc</filename>
     <filename hgrid="ne128np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne128np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20251001.nc</filename>
+    <filename hgrid="ne128np4" nlev="128" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam_ne128np4L128_c20260316.nc</filename>
+    <filename hgrid="ne128np4" nlev="72" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam_ne128np4L72_c20260316.nc</filename>
     <filename hgrid="ne120np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</filename>
     <filename hgrid="ne120np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L128_20230215.nc</filename>
     <filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</filename>
