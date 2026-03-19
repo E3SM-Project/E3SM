@@ -96,17 +96,19 @@ void Functions<S,D>::gw_common_init(
   for (int l = -s_common_init.pgwv; l <= s_common_init.pgwv; ++l)
     s_common_init.cref[l + s_common_init.pgwv] = s_common_init.dc * l;
 
+  // cref is a device view; initialize via a HostSpace mirror, then deep_copy.
+  auto cref_h = Kokkos::create_mirror_view(Kokkos::HostSpace(), s_common_init.cref);
+  for (int l = -s_common_init.pgwv; l <= s_common_init.pgwv; ++l) {
+    cref_h[l + s_common_init.pgwv] = s_common_init.dc * l;
+  }
+  Kokkos::deep_copy(s_common_init.cref, cref_h);
+
   s_common_init.orographic_only = !s_common_init.use_gw_convect && !s_common_init.use_gw_frontal;
 
   // calculate alpha (Newtonian cooling coefficients)
+  s_common_init.alpha = view_1d<Real>("alpha", GWC::nalph);
   if (s_common_init.orographic_only) {
-    Kokkos::parallel_for("gw_common_init_calculate_newtonian_damping", 
-      Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, s_common_init.alpha.size()), 
-      KOKKOS_LAMBDA (const int k) {
-        // assume 10-day relaxation timescale
-        s_common_init.alpha[k] = 1.e-6;
-      }
-    );
+    Kokkos::deep_copy(s_common_init.alpha,1e-6);
   } else {
     // pre-calculated newtonian damping:
     //     * convert alpha0 from 1/day to 1/s
@@ -127,7 +129,6 @@ void Functions<S,D>::gw_common_init(
     Kokkos::View<Real*, Kokkos::HostSpace> alpha_tmp("alpha_tmp", pver_in+1);
     simple_linear_interp(alpha_pressure_pa, alpha0_per_sec, pref_int, alpha_tmp);
     // copy to device struct
-    s_common_init.alpha = view_1d<Real>("alpha", alpha_tmp.size());
     Kokkos::deep_copy(s_common_init.alpha, alpha_tmp);
   }
 
