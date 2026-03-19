@@ -515,7 +515,7 @@ void Functions<S,D>::shoc_main_internal(
                                      vw_sfc,wthl_sfc,wqw_sfc,wtracer_sfc,        // Input
                                      workspace_mgr,                              // Workspace mgr
                                      thetal,qw,qtracers,tke,u_wind,v_wind,       // Input/Output
-                                     uw_sfc_pert, vm_sfc_pert, um_pert, vm_pert);// Input/Output
+                                     uw_sfc_pert, vw_sfc_pert, um_pert, vm_pert);// Input/Output
 
     // Diagnose the second order moments
     diag_second_shoc_moments_disp(shcol,nlev,nlevi,
