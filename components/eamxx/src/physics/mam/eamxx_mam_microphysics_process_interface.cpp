@@ -406,8 +406,8 @@ void MAMMicrophysics::init_temporary_views() {
   work_ptr += ncol_ * nlev_ * mam4::mo_photo::phtcnt;
   invariants_ = view_3d(work_ptr, ncol_, nlev_, mam4::gas_chemistry::nfs);
   work_ptr += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
-  extfrc_ = view_3d(work_ptr, ncol_, extcnt, nlev_);
-  work_ptr += ncol_ * extcnt * nlev_;
+  extfrc_ = view_3d(work_ptr, ncol_, nlev_, extcnt);
+  work_ptr += ncol_ * nlev_ * extcnt;
   state_q_=view_3d(work_ptr, ncol_, nlev_, pcnst );
   work_ptr += ncol_ * nlev_*pcnst;
   qqcw_pcnst_=view_3d(work_ptr, ncol_, nlev_,pcnst );
@@ -869,13 +869,13 @@ void MAMMicrophysics::run_impl(const double dt) {
   }
 
   Kokkos::parallel_for("copy_extfrc",
-    Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {ncol, extcnt, nlev}),
-    KOKKOS_LAMBDA(const int i, const int j, const int k) {
+     Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {ncol, extcnt, nlev}),
+     KOKKOS_LAMBDA(const int i, const int j, const int k) {
       const int pcnst_idx = extfrc_pcnst_index[j];
       const Real molar_mass_g_per_mol = molar_mass_g_per_mol_tmp[pcnst_idx]; // g/mol
       // Modify units to MKS units: [molec/cm3/s] to [kg/m3/s]
       // Convert g → kg (× 1e-3), cm³ → m³ (× 1e6) → total factor: 1e-3 × 1e6 = 1e3 = 1000.0
-      extfrc_fm(i,j,k) = extfrc(i,j,k) * (molar_mass_g_per_mol / Avogadro) * 1000.0;
+      extfrc_fm(i,j,k) = extfrc(i,k,j) * (molar_mass_g_per_mol / Avogadro) * 1000.0;
   });
 
   // postprocess output
