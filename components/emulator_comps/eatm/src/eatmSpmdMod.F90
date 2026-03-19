@@ -1,5 +1,7 @@
 module eatmSpmdMod
 
+  use shr_sys_mod,  only: shr_sys_abort
+
   implicit none
   save
   private
@@ -39,6 +41,7 @@ contains
     !
     integer, intent (in) :: mpicom_local
     !
+    character(*), parameter :: subName = "(eatmSpmdInit) "
     integer :: ierr
 
     mpicom_atm = mpicom_local
@@ -55,6 +58,12 @@ contains
 
     ! Get number of processors
     call mpi_comm_size(mpicom_atm, npes, ierr)
+
+    ! EATM only runs as a serial model currently, so abort if more than one
+    ! pe in mpi communicator
+    if (npes.gt.1) then
+      call shr_sys_abort(trim(subname)//' ERROR EATM is serial but multiple pes in mpicomm')
+    endif
 
   end subroutine eatmSpmdInit
 

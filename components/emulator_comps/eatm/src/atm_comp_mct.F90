@@ -96,7 +96,6 @@ CONTAINS
     character(*), parameter :: subName = "(atm_init_mct) "
     !-------------------------------------------------------------------------------
 
-    if (masterproc) write(logunit_atm,*) 'got to atm_init'
     ! Set cdata pointers to derived types (in coupler)
     call seq_cdata_setptrs(cdata, &
          id=compid, &
