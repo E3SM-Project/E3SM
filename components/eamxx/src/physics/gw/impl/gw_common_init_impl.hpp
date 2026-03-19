@@ -105,6 +105,13 @@ void Functions<S,D>::gw_common_init(
   }
   Kokkos::deep_copy(s_common_init.cref, cref_h);
 
+  // cref is a device view; initialize via a HostSpace mirror, then deep_copy.
+  auto cref_h = Kokkos::create_mirror_view(Kokkos::HostSpace(), s_common_init.cref);
+  for (int l = -s_common_init.pgwv; l <= s_common_init.pgwv; ++l) {
+    cref_h[l + s_common_init.pgwv] = s_common_init.dc * l;
+  }
+  Kokkos::deep_copy(s_common_init.cref, cref_h);
+
   s_common_init.orographic_only = !s_common_init.use_gw_convect && !s_common_init.use_gw_frontal;
 
   // calculate alpha (Newtonian cooling coefficients)
