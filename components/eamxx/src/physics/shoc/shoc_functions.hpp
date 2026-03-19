@@ -513,7 +513,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const WorkspaceMgr &workspace_mgr, const view_2d<Pack> &thetal, const view_2d<Pack> &qw,
       const view_3d_strided<Pack> &tracer, const view_2d<Pack> &tke, const view_2d<Pack> &u_wind,
       const view_2d<Pack> &v_wind, const view_1d<const Scalar>& uw_sfc_pert, const view_1d<const Scalar>& vw_sfc_pert,
-      const uview_2d<Pack>& um_pert, const uview_2d<Pack>& vm_pert);
+      const view_2d<Pack>& um_pert, const view_2d<Pack>& vm_pert);
 #endif
 
   KOKKOS_FUNCTION
