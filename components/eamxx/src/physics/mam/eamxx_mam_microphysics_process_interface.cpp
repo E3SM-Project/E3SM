@@ -853,7 +853,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   const auto &extfrc   = extfrc_;
   constexpr int extcnt = mam4::gas_chemistry::extcnt;
 
-  run_small_kernels_microphysics(dt, eccf);
+  run_microphysics_kernels(dt, eccf);
 
   auto extfrc_fm = get_field_out("mam4_external_forcing").get_view<Real***>();
 
