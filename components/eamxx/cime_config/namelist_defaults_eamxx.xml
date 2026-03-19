@@ -284,7 +284,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <gw_dc type="real" doc="Bin width for spectrum">2.5</gw_dc>
       <tau_0_ubc type="logical" doc="flag to enforce an upper boundary condition of tau=0">false</tau_0_ubc>
       <fcrit2 type="real" doc="Critical Froude number">1.0</fcrit2>
-      <gw_orographic_eff type="real" doc="Efficiency of orographic GW tendencies">0.375</gw_orogrph_eff>
+      <gw_orographic_eff type="real" doc="Efficiency of orographic GW tendencies">0.375</gw_orographic_eff>
       <gw_frontal_taubgnd type="real" doc="Background stress source strength for frontal GW scheme">2.5E-3</gw_frontal_taubgnd>
       <gw_frontal_eff type="real" doc="Efficiency of frontal GW tendencies">1.0</gw_frontal_eff>
       <gw_frontal_fgfc hgrid="ne30np4.pg2"  type="real" doc="Frontogenesis function critical threshold for frontal GW scheme">1.25E-15</gw_frontal_fgfc>
