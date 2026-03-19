@@ -275,9 +275,11 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Rr2i'
           end if
-          call seq_map_init_rcfile(mapper_Rr2i, rof(1), ice(1), &
-               'seq_maps.rc','rof2ice_rmapname:','rof2ice_rmaptype:',samegrid_ro, &
-               'mapper_Rr2i initialization', esmf_map_flag,no_match)
+          call seq_map_mapinit(mapper_Rr2i, mpicom_CPLID)
+          if (samegrid_ro) then
+             mapper_Rr2i%rearrange_only = .true.
+             mapper_Rr2i%strategy = "rearrange"
+          endif
           if ((mbrxid .ge. 0) .and.  (mbixid .ge. 0)) then
             ! now take care of the mapper
             if (iamroot_CPLID) then

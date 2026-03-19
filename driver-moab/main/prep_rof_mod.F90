@@ -307,9 +307,11 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fl2r'
           end if
-          call seq_map_init_rcfile(mapper_Fl2r, lnd(1), rof(1), &
-               'seq_maps.rc','lnd2rof_fmapname:','lnd2rof_fmaptype:',samegrid_lr, &
-               string='mapper_Fl2r initialization', esmf_map=esmf_map_flag, no_match=no_match )
+          call seq_map_mapinit(mapper_Fl2r, mpicom_CPLID)
+          if (samegrid_lr) then
+             mapper_Fl2r%rearrange_only = .true.
+             mapper_Fl2r%strategy = "rearrange"
+          endif
 ! similar to a2r, from below
           ! Call moab intx only if land and river are init in moab
           if ((mblxid .ge. 0) .and.  (mbrxid .ge. 0)) then
@@ -531,9 +533,11 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fa2r'
           end if
-          call seq_map_init_rcfile(mapper_Fa2r, atm(1), rof(1), &
-               'seq_maps.rc','atm2rof_fmapname:','atm2rof_fmaptype:',samegrid_ar, &
-               string='mapper_Fa2r initialization', esmf_map=esmf_map_flag, no_match=no_match )
+          call seq_map_mapinit(mapper_Fa2r, mpicom_CPLID)
+          if (samegrid_ar) then
+             mapper_Fa2r%rearrange_only = .true.
+             mapper_Fa2r%strategy = "rearrange"
+          endif
 ! similar to a2o, prep_ocn
           ! Call moab intx only if atm  and river are init in moab
           if ((mbrxid .ge. 0) .and.  (mbaxid .ge. 0)) then
@@ -659,9 +663,11 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Sa2r'
           end if
-          call seq_map_init_rcfile(mapper_Sa2r, atm(1), rof(1), &
-               'seq_maps.rc','atm2rof_smapname:','atm2rof_smaptype:',samegrid_ar, &
-               string='mapper_Sa2r initialization', esmf_map=esmf_map_flag, no_match=no_match )
+          call seq_map_mapinit(mapper_Sa2r, mpicom_CPLID)
+          if (samegrid_ar) then
+             mapper_Sa2r%rearrange_only = .true.
+             mapper_Sa2r%strategy = "rearrange"
+          endif
           if ((mbaxid .ge. 0) .and.  (mbrxid .ge. 0) ) then
             ! now take care of the mapper, use the same one as before
             if (iamroot_CPLID) then
@@ -782,9 +788,11 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_So2r'
           end if
-          call seq_map_init_rcfile(mapper_So2r, ocn(1), rof(1), &
-               'seq_maps.rc','ocn2rof_smapname:','ocn2rof_smaptype:',samegrid_ro, &
-               string='mapper_So2r initialization', esmf_map=esmf_map_flag, no_match=no_match )
+          call seq_map_mapinit(mapper_So2r, mpicom_CPLID)
+          if (samegrid_ro) then
+             mapper_So2r%rearrange_only = .true.
+             mapper_So2r%strategy = "rearrange"
+          endif
 
           if ((mboxid .ge. 0) .and.  (mbrxid .ge. 0)) then
             ! now take care of the mapper, use the same one as before

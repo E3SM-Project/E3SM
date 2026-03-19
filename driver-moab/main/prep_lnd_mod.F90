@@ -245,9 +245,11 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fr2l'
           end if
-          call seq_map_init_rcfile(mapper_Fr2l, rof(1), lnd(1), &
-               'seq_maps.rc','rof2lnd_fmapname:','rof2lnd_fmaptype:',samegrid_lr, &
-               string='mapper_Fr2l initialization',esmf_map=esmf_map_flag,no_match=.true.)
+          call seq_map_mapinit(mapper_Fr2l, mpicom_CPLID)
+          if (samegrid_lr) then
+             mapper_Fr2l%rearrange_only = .true.
+             mapper_Fr2l%strategy = "rearrange"
+          endif
 ! symmetric of l2r, from prep_rof
           ! Call moab intx only if land and river are init in moab
           if ((mbrxid .ge. 0) .and.  (mblxid .ge. 0)) then
@@ -439,16 +441,20 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Sa2l'
           end if
-          call seq_map_init_rcfile(mapper_Sa2l, atm(1), lnd(1), &
-               'seq_maps.rc','atm2lnd_smapname:','atm2lnd_smaptype:',samegrid_al, &
-               'mapper_Sa2l initialization',esmf_map_flag, no_match=.true.)
+          call seq_map_mapinit(mapper_Sa2l, mpicom_CPLID)
+          if (samegrid_al) then
+             mapper_Sa2l%rearrange_only = .true.
+             mapper_Sa2l%strategy = "rearrange"
+          endif
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fa2l'
           end if
-          call seq_map_init_rcfile(mapper_Fa2l, atm(1), lnd(1), &
-               'seq_maps.rc','atm2lnd_fmapname:','atm2lnd_fmaptype:',samegrid_al, &
-               'mapper_Fa2l initialization',esmf_map_flag, no_match=.true.)
+          call seq_map_mapinit(mapper_Fa2l, mpicom_CPLID)
+          if (samegrid_al) then
+             mapper_Fa2l%rearrange_only = .true.
+             mapper_Fa2l%strategy = "rearrange"
+          endif
 ! similar to prep_atm_init, lnd and atm reversed
           ! important change: do not compute intx at all between atm and land when we have samegrid_al
           ! we will use just a comm graph to send data from atm to land on coupler

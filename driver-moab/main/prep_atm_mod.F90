@@ -236,17 +236,21 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_So2a'
          endif
-         call seq_map_init_rcfile(mapper_So2a, ocn(1), atm(1), &
-            'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
-            'mapper_So2a initialization',esmf_map_flag, no_match)
+         call seq_map_mapinit(mapper_So2a, mpicom_CPLID)
+         if (samegrid_ao) then
+            mapper_So2a%rearrange_only = .true.
+            mapper_So2a%strategy = "rearrange"
+         endif
 
          if (iamroot_CPLID) then
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Sof2a'
          endif
-         call seq_map_init_rcfile(mapper_Sof2a, ocn(1), atm(1), &
-            'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
-            'mapper_Sof2a initialization',esmf_map_flag, no_match)
+         call seq_map_mapinit(mapper_Sof2a, mpicom_CPLID)
+         if (samegrid_ao) then
+            mapper_Sof2a%rearrange_only = .true.
+            mapper_Sof2a%strategy = "rearrange"
+         endif
 
          ! Call moab intx only if atm and ocn are init in moab
          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
@@ -409,17 +413,21 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Fo2a'
          endif
-         call seq_map_init_rcfile(mapper_Fo2a, ocn(1), atm(1), &
-            'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
-            'mapper_Fo2a initialization',esmf_map_flag, no_match)
+         call seq_map_mapinit(mapper_Fo2a, mpicom_CPLID)
+         if (samegrid_ao) then
+            mapper_Fo2a%rearrange_only = .true.
+            mapper_Fo2a%strategy = "rearrange"
+         endif
 
          if (iamroot_CPLID) then
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Fof2a'
          endif
-         call seq_map_init_rcfile(mapper_Fof2a, ocn(1), atm(1), &
-            'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
-            'mapper_Fof2a initialization',esmf_map_flag, no_match)
+         call seq_map_mapinit(mapper_Fof2a, mpicom_CPLID)
+         if (samegrid_ao) then
+            mapper_Fof2a%rearrange_only = .true.
+            mapper_Fof2a%strategy = "rearrange"
+         endif
 
          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
             if (iamroot_CPLID) then
@@ -551,9 +559,11 @@ contains
             write(logunit,F00) 'Initializing mapper_Si2a'
          endif
          ! otherwise it may find ocean map, and this will not work on ice vars
-         call seq_map_init_rcfile(mapper_Si2a, ice(1), atm(1), &
-            'seq_maps.rc','ice2atm_smapname:','ice2atm_smaptype:',samegrid_ao, &
-            'mapper_Si2a initialization',esmf_map_flag, no_match)
+         call seq_map_mapinit(mapper_Si2a, mpicom_CPLID)
+         if (samegrid_ao) then
+            mapper_Si2a%rearrange_only = .true.
+            mapper_Si2a%strategy = "rearrange"
+         endif
        endif
 
       if (ice_present) then
@@ -693,9 +703,11 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Fi2a'
          endif
-         call seq_map_init_rcfile(mapper_Fi2a, ice(1), atm(1), &
-            'seq_maps.rc','ice2atm_fmapname:','ice2atm_fmaptype:',samegrid_ao, &
-            'mapper_Fi2a initialization',esmf_map_flag, no_match)
+         call seq_map_mapinit(mapper_Fi2a, mpicom_CPLID)
+         if (samegrid_ao) then
+            mapper_Fi2a%rearrange_only = .true.
+            mapper_Fi2a%strategy = "rearrange"
+         endif
 
          ! now take care of the mapper for MOAB.  Need to always do if ice_present
          if (iamroot_CPLID) then
@@ -783,9 +795,11 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Fl2a'
          endif
-         call seq_map_init_rcfile(mapper_Fl2a, lnd(1), atm(1), &
-            'seq_maps.rc','lnd2atm_fmapname:','lnd2atm_fmaptype:',samegrid_al, &
-            'mapper_Fl2a initialization', esmf_map_flag, no_match)
+         call seq_map_mapinit(mapper_Fl2a, mpicom_CPLID)
+         if (samegrid_al) then
+            mapper_Fl2a%rearrange_only = .true.
+            mapper_Fl2a%strategy = "rearrange"
+         endif
 
          ! important change: do not compute intx at all between atm and land when we have samegrid_al
          ! we will use just a comm graph to send data from phys grid to land on coupler
@@ -948,9 +962,11 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Sl2a'
          endif
-         call seq_map_init_rcfile(mapper_Sl2a, lnd(1), atm(1), &
-            'seq_maps.rc','lnd2atm_smapname:','lnd2atm_smaptype:',samegrid_al, &
-            'mapper_Sl2a initialization', esmf_map_flag, no_match )
+         call seq_map_mapinit(mapper_Sl2a, mpicom_CPLID)
+         if (samegrid_al) then
+            mapper_Sl2a%rearrange_only = .true.
+            mapper_Sl2a%strategy = "rearrange"
+         endif
          if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
             if (iamroot_CPLID) then
               write(logunit,*) ' '

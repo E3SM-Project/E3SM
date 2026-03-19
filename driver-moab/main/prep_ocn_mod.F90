@@ -407,9 +407,11 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fa2o'
           end if
-          call seq_map_init_rcfile(mapper_Fa2o, atm(1), ocn(1), &
-               'seq_maps.rc','atm2ocn_fmapname:','atm2ocn_fmaptype:',samegrid_ao, &
-               'mapper_Fa2o initialization', esmf_map_flag, no_match)
+          call seq_map_mapinit(mapper_Fa2o, mpicom_CPLID)
+          if (samegrid_ao) then
+             mapper_Fa2o%rearrange_only = .true.
+             mapper_Fa2o%strategy = "rearrange"
+          endif
           call shr_sys_flush(logunit)
           ! Call moab intx only if atm and ocn are init in moab
           if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
@@ -603,17 +605,21 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Sa2o'
           end if
-          call seq_map_init_rcfile(mapper_Sa2o, atm(1), ocn(1), &
-               'seq_maps.rc','atm2ocn_smapname:','atm2ocn_smaptype:',samegrid_ao, &
-               'mapper_Sa2o initialization', esmf_map_flag, no_match)
+          call seq_map_mapinit(mapper_Sa2o, mpicom_CPLID)
+          if (samegrid_ao) then
+             mapper_Sa2o%rearrange_only = .true.
+             mapper_Sa2o%strategy = "rearrange"
+          endif
 
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Va2o'
           end if
-          call seq_map_init_rcfile(mapper_Va2o, atm(1), ocn(1), &
-               'seq_maps.rc','atm2ocn_vmapname:','atm2ocn_vmaptype:',samegrid_ao, &
-               'mapper_Va2o initialization', esmf_map_flag, no_match)
+          call seq_map_mapinit(mapper_Va2o, mpicom_CPLID)
+          if (samegrid_ao) then
+             mapper_Va2o%rearrange_only = .true.
+             mapper_Va2o%strategy = "rearrange"
+          endif
 
           if (iamroot_CPLID) then
              write(logunit,*) ' '
@@ -742,9 +748,11 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Rr2o_liq'
           end if
-          call seq_map_init_rcfile(mapper_Rr2o_liq, rof(1), ocn(1), &
-               'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
-               'mapper_Rr2o_liq  initialization', esmf_map_flag, no_match )
+          call seq_map_mapinit(mapper_Rr2o_liq, mpicom_CPLID)
+          if (samegrid_ro) then
+             mapper_Rr2o_liq%rearrange_only = .true.
+             mapper_Rr2o_liq%strategy = "rearrange"
+          endif
 
           call seq_comm_getData(CPLID, mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
           call seq_comm_getData(CPLID, mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
@@ -835,9 +843,11 @@ contains
             write(logunit,F00) 'Initializing mapper_Rr2o_ice'
          end if
          ! is this the same map as above ?
-         call seq_map_init_rcfile(mapper_Rr2o_ice, rof(1), ocn(1), &
-            'seq_maps.rc', 'rof2ocn_ice_rmapname:', 'rof2ocn_ice_rmaptype:',samegrid_ro, &
-            'mapper_Rr2o_ice  initialization', esmf_map_flag, no_match )
+         call seq_map_mapinit(mapper_Rr2o_ice, mpicom_CPLID)
+         if (samegrid_ro) then
+            mapper_Rr2o_ice%rearrange_only = .true.
+            mapper_Rr2o_ice%strategy = "rearrange"
+         endif
 ! us the same one for mapper_Rr2o_ice and mapper_Fr2o
 ! now take care of the mapper for MOAB mapper_Rr2o_ice
          if (iamroot_CPLID) then
@@ -866,9 +876,11 @@ contains
                write(logunit,F00) 'Initializing mapper_Fr2o'
             end if
             no_match = .true. ! force to create a new mapper object
-            call seq_map_init_rcfile( mapper_Fr2o, rof(1), ocn(1), &
-                  'seq_maps.rc', 'rof2ocn_fmapname:', 'rof2ocn_fmaptype:',samegrid_ro, &
-                  string='mapper_Fr2o initialization', esmf_map=esmf_map_flag, no_match=no_match )
+            call seq_map_mapinit(mapper_Fr2o, mpicom_CPLID)
+            if (samegrid_ro) then
+               mapper_Fr2o%rearrange_only = .true.
+               mapper_Fr2o%strategy = "rearrange"
+            endif
             ! now take care of the mapper for MOAB mapper_Fr2o
             if (iamroot_CPLID) then
                write(logunit,*) ' '
