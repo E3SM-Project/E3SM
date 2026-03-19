@@ -16,94 +16,25 @@ sys.path.append(_LIBDIR)
 from standard_script_setup import *
 from CIME.buildlib         import parse_input
 from CIME.case             import Case
-from CIME.build            import get_standard_makefile_args
-from CIME.utils            import expect, run_bld_cmd_ensure_logging, safe_copy, run_cmd_no_fail
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
 def buildlib(bldroot, installpath, case):
 ###############################################################################
-    caseroot       = case.get_value("CASEROOT")
-    casebuild      = case.get_value("CASEBUILD")
-    casetools      = case.get_value("CASETOOLS")
-    srcroot        = case.get_value("SRCROOT")
-    mach           = case.get_value("MACH")
-    objroot        = case.get_value("OBJROOT")
-    libroot        = case.get_value("LIBROOT")
-    gmake_j        = case.get_value("GMAKE_J")
-    gmake          = case.get_value("GMAKE")
-    compiler       = case.get_value("COMPILER")
-    mpilib         = case.get_value("MPILIB")
-    comp_interface = case.get_value("COMP_INTERFACE")
-    exeroot        = case.get_value("EXEROOT")
-    ninst_value    = case.get_value("NINST_VALUE")
-    rundir         = case.get_value("RUNDIR")
-
-    # Define WW3 repository directories
-    repodir  = "{}/components/ww3/src".format(srcroot)
-    modeldir = "{}/WW3/model".format(repodir)
-    builddir = "{}/wav".format(exeroot)
-
-    # work dirs are placed in the binary/build area.
-    bindir_source  = "{}/bin".format(modeldir)
-    bindir   = "{}/bin".format(builddir)
-    shutil.copytree(bindir_source, bindir)
-    auxdir_source  = "{}/aux".format(modeldir)
-    auxdir   = "{}/aux".format(builddir)
-    shutil.copytree(auxdir_source, auxdir)
-    ftndir_source  = "{}/ftn".format(modeldir)
-    ftndir   = "{}/ftn".format(builddir)
-    shutil.copytree(ftndir_source, ftndir)
-    
-    tmpdir   = "{}/tmp".format(builddir)
-
-    # Run w3_setup to create wwatch3.env file
-    env_file = os.path.join(bindir, "wwatch3.env")
-    if os.path.exists(env_file):
-        os.remove(env_file)
-
-    comp = compiler.capitalize()
-
-    # Get serial fortran and C compilers from Macros
-    make_args = get_standard_makefile_args(case, shared_lib=True)
-    sf90 = run_cmd_no_fail("make -f {}/Macros.make {} -p | grep 'SFC :='".format(caseroot, make_args)).split(":=")[-1].strip()
-    scc  = run_cmd_no_fail("make -f {}/Macros.make {} -p | grep 'SCC :='".format(caseroot, make_args)).split(":=")[-1].strip()
-
-    inp_file = os.path.join(bindir, "w3_setup.inp")
-    with open(inp_file, "w") as fd:
-        fd.write(
-"""y
-
-{}
-{}
-{}
-
-
-y
-""".format(sf90, scc, tmpdir))
-
-    run_bld_cmd_ensure_logging("./w3_setup {} -s E3SM < w3_setup.inp".format(builddir), logger, from_dir=bindir)
-    os.remove(inp_file)
-
-    # Generate pre-processed WW3 source code
-    ww3_exe = ['ww3_shel','ww3_grid']
-    for exe in ww3_exe:
-      run_bld_cmd_ensure_logging("./w3_source {}".format(exe), logger, from_dir=bindir)
-    for exe in ww3_exe:
-      tarfile = "{}/work/{}.tar.gz".format(builddir,exe)
-      shutil.move(tarfile, tmpdir)
-      run_bld_cmd_ensure_logging("tar -xzvf {}.tar.gz".format(exe), logger, from_dir=tmpdir)
-    run_bld_cmd_ensure_logging("rm ww3_shel.F90", logger, from_dir=tmpdir)
-    run_bld_cmd_ensure_logging("rm ww3_grid.F90", logger, from_dir=tmpdir)
+    srcroot = case.get_value("SRCROOT")
+    caseroot = case.get_value("CASEROOT")
+    casebuild = case.get_value("CASEBUILD")
 
     with open(os.path.join(casebuild, "ww3conf", "Filepath"), "w") as fd:
-        fd.write(
-"""{}/SourceMods/src.ww3
-{}
-{}/components/ww3/src/cpl
-""".format(caseroot, tmpdir, srcroot))
+        fd.write(f"{caseroot}/SourceMods/src.ww3\n")
+        fd.write(f"{srcroot}/components/ww3/src/WW3/model/src\n")
+        fd.write(f"{srcroot}/components/ww3/src/WW3/model/src/SCRIP\n")
+        fd.write(f"{srcroot}/components/ww3/src/cpl\n")
 
+    cmake_args = " -DSWITCH=E3SM"
+
+    return cmake_args
 
 ###############################################################################
 def _main_func():

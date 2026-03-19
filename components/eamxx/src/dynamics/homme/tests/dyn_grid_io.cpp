@@ -2,30 +2,32 @@
 
 #include "TimeLevel.hpp"
 
-#include "dynamics/homme/homme_grids_manager.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
+#include "dynamics/homme/homme_grids_manager.hpp"
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
 
-#include "share/io/scorpio_input.hpp"
 #include "share/io/eamxx_output_manager.hpp"
+#include "share/io/scorpio_input.hpp"
 
 #include "share/field/field_utils.hpp"
-#include "share/field/field_manager.hpp"
-#include "share/grid/grids_manager.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/data_managers/grids_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 
-#include "ekat/util/ekat_units.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
+
+#include <ekat_comm.hpp>
+#include <ekat_parameter_list.hpp>
+#include <ekat_units.hpp>
 
 extern "C" {
 // These are specific C/F calls for these tests (i.e., not part of eamxx_homme_interface.hpp)
-void init_test_params_f90 ();
-void cleanup_test_f90 ();
+void init_test_params_f90();
+void cleanup_test_f90();
 }
 
-namespace {
+namespace
+{
 
 /*
  * In this test we do a dyn->physGLL remap "on the fly" during the output phase.
@@ -38,7 +40,7 @@ TEST_CASE("dyn_grid_io")
   using namespace scream;
   using namespace ShortFieldTagsNames;
 
-  ekat::Comm comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
+  ekat::Comm comm(MPI_COMM_WORLD); // MPI communicator group used for I/O set as ekat object.
 
   // Initialize the pio_subsystem for this test:
   scorpio::init_subsystem(comm);
@@ -48,17 +50,17 @@ TEST_CASE("dyn_grid_io")
     auto comm_f = MPI_Comm_c2f(MPI_COMM_WORLD);
     init_parallel_f90(comm_f);
   }
-  init_test_params_f90 ();
+  init_test_params_f90();
 
   // Set parameters
   constexpr int ne = 2;
-  set_homme_param("ne",ne);
+  set_homme_param("ne", ne);
 
   // Create the grids
   ekat::ParameterList params;
-  params.set<std::string>("physics_grid_type","gll");
-  params.set<std::string>("vertical_coordinate_filename","NONE");
-  auto gm = std::make_shared<HommeGridsManager>(comm,params);
+  params.set<std::string>("physics_grid_type", "gll");
+  params.set<std::string>("vertical_coordinate_filename", "NONE");
+  auto gm = std::make_shared<HommeGridsManager>(comm, params);
   gm->build_grids();
 
   auto dyn_grid  = gm->get_grid("dynamics");
@@ -92,9 +94,6 @@ TEST_CASE("dyn_grid_io")
   // The FM we will manually remap onto
   auto fm_ctrl= std::make_shared<FieldManager> (phys_grid);
 
-  fm->registration_begins();
-  fm_ctrl->registration_begins();
-
   const int ps = HOMMEXX_PACK_SIZE;
   util::TimeStamp t0({2000,1,1},{0,0,0});
 
@@ -117,15 +116,13 @@ TEST_CASE("dyn_grid_io")
   std::vector<std::string> fnames = {"field_1", "field_2", "field_3"};
 
   // Randomize dyn fields, then remap to ctrl fields
-  std::uniform_real_distribution<Real> pdf(0.01,100.0);
-  auto engine = setup_random_test(&comm);
+  auto seed = get_random_test_seed(&comm);
   auto dyn2ctrl = gm->create_remapper(dyn_grid,phys_grid);
-  dyn2ctrl->registration_begins();
   for (const auto& fn : fnames) {
     auto fd = fm->get_field(fn,dyn_grid->name());
     auto fc = fm_ctrl->get_field(fn,phys_grid->name());
     dyn2ctrl->register_field(fd,fc);
-    randomize(fd,engine,pdf);
+    randomize_uniform(fd,seed++);
 
     // Init phys field to something obviously wrong
     auto fp = fm->get_field(fn,phys_grid->name());
@@ -140,7 +137,6 @@ TEST_CASE("dyn_grid_io")
   out_params.set<std::string>("averaging_type","instant");
   out_params.set<std::string>("filename_prefix","dyn_grid_io");
   out_params.sublist("fields").sublist("dynamics").set<std::vector<std::string>>("field_names",fnames);
-  out_params.sublist("fields").sublist("dynamics").set<std::string>("io_grid_name","physics_gll");
 
   out_params.sublist("output_control").set<int>("frequency",1);
   out_params.sublist("output_control").set<std::string>("frequency_units","nsteps");

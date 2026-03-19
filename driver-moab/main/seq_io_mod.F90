@@ -33,6 +33,7 @@ module seq_io_mod
   use shr_sys_mod,  only: shr_sys_abort
   use seq_comm_mct, only: logunit, CPLID, seq_comm_setptrs
   use seq_comm_mct, only: seq_comm_namelen, seq_comm_name
+  use seq_comm_mct, only: mbaxid, atm_pg_active,mblxid,mb_scm_land
   use seq_flds_mod, only : seq_flds_lookup
   use mct_mod           ! mct wrappers
   use pio
@@ -394,8 +395,8 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_io_write_av(filename,gsmap,AV,dname,whead,wdata,nx,ny,nt,fillval,pre,tavg,&
-       use_float, file_ind, mask, scolumn)
+  subroutine seq_io_write_av(filename,gsmap,AV,dname,whead,wdata,nx,ny,nt,fillval,dims2din,&
+       dims2do,pre,tavg,use_float, file_ind, mask, scolumn)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -409,6 +410,8 @@ contains
     integer(in),optional,intent(in) :: ny   ! 2d grid size if available
     integer(in),optional,intent(in) :: nt   ! time sample
     real(r8),optional,intent(in) :: fillval ! fill value
+    integer(in),optional,intent(out) :: dims2do(2)   ! dim ids to output
+    integer(in),optional,intent(in) :: dims2din(2)   ! dim ids to output
     character(len=*),optional,intent(in) :: pre      ! prefix to variable name
     logical,optional,intent(in) :: tavg     ! is this a tavg
     logical,optional,intent(in) :: use_float ! write output as float rather than double
@@ -505,8 +508,17 @@ contains
     endif
 
     if (lwhead) then
-       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
-       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
+       if (present(dims2din)) then
+          dimid2(1)=dims2din(1)
+          dimid2(2)=dims2din(2)
+       else
+          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
+          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
+       endif
+       if (present(dims2do)) then
+          dims2do(1)=dimid2(1)
+          dims2do(2)=dimid2(2)
+       endif
 
        if (present(nt)) then
           dimid3(1:2) = dimid2
@@ -613,8 +625,8 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_io_write_avs(filename,gsmap,AVS,dname,whead,wdata,nx,ny,nt,fillval,pre,tavg,&
-       use_float,file_ind,scolumn)
+  subroutine seq_io_write_avs(filename,gsmap,AVS,dname,whead,wdata,nx,ny,nt,fillval,dims2din,&
+       dims2do,pre,tavg,use_float,file_ind,scolumn)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -628,6 +640,8 @@ contains
     integer(in),optional,intent(in) :: ny   ! 2d grid size if available
     integer(in),optional,intent(in) :: nt   ! time sample
     real(r8),optional,intent(in) :: fillval ! fill value
+    integer(in),optional,intent(in) :: dims2din(2)   ! dim ids to output
+    integer(in),optional,intent(out) :: dims2do(2)   ! dim ids for output
     character(len=*),optional,intent(in) :: pre      ! prefix to variable name
     logical,optional,intent(in) :: tavg     ! is this a tavg
     logical,optional,intent(in) :: use_float ! write output as float rather than double
@@ -728,8 +742,17 @@ contains
     endif
 
     if (lwhead) then
-       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
-       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
+       if (present(dims2din)) then
+          dimid2(1)=dims2din(1)
+          dimid2(2)=dims2din(2)
+       else
+          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
+          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
+       endif
+       if (present(dims2do)) then
+          dims2do(1)=dimid2(1)
+          dims2do(2)=dimid2(2)
+       endif
 
        if (ni > 1) then
           rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ni',ni,dimid3(3))
@@ -837,7 +860,7 @@ contains
   ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine seq_io_write_avscomp(filename, comp, flow, dname, &
-       whead, wdata, nx, ny, nt, fillval, pre, tavg, use_float, file_ind, scolumn, mask)
+       whead, wdata, nx, ny, nt, fillval, dims2din, pre, tavg, use_float, file_ind, scolumn, mask)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -851,6 +874,7 @@ contains
     integer(in)      ,optional,intent(in) :: ny        ! 2d grid size if available
     integer(in)      ,optional,intent(in) :: nt        ! time sample
     real(r8)         ,optional,intent(in) :: fillval   ! fill value
+    integer(in) ,optional,intent(in) :: dims2din(2) ! use previously made 2d dims
     character(len=*) ,optional,intent(in) :: pre       ! prefix to variable name
     logical          ,optional,intent(in) :: tavg      ! is this a tavg
     logical          ,optional,intent(in) :: use_float ! write output as float rather than double
@@ -959,8 +983,13 @@ contains
     endif
 
     if (lwhead) then
-       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
-       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
+       if (present(dims2din)) then
+          dimid2(1)=dims2din(1)
+          dimid2(2)=dims2din(2)
+       else
+          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
+          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
+       endif
 
        if (ni > 1) then
           rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ni',ni,dimid3(3))
@@ -1564,13 +1593,46 @@ contains
 
   end subroutine seq_io_write_time
 
-  subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, matrix, nx, file_ind )
+  !===============================================================================
+  !BOP ===========================================================================
+  !
+  ! !IROUTINE: seq_io_write_moab_tags - write MOAB mesh tags to netcdf file
+  !
+  ! !DESCRIPTION:
+  !    Writes one or more MOAB mesh tags (fields) from a MOAB mesh instance to a NetCDF file using PIO.
+  !    The tags are written as variables, with support for writing multiple fields at once, and optional
+  !    matrix input for direct data writing. Handles global cell ordering and reordering for correct output.
+  !    Used for writing mesh-based data (e.g., from iMOAB) into the driver output files.
+  !
+  ! !ARGUMENTS:
+  !    filename   [in]  - Name of the NetCDF file to write to
+  !    mbxid      [in]  - iMOAB application ID (mesh handle)
+  !    dname      [in]  - Prefix for variable names in the output file
+  !    tag_list   [in]  - Colon-separated list of MOAB tag (field) names to write
+  !    whead      [in, optional] - Logical flag to write NetCDF header/define variables
+  !    wdata      [in, optional] - Logical flag to write data values
+  !    matrix     [in, optional] - 2D array of data to write directly (overrides reading from MOAB)
+  !    nx         [in, optional] - Number of global cells (overrides value from MOAB)
+  !    file_ind   [in, optional] - File index for multi-file support
+  !
+  ! !NOTES:
+  !    - Only cell-type entities are supported (ent_type=1). 
+  !            - not anymore: spectral case, atm needs vertices ent_type=0
+  !    - Handles reordering of local/global cell IDs for correct output.
+  !    - If matrix is not present, data is read from MOAB tags; if present, matrix is written directly.
+  !    - Skips writing the field "hgt" as a temporary exclusion.
+  !    - Uses fillvalue for missing data.
+  !
+  ! !REVISION HISTORY:
+  !    2025-07-20 - Cursor - initial documentation
+  !    2025-09-24   allow vertex type for entity, for spectral case for atmosphere
+  !
+  ! !INTERFACE: ------------------------------------------------------------------
+  subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, matrix, nx, ny, nt, file_ind, dims2din, dims2do, mask )
 
     use shr_kind_mod,     only: CX => shr_kind_CX, CXX => shr_kind_CXX
-
     use iMOAB,            only: iMOAB_GetGlobalInfo, iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
         iMOAB_GetIntTagStorage
-
     use m_MergeSorts,     only: IndexSet, IndexSort
 
      ! !INPUT/OUTPUT PARAMETERS:
@@ -1583,10 +1645,14 @@ contains
     logical,optional,intent(in) :: wdata         ! write data
     real(r8), dimension(:,:), pointer, optional :: matrix  ! this may or may not be passed
     integer, optional,intent(in):: nx
+    integer, optional,intent(in):: ny
+    integer, optional,intent(in):: nt
     integer,optional,intent(in) :: file_ind
+    integer,optional,intent(in) :: dims2din(2)   ! dim ids to output
+    integer,optional,intent(out):: dims2do(2)    ! dim ids for output
+    real(r8)         ,optional,intent(in) :: mask(:)
 
     logical :: lwhead, lwdata
-    !integer :: start(2),count(2)
     character(*),parameter :: subName = '(seq_io_write_moab_tags) '
     integer :: ndims, lfile_ind, iam, rcode
     integer(in)              :: ns, ng, lnx, lny, ix
@@ -1598,17 +1664,17 @@ contains
     character(CL)    :: cunit       ! var units
     character(CL)    :: lname       ! long name
     character(CL)    :: sname       ! standard name
-
     character(CL)  :: lpre
-
     type(mct_list) :: temp_list
+    integer(kind=Pio_Offset_Kind) :: frame
     integer :: size_list, index_list
     type(mct_string)    :: mctOStr  !
     character(CXX) ::tagname, field
-
-    integer(in)        :: dimid2(2)
-    integer(in)              :: dummy, ent_type, ierr
-    real(r8)                 :: lfillvalue ! or just use fillvalue ?
+    integer(in),target  :: dimid2(2)
+    integer(in),target  :: dimid3(3)
+    integer(in),pointer :: dimid(:)
+    integer(in)              :: ngv, ent_type, ierr
+    real(r8)                 :: lfillvalue
     integer, allocatable         :: indx(:) !  this will be ordered
     integer, allocatable         :: Dof(:)  ! will be filled with global ids from cells
     integer, allocatable         :: Dof_reorder(:)  !
@@ -1623,12 +1689,11 @@ contains
     lfillvalue = fillvalue 
     if (present(whead)) lwhead = whead
     if (present(wdata)) lwdata = wdata
-
+    frame = -1
     if (.not.lwhead .and. .not.lwdata) then
        ! should we write a warning?
        return
     endif
-    ent_type = 1 ! cells type
 
     lfile_ind = 0
     if (present(file_ind)) lfile_ind=file_ind
@@ -1637,7 +1702,6 @@ contains
 
     call mct_list_init(temp_list ,trim(tag_list))
     size_list=mct_list_nitem (temp_list)  ! role of nf, number fields
-    ent_type = 1 ! cell for atm, atm_pg_active
 
     if (size_list < 1) then
        write(logunit,*) subname,' ERROR: size_list = ',size_list,trim(dname)
@@ -1646,18 +1710,61 @@ contains
 
     lpre = trim(dname)
     ! find out the number of global cells, needed for defining the variables length
-    ierr = iMOAB_GetGlobalInfo( mbxid, dummy, ng)
-    lnx = ng
+    ierr = iMOAB_GetGlobalInfo( mbxid, ngv, ng)
+    lny = 1
+#ifdef MOABCOMP
+    write(logunit,*) subname, 'lnx, lny, mbxid ',  lnx, lny, mbxid 
+#endif
+
+
+    ! get the local size ns
+    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
+    if ((.not. atm_pg_active .and. (mbaxid .eq. mbxid)) .or. &
+       (mb_scm_land .and. (mblxid .eq. mbxid))) then
+      ent_type = 0
+      ns = nvert(1) ! local vertices 
+      lnx = ngv ! number of global vertices
+    else
+      ent_type = 1
+      ns = nvise(1) ! local cells 
+      lnx = ng
+    endif
     ! it is needed to overwrite that for land, ng is too small
     !  ( for ne4pg2 it is 201 instead of 384)
-    if (present(nx)) lnx = nx 
-    lny = 1 ! do we need 2 var, or just 1 
-    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
-    ns = nvise(1) ! local cells 
-
+    if (present(nx)) then
+       if (nx /= 0) lnx = nx
+    endif
+    if (present(ny)) then
+       if( ny /= 0) lny = ny
+    endif
+    if (present(nt)) then
+       frame = nt
+    endif
+#ifdef MOABCOMP
+    write(logunit,*) subname, ' ent_type, ns ', ent_type, ns  
+    write(logunit,*) subname, ' tag_list ', trim(tag_list)  
+#endif
     if (lwhead) then
-       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
-       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
+       if (present(dims2din)) then
+          dimid2(1)=dims2din(1)
+          dimid2(2)=dims2din(2)
+       else
+          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
+          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
+       endif
+       if (present(dims2do)) then
+          dims2do(1)=dimid2(1)
+          dims2do(2)=dimid2(2)
+       endif
+
+       if (present(nt)) then
+          dimid3(1:2) = dimid2
+          rcode = pio_inq_dimid(cpl_io_file(lfile_ind),'time',dimid3(3))
+          dimid => dimid3
+       else
+          dimid => dimid2
+       endif
+
        do index_list = 1, size_list
           call mct_list_get(mctOStr,index_list,temp_list)
           field = mct_string_toChar(mctOStr)
@@ -1669,7 +1776,7 @@ contains
             !     rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_REAL,dimid1,varid)
             !     rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",real(lfillvalue,r4))
             !  else
-             rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_DOUBLE,dimid2,varid)
+             rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_DOUBLE,dimid,varid)
              rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",lfillvalue)
              !end if
              rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
@@ -1717,7 +1824,7 @@ contains
           if (trim(field) /= "hgt") then
              name1 = trim(lpre)//'_'//trim(field)
              rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(name1),varid)
-             !call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
+             call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
              if (present(matrix)) then
                do ix = 1, ns
                  data1(ix) = matrix(ix, index_list) ! 
@@ -1732,9 +1839,29 @@ contains
                   endif
                endif
              endif
-             do ix=1,ns
-                data_reorder(ix) = data1(indx(ix)) ! 
+
+             ! remove MOAB default values
+             do ix = 1, ns
+               if (data1(ix) < -9.99999E+9_r8) then
+                  data1(ix) = 0.0_r8
+               endif
              enddo
+
+
+             ! rearrange data for writing and handle mask
+             if(present(mask)) then
+               do ix=1,ns
+                 if(mask(indx(ix)) /= 0) then
+                   data_reorder(ix) = data1(indx(ix))
+                 else
+                   data_reorder(ix) = lfillvalue
+                 endif
+               enddo
+             else
+               do ix=1,ns
+                  data_reorder(ix) = data1(indx(ix))
+               enddo
+             endif
              
              call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data_reorder, rcode, fillval=lfillvalue)
           endif
@@ -2490,6 +2617,39 @@ contains
 
   end subroutine seq_io_read_char
 
+  !===============================================================================
+  !BOP ===========================================================================
+  !
+  ! !IROUTINE: seq_io_read_moab_tags - read MOAB mesh tags from netcdf file
+  !
+  ! !DESCRIPTION:
+  !    Reads one or more MOAB mesh tags (fields) from a NetCDF file using PIO and stores them
+  !    into a MOAB mesh instance or a provided matrix. Supports reading multiple fields at once,
+  !    and handles global cell ordering and reordering for correct mapping to the mesh. Used for
+  !    restoring mesh-based data (e.g., from iMOAB) from driver output files.
+  !
+  ! !ARGUMENTS:
+  !    filename   [in]  - Name of the NetCDF file to read from
+  !    mbxid      [in]  - iMOAB application ID (mesh handle)
+  !    dname      [in]  - Prefix for variable names in the input file
+  !    tag_list   [in]  - Colon-separated list of MOAB tag (field) names to read
+  !    matrix     [in, optional] - 2D array to store data directly (if present, data is written here instead of MOAB)
+  !    nx         [in, optional] - Number of global cells (overrides value from MOAB)
+  !
+  ! !NOTES:
+  !    - Only cell-type entities are supported (ent_type=1).
+  !         - not anymore: spectral case, atm, uses vertices, ent_type = 0
+  !    - Handles reordering of local/global cell IDs for correct mapping.
+  !    - If matrix is present, data is stored in the matrix; otherwise, data is set as MOAB tags.
+  !    - Skips reading the field "hgt" as a temporary exclusion.
+  !    - Uses fillvalue for missing data.
+  !
+  ! !REVISION HISTORY:
+  !    2025-07-20 - Cursor - initial documentation
+  !    2025-09-24  spectral case atm
+  !
+  ! !INTERFACE: ------------------------------------------------------------------
+
   subroutine seq_io_read_moab_tags(filename, mbxid, dname, tag_list, matrix, nx)
 
     use shr_kind_mod,     only: CX => shr_kind_CX, CXX => shr_kind_CXX
@@ -2534,7 +2694,7 @@ contains
     type(mct_string)    :: mctOStr  !
     character(CXX) ::tagname, field
 
-    integer(in)              :: dummy, ent_type, ierr
+    integer(in)              :: ngv, ent_type, ierr
     character(*),parameter :: subName = '(seq_io_read_moab_tags) '
 
     
@@ -2544,7 +2704,6 @@ contains
 
     call mct_list_init(temp_list ,trim(tag_list))
     size_list=mct_list_nitem (temp_list)  ! role of nf, number fields
-    ent_type = 1 ! cell for atm, atm_pg_active
 
     if (size_list < 1) then
        write(logunit,*) subname,' ERROR: size_list = ',size_list,trim(dname)
@@ -2568,8 +2727,19 @@ contains
     endif
 
         ! find out the number of global cells, needed for defining the variables length
-    ierr = iMOAB_GetGlobalInfo( mbxid, dummy, ng)
-    lnx = ng
+    ierr = iMOAB_GetGlobalInfo( mbxid, ngv, ng)
+    lny = 1 ! do we need 2 var, or just 1 
+    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
+    if ((.not. atm_pg_active .and. (mbaxid .eq. mbxid)) .or. &
+       (mb_scm_land .and. (mblxid .eq. mbxid))) then
+      ent_type = 0
+      ns = nvert(1) ! local vertices 
+      lnx = ngv ! number of global vertices
+    else
+      ent_type = 1
+      ns = nvise(1) ! local cells 
+      lnx = ng
+    endif
     ! it is needed to overwrite that for land, ng is too small
     !  ( for ne4pg2 it is 201 instead of 384)
     if (present(nx)) then
@@ -2578,9 +2748,6 @@ contains
 #endif
        lnx = nx 
     endif
-    lny = 1 ! do we need 2 var, or just 1 
-    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
-    ns = nvise(1) ! local cells 
     allocate(data1(ns))
     allocate(data_reorder(ns))
     allocate(dof(ns))

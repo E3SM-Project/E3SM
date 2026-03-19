@@ -1,12 +1,10 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-
 #include "p3_unit_tests_common.hpp"
+
+#include "share/core/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -39,8 +37,8 @@ void run_bfb()
 
   // We need to test the calculation under freezing and not-freezing
   // conditions.
-  constexpr Scalar t_freezing = 0.9 * C::T_rainfrz,
-                   t_not_freezing = 2.0 * C::T_rainfrz;
+  constexpr Scalar t_freezing = 0.9 * C::T_rainfrz.value,
+                   t_not_freezing = 2.0 * C::T_rainfrz.value;
 
   // Ideally, we'd also test the calculation based on the mass-weighted mean
   // size Ri--whether it's above or below 8, specifically. Unfortunately,
@@ -90,17 +88,17 @@ void run_bfb()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < max_pack_size; ++i) {
-      calc_rime_density_data[i].read(Base::m_fid);
+      calc_rime_density_data[i].read(Base::m_ifile);
     }
   }
 
   // Run the lookup from a kernel and copy results back to host
   Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-    const Int offset = i * Spack::n;
+    const Int offset = i * Pack::n;
 
     // Init pack inputs
-    Spack T_atm, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c, qc_incld, qc2qi_collect_tend;
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    Pack T_atm, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c, qc_incld, qc2qi_collect_tend;
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       T_atm[s]                = device_data(vs).T_atm;
       rhofaci[s]              = device_data(vs).rhofaci;
       table_val_qi_fallspd[s] = device_data(vs).table_val_qi_fallspd;
@@ -111,14 +109,14 @@ void run_bfb()
       qc2qi_collect_tend[s]   = device_data(vs).qc2qi_collect_tend;
     }
 
-    Spack vtrmi1{0.0};
-    Spack rho_qm_cloud{0.0};
+    Pack vtrmi1{0.0};
+    Pack rho_qm_cloud{0.0};
 
     Functions::calc_rime_density(T_atm, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c,
                                  qc_incld, qc2qi_collect_tend, vtrmi1, rho_qm_cloud);
 
     // Copy results back into views
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       device_data(vs).vtrmi1  = vtrmi1[s];
       device_data(vs).rho_qm_cloud  = rho_qm_cloud[s];
     }
@@ -136,7 +134,7 @@ void run_bfb()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int s = 0; s < max_pack_size; ++s) {
-      host_data(s).write(Base::m_fid);
+      host_data(s).write(Base::m_ofile);
     }
   }
 }

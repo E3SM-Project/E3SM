@@ -5,7 +5,8 @@ OBJS =  mpas_li_constants.o \
         mpas_li_mask.o \
         mpas_li_mesh.o \
         mpas_li_config.o \
-        mpas_li_setup.o
+        mpas_li_setup.o \
+        mpas_li_time_average_coupled.o
 
 all: $(OBJS)
 
@@ -18,6 +19,8 @@ mpas_li_mask.o: mpas_li_setup.o
 mpas_li_mesh.o:
 
 mpas_li_config.o:
+
+mpas_li_time_average_coupled.o:
 
 clean:
 	$(RM) *.o *.mod *.f90

@@ -67,24 +67,9 @@ will use the routines in these base classes, it should create a wrapper function
 of the same name, but with the _mod extension. All source code accesses routines
 in these classes through these wrapper modules.
 
-As an example: 
-
-src/share/edge_mod_base.F90      Element edge pack and unpack routines
-src/sweqx/edge_mod.F90           interface only code
-src/preqx/edge_mod.F90           interface only code
-src/preqx_acc/edge_mod.F90       openACC versions of some routines
-
-To use the routines in the base class unchanged, the wrapper
-module contains only interface related statements.  To replace a
-routine with a version specific to that particular model, the new code
-is included in the wrapper module.
-
 Current list of base classses:
 
 These are base classes only so src/preqx_acc can provide openACC versions
-  src/share/bndry_mod_base.F90          Boundary exchange
-  src/share/edge_mod_base.F90           Element boundary pack/unpack routines
-  src/share/derivative_mod_base.F90     Local element derivatives
   src/share/viscosity_base.F90          biharmonic and other global derivatives
 
 src/share/prim_driver_base.F90        All SB81 models use this unchanged

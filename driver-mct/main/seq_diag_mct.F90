@@ -195,9 +195,7 @@ module seq_diag_mct
 
        (/'        area','     hfreeze','       hmelt','      hnetsw','       hlwdn', &
        '       hlwup','     hlatvap','     hlatfus','      hiroff','        hsen', &
-!       '      hpolar','    hh2otemp','     wfreeze','       wmelt','       wrain', &
        '      hpolar','    hh2otemp','       hgsmb','     wfreeze','       wmelt','       wrain', &
-!       '       wsnow','      wpolar','       wevap','     wrunoff','     wfrzrof', &
        '       wsnow','      wpolar','       wgsmb','       wevap','     wrunoff','     wfrzrof', &
        '      wirrig',                                                             &
        ' wfreeze_16O','   wmelt_16O','   wrain_16O','   wsnow_16O',                &
@@ -1340,8 +1338,6 @@ contains
     real(r8)                 :: ca_g            ! area of a grid cell
     logical,save             :: first_time = .true.
 
-    integer,save             :: smb_vector_length,calving_vector_length
-
     !----- formats -----
     character(*),parameter :: subName = '(seq_diag_glc_mct) '
 
@@ -1359,17 +1355,24 @@ contains
 
     ip = p_inst
 
+    if (first_time) then
+
+       ! we calc these both first rather then in their respective "if" constructs
+       ! below to avoid g2x indices not getting calculated (because the call to
+       ! x2g and g2x happen separately, in budgets1 and budgets2, respectively).
+
+       ! indices needed for g2x
+       index_g2x_Fogg_rofl   = mct_aVect_indexRA(g2x_g,'Fogg_rofl')
+       index_g2x_Fogg_rofi   = mct_aVect_indexRA(g2x_g,'Fogg_rofi')
+       index_g2x_Figg_rofi   = mct_aVect_indexRA(g2x_g,'Figg_rofi')
+
+       ! indices needed for x2g
+       index_x2g_Flgl_qice  = mct_aVect_indexRA(x2g_g,'Flgl_qice')
+       index_g2x_Sg_icemask = mct_avect_indexRA(g2x_g,'Sg_icemask')
+
+    end if
+
     if( present(do_g2x))then  ! do fields from glc to coupler (g2x_)
-
-       if (first_time) then
-
-          calving_vector_length = 0
-
-          index_g2x_Fogg_rofl   = mct_aVect_indexRA(g2x_g,'Fogg_rofl')
-          index_g2x_Fogg_rofi   = mct_aVect_indexRA(g2x_g,'Fogg_rofi')
-          index_g2x_Figg_rofi   = mct_aVect_indexRA(g2x_g,'Figg_rofi')
-
-       end if
 
        ic = c_glc_gr
        kArea = mct_aVect_indexRA(dom_g%data,afldname)
@@ -1388,13 +1391,6 @@ contains
 
     if( present(do_x2g))then  ! do fields from coupler to glc (x2g_)
 
-       if (first_time) then
-
-          index_x2g_Flgl_qice  = mct_aVect_indexRA(x2g_g,'Flgl_qice')
-          index_g2x_Sg_icemask = mct_avect_indexRA(g2x_g,'Sg_icemask')
-
-       end if
-
        l2gacc_lx_cnt_avg = prep_glc_get_l2gacc_lx_cnt_avg() ! counter for how many times SMB flux accumulation has occured 
        ic = c_glc_gs
        kArea = mct_aVect_indexRA(dom_g%data,afldname)
@@ -1408,8 +1404,6 @@ contains
        budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) * l2gacc_lx_cnt_avg
 
        budg_dataL(f_hgsmb,ic,ip) = budg_dataL(f_wgsmb,ic,ip)*shr_const_latice 
-
-       smb_vector_length = smb_vector_length +lSize
 
     end if ! end do fields from coupler to glc (x2g_)
 

@@ -146,6 +146,7 @@ module li_advection
            bedTopography,         & ! bed topography
            sfcMassBal,            & ! surface mass balance (potential forcing)
            sfcMassBalApplied,     & ! surface mass balance (actually applied)
+           bareIceAblationApplied, & ! ablation (melting) of bare ice (actually applied)
            groundedSfcMassBalApplied,     & ! surface mass balance on grounded locations (actually applied)
            basalMassBal,          & ! basal mass balance
            groundedBasalMassBal,  & ! basal mass balance for grounded ice
@@ -282,6 +283,7 @@ module li_advection
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
       call mpas_pool_get_array(geometryPool, 'sfcMassBalApplied', sfcMassBalApplied)
+      call mpas_pool_get_array(geometryPool, 'bareIceAblationApplied', bareIceAblationApplied)
       call mpas_pool_get_array(geometryPool, 'groundedSfcMassBalApplied', groundedSfcMassBalApplied)
       call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
       call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
@@ -606,6 +608,7 @@ module li_advection
               bedTopography,       &
               sfcMassBal,          &
               sfcMassBalApplied,   &
+              bareIceAblationApplied,      &
               groundedSfcMassBalApplied,   &
               basalMassBal,        &
               basalMassBalApplied, &
@@ -859,6 +862,7 @@ module li_advection
               bedTopography,       &
               sfcMassBal,          &
               sfcMassBalApplied,   &
+              bareIceAblationApplied,      &
               groundedSfcMassBalApplied,   &
               basalMassBal,        &
               basalMassBalApplied, &
@@ -905,6 +909,10 @@ module li_advection
       real(kind=RKIND), dimension(:), intent(out) :: &
            sfcMassBalApplied !< Output: surface mass balance actually applied on this time step (kg/m^2/s)
 
+      real(kind=RKIND), dimension(:), intent(out) :: &
+           bareIceAblationApplied !< Output: applied bare ice ablation (melting) occurring on on this time step (kg/m^2/s).
+                                  ! Note that this is the value that actually produces runoff sent to coupler (Fogg_rofl)
+                                  
       real(kind=RKIND), dimension(:), intent(out) :: &
            groundedSfcMassBalApplied !< Output: surface mass balance actually applied to grounded ice on this time step (kg/m^2/s)
 
@@ -1012,11 +1020,15 @@ module li_advection
                !TODO - If remaining sfcAblat > 0, then keep track of it to conserve energy (?)
             endif
 
-
          endif   ! sfcMassBal > 0
 
-         ! apply basal mass balance
+         ! calculate bare ice ablation applied field 
+         bareIceAblationApplied(:) = 0.0_RKIND 
+         where (sfcMassBalApplied < 0.0_RKIND)
+            bareIceAblationApplied = -1.0_RKIND * sfcMassBalApplied
+         end where
 
+         ! apply basal mass balance
          if (basalMassBalApplied(iCell) > 0.0_RKIND) then
 
             ! basal freeze-on
@@ -1871,7 +1883,7 @@ module li_advection
       !-----------------------------------------------------------------
 
       integer, pointer :: &
-           nEdgesSolve,     & ! dnumber of locally owned edges
+           nEdges,     & ! number of edges
            nVertLevels        ! number of vertical layers
 
       real (kind=RKIND), dimension(:), pointer :: &
@@ -1894,7 +1906,7 @@ module li_advection
       err = 0
 
       ! get dimensions
-      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       ! get mesh arrays
@@ -1907,8 +1919,8 @@ module li_advection
       ! initialize output variables
       minOfMaxAllowableDt = bigNumber
 
-      ! loop over local edges
-      do iEdge = 1, nEdgesSolve
+      ! loop over edges
+      do iEdge = 1, nEdges
 
          if (li_mask_is_dynamic_ice(edgeMask(iEdge))) then
 

@@ -1,16 +1,12 @@
 #include "catch2/catch.hpp"
 
 #include "p3_unit_tests_common.hpp"
-
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/ekat_pack_kokkos.hpp"
-#include "ekat/util/ekat_file_utils.hpp"
+#include <ekat_team_policy_utils.hpp>
 
 #include <thread>
 #include <array>
@@ -39,7 +35,9 @@ struct UnitWrap::UnitTest<D>::TestUpwind : public UnitWrap::UnitTest<D>::Base {
 void run_phys()
 {
   using ekat::repack;
-  constexpr auto SPS = SCREAM_SMALL_PACK_SIZE;
+  using TPF = ekat::TeamPolicyFactory<ExeSpace>;
+
+  constexpr auto PS = SCREAM_PACK_SIZE;
 
   static const Int nfield = 2;
 
@@ -52,14 +50,14 @@ void run_phys()
     const Real dt = min_dz/max_speed;
 
     view_1d<Pack> rho("rho", npack), inv_rho("inv_rho", npack), inv_dz("inv_dz", npack);
-    const auto lrho = repack<SPS>(rho), linv_rho = repack<SPS>(inv_rho), linv_dz = repack<SPS>(inv_dz);
+    const auto lrho = repack<PS>(rho), linv_rho = repack<PS>(inv_rho), linv_dz = repack<PS>(inv_dz);
 
     Kokkos::Array<view_1d<Pack>, nfield> flux, V, r;
-    Kokkos::Array<uview_1d<Spack>, nfield> lflux, lV, lr;
+    Kokkos::Array<uview_1d<Pack>, nfield> lflux, lV, lr;
     const auto init_array = [&] (const std::string& /* name */, const Int& i, decltype(flux)& f,
                                  decltype(lflux)& lf) {
       f[i] = view_1d<Pack>("f", npack);
-      lf[i] = repack<SPS>(f[i]);
+      lf[i] = repack<PS>(f[i]);
     };
     for (int i = 0; i < nfield; ++i) {
       init_array("flux", i, flux, lflux);
@@ -95,7 +93,7 @@ void run_phys()
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npack), set_fields);
         team.team_barrier();
       };
-      Kokkos::parallel_for(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
+      Kokkos::parallel_for(TPF::get_default_team_policy(1, npack),
                            init_fields);
 
       const auto sflux = scalarize(flux[1]);
@@ -189,7 +187,7 @@ void run_phys()
           if (r_max1 > r_max0 + 10*eps) ++nerr;
         };
         Int lnerr;
-        Kokkos::parallel_reduce(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
+        Kokkos::parallel_reduce(TPF::get_default_team_policy(1, npack),
                                 step, lnerr);
         nerr += lnerr;
         Kokkos::fence();
@@ -237,7 +235,7 @@ void run_bfb()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (auto& d : cuds_baseline) {
-      d.read(Base::m_fid);
+      d.read(Base::m_ifile);
     }
   }
 
@@ -272,7 +270,7 @@ void run_bfb()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      cuds_cxx[i].write(Base::m_fid);
+      cuds_cxx[i].write(Base::m_ofile);
     }
   }
 }
@@ -319,7 +317,7 @@ void run_bfb()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (auto& d : gsds_baseline) {
-      d.read(Base::m_fid);
+      d.read(Base::m_ifile);
     }
   }
 
@@ -357,7 +355,7 @@ void run_bfb()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      gsds_cxx[i].write(Base::m_fid);
+      gsds_cxx[i].write(Base::m_ofile);
     }
   }
 }

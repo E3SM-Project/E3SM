@@ -8,7 +8,7 @@ time_stepping:
   run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
   number_of_steps: ${NUM_STEPS}
 
-atmosphere_processes:
+eamxx:
   schedule_type: sequential
   atm_procs_list: [shoc,p3]
   number_of_subcycles: ${NUM_SUBCYCLES}
@@ -27,6 +27,7 @@ atmosphere_processes:
     c_diag_3rd_mom: 7.0
     coeff_kh: 0.1
     coeff_km: 0.1
+    shoc_1p5tke: false
     compute_tendencies: [tke]
 
 grids_manager:

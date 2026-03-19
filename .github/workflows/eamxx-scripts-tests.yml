@@ -8,6 +8,8 @@ on:
     paths:
       - 'components/eamxx/scripts/**'
       - 'components/eamxx/cime_config/**'
+      - 'components/eamxx/CMakeLists.txt'
+      - 'externals/ekat'
       - '.github/workflows/eamxx-scripts-tests.yml'
 
   # Manual run for debug purposes only
@@ -33,12 +35,16 @@ env:
   # Submit to cdash only for nightlies or if the user explicitly forced a submission via workflow dispatch
   submit: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.submit) }}
 
+defaults:
+  run:
+    shell: bash --login {0}
+
 jobs:
   cpu-gcc:
     runs-on:  [self-hosted, gcc, ghci-snl-cpu]
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
           show-progress: false

@@ -81,23 +81,15 @@ set(SCREAM_CUT_TEST_MV_ARGS ${CUT_TEST_MV_ARGS})
 #
 
 # Scream always excludes the ekat test session since it has its own
-list(REMOVE_ITEM SCREAM_CUT_EXEC_OPTIONS EXCLUDE_TEST_SESSION)
+list(REMOVE_ITEM SCREAM_CUT_EXEC_OPTIONS USER_DEFINED_TEST_SESSION)
 
 ###############################################################################
 function(CreateUnitTestExec exec_name test_srcs)
 ###############################################################################
   # Call Ekat function, with a couple of extra params
   EkatCreateUnitTestExec("${exec_name}" "${test_srcs}" ${ARGN}
-    EXCLUDE_TEST_SESSION LIBS scream_share scream_test_support)
+    USER_DEFINED_TEST_SESSION LIBS eamxx_test_support)
 endfunction(CreateUnitTestExec)
-
-###############################################################################
-function(CreateADUnitTestExec exec_name)
-###############################################################################
-  # Call the function above specifying some params
-  CreateUnitTestExec("${exec_name}" "${SCREAM_SRC_DIR}/share/util/eamxx_ad_test.cpp"
-    LIBS scream_control scream_io diagnostics ${ARGN})
-endfunction(CreateADUnitTestExec)
 
 ###############################################################################
 function(CreateUnitTestFromExec test_name test_exec)
@@ -182,15 +174,6 @@ function(CreateUnitTest test_name test_srcs)
   CreateUnitTestFromExec("${test_name}" "${test_name}" ${options_TestPhase})
 
 endfunction(CreateUnitTest)
-
-###############################################################################
-function(CreateADUnitTest test_name)
-###############################################################################
-
-  # Call the function above specifying some params
-  CreateUnitTest("${test_name}" "${SCREAM_SRC_DIR}/share/util/eamxx_ad_test.cpp"
-    LABELS driver LIBS scream_control scream_io diagnostics ${ARGN})
-endfunction(CreateADUnitTest)
 
 ###############################################################################
 function(GetInputFile src_path)

@@ -2,7 +2,7 @@
 #define P3_GET_TIME_SPACE_PHYS_VARIABLES_IMPL_HPP
 
 #include "p3_functions.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
 namespace scream {
 namespace p3 {
@@ -11,20 +11,20 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::get_time_space_phys_variables(
-  const Spack& T_atm, const Spack& pres, const Spack& rho,
-  const Spack& qv_sat_l, const Spack& qv_sat_i, Spack& mu, Spack& dv, Spack& sc, Spack& dqsdt,
-  Spack& dqsidt, Spack& ab, Spack& abi, Spack& kap, Spack& eii,
-  const Smask& context)
+  const Pack& T_atm, const Pack& pres, const Pack& rho,
+  const Pack& qv_sat_l, const Pack& qv_sat_i, Pack& mu, Pack& dv, Pack& sc, Pack& dqsdt,
+  Pack& dqsidt, Pack& ab, Pack& abi, Pack& kap, Pack& eii,
+  const Mask& context)
 {
   //time/space varying physical variables
   mu.set(context, sp(1.496e-6) * pow(T_atm,sp(1.5))/(T_atm+120));
   dv.set(context, sp(8.794e-5) * pow(T_atm,sp(1.81))/pres);
   sc.set(context, mu/(rho*dv));
 
-  constexpr Scalar RV     = C::RV;
-  constexpr Scalar INV_CP = C::INV_CP;
-  constexpr Scalar latvap = C::LatVap;
-  constexpr Scalar latice = C::LatIce;
+  constexpr Scalar RV     = C::RV.value;
+  constexpr Scalar INV_CP = C::INV_CP.value;
+  constexpr Scalar latvap = C::LatVap.value;
+  constexpr Scalar latice = C::LatIce.value;
   constexpr Scalar tval1  = 253.15;
   constexpr Scalar tval2  = 273.15;
   constexpr Scalar dtval  = 20; //this is tval2-tval1, but specifying here as int to be BFB with F90.

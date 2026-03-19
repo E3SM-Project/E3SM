@@ -1,12 +1,10 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-
 #include "p3_unit_tests_common.hpp"
+
+#include "share/core/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -53,11 +51,11 @@ void run_bfb_p3_main_part1()
   auto engine = Base::get_engine();
 
   constexpr Scalar qsmall = C::QSMALL; //PMC wouldn't it make more sense to define qsmall at a higher level since used in part1, part2, and part3?
-  constexpr Scalar T_zerodegc   = C::T_zerodegc;
+  constexpr Scalar T_zerodegc   = C::T_zerodegc.value;
   constexpr Scalar sup_upper = -0.05;
   constexpr Scalar sup_lower = -0.1;
-  constexpr Scalar latvap = C::LatVap;
-  constexpr Scalar latice = C::LatIce;
+  constexpr Scalar latvap = C::LatVap.value;
+  constexpr Scalar latice = C::LatIce.value;
 
   P3MainPart1Data isds_baseline[] = {
     //            kts, kte, ktop, kbot, kdir, do_predict_nc, do_prescribed_CCN,       dt
@@ -97,7 +95,7 @@ void run_bfb_p3_main_part1()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (auto& d : isds_baseline) {
-      d.read(Base::m_fid);
+      d.read(Base::m_ifile);
     }
   }
 
@@ -151,7 +149,7 @@ void run_bfb_p3_main_part1()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      isds_cxx[i].write(Base::m_fid);
+      isds_cxx[i].write(Base::m_ofile);
     }
   }
 }
@@ -161,11 +159,11 @@ void run_bfb_p3_main_part2()
   auto engine = Base::get_engine();
 
   constexpr Scalar qsmall     = C::QSMALL;
-  constexpr Scalar T_zerodegc   = C::T_zerodegc;
+  constexpr Scalar T_zerodegc   = C::T_zerodegc.value;
   constexpr Scalar sup_upper = -0.05;
   constexpr Scalar sup_lower = -0.1;
-  constexpr Scalar latvap = C::LatVap;
-  constexpr Scalar latice = C::LatIce;
+  constexpr Scalar latvap = C::LatVap.value;
+  constexpr Scalar latice = C::LatIce.value;
 
   P3MainPart2Data isds_baseline[] = {
     //            kts, kte, ktop, kbot, kdir, do_predict_nc, do_prescribed_CCN,       dt
@@ -178,6 +176,9 @@ void run_bfb_p3_main_part2()
   std::vector<Real> hetfrz_immersion_nucleation_tend(72,0.0);
   std::vector<Real> hetfrz_contact_nucleation_tend(72,0.0);
   std::vector<Real> hetfrz_deposition_nucleation_tend(72,0.0);
+  std::vector<Real> qr2qv_evap(72,0.0), qi2qv_sublim(72,0.0), qc2qr_accret(72,0.0), qc2qr_autoconv(72,0.0), qv2qi_vapdep(72,0.0),
+    qc2qi_berg(72,0.0), qc2qr_ice_shed(72,0.0), qc2qi_collect(72,0.0), qr2qi_collect(72,0.0), qc2qi_hetero_freeze(72,0.0),
+    qr2qi_immers_freeze(72,0.0), qi2qr_melt(72,0.0);
   static constexpr Int num_runs = sizeof(isds_baseline) / sizeof(P3MainPart2Data);
 
   for (auto& d : isds_baseline) {
@@ -209,7 +210,7 @@ void run_bfb_p3_main_part2()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (auto& d : isds_baseline) {
-      d.read(Base::m_fid);
+      d.read(Base::m_ifile);
     }
   }
 
@@ -223,8 +224,11 @@ void run_bfb_p3_main_part2()
       d.T_atm, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci, d.acn, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni,
       d.qm, d.bm, d.qc_incld, d.qr_incld, d.qi_incld, d.qm_incld, d.nc_incld, d.nr_incld,
       d.ni_incld, d.bm_incld, d.mu_c, d.nu, d.lamc, d.cdist, d.cdist1, d.cdistr, d.mu_r, d.lamr, d.logn0r, d.qv2qi_depos_tend, d.precip_total_tend,
-      d.nevapr, d.qr_evap_tend, d.vap_liq_exchange, d.vap_ice_exchange, d.liq_ice_exchange, d.pratot,
-      d.prctot, &d.is_hydromet_present);
+      d.nevapr, d.qr_evap_tend, d.vap_liq_exchange, d.vap_ice_exchange, d.liq_ice_exchange,
+      qr2qv_evap.data(), qi2qv_sublim.data(), qc2qr_accret.data(), qc2qr_autoconv.data(),
+      qv2qi_vapdep.data(), qc2qi_berg.data(), qc2qr_ice_shed.data(), qc2qi_collect.data(), qr2qi_collect.data(),
+      qc2qi_hetero_freeze.data(), qr2qi_immers_freeze.data(), qi2qr_melt.data(),
+      d.pratot, d.prctot, &d.is_hydromet_present);
   }
 
   if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
@@ -286,15 +290,15 @@ void run_bfb_p3_main_part2()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      isds_cxx[i].write(Base::m_fid);
+      isds_cxx[i].write(Base::m_ofile);
     }
   }
 }
 
 void run_bfb_p3_main_part3()
 {
-  constexpr Scalar latvap = C::LatVap;
-  constexpr Scalar latice = C::LatIce;
+  constexpr Scalar latvap = C::LatVap.value;
+  constexpr Scalar latice = C::LatIce.value;
 
   auto engine = Base::get_engine();
 
@@ -334,7 +338,7 @@ void run_bfb_p3_main_part3()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (auto& d : isds_baseline) {
-      d.read(Base::m_fid);
+      d.read(Base::m_ifile);
     }
   }
 
@@ -388,7 +392,7 @@ void run_bfb_p3_main_part3()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      isds_cxx[i].write(Base::m_fid);
+      isds_cxx[i].write(Base::m_ofile);
     }
   }
 }
@@ -443,7 +447,7 @@ void run_bfb_p3_main()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (auto& d : isds_baseline) {
-      d.read(Base::m_fid);
+      d.read(Base::m_ifile);
     }
   }
 
@@ -500,7 +504,7 @@ void run_bfb_p3_main()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      isds_cxx[i].write(Base::m_fid);
+      isds_cxx[i].write(Base::m_ofile);
     }
   }
 }

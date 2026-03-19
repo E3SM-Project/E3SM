@@ -463,7 +463,7 @@ contains
 
     type (GridManager_t), intent(inout) :: gm
     type (GridVertex_t), pointer :: gv
-    integer :: id, ne2, nelem, sfc, i, j, k, id_nbr, n_owned_or_used, o
+    integer :: id, ne2, nelem, sfc, i, j, k, n_owned_or_used, o
     logical :: owned
     integer :: idxs, idxe, face_current, face, nface, sfcidx(7), max_pos
     integer, allocatable :: positions(:,:), id_sfc_pairs(:,:)
@@ -586,7 +586,7 @@ contains
     use cube_mod, only: CubeSetupEdgeIndex
 
     type (GridManager_t), intent(inout) :: gm
-    integer :: igv, ngv, i, j, k, id_nbr, ll, loc
+    integer :: igv, ngv, i, ll, loc
     type (GridVertex_t), pointer :: gv
     type (GridVertex_t) :: gv_tmp
 
@@ -834,7 +834,7 @@ contains
 
     type (GridManager_t), intent(inout) :: gm
 
-    integer :: i,j,k,iptr,m,n,wgtV,wgtP,gid,igv
+    integer :: i,j,k,iptr,m,n,gid,igv
     integer :: nelem,nelem_edge,inbr,igvnbr
     integer :: mynbr_cnt, cnt, mystart, start
     logical :: owned_or_used
@@ -947,7 +947,7 @@ contains
 
   function find_next_factorable(n_in, direction) result(n)
     integer, intent(in) :: n_in, direction
-    integer :: n, dir, f
+    integer :: n, dir
 
     n = n_in
     if (direction > 0) then
@@ -1034,21 +1034,21 @@ contains
     end do
   end subroutine sgi_check
 
-  subroutine print_array(rank, name, a)
-    integer, intent(in) :: rank, a(:)
-    character(*), intent(in) :: name
-    character(128) :: filename
-    integer :: i
+  ! subroutine print_array(rank, name, a)
+  !   integer, intent(in) :: rank, a(:)
+  !   character(*), intent(in) :: name
+  !   character(128) :: filename
+  !   integer :: i
 
-    write(filename, '(a,i1)') name,rank
-    open(unit=42, file=filename)
-    write (42, fmt='(a,a,a)', advance='no')  '(sv b.',filename(1:5),'(sort ['
-    do i = 1, size(a)
-       write (42, fmt='(i4)', advance='no') a(i)
-    end do
-    write (42, fmt='(a)', advance='yes') ']))'
-    close(42)
-  end subroutine print_array
+  !   write(filename, '(a,i1)') name,rank
+  !   open(unit=42, file=filename)
+  !   write (42, fmt='(a,a,a)', advance='no')  '(sv b.',filename(1:5),'(sort ['
+  !   do i = 1, size(a)
+  !      write (42, fmt='(i4)', advance='no') a(i)
+  !   end do
+  !   write (42, fmt='(a)', advance='yes') ']))'
+  !   close(42)
+  ! end subroutine print_array
   
   ! Compare MetaVertex created the scalable way against the one created the
   ! original, unscalable way.

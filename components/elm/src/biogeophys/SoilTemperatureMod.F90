@@ -12,7 +12,7 @@ module SoilTemperatureMod
   use shr_infnan_mod    , only : nan => shr_infnan_nan
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
-  use elm_varctl        , only : iulog
+  use elm_varctl        , only : iulog, use_finetop_rad
   use elm_varcon        , only : spval
   use UrbanParamsType   , only : urbanparams_type
   use atm2lndType       , only : atm2lnd_type
@@ -32,6 +32,8 @@ module SoilTemperatureMod
   use ExternalModelConstants   , only : EM_ID_PTM
   use ExternalModelConstants   , only : EM_PTM_TBASED_SOLVE_STAGE
   use ExternalModelInterfaceMod, only : EMI_Driver
+  use shr_const_mod            , only : SHR_CONST_PI
+  use GridcellType             , only : grc_pp
 
   !! Needed beacuse EMI is still using them as arguments
   use WaterstateType    , only : waterstate_type
@@ -677,9 +679,9 @@ contains
             if (j == 1) then ! this only needs to be done once
                eflx_fgr12(c) = -cnfac*fn(c,1) - (1._r8-cnfac)*fn1(c,1)
             end if
-            if (j > 0 .and. j < nlevgrnd .and. (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop)) then
+            if (j > 0 .and. j < nlevgrnd .and. (col_pp%is_soil(c) .or. col_pp%is_crop(c))) then
                eflx_fgr(c,j) = -cnfac*fn(c,j) - (1._r8-cnfac)*fn1(c,j)
-            else if (j == nlevgrnd .and. (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop)) then
+            else if (j == nlevgrnd .and. (col_pp%is_soil(c) .or. col_pp%is_crop(c))) then
                eflx_fgr(c,j) = 0._r8
             end if
 
@@ -1465,7 +1467,7 @@ contains
 
                ! from Zhao (1997) and Koren (1999)
                supercool(c,j) = 0.0_r8
-               if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop .or. col_pp%itype(c) == icol_road_perv) then
+               if (col_pp%is_soil(c) .or. col_pp%is_crop(c) .or. col_pp%itype(c) == icol_road_perv) then
                   if(t_soisno(c,j) < tfrz) then
                      smp = hfus*(tfrz-t_soisno(c,j))/(grav*t_soisno(c,j)) * 1000._r8  !(mm)
                      supercool(c,j) = watsat(c,j)*(smp/sucsat(c,j))**(-1._r8/bsw(c,j))
@@ -1648,7 +1650,7 @@ contains
             ! as computed in HydrologyDrainageMod.F90.
 
             l = col_pp%landunit(c)
-            if ( lun_pp%itype(l)==istice_mec) then
+            if ( lun_pp%itype(l) == istice_mec) then
                if (j>=1 .and. h2osoi_liq(c,j) > 0._r8) then   ! ice layer with meltwater
                   ! melting corresponds to a negative ice flux
                   qflx_glcice_melt(c) = qflx_glcice_melt(c) + h2osoi_liq(c,j)/dtime
@@ -1662,7 +1664,7 @@ contains
             endif     ! istice_mec
             ! for diagnostic QICE SMB output only - 
             ! these are to calculate SMB even without MECs 
-            if ( lun_pp%itype(l)==istice) then
+            if ( lun_pp%itype(l) == istice) then
                if (j>=1 .and. h2osoi_liq(c,j) > 0._r8) then   ! ice layer with meltwater
                   ! melting corresponds to a negative ice flux
                   qflx_glcice_melt_diag(c) = qflx_glcice_melt_diag(c) + h2osoi_liq(c,j)/dtime
@@ -1682,7 +1684,7 @@ contains
          l = col_pp%landunit(c)
          if (lun_pp%urbpoi(l)) then
             eflx_snomelt_u(c) = eflx_snomelt(c)
-         else if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+         else if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
             eflx_snomelt_r(c) = eflx_snomelt(c)
          end if
       end do
@@ -1750,6 +1752,7 @@ contains
     real(r8) :: eflx_gnet_snow                                         !
     real(r8) :: eflx_gnet_soil                                         !
     real(r8) :: eflx_gnet_h2osfc                                       !
+    real(r8) :: slope_rad, deg2rad
     !-----------------------------------------------------------------------
 
     ! Enforce expected array sizes
@@ -1800,7 +1803,8 @@ contains
          sabg_lyr                => solarabs_vars%sabg_lyr_patch            , & ! Output: [real(r8) (:,:) ]  absorbed solar radiation (pft,lyr) [W/m2]
 
          begc                    => bounds%begc                             , & ! Input:  [integer        ] beginning column index
-         endc                    => bounds%endc                               & ! Input:  [integer        ] ending column index
+         endc                    => bounds%endc                             , & ! Input:  [integer        ] ending column index
+         slope_deg               => grc_pp%slope_deg                          &
          )
 
       ! Net ground heat flux into the surface and its temperature derivative
@@ -1809,6 +1813,8 @@ contains
 
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
+         g = col_pp%gridcell(c)
+         l = col_pp%landunit(c)
          lwrad_emit(c)  =    emg(c) * sb * t_grnd(c)**4
          dlwrad_emit(c) = 4._r8*emg(c) * sb * t_grnd(c)**3
 
@@ -1816,6 +1822,16 @@ contains
          lwrad_emit_snow(c)    =    emg(c) * sb * t_soisno(c,snl(c)+1)**4
          lwrad_emit_soil(c)    =    emg(c) * sb * t_soisno(c,1)**4
          lwrad_emit_h2osfc(c)  =    emg(c) * sb * t_h2osfc(c)**4
+
+         if (use_finetop_rad .and. (.not. lun_pp%urbpoi(l))) then
+            deg2rad = SHR_CONST_PI/180._r8
+            slope_rad = slope_deg(g) * deg2rad
+            lwrad_emit(c) = lwrad_emit(c) / cos(slope_rad)
+            dlwrad_emit(c) = dlwrad_emit(c) / cos(slope_rad)
+            lwrad_emit_snow(c) = lwrad_emit_snow(c) / cos(slope_rad)
+            lwrad_emit_soil(c) = lwrad_emit_soil(c) / cos(slope_rad)
+            lwrad_emit_h2osfc(c) = lwrad_emit_h2osfc(c) / cos(slope_rad)
+         endif
       end do
 
       hs_soil(begc:endc)   = 0._r8

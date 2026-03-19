@@ -165,6 +165,29 @@ macro(build_model COMP_CLASS COMP_NAME)
   endif()
 
   #-------------------------------------------------------------------------------
+  # iac needs specific compile flags and libraries
+  # try adding them here
+  #-------------------------------------------------------------------------------
+
+  if (COMP_NAME STREQUAL "gcam")
+    set(CXXFLAGS "${CXXFLAGS} -DGCAM_PARALLEL_ENABLED=0")
+  endif()
+  
+  #-------------------------------------------------------------------------------
+  # WW3 needs some special handling of files based on the switches provided
+  #-------------------------------------------------------------------------------
+  if (COMP_NAME STREQUAL "ww3")
+    include(${PROJECT_SOURCE_DIR}/ww3/src/ww3_utils.cmake)
+    # cull the sources lists based on switches
+    cull_sources_from_switches("${SOURCES}" "${GEN_F90_SOURCES}")
+    # reset the local variables based on the culled lists
+    set(SOURCES ${SOURCES_CULLED})
+
+    list(LENGTH SOURCES ORIGINAL_LENGTH)
+    #message(FATAL_ERROR "ORIGINAL_LENGTH=${ORIGINAL_LENGTH}")
+  endif()
+
+  #-------------------------------------------------------------------------------
   # create list of component libraries - hard-wired for current e3sm components
   #-------------------------------------------------------------------------------
 
@@ -240,16 +263,10 @@ macro(build_model COMP_CLASS COMP_NAME)
     add_executable(${TARGET_NAME})
     target_sources(${TARGET_NAME} PRIVATE ${REAL_SOURCES})
 
-    separate_arguments(ALL_LIBS_LIST UNIX_COMMAND "${SLIBS}")
-
     foreach(ITEM IN LISTS COMP_CLASSES)
       if (NOT ITEM STREQUAL "cpl")
         target_link_libraries(${TARGET_NAME} ${ITEM})
       endif()
-    endforeach()
-
-    foreach(ITEM IN LISTS ALL_LIBS_LIST)
-      target_link_libraries(${TARGET_NAME} ${ITEM})
     endforeach()
 
     if (USE_MOAB)
@@ -274,7 +291,7 @@ macro(build_model COMP_CLASS COMP_NAME)
       set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 
       if (COMPILER STREQUAL "oneapi-ifxgpu")
-        string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,-\-defsym,main=MAIN_\_ -lifcore -\-intel -fsycl -lsycl -Xsycl-target-backend \"-device 12.60.7\" ")
+        string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,-\-defsym,main=MAIN_\_ -lifcore -fsycl -Xsycl-target-backend \"-device pvc\" ")
       endif()
 
     endif()
@@ -311,6 +328,22 @@ macro(build_model COMP_CLASS COMP_NAME)
           target_link_libraries(${TARGET_NAME} PRIVATE "${PETSC_LIBRARIES}")
           target_include_directories(${TARGET_NAME} PRIVATE "${PETSC_INCLUDES}")
         endif()
+      endif()
+      if (COMP_NAME STREQUAL "ww3")
+
+        set(WW3_SRC_DIR "${PROJECT_SOURCE_DIR}/ww3/src/WW3/model/src")
+
+        #-------------------------
+        # Determine compile definitions for wav
+        #-------------------------
+        foreach(switch ${switches})
+          target_compile_definitions("${TARGET_NAME}" PUBLIC W3_${switch})
+        endforeach()
+
+        set_property(SOURCE "${WW3_SRC_DIR}/w3initmd.F90" APPEND PROPERTY COMPILE_DEFINITIONS "__WW3_SWITCHES__=\'\'")
+
+        #add_executable(ww3_ounf "${WW3_SRC_DIR}/ww3_ounf.F90")
+        #target_link_libraries(ww3_ounf "${TARGET_NAME}")
       endif()
       if (USE_KOKKOS)
         target_link_libraries (${TARGET_NAME} PRIVATE Kokkos::kokkos)

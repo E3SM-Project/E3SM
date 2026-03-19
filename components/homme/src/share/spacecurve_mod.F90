@@ -1206,8 +1206,7 @@ contains
        type (GridEdge_t),   intent(inout) :: GridEdge(:)
 
        integer               :: nelem,nelem_edge,nelemd
-       integer               :: head_part,tail_part
-       integer               :: j,k,tmp1,id,s1,extra
+       integer               :: k,tmp1,id,s1,extra
 
        nelem      = SIZE(GridVertex(:))
        nelem_edge = SIZE(GridEdge(:))
@@ -1261,7 +1260,7 @@ contains
   function sfcmap_init(ne, sfcmap) result(ierr)
     integer, intent(in) :: ne
     type (sfcmap_t), intent(out) :: sfcmap
-    integer :: i, ierr, f
+    integer :: ierr
 
     sfcmap%n = ne
     sfcmap%fact = factor(ne)
@@ -1308,7 +1307,7 @@ contains
     type (sfcmap_t), intent(inout) :: s
     integer, intent(in) :: idxs, idxe
     integer, target, intent(inout) :: pos(:,:)
-    integer :: index, status
+    integer :: status
     
     s%pos2i = .false.
     s%idxs = idxs
@@ -1639,7 +1638,7 @@ contains
        ma, md, ja, jd) result(o)
     type (sfcmap_t), intent(inout) :: s
     integer, intent(in) :: k, k_n, region_min, ma, md, ja, jd
-    integer :: km1, km1_n, km1_n2, ima, region, o
+    integer :: km1, km1_n, ima, region, o
 
     if (k == 0) then ! base case
        s%index = s%index + 1
@@ -1835,8 +1834,6 @@ contains
   end subroutine GilbertCurve
 
   recursive subroutine gilbert(Mesh, ix, iy, iax, iay, ibx, iby, global_index_ctr)
-
-    use dimensions_mod, only : ne_x, ne_y
 
     implicit none
 

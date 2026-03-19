@@ -7,11 +7,11 @@ SET(UTILS_TIMING_BIN_DIR  ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
 SET(UTILS_TIMING_DIRS ${UTILS_TIMING_SRC_DIR} ${UTILS_TIMING_BIN_DIR})
 
 # Place common CPP definitions here.
-# Note: need CUDA_BUILD and HOMMEXX_BFB_TESTING here, since the share
+# Note: HOMMEXX_BFB_TESTING here, since the share
 #       unit tests do not include a config.h file
 SET (COMMON_DEFINITIONS NP=4 NC=4)
-IF (CUDA_BUILD OR HIP_BUILD OR SYCL_BUILD)
-	SET(COMMON_DEFINITIONS ${COMMON_DEFINITIONS} HOMMEXX_ENABLE_GPU_F90)
+IF (HOMMEXX_ENABLE_GPU_F90)
+  SET(COMMON_DEFINITIONS ${COMMON_DEFINITIONS} HOMMEXX_ENABLE_GPU_F90)
 ENDIF()
 IF (HOMMEXX_BFB_TESTING)
   SET(COMMON_DEFINITIONS ${COMMON_DEFINITIONS} HOMMEXX_BFB_TESTING)
@@ -52,14 +52,14 @@ endif()
 if (HOMMEXX_BFB_TESTING)
 SET (BOUNDARY_EXCHANGE_UT_F90_SRCS
   ${SRC_DIR}/repro_sum_mod.F90
-  ${SRC_SHARE_DIR}/bndry_mod_base.F90
+  ${SRC_SHARE_DIR}/bndry_mod.F90
   ${SRC_SHARE_DIR}/control_mod.F90
   ${SRC_SHARE_DIR}/coordinate_systems_mod.F90
   ${SRC_SHARE_DIR}/cube_mod.F90
   ${SRC_SHARE_DIR}/planar_mod.F90
-  ${SRC_SHARE_DIR}/derivative_mod_base.F90
+  ${SRC_SHARE_DIR}/derivative_mod.F90
   ${SRC_SHARE_DIR}/dimensions_mod.F90
-  ${SRC_SHARE_DIR}/edge_mod_base.F90
+  ${SRC_SHARE_DIR}/edge_mod.F90
   ${SRC_SHARE_DIR}/edgetype_mod.F90
   ${SRC_SHARE_DIR}/element_mod.F90
   ${SRC_SHARE_DIR}/gridgraph_mod.F90
@@ -76,9 +76,6 @@ SET (BOUNDARY_EXCHANGE_UT_F90_SRCS
   ${SRC_SHARE_DIR}/spacecurve_mod.F90
   ${SRC_SHARE_DIR}/thread_mod.F90
   ${SRC_SHARE_DIR}/viscosity_base.F90
-  ${SRC_PREQX_DIR}/bndry_mod.F90
-  ${SRC_PREQX_DIR}/derivative_mod.F90
-  ${SRC_PREQX_DIR}/edge_mod.F90
   ${SRC_PREQX_DIR}/element_state.F90
   ${SHARE_UT_DIR}/boundary_exchange_ut.F90
   ${SHARE_UT_DIR}/geometry_interface.F90
@@ -120,7 +117,7 @@ if (HOMMEXX_BFB_TESTING)
 SET (SPHERE_OP_UT_F90_SRCS
   ${SRC_SHARE_DIR}/control_mod.F90
   ${SRC_SHARE_DIR}/coordinate_systems_mod.F90
-  ${SRC_SHARE_DIR}/derivative_mod_base.F90
+  ${SRC_SHARE_DIR}/derivative_mod.F90
   ${SRC_SHARE_DIR}/dimensions_mod.F90
   ${SRC_SHARE_DIR}/edgetype_mod.F90
   ${SRC_SHARE_DIR}/element_mod.F90
@@ -165,7 +162,7 @@ endif () #BFB
 SET (LIMITERS_UT_F90_SRCS
   ${SRC_SHARE_DIR}/control_mod.F90
   ${SRC_SHARE_DIR}/coordinate_systems_mod.F90
-  ${SRC_SHARE_DIR}/derivative_mod_base.F90
+  ${SRC_SHARE_DIR}/derivative_mod.F90
   ${SRC_SHARE_DIR}/dimensions_mod.F90
   ${SRC_SHARE_DIR}/edgetype_mod.F90
   ${SRC_SHARE_DIR}/element_mod.F90

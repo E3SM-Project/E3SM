@@ -1,7 +1,7 @@
 #ifndef SCREAM_FIELD_GROUP_INFO_HPP
 #define SCREAM_FIELD_GROUP_INFO_HPP
 
-#include <ekat/util/ekat_string_utils.hpp>
+#include <ekat_string_utils.hpp>
 
 #include <list>
 #include <map>
@@ -62,11 +62,11 @@ struct FieldGroupInfo
   std::list<ci_string> m_requested_grids;
 
   // Whether the group allocated a monolithic field
-  bool m_monolithic_allocation;
+  bool m_monolithic_allocation = false;
 
   // If we allocate a monolithic field, each field is subviewed
   // along a different entry along the same dimension.
-  int m_subview_dim;
+  int m_subview_dim = -1;
 
   // If we allocate a monolithic field, for each field name,
   // store the idx used to subview each individual field.

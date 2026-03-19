@@ -50,6 +50,9 @@ module control_mod
 ! should be renamed to "hydrostatic_mode"
   logical, public :: theta_hydrostatic_mode
 
+! option to run 3d turbulence
+  logical, public :: do_3d_turbulence
+
 
   integer, public  :: tstep_type= 5                           ! preqx timestepping options
   integer, public  :: rk_stage_user  = 0                      ! number of RK stages (shallow water model) 
@@ -134,7 +137,7 @@ module control_mod
   integer              , public :: restartfreq
   integer              , public :: runtype 
   integer              , public :: timerdetail 
-  integer              , public :: numnodes 
+  integer              , public :: numnodes
   character(len=MAX_STRING_LEN)    , public :: restartfile 
   character(len=MAX_STRING_LEN)    , public :: restartdir
 
@@ -231,7 +234,7 @@ module control_mod
   ! kmass = level index with density.  other levels contain test tracers
   integer, public  :: kmass  = -1
   integer, public  :: toy_chemistry = 0            !  1 = toy chemestry is turned on in 2D advection code
-  real (kind=real_kind), public :: g_sw_output            	   = 9.80616D0          ! m s^-2
+  real (kind=real_kind), public :: g_sw_output = 9.80616D0          ! m s^-2
 
   ! parameters for dcmip12 test 2-0: steady state atmosphere with orography
   real(real_kind), public :: dcmip2_0_h0      = 2000.d0        ! height of mountain range        (meters)
@@ -292,7 +295,6 @@ contains
     !   If you want a value to be computed, set it to <0 on input.
 
     use parallel_mod, only: abortmp, parallel_t
-    use kinds, only: iulog
 
     type (parallel_t), intent(in) :: par
     integer, intent(inout) :: &
@@ -644,7 +646,7 @@ contains
 
 subroutine set_planar_defaults()
 
-use physical_constants, only: Lx, Ly, Sx, Sy
+use physical_constants, only: Lx, Ly, Sx, Sy, dd_pi, rearth
  
 !since defaults here depend on test, they cannot be set before ctl_nl is read, unlike some other parameters, bubble_*, etc.        
 !if true, most likely lx,ly,sx,sy weren't set in ctl_nl
@@ -706,7 +708,11 @@ use physical_constants, only: Lx, Ly, Sx, Sy
 !       Ly = 5000.0D0 * 1000.0D0
 !       Sx = 0.0D0
 !       Sy = 0.0D0
-
+    else if (test_case(1:16) == 'planar_transport') then
+       Lx = 2*dd_pi*rearth
+       Ly = Lx
+       Sx = -Lx/2
+       Sy = Sx
     endif
     endif !if lx,ly,sx,sy are not set in nl
 

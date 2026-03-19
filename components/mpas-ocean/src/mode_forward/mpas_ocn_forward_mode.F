@@ -614,6 +614,7 @@ module ocn_forward_mode
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: forcingPool
+      type (mpas_pool_type), pointer :: ecosysFrazilForcingPool
       type (mpas_pool_type), pointer :: scratchPool
 
       type (MPAS_timeInterval_type) :: timeStep
@@ -711,6 +712,11 @@ module ocn_forward_mode
            call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
            call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, ierr, 1)
            call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, err)
+           if (config_use_ecosysTracers .and. config_use_ecosys_frazil_tendencies) then
+               call mpas_pool_get_subpool(forcingPool, 'ecosysFrazilForcing', ecosysFrazilForcingPool)
+               call ocn_frazil_forcing_build_ecosys_arrays(domain, meshPool, forcingPool, statePool, &
+                  ecosysFrazilForcingPool, ierr)
+           end if  
            call mpas_timer_start("land_ice_build_arrays")
            call ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
                                                          forcingPool, scratchPool, statePool, err)

@@ -60,19 +60,17 @@ The following examples describe how to use the script for development in Icepack
 
 ### Set up and run baselines
 
-Create a file containing modified namelist options. The file ``nset01.nlk`` in this example creates baselines for two types of column physics and turns off the ``snicar_ad`` radiation scheme.
+Create a file containing modified namelist options. The file ``nset01.nlk`` in this example turns off the ``snicar_ad`` radiation scheme.
 
 ```text
 $ less nset01.nlk
 [mpassi]
-config_column_physics_type = {'column_package','icepack'}
 config_use_snicar_ad = {.false.}
 ```
 
 Notes:
 
 - A .nlk file without any config settings will create a baseline using default settings.
-- The ``column_package`` option is still available but is no longer being supported in MPAS-seaice.
 
 Fetch E3SM (choose any name for the directory baselines01):
 
@@ -92,7 +90,7 @@ Submit:
 ./E3SM-Polar-Developer.sh -s baselines01 -k nset01.nlk -e -q
 ```
 
-Examine the diagnostic output (compares the icepack run with the column_package run in this example):
+Examine the diagnostic output:
 
 ```text
 ./E3SM-Polar-Developer.sh -s baselines01 -k nset01.nlk -e -a -v

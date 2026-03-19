@@ -2,7 +2,7 @@
 #define SHOC_ENERGY_FIXER_IMPL_HPP
 
 #include "shoc_functions.hpp" // for ETI only but harmless for GPU
-#include "share/util/eamxx_common_physics_functions.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
 
 namespace scream {
 
@@ -23,8 +23,8 @@ void Functions<S,D>::shoc_energy_fixer(
   const Int&                   nlevi,
   const Scalar&                dtime,
   const Int&                   nadv,
-  const uview_1d<const Spack>& zt_grid,
-  const uview_1d<const Spack>& zi_grid,
+  const uview_1d<const Pack>& zt_grid,
+  const uview_1d<const Pack>& zi_grid,
   const Scalar&                se_b,
   const Scalar&                ke_b,
   const Scalar&                wv_b,
@@ -35,21 +35,21 @@ void Functions<S,D>::shoc_energy_fixer(
   const Scalar&                wl_a,
   const Scalar&                wthl_sfc,
   const Scalar&                wqw_sfc,
-  const uview_1d<const Spack>& rho_zt,
-  const uview_1d<const Spack>& tke,
-  const uview_1d<const Spack>& pint,
+  const uview_1d<const Pack>& rho_zt,
+  const uview_1d<const Pack>& tke,
+  const uview_1d<const Pack>& pint,
   const Workspace&             workspace,
-  const uview_1d<Spack>&       host_dse)
+  const uview_1d<Pack>&       host_dse)
 {
   // Define temporary variables
   auto rho_zi = workspace.take("rho_zi");
 
   // Constants
-  const auto cp = C::CP;
-  const auto lcond = C::LatVap;
-  const auto lice = C::LatIce;
+  const auto cp = C::CP.value;
+  const auto lcond = C::LatVap.value;
+  const auto lice = C::LatIce.value;
   const auto mintke = SC::mintke;
-  const auto ggr = C::gravit;
+  const auto ggr = C::gravit.value;
 
   // Local variables
   Scalar te_a = 0;
@@ -80,16 +80,16 @@ void Functions<S,D>::shoc_energy_fixer(
 
   // Limit the energy fixer to find highest layer where SHOC is active.
   // Find first level where tke is higher than lowest threshold.
-  static_assert(static_cast<int>(Spack::n)==static_cast<int>(IntSmallPack::n),
+  static_assert(static_cast<int>(Pack::n)==static_cast<int>(IntPack::n),
                 "SHOC: violated assumption in parallel reduce.");
   Int shoctop = 0;
-  const auto nlevm2_packs = ekat::npack<Spack>(nlev-2);
+  const auto nlevm2_packs = ekat::npack<Pack>(nlev-2);
   Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, nlevm2_packs),
                           [&] (Int k, Int& local_shoctop) {
     // Find the minimum index corresponding to mintke!=tke(indx).
     // Here we set all indices s.t. tke==mintke to nlev-2 since
     // we require shoctop <= nlev-2
-    auto local_indices = ekat::range<IntSmallPack>(k*IntSmallPack::n);
+    auto local_indices = ekat::range<IntPack>(k*IntPack::n);
     local_indices.set(tke(k)==mintke, nlev-2);
     const Int min_indx = ekat::min(local_indices);
 
@@ -102,10 +102,10 @@ void Functions<S,D>::shoc_energy_fixer(
   se_dis = (te_a - te_b)/(s_pint(nlevi-1) - s_pint(shoctop));
 
   // Update host_dse
-  const int shoctop_pack = shoctop/Spack::n;
-  const auto nlev_packs = ekat::npack<Spack>(nlev);
+  const int shoctop_pack = shoctop/Pack::n;
+  const auto nlev_packs = ekat::npack<Pack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, shoctop_pack, nlev_packs), [&] (const Int& k) {
-    auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
+    auto range_pack = ekat::range<IntPack>(k*Pack::n);
 
     host_dse(k).set(range_pack >= shoctop && range_pack < nlev, host_dse(k)-se_dis*ggr);
   });

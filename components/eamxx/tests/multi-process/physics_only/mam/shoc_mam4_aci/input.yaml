@@ -8,7 +8,7 @@ time_stepping:
   run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
   number_of_steps: ${NUM_STEPS}
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [mac_mic]
   schedule_type: sequential
   mac_mic:
@@ -33,6 +33,7 @@ atmosphere_processes:
       c_diag_3rd_mom: 7.0
       coeff_kh: 0.1
       coeff_km: 0.1
+      shoc_1p5tke: false
 
 grids_manager:
   type: mesh_free
@@ -52,9 +53,11 @@ initial_conditions:
   #variables needed for SHOC
   surf_sens_flux: 0.0
   surf_evap: 0.0
-  
+
   #variables needed for mam4-aci
   dgnum: 1e-3
+
+  z_mam4_int : 0.0
 
 # The parameters for I/O control
 scorpio:

@@ -169,6 +169,10 @@ void FieldAllocProp::commit (const layout_type& layout)
   }
 
   // Sanity checks: we must have requested at least one value type, and the identifier needs all dimensions set by now.
+  EKAT_REQUIRE_MSG(m_scalar_type_size>0,
+      "Error! Cannot commit allocation for a field with invalid (zero) scalar type size.\n"
+      "  This likely means the field was created with DataType::Invalid.\n"
+      "  Ensure the field is properly initialized with a valid DataType before allocating.\n");
   EKAT_REQUIRE_MSG(m_value_type_sizes.size()>0,
       "Error! No value types requested for the allocation.\n");
   EKAT_REQUIRE_MSG(layout.are_dimensions_set(),

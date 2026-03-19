@@ -1,10 +1,10 @@
 #include "p3_test_data.hpp"
-#include "ekat/kokkos/ekat_kokkos_types.hpp"
 #include "p3_data.hpp"
 
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/ekat_pack_kokkos.hpp"
-#include "ekat/ekat_assert.hpp"
+#include <ekat_kokkos_types.hpp>
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_pack_kokkos.hpp>
+#include <ekat_assert.hpp>
 
 #include <random>
 
@@ -192,13 +192,13 @@ P3MainData::P3MainData(
   Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_, bool do_prescribed_CCN_, Real) :
   PhysicsTestData( { {(ite_ - its_) + 1, (kte_ - kts_) + 1}, {(ite_ - its_) + 1, (kte_ - kts_) + 2} }, { {
     &pres, &dz, &nc_nuceat_tend, &nccn_prescribed, &ni_activated, &dpres, &inv_exner, &cld_frac_i, &cld_frac_l, &cld_frac_r,
-    &inv_qc_relvar, &qc, &nc, &qr, &nr, &qi, &qm, &ni, &bm, &qv, &th_atm, &qv_prev, &t_prev, 
+    &inv_qc_relvar, &qc, &nc, &qr, &nr, &qi, &qm, &ni, &bm, &qv, &th_atm, &qv_prev, &t_prev,
     &diag_eff_radius_qc, &diag_eff_radius_qi, &diag_eff_radius_qr, &rho_qi, &mu_c, &lamc, &qv2qi_depos_tend, &precip_total_tend, &nevapr,
     &qr_evap_tend, &liq_ice_exchange, &vap_liq_exchange, &vap_ice_exchange, &precip_liq_flux,
     &precip_ice_flux},
     {&precip_liq_surf, &precip_ice_surf} }), // these two are (ni, nk+1)
   its(its_), ite(ite_), kts(kts_), kte(kte_), it(it_), dt(dt_), do_predict_nc(do_predict_nc_), do_prescribed_CCN(do_prescribed_CCN_), use_hetfrz_classnuc(false),
-  hetfrz_immersion_nucleation_tend(nullptr), hetfrz_contact_nucleation_tend(nullptr), hetfrz_deposition_nucleation_tend(nullptr) 
+  hetfrz_immersion_nucleation_tend(nullptr), hetfrz_contact_nucleation_tend(nullptr), hetfrz_deposition_nucleation_tend(nullptr)
 {}
 
 void IceSupersatConservationData::randomize(std::mt19937_64& engine)
@@ -337,13 +337,14 @@ void calc_first_order_upwind_step_host_impl(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack = typename P3F::Spack;
-  using view_1d = typename P3F::view_1d<Spack>;
+  using Pack = typename P3F::Pack;
+  using view_1d = typename P3F::view_1d<Pack>;
   using KT = typename P3F::KT;
   using ExeSpace = typename KT::ExeSpace;
+  using TPF = ekat::TeamPolicyFactory<ExeSpace>;
   using MemberType = typename P3F::MemberType;
-  using view_1d_ptr_array = typename P3F::view_1d_ptr_array<Spack, N>;
-  using uview_1d = typename P3F::uview_1d<Spack>;
+  using view_1d_ptr_array = typename P3F::view_1d_ptr_array<Pack, N>;
+  using uview_1d = typename P3F::uview_1d<Pack>;
 
   EKAT_REQUIRE_MSG(kts == 1, "kts must be 1, got " << kts);
 
@@ -354,7 +355,7 @@ void calc_first_order_upwind_step_host_impl(
   k_qxtop -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 
   // Setup views
   std::vector<view_1d> temp_d(3);
@@ -376,7 +377,7 @@ void calc_first_order_upwind_step_host_impl(
   }
 
   // Call core function from kernel
-  auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
+  auto policy = TPF::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     view_1d_ptr_array fluxes_ptr, vs_ptr, qnx_ptr;
     for (int i = 0; i < N; ++i) {
@@ -401,15 +402,16 @@ void generalized_sedimentation_host_impl(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack = typename P3F::Spack;
+  using Pack = typename P3F::Pack;
   using Singlep = typename ekat::Pack<Real, 1>;
-  using view_1d = typename P3F::view_1d<Spack>;
+  using view_1d = typename P3F::view_1d<Pack>;
   using view_1ds = typename P3F::view_1d<Singlep>;
   using KT = typename P3F::KT;
   using ExeSpace = typename KT::ExeSpace;
+  using TPF = ekat::TeamPolicyFactory<ExeSpace>;
   using MemberType = typename P3F::MemberType;
-  using view_1d_ptr_array = typename P3F::view_1d_ptr_array<Spack, N>;
-  using uview_1d = typename P3F::uview_1d<Spack>;
+  using view_1d_ptr_array = typename P3F::view_1d_ptr_array<Pack, N>;
+  using uview_1d = typename P3F::uview_1d<Pack>;
   using ekat::host_to_device;
   using ekat::device_to_host;
 
@@ -423,7 +425,7 @@ void generalized_sedimentation_host_impl(
   *k_qxbot -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 
   // Set up views
   std::vector<view_1d> temp_d(3);
@@ -449,7 +451,7 @@ void generalized_sedimentation_host_impl(
   }
 
   // Call core function from kernel
-  auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
+  auto policy = TPF::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     view_1d_ptr_array fluxes_ptr, vs_ptr, qnx_ptr;
     for (int i = 0; i < N; ++i) {
@@ -532,10 +534,11 @@ void cloud_sedimentation_host(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack = typename P3F::Spack;
-  using view_1d = typename P3F::view_1d<Spack>;
+  using Pack = typename P3F::Pack;
+  using view_1d = typename P3F::view_1d<Pack>;
   using KT = typename P3F::KT;
   using ExeSpace = typename KT::ExeSpace;
+  using TPF = ekat::TeamPolicyFactory<ExeSpace>;
   using MemberType = typename P3F::MemberType;
 
   EKAT_REQUIRE_MSG(kts == 1, "kts must be 1, got " << kts);
@@ -547,7 +550,7 @@ void cloud_sedimentation_host(
   kbot -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 
   // Set up views
   const auto dnu = P3F::p3_init().dnu_table_vals;
@@ -573,8 +576,8 @@ void cloud_sedimentation_host(
     nc_tend_d (temp_d[12]);
 
   // Call core function from kernel
-  auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
-  ekat::WorkspaceManager<Spack> wsm(rho_d.extent(0), 4, policy);
+  auto policy = TPF::get_default_team_policy(1, nk_pack);
+  ekat::WorkspaceManager<Pack> wsm(rho_d.extent(0), 4, policy);
   Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& precip_liq_surf_k) {
 
     P3F::cloud_sedimentation(
@@ -600,10 +603,11 @@ void ice_sedimentation_host(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack      = typename P3F::Spack;
-  using view_1d    = typename P3F::view_1d<Spack>;
+  using Pack      = typename P3F::Pack;
+  using view_1d    = typename P3F::view_1d<Pack>;
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
+  using TPF = ekat::TeamPolicyFactory<ExeSpace>;
   using MemberType = typename P3F::MemberType;
 
   EKAT_REQUIRE_MSG(kts == 1, "kts must be 1, got " << kts);
@@ -615,7 +619,7 @@ void ice_sedimentation_host(
   kbot -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 
   // Set up views
   std::vector<view_1d> temp_d(IceSedData::NUM_ARRAYS);
@@ -642,8 +646,8 @@ void ice_sedimentation_host(
 
   // Call core function from kernel
   auto ice_table_vals = P3F::p3_init().ice_table_vals;
-  auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
-  ekat::WorkspaceManager<Spack> wsm(rho_d.extent(0), 6, policy);
+  auto policy = TPF::get_default_team_policy(1, nk_pack);
+  ekat::WorkspaceManager<Pack> wsm(rho_d.extent(0), 6, policy);
   Real my_precip_ice_surf = 0;
   Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& precip_ice_surf_k) {
 
@@ -672,10 +676,11 @@ void rain_sedimentation_host(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack      = typename P3F::Spack;
-  using view_1d    = typename P3F::view_1d<Spack>;
+  using Pack      = typename P3F::Pack;
+  using view_1d    = typename P3F::view_1d<Pack>;
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
+  using TPF = ekat::TeamPolicyFactory<ExeSpace>;
   using MemberType = typename P3F::MemberType;
 
   EKAT_REQUIRE_MSG(kts == 1, "kts must be 1, got " << kts);
@@ -687,7 +692,7 @@ void rain_sedimentation_host(
   kbot -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 
   // Set up views
   std::vector<view_1d> temp_d(RainSedData::NUM_ARRAYS);
@@ -717,8 +722,8 @@ void rain_sedimentation_host(
   auto tables = P3F::p3_init();
   auto vn_table_vals = tables.vn_table_vals;
   auto vm_table_vals = tables.vm_table_vals;
-  auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
-  ekat::WorkspaceManager<Spack> wsm(rho_d.extent(0), 4, policy);
+  auto policy = TPF::get_default_team_policy(1, nk_pack);
+  ekat::WorkspaceManager<Pack> wsm(rho_d.extent(0), 4, policy);
   Real my_precip_liq_surf = 0;
   Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& precip_liq_surf_k) {
 
@@ -747,10 +752,11 @@ void homogeneous_freezing_host(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack      = typename P3F::Spack;
-  using view_1d    = typename P3F::view_1d<Spack>;
+  using Pack      = typename P3F::Pack;
+  using view_1d    = typename P3F::view_1d<Pack>;
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
+  using TPF = ekat::TeamPolicyFactory<ExeSpace>;
   using MemberType = typename P3F::MemberType;
 
   EKAT_REQUIRE_MSG(kts == 1, "kts must be 1, got " << kts);
@@ -762,7 +768,7 @@ void homogeneous_freezing_host(
   kbot -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 
   // Set up views
   std::vector<view_1d> temp_d(HomogeneousFreezingData::NUM_ARRAYS-1);
@@ -785,7 +791,7 @@ void homogeneous_freezing_host(
     th_atm_d              (temp_d[current_index++]);
 
   // Call core function from kernel
-  auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
+  auto policy = TPF::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
     P3F::homogeneous_freezing(
@@ -805,11 +811,12 @@ void check_values_host(Real* qv, Real* temp, Int kstart, Int kend,
                     Int timestepcount, bool force_abort, Int source_ind, Real* col_loc)
 {
   using P3F        = Functions<Real, DefaultDevice>;
-  using Spack      = typename P3F::Spack;
-  using view_1d    = typename P3F::view_1d<Spack>;
+  using Pack      = typename P3F::Pack;
+  using view_1d    = typename P3F::view_1d<Pack>;
   using suview_1d  = typename P3F::uview_1d<Real>;
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
+  using TPF = ekat::TeamPolicyFactory<ExeSpace>;
   using MemberType = typename P3F::MemberType;
 
   EKAT_REQUIRE_MSG(kend > kstart,
@@ -817,16 +824,16 @@ void check_values_host(Real* qv, Real* temp, Int kstart, Int kend,
 
   kstart -= 1;
   kend -= 1;
-  const auto nk = (kend - kstart) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk = (kend - kstart) + 1;
+  const Int nk_pack = ekat::npack<Pack>(nk);
   std::vector<view_1d> cvd_d(CheckValuesData::NUM_ARRAYS+1);
 
-  ekat::host_to_device<Int>({qv, temp, col_loc}, {nk, nk, 3}, cvd_d);
+  ekat::host_to_device({qv, temp, col_loc}, std::vector<Int>{nk, nk, 3}, cvd_d);
 
   view_1d qv_d(cvd_d[0]), temp_d(cvd_d[1]), col_loc_d(cvd_d[2]);
   suview_1d ucol_loc_d(reinterpret_cast<Real*>(col_loc_d.data()), 3);
 
-  auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
+  auto policy = TPF::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
     P3F::check_values(qv_d, temp_d, kstart, kend, timestepcount, force_abort, source_ind, team,
@@ -847,11 +854,12 @@ void p3_main_part1_host(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack      = typename P3F::Spack;
-  using view_1d    = typename P3F::view_1d<Spack>;
+  using Pack      = typename P3F::Pack;
+  using view_1d    = typename P3F::view_1d<Pack>;
   using bview_1d   = typename P3F::view_1d<bool>;
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
+  using TPF = ekat::TeamPolicyFactory<ExeSpace>;
   using MemberType = typename P3F::MemberType;
 
   EKAT_REQUIRE_MSG(kts == 1, "kts must be 1, got " << kts);
@@ -863,7 +871,7 @@ void p3_main_part1_host(
   kbot -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 
   // Set up views
   std::vector<view_1d> temp_d(P3MainPart1Data::NUM_ARRAYS);
@@ -915,7 +923,7 @@ void p3_main_part1_host(
 
   // Call core function from kernel
   bview_1d bools_d("bools", 2);
-  auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
+  auto policy = TPF::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
     P3F::p3_main_part1(
@@ -955,16 +963,20 @@ void p3_main_part2_host(
   Real* acn, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni,
   Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld, Real* qm_incld, Real* nc_incld, Real* nr_incld,
   Real* ni_incld, Real* bm_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* qv2qi_depos_tend, Real* precip_total_tend,
-  Real* nevapr, Real* qr_evap_tend, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange, Real* pratot,
-  Real* prctot, bool* is_hydromet_present)
+  Real* nevapr, Real* qr_evap_tend, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange,
+  Real* qr2qv_evap, Real* qi2qv_sublim, Real* qc2qr_accret, Real* qc2qr_autoconv,
+  Real* qv2qi_vapdep, Real* qc2qi_berg, Real* qc2qr_ice_shed, Real* qc2qi_collect, Real* qr2qi_collect,
+  Real* qc2qi_hetero_freeze, Real* qr2qi_immers_freeze, Real* qi2qr_melt,
+  Real* pratot, Real* prctot, bool* is_hydromet_present)
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack      = typename P3F::Spack;
-  using view_1d    = typename P3F::view_1d<Spack>;
+  using Pack      = typename P3F::Pack;
+  using view_1d    = typename P3F::view_1d<Pack>;
   using bview_1d   = typename P3F::view_1d<bool>;
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
+  using TPF = ekat::TeamPolicyFactory<ExeSpace>;
   using MemberType = typename P3F::MemberType;
 
   EKAT_REQUIRE_MSG(kts == 1, "kts must be 1, got " << kts);
@@ -976,7 +988,7 @@ void p3_main_part2_host(
   kbot -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
   const Real max_total_ni = 740.0e3;  // Hard-code this value for F90 comparison
 
   // Set up views
@@ -985,6 +997,21 @@ void p3_main_part2_host(
   hetfrz_immersion_nucleation_tend = hetfrz_0.data();
   hetfrz_contact_nucleation_tend = hetfrz_1.data();
   hetfrz_deposition_nucleation_tend = hetfrz_2.data();
+  std::vector<Real> qr2qv_evap_v(nk,0), qi2qv_sublim_v(nk,0), qc2qr_accret_v(nk,0), qc2qr_autoconv_v(nk,0), qv2qi_vapdep_v(nk,0),
+    qc2qi_berg_v(nk,0), qc2qr_ice_shed_v(nk,0), qc2qi_collect_v(nk,0), qr2qi_collect_v(nk,0), qc2qi_hetero_freeze_v(nk,0),
+    qr2qi_immers_freeze_v(nk,0), qi2qr_melt_v(nk,0);
+  qr2qv_evap = qr2qv_evap_v.data();
+  qi2qv_sublim = qi2qv_sublim_v.data();
+  qc2qr_accret = qc2qr_accret_v.data();
+  qc2qr_autoconv = qc2qr_autoconv_v.data();
+  qv2qi_vapdep = qv2qi_vapdep_v.data();
+  qc2qi_berg = qc2qi_berg_v.data();
+  qc2qr_ice_shed = qc2qr_ice_shed_v.data();
+  qc2qi_collect = qc2qi_collect_v.data();
+  qr2qi_collect = qr2qi_collect_v.data();
+  qc2qi_hetero_freeze = qc2qi_hetero_freeze_v.data();
+  qr2qi_immers_freeze = qr2qi_immers_freeze_v.data();
+  qi2qr_melt = qi2qr_melt_v.data();
 
   ekat::host_to_device({hetfrz_immersion_nucleation_tend, hetfrz_contact_nucleation_tend, hetfrz_deposition_nucleation_tend,
         pres, dpres, dz, nc_nuceat_tend, inv_exner, exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r,
@@ -992,14 +1019,17 @@ void p3_main_part2_host(
         qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld,
         qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1,
         cdistr, mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend, vap_liq_exchange,
-        vap_ice_exchange, liq_ice_exchange, pratot, prctot, qv_prev, t_prev
+        vap_ice_exchange, liq_ice_exchange, pratot, prctot, qv_prev, t_prev,
+        qr2qv_evap, qi2qv_sublim, qc2qr_accret, qc2qr_autoconv,
+        qv2qi_vapdep, qc2qi_berg, qc2qr_ice_shed, qc2qi_collect, qr2qi_collect,
+        qc2qi_hetero_freeze, qr2qi_immers_freeze, qi2qr_melt
         },
     nk, temp_d);
 
   int current_index = 0;
   view_1d
-    hetfrz_immersion_nucleation_tend_d(temp_d[current_index++]), 
-    hetfrz_contact_nucleation_tend_d(temp_d[current_index++]), 
+    hetfrz_immersion_nucleation_tend_d(temp_d[current_index++]),
+    hetfrz_contact_nucleation_tend_d(temp_d[current_index++]),
     hetfrz_deposition_nucleation_tend_d(temp_d[current_index++]),
     pres_d              (temp_d[current_index++]),
     dpres_d             (temp_d[current_index++]),
@@ -1061,7 +1091,19 @@ void p3_main_part2_host(
     pratot_d            (temp_d[current_index++]),
     prctot_d            (temp_d[current_index++]),
     qv_prev_d           (temp_d[current_index++]),
-    t_prev_d            (temp_d[current_index++]);
+    t_prev_d            (temp_d[current_index++]),
+    qr2qv_evap_d        (temp_d[current_index++]),
+    qi2qv_sublim_d      (temp_d[current_index++]),
+    qc2qr_accret_d      (temp_d[current_index++]),
+    qc2qr_autoconv_d    (temp_d[current_index++]),
+    qv2qi_vapdep_d      (temp_d[current_index++]),
+    qc2qi_berg_d        (temp_d[current_index++]),
+    qc2qr_ice_shed_d    (temp_d[current_index++]),
+    qc2qi_collect_d     (temp_d[current_index++]),
+    qr2qi_collect_d     (temp_d[current_index++]),
+    qc2qi_hetero_freeze_d (temp_d[current_index++]),
+    qr2qi_immers_freeze_d (temp_d[current_index++]),
+    qi2qr_melt_d        (temp_d[current_index++]);
 
   // Call core function from kernel
   auto tables = P3F::p3_init();
@@ -1070,12 +1112,12 @@ void p3_main_part2_host(
   const auto collect_table_vals     = tables.collect_table_vals;
   const auto revap_table_vals = tables.revap_table_vals;
   bview_1d bools_d("bools", 1);
-  auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
+  auto policy = TPF::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
     P3F::p3_main_part2(
-      team, nk_pack, max_total_ni, do_predict_nc, do_prescribed_CCN, dt, inv_dt, 
-      hetfrz_immersion_nucleation_tend_d, hetfrz_contact_nucleation_tend_d, hetfrz_deposition_nucleation_tend_d, 
+      team, nk_pack, max_total_ni, do_predict_nc, do_prescribed_CCN, dt, inv_dt,
+      hetfrz_immersion_nucleation_tend_d, hetfrz_contact_nucleation_tend_d, hetfrz_deposition_nucleation_tend_d,
       dnu, ice_table_vals, collect_table_vals, revap_table_vals,
       pres_d, dpres_d, dz_d, nc_nuceat_tend_d, inv_exner_d, exner_d, inv_cld_frac_l_d,
       inv_cld_frac_i_d, inv_cld_frac_r_d, ni_activated_d, inv_qc_relvar_d, cld_frac_i_d, cld_frac_l_d, cld_frac_r_d,
@@ -1085,7 +1127,11 @@ void p3_main_part2_host(
       qm_incld_d, nc_incld_d, nr_incld_d, ni_incld_d, bm_incld_d,
       mu_c_d, nu_d, lamc_d, cdist_d, cdist1_d, cdistr_d, mu_r_d, lamr_d,
       logn0r_d, qv2qi_depos_tend_d, precip_total_tend_d, nevapr_d, qr_evap_tend_d, vap_liq_exchange_d,
-      vap_ice_exchange_d, liq_ice_exchange_d, pratot_d, prctot_d, bools_d(0),nk, P3F::P3Runtime());
+      vap_ice_exchange_d, liq_ice_exchange_d, qr2qv_evap_d, qi2qv_sublim_d,
+      qc2qr_accret_d, qc2qr_autoconv_d, qv2qi_vapdep_d, qc2qi_berg_d,
+      qc2qr_ice_shed_d, qc2qi_collect_d, qr2qi_collect_d,
+      qc2qi_hetero_freeze_d, qr2qi_immers_freeze_d, qi2qr_melt_d,
+      pratot_d, prctot_d, bools_d(0),nk, P3F::P3Runtime());
   });
 
   // Sync back to host. Skip intent in variables.
@@ -1096,7 +1142,11 @@ void p3_main_part2_host(
     nc_incld_d, nr_incld_d, ni_incld_d, bm_incld_d, mu_c_d, nu_d, lamc_d,
     cdist_d, cdist1_d, cdistr_d, mu_r_d, lamr_d, logn0r_d, qv2qi_depos_tend_d, precip_total_tend_d,
     nevapr_d, qr_evap_tend_d, vap_liq_exchange_d, vap_ice_exchange_d,
-    liq_ice_exchange_d, pratot_d, prctot_d
+    liq_ice_exchange_d, pratot_d, prctot_d,
+    qr2qv_evap_d, qi2qv_sublim_d, qc2qr_accret_d, qc2qr_autoconv_d,
+    qv2qi_vapdep_d, qc2qi_berg_d, qc2qr_ice_shed_d, qc2qi_collect_d,
+    qr2qi_collect_d, qc2qi_hetero_freeze_d, qr2qi_immers_freeze_d,
+    qi2qr_melt_d
   };
 
   ekat::device_to_host({
@@ -1105,7 +1155,11 @@ void p3_main_part2_host(
       qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld,
       mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend,
       nevapr, qr_evap_tend, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange,
-      pratot, prctot},
+      pratot, prctot,
+      qr2qv_evap, qi2qv_sublim, qc2qr_accret, qc2qr_autoconv,
+      qv2qi_vapdep, qc2qi_berg, qc2qr_ice_shed, qc2qi_collect, qr2qi_collect,
+      qc2qi_hetero_freeze, qr2qi_immers_freeze, qi2qr_melt
+    },
     nk, inout_views);
 
   const auto bools_h = Kokkos::create_mirror_view(bools_d);
@@ -1126,10 +1180,11 @@ void p3_main_part3_host(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack      = typename P3F::Spack;
-  using view_1d    = typename P3F::view_1d<Spack>;
+  using Pack      = typename P3F::Pack;
+  using view_1d    = typename P3F::view_1d<Pack>;
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
+  using TPF = ekat::TeamPolicyFactory<ExeSpace>;
   using MemberType = typename P3F::MemberType;
 
   EKAT_REQUIRE_MSG(kts == 1, "kts must be 1, got " << kts);
@@ -1141,7 +1196,7 @@ void p3_main_part3_host(
   kbot -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
   const Real max_total_ni = 740.0e3;  // Hard-code this value for F90 comparison
 
   // Set up views
@@ -1193,7 +1248,7 @@ void p3_main_part3_host(
   auto tables = P3F::p3_init();
   const auto dnu            = tables.dnu_table_vals;
   const auto ice_table_vals = tables.ice_table_vals;
-  auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
+  auto policy = TPF::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
     P3F::p3_main_part3(team, nk_pack, max_total_ni, dnu, ice_table_vals,
@@ -1234,9 +1289,10 @@ Int p3_main_host(
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
-  using Spack      = typename P3F::Spack;
+  using Pack      = typename P3F::Pack;
   using KT         = typename P3F::KT;
-  using view_2d    = typename P3F::view_2d<Spack>;
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+  using view_2d    = typename P3F::view_2d<Pack>;
   using sview_1d   = typename P3F::view_1d<Real>;
   using sview_2d   = typename P3F::view_2d<Real>;
 
@@ -1260,8 +1316,8 @@ Int p3_main_host(
     pres, dz, nc_nuceat_tend, nccn_prescribed, ni_activated, dpres, inv_exner, cld_frac_i, cld_frac_l, cld_frac_r, inv_qc_relvar,
     qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm, qv_prev, t_prev, diag_eff_radius_qc, diag_eff_radius_qi, diag_eff_radius_qr,
     rho_qi, qv2qi_depos_tend,
-    liq_ice_exchange, vap_liq_exchange, vap_ice_exchange, 
-    precip_liq_flux, precip_ice_flux, 
+    liq_ice_exchange, vap_liq_exchange, vap_ice_exchange,
+    precip_liq_flux, precip_ice_flux,
     precip_liq_surf, precip_ice_surf
   };
 
@@ -1316,22 +1372,59 @@ Int p3_main_host(
     precip_liq_flux_d      (temp_d[counter++]),
     precip_ice_flux_d      (temp_d[counter++]), // 35
     precip_liq_surf_temp_d (temp_d[counter++]),
-    precip_ice_surf_temp_d (temp_d[counter++]); 
+    precip_ice_surf_temp_d (temp_d[counter++]);
 
   std::vector<Real> hetfrz_immersion_nucleation_tend(nj*nk, 0.0);
   std::vector<Real> hetfrz_contact_nucleation_tend(nj*nk, 0.0);
   std::vector<Real> hetfrz_deposition_nucleation_tend(nj*nk, 0.0);
+  std::vector<Real> qr2qv_evap(nj*nk, 0.0);
+  std::vector<Real> qi2qv_sublim(nj*nk, 0.0);
+  std::vector<Real> qc2qr_accret(nj*nk, 0.0);
+  std::vector<Real> qc2qr_autoconv(nj*nk, 0.0);
+  std::vector<Real> qv2qi_vapdep(nj*nk, 0.0);
+  std::vector<Real> qc2qi_berg(nj*nk, 0.0);
+  std::vector<Real> qc2qr_ice_shed(nj*nk, 0.0);
+  std::vector<Real> qc2qi_collect(nj*nk, 0.0);
+  std::vector<Real> qr2qi_collect(nj*nk, 0.0);
+  std::vector<Real> qc2qi_hetero_freeze(nj*nk, 0.0);
+  std::vector<Real> qr2qi_immers_freeze(nj*nk, 0.0);
+  std::vector<Real> qi2qr_melt(nj*nk, 0.0);
+  std::vector<Real> qc_sedim(nj*nk, 0.0);
+  std::vector<Real> qr_sedim(nj*nk, 0.0);
+  std::vector<Real> qi_sedim(nj*nk, 0.0);
   std::vector<const Real*> pointers = {
-    hetfrz_immersion_nucleation_tend.data(), 
-    hetfrz_contact_nucleation_tend.data(), 
-    hetfrz_deposition_nucleation_tend.data()};
-  std::vector<size_t> dim1(3, nj);
-  std::vector<size_t> dim2(3, nk);
-  std::vector<view_2d> view(3);
+    hetfrz_immersion_nucleation_tend.data(),
+    hetfrz_contact_nucleation_tend.data(),
+    hetfrz_deposition_nucleation_tend.data(),
+    qr2qv_evap.data(), qi2qv_sublim.data(),
+    qc2qr_accret.data(), qc2qr_autoconv.data(),
+    qv2qi_vapdep.data(), qc2qi_berg.data(),
+    qc2qr_ice_shed.data(), qc2qi_collect.data(),
+    qr2qi_collect.data(), qc2qi_hetero_freeze.data(),
+    qr2qi_immers_freeze.data(), qi2qr_melt.data(),
+    qc_sedim.data(), qr_sedim.data(), qi_sedim.data()};
+  std::vector<size_t> dim1(pointers.size(), nj);
+  std::vector<size_t> dim2(pointers.size(), nk);
+  std::vector<view_2d> view(pointers.size());
   ekat::host_to_device(pointers, dim1, dim2, view);
   view_2d hetfrz_immersion_nucleation_tend_d(view[0]);
   view_2d hetfrz_contact_nucleation_tend_d(view[1]);
   view_2d hetfrz_deposition_nucleation_tend_d(view[2]);
+  view_2d qr2qv_evap_d(view[3]);
+  view_2d qi2qv_sublim_d(view[4]);
+  view_2d qc2qr_accret_d(view[5]);
+  view_2d qc2qr_autoconv_d(view[6]);
+  view_2d qv2qi_vapdep_d(view[7]);
+  view_2d qc2qi_berg_d(view[8]);
+  view_2d qc2qr_ice_shed_d(view[9]);
+  view_2d qc2qi_collect_d(view[10]);
+  view_2d qr2qi_collect_d(view[11]);
+  view_2d qc2qi_hetero_freeze_d(view[12]);
+  view_2d qr2qi_immers_freeze_d(view[13]);
+  view_2d qi2qr_melt_d(view[14]);
+  view_2d qc_sedim_d(view[15]);
+  view_2d qr_sedim_d(view[16]);
+  view_2d qi_sedim_d(view[17]);
 
   // Special cases: precip_liq_surf=1d<scalar>(ni), precip_ice_surf=1d<scalar>(ni), col_location=2d<scalar>(nj, 3)
   sview_1d precip_liq_surf_d("precip_liq_surf_d", nj), precip_ice_surf_d("precip_ice_surf_d", nj);
@@ -1345,8 +1438,8 @@ Int p3_main_host(
   view_2d qr_evap_tend_d("qr_evap_tend_d",nj,nk);
 
   Kokkos::parallel_for(nj, KOKKOS_LAMBDA(const Int& i) {
-    precip_liq_surf_d(i) = precip_liq_surf_temp_d(0, i / Spack::n)[i % Spack::n];
-    precip_ice_surf_d(i) = precip_ice_surf_temp_d(0, i / Spack::n)[i % Spack::n];
+    precip_liq_surf_d(i) = precip_liq_surf_temp_d(0, i / Pack::n)[i % Pack::n];
+    precip_ice_surf_d(i) = precip_ice_surf_temp_d(0, i / Pack::n)[i % Pack::n];
 
     for (int j = 0; j < 3; ++j) {
       col_location_d(i, j) = i+1;
@@ -1364,10 +1457,15 @@ Int p3_main_host(
                                         rho_qi_d,precip_liq_flux_d, precip_ice_flux_d, precip_total_tend_d, nevapr_d, diag_equiv_reflectivity_d};
   P3F::P3Infrastructure infrastructure{dt, it, its, ite, kts, kte,
                                        do_predict_nc, do_prescribed_CCN, col_location_d};
-  P3F::P3HistoryOnly history_only{liq_ice_exchange_d, vap_liq_exchange_d,
-                                  vap_ice_exchange_d};
+  P3F::P3HistoryOnly history_only{liq_ice_exchange_d, vap_liq_exchange_d, vap_ice_exchange_d,
+      qr2qv_evap_d, qi2qv_sublim_d,
+      qc2qr_accret_d, qc2qr_autoconv_d, qv2qi_vapdep_d, qc2qi_berg_d,
+      qc2qr_ice_shed_d, qc2qi_collect_d, qr2qi_collect_d,
+      qc2qi_hetero_freeze_d, qr2qi_immers_freeze_d, qi2qr_melt_d,
+      qc_sedim_d, qr_sedim_d, qi_sedim_d,
+  };
 
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 #ifdef SCREAM_P3_SMALL_KERNELS
   view_2d
     mu_r("mu_r", nj, nk_pack), T_atm("T_atm", nj, nk_pack), lamr("lamr", nj, nk_pack), logn0r("logn0r", nj, nk_pack), nu("nu", nj, nk_pack),
@@ -1402,8 +1500,8 @@ Int p3_main_host(
   P3F::P3Runtime runtime_options{740.0e3};
 
   // Create local workspace
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(nj, nk_pack);
-  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nk_pack, 52, policy);
+  const auto policy = TPF::get_default_team_policy(nj, nk_pack);
+  ekat::WorkspaceManager<Pack, KT::Device> workspace_mgr(nk_pack, 52, policy);
 
   auto elapsed_microsec = P3F::p3_main(runtime_options, prog_state, diag_inputs, diag_outputs, infrastructure,
                                        history_only, lookup_tables,
@@ -1413,8 +1511,8 @@ Int p3_main_host(
                                        workspace_mgr, nj, nk);
 
   Kokkos::parallel_for(nj, KOKKOS_LAMBDA(const Int& i) {
-    precip_liq_surf_temp_d(0, i / Spack::n)[i % Spack::n] = precip_liq_surf_d(i);
-    precip_ice_surf_temp_d(0, i / Spack::n)[i % Spack::n] = precip_ice_surf_d(i);
+    precip_liq_surf_temp_d(0, i / Pack::n)[i % Pack::n] = precip_liq_surf_d(i);
+    precip_ice_surf_temp_d(0, i / Pack::n)[i % Pack::n] = precip_ice_surf_d(i);
   });
 
   // Sync back to host

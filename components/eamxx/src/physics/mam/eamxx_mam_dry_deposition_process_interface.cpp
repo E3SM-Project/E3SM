@@ -6,6 +6,8 @@
 // For reading fractional land use file
 #include <physics/mam/readfiles/fractional_land_use.hpp>
 
+#include <ekat_team_policy_utils.hpp>
+
 namespace scream {
 
 using FracLandUseFunc = frac_landuse::fracLandUseFunctions<Real, DefaultDevice>;
@@ -22,13 +24,12 @@ MAMDryDep::MAMDryDep(const ekat::Comm &comm, const ekat::ParameterList &params)
 // ================================================================
 //  SET_GRIDS
 // ================================================================
-void MAMDryDep::set_grids(
-    const std::shared_ptr<const GridsManager> grids_manager) {
+void MAMDryDep::create_requests() {
   using namespace ekat::units;
 
   // set grid for all the inputs and outputs
   // use physics grid
-  grid_ = grids_manager->get_grid("physics");
+  grid_ = m_grids_manager->get_grid("physics");
 
   // Name of the grid
   const auto &grid_name = grid_->name();
@@ -52,7 +53,7 @@ void MAMDryDep::set_grids(
   // layout for 2D (ncol, pcnst)
   constexpr int pcnst = mam4::aero_model::pcnst;
   const FieldLayout vector2d_pcnst =
-      grid_->get_2d_vector_layout(pcnst, "num_phys_constants");
+      grid_->get_2d_vector_layout(pcnst, "num_phys_constituents");
   const FieldLayout vector2d_class =
       grid_->get_2d_vector_layout(n_land_type, "class");
 
@@ -73,6 +74,10 @@ void MAMDryDep::set_grids(
 
   add_tracers_wet_atm();
   add_fields_dry_atm();
+  
+  // cloud liquid number mixing ratio [1/kg]
+  auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
+  add_tracer<Required>("nc", grid_, n_unit);
 
   static constexpr auto m2 = m * m;
   static constexpr auto s2 = s * s;
@@ -330,8 +335,8 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
 
 // =========================================================================================
 void MAMDryDep::run_impl(const double dt) {
-  const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
   pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);

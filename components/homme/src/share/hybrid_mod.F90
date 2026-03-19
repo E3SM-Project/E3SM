@@ -17,6 +17,12 @@ private
      integer           :: ithr
      integer           :: hthreads
      integer           :: vthreads
+#ifdef MODEL_CESM
+     integer           :: nthreads
+     integer           :: ibeg, iend
+     integer           :: kbeg, kend
+     integer           :: qbeg, qend
+#endif
      logical           :: masterthread
   end type
 

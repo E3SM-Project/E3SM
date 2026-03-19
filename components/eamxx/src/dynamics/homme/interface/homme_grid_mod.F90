@@ -12,11 +12,12 @@ module homme_grid_mod
   public :: finalize_geometry_f90
 
   ! Routines to get information
-  ! public :: get_cols_gids_f90, get_cols_indices_f90
   public :: get_num_local_columns_f90, get_num_global_columns_f90
   public :: get_num_local_elems_f90, get_num_global_elems_f90
   public :: get_np_f90, get_nlev_f90
   public :: is_planar_geometry_f90
+
+  public :: check_grids_inited
 
 contains
 

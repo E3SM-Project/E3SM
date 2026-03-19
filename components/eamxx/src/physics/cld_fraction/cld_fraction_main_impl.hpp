@@ -2,7 +2,9 @@
 #define CLD_FRACTION_MAIN_IMPL_HPP
 
 #include "physics/cld_fraction/cld_fraction_functions.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_subview_utils.hpp>
 
 namespace scream {
 namespace cld_fraction {
@@ -15,16 +17,18 @@ void CldFractionFunctions<S,D>
   const Int nk,
   const Real ice_threshold,
   const Real ice_4out_threshold,
-  const view_2d<const Spack>& qi,
-  const view_2d<const Spack>& liq_cld_frac,
-  const view_2d<Spack>& ice_cld_frac,
-  const view_2d<Spack>& tot_cld_frac,
-  const view_2d<Spack>& ice_cld_frac_4out,
-  const view_2d<Spack>& tot_cld_frac_4out)
+  const view_2d<const Pack>& qi,
+  const view_2d<const Pack>& liq_cld_frac,
+  const view_2d<Pack>& ice_cld_frac,
+  const view_2d<Pack>& tot_cld_frac,
+  const view_2d<Pack>& ice_cld_frac_4out,
+  const view_2d<Pack>& tot_cld_frac_4out)
 {
   using ExeSpace = typename KT::ExeSpace;
-  const Int nk_pack = ekat::npack<Spack>(nk);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
+  using TPF = ekat::TeamPolicyFactory<ExeSpace>;
+
+  const Int nk_pack = ekat::npack<Pack>(nk);
+  const auto policy = TPF::get_default_team_policy(nj, nk_pack);
   Kokkos::parallel_for(
     "cld fraction main loop",
     policy,
@@ -55,11 +59,11 @@ void CldFractionFunctions<S,D>
   const MemberType& team,
   const Int& nk,
   const Real& threshold,
-  const uview_1d<const Spack>& qi,
-  const uview_1d<Spack>&       ice_cld_frac)
+  const uview_1d<const Pack>& qi,
+  const uview_1d<Pack>&       ice_cld_frac)
 {
   team.team_barrier();
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
       const Real ice_frac_threshold = threshold;
@@ -76,12 +80,12 @@ void CldFractionFunctions<S,D>
 ::calc_totalfrac(
   const MemberType& team,
   const Int& nk,
-  const uview_1d<const Spack>& liq_cld_frac,
-  const uview_1d<const Spack>& ice_cld_frac,
-  const uview_1d<Spack>&       tot_cld_frac)
+  const uview_1d<const Pack>& liq_cld_frac,
+  const uview_1d<const Pack>& ice_cld_frac,
+  const uview_1d<Pack>&       tot_cld_frac)
 {
   team.team_barrier();
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
       tot_cld_frac(k) = max(ice_cld_frac(k),liq_cld_frac(k));

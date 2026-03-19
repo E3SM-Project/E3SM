@@ -3,23 +3,21 @@
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_output.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_header.hpp"
 #include "share/field/field.hpp"
-#include "share/field/field_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util//eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_parameter_list.hpp>
 
 #include <iostream>
 #include <iomanip>
@@ -27,7 +25,7 @@
 
 namespace scream {
 
-constexpr Real FillValue = constants::DefaultFillValue<float>().value;
+constexpr Real fill_value = constants::fill_value<Real>;
 
 std::shared_ptr<FieldManager>
 get_test_fm(const std::shared_ptr<const AbstractGrid>& grid);
@@ -38,8 +36,7 @@ clone_fm (const std::shared_ptr<const FieldManager>& fm);
 std::shared_ptr<GridsManager>
 get_test_gm(const ekat::Comm& comm, const Int num_gcols, const Int num_levs);
 
-template<typename Engine>
-void randomize_fields (const FieldManager& fm, Engine& engine);
+void randomize_fields (const FieldManager& fm, int seed);
 
 void time_advance (const FieldManager& fm,
                    const std::list<ekat::CaseInsensitiveString>& fnames,
@@ -55,7 +52,7 @@ TEST_CASE("output_restart","io")
   int num_levs = 3;
   int dt = 1;
 
-  auto engine = setup_random_test(&comm);
+  auto seed = get_random_test_seed(&comm);
 
   // First set up a field manager and grids manager to interact with the output functions
   auto gm = get_test_gm(comm,num_gcols,num_levs);
@@ -63,7 +60,7 @@ TEST_CASE("output_restart","io")
 
   // The the IC field manager
   auto fm0 = get_test_fm(grid);
-  randomize_fields(*fm0,engine);
+  randomize_fields(*fm0,seed);
 
   const auto& out_fields = fm0->get_group_info("output").m_fields_names;
 
@@ -77,7 +74,6 @@ TEST_CASE("output_restart","io")
   ekat::ParameterList output_params;
   output_params.set<std::string>("floating_point_precision","real");
   output_params.set<std::vector<std::string>>("field_names",{"field_1", "field_2", "field_3", "field_4","field_5"});
-  output_params.set<double>("fill_value",FillValue);
   output_params.set<int>("flush_frequency",1);
   output_params.sublist("restart").set<bool>("force_new_file",false);
   output_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
@@ -182,7 +178,6 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid)
   FieldIdentifier fid5("field_5",rad_vector_3d,m*m, gn);
 
   // Register fields with fm
-  fm->registration_begins();
   fm->register_field(FR{fid1,SL{"output"}});
   fm->register_field(FR{fid2,SL{"output"}});
   fm->register_field(FR{fid3,SL{"output"}});
@@ -203,9 +198,7 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid)
 
 std::shared_ptr<FieldManager>
 clone_fm(const std::shared_ptr<const FieldManager>& src) {
-  auto copy = std::make_shared<FieldManager>(src->get_grid());
-  copy->registration_begins();
-  copy->registration_ends();
+  auto copy = std::make_shared<FieldManager>(src->get_grid(),RepoState::Closed);
   for (auto it : src->get_repo()) {
     copy->add_field(it.second->clone());
   }
@@ -214,23 +207,19 @@ clone_fm(const std::shared_ptr<const FieldManager>& src) {
 }
 
 /*=================================================================================================*/
-template<typename Engine>
-void randomize_fields (const FieldManager& fm, Engine& engine)
+void randomize_fields (const FieldManager& fm, int seed)
 {
-  using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf(0.01,0.99);
-
   // Initialize these fields
   const auto& f1 = fm.get_field("field_1");
   const auto& f2 = fm.get_field("field_2");
   const auto& f3 = fm.get_field("field_3");
   const auto& f4 = fm.get_field("field_4");
   const auto& f5 = fm.get_field("field_5");
-  randomize(f1,engine,pdf);
-  randomize(f2,engine,pdf);
-  randomize(f3,engine,pdf);
-  randomize(f4,engine,pdf);
-  randomize(f5,engine,pdf);
+  randomize_uniform(f1,seed++);
+  randomize_uniform(f2,seed++);
+  randomize_uniform(f3,seed++);
+  randomize_uniform(f4,seed++);
+  randomize_uniform(f5,seed++);
 }
 
 /*=============================================================================================*/
@@ -277,8 +266,8 @@ void time_advance (const FieldManager& fm,
                 if (fname == "field_5") {
                   // field_5 is used to test restarts w/ filled values, so
                   // we cycle between filled and unfilled states.
-                  v(i,j,k) = (v(i,j,k)==FillValue) ? dt :
-                    ( (v(i,j,k)==1.0) ? 2.0*dt : FillValue );
+                  v(i,j,k) = (v(i,j,k)==fill_value) ? dt :
+                    ( (v(i,j,k)==1.0) ? 2.0*dt : fill_value );
                 } else {
                               v(i,j,k) += dt;
                 }

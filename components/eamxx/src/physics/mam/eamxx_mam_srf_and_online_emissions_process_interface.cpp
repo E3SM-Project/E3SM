@@ -6,6 +6,8 @@
 // For reading soil erodibility file
 #include <physics/mam/readfiles/soil_erodibility.hpp>
 
+#include <ekat_team_policy_utils.hpp>
+
 namespace scream {
 
 // For reading soil erodibility file
@@ -29,9 +31,8 @@ MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
 // ================================================================
 //  SET_GRIDS
 // ================================================================
-void MAMSrfOnlineEmiss::set_grids(
-    const std::shared_ptr<const GridsManager> grids_manager) {
-  grid_                 = grids_manager->get_grid("physics");
+void MAMSrfOnlineEmiss::create_requests() {
+  grid_                 = m_grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
@@ -62,7 +63,11 @@ void MAMSrfOnlineEmiss::set_grids(
   // Specific humidity [kg/kg]
   add_tracers_wet_atm();
   add_fields_dry_atm();
-
+  
+  // cloud liquid number mixing ratio [1/kg]
+  auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
+  add_tracer<Required>("nc", grid_, n_unit);
+  
   //----------- Variables from microphysics scheme -------------
 
   // Surface geopotential [m2/s2]
@@ -109,6 +114,7 @@ void MAMSrfOnlineEmiss::set_grids(
   dms.data_file    = m_params.get<std::string>("srf_emis_specifier_for_dms");
   dms.species_name = "dms";
   dms.sectors      = {"DMS"};
+  dms.scale_factor = m_params.get<Real>("srf_emis_scale_factor_for_dms", 1.0);
   srf_emiss_species_.push_back(dms);  // add to the vector
 
   //--------------------------------------------------------------------
@@ -322,7 +328,8 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //--------------------------------------------------------------------
   for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
     srfEmissFunc::update_srfEmiss_data_from_file(
-        ispec_srf.dataReader_, start_of_step_ts(), curr_month, *ispec_srf.horizInterp_,
+        ispec_srf.dataReader_, start_of_step_ts(), curr_month,
+        ispec_srf.scale_factor, *ispec_srf.horizInterp_,
         ispec_srf.data_end_);  // output
   }
 
@@ -354,8 +361,8 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMSrfOnlineEmiss::run_impl(const double dt) {
-  const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
@@ -435,7 +442,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
 
     // Update time state and if the month has changed, update the data.
     srfEmissFunc::update_srfEmiss_timestate(
-        ispec_srf.dataReader_, ts, *ispec_srf.horizInterp_,
+        ispec_srf.dataReader_, ts, *ispec_srf.horizInterp_, ispec_srf.scale_factor,
         // output
         ispec_srf.timeState_, ispec_srf.data_start_, ispec_srf.data_end_);
 

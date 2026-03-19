@@ -10,16 +10,16 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_relaxation_timescale(
-  const Spack& rho, const Spack& temp, const Spack& rhofaci, const Spack& table_val_qi2qr_melting,
-  const Spack& table_val_qi2qr_vent_melt, const Spack& dv, const Spack& mu, const Spack& sc,
-  const Spack& qi_incld, const Spack& ni_incld,
-  Spack& epsi, Spack& epsi_tot,
-  const Smask& context)
+  const Pack& rho, const Pack& temp, const Pack& rhofaci, const Pack& table_val_qi2qr_melting,
+  const Pack& table_val_qi2qr_vent_melt, const Pack& dv, const Pack& mu, const Pack& sc,
+  const Pack& qi_incld, const Pack& ni_incld,
+  Pack& epsi, Pack& epsi_tot,
+  const Mask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
-  constexpr Scalar tmelt = C::Tmelt;
-  constexpr Scalar zero = C::ZERO;
-  constexpr Scalar pi = C::Pi;
+  constexpr Scalar tmelt  = C::Tmelt.value;
+  constexpr Scalar zero   = C::ZERO;
+  constexpr Scalar pi     = C::Pi;
 
   const auto t_is_negative = temp < tmelt;
   const auto qi_incld_ge_small = qi_incld >= qsmall;

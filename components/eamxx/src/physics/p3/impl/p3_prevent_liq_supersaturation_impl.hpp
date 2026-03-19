@@ -2,8 +2,8 @@
 #define P3_PREVENT_LIQ_SUPERSATURATION_IMPL_HPP
 
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
-#include "physics/share/physics_saturation_impl.hpp"
+#include "share/physics/physics_functions.hpp" // also for ETI not on GPUs
+#include "share/physics/physics_saturation_impl.hpp"
 
 namespace scream {
 namespace p3 {
@@ -14,19 +14,19 @@ namespace p3 {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::prevent_liq_supersaturation(const Spack& pres, const Spack& t_atm, const Spack& qv, const Scalar& dt, const Spack& qv2qi_vapdep_tend, const Spack& qinuc, Spack& qi2qv_sublim_tend, Spack& qr2qv_evap_tend, const Smask& context)
+void Functions<S,D>::prevent_liq_supersaturation(const Pack& pres, const Pack& t_atm, const Pack& qv, const Scalar& dt, const Pack& qv2qi_vapdep_tend, const Pack& qinuc, Pack& qi2qv_sublim_tend, Pack& qr2qv_evap_tend, const Mask& context)
 // Note: context masks cells which are just padding for packs or which don't have any condensate worth
 // performing calculations on.
 {
   using physics = scream::physics::Functions<Scalar, Device>;
 
-  constexpr Scalar inv_cp       = C::INV_CP;
-  constexpr Scalar rv           = C::RV;
+  constexpr Scalar inv_cp       = C::INV_CP.value;
+  constexpr Scalar rv           = C::RV.value;
   constexpr Scalar qsmall       = C::QSMALL;
-  constexpr Scalar latvap       = C::LatVap;
-  constexpr Scalar latice       = C::LatIce;
+  constexpr Scalar latvap       = C::LatVap.value;
+  constexpr Scalar latice       = C::LatIce.value;
 
-  Spack qv_sinks, qv_sources, qv_endstep, T_endstep, A, frac;
+  Pack qv_sinks, qv_sources, qv_endstep, T_endstep, A, frac;
 
   qv_sources.set(context, qi2qv_sublim_tend + qr2qv_evap_tend);
   const auto has_sources = (qv_sources>=qsmall && context); //if nothing to rescale, no point in calculations.

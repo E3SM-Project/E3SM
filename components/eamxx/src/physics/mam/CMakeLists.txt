@@ -9,7 +9,7 @@ endif()
 # Haero (Kokkos-based aerosol interface library)
 set(HAERO_ENABLE_GPU ${EAMXX_ENABLE_GPU})
 set(HAERO_ENABLE_MPI ON)
-set(HAERO_ENABLE_TESTS OFF)
+set(HAERO_ENABLE_TESTS OFF CACHE BOOL "Disable Haero tests within E3SM" FORCE)
 if (SCREAM_DOUBLE_PRECISION)
   set(HAERO_PRECISION "double")
 else()
@@ -41,6 +41,8 @@ add_subdirectory(${EXTERNALS_SOURCE_DIR}/mam4xx ${CMAKE_BINARY_DIR}/externals/ma
 
 # EAMxx mam4xx-based atmospheric processes
 add_library(mam
+  readfiles/vertical_remapper_mam4.cpp
+  readfiles/vertical_remapper_exo_coldens.cpp
   eamxx_mam_generic_process_interface.cpp
   eamxx_mam_microphysics_process_interface.cpp
   ${SCREAM_BASE_DIR}/src/physics/rrtmgp/shr_orb_mod_c2f.F90
@@ -56,7 +58,7 @@ target_include_directories(mam PUBLIC
   ${EXTERNALS_SOURCE_DIR}/haero
   ${EXTERNALS_SOURCE_DIR}/mam4xx/src
 )
-target_link_libraries(mam PUBLIC physics_share csm_share scream_share mam4xx haero)
+target_link_libraries(mam PUBLIC eamxx_physics_share csm_share scream_share mam4xx haero)
 
 #if (NOT SCREAM_LIB_ONLY)
 #  add_subdirectory(tests)

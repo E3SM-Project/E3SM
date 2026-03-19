@@ -12,7 +12,7 @@ from CIME.build import get_standard_makefile_args
 from CIME.case import Case
 
 sys.path.append(os.path.dirname(__file__))
-from buildlib_util import extract_from_macros
+from buildlib_util import extract_from_macros, config_if_not_configured
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +80,12 @@ def buildlib(bldroot, installpath, case):
         os.environ["ADIOS2_DIR"] = os.environ["ADIOS2_ROOT"]
     if "BLOSC2_ROOT" in os.environ:
         os.environ["Blosc2_DIR"] = os.environ["BLOSC2_ROOT"]
+    if "H5Z_BLOSC2_ROOT" in os.environ:
+        os.environ["H5Z_BLOSC2_DIR"] = os.environ["H5Z_BLOSC2_ROOT"]
+    if "ZFP_ROOT" in os.environ:
+        os.environ["ZFP_DIR"] = os.environ["ZFP_ROOT"]
+    if "H5Z_ZFP_ROOT" in os.environ:
+        os.environ["H5Z_ZFP_DIR"] = os.environ["H5Z_ZFP_ROOT"]
 
     # If variable PIO_VERSION_MAJOR is defined in the environment then
     # we assume that PIO is installed on the system
@@ -145,10 +151,16 @@ def buildlib(bldroot, installpath, case):
     # elif which_h5dump is not None:
     #     os.environ["HDF5"] = os.path.dirname(os.path.dirname(which_h5dump))
 
-    # Before E3SM upgrades scorpio submodule to 1.5.0 or higher, keep WITH_HDF5
-    # CMake option OFF by default.
-    # if "HDF5_ROOT" in os.environ:
-    #    cmake_opts += "-DWITH_HDF5:BOOL=ON "
+    hdf5c_found = False
+    if "HDF5_ROOT" in os.environ:
+        cmake_opts += "-DWITH_HDF5:BOOL=ON "
+        if "BLOSC2_ROOT" in os.environ and "H5Z_BLOSC2_ROOT" in os.environ:
+            cmake_opts += "-DHDF5_USE_COMPRESSION:BOOL=ON "
+            # Uncomment to enable flush after HDF5 write (useful when HDF5 runs out of memory)
+            #cmake_opts += "-DSPIO_HDF5_FLUSH_AFTER_COLL_WR:BOOL=ON "
+            # Note: Use regex to disable compression for selected variables, if needed
+            # e.g. cmake_opts += "-DSPIO_OVERRIDE_HDF5_COMPRESSION_VNAME_REGEX='(decomp_type|numlev|hwrt_prec|avgflag|fillvalue|meridional_complement|zonal_complement)' "
+            hdf5c_found = True
 
     # Same deal with libz and szip
     if "ZLIB_ROOT" in os.environ:
@@ -192,10 +204,9 @@ def buildlib(bldroot, installpath, case):
     if pio_hints:
         cmake_opts += f"-DPIO_FILESYSTEM_HINTS:STRING='$(PIO_FILESYSTEM_HINTS)' "
 
-    # This runs the pio cmake command from the cime case Makefile
-    logger.info("Configuring SCORPIO")
+    # Do cmake
     cmd = f"FC={fc} CC={cc} CXX={cxx} LDFLAGS='{ldflags}' cmake {cmake_opts} {scorpio_src_dir}"
-    run_bld_cmd_ensure_logging(cmd, logger, from_dir=pio_bld_dir)
+    config_if_not_configured("SCORPIO", pio_bld_dir, cmd, logger)
 
     # This runs the pio make command from the cmake generated Makefile
     logger.info("Building SCORPIO")
@@ -211,11 +222,13 @@ def buildlib(bldroot, installpath, case):
         pnetcdf_string = "WITH_PNETCDF:BOOL=ON"
         netcdf4_string = "NetCDF_C_HAS_PARALLEL:BOOL=TRUE"
 
+    netcdf4_nczarr_string = "PIO_ENABLE_NCZARR:BOOL=ON"
     adios_string = "WITH_ADIOS2:BOOL=ON"
     hdf5_string = "WITH_HDF5:BOOL=ON"
     expect_string_found = False
     pnetcdf_found = False
     netcdf4_parallel_found = False
+    netcdf4_nczarr_found = False
     adios_found = False
     hdf5_found = False
 
@@ -227,6 +240,8 @@ def buildlib(bldroot, installpath, case):
             pnetcdf_found = True
         if re.search(netcdf4_string, line):
             netcdf4_parallel_found = True
+        if re.search(netcdf4_nczarr_string, line):
+            netcdf4_nczarr_found = True
         if re.search(adios_string, line):
             adios_found = True
         if re.search(hdf5_string, line):
@@ -285,12 +300,16 @@ def buildlib(bldroot, installpath, case):
         valid_values += ",pnetcdf"
     if netcdf4_parallel_found:
         valid_values += ",netcdf4p,netcdf4c"
+    if netcdf4_nczarr_found:
+        valid_values += ",netcdf4z"
     if adios_found:
         valid_values += ",adios"
         if adiosc_found:
             valid_values += ",adiosc"
     if hdf5_found:
         valid_values += ",hdf5"
+        if hdf5c_found:
+            valid_values += ",hdf5c"
 
     _set_pio_valid_values(case, valid_values)
 

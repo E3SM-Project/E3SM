@@ -2,11 +2,11 @@
 #define SCREAM_FIELD_LAYOUT_HPP
 
 #include "share/field/field_tag.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
-#include <ekat/std_meta/ekat_std_utils.hpp>
-#include <ekat/util/ekat_string_utils.hpp>
-#include <ekat/ekat_assert.hpp>
+#include <ekat_std_utils.hpp>
+#include <ekat_string_utils.hpp>
+#include <ekat_assert.hpp>
 
 #include <string>
 #include <vector>
@@ -92,10 +92,12 @@ public:
   // The rank is the number of tags associated to this field.
   int rank () const  { return m_rank; }
 
-  int dim_idx (const FieldTag t) const;
+  // If throw_if_multiple_matches=false, simply return the idx of the
+  // first match, otherwise throws an exception if 2+ matches are found
+  int dim_idx (const FieldTag t, bool throw_if_multiple_matches = true) const;
 
-  int dim (const std::string& name) const;
-  int dim (const FieldTag tag) const;
+  int dim (const std::string& name, bool throw_if_multiple_matches = true) const;
+  int dim (const FieldTag tag, bool throw_if_multiple_matches = true) const;
   int dim (const int idim) const;
   const std::vector<int>& dims () const { return m_dims; }
   const extents_type& extents () const { return m_extents; }
@@ -132,6 +134,8 @@ public:
   FieldLayout& strip_dim (const int idim);
   FieldLayout& append_dim (const FieldTag t, const int extent);
   FieldLayout& append_dim (const FieldTag t, const int extent, const std::string& name);
+  FieldLayout& prepend_dim (const FieldTag t, const int extent);
+  FieldLayout& prepend_dim (const FieldTag t, const int extent, const std::string& name);
   FieldLayout& rename_dim (const int idim, const std::string& n);
   FieldLayout& rename_dim (const FieldTag tag, const std::string& n, const bool throw_if_not_found = true);
   FieldLayout& reset_dim (const int idim, const int extent);
@@ -142,6 +146,7 @@ public:
   FieldLayout& rename_dims (const std::map<FieldTag,std::string>& new_names); // Does not throw if not found
 
   FieldLayout clone() const;
+  FieldLayout transpose () const;
 
   // NOTE: congruent does not check the tags names. It only checks
   //       rank, m_tags, and m_dims. Use operator== if names are important
@@ -153,6 +158,8 @@ public:
 protected:
   void compute_type ();
   void set_extents ();
+  void add_dim (const FieldTag t, const int extent, const std::string& name,
+                bool prepend_instead_of_append = false);
 
   int                       m_rank;
   std::vector<FieldTag>     m_tags;
@@ -168,22 +175,27 @@ bool operator== (const FieldLayout& fl1, const FieldLayout& fl2);
 
 // ========================== IMPLEMENTATION ======================= //
 
-inline int FieldLayout::dim_idx (const FieldTag t) const {
-  // Check exactly one tag (no ambiguity)
-  EKAT_REQUIRE_MSG(ekat::count(m_tags,t)==1,
-      "Error! FieldTag::dim_idx requires that the tag appears exactly once.\n"
+inline int FieldLayout::dim_idx (const FieldTag t, bool throw_if_multiple_matches) const {
+  EKAT_REQUIRE_MSG( (not throw_if_multiple_matches) or ekat::count(m_tags,t)<=1,
+      "[FieldTag::dim_idx] Error! Multiple matches found for the requested tag.\n"
       "  - field tag: " + e2str(t) + "\n"
-      "  - tag count: " + std::to_string(ekat::count(m_tags,t)) + "\n");
+      "  - field layout: " + this->to_string() + "\n");
 
-  return std::distance(m_tags.begin(),ekat::find(m_tags,t));
+  auto it = ekat::find(m_tags,t);
+  EKAT_REQUIRE_MSG (it!=m_tags.end(),
+      "[FieldTag::dim_idx] Error! Requested tag not found.\n"
+      "  - field tag: " + e2str(t) + "\n"
+      "  - field layout: " + this->to_string() + "\n");
+
+  return std::distance(m_tags.begin(),it);
 }
 
 // returns extent
-inline int FieldLayout::dim (const FieldTag t) const {
-  return m_dims[dim_idx(t)];
+inline int FieldLayout::dim (const FieldTag t, bool throw_if_multiple_matches) const {
+  return m_dims[dim_idx(t,throw_if_multiple_matches)];
 }
 
-inline int FieldLayout::dim (const std::string& name) const {
+inline int FieldLayout::dim (const std::string& name, bool throw_if_multiple_matches) const {
   auto it = ekat::find(m_names,name);
 
   // Check if found
@@ -192,7 +204,7 @@ inline int FieldLayout::dim (const std::string& name) const {
       "  - layout dims: " + ekat::join(m_names,",") + "\n");
 
   // Check only one tag (no ambiguity)
-  EKAT_REQUIRE_MSG(ekat::count(m_names,name)==1,
+  EKAT_REQUIRE_MSG( (not throw_if_multiple_matches) or ekat::count(m_names,name)==1,
       "Error! Dimension name '" + name + "' appears multiple times.\n"
       "  - layout dims: " + ekat::join(m_names,",") + "\n");
 
@@ -214,7 +226,7 @@ inline long long FieldLayout::size () const {
   return prod;
 }
 
-inline FieldTag FieldLayout::tag (const int idim) const { 
+inline FieldTag FieldLayout::tag (const int idim) const {
   EKAT_REQUIRE_MSG (idim>=0 && idim<m_rank, "Error! Index out of bounds.");
   return m_tags[idim];
 }

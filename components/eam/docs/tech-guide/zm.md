@@ -14,7 +14,7 @@ The convective microphysics scheme is based on the work of Song and Zhang (2011)
 
 ### Mass flux adjustment
 
-The convective mass flux adjustment (MAdj) is designed to represent the dynamical effects of large-scale vertical motion on convection. With MAdj, convection is enhanced (suppressed) when there is large-scale ascending (descending) motion at the planetary boundary layer top. The coupling of convection with the large-scale circulation significantly improves the simulation of climate variability across multiple scales from diurnal cycle, convectively coupled equatorial waves, to Madden-Julian oscillations (Song et al., 2023).[@song_incorporating_2023]
+The convective mass flux adjustment (MAdj) is designed to represent the dynamical effects of large-scale vertical motion on convection. With MAdj, convection is enhanced (suppressed) when there is large-scale ascending (descending) motion at the planetary boundary layer top. The coupling of convection with the large-scale circulation significantly improves the simulation of internal variability across multiple scales from diurnal cycle, convectively coupled equatorial waves, to Madden-Julian oscillations (Song et al., 2023).[@song_incorporating_2023]
 
 ### MCSP
 

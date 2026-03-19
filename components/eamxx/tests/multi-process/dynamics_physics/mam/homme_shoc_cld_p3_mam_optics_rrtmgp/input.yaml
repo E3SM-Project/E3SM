@@ -15,6 +15,7 @@ time_stepping:
 initial_conditions:
   filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
+  eddy_diff_heat: 0.0
   surf_evap: 0.0
   surf_sens_flux: 0.0
   precip_liq_surf_mass: 0.0
@@ -24,8 +25,9 @@ initial_conditions:
   hetfrz_deposition_nucleation_tend: 0.1
   pbl_height : 1.0
   phis : 1.0
+  z_mam4_int : 0.0
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [homme,physics]
   schedule_type: sequential
   homme:
@@ -57,6 +59,7 @@ atmosphere_processes:
         c_diag_3rd_mom: 7.0
         coeff_kh: 0.1
         coeff_km: 0.1
+        shoc_1p5tke: false
 
     mam4_optics:
       mam4_mode1_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode1_rrtmg_aeronetdust_c20240206.nc

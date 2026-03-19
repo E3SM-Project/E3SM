@@ -3,6 +3,7 @@ module phys_grid_mod
   use iso_c_binding, only: c_int, c_double
   use parallel_mod,  only: abortmp, MPIinteger_t, MPIreal_t
   use kinds,         only: iulog
+  use mpi
 
   implicit none
   private
@@ -55,8 +56,6 @@ module phys_grid_mod
 
   type(pg_specs_t), target :: pg_specs (pgN_min:pgN_max)
 
-! To get MPI_IN_PLACE and MPI_DATATYPE_NULL
-#include <mpif.h>
   ! Note: in this module, we often use MPI_IN_PLACE,0,MPI_DATATYPE_NULL
   !       for the src array specs in Allgatherv calls. These special values 
   !       inform MPI that src array is aliasing the dst one, so MPI will
@@ -626,45 +625,45 @@ contains
     call compute_global_area (pg)
 #ifdef HAVE_MOAB
     if (pgN > 0) then
-       appname="HM_COARSE"//C_NULL_CHAR
-       ATM_ID1 = 120 !
-       ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, MHID)
-       if (ierr > 0 )  &
-       call abortmp('Error: cannot register moab app')
-       if(par%masterproc) then
-           write(iulog,*) " "
-           write(iulog,*) "register MOAB app:", trim(appname), "  MHID=", MHID
-           write(iulog,*) " "
-       endif
-       appname="HM_FINE"//C_NULL_CHAR
-       ATM_ID1 = 119 ! this number should not conflict with other components IDs; how do we know?
-       ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, MHFID)
-       if (ierr > 0 )  &
-       call abortmp('Error: cannot register moab app for fine mesh')
-       if(par%masterproc) then
-           write(iulog,*) " "
-           write(iulog,*) "register MOAB app:", trim(appname), "  MHFID=", MHFID
-           write(iulog,*) " "
-       endif
-         appname="HM_PGX"//C_NULL_CHAR
-         ATM_ID1 =  ATMID(1) ! this number should not conflict with other components IDs; how do we know?
-         !
-         ! in this case, we reuse the main atm id, mhid will not be used for intersection anymore
-         ! still, need to be careful
-         ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, mhpgid)
-         if (ierr > 0 )  &
-             call abortmp('Error: cannot register moab app for fine mesh')
-         if(par%masterproc) then
-             write(iulog,*) " "
-             write(iulog,*) "register MOAB app:", trim(appname), "  MHPGID=", mhpgid
-             write(iulog,*) " "
-         endif
+        appname="HM_COARSE"//C_NULL_CHAR
+        ATM_ID1 = 120 !
+        ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, MHID)
+        if (ierr > 0 )  &
+        call abortmp('Error: cannot register moab app')
+        if(par%masterproc) then
+            write(iulog,*) " "
+            write(iulog,*) "register MOAB app:", trim(appname), "  MHID=", MHID
+            write(iulog,*) " "
+        endif
+        appname="HM_FINE"//C_NULL_CHAR
+        ATM_ID1 = 119 ! this number should not conflict with other components IDs; how do we know?
+        ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, MHFID)
+        if (ierr > 0 )  &
+        call abortmp('Error: cannot register moab app for fine mesh')
+        if(par%masterproc) then
+            write(iulog,*) " "
+            write(iulog,*) "register MOAB app:", trim(appname), "  MHFID=", MHFID
+            write(iulog,*) " "
+        endif
+        appname="HM_PGX"//C_NULL_CHAR
+        ATM_ID1 =  ATMID(1) ! this number should not conflict with other components IDs; how do we know?
+        !
+        ! in this case, we reuse the main atm id, mhid will not be used for intersection anymore
+        ! still, need to be careful
+        ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, mhpgid)
+        if (ierr > 0 )  &
+            call abortmp('Error: cannot register moab app for fine mesh')
+        if(par%masterproc) then
+            write(iulog,*) " "
+            write(iulog,*) "register MOAB app:", trim(appname), "  MHPGID=", mhpgid
+            write(iulog,*) " "
+        endif
 ! instance distributed moab meshes from elem structures
 !    1 ) spectral coarse mesh
 !    2 ) GLL fine quad mesh (used mostly for visualization)
 !    3 ) pgN FV type mesh, (most of the time pg2 mesh), used for coupling with other components;
-       call create_moab_meshes(par, elem, pgN)
-     endif
+        call create_moab_meshes(par, elem, pgN)
+    endif
 #endif
   end subroutine phys_grid_init
 

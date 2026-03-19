@@ -2,6 +2,9 @@
 #include <physics/mam/eamxx_mam_constituent_fluxes_interface.hpp>
 #include <physics/mam/physical_limits.hpp>
 #include <share/property_checks/field_within_interval_check.hpp>
+
+#include <ekat_team_policy_utils.hpp>
+
 namespace scream {
 
 // ================================================================
@@ -20,9 +23,8 @@ MAMConstituentFluxes::MAMConstituentFluxes(const ekat::Comm &comm,
 // ================================================================
 //  SET_GRIDS
 // ================================================================
-void MAMConstituentFluxes::set_grids(
-    const std::shared_ptr<const GridsManager> grids_manager) {
-  grid_                 = grids_manager->get_grid("physics");
+void MAMConstituentFluxes::create_requests() {
+  grid_                 = m_grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
@@ -36,6 +38,11 @@ void MAMConstituentFluxes::set_grids(
 
   add_tracers_wet_atm();
   add_fields_dry_atm();
+
+  // cloud liquid number mixing ratio [1/kg]
+  auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
+  add_tracer<Required>("nc", grid_, n_unit);
+  
   static constexpr Units m2(m * m, "m2");
   // Constituent fluxes at the surface (gasses and aerosols)
   //[units: kg/m2/s (mass) or #/m2/s (number)]
@@ -133,6 +140,8 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMConstituentFluxes::run_impl(const double dt) {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   // -------------------------------------------------------------------
   // (LONG) NOTE: The following code is an adaptation of cflx.F90 code in
   // E3SM. In EAMxx, all constituents are considered "wet" (or have wet
@@ -172,8 +181,7 @@ void MAMConstituentFluxes::run_impl(const double dt) {
                                icol);          // in
   };
   // policy
-  const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   Kokkos::parallel_for("mam_cfi_compute_updraft", scan_policy, lambda);
   Kokkos::fence();

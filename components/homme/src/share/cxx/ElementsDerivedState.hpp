@@ -30,6 +30,9 @@ public:
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>     m_dpdiss_biharmonic; // mean dp dissipation tendency, if nu_p>0
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>     m_dpdiss_ave;        // mean dp used to compute psdiss_tens
 
+  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>     m_turb_diff_mom;     // SGS eddy diffusivity for momentum
+  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>     m_turb_diff_heat;    // SGS eddy diffusivity for heat
+
   ElementsDerivedState() : m_num_elems(0) {}
 
   void init (const int num_elems);

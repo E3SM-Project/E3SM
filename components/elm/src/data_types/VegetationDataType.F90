@@ -29,6 +29,7 @@ module VegetationDataType
   use CNStateType     , only: cnstate_type
   use SpeciesMod              , only : species_from_string
   use VegetationType            , only : veg_pp
+  use ColumnType                , only : col_pp
   use VegetationPropertiesType  , only : veg_vp
   use LandunitType              , only : lun_pp
   use GridcellType              , only : grc_pp
@@ -2460,7 +2461,7 @@ module VegetationDataType
           this%leafcmax(p) = 0._r8
 
           l = veg_pp%landunit(p)
-          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+          if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
 
              if (veg_pp%itype(p) == noveg) then
                 this%leafc(p)         = 0._r8
@@ -3648,10 +3649,12 @@ module VegetationDataType
          totvegc_abg_patch(bounds%begp:bounds%endp), &
          totvegc_abg_col(bounds%begc:bounds%endc))
 
-    call p2c(bounds, num_soilc, filter_soilc, &
-         cropseedc_deficit_patch(bounds%begp:bounds%endp), &
-         cropseedc_deficit_col(bounds%begc:bounds%endc))
-    end associate
+    if (use_crop) then
+       call p2c(bounds, num_soilc, filter_soilc, &
+            cropseedc_deficit_patch(bounds%begp:bounds%endp), &
+            cropseedc_deficit_col(bounds%begc:bounds%endc))
+    endif
+  end associate
 
   end subroutine veg_cs_summary
 
@@ -3933,7 +3936,7 @@ module VegetationDataType
     do p = begp,endp
 
        l = veg_pp%landunit(p)
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
           if (veg_pp%itype(p) == noveg) then
              this%leafn(p) = 0._r8
              this%leafn_storage(p) = 0._r8
@@ -4305,10 +4308,11 @@ module VegetationDataType
         totpftn_patch(bounds%begp:bounds%endp) , &
         totpftn_col(bounds%begc:bounds%endc))
 
-   call p2c(bounds, num_soilc, filter_soilc, &
-        cropseedn_deficit_patch(bounds%begp:bounds%endp) , &
-        cropseedn_deficit_col(bounds%begc:bounds%endc))
-
+   if (use_crop) then
+      call p2c(bounds, num_soilc, filter_soilc, &
+           cropseedn_deficit_patch(bounds%begp:bounds%endp) , &
+           cropseedn_deficit_col(bounds%begc:bounds%endc))
+   endif
    end associate
 
   end subroutine veg_ns_summary
@@ -4414,7 +4418,7 @@ module VegetationDataType
     type(vegetation_carbon_state), intent(in) :: veg_cs
     !
     ! !LOCAL VARIABLES:
-    integer :: fp,l,p                      ! indices
+    integer :: fp,l,c,p                    ! indices
     integer :: num_special_patch           ! number of good values in special_patch filter
     integer :: special_patch (endp-begp+1) ! special landunit filter - patches
     !------------------------------------------------------------------------
@@ -4616,7 +4620,7 @@ module VegetationDataType
 
     do p = begp,endp
        l = veg_pp%landunit(p)
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
 
           if (veg_pp%itype(p) == noveg) then
              this%leafp(p) = 0._r8
@@ -5050,9 +5054,11 @@ module VegetationDataType
         totpftp_patch(bounds%begp:bounds%endp) , &
         totpftp_col(bounds%begc:bounds%endc) )
 
-   call p2c(bounds, num_soilc, filter_soilc, &
-        cropseedp_deficit_patch(bounds%begp:bounds%endp) , &
-        cropseedp_deficit_col(bounds%begc:bounds%endc) )
+   if (use_crop) then
+      call p2c(bounds, num_soilc, filter_soilc, &
+           cropseedp_deficit_patch(bounds%begp:bounds%endp) , &
+           cropseedp_deficit_col(bounds%begc:bounds%endc) )
+   endif
    end associate
 
   end subroutine veg_ps_summary
@@ -5583,7 +5589,7 @@ module VegetationDataType
     do p = begp, endp
        l = veg_pp%landunit(p)
 
-       if (lun_pp%itype(l)==istsoil) then
+       if (veg_pp%is_on_soil_col(p)) then
           this%n_irrig_steps_left(p) = 0
           this%irrig_rate(p)         = 0.0_r8
        end if
@@ -7949,7 +7955,7 @@ module VegetationDataType
                 this%xsmrpool_c13ratio(p)  = spval
              endif
           end if
-          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+          if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
              this%tempsum_npp(p)           = 0._r8
              this%annsum_npp(p)            = 0._r8
              this%availc(p)                = 0._r8
@@ -9497,7 +9503,7 @@ module VegetationDataType
           this%soyfixn(p)       = 0._r8
        end if
 
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
           this%fert_counter(p)  = 0._r8
        end if
 
@@ -9835,6 +9841,19 @@ module VegetationDataType
            this%hrv_deadcrootn_to_litter(p)        + &
            this%hrv_deadcrootn_storage_to_litter(p)+ &
            this%hrv_deadcrootn_xfer_to_litter(p)
+
+          !Exit if any of the litter N loss terms are NaN
+          if (isnan(this%sen_nloss_litter(p)) .or.  &
+               isnan(this%livestemn_to_litter(p)) .or. &
+               isnan(this%leafn_to_litter(p)) .or. &
+               isnan(this%frootn_to_litter(p))) then
+               call endrun(msg = 'veg_nf_summary: NaN in litter N loss terms: '//errMsg(__FILE__, __LINE__))
+          endif
+         this%sen_nloss_litter(p) = &
+              this%livestemn_to_litter(p)            + &
+              this%leafn_to_litter(p)                + &
+              this%frootn_to_litter(p)
+
       if (crop_prog) then
          this%sen_nloss_litter(p) = &
              this%livestemn_to_litter(p)            + &
@@ -9879,7 +9898,7 @@ module VegetationDataType
     integer, intent(in) :: begp,endp
     !
     ! !LOCAL VARIABLES:
-    integer :: p,l                         ! indices
+    integer :: p,c,l                       ! indices
     integer :: fp                          ! filter indices
     integer :: num_special_patch           ! number of good values in special_patch filter
     integer :: special_patch(endp-begp+1)  ! special landunit filter - patches
@@ -10558,7 +10577,7 @@ module VegetationDataType
 
        end if
 
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
           this%fert_p_counter(p)  = 0._r8
        end if
 
@@ -10891,6 +10910,20 @@ module VegetationDataType
            this%hrv_deadcrootp_to_litter(p)       + &
            this%hrv_deadcrootp_storage_to_litter(p)+ &
            this%hrv_deadcrootp_xfer_to_litter(p)
+
+          ! Exit if any of the following are NaN
+          if (isnan(this%sen_ploss_litter(p)) .or. &
+              isnan(this%livestemp_to_litter(p)) .or. &
+              isnan(this%leafp_to_litter(p)) .or. &
+              isnan( this%frootp_to_litter(p))) then
+               call endrun(msg = 'veg_pf_summary: sen_ploss_litter, livestemp_to_litter, leafp_to_litter, or frootp_to_litter is NaN '//&
+               errMsg(__FILE__, __LINE__))
+          endif
+
+         this%sen_ploss_litter(p) = &
+              this%livestemp_to_litter(p)            + &
+              this%leafp_to_litter(p)                + &
+              this%frootp_to_litter(p)
 
       if (crop_prog) then
          this%sen_ploss_litter(p) = &

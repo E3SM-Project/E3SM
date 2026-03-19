@@ -6,7 +6,7 @@ set (HOMME_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/homme CACHE INTERNAL "Homme bi
 
 # If using Intel, we need to tell Homme to link against mkl rather than lapack
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+if (CMAKE_CXX_COMPILER_ID MATCHES "^(Intel|IntelLLVM)$")
   option (HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" ON)
   option (HOMME_FIND_BLASLAPACK "Whether to use system blas/lapack" OFF)
 else ()
@@ -162,7 +162,7 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     set (dynLibName scream_${hommeLibName})
     add_library(${dynLibName} ${SCREAM_DYNAMICS_SOURCES})
     target_compile_definitions(${dynLibName} PUBLIC EAMXX_HAS_HOMME)
-    target_link_libraries(${dynLibName} PUBLIC scream_share scream_io ${hommeLibName})
+    target_link_libraries(${dynLibName} PUBLIC scream_share eamxx_io ${hommeLibName})
     get_target_property(modulesDir ${hommeLibName} Fortran_MODULE_DIRECTORY)
     set_target_properties(${dynLibName} PROPERTIES Fortran_MODULE_DIRECTORY ${modulesDir})
     target_include_directories(${dynLibName} PUBLIC ${modulesDir})

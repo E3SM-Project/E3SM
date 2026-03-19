@@ -1,10 +1,9 @@
 #ifndef EAMXX_MAM_FIND_SEASON_INDEX_UTILS
 #define EAMXX_MAM_FIND_SEASON_INDEX_UTILS
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
 #include <mam4xx/mam4.hpp>
 
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
 
 namespace scream::mam_coupling {

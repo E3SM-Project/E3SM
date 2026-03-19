@@ -1,1 +1,5 @@
+ config_time_integrator = 'split_explicit'
  config_thickness_flux_type = 'upwind'
+ config_use_spatially_variable_upwind = .true.
+ config_spatially_variable_upwind_hmin = 10.0
+ config_spatially_variable_upwind_hmax = 50.0

@@ -26,7 +26,8 @@ module dynSubgridAdjustmentsMod
   use VegetationDataType     , only : vegetation_carbon_state, vegetation_nitrogen_state
   use VegetationDataType     , only : vegetation_phosphorus_state
   use SpeciesMod             , only : CN_SPECIES_N, CN_SPECIES_P
-
+  use abortutils             , only : endrun
+  use shr_log_mod            , only : errMsg => shr_log_errMsg
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -404,7 +405,7 @@ contains
     type(column_carbon_state)       , intent(inout) :: col_cs
     !
     ! !LOCAL VARIABLES:
-    integer         :: l, j
+    integer         :: l, j, c
     integer         :: begc, endc
     real(r8)        :: adjustment_one_level(bounds%begc:bounds%endc)
     !-----------------------------------------------------------------------
@@ -825,7 +826,7 @@ contains
     type(column_nitrogen_state)     , intent(inout) :: col_ns
     !
     ! !LOCAL VARIABLES:
-    integer                     :: l, j
+    integer                     :: l, j, c
     integer                     :: begc, endc
     real(r8)                    :: adjustment_one_level(bounds%begc:bounds%endc)
     !-----------------------------------------------------------------------
@@ -837,7 +838,30 @@ contains
       smin_no3_vr         => col_ns%smin_no3_vr  , &
       prod1n              => col_ns%prod1n       , &
       prod10n             => col_ns%prod10n      , &
-      prod100n            => col_ns%prod100n     &
+      prod100n            => col_ns%prod100n     , &
+      tan_g1              => col_ns%tan_g1       , &
+      tan_g2              => col_ns%tan_g2       , &
+      tan_g3              => col_ns%tan_g3       , &
+      tan_s0              => col_ns%tan_s0       , &
+      tan_s1              => col_ns%tan_s1       , &
+      tan_s2              => col_ns%tan_s2       , &
+      tan_s3              => col_ns%tan_s3       , &
+      tan_f1              => col_ns%tan_f1       , &
+      tan_f2              => col_ns%tan_f2       , &
+      tan_f3              => col_ns%tan_f3       , &
+      tan_f4              => col_ns%tan_f4       , &
+      fert_u1             => col_ns%fert_u1      , &
+      fert_u2             => col_ns%fert_u2      , &
+      manure_u_grz        => col_ns%manure_u_grz , &
+      manure_a_grz        => col_ns%manure_a_grz , &
+      manure_r_grz        => col_ns%manure_r_grz , &
+      manure_u_app        => col_ns%manure_u_app , &
+      manure_a_app        => col_ns%manure_a_app , &
+      manure_r_app        => col_ns%manure_r_app , &
+      manure_tan_stored   => col_ns%manure_tan_stored , &
+      manure_n_stored     => col_ns%manure_n_stored , &
+      fan_grz_fract       => col_ns%fan_grz_fract, &
+      fan_totn            => col_ns%fan_totn     &
       )
 
     begc = bounds%begc
@@ -854,6 +878,7 @@ contains
           col_ns%dyn_nbal_adjustments(begc:endc) = &
                col_ns%dyn_nbal_adjustments(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+     
 
        end do
     end do
@@ -868,7 +893,6 @@ contains
        col_ns%dyn_nbal_adjustments(begc:endc) = &
             col_ns%dyn_nbal_adjustments(begc:endc) + &
             adjustment_one_level(begc:endc) * dzsoi_decomp(j)
-
 
        call update_column_state_no_special_handling(column_state_updater, &
            bounds      = bounds                          , &
@@ -898,9 +922,11 @@ contains
          var         = prod1n(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
+    
     col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
-         adjustment_one_level(begc:endc)
+          col_ns%dyn_nbal_adjustments(begc:endc) + &
+          adjustment_one_level(begc:endc)
+    
 
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
@@ -909,8 +935,9 @@ contains
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
-         adjustment_one_level(begc:endc)
+          col_ns%dyn_nbal_adjustments(begc:endc) + &
+          adjustment_one_level(begc:endc)
+    
 
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
@@ -918,9 +945,241 @@ contains
          var         = prod100n(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
+    
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+          col_ns%dyn_nbal_adjustments(begc:endc) + &
+          adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = fan_totn(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = tan_g1(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = tan_g2(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = tan_g3(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = tan_s0(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = tan_s1(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = tan_s2(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = tan_s3(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = tan_f1(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = tan_f2(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = tan_f3(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = tan_f4(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = fert_u1(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = fert_u2(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = manure_u_grz(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = manure_a_grz(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = manure_r_grz(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = manure_u_app(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = manure_a_app(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = manure_r_app(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = manure_tan_stored(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = manure_n_stored(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = fan_grz_fract(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ns%dyn_nbal_adjustments(begc:endc) = &
+         col_ns%dyn_nbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
     !=======================================================!
     end associate
 
@@ -1314,8 +1573,9 @@ contains
             adjustment  = adjustment_one_level(begc:endc))
 
        col_ps%dyn_pbal_adjustments(begc:endc) =      &
-            col_ps%dyn_pbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+           col_ps%dyn_pbal_adjustments(begc:endc) + &
+           adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
        call update_column_state_no_special_handling( column_state_updater, &
             bounds      = bounds,                                         &
             clump_index = clump_index,                                    &
@@ -1323,8 +1583,8 @@ contains
             adjustment  = adjustment_one_level(begc:endc))
 
        col_ps%dyn_pbal_adjustments(begc:endc) =      &
-            col_ps%dyn_pbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+           col_ps%dyn_pbal_adjustments(begc:endc) + &
+           adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        call update_column_state_no_special_handling( column_state_updater, &
             bounds      = bounds,                                         &
@@ -1333,8 +1593,9 @@ contains
             adjustment  = adjustment_one_level(begc:endc))
 
        col_ps%dyn_pbal_adjustments(begc:endc) =      &
-            col_ps%dyn_pbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+           col_ps%dyn_pbal_adjustments(begc:endc) + &
+           adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
        !!
        call update_column_state_no_special_handling( column_state_updater, &
             bounds      = bounds,                                         &
@@ -1365,7 +1626,7 @@ contains
          var         = prod1p(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ps%dyn_pbal_adjustments(begc:endc) = &
+   col_ps%dyn_pbal_adjustments(begc:endc) = &
          col_ps%dyn_pbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 

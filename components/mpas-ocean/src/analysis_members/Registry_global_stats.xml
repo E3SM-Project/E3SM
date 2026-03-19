@@ -814,6 +814,10 @@
 			 description="Global stats copy of the running mean of the daily averaged removed ice runoff"
 			 packages="scaledDISMFPKG"
 		/>
+		<var name="gsSFWFScalingFactor" type="real" dimensions="Time" units="kg s^-1"
+			 description="Global stats copy of the scaling factors on freshwater fluxes"
+			 packages="scaledSFWFPKG"
+		/>
 	</var_struct>
 	<streams>
 		<stream name="globalStatsOutput" type="output"

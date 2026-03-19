@@ -64,10 +64,11 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
     TARGET_COMPILE_DEFINITIONS(${target_name} PUBLIC HOMME_WITHOUT_PIOLIBRARY)
   ENDIF()
 
-  TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${HOMME_SOURCE_DIR}/test/unit_tests/catch2/include")
+  set (CATCH_INCLUDE ${HOMME_SOURCE_DIR}/../../externals/ekat/extern/Catch2/single_include)
+  TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${CATCH_INCLUDE}")
   TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${include_dirs}")
   TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${SRC_SHARE};${SRC_BASE};${UNITTESTER_DIR}")
-  TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${PIO_INCLUDE_DIRS};${UTILS_TIMING_DIR}")
+  TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${PIO_INCLUDE_DIRS}")
   TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${CMAKE_BINARY_DIR}/src")
 
 endmacro(cxx_unit_test)

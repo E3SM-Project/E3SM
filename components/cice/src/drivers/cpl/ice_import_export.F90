@@ -26,6 +26,15 @@ module ice_import_export
   use ice_prescribed_mod
   use ice_cpl_indices
   use perf_mod        , only: t_startf, t_stopf, t_barrierf
+#ifdef HAVE_MOAB
+  use iMOAB,            only: iMOAB_SetDoubleTagStorage, iMOAB_GetDoubleTagStorage, iMOAB_WriteMesh
+  use seq_timemgr_mod , only: seq_timemgr_EClockGetData
+  use esmf            , only: ESMF_clock
+  use seq_comm_mct,     only: MPSIID! id of moab sea ice app
+  use shr_kind_mod     , only : CXX => SHR_KIND_CXX
+  use seq_flds_mod     , only : seq_flds_x2i_fields, seq_flds_i2x_fields
+  use iso_c_binding
+#endif
   implicit none
   public
 

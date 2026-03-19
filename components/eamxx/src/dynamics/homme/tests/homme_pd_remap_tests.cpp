@@ -5,7 +5,7 @@
 #include "share/field/field.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
 #include "SimulationParams.hpp"
@@ -13,9 +13,9 @@
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/homme_grids_manager.hpp"
 
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_comm.hpp>
+#include <ekat_pack.hpp>
+#include <ekat_test_utils.hpp>
 
 #include <memory>
 #include <random>
@@ -198,7 +198,6 @@ TEST_CASE("remap", "") {
 
   // Build the remapper, and register the fields
   std::shared_ptr<Remapper> remapper(new Remapper(phys_grid,dyn_grid));
-  remapper->registration_begins();
   remapper->register_field(s_2d_field_phys, s_2d_field_dyn);
   remapper->register_field(v_2d_field_phys, v_2d_field_dyn);
   remapper->register_field(s_3d_field_phys, s_3d_field_dyn);
@@ -739,7 +738,6 @@ TEST_CASE("combo_remap", "") {
 
   // Build the remapper, and register the fields
   std::shared_ptr<Remapper> remapper(new Remapper(phys_grid,dyn_grid));
-  remapper->registration_begins();
   remapper->register_field(s_2d_field_phys, s_2d_field_dyn);
   remapper->register_field(v_2d_field_phys, v_2d_field_dyn);
   remapper->register_field(s_3d_field_phys, s_3d_field_dyn);

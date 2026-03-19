@@ -1,11 +1,9 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "share/core/eamxx_types.hpp"
 #include "shoc_functions.hpp"
 #include "shoc_test_data.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 
 #include "shoc_unit_tests_common.hpp"
 
@@ -85,7 +83,10 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments : public UnitWrap::UnitT
     // set upper condition for dz_zi
     dz_zi[nlevi-1] = zt_grid[nlev-1];
 
-    DiagSecondShocMomentsData SDS(shcol, nlev, nlevi);
+    // Default SHOC formulation, not 1.5 TKE closure assumptions
+    const bool shoc_1p5tke = false;
+
+    DiagSecondShocMomentsData SDS(shcol, nlev, nlevi, shoc_1p5tke);
 
     // Test that the inputs are reasonable.
     REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi == nlevi) );
@@ -260,6 +261,33 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments : public UnitWrap::UnitT
       }
     }
 
+    // SECOND TEST
+    // If SHOC is reverted to a 1.5 TKE closure then test to make sure that
+    //  all values of the scalar variances are zero everywhere.
+    //  Will use the same input data as the previous test.
+
+    // Activate 1.5 TKE closure assumptions
+    SDS.shoc_1p5tke = true;
+
+    // Call the C++ implementation
+    diag_second_shoc_moments(SDS);
+
+    // Require that all values of w2 are ZERO
+    for (Int s = 0; s < shcol; ++s){
+      // nlev checks
+      for (Int n = 0; n < nlev; ++n){
+        const auto offset = n + s * nlev;
+        REQUIRE(SDS.w_sec[offset] == 0);
+      }
+      // nlevi checks
+      for (Int n = 0; n < nlevi; ++n){
+        const auto offset = n + s * nlevi;
+        REQUIRE(SDS.thl_sec[offset] == 0);
+        REQUIRE(SDS.qw_sec[offset] == 0);
+        REQUIRE(SDS.qwthl_sec[offset] == 0);
+      }
+    }
+
   } // run_property
 
   void run_bfb()
@@ -267,10 +295,10 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments : public UnitWrap::UnitT
     auto engine = Base::get_engine();
 
     DiagSecondShocMomentsData baseline_data[] = {
-      DiagSecondShocMomentsData(36,  72, 73),
-      DiagSecondShocMomentsData(72,  72, 73),
-      DiagSecondShocMomentsData(128, 72, 73),
-      DiagSecondShocMomentsData(256, 72, 73),
+      DiagSecondShocMomentsData(36,  72, 73, false),
+      DiagSecondShocMomentsData(72,  72, 73, false),
+      DiagSecondShocMomentsData(128, 72, 73, false),
+      DiagSecondShocMomentsData(256, 72, 73, false),
     };
 
     // Generate random input data
@@ -292,7 +320,7 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments : public UnitWrap::UnitT
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (auto& d : baseline_data) {
-        d.read(Base::m_fid);
+        d.read(Base::m_ifile);
       }
     }
 
@@ -324,7 +352,7 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments : public UnitWrap::UnitT
     } // SCREAM_BFB_TESTING
     else if (this->m_baseline_action == GENERATE) {
       for (auto& d : cxx_data) {
-        d.write(Base::m_fid);
+        d.write(Base::m_ofile);
       }
     }
   } // run_bfb

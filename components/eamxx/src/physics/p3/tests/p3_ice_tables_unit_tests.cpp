@@ -1,12 +1,10 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-
 #include "p3_unit_tests_common.hpp"
+
+#include "share/core/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -175,10 +173,10 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        lid[i].read(Base::m_fid);
-        lidb[i].read(Base::m_fid);
-        altd[i].read(Base::m_fid);
-        altcd[i].read(Base::m_fid);
+        lid[i].read(Base::m_ifile);
+        lidb[i].read(Base::m_ifile);
+        altd[i].read(Base::m_ifile);
+        altcd[i].read(Base::m_ifile);
       }
     }
 
@@ -186,13 +184,13 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
     view_2d<Int>  int_results("int results", 5, max_pack_size);
     view_2d<Real> real_results("real results", 7, max_pack_size);
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init packs
       TableIce ti;
       TableRain tr;
-      Spack qi, ni, qm, rhop, qr, nr;
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      Pack qi, ni, qm, rhop, qr, nr;
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         qi[s]    = lid_device(vs).qi;
         ni[s]    = lid_device(vs).ni;
         qm[s]    = lid_device(vs).qm;
@@ -201,13 +199,13 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
         nr[s]    = lidb_device(vs).nr;
       }
 
-      Smask qiti_gt_small(qi > qsmall);
+      Mask qiti_gt_small(qi > qsmall);
       Functions::lookup_ice(qi, ni, qm, rhop, ti, qiti_gt_small);
       Functions::lookup_rain(qr, nr, tr, qiti_gt_small);
-      Spack ice_result = Functions::apply_table_ice(access_table_index-1, ice_table_vals, ti, qiti_gt_small);
-      Spack rain_result = Functions::apply_table_coll(access_table_index-1, collect_table_vals, ti, tr, qiti_gt_small);
+      Pack ice_result = Functions::apply_table_ice(access_table_index-1, ice_table_vals, ti, qiti_gt_small);
+      Pack rain_result = Functions::apply_table_coll(access_table_index-1, collect_table_vals, ti, tr, qiti_gt_small);
 
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         int_results(0, vs) = ti.dumi[s];
         int_results(1, vs) = ti.dumjj[s];
         int_results(2, vs) = ti.dumii[s];
@@ -276,10 +274,10 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
 
         altcd[s].proc = real_results_mirror(6, s);
 
-        lid[s].write(Base::m_fid);
-        lidb[s].write(Base::m_fid);
-        altd[s].write(Base::m_fid);
-        altcd[s].write(Base::m_fid);
+        lid[s].write(Base::m_ofile);
+        lidb[s].write(Base::m_ofile);
+        altd[s].write(Base::m_ofile);
+        altcd[s].write(Base::m_ofile);
       }
     }
   }
@@ -291,7 +289,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
     init_table_linear_dimension(ice_table_vals, 0);
 
     int nerr = 0;
-    TeamPolicy policy(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ice_table_vals.extent(0), ice_table_vals.extent(1)));
+    TeamPolicy policy(ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(ice_table_vals.extent(0), ice_table_vals.extent(1)));
     Kokkos::parallel_reduce("TestTableIce::run", policy, KOKKOS_LAMBDA(const MemberType& team, int& errors) {
       //int i = team.league_rank();
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, ice_table_vals.extent(1)), [&] (const int& j) {
@@ -299,15 +297,15 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
         for (size_t k = 0; k < ice_table_vals.extent(2); ++k) {
           for (size_t l = 0; l < ice_table_vals.extent(3); ++l) {
             // Init packs to same value, TODO: how to pick use values?
-            Spack qi(0.1), ni(0.2), qm(0.3), rhop(0.4), qr(0.5), nr(0.6);
+            Pack qi(0.1), ni(0.2), qm(0.3), rhop(0.4), qr(0.5), nr(0.6);
 
             TableIce ti;
             TableRain tr;
             Functions::lookup_ice(qi, ni, qm, rhop, ti);
             Functions::lookup_rain(qr, nr, tr);
 
-            /*Spack proc1 = */ Functions::apply_table_ice(1, ice_table_vals, ti);
-            //Spack proc2 = Functions::apply_table_coll(1, collect_table_vals, ti, tr);
+            /*Pack proc1 = */ Functions::apply_table_ice(1, ice_table_vals, ti);
+            //Pack proc2 = Functions::apply_table_coll(1, collect_table_vals, ti, tr);
 
             // TODO: how to test?
           }

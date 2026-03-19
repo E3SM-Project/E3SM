@@ -1,6 +1,7 @@
-
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+
+#include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 namespace p3 {
@@ -13,29 +14,31 @@ namespace p3 {
 template <>
 void Functions<Real,DefaultDevice>
 ::cloud_sedimentation_disp(
-    const uview_2d<Spack>& qc_incld,
-    const uview_2d<const Spack>& rho,
-    const uview_2d<const Spack>& inv_rho,
-    const uview_2d<const Spack>& cld_frac_l,
-    const uview_2d<const Spack>& acn,
-    const uview_2d<const Spack>& inv_dz,
+    const uview_2d<Pack>& qc_incld,
+    const uview_2d<const Pack>& rho,
+    const uview_2d<const Pack>& inv_rho,
+    const uview_2d<const Pack>& cld_frac_l,
+    const uview_2d<const Pack>& acn,
+    const uview_2d<const Pack>& inv_dz,
     const view_dnu_table& dnu,
     const WorkspaceManager& workspace_mgr,
     const Int& nj, const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& inv_dt, const bool& do_predict_nc,
-    const uview_2d<Spack>& qc,
-    const uview_2d<Spack>& nc,
-    const uview_2d<Spack>& nc_incld,
-    const uview_2d<Spack>& mu_c,
-    const uview_2d<Spack>& lamc,
-    const uview_2d<Spack>& qc_tend,
-    const uview_2d<Spack>& nc_tend,
+    const uview_2d<Pack>& qc,
+    const uview_2d<Pack>& nc,
+    const uview_2d<Pack>& nc_incld,
+    const uview_2d<Pack>& mu_c,
+    const uview_2d<Pack>& lamc,
+    const uview_2d<Pack>& qc_tend,
+    const uview_2d<Pack>& nc_tend,
     const uview_1d<Scalar>& precip_liq_surf,
     const uview_1d<bool>& nucleationPossible,
     const uview_1d<bool>& hydrometeorsPresent)
 {
   using ExeSpace = typename KT::ExeSpace;
-  const Int nk_pack = ekat::npack<Spack>(nk);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
+
+  const Int nk_pack = ekat::npack<Pack>(nk);
+  const auto policy = TPF::get_default_team_policy(nj, nk_pack);
   // p3_cloud_sedimentation loop
   Kokkos::parallel_for(
     "p3_cloud_sedimentation",

@@ -678,6 +678,33 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- eddy_kinetic_energy_correction -->
+
+<entry id="config_eke_correction_enable" type="logical"
+	category="eddy_kinetic_energy_correction" group="eddy_kinetic_energy_correction">
+flag to enable the eddy kinetic energy corrections.  This parameterization is based on the work of Renault et al 2019 - https://doi.org/10.1029/2019MS001715 -- NOTE: this should only be used at for RRS6to18 resolution or finer
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eke_alpha" type="real"
+	category="eddy_kinetic_energy_correction" group="eddy_kinetic_energy_correction">
+'alpha' coefficent for computations of St in equation (10) of Renault et al (2019)
+
+Valid values: small negative values not too far from the default
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eke_beta" type="real"
+	category="eddy_kinetic_energy_correction" group="eddy_kinetic_energy_correction">
+'beta' coefficent for computation of St in equation (10) of Renault et al (2019)
+
+Valid values: small positive numbers not far from the default
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- eddy_parameterization -->
 
 <entry id="config_eddyMLD_dens_threshold" type="real"
@@ -733,7 +760,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_cvmix_background_scheme" type="char*1024"
 	category="cvmix" group="cvmix">
-Scheme for background diffusivity, 'constant' for constant with depth and space, 'BryanLewis' for vertically variable, 'none' for no background diffusivity
+Scheme for background diffusivity, 'constant' for constant with depth and space, 'latitude-dependent' for latitude dependence and constant in depth, 'BryanLewis' for vertically variable, 'none' for no background diffusivity
 
 Valid values: 'constant', 'BryanLewis', and 'none'
 Default: Defined in namelist_defaults.xml
@@ -741,9 +768,17 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_cvmix_background_diffusion" type="real"
 	category="cvmix" group="cvmix">
-Background vertical diffusion applied to tracer quantities
+Background vertical diffusion applied to tracer quantities. For 'latitude-dependent' this is the maximum value
 
 Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_background_diffusion_max_latitude" type="real"
+	category="cvmix" group="cvmix">
+For 'latitude-dependent' this is the maximum latitude at which background diffusivity is non-zero
+
+Valid values: Any real value between -90 and 90.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1094,6 +1129,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_momentum_use_active_wave" type="logical"
+	category="wave_coupling" group="wave_coupling">
+Flag for correcting momentum coupling in ocean due to waves. Requires config_use_active_wave = .true.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_n_stokes_drift_wavenumber_partitions" type="integer"
 	category="wave_coupling" group="wave_coupling">
 Number of wavenumber partitions to be used in reconstructing wave-induced Stokes drift profile
@@ -1261,6 +1304,57 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- precip_scaling -->
+
+<entry id="config_use_precip_scaling" type="logical"
+	category="precip_scaling" group="precip_scaling">
+If true, precipitation fluxes will be scalled to ensure freshwater balance in FOSI runs referring to forced ocean-sea ice simulation where ocean model is driven by a data atmosphere with prescribed precipitation (rain + snow) fluxes.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_precip_scaling_mode" type="char*1024"
+	category="precip_scaling" group="precip_scaling">
+Option for scaling precipitation fluxes to ensure freshwater balance in FOSI runs. config_precip_scaling_mode='constant' uses a prescribed constant factor applied to precipitation fluxes. config_precip_scaling_mode='time-dependent' enables the dynamical caclulation of scaling factors using annual and global mean precipitation (rain + snow) and sea surface height changes over one-year or multi-year period.
+
+Valid values: 'off', 'constant' or 'time-dependent'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_precip_scaling_initial_factor" type="real"
+	category="precip_scaling" group="precip_scaling">
+Initial guess scaling factor on precipitation fluxes in FOSI runs when config_precip_scaling_mode = 'time-dependent'.
+
+Valid values: Non-negative number. A default value of 1.0 indicates no scaling, but values greater than 1.0 can be used to scale up precipitation fluxes in order to achieve freshwater balance in FOSI runs.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_precip_scaling_constant_factor" type="real"
+	category="precip_scaling" group="precip_scaling">
+Prescribed constant scaling factor on precipitation fluxes in FOSI runs when config_precip_scaling_mode = 'constant'.
+
+Valid values: Non-negative number between 0 and 1.0. Default value of 1.0 means no scaling, but values greater than 1.0 can be used to scale up precipitation fluxes in order to achieve freshwater balance in FOSI runs.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_precip_scaling_history_years" type="integer"
+	category="precip_scaling" group="precip_scaling">
+The number of years over which scaling factor on precipitation fluxes is computed in FOSI runs. Default value is 1 year.
+
+Valid values: Positive integer greater than or equal to 1.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_precip_scaling_write_to_logfile" type="logical"
+	category="precip_scaling" group="precip_scaling">
+Logical flag indicating whether information for precipitation flux scaling in FOSI runs will be written to the log file.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- coupling -->
 
 <entry id="config_remove_ais_river_runoff" type="logical"
@@ -1295,19 +1389,19 @@ Valid values: Any positive integer
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_glc_thermal_forcing_coupling_mode" type="char*1024"
+<entry id="config_n_glc_z_levels" type="integer"
 	category="coupling" group="coupling">
-If and how MPAS-Ocean sends thermal forcing to GLC (MALI) in E3SM.  This is used for ocean coupling with a melt parameterization for grounded marine ice-cliffs in MALI.  This is primarily relevant to the Greenland Ice Sheet, but also relevant to the Antarctic Ice Sheet. 'none' means no coupling of thermal forcing.  '2d' means thermal forcing at a prescribed depth is passed to GLC.  That depth is controlled by 'config_2d_thermal_forcing_depth', and the resulting thermal forcing field is calculated in the field 'avgThermalForcingAtCritDepth'.
+The number of z-levels to use for passing ocean properties to GLC for indirect ice-sheet/ocean coupling. This option is only intended to be used for ocean thermal forcing coupling in E3SM, in which case E3SM will set this option, define the values of ismip6shelfMelt_zOcean through the driver, and pass thermal forcing from the ocean model.  Note that the default value of zero will result in this dimension not being defined (unless overridden by the value in an input file).
 
-Valid values: 'off', '2d'
+Valid values: Any positive integer or zero
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_2d_thermal_forcing_depth" type="real"
+<entry id="config_glc_thermal_forcing_coupling_mode" type="char*1024"
 	category="coupling" group="coupling">
-Depth at which to pass 2d thermal forcing to the coupler for use in the GLC component.  Note that mapping files for this field must be created with a mask to exclude ocean grid cells shallower than this value and thus must be regenerated if this value is changed.
+If and how MPAS-Ocean sends thermal forcing to GLC (MALI) in E3SM.  This is used for ocean coupling with a melt parameterization for grounded marine ice-cliffs in MALI.  This is primarily relevant to the Greenland Ice Sheet, but also relevant to the Antarctic Ice Sheet. 'none' means no coupling of thermal forcing. '3d' means thermal forcing is passed at multiple z-levels.
 
-Valid values: any non-negative value
+Valid values: 'off', '3d'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1644,6 +1738,25 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- land_ice -->
+
+<entry id="config_land_ice_draft_mode" type="char*1024"
+	category="land_ice" group="land_ice">
+Selects the mode in which land-ice draft is computed.
+
+Valid values: 'data', 'pressure-dependent'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_land_ice_rho_ocean" type="real"
+	category="land_ice" group="land_ice">
+ocean density used to calculate landIceDraft at floatation (assumed constant and uniform). Should be consistent with MALI's config_ocean_density when used to determine grounding line location. This is an alternative to the coupler variable effectiveDensityInLandIce which is not currently used.
+
+Valid values: Any positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- land_ice_fluxes -->
 
 <entry id="config_land_ice_flux_mode" type="char*1024"
@@ -1838,6 +1951,30 @@ Default: Defined in namelist_defaults.xml
 If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThickEdgeFlux.  The standard MPAS-O approach is 'centered'. For 'constant', uses constant thickness in time from restingThickness, for linear test problems. Note that these two flags are set together for linearized test cases: config_thickness_flux_type = 'constant' linearizes the thickness equation, and config_disable_vel_hadv = .true. linearizes the momentum equation if there is no assumed mean background velocity.
 
 Valid values: 'upwind', 'centered', 'constant'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_spatially_variable_upwind" type="logical"
+	category="advection" group="advection">
+If true, use upwindFactor to scale layerThickEdgeFlux by centered and upwind values.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_spatially_variable_upwind_hmin" type="real"
+	category="advection" group="advection">
+Column thickness above which we start weighting upwind with centered advection.
+
+Valid values: Any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_spatially_variable_upwind_hmax" type="real"
+	category="advection" group="advection">
+Column thickness above which advection is no longer upwinded.
+
+Valid values: Any positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3102,6 +3239,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_use_ecosysTracers_river_inputs_from_coupler" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 if true, get river nutrient inputs from the coupler, else from ecosys monthly forcing file
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ecosys_frazil_tendencies" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, use ecosys tendencies from internal ocean frazil formation
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml

@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<use_case_desc>Conditions to simulate 1950 land-use</use_case_desc>
+
+<sim_year>1950</sim_year>
+
+<sim_year_range>constant</sim_year_range>
+
+<stream_year_first_ndep phys="elm" use_cn=".true." ndepsrc="stream" >1950</stream_year_first_ndep>
+<stream_year_last_ndep  phys="elm" use_cn=".true." ndepsrc="stream" >1950</stream_year_last_ndep>
+
+<stream_year_first_pdep phys="elm" use_cn=".true." ndepsrc="stream" >2000</stream_year_first_pdep>
+<stream_year_last_pdep  phys="elm" use_cn=".true." ndepsrc="stream" >2000</stream_year_last_pdep>
+
+<stream_year_first_popdens phys="elm" use_cn=".true." ndepsrc="stream" >1950</stream_year_first_popdens>
+<stream_year_last_popdens  phys="elm" use_cn=".true." ndepsrc="stream" >1950</stream_year_last_popdens>
+
+<stream_fldfilename_popdens phys="elm" use_cn=".true." >lnd/clm2/firedata/elmforc.popden_cmip7_gr_0.5x0.5_simyr1850-2025_c251024.nc</stream_fldfilename_popdens>
+
+</namelist_defaults>

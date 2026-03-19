@@ -16,14 +16,14 @@ void Functions<S,D>
   const Scalar&                length_fac,
   const Scalar&                dx,
   const Scalar&                dy,
-  const uview_1d<const Spack>& zt_grid,
-  const uview_1d<const Spack>& zi_grid,
-  const uview_1d<const Spack>& dz_zt,
-  const uview_1d<const Spack>& tke,
-  const uview_1d<const Spack>& thv,
+  const uview_1d<const Pack>& zt_grid,
+  const uview_1d<const Pack>& zi_grid,
+  const uview_1d<const Pack>& dz_zt,
+  const uview_1d<const Pack>& tke,
+  const uview_1d<const Pack>& thv,
   const Workspace&             workspace,
-  const uview_1d<Spack>&       brunt,
-  const uview_1d<Spack>&       shoc_mix)
+  const uview_1d<Pack>&       brunt,
+  const uview_1d<Pack>&       shoc_mix)
 {
   // Define temporary variable
   auto thv_zi = workspace.take("thv_zi");
@@ -37,7 +37,7 @@ void Functions<S,D>
   Scalar l_inf = 0;
   compute_l_inf_shoc_length(team,nlev,zt_grid,dz_zt,tke,l_inf);
 
-  compute_shoc_mix_shoc_length(team,nlev,length_fac, tke,brunt,zt_grid,l_inf,shoc_mix);
+  compute_shoc_mix_shoc_length(team,nlev,length_fac,tke,brunt,zt_grid,l_inf,shoc_mix);
   team.team_barrier();
 
   check_length_scale_shoc_length(team,nlev,dx,dy,shoc_mix);

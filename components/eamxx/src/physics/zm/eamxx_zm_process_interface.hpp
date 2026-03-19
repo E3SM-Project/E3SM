@@ -1,0 +1,74 @@
+#ifndef EAMXX_ZM_PROCESS_INTERFACE_HPP
+#define EAMXX_ZM_PROCESS_INTERFACE_HPP
+
+#include "share/atm_process/atmosphere_process.hpp"
+#include "share/atm_process/ATMBufferManager.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
+#include "zm_functions.hpp"
+
+#include <ekat_parameter_list.hpp>
+
+namespace scream
+{
+
+// Zhang-McFarlane Deep Convection scheme
+
+class ZMDeepConvection : public AtmosphereProcess
+{
+  using KT  = ekat::KokkosTypes<DefaultDevice>;
+  using ZMF = zm::Functions<Real, DefaultDevice>;
+  using PF  = scream::PhysicsFunctions<DefaultDevice>;
+  using PC  = scream::physics::Constants<Real>;
+
+  using Scalar               = typename ZMF::Scalar;
+  using Pack                = typename ZMF::Pack;
+  using IntPack             = typename ZMF::IntPack;
+
+  public:
+
+    // Constructors
+    ZMDeepConvection(const ekat::Comm& comm, const ekat::ParameterList& params);
+
+    // The type of subcomponent
+    AtmosphereProcessType type() const override { return AtmosphereProcessType::Physics; }
+
+    // The name of the subcomponent
+    std::string name() const override { return "ZM"; }
+
+    // Create grid-dependent field requests
+    void create_requests() override;
+
+#ifndef KOKKOS_ENABLE_CUDA
+  // Cuda requires methods enclosing __device__ lambda's to be public
+  protected:
+#endif
+
+    void initialize_impl (const RunType run_type);
+    void run_impl        (const double dt);
+
+  protected:
+
+    void finalize_impl   ();
+
+    // Computes total number of bytes needed for local variables
+    size_t requested_buffer_size_in_bytes() const;
+
+    // Set local variables using memory provided by the ATMBufferManager
+    void init_buffers(const ATMBufferManager &buffer_manager);
+
+    // define ZM process variables
+    std::shared_ptr<const AbstractGrid> m_grid;
+    int m_ncol;
+    int m_nlev;
+
+    // Structures for arguments to ZM
+    ZMF::ZmRuntimeOpt zm_opts;
+    ZMF::ZmInputState zm_input;
+    ZMF::ZmOutputTend zm_output;
+    ZMF::ZmOutputDiag zm_diag;
+
+}; // class ZMDeepConvection
+
+} // namespace scream
+
+#endif // EAMXX_ZM_PROCESS_INTERFACE_HPP

@@ -1322,9 +1322,6 @@ contains
     use seaice_icepack, only: &
          seaice_icepack_write_warnings
 
-    use seaice_column, only: &
-         seaice_column_ice_strength
-
     use seaice_constants, only: &
          seaiceIceStrengthConstantHiblerP, &
          seaiceIceStrengthConstantHiblerC
@@ -1422,7 +1419,7 @@ contains
 
        else
 
-          if (trim(config_column_physics_type) == "icepack") then
+!          if (trim(config_column_physics_type) == "icepack") then
              do iCell = 1, nCellsSolve
 
                 icePressure(iCell) = 0.0_RKIND
@@ -1442,27 +1439,7 @@ contains
                 endif ! solveStress
 
              enddo ! iCell
-          else if (trim(config_column_physics_type) == "column_package") then
-             do iCell = 1, nCellsSolve
-
-                icePressure(iCell) = 0.0_RKIND
-
-                if (solveStress(iCell) == 1) then
-
-                   ! this routine doesnt reset icePressure
-                   call seaice_column_ice_strength(&
-                        nCategories, &
-                        iceAreaCell(iCell), &
-                        iceVolumeCell(iCell), &
-                        openWaterArea(iCell), &
-                        iceAreaCategory(1,:,iCell), &
-                        iceVolumeCategory(1,:,iCell), &
-                        icePressure(iCell))
-
-                endif ! solveStress
-
-             enddo ! iCell
-          endif ! config_column_physics_type
+!          endif ! config_column_physics_type
 
        endif
 

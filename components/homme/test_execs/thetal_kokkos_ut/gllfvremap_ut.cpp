@@ -867,14 +867,22 @@ test_fv_phys_to_dyn (Session& s, const int nf, const bool theta_hydrostatic_mode
       dq("dq", s.nelemd, nf2, s.qsize, g::num_lev_aligned),
       dfq("dq", s.nelemd, nf2, s.qsize, g::num_lev_aligned);
 
+    // SGS turbulence inputs
+    const ExecView<Real***> dKm("dKm", s.nelemd, nf2, g::num_lev_aligned);
+    const ExecView<Real***> dKh("dKh", s.nelemd, nf2, g::num_lev_aligned);
+
     const auto T = cmv(dT);
     const auto uv = cmv(duv);
     const auto fq = cmv(dfq);
+    const auto Km = cmv(dKm);
+    const auto Kh = cmv(dKh);
 
     for (int ie = 0; ie < s.nelemd; ++ie)
       for (int k = 0; k < s.nlev; ++k)
         for (int i = 0; i < nf2; ++i) {
           fT(ie,k,i) = T(ie,i,k) = s.r.urrng(100, 300);
+          Km(ie,i,k) = s.r.urrng(0,40);
+          Kh(ie,i,k) = s.r.urrng(0,40);
           for (int d = 0; d < 2; ++d)
             fuv(ie,k,d,i) = uv(ie,i,d,k) = s.r.urrng(-30, 30);
           for (int iq = 0; iq < s.qsize; ++iq)
@@ -885,12 +893,15 @@ test_fv_phys_to_dyn (Session& s, const int nf, const bool theta_hydrostatic_mode
     deep_copy(duv, uv);
     deep_copy(dfq, fq);
 
+    deep_copy(dKm, Km);
+    deep_copy(dKh, Kh);
+
     const auto& c = Context::singleton();
     auto& gfr = c.get<GllFvRemap>();
 
     const int nt = 1;
     gfr_fv_phys_to_dyn_f90(nf, nt+1, fT.data(), fuv.data(), ffq.data());
-    gfr.run_fv_phys_to_dyn(nt, dT, duv, dfq);
+    gfr.run_fv_phys_to_dyn(nt, dT, duv, dfq, dKm, dKh);
     gfr.run_fv_phys_to_dyn_dss();
   }
 

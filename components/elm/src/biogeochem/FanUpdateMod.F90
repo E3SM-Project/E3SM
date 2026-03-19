@@ -264,7 +264,7 @@ contains
        if (.not. col_pp%active(c) .or. col_pp%wtgcell(c) < 1e-6_r8) cycle
 
        g = col_pp%gridcell(c)
-       if (lun_pp%itype(l) == istsoil) then
+       if (col_pp%is_soil(c)) then
           col_nf%manure_n_grz(c) &
                = atm2lnd_vars%forc_ndep_past_grc(g) / col_pp%wtgcell(c) * 1e3_r8 ! kg to g 
           if (col_nf%manure_n_grz(c) > 1e12 .or. isnan(col_nf%manure_n_grz(c))) then
@@ -314,12 +314,12 @@ contains
        c = filter_soilc(fc)
        l = col_pp%landunit(c)
        g = col_pp%gridcell(c)
-       if (.not. (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop)) cycle
+       if (.not. (col_pp%is_soil(c) .or. col_pp%is_crop(c))) cycle
        if (.not. col_pp%active(c) .or. col_pp%wtgcell(c) < 1e-15_r8) cycle
 
        ! Find and average the atmospheric resistances Rb and Ra.
        ! 
-       if (lun_pp%itype(col_pp%landunit(c)) == istcrop) then
+       if (lun_pp%itype(l) == istcrop) then
           ! Crop column, only one patch
           p = col_pp%pfti(c)
           if (p /= col_pp%pftf(c)) call endrun(msg='Strange patch for crop')
@@ -727,6 +727,7 @@ contains
     real(r8), parameter :: kg_to_g = 1e3_r8
     ! FAN allows a fraction of manure N diverted before storage; this option is currently not used.
     real(r8), parameter :: fract_direct = 0.0_r8
+    real(r8), parameter :: abstol = 1.e-6_r8 ! weight tolerance to remove small column and landunits
 
     ! N fluxes, gN/m2/sec:
     !
@@ -774,7 +775,7 @@ contains
        col_grass = ispval
        l = grc_pp%landunit_indices(istsoil, g)
        do c = lun_pp%coli(l), lun_pp%colf(l)
-          if (col_pp%itype(c) == istsoil) then
+          if (col_pp%is_soil(c)) then
              col_grass = c
              exit
           end if
@@ -792,7 +793,9 @@ contains
        if (l /= ispval) then
           ! flux_avail = manure excreted per m2 of crops (ndep_mixed_grc = per m2 / all land units)
           do c = lun_pp%coli(l), lun_pp%colf(l)
-             if (.not. col_pp%active(c)) cycle
+             if (.not. col_pp%active(c) .or. col_pp%wtgcell(c) < abstol) cycle
+
+             if (lun_pp%wtgcell(l) < abstol) cycle ! Ignore if landunit is very tiny
 
              flux_avail = ndep_mixed_grc(g) * kg_to_g / lun_pp%wtgcell(l)
 
@@ -850,7 +853,7 @@ contains
           end do ! column
        end if ! land unit not ispval
 
-       if (col_grass /= ispval .and. col_pp%wtgcell(col_grass) > 0.0_r8) then
+       if (col_grass /= ispval .and. col_pp%wtgcell(col_grass) > abstol) then
           n_manure_spread(col_grass) = n_manure_spread(col_grass) &
                + flux_grass_spread / col_pp%wtgcell(col_grass)
           tan_manure_spread(col_grass) = tan_manure_spread(col_grass) &
@@ -862,8 +865,10 @@ contains
                   flux_grass_spread_tan, col_grass, tan_manure_spread(col_grass)
           end if
        else if (flux_grass_spread > 0._r8) then
-          ! call endrun('Cannot spread manure')
-          write(iulog,*) 'warning: FAN cannot spread manure'
+          if (debug_fan) then
+             ! call endrun('Cannot spread manure')
+             write(iulog,*) 'warning: FAN cannot spread manure'
+          end if
        end if
 
     end do ! grid
@@ -880,20 +885,23 @@ contains
     integer, intent(in)    :: num_soilc       ! number of soil columns in filter
     integer, intent(in)    :: filter_soilc(:) ! filter for soil columns
 
-    integer :: c, fc
+    integer :: c, l, fc
     real(r8) :: total, fluxout, fluxin, flux_loss    
 
     do fc = 1, num_soilc
        c = filter_soilc(fc)
+       l = col_pp%landunit(c)
+       if (.not. col_pp%active(c) .or. col_pp%wtgcell(c) < 1.e-15_r8) cycle
        total = col_ns%tan_g1(c) + col_ns%tan_g2(c) + col_ns%tan_g3(c)
        total = total + col_ns%manure_u_grz(c) + col_ns%manure_a_grz(c) + col_ns%manure_r_grz(c)
        total = total + col_ns%tan_s0(c) + col_ns%tan_s1(c) + col_ns%tan_s2(c) + col_ns%tan_s3(c)
        total = total + col_ns%manure_u_app(c) + col_ns%manure_a_app(c) + col_ns%manure_r_app(c)
        total = total + col_ns%tan_f1(c) + col_ns%tan_f2(c) + col_ns%tan_f3(c) + col_ns%tan_f4(c)
        total = total + col_ns%fert_u1(c) + col_ns%fert_u2(c)
+       total = total + col_ns%manure_n_stored(c)
        col_ns%fan_totn(c) = total
 
-       if (lun_pp%itype(col_pp%landunit(c)) == istcrop) then
+       if (lun_pp%itype(l) == istcrop) then
           ! no grazing, manure_n_appl is from the same column and not counted as input
           fluxin = col_nf%manure_n_mix(c) + col_nf%fert_n_appl(c)
        else
@@ -932,7 +940,7 @@ contains
     ! patch level fertilizer application + manure production 
     real(r8), intent(inout) :: nfertilization(bounds%begp:) 
 
-    integer :: c, fc, p
+    integer :: c, l, fc, p
     real(r8) :: flux_manure, flux_fert, manure_prod
     logical :: included
 
@@ -940,12 +948,13 @@ contains
 
     do fc = 1, num_soilc
        c = filter_soilc(fc)
+       l = col_pp%landunit(c)
        flux_manure = col_nf%manure_no3_to_soil(c) + col_nf%manure_nh4_to_soil(c)
        flux_fert = col_nf%fert_no3_to_soil(c) + col_nf%fert_nh4_to_soil(c)
        manure_prod = col_nf%manure_n_barns(c) + col_nf%manure_n_grz(c)
 
-       included = (lun_pp%itype(col_pp%landunit(c)) == istcrop .and. fan_to_bgc_crop) &
-             .or. (lun_pp%itype(col_pp%landunit(c)) == istsoil .and. fan_to_bgc_veg)
+       included = (col_pp%is_crop(c) .and. fan_to_bgc_crop) &
+             .or. (col_pp%is_soil(c) .and. fan_to_bgc_veg)
 
        if (included) then
           col_nf%fert_to_sminn(c) = flux_fert + flux_manure

@@ -2,37 +2,47 @@ site_name: EAMxx
 
 nav:
   - 'Home': 'index.md'
-  # - 'WIP Sandbox': 'WIP.md'
   - 'User Guide':
     - 'Overview': 'user/index.md'
-    # - 'Quick-start Guide': 'user/user_quickstart.md'
     - 'EAMxx case basics': 'user/eamxx_cases.md'
-    # - 'Testing': 'user/user_testing.md'
     - 'Model Configuration': 'user/model_configuration.md'
     - 'Nudging': 'user/nudging.md'
     - 'Extra radiation calls': 'user/clean_clear_sky.md'
     - 'COSP': 'user/cosp.md'
     - 'Regionally Refined EAMxx': 'user/rrm_eamxx.md'
     - 'Doubly Periodic EAMxx': 'user/dp_eamxx.md'
-    - 'PyEAMxx': 'user/pyeamxx.md'
+    - 'Python support': 'user/python.md'
     - 'IO Metadata': 'user/io_metadata.md'
-    - 'Multi-Instance and NBFB': 'user/multi-instance-mvk.md'
+    - 'Multi-Instance and NBFB': 'user/multi-instance-rcs.md'
     - 'EAMxx runtime parameters': 'user/eamxx_params.md'
+    - 'Diagnostics':
+      - 'Overview': 'user/diags/index.md'
+      - 'Field contraction': 'user/diags/field_contraction.md'
+      - 'Conditional sampling': 'user/diags/conditional_sampling.md'
+      - 'Binary arithmetics': 'user/diags/binary_ops.md'
+      - 'Vertical derivative': 'user/diags/vert_derivative.md'
     - 'Presentations': 'user/presentations.md'
+    - 'IO Aliases': 'user/io_aliases.md'
   - 'Developer Guide':
-    # - 'Overview': 'developer/index.md'
     - 'Quick-start Guide': 'developer/dev_quickstart.md'
     - 'Code Structure and Organization': 'developer/code_structure.md'
-    # - 'Installation': 'common/installation.md'
-    - 'Style Guide': 'developer/style_guide.md'
+    - 'Style Guide':
+      - 'Overview': 'developer/style/style_guide_overview.md'
+      - 'Code Formatting Standards': 'developer/style/format.md'
+      - 'Code Style Standards':
+        - 'Overview': 'developer/style/style.md'
+        - 'Types, Classes, Structures': 'developer/style/types.md'
+        - 'Functions and Methods': 'developer/style/functions.md'
+        - 'Variables': 'developer/style/variables.md'
+        - 'Templating': 'developer/style/templates.md'
+      - 'Resources':
+        - 'How-to Guide: clang-format': 'developer/style/resources/clang-format_HOWTO.md'
     - 'Testing':
       - 'Overview': 'developer/dev_testing/index.md'
       - 'Testing for Development': 'developer/dev_testing/testing_for_development.md'
       - 'Automated Standalone Testing': 'developer/dev_testing/test_all_eamxx.md'
       - 'Full model (CIME)': 'developer/dev_testing/full_model_testing.md'
       - 'CI and Nightly Testing': 'developer/dev_testing/ci_nightly.md'
-      # - 'Supported Computing Platforms': 'developer/dev_testing/supported_machines.md'
-      # - 'Testing Locally': 'developer/dev_testing/local_test.md'
     - 'Important Tools and Objects':
       - 'Kokkos and EKAT': 'developer/kokkos_ekat.md'
       - 'Fields': 'developer/field.md'
@@ -40,10 +50,15 @@ nav:
       - 'Atmosphere Processes': 'developer/processes.md'
       - 'Input/Output': 'developer/io.md'
       - 'Third-party Libraries': 'developer/TPLs.md'
+    - 'How to':
+      - 'Wrap Torch emulators': 'developer/torch_support.md'
   - 'Technical Guide':
     - 'Overview': 'technical/index.md'
+    - 'Physics':
+      - 'P3':
+        - 'Autoconversion': 'technical/physics/p3/autoconversion.md'
+        - 'Back to Cell Average': 'technical/physics/p3/back_to_cell_average.md'
     - 'AeroCom cloud top': 'technical/aerocom_cldtop.md'
-  # - 'Glossary': 'common/glossary.md'
 
 edit_uri: ""
 

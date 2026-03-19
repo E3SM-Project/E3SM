@@ -1437,8 +1437,10 @@ module ocn_time_integration_si
                ! Use of sshNew to save the lagged SSH
                sshNew(iCell) = sshSubcycleNew(iCell)
             end do
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
    
 #ifdef MPAS_OPENACC
             !$acc parallel loop async &
@@ -1676,8 +1678,10 @@ module ocn_time_integration_si
                SIvec_s0(iCell)  = 0.0_RKIND
                SIvec_z0(iCell)  = 0.0_RKIND
             end do ! iCell
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
    
             ! Preconditioning --------------------------------------------!
 
@@ -2555,10 +2559,8 @@ module ocn_time_integration_si
                         layerThicknessNew(k,iCell)
                      end do
                      end do
-#ifndef MPAS_OPENACC
                      !$omp end do
                      !$omp end parallel
-#endif
 
                      ! limit salinity in separate loop
                      if (trim(groupItr%memberName) == &
@@ -2572,10 +2574,8 @@ module ocn_time_integration_si
                            tracersGroupNew(indexSalinity,k,iCell))
                         end do
                         end do
-#ifndef MPAS_OPENACC
                         !$omp end do
                         !$omp end parallel
-#endif
                      end if
 
                      ! Reset debugTracers to fixed value at the surface
@@ -2627,10 +2627,8 @@ module ocn_time_integration_si
                               end do
                            end if
                         end do ! cells
-#ifndef MPAS_OPENACC
                         !$omp end do
                         !$omp end parallel
-#endif
                      end if ! debug tracers
                   end if ! use tracer group
                end if ! tracer

@@ -1,7 +1,7 @@
 #ifndef SCREAM_SHOC_MAIN_WRAP_HPP
 #define SCREAM_SHOC_MAIN_WRAP_HPP
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <memory>
 #include <vector>
@@ -12,7 +12,7 @@ namespace shoc {
 struct FortranData;
 
 // Run SHOC subroutines, populating inout and out fields of d.
-ekat::Int shoc_main(FortranData& d);
+int shoc_main(FortranData& d);
 
 // Test SHOC by running initial conditions for a number of steps and comparing
 // against reference data. If gen_plot_scripts is true, Python scripts are

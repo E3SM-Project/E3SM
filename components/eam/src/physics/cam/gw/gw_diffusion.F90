@@ -76,8 +76,6 @@ subroutine gw_ediff(ncol, pver, ngwv, kbot, ktop, tend_level, &
   integer :: k, l
   ! Inverse Prandtl number.
   real(r8), parameter :: prndl=0.25_r8
-  ! Density scale height.
-  real(r8), parameter :: dscale=7000._r8
 
 !--------------------------------------------------------------------------
 
@@ -95,7 +93,6 @@ subroutine gw_ediff(ncol, pver, ngwv, kbot, ktop, tend_level, &
 
      end do
   end do
-
 
   ! Interpolate effective diffusivity to interfaces.
   ! Assume zero at top and bottom interfaces.
@@ -121,7 +118,6 @@ subroutine gw_ediff(ncol, pver, ngwv, kbot, ktop, tend_level, &
   ! in vd_lu_decomp they are expected as midpoints.
   call vd_lu_decomp(ncol, pver, ncol, &
        zero, egwdffi, tmpi2, rdpm, dt, gravit, zero, ktop+1, kbot+1, decomp)
-
 end subroutine gw_ediff
 
 !==========================================================================
@@ -149,7 +145,6 @@ subroutine gw_diff_tend(ncol, pver, kbot, ktop, q, dt, decomp, dq)
 !
 ! Author: Sassi - Jan 2001
 !--------------------------------------------------------------------------
-
   use vdiff_lu_solver, only: vd_lu_solve
 
 !---------------------------Input Arguments--------------------------------
@@ -189,7 +184,6 @@ subroutine gw_diff_tend(ncol, pver, kbot, ktop, q, dt, decomp, dq)
 
   ! Evaluate tendency to be reported back.
   dq = (qnew-q) / dt
-
 end subroutine gw_diff_tend
 
 end module gw_diffusion

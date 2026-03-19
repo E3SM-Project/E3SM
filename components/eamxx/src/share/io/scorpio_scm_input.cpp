@@ -1,10 +1,10 @@
 #include "share/io/scorpio_scm_input.hpp"
 #include "share/io/scorpio_input.hpp"
 
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/grid/point_grid.hpp"
 
-#include <ekat/util/ekat_string_utils.hpp>
+#include <ekat_string_utils.hpp>
 
 #include <memory>
 
@@ -82,6 +82,12 @@ SCMInput::
   scorpio::release_file(m_filename);
 }
 
+void SCMInput::
+set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
+  EKAT_REQUIRE_MSG (atm_logger, "Error! Invalid logger pointer.\n");
+  m_atm_logger = atm_logger;
+}
+
 void SCMInput::create_io_grid ()
 {
   EKAT_REQUIRE_MSG (scorpio::has_dim(m_filename,"ncol"),
@@ -102,8 +108,10 @@ void SCMInput::create_closest_col_info (double target_lat, double target_lon)
   auto lat = m_io_grid->create_geometry_data("lat",m_io_grid->get_2d_scalar_layout(),nondim);
   auto lon = m_io_grid->create_geometry_data("lon",m_io_grid->get_2d_scalar_layout(),nondim);
 
+  std::vector<Field> latlon = {lat,lon};
+
   // Read from file
-  AtmosphereInput file_reader(m_filename, m_io_grid, {lat,lon});
+  AtmosphereInput file_reader(m_filename, m_io_grid, latlon);
   file_reader.read_variables();
   file_reader.finalize();
 
@@ -135,13 +143,12 @@ void SCMInput::read_variables (const int time_index)
 {
   auto func_start = std::chrono::steady_clock::now();
   auto fname = [](const Field& f) { return f.name(); };
-  if (m_atm_logger) {
-    m_atm_logger->info("[EAMxx::scorpio_scm_input] Reading variables from file");
-    m_atm_logger->info("  file name: " + m_filename);
-    m_atm_logger->info("  var names: " + ekat::join(m_fields,fname,", "));
-    if (time_index!=-1) {
-      m_atm_logger->info("  time idx : " + std::to_string(time_index));
-    }
+
+  m_atm_logger->info("[EAMxx::scorpio_scm_input] Reading variables from file");
+  m_atm_logger->info("  file name: " + m_filename);
+  m_atm_logger->info("  var names: " + ekat::join(m_fields,fname,", "));
+  if (time_index!=-1) {
+    m_atm_logger->info("  time idx : " + std::to_string(time_index));
   }
 
   // MPI rank with closest column index store column data
@@ -156,7 +163,9 @@ void SCMInput::read_variables (const int time_index)
     auto& f = m_fields[i];
     if (m_comm.rank() == m_closest_col_info.mpi_rank) {
       // This rank read the column we need, so copy it in the output field
-      f.deep_copy<Host>(f_io.subfield(0,m_closest_col_info.col_lid));
+      f_io.sync_to_dev();
+      f.deep_copy(f_io.subfield(0,m_closest_col_info.col_lid));
+      f.sync_to_host();
     }
 
     // Broadcast column data to all other ranks

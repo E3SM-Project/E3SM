@@ -1,12 +1,10 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-
 #include "p3_unit_tests_common.hpp"
+
+#include "share/core/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -59,17 +57,17 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection : public UnitWrap::UnitTest
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        dc[i].read(Base::m_fid);
+        dc[i].read(Base::m_ifile);
       }
     }
 
     //Run function from a kernal and copy results back to the host
     Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init pack inputs
-      Spack rho_local, qr_incld_local, nr_incld_local, nr_selfcollect_tend_local;
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      Pack rho_local, qr_incld_local, nr_incld_local, nr_selfcollect_tend_local;
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         rho_local[s]      = dc_device(vs).rho;
         qr_incld_local[s] = dc_device(vs).qr_incld;
         nr_incld_local[s] = dc_device(vs).nr_incld;
@@ -81,7 +79,7 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection : public UnitWrap::UnitTest
           p3::Functions<Real,DefaultDevice>::P3Runtime());
 
       // Copy results back into views
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         dc_device(vs).rho                  = rho_local[s];
         dc_device(vs).qr_incld             = qr_incld_local[s];
         dc_device(vs).nr_incld             = nr_incld_local[s];
@@ -103,7 +101,7 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection : public UnitWrap::UnitTest
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        dc_host(s).write(Base::m_fid);
+        dc_host(s).write(Base::m_ofile);
       }
     }
   }

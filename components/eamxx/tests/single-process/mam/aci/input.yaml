@@ -8,7 +8,7 @@ time_stepping:
   run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
   number_of_steps: ${NUM_STEPS}
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [mam4_aci]
   mam4_aci:
     wsubmin: 0.001
@@ -39,6 +39,7 @@ initial_conditions:
   cldfrac_liq_prev: 0.138584624960092
   eddy_diff_heat: 0.620820118789603
   w_variance:  1.110977269289875E-002
+  z_mam4_int : 0.0
 
 # The parameters for I/O control
 scorpio:

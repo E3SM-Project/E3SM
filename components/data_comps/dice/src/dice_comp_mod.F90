@@ -284,12 +284,28 @@ CONTAINS
       call shr_sys_abort('Error: fail to update mesh info ')
 
    allocate(data(lsize))
-   ierr = iMOAB_DefineTagStorage( MPSIID, "area:aream:frac:mask"//C_NULL_CHAR, &
+   ierr = iMOAB_DefineTagStorage( MPSIID, "lat:lon:area:aream:frac:mask"//C_NULL_CHAR, &
                                     1, & ! dense, double
                                     1, & ! number of components
                                     tagindex )
    if (ierr > 0 )  &
       call shr_sys_abort('Error: fail to create tag: area:aream:frac:mask' )
+
+   data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'lat'),:)
+   tagname='lat'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, lsize, &
+                                    0, & ! set data on vertices
+                                    data)
+   if (ierr > 0 )  &
+      call shr_sys_abort('Error: fail to set lat tag ')
+
+   data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'lon'),:)
+   tagname='lon'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, lsize, &
+                                    0, & ! set data on vertices
+                                    data)
+   if (ierr > 0 )  &
+      call shr_sys_abort('Error: fail to set lon tag ')
 
    data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'area'),:)
    tagname='area'//C_NULL_CHAR
@@ -297,7 +313,7 @@ CONTAINS
                                     0, & ! set data on vertices
                                     data)
    if (ierr > 0 )  &
-      call shr_sys_abort('Error: fail to get area tag ')
+      call shr_sys_abort('Error: fail to set area tag ')
 
    ! set the same data for aream (model area) as area
    ! data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'aream'),:)
@@ -525,8 +541,9 @@ CONTAINS
     use iMOAB, only: iMOAB_WriteMesh
 #endif
 #ifdef HAVE_MOAB
-    use seq_flds_mod    , only: seq_flds_i2x_fields 
-    use seq_flds_mod    , only: moab_set_tag_from_av
+    use seq_flds_mod    , only: seq_flds_i2x_fields
+    use seq_flds_mod    , only: seq_flds_x2i_fields
+    use shr_moab_mod    , only: moab_set_tag_from_av, moab_set_av_from_tag
 #endif
     implicit none
 
@@ -581,6 +598,71 @@ CONTAINS
 
     call t_startf('DICE_RUN')
 
+#ifdef HAVE_MOAB
+    if(.not.firstcall) then
+       ! Copy x2i data from MOAB mesh at the beginning of the run method
+       lsize = mct_avect_lsize(x2i)
+       allocate(datam(lsize))
+
+       tagname = 'Faxa_swvdr'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kswvdr, MPSIID, datam, lsize)
+       tagname = 'Faxa_swndr'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kswndr, MPSIID, datam, lsize)
+       tagname = 'Faxa_swvdf'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kswvdf, MPSIID, datam, lsize)
+       tagname = 'Faxa_swndf'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kswndf, MPSIID, datam, lsize)
+       tagname = 'Fioo_q'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kq, MPSIID, datam, lsize)
+       tagname = 'Sa_z'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kz, MPSIID, datam, lsize)
+       tagname = 'Sa_u'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kua, MPSIID, datam, lsize)
+       tagname = 'Sa_v'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kva, MPSIID, datam, lsize)
+       tagname = 'Sa_ptem'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kptem, MPSIID, datam, lsize)
+       tagname = 'Sa_shum'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kshum, MPSIID, datam, lsize)
+       tagname = 'Sa_dens'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kdens, MPSIID, datam, lsize)
+       tagname = 'Sa_tbot'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, ktbot, MPSIID, datam, lsize)
+       tagname = 'So_s'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, ksalinity, MPSIID, datam, lsize)
+       tagname = 'Faxa_bcphidry'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kbcphidry, MPSIID, datam, lsize)
+       tagname = 'Faxa_bcphodry'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kbcphodry, MPSIID, datam, lsize)
+       tagname = 'Faxa_bcphiwet'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kbcphiwet, MPSIID, datam, lsize)
+       tagname = 'Faxa_ocphidry'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kocphidry, MPSIID, datam, lsize)
+       tagname = 'Faxa_ocphodry'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kocphodry, MPSIID, datam, lsize)
+       tagname = 'Faxa_ocphiwet'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kocphiwet, MPSIID, datam, lsize)
+       tagname = 'Faxa_dstdry1'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kdstdry1, MPSIID, datam, lsize)
+       tagname = 'Faxa_dstdry2'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kdstdry2, MPSIID, datam, lsize)
+       tagname = 'Faxa_dstdry3'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kdstdry3, MPSIID, datam, lsize)
+       tagname = 'Faxa_dstdry4'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kdstdry4, MPSIID, datam, lsize)
+       tagname = 'Faxa_dstwet1'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kdstwet1, MPSIID, datam, lsize)
+       tagname = 'Faxa_dstwet2'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kdstwet2, MPSIID, datam, lsize)
+       tagname = 'Faxa_dstwet3'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kdstwet3, MPSIID, datam, lsize)
+       tagname = 'Faxa_dstwet4'//C_NULL_CHAR
+       call moab_set_av_from_tag(tagname, x2i, kdstwet4, MPSIID, datam, lsize)
+
+       deallocate(datam)
+    endif
+#endif
+
     call t_startf('dice_run1')
 
     call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
@@ -607,7 +689,7 @@ CONTAINS
        call t_barrierf('dice_scatter_BARRIER',mpicom)
        call t_startf('dice_scatter')
        do n = 1,SDICE%nstreams
-          call shr_dmodel_translateAV(SDICE%avs(n),i2x,avifld,avofld,rearr)
+          call shr_dmodel_translateAV(SDICE%avs(n),i2x, avifld, avofld,rearr)
        enddo
        call t_stopf('dice_scatter')
     else
@@ -823,8 +905,10 @@ CONTAINS
     call t_stopf('dice')
 
 #ifdef HAVE_MOAB
-    lsize = mct_avect_lsize(i2x) ! is it the same as mct_avect_lsize(avstrm) ?
-    allocate(datam(lsize)) ! 
+    ! Copy i2x data to MOAB mesh
+    lsize = mct_avect_lsize(i2x)
+    allocate(datam(lsize))
+
     call mct_list_init(temp_list ,seq_flds_i2x_fields)
     size_list=mct_list_nitem (temp_list)
     do index_list = 1, size_list

@@ -58,7 +58,7 @@ public:
   TimeStamp& operator= (const TimeStamp&) = default;
 
   // This method checks that time shifts forward (i.e. that seconds is positive)
-  TimeStamp& operator+= (const double seconds);
+  TimeStamp& operator+= (double seconds);
 
   // Clones the stamps and sets num steps to given value. If -1, clones num steps too
   TimeStamp clone (const int num_steps);
@@ -67,15 +67,20 @@ protected:
 
   std::vector<int> m_date;  // [year, month, day]
   std::vector<int> m_time;  // [hour, min, sec]
+  double           m_sec_fraction = 0;
 
   int m_num_steps = std::numeric_limits<int>::lowest(); // Number of steps since simulation started
 };
 
 // Overload operators for TimeStamp
 bool operator== (const TimeStamp& ts1, const TimeStamp& ts2);
+inline bool operator!= (const TimeStamp& ts1, const TimeStamp& ts2)
+{
+  return not (ts1==ts2);
+}
 bool operator<  (const TimeStamp& ts1, const TimeStamp& ts2);
 bool operator<= (const TimeStamp& ts1, const TimeStamp& ts2);
-TimeStamp operator+ (const TimeStamp& ts, const int dt);
+TimeStamp operator+ (const TimeStamp& ts, const double dt);
 
 // Difference (in seconds) between two timestamps
 std::int64_t operator- (const TimeStamp& ts1, const TimeStamp& ts2);

@@ -6,9 +6,6 @@
 !> \author Adrian K. Turner and Elizabeth Hunke, LANL
 !> \date 2013-2014, 2023
 !> \details
-!> Values in this module have been copied from the two ice_constants_colpkg.F90 
-!> modules in the column physics package (in column/).  They will remain 
-!> duplicates until the column physics package is deprecated.
 !
 !-----------------------------------------------------------------------
 
@@ -72,7 +69,7 @@ module seaice_constants
        seaiceDensityFreshwater         = 1000.0_RKIND  ,&! density of fresh water (kg/m^3)
 
   ! thermodynamic constants
-       seaiceStefanBoltzmann           = 567.0e-10_RKIND,&! W/m^2/K^4
+       seaiceStefanBoltzmann           = 5.670374419e-8_RKIND,&! W/m^2/K^4
        seaiceIceSnowEmissivity         = 0.95_RKIND    ,&! emissivity of snow and ice ! 0.985_RKIND in Icepack
        seaiceFreshWaterFreezingPoint   = 273.15_RKIND  ,&! freezing temp of fresh ice (K)
        seaiceFreshIceSpecificHeat      = 2106._RKIND   ,&! specific heat of fresh ice (J/kg/K)

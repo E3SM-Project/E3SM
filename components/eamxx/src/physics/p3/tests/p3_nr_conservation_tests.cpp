@@ -1,12 +1,10 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-
 #include "p3_unit_tests_common.hpp"
+
+#include "share/core/eamxx_types.hpp"
 
 namespace scream {
 namespace p3 {
@@ -39,17 +37,17 @@ struct UnitWrap::UnitTest<D>::TestNrConservation : public UnitWrap::UnitTest<D>:
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        baseline_data[i].read(Base::m_fid);
+        baseline_data[i].read(Base::m_ifile);
       }
     }
 
     // Get data from cxx. Run nr_conservation from a kernel and copy results back to host
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init pack inputs
-      Spack nc2nr_autoconv_tend, ncshdc, ni2nr_melt_tend, nr, nr2ni_immers_freeze_tend, nr_collect_tend, nr_evap_tend, nr_ice_shed_tend, nr_selfcollect_tend;
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      Pack nc2nr_autoconv_tend, ncshdc, ni2nr_melt_tend, nr, nr2ni_immers_freeze_tend, nr_collect_tend, nr_evap_tend, nr_ice_shed_tend, nr_selfcollect_tend;
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         nc2nr_autoconv_tend[s] = cxx_device(vs).nc2nr_autoconv_tend;
         ncshdc[s] = cxx_device(vs).ncshdc;
         ni2nr_melt_tend[s] = cxx_device(vs).ni2nr_melt_tend;
@@ -64,7 +62,7 @@ struct UnitWrap::UnitTest<D>::TestNrConservation : public UnitWrap::UnitTest<D>:
       Functions::nr_conservation(nr, ni2nr_melt_tend, nr_ice_shed_tend, ncshdc, nc2nr_autoconv_tend, cxx_device(offset).dt, cxx_device(offset).nmltratio, nr_collect_tend, nr2ni_immers_freeze_tend, nr_selfcollect_tend, nr_evap_tend);
 
       // Copy spacks back into cxx_device view
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         cxx_device(vs).nr2ni_immers_freeze_tend = nr2ni_immers_freeze_tend[s];
         cxx_device(vs).nr_collect_tend = nr_collect_tend[s];
         cxx_device(vs).nr_evap_tend = nr_evap_tend[s];
@@ -88,7 +86,7 @@ struct UnitWrap::UnitTest<D>::TestNrConservation : public UnitWrap::UnitTest<D>:
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        cxx_host(s).write(Base::m_fid);
+        cxx_host(s).write(Base::m_ofile);
       }
     }
   } // run_bfb

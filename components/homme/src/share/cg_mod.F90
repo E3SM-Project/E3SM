@@ -82,8 +82,8 @@ contains
     type (hybrid_t)  , intent(in)     :: hybrid
     integer, optional, intent(in)     :: debug_level
     real(kind=real_kind), optional, intent(in) :: wts(len,nblks)
-    real(kind=real_kind) :: psum
     integer :: err, i
+
     cg%len         = len
     cg%ninst       = ninst
     cg%nblks       = nblks
@@ -171,7 +171,6 @@ contains
     integer kptr
 
     real (kind=real_kind), dimension(cg%ninst)    :: eps
-    real (kind=real_kind), dimension(3*cg%ninst)  :: redp
 
     real (kind=real_kind) :: gamma
     real (kind=real_kind) :: delta
@@ -374,8 +373,6 @@ contains
        return               
 
     end if
-
-10  format("cg:iter:",i4," residual=",e22.14," instance=",i4)
 
   end function congrad0
 

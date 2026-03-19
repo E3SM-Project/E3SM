@@ -123,6 +123,7 @@ module ocn_core_interface
       logical, pointer :: dataLandIceFluxesPKGActive
       logical, pointer :: landIceFluxesPKGActive
       logical, pointer :: landIceCouplingPKGActive
+      logical, pointer :: landIceThermalForcing3DPKGActive
       logical, pointer :: dataSubglacialRunoffFluxPKGActive
       logical, pointer :: thicknessBulkPKGActive
       logical, pointer :: frazilIceActive
@@ -141,6 +142,7 @@ module ocn_core_interface
       logical, pointer :: activeWavePKGActive
       logical, pointer :: subgridWetDryPKGActive
       logical, pointer :: scaledDISMFPKGActive
+      logical, pointer :: scaledSFWFPKGActive
 
       type (mpas_pool_iterator_type) :: pkgItr
       logical, pointer :: packageActive
@@ -178,6 +180,9 @@ module ocn_core_interface
       logical, pointer :: config_use_subgrid_wetting_drying
       logical, pointer :: config_scale_dismf_by_removed_ice_runoff
 
+      ! flag to turn on freshwater balance adjustment 
+      logical, pointer :: config_use_precip_scaling
+
       character (len=StrKIND), pointer :: config_time_integrator
       character (len=StrKIND), pointer :: config_ocean_run_mode
       character (len=StrKIND), pointer :: config_pressure_gradient_type
@@ -189,6 +194,7 @@ module ocn_core_interface
       logical, pointer :: config_use_bulk_thickness_flux
       logical, pointer :: config_compute_active_tracer_budgets
       character (len=StrKIND), pointer :: config_land_ice_flux_mode
+      character (len=StrKIND), pointer :: config_glc_thermal_forcing_coupling_mode
       character (len=StrKIND), pointer :: config_subglacial_runoff_mode
 
        type (mpas_pool_iterator_type) :: groupItr
@@ -321,6 +327,16 @@ module ocn_core_interface
          landIcePressurePKGActive = .true.
          landIceFluxesPKGActive = .true.
          landIceCouplingPKGActive = .true.
+      end if
+
+
+      !
+      ! test for 3d land ice thermal forcing, landIceThermalForcing3DPKG
+      !
+      call mpas_pool_get_package(packagePool, 'landIceThermalForcing3DPKGActive', landIceThermalForcing3DPKGActive)
+      call mpas_pool_get_config(configPool, 'config_glc_thermal_forcing_coupling_mode', config_glc_thermal_forcing_coupling_mode)
+      if ( trim(config_glc_thermal_forcing_coupling_mode) == '3d' ) then
+         landIceThermalForcing3DPKGActive = .true.
       end if
 
       !
@@ -460,6 +476,15 @@ module ocn_core_interface
                                 config_scale_dismf_by_removed_ice_runoff)
       if (config_scale_dismf_by_removed_ice_runoff) then
          scaledDISMFPKGActive = .true.
+      end if
+
+      !
+      ! test for scaling precipitation fluxes to ensure a balance of fresh water
+      !
+      call mpas_pool_get_package(packagePool, 'scaledSFWFPKGActive', scaledSFWFPKGActive)
+      call mpas_pool_get_config(configPool, 'config_use_precip_scaling', config_use_precip_scaling)
+      if (config_use_precip_scaling) then
+         scaledSFWFPKGActive = .true.
       end if
 
       !

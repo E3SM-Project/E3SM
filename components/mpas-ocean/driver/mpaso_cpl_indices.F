@@ -8,6 +8,8 @@ module mpaso_cpl_indices
   SAVE
   public                               ! By default make data private
 
+  integer , parameter, private:: glc_nzoc_max = 100
+
   ! ocn -> drv
 
   integer :: index_o2x_So_t      
@@ -24,6 +26,7 @@ module mpaso_cpl_indices
   integer :: index_o2x_Faoo_fco2_ocn
   integer :: index_o2x_Faoo_fdms_ocn
   integer :: index_o2x_So_ssh
+  integer :: index_o2x_So_frac_h2oocn
   integer :: index_o2x_Foxo_ismw
   integer :: index_o2x_Foxo_rrofl
   integer :: index_o2x_Foxo_rrofi
@@ -37,7 +40,9 @@ module mpaso_cpl_indices
   integer :: index_o2x_So_htv !ocean heat-transfer velocity
   integer :: index_o2x_So_stv !ocean salt-transfer velocity
   integer :: index_o2x_So_rhoeff !ocean effective density
-  integer :: index_o2x_So_tf2d !ocean thermal forcing at predefined critical depth
+  integer :: index_o2x_So_tf3d(glc_nzoc_max) !ocean thermal forcing at predefined z-levels
+  integer :: index_o2x_So_tf3d_mask(glc_nzoc_max) !mask ofocean thermal forcing at predefined z-levels
+
 
 
   ! ocn -> drv  (BGC)
@@ -133,6 +138,15 @@ module mpaso_cpl_indices
   integer :: index_x2o_Sw_Hs         ! Significant wave height
   integer :: index_x2o_Sw_Fp         ! Peak wave frequency
   integer :: index_x2o_Sw_Dp         ! Peak wave direction
+  integer :: index_x2o_Sw_Z0         ! surface roughness length from WW3
+  integer :: index_x2o_Sw_Ustar      ! Friction velocity from WW3
+  integer :: index_x2o_Sw_Charn      !Charnock coefficient accounting for the wave stress
+  integer :: index_x2o_Faww_Tawx     !Wave supported stress 
+  integer :: index_x2o_Faww_Tawy     !Wave supported stress
+  integer :: index_x2o_Fwow_Twox     !Wave to Ocean momentum flux
+  integer :: index_x2o_Fwow_Twoy     !Wave to Ocean momentum flux
+  integer :: index_x2o_Faow_Tocx     !Wave Net Ocean momentum flux
+  integer :: index_x2o_Faow_Tocy     !Wave Net Ocean momentum flux
 
   ! drv -> glc and internal drv fields
 
@@ -174,8 +188,17 @@ contains
   subroutine mpaso_cpl_indices_set( )
 
     use seq_flds_mod, only : wav_ocn_coup      
+    use glc_zocnclass_mod
+
     type(mct_aVect) :: o2x      ! temporary
     type(mct_aVect) :: x2o      ! temporary
+
+    integer :: glc_nzoc
+    integer :: iLev
+    character(len=2) :: cnum
+    character(len=64) :: varname
+
+    glc_nzoc = glc_get_num_zocn_classes()
 
     ! Determine attribute vector indices
 
@@ -197,6 +220,9 @@ contains
     index_o2x_Faoo_fco2_ocn = mct_avect_indexra(o2x,'Faoo_fco2_ocn',perrWith='quiet')
     index_o2x_Faoo_fdms_ocn = mct_avect_indexra(o2x,'Faoo_fdms_ocn',perrWith='quiet')
     index_o2x_So_ssh        = mct_avect_indexra(o2x,'So_ssh')
+    if (ocn_lnd_one_way) then
+      index_o2x_So_frac_h2oocn= mct_avect_indexra(o2x,'So_ssh')
+    endif
 
     index_o2x_Foxo_ismw     = mct_avect_indexra(o2x,'Foxo_ismw',perrWith='quiet')
     index_o2x_Foxo_rrofl    = mct_avect_indexra(o2x,'Foxo_rrofl',perrWith='quiet')
@@ -210,7 +236,16 @@ contains
     index_o2x_So_htv        = mct_avect_indexra(o2x,'So_htv')
     index_o2x_So_stv        = mct_avect_indexra(o2x,'So_stv')
     index_o2x_So_rhoeff     = mct_avect_indexra(o2x,'So_rhoeff')
-    index_o2x_So_tf2d       = mct_avect_indexra(o2x,'So_tf2d',perrWith='quiet')
+    if (glc_nzoc > 0) then
+       do iLev = 1, glc_nzoc
+          cnum = glc_zocnclass_as_string(iLev)
+          varname = 'So_tf3d' // cnum
+          index_o2x_So_tf3d(iLev) = mct_avect_indexra(o2x, trim(varname))
+
+          varname = 'So_tf3d_mask' // cnum
+          index_o2x_So_tf3d_mask(iLev) = mct_avect_indexra(o2x, trim(varname))
+       enddo
+    endif
 
     index_o2x_So_algae1     = mct_avect_indexra(o2x,'So_algae1',perrWith='quiet')
     index_o2x_So_algae2     = mct_avect_indexra(o2x,'So_algae2',perrWith='quiet')
@@ -335,6 +370,15 @@ contains
        index_x2o_Sw_Hs = mct_avect_indexra(x2o,'Sw_Hs')
        index_x2o_Sw_Fp = mct_avect_indexra(x2o,'Sw_Fp')
        index_x2o_Sw_Dp = mct_avect_indexra(x2o,'Sw_Dp')
+       index_x2o_Sw_Z0 = mct_avect_indexra(x2o,'Sw_Z0')
+       index_x2o_Sw_Ustar = mct_avect_indexra(x2o,'Sw_Ustar')
+       index_x2o_Sw_Charn = mct_avect_indexra(x2o,'Sw_Charn')
+       index_x2o_Faww_Tawx = mct_avect_indexra(x2o,'Faww_Tawx')
+       index_x2o_Faww_Tawy = mct_avect_indexra(x2o,'Faww_Tawy')
+       index_x2o_Fwow_Twox = mct_avect_indexra(x2o,'Fwow_Twox')
+       index_x2o_Fwow_Twoy = mct_avect_indexra(x2o,'Fwow_Twoy')
+       index_x2o_Faow_Tocx = mct_avect_indexra(x2o,'Faow_Tocx')
+       index_x2o_Faow_Tocy = mct_avect_indexra(x2o,'Faow_Tocy')
     endif
     call mct_aVect_clean(x2o)
     call mct_aVect_clean(o2x)

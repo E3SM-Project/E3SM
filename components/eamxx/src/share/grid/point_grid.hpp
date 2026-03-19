@@ -1,11 +1,12 @@
 #ifndef SCREAM_POINT_GRID_HPP
 #define SCREAM_POINT_GRID_HPP
 
-#include <memory>
 #include "share/grid/abstract_grid.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
-#include "ekat/mpi/ekat_comm.hpp"
+#include <ekat_comm.hpp>
+
+#include <memory>
 
 namespace scream
 {
@@ -75,7 +76,8 @@ std::shared_ptr<PointGrid>
 create_point_grid (const std::string& name,
                    const int num_global_cols,
                    const int num_vertical_lev,
-                   const ekat::Comm& comm);
+                   const ekat::Comm& comm,
+                   const int gid_base = 0);
 
 } // namespace scream
 

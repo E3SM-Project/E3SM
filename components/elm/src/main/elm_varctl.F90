@@ -19,6 +19,7 @@ module elm_varctl
   public :: cnallocate_carbonphosphorus_only_set
   public :: cnallocate_carbonphosphorus_only
   public :: get_carbontag ! get the tag for carbon simulations
+  public :: elm_varctl_set_iac_flag
   !
   private
   save
@@ -164,6 +165,10 @@ module elm_varctl
   ! BGC logic and datasets
   !----------------------------------------------------------
 
+  ! true => iac/gcam component is present (prognostic)
+  !(public and protected to ensure read only access in other modules)
+  logical, public, protected :: iac_present = .false.
+
   ! values of 'prognostic','diagnostic','constant'
   character(len=16), public :: co2_type = 'constant'
 
@@ -221,7 +226,17 @@ module elm_varctl
 
   logical, public            :: use_fates = .false.                     ! true => use  ED
   integer, public            :: fates_spitfire_mode = 0                 ! 0 for no fire; 1 for constant ignitions
+  logical, public            :: use_fates_managed_fire = .false.        ! true => turn on managed fire
   character(len=256), public :: fates_harvest_mode = ''                 ! five different harvest modes; see namelist_definitions
+  character(len=256), public :: fates_photosynth_acclimation = ''       ! nonacclimating, kumarathunge2019
+  character(len=256), public :: fates_stomatal_model = ''               ! stomatal conductance model, Ball-berry or Medlyn
+  character(len=256), public :: fates_stomatal_assimilation = ''        ! net or gross assimilation modes
+  character(len=256), public :: fates_leafresp_model = ''               ! Leaf maintenance respiration model, Ryan or Atkin
+  character(len=256), public :: fates_cstarvation_model = ''            ! linear or exponential function
+  character(len=256), public :: fates_regeneration_model = ''           ! default, TRS, or TRS without seed dynamics
+  character(len=256), public :: fates_hydro_solver = ''                 ! 1D Taylor, 2D Picard, 2D Newton
+  character(len=256), public :: fates_radiation_model = ''              ! Norman or two-stream radiation model
+  character(len=256), public :: fates_electron_transport_model = ''     ! FvCB or JB electron transport model
   logical, public            :: use_fates_fixed_biogeog = .false.       ! true => use fixed biogeography mode
   logical, public            :: use_fates_planthydro = .false.          ! true => turn on fates hydro
   logical, public            :: use_fates_cohort_age_tracking = .false. ! true => turn on cohort age tracking
@@ -234,6 +249,7 @@ module elm_varctl
   logical, public            :: use_fates_luh = .false.                 ! true => FATES land use transitions mode
   logical, public            :: use_fates_lupft = .false.               ! true => FATES land use x pft mode
   logical, public            :: use_fates_potentialveg = .false.        ! true => FATES potential veg only
+  logical, public            :: use_fates_daylength_factor = .false.    ! true => enable fates to use host land model daylength factor
   character(len=256), public :: fluh_timeseries = ''                    ! filename for land use harmonization data
   character(len=256), public :: flandusepftdat = ''                     ! filename for fates landuse x pft data
   character(len=256), public :: fates_inventory_ctrl_filename = ''      ! filename for inventory control
@@ -385,7 +401,8 @@ module elm_varctl
   character(len = SHR_KIND_CS), public :: precip_downscaling_method  = 'ERMM' ! Precip downscaling method values can be ERMM or FNM
   logical, public :: use_lake_wat_storage = .false.
   logical, public :: use_top_solar_rad   = .false.  ! TOP : sub-grid topographic effect on surface solar radiation
-
+  logical, public :: use_finetop_rad     = .false.  ! fineTOP : fine(grid)-scale topographic effect on surface radiation balance (longwave + shortwave)
+  
   !----------------------------------------------------------
   ! Fan controls (use_fan)
   !----------------------------------------------------------
@@ -554,12 +571,17 @@ module elm_varctl
    !----------------------------------------------------------
    logical, public :: use_lnd_rof_two_way = .false.
    integer, public :: lnd_rof_coupling_nstep = 0
+
+   !----------------------------------------------------------
+   ! ocean land one way coupling
+   !----------------------------------------------------------
+   logical, public :: use_ocn_lnd_one_way = .false.
    
    
    !----------------------------------------------------------
    ! SNICAR-AD
    !----------------------------------------------------------
-   character(len=256), public :: snow_shape = 'sphere'
+   character(len=256), public :: snow_shape = 'hexagonal_plate'
    character(len=256), public :: snicar_atm_type = 'default'
    logical, public :: use_dust_snow_internal_mixing = .false.
 
@@ -653,6 +675,12 @@ contains
   logical function CNAllocate_CarbonPhosphorus_only()
     cnallocate_carbonphosphorus_only = carbonphosphorus_only
   end function CNAllocate_CarbonPhosphorus_only
+
+  ! set module iac flag
+  subroutine elm_varctl_set_iac_flag(iac_flag_in)
+    logical, intent(in) :: iac_flag_in
+    iac_present = iac_flag_in
+  end subroutine elm_varctl_set_iac_flag
 
   function get_carbontag(carbon_type)result(ctag)
     !$acc routine seq

@@ -83,7 +83,9 @@ module cube_mod
   public  :: CubeElemCount
   public  :: CubeSetupEdgeIndex
   public  :: ref2sphere
-
+#ifdef MODEL_CESM
+  public  :: dmap_elementlocal
+#endif
 
   ! public interface to REFERECE element map
 #if HOMME_QUAD_PREC
@@ -146,10 +148,7 @@ contains
     type (element_t) :: elem
     real (kind=longdouble_kind)      :: gll_points(np)
 
-
-    real (kind=real_kind)      :: area1,area2
-    type (cartesian3d_t) :: quad(4)
-    integer face_no,i,j
+    integer :: face_no,i,j
 
     face_no = elem%vertex%face_number
     ! compute the corners in Cartesian coordinates
@@ -222,21 +221,16 @@ contains
     real(kind=real_kind) :: alpha
     real (kind=longdouble_kind)      :: gll_points(np)
     ! Local variables
-    integer ii
-    integer i,j,nn
-    integer iptr
+    integer :: i,j
 
-    real (kind=real_kind) :: r         ! distance from origin for point on cube tangent to unit sphere
-
-    real (kind=real_kind) :: const, norm
+    real (kind=real_kind) :: norm
     real (kind=real_kind) :: detD      ! determinant of vector field mapping matrix.  
 
     real (kind=real_kind) :: x1        ! 1st cube face coordinate
     real (kind=real_kind) :: x2        ! 2nd cube face coordinate
-    real (kind=real_kind) :: tmpD(2,2)
-    real (kind=real_kind) :: M(2,2),E(2,2),eig(2),DE(2,2),DEL(2,2),V(2,2), nu1, nu2, lamStar1, lamStar2
+    real (kind=real_kind) :: M(2,2),E(2,2),eig(2),DE(2,2),DEL(2,2),V(2,2), lamStar1, lamStar2
     integer :: imaxM(2)
-    real (kind=real_kind) :: l1, l2, sc,min_svd,max_svd,max_normDinv
+    real (kind=real_kind) :: l1, l2, min_svd,max_svd,max_normDinv
 
     
     ! ==============================================
@@ -514,8 +508,6 @@ contains
     endif
   end subroutine Dmap
 
-
-
   ! ========================================================
   ! Dmap:
   !
@@ -577,8 +569,6 @@ contains
     D(2,1) = tmpD(2,1)*Jp(1,1) + tmpD(2,2)*Jp(2,1)
     D(2,2) = tmpD(2,1)*Jp(1,2) + tmpD(2,2)*Jp(2,2)
   end subroutine dmap_equiangular
-
-
 
   ! ========================================================
   ! vmap:
@@ -805,8 +795,11 @@ contains
     type (element_t) :: elem 
 
     ! Local variables
-    integer  i,ie,je,face_no,nn
+    integer :: ie,je,face_no
     real (kind=real_kind)  :: dx,dy, startx, starty
+#if 0
+    integer :: i
+#endif
 
     if (0==ne) call abortmp('Error in set_corner_coordinates: ne is zero')
 
@@ -1859,11 +1852,8 @@ contains
     use control_mod, only : north, south, east, west, neast, seast, swest, nwest
     type (GridEdge_t),target           :: Edge
 
-    integer                            :: np0,sFace,dFace
+    integer                            :: sFace,dFace
     logical                            :: reverse
-    integer,allocatable                :: forwardV(:), forwardP(:)
-    integer,allocatable                :: backwardV(:), backwardP(:)
-    integer                            :: i,ii
 
     sFace = Edge%tail_face
     dFace = Edge%head_face

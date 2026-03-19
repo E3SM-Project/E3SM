@@ -3,8 +3,8 @@
 #include "p3_functions.hpp"
 #include "eamxx_p3_process_interface.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_assert.hpp>
+#include <ekat_units.hpp>
 
 #include <array>
 
@@ -19,7 +19,7 @@ P3Microphysics::P3Microphysics(const ekat::Comm& comm, const ekat::ParameterList
 }
 
 // =========================================================================================
-void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void P3Microphysics::create_requests()
 {
   using namespace ekat::units;
   using namespace ekat::prefixes;
@@ -30,7 +30,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   auto micron = micro*m;
   auto m2 = pow(m,2);
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
@@ -126,6 +126,23 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Computed>("precip_total_tend",       scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
   add_field<Computed>("nevapr",                  scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
   add_field<Computed>("diag_equiv_reflectivity", scalar3d_layout_mid, nondim,    grid_name, ps);
+  if (runtime_options.extra_p3_diags) {
+    add_field<Computed>("qr2qv_evap", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qi2qv_sublim", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc2qr_accret", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc2qr_autoconv", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qv2qi_vapdep", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc2qi_berg", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc2qr_ice_shed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc2qi_collect", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qr2qi_collect", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc2qi_hetero_freeze", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qr2qi_immers_freeze", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qi2qr_melt", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qr_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qi_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+  }
 
   // History Only: (all fields are just outputs and are really only meant for I/O purposes)
   // TODO: These should be averaged over subcycle as well.  But there is no simple mechanism
@@ -148,22 +165,24 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 // =========================================================================================
 size_t P3Microphysics::requested_buffer_size_in_bytes() const
 {
-  const Int nk_pack    = ekat::npack<Spack>(m_num_levs);
-  const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
+  const Int nk_pack    = ekat::npack<Pack>(m_num_levs);
+  const Int nk_pack_p1 = ekat::npack<Pack>(m_num_levs+1);
 
   // Number of Reals needed by local views in the interface
   const size_t interface_request =
       // 1d view scalar, size (ncol)
       Buffer::num_1d_scalar*m_num_cols*sizeof(Real) +
       // 2d view packed, size (ncol, nlev_packs)
-      Buffer::num_2d_vector*m_num_cols*nk_pack*sizeof(Spack) +
-      Buffer::num_2dp1_vector*m_num_cols*nk_pack_p1*sizeof(Spack) +
+      Buffer::num_2d_vector*m_num_cols*nk_pack*sizeof(Pack) +
+      Buffer::num_2dp1_vector*m_num_cols*nk_pack_p1*sizeof(Pack) +
       // 2d view scalar, size (ncol, 3)
       m_num_cols*3*sizeof(Real);
 
   // Number of Reals needed by the WorkspaceManager passed to p3_main
-  const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
-  const size_t wsm_request   = WSM::get_total_bytes_needed(nk_pack_p1, 52, policy);
+  const auto policy        = TPF::get_default_team_policy(m_num_cols, nk_pack);
+  const size_t wsm_request = WSM::get_total_bytes_needed(nk_pack_p1, 52, policy);
 
   return interface_request + wsm_request;
 }
@@ -171,6 +190,8 @@ size_t P3Microphysics::requested_buffer_size_in_bytes() const
 // =========================================================================================
 void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(), "Error! Buffers size not sufficient.\n");
 
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
@@ -189,11 +210,11 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   m_buffer.col_location = decltype(m_buffer.col_location)(mem, m_num_cols, 3);
   mem += m_buffer.col_location.size();
 
-  Spack* s_mem = reinterpret_cast<Spack*>(mem);
+  Pack* s_mem = reinterpret_cast<Pack*>(mem);
 
   // 2d packed views
-  const Int nk_pack    = ekat::npack<Spack>(m_num_levs);
-  const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
+  const Int nk_pack    = ekat::npack<Pack>(m_num_levs);
+  const Int nk_pack_p1 = ekat::npack<Pack>(m_num_levs+1);
 
   using spack_2d_view_t = decltype(m_buffer.inv_exner);
   spack_2d_view_t* _2d_spack_mid_view_ptrs[Buffer::num_2d_vector] = {
@@ -233,8 +254,8 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
 
   // Compute workspace manager size to check used memory
   // vs. requested memory
-  const auto policy  = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
-  const int wsm_size = WSM::get_total_bytes_needed(nk_pack_p1, 52, policy)/sizeof(Spack);
+  const auto policy  = TPF::get_default_team_policy(m_num_cols, nk_pack);
+  const int wsm_size = WSM::get_total_bytes_needed(nk_pack_p1, 52, policy)/sizeof(Pack);
   s_mem += wsm_size;
 
   size_t used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
@@ -244,6 +265,7 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
 // =========================================================================================
 void P3Microphysics::initialize_impl (const RunType /* run_type */)
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0,500.0,false);
@@ -272,8 +294,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   // Initialize all of the structures that are passed to p3_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
-  const Int nk_pack = ekat::npack<Spack>(m_num_levs);
-  const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
+  const Int nk_pack = ekat::npack<Pack>(m_num_levs);
+  const Int nk_pack_p1 = ekat::npack<Pack>(m_num_levs+1);
   const  auto& pmid           = get_field_in("p_mid").get_view<const Pack**>();
   const  auto& pmid_dry       = get_field_in("p_dry_mid").get_view<const Pack**>();
   const  auto& pseudo_density = get_field_in("pseudo_density").get_view<const Pack**>();
@@ -381,6 +403,41 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   history_only.liq_ice_exchange = get_field_out("micro_liq_ice_exchange").get_view<Pack**>();
   history_only.vap_liq_exchange = get_field_out("micro_vap_liq_exchange").get_view<Pack**>();
   history_only.vap_ice_exchange = get_field_out("micro_vap_ice_exchange").get_view<Pack**>();
+  if (runtime_options.extra_p3_diags) {
+    // if we are doing extra diagnostics, assign the fields to the history only struct
+    history_only.qr2qv_evap   = get_field_out("qr2qv_evap").get_view<Pack**>();
+    history_only.qi2qv_sublim = get_field_out("qi2qv_sublim").get_view<Pack**>();
+    history_only.qc2qr_accret = get_field_out("qc2qr_accret").get_view<Pack**>();
+    history_only.qc2qr_autoconv = get_field_out("qc2qr_autoconv").get_view<Pack**>();
+    history_only.qv2qi_vapdep = get_field_out("qv2qi_vapdep").get_view<Pack**>();
+    history_only.qc2qi_berg = get_field_out("qc2qi_berg").get_view<Pack**>();
+    history_only.qc2qr_ice_shed = get_field_out("qc2qr_ice_shed").get_view<Pack**>();
+    history_only.qc2qi_collect = get_field_out("qc2qi_collect").get_view<Pack**>();
+    history_only.qr2qi_collect = get_field_out("qr2qi_collect").get_view<Pack**>();
+    history_only.qc2qi_hetero_freeze = get_field_out("qc2qi_hetero_freeze").get_view<Pack**>();
+    history_only.qr2qi_immers_freeze = get_field_out("qr2qi_immers_freeze").get_view<Pack**>();
+    history_only.qi2qr_melt = get_field_out("qi2qr_melt").get_view<Pack**>();
+    history_only.qr_sed = get_field_out("qr_sed").get_view<Pack**>();
+    history_only.qc_sed = get_field_out("qc_sed").get_view<Pack**>();
+    history_only.qi_sed = get_field_out("qi_sed").get_view<Pack**>();
+  } else {
+    // if not, let's use the unused buffer
+    history_only.qr2qv_evap = m_buffer.unused;
+    history_only.qi2qv_sublim = m_buffer.unused;
+    history_only.qc2qr_accret = m_buffer.unused;
+    history_only.qc2qr_autoconv = m_buffer.unused;
+    history_only.qv2qi_vapdep = m_buffer.unused;
+    history_only.qc2qi_berg = m_buffer.unused;
+    history_only.qc2qr_ice_shed = m_buffer.unused;
+    history_only.qc2qi_collect = m_buffer.unused;
+    history_only.qr2qi_collect = m_buffer.unused;
+    history_only.qc2qi_hetero_freeze = m_buffer.unused;
+    history_only.qr2qi_immers_freeze = m_buffer.unused;
+    history_only.qi2qr_melt = m_buffer.unused;
+    history_only.qr_sed = m_buffer.unused;
+    history_only.qc_sed = m_buffer.unused;
+    history_only.qi_sed = m_buffer.unused;
+  }
 #ifdef SCREAM_P3_SMALL_KERNELS
   // Temporaries
   temporaries.mu_r                    = m_buffer.mu_r;
@@ -460,7 +517,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   }
 
   // Setup WSM for internal local variables
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
+  const auto policy = TPF::get_default_team_policy(m_num_cols, nk_pack);
   workspace_mgr.setup(m_buffer.wsm_data, nk_pack_p1, 52, policy);
 }
 

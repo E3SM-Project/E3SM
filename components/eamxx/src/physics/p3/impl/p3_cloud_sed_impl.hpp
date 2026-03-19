@@ -15,37 +15,37 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::cloud_sedimentation(
-    const uview_1d<Spack>& qc_incld,
-    const uview_1d<const Spack>& rho,
-    const uview_1d<const Spack>& inv_rho,
-    const uview_1d<const Spack>& cld_frac_l,
-    const uview_1d<const Spack>& acn,
-    const uview_1d<const Spack>& inv_dz,
+    const uview_1d<Pack>& qc_incld,
+    const uview_1d<const Pack>& rho,
+    const uview_1d<const Pack>& inv_rho,
+    const uview_1d<const Pack>& cld_frac_l,
+    const uview_1d<const Pack>& acn,
+    const uview_1d<const Pack>& inv_dz,
     const view_dnu_table& dnu,
     const MemberType& team,
     const Workspace& workspace,
     const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& inv_dt, const bool& do_predict_nc,
-    const uview_1d<Spack>& qc,
-    const uview_1d<Spack>& nc,
-    const uview_1d<Spack>& nc_incld,
-    const uview_1d<Spack>& mu_c,
-    const uview_1d<Spack>& lamc,
-    const uview_1d<Spack>& qc_tend,
-    const uview_1d<Spack>& nc_tend,
+    const uview_1d<Pack>& qc,
+    const uview_1d<Pack>& nc,
+    const uview_1d<Pack>& nc_incld,
+    const uview_1d<Pack>& mu_c,
+    const uview_1d<Pack>& lamc,
+    const uview_1d<Pack>& qc_tend,
+    const uview_1d<Pack>& nc_tend,
     Scalar& precip_liq_surf)
 {
   // Get temporary workspaces needed for the cloud-sed calculation
-  uview_1d<Spack> V_qc, V_nc, flux_qx, flux_nx;
+  uview_1d<Pack> V_qc, V_nc, flux_qx, flux_nx;
   workspace.template take_many_contiguous_unsafe<4>(
     {"V_qc", "V_nc", "flux_qx", "flux_nx"},
     {&V_qc, &V_nc, &flux_qx, &flux_nx});
 
-  const view_1d_ptr_array<Spack, 2>
+  const view_1d_ptr_array<Pack, 2>
     fluxes_ptr = {&flux_qx, &flux_nx},
     vs_ptr     = {&V_qc, &V_nc},
     qnr_ptr    = {&qc, &nc};
 
-  const view_1d_ptr_array<Spack, 1>
+  const view_1d_ptr_array<Pack, 1>
     flux_ptr  = {&flux_qx},
     v_ptr     = {&V_qc},
     qr_ptr    = {&qc};
@@ -80,17 +80,17 @@ void Functions<S,D>
       team.team_barrier();
 
       // Convert top/bot to pack indices
-      ekat::impl::set_min_max(k_qxbot, k_qxtop, kmin, kmax, Spack::n);
+      ekat::impl::set_min_max(k_qxbot, k_qxtop, kmin, kmax, Pack::n);
 
       Kokkos::parallel_reduce(
         Kokkos::TeamVectorRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
           const int pk = kmin + pk_;
-          const auto range_pack = ekat::range<IntSmallPack>(pk*Spack::n);
+          const auto range_pack = ekat::range<IntPack>(pk*Pack::n);
           const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
           const auto qc_gt_small = range_mask && qc_incld(pk) > qsmall;
           if (qc_gt_small.any()) {
             // compute Vq, Vn
-            Spack nu, cdist, cdist1, dum;
+            Pack nu, cdist, cdist1, dum;
             get_cloud_dsd2(qc_incld(pk), nc_incld(pk), mu_c(pk), rho(pk), nu, dnu, lamc(pk), cdist, cdist1, qc_gt_small);
 
 	    //get_cloud_dsd2 keeps the drop-size distribution within reasonable
@@ -131,11 +131,11 @@ void Functions<S,D>
 
     Kokkos::single(
       Kokkos::PerTeam(team), [&] () {
-        precip_liq_surf = prt_accum * C::INV_RHO_H2O * inv_dt;
+        precip_liq_surf = prt_accum * C::INV_RHO_H2O.value * inv_dt;
       });
   }
 
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, nk_pack), [&] (int pk) {
       qc_tend(pk) = (qc(pk) - qc_tend(pk)) * inv_dt; // Liq. sedimentation tendency, measure

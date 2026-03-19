@@ -256,7 +256,8 @@ contains
                        velocityY,            &
                        velocityZ,            &
                        velocityZonal,        &
-                       velocityMeridional    &
+                       velocityMeridional,   &
+                       includeHalos = .true. &
                       )
 
       call mpas_pool_initialize_time_levels(statePool)

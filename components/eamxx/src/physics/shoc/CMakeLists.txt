@@ -86,7 +86,7 @@ if (NOT SCREAM_DEBUG)
   endif()
 endif()
 
-if (HIP_BUILD)
+if (Kokkos_ENABLE_HIP)
   #this is needed for crusher even with small kernels
   set_source_files_properties(shoc_diag_second_shoc_moments_disp.cpp  PROPERTIES COMPILE_FLAGS -O1)
 endif()
@@ -114,7 +114,7 @@ foreach (SHOC_LIB IN LISTS SHOC_LIBS)
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/impl
   )
-  target_link_libraries(${SHOC_LIB} physics_share scream_share)
+  target_link_libraries(${SHOC_LIB} eamxx_physics_share scream_share)
 endforeach()
 
 if (NOT SCREAM_LIB_ONLY)

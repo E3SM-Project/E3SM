@@ -1,12 +1,10 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-
 #include "p3_unit_tests_common.hpp"
+
+#include "share/core/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -75,17 +73,17 @@ void run_bfb()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < max_pack_size; ++i) {
-      droplet_self_coll_data[i].read(Base::m_fid);
+      droplet_self_coll_data[i].read(Base::m_ifile);
     }
   }
 
   // Run the lookup from a kernel and copy results back to host
   Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-    const Int offset = i * Spack::n;
+    const Int offset = i * Pack::n;
 
     // Init pack inputs
-    Spack rho, inv_rho, qc_incld, mu_c, nu, nc2nr_autoconv_tend;
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    Pack rho, inv_rho, qc_incld, mu_c, nu, nc2nr_autoconv_tend;
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       rho[s]                   = device_data(vs).rho;
       inv_rho[s]               = device_data(vs).inv_rho;
       qc_incld[s]              = device_data(vs).qc_incld;
@@ -94,13 +92,13 @@ void run_bfb()
       nc2nr_autoconv_tend[s]   = device_data(vs).nc2nr_autoconv_tend;
     }
 
-    Spack nc_selfcollect_tend{0.0};
+    Pack nc_selfcollect_tend{0.0};
 
     Functions::droplet_self_collection(rho, inv_rho, qc_incld, mu_c, nu, nc2nr_autoconv_tend,
                                        nc_selfcollect_tend);
 
     // Copy results back into views
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       device_data(vs).nc_selfcollect_tend  = nc_selfcollect_tend[s];
     }
   });
@@ -116,7 +114,7 @@ void run_bfb()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int s = 0; s < max_pack_size; ++s) {
-      host_data(s).write(Base::m_fid);
+      host_data(s).write(Base::m_ofile);
     }
   }
 

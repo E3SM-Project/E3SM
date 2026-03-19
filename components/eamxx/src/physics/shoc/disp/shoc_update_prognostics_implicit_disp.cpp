@@ -1,6 +1,7 @@
 #include "shoc_functions.hpp"
 
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+#include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 namespace shoc {
@@ -13,30 +14,31 @@ void Functions<Real,DefaultDevice>
   const Int&                   nlevi,
   const Int&                   num_tracer,
   const Scalar&                dtime,
-  const view_2d<const Spack>&  dz_zt,
-  const view_2d<const Spack>&  dz_zi,
-  const view_2d<const Spack>&  rho_zt,
-  const view_2d<const Spack>&  zt_grid,
-  const view_2d<const Spack>&  zi_grid,
-  const view_2d<const Spack>&  tk,
-  const view_2d<const Spack>&  tkh,
+  const view_2d<const Pack>&  dz_zt,
+  const view_2d<const Pack>&  dz_zi,
+  const view_2d<const Pack>&  rho_zt,
+  const view_2d<const Pack>&  zt_grid,
+  const view_2d<const Pack>&  zi_grid,
+  const view_2d<const Pack>&  tk,
+  const view_2d<const Pack>&  tkh,
   const view_1d<const Scalar>& uw_sfc,
   const view_1d<const Scalar>& vw_sfc,
   const view_1d<const Scalar>& wthl_sfc,
   const view_1d<const Scalar>& wqw_sfc,
-  const view_2d<const Spack>&  wtracer_sfc,
+  const view_2d<const Pack>&  wtracer_sfc,
   const WorkspaceMgr&          workspace_mgr,
-  const view_2d<Spack>&        thetal,
-  const view_2d<Spack>&        qw,
-  const view_3d_strided<Spack>& tracer,
-  const view_2d<Spack>&        tke,
-  const view_2d<Spack>&        u_wind,
-  const view_2d<Spack>&        v_wind)
+  const view_2d<Pack>&        thetal,
+  const view_2d<Pack>&        qw,
+  const view_3d_strided<Pack>& tracer,
+  const view_2d<Pack>&        tke,
+  const view_2d<Pack>&        u_wind,
+  const view_2d<Pack>&        v_wind)
 {
   using ExeSpace = typename KT::ExeSpace;
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
 
-  const auto nlev_packs = ekat::npack<Spack>(nlev);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
+  const auto nlev_packs = ekat::npack<Pack>(nlev);
+  const auto policy = TPF::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 

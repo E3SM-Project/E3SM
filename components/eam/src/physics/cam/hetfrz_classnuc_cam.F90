@@ -1305,7 +1305,7 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
 #if ((defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE) && defined RAIN_EVAP_TO_COARSE_AERO )
          dst3_num_imm = dmc_imm/(ssmc_imm+dmc_imm+bcmc_imm+pommc_imm+soamc_imm+mommc_imm) &
                       * aer_cb(ii,kk,num_coarse)*1.0e-6_r8 ! #/cm^3
-#elif (defined MODAL_AERO_4MODE_MOM)
+#elif (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
          dst3_num_imm = dmc_imm/(ssmc_imm+dmc_imm+mommc_imm) * aer_cb(ii,kk,num_coarse)*1.0e-6_r8 ! #/cm^3
 #elif (defined RAIN_EVAP_TO_COARSE_AERO) 
          dst3_num_imm = dmc_imm/(ssmc_imm+dmc_imm+bcmc_imm+pommc_imm+soamc_imm) &
@@ -1475,7 +1475,7 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
                      aer(ii,kk,pom_coarse)/(specdens_pom*rhoair) + & 
                      aer(ii,kk,soa_coarse)/(specdens_soa*rhoair) + & 
                      aer(ii,kk,mom_coarse)/(specdens_mom*rhoair) 
-#elif (defined MODAL_AERO_4MODE_MOM)
+#elif (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
       vol_shell(3) = aer(ii,kk,so4_coarse)/(specdens_so4*rhoair) + & 
                      aer(ii,kk,mom_coarse)/(specdens_mom*rhoair) 
 #elif (defined RAIN_EVAP_TO_COARSE_AERO) 
@@ -1603,7 +1603,7 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
 #if ((defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE) && defined RAIN_EVAP_TO_COARSE_AERO )
          awcam(3) = (dst3_num*1.0e6_r8)/aer(ii,kk,num_coarse)* ( aer(ii,kk,so4_coarse) + & 
                      aer(ii,kk,mom_coarse) + aer(ii,kk,bc_coarse) + aer(ii,kk,pom_coarse) + aer(ii,kk,soa_coarse) ) *1.0e9_r8
-#elif (defined MODAL_AERO_4MODE_MOM)
+#elif (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
          awcam(3) = (dst3_num*1.0e6_r8)/aer(ii,kk,num_coarse)* ( aer(ii,kk,so4_coarse) + & 
                      aer(ii,kk,mom_coarse) ) *1.0e9_r8
 #elif (defined RAIN_EVAP_TO_COARSE_AERO) 
@@ -1617,12 +1617,12 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       end if
 
       if (awcam(3) > 0._r8) then
-#if (defined MODAL_AERO_4MODE_MOM && defined RAIN_EVAP_TO_COARSE_AERO )
+#if ( (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE) && defined RAIN_EVAP_TO_COARSE_AERO )
          awfacm(3) = ( aer(ii,kk,bc_coarse) + aer(ii,kk,soa_coarse) + &
                        aer(ii,kk,pom_coarse) + aer(ii,kk,mom_coarse) )/ &
                      ( aer(ii,kk,soa_coarse) + aer(ii,kk,pom_coarse) + &
                        aer(ii,kk,so4_coarse) + aer(ii,kk,bc_coarse) + aer(ii,kk,mom_coarse) )
-#elif (defined MODAL_AERO_4MODE_MOM)
+#elif (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
          awfacm(3) = ( aer(ii,kk,mom_coarse) ) / & 
                      ( aer(ii,kk,so4_coarse) + aer(ii,kk,mom_coarse) )
 #elif (defined RAIN_EVAP_TO_COARSE_AERO) 

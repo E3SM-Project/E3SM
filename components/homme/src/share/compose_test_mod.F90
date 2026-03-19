@@ -78,12 +78,15 @@ end interface
 contains
 
   ! For comprehensive testing.
-  subroutine compose_test(par, hvcoord, dom_mt, elem, eval)
+  subroutine compose_test(par, hvcoord, dom_mt, elem, nerr, eval)
     use kinds, only: real_kind
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
     use element_mod, only: element_t
-    use thread_mod, only: hthreads, vthreads, omp_set_num_threads, omp_get_thread_num
+    use thread_mod, only: hthreads, omp_get_thread_num
+#if defined (HORIZ_OPENMP)
+    use thread_mod, only: vthreads, omp_set_num_threads
+#endif
     use hybrid_mod, only: hybrid_t, hybrid_create
     use derivative_mod, only: derivative_t, derivinit
     use hybvcoord_mod, only: hvcoord_t
@@ -98,11 +101,12 @@ contains
     type (hvcoord_t) , intent(in) :: hvcoord
     type (domain1d_t), pointer, intent(in) :: dom_mt(:)
     type (element_t), intent(inout) :: elem(:)
+    integer, optional, intent(out) :: nerr
     real (real_kind), optional, intent(out) :: eval(:)
 
     type (hybrid_t) :: hybrid
     type (derivative_t) :: deriv
-    integer :: ithr, nets, nete, nerr
+    integer :: ithr, nets, nete, ne, nesum
 
 #ifdef HOMME_ENABLE_COMPOSE
     if (transport_alg == 19) then
@@ -117,10 +121,12 @@ contains
 
     ! 1. Unit tests.
     call compose_unittest()
-    call sl_unittest(par, hvcoord)
-    nerr = 0
-    call cedr_unittest(par%comm, nerr)
-    if (nerr /= 0) print *, 'cedr_unittest returned', nerr
+    call sl_unittest(par, hvcoord, ne)
+    nesum = ne
+    call cedr_unittest(par%comm, ne)
+    if (ne /= 0) print *, 'cedr_unittest returned', ne
+    nesum = nesum + ne
+    if (present(nerr)) nerr = nesum
 
 #if (defined HORIZ_OPENMP)
     !$omp parallel num_threads(hthreads), default(SHARED), private(ithr,nets,nete,hybrid)
@@ -179,7 +185,6 @@ contains
     use element_mod, only: element_t
     use time_mod, only: timelevel_t, timelevel_init_default, timelevel_qdp
     use kinds, only: real_kind
-    use thread_mod, only: hthreads, vthreads, omp_set_num_threads, omp_get_thread_num
     use derivative_mod, only: derivative_t, derivinit
     use dimensions_mod, only: ne, np, nlev, qsize, qsize_d, nelemd
     use coordinate_systems_mod, only: spherical_polar_t
@@ -206,7 +211,7 @@ contains
     real (kind=real_kind), parameter :: twelve_days = 3600.d0 * 24 * 12
 
     type (timelevel_t) :: tl
-    integer :: nsteps, n0_qdp, np1_qdp, ie, i, j, geometry_type, nerr
+    integer :: nsteps, n0_qdp, np1_qdp, ie, i, geometry_type, nerr
     real (kind=real_kind) :: dt, tprev, t, unused((nlev+1)*qsize)
 
     nerr = 0

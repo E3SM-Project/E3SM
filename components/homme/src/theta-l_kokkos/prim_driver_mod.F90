@@ -91,7 +91,7 @@ contains
                               dcmip16_mu, theta_advect_form, test_case,                &
                               MAX_STRING_LEN, dt_remap_factor, dt_tracer_factor,       &
                               pgrad_correction, dp3d_thresh, vtheta_thresh,            &
-                              internal_diagnostics_level
+                              internal_diagnostics_level, do_3d_turbulence
     !
     ! Input(s)
     !
@@ -101,12 +101,11 @@ contains
     !
     ! Local(s)
     !
-    integer :: ie
     real (kind=real_kind), target :: dvv (np,np), elem_mp(np,np)
     type (c_ptr) :: hybrid_am_ptr, hybrid_ai_ptr, hybrid_bm_ptr, hybrid_bi_ptr
     character(len=MAX_STRING_LEN), target :: test_name
 
-    integer :: disable_diagnostics_int, theta_hydrostatic_mode_int, use_moisture_int
+    integer :: disable_diagnostics_int, theta_hydrostatic_mode_int, use_moisture_int, do_3d_turbulence_int
 
     ! Initialize the C++ reference element structure (i.e., pseudo-spectral deriv matrix and ref element mass matrix)
     dvv = deriv1%dvv
@@ -122,6 +121,8 @@ contains
     if (use_moisture) use_moisture_int = 1
     theta_hydrostatic_mode_int = 0
     if (theta_hydrostatic_mode) theta_hydrostatic_mode_int = 1
+    do_3d_turbulence_int = 0
+    if (do_3d_turbulence) do_3d_turbulence_int = 1
 
     call init_simulation_params_c (vert_remap_q_alg, limiter_option, rsplit, qsplit, tstep_type,  &
                                    qsize, statefreq, nu, nu_p, nu_q, nu_s, nu_div, nu_top,        &
@@ -139,7 +140,8 @@ contains
                                    scale_factor, laplacian_rigid_factor,                          &
                                    nsplit,                                                        &
                                    pgrad_correction,                                              &
-                                   dp3d_thresh, vtheta_thresh, internal_diagnostics_level)
+                                   dp3d_thresh, vtheta_thresh, internal_diagnostics_level,        &
+                                   do_3d_turbulence_int)
 
     ! Initialize time level structure in C++
     call init_time_level_c(tl%nm1, tl%n0, tl%np1, tl%nstep, tl%nstep0)
@@ -170,7 +172,7 @@ contains
     ! Local(s)
     !
     real (kind=real_kind), target, dimension(np,np,2,2)     :: elem_D, elem_Dinv, elem_metinv, elem_tensorvisc
-    real (kind=real_kind), target, dimension(np,np)         :: elem_mp, elem_fcor, elem_spheremp
+    real (kind=real_kind), target, dimension(np,np)         :: elem_fcor, elem_spheremp
     real (kind=real_kind), target, dimension(np,np)         :: elem_rspheremp, elem_metdet
     real (kind=real_kind), target, dimension(np,np,3,2)     :: elem_vec_sph2cart
 
@@ -428,7 +430,7 @@ contains
     type (c_ptr) :: elem_state_dp3d_ptr, elem_state_Qdp_ptr, elem_state_Q_ptr, elem_state_ps_v_ptr
     type (c_ptr) :: elem_derived_omega_p_ptr
     integer :: n0_qdp, np1_qdp
-    real(kind=real_kind) :: dt_remap, dt_q, eta_ave_w
+    real(kind=real_kind) :: dt_remap, dt_q
     logical :: compute_forcing_and_push_to_c, push_to_f
 
     if (nsplit<1) then
@@ -562,8 +564,13 @@ contains
   function is_push_to_f_required(tl,statefreq,nextOutputStep,compute_diagnostics,nsplit_iter) &
        result(push_to_f)
 
+#if !defined(HOMMEXX_BENCHMARK_NOFORCING) && !defined(SCREAM) && !defined(CAM)
     use control_mod, only : test_with_forcing, prescribed_wind
-    use time_mod,    only : timelevel_t, nsplit
+#endif
+    use time_mod,    only : timelevel_t
+#ifdef CAM
+    use time_mod,    only : nsplit
+#endif
 
     type (TimeLevel_t),   intent(in) :: tl
     integer,              intent(in) :: statefreq, nextOutputStep, nsplit_iter

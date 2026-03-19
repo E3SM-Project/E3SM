@@ -233,12 +233,28 @@ CONTAINS
       call shr_sys_abort('Error: fail to update mesh info ')
 
    allocate(data(lsize))
-   ierr = iMOAB_DefineTagStorage( mrofid, "area:aream:frac:mask"//C_NULL_CHAR, &
+   ierr = iMOAB_DefineTagStorage( mrofid, "lat:lon:area:aream:frac:mask"//C_NULL_CHAR, &
                                     1, & ! dense, double
                                     1, & ! number of components
                                     tagindex )
    if (ierr > 0 )  &
       call shr_sys_abort('Error: fail to create tag: area:aream:frac:mask' )
+
+   data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'lat'),:)
+   tagname='lat'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsize, &
+                                    0, & ! set data on vertices
+                                    data)
+   if (ierr > 0 )  &
+      call shr_sys_abort('Error: fail to set lat tag ')
+
+   data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'lon'),:)
+   tagname='lon'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsize, &
+                                    0, & ! set data on vertices
+                                    data)
+   if (ierr > 0 )  &
+      call shr_sys_abort('Error: fail to set lon tag ')
 
    data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'area'),:)
    tagname='area'//C_NULL_CHAR
@@ -246,7 +262,7 @@ CONTAINS
                                     0, & ! set data on vertices
                                     data)
    if (ierr > 0 )  &
-      call shr_sys_abort('Error: fail to get area tag ')
+      call shr_sys_abort('Error: fail to set area tag ')
 
    ! set the same data for aream (model area) as area
    ! data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'aream'),:)
@@ -397,8 +413,8 @@ CONTAINS
     use iMOAB, only: iMOAB_WriteMesh
 #endif
 #ifdef HAVE_MOAB
-    use seq_flds_mod    , only: seq_flds_r2x_fields 
-    use seq_flds_mod    , only: moab_set_tag_from_av
+    use seq_flds_mod    , only: seq_flds_r2x_fields
+    use shr_moab_mod    , only: moab_set_tag_from_av
 #endif
     ! !DESCRIPTION:  run method for drof model
     implicit none

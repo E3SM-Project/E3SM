@@ -234,7 +234,7 @@ subroutine gw_init(pbuf2d)
   use ref_pres,   only: pref_edge
   use physconst,  only: gravit, rair
 
-  use gw_common,  only: gw_common_init, orographic_only
+  use gw_common,  only: gw_common_init
   use gw_oro,     only: gw_oro_init
   use gw_front,   only: gw_front_init
   use gw_convect, only: gw_convect_init
@@ -262,6 +262,10 @@ subroutine gw_init(pbuf2d)
 
   ! Interpolated Newtonian cooling coefficients.
   real(r8) :: alpha(0:pver)
+
+  ! This flag preserves answers for vanilla CAM by making a few changes (e.g.
+  ! order of operations) when only orographic waves are on.
+  logical :: orographic_only
 
   ! Levels of pre-calculated Newtonian cooling (1/day).
   integer, parameter :: nalph=66
@@ -385,7 +389,7 @@ subroutine gw_init(pbuf2d)
        history_amwg_out   = history_amwg  )
 
   ! Initialize subordinate modules.
-  call gw_common_init(pver, pgwv, dc, cref, do_molec_diff, tau_0_ubc, &
+  call gw_common_init(pver, pgwv, dc, cref, orographic_only, do_molec_diff, tau_0_ubc, &
        nbot_molec, ktop, kbotbg, fcrit2, kwv, gravit, rair, alpha, &
        errstring)
   if (trim(errstring) /= "") call endrun("gw_common_init: "//errstring)

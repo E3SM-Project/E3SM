@@ -6,7 +6,9 @@
 // For EKAT units package
 #include <physics/mam/physical_limits.hpp>
 
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_units.hpp>
+
 /*
 -----------------------------------------------------------------
 NOTES:
@@ -54,11 +56,10 @@ MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params)
 // ================================================================
 //  SET_GRIDS
 // ================================================================
-void MAMAci::set_grids(
-    const std::shared_ptr<const GridsManager> grids_manager) {
+void MAMAci::create_requests() {
   // set grid for all the inputs and outputs
   // use physics grid
-  grid_ = grids_manager->get_grid("physics");
+  grid_ = m_grids_manager->get_grid("physics");
 
   // Name of the grid
   const auto &grid_name = grid_->name();
@@ -87,6 +88,11 @@ void MAMAci::set_grids(
   add_tracers_wet_atm();
   add_fields_dry_atm();
 
+  // cloud liquid number mixing ratio [1/kg]
+  // NOTE: Advected by dynamics only, ACI vertically mixes nc
+  // Updates to nc from ACI are applied in P3 microphysics
+  add_tracer<Required>("nc", grid_, n_unit, 1, TracerAdvection::DynamicsOnly);
+  
   constexpr auto m2 = pow(m, 2);
   constexpr auto s2 = pow(s, 2);
 
@@ -491,8 +497,9 @@ void MAMAci::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMAci::run_impl(const double dt) {
-  const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of local derivied
   // quantities

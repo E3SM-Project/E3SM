@@ -37,9 +37,14 @@ site
 #Ignore Mac folder files
 .DS_Store
 
+# Ignore compiled output files
+a.out
+
 #Ignore vscode dir
 .vscode
 
+# Fortran LSP
+.fortls.json
 
 # Ignore mkdocs site-generated files in eamxx
 components/eamxx/site/*
@@ -53,3 +58,8 @@ components/eamxx/docs/_presentations_html/
 components/eamxx/src/python/build
 components/eamxx/src/python/build_src
 components/eamxx/src/python/dist
+
+# Emulator Components
+components/emulators/build
+**/Testing/**
+**/.cache/**

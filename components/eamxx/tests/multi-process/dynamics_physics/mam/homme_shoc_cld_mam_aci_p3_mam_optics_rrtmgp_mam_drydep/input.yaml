@@ -19,9 +19,10 @@ initial_conditions:
   phis : 1.0
 
   #variables required for shoc
+  eddy_diff_heat: 0.0
   surf_sens_flux: 0.0
   surf_evap: 0.0
-  
+
   #variables required for p3
   precip_ice_surf_mass: 0.0
   precip_liq_surf_mass: 0.0
@@ -40,8 +41,9 @@ initial_conditions:
   ram1: 0.45506166067091662E+002
   dgnumwet: 0.41417721820867320E-007
   wetdens: 0.15100083211582764E+004
+  z_mam4_int : 0.0
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [homme,physics]
   schedule_type: sequential
   homme:
@@ -77,6 +79,7 @@ atmosphere_processes:
         c_diag_3rd_mom: 7.0
         coeff_kh: 0.1
         coeff_km: 0.1
+        shoc_1p5tke: false
 
     mam4_optics:
       mam4_mode1_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode1_rrtmg_aeronetdust_c20240206.nc

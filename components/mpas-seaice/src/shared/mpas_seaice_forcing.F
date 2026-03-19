@@ -35,6 +35,7 @@ module seaice_forcing
        post_oceanic_coupling
 
   type (MPAS_forcing_group_type), pointer, public :: seaiceForcingGroups
+  logical, public :: use_restart_ic
 
   ! forcing parameters
   real (kind=RKIND), parameter :: &
@@ -1841,19 +1842,38 @@ contains
          forcingIntervalMonthly, &
          forcingReferenceTimeMonthly
 
+    type (MPAS_Time_Type) :: currTime
+    character(len=strKIND) :: timeStamp
+    integer :: ierr
+
     ! get forcing configuration options
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
+    currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
+    call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
+    timeStamp = '0000'//trim(timeStamp(5:))
+
     ! create the dust iron solubility forcing group
 
-    call MPAS_forcing_init_group(&
-         seaiceForcingGroups, &
-         "seaice_atm_bgc_forcing_monthly", &
-         domain, &
-         '0000-01-01_00:00:00', &
-         '0000-01-01_00:00:00', &
-         '0001-00-00_00:00:00', &
-         config_do_restart)
+    if (use_restart_ic) then
+       call MPAS_forcing_init_group(&
+            seaiceForcingGroups, &
+            "seaice_atm_bgc_forcing_monthly", &
+            domain, &
+            '0000-01-01_00:00:00', &
+            '0000-01-01_00:00:00', &
+            '0001-00-00_00:00:00', &
+            .false.)
+    else
+       call MPAS_forcing_init_group(&
+            seaiceForcingGroups, &
+            "seaice_atm_bgc_forcing_monthly", &
+            domain, &
+            '0000-01-01_00:00:00', & !timeStamp, &
+            '0000-01-01_00:00:00', &
+            '0001-00-00_00:00:00', &
+            config_do_restart)
+    endif
 
     forcingIntervalMonthly = "00-01-00_00:00:00"
     forcingReferenceTimeMonthly = "0001-01-15_00:00:00"
@@ -1862,12 +1882,12 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         'seaice_atm_bgc_forcing_monthly', &
-         'IRON_Zolubility_wet', &
-         'DustIronMonthlyForcing', &
-         'atmos_forcing', &
-         'IRON_Zolubility_wet', &
-         'linear', &
+         "seaice_atm_bgc_forcing_monthly", &
+         "IRON_Zolubility_wet", &
+         "DustIronMonthlyForcing", &
+         "atmos_forcing", &
+         "IRON_Zolubility_wet", &
+         "linear", &
          forcingReferenceTimeMonthly, &
          forcingIntervalMonthly)
 
@@ -1875,12 +1895,12 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         'seaice_atm_bgc_forcing_monthly', &
-         'IRON_Zolubility_dry', &
-         'DustIronMonthlyForcing', &
-         'atmos_forcing', &
-         'IRON_Zolubility_dry', &
-         'linear', &
+         "seaice_atm_bgc_forcing_monthly", &
+         "IRON_Zolubility_dry", &
+         "DustIronMonthlyForcing", &
+         "atmos_forcing", &
+         "IRON_Zolubility_dry", &
+         "linear", &
          forcingReferenceTimeMonthly, &
          forcingIntervalMonthly)
 
@@ -1888,12 +1908,12 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         'seaice_atm_bgc_forcing_monthly', &
-         'dust_FLUZ_WET', &
-         'DustIronMonthlyForcing', &
-         'atmos_forcing', &
-         'dust_FLUZ_WET', &
-         'linear', &
+         "seaice_atm_bgc_forcing_monthly", &
+         "dust_FLUZ_WET", &
+         "DustIronMonthlyForcing", &
+         "atmos_forcing", &
+         "dust_FLUZ_WET", &
+         "linear", &
          forcingReferenceTimeMonthly, &
          forcingIntervalMonthly)
 
@@ -1901,12 +1921,12 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         'seaice_atm_bgc_forcing_monthly', &
-         'dust_FLUZ_DRY', &
-         'DustIronMonthlyForcing', &
-         'atmos_forcing', &
-         'dust_FLUZ_DRY', &
-         'linear', &
+         "seaice_atm_bgc_forcing_monthly", &
+         "dust_FLUZ_DRY", &
+         "DustIronMonthlyForcing", &
+         "atmos_forcing", &
+         "dust_FLUZ_DRY", &
+         "linear", &
          forcingReferenceTimeMonthly, &
          forcingIntervalMonthly)
 
@@ -1914,18 +1934,18 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         'seaice_atm_bgc_forcing_monthly', &
-         'IRON_in_duzt_fraction', &
-         'DustIronMonthlyForcing', &
-         'atmos_forcing', &
-         'IRON_in_duzt_fraction', &
-         'linear', &
+         "seaice_atm_bgc_forcing_monthly", &
+         "IRON_in_duzt_fraction", &
+         "DustIronMonthlyForcing", &
+         "atmos_forcing", &
+         "IRON_in_duzt_fraction", &
+         "linear", &
          forcingReferenceTimeMonthly, &
          forcingIntervalMonthly)
 
     call MPAS_forcing_init_field_data(&
          seaiceForcingGroups, &
-         'seaice_atm_bgc_forcing_monthly', &
+         "seaice_atm_bgc_forcing_monthly", &
          domain % streamManager, &
          config_do_restart, &
          .false.)
@@ -2754,8 +2774,6 @@ contains
 
     use icepack_intfc, only: &
          icepack_sea_freezing_temperature
-    use seaice_column, only: &
-         seaice_column_sea_freezing_temperature
 
     type (block_type), pointer :: block
 
@@ -2801,7 +2819,7 @@ contains
     call MPAS_pool_get_array(ocean_coupling, "oceanMixedLayerDepth", oceanMixedLayerDepth)
     call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
 
-    if (trim(config_column_physics_type) == "icepack") then
+!    if (trim(config_column_physics_type) == "icepack") then
        do iCell = 1, nCellsSolve
 
           ! ensure physical realism
@@ -2812,18 +2830,7 @@ contains
           seaFreezingTemperature(iCell) = icepack_sea_freezing_temperature(seaSurfaceSalinity(iCell))
 
        enddo ! iCell
-    else if (trim(config_column_physics_type) == "column_package") then
-       do iCell = 1, nCellsSolve
-
-          ! ensure physical realism
-          seaSurfaceSalinity(iCell)   = max(seaSurfaceSalinity(iCell), 0.0_RKIND)
-          oceanMixedLayerDepth(iCell) = max(oceanMixedLayerDepth(iCell), 0.0_RKIND)
-
-          ! sea freezing temperature
-          seaFreezingTemperature(iCell) = seaice_column_sea_freezing_temperature(seaSurfaceSalinity(iCell))
-
-       enddo ! iCell
-    endif ! config_column_physics_type
+!    endif ! config_column_physics_type
 
     ! only update sea surface temperature on first non-restart timestep
     if (firstTimeStep .and. .not. config_do_restart) then
@@ -2852,9 +2859,6 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine prepare_oceanic_coupling_variables_ISPOL(block, firstTimeStep)
-
-    use ice_colpkg, only: &
-         colpkg_sea_freezing_temperature
 
     use icepack_intfc, only: &
          icepack_sea_freezing_temperature
@@ -2902,7 +2906,7 @@ contains
     call MPAS_pool_get_array(ocean_coupling, "oceanMixedLayerDepth", oceanMixedLayerDepth)
     call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
 
-    if (trim(config_column_physics_type) == "icepack") then
+!    if (trim(config_column_physics_type) == "icepack") then
        do iCell = 1, nCellsSolve
 
           ! ensure physical realism
@@ -2913,18 +2917,7 @@ contains
           seaFreezingTemperature(iCell) = icepack_sea_freezing_temperature(seaSurfaceSalinity(iCell))
 
        enddo ! iCell
-    else if (trim(config_column_physics_type) == "column_package") then
-       do iCell = 1, nCellsSolve
-
-          ! ensure physical realism
-          seaSurfaceSalinity(iCell)   = max(seaSurfaceSalinity(iCell), 0.0_RKIND)
-          oceanMixedLayerDepth(iCell) = max(oceanMixedLayerDepth(iCell), 0.0_RKIND)
-
-          ! sea freezing temperature
-          seaFreezingTemperature(iCell) = colpkg_sea_freezing_temperature(seaSurfaceSalinity(iCell))
-
-       enddo ! iCell
-    endif ! config_column_physics_type
+!    endif ! config_column_physics_type
 
     ! only update sea surface temperature on first non-restart timestep
     if (firstTimeStep .and. .not. config_do_restart) then
@@ -3305,7 +3298,8 @@ contains
   subroutine get_data_iceberg_fluxes(domain)
 
     use seaice_constants, only: &
-         seaiceLatentHeatMelting ! latent heat of melting of fresh ice (J/kg)
+         seaiceLatentHeatMelting, & ! latent heat of melting of fresh ice (J/kg)
+         seaiceFreshIceSpecificHeat ! specific heat of fresh ice (J/kg/K)
 
     type(domain_type), intent(inout) :: &
          domain
@@ -3330,6 +3324,7 @@ contains
          bergLatentHeatFlux ! iceberg latent heat flux for ocean (J/m^2/s)
 
     real(kind=RKIND), pointer :: &
+         bergTemperature, & ! iceberg temperature
          areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux, & ! area integrated, annual mean freshwater flux from icebegs and ice shelves (kg/s)
          runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff (kg/s)
 
@@ -3339,11 +3334,8 @@ contains
     real(kind=RKIND) :: &
          scaling
 
-    ! dc including as parameters here so as not to create new namelist options
-    real(kind=RKIND), parameter :: &
-         specificHeatFreshIce = 2106.0_RKIND, & ! specific heat of fresh ice J * kg^-1 * K^-1
-         bergTemperature = -4.0_RKIND           ! iceberg temperature, assumed constant
-
+    call MPAS_pool_get_config(domain % configs, "config_iceberg_temperature", &
+                              bergTemperature)
 
     call MPAS_pool_get_config(domain % configs, "config_scale_dib_by_removed_ice_runoff", &
                               config_scale_dib_by_removed_ice_runoff)
@@ -3376,8 +3368,7 @@ contains
 
           bergFreshwaterFlux(iCell) = scaling * bergFreshwaterFluxData(iCell)
           bergLatentHeatFlux(iCell) = -scaling * bergFreshwaterFluxData(iCell) * &
-                                     (seaiceLatentHeatMelting - specificHeatFreshIce*bergTemperature)
-
+                                     (seaiceLatentHeatMelting - seaiceFreshIceSpecificHeat*bergTemperature)
        enddo
 
        block => block % next

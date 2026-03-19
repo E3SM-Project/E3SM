@@ -114,7 +114,7 @@ macro(createTestExec execName execType macroNP macroNC
   ADD_EXECUTABLE(${execName} ${EXEC_SOURCES})
   # For SYCL builds it is suggested to use CXX linker with `-fortlib`
   # for mixed-language setups
-  IF(SYCL_BUILD)
+  IF(Kokkos_ENABLE_SYCL)
     SET_TARGET_PROPERTIES(${execName} PROPERTIES LINKER_LANGUAGE CXX)
   ELSE()
     SET_TARGET_PROPERTIES(${execName} PROPERTIES LINKER_LANGUAGE Fortran)
@@ -828,6 +828,24 @@ MACRO(CREATE_CXX_VS_F90_TESTS_WITH_PROFILE TESTS_LIST testProfile)
       LABELS ${testProfile})
   ENDFOREACH ()
 ENDMACRO(CREATE_CXX_VS_F90_TESTS_WITH_PROFILE)
+
+function(check_transport_error_norms
+    TEST_NAME TCEN_ERROR_ANCHOR TCEN_FILENAME TCEN_UPPER_BOUNDS)
+  # Check prescribed-wind tracer transport test error-norm output, which is
+  # available with some of these tests. This function encapsulates the setup
+  # steps to add a check after a tracer transport test runs. See
+  # TransportCheckErrorNorms.cmake.in for details.
+  configure_file(
+    ${HOMME_SOURCE_DIR}/cmake/TransportCheckErrorNorms.cmake.in
+    ${HOMME_BINARY_DIR}/tests/${TEST_NAME}/check.cmake
+    @ONLY)
+  add_test(
+    NAME "${TEST_NAME}_l2err"
+    COMMAND ${CMAKE_COMMAND} -P check.cmake
+    WORKING_DIRECTORY ${HOMME_BINARY_DIR}/tests/${TEST_NAME})
+  set_tests_properties(
+    "${TEST_NAME}_l2err" PROPERTIES DEPENDS "${TEST_NAME}")
+endfunction()
 
 macro(testQuadPrec HOMME_QUAD_PREC)
 

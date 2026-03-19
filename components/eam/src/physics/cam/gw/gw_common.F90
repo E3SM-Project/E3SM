@@ -1,10 +1,17 @@
+! Include bit-for-bit math macros.
+#include "bfb_math.inc"
+
 module gw_common
 
 !
 ! This module contains code common to different gravity wave
 ! parameterizations.
 !
-use gw_utils, only: r8
+use gw_utils, only: r8, btype
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+use physics_share_f2c, only: scream_cos
+#endif
 
 implicit none
 private
@@ -27,9 +34,15 @@ public :: kwv
 public :: gravit
 public :: rair
 
+! These only need to be public for unit testing
+public :: gwd_compute_stress_profiles_and_diffusivities
+public :: gwd_project_tau
+public :: gwd_compute_tendencies_from_stress_divergence
+public :: gwd_precalc_rhoi
+
 ! This flag preserves answers for vanilla CAM by making a few changes (e.g.
 ! order of operations) when only orographic waves are on.
-logical, public :: orographic_only = .false.
+logical(btype), public :: orographic_only = .false.
 
 ! Number of levels in the atmosphere.
 integer, protected :: pver = 0
@@ -45,11 +58,11 @@ real(r8), allocatable, protected :: cref(:)
 
 ! Whether or not molecular diffusion is being done, and bottom level where
 ! it is done.
-logical, protected :: do_molec_diff = .false.
+logical(btype), protected :: do_molec_diff = .false.
 integer, protected :: nbot_molec = huge(1)
 
 ! Whether or not to enforce an upper boundary condition of tau = 0.
-logical :: tau_0_ubc = .false.
+logical(btype) :: tau_0_ubc = .false.
 
 ! Index the cardinal directions.
 integer, parameter :: west = 1
@@ -107,15 +120,16 @@ contains
 !==========================================================================
 
 subroutine gw_common_init(pver_in, pgwv_in, dc_in, cref_in, &
-     do_molec_diff_in, tau_0_ubc_in, nbot_molec_in, ktop_in, kbotbg_in, &
+     orographic_only_in, do_molec_diff_in, tau_0_ubc_in, nbot_molec_in, ktop_in, kbotbg_in, &
      fcrit2_in, kwv_in, gravit_in, rair_in, alpha_in, errstring)
 
   integer,  intent(in) :: pver_in
   integer,  intent(in) :: pgwv_in
   real(r8), intent(in) :: dc_in
   real(r8), intent(in) :: cref_in(-pgwv_in:)
-  logical,  intent(in) :: do_molec_diff_in
-  logical,  intent(in) :: tau_0_ubc_in
+  logical(btype),  intent(in) :: orographic_only_in
+  logical(btype),  intent(in) :: do_molec_diff_in
+  logical(btype),  intent(in) :: tau_0_ubc_in
   integer,  intent(in) :: nbot_molec_in
   integer,  intent(in) :: ktop_in
   integer,  intent(in) :: kbotbg_in
@@ -134,9 +148,11 @@ subroutine gw_common_init(pver_in, pgwv_in, dc_in, cref_in, &
   pver = pver_in
   pgwv = pgwv_in
   dc = dc_in
+  if (allocated(cref)) deallocate(cref)
   allocate(cref(-pgwv:pgwv), stat=ierr, errmsg=errstring)
   if (ierr /= 0) return
   cref = cref_in
+  orographic_only = orographic_only_in
   do_molec_diff = do_molec_diff_in
   tau_0_ubc = tau_0_ubc_in
   nbot_molec = nbot_molec_in
@@ -146,6 +162,7 @@ subroutine gw_common_init(pver_in, pgwv_in, dc_in, cref_in, &
   kwv = kwv_in
   gravit = gravit_in
   rair = rair_in
+  if (allocated(alpha)) deallocate(alpha)
   allocate(alpha(0:pver), stat=ierr, errmsg=errstring)
   if (ierr /= 0) return
   alpha = alpha_in
@@ -544,7 +561,7 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, d
   integer, intent(in) :: ncol, ngwv
 
   ! Whether or not to apply the polar taper.
-  logical, intent(in) :: do_taper
+  logical(btype), intent(in) :: do_taper
   ! Time step.
   real(r8), intent(in) :: dt
   ! Tendency efficiency.
@@ -586,7 +603,9 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, d
   real(r8) :: ptaper(ncol)
 
   if (do_taper) then    ! taper CM only
-     ptaper = cos(lat)
+     do l=1, ncol
+        ptaper(l) = bfb_cos(lat(l))
+     end do
   else                  ! do not taper other cases
      ptaper = 1._r8
   endif
@@ -744,10 +763,8 @@ subroutine gwd_precalc_rhoi(ncol, ngwv, dt, tend_level, pmid, pint, t, gwut, ubm
 
   ! Calculate tendency on each constituent.
   do m = 1, size(q,3)
-
      call gw_diff_tend(ncol, pver, kbotbg, ktop, q(:,:,m), dt, &
           decomp, qtgw(:,:,m))
-
   enddo
 
   ! Calculate tendency from diffusing dry static energy (dttdf).
@@ -799,7 +816,7 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
   ! wave propagation up to a certain level, but then allow wind tendencies
   ! and adjustments to tau below that level.
   ! Whether or not to apply the polar taper.
-  logical, intent(in) :: do_taper
+  logical(btype), intent(in) :: do_taper
   ! Time step.
   real(r8), intent(in) :: dt
 
@@ -857,7 +874,6 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
   !------------------------------------------------------------------------
 
   ! Initialize gravity wave drag tendencies to zero.
-
   utgw = 0._r8
   vtgw = 0._r8
   taucd = 0._r8

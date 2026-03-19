@@ -8,11 +8,13 @@ module prep_ice_mod
   use seq_comm_mct    , only: num_inst_ice, num_inst_frc, num_inst_rof
   use seq_comm_mct    , only: CPLID, ICEID, logunit
   use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs
-  use seq_comm_mct,     only: mboxid ! iMOAB id for mpas ocean migrated mesh to coupler pes
-  use seq_comm_mct,     only : mbixid   ! iMOAB for sea-ice migrated to coupler
-  use seq_comm_mct,     only : num_moab_exports
+  use seq_comm_mct    , only: mboxid   ! iMOAB id for MPAS-O migrated mesh to coupler PEs
+  use seq_comm_mct    , only: mbrxid   ! iMOAB id of moab ROF read on couple PEs
+  use seq_comm_mct    , only: mbixid   ! iMOAB for SEA-ICE migrated to coupler PEs
+  use seq_comm_mct    , only: mbintxri ! iMOAB id for intx mesh between ROF and ICE
+  use seq_comm_mct    , only: num_moab_exports
 
-  use seq_comm_mct,     only : seq_comm_getinfo => seq_comm_setptrs
+  use seq_comm_mct    , only: seq_comm_getinfo => seq_comm_setptrs
 
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
   use seq_map_type_mod
@@ -85,6 +87,11 @@ module prep_ice_mod
   real (kind=r8) , allocatable, private :: r2x_im (:,:)
   ! seq_comm_getData variables
   integer :: mpicom_CPLID                         ! MPI cpl communicator
+
+  logical :: no_match ! used to force a new mapper
+  logical :: compute_maps_online_r2i
+  character*32             :: wgtIdSr2i
+
   !================================================================================================
 
 contains
@@ -133,6 +140,7 @@ contains
     integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
 
     integer                  :: type1, type2 ! type for computing graph; should be the same type for ocean, 3 (FV)
+    integer                  :: arearead
     integer                  :: tagtype, numco, tagindex
     character(CXX)           :: tagName
 
@@ -145,6 +153,10 @@ contains
          ocn_gnam=ocn_gnam            , &
          rof_gnam=rof_gnam            , &
          glc_gnam=glc_gnam)
+
+    wgtIdSr2i = 'scalar_r2i'//C_NULL_CHAR
+    compute_maps_online_r2i = .false. ! force read from disk
+    no_match = .true. ! force to create a new mapper object
 
     allocate(mapper_SFo2i)
     allocate(mapper_Rg2i)
@@ -191,10 +203,8 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_SFo2i'
           end if
-          no_match = .true.
           call seq_map_init_rearrolap(mapper_SFo2i, ocn(1), ice(1), 'mapper_SFo2i', no_match) ! force a new map always
 
-#ifdef HAVE_MOAB
           if ( (mbixid .ge. 0) .and. (mboxid .ge. 0)) then
             if (iamroot_CPLID) then
                write(logunit,*) ' '
@@ -235,13 +245,7 @@ contains
             mapper_SFo2i%src_context = ocn(1)%cplcompid
             mapper_SFo2i%intx_context = ice(1)%cplcompid
             mapper_SFo2i%mbname = 'mapper_SFo2i'
-
-            if(mapper_SFo2i%copy_only) then
-               call seq_map_set_type(mapper_SFo2i, mboxid, 1) ! type is cells
-            endif
-
          endif
-#endif
        endif
 
        if (glc_c2_ice) then
@@ -279,7 +283,39 @@ contains
           end if
           call seq_map_init_rcfile(mapper_Rr2i, rof(1), ice(1), &
                'seq_maps.rc','rof2ice_rmapname:','rof2ice_rmaptype:',samegrid_ro, &
-               'mapper_Rr2i initialization', esmf_map_flag)
+               'mapper_Rr2i initialization', esmf_map_flag,no_match)
+          if ((mbrxid .ge. 0) .and.  (mbixid .ge. 0)) then
+            ! now take care of the mapper
+            if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing MOAB mapper_Rr2i'
+            end if
+
+            appname = "ROF_ICE_COU"//C_NULL_CHAR
+            ! idintx is a unique number of MOAB app that takes care of intx between lnd and rof mesh
+            idintx = 100*rof(1)%cplcompid + ice(1)%cplcompid ! something different, to differentiate it
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxri)
+            if (ierr .ne. 0) then
+              write(logunit,*) subname,' error in registering ROF-ICE intersection'
+              call shr_sys_abort(subname//' ERROR in registering ROF-ICE intersection')
+            endif
+
+            ! If loading map from disk, then load the scalar map as well
+            if (.not. compute_maps_online_r2i) then
+               type1 = 3 ! this is type of grid
+               arearead = 0
+               call moab_map_init_rcfile( mbrxid, mbixid, mbintxri, type1, &
+                     'seq_maps.rc', 'rof2ice_rmapname:', 'rof2ice_rmaptype:', samegrid_ro, &
+                     arearead, wgtIdSr2i, 'mapper_Rr2i MOAB initialization', esmf_map_flag )
+            end if
+            mapper_Rr2i%src_mbid = mbrxid
+            mapper_Rr2i%tgt_mbid = mbixid
+            mapper_Rr2i%intx_mbid = mbintxri
+            mapper_Rr2i%src_context = rof(1)%cplcompid
+            mapper_Rr2i%intx_context = idintx
+            mapper_Rr2i%weight_identifier = wgtIdSr2i
+            mapper_Rr2i%mbname = 'mapper_Rr2i'
+          end if ! if ((mbrxid .ge. 0) .and.  (mbixid .ge. 0)) then
        endif
        call shr_sys_flush(logunit)
 

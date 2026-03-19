@@ -32,6 +32,7 @@ module li_iceshelf_melt
    use li_setup
    use li_mask
    use li_constants
+   use li_ocean_extrap
 
    implicit none
    private
@@ -276,6 +277,8 @@ module li_iceshelf_melt
            lowerSurface,             & ! lower surface elevation (m)
            bedTopography               ! bed topography (m; negative below sea level)
 
+      integer, dimension(:), pointer :: connectedOceanMask
+
       real(kind=RKIND), pointer :: daysSinceStart
 
       integer :: iCell, jCell, iEdge, iNeighbor, err_tmp
@@ -355,6 +358,38 @@ module li_iceshelf_melt
             call mpas_log_write('GLdepth=$r, CFdepth=$r', realArgs=(/GLdepth, CFdepth/))
          endif
       endif
+
+      ! Allocate scratch fields for flood-fill
+      ! Note: This only supports one block per processor
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
+      call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
+      call mpas_allocate_scratch_field(seedMaskField, single_block_in = .true.)
+      seedMask => seedMaskField % array
+      seedMask(:) = 0
+      call mpas_pool_get_field(scratchPool, 'growMask', growMaskField)
+      call mpas_allocate_scratch_field(growMaskField, single_block_in = .true.)
+      growMask => growMaskField % array
+      growMask(:) = 0
+
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      call mpas_pool_get_array(geometryPool, 'connectedOceanMask', connectedOceanMask)
+      do iCell = 1, nCells
+         if ( (.not. li_mask_is_ice(cellMask(iCell))) .and. (bedTopography(iCell) < config_sea_level) ) then
+              seedMask(iCell) = 1
+         else if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
+              growMask(iCell) = 1
+         end if
+      end do
+      call li_flood_fill(seedMask, growMask, domain)
+      connectedOceanMask = seedMask
+      ! deallocate scratch fields used for flood fill
+      call mpas_deallocate_scratch_field(seedMaskField, single_block_in=.true.)
+      call mpas_deallocate_scratch_field(growMaskField, single_block_in=.true.)
 
       if (trim(config_basal_mass_bal_float) == 'ismip6') then
          call iceshelf_melt_ismip6(domain, err_tmp)
@@ -505,39 +540,8 @@ module li_iceshelf_melt
 
       endif
 
-      ! Allocate scratch fields for flood-fill
-      ! Note: This only supports one block per processor
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
-      call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
-      call mpas_allocate_scratch_field(seedMaskField, single_block_in = .true.)
-      seedMask => seedMaskField % array
-      seedMask(:) = 0
-      call mpas_pool_get_field(scratchPool, 'growMask', growMaskField)
-      call mpas_allocate_scratch_field(growMaskField, single_block_in = .true.)
-      growMask => growMaskField % array
-      growMask(:) = 0
-
       ! Prevent sub-shelf melt in subglacial lakes
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-      call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
-      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-      do iCell = 1, nCells
-         if ( (.not. li_mask_is_ice(cellMask(iCell))) .and. (bedTopography(iCell) < config_sea_level) ) then
-              seedMask(iCell) = 1
-         else if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
-              growMask(iCell) = 1
-         end if
-      end do
-      call li_flood_fill(seedMask, growMask, domain)
-
-      floatingBasalMassBal(:) = floatingBasalMassBal(:) * seedMask(:)
-
-      ! deallocate scratch fields used for flood fill
-      call mpas_deallocate_scratch_field(seedMaskField, single_block_in=.true.)
-      call mpas_deallocate_scratch_field(growMaskField, single_block_in=.true.)
+      floatingBasalMassBal(:) = floatingBasalMassBal(:) * connectedOceanMask(:)
 
       if (trim(config_front_mass_bal_grounded) .ne. 'none') then
          block => domain % blocklist
@@ -1188,7 +1192,7 @@ module li_iceshelf_melt
       real(kind=RKIND) :: cste
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool, meshPool
-      real (kind=RKIND), dimension(:,:), pointer :: TFocean
+      real (kind=RKIND), dimension(:,:), pointer :: TFocean3d
       real (kind=RKIND), dimension(:), pointer :: zOcean
       real (kind=RKIND), dimension(:), pointer :: TFdraft
       real (kind=RKIND), dimension(:), pointer :: deltaT
@@ -1202,6 +1206,8 @@ module li_iceshelf_melt
       real(kind=RKIND), dimension(maxNumBasins*2) :: localSums, globalSums
       real (kind=RKIND), pointer :: gamma0
       real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
+      real (kind=RKIND), dimension(:), pointer :: bedTopography
+      integer, dimension(:), pointer :: connectedOceanMask
       real (kind=RKIND) :: coef
       integer :: i
 
@@ -1219,14 +1225,17 @@ module li_iceshelf_melt
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-
+         
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nOceanLayers)
          call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
 
          ! Get 3d thermal forcing (had to be read-in)
-         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', TFocean)
-
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', TFocean3d)
+         
+         ! Get bed topography
+         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+         
          ! Get z-coords for ocean data
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', zOcean)
 
@@ -1244,6 +1253,7 @@ module li_iceshelf_melt
          call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(geometryPool, 'connectedOceanMask', connectedOceanMask)
 
          ! Get TFdraft field that we will calculate
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_TFdraft', TFdraft)
@@ -1265,50 +1275,49 @@ module li_iceshelf_melt
 
          do iCell = 1, nCellsSolve
 
-            if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
+            if ( li_mask_is_floating_ice(cellMask(iCell)) .and. (connectedOceanMask(iCell) == 1)) then
                ! 1 -  Linear interpolation of the thermal forcing on the ice draft depth :
                ksup=0
                do kk=1,nOceanLayers
                   if ( zOcean(kk) >= lowerSurface(iCell) )  ksup = kk
                enddo
-               kinf = ksup + 1
 
-               !call mpas_log_write("kinf=$i, zOcean(kinf)=$r, TFocean=$r",realArgs=(/zOcean(kinf),TFocean(kinf,iCell)/), &
+               kinf = ksup + 1
+                
+               !call mpas_log_write("kinf=$i, zOcean(kinf)=$r, TFocean3d=$r",realArgs=(/zOcean(kinf),TFocean3d(kinf,iCell)/), &
                !        intArgs=(/kinf/))
-               !call mpas_log_write("ksup=$i, zOcean(ksup)=$r, TFocean=$r",realArgs=(/zOcean(ksup),TFocean(ksup,iCell)/), &
+               !call mpas_log_write("ksup=$i, zOcean(ksup)=$r, TFocean3d=$r",realArgs=(/zOcean(ksup),TFocean3d(ksup,iCell)/), &
                !        intArgs=(/ksup/))
 
-               ! check if any invalid TFocean value is used for calculating TF at the draft
+               ! check if any invalid TFocean3d value is used for calculating TF at the draft
                if (ksup >= 1) then
-                  if (TFocean(ksup, iCell) == invalid_value_TF) then
-                     call mpas_log_write("iceshelf_melt_ismip6: Invalid value for TFocean. " // &
-                        "ksup=$i TFocean(ksup, iCell)=$r indexToCellID=$i", MPAS_LOG_ERR, &
+                  if (li_is_tf_invalid(TFocean3d(ksup, iCell))) then
+                     call mpas_log_write("iceshelf_melt_ismip6: Invalid value for TFocean3d. " // &
+                        "ksup=$i TFocean3d(ksup, iCell)=$r indexToCellID=$i", MPAS_LOG_ERR, &
                         intArgs=(/ksup,  indexToCellID(iCell)/), &
-                        realArgs=(/TFocean(ksup, iCell) /) )
-                     err = ior(err, 1)
-                  endif
-               endif
-               if (kinf <= nOceanLayers) then
-                  if (TFocean(kinf, iCell) == invalid_value_TF) then
-                     call mpas_log_write("iceshelf_melt_ismip6: Invalid value for TFocean. " // &
-                        "kinf=$i TFocean(kinf,iCell)=$r indexToCellID=$i", MPAS_LOG_ERR, &
-                        intArgs=(/kinf, indexToCellID(iCell)/), &
-                        realArgs=(/TFocean(kinf, iCell) /) )
+                        realArgs=(/TFocean3d(ksup, iCell) /) )
                      err = ior(err, 1)
                   endif
                endif
 
                if (ksup == 0) then
                   ! For depths shallower than shallowest layer center, use shallowest layer
-                  TFdraft(iCell) = TFocean(1, iCell)
+                  TFdraft(iCell) = TFocean3d(1, iCell)
                elseif (ksup == nOceanLayers) then
-                  ! for depths below the deepest layer center, use deepest layer corrected for Tfreeze
-                  TFdraft(iCell) = TFocean(nOceanLayers, iCell) - &
+                  ! Use deepest layer corrected for Tfreeze for depths below the deepest layer center
+                  TFdraft(iCell) = TFocean3d(nOceanLayers, iCell) - &
                      (zOcean(nOceanLayers) - lowerSurface(iCell)) * oceanFreezingTempDepthDependence
                else
-                  ! for depths between the first and last layer centers, linearly interpolate
-                  TFdraft(iCell) = ( (zOcean(ksup)-lowerSurface(iCell)) * TFocean(kinf, iCell) &
-                     + (lowerSurface(iCell)-zOcean(kinf)) * TFocean(ksup, iCell) ) / (zOcean(ksup)-zOcean(kinf))
+                  if (zOcean(kinf) < bedTopography(iCell)) then
+                     ! Use deepest ocean cell corrected for Tfreeze where
+                     ! lowerSurface is below that cell center
+                     TFdraft(iCell) = TFocean3d(ksup, iCell) - &
+                        (zOcean(ksup) - lowerSurface(iCell)) * oceanFreezingTempDepthDependence
+                  else
+                     ! for depths between the first and last layer centers, linearly interpolate
+                     TFdraft(iCell) = ( (zOcean(ksup)-lowerSurface(iCell)) * TFocean3d(kinf, iCell) &
+                        + (lowerSurface(iCell)-zOcean(kinf)) * TFocean3d(ksup, iCell) ) / (zOcean(ksup)-zOcean(kinf))
+                  endif
                endif
 
                ! 2 -  Mean Thermal forcing in individual basins (NB: fortran norm while basins start at zero):
@@ -1359,7 +1368,7 @@ module li_iceshelf_melt
          floatingBasalMassBal(:) = 0.0_RKIND
          coef = gamma0 * cste / scyr * rhoi
          do iCell = 1, nCellsSolve
-            if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
+            if ( li_mask_is_floating_ice(cellMask(iCell)) .and. (connectedOceanMask(iCell) == 1)) then
                floatingBasalMassBal(iCell) = -1.0_RKIND * coef * (TFdraft(iCell) + deltaT(iCell)) * &
                   abs(mean_TF(basinNumber(iCell)+1) + deltaT(iCell)) + ismip6shelfMelt_offset(iCell)
             endif
@@ -1399,6 +1408,8 @@ module li_iceshelf_melt
                     applyToFloating, applyToGroundingLine, err)
 
       use li_calving
+      use li_constants, only: oceanFreezingTempDepthDependence
+
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -1430,6 +1441,7 @@ module li_iceshelf_melt
       real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing
       real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_deltaT
       real (kind=RKIND), dimension(:), pointer :: zOcean
+      real (kind=RKIND), dimension(:,:), pointer :: zBndsOcean
       real (kind=RKIND), dimension(:), pointer :: areaCell
       integer, dimension(:), pointer :: cellMask, edgeMask, nEdgesOnCell
       real (kind=RKIND), pointer :: aSubglacial ! param A
@@ -1446,7 +1458,14 @@ module li_iceshelf_melt
       real (kind=RKIND), dimension(:), allocatable :: faceMeltSpeedVertAvg !vertically averaged faceMeltSpeed
                                                                 !to pass to  li_apply_front_ablation_velocity,
                                                                 !because faceMeltSpeed is only below water-line
-      integer :: err_tmp, kk
+      character(len=StrKIND), pointer :: config_TF_vertical_calc
+      real (kind=RKIND), pointer :: invalid_value_TF
+      logical :: validTF
+      logical, pointer :: config_calculate_thermal_forcing
+      logical, pointer :: config_ocean_data_extrapolation
+      integer, pointer :: config_ocean_data_extrap_ncells_extra
+      real (kind=RKIND) :: dzAccumulated, dz
+      integer :: err_tmp, kk, iLayer
 
       err = 0
       call mpas_log_write('Starting face melt routine')
@@ -1464,6 +1483,9 @@ module li_iceshelf_melt
       call mpas_pool_get_config(liConfigs, 'config_uniform_face_melt_rate', config_uniform_face_melt_rate)
       call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
       call mpas_pool_get_config(liConfigs, 'config_use_3d_thermal_forcing_for_face_melt', config_use_3d_thermal_forcing_for_face_melt)
+      call mpas_pool_get_config(liConfigs, 'config_invalid_value_TF', invalid_value_TF)
+      call mpas_pool_get_config(liConfigs, 'config_calculate_thermal_forcing', config_calculate_thermal_forcing)
+      call mpas_pool_get_config(liConfigs, 'config_TF_vertical_calc', config_TF_vertical_calc)
 
       block => domain % blocklist
       do while (associated(block))
@@ -1494,28 +1516,112 @@ module li_iceshelf_melt
             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', zOcean)
             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_deltaT', ismip6shelfMelt_deltaT)
+            call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zBndsOcean', zBndsOcean)
 
-            ! Calculate thermal forcing based on bedTopography
-            TFocean(:) = 0.0_RKIND
-            do iCell = 1, nCells
-               if (bedTopography(iCell) < 0.0_RKIND) then
-                     kk = 1
-                     ! Find deepest zOcean above ocean floor
-                     do while ( (zOcean(kk) >= bedTopography(iCell)) .and. (kk < nISMIP6OceanLayers) )
-                        kk = kk + 1
-                     enddo
-                     ! If bed is shallower than first layer, use TF from the first layer.
-                     ! If bed is deeper than the bottomg ocean layer, use TF from the bottom layer.
-                     if ( (kk == 1) .or. ( (kk == nISMIP6OceanLayers) .and. (zOcean(kk) >= bedTopography(iCell)) ) ) then
-                        TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell) + ismip6shelfMelt_deltaT(iCell)
-                     ! For all other bed depths, interpolate linearly between layers above and below bed depth.
-                     else
-                        TFocean(iCell) = ( (zOcean(kk-1) - bedTopography(iCell)) * ismip6shelfMelt_3dThermalForcing(kk, iCell) + &
-                                           (bedTopography(iCell) - zOcean(kk)) * ismip6shelfMelt_3dThermalForcing(kk-1, iCell) ) / &
-                                           (zOcean(kk-1) - zOcean(kk)) + ismip6shelfMelt_deltaT(iCell)
+            ! Check for option incompatibility - apply_ablation routine needs valid faceMeltSpeed 3 rows back
+            call mpas_pool_get_config(liConfigs, 'config_ocean_data_extrapolation', config_ocean_data_extrapolation)
+            call mpas_pool_get_config(liConfigs, 'config_ocean_data_extrap_ncells_extra', config_ocean_data_extrap_ncells_extra)
+            if (config_ocean_data_extrapolation .and. (config_ocean_data_extrap_ncells_extra < 3)) then
+               call mpas_log_write("If config_front_mass_bal_grounded='ismip6', config_use_3d_thermal_forcing_for_face_melt=.true., " // &
+                                   "and config_ocean_data_extrapolation=.true., " // &
+                                   "then config_ocean_data_extrap_ncells_extra must be >= 3", MPAS_LOG_ERR)
+               err = ior(err, 1)
+               return
+            endif
+
+
+               !Consolidate 3d profile to 2d depending on parameterization type
+               if (config_TF_vertical_calc == 'average' ) then
+                  
+                  ! Depth weighted average
+                  TFocean(:) = 0.0_RKIND
+                  do iCell = 1, nCells
+                     if (bedTopography(iCell) < 0.0_RKIND) then
+                        kk = 1
+                        ! Find deepest zOcean above ocean floor
+                        do while ( (zOcean(kk) >= bedTopography(iCell)) .and. (kk < nISMIP6OceanLayers) )
+                           kk = kk + 1
+                        enddo
+                        ! If bed is shallower than first layer, use TF from the first layer.
+                        if (kk == 1) then
+                           TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell)
+                          
+                        ! For all other bed depths, average between surface and
+                        ! layer just above bed depth. All cells above bathymetry
+                        ! are already defined as valid.
+                        else
+                           dzAccumulated = 0.0_RKIND
+                           do iLayer = 1, kk
+                              if (zOcean(iLayer) >= bedTopography(iCell)) then
+                                dz = zBndsOcean(2,iLayer) - zBndsOcean(1,iLayer)
+                                TFocean(iCell) = (TFocean(iCell) * dzAccumulated + ismip6shelfMelt_3dThermalForcing(iLayer,iCell) * dz) &
+                                        / (dzAccumulated + dz)
+                                dzAccumulated = dzAccumulated + dz
+                              endif
+                           enddo
+                        endif
                      endif
+                  enddo
+
+               elseif (config_TF_vertical_calc == '200-500') then
+                  ! Depth-weighted average of valid cells between 200-500m, ignoring bathymetry
+                  TFocean(:) = 0.0_RKIND
+                  do iCell = 1, nCells
+                     if (bedTopography(iCell) < 0.0_RKIND) then 
+                        dzAccumulated = 0.0_RKIND
+                        validTF = .false.
+                        do iLayer = 1, nISMIP6OceanLayers
+                           if ( (zOcean(iLayer) <= -200.0_RKIND) .and. (zOcean(iLayer) >= -500.0_RKIND) &
+                                 .and. (.not. li_is_tf_invalid(ismip6shelfMelt_3dThermalForcing(iLayer,iCell))) ) then
+                              
+                              dz = zBndsOcean(2,iLayer) - zBndsOcean(1,iLayer)
+                              TFocean(iCell) = (TFocean(iCell) * dzAccumulated + ismip6shelfMelt_3dThermalForcing(iLayer,iCell) * dz) &
+                                   / (dzAccumulated + dz)
+                              dzAccumulated = dzAccumulated + dz
+                              validTF = .true.
+                        
+                           endif
+                        enddo
+                        if (.not. validTF) then
+                           TFocean(iCell) = invalid_value_TF
+                        endif
+                     endif
+                  enddo
+
+               elseif (config_TF_vertical_calc == 'seafloor') then
+                  ! Define 2d TF at seafloor
+                  TFocean(:) = 0.0_RKIND
+                  do iCell = 1, nCells
+                     if (bedTopography(iCell) < 0.0_RKIND) then
+                        kk = 1
+                        ! Find deepest zOcean above ocean floor
+                        do while ( (zOcean(kk) >= bedTopography(iCell)) .and. (kk < nISMIP6OceanLayers) )
+                           kk = kk + 1
+                        enddo
+                        ! If bed is shallower than first layer, use TF from the first layer.
+                        if (kk == 1) then
+                           TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell)
+                        
+                        elseif (kk == nISMIP6OceanLayers) then
+                           ! If bed is deeper than the bottom ocean layer, use
+                           ! TF from the bottom layer adjusted for depth
+                           ! dependence
+                           TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk,iCell) - & 
+                                   ((zOcean(kk) - bedTopography(iCell)) * oceanFreezingTempDepthDependence)
+                        else
+                           ! For all other bed depths, use layer TF adjusted for
+                           ! depth dependence
+                           TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk-1,iCell) - & 
+                                   ((zOcean(kk-1) - bedTopography(iCell)) * oceanFreezingTempDepthDependence)
+                        endif
+                     endif
+                  enddo
+               else
+                  call mpas_log_write("Unknown config_TF_vertical_calc specified. Options are: 'seafloor','200-500',or 'average' ", MPAS_LOG_ERR)
+                  err = ior(err, 1)
                endif
-            end do
+         
+               TFocean = TFocean + ismip6shelfMelt_deltaT !apply dT correction
          endif
 
          faceMeltSpeed(:) = 0.0_RKIND

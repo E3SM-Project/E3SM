@@ -72,6 +72,10 @@ module elm_varcon
   real(r8) :: tlsai_crit = 2.0_r8                           ! critical value of elai+esai for which aerodynamic parameters are maximum
   real(r8) :: watmin = 0.01_r8                              ! minimum soil moisture (mm)
 
+  real(r8), parameter :: mm_epsilon = 0.622_r8              ! Molar mass ratio (water:dry air)
+                                                            !   This is set to 0.622 for bit-for-bit compatibility, but
+                                                            !   this should be defined as SHR_CONST_MWWV/SHR_CONST_MWDAIR
+
   real(r8) :: re = SHR_CONST_REARTH*0.001_r8                ! radius of earth (km)
 
   real(r8), public, parameter :: degpsec = 15._r8/3600.0_r8 ! Degree's earth rotates per second
@@ -80,6 +84,13 @@ module elm_varcon
   real(r8), public, parameter ::  spval = 1.e36_r8          ! special value for real data
   integer , public, parameter :: ispval = -9999             ! special value for int data 
                                                             ! (keep this negative to avoid conflicts with possible valid values)
+
+
+  !------------------------------------------------------------------
+  ! Unit conversion constants
+  !------------------------------------------------------------------
+
+  real(r8), parameter :: pa_to_kpa = 0.001_r8               ! Conversion factor (Pa to kPa) [kPa/Pa]
 
   ! These are tunable constants from clm2_3
 

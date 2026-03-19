@@ -8,7 +8,7 @@ time_stepping:
   run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
   number_of_steps: ${NUM_STEPS}
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [mac_mic,mam4_drydep]
   schedule_type: sequential
   mac_mic:
@@ -29,6 +29,7 @@ atmosphere_processes:
       c_diag_3rd_mom: 7.0
       coeff_kh: 0.1
       coeff_km: 0.1
+      shoc_1p5tke: false
   mam4_drydep:
     # Fractional land use file
     drydep_remap_file: ""
@@ -52,7 +53,7 @@ initial_conditions:
   #variables needed for SHOC
   surf_sens_flux: 0.0
   surf_evap: 0.0
-  
+
   #variables needed for mam4-drydep
   fraction_landuse: 0.2
   w_updraft: 1e-5
@@ -64,7 +65,7 @@ initial_conditions:
   ram1: 0.45506166067091662E+002
   dgnumwet: 0.41417721820867320E-007
   wetdens: 0.15100083211582764E+004
-
+  z_mam4_int : 0.0
 # The parameters for I/O control
 scorpio:
   output_yaml_files: ["output.yaml"]

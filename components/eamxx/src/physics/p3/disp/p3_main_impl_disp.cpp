@@ -1,8 +1,9 @@
-
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
-#include "physics/share/physics_saturation_impl.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+#include "share/physics/physics_functions.hpp" // also for ETI not on GPUs
+#include "share/physics/physics_saturation_impl.hpp"
+
+#include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 namespace p3 {
@@ -15,26 +16,28 @@ namespace p3 {
 template <>
 void Functions<Real,DefaultDevice>
 ::p3_main_init_disp(
-  const Int& nj, const Int& nk_pack, const uview_2d<const Spack>& cld_frac_i, const uview_2d<const Spack>& cld_frac_l,
-  const uview_2d<const Spack>& cld_frac_r, const uview_2d<const Spack>& inv_exner, const uview_2d<const Spack>& th_atm,
-  const uview_2d<const Spack>& dz, const uview_2d<Spack>& diag_equiv_reflectivity, const uview_2d<Spack>& ze_ice,
-  const uview_2d<Spack>& ze_rain, const uview_2d<Spack>& diag_eff_radius_qc, const uview_2d<Spack>& diag_eff_radius_qi,
-  const uview_2d<Spack>& diag_eff_radius_qr,
-  const uview_2d<Spack>& inv_cld_frac_i, const uview_2d<Spack>& inv_cld_frac_l, const uview_2d<Spack>& inv_cld_frac_r,
-  const uview_2d<Spack>& exner, const uview_2d<Spack>& T_atm, const uview_2d<Spack>& qv, const uview_2d<Spack>& inv_dz,
+  const Int& nj, const Int& nk_pack, const uview_2d<const Pack>& cld_frac_i, const uview_2d<const Pack>& cld_frac_l,
+  const uview_2d<const Pack>& cld_frac_r, const uview_2d<const Pack>& inv_exner, const uview_2d<const Pack>& th_atm,
+  const uview_2d<const Pack>& dz, const uview_2d<Pack>& diag_equiv_reflectivity, const uview_2d<Pack>& ze_ice,
+  const uview_2d<Pack>& ze_rain, const uview_2d<Pack>& diag_eff_radius_qc, const uview_2d<Pack>& diag_eff_radius_qi,
+  const uview_2d<Pack>& diag_eff_radius_qr,
+  const uview_2d<Pack>& inv_cld_frac_i, const uview_2d<Pack>& inv_cld_frac_l, const uview_2d<Pack>& inv_cld_frac_r,
+  const uview_2d<Pack>& exner, const uview_2d<Pack>& T_atm, const uview_2d<Pack>& qv, const uview_2d<Pack>& inv_dz,
   const uview_1d<Scalar>& precip_liq_surf, const uview_1d<Scalar>& precip_ice_surf,
-  const uview_2d<Spack>& mu_r, const uview_2d<Spack>& lamr, const uview_2d<Spack>& logn0r, const uview_2d<Spack>& nu,
-  const uview_2d<Spack>& cdist, const uview_2d<Spack>& cdist1, const uview_2d<Spack>& cdistr,
-  const uview_2d<Spack>& qc_incld, const uview_2d<Spack>& qr_incld, const uview_2d<Spack>& qi_incld,
-  const uview_2d<Spack>& qm_incld, const uview_2d<Spack>& nc_incld, const uview_2d<Spack>& nr_incld, const uview_2d<Spack>& ni_incld,
-  const uview_2d<Spack>& bm_incld, const uview_2d<Spack>& inv_rho, const uview_2d<Spack>& prec, const  uview_2d<Spack>& rho, const uview_2d<Spack>& rhofacr,
-  const uview_2d<Spack>& rhofaci, const uview_2d<Spack>& acn, const uview_2d<Spack>& qv_sat_l, const uview_2d<Spack>& qv_sat_i, const uview_2d<Spack>& sup,
-  const uview_2d<Spack>& qv_supersat_i, const uview_2d<Spack>& qtend_ignore, const uview_2d<Spack>& ntend_ignore, const uview_2d<Spack>& mu_c,
-  const uview_2d<Spack>& lamc, const uview_2d<Spack>& rho_qi, const uview_2d<Spack>& qv2qi_depos_tend, const uview_2d<Spack>& precip_total_tend,
-  const uview_2d<Spack>& nevapr, const uview_2d<Spack>& precip_liq_flux, const uview_2d<Spack>& precip_ice_flux)
+  const uview_2d<Pack>& mu_r, const uview_2d<Pack>& lamr, const uview_2d<Pack>& logn0r, const uview_2d<Pack>& nu,
+  const uview_2d<Pack>& cdist, const uview_2d<Pack>& cdist1, const uview_2d<Pack>& cdistr,
+  const uview_2d<Pack>& qc_incld, const uview_2d<Pack>& qr_incld, const uview_2d<Pack>& qi_incld,
+  const uview_2d<Pack>& qm_incld, const uview_2d<Pack>& nc_incld, const uview_2d<Pack>& nr_incld, const uview_2d<Pack>& ni_incld,
+  const uview_2d<Pack>& bm_incld, const uview_2d<Pack>& inv_rho, const uview_2d<Pack>& prec, const  uview_2d<Pack>& rho, const uview_2d<Pack>& rhofacr,
+  const uview_2d<Pack>& rhofaci, const uview_2d<Pack>& acn, const uview_2d<Pack>& qv_sat_l, const uview_2d<Pack>& qv_sat_i, const uview_2d<Pack>& sup,
+  const uview_2d<Pack>& qv_supersat_i, const uview_2d<Pack>& qtend_ignore, const uview_2d<Pack>& ntend_ignore, const uview_2d<Pack>& mu_c,
+  const uview_2d<Pack>& lamc, const uview_2d<Pack>& rho_qi, const uview_2d<Pack>& qv2qi_depos_tend, const uview_2d<Pack>& precip_total_tend,
+  const uview_2d<Pack>& nevapr, const uview_2d<Pack>& precip_liq_flux, const uview_2d<Pack>& precip_ice_flux)
 {
   using ExeSpace = typename KT::ExeSpace;
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
+
+  const auto policy = TPF::get_default_team_policy(nj, nk_pack);
 
   Kokkos::parallel_for("p3_main_init",
          policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -114,7 +117,7 @@ Int Functions<Real,DefaultDevice>
 {
   using ExeSpace = typename KT::ExeSpace;
 
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 
   // load constants into local vars
   const     Scalar inv_dt          = 1 / infrastructure.dt;
@@ -172,6 +175,21 @@ Int Functions<Real,DefaultDevice>
   auto liq_ice_exchange        = history_only.liq_ice_exchange;
   auto vap_liq_exchange        = history_only.vap_liq_exchange;
   auto vap_ice_exchange        = history_only.vap_ice_exchange;
+  auto qr2qv_evap              = history_only.qr2qv_evap;
+  auto qi2qv_sublim            = history_only.qi2qv_sublim;
+  auto qc2qr_accret            = history_only.qc2qr_accret;
+  auto qc2qr_autoconv          = history_only.qc2qr_autoconv;
+  auto qv2qi_vapdep            = history_only.qv2qi_vapdep;
+  auto qc2qi_berg              = history_only.qc2qi_berg;
+  auto qc2qr_ice_shed          = history_only.qc2qr_ice_shed;
+  auto qc2qi_collect           = history_only.qc2qi_collect;
+  auto qr2qi_collect           = history_only.qr2qi_collect;
+  auto qc2qi_hetero_freeze     = history_only.qc2qi_hetero_freeze;
+  auto qr2qi_immers_freeze     = history_only.qr2qi_immers_freeze;
+  auto qi2qr_melt              = history_only.qi2qr_melt;
+  auto qr_sed                  = history_only.qr_sed;
+  auto qc_sed                  = history_only.qc_sed;
+  auto qi_sed                  = history_only.qi_sed;
   auto mu_r                    = temporaries.mu_r;
   auto T_atm                   = temporaries.T_atm;
   auto lamr                    = temporaries.lamr;
@@ -266,6 +284,9 @@ Int Functions<Real,DefaultDevice>
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
       vap_liq_exchange, vap_ice_exchange, liq_ice_exchange,
+      qr2qv_evap, qi2qv_sublim, qc2qr_accret, qc2qr_autoconv,
+      qv2qi_vapdep, qc2qi_berg, qc2qr_ice_shed, qc2qi_collect,
+      qr2qi_collect, qc2qi_hetero_freeze, qr2qi_immers_freeze, qi2qr_melt,
       pratot, prctot, nucleationPossible, hydrometeorsPresent, runtime_options);
 
   //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
@@ -283,7 +304,7 @@ Int Functions<Real,DefaultDevice>
   cloud_sedimentation_disp(
       qc_incld, rho, inv_rho, cld_frac_l, acn, inv_dz, lookup_tables.dnu_table_vals, workspace_mgr,
       nj, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, infrastructure.predictNc,
-      qc, nc, nc_incld, mu_c, lamc, qtend_ignore, ntend_ignore,
+      qc, nc, nc_incld, mu_c, lamc, qc_sed, ntend_ignore,
       diagnostic_outputs.precip_liq_surf, nucleationPossible, hydrometeorsPresent);
 
 
@@ -291,14 +312,14 @@ Int Functions<Real,DefaultDevice>
   rain_sedimentation_disp(
       rho, inv_rho, rhofacr, cld_frac_r, inv_dz, qr_incld, workspace_mgr,
       lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, nj, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, qr,
-      nr, nr_incld, mu_r, lamr, precip_liq_flux, qtend_ignore, ntend_ignore,
+      nr, nr_incld, mu_r, lamr, precip_liq_flux, qr_sed, ntend_ignore,
       diagnostic_outputs.precip_liq_surf, nucleationPossible, hydrometeorsPresent, runtime_options);
 
   // Ice sedimentation:  (adaptive substepping)
   ice_sedimentation_disp(
       rho, inv_rho, rhofaci, cld_frac_i, inv_dz, workspace_mgr, nj, nk, ktop, kbot,
       kdir, infrastructure.dt, inv_dt, qi, qi_incld, ni, ni_incld,
-      qm, qm_incld, bm, bm_incld, qtend_ignore, ntend_ignore,
+      qm, qm_incld, bm, bm_incld, qi_sed, ntend_ignore,
       lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf, nucleationPossible, hydrometeorsPresent, runtime_options);
 
   // homogeneous freezing f cloud and rain

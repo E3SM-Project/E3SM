@@ -16,10 +16,12 @@ module seq_map_mod
   use shr_sys_mod
   use shr_const_mod
   use shr_mct_mod, only: shr_mct_sMatPInitnc, shr_mct_queryConfigFile
+  use shr_mpi_mod
   use mct_mod
   use seq_comm_mct
   use component_type_mod
   use seq_map_type_mod
+  use shr_moab_mod
 
   implicit none
   save
@@ -33,9 +35,14 @@ module seq_map_mod
   public :: moab_map_init_rcfile    ! cpl pes
   public :: seq_map_init_rearrolap  ! cpl pes
   public :: seq_map_initvect        ! cpl pes
+  public :: seq_map_initvect_moab   ! cpl pes
   public :: seq_map_map             ! cpl pes
   public :: seq_map_mapvect         ! cpl pes
+  public :: seq_map_clean_moab      ! cpl pes
   public :: seq_map_readdata        ! cpl pes
+
+
+
 
   interface seq_map_avNorm
      module procedure seq_map_avNormArr
@@ -103,13 +110,13 @@ contains
     gsmap_d => component_get_gsmap_cx(comp_d)
 
     if (mct_gsmap_Identical(gsmap_s,gsmap_d)) then
-       call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="copy")
+       if(.not.skip_match) call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="copy")
 
-       if (mapid > 0 .and. .not. skip_match) then
+       if (.not. skip_match .and. mapid > 0 ) then
           call seq_map_mappoint(mapid,mapper)
        else
           if(skip_match .and. seq_comm_iamroot(CPLID)) then
-             write(logunit,'(A)') subname, 'skip_match true, force new map'
+             write(logunit,'(A)') subname//' skip_match true, force new map'
           endif
           call seq_map_mapinit(mapper,mpicom)
           mapper%copy_only = .true.
@@ -119,13 +126,13 @@ contains
        endif
 
     elseif (samegrid) then
-       call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="rearrange")
+       if(.not.skip_match) call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="rearrange")
 
-       if (mapid > 0 .and. .not. skip_match) then
+       if (.not. skip_match .and. mapid > 0 ) then
           call seq_map_mappoint(mapid,mapper)
        else
           if(skip_match .and. seq_comm_iamroot(CPLID)) then
-             write(logunit,'(A)') subname, 'skip_match true, force new map'
+             write(logunit,'(A)') subname//'skip_match true, force new map'
           endif
           ! --- Initialize rearranger
           call seq_map_mapinit(mapper,mpicom)
@@ -142,13 +149,13 @@ contains
        ! --- Initialize Smatp
        call shr_mct_queryConfigFile(mpicom,maprcfile,maprcname,mapfile,maprctype,maptype)
 
-       call seq_map_mapmatch(mapid,gsMap_s=gsMap_s,gsMap_d=gsMap_d,mapfile=mapfile,strategy=maptype)
+       if(.not.skip_match) call seq_map_mapmatch(mapid,gsMap_s=gsMap_s,gsMap_d=gsMap_d,mapfile=mapfile,strategy=maptype)
 
-       if (mapid > 0 .and. .not. skip_match) then
+       if (.not. skip_match .and. mapid > 0) then
           call seq_map_mappoint(mapid,mapper)
        else
           if(skip_match .and. seq_comm_iamroot(CPLID)) then
-             write(logunit,'(A)') subname, 'skip_match true, force new map'
+             write(logunit,'(A)') subname//'skip_match true, force new map'
           endif
           call seq_map_mapinit(mapper,mpicom)
           mapper%mapfile = trim(mapfile)
@@ -176,71 +183,83 @@ contains
 
 
   subroutine moab_map_init_rcfile( mbsrc, mbtgt, mbintx, discretization_type, &
-    maprcfile, maprcname, maprctype, samegrid, sol_identifier, string, esmf_map)
+                   maprcfile, maprcname, maprctype, samegrid, arearead, map_identifier, &
+                   description_string, esmf_map, fallback_map_identifier )
 
-   use iMOAB, only: iMOAB_LoadMappingWeightsFromFile
-   implicit none
-   !-----------------------------------------------------
-   !
-   ! Arguments
-   !
-   type(integer)        ,intent(in)            :: mbsrc  ! moab source app id
-   type(integer)        ,intent(in)            :: mbtgt  ! moab target app id
-   type(integer)        ,intent(in)            :: mbintx  ! moab intersection app id, identifing the map from source to target
-   type(integer)        ,intent(in)            :: discretization_type ! 1 for SE, 2 for PC, 3 for FV; should be a member data
-   ! type(component_type) ,intent(inout)         :: comp_s
-   ! type(component_type) ,intent(inout)         :: comp_d
-   character(len=*)     ,intent(in)            :: maprcfile
-   character(len=*)     ,intent(in)            :: maprcname
-   character(len=*)     ,intent(in)            :: maprctype
-   logical              ,intent(in)            :: samegrid
-   character(len=*)     ,intent(in),optional   :: sol_identifier !   /* "scalar", "flux", "custom" */
-   character(len=*)     ,intent(in),optional   :: string
-   logical              ,intent(in),optional   :: esmf_map
-   !
-   ! Local Variables
-   !
-   !type(mct_gsmap), pointer    :: gsmap_s ! temporary pointers
-   !type(mct_gsmap), pointer    :: gsmap_d ! temporary pointers
-   integer(IN)                 :: mpicom
-   character(CX)               :: mapfile
-   character(CX)               :: mapfile_term
-   character(CL)               :: maptype
-   integer(IN)                 :: mapid
-   integer                     :: ierr
+    use iMOAB, only: iMOAB_LoadMapFile
+    implicit none
+    !-----------------------------------------------------
+    !
+    ! Arguments
+    !
+    type(integer)        ,intent(in)            :: mbsrc  ! moab source app id
+    type(integer)        ,intent(in)            :: mbtgt  ! moab target app id
+    type(integer)        ,intent(in)            :: mbintx  ! moab intersection app id, identifing the map from source to target
+    type(integer)        ,intent(in)            :: discretization_type ! 1 for SE, 2 for PC, 3 for FV; should be a member data
+    ! type(component_type) ,intent(inout)         :: comp_s
+    ! type(component_type) ,intent(inout)         :: comp_d
+    character(len=*)     ,intent(in)            :: maprcfile
+    character(len=*)     ,intent(in)            :: maprcname
+    character(len=*)     ,intent(in)            :: maprctype
+    logical              ,intent(in)            :: samegrid
+    integer              ,intent(in)            :: arearead ! read or not area_a and area_b
+    character(len=*)     ,intent(inout)         :: map_identifier !   /* "scalar", "flux", "custom" */
+    character(len=*)     ,intent(in),optional   :: description_string
+    logical              ,intent(in),optional   :: esmf_map
+    character(len=*)     ,intent(in),optional   :: fallback_map_identifier
+    !
+    ! Local Variables
+    !
+    !type(mct_gsmap), pointer    :: gsmap_s ! temporary pointers
+    !type(mct_gsmap), pointer    :: gsmap_d ! temporary pointers
+    integer(IN)                 :: mpicom
+    character(CX)               :: mapfile
+    character(CX)               :: mapfile_term
+    character(CL)               :: maptype
+    integer(IN)                 :: mapid
+    integer                     :: ierr
 
+    character(len=*),parameter  :: subname = "(moab_map_init_rcfile) "
+    !-----------------------------------------------------
 
-   character(len=*),parameter  :: subname = "(moab_map_init_rcfile) "
-   !-----------------------------------------------------
+    if (seq_comm_iamroot(CPLID) .and. present(description_string)) then
+        write(logunit,'(A)') subname//' called for '//trim(description_string)
+    endif
 
-   if (seq_comm_iamroot(CPLID) .and. present(string)) then
-      write(logunit,'(A)') subname//' called for '//trim(string)
-   endif
-
-   call seq_comm_setptrs(CPLID, mpicom=mpicom)
+    call seq_comm_setptrs(CPLID, mpicom=mpicom)
 
    ! --- Initialize Smatp
    call shr_mct_queryConfigFile(mpicom,maprcfile,maprcname,mapfile,maprctype,maptype)
-   !call shr_mct_sMatPInitnc(mapper%sMatp, mapper%gsMap_s, mapper%gsMap_d, trim(mapfile),trim(maptype),mpicom)
-   !sol_identifier = 'map-from-file'//CHAR(0)
-   mapfile_term = trim(mapfile)//CHAR(0)
-   if (seq_comm_iamroot(CPLID)) then
-       write(logunit,*) subname,' reading map file with iMOAB: ', trim(mapfile_term)
-   endif
+   if (mapfile == 'idmap' .or. mapfile == 'idmap_ignore') then
+      if (present(fallback_map_identifier)) then
+         map_identifier = fallback_map_identifier
+         write(logunit,*) subname,' do not want to load backup identifier - ' // mapfile
+         call shr_sys_abort(subname//' ERROR in not wanting to load backup identifier - ' // mapfile)
+      else
+         write(logunit,*) subname,' error in loading map file - ' // mapfile
+         call shr_sys_abort(subname//' ERROR in loading map file - ' // mapfile)
+      end if
+   else
+      mapfile_term = trim(mapfile)//CHAR(0)
+      if (seq_comm_iamroot(CPLID)) then
+         write(logunit,*) subname,' reading map file with iMOAB: ', trim(mapfile_term)
+      endif
 
-   ierr = iMOAB_LoadMappingWeightsFromFile( mbsrc, mbtgt, mbintx, discretization_type, &
-                      discretization_type, sol_identifier, mapfile_term)
-   if (ierr .ne. 0) then
-      write(logunit,*) subname,' error in loading map file'
-      call shr_sys_abort(subname//' ERROR in loading map file')
+      ierr = iMOAB_LoadMapFile( mbsrc, mbtgt, mbintx, discretization_type, &
+                                 discretization_type, arearead, map_identifier, mapfile_term)
+      if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in loading map file - ' // mapfile
+         call shr_sys_abort(subname//' ERROR in loading map file - ' // mapfile)
+      endif
+      if (seq_comm_iamroot(CPLID)) then
+         write(logunit,'(2A,I10,6A)') subname, ': iMOAB appID: ', &
+            mbintx, ', maptype: ', trim(maptype), ', mapfile: ', &
+            trim(mapfile), ', identifier: ', trim(map_identifier)
+         call shr_sys_flush(logunit)
+      endif
     endif
-   if (seq_comm_iamroot(CPLID)) then
-      write(logunit,'(2A,I6,4A)') subname,'Result: iMOAB map app ID, maptype, mapfile = ', &
-         mbintx,' ',trim(maptype),' ',trim(mapfile), ', identifier: ', trim(sol_identifier)
-      call shr_sys_flush(logunit)
-   endif
 
-end subroutine moab_map_init_rcfile
+  end subroutine moab_map_init_rcfile
 
   !=======================================================================
 
@@ -280,12 +299,15 @@ end subroutine moab_map_init_rcfile
     if (present(no_match)) then
        if (no_match) skip_match = .true.
     endif
-    if (mct_gsmap_Identical(gsmap_s,gsmap_d) .and. .not.skip_match ) then
-       call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="copy")
+    if (mct_gsmap_Identical(gsmap_s,gsmap_d)) then
+       if(.not.skip_match) call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="copy")
 
-       if (mapid > 0) then
+       if (.not.skip_match .and. mapid > 0) then
           call seq_map_mappoint(mapid,mapper)
        else
+          if(skip_match .and. seq_comm_iamroot(CPLID)) then
+             write(logunit,'(A)') subname//' skip_match true, force new map'
+          endif
           call seq_map_mapinit(mapper,mpicom)
           mapper%copy_only = .true.
           mapper%strategy = "copy"
@@ -294,11 +316,14 @@ end subroutine moab_map_init_rcfile
        endif
 
     else
-       call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="rearrange")
+       if(.not.skip_match) call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="rearrange")
 
-       if (mapid > 0) then
+       if (.not.skip_match .and. mapid > 0) then
           call seq_map_mappoint(mapid,mapper)
        else
+          if(skip_match .and. seq_comm_iamroot(CPLID)) then
+             write(logunit,'(A)') subname//'skip_match true, force new map'
+          endif
           ! --- Initialize rearranger
           call seq_map_mapinit(mapper, mpicom)
           mapper%rearrange_only = .true.
@@ -320,6 +345,48 @@ end subroutine moab_map_init_rcfile
   end subroutine seq_map_init_rearrolap
 
   !=======================================================================
+  !
+  ! seq_map_map - Maps attribute vector fields from source to destination grid.
+  !
+  ! This subroutine is the primary mapping interface for transferring field
+  ! data between component grids. It supports THREE mapping strategies:
+  !
+  ! 1. COPY (mapper%copy_only=.true.)
+  !    - Used when source and destination grids are IDENTICAL
+  !    - Simply copies data without any transformation
+  !    - only in MCT mode
+  !
+  ! 2. REARRANGE (mapper%rearrange_only=.true.)
+  !    - Used when grids have the SAME points but DIFFERENT MPI distribution
+  !    - Performs MPI communication to redistribute data
+  !
+  ! 3. MAP (neither copy_only nor rearrange_only)
+  !    - Full interpolation/regridding between DIFFERENT grids
+  !    - Uses sparse matrix multiplication with pre-computed weights
+  !    - Supports optional normalization for conservation
+  !
+  ! *** MOAB Integration ***
+  ! This subroutine maintains DUAL data paths:
+  ! - MCT path: Traditional mct_aVect operations (always executed)
+  ! - MOAB path: Parallel iMOAB operations (executed when valid_moab_context=.true.)
+  !
+  ! The MOAB path uses iMOAB API calls to:
+  ! - Transfer data between MOAB application instances
+  ! - Apply projection weights for regridding
+  ! - Handle normalization for conservative mapping
+  !
+  ! Arguments:
+  !   mapper     - Mapping data structure containing weights and grid info
+  !   av_s       - Source attribute vector (input fields)
+  !   av_d       - Destination attribute vector (output fields)
+  !   fldlist    - Optional: specific fields to map (default: all fields)
+  !   norm       - Optional: enable normalization (default: .true.)
+  !   avwts_s    - Optional: source weights for normalization
+  !   avwtsfld_s - Optional: field name in avwts_s to use as weight
+  !   string     - Optional: description string for logging
+  !   msgtag     - Optional: MPI message tag for rearrangement
+  !
+  !=======================================================================
 
   subroutine seq_map_map( mapper, av_s, av_d, fldlist, norm, avwts_s, avwtsfld_s, &
        string, msgtag )
@@ -328,6 +395,7 @@ end subroutine moab_map_init_rcfile
     use iMOAB, only: iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, iMOAB_SetDoubleTagStorage, &
       iMOAB_GetIntTagStorage, iMOAB_ApplyScalarProjectionWeights, &
       iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers
+    use seq_comm_mct, only : num_moab_exports
 
     implicit none
     !-----------------------------------------------------
@@ -343,7 +411,6 @@ end subroutine moab_map_init_rcfile
     character(len=*),intent(in),optional :: avwtsfld_s
     character(len=*),intent(in),optional :: string
     integer(IN)     ,intent(in),optional :: msgtag
-#ifdef HAVE_MOAB
     logical  :: valid_moab_context
     integer  :: ierr, nfields, lsize_src, lsize_tgt, arrsize_tgt, j, arrsize_src
     character(len=CXX) :: fldlist_moab
@@ -355,7 +422,6 @@ end subroutine moab_map_init_rcfile
     real(kind=r8) , allocatable  :: targtags(:,:), targtags_ini(:,:)
     real(kind=r8)  :: factor
     integer  :: filter_type ! used for caas projection
-#endif
     !
     ! Local Variables
     !
@@ -401,53 +467,70 @@ end subroutine moab_map_init_rcfile
        call shr_sys_abort(subname//' ERROR: avwtsfld present')
     endif
 
-#ifdef HAVE_MOAB
-       ! check whether the application ID is defined on the current process
-       if ( mapper%src_mbid .lt. 0 .or. mapper%tgt_mbid .lt. 0 ) then
-         valid_moab_context = .FALSE.
+    !*** MOAB: Check if MOAB context is valid on this process
+    !*** A valid MOAB context requires both source and target MOAB app IDs >= 0.
+    !*** When valid, MOAB operations run IN PARALLEL with MCT operations,
+    !*** maintaining data consistency between both representations.
+    if ( mapper%src_mbid .lt. 0 .or. mapper%tgt_mbid .lt. 0 ) then
+       valid_moab_context = .FALSE.
+    else
+       valid_moab_context = .TRUE.
+    endif
+
+    !*** MOAB: Build field list for MOAB operations
+    !*** This section constructs a colon-delimited field list string that will
+    !*** be passed to iMOAB functions. The list is built from either:
+    !*** - The explicit fldlist argument, or
+    !*** - All real attributes in the source attribute vector
+    !*** If normalization is enabled (mbnorm=.true.), "norm8wt" is appended
+    !*** to carry normalization weights through the mapping.
+    if ( valid_moab_context ) then
+       nfields = 1
+       ! first get data from source tag and store in a temporary
+       ! then set it back to target tag to mimic a copy
+       if (present(fldlist)) then
+          ! find the number of fields in the list
+          ! Or should we decipher based on fldlist?
+          call mct_list_init(temp_list, fldlist)
+          nfields=mct_list_nitem (temp_list)
+          call mct_list_clean(temp_list)
+          fldlist_moab= trim(fldlist)
        else
-         valid_moab_context = .TRUE.
+          ! Extract character strings from attribute vector
+          nfields = mct_aVect_nRAttr(av_s)
+          fldlist_moab = ''
+          if ( nfields /= 0 ) fldlist_moab = trim(mct_aVect_exportRList2c(av_s))
        endif
 
-       if ( valid_moab_context ) then
-         nfields = 1
-         ! first get data from source tag and store in a temporary
-         ! then set it back to target tag to mimic a copy
-         if (present(fldlist)) then
-            ! find the number of fields in the list
-            ! Or should we decipher based on fldlist?
-            call mct_list_init(temp_list, fldlist)
-            nfields=mct_list_nitem (temp_list)
-            call mct_list_clean(temp_list)
-            fldlist_moab= trim(fldlist)
-         else
-            ! Extract character strings from attribute vector
-            nfields = mct_aVect_nRAttr(av_s)
-            fldlist_moab = ''
-            if ( nfields /= 0 ) fldlist_moab = trim(mct_aVect_exportRList2c(av_s))
-         endif
-
-         if (mbnorm) then
-           fldlist_moab = trim(fldlist_moab)//":norm8wt"//C_NULL_CHAR
-           nfields=nfields + 1
-         else
-           fldlist_moab = trim(fldlist_moab)//C_NULL_CHAR
-         endif
+       if (mbnorm) then
+          fldlist_moab = trim(fldlist_moab)//":norm8wt"//C_NULL_CHAR
+          nfields=nfields + 1
+       else
+          fldlist_moab = trim(fldlist_moab)//C_NULL_CHAR
+       endif
 
 
 #ifdef MOABDEBUG
-         if (seq_comm_iamroot(CPLID)) then
-            write(logunit,*) subname, 'iMOAB mapper ',trim(mapper%mbname), ' iMOAB_mapper  nfields', &
-                  nfields,  ' fldlist_moab=', trim(fldlist_moab)
-            call shr_sys_flush(logunit)
-         endif
+       if (seq_comm_iamroot(CPLID)) then
+          write(logunit,*) subname, 'iMOAB mapper ',trim(mapper%mbname), ' iMOAB_mapper  nfields', &
+                nfields,  ' fldlist_moab=', trim(fldlist_moab), ' moab step ', num_moab_exports
+          call shr_sys_flush(logunit)
+       endif
 #endif
-       endif ! valid_moab_context
-#endif
+    endif ! valid_moab_context
+
+    !=========================================================================
+    ! STRATEGY SELECTION: MCT Path
+    ! The following three branches handle the MCT-based mapping operations.
+    ! MOAB operations for these strategies are handled AFTER this section.
+    !=========================================================================
 
     if (mapper%copy_only) then
        !-------------------------------------------
-       ! COPY data
+       ! STRATEGY 1: COPY
+       ! Source and destination grids are IDENTICAL (same gsmap).
+       ! No interpolation needed - just copy field values directly.
+       ! MCT: Uses mct_aVect_copy for efficient memory copy.
        !-------------------------------------------
        if (present(fldlist)) then
           call mct_aVect_copy(aVin=av_s,aVout=av_d,rList=fldlist,vector=mct_usevector)
@@ -457,7 +540,11 @@ end subroutine moab_map_init_rcfile
 
     else if (mapper%rearrange_only) then
        !-------------------------------------------
-       ! REARRANGE data
+       ! STRATEGY 2: REARRANGE
+       ! Source and destination grids have SAME grid points but
+       ! DIFFERENT MPI decomposition (different gsmap).
+       ! MCT: Uses mct_rearr_rearrange for MPI all-to-all communication
+       ! to redistribute data across processors.
        !-------------------------------------------
        if (present(fldlist)) then
           call mct_rearr_rearrange_fldlist(av_s, av_d, mapper%rearr, tag=ltag, VECTOR=mct_usevector, &
@@ -469,7 +556,14 @@ end subroutine moab_map_init_rcfile
 
     else
        !-------------------------------------------
-       ! MAP data
+       ! STRATEGY 3: MAP (Full Interpolation/Regridding)
+       ! Source and destination are DIFFERENT grids.
+       ! MCT: Uses sparse matrix-vector multiplication (sMatP) with
+       ! pre-computed interpolation weights from mapping files.
+       ! Supports optional normalization via seq_map_avNorm:
+       ! - If avwts_s provided: multiply source by weights before mapping,
+       !   then divide result by mapped weights (conservative mapping)
+       ! - If norm=.true.: apply self-normalization
        !-------------------------------------------
        if (present(avwts_s)) then
           if (present(fldlist)) then
@@ -489,228 +583,302 @@ end subroutine moab_map_init_rcfile
 
     endif
 
+    !=========================================================================
+    ! MOAB PATH: Copy/Rearrange Operations
+    ! For COPY and REARRANGE strategies, MOAB uses point-to-point
+    ! communication between MOAB app instances instead of MCT rearranger.
+    !=========================================================================
     if (mapper%copy_only .or. mapper%rearrange_only) then
 
-#ifdef HAVE_MOAB
+       !*** MOAB: Send/Receive for Copy or Rearrange
+       !*** For identical or same-grid mappings, MOAB transfers data directly
+       !*** between source and target MOAB apps using iMOAB_SendElementTag
+       !*** and iMOAB_ReceiveElementTag. This is analogous to MCT's copy or
+       !*** rearrange but operates on MOAB mesh data structures.
        if ( valid_moab_context ) then
 #ifdef MOABDEBUG
-         if (seq_comm_iamroot(CPLID)) then
-            write(logunit, *) subname,' iMOAB mapper rearrange or copy ', mapper%mbname, ' send/recv tags ', trim(fldlist_moab), &
-              ' mbpresent=', mbpresent, ' mbnorm=', mbnorm
-            call shr_sys_flush(logunit)
-         endif
+          if (seq_comm_iamroot(CPLID)) then
+             write(logunit, *) subname,' iMOAB mapper rearrange or copy ', mapper%mbname, ' send/recv tags ', trim(fldlist_moab), &
+               ' mbpresent=', mbpresent, ' mbnorm=', mbnorm, ' moab step:', num_moab_exports
+             call shr_sys_flush(logunit)
+          endif
 #endif
-         ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
-         if (ierr .ne. 0) then
-            write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' error in sending tags ', trim(fldlist_moab), ierr
-            call shr_sys_flush(logunit)
-            call shr_sys_abort(subname//' ERROR in sending tags')
-         endif
-         ! receive in the target app
-         ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in receiving tags iMOAB mapper ', mapper%mbname,  trim(fldlist_moab)
-            call shr_sys_flush(logunit)
-            call shr_sys_abort(subname//' ERROR in receiving tags')
-         endif
-         ! now free buffers
-         ierr = iMOAB_FreeSenderBuffers( mapper%src_mbid, mapper%intx_context )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in freeing buffers ', trim(fldlist_moab)
-            call shr_sys_abort(subname//' ERROR in freeing buffers') ! serious enough
-         endif
+          !*** MOAB: iMOAB_SendElementTag - Send field data from source MOAB app
+          !*** Parameters:
+          !***   src_mbid: Source MOAB application ID
+          !***   fldlist_moab: Colon-delimited list of tag names to send
+          !***   mpicom: MPI communicator
+          !***   intx_context: Context ID for the intersection/target app
+          ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
+          if (ierr .ne. 0) then
+             write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' error in sending tags ', trim(fldlist_moab), ierr
+             call shr_sys_flush(logunit)
+             call shr_sys_abort(subname//' ERROR in sending tags')
+          endif
+          !*** MOAB: iMOAB_ReceiveElementTag - Receive field data into target MOAB app
+          !*** Parameters:
+          !***   tgt_mbid: Target MOAB application ID
+          !***   fldlist_moab: Colon-delimited list of tag names to receive
+          !***   mpicom: MPI communicator
+          !***   src_context: Context ID for the source app
+          ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
+          if (ierr .ne. 0) then
+             write(logunit,*) subname,' error in receiving tags iMOAB mapper ', mapper%mbname,  trim(fldlist_moab)
+             call shr_sys_flush(logunit)
+             call shr_sys_abort(subname//' ERROR in receiving tags')
+          endif
+          !*** MOAB: iMOAB_FreeSenderBuffers - Release MPI send buffers
+          !*** Must be called after receive completes to free memory.
+          ierr = iMOAB_FreeSenderBuffers( mapper%src_mbid, mapper%intx_context )
+          if (ierr .ne. 0) then
+             write(logunit,*) subname,' error in freeing buffers ', trim(fldlist_moab)
+             call shr_sys_abort(subname//' ERROR in freeing buffers') ! serious enough
+          endif
        endif ! if (valid_moab_context)
 
-#endif
 
-      else
+    else
+       !=========================================================================
+       ! MOAB PATH: Full Mapping Operations (Strategy 3)
+       ! For full interpolation/regridding between different grids.
+       ! This is more complex than copy/rearrange and involves:
+       ! 1. Pre-normalization: Multiply source fields by normalization weight
+       ! 2. Send/Receive: Transfer data to intersection mesh
+       ! 3. Apply weights: Apply projection/interpolation weights
+       ! 4. Post-normalization: Divide by mapped normalization weight
+       !=========================================================================
 
-#ifdef HAVE_MOAB
+       !*** MOAB: Pre-normalization (source side)
+       !*** For conservative mapping, we need to:
+       !*** 1. Set norm8wt tag to 1.0 on all source cells
+       !*** 2. If a weight field (avwtsfld_s) is specified, multiply all fields by it
+       !*** 3. Map both the fields AND the weights
+       !*** 4. Post-map: divide fields by mapped weights to restore proper scaling
        if ( valid_moab_context ) then
-       ! NORMALIZATION
-         if (mbnorm .or. mbpresent) then
-            !  initialize the weight tag and multiply it by the input tags.
-            ! get target mesh info
-            ierr  = iMOAB_GetMeshInfo ( mapper%src_mbid, nvert, nvise, nbl, nsurf, nvisBC );
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error getting mesh info for ', mapper%mbname
-               call shr_sys_abort(subname//' ERROR getting mesh info') ! serious enough
-            endif
-            lsize_src = nvise(1) ! number of active cells
+          !*** MOAB: Pre-normalization setup
+          !*** When normalization is requested (mbnorm=.true.) or a weight field
+          !*** is provided (mbpresent=.true.), we prepare source data for mapping.
+          if (mbnorm .or. mbpresent) then
+             !*** MOAB: iMOAB_GetMeshInfo - Get source mesh dimensions
+             !*** nvise(1) returns the number of visible (owned) elements
+             ierr  = iMOAB_GetMeshInfo ( mapper%src_mbid, nvert, nvise, nbl, nsurf, nvisBC );
+             if (ierr .ne. 0) then
+                write(logunit,*) subname,' error getting mesh info for ', mapper%mbname
+                call shr_sys_abort(subname//' ERROR getting mesh info') ! serious enough
+             endif
+             lsize_src = nvise(1) ! number of active cells
 
-            ! init normalization weight
-            allocate(wghts(lsize_src))
-            wghts = 1.0_r8
-            tagname = "norm8wt"//C_NULL_CHAR
-            ! set the normalization factor to 1
-            ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, tagname, lsize_src , mapper%tag_entity_type, wghts)
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error setting init value for mapping norm factor ',ierr,trim(tagname)
-               call shr_sys_abort(subname//' ERROR setting norm init value') ! serious enough
-            endif
+             !*** MOAB: Initialize norm8wt tag to 1.0 on all source cells
+             !*** This tag will be mapped along with the data fields.
+             !*** After mapping, dividing by the mapped norm8wt gives proper normalization.
+             allocate(wghts(lsize_src))
+             wghts = 1.0_r8
+             tagname = "norm8wt"//C_NULL_CHAR
+             !*** MOAB: iMOAB_SetDoubleTagStorage - Set tag values on mesh elements
+             ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, tagname, lsize_src , mapper%tag_entity_type, wghts)
+             if (ierr .ne. 0) then
+                write(logunit,*) subname,' error setting init value for mapping norm factor ',ierr,trim(tagname)
+                call shr_sys_abort(subname//' ERROR setting norm init value') ! serious enough
+             endif
 #ifdef MOABDEBUG
-            if (seq_comm_iamroot(CPLID)) then
-               write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' set norm8wt 1  on source with app id: ', mapper%src_mbid
-               call shr_sys_flush(logunit)
-            endif
+             if (seq_comm_iamroot(CPLID)) then
+                write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' set norm8wt 1  on source with app id: ', &
+                    mapper%src_mbid, ' moab step:', num_moab_exports
+                call shr_sys_flush(logunit)
+             endif
 #endif
-            ! if a normalization factor was specified, get it and multiply src tags by it
-            if(mbpresent) then
-               tagname = avwtsfld_s//C_NULL_CHAR
-               ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, tagname, lsize_src , mapper%tag_entity_type, wghts)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error getting value for mapping norm factor ', trim(tagname)
-                  call shr_sys_abort(subname//' ERROR getting norm factor') ! serious enough
-               endif
+             !*** MOAB: Optional pre-multiplication by user-specified weights
+             !*** If avwtsfld_s was provided, multiply all source fields by this weight.
+             !*** This is used for flux-weighted mapping (e.g., area-weighted averages).
+             if(mbpresent) then
+                !*** MOAB: iMOAB_GetDoubleTagStorage - Get weight field values
+                tagname = avwtsfld_s//C_NULL_CHAR
+                ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, tagname, lsize_src , mapper%tag_entity_type, wghts)
+                if (ierr .ne. 0) then
+                   write(logunit,*) subname,' error getting value for mapping norm factor ', trim(tagname)
+                   call shr_sys_abort(subname//' ERROR getting norm factor') ! serious enough
+                endif
 
-               ! get the fieldlist including weight
-               allocate(targtags(lsize_src,nfields))
-               allocate(targtags_ini(lsize_src,nfields))
-               arrsize_src=lsize_src*(nfields)
+                !*** MOAB: Get all source field values and save original values
+                !*** targtags_ini stores original values to restore after mapping
+                allocate(targtags(lsize_src,nfields))
+                allocate(targtags_ini(lsize_src,nfields))
+                arrsize_src=lsize_src*(nfields)
 
-               ! get the current values of all source tags including the norm8wt currently set to 1
-               ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize_src , mapper%tag_entity_type, targtags)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error getting source tag values ', mapper%mbname, mapper%src_mbid, trim(fldlist_moab), arrsize_src, mapper%tag_entity_type
-                  call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
-               endif
+                !*** MOAB: iMOAB_GetDoubleTagStorage - Get current field values
+                ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize_src , mapper%tag_entity_type, targtags)
+                if (ierr .ne. 0) then
+                   write(logunit,*) subname,' error getting source tag values ', mapper%mbname, mapper%src_mbid, trim(fldlist_moab), arrsize_src, mapper%tag_entity_type
+                   call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
+                endif
 
-               targtags_ini = targtags
-               ! multiply by the value of the avwtsfld_s field.
-               ! norm8wt is 1 so it will record the value of the weight.
-               do j = 1, lsize_src
-                 targtags(j,:)= targtags(j,:)*wghts(j)
-               enddo
+                targtags_ini = targtags
+                !*** MOAB: Multiply all fields by the normalization weight
+                !*** Since norm8wt starts at 1.0, after this multiplication:
+                !*** - Data fields contain: field_value * weight
+                !*** - norm8wt contains: 1.0 * weight = weight
+                !*** After mapping and dividing by mapped norm8wt, we get proper normalization.
+                do j = 1, lsize_src
+                   targtags(j,:)= targtags(j,:)*wghts(j)
+                enddo
 #ifdef MOABDEBUG
-         if (seq_comm_iamroot(CPLID)) then
-            write(logunit, *) subname,' iMOAB projection mapper: ', mapper%mbname, ' normalize nfields=', &
-               nfields, ' arrsize_src on root:', arrsize_src, ' shape(targtags_ini)=', shape(targtags_ini)
-            call shr_sys_flush(logunit)
-         endif
+                if (seq_comm_iamroot(CPLID)) then
+                   write(logunit, *) subname,' iMOAB projection mapper: ', mapper%mbname, ' normalize nfields=', &
+                      nfields, ' arrsize_src on root:', arrsize_src, ' shape(targtags_ini)=', shape(targtags_ini), &
+                      ' moab step:', num_moab_exports
+                   call shr_sys_flush(logunit)
+                endif
 #endif
-               ! put the new values on the mesh for later mapping
-               ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize_src , mapper%tag_entity_type, targtags)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error setting normed source tag values ', mapper%mbname
-                  call shr_sys_abort(subname//' ERROR setting normed source tag values') ! serious enough
-               endif
-               deallocate(targtags)
-            endif ! end multiplication by norm factor
-            deallocate(wghts)
-         endif  ! end NORMALIZATION
+                !*** MOAB: iMOAB_SetDoubleTagStorage - Store weighted values back to source
+                !*** These weighted values will be sent and mapped to the target grid.
+                ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize_src , mapper%tag_entity_type, targtags)
+                if (ierr .ne. 0) then
+                   write(logunit,*) subname,' error setting normed source tag values ', mapper%mbname
+                   call shr_sys_abort(subname//' ERROR setting normed source tag values') ! serious enough
+                endif
+                deallocate(targtags)
+             endif ! end multiplication by norm factor
+             deallocate(wghts)
+          endif  ! end NORMALIZATION
 
-         !
-         ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context )
-         if (ierr .ne. 0) then
-            write(logunit, *) subname,' iMOAB mapper error in sending tags ', mapper%mbname,  trim(fldlist_moab)
-            call shr_sys_flush(logunit)
-            call shr_sys_abort(subname//' ERROR in sending tags')
-         endif
+          !*** MOAB: Send source data to intersection/coverage mesh
+          !*** For full mapping, data goes to the intersection app (intx_context)
+          !*** where projection weights will be applied.
+          ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context )
+          if (ierr .ne. 0) then
+             write(logunit, *) subname,' iMOAB mapper error in sending tags ', mapper%mbname,  trim(fldlist_moab)
+             call shr_sys_flush(logunit)
+             call shr_sys_abort(subname//' ERROR in sending tags')
+          endif
        endif
+
+       !*** MOAB: Receive data into intersection mesh for weight application
+       !*** The data is received by the intersection app (intx_mbid), which holds
+       !*** the projection weights. Note: for true intersection cases, tgt_mbid
+       !*** may be the same as intx_mbid.
        if ( valid_moab_context ) then
-         ! receive in the intx app, because it is redistributed according to coverage (trick)
-         ! for true intx cases, tgt_mbid is set to be the same as intx_mbid
 #ifdef MOABDEBUG
-         if (seq_comm_iamroot(CPLID)) then
-            write(logunit, *) subname,' iMOAB mapper receiving tags with intx and intx_mbid: ', &
-               mapper%mbname, trim(fldlist_moab)
-         endif
+          if (seq_comm_iamroot(CPLID)) then
+             write(logunit, *) subname,' iMOAB mapper receiving tags with intx and intx_mbid: ', &
+                mapper%mbname, trim(fldlist_moab), ' moab step:', num_moab_exports
+          endif
 #endif
-         ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in receiving tags ', mapper%mbname, 'recv:',  mapper%intx_mbid, trim(fldlist_moab)
-            call shr_sys_flush(logunit)
-            call shr_sys_abort(subname//' ERROR in receiving tags')
-            !valid_moab_context = .false. ! do not attempt to project
-         endif
-         ! now free buffers
-         ierr = iMOAB_FreeSenderBuffers( mapper%src_mbid, mapper%intx_context )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in freeing buffers ', trim(fldlist_moab)
-            call shr_sys_abort(subname//' ERROR in freeing buffers') ! serious enough
-         endif
+          ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context )
+          if (ierr .ne. 0) then
+             write(logunit,*) subname,' error in receiving tags ', mapper%mbname, 'recv:',  mapper%intx_mbid, trim(fldlist_moab)
+             call shr_sys_flush(logunit)
+             call shr_sys_abort(subname//' ERROR in receiving tags')
+             !valid_moab_context = .false. ! do not attempt to project
+          endif
+          !*** MOAB: iMOAB_FreeSenderBuffers - Release MPI send buffers
+          ierr = iMOAB_FreeSenderBuffers( mapper%src_mbid, mapper%intx_context )
+          if (ierr .ne. 0) then
+             write(logunit,*) subname,' error in freeing buffers ', trim(fldlist_moab)
+             call shr_sys_abort(subname//' ERROR in freeing buffers') ! serious enough
+          endif
        endif
+
+       !*** MOAB: Apply projection weights to interpolate source data to target grid
+       !*** This is the core remapping operation using iMOAB_ApplyScalarProjectionWeights.
+       !*** The weights were loaded earlier via moab_map_init_rcfile.
        if ( valid_moab_context ) then
 
 #ifdef MOABDEBUG
-         if (seq_comm_iamroot(CPLID)) then
-            write(logunit, *) subname,' iMOAB projection mapper: ',trim(mapper%mbname), ' between ', mapper%src_mbid, ' and ',  mapper%tgt_mbid, trim(fldlist_moab)
-            call shr_sys_flush(logunit)
-         endif
+          if (seq_comm_iamroot(CPLID)) then
+             write(logunit, *) subname,' iMOAB projection mapper: ',trim(mapper%mbname), ' between ', mapper%src_mbid, ' and ',  mapper%tgt_mbid, trim(fldlist_moab), &
+                ' moab step:', num_moab_exports
+             call shr_sys_flush(logunit)
+          endif
 #endif
-         filter_type = 0 ! no
-         ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%weight_identifier, fldlist_moab, fldlist_moab)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in applying weights '
-            call shr_sys_abort(subname//' ERROR in applying weights')
-         endif
+          !*** MOAB: iMOAB_ApplyScalarProjectionWeights - Apply interpolation/projection
+          !*** Parameters:
+          !***   intx_mbid: Intersection mesh app ID (holds the weights)
+          !***   filter_type: 0=no filter, other values for CAAS projection
+          !***   weight_identifier: Name of the weight matrix (e.g., "scalar", "flux")
+          !***   fldlist_moab: Input and output field names (can be different)
+          filter_type = 0 ! no filter
+          ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%weight_identifier, fldlist_moab, fldlist_moab)
+          if (ierr .ne. 0) then
+             write(logunit,*) subname,' error in applying weights '
+             call shr_sys_abort(subname//' ERROR in applying weights')
+          endif
 
-         ! complete the normalization process
-         if (mbnorm) then
-            ierr  = iMOAB_GetMeshInfo ( mapper%tgt_mbid, nvert, nvise, nbl, nsurf, nvisBC );
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error getting mesh info for target ', mapper%mbname
-               call shr_sys_abort(subname//' ERROR getting mesh info') ! serious enough
-            endif
+          !*** MOAB: Post-normalization (target side)
+          !*** After mapping, we need to divide by the mapped normalization weight.
+          !*** This completes the conservative mapping: mapped_field / mapped_weight
+          !*** gives the properly normalized field value on the target grid.
+          if (mbnorm) then
+             !*** MOAB: Get target mesh dimensions
+             ierr  = iMOAB_GetMeshInfo ( mapper%tgt_mbid, nvert, nvise, nbl, nsurf, nvisBC );
+             if (ierr .ne. 0) then
+                write(logunit,*) subname,' error getting mesh info for target ', mapper%mbname
+                call shr_sys_abort(subname//' ERROR getting mesh info') ! serious enough
+             endif
 
-            lsize_tgt = nvise(1) ! number of active cells
-            tagname = "norm8wt"//C_NULL_CHAR
-            allocate(wghts(lsize_tgt))
+             lsize_tgt = nvise(1) ! number of active cells
+             tagname = "norm8wt"//C_NULL_CHAR
+             allocate(wghts(lsize_tgt))
 
-            ! get values of weights after mapping
-            ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, tagname, lsize_tgt , mapper%tag_entity_type, wghts)
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error getting value for mapping norm factor post-map ', ierr, trim(tagname)
-               call shr_sys_abort(subname//' ERROR getting norm factor') ! serious enough
-            endif
+             !*** MOAB: Get mapped normalization weights on target grid
+             ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, tagname, lsize_tgt , mapper%tag_entity_type, wghts)
+             if (ierr .ne. 0) then
+                write(logunit,*) subname,' error getting value for mapping norm factor post-map ', ierr, trim(tagname)
+                call shr_sys_abort(subname//' ERROR getting norm factor') ! serious enough
+             endif
 
-            ! get values of target tags after mapping
-            allocate(targtags(lsize_tgt,nfields))
-            arrsize_tgt=lsize_tgt*(nfields)
-            ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, fldlist_moab, arrsize_tgt , mapper%tag_entity_type, targtags)
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error getting destination tag values ', mapper%mbname
-               call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
-            endif
+             !*** MOAB: Get mapped field values on target grid
+             allocate(targtags(lsize_tgt,nfields))
+             arrsize_tgt=lsize_tgt*(nfields)
+             ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, fldlist_moab, arrsize_tgt , mapper%tag_entity_type, targtags)
+             if (ierr .ne. 0) then
+                write(logunit,*) subname,' error getting destination tag values ', mapper%mbname
+                call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
+             endif
 
-            ! do the post mapping normalization
-            ! TODO:  add some check for wghts < puny
-            do j = 1, lsize_tgt
-               factor = wghts(j)
-               if (wghts(j) .ne. 0) factor = 1.0_r8/wghts(j) ! should we compare to a small value instead ?
-               targtags(j,:)= targtags(j,:)*factor
-            enddo
+             !*** MOAB: Divide mapped fields by mapped normalization weight
+             !*** For each target cell:
+             !***   factor = 1/norm8wt if norm8wt != 0, else factor = norm8wt
+             !***   final_value = mapped_value * factor
+             !*** This gives the properly normalized field values.
+             ! TODO:  add some check for wghts < puny
+             do j = 1, lsize_tgt
+                factor = wghts(j)
+                if (wghts(j) .ne. 0) factor = 1.0_r8/wghts(j) ! should we compare to a small value instead ?
+                targtags(j,:)= targtags(j,:)*factor
+             enddo
 
-            ! put the values back on the mesh
-            ierr = iMOAB_SetDoubleTagStorage (mapper%tgt_mbid, fldlist_moab, arrsize_tgt , mapper%tag_entity_type, targtags)
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error getting destination tag values ', mapper%mbname
-               call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
-            endif
+             !*** MOAB: Store normalized field values back to target mesh
+             ierr = iMOAB_SetDoubleTagStorage (mapper%tgt_mbid, fldlist_moab, arrsize_tgt , mapper%tag_entity_type, targtags)
+             if (ierr .ne. 0) then
+                write(logunit,*) subname,' error getting destination tag values ', mapper%mbname
+                call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
+             endif
 
-            deallocate(wghts, targtags)
-            if (mbpresent) then
+             deallocate(wghts, targtags)
+             !*** MOAB: Restore original source field values
+             !*** If we multiplied source fields by weights before mapping,
+             !*** restore the original values so the source mesh is unchanged.
+             if (mbpresent) then
 #ifdef MOABDEBUG
-               if (seq_comm_iamroot(CPLID)) then
-                  write(logunit, *) subname,' iMOAB projection mapper: ', mapper%mbname, ' shape(targtags_ini)=', shape(targtags_ini)
-                  call shr_sys_flush(logunit)
-               endif
+                if (seq_comm_iamroot(CPLID)) then
+                   write(logunit, *) subname,' iMOAB projection mapper: ', mapper%mbname, ' shape(targtags_ini)=', shape(targtags_ini)
+                   call shr_sys_flush(logunit)
+                endif
 #endif
-               ! put the values back on the source mesh
-               ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize_src , mapper%tag_entity_type, targtags_ini)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error setting source tag values ', mapper%mbname
-                  call shr_sys_abort(subname//' ERROR setting source tag values') ! serious enough
-               endif
-               deallocate(targtags_ini)
-            endif
+                !*** MOAB: Restore original values to source mesh
+                ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize_src , mapper%tag_entity_type, targtags_ini)
+                if (ierr .ne. 0) then
+                   write(logunit,*) subname,' error setting source tag values ', mapper%mbname
+                   call shr_sys_abort(subname//' ERROR setting source tag values') ! serious enough
+                endif
+                deallocate(targtags_ini)
+             endif
 
-         endif ! end normalization
+          endif ! end normalization
 
        endif
-#endif
 
-      endif ! end of mapping type if else
+    endif ! end of mapping type if else
 
   end subroutine seq_map_map
 
@@ -780,6 +948,195 @@ end subroutine moab_map_init_rcfile
 
   !=======================================================================
 
+  subroutine seq_map_initvect_moab(mapper, type, src_mbid, tgt_mbid, string)
+    use iMOAB, only: iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, iMOAB_DefineTagStorage
+    use iso_c_binding, only: c_char, C_NULL_CHAR
+
+    !-----------------------------------------------------
+    !
+    ! Purpose: Initialize vector mapping for MOAB data types
+    ! This version uses iMOAB_GetDoubleTagStorage to retrieve
+    ! lat/lon coordinates from MOAB mesh handles and computes
+    ! trigonometric functions needed for spherical vector transformations.
+    !
+    ! The computed values are stored in MOAB-specific arrays:
+    ! - slon_s_moab, clon_s_moab, slat_s_moab, clat_s_moab for source
+    ! - slon_d_moab, clon_d_moab, slat_d_moab, clat_d_moab for target
+    !
+    ! These arrays are used by cart3d for vector field mapping
+    ! between spherical coordinate systems.
+    !
+    ! Usage:
+    !   call seq_map_initvect_moab(mapper, 'cart3d', src_app_id, tgt_app_id, 'my_mapper')
+    !
+    ! Arguments
+    !
+    type(seq_map)        ,intent(inout)       :: mapper
+    character(len=*)     ,intent(in)          :: type     ! mapping type ('cart3d' for vector mapping)
+    integer              ,intent(in)          :: src_mbid  ! source MOAB app ID
+    integer              ,intent(in)          :: tgt_mbid  ! target MOAB app ID
+    character(len=*)     ,intent(in),optional :: string   ! optional description string
+    !
+    ! Local Variables
+    !
+    integer(IN)                :: lsize_s, lsize_d, n, ierr,tagindex
+    integer(IN)                :: num_verts, num_elems, num_edges, dimension
+    character(len=CL)          :: lstring
+    character(len=*),parameter :: subname = "(seq_map_initvect_moab) "
+    character(64)              :: tagname
+    integer                    :: ent_type
+    real(R8), allocatable      :: lon_data(:), lat_data(:)
+    !-----------------------------------------------------
+
+    lstring = ' '
+    if (present(string)) then
+       if (seq_comm_iamroot(CPLID)) write(logunit,'(A)') subname//' called for '//trim(string)
+       lstring = trim(string)
+    endif
+
+    if (trim(type(1:6)) == 'cart3d') then
+       if (mapper%cart3d_init_moab == trim(seq_map_stron)) return
+
+       lsize_s = mbGetnCells(src_mbid)
+
+       if (associated(mapper%slon_s_moab)) deallocate(mapper%slon_s_moab)
+       if (associated(mapper%clon_s_moab)) deallocate(mapper%clon_s_moab)
+       if (associated(mapper%slat_s_moab)) deallocate(mapper%slat_s_moab)
+       if (associated(mapper%clat_s_moab)) deallocate(mapper%clat_s_moab)
+
+       allocate(mapper%slon_s_moab(lsize_s), mapper%clon_s_moab(lsize_s), &
+                mapper%slat_s_moab(lsize_s), mapper%clat_s_moab(lsize_s))
+       allocate(lon_data(lsize_s), lat_data(lsize_s))
+
+       ! Get longitude data from MOAB
+       tagname = 'lon'//C_NULL_CHAR
+       call mbGetCellTagVals(src_mbid, tagname,lon_data,lsize_s)
+
+       ! Get latitude data from MOAB
+       tagname = 'lat'//C_NULL_CHAR
+       call mbGetCellTagVals(src_mbid, tagname,lat_data,lsize_s)
+
+       ! Compute trigonometric functions for source
+       do n = 1, lsize_s
+          mapper%slon_s_moab(n) = sin(lon_data(n) * deg2rad)
+          mapper%clon_s_moab(n) = cos(lon_data(n) * deg2rad)
+          mapper%slat_s_moab(n) = sin(lat_data(n) * deg2rad)
+          mapper%clat_s_moab(n) = cos(lat_data(n) * deg2rad)
+       enddo
+
+       deallocate(lon_data, lat_data)
+
+       ! Get target mesh info and coordinates
+       lsize_d = mbGetnCells(tgt_mbid)
+
+       if (associated(mapper%slon_d_moab)) deallocate(mapper%slon_d_moab)
+       if (associated(mapper%clon_d_moab)) deallocate(mapper%clon_d_moab)
+       if (associated(mapper%slat_d_moab)) deallocate(mapper%slat_d_moab)
+       if (associated(mapper%clat_d_moab)) deallocate(mapper%clat_d_moab)
+
+       allocate(mapper%slon_d_moab(lsize_d), mapper%clon_d_moab(lsize_d), &
+                mapper%slat_d_moab(lsize_d), mapper%clat_d_moab(lsize_d))
+       allocate(lon_data(lsize_d), lat_data(lsize_d))
+
+       ! Get longitude data from MOAB
+       tagname = 'lon'//C_NULL_CHAR
+       call mbGetCellTagVals(tgt_mbid, tagname,lon_data,lsize_d)
+
+       ! Get latitude data from MOAB
+       tagname = 'lat'//C_NULL_CHAR
+       call mbGetCellTagVals(tgt_mbid, tagname,lat_data,lsize_d)
+
+       ! Compute trigonometric functions for target
+       do n = 1, lsize_d
+          mapper%slon_d_moab(n) = sin(lon_data(n) * deg2rad)
+          mapper%clon_d_moab(n) = cos(lon_data(n) * deg2rad)
+          mapper%slat_d_moab(n) = sin(lat_data(n) * deg2rad)
+          mapper%clat_d_moab(n) = cos(lat_data(n) * deg2rad)
+       enddo
+
+       deallocate(lon_data, lat_data)
+       mapper%cart3d_init_moab = trim(seq_map_stron)
+
+       ! Define ux, uy, uz tags in source and destination MOAB apps
+       tagname = 'ux:uy:uz'//C_NULL_CHAR
+       ierr = iMOAB_DefineTagStorage(src_mbid, tagname, 1, 1, tagindex)
+       if (ierr /= 0) then
+          write(logunit,*) subname,' ERROR: Failed to define ux:uy:uz tags in source'
+          call shr_sys_abort(trim(subname)//' ERROR defining source tags')
+       endif
+
+       ierr = iMOAB_DefineTagStorage(tgt_mbid, tagname, 1, 1, tagindex)
+       if (ierr /= 0) then
+          write(logunit,*) subname,' ERROR: Failed to define ux:uy:uz tags in target'
+          call shr_sys_abort(trim(subname)//' ERROR defining target tags')
+       endif
+    endif
+
+  end subroutine seq_map_initvect_moab
+
+
+  subroutine seq_map_clean_moab(mapper)
+
+    !-----------------------------------------------------
+    !
+    ! Purpose: Clean up MOAB-specific coordinate arrays
+    !
+    ! Deallocates and nullifies all MOAB coordinate arrays (slon_*_moab, etc.)
+    ! and resets the cart3d_init_moab flag. Should be called when the mapper
+    ! is no longer needed to prevent memory leaks.
+    !
+    ! Usage:
+    !   call seq_map_clean_moab(mapper)
+    !
+    ! Arguments
+    !
+    type(seq_map), intent(inout) :: mapper  ! mapper to clean up
+    !
+    ! Local Variables
+    !
+    character(len=*),parameter :: subname = "(seq_map_clean_moab) "
+    !-----------------------------------------------------
+
+    ! Deallocate MOAB coordinate arrays if allocated
+    if (associated(mapper%slon_s_moab)) then
+       deallocate(mapper%slon_s_moab)
+       nullify(mapper%slon_s_moab)
+    endif
+    if (associated(mapper%clon_s_moab)) then
+       deallocate(mapper%clon_s_moab)
+       nullify(mapper%clon_s_moab)
+    endif
+    if (associated(mapper%slat_s_moab)) then
+       deallocate(mapper%slat_s_moab)
+       nullify(mapper%slat_s_moab)
+    endif
+    if (associated(mapper%clat_s_moab)) then
+       deallocate(mapper%clat_s_moab)
+       nullify(mapper%clat_s_moab)
+    endif
+    if (associated(mapper%slon_d_moab)) then
+       deallocate(mapper%slon_d_moab)
+       nullify(mapper%slon_d_moab)
+    endif
+    if (associated(mapper%clon_d_moab)) then
+       deallocate(mapper%clon_d_moab)
+       nullify(mapper%clon_d_moab)
+    endif
+    if (associated(mapper%slat_d_moab)) then
+       deallocate(mapper%slat_d_moab)
+       nullify(mapper%slat_d_moab)
+    endif
+    if (associated(mapper%clat_d_moab)) then
+       deallocate(mapper%clat_d_moab)
+       nullify(mapper%clat_d_moab)
+    endif
+
+    mapper%cart3d_init_moab = trim(seq_map_stroff)
+
+  end subroutine seq_map_clean_moab
+
+  !=======================================================================
+
   subroutine seq_map_mapvect( mapper, type, av_s, av_d, fldu, fldv, norm, string )
 
     implicit none
@@ -836,6 +1193,9 @@ end subroutine moab_map_init_rcfile
 
   subroutine seq_map_cart3d( mapper, type, av_s, av_d, fldu, fldv, norm, string)
 
+    use shr_moab_mod, only: mbGetCellTagVals, mbSetCellTagVals, mbGetnCells
+    use iMOAB, only: iMOAB_DefineTagStorage
+    use iso_c_binding
     implicit none
     !-----------------------------------------------------
     !
@@ -852,14 +1212,20 @@ end subroutine moab_map_init_rcfile
     !
     ! Local Variables
     !
-    integer           :: lsize
+    integer           :: lsize,tagindex
     logical           :: lnorm
     integer           :: ku,kv,kux,kuy,kuz,n
     real(r8)          :: ue,un,ur,ux,uy,uz,speed
     real(r8)          :: urmaxl,urmax,uravgl,uravg,spavgl,spavg
     type(mct_aVect)   :: av3_s, av3_d
     integer(in)       :: mpicom,my_task,ierr,urcnt,urcntl
+    ! MOAB-specific variables
+    integer           :: lsize_s_moab, lsize_d_moab
+    real(r8), allocatable :: u_vals_moab(:), v_vals_moab(:)
+    real(r8), allocatable :: cart_vals_moab(:,:)  ! 2D array: (ux,uy,uz) x npoints
+    logical           :: use_moab_data
     character(len=*),parameter :: subname = "(seq_map_cart3d) "
+    character(64)              :: tagname
 
     lnorm = .true.
     if (present(norm)) then
@@ -867,6 +1233,9 @@ end subroutine moab_map_init_rcfile
     endif
 
     mpicom = mapper%mpicom
+
+    ! Check if we should use MOAB data (when src_mbid and tgt_mbid are set)
+    use_moab_data = (mapper%src_mbid >= 0 .and. mapper%tgt_mbid >= 0)
 
     ku = mct_aVect_indexRA(av_s, trim(fldu), perrwith='quiet')
     kv = mct_aVect_indexRA(av_s, trim(fldv), perrwith='quiet')
@@ -898,9 +1267,42 @@ end subroutine moab_map_init_rcfile
           av3_s%rAttr(kuy,n) = uy
           av3_s%rAttr(kuz,n) = uz
        enddo
+    endif
 
-       call seq_map_map(mapper, av3_s, av3_d, norm=lnorm)
+    if (use_moab_data) then
+       ! MOAB data path: get source values from MOAB
+       lsize_s_moab = mbGetnCells(mapper%src_mbid)
+       allocate(u_vals_moab(lsize_s_moab), v_vals_moab(lsize_s_moab))
+       allocate(cart_vals_moab(lsize_s_moab,3))
 
+       ! Get source u and v values from MOAB
+       call mbGetCellTagVals(mapper%src_mbid, trim(fldu), u_vals_moab, lsize_s_moab)
+       call mbGetCellTagVals(mapper%src_mbid, trim(fldv), v_vals_moab, lsize_s_moab)
+
+       ! Convert source spherical to cartesian using MOAB coordinate arrays
+       do n = 1, lsize_s_moab
+          ur = 0.0_r8
+          ue = u_vals_moab(n)
+          un = v_vals_moab(n)
+          ux = mapper%clon_s_moab(n)*mapper%clat_s_moab(n)*ur - &
+            mapper%clon_s_moab(n)*mapper%slat_s_moab(n)*un - &
+               mapper%slon_s_moab(n)*ue
+          uy = mapper%slon_s_moab(n)*mapper%clat_s_moab(n)*ur - &
+               mapper%slon_s_moab(n)*mapper%slat_s_moab(n)*un + &
+               mapper%clon_s_moab(n)*ue
+          uz = mapper%slat_s_moab(n)*ur + &
+               mapper%clat_s_moab(n)*un
+          cart_vals_moab(n,1) = ux
+          cart_vals_moab(n,2) = uy
+          cart_vals_moab(n,3) = uz
+       enddo
+       call mbSetCellTagVals(mapper%src_mbid, "ux:uy:uz"//C_NULL_CHAR, cart_vals_moab, lsize_s_moab*3)
+
+    endif
+
+    call seq_map_map(mapper, av3_s, av3_d, norm=lnorm)
+
+    if (ku /= 0 .and. kv /= 0) then
        kux = mct_aVect_indexRA(av3_d,'ux')
        kuy = mct_aVect_indexRA(av3_d,'uy')
        kuz = mct_aVect_indexRA(av3_d,'uz')
@@ -909,6 +1311,7 @@ end subroutine moab_map_init_rcfile
        uravgl = 0.0_r8
        urcntl = 0
        spavgl = 0.0_r8
+
        do n = 1,lsize
           ux = av3_d%rAttr(kux,n)
           uy = av3_d%rAttr(kuy,n)
@@ -949,6 +1352,72 @@ end subroutine moab_map_init_rcfile
              av_d%rAttr(kv,n) = un
           endif
        enddo
+       call mct_avect_clean(av3_s)
+       call mct_avect_clean(av3_d)
+    endif
+
+    if (use_moab_data) then
+       ! MOAB data path: convert cartesian back to spherical and set in MOAB
+       lsize_d_moab = mbGetnCells(mapper%tgt_mbid)
+       deallocate(u_vals_moab, v_vals_moab, cart_vals_moab)
+       allocate(u_vals_moab(lsize_d_moab), v_vals_moab(lsize_d_moab))
+       allocate(cart_vals_moab(lsize_d_moab,3))
+
+       ! Get mapped values
+       call mbGetCellTagVals(mapper%tgt_mbid, "ux:uy:uz"//C_NULL_CHAR, cart_vals_moab, lsize_d_moab*3)
+
+
+       ! Convert back from cartesian to spherical on target grid using MOAB coordinates
+       do n = 1, lsize_d_moab
+          ux = cart_vals_moab(n,1)
+          uy = cart_vals_moab(n,2)
+          uz = cart_vals_moab(n,3)
+          ue = -mapper%slon_d_moab(n)          *ux + &
+               mapper%clon_d_moab(n)          *uy
+          un = -mapper%clon_d_moab(n)*mapper%slat_d_moab(n)*ux - &
+               mapper%slon_d_moab(n)*mapper%slat_d_moab(n)*uy + &
+               mapper%clat_d_moab(n)*uz
+          ur =  mapper%clon_d_moab(n)*mapper%clat_d_moab(n)*ux + &
+               mapper%slon_d_moab(n)*mapper%clat_d_moab(n)*uy - &
+               mapper%slat_d_moab(n)*uz
+          speed = sqrt(ur*ur + ue*ue + un*un)
+          if (trim(type) == 'cart3d_diag' .or. trim(type) == 'cart3d_uvw_diag') then
+             if (speed /= 0.0_r8) then
+                urmaxl = max(urmaxl,abs(ur))
+                uravgl = uravgl + abs(ur)
+                spavgl = spavgl + speed
+                urcntl = urcntl + 1
+             endif
+          endif
+          if (type(1:10) == 'cart3d_uvw') then
+             !--- this adds ur to ue and un, while preserving u/v angle and total speed ---
+             if (un == 0.0_R8) then
+                !--- if ue is also 0.0 then just give speed to ue, this is arbitrary ---
+                u_vals_moab(n) = sign(speed,ue)
+                v_vals_moab(n) = 0.0_r8
+             else if (ue == 0.0_R8) then
+                u_vals_moab(n) = 0.0_r8
+                v_vals_moab(n) = sign(speed,un)
+             else
+                u_vals_moab(n) = sign(speed/sqrt(1.0_r8 + ((un*un)/(ue*ue))),ue)
+                v_vals_moab(n) = sign(speed/sqrt(1.0_r8 + ((ue*ue)/(un*un))),un)
+             endif
+          else
+             !--- this ignores ur ---
+             u_vals_moab(n) = ue
+             v_vals_moab(n) = un
+          endif
+       enddo
+
+       ! Set final u,v values in destination MOAB app
+       call mbSetCellTagVals(mapper%tgt_mbid, trim(fldu), u_vals_moab, lsize_d_moab)
+       call mbSetCellTagVals(mapper%tgt_mbid, trim(fldv), v_vals_moab, lsize_d_moab)
+
+       ! Clean up MOAB arrays
+       deallocate(u_vals_moab, v_vals_moab, cart_vals_moab)
+    endif
+
+
        if (trim(type) == 'cart3d_diag' .or. trim(type) == 'cart3d_uvw_diag') then
           call mpi_comm_rank(mpicom,my_task,ierr)
           call shr_mpi_max(urmaxl,urmax,mpicom,'urmax')
@@ -961,11 +1430,6 @@ end subroutine moab_map_init_rcfile
              write(logunit,*) trim(subname),' cart3d uravg,urmax,spavg = ',uravg,urmax,spavg
           endif
        endif
-
-       call mct_avect_clean(av3_s)
-       call mct_avect_clean(av3_d)
-
-    endif  ! ku,kv
 
   end subroutine seq_map_cart3d
 

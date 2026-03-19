@@ -9,11 +9,11 @@ string(APPEND CPPDEFS " -DLINUX -DFORTRANUNDERSCORE -DNO_R16 -DCPRGNU -DMPINIT_W
 if (COMP_NAME STREQUAL gptl)
     string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY")
 endif()
-string(APPEND CMAKE_Fortran_FLAGS " -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none -fallow-argument-mismatch")
+string(APPEND CMAKE_Fortran_FLAGS " -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none -fallow-argument-mismatch -cpp")
 
-string(APPEND CMAKE_C_FLAGS_DEBUG " -O0 -g -Wall -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow")
+string(APPEND CMAKE_C_FLAGS_DEBUG " -O0 -g -Wall -fcheck=bounds -ffpe-trap=invalid,zero,overflow")
 string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -O0 -g -Wall -fbacktrace -fcheck=bounds -ffpe-trap=zero,overflow")
-string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g -Wall -fbacktrace")
+string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g -Wall")
 
 string(APPEND CMAKE_C_FLAGS_RELEASE " -g -O2")
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -g -O2")
@@ -37,7 +37,9 @@ if (compile_threaded)
   string(APPEND CMAKE_EXE_LINKER_FLAGS " -fopenmp")
 endif()
 
-string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=On -DKokkos_ARCH_ZEN3=On -DKokkos_ARCH_VEGA90A=On -DKokkos_ENABLE_OPENMP=Off")
+string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=On -DKokkos_ARCH_ZEN3=On -DKokkos_ARCH_VEGA90A=On -DKokkos_ENABLE_OPENMP=Off -DAMDGPU_TARGETS=gfx90a -DGPU_TARGETS=gfx90a")
 
 set(USE_HIP "TRUE")
-string(APPEND CMAKE_HIP_FLAGS "$ENV{CXXFLAGS} --offload-arch=gfx90a -munsafe-fp-atomics")
+set(AMDGPU_TARGETS "gfx90a" CACHE STRING "")
+set(GPU_TARGETS "gfx90a" CACHE STRING "")
+string(APPEND CMAKE_HIP_FLAGS "$ENV{CXXFLAGS} -munsafe-fp-atomics")

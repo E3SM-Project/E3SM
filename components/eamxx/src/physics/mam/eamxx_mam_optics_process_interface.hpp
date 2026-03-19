@@ -1,14 +1,15 @@
 #ifndef EAMXX_MAM_OPTICS_HPP
 #define EAMXX_MAM_OPTICS_HPP
 
-#include <ekat/ekat_parameter_list.hpp>
-#include <ekat/ekat_workspace.hpp>
 #include <mam4xx/mam4.hpp>
 #include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 #include <physics/mam/mam_aerosol_optics_read_tables.hpp>
 #include <physics/mam/mam_coupling.hpp>
 #include <share/atm_process/ATMBufferManager.hpp>
-#include <share/util/eamxx_common_physics_functions.hpp>
+
+#include <ekat_parameter_list.hpp>
+#include <ekat_workspace.hpp>
+
 #include <string>
 
 #ifndef KOKKOS_ENABLE_CUDA
@@ -24,7 +25,6 @@ namespace scream {
 // The process responsible for handling MAM4 aerosol optical properties. The AD
 // stores exactly ONE instance of this class in its list of subcomponents.
 class MAMOptics final : public MAMGenericInterface {
-  using PF = scream::PhysicsFunctions<DefaultDevice>;
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
   // a quantity stored in a single vertical column with a single index
@@ -47,8 +47,7 @@ class MAMOptics final : public MAMGenericInterface {
       name() const override;
 
   // grid
-  void set_grids(
-      const std::shared_ptr<const GridsManager> grids_manager) override;
+  void create_requests() override;
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override;

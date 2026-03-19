@@ -119,10 +119,7 @@ OPTION(BUILD_HOMME_SWEQX "Shallow water equations FEM" ON)
 OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
 OPTION(BUILD_HOMME_THETA "SB81 NH model with theta and Exner pressure" ON)
 OPTION(BUILD_HOMME_THETA_KOKKOS "SB81 NH model with theta and Exner pressure, Kokkos target" OFF)
-OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
 OPTION(BUILD_HOMME_PREQX_KOKKOS "Primitive equations FEM with Kokkos" OFF)
-OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
-OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 OPTION(BUILD_HOMME_TOOL  "Offline tool" ON)
 OPTION(HOMME_ENABLE_COMPOSE "Build COMPOSE semi-Lagrangian tracer transport code" ON)
 OPTION(HOMME_USE_SCORPIO  "Use Scorpio as the I/O library (Disable to use Scorpio classic)" ON)
@@ -131,11 +128,6 @@ OPTION(HOMME_USE_SCORPIO  "Use Scorpio as the I/O library (Disable to use Scorpi
 SET(HOMME_USE_CXX FALSE)
 SET(HOMME_USE_KOKKOS FALSE)
 
-# swim and prim executables require C++ compiler
-IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
-  SET (HOMME_USE_CXX TRUE)
-  SET (HOMME_USE_TRILINOS TRUE)
-ENDIF ()
 #if trilinos is needed, we need cxx
 IF (HOMME_USE_TRILINOS)
   SET (HOMME_USE_CXX TRUE)
@@ -176,7 +168,7 @@ IF (HOMME_BUILD_KOKKOS_DYCORE)
   ENDIF ()
 ENDIF ()
 
-IF (BUILD_HOMME_PREQX OR BUILD_HOMME_THETA OR BUILD_HOMME_PREQX_ACC)
+IF (BUILD_HOMME_PREQX OR BUILD_HOMME_THETA)
   SET (HOMME_BUILD_FORTRAN_DYCORE TRUE)
 ENDIF()
 
@@ -314,15 +306,15 @@ MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
 MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 
 SET (HOMMEXX_ENABLE_GPU FALSE)
-SET (HOMMEXX_ENABLE_GPU_F90 FALSE) 
+SET (HOMMEXX_ENABLE_GPU_F90 FALSE)
 
 IF (HOMME_USE_KOKKOS)
 
-  IF (CUDA_BUILD OR HIP_BUILD OR SYCL_BUILD)
+  IF (Kokkos_ENABLE_CUDA OR Kokkos_ENABLE_HIP OR Kokkos_ENABLE_SYCL)
     SET (DEFAULT_VECTOR_SIZE 1)
     SET (HOMMEXX_ENABLE_GPU TRUE)
     SET (HOMMEXX_ENABLE_GPU_F90 TRUE)
-    IF (SYCL_BUILD)
+    IF (Kokkos_ENABLE_SYCL)
       SET (DISABLE_TIMERS_IN_FIRST_STEP TRUE)
     ENDIF()
   ELSE ()
@@ -365,20 +357,28 @@ IF (DEFINED SUNDIALS_DIR)
   INCLUDE_DIRECTORIES(${SUNDIALS_DIR}/fortran)
 ENDIF ()
 
-###########################################
-# Definitions for timing library
-###########################################
-# This is required in timing to set HAVE_MPI
-ADD_DEFINITIONS(-DSPMD)
-OPTION(ENABLE_NANOTIMERS "Use nano timers in timing library" FALSE)
-OPTION(USE_BIT64 "Set BIT64 (for 64 bit arch) in timing library when ENABLE_NANOTIME" FALSE)
-IF (${ENABLE_NANOTIMERS})
-  ADD_DEFINITIONS(-DHAVE_NANOTIME)
-  IF (${USE_BIT64})
-    ADD_DEFINITIONS(-DBIT64)
+if (HOMME_STANDALONE OR NOT TARGET gptl)
+  ###########################################
+  # Definitions for timing library
+  ###########################################
+  # This is required in timing to set HAVE_MPI
+  ADD_DEFINITIONS(-DSPMD)
+  OPTION(ENABLE_NANOTIMERS "Use nano timers in timing library" FALSE)
+  OPTION(USE_BIT64 "Set BIT64 (for 64 bit arch) in timing library when ENABLE_NANOTIME" FALSE)
+  IF (${ENABLE_NANOTIMERS})
+    ADD_DEFINITIONS(-DHAVE_NANOTIME)
+    IF (${USE_BIT64})
+      ADD_DEFINITIONS(-DBIT64)
+    ENDIF ()
   ENDIF ()
-ENDIF ()
-ADD_SUBDIRECTORY(utils/cime/CIME/non_py/src/timing)
+  ADD_SUBDIRECTORY(utils/cime/CIME/non_py/src/timing)
+  target_include_directories (timing PUBLIC utils/cime/CIME/non_py/src/timing)
+  target_include_directories (timing PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
+else ()
+  # EAMxx already takes care of making the gptl target available, so just make the timing tgt point to that
+  add_library(timing INTERFACE)
+  target_link_libraries (timing INTERFACE gptl)
+endif()
 
 
 # CMAKE_CURRENT_SOURCE_DIR == homme
@@ -409,16 +409,15 @@ if (HOMME_BUILD_SCORPIO)
   message("-- PnetCDF_C_PATH = ${PnetCDF_C_PATH}")
   message("** Configuring SCORPIO")
   # pio needs cime/externals/genf90/genf90.pl
+  SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/externals/genf90)
   if (HOMME_USE_SCORPIO)
     # Need to use scorpio's older genf90 for now
-    SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/utils/externals/scorpio/src/genf90)
     SET(PIO_ENABLE_TOOLS OFF CACHE BOOL "Disabling Scorpio tool build")
     ADD_SUBDIRECTORY(utils/externals/scorpio)
     SET(PIO_INCLUDE_DIRS "${CMAKE_CURRENT_BINARY_DIR}/utils/externals/scorpio/src/flib")
   else ()
     # The default I/O library used in "Scorpio classic"
     ADD_SUBDIRECTORY(utils/externals/scorpio_classic)
-    SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/externals/genf90)
     SET(PIO_INCLUDE_DIRS "${CMAKE_CURRENT_BINARY_DIR}/utils/externals/scorpio/pio")
   endif ()
   INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS})
@@ -545,10 +544,6 @@ IF(${BUILD_HOMME_THETA_KOKKOS})
 ENDIF()
 IF(${BUILD_HOMME_SWIM})
   ADD_SUBDIRECTORY(src/swim)
-ENDIF()
-
-IF(${BUILD_HOMME_PRIM})
-  ADD_SUBDIRECTORY(src/prim)
 ENDIF()
 
 IF(${BUILD_HOMME_TOOL})
