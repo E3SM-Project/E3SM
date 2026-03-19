@@ -85,8 +85,8 @@ class MAMMicrophysics final : public MAMGenericInterface {
     // turn on/off gas phase chemistry (namelist: mam4_do_gas_phase_chemistry)
     bool compute_gas_phase_chemistry = true;
 
-    // turn on/off aqueous chemistry / setsox (namelist: mam4_do_setsox)
-    bool compute_setsox = true;
+    // turn on/off aqueous chemistry / setsox (namelist: mam4_do_aqueous_phase_chemistry)
+    bool compute_aqueous_phase_chemistry = true;
 
     // stratospheric chemistry parameters
     mam4::microphysics::LinozConf linoz;

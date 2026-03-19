@@ -491,7 +491,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
   const auto& dqdt_aqh2so4 = dqdt_aqh2so4_;
   const unsigned n_so4_monolayers_pcage = config_.n_so4_monolayers_pcage;
 
-  if (config_.compute_setsox) {
+  if (config_.compute_aqueous_phase_chemistry) {
   Kokkos::parallel_for(
     "MAMMicrophysics::run_impl::setsox", policy,
     KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -563,7 +563,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
 
       });
     }
-  } // compute_setsox
+  } // compute_aqueous_phase_chemistry
     //setsox_single_level ends
 
     // modal_aero_amicphys_intr
