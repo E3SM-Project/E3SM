@@ -41,6 +41,8 @@ const Real TeosSVExpValue =
     0.0009732819628; // Expected value for TEOS-10 specific volume
 const Real LinearExpValue =
     0.0009784735812133072; // Expected value for Linear specific volume
+const Real ConstantExpValue =
+    1.0_Real / RhoSw; // Expected value for constant specific volume
 const Real TeosBVFExpValue =
     0.020913834194283325; // Expected value for TEOS-10 squared Brunt-Vaisala
                           // frequency
@@ -236,6 +238,75 @@ void testEosLinearDisplaced() {
          }
       }
       ABORT_ERROR("EosTest: Linear SpecVolDisp FAIL with {} bad values ",
+                  NumMismatches);
+   }
+
+   return;
+}
+
+/// Test Constant EOS calculation for all cells/layers
+void testEosConstant() {
+   /// Get mesh and coordinate info
+   const auto Mesh     = HorzMesh::getDefault();
+   const auto VCoord   = VertCoord::getDefault();
+   VCoord->NVertLayers = NVertLayers;
+   I4 NCellsAll        = Mesh->NCellsAll;
+   /// Get Eos instance to test
+   Eos *TestEos       = Eos::getInstance();
+   TestEos->EosChoice = EosType::ConstantEos;
+
+   /// Create and fill ocean state arrays
+   Array2DReal SArray = Array2DReal("SArray", NCellsAll, NVertLayers);
+   Array2DReal TArray = Array2DReal("TArray", NCellsAll, NVertLayers);
+   Array2DReal PArray = Array2DReal("PArray", NCellsAll, NVertLayers);
+   deepCopy(SArray, Sa + 1.0_Real);
+   deepCopy(TArray, Ct - 2.0_Real);
+   deepCopy(PArray, P + 50.0_Real);
+   deepCopy(TestEos->SpecVol, 0.0);
+
+   /// Compute specific volume
+   TestEos->computeSpecVol(TArray, SArray, PArray);
+
+   const auto &MinLayerCell = VCoord->MinLayerCell;
+   const auto &MaxLayerCell = VCoord->MaxLayerCell;
+
+   /// Check all active layers against expected constant value
+   int NumMismatches   = 0;
+   Array2DReal SpecVol = TestEos->SpecVol;
+   parallelReduceOuter(
+       "CheckSpecVolMatrix-Constant", {Mesh->NCellsAll},
+       KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
+          int NumMismatchesCol;
+          const int KMin   = MinLayerCell(ICell);
+          const int KMax   = MaxLayerCell(ICell);
+          const int KRange = vertRange(KMin, KMax);
+          parallelReduceInner(
+              Team, KRange,
+              INNER_LAMBDA(int KOff, int &InnerCount) {
+                 const int K = KMin + KOff;
+                 if (!isApprox(SpecVol(ICell, K), ConstantExpValue, RTol)) {
+                    InnerCount++;
+                 }
+              },
+              NumMismatchesCol);
+
+          Kokkos::single(PerTeam(Team),
+                         [&]() { OuterCount += NumMismatchesCol; });
+       },
+       NumMismatches);
+
+   // If test fails, print bad values and abort
+   if (NumMismatches != 0) {
+      auto SpecVolH = createHostMirrorCopy(SpecVol);
+      for (int I = 0; I < NCellsAll; ++I) {
+         for (int K = 0; K < NVertLayers; ++K) {
+            if (!isApprox(SpecVolH(I, K), ConstantExpValue, RTol))
+               LOG_ERROR("EosTest: SpecVol Constant Bad Value: "
+                         "SpecVol({},{}) = {}; Expected {}",
+                         I, K, SpecVolH(I, K), ConstantExpValue);
+         }
+      }
+      ABORT_ERROR("EosTest: SpecVol Constant FAIL with {} bad values",
                   NumMismatches);
    }
 
@@ -712,6 +783,7 @@ void eosTest(const std::string &MeshFile = "OmegaMesh.nc") {
 
    testEosLinear();
    testEosLinearDisplaced();
+   testEosConstant();
    testBruntVaisalaFreqSqLinear();
    testEosTeos10();
    testEosTeos10Displaced();
