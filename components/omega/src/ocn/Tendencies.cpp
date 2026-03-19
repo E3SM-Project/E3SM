@@ -405,8 +405,8 @@ void Tendencies::computeVelocityTendenciesOnly(
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
                     LocPotentialVortHAdv(LocNormalVelocityTend, IEdge, KChunk,
-                                          NormRVortEdge, NormFEdge,
-                                          FluxLayerThickEdge, NormVelEdge);
+                                         NormRVortEdge, NormFEdge,
+                                         FluxLayerThickEdge, NormVelEdge);
                  });
           });
       Pacer::stop("Tend:potientialVortHAdv", 2);
