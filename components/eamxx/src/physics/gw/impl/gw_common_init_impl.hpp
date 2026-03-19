@@ -133,18 +133,18 @@ void Functions<S,D>::gw_common_init(
   }
 
   // set bottom index for background spectrum
-  int kbotbg = -1;
+  int kbotbg_tmp = -1;
   for (int i = 0; i < pref_int.size(); ++i) {
     if (pref_int[i] < GWC::kbotbg_pref_max) {
-      kbotbg = i;
+      kbotbg_tmp = i;
     }
   }
-  kbotbg -= 1; // move one level up
+  kbotbg_tmp -= 1; // move one level up
 
   s_common_init.do_molec_diff = do_molec_diff_in;
   s_common_init.nbot_molec = nbot_molec_in;
   s_common_init.ktop = ktop_in;
-  // s_common_init.kbotbg = kbotbg_in
+  s_common_init.kbotbg = kbotbg_tmp
   s_common_init.kwv = kwv_in;
   s_common_init.oroko2 = GWC::half * kwv_in;
   s_common_init.effkwv = s_common_init.kwv * s_common_init.fcrit2;
