@@ -124,6 +124,7 @@ void Functions<S,D>::compute_dilute_cape(
       }
     });
   }
+  team.team_barrier();
 
   //----------------------------------------------------------------------------
   // Set level of max moist static energy for parcel initialization
@@ -140,6 +141,7 @@ void Functions<S,D>::compute_dilute_cape(
                  temperature, zmid, sp_humidity,
                  msemax_klev, mse_max_val);
   }
+  team.team_barrier();
 
   //----------------------------------------------------------------------------
   // Save launching level T, q for output

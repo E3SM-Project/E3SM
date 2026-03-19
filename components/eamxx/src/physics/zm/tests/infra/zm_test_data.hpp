@@ -201,7 +201,6 @@ struct ComputeDiluteCapeData : public PhysicsTestData {
     for (Int c = 0; c < pcols; ++c) {
       std::sort(pmid + (c*pver), pmid + ((c+1)*pver));
     }
-
   }
 
 };

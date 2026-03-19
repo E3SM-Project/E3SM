@@ -60,9 +60,6 @@ struct UnitWrap::UnitTest<D>::TestComputeDiluteParcel : public UnitWrap::UnitTes
       }
     }
 
-    const auto margin = std::numeric_limits<Real>::epsilon() *
-      (ekat::is_single_precision<Real>::value ? 1000 : 1);
-
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
@@ -74,7 +71,7 @@ struct UnitWrap::UnitTest<D>::TestComputeDiluteParcel : public UnitWrap::UnitTes
         for (Int k = 0; k < d_baseline.total(d_baseline.parcel_temp); ++k) {
           REQUIRE(d_baseline.parcel_temp[k] == d_test.parcel_temp[k]);
           REQUIRE(d_baseline.parcel_vtemp[k] == d_test.parcel_vtemp[k]);
-          REQUIRE(d_baseline.parcel_qsat[k] == Approx(d_test.parcel_qsat[k]).margin(margin));
+          REQUIRE(d_baseline.parcel_qsat[k] == d_test.parcel_qsat[k]);
         }
         REQUIRE(d_baseline.total(d_baseline.lcl_pmid) == d_test.total(d_test.lcl_pmid));
         REQUIRE(d_baseline.total(d_baseline.lcl_pmid) == d_test.total(d_test.lcl_temperature));

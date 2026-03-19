@@ -86,8 +86,11 @@ void Functions<S,D>::compute_cape_from_parcel(
       }
     }
   });
+  team.team_barrier();
 
-  // Integrate buoyancy to obtain possible CAPE values
+  // Integrate buoyancy to obtain possible CAPE values. For some reason, the
+  // sum order does not match the serial fortran, so tiny roundoff differences
+  // exist compared to fortran for cape.
   for (Int n = 0; n < num_cin; ++n) {
     Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, num_msg, pver),
       [&] (const Int& k, Real& cape_n) {
