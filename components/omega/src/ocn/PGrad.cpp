@@ -181,7 +181,7 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
           KOKKOS_LAMBDA(I4 IEdge, const TeamMember &Team) {
              const int KMin   = LocMinLayerEdgeBot(IEdge);
              const int KMax   = LocMaxLayerEdgeTop(IEdge);
-             const int KRange = vertRange(KMin, KMax);
+             const int KRange = vertRangeChunked(KMin, KMax);
 
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
@@ -200,7 +200,7 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
           KOKKOS_LAMBDA(I4 IEdge, const TeamMember &Team) {
              const int KMin   = LocMinLayerEdgeBot(IEdge);
              const int KMax   = LocMaxLayerEdgeTop(IEdge);
-             const int KRange = vertRange(KMin, KMax);
+             const int KRange = vertRangeChunked(KMin, KMax);
 
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
