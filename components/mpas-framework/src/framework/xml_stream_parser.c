@@ -660,7 +660,8 @@ int check_streams(ezxml_t streams)
 	const char *filename;
 	static const char *stream_attrs[] = {
 		"name", "type", "filename_template", "filename_interval", "input_interval", "output_interval",
-		"reference_time", "record_interval", "precision", "packages", "clobber_mode", "useMissingValMask", "io_type"
+		"reference_time", "record_interval", "precision", "packages", "clobber_mode", "useMissingValMask",
+		"io_type", "runtime_format"
 	};
 	static const char *member_attrs[] = {"name", "packages"};
 	static const char *top_children[] = {"stream", "immutable_stream"};
@@ -683,7 +684,7 @@ int check_streams(ezxml_t streams)
 			return 1;
 		}
 
-		if (unknown_attribute_check(stream_xml, "immutable_stream", stream_attrs, 13) != 0) {
+		if (unknown_attribute_check(stream_xml, "immutable_stream", stream_attrs, 14) != 0) {
 			return 1;
 		}
 
@@ -743,7 +744,7 @@ int check_streams(ezxml_t streams)
 			return 1;
 		}
 
-		if (unknown_attribute_check(stream_xml, "stream", stream_attrs, 13) != 0) {
+		if (unknown_attribute_check(stream_xml, "stream", stream_attrs, 14) != 0) {
 			return 1;
 		}
 
