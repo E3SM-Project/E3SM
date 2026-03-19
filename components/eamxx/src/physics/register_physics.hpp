@@ -15,7 +15,7 @@
 #include "physics/zm/eamxx_zm_process_interface.hpp"
 #endif
 #ifdef EAMXX_HAS_GW
-#include "physics/zm/eamxx_gw_process_interface.hpp"
+#include "physics/gw/eamxx_gw_process_interface.hpp"
 #endif
 #ifdef EAMXX_HAS_CLD_FRACTION
 #include "physics/cld_fraction/eamxx_cld_fraction_process_interface.hpp"
