@@ -188,7 +188,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   using scalar_view_t = decltype(m_buffer.wpthlp_sfc);
   scalar_view_t* _1d_scalar_view_ptrs[Buffer::num_1d_scalar_ncol] =
     {&m_buffer.wpthlp_sfc, &m_buffer.wprtp_sfc, &m_buffer.upwp_sfc, &m_buffer.vpwp_sfc,
-     &m_buffer.upwp_sfc_pert, &m_buffer.vpwp_sfc_pert,
+     &m_buffer.upwp_sfc_pert, &m_buffer.vpwp_sfc_pert
 #ifdef SCREAM_SHOC_SMALL_KERNELS
      , &m_buffer.se_b, &m_buffer.ke_b, &m_buffer.wv_b, &m_buffer.wl_b
      , &m_buffer.se_a, &m_buffer.ke_a, &m_buffer.wv_a, &m_buffer.wl_a
