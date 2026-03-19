@@ -3,10 +3,13 @@
 # Equation of State (EOS)
 
 Omega includes an `Eos` class that provides functions that compute `SpecVol`, `SpecVolDisplaced`,
-and `BruntVaisalaFreqSq`. Current EOS options are a linear EOS or an EOS computed using the TEOS-10
-75 term expansion from [Roquet et al. 2015](https://www.sciencedirect.com/science/article/pii/S1463500315000566).
-If `SpecVolDisplaced` is calculated with the linear EOS option, it will be equal to `SpecVol` as there
-is no pressure/depth dependence for the linear EOS. `SpecVolDisplaced` computes specific volume
+and `BruntVaisalaFreqSq`. Current EOS options are a linear EOS, a constant EOS,
+or an EOS computed using the TEOS-10 75 term expansion from
+[Roquet et al. 2015](https://www.sciencedirect.com/science/article/pii/S1463500315000566).
+If `SpecVolDisplaced` is calculated with the linear or constant EOS option,
+it will be equal to `SpecVol` as there is no pressure/depth dependence for
+those EOS options. For the constant EOS option, `SpecVol` is set to `1/RhoSw`
+for all active cells/layers. `SpecVolDisplaced` computes specific volume
 adiabatically displaced to `K + KDisp` (where `K` counted positive downward, ie `K+1` is one layer below `K`). Note: `SpecVol` must be calculated before `BruntVaisalaFreqSq`, as
 `SpecVol` is an input for the `BruntVaisalaFreqSq` calculation. If the linear EOS option is used, then the `BruntVaisalaFreqSq`
 is calculated using linear coefficients. If the TEOS-10 option is used, the `BruntVaisalaFreqSq` is calculated with non-linear
@@ -15,6 +18,7 @@ for the `BruntVaisalaFreqSq` TEOS-10 option that differ from how it is calculate
 (1) gravity is assumed to be constant and not a function of depth and latitude, and (2) the interface value of the specific volume is
 calculated as the average between two layer values, rather than being recalculated using the interface values of temperature,
 salinity, and pressure. Both of these assumptions incur less than a 1% error.
+For the constant EOS option, `BruntVaisalaFreqSq` is identically zero.
 
 ## Eos type
 
@@ -22,7 +26,7 @@ An enumeration listing all implemented schemes is provided. It needs to be exten
 EOS is added. It is used to identify which EOS method is to be used at run time.
 
 ```c++
-enum class EosType { LinearEos, Teos10Eos };
+enum class EosType { LinearEos, Teos10Eos, ConstantEos };
 ```
 
 ## Initialization
@@ -72,3 +76,4 @@ To clear the Eos instance do:
 
 ```c++
 OMEGA::Eos::destroyInstance();
+```

@@ -259,9 +259,9 @@ void testEosConstant() {
    Array2DReal SArray = Array2DReal("SArray", NCellsAll, NVertLayers);
    Array2DReal TArray = Array2DReal("TArray", NCellsAll, NVertLayers);
    Array2DReal PArray = Array2DReal("PArray", NCellsAll, NVertLayers);
-   deepCopy(SArray, Sa + 1.0_Real);
-   deepCopy(TArray, Ct - 2.0_Real);
-   deepCopy(PArray, P + 50.0_Real);
+   deepCopy(SArray, Sa);
+   deepCopy(TArray, Ct);
+   deepCopy(PArray, P);
    deepCopy(TestEos->SpecVol, 0.0);
 
    /// Compute specific volume
