@@ -10,11 +10,17 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
   const auto policy =
       TPF::get_default_team_policy(ncol_, nlev_);
   const int nlev = nlev_;
-  constexpr int num_oxidants=mam4::mo_setinv::num_tracer_cnst;
+  constexpr int num_oxidants = mam4::mo_setinv::num_tracer_cnst;
+
+  // Ensure configuration provides exactly the expected number of oxidant fields.
+  EKAT_REQUIRE_MSG(
+      var_names_oxi_.size() == static_cast<std::size_t>(num_oxidants),
+      "MAMMicrophysics::run_small_kernels_microphysics: "
+      "var_names_oxi_ size does not match mam4::mo_setinv::num_tracer_cnst.");
 
   view_2d oxidants[num_oxidants];
-  for (size_t i = 0; i < var_names_oxi_.size(); ++i) {
-    oxidants[i] = get_field_out("oxid_"+var_names_oxi_[i]).get_view<Real **>();
+  for (int i = 0; i < num_oxidants; ++i) {
+    oxidants[i] = get_field_out("oxid_" + var_names_oxi_[i]).get_view<Real **>();
   }
   // set external forcing
   // Flatten the (mm, isec) host loops into fixed-size arrays captured by
