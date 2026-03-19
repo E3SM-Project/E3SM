@@ -7,28 +7,36 @@ namespace scream {
  *
  * Assumes x1 and x2 are monotonically increasing.
  *
- * Template parameters:
  *   N1 - number of points in the source grid
  *   N2 - number of points in the target grid
  *
  * Arguments:
  *   x1       - source coordinate array (size N1)
- *   x2       - target coordinate array (size N2)
  *   y1       - source values (size N1)
+ *   x2       - target coordinate array (size N2)
  *   y2       - interpolated output values (size N2)  [output]
  */
-template <std::size_t N1, std::size_t N2>
-KOKKOS_INLINE_FUNCTION
-void simple_linear_interp(
+
+// template <std::size_t N1, std::size_t N2>
+// KOKKOS_INLINE_FUNCTION
+// void simple_linear_interp(
   // const Kokkos::View<const Real[N1], Kokkos::MemoryTraits<Kokkos::Unmanaged>>& x1,
   // const Kokkos::View<const Real[N2], Kokkos::MemoryTraits<Kokkos::Unmanaged>>& x2,
   // const Kokkos::View<const Real[N1], Kokkos::MemoryTraits<Kokkos::Unmanaged>>& y1,
   // const Kokkos::View<      Real[N2], Kokkos::MemoryTraits<Kokkos::Unmanaged>>& y2)
-  const Kokkos::View<const Real[N1], Kokkos::HostSpace>& x1,
-  const Kokkos::View<const Real[N1], Kokkos::HostSpace>& y1,
-  const Kokkos::View<const Real[N2], Kokkos::HostSpace>& x2,
-  const Kokkos::View<      Real[N2], Kokkos::HostSpace>& y2)
+
+void simple_linear_interp(
+  const Kokkos::View<Real*, Kokkos::HostSpace>& x1,
+  const Kokkos::View<Real*, Kokkos::HostSpace>& y1,
+  const Kokkos::View<Real*, Kokkos::HostSpace>& x2,
+  const Kokkos::View<Real*, Kokkos::HostSpace>& y2)
 {
+  N1 = x1.size();
+  N2 = x2.size();
+
+  static_assert(N1 == y1.size(), "Variable sizes do not match");
+  static_assert(N2 == y2.size(), "Variable sizes do not match");
+
   static_assert(N1 >= 2, "Source grid must have at least 2 points");
   static_assert(N2 >= 1, "Target grid must have at least 1 point");
 
