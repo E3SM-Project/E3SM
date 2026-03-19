@@ -73,6 +73,7 @@ struct Functions
     static constexpr Real orohmin = 10;                 // min surface displacement height for orographic waves
     static constexpr Real orovmin = 2;                  // min wind speed for orographic waves
     static constexpr Real kbotbg_pref_max = 50000.0;    // pressure limit for setting kbotbg
+    static constexpr Real kfront_pref_max = 60000.0;    // pressure limit for setting kfront
 
     static constexpr int nalph = 66;
 
@@ -149,18 +150,6 @@ struct Functions
     Real effkwv;            // Effective wavenumber = huge(1._r8)
     view_1d<Real> alpha;    // Newtonian cooling coefficients
     Real tndmax;            // Max wind tend from stress divergence (before efficiency) = huge(1._r8)
-
-    // void load_runtime_options(ekat::ParameterList& params) {
-    //   use_gw_convect    = params.get<bool>("use_gw_convect", use_gw_convect);
-    //   use_gw_frontal    = params.get<bool>("use_gw_frontal", use_gw_frontal);
-    //   use_gw_orographic = params.get<bool>("use_gw_orographic", use_gw_orographic);
-    //   // gw_drag_file      = params.get<std::string>("gw_drag_file", gw_drag_file);
-    //   pgwv              = params.get<int>("pgwv", pgwv);
-    //   dc                = params.get<Real>("gw_dc", dc);
-    //   tau_0_ubc         = params.get<bool>("tau_0_ubc", tau_0_ubc);
-    //   fcrit2            = params.get<Real>("fcrit2", fcrit2);
-    //   gw_orographic_eff = params.get<Real>("gw_orographic_eff", gw_orographic_eff);
-    // }
   };
 
   // -----------------------------------------------------------------------------------------------
@@ -181,15 +170,15 @@ struct Functions
     Real gw_convect_plev_src_wind;   // Reference pressure level for source wind for convective GWD [Pa]
     bool use_gw_convect_old;         // Switch to enable legacy behavior
 
-    void load_runtime_options(ekat::ParameterList& params) {
-      gw_convect_eff             = params.get<Real>("gw_convect_eff", gw_convect_eff);
-      gw_convect_hcf             = params.get<Real>("gw_convect_hcf", gw_convect_hcf);
-      gw_convect_hdepth_scale    = params.get<Real>("gw_convect_hdepth_scale", gw_convect_hdepth_scale);
-      gw_convect_hdepth_min      = params.get<Real>("gw_convect_hdepth_min", gw_convect_hdepth_min);
-      gw_convect_storm_speed_min = params.get<Real>("gw_convect_storm_speed_min", gw_convect_storm_speed_min);
-      gw_convect_plev_src_wind   = params.get<Real>("gw_convect_plev_src_wind", gw_convect_plev_src_wind);
-      use_gw_convect_old         = params.get<bool>("use_gw_convect_old", use_gw_convect_old);
-    }
+    // void load_runtime_options(ekat::ParameterList& params) {
+    //   gw_convect_eff             = params.get<Real>("gw_convect_eff", gw_convect_eff);
+    //   gw_convect_hcf             = params.get<Real>("gw_convect_hcf", gw_convect_hcf);
+    //   gw_convect_hdepth_scale    = params.get<Real>("gw_convect_hdepth_scale", gw_convect_hdepth_scale);
+    //   gw_convect_hdepth_min      = params.get<Real>("gw_convect_hdepth_min", gw_convect_hdepth_min);
+    //   gw_convect_storm_speed_min = params.get<Real>("gw_convect_storm_speed_min", gw_convect_storm_speed_min);
+    //   gw_convect_plev_src_wind   = params.get<Real>("gw_convect_plev_src_wind", gw_convect_plev_src_wind);
+    //   use_gw_convect_old         = params.get<bool>("use_gw_convect_old", use_gw_convect_old);
+    // }
   };
 
   // -----------------------------------------------------------------------------------------------
@@ -202,11 +191,12 @@ struct Functions
     Int kfront;         // Level to check frontogenesis func to launch waves
     view_1d<Real> fav;  // Avg of gaussian over gw spectrum bins, mult. by BG source strength (taubgnd)
     Real gw_frontal_eff;// Efficiency of frontal GW tendencies
-    void load_runtime_options(ekat::ParameterList& params) {
-      taubgnd             = params.get<Real>("gw_frontal_taubgnd", taubgnd);
-      frontgfc            = params.get<Real>("gw_frontal_fgfc", frontgfc);
-      gw_frontal_eff      = params.get<Real>("gw_frontal_eff", gw_frontal_eff);
-    }
+    
+    // void load_runtime_options(ekat::ParameterList& params) {
+    //   taubgnd             = params.get<Real>("gw_frontal_taubgnd", taubgnd);
+    //   frontgfc            = params.get<Real>("gw_frontal_fgfc", frontgfc);
+    //   gw_frontal_eff      = params.get<Real>("gw_frontal_eff", gw_frontal_eff);
+    // }
   };
 
   // -----------------------------------------------------------------------------------------------
@@ -281,11 +271,21 @@ struct Functions
     const Real& plev_src_wind,
     const uview_3d<const Real>& mfcc_in);
 
+  static void gw_convect_init(
+    // Inputs
+    ekat::ParameterList& params,
+    const Kokkos::View<Real***, Kokkos::HostSpace>& mfcc_in);
+
   static void gw_front_init(
     // Inputs
     const Real& taubgnd,
     const Real& frontgfc_in,
     const Int& kfront_in);
+
+  static void gw_front_init(
+    // Inputs
+    ekat::ParameterList& params,
+    const Kokkos::View<Real*, Kokkos::HostSpace>& pref_int);
 
   static void gw_finalize()
   {

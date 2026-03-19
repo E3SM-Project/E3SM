@@ -144,7 +144,7 @@ void Functions<S,D>::gw_common_init(
   s_common_init.do_molec_diff = do_molec_diff_in;
   s_common_init.nbot_molec = nbot_molec_in;
   s_common_init.ktop = ktop_in;
-  s_common_init.kbotbg = kbotbg_tmp
+  s_common_init.kbotbg = kbotbg_tmp;
   s_common_init.kwv = kwv_in;
   s_common_init.oroko2 = GWC::half * kwv_in;
   s_common_init.effkwv = s_common_init.kwv * s_common_init.fcrit2;

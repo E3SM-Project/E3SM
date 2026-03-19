@@ -74,16 +74,6 @@ void GWDrag::create_requests() {
 /*------------------------------------------------------------------------------------------------*/
 void GWDrag::initialize_impl (const RunType) {
 
-  // std::string gw_drag_file = m_params.get<std::string>("gw_drag_file");
-  // scorpio::register_file(fname,scorpio::FileMode::Read);
-  // scorpio::read_var(fname,"bnd_limits_wavenumber",bounds.get_view<Real**,Host>().data());
-  // scorpio::release_file(fname);
-
-  // retrieve runtime options
-  // GWF::s_common_init.load_runtime_options(m_params);
-  // GWF::s_convect_init.load_runtime_options(m_params);
-  // GWF::s_front_init.load_runtime_options(m_params);
-
   // defaults for gw_common_init()
   bool do_molec_diff_default = false; // Flag for molecular diffusion
   int nbot_molec_default = 0;         // bottom level for molecular diffusion
@@ -102,7 +92,6 @@ void GWDrag::initialize_impl (const RunType) {
   });
   Kokkos::fence();
 
-
   GWF::gw_common_init( m_params, 
                        m_nlev,
                        pref_int,
@@ -111,8 +100,18 @@ void GWDrag::initialize_impl (const RunType) {
                        ktop_default,
                        kwv_default);
 
-  // GWF::gw_convect_init( m_params,
-  // GWF::gw_front_init( m_params,
+  std::string gw_drag_file = m_params.get<std::string>("gw_drag_file");
+  scorpio::register_file(gw_drag_file,scorpio::FileMode::Read);
+  const int PS_dim_size = scorpio::get_dimlen(gw_drag_file, "PS"); // Phase Speed [m/s]
+  const int MW_dim_size = scorpio::get_dimlen(gw_drag_file, "MW"); // Mean Wind in Heating [m/s]
+  const int HD_dim_size = scorpio::get_dimlen(gw_drag_file, "HD"); // Heating Depth [km]
+  Kokkos::View<Real***, Kokkos::HostSpace> mfcc_host("mfcc_host", HD_dim_size, MW_dim_size, PS_dim_size);
+  scorpio::read_var(gw_drag_file,"mfcc",mfcc_host.data());
+  scorpio::release_file(gw_drag_file);
+
+  GWF::gw_convect_init( m_params, mfcc_host );
+
+  GWF::gw_front_init( m_params, pref_int );
 
   // Set property checks for fields in this process
   using Interval = FieldWithinIntervalCheck;
