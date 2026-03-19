@@ -58,16 +58,18 @@ TEST_CASE("field_prev") {
   auto &diag_factory = AtmosphereDiagnosticFactory::instance();
   register_diagnostics();
 
+  // Create and set up the diagnostic
   ekat::ParameterList params;
-  REQUIRE_THROWS(diag_factory.create("FieldPrevDiag", comm,
-                                     params));  // No 'field_name'
+  REQUIRE_THROWS(diag_factory.create("FieldPrevDiag", comm, params)); // Bad construction
+
+  params.set("grid_name", grid->name());
+  REQUIRE_THROWS(diag_factory.create("FieldPrevDiag", comm, params)); // Still no field_name
 
   // Set time for qc and randomize its values
   qc.get_header().get_tracking().update_time_stamp(t0);
   randomize_uniform(qc, seed++, 0, 200);
 
   // Create and set up the diagnostic
-  params.set("grid_name", grid->name());
   params.set<std::string>("field_name", "qc");
   auto diag = diag_factory.create("FieldPrevDiag", comm, params);
   diag->set_grids(gm);
@@ -87,7 +89,8 @@ TEST_CASE("field_prev") {
   // rather than fill_value or stale zeros — this is the key test for the
   // "first step of a derived _prev field" correctness.
   {
-    Field qc_uninit(qc_fid);
+    FieldIdentifier qc_uninit_fid("qc_uninit", scalar2d_layout, kg / kg, grid->name());
+    Field qc_uninit(qc_uninit_fid);
     qc_uninit.allocate_view();  // zero-initialized, no valid timestamp
 
     ekat::ParameterList p2;
