@@ -30,6 +30,23 @@ void Functions<S,D>::gw_convect_init(
   Kokkos::deep_copy(s_convect_init.mfcc, mfcc_in);
 }
 
+template<typename S, typename D>
+void Functions<S,D>::gw_convect_init(
+  // Inputs
+  ekat::ParameterList& params,
+  const Kokkos::View<Real***, Kokkos::HostSpace>& mfcc_in)
+{
+  s_convect_init.gw_convect_eff             = params.get<Real>("gw_convect_eff", s_convect_init.gw_convect_eff);
+  s_convect_init.gw_convect_hcf             = params.get<Real>("gw_convect_hcf", s_convect_init.gw_convect_hcf);
+  s_convect_init.gw_convect_hdepth_scale    = params.get<Real>("gw_convect_hdepth_scale", s_convect_init.gw_convect_hdepth_scale);
+  s_convect_init.gw_convect_hdepth_min      = params.get<Real>("gw_convect_hdepth_min", s_convect_init.gw_convect_hdepth_min);
+  s_convect_init.gw_convect_storm_speed_min = params.get<Real>("gw_convect_storm_speed_min", s_convect_init.gw_convect_storm_speed_min);
+  s_convect_init.gw_convect_plev_src_wind   = params.get<Real>("gw_convect_plev_src_wind", s_convect_init.gw_convect_plev_src_wind);
+  s_convect_init.use_gw_convect_old         = params.get<bool>("use_gw_convect_old", s_convect_init.use_gw_convect_old);
+  s_convect_init.mfcc = view_3d<Real>("mfcc", mfcc_in.extent(0), mfcc_in.extent(1), mfcc_in.extent(2));
+  Kokkos::deep_copy(s_convect_init.mfcc, mfcc_in);
+}
+
 } // namespace gw
 } // namespace scream
 
