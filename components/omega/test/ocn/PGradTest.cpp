@@ -302,7 +302,8 @@ int main(int argc, char *argv[]) {
       } // refinement loop
 
       // Test for second order convergence
-      if (RMSE(NRefinements) < RMSE(0) / pow(4.0_Real, NRefinements - 1)) {
+      // resolution (dC) increases in refimenent loop
+      if (RMSE(0) < RMSE(NRefinements - 1) / pow(4.0_Real, NRefinements - 1)) {
          RetVal = 0;
       } else {
          RetVal = 1;
