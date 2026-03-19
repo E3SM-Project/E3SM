@@ -56,7 +56,7 @@ MODULE tropical_cyclone
        pi    = 3.14159265358979d0,    & ! pi
        p0    = 100000.0d0,            & ! surface pressure (Pa)
        kappa = 2.d0/7.d0,             & ! Ratio of Rd to cp
-       omega = 7.29212d-5,            & ! Reference rotation rate of the Earth (s^-1)
+       omega = 2.d0*pi/86164.d0,          & ! Reference rotation rate of the Earth (s^-1), 86164 s = sidereal day
        deg2rad  = pi/180.d0             ! Conversion factor of degrees to radians
 
 !=======================================================================

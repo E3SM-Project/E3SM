@@ -41,8 +41,8 @@ MODULE dcmip2012_test5
 	real(8), parameter ::	a	= 6371220.d0,	&	! Earth's Radius (m)
 				Rd 	= 287.0d0,	&	! Ideal gas const dry air (J kg^-1 K^1)
 				g	= 9.80616d0,	&	! Gravity (m s^2)
-                                omega   = 7.292115d-5,  &       ! angular velocity 1/s
-                                pi      = 4.d0*atan(1.d0)       ! pi
+                                pi      = 4.d0*atan(1.d0),      &       ! pi
+                                omega   = 2.d0*pi/86164.d0              ! angular velocity 1/s, 86164 s = sidereal day
 
 !-----------------------------------------------------------------------
 !     Additional constants

@@ -69,7 +69,7 @@ MODULE dcmip2012_test4
        cp    = 1005.0D0,                              & ! Specific heat capacity (J kg^-1 K^1)
        pi    = 4.d0*atan(1.d0),                       & ! pi
        kappa = Rd/Cp,                                 & ! Ratio of Rd to cp
-       omega = 7.29212d-5                               ! Reference rotation rate of the Earth (s^-1)
+       omega = 2.d0*pi/86164.d0                              ! Reference rotation rate of the Earth (s^-1), 86164 s = sidereal day
 
 
 !=======================================================================

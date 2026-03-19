@@ -62,12 +62,14 @@
 #endif
 
       real (kind=dbl_kind), parameter :: &
+         pi = 3.14159265358979323846_dbl_kind  ! pi
+
+      real (kind=dbl_kind), parameter :: &
          gravit    = 9.80616_dbl_kind    ,&! gravitational acceleration (m/s^2)
-         omega     = 7.292e-5_dbl_kind   ,&! angular velocity of earth (rad/sec)
+         omega     = 2.0_dbl_kind*pi/86164.0_dbl_kind ,&! angular velocity of earth (rad/sec), 86164 s = sidereal day
          radius    = 6.37e6_dbl_kind       ! earth radius (m)
 
       real (kind=dbl_kind), parameter :: &
-         pi = 3.14159265358979323846_dbl_kind,&! pi
          secday    = 86400.0_dbl_kind ,&! seconds in calendar day
          Tocnfrz   = -1.8_dbl_kind    ,&! freezing temp of seawater (C),
                                         ! used as Tsfcn for open water

@@ -111,7 +111,7 @@ module seaice_constants
 
   ! physical constants
   real (kind=RKIND), parameter, public :: &
-       omega                              = 7.29212e-5_RKIND ! angular rotation rate of the Earth [s-1]
+       omega                              = 2.0_RKIND*pi/86164.0_RKIND ! angular rotation rate of the Earth [s-1], 86164 s = sidereal day
 
   real(kind=RKIND), public :: &
        seaiceDensitySnow                  = 330.0_RKIND     ! density of snow (kg/m^3)

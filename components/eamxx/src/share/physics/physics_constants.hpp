@@ -123,7 +123,7 @@ struct Constants
   static constexpr Scalar basetemp      = 300.0;
   static constexpr auto r_earth         = quantity_t(6.376e6,m); // Radius of the earth in m
   static constexpr auto stebol          = quantity_t(5.670374419e-8,W/m2/pow(K,4)); // Stefan-Boltzmann's constant (W/m^2/K^4)
-  static constexpr auto omega           = quantity_t(7.292e-5,rad/s); // Earth's rotation (rad/sec)
+  static constexpr auto omega           = quantity_t(2.0*Pi/86164.0,rad/s); // Earth's rotation (rad/sec), 86164 s = sidereal day
 
   // Table dimension constants
   static constexpr int VTABLE_DIM0    = 300;

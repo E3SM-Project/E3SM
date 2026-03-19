@@ -62,9 +62,9 @@ MODULE jw
        Rd         = 287.d0    ,&! gas constant J/(K kg)
        g          = 9.80616d0 ,&! gravitational acceleration (m/s^2)
        a          = 6371229.d0,&! Earth's radius in m
-       omega      = 7.29212d-5,&! angular velocity 1/s
-       gamma      = 0.005d0   ,&! lapse rate
        pi         = 3.14159265358979323846_R8,&  ! pi
+       omega      = 2._R8*pi/86164._R8,&! Earth's angular velocity 1/s, 86164 s = sidereal day
+       gamma      = 0.005d0   ,&! lapse rate
        deg2rad    = pi/180.d0, &
        perturbation_latitude_tracer = 55.d0
 

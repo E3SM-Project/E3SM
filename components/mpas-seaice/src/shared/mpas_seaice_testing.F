@@ -539,7 +539,8 @@ contains
   subroutine square_test_correct_positions(mesh)
 
     use seaice_constants, only: &
-         seaiceRadiansToDegrees
+         seaiceRadiansToDegrees, &
+         omega
 
     type(MPAS_pool_type), intent(inout) :: &
          mesh
@@ -559,8 +560,7 @@ contains
          longitudeSquare = -156.5_RKIND, &
          latitudeSquare  = 71.35_RKIND, &
          radius          = 6.37e6_RKIND, &
-         distanceToAngle = seaiceRadiansToDegrees / radius, &
-         omega           = 7.292e-5_RKIND
+         distanceToAngle = seaiceRadiansToDegrees / radius
 
     real(kind=RKIND), dimension(:), pointer :: &
          xCell, &

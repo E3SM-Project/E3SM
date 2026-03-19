@@ -210,8 +210,8 @@ SUBROUTINE SIMPLE_PHYSICS_V5(pcols, pver, dtime, lat, t, q, u, v, pmid, pint, pd
    epsilo = rair/rh2o                    ! Ratio of gas constant for dry air to that for vapor
    zvir   = (rh2o/rair) - 1._r8          ! Constant for virtual temp. calc. =(rh2o/rair) - 1 is approx. 0.608
    a      = 6371220.0_r8                 ! Reference Earth's Radius (m)
-   omega  = 7.29212d-5                   ! Reference rotation rate of the Earth (s^-1)
    pi     = 4._r8*atan(1._r8)            ! pi
+   omega  = 2._r8*pi/86164._r8           ! Reference rotation rate of the Earth (s^-1), 86164 s = sidereal day
 
 !===============================================================================
 !
