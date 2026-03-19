@@ -868,9 +868,6 @@ void MAMMicrophysics::run_impl(const double dt) {
     molar_mass_g_per_mol_tmp[i] = mam4::gas_chemistry::adv_mass[i];  // host-only access
   }
 
-  // Copy extfrc_ from internal layout [ncol][extcnt][nlev]
-  // to output layout [ncol][extcnt][nlev] — layouts match, no transpose needed.
-  // This aligns with expected field storage in the EAMxx infrastructure.
   Kokkos::parallel_for("copy_extfrc",
     Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {ncol, extcnt, nlev}),
     KOKKOS_LAMBDA(const int i, const int j, const int k) {

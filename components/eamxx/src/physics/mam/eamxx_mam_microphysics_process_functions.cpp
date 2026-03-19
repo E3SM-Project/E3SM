@@ -4,7 +4,7 @@
 
 namespace scream {
 
-void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const double eccf)
+void MAMMicrophysics::run_microphysics_kernels(const double dt, const double eccf)
 {
    using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
   const auto policy =
@@ -15,7 +15,7 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
   // Ensure configuration provides exactly the expected number of oxidant fields.
   EKAT_REQUIRE_MSG(
       var_names_oxi_.size() == static_cast<std::size_t>(num_oxidants),
-      "MAMMicrophysics::run_small_kernels_microphysics: "
+      "MAMMicrophysics::run_microphysics_kernels: "
       "var_names_oxi_ size does not match mam4::mo_setinv::num_tracer_cnst.");
 
   view_2d oxidants[num_oxidants];
@@ -367,7 +367,7 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
         sfc_pressure(icol),     // surface pressure [Pa]
         pressure_10m,     // 10-meter pressure [Pa]
         spec_hum,         // specific humidity [kg/kg]
-        wind_speed,       // 10-meter wind spped [m/s]
+        wind_speed,       // 10-meter wind speed [m/s]
         rain,             // rain content [??]
         solar_flux,       // direct shortwave surface radiation [W/m^2]
         qq_sfc.data(),               // constituent MMRs [kg/kg]

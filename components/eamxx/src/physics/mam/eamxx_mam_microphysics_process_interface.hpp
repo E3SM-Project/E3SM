@@ -59,7 +59,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
   void finalize_impl(){/*Do nothing*/};
 
  private:
-  void run_small_kernels_microphysics(const double dt, const double eccf);
+  void run_microphysics_kernels(const double dt, const double eccf);
   // Output extra mam4xx diagnostics.
   bool extra_mam4_aero_microphys_diags_ = false;
 
