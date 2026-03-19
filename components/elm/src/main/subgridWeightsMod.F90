@@ -776,9 +776,9 @@ contains
     
     deallocate(sumwtcol, sumwtlunit, sumwttunit, sumwtgcell)
 
-!    if (error_found) then
-!       call endrun(msg=errMsg(__FILE__, __LINE__))
-!    end if
+    if (error_found) then
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
 
     ! Success
 
