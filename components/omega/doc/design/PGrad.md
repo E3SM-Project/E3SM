@@ -337,9 +337,10 @@ The pressure gradient term will be compared to the zero exact solution at progre
 
 ### Test: Spatial convergence to exact solution
 For given analytical functions of $T$, and $S$ and with specified $z$ layer spacing, the spatial convergence of the pressure gradient can be assessed by computing errors using a high-fidelity reference solution on progressively finer meshes.
+This will be implemented as a two-column test in Polaris.
 
 ### Test: Seamount test
-The seamount test in Polaris will be used to verify the pressure gradient's ability to preserve the resting state of fluid in a case with tilted layers.
+The [seamount test](https://docs.e3sm.org/polaris/main/users_guide/ocean/tasks/seamount.html) in Polaris will be used to verify the pressure gradient's ability to preserve the resting state of fluid in a case with tilted layers.
 
-### Test: Baroclinic gyre
-The baroclinic gyre test case will test the pressure gradient term in the full non-Boussinesq equations.
+### Test: Overflow test
+The [overflow test](https://docs.e3sm.org/polaris/main/users_guide/ocean/tasks/overflow.html) in Polaris will test the pressure gradient term in the full non-Boussinesq equations.
