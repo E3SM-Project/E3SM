@@ -1021,64 +1021,74 @@ int testSurfaceTracerRestoringOnCell(int NVertLayers, int NTracers, Real RTol) {
    const auto Mesh   = HorzMesh::getDefault();
    const auto VCoord = VertCoord::getDefault();
 
-   // Compute exact result: zero everywhere except at surface layer where it
-   // equals PistonVelocity * input field
-   Array3DReal ExactSurfRest("ExactSurfRest", NTracers, Mesh->NCellsOwned,
-                             NVertLayers);
-   // Initialize exact array to zero
-   deepCopy(ExactSurfRest, 0);
+   if (NTracers < 3) {
+      LOG_ERROR("TendencyTermsTest: SurfaceTracerRestoring requires at least 3 "
+                "tracers, found {}",
+                NTracers);
+      return 1;
+   }
 
-   // Create temporary array for input field (scalarA)
-   Array2DReal InputField("InputField", Mesh->NCellsSize, 1);
-   // Set input array (surface tracer restoring values at each cell)
-   Array2DReal SurfTracerRestValuesCell("SurfTracerRestValuesCell", NTracers,
-                                        Mesh->NCellsSize, NVertLayers);
-   deepCopy(InputField, 0);
-   deepCopy(SurfTracerRestValuesCell, 0);
+   const char *CaseLabels[3] = {"SurfaceTracerRestoringSalinityOnly",
+                                "SurfaceTracerRestoringTemperatureOnly",
+                                "SurfaceTracerRestoringTempSaltDebug"};
 
-   Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarA(X, Y); },
-       InputField, Geom, Mesh, OnCell);
+   const I4 CaseMasks[3][3] = {
+       {0, 1, 0},
+       {1, 0, 0},
+       {1, 1, 1},
+   };
 
-   // Set exact array at surface layer only
-   // The functor modifies Tend(L, ICell, MinLayerCell(ICell)) when KChunk==0
-   // We need access to MinLayerCell to set exact values correctly
-   // For now, use a straightforward approach: set all MinLayer indices to 0
-   // (topmost layer) in the numerical computation loop
-   SurfaceTracerRestoringOnCell SurfRestOnC(Mesh, VCoord);
+   for (int Case = 0; Case < 3; ++Case) {
 
-   // Set the exact array at the minimum layer for each cell
-   // For this test we assume the minimum layer index is 0 (surface).  The
-   // exact result will therefore only be non-zero at KLayer==0 and equal to
-   // PistonVelocity * input field.  Perform the computation directly on the
-   // device rather than staging data on the host.
-   parallelFor(
-       {NTracers, Mesh->NCellsOwned}, KOKKOS_LAMBDA(int L, int ICell) {
-          SurfTracerRestValuesCell(L, ICell) = InputField(ICell, 0);
-          ExactSurfRest(L, ICell, 0) =
-              SurfRestOnC.PistonVelocity * InputField(ICell, 0);
-       });
+      Array3DReal ExactSurfRest("ExactSurfRest", NTracers, Mesh->NCellsOwned,
+                                NVertLayers);
+      Array2DReal InputField("InputField", Mesh->NCellsSize, 1);
+      Array2DReal SurfTracerRestValuesCell("SurfTracerRestValuesCell", NTracers,
+                                           Mesh->NCellsSize, NVertLayers);
+      Array3DReal NumSurfRest("NumSurfRest", NTracers, Mesh->NCellsOwned,
+                              NVertLayers);
 
-   // Compute numerical result: initialize to zero and apply functor
-   Array3DReal NumSurfRest("NumSurfRest", NTracers, Mesh->NCellsOwned,
-                           NVertLayers);
-   deepCopy(NumSurfRest, 0);
+      deepCopy(ExactSurfRest, 0);
+      deepCopy(InputField, 0);
+      deepCopy(SurfTracerRestValuesCell, 0);
+      deepCopy(NumSurfRest, 0);
 
-   // Loop over all KChunk values to verify functor only modifies at KChunk==0
-   parallelFor(
-       {NTracers, Mesh->NCellsOwned, NVertLayers},
-       KOKKOS_LAMBDA(int L, int ICell, int KLayer) {
-          SurfRestOnC(NumSurfRest, L, ICell, KLayer, SurfTracerRestValuesCell);
-       });
+      Err += setScalar(
+          KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarA(X, Y); },
+          InputField, Geom, Mesh, OnCell);
 
-   // Compute errors
-   ErrorMeasures SurfRestErrors;
-   Err +=
-       computeErrors(SurfRestErrors, NumSurfRest, ExactSurfRest, Mesh, OnCell);
+      SurfaceTracerRestoringOnCell SurfRestOnC(Mesh, VCoord);
+      SurfRestOnC.TracerRestoreMask = Array1DI4("TracerRestoreMask", NTracers);
 
-   // Check error values (expect zero error)
-   Err += checkErrors("TendencyTermsTest", "SurfaceTracerRestoring",
-                      SurfRestErrors, Setup.ExpectedSurfTrRestErrors, RTol);
+      HostArray1DI4 TracerRestoreMaskH("TracerRestoreMaskH", NTracers);
+      deepCopy(TracerRestoreMaskH, 0);
+      for (int L = 0; L < 3; ++L) {
+         TracerRestoreMaskH(L) = CaseMasks[Case][L];
+      }
+      deepCopy(SurfRestOnC.TracerRestoreMask, TracerRestoreMaskH);
+
+      parallelFor(
+          {NTracers, Mesh->NCellsOwned}, KOKKOS_LAMBDA(int L, int ICell) {
+             SurfTracerRestValuesCell(L, ICell) = InputField(ICell, 0);
+             ExactSurfRest(L, ICell, 0) = SurfRestOnC.TracerRestoreMask(L) *
+                                          SurfRestOnC.PistonVelocity *
+                                          InputField(ICell, 0);
+          });
+
+      parallelFor(
+          {NTracers, Mesh->NCellsOwned, NVertLayers},
+          KOKKOS_LAMBDA(int L, int ICell, int KLayer) {
+             SurfRestOnC(NumSurfRest, L, ICell, KLayer,
+                         SurfTracerRestValuesCell);
+          });
+
+      ErrorMeasures SurfRestErrors;
+      Err += computeErrors(SurfRestErrors, NumSurfRest, ExactSurfRest, Mesh,
+                           OnCell);
+
+      Err += checkErrors("TendencyTermsTest", CaseLabels[Case], SurfRestErrors,
+                         Setup.ExpectedSurfTrRestErrors, RTol);
+   }
 
    if (Err == 0) {
       LOG_INFO("TendencyTermsTest: SurfaceTracerRestoring PASS");

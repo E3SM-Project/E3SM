@@ -575,6 +575,7 @@ class SurfaceTracerRestoringOnCell {
  public:
    bool Enabled;
    Real PistonVelocity = 1.585e-5;
+   Array1DI4 TracerRestoreMask;
 
    /// constructor declaration
    SurfaceTracerRestoringOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
@@ -584,7 +585,8 @@ class SurfaceTracerRestoringOnCell {
    KOKKOS_FUNCTION void
    operator()(const Array3DReal &Tend, I4 L, I4 ICell, I4 KChunk,
               const Array2DReal &SurfTracerRestValuesCell) const {
-      if (KChunk == 0) {
+      if (KChunk == 0 &&
+          (TracerRestoreMask.extent(0) == 0 || TracerRestoreMask(L) == 1)) {
          const I4 K = MinLayerCell(ICell);
 
          Tend(L, ICell, K) +=

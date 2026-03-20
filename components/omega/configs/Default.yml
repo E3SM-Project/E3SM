@@ -34,6 +34,8 @@ Omega:
   SurfaceRestoring:
     MaxDiff: 100.0
     PistonVelocity: 1.585e-5
+    TracerGroupsToRestore: [Base]
+    TracersToRestore: []
   VertCoord:
     MovementWeightType: Uniform
   PressureGrad:
