@@ -74,19 +74,19 @@ KOKKOS_INLINE_FUNCTION void teamBarrier(const TeamMember &Team) {
 // parallelForOuter: with label and with launch config
 template <int N, class F>
 inline void parallelForOuter(const std::string &Label,
-                             const LaunchConfig<N> &Config, F &&Functor) {
+                             const LaunchConfig<N> &LConfig, F &&Functor) {
 
    auto LinFunctor =
-       LinearIdxWrapper{std::forward<F>(Functor), Config.UpperBounds};
+       LinearIdxWrapper{std::forward<F>(Functor), LConfig.UpperBounds};
    int LinBound = 1;
    for (int Rank = 0; Rank < N; ++Rank) {
-      LinBound *= Config.UpperBounds[Rank];
+      LinBound *= LConfig.UpperBounds[Rank];
    }
 
-   auto Policy = TeamPolicy(LinBound, Config.TeamSize);
+   auto Policy = TeamPolicy(LinBound, LConfig.TeamSize);
 
-   if (Config.ScratchBytesPerTeam > 0) {
-      Policy.set_scratch_size(0, Kokkos::PerTeam(Config.ScratchBytesPerTeam));
+   if (LConfig.ScratchBytesPerTeam > 0) {
+      Policy.set_scratch_size(0, Kokkos::PerTeam(LConfig.ScratchBytesPerTeam));
    }
 
    Kokkos::parallel_for(
@@ -98,8 +98,8 @@ inline void parallelForOuter(const std::string &Label,
 
 // parallelForOuter: without label and with launch config
 template <int N, class F>
-inline void parallelForOuter(const LaunchConfig<N> &Config, F &&Functor) {
-   parallelForOuter("", Config, std::forward<F>(Functor));
+inline void parallelForOuter(const LaunchConfig<N> &LConfig, F &&Functor) {
+   parallelForOuter("", LConfig, std::forward<F>(Functor));
 }
 
 // parallelForOuter: with label and with array bounds
@@ -134,19 +134,24 @@ struct AccumTypeHelper<T, std::enable_if_t<Kokkos::is_reducer_v<T>>> {
 
 template <class T> using AccumType = typename AccumTypeHelper<T>::Type;
 
-// parallelReduceOuter: with label
+// parallelReduceOuter: with label and with launch config
 template <int N, class F, class... R>
 inline void parallelReduceOuter(const std::string &Label,
-                                const int (&UpperBounds)[N], F &&Functor,
+                                const LaunchConfig<N> &LConfig, F &&Functor,
                                 R &&...Reducers) {
 
-   auto LinFunctor = LinearIdxWrapper{std::forward<F>(Functor), UpperBounds};
-   int LinBound    = 1;
+   auto LinFunctor =
+       LinearIdxWrapper{std::forward<F>(Functor), LConfig.UpperBounds};
+   int LinBound = 1;
    for (int Rank = 0; Rank < N; ++Rank) {
-      LinBound *= UpperBounds[Rank];
+      LinBound *= LConfig.UpperBounds[Rank];
    }
 
-   auto Policy = TeamPolicy(LinBound, OMEGA_TEAMSIZE);
+   auto Policy = TeamPolicy(LinBound, LConfig.TeamSize);
+   if (LConfig.ScratchBytesPerTeam > 0) {
+      Policy.set_scratch_size(0, Kokkos::PerTeam(LConfig.ScratchBytesPerTeam));
+   }
+
    Kokkos::parallel_reduce(
        Label, Policy,
        KOKKOS_LAMBDA(const TeamMember &Team,
@@ -157,11 +162,28 @@ inline void parallelReduceOuter(const std::string &Label,
        std::forward<R>(Reducers)...);
 }
 
-// parallelReduceOuter: without label
+// parallelReduceOuter: without label and with launch config
+template <int N, class F, class... R>
+inline void parallelReduceOuter(const LaunchConfig<N> &LConfig, F &&Functor,
+                                R &&...Reducers) {
+   parallelReduceOuter("", LConfig, std::forward<F>(Functor),
+                       std::forward<R>(Reducers)...);
+}
+
+// parallelReduceOuter: with label and with array bounds
+template <int N, class F, class... R>
+inline void parallelReduceOuter(const std::string Label,
+                                const int (&UpperBounds)[N], F &&Functor,
+                                R &&...Reducers) {
+   parallelReduceOuter(Label, LaunchConfig(UpperBounds),
+                       std::forward<F>(Functor), std::forward<R>(Reducers)...);
+}
+
+// parallelReduceOuter: without label and with array bounds
 template <int N, class F, class... R>
 inline void parallelReduceOuter(const int (&UpperBounds)[N], F &&Functor,
                                 R &&...Reducers) {
-   parallelReduceOuter("", UpperBounds, std::forward<F>(Functor),
+   parallelReduceOuter("", LaunchConfig(UpperBounds), std::forward<F>(Functor),
                        std::forward<R>(Reducers)...);
 }
 
