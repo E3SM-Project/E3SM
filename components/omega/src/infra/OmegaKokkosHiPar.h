@@ -165,28 +165,33 @@ inline void parallelReduceOuter(const int (&UpperBounds)[N], F &&Functor,
                        std::forward<R>(Reducers)...);
 }
 
+// Inclusive range of indices
+struct Range {
+   int First;
+   int Last;
+};
+
 // parallelForInner
 
 template <class F>
-KOKKOS_FUNCTION void parallelForInner(const TeamMember &Team, int MinIndex,
-                                      int MaxIndex, F &&Functor) {
-   const auto Policy = TeamThreadRange(Team, MinIndex, MaxIndex + 1);
+KOKKOS_FUNCTION void parallelForInner(const TeamMember &Team, Range Rng,
+                                      F &&Functor) {
+   const auto Policy = TeamThreadRange(Team, Rng.First, Rng.Last + 1);
    Kokkos::parallel_for(Policy, std::forward<F>(Functor));
 }
 
 template <class F>
 KOKKOS_FUNCTION void parallelForInner(const TeamMember &Team, int UpperBound,
                                       F &&Functor) {
-   parallelForInner(Team, 0, UpperBound - 1, std::forward<F>(Functor));
+   parallelForInner(Team, Range{0, UpperBound - 1}, std::forward<F>(Functor));
 }
 
 // parallelReduceInner
 
 template <class F, class... R>
-KOKKOS_FUNCTION void parallelReduceInner(const TeamMember &Team, int MinIndex,
-                                         int MaxIndex, F &&Functor,
-                                         R &&...Reducers) {
-   const auto Policy = TeamThreadRange(Team, MinIndex, MaxIndex + 1);
+KOKKOS_FUNCTION void parallelReduceInner(const TeamMember &Team, Range Rng,
+                                         F &&Functor, R &&...Reducers) {
+   const auto Policy = TeamThreadRange(Team, Rng.First, Rng.Last + 1);
    Kokkos::parallel_reduce(Policy, std::forward<F>(Functor),
                            std::forward<R>(Reducers)...);
 }
@@ -194,17 +199,16 @@ KOKKOS_FUNCTION void parallelReduceInner(const TeamMember &Team, int MinIndex,
 template <class F, class... R>
 KOKKOS_FUNCTION void parallelReduceInner(const TeamMember &Team, int UpperBound,
                                          F &&Functor, R &&...Reducers) {
-   parallelReduceInner(Team, 0, UpperBound - 1, std::forward<F>(Functor),
+   parallelReduceInner(Team, Range{0, UpperBound - 1}, std::forward<F>(Functor),
                        std::forward<R>(Reducers)...);
 }
 
 // parallelScanInner
 
 template <class F, class... R>
-KOKKOS_FUNCTION void parallelScanInner(const TeamMember &Team, int MinIndex,
-                                       int MaxIndex, F &&Functor,
-                                       R &&...Reducers) {
-   const auto Policy = TeamThreadRange(Team, MinIndex, MaxIndex + 1);
+KOKKOS_FUNCTION void parallelScanInner(const TeamMember &Team, Range Rng,
+                                       F &&Functor, R &&...Reducers) {
+   const auto Policy = TeamThreadRange(Team, Rng.First, Rng.Last + 1);
    Kokkos::parallel_scan(Policy, std::forward<F>(Functor),
                          std::forward<R>(Reducers)...);
 }
@@ -212,7 +216,7 @@ KOKKOS_FUNCTION void parallelScanInner(const TeamMember &Team, int MinIndex,
 template <class F, class... R>
 KOKKOS_FUNCTION void parallelScanInner(const TeamMember &Team, int UpperBound,
                                        F &&Functor, R &&...Reducers) {
-   parallelScanInner(Team, 0, UpperBound - 1, std::forward<F>(Functor),
+   parallelScanInner(Team, Range{0, UpperBound - 1}, std::forward<F>(Functor),
                      std::forward<R>(Reducers)...);
 }
 
