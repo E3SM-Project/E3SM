@@ -171,10 +171,11 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   // calculate final output tendencies
 
   mcsp_freq = 0.0;
+  bool any_tend = false;
 
   // Calculate final tendencies and check frequency in a single parallel_reduce
   Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, jctop, pver),
-    [&] (const Int& k, Real& local_freq) {
+    [&] (const Int& k, bool& local_freq) {
       // subtract mass weighted average tendencies for energy/mass conservation
       mcsp_dt_out(k) = mcsp_tend_s(k) - mcsp_avg_tend_s;
       mcsp_dq_out(k) = mcsp_tend_q(k) - mcsp_avg_tend_q;
@@ -199,14 +200,13 @@ void Functions<S,D>::zm_conv_mcsp_tend(
       // update frequency if MCSP contributes any tendency in the column
       if (std::abs(mcsp_tend_s(k)) > 0.0 || std::abs(mcsp_tend_q(k)) > 0.0 ||
           std::abs(mcsp_tend_u(k)) > 0.0 || std::abs(mcsp_tend_v(k)) > 0.0) {
-        local_freq = 1.0;
-      }
-      else {
-        local_freq = 0.0;
+        local_freq = true;
       }
     },
-    Kokkos::Max<Real>(mcsp_freq));
+    Kokkos::LOr<bool>(any_tend));
   team.team_barrier();
+
+  if (any_tend) mcsp_freq = 1.0;
 
   workspace.template release_many_contiguous<4>(
     {&mcsp_tend_s, &mcsp_tend_q, &mcsp_tend_u, &mcsp_tend_v});

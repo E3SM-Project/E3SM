@@ -414,7 +414,7 @@ struct ZmConvMcspTendData : public PhysicsTestData {
     // Make sure each column is sorted
     for (Int c = 0; c < pcols; ++c) {
       std::sort(state_pmid + (c*pver), state_pmid + ((c+1)*pver));
-      std::sort(state_pint + (c*(pver+1)), state_pint + ((c+1)*(pver+1)));
+      std::sort(state_pint + (c*(pverp)), state_pint + ((c+1)*(pverp)));
     }
   }
 };
