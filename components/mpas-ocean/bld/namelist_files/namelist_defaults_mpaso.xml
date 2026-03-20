@@ -402,6 +402,8 @@
 <!-- coupling -->
 <config_remove_ais_river_runoff>.false.</config_remove_ais_river_runoff>
 <config_remove_ais_ice_runoff>.false.</config_remove_ais_ice_runoff>
+<config_convert_ice_to_river_runoff_latband>.false.</config_convert_ice_to_river_runoff_latband>
+<config_convert_ice_to_river_runoff_latband_width_degrees>20.0</config_convert_ice_to_river_runoff_latband_width_degrees>
 <config_scale_dismf_by_removed_ice_runoff>.false.</config_scale_dismf_by_removed_ice_runoff>
 <config_ais_ice_runoff_history_days>731</config_ais_ice_runoff_history_days>
 <config_n_glc_z_levels>0</config_n_glc_z_levels>

@@ -126,6 +126,7 @@ module ocn_comp_mct
               ocn_cpl_dt    ! length of coupling interval in seconds - set by coupler/ESMF
 
    real (kind=RKIND) :: precFactor 
+   real (kind=RKIND), private :: cumulativeConvertedRunoffEnergyDeficitJ = 0.0_RKIND
 
 !=======================================================================
 
@@ -996,6 +997,7 @@ contains
 
 
     itimestep = 0
+   cumulativeConvertedRunoffEnergyDeficitJ = 0.0_RKIND
 
     ! Reset all output alarms, to prevent intial time step from writing any output, unless it's ringing.
     call mpas_stream_mgr_reset_alarms(domain_ptr % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
@@ -1066,7 +1068,7 @@ contains
       type (domain_type), pointer :: domain_ptr
       character(len=StrKIND) :: timeStamp, streamName, WCstring
       type (MPAS_timeInterval_type) :: timeStep
-      integer :: iam, ierr, streamDirection, errorCode
+      integer :: i, iam, ierr, streamDirection, errorCode
       logical :: streamActive, debugOn
       logical, pointer :: config_write_output_on_startup
       logical, pointer :: config_use_ecosysTracers
@@ -1075,14 +1077,23 @@ contains
       logical, pointer :: config_use_activeTracers_surface_restoring
       logical, pointer :: config_use_surface_salinity_monthly_restoring
       logical, pointer :: config_scale_dismf_by_removed_ice_runoff
+      logical, pointer :: config_convert_ice_to_river_runoff_latband
       character (len=StrKIND), pointer :: config_restart_timestamp_name
       character (len=StrKIND), pointer :: config_sw_absorption_type
+      character(len=StrKIND) :: diagMessage
 
       ! Added for coupling interval initialization
       integer, pointer :: index_avgZonalSSHGradient, index_avgMeridionalSSHGradient
       real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
       real (kind=RKIND), pointer :: &
          runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff from the ocean
+      real (kind=RKIND), dimension(:), pointer :: areaCell
+      real (kind=RKIND), dimension(:), pointer :: convertedIceRunoffFlux
+      real (kind=RKIND), dimension(:), pointer :: convertedIceRunoffEnergyDeficitFlux
+      real (kind=RKIND) :: convertedRunoffLocal, convertedRunoffGlobal
+      real (kind=RKIND) :: convertedEnergyDeficitLocal, convertedEnergyDeficitGlobal
+      integer, pointer :: nCellsSolve
+      integer :: convertedCellsLocal, convertedCellsGlobal
 
       ! freshwater balance adjustment 
       logical, pointer :: config_use_precip_scaling
@@ -1114,6 +1125,8 @@ contains
 
       call mpas_pool_get_config(domain_ptr % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
       call mpas_pool_get_config(domain_ptr % configs, 'config_sw_absorption_type', config_sw_absorption_type)
+      call mpas_pool_get_config(domain_ptr % configs, 'config_convert_ice_to_river_runoff_latband', &
+                    config_convert_ice_to_river_runoff_latband)
 
       ! Setup log information.
       call shr_file_getLogUnit (shrlogunit)
@@ -1215,6 +1228,49 @@ contains
             block_ptr => block_ptr % next
          end do
          if (debugOn) call mpas_log_write('   Finished building forcing arrays')
+
+         if (config_convert_ice_to_river_runoff_latband) then
+            convertedRunoffLocal = 0.0_RKIND
+            convertedEnergyDeficitLocal = 0.0_RKIND
+            convertedCellsLocal = 0
+
+            block_ptr => domain_ptr % blocklist
+            do while(associated(block_ptr))
+               call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+               call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+               call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+               call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+               call mpas_pool_get_array(forcingPool, 'convertedIceRunoffFlux', convertedIceRunoffFlux)
+               call mpas_pool_get_array(forcingPool, 'convertedIceRunoffEnergyDeficitFlux', convertedIceRunoffEnergyDeficitFlux)
+
+               do i = 1, nCellsSolve
+                  convertedRunoffLocal = convertedRunoffLocal + convertedIceRunoffFlux(i) * areaCell(i)
+                  convertedEnergyDeficitLocal = convertedEnergyDeficitLocal + &
+                     convertedIceRunoffEnergyDeficitFlux(i) * areaCell(i)
+                  if (convertedIceRunoffFlux(i) > 0.0_RKIND) then
+                     convertedCellsLocal = convertedCellsLocal + 1
+                  end if
+               end do
+
+               block_ptr => block_ptr % next
+            end do
+
+            call mpas_dmpar_sum_real(domain % dminfo, convertedRunoffLocal, convertedRunoffGlobal)
+            call mpas_dmpar_sum_real(domain % dminfo, convertedEnergyDeficitLocal, convertedEnergyDeficitGlobal)
+            call mpas_dmpar_sum_int(domain % dminfo, convertedCellsLocal, convertedCellsGlobal)
+
+            cumulativeConvertedRunoffEnergyDeficitJ = cumulativeConvertedRunoffEnergyDeficitJ + &
+               convertedEnergyDeficitGlobal * dt
+
+            if (iam == 0 .and. convertedCellsGlobal > 0) then
+               write(diagMessage,'(A,1PE14.6,A,1PE14.6,A,1PE14.6,A,I10)') &
+                  'ROFI->ROFL latband diagnostics: converted_mass_flux_kgps=', convertedRunoffGlobal, &
+                  ' estimated_energy_deficit_W=', convertedEnergyDeficitGlobal, &
+                  ' cumulative_energy_deficit_J=', cumulativeConvertedRunoffEnergyDeficitJ, &
+                  ' converted_cells=', convertedCellsGlobal
+               call mpas_log_write(trim(diagMessage))
+            end if
+         end if
 
          ! Read forcing streams for next timestep
          if (iam==0.and.debugOn) then
@@ -2046,6 +2102,7 @@ contains
                        config_use_CFCTracers,  &
                        config_remove_ais_river_runoff, &
                        config_remove_ais_ice_runoff, &
+                       config_convert_ice_to_river_runoff_latband, &
                        config_cvmix_kpp_use_theory_wave, &
                        config_eke_correction_enable
 
@@ -2053,6 +2110,8 @@ contains
                                       config_ecosys_atm_alt_co2_option
 
    real (kind=RKIND), pointer :: config_ecosys_atm_co2_constant_value
+
+   real (kind=RKIND), pointer :: config_convert_ice_to_river_runoff_latband_width_degrees
 
    real (kind=RKIND), pointer :: config_density0
 
@@ -2080,6 +2139,7 @@ contains
                                   snowFluxField, seaIceFreshWaterFluxField, icebergFreshWaterFluxField, &
                                   seaIceSalinityFluxField, &
                                   riverRunoffFluxField, iceRunoffFluxField, &
+                                  convertedIceRunoffFluxField, &
                                   removedRiverRunoffFluxField, removedIceRunoffFluxField, &
                                   shortWaveHeatFluxField, rainFluxField, &
                                   atmosphericPressureField, iceFractionField, &
@@ -2142,6 +2202,7 @@ contains
                                                snowFlux, seaIceFreshWaterFlux, icebergFreshWaterFlux, &
                                                seaIceSalinityFlux, &
                                                riverRunoffFlux, iceRunoffFlux, &
+                                               convertedIceRunoffFlux, &
                                                removedRiverRunoffFlux, removedIceRunoffFlux, &
                                                shortWaveHeatFlux, rainFlux, &
                                                atmosphericPressure, iceFraction, &
@@ -2203,6 +2264,7 @@ contains
    real (kind=RKIND), dimension(:,:), pointer :: landIceInterfaceTracers
 
    real (kind=RKIND) :: riverFactor
+   real (kind=RKIND) :: convert_ice_to_river_runoff_latband_width_radians
 
    ! freshwater balance adjustment 
    logical, pointer :: config_use_precip_scaling
@@ -2236,8 +2298,15 @@ contains
    call mpas_pool_get_config(domain % configs, 'config_use_CFCTracers', config_use_CFCTracers)
    call mpas_pool_get_config(domain % configs, 'config_remove_ais_river_runoff', config_remove_ais_river_runoff)
    call mpas_pool_get_config(domain % configs, 'config_remove_ais_ice_runoff', config_remove_ais_ice_runoff)
+   call mpas_pool_get_config(domain % configs, 'config_convert_ice_to_river_runoff_latband', &
+                                                config_convert_ice_to_river_runoff_latband)
+   call mpas_pool_get_config(domain % configs, 'config_convert_ice_to_river_runoff_latband_width_degrees', &
+                                                config_convert_ice_to_river_runoff_latband_width_degrees)
    call mpas_pool_get_config(domain % configs, 'config_cvmix_kpp_use_theory_wave', config_cvmix_kpp_use_theory_wave)
    call mpas_pool_get_config(domain % configs, 'config_eke_correction_enable', config_eke_correction_enable)
+
+   convert_ice_to_river_runoff_latband_width_radians = &
+      max(0.0_RKIND, config_convert_ice_to_river_runoff_latband_width_degrees) * pi / 180.0_RKIND
 
    precFactor = 1.0_RKIND  ! Default to no scaling
    !configuration for freshwater balance constrains
@@ -2273,6 +2342,7 @@ contains
       call mpas_pool_get_field(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFluxField)
       call mpas_pool_get_field(forcingPool, 'riverRunoffFlux', riverRunoffFluxField)
       call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
+      call mpas_pool_get_field(forcingPool, 'convertedIceRunoffFlux', convertedIceRunoffFluxField)
       call mpas_pool_get_field(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFluxField)
       call mpas_pool_get_field(forcingPool, 'rainFlux', rainFluxField)
       call mpas_pool_get_field(forcingPool, 'atmosphericPressure', atmosphericPressureField)
@@ -2323,6 +2393,7 @@ contains
       seaIceSalinityFlux => seaIceSalinityFluxField % array
       riverRunoffFlux => riverRunoffFluxField % array
       iceRunoffFlux => iceRunoffFluxField % array
+      convertedIceRunoffFlux => convertedIceRunoffFluxField % array
       shortWaveHeatFlux => shortWaveHeatFluxField % array
       rainFlux => rainFluxField % array
       atmosphericPressure => atmosphericPressureField % array
@@ -2458,6 +2529,8 @@ contains
          removedIceRunoffFlux(:) = 0.0_RKIND
       endif
 
+      convertedIceRunoffFlux(:) = 0.0_RKIND
+
       if (config_cvmix_kpp_use_theory_wave .or. config_eke_correction_enable) then
          ! Initialize this field
          windSpeed10m(:) = 0.0_RKIND
@@ -2531,6 +2604,13 @@ contains
                  removedIceRunoffFlux(i) = iceRunoffFlux(i)
                  iceRunoffFlux(i) = 0.0_RKIND
                  removedIceRunoffFluxThisProc = removedIceRunoffFluxThisProc + removedIceRunoffFlux(i)
+              endif
+           endif
+           if (config_convert_ice_to_river_runoff_latband) then
+              if (abs(latCell(i)) <= convert_ice_to_river_runoff_latband_width_radians) then
+                 convertedIceRunoffFlux(i) = iceRunoffFlux(i)
+                 riverRunoffFlux(i) = riverRunoffFlux(i) + iceRunoffFlux(i)
+                 iceRunoffFlux(i) = 0.0_RKIND
               endif
            endif
         end if
@@ -2926,6 +3006,9 @@ contains
    end if
    if ( iceRunoffFluxField % isActive ) then
       call mpas_dmpar_exch_halo_field(iceRunoffFluxField)
+   end if
+   if ( convertedIceRunoffFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(convertedIceRunoffFluxField)
    end if
    if ( shortWaveHeatFluxField % isActive ) then
       call mpas_dmpar_exch_halo_field(shortWaveHeatFluxField)
