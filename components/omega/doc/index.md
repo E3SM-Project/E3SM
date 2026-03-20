@@ -116,6 +116,7 @@ design/HorzMeshClass
 design/Logging
 design/MachEnv
 design/Metadata
+design/PGrad
 design/IO
 design/IOStreams
 design/Reductions
