@@ -53,7 +53,7 @@ using MemoryUnmanaged = Kokkos::MemoryTraits<Kokkos::Unmanaged | Kokkos::Restric
 // The memory spaces
 using ExecMemSpace    = ExecSpace::memory_space;
 using ScratchMemSpace = ExecSpace::scratch_memory_space;
-using HostMemSpace    = Kokkos::HostSpace;
+using HostMemSpace    = typename Kokkos::View<Real, ExecMemSpace>::HostMirror::memory_space;
 // Selecting the memory space for the MPI buffers, that is, where the MPI
 // buffers will be allocated. In a CPU build, this is always going to be
 // the same as ExecMemSpace, i.e., HostSpace. In a GPU build, one can choose

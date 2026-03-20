@@ -15,11 +15,13 @@ typedef double Real;
 namespace ko = Kokkos;
 
 // Fortran array wrappers with Fortran index order.
-template <typename T> using FA1 = typename ko::View<T*,     ko::LayoutLeft, ko::DefaultExecutionSpace::memory_space>::HostMirror;
-template <typename T> using FA2 = typename ko::View<T**,    ko::LayoutLeft, ko::DefaultExecutionSpace::memory_space>::HostMirror;
-template <typename T> using FA3 = typename ko::View<T***,   ko::LayoutLeft, ko::DefaultExecutionSpace::memory_space>::HostMirror;
-template <typename T> using FA4 = typename ko::View<T****,  ko::LayoutLeft, ko::DefaultExecutionSpace::memory_space>::HostMirror;
-template <typename T> using FA5 = typename ko::View<T*****, ko::LayoutLeft, ko::DefaultExecutionSpace::memory_space>::HostMirror;
+// Use explicit HostSpace to preserve const qualifiers and ensure compatibility
+// on APU where HostMirror of HIPSpace stays in HIPSpace.
+template <typename T> using FA1 = ko::View<T*,     ko::LayoutLeft, ko::HostSpace>;
+template <typename T> using FA2 = ko::View<T**,    ko::LayoutLeft, ko::HostSpace>;
+template <typename T> using FA3 = ko::View<T***,   ko::LayoutLeft, ko::HostSpace>;
+template <typename T> using FA4 = ko::View<T****,  ko::LayoutLeft, ko::HostSpace>;
+template <typename T> using FA5 = ko::View<T*****, ko::LayoutLeft, ko::HostSpace>;
 
 template <typename MT> using DepPoints =
   ko::View<Real****, ko::LayoutRight, typename MT::DDT>;

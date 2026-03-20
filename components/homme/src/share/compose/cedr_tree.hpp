@@ -108,7 +108,14 @@ struct NodeSetsDeviceData {
   IntList lvl, lvlptr;
 };
 
-typedef NodeSetsDeviceData<Kokkos::DefaultHostExecutionSpace> NodeSetsHostData;
+template <typename ExeSpace>
+struct NodeSetsHostData {
+  typedef typename NodeSetsDeviceData<ExeSpace>::NodeList::HostMirror NodeList;
+  typedef typename NodeSetsDeviceData<ExeSpace>::IntList::HostMirror IntList;
+
+  NodeList node;
+  IntList lvl, lvlptr;
+};
 
 // Analyze the tree to extract levels. Levels are run from 0 to #level - 1. Each
 // level has nodes whose corresponding operations depend on only nodes in

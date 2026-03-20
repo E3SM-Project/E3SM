@@ -129,7 +129,7 @@ void GllFvRemapImpl::init_boundary_exchanges () {
   }
 }
 
-template <typename T> using FV = typename Kokkos::View<T, Kokkos::LayoutLeft, Homme::ExecSpace::memory_space>::HostMirror;
+template <typename T> using FV = Kokkos::View<T, Kokkos::LayoutLeft, HostMemSpace>;
 
 void GllFvRemapImpl
 ::init_data (const int nf, const int nf_max, const bool theta_hydrostatic_mode,
