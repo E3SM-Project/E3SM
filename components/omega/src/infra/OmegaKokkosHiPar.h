@@ -242,6 +242,44 @@ KOKKOS_FUNCTION void parallelScanInner(const TeamMember &Team, int UpperBound,
                      std::forward<R>(Reducers)...);
 }
 
+// parallelSearchInner
+// Given a functor taking an index and returning a bool this function
+// returns the first index in the range [0, UpperBound) for which the input
+// functor returns true. If no such index is found it returns -1
+template <class F>
+KOKKOS_FUNCTION void parallelSearchInner(const TeamMember &Team, int UpperBound,
+                                         F &&Functor, int &Idx) {
+   static_assert(std::is_same_v<std::invoke_result_t<F, int>, bool>,
+                 "parallelSearchInner requires a functor that takes an int and "
+                 "returns bool");
+
+   // There are different implementations for host and device since the
+   // parallel_reduce version doesn't return early leading to performance loss
+   // on CPUs
+#ifndef OMEGA_TARGET_DEVICE
+   Idx = -1;
+   for (int I = 0; I < UpperBound; ++I) {
+      if (Functor(I)) {
+         Idx = I;
+         break;
+      }
+   }
+#else
+   const auto Policy = TeamThreadRange(Team, UpperBound);
+   Kokkos::parallel_reduce(
+       Policy,
+       INNER_LAMBDA(int I, int &Accum) {
+          if (I <= Accum && Functor(I)) {
+             Accum = I;
+          }
+       },
+       Kokkos::Min<int>(Idx));
+   if (Idx == Kokkos::reduction_identity<int>::min()) {
+      Idx = -1;
+   }
+#endif
+}
+
 } // end namespace OMEGA
 
 //===----------------------------------------------------------------------===//
