@@ -555,13 +555,13 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
       if (export_source(idx_Faxa_snowl)==FROM_MODEL) { Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O.value); }
     }
 
-    if (export_source(idx_Sa_wsresp)==FROM_MODEL) {
+    if (export_source(idx_Sa_ugust)==FROM_MODEL) {
       const auto tke_i = ekat::subview(tke, i);
       const auto s_tke_i = ekat::scalarize(tke_i);
       Sa_ugust(i) = PF::calculate_gustiness_speed(s_tke_i(num_levs-1));
     }
 
-    if (export_source(idx_Sa_ugust)==FROM_MODEL) {
+    if (export_source(idx_Sa_wsresp)==FROM_MODEL) {
       const auto um_pert_diff_i = ekat::subview(um_pert_diff, i);
       const auto s_um_pert_diff_i = ekat::scalarize(um_pert_diff_i);
       const auto vm_pert_diff_i = ekat::subview(vm_pert_diff, i);
