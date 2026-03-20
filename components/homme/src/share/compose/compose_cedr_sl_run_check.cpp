@@ -13,7 +13,7 @@ void check (CDR<MT>& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
   const Int np = ta.np, np2 = np*np, nlev = ta.nlev, nsuplev = cdr.nsuplev,
     qsize = ta.qsize, nprob = cdr.threed ? 1 : nsuplev;
 
-  Kokkos::View<Real**, Kokkos::DefaultHostExecutionSpace>
+  Kokkos::View<Real**, Kokkos::Serial>
     mass_p("mass_p", nprob, qsize), mass_c("mass_c", nprob, qsize),
     mass_lo("mass_lo", nprob, qsize), mass_hi("mass_hi", nprob, qsize),
     q_lo("q_lo", nprob, qsize), q_hi("q_hi", nprob, qsize),
@@ -160,7 +160,7 @@ void check (CDR<MT>& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
 # pragma omp master
 #endif
   {
-    Kokkos::View<Real**, Kokkos::DefaultHostExecutionSpace>
+    Kokkos::View<Real**, Kokkos::Serial>
       mass_p_g("mass_p_g", nprob, qsize), mass_c_g("mass_c_g", nprob, qsize),
       mass_lo_g("mass_lo_g", nprob, qsize), mass_hi_g("mass_hi_g", nprob, qsize),
       q_lo_g("q_lo_g", nprob, qsize), q_hi_g("q_hi_g", nprob, qsize),

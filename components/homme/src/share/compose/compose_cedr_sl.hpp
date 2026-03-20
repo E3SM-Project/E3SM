@@ -29,7 +29,7 @@ struct Data {
   const TracerArrays<ko::MachineTraits>::Ptr ta;
 
   struct Check {
-    Kokkos::View<Real**, Kokkos::DefaultHostExecutionSpace>
+    Kokkos::View<Real**, Kokkos::Serial>
       mass_p, mass_c, mass_lo, mass_hi,
       q_lo, q_hi, q_min_l, q_max_l, qd_lo, qd_hi;
     Check (const Int nlev, const Int qsize)
