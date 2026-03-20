@@ -202,7 +202,8 @@ void Functions<S,D>::update_prognostics_implicit(
 
   // march um_pert and vm_pert one step forward using implicit solver
   {
-    // Call decomp for momentum variables
+    // Call decomp for perturbed momentum variables
+    team.team_barrier();
     vd_shoc_decomp(team, nlev, tk_zi, tmpi, rdp_zt, dtime, ksrf_pert, du, dl, d);
 
     // Solve
