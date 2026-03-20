@@ -744,8 +744,7 @@ void compute_cape_from_parcel(ComputeCapeFromParcelData& d)
     pint_d(vec2dr_in[3]),
     sp_humidity_d(vec2dr_in[4]),
     temperature_d(vec2dr_in[5]),
-    tv_d(vec2dr_in[6]),
-    zmid_d(vec2dr_in[7]);
+    tv_d(vec2dr_in[6]);
 
   view1di_d
     eql_klev_d(vec1di_in[0]),
