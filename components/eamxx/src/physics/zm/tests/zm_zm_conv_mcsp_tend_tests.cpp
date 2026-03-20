@@ -60,6 +60,11 @@ struct UnitWrap::UnitTest<D>::TestZmConvMcspTend : public UnitWrap::UnitTest<D>:
       }
     }
 
+    // zm_conv_mcsp_test does a few sum reductions and we can't guarantee
+    // order of operations consistency with fortran, so we need approx
+    const auto margin = std::numeric_limits<Real>::epsilon() *
+      (ekat::is_single_precision<Real>::value ? 1000 : 1);
+
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
@@ -74,11 +79,11 @@ struct UnitWrap::UnitTest<D>::TestZmConvMcspTend : public UnitWrap::UnitTest<D>:
         REQUIRE(d_baseline.total(d_baseline.ptend_s) == d_test.total(d_test.mcsp_du_out));
         REQUIRE(d_baseline.total(d_baseline.ptend_s) == d_test.total(d_test.mcsp_dv_out));
         for (Int k = 0; k < d_baseline.total(d_baseline.ptend_s); ++k) {
-          REQUIRE(d_baseline.ptend_s[k] == d_test.ptend_s[k]);
+          REQUIRE(d_baseline.ptend_s[k] == Approx(d_test.ptend_s[k]).margin(margin));
           REQUIRE(d_baseline.ptend_q[k] == d_test.ptend_q[k]);
           REQUIRE(d_baseline.ptend_u[k] == d_test.ptend_u[k]);
           REQUIRE(d_baseline.ptend_v[k] == d_test.ptend_v[k]);
-          REQUIRE(d_baseline.mcsp_dt_out[k] == d_test.mcsp_dt_out[k]);
+          REQUIRE(d_baseline.mcsp_dt_out[k] == Approx(d_test.mcsp_dt_out[k]).margin(margin));
           REQUIRE(d_baseline.mcsp_dq_out[k] == d_test.mcsp_dq_out[k]);
           REQUIRE(d_baseline.mcsp_du_out[k] == d_test.mcsp_du_out[k]);
           REQUIRE(d_baseline.mcsp_dv_out[k] == d_test.mcsp_dv_out[k]);
