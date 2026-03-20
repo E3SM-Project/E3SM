@@ -154,18 +154,16 @@ struct TestSetupPlane {
               std::cos(2 * TwoPi * Y / Ly) / Ly / Ly);
    }
 
-   KOKKOS_FUNCTION Real windForcingX(Real X, Real Y,
-                                     Real SaltWaterDensity) const {
+   KOKKOS_FUNCTION Real windForcingX(Real X, Real Y) const {
       const Real StressU = vectorX(X, Y);
       const Real Thick   = scalarB(X, Y);
-      return StressU / (Thick * SaltWaterDensity);
+      return StressU / (Thick * RhoSw);
    }
 
-   KOKKOS_FUNCTION Real windForcingY(Real X, Real Y,
-                                     Real SaltWaterDensity) const {
+   KOKKOS_FUNCTION Real windForcingY(Real X, Real Y) const {
       const Real StressV = vectorY(X, Y);
       const Real Thick   = scalarB(X, Y);
-      return StressV / (Thick * SaltWaterDensity);
+      return StressV / (Thick * RhoSw);
    }
 
    KOKKOS_FUNCTION Real bottomDragX(Real X, Real Y, Real Coeff) const {
@@ -297,18 +295,16 @@ struct TestSetupSphere {
       return std::sqrt(3. / 2. / Pi) * std::cos(Lat) * std::cos(Lon) / Radius;
    }
 
-   KOKKOS_FUNCTION Real windForcingX(Real Lon, Real Lat,
-                                     Real SaltWaterDensity) const {
+   KOKKOS_FUNCTION Real windForcingX(Real Lon, Real Lat) const {
       const Real StressU = vectorX(Lon, Lat);
       const Real Thick   = scalarB(Lon, Lat);
-      return StressU / (Thick * SaltWaterDensity);
+      return StressU / (Thick * RhoSw);
    }
 
-   KOKKOS_FUNCTION Real windForcingY(Real Lon, Real Lat,
-                                     Real SaltWaterDensity) const {
+   KOKKOS_FUNCTION Real windForcingY(Real Lon, Real Lat) const {
       const Real StressV = vectorY(Lon, Lat);
       const Real Thick   = scalarB(Lon, Lat);
-      return StressV / (Thick * SaltWaterDensity);
+      return StressV / (Thick * RhoSw);
    }
 
    KOKKOS_FUNCTION Real bottomDragX(Real Lon, Real Lat, Real Coeff) const {
@@ -706,8 +702,6 @@ int testWindForcing(int NVertLayers) {
    const auto Mesh   = HorzMesh::getDefault();
    const auto VCoord = VertCoord::getDefault();
 
-   const Real SaltWaterDensity = 0.987654321;
-
    // Compute exact result
    Array2DReal ExactWindForcing("ExactWindForcing", Mesh->NEdgesOwned,
                                 NVertLayers);
@@ -715,8 +709,8 @@ int testWindForcing(int NVertLayers) {
    // Note: this computes wind forcing at every layer
    Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
-          VecField[0] = Setup.windForcingX(X, Y, SaltWaterDensity);
-          VecField[1] = Setup.windForcingY(X, Y, SaltWaterDensity);
+          VecField[0] = Setup.windForcingX(X, Y);
+          VecField[1] = Setup.windForcingY(X, Y);
        },
        ExactWindForcing, EdgeComponent::Normal, Geom, Mesh, ExchangeHalos::No);
 
@@ -745,7 +739,6 @@ int testWindForcing(int NVertLayers) {
    Array2DReal NumWindForcing("NumWindForcing", Mesh->NEdgesOwned, NVertLayers);
 
    WindForcingOnEdge WindForcingOnE(Mesh, VCoord);
-   WindForcingOnE.LocRhoSw = SaltWaterDensity;
 
    parallelFor(
        {Mesh->NEdgesOwned, NVertLayers}, KOKKOS_LAMBDA(int IEdge, int KLayer) {

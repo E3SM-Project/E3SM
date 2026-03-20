@@ -62,7 +62,7 @@ VelocityHyperDiffOnEdge::VelocityHyperDiffOnEdge(const HorzMesh *Mesh,
 
 WindForcingOnEdge::WindForcingOnEdge(const HorzMesh *Mesh,
                                      const VertCoord *VCoord)
-    : Enabled(false), LocRhoSw(RhoSw), EdgeMask(VCoord->EdgeMask),
+    : Enabled(false), EdgeMask(VCoord->EdgeMask),
       MinLayerEdgeBot(VCoord->MinLayerEdgeBot) {}
 
 BottomDragOnEdge::BottomDragOnEdge(const HorzMesh *Mesh,

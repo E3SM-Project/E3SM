@@ -305,7 +305,6 @@ class VelocityHyperDiffOnEdge {
 class WindForcingOnEdge {
  public:
    bool Enabled = false;
-   Real LocRhoSw;
 
    /// constructor declaration
    WindForcingOnEdge(const HorzMesh *Mesh, const VertCoord *VCoord);
@@ -320,7 +319,7 @@ class WindForcingOnEdge {
 
          const Real InvThickEdge = 1._Real / LayerThickEdge(IEdge, K);
          Tend(IEdge, K) += EdgeMask(IEdge, K) * InvThickEdge *
-                           NormalStressEdge(IEdge) / LocRhoSw;
+                           NormalStressEdge(IEdge) / RhoSw;
       }
    }
 
