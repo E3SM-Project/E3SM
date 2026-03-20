@@ -31,18 +31,18 @@ constexpr int OMEGA_TEAMSIZE = 1;
 #define INNER_LAMBDA [=]
 // #define INNER_LAMBDA [&]
 
+// Helper struct for providing information about scratch memory requirements
+// TeamScratch<Real, I4>(4, 8) stores the number of bytes needed for
+// 4 values of type Real and 8 vals of type I4
 template <class... T> struct TeamScratch {
    size_t BytesPerTeam = 0;
 
    TeamScratch() = default;
 
-   template <int N> TeamScratch(const int (&NVals)[N]) {
-      static_assert(N == sizeof...(T));
-      int I = 0;
-      ((BytesPerTeam += sizeof(T) * NVals[I++]), ...);
+   template <class... ArgT> TeamScratch(ArgT... Args) {
+      static_assert(sizeof...(ArgT) == sizeof...(T));
+      ((BytesPerTeam += sizeof(T) * Args), ...);
    }
-
-   TeamScratch(int NVals) : TeamScratch({{NVals}}) {}
 };
 
 template <int N> struct LaunchConfig {
