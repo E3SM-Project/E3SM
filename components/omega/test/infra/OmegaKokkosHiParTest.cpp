@@ -366,6 +366,75 @@ Error testHiparFor1DSearch1D(int N2) {
    return Err;
 }
 
+Error testHiparLaunchConfig1D(int N1, int N2) {
+   Error Err;
+
+   HostArray2DReal RefOutH("RefOutH", N1, N2 - 3);
+
+   for (int J1 = 0; J1 < N1; ++J1) {
+      HostArray1DI4 ScratchAH("ScratchAH", N2);
+
+      for (int J2 = 0; J2 < N2; ++J2) {
+         ScratchAH(J2) = f2(J1, J2, N1, N2) * f2(J1, J2, N1, N2);
+      }
+
+      HostArray1DReal ScratchBH("ScratchBH", N2 - 2);
+
+      for (int J2 = 1; J2 < N2 - 1; ++J2) {
+         ScratchBH(J2 - 1) =
+             1._Real / (1._Real + ScratchAH(J2 + 1) - ScratchAH(J2 - 1));
+      }
+
+      for (int J2 = 0; J2 < N2 - 3; ++J2) {
+         RefOutH(J1, J2) = ScratchBH(J2) / ScratchBH(J2 + 1);
+      }
+   }
+
+   Array2DReal OutD("OutD", N1, N2 - 3);
+
+#ifdef OMEGA_DEVICE
+   const int TeamSize = 32;
+#else
+   const int TeamSize = 1;
+#endif
+
+   auto LConfig =
+       LaunchConfig({N1}, TeamSize, TeamScratch<Real, I4>({N2, N2 - 2}));
+   parallelForOuter(
+       LConfig, KOKKOS_LAMBDA(int J1, const TeamMember &Team) {
+          ArrayScratch1DI4 ScratchA(Team.team_scratch(0), N2);
+
+          parallelForInner(
+              Team, N2, INNER_LAMBDA(int J2) {
+                 ScratchA(J2) = f2(J1, J2, N1, N2) * f2(J1, J2, N1, N2);
+              });
+
+          teamBarrier(Team);
+
+          ArrayScratch1DReal ScratchB(Team.team_scratch(0), N2 - 2);
+
+          parallelForInner(
+              Team, Range{1, N2 - 2}, INNER_LAMBDA(int J2) {
+                 ScratchB(J2 - 1) =
+                     1._Real / (1._Real + ScratchA(J2 + 1) - ScratchA(J2 - 1));
+              });
+
+          teamBarrier(Team);
+
+          parallelForInner(
+              Team, N2 - 3, INNER_LAMBDA(int J2) {
+                 OutD(J1, J2) = ScratchB(J2) / ScratchB(J2 + 1);
+              });
+       });
+
+   if (!arraysEqual(OutD, RefOutH)) {
+      Err += Error(ErrorCode::Fail,
+                   errorMsg("parallelForLaunchConfig1D FAIL", N1, N2));
+   }
+
+   return Err;
+}
+
 Error testHiparFor1DMultiple1D(int N1, int N2) {
    Error Err;
 
@@ -793,6 +862,8 @@ int main(int argc, char **argv) {
             Err += testHiparReduce1DReduce1D(N1);
 #endif
             Err += testHiparFor1DSearch1D(N1);
+
+            Err += testHiparLaunchConfig1D(2 * N1, N1 + 3);
 
             Err += testHiparFor1DMultiple1D(1, N1);
             Err += testHiparFor1DMultiple1D((N1 + 1) / 2, N1);

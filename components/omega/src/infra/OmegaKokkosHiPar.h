@@ -18,6 +18,8 @@ using ScratchMemSpace = ExecSpace::scratch_memory_space;
 using Kokkos::PerTeam;
 using ArrayScratch1DReal =
     Kokkos::View<Real *, ScratchMemSpace, Kokkos::MemoryUnmanaged>;
+using ArrayScratch1DI4 =
+    Kokkos::View<I4 *, ScratchMemSpace, Kokkos::MemoryUnmanaged>;
 
 /// team_size for hierarchical parallelism
 #ifdef OMEGA_TARGET_DEVICE
