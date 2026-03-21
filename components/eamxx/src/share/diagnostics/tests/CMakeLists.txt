@@ -94,4 +94,7 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
 
   # Test histogram
   CreateDiagTest(histogram "histogram_test.cpp" MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+
+  # Test COSP diagnostic (multi-output, uses Fortran interface)
+  CreateDiagTest(cosp_diag "cosp_tests.cpp")
 endif()

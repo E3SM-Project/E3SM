@@ -9,6 +9,7 @@
 
 #include <fstream>
 #include <regex>
+#include <set>
 
 namespace scream {
 
@@ -260,8 +261,18 @@ create_diagnostic (const std::string& diag_field_name,
   }
   else
   {
-    // No existing special regex matches, so we assume that the diag field name IS the diag name.
-    diag_name = diag_field_name;
+    // COSP diagnostic fields: map specific field names to the COSP diagnostic
+    static const std::set<std::string> cosp_fields = {
+      "isccp_cldtot", "isccp_ctptau", "modis_ctptau", "misr_cthtau"
+    };
+    if (cosp_fields.count(diag_field_name)) {
+      diag_name = "Cosp";
+      params.set<std::string>("cosp_output_field", diag_field_name);
+      params.set<int>("cosp_subcolumns", 10);
+    } else {
+      // No existing special regex matches, so we assume that the diag field name IS the diag name.
+      diag_name = diag_field_name;
+    }
   }
 
   auto comm = grid->get_comm();

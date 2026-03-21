@@ -32,6 +32,9 @@ add_library (eamxx_diagnostics
 
 target_link_libraries(eamxx_diagnostics PUBLIC eamxx_atm_process)
 
+# COSP diagnostic (Fortran interface handles precision conversion internally)
+add_subdirectory(cosp)
+
 if (NOT SCREAM_LIB_ONLY AND NOT SCREAM_ONLY_GENERATE_BASELINES)
   add_subdirectory(tests)
 endif()

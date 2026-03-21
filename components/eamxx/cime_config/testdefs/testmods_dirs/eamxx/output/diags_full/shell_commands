@@ -1,0 +1,78 @@
+# This script generates output YAML files to test both single-output and
+# multi-output diagnostics in EAMxx. It creates two output streams:
+#   1. Single-output diagnostics (various types: pressure-level, height-level,
+#      derived quantities, cloud forcing, etc.)
+#   2. Multi-output diagnostics (COSP satellite simulator fields)
+#
+# This testmod is designed to exercise the diagnostic creation and output
+# pipeline thoroughly, covering:
+#   - Regex-based diagnostic creation (field_at_level, field_at_pressure, etc.)
+#   - Direct factory diagnostic creation (wind_speed, WaterPath, etc.)
+#   - Multi-output diagnostic creation (COSP: isccp_cldtot, isccp_ctptau, etc.)
+#   - Both INSTANT and AVERAGE output types
+
+CASEROOT=$(./xmlquery --value CASEROOT)
+CASE=$(./xmlquery --value CASE)
+
+# Scripts location
+YAML_EDIT_SCRIPT=$CIMEROOT/../components/eamxx/scripts/edit-output-stream
+ATMCHANGE=$CIMEROOT/../components/eamxx/scripts/atmchange
+
+# Figure out the suffix for the physics grid
+ATM_GRID=$(./xmlquery --value ATM_GRID)
+if [[ $ATM_GRID == *"pg2"* ]]; then
+  PGTYPE="pg2"
+else
+  PGTYPE="gll"
+fi
+
+# ---- Stream 1: Single-output diagnostics (INSTANT) ----
+YAML_SINGLE=$CASEROOT/eamxx_diags_single_output.yaml
+
+# Mix of diagnostic types to cover different creation paths:
+#   - FieldAtLevel: T_mid_at_model_bot, T_mid_at_model_top
+#   - FieldAtPressureLevel: T_mid_at_500hPa, T_mid_at_850hPa
+#   - FieldAtHeight: horiz_winds_at_100m_above_surface
+#   - VerticalLayer: z_mid, dz
+#   - Direct factory: wind_speed, LiqWaterPath, IceWaterPath
+#   - Derived: PotentialTemperature, SeaLevelPressure, Exner
+#   - Cloud forcing: ShortwaveCloudForcing, LongwaveCloudForcing
+#   - Precip: precip_liq_surf_mass_flux
+FIELDS_SINGLE='T_mid_at_model_bot T_mid_at_model_top'
+FIELDS_SINGLE+=' T_mid_at_500hPa T_mid_at_850hPa'
+FIELDS_SINGLE+=' horiz_winds_at_100m_above_surface'
+FIELDS_SINGLE+=' z_mid dz'
+FIELDS_SINGLE+=' wind_speed LiqWaterPath IceWaterPath'
+FIELDS_SINGLE+=' PotentialTemperature SeaLevelPressure Exner'
+FIELDS_SINGLE+=' ShortwaveCloudForcing LongwaveCloudForcing'
+FIELDS_SINGLE+=' precip_liq_surf_mass_flux'
+
+$YAML_EDIT_SCRIPT -g \
+ -f $YAML_SINGLE                             \
+ --avg-type INSTANT                          \
+ --freq HIST_N                               \
+ --freq-units HIST_OPTION                    \
+ --prefix ${CASE}.scream.diags_single.h      \
+ --grid "physics_${PGTYPE}"                  \
+ --fields ${FIELDS_SINGLE}
+
+$ATMCHANGE output_yaml_files+=$YAML_SINGLE -b
+
+# ---- Stream 2: Multi-output diagnostics / COSP (AVERAGE) ----
+# COSP fields are automatically recognized by the output manager and
+# trigger creation of the COSP multi-output diagnostic. No need to add
+# COSP to atm_procs_list; it runs at output frequency.
+YAML_MULTI=$CASEROOT/eamxx_diags_multi_output.yaml
+
+FIELDS_MULTI='isccp_cldtot isccp_ctptau modis_ctptau misr_cthtau'
+
+$YAML_EDIT_SCRIPT -g \
+ -f $YAML_MULTI                              \
+ --avg-type AVERAGE                          \
+ --freq HIST_N                               \
+ --freq-units HIST_OPTION                    \
+ --prefix ${CASE}.scream.diags_multi.h       \
+ --grid "physics_${PGTYPE}"                  \
+ --fields ${FIELDS_MULTI}
+
+$ATMCHANGE output_yaml_files+=$YAML_MULTI -b

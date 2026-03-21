@@ -16,10 +16,8 @@ case_name=$(./xmlquery --value CASE)
 ./xmlchange PIO_TYPENAME=pnetcdf #adios #,PIO_TYPENAME_ATM=adios
 ./xmlchange PIO_REARRANGER=1  # use PIO_REARRANGER=3, for ADIOS; PIO_REARRANGER=1 for pnetcdf
 
-# Turn on cosp and set frequency
-$atmchange -b physics::atm_procs_list="mac_aero_mic,rrtmgp,cosp"
-$atmchange -b physics::cosp::cosp_frequency_units="hours"
-$atmchange -b physics::cosp::cosp_frequency=1
+# COSP is now a diagnostic triggered by requesting its fields in output YAML
+$atmchange -b physics::atm_procs_list="mac_aero_mic,rrtmgp"
 
 # Need to explicitly turn on computing tendencies
 $atmchange -b physics::mac_aero_mic::shoc::compute_tendencies=T_mid,qv

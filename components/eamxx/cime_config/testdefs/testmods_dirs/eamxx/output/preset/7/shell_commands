@@ -1,0 +1,11 @@
+# Preset 7: Full diagnostics coverage (single + multi-output)
+# Combines physics output with comprehensive diagnostic testing.
+# Uses INSTANT for all streams.
+
+SCRIPTS_DIR=$CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/eamxx/output
+
+# Add physics output stream
+. $SCRIPTS_DIR/phys/shell_commands
+
+# Add comprehensive diagnostics (single + multi-output including COSP)
+. $SCRIPTS_DIR/diags_full/shell_commands

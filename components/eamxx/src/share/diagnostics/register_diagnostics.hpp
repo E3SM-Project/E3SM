@@ -32,6 +32,10 @@
 #include "binary_ops.hpp"
 #include "histogram.hpp"
 
+#ifdef EAMXX_HAS_COSP
+#include "cosp/eamxx_cosp.hpp"
+#endif
+
 namespace scream {
 
 inline void register_diagnostics () {
@@ -65,6 +69,9 @@ inline void register_diagnostics () {
   diag_factory.register_product("ConditionalSampling",&create_atmosphere_diagnostic<ConditionalSampling>);
   diag_factory.register_product("BinaryOpsDiag", &create_atmosphere_diagnostic<BinaryOpsDiag>);
   diag_factory.register_product("HistogramDiag",&create_atmosphere_diagnostic<HistogramDiag>);
+#ifdef EAMXX_HAS_COSP
+  diag_factory.register_product("Cosp",&create_atmosphere_diagnostic<Cosp>);
+#endif
 }
 
 } // namespace scream
