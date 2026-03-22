@@ -38,9 +38,10 @@ constexpr Real Gravity =
                                            // m/s^2 (from Physical Constants
                                            // Dictionary)
 constexpr Real CDay = 86400.0;             // Seconds in a calendar day ~ sec
-constexpr Real SDay = 86164.0;             // Seconds in a sidereal day ~ sec
 constexpr Real Omega =
-    2.0 * Pi / SDay; // Angular velocity of the Earth ~ rad/sec
+    pcd::angular_velocity; // Angular velocity of the Earth ~ rad/sec (from
+                           // Physical Constants Dictionary)
+constexpr Real SDay   = TwoPi / Omega;    // Seconds in a sidereal day ~ sec
 constexpr Real REarth = pcd::mean_radius; // Mean radius of the Earth ~ m (from
                                           // Physical Constants Dictionary)
 
@@ -48,26 +49,44 @@ constexpr Real REarth = pcd::mean_radius; // Mean radius of the Earth ~ m (from
 constexpr Real TkTrip =
     pcd::water_triple_point_temperature; // Triple point of fresh water ~ K
                                          // (from Physical Constants Dictionary)
-constexpr Real TkFrz   = 273.15;         // Freezing point of fresh water ~ K
-constexpr Real TkFrzSw = TkFrz - 1.8;    // Freezing point of seawater ~ K
-constexpr Real RhoAir  = 1.2;            // Density of air ~ kg/m^3
-constexpr Real RhoFw   = 1.000e3;        // Density of fresh water ~ kg/m^3
-constexpr Real RhoSw   = 1.026e3;        // Density of seawater ~ kg/m^3
-constexpr Real RhoIce  = 0.917e3;        // Density of ice ~ kg/m^3
-constexpr Real CpAir   = 1.005e3; // Specific heat capacity of air ~ J/(kg*K)
-constexpr Real CpFw =
-    4.188e3; // Specific heat capacity of fresh water ~ J/(kg*K)
-constexpr Real CpSw  = 3.996e3; // Specific heat capacity of seawater ~ J/(kg*K)
-constexpr Real CpIce = 2.108e3; // Specific heat capacity of ice ~ J/(kg*K)
-constexpr Real LatIce    = 3.337e5; // Latent heat of fusion ~ J/kg
-constexpr Real LatVap    = 2.501e6; // Latent heat of vaporization ~ J/kg
-constexpr Real LatSub    = LatIce + LatVap; // Latent heat of sublimation ~ J/kg
-constexpr Real CondIce   = 2.1;   // Universal gas constant ~ J/(mol*K)
-constexpr Real OcnRefSal = 34.7;  // Reference ocean salinity ~ psu
-constexpr Real IceRefSal = 4.0;   // Reference ice salinity ~ psu
-constexpr Real Sound     = 1.5e2; // Speed of sound ~ m/s
-constexpr Real VonKar    = 0.4;   // Von Karman constant ~ dimensionless
-constexpr Real Emiss     = 1.0;   // Emissivity ~ dimensionless
+constexpr Real TkFrz = pcd::pure_water_freezing_temperature_reference;
+// Freezing point of fresh water ~ K (from Physical Constants Dictionary)
+constexpr Real TkFrzSw = TkFrz - 1.8; // Freezing point of seawater ~ K
+constexpr Real RhoAir =
+    pcd::dry_air_density_at_standard_temperature_and_pressure;
+// Density of air ~ kg/m^3 (from Physical Constants Dictionary)
+constexpr Real RhoFw = pcd::pure_water_density_reference;
+// Density of fresh water ~ kg/m^3 (from Physical Constants Dictionary)
+constexpr Real RhoSw = pcd::seawater_density_reference;
+// Density of seawater ~ kg/m^3 (from Physical Constants Dictionary)
+constexpr Real RhoIce = pcd::sea_ice_density_reference;
+// Density of ice ~ kg/m^3 (from Physical Constants Dictionary)
+constexpr Real CpAir = pcd::dry_air_specific_heat_capacity_reference;
+// Specific heat capacity of air ~ J/(kg*K) (from Physical Constants Dictionary)
+constexpr Real CpFw = pcd::pure_water_specific_heat_capacity_reference;
+// Specific heat capacity of fresh water ~ J/(kg*K) (from Physical Constants
+// Dictionary)
+constexpr Real CpSw = pcd::seawater_specific_heat_capacity_reference;
+// Specific heat capacity of seawater ~ J/(kg*K) (from Physical Constants
+// Dictionary)
+constexpr Real CpIce = pcd::sea_ice_specific_heat_capacity_reference;
+// Specific heat capacity of ice ~ J/(kg*K) (from Physical Constants Dictionary)
+constexpr Real LatIce = pcd::latent_heat_of_fusion_reference;
+// Latent heat of fusion ~ J/kg (from Physical Constants Dictionary)
+constexpr Real LatVap = pcd::latent_heat_of_vaporization_reference;
+// Latent heat of vaporization ~ J/kg (from Physical Constants Dictionary)
+constexpr Real LatSub = pcd::latent_heat_of_sublimation_reference;
+// Latent heat of sublimation ~ J/kg (from Physical Constants Dictionary)
+constexpr Real CondIce = pcd::sea_ice_thermal_conductivity_reference;
+// Thermal conductivity of ice ~ W/(m*K) (from Physical Constants Dictionary)
+constexpr Real OcnRefSal = pcd::ocean_reference_salinity;
+// Reference ocean salinity ~ g/kg (from Physical Constants Dictionary)
+constexpr Real IceRefSal = pcd::sea_ice_reference_salinity;
+// Reference ice salinity ~ g/kg (from Physical Constants Dictionary)
+constexpr Real Sound = pcd::speed_of_sound_in_seawater_reference;
+// Speed of sound in seawater ~ m/s (from Physical Constants Dictionary)
+constexpr Real VonKar = 0.4; // Von Karman constant ~ dimensionless
+constexpr Real Emiss  = 1.0; // Emissivity ~ dimensionless
 constexpr Real AtmRefP =
     pcd::standard_atmosphere; // Reference atmospheric pressure ~ Pa (from
                               // Physical Constants Dictionary)
