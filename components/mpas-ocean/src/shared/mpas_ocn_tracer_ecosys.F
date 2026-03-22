@@ -552,7 +552,7 @@ contains
       ! two dimensional pointers
       !
       real (kind=RKIND), dimension(:), pointer :: &
-         dust_FLUX_IN, PAR_surface, shortWaveHeatFlux
+         dust_FLUX_IN, PAR_surface, shortWaveHeatFlux, iceFluxDust, iceFraction
 
       ! two dimensional arrays
       real (kind=RKIND), dimension(:,:), pointer :: &
@@ -588,6 +588,7 @@ contains
                                         ecosysDiagFieldsLevel4,  &
                                         ecosysDiagFieldsLevel5
 
+      type (mpas_pool_type), pointer :: ecosysSeaIceCoupling
       !
       ! level 1 diagnostics
       !
@@ -950,10 +951,19 @@ contains
          call mpas_pool_get_array(ecosysDiagFieldsLevel5, 'ecosys_diag_SiO3_RESTORE', ecosys_diag_SiO3_RESTORE)
       endif
 
+      if (config_use_ecosystracers_sea_ice_coupling) then
+         call mpas_pool_get_subpool(forcingPool, 'ecosysSeaIceCoupling', ecosysSeaIceCoupling)
+         call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxDust', iceFluxDust)
+      endif
+
       numColumns = 1
       column = 1
       !DWJ 08/05/2016: This loop needs OpenMP added to it.
       do iCell=1,nCellsSolve
+         if(config_use_ecosystracers_sea_ice_coupling) &
+            dust_FLUX_IN(iCell) = (1.0_RKIND - iceFraction(iCell))*dust_FLUX_IN(iCell)  &
+                                + max(0.0_RKIND,iceFluxDust(iCell))
 
          marbl_instances(1)%domain%kmt = maxLevelCell(iCell)
          marbl_instances(1)%interior_tendency_forcings(dustFlux_indexInMARBL)%field_0d(1)  = dust_FLUX_IN(iCell)
@@ -1821,6 +1831,13 @@ contains
          call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxFeDissolved', iceFluxFeDissolved)
 
       endif
+      if (config_use_ecosysTracers_iron_solubility_file) then
+        call mpas_pool_get_array(ecosysAuxiliary, 'IRON_Solubility_wet', IRON_Solubility_wet)
+        call mpas_pool_get_array(ecosysAuxiliary, 'IRON_Solubility_dry', IRON_Solubility_dry)
+        call mpas_pool_get_array(ecosysAuxiliary, 'IRON_in_dust_fraction', IRON_in_dust_fraction)
+        call mpas_pool_get_array(ecosysAuxiliary, 'dust_FLUX_WET', dust_FLUX_WET)
+        call mpas_pool_get_array(ecosysAuxiliary, 'dust_FLUX_DRY', dust_FLUX_DRY)
+      endif
 
       if (config_ecosysTracers_diagnostic_fields_level2) then
          call mpas_pool_get_subpool(forcingPool, 'ecosysDiagFieldsLevel2', ecosysDiagFieldsLevel2)
@@ -1877,12 +1894,14 @@ contains
          marbl_instances(1)%surface_flux_forcings(nhyFlux_indexInMARBL)%field_0d(iCell) = &
             depositionFluxNH4(iCell)
 
-         if(config_use_ecosystracers_sea_ice_coupling) then
+         if (config_use_ecosysTracers_iron_solubility_file) &
+            IRON_FLUX_IN(iCell) = ( dust_FLUX_WET(iCell)*IRON_Solubility_wet(iCell)    &
+                                    + dust_FLUX_DRY(iCell)*IRON_Solubility_dry(iCell) )  &
+                                    * IRON_in_dust_fraction(iCell)*1.e6_RKIND/molecular_weight_Fe
+         if (config_use_ecosystracers_sea_ice_coupling) &
             IRON_FLUX_IN(iCell) = (1.0_RKIND - iceFraction(iCell))*IRON_FLUX_IN(iCell)  &
                                 + iceFluxFeDissolved(iCell)
-            dust_FLUX_IN(iCell) = (1.0_RKIND - iceFraction(iCell))*dust_FLUX_IN(iCell)  &
-                                + iceFluxDust(iCell)
-         endif
+
 ! NOTE pass in total Fe and mult by parm_Fe_bioavail inside the flux routine
          marbl_instances(1)%surface_flux_forcings(ironFlux_indexInMARBL)%field_0d(iCell) = &
             IRON_FLUX_IN(iCell)
@@ -2853,12 +2872,9 @@ contains
              if (.not. config_use_ecosysTracers_atm_dust_from_coupler) then
                dust_FLUX_WET(iCell) = dust_FLUZ_WET(iCell)
                dust_FLUX_DRY(iCell) = dust_FLUZ_DRY(iCell)
+               dust_FLUX_IN(iCell)  = dust_FLUX_WET(iCell) + dust_FLUX_DRY(iCell)
              endif
 
-             IRON_FLUX_IN(iCell)  = ( dust_FLUX_WET(iCell)*IRON_Solubility_wet(iCell)    &
-                                    + dust_FLUX_DRY(iCell)*IRON_Solubility_dry(iCell) )  &
-                                    * IRON_in_dust_fraction(iCell)*1.e6_RKIND/molecular_weight_Fe
-             dust_FLUX_IN(iCell)  = dust_FLUX_WET(iCell) + dust_FLUX_DRY(iCell)
            else
              IRON_FLUX_IN(iCell)   = IRON_FLUZ_IN(iCell)
              dust_FLUX_IN(iCell)   = dust_FLUZ_IN(iCell)
