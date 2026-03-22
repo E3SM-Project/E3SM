@@ -366,8 +366,7 @@ contains
     ! Initialize fractions on atm grid/decomp (initialize ice fraction to zero)
 
     if (atm_present) then
-       lSize = mct_aVect_lSize(dom_a%data)
-       call mct_aVect_init(fractions_a,rList=fraclist_a,lsize=lsize)
+       call mct_aVect_init(fractions_a,rList=fraclist_a,lsize=0)
        call mct_aVect_zero(fractions_a)
 
        ka = mct_aVect_indexRa(fractions_a,"afrac",perrWith=subName)
@@ -411,20 +410,15 @@ contains
 
     ! MOABTODO: add capabiility for MOAB
     if (glc_present) then
-       lSize = mct_aVect_lSize(dom_g%data)
-       call mct_aVect_init(fractions_g,rList=fraclist_g,lsize=lsize)
+       call mct_aVect_init(fractions_g,rList=fraclist_g,lsize=0)
        call mct_aVect_zero(fractions_g)
 
-       kg = mct_aVect_indexRA(fractions_g,"gfrac",perrWith=subName)
-       kf = mct_aVect_indexRA(dom_g%data ,"frac" ,perrWith=subName)
-       fractions_g%rAttr(kg,:) = dom_g%data%rAttr(kf,:)
     end if
 
     ! Initialize fractions on land grid decomp, just an initial "guess", updated later
 
     if (lnd_present) then
-       lSize = mct_aVect_lSize(dom_l%data)
-       call mct_aVect_init(fractions_l,rList=fraclist_l,lsize=lsize)
+       call mct_aVect_init(fractions_l,rList=fraclist_l,lsize=0)
        call mct_aVect_zero(fractions_l)
        if (mblxid .ge. 0  ) then
          arrSize = mbGetnCells(mblxid)
@@ -446,9 +440,6 @@ contains
        endif
 
       ! set lfrin to the domain frac
-       kk = mct_aVect_indexRA(fractions_l,"lfrin",perrWith=subName)
-       kf = mct_aVect_indexRA(dom_l%data ,"frac" ,perrWith=subName)
-       fractions_l%rAttr(kk,:) = dom_l%data%rAttr(kf,:)
        if (mblxid .ge. 0  ) then
          allocate(tagValues(arrSize))
          call mbGetCellTagVals(mblxid, 'frac',tagValues,arrSize)
@@ -469,13 +460,9 @@ contains
     ! Initialize fractions on ice grid/decomp (initialize ice fraction to zero)
 
     if (rof_present) then
-       lSize = mct_aVect_lSize(dom_r%data)
-       call mct_aVect_init(fractions_r,rList=fraclist_r,lsize=lsize)
+       call mct_aVect_init(fractions_r,rList=fraclist_r,lsize=0)
        call mct_aVect_zero(fractions_r)
 
-       kr = mct_aVect_indexRa(fractions_r,"rfrac",perrWith=subName)
-       kf = mct_aVect_indexRA(dom_r%data ,"frac" ,perrWith=subName)
-       fractions_r%rAttr(kr,:) = dom_r%data%rAttr(kf,:)
        ! fractions needs to be set on river grid (that has a mask ?)
        ! copy from land code; we have on coupler the river instance that comes from river-ocean map
        if (mbrxid .ge. 0  ) then ! //
@@ -509,8 +496,7 @@ contains
     ! Initialize fractions on wav grid decomp, just an initial "guess", updated later
     !MOABTODO: implement for moab
     if (wav_present) then
-       lSize = mct_aVect_lSize(dom_w%data)
-       call mct_aVect_init(fractions_w,rList=fraclist_w,lsize=lsize)
+       call mct_aVect_init(fractions_w,rList=fraclist_w,lsize=0)
        call mct_aVect_zero(fractions_w)
        fractions_w%rAttr(:,:) = 1.0_r8
     end if
@@ -527,13 +513,8 @@ contains
     ! Initialize fractions on ice grid/decomp (initialize ice fraction to zero)
 
     if (ice_present) then
-       lSize = mct_aVect_lSize(dom_i%data)
-       call mct_aVect_init(fractions_i,rList=fraclist_i,lsize=lsize)
+       call mct_aVect_init(fractions_i,rList=fraclist_i,lsize=0)
        call mct_aVect_zero(fractions_i)
-
-       ko = mct_aVect_indexRa(fractions_i,"ofrac",perrWith=subName)
-       kf = mct_aVect_indexRA(dom_i%data ,"frac" ,perrWith=subName)
-       fractions_i%rAttr(ko,:) = dom_i%data%rAttr(kf,:)
 
        if (mbixid .ge. 0  ) then ! //
          tagname = trim(fraclist_i)//C_NULL_CHAR ! 'afrac:ifrac:ofrac'
@@ -593,8 +574,7 @@ contains
     ! These are initialized the same as for ice
 
     if (ocn_present) then
-       lSize = mct_aVect_lSize(dom_o%data)
-       call mct_aVect_init(fractions_o,rList=fraclist_o,lsize=lsize)
+       call mct_aVect_init(fractions_o,rList=fraclist_o,lsize=0)
        call mct_aVect_zero(fractions_o)
 
        if (mboxid .ge. 0  ) then ! //
@@ -635,9 +615,6 @@ contains
           deallocate(tagValues)
 
        else ! ocn_present but stub sea ice
-          ko = mct_aVect_indexRa(fractions_o,"ofrac",perrWith=subName)
-          kf = mct_aVect_indexRA(dom_o%data ,"frac" ,perrWith=subName)
-          fractions_o%rAttr(ko,:) = dom_o%data%rAttr(kf,:)
           ! so the frac var from dom is copied into ofrac field
           !  frac is on ocean mesh, ofrac is on ocean mesh too;
 
@@ -926,17 +903,6 @@ contains
 
     ! entire update depends on if ice present.
     if (ice_present) then
-       ! MCT
-       !copy Si_ifrac to ifrac
-       call mct_aVect_copy(i2x_i, fractions_i, "Si_ifrac", "ifrac")
-
-       ki = mct_aVect_indexRA(fractions_i,"ifrac")
-       ko = mct_aVect_indexRA(fractions_i,"ofrac")
-       kf = mct_aVect_indexRA(dom_i%data ,"frac" ,perrWith=subName)
-       fractions_i%rAttr(ki,:) = fractions_i%rAttr(ki,:) * dom_i%data%rAttr(kf,:)
-       fractions_i%rAttr(ko,:) = dom_i%data%rAttr(kf,:) - fractions_i%rAttr(ki,:)
-
-       call seq_frac_check(fractions_i,mbixid,'ice set')
 
        ! MOAB
        if (first_time) then
@@ -952,13 +918,13 @@ contains
        ! update ifrac and ofrac
        call mbGetCellTagVals(mbixid, 'frac',tagValues2,arrSize_i)
 
-       !fractions_i%rAttr(ki,:) = fractions_i%rAttr(ki,:) * dom_i%data%rAttr(kf,:)
        tagValues(:) = tagValues(:)*tagValues2(:)
        call mbSetCellTagVals(mbixid, 'ifrac',tagValues,arrSize_i)
 
-       !fractions_i%rAttr(ko,:) = dom_i%data%rAttr(kf,:) - fractions_i%rAttr(ki,:)
        tagValues3(:) = tagValues2(:) - tagValues(:)
        call mbSetCellTagVals(mbixid, 'ofrac',tagValues3,arrSize_i)
+
+       call seq_frac_check(fractions_i,mbixid,'ice set')
 
 #ifdef MOABDEBUG
          write(lnum,"(I0.2)")num_moab_exports
