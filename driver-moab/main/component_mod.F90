@@ -334,9 +334,7 @@ contains
 
     !---------------------------------------------------------------
     ! Uses
-    use cplcomp_exchange_mod, only: seq_mctext_gsmapinit, seq_mctext_avInit
-    use cplcomp_exchange_mod, only: seq_mctext_avExtend, seq_mctext_gGridInit
-    use cplcomp_exchange_mod, only: seq_map_init_exchange, seq_map_map_exchange
+    use cplcomp_exchange_mod, only: seq_mctext_avCreate
     use cplcomp_exchange_mod, only: cplcomp_moab_Init
     use seq_domain_mct,       only: seq_domain_compare
     use mct_mod,              only: mct_ggrid_clean
@@ -354,8 +352,8 @@ contains
     character(*), parameter :: F0I = "('"//subname//" : ', A, 2i8 )"
     !---------------------------------------------------------------
 
-    ! Initialize driver rearrangers and AVs on driver
-    ! Initialize cdata_*x data
+    ! Initialize coupler versions of components in MOAB
+    !
     ! Zero out x2*_** in case it never gets used then it'll produce zeros in diags
     ! For ensembles, create only a single dom_*x for the coupler based on the
     !   first ensemble member.  otherwise, just extend the dom_** and dom_*x to
@@ -371,67 +369,22 @@ contains
 
           if (comp(eci)%iamin_cplcompid) then
 
-             ! Create gsmap_cx (note that comp(eci)%gsmap_cx all point to comp(1)%gsmap_cx
              ! This will only be valid on the coupler pes
              if (eci == 1) then
                 if (iamroot_CPLID) then
-                   write(logunit,F0I) 'creating gsmap_cx for '//comp(eci)%ntype(1:3)
+                   write(logunit,F0I) 'Init moab for '//comp(eci)%ntype(1:3)
                    call shr_sys_flush(logunit)
                 end if
-                call seq_mctext_gsmapInit(comp(1))
                 call cplcomp_moab_Init(infodata,comp(1))
              endif
 
-             ! Create mapper_Cc2x and mapper_Cx2c
-             allocate(comp(eci)%mapper_Cc2x, comp(eci)%mapper_Cx2c)
-             if (iamroot_CPLID) then
-                write(logunit,F0I) 'Initializing mapper_C'//comp(eci)%ntype(1:1)//'2x',eci
-                call shr_sys_flush(logunit)
-             end if
-             call seq_map_init_exchange(comp(eci), flow='c2x', mapper=comp(eci)%mapper_Cc2x)
-             if (iamroot_CPLID) then
-                write(logunit,F0I) 'Initializing mapper_Cx2'//comp(eci)%ntype(1:1),eci
-                call shr_sys_flush(logunit)
-             end if
-             call seq_map_init_exchange(comp(eci), flow='x2c', mapper=comp(eci)%mapper_Cx2c)
-
              ! Create x2c_cx and c2x_cx
              allocate(comp(eci)%x2c_cx, comp(eci)%c2x_cx)
-             call seq_mctext_avinit(comp(eci), flow='x2c')
-             call seq_mctext_avinit(comp(eci), flow='c2x')
 
-             ! Create dom_cx (note that  comp(eci)%dom_cx all point to  comp(1)%dom_cx
-             ! Then verify other ensembles have same domain by comparing to dom_cx
-             if (eci == 1) then  ! create dom_cx
-                if (iamroot_CPLID) then
-                   write(logunit,F0I) 'creating dom_cx'
-                   call shr_sys_flush(logunit)
-                end if
-                call seq_mctext_gGridInit(comp(1))
-
-                if (size(comp) > 1) then
-                    mpi_tag = comp(eci)%cplcompid*100+eci*10+1
-                else
-                    mpi_tag = comp(eci)%cplcompid*10000+eci*10+1
-                end if
-                call seq_map_map_exchange(comp(1), flow='c2x', dom_flag=.true., msgtag=mpi_tag)
-
-             else if (eci > 1) then
-                if (iamroot_CPLID) then
-                   write(logunit,F0I) 'comparing comp domain ensemble number ',eci
-                   call shr_sys_flush(logunit)
-                end if
-                call seq_mctext_avExtend(comp(eci)%dom_cx%data, cplid, comp(eci)%cplcompid)
-                call seq_mctext_gGridInit(comp(eci), dom_tmp)
-                call seq_map_map_exchange(comp(eci), flow='c2x', dom_flag=.true., dom_tmp=dom_tmp)
-                if (iamin_CPLID) then
-                   call seq_domain_compare(comp(eci)%dom_cx, dom_tmp, mpicom_CPLID)
-                end if
-                call mct_ggrid_clean(dom_tmp,rc)
-             endif
-
-             call mct_avect_zero(comp(eci)%x2c_cc)
-             call mct_avect_zero(comp(eci)%x2c_cx)
+             call seq_mctext_avCreate(comp(eci)%x2c_cc, comp(eci)%compid, &
+                  comp(eci)%x2c_cx, comp(eci)%cplcompid, 0)
+             call seq_mctext_avCreate(comp(eci)%c2x_cc, comp(eci)%compid, &
+                  comp(eci)%c2x_cx, comp(eci)%cplcompid, 0)
 
           end if ! if comp(eci)%iamin_cplcompid
        end if  ! if comp(eci)%present
@@ -522,10 +475,6 @@ contains
        if (samegrid_ao) then
           dom_s  => component_get_dom_cx(atm(1))   !dom_ax
           dom_d  => component_get_dom_cx(ocn(1))   !dom_ox
-          ka = mct_aVect_indexRa(dom_s%data, "area" )
-          km = mct_aVect_indexRa(dom_s%data, "aream" )
-          ! copy atm area to ocn aream
-          dom_s%data%rAttr(km,:) = dom_s%data%rAttr(ka,:)
           ! project now aream from atm to ocean.  This is a rearrange since samegrid_ao is true
           call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
        endif
