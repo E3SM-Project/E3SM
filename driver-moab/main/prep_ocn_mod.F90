@@ -621,12 +621,6 @@ contains
              mapper_Va2o%strategy = "rearrange"
           endif
 
-          if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Va2o vect with vect_map = ',trim(vect_map)
-          end if
-          call seq_map_initvect(mapper_Va2o, vect_map, atm(1), ocn(1), string='mapper_Va2o initvect')
-
           ! will use the same map for mapper_Sa2o and Va2o, using the bilinear map option
           if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
 
@@ -684,6 +678,10 @@ contains
             mapper_Va2o%weight_identifier = wgtIdVa2o
             mapper_Va2o%mbname = 'mapper_Va2o'
 
+            if (iamroot_CPLID) then
+                write(logunit,*) ' '
+                write(logunit,F00) 'Initializing mapper_Va2o vect with vect_map = ',trim(vect_map)
+            endif
             call seq_map_initvect_moab(mapper_Va2o, vect_map, mbaxid, mboxid, string='mapper_Va2o initvect moab')
 
           endif ! if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0))
@@ -696,7 +694,9 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_SFi2o'
           end if
-          call seq_map_init_rearrolap(mapper_SFi2o, ice(1), ocn(1), 'mapper_SFi2o',no_match=.true.)
+          call seq_map_mapinit(mapper_SFi2o, mpicom_CPLID)
+          mapper_SFi2o%rearrange_only = .true.
+          mapper_SFi2o%strategy = "rearrange"
           if ( (mbixid .ge. 0) .and. (mboxid .ge. 0)) then
              if (iamroot_CPLID) then
                write(logunit,*) ' '
@@ -2033,12 +2033,8 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
 
        call seq_map_map(mapper_Fa2o, a2x_ax, a2x_ox(eai), fldlist=seq_flds_a2x_fluxes, norm=.true.)
 
-#ifdef COMPARE_TO_NUOPC
-       call seq_map_mapvect(mapper_Va2o, vect_map, a2x_ax, a2x_ox(eai), 'Sa_u', 'Sa_v', norm=.true.)
-#else
        !--- tcx the norm should be true below, it's false for bfb backwards compatability
        call seq_map_mapvect(mapper_Va2o, vect_map, a2x_ax, a2x_ox(eai), 'Sa_u', 'Sa_v', norm=.false.)
-#endif
 
     enddo
 

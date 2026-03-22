@@ -197,7 +197,9 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_SFo2i'
           end if
-          call seq_map_init_rearrolap(mapper_SFo2i, ocn(1), ice(1), 'mapper_SFo2i', no_match) ! force a new map always
+          call seq_map_mapinit(mapper_SFo2i, mpicom_CPLID)
+          mapper_SFo2i%rearrange_only = .true.
+          mapper_SFo2i%strategy = "rearrange"
 
           if ( (mbixid .ge. 0) .and. (mboxid .ge. 0)) then
             if (iamroot_CPLID) then
