@@ -991,6 +991,7 @@ contains
           write(logunit,*) subname,' ERROR: Failed to define ux:uy:uz tags in target'
           call shr_sys_abort(trim(subname)//' ERROR defining target tags')
        endif
+       mapper%cart3d_init = trim(seq_map_stron)
     endif
 
   end subroutine seq_map_initvect_moab
