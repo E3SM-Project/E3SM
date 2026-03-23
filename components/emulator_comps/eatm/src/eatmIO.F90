@@ -1353,18 +1353,29 @@ contains
     character(len=*),parameter :: subname='ncd_io_int_var2_nf'
     !-----------------------------------------------------------------------
 
+    start = 0
+    count = 0
+
     if (flag == 'read') then
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-          status = pio_get_var(ncid, varid, data)
+          if (present(nt)) then
+             start(1) = 1
+             start(2) = 1
+             start(3) = nt
+             count(1) = size(data, dim=1)
+             count(2) = size(data, dim=2)
+             count(3) = 1
+             status = pio_get_var(ncid, varid, start, count, data)
+          else
+             status = pio_get_var(ncid, varid, data)
+          endif
        endif
        if (present(readvar)) readvar = varpresent
 
     elseif (flag == 'write') then
 
-       start = 0
-       count = 0
        if (present(nt))      then
           start(1) = 1
           start(2) = 1
@@ -1412,18 +1423,29 @@ contains
     character(len=*),parameter :: subname='ncd_io_real_var2_nf'
     !-----------------------------------------------------------------------
 
+    start = 0
+    count = 0
+
     if (flag == 'read') then
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-          status = pio_get_var(ncid, varid, data)
+          if (present(nt)) then
+             start(1) = 1
+             start(2) = 1
+             start(3) = nt
+             count(1) = size(data, dim=1)
+             count(2) = size(data, dim=2)
+             count(3) = 1
+             status = pio_get_var(ncid, varid, start, count, data)
+          else
+             status = pio_get_var(ncid, varid, data)
+          endif
        endif
        if (present(readvar)) readvar = varpresent
 
     elseif (flag == 'write') then
 
-       start = 0
-       count = 0
        if (present(nt))      then
           start(1) = 1
           start(2) = 1
@@ -1471,18 +1493,29 @@ contains
     character(len=*),parameter :: subname='ncd_io_real_var2_nf'
     !-----------------------------------------------------------------------
 
+    start = 0
+    count = 0
+
     if (flag == 'read') then
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-          status = pio_get_var(ncid, varid, data)
+          if (present(nt)) then
+             start(1) = 1
+             start(2) = 1
+             start(3) = nt
+             count(1) = size(data, dim=1)
+             count(2) = size(data, dim=2)
+             count(3) = 1
+             status = pio_get_var(ncid, varid, start, count, data)
+          else
+             status = pio_get_var(ncid, varid, data)
+          endif
        endif
        if (present(readvar)) readvar = varpresent
 
     elseif (flag == 'write') then
 
-       start = 0
-       count = 0
        if (present(nt))      then
           start(1) = 1
           start(2) = 1
