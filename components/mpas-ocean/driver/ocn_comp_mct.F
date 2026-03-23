@@ -2545,18 +2545,18 @@ contains
               endif
 ! do not want atmospheric deposition on 100% land ice to enter the ocean
               if ( config_use_ecosysTracers_atm_dust_from_coupler .and. dust_FLUX_WETField % isActive ) then
-                 dust_FLUX_WET(i) = ( x2o_o % rAttr(index_x2o_Faxa_dstwet1, n)   &
+                 dust_FLUX_WET(i) = max(0.0_RKIND,( x2o_o % rAttr(index_x2o_Faxa_dstwet1, n)   &
                                     + x2o_o % rAttr(index_x2o_Faxa_dstwet2, n)   &
                                     + x2o_o % rAttr(index_x2o_Faxa_dstwet3, n)   &
                                     + x2o_o % rAttr(index_x2o_Faxa_dstwet4, n) ) &
-                                  * (1.0_RKIND - landIceFraction(i))
+                                  * (1.0_RKIND - landIceFraction(i)))
               endif
               if ( config_use_ecosysTracers_atm_dust_from_coupler .and. dust_FLUX_DRYField % isActive ) then
-                 dust_FLUX_DRY(i) = ( x2o_o % rAttr(index_x2o_Faxa_dstdry1, n)   &
+                 dust_FLUX_DRY(i) = max(0.0_RKIND,( x2o_o % rAttr(index_x2o_Faxa_dstdry1, n)   &
                                     + x2o_o % rAttr(index_x2o_Faxa_dstdry2, n)   &
                                     + x2o_o % rAttr(index_x2o_Faxa_dstdry3, n)   &
                                     + x2o_o % rAttr(index_x2o_Faxa_dstdry4, n) ) &
-                                  * (1.0_RKIND - landIceFraction(i))
+                                  * (1.0_RKIND - landIceFraction(i)))
               endif
 
               if ( config_use_ecosysTracers_atm_dust_from_coupler .and. dust_FLUX_INField % isActive ) then
