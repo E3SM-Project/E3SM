@@ -67,6 +67,8 @@ module RtmVar
   character(len=256), public :: frivinp_mesh  = ' '   ! mesh input data file name
   logical,            public :: ice_runoff = .true.  ! true => runoff is split into liquid and ice, 
                                                      ! otherwise just liquid
+   logical,            public :: convert_ice_to_river_runoff_latband = .false.
+   real(r8),           public :: convert_ice_to_river_runoff_latband_width_degrees = 20.0_r8
   ! Rtm grid size
   integer :: rtmlon = 1 ! number of rtm longitudes (initialize)
   integer :: rtmlat = 1 ! number of rtm latitudes  (initialize)

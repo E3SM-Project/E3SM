@@ -873,14 +873,6 @@
 					description="If true, solid runoff from the Antarctic Ice Sheet (below 60S latitude) coming from the coupled is zeroed in the coupler import routines.  To be used with data iceberg fluxes coming from the sea ice model."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_convert_ice_to_river_runoff_latband" type="logical" default_value=".false."
-					description="If true, convert incoming frozen runoff (rofi) to liquid river runoff (rofl) in ocean import within a symmetric latitude band around the equator."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_convert_ice_to_river_runoff_latband_width_degrees" type="real" default_value="20.0"
-					description="Half-width of symmetric latitude band (degrees) used when config_convert_ice_to_river_runoff_latband is true. Example: 20.0 applies conversion for |latitude| <= 20 degrees."
-					possible_values="Any non-negative real"
-		/>
 		<nml_option name="config_scale_dismf_by_removed_ice_runoff" type="logical" default_value=".false."
 					description="Whether to scale data ice-shelf melt fluxes by the running mean of removed ice runoff."
 					possible_values=".true. or .false."
@@ -3976,12 +3968,6 @@
 			 description="Fresh water flux from ice runoff from the coupler that was removed due to config_remove_ais_ice_runoff option. Positive into the ocean."
 			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
 		/>
-		<var name="convertedIceRunoffFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
-			 description="Fresh water flux converted from ice runoff to river runoff due to latitude-band conversion in ocean import. Positive into the ocean."
-		/>
-		<var name="convertedIceRunoffEnergyDeficitFlux" type="real" dimensions="nCells Time" units="W m^-2"
-			 description="Estimated heat flux required to melt and warm converted ice runoff to local liquid runoff temperature; diagnostic estimate of energy conservation violation introduced by conversion. Positive means missing heat input."
-		/>
 		<var name="nAccumulatedRemovedIceRunoff" type="integer" dimensions="Time"
 			 description="Number of accumulations in time averaging of removed ice runoff"
 			 packages="scaledDISMFPKG"
@@ -4186,13 +4172,6 @@
 		<var name="avgRemovedIceRunoffHeatFlux" type="real" dimensions="nCells Time" units="W m^-2"
 			 description="Time-averaged sum of heat fluxes associated with removed ice runoff fluxes cell centers sent to coupler. Positive into the ocean."
 		/>
-		<var name="avgConvertedIceRunoffFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
-			 description="Time-averaged freshwater flux converted from ice runoff to river runoff due to latitude-band conversion in ocean import. Positive into the ocean."
-		/>
-		<var name="avgConvertedIceRunoffEnergyDeficitFlux" type="real" dimensions="nCells Time" units="W m^-2"
-			 description="Time-averaged estimated heat flux required to melt and warm converted ice runoff to local liquid runoff temperature; diagnostic estimate of energy conservation violation introduced by conversion. Positive means missing heat input."
-		/>
-
 		<!-- Input fields from coupler or initial condition for forcing under land ice -->
 		<var name="landIceFraction" type="real" dimensions="nCells Time" units="1"
 			description="The fraction of each cell covered by land ice"

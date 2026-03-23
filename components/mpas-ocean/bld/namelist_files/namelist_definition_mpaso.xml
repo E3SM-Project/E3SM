@@ -1384,22 +1384,6 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_convert_ice_to_river_runoff_latband" type="logical"
-	category="coupling" group="coupling">
-If true, convert incoming frozen runoff (rofi) to liquid river runoff (rofl) in ocean import within a symmetric latitude band around the equator.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_convert_ice_to_river_runoff_latband_width_degrees" type="real"
-	category="coupling" group="coupling">
-Half-width of symmetric latitude band (degrees) used when config_convert_ice_to_river_runoff_latband is true. Example: 20.0 applies conversion for |latitude| <= 20 degrees.
-
-Valid values: Any non-negative real
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_scale_dismf_by_removed_ice_runoff" type="logical"
 	category="coupling" group="coupling">
 Whether to scale data ice-shelf melt fluxes by the running mean of removed ice runoff.

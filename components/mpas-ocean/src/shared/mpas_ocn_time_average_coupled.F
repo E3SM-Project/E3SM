@@ -59,7 +59,7 @@ module ocn_time_average_coupled
                                                     avgLandIceFreshwaterFlux, &
                                                     avgRemovedRiverRunoffFlux, avgRemovedIceRunoffFlux, &
                                                     avgLandIceHeatFlux, avgRemovedIceRunoffHeatFlux, &
-                                                    avgConvertedIceRunoffFlux, avgConvertedIceRunoffEnergyDeficitFlux
+                                                    avgRemovedIceRunoffHeatFlux
 
         real (kind=RKIND), dimension(:,:), pointer :: avgThermalForcingAtZLevels
         real (kind=RKIND), dimension(:,:), pointer :: avgThermalForcingAtZLevelsMask
@@ -97,8 +97,6 @@ module ocn_time_average_coupled
         call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
         call mpas_pool_get_array(forcingPool, 'nAccumulatedCoupled', nAccumulatedCoupled)
         call mpas_pool_get_array(forcingPool, 'avgTotalFreshWaterTemperatureFlux', avgTotalFreshWaterTemperatureFlux)
-      call mpas_pool_get_array(forcingPool, 'avgConvertedIceRunoffFlux', avgConvertedIceRunoffFlux)
-      call mpas_pool_get_array(forcingPool, 'avgConvertedIceRunoffEnergyDeficitFlux', avgConvertedIceRunoffEnergyDeficitFlux)
 
         !$omp parallel
         !$omp do schedule(runtime)
@@ -107,8 +105,6 @@ module ocn_time_average_coupled
            avgTracersSurfaceValue(:, iCell) = 0.0_RKIND
            avgSSHGradient(:, iCell) = 0.0_RKIND
            avgTotalFreshWaterTemperatureFlux(iCell) = 0.0_RKIND
-           avgConvertedIceRunoffFlux(iCell) = 0.0_RKIND
-           avgConvertedIceRunoffEnergyDeficitFlux(iCell) = 0.0_RKIND
         end do
         !$omp end do
         !$omp end parallel
@@ -287,8 +283,6 @@ module ocn_time_average_coupled
                                                       avgLandIceBoundaryLayerTracers, avgLandIceTracerTransferVelocities
         real (kind=RKIND), dimension(:), pointer :: effectiveDensityInLandIce, avgEffectiveDensityInLandIce, &
                                                     totalFreshWaterTemperatureFlux, avgTotalFreshWaterTemperatureFlux, &
-                                                    convertedIceRunoffFlux, avgConvertedIceRunoffFlux, &
-                                                    convertedIceRunoffEnergyDeficitFlux, avgConvertedIceRunoffEnergyDeficitFlux, &
                                                     landIceFreshwaterFlux, avgLandIceFreshwaterFlux, &
                                                     landIceHeatFlux, avgLandIceHeatFlux, &
                                                     removedRiverRunoffFlux, avgRemovedRiverRunoffFlux, &
@@ -330,10 +324,6 @@ module ocn_time_average_coupled
 
         call mpas_pool_get_array(forcingPool, 'totalFreshWaterTemperatureFlux', totalFreshWaterTemperatureFlux)
         call mpas_pool_get_array(forcingPool, 'avgTotalFreshWaterTemperatureFlux', avgTotalFreshWaterTemperatureFlux)
-      call mpas_pool_get_array(forcingPool, 'convertedIceRunoffFlux', convertedIceRunoffFlux)
-      call mpas_pool_get_array(forcingPool, 'avgConvertedIceRunoffFlux', avgConvertedIceRunoffFlux)
-      call mpas_pool_get_array(forcingPool, 'convertedIceRunoffEnergyDeficitFlux', convertedIceRunoffEnergyDeficitFlux)
-      call mpas_pool_get_array(forcingPool, 'avgConvertedIceRunoffEnergyDeficitFlux', avgConvertedIceRunoffEnergyDeficitFlux)
 
         call mpas_pool_get_dimension(forcingPool, 'nCells', nCells)
         call mpas_pool_get_dimension(forcingPool, &
@@ -367,10 +357,6 @@ module ocn_time_average_coupled
                                         / ( nAccumulatedCoupled + 1 )
            avgTotalFreshWaterTemperatureFlux(iCell) = ( avgTotalFreshWaterTemperatureFlux(iCell) * nAccumulatedCoupled &
                                                + totalFreshWaterTemperatureFlux(iCell) ) / ( nAccumulatedCoupled + 1 )
-           avgConvertedIceRunoffFlux(iCell) = ( avgConvertedIceRunoffFlux(iCell) * nAccumulatedCoupled &
-                                           + convertedIceRunoffFlux(iCell) ) / ( nAccumulatedCoupled + 1 )
-           avgConvertedIceRunoffEnergyDeficitFlux(iCell) = ( avgConvertedIceRunoffEnergyDeficitFlux(iCell) * nAccumulatedCoupled &
-                                                       + convertedIceRunoffEnergyDeficitFlux(iCell) ) / ( nAccumulatedCoupled + 1 )
 
         end do
         !$omp end do

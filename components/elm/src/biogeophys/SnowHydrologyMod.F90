@@ -19,7 +19,7 @@ module SnowHydrologyMod
   use abortutils      , only : endrun
   use elm_varpar      , only : nlevsno
   use elm_varctl      , only : iulog, use_extrasnowlayers, use_firn_percolation_and_compaction
-  use elm_varcon      , only : namec, h2osno_max
+   use elm_varcon      , only : namec, h2osno_max, cpice, cpliq, hfus
   use atm2lndType     , only : atm2lnd_type
   use AerosolType     , only : aerosol_type
   use TopounitDataType, only : topounit_atmospheric_state
@@ -2264,16 +2264,23 @@ contains
      real(r8)   :: icefrac                          ! fraction of ice mass w.r.t. total mass [unitless]
      real(r8)   :: frac_adjust                      ! fraction of mass remaining after capping
      real(r8)   :: rho                              ! partial density of ice (not scaled with frac_sno) [kg/m3]
-     integer    :: fc, c                            ! counters
+   integer    :: fc, c, j, n_active, k            ! counters
+   real(r8)   :: e_cooling                        ! column energy removed [J/m2]
+   real(r8)   :: c_layer                          ! layer heat capacity [J/m2/K]
+   real(r8)   :: wsum, wraw                       ! weight sum and layer weight [-]
      ! Always keep at least this fraction of the bottom snow layer when doing snow capping
      ! This needs to be slightly greater than 0 to avoid roundoff problems
      real(r8), parameter :: min_snow_to_keep = 1.e-9  ! fraction of bottom snow layer to keep with capping
+   real(r8), parameter :: tiny_heatcap = 1.e-14_r8  ! minimum layer heat capacity for cooling update [J/m2/K]
+   logical,  parameter :: snowcap_surface_weighted_cooling = .false.
 
      !-----------------------------------------------------------------------
      associate( &
+       snl                => col_pp%snl                       , & ! Input:  [integer  (:)   ] number of snow layers
          qflx_snwcp_ice     => col_wf%qflx_snwcp_ice               , & ! Output: [real(r8) (:)   ]  excess solid h2o due to snow capping (outgoing) (mm H2O /s) [+]
          qflx_snwcp_liq     => col_wf%qflx_snwcp_liq               , & ! Output: [real(r8) (:)   ]  excess liquid h2o due to snow capping (outgoing) (mm H2O /s) [+]
          qflx_ice_runoff_xs =>    col_wf%qflx_ice_runoff_xs        , & ! Input:  [real(r8) (:)   ] 
+       t_soisno           => col_es%t_soisno                     , & ! In/Out: [real(r8) (:,:) ] snow/soil temperature (Kelvin)
          h2osoi_ice         => col_ws%h2osoi_ice                   , & ! In/Out: [real(r8) (:,:) ] ice lens (kg/m2)                       
          h2osoi_liq         => col_ws%h2osoi_liq                   , & ! In/Out: [real(r8) (:,:) ] liquid water (kg/m2)                   
          h2osno             => col_ws%h2osno                       , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)
@@ -2344,6 +2351,52 @@ contains
            mss_dst2(c,0)    = mss_dst2(c,0) * frac_adjust
            mss_dst3(c,0)    = mss_dst3(c,0) * frac_adjust
            mss_dst4(c,0)    = mss_dst4(c,0) * frac_adjust
+
+           ! Remove latent heat from the remaining snowpack to conserve energy when
+           ! capped ice is converted to liquid runoff downstream.
+           e_cooling = qflx_snwcp_ice(c) * dtime * hfus
+           if (e_cooling > 0._r8 .and. snl(c) < 0) then
+              n_active = 0
+              do j = snl(c)+1, 0
+                 c_layer = cpice*h2osoi_ice(c,j) + cpliq*h2osoi_liq(c,j)
+                 if (c_layer > tiny_heatcap) then
+                    n_active = n_active + 1
+                 end if
+              end do
+
+              if (n_active > 0) then
+                 wsum = 0._r8
+                 k = 0
+                 do j = snl(c)+1, 0
+                    c_layer = cpice*h2osoi_ice(c,j) + cpliq*h2osoi_liq(c,j)
+                    if (c_layer > tiny_heatcap) then
+                       k = k + 1
+                       if (snowcap_surface_weighted_cooling) then
+                          wraw = real(n_active-k+1, r8)
+                       else
+                          wraw = 1._r8
+                       end if
+                       wsum = wsum + wraw
+                    end if
+                 end do
+
+                 if (wsum > 0._r8) then
+                    k = 0
+                    do j = snl(c)+1, 0
+                       c_layer = cpice*h2osoi_ice(c,j) + cpliq*h2osoi_liq(c,j)
+                       if (c_layer > tiny_heatcap) then
+                          k = k + 1
+                          if (snowcap_surface_weighted_cooling) then
+                             wraw = real(n_active-k+1, r8)
+                          else
+                             wraw = 1._r8
+                          end if
+                          t_soisno(c,j) = t_soisno(c,j) - (e_cooling * (wraw/wsum)) / c_layer
+                       end if
+                    end do
+                 end if
+              end if
+           end if
         end if
 
      end do loop_columns

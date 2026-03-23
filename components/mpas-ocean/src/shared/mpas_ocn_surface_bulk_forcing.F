@@ -738,8 +738,7 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: latentHeatFlux, sensibleHeatFlux, longWaveHeatFluxUp, longWaveHeatFluxDown, &
                                                   seaIceHeatFlux, icebergHeatFlux, evaporationFlux, riverRunoffFlux
-      real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, icebergFreshWaterFlux, seaIceSalinityFlux, iceRunoffFlux, &
-                             convertedIceRunoffFlux, convertedIceRunoffEnergyDeficitFlux
+      real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, icebergFreshWaterFlux, seaIceSalinityFlux, iceRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: shortWaveHeatFlux, penetrativeTemperatureFlux
       real (kind=RKIND), dimension(:), pointer :: snowFlux, rainFlux
       real (kind=RKIND), dimension(:), pointer :: rainTemperatureFlux, evapTemperatureFlux, &
@@ -779,8 +778,6 @@ contains
       call mpas_pool_get_array(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFlux)
       call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
-      call mpas_pool_get_array(forcingPool, 'convertedIceRunoffFlux', convertedIceRunoffFlux)
-      call mpas_pool_get_array(forcingPool, 'convertedIceRunoffEnergyDeficitFlux', convertedIceRunoffEnergyDeficitFlux)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
 
       call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
@@ -791,14 +788,6 @@ contains
       call mpas_pool_get_array(forcingPool, 'totalFreshWaterTemperatureFlux', totalFreshWaterTemperatureFlux)
 
       nCells = nCellsArray( 3 )
-
-      !$omp parallel
-      !$omp do schedule(runtime)
-      do iCell = 1, nCells
-         convertedIceRunoffEnergyDeficitFlux(iCell) = 0.0_RKIND
-      end do
-      !$omp end do
-      !$omp end parallel
 
       ! Build surface fluxes at cell centers
       !$omp parallel
@@ -867,9 +856,6 @@ contains
            ! add river runoff contribution for sending through coupler
            totalFreshWaterTemperatureFlux(iCell) = surfaceTemperatureFluxWithoutRunoff &
               + tracersSurfaceFluxRunoff(index_temperature_flux,iCell)
-
-           convertedIceRunoffEnergyDeficitFlux(iCell) = convertedIceRunoffFlux(iCell) * &
-                (latent_heat_fusion_mks + cp_sw * max(tracerGroup(index_temperature_flux,minLevelCell(iCell),iCell), 0.0_RKIND))
 
            ! Fields with zero temperature are not accumulated. These include:
            !    snowFlux
