@@ -93,10 +93,8 @@ void Functions<S,D>::gw_common_init(
   // Kokkos::fence();
 
   // Set phase speeds
-  for (int l = -s_common_init.pgwv; l <= s_common_init.pgwv; ++l)
-    s_common_init.cref[l + s_common_init.pgwv] = s_common_init.dc * l;
-
-  // cref is a device view; initialize via a HostSpace mirror, then deep_copy.
+  const int num_pgwv = s_common_init.pgwv * 2 + 1;
+  s_common_init.cref = view_1d<Real>("cref", num_pgwv);
   auto cref_h = Kokkos::create_mirror_view(Kokkos::HostSpace(), s_common_init.cref);
   for (int l = -s_common_init.pgwv; l <= s_common_init.pgwv; ++l) {
     cref_h[l + s_common_init.pgwv] = s_common_init.dc * l;
@@ -106,7 +104,7 @@ void Functions<S,D>::gw_common_init(
   s_common_init.orographic_only = !s_common_init.use_gw_convect && !s_common_init.use_gw_frontal;
 
   // calculate alpha (Newtonian cooling coefficients)
-  s_common_init.alpha = view_1d<Real>("alpha", GWC::nalph);
+  s_common_init.alpha = view_1d<Real>("alpha", pver_in+1);
   if (s_common_init.orographic_only) {
     Kokkos::deep_copy(s_common_init.alpha,1e-6);
   } else {
@@ -139,6 +137,8 @@ void Functions<S,D>::gw_common_init(
       kbotbg_tmp = i;
     }
   }
+  EKAT_REQUIRE_MSG(kbotbg_tmp >= 1,
+    "Error! No interface pressure level found below kbotbg_pref_max. Check pref_int.\n");
   kbotbg_tmp -= 1; // move one level up
 
   s_common_init.do_molec_diff = do_molec_diff_in;
