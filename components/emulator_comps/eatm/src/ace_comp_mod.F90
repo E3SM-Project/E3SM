@@ -35,9 +35,9 @@ module ace_comp_mod
   !--------------------------------------------------------------------------
   ! Public module data
   !--------------------------------------------------------------------------
-  integer, public :: n_input_channels=39  ! number of input channels to emulator
-  integer, public :: n_output_channels=44 ! number of output channels to emulator
-  integer, public :: eatm_idt=6 * 60 * 60 ! eatm timestep (6hr) in seconds
+  integer, parameter, public :: n_input_channels=39  ! number of input channels to emulator
+  integer, parameter, public :: n_output_channels=44 ! number of output channels to emulator
+  integer, parameter, public :: eatm_idt=6 * 60 * 60 ! eatm timestep (6hr) in seconds
 
   !--------------------------------------------------------------------------
   ! Private module data
@@ -50,10 +50,9 @@ module ace_comp_mod
   type(torch_tensor), dimension(1) :: input_tensor
   type(torch_tensor), dimension(1) :: output_tensor
 
+  integer(c_int) :: tensor_layout(4)
   integer(c_int64_t) :: input_tensor_shape(4)
   integer(c_int64_t) :: output_tensor_shape(4)
-
-  integer(c_int) :: tensor_layout(4)
 
   ! TODO (AN): Parse from namelist
   character(len=*), parameter :: torchscript_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace2_EAMv3_ckpt-CUDA_traced.tar"
@@ -64,25 +63,31 @@ module ace_comp_mod
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
 
-  subroutine ace_comp_init(ggrid)
+  subroutine ace_comp_init(EClock, ggrid, read_restart)
 
     implicit none
 
-    type(mct_gGrid), intent(in), pointer :: ggrid
-    integer :: i, j, k ! loop indicies
+    type(ESMF_Clock), intent(in)          :: EClock
+    type(mct_gGrid),  intent(in), pointer :: ggrid
+    logical,          intent(in)          :: read_restart
+
+    integer     :: i, j, k     ! loop indicies
+    real(R8)    :: t_frac      ! frac through eatm timestep
+    integer     :: t_modulo    ! int remainder of curr. time over eatm dt
+    integer(in) :: CurrentTOD  ! model sec into model date
 
     input_tensor_shape = [ &
-      int(1, kind=c_int), &
-      int(n_input_channels, kind=c_int), &
-      int(lsize_y, kind=c_int), &
-      int(lsize_x, kind=c_int) &
+      int(1, kind=c_int64_t), &
+      int(n_input_channels, kind=c_int64_t), &
+      int(lsize_y, kind=c_int64_t), &
+      int(lsize_x, kind=c_int64_t) &
     ]
 
     output_tensor_shape = [ &
-      int(1, kind=c_int), &
-      int(n_output_channels, kind=c_int), &
-      int(lsize_y, kind=c_int), &
-      int(lsize_x, kind=c_int) &
+      int(1, kind=c_int64_t), &
+      int(n_output_channels, kind=c_int64_t), &
+      int(lsize_y, kind=c_int64_t), &
+      int(lsize_x, kind=c_int64_t) &
     ]
 
     tensor_layout = [1_c_int, 2_c_int, 4_c_int, 3_c_int]
@@ -93,49 +98,69 @@ CONTAINS
     ! load the traced model
     call torch_model_load(ace_model, torchscript_file, torch_kCUDA)
 
-    net_inputs_nn = net_inputs
-    ! normalize, can probably happen after tensor is made becuase it's a pointer
-    call normalizer%normalize(net_inputs_nn)
+    if (read_restart) then
 
-    ! create input/output tensors based off net input/output arrays
-    call torch_tensor_from_blob(&
-      input_tensor(1), &
-      c_loc(net_inputs_nn), &
-      ndims=4_c_int, &
-      tensor_shape=input_tensor_shape, &
-      layout=tensor_layout, &
-      dtype=torch_kFloat32, &
-      device_type=torch_kCPU &
-    )
-    call torch_tensor_from_blob(&
-      output_tensor(1), &
-      c_loc(net_outputs), &
-      ndims=4_c_int, &
-      tensor_shape=output_tensor_shape, &
-      layout=tensor_layout, &
-      dtype=torch_kFloat32, &
-      device_type=torch_kCPU &
-    )
+      call seq_timemgr_EClockGetData( EClock, curr_tod=CurrentTOD )
 
-    ! run inference
-    call torch_model_forward(ace_model, input_tensor, output_tensor)
+      ! int remainder (in sec) of coupler timestep relative to ACE timestep
+      t_modulo = mod(CurrentTOD, eatm_idt)
+      ! turn integer remainder into fraction through ACE timestep
+      t_frac = real(t_modulo, kind=R8) / real(eatm_idt, kind=R8)
 
-    ! Clean up C++ pointers
-    call torch_delete(input_tensor)
-    call torch_delete(output_tensor)
-
-    ! denormalize
-    call denormalizer%denormalize(net_outputs)
-
-    ! fill both time levels of intrp struct with restart data
-    do k = 1, n_output_channels
-      do j = 1, lsize_y
-        do i = 1, lsize_x
-          eatm_intrp%t_im1(k, i, j) = net_outputs(1, k, i, j)
-          eatm_intrp%t_ip1(k, i, j) = net_outputs(1, k, i, j)
+      do k = 1, n_output_channels
+        do j = 1, lsize_y
+          do i = 1, lsize_x
+            net_outputs(1, k, i, j) = eatm_intrp%t_im1(k, i, j) + &
+                t_frac * (eatm_intrp%t_ip1(k, i, j) - eatm_intrp%t_im1(k, i, j))
+          end do
         end do
       end do
-    end do
+
+    else
+      net_inputs_nn = net_inputs
+      ! normalize, can probably happen after tensor is made becuase it's a pointer
+      call normalizer%normalize(net_inputs_nn)
+
+      ! create input/output tensors based off net input/output arrays
+      call torch_tensor_from_blob(&
+        input_tensor(1), &
+        c_loc(net_inputs_nn), &
+        ndims=4_c_int, &
+        tensor_shape=input_tensor_shape, &
+        layout=tensor_layout, &
+        dtype=torch_kFloat32, &
+        device_type=torch_kCUDA &
+      )
+      call torch_tensor_from_blob(&
+        output_tensor(1), &
+        c_loc(net_outputs), &
+        ndims=4_c_int, &
+        tensor_shape=output_tensor_shape, &
+        layout=tensor_layout, &
+        dtype=torch_kFloat32, &
+        device_type=torch_kCPU &
+      )
+
+      ! run inference
+      call torch_model_forward(ace_model, input_tensor, output_tensor)
+
+      ! Clean up C++ pointers
+      call torch_delete(input_tensor)
+      call torch_delete(output_tensor)
+
+      ! denormalize
+      call denormalizer%denormalize(net_outputs)
+
+      ! fill both time levels of intrp struct with restart data
+      do k = 1, n_output_channels
+        do j = 1, lsize_y
+          do i = 1, lsize_x
+            eatm_intrp%t_im1(k, i, j) = net_outputs(1, k, i, j)
+            eatm_intrp%t_ip1(k, i, j) = net_outputs(1, k, i, j)
+          end do
+        end do
+      end do
+    endif
 
     ! using restart data from ACE set the fields passed to the coupler
     call ace_eatm_export(ggrid)
@@ -154,7 +179,6 @@ CONTAINS
     integer     :: i, j, k           ! loop indicies
     real(R8)    :: t_frac            ! frac of cpl_t / eatm_t
     integer     :: t_modulo          ! frac of cpl_t / eatm_t
-    real(R8)    :: cpl_dt            ! timestep
     integer(in) :: cpl_idt           ! integer timestep
     integer(in) :: stepno            ! step number
     integer(in) :: CurrentYMD        ! model date
@@ -164,17 +188,14 @@ CONTAINS
     call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
     call seq_timemgr_EClockGetData( EClock, stepno=stepno, dtime=cpl_idt)
 
-    cpl_dt = real(cpl_idt, kind=r8)
-
     write(logunit_atm, *) "stepno: ", stepno
-    write(logunit_atm, *) "cpl_dt: ", cpl_dt
     write(logunit_atm, *) "cpl_idt: ", cpl_idt
     write(logunit_atm, *) "eatm_idt: ", eatm_idt
     write(logunit_atm, *) "CurrentYMD: ", CurrentYMD
     write(logunit_atm, *) "CurrentTOD: ", CurrentTOD
     call shr_sys_flush(logunit_atm)
 
-    ! integer remained
+    ! integer remainder (in sec) of coupler timestep relative to ACE timestep
     t_modulo = mod(CurrentTOD, eatm_idt)
 
     if (t_modulo .eq. 0) then
@@ -227,18 +248,20 @@ CONTAINS
 
     end if
 
-    t_frac = real(t_modulo, kind=r8)/real(eatm_idt, kind=r8)
+    t_frac = real(t_modulo, kind=r8) / real(eatm_idt, kind=r8)
 
     ! time interpolate the results
     do k = 1, n_output_channels
       do j = 1, lsize_y
         do i = 1, lsize_x
-          net_outputs(1, k, i, j) = eatm_intrp%t_im1(k, i, j) + t_frac * (eatm_intrp%t_ip1(k, i, j) - eatm_intrp%t_im1(k, i, j))
+          net_outputs(1, k, i, j) = eatm_intrp%t_im1(k, i, j) + &
+              t_frac * (eatm_intrp%t_ip1(k, i, j) - eatm_intrp%t_im1(k, i, j))
         end do
       end do
     end do
 
     call ace_eatm_export(ggrid)
+
   end subroutine ace_comp_run
 
   subroutine ace_comp_finalize()

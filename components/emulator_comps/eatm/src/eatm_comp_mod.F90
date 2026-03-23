@@ -172,7 +172,7 @@ CONTAINS
        else
           if (masterproc) then
             ! startup, so read initial condition file
-            call eatm_restart_file_read(initial_condition_file)
+            call eatm_initial_condition_file_read(initial_condition_file)
           endif
        endif
     !----------------------------------------------------------------------------
@@ -180,7 +180,7 @@ CONTAINS
     !----------------------------------------------------------------------------
     call t_startf ('eatm_grid')
 
-    call ace_comp_init(ggrid)
+    call ace_comp_init(EClock, ggrid, read_restart)
 
     call t_stopf ('eatm_grid')
 

@@ -214,18 +214,22 @@ CONTAINS
        call shr_file_getLogLevel(shrloglev)
        call shr_file_setLogUnit (logunit_atm)
 
-       call atm_import_mct(x2a)
+       if (.not. read_restart) then
 
-       call t_startf('EATM_run')
-       call eatm_comp_run( &
-         EClock = EClock, &
-         x2a = x2a, &
-         a2x = a2x, &
-         gsmap = gsmap, &
-         ggrid = ggrid)
-       call t_stopf('EATM_run')
+          call atm_import_mct(x2a)
 
-       call atm_export_mct(a2x)
+          call t_startf('EATM_run')
+          call eatm_comp_run( &
+            EClock = EClock, &
+            x2a = x2a, &
+            a2x = a2x, &
+            gsmap = gsmap, &
+            ggrid = ggrid)
+          call t_stopf('EATM_run')
+
+          call atm_export_mct(a2x)
+
+       end if
 
        ! End redirection of share output to eatm log
 
