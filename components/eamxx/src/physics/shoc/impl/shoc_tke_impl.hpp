@@ -61,16 +61,18 @@ void Functions<S,D>::shoc_tke(
   Scalar brunt_int(0);
   integ_column_stability(team,nlev,dz_zt,pres,brunt,brunt_int);
 
-  // Compute shear production term, which is on interface levels
-  // This follows the methods of Bretheron and Park (2010)
-  compute_shr_prod(team,do_3d_turb,nlevi,nlev,dz_zi,strain2,u_wind,v_wind,sterm);
+  if (!not do_3d_turb){
+    // Compute shear production term, which is on interface levels
+    // This follows the methods of Bretheron and Park (2010)
+    compute_shr_prod(team,nlevi,nlev,dz_zi,u_wind,v_wind,sterm);
 
-  // Interpolate shear term from interface to thermo grid
-  team.team_barrier();
-  linear_interp(team,zi_grid,zt_grid,sterm,sterm_zt,nlevi,nlev,0);
+    // Interpolate shear term from interface to thermo grid
+    team.team_barrier();
+    linear_interp(team,zi_grid,zt_grid,sterm,sterm_zt,nlevi,nlev,0);
+  }
 
   // Advance sgs TKE
-  adv_sgs_tke(team,nlev,dtime,shoc_1p5tke,shoc_mix,wthv_sec,sterm_zt,tk,brunt,tke,a_diss);
+  adv_sgs_tke(team,nlev,dtime,shoc_1p5tke,do_3d_turb,shoc_mix,wthv_sec,sterm_zt,tk,brunt,strain2,tke,a_diss);
 
   // Compute isotropic time scale [s]
   isotropic_ts(team,nlev,lambda_low,lambda_high,lambda_slope,lambda_thresh,brunt_int,tke,a_diss,brunt,isotropy);

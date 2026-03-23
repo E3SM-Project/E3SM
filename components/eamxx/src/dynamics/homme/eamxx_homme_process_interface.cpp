@@ -532,10 +532,10 @@ void HommeDynamics::run_impl (const double dt)
     }
 
     // This is where we will compute the strain term needed for Shear Production of TKE
-    //if (do_3d_turbulence){
+    if (params.do_3d_turbulence){
       compute_horizontal_derivs_of_car_velocity();
       contract_to_local_strain2();
-    //}
+    }
 
     // Update nstep in the restart extra data, so it can be written to restart if needed.
     const auto& tl = c.get<Homme::TimeLevel>();

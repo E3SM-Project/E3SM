@@ -19,11 +19,13 @@ void Functions<S,D>
   const Int&                   nlev,
   const Real&                  dtime,
   const bool&                  shoc_1p5tke,
+  const bool&                  do_3d_turb,
   const uview_1d<const Pack>& shoc_mix,
   const uview_1d<const Pack>& wthv_sec,
   const uview_1d<const Pack>& sterm_zt,
   const uview_1d<const Pack>& tk,
   const uview_1d<const Pack>& brunt,
+  const uview_1d<const Pack>& strain2,
   const uview_1d<Pack>&       tke,
   const uview_1d<Pack>&       a_diss)
 {
@@ -59,7 +61,12 @@ void Functions<S,D>
     tke(k) = ekat::max(0,tke(k));
 
     // Shear production term, use diffusivity from previous timestep
-    const Pack a_prod_sh = tk(k)*sterm_zt(k);
+    if (do_3d_turb){
+      const Pack a_prod_sh = tk(k)*sterm_zt(k);
+    }
+    else{
+      const Pack a_prod_sh = tk(k)*strain2(k);
+    }
 
     // Dissipation term
     a_diss(k)=Cee/shoc_mix(k)*ekat::pow(tke(k),sp(1.5));
