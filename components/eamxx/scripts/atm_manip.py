@@ -72,32 +72,57 @@ def reset_buffer():
     run_cmd_no_fail(f"./xmlchange {ATMCHANGE_BUFF_XML_NAME}=''")
 
 ###############################################################################
-def reset_node_changes(xml_root, node_name):
+def get_changes_for_node(xml_root, node_name, changes):
 ###############################################################################
     """
-    Remove from the SCREAM_ATMCHANGE_BUFFER all changes that target
-    the given node or any of its descendants.
+    Return the subset of changes from `changes` that do NOT target the given
+    XML node or any of its descendants.  This is the filtering kernel used by
+    reset_node_changes and can be called directly for testing.
+
+    NOTE: `changes` is a list of already-unescaped change strings
+          (commas are NOT escaped with backslash).
+
+    >>> xml = '''
+    ... <root>
+    ...     <foo type="integer">0</foo>
+    ...     <bar type="integer">10</bar>
+    ...     <sub>
+    ...         <child1 type="integer">1</child1>
+    ...         <child2 type="integer">2</child2>
+    ...     </sub>
+    ... </root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> tree = ET.fromstring(xml)
+    >>> ################ ERROR: node not found #######################
+    >>> get_changes_for_node(tree, 'nonexistent', ['foo=5'])
+    Traceback (most recent call last):
+    SystemExit: ERROR: 'nonexistent' did not match any node in the XML file
+    >>> ################ Reset leaf node (foo), keep bar change #####
+    >>> get_changes_for_node(tree, 'foo', ['foo=5', 'bar=2'])
+    ['bar=2']
+    >>> ################ Reset leaf node (foo), no matching change ##
+    >>> get_changes_for_node(tree, 'foo', ['bar=2', 'sub::child1=99'])
+    ['bar=2', 'sub::child1=99']
+    >>> ################ Reset non-leaf node (sub), removes children
+    >>> get_changes_for_node(tree, 'sub', ['sub::child1=99', 'bar=3'])
+    ['bar=3']
+    >>> ################ Reset child only, keep sibling change #######
+    >>> get_changes_for_node(tree, 'sub::child1', ['sub::child1=99', 'sub::child2=5', 'bar=3'])
+    ['sub::child2=5', 'bar=3']
+    >>> ################ Empty changes list ##########################
+    >>> get_changes_for_node(tree, 'foo', [])
+    []
     """
-    # Verify the node exists in the XML
     reset_targets = get_xml_nodes(xml_root, node_name)
     expect(len(reset_targets) > 0,
            f"'{node_name}' did not match any node in the XML file")
 
-    # Get current buffered changes
-    buff_str = run_cmd_no_fail(f"./xmlquery {ATMCHANGE_BUFF_XML_NAME} --value")
-    changes = []
-    for item in buff_str.split(ATMCHANGE_SEP):
-        if item.strip():
-            changes.append(item.replace(r"\,", ",").strip())
-
     if not changes:
-        return
+        return []
 
-    # Build parent map for ancestor checks
     parent_map = create_parent_map(xml_root)
 
-    # Filter out changes that affect the reset targets (the target itself or
-    # any of its descendants)
     filtered_changes = []
     for chg in changes:
         try:
@@ -115,6 +140,25 @@ def reset_node_changes(xml_root, node_name):
         except SystemExit:
             # If parse_change fails, keep the change as-is
             filtered_changes.append(chg)
+
+    return filtered_changes
+
+###############################################################################
+def reset_node_changes(xml_root, node_name):
+###############################################################################
+    """
+    Remove from the SCREAM_ATMCHANGE_BUFFER all changes that target
+    the given node or any of its descendants.
+    """
+    # Get current buffered changes
+    buff_str = run_cmd_no_fail(f"./xmlquery {ATMCHANGE_BUFF_XML_NAME} --value")
+    changes = []
+    for item in buff_str.split(ATMCHANGE_SEP):
+        if item.strip():
+            changes.append(item.replace(r"\,", ",").strip())
+
+    # Filter changes (also validates node_name exists in xml_root)
+    filtered_changes = get_changes_for_node(xml_root, node_name, changes)
 
     # Reset buffer and write back the filtered changes
     run_cmd_no_fail(f"./xmlchange {ATMCHANGE_BUFF_XML_NAME}=''")
