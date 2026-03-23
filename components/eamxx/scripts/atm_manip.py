@@ -125,20 +125,16 @@ def get_changes_for_node(xml_root, node_name, changes):
 
     filtered_changes = []
     for chg in changes:
-        try:
-            chg_node_name, _, _, _ = parse_change(chg)
-            chg_nodes = get_xml_nodes(xml_root, chg_node_name)
-            # is_anchestor_of(A, B, ...) returns True when A == B too, so
-            # this covers both direct matches and descendant matches.
-            affects_reset = any(
-                is_anchestor_of(reset_target, chg_node, parent_map)
-                for chg_node in chg_nodes
-                for reset_target in reset_targets
-            )
-            if not affects_reset:
-                filtered_changes.append(chg)
-        except SystemExit:
-            # If parse_change fails, keep the change as-is
+        chg_node_name, _, _, _ = parse_change(chg)
+        chg_nodes = get_xml_nodes(xml_root, chg_node_name)
+        # is_anchestor_of(A, B, ...) returns True when A == B too, so
+        # this covers both direct matches and descendant matches.
+        affects_reset = any(
+            is_anchestor_of(reset_target, chg_node, parent_map)
+            for chg_node in chg_nodes
+            for reset_target in reset_targets
+        )
+        if not affects_reset:
             filtered_changes.append(chg)
 
     return filtered_changes
