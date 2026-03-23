@@ -41,19 +41,6 @@ TEST_CASE("field", "") {
         for (int k = 0; k < d1[3]; ++k) {
           REQUIRE(v4d_h(i, ivar, j, k) == v3d_h(i, j, k));
         }
-
-    // Check that valid_mask extra data is kept in sync
-    FieldIdentifier mfid("my_mask", {t1, d1}, m / s, "some_grid", DataType::IntType);
-    Field mask(mfid,true);
-    f1.get_header().set_extra_data("valid_mask",mask);
-
-    auto f3 = f1.subfield(idim,ivar);
-    randomize_uniform(mask,seed++,0,1);
-
-    REQUIRE (f3.get_header().has_extra_data("valid_mask"));
-    auto f3_mask = f3.get_header().get_extra_data<Field>("valid_mask");
-    auto mask_sf = mask.subfield(idim,ivar);
-    REQUIRE (views_are_equal(f3_mask,mask_sf));
   }
 
   SECTION("multi-sliced subfield") {

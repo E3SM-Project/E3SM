@@ -36,6 +36,7 @@ protected:
   std::string         m_diag_name;
 
   Real                m_pressure_level;
+  int                 m_num_levs;
 }; // class FieldAtPressureLevel
 
 } //namespace scream

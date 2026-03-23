@@ -1063,8 +1063,7 @@ void AtmosphereDriver::set_initial_conditions ()
     if (ic_pl.isParameter(fname)) {
       // This is the case that the user provided an initialization
       // for this field in the parameter file.
-      if (ic_pl.isType<int>(fname) or ic_pl.isType<double>(fname) or
-          ic_pl.isType<std::vector<double>>(fname)) {
+      if (ic_pl.isType<double>(fname) or ic_pl.isType<std::vector<double>>(fname)) {
         // Initial condition is a constant
         initialize_constant_field(fid, ic_pl);
 
@@ -1508,13 +1507,8 @@ initialize_constant_field(const FieldIdentifier& fid,
       }
     }
   } else {
-    if (ic_pl.isType<int>(name)) {
-      const auto& value = ic_pl.get<int>(name);
-      f.deep_copy(value);
-    } else {
-      const auto& value = ic_pl.get<double>(name);
-      f.deep_copy(value);
-    }
+    const auto& value = ic_pl.get<double>(name);
+    f.deep_copy(value);
   }
 }
 

@@ -188,27 +188,29 @@ registration_ends_impl ()
         //       and that fields with multiple components will have the same masking for each component
         //       at a specific COL,LEV
 
-        auto tgt_layout = create_tgt_layout(src_layout);
+        auto src_layout_no_cmp = src_layout.clone();
+        src_layout_no_cmp.strip_dims({CMP});
+        auto tgt_layout = create_tgt_layout(src_layout_no_cmp);
 
         // I this mask has already been created, retrieve it, otherwise create it
         // CAVEAT: the tgt layout ALWAYS has LEV as vertical dim tag. But we NEED different masks for
-        // src fields defined at LEV and ILEV. So use src_layout to craft the mask name
-        const auto mask_name = m_tgt_grid->name() + "_" + ekat::join(src_layout.names(),"_") + "_mask";
+        // src fields defined at LEV and ILEV. So use src_layout_no_cmp to craft the mask name
+        const auto mask_name = m_tgt_grid->name() + "_" + ekat::join(src_layout_no_cmp.names(),"_") + "_mask";
         auto& mask = m_masks[mask_name];
         if (not mask.is_allocated()) {
           auto nondim = ekat::units::Units::nondimensional();
           // Create this src/tgt mask fields, and assign them to these src/tgt fields extra data
 
-          FieldIdentifier mask_fid (mask_name, tgt_layout, nondim, m_tgt_grid->name(), DataType::IntType );
+          FieldIdentifier mask_fid (mask_name, tgt_layout, nondim, m_tgt_grid->name() );
           mask  = Field (mask_fid);
           mask.allocate_view();
         }
 
-        EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("valid_mask"),
+        EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_field"),
             "[VerticalRemapper::registration_ends_impl] Error! Target field already has mask data assigned.\n"
             " - tgt field name: " + tgt.name() + "\n");
 
-        tgt.get_header().set_extra_data("valid_mask",mask);
+        tgt.get_header().set_extra_data("mask_field",mask);
 
         // Since we do mask (at top and/or bot), the tgt field MAY be contain fill_value entries
         tgt.get_header().set_may_be_filled(true);
@@ -217,12 +219,12 @@ registration_ends_impl ()
       // If a field does not have LEV or ILEV it may still have fill_value tracking assigned from somewhere else.
       // For instance, this could be a 2d field computed by FieldAtPressureLevel diagnostic.
       // In those cases we want to copy that fill_value tracking to the target field.
-      if (src.get_header().has_extra_data("valid_mask")) {
-        EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("valid_mask"),
+      if (src.get_header().has_extra_data("mask_field")) {
+        EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_field"),
             "[VerticalRemapper::registration_ends_impl] Error! Target field already has mask data assigned.\n"
             " - tgt field name: " + tgt.name() + "\n");
-        auto src_mask = src.get_header().get_extra_data<Field>("valid_mask");
-        tgt.get_header().set_extra_data("valid_mask",src_mask);
+        auto src_mask = src.get_header().get_extra_data<Field>("mask_field");
+        tgt.get_header().set_extra_data("mask_field",src_mask);
       }
       if (src.get_header().may_be_filled()) {
         tgt.get_header().set_may_be_filled(true);
@@ -420,9 +422,9 @@ void VerticalRemapper::remap_fwd_impl ()
       // so just copy it over.  Note, if this field has its own mask data make
       // sure that is copied too.
       f_tgt.deep_copy(f_src);
-      if (f_tgt.get_header().has_extra_data("valid_mask")) {
-        auto f_tgt_mask = f_tgt.get_header().get_extra_data<Field>("valid_mask");
-        auto f_src_mask = f_src.get_header().get_extra_data<Field>("valid_mask");
+      if (f_tgt.get_header().has_extra_data("mask_field")) {
+        auto f_tgt_mask = f_tgt.get_header().get_extra_data<Field>("mask_field");
+        auto f_src_mask = f_src.get_header().get_extra_data<Field>("mask_field");
         f_tgt_mask.deep_copy(f_src_mask);
       }
     }
@@ -620,15 +622,16 @@ extrapolate (const Field& f_src,
   auto ebot = m_etype_bot;
   auto mid = nlevs_tgt / 2;
   auto do_mask = etop==Mask or ebot==Mask;
+  decltype(f_tgt.get_view<Real**>()) mask_v;
+  if (do_mask) {
+    mask_v = f_tgt.get_header().get_extra_data<Field>("mask_field").get_view<Real**>();
+  }
 
   switch(f_src.rank()) {
     case 2:
     {
       auto f_src_v = f_src.get_view<const Real**>();
       auto f_tgt_v = f_tgt.get_view<      Real**>();
-      auto mask_v = do_mask ? f_tgt.get_header().get_extra_data<Field>("valid_mask").get_view<int**>()
-                            : typename Field::view_dev_t<int**>{};
-
       auto policy = TPF::get_default_team_policy(ncols,nlevs_tgt);
 
       using MemberType = typename decltype(policy)::member_type;
@@ -681,8 +684,6 @@ extrapolate (const Field& f_src,
     {
       auto f_src_v = f_src.get_view<const Real***>();
       auto f_tgt_v = f_tgt.get_view<      Real***>();
-      auto mask_v = do_mask ? f_tgt.get_header().get_extra_data<Field>("valid_mask").get_view<int***>()
-                            : typename Field::view_dev_t<int***>{};
       const int ncomps = f_tgt_l.get_vector_dim();
       auto policy = TPF::get_default_team_policy(ncols*ncomps,nlevs_tgt);
 
@@ -712,7 +713,7 @@ extrapolate (const Field& f_src,
                 y_tgt[ilev] = y_src[nlevs_src-1];
               } else {
                 y_tgt[ilev] = fill_val;
-                mask_v(icol,icmp,ilev) = 0;
+                mask_v(icol,ilev) = 0;
               }
             }
           } else {
@@ -722,7 +723,7 @@ extrapolate (const Field& f_src,
                 y_tgt[ilev] = y_src[0];
               } else {
                 y_tgt[ilev] = fill_val;
-                mask_v(icol,icmp,ilev) = 0;
+                mask_v(icol,ilev) = 0;
               }
             }
           }

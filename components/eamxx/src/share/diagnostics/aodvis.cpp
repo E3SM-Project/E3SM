@@ -31,7 +31,7 @@ create_requests()
 
   // The fields required for this diagnostic to be computed
   add_field<Required>("aero_tau_sw", vector3d, nondim, grid_name);
-  add_field<Required>(FieldIdentifier("sunlit_mask", scalar2d, nondim, grid_name, DataType::IntType));
+  add_field<Required>("sunlit_mask", scalar2d, nondim, grid_name);
 
   // Construct and allocate the aodvis field
   FieldIdentifier fid(name(), scalar2d, nondim, grid_name);
@@ -41,7 +41,7 @@ create_requests()
 }
 
 void AODVis::initialize_impl(const RunType /*run_type*/) {
-  m_diagnostic_output.get_header().set_extra_data("valid_mask", get_field_in("sunlit_mask"));
+  m_diagnostic_output.get_header().set_extra_data("mask_field", get_field_in("sunlit_mask"));
 }
 
 void AODVis::compute_diagnostic_impl() {
@@ -56,18 +56,18 @@ void AODVis::compute_diagnostic_impl() {
   const auto tau_vis = get_field_in("aero_tau_sw")
                            .subfield(1, m_vis_bnd)
                            .get_view<const Real **>();
-  const auto sunlit = get_field_in("sunlit_mask").get_view<const int *>();
+  const auto sunlit = get_field_in("sunlit_mask").get_view<const Real *>();
 
   const auto num_levs = m_nlevs;
   const auto policy   = TPF::get_default_team_policy(m_ncols, m_nlevs);
   Kokkos::parallel_for(
       "Compute " + m_diagnostic_output.name(), policy, KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
-        if(sunlit(icol)) {
+        if(sunlit(icol) == 0.0) {
+          aod(icol) = fill_value;
+        } else {
           auto tau_icol = ekat::subview(tau_vis, icol);
           aod(icol)     = RU::view_reduction(team, 0, num_levs, tau_icol);
-        } else {
-          aod(icol) = fill_value;
         }
       });
 }

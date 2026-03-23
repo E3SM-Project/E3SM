@@ -37,11 +37,7 @@ auto Field::get_view () const
 
   // Check the reinterpret cast makes sense for the Dst value types (need integer sizes ratio)
   EKAT_REQUIRE_MSG(alloc_prop.template is_compatible<DstValueType>(),
-      "Error! Source field allocation is not compatible with the requested value type.\n"
-      " - field name: " + name() + "\n"
-      " - field data type: " + e2str(data_type()) + "\n"
-      " - alloc pack size: " + std::to_string(alloc_prop.get_largest_pack_size()) + "\n"
-      " - DstValueType: " + std::string(typeid(DstValueType).name()) + "\n");
+      "Error! Source field allocation is not compatible with the requested value type.\n");
 
   // Start by reshaping into a ND view with all dynamic extents
   const auto view_ND = get_ND_view<HD,DstValueType,DstRank>();

@@ -103,13 +103,13 @@ TEST_CASE("field_at_pressure_level_p2")
       diag_f.sync_to_host();
       auto test2_diag_v = diag_f.get_view<const Real*, Host>();
       // Check the mask field inside the diag_f
-      auto mask_f = diag_f.get_header().get_extra_data<Field>("valid_mask");
+      auto mask_f = diag_f.get_header().get_extra_data<Field>("mask_field");
       mask_f.sync_to_host();
-      auto test2_mask_v = mask_f.get_view<const int*, Host>();
+      auto test2_mask_v = mask_f.get_view<const Real*, Host>();
       //
       for (int icol=0;icol<ncols;icol++) {
         REQUIRE(approx(test2_diag_v(icol),get_test_data(plevel)));
-        REQUIRE(test2_mask_v(icol)==1);
+        REQUIRE(approx(test2_mask_v(icol),Real(1.0)));
       }
     }
   } 
@@ -124,13 +124,13 @@ TEST_CASE("field_at_pressure_level_p2")
       diag_f.sync_to_host();
       auto test2_diag_v = diag_f.get_view<const Real*, Host>();
       // Check the mask field inside the diag_f
-      auto mask_f = diag_f.get_header().get_extra_data<Field>("valid_mask");
+      auto mask_f = diag_f.get_header().get_extra_data<Field>("mask_field");
       mask_f.sync_to_host();
-      auto test2_mask_v = mask_f.get_view<const int*, Host>();
+      auto test2_mask_v = mask_f.get_view<const Real*, Host>();
 
       for (int icol=0;icol<ncols;icol++) {
         REQUIRE(approx(test2_diag_v(icol),constants::fill_value<Real>));
-        REQUIRE(test2_mask_v(icol)==0);
+        REQUIRE(approx(test2_mask_v(icol),Real(0.0)));
       }
     }
   } 

@@ -163,7 +163,7 @@ FieldIdentifier AbstractRemapper::create_src_fid (const FieldIdentifier& tgt_fid
   const auto& layout = create_src_layout(tgt_fid.get_layout());
   const auto& units = tgt_fid.get_units();
 
-  return FieldIdentifier(name,layout,units,m_src_grid->name(),tgt_fid.data_type());
+  return FieldIdentifier(name,layout,units,m_src_grid->name());
 }
 
 FieldIdentifier AbstractRemapper::create_tgt_fid (const FieldIdentifier& src_fid) const
@@ -172,7 +172,7 @@ FieldIdentifier AbstractRemapper::create_tgt_fid (const FieldIdentifier& src_fid
   const auto& layout = create_tgt_layout(src_fid.get_layout());
   const auto& units = src_fid.get_units();
 
-  return FieldIdentifier(name,layout,units,m_tgt_grid->name(),src_fid.data_type());
+  return FieldIdentifier(name,layout,units,m_tgt_grid->name());
 }
 
 FieldLayout AbstractRemapper::
