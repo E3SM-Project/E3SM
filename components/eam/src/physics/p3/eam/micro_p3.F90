@@ -53,6 +53,9 @@ module micro_p3
    ! Import precision info from iso
    use, intrinsic :: iso_fortran_env, only : sp => real32
 
+   ! For checking for NaNs and Infs in the code, if needed
+   use, intrinsic :: ieee_arithmetic, only : ieee_is_nan, ieee_is_finite
+
    ! get real kind from utils
    use physics_utils, only: rtype,rtype8,btype
 
@@ -1147,6 +1150,12 @@ end function bfb_expm1
          nrtend_TAU_raw = ftorch_out(3)   ! Rain number tendency
          qctend_TAU_raw = ftorch_out(4)   ! Cloud water tendency (= -qrtend inside model)
 
+         ! The fixer is assuming the rates are as for tau: qctend_TAU < 0 and nctend_TAU < 0 (e.g. not all rates positive)
+               
+         call ml_fixer_calc(dt,qc_incld(k),nc_incld(k),qr_incld(k), nr_incld(k), &
+                           qctend_TAU_raw, nctend_TAU_raw, qrtend_TAU_raw, nrtend_TAU_raw, &
+                           ML_fixer,QC_fixer,NC_fixer,QR_fixer,NR_fixer)
+
          ! Apply P3 sign conventions (sinks positive)
          qctend_TAU = -1._rtype * qctend_TAU_raw
          nctend_TAU = -1._rtype * nctend_TAU_raw
@@ -1344,6 +1353,22 @@ end function bfb_expm1
       pratot(k) = qc2qr_accret_tend                   ! cloud drop accretion by rain
       prctot(k) = qc2qr_autoconv_tend                 ! cloud drop autoconversion to rain
       !---------------------------------------------------------------------------------
+
+      ! Trap for non numeric values in size distribution parameters which can cause TAU to fail. If these are non-physical, set to zero to avoid emulator failure.
+      ! Also trap for values that exceed single-precision float representability to prevent NetCDF conversion errors
+      ! Physical bounds for size distribution parameters
+      if (.not. ieee_is_finite(mu_c(k)) .or. mu_c(k) < 2._rtype .or. mu_c(k) > 15._rtype) then
+         mu_c(k) = -99999.0
+      end if
+      if (.not. ieee_is_finite(lamc(k)) .or. lamc(k) > 1.0e10_rtype .or. lamc(k) < 0._rtype) then
+         lamc(k) = -99999.0
+      end if
+      if (.not. ieee_is_finite(lamr(k)) .or. lamr(k) > 1.0e10_rtype .or. lamr(k) < 0._rtype) then
+         lamr(k) = -99999.0
+      end if
+      if (.not. ieee_is_finite(n0r) .or. n0r > 1.0e10_rtype .or. n0r < 0._rtype) then
+         n0r = -99999.0
+      end if
 
       ! Record stochastic collection Input and tendencies for aouptut. 
       ! Size distribution parameters
