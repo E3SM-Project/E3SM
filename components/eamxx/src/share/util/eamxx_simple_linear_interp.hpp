@@ -5,7 +5,6 @@
 
 #include <Kokkos_Core.hpp>
 #include <ekat_assert.hpp>
-
 #include <cstddef>
 
 namespace scream {
