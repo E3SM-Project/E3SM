@@ -123,7 +123,7 @@ struct Functions
   // -----------------------------------------------------------------------------------------------
   // Common GWD parameters
   struct GwCommonInit {
-    GwCommonInit() : initialized(false) {}
+    GwCommonInit() : initialized(false), cref(), alpha() {}
     bool initialized;       // flag to indicate if initialize has been called
     
     bool use_gw_convect    = false;
@@ -155,7 +155,7 @@ struct Functions
   // -----------------------------------------------------------------------------------------------
   // Convective GWD parameters
   struct GwConvectInit {
-    GwConvectInit() : initialized(false) {}
+    GwConvectInit() : initialized(false), mfcc() {}
     bool initialized;   // flag to indicate if initialize has been called
     int maxh;           // Dimension for convective heating depth
     int maxuh;          // Dimension for mean wind in heating
@@ -184,7 +184,7 @@ struct Functions
   // -----------------------------------------------------------------------------------------------
   // Frontal GWD parameters
   struct GwFrontInit {
-    GwFrontInit() : initialized(false) {}
+    GwFrontInit() : initialized(false), fav() {}
     bool initialized;   // Tell us if initialize has been called
     Real taubgnd;       // Background stress source strength for frontal GW scheme
     Real frontgfc;      // Frontogenesis function critical threshold
