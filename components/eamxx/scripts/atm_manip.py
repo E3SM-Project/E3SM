@@ -72,6 +72,56 @@ def reset_buffer():
     run_cmd_no_fail(f"./xmlchange {ATMCHANGE_BUFF_XML_NAME}=''")
 
 ###############################################################################
+def reset_node_changes(xml_root, node_name):
+###############################################################################
+    """
+    Remove from the SCREAM_ATMCHANGE_BUFFER all changes that target
+    the given node or any of its descendants.
+    """
+    # Verify the node exists in the XML
+    reset_targets = get_xml_nodes(xml_root, node_name)
+    expect(len(reset_targets) > 0,
+           f"'{node_name}' did not match any node in the XML file")
+
+    # Get current buffered changes
+    buff_str = run_cmd_no_fail(f"./xmlquery {ATMCHANGE_BUFF_XML_NAME} --value")
+    changes = []
+    for item in buff_str.split(ATMCHANGE_SEP):
+        if item.strip():
+            changes.append(item.replace(r"\,", ",").strip())
+
+    if not changes:
+        return
+
+    # Build parent map for ancestor checks
+    parent_map = create_parent_map(xml_root)
+
+    # Filter out changes that affect the reset targets (the target itself or
+    # any of its descendants)
+    filtered_changes = []
+    for chg in changes:
+        try:
+            chg_node_name, _, _, _ = parse_change(chg)
+            chg_nodes = get_xml_nodes(xml_root, chg_node_name)
+            # is_anchestor_of(A, B, ...) returns True when A == B too, so
+            # this covers both direct matches and descendant matches.
+            affects_reset = any(
+                is_anchestor_of(reset_target, chg_node, parent_map)
+                for chg_node in chg_nodes
+                for reset_target in reset_targets
+            )
+            if not affects_reset:
+                filtered_changes.append(chg)
+        except SystemExit:
+            # If parse_change fails, keep the change as-is
+            filtered_changes.append(chg)
+
+    # Reset buffer and write back the filtered changes
+    run_cmd_no_fail(f"./xmlchange {ATMCHANGE_BUFF_XML_NAME}=''")
+    if filtered_changes:
+        buffer_changes(filtered_changes)
+
+###############################################################################
 def get_xml_nodes(xml_root, name):
 ###############################################################################
     """
