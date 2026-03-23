@@ -58,7 +58,7 @@ void Functions<S,D>::zm_transport_tracer(
     dptmp(dptmp1d.data(), ncnst, pver);
 
   // Parallel loop over each constituent (skip water vapor at m=0)
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 1, ncnst), [&] (const Int& m) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 1, ncnst), [&] (const Int& m) {
     if (!doconvtran(m)) return;
 
     // Initialize temporary arrays (always use moist formulation)

@@ -371,7 +371,52 @@ struct ZmConvMcspCalculateShearData : public PhysicsTestData {
       std::sort(state_pmid + (c*pver), state_pmid + ((c+1)*pver));
     }
   }
+};
 
+struct ZmConvMcspTendData : public PhysicsTestData {
+  // Inputs
+  Int pcols, ncol, pver, pverp;
+  Int *jctop;
+  Real ztodt;
+  Real *state_pmid, *state_pint, *state_pdel, *state_s, *state_q, *state_u, *state_v, *ptend_zm_s, *ptend_zm_q;
+
+  // Inputs/Outputs
+  Real *ptend_s, *ptend_q, *ptend_u, *ptend_v;
+
+  // Outputs
+  Real *mcsp_dt_out, *mcsp_dq_out, *mcsp_du_out, *mcsp_dv_out, *mcsp_freq, *mcsp_shear, *zm_depth;
+
+  ZmConvMcspTendData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Real ztodt_) :
+    PhysicsTestData({
+      {pcols_, pver_},
+      {pcols_, pverp_},
+      {pcols_},
+      {pcols_}
+    },
+    {
+      {&state_pmid, &state_pdel, &state_s, &state_q, &state_u, &state_v, &ptend_zm_s, &ptend_zm_q, &ptend_s, &ptend_q, &ptend_u, &ptend_v, &mcsp_dt_out, &mcsp_dq_out, &mcsp_du_out, &mcsp_dv_out},
+      {&state_pint},
+      {&mcsp_freq, &mcsp_shear, &zm_depth}
+    },
+    {
+      {&jctop}
+    }),
+    pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), ztodt(ztodt_)
+  {}
+
+  PTD_STD_DEF(ZmConvMcspTendData, 5, pcols, ncol, pver, pverp, ztodt);
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine, { {state_pmid, {600e2-1000, 600e2+1000}}, {state_pint, {1300e2 - 1000, 1300e2 + 1000}}, {state_u, {50, 150}} });
+
+    // Make sure each column is sorted
+    for (Int c = 0; c < pcols; ++c) {
+      std::sort(state_pmid + (c*pver), state_pmid + ((c+1)*pver));
+      std::sort(state_pint + (c*(pverp)), state_pint + ((c+1)*(pverp)));
+    }
+  }
 };
 
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
@@ -393,6 +438,8 @@ void compute_cape_from_parcel_f(ComputeCapeFromParcelData& d);
 void compute_cape_from_parcel(ComputeCapeFromParcelData& d);
 void zm_conv_mcsp_calculate_shear_f(ZmConvMcspCalculateShearData& d);
 void zm_conv_mcsp_calculate_shear(ZmConvMcspCalculateShearData& d);
+void zm_conv_mcsp_tend_f(ZmConvMcspTendData& d);
+void zm_conv_mcsp_tend(ZmConvMcspTendData& d);
 // End glue function decls
 
 }  // namespace zm

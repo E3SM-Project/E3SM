@@ -54,6 +54,8 @@ void compute_dilute_parcel_bridge_f(Int pcols, Int ncol, Int pver, Int num_msg, 
 void compute_cape_from_parcel_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int num_cin, Int num_msg, Real* temperature, Real* tv, Real* sp_humidity, Real* pint, Int* msemax_klev, Real* lcl_pmid, Int* lcl_klev, Real* parcel_qsat, Real* parcel_temp, Real* parcel_vtemp, Int* eql_klev, Real* cape);
 
 void zm_conv_mcsp_calculate_shear_bridge_f(Int pcols, Int ncol, Int pver, Real* state_pmid, Real* state_u, Real* state_v, Real* mcsp_shear);
+
+void zm_conv_mcsp_tend_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Real ztodt, Int* jctop, Real* state_pmid, Real* state_pint, Real* state_pdel, Real* state_s, Real* state_q, Real* state_u, Real* state_v, Real* ptend_zm_s, Real* ptend_zm_q, Real* ptend_s, Real* ptend_q, Real* ptend_u, Real* ptend_v, Real* mcsp_dt_out, Real* mcsp_dq_out, Real* mcsp_du_out, Real* mcsp_dv_out, Real* mcsp_freq, Real* mcsp_shear, Real* zm_depth);
 } // extern "C" : end _f decls
 
 // Inits and finalizes are not intended to be called outside this comp unit
@@ -742,8 +744,7 @@ void compute_cape_from_parcel(ComputeCapeFromParcelData& d)
     pint_d(vec2dr_in[3]),
     sp_humidity_d(vec2dr_in[4]),
     temperature_d(vec2dr_in[5]),
-    tv_d(vec2dr_in[6]),
-    zmid_d(vec2dr_in[7]);
+    tv_d(vec2dr_in[6]);
 
   view1di_d
     eql_klev_d(vec1di_in[0]),
@@ -860,6 +861,130 @@ void zm_conv_mcsp_calculate_shear(ZmConvMcspCalculateShearData& d)
   // Now get arrays
   std::vector<view1dr_d> vec1dr_out = {mcsp_shear_d};
   ekat::device_to_host({d.mcsp_shear}, d.pcols, vec1dr_out);
+
+  zm_finalize_cxx();
+}
+void zm_conv_mcsp_tend_f(ZmConvMcspTendData& d)
+{
+  d.transition<ekat::TransposeDirection::c2f>();
+  zm_common_init_f();
+  zm_conv_mcsp_tend_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.ztodt, d.jctop, d.state_pmid, d.state_pint, d.state_pdel, d.state_s, d.state_q, d.state_u, d.state_v, d.ptend_zm_s, d.ptend_zm_q, d.ptend_s, d.ptend_q, d.ptend_u, d.ptend_v, d.mcsp_dt_out, d.mcsp_dq_out, d.mcsp_du_out, d.mcsp_dv_out, d.mcsp_freq, d.mcsp_shear, d.zm_depth);
+  zm_common_finalize_f();
+  d.transition<ekat::TransposeDirection::f2c>();
+}
+
+void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
+{
+  zm_common_init();
+
+  // create device views and copy
+  std::vector<view1dr_d> vec1dr_in(3);
+  ekat::host_to_device({d.mcsp_freq, d.mcsp_shear, d.zm_depth}, d.pcols, vec1dr_in);
+
+  std::vector<view2dr_d> vec2dr_in(17);
+  std::vector<int> vec2dr_in_0_sizes = {d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols};
+  std::vector<int> vec2dr_in_1_sizes = {d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pverp, d.pver, d.pver, d.pver, d.pver, d.pver};
+  ekat::host_to_device({d.mcsp_dq_out, d.mcsp_dt_out, d.mcsp_du_out, d.mcsp_dv_out, d.ptend_q, d.ptend_s, d.ptend_u, d.ptend_v, d.ptend_zm_q, d.ptend_zm_s, d.state_pdel, d.state_pint, d.state_pmid, d.state_q, d.state_s, d.state_u, d.state_v}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
+
+  std::vector<view1di_d> vec1di_in(1);
+  ekat::host_to_device({d.jctop}, d.pcols, vec1di_in);
+
+  view1dr_d
+    mcsp_freq_d(vec1dr_in[0]),
+    mcsp_shear_d(vec1dr_in[1]),
+    zm_depth_d(vec1dr_in[2]);
+
+  view2dr_d
+    mcsp_dq_out_d(vec2dr_in[0]),
+    mcsp_dt_out_d(vec2dr_in[1]),
+    mcsp_du_out_d(vec2dr_in[2]),
+    mcsp_dv_out_d(vec2dr_in[3]),
+    ptend_q_d(vec2dr_in[4]),
+    ptend_s_d(vec2dr_in[5]),
+    ptend_u_d(vec2dr_in[6]),
+    ptend_v_d(vec2dr_in[7]),
+    ptend_zm_q_d(vec2dr_in[8]),
+    ptend_zm_s_d(vec2dr_in[9]),
+    state_pdel_d(vec2dr_in[10]),
+    state_pint_d(vec2dr_in[11]),
+    state_pmid_d(vec2dr_in[12]),
+    state_q_d(vec2dr_in[13]),
+    state_s_d(vec2dr_in[14]),
+    state_u_d(vec2dr_in[15]),
+    state_v_d(vec2dr_in[16]);
+
+  view1di_d
+    jctop_d(vec1di_in[0]);
+
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
+
+  WSM wsm(d.pver, 4, policy);
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+
+  // unpack data scalars because we do not want the lambda to capture d
+  const Real ztodt = d.ztodt;
+  const Int pver = d.pver;
+  const Int pverp = d.pverp;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto state_pmid_c = ekat::subview(state_pmid_d, i);
+    const auto state_pint_c = ekat::subview(state_pint_d, i);
+    const auto state_pdel_c = ekat::subview(state_pdel_d, i);
+    const auto state_s_c = ekat::subview(state_s_d, i);
+    const auto state_q_c = ekat::subview(state_q_d, i);
+    const auto state_u_c = ekat::subview(state_u_d, i);
+    const auto state_v_c = ekat::subview(state_v_d, i);
+    const auto ptend_zm_s_c = ekat::subview(ptend_zm_s_d, i);
+    const auto ptend_zm_q_c = ekat::subview(ptend_zm_q_d, i);
+    const auto ptend_s_c = ekat::subview(ptend_s_d, i);
+    const auto ptend_q_c = ekat::subview(ptend_q_d, i);
+    const auto ptend_u_c = ekat::subview(ptend_u_d, i);
+    const auto ptend_v_c = ekat::subview(ptend_v_d, i);
+    const auto mcsp_dt_out_c = ekat::subview(mcsp_dt_out_d, i);
+    const auto mcsp_dq_out_c = ekat::subview(mcsp_dq_out_d, i);
+    const auto mcsp_du_out_c = ekat::subview(mcsp_du_out_d, i);
+    const auto mcsp_dv_out_c = ekat::subview(mcsp_dv_out_d, i);
+
+    ZMF::zm_conv_mcsp_tend(
+      team,
+      wsm.get_workspace(team),
+      init_cp,
+      pver,
+      pverp,
+      ztodt,
+      jctop_d(i),
+      state_pmid_c,
+      state_pint_c,
+      state_pdel_c,
+      state_s_c,
+      state_q_c,
+      state_u_c,
+      state_v_c,
+      ptend_zm_s_c,
+      ptend_zm_q_c,
+      ptend_s_c,
+      ptend_q_c,
+      ptend_u_c,
+      ptend_v_c,
+      mcsp_dt_out_c,
+      mcsp_dq_out_c,
+      mcsp_du_out_c,
+      mcsp_dv_out_c,
+      mcsp_freq_d(i),
+      mcsp_shear_d(i),
+      zm_depth_d(i));
+  });
+
+  // Now get arrays
+  std::vector<view1dr_d> vec1dr_out = {mcsp_freq_d, mcsp_shear_d, zm_depth_d};
+  ekat::device_to_host({d.mcsp_freq, d.mcsp_shear, d.zm_depth}, d.pcols, vec1dr_out);
+
+  std::vector<view2dr_d> vec2dr_out = {mcsp_dq_out_d, mcsp_dt_out_d, mcsp_du_out_d, mcsp_dv_out_d, ptend_q_d, ptend_s_d, ptend_u_d, ptend_v_d};
+  ekat::device_to_host({d.mcsp_dq_out, d.mcsp_dt_out, d.mcsp_du_out, d.mcsp_dv_out, d.ptend_q, d.ptend_s, d.ptend_u, d.ptend_v}, d.pcols, d.pver, vec2dr_out);
 
   zm_finalize_cxx();
 }

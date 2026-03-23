@@ -74,7 +74,7 @@ void Functions<S,D>::compute_dilute_cape(
 
   //----------------------------------------------------------------------------
   // Copy the incoming temperature and specific humidity values to local arrays
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver), [&] (const Int& k) {
     temperature(k) = temperature_in(k);
     sp_humidity(k) = sp_humidity_in(k);
   });
@@ -97,14 +97,14 @@ void Functions<S,D>::compute_dilute_cape(
 
   //----------------------------------------------------------------------------
   // calculate virtual temperature
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver), [&] (const Int& k) {
     tv(k) = temperature(k) * (1 + PC::ZVIR * sp_humidity(k)) / (1 + sp_humidity(k));
   });
   team.team_barrier();
 
   //----------------------------------------------------------------------------
   // Initialize parcel properties
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver), [&] (const Int& k) {
     parcel_temp(k) = temperature(k);
     parcel_qsat(k) = sp_humidity(k);
     parcel_vtemp(k) = tv(k);

@@ -1,3 +1,5 @@
+#include "bfb_math.inc"
+
 module zm_conv_mcsp
    !----------------------------------------------------------------------------
    ! Purpose: methods for mesoscale coherent structure parameterization (MCSP)
@@ -29,6 +31,7 @@ module zm_conv_mcsp
    !----------------------------------------------------------------------------
 #ifdef SCREAM_CONFIG_IS_CMAKE
    use zm_eamxx_bridge_params, only: r8
+   use physics_share_f2c, only: scream_sin, scream_cos
 #else
    use shr_kind_mod,     only: r8=>shr_kind_r8
    use cam_abortutils,   only: endrun
@@ -270,10 +273,10 @@ subroutine zm_conv_mcsp_tend( pcols, ncol, pver, pverp, &
                   pdepth_total = state_pint(i,pver+1) - state_pmid(i,jctop(i))
 
                   ! specify the assumed vertical structure
-                  if (do_mcsp_t) mcsp_tend_s(i,k) = -1*zm_param%mcsp_t_coeff * sin(2.0_r8*zm_const%pi*(pdepth_mid_k/pdepth_total))
-                  if (do_mcsp_q) mcsp_tend_q(i,k) = -1*zm_param%mcsp_q_coeff * sin(2.0_r8*zm_const%pi*(pdepth_mid_k/pdepth_total))
-                  if (do_mcsp_u) mcsp_tend_u(i,k) =    zm_param%mcsp_u_coeff * (cos(zm_const%pi*(pdepth_mid_k/pdepth_total)))
-                  if (do_mcsp_v) mcsp_tend_v(i,k) =    zm_param%mcsp_v_coeff * (cos(zm_const%pi*(pdepth_mid_k/pdepth_total)))
+                  if (do_mcsp_t) mcsp_tend_s(i,k) = -1*zm_param%mcsp_t_coeff * bfb_sin(2.0_r8*zm_const%pi*(pdepth_mid_k/pdepth_total))
+                  if (do_mcsp_q) mcsp_tend_q(i,k) = -1*zm_param%mcsp_q_coeff * bfb_sin(2.0_r8*zm_const%pi*(pdepth_mid_k/pdepth_total))
+                  if (do_mcsp_u) mcsp_tend_u(i,k) =    zm_param%mcsp_u_coeff * (bfb_cos(zm_const%pi*(pdepth_mid_k/pdepth_total)))
+                  if (do_mcsp_v) mcsp_tend_v(i,k) =    zm_param%mcsp_v_coeff * (bfb_cos(zm_const%pi*(pdepth_mid_k/pdepth_total)))
 
                   ! scale the vertical structure by the ZM heating/drying tendencies
                   if (do_mcsp_t) mcsp_tend_s(i,k) = zm_avg_tend_s(i) * mcsp_tend_s(i,k)
