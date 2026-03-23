@@ -14,7 +14,21 @@ namespace {
 using ExeSpace = KokkosTypes<DefaultDevice>::ExeSpace;
 using bfbhash::HashType;
 
-void hash (const Field::view_dev_t<const Real*>& v,
+template<typename T>
+void hash (const Field::view_dev_t<const T>& v,
+           HashType& accum_out) {
+  HashType accum = 0;
+  Kokkos::parallel_reduce(
+    Kokkos::RangePolicy<ExeSpace>(0, 1),
+    KOKKOS_LAMBDA(const int, HashType& accum) {
+      bfbhash::hash(v(), accum);
+    }, bfbhash::HashReducer<>(accum));
+  Kokkos::fence();
+  bfbhash::hash(accum, accum_out);
+}
+
+template<typename T>
+void hash (const Field::view_dev_t<const T*>& v,
            const FieldLayout& lo, HashType& accum_out) {
   HashType accum = 0;
   Kokkos::parallel_reduce(
@@ -26,7 +40,8 @@ void hash (const Field::view_dev_t<const Real*>& v,
   bfbhash::hash(accum, accum_out);
 }
 
-void hash (const Field::view_dev_t<const Real**>& v,
+template<typename T>
+void hash (const Field::view_dev_t<const T**>& v,
            const FieldLayout& lo, HashType& accum_out) {
   HashType accum = 0;
   const auto& dims = lo.extents();
@@ -41,7 +56,8 @@ void hash (const Field::view_dev_t<const Real**>& v,
   bfbhash::hash(accum, accum_out);
 }
 
-void hash (const Field::view_dev_t<const Real***>& v,
+template<typename T>
+void hash (const Field::view_dev_t<const T***>& v,
            const FieldLayout& lo, HashType& accum_out) {
   HashType accum = 0;
   const auto& dims = lo.extents();
@@ -56,7 +72,8 @@ void hash (const Field::view_dev_t<const Real***>& v,
   bfbhash::hash(accum, accum_out);
 }
 
-void hash (const Field::view_dev_t<const Real****>& v,
+template<typename T>
+void hash (const Field::view_dev_t<const T****>& v,
            const FieldLayout& lo, HashType& accum_out) {
   HashType accum = 0;
   const auto& dims = lo.extents();
@@ -71,7 +88,8 @@ void hash (const Field::view_dev_t<const Real****>& v,
   bfbhash::hash(accum, accum_out);
 }
 
-void hash (const Field::view_dev_t<const Real*****>& v,
+template<typename T>
+void hash (const Field::view_dev_t<const T*****>& v,
            const FieldLayout& lo, HashType& accum_out) {
   HashType accum = 0;
   const auto& dims = lo.extents();
@@ -91,13 +109,31 @@ void hash (const Field& f, HashType& accum) {
   const auto& id = hd.get_identifier();
   const auto& lo = id.get_layout();
   const auto rank = lo.rank();
-  switch (rank) {
-  case 1: hash(f.get_view<const Real*    >(), lo, accum); break;
-  case 2: hash(f.get_view<const Real**   >(), lo, accum); break;
-  case 3: hash(f.get_view<const Real***  >(), lo, accum); break;
-  case 4: hash(f.get_view<const Real**** >(), lo, accum); break;
-  case 5: hash(f.get_view<const Real*****>(), lo, accum); break;
-  default: break;
+  if (f.data_type()==DataType::RealType) {
+    switch (rank) {
+      case 0: hash(f.get_view<const Real     >(),     accum); break;
+      case 1: hash(f.get_view<const Real*    >(), lo, accum); break;
+      case 2: hash(f.get_view<const Real**   >(), lo, accum); break;
+      case 3: hash(f.get_view<const Real***  >(), lo, accum); break;
+      case 4: hash(f.get_view<const Real**** >(), lo, accum); break;
+      case 5: hash(f.get_view<const Real*****>(), lo, accum); break;
+      default: break;
+    }
+  } else if (f.data_type()==DataType::IntType) {
+    switch (rank) {
+      case 0: hash(f.get_view<const int     >(),     accum); break;
+      case 1: hash(f.get_view<const int*    >(), lo, accum); break;
+      case 2: hash(f.get_view<const int**   >(), lo, accum); break;
+      case 3: hash(f.get_view<const int***  >(), lo, accum); break;
+      case 4: hash(f.get_view<const int**** >(), lo, accum); break;
+      case 5: hash(f.get_view<const int*****>(), lo, accum); break;
+      default: break;
+    }
+  } else {
+    EKAT_ERROR_MSG (
+        "Error! Cannot hash field, unsupported data type.\n"
+        " - name: " + f.name() + "\n"
+        " - type: " + e2str(f.data_type()) + "\n");
   }
 }
 

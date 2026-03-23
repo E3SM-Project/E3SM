@@ -73,7 +73,7 @@ public:
   template<int N>
   void local_mat_vec (const Field& f_src, const Field& f_tgt) const;
   template<int N>
-  void local_mat_vec (const Field& f_src, const Field& f_tgt, const Field& mask) const;
+  void local_mat_vec_masked (const Field& f_src, const Field& f_tgt) const;
   template<int N>
   void rescale_masked_fields (const Field& f_tgt, const Field& f_mask) const;
   void pack_and_send ();
@@ -138,6 +138,12 @@ protected:
   // Send/recv persistent requests
   std::vector<MPI_Request>  m_send_req;
   std::vector<MPI_Request>  m_recv_req;
+
+  // Keep track of all src/tgt int/real mask fields (only if m_track_mask=true)
+  std::map<std::string,Field> m_name_to_src_int_mask;
+  std::map<std::string,Field> m_name_to_tgt_int_mask;
+  std::map<std::string,Field> m_name_to_src_real_mask;
+  std::map<std::string,Field> m_name_to_tgt_real_mask;
 };
 
 } // namespace scream

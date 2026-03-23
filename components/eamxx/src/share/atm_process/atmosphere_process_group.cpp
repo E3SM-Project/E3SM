@@ -306,6 +306,9 @@ void AtmosphereProcessGroup::add_postcondition_nan_checks () const {
       group->add_postcondition_nan_checks();
     } else {
       for (const auto& f : proc->get_fields_out()) {
+        if (f.data_type()==DataType::IntType)
+          continue;
+
         const auto& grid_name = f.get_header().get_identifier().get_grid_name();
         auto nan_check = std::make_shared<FieldNaNCheck>(f,m_grids_manager->get_grid(grid_name));
         proc->add_postcondition_check(nan_check, CheckFailHandling::Fatal);
@@ -314,6 +317,9 @@ void AtmosphereProcessGroup::add_postcondition_nan_checks () const {
       for (const auto& g : proc->get_groups_out()) {
         const auto& grid = m_grids_manager->get_grid(g.grid_name());
         for (const auto& f : g.m_individual_fields) {
+          if (f.second->data_type()==DataType::IntType)
+            continue;
+
           auto nan_check = std::make_shared<FieldNaNCheck>(*f.second,grid);
           proc->add_postcondition_check(nan_check, CheckFailHandling::Fatal);
         }
