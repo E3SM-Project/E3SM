@@ -59,9 +59,11 @@ class VertCoord {
    I4 NCellsAll;
    I4 NCellsSize;
    I4 NEdgesOwned;
+   I4 NEdgesHalo0;
    I4 NEdgesAll;
    I4 NEdgesSize;
    I4 NVerticesOwned;
+   I4 NVerticesHalo0;
    I4 NVerticesAll;
    I4 NVerticesSize;
    I4 VertexDegree;

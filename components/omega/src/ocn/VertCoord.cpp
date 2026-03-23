@@ -142,10 +142,12 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    NCellsSize  = Decomp->NCellsSize;
 
    NEdgesOwned = Decomp->NEdgesOwned;
+   NEdgesHalo0 = Decomp->NEdgesHaloH(0);
    NEdgesAll   = Decomp->NEdgesAll;
    NEdgesSize  = Decomp->NEdgesSize;
 
    NVerticesOwned = Decomp->NVerticesOwned;
+   NVerticesHalo0 = Decomp->NVerticesHaloH(0);
    NVerticesAll   = Decomp->NVerticesAll;
    NVerticesSize  = Decomp->NVerticesSize;
    VertexDegree   = Decomp->VertexDegree;
@@ -626,6 +628,22 @@ void VertCoord::minMaxLayerEdge(Halo *MeshHalo) {
           LocMaxLayerEdgeBot(LocNEdgesAll) = -1;
        });
 
+   // Set the [MinLayerEdgeBot, MaxLayerEdgeTop] range to be invalid
+   // on the outermost edges of the halo layer.
+   OMEGA_SCOPE(LocNEdgesHalo0, NEdgesHalo0);
+   // start from NEdgesHalo(0) to exclude any edges of the owned cells
+   parallelFor(
+       {NEdgesAll - NEdgesHalo0}, KOKKOS_LAMBDA(int EdgeOffset) {
+          const int IEdge = LocNEdgesHalo0 + EdgeOffset;
+
+          // Is any cell on this edge an invalid (remote) cell ?
+          if (LocCellsOnEdge(IEdge, 0) == LocNEdgesAll ||
+              LocCellsOnEdge(IEdge, 1) == LocNEdgesAll) {
+             LocMinLayerEdgeBot(IEdge) = LocNVertLayersP1;
+             LocMaxLayerEdgeTop(IEdge) = -1;
+          }
+       });
+
    MinLayerEdgeTopH = createHostMirrorCopy(MinLayerEdgeTop);
    MinLayerEdgeBotH = createHostMirrorCopy(MinLayerEdgeBot);
    MaxLayerEdgeTopH = createHostMirrorCopy(MaxLayerEdgeTop);
@@ -706,6 +724,27 @@ void VertCoord::minMaxLayerVertex(Halo *MeshHalo) {
           LocMinLayerVertexBot(LocNVerticesAll) = LocNVertLayersP1;
           LocMaxLayerVertexTop(LocNVerticesAll) = -1;
           LocMaxLayerVertexBot(LocNVerticesAll) = -1;
+       });
+
+   // Set the [MinLayerVertexBot, MaxLayerVertexTop] range to be invalid
+   // on the outermost vertices of the halo layer.
+   OMEGA_SCOPE(LocNVerticesHalo0, NVerticesHalo0);
+   // start from NVerticesHalo(0) to exclude any vertices of the owned cells
+   parallelFor(
+       {NVerticesAll - NVerticesHalo0}, KOKKOS_LAMBDA(int VertexOffset) {
+          const int IVertex = LocNVerticesHalo0 + VertexOffset;
+
+          // Is any cell on this vertex an invalid (remote) cell ?
+          bool IsOuterMost = LocCellsOnVertex(IVertex, 0) == LocNVerticesAll;
+          for (int I = 1; I < LocVertexDegree; ++I) {
+             IsOuterMost =
+                 IsOuterMost || LocCellsOnVertex(IVertex, I) == LocNVerticesAll;
+          }
+
+          if (IsOuterMost) {
+             LocMinLayerVertexBot(IVertex) = LocNVertLayersP1;
+             LocMaxLayerVertexTop(IVertex) = -1;
+          }
        });
 
    MinLayerVertexTopH = createHostMirrorCopy(MinLayerVertexTop);
