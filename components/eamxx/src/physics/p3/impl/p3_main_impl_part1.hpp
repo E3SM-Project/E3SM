@@ -82,7 +82,9 @@ void Functions<S,D>
 
   const Scalar spa_ccn_to_nc_factor = runtime_options.spa_ccn_to_nc_factor;
   const Scalar spa_ccn_to_nc_exponent = runtime_options.spa_ccn_to_nc_exponent;
-
+//[shanyp 20251224
+  Pack oldnc(0),deltaqc(0);
+//shanyp 20251224]
   nucleationPossible = false;
   hydrometeorsPresent = false;
   team.team_barrier();
@@ -140,12 +142,15 @@ void Functions<S,D>
         // This functional form accounts for "activation" of CCN into Nc
         // and it can be made sublinear (e.g., 2000 and 0.55).
         // First, scale by cld_frac_l to account for subgrid frac (if any)
-        auto nccn_scaled = nccn_prescribed(k) / inv_cld_frac_l(k);
+//        auto nccn_scaled = nccn_prescribed(k) / inv_cld_frac_l(k);
         // Second, apply the exponent
-        nccn_scaled = pow(nccn_scaled, spa_ccn_to_nc_exponent);
+//        nccn_scaled = pow(nccn_scaled, spa_ccn_to_nc_exponent);
         // Third, apply the factor, and retain the max
-        nc(k).set(not_drymass,
-                  max(nc(k), spa_ccn_to_nc_factor * nccn_scaled));
+//        nc(k).set(not_drymass,
+//                  max(nc(k), spa_ccn_to_nc_factor * nccn_scaled));
+//[shanyp 20251224
+        oldnc=nc(k);  // Make it do nothing here.
+//shanyp 20251224]
       } else if(predictNc) {
         nc(k).set(not_drymass, max(nc(k) + nc_nuceat_tend(k) * dt, 0.0));
       } else {
@@ -154,6 +159,35 @@ void Functions<S,D>
       }
     }
 
+//[shanyp 20251226
+    auto nccn_scaled = ekat::pow(nccn_prescribed(k) / inv_cld_frac_l(k),spa_ccn_to_nc_exponent);
+//    auto actmask = shocql_out(k) > qc(k); // lane condition mask
+    auto actmask = qv(k) > qv_sat_l(k); // use gridscale qv
+    if (actmask.any()) {
+     auto oldnc = nc(k);
+     auto newnc = ekat::max(nc(k), spa_ccn_to_nc_factor * nccn_scaled);
+     nc(k).set(actmask, newnc);
+     deltaqc.set(actmask, ekat::max(nc(k) - oldnc, 0.0) * 4./3.*3.1415*1.e-15);
+     qc(k).set(actmask, qc(k) + deltaqc);
+     qv(k).set(actmask, qv(k) - deltaqc);
+     th_atm(k).set(actmask, th_atm(k) + exner(k) * latvap * inv_cp * deltaqc);
+    // auto ql = shocql_out(k);
+    // for (int s = 0; s < Spack::n; ++s) {
+    //     const Int lev = k * Spack::n + s;
+    //     if (lev >= nk) continue;
+    //     if (condmask[s] && ql[s] != 0.0) {
+    //         printf("col %d lev %d ql = %e\n qc = %e\n deltaqc = %e\n",
+    //                team.league_rank(),
+    //                lev,
+    //                ql[s],
+    //                qc(k)[s],
+    //                deltaqc[s]);
+    //     }
+    // }
+    }
+
+
+//shanyp 20251226]
     drymass = qr(k) < qsmall;
     not_drymass = !drymass && range_mask;
     qv(k).set(drymass, qv(k) + qr(k));

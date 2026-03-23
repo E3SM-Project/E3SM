@@ -49,6 +49,9 @@ void Functions<S,D>
   const uview_1d<const Pack>& cld_frac_r,
   const uview_1d<const Pack>& qv_prev,
   const uview_1d<const Pack>& t_prev,
+//[shanyp 20251120
+  const uview_1d<const Pack>& omega_mp,
+//shanyp 20251120]
   const uview_1d<Pack>& T_atm,
   const uview_1d<Pack>& rho,
   const uview_1d<Pack>& inv_rho,
@@ -222,6 +225,15 @@ void Functions<S,D>
       epsc(0),        // TODO(doc)
       epsi_tot (0);   // inverse supersaturation relaxation timescale for combined ice categories
 
+//[shanyp 20251120
+    Pack xx(0),oxx(0),aaa(0),odt(0),ocp(0),dum(0),dumss(0),pcc(0),e0d(0),w0d(0);
+//[shanyp 20251216
+    Pack dum2(0),dumnc(0),dumqc(0),c1(0),k1(0);
+//shanyp 20251216]
+//shanyp 20251120]
+//[shanyp 20260215
+    Pack ssatqv_l(0);
+//shanyp 20260215]    
     Mask wetgrowth(false);
 
     // skip micro process calculations except nucleation/acvtivation if there no hydrometeors are present
@@ -379,6 +391,64 @@ void Functions<S,D>
       calc_liq_relaxation_timescale(
         revap_table_vals, rho(k), f1r, f2r, dv, mu, sc, mu_r(k), lamr(k), cdistr(k), cdist(k), qr_incld(k), qc_incld(k),
         epsr, epsc, not_skip_micro);
+
+//[shanyp 20251216
+////      if(qv(k)/qv_sat_l(k)
+//      c1=100.; // CCN number concentration
+//      k1=0.4;  // parameter for the CCN activation equatino NCCN=C1*SS**K1
+//      const auto saturated = qv(k) > qv_sat_l(k) && not_skip_micro;
+//      if(saturated.any()){
+//       dum2=c1*ekat::pow(((qv(k)/qv_sat_l(k)-1.)*100.),k1);                // activated CCN number concentration. The unit of c1 is #/cm3.
+//      } else {
+//       dum2=0.;
+//      }
+//      dum2=dum2*1.e6;                                                      // #/cm3 -> #/m3
+//      dum2=dum2/rho(k);                                                    // #/m3 -> #/kg
+//      dumnc=dum2/cld_frac_l(k)-nc_incld(k);                                // number concentration of newly formed cloud droplets
+//      dumqc=dumnc*4./3.*3.14*1.e-15;                                       // mass mixing ratio of newly formed cloud droplets
+//      nc_incld(k)=nc_incld(k)+dumnc;                                       // update in-cloud number
+//      qc_incld(k)=qc_incld(k)+dumqc;                                       // update in-cloud mass
+//      qv(k) = qv(k) - cld_frac_l(k)*dumqc;                                 // update qv
+//      th_atm(k) = th_atm(k) + exner(k)*latvap*inv_cp*cld_frac_l(k)*dumqc;  // update th_atm
+//Adjust other cloud droplet parameters.
+//      get_cloud_dsd2(qc_incld(k), nc_incld(k), mu_c(k), rho(k), nu(k), dnu,
+//                     lamc(k), cdist(k), cdist1(k), not_skip_micro);
+//      nc(k).set(not_skip_micro, nc_incld(k) * cld_frac_l(k));
+//      calc_liq_relaxation_timescale(
+//        revap_table_vals, rho(k), f1r, f2r, dv, mu, sc, mu_r(k), lamr(k), cdistr(k), cdist(k), qr_incld(k), qc_incld(k),
+//        epsr, epsc, not_skip_micro);
+
+//[shanyp 20260216
+    auto condmask = (qc_incld(k) >= qsmall) && not_skip_micro;
+    if (condmask.any()) {
+     w0d.set(condmask, -omega_mp(k) / (rho(k) * 9.81));
+     xx.set(condmask, epsc);
+     oxx.set(condmask, 1.0 / xx);
+//     ssatqv_l.set(condmask, (shocql_out(k) - qc_incld(k) * cld_frac_l(k)) * ab);
+     ssatqv_l.set(condmask, qv(k)-qv_sat_l(k));
+     aaa.set(condmask, -dum - dqsdt * (-w0d * 9.81 * inv_cp));
+     pcc.set(condmask, (aaa * epsc * oxx + (ssatqv_l - aaa * oxx) * inv_dt * epsc * oxx * (1.0 - ekat::exp(-xx * dt))) / ab);
+     pcc.set(condmask, ekat::max(-qc_incld(k) / dt, pcc));
+//     qc(k).set(condmask, qc_incld(k) + pcc * dt);
+     qc(k).set(condmask, qc(k) + pcc * cld_frac_l(k) * dt);
+     qv(k).set(condmask, qv(k) - cld_frac_l(k) * pcc * dt);
+     th_atm(k).set(condmask, th_atm(k) + exner(k) * latvap * inv_cp * cld_frac_l(k) * pcc * dt);
+    // Recalculate in-cloud values for microphysics
+     calculate_incloud_mixingratios(
+      qc(k), qr(k), qi(k), qm(k), nc(k), nr(k), ni(k), bm(k), inv_cld_frac_l(k), inv_cld_frac_i(k), inv_cld_frac_r(k),
+      qc_incld(k), qr_incld(k), qi_incld(k), qm_incld(k), nc_incld(k), nr_incld(k), ni_incld(k), bm_incld(k), not_skip_all);
+    } // if condmask.any()
+//shanyp 20260216]
+
+
+//Adjust other cloud droplet parameters.
+       get_cloud_dsd2(qc_incld(k), nc_incld(k), mu_c(k), rho(k), nu(k), dnu,
+                      lamc(k), cdist(k), cdist1(k), not_skip_micro);
+       nc(k).set(not_skip_micro, nc_incld(k) * cld_frac_l(k));
+       calc_liq_relaxation_timescale(
+         revap_table_vals, rho(k), f1r, f2r, dv, mu, sc, mu_r(k), lamr(k), cdistr(k), cdist(k), qr_incld(k), qc_incld(k),
+         epsr, epsc, not_skip_micro);
+//shanyp 20251120]
 
       evaporate_rain(qr_incld(k),qc_incld(k),nr_incld(k),qi_incld(k),
 		     cld_frac_l(k),cld_frac_r(k),qv(k),qv_prev(k),qv_sat_l(k),qv_sat_i(k),
