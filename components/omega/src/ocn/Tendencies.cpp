@@ -257,7 +257,7 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
    Err += TendConfig.get("PressureGradTendencyEnable", this->PGrad->Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: PressureGradTendencyEnable not found in TendConfig");
-   
+
    Err += TendConfig.get("SurfaceTracerRestoringEnable",
                          this->SurfaceTracerRestoring.Enabled);
    CHECK_ERROR_ABORT(

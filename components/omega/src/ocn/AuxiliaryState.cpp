@@ -414,6 +414,10 @@ void AuxiliaryState::readConfigOptions(Config *OmegaConfig) {
    Err += SurfRestConfig.get("MaxDiff", this->SurfTracerRestAux.MaxDiff);
    CHECK_ERROR_ABORT(
        Err, "AuxiliaryState: MaxDiff not found in SurfaceRestoringConfig");
+   if (this->SurfTracerRestAux.MaxDiff <= 0) {
+      ABORT_ERROR("AuxiliaryState: MaxDiff must be positive, got {}",
+                  this->SurfTracerRestAux.MaxDiff);
+   }
 }
 
 //------------------------------------------------------------------------------
