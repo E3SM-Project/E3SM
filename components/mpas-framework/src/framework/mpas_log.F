@@ -824,8 +824,9 @@ module mpas_log
       ! local variables
       !-----------------------------------------------------------------
 #ifdef _MPI
-      integer :: mpi_ierr, mpi_errcode, err
+      integer :: mpi_ierr, mpi_errcode
 #endif
+      integer :: err
       character(len=8) :: date
       character(len=10) :: time
 
