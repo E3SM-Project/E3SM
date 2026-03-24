@@ -120,26 +120,26 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     # Set runoff modifications for ice sheets if needed
     #----------------------------------------------------
     if ocn_iceberg == 'true':
-        print('Setting remove_ais_rofi to .true.')
+        logger.info('Setting remove_ais_rofi to .true.')
         nmlgen.set_value("remove_ais_rofi", '.true.')
-    elif comp_glc =='mali' and mali_prognostic_mode == 'PROGNOSTIC'):
+    elif comp_glc =='mali' and mali_prognostic_mode == 'PROGNOSTIC':
         if 'ais' in glc_grid:
-            print('Setting remove_ais_rofi to .true.')
+            logger.info('Setting remove_ais_rofi to .true.')
             nmlgen.set_value("remove_ais_rofi", '.true.')
         if 'gis' in glc_grid:
-            print('Setting remove_gis_rofi to .true.')
+            logger.info('Setting remove_gis_rofi to .true.')
             nmlgen.set_value("remove_gis_rofi", '.true.')
 
     if (((ocn_glc_ismf_coupling == 'coupler') or
          (ocn_glc_ismf_coupling == 'internal_mpaso') or
          (ocn_glc_ismf_coupling == 'data_mpaso'))
         and (ocn_forcing != 'active_atm')):
-        print('Setting remove_ais_rofl to .true.')
+        logger.info('Setting remove_ais_rofl to .true.')
         nmlgen.set_value("remove_ais_rofl", '.true.')
     elif (ocn_glc_ismf_coupling == 'tf'
           and ocn_forcing != 'active_atm'):
         if 'ais' in glc_grid:
-            print('Setting remove_ais_rofl to .true.')
+            logger.info('Setting remove_ais_rofl to .true.')
             nmlgen.set_value("remove_ais_rofl", '.true.')
         # Don't handle GIS because DROF rofl will be a large part
         # surface runoff and not from ISMF
