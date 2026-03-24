@@ -195,7 +195,7 @@ registration_ends_impl ()
         //  1. the tgt layout ALWAYS has LEV as vertical dim tag. But we NEED different masks for
         //     src fields defined at LEV and ILEV. So use src_layout to craft the mask name
         //  2. for vector dimensions, we must include the vector dim length, as there may be
-        //     2+ vector fileds with diff vector length, which need 2 different masks
+        //     2+ vector fields with different vector length, which need 2 different masks
         std::vector<std::string> tagdim_names;
         for (int i=0; i<src_layout.rank(); ++i) {
           tagdim_names.push_back(src_layout.names()[i]);
