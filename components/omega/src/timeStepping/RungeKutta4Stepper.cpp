@@ -101,12 +101,7 @@ void RungeKutta4Stepper::doStep(OceanState *State,   // model state
 
          Pacer::timingBarrier("RK4:haloExchProvisBarrier", 3, Comm);
          Pacer::start("RK4:haloExchProvis", 3);
-         // TODO(mwarusz) this depends on halo width actually
-         if (Stage == 2) {
-            ProvisState->exchangeHalo(CurLevel);
-         }
-         // We need to exchange tracer halos at every stage for high-order
-         // advection
+         ProvisState->exchangeHalo(CurLevel);
          MeshHalo->exchangeFullArrayHalo(ProvisTracers, OnCell);
          Pacer::stop("RK4:haloExchProvis", 3);
 

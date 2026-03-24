@@ -44,7 +44,7 @@ void RungeKutta2Stepper::doStep(OceanState *State,   // model state
    updateTracersByTend(NextTracerArray, CurTracerArray, State, NextLevel, State,
                        CurLevel, 0.5 * TimeStep);
 
-   // We need to exchange tracer halos at every stage for high-order advection
+   State->exchangeHalo(NextLevel);
    MeshHalo->exchangeFullArrayHalo(NextTracerArray, OnCell);
 
    // R_q^{n+0.5} = RHS_q(u^{n+0.5}, h^{n+0.5}, phi^{n+0.5}, t^{n+0.5})
