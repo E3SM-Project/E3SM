@@ -549,9 +549,7 @@ CONTAINS
           do n=1,lsize
              lonv = ggrid%data%rAttr(ilon, n)
              latv = ggrid%data%rAttr(ilat, n)
-             ! This threshold was chosen to match the config_remove_ais_ice_runoff option
-             ! in MPAS-Ocean.  See components/mpas-ocean/driver/ocn_comp_mct.F line 2184 & 3717
-             if (latv < -57.0_r8) then
+             if (latv < -60.0_r8) then
                 r2x%rAttr(index_r2x_rofi,n) = 0.0_r8
              end if
           enddo
