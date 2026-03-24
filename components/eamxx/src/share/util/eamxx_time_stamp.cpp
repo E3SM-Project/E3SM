@@ -164,12 +164,21 @@ TimeStamp& TimeStamp::operator+=(double seconds) {
   // Allow updating with fractional seconds (useful in case of subcycling)
   // The time stamp will never print fractions, but will allow them, keeping
   // a runningy tally. To avoid carrying rounding for too long, whenever we get
-  // within 1ms of a round second, we reset the tally to 0 and round the seconds
+  // within 1 microsecond of a round second, we reset the tally to 0 and round
+  // the seconds
   m_sec_fraction += seconds;
   m_sec_fraction = std::modf(m_sec_fraction,&seconds);
+  /*
   if (m_sec_fraction<1e-3) {
     m_sec_fraction = 0;
   } else if (m_sec_fraction>0.999) {
+    m_sec_fraction = 0;
+    seconds += 1;
+  }
+  */
+  if (m_sec_fraction<1e-6) {
+    m_sec_fraction = 0;
+  } else if (m_sec_fraction>0.999999) {
     m_sec_fraction = 0;
     seconds += 1;
   }
@@ -212,7 +221,7 @@ TimeStamp& TimeStamp::operator+=(double seconds) {
   while (dd>days_in_month(yy,mm)) {
     dd -= days_in_month(yy,mm);
     ++mm;
-    
+
     if (mm>12) {
       ++yy;
       mm = 1;

@@ -360,7 +360,7 @@ void OutputManager::init_timestep (const util::TimeStamp& start_of_step, const R
   // Note: we need to "init" the timestep if we are going to do something this step, which means we either
   //       have INST output and it's a write step, or we have AVG output.
   const auto end_of_step = start_of_step+dt;
-  const bool is_output_step = m_output_control.is_write_step(end_of_step) || end_of_step==m_case_t0;
+  const bool is_output_step = m_output_control.is_write_step(end_of_step);// || end_of_step==m_case_t0;
   if (not is_output_step and m_avg_type==OutputAvgType::Instant) {
     return;
   }
@@ -410,7 +410,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   //       bad if we write out some extra data.
   const bool output_every_step       = m_output_control.frequency_units=="nsteps" &&
                                        m_output_control.frequency==1;
-  const bool is_t0_output            = timestamp==m_case_t0;
+  const bool is_t0_output            = timestamp.get_num_steps() == 0; //timestamp==m_case_t0;
   const bool is_output_step          = m_output_control.is_write_step(timestamp) || is_t0_output;
   const bool is_checkpoint_step      = m_checkpoint_control.is_write_step(timestamp) && not is_t0_output;
   const bool has_checkpoint_data     = m_avg_type!=OutputAvgType::Instant && not output_every_step;
