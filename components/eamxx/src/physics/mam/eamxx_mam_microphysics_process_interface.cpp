@@ -858,7 +858,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   auto extfrc_fm = get_field_out("mam4_external_forcing").get_view<Real***>();
 
   // Avogadro's number [molecules/mol]
-  const Real Avogadro = haero::Constants::avogadro;
+  const Real Avogadro = mam4::Constants::avogadro;
   // Mapping from external forcing species index to physics constituent index
   // NOTE: These indices should match the species in extfrc_lst
   // TODO: getting rid of hard-coded indices

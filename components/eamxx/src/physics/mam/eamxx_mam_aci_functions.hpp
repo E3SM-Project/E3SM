@@ -35,7 +35,7 @@ void compute_w0_and_rho(const int ncol,
       });
 }
 
-void compute_tke_at_interfaces(haero::ThreadTeamPolicy team_policy,
+void compute_tke_at_interfaces(mam4::ThreadTeamPolicy team_policy,
                                const MAMAci::const_view_2d var_mid,
                                const MAMAci::view_2d dz, const int nlev_,
                                MAMAci::view_2d w_sec_int,
@@ -45,7 +45,7 @@ void compute_tke_at_interfaces(haero::ThreadTeamPolicy team_policy,
 
   Kokkos::parallel_for(
       "MAMAci::run_impl::compute_tke_at_interfaces", team_policy,
-      KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+      KOKKOS_LAMBDA(const mam4::ThreadTeam &team) {
         const int icol = team.league_rank();
 
         const auto var_mid_col   = ekat::subview(var_mid, icol);
@@ -80,19 +80,19 @@ void compute_subgrid_scale_velocities(
           wsubice(icol, kk) = 0.001;
           wsig(icol, kk)    = 0.001;
         } else {
-          wsub(icol, kk) = haero::sqrt(
+          wsub(icol, kk) = mam4::sqrt(
               0.5 * (tke(icol, kk) + tke(icol, kk + 1)) * (2.0 / 3.0));
           wsig(icol, kk) =
               mam4::utils::min_max_bound(0.001, 10.0, wsub(icol, kk));
           wsubice(icol, kk) =
               mam4::utils::min_max_bound(0.2, 10.0, wsub(icol, kk));
-          wsub(icol, kk) = haero::max(wsubmin, wsub(icol, kk));
+          wsub(icol, kk) = mam4::max(wsubmin, wsub(icol, kk));
         }
       });
 }
 
 void compute_nucleate_ice_tendencies(
-    const mam4::NucleateIce &nucleate_ice, haero::ThreadTeamPolicy team_policy,
+    const mam4::NucleateIce &nucleate_ice, mam4::ThreadTeamPolicy team_policy,
     const mam_coupling::DryAtmosphere &dry_atmosphere,
     const mam_coupling::AerosolState &dry_aero, const MAMAci::view_2d wsubice,
     const MAMAci::view_2d aitken_dry_dia, const int nlev, const double dt,
@@ -108,7 +108,7 @@ void compute_nucleate_ice_tendencies(
 
   Kokkos::parallel_for(
       "MAMAci::run_impl::compute_nucleate_ice_tendencies", team_policy,
-      KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+      KOKKOS_LAMBDA(const mam4::ThreadTeam &team) {
         const int icol = team.league_rank();
         //---------------------------------------------------------------------
         //   Set up surface, pronostics atmosphere, diagnostics, and tendencies
@@ -116,19 +116,19 @@ void compute_nucleate_ice_tendencies(
         //---------------------------------------------------------------------
 
         // For compute_tendecies interface only, this structure is empty
-        haero::Surface surf{};
+        mam4::Surface surf{};
 
         // Store interstitial and cld borne aerosols in "progrs" struture
         mam4::Prognostics progs =
             mam_coupling::aerosols_for_column(dry_aero, icol);
 
         // Store atmopsheric vars (Tmid, Pmid, cloud fraction, qv, wsubmin)
-        haero::Atmosphere haero_atm =
+        mam4::Atmosphere atm =
             atmosphere_for_column(dry_atmosphere, icol);
 
         // Update the updraft velocity needed by nucleation to be "wsubice"
-        // in the haero_atm object
-        haero_atm.updraft_vel_ice_nucleation = ekat::subview(wsubice, icol);
+        // in the atm object
+        atm.updraft_vel_ice_nucleation = ekat::subview(wsubice, icol);
 
         // All the output from this process is diagnotics; creates "diags" with
         // nlev column length
@@ -157,7 +157,7 @@ void compute_nucleate_ice_tendencies(
         const mam4::Tendencies tends(nlev);  // not used
         const mam4::AeroConfig aero_config;
         const Real t = 0;  // not used
-        nucleate_ice.compute_tendencies(aero_config, team, t, dt, haero_atm,
+        nucleate_ice.compute_tendencies(aero_config, team, t, dt, atm,
                                         surf, progs, diags, tends);
       });
 }
@@ -191,7 +191,7 @@ void store_liquid_cloud_fraction(
 }
 
 void call_function_dropmixnuc(
-    haero::ThreadTeamPolicy team_policy, const Real dt,
+    mam4::ThreadTeamPolicy team_policy, const Real dt,
     mam_coupling::DryAtmosphere &dry_atmosphere, const MAMAci::view_2d rpdel,
     const MAMAci::const_view_2d kvh_mid, const MAMAci::view_2d kvh_int,
     const MAMAci::view_2d wsub, const MAMAci::view_2d cloud_frac,
@@ -313,7 +313,7 @@ void call_function_dropmixnuc(
   const bool local_enable_aero_vertical_mix = enable_aero_vertical_mix;
   Kokkos::parallel_for(
       "MAMAci::run_impl::call_function_dropmixnuc", team_policy,
-      KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+      KOKKOS_LAMBDA(const mam4::ThreadTeam &team) {
         const int icol = team.league_rank();
         // for (int icol=0; icol<5; ++icol){
         mam4::ndrop::View1D raercol_cw_view[mam4::ndrop::pver][2];
@@ -346,7 +346,7 @@ void call_function_dropmixnuc(
         mam4::Prognostics progs_at_col = aerosols_for_column(dry_aero, icol);
 
         // get atmospheric quantities
-        haero::Atmosphere haero_atm =
+        mam4::Atmosphere atm =
             atmosphere_for_column(dry_atmosphere, icol);
 
         // Compute kvh at interfaces
@@ -370,7 +370,7 @@ void call_function_dropmixnuc(
               // NOTE: The order of species in state_q_at_lev_col
               // is the same as in E3SM state%q array
               mam4::utils::extract_stateq_from_prognostics(
-                  progs_at_col, haero_atm, state_q_at_lev_col, klev);
+                  progs_at_col, atm, state_q_at_lev_col, klev);
 
               // get the start index for aerosols species in the state_q array
               int istart = mam4::utils::aero_start_ind();
@@ -492,7 +492,7 @@ void update_interstitial_aerosols(
 }
 
 void call_hetfrz_compute_tendencies(
-    haero::ThreadTeamPolicy team_policy, mam4::Hetfrz &hetfrz_,
+    mam4::ThreadTeamPolicy team_policy, mam4::Hetfrz &hetfrz_,
     mam_coupling::DryAtmosphere &dry_atm_,
     mam_coupling::AerosolState &dry_aero_, MAMAci::view_3d factnum,
     const double dt, const int nlev,
@@ -511,14 +511,14 @@ void call_hetfrz_compute_tendencies(
 
   Kokkos::parallel_for(
       "MAMAci::run_impl::call_hetfrz_compute_tendencies", team_policy,
-      KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+      KOKKOS_LAMBDA(const mam4::ThreadTeam &team) {
         const int icol = team.league_rank();
         //   Set up an atmosphere, surface, diagnostics, pronostics and
         //   tendencies class.
 
-        haero::Atmosphere haero_atm =
+        mam4::Atmosphere atm =
             atmosphere_for_column(dry_atmosphere, icol);
-        haero::Surface surf{};
+        mam4::Surface surf{};
         set_min_background_mmr(team, dry_aero, icol);
         mam4::Prognostics progs =
             mam_coupling::aerosols_for_column(dry_aero, icol);
@@ -593,7 +593,7 @@ void call_hetfrz_compute_tendencies(
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0u, pver),
                              [&](int klev) {
                                diags.stratiform_cloud_fraction(klev) =
-                                   haero_atm.cloud_fraction(klev);
+                                   atm.cloud_fraction(klev);
                              });
         //-------------------------------------------------------------
         // Heterogeneous freezing
@@ -606,7 +606,7 @@ void call_hetfrz_compute_tendencies(
         const mam4::Tendencies tends(nlev);
         const mam4::AeroConfig aero_config;
         const Real t = 0;  // not used
-        hetfrz.compute_tendencies(aero_config, team, t, dt, haero_atm, surf,
+        hetfrz.compute_tendencies(aero_config, team, t, dt, atm, surf,
                                   progs, diags, tends);
       });
 }

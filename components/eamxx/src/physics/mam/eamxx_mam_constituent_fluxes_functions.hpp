@@ -37,14 +37,14 @@ void update_gas_aerosols_using_constituents(
             mam_coupling::aerosols_for_column(wet_aero,  // output
                                               icol);     // input
         // Get atmospheric quantities
-        const haero::Atmosphere haero_atm =
+        const mam4::Atmosphere atm =
             atmosphere_for_column(dry_atm,  // output
                                   icol);    // input
 
         // Form state%q like array at surface level
         Real state_q_at_surf_lev[pcnst] = {};
         mam4::utils::extract_stateq_from_prognostics(
-            progs_at_col, haero_atm,  // input
+            progs_at_col, atm,        // input
             state_q_at_surf_lev,      // output
             surface_lev);             // input
 

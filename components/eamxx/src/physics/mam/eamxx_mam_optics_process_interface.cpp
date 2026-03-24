@@ -29,8 +29,8 @@ void MAMOptics::create_requests() {
 
   ncol_     = grid_->get_num_local_dofs();  // number of columns on this rank
   nlev_     = grid_->get_num_vertical_levels();  // number of levels per column
-  nswbands_ = mam4::modal_aer_opt::nswbands;     // number of shortwave bands
-  nlwbands_ = mam4::modal_aer_opt::nlwbands;     // number of longwave bands
+  nswbands_ = mam4::modal_aero_opt::nswbands;     // number of shortwave bands
+  nlwbands_ = mam4::modal_aero_opt::nlwbands;     // number of longwave bands
 
   len_temporary_views_ = get_len_temporary_views();
   buffer_.set_len_temporary_views(len_temporary_views_);
@@ -95,7 +95,7 @@ size_t MAMOptics::requested_buffer_size_in_bytes() const {
 int MAMOptics::get_len_temporary_views() {
   int work_len = 0;
   // work_
-  work_len += ncol_ * mam4::modal_aer_opt::get_work_len_aerosol_optics();
+  work_len += ncol_ * mam4::modal_aero_opt::get_work_len_aerosol_optics();
   // tau_ssa_g_sw_, tau_ssa_sw_, tau_sw_, tau_f_sw_
   const int nlev_f = nlev_ + 1;
   work_len += 4 * ncol_ * nswbands_ * nlev_f;
@@ -103,7 +103,7 @@ int MAMOptics::get_len_temporary_views() {
 }
 void MAMOptics::init_temporary_views() {
   auto work_ptr      = (Real *)buffer_.temporary_views.data();
-  const int work_len = mam4::modal_aer_opt::get_work_len_aerosol_optics();
+  const int work_len = mam4::modal_aero_opt::get_work_len_aerosol_optics();
   work_              = mam_coupling::view_2d(work_ptr, ncol_, work_len);
   work_ptr += ncol_ * work_len;
 
@@ -205,11 +205,11 @@ void MAMOptics::initialize_impl(const RunType run_type) {
     using namespace ShortFieldTagsNames;
 
     // Note: these functions do not set values for aerosol_optics_device_data_.
-    mam4::modal_aer_opt::set_complex_views_modal_aero(
+    mam4::modal_aero_opt::set_complex_views_modal_aero(
         aerosol_optics_device_data_);
-    mam4::modal_aer_opt::set_aerosol_optics_data_for_modal_aero_sw_views(
+    mam4::modal_aero_opt::set_aerosol_optics_data_for_modal_aero_sw_views(
         aerosol_optics_device_data_);
-    mam4::modal_aer_opt::set_aerosol_optics_data_for_modal_aero_lw_views(
+    mam4::modal_aero_opt::set_aerosol_optics_data_for_modal_aero_lw_views(
         aerosol_optics_device_data_);
 
     auto aerosol_optics_fields = mam_coupling::create_optics_fields(grid_);
@@ -272,10 +272,10 @@ void MAMOptics::initialize_impl(const RunType run_type) {
             specrefndxlw_host);
       }  // done ispec
       // reshape specrefndxsw_host and copy it to device
-      mam4::modal_aer_opt::set_device_specrefindex(
+      mam4::modal_aero_opt::set_device_specrefindex(
           aerosol_optics_device_data_.specrefindex_sw, "short_wave",
           specrefndxsw_host);
-      mam4::modal_aer_opt::set_device_specrefindex(
+      mam4::modal_aero_opt::set_device_specrefindex(
           aerosol_optics_device_data_.specrefindex_lw, "long_wave",
           specrefndxlw_host);
     }
@@ -376,7 +376,7 @@ void MAMOptics::run_impl(const double dt) {
         mam4::Prognostics progs =
             mam_coupling::aerosols_for_column(dry_aero, icol);
 
-        mam4::aer_rad_props::aer_rad_props_sw(
+        mam4::aero_rad_props::aero_rad_props_sw(
             team, dt, progs, atm, zi, pdel, ssa_cmip6_sw_icol, af_cmip6_sw_icol,
             ext_cmip6_sw_icol, tau_icol, tau_w_icol, tau_w_g_icol, tau_w_f_icol,
             aerosol_optics_device_data, calsize_data,  aodvis(icol), work_icol);
@@ -387,7 +387,7 @@ void MAMOptics::run_impl(const double dt) {
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const Int icol = team.league_rank();  // column index
         // absorption optical depth, per layer [unitless]
-        auto odap_aer_icol = ekat::subview(aero_tau_lw, icol);
+        auto odap_aero_icol = ekat::subview(aero_tau_lw, icol);
         const auto atm     = mam_coupling::atmosphere_for_column(dry_atm, icol);
 
         // FIXME: dry mass pressure interval [Pa]
@@ -399,9 +399,9 @@ void MAMOptics::run_impl(const double dt) {
         mam4::Prognostics progs =
             mam_coupling::aerosols_for_column(dry_aero, icol);
 
-        mam4::aer_rad_props::aer_rad_props_lw(
+        mam4::aero_rad_props::aero_rad_props_lw(
             team, dt, progs, atm, zi, pdel, ext_cmip6_lw_icol,
-            aerosol_optics_device_data, calsize_data, odap_aer_icol);
+            aerosol_optics_device_data, calsize_data, odap_aero_icol);
       });
   Kokkos::fence();
   // TODO: We will need to generate optical inputs files with  band ordering
