@@ -279,7 +279,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <use_gw_convect type="logical" doc="Flag for convective GWD">false</use_gw_convect>
       <use_gw_frontal type="logical" doc="Flag for frontal GWD">false</use_gw_frontal>
       <use_gw_orographic type="logical" doc="Flag for orographic GWD">false</use_gw_orographic>
-      <gw_drag_file type="array(string)" doc="GW source spectra file">${DIN_LOC_ROOT}/atm/waccm/gw/newmfspectra40_dc25.nc</gw_drag_file>
+      <gw_drag_file type="string" doc="GW source spectra file">${DIN_LOC_ROOT}/atm/waccm/gw/newmfspectra40_dc25.nc</gw_drag_file>
       <pgwv type="integer" doc="Maximum number of waves allowed">32</pgwv>
       <gw_dc type="real" doc="Bin width for spectrum">2.5</gw_dc>
       <tau_0_ubc type="logical" doc="flag to enforce an upper boundary condition of tau=0">false</tau_0_ubc>
