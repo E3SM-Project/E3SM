@@ -121,8 +121,8 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
   const auto vtag = p_layout.tags().back();
   const auto vdim = p_layout.dims().back();
 
-  FieldTag expected_tag;
-  int      expected_dim;
+  FieldTag expected_tag = FieldTag::Invalid;
+  int      expected_dim = -1;
   if (ptype==Midpoints or ptype==Both) {
     expected_tag = LEV;
     expected_dim = nlevs;
@@ -191,9 +191,19 @@ registration_ends_impl ()
         auto tgt_layout = create_tgt_layout(src_layout);
 
         // I this mask has already been created, retrieve it, otherwise create it
-        // CAVEAT: the tgt layout ALWAYS has LEV as vertical dim tag. But we NEED different masks for
-        // src fields defined at LEV and ILEV. So use src_layout to craft the mask name
-        const auto mask_name = m_tgt_grid->name() + "_" + ekat::join(src_layout.names(),"_") + "_mask";
+        // CAVEATS:
+        //  1. the tgt layout ALWAYS has LEV as vertical dim tag. But we NEED different masks for
+        //     src fields defined at LEV and ILEV. So use src_layout to craft the mask name
+        //  2. for vector dimensions, we must include the vector dim length, as there may be
+        //     2+ vector fields with different vector length, which need 2 different masks
+        std::vector<std::string> tagdim_names;
+        for (int i=0; i<src_layout.rank(); ++i) {
+          tagdim_names.push_back(src_layout.names()[i]);
+          if (src_layout.tags()[i]==CMP) {
+            tagdim_names.back() += std::to_string(src_layout.dims()[i]);
+          }
+        }
+        const auto mask_name = m_tgt_grid->name() + "_" + ekat::join(tagdim_names,"_") + "_mask";
         auto& mask = m_masks[mask_name];
         if (not mask.is_allocated()) {
           auto nondim = ekat::units::Units::nondimensional();
@@ -201,6 +211,8 @@ registration_ends_impl ()
 
           FieldIdentifier mask_fid (mask_name, tgt_layout, nondim, m_tgt_grid->name(), DataType::IntType );
           mask  = Field (mask_fid);
+          if (ft.packed)
+            mask.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
           mask.allocate_view();
         }
 
