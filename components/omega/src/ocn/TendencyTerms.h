@@ -578,24 +578,16 @@ class SurfaceTracerRestoringOnCell {
    Array1DI4 TracerRestoreMask;
 
    /// constructor declaration
-   SurfaceTracerRestoringOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
+   SurfaceTracerRestoringOnCell(const HorzMesh *Mesh);
 
    /// The functor takes the cell index and the array for the tracer surface
    /// restoring values, outputs tendency array
    KOKKOS_FUNCTION void
-   operator()(const Array3DReal &Tend, I4 L, I4 ICell, I4 KChunk,
+   operator()(const Array3DReal &Tend, I4 L, I4 ICell, I4 KMin,
               const Array2DReal &SurfTracerRestoringDiffsCell) const {
-      if (KChunk == 0 &&
-          (TracerRestoreMask.extent(0) == 0 || TracerRestoreMask(L) == 1)) {
-         const I4 K = MinLayerCell(ICell);
-
-         Tend(L, ICell, K) +=
-             PistonVelocity * SurfTracerRestoringDiffsCell(L, ICell);
-      }
+      Tend(L, ICell, KMin) +=
+          PistonVelocity * SurfTracerRestoringDiffsCell(L, ICell);
    }
-
- private:
-   Array1DI4 MinLayerCell;
 };
 
 } // namespace OMEGA

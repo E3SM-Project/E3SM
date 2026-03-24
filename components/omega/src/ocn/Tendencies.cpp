@@ -391,8 +391,7 @@ Tendencies::Tendencies(const std::string &Name_, ///< [in] Name for tendencies
       VelocityHyperDiff(Mesh, VCoord), WindForcing(Mesh, VCoord),
       BottomDrag(Mesh, VCoord), TracerDiffusion(Mesh, VCoord),
       TracerHyperDiff(Mesh, VCoord), TracerHorzAdv(Mesh, VCoord),
-      TracerDiffusion(Mesh, VCoord), SurfaceTracerRestoring(Mesh, VCoord),
-      CustomThicknessTend(InCustomThicknessTend),
+      SurfaceTracerRestoring(Mesh), CustomThicknessTend(InCustomThicknessTend),
       CustomVelocityTend(InCustomVelocityTend), EqState(EqState), PGrad(PGrad) {
 
    // Tendency arrays

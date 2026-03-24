@@ -1058,29 +1058,22 @@ int testSurfaceTracerRestoringOnCell(int NVertLayers, int NTracers, Real RTol) {
           KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarA(X, Y); },
           InputField, Geom, Mesh, OnCell);
 
-      SurfaceTracerRestoringOnCell SurfRestOnC(Mesh, VCoord);
-      SurfRestOnC.TracerRestoreMask = Array1DI4("TracerRestoreMask", NTracers);
-
-      HostArray1DI4 TracerRestoreMaskH("TracerRestoreMaskH", NTracers);
-      deepCopy(TracerRestoreMaskH, 0);
-      for (int L = 0; L < 3; ++L) {
-         TracerRestoreMaskH(L) = CaseMasks[Case][L];
-      }
-      deepCopy(SurfRestOnC.TracerRestoreMask, TracerRestoreMaskH);
+      SurfaceTracerRestoringOnCell SurfRestOnC(Mesh);
 
       parallelFor(
           {NTracers, Mesh->NCellsOwned}, KOKKOS_LAMBDA(int L, int ICell) {
              SurfTracerRestoringDiffsCell(L, ICell) = InputField(ICell, 0);
-             ExactSurfRest(L, ICell, 0) = SurfRestOnC.TracerRestoreMask(L) *
+             ExactSurfRest(L, ICell, 0)             = CaseMasks[Case][L] *
                                           SurfRestOnC.PistonVelocity *
                                           InputField(ICell, 0);
           });
 
       parallelFor(
-          {NTracers, Mesh->NCellsOwned, NVertLayers},
-          KOKKOS_LAMBDA(int L, int ICell, int KLayer) {
-             SurfRestOnC(NumSurfRest, L, ICell, KLayer,
-                         SurfTracerRestoringDiffsCell);
+          {NTracers, Mesh->NCellsOwned}, KOKKOS_LAMBDA(int L, int ICell) {
+             if (CaseMasks[Case][L] == 1) {
+                SurfRestOnC(NumSurfRest, L, ICell, 0,
+                            SurfTracerRestoringDiffsCell);
+             }
           });
 
       ErrorMeasures SurfRestErrors;

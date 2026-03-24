@@ -67,6 +67,9 @@ Omega:
 - `MaxDiff`: cap on restoring difference magnitude
 - `SurfaceTracerRestoringEnable`: switch to enable surface tracer restoring
 
+When restoring is enabled, Omega builds an internal `TracerRestoreMask` from
+`TracersToRestore` and applies restoring only to tracers whose mask value is 1.
+
 ### Restoring target fields
 
 Surface restoring uses auxiliary fields:
@@ -81,4 +84,6 @@ The restoring tendency is computed at the surface layer only and is limited by
 
 - If a tracer is not listed in `TracersToRestore`, no restoring tendency is
   applied to that tracer.
+- If surface restoring is enabled but no restore mask is available at tendency
+  compute-time, Omega aborts with an error.
 - `MaxDiff` must be positive. A runtime check will error out if not.

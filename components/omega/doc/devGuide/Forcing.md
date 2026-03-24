@@ -55,8 +55,10 @@ pathways in Omega, currently this includes:
 - `SurfaceTracerRestoringOnCell` tendency term
   - Applies `PistonVelocity * SurfTracerRestoringDiffsCell` at surface
 - `Tendencies`
-  - Builds restore mask from `SurfaceRestoring.TracersToRestore`
-  - Calls surface restoring term when enabled
+  - Builds `TracerRestoreMask` from `SurfaceRestoring.TracersToRestore`
+  - Applies tracer-selection logic at call site in
+    `computeTracerTendenciesOnly`
+  - Aborts if restoring is enabled but no restore mask is available
 
 ### Surface tracer restoring config coupling
 
@@ -65,7 +67,7 @@ pathways in Omega, currently this includes:
 - `Omega.SurfaceRestoring.PistonVelocity`
   - tendency scaling
 - `Omega.SurfaceRestoring.TracersToRestore`
-  - tracer-level enable list
+  - tracer-level enable list used to build `TracerRestoreMask`
 - `Omega.Tendencies.SurfaceTracerRestoringEnable`
   - gates restoring tendency execution
 
@@ -73,6 +75,8 @@ pathways in Omega, currently this includes:
 
 - If a tracer is not listed in `TracersToRestore`, no restoring tendency is
   applied to that tracer.
+- If restoring is enabled but no restore mask is available at tendency
+  compute-time, Omega aborts with an error.
 - `MaxDiff` must be positive. A runtime check will error out if not.
 - It is assumed that the incoming `TracersMonthlySurfClimoCell` values have the correct units appropriate for Omega. If this is not true, conversion should be implemented.
 - Surface tracer restoring is active everywhere if enabled. A flag to turn it off under sea ice will need to be added in later development if this feature is desired.
