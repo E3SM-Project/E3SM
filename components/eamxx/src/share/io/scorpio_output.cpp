@@ -11,6 +11,7 @@
 #include <ekat_string_utils.hpp>
 #include <ekat_units.hpp>
 
+#include <algorithm>
 #include <numeric>
 
 namespace
@@ -280,8 +281,9 @@ AtmosphereOutput::
   //       to prevent two output streams creating the same diag. So when this
   //       destructor runs, it's fine to clean up this static var
   for (auto d : m_diagnostics) {
-    const auto& name = d->get_diagnostic().name();
-    m_diag_repo.erase(name);
+    for (const auto& dname : d->get_diagnostic_names()) {
+      m_diag_repo.erase(dname);
+    }
   }
 }
 
@@ -950,26 +952,25 @@ compute_diagnostics(const bool allow_invalid_fields)
       EKAT_REQUIRE_MSG (computable or allow_invalid_fields,
         "Error! Cannot compute a diagnostic. One dependency has an invalid timestamp.\n"
         " - stream name: " + m_stream_name + "\n"
-        " - diag name: " + diag->get_diagnostic().name() + "\n"
+        " - diag class: " + diag->name() + "\n"
+        " - diag field(s): " + ekat::join(diag->get_diagnostic_names(),",") + "\n"
         " - dep  name: " + f.name() + "\n");
     }
 
-    auto d = diag->get_diagnostic();
     if (computable) {
       diag->compute_diagnostic();
     }
 
-    bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
-
-    EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
-      "Error! Failed to compute diagnostic.\n"
-      " - diag name: " + diag->get_diagnostic().name() + "\n");
-
-    if (not computed) {
-      // The diag was either not computable or it may have failed to compute
-      // (e.g., t=0 output with a flux-like diag).
-      // If we're allowing invalid fields, then we should simply set diag=fill_value
-      d.deep_copy(constants::fill_value<float>);
+    for (const auto& dname : diag->get_diagnostic_names()) {
+      auto d = diag->get_diagnostic(dname);
+      bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
+      EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
+        "Error! Failed to compute diagnostic.\n"
+        " - diag class: " + diag->name() + "\n"
+        " - diag name: " + dname + "\n");
+      if (not computed) {
+        d.deep_copy(constants::fill_value<float>);
+      }
     }
   }
 }
@@ -1051,10 +1052,9 @@ process_requested_fields()
     diag->initialize(util::TimeStamp(),RunType::Initial);
   };
 
-  auto check_diag_avg_cnt = [&](const std::shared_ptr<AtmosphereDiagnostic>& diag) {
-    // Set the diag field in the FM
-    auto diag_field = diag->get_diagnostic();
-
+  // Helper to check avg_cnt for a single diagnostic output field
+  auto check_diag_avg_cnt_field = [&](const std::shared_ptr<AtmosphereDiagnostic>& diag,
+                                      Field diag_field) {
     // Add the field to the diag group
     diag_field.get_header().get_tracking().add_group("diagnostic");
 
@@ -1085,6 +1085,12 @@ process_requested_fields()
     // If specified, set avg_cnt tracking for this diagnostic.
     if (m_track_avg_cnt) {
       m_field_to_avg_cnt_suffix.emplace(diag_field.name(),diag_avg_cnt_name);
+    }
+  };
+
+  auto check_diag_avg_cnt = [&](const std::shared_ptr<AtmosphereDiagnostic>& diag) {
+    for (const auto& dname : diag->get_diagnostic_names()) {
+      check_diag_avg_cnt_field(diag, diag->get_diagnostic(dname));
     }
   };
   
@@ -1133,6 +1139,14 @@ process_requested_fields()
         if (not diag) {
           // First time we run into this diag. Create it
           diag = create_diagnostic(name,fm_model->get_grid());
+
+          // Pre-populate the repo for all output field names
+          // so sibling fields (multi-output) reuse the same instance
+          for (const auto& dname : diag->get_diagnostic_names()) {
+            if (m_diag_repo.find(dname) == m_diag_repo.end()) {
+              m_diag_repo[dname] = diag;
+            }
+          }
         }
         // Add its deps to the list of fields to process (if not already in fm_model)
         bool deps_met = true;
@@ -1152,8 +1166,21 @@ process_requested_fields()
           }
           check_diag_avg_cnt (diag);
           remove_these.insert(name);
-          fm_model->add_field(diag->get_diagnostic());
-          m_diagnostics.push_back(diag);
+
+          // Add all output fields to the FM
+          for (const auto& dname : diag->get_diagnostic_names()) {
+            auto f = diag->get_diagnostic(dname);
+            if (not fm_model->has_field(dname)) {
+              fm_model->add_field(f);
+            }
+            // Remove sibling field names from remaining if present
+            remove_these.insert(dname);
+          }
+
+          // Only push the diagnostic once (avoid duplicates for multi-output)
+          if (std::find(m_diagnostics.begin(),m_diagnostics.end(),diag)==m_diagnostics.end()) {
+            m_diagnostics.push_back(diag);
+          }
         }
       }
     }
