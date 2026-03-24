@@ -172,6 +172,7 @@ protected:
 };
 
 bool operator== (const FieldLayout& fl1, const FieldLayout& fl2);
+inline bool operator!= (const FieldLayout& fl1, const FieldLayout& fl2) { return not (fl1==fl2); }
 
 // ========================== IMPLEMENTATION ======================= //
 
