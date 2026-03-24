@@ -122,7 +122,9 @@ void GWDrag::initialize_impl (const RunType) {
 
 /*------------------------------------------------------------------------------------------------*/
 void GWDrag::run_impl (const double dt) {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
   const int nlev_mid_packs = ekat::npack<Pack>(m_nlev);
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(m_ncol, nlev_mid_packs);
   //----------------------------------------------------------------------------
   // get fields
 
@@ -144,35 +146,35 @@ void GWDrag::run_impl (const double dt) {
   const auto& uwind       = hwinds_fld.get_component(0)   .get_view<Pack**>();
   const auto& vwind       = hwinds_fld.get_component(1)   .get_view<Pack**>();
   //----------------------------------------------------------------------------
-  // // calculate altitude on interfaces (z_int) and mid-points (z_mid)
+  // calculate altitude on interfaces (z_int) and mid-points (z_mid)
 
-  // // create temporaries to avoid "Implicit capture" warning
-  // const auto loc_p_mid = p_mid;
-  // const auto loc_p_del = p_del;
-  // const auto loc_T_mid = T_mid;
-  // const auto loc_qv    = qv;
-  // auto loc_z_mid = m_buffer.z_mid;
-  // auto loc_z_del = m_buffer.z_del;
-  // auto loc_z_int = m_buffer.z_int;
-  // auto loc_nlev = m_nlev;
+  // create temporaries to avoid "Implicit capture" warning
+  const auto loc_p_mid = p_mid;
+  const auto loc_p_del = p_del;
+  const auto loc_T_mid = T_mid;
+  const auto loc_qv    = qv;
+  auto loc_z_mid = m_buffer.z_mid;
+  auto loc_z_del = m_buffer.z_del;
+  auto loc_z_int = m_buffer.z_int;
+  auto loc_nlev = m_nlev;
 
-  // Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
-  //   const int i = team.league_rank();
-  //   const auto p_mid_i = ekat::subview(loc_p_mid, i);
-  //   const auto p_del_i = ekat::subview(loc_p_del, i);
-  //   const auto T_mid_i = ekat::subview(loc_T_mid, i);
-  //   const auto qv_i    = ekat::subview(loc_qv,    i);
-  //   auto z_mid_i = ekat::subview(loc_z_mid, i);
-  //   auto z_del_i = ekat::subview(loc_z_del, i);
-  //   auto z_int_i = ekat::subview(loc_z_int, i);
-  //   auto z_surf = 0.0; // z_mid & z_int are altitude above the surface
-  //   PF::calculate_dz(team, p_del_i, p_mid_i, T_mid_i, qv_i, z_del_i);
-  //   team.team_barrier();
-  //   PF::calculate_z_int(team, loc_nlev, z_del_i, z_surf, z_int_i);
-  //   team.team_barrier();
-  //   PF::calculate_z_mid(team, loc_nlev, z_int_i, z_mid_i);
-  //   team.team_barrier();
-  // });
+  Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
+    const int i = team.league_rank();
+    const auto p_mid_i = ekat::subview(loc_p_mid, i);
+    const auto p_del_i = ekat::subview(loc_p_del, i);
+    const auto T_mid_i = ekat::subview(loc_T_mid, i);
+    const auto qv_i    = ekat::subview(loc_qv,    i);
+    auto z_mid_i = ekat::subview(loc_z_mid, i);
+    auto z_del_i = ekat::subview(loc_z_del, i);
+    auto z_int_i = ekat::subview(loc_z_int, i);
+    auto z_surf = 0.0; // z_mid & z_int are altitude above the surface
+    PF::calculate_dz(team, p_del_i, p_mid_i, T_mid_i, qv_i, z_del_i);
+    team.team_barrier();
+    PF::calculate_z_int(team, loc_nlev, z_del_i, z_surf, z_int_i);
+    team.team_barrier();
+    PF::calculate_z_mid(team, loc_nlev, z_int_i, z_mid_i);
+    team.team_barrier();
+  });
   //----------------------------------------------------------------------------
 
   // // Calculate local molecular diffusivity
