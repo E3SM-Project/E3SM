@@ -449,8 +449,6 @@ CONTAINS
     integer(IN)   :: nu                ! unit number
     integer(IN)   :: nflds_r2x
     character(len=18) :: date_str
-    real(R8) latv, lonv
-    integer ilat, ilon
     integer :: index_r2x_rofl, index_r2x_rofi
 #ifdef HAVE_MOAB
     real(R8), allocatable, target :: datam(:)
@@ -532,49 +530,19 @@ CONTAINS
        ! Apply modifications around ice sheets if required
        lsize = mct_avect_lsize(r2x)
        nflds_r2x = mct_avect_nRattr(r2x)
-       ilat = mct_aVect_indexRA(ggrid%data,'lat')
-       ilon = mct_aVect_indexRA(ggrid%data,'lon')
        index_r2x_rofl = mct_avect_indexra(r2x,'Forr_rofl')
        index_r2x_rofi = mct_avect_indexra(r2x,'Forr_rofi')
        if (remove_ais_rofl) then
-          do n=1,lsize
-             lonv = ggrid%data%rAttr(ilon, n)
-             latv = ggrid%data%rAttr(ilat, n)
-             if (latv < -60.0_r8) then
-                r2x%rAttr(index_r2x_rofl,n) = 0.0_r8
-             end if
-          enddo
+          call apply_ais_mask(r2x, ggrid, lsize, index_r2x_rofl)
        endif
        if (remove_ais_rofi) then
-          do n=1,lsize
-             lonv = ggrid%data%rAttr(ilon, n)
-             latv = ggrid%data%rAttr(ilat, n)
-             if (latv < -60.0_r8) then
-                r2x%rAttr(index_r2x_rofi,n) = 0.0_r8
-             end if
-          enddo
+          call apply_ais_mask(r2x, ggrid, lsize, index_r2x_rofi)
        endif
-       ! Note: Greenland box is approximate and includes portions of
-       ! Canadian archipelago and Iceland
        if (remove_gis_rofl) then
-          do n=1,lsize
-             lonv = ggrid%data%rAttr(ilon, n)
-             latv = ggrid%data%rAttr(ilat, n)
-             if ((latv > 59.0_r8)  .and. (latv < 83.0_r8) .and. &
-                 (lonv > 286.0_r8) .and. (lonv < 349.0_r8)) then
-                r2x%rAttr(index_r2x_rofl,n) = 0.0_r8
-             end if
-          enddo
+          call apply_gis_mask(r2x, ggrid, lsize, index_r2x_rofl)
        endif
        if (remove_gis_rofi) then
-          do n=1,lsize
-             lonv = ggrid%data%rAttr(ilon, n)
-             latv = ggrid%data%rAttr(ilat, n)
-             if ((latv > 59.0_r8)  .and. (latv < 83.0_r8) .and. &
-                 (lonv > 286.0_r8) .and. (lonv < 349.0_r8)) then
-                r2x%rAttr(index_r2x_rofi,n) = 0.0_r8
-             end if
-          enddo
+          call apply_gis_mask(r2x, ggrid, lsize, index_r2x_rofi)
        endif
 
     end select
@@ -647,6 +615,71 @@ CONTAINS
     call t_stopf('DROF_RUN')
 
   end subroutine drof_comp_run
+
+  !===============================================================================
+  subroutine apply_ais_mask(r2x, ggrid, lsize, field_index)
+
+    implicit none
+
+    type(mct_aVect) , intent(inout) :: r2x
+    type(mct_gGrid) , pointer       :: ggrid
+    integer(IN)     , intent(in)    :: lsize
+    integer(IN)     , intent(in)    :: field_index
+
+    integer(IN) :: n, ilat
+    real(R8)    :: latv
+
+    ilat = mct_aVect_indexRA(ggrid%data,'lat')
+    do n=1,lsize
+       latv = ggrid%data%rAttr(ilat, n)
+       if (latv < -60.0_r8) then
+          r2x%rAttr(field_index,n) = 0.0_r8
+       end if
+    enddo
+
+  end subroutine apply_ais_mask
+
+  !===============================================================================
+  subroutine apply_gis_mask(r2x, ggrid, lsize, field_index)
+
+    implicit none
+
+    type(mct_aVect) , intent(inout) :: r2x
+    type(mct_gGrid) , pointer       :: ggrid
+    integer(IN)     , intent(in)    :: lsize
+    integer(IN)     , intent(in)    :: field_index
+
+    integer(IN) :: n, ilat, ilon
+    real(R8)    :: latv, lonv
+    logical     :: in_greenland, in_baffin, in_ellesmere, in_iceland
+
+    ilat = mct_aVect_indexRA(ggrid%data,'lat')
+    ilon = mct_aVect_indexRA(ggrid%data,'lon')
+
+    do n=1,lsize
+       lonv = ggrid%data%rAttr(ilon, n)
+       latv = ggrid%data%rAttr(ilat, n)
+
+       in_greenland = (latv > 59.5_r8) .and. (latv < 83.66_r8) .and. &
+                      (lonv > 287.0_r8) .and. (lonv < 349.2_r8)
+
+       in_baffin = (latv > 59.5_r8) .and. (latv < 73.0_r8) .and. &
+                   (lonv > 287.0_r8) .and. (lonv < 300.0_r8)
+
+       ! This region is a right triangle with a hypotenuse passing through Nares Strait
+       in_ellesmere = (latv > 76.5_r8) .and. (latv < 83.66_r8) .and. &
+                      (lonv > 280.0_r8) .and. &
+                      (lonv < 280.0_r8 + (latv - 76.5_r8) * 3.4_r8)
+
+       in_iceland = (latv > 63.0_r8) .and. (latv < 67.0_r8) .and. &
+                    (lonv > 334.0_r8) .and. (lonv < 347.0_r8)
+
+       if (in_greenland .and. .not.(in_baffin .or. in_ellesmere .or. in_iceland)) then
+          r2x%rAttr(field_index,n) = 0.0_r8
+       end if
+    enddo
+
+  end subroutine apply_gis_mask
 
   !===============================================================================
   subroutine drof_comp_final(my_task, master_task, logunit)
