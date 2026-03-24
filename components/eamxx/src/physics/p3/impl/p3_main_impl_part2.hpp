@@ -350,7 +350,7 @@ void Functions<S,D>
                      hetfrz_deposition_nucleation_tend(k), rho(k), qc_incld(k), nc_incld(k), 1,
                      ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt);
           ice_classical_nucleation(hetfrz_immersion_nucleation_tend(k), hetfrz_contact_nucleation_tend(k),
-                     hetfrz_deposition_nucleation_tend(k), rho(k), qc_incld(k), nc_incld(k), 2,
+                     hetfrz_deposition_nucleation_tend(k), rho(k), qc_incld(k), nc_incld(k), 2, 
                      ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt);
         }
         else{
@@ -431,7 +431,7 @@ void Functions<S,D>
       nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr, qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend,
       qr2qi_collect_tend, qc2qr_ice_shed_tend, qi2qr_melt_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, ni2nr_melt_tend, nc_collect_tend,
       ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend,
-      qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend,
+      qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend, 
       ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt, not_skip_all, runtime_options);
 
     //
@@ -488,18 +488,18 @@ void Functions<S,D>
     //---------------------------------------------------------------------------------
 
     //-- ice-phase dependent processes:
-/*  update_prognostic_ice(
+    update_prognostic_ice(
       qc2qi_hetero_freeze_tend, qc2qi_collect_tend, qc2qr_ice_shed_tend, nc_collect_tend, nc2ni_immers_freeze_tend, ncshdc, qr2qi_collect_tend, nr_collect_tend,  qr2qi_immers_freeze_tend,
       nr2ni_immers_freeze_tend, nr_ice_shed_tend, qi2qr_melt_tend, ni2nr_melt_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qv2qi_nucleat_tend, ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend,
       qc2qi_berg_tend, inv_exner(k), predictNc, wetgrowth, dt, nmltratio,
       rho_qm_cloud, ncheti_cnt, nicnt, ninuc_cnt, qcheti_cnt, qicnt, qinuc_cnt,  th_atm(k), qv(k), qi(k), ni(k), qm(k), bm(k), qc(k),
-      nc(k), qr(k), nr(k), use_hetfrz_classnuc, not_skip_all);*/
+      nc(k), qr(k), nr(k), use_hetfrz_classnuc, not_skip_all);
 
     //-- warm-phase only processes:
-/*  update_prognostic_liquid(
+    update_prognostic_liquid(
       qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, nc_selfcollect_tend, qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend,
       predictNc, do_prescribed_CCN, inv_rho(k), inv_exner(k), dt, th_atm(k), qv(k), qc(k), nc(k),
-      qr(k), nr(k), not_skip_all);*/
+      qr(k), nr(k), not_skip_all);
 
     // AaronDonahue - Add extra variables needed from microphysics by E3SM:
     if(use_hetfrz_classnuc){
