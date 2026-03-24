@@ -40,6 +40,38 @@ clone (const std::string& name) const
   return fid;
 }
 
+FieldIdentifier& FieldIdentifier::
+reset_layout (const FieldLayout& layout)
+{
+  m_layout = layout;
+  update_identifier();
+  return *this;
+}
+
+FieldIdentifier& FieldIdentifier::
+reset_units  (const Units& units)
+{
+  m_units = units;
+  update_identifier();
+  return *this;
+}
+
+FieldIdentifier& FieldIdentifier::
+reset_grid   (const std::string& grid)
+{
+  m_grid_name = grid;
+  update_identifier();
+  return *this;
+}
+
+FieldIdentifier& FieldIdentifier::
+reset_dtype  (const DataType dtype)
+{
+  m_data_type = dtype;
+  update_identifier();
+  return *this;
+}
+
 void FieldIdentifier::update_identifier () {
   // Create a verbose identifier string.
   m_identifier = m_name + "[" + m_grid_name + "] <" + e2str(m_data_type);

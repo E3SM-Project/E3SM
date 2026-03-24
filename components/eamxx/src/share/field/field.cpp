@@ -108,8 +108,7 @@ Field
 Field::clone(const std::string& name, const std::string& grid_name) const {
   // Create new field
   const auto& my_fid = get_header().get_identifier();
-  FieldIdentifier fid(name,my_fid.get_layout(),my_fid.get_units(),
-                      grid_name,my_fid.data_type());
+  auto fid = my_fid.clone(name).reset_grid(grid_name);
   Field f(fid);
 
   // Ensure alloc props match

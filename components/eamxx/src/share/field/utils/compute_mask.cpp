@@ -217,8 +217,9 @@ void compute_mask (const Field& f, const ScalarWrapper value, Comparison CMP, Fi
 
 Field compute_mask (const Field& x, const ScalarWrapper value, Comparison CMP) {
   const auto& fid_x = x.get_header().get_identifier();
-  const auto nondim = ekat::units::Units::nondimensional();
-  FieldIdentifier fid(x.name()+"_mask",fid_x.get_layout(),nondim,fid_x.get_grid_name(),DataType::IntType);
+  auto fid = fid_x.clone(x.name()+"_mask")
+                  .reset_units(ekat::units::Units::nondimensional())
+                  .reset_dtype(DataType::IntType);
   Field mask(fid,true);
 
   compute_mask(x,value,CMP,mask);

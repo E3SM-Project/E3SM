@@ -869,7 +869,7 @@ void FieldManager::pre_process_monolithic_group_requests () {
         // to the layout on the src grid
         const auto src_fid = m_fields.at(registered_grid).at(field_name)->get_header().get_identifier();
         const auto fl = m_grids_mgr->get_grid(grid_name)->equivalent_layout(src_fid.get_layout());
-        FieldIdentifier fid(field_name, fl, src_fid.get_units(), grid_name);
+        auto fid = src_fid.clone().reset_layout(fl).reset_grid(grid_name);
 
         // Register the field for each group req
         for (auto greq : m_group_requests.at(grid_name).at(group_name)) {
