@@ -17,6 +17,12 @@ void Functions<S,D>::gw_convect_init(
   const Real& plev_src_wind,
   const uview_3d<const Real>& mfcc_in)
 {
+  static bool s_convect_init_constructed = false;
+  if (!s_convect_init_constructed) {
+    new (&s_convect_init) GwConvectInit();
+    s_convect_init_constructed = true;
+  }
+
   // Just set k_src_wind to pver. We don't have access to pref_edge
   s_convect_init.k_src_wind = s_common_init.pver - 1;
 
@@ -36,6 +42,12 @@ void Functions<S,D>::gw_convect_init(
   ekat::ParameterList& params,
   const Kokkos::View<Real***, Kokkos::HostSpace>& mfcc_in)
 {
+  static bool s_convect_init_constructed = false;
+  if (!s_convect_init_constructed) {
+    new (&s_convect_init) GwConvectInit();
+    s_convect_init_constructed = true;
+  }
+
   s_convect_init.gw_convect_eff             = params.get<Real>("gw_convect_eff", s_convect_init.gw_convect_eff);
   s_convect_init.gw_convect_hcf             = params.get<Real>("gw_convect_hcf", s_convect_init.gw_convect_hcf);
   s_convect_init.gw_convect_hdepth_scale    = params.get<Real>("gw_convect_hdepth_scale", s_convect_init.gw_convect_hdepth_scale);
