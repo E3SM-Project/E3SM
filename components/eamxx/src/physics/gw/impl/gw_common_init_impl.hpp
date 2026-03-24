@@ -96,18 +96,6 @@ void Functions<S,D>::gw_common_init(
   s_common_init.fcrit2            = params.get<Real>("fcrit2", s_common_init.fcrit2);
   s_common_init.gw_orographic_eff = params.get<Real>("gw_orographic_eff", s_common_init.gw_orographic_eff);
 
-  // // calculate reference pressure at interfaces
-  // const auto hyai = m_grid->get_geometry_data("hyai").get_view<const Real*>();
-  // const auto hybi = m_grid->get_geometry_data("hybi").get_view<const Real*>();
-  // Kokkos::View<Real*, Kokkos::HostSpace> pref_int("pref_int", hyai.size());
-  // // Kokkos::parallel_for(Kokkos::RangePolicy<>(0, m_nlev+1), KOKKOS_LAMBDA (const int k) {
-  // Kokkos::parallel_for("gw_common_init_calculate_pref_int", 
-  //   Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, hyai.size()), 
-  //   KOKKOS_LAMBDA (const int k) {
-  //     pref_int(k) = PC::P0.value*hyai(k) + PC::P0.value*hybi(k);
-  // });
-  // Kokkos::fence();
-
   // Set phase speeds
   const int num_pgwv = s_common_init.pgwv * 2 + 1;
   s_common_init.cref = view_1d<Real>("cref", num_pgwv);
