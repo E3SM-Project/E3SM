@@ -18,6 +18,12 @@ void Functions<S,D>::gw_front_init(
   const Real& frontgfc_in,
   const Int& kfront_in)
 {
+  static bool s_front_init_constructed = false;
+  if (!s_front_init_constructed) {
+    new (&s_front_init) GwFrontInit();
+    s_front_init_constructed = true;
+  }
+
   using exe_space_t = typename KT::ExeSpace;
 
   s_front_init.frontgfc = frontgfc_in;
@@ -61,6 +67,12 @@ void Functions<S,D>::gw_front_init(
   ekat::ParameterList& params,
   const Kokkos::View<Real*, Kokkos::HostSpace>& pref_int)
 {
+  static bool s_front_init_constructed = false;
+  if (!s_front_init_constructed) {
+    new (&s_front_init) GwFrontInit();
+    s_front_init_constructed = true;
+  }
+
   using exe_space_t = typename KT::ExeSpace;
 
   s_front_init.taubgnd        = params.get<Real>("gw_frontal_taubgnd",s_front_init.taubgnd);
