@@ -121,8 +121,8 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
   const auto vtag = p_layout.tags().back();
   const auto vdim = p_layout.dims().back();
 
-  FieldTag expected_tag;
-  int      expected_dim;
+  FieldTag expected_tag = FieldTag::Invalid;
+  int      expected_dim = -1;
   if (ptype==Midpoints or ptype==Both) {
     expected_tag = LEV;
     expected_dim = nlevs;
