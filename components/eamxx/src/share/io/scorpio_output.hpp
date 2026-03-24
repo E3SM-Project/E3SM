@@ -30,6 +30,7 @@
  *  ------
  *  filename_prefix:                    STRING
  *  averaging_type:                     STRING
+ *  transpose:                          BOOL                  (default: false)
  *  max_snapshots_per_file:             INT                   (default: 1)
  *  fields:
  *     GRID_NAME_1:
@@ -57,8 +58,11 @@
  *    Here, 'time interval' is described by ${Output frequency} and ${Output frequency_units}.
  *    E.g., with 'Output frequency'=10 and 'Output frequency_units'="Days", the time interval is 10
  days.
+ *  - transpose: optional boolean flag to enable transposed output (default: false).
+ *      When set to true, all field dimensions will be reversed in the output file.
+ *      For example, a field with layout (ncol, nlev) will be written as (nlev, ncol).
  *  - fields: parameters specifying fields to output
- *     - GRID_NAME: parameters specifyign fields to output from grid $GRID_NAME
+ *     - GRID_NAME: parameters specifying fields to output from grid $GRID_NAME
  *        - field_names: names of fields defined on grid $grid_name that need to be outputed
  *        - output_data_layout: attempt to 'remap' fields to this data layout first.
  *          This option is mostly used to enable dyn->phys_gll remap (to save storage),
@@ -172,6 +176,7 @@ protected:
 
   // --- Internal variables --- //
   ekat::Comm m_comm;
+  bool m_transpose = false;
 
   // We store separate shared pointers for field mgrs at different stages of IO:
   // More specifically, the order of operations is as follows:
@@ -201,6 +206,7 @@ protected:
     Scorpio // Output fields to pass to scorpio (may differ from the above in case of packing)
   };
   std::map<Phase, std::shared_ptr<fm_type>> m_field_mgrs;
+  std::map<std::string, Field> m_helper_fields;
 
   std::shared_ptr<const grid_type> m_io_grid;
   std::shared_ptr<remapper_type> m_horiz_remapper;
@@ -229,7 +235,7 @@ protected:
   DefaultMetadata m_default_metadata;
 
   bool m_add_time_dim;
-  bool m_track_avg_cnt = false;
+  bool m_track_avg_cnt         = false;
   bool m_latlon_output = false;
   std::string m_decomp_dimname = "";
 
