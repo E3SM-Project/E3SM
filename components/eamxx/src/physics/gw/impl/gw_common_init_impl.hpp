@@ -29,6 +29,12 @@ void Functions<S,D>::gw_common_init(
   const Real& kwv_in,
   const uview_1d<const Real>& alpha_in)
 {
+  static bool s_common_init_constructed = false;
+  if (!s_common_init_constructed) {
+    new (&s_common_init) GwCommonInit();
+    s_common_init_constructed = true;
+  }
+
   s_common_init.initialized = true;
   s_common_init.pver = pver_in;
   s_common_init.pgwv = pgwv_in;
@@ -66,6 +72,16 @@ void Functions<S,D>::gw_common_init(
   const Int& ktop_in,
   const Real& kwv_in)
 {
+  // Intel compiler may not call constructors for inline static members of
+  // template classes, leaving Kokkos view trackers zero-initialized (which
+  // causes crashes on assignment). Use placement new to force-construct on
+  // first call. Function-local statics are guaranteed to initialize correctly.
+  static bool s_common_init_constructed = false;
+  if (!s_common_init_constructed) {
+    new (&s_common_init) GwCommonInit();
+    s_common_init_constructed = true;
+  }
+
   EKAT_REQUIRE_MSG(pref_int.size()==pver_in+1, "Error! pref_int size is incorrect.\n");
 
   s_common_init.initialized = true;
