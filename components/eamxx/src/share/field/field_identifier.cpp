@@ -32,10 +32,11 @@ FieldIdentifier (const std::string& name,
 
 FieldIdentifier
 FieldIdentifier::
-alias (const std::string& name) const
+clone (const std::string& name) const
 {
   auto fid = *this;
   fid.m_name = name;
+  fid.update_identifier();
   return fid;
 }
 

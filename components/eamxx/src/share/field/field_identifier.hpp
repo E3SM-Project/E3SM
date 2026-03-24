@@ -71,7 +71,7 @@ public:
   DataType                data_type      () const { return m_data_type; }
 
   // Returns a copy of this identifier, but with a different name
-  FieldIdentifier alias (const std::string& name) const;
+  FieldIdentifier clone (const std::string& name) const;
 
   // The identifier string
   const std::string& get_id_string () const { return m_identifier; }
