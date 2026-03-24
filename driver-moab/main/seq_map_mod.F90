@@ -33,7 +33,6 @@ module seq_map_mod
 
   public :: seq_map_init_rcfile     ! cpl pes
   public :: moab_map_init_rcfile    ! cpl pes
-  public :: seq_map_init_rearrolap  ! cpl pes
   public :: seq_map_initvect        ! cpl pes
   public :: seq_map_initvect_moab   ! cpl pes
   public :: seq_map_map             ! cpl pes
@@ -257,102 +256,21 @@ contains
 
   !=======================================================================
 
-  subroutine seq_map_init_rearrolap(mapper, comp_s, comp_d, string, no_match)
-
-    implicit none
-    !-----------------------------------------------------
-    !
-    ! Arguments
-    !
-    type(seq_map)        ,intent(inout),pointer :: mapper
-    type(component_type) ,intent(inout)         :: comp_s
-    type(component_type) ,intent(inout)         :: comp_d
-    character(len=*)     ,intent(in),optional   :: string
-    logical              ,intent(in),optional   :: no_match
-    !
-    ! Local Variables
-    !
-    integer(IN)                :: mapid
-    type(mct_gsmap), pointer   :: gsmap_s
-    type(mct_gsmap), pointer   :: gsmap_d
-    integer(IN)                :: mpicom
-    logical                    :: skip_match
-    character(len=*),parameter :: subname = "(seq_map_init_rearrolap) "
-    !-----------------------------------------------------
-
-    if (seq_comm_iamroot(CPLID) .and. present(string)) then
-       write(logunit,'(A)') subname//' called for '//trim(string)
-    endif
-
-    call seq_comm_setptrs(CPLID, mpicom=mpicom)
-
-    gsmap_s => component_get_gsmap_cx(comp_s)
-    gsmap_d => component_get_gsmap_cx(comp_d)
-
-    skip_match = .false.
-    if (present(no_match)) then
-       if (no_match) skip_match = .true.
-    endif
-    if (mct_gsmap_Identical(gsmap_s,gsmap_d)) then
-       if(.not.skip_match) call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="copy")
-
-       if (.not.skip_match .and. mapid > 0) then
-          call seq_map_mappoint(mapid,mapper)
-       else
-          if(skip_match .and. seq_comm_iamroot(CPLID)) then
-             write(logunit,'(A)') subname//' skip_match true, force new map'
-          endif
-          call seq_map_mapinit(mapper,mpicom)
-          mapper%copy_only = .true.
-          mapper%strategy = "copy"
-          mapper%gsmap_s => component_get_gsmap_cx(comp_s)
-          mapper%gsmap_d => component_get_gsmap_cx(comp_d)
-       endif
-
-    else
-       if(.not.skip_match) call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="rearrange")
-
-       if (.not.skip_match .and. mapid > 0) then
-          call seq_map_mappoint(mapid,mapper)
-       else
-          if(skip_match .and. seq_comm_iamroot(CPLID)) then
-             write(logunit,'(A)') subname//'skip_match true, force new map'
-          endif
-          ! --- Initialize rearranger
-          call seq_map_mapinit(mapper, mpicom)
-          mapper%rearrange_only = .true.
-          mapper%strategy = "rearrange"
-          mapper%gsmap_s => component_get_gsmap_cx(comp_s)
-          mapper%gsmap_d => component_get_gsmap_cx(comp_d)
-          call seq_map_gsmapcheck(gsmap_s, gsmap_d)
-          call mct_rearr_init(gsmap_s, gsmap_d, mpicom, mapper%rearr)
-       endif
-
-    endif
-
-    if (seq_comm_iamroot(CPLID)) then
-       write(logunit,'(2A,I6,4A)') subname,' mapper counter, strategy, mapfile = ', &
-            mapper%counter,' ',trim(mapper%strategy),' ',trim(mapper%mapfile)
-       call shr_sys_flush(logunit)
-    endif
-
-  end subroutine seq_map_init_rearrolap
-
   !=======================================================================
   !
   ! seq_map_map - Maps attribute vector fields from source to destination grid.
   !
   ! This subroutine is the primary mapping interface for transferring field
-  ! data between component grids. It 2 mapping strategies:
+  ! data between component grids within the coupler. It supports 2 mapping strategies:
   !
-  ! 1. REARRANGE (mapper%rearrange_only or mapper@copy_only =.true.)
+  ! 1. REARRANGE (mapper%rearrange_only or mapper%copy_only =.true.)
   !    - Used when grids have the SAME meshes but possibly DIFFERENT MPI distribution
   !    - Performs MPI communication to redistribute data
   !    - goes through MPI layer even if decomps are identical.
   !
   ! 2. MAP
   !    - Full interpolation/regridding between DIFFERENT grids
-  !    - Uses sparse matrix multiplication with pre-computed weights
+  !    - Uses sparse matrix multiplication with pre-computed or online weights
   !    - Supports optional normalization for conservation
   !
   ! MOAB uses iMOAB API calls to:
