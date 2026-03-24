@@ -149,7 +149,6 @@ TEST_CASE ("inputs_have_mask") {
   auto layout = grid->get_2d_scalar_layout();
   FieldIdentifier fid1("f1",layout,m/s,grid->name());
   FieldIdentifier fid2("f2",layout,m/s,grid->name());
-  FieldIdentifier mfid("m",layout,m/s,grid->name(),DataType::IntType);
 
   auto create_diag = [&](const Field& f1, const Field& f2) {
     ekat::ParameterList params;
@@ -178,9 +177,8 @@ TEST_CASE ("inputs_have_mask") {
 
     Field m1;
     if (mask1) {
-      m1 = Field(mfid,true);
+      m1 = f1.create_mask("m1");
       randomize_uniform(m1,seed++,0,1);
-      f1.get_header().set_extra_data("valid_mask",m1);
     }
 
     for (auto mask2 : {false, true}) {
@@ -190,9 +188,8 @@ TEST_CASE ("inputs_have_mask") {
 
       Field m2;
       if (mask2) {
-        m2 = Field(mfid,true);
+        m2 = f2.create_mask("m2");
         randomize_uniform(m2,seed++,0,1);
-        f2.get_header().set_extra_data("valid_mask",m2);
       }
 
       auto diag = create_diag(f1,f2);
@@ -200,7 +197,7 @@ TEST_CASE ("inputs_have_mask") {
 
       auto d = diag->get_diagnostic();
       d.sync_to_host();
-      auto dm = mask1 or mask2 ? d.get_header().get_extra_data<Field>("valid_mask") : Field{};
+      auto dm = mask1 or mask2 ? d.get_mask() : Field{};
 
       auto dh  = d.get_view<const Real*,Host>();
       auto f1h = f1.get_view<const Real*,Host>();

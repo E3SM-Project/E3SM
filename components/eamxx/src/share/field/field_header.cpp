@@ -1,4 +1,5 @@
 #include "share/field/field_header.hpp"
+#include "share/field/field.hpp"
 
 #include <ekat_std_utils.hpp>
 

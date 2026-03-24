@@ -109,34 +109,12 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   // Set property checks for fields in this process
   CospFunc::initialize(m_num_cols, m_num_subcols, m_num_levs);
 
-  using namespace ShortFieldTagsNames;
-
   // Create the masks for the 4d fields
-  FieldLayout scalar4d_ctptau ( {COL,CMP,CMP},
-                                {m_num_cols,m_num_tau,m_num_ctp},
-                                {e2str(COL), "cosp_tau", "cosp_prs"});
-  FieldLayout scalar4d_cthtau ( {COL,CMP,CMP},
-                                {m_num_cols,m_num_tau,m_num_cth},
-                                {e2str(COL), "cosp_tau", "cosp_cth"});
-
-  const auto nondim = ekat::units::Units::nondimensional();
-  FieldIdentifier mctp_fid ("sunlit_mask_ctptau", scalar4d_ctptau, nondim, m_grid->name(), DataType::IntType);
-  FieldIdentifier mcth_fid ("sunlit_mask_cthtau", scalar4d_cthtau, nondim, m_grid->name(), DataType::IntType);
-  Field mctp(mctp_fid,true);
-  Field mcth(mcth_fid,true);
-  std::map<std::string,Field> masks = {
-    {"isccp_cldtot", get_field_in("sunlit_mask")},
-    {"isccp_ctptau", mctp},
-    {"modis_ctptau", mctp},
-    {"misr_cthtau",  mcth},
-  };
-  // Set the mask field for each of the cosp computed fields
   std::list<std::string> vnames = {"isccp_cldtot", "isccp_ctptau", "modis_ctptau", "misr_cthtau"};
   for (const auto& field_name : vnames) {
     // the mask here is just the sunlit mask, so set it
     auto& f = get_field_out(field_name);
-
-    f.get_header().set_extra_data("valid_mask", masks.at(field_name));
+    f.create_mask();
   }
 }
 
@@ -280,8 +258,8 @@ void Cosp::run_impl (const double dt)
 
     // Update the ctptau and cthtau masks by broadcasting sunlit mask
     const auto& sunlit = get_field_in("sunlit_mask");
-    auto& ctptau = get_field_out("isccp_ctptau").get_header().get_extra_data<Field>("valid_mask");
-    auto& cthtau = get_field_out("misr_cthtau").get_header().get_extra_data<Field>("valid_mask");
+    auto& ctptau = get_field_out("isccp_ctptau").get_mask();
+    auto& cthtau = get_field_out("misr_cthtau").get_mask();
 
     auto sunlit_v = sunlit.get_view<const int*>();
     auto ctptau_v = ctptau.get_view<int***>();

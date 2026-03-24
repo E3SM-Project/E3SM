@@ -202,6 +202,18 @@ public:
   void sync_to_host (const bool fence = true) const;
   void sync_to_dev (const bool fence = true) const;
 
+  // It is not too unfrequent to have to query the Field for a mask field. So we provide shortcuts.
+  // NOTE: the user can manually set other "mask" field in the field header via FieldHeader's extra data API.
+  // These methods are for a pre-defined mask that signals where the data is valid/reliable.
+  // When this mask is present, certain customers of this field may decide to perform masked-manipulations.
+  bool has_mask () const;
+  Field& create_mask (const std::string&);
+  Field& create_mask () { return create_mask(name()+"_mask"); }
+
+  void set_mask (const Field& mask);
+  const Field& get_mask () const;
+        Field& get_mask ();
+
   // --------- Field manipulation methods ------------- //
   // NOTE: the versions with a mask field only perform the manip where mask!=0
   //       The mask field MUST have data type IntType

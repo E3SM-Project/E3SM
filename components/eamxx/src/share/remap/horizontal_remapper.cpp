@@ -113,12 +113,11 @@ registration_ends_impl ()
     int num_orig_fields = m_num_fields;
     for (int i=0; i<num_orig_fields; ++i) {
       const auto& src_hdr = m_src_fields[i].get_header();
-            auto& tgt_hdr = m_tgt_fields[i].get_header();
-      if (not src_hdr.has_extra_data("valid_mask"))
+      if (not m_src_fields[i].has_mask())
         continue;
 
       const auto& f_name = src_hdr.get_identifier().name();
-      const auto& src_mask = src_hdr.get_extra_data<Field>("valid_mask");
+      const auto& src_mask = m_src_fields[i].get_mask();
 
       // Check that the mask field has the correct layout
       const auto& f_lt = src_hdr.get_identifier().get_layout();
@@ -131,7 +130,7 @@ registration_ends_impl ()
 
       if (not m_lt.has_tag(COL)) {
         // This field doesn't really need to be remapped, so tgt can use the same mask field as src
-        tgt_hdr.set_extra_data("valid_mask",src_mask);
+        m_tgt_fields[i].set_mask(src_mask);
         continue;
       }
 
@@ -140,14 +139,14 @@ registration_ends_impl ()
       if (m_name_to_tgt_int_mask.count(mask_name)==1) {
         // There was another src field with the same src mask, which was already registerred. Recycle it.
         const auto& tgt_mask = m_name_to_tgt_int_mask.at(mask_name);
-        tgt_hdr.set_extra_data("valid_mask",tgt_mask);
+        m_tgt_fields[i].set_mask(tgt_mask);
         continue;
       }
 
       m_name_to_src_int_mask[src_mask.name()] = src_mask;
 
       // Make sure fields representing masks are not themselves meant to be masked.
-      EKAT_REQUIRE_MSG(not src_mask.get_header().has_extra_data("valid_mask"),
+      EKAT_REQUIRE_MSG(not src_mask.has_mask(),
           "Error! A mask field cannot be itself masked.\n"
           "  - field name: " + f_name + "\n"
           "  - mask field name: " + src_mask.name() + "\n");
@@ -170,7 +169,7 @@ registration_ends_impl ()
       Field tgt_mask(tgt_fid);
       tgt_mask.get_header().get_alloc_properties().request_allocation(ps);
       tgt_mask.allocate_view();
-      tgt_hdr.set_extra_data("valid_mask",tgt_mask);
+      m_tgt_fields[i].set_mask(tgt_mask);
 
       m_name_to_tgt_int_mask[mask_name] = tgt_mask;
     }
@@ -280,7 +279,7 @@ void HorizontalRemapper::remap_fwd_impl ()
     const auto& x = coarsen ? m_src_fields[i] : m_ov_fields[i];
     const auto& y = coarsen ? m_ov_fields[i] : m_tgt_fields[i];
 
-    const bool masked = m_track_mask and x.get_header().has_extra_data("valid_mask");
+    const bool masked = m_track_mask and x.has_mask();
     if (masked) {
       // If possible, dispatch kernel with SCREAM_PACK_SIZE
       if (can_pack_field(x) and can_pack_field(y)) {
@@ -317,8 +316,8 @@ void HorizontalRemapper::remap_fwd_impl ()
     const Real mask_threshold = std::numeric_limits<Real>::epsilon();  // TODO: make this configurable
     for (int i=0; i<m_num_fields; ++i) {
       auto& f_tgt = m_tgt_fields[i];
-      if (f_tgt.get_header().has_extra_data("valid_mask")) {
-        auto& mask = f_tgt.get_header().get_extra_data<Field>("valid_mask");
+      if (f_tgt.has_mask()) {
+        auto& mask = f_tgt.get_mask();
         const auto& real_mask = m_name_to_tgt_real_mask.at(mask.name());
         compute_mask(real_mask,mask_threshold,Comparison::GE,mask);
         f_tgt.scale_inv(real_mask,mask);
@@ -467,7 +466,7 @@ local_mat_vec_masked (const Field& x, const Field& y) const
   using PackInfo    = ekat::PackInfo<PackSize>;
 
   const auto& src_layout = x.get_header().get_identifier().get_layout();
-  const auto& mask_name = x.get_header().get_extra_data<Field>("valid_mask").name();
+  const auto& mask_name = x.get_mask().name();
   const auto& mask = m_name_to_src_real_mask.at(mask_name);
   const int rank = src_layout.rank();
   const int nrows  = m_remap_data->m_overlap_grid->get_num_local_dofs();

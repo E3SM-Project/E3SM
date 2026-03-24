@@ -240,24 +240,24 @@ void BinaryOpsDiag::initialize_impl(const RunType /*run_type*/)
     m_diagnostic_output.get_header().get_tracking().update_time_stamp(start_of_step_ts());
   }
 
-  m_arg1_has_mask = m_arg1_is_field and get_field_in(m_arg1_name).get_header().has_extra_data("valid_mask");
-  m_arg2_has_mask = m_arg2_is_field and get_field_in(m_arg2_name).get_header().has_extra_data("valid_mask");
+  m_arg1_has_mask = m_arg1_is_field and get_field_in(m_arg1_name).has_mask();
+  m_arg2_has_mask = m_arg2_is_field and get_field_in(m_arg2_name).has_mask();
 
   if (m_arg1_has_mask and m_arg2_has_mask) {
     // The diag mask will be the logical AND of the two, so it must be a DIFFERENT field
-    const auto& m1 = get_field_in(m_arg2_name).get_header().get_extra_data<Field>("valid_mask");
-    auto mdiag = m1.clone(m_diagnostic_output.name()+"_valid_mask");
-    m_diagnostic_output.get_header().set_extra_data("valid_mask",mdiag);
+    const auto& m2 = get_field_in(m_arg2_name).get_mask();
+    auto mdiag = m2.clone(m_diagnostic_output.name()+"_mask");
+    m_diagnostic_output.set_mask(mdiag);
   } else if (m_arg1_has_mask) {
     // Only arg1 has a mask. The diag mask is THE SAME as the arg's one, and can alias it
-    const auto& m1 = get_field_in(m_arg1_name).get_header().get_extra_data<Field>("valid_mask");
-    auto mdiag = m1.alias(m_diagnostic_output.name()+"_valid_mask");
-    m_diagnostic_output.get_header().set_extra_data("valid_mask",mdiag);
+    const auto& m1 = get_field_in(m_arg1_name).get_mask();
+    auto mdiag = m1.alias(m_diagnostic_output.name()+"_mask");
+    m_diagnostic_output.set_mask(mdiag);
   } else if (m_arg2_has_mask) {
     // Only arg2 has a mask. The diag mask is THE SAME as the arg's one, and can alias it
-    const auto& m2 = get_field_in(m_arg2_name).get_header().get_extra_data<Field>("valid_mask");
-    auto mdiag = m2.alias(m_diagnostic_output.name()+"_valid_mask");
-    m_diagnostic_output.get_header().set_extra_data("valid_mask",mdiag);
+    const auto& m2 = get_field_in(m_arg2_name).get_mask();
+    auto mdiag = m2.alias(m_diagnostic_output.name()+"_mask");
+    m_diagnostic_output.set_mask(mdiag);
   }
 }
 
@@ -268,17 +268,19 @@ void BinaryOpsDiag::compute_diagnostic_impl()
   // Check if the bin op will have to be masked. If both fields are masked,
   // we'll also have to compute mask's entries
   Field* mask = nullptr;
-  if (m_diagnostic_output.get_header().has_extra_data("valid_mask"))
-    mask = &m_diagnostic_output.get_header().get_extra_data<Field>("valid_mask");
+  if (m_diagnostic_output.has_mask())
+    mask = &m_diagnostic_output.get_mask();
 
   // If both args are masked, we first need to compute the output mask
   if (m_arg1_has_mask and m_arg2_has_mask) {
-    auto m1 = get_field_in(m_arg1_name).get_header().get_extra_data<Field>("valid_mask");
-    auto m2 = get_field_in(m_arg2_name).get_header().get_extra_data<Field>("valid_mask");
+    auto m1 = get_field_in(m_arg1_name).get_mask();
+    auto m2 = get_field_in(m_arg2_name).get_mask();
     mask->deep_copy(m1);
     mask->scale(m2);
   }
 
+  // TODO: this should NOT be necessary. Downstream diags should simply
+  //       process this diag field ONLY where its mask is nonzero
   if (mask) {
     // Init entries with fill value
     m_diagnostic_output.deep_copy(constants::fill_value<Real>);

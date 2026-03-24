@@ -342,10 +342,9 @@ void AtmosphereOutput::init()
     if (m_avg_type!=OutputAvgType::Instant or
         fh.get_alloc_properties().get_padding()>0 or
         fh.get_parent()!=nullptr) {
-      Field copy(fid);
-      copy.allocate_view();
-      if (fh.has_extra_data("valid_mask"))
-        copy.get_header().set_extra_data("valid_mask",fh.get_extra_data<Field>("valid_mask"));
+      Field copy (fid,true);
+      if (f.has_mask())
+        copy.set_mask(f.get_mask());
       transfer_extra_data (f,copy);
       fm_scorpio->add_field(copy);
     } else {
@@ -421,7 +420,7 @@ void AtmosphereOutput::init()
       }
     }
 
-    if (m_track_avg_cnt and f.get_header().has_extra_data("valid_mask")) {
+    if (m_track_avg_cnt and f.has_mask()) {
       // Create and store a Field to track the averaging count for this layout
       set_avg_cnt_tracking(fid);
     }
@@ -528,10 +527,10 @@ run (const std::string& filename,
       //    if we later need it. E.g, if no AvgCount AND no hremap, we don't need it.
       //////////////////////////////////////////////////////
       auto field = fm_after_hr->get_field(fname);
-      auto valid_mask = field.get_header().get_extra_data<Field>("valid_mask");
+      auto mask = field.get_mask();
 
       // mask=1 for "good" entries, and mask=0 otherwise.
-      count.update(valid_mask,1,1);
+      count.update(mask,1,1);
 
       // Handle writing the average count variables to file
       if (is_write_step) {
@@ -561,7 +560,7 @@ run (const std::string& filename,
           int min_count = static_cast<int>(std::floor(m_avg_coeff_threshold*nsteps_since_last_output));
 
           // Recycle mask to find where count<thresh
-          auto& valid_count = count.get_header().get_extra_data<Field>("valid_mask");
+          auto& valid_count = count.get_mask();
           compute_mask(count,min_count,Comparison::GT,valid_count);
         }
       }
@@ -587,8 +586,8 @@ run (const std::string& filename,
         "Please, contact developers.\n");
     }
 
-    const bool masked = f_in.get_header().has_extra_data("valid_mask");
-    Field mask = masked ? f_in.get_header().get_extra_data<Field>("valid_mask") : Field{};
+    const bool masked = f_in.has_mask();
+    Field mask = masked ? f_in.get_mask() : Field{};
     switch (m_avg_type) {
       case OutputAvgType::Instant:
         // Note: if f_in aliases f_out, this is a no-op
@@ -624,7 +623,7 @@ run (const std::string& filename,
         // Even if m_track_avg_cnt=true, this field may not need it
         if (m_track_avg_cnt) {
           const auto& avg_count = m_field_to_avg_count.at(field_name);
-          const auto& valid_count = avg_count.get_header().get_extra_data<Field>("valid_mask");
+          const auto& valid_count = avg_count.get_mask();
 
           // Divide by avg_count where large enough, set to fill_value elsewhere
           f_out.scale_inv(avg_count,valid_count);
@@ -734,13 +733,11 @@ void AtmosphereOutput::set_avg_cnt_tracking(const FieldIdentifier& fid)
 
   auto nondim = ekat::units::Units::nondimensional();
   auto count_id = fid.clone(avg_cnt_name).reset_units(nondim).reset_dtype(DataType::IntType);
-  Field count(count_id);
-  count.allocate_view();
+  Field count(count_id,true);
 
   // We will use a helper field for updating cnt, so store it inside the field header.
   // Create the valid_mask explicitly as an IntType field with the same layout/grid.
-  Field mask(count_id.clone(count.name()+"_mask"),true);
-  count.get_header().set_extra_data("valid_mask",mask);
+  count.create_mask();
 
   m_avg_counts.push_back(count);
   m_field_to_avg_count[name] = count;
@@ -1084,9 +1081,9 @@ process_requested_fields()
   // Helper lambda to check if this fm_model field should trigger avg count
   auto check_for_avg_cnt = [&](const Field& f) {
     // We need avg-count tracking for any averaged (non-instant) field that
-    // supplies explicit mask info (valid_mask)
+    // supplies explicit mask info (mask)
     if (m_avg_type!=OutputAvgType::Instant) {
-      const bool has_mask = f.get_header().has_extra_data("mask_data") || f.get_header().has_extra_data("valid_mask");
+      const bool has_mask = f.get_header().has_extra_data("mask_data") || f.has_mask();
       if (has_mask) {
         m_track_avg_cnt = true;
         // Avoid duplicate insertion if already present (e.g., mask + filled both true)

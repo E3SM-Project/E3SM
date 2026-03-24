@@ -16,7 +16,7 @@
 namespace scream
 {
 
-class AtmosphereProcess;
+class Field;
 
 /*
  * A small class to contain meta-data about a field
@@ -87,6 +87,7 @@ public:
   //   - they have the same tracking, alloc_prop and extra data (they were created by alias above)
   //   - they have the same parent field and their subview info (form alloc prop) are the same
   bool is_aliasing (const FieldHeader& rhs) const;
+
 protected:
 
   // Friend this function, so it can set up a subfield header

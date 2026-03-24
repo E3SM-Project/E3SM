@@ -87,14 +87,11 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   const auto units = ekat::units::Units::nondimensional();
   for (const auto& fl : layouts) {
     FID fid("f_"+std::to_string(fl.size()),fl,units,grid->name());
-    FID mfid(fid.name()+"_mask",fl,units,grid->name(),DataType::IntType);
-    Field f(fid);
-    f.allocate_view();
+    Field f(fid,true);
     f.deep_copy(0.0);
     f.get_header().get_tracking().update_time_stamp(t0);
+    f.create_mask();
 
-    Field mask(mfid,true);
-    f.get_header().set_extra_data("valid_mask",mask);
     fm->add_field(f);
   }
 
@@ -153,7 +150,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
     for (const auto& fn : fnames) {
       auto f = fm->get_field(fn);
       f.deep_copy(setval);
-      auto& m = f.get_header().get_extra_data<Field>("valid_mask");
+      auto& m = f.get_mask();
       m.deep_copy(valid_step ? 1 : 0);
     }
 
