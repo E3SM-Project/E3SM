@@ -44,8 +44,7 @@ void HorizAvgDiag::initialize_impl(const RunType /*run_type*/) {
                        " - field layout: " +
                        layout.to_string() + "\n");
 
-  FieldIdentifier d_fid(m_diag_name, layout.clone().strip_dim(COL),
-                        fid.get_units(), fid.get_grid_name());
+  auto d_fid = fid.clone(m_diag_name).reset_layout(layout.clone().strip_dim(COL));
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
 

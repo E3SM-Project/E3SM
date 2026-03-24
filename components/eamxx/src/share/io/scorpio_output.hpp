@@ -172,7 +172,7 @@ protected:
   strvec_t get_var_dimnames(const FieldLayout &layout) const;
 
   // Tracking the averaging of any filled values:
-  void set_avg_cnt_tracking(const std::string &name, const FieldLayout &layout);
+  void set_avg_cnt_tracking(const FieldIdentifier& fid);
 
   // --- Internal variables --- //
   ekat::Comm m_comm;

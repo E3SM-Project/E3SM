@@ -155,7 +155,7 @@ registration_ends_impl ()
 
       // Create the real-valued mask field, to use during remap
       const auto& src_fid = src_mask.get_header().get_identifier();
-      FieldIdentifier src_fid_r (src_fid.name()+"_real",m_lt,src_fid.get_units(),src_fid.get_grid_name(),DataType::RealType);
+      auto src_fid_r = src_fid.clone(src_fid.name()+"_real").reset_dtype(DataType::RealType);
       Field src_mask_real(src_fid_r);
       src_mask_real.get_header().get_alloc_properties().request_allocation(ps);
       src_mask_real.allocate_view();
@@ -209,7 +209,6 @@ void HorizontalRemapper::create_ov_fields ()
   m_ov_fields.reserve(m_num_fields);
   const auto num_ov_gids = m_remap_data->m_overlap_grid->get_num_local_dofs();
   const auto ov_gn = m_remap_data->m_overlap_grid->name();
-  const auto dt = DataType::RealType;
   for (int i=0; i<m_num_fields; ++i) {
     const auto& f = m_remap_data->m_coarsening ? m_src_fields[i] : m_tgt_fields[i];
     const auto& fid = f.get_header().get_identifier();
@@ -221,7 +220,7 @@ void HorizontalRemapper::create_ov_fields ()
     }
 
     const auto layout = fid.get_layout().clone().reset_dim(0,num_ov_gids);
-    FieldIdentifier ov_fid (fid.name(),layout,fid.get_units(),ov_gn,dt);
+    auto ov_fid = fid.clone().reset_layout(layout).reset_grid(ov_gn);
 
     auto& ov_f = m_ov_fields.emplace_back(ov_fid);
 

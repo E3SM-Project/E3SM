@@ -118,9 +118,7 @@ void transpose (const Field& src, Field& tgt)
 Field transpose (const Field& src)
 {
   const auto& src_id = src.get_header().get_identifier();
-  FieldIdentifier id(src_id.name()+"_transpose", src_id.get_layout().transpose(),
-                     src_id.get_units(), src_id.get_grid_name(),
-                     src_id.data_type());
+  auto id = src_id.clone(src_id.name()+"_transpose").reset_layout(src_id.get_layout().transpose());
   Field ft (id,true);
   transpose(src,ft);
   return ft;

@@ -293,9 +293,7 @@ public:
                      "Error! We should not setup contiguous helper field for a field "
                      "when host and device share a memory space.\n");
 
-    auto id = m_header->get_identifier();
-    Field contig(id.alias(name()+std::string("_contiguous")));
-    contig.allocate_view();
+    auto contig = clone(name()+"_contiguous");
 
     // Sanity check
     EKAT_REQUIRE_MSG(contig.get_header().get_alloc_properties().contiguous(),

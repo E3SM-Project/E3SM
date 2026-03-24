@@ -159,20 +159,14 @@ const Field& AbstractRemapper::get_tgt_field (const int i) const
 
 FieldIdentifier AbstractRemapper::create_src_fid (const FieldIdentifier& tgt_fid) const
 {
-  const auto& name = tgt_fid.name();
   const auto& layout = create_src_layout(tgt_fid.get_layout());
-  const auto& units = tgt_fid.get_units();
-
-  return FieldIdentifier(name,layout,units,m_src_grid->name(),tgt_fid.data_type());
+  return tgt_fid.clone().reset_layout(layout).reset_grid(m_src_grid->name());
 }
 
 FieldIdentifier AbstractRemapper::create_tgt_fid (const FieldIdentifier& src_fid) const
 {
-  const auto& name = src_fid.name();
   const auto& layout = create_tgt_layout(src_fid.get_layout());
-  const auto& units = src_fid.get_units();
-
-  return FieldIdentifier(name,layout,units,m_tgt_grid->name(),src_fid.data_type());
+  return src_fid.clone().reset_layout(layout).reset_grid(m_tgt_grid->name());
 }
 
 FieldLayout AbstractRemapper::

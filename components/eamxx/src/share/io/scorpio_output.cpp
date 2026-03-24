@@ -427,7 +427,7 @@ void AtmosphereOutput::init()
 
     if (m_track_avg_cnt) {
       // Create and store a Field to track the averaging count for this layout
-      set_avg_cnt_tracking(fname,layout);
+      set_avg_cnt_tracking(fid);
     }
   }
 
@@ -693,9 +693,11 @@ res_dep_memory_footprint () const
   return rdmf;
 }
 
-void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const FieldLayout& layout)
+void AtmosphereOutput::set_avg_cnt_tracking(const FieldIdentifier& fid)
 {
   // Now create a Field to track the averaging count for this layout
+  const std::string& name = fid.name();
+  const auto& layout = fid.get_layout();
   const auto& avg_cnt_suffix = m_field_to_avg_cnt_suffix[name];
   const auto tags = layout.tags();
   std::string avg_cnt_name = "avg_count" + avg_cnt_suffix;
@@ -726,14 +728,13 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const Field
   m_vars_dims[avg_cnt_name] = get_var_dimnames(m_transpose ? layout.transpose() : layout);
 
   auto nondim = ekat::units::Units::nondimensional();
-  FieldIdentifier count_id (avg_cnt_name,layout,nondim,m_io_grid->name(),DataType::IntType);
+  auto count_id = fid.clone(avg_cnt_name).reset_units(nondim).reset_dtype(DataType::IntType);
   Field count(count_id);
   count.allocate_view();
 
   // We will use a helper field for updating cnt, so store it inside the field header.
   // Create the valid_mask explicitly as an IntType field with the same layout/grid.
-  FieldIdentifier mask_id (count.name()+"_mask", layout, nondim, m_io_grid->name(), DataType::IntType);
-  Field mask(mask_id,true);
+  Field mask(count_id.clone(count.name()+"_mask"),true);
   count.get_header().set_extra_data("valid_mask",mask);
 
   m_avg_counts.push_back(count);
