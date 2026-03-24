@@ -831,7 +831,6 @@ int testSurfTracerRestAuxVars(int NVertLayers, int NTracers, Real RTol) {
        {NTracers, Mesh->NCellsOwned}, KOKKOS_LAMBDA(int L, int ICell) {
           SurfTracerRestAux.computeVarsOnCells(L, ICell, TracersOnCell);
        });
-   // const auto &NumSurfRest = SurfTracerRestAux.SurfTracerRestValuesCell;
 
    // build the exact result by re‑implementing the class logic, including
    // lookup of MinLayerCell
@@ -852,7 +851,7 @@ int testSurfTracerRestAuxVars(int NVertLayers, int NTracers, Real RTol) {
              ExactSurfRest(ICell) = diff;
           }
           NumSurfRest(ICell) =
-              SurfTracerRestAux.SurfTracerRestValuesCell(0, ICell);
+              SurfTracerRestAux.SurfTracerRestoringDiffsCell(0, ICell);
        });
 
    ErrorMeasures SurfRestErrors;

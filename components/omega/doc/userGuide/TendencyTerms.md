@@ -57,7 +57,6 @@ the currently available tendency terms:
 | | BottomDragCoeff | bottom drag coefficient
 | SurfaceTracerRestoringOnCell | SurfaceTracerRestoringEnable | enable/disable term
 
-
 ## Second Order Horizontal Advection Algorithm
 
 The horizontal advection is done independently within each ocean layer
@@ -138,3 +137,8 @@ is about order 1.7 as shown in  {numref}`tracer-higher-order-convergence`:
 :width: 600 px
 Tracer higer order convergence example of a cosine bell advected on a sphere showing an order 1.71 convergence rate
 ```
+
+## See Also
+
+Additional information on forcing (currently wind forcing and surface tracer
+restoring) is detailed in [](omega-user-forcing).

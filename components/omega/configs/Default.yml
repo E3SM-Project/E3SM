@@ -32,9 +32,9 @@ Omega:
   WindStress:
     InterpType: Isotropic
   SurfaceRestoring:
-    MaxDiff: 100.0
+    TracersToRestore: [Temperature, Salinity]
     PistonVelocity: 1.585e-5
-    TracersToRestore: []
+    MaxDiff: 100.0
   VertCoord:
     MovementWeightType: Uniform
   PressureGrad:

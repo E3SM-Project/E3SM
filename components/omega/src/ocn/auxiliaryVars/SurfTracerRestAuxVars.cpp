@@ -10,8 +10,9 @@ SurfTracerRestAuxVars::SurfTracerRestAuxVars(const std::string &AuxStateSuffix,
                                              const HorzMesh *Mesh,
                                              const VertCoord *VCoord,
                                              const I4 NTracers)
-    : SurfTracerRestValuesCell("SurfTracerRestValuesCell" + AuxStateSuffix,
-                               NTracers, Mesh->NCellsSize),
+    : SurfTracerRestoringDiffsCell("SurfTracerRestoringDiffsCell" +
+                                       AuxStateSuffix,
+                                   NTracers, Mesh->NCellsSize),
       TracersMonthlySurfClimoCell("TracersMonthlySurfClimoCell" +
                                       AuxStateSuffix,
                                   NTracers, Mesh->NCellsSize),
@@ -34,30 +35,46 @@ void SurfTracerRestAuxVars::registerFields(
    }
 
    // Tracers surface restoring values
-   DimNames[0] = "NTracers";
-   DimNames[1] = "NCells" + DimSuffix;
-   auto SurfTracerRestValuesCellField =
-       Field::create(SurfTracerRestValuesCell.label(), // field name
-                     "tracer surface restoring value", // long name/describe
-                     "tracer units",                   // units
-                     "",                               // CF standard Name
-                     std::numeric_limits<Real>::min(), // min valid value
-                     std::numeric_limits<Real>::max(), // max valid value
+   DimNames[0]                            = "NTracers";
+   DimNames[1]                            = "NCells" + DimSuffix;
+   auto SurfTracerRestoringDiffsCellField = Field::create(
+       SurfTracerRestoringDiffsCell.label(),   // field name
+       "surface tracer restoring differences", // long name/describe
+       "tracer units",                         // units
+       "",                                     // CF standard Name
+       std::numeric_limits<Real>::min(),       // min valid value
+       std::numeric_limits<Real>::max(),       // max valid value
+       FillValue,                              // scalar for undefined entries
+       NDims,                                  // number of dimensions
+       DimNames);                              // dim names
+
+   auto TracersMonthlySurfClimoCellField =
+       Field::create(TracersMonthlySurfClimoCell.label(),
+                     "monthly surface tracer climatology", // long name/describe
+                     "tracer units",                       // units
+                     "",                                   // CF standard Name
+                     std::numeric_limits<Real>::min(),     // min valid value
+                     std::numeric_limits<Real>::max(),     // max valid value
                      FillValue, // scalar for undefined entries
                      NDims,     // number of dimensions
-                     DimNames   // dim names
-       );
+                     DimNames); // dim names
 
    // Add fields to FieldGroup
-   FieldGroup::addFieldToGroup(SurfTracerRestValuesCell.label(), AuxGroupName);
+   FieldGroup::addFieldToGroup(SurfTracerRestoringDiffsCell.label(),
+                               AuxGroupName);
+   FieldGroup::addFieldToGroup(TracersMonthlySurfClimoCell.label(),
+                               AuxGroupName);
 
    // Attach data
-   SurfTracerRestValuesCellField->attachData<Array2DReal>(
-       SurfTracerRestValuesCell);
+   SurfTracerRestoringDiffsCellField->attachData<Array2DReal>(
+       SurfTracerRestoringDiffsCell);
+   TracersMonthlySurfClimoCellField->attachData<Array2DReal>(
+       TracersMonthlySurfClimoCell);
 }
 
 void SurfTracerRestAuxVars::unregisterFields() const {
-   Field::destroy(SurfTracerRestValuesCell.label());
+   Field::destroy(SurfTracerRestoringDiffsCell.label());
+   Field::destroy(TracersMonthlySurfClimoCell.label());
 }
 
 } // namespace OMEGA

@@ -431,6 +431,15 @@ I4 AuxiliaryState::exchangeHalo() {
    Err +=
        MeshHalo->exchangeFullArrayHalo(WindForcingAux.MeridStressCell, OnCell);
 
+   const I4 NTracers =
+       SurfTracerRestAux.TracersMonthlySurfClimoCell.extent_int(0);
+   for (I4 LTracer = 0; LTracer < NTracers; ++LTracer) {
+      auto TracerSurfClimoCell =
+          Kokkos::subview(SurfTracerRestAux.TracersMonthlySurfClimoCell,
+                          LTracer, Kokkos::ALL());
+      Err += MeshHalo->exchangeFullArrayHalo(TracerSurfClimoCell, OnCell);
+   }
+
    return Err;
 
 } // end exchangeHalo

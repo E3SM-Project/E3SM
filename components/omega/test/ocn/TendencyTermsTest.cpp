@@ -1043,14 +1043,15 @@ int testSurfaceTracerRestoringOnCell(int NVertLayers, int NTracers, Real RTol) {
       Array3DReal ExactSurfRest("ExactSurfRest", NTracers, Mesh->NCellsOwned,
                                 NVertLayers);
       Array2DReal InputField("InputField", Mesh->NCellsSize, 1);
-      Array2DReal SurfTracerRestValuesCell("SurfTracerRestValuesCell", NTracers,
-                                           Mesh->NCellsSize, NVertLayers);
+      Array2DReal SurfTracerRestoringDiffsCell("SurfTracerRestoringDiffsCell",
+                                               NTracers, Mesh->NCellsSize,
+                                               NVertLayers);
       Array3DReal NumSurfRest("NumSurfRest", NTracers, Mesh->NCellsOwned,
                               NVertLayers);
 
       deepCopy(ExactSurfRest, 0);
       deepCopy(InputField, 0);
-      deepCopy(SurfTracerRestValuesCell, 0);
+      deepCopy(SurfTracerRestoringDiffsCell, 0);
       deepCopy(NumSurfRest, 0);
 
       Err += setScalar(
@@ -1069,7 +1070,7 @@ int testSurfaceTracerRestoringOnCell(int NVertLayers, int NTracers, Real RTol) {
 
       parallelFor(
           {NTracers, Mesh->NCellsOwned}, KOKKOS_LAMBDA(int L, int ICell) {
-             SurfTracerRestValuesCell(L, ICell) = InputField(ICell, 0);
+             SurfTracerRestoringDiffsCell(L, ICell) = InputField(ICell, 0);
              ExactSurfRest(L, ICell, 0) = SurfRestOnC.TracerRestoreMask(L) *
                                           SurfRestOnC.PistonVelocity *
                                           InputField(ICell, 0);
@@ -1079,7 +1080,7 @@ int testSurfaceTracerRestoringOnCell(int NVertLayers, int NTracers, Real RTol) {
           {NTracers, Mesh->NCellsOwned, NVertLayers},
           KOKKOS_LAMBDA(int L, int ICell, int KLayer) {
              SurfRestOnC(NumSurfRest, L, ICell, KLayer,
-                         SurfTracerRestValuesCell);
+                         SurfTracerRestoringDiffsCell);
           });
 
       ErrorMeasures SurfRestErrors;

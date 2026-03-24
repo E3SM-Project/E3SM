@@ -13,7 +13,7 @@ namespace OMEGA {
 
 class SurfTracerRestAuxVars {
  public:
-   Array2DReal SurfTracerRestValuesCell;
+   Array2DReal SurfTracerRestoringDiffsCell;
    Array2DReal TracersMonthlySurfClimoCell;
    Real MaxDiff = 100.0; // maximum allowed difference for restoring
    /// Need to add under sea ice restoring option when that is available
@@ -29,12 +29,12 @@ class SurfTracerRestAuxVars {
 
       if ((TracersMonthlySurfClimoCell(L, ICell) - TracerCell(L, ICell, K)) >
           MaxDiff) {
-         SurfTracerRestValuesCell(L, ICell) = MaxDiff;
+         SurfTracerRestoringDiffsCell(L, ICell) = MaxDiff;
       } else if ((TracersMonthlySurfClimoCell(L, ICell) -
                   TracerCell(L, ICell, K)) < -MaxDiff) {
-         SurfTracerRestValuesCell(L, ICell) = -MaxDiff;
+         SurfTracerRestoringDiffsCell(L, ICell) = -MaxDiff;
       } else {
-         SurfTracerRestValuesCell(L, ICell) =
+         SurfTracerRestoringDiffsCell(L, ICell) =
              TracersMonthlySurfClimoCell(L, ICell) - TracerCell(L, ICell, K);
       }
    }
