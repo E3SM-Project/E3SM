@@ -164,8 +164,8 @@ public:
       upwp_sfc(i) = surf_mom_flux(i,0)/rrho_i(i,nlevi_v)[nlevi_p];
       vpwp_sfc(i) = surf_mom_flux(i,1)/rrho_i(i,nlevi_v)[nlevi_p];
 
-      const auto stress_is_small = (std::abs(surf_mom_flux(i,0)) < 1.e-12
-                                    && std::abs(surf_mom_flux(i,1)) < 1.e-12);
+      const auto stress_is_small = (Kokkos::abs(surf_mom_flux(i,0)) < 1.e-12
+                                    && Kokkos::abs(surf_mom_flux(i,1)) < 1.e-12);
       if (stress_is_small) {
         // If stress is too small, don't trust direction information, and instead apply perturbation
         // entirely in the u direction.
@@ -174,7 +174,7 @@ public:
       } else {
         // Apply perturbation in direction of existing wind.
         const auto pert_scale_fac = C::tau_pert_mag /
-          std::sqrt(surf_mom_flux(i,0)*surf_mom_flux(i,0) + surf_mom_flux(i,1)*surf_mom_flux(i,1));
+          Kokkos::sqrt(surf_mom_flux(i,0)*surf_mom_flux(i,0) + surf_mom_flux(i,1)*surf_mom_flux(i,1));
         upwp_sfc_pert(i) = upwp_sfc(i) * pert_scale_fac;
         vpwp_sfc_pert(i) = vpwp_sfc(i) * pert_scale_fac;
       }
@@ -343,7 +343,7 @@ public:
       // assumed to be the derivative of equilibrium wind with respect to surface stress
       // magnitude at this point.
       // For now, just use the magnitude of the input momentum flux from the last time step.
-      tau_est(i) = std::sqrt(surf_mom_flux(i,0)*surf_mom_flux(i,0)
+      tau_est(i) = Kokkos::sqrt(surf_mom_flux(i,0)*surf_mom_flux(i,0)
                              + surf_mom_flux(i,1)*surf_mom_flux(i,1));
 
       // If necessary, set appropriate boundary fluxes for energy and mass conservation checks.

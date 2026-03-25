@@ -339,6 +339,10 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
     Kokkos::deep_copy(tke,0.0004);
     Kokkos::deep_copy(tke_copy,0.0004);
     Kokkos::deep_copy(cldfrac_liq,0.0);
+    Kokkos::deep_copy(um_pert_diff,0.0);
+    Kokkos::deep_copy(vm_pert_diff,0.0);
+    Kokkos::deep_copy(um_pert,0.0);
+    Kokkos::deep_copy(vm_pert,0.0);
   }
 
   shoc_preprocess.set_variables(m_num_cols,m_num_levs,z_surf,
