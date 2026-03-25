@@ -88,7 +88,7 @@
 namespace homme {
 namespace islmpi {
 
-template <typename T> using CA4 = typename ko::View<T****, ko::LayoutRight, ko::DefaultExecutionSpace::memory_space>::HostMirror;
+template <typename T> using CA4 = ko::View<T****, ko::LayoutRight, HostMirrorMemSpace>;
 
 // Interpolate at eta interfaces, rather than midpoints as below.
 template <Int np, typename EtaT, typename VnodeT> SLMM_KF
