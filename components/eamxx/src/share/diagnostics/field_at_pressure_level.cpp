@@ -73,7 +73,11 @@ initialize_impl (const RunType /*run_type*/)
   m_pressure_name = tag==LEV ? "p_mid" : "p_int";
 
   // Add mask field to the diagnostic field metadata.
-  m_diagnostic_output.create_mask(m_diag_name+"_mask");
+  const auto& units   = m_params.get<std::string>("pressure_units");
+  const auto& p_value = m_params.get<std::string>("pressure_value");
+  std::string location = tag==LEV ? "midpoint" : "interface";
+
+  m_diagnostic_output.create_mask(location + "_field_at_" + p_value + units + "_mask");
 
   using stratts_t = std::map<std::string,std::string>;
 
@@ -105,7 +109,6 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
   const int nlevs = pl.dim(1);
 
   auto p_tgt = m_pressure_level;
-  constexpr auto fval = constants::fill_value<Real>;
   if (rank==2) {
     auto policy = KT::RangePolicy(0,ncols);
     auto diag = m_diagnostic_output.get_view<Real*>();
@@ -118,7 +121,6 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
       auto end = beg + nlevs;
       auto last = beg + (nlevs-1);
       if (p_tgt<*beg or p_tgt>*last) {
-        diag(icol) = fval;
         mask(icol) = 0;
       } else {
         auto ub = ekat::upper_bound(beg,end,p_tgt);     
@@ -150,7 +152,6 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
       auto last = beg + (nlevs-1);
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team,ndims),[&](const int idim) {
         if (p_tgt<*beg or p_tgt>*last) {
-          diag(icol,idim) = fval; // TODO: don't bother setting an arbitrary value
           mask(icol,idim) = 0;
         } else {
           auto y1 = ekat::subview(f_v,icol,idim);
@@ -173,7 +174,6 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
   } else {
     EKAT_ERROR_MSG("Error! field at pressure level only supports fields ranks 2 and 3 \n");
   }
-
 }
 
 } //namespace scream

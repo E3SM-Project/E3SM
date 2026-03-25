@@ -20,6 +20,8 @@ namespace
 void
 transfer_extra_data(const scream::Field &src, scream::Field &tgt)
 {
+  if (src.is_aliasing(tgt))
+    return;
 
   // Transfer io string attributes
   const std::string io_string_atts_key = "io: string attributes";
@@ -188,22 +190,15 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
 
   // Avg count only makes sense if we have
   //  - non-instant output
-  //  - we have one between:
+  //  - we have fields that have masks set. For instance:
   //    - vertically remapped output
   //    - field_at_XhPa diagnostic
-  //    - fields that can contain invalid values (not yet supported, but RAD may want this at some point)
-  // We already set m_track_avg_cnt to true if field_at_XhPa is found in process_requested_fields.
-  // Hence, here we only check if vert remap is active
-
-  if (m_avg_type!=OutputAvgType::Instant) {
-    if (params.isParameter("track_avg_cnt")) {
-      // This is to be used for unit testing only, so that we can test avg cnt even
-      // if there is no vert remap and no field_at_XhPa diagnostic in the stream
-      m_track_avg_cnt = params.get<bool>("track_avg_cnt");
-    }
-    if (use_vertical_remap_from_file) {
-      m_track_avg_cnt = true;
-    }
+  //    - cosp fields
+  // NOTE: we are currently only doing this for AVERAGE output, but we should prob extend to MAX/MIN
+  // NOTE 2: while we are in the process of transitioning to use Field's mask API, there are still
+  //         some diags that use the "mask_data" extra data, so we must check for that too
+  if (m_avg_type==OutputAvgType::Average) {
+    m_track_avg_cnt = true;
     if (params.isParameter("fill_threshold")) {
       m_avg_coeff_threshold = params.get<Real>("fill_threshold");
     }
@@ -339,17 +334,12 @@ void AtmosphereOutput::init()
     // It can do so only for Instant output, and if the field is NOT a subfield ant NOT padded
     // Also, if we track avg cnt, we MUST add the fill_value extra data, to trigger fill-value logic
     // when calling Field's update methods
-    if (m_avg_type!=OutputAvgType::Instant or
-        fh.get_alloc_properties().get_padding()>0 or
-        fh.get_parent()!=nullptr) {
-      Field copy (fid,true);
-      if (f.has_mask())
-        copy.set_mask(f.get_mask());
-      transfer_extra_data (f,copy);
-      fm_scorpio->add_field(copy);
-    } else {
-      fm_scorpio->add_field(f);
-    }
+    auto can_alias = m_avg_type==OutputAvgType::Instant and
+                     fh.get_alloc_properties().get_padding()==0 and
+                     fh.get_parent()==nullptr;
+    auto f_for_scorpio = can_alias ? f : f.clone();
+    transfer_extra_data (f,f_for_scorpio);
+    fm_scorpio->add_field(f_for_scorpio);
 
     // Store the field layout, so that calls to setup_output_file are easier
     const auto& layout = fid.get_layout();
@@ -367,7 +357,7 @@ void AtmosphereOutput::init()
         // We can add a new helper field for this layout and data type
         // Use Units::invalid() since this helper is reused for fields with same layout but different units
         using namespace ekat::units;
-        FieldIdentifier fid_helper(helper_name,helper_layout,Units::invalid(),fid.get_grid_name(),data_type);
+        auto fid_helper = fid.clone(helper_name).reset_units(Units::invalid()).reset_layout(helper_layout);
         Field helper(fid_helper);
         helper.get_header().get_alloc_properties().request_allocation();
         helper.allocate_view();
@@ -422,7 +412,7 @@ void AtmosphereOutput::init()
 
     if (m_track_avg_cnt and f.has_mask()) {
       // Create and store a Field to track the averaging count for this layout
-      set_avg_cnt_tracking(fid);
+      set_avg_cnt_tracking(f);
     }
   }
 
@@ -498,34 +488,15 @@ run (const std::string& filename,
   // Note, we assume that all fields that share a layout are also masked/filled in the same way.
   if (m_track_avg_cnt) {
     // Since 2+ fields may have same avg count, make sure we update the counts only ONCE.
-    std::map<std::string,bool> updated;
+    std::set<std::string> updated;
 
     for (auto& [fname, count] : m_field_to_avg_count) {
-      auto& count_updated = updated.emplace(count.name(),false).first->second;
+      auto count_updated = updated.count(count.name())>0;
       if (count_updated) {
         // was already in the map (hence, already updated)
         continue;
       }
 
-      //////////////////////// TODO ////////////////////////
-      // 1. Make the diags/procs COMPUTE the mask for the field, and
-      //    set the mask as extra data. We DON'T want to compute it here
-      // 2. Create count with same layout as the mask
-      // 3. In avg=tally/count, count MAY have smaller layout, hence
-      //    be incompatible. E.g., mask came from FieldAtPressureLevel,
-      //    and was (ncol), but the field is (ncol,2). In this case, we
-      //    ASSUME same mask for all slices, so do scaling on all slices:
-      //      avg.component(i).scale_inv(count)
-      // 4. In FieldAtPressureLevel, make ALL instances at same Plev share
-      //    the same mask field. How? Two ideas:
-      //      - store a static map string->Field in class, and use a string
-      //        key that encodes grid and press level. Only compute mask if
-      //        timestamp of mask field is "old"
-      //      - make another diag that computes the mask, make F@plev depend
-      //        on that diag.
-      // 5. FieldAtPressureLevel (and vremap) should only fill the mask field
-      //    if we later need it. E.g, if no AvgCount AND no hremap, we don't need it.
-      //////////////////////////////////////////////////////
       auto field = fm_after_hr->get_field(fname);
       auto mask = field.get_mask();
 
@@ -564,7 +535,7 @@ run (const std::string& filename,
           compute_mask(count,min_count,Comparison::GT,valid_count);
         }
       }
-      count_updated = true;
+      updated.insert(count.name());
     }
   }
 
@@ -587,29 +558,29 @@ run (const std::string& filename,
     }
 
     const bool masked = f_in.has_mask();
-    Field mask = masked ? f_in.get_mask() : Field{};
     switch (m_avg_type) {
       case OutputAvgType::Instant:
         // Note: if f_in aliases f_out, this is a no-op
         f_out.deep_copy(f_in);
         if (masked)
-          f_out.deep_copy(constants::fill_value<Real>,mask,true);
+          // We must f=FV wherever the mask is not valid
+          f_out.deep_copy(constants::fill_value<Real>,f_in.get_mask(),true);
         break;
       case OutputAvgType::Max:
         if (masked)
-          f_out.max(f_in,mask);
+          f_out.max(f_in,f_in.get_mask());
         else 
           f_out.max(f_in);
         break;
       case OutputAvgType::Min:
         if (masked)
-          f_out.min(f_in,mask);
+          f_out.min(f_in,f_in.get_mask());
         else 
           f_out.min(f_in);
         break;
       case OutputAvgType::Average:
         if (masked)
-          f_out.update(f_in,1,1,mask);
+          f_out.update(f_in,1,1,f_in.get_mask());
         else 
           f_out.update(f_in,1,1);
         break;

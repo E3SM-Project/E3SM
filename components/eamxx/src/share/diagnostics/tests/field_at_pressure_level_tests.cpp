@@ -121,15 +121,11 @@ TEST_CASE("field_at_pressure_level_p2")
       diag->initialize(t0,RunType::Initial);
       diag->compute_diagnostic();
       auto diag_f = diag->get_diagnostic();
-      diag_f.sync_to_host();
-      auto test2_diag_v = diag_f.get_view<const Real*, Host>();
-      // Check the mask field inside the diag_f
       auto mask_f = diag_f.get_mask();
       mask_f.sync_to_host();
       auto test2_mask_v = mask_f.get_view<const int*, Host>();
 
       for (int icol=0;icol<ncols;icol++) {
-        REQUIRE(approx(test2_diag_v(icol),constants::fill_value<Real>));
         REQUIRE(test2_mask_v(icol)==0);
       }
     }
