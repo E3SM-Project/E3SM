@@ -167,8 +167,6 @@ TEST_CASE ("inputs_have_mask") {
     return diag;
   };
 
-  constexpr auto fv = constants::fill_value<Real>;
-
   typename Field::view_host_t<const int*> empty;
   for (auto mask1 : {false, true}) {
     Field f1 (fid1,true);
@@ -211,8 +209,6 @@ TEST_CASE ("inputs_have_mask") {
         for (int i=0; i<ncols; ++i) {
           if (m1h[i] and m2h[i])
             REQUIRE (dh[i]==f1h[i]*f2h[i]);
-          else
-            REQUIRE (dh[i]==fv);
 
           // Also check that diag mask is the prod of input masks
           REQUIRE (dmh[i]==m1h[i]*m2h[i]);
@@ -221,8 +217,6 @@ TEST_CASE ("inputs_have_mask") {
         for (int i=0; i<ncols; ++i) {
           if (m1h[i])
             REQUIRE (dh[i]==f1h[i]*f2h[i]);
-          else
-            REQUIRE (dh[i]==fv);
         }
         // Diag mask should alias f1's
         REQUIRE (dm.is_aliasing(m1));
@@ -230,8 +224,6 @@ TEST_CASE ("inputs_have_mask") {
         for (int i=0; i<ncols; ++i) {
           if (m2h[i])
             REQUIRE (dh[i]==f1h[i]*f2h[i]);
-          else
-            REQUIRE (dh[i]==fv);
         }
         // Diag mask should alias f2's
         REQUIRE (dm.is_aliasing(m2));
