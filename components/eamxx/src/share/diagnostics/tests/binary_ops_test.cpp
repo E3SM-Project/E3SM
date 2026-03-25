@@ -196,6 +196,7 @@ TEST_CASE ("inputs_have_mask") {
       auto d = diag->get_diagnostic();
       d.sync_to_host();
       auto dm = mask1 or mask2 ? d.get_mask() : Field{};
+      if (mask1 or mask2) dm.sync_to_host();
 
       auto dh  = d.get_view<const Real*,Host>();
       auto f1h = f1.get_view<const Real*,Host>();
