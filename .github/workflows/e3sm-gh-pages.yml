@@ -49,6 +49,8 @@ jobs:
           # In the scream repo, all other components do not need to be checked out. 
           # And even in the upstream, we mainly need only components/xyz/docs (and a few more places).
           submodules: true
+      - name: Sync with Base Branch
+        uses: ./.github/actions/sync-merge
       - name: Show action trigger
         run: echo "= The job was automatically triggered by a ${{github.event_name}} event on repo ${{github.event.repository.name}}."
       - name: Install Python deps

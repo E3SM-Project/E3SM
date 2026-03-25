@@ -92,6 +92,8 @@ jobs:
           persist-credentials: false
           show-progress: false
           submodules: recursive
+      - name: Sync with Base Branch
+        uses: ./.github/actions/sync-merge
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
       - name: Set CA certificates env var

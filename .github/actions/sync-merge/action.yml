@@ -1,0 +1,51 @@
+name: 'Update Merge Ref'
+description: 'Ensures PR is tested with the most recent merge commit'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Sync Merge Commit
+      # GUARD 1: Only run this step if the event is a Pull Request
+      if: github.event_name == 'pull_request'
+      id: sync
+      shell: bash
+      run: |
+        PR_NUM="${{github.event.pull_request.number}}"
+
+        # Setup (HPC/E3SM Specific)
+        mkdir -p "$HOME" && printf '[safe]\n\tdirectory = %s\n' "$GITHUB_WORKSPACE" >> "$HOME/.gitconfig"
+        git config --global url."https://github.com/".insteadOf "git@github.com:"
+
+        LOCAL_HEAD=$(git rev-parse HEAD)
+
+        echo "Surgically fetching merge ref for PR #$PR_NUM..."
+
+        # tree:0 is the 'ancestry-only' fetch (fastest possible)
+        if git fetch --no-recurse-submodules --filter=tree:0 --no-tags origin "refs/pull/$PR_NUM/merge"; then
+          MERGE_SHA=$(git rev-parse FETCH_HEAD)
+
+          if [ "$LOCAL_HEAD" != "$MERGE_SHA" ]; then
+            echo "Resetting workspace to merge commit: $MERGE_SHA"
+            git reset --hard "$MERGE_SHA"
+            echo "merged_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "Already up to date."
+            echo "merged_changed=false" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "::error::Merge ref unavailable. Likely a conflict."
+          exit 1
+        fi
+
+    - name: Submodule Update
+      # GUARD 2: Only run if it's a PR AND the previous step actually changed something
+      if: github.event_name == 'pull_request' && steps.sync.outputs.merged_changed == 'true'
+      shell: bash
+      run: |
+        git submodule sync --recursive
+        git submodule foreach --recursive 'git config --local url."https://github.com/".insteadOf "git@github.com:"'
+
+        # The 'landusedata' cd fix: nuke shallow markers
+        find .git/modules -name shallow -delete 2>/dev/null || true
+
+        git submodule update --init --recursive --force --filter=blob:none

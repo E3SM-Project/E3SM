@@ -51,6 +51,8 @@ jobs:
         with:
           show-progress: false
           submodules: recursive
+      - name: Sync with Base Branch
+        uses: ./.github/actions/sync-merge
       -
         name: CIME
         working-directory: cime/scripts

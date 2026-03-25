@@ -20,6 +20,8 @@ jobs:
     - uses: actions/checkout@v6
       with:
         fetch-depth: 0
+    - name: Sync with Base Branch
+      uses: ./.github/actions/sync-merge
     - uses: tj-actions/changed-files@v47
       id: changed-files
       with:
