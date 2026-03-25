@@ -9,7 +9,7 @@ namespace scream {
 
 namespace {
 
-void compute_w0_and_rho(haero::ThreadTeamPolicy team_policy,
+void compute_w0_and_rho(const int ncol,
                         const mam_coupling::DryAtmosphere &dry_atmosphere,
                         const int top_lev, const int nlev,
                         // output
@@ -17,25 +17,21 @@ void compute_w0_and_rho(haero::ThreadTeamPolicy team_policy,
   MAMAci::const_view_2d omega = dry_atmosphere.omega;
   MAMAci::const_view_2d T_mid = dry_atmosphere.T_mid;
   MAMAci::const_view_2d p_mid = dry_atmosphere.p_mid;
+  using C                      = physics::Constants<Real>;
+  static constexpr auto gravit = C::gravit.value;  // Gravity [m/s2]
+  // Gas constant for dry air [J/(kg*K) or J/Kg/K]
+  static constexpr auto rair = C::Rair.value;
   Kokkos::parallel_for(
-      "MAMAci::run_impl::compute_w0_and_rho", team_policy,
-      KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
-        const int icol = team.league_rank();
-        // Get physical constants
-        using C                      = physics::Constants<Real>;
-        static constexpr auto gravit = C::gravit.value;  // Gravity [m/s2]
-        // Gas constant for dry air [J/(kg*K) or J/Kg/K]
-        static constexpr auto rair = C::Rair.value;
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0u, top_lev),
-                             [&](int kk) {
-                               w0(icol, kk)  = 0;
-                               rho(icol, kk) = -999.0;
-                             });
-        Kokkos::parallel_for(
-            Kokkos::TeamVectorRange(team, top_lev, nlev), [&](int kk) {
-              rho(icol, kk) = p_mid(icol, kk) / (rair * T_mid(icol, kk));
-              w0(icol, kk)  = -1.0 * omega(icol, kk) / (rho(icol, kk) * gravit);
-            });
+      "MAMAci::run_impl::compute_w0_and_rho",
+      Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, nlev}),
+      KOKKOS_LAMBDA(const int icol, const int kk) {
+        if(kk < top_lev) {
+          w0(icol, kk)  = 0;
+          rho(icol, kk) = -999.0;
+        } else {
+          rho(icol, kk) = p_mid(icol, kk) / (rair * T_mid(icol, kk));
+          w0(icol, kk)  = -1.0 * omega(icol, kk) / (rho(icol, kk) * gravit);
+        }
       });
 }
 

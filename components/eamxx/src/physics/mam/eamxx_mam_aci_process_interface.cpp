@@ -513,7 +513,7 @@ void MAMAci::run_impl(const double dt) {
   mam_coupling::copy_view_lev_slice(team_policy, wet_atm_.nc, nlev_,  // inputs
                                     nc_inp_to_aci_);                  // output
 
-  compute_w0_and_rho(team_policy, dry_atm_, top_lev_, nlev_,
+  compute_w0_and_rho(ncol_, dry_atm_, top_lev_, nlev_,
                      // output
                      w0_, rho_);
 
