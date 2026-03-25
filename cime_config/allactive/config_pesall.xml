@@ -1251,6 +1251,53 @@
         </rootpe>
       </pes>
     </mach>
+    <mach name="crux">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+_SESP$" pesize="PS">
+        <comment> --compset WCYCL* --res ne30pg2_r05_IcoswISC30E3r5 on 15 nodes pure-MPI, ~7 sypd </comment>
+        <ntasks>
+          <ntasks_atm>-11</ntasks_atm>
+          <ntasks_lnd>-5</ntasks_lnd>
+          <ntasks_rof>-5</ntasks_rof>
+          <ntasks_ice>-6</ntasks_ice>
+          <ntasks_ocn>-4</ntasks_ocn>
+          <ntasks_cpl>-11</ntasks_cpl>
+        </ntasks>
+        <rootpe>
+          <rootpe_ice>-5</rootpe_ice>
+          <rootpe_ocn>-11</rootpe_ocn>
+        </rootpe>
+      </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+_SESP$" pesize="PM">
+        <comment> --compset WCYCL* --res ne30pg2_r05_IcoswISC30E3r5 on 30 nodes pure-MPI, ~13 sypd </comment>
+        <ntasks>
+          <ntasks_atm>-22</ntasks_atm>
+          <ntasks_lnd>-8</ntasks_lnd>
+          <ntasks_rof>-8</ntasks_rof>
+          <ntasks_ice>-14</ntasks_ice>
+          <ntasks_ocn>-8</ntasks_ocn>
+          <ntasks_cpl>-22</ntasks_cpl>
+        </ntasks>
+        <rootpe>
+          <rootpe_ice>-8</rootpe_ice>
+          <rootpe_ocn>-22</rootpe_ocn>
+        </rootpe>
+      </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+_SESP$" pesize="PL">
+        <comment> --compset WCYCL* --res ne30pg2_r05_IcoswISC30E3r5 on 58 nodes pure-MPI, ~20 sypd </comment>
+        <ntasks>
+          <ntasks_atm>-43</ntasks_atm>
+          <ntasks_lnd>-11</ntasks_lnd>
+          <ntasks_rof>-11</ntasks_rof>
+          <ntasks_ice>-32</ntasks_ice>
+          <ntasks_ocn>-15</ntasks_ocn>
+          <ntasks_cpl>-43</ntasks_cpl>
+        </ntasks>
+        <rootpe>
+          <rootpe_ice>-11</rootpe_ice>
+          <rootpe_ocn>-43</rootpe_ocn>
+        </rootpe>
+      </pes>
+    </mach>
     <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="any">
         <comment> pm-cpu --compset WCYCL* --res ne30pg2_r05_IcoswISC30E3r5 on 8 nodes, stacked layout, 128x1 4-5 sypd</comment>
