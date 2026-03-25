@@ -1051,6 +1051,14 @@ process_requested_fields()
   //  - it is an alias of a field added to the FM
   //  - it is a diag that ONLY depends on fields already added to the FM
   // We keep scanning the fields names and process a field, removing it from the list.
+  // If a field cannot be processed yet (e.g., it's a diag whose deps have not been
+  // parsed yet, or an alias of a field not yet parsed), then we simply add it back
+  // to the end of the list, which is effectively a queue.
+  // To avoid infinite loops, we need to ensure that we either add or remove items
+  // to the list. A check on the size is not ok (if we have an alias of an unprocessed
+  // field, we are simply moving it back to the end of the line). Instead, we keep
+  // track of how many iters it's been since the last fully processed field. This number
+  // should NEVER exceed the legnth of the remaining fields
   // There MUST be at least ONE field we can process at every iteration, but
   // some field MAY have to wait until another is processed. E.g., if we have
   // 'foo_at_900hPa' and 'foo:=horiz_winds', the latter (an alias) must be
@@ -1060,83 +1068,82 @@ process_requested_fields()
   // the order in which diags appear in m_diagnostics follows the evaluation
   // order, meaning that if diag A depends on diag B, then B appears *before* A.
   // This ensures we can evaluate diags in order at runtime
-  bool done = false;
-  std::set<std::string> remaining(m_fields_names.begin(),m_fields_names.end());
+  std::list<std::string> remaining(m_fields_names.begin(),m_fields_names.end());
   for (const auto& it : m_alias_to_orig) {
-    remaining.insert(it.second);
+    remaining.push_back(it.second);
   }
 
   bool any_masked_field = false;
-  while (not done) {
-    // We can't add-to/rm-form a std:;set while iterating on it, as that could
-    // change the end iterator. Hence, keep track of what we add or remove,
-    // and add/remove after the for loop ends
-    std::set<std::string> remove_these, add_these;
-    for (const auto& name : remaining) {
-      if (fm_model->has_field(name)) {
-        // This is a regular field, not a diagnostic nor an alias.
-        remove_these.insert(name);
-        any_masked_field |= fm_model->get_field(name).has_mask();
-      } else if (m_alias_to_orig.count(name)==1) {
-        // An alias. If the aliased field was already processed, we can
-        // process the alias as well
-        if (fm_model->has_field(m_alias_to_orig[name])) {
-          const auto& orig = fm_model->get_field(m_alias_to_orig[name]);
-          auto alias = orig.alias(name);
-          fm_model->add_field(alias);
-          remove_these.insert(name);
+  size_t iters_since_last_done = 0;
+  for (auto it=remaining.begin(); it!=remaining.end(); ) {
+    const auto name = *it;
 
-          // TODO: move all remaining diags to use mask field API in Field
-          any_masked_field |= alias.has_mask() ||
-                              alias.get_header().has_extra_data("mask_data");
-        }
+    EKAT_REQUIRE_MSG (iters_since_last_done<remaining.size(),
+        "Error! It seems we're stuck in an infinite loop...\n"
+        " Field '" + name + "' seem to cause circular deps.");
+    ++iters_since_last_done;
+
+    if (fm_model->has_field(name)) {
+      // This is a regular field, not a diagnostic nor an alias.
+      iters_since_last_done = 0;
+      any_masked_field |= fm_model->get_field(name).has_mask();
+    } else if (m_alias_to_orig.count(name)==1) {
+      // An alias. If the aliased field was already processed, we can
+      // process the alias as well
+      if (fm_model->has_field(m_alias_to_orig[name])) {
+        const auto& orig = fm_model->get_field(m_alias_to_orig[name]);
+        auto alias = orig.alias(name);
+        fm_model->add_field(alias);
+        iters_since_last_done = 0;
+
+        // TODO: move all remaining diags to use mask field API in Field
+        any_masked_field |= alias.has_mask() ||
+                            alias.get_header().has_extra_data("mask_data");
       } else {
-        auto& diag = m_diag_repo[name];
-        if (not diag) {
-          // First time we run into this diag. Create it
-          diag = create_diagnostic(name,fm_model->get_grid());
+        // Put this field back at the end of the list, while we wait to process the aliased field
+        remaining.push_back(*it);
+      }
+    } else {
+      auto& diag = m_diag_repo[name];
+      if (not diag) {
+        // First time we run into this diag. Create it
+        diag = create_diagnostic(name,fm_model->get_grid());
+      }
+      // Add its deps to the list of fields to process (if not already in fm_model)
+      bool deps_met = true;
+      for (const auto& req : diag->get_field_requests()) {
+        if (not fm_model->has_field(req.fid.name())) {
+          deps_met = false;
+          remaining.push_back(req.fid.name());
         }
-        // Add its deps to the list of fields to process (if not already in fm_model)
-        bool deps_met = true;
-        for (const auto& req : diag->get_field_requests()) {
-          if (not fm_model->has_field(req.fid.name())) {
-            deps_met = false;
-            add_these.insert(req.fid.name());
-          }
-        }
+      }
 
-        // If we are missing any dep, we DELAY adding this diag to m_diagnostics, so that
-        // the order in which diags appear is compatible with the evaluation order
-        if (deps_met) {
-          // Check if already inited (perhaps by another stream)
-          if (not diag->is_initialized()) {
-            init_diag(diag);
-          }
-          diag->get_diagnostic().get_header().get_tracking().add_group("diagnostic");
-          remove_these.insert(name);
-          fm_model->add_field(diag->get_diagnostic());
-          m_diagnostics.push_back(diag);
-          auto diag_field = diag->get_diagnostic();
-
-          // TODO: move all remaining diags to use mask field API in Field
-          any_masked_field |= diag_field.has_mask() ||
-                              diag_field.get_header().has_extra_data("mask_data");
+      // If we are missing any dep, we DELAY adding this diag to m_diagnostics, so that
+      // the order in which diags appear is compatible with the evaluation order
+      if (deps_met) {
+        // Check if already inited (perhaps by another stream)
+        if (not diag->is_initialized()) {
+          init_diag(diag);
         }
+        diag->get_diagnostic().get_header().get_tracking().add_group("diagnostic");
+        fm_model->add_field(diag->get_diagnostic());
+        m_diagnostics.push_back(diag);
+        auto diag_field = diag->get_diagnostic();
+
+        iters_since_last_done = 0;
+
+        // TODO: move all remaining diags to use mask field API in Field
+        any_masked_field |= diag_field.has_mask() ||
+                            diag_field.get_header().has_extra_data("mask_data");
+      } else {
+        // we'll come back to this after its deps, so put it back at the end
+        remaining.push_back(name);
       }
     }
 
-    EKAT_REQUIRE_MSG (add_these.size()>0 or remove_these.size()>0,
-        "Error! We're stuck in an endless loop while processing output fields.\n"
-        " - stream name: " + m_stream_name + "\n");
-
-    // Remove fields we added to the FM, and add new diags we need
-    for (const auto& n : remove_these) {
-      remaining.erase(n);
-    }
-    for (const auto& n : add_these) {
-      remaining.insert(n);
-    }
-    done = remaining.size()==0;
+    // Whether we fully processed this field, or we put it back at the end, we need
+    // to remove the current entry, and update the iterator
+    it = remaining.erase(it);
   }
 
   m_track_avg_cnt &= any_masked_field;
