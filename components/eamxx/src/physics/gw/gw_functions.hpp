@@ -129,8 +129,6 @@ struct Functions
     bool use_gw_convect    = false;
     bool use_gw_frontal    = false;
     bool use_gw_orographic = false;
-
-    // std::string gw_drag_file;
     
     Real gw_orographic_eff;
 
@@ -209,6 +207,12 @@ struct Functions
     const uview_1d<const Real>& in,
     const uview_1d<Real>& interp)
   {
+    if (in.size() != interp.size() + 1) {
+      Kokkos::printf("midpoint_interp(): 'in' (interface) must have exactly one more "
+                     "element than 'interp' (midpoint). Got in.size()=%d, interp.size()=%d, "
+                     "expected in.size() == interp.size() + 1.\n",
+                     (int)in.size(), (int)interp.size());
+    }
     EKAT_KERNEL_REQUIRE(in.size() == interp.size() + 1);
     Kokkos::parallel_for(
       Kokkos::TeamVectorRange(team, 0, in.extent(0)-1), [&] (const int k) {
