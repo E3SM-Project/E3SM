@@ -621,7 +621,7 @@ run (const std::string& filename,
       // NOTE: we don't divide by the avg cnt for checkpoint output
       if (output_step and m_avg_type==OutputAvgType::Average) {
         // Even if m_track_avg_cnt=true, this field may not need it
-        if (m_track_avg_cnt) {
+        if (m_track_avg_cnt and f_out.has_mask()) {
           const auto& avg_count = m_field_to_avg_count.at(field_name);
           const auto& valid_count = avg_count.get_mask();
 
