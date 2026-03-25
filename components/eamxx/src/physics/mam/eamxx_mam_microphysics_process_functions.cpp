@@ -459,22 +459,19 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     if (gas_phase_chemistry_dvmrdt.size()) {
 
     Kokkos::parallel_for(
-    "MAMMicrophysics::run_impl::gas_phase_chemistry_dvmrdt", policy,
-    KOKKOS_LAMBDA(const ThreadTeam &team) {
-      const int icol     = team.league_rank();   // column index
+    "MAMMicrophysics::run_impl::gas_phase_chemistry_dvmrdt",
+    Kokkos::RangePolicy<>(0, ncol_ * nlev),
+    KOKKOS_LAMBDA(const int i) {
+      const int icol = i / nlev;
+      const int kk   = i % nlev;
       const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
-      Kokkos::parallel_for(
-       Kokkos::TeamVectorRange(team, nlev),
-       [&](const int kk) {
-        Real pdel = atm.hydrostatic_dp(kk);
-        const Real mbar = haero::Constants::molec_weight_dry_air;
+      const Real pdel = atm.hydrostatic_dp(kk);
+      const Real mbar = haero::Constants::molec_weight_dry_air;
       const Real gravit = haero::Constants::gravity;
       const Real x = 1.0 / mbar * pdel / gravit;
       for (int m = 0; m < num_gas_aerosol_constituents; ++m)
         gas_phase_chemistry_dvmrdt(icol, m, kk) =
             x * adv_mass_kg_per_moles[m] * (vmr(icol,kk,m) - vmr0(icol,kk,m)) / dt;
-       });
-
     });
   }
     } // compute_gas_phase_chemistry
@@ -546,22 +543,19 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
 
     if (aqueous_chemistry_dvmrdt.size()) {
       Kokkos::parallel_for(
-      "MAMMicrophysics::run_impl::aqueous_chemistry_dvmrdt", policy,
-      KOKKOS_LAMBDA(const ThreadTeam &team) {
-        const int icol     = team.league_rank();   // column index
+      "MAMMicrophysics::run_impl::aqueous_chemistry_dvmrdt",
+      Kokkos::RangePolicy<>(0, ncol_ * nlev),
+      KOKKOS_LAMBDA(const int i) {
+        const int icol = i / nlev;
+        const int kk   = i % nlev;
         const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
-        Kokkos::parallel_for(
-         Kokkos::TeamVectorRange(team, nlev),
-         [&](const int kk) {
-         Real pdel = atm.hydrostatic_dp(kk);
-         const Real mbar = haero::Constants::molec_weight_dry_air;
-         const Real gravit = haero::Constants::gravity;
-         const Real x = 1.0 / mbar * pdel / gravit;
-         for (int m = 0; m < num_gas_aerosol_constituents; ++m)
+        const Real pdel = atm.hydrostatic_dp(kk);
+        const Real mbar = haero::Constants::molec_weight_dry_air;
+        const Real gravit = haero::Constants::gravity;
+        const Real x = 1.0 / mbar * pdel / gravit;
+        for (int m = 0; m < num_gas_aerosol_constituents; ++m)
           aqueous_chemistry_dvmrdt(icol, m, kk) =
             x * adv_mass_kg_per_moles[m] * (vmr(icol,kk,m) - vmr_bef_aq_chem(icol,kk,m)) / dt;
-         });
-
       });
     }
   } // compute_aqueous_phase_chemistry
@@ -579,18 +573,16 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     auto& wetdens_loc = wetdens_;
     constexpr int nmodes = mam4::AeroConfig::num_modes();
      Kokkos::parallel_for(
-    "MAMMicrophysics::run_impl::modal_aero_amicphys_intr_precompute", policy,
-    KOKKOS_LAMBDA(const ThreadTeam &team) {
-      const int icol     = team.league_rank();   // column index
-    Kokkos::parallel_for(
-       Kokkos::TeamVectorRange(team, nlev),
-       [&](const int kk) {
-        for (int imode = 0; imode < nmodes; imode++) {
-         dgncur_awet_loc(icol, kk, imode) = wet_diameter(icol, imode, kk);
-         dgncur_a_loc(icol, kk, imode) = dry_diameter(icol, imode, kk);
-         wetdens_loc(icol, kk, imode) = wetdens(icol, imode, kk);
-        }
-      });
+    "MAMMicrophysics::run_impl::modal_aero_amicphys_intr_precompute",
+    Kokkos::RangePolicy<>(0, ncol_ * nlev),
+    KOKKOS_LAMBDA(const int i) {
+      const int icol = i / nlev;
+      const int kk   = i % nlev;
+      for (int imode = 0; imode < nmodes; imode++) {
+        dgncur_awet_loc(icol, kk, imode) = wet_diameter(icol, imode, kk);
+        dgncur_a_loc(icol, kk, imode) = dry_diameter(icol, imode, kk);
+        wetdens_loc(icol, kk, imode) = wetdens(icol, imode, kk);
+      }
     });
 
     view_3d gas_aero_exchange_condensation, gas_aero_exchange_renaming,
