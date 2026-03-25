@@ -162,7 +162,7 @@ void compute_nucleate_ice_tendencies(
       });
 }
 void store_liquid_cloud_fraction(
-    haero::ThreadTeamPolicy team_policy,
+    const int ncol,
     const mam_coupling::DryAtmosphere &dry_atmosphere,
     const MAMAci::const_view_2d liqcldf,
     const MAMAci::const_view_2d liqcldf_prev, const int top_lev, const int nlev,
@@ -170,26 +170,23 @@ void store_liquid_cloud_fraction(
     MAMAci::view_2d cloud_frac, MAMAci::view_2d cloud_frac_prev) {
   MAMAci::const_view_2d qc = dry_atmosphere.qc;
   MAMAci::const_view_2d qi = dry_atmosphere.qi;
+  // cut-off for cloud amount (ice or liquid)
+  static constexpr auto qsmall = 1e-18;  // BAD_CONSTANT
   Kokkos::parallel_for(
-      "MAMAci::run_impl::store_liquid_cloud_fraction", team_policy,
-      KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
-        const int icol = team.league_rank();
+      "MAMAci::run_impl::store_liquid_cloud_fraction",
+      Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, top_lev}, {ncol, nlev}),
+      KOKKOS_LAMBDA(const int icol, const int kk) {
         //-------------------------------------------------------------
         // Get old and new liquid cloud fractions when amount of cloud
         // is above qsmall threshold value
         //-------------------------------------------------------------
-        // cut-off for cloud amount (ice or liquid)
-        static constexpr auto qsmall = 1e-18;  // BAD_CONSTANT
-        Kokkos::parallel_for(
-            Kokkos::TeamVectorRange(team, top_lev, nlev), [&](int kk) {
-              if((qc(icol, kk) + qi(icol, kk)) > qsmall) {
-                cloud_frac(icol, kk)      = liqcldf(icol, kk);
-                cloud_frac_prev(icol, kk) = liqcldf_prev(icol, kk);
-              } else {
-                cloud_frac(icol, kk)      = 0;
-                cloud_frac_prev(icol, kk) = 0;
-              }
-            });
+        if((qc(icol, kk) + qi(icol, kk)) > qsmall) {
+          cloud_frac(icol, kk)      = liqcldf(icol, kk);
+          cloud_frac_prev(icol, kk) = liqcldf_prev(icol, kk);
+        } else {
+          cloud_frac(icol, kk)      = 0;
+          cloud_frac_prev(icol, kk) = 0;
+        }
       });
 }
 

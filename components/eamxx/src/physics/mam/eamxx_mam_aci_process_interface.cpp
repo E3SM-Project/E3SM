@@ -546,7 +546,7 @@ void MAMAci::run_impl(const double dt) {
       naai_);
 
   // Compute cloud fractions based on cloud threshold
-  store_liquid_cloud_fraction(team_policy, dry_atm_, liqcldf_, liqcldf_prev_,
+  store_liquid_cloud_fraction(ncol_, dry_atm_, liqcldf_, liqcldf_prev_,
                               top_lev_, nlev_,
                               // output
                               cloud_frac_, cloud_frac_prev_);
