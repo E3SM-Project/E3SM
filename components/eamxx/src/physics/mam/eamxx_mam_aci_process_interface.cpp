@@ -611,7 +611,7 @@ void MAMAci::run_impl(const double dt) {
                               dry_aero_);
 
   // Update interstitial aerosols using tendencies
-  update_interstitial_aerosols(team_policy, ptend_q_, nlev_, dt,
+  update_interstitial_aerosols(ncol_, ptend_q_, nlev_, dt,
                                // output
                                dry_aero_);
 

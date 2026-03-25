@@ -452,7 +452,7 @@ void update_cloud_borne_aerosols(
 
 // Update interstitial aerosols using tendencies- cols and levs
 void update_interstitial_aerosols(
-    haero::ThreadTeamPolicy team_policy,
+    const int ncol,
     const MAMAci::view_2d ptend_q[mam4::aero_model::pcnst], const int nlev,
     const Real dt,
     // output
@@ -469,14 +469,10 @@ void update_interstitial_aerosols(
       if(aero_mmr.data()) {
         const auto ptend_view = ptend_q[s_idx];
         Kokkos::parallel_for(
-            "MAMAci::run_impl::update_interstitial_aerosols_mmr", team_policy,
-            KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
-              const int icol = team.league_rank();
-              // update values for all levs at this column
-              Kokkos::parallel_for(
-                  Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
-                    aero_mmr(icol, kk) += ptend_view(icol, kk) * dt;
-                  });
+            "MAMAci::run_impl::update_interstitial_aerosols_mmr",
+            Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, nlev}),
+            KOKKOS_LAMBDA(const int icol, const int kk) {
+              aero_mmr(icol, kk) += ptend_view(icol, kk) * dt;
             });
         // update index for the next species (only if aero_mmr.data() is True)
         ++s_idx;
@@ -486,13 +482,10 @@ void update_interstitial_aerosols(
         dry_aero.int_aero_nmr[m];  // number mixing ratio for mode "m"
     const auto ptend_view = ptend_q[s_idx];
     Kokkos::parallel_for(
-        "MAMAci::run_impl::update_interstitial_aerosols_nmr", team_policy,
-        KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
-          const int icol = team.league_rank();
-          // update values for all levs at this column
-          Kokkos::parallel_for(
-              Kokkos::TeamVectorRange(team, nlev),
-              [&](int kk) { aero_nmr(icol, kk) += ptend_view(icol, kk) * dt; });
+        "MAMAci::run_impl::update_interstitial_aerosols_nmr",
+        Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, nlev}),
+        KOKKOS_LAMBDA(const int icol, const int kk) {
+          aero_nmr(icol, kk) += ptend_view(icol, kk) * dt;
         });
     ++s_idx;  // update index for the next species
   }
