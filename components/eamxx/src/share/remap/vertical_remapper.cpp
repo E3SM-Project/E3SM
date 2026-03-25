@@ -184,15 +184,17 @@ registration_ends_impl ()
         ft.packed &= m_int_packs_supported;
 
       if (m_etype_top==Mask or m_etype_bot==Mask) {
-        // NOTE: for now we assume that masking is determined only by the COL,LEV location in space
-        //       and that fields with multiple components will have the same masking for each component
-        //       at a specific COL,LEV
-
+        // NOTE: the tgt layout is assumed to ALWAYS have LEV as vertical dim tag.
         auto tgt_layout = create_tgt_layout(src_layout);
+        EKAT_REQUIRE_MSG (tgt_layout.tags().back()==LEV or tgt_layout.tags().back()==ILEV,
+            "Error! Something went wrong while creating a mask field target layout.\n"
+            " - field name: " + tgt.name() + "\n"
+            " - mask layout: " + tgt_layout.to_string() + "\n");
+        tgt_layout.strip_dims({ILEV,LEV}).append_dim(LEV,m_tgt_grid->get_num_vertical_levels());
 
         // I this mask has already been created, retrieve it, otherwise create it
         // CAVEATS:
-        //  1. the tgt layout ALWAYS has LEV as vertical dim tag. But we NEED different masks for
+        //  1. while the tgt layout ALWAYS has LEV as vertical dim tag, we NEED different masks for
         //     src fields defined at LEV and ILEV. So use src_layout to craft the mask name
         //  2. for vector dimensions, we must include the vector dim length, as there may be
         //     2+ vector fields with different vector length, which need 2 different masks
@@ -206,21 +208,10 @@ registration_ends_impl ()
         const auto mask_name = m_tgt_grid->name() + "_" + ekat::join(tagdim_names,"_") + "_mask";
         auto& mask = m_masks[mask_name];
         if (not mask.is_allocated()) {
-          auto nondim = ekat::units::Units::nondimensional();
-          // Create this src/tgt mask fields, and assign them to these src/tgt fields extra data
-
-          FieldIdentifier mask_fid (mask_name, tgt_layout, nondim, m_tgt_grid->name(), DataType::IntType );
-          mask  = Field (mask_fid);
-          if (ft.packed)
-            mask.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
-          mask.allocate_view();
+          mask = tgt.create_mask(mask_name);
+        } else {
+          tgt.set_mask(mask);
         }
-
-        EKAT_REQUIRE_MSG(not tgt.has_mask(),
-            "[VerticalRemapper::registration_ends_impl] Error! Target field already has mask data assigned.\n"
-            " - tgt field name: " + tgt.name() + "\n");
-
-        tgt.set_mask(mask);
       }
     } else {
       // If a field does not have LEV or ILEV it may still have fill_value tracking assigned from somewhere else.
