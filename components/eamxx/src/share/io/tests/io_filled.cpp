@@ -145,7 +145,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
     // Set fields to n+1 or the fill_value, depending on step:
     //  - n if n is odd
     //  - fill_value if n is even
-    bool valid_step = n % 2 == 0; 
+    bool valid_step = n % 2 == 1; 
     Real setval = valid_step ? Real(n) : fill_value;
     for (const auto& fn : fnames) {
       auto f = fm->get_field(fn);
@@ -170,7 +170,8 @@ void read (const std::string& avg_type, const std::string& freq_units,
 
   // Time quantities
   auto t0 = get_t0();
-  int num_writes = num_output_steps + (instant ? 1 : 0);
+  int first_snap = instant ? 0 : 1;
+  int last_snap = num_output_steps;
 
   // Get gm
   auto gm = get_gm (comm);
@@ -199,44 +200,49 @@ void read (const std::string& avg_type, const std::string& freq_units,
   reader_pl.set("field_names",fnames);
   AtmosphereInput reader(reader_pl,fm);
 
-  // We set the value n to each input field for each odd valued timestep and fill_value for each even valued timestep
-  // Hence, at output step N = snap*freq, we should get
-  //  avg=INSTANT: output = N if (N%2=0), else Fillvalue
-  //  avg=MAX:     output = N if (N%2=0), else N-1
+  // We set the value n (the step number) to each input field for each odd valued timestep
+  // and fill_value for each even valued timestep
+  // Hence, at output step N = snap*freq (snap=1,...,num_writes), we should get
+  //  avg=INSTANT: output = N if (N%2=1), else Fillvalue (that's b/c we have t0 output, which is FV)
+  //  avg=MAX:     output = N-1 if (N%2=0), else N
   //  avg=MIN:     output = N + 1, where n is the first timesnap of the Nth output step.
   //                        we add + 1 more in cases where (N%2=0) because that means the first snap was filled.
-  //  avg=AVERAGE: output = a + M+1 = a + M*(M+1)/M
-  // The last one comes from
-  //   a + 2*(1 + 2 +..+M)/M =
-  //   a + 2*sum(i)/M = a + 2*(M(M+1)/2)/M,
-  //         where M = freq/2 + ( N%2=0 ? 0 : 1 ),
-  //               a = floor(N/freq)*freq + ( N%2=0 ? 0 : -1)
-  for (int n=0; n<num_writes; ++n) {
-    reader.read_variables(n);
+  //  avg=AVERAGE: output = sum([i if i%2==1]) divided by the list length if > 0.5*freq, else FillValue
+  for (int n=first_snap; n<=last_snap; ++n) {
+    reader.read_variables(n-first_snap);
     for (const auto& fn : fnames) {
       auto f0 = fm0->get_field(fn).clone();
       auto f  = fm->get_field(fn);
       if (avg_type=="MIN") {
-        Real test_val = ((n+1)*freq%2==0) ? n*freq+1 : n*freq+2;
+        int first_avg_step = (n-1)*freq + 1;
+        Real test_val = first_avg_step%2 == 0 ? first_avg_step+1 : first_avg_step;
         f0.deep_copy(test_val);
         REQUIRE (views_are_equal(f,f0));
       } else if (avg_type=="MAX") {
-        Real test_val = ((n+1)*freq%2==0) ? (n+1)*freq : (n+1)*freq-1;
+        int last_avg_step = n*freq;
+        Real test_val = last_avg_step%2 == 0 ? last_avg_step-1 : last_avg_step;
         f0.deep_copy(test_val);
         REQUIRE (views_are_equal(f,f0));
       } else if (avg_type=="INSTANT") {
-        Real test_val = (n*freq%2==0) ? n*freq : fill_value;
+        Real test_val = (n*freq%2==0) ? fill_value : n*freq;
         f0.deep_copy(test_val);
         REQUIRE (views_are_equal(f,f0));
       } else { // Is avg_type = AVERAGE
         // Note, for AVERAGE type output with filling we need to check that the
         // number of contributing fill steps surpasses the fill_threshold, if not
         // then we know that the snap will reflect the fill value.
+        int first_avg_step = (n-1)*freq + 1;
+        int last_avg_step = n*freq;
+        Real test_val = 0;
+        int nvalid = 0;
+        for (int i=first_avg_step; i<=last_avg_step; ++i) {
+          if (i%2==1) {
+            test_val += i;
+            ++nvalid;
+          }
+        }
+        test_val = nvalid > fill_threshold*freq ? test_val/nvalid : fill_value;
 
-        Real test_val;
-        Real M = freq/2 + (n%2==0 ? 0.0 :  1.0);
-        Real a = n*freq + (n%2==0 ? 0.0 : -1.0);
-        test_val = (M/freq > fill_threshold) ? a + (M+1.0) : fill_value;
         f0.deep_copy(test_val);
         REQUIRE (views_are_equal(f,f0));
       }
