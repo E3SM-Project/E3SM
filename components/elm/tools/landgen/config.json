@@ -1,0 +1,53 @@
+{
+  "start_year": 2015,
+  "end_year": 2015,
+  "source_data_path": "/global/cfs/cdirs/e3sm/landgen/rawdata",
+  "landgen_grid_path": "healpix/10km/land_domain_file_healpix_10km.nc",
+  "out_path": "/global/cfs/cdirs/e3sm/landgen/output",
+  "modules": [
+    {
+      "name": "topography",
+      "params": {
+        "active": true,
+        "out_fname": "landgen_topography.nc"
+      }
+    },
+    {
+      "name": "land_type",
+      "params": {
+        "active": true,
+        "out_fname": "landgen_land_type.nc",
+        "lc_rs_path": "/global/cfs/cdirs/e3sm/landgen/rawdata/modis",
+        "lc_rs_name": "modis",
+        "crop_path": "",
+        "urban_path": "",
+        "lake_path": "",
+        "ice_path": "",
+        "wetland_path": "",
+        "harvest_path": "",
+        "assoc_path": ""
+      }
+    },
+    {
+      "name": "soil",
+      "params": {
+        "active": true,
+        "out_fname": "landgen_soil.nc"
+      }
+    },
+    {
+      "name": "human",
+      "params": {
+        "active": true,
+        "out_fname": "landgen_human.nc"
+      }
+    },
+    {
+      "name": "atmosphere",
+      "params": {
+        "active": true,
+        "out_fname": "landgen_atmosphere.nc"
+      }
+    }
+  ]
+}
