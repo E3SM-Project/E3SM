@@ -77,7 +77,18 @@ initialize_impl (const RunType /*run_type*/)
   const auto& p_value = m_params.get<std::string>("pressure_value");
   std::string location = tag==LEV ? "midpoint" : "interface";
 
-  m_diagnostic_output.create_mask(location + "_field_at_" + p_value + units + "_mask");
+  // Build a mask name that encodes the input field layout, so that fields
+  // with different layouts get distinct mask names.  For CMP dimensions,
+  // append the extent so that, e.g., a vector dim of size 2 becomes "dim2"
+  // (distinguishing it from a dim of size 3, etc.).
+  std::string layout_str;
+  for (int i = 0; i < layout.rank(); ++i) {
+    layout_str += "_" + layout.name(i);
+    if (layout.tag(i) == CMP) {
+      layout_str += std::to_string(layout.dim(i));
+    }
+  }
+  m_diagnostic_output.create_mask(location + layout_str + "_at_" + p_value + units + "_mask");
 
   using stratts_t = std::map<std::string,std::string>;
 
