@@ -205,7 +205,7 @@ void GWDrag::run_impl (const double dt) {
     const auto T_mid_i   = ekat::subview(T_mid_s,   Kokkos::pair<int, int>{0, m_nlev});
     const auto p_mid_i   = ekat::subview(p_mid_s,   Kokkos::pair<int, int>{0, m_nlev});
     const auto p_int_i   = ekat::subview(p_int_s,   Kokkos::pair<int, int>{0, m_nlev+1});
-    const auto T_int_i   = ekat::subview(T_int_s,   Kokkos::pair<int, int>{0, m_nlev});
+    const auto T_int_i   = ekat::subview(T_int_s,   Kokkos::pair<int, int>{0, m_nlev}); // note: interface data w/ m_nlev dimension
     const auto N_mid_i   = ekat::subview(N_mid_s,   Kokkos::pair<int, int>{0, m_nlev});
     const auto N_int_i   = ekat::subview(N_int_s,   Kokkos::pair<int, int>{0, m_nlev+1});
     const auto rho_int_i = ekat::subview(rho_int_s, Kokkos::pair<int, int>{0, m_nlev+1});
