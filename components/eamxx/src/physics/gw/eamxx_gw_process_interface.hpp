@@ -33,6 +33,7 @@ class GWDrag : public AtmosphereProcess
   using IntPack  = typename GWF::IntPack;
 
   using uview_2d = GWF::uview_2d<Pack>;
+  using uview_3d = GWF::uview_3d<Pack>;
 
   public:
     // Constructors
@@ -49,9 +50,22 @@ class GWDrag : public AtmosphereProcess
 
     // Structure for storing local variables initialized using the ATMBufferManager
     struct Buffer {
-      static constexpr int num_2d_mid_views = 2;
-      static constexpr int num_2d_int_views = 1;
-      uview_2d z_mid, z_int, z_del;
+      static constexpr int num_3d_mid_views = 1;
+      static constexpr int num_2d_mid_views = 5;
+      static constexpr int num_2d_int_views = 4;
+      static constexpr int num_2d_pgw_views = 1;
+      uview_2d z_mid;   // mid-point altitude
+      uview_2d z_int;   // interface altitude
+      uview_2d z_del;   // thickness of layer altitudes
+      uview_2d T_int;   // interface absolute temperature (dimension must equal T_mid)
+      uview_2d N_mid;   // mid-point Brunt-Vaisalla frequency
+      uview_2d N_int;   // interface Brunt-Vaisalla frequency
+      uview_2d rho_int; // interface density
+
+      uview_3d tau;     // gravity wave Reynolds stress
+      uview_2d ubm;     // mid-point projection of wind
+      uview_2d ubi;     // interface projection of wind
+      uview_2d c;       // calculated gravity wave phase speeds
     };
 
 #ifndef KOKKOS_ENABLE_CUDA
@@ -78,6 +92,7 @@ class GWDrag : public AtmosphereProcess
     std::shared_ptr<const AbstractGrid> m_grid;
     int m_ncol;
     int m_nlev;
+    int m_npgw;
 
 }; // class GWDrag
 
