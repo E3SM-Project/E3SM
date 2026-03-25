@@ -523,7 +523,7 @@ void MAMAci::run_impl(const double dt) {
                             tke_);
 
   Kokkos::fence();  // wait for tke_ to be computed.
-  compute_subgrid_scale_velocities(team_policy, tke_, wsubmin_, top_lev_, nlev_,
+  compute_subgrid_scale_velocities(ncol_, tke_, wsubmin_, top_lev_, nlev_,
                                    // output
                                    wsub_, wsubice_, wsig_);
 

@@ -65,33 +65,29 @@ void compute_tke_at_interfaces(haero::ThreadTeamPolicy team_policy,
 }
 
 void compute_subgrid_scale_velocities(
-    haero::ThreadTeamPolicy team_policy, const MAMAci::const_view_2d tke,
+    const int ncol, const MAMAci::const_view_2d tke,
     const Real wsubmin, const int top_lev, const int nlev,
     // output
     MAMAci::view_2d wsub, MAMAci::view_2d wsubice, MAMAci::view_2d wsig) {
   Kokkos::parallel_for(
-      "MAMAci::run_impl::compute_subgrid_scale_velocities", team_policy,
-      KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
-        const int icol = team.league_rank();
+      "MAMAci::run_impl::compute_subgrid_scale_velocities",
+      Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, nlev}),
+      KOKKOS_LAMBDA(const int icol, const int kk) {
         // More refined computation of sub-grid vertical velocity
         // Set to be zero at the surface by initialization.
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, top_lev),
-                             [&](int kk) {
-                               wsub(icol, kk)    = wsubmin;
-                               wsubice(icol, kk) = 0.001;
-                               wsig(icol, kk)    = 0.001;
-                             });
-        // parallel_for ranges do not overlap, no need for barrier.
-        Kokkos::parallel_for(
-            Kokkos::TeamVectorRange(team, top_lev, nlev), [&](int kk) {
-              wsub(icol, kk) = haero::sqrt(
-                  0.5 * (tke(icol, kk) + tke(icol, kk + 1)) * (2.0 / 3.0));
-              wsig(icol, kk) =
-                  mam4::utils::min_max_bound(0.001, 10.0, wsub(icol, kk));
-              wsubice(icol, kk) =
-                  mam4::utils::min_max_bound(0.2, 10.0, wsub(icol, kk));
-              wsub(icol, kk) = haero::max(wsubmin, wsub(icol, kk));
-            });
+        if(kk < top_lev) {
+          wsub(icol, kk)    = wsubmin;
+          wsubice(icol, kk) = 0.001;
+          wsig(icol, kk)    = 0.001;
+        } else {
+          wsub(icol, kk) = haero::sqrt(
+              0.5 * (tke(icol, kk) + tke(icol, kk + 1)) * (2.0 / 3.0));
+          wsig(icol, kk) =
+              mam4::utils::min_max_bound(0.001, 10.0, wsub(icol, kk));
+          wsubice(icol, kk) =
+              mam4::utils::min_max_bound(0.2, 10.0, wsub(icol, kk));
+          wsub(icol, kk) = haero::max(wsubmin, wsub(icol, kk));
+        }
       });
 }
 
