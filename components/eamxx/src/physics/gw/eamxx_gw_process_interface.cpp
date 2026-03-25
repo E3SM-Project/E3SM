@@ -184,33 +184,41 @@ void GWDrag::run_impl (const double dt) {
     });
   });
   //----------------------------------------------------------------------------
-  // calculate altitude on interfaces (z_int) and mid-points (z_mid)
+  // create local temporaries to avoid "Implicit capture" warning
+  const auto loc_common_init = GWF::s_common_init;
+  const auto loc_convect_init = GWF::s_convect_init;
+  const auto loc_front_init = GWF::s_front_init;
 
-  // create temporaries to avoid "Implicit capture" warning
   const auto loc_p_mid = p_mid;
+  const auto loc_p_int = p_int;
   const auto loc_p_del = p_del;
   const auto loc_T_mid = T_mid;
   const auto loc_qv    = qv;
-  auto loc_z_mid = m_buffer.z_mid;
-  auto loc_z_del = m_buffer.z_del;
-  auto loc_z_int = m_buffer.z_int;
-  auto loc_nlev = m_nlev;
 
+  auto loc_z_mid       = m_buffer.z_mid;
+  auto loc_z_del       = m_buffer.z_del;
+  auto loc_z_int       = m_buffer.z_int;
+  auto loc_T_int       = m_buffer.T_int;
+  auto loc_N_mid       = m_buffer.N_mid;
+  auto loc_N_int       = m_buffer.N_int;
+  auto loc_rho_int     = m_buffer.rho_int;
+  //----------------------------------------------------------------------------
+  // calculate altitude on interfaces (z_int) and mid-points (z_mid)
   Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
     const auto p_mid_i = ekat::subview(loc_p_mid, i);
     const auto p_del_i = ekat::subview(loc_p_del, i);
     const auto T_mid_i = ekat::subview(loc_T_mid, i);
-    const auto qv_i    = ekat::subview(loc_qv,    i);
+    const auto qv_i = ekat::subview(loc_qv,    i);
     auto z_mid_i = ekat::subview(loc_z_mid, i);
     auto z_del_i = ekat::subview(loc_z_del, i);
     auto z_int_i = ekat::subview(loc_z_int, i);
     auto z_surf = 0.0; // z_mid & z_int are altitude above the surface
     PF::calculate_dz(team, p_del_i, p_mid_i, T_mid_i, qv_i, z_del_i);
     team.team_barrier();
-    PF::calculate_z_int(team, loc_nlev, z_del_i, z_surf, z_int_i);
+    PF::calculate_z_int(team, m_nlev, z_del_i, z_surf, z_int_i);
     team.team_barrier();
-    PF::calculate_z_mid(team, loc_nlev, z_int_i, z_mid_i);
+    PF::calculate_z_mid(team, m_nlev, z_int_i, z_mid_i);
     team.team_barrier();
   });
   //----------------------------------------------------------------------------
@@ -813,7 +821,7 @@ void GWDrag::run_impl (const double dt) {
 
   // The fortran version used the conversion below - but since the constituent
   // tendencies only use the first 3 tracers (vapor, cloud liquid, cloud ice)
-  // we can skip this step, and just note in the usage changes in the future
+  // we can skip this step, and just note in the usage changes in the future\
 
   // do m = 1, pcnst
   //    if (cnst_type(m).eq.'dry') then
@@ -1045,8 +1053,10 @@ size_t GWDrag::requested_buffer_size_in_bytes() const
   const int nlev_int_packs = ekat::npack<Pack>(m_nlev+1);
   size_t gw_buffer_size = 0;
 
+  gw_buffer_size += Buffer::num_3d_mid_views*m_ncol*m_npgw*nlev_mid_packs*sizeof(Pack);
   gw_buffer_size += Buffer::num_2d_mid_views*m_ncol*nlev_mid_packs*sizeof(Pack);
   gw_buffer_size += Buffer::num_2d_int_views*m_ncol*nlev_int_packs*sizeof(Pack);
+  gw_buffer_size += Buffer::num_2d_pgw_views*m_ncol*m_npgw*sizeof(Pack);
 
   return gw_buffer_size;
 }
@@ -1060,26 +1070,49 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
   const int nlev_mid_packs = ekat::npack<Pack>(m_nlev);
   const int nlev_int_packs = ekat::npack<Pack>(m_nlev+1);
   //----------------------------------------------------------------------------
-  uview_2d* buffer_mid_view_ptrs[Buffer::num_2d_mid_views] = {
-    &m_buffer.z_del,
-    &m_buffer.z_mid
+  uview_3d* buffer_3d_mid_view_ptrs[Buffer::num_3d_mid_views] = {
+    &m_buffer.tau
   };
-  for (int i=0; i<Buffer::num_2d_mid_views; ++i) {
-    *buffer_mid_view_ptrs[i] = uview_2d(mem, m_ncol, nlev_mid_packs);
-    mem += buffer_mid_view_ptrs[i]->size();
+  for (int i=0; i<Buffer::num_3d_mid_views; ++i) {
+    *buffer_3d_mid_view_ptrs[i] = uview_3d(mem, m_ncol, m_npgw, nlev_mid_packs);
+    mem += buffer_3d_mid_view_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
-  uview_2d* buffer_int_view_ptrs[Buffer::num_2d_int_views] = {
-    &m_buffer.z_int
+  uview_2d* buffer_2d_mid_view_ptrs[Buffer::num_2d_mid_views] = {
+    &m_buffer.z_del,
+    &m_buffer.z_mid,
+    &m_buffer.T_int,
+    &m_buffer.N_mid,
+    &m_buffer.ubm
+  };
+  for (int i=0; i<Buffer::num_2d_mid_views; ++i) {
+    *buffer_2d_mid_view_ptrs[i] = uview_2d(mem, m_ncol, nlev_mid_packs);
+    mem += buffer_2d_mid_view_ptrs[i]->size();
+  }
+  //----------------------------------------------------------------------------
+  uview_2d* buffer_2d_int_view_ptrs[Buffer::num_2d_int_views] = {
+    &m_buffer.z_int,
+    // &m_buffer.T_int,
+    &m_buffer.N_int,
+    &m_buffer.rho_int,
+    &m_buffer.ubi
   };
   for (int i=0; i<Buffer::num_2d_int_views; ++i) {
-    *buffer_int_view_ptrs[i] = uview_2d(mem, m_ncol, nlev_int_packs);
-    mem += buffer_int_view_ptrs[i]->size();
+    *buffer_2d_int_view_ptrs[i] = uview_2d(mem, m_ncol, nlev_int_packs);
+    mem += buffer_2d_int_view_ptrs[i]->size();
+  }
+  //----------------------------------------------------------------------------
+  uview_2d* buffer_2d_pgw_view_ptrs[Buffer::num_2d_pgw_views] = {
+    &m_buffer.c
+  };
+  for (int i=0; i<Buffer::num_2d_pgw_views; ++i) {
+    *buffer_2d_pgw_view_ptrs[i] = uview_2d(mem, m_ncol, m_npgw);
+    mem += buffer_2d_pgw_view_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
   size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
-                   "Error! Used memory != requested memory for TurbulentMountainStress.");
+                   "Error! Used memory != requested memory for GWDrag.");
 }
 /*------------------------------------------------------------------------------------------------*/
 void GWDrag::finalize_impl ()
