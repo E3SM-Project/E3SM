@@ -33,23 +33,22 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     const auto& field = forcings_[mm].fields[isec];
     if (forcings_[mm].file_alt_data) {
       Kokkos::parallel_for(
-        "MAMMicrophysics::run_impl::forcing", policy,
-        KOKKOS_LAMBDA(const ThreadTeam &team) {
-        const int icol     = team.league_rank();   // column index
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev),
-         [&](int kk) {
-          extfrc(icol,kk,nn) += field(icol,nlev - 1 - kk);
-        });
+        "MAMMicrophysics::run_impl::forcing",
+        Kokkos::RangePolicy<>(0, ncol_ * nlev),
+        KOKKOS_LAMBDA(const int i) {
+        const int icol = i / nlev;
+        const int kk   = i % nlev;
+        extfrc(icol,kk,nn) += field(icol,nlev - 1 - kk);
       });
 
    } else {
      Kokkos::parallel_for(
-      "MAMMicrophysics::run_impl::forcing", policy,
-      KOKKOS_LAMBDA(const ThreadTeam &team) {
-      const int icol     = team.league_rank();   // column index
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
-        extfrc(icol,kk,nn) += field(icol,kk);
-      });
+      "MAMMicrophysics::run_impl::forcing",
+      Kokkos::RangePolicy<>(0, ncol_ * nlev),
+      KOKKOS_LAMBDA(const int i) {
+      const int icol = i / nlev;
+      const int kk   = i % nlev;
+      extfrc(icol,kk,nn) += field(icol,kk);
     });
    }
   } // isec
