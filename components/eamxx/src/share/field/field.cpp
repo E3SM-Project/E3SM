@@ -71,9 +71,9 @@ void update_checks (const Field& y, const Field* x = nullptr,
     const auto& m_l = mask->get_header().get_identifier().get_layout();
     EKAT_REQUIRE_MSG (y_l.congruent(m_l),
       "Error! Incompatible mask layout for update_field.\n"
-      " - y name: " + x->name() + "\n"
+      " - y name: " + y.name() + "\n"
       " - mask name: " + mask->name() + "\n"
-      " - y layout: " + x_l.to_string() + "\n"
+      " - y layout: " + y_l.to_string() + "\n"
       " - mask layout: " + m_l.to_string() + "\n");
   }
 }
@@ -397,7 +397,7 @@ void Field::deep_copy (const ScalarWrapper value)
 
 void Field::deep_copy (const ScalarWrapper value, const Field& mask, const bool negate_mask)
 {
-  update_checks(*this,nullptr,&value,nullptr);
+  update_checks(*this,nullptr,&value,nullptr,&mask);
 
   const auto my_data_type = data_type();
   switch (my_data_type) {
@@ -453,7 +453,7 @@ void Field::deep_copy (const Field& x)
 void Field::deep_copy (const Field& x, const Field& mask)
 {
   // Check consistency of inputs
-  update_checks(*this,&x,nullptr,nullptr);
+  update_checks(*this,&x,nullptr,nullptr,&mask);
 
   // We do an update with y = 0*y + 1*x
   constexpr auto CM = CombineMode::Replace;
@@ -500,10 +500,10 @@ void Field::scale (const ScalarWrapper beta)
   }
 }
 
-void Field::scale (const ScalarWrapper beta, const Field& maske)
+void Field::scale (const ScalarWrapper beta, const Field& mask)
 {
   // Check consistency of inputs
-  update_checks(*this,nullptr,nullptr,&beta);
+  update_checks(*this,nullptr,nullptr,&beta,&mask);
 
   // update_impl expects an input field, even if it's not really used
   const auto& x = *this;
@@ -512,13 +512,13 @@ void Field::scale (const ScalarWrapper beta, const Field& maske)
   constexpr auto CM = CombineMode::Update;
   if (data_type()==DataType::IntType) {
     auto b = beta.as<int>();
-    update_impl<true,CM,int,int>(x,0,b);
+    update_impl<true,CM,int,int>(x,0,b,&mask);
   } else if (data_type()==DataType::FloatType) {
     auto b = beta.as<float>();
-    update_impl<true,CM,float,float>(x,0,b);
+    update_impl<true,CM,float,float>(x,0,b,&mask);
   } else if (data_type()==DataType::DoubleType) {
     auto b = beta.as<double>();
-    update_impl<true,CM,double,double>(x,0,b);
+    update_impl<true,CM,double,double>(x,0,b,&mask);
   } else {
     EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
   }
@@ -552,7 +552,7 @@ void Field::scale (const Field& x)
 void Field::scale (const Field& x, const Field& mask)
 {
   // Check consistency of inputs
-  update_checks(*this,&x,nullptr,nullptr);
+  update_checks(*this,&x,nullptr,nullptr,&mask);
 
   constexpr auto CM = CombineMode::Multiply;
   if (data_type()==DataType::IntType) {
@@ -602,7 +602,7 @@ void Field::scale_inv (const Field& x)
 void Field::scale_inv (const Field& x, const Field& mask)
 {
   // Check consistency of inputs
-  update_checks(*this,&x,nullptr,nullptr);
+  update_checks(*this,&x,nullptr,nullptr,&mask);
 
   constexpr auto CM = CombineMode::Divide;
   if (data_type()==DataType::IntType) {
@@ -652,7 +652,7 @@ void Field::max (const Field& x)
 void Field::max (const Field& x, const Field& mask)
 {
   // Check consistency of inputs
-  update_checks(*this,&x,nullptr,nullptr);
+  update_checks(*this,&x,nullptr,nullptr,&mask);
 
   constexpr auto CM = CombineMode::Max;
   if (data_type()==DataType::IntType) {
@@ -702,7 +702,7 @@ void Field::min (const Field& x)
 void Field::min (const Field& x, const Field& mask)
 {
   // Check consistency of inputs
-  update_checks(*this,&x,nullptr,nullptr);
+  update_checks(*this,&x,nullptr,nullptr,&mask);
 
   constexpr auto CM = CombineMode::Min;
   if (data_type()==DataType::IntType) {
