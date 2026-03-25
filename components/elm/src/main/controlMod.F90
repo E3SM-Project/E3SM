@@ -98,6 +98,8 @@ module controlMod
                         use_nofire, use_lch4, use_vertsoilc, use_extralakelayers, &
                         use_vichydro, use_century_decomp, use_cn, use_crop, &
                         use_snicar_frc, use_snicar_ad, use_firn_percolation_and_compaction, &
+                        convert_ice_to_river_runoff_latband, &
+                        convert_ice_to_river_runoff_latband_width_degrees, &
                         use_extrasnowlayers, use_T_rho_dependent_snowthk, &
                         use_vancouver, use_mexicocity, use_noio, use_finetop_rad
   !
@@ -347,6 +349,8 @@ contains
          use_nofire, use_lch4, use_vertsoilc, use_extralakelayers, &
          use_vichydro, use_century_decomp, use_cn, use_crop, use_snicar_frc, &
          use_snicar_ad, use_firn_percolation_and_compaction, use_extrasnowlayers,&
+          convert_ice_to_river_runoff_latband, &
+          convert_ice_to_river_runoff_latband_width_degrees, &
          use_T_rho_dependent_snowthk, use_vancouver, use_mexicocity, use_noio
 
     ! cpl_bypass variables

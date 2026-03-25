@@ -58,8 +58,7 @@ module ocn_time_average_coupled
         real (kind=RKIND), dimension(:), pointer :: avgEffectiveDensityInLandIce, avgTotalFreshWaterTemperatureFlux, &
                                                     avgLandIceFreshwaterFlux, &
                                                     avgRemovedRiverRunoffFlux, avgRemovedIceRunoffFlux, &
-                                                    avgLandIceHeatFlux, avgRemovedIceRunoffHeatFlux, &
-                                                    avgRemovedIceRunoffHeatFlux
+                                                    avgLandIceHeatFlux, avgRemovedIceRunoffHeatFlux
 
         real (kind=RKIND), dimension(:,:), pointer :: avgThermalForcingAtZLevels
         real (kind=RKIND), dimension(:,:), pointer :: avgThermalForcingAtZLevelsMask

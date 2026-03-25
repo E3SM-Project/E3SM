@@ -18,11 +18,14 @@ module SnowHydrologyMod
   use decompMod       , only : bounds_type
   use abortutils      , only : endrun
   use elm_varpar      , only : nlevsno
-  use elm_varctl      , only : iulog, use_extrasnowlayers, use_firn_percolation_and_compaction
+   use elm_varctl      , only : iulog, use_extrasnowlayers, use_firn_percolation_and_compaction, &
+                                              convert_ice_to_river_runoff_latband, &
+                                              convert_ice_to_river_runoff_latband_width_degrees
    use elm_varcon      , only : namec, h2osno_max, cpice, cpliq, hfus
   use atm2lndType     , only : atm2lnd_type
   use AerosolType     , only : aerosol_type
   use TopounitDataType, only : topounit_atmospheric_state
+   use TopounitType    , only : top_pp
   use LandunitType    , only : lun_pp
   use ColumnType      , only : col_pp
   use ColumnDataType  , only : col_es, col_ef, col_ws, col_wf
@@ -2264,10 +2267,12 @@ contains
      real(r8)   :: icefrac                          ! fraction of ice mass w.r.t. total mass [unitless]
      real(r8)   :: frac_adjust                      ! fraction of mass remaining after capping
      real(r8)   :: rho                              ! partial density of ice (not scaled with frac_sno) [kg/m3]
-   integer    :: fc, c, j, n_active, k            ! counters
+   integer    :: fc, c, j, n_active, k, t         ! counters
    real(r8)   :: e_cooling                        ! column energy removed [J/m2]
    real(r8)   :: c_layer                          ! layer heat capacity [J/m2/K]
    real(r8)   :: wsum, wraw                       ! weight sum and layer weight [-]
+   real(r8)   :: lat_abs_deg                      ! absolute topounit latitude [deg]
+   logical    :: apply_local_latent_cooling       ! whether to cool snowpack in this column
      ! Always keep at least this fraction of the bottom snow layer when doing snow capping
      ! This needs to be slightly greater than 0 to avoid roundoff problems
      real(r8), parameter :: min_snow_to_keep = 1.e-9  ! fraction of bottom snow layer to keep with capping
@@ -2354,8 +2359,15 @@ contains
 
            ! Remove latent heat from the remaining snowpack to conserve energy when
            ! capped ice is converted to liquid runoff downstream.
+           apply_local_latent_cooling = .true.
+           if (convert_ice_to_river_runoff_latband) then
+              t = col_pp%topounit(c)
+              lat_abs_deg = abs(top_pp%lat(t)) * 180._r8 / (4._r8 * atan(1._r8))
+              apply_local_latent_cooling = lat_abs_deg <= max(0._r8, convert_ice_to_river_runoff_latband_width_degrees)
+           end if
+
            e_cooling = qflx_snwcp_ice(c) * dtime * hfus
-           if (e_cooling > 0._r8 .and. snl(c) < 0) then
+           if (apply_local_latent_cooling .and. e_cooling > 0._r8 .and. snl(c) < 0) then
               n_active = 0
               do j = snl(c)+1, 0
                  c_layer = cpice*h2osoi_ice(c,j) + cpliq*h2osoi_liq(c,j)
