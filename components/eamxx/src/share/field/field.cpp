@@ -338,6 +338,29 @@ bool Field::has_mask () const {
 
 void Field::set_mask (const Field& mask)
 {
+  EKAT_REQUIRE_MSG (not has_mask(),
+      "Error! Cannot reset the mask field.\n"
+      " - field name: " + name() + "\n");
+  EKAT_REQUIRE_MSG (is_allocated(),
+      "Error! Cannot set a mask field until this field has been allocated.\n"
+      " - field name: " + name() + "\n");
+
+  // Check that the input field has the expected properties
+  EKAT_REQUIRE_MSG (mask.is_allocated(),
+      "Error! Input mask field was not yet allocated.\n"
+      " - field name: " + name() + "\n");
+  EKAT_REQUIRE_MSG (mask.data_type()==DataType::IntType,
+      "Error! Input mask field must have IntType data type.\n"
+      " - field name: " + name() + "\n"
+      " - mask name : " + mask.name() + "\n"
+      " - mask data type: " + e2str(mask.data_type()) + "\n");
+  EKAT_REQUIRE_MSG (mask.get_header().get_identifier().get_layout()==get_header().get_identifier().get_layout(),
+      "Error! Input mask field must have same layout as this field.\n"
+      " - field name: " + name() + "\n"
+      " - mask name : " + mask.name() + "\n"
+      " - field layout: " + get_header().get_identifier().get_layout().to_string() + "\n"
+      " - mask layout: " + get_header().get_identifier().get_layout().to_string() + "\n");
+
   m_header->set_extra_data("mask",mask);
 }
 
