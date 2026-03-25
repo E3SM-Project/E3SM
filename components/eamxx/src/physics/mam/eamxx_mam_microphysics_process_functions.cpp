@@ -243,28 +243,28 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
   const auto& index_season_lai=index_season_lai_;
 
   // U wind component [m/s]
-  const const_view_2d u_wind =
+  const auto& u_wind =
       get_field_in("horiz_winds").get_component(0).get_view<const Real **>();
 
   // V wind component [m/s]
-  const const_view_2d v_wind =
+  const auto& v_wind =
       get_field_in("horiz_winds").get_component(1).get_view<const Real **>();
 
   // Liquid precip [kg/m2]
-  const const_view_1d precip_liq_surf_mass =
+  const auto& precip_liq_surf_mass =
       get_field_in("precip_liq_surf_mass").get_view<const Real *>();
 
   // drydep_xactive
   // Snow depth on land [m]
-  const const_view_1d snow_depth_land =
+  const auto& snow_depth_land =
       get_field_in("snow_depth_land").get_view<const Real *>();
 
   // Fractional land use [fraction]
-  const const_view_2d fraction_landuse =
+  const auto& fraction_landuse =
       get_field_in("fraction_landuse").get_view<const Real **>();
 
     // Downwelling solar flux at the surface [w/m2]
-  const const_view_2d sw_flux_dn =
+  const auto& sw_flux_dn =
       get_field_in("SW_flux_dn").get_view<const Real **>();
 
   const mam4::seq_drydep::Data drydep_data =
@@ -273,15 +273,15 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
   const int month              = start_of_step_ts().get_month();  // 1-based
 
   // Surface temperature [K]
-  const const_view_1d sfc_temperature =
+  const auto& sfc_temperature =
       get_field_in("surf_radiative_T").get_view<const Real *>();
 
   // Surface pressure [Pa]
-  const const_view_1d sfc_pressure =
+  const auto& sfc_pressure =
       get_field_in("ps").get_view<const Real *>();
 
   // Constituent fluxes of gas and aerosol species
-  view_2d constituent_fluxes =
+  const auto& constituent_fluxes =
       get_field_out("constituent_fluxes").get_view<Real **>();
 
   view_2d mam4_gas_dry_deposition_flux;
@@ -291,7 +291,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
   }
 
   // Ice precip [kg/m2]
-  const const_view_1d precip_ice_surf_mass =
+  const auto& precip_ice_surf_mass =
       get_field_in("precip_ice_surf_mass").get_view<const Real *>();
 
   Kokkos::parallel_for(
