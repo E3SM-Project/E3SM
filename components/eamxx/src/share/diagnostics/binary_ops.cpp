@@ -41,24 +41,15 @@ void apply_binary_op(Field& d, const Field& a, const Real b, const int op_code, 
   switch (op_code) {
     case OP_PLUS:
       d.deep_copy(b);
-      if (mask)
-        d.update(a,1,1,*mask);
-      else
-        d.update(a,1,1);
+      d.update(a,1,1);
       break;
     case OP_MINUS:
       d.deep_copy(b);
-      if (mask)
-        d.update(a,1,-1,*mask);
-      else
-        d.update(a,1,-1);
+      d.update(a,1,-1);
       break;
     case OP_TIMES:
       d.deep_copy(b);
-      if (mask)
-        d.scale(a,*mask);
-      else
-        d.scale(a);
+      d.scale(a);
       break;
     case OP_OVER:
       d.deep_copy(1 / b);
@@ -76,24 +67,15 @@ void apply_binary_op(Field& d, const Real a, const Field& b, const int op_code, 
   switch (op_code) {
     case OP_PLUS:
       d.deep_copy(a);
-      if (mask)
-        d.update(b,1,1,*mask);
-      else
-        d.update(b,1,1);
+      d.update(b,1,1);
       break;
     case OP_MINUS:
       d.deep_copy(a);
-      if (mask)
-        d.update(b,-1,1,*mask);
-      else
-        d.update(b,-1,1);
+      d.update(b,-1,1);
       break;
     case OP_TIMES:
       d.deep_copy(a);
-      if (mask)
-        d.scale(b,*mask);
-      else
-        d.scale(b);
+      d.scale(b);
       break;
     case OP_OVER:
       d.deep_copy(a);
@@ -108,34 +90,22 @@ void apply_binary_op(Field& d, const Real a, const Field& b, const int op_code, 
 }
 void apply_binary_op(Field& d, const Field& a, const Field& b, const int op_code, const Field* mask = nullptr)
 {
-  if (mask)
-    d.deep_copy(a,*mask);
-  else
-    d.deep_copy(a);
+  d.deep_copy(a);
   switch (op_code) {
     case OP_PLUS:
-      if (mask)
-        d.update(b, 1, 1, *mask); // addition
-      else
-        d.update(b, 1, 1); // addition
+      d.update(b, 1, 1);
       break;
     case OP_MINUS:
-      if (mask)
-        d.update(b, -1, 1, *mask); // addition
-      else
-        d.update(b, -1, 1); // addition
+      d.update(b, -1, 1);
       break;
     case OP_TIMES:
-      if (mask)
-        d.scale(b,*mask); // multiplication
-      else
-        d.scale(b); // multiplication
+      d.scale(b);
       break;
     case OP_OVER:
       if (mask)
-        d.scale_inv(b,*mask); // division
+        d.scale_inv(b,*mask);
       else
-        d.scale_inv(b); // division
+        d.scale_inv(b);
       break;
     default:
       EKAT_ERROR_MSG("Error! Unrecognized/unsupported binary op code (" + std::to_string(op_code) + ")\n");
