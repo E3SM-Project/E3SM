@@ -247,8 +247,8 @@ void Functions<S,D>::update_prognostics_implicit(
   // Release temporary variables from the workspace
   team.team_barrier();
   workspace.template release_macro_block<Scalar>(tracers_slot,n_trac_slots);
-  workspace.template release_macro_block<Scalar>(wind_slot,n_wind_slots);
   workspace.template release_macro_block<Scalar>(wind_pert_slot,n_wind_slots);
+  workspace.template release_macro_block<Scalar>(wind_slot,n_wind_slots);
   workspace.template release_many_contiguous<3,Scalar>(
     {&du_workspace, &dl_workspace, &d_workspace});
   workspace.template release_many_contiguous<5>(
