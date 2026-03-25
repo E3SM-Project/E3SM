@@ -185,9 +185,6 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
     fm_model->add_field(*f_ptr);
   }
 
-  // Then we 1) create aliases, and b) create diagnostics, adding alias/diag fields to fm_model
-  process_requested_fields ();
-
   // Avg count only makes sense if we have
   //  - non-instant output
   //  - we have fields that have masks set. For instance:
@@ -197,12 +194,16 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   // NOTE: we are currently only doing this for AVERAGE output, but we should prob extend to MAX/MIN
   // NOTE 2: while we are in the process of transitioning to use Field's mask API, there are still
   //         some diags that use the "mask_data" extra data, so we must check for that too
+  // NOTE 3: if in process_requested_fields we realize that NO field is masked, we'll reset it to false
   if (m_avg_type==OutputAvgType::Average) {
     m_track_avg_cnt = true;
     if (params.isParameter("fill_threshold")) {
       m_avg_coeff_threshold = params.get<Real>("fill_threshold");
     }
   }
+
+  // Then we 1) create aliases, and b) create diagnostics, adding alias/diag fields to fm_model
+  process_requested_fields ();
 
   // Setup remappers - if needed
   auto grid_after_vr = fm_grid;
@@ -337,7 +338,7 @@ void AtmosphereOutput::init()
     auto can_alias = m_avg_type==OutputAvgType::Instant and
                      fh.get_alloc_properties().get_padding()==0 and
                      fh.get_parent()==nullptr;
-    auto f_for_scorpio = can_alias ? f : f.clone();
+    auto f_for_scorpio = can_alias ? f : Field(fid,true);
     transfer_extra_data (f,f_for_scorpio);
     fm_scorpio->add_field(f_for_scorpio);
 
@@ -588,23 +589,22 @@ run (const std::string& filename,
         EKAT_ERROR_MSG ("Unexpected/unsupported averaging type.\n");
     }
 
-    if (is_write_step) {
-      // NOTE: we don't divide by the avg cnt for checkpoint output
-      if (output_step and m_avg_type==OutputAvgType::Average) {
-        // Even if m_track_avg_cnt=true, this field may not need it
-        if (m_track_avg_cnt and f_out.has_mask()) {
-          const auto& avg_count = m_field_to_avg_count.at(field_name);
-          const auto& valid_count = avg_count.get_mask();
+    // NOTE: we don't divide by the avg cnt when writing rhist files, so only do this for OUTPUT steps
+    if (output_step and m_avg_type==OutputAvgType::Average) {
+      if (masked) {
+        const auto& avg_count = m_field_to_avg_count.at(field_name);
+        const auto& valid_count = avg_count.get_mask();
 
-          // Divide by avg_count where large enough, set to fill_value elsewhere
-          f_out.scale_inv(avg_count,valid_count);
-          f_out.deep_copy(constants::fill_value<Real>,valid_count,true);
-        } else {
-          // Divide by steps count only when the summation is complete
-          f_out.scale(Real(1.0) / nsteps_since_last_output);
-        }
+        // Divide by avg_count where large enough, set to fill_value elsewhere
+        f_out.scale_inv(avg_count,valid_count);
+        f_out.deep_copy(constants::fill_value<Real>,valid_count,true);
+      } else {
+        // Simply divide by steps count
+        f_out.scale(Real(1.0) / nsteps_since_last_output);
       }
+    }
 
+    if (is_write_step) {
       // Write to file
       auto func_start = std::chrono::steady_clock::now();
       if (m_transpose) {
@@ -668,50 +668,33 @@ res_dep_memory_footprint () const
   return rdmf;
 }
 
-void AtmosphereOutput::set_avg_cnt_tracking(const FieldIdentifier& fid)
+void AtmosphereOutput::set_avg_cnt_tracking(const Field& f)
 {
-  // Now create a Field to track the averaging count for this layout
-  const std::string& name = fid.name();
-  const auto& layout = fid.get_layout();
-  const auto& avg_cnt_suffix = m_field_to_avg_cnt_suffix[name];
-  const auto tags = layout.tags();
-  std::string avg_cnt_name = "avg_count" + avg_cnt_suffix;
-  for (int i=0; i<layout.rank(); ++i) {
-    const auto t = layout.tag(i);
-    std::string tag_name = m_io_grid->has_special_tag_name(t)
-                         ? m_io_grid->get_special_tag_name(t)
-                         : layout.names()[i];
-
-    // If t==CMP, and the name stored in the layout is "dim" (the default) or "bin",
-    // we append also the extent, to allow different vector dims in the file
-    // TODO: generalize this to all tags, for now hardcoding to dim and bin only
-    tag_name += (tag_name=="dim" or tag_name=="bin") ? std::to_string(layout.dim(i)) : "";
-
-    avg_cnt_name += "_" + tag_name;
-  }
+  const auto& mask = f.get_mask();
+  const auto avg_cnt_name = "avg_cnt_" + mask.name();
 
   // Look for an avg count field with the right name
-  for (const auto& f : m_avg_counts) {
-    if (f.name()==avg_cnt_name) {
+  for (const auto& count : m_avg_counts) {
+    if (count.name()==avg_cnt_name) {
       // We already created this avg count field
-      m_field_to_avg_count[name] = f;
+      m_field_to_avg_count[f.name()] = count;
       return;
     }
   }
 
   // We have not created this avg count field yet.
+  const auto& layout = mask.get_header().get_identifier().get_layout();
   m_vars_dims[avg_cnt_name] = get_var_dimnames(m_transpose ? layout.transpose() : layout);
 
-  auto nondim = ekat::units::Units::nondimensional();
-  auto count_id = fid.clone(avg_cnt_name).reset_units(nondim).reset_dtype(DataType::IntType);
-  Field count(count_id,true);
+  // The count is basically a mask with values in [0,max_int)
+  auto count = mask.clone(avg_cnt_name);
 
-  // We will use a helper field for updating cnt, so store it inside the field header.
-  // Create the valid_mask explicitly as an IntType field with the same layout/grid.
+  // For Average, we also check if count is larger than a threshold, so we need a mask
+  // for count to establish if the count is "valid"
   count.create_mask();
 
   m_avg_counts.push_back(count);
-  m_field_to_avg_count[name] = count;
+  m_field_to_avg_count[f.name()] = count;
 }
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::
@@ -1049,22 +1032,6 @@ process_requested_fields()
       " - stream name:  " + m_stream_name + "\n"
       " - fields names: " + ekat::join(m_fields_names,",") + "\n");
 
-  // Helper lambda to check if this fm_model field should trigger avg count
-  auto check_for_avg_cnt = [&](const Field& f) {
-    // We need avg-count tracking for any averaged (non-instant) field that
-    // supplies explicit mask info (mask)
-    if (m_avg_type!=OutputAvgType::Instant) {
-      const bool has_mask = f.get_header().has_extra_data("mask_data") || f.has_mask();
-      if (has_mask) {
-        m_track_avg_cnt = true;
-        // Avoid duplicate insertion if already present (e.g., mask + filled both true)
-        if (m_field_to_avg_cnt_suffix.count(f.name())==0) {
-          m_field_to_avg_cnt_suffix.emplace(f.name(), "_" + f.name());
-        }
-      }
-    }
-  };
-
   // Helper lambda that initializes a diagnostic
   auto init_diag = [&](const std::shared_ptr<AtmosphereDiagnostic>& diag) {
     // Set inputs in the diag
@@ -1079,43 +1046,6 @@ process_requested_fields()
     diag->initialize(util::TimeStamp(),RunType::Initial);
   };
 
-  auto check_diag_avg_cnt = [&](const std::shared_ptr<AtmosphereDiagnostic>& diag) {
-    // Set the diag field in the FM
-    auto diag_field = diag->get_diagnostic();
-
-    // Add the field to the diag group
-    diag_field.get_header().get_tracking().add_group("diagnostic");
-
-    // Some diags need some extra setup or trigger extra behaviors
-    std::string diag_avg_cnt_name = "";
-    auto& params = diag->get_params();
-    if (diag->name()=="FieldAtPressureLevel") {
-      diag_avg_cnt_name = "_"
-                        + params.get<std::string>("pressure_value")
-                        + params.get<std::string>("pressure_units");
-      m_track_avg_cnt |= m_avg_type!=OutputAvgType::Instant;
-    } else if (diag->name()=="FieldAtHeight") {
-      if (params.get<std::string>("surface_reference")=="sealevel") {
-        diag_avg_cnt_name = "_"
-                          + params.get<std::string>("height_value")
-                          + params.get<std::string>("height_units") + "_above_sealevel";
-        m_track_avg_cnt |= m_avg_type!=OutputAvgType::Instant;
-      }
-    } else if (diag->name()=="AerosolOpticalDepth550nm") {
-      m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
-      diag_avg_cnt_name = "_" + diag->name();
-    }
-    else if (diag_field.get_header().has_extra_data("mask_data")) {
-      m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
-      diag_avg_cnt_name = "_" + diag_field.name();
-    }
-
-    // If specified, set avg_cnt tracking for this diagnostic.
-    if (m_track_avg_cnt) {
-      m_field_to_avg_cnt_suffix.emplace(diag_field.name(),diag_avg_cnt_name);
-    }
-  };
-  
   // Now process each requested field, if possible. We can process a field if either:
   //  - it is already in the model FM
   //  - it is an alias of a field added to the FM
@@ -1135,6 +1065,8 @@ process_requested_fields()
   for (const auto& it : m_alias_to_orig) {
     remaining.insert(it.second);
   }
+
+  bool any_masked_field = false;
   while (not done) {
     // We can't add-to/rm-form a std:;set while iterating on it, as that could
     // change the end iterator. Hence, keep track of what we add or remove,
@@ -1143,10 +1075,8 @@ process_requested_fields()
     for (const auto& name : remaining) {
       if (fm_model->has_field(name)) {
         // This is a regular field, not a diagnostic nor an alias.
-        // Still, we might need to do some extra setup, like for avg_count.
-        const auto& f = m_field_mgrs[FromModel]->get_field(name);
-        check_for_avg_cnt(f);
         remove_these.insert(name);
+        any_masked_field |= fm_model->get_field(name).has_mask();
       } else if (m_alias_to_orig.count(name)==1) {
         // An alias. If the aliased field was already processed, we can
         // process the alias as well
@@ -1155,6 +1085,10 @@ process_requested_fields()
           auto alias = orig.alias(name);
           fm_model->add_field(alias);
           remove_these.insert(name);
+
+          // TODO: move all remaining diags to use mask field API in Field
+          any_masked_field |= alias.has_mask() ||
+                              alias.get_header().has_extra_data("mask_data");
         }
       } else {
         auto& diag = m_diag_repo[name];
@@ -1178,10 +1112,15 @@ process_requested_fields()
           if (not diag->is_initialized()) {
             init_diag(diag);
           }
-          check_diag_avg_cnt (diag);
+          diag->get_diagnostic().get_header().get_tracking().add_group("diagnostic");
           remove_these.insert(name);
           fm_model->add_field(diag->get_diagnostic());
           m_diagnostics.push_back(diag);
+          auto diag_field = diag->get_diagnostic();
+
+          // TODO: move all remaining diags to use mask field API in Field
+          any_masked_field |= diag_field.has_mask() ||
+                              diag_field.get_header().has_extra_data("mask_data");
         }
       }
     }
@@ -1197,9 +1136,10 @@ process_requested_fields()
     for (const auto& n : add_these) {
       remaining.insert(n);
     }
-
     done = remaining.size()==0;
   }
+
+  m_track_avg_cnt &= any_masked_field;
 }
 
 std::vector<std::string> AtmosphereOutput::

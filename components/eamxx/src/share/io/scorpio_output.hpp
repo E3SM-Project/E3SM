@@ -172,7 +172,7 @@ protected:
   strvec_t get_var_dimnames(const FieldLayout &layout) const;
 
   // Tracking the averaging of any filled values:
-  void set_avg_cnt_tracking(const FieldIdentifier& fid);
+  void set_avg_cnt_tracking(const Field& f);
 
   // --- Internal variables --- //
   ekat::Comm m_comm;
@@ -214,15 +214,15 @@ protected:
 
   // How to combine multiple snapshots in the output: instant, Max, Min, Average
   OutputAvgType m_avg_type;
-  Real m_avg_coeff_threshold =
-      0.5; // % of unfilled values required to not just assign value as FillValue
+
+  // Percentage of valid entries required to NOT set average output to fill_value
+  Real m_avg_coeff_threshold = 0.5;
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and
   // the global ids.
   strvec_t m_fields_names;
   strmap_t<Field> m_field_to_avg_count;
   std::vector<Field> m_avg_counts;
-  strmap_t<std::string> m_field_to_avg_cnt_suffix;
   strmap_t<strvec_t> m_vars_dims;
   strmap_t<int> m_dims_len;
   std::list<diag_ptr_type> m_diagnostics;

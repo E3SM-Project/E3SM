@@ -123,7 +123,6 @@ void write (const std::string& avg_type, const std::string& freq_units,
   om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", avg_type);
   om_pl.set<Real>("fill_threshold",fill_threshold);
-  om_pl.set("track_avg_cnt",true);
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",freq_units);
   ctrl_pl.set("frequency",freq);
@@ -142,14 +141,13 @@ void write (const std::string& avg_type, const std::string& freq_units,
     // Update time
     t += dt;
 
-    // Set fields to n+1 or the fill_value, depending on step:
-    //  - n if n is odd
-    //  - fill_value if n is even
+    // Set fields to n, but we set mask to
+    //  - 1 if n is odd
+    //  - 0 if n is even
     bool valid_step = n % 2 == 1; 
-    Real setval = valid_step ? Real(n) : fill_value;
     for (const auto& fn : fnames) {
       auto f = fm->get_field(fn);
-      f.deep_copy(setval);
+      f.deep_copy(n);
       auto& m = f.get_mask();
       m.deep_copy(valid_step ? 1 : 0);
     }
