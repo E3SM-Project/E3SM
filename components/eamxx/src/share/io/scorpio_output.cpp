@@ -551,7 +551,7 @@ run (const std::string& filename,
     // Safety check: if we are computing an Average and we are tracking the count,
     // we must have created an avg-count tracking field; otherwise division by the raw
     // number of steps would bias the result wherever fill values occurred.
-    if (m_avg_type==OutputAvgType::Average && m_track_avg_cnt) {
+    if (m_avg_type==OutputAvgType::Average && m_track_avg_cnt && f_in.has_mask()) {
       EKAT_REQUIRE_MSG(m_field_to_avg_count.count(field_name),
         "[AtmosphereOutput::run] Error! No avg-count tracking field for this field.\n"
         " - field name : " + field_name + "\n"

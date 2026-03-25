@@ -359,7 +359,7 @@ void Field::set_mask (const Field& mask)
       " - field name: " + name() + "\n"
       " - mask name : " + mask.name() + "\n"
       " - field layout: " + get_header().get_identifier().get_layout().to_string() + "\n"
-      " - mask layout: " + get_header().get_identifier().get_layout().to_string() + "\n");
+      " - mask layout: " + mask.get_header().get_identifier().get_layout().to_string() + "\n");
 
   m_header->set_extra_data("mask",mask);
 }
