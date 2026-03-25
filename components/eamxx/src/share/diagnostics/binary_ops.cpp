@@ -279,13 +279,6 @@ void BinaryOpsDiag::compute_diagnostic_impl()
     mask->scale(m2);
   }
 
-  // TODO: this should NOT be necessary. Downstream diags should simply
-  //       process this diag field ONLY where its mask is nonzero
-  if (mask) {
-    // Init entries with fill value
-    m_diagnostic_output.deep_copy(constants::fill_value<Real>);
-  }
-
   if (m_arg1_is_field and m_arg2_is_field) {
     const auto& f1 = get_field_in(m_arg1_name);
     const auto& f2 = get_field_in(m_arg2_name);
