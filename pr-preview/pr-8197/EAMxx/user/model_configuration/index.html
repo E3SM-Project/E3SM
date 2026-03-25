@@ -5272,7 +5272,8 @@ will be removed from the generated <code>namelist_defaults.xml</code>
 with each YAML file associated to a different output stream (i.e., a file).
 In order to add an output stream,
 one needs to run <code>atmchange output_yaml_files+=/path/to/my/output/yaml</code>
-(more information on how to use <code>atmchange</code> can be found <a href="#changing-model-inputs-atmchange">here</a>).
+(more information on how to use <code>atmchange</code> can be found in the
+<a href="#changing-model-inputs-atmchange">atmchange documentation</a>).
 During the <code>buildnml</code> phase of the case management system, these YAML files
 will be copied into the RUNDIR/data folder.
 During this process, the files will be parsed, and any CIME-related
@@ -5346,6 +5347,12 @@ in the run directory.<ul>
 <li><code>frequency_units</code>: units of the output frequency.<ul>
 <li>Valid options are <code>nsteps</code> (the number of atmosphere time steps),
   <code>nsecs</code>, <code>nmins</code>, <code>nhours</code>, <code>ndays</code>, <code>nmonths</code>, <code>nyears</code>.</li>
+</ul>
+</li>
+<li><code>transpose</code>: optional boolean flag to enable transposed output (default: <code>false</code>).<ul>
+<li>When set to <code>true</code>, all field dimensions will be reversed in the output file.</li>
+<li>For example, a field with layout <code>(ncol, nlev)</code> will be written as <code>(nlev, ncol)</code>.</li>
+<li>This can be useful for post-processing tools that expect a specific dimension ordering.</li>
 </ul>
 </li>
 </ul>
