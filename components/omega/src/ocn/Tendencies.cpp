@@ -395,7 +395,7 @@ void Tendencies::computeVelocityTendenciesOnly(
    const Array2DReal &NormFEdge     = AuxState->VorticityAux.NormPlanetVortEdge;
    Array2DReal NormVelEdge          = State->getNormalVelocity(VelTimeLevel);
    if (LocPotentialVortHAdv.Enabled) {
-      Pacer::start("Tend:potientialVortHAdv", 2);
+      Pacer::start("Tend:PotentialVortHAdv", 2);
       parallelForOuter(
           {Mesh->NEdgesAll}, KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
              const int KMin   = MinLayerEdgeBot(IEdge);
@@ -409,7 +409,7 @@ void Tendencies::computeVelocityTendenciesOnly(
                                          FluxLayerThickEdge, NormVelEdge);
                  });
           });
-      Pacer::stop("Tend:potientialVortHAdv", 2);
+      Pacer::stop("Tend:PotentialVortHAdv", 2);
    }
 
    // Compute kinetic energy gradient
