@@ -753,7 +753,7 @@ add_default($nl, 'config_precip_scaling_write_to_logfile');
 ############################
 
 # handling of config_remove_ais_ice_runoff:
-if ($OCN_FORCING ne 'active_atm') {
+if ($OCN_FORCING eq 'active_atm') {
   # For fully coupled B-cases with active ATM/LND/ROF:
   if ($OCN_ICEBERG eq 'true') {
     # When we have a data representation of icebergs, remove ice runoff
