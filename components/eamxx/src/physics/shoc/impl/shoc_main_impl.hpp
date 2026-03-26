@@ -631,6 +631,7 @@ Int Functions<S,D>::shoc_main(
   const Scalar Ckm           = shoc_runtime.Ckm;
   const bool   shoc_1p5tke   = shoc_runtime.shoc_1p5tke;
   const bool   extra_diags   = shoc_runtime.extra_diags;
+  const bool   do_3d_turb    = shoc_runtime.do_3d_turb;
 
 #ifndef SCREAM_SHOC_SMALL_KERNELS
   using ExeSpace = typename KT::ExeSpace;
@@ -699,7 +700,8 @@ Int Functions<S,D>::shoc_main(
     shoc_main_internal(team, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
 	               lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
                        thl2tune, qw2tune, qwthl2tune, w2tune, length_fac,     // Runtime options
-                       c_diag_3rd_mom, Ckh, Ckm, shoc_1p5tke, extra_diags,    // Runtime options
+                       c_diag_3rd_mom, Ckh, Ckm, shoc_1p5tke,                 // Runtime options
+                       do_3d_turb, extra_diags,                               // Runtime options
                        dx_s, dy_s, zt_grid_s, zi_grid_s,                      // Input
                        pres_s, presi_s, pdel_s, thv_s, w_field_s,             // Input
                        wthl_sfc_s, wqw_sfc_s, uw_sfc_s, vw_sfc_s,             // Input
