@@ -3191,7 +3191,7 @@
         <command name="unload">darshan</command>
       </modules>
       <modules compiler="gnu.*">
-	<command name="load">PrgEnv-gnu/8.6.0</command>
+	<command name="load">PrgEnv-gnu/8.7.0</command>
 	<command name="load">gcc-native/13.2</command>
 	<command name="load">cray-libsci/24.11.0</command>
 	<command name="load">craype-x86-trento</command>
