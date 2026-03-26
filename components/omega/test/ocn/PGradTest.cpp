@@ -115,12 +115,12 @@ int main(int argc, char *argv[]) {
       I4 NCellsAll = DefMesh->NCellsAll;
 
       I4 NVertLayers  = 60;
-      Real dC         = 30000.0_Real;
+      Real DC         = 30000.0_Real;
       I4 NRefinements = 4;
-      HostArray1DReal RMSE("RMSE", NRefinements);
-      for (int refinement = 0; refinement < NRefinements; ++refinement) {
+      HostArray1DReal Rmse("Rmse", NRefinements);
+      for (int Refinement = 0; Refinement < NRefinements; ++Refinement) {
 
-         LOG_INFO("PGradTest: Starting refinement level {}", refinement);
+         LOG_INFO("PGradTest: Starting refinement level {}", Refinement);
          VCoord->NVertLayers   = NVertLayers;
          VCoord->NVertLayersP1 = NVertLayers + 1;
 
@@ -138,7 +138,6 @@ int main(int argc, char *argv[]) {
              {NEdgesAll}, KOKKOS_LAMBDA(int i) {
                 MinLayerEdgeBot(i) = 0;
                 MaxLayerEdgeTop(i) = NVertLayers - 1;
-                // MaxLayerEdgeTop(i) = 4;
              });
 
          auto &CellsOnEdge = DefMesh->CellsOnEdge;
@@ -147,7 +146,7 @@ int main(int argc, char *argv[]) {
              {NEdgesAll}, KOKKOS_LAMBDA(int i) {
                 CellsOnEdge(i, 0) = 0;
                 CellsOnEdge(i, 1) = 1;
-                DcEdge(i)         = dC;
+                DcEdge(i)         = DC;
              });
 
          // Fetch reference desnity from Config
@@ -163,32 +162,31 @@ int main(int argc, char *argv[]) {
 
          // set Z interface and mid-point locations
          Real ZBottom      = -1000.0_Real;
-         Real dZ           = 2.0_Real * (-ZBottom / NVertLayers);
+         Real DZ           = 2.0_Real * (-ZBottom / NVertLayers);
          auto &BottomDepth = VCoord->BottomDepth;
          auto &ZInterface  = VCoord->ZInterface;
          auto &ZMid        = VCoord->ZMid;
-         Real tilt_factor  = 0.495_Real;
-         // Real tilt_factor = 0.45_Real;
+         Real TiltFactor   = 0.495_Real;
          parallelFor(
              {NCellsAll}, KOKKOS_LAMBDA(int i) {
                 ZInterface(i, NVertLayers) = ZBottom;
                 SurfacePressure(i)         = 0.0_Real;
                 BottomDepth(i)             = 0.0_Real;
                 for (int k = NVertLayers - 1; k >= 0; --k) {
-                   Real x  = (k + i) % 2;
-                   Real dz = (2.0_Real * tilt_factor - 1.0_Real) * x * dZ +
-                             (1.0_Real - tilt_factor) *
-                                 dZ; // staggered layer thickness
-                   ZInterface(i, k) = ZInterface(i, k + 1) + dz;
+                   Real X  = (k + i) % 2;
+                   Real Dz = (2.0_Real * TiltFactor - 1.0_Real) * X * DZ +
+                             (1.0_Real - TiltFactor) *
+                                 DZ; // staggered layer thickness
+                   ZInterface(i, k) = ZInterface(i, k + 1) + Dz;
                    LayerThick(i, k) = ZInterface(i, k) - ZInterface(i, k + 1);
                    ZMid(i, k) =
                        0.5_Real * (ZInterface(i, k) + ZInterface(i, k + 1));
-                   BottomDepth(i) += dz;
+                   BottomDepth(i) += Dz;
                 }
              });
 
          LOG_INFO("NVertLayers = {}", NVertLayers);
-         LOG_INFO("dC = {}", dC);
+         LOG_INFO("dC = {}", DC);
          DefState->copyToHost(0);
          HostArray2DReal LayerThickH = DefState->getLayerThicknessH(TimeLevel);
          for (int i = 0; i < 2; ++i) {
@@ -206,11 +204,11 @@ int main(int argc, char *argv[]) {
                 Real S0 = 30.0;
                 Real SB = 40.0;
 
-                Real phi0 = (ZMid(i, k) - ZBottom) / (-ZBottom);
-                Real phiB = 1.0_Real - phi0;
+                Real Phi0 = (ZMid(i, k) - ZBottom) / (-ZBottom);
+                Real PhiB = 1.0_Real - Phi0;
 
-                Temp(i, k)       = T0 * phi0 + TB * phiB;
-                Salinity(i, k)   = S0 * phi0 + SB * phiB;
+                Temp(i, k)       = T0 * Phi0 + TB * PhiB;
+                Salinity(i, k)   = S0 * Phi0 + SB * PhiB;
                 SpecVol(i, k)    = 1.0_Real / Density0;
                 SpecVolOld(i, k) = SpecVol(i, k);
              });
@@ -219,7 +217,7 @@ int main(int argc, char *argv[]) {
          auto &PressureMid = VCoord->PressureMid;
          VCoord->computePressure(LayerThick, SurfacePressure);
          deepCopy(PressureMidOld, PressureMid);
-         for (int iteration = 0; iteration < 15; ++iteration) {
+         for (int Iteration = 0; Iteration < 15; ++Iteration) {
 
             // compute specific volume from EOS
             VCoord->computePressure(LayerThick, SurfacePressure);
@@ -233,19 +231,19 @@ int main(int argc, char *argv[]) {
                 });
 
             // compute difference from previous iteration
-            Real max_value = 0.0_Real;
+            Real MaxValue = 0.0_Real;
             parallelReduce(
                 {NCellsAll, NVertLayers},
                 KOKKOS_LAMBDA(int i, int k, Real &max) {
-                   Real diff = Kokkos::abs(SpecVol(i, k) - SpecVolOld(i, k));
-                   if (diff > max)
-                      max = diff;
+                   Real Diff = Kokkos::abs(SpecVol(i, k) - SpecVolOld(i, k));
+                   if (Diff > max)
+                      max = Diff;
                 },
-                Kokkos::Max<Real>(max_value));
+                Kokkos::Max<Real>(MaxValue));
 
             // check convergence
-            if (max_value < 1e-12_Real) {
-               LOG_INFO("converged: max diff = {}", max_value);
+            if (MaxValue < 1e-12_Real) {
+               LOG_INFO("converged: max diff = {}", MaxValue);
                break;
             } else {
                parallelFor(
@@ -273,37 +271,37 @@ int main(int argc, char *argv[]) {
                                        TimeLevel);
 
          // compute errors
-         Real max_value = 0.0_Real;
+         Real MaxValue = 0.0_Real;
          parallelReduce(
              {NEdgesAll, NVertLayers - 2},
              KOKKOS_LAMBDA(int i, int k, Real &max) {
-                Real val = Kokkos::abs(Tend(i, k + 1));
-                if (val > max)
-                   max = val;
+                Real Val = Kokkos::abs(Tend(i, k + 1));
+                if (Val > max)
+                   max = Val;
              },
-             Kokkos::Max<Real>(max_value));
-         Real sum_value = 0.0_Real;
+             Kokkos::Max<Real>(MaxValue));
+         Real SumValue = 0.0_Real;
          parallelReduce(
              {NEdgesAll, NVertLayers - 2},
-             KOKKOS_LAMBDA(int i, int k, Real &lsum) {
-                lsum += Tend(i, k + 1) * Tend(i, k + 1);
+             KOKKOS_LAMBDA(int i, int k, Real &LSum) {
+                LSum += Tend(i, k + 1) * Tend(i, k + 1);
              },
-             Kokkos::Sum<Real>(sum_value));
-         Real rmse = std::sqrt(sum_value / (NEdgesAll * (NVertLayers - 2)));
-         RMSE(refinement) = rmse;
+             Kokkos::Sum<Real>(SumValue));
+         Real RmseVal = std::sqrt(SumValue / (NEdgesAll * (NVertLayers - 2)));
+         Rmse(Refinement) = RmseVal;
 
          LOG_INFO("refinement level {}: max |Tend| = {}, average Tend = {}",
-                  refinement, max_value, rmse);
+                  Refinement, MaxValue, RmseVal);
 
          // coarsen for next iteration
-         dC          = dC * 2.0_Real;
+         DC          = DC * 2.0_Real;
          NVertLayers = NVertLayers / 2;
 
       } // refinement loop
 
       // Test for second order convergence
       // resolution (dC) increases in refimenent loop
-      if (RMSE(0) < RMSE(NRefinements - 1) / pow(4.0_Real, NRefinements - 1)) {
+      if (Rmse(0) < Rmse(NRefinements - 1) / pow(4.0_Real, NRefinements - 1)) {
          RetVal = 0;
       } else {
          RetVal = 1;
