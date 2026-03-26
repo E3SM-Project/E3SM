@@ -157,6 +157,7 @@ void HommeDynamics::create_requests ()
 
   const auto m2 = pow(m,2);
   const auto s2 = pow(s,2);
+  const auto nondim = Units::nondimensional();
 
   // Note: qv is needed to transform T<->Theta
 
@@ -178,7 +179,7 @@ void HommeDynamics::create_requests ()
   add_field<Computed>("omega",              pg_scalar3d_mid, Pa/s,  pgn,N);
   add_field<Required>("eddy_diff_heat",     pg_scalar3d_mid, m2/s,  pgn,N);
   add_field<Required>("eddy_diff_mom",      pg_scalar3d_mid, m2/s,  pgn,N);
-  add_field<Computed>("tke_shear_strain",   pg_scalar3d_mid, /s2,   pgn,N);
+  add_field<Computed>("tke_shear_strain",   pg_scalar3d_mid, nondim/s2,   pgn,N);
 
   add_tracer<Updated >("qv", m_phys_grid, kg/kg, N);
   add_group<Updated>("tracers",pgn,N, MonolithicAlloc::Required);
@@ -436,7 +437,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     m_p2d_remapper->register_field(get_field_in("eddy_diff_heat",pgn),m_helper_fields.at("Kh_dyn"));
 
     // Remap strain term of TKE Shear production from dynamics to physics grid
-    m_d2p_remapper->register_field(m_helper_fields.at("strain2_dyn",get_field_out("tke_shear_strain"));
+    m_d2p_remapper->register_field(m_helper_fields.at("strain2_dyn"), get_field_out("tke_shear_strain"));
 
     m_p2d_remapper->registration_ends();
     m_d2p_remapper->registration_ends();

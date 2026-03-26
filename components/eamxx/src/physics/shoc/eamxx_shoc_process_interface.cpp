@@ -74,7 +74,7 @@ void SHOCMacrophysics::create_requests()
   add_field<Required>("p_int",          scalar3d_int, Pa,    grid_name, ps);
   add_field<Required>("pseudo_density", scalar3d_mid, Pa,    grid_name, ps);
   add_field<Required>("phis",           scalar2d    , m2/s2, grid_name);
-  add_field<Required>("strain2d",       scalar3d_mid, /s2,   grid_name, ps);
+  add_field<Required>("strain2",        scalar3d_mid,nondim/s2,   grid_name, ps);
 
   // Input/Output variables
   add_field<Updated>("horiz_winds",   vector3d_mid,   m/s,     grid_name, ps);
@@ -333,7 +333,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
 
   shoc_preprocess.set_variables(m_num_cols,m_num_levs,z_surf,
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_evap,
-                                surf_mom_flux,qtracers,qv,qc,qc_copy,tke,tke_copy,z_mid,z_int,
+                                surf_mom_flux,qtracers,qv,strain2,qc,qc_copy,tke,tke_copy,z_mid,z_int,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
                                 wtracer_sfc,wm_zt,inv_exner,thlm,qw, cldfrac_liq, cldfrac_liq_prev);
 

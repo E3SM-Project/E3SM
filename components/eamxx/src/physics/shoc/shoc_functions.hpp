@@ -80,6 +80,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     Scalar Ckm;
     bool shoc_1p5tke;
     bool extra_diags;
+    bool do_3d_turb;
   };
 
   // This struct stores input views for shoc_main.
@@ -114,6 +115,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     view_2d<const Pack> wtracer_sfc;
     // Inverse of the exner function [-]
     view_2d<const Pack> inv_exner;
+    // 3D strain term for shear production of TKE
+    view_2d<const Pack> strain2;
     // Host model surface geopotential height
     view_1d<const Scalar> phis;
   };
@@ -530,11 +533,11 @@ template <typename ScalarT, typename DeviceT> struct Functions {
 
   KOKKOS_FUNCTION
   static void adv_sgs_tke(const MemberType &team, const Int &nlev, const Real &dtime,
-                          const bool &shoc_1p5tke, const uview_1d<const Pack> &shoc_mix,
-                          const uview_1d<const Pack> &wthv_sec,
+                          const bool &shoc_1p5tke, const bool &do_3d_turb,
+                          const uview_1d<const Pack> &shoc_mix, const uview_1d<const Pack> &wthv_sec,
                           const uview_1d<const Pack> &sterm_zt, const uview_1d<const Pack> &tk,
-                          const uview_1d<const Pack> &brunt, const uview_1d<Pack> &tke,
-                          const uview_1d<Pack> &a_diss);
+                          const uview_1d<const Pack> &brunt, const uview_1d<const Pack> &strain2,
+                          const uview_1d<Pack> &tke, const uview_1d<Pack> &a_diss);
 
   KOKKOS_FUNCTION
   static void
@@ -693,6 +696,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Scalar &wthl_sfc, const Scalar &wqw_sfc, const Scalar &uw_sfc, const Scalar &vw_sfc,
       const uview_1d<const Pack> &wtracer_sfc, const uview_1d<const Pack> &inv_exner,
       const Scalar &phis,
+      const uview_1d<const Pack> &strain2,
       // Local Workspace
       const Workspace &workspace,
       // Input/Output Variables
@@ -736,6 +740,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const view_1d<const Scalar> &wqw_sfc, const view_1d<const Scalar> &uw_sfc,
       const view_1d<const Scalar> &vw_sfc, const view_2d<const Pack> &wtracer_sfc,
       const view_2d<const Pack> &inv_exner, const view_1d<const Scalar> &phis,
+      const view_2d<const Pack> &strain2,
       // Workspace Manager
       WorkspaceMgr &workspace_mgr,
       // Input/Output Variables

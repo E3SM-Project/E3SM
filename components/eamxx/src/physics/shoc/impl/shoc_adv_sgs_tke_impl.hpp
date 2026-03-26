@@ -36,6 +36,7 @@ void Functions<S,D>
   static constexpr Scalar mintke   = scream::shoc::Constants<Real>::mintke;
   static constexpr Scalar maxtke   = scream::shoc::Constants<Real>::maxtke;
   Pack a_prod_bu;
+  Pack a_prod_sh;
 
   //declare some constants
   static constexpr Scalar Cs  = 0.15;
@@ -62,10 +63,10 @@ void Functions<S,D>
 
     // Shear production term, use diffusivity from previous timestep
     if (do_3d_turb){
-      const Pack a_prod_sh = tk(k)*sterm_zt(k);
+      a_prod_sh = tk(k)*strain2(k);
     }
     else{
-      const Pack a_prod_sh = tk(k)*strain2(k);
+      a_prod_sh = tk(k)*sterm_zt(k);
     }
 
     // Dissipation term
