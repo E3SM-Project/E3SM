@@ -34,6 +34,8 @@ void GWDrag::create_requests() {
   m_nlev = m_grid->get_num_vertical_levels();
   m_npgw = m_params.get<int>("pgwv") * 2 + 1;
 
+  m_lat = m_grid->get_geometry_data("lat");
+
   const auto nondim = Units::nondimensional();
   const auto m2     = pow(m,2);
   const auto s2     = pow(s,2);
@@ -129,6 +131,8 @@ void GWDrag::run_impl (const double dt) {
   const int nlev_int_packs = ekat::npack<Pack>(m_nlev+1);
   const auto team_policy = TPF::get_default_team_policy(m_ncol, nlev_mid_packs);
   const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(m_ncol, nlev_mid_packs);
+  // Use one workspace with the biggest size or use two, one for pver, one for pver*2*pgwv?
+  WSM wsm( (m_nlev+1)*m_npgw, 9, team_policy);
   //----------------------------------------------------------------------------
   // get fields
 
@@ -149,25 +153,56 @@ void GWDrag::run_impl (const double dt) {
   const auto& hwinds_fld  = get_field_out("horiz_winds");
   const auto& uwind       = hwinds_fld.get_component(0)   .get_view<Pack**>();
   const auto& vwind       = hwinds_fld.get_component(1)   .get_view<Pack**>();
+
+  auto m_lat_v = m_lat.get_view<const Real*>();
   //----------------------------------------------------------------------------
   // create local temporaries to avoid "Implicit capture" warning
-  const auto loc_common_init = GWF::s_common_init;
-  const auto loc_convect_init = GWF::s_convect_init;
-  const auto loc_front_init = GWF::s_front_init;
-
+  const auto loc_phis  = phis;
   const auto loc_p_mid = p_mid;
   const auto loc_p_int = p_int;
   const auto loc_p_del = p_del;
-  const auto loc_T_mid = T_mid;
-  const auto loc_qv    = qv;
+
+  auto loc_T_mid = T_mid;
+  auto loc_qv    = qv;
+  auto loc_qc    = qc;
+  auto loc_qi    = qi;
+  auto loc_uwind = uwind;
+  auto loc_vwind = vwind;
 
   auto loc_z_mid       = m_buffer.z_mid;
   auto loc_z_del       = m_buffer.z_del;
   auto loc_z_int       = m_buffer.z_int;
+  auto loc_p_del_rcp   = m_buffer.p_del_rcp;
+  auto loc_p_int_log   = m_buffer.p_int_log;
   auto loc_T_int       = m_buffer.T_int;
   auto loc_N_mid       = m_buffer.N_mid;
   auto loc_N_int       = m_buffer.N_int;
   auto loc_rho_int     = m_buffer.rho_int;
+  auto loc_q_combined  = m_buffer.q_combined;
+  auto loc_tau         = m_buffer.tau;
+  auto loc_ubm         = m_buffer.ubm;
+  auto loc_ubi         = m_buffer.ubi;
+  auto loc_c           = m_buffer.c;
+  auto loc_kvtt        = m_buffer.kvtt;
+  auto loc_dse         = m_buffer.dse;
+  auto loc_utgw        = m_buffer.utgw;
+  auto loc_vtgw        = m_buffer.vtgw;
+  auto loc_ttgw        = m_buffer.ttgw;
+  auto loc_qtgw        = m_buffer.qtgw;
+  auto loc_taucd       = m_buffer.taucd;
+  auto loc_egwdffi     = m_buffer.egwdffi;
+  auto loc_gwut        = m_buffer.gwut;
+  auto loc_dttdf       = m_buffer.dttdf;
+  auto loc_dttke       = m_buffer.dttke;
+  //----------------------------------------------------------------------------
+  // populate q_combined
+  Kokkos::parallel_for("zm_update_prognostic",KT::RangePolicy(0, m_ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int idx) {
+    const int i = idx/nlev_mid_packs;
+    const int k = idx%nlev_mid_packs;
+    loc_q_combined(i, k, 0) = loc_qv(i,k);
+    loc_q_combined(i, k, 1) = loc_qc(i,k);
+    loc_q_combined(i, k, 2) = loc_qi(i,k);
+  });
   //----------------------------------------------------------------------------
   // calculate altitude on interfaces (z_int) and mid-points (z_mid)
   Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
@@ -186,6 +221,19 @@ void GWDrag::run_impl (const double dt) {
     team.team_barrier();
     PF::calculate_z_mid(team, m_nlev, z_int_i, z_mid_i);
     team.team_barrier();
+  });
+  //----------------------------------------------------------------------------
+  // miscellaneous calculations
+  Kokkos::parallel_for(KT::RangePolicy(0, m_ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int idx) {
+    const int i = idx/nlev_mid_packs;
+    const int k = idx%nlev_mid_packs;
+    loc_dse(i,k) = PF::calculate_dse(loc_T_mid(i,k),loc_z_mid(i,k),loc_phis(i));
+    loc_p_del_rcp(i,k) = 1.0/loc_p_del(i,k);
+  });
+  Kokkos::parallel_for(KT::RangePolicy(0, m_ncol*nlev_int_packs), KOKKOS_LAMBDA (const int idx) {
+    const int i = idx/nlev_int_packs;
+    const int k = idx%nlev_int_packs;
+    loc_p_int_log(i,k) = ekat::log(loc_p_int(i,k));
   });
   //----------------------------------------------------------------------------
 
@@ -223,7 +271,7 @@ void GWDrag::run_impl (const double dt) {
 
 
   // Convective gravity waves (Beres scheme)
-  if (loc_common_init.use_gw_convect) {
+  if (GWF::s_common_init.use_gw_convect) {
 
     // // Determine wave sources
     // GWF::gw_beres_src();
@@ -256,31 +304,49 @@ void GWDrag::run_impl (const double dt) {
   }
 
   // Frontally generated gravity waves
-  if (loc_common_init.use_gw_frontal) {
+  if (GWF::s_common_init.use_gw_frontal) {
     // GWF::gw_cm_src();
     // GWF::gw_drag_prof();
     // GWF::momentum_energy_conservation();
   }
 
   // Orographic stationary gravity waves
-  if (loc_common_init.use_gw_orographic) {
-
+  if (GWF::s_common_init.use_gw_orographic) {
     Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
       const Int i = team.league_rank();
 
       // Get single-column subviews of all inputs
-      const auto uwind_i = ekat::scalarize(ekat::subview(uwind, i));
-      const auto vwind_i = ekat::scalarize(ekat::subview(vwind, i));
-      const auto T_mid_i = ekat::scalarize(ekat::subview(T_mid, i));
-      const auto p_mid_i = ekat::scalarize(ekat::subview(p_mid, i));
-      const auto p_int_i = ekat::scalarize(ekat::subview(p_int, i));
-      const auto p_del_i = ekat::scalarize(ekat::subview(p_del, i));
-      const auto z_mid_i = ekat::scalarize(ekat::subview(m_buffer.z_mid, i));
-      const auto N_mid_i = ekat::scalarize(ekat::subview(m_buffer.N_mid, i));
-      const auto tau_i   = ekat::scalarize(ekat::subview(m_buffer.tau, i));
-      const auto ubm_i   = ekat::scalarize(ekat::subview(m_buffer.ubm, i));
-      const auto ubi_i   = ekat::scalarize(ekat::subview(m_buffer.ubi, i));
-      const auto c_i     = ekat::scalarize(ekat::subview(m_buffer.c, i));
+      const auto uwind_i      = ekat::scalarize(ekat::subview(loc_uwind, i));
+      const auto vwind_i      = ekat::scalarize(ekat::subview(loc_vwind, i));
+      const auto T_mid_i      = ekat::scalarize(ekat::subview(loc_T_mid, i));
+      const auto T_int_i      = ekat::scalarize(ekat::subview(loc_T_int, i));
+      const auto p_mid_i      = ekat::scalarize(ekat::subview(loc_p_mid, i));
+      const auto p_int_i      = ekat::scalarize(ekat::subview(loc_p_int, i));
+      const auto p_del_i      = ekat::scalarize(ekat::subview(loc_p_del, i));
+      const auto p_del_rcp_i  = ekat::scalarize(ekat::subview(loc_p_del_rcp, i));
+      const auto p_int_log_i  = ekat::scalarize(ekat::subview(loc_p_int_log, i));
+      const auto z_mid_i      = ekat::scalarize(ekat::subview(loc_z_mid, i));
+      const auto N_mid_i      = ekat::scalarize(ekat::subview(loc_N_mid, i));
+      const auto N_int_i      = ekat::scalarize(ekat::subview(loc_N_int, i));
+      const auto rho_int_i    = ekat::scalarize(ekat::subview(loc_rho_int,i));
+      const auto tau_i        = ekat::scalarize(ekat::subview(loc_tau, i));
+      const auto ubm_i        = ekat::scalarize(ekat::subview(loc_ubm, i));
+      const auto ubi_i        = ekat::scalarize(ekat::subview(loc_ubi, i));
+      const auto c_i          = ekat::scalarize(ekat::subview(loc_c, i));
+      const auto kvtt_i       = ekat::scalarize(ekat::subview(loc_kvtt, i));
+      const auto dse_i        = ekat::scalarize(ekat::subview(loc_dse, i));
+      const auto utgw_i       = ekat::scalarize(ekat::subview(loc_utgw, i));
+      const auto vtgw_i       = ekat::scalarize(ekat::subview(loc_vtgw, i));
+      const auto ttgw_i       = ekat::scalarize(ekat::subview(loc_ttgw, i));
+      const auto qtgw_i       = ekat::scalarize(ekat::subview(loc_qtgw, i));
+      const auto taucd_i      = ekat::scalarize(ekat::subview(loc_taucd, i));
+      const auto egwdffi_i    = ekat::scalarize(ekat::subview(loc_egwdffi, i));
+      const auto gwut_i       = ekat::scalarize(ekat::subview(loc_gwut, i));
+      const auto dttdf_i      = ekat::scalarize(ekat::subview(loc_dttdf, i));
+      const auto dttke_i      = ekat::scalarize(ekat::subview(loc_dttke, i));
+
+      const auto q_comb_s = ekat::scalarize(ekat::subview(loc_q_combined, i));
+      const auto q_2d = Kokkos::subview(q_comb_s,Kokkos::pair<int,int>{0, m_nlev},Kokkos::ALL);
 
       Int src_lev; // level index of gravity wave source
       Int tnd_lev; // lowest level index where tendencies are allowed
@@ -288,16 +354,24 @@ void GWDrag::run_impl (const double dt) {
       Real yv;      // meridional unit vector of source wind
 
       // Determine the orographic wave source
-      Kokkos::printf("DEBUG: calling gw_oro_src\n");
-      GWF::gw_oro_src(team, GWF::s_common_init, m_nlev, m_npgw,
+      GWF::gw_oro_src(team, GWF::s_common_init, m_nlev, GWF::s_common_init.pgwv,
                       uwind_i, vwind_i, T_mid_i, sgh(i),
                       p_mid_i, p_int_i, p_del_i, z_mid_i, N_mid_i,
                       src_lev, tnd_lev,
                       tau_i, ubm_i, ubi_i, xv, yv, c_i );
-      Kokkos::printf("DEBUG: done\n");
 
       // Solve for the drag profile with orographic sources
-      // GWF::gw_drag_prof();
+      Int max_lev = tnd_lev; // ???
+      GWF::gw_drag_prof(team, wsm.get_workspace(team), GWF::s_common_init,
+                        m_nlev, GWF::s_common_init.pgwv, src_lev, max_lev, tnd_lev,
+                        GWF::s_common_init.do_taper, dt, m_lat_v(i),
+                        T_mid_i, T_int_i, p_mid_i, p_int_i,
+                        p_del_i, p_del_rcp_i, p_int_log_i, rho_int_i,
+                        N_mid_i, N_int_i, ubm_i, ubi_i, xv, yv,
+                        GWF::s_common_init.gw_orographic_eff,
+                        c_i, kvtt_i, q_2d, dse_i, tau_i,
+                        utgw_i, vtgw_i, ttgw_i, qtgw_i,
+                        taucd_i, egwdffi_i, gwut_i, dttdf_i, dttke_i);
 
       // // GW energy fixer
       // do k = 1, pver
@@ -349,9 +423,13 @@ size_t GWDrag::requested_buffer_size_in_bytes() const
 {
   const int nlev_mid_packs = ekat::npack<Pack>(m_nlev);
   const int nlev_int_packs = ekat::npack<Pack>(m_nlev+1);
+  constexpr int pcnst = 3; // number of constituents (qv, qc, qi)
   size_t gw_buffer_size = 0;
 
   gw_buffer_size += Buffer::num_3d_mid_views*m_ncol*m_npgw*nlev_mid_packs*sizeof(Pack);
+  gw_buffer_size += Buffer::num_3d_pcnst_views*m_ncol*nlev_mid_packs*pcnst*sizeof(Pack);
+  gw_buffer_size += Buffer::num_3d_cd_views*m_ncol*nlev_mid_packs*4*sizeof(Pack);
+  gw_buffer_size += Buffer::num_3d_pgw_views*m_ncol*nlev_mid_packs*m_npgw*sizeof(Pack);
   gw_buffer_size += Buffer::num_2d_mid_views*m_ncol*nlev_mid_packs*sizeof(Pack);
   gw_buffer_size += Buffer::num_2d_int_views*m_ncol*nlev_int_packs*sizeof(Pack);
   gw_buffer_size += Buffer::num_2d_pgw_views*m_ncol*m_npgw*sizeof(Pack);
@@ -367,6 +445,7 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
   Pack* mem = reinterpret_cast<Pack*>(buffer_manager.get_memory());
   const int nlev_mid_packs = ekat::npack<Pack>(m_nlev);
   const int nlev_int_packs = ekat::npack<Pack>(m_nlev+1);
+  constexpr int pcnst = 3; // number of constituents (qv, qc, qi)
   //----------------------------------------------------------------------------
   uview_3d* buffer_3d_mid_view_ptrs[Buffer::num_3d_mid_views] = {
     &m_buffer.tau
@@ -376,12 +455,45 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
     mem += buffer_3d_mid_view_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
+  uview_3d* buffer_3d_pcnst_view_ptrs[Buffer::num_3d_pcnst_views] = {
+    &m_buffer.q_combined,
+    &m_buffer.qtgw
+  };
+  for (int i=0; i<Buffer::num_3d_pcnst_views; ++i) {
+    *buffer_3d_pcnst_view_ptrs[i] = uview_3d(mem, m_ncol, nlev_mid_packs, pcnst);
+    mem += buffer_3d_pcnst_view_ptrs[i]->size();
+  }
+  //----------------------------------------------------------------------------
+  uview_3d* buffer_3d_cd_view_ptrs[Buffer::num_3d_cd_views] = {
+    &m_buffer.taucd
+  };
+  for (int i=0; i<Buffer::num_3d_cd_views; ++i) {
+    *buffer_3d_cd_view_ptrs[i] = uview_3d(mem, m_ncol, nlev_mid_packs, 4);
+    mem += buffer_3d_cd_view_ptrs[i]->size();
+  }
+  //----------------------------------------------------------------------------
+  uview_3d* buffer_3d_pgw_view_ptrs[Buffer::num_3d_pgw_views] = {
+    &m_buffer.gwut
+  };
+  for (int i=0; i<Buffer::num_3d_pgw_views; ++i) {
+    *buffer_3d_pgw_view_ptrs[i] = uview_3d(mem, m_ncol, nlev_mid_packs, m_npgw);
+    mem += buffer_3d_pgw_view_ptrs[i]->size();
+  }
+  //----------------------------------------------------------------------------
   uview_2d* buffer_2d_mid_view_ptrs[Buffer::num_2d_mid_views] = {
     &m_buffer.z_del,
     &m_buffer.z_mid,
     &m_buffer.T_int,
     &m_buffer.N_mid,
-    &m_buffer.ubm
+    &m_buffer.ubm,
+    &m_buffer.kvtt,
+    &m_buffer.dse,
+    &m_buffer.utgw,
+    &m_buffer.vtgw,
+    &m_buffer.ttgw,
+    &m_buffer.dttdf,
+    &m_buffer.dttke,
+    &m_buffer.p_del_rcp
   };
   for (int i=0; i<Buffer::num_2d_mid_views; ++i) {
     *buffer_2d_mid_view_ptrs[i] = uview_2d(mem, m_ncol, nlev_mid_packs);
@@ -390,10 +502,11 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
   //----------------------------------------------------------------------------
   uview_2d* buffer_2d_int_view_ptrs[Buffer::num_2d_int_views] = {
     &m_buffer.z_int,
-    // &m_buffer.T_int,
     &m_buffer.N_int,
     &m_buffer.rho_int,
-    &m_buffer.ubi
+    &m_buffer.ubi,
+    &m_buffer.egwdffi,
+    &m_buffer.p_int_log
   };
   for (int i=0; i<Buffer::num_2d_int_views; ++i) {
     *buffer_2d_int_view_ptrs[i] = uview_2d(mem, m_ncol, nlev_int_packs);
