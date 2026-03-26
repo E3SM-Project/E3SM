@@ -175,6 +175,7 @@ public:
     sview_2d_const surf_mom_flux;
     view_3d_strided qtracers;
     view_2d        qv;
+    view_2d_const  strain2;
     view_2d_const  qc;
     view_2d        qc_copy;
     view_2d        z_mid;
@@ -209,7 +210,7 @@ public:
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_evap_,
                        const sview_2d_const& surf_mom_flux_,
                        const view_3d_strided& qtracers_,
-                       const view_2d& qv_, const view_2d_const& qc_, const view_2d& qc_copy_,
+                       const view_2d& qv_, const view_2d_const& strain2_, const view_2d_const& qc_, const view_2d& qc_copy_,
                        const view_2d& tke_, const view_2d& tke_copy_,
                        const view_2d& z_mid_, const view_2d& z_int_,
                        const view_2d& dse_, const view_2d& rrho_, const view_2d& rrho_i_,
@@ -232,6 +233,7 @@ public:
       surf_evap = surf_evap_;
       surf_mom_flux = surf_mom_flux_;
       qv = qv_;
+      strain2 = strain2_;
       // OUT
       qtracers = qtracers_;
       qc = qc_;

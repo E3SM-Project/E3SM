@@ -115,10 +115,10 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     view_2d<const Pack> wtracer_sfc;
     // Inverse of the exner function [-]
     view_2d<const Pack> inv_exner;
-    // 3D strain term for shear production of TKE
-    view_2d<const Pack> strain2;
     // Host model surface geopotential height
     view_1d<const Scalar> phis;
+    // 3D strain term for shear production of TKE [/s2]
+    view_2d<const Pack> strain2;
   };
 
   // This struct stores input/outputs views for shoc_main.
