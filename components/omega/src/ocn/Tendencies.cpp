@@ -145,7 +145,7 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
    CHECK_ERROR_ABORT(
        Err, "Tendencies: ThicknessFluxTendencyEnable not found in TendConfig");
 
-   Err += TendConfig.get("PVTendencyEnable", this->PotientialVortHAdv.Enabled);
+   Err += TendConfig.get("PVTendencyEnable", this->PotentialVortHAdv.Enabled);
    CHECK_ERROR_ABORT(Err,
                      "Tendencies: PVTendencyEnable not found in TendConfig");
 
@@ -255,7 +255,7 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
                        CustomTendencyType InCustomThicknessTend,
                        CustomTendencyType InCustomVelocityTend)
     : Mesh(Mesh), VCoord(VCoord), VAdv(VAdv), ThicknessFluxDiv(Mesh, VCoord),
-      PotientialVortHAdv(Mesh, VCoord), KEGrad(Mesh, VCoord),
+      PotentialVortHAdv(Mesh, VCoord), KEGrad(Mesh, VCoord),
       SSHGrad(Mesh, VCoord), VelocityDiffusion(Mesh, VCoord),
       VelocityHyperDiff(Mesh, VCoord), WindForcing(Mesh, VCoord),
       BottomDrag(Mesh, VCoord), TracerDiffusion(Mesh, VCoord),
@@ -366,7 +366,7 @@ void Tendencies::computeVelocityTendenciesOnly(
 ) {
 
    OMEGA_SCOPE(LocNormalVelocityTend, NormalVelocityTend);
-   OMEGA_SCOPE(LocPotientialVortHAdv, PotientialVortHAdv);
+   OMEGA_SCOPE(LocPotentialVortHAdv, PotentialVortHAdv);
    OMEGA_SCOPE(LocKEGrad, KEGrad);
    OMEGA_SCOPE(LocSSHGrad, SSHGrad);
    OMEGA_SCOPE(LocVelocityDiffusion, VelocityDiffusion);
@@ -397,8 +397,8 @@ void Tendencies::computeVelocityTendenciesOnly(
    const Array2DReal &NormRVortEdge = AuxState->VorticityAux.NormRelVortEdge;
    const Array2DReal &NormFEdge     = AuxState->VorticityAux.NormPlanetVortEdge;
    Array2DReal NormVelEdge          = State->getNormalVelocity(VelTimeLevel);
-   if (LocPotientialVortHAdv.Enabled) {
-      Pacer::start("Tend:potientialVortHAdv", 2);
+   if (LocPotentialVortHAdv.Enabled) {
+      Pacer::start("Tend:PotentialVortHAdv", 2);
       parallelForOuter(
           {Mesh->NEdgesAll}, KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
              const int KMin   = MinLayerEdgeBot(IEdge);
@@ -407,12 +407,12 @@ void Tendencies::computeVelocityTendenciesOnly(
 
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
-                    LocPotientialVortHAdv(LocNormalVelocityTend, IEdge, KChunk,
-                                          NormRVortEdge, NormFEdge,
-                                          FluxLayerThickEdge, NormVelEdge);
+                    LocPotentialVortHAdv(LocNormalVelocityTend, IEdge, KChunk,
+                                         NormRVortEdge, NormFEdge,
+                                         FluxLayerThickEdge, NormVelEdge);
                  });
           });
-      Pacer::stop("Tend:potientialVortHAdv", 2);
+      Pacer::stop("Tend:PotentialVortHAdv", 2);
    }
 
    // Compute kinetic energy gradient
