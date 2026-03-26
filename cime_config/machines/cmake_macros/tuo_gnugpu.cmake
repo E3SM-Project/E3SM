@@ -1,12 +1,5 @@
 string(APPEND CONFIG_ARGS " --host=cray")
 
-set(MPICC "mpicc")
-set(MPICXX "mpicxx")
-set(MPIFC "mpifort")
-set(SCC "gcc")
-set(SCXX "g++")
-set(SFC "gfortran")
-
 if (COMP_NAME STREQUAL gptl)
   string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY")
 endif()
