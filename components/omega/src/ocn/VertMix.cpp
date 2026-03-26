@@ -32,8 +32,8 @@ VertMix::VertMix(const std::string &Name, ///< [in] Name for VertMix object
                  )
     : ComputeVertMixConv(VCoord), ComputeVertMixShear(Mesh, VCoord), Name(Name),
       Mesh(Mesh), VCoord(VCoord) {
-   VertDiff = Array2DReal("VertDiff", Mesh->NCellsAll, VCoord->NVertLayers);
-   VertVisc = Array2DReal("VertVisc", Mesh->NCellsAll, VCoord->NVertLayers);
+   VertDiff = Array2DReal("VertDiff", Mesh->NCellsSize, VCoord->NVertLayers);
+   VertVisc = Array2DReal("VertVisc", Mesh->NCellsSize, VCoord->NVertLayers);
 
    defineFields();
 }
@@ -177,7 +177,7 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
    /// Dispatch to the correct VertMix calculation
    if (LocComputeVertMixShear.Enabled && LocComputeVertMixConv.Enabled) {
       parallelForOuter(
-          "VertMix-ConvPlusShear", {Mesh->NCellsAll},
+          "VertMix-ConvPlusShear", {Mesh->NCellsSize},
           KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
              const int KMin   = MinLayerCell(ICell);
              const int KMax   = MaxLayerCell(ICell);
@@ -194,7 +194,7 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
           });
    } else if (LocComputeVertMixShear.Enabled) {
       parallelForOuter(
-          "VertMix-ShearOnly", {Mesh->NCellsAll},
+          "VertMix-ShearOnly", {Mesh->NCellsSize},
           KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
              const int KMin   = MinLayerCell(ICell);
              const int KMax   = MaxLayerCell(ICell);
@@ -209,7 +209,7 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
           });
    } else if (LocComputeVertMixConv.Enabled) {
       parallelForOuter(
-          "VertMix-ConvOnly", {Mesh->NCellsAll},
+          "VertMix-ConvOnly", {Mesh->NCellsSize},
           KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
              const int KMin   = MinLayerCell(ICell);
              const int KMax   = MaxLayerCell(ICell);
@@ -223,7 +223,7 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
           });
    } else {
       parallelFor(
-          "VertMix-Background", {Mesh->NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
+          "VertMix-Background", {Mesh->NCellsSize}, KOKKOS_LAMBDA(I4 ICell) {
              LocVertDiff(ICell, 0) = 0.0_Real;
              LocVertVisc(ICell, 0) = 0.0_Real;
           });
