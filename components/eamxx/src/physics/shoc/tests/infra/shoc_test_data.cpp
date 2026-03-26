@@ -1695,8 +1695,14 @@ void update_prognostics_implicit_host(Int shcol, Int nlev, Int nlevi, Int num_tr
   // Local variable workspace
   const int n_wind_slots = ekat::npack<Pack>(2)*Pack::n;
   const int n_trac_slots = ekat::npack<Pack>(num_tracer+3)*Pack::n;
-  const int tmp_var_size = 8+n_wind_slots+n_trac_slots;
+  const int tmp_var_size = 8+2*n_wind_slots+n_trac_slots;
   ekat::WorkspaceManager<Pack, KT::Device> workspace_mgr(nlevi_packs, tmp_var_size, policy);
+
+  // Zero-initialized pert wind views (no pert wind data in this parity test)
+  view_2d um_pert_d("um_pert", shcol, nlev_packs);
+  view_2d vm_pert_d("vm_pert", shcol, nlev_packs);
+  Kokkos::deep_copy(um_pert_d, Pack(0));
+  Kokkos::deep_copy(vm_pert_d, Pack(0));
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
@@ -1722,13 +1728,16 @@ void update_prognostics_implicit_host(Int shcol, Int nlev, Int nlevi, Int num_tr
     const auto v_wind_s = ekat::subview(v_wind_d, i);
     const auto tke_s = ekat::subview(tke_d, i);
     const auto tracer_s = Kokkos::subview(qtracers_cxx_d, i, Kokkos::ALL(), Kokkos::ALL());
+    const auto um_pert_s = ekat::subview(um_pert_d, i);
+    const auto vm_pert_s = ekat::subview(vm_pert_d, i);
 
     SHF::update_prognostics_implicit(team, nlev, nlevi, num_tracer, dtime,
                                      dz_zt_s, dz_zi_s, rho_zt_s, zt_grid_s,
                                      zi_grid_s, tk_s, tkh_s, uw_sfc_s, vw_sfc_s,
                                      wthl_sfc_s, wqw_sfc_s, wtracer_sfc_s,
                                      workspace,
-                                     thetal_s, qw_s, tracer_s, tke_s, u_wind_s, v_wind_s);
+                                     thetal_s, qw_s, tracer_s, tke_s, u_wind_s, v_wind_s,
+                                     Scalar(0), Scalar(0), um_pert_s, vm_pert_s);
   });
 
   // Transpose tracers
@@ -2430,7 +2439,7 @@ Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npb
   // Create local workspace
   const int n_wind_slots = ekat::npack<Pack>(2)*Pack::n;
   const int n_trac_slots = ekat::npack<Pack>(num_qtracers+3)*Pack::n;
-  ekat::WorkspaceManager<Pack, SHF::KT::Device> workspace_mgr(nlevi_packs, 14+(n_wind_slots+n_trac_slots), policy);
+  ekat::WorkspaceManager<Pack, SHF::KT::Device> workspace_mgr(nlevi_packs, 14+(2*n_wind_slots+n_trac_slots), policy);
 
   const auto elapsed_microsec = SHF::shoc_main(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
                                                workspace_mgr, shoc_runtime_options,
