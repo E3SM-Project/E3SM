@@ -73,7 +73,7 @@ class PressureGradCentered {
          Real GradMontPot    = 0.5_Real * (GradMontPotK + GradMontPotKp1);
 
          Real PGradAlpha =
-             0.5 * (PressureMid(ICell1, K) + PressureMid(ICell0, K)) *
+             0.5_Real * (PressureMid(ICell1, K) + PressureMid(ICell0, K)) *
              (SpecVol(ICell1, K) - SpecVol(ICell0, K)) * InvDcEdge;
          Tend(IEdge, K) +=
              EdgeMask(IEdge, K) * (-GradMontPot + PGradAlpha - GradGeoPot);
@@ -156,9 +156,12 @@ class PressureGrad {
    ~PressureGrad();
 
    // Compute pressure gradient tendencies and add into Tend array
-   void computePressureGrad(Array2DReal &Tend, const OceanState *State,
-                            const VertCoord *VCoord, const Eos *EqState,
-                            const int TimeLevel) const;
+   void computePressureGrad(Array2DReal &Tend,
+                            const Array2DReal &PressureMid,
+                            const Array2DReal &PressureInterface,
+                            const Array2DReal &SpecVol,
+                            const Array2DReal &ZInterface,
+                            const Array2DReal &LayerThick) const;
 
  private:
    // Construct a new pressure gradient object
@@ -173,7 +176,7 @@ class PressureGrad {
 
    // Mesh-related sizes
    I4 NEdgesAll     = 0;
-   I4 NChunks       = 0;
+   I4 NEdgesOwned   = 0;
    I4 NVertLayers   = 0;
    I4 NVertLayersP1 = 0;
 

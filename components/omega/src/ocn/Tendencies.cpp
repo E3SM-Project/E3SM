@@ -431,6 +431,7 @@ void Tendencies::computeVelocityTendenciesOnly(
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
     int ThickTimeLevel,             ///< [in] Time level
     int VelTimeLevel,               ///< [in] Time level
+    int TracerTimeLevel,            ///< [in] Time level
     TimeInstant Time                ///< [in] Time
 ) {
 
@@ -609,20 +610,24 @@ void Tendencies::computeVelocityTendenciesOnly(
       deepCopy(SurfacePressure, 0.0_Real);
 
       Pacer::start("Tend:pressureGradTerm", 2);
-      Array2DReal LayerThick = State->getLayerThickness(VelTimeLevel);
+      Array2DReal LayerThick = State->getLayerThickness(ThickTimeLevel);
       VCoord->computePressure(LayerThick, SurfacePressure);
-      OMEGA_SCOPE(LocPressureMid, VCoord->PressureMid);
-      Array2DReal Temp     = Tracers::getByName(VelTimeLevel, "Temperature");
-      Array2DReal Salinity = Tracers::getByName(VelTimeLevel, "Salinity");
 
-      EqState->computeSpecVol(Temp, Salinity, LocPressureMid);
+      const auto &PressureMid = VCoord->PressureMid;
+      const auto &PressureInterface = VCoord->PressureInterface;
+      Array2DReal Temp     = Tracers::getByName(TracerTimeLevel, "Temperature");
+      Array2DReal Salinity = Tracers::getByName(TracerTimeLevel, "Salinity");
+      EqState->computeSpecVol(Temp, Salinity, PressureMid);
 
       // Temporary: ensure vertical geometric/geopotential fields are updated
       // for pressure-gradient tendency calculations.
-      VCoord->computeZHeight(LayerThick, EqState->SpecVol);
+      const auto &SpecVol = EqState->SpecVol;
+      VCoord->computeZHeight(LayerThick, SpecVol);
 
-      PGrad->computePressureGrad(LocNormalVelocityTend, State, VCoord, EqState,
-                                 VelTimeLevel);
+      const auto &ZInterface = VCoord->ZInterface;
+      PGrad->computePressureGrad(LocNormalVelocityTend, PressureMid,
+                                 PressureInterface, SpecVol, ZInterface,
+                                 LayerThick);
       Pacer::stop("Tend:pressureGradTerm", 2);
    }
 
@@ -795,13 +800,14 @@ void Tendencies::computeVelocityTendencies(
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
     int ThickTimeLevel,             ///< [in] Time level
     int VelTimeLevel,               ///< [in] Time level
+    int TracerTimeLevel,            ///< [in] Time level
     TimeInstant Time                ///< [in] Time
 ) {
    Pacer::start("Tend:computeVelocityTendencies", 1);
 
    AuxState->computeMomAux(State, ThickTimeLevel, VelTimeLevel);
    computeVelocityTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
-                                 Time);
+                                 TracerTimeLevel, Time);
 
    Pacer::stop("Tend:computeVelocityTendencies", 1);
 }
@@ -856,13 +862,15 @@ void Tendencies::computeAllTendencies(
     const Array3DReal &TracerArray, ///< [in] Tracer array
     int ThickTimeLevel,             ///< [in] Time level
     int VelTimeLevel,               ///< [in] Time level
+    int TracerTimeLevel,            ///< [in] Time level
     TimeInstant Time                ///< [in] Time
 ) {
    AuxState->computeAll(State, TracerArray, ThickTimeLevel, VelTimeLevel);
+
    computeThicknessTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
                                   Time);
    computeVelocityTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
-                                 Time);
+                                 TracerTimeLevel, Time);
    computeTracerTendenciesOnly(State, AuxState, TracerArray, ThickTimeLevel,
                                VelTimeLevel, Time);
 } // end all tendency compute

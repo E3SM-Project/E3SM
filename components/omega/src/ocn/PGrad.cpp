@@ -82,9 +82,9 @@ PressureGrad::PressureGrad(
 
    // store mesh sizes
    NEdgesAll     = Mesh->NEdgesAll;
+   NEdgesOwned   = Mesh->NEdgesOwned;
    NVertLayers   = VCoord->NVertLayers;
    NVertLayersP1 = NVertLayers + 1;
-   NChunks       = NVertLayers / VecLength;
 
    // Read config options for PressureGrad type
    // and enable the appropriate functor
@@ -124,7 +124,13 @@ PressureGrad::~PressureGrad() {
 
 //------------------------------------------------------------------------------
 // Remove PressureGrad instances before exit
-void PressureGrad::clear() { AllPGrads.clear(); } // end clear
+void PressureGrad::clear() {
+
+   AllPGrads.clear();
+
+   DefaultPGrad = nullptr; // prevent dangling pointe'r
+
+ } // end clear
 
 //------------------------------------------------------------------------------
 // Remove PressureGrad from list by name
@@ -155,10 +161,11 @@ PressureGrad *PressureGrad::get(const std::string &Name ///< [in] Name of
 //------------------------------------------------------------------------------
 // Compute pressure gradient tendencies and add into Tend array
 void PressureGrad::computePressureGrad(Array2DReal &Tend,
-                                       const OceanState *State,
-                                       const VertCoord *VCoord,
-                                       const Eos *EqState,
-                                       const int TimeLevel) const {
+                                       const Array2DReal &PressureMid,
+                                       const Array2DReal &PressureInterface,
+                                       const Array2DReal &SpecVol,
+                                       const Array2DReal &ZInterface,
+                                       const Array2DReal &LayerThick) const {
 
    OMEGA_SCOPE(LocCenteredPGrad, CenteredPGrad);
    OMEGA_SCOPE(LocHighOrderPGrad, HighOrderPGrad);
@@ -166,12 +173,6 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
    OMEGA_SCOPE(LocMaxLayerEdgeTop, MaxLayerEdgeTop);
    OMEGA_SCOPE(LocTidalPotential, TidalPotential);
    OMEGA_SCOPE(LocSelfAttractionLoading, SelfAttractionLoading);
-
-   const Array2DReal &PressureMid       = VCoord->PressureMid;
-   const Array2DReal &PressureInterface = VCoord->PressureInterface;
-   const Array2DReal &SpecVol           = EqState->SpecVol;
-   const Array2DReal &ZInterface        = VCoord->ZInterface;
-   Array2DReal LayerThick               = State->getLayerThickness(TimeLevel);
 
    if (PressureGradChoice == PressureGradType::Centered) {
 
