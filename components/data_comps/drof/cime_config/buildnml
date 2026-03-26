@@ -130,6 +130,9 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
             logger.info('Setting remove_gis_rofi to .true.')
             nmlgen.set_value("remove_gis_rofi", '.true.')
 
+    # Assume river runoff corresponds to ISMF in Southern Ocean only for
+    # G-cases (true for JRA). When atm active, we assume liquid runoff
+    # corresonds to precip or snow melt so we do not remove it.
     if (((ocn_glc_ismf_coupling == 'coupler') or
          (ocn_glc_ismf_coupling == 'internal_mpaso') or
          (ocn_glc_ismf_coupling == 'data_mpaso'))
@@ -141,8 +144,8 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
         if 'ais' in glc_grid:
             logger.info('Setting remove_ais_rofl to .true.')
             nmlgen.set_value("remove_ais_rofl", '.true.')
-        # Don't handle GIS because DROF rofl will be a large part
-        # surface runoff and not from ISMF
+        # Don't handle GIS because DROF rofl will be a large part of
+        # surface runoff and not correspond to ISMF
 
     #----------------------------------------------------
     # Finally, write out all the namelists.
