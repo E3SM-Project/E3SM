@@ -107,15 +107,15 @@ void testEosLinear() {
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
    VCoord->NVertLayers = NVertLayers;
-   I4 NCellsAll        = Mesh->NCellsAll;
+   I4 NCellsSize       = Mesh->NCellsSize;
    /// Get Eos instance to test
    Eos *TestEos       = Eos::getInstance();
    TestEos->EosChoice = EosType::LinearEos;
 
    /// Create and fill ocean state arrays
-   Array2DReal SArray = Array2DReal("SArray", NCellsAll, NVertLayers);
-   Array2DReal TArray = Array2DReal("TArray", NCellsAll, NVertLayers);
-   Array2DReal PArray = Array2DReal("PArray", NCellsAll, NVertLayers);
+   Array2DReal SArray = Array2DReal("SArray", NCellsSize, NVertLayers);
+   Array2DReal TArray = Array2DReal("TArray", NCellsSize, NVertLayers);
+   Array2DReal PArray = Array2DReal("PArray", NCellsSize, NVertLayers);
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(SArray, Sa);
    deepCopy(TArray, Ct);
@@ -132,7 +132,7 @@ void testEosLinear() {
    int NumMismatches   = 0;
    Array2DReal SpecVol = TestEos->SpecVol;
    parallelReduceOuter(
-       "CheckSpecVolMatrix-linear", {Mesh->NCellsAll},
+       "CheckSpecVolMatrix-linear", {Mesh->NCellsSize},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -156,7 +156,7 @@ void testEosLinear() {
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
       auto SpecVolH = createHostMirrorCopy(TestEos->SpecVol);
-      for (int I = 0; I < NCellsAll; ++I) {
+      for (int I = 0; I < NCellsSize; ++I) {
          for (int K = 0; K < NVertLayers; ++K) {
             if (!isApprox(SpecVolH(I, K), LinearExpValue, RTol))
                LOG_ERROR("EosTest: SpecVol Linear Bad Value: "
@@ -177,15 +177,15 @@ void testEosLinearDisplaced() {
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
    VCoord->NVertLayers = NVertLayers;
-   I4 NCellsAll        = Mesh->NCellsAll;
+   I4 NCellsSize       = Mesh->NCellsSize;
    /// Get Eos instance to test
    Eos *TestEos       = Eos::getInstance();
    TestEos->EosChoice = EosType::LinearEos;
 
    /// Create and fill ocean state arrays
-   Array2DReal SArray = Array2DReal("SArray", NCellsAll, NVertLayers);
-   Array2DReal TArray = Array2DReal("TArray", NCellsAll, NVertLayers);
-   Array2DReal PArray = Array2DReal("PArray", NCellsAll, NVertLayers);
+   Array2DReal SArray = Array2DReal("SArray", NCellsSize, NVertLayers);
+   Array2DReal TArray = Array2DReal("TArray", NCellsSize, NVertLayers);
+   Array2DReal PArray = Array2DReal("PArray", NCellsSize, NVertLayers);
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(SArray, Sa);
    deepCopy(TArray, Ct);
@@ -202,7 +202,7 @@ void testEosLinearDisplaced() {
    int NumMismatches            = 0;
    Array2DReal SpecVolDisplaced = TestEos->SpecVolDisplaced;
    parallelReduceOuter(
-       "CheckSpecVolDispMatrix-linear", {Mesh->NCellsAll},
+       "CheckSpecVolDispMatrix-linear", {Mesh->NCellsSize},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -227,7 +227,7 @@ void testEosLinearDisplaced() {
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
       auto SpecVolDisplacedH = createHostMirrorCopy(SpecVolDisplaced);
-      for (int I = 0; I < NCellsAll; ++I) {
+      for (int I = 0; I < NCellsSize; ++I) {
          for (int K = 0; K < NVertLayers; ++K) {
             if (!isApprox(SpecVolDisplacedH(I, K), LinearExpValue, RTol))
                LOG_ERROR("EosTest: SpecVol Linear Displaced Bad Value: "
@@ -248,15 +248,15 @@ void testBruntVaisalaFreqSqLinear() {
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
    VCoord->NVertLayers = NVertLayers;
-   I4 NCellsAll        = Mesh->NCellsAll;
+   I4 NCellsSize       = Mesh->NCellsSize;
    /// Get Eos instance to test
    Eos *TestEos       = Eos::getInstance();
    TestEos->EosChoice = EosType::LinearEos;
 
    /// Create and fill ocean state arrays
-   Array2DReal SArray = Array2DReal("SArray", NCellsAll, NVertLayers);
-   Array2DReal TArray = Array2DReal("TArray", NCellsAll, NVertLayers);
-   Array2DReal PArray = Array2DReal("PArray", NCellsAll, NVertLayers);
+   Array2DReal SArray = Array2DReal("SArray", NCellsSize, NVertLayers);
+   Array2DReal TArray = Array2DReal("TArray", NCellsSize, NVertLayers);
+   Array2DReal PArray = Array2DReal("PArray", NCellsSize, NVertLayers);
    /// Use deep copy to initialize results to zero
    deepCopy(TestEos->SpecVol, 0.0);
    deepCopy(TestEos->BruntVaisalaFreqSq, 0.0);
@@ -265,7 +265,7 @@ void testBruntVaisalaFreqSqLinear() {
    // for K = 1.
    OMEGA_SCOPE(ZMid, VCoord->ZMid);
    parallelFor(
-       "populateArrays", {NCellsAll, NVertLayers},
+       "populateArrays", {NCellsSize, NVertLayers},
        KOKKOS_LAMBDA(I4 ICell, I4 K) {
           if (K == 0) {
              ZMid(ICell, 0)   = -992.1173890198451_Real;
@@ -304,7 +304,7 @@ void testBruntVaisalaFreqSqLinear() {
    int NumMismatches = 0;
    OMEGA_SCOPE(BruntVaisalaFreqSq, TestEos->BruntVaisalaFreqSq);
    parallelReduceOuter(
-       "CheckBruntVaisalaSq-Linear", {Mesh->NCellsAll},
+       "CheckBruntVaisalaSq-Linear", {Mesh->NCellsSize},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -338,7 +338,7 @@ void testBruntVaisalaFreqSqLinear() {
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
       auto BruntVaisalaFreqSqH = createHostMirrorCopy(BruntVaisalaFreqSq);
-      for (int I = 0; I < NCellsAll; ++I) {
+      for (int I = 0; I < NCellsSize; ++I) {
          // top layer should be zero
          if (BruntVaisalaFreqSqH(I, 0) != 0.0)
             LOG_ERROR("EosTest: Brunt-Vaisala Linear Bad Value: "
@@ -372,15 +372,15 @@ void testEosTeos10() {
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
    VCoord->NVertLayers = NVertLayers;
-   I4 NCellsAll        = Mesh->NCellsAll;
+   I4 NCellsSize       = Mesh->NCellsSize;
    /// Get Eos instance to test
    Eos *TestEos       = Eos::getInstance();
    TestEos->EosChoice = EosType::Teos10Eos;
 
    /// Create and fill ocean state arrays
-   Array2DReal SArray = Array2DReal("SArray", NCellsAll, NVertLayers);
-   Array2DReal TArray = Array2DReal("TArray", NCellsAll, NVertLayers);
-   Array2DReal PArray = Array2DReal("PArray", NCellsAll, NVertLayers);
+   Array2DReal SArray = Array2DReal("SArray", NCellsSize, NVertLayers);
+   Array2DReal TArray = Array2DReal("TArray", NCellsSize, NVertLayers);
+   Array2DReal PArray = Array2DReal("PArray", NCellsSize, NVertLayers);
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(SArray, Sa);
    deepCopy(TArray, Ct);
@@ -397,7 +397,7 @@ void testEosTeos10() {
    int NumMismatches   = 0;
    Array2DReal SpecVol = TestEos->SpecVol;
    parallelReduceOuter(
-       "CheckSpecVolMatrix-Teos", {Mesh->NCellsAll},
+       "CheckSpecVolMatrix-Teos", {Mesh->NCellsSize},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -421,7 +421,7 @@ void testEosTeos10() {
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
       auto SpecVolH = createHostMirrorCopy(SpecVol);
-      for (int I = 0; I < NCellsAll; ++I) {
+      for (int I = 0; I < NCellsSize; ++I) {
          for (int K = 0; K < NVertLayers; ++K) {
             if (!isApprox(SpecVolH(I, K), LinearExpValue, RTol))
                LOG_ERROR("EosTest: SpecVol TEOS Bad Value: "
@@ -442,15 +442,15 @@ void testEosTeos10Displaced() {
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
    VCoord->NVertLayers = NVertLayers;
-   I4 NCellsAll        = Mesh->NCellsAll;
+   I4 NCellsSize       = Mesh->NCellsSize;
    /// Get Eos instance to test
    Eos *TestEos       = Eos::getInstance();
    TestEos->EosChoice = EosType::Teos10Eos;
 
    /// Create and fill ocean state arrays
-   Array2DReal SArray = Array2DReal("SArray", NCellsAll, NVertLayers);
-   Array2DReal TArray = Array2DReal("TArray", NCellsAll, NVertLayers);
-   Array2DReal PArray = Array2DReal("PArray", NCellsAll, NVertLayers);
+   Array2DReal SArray = Array2DReal("SArray", NCellsSize, NVertLayers);
+   Array2DReal TArray = Array2DReal("TArray", NCellsSize, NVertLayers);
+   Array2DReal PArray = Array2DReal("PArray", NCellsSize, NVertLayers);
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(SArray, Sa);
    deepCopy(TArray, Ct);
@@ -467,7 +467,7 @@ void testEosTeos10Displaced() {
    int NumMismatches            = 0;
    Array2DReal SpecVolDisplaced = TestEos->SpecVolDisplaced;
    parallelReduceOuter(
-       "CheckSpecVolDispMatrix-Teos", {Mesh->NCellsAll},
+       "CheckSpecVolDispMatrix-Teos", {Mesh->NCellsSize},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -492,7 +492,7 @@ void testEosTeos10Displaced() {
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
       auto SpecVolDisplacedH = createHostMirrorCopy(SpecVolDisplaced);
-      for (int I = 0; I < NCellsAll; ++I) {
+      for (int I = 0; I < NCellsSize; ++I) {
          for (int K = 0; K < NVertLayers; ++K) {
             if (!isApprox(SpecVolDisplacedH(I, K), LinearExpValue, RTol))
                LOG_ERROR("EosTest: SpecVol Displaced TEOS Bad Value: "
@@ -513,15 +513,15 @@ void testBruntVaisalaFreqSqTeos10() {
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
    VCoord->NVertLayers = NVertLayers;
-   I4 NCellsAll        = Mesh->NCellsAll;
+   I4 NCellsSize       = Mesh->NCellsSize;
    /// Get Eos instance to test
    Eos *TestEos       = Eos::getInstance();
    TestEos->EosChoice = EosType::Teos10Eos;
 
    /// Create and fill ocean state arrays
-   Array2DReal SArray = Array2DReal("SArray", NCellsAll, NVertLayers);
-   Array2DReal TArray = Array2DReal("TArray", NCellsAll, NVertLayers);
-   Array2DReal PArray = Array2DReal("PArray", NCellsAll, NVertLayers);
+   Array2DReal SArray = Array2DReal("SArray", NCellsSize, NVertLayers);
+   Array2DReal TArray = Array2DReal("TArray", NCellsSize, NVertLayers);
+   Array2DReal PArray = Array2DReal("PArray", NCellsSize, NVertLayers);
    /// Use deep copy to initialize results to zero
    deepCopy(TestEos->BruntVaisalaFreqSq, 0.0);
    deepCopy(TestEos->SpecVol, 0.0);
@@ -529,7 +529,7 @@ void testBruntVaisalaFreqSqTeos10() {
    /// Fill inputs with values that should lead to ref result for K=1
    OMEGA_SCOPE(ZMid, VCoord->ZMid);
    parallelFor(
-       "populateArrays", {NCellsAll, NVertLayers},
+       "populateArrays", {NCellsSize, NVertLayers},
        KOKKOS_LAMBDA(I4 ICell, I4 K) {
           if (K == 0) {
              ZMid(ICell, 0)   = -992.1173890198451_Real;
@@ -568,7 +568,7 @@ void testBruntVaisalaFreqSqTeos10() {
    int NumMismatches = 0;
    OMEGA_SCOPE(BruntVaisalaFreqSq, TestEos->BruntVaisalaFreqSq);
    parallelReduceOuter(
-       "CheckSpecVolMatrix-Teos", {Mesh->NCellsAll},
+       "CheckSpecVolMatrix-Teos", {Mesh->NCellsSize},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -602,7 +602,7 @@ void testBruntVaisalaFreqSqTeos10() {
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
       auto BruntVaisalaFreqSqH = createHostMirrorCopy(BruntVaisalaFreqSq);
-      for (int ICell = 0; ICell < NCellsAll; ++ICell) {
+      for (int ICell = 0; ICell < NCellsSize; ++ICell) {
          // top layer should be zero
          if (BruntVaisalaFreqSqH(ICell, 0) != 0.0)
             LOG_ERROR("EosTest: Brunt-Vaisala TEOS Bad Value: "

@@ -39,11 +39,11 @@ Eos::Eos(const std::string &Name, ///< [in] Name for eos object
       ComputeBruntVaisalaFreqSqLinear(VCoord),
       ComputeBruntVaisalaFreqSqTeos10(VCoord), Name(Name), Mesh(Mesh),
       VCoord(VCoord) {
-   SpecVol = Array2DReal("SpecVol", Mesh->NCellsAll, VCoord->NVertLayers);
+   SpecVol = Array2DReal("SpecVol", Mesh->NCellsSize, VCoord->NVertLayers);
    SpecVolDisplaced =
-       Array2DReal("SpecVolDisplaced", Mesh->NCellsAll, VCoord->NVertLayers);
+       Array2DReal("SpecVolDisplaced", Mesh->NCellsSize, VCoord->NVertLayers);
    BruntVaisalaFreqSq =
-       Array2DReal("BruntVaisalaFreqSq", Mesh->NCellsAll, VCoord->NVertLayers);
+       Array2DReal("BruntVaisalaFreqSq", Mesh->NCellsSize, VCoord->NVertLayers);
 
    defineFields();
 }
@@ -138,7 +138,7 @@ void Eos::computeSpecVol(const Array2DReal &ConservTemp,
    /// Dispatch to the correct EOS calculation
    if (EosChoice == EosType::LinearEos) {
       parallelForOuter(
-          "eos-linear", {Mesh->NCellsAll},
+          "eos-linear", {Mesh->NCellsSize},
           KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
              const int KMin   = MinLayerCell(ICell);
              const int KMax   = MaxLayerCell(ICell);
@@ -152,7 +152,7 @@ void Eos::computeSpecVol(const Array2DReal &ConservTemp,
           });
    } else if (EosChoice == EosType::Teos10Eos) {
       parallelForOuter(
-          "eos-teos10", {Mesh->NCellsAll},
+          "eos-teos10", {Mesh->NCellsSize},
           KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
              const int KMin   = MinLayerCell(ICell);
              const int KMax   = MaxLayerCell(ICell);
@@ -189,7 +189,7 @@ void Eos::computeSpecVolDisp(const Array2DReal &ConservTemp,
    /// volume is the same as the specific volume
    if (EosChoice == EosType::LinearEos) {
       parallelForOuter(
-          "eos-linear", {Mesh->NCellsAll},
+          "eos-linear", {Mesh->NCellsSize},
           KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
              const int KMin   = MinLayerCell(ICell);
              const int KMax   = MaxLayerCell(ICell);
@@ -202,7 +202,7 @@ void Eos::computeSpecVolDisp(const Array2DReal &ConservTemp,
           });
    } else if (EosChoice == EosType::Teos10Eos) {
       parallelForOuter(
-          "eos-teos10", {Mesh->NCellsAll},
+          "eos-teos10", {Mesh->NCellsSize},
           KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
              const int KMin   = MinLayerCell(ICell);
              const int KMax   = MaxLayerCell(ICell);
@@ -240,7 +240,7 @@ void Eos::computeBruntVaisalaFreqSq(const Array2DReal &ConservTemp,
    if (EosChoice == EosType::LinearEos) {
       /// If Linear EOS, use linear squared Brunt-Vaisala frequency calculation
       parallelForOuter(
-          "bvf-linear", {Mesh->NCellsAll},
+          "bvf-linear", {Mesh->NCellsSize},
           KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
              const int KMin   = MinLayerCell(ICell);
              const int KMax   = MaxLayerCell(ICell);
@@ -255,7 +255,7 @@ void Eos::computeBruntVaisalaFreqSq(const Array2DReal &ConservTemp,
       /// If TEOS-10 EOS, use TEOS-10 squared Brunt-Vaisala frequency
       /// calculation
       parallelForOuter(
-          "bvf-teos10", {Mesh->NCellsAll},
+          "bvf-teos10", {Mesh->NCellsSize},
           KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
              const int KMin   = MinLayerCell(ICell);
              const int KMax   = MaxLayerCell(ICell);
