@@ -185,23 +185,52 @@ void GWDrag::run_impl (const double dt) {
   });
   //----------------------------------------------------------------------------
   // create local temporaries to avoid "Implicit capture" warning
-  const auto loc_common_init = GWF::s_common_init;
-  const auto loc_convect_init = GWF::s_convect_init;
-  const auto loc_front_init = GWF::s_front_init;
-
+  const auto loc_phis  = phis;
   const auto loc_p_mid = p_mid;
   const auto loc_p_int = p_int;
   const auto loc_p_del = p_del;
-  const auto loc_T_mid = T_mid;
-  const auto loc_qv    = qv;
+
+  auto loc_T_mid = T_mid;
+  auto loc_qv    = qv;
+  auto loc_qc    = qc;
+  auto loc_qi    = qi;
+  auto loc_uwind = uwind;
+  auto loc_vwind = vwind;
 
   auto loc_z_mid       = m_buffer.z_mid;
   auto loc_z_del       = m_buffer.z_del;
   auto loc_z_int       = m_buffer.z_int;
+  auto loc_p_del_rcp   = m_buffer.p_del_rcp;
+  auto loc_p_int_log   = m_buffer.p_int_log;
   auto loc_T_int       = m_buffer.T_int;
   auto loc_N_mid       = m_buffer.N_mid;
   auto loc_N_int       = m_buffer.N_int;
   auto loc_rho_int     = m_buffer.rho_int;
+  auto loc_q_combined  = m_buffer.q_combined;
+  auto loc_tau         = m_buffer.tau;
+  auto loc_ubm         = m_buffer.ubm;
+  auto loc_ubi         = m_buffer.ubi;
+  auto loc_c           = m_buffer.c;
+  auto loc_kvtt        = m_buffer.kvtt;
+  auto loc_dse         = m_buffer.dse;
+  auto loc_utgw        = m_buffer.utgw;
+  auto loc_vtgw        = m_buffer.vtgw;
+  auto loc_ttgw        = m_buffer.ttgw;
+  auto loc_qtgw        = m_buffer.qtgw;
+  auto loc_taucd       = m_buffer.taucd;
+  auto loc_egwdffi     = m_buffer.egwdffi;
+  auto loc_gwut        = m_buffer.gwut;
+  auto loc_dttdf       = m_buffer.dttdf;
+  auto loc_dttke       = m_buffer.dttke;
+  //----------------------------------------------------------------------------
+  // populate q_combined
+  Kokkos::parallel_for("zm_update_prognostic",KT::RangePolicy(0, m_ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int idx) {
+    const int i = idx/nlev_mid_packs;
+    const int k = idx%nlev_mid_packs;
+    loc_q_combined(i, k, 0) = loc_qv(i,k);
+    loc_q_combined(i, k, 1) = loc_qc(i,k);
+    loc_q_combined(i, k, 2) = loc_qi(i,k);
+  });
   //----------------------------------------------------------------------------
   // calculate altitude on interfaces (z_int) and mid-points (z_mid)
   Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
@@ -220,6 +249,19 @@ void GWDrag::run_impl (const double dt) {
     team.team_barrier();
     PF::calculate_z_mid(team, m_nlev, z_int_i, z_mid_i);
     team.team_barrier();
+  });
+  //----------------------------------------------------------------------------
+  // miscellaneous calculations
+  Kokkos::parallel_for(KT::RangePolicy(0, m_ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int idx) {
+    const int i = idx/nlev_mid_packs;
+    const int k = idx%nlev_mid_packs;
+    loc_dse(i,k) = PF::calculate_dse(loc_T_mid(i,k),loc_z_mid(i,k),loc_phis(i));
+    loc_p_del_rcp(i,k) = 1.0/loc_p_del(i,k);
+  });
+  Kokkos::parallel_for(KT::RangePolicy(0, m_ncol*nlev_int_packs), KOKKOS_LAMBDA (const int idx) {
+    const int i = idx/nlev_int_packs;
+    const int k = idx%nlev_int_packs;
+    loc_p_int_log(i,k) = ekat::log(loc_p_int(i,k));
   });
   //----------------------------------------------------------------------------
 
@@ -1051,9 +1093,13 @@ size_t GWDrag::requested_buffer_size_in_bytes() const
 {
   const int nlev_mid_packs = ekat::npack<Pack>(m_nlev);
   const int nlev_int_packs = ekat::npack<Pack>(m_nlev+1);
+  constexpr int pcnst = 3; // number of constituents (qv, qc, qi)
   size_t gw_buffer_size = 0;
 
   gw_buffer_size += Buffer::num_3d_mid_views*m_ncol*m_npgw*nlev_mid_packs*sizeof(Pack);
+  gw_buffer_size += Buffer::num_3d_pcnst_views*m_ncol*nlev_mid_packs*pcnst*sizeof(Pack);
+  gw_buffer_size += Buffer::num_3d_cd_views*m_ncol*nlev_mid_packs*4*sizeof(Pack);
+  gw_buffer_size += Buffer::num_3d_pgw_views*m_ncol*nlev_mid_packs*m_npgw*sizeof(Pack);
   gw_buffer_size += Buffer::num_2d_mid_views*m_ncol*nlev_mid_packs*sizeof(Pack);
   gw_buffer_size += Buffer::num_2d_int_views*m_ncol*nlev_int_packs*sizeof(Pack);
   gw_buffer_size += Buffer::num_2d_pgw_views*m_ncol*m_npgw*sizeof(Pack);
@@ -1069,6 +1115,7 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
   Pack* mem = reinterpret_cast<Pack*>(buffer_manager.get_memory());
   const int nlev_mid_packs = ekat::npack<Pack>(m_nlev);
   const int nlev_int_packs = ekat::npack<Pack>(m_nlev+1);
+  constexpr int pcnst = 3; // number of constituents (qv, qc, qi)
   //----------------------------------------------------------------------------
   uview_3d* buffer_3d_mid_view_ptrs[Buffer::num_3d_mid_views] = {
     &m_buffer.tau
@@ -1078,12 +1125,45 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
     mem += buffer_3d_mid_view_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
+  uview_3d* buffer_3d_pcnst_view_ptrs[Buffer::num_3d_pcnst_views] = {
+    &m_buffer.q_combined,
+    &m_buffer.qtgw
+  };
+  for (int i=0; i<Buffer::num_3d_pcnst_views; ++i) {
+    *buffer_3d_pcnst_view_ptrs[i] = uview_3d(mem, m_ncol, nlev_mid_packs, pcnst);
+    mem += buffer_3d_pcnst_view_ptrs[i]->size();
+  }
+  //----------------------------------------------------------------------------
+  uview_3d* buffer_3d_cd_view_ptrs[Buffer::num_3d_cd_views] = {
+    &m_buffer.taucd
+  };
+  for (int i=0; i<Buffer::num_3d_cd_views; ++i) {
+    *buffer_3d_cd_view_ptrs[i] = uview_3d(mem, m_ncol, nlev_mid_packs, 4);
+    mem += buffer_3d_cd_view_ptrs[i]->size();
+  }
+  //----------------------------------------------------------------------------
+  uview_3d* buffer_3d_pgw_view_ptrs[Buffer::num_3d_pgw_views] = {
+    &m_buffer.gwut
+  };
+  for (int i=0; i<Buffer::num_3d_pgw_views; ++i) {
+    *buffer_3d_pgw_view_ptrs[i] = uview_3d(mem, m_ncol, nlev_mid_packs, m_npgw);
+    mem += buffer_3d_pgw_view_ptrs[i]->size();
+  }
+  //----------------------------------------------------------------------------
   uview_2d* buffer_2d_mid_view_ptrs[Buffer::num_2d_mid_views] = {
     &m_buffer.z_del,
     &m_buffer.z_mid,
     &m_buffer.T_int,
     &m_buffer.N_mid,
-    &m_buffer.ubm
+    &m_buffer.ubm,
+    &m_buffer.kvtt,
+    &m_buffer.dse,
+    &m_buffer.utgw,
+    &m_buffer.vtgw,
+    &m_buffer.ttgw,
+    &m_buffer.dttdf,
+    &m_buffer.dttke,
+    &m_buffer.p_del_rcp
   };
   for (int i=0; i<Buffer::num_2d_mid_views; ++i) {
     *buffer_2d_mid_view_ptrs[i] = uview_2d(mem, m_ncol, nlev_mid_packs);
@@ -1092,10 +1172,11 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
   //----------------------------------------------------------------------------
   uview_2d* buffer_2d_int_view_ptrs[Buffer::num_2d_int_views] = {
     &m_buffer.z_int,
-    // &m_buffer.T_int,
     &m_buffer.N_int,
     &m_buffer.rho_int,
-    &m_buffer.ubi
+    &m_buffer.ubi,
+    &m_buffer.egwdffi,
+    &m_buffer.p_int_log
   };
   for (int i=0; i<Buffer::num_2d_int_views; ++i) {
     *buffer_2d_int_view_ptrs[i] = uview_2d(mem, m_ncol, nlev_int_packs);
