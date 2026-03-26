@@ -26,10 +26,8 @@ create_requests()
 void AtmBackTendDiag::initialize_impl(const RunType /*run_type*/) {
   const auto &f   = get_field_in(m_name);
   const auto &fid = f.get_header().get_identifier();
-  const auto &gn  = fid.get_grid_name();
 
   // Sanity checks
-  const auto &layout = fid.get_layout();
   EKAT_REQUIRE_MSG(
       f.data_type() == DataType::RealType,
       "Error! AtmBackTendDiag only supports Real data type field.\n"
@@ -44,13 +42,11 @@ void AtmBackTendDiag::initialize_impl(const RunType /*run_type*/) {
   auto diag_units = fid.get_units() / s;
 
   // All good, create the diag output
-  FieldIdentifier d_fid(m_name + "_atm_backtend", layout.clone(), diag_units, gn);
-  m_diagnostic_output = Field(d_fid);
+  m_diagnostic_output = Field(fid.clone(m_name + "_atm_backtend").reset_units(diag_units));
   m_diagnostic_output.allocate_view();
 
   // Let's also create the previous field
-  FieldIdentifier prev_fid(m_name + "_atm_backtend_prev", layout.clone(), diag_units, gn);
-  m_f_prev = Field(prev_fid);
+  m_f_prev = Field(fid.clone(m_name + "_atm_backtend_prev").reset_units(diag_units));
   m_f_prev.allocate_view();
 }
 

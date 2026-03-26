@@ -59,6 +59,17 @@ void update_checks (const Field& y, const Field* x = nullptr,
 } // anonymous namespace
 
 Field::
+Field ()
+ : Field (identifier_type("UNSET",
+                          FieldLayout::invalid(),
+                          ekat::units::Units::invalid(),
+                          "UNKNOWN",
+                          DataType::Invalid))
+{
+  // Nothing to do here
+}
+
+Field::
 Field (const identifier_type& id, bool allocate)
 {
   m_header = std::make_shared<FieldHeader>(id);
@@ -97,8 +108,7 @@ Field
 Field::clone(const std::string& name, const std::string& grid_name) const {
   // Create new field
   const auto& my_fid = get_header().get_identifier();
-  FieldIdentifier fid(name,my_fid.get_layout(),my_fid.get_units(),
-                      grid_name,my_fid.data_type());
+  auto fid = my_fid.clone(name).reset_grid(grid_name);
   Field f(fid);
 
   // Ensure alloc props match
@@ -149,6 +159,12 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
     // share a memory space, we must initialize the helper field
     // for sync_to functions.
     sf.initialize_contiguous_helper_field();
+  }
+
+  if (m_header->has_extra_data("valid_mask")) {
+    const auto& mask = m_header->get_extra_data<Field>("valid_mask");
+    const auto& mfid = mask.get_header().get_identifier();
+    sf.m_header->set_extra_data("valid_mask",mask.subfield(mask.name(),mfid.get_units(),idim,index,dynamic));
   }
 
   return sf;

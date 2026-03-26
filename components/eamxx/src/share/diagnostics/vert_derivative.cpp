@@ -61,7 +61,7 @@ void VertDerivativeDiag::initialize_impl(const RunType /*run_type*/) {
     diag_units = fid.get_units() / m;
   }
 
-  FieldIdentifier d_fid(m_diag_name, layout, diag_units, fid.get_grid_name());
+  auto d_fid = fid.clone(m_diag_name).reset_units(diag_units);
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
 }

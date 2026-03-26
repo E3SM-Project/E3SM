@@ -31,8 +31,6 @@ TEST_CASE("aodvis") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
-  Real some_limit = 0.0025;
-
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
@@ -61,7 +59,7 @@ TEST_CASE("aodvis") {
   tau.get_header().get_tracking().update_time_stamp(t0);
   // Input (randomized) sunlit
   FieldLayout scalar2d_layout = grid->get_2d_scalar_layout();
-  FieldIdentifier sunlit_fid("sunlit_mask", scalar2d_layout, nondim, grid->name());
+  FieldIdentifier sunlit_fid("sunlit_mask", scalar2d_layout, nondim, grid->name(), DataType::IntType);
   Field sunlit(sunlit_fid);
   sunlit.allocate_view();
   sunlit.get_header().get_tracking().update_time_stamp(t0);
@@ -80,7 +78,7 @@ TEST_CASE("aodvis") {
     randomize_uniform(tau, seed++, 0, 0.005);
 
     // Randomize sunlit
-    randomize_uniform(sunlit, seed++, 0, 0.005);
+    randomize_uniform(sunlit, seed++, 0, 1);
 
     // Create and set up the diagnostic
     ekat::ParameterList params;
@@ -90,16 +88,6 @@ TEST_CASE("aodvis") {
     diag->set_required_field(sunlit);
     diag->initialize(t0, RunType::Initial);
 
-    auto sun_h = sunlit.get_view<Real *, Host>();
-    for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
-      // zero out all sun_h if below 0.05
-      if(sun_h(icol) < some_limit) {
-        sun_h(icol) = 0.0;
-      }
-    }
-    // sync to device
-    sunlit.sync_to_dev();
-
     // Run diag
     diag->compute_diagnostic();
 
@@ -107,21 +95,22 @@ TEST_CASE("aodvis") {
     tau.sync_to_host();
     diag->get_diagnostic().sync_to_host();
 
+    const auto sun_h  = sunlit.get_view<const int *, Host>();
     const auto tau_h  = tau.get_view<const Real ***, Host>();
     const auto aod_hf = diag->get_diagnostic();
-    const auto aod_mask = aod_hf.get_header().get_extra_data<Field>("mask_field");
+    const auto aod_mask = aod_hf.get_header().get_extra_data<Field>("valid_mask");
 
     Field aod_tf = diag->get_diagnostic().clone();
     auto aod_t = aod_tf.get_view<Real *, Host>();
 
     for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
-      if(sun_h(icol) < some_limit) {
-        aod_t(icol) = constants::fill_value<Real>;
-      } else {
+      if(sun_h(icol)) {
         aod_t(icol) = 0;
         for(int ilev = 0; ilev < nlevs; ++ilev) {
           aod_t(icol) += tau_h(icol, swvis, ilev);
         }
+      } else {
+        aod_t(icol) = constants::fill_value<Real>;
       }
     }
     aod_hf.sync_to_dev();

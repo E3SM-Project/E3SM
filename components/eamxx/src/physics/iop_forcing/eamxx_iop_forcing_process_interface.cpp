@@ -4,6 +4,7 @@
 #include "share/property_checks/field_within_interval_check.hpp"
 
 #include <ekat_math_utils.hpp>
+#include <ekat_lin_interp.hpp>
 
 namespace scream
 {
@@ -80,7 +81,7 @@ size_t IOPForcing::requested_buffer_size_in_bytes() const
   // Number of bytes needed by the WorkspaceManager passed to shoc_main
   const int nlevi_packs  = ekat::npack<Pack>(m_num_levs+1);
   const auto policy      = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
-  const size_t wsm_bytes = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 7+m_num_tracers, policy);
+  const size_t wsm_bytes = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 8, policy);
 
   return wsm_bytes;
 }
@@ -99,7 +100,7 @@ void IOPForcing::init_buffers(const ATMBufferManager &buffer_manager)
   m_buffer.wsm_data = mem;
 
   const auto policy       = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
-  const size_t wsm_npacks = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 7+m_num_tracers, policy)/sizeof(Pack);
+  const size_t wsm_npacks = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 8, policy)/sizeof(Pack);
   mem += wsm_npacks;
 
   size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
@@ -138,7 +139,7 @@ void IOPForcing::initialize_impl (const RunType run_type)
   // Setup WSM for internal local variables
   const auto nlevi_packs = ekat::npack<Pack>(m_num_levs+1);
   const auto policy = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
-  m_workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 7+m_num_tracers, policy);
+  m_workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 8, policy);
 
   // Compute field for horizontal contraction weights (1/num_global_dofs)
   const auto iop_nudge_tq = m_iop_data_manager->get_params().get<bool>("iop_nudge_tq");
@@ -147,149 +148,72 @@ void IOPForcing::initialize_impl (const RunType run_type)
   if (iop_nudge_tq or iop_nudge_uv) m_helper_fields.at("horiz_mean_weights").deep_copy(one_over_num_dofs);
 }
 // =========================================================================================
+
 KOKKOS_FUNCTION
 void IOPForcing::
-advance_iop_subsidence(const MemberType& team,
-                       const int nlevs,
-                       const Real dt,
-                       const Real ps,
-                       const view_1d<const Pack>& ref_p_mid,
-                       const view_1d<const Pack>& ref_p_int,
-                       const view_1d<const Pack>& ref_p_del,
-                       const view_1d<const Pack>& omega,
-                       const Workspace& workspace,
-                       const view_1d<Pack>& u,
-                       const view_1d<Pack>& v,
-                       const view_1d<Pack>& T,
-                       const view_2d<Pack>& Q)
+advance_iop_subsidence (const MemberType& team,
+                        const int nlevs,
+                        const Real dt,
+                        const view_1d<const Pack>& ref_p_mid,
+                        const view_1d<const Pack>& omega,
+                        const Workspace& workspace,
+                        const view_1d<Pack>& u,
+                        const view_1d<Pack>& v,
+                        const view_1d<Pack>& T,
+                        const view_2d<Pack>& Q,
+                        ekat::LinInterp<Real, Pack::n>& interp)
 {
-  constexpr Real Rair = C::Rair.value;
+  constexpr Real Rair  = C::Rair.value;
   constexpr Real Cpair = C::Cpair.value;
 
-  const auto n_q_tracers = Q.extent_int(0);
-  const auto nlev_packs = ekat::npack<Pack>(nlevs);
+  const int n_q_tracers = Q.extent_int(0);
+  const int nlev_packs  = ekat::npack<Pack>(nlevs);
 
-  // Get some temporary views from WS
-  uview_1d<Pack> omega_int, delta_u, delta_v, delta_T, tmp;
-  workspace.take_many_contiguous_unsafe<4>({"omega_int", "delta_u", "delta_v", "delta_T"},
-                                           {&omega_int,  &delta_u,  &delta_v,  &delta_T});
-  const auto delta_Q_slot = workspace.take_macro_block("delta_Q", n_q_tracers);
-  uview_2d<Pack> delta_Q(delta_Q_slot.data(), n_q_tracers, nlev_packs);
+  const int icol  =  team.league_rank();
 
-  auto s_ref_p_mid = ekat::scalarize(ref_p_mid);
-  auto s_omega = ekat::scalarize(omega);
-  auto s_delta_u = ekat::scalarize(delta_u);
-  auto s_delta_v = ekat::scalarize(delta_v);
-  auto s_delta_T = ekat::scalarize(delta_T);
-  auto s_delta_Q = ekat::scalarize(delta_Q);
-  auto s_omega_int = ekat::scalarize(omega_int);
+  // Workspace temporaries
+  uview_1d<Pack> p_dep, u_new, v_new, T_new, q_new;
 
-  // Compute omega on the interface grid by using a weighted average in pressure
-  const int pack_begin = 1/Pack::n, pack_end = (nlevs-1)/Pack::n;
-  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pack_begin, pack_end+1), [&] (const int k){
-    auto range_pack = ekat::range<IntPack>(k*Pack::n);
-    range_pack.set(range_pack<1, 1);
-    Pack ref_p_mid_k, ref_p_mid_km1, omega_k, omega_km1;
-    ekat::index_and_shift<-1>(s_ref_p_mid, range_pack, ref_p_mid_k, ref_p_mid_km1);
-    ekat::index_and_shift<-1>(s_omega, range_pack, omega_k, omega_km1);
+  // allocate temporaries from workspace
+  workspace.take_many_contiguous_unsafe<5>(
+    {"iop_p_dep","iop_u_new","iop_v_new","iop_T_new","iop_q_new"},
+    {&p_dep, &u_new, &v_new, &T_new, &q_new});
 
-    const auto weight = (ref_p_int(k) - ref_p_mid_km1)/(ref_p_mid_k - ref_p_mid_km1);
-    omega_int(k).set(range_pack>=1 and range_pack<=nlevs-1,
-                      weight*omega_k + (1-weight)*omega_km1);
+  // Compute Departure Points using large-scale vertical velocity
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
+    p_dep(k) = ref_p_mid(k) - dt * omega(k);
   });
-  omega_int(0)[0] = 0;
-  omega_int(nlevs/Pack::n)[nlevs%Pack::n] = 0;
-
-  // Compute delta views for u, v, T, and Q (e.g., u(k+1) - u(k), k=0,...,nlevs-2)
-  ColOps::compute_midpoint_delta(team, nlevs-1, u, delta_u);
-  ColOps::compute_midpoint_delta(team, nlevs-1, v, delta_v);
-  ColOps::compute_midpoint_delta(team, nlevs-1, T, delta_T);
-  for (int iq=0; iq<n_q_tracers; ++iq) {
-    auto tracer       = Kokkos::subview(Q,       iq, Kokkos::ALL());
-    auto delta_tracer = Kokkos::subview(delta_Q, iq, Kokkos::ALL());
-    ColOps::compute_midpoint_delta(team, nlevs-1, tracer, delta_tracer);
-  }
   team.team_barrier();
 
-  // Compute updated temperature, horizontal winds, and tracers
-  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const int k) {
-    auto range_pack = ekat::range<IntPack>(k*Pack::n);
-    const auto at_top = range_pack==0;
-    const auto not_at_top = not at_top;
-    const auto at_bot = range_pack==nlevs-1;
-    const auto not_at_bot = not at_bot;
-    const bool any_at_top = at_top.any();
-    const bool any_at_bot = at_bot.any();
+  interp.setup(team, ref_p_mid, p_dep);
 
-    // Get delta(k-1) packs. The range pack should not
-    // contain index 0 (so that we don't attempt to access
-    // k=-1 index) or index > nlevs-2 (since delta_* views
-    // are size nlevs-1).
-    auto range_pack_for_m1_shift = range_pack;
-    range_pack_for_m1_shift.set(range_pack<1, 1);
-    range_pack_for_m1_shift.set(range_pack>nlevs-2, nlevs-2);
-    Pack delta_u_k, delta_u_km1,
-         delta_v_k, delta_v_km1,
-         delta_T_k, delta_T_km1;
-    ekat::index_and_shift<-1>(s_delta_u, range_pack_for_m1_shift, delta_u_k, delta_u_km1);
-    ekat::index_and_shift<-1>(s_delta_v, range_pack_for_m1_shift, delta_v_k, delta_v_km1);
-    ekat::index_and_shift<-1>(s_delta_T, range_pack_for_m1_shift, delta_T_k, delta_T_km1);
+  interp.lin_interp(team, ref_p_mid, p_dep, u, u_new, icol);
+  interp.lin_interp(team, ref_p_mid, p_dep, v, v_new, icol);
+  interp.lin_interp(team, ref_p_mid, p_dep, T, T_new, icol);
+  team.team_barrier();
 
-    // At the top and bottom of the model, set the end points for
-    // delta_*_k and delta_*_km1 to be the first and last entries
-    // of delta_*, respectively.
-    if (any_at_top) {
-      delta_u_k.set(at_top, s_delta_u(0));
-      delta_v_k.set(at_top, s_delta_v(0));
-      delta_T_k.set(at_top, s_delta_T(0));
-    }
-    if (any_at_bot) {
-      delta_u_km1.set(at_bot, s_delta_u(nlevs-2));
-      delta_v_km1.set(at_bot, s_delta_v(nlevs-2));
-      delta_T_km1.set(at_bot, s_delta_T(nlevs-2));
-    }
-
-    // Get omega_int(k+1) pack. The range pack should not
-    // contain index > nlevs-1 (since omega_int is size nlevs+1).
-    auto range_pack_for_p1_shift = range_pack;
-    range_pack_for_p1_shift.set(range_pack>nlevs-1, nlevs-1);
-    Pack omega_int_k, omega_int_kp1;
-    ekat::index_and_shift<1>(s_omega_int, range_pack, omega_int_k, omega_int_kp1);
-
-    const auto fac = (dt/2)/ref_p_del(k);
-
-    // Update u
-    u(k).update(not_at_bot, fac*omega_int_kp1*delta_u_k, -1, 1);
-    u(k).update(not_at_top, fac*omega_int_k*delta_u_km1, -1, 1);
-
-    // Update v
-    v(k).update(not_at_bot, fac*omega_int_kp1*delta_v_k, -1, 1);
-    v(k).update(not_at_top, fac*omega_int_k*delta_v_km1, -1, 1);
-
-    // Before updating T, first scale using thermal
-    // expansion term due to LS vertical advection
-    T(k) *= 1 + (dt*Rair/Cpair)*omega(k)/ref_p_mid(k);
-
-    // Update T
-    T(k).update(not_at_bot, fac*omega_int_kp1*delta_T_k, -1, 1);
-    T(k).update(not_at_top, fac*omega_int_k*delta_T_km1, -1, 1);
-
-    // Update Q
-    Pack delta_tracer_k, delta_tracer_km1;
-    for (int iq=0; iq<n_q_tracers; ++iq) {
-      auto s_delta_tracer = Kokkos::subview(s_delta_Q, iq, Kokkos::ALL());
-      ekat::index_and_shift<-1>(s_delta_tracer, range_pack_for_m1_shift, delta_tracer_k, delta_tracer_km1);
-      if (any_at_top) delta_tracer_k.set(at_top, s_delta_tracer(0));
-      if (any_at_bot) delta_tracer_km1.set(at_bot, s_delta_tracer(nlevs-2));
-
-      Q(iq, k).update(not_at_bot, fac*omega_int_kp1*delta_tracer_k, -1, 1);
-      Q(iq, k).update(not_at_top, fac*omega_int_k*delta_tracer_km1, -1, 1);
-    }
+  // Thermal expansion correction + write back
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
+    T_new(k) *= 1.0 + (dt * Rair / Cpair) * omega(k) / ref_p_mid(k);
+    u(k) = u_new(k);
+    v(k) = v_new(k);
+    T(k) = T_new(k);
   });
 
-  // Release WS views
-  workspace.release_macro_block(delta_Q_slot, n_q_tracers);
-  workspace.release_many_contiguous<4>({&omega_int,  &delta_u,  &delta_v,  &delta_T});
+  // Tracers
+  for (int m = 0; m < n_q_tracers; ++m) {
+    const auto q_m = Kokkos::subview(Q, m, Kokkos::ALL());
+
+    interp.lin_interp(team, ref_p_mid, p_dep, q_m, q_new, icol);
+    team.team_barrier();
+
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
+      q_m(k) = q_new(k);
+    });
+  }
+
+  workspace.release_many_contiguous<5>(
+    {&p_dep,&u_new,&v_new,&T_new,&q_new});
 }
 // =========================================================================================
 KOKKOS_FUNCTION
@@ -407,6 +331,10 @@ void IOPForcing::run_impl (const double dt)
   auto wsm = m_workspace_mgr;
   auto num_levs = m_num_levs;
 
+  const auto ncols = m_grid->get_num_local_dofs();
+
+  ekat::LinInterp<Real, Pack::n> subs_interp(ncols, num_levs, num_levs);
+
   // Apply IOP forcing
   Kokkos::parallel_for("apply_iop_forcing", policy_iop, KOKKOS_LAMBDA (const MemberType& team) {
     const int icol  =  team.league_rank();
@@ -437,9 +365,11 @@ void IOPForcing::run_impl (const double dt)
     ColOps::compute_midpoint_delta(team, num_levs, ref_p_int, ref_p_del);
     team.team_barrier();
 
+    auto interp_local = subs_interp;
+
     if (iop_dosubsidence) {
     // Compute subsidence due to large-scale forcing
-      advance_iop_subsidence(team, num_levs, dt, ps_i, ref_p_mid, ref_p_int, ref_p_del, omega, ws, u_i, v_i, T_mid_i, Q_i);
+      advance_iop_subsidence(team, num_levs, dt, ref_p_mid, omega, ws, u_i, v_i, T_mid_i, Q_i, interp_local);
     }
 
     // Update T and qv according to large scale forcing as specified in IOP file.

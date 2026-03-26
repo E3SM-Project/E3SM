@@ -361,7 +361,8 @@ EAMxx allows the user to configure the desired model output via
 with each YAML file associated to a different output stream (i.e., a file).
 In order to add an output stream,
 one needs to run `atmchange output_yaml_files+=/path/to/my/output/yaml`
-(more information on how to use `atmchange` can be found [here](#changing-model-inputs-atmchange)).
+(more information on how to use `atmchange` can be found in the
+[atmchange documentation](#changing-model-inputs-atmchange)).
 During the `buildnml` phase of the case management system, these YAML files
 will be copied into the RUNDIR/data folder.
 During this process, the files will be parsed, and any CIME-related
@@ -432,6 +433,10 @@ in the run directory.
 - `frequency_units`: units of the output frequency.
       - Valid options are `nsteps` (the number of atmosphere time steps),
       `nsecs`, `nmins`, `nhours`, `ndays`, `nmonths`, `nyears`.
+- `transpose`: optional boolean flag to enable transposed output (default: `false`).
+      - When set to `true`, all field dimensions will be reversed in the output file.
+      - For example, a field with layout `(ncol, nlev)` will be written as `(nlev, ncol)`.
+      - This can be useful for post-processing tools that expect a specific dimension ordering.
 
 ## Diagnostic output
 

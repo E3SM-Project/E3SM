@@ -114,7 +114,7 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/) {
     VertContractDiag::scale_wts(m_weighting, m_weighting_sum);
   }
 
-  FieldIdentifier d_fid(m_diag_name, layout.clone().strip_dim(LEV), diag_units, fid.get_grid_name());
+  auto d_fid = fid.clone(m_diag_name).reset_layout(layout.clone().strip_dim(LEV)).reset_units(diag_units);
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
 

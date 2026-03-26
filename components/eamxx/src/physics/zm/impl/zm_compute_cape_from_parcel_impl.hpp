@@ -50,19 +50,19 @@ void Functions<S,D>::compute_cape_from_parcel(
   eql_klev = pver - 1;
   cape = 0.0;
 
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_cin), [&] (const Int& n) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_cin), [&] (const Int& n) {
     eql_klev_tmp(n) = pver - 1;
     cape_tmp(n) = 0.0;
   });
   team.team_barrier();
 
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver), [&] (const Int& k) {
     buoyancy(k) = 0.0;
   });
   team.team_barrier();
 
   // Calculate buoyancy
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_msg, pver), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_msg, pver), [&] (const Int& k) {
     // Define buoyancy from launch level to equilibrium level
     if (k <= msemax_klev && lcl_pmid >= ZMC::lcl_pressure_threshold) {
       buoyancy(k) = parcel_vtemp(k) - tv(k) + runtime_opt.tiedke_add;
@@ -86,10 +86,13 @@ void Functions<S,D>::compute_cape_from_parcel(
       }
     }
   });
+  team.team_barrier();
 
-  // Integrate buoyancy to obtain possible CAPE values
+  // Integrate buoyancy to obtain possible CAPE values. For some reason, the
+  // sum order does not match the serial fortran, so tiny roundoff differences
+  // exist compared to fortran for cape.
   for (Int n = 0; n < num_cin; ++n) {
-    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, num_msg, pver),
+    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, num_msg, pver),
       [&] (const Int& k, Real& cape_n) {
         if (lcl_pmid >= ZMC::lcl_pressure_threshold &&
             k <= msemax_klev && k > eql_klev_tmp(n)) {

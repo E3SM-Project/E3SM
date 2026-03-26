@@ -181,4 +181,27 @@ subroutine zm_conv_mcsp_calculate_shear_bridge_f(pcols, ncol, pver, state_pmid, 
   call zm_conv_mcsp_calculate_shear(pcols, ncol, pver, state_pmid, state_u, state_v, mcsp_shear)
 end subroutine zm_conv_mcsp_calculate_shear_bridge_f
 
+subroutine zm_conv_mcsp_tend_bridge_f(pcols, ncol, pver, pverp, ztodt, jctop, state_pmid, state_pint, state_pdel, state_s, state_q, state_u, state_v, ptend_zm_s, ptend_zm_q, ptend_s, ptend_q, ptend_u, ptend_v, mcsp_dt_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, mcsp_freq, mcsp_shear, zm_depth) bind(C)
+  use zm_conv_mcsp, only : zm_conv_mcsp_tend
+  use zm_conv_types,  only: zm_const_t, zm_param_t
+  use zm_conv_types,  only: zm_param_set_for_testing, zm_const_set_for_testing
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp
+  real(kind=c_real) , value, intent(in) :: ztodt
+  integer(kind=c_int) , intent(in), dimension(pcols) :: jctop
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: state_pmid, state_pdel, state_s, state_q, state_u, state_v, ptend_zm_s, ptend_zm_q
+  real(kind=c_real) , intent(in), dimension(pcols, pverp) :: state_pint
+  real(kind=c_real) , intent(inout), dimension(pcols, pver) :: ptend_s, ptend_q, ptend_u, ptend_v
+  real(kind=c_real) , intent(out), dimension(pcols, pver) :: mcsp_dt_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out
+  real(kind=c_real) , intent(out), dimension(pcols) :: mcsp_freq, mcsp_shear, zm_depth
+
+  type(zm_const_t) :: zm_const ! derived type to hold ZM constants
+  type(zm_param_t) :: zm_param ! derived type to hold ZM tunable parameters
+  !-----------------------------------------------------------------------------
+  call zm_param_set_for_testing(zm_param)
+  call zm_const_set_for_testing(zm_const)
+
+  call zm_conv_mcsp_tend(pcols, ncol, pver, pverp, ztodt, jctop, zm_const, zm_param, state_pmid, state_pint, state_pdel, state_s, state_q, state_u, state_v, ptend_zm_s, ptend_zm_q, ptend_s, ptend_q, ptend_u, ptend_v, mcsp_dt_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, mcsp_freq, mcsp_shear, zm_depth)
+end subroutine zm_conv_mcsp_tend_bridge_f
+
 end module zm_c2f_bridge

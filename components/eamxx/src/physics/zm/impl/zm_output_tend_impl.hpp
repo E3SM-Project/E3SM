@@ -47,26 +47,36 @@ void Functions<S,D>::ZmOutputTend::transpose(int ncol, int nlev_mid)
     const auto loc_snow_flux = snow_flux;
     const auto loc_mass_flux = mass_flux;
 
+    const auto loc_f_tend_t    = f_tend_t;
+    const auto loc_f_tend_qv   = f_tend_qv;
+    const auto loc_f_tend_u    = f_tend_u;
+    const auto loc_f_tend_v    = f_tend_v;
+    const auto loc_f_rain_prod = f_rain_prod;
+    const auto loc_f_snow_prod = f_snow_prod;
+    const auto loc_f_prec_flux = f_prec_flux;
+    const auto loc_f_snow_flux = f_snow_flux;
+    const auto loc_f_mass_flux = f_mass_flux;
+
     //----------------------------------------------------------------------
     // mid-point level variables
     Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int i) {
       const int icol = i/nlev_mid_packs;
       const int klev = i%nlev_mid_packs;
-      loc_tend_t   (icol,klev/Pack::n)[klev%Pack::n] = f_tend_t   (icol,klev);
-      loc_tend_qv  (icol,klev/Pack::n)[klev%Pack::n] = f_tend_qv  (icol,klev);
-      loc_tend_u   (icol,klev/Pack::n)[klev%Pack::n] = f_tend_u   (icol,klev);
-      loc_tend_v   (icol,klev/Pack::n)[klev%Pack::n] = f_tend_v   (icol,klev);
-      loc_rain_prod(icol,klev/Pack::n)[klev%Pack::n] = f_rain_prod(icol,klev);
-      loc_snow_prod(icol,klev/Pack::n)[klev%Pack::n] = f_snow_prod(icol,klev);
+      loc_tend_t   (icol,klev/Pack::n)[klev%Pack::n] = loc_f_tend_t   (icol,klev);
+      loc_tend_qv  (icol,klev/Pack::n)[klev%Pack::n] = loc_f_tend_qv  (icol,klev);
+      loc_tend_u   (icol,klev/Pack::n)[klev%Pack::n] = loc_f_tend_u   (icol,klev);
+      loc_tend_v   (icol,klev/Pack::n)[klev%Pack::n] = loc_f_tend_v   (icol,klev);
+      loc_rain_prod(icol,klev/Pack::n)[klev%Pack::n] = loc_f_rain_prod(icol,klev);
+      loc_snow_prod(icol,klev/Pack::n)[klev%Pack::n] = loc_f_snow_prod(icol,klev);
     });
 
     // interface level variables
     Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_int_packs), KOKKOS_LAMBDA (const int i) {
       const int icol = i/nlev_int_packs;
       const int klev = i%nlev_int_packs;
-      loc_prec_flux(icol,klev/Pack::n)[klev%Pack::n] = f_prec_flux(icol,klev);
-      loc_snow_flux(icol,klev/Pack::n)[klev%Pack::n] = f_snow_flux(icol,klev);
-      loc_mass_flux(icol,klev/Pack::n)[klev%Pack::n] = f_mass_flux(icol,klev);
+      loc_prec_flux(icol,klev/Pack::n)[klev%Pack::n] = loc_f_prec_flux(icol,klev);
+      loc_snow_flux(icol,klev/Pack::n)[klev%Pack::n] = loc_f_snow_flux(icol,klev);
+      loc_mass_flux(icol,klev/Pack::n)[klev%Pack::n] = loc_f_mass_flux(icol,klev);
     });
   }
   // ***********************************************************************

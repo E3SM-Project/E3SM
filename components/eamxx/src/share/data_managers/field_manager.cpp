@@ -57,13 +57,9 @@ void FieldManager::register_field (const FieldRequest& req)
 
   // Get or create the new field
   if (!has_field(id.name(), grid_name)) {
-
-    EKAT_REQUIRE_MSG (id.data_type()==field_valid_data_types().at<Real>(),
-        "Error! While refactoring, we only allow the Field data type to be Real.\n"
-        "       If you're done with refactoring, go back and fix things.\n");
     m_fields[grid_name][id.name()] = std::make_shared<Field>(id);
   } else {
-    // Make sure the input field has the same layout and units as the field already stored.
+    // Make sure the input field has the same layout, units, and data type as the field already stored.
     // TODO: this is the easiest way to ensure everyone uses the same units.
     //       However, in the future, we *may* allow different units, providing
     //       the users with conversion routines perhaps.
@@ -79,6 +75,12 @@ void FieldManager::register_field (const FieldRequest& req)
         "         - input id:  " + id.get_id_string() + "\n"
         "         - stored id: " + id0.get_id_string() + "\n"
         "       Please, check and make sure all atmosphere processes use the same layout for a given field.\n");
+
+    EKAT_REQUIRE_MSG(id.data_type()==id0.data_type(),
+        "Error! Field '" + id.name() + "' already registered with different data_type:\n"
+        "         - input id:  " + id.get_id_string() + "\n"
+        "         - stored id: " + id0.get_id_string() + "\n"
+        "       Please, check and make sure all atmosphere processes use the same data_type for a given field.\n");
   }
 
   // Make sure the field can accommodate the requested value type
@@ -867,7 +869,7 @@ void FieldManager::pre_process_monolithic_group_requests () {
         // to the layout on the src grid
         const auto src_fid = m_fields.at(registered_grid).at(field_name)->get_header().get_identifier();
         const auto fl = m_grids_mgr->get_grid(grid_name)->equivalent_layout(src_fid.get_layout());
-        FieldIdentifier fid(field_name, fl, src_fid.get_units(), grid_name);
+        auto fid = src_fid.clone().reset_layout(fl).reset_grid(grid_name);
 
         // Register the field for each group req
         for (auto greq : m_group_requests.at(grid_name).at(group_name)) {

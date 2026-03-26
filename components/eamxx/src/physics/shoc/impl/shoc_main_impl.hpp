@@ -213,10 +213,10 @@ void Functions<S,D>::shoc_main_internal(
 
     // Update the turbulent length scale
     shoc_length(team,nlev,nlevi,       // Input
-                length_fac,shoc_1p5tke,// Runtime Options
+                length_fac,            // Runtime Options
                 dx,dy,                 // Input
                 zt_grid,zi_grid,dz_zt, // Input
-                tke,thv,tk,            // Input
+                tke,thv,               // Input
                 workspace,             // Workspace
                 brunt,shoc_mix);       // Output
 
@@ -244,7 +244,7 @@ void Functions<S,D>::shoc_main_internal(
     // Diagnose the second order moments
     diag_second_shoc_moments(team,nlev,nlevi,
                              thl2tune, qw2tune, qwthl2tune, w2tune,     // Runtime options
-			     shoc_1p5tke,                               // Runtime options
+                             shoc_1p5tke,                               // Runtime options
                              thetal,qw,u_wind,v_wind,                   // Input
                              tke,isotropy,tkh,tk,dz_zi,zt_grid,zi_grid, // Input
                              shoc_mix,wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,   // Input
@@ -480,17 +480,17 @@ void Functions<S,D>::shoc_main_internal(
 
     // Update the turbulent length scale
     shoc_length_disp(shcol,nlev,nlevi,      // Input
-                     length_fac,shoc_1p5tke,// Runtime Options
+                     length_fac,            // Runtime Options
                      dx,dy,                 // Input
                      zt_grid,zi_grid,dz_zt, // Input
-                     tke,thv,tk,            // Input
+                     tke,thv,               // Input
                      workspace_mgr,         // Workspace mgr
                      brunt,shoc_mix);       // Output
 
     // Advance the SGS TKE equation
     shoc_tke_disp(shcol,nlev,nlevi,dtime,               // Input
-	          lambda_low,lambda_high,lambda_slope,  // Runtime options
-		  lambda_thresh,Ckh,Ckm,shoc_1p5tke,    // Runtime options
+                  lambda_low,lambda_high,lambda_slope,  // Runtime options
+                  lambda_thresh,Ckh,Ckm,shoc_1p5tke,    // Runtime options
                   wthv_sec,                             // Input
                   shoc_mix,dz_zi,dz_zt,pres,shoc_tabs,  // Input
                   u_wind,v_wind,brunt,zt_grid,          // Input
@@ -510,7 +510,7 @@ void Functions<S,D>::shoc_main_internal(
     // Diagnose the second order moments
     diag_second_shoc_moments_disp(shcol,nlev,nlevi,
                                   thl2tune, qw2tune, qwthl2tune, w2tune,     // Runtime options
-				  shoc_1p5tke,                               // Runtime options
+                                  shoc_1p5tke,                               // Runtime options
                                   thetal,qw,u_wind,v_wind,                   // Input
                                   tke,isotropy,tkh,tk,dz_zi,zt_grid,zi_grid, // Input
                                   shoc_mix,wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,   // Input

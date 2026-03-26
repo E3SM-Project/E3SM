@@ -91,7 +91,7 @@ public:
   static constexpr int MaxRank = 6;
 
   // Constructor(s)
-  Field () = default;
+  Field ();
   explicit Field (const identifier_type& id, bool allocate = false);
   Field (const Field& src) = default;
   ~Field () = default;
@@ -293,9 +293,7 @@ public:
                      "Error! We should not setup contiguous helper field for a field "
                      "when host and device share a memory space.\n");
 
-    auto id = m_header->get_identifier();
-    Field contig(id.alias(name()+std::string("_contiguous")));
-    contig.allocate_view();
+    auto contig = clone(name()+"_contiguous");
 
     // Sanity check
     EKAT_REQUIRE_MSG(contig.get_header().get_alloc_properties().contiguous(),
