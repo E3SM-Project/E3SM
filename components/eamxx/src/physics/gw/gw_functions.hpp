@@ -148,6 +148,12 @@ struct Functions
     Real effkwv;            // Effective wavenumber = huge(1._r8)
     view_1d<Real> alpha;    // Newtonian cooling coefficients
     Real tndmax;            // Max wind tend from stress divergence (before efficiency) = huge(1._r8)
+
+    // the do_taper flag refers to a latitude taper that was designed for lat/lon
+    // grids where points converge toward the poles. We will likely never use this
+    // but we'll keep it hard coded to false and passed to various routines just
+    // in case we revert back to using these grids in the future.
+    bool do_taper = false;
   };
 
   // -----------------------------------------------------------------------------------------------
