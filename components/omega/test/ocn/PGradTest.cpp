@@ -267,11 +267,10 @@ int main(int argc, char *argv[]) {
 
          // compute pressure gradient
          deepCopy(Tend, 0.0_Real);
-         
+
          const auto &PressureInterface = VCoord->PressureInterface;
          DefPGrad->computePressureGrad(Tend, PressureMid, PressureInterface,
-                                       SpecVol, ZInterface, 
-                                       LayerThick);
+                                       SpecVol, ZInterface, LayerThick);
 
          // compute errors
          Real MaxValue = 0.0_Real;

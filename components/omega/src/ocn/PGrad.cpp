@@ -130,7 +130,7 @@ void PressureGrad::clear() {
 
    DefaultPGrad = nullptr; // prevent dangling pointe'r
 
- } // end clear
+} // end clear
 
 //------------------------------------------------------------------------------
 // Remove PressureGrad from list by name

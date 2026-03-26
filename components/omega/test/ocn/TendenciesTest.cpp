@@ -213,10 +213,10 @@ int testTendencies() {
    Array3DReal TracerArray = Tracers::getAll(0);
    int ThickTimeLevel      = 0;
    int VelTimeLevel        = 0;
-   int TracerTimeLevel        = 0;
+   int TracerTimeLevel     = 0;
    TimeInstant Time;
    DefTendencies->computeAllTendencies(State, AuxState, TracerArray,
-                                       ThickTimeLevel, VelTimeLevel, 
+                                       ThickTimeLevel, VelTimeLevel,
                                        TracerTimeLevel, Time);
 
    // check that everything got computed correctly

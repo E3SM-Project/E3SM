@@ -613,7 +613,7 @@ void Tendencies::computeVelocityTendenciesOnly(
       Array2DReal LayerThick = State->getLayerThickness(ThickTimeLevel);
       VCoord->computePressure(LayerThick, SurfacePressure);
 
-      const auto &PressureMid = VCoord->PressureMid;
+      const auto &PressureMid       = VCoord->PressureMid;
       const auto &PressureInterface = VCoord->PressureInterface;
       Array2DReal Temp     = Tracers::getByName(TracerTimeLevel, "Temperature");
       Array2DReal Salinity = Tracers::getByName(TracerTimeLevel, "Salinity");

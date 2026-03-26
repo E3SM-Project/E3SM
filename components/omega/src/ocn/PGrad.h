@@ -156,8 +156,7 @@ class PressureGrad {
    ~PressureGrad();
 
    // Compute pressure gradient tendencies and add into Tend array
-   void computePressureGrad(Array2DReal &Tend,
-                            const Array2DReal &PressureMid,
+   void computePressureGrad(Array2DReal &Tend, const Array2DReal &PressureMid,
                             const Array2DReal &PressureInterface,
                             const Array2DReal &SpecVol,
                             const Array2DReal &ZInterface,
