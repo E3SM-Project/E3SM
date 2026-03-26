@@ -7,7 +7,27 @@
 	branch = alm/develop
 [submodule "sbetr"]
 	path = components/elm/src/external_models/sbetr
-	url = git@github.com:BeTR-biogeochemistry-modeling/sbetr.git
+  url = git@github.com:BeTR-biogeochemistry-modeling/sbetr.git
+[submodule "3rd-party/zlib"]
+  path = components/elm/src/external_models/sbetr/3rd-party/zlib
+  url = git@github.com:madler/zlib.git
+  update=none
+[submodule "3rd-party/hdf5"]
+  path = components/elm/src/external_models/sbetr/3rd-party/hdf5
+  url = git@github.com:HDFGroup/hdf5.git
+  update=none
+[submodule "3rd-party/netcdf-c"]
+  path = components/elm/src/external_models/sbetr/3rd-party/netcdf-c
+  url = git@github.com:jinyun1tang/netcdf-c.git
+  update=none
+[submodule "3rd-party/netcdf-fortran"]
+  path = components/elm/src/external_models/sbetr/3rd-party/netcdf-fortran
+  url = git@github.com:jinyun1tang/netcdf-fortran.git
+  update=none
+[submodule "3rd-party/pfunit"]
+  path = components/elm/src/external_models/sbetr/3rd-party/pfunit
+  url = git@github.com:jinyun1tang/pFUnit.git
+  update=none
 [submodule "rrtmgp"]
 	path = components/eam/src/physics/rrtmgp/external
 	url = git@github.com:E3SM-Project/rte-rrtmgp.git
