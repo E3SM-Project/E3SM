@@ -177,7 +177,7 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
    /// Dispatch to the correct VertMix calculation
    if (LocComputeVertMixShear.Enabled && LocComputeVertMixConv.Enabled) {
       parallelForOuter(
-          "VertMix-ConvPlusShear", {Mesh->NCellsSize},
+          "VertMix-ConvPlusShear", {Mesh->NCellsAll},
           KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
              const int KMin   = MinLayerCell(ICell);
              const int KMax   = MaxLayerCell(ICell);
@@ -194,7 +194,7 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
           });
    } else if (LocComputeVertMixShear.Enabled) {
       parallelForOuter(
-          "VertMix-ShearOnly", {Mesh->NCellsSize},
+          "VertMix-ShearOnly", {Mesh->NCellsAll},
           KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
              const int KMin   = MinLayerCell(ICell);
              const int KMax   = MaxLayerCell(ICell);
@@ -209,7 +209,7 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
           });
    } else if (LocComputeVertMixConv.Enabled) {
       parallelForOuter(
-          "VertMix-ConvOnly", {Mesh->NCellsSize},
+          "VertMix-ConvOnly", {Mesh->NCellsAll},
           KOKKOS_LAMBDA(I4 ICell, const TeamMember &Team) {
              const int KMin   = MinLayerCell(ICell);
              const int KMax   = MaxLayerCell(ICell);
@@ -223,7 +223,7 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
           });
    } else {
       parallelFor(
-          "VertMix-Background", {Mesh->NCellsSize}, KOKKOS_LAMBDA(I4 ICell) {
+          "VertMix-Background", {Mesh->NCellsAll}, KOKKOS_LAMBDA(I4 ICell) {
              LocVertDiff(ICell, 0) = 0.0_Real;
              LocVertVisc(ICell, 0) = 0.0_Real;
           });

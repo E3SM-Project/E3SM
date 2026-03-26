@@ -132,7 +132,7 @@ void testEosLinear() {
    int NumMismatches   = 0;
    Array2DReal SpecVol = TestEos->SpecVol;
    parallelReduceOuter(
-       "CheckSpecVolMatrix-linear", {Mesh->NCellsSize},
+       "CheckSpecVolMatrix-linear", {Mesh->NCellsAll},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -156,7 +156,7 @@ void testEosLinear() {
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
       auto SpecVolH = createHostMirrorCopy(TestEos->SpecVol);
-      for (int I = 0; I < NCellsSize; ++I) {
+      for (int I = 0; I < Mesh->NCellsAll; ++I) {
          for (int K = 0; K < NVertLayers; ++K) {
             if (!isApprox(SpecVolH(I, K), LinearExpValue, RTol))
                LOG_ERROR("EosTest: SpecVol Linear Bad Value: "
@@ -202,7 +202,7 @@ void testEosLinearDisplaced() {
    int NumMismatches            = 0;
    Array2DReal SpecVolDisplaced = TestEos->SpecVolDisplaced;
    parallelReduceOuter(
-       "CheckSpecVolDispMatrix-linear", {Mesh->NCellsSize},
+       "CheckSpecVolDispMatrix-linear", {Mesh->NCellsAll},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -227,7 +227,7 @@ void testEosLinearDisplaced() {
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
       auto SpecVolDisplacedH = createHostMirrorCopy(SpecVolDisplaced);
-      for (int I = 0; I < NCellsSize; ++I) {
+      for (int I = 0; I < Mesh->NCellsAll; ++I) {
          for (int K = 0; K < NVertLayers; ++K) {
             if (!isApprox(SpecVolDisplacedH(I, K), LinearExpValue, RTol))
                LOG_ERROR("EosTest: SpecVol Linear Displaced Bad Value: "
@@ -265,7 +265,7 @@ void testBruntVaisalaFreqSqLinear() {
    // for K = 1.
    OMEGA_SCOPE(ZMid, VCoord->ZMid);
    parallelFor(
-       "populateArrays", {NCellsSize, NVertLayers},
+       "populateArrays", {Mesh->NCellsAll, NVertLayers},
        KOKKOS_LAMBDA(I4 ICell, I4 K) {
           if (K == 0) {
              ZMid(ICell, 0)   = -992.1173890198451_Real;
@@ -304,7 +304,7 @@ void testBruntVaisalaFreqSqLinear() {
    int NumMismatches = 0;
    OMEGA_SCOPE(BruntVaisalaFreqSq, TestEos->BruntVaisalaFreqSq);
    parallelReduceOuter(
-       "CheckBruntVaisalaSq-Linear", {Mesh->NCellsSize},
+       "CheckBruntVaisalaSq-Linear", {Mesh->NCellsAll},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -338,7 +338,7 @@ void testBruntVaisalaFreqSqLinear() {
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
       auto BruntVaisalaFreqSqH = createHostMirrorCopy(BruntVaisalaFreqSq);
-      for (int I = 0; I < NCellsSize; ++I) {
+      for (int I = 0; I < Mesh->NCellsAll; ++I) {
          // top layer should be zero
          if (BruntVaisalaFreqSqH(I, 0) != 0.0)
             LOG_ERROR("EosTest: Brunt-Vaisala Linear Bad Value: "
@@ -397,7 +397,7 @@ void testEosTeos10() {
    int NumMismatches   = 0;
    Array2DReal SpecVol = TestEos->SpecVol;
    parallelReduceOuter(
-       "CheckSpecVolMatrix-Teos", {Mesh->NCellsSize},
+       "CheckSpecVolMatrix-Teos", {Mesh->NCellsAll},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -421,7 +421,7 @@ void testEosTeos10() {
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
       auto SpecVolH = createHostMirrorCopy(SpecVol);
-      for (int I = 0; I < NCellsSize; ++I) {
+      for (int I = 0; I < Mesh->NCellsAll; ++I) {
          for (int K = 0; K < NVertLayers; ++K) {
             if (!isApprox(SpecVolH(I, K), LinearExpValue, RTol))
                LOG_ERROR("EosTest: SpecVol TEOS Bad Value: "
@@ -467,7 +467,7 @@ void testEosTeos10Displaced() {
    int NumMismatches            = 0;
    Array2DReal SpecVolDisplaced = TestEos->SpecVolDisplaced;
    parallelReduceOuter(
-       "CheckSpecVolDispMatrix-Teos", {Mesh->NCellsSize},
+       "CheckSpecVolDispMatrix-Teos", {Mesh->NCellsAll},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -492,7 +492,7 @@ void testEosTeos10Displaced() {
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
       auto SpecVolDisplacedH = createHostMirrorCopy(SpecVolDisplaced);
-      for (int I = 0; I < NCellsSize; ++I) {
+      for (int I = 0; I < Mesh->NCellsAll; ++I) {
          for (int K = 0; K < NVertLayers; ++K) {
             if (!isApprox(SpecVolDisplacedH(I, K), LinearExpValue, RTol))
                LOG_ERROR("EosTest: SpecVol Displaced TEOS Bad Value: "
@@ -529,7 +529,7 @@ void testBruntVaisalaFreqSqTeos10() {
    /// Fill inputs with values that should lead to ref result for K=1
    OMEGA_SCOPE(ZMid, VCoord->ZMid);
    parallelFor(
-       "populateArrays", {NCellsSize, NVertLayers},
+       "populateArrays", {Mesh->NCellsAll, NVertLayers},
        KOKKOS_LAMBDA(I4 ICell, I4 K) {
           if (K == 0) {
              ZMid(ICell, 0)   = -992.1173890198451_Real;
@@ -568,7 +568,7 @@ void testBruntVaisalaFreqSqTeos10() {
    int NumMismatches = 0;
    OMEGA_SCOPE(BruntVaisalaFreqSq, TestEos->BruntVaisalaFreqSq);
    parallelReduceOuter(
-       "CheckSpecVolMatrix-Teos", {Mesh->NCellsSize},
+       "CheckSpecVolMatrix-Teos", {Mesh->NCellsAll},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -602,7 +602,7 @@ void testBruntVaisalaFreqSqTeos10() {
    // If test fails, print bad values and abort
    if (NumMismatches != 0) {
       auto BruntVaisalaFreqSqH = createHostMirrorCopy(BruntVaisalaFreqSq);
-      for (int ICell = 0; ICell < NCellsSize; ++ICell) {
+      for (int ICell = 0; ICell < Mesh->NCellsAll; ++ICell) {
          // top layer should be zero
          if (BruntVaisalaFreqSqH(ICell, 0) != 0.0)
             LOG_ERROR("EosTest: Brunt-Vaisala TEOS Bad Value: "

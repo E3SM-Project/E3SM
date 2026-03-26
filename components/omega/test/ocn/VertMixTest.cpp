@@ -125,7 +125,7 @@ void testBackVertMix() {
    deepCopy(TestVertMix->VertVisc, 0.0);
 
    parallelFor(
-       "populateArrays", {NCellsSize, NVertLayers},
+       "populateArrays", {Mesh->NCellsAll, NVertLayers},
        KOKKOS_LAMBDA(I4 ICell, I4 K) { ZMid(ICell, K) = -K; });
 
    parallelFor(
@@ -152,7 +152,7 @@ void testBackVertMix() {
    /// Check total Visc against linear addition of components
    int NumMismatches = 0;
    parallelReduceOuter(
-       "CheckVertMixMatrix-BackgroundVisc", {Mesh->NCellsSize},
+       "CheckVertMixMatrix-BackgroundVisc", {Mesh->NCellsAll},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -187,7 +187,7 @@ void testBackVertMix() {
    /// Check total Diff against linear addition of components
    NumMismatches = 0;
    parallelReduceOuter(
-       "CheckVertMixMatrix-BackgroundDiff", {Mesh->NCellsSize},
+       "CheckVertMixMatrix-BackgroundDiff", {Mesh->NCellsAll},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -251,7 +251,7 @@ void testConvVertMix() {
    deepCopy(TestVertMix->VertVisc, 0.0);
 
    parallelFor(
-       "populateArrays", {NCellsSize, NVertLayers},
+       "populateArrays", {Mesh->NCellsAll, NVertLayers},
        KOKKOS_LAMBDA(I4 ICell, I4 K) { ZMid(ICell, K) = -K; });
 
    parallelFor(
@@ -278,7 +278,7 @@ void testConvVertMix() {
    /// Check total Visc against linear addition of components
    int NumMismatches = 0;
    parallelReduceOuter(
-       "CheckVertMixMatrix-ConvectiveVisc", {Mesh->NCellsSize},
+       "CheckVertMixMatrix-ConvectiveVisc", {Mesh->NCellsAll},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -315,7 +315,7 @@ void testConvVertMix() {
    /// Check total Diff against linear addition of components
    NumMismatches = 0;
    parallelReduceOuter(
-       "CheckVertMixMatrix-ConvectiveDiff", {Mesh->NCellsSize},
+       "CheckVertMixMatrix-ConvectiveDiff", {Mesh->NCellsAll},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -382,7 +382,7 @@ void testShearVertMix() {
    deepCopy(TestVertMix->VertVisc, 0.0);
 
    parallelFor(
-       "populateArrays", {NCellsSize, NVertLayers},
+       "populateArrays", {Mesh->NCellsAll, NVertLayers},
        KOKKOS_LAMBDA(I4 ICell, I4 K) {
           ZMid(ICell, K)      = -K;
           NEdgesOnCell(ICell) = 5;
@@ -415,7 +415,7 @@ void testShearVertMix() {
    /// Check total Visc against linear addition of components
    int NumMismatches = 0;
    parallelReduceOuter(
-       "CheckVertMixMatrix-ShearVisc", {Mesh->NCellsSize},
+       "CheckVertMixMatrix-ShearVisc", {Mesh->NCellsAll},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -458,7 +458,7 @@ void testShearVertMix() {
    /// Check total Diff against linear addition of components
    NumMismatches = 0;
    parallelReduceOuter(
-       "CheckVertMixMatrix-ShearVisc", {Mesh->NCellsSize},
+       "CheckVertMixMatrix-ShearVisc", {Mesh->NCellsAll},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -534,7 +534,7 @@ void testTotalVertMix() {
    deepCopy(TestVertMix->VertVisc, 0.0);
 
    parallelFor(
-       "populateArrays", {NCellsSize, NVertLayers},
+       "populateArrays", {Mesh->NCellsAll, NVertLayers},
        KOKKOS_LAMBDA(I4 ICell, I4 K) {
           ZMid(ICell, K)      = -K;
           NEdgesOnCell(ICell) = 5;
@@ -567,7 +567,7 @@ void testTotalVertMix() {
    /// Check all VertDiff array values against expected value
    int NumMismatches = 0;
    parallelReduceOuter(
-       "CheckVertMixMatrix-TotalPosDiff", {Mesh->NCellsSize},
+       "CheckVertMixMatrix-TotalPosDiff", {Mesh->NCellsAll},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -609,7 +609,7 @@ void testTotalVertMix() {
    /// Check all VertVisc array values against expected value
    NumMismatches = 0;
    parallelReduceOuter(
-       "CheckVertMixMatrix-TotalPosVisc", {Mesh->NCellsSize},
+       "CheckVertMixMatrix-TotalPosVisc", {Mesh->NCellsAll},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -662,7 +662,7 @@ void testTotalVertMix() {
    /// Check all VertDiff array values against expected value
    NumMismatches = 0;
    parallelReduceOuter(
-       "CheckVertMixMatrix-TotalNegDiff", {Mesh->NCellsSize},
+       "CheckVertMixMatrix-TotalNegDiff", {Mesh->NCellsAll},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
@@ -704,7 +704,7 @@ void testTotalVertMix() {
    /// Check all VertVisc array values against expected value
    NumMismatches = 0;
    parallelReduceOuter(
-       "CheckVertMixMatrix-TotalNegVisc", {Mesh->NCellsSize},
+       "CheckVertMixMatrix-TotalNegVisc", {Mesh->NCellsAll},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team, int &OuterCount) {
           int NumMismatchesCol;
           const int KMin   = MinLayerCell(ICell);
