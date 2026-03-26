@@ -47,7 +47,7 @@ void SurfaceCouplingExporter::create_requests()
   add_field<Required>("phis",                 scalar2d_layout,      m2/s2,  grid_name);
   add_field<Required>("p_mid",                scalar3d_layout_mid,  Pa,     grid_name, ps);
   add_field<Required>("T_mid",                scalar3d_layout_mid,  K,      grid_name, ps);
-  add_tracer<Required>("qv", m_grid,  kg/kg, ps);
+  add_field<Required>("qv",                   scalar3d_layout_mid,  kg/kg,  grid_name, ps);
   // TODO: Switch horiz_winds to using U and V, note right now there is an issue with when the subfields are created, so can't switch yet.
   add_field<Required>("horiz_winds",          vector3d_layout,      m/s,    grid_name);
   add_field<Required>("sfc_flux_dir_nir",     scalar2d_layout,      W/m2,   grid_name);
@@ -64,7 +64,7 @@ void SurfaceCouplingExporter::create_requests()
   add_field<Required>("surf_mom_flux",        vector2d_layout,      N/m2,   grid_name);
   add_field<Required>("tau_est",              scalar2d_layout,      Pa,     grid_name);
   // Required for ugust
-  add_tracer<Required>("tke",                 m_grid,               m2/s2,  ps);
+  add_field<Required>("tke",                  scalar3d_layout_mid,  m2/s2,  grid_name, ps);
 
   create_helper_field("Sa_z",       scalar2d_layout, grid_name);
   create_helper_field("Sa_u",       scalar2d_layout, grid_name);
@@ -341,6 +341,10 @@ void SurfaceCouplingExporter::do_export(const double dt, const bool called_durin
     compute_eamxx_exports(dt,called_during_initialization);
   }
 
+  // Ensure all GPU kernels in compute_eamxx_exports have completed before
+  // do_export_to_cpl reads the helper field data (e.g. Sa_wsresp, Sa_ugust).
+  Kokkos::fence();
+
   // Finish up exporting vars
   do_export_to_cpl(called_during_initialization);
 }
@@ -495,9 +499,8 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
     // Set the values in the helper fields which correspond to the exported variables
 
     if (export_source(idx_Sa_z)==FROM_MODEL) {
-      // Assugb to Sa_z
       const auto s_z_mid_i = ekat::scalarize(z_mid_i);
-      Sa_z(i)    = s_z_mid_i(num_levs-1);
+      Sa_z(i) = s_z_mid_i(num_levs-1);
     }
 
     if (export_source(idx_Sa_u)==FROM_MODEL) {
@@ -600,13 +603,15 @@ void SurfaceCouplingExporter::do_export_to_cpl(const bool called_during_initiali
     const auto& info = col_info(ifield);
     const auto offset = icol*info.col_stride + info.col_offset;
 
-    // if this is during initialization, check whether or not the field should be exported
+    // if this is during initialization, check whether or not the field should be exported.
+    // Also skip if cpl_indx == -1 (field not found in MCT attribute vector via perrWith='quiet').
+    // Note: indices are already converted from 1-based Fortran to 0-based C++, so valid indices are >= 0.
     bool do_export = (not called_during_initialization || info.transfer_during_initialization);
-    if (do_export) {
+    if (do_export && info.cpl_indx >= 0) {
 #ifdef HAVE_MOAB
       cpl_exports_view_d(info.cpl_indx, icol) = info.constant_multiple*info.data[offset];
 #else
-      cpl_exports_view_d(icol,info.cpl_indx) = info.constant_multiple*info.data[offset];
+      cpl_exports_view_d(icol, info.cpl_indx) = info.constant_multiple*info.data[offset];
 #endif
     }
   });

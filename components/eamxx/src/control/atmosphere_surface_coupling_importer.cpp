@@ -178,13 +178,15 @@ void SurfaceCouplingImporter::do_import(const bool called_during_initialization)
 
     auto offset = icol*info.col_stride + info.col_offset;
 
-    // if this is during initialization, check whether or not the field should be imported
+    // if this is during initialization, check whether or not the field should be imported.
+    // Also skip if cpl_indx == -1 (field not found in MCT attribute vector via perrWith='quiet').
+    // Note: indices are already converted from 1-based Fortran to 0-based C++, so valid indices are >= 0.
     bool do_import = (not called_during_initialization || info.transfer_during_initialization);
-    if (do_import) {
+    if (do_import && info.cpl_indx >= 0) {
 #ifdef HAVE_MOAB
       info.data[offset] = cpl_imports_view_d(info.cpl_indx, icol)*info.constant_multiple;
 #else
-      info.data[offset] = cpl_imports_view_d(icol,info.cpl_indx)*info.constant_multiple;
+      info.data[offset] = cpl_imports_view_d(icol, info.cpl_indx)*info.constant_multiple;
 #endif
     }
   });
