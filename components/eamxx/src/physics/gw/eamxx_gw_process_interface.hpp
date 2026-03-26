@@ -27,6 +27,7 @@ class GWDrag : public AtmosphereProcess
   using GWF = gw::Functions<Real, DefaultDevice>;
   using PF  = scream::PhysicsFunctions<DefaultDevice>;
   using PC  = scream::physics::Constants<Real>;
+  using WSM = typename GWF::WorkspaceManager;
 
   using Scalar   = typename GWF::Scalar;
   using Pack     = typename GWF::Pack;
@@ -50,22 +51,43 @@ class GWDrag : public AtmosphereProcess
 
     // Structure for storing local variables initialized using the ATMBufferManager
     struct Buffer {
-      static constexpr int num_3d_mid_views = 1;
-      static constexpr int num_2d_mid_views = 5;
-      static constexpr int num_2d_int_views = 4;
-      static constexpr int num_2d_pgw_views = 1;
-      uview_2d z_mid;   // mid-point altitude
-      uview_2d z_int;   // interface altitude
-      uview_2d z_del;   // thickness of layer altitudes
-      uview_2d T_int;   // interface absolute temperature (dimension must equal T_mid)
-      uview_2d N_mid;   // mid-point Brunt-Vaisalla frequency
-      uview_2d N_int;   // interface Brunt-Vaisalla frequency
-      uview_2d rho_int; // interface density
+      static constexpr int num_3d_mid_views   = 1;
+      static constexpr int num_3d_pcnst_views = 2;
+      static constexpr int num_3d_cd_views    = 1;
+      static constexpr int num_3d_pgw_views   = 1;
+      static constexpr int num_2d_mid_views   = 13;
+      static constexpr int num_2d_int_views   = 6;
+      static constexpr int num_2d_pgw_views   = 1;
+      uview_2d z_mid;       // mid-point altitude
+      uview_2d z_int;       // interface altitude
+      uview_2d z_del;       // thickness of layer altitudes
+      uview_2d p_del_rcp;   // reciprcal of p_del
+      uview_2d p_int_log;   // natural log of p_int
+      uview_2d T_int;       // interface absolute temperature (dimension must equal T_mid)
+      uview_2d N_mid;       // mid-point Brunt-Vaisalla frequency
+      uview_2d N_int;       // interface Brunt-Vaisalla frequency
+      uview_2d rho_int;     // interface density
+      uview_3d q_combined;  // combined qv, qc, qi [ncol][pver][3]
 
-      uview_3d tau;     // gravity wave Reynolds stress
-      uview_2d ubm;     // mid-point projection of wind
-      uview_2d ubi;     // interface projection of wind
-      uview_2d c;       // calculated gravity wave phase speeds
+      uview_3d tau;         // gravity wave Reynolds stress
+      uview_2d ubm;         // mid-point projection of wind
+      uview_2d ubi;         // interface projection of wind
+      uview_2d c;           // calculated gravity wave phase speeds
+
+      uview_2d kvtt;    // molecular diffusivity
+      uview_2d dse;     // dry static energy
+
+      uview_2d utgw;    // temperature tendency
+      uview_2d vtgw;    // zonal wind tendency
+      uview_2d ttgw;    // meridional wind tendency
+      uview_3d qtgw;    // constituents tendencies
+
+      uview_3d taucd;   // reynolds stress for waves propagating in each cardinal direction
+
+      uview_2d egwdffi; // effective gw diffusivity at interfaces needed for output
+      uview_3d gwut;    // gravity wave wind tendency for each wave
+      uview_2d dttdf;   // temperature tendencies from diffusion
+      uview_2d dttke;   // temperature tendencies from kinetic energy
     };
 
 #ifndef KOKKOS_ENABLE_CUDA
@@ -93,6 +115,8 @@ class GWDrag : public AtmosphereProcess
     int m_ncol;
     int m_nlev;
     int m_npgw;
+
+    Field m_lat;
 
 }; // class GWDrag
 
