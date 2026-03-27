@@ -113,7 +113,7 @@ cvmh (LhsView lhs, RhsView rhs,
   helper.run(dims);
 }
 
-template<typename LhsView, typename MaskView>
+template<typename LhsView, typename MaskView, bool negate_mask>
 struct SetValueMasked
 {
   using exec_space = typename LhsView::traits::execution_space;
@@ -158,41 +158,41 @@ struct SetValueMasked
   KOKKOS_INLINE_FUNCTION
   void operator() (int i) const {
     if constexpr (N==0) {
-      if (mask())
+      if ((mask()!=0) != negate_mask)
         lhs() = value;
     } else {
-      if (mask(i))
+      if ((mask(i)!=0) != negate_mask)
         lhs(i) = value;
     }
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j) const {
-    if (mask(i,j))
+    if ((mask(i,j)!=0) != negate_mask)
       lhs(i,j) = value;
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k) const {
-    if (mask(i,j,k))
+    if ((mask(i,j,k)!=0) != negate_mask)
       lhs(i,j,k) = value;
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k, int l) const {
-    if (mask(i,j,k,l))
+    if ((mask(i,j,k,l)!=0) != negate_mask)
       lhs(i,j,k,l) = value;
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k, int l, int m) const {
-    if (mask(i,j,k,l,m))
+    if ((mask(i,j,k,l,m)!=0) != negate_mask)
       lhs(i,j,k,l,m) = value;
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k, int l, int m, int n) const {
-    if (mask(i,j,k,l,m,n))
+    if ((mask(i,j,k,l,m,n)!=0) != negate_mask)
       lhs(i,j,k,l,m,n) = value;
   }
 
@@ -201,14 +201,14 @@ struct SetValueMasked
   MaskView mask;
 };
 
-template<typename LhsView, typename MaskView = LhsView>
+template<bool negate_mask, typename LhsView, typename MaskView = LhsView>
 void
 svm (LhsView lhs,
      typename LhsView::traits::value_type value,
      const std::vector<int>& dims,
      MaskView mask)
 {
-  SetValueMasked <LhsView, MaskView> helper;
+  SetValueMasked <LhsView, MaskView, negate_mask> helper;
   helper.lhs = lhs;
   helper.mask = mask;
   helper.value = value;
@@ -396,7 +396,7 @@ update_masked (const Field& x, const ST alpha, const ST beta, const Field& mask)
   Kokkos::fence();
 }
 
-template<typename ST>
+template<bool negate_mask, typename ST>
 void Field::deep_copy_masked (const ST value, const Field& mask)
 {
   const auto& layout = get_header().get_identifier().get_layout();
@@ -408,63 +408,64 @@ void Field::deep_copy_masked (const ST value, const Field& mask)
   switch (rank) {
     case 0:
       if (lr_ok)
-        return m_lr_ok ? details::svm(get_view<ST>(),value,dims,mask.get_view<const int>())
-                       : details::svm(get_view<ST>(),value,dims,mask.get_strided_view<const int>());
+        m_lr_ok ? details::svm<negate_mask>(get_view<ST>(),value,dims,mask.get_view<const int>())
+                : details::svm<negate_mask>(get_view<ST>(),value,dims,mask.get_strided_view<const int>());
       else
-        return m_lr_ok ? details::svm(get_strided_view<ST>(),value,dims,mask.get_view<const int>())
-                       : details::svm(get_strided_view<ST>(),value,dims,mask.get_strided_view<const int>());
+        m_lr_ok ? details::svm<negate_mask>(get_strided_view<ST>(),value,dims,mask.get_view<const int>())
+                : details::svm<negate_mask>(get_strided_view<ST>(),value,dims,mask.get_strided_view<const int>());
       break;
     case 1:
       if (lr_ok)
-        return m_lr_ok ? details::svm(get_view<ST*>(),value,dims,mask.get_view<const int*>())
-                       : details::svm(get_view<ST*>(),value,dims,mask.get_strided_view<const int*>());
+        m_lr_ok ? details::svm<negate_mask>(get_view<ST*>(),value,dims,mask.get_view<const int*>())
+                : details::svm<negate_mask>(get_view<ST*>(),value,dims,mask.get_strided_view<const int*>());
       else
-        return m_lr_ok ? details::svm(get_strided_view<ST*>(),value,dims,mask.get_view<const int*>())
-                       : details::svm(get_strided_view<ST*>(),value,dims,mask.get_strided_view<const int*>());
+        m_lr_ok ? details::svm<negate_mask>(get_strided_view<ST*>(),value,dims,mask.get_view<const int*>())
+                : details::svm<negate_mask>(get_strided_view<ST*>(),value,dims,mask.get_strided_view<const int*>());
       break;
     case 2:
       if (lr_ok)
-        return m_lr_ok ? details::svm(get_view<ST**>(),value,dims,mask.get_view<const int**>())
-                       : details::svm(get_view<ST**>(),value,dims,mask.get_strided_view<const int**>());
+        m_lr_ok ? details::svm<negate_mask>(get_view<ST**>(),value,dims,mask.get_view<const int**>())
+                : details::svm<negate_mask>(get_view<ST**>(),value,dims,mask.get_strided_view<const int**>());
       else
-        return m_lr_ok ? details::svm(get_strided_view<ST**>(),value,dims,mask.get_view<const int**>())
-                       : details::svm(get_strided_view<ST**>(),value,dims,mask.get_strided_view<const int**>());
+        m_lr_ok ? details::svm<negate_mask>(get_strided_view<ST**>(),value,dims,mask.get_view<const int**>())
+                : details::svm<negate_mask>(get_strided_view<ST**>(),value,dims,mask.get_strided_view<const int**>());
       break;
     case 3:
       if (lr_ok)
-        return m_lr_ok ? details::svm(get_view<ST***>(),value,dims,mask.get_view<const int***>())
-                       : details::svm(get_view<ST***>(),value,dims,mask.get_strided_view<const int***>());
+        m_lr_ok ? details::svm<negate_mask>(get_view<ST***>(),value,dims,mask.get_view<const int***>())
+                : details::svm<negate_mask>(get_view<ST***>(),value,dims,mask.get_strided_view<const int***>());
       else
-        return m_lr_ok ? details::svm(get_strided_view<ST***>(),value,dims,mask.get_view<const int***>())
-                       : details::svm(get_strided_view<ST***>(),value,dims,mask.get_strided_view<const int***>());
+        m_lr_ok ? details::svm<negate_mask>(get_strided_view<ST***>(),value,dims,mask.get_view<const int***>())
+                : details::svm<negate_mask>(get_strided_view<ST***>(),value,dims,mask.get_strided_view<const int***>());
       break;
     case 4:
       if (lr_ok)
-        return m_lr_ok ? details::svm(get_view<ST****>(),value,dims,mask.get_view<const int****>())
-                       : details::svm(get_view<ST****>(),value,dims,mask.get_strided_view<const int****>());
+        m_lr_ok ? details::svm<negate_mask>(get_view<ST****>(),value,dims,mask.get_view<const int****>())
+                : details::svm<negate_mask>(get_view<ST****>(),value,dims,mask.get_strided_view<const int****>());
       else
-        return m_lr_ok ? details::svm(get_strided_view<ST****>(),value,dims,mask.get_view<const int****>())
-                       : details::svm(get_strided_view<ST****>(),value,dims,mask.get_strided_view<const int****>());
+        m_lr_ok ? details::svm<negate_mask>(get_strided_view<ST****>(),value,dims,mask.get_view<const int****>())
+                : details::svm<negate_mask>(get_strided_view<ST****>(),value,dims,mask.get_strided_view<const int****>());
       break;
     case 5:
       if (lr_ok)
-        return m_lr_ok ? details::svm(get_view<ST*****>(),value,dims,mask.get_view<const int*****>())
-                       : details::svm(get_view<ST*****>(),value,dims,mask.get_strided_view<const int*****>());
+        m_lr_ok ? details::svm<negate_mask>(get_view<ST*****>(),value,dims,mask.get_view<const int*****>())
+                : details::svm<negate_mask>(get_view<ST*****>(),value,dims,mask.get_strided_view<const int*****>());
       else
-        return m_lr_ok ? details::svm(get_strided_view<ST*****>(),value,dims,mask.get_view<const int*****>())
-                       : details::svm(get_strided_view<ST*****>(),value,dims,mask.get_strided_view<const int*****>());
+        m_lr_ok ? details::svm<negate_mask>(get_strided_view<ST*****>(),value,dims,mask.get_view<const int*****>())
+                : details::svm<negate_mask>(get_strided_view<ST*****>(),value,dims,mask.get_strided_view<const int*****>());
       break;
     case 6:
       if (lr_ok)
-        return m_lr_ok ? details::svm(get_view<ST******>(),value,dims,mask.get_view<const int******>())
-                       : details::svm(get_view<ST******>(),value,dims,mask.get_strided_view<const int******>());
+        m_lr_ok ? details::svm<negate_mask>(get_view<ST******>(),value,dims,mask.get_view<const int******>())
+                : details::svm<negate_mask>(get_view<ST******>(),value,dims,mask.get_strided_view<const int******>());
       else
-        return m_lr_ok ? details::svm(get_strided_view<ST******>(),value,dims,mask.get_view<const int******>())
-                       : details::svm(get_strided_view<ST******>(),value,dims,mask.get_strided_view<const int******>());
+        m_lr_ok ? details::svm<negate_mask>(get_strided_view<ST******>(),value,dims,mask.get_view<const int******>())
+                : details::svm<negate_mask>(get_strided_view<ST******>(),value,dims,mask.get_strided_view<const int******>());
       break;
     default:
       EKAT_ERROR_MSG ("Error! Unsupported field rank in 'deep_copy'.\n");
   }
+  Kokkos::fence();
 }
 
 } // namespace scream

@@ -373,20 +373,23 @@ void Field::deep_copy (const ScalarWrapper value)
   }
 }
 
-void Field::deep_copy (const ScalarWrapper value, const Field& mask)
+void Field::deep_copy (const ScalarWrapper value, const Field& mask, const bool negate_mask)
 {
   update_checks(*this,*this,value,value,&mask);
 
   const auto my_data_type = data_type();
   switch (my_data_type) {
     case DataType::IntType:
-      deep_copy_masked(value.as<int>(),mask);
+      negate_mask ? deep_copy_masked<true>(value.as<int>(),mask)
+                  : deep_copy_masked<false>(value.as<int>(),mask);
       break;
     case DataType::FloatType:
-      deep_copy_masked(value.as<float>(),mask);
+      negate_mask ? deep_copy_masked<true>(value.as<float>(),mask)
+                  : deep_copy_masked<false>(value.as<float>(),mask);
       break;
     case DataType::DoubleType:
-      deep_copy_masked(value.as<double>(),mask);
+      negate_mask ? deep_copy_masked<true>(value.as<double>(),mask)
+                  : deep_copy_masked<false>(value.as<double>(),mask);
       break;
     default:
       EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");

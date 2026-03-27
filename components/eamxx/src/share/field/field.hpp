@@ -203,12 +203,13 @@ public:
   void sync_to_dev (const bool fence = true) const;
 
   // --------- Field manipulation methods ------------- //
-  // NOTE: the versions with a mask field only perform the manip where mask!=0
+  // NOTE: the versions with a mask field only perform the manip where mask!=0, except
+  //       for deep_copy(value,mask,true), which performs the deep copy where mask==0.
   //       The mask field MUST have data type IntType
 
   // Set the field to a constant value (on device view ONLY)
   void deep_copy (const ScalarWrapper value);
-  void deep_copy (const ScalarWrapper value, const Field& mask);
+  void deep_copy (const ScalarWrapper value, const Field& mask, const bool negate_mask = false);
 
   // Copy the data from one field to this field (on device ONLY)
   void deep_copy (const Field& src);
@@ -326,7 +327,7 @@ protected:
   template<typename ST>
   void deep_copy_impl (const ST value);
 
-  template<typename ST>
+  template<bool negate_mask, typename ST>
   void deep_copy_masked (const ST value, const Field& mask);
 
   template<CombineMode CM>
