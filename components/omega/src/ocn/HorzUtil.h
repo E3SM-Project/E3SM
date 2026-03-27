@@ -183,7 +183,7 @@ KOKKOS_INLINE_FUNCTION void arc_bisect(const Real ax, const Real ay,
    cy = 0.5_Real * (ay + by);
    cz = 0.5_Real * (az + bz);
    if (cx == 0. && cy == 0. && cz == 0.) {
-      printf("arc_bisect: A and B are diametrically opposite");
+      Kokkos::abort("arc_bisect: A and B are diametrically opposite");
    } else {
       const Real d = Kokkos::sqrt(cx * cx + cy * cy + cz * cz);
       const Real r = Kokkos::sqrt(ax * ax + ay * ay + az * az);

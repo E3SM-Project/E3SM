@@ -211,9 +211,8 @@ class SecondDerivativeOnCell {
                                    const int ICell) const {
       const int NEdges = NEdgesOnCell(ICell);
       if (MaxMaxEdges < NEdges)
-         printf("Error: Number of edges on cell:%d exceeds maximum "
-                "expected:%d for cell:%d",
-                NEdges, MaxMaxEdges, ICell);
+         Kokkos::abort("SecondDerivativeOnCell: number of edges on cell "
+                       "exceeds MaxMaxEdges");
 
       // check to see if we are reaching outside the halo
       auto CellList = Kokkos::subview(CellListCell, ICell, Kokkos::ALL);
@@ -416,35 +415,24 @@ class MasksAndCoefficients {
    // Sort the second dimension (values) of vec based on the first (keys):
    // Array1DI4 keys   = Kokkos::subview(vec, 0, Kokkos::ALL);
    // Array1DI4 values = Kokkos::subview(vec, 1, Kokkos::ALL);
-   KOKKOS_INLINE_FUNCTION static int partition(Array2DI4 &vec, const int low,
-                                               const int high) {
-      // Selecting last element as the pivot
-      const I4 pivot = vec(0, high);
-      int i          = (low - 1);
-      for (int j = low; j < high; ++j) {
-         if (vec(0, j) <= pivot) {
-            i++;
-            swap(vec, i, j);
-         }
-      }
-      // Put pivot to its position
-      swap(vec, i + 1, high);
-      // Return the point of partition
-      return (i + 1);
-   }
-
+   // Use iterative insertion sort to keep this SYCL-device compatible
+   // (recursive device calls are rejected by DPC++).
    KOKKOS_INLINE_FUNCTION static void sort_by_key(Array2DI4 &vec, const I4 low,
                                                   const I4 high) {
-      // Base case: This part will be executed till the starting
-      // index low is lesser than the ending index high
-      if (low < high) {
-         // pi is Partitioning Index, vec[pi] is now at
-         // right place
-         const I4 pi = partition(vec, low, high);
-         // Separately sort elements before and after the
-         // Partition Index pi
-         sort_by_key(vec, low, pi - 1);
-         sort_by_key(vec, pi + 1, high);
+      if (low > high) {
+         Kokkos::abort("MasksAndCoefficients::sort_by_key called with invalid "
+                       "bounds");
+      }
+
+      if (low == high)
+         return;
+
+      for (I4 i = low + 1; i <= high; ++i) {
+         I4 j = i;
+         while (j > low && vec(0, j - 1) > vec(0, j)) {
+            swap(vec, j - 1, j);
+            --j;
+         }
       }
    }
    KOKKOS_INLINE_FUNCTION static bool is_sorted(Array2DI4 &vec) {
