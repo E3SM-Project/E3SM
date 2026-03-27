@@ -231,6 +231,21 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
       fm_after_vr->add_field(tgt);
     }
     m_vert_remapper->registration_ends();
+
+    if (m_avg_type==OutputAvgType::Average) {
+      // We need to reassess whether we are tracking avg count. If there is at least one
+      // tgt field with mask in the vert remapper, we do track avg count. There could be
+      // none if this stream has NO field with vert dim tag (but the user somehow still has
+      // the vert remap option...perhaps they're debugging, and temporarily rm-ed some fields,
+      // so we allow it)
+      for (int i=0; i<m_vert_remapper->get_num_fields(); ++i) {
+        const auto& f = m_vert_remapper->get_tgt_field(i);
+        if (f.has_mask()) {
+          m_track_avg_cnt = true;
+          break;
+        }
+      }
+    }
   } else {
     // No vert remap. Simply alias the fm from the model
     fm_after_vr = fm_model;
