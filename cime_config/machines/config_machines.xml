@@ -1387,16 +1387,16 @@
         <!-- PrgEnv-gnu before cpe, or cray-mpich module doesn't update correctly -->
         <command name="load">Core/25.03</command>
         <command name="load">PrgEnv-gnu</command>
-        <command name="load">cpe/24.11</command>
-        <command name="load">gcc-native/12.3</command>
+        <command name="load">cpe/25.09</command>
+        <command name="load">gcc-native/14.2</command>
         <command name="load">libunwind</command>
         <command name="load">cray-python/3.11.7</command>
         <command name="load">subversion</command>
         <command name="load">git</command>
         <command name="load">cmake</command>
-        <command name="load">cray-hdf5-parallel/1.14.3.3</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.15</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.15</command>
+        <command name="load">cray-hdf5-parallel/1.14.3.7</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.19</command>
         <command name="unload">darshan-runtime</command>
       </modules>
       <modules compiler="craygnu-mphipcc">
