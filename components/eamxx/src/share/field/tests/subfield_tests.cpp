@@ -31,6 +31,11 @@ TEST_CASE("field", "") {
 
     auto f2 = f1.subfield(idim, ivar);
 
+    // A single-slice subfield along dim1 of a rank>=3 parent is not contiguous,
+    // but is still LayoutRight-compatible (Kokkos allows non-trivial stride in dim0).
+    REQUIRE(f2.get_header().get_alloc_properties().contiguous() == false);
+    REQUIRE(f2.get_header().get_alloc_properties().allows_layout_right() == true);
+
     // Wrong rank for the subfield f2
     REQUIRE_THROWS(f2.get_view<Real****>());
 
@@ -75,7 +80,7 @@ TEST_CASE("field", "") {
 
       auto v1d_h = f1.get_view<Real*, Host>();
       auto sf = f1.subfield(idim, sl_beg, sl_end);
-      REQUIRE(sf.get_header().get_alloc_properties().contiguous() == false);
+      REQUIRE(sf.get_header().get_alloc_properties().allows_layout_right() == false);
       auto sv_h = sf.get_strided_view<Real*, Host>();
       REQUIRE(sv_h.extent_int(idim) == (sl_end - sl_beg));
 
@@ -273,7 +278,7 @@ TEST_CASE("field", "") {
 
       for (int ens = 0; ens < 6; ens++) {
         auto sf = f6.subfield(idim[ens], sl_beg[ens], sl_end[ens]);
-        REQUIRE(sf.get_header().get_alloc_properties().contiguous() == false);
+        REQUIRE(sf.get_header().get_alloc_properties().allows_layout_right() == false);
         auto sv_h = sf.get_strided_view<Real******, Host>();
         i1 = (ens == 0) ? sl_beg[0] : 0;
         i2 = (ens == 0) ? sl_end[0] : d6[0];
