@@ -184,18 +184,10 @@ registration_ends_impl ()
         ft.packed &= m_int_packs_supported;
 
       if (m_etype_top==Mask or m_etype_bot==Mask) {
-        // NOTE: the tgt layout is assumed to ALWAYS have LEV as vertical dim tag.
-        auto tgt_layout = create_tgt_layout(src_layout);
-        EKAT_REQUIRE_MSG (tgt_layout.tags().back()==LEV or tgt_layout.tags().back()==ILEV,
-            "Error! Something went wrong while creating a mask field target layout.\n"
-            " - field name: " + tgt.name() + "\n"
-            " - mask layout: " + tgt_layout.to_string() + "\n");
-        tgt_layout.strip_dims({ILEV,LEV}).append_dim(LEV,m_tgt_grid->get_num_vertical_levels());
-
-        // I this mask has already been created, retrieve it, otherwise create it
+        // If this mask has already been created, retrieve it, otherwise create it
         // CAVEATS:
-        //  1. while the tgt layout ALWAYS has LEV as vertical dim tag, we NEED different masks for
-        //     src fields defined at LEV and ILEV. So use src_layout to craft the mask name
+        //  1. while the tgt layout may always have LEV as vertical dim tag (if m_tgt_int_same_as_mid==true),
+        //     we NEED different masks for src fields defined at LEV and ILEV. So use src_layout to craft the mask name
         //  2. for vector dimensions, we must include the vector dim length, as there may be
         //     2+ vector fields with different vector length, which need 2 different masks
         std::vector<std::string> tagdim_names;
