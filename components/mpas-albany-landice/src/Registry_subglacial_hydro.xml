@@ -33,6 +33,14 @@
 'overburden' assumes water pressure is always equal to ice overburden pressure."
 		            possible_values="'cavity', 'overburden'"
                 />
+		<nml_option name="config_SGH_transition_flow" type="logical" default_value=".false." units="unitless"
+		            description="Whether to use the transition flow law for distributed flow from Hill et al. (2024) (https://doi.org/10.1017/jog.2023.103).  If true, config_SGH_beta is ignored and a value of 1.5 is used for the turbulent flow regime and 2 is used for laminar flow regime in the transition law.  Also, if true, a value of 3 is used for config_SGH_alpha in the laminar regime, while the specified value for config_SGH_alpha is used for the turbulent regime.  These choices follow Hill et al. (Sec. 2.2.1)."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_SGH_flow_transition_param" type="real" default_value="0.0005" units="unitless"
+		            description="laminar-turbulent transition parameter used when config_SGH_transition_flow=.true., defined as one over the Reynolds number controlling the transition between laminar and turbulent flow.  Default value of 0.0005 corresponds to Reynolds number of 2000, which is a standard transition value."
+		            possible_values="positive real number"
+		/>
 		<nml_option name="config_SGH_alpha" type="real" default_value="1.25" units="unitless"
 		            description="power of alpha parameter in subglacial water flux formula"
 		            possible_values="positive real number"
@@ -42,7 +50,7 @@
 		            possible_values="positive real number"
 		/>
 		<nml_option name="config_SGH_conduc_coeff" type="real" default_value="0.001" units="m^(2*beta-alpha) s^(2*beta-3) kg^(1-beta)"
-		            description="conductivity coefficient for subglacial water flux"
+		            description="conductivity coefficient for subglacial water flux.  Units are Pa s^(-1) when using the transition flow law."
 		            possible_values="positive real number"
 		/>
 		<nml_option name="config_SGH_conduc_coeff_drowned" type="real" default_value="0.0" units="m^(2*beta-alpha) s^(2*beta-3) kg^(1-beta)"
