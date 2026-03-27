@@ -133,8 +133,13 @@ Field::clone() const {
 
 Field
 Field::alias (const std::string& name) const {
+  return alias(name,get_header().get_identifier().get_grid_name());
+}
+
+Field
+Field::alias (const std::string& name,const std::string& grid_name) const {
   Field f;
-  f.m_header = get_header().alias(name);
+  f.m_header = get_header().alias(name,grid_name);
   f.m_data = m_data;
   f.m_is_read_only = m_is_read_only;
   return f;
