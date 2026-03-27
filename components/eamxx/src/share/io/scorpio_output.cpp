@@ -698,11 +698,15 @@ void AtmosphereOutput::set_avg_cnt_tracking(const Field& f)
   }
 
   // We have not created this avg count field yet.
-  const auto& layout = mask.get_header().get_identifier().get_layout();
+  const auto& mask_fid = mask.get_header().get_identifier();
+  const auto& layout = mask_fid.get_layout();
   m_vars_dims[avg_cnt_name] = get_var_dimnames(m_transpose ? layout.transpose() : layout);
 
   // The count is basically a mask with values in [0,max_int)
-  auto count = mask.clone(avg_cnt_name);
+  // NOTE: we cannot call mask.clone(..), since mask may be packed, and include padding,
+  //       and Field::clone reflects pack size in the new field. But the avg count field
+  //       must later be written to (rhist) file, and we cannot handle packed fields
+  Field count (mask_fid.clone(avg_cnt_name),true);
 
   // For Average, we also check if count is larger than a threshold, so we need a mask
   // for count to establish if the count is "valid"
