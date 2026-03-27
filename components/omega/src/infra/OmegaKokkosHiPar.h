@@ -204,7 +204,7 @@ struct Range {
 template <class F>
 KOKKOS_FUNCTION void parallelForInner(const TeamMember &Team, Range Rng,
                                       F &&Functor) {
-   const auto Policy = TeamThreadRange(Team, Rng.First, Rng.Last + 1);
+   const auto Policy = Kokkos::TeamThreadRange(Team, Rng.First, Rng.Last + 1);
    Kokkos::parallel_for(Policy, std::forward<F>(Functor));
 }
 
@@ -219,7 +219,7 @@ KOKKOS_FUNCTION void parallelForInner(const TeamMember &Team, int UpperBound,
 template <class F, class... R>
 KOKKOS_FUNCTION void parallelReduceInner(const TeamMember &Team, Range Rng,
                                          F &&Functor, R &&...Reducers) {
-   const auto Policy = TeamThreadRange(Team, Rng.First, Rng.Last + 1);
+   const auto Policy = Kokkos::TeamThreadRange(Team, Rng.First, Rng.Last + 1);
    Kokkos::parallel_reduce(Policy, std::forward<F>(Functor),
                            std::forward<R>(Reducers)...);
 }
@@ -236,7 +236,7 @@ KOKKOS_FUNCTION void parallelReduceInner(const TeamMember &Team, int UpperBound,
 template <class F, class... R>
 KOKKOS_FUNCTION void parallelScanInner(const TeamMember &Team, Range Rng,
                                        F &&Functor, R &&...Reducers) {
-   const auto Policy = TeamThreadRange(Team, Rng.First, Rng.Last + 1);
+   const auto Policy = Kokkos::TeamThreadRange(Team, Rng.First, Rng.Last + 1);
    Kokkos::parallel_scan(Policy, std::forward<F>(Functor),
                          std::forward<R>(Reducers)...);
 }
@@ -271,7 +271,7 @@ KOKKOS_FUNCTION void parallelSearchInner(const TeamMember &Team, Range Rng,
       }
    }
 #else
-   const auto Policy = TeamThreadRange(Team, Rng.First, Rng.Last + 1);
+   const auto Policy = Kokkos::TeamThreadRange(Team, Rng.First, Rng.Last + 1);
    Kokkos::parallel_reduce(
        Policy,
        INNER_LAMBDA(int I, int &Accum) {
