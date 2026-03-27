@@ -507,12 +507,6 @@ contains
      endif
     !  mbSize = mbGetnCells(appId)
 
-     iamroot = seq_comm_iamroot(CPLID)
-     if (iamroot) then
-        print *, subname, 'SIZE CHECK: nloc (MCT) = ', nloc, ', mbSize (MOAB) = ', mbSize, &
-                 ', ent_type = ', ent_type, ', tag = ', trim(tagname)
-     endif
-
      allocate(values(mbSize))
      allocate(mct_values(mbSize))
 
@@ -523,23 +517,25 @@ contains
      if (ierr > 0 )  &
         call shr_sys_abort(subname//'Error: fail to get moab tag values')
 
-     values  = mct_values - values
-
-     difference = dot_product(values, values)
+     difference = dot_product(mct_values - values, mct_values - values)
+#ifdef MOABDEBUG
      ! Debug: check for problematic values
      iamroot = seq_comm_iamroot(CPLID)
      if (iamroot .and. difference > 1.e-14) then
-        nloc = count(abs(values) > 1.e-14)  ! count significant differences
+        nloc = count(abs(mct_values - values) > 1.e-14)  ! count significant differences
         print *, subname, 'DIFF DEBUG: elements with |diff| > 1e-10: ', nloc, ' out of ', mbSize
         if (nloc > 0) then
-           print *, '  max |diff| = ', maxval(abs(values)), ' at index ', maxloc(abs(values))
-           print *, '  min |diff| = ', minval(abs(values)), ' at index ', minloc(abs(values))
+           print *, '  max |diff| = ', maxval(abs(mct_values - values)), ' at index ', maxloc(abs(mct_values - values))
+           print *, '  min |diff| = ', minval(abs(mct_values - values)), ' at index ', minloc(abs(mct_values - values))
         endif
      endif
+#endif
 
      differenceg = 0. ! intel complained; why ?
      call shr_mpi_sum(difference,differenceg,mpicom,subname)
      difference = sqrt(differenceg)
+#ifdef MOABDEBUG
+     iamroot = seq_comm_iamroot(CPLID)
      if (iamroot) then
         print * , subname, trim(comp%ntype), ' on cpl, difference on tag ', trim(tagname), ' = ', difference
         if (difference > 1.e-10) then
@@ -549,6 +545,7 @@ contains
         endif
         !call shr_sys_abort(subname//'differences between mct and moab values')
      endif
+#endif
      !deallocate(GlobalIds)
      deallocate (dof)
      deallocate(values)
