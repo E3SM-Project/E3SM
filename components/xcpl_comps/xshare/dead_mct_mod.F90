@@ -228,7 +228,7 @@ contains
                   *  sin (SHR_CONST_PI*lon/180.0_R8)       &
                   + (ncomp*10.0_R8)
 #ifdef HAVE_MOAB
-               !data_d2x(n,nf) = d2x%rAttr(nf,n)
+               data_d2x(n,nf) = d2x%rAttr(nf,n)
 #endif
           enddo
        enddo
