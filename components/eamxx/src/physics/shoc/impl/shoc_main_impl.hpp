@@ -728,7 +728,7 @@ Int Functions<S,D>::shoc_main(
   shoc_main_internal(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
     lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
     thl2tune, qw2tune, qwthl2tune, w2tune, length_fac,     // Runtime options
-    c_diag_3rd_mom, Ckh, Ckm, shoc_1p5tke, extra_diags,    // Runtime options
+    c_diag_3rd_mom, Ckh, Ckm, shoc_1p5tke, do_3d_turb, extra_diags,    // Runtime options
     shoc_input.dx, shoc_input.dy, shoc_input.zt_grid, shoc_input.zi_grid, // Input
     shoc_input.pres, shoc_input.presi, shoc_input.pdel, shoc_input.thv, shoc_input.w_field, // Input
     shoc_input.wthl_sfc, shoc_input.wqw_sfc, shoc_input.uw_sfc, shoc_input.vw_sfc, // Input
