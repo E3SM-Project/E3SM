@@ -81,6 +81,7 @@ public:
   bool  has_extra_data (const std::string& key) const;
 
   std::shared_ptr<FieldHeader> alias (const std::string& name) const;
+  std::shared_ptr<FieldHeader> alias (const std::string& name, const std::string& grid_name) const;
 
   // Two headers alias each other if either
   //   - they are the same obj

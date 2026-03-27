@@ -318,7 +318,7 @@ void AtmosphereOutput::restart (const std::string& filename)
     fields.push_back(*f_ptr);
   }
   for (const auto& f : m_avg_counts) {
-    fields.push_back(f);
+    fields.push_back(f.alias(f.name(),fm->get_grid()->name()));
   }
 
   AtmosphereInput hist_restart (filename, fm->get_grid(), fields);
