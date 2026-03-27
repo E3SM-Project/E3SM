@@ -75,7 +75,7 @@ TEST_CASE("field", "") {
 
       auto v1d_h = f1.get_view<Real*, Host>();
       auto sf = f1.subfield(idim, sl_beg, sl_end);
-      REQUIRE(sf.get_header().get_alloc_properties().contiguous() == false);
+      REQUIRE(sf.get_header().get_alloc_properties().allows_layout_right() == false);
       auto sv_h = sf.get_strided_view<Real*, Host>();
       REQUIRE(sv_h.extent_int(idim) == (sl_end - sl_beg));
 
@@ -273,7 +273,7 @@ TEST_CASE("field", "") {
 
       for (int ens = 0; ens < 6; ens++) {
         auto sf = f6.subfield(idim[ens], sl_beg[ens], sl_end[ens]);
-        REQUIRE(sf.get_header().get_alloc_properties().contiguous() == false);
+        REQUIRE(sf.get_header().get_alloc_properties().allows_layout_right() == false);
         auto sv_h = sf.get_strided_view<Real******, Host>();
         i1 = (ens == 0) ? sl_beg[0] : 0;
         i2 = (ens == 0) ? sl_end[0] : d6[0];

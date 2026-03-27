@@ -44,7 +44,7 @@ void compute_mask (const Field& f, const ST value, Comparison CMP, Field& mask)
   using range_t   = typename KT::RangePolicy;
 
   const auto& layout = f.get_header().get_identifier().get_layout();
-  const auto contiguous = f.get_header().get_alloc_properties().contiguous();
+  const auto lr_ok = f.get_header().get_alloc_properties().allows_layout_right();
 
   int beg[N] = {};
   int end[N];
@@ -53,7 +53,7 @@ void compute_mask (const Field& f, const ST value, Comparison CMP, Field& mask)
   }
 
   auto mv = mask.get_view<int_ND>();
-  if (contiguous) {
+  if (lr_ok) {
     auto v = f.get_view<scalar_ND>();
     if constexpr (N==0) {
       range_t policy(0,1);
