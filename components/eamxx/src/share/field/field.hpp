@@ -203,6 +203,21 @@ public:
   void sync_to_host (const bool fence = true) const;
   void sync_to_dev (const bool fence = true) const;
 
+  // Querying the valid_mask field is common enough that we provide shortcuts.
+  // NOTE: the user can manually set other "mask" fields in the field header
+  //       via FieldHeader's extra data API.
+  // These methods are for a predefined mask that signals where the data is
+  // valid (mask!=0) or invalid/garbage (mask==0).
+  // When this mask is present, certain users of this field may decide to
+  // perform masked manipulations.
+  bool has_valid_mask () const;
+  Field& create_valid_mask (const std::string& mask_name);
+  Field& create_valid_mask () { return create_valid_mask(name()+"_valid_mask"); }
+
+  void set_valid_mask (const Field& mask);
+  const Field& get_valid_mask () const;
+        Field& get_valid_mask ();
+
   // --------- Field manipulation methods ------------- //
   // NOTE: the versions with a mask field only perform the manip where mask!=0, except
   //       for deep_copy(value,mask,true), which performs the deep copy where mask==0.
