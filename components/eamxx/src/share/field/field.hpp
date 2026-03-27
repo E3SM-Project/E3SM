@@ -331,9 +331,9 @@ protected:
   void deep_copy_masked (const ST value, const Field& mask);
 
   template<CombineMode CM>
-  void update_cm (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta);
+  void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta);
   template<CombineMode CM>
-  void update_cm (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const Field& mask);
+  void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const Field& mask);
 
   template<CombineMode CM, typename ST, typename STX>
   void update_impl (const Field& x, const ST alpha, const ST beta);

@@ -6,14 +6,15 @@ namespace scream
 
 namespace
 {
-void update_checks (const Field& y, const Field& x,
+void update_checks (const std::string& caller,
+                    const Field& y, const Field& x,
                     const ScalarWrapper& alpha,
                     const ScalarWrapper& beta,
                     const Field* mask = nullptr)
 {
   // Check output field is writable
   EKAT_REQUIRE_MSG (not y.is_read_only(),
-      "Error! Cannot update field, as it is read-only.\n"
+      "[" + caller + "] Error! Cannot modify field, as it is read-only.\n"
       " - field name: " + y.name() + "\n");
 
   const auto& y_dt = y.data_type();
@@ -23,17 +24,17 @@ void update_checks (const Field& y, const Field& x,
 
   // Ensure data types are not somehow invalid
   EKAT_REQUIRE_MSG (y_dt!=DataType::Invalid,
-      "Error! Left hand side data type is invalid.\n"
+      "[" + caller + "] Error! Lhs data type is invalid.\n"
       " - lhs name: " + y.name() + "\n");
   EKAT_REQUIRE_MSG (x_dt!=DataType::Invalid,
-      "Error! Right hand side data type is invalid.\n"
+      "[" + caller + "] Error! Rhs data type is invalid.\n"
       " - rhs name: " + x.name() + "\n");
   EKAT_REQUIRE_MSG (a_dt!=DataType::Invalid,
-      "Error! Alpha coeff data type is invalid.\n"
+      "[" + caller + "] Error! Alpha coeff data type is invalid.\n"
       " - lhs name: " + y.name() + "\n");
   EKAT_REQUIRE_MSG (b_dt!=DataType::Invalid,
-      "Error! Beta coeff data type is invalid.\n"
-      " - rhs name: " + x.name() + "\n");
+      "[" + caller + "] Error! Beta coeff data type is invalid.\n"
+      " - lhs name: " + y.name() + "\n");
 
   // If user passes, say, double alpha/beta for an int field, we should error out, warning about
   // a potential narrowing rounding. The other way around, otoh, is allowed (even though
@@ -42,56 +43,56 @@ void update_checks (const Field& y, const Field& x,
   // Similarly, we allow updating a field Y with another X as long as converting the data type of X
   // to the data type of Y does not require narrowing
   EKAT_REQUIRE_MSG (not is_narrowing_conversion(x_dt,y_dt),
-      "Error! Right hand side data type may be narrowed when converted to lhs data type.\n"
+      "[" + caller + "] Error! Rhs data type may be narrowed when converted to lhs data type.\n"
       " - lhs name: " + y.name() + "\n"
       " - rhs name: " + x.name() + "\n"
       " - rhs data type: " + e2str(x_dt) + "\n"
       " - lhs data type: " + e2str(y_dt) + "\n");
   EKAT_REQUIRE_MSG (not is_narrowing_conversion(a_dt,y_dt),
-      "Error! Coefficient alpha may be narrowed when converted to x/y data type.\n"
+      "[" + caller + "] Error! Coefficient alpha may be narrowed when converted to lhs data type.\n"
       " - lhs name: " + y.name() + "\n"
       " - lhs data type  : " + e2str(y_dt) + "\n"
       " - alpha data type: " + e2str(a_dt) + "\n");
   EKAT_REQUIRE_MSG (not is_narrowing_conversion(b_dt,y_dt),
-      "Error! Coefficient beta may be narrowed when converted to x/y data type.\n"
+      "[" + caller + "] Error! Coefficient beta may be narrowed when converted to lhs data type.\n"
       " - lhs name: " + y.name() + "\n"
       " - lhs data type  : " + e2str(y_dt) + "\n"
       " - beta data type: " + e2str(b_dt) + "\n");
 
   // Check x/y are allocated
   EKAT_REQUIRE_MSG (y.is_allocated(),
-      "Error! Cannot update field, since it is not allocated.\n"
+      "[" + caller + "] Error! Lhs field is not yet allocated.\n"
       " - field name: " + y.name() + "\n");
   EKAT_REQUIRE_MSG (x.is_allocated(),
-      "Error! Cannot update field, since rhs field is not allocated.\n"
+      "[" + caller + "] Error! Rhs field is not yet allocated.\n"
       " - field name: " + x.name() + "\n");
 
   const auto& y_l = y.get_header().get_identifier().get_layout();
   const auto& x_l = x.get_header().get_identifier().get_layout();
   EKAT_REQUIRE_MSG (y_l==x_l,
-      "Error! Incompatible layouts for update_field.\n"
-      " - x name: " + x.name() + "\n"
-      " - y name: " + y.name() + "\n"
-      " - x layout: " + x_l.to_string() + "\n"
-      " - y layout: " + y_l.to_string() + "\n");
+      "[" + caller + "] Error! Incompatible fields layouts.\n"
+      " - rhs name: " + x.name() + "\n"
+      " - lhs name: " + y.name() + "\n"
+      " - rhs layout: " + x_l.to_string() + "\n"
+      " - lhs layout: " + y_l.to_string() + "\n");
 
   // Now check mask
   if (mask) {
     EKAT_REQUIRE_MSG (mask->is_allocated(),
-        "Error! Mask field was not yet allocated.\n"
+        "[" + caller + "] Error! Mask field was not yet allocated.\n"
         " - mask name: " + mask->name() + "\n");
 
     EKAT_REQUIRE_MSG (mask->data_type()==DataType::IntType,
-        "Error! Mask data type MUST be IntType.\n"
+        "[" + caller + "] Error! Mask data type MUST be IntType.\n"
         " - mask name: " + mask->name() + "\n"
         " - mask data type: " + e2str(mask->data_type()) + "\n");
 
     const auto& m_l = mask->get_header().get_identifier().get_layout();
     EKAT_REQUIRE_MSG (y_l.congruent(m_l),
-      "Error! Incompatible mask layout for update_field.\n"
-      " - y name: " + y.name() + "\n"
+      "[" + caller + "] Error! Incompatible mask layout.\n"
+      " - lhs name: " + y.name() + "\n"
       " - mask name: " + mask->name() + "\n"
-      " - y layout: " + y_l.to_string() + "\n"
+      " - lhs layout: " + y_l.to_string() + "\n"
       " - mask layout: " + m_l.to_string() + "\n");
   }
 }
@@ -355,7 +356,7 @@ void Field::allocate_view ()
 void Field::deep_copy (const ScalarWrapper value)
 {
   // Check consistency of inputs
-  update_checks(*this,*this,value,value);
+  update_checks("Field::deep_copy (scalar)",*this,*this,value,value);
 
   const auto my_data_type = data_type();
   switch (my_data_type) {
@@ -375,7 +376,7 @@ void Field::deep_copy (const ScalarWrapper value)
 
 void Field::deep_copy (const ScalarWrapper value, const Field& mask, const bool negate_mask)
 {
-  update_checks(*this,*this,value,value,&mask);
+  update_checks("Field::deep_copy (scalar, masked)",*this,*this,value,value,&mask);
 
   const auto my_data_type = data_type();
   switch (my_data_type) {
@@ -399,96 +400,96 @@ void Field::deep_copy (const ScalarWrapper value, const Field& mask, const bool 
 void Field::deep_copy (const Field& x)
 {
   constexpr auto CM = CombineMode::Replace;
-  update_cm<CM>(x,1,0);
+  update_cm<CM>("Field::deep_copy",x,1,0);
 }
 
 void Field::deep_copy (const Field& x, const Field& mask)
 {
   constexpr auto CM = CombineMode::Replace;
-  update_cm<CM>(x,1,0,mask);
+  update_cm<CM>("Field::deep_copy (masked)",x,1,0,mask);
 }
 
 void Field::scale (const ScalarWrapper beta)
 {
   constexpr auto CM = CombineMode::Update;
-  update_cm<CM>(*this,0,beta);
+  update_cm<CM>("Field::scale (scalar)",*this,0,beta);
 }
 
 void Field::scale (const ScalarWrapper beta, const Field& mask)
 {
   constexpr auto CM = CombineMode::Update;
-  update_cm<CM>(*this,0,beta,mask);
+  update_cm<CM>("Field::scale (scalar, masked)",*this,0,beta,mask);
 }
 
 void Field::scale (const Field& x)
 {
   constexpr auto CM = CombineMode::Multiply;
-  update_cm<CM>(x,1,1);
+  update_cm<CM>("Field::scale",x,1,1);
 }
 
 void Field::scale (const Field& x, const Field& mask)
 {
   constexpr auto CM = CombineMode::Multiply;
-  update_cm<CM>(x,1,1,mask);
+  update_cm<CM>("Field::scale (masked)",x,1,1,mask);
 }
 
 void Field::scale_inv (const Field& x)
 {
   constexpr auto CM = CombineMode::Divide;
-  update_cm<CM>(x,1,1);
+  update_cm<CM>("Field::scale_inv",x,1,1);
 }
 
 void Field::scale_inv (const Field& x, const Field& mask)
 {
   constexpr auto CM = CombineMode::Divide;
-  update_cm<CM>(x,1,1,mask);
+  update_cm<CM>("Field::scale_inv (masked)",x,1,1,mask);
 }
 
 void Field::max (const Field& x)
 {
   constexpr auto CM = CombineMode::Max;
-  update_cm<CM>(x,1,1);
+  update_cm<CM>("Field::max",x,1,1);
 }
 
 void Field::max (const Field& x, const Field& mask)
 {
   constexpr auto CM = CombineMode::Max;
-  update_cm<CM>(x,1,1,mask);
+  update_cm<CM>("Field::max (masked)",x,1,1,mask);
 }
 
 void Field::min (const Field& x)
 {
   constexpr auto CM = CombineMode::Min;
-  update_cm<CM>(x,1,1);
+  update_cm<CM>("Field::min",x,1,1);
 }
 
 void Field::min (const Field& x, const Field& mask)
 {
   constexpr auto CM = CombineMode::Min;
-  update_cm<CM>(x,1,1,mask);
+  update_cm<CM>("Field::min (masked)",x,1,1,mask);
 }
 
 void Field::
 update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta)
 {
   constexpr auto CM = CombineMode::Update;
-  update_cm<CM>(x,alpha,beta);
+  update_cm<CM>("Field::update",x,alpha,beta);
 }
 
 void Field::
 update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const Field& mask)
 {
   constexpr auto CM = CombineMode::Update;
-  update_cm<CM>(x,alpha,beta,mask);
+  update_cm<CM>("Field::update (masked)",x,alpha,beta,mask);
 }
 
 template<CombineMode CM>
 void Field::
-update_cm (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta)
+update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta)
 {
   // Determine if the RHS can contain fill_value entries
   // Check consistency of inputs
-  update_checks(*this,x,alpha,beta);
+  update_checks(caller,*this,x,alpha,beta);
 
   bool fill_aware = x.get_header().may_be_filled();
 
@@ -517,11 +518,11 @@ update_cm (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta)
 
 template<CombineMode CM>
 void Field::
-update_cm (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const Field& mask)
+update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const Field& mask)
 {
   // Determine if the RHS can contain fill_value entries
   // Check consistency of inputs
-  update_checks(*this,x,alpha,beta,&mask);
+  update_checks(caller,*this,x,alpha,beta,&mask);
 
   if (data_type()==DataType::IntType) {
     return update_masked<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),mask);
