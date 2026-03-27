@@ -320,7 +320,7 @@ void AtmosphereOutput::restart (const std::string& filename)
     fields.push_back(*f_ptr);
   }
   for (const auto& f : m_avg_counts) {
-    fields.push_back(f);
+    fields.push_back(f.alias(f.name(),fm->get_grid()->name()));
   }
 
   AtmosphereInput hist_restart (filename, fm->get_grid(), fields);
@@ -539,7 +539,7 @@ run (const std::string& filename,
       //    if we later need it. E.g, if no AvgCount AND no hremap, we don't need it.
       //////////////////////////////////////////////////////
       auto field = fm_after_hr->get_field(fname);
-      auto mask  = count.get_header().get_extra_data<Field>("valid_mask");
+      auto mask  = count.get_valid_mask();
 
       // Find where the field is NOT equal to fill_value
       compute_mask(field,constants::fill_value<Real>,Comparison::NE,mask);
@@ -629,7 +629,7 @@ run (const std::string& filename,
 
           f_out.scale_inv(avg_count);
 
-          const auto& mask = avg_count.get_header().get_extra_data<Field>("valid_mask");
+          const auto& mask = avg_count.get_valid_mask();
           f_out.deep_copy(constants::fill_value<Real>,mask);
         } else {
           // Divide by steps count only when the summation is complete
@@ -739,10 +739,8 @@ void AtmosphereOutput::set_avg_cnt_tracking(const FieldIdentifier& fid)
   Field count(count_id);
   count.allocate_view();
 
-  // We will use a helper field for updating cnt, so store it inside the field header.
-  // Create the valid_mask explicitly as an IntType field with the same layout/grid.
-  Field mask(count_id.clone(count.name()+"_mask"),true);
-  count.get_header().set_extra_data("valid_mask",mask);
+  // We will use a mask field for updating cnt (to check where cnt>threshold)
+  count.create_valid_mask();
 
   m_avg_counts.push_back(count);
   m_field_to_avg_count[name] = count;
@@ -1116,14 +1114,14 @@ process_requested_fields()
   // Helper lambda to check if this fm_model field should trigger avg count
   auto check_for_avg_cnt = [&](const Field& f) {
     // We need avg-count tracking for any averaged (non-instant) field that:
-    //  - supplies explicit mask info (mask_data or valid_mask)
+    //  - supplies explicit mask info ("mask_data" extra data, or mask field)
     //  - is marked as potentially containing fill values (may_be_filled()).
     // Without this, fill-aware updates skip fill_value during accumulation (good)
     // but we would still divide by the raw nsteps, biasing the result low.
     if (m_avg_type!=OutputAvgType::Instant) {
-      const bool has_mask = f.get_header().has_extra_data("mask_data") || f.get_header().has_extra_data("valid_mask");
+      const bool has_mask_data = f.get_header().has_extra_data("mask_data");
       const bool may_be_filled = f.get_header().may_be_filled();
-      if (has_mask || may_be_filled) {
+      if (f.has_valid_mask() or has_mask_data or may_be_filled) {
         m_track_avg_cnt = true;
         // Avoid duplicate insertion if already present (e.g., mask + filled both true)
         if (m_field_to_avg_cnt_suffix.count(f.name())==0) {

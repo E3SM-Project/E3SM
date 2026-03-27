@@ -136,7 +136,7 @@ void Cosp::initialize_impl (const RunType /* run_type */)
     // the mask here is just the sunlit mask, so set it
     auto& f = get_field_out(field_name);
 
-    f.get_header().set_extra_data("valid_mask", masks.at(field_name));
+    f.set_valid_mask(masks.at(field_name));
     f.get_header().set_may_be_filled(true);
   }
 }
@@ -281,8 +281,8 @@ void Cosp::run_impl (const double dt)
 
     // Update the ctptau and cthtau masks by broadcasting sunlit mask
     const auto& sunlit = get_field_in("sunlit_mask");
-    auto& ctptau = get_field_out("isccp_ctptau").get_header().get_extra_data<Field>("valid_mask");
-    auto& cthtau = get_field_out("misr_cthtau").get_header().get_extra_data<Field>("valid_mask");
+    auto& ctptau = get_field_out("isccp_ctptau").get_valid_mask();
+    auto& cthtau = get_field_out("misr_cthtau").get_valid_mask();
 
     auto sunlit_v = sunlit.get_view<const int*>();
     auto ctptau_v = ctptau.get_view<int***>();

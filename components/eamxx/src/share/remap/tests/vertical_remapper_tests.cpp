@@ -49,8 +49,8 @@ build_grid(const ekat::Comm& comm, const int nldofs, const int nlevs)
 Field
 create_field(const std::string& name,
              const std::shared_ptr<const AbstractGrid>& grid,
-             const bool create_mask, const bool twod,
-             const bool vec, const FieldTag vtag = FieldTag::LevelInterface, const int ps = 1)
+             const bool create_valid_mask, const bool twod,
+             const bool vec, const FieldTag vtag = FieldTag::Invalid, const int ps = 1)
 {
   using namespace ShortFieldTagsNames;
   constexpr int vec_dim = 3;
@@ -65,7 +65,7 @@ create_field(const std::string& name,
   f.get_header().get_alloc_properties().request_allocation(ps);
   f.allocate_view();
 
-  if (create_mask) {
+  if (create_valid_mask) {
     // Set a mask (1=filled, 0=valid) to be used in testing the results
     FieldIdentifier mask_id("is_filled",fl,units,grid->name(),DataType::IntType);
     Field mask(mask_id);

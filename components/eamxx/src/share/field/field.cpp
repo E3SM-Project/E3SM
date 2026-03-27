@@ -208,13 +208,12 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
     sf.initialize_contiguous_helper_field();
   }
 
-  if (m_header->has_extra_data("valid_mask")) {
-    const auto& mask = m_header->get_extra_data<Field>("valid_mask");
-    const auto& mfid = mask.get_header().get_identifier();
-    sf.m_header->set_extra_data("valid_mask",mask.subfield(mask.name(),mfid.get_units(),idim,index,dynamic));
-  }
-
   if (has_valid_mask()) {
+    EKAT_REQUIRE_MSG (not dynamic,
+        "Error! We do not support getting a dynamic subview of a masked field. It's too much work...\n"
+        " - field name: " + name() + "\n"
+        "NOTE: if this is REALLY needed, contact developers, and we can accommodate it.\n");
+
     const auto& mask = get_valid_mask();
     sf.set_valid_mask(mask.subfield(mask.name(),idim,index,dynamic));
   }
