@@ -31,6 +31,11 @@ TEST_CASE("field", "") {
 
     auto f2 = f1.subfield(idim, ivar);
 
+    // A single-slice subfield along dim1 of a rank>=3 parent is not contiguous,
+    // but is still LayoutRight-compatible (Kokkos allows non-trivial stride in dim0).
+    REQUIRE(f2.get_header().get_alloc_properties().contiguous() == false);
+    REQUIRE(f2.get_header().get_alloc_properties().allows_layout_right() == true);
+
     // Wrong rank for the subfield f2
     REQUIRE_THROWS(f2.get_view<Real****>());
 
