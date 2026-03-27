@@ -693,10 +693,10 @@ contains
             write(iulog,fmt='(a,i5,a)') 'aveDTB not in surfdata: reverting to default ',nlevsoi,' layers.'
             do c = begc,endc
                col_pp%nlevbed(c) = nlevsoi
-	       col_pp%zibed(c) = zisoi(nlevsoi)
-	    end do
+	           col_pp%zibed(c) = zisoi(nlevsoi)
+	        end do
          else
-	    do c = begc,endc
+	        do c = begc,endc
                g = col_pp%gridcell(c)
                l = col_pp%landunit(c)               
                t = col_pp%topounit(c)
@@ -711,31 +711,35 @@ contains
                	  col_pp%nlevbed(c) = 5
                else
                   ! check for near zero DTBs, set minimum value
-	          beddep = max(dtb(g,ti), 0.2_r8)
-	          j = 0
-	          zimid = 0._r8
+                  beddep = max(dtb(g,ti), zsoi(1))    ! better to use first-layer thickness
+                  j = 0
+                  zimid = 0._r8
                   do while (zimid < beddep .and. j < nlevgrnd)
-	             zimid = 0.5_r8*(zisoi(j)+zisoi(j+1))
-	             if (beddep > zimid) then
-	                nlevbed = j + 1
-	             else
-	                nlevbed = j
-                     end if
-	             j = j + 1
+	                zimid = 0.5_r8*(zisoi(j)+zisoi(j+1))
+	                if (beddep > zimid) then
+	                   nlevbed = j + 1
+	                else
+	                   nlevbed = j
+                    end if
+	                j = j + 1
                   enddo
-	          nlevbed = max(nlevbed, 5)
-	          nlevbed = min(nlevbed, nlevgrnd)
+	              !nlevbed = max(nlevbed, 5)
+                  nlevbed = max(nlevbed, 1)  ! in alpine or similar situation, it's not ideal assuming 5 layers
+	              nlevbed = min(nlevbed, nlevgrnd)
+                  
                   col_pp%nlevbed(c) = nlevbed
-	          col_pp%zibed(c) = zisoi(nlevbed)
+	              col_pp%zibed(c)   = zisoi(nlevbed)
                end if
+
+
             end do
-	 end if
+	     end if
          deallocate(dtb)
       else
          do c = begc,endc
             col_pp%nlevbed(c) = nlevsoi
-	    col_pp%zibed(c) = zisoi(nlevsoi)
-	 end do
+	        col_pp%zibed(c) = zisoi(nlevsoi)
+	     end do
       end if
 
       !-----------------------------------------------
