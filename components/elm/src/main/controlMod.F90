@@ -42,6 +42,7 @@ module controlMod
   use FanMod                  , only: nh4_ads_coef
   use AllocationMod           , only: nu_com_phosphatase,nu_com_nfix
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
+  use elm_varctl              , only: onset_gdd_extension
   use EcosystemBalanceCheckMod, only: bgc_balance_check_tolerance => balance_check_tolerance
 
   use elm_varctl, only: nu_com, use_dynroot, use_fan, fan_mode, fan_to_bgc_veg, &
