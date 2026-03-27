@@ -52,7 +52,7 @@ module li_constants
 
 #endif
 
-   real (kind=RKIND), parameter, public :: kin_visc_water = 1.793e-6_RKIND  !< kinematic viscosity of freshwater at 0 deg C (m s^-2)
+   real (kind=RKIND), parameter, public :: kin_visc_water = 1.793e-6_RKIND  !< kinematic viscosity of freshwater at 0 deg C (m^2 s^-1)
    real (kind=RKIND), parameter, public :: idealGasConstant = 8.314_RKIND  !< ideal gas constant (J mol^-1 K^-1)
    real (kind=RKIND), parameter, public :: iceConductivity = 2.1_RKIND  !< thermal conductivity of ice (W m^-1 K^-1)
 
