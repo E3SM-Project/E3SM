@@ -402,7 +402,7 @@ Error testHiparLaunchConfig1D(int N1, int N2) {
        LaunchConfig({N1}, TeamSize, TeamScratch<Real, I4>(N2, N2 - 2));
    parallelForOuter(
        LConfig, KOKKOS_LAMBDA(int J1, const TeamMember &Team) {
-          ArrayScratch1DI4 ScratchA(Team.team_scratch(0), N2);
+          ArrayScratch1DI4 ScratchA(teamScratch(Team), N2);
 
           parallelForInner(
               Team, N2, INNER_LAMBDA(int J2) {
@@ -411,7 +411,7 @@ Error testHiparLaunchConfig1D(int N1, int N2) {
 
           teamBarrier(Team);
 
-          ArrayScratch1DReal ScratchB(Team.team_scratch(0), N2 - 2);
+          ArrayScratch1DReal ScratchB(teamScratch(Team), N2 - 2);
 
           parallelForInner(
               Team, Range{1, N2 - 2}, INNER_LAMBDA(int J2) {

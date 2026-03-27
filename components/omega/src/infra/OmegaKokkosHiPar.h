@@ -73,6 +73,10 @@ KOKKOS_INLINE_FUNCTION void teamBarrier(const TeamMember &Team) {
    Team.team_barrier();
 }
 
+KOKKOS_INLINE_FUNCTION decltype(auto) teamScratch(const TeamMember &Team) {
+   return Team.team_scratch(0);
+}
+
 // parallelForOuter: with label and with launch config
 template <int N, class F>
 inline void parallelForOuter(const std::string &Label,
