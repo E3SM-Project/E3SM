@@ -117,6 +117,19 @@ AbstractGrid::equivalent_layout (const FieldLayout& template_layout) const
 {
   using namespace ShortFieldTagsNames;
 
+  // PLEV layouts have an arbitrary pressure-level dimension not tied to this
+  // grid's vertical levels. Handle them by stripping PLEV, computing the
+  // equivalent of the remaining (horizontal) layout, then re-appending PLEV.
+  if (template_layout.has_tag(PLEV)) {
+    const auto plev_idx  = template_layout.dim_idx(PLEV);
+    const auto nplev     = template_layout.dim(PLEV);
+    const auto plev_name = template_layout.names()[plev_idx];
+    auto template_no_plev = template_layout.clone().strip_dim(PLEV);
+    auto ret = equivalent_layout(template_no_plev);
+    ret.append_dim(PLEV, nplev, plev_name);
+    return ret;
+  }
+
   FieldLayout ret_layout = FieldLayout::invalid();
 
   const bool midpoints   = template_layout.has_tag(LEV);
@@ -247,6 +260,14 @@ bool AbstractGrid::
 is_valid_layout (const FieldLayout& layout) const
 {
   using namespace ShortFieldTagsNames;
+
+  // PLEV layouts have an arbitrary pressure-level dimension not tied to this
+  // grid's vertical levels. Validate by stripping the PLEV dimension and
+  // checking that the remaining (horizontal) layout is valid.
+  if (layout.has_tag(PLEV)) {
+    auto layout_no_plev = layout.clone().strip_dim(PLEV);
+    return is_valid_layout(layout_no_plev);
+  }
 
   const bool midpoints = layout.has_tag(LEV);
   switch (layout.type()) {
@@ -493,6 +514,8 @@ void AbstractGrid::reset_num_vertical_lev (const int num_vertical_lev) {
 
   // Loop over geo data. If they have the LEV or ILEV tag, they are
   // no longer valid, so we must erase them.
+  // NOTE: PLEV fields have an arbitrary pressure-level dimension not tied
+  //       to m_num_vert_levs, so they are NOT invalidated here.
   for (auto it=m_geo_fields.cbegin(); it!=m_geo_fields.cend(); ) {
     const auto& fl = it->second.get_header().get_identifier().get_layout();
     const auto has_lev = fl.has_tag(LEV) or fl.has_tag(ILEV);

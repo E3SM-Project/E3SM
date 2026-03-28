@@ -30,6 +30,7 @@ enum class FieldTag {
   Element,
   LevelMidPoint,
   LevelInterface,
+  PressureLevel,
   Column,
   GaussPoint,
   Component,
@@ -49,6 +50,7 @@ namespace ShortFieldTagsNames {
   constexpr auto TL   = FieldTag::TimeLevel;
   constexpr auto LEV  = FieldTag::LevelMidPoint;
   constexpr auto ILEV = FieldTag::LevelInterface;
+  constexpr auto PLEV = FieldTag::PressureLevel;
   constexpr auto CMP  = FieldTag::Component;
 }
 
@@ -67,6 +69,9 @@ inline std::string e2str (const FieldTag ft) {
       break;
     case ILEV:
       name = "ilev";
+      break;
+    case PLEV:
+      name = "lev";
       break;
     case FieldTag::TimeLevel:
       name = "tl";
