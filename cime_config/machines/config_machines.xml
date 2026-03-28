@@ -296,12 +296,15 @@
       <!--env name="H5Z_ZFP_ROOT">$SHELL{if [ -z "$H5Z_ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/h5z-zfp/1.1.1/intel-2024.1.0; else echo "$H5Z_ZFP_ROOT"; fi}</env-->
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="mpich">
-      <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/gcc-native-12.3/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.2/cray-mpich-8.1.28/gcc-native-12.3; else echo "$ADIOS2_ROOT"; fi}</env>
-      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.2/gcc-native-12.3; else echo "$BLOSC2_ROOT"; fi}</env>
-      <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/mgard/1.5.2/gcc-native-12.3; else echo "$MGARD_ROOT"; fi}</env>
-      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/sz/2.1.12.5/gcc-native-12.3; else echo "$SZ_ROOT"; fi}</env>
-      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/zfp/1.0.1/gcc-native-12.3; else echo "$ZFP_ROOT"; fi}</env>
+      <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/gcc-native-14/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
+      <env name="HDF5_ROOT">/global/cfs/cdirs/e3sm/3rdparty/hdf5/2.1.1/cray-mpich-9.0.1/gcc-native-14-mt</env>
+      <env name="ADIOS2_ROOT">/global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.2/cray-mpich-9.0.1/gcc-native-14</env>
+      <env name="BLOSC2_ROOT">/global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.2/gcc-native-14</env>
+      <env name="H5Z_BLOSC2_ROOT">/global/cfs/cdirs/e3sm/3rdparty/h5z-blosc2/2.0.0/gcc-native-14-hdf5-2.1.1</env>
+      <env name="MGARD_ROOT">/global/cfs/cdirs/e3sm/3rdparty/mgard/1.5.2/gcc-native-14</env>
+      <env name="SZ_ROOT">/global/cfs/cdirs/e3sm/3rdparty/sz/2.1.12.5/gcc-native-14</env>
+      <env name="ZFP_ROOT">/global/cfs/cdirs/e3sm/3rdparty/zfp/1.0.1/gcc-native-14</env>
+      <env name="H5Z_ZFP_ROOT">/global/cfs/cdirs/e3sm/3rdparty/h5z-zfp/1.1.1/gcc-native-14-hdf5-2.1.1</env>
       <env name="BLA_VENDOR">Generic</env>
       <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2025.11.14/gcc/12.3; else echo "$Albany_ROOT"; fi}</env>
       <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/2025.10.01/gcc/12.3; else echo "$Trilinos_ROOT"; fi}</env>
