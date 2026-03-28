@@ -2763,6 +2763,9 @@
       <env name="OMP_PLACES">cores</env>
     </environment_variables>
     <environment_variables compiler="oneapi-ifx" mpilib="openmpi">
+      <env name="UCX_RCACHE_MAX_REGIONS">1000</env>
+    </environment_variables>
+    <environment_variables compiler="oneapi-ifx" mpilib="openmpi">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/chrysalis/intel-oneapi-compilers-2025.2.0; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="openmpi">
