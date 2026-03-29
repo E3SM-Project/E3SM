@@ -82,7 +82,7 @@ SEGrid::get_3d_scalar_layout (const FieldTag vtag) const
 {
   using namespace ShortFieldTagsNames;
 
-  check_tag_vkind_compat(vtag);
+  check_tag_vkind_compatibility(vtag);
   int nvl = this->get_num_vertical_levels() + (vtag==ILEV ? 1 : 0);
 
   return FieldLayout({EL,GP,GP,vtag},{m_num_local_elem,m_num_gp,m_num_gp,nvl}).rename_dims(m_special_tag_names);
@@ -94,7 +94,7 @@ SEGrid::get_3d_vector_layout (const FieldTag vtag, const int vector_dim,
 {
   using namespace ShortFieldTagsNames;
 
-  check_tag_vkind_compat(vtag);
+  check_tag_vkind_compatibility(vtag);
   int nvl = this->get_num_vertical_levels() + (vtag==ILEV ? 1 : 0);
 
   FieldLayout fl({EL,CMP,GP,GP,vtag},{m_num_local_elem,vector_dim,m_num_gp,m_num_gp,nvl});
@@ -115,7 +115,7 @@ SEGrid::get_3d_tensor_layout (const FieldTag vtag,
 
   using namespace ShortFieldTagsNames;
 
-  check_tag_vkind_compat(vtag);
+  check_tag_vkind_compatibility(vtag);
   int nvl = this->get_num_vertical_levels() + (vtag==ILEV ? 1 : 0);
 
   FieldLayout fl;

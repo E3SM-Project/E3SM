@@ -84,7 +84,7 @@ PointGrid::get_3d_scalar_layout (const FieldTag vtag) const
 {
   using namespace ShortFieldTagsNames;
 
-  check_tag_vkind_compat(vtag);
+  check_tag_vkind_compatibility(vtag);
   int nvl = this->get_num_vertical_levels() + (vtag==ILEV ? 1 : 0);
 
   return FieldLayout({COL,vtag},{get_num_local_dofs(),nvl}).rename_dims(m_special_tag_names);
@@ -96,7 +96,7 @@ PointGrid::get_3d_vector_layout (const FieldTag vtag, const int vector_dim,
 {
   using namespace ShortFieldTagsNames;
 
-  check_tag_vkind_compat(vtag);
+  check_tag_vkind_compatibility(vtag);
   int nvl = this->get_num_vertical_levels() + (vtag==ILEV ? 1 : 0);
 
   FieldLayout fl({COL,CMP,vtag},{get_num_local_dofs(),vector_dim,nvl});
@@ -116,7 +116,7 @@ PointGrid::get_3d_tensor_layout (const FieldTag vtag,
       "  - cmp_dims : " + ekat::join(cmp_dims,",") + "\n");
   using namespace ShortFieldTagsNames;
 
-  check_tag_vkind_compat(vtag);
+  check_tag_vkind_compatibility(vtag);
   int nvl = this->get_num_vertical_levels() + (vtag==ILEV ? 1 : 0);
 
   FieldLayout fl;

@@ -291,6 +291,11 @@ protected:
   //       since it calls get_2d_scalar_layout.
   void create_dof_fields(const int scalar2d_layout_rank);
 
+  // Throws if vtag is incompatible with m_vkind:
+  //   - VKind::Model: accepts LEV and ILEV, rejects PLEV
+  //   - VKind::Pressure: accepts PLEV, rejects LEV and ILEV
+  void check_tag_vkind_compatibility(const FieldTag vtag) const;
+
   // The grid name and type
   GridType m_type;
   std::string m_name;
@@ -343,12 +348,6 @@ protected:
 
   // The MPI comm containing the ranks across which the global mesh is partitioned
   ekat::Comm m_comm;
-
-private:
-  // Throws if vtag is incompatible with m_vkind:
-  //   - VKind::Model: accepts LEV and ILEV, rejects PLEV
-  //   - VKind::Pressure: accepts PLEV, rejects LEV and ILEV
-  void check_tag_vkind_compat(const FieldTag vtag) const;
 };
 
 } // namespace scream

@@ -62,16 +62,16 @@ void AbstractGrid::add_alias (const std::string& alias)
   }
 }
 
-void AbstractGrid::check_tag_vkind_compat (const FieldTag vtag) const
+void AbstractGrid::check_tag_vkind_compatibility (const FieldTag vtag) const
 {
   using namespace ShortFieldTagsNames;
   if (m_vkind == VKind::Model) {
     EKAT_REQUIRE_MSG (vtag==LEV or vtag==ILEV,
-        "Error! Cannot use PLEV tag on a Model (LEV/ILEV) grid.\n"
+        "Error! A grid with VKind=Model only accepts LEV/ILEV as vertical dim tag.\n"
         "  - grid name: " + m_name + "\n");
   } else {
     EKAT_REQUIRE_MSG (vtag==PLEV,
-        "Error! Cannot use LEV/ILEV tags on a Pressure (PLEV) grid.\n"
+        "Error! A grid with VKind=Pressure only accepts PLEV as vertical dim tag.\n"
         "  - grid name: " + m_name + "\n");
   }
 }
@@ -80,7 +80,7 @@ FieldLayout AbstractGrid::
 get_vertical_layout (const FieldTag vtag) const
 {
   using namespace ShortFieldTagsNames;
-  check_tag_vkind_compat(vtag);
+  check_tag_vkind_compatibility(vtag);
   const auto d = m_num_vert_levs + (vtag==ILEV ? 1 : 0);
   return FieldLayout({vtag},{d}).rename_dims(m_special_tag_names);
 }
