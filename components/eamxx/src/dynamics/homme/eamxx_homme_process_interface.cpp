@@ -162,9 +162,9 @@ void HommeDynamics::create_requests ()
 
   const auto& pgn = m_phys_grid->name();
   auto pg_scalar2d     = m_phys_grid->get_2d_scalar_layout();
-  auto pg_scalar3d_mid = m_phys_grid->get_3d_scalar_layout(true);
-  auto pg_scalar3d_int = m_phys_grid->get_3d_scalar_layout(false);
-  auto pg_vector3d_mid = m_phys_grid->get_3d_vector_layout(true,2);
+  auto pg_scalar3d_mid = m_phys_grid->get_3d_scalar_layout(LEV);
+  auto pg_scalar3d_int = m_phys_grid->get_3d_scalar_layout(ILEV);
+  auto pg_vector3d_mid = m_phys_grid->get_3d_vector_layout(LEV,2);
   add_field<Updated> ("horiz_winds",        pg_vector3d_mid, m/s,   pgn,N);
   add_field<Updated> ("T_mid",              pg_scalar3d_mid, K,     pgn,N);
   add_field<Computed>("pseudo_density",     pg_scalar3d_mid, Pa,    pgn,N);
@@ -189,8 +189,8 @@ void HommeDynamics::create_requests ()
     // init'ing a field to a constant.
     const auto& rgn = m_cgll_grid->name();
     auto rg_scalar2d     = m_cgll_grid->get_2d_scalar_layout();
-    auto rg_scalar3d_mid = m_cgll_grid->get_3d_scalar_layout(true);
-    auto rg_vector3d_mid = m_cgll_grid->get_3d_vector_layout(true,2);
+    auto rg_scalar3d_mid = m_cgll_grid->get_3d_scalar_layout(LEV);
+    auto rg_vector3d_mid = m_cgll_grid->get_3d_vector_layout(LEV,2);
 
     add_field<Required>("horiz_winds",   rg_vector3d_mid,m/s,   rgn,N);
     add_field<Required>("T_mid",         rg_scalar3d_mid,K,     rgn,N);

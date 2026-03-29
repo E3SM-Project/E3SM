@@ -30,6 +30,7 @@ VaporFluxDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
 void VaporFluxDiagnostic::create_requests()
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   auto grid  = m_grids_manager->get_grid("physics");
   const auto& grid_name = grid->name();
@@ -37,8 +38,8 @@ void VaporFluxDiagnostic::create_requests()
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
   auto scalar2d = grid->get_2d_scalar_layout();
-  auto scalar3d = grid->get_3d_scalar_layout(true);
-  auto vector3d = grid->get_3d_vector_layout(true,2);
+  auto scalar3d = grid->get_3d_scalar_layout(LEV);
+  auto vector3d = grid->get_3d_vector_layout(LEV,2);
 
   // The fields required for this diagnostic to be computed
   add_field<Required>("pseudo_density", scalar3d, Pa,    grid_name);

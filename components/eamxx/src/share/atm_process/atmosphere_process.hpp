@@ -385,7 +385,7 @@ protected:
       tracer_groups.push_back("non_turbulence_advected_tracers");
     }
 
-    FieldIdentifier fid(name, grid->get_3d_scalar_layout(true), u, grid->name());
+    FieldIdentifier fid(name, grid->get_3d_scalar_layout(FieldTag::LevelMidPoint), u, grid->name());
     FieldRequest req(fid, tracer_groups, ps);
     req.calling_process = this->name();
 

@@ -71,12 +71,12 @@ TEST_CASE("dyn_grid_io")
   EKAT_REQUIRE_MSG(get_num_local_elems_f90()>0, "Internal test error! Fix dyn_grid_io, please.\n");
 
   // Create physics and dynamics fields
-  auto dyn_scalar3d_mid = dyn_grid->get_3d_scalar_layout(true);
-  auto dyn_vector3d_mid = dyn_grid->get_3d_vector_layout(true,2);
+  auto dyn_scalar3d_mid = dyn_grid->get_3d_scalar_layout(LEV);
+  auto dyn_vector3d_mid = dyn_grid->get_3d_vector_layout(LEV,2);
   auto dyn_scalar2d     = dyn_grid->get_2d_scalar_layout();
 
-  auto phys_scalar3d_mid = phys_grid->get_3d_scalar_layout(true);
-  auto phys_vector3d_mid = phys_grid->get_3d_vector_layout(true,2);
+  auto phys_scalar3d_mid = phys_grid->get_3d_scalar_layout(LEV);
+  auto phys_vector3d_mid = phys_grid->get_3d_vector_layout(LEV,2);
   auto phys_scalar2d     = phys_grid->get_2d_scalar_layout();
 
   auto nondim = ekat::units::Units::nondimensional();

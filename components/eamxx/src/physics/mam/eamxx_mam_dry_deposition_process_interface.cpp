@@ -47,8 +47,8 @@ void MAMDryDep::create_requests() {
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and
   // interfaces
-  const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
-  const FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
+  const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(LEV);
+  const FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(ILEV);
 
   // layout for 2D (ncol, pcnst)
   constexpr int pcnst = mam4::aero_model::pcnst;
@@ -61,7 +61,7 @@ void MAMDryDep::create_requests() {
   // at mid points
   const int num_aero_modes       = mam_coupling::num_aero_modes();
   const FieldLayout vector3d_mid = grid_->get_3d_vector_layout(
-      true, num_aero_modes, mam_coupling::num_modes_tag_name());
+      LEV, num_aero_modes, mam_coupling::num_modes_tag_name());
 
   using namespace ekat::units;
   auto nondim = ekat::units::Units::nondimensional();

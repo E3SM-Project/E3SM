@@ -58,10 +58,9 @@ HorizontalRemapper (const grid_ptr_type& grid,
   // store the same generated grid.
   // So we soft-clone the generated grid, and reset the number of levels.
   // This requires to also delete any geo data that has the lev dim, as we cannot map it
-
   auto gen_grid = built_from_src ? m_remap_data->m_tgt_grid : m_remap_data->m_src_grid;
   auto other_grid = gen_grid->clone(gen_grid->name(),true);
-  other_grid->reset_num_vertical_lev(grid->get_num_vertical_levels());
+  other_grid->reset_vertical_configuration(grid->get_num_vertical_levels(), grid->get_vkind());
   using namespace ShortFieldTagsNames;
   for (const auto& name : gen_grid->get_geometry_data_names()) {
     const auto& f = gen_grid->get_geometry_data(name);

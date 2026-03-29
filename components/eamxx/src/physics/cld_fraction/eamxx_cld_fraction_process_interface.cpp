@@ -22,6 +22,7 @@ CldFraction::CldFraction (const ekat::Comm& comm, const ekat::ParameterList& par
 void CldFraction::create_requests()
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
   using CldFractionFunc = cld_fraction::CldFractionFunctions<Real, DefaultDevice>;
   using Pack           = CldFractionFunc::Pack;
 
@@ -37,7 +38,7 @@ void CldFraction::create_requests()
   // Define the different field layouts that will be used for this process
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
-  auto scalar3d_layout_mid = m_grid->get_3d_scalar_layout(true);
+  auto scalar3d_layout_mid = m_grid->get_3d_scalar_layout(LEV);
 
   // Set of fields used strictly as input
   constexpr int ps = Pack::n;

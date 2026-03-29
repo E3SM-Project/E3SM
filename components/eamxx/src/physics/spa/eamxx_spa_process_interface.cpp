@@ -21,6 +21,7 @@ SPA::SPA (const ekat::Comm& comm, const ekat::ParameterList& params)
 void SPA::create_requests()
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   constexpr auto nondim = Units::nondimensional();
   constexpr int ps = SCREAM_PACK_SIZE;
@@ -38,11 +39,11 @@ void SPA::create_requests()
       "  - num lw bands: " + std::to_string(nlwbands) + "\n");
 
   // Define the different field layouts that will be used for this process
-  auto scalar3d_mid    = m_model_grid->get_3d_scalar_layout(true);
+  auto scalar3d_mid    = m_model_grid->get_3d_scalar_layout(LEV);
   auto scalar2d        = m_model_grid->get_2d_scalar_layout();
-  auto scalar1d_mid    = m_model_grid->get_vertical_layout(true);
-  auto scalar3d_swband = m_model_grid->get_3d_vector_layout(true,nswbands,"swband");
-  auto scalar3d_lwband = m_model_grid->get_3d_vector_layout(true,nlwbands,"lwband");
+  auto scalar1d_mid    = m_model_grid->get_vertical_layout(LEV);
+  auto scalar3d_swband = m_model_grid->get_3d_vector_layout(LEV,nswbands,"swband");
+  auto scalar3d_lwband = m_model_grid->get_3d_vector_layout(LEV,nlwbands,"lwband");
 
   // Set of fields used strictly as input
   add_field<Required>("p_mid"      , scalar3d_mid, Pa,     grid_name, ps);
@@ -59,6 +60,7 @@ void SPA::create_requests()
 void SPA::initialize_impl (const RunType /* run_type */)
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   // NOTE: SPA does not have an internal persistent state, so run_type is irrelevant
 
@@ -80,7 +82,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
   // properties compatible with SCREAM_PACK_SIZE.
   // NOTE: we could just add p_int as a required field, but that would be misleading in the DAG
   auto pmid = get_field_in("p_mid");
-  Field pint(FieldIdentifier("p_int",m_model_grid->get_vertical_layout(false),Pa,m_model_grid->name()));
+  Field pint(FieldIdentifier("p_int",m_model_grid->get_vertical_layout(ILEV),Pa,m_model_grid->name()));
   pint.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
   pint.allocate_view();
 

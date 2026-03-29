@@ -264,8 +264,8 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   // If one of the hybrid vcoord arrays is there, they all are
   // NOTE: we may have none in some unit tests that don't need them (e.g. pd remap)
   if (get_grid("dynamics")->has_geometry_data("hyam")) {
-    auto layout_mid = phys_grid->get_vertical_layout(true);
-    auto layout_int = phys_grid->get_vertical_layout(false);
+    auto layout_mid = phys_grid->get_vertical_layout(LEV);
+    auto layout_int = phys_grid->get_vertical_layout(ILEV);
     using namespace ekat::units;
     Units nondim = Units::nondimensional();
     Units mbar(bar/1000,"mb");
@@ -332,8 +332,8 @@ initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
   }
 
   // Create vcoords fields
-  auto layout_mid = dyn_grid->get_vertical_layout(true);
-  auto layout_int = dyn_grid->get_vertical_layout(false);
+  auto layout_mid = dyn_grid->get_vertical_layout(LEV);
+  auto layout_int = dyn_grid->get_vertical_layout(ILEV);
   constexpr auto nondim = ekat::units::Units::nondimensional();
 
   auto hyai = dyn_grid->create_geometry_data("hyai",layout_int,nondim);

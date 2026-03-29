@@ -96,11 +96,11 @@ MAMMicrophysics::create_requests()
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and
   // interfaces
-  const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
-  const FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
+  const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(LEV);
+  const FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(ILEV);
 
   // For U and V components of wind
-  const FieldLayout vector3d = grid_->get_3d_vector_layout(true, 2);
+  const FieldLayout vector3d = grid_->get_3d_vector_layout(LEV, 2);
 
   using namespace ekat::units;
   // --------------------------------------------------------------------------
@@ -149,7 +149,7 @@ MAMMicrophysics::create_requests()
 
   // layout for 3D (ncol, nmodes, nlevs)
   FieldLayout vector3d_mid_nmodes =
-      grid_->get_3d_vector_layout(true, nmodes, mam_coupling::num_modes_tag_name());
+      grid_->get_3d_vector_layout(LEV, nmodes, mam_coupling::num_modes_tag_name());
 
   // Geometric mean dry diameter for number distribution [m]
   add_field<Required>("dgnum", vector3d_mid_nmodes, m, grid_name);
@@ -205,7 +205,7 @@ MAMMicrophysics::create_requests()
   // Number of externally forced chemical species
   constexpr int extcnt = mam4::gas_chemistry::extcnt;
 
-  FieldLayout vector3d_extcnt = grid_->get_3d_vector_layout(true, extcnt, "ext_cnt");
+  FieldLayout vector3d_extcnt = grid_->get_3d_vector_layout(LEV, extcnt, "ext_cnt");
 
   // Register computed fields for external forcing
   // - extfrc: 3D instantaneous forcing rate [kg/m³/s]
@@ -217,7 +217,7 @@ MAMMicrophysics::create_requests()
   extra_mam4_aero_microphys_diags_ = m_params.get<bool>("extra_mam4_aero_microphys_diags", false);
   if (extra_mam4_aero_microphys_diags_) {
     const FieldLayout vector3d_num_gas_aerosol_constituents = grid_->get_3d_vector_layout(
-        true, mam_coupling::gas_pcnst(), "num_gas_aerosol_constituents");
+        LEV, mam_coupling::gas_pcnst(), "num_gas_aerosol_constituents");
 
     const FieldLayout vector2d_nmodes = grid_->get_2d_vector_layout(nmodes, "nmodes");
     const FieldLayout vector2d_gas_pcnst =
@@ -534,6 +534,7 @@ void MAMMicrophysics::set_linoz_reader(){
 void MAMMicrophysics::set_exo_coldens_reader()
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
   const auto pint = get_field_in("p_int");
   // Exo column density fields read initialization
   const std::string exo_coldens_file_name = m_params.get<std::string>("mam4_exo_coldens_file_name");
@@ -541,8 +542,8 @@ void MAMMicrophysics::set_exo_coldens_reader()
         m_params.get<std::string>("aero_microphys_remap_file", "");
   // get fields from FM.
   auto grid_exo_coldens = grid_->clone("exo_grid",true);
-  grid_exo_coldens->reset_num_vertical_lev(1);
-  auto layout = grid_exo_coldens->get_3d_scalar_layout(true);
+  grid_exo_coldens->reset_vertical_configuration(1, AbstractGrid::VKind::Model);
+  auto layout = grid_exo_coldens->get_3d_scalar_layout(LEV);
 
   auto molec = Units::nondimensional();// example;
   auto cm2 = pow(m / 100,2);

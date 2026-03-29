@@ -50,7 +50,7 @@ Field
 create_field(const std::string& name,
              const std::shared_ptr<const AbstractGrid>& grid,
              const bool create_mask, const bool twod,
-             const bool vec, const bool mid = false, const int ps = 1)
+             const bool vec, const FieldTag vtag = FieldTag::LevelInterface, const int ps = 1)
 {
   using namespace ShortFieldTagsNames;
   constexpr int vec_dim = 3;
@@ -58,8 +58,8 @@ create_field(const std::string& name,
   auto fl = twod
           ? (vec ? grid->get_2d_vector_layout (vec_dim)
                  : grid->get_2d_scalar_layout ())
-          : (vec ? grid->get_3d_vector_layout (mid,vec_dim)
-                 : grid->get_3d_scalar_layout (mid));
+          : (vec ? grid->get_3d_vector_layout (vtag,vec_dim)
+                 : grid->get_3d_scalar_layout (vtag));
   FieldIdentifier fid(name,fl,units,grid->name());
   Field f(fid);
   f.get_header().get_alloc_properties().request_allocation(ps);
@@ -335,6 +335,7 @@ TEST_CASE ("create_tgt_grid") {
 }
 
 TEST_CASE ("vertical_remapper") {
+  using namespace ShortFieldTagsNames;
   // -------------------------------------- //
   //           Init MPI and PIO             //
   // -------------------------------------- //
@@ -366,8 +367,9 @@ TEST_CASE ("vertical_remapper") {
 
   // Helper lambda, to create p_int profile. If it is a 3d field, make same profile on each col
   auto create_pint = [&](const auto& grid, const bool one_d, const Real ptop, const Real pbot) {
-    auto layout = one_d ? grid->get_vertical_layout(false)
-                        : grid->get_3d_scalar_layout(false);
+    using namespace ShortFieldTagsNames;
+    auto layout = one_d ? grid->get_vertical_layout(ILEV)
+                        : grid->get_3d_scalar_layout(ILEV);
     FieldIdentifier fid("p_int",layout,ekat::units::Pa,grid->name());
     Field pint (fid);
     pint.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
@@ -445,7 +447,7 @@ TEST_CASE ("vertical_remapper") {
 
             print (" -> creating tgt grid ...\n",comm);
             auto tgt_grid = src_grid->clone("tgt",true);
-            tgt_grid->reset_num_vertical_lev(nlevs_tgt);
+            tgt_grid->reset_vertical_configuration(nlevs_tgt, AbstractGrid::VKind::Model);
             print (" -> creating tgt grid ...done!\n",comm);
 
             print (" -> creating src/tgt pressure fields ...\n",comm);
@@ -462,25 +464,25 @@ TEST_CASE ("vertical_remapper") {
             print (" -> creating fields ... done!\n",comm);
             auto src_s2d   = create_field("s2d",  src_grid,false,true,false);
             auto src_v2d   = create_field("v2d",  src_grid,false,true,true);
-            auto src_s3d_m = create_field("s3d_m",src_grid,false,false,false,true, 1);
-            auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,false,SCREAM_PACK_SIZE);
-            auto src_v3d_m = create_field("v3d_m",src_grid,false,false,true ,true, 1);
-            auto src_v3d_i = create_field("v3d_i",src_grid,false,false,true ,false,SCREAM_PACK_SIZE);
+            auto src_s3d_m = create_field("s3d_m",src_grid,false,false,false,LEV, 1);
+            auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,ILEV,SCREAM_PACK_SIZE);
+            auto src_v3d_m = create_field("v3d_m",src_grid,false,false,true ,LEV, 1);
+            auto src_v3d_i = create_field("v3d_i",src_grid,false,false,true ,ILEV,SCREAM_PACK_SIZE);
 
             auto tgt_s2d   = create_field("s2d",  tgt_grid,false,true,false);
             auto tgt_v2d   = create_field("v2d",  tgt_grid,false,true,true);
-            auto tgt_s3d_m = create_field("s3d_m",tgt_grid,false,false,false,true, 1);
-            auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,false,true, SCREAM_PACK_SIZE);
-            auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,false,true ,true, 1);
-            auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,false,true ,true, SCREAM_PACK_SIZE);
+            auto tgt_s3d_m = create_field("s3d_m",tgt_grid,false,false,false,LEV, 1);
+            auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,false,LEV, SCREAM_PACK_SIZE);
+            auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,false,true ,LEV, 1);
+            auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,false,true ,LEV, SCREAM_PACK_SIZE);
 
             // For expected fields, also create the mask extra data
             auto expected_s2d   = create_field("s2d",  tgt_grid,true,true,false);
             auto expected_v2d   = create_field("v2d",  tgt_grid,true,true,true);
-            auto expected_s3d_m = create_field("s3d_m",tgt_grid,true,false,false,true, 1);
-            auto expected_s3d_i = create_field("s3d_i",tgt_grid,true,false,false,true, SCREAM_PACK_SIZE);
-            auto expected_v3d_m = create_field("v3d_m",tgt_grid,true,false,true ,true, 1);
-            auto expected_v3d_i = create_field("v3d_i",tgt_grid,true,false,true ,true, SCREAM_PACK_SIZE);
+            auto expected_s3d_m = create_field("s3d_m",tgt_grid,true,false,false,LEV, 1);
+            auto expected_s3d_i = create_field("s3d_i",tgt_grid,true,false,false,LEV, SCREAM_PACK_SIZE);
+            auto expected_v3d_m = create_field("v3d_m",tgt_grid,true,false,true ,LEV, 1);
+            auto expected_v3d_i = create_field("v3d_i",tgt_grid,true,false,true ,LEV, SCREAM_PACK_SIZE);
             print (" -> creating fields ... done!\n",comm);
 
             // -------------------------------------- //

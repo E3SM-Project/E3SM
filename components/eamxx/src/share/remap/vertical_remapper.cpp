@@ -28,10 +28,11 @@ create_tgt_grid (const grid_ptr_type& src_grid,
   auto nlevs_tgt = scorpio::get_dimlen(map_file,"lev");
 
   auto tgt_grid = src_grid->clone("vertical_remap_tgt_grid",true);
-  tgt_grid->reset_num_vertical_lev(nlevs_tgt);
+  tgt_grid->reset_vertical_configuration(nlevs_tgt, AbstractGrid::VKind::Pressure);
 
   // Gather the pressure level data for vertical remapping
-  auto layout = tgt_grid->get_vertical_layout(true);
+  using namespace ShortFieldTagsNames;
+  auto layout = tgt_grid->get_vertical_layout(PLEV);
   Field p_tgt(FieldIdentifier("p_levs",layout,ekat::units::Pa,tgt_grid->name()));
   p_tgt.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
   p_tgt.allocate_view();
@@ -342,7 +343,8 @@ create_layout (const FieldLayout& from_layout,
       "  - to grid  : " + to_grid->name() + "\n");
 
   auto to_layout = FieldLayout::invalid();
-  bool midpoints;
+  const bool to_grid_is_pressure = to_grid->get_vkind()==AbstractGrid::VKind::Pressure;
+  FieldTag vtag;
   std::string vdim_name;
   switch (from_layout.type()) {
     case LayoutType::Scalar0D: [[ fallthrough ]];
@@ -354,17 +356,20 @@ create_layout (const FieldLayout& from_layout,
       to_layout = from_layout;
       break;
     case LayoutType::Scalar1D:
-      midpoints = output_int_same_as_mid || from_layout.tags().back()==LEV;
-      to_layout = to_grid->get_vertical_layout(midpoints);
+      vtag = to_grid_is_pressure ? PLEV
+           : (output_int_same_as_mid || from_layout.tags().back()==LEV) ? LEV : ILEV;
+      to_layout = to_grid->get_vertical_layout(vtag);
       break;
     case LayoutType::Scalar3D:
-      midpoints = output_int_same_as_mid || from_layout.tags().back()==LEV;
-      to_layout = to_grid->get_3d_scalar_layout(midpoints);
+      vtag = to_grid_is_pressure ? PLEV
+           : (output_int_same_as_mid || from_layout.tags().back()==LEV) ? LEV : ILEV;
+      to_layout = to_grid->get_3d_scalar_layout(vtag);
       break;
     case LayoutType::Vector3D:
       vdim_name = from_layout.name(from_layout.get_vector_component_idx());
-      midpoints = output_int_same_as_mid || from_layout.tags().back()==LEV;
-      to_layout = to_grid->get_3d_vector_layout(midpoints,from_layout.get_vector_dim(),vdim_name);
+      vtag = to_grid_is_pressure ? PLEV
+           : (output_int_same_as_mid || from_layout.tags().back()==LEV) ? LEV : ILEV;
+      to_layout = to_grid->get_3d_vector_layout(vtag,from_layout.get_vector_dim(),vdim_name);
       break;
     default:
       // NOTE: this also include Tensor3D. We don't really have any atm proc

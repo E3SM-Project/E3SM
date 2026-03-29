@@ -62,22 +62,36 @@ void AbstractGrid::add_alias (const std::string& alias)
   }
 }
 
-FieldLayout AbstractGrid::
-get_vertical_layout (const bool midpoints) const
+void AbstractGrid::check_tag_vkind_compat (const FieldTag vtag) const
 {
   using namespace ShortFieldTagsNames;
-  const auto t = midpoints ? LEV : ILEV;
-  const auto d = m_num_vert_levs + (midpoints ? 0 : 1);
-  return FieldLayout({t},{d}).rename_dims(m_special_tag_names);
+  if (m_vkind == VKind::Model) {
+    EKAT_REQUIRE_MSG (vtag==LEV or vtag==ILEV,
+        "Error! Cannot use PLEV tag on a Model (LEV/ILEV) grid.\n"
+        "  - grid name: " + m_name + "\n");
+  } else {
+    EKAT_REQUIRE_MSG (vtag==PLEV,
+        "Error! Cannot use LEV/ILEV tags on a Pressure (PLEV) grid.\n"
+        "  - grid name: " + m_name + "\n");
+  }
 }
 
 FieldLayout AbstractGrid::
-get_vertical_layout (const bool midpoints,
+get_vertical_layout (const FieldTag vtag) const
+{
+  using namespace ShortFieldTagsNames;
+  check_tag_vkind_compat(vtag);
+  const auto d = m_num_vert_levs + (vtag==ILEV ? 1 : 0);
+  return FieldLayout({vtag},{d}).rename_dims(m_special_tag_names);
+}
+
+FieldLayout AbstractGrid::
+get_vertical_layout (const FieldTag vtag,
                      const int vector_dim,
                      const std::string& vec_dim_name) const
 {
   using namespace ShortFieldTagsNames;
-  auto l = get_vertical_layout(midpoints);
+  auto l = get_vertical_layout(vtag);
   l.prepend_dim(CMP,vector_dim,vec_dim_name);
   return l;
 }
@@ -98,18 +112,18 @@ AbstractGrid::get_2d_tensor_layout (const std::vector<int>& cmp_dims) const
 }
 
 FieldLayout
-AbstractGrid::get_3d_vector_layout (const bool midpoints, const int vector_dim) const
+AbstractGrid::get_3d_vector_layout (const FieldTag vtag, const int vector_dim) const
 {
   using namespace ShortFieldTagsNames;
-  return get_3d_vector_layout(midpoints,vector_dim,e2str(CMP));
+  return get_3d_vector_layout(vtag,vector_dim,e2str(CMP));
 }
 
 FieldLayout
-AbstractGrid::get_3d_tensor_layout (const bool midpoints, const std::vector<int>& cmp_dims) const
+AbstractGrid::get_3d_tensor_layout (const FieldTag vtag, const std::vector<int>& cmp_dims) const
 {
   using namespace ShortFieldTagsNames;
   std::vector<std::string> names (cmp_dims.size(),e2str(CMP));
-  return get_3d_tensor_layout(midpoints,cmp_dims,names);
+  return get_3d_tensor_layout(vtag,cmp_dims,names);
 }
 
 FieldLayout
@@ -117,22 +131,16 @@ AbstractGrid::equivalent_layout (const FieldLayout& template_layout) const
 {
   using namespace ShortFieldTagsNames;
 
-  // PLEV layouts have an arbitrary pressure-level dimension not tied to this
-  // grid's vertical levels. Handle them by stripping PLEV, computing the
-  // equivalent of the remaining (horizontal) layout, then re-appending PLEV.
-  if (template_layout.has_tag(PLEV)) {
-    const auto plev_idx  = template_layout.dim_idx(PLEV);
-    const auto nplev     = template_layout.dim(PLEV);
-    const auto plev_name = template_layout.names()[plev_idx];
-    auto template_no_plev = template_layout.clone().strip_dim(PLEV);
-    auto ret = equivalent_layout(template_no_plev);
-    ret.append_dim(PLEV, nplev, plev_name);
-    return ret;
-  }
-
   FieldLayout ret_layout = FieldLayout::invalid();
 
-  const bool midpoints   = template_layout.has_tag(LEV);
+  // Extract the vertical tag from the template (LEV, ILEV, or PLEV).
+  // This tag is passed directly to the get_Xd_Y_layout methods, which will
+  // check compatibility with this grid's VKind and throw if incompatible.
+  FieldTag vlev_tag = FieldTag::Invalid;
+  if (template_layout.has_tag(LEV))       vlev_tag = LEV;
+  else if (template_layout.has_tag(ILEV)) vlev_tag = ILEV;
+  else if (template_layout.has_tag(PLEV)) vlev_tag = PLEV;
+
   const auto names       = template_layout.names();
   const auto vec_cmp     = template_layout.is_vector_layout() ?
                            template_layout.get_vector_component_idx() : -1;
@@ -155,10 +163,10 @@ AbstractGrid::equivalent_layout (const FieldLayout& template_layout) const
       ret_layout = template_layout;
       break;
     case LayoutType::Scalar1D:
-      ret_layout = get_vertical_layout(midpoints);
+      ret_layout = get_vertical_layout(vlev_tag);
       break;
     case LayoutType::Vector1D:
-      ret_layout = get_vertical_layout(midpoints, vec_dim, names[vec_cmp]);
+      ret_layout = get_vertical_layout(vlev_tag, vec_dim, names[vec_cmp]);
       break;
     case LayoutType::Scalar2D:
       ret_layout = get_2d_scalar_layout();
@@ -170,13 +178,13 @@ AbstractGrid::equivalent_layout (const FieldLayout& template_layout) const
       ret_layout = get_2d_tensor_layout(tensor_dims, tdims_names);
       break;
     case LayoutType::Scalar3D:
-      ret_layout = get_3d_scalar_layout(midpoints);
+      ret_layout = get_3d_scalar_layout(vlev_tag);
       break;
     case LayoutType::Vector3D:
-      ret_layout = get_3d_vector_layout(midpoints, vec_dim, names[vec_cmp]);
+      ret_layout = get_3d_vector_layout(vlev_tag, vec_dim, names[vec_cmp]);
       break;
     case LayoutType::Tensor3D:
-      ret_layout = get_3d_tensor_layout(midpoints, tensor_dims, tdims_names);
+      ret_layout = get_3d_tensor_layout(vlev_tag, tensor_dims, tdims_names);
       break;
     default:
       EKAT_ERROR_MSG("Error! Unknown FieldLayout type.\n");
@@ -261,15 +269,12 @@ is_valid_layout (const FieldLayout& layout) const
 {
   using namespace ShortFieldTagsNames;
 
-  // PLEV layouts have an arbitrary pressure-level dimension not tied to this
-  // grid's vertical levels. Validate by stripping the PLEV dimension and
-  // checking that the remaining (horizontal) layout is valid.
-  if (layout.has_tag(PLEV)) {
-    auto layout_no_plev = layout.clone().strip_dim(PLEV);
-    return is_valid_layout(layout_no_plev);
-  }
+  // Extract the vertical tag (LEV, ILEV, or PLEV) from the layout.
+  FieldTag vlev_tag = FieldTag::Invalid;
+  if (layout.has_tag(LEV))       vlev_tag = LEV;
+  else if (layout.has_tag(ILEV)) vlev_tag = ILEV;
+  else if (layout.has_tag(PLEV)) vlev_tag = PLEV;
 
-  const bool midpoints = layout.has_tag(LEV);
   switch (layout.type()) {
     case LayoutType::Scalar0D: [[fallthrough]];
     case LayoutType::Vector0D:
@@ -277,9 +282,9 @@ is_valid_layout (const FieldLayout& layout) const
       // 0d quantities are always ok
       return true;
     case LayoutType::Scalar1D:
-      return layout.congruent(get_vertical_layout(midpoints));
+      return layout.congruent(get_vertical_layout(vlev_tag));
     case LayoutType::Vector1D:
-      return layout.congruent(get_vertical_layout(midpoints,layout.get_vector_dim()));
+      return layout.congruent(get_vertical_layout(vlev_tag,layout.get_vector_dim()));
     case LayoutType::Scalar2D:
       return layout.congruent(get_2d_scalar_layout());
     case LayoutType::Vector2D:
@@ -287,11 +292,11 @@ is_valid_layout (const FieldLayout& layout) const
     case LayoutType::Tensor2D:
       return layout.congruent(get_2d_tensor_layout(layout.get_tensor_dims()));
     case LayoutType::Scalar3D:
-      return layout.congruent(get_3d_scalar_layout(midpoints));
+      return layout.congruent(get_3d_scalar_layout(vlev_tag));
     case LayoutType::Vector3D:
-      return layout.congruent(get_3d_vector_layout(midpoints,layout.get_vector_dim()));
+      return layout.congruent(get_3d_vector_layout(vlev_tag,layout.get_vector_dim()));
     case LayoutType::Tensor3D:
-      return layout.congruent(get_3d_tensor_layout(midpoints,layout.get_tensor_dims()));
+      return layout.congruent(get_3d_tensor_layout(vlev_tag,layout.get_tensor_dims()));
     default:
       // Anything else is probably not ok
       return false;
@@ -507,19 +512,18 @@ AbstractGrid::get_geometry_data_names () const
   return names;
 }
 
-void AbstractGrid::reset_num_vertical_lev (const int num_vertical_lev) {
+void AbstractGrid::reset_vertical_configuration (const int num_vertical_lev, const VKind vkind) {
   m_num_vert_levs = num_vertical_lev;
+  m_vkind = vkind;
 
   using namespace ShortFieldTagsNames;
 
-  // Loop over geo data. If they have the LEV or ILEV tag, they are
+  // Loop over geo data. If they have the LEV, ILEV, or PLEV tag, they are
   // no longer valid, so we must erase them.
-  // NOTE: PLEV fields have an arbitrary pressure-level dimension not tied
-  //       to m_num_vert_levs, so they are NOT invalidated here.
   for (auto it=m_geo_fields.cbegin(); it!=m_geo_fields.cend(); ) {
     const auto& fl = it->second.get_header().get_identifier().get_layout();
-    const auto has_lev = fl.has_tag(LEV) or fl.has_tag(ILEV);
-    if (has_lev) {
+    const auto has_vlev = fl.has_tag(LEV) or fl.has_tag(ILEV) or fl.has_tag(PLEV);
+    if (has_vlev) {
       it = m_geo_fields.erase(it);
     } else {
       ++it;

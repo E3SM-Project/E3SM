@@ -15,6 +15,7 @@ namespace scream {
 void write (int seed, const ekat::Comm& comm)
 {
   using ekat::units::Units;
+  using namespace ShortFieldTagsNames;
   using IPDF = std::uniform_int_distribution<int>;
 
   std::mt19937_64 engine(seed);
@@ -36,7 +37,7 @@ void write (int seed, const ekat::Comm& comm)
   randomize_uniform(lon,seed++,-180,180);
 
   // Create variable data
-  FieldIdentifier fid("var",grid->get_3d_scalar_layout(true),Units::nondimensional(),"");
+  FieldIdentifier fid("var",grid->get_3d_scalar_layout(LEV),Units::nondimensional(),"");
   Field var(fid);
   var.allocate_view();
   randomize_uniform(var,seed++,-1,1);
@@ -72,6 +73,7 @@ void write (int seed, const ekat::Comm& comm)
 void read (const int seed, const ekat::Comm& comm)
 {
   using ekat::units::Units;
+  using namespace ShortFieldTagsNames;
   using IPDF = std::uniform_int_distribution<int>;
   using Engine = std::mt19937_64;
 
@@ -102,7 +104,7 @@ void read (const int seed, const ekat::Comm& comm)
   dofs_gids.deep_copy(0);
 
   // Create field to read
-  FieldIdentifier fid("var",grid->get_3d_scalar_layout(true),Units::nondimensional(),"");
+  FieldIdentifier fid("var",grid->get_3d_scalar_layout(LEV),Units::nondimensional(),"");
   Field var_f(fid);
   var_f.allocate_view();
 

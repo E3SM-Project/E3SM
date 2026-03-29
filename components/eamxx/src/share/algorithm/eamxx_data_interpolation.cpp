@@ -443,7 +443,7 @@ create_horiz_remappers (const std::string& map_file)
   }
 
   m_grid_after_hremap = m_model_grid->clone("after_hremap",true);
-  m_grid_after_hremap->reset_num_vertical_lev(nlevs_data);
+  m_grid_after_hremap->reset_vertical_configuration(nlevs_data, AbstractGrid::VKind::Pressure);
 
   if (map_file!="") {
     m_horiz_remapper_beg = std::make_shared<HorizontalRemapper>(m_grid_after_hremap,map_file);
@@ -509,9 +509,7 @@ create_horiz_remappers (const Real iop_lat, const Real iop_lon)
 
   // Create iop remap tgt grid
   m_grid_after_hremap = m_model_grid->clone("after_hremap",true);
-  m_grid_after_hremap->reset_num_vertical_lev(nlevs_data);
-
-  // Create IOP remappers
+  m_grid_after_hremap->reset_vertical_configuration(nlevs_data, AbstractGrid::VKind::Pressure);
   m_horiz_remapper_beg = std::make_shared<IOPRemapper>(data_grid,m_grid_after_hremap,iop_lat,iop_lon);
   m_horiz_remapper_end = std::make_shared<IOPRemapper>(data_grid,m_grid_after_hremap,iop_lat,iop_lon);
 }
@@ -605,6 +603,8 @@ create_vert_remapper (const VertRemapData& data)
 
   // If the vremap type is not CUSTOM, we need to setup the source pressure profile
   if (m_vr_type!=Custom) {
+    using namespace ShortFieldTagsNames;
+
     // If the remapper is not "custom", we MUST be able to cast down to VerticalRemapper
     auto vremap = std::dynamic_pointer_cast<VerticalRemapper>(m_vert_remapper);
 
@@ -614,8 +614,8 @@ create_vert_remapper (const VertRemapData& data)
     //  - p_data is the full 3d pressure where data is defined, while p_file is the field
     //    we read from file. For Static1D and Dynamic3D they are the same, but for
     //    Dynamic3DRef, p_file is the surf pressure (2d), while p_data is the full 3d pmid
-    auto p_layout = m_vr_type==Static1D ? m_grid_after_hremap->get_vertical_layout(true)
-                                        : m_grid_after_hremap->get_3d_scalar_layout(true);
+    auto p_layout = m_vr_type==Static1D ? m_grid_after_hremap->get_vertical_layout(PLEV)
+                                        : m_grid_after_hremap->get_3d_scalar_layout(PLEV);
     auto& p_data = m_helper_pressure_fields ["p_data"];
     p_data = Field (FieldIdentifier("p_data",p_layout,ekat::units::Pa,m_grid_after_hremap->name()));
     p_data.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
@@ -631,7 +631,7 @@ create_vert_remapper (const VertRemapData& data)
 
       // We need to reconstruct the 3d pressure from ps, hybm, and hyam.
       // We read and store hyam/hybm in the vremap src grid
-      auto layout = m_grid_after_hremap->get_vertical_layout(true);
+      auto layout = m_grid_after_hremap->get_vertical_layout(PLEV);
       auto nondim = ekat::units::Units::nondimensional();
       DataType real_t = DataType::RealType;
       std::vector<Field> fields = {

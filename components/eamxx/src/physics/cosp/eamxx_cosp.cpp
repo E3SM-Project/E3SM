@@ -54,8 +54,8 @@ void Cosp::create_requests()
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
   FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();
-  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
-  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(false);
+  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(LEV);
+  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(ILEV);
   FieldLayout scalar4d_ctptau ( {COL,CMP,CMP},
                                 {m_num_cols,m_num_tau,m_num_ctp},
                                 {e2str(COL), "cosp_tau", "cosp_prs"});

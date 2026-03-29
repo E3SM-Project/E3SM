@@ -51,6 +51,7 @@ create_fields (const std::shared_ptr<const AbstractGrid>& grid,
                const bool int_same_as_mid = false,
                const bool pad_for_packing = true)
 {
+  using namespace ShortFieldTagsNames;
   constexpr auto m  = ekat::units::m;
   const auto& gn = grid->name();
 
@@ -60,10 +61,10 @@ create_fields (const std::shared_ptr<const AbstractGrid>& grid,
   // Create fields
   auto layout_s2d   = grid->get_2d_scalar_layout();
   auto layout_v2d   = grid->get_2d_vector_layout(ncmps);
-  auto layout_s3d_m = grid->get_3d_scalar_layout(true);
-  auto layout_v3d_m = grid->get_3d_vector_layout(true,ncmps);
-  auto layout_s3d_i = grid->get_3d_scalar_layout(int_same_as_mid);
-  auto layout_v3d_i = grid->get_3d_vector_layout(int_same_as_mid,ncmps);
+  auto layout_s3d_m = grid->get_3d_scalar_layout(LEV);
+  auto layout_v3d_m = grid->get_3d_vector_layout(LEV,ncmps);
+  auto layout_s3d_i = grid->get_3d_scalar_layout(int_same_as_mid ? LEV : ILEV);
+  auto layout_v3d_i = grid->get_3d_vector_layout(int_same_as_mid ? LEV : ILEV,ncmps);
 
   Field s2d  (FieldIdentifier("s2d",   layout_s2d,   m, gn));
   Field v2d  (FieldIdentifier("v2d",   layout_v2d,   m, gn));

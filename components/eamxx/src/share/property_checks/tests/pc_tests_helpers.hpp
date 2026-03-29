@@ -33,7 +33,8 @@ create_test_grid (const ekat::Comm& comm, int num_lcols, int nlevs)
 inline Field create_test_field (const std::shared_ptr<const AbstractGrid>& grid)
 {
   using namespace ekat::units;
-  const auto layout = grid->get_3d_vector_layout(true,3);
+  using namespace ShortFieldTagsNames;
+  const auto layout = grid->get_3d_vector_layout(LEV,3);
 
   FieldIdentifier fid ("field_1", layout, m/s, grid->name());
   Field f(fid);

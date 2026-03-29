@@ -21,9 +21,10 @@ constexpr int tens_dim2 = 4;
 Field create_field (const std::string& name,
                     const LayoutType lt,
                     const AbstractGrid& grid,
-                    const bool midpoints,
+                    const FieldTag vtag,
                     const int seed)
 {
+  using namespace ShortFieldTagsNames;
   const auto u = ekat::units::Units::nondimensional();
   const auto& gn = grid.name();
   Field f;
@@ -35,15 +36,15 @@ Field create_field (const std::string& name,
     case LayoutType::Tensor2D:
       f = Field(FieldIdentifier(name,grid.get_2d_tensor_layout({tens_dim1,tens_dim2}),u,gn));  break;
     case LayoutType::Scalar3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(midpoints),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(vtag),u,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     case LayoutType::Vector3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(midpoints,vec_dim),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(vtag,vec_dim),u,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     case LayoutType::Tensor3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_tensor_layout(midpoints,{tens_dim1,tens_dim2}),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_tensor_layout(vtag,{tens_dim1,tens_dim2}),u,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     default:
@@ -58,6 +59,7 @@ Field create_field (const std::string& name,
 
 TEST_CASE("iop_remap")
 {
+  using namespace ShortFieldTagsNames;
   ekat::Comm comm(MPI_COMM_WORLD);
 
   root_print ("\n +---------------------------------+\n",comm);
@@ -87,8 +89,8 @@ TEST_CASE("iop_remap")
   REQUIRE_THROWS (std::make_shared<IOPRemapper>(src_grid,tgt_grid,0,0)); // not lat/lon in src
 
   auto bad_src = create_point_grid("src", src_ngcols,10,comm);
-  bad_src->create_geometry_data("lat",src_grid->get_3d_scalar_layout(true));
-  bad_src->create_geometry_data("lon",src_grid->get_3d_scalar_layout(true));
+  bad_src->create_geometry_data("lat",src_grid->get_3d_scalar_layout(LEV));
+  bad_src->create_geometry_data("lon",src_grid->get_3d_scalar_layout(LEV));
   REQUIRE_THROWS (std::make_shared<IOPRemapper>(bad_src,tgt_grid,0,0)); // lat/lon bad layout
 
   auto src_lat = src_grid->create_geometry_data("lat",src_grid->get_2d_scalar_layout());
@@ -103,7 +105,7 @@ TEST_CASE("iop_remap")
   REQUIRE_THROWS (std::make_shared<IOPRemapper>(se_grid,tgt_grid,0,0)); // src!=PointGrid
 
   auto bad_tgt = tgt_grid->clone("bad_tgt",true);
-  bad_tgt->reset_num_vertical_lev(12);
+  bad_tgt->reset_vertical_configuration(12, AbstractGrid::VKind::Model);
   REQUIRE_THROWS (std::make_shared<IOPRemapper>(src_grid,bad_tgt,0,0)); // nlevs doesn't match
 
   REQUIRE_THROWS (std::make_shared<IOPRemapper>(src_grid,bad_tgt,91,0)); // lat OOB
@@ -139,14 +141,14 @@ TEST_CASE("iop_remap")
     LayoutType::Tensor3D
   };
 
-  bool midpoints = false; // midpoints is unused for 2d layouts
+  FieldTag vtag = ILEV; // vtag is unused for 2d layouts
   for (auto l : layouts) {
     auto n = e2str(l);
-    auto src = create_field(n+"_src",l,*src_grid,midpoints,seed++);
-    auto tgt = create_field(n+"_tgt",l,*tgt_grid,midpoints,seed++);
+    auto src = create_field(n+"_src",l,*src_grid,vtag,seed++);
+    auto tgt = create_field(n+"_tgt",l,*tgt_grid,vtag,seed++);
     remap->register_field(src,tgt);
 
-    midpoints = not midpoints; // ensure we create both mid and int fields
+    vtag = (vtag == ILEV) ? LEV : ILEV; // ensure we create both mid and int fields
   }
   remap->registration_ends();
 

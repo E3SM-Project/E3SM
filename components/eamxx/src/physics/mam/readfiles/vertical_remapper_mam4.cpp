@@ -39,7 +39,8 @@ void VerticalRemapperMAM4::
 set_source_pressure (const std::string& file_name )
 {
   if (m_vremap_type == MAM4_ELEVATED_EMISSIONS) {
-    auto layout = m_src_grid->get_vertical_layout(false);
+    using namespace ShortFieldTagsNames;
+    auto layout = m_src_grid->get_vertical_layout(ILEV);
     auto mbar = ekat::units::Units(100*ekat::units::Pa,"mbar");
     Field altitude_int_src(FieldIdentifier("altitude_int_field",layout,mbar,m_src_grid->name()));
     altitude_int_src.allocate_view();
