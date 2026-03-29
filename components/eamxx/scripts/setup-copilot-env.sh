@@ -17,7 +17,10 @@
 #   cd components/eamxx
 #   ./scripts/test-all-eamxx -m copilot-testing -t dbg --config-only
 
-set -e
+# Only enable 'errexit' when running as a script, not when sourced.
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    set -e
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EAMXX_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -36,6 +39,7 @@ install_with_apt() {
     sudo -E apt-get update -qq || sudo apt-get update -qq
     sudo -E apt-get install -y -qq \
         gfortran gcc g++ cmake make git \
+        python3 python3-pip \
         libopenmpi-dev openmpi-bin \
         libnetcdf-dev libnetcdff-dev libpnetcdf-dev \
         libboost-dev libyaml-cpp-dev \
@@ -45,6 +49,7 @@ install_with_apt() {
         perl \
     || sudo apt-get install -y \
         gfortran gcc g++ cmake make git \
+        python3 python3-pip \
         libopenmpi-dev openmpi-bin \
         libnetcdf-dev libnetcdff-dev libpnetcdf-dev \
         libboost-dev libyaml-cpp-dev \
@@ -55,11 +60,12 @@ install_with_apt() {
 }
 
 fix_multiarch_paths() {
-    # Debian/Ubuntu multiarch puts libraries in lib/x86_64-linux-gnu/ instead of lib/.
+    # Debian/Ubuntu multiarch puts libraries in lib/<triplet>/ instead of lib/.
     # Scorpio's FindNetCDF/FindPnetCDF only searches PATH_SUFFIXES "lib" with
     # NO_DEFAULT_PATH, so cmake can't find them. Create symlinks in /usr/lib/ to fix.
     echo "--- Fixing multiarch library paths ---"
-    local arch_dir="/usr/lib/x86_64-linux-gnu"
+    local arch_dir
+    arch_dir="/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH 2>/dev/null || echo x86_64-linux-gnu)"
     local target_dir="/usr/lib"
     for lib in libnetcdf.so libnetcdff.so libpnetcdf.so libhdf5.so libhdf5_hl.so; do
         if [ -f "$arch_dir/$lib" ] && [ ! -f "$target_dir/$lib" ]; then
@@ -72,8 +78,12 @@ fix_multiarch_paths() {
 install_with_spack() {
     echo "--- Installing dependencies via spack ---"
     if ! command -v spack &> /dev/null; then
-        echo "Installing spack..."
-        git clone --depth=2 https://github.com/spack/spack.git "$HOME/spack"
+        if [ -d "$HOME/spack" ]; then
+            echo "Found existing spack installation at $HOME/spack, reusing it"
+        else
+            echo "Installing spack..."
+            git clone --depth=2 https://github.com/spack/spack.git "$HOME/spack"
+        fi
         . "$HOME/spack/share/spack/setup-env.sh"
     else
         echo "spack already available"
@@ -119,9 +129,10 @@ pip install --quiet psutil pyyaml netCDF4 packaging
 echo "--- Initializing required git submodules ---"
 cd "$E3SM_ROOT"
 
-# Use HTTPS instead of SSH if SSH DNS resolution fails (common in CI containers)
-if ! ssh -o ConnectTimeout=5 -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
-    git config --global url."https://github.com/".insteadOf "git@github.com:"
+# Use HTTPS instead of SSH if SSH is unavailable (common in CI containers)
+if ! ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+       -o ConnectTimeout=5 -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+    git config url."https://github.com/".insteadOf "git@github.com:"
     echo "  Using HTTPS for GitHub (SSH unavailable)"
 fi
 

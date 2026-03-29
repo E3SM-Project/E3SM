@@ -16,8 +16,14 @@ endif()
 
 # BLAS/LAPACK - prefer env vars, fall back to system paths
 if (DEFINED ENV{BLAS_ROOT})
-  set(BLAS_LIBRARIES "$ENV{BLAS_ROOT}/lib/libblas.so" CACHE STRING "")
-  set(LAPACK_LIBRARIES "$ENV{BLAS_ROOT}/lib/liblapack.so" CACHE STRING "")
+  # Try lib first, then lib64 (common on HPC/module installs)
+  set(_blas_lib_dir "lib")
+  if (NOT EXISTS "$ENV{BLAS_ROOT}/${_blas_lib_dir}/libblas.so"
+      AND EXISTS "$ENV{BLAS_ROOT}/lib64/libblas.so")
+    set(_blas_lib_dir "lib64")
+  endif()
+  set(BLAS_LIBRARIES "$ENV{BLAS_ROOT}/${_blas_lib_dir}/libblas.so" CACHE STRING "")
+  set(LAPACK_LIBRARIES "$ENV{BLAS_ROOT}/${_blas_lib_dir}/liblapack.so" CACHE STRING "")
 elseif (EXISTS "/usr/lib/x86_64-linux-gnu/libblas.so")
   set(BLAS_LIBRARIES "/usr/lib/x86_64-linux-gnu/libblas.so" CACHE STRING "")
   set(LAPACK_LIBRARIES "/usr/lib/x86_64-linux-gnu/liblapack.so" CACHE STRING "")
