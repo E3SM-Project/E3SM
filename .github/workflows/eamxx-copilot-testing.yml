@@ -1,0 +1,107 @@
+name: eamxx-copilot-testing
+
+# This workflow is intended to be triggered manually by GitHub Copilot to test
+# modifications to components/eamxx. It installs all required dependencies on
+# a GitHub-hosted Ubuntu runner and executes the EAMxx standalone test suite.
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: >
+          Build type to test. Choices: dbg (debug, fast to configure),
+          sp (single precision), opt (optimized), fpe (floating point exceptions).
+        required: false
+        default: 'dbg'
+        type: choice
+        options:
+          - dbg
+          - sp
+          - opt
+          - fpe
+      test_regex:
+        description: >
+          Regex passed to ctest -R to limit which tests are run.
+          Leave empty to run all tests for the selected build type.
+          Example: "field" to run only field-related tests,
+          "share/field" to target a specific subdirectory.
+        required: false
+        default: ''
+        type: string
+      cmake_configs:
+        description: >
+          Semicolon-separated list of extra KEY=VALUE pairs forwarded to cmake
+          via test-all-eamxx -c flags.  Example: SCREAM_NUM_VERTICAL_LEV=72
+        required: false
+        default: ''
+        type: string
+
+defaults:
+  run:
+    shell: bash -l {0}
+
+jobs:
+  test-eamxx:
+    runs-on: ubuntu-latest
+    name: copilot-testing / ${{ inputs.build_type }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            gfortran \
+            libopenmpi-dev \
+            openmpi-bin \
+            libnetcdf-dev \
+            libnetcdff-dev \
+            libpnetcdf-dev \
+            libboost-dev \
+            libyaml-cpp-dev \
+            liblapack-dev \
+            libblas-dev
+
+      - name: Install Python dependencies
+        run: pip install psutil pyyaml
+
+      - name: Run test-all-eamxx
+        working-directory: components/eamxx
+        env:
+          INPUT_TEST_REGEX: ${{ inputs.test_regex }}
+          INPUT_CMAKE_CONFIGS: ${{ inputs.cmake_configs }}
+        run: |
+          cmd_args=("-m" "copilot-testing" "-t" "${{ inputs.build_type }}"
+                    "--preserve-env" "-c" "EKAT_DISABLE_TPL_WARNINGS=ON")
+
+          # Limit test scope if a regex was provided
+          if [ -n "${INPUT_TEST_REGEX}" ]; then
+            cmd_args+=("--limit-test-regex" "${INPUT_TEST_REGEX}")
+          fi
+
+          # Forward any extra cmake configs
+          IFS=';' read -ra configs <<< "${INPUT_CMAKE_CONFIGS}"
+          for config in "${configs[@]}"; do
+            [ -n "$config" ] && cmd_args+=("-c" "$config")
+          done
+
+          echo "test-all-eamxx call: ./scripts/test-all-eamxx ${cmd_args[*]}"
+          ./scripts/test-all-eamxx "${cmd_args[@]}"
+
+      - name: Upload ctest logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctest-logs-${{ inputs.build_type }}
+          path: |
+            components/eamxx/ctest-build/**/Testing/Temporary/Last*.log
+            components/eamxx/ctest-build/**/CMakeCache.txt
+          retention-days: 3
