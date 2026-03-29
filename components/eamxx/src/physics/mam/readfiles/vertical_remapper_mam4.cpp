@@ -9,9 +9,7 @@ VerticalRemapperMAM4 (const grid_ptr_type& src_grid,
                   const grid_ptr_type& tgt_grid,
                   const VertRemapType& vremp_type)
 :VerticalRemapper(src_grid,
-                  tgt_grid,
-                  true,
-                  false) {
+                  tgt_grid) {
   m_vremap_type=vremp_type;
 }
 
