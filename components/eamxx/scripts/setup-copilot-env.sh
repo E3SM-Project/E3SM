@@ -17,10 +17,26 @@
 #   cd components/eamxx
 #   ./scripts/test-all-eamxx -m copilot-testing -t dbg --config-only
 
+# Determine whether we are sourced or executed directly.
+_setup_copilot_is_sourced=false
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+    _setup_copilot_is_sourced=true
+fi
+
+# Helper: abort with a message.  Uses 'return 1' when sourced so the
+# caller's shell survives, 'exit 1' otherwise.
+_setup_copilot_fail() {
+    echo "SETUP ERROR: $1" >&2
+    if $_setup_copilot_is_sourced; then return 1; else exit 1; fi
+}
+
 # Only enable 'errexit' when running as a script, not when sourced.
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+if ! $_setup_copilot_is_sourced; then
     set -e
 fi
+
+# Save the caller's working directory so we can restore it at the end.
+_setup_copilot_orig_dir="$(pwd)"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EAMXX_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -103,10 +119,10 @@ install_with_spack() {
 }
 
 if command -v apt-get &> /dev/null; then
-    install_with_apt
+    install_with_apt || _setup_copilot_fail "apt-get package installation failed"
     fix_multiarch_paths
 elif command -v spack &> /dev/null; then
-    install_with_spack
+    install_with_spack || _setup_copilot_fail "spack package installation failed"
 else
     echo "WARNING: Neither apt-get nor spack found."
     echo "Please install the following manually:"
@@ -120,7 +136,8 @@ fi
 ###############################################################################
 
 echo "--- Installing Python packages ---"
-pip install --quiet psutil pyyaml netCDF4 packaging
+pip install --quiet psutil pyyaml netCDF4 packaging \
+    || _setup_copilot_fail "pip package installation failed"
 
 ###############################################################################
 # 3. Initialize git submodules
@@ -139,13 +156,19 @@ fi
 git submodule update --init --recursive \
     externals/ekat externals/scorpio externals/mam4xx externals/haero \
     components/eam/src/physics/cosp2/external \
-    components/eam/src/physics/rrtmgp/external
-git submodule update --init cime
-cd cime && git submodule update --init CIME/non_py/cprnc && cd "$E3SM_ROOT"
+    components/eam/src/physics/rrtmgp/external \
+    || _setup_copilot_fail "git submodule init failed"
+git submodule update --init cime \
+    || _setup_copilot_fail "cime submodule init failed"
+cd cime && git submodule update --init CIME/non_py/cprnc \
+    || _setup_copilot_fail "cprnc submodule init failed"
 
 ###############################################################################
 # 4. Set environment variables
 ###############################################################################
+
+# Restore the caller's working directory before exporting env vars.
+cd "$_setup_copilot_orig_dir"
 
 echo "--- Setting environment variables ---"
 
