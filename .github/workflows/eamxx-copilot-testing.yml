@@ -71,7 +71,7 @@ jobs:
             libblas-dev
 
       - name: Install Python dependencies
-        run: pip install psutil pyyaml
+        run: python3 -m pip install --user psutil pyyaml
 
       - name: Run test-all-eamxx
         working-directory: components/eamxx
@@ -98,7 +98,7 @@ jobs:
 
       - name: Upload ctest logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ctest-logs-${{ inputs.build_type }}
           path: |
