@@ -62,7 +62,7 @@ void run_tests (const std::shared_ptr<const AbstractGrid>& grid,
   auto nlevs = grid->get_num_vertical_levels();
 
   auto vcoarse_grid = grid->clone("vcoarse",true);
-  vcoarse_grid->reset_num_vertical_lev(data_nlevs);
+  vcoarse_grid->reset_vertical_configuration(data_nlevs, AbstractGrid::VKind::Pressure);
 
   // These are the fields we will compute
   auto fields = create_fields(grid,false,false);

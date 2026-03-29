@@ -312,13 +312,13 @@ is_valid_src_layout (const FieldLayout& layout) const {
 bool VerticalRemapper::
 compatible_layouts (const FieldLayout& src,
                     const FieldLayout& tgt) const {
-  // Strip the LEV/ILEV tags, and check if they are the same
-  // Also, check rank compatibility, in case one has LEV/ILEV and the other doesn't
-  // NOTE: tgt layouts always use LEV (not ILEV), while src can have ILEV or LEV.
+  // Strip the LEV/ILEV/PLEV tags, and check if they are the same
+  // Also, check rank compatibility, in case one has a vertical tag and the other doesn't
+  // NOTE: tgt layouts use LEV (model midpoints) or PLEV (pressure), while src can have ILEV or LEV.
 
   using namespace ShortFieldTagsNames;
-  auto src_stripped = src.clone().strip_dims({LEV,ILEV});
-  auto tgt_stripped = tgt.clone().strip_dims({LEV,ILEV});
+  auto src_stripped = src.clone().strip_dims({LEV,ILEV,PLEV});
+  auto tgt_stripped = tgt.clone().strip_dims({LEV,ILEV,PLEV});
 
   return src.rank()==tgt.rank() and
          src_stripped.congruent(tgt_stripped);
