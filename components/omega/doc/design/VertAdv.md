@@ -24,7 +24,7 @@ layer interfaces and tilt of layer interfaces
 Support for multiple possible reconstruction schemes, allowing users to select
 among different orders of accuracy and upwinding at runtime through
 configuration options. Standard and monotonic flux-corrected transport (FCT)
-advection algorithms are available for the tendency calculations.
+advection algorithms are available for the tracer tendency calculations.
 
 ### 2.3 Requirement: Compute tendencies for mass, velocity, and tracers
 
@@ -71,6 +71,13 @@ using the TRiSK formulation of the discrete divergence operator (see
 [V0 design document](omega-design-shallow-water-omega0)). The boundary
 conditions at the top and bottom interfaces set the pseudo-velocity to zero.
 
+The vertical pseudo-velocity $\tilde{w}$ is represented in the code by
+`VerticalVelocity`. The equations below use the transport pseudo-velocity
+$\tilde{W}_{tr} which incorporates optional corrections on the pseudo-velocity
+arising from interface motion, contributions from the horizontal velocity
+through tilted interfaces, and surface source terms. This is represented in the
+code by `TotalVerticalVelocity`.
+
 ### 3.2 Mass (Thickness)
 
 The time evolution of the pseudo-thickness (represented in the code as
@@ -79,12 +86,8 @@ The time evolution of the pseudo-thickness (represented in the code as
 $$
 \tilde{h}^{n+1}_{i,k} = \tilde{h}^{n}_{i,k} +
 \Delta t \left( \left[\tilde{W}_{tr}\right]_{k+1/2} -
-\left[\tilde{W}_{tr}\right]_{k-1/2} \right),
+\left[\tilde{W}_{tr}\right]_{k-1/2} \right).
 $$
-
-where $\tilde{W}_{tr}$ represents the transport pseudo-velocity and accounts for
-the motion of the interface, contributions from the horizontal velocity through
-tilted interfaces, and surface source terms.
 
 This second-order form ensures exact conservation of total column thickness and
 numerical stability.
@@ -115,8 +118,8 @@ $$
 $$
 
 A variety of options are available for the scheme used to reconstruct the tracer
-values at interfaces $[\phi]_{k\pm1/2}$ (order of accuracy, centered vs.
-upwinded) which can be selected at runtime via configuration.
+values at interfaces $[\phi]_{k\pm1/2}$ (order of accuracy, standard advection vs.
+flux-corrected transport) which can be selected at runtime via configuration.
 
 ## 4 Design
 
@@ -135,7 +138,7 @@ enum class VertFluxOption {
 };
 ```
 
-Another `enum class` specifies the advection scheme:
+Another `enum class` specifies the tracer advection scheme:
 
 ```c++
 enum class VertAdvOption {
@@ -146,32 +149,12 @@ enum class VertAdvOption {
 
 #### 4.1.2 Class/structs/data types
 
-Separate functors are defined for each of the flux reconstruction options
-described in section 4.1.1, as well as for the low-order (first-order upwind)
-flux used in the flux-corrected transport scheme. These functors are invoked
-in parallel dispatches within the tracer tendency compute methods.
-
-```c++
-class VertFlux1stOrderUpwind {
- public:
-
-   VertFlux1stOrderUpwind(const VertCoord *VCoord);
-
-   KOKKOS_FUNCTION void operator()(const Array3DReal &Flux, I4 ICell,
-                                   I4 KChunk, Array3DReal &Tracers,
-                                   Array2DReal &WTransp)
-
-};
-```
-
 The `VertAdv` class provides the core functionality for vertical advection.
 It defines the data structures, configuration parameters, and compute methods
-needed for performing advective vertical transport. Instances of the flux
-functors are created and managed within this class.
+needed for performing advective vertical transport.
 
 ```c++
 class VertAdv{
- public:
    // Logicals to enable/disable advection of specific fields
    bool ThickVertAdvEnabled;
    bool VelVertAdvEnabled;
@@ -182,25 +165,20 @@ class VertAdv{
    VertAdvOption VertAdvChoice;
 
    // Core data arrays
-   Array2DReal VerticalTransport;    /// pseudo-velocity through top of layer
-   Array3DReal VerticalFlux;         /// fluxes at vertical interfaces
-   Array3DReal LowOrderVerticalFlux; /// low order fluxes for FCT
+   Array2DReal VerticalVelocity;      /// pseudo-velocity through top of cell
+   Array2DReal TotalVerticalVelocity; /// transport velocity through top of cell
+   Array3DReal VerticalFlux;          /// tracer fluxes at vertical interfaces
+   Array3DReal LowOrderVerticalFlux;  /// low order fluxes for FCT
 
    // Compute methods
-   computeVerticalTransport(...);
+   computeVerticalVelocity(...);
    computeThicknessVAdvTend(...);
    computeVelocityVadvTend(...);
    computeTracerVadvTend(...);
+   computeVerticalFluxes(...);
    computeStdVAdvTend(...);
    computeFCTVAdvTend(...);
 
-   // Flux functors
-   VertFlux1stOrderUpwind   VFlux1stUpw;
-   VertFlux2ndOrderCentered VFlux2ndCent;
-   VertFlux3rdOrderUpwind   VFlux3rdUpw;
-   VertFlux4thOrderCentered VFlux4thCent;
-
- private:
    // Mesh dimensions
    I4 NVertLayers;
    I4 NVertLayersP1;
@@ -254,7 +232,7 @@ void VertAdv::init();
 #### 4.2.2 Pseudo-velocity computation
 
 The quantities required by this method are either stored locally in the
-`VertAdv` object, or are passed in through the `State` and `AuxState` objects.
+`VertAdv` object, or are fetched from  the `State` and `AuxState` objects.
 
 This method computes the vertical pseudo-velocity based on the divergence of
 the horizontal velocity field. A `parallelForOuter` construct iterates over the
@@ -263,13 +241,15 @@ through the active layers to compute the divergence of horizontal velocity,
 storing the result in scratch space. After the divergence is computed, a
 `parallelScanInner` performs a prefix sum to obtain the vertical pseudo-velocity
 at each layer interface. These pseudo-velocities are stored in the
-`VerticalTransport` member array for later use in mass, velocity, and tracer
-tendency calculations.
+`VerticalVelocity` member array. The transport pseudo-velocity
+`TotalVerticalVelocity` is then computed from the `VerticalVelocity` and
+any desired corrections. `TotalVerticalVelocity` is used by the tendency
+methods below.
+
 
 ```c++
-void VertAdv::computeVerticalTransport(const OceanState *State,
-    const AuxiliaryState *AuxState, int ThickTimeLevel,
-    int VelTimeLevel, TimeInterval Dt)
+void VertAdv::computeVerticalVelocity(const Array2DReal &NormalVelocity,
+    const Array2DReal &FluxLayerThickEdge, TimeInterval Dt)
 ```
 
 #### 4.2.3 Tendency computations
@@ -279,22 +259,20 @@ The `computeThicknessVAdvTend`, `computeVelocityVadvTend`, and
 `Tendencies` class methods.
 
 The `computeThicknessVAdvTend` method computes the vertical advection tendency
-for pseudo-thickness (`LayerThickness`). Because the vertical pseudo-velocity
-field (`VerticalTransport`) is already stored within the `VertAdv` object,
-this method requires only the thickness tendency array as an argument. The
-parallel execution of the computation is straightforward.
+for pseudo-thickness (`LayerThickness`). The parallel execution of the
+computation is straightforward.
 
 ```c++
 void VertAdv::computeThicknessVAdvTend(const Array2DReal &Tend) {
 
    if (!ThickVertAdvEnabled) return;
 
-   OmegaScope(LocVertTransp, VerticalTransport);
+   OmegaScope(LocTotVertVel, TotalVerticalVelocity);
 
    parallelForOuter(...,
       parallelForInner(...,
-         Tend(ICell, K) += LocVertTransp(ICell, K + 1) -
-                           LocVertTransp(ICell, K);
+         Tend(ICell, K) += LocTotVertVel(ICell, K + 1) -
+                           LocTotVertVel(ICell, K);
       );
    );
 }
@@ -306,8 +284,8 @@ for horizontal velocity (`NormalVelocity`). The method requires the
 field from the `AuxState` object as input. A `parallelForOuter` loop iterates
 over the edges in the horizontal mesh, and a `parallelForInner` loop iterates
 over the active layer interfaces. At each interface, `NormalVelocity` and
-`FluxLayerThickEdge` are used to compute `du/dz`, and the `VerticalTransport`
-is interpolated from cell centers to edges. The product of these, `w du/dz` is
+`FluxLayerThickEdge` are used to compute $du/dz$, and `TotalVerticalVelocity`
+is interpolated from cell centers to edges. The product of these, $W du/dz$ is
 averaged from interfaces to the middle of each layer and accumulated into the
 velocity tendency.
 
@@ -316,9 +294,10 @@ void VertAdv::computeVelocityVAdvTend(const Array2DReal &Tend,
     const Array2DReal &NormalVelocity, const Array2DReal &FluxLayerThickEdge)
 ```
 
-The `computeTracerVAdvTend` method serves as an interface that dispatches to
-either the standard advection algorithm, or the FCT scheme depending on
-runtime configuration.
+The `computeTracerVAdvTend` method serves as an interface that calls
+`computeVerticalFluxes` to compute the needed tracer fluxes based on specified
+configuration options and then dispatches to either the standard advection
+algorithm, or the FCT scheme depending on runtime configuration.
 
 ```c++
 void VertAdv::computeTracerVadvTend(const Array3DReal &Tend,
@@ -327,21 +306,19 @@ void VertAdv::computeTracerVadvTend(const Array3DReal &Tend,
 
 The `computeStdVAdvTend` method performs the standard advection update by
 looping over the cells and interfaces using nested `parallelForOuter` and
-`parallelForInner` constructs. The flux functor chosen from the runtime
-configuration is used to compute interface fluxes, which are then applied to
-update the tracer tendencies.
+`parallelForInner` constructs.
 
 The `computeFCTVAdvTend` method implements the flux-corrected transport scheme
 developed by [Zalesak 1979](https://www.sciencedirect.com/science/article/pii/0021999179900512).
 We use by default the FCT formulation of
 [Skamarack & Gassmann 2011](https://journals.ametsoc.org/view/journals/mwre/139/9/mwr-d-10-05056.1.xml).
 At each interface, both a high-order flux (chosen via configuration) and a
-low-order flux (1st-order upwind) are computed. These fluxes are then blended
-and limited to ensure monotone transport.
+low-order flux (1st-order upwind) are computed in `computeVerticalFluxes`.
+These fluxes are then blended and limited to ensure monotone transport.
 
 ## 5 Verification and Testing
 
 Unit tests are required for each compute method to verify correct operation and
 numerical consistency. In addition, convergence tests with the
 [merry-go-round](https://docs.e3sm.org/polaris/main/users_guide/ocean/tasks/merry_go_round.html)
-test case should confirm the expected order of accuracy of the flux functors.
+test case should confirm the expected order of accuracy of the tracer fluxes.
