@@ -3,8 +3,8 @@
 #include "Field.h"
 #include "Logging.h"
 #include "Pacer.h"
-#include "TimeStepper.h"
 #include "Tendencies.h"
+#include "TimeStepper.h"
 
 namespace OMEGA {
 
@@ -74,6 +74,7 @@ void AuxiliaryState::computeMomAux(const OceanState *State, int ThickTimeLevel,
    OMEGA_SCOPE(LocVorticityAux, VorticityAux);
    OMEGA_SCOPE(LocVelocityDel2Aux, VelocityDel2Aux);
    OMEGA_SCOPE(LocWindForcingAux, WindForcingAux);
+
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
    OMEGA_SCOPE(MinLayerVertexBot, VCoord->MinLayerVertexBot);
@@ -230,7 +231,6 @@ void AuxiliaryState::computeAll(const OceanState *State,
 
    OMEGA_SCOPE(LocLayerThicknessAux, LayerThicknessAux);
    OMEGA_SCOPE(LocTracerAux, TracerAux);
-
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
    OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);

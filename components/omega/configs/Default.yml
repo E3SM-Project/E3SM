@@ -50,7 +50,7 @@ Omega:
     ViscDel4: 1.2e11
     DivFactor: 1.0
     WindForcingTendencyEnable: false
-    SurfaceTracerRestoringEnable: true
+    SurfaceTracerRestoringEnable: false
     BottomDragTendencyEnable: false
     BottomDragCoeff: 0.0
     TracerHorzAdvTendencyEnable: true

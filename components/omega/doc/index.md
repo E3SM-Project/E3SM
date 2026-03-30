@@ -98,11 +98,8 @@ devGuide/VertCoord
 devGuide/PGrad
 devGuide/Timing
 devGuide/VerticalMixingCoeff
-<<<<<<< HEAD
 devGuide/VertAdv
-=======
 devGuide/Forcing
->>>>>>> 41ae670f82 (adds more documentation and renames vars)
 ```
 
 ```{toctree}
