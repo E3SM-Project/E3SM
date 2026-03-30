@@ -140,9 +140,11 @@ registration_ends_impl ()
 
       auto& tgt_mask = m_name_to_tgt_int_mask[mask_name];
       if (tgt_mask.data_type()!=DataType::Invalid) {
-        // There was another src field with the same src mask, which was already registerred.
+        // There was another src field with the same src mask, which was already registered.
         // Recycle it, but make sure it can accommodate this field's pack size
         tgt_mask.get_header().get_alloc_properties().request_allocation(ps);
+        m_name_to_src_real_mask[mask_name].get_header().get_alloc_properties().request_allocation(ps);
+        m_name_to_tgt_real_mask[mask_name].get_header().get_alloc_properties().request_allocation(ps);
         tgt_hdr.set_extra_data("valid_mask",tgt_mask);
         continue;
       }
