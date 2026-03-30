@@ -48,7 +48,7 @@ public:
 
   // Describes the type of vertical configuration.
   //   Model:    vertical levels are model levels (LEV = midpoints, ILEV = interfaces)
-  //   Pressure: vertical levels are at arbitrary pressure coordinates (PLEV)
+  //   Pressure: vertical levels are at arbitrary pressure coordinates (LEVP)
   enum class VKind { Model, Pressure };
 
   // Constructor(s) & Destructor
@@ -292,8 +292,8 @@ protected:
   void create_dof_fields(const int scalar2d_layout_rank);
 
   // Throws if vtag is incompatible with m_vkind:
-  //   - VKind::Model: accepts LEV and ILEV, rejects PLEV
-  //   - VKind::Pressure: accepts PLEV, rejects LEV and ILEV
+  //   - VKind::Model: accepts LEV and ILEV, rejects LEVP
+  //   - VKind::Pressure: accepts LEVP, rejects LEV and ILEV
   void check_tag_vkind_compatibility(const FieldTag vtag) const;
 
   // The grid name and type
@@ -311,7 +311,7 @@ protected:
   int m_num_global_dofs;
   int m_num_vert_levs;
 
-  // Vertical kind: Model (LEV/ILEV) or Pressure (PLEV)
+  // Vertical kind: Model (LEV/ILEV) or Pressure (LEVP)
   VKind m_vkind = VKind::Model;
 
   // The global ID of each dof

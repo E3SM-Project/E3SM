@@ -65,7 +65,7 @@ HorizontalRemapper (const grid_ptr_type& grid,
   for (const auto& name : gen_grid->get_geometry_data_names()) {
     const auto& f = gen_grid->get_geometry_data(name);
     const auto& fl = f.get_header().get_identifier().get_layout();
-    if (fl.has_tag(LEV) or fl.has_tag(ILEV) or fl.has_tag(PLEV)) {
+    if (fl.has_tag(LEV) or fl.has_tag(ILEV) or fl.has_tag(LEVP)) {
       other_grid->delete_geometry_data(name);
     }
   }

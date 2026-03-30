@@ -32,7 +32,7 @@ create_tgt_grid (const grid_ptr_type& src_grid,
 
   // Gather the pressure level data for vertical remapping
   using namespace ShortFieldTagsNames;
-  auto layout = tgt_grid->get_vertical_layout(PLEV);
+  auto layout = tgt_grid->get_vertical_layout(LEVP);
   Field p_tgt(FieldIdentifier("p_levs",layout,ekat::units::Pa,tgt_grid->name()));
   p_tgt.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
   p_tgt.allocate_view();
@@ -122,7 +122,7 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
   auto grid = src ? m_src_grid : m_tgt_grid;
   bool is_pressure_grid = grid->get_vkind()==AbstractGrid::VKind::Pressure;
   if (ptype==Midpoints or ptype==Both) {
-    expected_tag = is_pressure_grid ? PLEV : LEV;
+    expected_tag = is_pressure_grid ? LEVP : LEV;
     expected_dim = nlevs;
     if (src) {
       m_src_pmid = p;
@@ -132,7 +132,7 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
     m_mid_packs_supported &= pack_compatible;
   }
   if (ptype==Interfaces or ptype==Both) {
-    expected_tag = is_pressure_grid ? PLEV : ILEV;
+    expected_tag = is_pressure_grid ? LEVP : ILEV;
     expected_dim = is_pressure_grid ? nlevs : nlevs+1;
     if (src) {
       m_src_pint = p;
@@ -161,9 +161,9 @@ registration_ends_impl ()
 
     const auto& src_layout = src.get_header().get_identifier().get_layout().clone();
 
-    if (src_layout.has_tag(LEV) or src_layout.has_tag(ILEV) or src_layout.has_tag(PLEV)) {
+    if (src_layout.has_tag(LEV) or src_layout.has_tag(ILEV) or src_layout.has_tag(LEVP)) {
       // Determine if this field can be handled with packs, and whether it's at midpoints.
-      // For a Pressure src grid (PLEV), use the tgt layout to determine mid vs int.
+      // For a Pressure src grid (LEVP), use the tgt layout to determine mid vs int.
       // Add mask tracking to the target field. The mask tracks location of tgt pressure levs that are outside the
       // bounds of the src pressure field, and hence cannot be recovered by interpolation
       auto& ft = m_field2type[src.name()];
@@ -223,7 +223,7 @@ registration_ends_impl ()
         tgt.get_header().set_may_be_filled(true);
       }
     } else {
-      // If a field does not have any vertical tag (LEV, ILEV, or PLEV) it may still have
+      // If a field does not have any vertical tag (LEV, ILEV, or LEVP) it may still have
       // fill_value tracking assigned from somewhere else.
       // For instance, this could be a 2d field computed by FieldAtPressureLevel diagnostic.
       // In those cases we want to copy that fill_value tracking to the target field.
@@ -297,7 +297,7 @@ is_valid_tgt_layout (const FieldLayout& layout) const {
   using namespace ShortFieldTagsNames;
   const auto vkind = m_tgt_grid->get_vkind();
   const bool has_model_vtag    = layout.has_tag(LEV) or layout.has_tag(ILEV);
-  const bool has_pressure_vtag = layout.has_tag(PLEV);
+  const bool has_pressure_vtag = layout.has_tag(LEVP);
   if (vkind==AbstractGrid::VKind::Pressure and has_model_vtag) return false;
   if (vkind==AbstractGrid::VKind::Model    and has_pressure_vtag) return false;
   return AbstractRemapper::is_valid_tgt_layout(layout);
@@ -308,7 +308,7 @@ is_valid_src_layout (const FieldLayout& layout) const {
   using namespace ShortFieldTagsNames;
   const auto vkind = m_src_grid->get_vkind();
   const bool has_model_vtag    = layout.has_tag(LEV) or layout.has_tag(ILEV);
-  const bool has_pressure_vtag = layout.has_tag(PLEV);
+  const bool has_pressure_vtag = layout.has_tag(LEVP);
   if (vkind==AbstractGrid::VKind::Pressure and has_model_vtag) return false;
   if (vkind==AbstractGrid::VKind::Model    and has_pressure_vtag) return false;
   return AbstractRemapper::is_valid_src_layout(layout);
@@ -317,13 +317,13 @@ is_valid_src_layout (const FieldLayout& layout) const {
 bool VerticalRemapper::
 compatible_layouts (const FieldLayout& src,
                     const FieldLayout& tgt) const {
-  // Strip the LEV/ILEV/PLEV tags, and check if they are the same
+  // Strip the LEV/ILEV/LEVP tags, and check if they are the same
   // Also, check rank compatibility, in case one has a vertical tag and the other doesn't
-  // NOTE: tgt layouts use LEV (model midpoints) or PLEV (pressure), while src can have ILEV or LEV.
+  // NOTE: tgt layouts use LEV (model midpoints) or LEVP (pressure), while src can have ILEV or LEV.
 
   using namespace ShortFieldTagsNames;
-  auto src_stripped = src.clone().strip_dims({LEV,ILEV,PLEV});
-  auto tgt_stripped = tgt.clone().strip_dims({LEV,ILEV,PLEV});
+  auto src_stripped = src.clone().strip_dims({LEV,ILEV,LEVP});
+  auto tgt_stripped = tgt.clone().strip_dims({LEV,ILEV,LEVP});
 
   return src.rank()==tgt.rank() and
          src_stripped.congruent(tgt_stripped);
@@ -337,10 +337,10 @@ create_layout (const FieldLayout& from_layout,
 
   auto from_grid = to_grid==m_src_grid ? m_tgt_grid : m_src_grid;
 
-  // If the from_grid is a Pressure grid, its layout uses PLEV which cannot be
+  // If the from_grid is a Pressure grid, its layout uses LEVP which cannot be
   // mapped to LEV or ILEV without additional information.
   EKAT_REQUIRE_MSG (from_grid->get_vkind()!=AbstractGrid::VKind::Pressure,
-      "[VerticalRemapper::create_layout] Error! Starting layout uses PLEV which cannot be mapped to LEV/ILEV.\n"
+      "[VerticalRemapper::create_layout] Error! Starting layout uses LEVP which cannot be mapped to LEV/ILEV.\n"
       "  - from grid: " + from_grid->name() + "\n"
       "  - to grid  : " + to_grid->name() + "\n");
 
@@ -358,18 +358,18 @@ create_layout (const FieldLayout& from_layout,
       to_layout = from_layout;
       break;
     case LayoutType::Scalar1D:
-      vtag = to_grid_is_pressure ? PLEV
+      vtag = to_grid_is_pressure ? LEVP
            : (from_layout.tags().back()==LEV ? LEV : ILEV);
       to_layout = to_grid->get_vertical_layout(vtag);
       break;
     case LayoutType::Scalar3D:
-      vtag = to_grid_is_pressure ? PLEV
+      vtag = to_grid_is_pressure ? LEVP
            : (from_layout.tags().back()==LEV ? LEV : ILEV);
       to_layout = to_grid->get_3d_scalar_layout(vtag);
       break;
     case LayoutType::Vector3D:
       vdim_name = from_layout.name(from_layout.get_vector_component_idx());
-      vtag = to_grid_is_pressure ? PLEV
+      vtag = to_grid_is_pressure ? LEVP
            : (from_layout.tags().back()==LEV ? LEV : ILEV);
       to_layout = to_grid->get_3d_vector_layout(vtag,from_layout.get_vector_dim(),vdim_name);
       break;
@@ -416,7 +416,7 @@ void VerticalRemapper::remap_fwd_impl ()
     const auto& f_src    = m_src_fields[i];
           auto& f_tgt    = m_tgt_fields[i];
     const auto& tgt_layout   = f_tgt.get_header().get_identifier().get_layout();
-    if (tgt_layout.has_tag(LEV) or tgt_layout.has_tag(ILEV) or tgt_layout.has_tag(PLEV)) {
+    if (tgt_layout.has_tag(LEV) or tgt_layout.has_tag(ILEV) or tgt_layout.has_tag(LEVP)) {
       const auto& type = m_field2type.at(f_src.name());
       // Dispatch interpolation to the proper lin interp object
       if (type.midpoints) {

@@ -233,8 +233,8 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   m_time_interp.set_logger(m_atm_logger,"[EAMxx::Nudging] Reading nudging data");
 
   // NOTE: we are ASSUMING all fields are 3d and scalar!
-  const auto layout_ext = grid_ext->get_3d_scalar_layout(PLEV);
-  const auto layout_tmp = grid_tmp->get_3d_scalar_layout(PLEV);
+  const auto layout_ext = grid_ext->get_3d_scalar_layout(LEVP);
+  const auto layout_tmp = grid_tmp->get_3d_scalar_layout(LEVP);
   const auto layout_atm = m_grid->get_3d_scalar_layout(LEV);
   for (auto name : m_fields_nudge) {
     std::string name_ext = name + "_ext";
@@ -290,7 +290,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     create_helper_field("padded_p_mid_tmp",layout_padded,"");
   } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
     // For static 1D profile, we can read p_mid now
-    auto pmid_ext = create_helper_field("p_mid_ext", grid_ext->get_vertical_layout(PLEV), grid_ext->name());
+    auto pmid_ext = create_helper_field("p_mid_ext", grid_ext->get_vertical_layout(LEVP), grid_ext->name());
     AtmosphereInput src_input(m_static_vertical_pressure_file,grid_ext,{pmid_ext.alias("p_levs")},true);
     src_input.read_variables(-1);
 

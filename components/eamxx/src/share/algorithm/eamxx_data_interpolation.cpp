@@ -614,8 +614,8 @@ create_vert_remapper (const VertRemapData& data)
     //  - p_data is the full 3d pressure where data is defined, while p_file is the field
     //    we read from file. For Static1D and Dynamic3D they are the same, but for
     //    Dynamic3DRef, p_file is the surf pressure (2d), while p_data is the full 3d pmid
-    auto p_layout = m_vr_type==Static1D ? m_grid_after_hremap->get_vertical_layout(PLEV)
-                                        : m_grid_after_hremap->get_3d_scalar_layout(PLEV);
+    auto p_layout = m_vr_type==Static1D ? m_grid_after_hremap->get_vertical_layout(LEVP)
+                                        : m_grid_after_hremap->get_3d_scalar_layout(LEVP);
     auto& p_data = m_helper_pressure_fields ["p_data"];
     p_data = Field (FieldIdentifier("p_data",p_layout,ekat::units::Pa,m_grid_after_hremap->name()));
     p_data.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
@@ -631,7 +631,7 @@ create_vert_remapper (const VertRemapData& data)
 
       // We need to reconstruct the 3d pressure from ps, hybm, and hyam.
       // We read and store hyam/hybm in the vremap src grid
-      auto layout = m_grid_after_hremap->get_vertical_layout(PLEV);
+      auto layout = m_grid_after_hremap->get_vertical_layout(LEVP);
       auto nondim = ekat::units::Units::nondimensional();
       DataType real_t = DataType::RealType;
       std::vector<Field> fields = {

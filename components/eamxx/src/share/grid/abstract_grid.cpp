@@ -70,8 +70,8 @@ void AbstractGrid::check_tag_vkind_compatibility (const FieldTag vtag) const
         "Error! A grid with VKind=Model only accepts LEV/ILEV as vertical dim tag.\n"
         "  - grid name: " + m_name + "\n");
   } else {
-    EKAT_REQUIRE_MSG (vtag==PLEV,
-        "Error! A grid with VKind=Pressure only accepts PLEV as vertical dim tag.\n"
+    EKAT_REQUIRE_MSG (vtag==LEVP,
+        "Error! A grid with VKind=Pressure only accepts LEVP as vertical dim tag.\n"
         "  - grid name: " + m_name + "\n");
   }
 }
@@ -133,13 +133,13 @@ AbstractGrid::equivalent_layout (const FieldLayout& template_layout) const
 
   FieldLayout ret_layout = FieldLayout::invalid();
 
-  // Extract the vertical tag from the template (LEV, ILEV, or PLEV).
+  // Extract the vertical tag from the template (LEV, ILEV, or LEVP).
   // This tag is passed directly to the get_Xd_Y_layout methods, which will
   // check compatibility with this grid's VKind and throw if incompatible.
   FieldTag vlev_tag = FieldTag::Invalid;
   if (template_layout.has_tag(LEV))       vlev_tag = LEV;
   else if (template_layout.has_tag(ILEV)) vlev_tag = ILEV;
-  else if (template_layout.has_tag(PLEV)) vlev_tag = PLEV;
+  else if (template_layout.has_tag(LEVP)) vlev_tag = LEVP;
 
   const auto names       = template_layout.names();
   const auto vec_cmp     = template_layout.is_vector_layout() ?
@@ -269,11 +269,11 @@ is_valid_layout (const FieldLayout& layout) const
 {
   using namespace ShortFieldTagsNames;
 
-  // Extract the vertical tag (LEV, ILEV, or PLEV) from the layout.
+  // Extract the vertical tag (LEV, ILEV, or LEVP) from the layout.
   FieldTag vlev_tag = FieldTag::Invalid;
   if (layout.has_tag(LEV))       vlev_tag = LEV;
   else if (layout.has_tag(ILEV)) vlev_tag = ILEV;
-  else if (layout.has_tag(PLEV)) vlev_tag = PLEV;
+  else if (layout.has_tag(LEVP)) vlev_tag = LEVP;
 
   switch (layout.type()) {
     case LayoutType::Scalar0D: [[fallthrough]];
@@ -518,11 +518,11 @@ void AbstractGrid::reset_vertical_configuration (const int num_vertical_lev, con
 
   using namespace ShortFieldTagsNames;
 
-  // Loop over geo data. If they have the LEV, ILEV, or PLEV tag, they are
+  // Loop over geo data. If they have the LEV, ILEV, or LEVP tag, they are
   // no longer valid, so we must erase them.
   for (auto it=m_geo_fields.cbegin(); it!=m_geo_fields.cend(); ) {
     const auto& fl = it->second.get_header().get_identifier().get_layout();
-    const auto has_vlev = fl.has_tag(LEV) or fl.has_tag(ILEV) or fl.has_tag(PLEV);
+    const auto has_vlev = fl.has_tag(LEV) or fl.has_tag(ILEV) or fl.has_tag(LEVP);
     if (has_vlev) {
       it = m_geo_fields.erase(it);
     } else {
