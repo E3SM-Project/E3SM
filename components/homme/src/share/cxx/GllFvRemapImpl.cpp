@@ -339,7 +339,7 @@ f2g_scalar_dp (const KernelVariables& kv, const int nf2, const int np2, const in
 
 void GllFvRemapImpl
 ::run_dyn_to_fv_phys (const int timeidx, const Phys1T& ps, const Phys1T& phis, const Phys2T& Ts,
-                      const Phys2T& omegas, const Phys3T& uvs, const Phys3T& qs,
+                      const Phys2T& omegas, const Phys2T& strains, const Phys3T& uvs, const Phys3T& qs,
                       const Phys2T* dp_fv_out_ptr) {
   // Impl only for theta-l until ElementOps is provided in preqx_kokkos.
 #ifdef MODEL_THETA_L
@@ -371,7 +371,9 @@ void GllFvRemapImpl
   VPhys2T
     T(real2pack(Ts), Ts.extent_int(0), Ts.extent_int(1), Ts.extent_int(2)/packn),
     omega(real2pack(omegas), omegas.extent_int(0), omegas.extent_int(1),
-          omegas.extent_int(2)/packn);
+          omegas.extent_int(2)/packn),
+    strain2(real2pack(strains), strains.extent_int(0), strains.extent_int(1),
+            strains.extent_int(2)/packn);
   VPhys3T
     uv(real2pack(uvs), uvs.extent_int(0), uvs.extent_int(1), uvs.extent_int(2),
        uvs.extent_int(3)/packn),
@@ -385,6 +387,7 @@ void GllFvRemapImpl
   const auto phis_g = m_geometry.m_phis;
   const auto v = m_state.m_v;
   const auto omega_g = m_derived.m_omega_p;
+  const auto strain2_g = m_derived.m_turb_strain2;
   const auto q_g = m_tracers.Q;
   const auto gll_metdet = m_geometry.m_metdet;
   const auto fv_metdet = m_data.fv_metdet;
@@ -528,6 +531,12 @@ void GllFvRemapImpl
     remapd(team, nf2, np2, nlevpk, g2f_remapd, gll_metdet_ie, w_ff, fv_metdet_ie,
            evucs_np2_nlev(&omega_g(ie,0,0,0)), evus_np2_nlev(rw1.data()),
            evus2(&omega(ie,0,0), nf2, nlevpk));
+
+    // strain2
+    remapd(team, nf2, np2, nlevpk, g2f_remapd, gll_metdet_ie, w_ff, fv_metdet_ie,
+           evucs_np2_nlev(&strain2_g(ie,0,0,0)), evus_np2_nlev(rw1.data()),
+           evus2(&strain2(ie,0,0), nf2, nlevpk));
+
   };
   Kokkos::fence();
   Kokkos::parallel_for(m_tp_ne, fe);
