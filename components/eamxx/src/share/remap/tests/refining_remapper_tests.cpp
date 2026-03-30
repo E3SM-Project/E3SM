@@ -24,11 +24,11 @@ Field create_field (const std::string& name, const LayoutType lt, const Abstract
     case LayoutType::Vector2D:
       f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(ndims),u,gn));  break;
     case LayoutType::Scalar3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(LEV),u,gn));  break;
-      f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+      f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(LEV),u,gn));
+      f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);  break;
     case LayoutType::Vector3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(ILEV,ndims),u,gn));  break;
-      f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(ILEV,ndims),u,gn));
+      f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);  break;
     default:
       EKAT_ERROR_MSG ("Invalid layout type for this unit test.\n");
   }
@@ -192,7 +192,7 @@ TEST_CASE ("refining_remapper") {
   {
     // Incompatible nlevs
     auto bad_src_grid1 = src_grid->clone("bad_src",true);
-    bad_src_grid1->reset_num_vertical_lev(nlevs+1);
+    bad_src_grid1->reset_vertical_configuration(nlevs+1,bad_src_grid1->get_vkind());
     CHECK_THROWS (std::make_shared<HorizontalRemapper>(bad_src_grid1,tgt_grid,filename));
 
     // src incompatible with map file
