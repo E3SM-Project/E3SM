@@ -114,6 +114,7 @@ Field::
 Field (const identifier_type& id, bool allocate)
 {
   m_header = std::make_shared<FieldHeader>(id);
+  m_data = std::make_shared<dual_view_t<char*>>();
   if (allocate) {
     allocate_view();
   }
@@ -331,7 +332,7 @@ bool Field::is_aliasing(const Field& rhs) const
 
   // NOTE: I'm not sure we NEED to check m_data, but we might as well
   return m_header->is_aliasing(rhs.get_header()) and
-         m_data.d_view==rhs.m_data.d_view;
+         m_data==rhs.m_data;
 }
 
 void Field::allocate_view ()
@@ -354,8 +355,8 @@ void Field::allocate_view ()
   // Create the view, by quering allocation properties for the allocation size
   const auto view_dim = alloc_prop.get_alloc_size();
 
-  m_data.d_view = decltype(m_data.d_view)(id.name(),view_dim);
-  m_data.h_view = Kokkos::create_mirror_view(m_data.d_view);
+  m_data->d_view = decltype(m_data->d_view)(id.name(),view_dim);
+  m_data->h_view = Kokkos::create_mirror_view(m_data->d_view);
 }
 
 void Field::deep_copy (const ScalarWrapper value)

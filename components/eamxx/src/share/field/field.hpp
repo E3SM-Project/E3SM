@@ -279,7 +279,7 @@ public:
   Field get_components (const int beg, const int end) const;
 
   // Checks whether the underlying view has been already allocated.
-  bool is_allocated () const { return m_data.d_view.data()!=nullptr; }
+  bool is_allocated () const { return m_data->d_view.data()!=nullptr; }
 
   // Whether this field is an alias to the same field as rhs.
   // To return true, one of the following must hold
@@ -316,7 +316,7 @@ public:
     EKAT_REQUIRE_MSG(is_allocated(),
                      "Error! Must allocate view before querying "
                      "host_and_device_share_memory_space().\n");
-    return m_data.h_view.data() == m_data.d_view.data();
+    return m_data->h_view.data() == m_data->d_view.data();
   }
 
 protected:
@@ -350,9 +350,9 @@ protected:
   get_view_impl () const {
     EKAT_REQUIRE_MSG (is_allocated (), "Error! View was not yet allocated.\n");
     if constexpr (HD==Host) {
-      return m_data.get_view<host_device_t>();
+      return m_data->get_view<host_device_t>();
     } else {
-      return m_data.get_view<device_t>();
+      return m_data->get_view<device_t>();
     }
   }
 
@@ -392,7 +392,7 @@ protected:
   std::shared_ptr<header_type> m_header;
 
   // Actual data.
-  dual_view_t<char*> m_data;
+  std::shared_ptr<dual_view_t<char*>> m_data;
 
   // Field needed for sync host/device in case of non-contiguous
   // field when host and device do not share a memory space.
