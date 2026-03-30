@@ -265,9 +265,9 @@ void shoc_main(ShocMainData& d)
 {
   const int npbl = shoc_init_host(d.nlev, d.pref_mid, d.nbot_shoc, d.ntop_shoc);
   d.elapsed_s = shoc_main_host(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv, npbl, d.host_dx, d.host_dy, d.thv, d.zt_grid, d.zi_grid,
-              d.pres, d.presi, d.pdel, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.wtracer_sfc,
+              d.pres, d.presi, d.pdel, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.uw_sfc_pert, d.vw_sfc_pert, d.wtracer_sfc,
               d.num_qtracers, d.w_field, d.inv_exner, d.phis, d.host_dse, d.tke, d.thetal, d.qw,
-              d.u_wind, d.v_wind, d.qtracers, d.wthv_sec, d.tkh, d.tk, d.shoc_ql, d.shoc_cldfrac, d.pblh,
+              d.u_wind, d.v_wind, d.qtracers, d.wthv_sec, d.tkh, d.tk, d.shoc_ql, d.um_pert, d.vm_pert, d.shoc_cldfrac, d.pblh,
               d.shoc_mix, d.isotropy, d.w_sec, d.thl_sec, d.qw_sec, d.qwthl_sec, d.wthl_sec, d.wqw_sec,
               d.wtke_sec, d.uw_sec, d.vw_sec, d.w3, d.wqls_sec, d.brunt, d.shoc_ql2);
 }
@@ -2252,9 +2252,11 @@ int shoc_init_host(Int nlev, Real *pref_mid, Int nbot_shoc, Int ntop_shoc)
 
 Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, Real* host_dx, Real* host_dy, Real* thv, Real* zt_grid,
                 Real* zi_grid, Real* pres, Real* presi, Real* pdel, Real* wthl_sfc, Real* wqw_sfc, Real* uw_sfc, Real* vw_sfc,
+                Real* uw_sfc_pert, Real* vw_sfc_pert,
                 Real* wtracer_sfc, Int num_qtracers, Real* w_field, Real* inv_exner, Real* phis, Real* host_dse, Real* tke,
                 Real* thetal, Real* qw, Real* u_wind, Real* v_wind, Real* qtracers, Real* wthv_sec, Real* tkh, Real* tk,
-                Real* shoc_ql, Real* shoc_cldfrac, Real* pblh, Real* shoc_mix, Real* isotropy, Real* w_sec, Real* thl_sec,
+                Real* shoc_ql, Real* um_pert, Real* vm_pert,
+                Real* shoc_cldfrac, Real* pblh, Real* shoc_mix, Real* isotropy, Real* w_sec, Real* thl_sec,
                 Real* qw_sec, Real* qwthl_sec, Real* wthl_sec, Real* wqw_sec, Real* wtke_sec, Real* uw_sec, Real* vw_sec,
                 Real* w3, Real* wqls_sec, Real* brunt, Real* shoc_ql2)
 {
@@ -2271,8 +2273,8 @@ Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npb
   using MemberType = typename SHF::MemberType;
 
   // Initialize Kokkos views, sync to device
-  static constexpr Int num_1d_arrays = 7;
-  static constexpr Int num_2d_arrays = 35;
+  static constexpr Int num_1d_arrays = 9;
+  static constexpr Int num_2d_arrays = 37;
   static constexpr Int num_3d_arrays = 1;
 
   std::vector<view_1d> temp_1d_d(num_1d_arrays);
@@ -2282,24 +2284,24 @@ Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npb
   std::vector<int> dim1_2d_sizes = {shcol, shcol, shcol, shcol, shcol,
                                     shcol, shcol, shcol, shcol, shcol,
                                     shcol, shcol, shcol, shcol, shcol,
-                                    shcol, shcol, shcol, shcol, shcol,
+                                    shcol, shcol, shcol, shcol, shcol, shcol, shcol,
                                     shcol, shcol, shcol, shcol, shcol,
                                     shcol, shcol, shcol, shcol, shcol,
                                     shcol, shcol, shcol, shcol, shcol};
   std::vector<int> dim2_2d_sizes = {nlev,  nlevi, nlev,         nlevi, nlev,
                                     nlev,  nlev,  num_qtracers, nlev,  nlev,
                                     nlev,  nlev,  nlev,         nlev,  nlev,
-                                    nlev,  nlev,  nlev,         nlev,  nlev,
+                                    nlev,  nlev,  nlev,         nlev,  nlev, nlev, nlev,
                                     nlev,  nlev,  nlev,         nlevi, nlevi,
                                     nlevi, nlevi, nlevi,        nlevi, nlevi,
                                     nlevi, nlevi, nlev,         nlev,  nlev};
 
   std::vector<const Real*> ptr_array_1d = {host_dx, host_dy, wthl_sfc, wqw_sfc,
-                                           uw_sfc,  vw_sfc,  phis};
+                                           uw_sfc,  vw_sfc,  uw_sfc_pert, vw_sfc_pert, phis};
   std::vector<const Real*> ptr_array_2d = {zt_grid,   zi_grid,  pres,          presi,        pdel,
                                            thv,       w_field,  wtracer_sfc,   inv_exner,    host_dse,
                                            tke,       thetal,   qw,            u_wind,       v_wind,
-                                           wthv_sec,  tk,       shoc_cldfrac,  shoc_ql,      shoc_ql2,
+                                           wthv_sec,  tk,       shoc_cldfrac,  shoc_ql,      shoc_ql2, um_pert, vm_pert,
                                            tkh,       shoc_mix, w_sec,         thl_sec,      qw_sec,
                                            qwthl_sec, wthl_sec, wqw_sec,       wtke_sec,     uw_sec,
                                            vw_sec,    w3,       wqls_sec,      brunt,        isotropy};
@@ -2310,16 +2312,18 @@ Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npb
 
   Int index_counter = 0;
   view_1d
-    host_dx_d (temp_1d_d[index_counter++]),
-    host_dy_d (temp_1d_d[index_counter++]),
-    wthl_sfc_d(temp_1d_d[index_counter++]),
-    wqw_sfc_d (temp_1d_d[index_counter++]),
-    uw_sfc_d  (temp_1d_d[index_counter++]),
-    vw_sfc_d  (temp_1d_d[index_counter++]),
-    phis_d    (temp_1d_d[index_counter++]),
-    pblh_d    ("pblh",shcol),
-    ustar_d   ("ustar",shcol),
-    obklen_d  ("obklen",shcol);
+    host_dx_d    (temp_1d_d[index_counter++]),
+    host_dy_d    (temp_1d_d[index_counter++]),
+    wthl_sfc_d   (temp_1d_d[index_counter++]),
+    wqw_sfc_d    (temp_1d_d[index_counter++]),
+    uw_sfc_d     (temp_1d_d[index_counter++]),
+    vw_sfc_d     (temp_1d_d[index_counter++]),
+    uw_sfc_pert_d(temp_1d_d[index_counter++]),
+    vw_sfc_pert_d(temp_1d_d[index_counter++]),
+    phis_d       (temp_1d_d[index_counter++]),
+    pblh_d       ("pblh",shcol),
+    ustar_d      ("ustar",shcol),
+    obklen_d     ("obklen",shcol);
 
   index_counter = 0;
   view_2d
@@ -2343,6 +2347,8 @@ Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npb
     shoc_cldfrac_d(temp_2d_d[index_counter++]),
     shoc_ql_d     (temp_2d_d[index_counter++]),
     shoc_ql2_d    (temp_2d_d[index_counter++]),
+    um_pert_d     (temp_2d_d[index_counter++]),
+    vm_pert_d     (temp_2d_d[index_counter++]),
     tkh_d         (temp_2d_d[index_counter++]),
     shoc_mix_d    (temp_2d_d[index_counter++]),
     w_sec_d       (temp_2d_d[index_counter++]),
@@ -2389,13 +2395,14 @@ Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npb
   });
 
   // Pack our data into structs and ship it off to shoc_main.
-  SHF::SHOCInput shoc_input{host_dx_d,  host_dy_d,     zt_grid_d,   zi_grid_d,
-                             pres_d,    presi_d,       pdel_d,      thv_d,
-                             w_field_d, wthl_sfc_d,    wqw_sfc_d,   uw_sfc_d,
-                             vw_sfc_d,  wtracer_sfc_d, inv_exner_d, phis_d};
+  SHF::SHOCInput shoc_input{ host_dx_d,   host_dy_d,     zt_grid_d,     zi_grid_d,
+                             pres_d,      presi_d,       pdel_d,        thv_d,
+                             w_field_d,   wthl_sfc_d,    wqw_sfc_d,     uw_sfc_d,
+                             vw_sfc_d,    uw_sfc_pert_d, vw_sfc_pert_d, wtracer_sfc_d,
+                             inv_exner_d, phis_d};
   SHF::SHOCInputOutput shoc_input_output{host_dse_d,   tke_d,      thetal_d,       qw_d,
                                          horiz_wind_d, wthv_sec_d, qtracers_cxx_d,
-                                         tk_d,         shoc_cldfrac_d, shoc_ql_d};
+                                         tk_d,         shoc_cldfrac_d, shoc_ql_d, um_pert_d, vm_pert_d };
   SHF::SHOCOutput shoc_output{pblh_d, ustar_d, obklen_d, shoc_ql2_d, tkh_d};
   // TODO: HACK: for now, pretend shoc_cond_d and shoc_evap_d are just isotropy_d
   // TODO: this is ok for now as shoc_cond_d and shoc_evap_d aren't edited in testing
