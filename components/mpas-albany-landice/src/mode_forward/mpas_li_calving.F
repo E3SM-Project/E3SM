@@ -139,7 +139,8 @@ module li_calving
 
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity
       real (kind=RKIND), dimension(:), pointer :: faceMeltSpeed
-      real (kind=RKIND), dimension(:), pointer :: strainRateEnhancementForCalving
+      real (kind=RKIND), dimension(:), pointer :: strainRateEnhancementForCalving, &
+                                                  calvingStrainRateScaling
 
       real (kind=RKIND), dimension(:), pointer :: areaCell
 
@@ -194,7 +195,8 @@ module li_calving
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
          call mpas_pool_get_array(geometryPool, 'strainRateEnhancementForCalving', strainRateEnhancementForCalving)
-         call calculate_facemelt_strainrate_enhancement(faceMeltSpeed, strainRateEnhancementForCalving)
+         call mpas_pool_get_array(geometryPool, 'calvingStrainRateScaling', calvingStrainRateScaling)
+         call calculate_facemelt_strainrate_enhancement(calvingStrainRateScaling, faceMeltSpeed, strainRateEnhancementForCalving)
 
          block => block % next
       end do
@@ -4003,8 +4005,10 @@ module li_calving
                                                   calvingThickness, &
                                                   strainRateEnhancementForCalving, &
                                                   sfcMassBalApplied
+      real (kind=RKIND), pointer :: deltat  !< time step (s)
       real (kind=RKIND), pointer :: config_flowLawExponent, &
-                                    config_crevasse_water_depth
+                                    config_crevasse_water_depth, &
+                                    config_smb_fraction_to_water_depth
       real (kind=RKIND) :: dryCrevasseDepth, waterAvailable, eEff, &
                            tauMaxForCalving, meanA
 
@@ -4013,6 +4017,7 @@ module li_calving
 
       call mpas_pool_get_config(liConfigs, 'config_crevasse_water_depth', config_crevasse_water_depth)
       call mpas_pool_get_config(liConfigs, 'config_crevasse_water_depth_source', config_crevasse_water_depth_source)
+      call mpas_pool_get_config(liConfigs, 'config_smb_fraction_to_water_depth', config_smb_fraction_to_water_depth)
       call mpas_pool_get_config(liConfigs, 'config_flowParamA_calculation', config_flowParamA_calculation)
       call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
@@ -4027,6 +4032,7 @@ module li_calving
       call mpas_pool_get_subpool(domain % blocklist % structs, 'thermal', thermalPool)
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_array(meshPool, 'deltat', deltat)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
@@ -4067,8 +4073,16 @@ module li_calving
          crevasseWaterDepth(:) = config_crevasse_water_depth
       elseif (trim(config_crevasse_water_depth_source) == "data") then
          ! Do nothing. This was already retrieved above.
+      elseif (trim(config_crevasse_water_depth_source) == "scaled_smb") then
+         where (sfcMassBalApplied < 0.0_RKIND)
+             crevasseWaterDepth = crevasseWaterDepth + &
+                 (-1.0_RKIND * config_smb_fraction_to_water_depth * &
+                 sfcMassBalApplied / config_ice_density * deltat)
+         elsewhere
+             crevasseWaterDepth = 0.0_RKIND
+         endwhere
       else
-         call mpas_log_write("config_crevasse_water_depth_source must be set to either 'scalar' or 'data'.", MPAS_LOG_ERR)
+         call mpas_log_write("config_crevasse_water_depth_source must be set to 'scalar', 'data', or 'scaled_smb'.", MPAS_LOG_ERR)
          err = 1
          return
       endif
@@ -4744,24 +4758,31 @@ module li_calving
 !> from marine terminating glaciers. Journal of Geophysical Research: Earth Surface
 !-----------------------------------------------------------------------
 
-   subroutine calculate_facemelt_strainrate_enhancement(faceMeltSpeed, strainRateEnhancementForCalving)
+   subroutine calculate_facemelt_strainrate_enhancement(calvingStrainRateScaling, faceMeltSpeed, strainRateEnhancementForCalving)
       real(kind=RKIND), dimension(:), intent(in) :: faceMeltSpeed
       real(kind=RKIND), dimension(:), intent(out) :: strainRateEnhancementForCalving
+      real(kind=RKIND), dimension(:), intent(inout) :: calvingStrainRateScaling
 
       ! local variables
       logical, pointer :: config_apply_facemelt_strainrate_enhancement
       real(kind=RKIND), pointer :: config_calving_strainrate_scaling
-
+      character (len=StrKIND), pointer :: config_calving_strainrate_scaling_source
 
       call mpas_pool_get_config(liConfigs, 'config_apply_facemelt_strainrate_enhancement', config_apply_facemelt_strainrate_enhancement)
       call mpas_pool_get_config(liConfigs, 'config_calving_strainrate_scaling', config_calving_strainrate_scaling)
+      call mpas_pool_get_config(liConfigs, 'config_calving_strainrate_scaling_source', config_calving_strainrate_scaling_source)
 
       if (config_apply_facemelt_strainrate_enhancement) then
-         strainRateEnhancementForCalving = 1.0_RKIND + faceMeltSpeed * 86400.0_RKIND * config_calving_strainrate_scaling
+         if (trim(config_calving_strainrate_scaling_source) == 'scalar') then
+            calvingStrainRateScaling(:) = config_calving_strainrate_scaling
+         else
+            ! do nothing
+         endif
+         strainRateEnhancementForCalving(:) = 1.0_RKIND + faceMeltSpeed(:) * 86400.0_RKIND * calvingStrainRateScaling(:)
          ! Don't allow negative multiplier
-         strainRateEnhancementForCalving = max(0.0_RKIND, strainRateEnhancementForCalving)
+         strainRateEnhancementForCalving(:) = max(0.0_RKIND, strainRateEnhancementForCalving(:))
       else
-         strainRateEnhancementForCalving = 1.0_RKIND
+         strainRateEnhancementForCalving(:) = 1.0_RKIND
       endif
 
    end subroutine calculate_facemelt_strainrate_enhancement
