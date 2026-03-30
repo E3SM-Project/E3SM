@@ -142,17 +142,12 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
 ) {
    Error Err; // error code
 
-   // we need access to the top-level Omega config when pulling values
-   // from other sections such as SurfaceRestoring
-   Config *OmegaConfig = Config::getOmegaConfig();
-   
    Config TendConfig("Tendencies");
    Err += OmegaConfig->get(TendConfig);
    CHECK_ERROR_ABORT(Err, "Tendencies: Tendencies group not found in Config");
 
    Err += TendConfig.get("ThicknessFluxTendencyEnable",
                          this->ThicknessFluxDiv.Enabled);
-
    CHECK_ERROR_ABORT(
        Err, "Tendencies: ThicknessFluxTendencyEnable not found in TendConfig");
 
@@ -252,7 +247,6 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
       Err += TendConfig.get("EddyDiff4", this->TracerHyperDiff.EddyDiff4);
       CHECK_ERROR_ABORT(Err, "Tendencies: EddyDiff4 not found in TendConfig");
    }
-
 
    Err += TendConfig.get("PressureGradTendencyEnable", this->PGrad->Enabled);
    CHECK_ERROR_ABORT(
