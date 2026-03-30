@@ -4075,8 +4075,9 @@ module li_calving
          ! Do nothing. This was already retrieved above.
       elseif (trim(config_crevasse_water_depth_source) == "scaled_smb") then
          where (sfcMassBalApplied < 0.0_RKIND)
-             crevasseWaterDepth = crevasseWaterDepth + -1.0_RKIND * config_smb_fraction_to_water_depth * &
-                                  sfcMassBalApplied / config_ice_density * deltat
+             crevasseWaterDepth = crevasseWaterDepth + &
+                 (-1.0_RKIND * config_smb_fraction_to_water_depth * &
+                 sfcMassBalApplied / config_ice_density * deltat)
          elsewhere
              crevasseWaterDepth = 0.0_RKIND
          endwhere
@@ -4760,7 +4761,7 @@ module li_calving
    subroutine calculate_facemelt_strainrate_enhancement(calvingStrainRateScaling, faceMeltSpeed, strainRateEnhancementForCalving)
       real(kind=RKIND), dimension(:), intent(in) :: faceMeltSpeed
       real(kind=RKIND), dimension(:), intent(out) :: strainRateEnhancementForCalving
-      real(kind=RKIND), dimension(:), intent(out) :: calvingStrainRateScaling
+      real(kind=RKIND), dimension(:), intent(inout) :: calvingStrainRateScaling
 
       ! local variables
       logical, pointer :: config_apply_facemelt_strainrate_enhancement
