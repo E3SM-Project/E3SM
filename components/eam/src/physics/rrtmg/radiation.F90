@@ -643,6 +643,9 @@ end function radiation_nextsw_cday
           call addfld('FSDS'//diag(icall),  horiz_only,     'A',    'W/m2', 'Downwelling solar flux at surface', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true., &
                       standard_name='surface_downwelling_shortwave_flux_in_air')
+          call addfld('FSUS'//diag(icall),  horiz_only,     'A',    'W/m2', 'Upwelling solar flux at surface', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true., &
+                      standard_name='surface_upwelling_shortwave_flux_in_air')
           call addfld('FUS'//diag(icall),  (/ 'ilev' /), 'I',     'W/m2', 'Shortwave upward flux', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FDS'//diag(icall),  (/ 'ilev' /), 'I',     'W/m2', 'Shortwave downward flux', &
@@ -696,6 +699,9 @@ end function radiation_nextsw_cday
           call addfld('FLDS'//diag(icall), horiz_only,    'A',    'W/m2', 'Downwelling longwave flux at surface', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true., &
                       standard_name='surface_downwelling_longwave_flux_in_air')
+          call addfld('FLUS'//diag(icall), horiz_only,    'A',    'W/m2', 'Upwelling longwave flux at surface', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true., &
+                      standard_name='surface_upwelling_longwave_flux_in_air')
           call addfld('FLDSC'//diag(icall), horiz_only,    'A',   'W/m2', 'Clearsky Downwelling longwave flux at surface', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FLNS'//diag(icall), horiz_only,    'A',    'W/m2', 'Net longwave flux at surface', &
@@ -1370,6 +1376,9 @@ end function radiation_nextsw_cday
                   call outfld('FSNRTOAS'//diag(icall),fsnirtsq,pcols,lchnk)
                   call outfld('FSNT'//diag(icall),fsnt  ,pcols,lchnk)
                   call outfld('FSNS'//diag(icall),fsns  ,pcols,lchnk)
+                  ! FSUS = upwelling SW at surface = FSDS - FSNS
+                  ftem(:ncol,1) = fsds(:ncol) - fsns(:ncol)
+                  call outfld('FSUS'//diag(icall),ftem  ,pcols,lchnk)
                   call outfld('FSNTC'//diag(icall),fsntc ,pcols,lchnk)
                   call outfld('FSNSC'//diag(icall),fsnsc ,pcols,lchnk)
                   call outfld('FSDSC'//diag(icall),fsdsc ,pcols,lchnk)
@@ -1473,6 +1482,9 @@ end function radiation_nextsw_cday
                   call outfld('FLN200'//diag(icall),fln200,pcols,lchnk)
                   call outfld('FLN200C'//diag(icall),fln200c,pcols,lchnk)
                   call outfld('FLDS'//diag(icall),cam_out%flwds ,pcols,lchnk)
+                  ! FLUS = upwelling LW at surface = FLNS + FLDS
+                  ftem(:ncol,1) = flns(:ncol) + cam_out%flwds(:ncol)
+                  call outfld('FLUS'//diag(icall),ftem  ,pcols,lchnk)
 
               end if
           end do
@@ -1736,4 +1748,3 @@ end subroutine calc_col_mean
 !===============================================================================
 
 end module radiation
-
