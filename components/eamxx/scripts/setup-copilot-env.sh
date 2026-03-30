@@ -27,6 +27,7 @@ fi
 # caller's shell survives, 'exit 1' otherwise.
 _setup_copilot_fail() {
     echo "SETUP ERROR: $1" >&2
+    cd "$_setup_copilot_orig_dir" 2>/dev/null
     if $_setup_copilot_is_sourced; then return 1; else exit 1; fi
 }
 
@@ -37,6 +38,9 @@ fi
 
 # Save the caller's working directory so we can restore it at the end.
 _setup_copilot_orig_dir="$(pwd)"
+
+# Ensure we always restore the working directory, even on failure.
+trap 'cd "$_setup_copilot_orig_dir" 2>/dev/null' EXIT
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EAMXX_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -100,10 +104,10 @@ install_with_spack() {
             echo "Installing spack..."
             git clone --depth=2 https://github.com/spack/spack.git "$HOME/spack"
         fi
-        . "$HOME/spack/share/spack/setup-env.sh"
-    else
-        echo "spack already available"
     fi
+
+    # Always source the setup script so 'spack load' updates the environment
+    . "$HOME/spack/share/spack/setup-env.sh"
 
     spack install --no-checksum \
         cmake \
@@ -121,7 +125,7 @@ install_with_spack() {
 if command -v apt-get &> /dev/null; then
     install_with_apt || _setup_copilot_fail "apt-get package installation failed"
     fix_multiarch_paths
-elif command -v spack &> /dev/null; then
+elif command -v spack &> /dev/null || [ -d "$HOME/spack" ]; then
     install_with_spack || _setup_copilot_fail "spack package installation failed"
 else
     echo "WARNING: Neither apt-get nor spack found."
@@ -136,7 +140,7 @@ fi
 ###############################################################################
 
 echo "--- Installing Python packages ---"
-pip install --quiet psutil pyyaml netCDF4 packaging \
+python3 -m pip install --quiet psutil pyyaml netCDF4 packaging \
     || _setup_copilot_fail "pip package installation failed"
 
 ###############################################################################
