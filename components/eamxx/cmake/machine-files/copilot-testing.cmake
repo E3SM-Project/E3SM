@@ -6,8 +6,18 @@ include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
 # No resource manager in CI/container environments
 set (EKAT_TEST_LAUNCHER_MANAGE_RESOURCES True CACHE BOOL "")
 
-# Fortran compatibility flags for newer gfortran
-set(CMAKE_Fortran_FLAGS "-fallow-argument-mismatch" CACHE STRING "Fortran compiler flags" FORCE)
+# -fallow-argument-mismatch is needed for gfortran >= 10 to compile legacy Fortran code.
+# Older versions do not recognise this flag.
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU"
+    AND CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 10)
+  if (CMAKE_Fortran_FLAGS)
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fallow-argument-mismatch"
+        CACHE STRING "Fortran compiler flags" FORCE)
+  else()
+    set(CMAKE_Fortran_FLAGS "-fallow-argument-mismatch"
+        CACHE STRING "Fortran compiler flags" FORCE)
+  endif()
+endif()
 
 # Input data directory (set by setup-copilot-env.sh or agent)
 if (DEFINED ENV{SCREAM_INPUT_ROOT})

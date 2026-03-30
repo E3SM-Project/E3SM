@@ -40,7 +40,12 @@ fi
 _setup_copilot_orig_dir="$(pwd)"
 
 # Ensure we always restore the working directory, even on failure.
-trap 'cd "$_setup_copilot_orig_dir" 2>/dev/null' EXIT
+# Use RETURN trap when sourced (scoped to this script), EXIT when executed.
+if $_setup_copilot_is_sourced; then
+    trap 'cd "$_setup_copilot_orig_dir" 2>/dev/null' RETURN
+else
+    trap 'cd "$_setup_copilot_orig_dir" 2>/dev/null' EXIT
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EAMXX_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -97,17 +102,30 @@ fix_multiarch_paths() {
 
 install_with_spack() {
     echo "--- Installing dependencies via spack ---"
-    if ! command -v spack &> /dev/null; then
+
+    # Determine Spack root from existing installation when possible.
+    local spack_root=""
+    if command -v spack &> /dev/null; then
+        spack_root="${SPACK_ROOT:-$(spack location -r 2>/dev/null || true)}"
+    fi
+
+    # Fall back to $HOME/spack, potentially cloning a fresh install.
+    if [ -z "$spack_root" ]; then
         if [ -d "$HOME/spack" ]; then
             echo "Found existing spack installation at $HOME/spack, reusing it"
         else
             echo "Installing spack..."
             git clone --depth=2 https://github.com/spack/spack.git "$HOME/spack"
         fi
+        spack_root="$HOME/spack"
     fi
 
-    # Always source the setup script so 'spack load' updates the environment
-    . "$HOME/spack/share/spack/setup-env.sh"
+    # Always source the setup script so 'spack load' updates the environment.
+    local spack_setup="${spack_root}/share/spack/setup-env.sh"
+    if [ ! -f "$spack_setup" ]; then
+        _setup_copilot_fail "Spack setup script not found at: $spack_setup"
+    fi
+    . "$spack_setup"
 
     spack install --no-checksum \
         cmake \
