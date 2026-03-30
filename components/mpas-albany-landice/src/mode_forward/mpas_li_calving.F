@@ -4082,7 +4082,7 @@ module li_calving
              crevasseWaterDepth = 0.0_RKIND
          endwhere
       else
-         call mpas_log_write("config_crevasse_water_depth_source must be set to either 'scalar' or 'data'.", MPAS_LOG_ERR)
+         call mpas_log_write("config_crevasse_water_depth_source must be set to 'scalar', 'data', or 'scaled_smb'.", MPAS_LOG_ERR)
          err = 1
          return
       endif
