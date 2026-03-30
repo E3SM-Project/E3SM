@@ -56,7 +56,6 @@ module seq_map_type_mod
      real(R8), pointer       :: clon_d_moab(:)
      real(R8), pointer       :: slat_d_moab(:)
      real(R8), pointer       :: clat_d_moab(:)
-     character(CL)           :: cart3d_init_moab
      !
 
   end type seq_map
@@ -179,7 +178,7 @@ contains
     nullify(mapper%clon_d_moab)
     nullify(mapper%slat_d_moab)
     nullify(mapper%clat_d_moab)
-    mapper%cart3d_init_moab = "undefined"
+    mapper%cart3d_init = "undefined"
 
   end subroutine seq_map_mapinit
 

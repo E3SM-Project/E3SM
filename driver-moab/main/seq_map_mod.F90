@@ -33,7 +33,6 @@ module seq_map_mod
 
   public :: seq_map_init_rcfile     ! cpl pes
   public :: moab_map_init_rcfile    ! cpl pes
-  public :: seq_map_initvect        ! cpl pes
   public :: seq_map_initvect_moab   ! cpl pes
   public :: seq_map_map             ! cpl pes
   public :: seq_map_mapvect         ! cpl pes
@@ -723,70 +722,6 @@ contains
 
   !=======================================================================
 
-  subroutine seq_map_initvect(mapper, type, comp_s, comp_d, string)
-
-    !-----------------------------------------------------
-    !
-    ! Arguments
-    !
-    type(seq_map)        ,intent(inout)       :: mapper
-    character(len=*)     ,intent(in)          :: type
-    type(component_type) ,intent(inout)       :: comp_s
-    type(component_type) ,intent(inout)       :: comp_d
-    character(len=*)     ,intent(in),optional :: string
-    !
-    ! Local Variables
-    !
-    type(mct_gGrid), pointer   :: dom_s
-    type(mct_gGrid), pointer   :: dom_d
-    integer(IN)                :: klon, klat, lsize, n
-    character(len=CL)          :: lstring
-    character(len=*),parameter :: subname = "(seq_map_initvect) "
-    !-----------------------------------------------------
-
-    lstring = ' '
-    if (present(string)) then
-       if (seq_comm_iamroot(CPLID)) write(logunit,'(A)') subname//' called for '//trim(string)
-       lstring = trim(string)
-    endif
-
-    dom_s => component_get_dom_cx(comp_s)
-    dom_d => component_get_dom_cx(comp_d)
-
-    if (trim(type(1:6)) == 'cart3d') then
-       if (mapper%cart3d_init == trim(seq_map_stron)) return
-
-       !--- compute these up front for vector mapping ---
-       lsize = mct_aVect_lsize(dom_s%data)
-       allocate(mapper%slon_s(lsize),mapper%clon_s(lsize), &
-            mapper%slat_s(lsize),mapper%clat_s(lsize))
-       klon = mct_aVect_indexRa(dom_s%data, "lon" )
-       klat = mct_aVect_indexRa(dom_s%data, "lat" )
-       do n = 1,lsize
-          mapper%slon_s(n) = sin(dom_s%data%rAttr(klon,n)*deg2rad)
-          mapper%clon_s(n) = cos(dom_s%data%rAttr(klon,n)*deg2rad)
-          mapper%slat_s(n) = sin(dom_s%data%rAttr(klat,n)*deg2rad)
-          mapper%clat_s(n) = cos(dom_s%data%rAttr(klat,n)*deg2rad)
-       enddo
-
-       lsize = mct_aVect_lsize(dom_d%data)
-       allocate(mapper%slon_d(lsize),mapper%clon_d(lsize), &
-            mapper%slat_d(lsize),mapper%clat_d(lsize))
-       klon = mct_aVect_indexRa(dom_d%data, "lon" )
-       klat = mct_aVect_indexRa(dom_d%data, "lat" )
-       do n = 1,lsize
-          mapper%slon_d(n) = sin(dom_d%data%rAttr(klon,n)*deg2rad)
-          mapper%clon_d(n) = cos(dom_d%data%rAttr(klon,n)*deg2rad)
-          mapper%slat_d(n) = sin(dom_d%data%rAttr(klat,n)*deg2rad)
-          mapper%clat_d(n) = cos(dom_d%data%rAttr(klat,n)*deg2rad)
-       enddo
-       mapper%cart3d_init = trim(seq_map_stron)
-    endif
-
-  end subroutine seq_map_initvect
-
-  !=======================================================================
-
   subroutine seq_map_initvect_moab(mapper, type, src_mbid, tgt_mbid, string)
     use iMOAB, only: iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, iMOAB_DefineTagStorage
     use iso_c_binding, only: c_char, C_NULL_CHAR
@@ -834,7 +769,7 @@ contains
     endif
 
     if (trim(type(1:6)) == 'cart3d') then
-       if (mapper%cart3d_init_moab == trim(seq_map_stron)) return
+       if (mapper%cart3d_init == trim(seq_map_stron)) return
 
        lsize_s = mbGetnCells(src_mbid)
 
@@ -894,7 +829,6 @@ contains
        enddo
 
        deallocate(lon_data, lat_data)
-       mapper%cart3d_init_moab = trim(seq_map_stron)
 
        ! Define ux, uy, uz tags in source and destination MOAB apps
        tagname = 'ux:uy:uz'//C_NULL_CHAR
@@ -922,7 +856,7 @@ contains
     ! Purpose: Clean up MOAB-specific coordinate arrays
     !
     ! Deallocates and nullifies all MOAB coordinate arrays (slon_*_moab, etc.)
-    ! and resets the cart3d_init_moab flag. Should be called when the mapper
+    ! and resets the cart3d_init flag. Should be called when the mapper
     ! is no longer needed to prevent memory leaks.
     !
     ! Usage:
@@ -971,7 +905,7 @@ contains
        nullify(mapper%clat_d_moab)
     endif
 
-    mapper%cart3d_init_moab = trim(seq_map_stroff)
+    mapper%cart3d_init = trim(seq_map_stroff)
 
   end subroutine seq_map_clean_moab
 
