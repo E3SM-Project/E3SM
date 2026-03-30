@@ -99,11 +99,6 @@ registration_ends_impl ()
   using namespace ShortFieldTagsNames;
 
   if (m_track_mask) {
-    // We store masks (src-tgt) here, and register them AFTER we parse all currently registered fields.
-    // That makes the for loop below easier, since we can take references without worrring that they
-    // would get invalidated. In fact, if you call register_field inside the loop, the src/tgt fields
-    // vectors will grow, which may cause reallocation and references invalidation
-
     // NOTE: there are quite a few "mask" fields here, so let's recap:
     //  - src/tgt_mask: these are the int-valued fields attached to src/tgt field
     //  - src/tgt_mask_real: these are the real-valued fields that we remap, to correctly rescale tgt fields later
@@ -113,11 +108,14 @@ registration_ends_impl ()
     for (int i=0; i<num_orig_fields; ++i) {
       const auto& src_hdr = m_src_fields[i].get_header();
             auto& tgt_hdr = m_tgt_fields[i].get_header();
+
       if (not src_hdr.has_extra_data("valid_mask"))
         continue;
 
       const auto& f_name = src_hdr.get_identifier().name();
       const auto& src_mask = src_hdr.get_extra_data<Field>("valid_mask");
+      const auto& mask_name = src_mask.name();
+      const auto ps = src_hdr.get_alloc_properties().get_largest_pack_size();
 
       // Check that the mask field has the correct layout
       const auto& f_lt = src_hdr.get_identifier().get_layout();
@@ -128,51 +126,63 @@ registration_ends_impl ()
           "  - field layout: " + f_lt.to_string() + "\n"
           "  - mask layout: " + m_lt.to_string() + "\n");
 
-      if (not m_lt.has_tag(COL)) {
-        // This field doesn't really need to be remapped, so tgt can use the same mask field as src
-        tgt_hdr.set_extra_data("valid_mask",src_mask);
-        continue;
-      }
-
-      const auto& mask_name = src_mask.name();
-
-      if (m_name_to_tgt_int_mask.count(mask_name)==1) {
-        // There was another src field with the same src mask, which was already registerred. Recycle it.
-        const auto& tgt_mask = m_name_to_tgt_int_mask.at(mask_name);
-        tgt_hdr.set_extra_data("valid_mask",tgt_mask);
-        continue;
-      }
-
-      m_name_to_src_int_mask[src_mask.name()] = src_mask;
-
       // Make sure fields representing masks are not themselves meant to be masked.
       EKAT_REQUIRE_MSG(not src_mask.get_header().has_extra_data("valid_mask"),
           "Error! A mask field cannot be itself masked.\n"
           "  - field name: " + f_name + "\n"
-          "  - mask field name: " + src_mask.name() + "\n");
+          "  - mask field name: " + mask_name + "\n");
 
-      auto ps = src_hdr.get_alloc_properties().get_largest_pack_size();
+      if (not m_lt.has_tag(COL)) {
+        // This field doesn't really need to be remapped, so tgt can use the same mask field as src
+        tgt_hdr.set_extra_data("valid_mask",src_mask.alias(mask_name,get_tgt_grid()->name()));
+        continue;
+      }
 
-      // Create the real-valued mask field, to use during remap
+      auto& tgt_mask = m_name_to_tgt_int_mask[mask_name];
+      if (tgt_mask.data_type()!=DataType::Invalid) {
+        // There was another src field with the same src mask, which was already registerred.
+        // Recycle it, but make sure it can accommodate this field's pack size
+        tgt_mask.get_header().get_alloc_properties().request_allocation(ps);
+        tgt_hdr.set_extra_data("valid_mask",tgt_mask);
+        continue;
+      }
+
+      m_name_to_src_int_mask[mask_name] = src_mask;
+      
+      // Create and register the real-valued mask field, to use during remap
       const auto& src_fid = src_mask.get_header().get_identifier();
       auto src_fid_r = src_fid.clone(src_fid.name()+"_real").reset_dtype(DataType::RealType);
-      Field src_mask_real(src_fid_r);
-      src_mask_real.get_header().get_alloc_properties().request_allocation(ps);
-      src_mask_real.allocate_view();
-      m_name_to_src_real_mask[mask_name] = src_mask_real;
+      Field src_real_mask(src_fid_r);
+      src_real_mask.get_header().get_alloc_properties().request_allocation(ps);
+      m_name_to_src_real_mask[mask_name] = src_real_mask;
+      auto tgt_real_mask = register_field_from_src(src_real_mask);
+      tgt_real_mask.get_header().get_alloc_properties().request_allocation(ps);
+      m_name_to_tgt_real_mask[mask_name] = tgt_real_mask;
 
       // Create the int-valued tgt mask from the newly created real-valued tgt mask
-      auto tgt_mask_real = register_field_from_src(src_mask_real);
-      m_name_to_tgt_real_mask[mask_name] = tgt_mask_real;
-
       auto tgt_fid = create_tgt_fid(src_fid);
-      Field tgt_mask(tgt_fid);
+      tgt_mask = Field(tgt_fid);
       tgt_mask.get_header().get_alloc_properties().request_allocation(ps);
-      tgt_mask.allocate_view();
       tgt_hdr.set_extra_data("valid_mask",tgt_mask);
-
       m_name_to_tgt_int_mask[mask_name] = tgt_mask;
     }
+  }
+
+  // Now that ALL pack sizes have been requested for each mask, we can allocate them
+  for (auto& [name,tgt_int_mask] : m_name_to_tgt_int_mask) {
+    EKAT_REQUIRE_MSG (m_name_to_src_real_mask.count(name)==1,
+        "[HorizontalRemapper::registration_ends_impl] Error! Something went wrong while creating real mask fields.\n"
+        " - mask name: " + name + "\n");
+    EKAT_REQUIRE_MSG (m_name_to_tgt_real_mask.count(name)==1,
+        "[HorizontalRemapper::registration_ends_impl] Error! Something went wrong while creating real mask fields.\n"
+        " - mask name: " + name + "\n");
+
+    auto& src_real_mask = m_name_to_src_real_mask[name];
+    auto& tgt_real_mask = m_name_to_tgt_real_mask[name];
+
+    src_real_mask.allocate_view();
+    tgt_real_mask.allocate_view();
+    tgt_int_mask.allocate_view();
   }
 
   m_needs_remap.resize(m_num_fields,1);
@@ -180,7 +190,7 @@ registration_ends_impl ()
     const auto& src_dt = m_src_fields[i].get_header().get_identifier().data_type();
     const auto& tgt_dt = m_tgt_fields[i].get_header().get_identifier().data_type();
     EKAT_REQUIRE_MSG (src_dt==DataType::RealType and tgt_dt==DataType::RealType,
-        "Error! HorizInterpRmapperBase requires src/tgt fields to have Real data type.\n"
+        "[HorizontalRemapper::registration_ends_impl] Error! src/tgt fields must have Real data type.\n"
         "  - src field name: " + m_src_fields[i].name() + "\n"
         "  - tgt field name: " + m_tgt_fields[i].name() + "\n"
         "  - src data type : " + e2str(src_dt) + "\n"
@@ -192,7 +202,7 @@ registration_ends_impl ()
       m_needs_remap[i] = 0;
     } else {
       EKAT_REQUIRE_MSG (src_fl.tag(0)==COL,
-          "[HorizInterpRemapperBase::registration_ends_impl] Error! If present, the COL dimension MUST be the first one.\n"
+          "[HorizontalRemapper::registration_ends_impl] Error! If present, the COL dimension MUST be the first one.\n"
           " - field name: " + m_src_fields[i].name() + "\n"
           " - field layout: " + src_fl.to_string() + "\n");
     }
@@ -255,7 +265,7 @@ void HorizontalRemapper::remap_fwd_impl ()
   if (m_track_mask) {
     // Before any MPI or mat-vec, ensure real-valued mask matches the int-valued mask
     for (const auto& [name, int_mask] : m_name_to_src_int_mask) {
-      auto real_mask = m_name_to_src_real_mask.at(name);
+      auto& real_mask = m_name_to_src_real_mask.at(name);
       real_mask.deep_copy(int_mask);
     }
   }
