@@ -36,6 +36,7 @@
 
 #include <cmath>
 #include <limits>
+#include <vector>
 
 using namespace OMEGA;
 
@@ -1018,8 +1019,7 @@ int testSurfaceTracerRestoringOnCell(int NVertLayers, int NTracers, Real RTol) {
    I4 Err = 0;
    TestSetup Setup;
 
-   const auto Mesh   = HorzMesh::getDefault();
-   const auto VCoord = VertCoord::getDefault();
+   const auto Mesh = HorzMesh::getDefault();
 
    if (NTracers < 3) {
       LOG_ERROR("TendencyTermsTest: SurfaceTracerRestoring requires at least 3 "
@@ -1028,52 +1028,97 @@ int testSurfaceTracerRestoringOnCell(int NVertLayers, int NTracers, Real RTol) {
       return 1;
    }
 
+   // Test multiple cases with different combinations of tracers being restored
    const char *CaseLabels[3] = {"SurfaceTracerRestoringSalinityOnly",
                                 "SurfaceTracerRestoringTemperatureOnly",
                                 "SurfaceTracerRestoringTempSaltDebug"};
 
-   const I4 CaseMasks[3][3] = {
-       {0, 1, 0},
-       {1, 0, 0},
-       {1, 1, 1},
+   const std::vector<std::vector<I4>> CaseTracerIds = {
+       {1},       // Salinity Only
+       {0},       // Temperature Only
+       {0, 1, 2}, // Temperature, Salinity, and a Debug Tracer
    };
 
+   // Loop over cases, computing exact result, numerical result, and
+   // errors for each.
    for (int Case = 0; Case < 3; ++Case) {
 
       Array3DReal ExactSurfRest("ExactSurfRest", NTracers, Mesh->NCellsOwned,
                                 NVertLayers);
       Array2DReal InputField("InputField", Mesh->NCellsSize, 1);
-      Array2DReal SurfTracerRestoringDiffsCell("SurfTracerRestoringDiffsCell",
-                                               NTracers, Mesh->NCellsSize,
-                                               NVertLayers);
+      Array2DReal TracersMonthlySurfClimoCell("TracersMonthlySurfClimoCell",
+                                              NTracers, Mesh->NCellsSize);
+      Array3DReal TracersOnCell("TracersOnCell", NTracers, Mesh->NCellsSize,
+                                NVertLayers);
       Array3DReal NumSurfRest("NumSurfRest", NTracers, Mesh->NCellsOwned,
                               NVertLayers);
 
       deepCopy(ExactSurfRest, 0);
       deepCopy(InputField, 0);
-      deepCopy(SurfTracerRestoringDiffsCell, 0);
+      deepCopy(TracersMonthlySurfClimoCell, 0);
+      deepCopy(TracersOnCell, 0);
       deepCopy(NumSurfRest, 0);
 
+      // Set Input Field values. Use a combination of scalarB and vectorX to
+      // ensure the full surface tracer restoring logic is exercised (i.e.,
+      // cases where the difference is >, <, and within the max-difference
+      // threshold).
       Err += setScalar(
-          KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarA(X, Y); },
+          KOKKOS_LAMBDA(Real X, Real Y) {
+             return Setup.scalarB(X, Y) + Setup.vectorX(X, Y);
+          },
           InputField, Geom, Mesh, OnCell);
 
-      SurfaceTracerRestoringOnCell SurfRestOnC(Mesh);
-
+      // Set TracersOnCell values (use scalarB for simplicity, but could be
+      // any field).
+      Err += setScalar(
+          KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarB(X, Y); },
+          TracersOnCell, Geom, Mesh, OnCell);
       parallelFor(
-          {NTracers, Mesh->NCellsOwned}, KOKKOS_LAMBDA(int L, int ICell) {
-             SurfTracerRestoringDiffsCell(L, ICell) = InputField(ICell, 0);
-             ExactSurfRest(L, ICell, 0)             = CaseMasks[Case][L] *
-                                          SurfRestOnC.PistonVelocity *
-                                          InputField(ICell, 0);
+          {NTracers, Mesh->NCellsSize, NVertLayers},
+          KOKKOS_LAMBDA(int L, int ICell, int K) {
+             TracersOnCell(L, ICell, K) += 0.04_Real * K;
           });
 
+      SurfaceTracerRestoringOnCell SurfRestOnC(Mesh);
+      SurfRestOnC.MaxDiff = 0.5; // choose a small max‑difference so all
+                                 // three branches (>MaxDiff, <-MaxDiff,
+                                 // inside) are exercised.
+      SurfRestOnC.PistonVelocity = 1.585e-5;
+
+      // Build host-selected tracer IDs for restoring and copy to device.
+      const I4 NTracersToRestore = static_cast<I4>(CaseTracerIds[Case].size());
+      Array1DI4 TracerIdsToRestore("TracerIdsToRestore", NTracersToRestore);
+      HostArray1DI4 TracerIdsToRestoreH("TracerIdsToRestoreH",
+                                        NTracersToRestore);
+      for (I4 R = 0; R < NTracersToRestore; ++R) {
+         TracerIdsToRestoreH(R) = CaseTracerIds[Case][R];
+      }
+      deepCopy(TracerIdsToRestore, TracerIdsToRestoreH);
+
+      // Compute exact result using the same logic as
+      // SurfaceTracerRestoringOnCell, but iterating
+      // selected tracer IDs to match restoring implementation.
       parallelFor(
-          {NTracers, Mesh->NCellsOwned}, KOKKOS_LAMBDA(int L, int ICell) {
-             if (CaseMasks[Case][L] == 1) {
-                SurfRestOnC(NumSurfRest, L, ICell, 0,
-                            SurfTracerRestoringDiffsCell);
-             }
+          {NTracersToRestore, Mesh->NCellsOwned},
+          KOKKOS_LAMBDA(int R, int ICell) {
+             const int L                           = TracerIdsToRestore(R);
+             TracersMonthlySurfClimoCell(L, ICell) = InputField(ICell, 0);
+             const Real Diff = TracersMonthlySurfClimoCell(L, ICell) -
+                               TracersOnCell(L, ICell, 0);
+
+             ExactSurfRest(L, ICell, 0) =
+                 SurfRestOnC.PistonVelocity *
+                 Kokkos::clamp(Diff, -SurfRestOnC.MaxDiff, SurfRestOnC.MaxDiff);
+          });
+
+      // Compute numerical result
+      parallelFor(
+          {NTracersToRestore, Mesh->NCellsOwned},
+          KOKKOS_LAMBDA(int R, int ICell) {
+             const int L = TracerIdsToRestore(R);
+             SurfRestOnC(NumSurfRest, L, ICell, 0, TracersMonthlySurfClimoCell,
+                         TracersOnCell);
           });
 
       ErrorMeasures SurfRestErrors;

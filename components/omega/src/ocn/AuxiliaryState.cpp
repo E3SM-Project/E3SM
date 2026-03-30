@@ -29,8 +29,8 @@ AuxiliaryState::AuxiliaryState(const std::string &Name, const HorzMesh *Mesh,
       VorticityAux(stripDefault(Name), Mesh, VCoord),
       VelocityDel2Aux(stripDefault(Name), Mesh, VCoord),
       WindForcingAux(stripDefault(Name), Mesh),
-      TracerAux(stripDefault(Name), Mesh, VCoord, NTracers),
-      SurfTracerRestAux(stripDefault(Name), Mesh, VCoord, NTracers) {
+      SurfTracerRestAux(stripDefault(Name), Mesh, NTracers),
+      TracerAux(stripDefault(Name), Mesh, VCoord, NTracers) {
 
    GroupName = "AuxiliaryState";
    if (Name != "Default") {
@@ -45,8 +45,8 @@ AuxiliaryState::AuxiliaryState(const std::string &Name, const HorzMesh *Mesh,
    VorticityAux.registerFields(GroupName, AuxMeshName);
    VelocityDel2Aux.registerFields(GroupName, AuxMeshName);
    WindForcingAux.registerFields(GroupName, AuxMeshName);
-   TracerAux.registerFields(GroupName, AuxMeshName);
    SurfTracerRestAux.registerFields(GroupName, AuxMeshName);
+   TracerAux.registerFields(GroupName, AuxMeshName);
 }
 
 // Destructor. Unregisters the fields with IOStreams and destroys this auxiliary
@@ -57,8 +57,8 @@ AuxiliaryState::~AuxiliaryState() {
    VorticityAux.unregisterFields();
    VelocityDel2Aux.unregisterFields();
    WindForcingAux.unregisterFields();
-   TracerAux.unregisterFields();
    SurfTracerRestAux.unregisterFields();
+   TracerAux.unregisterFields();
 
    FieldGroup::destroy(GroupName);
 }
@@ -74,7 +74,6 @@ void AuxiliaryState::computeMomAux(const OceanState *State, int ThickTimeLevel,
    OMEGA_SCOPE(LocVorticityAux, VorticityAux);
    OMEGA_SCOPE(LocVelocityDel2Aux, VelocityDel2Aux);
    OMEGA_SCOPE(LocWindForcingAux, WindForcingAux);
-
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
    OMEGA_SCOPE(MinLayerVertexBot, VCoord->MinLayerVertexBot);
@@ -231,7 +230,6 @@ void AuxiliaryState::computeAll(const OceanState *State,
 
    OMEGA_SCOPE(LocLayerThicknessAux, LayerThicknessAux);
    OMEGA_SCOPE(LocTracerAux, TracerAux);
-   OMEGA_SCOPE(LocSurfTracerRestAux, SurfTracerRestAux);
 
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
@@ -279,14 +277,6 @@ void AuxiliaryState::computeAll(const OceanState *State,
               });
        });
    Pacer::stop("AuxState:cellAuxState4", 2);
-
-   Pacer::start("AuxState:cellAuxState5", 2);
-   parallelFor(
-       "cellAuxState5", {NTracers, Mesh->NCellsAll},
-       KOKKOS_LAMBDA(int LTracer, int ICell) {
-          LocSurfTracerRestAux.computeVarsOnCells(LTracer, ICell, TracerArray);
-       });
-   Pacer::stop("AuxState:cellAuxState5", 2);
 
    Pacer::stop("AuxState:computeAll", 1);
 }
@@ -407,17 +397,6 @@ void AuxiliaryState::readConfigOptions(Config *OmegaConfig) {
    } else {
       ABORT_ERROR("AuxiliaryState: Unknown InterpType requested");
    }
-
-   Config SurfRestConfig("SurfaceRestoring");
-   Err += OmegaConfig->get(SurfRestConfig);
-
-   Err += SurfRestConfig.get("MaxDiff", this->SurfTracerRestAux.MaxDiff);
-   CHECK_ERROR_ABORT(
-       Err, "AuxiliaryState: MaxDiff not found in SurfaceRestoringConfig");
-   if (this->SurfTracerRestAux.MaxDiff <= 0) {
-      ABORT_ERROR("AuxiliaryState: MaxDiff must be positive, got {}",
-                  this->SurfTracerRestAux.MaxDiff);
-   }
 }
 
 //------------------------------------------------------------------------------
@@ -431,12 +410,13 @@ I4 AuxiliaryState::exchangeHalo() {
    Err +=
        MeshHalo->exchangeFullArrayHalo(WindForcingAux.MeridStressCell, OnCell);
 
+   // Performing halo exchange on individual tracers because full halo exchange
+   // on a 2D array assumes the first dimension is the vertical
    const I4 NTracers =
        SurfTracerRestAux.TracersMonthlySurfClimoCell.extent_int(0);
    for (I4 LTracer = 0; LTracer < NTracers; ++LTracer) {
-      auto TracerSurfClimoCell =
-          Kokkos::subview(SurfTracerRestAux.TracersMonthlySurfClimoCell,
-                          LTracer, Kokkos::ALL());
+      auto TracerSurfClimoCell = Kokkos::subview(
+          SurfTracerRestAux.TracersMonthlySurfClimoCell, LTracer, Kokkos::ALL);
       Err += MeshHalo->exchangeFullArrayHalo(TracerSurfClimoCell, OnCell);
    }
 

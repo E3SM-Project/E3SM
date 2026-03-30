@@ -574,8 +574,11 @@ class TracerHyperDiffOnCell {
 class SurfaceTracerRestoringOnCell {
  public:
    bool Enabled;
-   Real PistonVelocity = 1.585e-5;
-   Array1DI4 TracerRestoreMask;
+   Real PistonVelocity  = 1.585e-5; ///< piston velocity
+   Real MaxDiff         = 100.0;    ///< maximum allowed restoring difference
+   I4 NTracersToRestore = 0;        ///< number of tracers to restore
+   Array1DI4 TracerIdsToRestore;    ///< tracer IDs to restore
+   /// Need to add under sea ice restoring option when that is available
 
    /// constructor declaration
    SurfaceTracerRestoringOnCell(const HorzMesh *Mesh);
@@ -584,9 +587,13 @@ class SurfaceTracerRestoringOnCell {
    /// restoring values, outputs tendency array
    KOKKOS_FUNCTION void
    operator()(const Array3DReal &Tend, I4 L, I4 ICell, I4 KMin,
-              const Array2DReal &SurfTracerRestoringDiffsCell) const {
+              const Array2DReal &TracersMonthlySurfClimoCell,
+              const Array3DReal &TracerCell) const {
+
       Tend(L, ICell, KMin) +=
-          PistonVelocity * SurfTracerRestoringDiffsCell(L, ICell);
+          PistonVelocity * Kokkos::clamp(TracersMonthlySurfClimoCell(L, ICell) -
+                                             TracerCell(L, ICell, KMin),
+                                         -MaxDiff, MaxDiff);
    }
 };
 

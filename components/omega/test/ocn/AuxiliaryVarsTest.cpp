@@ -15,7 +15,6 @@
 #include "VertCoord.h"
 #include "auxiliaryVars/KineticAuxVars.h"
 #include "auxiliaryVars/LayerThicknessAuxVars.h"
-#include "auxiliaryVars/SurfTracerRestAuxVars.h"
 #include "auxiliaryVars/TracerAuxVars.h"
 #include "auxiliaryVars/VelocityDel2AuxVars.h"
 #include "auxiliaryVars/VorticityAuxVars.h"
@@ -68,8 +67,6 @@ struct TestSetupPlane {
 
    ErrorMeasures ExpectedNormalStressErrors = {0.0033910709836867704,
                                                0.0039954090464502795};
-
-   ErrorMeasures ExpectedSurfTracerRestErrors = {0, 0};
 
    KOKKOS_FUNCTION Real layerThickness(Real X, Real Y) const {
       return 2 + std::cos(TwoPi * X / Lx) * std::cos(TwoPi * Y / Ly);
@@ -198,8 +195,6 @@ struct TestSetupSphere {
 
    ErrorMeasures ExpectedNormalStressErrors = {0.0038588958862868362,
                                                0.003813760171030077};
-
-   ErrorMeasures ExpectedSurfTracerRestErrors = {0, 0};
 
    KOKKOS_FUNCTION Real layerThickness(Real Lon, Real Lat) const {
       return (2 + std::cos(Lon) * std::pow(std::cos(Lat), 4));
@@ -782,89 +777,6 @@ int testTracerAuxVars(const Array2DReal &LayerThickCell,
 
    return Err;
 }
-
-int testSurfTracerRestAuxVars(int NVertLayers, int NTracers, Real RTol) {
-   int Err = 0;
-   TestSetup Setup;
-
-   const auto Mesh   = HorzMesh::getDefault();
-   const auto VCoord = VertCoord::getDefault();
-
-   SurfTracerRestAuxVars SurfTracerRestAux("", Mesh, VCoord, NTracers);
-   SurfTracerRestAux.MaxDiff = 0.5; // choose a small max‑difference so all
-                                    // three branches (>MaxDiff, <-MaxDiff,
-                                    // inside) are exercised.
-
-   Array2DReal InputField("InputField", Mesh->NCellsSize, 1);
-   deepCopy(InputField, 0.0);
-
-   // fill monthly climo with a simple analytic function that produces
-   // positive/negative variations, e.g. tracer+velocityx:
-   Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) {
-          return Setup.tracer(X, Y) + Setup.velocityX(X, Y);
-       },
-       InputField, Geom, Mesh, OnCell);
-
-   parallelFor(
-       {NTracers, Mesh->NCellsOwned}, KOKKOS_LAMBDA(int L, int ICell) {
-          SurfTracerRestAux.TracersMonthlySurfClimoCell(L, ICell) =
-              InputField(ICell, 0);
-       });
-
-   Array3DReal TracersOnCell("TracersOnCell", NTracers, Mesh->NCellsSize,
-                             NVertLayers);
-   deepCopy(TracersOnCell, 0.0);
-   // fill the tracer array and add a trivial vertical dependence so that
-   // the surface value differs from deeper layers
-   Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.tracer(X, Y); },
-       TracersOnCell, Geom, Mesh, OnCell);
-   parallelFor(
-       {NTracers, Mesh->NCellsSize, NVertLayers},
-       KOKKOS_LAMBDA(int L, int ICell, int K) {
-          TracersOnCell(L, ICell, K) += 0.04_Real * K;
-       });
-
-   // compute the numerical result
-   parallelFor(
-       {NTracers, Mesh->NCellsOwned}, KOKKOS_LAMBDA(int L, int ICell) {
-          SurfTracerRestAux.computeVarsOnCells(L, ICell, TracersOnCell);
-       });
-
-   // build the exact result by re‑implementing the class logic, including
-   // lookup of MinLayerCell
-   Array1DReal ExactSurfRest("ExactSurfRest", Mesh->NCellsOwned);
-   Array1DReal NumSurfRest("NumSurfRest", Mesh->NCellsOwned);
-   const auto &MinLayerCell = VCoord->MinLayerCell;
-   parallelFor(
-       {Mesh->NCellsOwned}, KOKKOS_LAMBDA(int ICell) {
-          const int K = MinLayerCell(ICell);
-          const Real diff =
-              SurfTracerRestAux.TracersMonthlySurfClimoCell(0, ICell) -
-              TracersOnCell(0, ICell, K);
-          if (diff > SurfTracerRestAux.MaxDiff) {
-             ExactSurfRest(ICell) = SurfTracerRestAux.MaxDiff;
-          } else if (diff < -SurfTracerRestAux.MaxDiff) {
-             ExactSurfRest(ICell) = -SurfTracerRestAux.MaxDiff;
-          } else {
-             ExactSurfRest(ICell) = diff;
-          }
-          NumSurfRest(ICell) =
-              SurfTracerRestAux.SurfTracerRestoringDiffsCell(0, ICell);
-       });
-
-   ErrorMeasures SurfRestErrors;
-   Err +=
-       computeErrors(SurfRestErrors, NumSurfRest, ExactSurfRest, Mesh, OnCell);
-   Err += checkErrors("AuxVarsTest", "SurfTracerRest", SurfRestErrors,
-                      Setup.ExpectedSurfTracerRestErrors, RTol);
-
-   if (Err == 0) {
-      LOG_INFO("AuxVarsTest: SurfTracerRestAuxVars PASS");
-   }
-   return Err;
-}
 //------------------------------------------------------------------------------
 // The initialization routine for aux vars testing
 int initAuxVarsTest(const std::string &mesh) {
@@ -934,8 +846,6 @@ int auxVarsTest(const std::string &mesh = DefaultMeshFile) {
    Err += testTracerAuxVars(LayerThickCell, NormalVelEdge, RTol);
 
    Err += testWindForcingAuxVars(RTol);
-
-   Err += testSurfTracerRestAuxVars(NVertLayers, NTracers, RTol);
 
    if (Err == 0) {
       LOG_INFO("AuxVarsTest: Successful completion");
