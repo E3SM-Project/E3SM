@@ -158,7 +158,13 @@ fi
 ###############################################################################
 
 echo "--- Installing Python packages ---"
-python3 -m pip install --quiet psutil pyyaml netCDF4 packaging \
+# Use --user when not in a virtualenv/conda to avoid PEP 668 failures
+# on systems with externally-managed Python environments.
+_pip_flags="--quiet"
+if [ -z "${VIRTUAL_ENV-}" ] && [ -z "${CONDA_PREFIX-}" ]; then
+    _pip_flags="$_pip_flags --user"
+fi
+python3 -m pip install $_pip_flags psutil pyyaml netCDF4 packaging \
     || _setup_copilot_fail "pip package installation failed"
 
 ###############################################################################

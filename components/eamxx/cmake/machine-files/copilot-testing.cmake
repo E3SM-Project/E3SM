@@ -51,5 +51,5 @@ set(EKAT_MPI_NP_FLAG "-n" CACHE STRING "")
 # Allow running MPI as root (common in containers/CI)
 set(EKAT_MPI_EXTRA_ARGS "--allow-run-as-root --oversubscribe" CACHE STRING "Extra args for mpirun")
 
-# Disable deprecated Kokkos code warnings
+# Disable use of deprecated Kokkos 4 APIs
 option(Kokkos_ENABLE_DEPRECATED_CODE_4 "" OFF)
