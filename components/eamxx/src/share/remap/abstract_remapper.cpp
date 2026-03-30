@@ -20,9 +20,6 @@ register_field (const Field& src, const Field& tgt)
 
   m_state = RepoState::Open;
 
-  EKAT_REQUIRE_MSG(src.is_allocated(), "Error! Source field is not yet allocated.\n");
-  EKAT_REQUIRE_MSG(tgt.is_allocated(), "Error! Target field is not yet allocated.\n");
-
   const auto& src_layout = src.get_header().get_identifier().get_layout();
   const auto& tgt_layout = tgt.get_header().get_identifier().get_layout();
   EKAT_REQUIRE_MSG(is_valid_src_layout(src_layout),
@@ -59,10 +56,15 @@ register_field_from_src (const Field& src) {
   const auto& tgt_fid = create_tgt_fid(src_fid);
 
   Field tgt(tgt_fid);
-  const auto& src_ap = src.get_header().get_alloc_properties();
-        auto& tgt_ap = tgt.get_header().get_alloc_properties();
-  tgt_ap.request_allocation(src_ap.get_largest_pack_size());
-  tgt.allocate_view();
+
+  // We allow for the src field to not be allocated yet
+  // Though it MUST be allocated before registration_ends() returns
+  if (src.is_allocated()) {
+    const auto& src_ap = src.get_header().get_alloc_properties();
+          auto& tgt_ap = tgt.get_header().get_alloc_properties();
+    tgt_ap.request_allocation(src_ap.get_largest_pack_size());
+    tgt.allocate_view();
+  }
 
   register_field(src,tgt);
 
@@ -75,10 +77,15 @@ register_field_from_tgt (const Field& tgt) {
   const auto& src_fid = create_src_fid(tgt_fid);
 
   Field src(src_fid);
-  const auto& tgt_ap = tgt.get_header().get_alloc_properties();
-        auto& src_ap = src.get_header().get_alloc_properties();
-  src_ap.request_allocation(tgt_ap.get_largest_pack_size());
-  src.allocate_view();
+
+  // We allow for the tgt field to not be allocated yet
+  // Though it MUST be allocated before registration_ends() returns
+  if (tgt.is_allocated()) {
+    const auto& tgt_ap = tgt.get_header().get_alloc_properties();
+          auto& src_ap = src.get_header().get_alloc_properties();
+    src_ap.request_allocation(tgt_ap.get_largest_pack_size());
+    src.allocate_view();
+  }
 
   register_field(src,tgt);
 
@@ -94,6 +101,17 @@ void AbstractRemapper::registration_ends ()
   // Call derived class impl first. They may register extra/internal fields,
   // so we must keep the repo OPEN until they're done.
   registration_ends_impl();
+
+  for (int i=0; i<m_num_fields; ++i) {
+    EKAT_REQUIRE_MSG(m_src_fields[i].is_allocated(),
+        " Error! Source field is not yet allocated.\n"
+        " - remapper  : " + name() + "\n"
+        " - field name: " + m_src_fields[i].name() + "\n");
+    EKAT_REQUIRE_MSG(m_tgt_fields[i].is_allocated(),
+        " Error! Target field is not yet allocated.\n"
+        " - remapper  : " + name() + "\n"
+        " - field name: " + m_tgt_fields[i].name() + "\n");
+  }
 
   m_state = RepoState::Closed;
 }

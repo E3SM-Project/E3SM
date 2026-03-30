@@ -188,10 +188,10 @@ TEST_CASE ("refining_remapper") {
     auto src_grid = r->get_src_grid();
     Field bad_src(FieldIdentifier("",src_grid->get_2d_scalar_layout(),ekat::units::m,src_grid->name(),DataType::IntType));
     Field bad_tgt(FieldIdentifier("",tgt_grid->get_2d_scalar_layout(),ekat::units::m,tgt_grid->name(),DataType::IntType));
-    CHECK_THROWS (r->register_field(bad_src,bad_tgt)); // not allocated
+    // Fields don't need to be allocated prior to registration
+    r->register_field(bad_src,bad_tgt);
     bad_src.allocate_view();
     bad_tgt.allocate_view();
-    r->register_field(bad_src,bad_tgt);
     CHECK_THROWS (r->registration_ends()); // bad data type (must be real)
   }
 
