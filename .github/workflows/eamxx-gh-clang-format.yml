@@ -43,7 +43,7 @@ jobs:
         files: 'components/eamxx/**/*.{cpp,hpp}'
         separator: " "
     - name: setup micromamba env
-      uses: mamba-org/setup-micromamba@v2
+      uses: mamba-org/setup-micromamba@v3
       with:
         init-shell: bash
         environment-name: clang-format
