@@ -828,6 +828,7 @@
                         <var name="groundedVonMisesThresholdStress"/>
                         <var name="floatingVonMisesThresholdStress"/>
                         <var name="calvingStrainRateScaling"/>
+						<var name="crevasseWaterDepth"/>
                         <var name="stiffnessFactor"/>
                         <var name="calvingMask"/>
                         <var name="upliftRate"/>
@@ -929,6 +930,7 @@
                         <var name="groundedVonMisesThresholdStress"/>
                         <var name="floatingVonMisesThresholdStress"/>
                         <var name="calvingStrainRateScaling"/>
+						<var name="crevasseWaterDepth"/>
                         <var name="stiffnessFactor"/>
                         <var name="calvingMask"/>
                         <!-- calvingCFLdt only needed if calving CFL is being applied, but it is a scalar value so no harm in including it always -->
