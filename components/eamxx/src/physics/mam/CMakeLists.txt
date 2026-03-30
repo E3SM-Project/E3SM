@@ -1,3 +1,11 @@
+if (SCREAM_CIME_BUILD)
+  # PROJECT_SOURCE_DIR is SCREAM_ROOT/components
+  set(EXTERNALS_SOURCE_DIR "${PROJECT_SOURCE_DIR}/../externals")
+else()
+  # PROJECT_SOURCE_DIR is SCREAM_ROOT/components/eamxx
+  set(EXTERNALS_SOURCE_DIR "${PROJECT_SOURCE_DIR}/../../externals")
+endif()
+
 # configure and build mam4xx (C++ port of MAM4)
 if (SCREAM_DOUBLE_PRECISION)
   set(MAM4XX_PRECISION "double" CACHE BOOL "Enable double precision for mam4xx")
@@ -5,27 +13,11 @@ else()
   set(MAM4XX_PRECISION "single" CACHE BOOL "Enable single precision for mam4xx")
 endif()
 set(MAM4XX_ENABLE_GPU ${EAMXX_ENABLE_GPU} CACHE BOOL "Enable mam4xx GPU configuration" FORCE)
-set(MAM4XX_ENABLE_MPI ON CACHE BOOL "Enable MPI for mam4xx" FORCE)
 set(MAM4XX_ENABLE_TESTS OFF CACHE BOOL "Disable mam4xx tests within E3SM" FORCE)
 set(MAM4XX_ENABLE_SKYWALKER OFF CACHE BOOL "Disable mam4xx validation tests" FORCE)
 set(MAM4XX_NUM_VERTICAL_LEVELS ${SCREAM_NUM_VERTICAL_LEV})
 
-list(APPEND CMAKE_MODULE_PATH
-  ${EXTERNALS_SOURCE_DIR}/haero/cmake
-)
-
-# NOTE: If/when E3SM switches from submodules to FetchContent, we should move this
-# NOTE: to a single location where dependencies are declared and made available.
-# NOTE: This is because FetchContent_MakeAvailable can only be called once for a 
-# NOTE: a project, and must include all necessary dependencies. See
-# NOTE: https://cmake.org/cmake/help/latest/module/FetchContent.html for details.
-include(FetchContent)
-FetchContent_Declare(
-  mam4xx
-  GIT_REPOSITORY https://github.com/eagles-project/mam4xx.git
-  GIT_TAG        jeff-cohere/merge-haero
-)
-FetchContent_MakeAvailable(mam4xx)
+add_subdirectory(${EXTERNALS_SOURCE_DIR}/mam4xx ${CMAKE_BINARY_DIR}/externals/mam4xx)
 
 # EAMxx mam4xx-based atmospheric processes
 add_library(mam
