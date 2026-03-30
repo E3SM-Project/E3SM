@@ -2930,7 +2930,7 @@
   </machine>
 
   <machine MACH="bebop">
-    <DESC>ANL/LCRC Cluster, Cray CS400, 352-nodes Xeon Phi 7230 KNLs 64C/1.3GHz + 672-nodes Xeon E5-2695v4 Broadwells 36C/2.10GHz, Intel Omni-Path network, SLURM batch system, Lmod module environment.</DESC>
+    <DESC>ANL-LCRC, 672-nodes Xeon E5-2695v4 Broadwell 36C/2.10GHz, Intel Omni-Path OPA 100G network, PBS Pro</DESC>
     <NODENAME_REGEX>beboplogin.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
@@ -2953,8 +2953,8 @@
     <mpirun mpilib="openmpi">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks">--tag-output -n {{ total_tasks }} </arg>
-        <arg name="tasks_per_node"> --map-by ppr:1:core:PE=$ENV{OMP_NUM_THREADS} --bind-to core --oversubscribe </arg>
+        <arg name="num_tasks">--tag-output -n {{ total_tasks }}</arg>
+        <arg name="tasks_per_node"> --map-by ppr:1:core:PE=$ENV{OMP_NUM_THREADS} --bind-to core --oversubscribe</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -2967,6 +2967,7 @@
       <modules>
         <command name="load">cmake/3.29.2</command>
         <command name="load">gcc/13.2.0-xk53apo</command>
+        <command name="load">openmpi/4.1.8</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -2976,8 +2977,10 @@
       <env name="NETCDF_C_PATH">/lcrc/group/e3sm/soft/bebop/netcdf-c/4.9.3/gcc-13.2.0/openmpi-4.1.8</env>
       <env name="NETCDF_FORTRAN_PATH">/lcrc/group/e3sm/soft/bebop/netcdf-fortran/4.6.2/gcc-13.2.0/openmpi-4.1.8</env>
       <env name="PNETCDF_PATH">/lcrc/group/e3sm/soft/bebop/pnetcdf/1.14.1/gcc-13.2.0/openmpi-4.1.8</env>
-      <env name="PATH">/lcrc/group/e3sm/soft/bebop/pnetcdf/1.14.1/gcc-13.2.0/openmpi-4.1.8/bin:/lcrc/group/e3sm/soft/bebop/netcdf-fortran/4.6.2/gcc-13.2.0/openmpi-4.1.8/bin:/lcrc/group/e3sm/soft/bebop/netcdf-c/4.9.3/gcc-13.2.0/openmpi-4.1.8/bin:/lcrc/group/e3sm/soft/bebop/openmpi/4.1.8/gcc-13.2.0/bin:/lcrc/group/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
-      <env name="LD_LIBRARY_PATH">/lcrc/group/e3sm/soft/bebop/netlib-lapack/3.12.0/gcc-13.2.0:/lcrc/group/e3sm/soft/bebop/pnetcdf/1.14.1/gcc-13.2.0/openmpi-4.1.8/lib:/lcrc/group/e3sm/soft/bebop/netcdf-fortran/4.6.2/gcc-13.2.0/openmpi-4.1.8/lib:/lcrc/group/e3sm/soft/bebop/netcdf-c/4.9.3/gcc-13.2.0/openmpi-4.1.8/lib:/opt/pbs/lib:/lcrc/group/e3sm/soft/bebop/openmpi/4.1.8/gcc-13.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="PATH">/lcrc/group/e3sm/soft/bebop/pnetcdf/1.14.1/gcc-13.2.0/openmpi-4.1.8/bin:/lcrc/group/e3sm/soft/bebop/netcdf-fortran/4.6.2/gcc-13.2.0/openmpi-4.1.8/bin:/lcrc/group/e3sm/soft/bebop/netcdf-c/4.9.3/gcc-13.2.0/openmpi-4.1.8/bin:/lcrc/group/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
+      <env name="LD_LIBRARY_PATH">/lcrc/group/e3sm/soft/bebop/pnetcdf/1.14.1/gcc-13.2.0/openmpi-4.1.8/lib:/lcrc/group/e3sm/soft/bebop/netcdf-fortran/4.6.2/gcc-13.2.0/openmpi-4.1.8/lib:/lcrc/group/e3sm/soft/bebop/netcdf-c/4.9.3/gcc-13.2.0/openmpi-4.1.8/lib:/lcrc/group/e3sm/soft/bebop/openmpi/4.1.8/gcc-13.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="LAPACK_ROOT">$SHELL{if [ -z "$LAPACK_ROOT" ]; then echo /lcrc/group/e3sm/soft/bebop/netlib-lapack/3.12.0/gcc-13.2.0; else echo "$LAPACK_ROOT"; fi}</env>
+      <env name="BLAS_ROOT">$SHELL{if [ -z "$BLAS_ROOT" ]; then echo /lcrc/group/e3sm/soft/bebop/netlib-lapack/3.12.0/gcc-13.2.0; else echo "$BLAS_ROOT"; fi}</env>
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/improv/gnu; else echo "$MOAB_ROOT"; fi}</env>
       <env name="OMPI_MCA_sharedfp">^lockedfile,individual</env>
     </environment_variables>
