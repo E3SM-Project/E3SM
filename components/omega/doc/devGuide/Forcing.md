@@ -44,7 +44,7 @@ pathways in Omega, currently this includes:
 2. Auxiliary-state compute forms bounded restoring differences:
    - `SurfTracerRestoringDiffsCell = clamp(target - tracer_surface, +/- MaxDiff)`
 3. Tendency term applies restoring only at surface layer and only for tracers
-   enabled by restore mask.
+  selected from `SurfaceRestoring.TracersToRestore`.
 
 ### Surface tracer restoring key classes/components
 
@@ -55,10 +55,11 @@ pathways in Omega, currently this includes:
 - `SurfaceTracerRestoringOnCell` tendency term
   - Applies `PistonVelocity * SurfTracerRestoringDiffsCell` at surface
 - `Tendencies`
-  - Builds `TracerRestoreMask` from `SurfaceRestoring.TracersToRestore`
+  - Parses `SurfaceRestoring.TracersToRestore` and resolves tracer indices
+  - Builds `TracerIdsToRestore` and `NTracersToRestore`
   - Applies tracer-selection logic at call site in
     `computeTracerTendenciesOnly`
-  - Aborts if restoring is enabled but no restore mask is available
+  - Aborts if restoring is enabled but no tracer IDs are available
 
 ### Surface tracer restoring config coupling
 
@@ -67,15 +68,15 @@ pathways in Omega, currently this includes:
 - `Omega.SurfaceRestoring.PistonVelocity`
   - tendency scaling
 - `Omega.SurfaceRestoring.TracersToRestore`
-  - tracer-level enable list used to build `TracerRestoreMask`
+  - tracer-level enable list used to build `TracerIdsToRestore`
 - `Omega.Tendencies.SurfaceTracerRestoringEnable`
   - gates restoring tendency execution
 
-  ## Notes
+## Notes
 
 - If a tracer is not listed in `TracersToRestore`, no restoring tendency is
   applied to that tracer.
-- If restoring is enabled but no restore mask is available at tendency
+- If restoring is enabled but no tracer IDs are available at tendency
   compute-time, Omega aborts with an error.
 - `MaxDiff` must be positive. A runtime check will error out if not.
 - It is assumed that the incoming `TracersMonthlySurfClimoCell` values have the correct units appropriate for Omega. If this is not true, conversion should be implemented.
