@@ -280,11 +280,14 @@ setup_time_database (const strvec_t& input_files,
         "[DataInterpolation] Error! Input file contains no time variable.\n"
         " - file name: " + fname + "\n");
 
-    auto t_ref = ref_ts.is_valid() ? ref_ts : read_timestamp (fname,"reference_time_stamp");
+    auto time_name  = scorpio::get_time_name(fname);
+    auto time_units = scorpio::get_attribute<std::string>(fname,time_name,"units");
+    auto [parsed_ref, time_mult] = parse_cf_time_units(time_units);
+    auto t_ref = ref_ts.is_valid() ? ref_ts : parsed_ref;
 
     times.emplace_back();
     for (const auto& t : file_times) {
-      times.back().push_back(t_ref + t*constants::seconds_per_day);
+      times.back().push_back(t_ref + t*time_mult);
     }
     scorpio::release_file(fname);
 

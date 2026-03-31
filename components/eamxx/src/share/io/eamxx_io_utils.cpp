@@ -121,6 +121,84 @@ util::TimeStamp read_timestamp (const std::string& filename,
   return ts;
 }
 
+std::pair<util::TimeStamp,int>
+parse_cf_time_units (const std::string& units_str)
+{
+  // Find the " since " separator
+  const std::string sep = " since ";
+  auto pos = units_str.find(sep);
+  EKAT_REQUIRE_MSG (pos!=std::string::npos,
+      "Error! Could not parse CF-compliant time units string.\n"
+      " - units string: '" + units_str + "'\n"
+      " - Expected format: '<unit> since <YYYY-MM-DD> [HH[:MM[:SS]]]'\n");
+
+  // Map unit name to seconds
+  auto unit_str = units_str.substr(0,pos);
+  int time_mult;
+  if (unit_str.find("second") != std::string::npos) {
+    time_mult = 1;
+  } else if (unit_str.find("minute") != std::string::npos) {
+    time_mult = 60;
+  } else if (unit_str.find("hour") != std::string::npos) {
+    time_mult = 3600;
+  } else if (unit_str.find("day") != std::string::npos) {
+    time_mult = 86400;
+  } else {
+    EKAT_ERROR_MSG (
+        "Error! Unsupported time unit in CF-compliant units string.\n"
+        " - units string: '" + units_str + "'\n"
+        " - unit: '" + unit_str + "'\n"
+        " - Supported units: seconds, minutes, hours, days\n");
+  }
+
+  // Extract and parse the reference date/time string
+  auto date_str = units_str.substr(pos + sep.size());
+
+  // First try EAMxx internal format: YYYY-MM-DD-SSSSS
+  auto ref_ts = util::str_to_time_stamp(date_str);
+  if (ref_ts.is_valid()) {
+    return {ref_ts, time_mult};
+  }
+
+  // Try CF format: YYYY-MM-DD [HH[:MM[:SS]]]
+  EKAT_REQUIRE_MSG (date_str.size()>=10 && date_str[4]=='-' && date_str[7]=='-',
+      "Error! Could not parse reference date in CF-compliant time units string.\n"
+      " - units string: '" + units_str + "'\n"
+      " - date/time part: '" + date_str + "'\n");
+
+  int yy  = std::stoi(date_str.substr(0,4));
+  int mon = std::stoi(date_str.substr(5,2));
+  int dd  = std::stoi(date_str.substr(8,2));
+  int hh = 0, min = 0, sec = 0;
+
+  if (date_str.size() > 10) {
+    // Expect a space or 'T' separator, then HH[:MM[:SS]]
+    char sep_char = date_str[10];
+    EKAT_REQUIRE_MSG (sep_char==' ' || sep_char=='T',
+        "Error! Invalid separator between date and time in CF-compliant units string.\n"
+        " - units string: '" + units_str + "'\n"
+        " - date/time part: '" + date_str + "'\n");
+    auto time_part = date_str.substr(11);
+    EKAT_REQUIRE_MSG (time_part.size() >= 2,
+        "Error! Could not parse time in CF-compliant units string.\n"
+        " - units string: '" + units_str + "'\n");
+    hh = std::stoi(time_part.substr(0,2));
+    if (time_part.size() >= 5 && time_part[2] == ':') {
+      min = std::stoi(time_part.substr(3,2));
+      if (time_part.size() >= 8 && time_part[5] == ':') {
+        sec = std::stoi(time_part.substr(6,2));
+      }
+    }
+  }
+
+  ref_ts = util::TimeStamp({yy,mon,dd},{hh,min,sec});
+  EKAT_REQUIRE_MSG (ref_ts.is_valid(),
+      "Error! Could not create a valid TimeStamp from CF-compliant units string.\n"
+      " - units string: '" + units_str + "'\n");
+
+  return {ref_ts, time_mult};
+}
+
 std::shared_ptr<AtmosphereDiagnostic>
 create_diagnostic (const std::string& diag_field_name,
                    const std::shared_ptr<const AbstractGrid>& grid)
