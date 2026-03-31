@@ -71,6 +71,7 @@ TEST_CASE("field_over_dt") {
   // Run diag before any init_timestep call: should return fill_value
   diag->compute_diagnostic();
   auto diag_f = diag->get_diagnostic();
+  diag_f.sync_to_host();
 
   auto fill_field = qc.clone();
   fill_field.deep_copy(constants::fill_value<Real>);
@@ -98,9 +99,11 @@ TEST_CASE("field_over_dt") {
     util::TimeStamp t1({2024, 1, itest}, {0, 0, 0});
     qc.get_header().get_tracking().update_time_stamp(t1);
     randomize_uniform(qc, seed++, 0, 200);
+    qc.sync_to_dev();
 
     // Diagnostic should be qc(t1) / dt
     diag->compute_diagnostic();
+    diag_f.sync_to_host();
 
     auto qc_v    = qc.get_view<Real**, Host>();
     auto diag_v  = diag_f.get_view<Real**, Host>();

@@ -62,6 +62,7 @@ TEST_CASE("atm_backtend") {
   // Set time for qc and randomize its values
   qc.get_header().get_tracking().update_time_stamp(t0);
   randomize_uniform(qc, seed++, 0, 200);
+  qc.sync_to_dev();
 
   // Build the composable chain: qc_atm_backtend ≡ qc_minus_qc_prev_over_dt
   // Layer 1: FieldPrevDiag(qc) → output field named "qc_prev"
@@ -105,6 +106,7 @@ TEST_CASE("atm_backtend") {
   over_dt_diag->compute_diagnostic();
 
   auto result = over_dt_diag->get_diagnostic();
+  result.sync_to_host();
   {
     auto v = result.get_view<Real**, Host>();
     const Real fill_val = constants::fill_value<Real>;
@@ -121,6 +123,7 @@ TEST_CASE("atm_backtend") {
     // Save current qc before advancing
     auto qc_old = qc.clone();
     qc_old.deep_copy(qc);
+    qc_old.sync_to_host();
 
     // init_timestep: FieldPrevDiag stores current qc; FieldOverDtDiag saves start ts
     prev_diag->init_timestep(t0);
@@ -130,11 +133,13 @@ TEST_CASE("atm_backtend") {
     util::TimeStamp t1({2024, 1, itest}, {0, 0, 0});
     qc.get_header().get_tracking().update_time_stamp(t1);
     randomize_uniform(qc, seed++, 0, 200);
+    qc.sync_to_dev();
 
     // Evaluate chain in dependency order
     prev_diag->compute_diagnostic();
     minus_diag->compute_diagnostic();
     over_dt_diag->compute_diagnostic();
+    result.sync_to_host();
 
     // Expected: (qc_new - qc_old) / a_day
     auto qc_new_v = qc.get_view<Real**, Host>();
