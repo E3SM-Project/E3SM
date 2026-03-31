@@ -246,7 +246,7 @@ contains
          enddo
         
          ! now create mask of all marine locations connected to open ocean - to be used below to screen out lakes
-         call li_flood_fill(seedMask, growMask, domain)
+         call li_flood_fill(domain)
          
          connectedMarineMask(:) = seedMask(:)
          
@@ -280,7 +280,7 @@ contains
         
          ! now create mask of all marine locations connected to open ocean
          ! through ice-free cells - to be used below to screen out lakes
-         call li_flood_fill(seedMask, growMask, domain)
+         call li_flood_fill(domain)
          
          altConnectedMarineMask(:) = seedMask(:)
          

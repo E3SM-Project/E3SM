@@ -1248,7 +1248,7 @@ module li_calving
          end where
 
          call mpas_log_write("***Cleaning up stranded cells after removing small islands***")
-         call li_flood_fill(seedMask, growMask, domain)
+         call li_flood_fill(domain)
          do iCell = 1, nCells
             if (li_mask_is_floating_ice(cellMask(iCell)) .and. seedMask(iCell) == 0) then
                   calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
@@ -3304,7 +3304,7 @@ module li_calving
       call mpas_dmpar_field_halo_exch(domain, 'seedMask')
       call mpas_timer_stop("halo updates")
 
-      call li_flood_fill(seedMask, growMask, domain)
+      call li_flood_fill(domain)
       openOceanMask = seedMask
 
       call mpas_deallocate_scratch_field(seedMaskField, single_block_in=.true.)
@@ -4224,7 +4224,7 @@ module li_calving
               growMask = 1
       end where
 
-      call li_flood_fill(seedMask, growMask, domain)
+      call li_flood_fill(domain)
 
       ! Remove ice from flood-filled mask, and any neighboring non-dynamic ice
       do iCell = 1, nCells
@@ -4530,7 +4530,7 @@ module li_calving
       where ( (seedMask == 0) .and. li_mask_is_floating_ice(cellMask(:)) .and. li_mask_is_dynamic_ice(cellMask(:)) )
              growMask = 1
       endwhere
-      call li_flood_fill(seedMask, growMask, domain)
+      call li_flood_fill(domain)
 
       ! Add floating non-dynamic fringe, but exclude dynamic ice isolated by
       ! non-dynamic ice, which can cause velocity solver to fail to converge.
@@ -4542,7 +4542,7 @@ module li_calving
       elsewhere
              growMask = 0
       endwhere
-      call li_flood_fill(seedMask, growMask, domain)
+      call li_flood_fill(domain)
       
       ! Now remove any ice that was not flood-filled - these are icebergs
       block => domain % blocklist
@@ -4591,29 +4591,37 @@ module li_calving
 !
 !    routine li_flood_fill
 !
-!> \brief  Flood fill routine to differentiate ice sheet from icebergs, critically damaged regions, etc. 
-!> The calling routine defines the seedMask to specify the initial masked region, and the growMask 
-!> to specify the potential region to be filled by the flood-fill routine. The flood-fill routine
-!> then adds the contiguous areas of the growMask to the seedMask, which is passed back to the 
-!> calling routine for application. Any integer fields in Registry can be used for seedMask and
-!> growMask, but there are existing variables with those names that can be used.
+!> \brief  Flood fill for MPAS meshes
 !> \author Trevor Hillebrand and Matthew Hoffman
 !> \date   March 2021
-!> \details 
+!> \details
+!> Flood fill routine to differentiate ice sheet from icebergs, critically damaged regions, etc.
+!> The calling routine defines the seedMask to specify the initial masked region, and the growMask
+!> to specify the potential region to be filled by the flood-fill routine. The flood-fill routine
+!> then adds the contiguous areas of the growMask to the seedMask, which is passed back to the
+!> calling routine for application.
+!> The calling routine must use the fields seedMask and growMask in the scratch pool in Registry.
+!> This is because the halo updates in this routine are hard-coded to use those field names.
+!> Because those two fields are scratch variables, the calling routine needs to be responsible
+!> for allocating (and populating) those fields prior to calling this routine, and then deallocating
+!> them afterwards.
+!> This routine currently retrieves mesh and scratch pools only from domain % blocklist (the first
+!> block) and therefore assumes one block per MPI task. Configurations with config_number_of_blocks
+!> greater than the number of MPI tasks (multiple blocks per task) are not supported for this routine.
 !-----------------------------------------------------------------------
-   subroutine li_flood_fill(seedMask, growMask, domain)
+   subroutine li_flood_fill(domain)
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain !< Input/Output: domain object
-      integer, dimension(:), intent(inout) :: seedMask
-      integer, dimension(:), intent(in) :: growMask
+
       ! Local variables
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: geometryPool
-      type (mpas_pool_type), pointer :: velocityPool
+      type (mpas_pool_type), pointer :: scratchPool
 
+      integer, dimension(:), pointer :: seedMask
+      integer, dimension(:), pointer :: growMask
       integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
       integer, dimension(:), allocatable :: seedMaskOld
@@ -4627,41 +4635,21 @@ module li_calving
       err = 0
 
       block => domain % blocklist
-      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(scratchPool, 'seedMask', seedMask)
+      call mpas_pool_get_array(scratchPool, 'growMask', growMask)
+
       allocate(seedMaskOld(nCells+1))
       seedMaskOld(:) = 0
 
-      !call mpas_log_write("Flood-fill: allocated.")
+      newMaskCountLocal = sum(seedMask(1:nCellsSolve))
 
-      ! First mark grounded ice to initialize flood fill mask
-      block => domain % blocklist
-      do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
-         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-         call mpas_pool_get_dimension(geometryPool, 'nCellsSolve', nCellsSolve)
-         call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
-         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-
-         ! make sure masks are up to date.  May not be necessary, but safer to
-         ! do anyway.
-         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-         err = ior(err, err_tmp)
-
-         !call mpas_log_write("Flood-fill: updated masks.")
-         newMaskCountLocal = sum(seedMask)
-         !call mpas_log_write("Initialized $i cells to local mask", intArgs=(/newMaskCountLocal/))
-
-         block => block % next
-      end do
-
-      !call mpas_log_write("Flood-fill initialization complete.")
-
-      ! Outer loop over processors (should also have a loop over blocks)
-      ! Inner loop over cells on that processor
+      ! Outer loop over processors; Inner loop over cells on that processor
 
       ! Initialize global mask count
       call mpas_dmpar_sum_int(domain % dminfo, newMaskCountLocal, newMaskCountGlobal)
@@ -4683,46 +4671,36 @@ module li_calving
 
          ! Now update (advance) mask locally
 
-         block => domain % blocklist
-         do while (associated(block))
-            call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-            call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
-            call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         ! initialize local loop
+         localLoopCount = 0
+         newMaskCountLocal = 1  ! need to make sure we enter the loop
+         do while (newMaskCountLocal > 0)
+            localLoopCount = localLoopCount + 1
+            !call mpas_log_write("    Starting local cell loop $i", intArgs=(/localLoopCount/))
 
-            ! initialize local loop
-            localLoopCount = 0
-            newMaskCountLocal = 1  ! need to make sure we enter the loop
-            do while (newMaskCountLocal > 0)
-               localLoopCount = localLoopCount + 1
-               !call mpas_log_write("    Starting local cell loop $i", intArgs=(/localLoopCount/))
+            ! initialize
+            newMaskCountLocal = 0
+            seedMaskOld(:) = seedMask(:)
 
-               ! initialize
-               newMaskCountLocal = 0
-               seedMaskOld(:) = seedMask(:)
+            do iCell = 1, nCellsSolve ! this gives owned cells only
+               if (growMask(iCell) > 0) then
+                  ! If it has a marked neighbor, then add it to the mask
+                  do n = 1, nEdgesOnCell(iCell)
+                     jCell = cellsOnCell(n, iCell)
+                     if ( (seedMaskOld(jCell) == 1) .and. (seedMask(iCell) .ne. 1) ) then
+                        seedMask(iCell) = 1
+                        newMaskCountLocal = newMaskCountLocal + 1
+                        exit ! skip the rest of this do-loop - no need to check additional neighbors
+                     endif
+                  enddo
+               endif ! if not already marked
+            enddo ! loop over cells
 
-               do iCell = 1, nCellsSolve ! this gives owned cells only
-                  if ( growMask(iCell)>0 ) then
-                     ! If it has a marked neighbor, then add it to the mask
-                     do n = 1, nEdgesOnCell(iCell)
-                        jCell = cellsOnCell(n, iCell)
-                        if ( (seedMaskOld(jCell) == 1) .and. (seedMask(iCell) .ne. 1) ) then
-                           seedMask(iCell) = 1
-                           newMaskCountLocal = newMaskCountLocal + 1
-                           exit ! skip the rest of this do-loop - no need to check additional neighbors
-                        endif
-                     enddo
-                  endif ! if not already marked
-               enddo ! loop over cells
-
-               ! Accumulate cells added locally until we do the next global
-               ! reduce
-               newMaskCountLocalAccum = newMaskCountLocalAccum + newMaskCountLocal
-               !call mpas_log_write("    Added $i new cells to local mask", intArgs=(/newMaskCountLocal/))
-            enddo ! local mask loop
-
-            block => block % next
-         end do
+            ! Accumulate cells added locally until we do the next global
+            ! reduce
+            newMaskCountLocalAccum = newMaskCountLocalAccum + newMaskCountLocal
+            !call mpas_log_write("    Added $i new cells to local mask", intArgs=(/newMaskCountLocal/))
+         enddo ! local mask loop
 
          ! update count of cells added to mask globally
          call mpas_dmpar_sum_int(domain % dminfo, newMaskCountLocalAccum, newMaskCountGlobal)
