@@ -1,6 +1,8 @@
 #include "eamxx_homme_process_interface.hpp"
 
 // HOMMEXX includes
+#include "Elements.hpp"
+#include "ElementsDerivedState.hpp"
 #include "Context.hpp"
 #include "ElementsGeometry.hpp"
 #include "ElementsState.hpp"
@@ -185,70 +187,80 @@ void HommeDynamics::contract_to_local_strain2 ()
   using namespace Homme;
 
   constexpr int NGP  = HOMMEXX_NP;
-  constexpr int NLEV = HOMMEXX_NUM_LEV;
+  constexpr int VLEN = VECTOR_SIZE;
 
   const auto& c      = Context::singleton();
   const auto& geom   = c.get<ElementsGeometry>();
+  const auto& elems  = c.get<Elements>();
 
   const int nelem = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
 
-  // These were written out as scalar Real fields in
-  // compute_horizontal_derivs_of_car_velocity().
   auto grad_Ux_dyn = m_helper_fields.at("grad_Ux_dyn").template get_view<Real*****>();
   auto grad_Uy_dyn = m_helper_fields.at("grad_Uy_dyn").template get_view<Real*****>();
   auto grad_Uz_dyn = m_helper_fields.at("grad_Uz_dyn").template get_view<Real*****>();
 
-  // Output scalar field: strain2_dyn(ie,igp,jgp,ilev)
+  // Optional: keep this helper field if you still want it for diagnostics/debugging.
   auto strain2_dyn = m_helper_fields.at("strain2_dyn").template get_view<Real****>();
+
+  // HOMME packed field used later by dyn->phys coupling
+  const auto turb_strain2 = elems.m_derived.m_turb_strain2;
 
   const auto vec_sph2cart = geom.m_vec_sph2cart;
 
+  const int nlev_scalar = grad_Ux_dyn.extent_int(4);
+  const int nlev_pack   = turb_strain2.extent_int(3);
+
   Kokkos::parallel_for(
       "contract_to_local_strain2",
-      Kokkos::RangePolicy<KT::ExeSpace>(0, nelem*NGP*NGP*NLEV),
+      Kokkos::RangePolicy<KT::ExeSpace>(0, nelem*NGP*NGP*nlev_pack),
       KOKKOS_LAMBDA (const int idx) {
 
-    const int ie   =  idx / (NGP*NGP*NLEV);
-    const int rem1 =  idx % (NGP*NGP*NLEV);
-    const int igp  =  rem1 / (NGP*NLEV);
-    const int rem2 =  rem1 % (NGP*NLEV);
-    const int jgp  =  rem2 / NLEV;
-    const int ilev =  rem2 % NLEV;
+    const int ie        =  idx / (NGP*NGP*nlev_pack);
+    const int rem1      =  idx % (NGP*NGP*nlev_pack);
+    const int igp       =  rem1 / (NGP*nlev_pack);
+    const int rem2      =  rem1 % (NGP*nlev_pack);
+    const int jgp       =  rem2 / nlev_pack;
+    const int ilev_pack =  rem2 % nlev_pack;
 
-    // Reconstruct the local 2x2 velocity-gradient tensor:
-    //
-    //   A(i,j) = d u_i / d x_j
-    //
-    // where i,j = 0,1 are the two local horizontal directions.
-    const Real A00 = cart_grad_to_local_component(
-        grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
-        vec_sph2cart, ie, 0, 0, igp, jgp, ilev);
+    Scalar strain2_pack(0.0);
 
-    const Real A01 = cart_grad_to_local_component(
-        grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
-        vec_sph2cart, ie, 0, 1, igp, jgp, ilev);
+    for (int s = 0; s < VLEN; ++s) {
+      const int ilev = ilev_pack*VLEN + s;
 
-    const Real A10 = cart_grad_to_local_component(
-        grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
-        vec_sph2cart, ie, 1, 0, igp, jgp, ilev);
+      if (ilev < nlev_scalar) {
+        const Real A00 = cart_grad_to_local_component(
+            grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
+            vec_sph2cart, ie, 0, 0, igp, jgp, ilev);
 
-    const Real A11 = cart_grad_to_local_component(
-        grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
-        vec_sph2cart, ie, 1, 1, igp, jgp, ilev);
+        const Real A01 = cart_grad_to_local_component(
+            grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
+            vec_sph2cart, ie, 0, 1, igp, jgp, ilev);
 
-    // Symmetric strain tensor S = 0.5 * (A + A^T)
-    const Real S00 = A00;
-    const Real S11 = A11;
-    const Real S01 = 0.5 * (A01 + A10);
+        const Real A10 = cart_grad_to_local_component(
+            grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
+            vec_sph2cart, ie, 1, 0, igp, jgp, ilev);
 
-    // Horizontal-only strain magnitude:
-    //
-    //   strain2 = 2 * S_ij S_ij
-    //           = 2 * (S00^2 + 2*S01^2 + S11^2)
-    //
-    // using only local horizontal directions i,j = 0,1.
-    strain2_dyn(ie,igp,jgp,ilev) =
-        2.0 * (S00*S00 + 2.0*S01*S01 + S11*S11);
+        const Real A11 = cart_grad_to_local_component(
+            grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
+            vec_sph2cart, ie, 1, 1, igp, jgp, ilev);
+
+        const Real S00 = A00;
+        const Real S11 = A11;
+        const Real S01 = 0.5 * (A01 + A10);
+
+        const Real strain2_val =
+            2.0 * (S00*S00 + 2.0*S01*S01 + S11*S11);
+
+        strain2_pack[s] = strain2_val;
+
+        // Optional: keep scalar helper output too
+        strain2_dyn(ie,igp,jgp,ilev) = strain2_val;
+      } else {
+        strain2_pack[s] = 0.0;
+      }
+    }
+
+    turb_strain2(ie,igp,jgp,ilev_pack) = strain2_pack;
   });
 
   Kokkos::fence();
