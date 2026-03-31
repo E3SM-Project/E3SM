@@ -3148,8 +3148,10 @@
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>flux</BATCH_SYSTEM>
     <SUPPORTED_BY>boutte3 -at- llnl.gov</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>96</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>96</MAX_MPITASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="gnugpu">4</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>84</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="gnugpu">4</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>flux run</executable>
       <arguments>
