@@ -49,6 +49,11 @@ class HorizontalRemapper : public AbstractRemapper
 public:
 
   HorizontalRemapper (const grid_ptr_type& src_grid,
+                      const grid_ptr_type& tgt_grid,
+                      const std::string& map_file,
+                      const bool track_mask = false);
+
+  HorizontalRemapper (const grid_ptr_type& grid,
                       const std::string& map_file,
                       const bool track_mask = false);
 
@@ -86,6 +91,11 @@ protected:
   void create_ov_fields ();
   void setup_mpi_data_structures ();
 
+  // We need to keep this (and not just its content) so that the weak_ptr in HorizRemapperDataRepo
+  // does not expire. This allows other remappers that need the same data to reuse it rather than
+  // have the repo re-create it anew.
+  std::shared_ptr<const HorizRemapperData> m_remap_data;
+
   // Whether we are tracking mask fields
   bool                m_track_mask;
 
@@ -94,11 +104,6 @@ protected:
 
   // Whether each field needs to be remapped (i.e., has COL tag)
   std::vector<int>    m_needs_remap;
-
-  // We need to keep this (and not just its content) so that the weak_ptr in HorizRemapperDataRepo
-  // does not expire. This allows other remappers that need the same data to reuse it rather than
-  // have the repo re-create it anew.
-  std::shared_ptr<const HorizRemapperData> m_remap_data;
 
   // ------- MPI-related data structures -------- //
 
