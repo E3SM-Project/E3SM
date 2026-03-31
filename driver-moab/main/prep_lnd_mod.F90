@@ -42,9 +42,6 @@ module prep_lnd_mod
   use seq_comm_mct,     only : num_moab_exports
   use shr_moab_mod,      only : mbGetnCells, mbGetCellTagVals
 
-#ifdef MOABCOMP
-  use component_type_mod, only:  compare_mct_av_moab_tag
-#endif
 
   implicit none
   save
@@ -55,7 +52,6 @@ module prep_lnd_mod
   !--------------------------------------------------------------------------
 
   public :: prep_lnd_init
-  public :: prep_lnd_mrg
   ! moab version
   public :: prep_lnd_mrg_moab
 
@@ -80,7 +76,6 @@ module prep_lnd_mod
   ! Private interfaces
   !--------------------------------------------------------------------------
 
-  private :: prep_lnd_merge
   private :: prep_lnd_set_glc2lnd_fields
 
   !--------------------------------------------------------------------------
@@ -250,9 +245,11 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fr2l'
           end if
-          call seq_map_init_rcfile(mapper_Fr2l, rof(1), lnd(1), &
-               'seq_maps.rc','rof2lnd_fmapname:','rof2lnd_fmaptype:',samegrid_lr, &
-               string='mapper_Fr2l initialization',esmf_map=esmf_map_flag,no_match=.true.)
+          call seq_map_mapinit(mapper_Fr2l, mpicom_CPLID)
+          if (samegrid_lr) then
+             mapper_Fr2l%rearrange_only = .true.
+             mapper_Fr2l%strategy = "rearrange"
+          endif
 ! symmetric of l2r, from prep_rof
           ! Call moab intx only if land and river are init in moab
           if ((mbrxid .ge. 0) .and.  (mblxid .ge. 0)) then
@@ -444,16 +441,20 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Sa2l'
           end if
-          call seq_map_init_rcfile(mapper_Sa2l, atm(1), lnd(1), &
-               'seq_maps.rc','atm2lnd_smapname:','atm2lnd_smaptype:',samegrid_al, &
-               'mapper_Sa2l initialization',esmf_map_flag, no_match=.true.)
+          call seq_map_mapinit(mapper_Sa2l, mpicom_CPLID)
+          if (samegrid_al) then
+             mapper_Sa2l%rearrange_only = .true.
+             mapper_Sa2l%strategy = "rearrange"
+          endif
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fa2l'
           end if
-          call seq_map_init_rcfile(mapper_Fa2l, atm(1), lnd(1), &
-               'seq_maps.rc','atm2lnd_fmapname:','atm2lnd_fmaptype:',samegrid_al, &
-               'mapper_Fa2l initialization',esmf_map_flag, no_match=.true.)
+          call seq_map_mapinit(mapper_Fa2l, mpicom_CPLID)
+          if (samegrid_al) then
+             mapper_Fa2l%rearrange_only = .true.
+             mapper_Fa2l%strategy = "rearrange"
+          endif
 ! similar to prep_atm_init, lnd and atm reversed
           ! important change: do not compute intx at all between atm and land when we have samegrid_al
           ! we will use just a comm graph to send data from atm to land on coupler
@@ -728,40 +729,11 @@ contains
 
   !================================================================================================
 
-  subroutine prep_lnd_mrg(infodata, timer_mrg)
-
-    !---------------------------------------------------------------
-    ! Description
-    ! Prepare run phase, including running the merge
-    !
-    ! Arguments
-    type(seq_infodata_type) , intent(in) :: infodata
-    character(len=*)     , intent(in)    :: timer_mrg
-    !
-    ! Local Variables
-    integer                  :: eai, eri, egi, eli
-    type(mct_aVect), pointer :: x2l_lx
-    character(*), parameter  :: subname = '(prep_lnd_mrg)'
-    !---------------------------------------------------------------
-
-    call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
-    do eli = 1,num_inst_lnd
-       ! Use fortran mod to address ensembles in merge
-       eai = mod((eli-1),num_inst_atm) + 1
-       eri = mod((eli-1),num_inst_rof) + 1
-       egi = mod((eli-1),num_inst_glc) + 1
-
-       x2l_lx => component_get_x2c_cx(lnd(eli))  ! This is actually modifying x2l_lx
-       call prep_lnd_merge( a2x_lx(eai), r2x_lx(eri), g2x_lx(egi), x2l_lx )
-    enddo
-    call t_drvstopf (trim(timer_mrg))
-
-  end subroutine prep_lnd_mrg
-
 ! this does almost nothing now, except documenting
-  subroutine prep_lnd_mrg_moab (infodata)
+  subroutine prep_lnd_mrg_moab (infodata, timer_mrg)
 
     type(seq_infodata_type) , intent(in) :: infodata
+    character(len=*)        , intent(in) :: timer_mrg
 
 
     type(mct_avect) , pointer   :: a2x_l  ! used just for indexing
@@ -791,14 +763,9 @@ contains
 #ifdef MOABDEBUG
     integer :: ierr
 #endif
-#ifdef MOABCOMP
-    character(CXX)           :: tagname, mct_field
-    real(R8)                 :: difference
-    type(mct_list) :: temp_list
-    integer :: size_list, index_list, ent_type
-    type(mct_string)    :: mctOStr  !
-#endif
     !-----------------------------------------------------------------------
+
+    call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
 
     call seq_comm_getdata(CPLID, iamroot=iamroot)
 
@@ -858,23 +825,6 @@ contains
        deallocate(mrgstr)
     endif
 
-#ifdef MOABCOMP
-  ! land does not do any merge for moab, all fields are directly projected, from atm, river, glacier
-  ! compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
-    x2l_l => component_get_x2c_cx(lnd(1))
-    ! loop over all fields in seq_flds_x2l_fields
-    call mct_list_init(temp_list ,seq_flds_x2l_fields)
-    size_list=mct_list_nitem (temp_list)
-    ent_type = 1 ! cell for land now, it is a full mesh
-    if (iamroot) print *, num_moab_exports, trim(seq_flds_x2l_fields)
-    do index_list = 1, size_list
-      call mct_list_get(mctOStr,index_list,temp_list)
-      mct_field = mct_string_toChar(mctOStr)
-      tagname= trim(mct_field)//C_NULL_CHAR
-      call compare_mct_av_moab_tag(lnd(1), x2l_l, mct_field,  mblxid, tagname, ent_type, difference, first_time)
-    enddo
-    call mct_list_clean(temp_list)
-#endif
 
     first_time = .false.
 
@@ -888,86 +838,9 @@ contains
 
 #endif
 
+    call t_drvstopf (trim(timer_mrg))
+
   end subroutine prep_lnd_mrg_moab
-  !================================================================================================
-
-  subroutine prep_lnd_merge( a2x_l, r2x_l, g2x_l, x2l_l )
-    !---------------------------------------------------------------
-    ! Description
-    ! Create input land state directly from atm, runoff and glc outputs
-    !
-    ! Arguments
-    type(mct_aVect), intent(in)     :: a2x_l
-    type(mct_aVect), intent(in)     :: r2x_l
-    type(mct_aVect), intent(in)     :: g2x_l
-    type(mct_aVect), intent(inout)  :: x2l_l
-    !-----------------------------------------------------------------------
-    integer       :: nflds,i,i1,o1
-    logical       :: iamroot
-    logical, save :: first_time = .true.
-    character(CL),allocatable :: mrgstr(:)   ! temporary string
-    character(CL) :: field   ! string converted to char
-    type(mct_aVect_sharedindices),save :: a2x_sharedindices
-    type(mct_aVect_sharedindices),save :: r2x_sharedindices
-    type(mct_aVect_sharedindices),save :: g2x_sharedindices
-    character(*), parameter   :: subname = '(prep_lnd_merge) '
-
-    !-----------------------------------------------------------------------
-
-    call seq_comm_getdata(CPLID, iamroot=iamroot)
-
-    if (first_time) then
-       nflds = mct_aVect_nRattr(x2l_l)
-
-       allocate(mrgstr(nflds))
-       do i = 1,nflds
-          field = mct_aVect_getRList2c(i, x2l_l)
-          mrgstr(i) = subname//'x2l%'//trim(field)//' ='
-       enddo
-
-       call mct_aVect_setSharedIndices(a2x_l, x2l_l, a2x_SharedIndices)
-       call mct_aVect_setSharedIndices(r2x_l, x2l_l, r2x_SharedIndices)
-       call mct_aVect_setSharedIndices(g2x_l, x2l_l, g2x_SharedIndices)
-
-       !--- document copy operations ---
-       do i=1,a2x_SharedIndices%shared_real%num_indices
-          i1=a2x_SharedIndices%shared_real%aVindices1(i)
-          o1=a2x_SharedIndices%shared_real%aVindices2(i)
-          field = mct_aVect_getRList2c(i1, a2x_l)
-          mrgstr(o1) = trim(mrgstr(o1))//' = a2x%'//trim(field)
-       enddo
-       do i=1,r2x_SharedIndices%shared_real%num_indices
-          i1=r2x_SharedIndices%shared_real%aVindices1(i)
-          o1=r2x_SharedIndices%shared_real%aVindices2(i)
-          field = mct_aVect_getRList2c(i1, r2x_l)
-          mrgstr(o1) = trim(mrgstr(o1))//' = r2x%'//trim(field)
-       enddo
-       do i=1,g2x_SharedIndices%shared_real%num_indices
-          i1=g2x_SharedIndices%shared_real%aVindices1(i)
-          o1=g2x_SharedIndices%shared_real%aVindices2(i)
-          field = mct_aVect_getRList2c(i1, g2x_l)
-          mrgstr(o1) = trim(mrgstr(o1))//' = g2x%'//trim(field)
-       enddo
-    endif
-
-    call mct_aVect_copy(aVin=a2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=a2x_SharedIndices)
-    call mct_aVect_copy(aVin=r2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=r2x_SharedIndices)
-    call mct_aVect_copy(aVin=g2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
-
-    if (first_time) then
-       if (iamroot) then
-          write(logunit,'(A)') subname//' Summary:'
-          do i = 1,nflds
-             write(logunit,'(A)') trim(mrgstr(i))
-          enddo
-       endif
-       deallocate(mrgstr)
-    endif
-
-    first_time = .false.
-
-  end subroutine prep_lnd_merge
-
   !================================================================================================
 
   subroutine prep_lnd_calc_a2x_lx(timer)

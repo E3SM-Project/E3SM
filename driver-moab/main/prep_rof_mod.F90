@@ -35,9 +35,6 @@ module prep_rof_mod
 
 
   use iso_c_binding
-#ifdef MOABCOMP
-  use component_type_mod, only:  compare_mct_av_moab_tag
-#endif
 
   implicit none
   save
@@ -48,18 +45,11 @@ module prep_rof_mod
   !--------------------------------------------------------------------------
 
   public :: prep_rof_init
-  public :: prep_rof_mrg
-
   public :: prep_rof_mrg_moab
   public :: prep_rof_accum_lnd_moab
   public :: prep_rof_accum_atm_moab
   public :: prep_rof_accum_ocn_moab
   public :: prep_rof_accum_avg_moab
-
-  public :: prep_rof_accum_lnd
-  public :: prep_rof_accum_atm
-  public :: prep_rof_accum_ocn
-  public :: prep_rof_accum_avg
 
   public :: prep_rof_calc_l2r_rx
   public :: prep_rof_calc_a2r_rx
@@ -85,8 +75,6 @@ module prep_rof_mod
   !--------------------------------------------------------------------------
   ! Private interfaces
   !--------------------------------------------------------------------------
-
-  private :: prep_rof_merge
 
   !--------------------------------------------------------------------------
   ! Private data
@@ -319,9 +307,11 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fl2r'
           end if
-          call seq_map_init_rcfile(mapper_Fl2r, lnd(1), rof(1), &
-               'seq_maps.rc','lnd2rof_fmapname:','lnd2rof_fmaptype:',samegrid_lr, &
-               string='mapper_Fl2r initialization', esmf_map=esmf_map_flag, no_match=no_match )
+          call seq_map_mapinit(mapper_Fl2r, mpicom_CPLID)
+          if (samegrid_lr) then
+             mapper_Fl2r%rearrange_only = .true.
+             mapper_Fl2r%strategy = "rearrange"
+          endif
 ! similar to a2r, from below
           ! Call moab intx only if land and river are init in moab
           if ((mblxid .ge. 0) .and.  (mbrxid .ge. 0)) then
@@ -543,9 +533,11 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fa2r'
           end if
-          call seq_map_init_rcfile(mapper_Fa2r, atm(1), rof(1), &
-               'seq_maps.rc','atm2rof_fmapname:','atm2rof_fmaptype:',samegrid_ar, &
-               string='mapper_Fa2r initialization', esmf_map=esmf_map_flag, no_match=no_match )
+          call seq_map_mapinit(mapper_Fa2r, mpicom_CPLID)
+          if (samegrid_ar) then
+             mapper_Fa2r%rearrange_only = .true.
+             mapper_Fa2r%strategy = "rearrange"
+          endif
 ! similar to a2o, prep_ocn
           ! Call moab intx only if atm  and river are init in moab
           if ((mbrxid .ge. 0) .and.  (mbaxid .ge. 0)) then
@@ -671,9 +663,11 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Sa2r'
           end if
-          call seq_map_init_rcfile(mapper_Sa2r, atm(1), rof(1), &
-               'seq_maps.rc','atm2rof_smapname:','atm2rof_smaptype:',samegrid_ar, &
-               string='mapper_Sa2r initialization', esmf_map=esmf_map_flag, no_match=no_match )
+          call seq_map_mapinit(mapper_Sa2r, mpicom_CPLID)
+          if (samegrid_ar) then
+             mapper_Sa2r%rearrange_only = .true.
+             mapper_Sa2r%strategy = "rearrange"
+          endif
           if ((mbaxid .ge. 0) .and.  (mbrxid .ge. 0) ) then
             ! now take care of the mapper, use the same one as before
             if (iamroot_CPLID) then
@@ -794,9 +788,11 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_So2r'
           end if
-          call seq_map_init_rcfile(mapper_So2r, ocn(1), rof(1), &
-               'seq_maps.rc','ocn2rof_smapname:','ocn2rof_smaptype:',samegrid_ro, &
-               string='mapper_So2r initialization', esmf_map=esmf_map_flag, no_match=no_match )
+          call seq_map_mapinit(mapper_So2r, mpicom_CPLID)
+          if (samegrid_ro) then
+             mapper_So2r%rearrange_only = .true.
+             mapper_So2r%strategy = "rearrange"
+          endif
 
           if ((mboxid .ge. 0) .and.  (mbrxid .ge. 0)) then
             ! now take care of the mapper, use the same one as before
@@ -865,50 +861,24 @@ contains
 
   end subroutine prep_rof_init
 
-  !================================================================================================
-  subroutine prep_rof_accum_lnd(timer)
-
-    !---------------------------------------------------------------
-    ! Description
-    ! Accumulate land input to river component
-    !
-    ! Arguments
-    character(len=*), intent(in) :: timer
-    !
-    ! Local Variables
-    integer :: eli
-    type(mct_aVect), pointer :: l2x_lx
-    character(*), parameter  :: subname = '(prep_rof_accum_lnd)'
-    !---------------------------------------------------------------
-
-    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-    do eli = 1,num_inst_lnd
-       l2x_lx => component_get_c2x_cx(lnd(eli))
-       if (l2racc_lx_cnt == 0) then
-          call mct_avect_copy(l2x_lx, l2racc_lx(eli))
-       else
-          call mct_avect_accum(l2x_lx, l2racc_lx(eli))
-       endif
-    end do
-    l2racc_lx_cnt = l2racc_lx_cnt + 1
-    call t_drvstopf (trim(timer))
-
-  end subroutine prep_rof_accum_lnd
-
 !================================================================================================
-  subroutine prep_rof_accum_lnd_moab()
+  subroutine prep_rof_accum_lnd_moab(timer)
 
    use iMOAB , only :  iMOAB_GetDoubleTagStorage
    !---------------------------------------------------------------
    ! Description
    ! Accumulate land input to river component
    !
+   ! Arguments
+   character(len=*), intent(in) :: timer
    !
    ! Local Variables
    character(CXX) ::tagname
    integer :: arrsize, ent_type, ierr
    character(*), parameter  :: subname = '(prep_rof_accum_lnd_moab)'
    !---------------------------------------------------------------
+
+   call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
 
    ! do eli = 1,num_inst_lnd
    !    l2x_lx => component_get_c2x_cx(lnd(eli))
@@ -933,57 +903,31 @@ contains
       l2racc_lm = l2racc_lm + l2x_lm2
    endif
    l2racc_lm_cnt = l2racc_lm_cnt + 1
+   call t_drvstopf (trim(timer))
 
  end subroutine prep_rof_accum_lnd_moab
 
   !================================================================================================
 
-  subroutine prep_rof_accum_atm(timer)
-
-    !---------------------------------------------------------------
-    ! Description
-    ! Accumulate atmosphere input to river component
-    !
-    ! Arguments
-    character(len=*), intent(in) :: timer
-    !
-    ! Local Variables
-    integer :: eai
-    type(mct_aVect), pointer :: a2x_ax
-    character(*), parameter  :: subname = '(prep_rof_accum_atm)'
-    !---------------------------------------------------------------
-
-    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-
-    do eai = 1,num_inst_atm
-       a2x_ax => component_get_c2x_cx(atm(eai))
-       if (a2racc_ax_cnt == 0) then
-          call mct_avect_copy(a2x_ax, a2racc_ax(eai))
-       else
-          call mct_avect_accum(a2x_ax, a2racc_ax(eai))
-       endif
-    end do
-    a2racc_ax_cnt = a2racc_ax_cnt + 1
-
-    call t_drvstopf (trim(timer))
-
-  end subroutine prep_rof_accum_atm
-
 !================================================================================================
 
-  subroutine prep_rof_accum_atm_moab()
+  subroutine prep_rof_accum_atm_moab(timer)
 
    use iMOAB , only :  iMOAB_GetDoubleTagStorage
    !---------------------------------------------------------------
    ! Description
    ! Accumulate atmosphere input to river component
    !
+   ! Arguments
+   character(len=*), intent(in) :: timer
    !
    ! Local Variables
    character(CXX) ::tagname
    integer :: arrsize, ent_type, ierr
    character(*), parameter  :: subname = '(prep_rof_accum_atm_moab)'
    !---------------------------------------------------------------
+
+   call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
 
    tagname = trim(sharedFieldsAtmRof)//C_NULL_CHAR
    arrsize = nfields_sh_ar * lsize_am
@@ -999,75 +943,28 @@ contains
       a2racc_am = a2racc_am + a2x_am2
    endif
    a2racc_am_cnt = a2racc_am_cnt + 1
-   !---------------------------------------------------------------
-
-   ! call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-
-   ! do eai = 1,num_inst_atm
-   !    a2x_ax => component_get_c2x_cx(atm(eai))
-   !    if (a2racc_ax_cnt == 0) then
-   !       call mct_avect_copy(a2x_ax, a2racc_ax(eai))
-   !    else
-   !       call mct_avect_accum(a2x_ax, a2racc_ax(eai))
-   !    endif
-   ! end do
-   ! a2racc_ax_cnt = a2racc_ax_cnt + 1
-
+   call t_drvstopf (trim(timer))
 
  end subroutine prep_rof_accum_atm_moab
 
   !================================================================================================
-  subroutine prep_rof_accum_ocn(timer)
+subroutine prep_rof_accum_ocn_moab(timer)
 
-    !---------------------------------------------------------------
-    ! Description
-    ! Accumulate ocean input to river component
-    !
-    ! Arguments
-    character(len=*), intent(in) :: timer
-    !
-    ! Local Variables
-    integer :: eoi
-    type(mct_aVect), pointer :: o2x_ox
-    character(*), parameter  :: subname = '(prep_rof_accum_ocn)'
-    !---------------------------------------------------------------
-
-    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-
-    do eoi = 1,num_inst_ocn
-       o2x_ox => component_get_c2x_cx(ocn(eoi))
-       if (o2racc_ox_cnt == 0) then
-          call mct_avect_copy(o2x_ox, o2racc_ox(eoi))
-       else
-          call mct_avect_accum(o2x_ox, o2racc_ox(eoi))
-       endif
-    end do
-    o2racc_ox_cnt = o2racc_ox_cnt + 1
-
-    call t_drvstopf (trim(timer))
-
-  end subroutine prep_rof_accum_ocn
-
-subroutine prep_rof_accum_ocn_moab()
-
-    !---------------------------------------------------------------
-    ! Description
-    ! Accumulate ocean input to river component
-    !
-    !
-    ! Local Variables
-
-use iMOAB , only :  iMOAB_GetDoubleTagStorage
+   use iMOAB , only :  iMOAB_GetDoubleTagStorage
    !---------------------------------------------------------------
    ! Description
-   ! Accumulate atmosphere input to river component
+   ! Accumulate ocean input to river component
    !
+   ! Arguments
+   character(len=*), intent(in) :: timer
    !
    ! Local Variables
    character(CXX) ::tagname
    integer :: arrsize, ent_type, ierr
-    character(*), parameter  :: subname = '(prep_rof_accum_ocn_moab)'
+   character(*), parameter  :: subname = '(prep_rof_accum_ocn_moab)'
    !---------------------------------------------------------------
+
+   call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
 
    tagname = trim(sharedFieldsOcnRof)//C_NULL_CHAR
    arrsize = nfields_sh_or * lsize_om
@@ -1083,72 +980,13 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
       o2racc_om = o2racc_om + o2r_om2
    endif
    o2racc_om_cnt = o2racc_om_cnt + 1
-
-
-    !---------------------------------------------------------------
-
-
-   !  do eoi = 1,num_inst_ocn
-   !     o2x_ox => component_get_c2x_cx(ocn(eoi))
-   !     if (o2racc_ox_cnt == 0) then
-   !        call mct_avect_copy(o2x_ox, o2racc_ox(eoi))
-   !     else
-   !        call mct_avect_accum(o2x_ox, o2racc_ox(eoi))
-   !     endif
-   !  end do
-   !  o2racc_ox_cnt = o2racc_ox_cnt + 1
-
+   call t_drvstopf (trim(timer))
 
   end subroutine prep_rof_accum_ocn_moab
 
-  !================================================================================================
-
-  subroutine prep_rof_accum_avg(timer)
-
-    !---------------------------------------------------------------
-    ! Description
-    ! Finalize accumulation of land input to river component
-    !
-    ! Arguments
-    character(len=*), intent(in) :: timer
-    !
-    ! Local Variables
-    integer :: eri, eli, eai, eoi
-    character(*), parameter :: subname = '(prep_rof_accum_avg)'
-    !---------------------------------------------------------------
-
-    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-    if(l2racc_lx_cnt > 1) then
-       do eri = 1,num_inst_rof
-          eli = mod((eri-1),num_inst_lnd) + 1
-          call mct_avect_avg(l2racc_lx(eli),l2racc_lx_cnt)
-       enddo
-    endif
-    l2racc_lx_cnt = 0
-
-    if((a2racc_ax_cnt > 1) .and. rof_heat) then
-       do eri = 1,num_inst_rof
-          eai = mod((eri-1),num_inst_atm) + 1
-          call mct_avect_avg(a2racc_ax(eai),a2racc_ax_cnt)
-       enddo
-    endif
-    a2racc_ax_cnt = 0
-
-    if(o2racc_ox_cnt > 1) then
-       do eri = 1,num_inst_rof
-          eoi = mod((eri-1),num_inst_ocn) + 1
-          call mct_avect_avg(o2racc_ox(eoi),o2racc_ox_cnt)
-       enddo
-    endif
-    o2racc_ox_cnt = 0
-
-    call t_drvstopf (trim(timer))
-
-  end subroutine prep_rof_accum_avg
-
  !================================================================================================
 
-  subroutine prep_rof_accum_avg_moab(ocn_c2_rof)
+  subroutine prep_rof_accum_avg_moab(timer, ocn_c2_rof)
 
     !---------------------------------------------------------------
     ! Description
@@ -1156,6 +994,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     use iMOAB, only : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
     use seq_comm_mct, only : num_moab_exports ! for debug
     ! Arguments
+    character(len=*), intent(in) :: timer
     logical,intent(in) :: ocn_c2_rof
     !
     ! Local Variables
@@ -1167,6 +1006,8 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
 #endif
     character(*), parameter :: subname = '(prep_rof_accum_avg_moab)'
     !---------------------------------------------------------------
+
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     if(l2racc_lm_cnt > 1) then
        ravg = 1.0_R8/real(l2racc_lm_cnt, R8)
        l2racc_lm = l2racc_lm * ravg
@@ -1249,352 +1090,22 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
      endif
     endif
 #endif
+    call t_drvstopf (trim(timer))
 
   end subroutine prep_rof_accum_avg_moab
 
 
   !================================================================================================
 
-  subroutine prep_rof_mrg(infodata, fractions_rx, timer_mrg, cime_model)
-
-    !---------------------------------------------------------------
-    ! Description
-    ! Merge rof inputs
-    !
-    ! Arguments
-    type(seq_infodata_type) , intent(in)    :: infodata
-    type(mct_aVect)         , intent(in)    :: fractions_rx(:)
-    character(len=*)        , intent(in)    :: timer_mrg
-    character(len=*)        , intent(in)    :: cime_model
-    !
-    ! Local Variables
-    integer                  :: eri, efi, eoi
-    type(mct_aVect), pointer :: x2r_rx
-    character(*), parameter  :: subname = '(prep_rof_mrg)'
-    !---------------------------------------------------------------
-
-    call t_drvstartf (trim(timer_mrg), barrier=mpicom_CPLID)
-    do eri = 1,num_inst_rof
-       efi = mod((eri-1),num_inst_frc) + 1
-
-       x2r_rx => component_get_x2c_cx(rof(eri))  ! This is actually modifying x2r_rx
-       if(ocn_rof_two_way) then
-         call prep_rof_merge(l2r_rx(eri), a2r_rx(eri), fractions_rx(efi), x2r_rx, cime_model, o2x_r=o2r_rx(eri))
-       else
-         call prep_rof_merge(l2r_rx(eri), a2r_rx(eri), fractions_rx(efi), x2r_rx, cime_model)
-       end if
-
-    end do
-    call t_drvstopf (trim(timer_mrg))
-
-  end subroutine prep_rof_mrg
-
-  !================================================================================================
-
-  subroutine prep_rof_merge(l2x_r, a2x_r, fractions_r, x2r_r, cime_model,o2x_r)
-
-    !-----------------------------------------------------------------------
-    ! Description
-    ! Merge land rof and ice forcing for rof input
-    !
-    ! Arguments
-    type(mct_aVect),intent(in)    :: l2x_r
-    type(mct_aVect),intent(in)    :: a2x_r
-    type(mct_aVect),intent(in)    :: fractions_r
-    type(mct_aVect),intent(inout) :: x2r_r
-    character(len=*)        , intent(in)    :: cime_model
-    type(mct_aVect),intent(in),optional  :: o2x_r
-    !
-    ! Local variables
-    integer       :: i
-    integer, save :: index_l2x_Flrl_rofsur
-    integer, save :: index_l2x_Flrl_rofgwl
-    integer, save :: index_l2x_Flrl_rofsub
-    integer, save :: index_l2x_Flrl_rofdto
-    integer, save :: index_l2x_Flrl_rofi
-    integer, save :: index_l2x_Flrl_demand
-    integer, save :: index_l2x_Flrl_irrig
-    integer, save :: index_x2r_Flrl_rofsur
-    integer, save :: index_x2r_Flrl_rofgwl
-    integer, save :: index_x2r_Flrl_rofsub
-    integer, save :: index_x2r_Flrl_rofdto
-    integer, save :: index_x2r_Flrl_rofi
-    integer, save :: index_x2r_Flrl_demand
-    integer, save :: index_x2r_Flrl_irrig
-    integer, save :: index_l2x_Flrl_rofl_16O
-    integer, save :: index_l2x_Flrl_rofi_16O
-    integer, save :: index_x2r_Flrl_rofl_16O
-    integer, save :: index_x2r_Flrl_rofi_16O
-    integer, save :: index_l2x_Flrl_rofl_18O
-    integer, save :: index_l2x_Flrl_rofi_18O
-    integer, save :: index_x2r_Flrl_rofl_18O
-    integer, save :: index_x2r_Flrl_rofi_18O
-    integer, save :: index_l2x_Flrl_rofl_HDO
-    integer, save :: index_l2x_Flrl_rofi_HDO
-    integer, save :: index_x2r_Flrl_rofl_HDO
-    integer, save :: index_x2r_Flrl_rofi_HDO
-
-    integer, save :: index_l2x_Flrl_Tqsur
-    integer, save :: index_l2x_Flrl_Tqsub
-    integer, save :: index_a2x_Sa_tbot
-    integer, save :: index_a2x_Sa_pbot
-    integer, save :: index_a2x_Sa_u
-    integer, save :: index_a2x_Sa_v
-    integer, save :: index_a2x_Sa_shum
-    integer, save :: index_a2x_Faxa_swndr
-    integer, save :: index_a2x_Faxa_swndf
-    integer, save :: index_a2x_Faxa_swvdr
-    integer, save :: index_a2x_Faxa_swvdf
-    integer, save :: index_a2x_Faxa_lwdn
-    integer, save :: index_x2r_Flrl_Tqsur
-    integer, save :: index_x2r_Flrl_Tqsub
-    integer, save :: index_x2r_Sa_tbot
-    integer, save :: index_x2r_Sa_pbot
-    integer, save :: index_x2r_Sa_u
-    integer, save :: index_x2r_Sa_v
-    integer, save :: index_x2r_Sa_shum
-    integer, save :: index_x2r_Faxa_swndr
-    integer, save :: index_x2r_Faxa_swndf
-    integer, save :: index_x2r_Faxa_swvdr
-    integer, save :: index_x2r_Faxa_swvdf
-    integer, save :: index_x2r_Faxa_lwdn
-
-    integer, save :: index_l2x_Flrl_inundinf
-    integer, save :: index_x2r_Flrl_inundinf
-    integer, save :: index_x2r_So_ssh
-    integer, save :: index_o2x_So_ssh
-
-    integer, save :: index_l2x_coszen_str
-    integer, save :: index_x2r_coszen_str
-
-    integer, save :: index_frac
-    real(R8)      :: frac
-    character(CL) :: fracstr
-    logical, save :: first_time = .true.
-    logical, save :: flds_wiso_rof = .false.
-    integer       :: nflds,lsize
-    logical       :: iamroot
-    character(CL) :: field        ! field string
-    character(CL),allocatable :: mrgstr(:)   ! temporary string
-    character(*), parameter   :: subname = '(prep_rof_merge) '
-
-    !-----------------------------------------------------------------------
-
-    call seq_comm_getdata(CPLID, iamroot=iamroot)
-    lsize = mct_aVect_lsize(x2r_r)
-
-    if (first_time) then
-       nflds = mct_aVect_nRattr(x2r_r)
-
-       allocate(mrgstr(nflds))
-       do i = 1,nflds
-          field = mct_aVect_getRList2c(i, x2r_r)
-          mrgstr(i) = subname//'x2r%'//trim(field)//' ='
-       enddo
-
-       index_l2x_Flrl_rofsur = mct_aVect_indexRA(l2x_r,'Flrl_rofsur' )
-       index_l2x_Flrl_rofgwl = mct_aVect_indexRA(l2x_r,'Flrl_rofgwl' )
-       index_l2x_Flrl_rofsub = mct_aVect_indexRA(l2x_r,'Flrl_rofsub' )
-       index_l2x_Flrl_rofdto = mct_aVect_indexRA(l2x_r,'Flrl_rofdto' )
-       if (have_irrig_field) then
-          index_l2x_Flrl_irrig  = mct_aVect_indexRA(l2x_r,'Flrl_irrig' )
-       end if
-       index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_r,'Flrl_rofi' )
-       index_l2x_Flrl_demand = mct_aVect_indexRA(l2x_r,'Flrl_demand' )
-
-       index_x2r_Flrl_demand = mct_aVect_indexRA(x2r_r,'Flrl_demand' )
-       index_x2r_Flrl_rofsur = mct_aVect_indexRA(x2r_r,'Flrl_rofsur' )
-       index_x2r_Flrl_rofgwl = mct_aVect_indexRA(x2r_r,'Flrl_rofgwl' )
-       index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub' )
-       index_x2r_Flrl_rofdto = mct_aVect_indexRA(x2r_r,'Flrl_rofdto' )
-       index_x2r_Flrl_rofi   = mct_aVect_indexRA(x2r_r,'Flrl_rofi' )
-
-       if (have_irrig_field) then
-          index_x2r_Flrl_irrig  = mct_aVect_indexRA(x2r_r,'Flrl_irrig' )
-       end if
-       index_l2x_Flrl_Tqsur = mct_aVect_indexRA(l2x_r,'Flrl_Tqsur' )
-       index_l2x_Flrl_Tqsub = mct_aVect_indexRA(l2x_r,'Flrl_Tqsub' )
-       index_x2r_Flrl_Tqsur = mct_aVect_indexRA(x2r_r,'Flrl_Tqsur' )
-       index_x2r_Flrl_Tqsub = mct_aVect_indexRA(x2r_r,'Flrl_Tqsub' )
-
-       index_l2x_Flrl_rofl_16O = mct_aVect_indexRA(l2x_r,'Flrl_rofl_16O', perrWith='quiet' )
-       if ( index_l2x_Flrl_rofl_16O /= 0 ) flds_wiso_rof = .true.
-       if ( flds_wiso_rof ) then
-          index_l2x_Flrl_rofi_16O = mct_aVect_indexRA(l2x_r,'Flrl_rofi_16O' )
-          index_x2r_Flrl_rofl_16O = mct_aVect_indexRA(x2r_r,'Flrl_rofl_16O' )
-          index_x2r_Flrl_rofi_16O = mct_aVect_indexRA(x2r_r,'Flrl_rofi_16O' )
-
-          index_l2x_Flrl_rofl_18O = mct_aVect_indexRA(l2x_r,'Flrl_rofl_18O' )
-          index_l2x_Flrl_rofi_18O = mct_aVect_indexRA(l2x_r,'Flrl_rofi_18O' )
-          index_x2r_Flrl_rofl_18O = mct_aVect_indexRA(x2r_r,'Flrl_rofl_18O' )
-          index_x2r_Flrl_rofi_18O = mct_aVect_indexRA(x2r_r,'Flrl_rofi_18O' )
-
-          index_l2x_Flrl_rofl_HDO = mct_aVect_indexRA(l2x_r,'Flrl_rofl_HDO' )
-          index_l2x_Flrl_rofi_HDO = mct_aVect_indexRA(l2x_r,'Flrl_rofi_HDO' )
-          index_x2r_Flrl_rofl_HDO = mct_aVect_indexRA(x2r_r,'Flrl_rofl_HDO' )
-          index_x2r_Flrl_rofi_HDO = mct_aVect_indexRA(x2r_r,'Flrl_rofi_HDO' )
-       end if
-
-       if (samegrid_al) then
-          index_frac = mct_aVect_indexRA(fractions_r,"lfrac")
-          fracstr = 'lfrac'
-       else
-          index_frac = mct_aVect_indexRA(fractions_r,"lfrin")
-          fracstr = 'lfrin'
-       endif
-
-       mrgstr(index_x2r_Flrl_rofsur) = trim(mrgstr(index_x2r_Flrl_rofsur))//' = '// &
-            trim(fracstr)//'*l2x%Flrl_rofsur'
-       mrgstr(index_x2r_Flrl_rofgwl) = trim(mrgstr(index_x2r_Flrl_rofgwl))//' = '// &
-            trim(fracstr)//'*l2x%Flrl_rofgwl'
-       mrgstr(index_x2r_Flrl_rofsub) = trim(mrgstr(index_x2r_Flrl_rofsub))//' = '// &
-            trim(fracstr)//'*l2x%Flrl_rofsub'
-       mrgstr(index_x2r_Flrl_rofdto) = trim(mrgstr(index_x2r_Flrl_rofdto))//' = '// &
-            trim(fracstr)//'*l2x%Flrl_rofdto'
-       mrgstr(index_x2r_Flrl_rofi) = trim(mrgstr(index_x2r_Flrl_rofi))//' = '// &
-            trim(fracstr)//'*l2x%Flrl_rofi'
-       mrgstr(index_x2r_Flrl_demand) = trim(mrgstr(index_x2r_Flrl_demand))//' = '// &
-               trim(fracstr)//'*l2x%Flrl_demand'
-       if (have_irrig_field) then
-          mrgstr(index_x2r_Flrl_irrig) = trim(mrgstr(index_x2r_Flrl_irrig))//' = '// &
-               trim(fracstr)//'*l2x%Flrl_irrig'
-       end if
-       mrgstr(index_x2r_Flrl_Tqsur) = trim(mrgstr(index_x2r_Flrl_Tqsur))//' = '//'l2x%Flrl_Tqsur'
-       mrgstr(index_x2r_Flrl_Tqsub) = trim(mrgstr(index_x2r_Flrl_Tqsub))//' = '//'l2x%Flrl_Tqsub'
-       if ( flds_wiso_rof ) then
-          mrgstr(index_x2r_Flrl_rofl_16O) = trim(mrgstr(index_x2r_Flrl_rofl_16O))//' = '// &
-               trim(fracstr)//'*l2x%Flrl_rofl_16O'
-          mrgstr(index_x2r_Flrl_rofi_16O) = trim(mrgstr(index_x2r_Flrl_rofi_16O))//' = '// &
-               trim(fracstr)//'*l2x%Flrl_rofi_16O'
-          mrgstr(index_x2r_Flrl_rofl_18O) = trim(mrgstr(index_x2r_Flrl_rofl_18O))//' = '// &
-               trim(fracstr)//'*l2x%Flrl_rofl_18O'
-          mrgstr(index_x2r_Flrl_rofi_18O) = trim(mrgstr(index_x2r_Flrl_rofi_18O))//' = '// &
-               trim(fracstr)//'*l2x%Flrl_rofi_18O'
-          mrgstr(index_x2r_Flrl_rofl_HDO) = trim(mrgstr(index_x2r_Flrl_rofl_HDO))//' = '// &
-               trim(fracstr)//'*l2x%Flrl_rofl_HDO'
-          mrgstr(index_x2r_Flrl_rofi_HDO) = trim(mrgstr(index_x2r_Flrl_rofi_HDO))//' = '// &
-               trim(fracstr)//'*l2x%Flrl_rofi_HDO'
-       end if
-
-       if ( rof_heat ) then
-          index_a2x_Sa_tbot    = mct_aVect_indexRA(a2x_r,'Sa_tbot')
-          index_a2x_Sa_pbot    = mct_aVect_indexRA(a2x_r,'Sa_pbot')
-          index_a2x_Sa_u       = mct_aVect_indexRA(a2x_r,'Sa_u')
-          index_a2x_Sa_v       = mct_aVect_indexRA(a2x_r,'Sa_v')
-          index_a2x_Sa_shum    = mct_aVect_indexRA(a2x_r,'Sa_shum')
-          index_a2x_Faxa_swndr = mct_aVect_indexRA(a2x_r,'Faxa_swndr')
-          index_a2x_Faxa_swndf = mct_aVect_indexRA(a2x_r,'Faxa_swndf')
-          index_a2x_Faxa_swvdr = mct_aVect_indexRA(a2x_r,'Faxa_swvdr')
-          index_a2x_Faxa_swvdf = mct_aVect_indexRA(a2x_r,'Faxa_swvdf')
-          index_a2x_Faxa_lwdn  = mct_aVect_indexRA(a2x_r,'Faxa_lwdn')
-
-          index_x2r_Sa_tbot    = mct_aVect_indexRA(x2r_r,'Sa_tbot')
-          index_x2r_Sa_pbot    = mct_aVect_indexRA(x2r_r,'Sa_pbot')
-          index_x2r_Sa_u       = mct_aVect_indexRA(x2r_r,'Sa_u')
-          index_x2r_Sa_v       = mct_aVect_indexRA(x2r_r,'Sa_v')
-          index_x2r_Sa_shum    = mct_aVect_indexRA(x2r_r,'Sa_shum')
-          index_x2r_Faxa_swndr = mct_aVect_indexRA(x2r_r,'Faxa_swndr')
-          index_x2r_Faxa_swndf = mct_aVect_indexRA(x2r_r,'Faxa_swndf')
-          index_x2r_Faxa_swvdr = mct_aVect_indexRA(x2r_r,'Faxa_swvdr')
-          index_x2r_Faxa_swvdf = mct_aVect_indexRA(x2r_r,'Faxa_swvdf')
-          index_x2r_Faxa_lwdn  = mct_aVect_indexRA(x2r_r,'Faxa_lwdn')
-
-          mrgstr(index_x2r_Sa_tbot)    = trim(mrgstr(index_x2r_Sa_tbot))//' = '//'a2x%Sa_tbot'
-          mrgstr(index_x2r_Sa_pbot)    = trim(mrgstr(index_x2r_Sa_pbot))//' = '//'a2x%Sa_pbot'
-          mrgstr(index_x2r_Sa_u)       = trim(mrgstr(index_x2r_Sa_u))//' = '//'a2x%Sa_u'
-          mrgstr(index_x2r_Sa_v)       = trim(mrgstr(index_x2r_Sa_v))//' = '//'a2x%Sa_v'
-          mrgstr(index_x2r_Sa_shum)    = trim(mrgstr(index_x2r_Sa_shum))//' = '//'a2x%Sa_shum'
-          mrgstr(index_x2r_Faxa_swndr) = trim(mrgstr(index_x2r_Faxa_swndr))//' = '//'a2x%Faxa_swndr'
-          mrgstr(index_x2r_Faxa_swndf) = trim(mrgstr(index_x2r_Faxa_swndf))//' = '//'a2x%Faxa_swndf'
-          mrgstr(index_x2r_Faxa_swvdr) = trim(mrgstr(index_x2r_Faxa_swvdr))//' = '//'a2x%Faxa_swvdr'
-          mrgstr(index_x2r_Faxa_swvdf) = trim(mrgstr(index_x2r_Faxa_swvdf))//' = '//'a2x%Faxa_swvdf'
-          mrgstr(index_x2r_Faxa_lwdn)  = trim(mrgstr(index_x2r_Faxa_lwdn))//' = '//'a2x%Faxa_lwdn'
-
-          if (lnd_rof_two_way) then
-             index_l2x_Flrl_inundinf = mct_aVect_indexRA(l2x_r,'Flrl_inundinf')
-             index_x2r_Flrl_inundinf = mct_aVect_indexRA(x2r_r,'Flrl_inundinf')
-             mrgstr(index_x2r_Flrl_inundinf) = trim(mrgstr(index_x2r_Flrl_inundinf))//' = '//'l2x%Flrl_inundinf'
-          endif
-
-       endif
-
-       if (ocn_rof_two_way) then
-          index_o2x_So_ssh = mct_aVect_indexRA(o2x_r,'So_ssh')
-          index_x2r_So_ssh = mct_aVect_indexRA(x2r_r,'So_ssh')
-          mrgstr(index_x2r_So_ssh)       = trim(mrgstr(index_x2r_So_ssh))//' = '//'o2x%So_ssh'
-       endif
-
-    end if
-
-    do i = 1,lsize
-       frac = fractions_r%rAttr(index_frac,i)
-       x2r_r%rAttr(index_x2r_Flrl_rofsur,i) = l2x_r%rAttr(index_l2x_Flrl_rofsur,i) * frac
-       x2r_r%rAttr(index_x2r_Flrl_rofgwl,i) = l2x_r%rAttr(index_l2x_Flrl_rofgwl,i) * frac
-       x2r_r%rAttr(index_x2r_Flrl_rofsub,i) = l2x_r%rAttr(index_l2x_Flrl_rofsub,i) * frac
-       x2r_r%rAttr(index_x2r_Flrl_rofdto,i) = l2x_r%rAttr(index_l2x_Flrl_rofdto,i) * frac
-       x2r_r%rAttr(index_x2r_Flrl_rofi,i) = l2x_r%rAttr(index_l2x_Flrl_rofi,i) * frac
-       x2r_r%rAttr(index_x2r_Flrl_demand,i) = l2x_r%rAttr(index_l2x_Flrl_demand,i) * frac
-       if (have_irrig_field) then
-          x2r_r%rAttr(index_x2r_Flrl_irrig,i) = l2x_r%rAttr(index_l2x_Flrl_irrig,i) * frac
-       end if
-       x2r_r%rAttr(index_x2r_Flrl_Tqsur,i) = l2x_r%rAttr(index_l2x_Flrl_Tqsur,i)
-       x2r_r%rAttr(index_x2r_Flrl_Tqsub,i) = l2x_r%rAttr(index_l2x_Flrl_Tqsub,i)
-       if ( flds_wiso_rof ) then
-          x2r_r%rAttr(index_x2r_Flrl_rofl_16O,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_16O,i) * frac
-          x2r_r%rAttr(index_x2r_Flrl_rofi_16O,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_16O,i) * frac
-          x2r_r%rAttr(index_x2r_Flrl_rofl_18O,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_18O,i) * frac
-          x2r_r%rAttr(index_x2r_Flrl_rofi_18O,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_18O,i) * frac
-          x2r_r%rAttr(index_x2r_Flrl_rofl_HDO,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_HDO,i) * frac
-          x2r_r%rAttr(index_x2r_Flrl_rofi_HDO,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_HDO,i) * frac
-       end if
-
-       if ( rof_heat ) then
-          x2r_r%rAttr(index_x2r_Sa_tbot,i)    = a2x_r%rAttr(index_a2x_Sa_tbot,i)
-          x2r_r%rAttr(index_x2r_Sa_pbot,i)    = a2x_r%rAttr(index_a2x_Sa_pbot,i)
-          x2r_r%rAttr(index_x2r_Sa_u,i)       = a2x_r%rAttr(index_a2x_Sa_u,i)
-          x2r_r%rAttr(index_x2r_Sa_v,i)       = a2x_r%rAttr(index_a2x_Sa_v,i)
-          x2r_r%rAttr(index_x2r_Sa_shum,i)    = a2x_r%rAttr(index_a2x_Sa_shum,i)
-          x2r_r%rAttr(index_x2r_Faxa_swndr,i) = a2x_r%rAttr(index_a2x_Faxa_swndr,i)
-          x2r_r%rAttr(index_x2r_Faxa_swndf,i) = a2x_r%rAttr(index_a2x_Faxa_swndf,i)
-          x2r_r%rAttr(index_x2r_Faxa_swvdr,i) = a2x_r%rAttr(index_a2x_Faxa_swvdr,i)
-          x2r_r%rAttr(index_x2r_Faxa_swvdf,i) = a2x_r%rAttr(index_a2x_Faxa_swvdf,i)
-          x2r_r%rAttr(index_x2r_Faxa_lwdn,i)  = a2x_r%rAttr(index_a2x_Faxa_lwdn,i)
-       endif
-
-       if (lnd_rof_two_way) then
-         x2r_r%rAttr(index_x2r_Flrl_inundinf,i) = l2x_r%rAttr(index_l2x_Flrl_inundinf,i)
-       endif
-
-    end do
-
-    if (ocn_rof_two_way) then
-       do i =1,lsize
-          x2r_r%rAttr(index_x2r_So_ssh,i)        = o2x_r%rAttr(index_o2x_So_ssh,i)
-       enddo
-    endif
-
-    if (first_time) then
-       if (iamroot) then
-          write(logunit,'(A)') subname//' Summary:'
-          do i = 1,nflds
-             write(logunit,'(A)') trim(mrgstr(i))
-          enddo
-       endif
-       deallocate(mrgstr)
-    endif
-
-    first_time = .false.
-
-  end subroutine prep_rof_merge
-  subroutine prep_rof_mrg_moab  (infodata, cime_model)
+  subroutine prep_rof_mrg_moab  (infodata, timer_mrg)
    use iMOAB , only : iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
      iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
      use seq_comm_mct, only : num_moab_exports ! for debug
 
     type(seq_infodata_type) , intent(in)    :: infodata
+    character(len=*)        , intent(in)    :: timer_mrg
 
     ! type(mct_aVect)         , intent(in)    :: fractions_rx(:) they should have been saved as tags on rof coupler component
-    character(len=*)        , intent(in)    :: cime_model
     !-----------------------------------------------------------------------
     ! Description
     ! Merge land rof and ice forcing for rof input
@@ -1681,14 +1192,9 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
 #endif
-#ifdef MOABCOMP
-    real(R8)                 :: difference
-    type(mct_list) :: temp_list
-    integer :: size_list, index_list
-    type(mct_string)    :: mctOStr  !
-#endif
     !-----------------------------------------------------------------------
 
+    call t_drvstartf (trim(timer_mrg), barrier=mpicom_CPLID)
     call seq_comm_getdata(CPLID, iamroot=iamroot)
 
 ! character(*),parameter :: fraclist_r = 'lfrac:lfrin:rfrac'
@@ -1946,22 +1452,6 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     endif
 
 
-#ifdef MOABCOMP
-  !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
-    x2r_r => component_get_x2c_cx(rof(1))
-    ! loop over all fields in seq_flds_x2r_fields
-    call mct_list_init(temp_list ,seq_flds_x2r_fields)
-    size_list=mct_list_nitem (temp_list)
-    ent_type = 1 ! cell for river
-    if (iamroot) print *, num_moab_exports, trim(seq_flds_x2r_fields)
-    do index_list = 1, size_list
-      call mct_list_get(mctOStr,index_list,temp_list)
-      mct_field = mct_string_toChar(mctOStr)
-      tagname= trim(mct_field)//C_NULL_CHAR
-      call compare_mct_av_moab_tag(rof(1), x2r_r, mct_field,  mbrxid, tagname, ent_type, difference, first_time)
-    enddo
-    call mct_list_clean(temp_list)
-#endif
     first_time = .false.
 #ifdef MOABDEBUG
 
@@ -1972,6 +1462,8 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
      ierr = iMOAB_WriteMesh(mbrxid, trim(outfile), trim(wopts))
    endif
 #endif
+
+    call t_drvstopf (trim(timer_mrg))
 
   end subroutine prep_rof_mrg_moab
   !================================================================================================

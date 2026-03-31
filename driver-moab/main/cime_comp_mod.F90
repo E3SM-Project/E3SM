@@ -126,7 +126,7 @@ module cime_comp_mod
   use seq_hist_mod, only : seq_hist_write, seq_hist_writeavg, seq_hist_writeaux
 
   ! restart file routines
-  use seq_rest_mod, only : seq_rest_read, seq_rest_mb_read, seq_rest_write, seq_rest_mb_write
+  use seq_rest_mod, only : seq_rest_mb_read, seq_rest_mb_write
 #ifdef MOABDEBUG
   use seq_rest_mod, only : write_moab_state
   use iMOAB, only: iMOAB_GetDoubleTagStorage, iMOAB_GetMeshInfo
@@ -175,7 +175,7 @@ module cime_comp_mod
   use component_mod,      only: component_init_pre
   use component_mod,      only: component_init_cc, component_init_cx
   use component_mod,      only: component_run, component_final
-  use component_mod,      only: component_init_areacor, component_init_aream
+  use component_mod,      only: component_init_aream
   use component_mod,      only: component_init_areacor_moab
   use component_mod,      only: component_exch, component_diag
   use cplcomp_exchange_mod,      only: component_exch_moab
@@ -206,10 +206,7 @@ module cime_comp_mod
 
   use shr_moab_mod
 
-#ifdef MOABDEBUGMCT
-  ! --- expose grid with MOAB
-  use component_type_mod , only: expose_mct_grid_moab
-#endif
+
 
   use iso_c_binding
 
@@ -1454,9 +1451,7 @@ contains
      seq_flds_o2x_fields, seq_flds_r2x_fields, seq_flds_i2x_fields
     use seq_comm_mct , only :  mphaid, mbaxid, mlnid, mblxid,  mrofid, mbrxid, mpoid, mboxid,  mpsiid, mbixid
     use seq_comm_mct,        only: num_moab_exports  ! used to count the steps for moab files
-#ifdef MOABDEBUGMCT
-    integer :: dummy_iMOAB
-#endif
+
     integer :: nfields, numpts
     type(mct_list) :: temp_list
 
@@ -2187,35 +2182,29 @@ contains
     num_moab_exports = 0
 
     call mpi_barrier(mpicom_GLOID,ierr)
-    if (atm_present) call component_init_areacor(atm, areafact_samegrid, seq_flds_a2x_fluxes)
-    ! send initial data to coupler
     if (atm_present) call component_init_areacor_moab(atm, areafact_samegrid, mphaid, mbaxid, seq_flds_a2x_fluxes, seq_flds_a2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
-    if (lnd_present) call component_init_areacor(lnd, areafact_samegrid, seq_flds_l2x_fluxes)
-    ! MOABTODO : lnd is vertex or cell ?
     if (lnd_present) call component_init_areacor_moab(lnd, areafact_samegrid, mlnid, mblxid, seq_flds_l2x_fluxes, seq_flds_l2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
-    if (rof_present) call component_init_areacor(rof, areafact_samegrid, seq_flds_r2x_fluxes)
     if (rof_present) call component_init_areacor_moab(rof, areafact_samegrid, mrofid, mbrxid, seq_flds_r2x_fluxes, seq_flds_r2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
-    if (ocn_present) call component_init_areacor(ocn, areafact_samegrid, seq_flds_o2x_fluxes)
     if (ocn_present) call component_init_areacor_moab(ocn, areafact_samegrid, mpoid, mboxid, seq_flds_o2x_fluxes, seq_flds_o2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
-    if (ice_present) call component_init_areacor(ice, areafact_samegrid, seq_flds_i2x_fluxes)
     if (ice_present) call component_init_areacor_moab(ice, areafact_samegrid, mpsiid, mbixid, seq_flds_i2x_fluxes, seq_flds_i2x_fields)
 
+    ! MOAB TODO: convert these to moab
     call mpi_barrier(mpicom_GLOID,ierr)
-    if (glc_present) call component_init_areacor(glc, areafact_samegrid, seq_flds_g2x_fluxes)
+    !if (glc_present) call component_init_areacor(glc, areafact_samegrid, seq_flds_g2x_fluxes)
 
     call mpi_barrier(mpicom_GLOID,ierr)
-    if (wav_present) call component_init_areacor(wav, areafact_samegrid, seq_flds_w2x_fluxes)
+    !if (wav_present) call component_init_areacor(wav, areafact_samegrid, seq_flds_w2x_fluxes)
 
     call mpi_barrier(mpicom_GLOID,ierr)
-    if (iac_present) call component_init_areacor(iac, areafact_samegrid, seq_flds_z2x_fluxes)
+    !if (iac_present) call component_init_areacor(iac, areafact_samegrid, seq_flds_z2x_fluxes)
 
     call t_adj_detailf(-2)
     call t_stopf ('CPL:init_areacor')
@@ -2452,10 +2441,7 @@ contains
              xao_ax => prep_aoflux_get_xao_ax()
              if (associated(xao_ax)) then
                 ! will call prep_atm_merge for each instance.
-                call  prep_atm_mrg(infodata, &
-                     fractions_ax=fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:init_atminit')
-                     ! MOAB
-                call  prep_atm_mrg_moab(infodata, xao_ax)
+                call  prep_atm_mrg_moab(infodata, xao_ax, timer_mrg='CPL:init_atminit')
              endif
           endif
 
@@ -2530,23 +2516,12 @@ contains
     if (read_restart .and. iamin_CPLID) then
 
        if (iamroot_CPLID) then
-          write(logunit,103) subname,' Reading restart file ',trim(rest_file)
-          call shr_sys_flush(logunit)
-       end if
-
-       call t_startf('CPL:seq_rest_read-init')
-       call seq_rest_read(rest_file, infodata, &
-            atm, lnd, ice, ocn, rof, glc, wav, esp, iac, &
-            fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-            fractions_rx, fractions_gx, fractions_wx, fractions_zx)
-       call t_stopf('CPL:seq_rest_read-init')
-       if (iamroot_CPLID) then
           write(logunit,103) subname,' Reading moab restart file ','moab_'//trim(rest_file)
           call shr_sys_flush(logunit)
        end if
-       call t_startf('CPL:seq_rest_read-moab')
+       call t_startf('CPL:seq_rest_read-init')
        call seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
-       call t_stopf('CPL:seq_rest_read-moab')
+       call t_stopf('CPL:seq_rest_read-init')
 #ifdef MOABDEBUG
        call write_moab_state(.false.)
 #endif
@@ -2640,33 +2615,7 @@ contains
        call shr_sys_flush(logunit)
     endif
 
-#ifdef MOABDEBUGMCT
-    if (iamroot_CPLID )then
-       write(logunit,*) ' '
-       write(logunit,F00) ' start output mct data with MOAB '
-       write(logunit,*) ' '
-       call shr_sys_flush(logunit)
-    endif
-    if (atm_present) then
-      call expose_mct_grid_moab(atm(1), dummy_iMOAB)
-    endif
-    if (lnd_present) then
-      call expose_mct_grid_moab(lnd(1), dummy_iMOAB)
-    endif
-    if (ocn_present) then
-      call expose_mct_grid_moab(ocn(1), dummy_iMOAB)
-    endif
-    if (ice_present) then
-      call expose_mct_grid_moab(ice(1), dummy_iMOAB)
-    endif
-    if (rof_present) then
-      call expose_mct_grid_moab(rof(1), dummy_iMOAB)
-    endif
-    if (glc_present) then
-      call expose_mct_grid_moab(glc(1), dummy_iMOAB)
-    endif
 
-#endif
 
     call t_adj_detailf(-1)
     call t_stopf('CPL:cime_init')
@@ -3586,21 +3535,15 @@ contains
              call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_READ_BARRIER')
              call t_drvstartf ('CPL:RESTART_READ',cplrun=.true.,barrier=mpicom_CPLID)
              call t_startf('CPL:seq_rest_read')
-             call seq_rest_read(drv_resume_file, infodata,                     &
-                  atm, lnd, ice, ocn, rof, glc, wav, esp, iac,                 &
-                  fractions_ax, fractions_lx, fractions_ix, fractions_ox,      &
-                  fractions_rx, fractions_gx, fractions_wx, fractions_zx)
-             call t_stopf('CPL:seq_rest_read')
-
-             call t_drvstopf  ('CPL:RESTART_READ',cplrun=.true.)
 
              if (iamroot_CPLID) then
                write(logunit,103) subname,' resume by moab restart file ','moab_'//trim(drv_resume_file)
                call shr_sys_flush(logunit)
              end if
-             call t_startf('CPL:seq_rest_read-moab')
              call seq_rest_mb_read(drv_resume_file, infodata, samegrid_al, samegrid_lr)
-             call t_stopf('CPL:seq_rest_read-moab')
+
+             call t_stopf('CPL:seq_rest_read')
+             call t_drvstopf  ('CPL:RESTART_READ',cplrun=.true.)
           end if
           ! Clear the resume file so we don't try to read it again
           drv_resume = .FALSE.
@@ -4139,9 +4082,7 @@ contains
           call prep_atm_calc_z2x_ax(fractions_zx, timer='CPL:atmprep_iac2atm')
        endif
        if (associated(xao_ax)) then
-          call prep_atm_mrg(infodata, fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:atmprep_mrgx2a')
-          ! call moab atm merge too
-          call  prep_atm_mrg_moab(infodata, xao_ax)
+          call  prep_atm_mrg_moab(infodata, xao_ax, timer_mrg='CPL:atmprep_mrgx2a')
        endif
 
        call component_diag(infodata, atm, flow='x2c', comment= 'send atm', info_debug=info_debug, &
@@ -4192,8 +4133,7 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        if (atm_c2_rof) then
-          call prep_rof_accum_atm(timer='CPL:atmpost_acca2r')
-          call prep_rof_accum_atm_moab()
+          call prep_rof_accum_atm_moab(timer='CPL:atmpost_acca2r')
        endif
 
        call component_diag(infodata, atm, flow='c2x', comment= 'recv atm', &
@@ -4237,8 +4177,7 @@ contains
 
        ! finish accumulating ocean inputs
        ! reset the value of x2o_ox with the value in x2oacc_ox (module variable in prep_ocn_mod)
-       call prep_ocn_accum_avg(timer_accum='CPL:ocnprep_avg')
-       call prep_ocn_accum_avg_moab()
+       call prep_ocn_accum_avg_moab(timer_accum='CPL:ocnprep_avg')
 
        call component_diag(infodata, ocn, flow='x2c', comment= 'send ocn', &
             info_debug=info_debug, timer_diag='CPL:ocnprep_diagav')
@@ -4289,8 +4228,7 @@ contains
        call component_diag(infodata, ocn, flow='c2x', comment= 'recv ocn', &
             info_debug=info_debug, timer_diag='CPL:ocnpost_diagav')
 
-       if (ocn_c2_rof) call prep_rof_accum_ocn(timer='CPL:ocnpost_acco2r')
-       if (ocn_c2_rof) call prep_rof_accum_ocn_moab()
+       if (ocn_c2_rof) call prep_rof_accum_ocn_moab(timer='CPL:ocnpost_acco2r')
 
        call cime_run_ocnglc_coupling()
 
@@ -4323,7 +4261,7 @@ contains
        endif
 
 
-       call prep_iac_mrg(infodata, fractions_zx, timer_mrg='CPL:iacprep_mrgx2z')
+      ! call prep_iac_mrg(infodata, fractions_zx, timer_mrg='CPL:iacprep_mrgx2z')
 
        call component_diag(infodata, iac, flow='x2c', comment= 'send iac', &
             info_debug=info_debug, timer_diag='CPL:iacprep_diagav')
@@ -4392,7 +4330,6 @@ contains
   subroutine cime_run_atmocn_setup(hashint)
     integer, intent(inout) :: hashint(:)
 
-    ! call prep_ocn_calc_i2x_ox_moab() ! this does projection from ice to ocean on coupler, by simply matching
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCNP_BARRIER')
        call t_drvstartf ('CPL:ATMOCNP',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(7))
@@ -4414,14 +4351,10 @@ contains
        if (ocn_prognostic) then
           ! ocn prep-merge
           xao_ox => prep_aoflux_get_xao_ox()
-          call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
-
-          ! moab version
-          call prep_ocn_mrg_moab(infodata, xao_ox)
+          call prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
 
           ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
-          call prep_ocn_accum(timer='CPL:atmocnp_accum')
-          call prep_ocn_accum_moab()
+          call prep_ocn_accum_moab(timer='CPL:atmocnp_accum')
        end if
 
        !----------------------------------------------------------
@@ -4509,8 +4442,7 @@ contains
        endif
 
        if (lnd_prognostic) then
-          call prep_lnd_mrg(infodata, timer_mrg='CPL:lndprep_mrgx2l')
-          call prep_lnd_mrg_moab(infodata)
+          call prep_lnd_mrg_moab(infodata, timer_mrg='CPL:lndprep_mrgx2l')
 
           call component_diag(infodata, lnd, flow='x2c', comment= 'send lnd', &
                info_debug=info_debug, timer_diag='CPL:lndprep_diagav')
@@ -4563,8 +4495,7 @@ contains
             info_debug=info_debug, timer_diag='CPL:lndpost_diagav')
 
        ! Accumulate rof and glc inputs (module variables in prep_rof_mod and prep_glc_mod)
-       if (lnd_c2_rof) call prep_rof_accum_lnd(timer='CPL:lndpost_accl2r')
-       if (lnd_c2_rof) call prep_rof_accum_lnd_moab()
+       if (lnd_c2_rof) call prep_rof_accum_lnd_moab(timer='CPL:lndpost_accl2r')
        if (lnd_c2_glc .or. do_hist_l2x1yrg) call prep_glc_accum_lnd(timer='CPL:lndpost_accl2g' )
        if (lnd_c2_iac) call prep_iac_accum(timer='CPL:lndpost_accl2z')
 
@@ -4708,16 +4639,13 @@ contains
        call t_drvstartf ('CPL:ROFPREP', cplrun=.true., barrier=mpicom_CPLID)
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-       call prep_rof_accum_avg(timer='CPL:rofprep_l2xavg')
-       call prep_rof_accum_avg_moab(ocn_c2_rof)
+       call prep_rof_accum_avg_moab(timer='CPL:rofprep_l2xavg', ocn_c2_rof=ocn_c2_rof)
        if (lnd_c2_rof) call prep_rof_calc_l2r_rx(fractions_lx, timer='CPL:rofprep_lnd2rof')
 
        if (atm_c2_rof) call prep_rof_calc_a2r_rx(timer='CPL:rofprep_atm2rof')
 
        if (ocn_c2_rof) call prep_rof_calc_o2r_rx(timer='CPL:rofprep_ocn2rof')
-       call prep_rof_mrg(infodata, fractions_rx, timer_mrg='CPL:rofprep_mrgx2r', cime_model=cime_model)
-       !moab version
-       call prep_rof_mrg_moab(infodata, cime_model=cime_model)
+       call prep_rof_mrg_moab(infodata, timer_mrg='CPL:rofprep_mrgx2r')
 
        call component_diag(infodata, rof, flow='x2c', comment= 'send rof', &
             info_debug=info_debug, timer_diag='CPL:rofprep_diagav')
@@ -4807,9 +4735,7 @@ contains
       !     call prep_ice_calc_a2x_ix(a2x_ox, timer='CPL:iceprep_atm2ice')
       !  endif
 
-       call prep_ice_mrg(infodata, timer_mrg='CPL:iceprep_mrgx2i')
-
-       call prep_ice_mrg_moab(infodata,rof_c2_ice)
+       call prep_ice_mrg_moab(infodata, rof_c2_ice, timer_mrg='CPL:iceprep_mrgx2i')
 
        call component_diag(infodata, ice, flow='x2c', comment= 'send ice', &
             info_debug=info_debug, timer_diag='CPL:iceprep_diagav')
@@ -4883,7 +4809,7 @@ contains
        if (ocn_c2_wav) call prep_wav_calc_o2x_wx(timer='CPL:wavprep_ocn2wav')
        if (ice_c2_wav) call prep_wav_calc_i2x_wx(timer='CPL:wavprep_ice2wav')
 
-       call prep_wav_mrg(infodata, fractions_wx, timer_mrg='CPL:wavprep_mrgx2w')
+       !call prep_wav_mrg(infodata, fractions_wx, timer_mrg='CPL:wavprep_mrgx2w')
 
        call component_diag(infodata, wav, flow='x2c', comment= 'send wav', &
             info_debug=info_debug, timer_diag='CPL:wavprep_diagav')
