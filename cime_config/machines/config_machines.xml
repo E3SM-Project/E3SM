@@ -3237,6 +3237,8 @@
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
+      <resource name="RLIMIT_CORE">-1</resource>
+      <resource name="RLIMIT_OFILE">65535</resource>
     </resource_limits>
   </machine>
 
