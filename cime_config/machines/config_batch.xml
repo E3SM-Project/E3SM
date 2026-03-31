@@ -249,7 +249,7 @@
       <directive> --output={{ job_id }}.\{\{jobid\}\}</directive>
       <directive> -N{{ num_nodes }}</directive>
       <directive> -n{{ total_tasks }}</directive>
-      <directive> -x</directive>
+      <directive> --exclusive</directive>
     </directives>
   </batch_system>
 
