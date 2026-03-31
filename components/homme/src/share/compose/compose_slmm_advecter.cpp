@@ -20,7 +20,7 @@ void Advecter<MT>
 ::init_meta_data (const Int nelem_global, const Int* lid2facenum) {
   const auto nelemd = local_mesh_h_.extent_int(0);
   lid2facenum_ = Ints<DES>("Advecter::lid2facenum", nelemd);
-  lid2facenum_h_ = ko::create_mirror_view(lid2facenum_);
+  lid2facenum_h_ = Ints<HES>("lid2facenum_h", nelemd);
   std::copy(lid2facenum, lid2facenum + nelemd, lid2facenum_h_.data());
   ko::deep_copy(lid2facenum_, lid2facenum_h_);
   s2r_.init(geometry_, cubed_sphere_map_, nelem_global, lid2facenum_, plane_);

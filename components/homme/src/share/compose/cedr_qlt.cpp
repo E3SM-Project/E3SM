@@ -176,7 +176,7 @@ void QLT<ES>::BulkData::init (Real* buf1, const size_t& l2r_sz,
 }
 
 template <typename ES>
-void init_device_data (const tree::NodeSets& ns, tree::NodeSetsHostData& h,
+void init_device_data (const tree::NodeSets& ns, tree::NodeSetsHostData<ES>& h,
                        tree::NodeSetsDeviceData<ES>& d) {
   typedef tree::NodeSetsDeviceData<ES> NSDD;
   d.node = typename NSDD::NodeList("NSDD::node", ns.nnode());
@@ -209,7 +209,7 @@ void QLT<ES>::init (const Parallel::Ptr& p, const Int& ncells,
   p_ = p;
   Timer::start(Timer::analyze);
   ns_ = tree::analyze(p, ncells, tree);
-  nshd_ = std::make_shared<tree::NodeSetsHostData>();
+  nshd_ = std::make_shared<tree::NodeSetsHostData<ES> >();
   nsdd_ = std::make_shared<tree::NodeSetsDeviceData<ES> >();
   init_device_data(*ns_, *nshd_, *nsdd_);
   init_ordinals();

@@ -199,7 +199,7 @@ protected:
   std::shared_ptr<const tree::NodeSets> ns_;
   // Data extracted from ns_ for use in run() on device.
   std::shared_ptr<tree::NodeSetsDeviceData<ExeSpace> > nsdd_;
-  std::shared_ptr<tree::NodeSetsHostData> nshd_;
+  std::shared_ptr<tree::NodeSetsHostData<ExeSpace> > nshd_;
   // Globally unique cellidx -> rank-local index.
   typedef std::map<Int,Int> Gci2LciMap;
   std::shared_ptr<Gci2LciMap> gci2lci_;
