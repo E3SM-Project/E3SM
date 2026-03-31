@@ -458,6 +458,18 @@ get_data (const std::shared_ptr<const AbstractGrid>& src_grid,
 {
   auto& data = m_repo[map_file];
   if (auto shared_data = data.lock()) {
+    // To prevent hard-to-find errors, we must guarantee that the passed grid
+    // matches either the src or tgt grid of shared_data. We can do this by checking that
+    // the gids fields of the two grids are aliasing each other.
+    const auto& src_gids = src_grid->get_dofs_gids();
+    const auto& tgt_gids = tgt_grid->get_dofs_gids();
+    const auto& data_src_gids = shared_data->m_src_grid->get_dofs_gids();
+    const auto& data_tgt_gids = shared_data->m_tgt_grid->get_dofs_gids();
+    EKAT_REQUIRE_MSG (src_gids.is_aliasing(data_src_gids) and tgt_gids.is_aliasing(tgt_gids),
+        "Error! Trying to retrieve remap data using a grid that is unrelated to the one(s) used before.\n"
+        " - map file: " + map_file + "\n"
+        " - src grid name: " + src_grid->name() + "\n"
+        " - tgt grid name: " + tgt_grid->name() + "\n");
     return shared_data;
   }
   
@@ -479,6 +491,16 @@ get_data (const std::shared_ptr<const AbstractGrid>& grid,
 {
   auto& data = m_repo[map_file];
   if (auto shared_data = data.lock()) {
+    // To prevent hard-to-find errors, we must guarantee that the passed grid
+    // matches either the src or tgt grid of shared_data. We can do this by checking that
+    // the gids fields of the two grids are aliasing each other.
+    const auto& grid_gids = grid->get_dofs_gids();
+    const auto& src_gids = shared_data->m_src_grid->get_dofs_gids();
+    const auto& tgt_gids = shared_data->m_tgt_grid->get_dofs_gids();
+    EKAT_REQUIRE_MSG (grid_gids.is_aliasing(src_gids) or grid_gids.is_aliasing(tgt_gids),
+        "Error! Trying to retrieve remap data using a grid that is unrelated to the one(s) used before.\n"
+        " - map file: " + map_file + "\n"
+        " - grid name: " + grid->name() + "\n");
     return shared_data;
   }
   
