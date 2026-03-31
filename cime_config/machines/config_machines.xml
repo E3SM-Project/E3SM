@@ -2941,7 +2941,7 @@
     <DIN_LOC_ROOT_CLMFORC>/lcrc/group/e3sm/data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lcrc/group/e3sm/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/lcrc/group/e3sm/baselines/bebop/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lcrc/group/e3sm/soft/tools/cprnc/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/lcrc/group/e3sm/tools/cprnc/cprnc.bebop</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_integration</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>

@@ -407,7 +407,7 @@
       <directive> -l select={{ num_nodes }}:mpiprocs={{ tasks_per_node }} </directive>
     </directives>
     <queues>
-      <queue walltimemax="72:00:00" nodemin="1" nodemax="672" strict="true" default="true">bdwall</queue>
+      <queue walltimemax="03:00:00" nodemin="1" nodemax="672" strict="true" default="true">bdwall</queue>
     </queues>
   </batch_system>
 
