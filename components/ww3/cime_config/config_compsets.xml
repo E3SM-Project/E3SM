@@ -58,4 +58,9 @@
     <alias>CRYO2010-WW3</alias>
     <lname>2010SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%DIB_MPASO%IBPISMF_MOSART_SGLC_WW3%sp36x36</lname>
   </compset>
+  
+  <compset>
+    <alias>WCYCL2010-WW3</alias>
+    <lname>2010SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_WW3%sp36x36</lname>
+  </compset>
 </compsets>
