@@ -3,16 +3,16 @@ module horiz_remap_mod
   !
   ! EAM wrapper for shared horizontal remapping (shr_horiz_remap_mod).
   !
-  ! Keeps the same public interface but delegates map reading, comm-pattern
-  ! building, and the runtime SpMV+Alltoallv to the shared module.
-  ! Only EAM-specific concerns remain here: chunk/icol indexing, cam_grid
-  ! registration, and PIO write logic.
+  ! Delegates map reading, CRS SpMV, and source-gather MPI to the shared
+  ! module.  Only EAM-specific concerns remain here: chunk/icol indexing,
+  ! cam_grid registration, PIO output decomposition, and packing source
+  ! data from the chunk layout into the send buffer.
   !
   !-------------------------------------------------------------------------------------------
 
   use shr_kind_mod,        only: r8 => shr_kind_r8
   use shr_horiz_remap_mod, only: shr_horiz_remap_t, shr_horiz_remap_read_mapfile, &
-                                  shr_horiz_remap_build_comm, shr_horiz_remap_apply
+                                 shr_horiz_remap_build_comm, shr_horiz_remap_apply
   use cam_logfile,         only: iulog
   use cam_abortutils,      only: endrun
   use spmd_utils,          only: masterproc, iam, npes, mpicom
@@ -30,13 +30,23 @@ module horiz_remap_mod
   public :: horiz_remap_get_grid_id
 
   type eam_horiz_remap_t
-    type(shr_horiz_remap_t) :: shared          ! core remap data
-    integer :: grid_id = 0                      ! EAM cam_grid ID
-    integer, allocatable :: send_cols_chunk(:)   ! chunk for each send entry
-    integer, allocatable :: send_cols_icol(:)    ! col-in-chunk for each send entry
+    type(shr_horiz_remap_t) :: shared
+    integer :: grid_id = 0
+
+    ! Send-side column mapping: for each entry in send_gcol_list,
+    ! the (chunk, col-in-chunk) pair for packing the send buffer.
+    integer, allocatable :: send_cols_chunk(:)
+    integer, allocatable :: send_cols_icol(:)
+
+    ! Persistent send buffer workspace
+    real(r8), allocatable :: ws_send_buf(:)
+
+    ! PIO decomposition cache (keyed on tape + numlev + data_type)
     logical :: iodesc_2d_valid = .false.
+    integer :: iodesc_2d_dtype = 0
     logical :: iodesc_3d_valid = .false.
     integer :: iodesc_3d_nlev = 0
+    integer :: iodesc_3d_dtype = 0
   end type eam_horiz_remap_t
 
   type(eam_horiz_remap_t), target :: remap_data(ptapes)
@@ -68,29 +78,38 @@ CONTAINS
     character(len=*), intent(in) :: mapfile
 
     type(shr_horiz_remap_t), pointer :: rd
+    type(eam_horiz_remap_t), pointer :: erd
     type(iosystem_desc_t), pointer :: pio_subsystem
-    integer :: ierr, i, cnt, idx, gcol
-    integer :: n_my_cols, lchnk, ncols, icol
-    integer, allocatable :: gcol_to_rank(:), gcol_to_myidx(:)
-    integer, allocatable :: send_gcol_list(:)
-    integer, allocatable :: my_gcol_chunk(:), my_gcol_icol(:)
+    integer :: ierr, i, cnt, idx, lchnk, ncols, icol
+    integer :: n_my_cols
+    integer, allocatable :: gcol_to_rank(:), send_gcol_list(:)
+    integer, allocatable :: gcol_to_myidx(:), my_gcol_chunk(:), my_gcol_icol(:)
     type(horiz_coord_t), pointer :: lat_coord, lon_coord
     integer(iMap), pointer :: grid_map(:,:)
     character(len=32) :: gridname
     character(len=*), parameter :: subname = 'horiz_remap_init'
 
-    rd => remap_data(t)%shared
+    erd => remap_data(t)
+    rd  => erd%shared
 
     if (masterproc) then
       write(iulog,*) trim(subname), ': Reading mapping file for tape ', t, ': ', trim(mapfile)
     end if
 
-    ! Phase 1: read map file (shared)
+    ! Phase 1: read map file
     pio_subsystem => shr_pio_getiosys(atm_id)
     call shr_horiz_remap_read_mapfile(rd, mapfile, mpicom, iam, npes, pio_subsystem, ierr)
     if (ierr /= 0) then
-      call endrun(trim(subname)//': Error reading mapping file, ierr='// &
-           char(ichar('0') + ierr))
+      call endrun(trim(subname)//': Error reading mapping file')
+    end if
+
+    ! Validate n_a
+    if (rd%n_a /= size(knuhcs)) then
+      if (masterproc) then
+        write(iulog,*) trim(subname), ': ERROR: map n_a=', rd%n_a, &
+             ' but EAM has ', size(knuhcs), ' columns'
+      end if
+      call endrun(trim(subname)//': n_a mismatch between map file and EAM grid')
     end if
 
     if (masterproc) then
@@ -104,7 +123,7 @@ CONTAINS
       gcol_to_rank(i) = chunks(knuhcs(i)%chunkid)%owner
     end do
 
-    ! Phase 2: build comm pattern (shared)
+    ! Phase 2: build comm pattern + CRS matrix
     call shr_horiz_remap_build_comm(rd, gcol_to_rank, mpicom, iam, npes, &
          send_gcol_list, ierr)
     deallocate(gcol_to_rank)
@@ -113,8 +132,7 @@ CONTAINS
       call endrun(trim(subname)//': Error building comm pattern')
     end if
 
-    ! Convert send_gcol_list to (chunk, icol) pairs using EAM indexing
-    ! Build reverse map: gcol -> (chunk, icol) for owned columns
+    ! Convert send_gcol_list to (chunk, icol) pairs
     n_my_cols = 0
     do lchnk = begchunk, endchunk
       n_my_cols = n_my_cols + get_ncols_p(lchnk)
@@ -134,38 +152,36 @@ CONTAINS
       end do
     end do
 
-    allocate(remap_data(t)%send_cols_chunk(rd%n_send_total))
-    allocate(remap_data(t)%send_cols_icol(rd%n_send_total))
+    allocate(erd%send_cols_chunk(rd%n_send_total))
+    allocate(erd%send_cols_icol(rd%n_send_total))
     do i = 1, rd%n_send_total
       idx = gcol_to_myidx(send_gcol_list(i))
       if (idx == 0) then
         call endrun(trim(subname)//': Requested gcol not owned by this rank')
       end if
-      remap_data(t)%send_cols_chunk(i) = my_gcol_chunk(idx)
-      remap_data(t)%send_cols_icol(i) = my_gcol_icol(idx)
+      erd%send_cols_chunk(i) = my_gcol_chunk(idx)
+      erd%send_cols_icol(i) = my_gcol_icol(idx)
     end do
 
     deallocate(send_gcol_list, gcol_to_myidx, my_gcol_chunk, my_gcol_icol)
 
-    ! Register the output grid with cam_grid_support
+    ! Register the lat-lon output grid
     nullify(grid_map)
-    remap_data(t)%grid_id = 300 + t
+    erd%grid_id = 300 + t
+    write(gridname, '(a,i0)') 'horiz_remap_', t
 
     lat_coord => horiz_coord_create('lat', '', rd%nlat, 'latitude', 'degrees_north', &
          1, rd%nlat, rd%lat)
     lon_coord => horiz_coord_create('lon', '', rd%nlon, 'longitude', 'degrees_east', &
          1, rd%nlon, rd%lon)
-
-    write(gridname, '(a,i0)') 'horiz_remap_', t
-    call cam_grid_register(trim(gridname), remap_data(t)%grid_id, &
+    call cam_grid_register(trim(gridname), erd%grid_id, &
          lat_coord, lon_coord, grid_map, unstruct=.false.)
     call cam_grid_attribute_register(trim(gridname), &
          'horiz_remap_file', trim(mapfile))
 
     if (masterproc) then
-      write(iulog,*) trim(subname), ': Horizontal remapping initialized for tape ', t
-      write(iulog,*) trim(subname), ':   grid_id=', remap_data(t)%grid_id, &
-           ' n_b_local=', rd%n_b_local
+      write(iulog,*) trim(subname), ': Initialized for tape ', t, &
+           ', n_b_local=', rd%n_b_local
     end if
 
   end subroutine horiz_remap_init
@@ -175,42 +191,48 @@ CONTAINS
     !
     ! Remap a field from the physics grid to the target lat-lon grid.
     !
-    ! Input: hbuf(pcols, numlev, begchunk:endchunk) - field on physics grid
-    ! Output: fld_out(n_b_local, numlev) - remapped field (allocated here)
+    ! Input: hbuf(pcols, numlev, begchunk:endchunk)
+    ! Output: fld_out(n_b_local, numlev) - allocated here
     !
     integer,  intent(in)    :: t
     real(r8), intent(in)    :: hbuf(:,:,:)
     integer,  intent(in)    :: numlev
     real(r8), allocatable, intent(out) :: fld_out(:,:)
 
+    type(eam_horiz_remap_t), pointer :: erd
     type(shr_horiz_remap_t), pointer :: rd
-    real(r8), allocatable :: send_buf(:)
-    integer :: i, k, lchnk, icol, ierr
+    integer :: i, k, lchnk, icol, ierr, needed
     character(len=*), parameter :: subname = 'horiz_remap_field'
 
-    rd => remap_data(t)%shared
+    erd => remap_data(t)
+    rd  => erd%shared
 
     if (.not. rd%initialized) then
       call endrun(trim(subname)//': Remapping not initialized for this tape')
     end if
 
-    ! Allocate output
     allocate(fld_out(rd%n_b_local, numlev))
 
+    ! Grow persistent send workspace if needed
+    needed = rd%n_send_total * numlev
+    if (needed > 0) then
+      if (.not. allocated(erd%ws_send_buf) .or. size(erd%ws_send_buf) < needed) then
+        if (allocated(erd%ws_send_buf)) deallocate(erd%ws_send_buf)
+        allocate(erd%ws_send_buf(needed))
+      end if
+    end if
+
     ! Pack send buffer from EAM chunk layout
-    allocate(send_buf(rd%n_send_total * numlev))
     do i = 1, rd%n_send_total
-      lchnk = remap_data(t)%send_cols_chunk(i)
-      icol  = remap_data(t)%send_cols_icol(i)
+      lchnk = erd%send_cols_chunk(i)
+      icol  = erd%send_cols_icol(i)
       do k = 1, numlev
-        send_buf((i-1)*numlev + k) = hbuf(icol, k, lchnk - begchunk + 1)
+        erd%ws_send_buf((i-1)*numlev + k) = hbuf(icol, k, lchnk - begchunk + 1)
       end do
     end do
 
-    ! Apply remap (shared: Alltoallv + SpMV)
-    call shr_horiz_remap_apply(rd, send_buf, numlev, fld_out, mpicom, npes, ierr)
-
-    deallocate(send_buf)
+    ! Apply remap: alltoallv + CRS SpMV
+    call shr_horiz_remap_apply(rd, erd%ws_send_buf, numlev, fld_out, mpicom, npes, ierr)
 
   end subroutine horiz_remap_field
 
@@ -236,9 +258,8 @@ CONTAINS
     type(io_desc_t), save :: iodesc_3d_cache(ptapes)
     type(iosystem_desc_t), pointer :: pio_subsystem
     integer(PIO_OFFSET_KIND), allocatable :: idof(:)
-    integer :: i, k, global_row, ilat, ilon, ierr
+    integer :: i, k, global_row, ilon, ilat, ierr
     integer :: nlat, nlon
-    character(len=*), parameter :: subname = 'horiz_remap_write'
 
     erd => remap_data(t)
     rd  => erd%shared
@@ -248,6 +269,10 @@ CONTAINS
     pio_subsystem => shr_pio_getiosys(atm_id)
 
     if (numlev <= 1) then
+      if (erd%iodesc_2d_valid .and. erd%iodesc_2d_dtype /= data_type) then
+        call pio_freedecomp(File, iodesc_2d_cache(t))
+        erd%iodesc_2d_valid = .false.
+      end if
       if (.not. erd%iodesc_2d_valid) then
         allocate(idof(rd%n_b_local))
         do i = 1, rd%n_b_local
@@ -259,13 +284,16 @@ CONTAINS
         call pio_initdecomp(pio_subsystem, data_type, (/nlon, nlat/), idof, iodesc_2d_cache(t))
         deallocate(idof)
         erd%iodesc_2d_valid = .true.
+        erd%iodesc_2d_dtype = data_type
       end if
       call pio_write_darray(File, varid, iodesc_2d_cache(t), fld_out(:,1), ierr)
     else
-      if (.not. erd%iodesc_3d_valid .or. erd%iodesc_3d_nlev /= numlev) then
-        if (erd%iodesc_3d_valid) then
-          call pio_freedecomp(File, iodesc_3d_cache(t))
-        end if
+      if (erd%iodesc_3d_valid .and. &
+          (erd%iodesc_3d_nlev /= numlev .or. erd%iodesc_3d_dtype /= data_type)) then
+        call pio_freedecomp(File, iodesc_3d_cache(t))
+        erd%iodesc_3d_valid = .false.
+      end if
+      if (.not. erd%iodesc_3d_valid) then
         allocate(idof(rd%n_b_local * numlev))
         do i = 1, rd%n_b_local
           global_row = rd%row_start + i - 1
@@ -279,6 +307,7 @@ CONTAINS
         deallocate(idof)
         erd%iodesc_3d_valid = .true.
         erd%iodesc_3d_nlev = numlev
+        erd%iodesc_3d_dtype = data_type
       end if
       call pio_write_darray(File, varid, iodesc_3d_cache(t), fld_out, ierr)
     end if
