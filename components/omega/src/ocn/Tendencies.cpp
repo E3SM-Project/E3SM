@@ -616,8 +616,8 @@ void Tendencies::computeVelocityTendenciesOnly(
 
       const auto &PressureMid       = VCoord->PressureMid;
       const auto &PressureInterface = VCoord->PressureInterface;
-      Array2DReal Temp = Kokkos::subview(TracerArray, Tracers::IndxTemp,
-                                         Kokkos::ALL, Kokkos::ALL);
+      Array2DReal Temp     = Kokkos::subview(TracerArray, Tracers::IndxTemp,
+                                             Kokkos::ALL, Kokkos::ALL);
       Array2DReal Salinity = Kokkos::subview(TracerArray, Tracers::IndxSalt,
                                              Kokkos::ALL, Kokkos::ALL);
       EqState->computeSpecVol(Temp, Salinity, PressureMid);
@@ -810,9 +810,8 @@ void Tendencies::computeVelocityTendencies(
    Pacer::start("Tend:computeVelocityTendencies", 1);
 
    AuxState->computeMomAux(State, ThickTimeLevel, VelTimeLevel);
-   computeVelocityTendenciesOnly(State, AuxState, TracerArray,
-                                 ThickTimeLevel, VelTimeLevel,
-                                 TracerTimeLevel, Time);
+   computeVelocityTendenciesOnly(State, AuxState, TracerArray, ThickTimeLevel,
+                                 VelTimeLevel, TracerTimeLevel, Time);
 
    Pacer::stop("Tend:computeVelocityTendencies", 1);
 }
