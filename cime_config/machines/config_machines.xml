@@ -3655,13 +3655,11 @@
       <cmd_path lang="sh">module</cmd_path> 
       <cmd_path lang="csh">module</cmd_path>
       <modules>
-        <command name="reset"></command>
         <command name="use">/grand/E3SMinput/soft/modulefiles/crux</command>
         <command name="load">cmake/3.27.9</command>
-        <command name="load">cray-python/3.11.7</command>
         <command name="load">craype-accel-host</command>
-        <command name="load">PrgEnv-gnu/8.5.0</command>   
-        <command name="load">cray-libsci/24.03.0</command>
+        <command name="load">PrgEnv-gnu/8.6.0</command>   
+        <command name="load">cray-libsci/25.09.0</command>
         <command name="load">cray-hdf5-parallel/1.12.2.11</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.11</command>
         <command name="load">cray-parallel-netcdf/1.12.3.11</command>
@@ -3676,6 +3674,8 @@
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env>
       <env name="FI_CXI_RX_MATCH_MODE">hybrid</env>
+      <env name="PALS_PING_PERIOD">240</env>
+      <env name="PALS_RPC_TIMEOUT">240</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>  
