@@ -3157,7 +3157,7 @@
       <arguments>
 	<arg name="label"> --label-io</arg>
 	<arg name="debug"> -o mpibind=verbose:1</arg>
-	<arg name="num_tasks"> -N{{ num_nodes }} -n{{ total_tasks }} --exclusive</arg>
+	<arg name="num_tasks"> -N{{ num_nodes }} -n{{ total_tasks }} --exclusive --env='MPI_LOCALRANKIK={{task.rank}}'</arg>
     	</arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
