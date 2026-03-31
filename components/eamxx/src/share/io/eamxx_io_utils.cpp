@@ -132,23 +132,23 @@ parse_cf_time_units (const std::string& units_str)
       " - units string: '" + units_str + "'\n"
       " - Expected format: '<unit> since <YYYY-MM-DD> [HH[:MM[:SS]]]'\n");
 
-  // Map unit name to seconds
+  // Map unit name to seconds using exact matching
   auto unit_str = units_str.substr(0,pos);
   int time_mult;
-  if (unit_str.find("second") != std::string::npos) {
+  if (unit_str == "second" || unit_str == "seconds") {
     time_mult = 1;
-  } else if (unit_str.find("minute") != std::string::npos) {
+  } else if (unit_str == "minute" || unit_str == "minutes") {
     time_mult = 60;
-  } else if (unit_str.find("hour") != std::string::npos) {
+  } else if (unit_str == "hour" || unit_str == "hours") {
     time_mult = 3600;
-  } else if (unit_str.find("day") != std::string::npos) {
+  } else if (unit_str == "day" || unit_str == "days") {
     time_mult = 86400;
   } else {
     EKAT_ERROR_MSG (
         "Error! Unsupported time unit in CF-compliant units string.\n"
         " - units string: '" + units_str + "'\n"
         " - unit: '" + unit_str + "'\n"
-        " - Supported units: seconds, minutes, hours, days\n");
+        " - Supported units: second(s), minute(s), hour(s), day(s)\n");
   }
 
   // Extract and parse the reference date/time string
@@ -166,9 +166,17 @@ parse_cf_time_units (const std::string& units_str)
       " - units string: '" + units_str + "'\n"
       " - date/time part: '" + date_str + "'\n");
 
-  int yy  = std::stoi(date_str.substr(0,4));
-  int mon = std::stoi(date_str.substr(5,2));
-  int dd  = std::stoi(date_str.substr(8,2));
+  int yy = 0, mon = 0, dd = 0;
+  try {
+    yy  = std::stoi(date_str.substr(0,4));
+    mon = std::stoi(date_str.substr(5,2));
+    dd  = std::stoi(date_str.substr(8,2));
+  } catch (...) {
+    EKAT_ERROR_MSG (
+        "Error! Could not parse date components in CF-compliant time units string.\n"
+        " - units string: '" + units_str + "'\n"
+        " - date/time part: '" + date_str + "'\n");
+  }
   int hh = 0, min = 0, sec = 0;
 
   if (date_str.size() > 10) {
@@ -182,12 +190,19 @@ parse_cf_time_units (const std::string& units_str)
     EKAT_REQUIRE_MSG (time_part.size() >= 2,
         "Error! Could not parse time in CF-compliant units string.\n"
         " - units string: '" + units_str + "'\n");
-    hh = std::stoi(time_part.substr(0,2));
-    if (time_part.size() >= 5 && time_part[2] == ':') {
-      min = std::stoi(time_part.substr(3,2));
-      if (time_part.size() >= 8 && time_part[5] == ':') {
-        sec = std::stoi(time_part.substr(6,2));
+    try {
+      hh = std::stoi(time_part.substr(0,2));
+      if (time_part.size() >= 5 && time_part[2] == ':') {
+        min = std::stoi(time_part.substr(3,2));
+        if (time_part.size() >= 8 && time_part[5] == ':') {
+          sec = std::stoi(time_part.substr(6,2));
+        }
       }
+    } catch (...) {
+      EKAT_ERROR_MSG (
+          "Error! Could not parse time components in CF-compliant time units string.\n"
+          " - units string: '" + units_str + "'\n"
+          " - time part: '" + time_part + "'\n");
     }
   }
 
