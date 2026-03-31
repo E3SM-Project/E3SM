@@ -6,6 +6,7 @@ module prep_ice_mod
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct    , only: num_inst_atm, num_inst_ocn, num_inst_glc
   use seq_comm_mct    , only: num_inst_ice, num_inst_frc, num_inst_rof
+  use seq_comm_mct    , only: num_inst_wav
   use seq_comm_mct    , only: CPLID, ICEID, logunit
   use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs
   use seq_comm_mct    , only: mboxid   ! iMOAB id for MPAS-O migrated mesh to coupler PEs
@@ -24,7 +25,7 @@ module prep_ice_mod
   use mct_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
-  use component_type_mod, only: ice, atm, ocn, glc, rof
+  use component_type_mod, only: ice, atm, ocn, glc, rof, wav
   use iso_c_binding
 
   implicit none
@@ -43,16 +44,19 @@ module prep_ice_mod
   public :: prep_ice_calc_r2x_ix
   public :: prep_ice_calc_g2x_ix
   public :: prep_ice_shelf_calc_g2x_ix
+  public :: prep_ice_calc_w2x_ix
 
   public :: prep_ice_get_a2x_ix
   public :: prep_ice_get_o2x_ix
   public :: prep_ice_get_g2x_ix
   public :: prep_ice_get_r2x_ix
+  public :: prep_ice_get_w2x_ix
 
   public :: prep_ice_get_mapper_SFo2i
   public :: prep_ice_get_mapper_Rg2i
   public :: prep_ice_get_mapper_Sg2i
   public :: prep_ice_get_mapper_Fg2i
+  public :: prep_ice_get_mapper_Sw2i
 
   !--------------------------------------------------------------------------
   ! Private interfaces
@@ -68,12 +72,14 @@ module prep_ice_mod
   type(seq_map), pointer :: mapper_Sg2i
   type(seq_map), pointer :: mapper_Fg2i
   type(seq_map), pointer :: mapper_Rr2i
+  type(seq_map), pointer :: mapper_Sw2i
 
   ! attribute vectors
   type(mct_aVect), pointer :: a2x_ix(:) ! Atm export, ice grid, cpl pes - allocated in driver
   type(mct_aVect), pointer :: o2x_ix(:) ! Ocn export, ice grid, cpl pes - allocated in driver
   type(mct_aVect), pointer :: g2x_ix(:) ! Glc export, ice grid, cpl pes - allocated in driver
   type(mct_aVect), pointer :: r2x_ix(:) ! Rof export, ice grid, cpl pes - allocated in driver
+  type(mct_aVect), pointer :: w2x_ix(:) ! Wav export, ice grid, cpl pes - allocated in driver
 
 ! MOAB arrays
   real (kind=r8) , allocatable, private :: x2i_im (:,:)
@@ -92,7 +98,8 @@ contains
 
   !================================================================================================
 
-  subroutine prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice)
+  subroutine prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice, &
+                           wav_c2_ice)
 
     use iMOAB, only: iMOAB_RegisterApplication, &
       iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph
@@ -107,19 +114,22 @@ contains
     logical,                   intent(in)    :: glc_c2_ice ! .true.  => glc to ice coupling on
     logical,                   intent(in)    :: glcshelf_c2_ice ! .true.  => glc ice shelf to ice coupling on
     logical,                   intent(in)    :: rof_c2_ice ! .true.  => rof to ice coupling on
+    logical,                   intent(in)    :: wav_c2_ice ! .true. => wav to ice coupling on
     !
     ! Local Variables
     integer                          :: lsize_i
-    integer                          :: eai, eoi, egi, eri
+    integer                          :: eai, eoi, egi, eri, ewi
     logical                          :: iamroot_CPLID ! .true. => CPLID masterproc
     logical                          :: samegrid_ig   ! samegrid glc and ice
     logical                          :: samegrid_ro   ! samegrid rof and ice/ocn
+    logical                          :: samegrid_iw   ! samegrid ice and wav
     logical                          :: ice_present   ! .true. => ice is present
     logical                          :: esmf_map_flag ! .true. => use esmf for mapping
     character(CL)                    :: ice_gnam      ! ice grid
     character(CL)                    :: ocn_gnam      ! ocn grid
     character(CL)                    :: glc_gnam      ! glc grid
     character(CL)                    :: rof_gnam      ! rof grid
+    character(CL)                    :: wav_gnam      ! wav grid
     type(mct_avect), pointer         :: i2x_ix
     character(*), parameter          :: subname = '(prep_ice_init)'
     logical                          :: no_match      ! to force a new map between ocean and ice, always
@@ -146,6 +156,7 @@ contains
          ice_gnam=ice_gnam            , &
          ocn_gnam=ocn_gnam            , &
          rof_gnam=rof_gnam            , &
+         wav_gnam=wav_gnam            , &
          glc_gnam=glc_gnam)
 
     wgtIdSr2i = 'scalar_r2i'//C_NULL_CHAR
@@ -157,6 +168,7 @@ contains
     allocate(mapper_Sg2i)
     allocate(mapper_Fg2i)
     allocate(mapper_Rr2i)
+    allocate(mapper_Sw2i)
 
     if (ice_present) then
 
@@ -186,11 +198,18 @@ contains
           call mct_aVect_init(r2x_ix(eri), rList=seq_flds_r2x_fields, lsize=lsize_i)
           call mct_aVect_zero(r2x_ix(eri))
        end do
+       allocate(w2x_ix(num_inst_wav))
+       do ewi = 1,num_inst_wav
+          call mct_aVect_init(w2x_ix(ewi), rList=seq_flds_w2x_fields, lsize=lsize_i)
+          call mct_aVect_zero(w2x_ix(ewi))
+       end do
 
        samegrid_ig = .true.
        samegrid_ro = .true.
+       samegrid_iw = .true.
        if (trim(ice_gnam) /= trim(glc_gnam)) samegrid_ig = .false.
        if (trim(rof_gnam) /= trim(ocn_gnam)) samegrid_ro = .false.
+       if (trim(ice_gnam) /= trim(wav_gnam)) samegrid_iw = .false.
 
        if (ocn_c2_ice) then
           if (iamroot_CPLID) then
@@ -314,6 +333,17 @@ contains
             mapper_Rr2i%weight_identifier = wgtIdSr2i
             mapper_Rr2i%mbname = 'mapper_Rr2i'
           end if ! if ((mbrxid .ge. 0) .and.  (mbixid .ge. 0)) then
+       endif
+       call shr_sys_flush(logunit)
+
+       if (wav_c2_ice) then
+          if (iamroot_CPLID) then
+             write(logunit,*) ' '
+             write(logunit,F00) 'Initializing mapper_Sw2i'
+          end if
+          call seq_map_init_rcfile(mapper_Sw2i, wav(1), ice(1), &
+               'seq_maps.rc','wav2ice_smapname:','wav2ice_smaptype:',samegrid_iw, &
+               'mapper_Sw2i initialization', esmf_map_flag)
        endif
        call shr_sys_flush(logunit)
 
@@ -774,6 +804,31 @@ contains
 
   !================================================================================================
 
+  subroutine prep_ice_calc_w2x_ix(timer)
+    !---------------------------------------------------------------
+    ! Description
+    ! Create w2x_ix (note that w2x_ix is a local module variable)
+    !
+    ! Arguments
+    character(len=*), intent(in) :: timer
+    !
+    ! Local Variables
+    integer :: ewi
+    type(mct_aVect), pointer :: w2x_wx
+    character(*), parameter :: subname = '(prep_ice_calc_w2x_ix)'
+    !---------------------------------------------------------------
+
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+    do ewi = 1,num_inst_wav
+       w2x_wx => component_get_c2x_cx(wav(ewi))
+       call seq_map_map(mapper_Sw2i, w2x_wx, w2x_ix(ewi), fldlist=seq_flds_w2x_states, norm=.true.)
+    enddo
+    call t_drvstopf  (trim(timer))
+
+  end subroutine prep_ice_calc_w2x_ix
+
+  !================================================================================================
+
   function prep_ice_get_a2x_ix()
     type(mct_aVect), pointer :: prep_ice_get_a2x_ix(:)
     prep_ice_get_a2x_ix => a2x_ix(:)
@@ -794,6 +849,11 @@ contains
     prep_ice_get_r2x_ix => r2x_ix(:)
   end function prep_ice_get_r2x_ix
 
+  function prep_ice_get_w2x_ix()
+    type(mct_aVect), pointer :: prep_ice_get_w2x_ix(:)
+    prep_ice_get_w2x_ix => w2x_ix(:)
+  end function prep_ice_get_w2x_ix
+
   function prep_ice_get_mapper_SFo2i()
     type(seq_map), pointer :: prep_ice_get_mapper_SFo2i
     prep_ice_get_mapper_SFo2i => mapper_SFo2i
@@ -813,5 +873,10 @@ contains
     type(seq_map), pointer :: prep_ice_get_mapper_Fg2i
     prep_ice_get_mapper_Fg2i => mapper_Fg2i
   end function prep_ice_get_mapper_Fg2i
+
+  function prep_ice_get_mapper_Sw2i()
+    type(seq_map), pointer :: prep_ice_get_mapper_Sw2i
+    prep_ice_get_mapper_Sw2i => mapper_Sw2i
+  end function prep_ice_get_mapper_Sw2i
 
 end module prep_ice_mod
