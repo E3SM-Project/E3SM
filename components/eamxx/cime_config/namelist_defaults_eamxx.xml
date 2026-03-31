@@ -874,6 +874,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <nu_top hgrid="ne0np4_CAx32v1">1.0e4</nu_top>
     <nu_top COMPSET=".*DP-EAMxx">1.0e4</nu_top>
     <nu_top hgrid="ne0np4_conus_x4v1_lowcon">100000.0</nu_top>
+    <tom_sponge_start type="real" doc="Starting height of the sponge layer, in hPa.">0.0</tom_sponge_start>
     <pgrad_correction>1</pgrad_correction>                <!-- Default (rough topography) -->
     <se_ftype valid_values="0,2">0</se_ftype>
     <se_geometry>sphere</se_geometry>
