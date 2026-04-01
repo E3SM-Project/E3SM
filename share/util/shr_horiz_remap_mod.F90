@@ -36,10 +36,6 @@ module shr_horiz_remap_mod
   save
 
   public :: shr_horiz_remap_t
-  public :: shr_horiz_remap_read_mapfile
-  public :: shr_horiz_remap_build_comm
-  public :: shr_horiz_remap_apply
-  public :: shr_horiz_remap_clean
 
   type shr_horiz_remap_t
     logical  :: initialized = .false.
@@ -82,6 +78,11 @@ module shr_horiz_remap_mod
 
     ! Persistent workspace for apply (grows as needed)
     real(r8), allocatable :: ws_recv_buf(:)
+  contains
+    procedure :: read_mapfile => shr_horiz_remap_read_mapfile
+    procedure :: build_comm   => shr_horiz_remap_build_comm
+    procedure :: apply        => shr_horiz_remap_apply
+    procedure :: clean        => shr_horiz_remap_clean
   end type shr_horiz_remap_t
 
 CONTAINS
@@ -99,7 +100,7 @@ CONTAINS
                    pio_inq_varid, pio_get_var, var_desc_t, &
                    pio_noerr, PIO_IOTYPE_NETCDF, iosystem_desc_t
 
-    type(shr_horiz_remap_t), intent(inout) :: rd
+    class(shr_horiz_remap_t), intent(inout) :: rd
     character(len=*), intent(in) :: mapfile
     integer, intent(in) :: comm, myrank, nprocs
     type(iosystem_desc_t), intent(inout) :: iosystem
@@ -269,7 +270,7 @@ CONTAINS
     !--------------------------------------------------------------------------
     use mpi, only: MPI_INTEGER
 
-    type(shr_horiz_remap_t), intent(inout) :: rd
+    class(shr_horiz_remap_t), intent(inout) :: rd
     integer, intent(in) :: gcol_to_rank(:)  ! (n_a)
     integer, intent(in) :: comm, myrank, nprocs
     integer, allocatable, intent(out) :: send_gcol_list(:)
@@ -400,7 +401,7 @@ CONTAINS
     !--------------------------------------------------------------------------
     use mpi, only: MPI_DOUBLE_PRECISION
 
-    type(shr_horiz_remap_t), intent(inout) :: rd
+    class(shr_horiz_remap_t), intent(inout) :: rd
     real(r8), intent(in)    :: send_buf(:)
     integer,  intent(in)    :: numlev
     real(r8), intent(out)   :: fld_out(:,:)
@@ -463,7 +464,7 @@ CONTAINS
 
   !-------------------------------------------------------------------------------------------
   subroutine shr_horiz_remap_clean(rd)
-    type(shr_horiz_remap_t), intent(inout) :: rd
+    class(shr_horiz_remap_t), intent(inout) :: rd
 
     rd%initialized = .false.
     rd%n_a = 0; rd%n_b = 0; rd%nlat = 0; rd%nlon = 0

@@ -51,6 +51,7 @@ module cam_history
                                   lookup_hist_coord_indices, get_hist_coord_index
    use sat_hist,            only: is_satfile
    use mo_solar_parms,      only: solar_parms_get, solar_parms_on
+   use horiz_remap_mod,     only: eam_horiz_remap_t
 
   implicit none
   private
@@ -161,8 +162,9 @@ module cam_history
   ! The last two history files are not supported for interpolation
   type(interp_info_t)   :: interpolate_info(ptapes - 2)
 
-  ! Parameters for horizontal remapping via map file
+  ! Horizontal remapping via map file
   character(len=max_string_len) :: horiz_remap_file(ptapes) = ' '
+  type(eam_horiz_remap_t) :: horiz_remap_data(ptapes)
 
   ! Allowed history averaging flags
   ! This should match namelist_definition.xml => avgflag_pertape (+ ' ')
@@ -931,7 +933,6 @@ CONTAINS
 
   subroutine setup_interpolation_and_define_vector_complements()
     use interp_mod,       only: setup_history_interpolation
-    use horiz_remap_mod,  only: horiz_remap_init
 
     ! Local variables
     integer :: hf, f, ii, ff
@@ -985,7 +986,7 @@ CONTAINS
     ! Initialize horizontal remapping from map files
     do hf = 1, ptapes
       if (len_trim(horiz_remap_file(hf)) > 0) then
-        call horiz_remap_init(hf, trim(horiz_remap_file(hf)))
+        call horiz_remap_data(hf)%init(trim(horiz_remap_file(hf)), hf)
       end if
     end do
 
@@ -3715,7 +3716,6 @@ end subroutine print_active_fldlst
     use cam_pio_utils,    only: vdesc_ptr, cam_pio_handle_error, cam_pio_def_dim
     use cam_pio_utils,    only: cam_pio_createfile, cam_pio_def_var
     use sat_hist,         only: sat_hist_define
-    use horiz_remap_mod,  only: horiz_remap_is_active, horiz_remap_get_grid_id
 
     !-----------------------------------------------------------------------
 
@@ -3817,14 +3817,14 @@ end subroutine print_active_fldlst
       !     
       ! interpolate is only supported for unstructured dycores
       interpolate = (interpolate_output(t) .and. (.not. restart))
-      horiz_remap = (horiz_remap_is_active(t) .and. (.not. restart))
+      horiz_remap = (horiz_remap_data(t)%is_active() .and. (.not. restart))
       patch_output = (associated(tape(t)%patches) .and. (.not. restart))
 
       ! First define the horizontal grid dims
       ! Interpolation/remapping is special in that we ignore the native grids
       if (horiz_remap) then
         allocate(header_info(1))
-        call cam_grid_write_attr(tape(t)%File, horiz_remap_get_grid_id(t), header_info(1))
+        call cam_grid_write_attr(tape(t)%File, horiz_remap_data(t)%get_grid_id(), header_info(1))
       else if(interpolate) then
         allocate(header_info(1))
         call cam_grid_write_attr(tape(t)%File, interpolate_info(t)%grid_id, header_info(1))
@@ -4271,7 +4271,7 @@ end subroutine print_active_fldlst
     !
     if(.not. is_satfile(t)) then
       if(horiz_remap) then
-        call cam_grid_write_var(tape(t)%File, horiz_remap_get_grid_id(t))
+        call cam_grid_write_var(tape(t)%File, horiz_remap_data(t)%get_grid_id())
       else if(interpolate) then
         call cam_grid_write_var(tape(t)%File, interpolate_info(t)%grid_id)
       else if((.not. patch_output) .or. restart) then
@@ -4455,7 +4455,6 @@ end subroutine print_active_fldlst
     use cam_history_support, only: history_patch_t, dim_index_3d
     use cam_grid_support,    only: cam_grid_write_dist_array, cam_grid_dimensions
     use interp_mod,          only: write_interpolated
-    use horiz_remap_mod,     only: horiz_remap_is_active, horiz_remap_field, horiz_remap_write
 
     ! Dummy arguments
     integer,     intent(in)    :: f
@@ -4489,7 +4488,7 @@ end subroutine print_active_fldlst
     real(r8), allocatable            :: remapped_fld(:,:)
 
     interpolate = (interpolate_output(t) .and. (.not. restart))
-    horiz_remap = (horiz_remap_is_active(t) .and. (.not. restart))
+    horiz_remap = (horiz_remap_data(t)%is_active() .and. (.not. restart))
     patch_output = (associated(tape(t)%patches) .and. (.not. restart))
 
     !!! Get the field's shape and decomposition
@@ -4542,8 +4541,8 @@ end subroutine print_active_fldlst
           if (mdimsize == 0) then
             mdimsize = tape(t)%hlist(f)%field%numlev
           end if
-          call horiz_remap_field(t, tape(t)%hlist(f)%hbuf, mdimsize, remapped_fld)
-          call horiz_remap_write(t, tape(t)%File, varid, remapped_fld, mdimsize, PIO_DOUBLE)
+          call horiz_remap_data(t)%remap_field(tape(t)%hlist(f)%hbuf, mdimsize, remapped_fld)
+          call horiz_remap_data(t)%write_field(tape(t)%File, varid, remapped_fld, mdimsize, PIO_DOUBLE)
           deallocate(remapped_fld)
         else if (interpolate) then
           mdimsize = tape(t)%hlist(f)%field%enddim2 - tape(t)%hlist(f)%field%begdim2 + 1
