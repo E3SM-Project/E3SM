@@ -8101,4 +8101,48 @@ Planetary rotation rate (radians/second). Value set here is ONLY used in the atm
 Default: set to shr_const value
 </entry>
 
+<!-- Vertical coarsening configuration -->
+
+<entry id="vcoarsen_pbounds" type="real(51)" category="physics"
+       group="eam_vcoarsen_nl" valid_values="" >
+Pressure boundaries (Pa) for vertical coarsening layers, from top to surface.
+Defines n-1 coarsened layers from n boundary values. Unused entries should be -1.
+Default: -1.0 (inactive)
+</entry>
+
+<entry id="vcoarsen_avg_flds" type="char*34(100)" category="physics"
+       group="eam_vcoarsen_nl" valid_values="" >
+Field names to average onto coarsened pressure layers.
+Use 'all' to apply to T, U, V, OMEGA, Z3, Q. Can also use constituent names.
+Default: none
+</entry>
+
+<entry id="vcoarsen_select_levs" type="integer(50)" category="physics"
+       group="eam_vcoarsen_nl" valid_values="" >
+Model level indices for level-index selection (e.g., 1,5,10).
+Output fields named BASE_at_L{index}. Unused entries should be -1.
+Default: -1 (inactive)
+</entry>
+
+<entry id="vcoarsen_select_lev_flds" type="char*34(100)" category="physics"
+       group="eam_vcoarsen_nl" valid_values="" >
+Field names for level-index selection.
+Use 'all' to apply to T, U, V, OMEGA, Z3, Q.
+Default: none
+</entry>
+
+<entry id="vcoarsen_select_pres" type="real(50)" category="physics"
+       group="eam_vcoarsen_nl" valid_values="" >
+Pressure values (hPa) for nearest-pressure-level selection (e.g., 850,500,200).
+Output fields named BASE_at_P{value}. Unused entries should be -1.
+Default: -1.0 (inactive)
+</entry>
+
+<entry id="vcoarsen_select_pres_flds" type="char*34(100)" category="physics"
+       group="eam_vcoarsen_nl" valid_values="" >
+Field names for nearest-pressure selection.
+Use 'all' to apply to T, U, V, OMEGA, Z3, Q.
+Default: none
+</entry>
+
 </namelist_definition>

@@ -1997,4 +1997,12 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <pgrad_correction phys="default"> 1 </pgrad_correction>
 <hv_ref_profiles phys="default"> 6 </hv_ref_profiles>
 
+<!-- Vertical coarsening defaults (inactive by default) -->
+<vcoarsen_pbounds phys="default"> -1.0 </vcoarsen_pbounds>
+<vcoarsen_avg_flds phys="default"> </vcoarsen_avg_flds>
+<vcoarsen_select_levs phys="default"> -1 </vcoarsen_select_levs>
+<vcoarsen_select_lev_flds phys="default"> </vcoarsen_select_lev_flds>
+<vcoarsen_select_pres phys="default"> -1.0 </vcoarsen_select_pres>
+<vcoarsen_select_pres_flds phys="default"> </vcoarsen_select_pres_flds>
+
 </namelist_defaults>

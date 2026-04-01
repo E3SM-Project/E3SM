@@ -42,6 +42,7 @@ module physpkg
   use perf_mod
   use cam_logfile,     only: iulog
   use camsrfexch,      only: cam_export
+  use eam_vcoarsen,    only: eam_vcoarsen_register, eam_vcoarsen_write
 
   use modal_aero_calcsize,    only: modal_aero_calcsize_init, &
                                     modal_aero_calcsize_reg
@@ -368,7 +369,9 @@ subroutine phys_register
        if (.not. do_clubb_sgs .and. .not. do_shoc_sgs) call vd_register()
 
        if (do_aerocom_ind3) call output_aerocom_aie_register()
-    
+
+       call eam_vcoarsen_register()
+
     end if
 
     ! Register diagnostics PBUF
@@ -1447,6 +1450,8 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
             sgh(1,c), sgh30(1,c), cam_out(c),                              &
             phys_state(c), phys_tend(c), phys_buffer_chunk, phys_diag(c),  &
             fsds(1,c))
+
+       call eam_vcoarsen_write(phys_state(c))
 
        call system_clock(count=end_chnk_cnt, count_rate=sysclock_rate, count_max=sysclock_max)
        if ( end_chnk_cnt < beg_chnk_cnt ) end_chnk_cnt = end_chnk_cnt + sysclock_max

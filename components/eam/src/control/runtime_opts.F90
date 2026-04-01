@@ -277,6 +277,7 @@ contains
    use nudging,             only: nudging_readnl
    use radheat,             only: radheat_readnl
    use phys_grid_ctem,      only: phys_grid_ctem_readnl
+   use eam_vcoarsen,        only: eam_vcoarsen_readnl
 #if ( defined OFFLINE_DYN )
    use metdata,             only: metdata_readnl
 #endif
@@ -544,6 +545,7 @@ contains
    call radheat_readnl(nlfilename)
    call vd_readnl(nlfilename)
    call phys_grid_ctem_readnl(nlfilename,dtime)
+   call eam_vcoarsen_readnl(nlfilename)
 #if ( defined OFFLINE_DYN )
    call metdata_readnl(nlfilename)
 #endif
