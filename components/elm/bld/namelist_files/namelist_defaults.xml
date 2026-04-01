@@ -354,7 +354,7 @@ lnd/clm2/surfdata_map/surfdata_nldas2_simyr2000_c181207.nc</fsurdat>
 <fsurdat hgrid="r0125"  sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr2000_c190730.nc</fsurdat>
 <fsurdat hgrid="0.9x1.25"  sim_year="2000" use_crop=".false." use_top_solar_rad=".true."> 
-lnd/clm2/surfdata_map/surfdata_0.9x1.25_SSP2_RCP45_simyr2015_c260223_with_TOP.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_0.9x1.25_simyr2000_c180404.nc</fsurdat>
 <fsurdat hgrid="1.9x2.5"   sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_1.9x2.5_simyr2000_c180306.nc</fsurdat>
 <fsurdat hgrid="4x5"       sim_year="2000" use_crop=".false." >

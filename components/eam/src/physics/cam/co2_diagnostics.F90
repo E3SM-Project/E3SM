@@ -531,14 +531,24 @@ contains
 
          write(iulog,C_FF) 'Surface  Emissions', gtc_flux_sfc, gtc_flux_sfc * dtime
          write(iulog,C_FF) 'Aircraft Emissions', gtc_flux_air, gtc_flux_air * dtime
-         write(iulog,C_FF) 'Sfc Fssl Fuel Flux', gtc_flux_sff, gtc_flux_sff * dtime
-         write(iulog,C_FF) 'Land  Surface Flux', gtc_flux_lnd, gtc_flux_lnd * dtime
-         write(iulog,C_FF) 'Ocean Surface Flux', gtc_flux_ocn, gtc_flux_ocn * dtime
 
          write(iulog, '(71("-"),"|",23("-"))')
 
          write(iulog,C_FF) '   *SUM*', &
-              gtc_flux_tot, gtc_flux_tot * dtime
+            gtc_flux_tot, gtc_flux_tot * dtime
+
+         write(iulog, '(71("-"),"|",20("-"))')
+
+         write(iulog,C_FF) 'Sfc Fssl Fuel Flux', gtc_flux_sff, gtc_flux_sff * dtime
+         write(iulog,C_FF) 'Land  Surface Flux', gtc_flux_lnd, gtc_flux_lnd * dtime
+         write(iulog,C_FF) 'Ocean Surface Flux', gtc_flux_ocn, gtc_flux_ocn * dtime
+
+         write(iulog, '(71("-"),"|",20("-"))')
+
+         write(iulog,C_FF) '   *SUM*', &
+                 (gtc_flux_sff + gtc_flux_lnd + gtc_flux_ocn), &
+                 (gtc_flux_sff + gtc_flux_lnd + gtc_flux_ocn) * dtime
+
 
          time_integrated_flux = gtc_flux_tot * dtime
 
@@ -732,7 +742,11 @@ contains
       real(r8), pointer, dimension(:) :: tmpptr_tc_init
       real(r8), pointer, dimension(:) :: tmpptr_tc_mnst
       real(r8), pointer, dimension(:) :: tmpptr_tc_prev
+      real(r8), pointer, dimension(:) :: tmpptr_c_flux_sfc
       real(r8), pointer, dimension(:) :: tmpptr_c_flux_air
+      real(r8), pointer, dimension(:) :: tmpptr_c_flux_sff
+      real(r8), pointer, dimension(:) :: tmpptr_c_flux_lnd
+      real(r8), pointer, dimension(:) :: tmpptr_c_flux_ocn
       real(r8), pointer, dimension(:) :: tmpptr_c_mflx_sfc
       real(r8), pointer, dimension(:) :: tmpptr_c_mflx_air
       real(r8), pointer, dimension(:) :: tmpptr_c_mflx_sff
@@ -746,7 +760,11 @@ contains
       integer :: tc_init_idx    = 0
       integer :: tc_mnst_idx    = 0
       integer :: tc_prev_idx    = 0
-      integer :: c_flux_air_idx  = 0
+      integer :: c_flux_sfc_idx = 0
+      integer :: c_flux_air_idx = 0
+      integer :: c_flux_sff_idx = 0
+      integer :: c_flux_lnd_idx = 0
+      integer :: c_flux_ocn_idx = 0
       integer :: c_mflx_sfc_idx = 0
       integer :: c_mflx_air_idx = 0
       integer :: c_mflx_sff_idx = 0
@@ -764,7 +782,12 @@ contains
       tc_init_idx    = pbuf_get_index('tc_init')
       tc_mnst_idx    = pbuf_get_index('tc_mnst')
       tc_prev_idx    = pbuf_get_index('tc_prev')
+      ! timestep fluxes
+      c_flux_sfc_idx = pbuf_get_index('c_flux_sfc')
       c_flux_air_idx = pbuf_get_index('c_flux_air')
+      c_flux_sff_idx = pbuf_get_index('c_flux_sff')
+      c_flux_lnd_idx = pbuf_get_index('c_flux_lnd')
+      c_flux_ocn_idx = pbuf_get_index('c_flux_ocn')
       ! monthly fluxes
       c_mflx_sfc_idx = pbuf_get_index('c_mflx_sfc')
       c_mflx_air_idx = pbuf_get_index('c_mflx_air')
@@ -785,7 +808,12 @@ contains
          call pbuf_get_field(pbuf_chnk, tc_init_idx, tmpptr_tc_init )
          call pbuf_get_field(pbuf_chnk, tc_mnst_idx, tmpptr_tc_mnst )
          call pbuf_get_field(pbuf_chnk, tc_prev_idx, tmpptr_tc_prev )
+         ! timestep fluxes
+         call pbuf_get_field(pbuf_chnk, c_flux_sfc_idx, tmpptr_c_flux_sfc )
          call pbuf_get_field(pbuf_chnk, c_flux_air_idx, tmpptr_c_flux_air )
+         call pbuf_get_field(pbuf_chnk, c_flux_sff_idx, tmpptr_c_flux_sff )
+         call pbuf_get_field(pbuf_chnk, c_flux_lnd_idx, tmpptr_c_flux_lnd )
+         call pbuf_get_field(pbuf_chnk, c_flux_ocn_idx, tmpptr_c_flux_ocn )
          ! monthly fluxes
          call pbuf_get_field(pbuf_chnk, c_mflx_sfc_idx, tmpptr_c_mflx_sfc )
          call pbuf_get_field(pbuf_chnk, c_mflx_air_idx, tmpptr_c_mflx_air )
@@ -803,7 +831,12 @@ contains
             tmpptr_tc_init(i)    = state(chnk)%tc_init(i)
             tmpptr_tc_mnst(i)    = state(chnk)%tc_mnst(i)
             tmpptr_tc_prev(i)    = state(chnk)%tc_prev(i)
-            tmpptr_c_flux_air(i)  = state(chnk)%c_flux_air(i)
+            ! timestep fluxes
+            tmpptr_c_flux_sfc(i) = state(chnk)%c_flux_sfc(i)
+            tmpptr_c_flux_air(i) = state(chnk)%c_flux_air(i)
+            tmpptr_c_flux_sff(i) = state(chnk)%c_flux_sff(i)
+            tmpptr_c_flux_lnd(i) = state(chnk)%c_flux_lnd(i)
+            tmpptr_c_flux_ocn(i) = state(chnk)%c_flux_ocn(i)
             ! monthly fluxes
             tmpptr_c_mflx_sfc(i) = state(chnk)%c_mflx_sfc(i)
             tmpptr_c_mflx_air(i) = state(chnk)%c_mflx_air(i)
@@ -844,7 +877,11 @@ contains
       real(r8), pointer, dimension(:) :: tmpptr_tc_init
       real(r8), pointer, dimension(:) :: tmpptr_tc_mnst
       real(r8), pointer, dimension(:) :: tmpptr_tc_prev
+      real(r8), pointer, dimension(:) :: tmpptr_c_flux_sfc
       real(r8), pointer, dimension(:) :: tmpptr_c_flux_air
+      real(r8), pointer, dimension(:) :: tmpptr_c_flux_sff
+      real(r8), pointer, dimension(:) :: tmpptr_c_flux_lnd
+      real(r8), pointer, dimension(:) :: tmpptr_c_flux_ocn
       real(r8), pointer, dimension(:) :: tmpptr_c_mflx_sfc
       real(r8), pointer, dimension(:) :: tmpptr_c_mflx_air
       real(r8), pointer, dimension(:) :: tmpptr_c_mflx_sff
@@ -858,7 +895,11 @@ contains
       integer :: tc_init_idx    = 0
       integer :: tc_mnst_idx    = 0
       integer :: tc_prev_idx    = 0
+      integer :: c_flux_sfc_idx = 0
       integer :: c_flux_air_idx = 0
+      integer :: c_flux_sff_idx = 0
+      integer :: c_flux_lnd_idx = 0
+      integer :: c_flux_ocn_idx = 0
       integer :: c_mflx_sfc_idx = 0
       integer :: c_mflx_air_idx = 0
       integer :: c_mflx_sff_idx = 0
@@ -877,7 +918,12 @@ contains
       tc_init_idx    = pbuf_get_index('tc_init')
       tc_mnst_idx    = pbuf_get_index('tc_mnst')
       tc_prev_idx    = pbuf_get_index('tc_prev')
+      ! timestep fluxes
+      c_flux_sfc_idx = pbuf_get_index('c_flux_sfc')
       c_flux_air_idx = pbuf_get_index('c_flux_air')
+      c_flux_sff_idx = pbuf_get_index('c_flux_sff')
+      c_flux_lnd_idx = pbuf_get_index('c_flux_lnd')
+      c_flux_ocn_idx = pbuf_get_index('c_flux_ocn')
       ! monthly fluxes
       c_mflx_sfc_idx = pbuf_get_index('c_mflx_sfc')
       c_mflx_air_idx = pbuf_get_index('c_mflx_air')
@@ -898,7 +944,12 @@ contains
          call pbuf_get_field(pbuf_chnk, tc_init_idx, tmpptr_tc_init )
          call pbuf_get_field(pbuf_chnk, tc_mnst_idx, tmpptr_tc_mnst )
          call pbuf_get_field(pbuf_chnk, tc_prev_idx, tmpptr_tc_prev )
+         ! timestep fluxes
+         call pbuf_get_field(pbuf_chnk, c_flux_sfc_idx, tmpptr_c_flux_sfc )
          call pbuf_get_field(pbuf_chnk, c_flux_air_idx, tmpptr_c_flux_air )
+         call pbuf_get_field(pbuf_chnk, c_flux_sff_idx, tmpptr_c_flux_sff )
+         call pbuf_get_field(pbuf_chnk, c_flux_lnd_idx, tmpptr_c_flux_lnd )
+         call pbuf_get_field(pbuf_chnk, c_flux_ocn_idx, tmpptr_c_flux_ocn )
          ! monthly fluxes
          call pbuf_get_field(pbuf_chnk, c_mflx_sfc_idx, tmpptr_c_mflx_sfc )
          call pbuf_get_field(pbuf_chnk, c_mflx_air_idx, tmpptr_c_mflx_air )
@@ -916,7 +967,12 @@ contains
             state(chnk)%tc_init(i)    = tmpptr_tc_init(i)
             state(chnk)%tc_mnst(i)    = tmpptr_tc_mnst(i)
             state(chnk)%tc_prev(i)    = tmpptr_tc_prev(i)
-            state(chnk)%c_flux_air(i) = tmpptr_c_flux_air(i)
+            ! timestep fluxes
+            tmpptr_c_flux_sfc(i) = state(chnk)%c_flux_sfc(i)
+            tmpptr_c_flux_air(i) = state(chnk)%c_flux_air(i)
+            tmpptr_c_flux_sff(i) = state(chnk)%c_flux_sff(i)
+            tmpptr_c_flux_lnd(i) = state(chnk)%c_flux_lnd(i)
+            tmpptr_c_flux_ocn(i) = state(chnk)%c_flux_ocn(i)
             ! monthly fluxes
             state(chnk)%c_mflx_sfc(i) = tmpptr_c_mflx_sfc(i)
             state(chnk)%c_mflx_air(i) = tmpptr_c_mflx_air(i)

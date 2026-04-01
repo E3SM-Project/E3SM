@@ -586,19 +586,19 @@ contains
           this%seedc(begg:endg) = spval
           call hist_addfld1d (fname='SEEDC_GRC', units='gC/m^2', &
                avgflag='A', long_name='pool for seeding new PFTs via dynamic landcover', &
-               ptr_gcell=this%seedc)
+               ptr_gcell=this%seedc, default='inactive')
        end if 
        if (carbon_type == 'c13') then
           this%seedc(begg:endg) = spval
           call hist_addfld1d (fname='C13_SEEDC_GRC', units='gC/m^2', &
                avgflag='A', long_name='pool for seeding new PFTs via dynamic landcover', &
-               ptr_gcell=this%seedc)
+               ptr_gcell=this%seedc, default='inactive')
        end if 
        if (carbon_type == 'c14') then
           this%seedc(begg:endg) = spval
           call hist_addfld1d (fname='C14_SEEDC_GRC', units='gC/m^2', &
                avgflag='A', long_name='pool for seeding new PFTs via dynamic landcover', &
-               ptr_gcell=this%seedc)
+               ptr_gcell=this%seedc, default='inactive')
        end if 
     end if
     

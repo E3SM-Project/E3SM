@@ -61,6 +61,7 @@
       $CASEROOT/user_nl_gcam file.</desc>
   </entry>
 
+<!--
     <entry id="ATM_DOMAIN_FILE">
     <type>char</type>
     <default_value>domain.lnd.ne30pg2_oEC60to30v3.200220.nc</default_value>
@@ -76,6 +77,7 @@
     <file>env_run.xml</file>
     <desc>lnd domain file</desc>
   </entry>
+-->
 
   <entry id="GCAM_PATH">
     <type>char</type>

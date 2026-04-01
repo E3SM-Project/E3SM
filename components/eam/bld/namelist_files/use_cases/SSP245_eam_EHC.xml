@@ -20,11 +20,17 @@
 <history_aerosol>.true.</history_aerosol>
 <history_aero_optics>.true.</history_aero_optics>
 
+<!-- co2 conservation tolerance with human component -->
+<co2_conserv_error_tol_per_year>1.e-5</co2_conserv_error_tol_per_year>
+
+<!-- more robust surface flux coupling: like v2 -->
+<cflx_cpl_opt>1</cflx_cpl_opt>
+
 <!-- External forcing for BAM or MAM.  CMIP6 input4mips data -->
 <ext_frc_type>INTERP_MISSING_MONTHS</ext_frc_type>
 <no2_ext_file         >atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_NO2_aircraft_vertical_2015-2100_1.9x2.5_c20240219.nc </no2_ext_file>
 <so2_ext_file         >atm/cam/chem/trop_mozart_aero/emis/GCAM_E3SM_SSP245/aerosol_emission_data_SSP245_GCAM/output_remapped_fv2deg/gcam_ssp245_mam4_so2_elev_2015-2100_c240412.nc </so2_ext_file>
-<soag0_ext_file	      >atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_SOAG0_elev_2015-2100_1.9x2.5_c20240219.nc </soag0_ext_file>
+<soag0_ext_file	      >atm/cam/chem/trop_mozart_aero/emis/GCAM_E3SM_SSP245/aerosol_emission_data_SSP245_GCAM/output_remapped_fv2deg/gcam_ssp245_mam4_soag0_elev_2015-2100_c240412.nc </soag0_ext_file>
 <bc_a4_ext_file       >atm/cam/chem/trop_mozart_aero/emis/GCAM_E3SM_SSP245/aerosol_emission_data_SSP245_GCAM/output_remapped_fv2deg/gcam_ssp245_mam4_bc_a4_elev_2015-2100_c240412.nc </bc_a4_ext_file>
 <mam7_num_a1_ext_file >atm/cam/chem/trop_mozart_aero/emis/GCAM_E3SM_SSP245/aerosol_emission_data_SSP245_GCAM/output_remapped_fv2deg/gcam_ssp245_mam4_num_a1_elev_2015-2100_c240412.nc </mam7_num_a1_ext_file>
 <num_a2_ext_file      >atm/cam/chem/trop_mozart_aero/emis/GCAM_E3SM_SSP245/aerosol_emission_data_SSP245_GCAM/output_remapped_fv2deg/gcam_ssp245_mam4_num_a2_elev_2015-2100_c240412.nc </num_a2_ext_file>
@@ -48,7 +54,7 @@
 <nox_emis_file        >atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_NO_surface_2015-2100_1.9x2.5_c20240219.nc </nox_emis_file>
 <dms_emis_file	      >atm/cam/chem/trop_mozart_aero/emis/DMSflux.1850-2100.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20160727.nc</dms_emis_file>
 <so2_emis_file	      >atm/cam/chem/trop_mozart_aero/emis/GCAM_E3SM_SSP245/aerosol_emission_data_SSP245_GCAM/output_remapped_fv2deg/gcam_ssp245_mam4_so2_surf_2015-2100_c240412.nc </so2_emis_file>
-<soag0_emis_file      >atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_SOAG0_surf_2015-2100_1.9x2.5_c20240219.nc </soag0_emis_file>
+<soag0_emis_file      >atm/cam/chem/trop_mozart_aero/emis/GCAM_E3SM_SSP245/aerosol_emission_data_SSP245_GCAM/output_remapped_fv2deggcam_ssp245_mam4_soag0_surf_2015-2100_c240412.nc </soag0_emis_file>
 <bc_a4_emis_file      >atm/cam/chem/trop_mozart_aero/emis/GCAM_E3SM_SSP245/aerosol_emission_data_SSP245_GCAM/output_remapped_fv2deg/gcam_ssp245_mam4_bc_a4_surf_2015-2100_c240412.nc </bc_a4_emis_file>
 <mam7_num_a1_emis_file>atm/cam/chem/trop_mozart_aero/emis/GCAM_E3SM_SSP245/aerosol_emission_data_SSP245_GCAM/output_remapped_fv2deg/gcam_ssp245_mam4_num_a1_surf_2015-2100_c240412.nc </mam7_num_a1_emis_file>
 <num_a2_emis_file     >atm/cam/chem/trop_mozart_aero/emis/GCAM_E3SM_SSP245/aerosol_emission_data_SSP245_GCAM/output_remapped_fv2deg/gcam_ssp245_mam4_num_a2_surf_2015-2100_c240412.nc </num_a2_emis_file>
