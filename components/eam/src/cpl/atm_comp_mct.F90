@@ -362,7 +362,7 @@ CONTAINS
        ! First phase of cam initialization
        ! Initialize mpicom_atm, allocate cam_in and cam_out and determine
        ! atm decomposition (needed to initialize gsmap)
-       ! for an initial run, cam_in and cam_out are allocated in cam_initial
+       ! for an initial run, cam_in and cam_out are allocated in is called the second time in atm_initial
        ! for a restart/branch run, cam_in and cam_out are allocated in restart
        ! Set defaults then override with user-specified input and initialize time manager
        ! Note that the following arguments are needed to cam_init for timemgr_restart only
@@ -570,6 +570,10 @@ CONTAINS
 
        end if
 
+!!!! todo: delete this !!!!!
+   if (masterproc) write(iulog,*)'cflx-log: atm_import and cam_run1 for restart in atm_init_mct'
+   if (masterproc) write(iulog,*)'sync ymd=',CurrentYMD
+
        ! Compute time of next radiation computation, like in run method for exact restart
 
        call seq_timemgr_EClockGetData(Eclock,dtime=atm_cpl_dt)
@@ -683,6 +687,22 @@ CONTAINS
 
     call seq_timemgr_EClockGetData(EClock,curr_ymd=ymd_sync,curr_tod=tod_sync, &
        curr_yr=yr_sync,curr_mon=mon_sync,curr_day=day_sync)
+
+!!!! todo: delete this !!!!!
+    call get_curr_date( yr, mon, day, tod)
+    ymd = yr*10000 + mon*100 + day
+    tod = tod
+   if (masterproc) write(iulog,*)'cflx-log: at beginning of atm_run_mct'
+   if (masterproc) write(iulog,*)' cam ymd=',ymd     ,'  cam tod= ',tod
+   if (masterproc) write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
+
+    if ( .not. seq_timemgr_EClockDateInSync( EClock, ymd, tod ) )then
+       call seq_timemgr_EClockGetData(EClock, curr_ymd=ymd_sync, curr_tod=tod_sync )
+       write(iulog,*)' cam ymd=',ymd     ,'  cam tod= ',tod
+       write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
+       call shr_sys_abort( subname//': CAM clock is not in sync with master Sync Clock' )
+    end if
+
 
     !load orbital parameters
 

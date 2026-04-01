@@ -1,7 +1,8 @@
 # create_e3sm_gcam_land_scalar_baseline_local.r
 
-# This function reads monthly elm h1 files to obtain pft-level values for baseline of:
+# This function reads monthly elm history files to obtain pft-level values for baseline of:
 #   veg_cf%npp, col_cf%hr, veg_pp%wtgcell for the veg landunit only, and total cell area
+#   this is currently the h2 file in our current run script
 
 # the period averaged data in E3SM-GCAM include zero values (and not uninitialized or large missing data values)
 #    because only active pfts are updated to be set to non-zero values and sent through the coupler
@@ -43,10 +44,10 @@
 
 # arguments
 
-# indir:				path to h1 files (requires final "/")
+# indir:				path to history files (requires final "/")
 # case_name:			simulation case name that is the main part of the history file name including ".elm.h#."; "yyyy-mm.nc" will be appended as appropriate
-# year_start:		start year of h1 files to read; will also be included in output file names
-# year_end:			end year of h1 files to read; will also be included in output file names
+# year_start:		start year of history files to read; will also be included in output file names
+# year_end:			end year of history files to read; will also be included in output file names
 # outdir:			path to output files (requires final "/")
 # out_base_name:    the beginning of the output file names; needs to include E3SM resolution and active component cofig info
 # avg_period:       Default=5; number of years in averaging period
@@ -73,7 +74,7 @@
 
 # about 1.5 hours to finish on desktop
 
-# resolution will be determined from the h1 file
+# resolution will be determined from the history file
 # recall that longitude varies fastest
 # this sript is agnostic regarding resolution; indices are determined based on input file order
 
@@ -138,7 +139,7 @@ create_e3sm_gcam_land_scalar_baseline_local <- function( indir = "./",
 											  out_base_name,
 											  avg_period = 5) {
 	
-	cat("Start create_baseline_for_iesm_scalars.r at", date(), "\n")
+	cat("Start create_e3sm_gcam_land_scalar_baseline_local.r at", date(), "\n")
 	
 	veg_lunit_id = 1
 	num_years = year_end - year_start + 1
@@ -345,7 +346,9 @@ create_e3sm_gcam_land_scalar_baseline_local <- function( indir = "./",
 		hr_monthly_avg[m,] = hr_monthly_avg[m,] / avg_period
 		
 	} # end m loop over month
-	
+
+	cat("Finish time loop, starting average calcs, at", date(), "\n")
+
 	# calc period average
 	# in E3SM coupler values are summed and averaged without error checking, and zeros are passed for missing/non-active pft data
 	# in E3SM outlier npp/hr values are removed before scalar calculation (outliers are determined without zero and nan values)
@@ -511,6 +514,6 @@ create_e3sm_gcam_land_scalar_baseline_local <- function( indir = "./",
 	write_df = write_df[order(write_df$lat_ind, write_df$lon_ind),]
 	write.csv(write_df, file = area_out_name, row.names=FALSE)
 	
-	cat("Finish create_baseline_for_iesm_scalars.r at", date(), "\n")
+	cat("Finish create_e3sm_gcam_land_scalar_baseline_local.r at", date(), "\n")
 	
 }
