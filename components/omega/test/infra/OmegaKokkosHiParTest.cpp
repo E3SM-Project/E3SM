@@ -349,12 +349,10 @@ Error testHiparFor1DSearch1D(int N2) {
              const int End   = 3 * N2 / 4 + J1 % (N2 / 4);
              int SearchIdx;
              parallelSearchInner(
-                 Team, End - Start,
-                 INNER_LAMBDA(int J2) {
-                    return DataD(J1, J2 + Start) >= Threshold;
-                 },
+                 Team, Range{Start, End - 1},
+                 INNER_LAMBDA(int J2) { return DataD(J1, J2) >= Threshold; },
                  SearchIdx);
-             IdxD(J1) = SearchIdx == -1 ? SearchIdx : SearchIdx + Start;
+             IdxD(J1) = SearchIdx;
           });
 
       if (!arraysEqual(IdxD, RefIdxH)) {
