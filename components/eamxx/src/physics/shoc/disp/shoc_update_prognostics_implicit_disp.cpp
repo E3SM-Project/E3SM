@@ -68,8 +68,8 @@ void Functions<Real,DefaultDevice>
                                 ekat::subview(tke, i),
                                 ekat::subview(u_wind, i),
                                 ekat::subview(v_wind, i),
-                                uw_sfc(i),
-                                vw_sfc(i),
+                                uw_sfc_pert(i),
+                                vw_sfc_pert(i),
                                 ekat::subview(um_pert, i),
                                 ekat::subview(vm_pert, i));
   });
