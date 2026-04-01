@@ -47,7 +47,7 @@ void SurfaceCouplingExporter::create_requests()
   add_field<Required>("phis",                 scalar2d_layout,      m2/s2,  grid_name);
   add_field<Required>("p_mid",                scalar3d_layout_mid,  Pa,     grid_name, ps);
   add_field<Required>("T_mid",                scalar3d_layout_mid,  K,      grid_name, ps);
-  add_field<Required>("qv",                   scalar3d_layout_mid,  kg/kg,  grid_name, ps);
+  add_tracer<Required>("qv",                  m_grid,               kg/kg, ps);
   // TODO: Switch horiz_winds to using U and V, note right now there is an issue with when the subfields are created, so can't switch yet.
   add_field<Required>("horiz_winds",          vector3d_layout,      m/s,    grid_name);
   add_field<Required>("sfc_flux_dir_nir",     scalar2d_layout,      W/m2,   grid_name);
@@ -64,7 +64,7 @@ void SurfaceCouplingExporter::create_requests()
   add_field<Required>("surf_mom_flux",        vector2d_layout,      N/m2,   grid_name);
   add_field<Required>("tau_est",              scalar2d_layout,      Pa,     grid_name);
   // Required for ugust
-  add_field<Required>("tke",                  scalar3d_layout_mid,  m2/s2,  grid_name, ps);
+  add_tracer<Updated>("tke",                  m_grid,               m2/s2, ps);
 
   create_helper_field("Sa_z",       scalar2d_layout, grid_name);
   create_helper_field("Sa_u",       scalar2d_layout, grid_name);
