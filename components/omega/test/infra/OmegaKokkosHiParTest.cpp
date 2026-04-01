@@ -399,7 +399,7 @@ Error testHiparLaunchConfig1D(int N1, int N2) {
 #endif
 
    auto LConfig =
-       LaunchConfig({N1}, TeamSize, TeamScratch<Real, I4>(N2, N2 - 2));
+       LaunchConfig({N1}, TeamSize, TeamScratch<Real, I4>(N2 - 2, N2));
    parallelForOuter(
        LConfig, KOKKOS_LAMBDA(int J1, const TeamMember &Team) {
           ArrayScratch1DI4 ScratchA(teamScratch(Team), N2);
