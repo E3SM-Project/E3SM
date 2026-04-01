@@ -341,10 +341,6 @@ void SurfaceCouplingExporter::do_export(const double dt, const bool called_durin
     compute_eamxx_exports(dt,called_during_initialization);
   }
 
-  // Ensure all GPU kernels in compute_eamxx_exports have completed before
-  // do_export_to_cpl reads the helper field data (e.g. Sa_wsresp, Sa_ugust).
-  Kokkos::fence();
-
   // Finish up exporting vars
   do_export_to_cpl(called_during_initialization);
 }
