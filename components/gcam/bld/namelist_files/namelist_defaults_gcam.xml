@@ -62,17 +62,17 @@ for the iac data in the e3sm distribution
 <base_npp_file hgrid="r0125">iac/giac/gcam/gcam_6_0/data/base_r0125_set_this_in_namelist_annAvgMonthly_2010-2014_npp.csv</base_npp_file>
 <base_npp_file hgrid="r025">iac/giac/gcam/gcam_6_0/data/base_r025_set_this_in_namelist_annAvgMonthly_2010-2014_npp.csv</base_npp_file>
 <base_npp_file hgrid="r05">iac/giac/gcam/gcam_6_0/data/base_r05_set_this_in_namelist_annAvgMonthly_2010-2014_npp.csv</base_npp_file>
-<base_npp_file hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/base_f09_20241204_ZATM_annAvgMonthly_2010-2014_npp.csv</base_npp_file>
+<base_npp_file hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/base_20260303_I20TREAMELMCNPRDCTCBCPHSBGC_ne30pg2_f09_oEC60to30v3_PerAvg_2010-2014_npp.csv</base_npp_file>
 <base_npp_file hgrid="1.9x2.5">iac/giac/gcam/gcam_6_0/data/base_f19_set_this_in_namelist_annAvgMonthly_2010-2014_npp.csv</base_npp_file>
 <base_hr_file hgrid="r0125">iac/giac/gcam/gcam_6_0/data/base_r0125_set_this_in_namelist_annAvgMonthly_2010-2014_hr.csv</base_hr_file>
 <base_hr_file hgrid="r025">iac/giac/gcam/gcam_6_0/data/base_r025_set_this_in_namelist_annAvgMonthly_2010-2014_hr.csv</base_hr_file>
 <base_hr_file hgrid="r05">iac/giac/gcam/gcam_6_0/data/base_r05_set_this_in_namelist_annAvgMonthly_2010-2014_hr.csv</base_hr_file>
-<base_hr_file hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/base_f09_20241204_ZATM_annAvgMonthly_2010-2014_hr.csv</base_hr_file>
+<base_hr_file hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/base_20260303_I20TREAMELMCNPRDCTCBCPHSBGC_ne30pg2_f09_oEC60to30v3_PerAvg_2010-2014_hr.csv</base_hr_file>
 <base_hr_file hgrid="1.9x2.5">iac/giac/gcam/gcam_6_0/data/base_f19_set_this_in_namelist_annAvgMonthly_2010-2014_hr.csv</base_hr_file>
 <base_pft_file hgrid="r0125">iac/giac/gcam/gcam_6_0/data/base_r0125_set_this_in_namelist_annAvgMonthly_2010-2014_pft_wt.csv</base_pft_file>
 <base_pft_file hgrid="r025">iac/giac/gcam/gcam_6_0/data/base_r025_set_this_in_namelist_annAvgMonthly_2010-2014_pft_wt.csv</base_pft_file>
 <base_pft_file hgrid="r05">iac/giac/gcam/gcam_6_0/data/base_r05_set_this_in_namelist_annAvgMonthly_2010-2014_pft_wt.csv</base_pft_file>
-<base_pft_file hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/base_f09_20241204_ZATM_annAvgMonthly_2010-2014_pft_wt.csv</base_pft_file>
+<base_pft_file hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/base_20260303_I20TREAMELMCNPRDCTCBCPHSBGC_ne30pg2_f09_oEC60to30v3_PerAvg_2010-2014_pft_wt.csv</base_pft_file>
 <base_pft_file hgrid="1.9x2.5">iac/giac/gcam/gcam_6_0/data/base_f19_set_this_in_namelist_annAvgMonthly_2010-2014_pft_wt.csv</base_pft_file>
 <gcam2elm_co2_mapping_file>iac/giac/gcam/gcam_6_0/mappings/co2_regional.xml</gcam2elm_co2_mapping_file>
 <gcam2elm_luc_mapping_file>iac/giac/gcam/gcam_6_0/mappings/luc.xml</gcam2elm_luc_mapping_file>
@@ -122,6 +122,7 @@ for the iac data in the e3sm distribution
 
 <!-- Runtime options -->
 <read_scalars>.false.</read_scalars>
+<scalar_source_dir></scalar_source_dir>
 <write_scalars>.true.</write_scalars>
 <write_co2>.false.</write_co2>
 <elm_ehc_agyield_scaling>.true.</elm_ehc_agyield_scaling>

@@ -18,6 +18,8 @@ from CIME.case import Case
 from CIME.utils import expect, run_cmd_no_fail, safe_copy
 from CIME.buildnml import create_namelist_infile, parse_input
 
+_GCAM_LINK_OVERWRITE = False
+
 logger = logging.getLogger(__name__)
 
 ###############################################################################
@@ -122,7 +124,6 @@ def buildnml(case, caseroot, compname):
         gcam_startfile = ""
 
 #### iac/gcam restart isn't controlled by this type of file
-#### there are several pieces to restart and they are not working yet
 #### to get a proper starting date with hybrid we need to override this
 #### this is because the iac is notrestarted at 2015, it is run for the first time
 #### to do: check this later
@@ -165,7 +166,7 @@ def buildnml(case, caseroot, compname):
 
     def _ensure_symlink(src, dst):
         """Create symlink dst -> src without clobbering by default.
-        If dst exists and matches, do nothing. If differs, require _OVERWRITE.
+        If dst exists and matches, do nothing. If differs, require _GCAM_LINK_OVERWRITE.
         """
         expect(os.path.exists(src), "Missing source for symlink: {}".format(src))
         os.makedirs(os.path.dirname(dst) or ".", exist_ok=True)
@@ -175,8 +176,14 @@ def buildnml(case, caseroot, compname):
                 if os.path.abspath(cur) == os.path.abspath(src):
                     # logger.info("Symlink exists and matches: {} -> {}".format(dst, src))
                     return
-            if not _OVERWRITE:
-                expect(False, "Refusing to overwrite existing path: {} (set GCAM_OVERWRITE=1 to override)".format(dst))
+                elif not _GCAM_LINK_OVERWRITE:
+                    logger.info("Link does not point to original source {}, likely because this is a branch run. Using linke to refcase files.".format(src))
+                    logger.info("Not overwriting existing link {} pointing to {}".format(dst, os.path.abspath(cur)))
+                    logger.info("Set _GCAM_LINK_OVERWRITE=True to set link to original source.")
+                    return
+                else:
+                    logger.info("Link does not point to original source, likely because this is a branch run.")
+                    logger.info("Overwriting existing link {} to point to original source: {}".format(dst, src))
             if os.path.isdir(dst) and not os.path.islink(dst):
                 shutil.rmtree(dst)
             else:
@@ -364,13 +371,17 @@ def buildnml(case, caseroot, compname):
     if read_scalars:
         # Only get scalar_source_dir when read_scalars = .true.
         scalar_source_dir = _get_namelist_item(gcam_in_path, "scalar_source_dir")
-        expect(scalar_source_dir, "read_scalars = .true. but scalar_source_dir is not specified in gcam_in")
-        expect(os.path.isdir(scalar_source_dir), f"scalar_source_dir '{scalar_source_dir}' does not exist")
-        for src in glob.glob(os.path.join(scalar_source_dir, "scalar.*")):
-            fname = os.path.basename(src)
-            dst = os.path.join(rundir, fname)
-            _ensure_symlink(src, dst)
-        logger.info("Linked scalar files from control run: %s", scalar_source_dir)
+        #expect(scalar_source_dir, "read_scalars = .true. but scalar_source_dir is not specified in gcam_in")
+        if not scalar_source_dir:
+            logger.info("read_scalars = .true., but scalar_source_dir is not specified in gcam_in, so skipping scalar file linking")
+            logger.info("User must copy scalar files manually to RUNDIR, OR set scalar_source_dir in gcam_in to enable linking and re-run case.setup --reset")
+        else:
+            expect(os.path.isdir(scalar_source_dir), f"scalar_source_dir '{scalar_source_dir}' does not exist")
+            for src in glob.glob(os.path.join(scalar_source_dir, "scalars_*")):
+                fname = os.path.basename(src)
+                dst = os.path.join(rundir, fname)
+                _ensure_symlink(src, dst)
+            logger.info("Linked scalar files from control run: %s", scalar_source_dir)
     else:
         logger.info("read_scalars = .false., skipping scalar file linking")
 

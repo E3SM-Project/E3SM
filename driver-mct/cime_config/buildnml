@@ -461,14 +461,8 @@ def buildnml(case, caseroot, component):
     
     if os.path.exists(gcam_in_path) and os.path.exists(drv_in_path):
         try:
-            # Check if run_gcam = .true. in gcam_in
-            gcam_active = False
-            with open(gcam_in_path, 'r') as f:
-                for line in f:
-                    line = line.strip().lower()
-                    if ('run_gcam' in line and '=' in line and '.true.' in line):
-                        gcam_active = True
-                        break
+            # if gcam_in exists, then the ehc is active
+            gcam_active = True
             
             if gcam_active:
                 # Read drv_in file

@@ -1130,7 +1130,7 @@ end function chem_is_active
     ! initialize chemistry constituent surface fluxes to zero
     do m = 2,pcnst
        n = map2chm(m)
-       if (n>0) cam_in%cflx(:,m) = 0._r8 
+       if (n>0) cam_in%cflx(:,m) = 0._r8
     enddo
 
     ! aerosol emissions ...

@@ -1339,12 +1339,13 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     use metdata,        only: get_met_srf2
 #endif
     use time_manager,   only: get_nstep, is_first_step, is_end_curr_month, &
-                              is_first_restart_step, is_last_step
+                              is_first_restart_step, is_last_step, is_start_curr_month
     use check_energy,   only: ieflx_gmean, check_ieflx_fix 
     use phys_control,   only: ieflx_opt
     use co2_diagnostics,only: get_total_carbon, print_global_carbon_diags, &
                               co2_diags_store_fields, co2_diags_read_fields
     use co2_cycle,      only: co2_transport
+    use phys_control,     only: phys_getopts
     !
     ! Input arguments
     !
@@ -1378,6 +1379,14 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     integer(i8) :: sysclock_max                  ! system clock max value
     real(r8)    :: chunk_cost                    ! measured cost per chunk
     type(physics_buffer_desc),pointer, dimension(:)     :: phys_buffer_chunk
+
+   ! Numerical schemes for process coupling
+    integer :: cflx_cpl_opt  ! When to apply surface tracer fluxes  (not including water vapor).
+                             ! The default for aerosols is to do this 
+                             ! after tphysac:clubb_surface and before aerosol dry removal.
+                             ! For chemical gases, different versions of EAM 
+                             ! might use different process ordering.
+
     !
     ! If exit condition just return
     !
@@ -1485,6 +1494,18 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
           if ( is_end_curr_month() ) then
              phys_state(c)%tc_mnst(:ncol) = phys_state(c)%tc_curr(:ncol)
           end if
+          ! upon restart with cflx_cpl_opt=2, these need to be re-zeroed
+          ! because get_carbon_sfc_fluxes has not been called yet,
+          ! and co2_diags_read_fields has been called to fill them with old values
+          ! there may still be an issue with the timestep-level values, but don't
+          ! zero them yet so that they can be diagnosed
+          call phys_getopts( cflx_cpl_opt_out = cflx_cpl_opt)
+          if ( is_first_restart_step() .and. is_start_curr_month() .and. cflx_cpl_opt == 2) then
+             phys_state(c)%c_mflx_sfc(:ncol) = 0._r8
+             phys_state(c)%c_mflx_ocn(:ncol) = 0._r8
+             phys_state(c)%c_mflx_sff(:ncol) = 0._r8
+             phys_state(c)%c_mflx_lnd(:ncol) = 0._r8
+         end if
        end do
        call co2_diags_store_fields(phys_state, pbuf2d)
     end if
@@ -1894,7 +1915,9 @@ end if ! l_tracer_aero
 
        if (cflx_cpl_opt==1) then
           call cflx_tend( state, cam_in, ztodt, ptend)       
-       call physics_update(state, ptend, ztodt, tend)
+         call physics_update(state, ptend, ztodt, tend)
+         !!!! todo: delete !!!
+         if (masterproc) write(iulog,*) 'clfx-log: surface flux tendencies applied in tphysac after clubb_surface'
        end if
 
        call cnd_diag_checkpoint( diag, 'CFLXAPP', state, pbuf, cam_in, cam_out )
@@ -1919,12 +1942,18 @@ end if ! l_tracer_aero
        call t_stopf ('vertical_diffusion_tend')
        call cnd_diag_checkpoint( diag, 'VDIFF', state, pbuf, cam_in, cam_out )
     
+      !!! todo: delete !!!
+       if (masterproc) write(iulog,*) 'cflx-log: surface fluxes applied via vertical diffusion tendencies in tphysac'
+
     end if ! l_vdiff
     endif
 
-    ! collect surface carbon fluxes
-    call get_carbon_sfc_fluxes(state, cam_in, ztodt)
-
+    ! collect surface carbon fluxes, but only if they have been updated by cflx_tend above, (cflx_cpl_opt==1)
+    !    or by vertical_diffusion_tend above (l_vdiff==.true.) or if they are not being updated in tphysbc (cflx_cpl_opt /= 2)
+    ! otherwise, this function is called by tphysbc after cflx_tend() and update_physics()
+    if (cflx_cpl_opt /= 2) then
+       call get_carbon_sfc_fluxes(state, cam_in, ztodt)
+    endif
 
 if (l_rayleigh) then
     !===================================================
@@ -2288,6 +2317,7 @@ subroutine tphysbc (ztodt,               &
     use debug_info,      only: get_debug_chunk, get_debug_macmiciter
     use lnd_infodata,    only: precip_downscaling_method
     use cflx,            only: cflx_tend
+    use co2_diagnostics, only: get_carbon_sfc_fluxes
 
     implicit none
 
@@ -2840,6 +2870,9 @@ end if
        if ( cflx_cpl_opt==2 ) then
           call cflx_tend( state, cam_in, ztodt, ptend)
           call physics_update(state, ptend, ztodt, tend)
+          call get_carbon_sfc_fluxes(state, cam_in, ztodt)
+         !!! todo: delete !!!
+         if (masterproc) write(iulog,*) 'cflx-log: surface flux tendencies applied in tphysbc.'
        end if
 
        !========================================================================================
