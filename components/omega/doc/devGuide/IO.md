@@ -44,32 +44,36 @@ As mentioned above, most I/O operations will take place within the IOStreams
 module, but the base IO functions can be accessed directly. To open and close
 files for reading/writing, use:
 ```c++
-   IO::openFile(FileID, Filename, Mode);
+   IO::openFileRead(FileID, Filename, FileFormat(optional));
    IO::closeFile(FileID);
 ```
 or
 ```c++
-   IO::openFile(FileID, Filename, Mode, Format, IfExists);
+   bool NewFile;
+   IO::openFileWrite(FileID, Filename, NewFile, IfExists, FileFormat(opt));
    IO::closeFile(FileID);
 ```
 In both case, an integer FileID is assigned to the open file which is then
 used by all subsequent operations. The Filename is a ``std::string`` that
-should include the full path and name of the file. The mode can be either
-``OMEGA::IO::ModeRead`` or ``OMEGA::IO::ModeWrite``. The shorter interface
-uses default values for the file format, overwrite behavior and precision.
-In the longer interface, the user must supply these values using the enums:
+should include the full path and name of the file. If the optional FileFormat
+is not supplied, the default file format (currently pnetcdf) is used. Supported
+file formats are shown below. The IfExists argument specifies the behavior
+for writing a file when the file already exists. It is an optional argument
+except when the FileFormat argument is needed; in that case, both must be
+supplied. The available options for IfExists are also shown below.
 ```c++
 /// Supported file formats
 enum FileFmt {
+   FmtPnetCDF  = PIO_IOTYPE_PNETCDF,  ///< Parallel NetCDF
    FmtNetCDF3  = PIO_IOTYPE_NETCDF,   ///< NetCDF3 classic format
-   FmtPnetCDF  = PIO_IOTYPE_PNETCDF,  ///< Parallel NetCDF3
-   FmtNetCDF4c = PIO_IOTYPE_NETCDF4C, ///< NetCDF4 (HDF5-compatible) cmpressed
+   FmtNetCDF4c = PIO_IOTYPE_NETCDF4C, ///< NetCDF4 (HDF5-compatible) compressed
    FmtNetCDF4p = PIO_IOTYPE_NETCDF4P, ///< NetCDF4 (HDF5-compatible) parallel
-   FmtNetCDF4  = PIO_IOTYPE_NETCDF4P, ///< NetCDF4 (HDF5-compatible) parallel
-   FmtHDF5     = PIO_IOTYPE_HDF5,     ///< native HDF5 format
-   FmtADIOS    = PIO_IOTYPE_ADIOS,    ///< ADIOS format
-   FmtUnknown  = -1,                  ///< Unknown or undefined
-   FmtDefault  = PIO_IOTYPE_NETCDF4C, ///< NetCDF4 is default
+   FmtNetCDF4z = PIO_IOTYPE_NETCDF4P_NCZARR, ///< NetCDF4 (HDF5) NCZarr
+   FmtADIOS    = PIO_IOTYPE_ADIOS,           ///< ADIOS parallel
+   FmtADIOSC   = PIO_IOTYPE_ADIOSC,  ///< ADIOS parallel with compression
+   FmtHDF5     = PIO_IOTYPE_HDF5,    ///< native HDF5 parallel
+   FmtHDF5C    = PIO_IOTYPE_HDF5C,   ///< native HDF5 parallel w compression
+   FmtDefault  = PIO_IOTYPE_PNETCDF, ///< PNETCDF is default
 };
 
 /// Behavior (for output files) when a file already exists
@@ -80,10 +84,9 @@ enum class IfExists {
 };
 
 ```
-with the defaults for each being ``IO::FmtDefault``, and
-``IO::IfExists::Fail``. The E3SM standard format is currently
-NetCDF4. Earlier NetCDF formats should be avoided, but are provided in
-case an input file is in an earlier format.
+The defaults for each are ``IO::FmtDefault`` for file format and
+``IO::IfExists::Fail`` for IfExists. Earlier NetCDF formats should be avoided,
+but are provided in case an input file is in an earlier format.
 
 Once the file is open, data is read/written using one of two interfaces,
 depending on whether the array is decomposed across MPI tasks or not. For

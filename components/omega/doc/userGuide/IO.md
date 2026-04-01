@@ -27,7 +27,7 @@ IO:
     IOStride: 1
     IOBaseTask: 0
     IORearranger: box
-    IODefaultFormat: NetCDF4
+    IODefaultFormat: pnetcdf
 ```
 where ``IOTasks`` is the total number of IOTasks to assign to reading
 and writing. The default is 1 (serial IO) for safety but this number
@@ -53,8 +53,8 @@ See SCORPIO documentation for details.
 
 Finally, the user can specify the file format. The SCORPIO library
 supports all the various NetCDF formats, though the use of older
-NetCDF formats is strongly discouraged. NetCDF-4 is currently the E3SM
-default and is the default for Omega. In addition, SCORPIO supports
+NetCDF formats is strongly discouraged. PNetCDF is currently the
+default for Omega. In addition, SCORPIO supports
 native HDF5 files (note that the latest NetCDF formats are all implemented
 with HDF5 and are mostly compatible with HDF5) The ADIOS format is different
 since ADIOS writes each chunk of data to a separate file and these files must

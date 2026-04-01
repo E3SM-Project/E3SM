@@ -461,7 +461,7 @@ Decomp::Decomp(
    TimerFlag = Pacer::start("Decomp read mesh", 2) && TimerFlag;
    int FileID;
    MeshFileName = MeshFileName_;
-   IO::openFile(FileID, MeshFileName, IO::ModeRead);
+   IO::openFileRead(FileID, MeshFileName);
 
    // Read mesh size and connectivity information
    std::vector<I4> CellsOnCellInit;

@@ -38,6 +38,7 @@ Omega:
       Filename: ocn.hist.$SimTime
       Mode: write
       IfExists: replace
+      #FileFormat: adios (optional format if different from default pnetcdf)
       Precision: double
       Freq: 1
       FreqUnits: months
@@ -97,6 +98,9 @@ a template can be:
    - Append if you want to append (eg multiple time slices) to the existing
      file. When re-running an interval, this will also over-write existing
      slices corresponding to the simulation time if they exist in the file.
+- **FileFormat:** An optional field that can be used if the file has a format
+   incompatible with the default IO format. If not supplied, the stream
+   will use the default format.
 - **Precision:** A field that determines whether floating point numbers are
    written in full (double) precision or reduced (single). Acceptable values
    are double or single. If not present, double is assumed, but a warning

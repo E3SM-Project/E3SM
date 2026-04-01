@@ -61,21 +61,38 @@ enum Rearranger {
    RearrBox     = PIO_REARR_BOX,    ///< box rearranger (default)
    RearrSubset  = PIO_REARR_SUBSET, ///< subset rearranger
    RearrDefault = PIO_REARR_BOX,    ///< default value (Box)
-   RearrUnknown = -1                ///< unknown or undefined
+   RearrUnknown = PIO_REARR_ANY,    ///< Lets PIO choose the rearranger
 };
+
+/// Map of string option name to enum. This is only used in the string
+/// conversion utility but is placed here so that options can all be changed
+/// in one place.
+static const std::map<std::string, Rearranger> RearrMap = {
+    {"box", RearrBox}, {"subset", RearrSubset}, {"default", RearrDefault}};
 
 /// Supported file formats
 enum FileFmt {
+   FmtPnetCDF  = PIO_IOTYPE_PNETCDF,  ///< Parallel NetCDF
    FmtNetCDF3  = PIO_IOTYPE_NETCDF,   ///< NetCDF3 classic format
-   FmtPnetCDF  = PIO_IOTYPE_PNETCDF,  ///< Parallel NetCDF3
-   FmtNetCDF4c = PIO_IOTYPE_NETCDF4C, ///< NetCDF4 (HDF5-compatible) cmpressed
+   FmtNetCDF4c = PIO_IOTYPE_NETCDF4C, ///< NetCDF4 (HDF5-compatible) compressed
    FmtNetCDF4p = PIO_IOTYPE_NETCDF4P, ///< NetCDF4 (HDF5-compatible) parallel
-   FmtNetCDF4  = PIO_IOTYPE_NETCDF4P, ///< NetCDF4 (HDF5-compatible) parallel
-   FmtHDF5     = PIO_IOTYPE_HDF5,     ///< native HDF5 format
-   FmtADIOS    = PIO_IOTYPE_ADIOS,    ///< ADIOS format
-   FmtUnknown  = -1,                  ///< Unknown or undefined
-   FmtDefault  = PIO_IOTYPE_PNETCDF,  ///< PNETCDF is default
+   FmtNetCDF4z = PIO_IOTYPE_NETCDF4P_NCZARR, ///< NetCDF4 (HDF5) NCZarr
+   FmtADIOS    = PIO_IOTYPE_ADIOS,           ///< ADIOS parallel
+   FmtADIOSC   = PIO_IOTYPE_ADIOSC,  ///< ADIOS parallel with compression
+   FmtHDF5     = PIO_IOTYPE_HDF5,    ///< native HDF5 parallel
+   FmtHDF5C    = PIO_IOTYPE_HDF5C,   ///< native HDF5 parallel w compression
+   FmtDefault  = PIO_IOTYPE_PNETCDF, ///< PNETCDF is default
 };
+
+/// Map of string file format option name to enum. This is only used in the
+/// string conversion utility but is placed here so that options can all be
+/// changed in one place.
+static const std::map<std::string, FileFmt> FmtMap = {
+    {"pnetcdf", FmtPnetCDF},   {"netcdf3", FmtNetCDF3},
+    {"netcdf4c", FmtNetCDF4c}, {"netcdf4p", FmtNetCDF4p},
+    {"netcdf4z", FmtNetCDF4z}, {"adios", FmtADIOS},
+    {"adiosc", FmtADIOSC},     {"hdf5", FmtHDF5},
+    {"hdf5c", FmtHDF5C},       {"default", FmtDefault}};
 
 /// File operations
 enum Mode {
@@ -84,12 +101,26 @@ enum Mode {
    ModeUnknown,             /// Unknown or undefined
 };
 
+/// Map of string file format option name to enum. This is only used in the
+/// string conversion utility but is placed here so that options can all be
+/// changed in one place.
+static const std::map<std::string, Mode> ModeMap = {{"read", ModeRead},
+                                                    {"write", ModeWrite}};
+
 /// Behavior (for output files) when a file already exists
 enum class IfExists {
    Fail,    /// Fail with an error
    Replace, /// Replace the file
    Append,  /// Append to the existing file
 };
+
+/// Map of string file format option name to enum. This is only used in the
+/// string conversion utility but is placed here so that options can all be
+/// changed in one place.
+static const std::map<std::string, IfExists> IfExistsMap = {
+    {"fail", IfExists::Fail},
+    {"replace", IfExists::Replace},
+    {"append", IfExists::Append}};
 
 /// Data types for PIO corresponding to Omega types
 enum IODataType {
@@ -139,20 +170,28 @@ IfExists IfExistsFromString(
 void init(const MPI_Comm &InComm ///< [in] MPI communicator to use
 );
 
-/// This routine opens a file for reading or writing, depending on the
-/// Mode argument. The filename with full path must be supplied and
-/// a FileID is returned to be used by other IO functions.
+/// This routine opens a file for reading. The filename with full path must be
+/// supplied and a FileID is returned to be used by other IO functions.
 /// The format of the file is assumed to be the default defined on init
 /// but can be optionally changed through this open function.
-/// For files to be written, optional arguments govern the behavior to be
-/// used if the file already exists, and the precision of any floating point
-/// variables.
-void openFile(
-    int &FileID,                    ///< [out] returned fileID for this file
-    const std::string &Filename,    ///< [in] name (incl path) of file to open
-    Mode Mode,                      ///< [in] mode (read or write)
-    FileFmt Format    = FmtDefault, ///< [in] (optional) file format
-    IfExists IfExists = IfExists::Fail ///< [in] behavior if file exists
+void openFileRead(
+    int &FileID,                 ///< [out] returned fileID for this file
+    const std::string &Filename, ///< [in] name (incl path) of file to open
+    FileFmt Format = FmtDefault  ///< [in] (optional) file format
+);
+
+/// This routine opens a file for writing. The filename with full path must be
+/// supplied and a FileID is returned to be used by other IO functions.
+/// A flag is returned to note whether a new file has been created and is
+/// therefore in define mode. The first optional argument determines what
+/// action to take if the file already exists. The second optional argument
+/// allows the user to specify a file format other than the default.
+void openFileWrite(
+    int &FileID,                 ///< [out] returned fileID for this file
+    const std::string &Filename, ///< [in] name (incl path) of file to open
+    bool &NewFile,               ///< [out] true if new file created
+    IfExists InIfExists = IfExists::Fail, ///< [in] behavior if file exists
+    FileFmt Format      = FmtDefault      ///< [in] (optional) file format
 );
 
 /// Closes an open file using the fileID, returns an error code

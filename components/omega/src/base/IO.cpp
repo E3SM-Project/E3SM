@@ -36,31 +36,18 @@ Rearranger DefaultRearr = RearrDefault;
 Rearranger
 RearrFromString(const std::string &Rearr // [in] choice of IO rearranger
 ) {
-   // Set default return value
-   Rearranger ReturnRearr = RearrUnknown;
-
    // Convert input string to lowercase for easier comparison
    std::string RearrComp = Rearr;
    std::transform(RearrComp.begin(), RearrComp.end(), RearrComp.begin(),
                   [](unsigned char c) { return std::tolower(c); });
 
-   // Determine the appropriate enum to use based on the name
-   // Check most likely options first
-
-   if (RearrComp == "box") { // Box rearranger
-      ReturnRearr = RearrBox;
-
-   } else if (RearrComp == "subset") { // Subset rearranger
-      ReturnRearr = RearrSubset;
-
-   } else if (RearrComp == "default") { // Default
-      ReturnRearr = RearrDefault;
-
-   } else {
+   // Find the enum corresponding to the string choice
+   auto RearrFound = RearrMap.find(RearrComp);
+   if (RearrFound == RearrMap.end()) // no entry found
       ABORT_ERROR("IO: Unknown data rearranger {}", RearrComp);
-   }
 
-   return ReturnRearr;
+   // Extract and return enum corresponding to string
+   return RearrFound->second;
 
 } // End RearrFromString
 
@@ -69,46 +56,29 @@ RearrFromString(const std::string &Rearr // [in] choice of IO rearranger
 FileFmt
 FileFmtFromString(const std::string &Format // [in] choice of IO file format
 ) {
-   // Set default return value
-   FileFmt ReturnFileFmt = FmtUnknown;
+   // In special case of blank option, return default. This is often the
+   // case when no explicit format is supplied by an IOStream and the default
+   // is desired
+   if (Format.empty())
+      return FmtDefault;
 
    // Convert input string to lowercase for easier comparison
    std::string FmtCompare = Format;
    std::transform(FmtCompare.begin(), FmtCompare.end(), FmtCompare.begin(),
                   [](unsigned char c) { return std::tolower(c); });
 
-   // Determine the appropriate enum to use based on the input string
-   // Check most likely options first
+   // Find the map entry corresponding to the string choice
+   auto FmtFound = FmtMap.find(FmtCompare);
 
-   if (FmtCompare == "netcdf4") { // NetCDF4 variants
-      ReturnFileFmt = FmtNetCDF4;
-
-   } else if (FmtCompare == "adios") { // ADIOS
-      ReturnFileFmt = FmtADIOS;
-
-   } else if (FmtCompare == "netcdf4c") { // netcdf4 variant - compressed
-      ReturnFileFmt = FmtNetCDF4c;
-
-   } else if (FmtCompare == "netcdf4p") { // netcdf4 variant - parallel
-      ReturnFileFmt = FmtNetCDF4p;
-
-   } else if (FmtCompare == "netcdf3") { // Older netcdf
-      ReturnFileFmt = FmtNetCDF3;
-
-   } else if (FmtCompare == "pnetcdf") { // pnetcdf
-      ReturnFileFmt = FmtPnetCDF;
-
-   } else if (FmtCompare == "hdf5") { // native HDF5
-      ReturnFileFmt = FmtHDF5;
-
-   } else if (FmtCompare == "default") {
-      ReturnFileFmt = FmtDefault;
-
-   } else {
-      ABORT_ERROR("IO: Unknown default file format {}", FmtCompare);
+   // if no entry found int the map, then a bad format has been supplied and we
+   // try to use the default anyway after printing a warning
+   if (FmtFound == FmtMap.end()) {
+      LOG_WARN("IO: Unknown file format {}; using default instead", FmtCompare);
+      return FmtDefault;
    }
 
-   return ReturnFileFmt;
+   // Extract and return enum corresponding to string
+   return FmtFound->second;
 
 } // end of FileFmtFromString
 
@@ -117,27 +87,18 @@ FileFmtFromString(const std::string &Format // [in] choice of IO file format
 Mode ModeFromString(
     const std::string &ModeChoice // [in] IO mode choice (read/write)
 ) {
-   // Set default return value
-   Mode ReturnMode = ModeUnknown;
-
    // Convert input string to lowercase for easier comparison
    std::string ModeComp = ModeChoice;
    std::transform(ModeComp.begin(), ModeComp.end(), ModeComp.begin(),
                   [](unsigned char c) { return std::tolower(c); });
 
-   // Determine the appropriate enum to use based on the input string
-
-   if (ModeComp == "read") { // Read only
-      ReturnMode = ModeRead;
-
-   } else if (ModeComp == "write") { // Write only
-      ReturnMode = ModeWrite;
-
-   } else {
+   // Find the map entry corresponding to the string choice
+   auto ModeFound = ModeMap.find(ModeComp);
+   if (ModeFound == ModeMap.end()) // no entry found
       ABORT_ERROR("IO: Unknown file mode {}: Must be read or write", ModeComp);
-   }
 
-   return ReturnMode;
+   // Extract and return enum corresponding to string
+   return ModeFound->second;
 
 } // End ModeFromString
 
@@ -146,30 +107,18 @@ Mode ModeFromString(
 IfExists IfExistsFromString(
     const std::string &InIfExists // [in] choice of behavior on file existence
 ) {
-   // Set default return value
-   IfExists ReturnIfExists = IfExists::Fail;
-
    // Convert input string to lowercase for easier comparison
    std::string IECompare = InIfExists;
    std::transform(IECompare.begin(), IECompare.end(), IECompare.begin(),
                   [](unsigned char c) { return std::tolower(c); });
 
-   // Determine the appropriate enum to use based on the input string
+   // Find the map entry corresponding to the string choice
+   auto IfExistsFound = IfExistsMap.find(IECompare);
+   if (IfExistsFound == IfExistsMap.end()) // no entry found, default to Fail
+      return IfExists::Fail;
 
-   if (IECompare == "fail") { // Fail with error
-      ReturnIfExists = IfExists::Fail;
-
-   } else if (IECompare == "replace") { // Replace existing file
-      ReturnIfExists = IfExists::Replace;
-
-   } else if (IECompare == "append") { // Append or insert into existing file
-      ReturnIfExists = IfExists::Append;
-
-   } else {
-      ReturnIfExists = IfExists::Fail;
-   }
-
-   return ReturnIfExists;
+   // Extract and return enum corresponding to string
+   return IfExistsFound->second;
 
 } // End IfExistsFromString
 
@@ -233,98 +182,110 @@ void init(const MPI_Comm &InComm // [in] MPI communicator to use
 } // end init
 
 //------------------------------------------------------------------------------
-// This routine opens a file for reading or writing, depending on the
-// Mode argument. The filename with full path must be supplied and
-// a FileID is returned to be used by other IO functions.
+// This routine opens a file for reading. The filename with full path must be
+// supplied and a FileID is returned to be used by other IO functions.
 // The format of the file is assumed to be the default defined on init
 // but can be optionally changed through this open function.
-// For files to be written, optional arguments govern the behavior to be
-// used if the file already exists, and the precision of any floating point
-// variables.
-void openFile(
+void openFileRead(
     int &FileID,                 // [out] returned fileID for this file
     const std::string &Filename, // [in] name (incl path) of file to open
-    Mode InMode,                 // [in] mode (read or write)
-    FileFmt InFormat,            // [in] (optional) file format
-    IfExists InIfExists          // [in] (for writes) behavior if file exists
+    FileFmt InFormat             // [in] (optional) file format
 ) {
 
    int PIOErr = 0;        // internal SCORPIO/PIO return call
    int Format = InFormat; // coerce to integer for PIO calls
-   int IsCDF5 = (InFormat == PIO_IOTYPE_PNETCDF) ? PIO_64BIT_DATA : 0;
 
-   switch (InMode) {
+   // Open the file for read-only
+   PIOErr = PIOc_openfile(SysID, &FileID, &Format, Filename.c_str(), ModeRead);
+   if (PIOErr != PIO_NOERR)
+      ABORT_ERROR("IO::openFile: PIO error opening file {} for read", Filename);
 
-   // If reading, open the file for read-only
-   case ModeRead:
-      PIOErr = PIOc_openfile(SysID, &FileID, &Format, Filename.c_str(), InMode);
+   return;
+
+} // End openFileRead
+//------------------------------------------------------------------------------
+// This routine opens a file for writing. The filename with full path must be
+// supplied and a FileID is returned to be used by other IO functions.
+// A flag is returned to note whether a new file has been created and is
+// therefore in define mode. The first optional argument determines what
+// action to take if the file already exists (default Fail). The second
+// optional argument allows the user to specify a file format other than
+// the default.
+void openFileWrite(
+    int &FileID,                 // [out] returned fileID for this file
+    const std::string &Filename, // [in] name (incl path) of file to open
+    bool &NewFile,               // [out] flag to note whether new file created
+    IfExists InIfExists,         // [in] (optional) behavior if file exists
+    FileFmt InFormat             // [in] (optional) file format
+) {
+
+   int PIOErr     = 0;                  // internal SCORPIO/PIO return call
+   int Format     = InFormat;           // coerce to integer for PIO calls
+   int TmpPnetcdf = PIO_IOTYPE_PNETCDF; // coerce to int for comparison
+   int IsCDF5     = (Format == TmpPnetcdf) ? PIO_64BIT_DATA : 0;
+
+   switch (InIfExists) {
+   // If the write should be a new file and fail if the
+   // file exists, we use create and fail with an error
+   case IfExists::Fail:
+      PIOErr = PIOc_createfile(SysID, &FileID, &Format, Filename.c_str(),
+                               NC_NOCLOBBER | IsCDF5 | ModeWrite);
       if (PIOErr != PIO_NOERR)
-         ABORT_ERROR("IO::openFile: PIO error opening file {} for read",
+         ABORT_ERROR("IO::openFileWrite: PIO error creating new file {}"
+                     " file already exists and fail mode requested",
                      Filename);
+      NewFile = true;
       break;
 
-   // If writing, the open will depend on what to do if the file
-   // exists.
-   case ModeWrite:
-
-      switch (InIfExists) {
-      // If the write should be a new file and fail if the
-      // file exists, we use create and fail with an error
-      case IfExists::Fail:
-         PIOErr = PIOc_createfile(SysID, &FileID, &Format, Filename.c_str(),
-                                  NC_NOCLOBBER | IsCDF5 | InMode);
-         if (PIOErr != PIO_NOERR)
-            ABORT_ERROR("IO::openFile: PIO error opening file {} for writing",
-                        Filename);
-         break;
-
-      // If the write should replace any existing file
-      // we use create with the CLOBBER option
-      case IfExists::Replace:
-         PIOErr = PIOc_createfile(SysID, &FileID, &Format, Filename.c_str(),
-                                  NC_CLOBBER | IsCDF5 | InMode);
-         if (PIOErr != PIO_NOERR)
-            ABORT_ERROR("IO::openFile: PIO error opening file {} for writing",
-                        Filename);
-         break;
-
-      // If the write should append or add to an existing file
-      // we open the file for reading and writing, but also must create
-      // the file if it doesn't already exist
-      case IfExists::Append: {
-         // Check for existence with one task and then broadcast to avoid
-         // the case where some tasks create and some open
-         bool FileExists;
-         MachEnv *DefEnv = MachEnv::getDefault();
-         if (DefEnv->isMasterTask()) {
-            FileExists = std::filesystem::exists(Filename);
-         }
-         Broadcast(FileExists);
-
-         if (FileExists) {
-            PIOErr = PIOc_openfile(SysID, &FileID, &Format, Filename.c_str(),
-                                   IsCDF5 | InMode);
-         } else {
-            PIOErr = PIOc_createfile(SysID, &FileID, &Format, Filename.c_str(),
-                                     IsCDF5 | InMode);
-         }
-
-         if (PIOErr != PIO_NOERR)
-            ABORT_ERROR("IO::openFile: PIO error opening file {} for writing",
-                        Filename);
-      } break;
-
-      default:
-         ABORT_ERROR("IO::openFile: unknown IfExists option for writing");
-
-      } // end switch IfExists
+   // If the write should replace any existing file
+   // we use create with the CLOBBER option
+   case IfExists::Replace:
+      PIOErr = PIOc_createfile(SysID, &FileID, &Format, Filename.c_str(),
+                               NC_CLOBBER | IsCDF5 | ModeWrite);
+      if (PIOErr != PIO_NOERR)
+         ABORT_ERROR("IO::openFileWrite: PIO error creating new file {}"
+                     " in replace mode",
+                     Filename);
+      NewFile = true;
       break;
 
-   // Unknown mode
+   // If the write should append or add to an existing file
+   // we open the file for reading and writing, but also must create
+   // the file if it doesn't already exist
+   case IfExists::Append: {
+      // Check for existence with one task and then broadcast to avoid
+      // the case where some tasks create and some open
+      bool FileExists;
+      MachEnv *DefEnv = MachEnv::getDefault();
+      if (DefEnv->isMasterTask()) {
+         FileExists = std::filesystem::exists(Filename);
+      }
+      Broadcast(FileExists);
+
+      if (FileExists) {
+         PIOErr = PIOc_openfile(SysID, &FileID, &Format, Filename.c_str(),
+                                IsCDF5 | ModeWrite);
+         if (PIOErr != PIO_NOERR)
+            ABORT_ERROR("IO::openFileWrite: PIO error opening existing file"
+                        " {} in append mode",
+                        Filename);
+         NewFile = false;
+      } else {
+         PIOErr = PIOc_createfile(SysID, &FileID, &Format, Filename.c_str(),
+                                  IsCDF5 | ModeWrite);
+         if (PIOErr != PIO_NOERR)
+            ABORT_ERROR("IO::openFileWrite: PIO error creating new file {}"
+                        " in append mode",
+                        Filename);
+         NewFile = true;
+      }
+
+   } break;
+
    default:
-      ABORT_ERROR("IO::fileOpen: Unknown Mode for file");
+      ABORT_ERROR("IO::openFileWrite: unknown IfExists option for writing");
 
-   } // End switch on Mode
+   } // end switch IfExists
 
    return;
 
