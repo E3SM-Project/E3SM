@@ -28,5 +28,7 @@ if (COMP_NAME STREQUAL cice)
 endif()
 
 if (COMP_NAME STREQUAL gcam)
+  string(APPEND CMAKE_CXX_FLAGS " -mcmodel=medium")
+  string(APPEND CMAKE_C_FLAGS " -mcmodel=medium")
   string(APPEND CMAKE_CXX_FLAGS " -DNDEBUG")
 endif()
