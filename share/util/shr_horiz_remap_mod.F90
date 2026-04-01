@@ -82,7 +82,6 @@ module shr_horiz_remap_mod
     procedure :: read_mapfile => shr_horiz_remap_read_mapfile
     procedure :: build_comm   => shr_horiz_remap_build_comm
     procedure :: apply        => shr_horiz_remap_apply
-    procedure :: clean        => shr_horiz_remap_clean
   end type shr_horiz_remap_t
 
 CONTAINS
@@ -276,9 +275,9 @@ CONTAINS
     integer, allocatable, intent(out) :: send_gcol_list(:)
     integer, intent(out) :: ierr
 
-    integer :: i, r, gcol, owner_rank, cnt, idx, irow, j
+    integer :: i, r, gcol, owner_rank, irow, j
     integer, allocatable :: need_from_rank(:), recv_gcols(:)
-    integer, allocatable :: src_need_recvidx(:), gcol_to_recvpos(:)
+    integer, allocatable :: gcol_to_recvpos(:)
     integer, allocatable :: recvidx_unsorted(:), row_counts(:), bucket_pos(:)
 
     ierr = 0
@@ -461,33 +460,5 @@ CONTAINS
     end do
 
   end subroutine shr_horiz_remap_apply
-
-  !-------------------------------------------------------------------------------------------
-  subroutine shr_horiz_remap_clean(rd)
-    class(shr_horiz_remap_t), intent(inout) :: rd
-
-    rd%initialized = .false.
-    rd%n_a = 0; rd%n_b = 0; rd%nlat = 0; rd%nlon = 0
-    rd%n_b_local = 0; rd%row_start = 0
-    rd%nnz_local = 0; rd%tmp_nnz = 0
-    rd%n_src_need = 0
-    rd%n_send_total = 0; rd%n_recv_total = 0
-
-    if (allocated(rd%lat))           deallocate(rd%lat)
-    if (allocated(rd%lon))           deallocate(rd%lon)
-    if (allocated(rd%row_offsets))   deallocate(rd%row_offsets)
-    if (allocated(rd%col_recvidx))   deallocate(rd%col_recvidx)
-    if (allocated(rd%wgt))           deallocate(rd%wgt)
-    if (allocated(rd%tmp_dst))       deallocate(rd%tmp_dst)
-    if (allocated(rd%tmp_src_gid))   deallocate(rd%tmp_src_gid)
-    if (allocated(rd%tmp_wgt))       deallocate(rd%tmp_wgt)
-    if (allocated(rd%src_need_gids)) deallocate(rd%src_need_gids)
-    if (allocated(rd%send_counts))   deallocate(rd%send_counts)
-    if (allocated(rd%send_displs))   deallocate(rd%send_displs)
-    if (allocated(rd%recv_counts))   deallocate(rd%recv_counts)
-    if (allocated(rd%recv_displs))   deallocate(rd%recv_displs)
-    if (allocated(rd%ws_recv_buf))   deallocate(rd%ws_recv_buf)
-
-  end subroutine shr_horiz_remap_clean
 
 end module shr_horiz_remap_mod
