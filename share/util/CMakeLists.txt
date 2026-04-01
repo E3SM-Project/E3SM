@@ -22,6 +22,7 @@ list(APPEND share_sources
   shr_precip_mod.F90
   shr_string_mod.F90
   shr_timer_mod.F90
+  shr_vcoarsen_mod.F90
   shr_vmath_mod.F90
   shr_wv_sat_mod.F90)
 
