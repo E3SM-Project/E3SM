@@ -114,6 +114,66 @@ files. Optionally, tests can also be built.
 The final step, which is optional, involves copying a subset of the build
 artifacts to designated locations or generating dynamic outputs as needed.
 
+## Standalone Build Commands
+
+In the Omega branch you would like to build, first update the submodules that
+Omega requires:
+
+```sh
+git submodule update --init --recursive \
+	externals/YAKL \
+	externals/ekat \
+	externals/scorpio \
+	externals/cpptrace \
+	components/omega/external \
+	cime
+```
+
+Since some systems require tests to be run in a scratch space, it is a good
+idea to build the code somewhere in your scratch space. We will refer to the
+build directory as `$BUILD_DIR`:
+
+```sh
+rm -rf "$BUILD_DIR"
+mkdir -p "$BUILD_DIR"
+cd "$BUILD_DIR"
+```
+
+Set `$PARMETIS_ROOT` to the location for Metis and Parmetis libraries built
+for your machine and compiler:
+
+```sh
+export PARMETIS_ROOT=<parmetis_root>
+```
+
+Run CMake for the build type, machine, and compiler you want:
+
+```sh
+cmake \
+   -DOMEGA_BUILD_TYPE=<build_type> \
+   -DOMEGA_CIME_COMPILER=<compiler> \
+   -DOMEGA_CIME_MACHINE=<machine> \
+   -DOMEGA_PARMETIS_ROOT=${PARMETIS_ROOT} \
+   -DOMEGA_BUILD_TEST=ON \
+   -Wno-dev \
+   -S <omega_branch>/components/omega \
+   -B .
+```
+
+Where `<build_type>` is either `Debug` or `Release`, `<omega_branch>` is the
+path to the base of the Omega branch you want to build, and `<machine>` and
+`<compiler>` are supported by E3SM on that machine.
+
+The command above configures Omega to build CTests
+(`-DOMEGA_BUILD_TEST=ON`), which is recommended.
+
+If CMake configuration runs correctly, you should have an `omega_build.sh`
+script that you can run to build Omega:
+
+```sh
+./omega_build.sh
+```
+
 Note: Until the Omega build is integrated into the E3SM build, specific
 modifications are required to trigger the Omega build within the E3SM
 build process. Please see [Omega Build User Guide](../userGuide/OmegaBuild.md)
