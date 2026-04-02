@@ -1844,19 +1844,16 @@ contains
                endif
              endif
 
-             ! NOTE: Previously had "remove MOAB default values" that
-             ! replaced any value < -1E10 with 0.0.  This is WRONG
-             ! because legitimate flux values can be large and negative
-             ! (e.g., after area correction with mdl2drv ~ 4E13).
-             ! MOAB tags are initialized to 0.0 in define_reset_fields_moab,
-             ! so there are no large-negative "default" values to clean up.
-
              ! remove MOAB default values
-            !  do ix = 1, ns
-            !    if (data1(ix) < -9.99999E+9_r8) then
-            !       data1(ix) = 0.0_r8
-            !    endif
-            !  enddo
+             ! This is needed to match MCT coupler history fields where data
+             ! is always initialized to zero.  It is safe because no physical
+             ! value will ever be near -1e10.
+             ! This can be removed after driver-moab is accepted.
+             do ix = 1, ns
+               if (data1(ix) < -9.99999E+9_r8) then
+                  data1(ix) = 0.0_r8
+               endif
+             enddo
 
              ! rearrange data for writing and handle mask
              if(present(mask)) then
