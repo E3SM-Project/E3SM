@@ -42,6 +42,7 @@ for the iac data in the e3sm distribution
 
 <!-- gcam config and init files, relative to inputdata -->
 <gcam_config>iac/giac/gcam/gcam_6_0/configuration/configuration_ref.xml</gcam_config>
+<use_gcam_usa>.false.</use_gcam_usa>
 <base_gcam_co2_file>iac/giac/gcam/gcam_6_0/data/co2_2015_gcam_out_regional.csv</base_gcam_co2_file>
 <base_gcam_lu_wh_file>iac/giac/gcam/gcam_6_0/data/lu_wh_2015_gcam_out.csv</base_gcam_lu_wh_file>
 <base_co2_surface_file hgrid="r0125">iac/giac/gcam/gcam_6_0/data/CO2-em-SFC-anthro_0.125x0.125_input4MIPs_2014.csv</base_co2_surface_file>
@@ -96,11 +97,16 @@ for the iac data in the e3sm distribution
 <gcam_gridfile hgrid="r05">iac/giac/glm2iac/landuse.timeseries_0.5x0.5_HIST_simyr2015_c241204.nc</gcam_gridfile>
 <gcam_gridfile hgrid="0.9x1.25">iac/giac/glm2iac/landuse.timeseries_0.9x1.25_HIST_simyr2015_c201021.nc</gcam_gridfile>
 <gcam_gridfile hgrid="1.9x2.5">iac/giac/glm2iac/landuse.timeseries_1.9x2.5_HIST_simyr2015_c241204.nc</gcam_gridfile>
-<elm2gcam_mapping_file hgrid="r0125">iac/giac/iac2gcam/elm0.125x0.125togcam_mapping.csv</elm2gcam_mapping_file>
-<elm2gcam_mapping_file hgrid="r025">iac/giac/iac2gcam/elm0.25x0.25togcam_mapping.csv</elm2gcam_mapping_file>
-<elm2gcam_mapping_file hgrid="r05">iac/giac/iac2gcam/elm0.5x0.5togcam_mapping.csv</elm2gcam_mapping_file>
-<elm2gcam_mapping_file hgrid="0.9x1.25">iac/giac/iac2gcam/elm0.9x1.25togcam_mapping.csv</elm2gcam_mapping_file>
-<elm2gcam_mapping_file hgrid="1.9x2.5">iac/giac/iac2gcam/elm1.9x2.5togcam_mapping.csv</elm2gcam_mapping_file>
+<elm2gcam_co2_mapping_file hgrid="r0125">iac/giac/iac2gcam/elm0.125x0.125togcam_mapping.csv</elm2gcam_co2_mapping_file>
+<elm2gcam_co2_mapping_file hgrid="r025">iac/giac/iac2gcam/elm0.25x0.25togcam_mapping.csv</elm2gcam_co2_mapping_file>
+<elm2gcam_co2_mapping_file hgrid="r05">iac/giac/iac2gcam/elm0.5x0.5togcam_mapping.csv</elm2gcam_co2_mapping_file>
+<elm2gcam_co2_mapping_file hgrid="0.9x1.25">iac/giac/iac2gcam/elm0.9x1.25togcam_mapping.csv</elm2gcam_co2_mapping_file>
+<elm2gcam_co2_mapping_file hgrid="1.9x2.5">iac/giac/iac2gcam/elm1.9x2.5togcam_mapping.csv</elm2gcam_co2_mapping_file>
+<elm2gcam_luc_mapping_file hgrid="r0125">iac/giac/iac2gcam/elm0.125x0.125togcam_mapping.csv</elm2gcam_luc_mapping_file>
+<elm2gcam_luc_mapping_file hgrid="r025">iac/giac/iac2gcam/elm0.25x0.25togcam_mapping.csv</elm2gcam_luc_mapping_file>
+<elm2gcam_luc_mapping_file hgrid="r05">iac/giac/iac2gcam/elm0.5x0.5togcam_mapping.csv</elm2gcam_luc_mapping_file>
+<elm2gcam_luc_mapping_file hgrid="0.9x1.25">iac/giac/iac2gcam/elm0.9x1.25togcam_mapping.csv</elm2gcam_luc_mapping_file>
+<elm2gcam_luc_mapping_file hgrid="1.9x2.5">iac/giac/iac2gcam/elm1.9x2.5togcam_mapping.csv</elm2gcam_luc_mapping_file>
 <gcam2glm_glumap>iac/giac/glm/inputs/gcam2glm_mapping.csv</gcam2glm_glumap>
 <gcam2glm_baselu>iac/giac/glm/inputs/initial/initial_state_LUH2_2015_v3.nc</gcam2glm_baselu>
 <gcam2glm_basebiomass>iac/giac/glm/inputs/vba_LUH1format.nc</gcam2glm_basebiomass>

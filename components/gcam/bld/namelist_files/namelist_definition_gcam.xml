@@ -106,6 +106,18 @@ Number of GCAM run periods
 Configuration file for gcam model
 </entry>
 
+<entry id="use_gcam_usa"
+	type="logical"
+	category="gcam"
+        group="gcam_inparm"
+        valid_values=""
+	value=".false.">
+Default is false; true enables GCAM-USA
+</entry>
+
+Configuration file for gcam model
+</entry>
+
 <entry id="base_gcam_co2_file"
         type="char*256"
         category="gcam"
@@ -251,13 +263,22 @@ Mapping file for heating/cooling degree days
 Full pathname of input gcam grid file
 </entry>
 
-<entry id="elm2gcam_mapping_file"
+<entry id="elm2gcam_co2_mapping_file"
 	type="char*256"
 	category="gcam"
 	input_pathname="abs"
 	group="gcam_inparm"
 	valid_values="">
-Mapping file between land model and gcam types
+Mapping file for co2 emissions between land model and gcam
+</entry>
+
+<entry id="elm2gcam_luc_mapping_file"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="gcam_inparm"
+        valid_values="">
+Mapping file for land use between land model and gcam
 </entry>
 
 <entry id="gcam2glm_glumap"

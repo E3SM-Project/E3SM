@@ -433,6 +433,7 @@ add_default($nl, 'num_periods');
 
 # gcam config and init files, relative to inputdata
 add_default($nl, 'gcam_config');
+add_default($nl, 'use_gcam_usa');
 add_default($nl, 'base_gcam_co2_file');
 add_default($nl, 'base_gcam_lu_wh_file');
 add_default($nl, 'base_co2_surface_file');
@@ -451,7 +452,8 @@ add_default($nl, 'gcam2elm_degdays_mapping_file');
 
 # grid mapping and initialization, relative to inputdata
 add_default($nl, 'gcam_gridfile');
-add_default($nl, 'elm2gcam_mapping_file');
+add_default($nl, 'elm2gcam_luc_mapping_file');
+add_default($nl, 'elm2gcam_co2_mapping_file');
 add_default($nl, 'gcam2glm_glumap');
 add_default($nl, 'gcam2glm_baselu');
 add_default($nl, 'gcam2glm_basebiomass');
