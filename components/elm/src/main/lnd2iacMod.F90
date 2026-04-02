@@ -29,6 +29,7 @@ module lnd2iacMod
      real(r8), pointer :: npp(:,:) => null()
      real(r8), pointer :: pftwgt(:,:) => null()
      real(r8), pointer :: t_ref2m(:,:)   => null()
+     real(r8), pointer :: forc_hdm(:)    => null()
 
    contains
      ! This object oriented stuff...
@@ -60,11 +61,13 @@ contains
     allocate(this%npp(begg:endg,0:numpft))
     allocate(this%pftwgt(begg:endg,0:numpft)) 
     allocate(this%t_ref2m(begg:endg,0:numpft))
+    allocate(this%forc_hdm(begg:endg))
 
     this%hr(:,:)=0.0_r8
     this%npp(:,:)=0.0_r8
     this%pftwgt(:,:)=0.0_r8
     this%t_ref2m(:,:)  = 0.0_r8
+    this%forc_hdm(:)   = 0.0_r8
 
   end subroutine Init
 

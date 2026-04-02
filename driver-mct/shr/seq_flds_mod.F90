@@ -2864,6 +2864,14 @@ contains
        end if
 
     end do 
+    ! Scalar per-gridcell lnd->iac fields
+    if (add_iac_to_cplstate) call seq_flds_add(l2x_states, 'Sl_forc_hdm')
+    call seq_flds_add(x2z_states, 'Sl_forc_hdm')
+    longname = 'Population density'
+    stdname  = 'lnd_population_density'
+    units    = 'ind/km2'
+    attname  = 'Sl_forc_hdm'
+    call metadata_set(attname, longname, stdname, units)
     ! iac->atm flux.
     ! Monthly values of surface, low alt, high alt co2 fluxes, so we
     ! loop over 36 total fields.

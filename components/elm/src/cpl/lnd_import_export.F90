@@ -1417,6 +1417,7 @@ contains
     use domainMod          , only : ldomain
     use seq_drydep_mod     , only : n_drydep
     use shr_megan_mod      , only : shr_megan_mechcomps_n
+    use FireMod            , only : forc_hdm
     !
     ! !ARGUMENTS:
     implicit none
@@ -1424,7 +1425,6 @@ contains
     type(lnd2atm_type), intent(inout) :: lnd2atm_vars ! elm land to atmosphere exchange data type
     type(lnd2glc_type), intent(inout) :: lnd2glc_vars ! elm land to atmosphere exchange data type
     type(lnd2iac_type), intent(inout) :: lnd2iac_vars ! elm lnd to gcam exchange vars
-
     real(r8)          , intent(out)   :: l2x(:,:)! land to coupler export state on land grid
     !
     ! !LOCAL VARIABLES:
@@ -1551,6 +1551,12 @@ contains
              l2x(index_l2x_Sl_pftwgt(p),i) = lnd2iac_vars%pftwgt(g,p)
              l2x(index_l2x_Sl_t_ref2m(p),i) = lnd2iac_vars%t_ref2m(g,p)
           end do
+          ! Scalar per-gridcell fields
+          ! forc_hdm is time-interpolated from stream file (FireMod in non-CPL_BYPASS,
+          ! or mirrored from atm2lnd_vars in CPL_BYPASS during lnd_import);
+          ! copy here into lnd2iac_vars and pack into the coupler vector.
+          lnd2iac_vars%forc_hdm(g)          = forc_hdm(g)
+          l2x(index_l2x_Sl_forc_hdm, i)     = lnd2iac_vars%forc_hdm(g)
        end if
     end do
 

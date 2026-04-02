@@ -82,6 +82,7 @@ module elm_cpl_indices
   integer, public ::index_l2x_Sl_npp(0:iac_npft_max)  = 0
   integer, public ::index_l2x_Sl_pftwgt(0:iac_npft_max)  = 0
   integer, public ::index_l2x_Sl_t_ref2m(0:iac_npft_max)   = 0
+  integer, public ::index_l2x_Sl_forc_hdm  = 0  ! human population density (per-gridcell)
 
   ! drv -> lnd (required)
 
@@ -393,6 +394,9 @@ contains
             index_x2l_Sz_harvest_frac(p) = mct_avect_indexra(x2l,trim(name))
          end if
       enddo
+
+      ! Scalar per-gridcell field
+      index_l2x_Sl_forc_hdm = mct_avect_indexra(l2x, 'Sl_forc_hdm')
 
     endif
 
