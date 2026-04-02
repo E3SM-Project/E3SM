@@ -173,11 +173,11 @@ Real runDiffManufactured(int NCells) {
       const Real TimeNext = (Step + 1) * TimeStep;
 
       parallelForOuter(
-          LConfig, KOKKOS_LAMBDA(int, const TeamMember &Member) {
-             TriDiagDiffScratch Scratch(Member, NCells);
+          LConfig, KOKKOS_LAMBDA(int, const TeamMember &Team) {
+             TriDiagDiffScratch Scratch(Team, NCells);
 
              // Setup the system to be solved
-             parallelForInner(Member, NCells, [=](int ICell) {
+             parallelForInner(Team, NCells, [=](int ICell) {
                 for (int IVec = 0; IVec < VecLength; ++IVec) {
 
                    // Forcing term from the manufactured solution
@@ -205,12 +205,12 @@ Real runDiffManufactured(int NCells) {
              });
 
              // Solve the system
-             Member.team_barrier();
-             TriDiagDiffSolver::solve(Member, Scratch);
-             Member.team_barrier();
+             teamBarrier(Team);
+             TriDiagDiffSolver::solve(Team, Scratch);
+             teamBarrier(Team);
 
              // Store the solution
-             parallelForInner(Member, NCells, [=](int ICell) {
+             parallelForInner(Team, NCells, [=](int ICell) {
                 U(ICell) = Scratch.X(ICell, 0);
              });
           });
@@ -319,12 +319,12 @@ Real runDiffusionStability(bool UseGeneralSolver, Real DiffValue) {
          auto LConfig = TriDiagSolver::makeLaunchConfig(1, NCells);
 
          parallelForOuter(
-             LConfig, KOKKOS_LAMBDA(int, const TeamMember &Member) {
-                TriDiagScratch Scratch(Member, NCells);
+             LConfig, KOKKOS_LAMBDA(int, const TeamMember &Team) {
+                TriDiagScratch Scratch(Team, NCells);
 
                 // Setup the system to be solved in the form expected by the
                 // general tridiagonal solver
-                parallelForInner(Member, NCells, [=](int ICell) {
+                parallelForInner(Team, NCells, [=](int ICell) {
                    for (int IVec = 0; IVec < VecLength; ++IVec) {
 
                       if (ICell < NCells - 1) {
@@ -354,12 +354,12 @@ Real runDiffusionStability(bool UseGeneralSolver, Real DiffValue) {
                 });
 
                 // Solve the system
-                Member.team_barrier();
-                TriDiagSolver::solve(Member, Scratch);
-                Member.team_barrier();
+                teamBarrier(Team);
+                TriDiagSolver::solve(Team, Scratch);
+                teamBarrier(Team);
 
                 // Save the solution
-                parallelForInner(Member, NCells, [=](int ICell) {
+                parallelForInner(Team, NCells, [=](int ICell) {
                    U(ICell) = Scratch.X(ICell, 0);
                 });
              });
@@ -367,12 +367,12 @@ Real runDiffusionStability(bool UseGeneralSolver, Real DiffValue) {
          auto LConfig = TriDiagDiffSolver::makeLaunchConfig(1, NCells);
 
          parallelForOuter(
-             LConfig, KOKKOS_LAMBDA(int, const TeamMember &Member) {
-                TriDiagDiffScratch Scratch(Member, NCells);
+             LConfig, KOKKOS_LAMBDA(int, const TeamMember &Team) {
+                TriDiagDiffScratch Scratch(Team, NCells);
 
                 // Setup the system to be solved in the form expected by the
                 // specialized diffusion tridiagonal solver
-                parallelForInner(Member, NCells, [=](int ICell) {
+                parallelForInner(Team, NCells, [=](int ICell) {
                    for (int IVec = 0; IVec < VecLength; ++IVec) {
 
                       Scratch.H(ICell, IVec) = LayerThick(ICell);
@@ -391,12 +391,12 @@ Real runDiffusionStability(bool UseGeneralSolver, Real DiffValue) {
                 });
 
                 // Solve the system
-                Member.team_barrier();
-                TriDiagDiffSolver::solve(Member, Scratch);
-                Member.team_barrier();
+                teamBarrier(Team);
+                TriDiagDiffSolver::solve(Team, Scratch);
+                teamBarrier(Team);
 
                 // Store the solution
-                parallelForInner(Member, NCells, [=](int ICell) {
+                parallelForInner(Team, NCells, [=](int ICell) {
                    U(ICell) = Scratch.X(ICell, 0);
                 });
              });

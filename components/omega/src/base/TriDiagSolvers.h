@@ -47,9 +47,9 @@ struct TriDiagScratch {
    TriDiagScratchArray X; // rhs on input, contains solution after calling solve
 
    // Constructor takes team member and system size
-   KOKKOS_FUNCTION TriDiagScratch(const TeamMember &Member, int NRow)
-       : DL(Member.team_scratch(0), NRow), D(Member.team_scratch(0), NRow),
-         DU(Member.team_scratch(0), NRow), X(Member.team_scratch(0), NRow) {}
+   KOKKOS_FUNCTION TriDiagScratch(const TeamMember &Team, int NRow)
+       : DL(teamScratch(Team), NRow), D(teamScratch(Team), NRow),
+         DU(teamScratch(Team), NRow), X(teamScratch(Team), NRow) {}
 };
 
 // Thomas algorithm solver for general tridiagonal systems
@@ -66,7 +66,7 @@ struct ThomasSolver {
    // Solve the system defined in the scratch data argument `Scratch`
    // This a team-level function that needs to be called inside a
    // parallel loop using TeamPolicy, hence it has a team member argument
-   static void KOKKOS_FUNCTION solve(const TeamMember &Member,
+   static void KOKKOS_FUNCTION solve(const TeamMember &Team,
                                      const TriDiagScratch &Scratch) {
       const int NRow = Scratch.X.extent_int(0);
 
@@ -103,10 +103,10 @@ struct ThomasSolver {
       auto LConfig = makeLaunchConfig(NBatch, NRow);
 
       parallelForOuter(
-          LConfig, KOKKOS_LAMBDA(const int IChunk, const TeamMember &Member) {
+          LConfig, KOKKOS_LAMBDA(const int IChunk, const TeamMember &Team) {
              const int IStart = IChunk * VecLength;
 
-             TriDiagScratch Scratch(Member, NRow);
+             TriDiagScratch Scratch(Team, NRow);
 
              for (int K = 0; K < NRow; ++K) {
                 for (int IVec = 0; IVec < VecLength; ++IVec) {
@@ -120,7 +120,7 @@ struct ThomasSolver {
                 }
              }
 
-             solve(Member, Scratch);
+             solve(Team, Scratch);
 
              for (int IVec = 0; IVec < VecLength; ++IVec) {
                 for (int K = 0; K < NRow; ++K) {
@@ -147,12 +147,12 @@ struct PCRSolver {
    // Solve the system defined in the scratch data argument `Scratch`
    // This a team-level function that needs to be called inside a
    // parallel loop using TeamPolicy, hence it has a team member argument
-   static void KOKKOS_FUNCTION solve(const TeamMember &Member,
+   static void KOKKOS_FUNCTION solve(const TeamMember &Team,
                                      const TriDiagScratch &Scratch) {
       const int NRow = Scratch.X.extent_int(0);
 
       // Row index = Thread index
-      const int K = Member.team_rank();
+      const int K = Team.team_rank();
 
       // Number of reduction levels
       const int NLevels = Kokkos::ceil(Kokkos::log2(NRow));
@@ -178,7 +178,7 @@ struct PCRSolver {
          const Real NewDL = alpha * Scratch.DL(Kmh, 0);
          const Real NewDU = gamma * Scratch.DU(Kph, 0);
 
-         Member.team_barrier();
+         teamBarrier(Team);
 
          // Store new system coefficients
          Scratch.D(K, 0)  = NewD;
@@ -186,7 +186,7 @@ struct PCRSolver {
          Scratch.DL(K, 0) = NewDL;
          Scratch.DU(K, 0) = NewDU;
 
-         Member.team_barrier();
+         teamBarrier(Team);
       }
 
       const int Stride = 1 << (NLevels - 1);
@@ -220,21 +220,21 @@ struct PCRSolver {
       auto LConfig     = makeLaunchConfig(NBatch, NRow);
 
       parallelForOuter(
-          LConfig, KOKKOS_LAMBDA(int I, const TeamMember &Member) {
-             const int K = Member.team_rank();
+          LConfig, KOKKOS_LAMBDA(int I, const TeamMember &Team) {
+             const int K = Team.team_rank();
 
-             TriDiagScratch Scratch(Member, NRow);
+             TriDiagScratch Scratch(Team, NRow);
 
              Scratch.DL(K, 0) = DL(I, K);
              Scratch.D(K, 0)  = D(I, K);
              Scratch.DU(K, 0) = DU(I, K);
              Scratch.X(K, 0)  = X(I, K);
 
-             Member.team_barrier();
+             teamBarrier(Team);
 
-             solve(Member, Scratch);
+             solve(Team, Scratch);
 
-             Member.team_barrier();
+             teamBarrier(Team);
 
              X(I, K) = Scratch.X(K, 0);
           });
@@ -250,9 +250,9 @@ struct TriDiagDiffScratch {
    TriDiagScratchArray X; // rhs on input, contains solution after calling solve
    TriDiagScratchArray Alpha; // internal workspace
 
-   KOKKOS_FUNCTION TriDiagDiffScratch(const TeamMember &Member, int NRow)
-       : G(Member.team_scratch(0), NRow), H(Member.team_scratch(0), NRow),
-         X(Member.team_scratch(0), NRow), Alpha(Member.team_scratch(0), NRow) {}
+   KOKKOS_FUNCTION TriDiagDiffScratch(const TeamMember &Team, int NRow)
+       : G(teamScratch(Team), NRow), H(teamScratch(Team), NRow),
+         X(teamScratch(Team), NRow), Alpha(teamScratch(Team), NRow) {}
 };
 
 // Thomas algorithm solver for diffusion-type tridiagonal systems
@@ -269,7 +269,7 @@ struct ThomasDiffusionSolver {
    // Solve the system defined in the scratch data argument `Scratch`
    // This a team-level function that needs to be called inside a
    // parallel loop using TeamPolicy, hence it has a team member argument
-   static void KOKKOS_FUNCTION solve(const TeamMember &Member,
+   static void KOKKOS_FUNCTION solve(const TeamMember &Team,
                                      const TriDiagDiffScratch &Scratch) {
       const int NRow = Scratch.X.extent_int(0);
 
@@ -325,10 +325,10 @@ struct ThomasDiffusionSolver {
       auto LConfig = makeLaunchConfig(NBatch, NRow);
 
       parallelForOuter(
-          LConfig, KOKKOS_LAMBDA(int IChunk, const TeamMember &Member) {
+          LConfig, KOKKOS_LAMBDA(int IChunk, const TeamMember &Team) {
              const int IStart = IChunk * VecLength;
 
-             TriDiagDiffScratch Scratch(Member, NRow);
+             TriDiagDiffScratch Scratch(Team, NRow);
 
              for (int K = 0; K < NRow; ++K) {
                 for (int IVec = 0; IVec < VecLength; ++IVec) {
@@ -341,7 +341,7 @@ struct ThomasDiffusionSolver {
                 }
              }
 
-             solve(Member, Scratch);
+             solve(Team, Scratch);
 
              for (int IVec = 0; IVec < VecLength; ++IVec) {
                 for (int K = 0; K < NRow; ++K) {
@@ -368,12 +368,12 @@ struct PCRDiffusionSolver {
    // Solve the system defined in the scratch data argument `Scratch`
    // This a team-level function that needs to be called inside a
    // parallel loop using TeamPolicy, hence it has a team member argument
-   static void KOKKOS_FUNCTION solve(const TeamMember &Member,
+   static void KOKKOS_FUNCTION solve(const TeamMember &Team,
                                      const TriDiagDiffScratch &Scratch) {
       const int NRow = Scratch.X.extent_int(0);
 
       // Row index = Thread index
-      const int K = Member.team_rank();
+      const int K = Team.team_rank();
 
       // Number of reduction levels
       const int NLevels = Kokkos::ceil(Kokkos::log2(NRow));
@@ -406,14 +406,14 @@ struct PCRDiffusionSolver {
          const Real NewH = Scratch.H(K, 0) + Alpha * Scratch.H(Kmh, 0) +
                            Beta * Scratch.H(Kph, 0);
 
-         Member.team_barrier();
+         teamBarrier(Team);
 
          // Store new system coefficients
          Scratch.H(K, 0) = NewH;
          Scratch.G(K, 0) = NewG;
          Scratch.X(K, 0) = NewX;
 
-         Member.team_barrier();
+         teamBarrier(Team);
       }
 
       const int Stride = 1 << (NLevels - 1);
@@ -456,20 +456,20 @@ struct PCRDiffusionSolver {
 
       auto LConfig = makeLaunchConfig(NBatch, NRow);
       parallelForOuter(
-          LConfig, KOKKOS_LAMBDA(int I, const TeamMember &Member) {
-             const int K = Member.team_rank();
+          LConfig, KOKKOS_LAMBDA(int I, const TeamMember &Team) {
+             const int K = Team.team_rank();
 
-             TriDiagDiffScratch Scratch(Member, NRow);
+             TriDiagDiffScratch Scratch(Team, NRow);
 
              Scratch.G(K, 0) = G(I, K);
              Scratch.H(K, 0) = H(I, K);
              Scratch.X(K, 0) = X(I, K);
 
-             Member.team_barrier();
+             teamBarrier(Team);
 
-             solve(Member, Scratch);
+             solve(Team, Scratch);
 
-             Member.team_barrier();
+             teamBarrier(Team);
 
              X(I, K) = Scratch.X(K, 0);
           });
