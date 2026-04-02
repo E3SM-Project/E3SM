@@ -493,6 +493,46 @@ Number of latitude grid points for zonal average TEM diagnostics history fields
   If &lt; 0, frequency is specified as number of hours.
 </entry>
 
+<!-- Derived Fields -->
+
+<entry id="derived_fld_defs" type="char*256(50)" category="history"
+       group="eam_derived_nl" valid_values="" >
+Derived field definitions using math operators.
+Format: OUTPUT_NAME=EXPR where EXPR uses +,-,*,/ operators.
+Operands are field names (state variables, constituents, physics buffer fields,
+or previously defined derived fields) or numeric constants (auto-detected).
+Evaluation is strict left-to-right (no operator precedence).
+Definitions are processed in order, enabling chaining (later definitions
+can reference earlier derived fields).
+Examples:
+  TOTAL_WATER=Q+CLDICE+CLDLIQ+QRAIN
+  HGTsfc=PHIS/9.80616
+  TOTAL_WATER_g=TOTAL_WATER*1000.0
+Default: none
+</entry>
+
+<entry id="tend_flds" type="char*34(100)" category="history"
+       group="eam_derived_nl" valid_values="" >
+Field names for automatic tendency computation.
+For each field listed, outputs d{NAME}_dt = (current - previous) / dt
+each physics timestep. The first timestep outputs zero.
+Can reference state variables (T,U,V,OMEGA,Z3,Q), constituents,
+physics buffer fields, or derived field names defined in derived_fld_defs.
+Default: none
+</entry>
+
+<entry id="tend_stages" type="char*16(10)" category="history"
+       group="eam_derived_nl" valid_values="total,phys,dyn" >
+Which tendency stages to output. Valid values:
+  total - total tendency d{NAME}_dt (default, always active)
+  phys  - physics-only tendency d{NAME}_dt_phys (change during physics)
+  dyn   - dynamics-only tendency d{NAME}_dt_dyn (= total - phys)
+Multiple stages can be specified. Requires tend_flds to be set.
+When phys or dyn is specified, a state snapshot is taken between
+dynamics and physics to split the tendency.
+Default: total
+</entry>
+
 <!-- Dry Convective Adjustment -->
 
 <entry id="nlvdry" type="integer"  category="dry_conv_adj"
