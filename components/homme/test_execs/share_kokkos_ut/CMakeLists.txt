@@ -104,11 +104,13 @@ SET (BOUNDARY_EXCHANGE_UT_INCLUDE_DIRS
   ${CMAKE_BINARY_DIR}/src/share/cxx
 )
 
-IF (USE_NUM_PROCS)
-  SET (NUM_CPUS ${USE_NUM_PROCS})
-ELSE()
-  SET (NUM_CPUS 1)
-ENDIF()
+# MPI_MAX_PROCS (the per-test rank ceiling) is already initialised to 24 by
+# default inside set_mpi_num_cpus() if it is not set before the call.
+# Callers that need a different ceiling (e.g. thetal_kokkos_ut sets it to 24
+# based on 6*ne^2 for ne=2) should set MPI_MAX_PROCS before calling the macro.
+# Note: USE_NUM_PROCS is a CMake cache variable (set via -DUSE_NUM_PROCS=N or
+# by CIME), not an environment variable; reading it from ENV{} would never work.
+set_mpi_num_cpus()
 cxx_unit_test (boundary_exchange_ut "${BOUNDARY_EXCHANGE_UT_F90_SRCS}" "${BOUNDARY_EXCHANGE_UT_CXX_SRCS}" "${BOUNDARY_EXCHANGE_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
 endif ()
 
@@ -149,11 +151,7 @@ SET (SPHERE_OP_UT_INCLUDE_DIRS
   ${CMAKE_BINARY_DIR}/src/share/cxx
 )
 
-IF (USE_NUM_PROCS)
-  SET (NUM_CPUS ${USE_NUM_PROCS})
-ELSE()
-  SET (NUM_CPUS 1)
-ENDIF()
+set_mpi_num_cpus()
 cxx_unit_test (sphere_op_ut "${SPHERE_OP_UT_F90_SRCS}" "${SPHERE_OP_UT_CXX_SRCS}" "${SPHERE_OP_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
 endif () #BFB
 
@@ -194,11 +192,7 @@ SET (LIMITERS_UT_INCLUDE_DIRS
   ${CMAKE_BINARY_DIR}/src/share/cxx
 )
 
-IF (USE_NUM_PROCS)
-  SET (NUM_CPUS ${USE_NUM_PROCS})
-ELSE()
-  SET (NUM_CPUS 1)
-ENDIF()
+set_mpi_num_cpus()
 cxx_unit_test (limiters_ut "${LIMITERS_UT_F90_SRCS}" "${LIMITERS_UT_CXX_SRCS}" "${LIMITERS_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
 
 ### ColumnOps unit tests
@@ -222,11 +216,7 @@ SET (COL_OPS_UT_INCLUDE_DIRS
   ${CMAKE_BINARY_DIR}/src/share/cxx
 )
 
-IF (USE_NUM_PROCS)
-  SET (NUM_CPUS ${USE_NUM_PROCS})
-ELSE()
-  SET (NUM_CPUS 1)
-ENDIF()
+set_mpi_num_cpus()
 cxx_unit_test (col_ops_ut "${COL_OPS_UT_F90_SRCS}" "${COL_OPS_UT_CXX_SRCS}" "${COL_OPS_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
 endif ()
 
@@ -261,10 +251,6 @@ SET (PPM_REMAP_UT_INCLUDE_DIRS
   ${CMAKE_BINARY_DIR}/src/share/cxx
 )
 
-IF (USE_NUM_PROCS)
-  SET (NUM_CPUS ${USE_NUM_PROCS})
-ELSE()
-  SET (NUM_CPUS 1)
-ENDIF()
+set_mpi_num_cpus()
 cxx_unit_test (ppm_remap_ut "${PPM_REMAP_UT_F90_SRCS}" "${PPM_REMAP_UT_CXX_SRCS}" "${PPM_REMAP_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
 endif ()
