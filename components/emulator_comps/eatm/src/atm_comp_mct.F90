@@ -16,6 +16,7 @@ module atm_comp_mct
   use shr_file_mod    , only: shr_file_setlogunit, shr_file_setloglevel, shr_file_setio
   use shr_file_mod    , only: shr_file_freeunit
   use seq_flds_mod    , only: seq_flds_a2x_fields, seq_flds_x2a_fields
+  use seq_timemgr_mod , only: seq_timemgr_EClockGetData, seq_timemgr_RestartAlarmIsOn
 
   use atm_cpl_indices
   use eatmMod
@@ -89,6 +90,7 @@ CONTAINS
     logical           :: first_time = .true.
     integer(IN)       :: ierr                      ! error code
     integer           :: mpicom_loc                ! local mpi communicator
+    real(R8)          :: nextsw_cday               ! calendar of next atm shortwave
 
     !--- formats ---
     character(*), parameter :: F00   = "('(atm_comp_init) ',8a)"
@@ -193,6 +195,12 @@ CONTAINS
        !----------------------------------------------------------------------------
        call atm_export_mct(a2x)
 
+       ! Set time step of radiation computation as the current calday
+       ! This should only be done on the first timestep of an initial run
+       if (.not. read_restart) then
+           call seq_timemgr_EClockGetData( EClock, curr_cday=nextsw_cday )
+           call seq_infodata_PutData( infodata, nextsw_cday=nextsw_cday )
+       endif
        !----------------------------------------------------------------------------
        ! Reset shr logging to original values
        !----------------------------------------------------------------------------
@@ -231,6 +239,11 @@ CONTAINS
 
        end if
 
+       ! Compute time of next radiation computation, like in run method for exact restart
+
+       nextsw_cday = eatm_shr_getNextRadCDay( EClock, iradsw )
+       call seq_infodata_PutData( infodata, nextsw_cday=nextsw_cday )
+
        ! End redirection of share output to eatm log
 
        call shr_file_setLogUnit (shrlogunit)
@@ -261,6 +274,7 @@ CONTAINS
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
     character(*), parameter :: subName = "(atm_run_mct) "
+    real(R8) :: nextsw_cday  ! calendar of next atm shortwave
     !-------------------------------------------------------------------------------
     if (masterproc) write(logunit_atm,*) 'got to atm_run'
     call shr_sys_flush(logunit_atm)
@@ -289,6 +303,11 @@ CONTAINS
     call t_startf ('lc_eatm_export')
     call atm_export_mct( a2x )
     call t_stopf ('lc_eatm_export')
+
+    ! Get calendar day of next radiation calculation
+    ! albedos for each surface model will be calculated for this day
+    nextsw_cday = eatm_shr_getNextRadCDay( EClock, iradsw )
+    call seq_infodata_PutData( infodata, nextsw_cday=nextsw_cday )
 
   end subroutine atm_run_mct
 

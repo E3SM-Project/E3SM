@@ -40,6 +40,8 @@ module ace_comp_mod
   integer, parameter, public :: eatm_idt=6 * 60 * 60 ! eatm timestep (6hr) in seconds
   ! number of eatm steps in a year
   integer, parameter, public :: eatm_spy=(365 * 24 * 60 * 60) / eatm_idt
+  ! TODO (AN): Parse from namelist
+  integer(IN), parameter, public :: iradsw=1    ! radiation interval
 
   !--------------------------------------------------------------------------
   ! Private module data

@@ -30,7 +30,10 @@ module eatm_comp_mod
   public :: eatm_comp_init
   public :: eatm_comp_run
   public :: eatm_comp_final
+  public :: eatm_shr_getNextRadCDay
 
+  ! forward value that should be coming from namelist
+  public :: iradsw
   save
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -381,4 +384,48 @@ CONTAINS
 
   end subroutine eatm_comp_final
   !===============================================================================
+
+  real(R8) function eatm_shr_getNextRadCDay( EClock, iradsw )
+
+    ! !DESCRIPTION:
+    !  Return the calendar day of the next radiation time-step.
+    implicit none
+
+    ! !INPUT/OUTPUT PARAMETERS:
+    type(ESMF_Clock), intent(in) :: EClock
+    integer(IN)     , intent(in) :: iradsw   ! radiation interval
+
+    !----- local -----
+    integer(IN)       :: ymd
+    integer(IN)       :: tod
+    integer(IN)       :: stepno
+    integer(IN)       :: dtime
+    character(len=CS) :: calendar
+    real(R8)          :: nextsw_cday
+    real(R8)          :: julday
+    integer(IN)       :: liradsw
+    !-------------------------------------------------------------------------------
+
+    call seq_timemgr_EClockGetData( EClock, curr_ymd=ymd, curr_tod=tod )
+    call seq_timemgr_EClockGetData( EClock, stepno=stepno, dtime=dtime )
+    call seq_timemgr_EClockGetData( EClock, calendar=calendar )
+
+    liradsw = iradsw
+    if (liradsw < 0) liradsw  = nint((-liradsw *3600._r8)/dtime)
+
+    call shr_cal_date2julian(ymd,tod,julday,calendar)
+
+    if (liradsw > 1) then
+       if (mod(stepno+1,liradsw) == 0 .and. stepno > 0) then
+          nextsw_cday = julday + 2*dtime/SHR_CONST_CDAY
+       else
+          nextsw_cday = -1._r8
+       end if
+    else
+       nextsw_cday = julday + dtime/SHR_CONST_CDAY
+    end if
+    eatm_shr_getNextRadCDay = nextsw_cday
+
+  end function eatm_shr_getNextRadCDay
+
 end module eatm_comp_mod
