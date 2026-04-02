@@ -22,10 +22,15 @@ module eam_vcoarsen
   !
   ! Use 'all' as the sole entry in any field list to apply to all known 3D fields.
   !
+  ! Field sources (checked in order):
+  !   1. Physics state variables: T, U, V, OMEGA, Z3, Q
+  !   2. Registered constituents (e.g., CLDLIQ, CLDICE)
+  !   3. Physics buffer fields (e.g., CLD, CONCLD)
+  !
   ! Usage from physpkg.F90:
-  !   call eam_vcoarsen_readnl(nlfile)     ! during namelist reading
-  !   call eam_vcoarsen_register()         ! during phys_init
-  !   call eam_vcoarsen_write(state)       ! during physics timestep
+  !   call eam_vcoarsen_readnl(nlfile)        ! during namelist reading
+  !   call eam_vcoarsen_register()            ! during phys_register
+  !   call eam_vcoarsen_write(state, pbuf)    ! during tphysbc history write
   !
   !-------------------------------------------------------------------------------------------
 
@@ -76,7 +81,6 @@ module eam_vcoarsen
   logical :: has_avg     = .false.
   logical :: has_sel_lev = .false.
   logical :: has_sel_pres = .false.
-  logical :: module_is_initialized = .false.
 
 contains
 
@@ -242,8 +246,6 @@ contains
       end do
     end if
 
-    module_is_initialized = .true.
-
     if (masterproc) then
       write(iulog,*) 'eam_vcoarsen_register: registration complete'
     end if
@@ -251,13 +253,15 @@ contains
   end subroutine eam_vcoarsen_register
 
   !============================================================================
-  subroutine eam_vcoarsen_write(state)
+  subroutine eam_vcoarsen_write(state, pbuf_chunk)
     use physics_types,  only: physics_state
+    use physics_buffer, only: physics_buffer_desc
     use cam_history,    only: outfld
     use shr_vcoarsen_mod, only: shr_vcoarsen_avg_cols, shr_vcoarsen_select_index, &
                                 shr_vcoarsen_select_nearest
 
     type(physics_state), intent(in) :: state
+    type(physics_buffer_desc), pointer :: pbuf_chunk(:)
 
     real(r8) :: src_field(pcols, pver)
     real(r8) :: coarsened(pcols, max(n_avg_levs, 1))
@@ -282,12 +286,15 @@ contains
       coord_iface(1:ncol, 1:pverp) = state%pint(1:ncol, 1:pverp)
 
       do i = 1, n_avg_flds
-        call get_state_field(state, vcoarsen_avg_flds(i), src_field, ncol)
+        call get_state_field(state, pbuf_chunk, vcoarsen_avg_flds(i), src_field, ncol)
 
         call shr_vcoarsen_avg_cols(src_field, coord_iface, ncol, pver, &
              vcoarsen_pbounds(1:n_avg_levs+1), n_avg_levs, fillvalue, coarsened)
 
         do k = 1, n_avg_levs
+          ! Fill inactive columns
+          coarsened(ncol+1:pcols, k) = fillvalue
+
           call make_avg_name(vcoarsen_avg_flds(i), k, fname)
           call outfld(trim(fname), coarsened(:, k), pcols, lchnk)
         end do
@@ -297,7 +304,7 @@ contains
     ! --- Level index selection ---
     if (has_sel_lev) then
       do i = 1, n_sel_lev_flds
-        call get_state_field(state, vcoarsen_select_lev_flds(i), src_field, ncol)
+        call get_state_field(state, pbuf_chunk, vcoarsen_select_lev_flds(i), src_field, ncol)
 
         do k = 1, n_sel_levs
           call shr_vcoarsen_select_index(src_field, ncol, pver, &
@@ -318,7 +325,7 @@ contains
       coord_mid(1:ncol, 1:pver) = state%pmid(1:ncol, 1:pver)
 
       do i = 1, n_sel_pres_flds
-        call get_state_field(state, vcoarsen_select_pres_flds(i), src_field, ncol)
+        call get_state_field(state, pbuf_chunk, vcoarsen_select_pres_flds(i), src_field, ncol)
 
         do k = 1, n_sel_pres
           ! Convert hPa to Pa for comparison with pmid
@@ -340,21 +347,25 @@ contains
   ! Private helper routines
   !============================================================================
 
-  subroutine get_state_field(state, fname, field_out, ncol)
-    use physics_types, only: physics_state
-    use constituents,  only: cnst_get_ind
+  subroutine get_state_field(state, pbuf_chunk, fname, field_out, ncol)
+    use physics_types,  only: physics_state
+    use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
+    use constituents,   only: cnst_get_ind
 
     type(physics_state), intent(in)  :: state
+    type(physics_buffer_desc), pointer :: pbuf_chunk(:)
     character(len=*),    intent(in)  :: fname
     real(r8),            intent(out) :: field_out(pcols, pver)
     integer,             intent(in)  :: ncol
 
-    integer :: idx
+    integer :: idx, pbuf_idx, errcode
     character(len=max_name_len) :: uname
+    real(r8), pointer :: pbuf_fld(:,:)
 
     uname = adjustl(fname)
     field_out(:,:) = 0.0_r8
 
+    ! Check standard state variables first
     select case (trim(uname))
     case ('T')
       field_out(1:ncol, :) = state%t(1:ncol, :)
@@ -383,34 +394,57 @@ contains
       return
     end if
 
-    call endrun('eam_vcoarsen: get_state_field: unknown field: '//trim(uname))
+    ! Try physics buffer lookup
+    ! pbuf_get_index returns index>0 if found, -1 if not (errcode=index)
+    pbuf_idx = pbuf_get_index(trim(uname), errcode)
+    if (pbuf_idx > 0) then
+      call pbuf_get_field(pbuf_chunk, pbuf_idx, pbuf_fld)
+      field_out(1:ncol, :) = pbuf_fld(1:ncol, :)
+      return
+    end if
+
+    call endrun('eam_vcoarsen: get_state_field: unknown field "'//trim(uname)// &
+         '". Must be a state variable, constituent, or physics buffer field.')
 
   end subroutine get_state_field
 
   !============================================================================
   subroutine validate_field_name(fname)
-    use constituents, only: cnst_get_ind
+    use constituents,   only: cnst_get_ind
+    use physics_buffer, only: pbuf_get_index
 
     character(len=*), intent(in) :: fname
-    integer :: k, idx
+    integer :: k, idx, errcode
     logical :: found
     character(len=max_name_len) :: uname
 
     uname = adjustl(fname)
     found = .false.
+
+    ! Check known state variables
     do k = 1, n_known_state
       if (trim(uname) == trim(known_state_vars(k))) then
         found = .true.
         exit
       end if
     end do
+
+    ! Check constituents
     if (.not. found) then
       call cnst_get_ind(trim(uname), idx, abrtf=.false.)
       found = (idx > 0)
     end if
+
+    ! Check physics buffer
+    ! pbuf_get_index returns index>0 if found, -1 if not
+    if (.not. found) then
+      idx = pbuf_get_index(trim(uname), errcode)
+      found = (idx > 0)
+    end if
+
     if (.not. found) then
       call endrun('eam_vcoarsen: unknown field "'//trim(uname)// &
-           '". Must be T, U, V, OMEGA, Z3, Q, or a registered constituent.')
+           '". Must be a state variable, constituent, or physics buffer field.')
     end if
 
   end subroutine validate_field_name

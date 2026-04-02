@@ -121,32 +121,33 @@ contains
     real(r8), intent(in)  :: fillval                   ! fill value for empty layers
     real(r8), intent(out) :: field_out(ncol, n_out)    ! output coarsened values
 
-    real(r8) :: b_lo, b_hi, c_lo, c_hi, overlap
-    real(r8) :: numerator, denominator
+    real(r8) :: b_lo, b_hi, overlap
+    real(r8) :: numerator(ncol), denominator(ncol)
     integer  :: i, k, kout
 
     do kout = 1, n_out
       b_lo = bounds(kout)
       b_hi = bounds(kout + 1)
 
-      do i = 1, ncol
-        numerator   = 0.0_r8
-        denominator = 0.0_r8
+      numerator(:)   = 0.0_r8
+      denominator(:) = 0.0_r8
 
-        do k = 1, nlev
-          c_lo = coord_iface(i, k)
-          c_hi = coord_iface(i, k + 1)
-
-          overlap = max(0.0_r8, min(c_hi, b_hi) - max(c_lo, b_lo))
+      ! k outer, i inner: field(i,k) with varying i is contiguous in memory
+      do k = 1, nlev
+        do i = 1, ncol
+          overlap = max(0.0_r8, min(coord_iface(i, k+1), b_hi) - &
+                                max(coord_iface(i, k),   b_lo))
 
           if (overlap > 0.0_r8) then
-            numerator   = numerator   + field(i, k) * overlap
-            denominator = denominator + overlap
+            numerator(i)   = numerator(i)   + field(i, k) * overlap
+            denominator(i) = denominator(i) + overlap
           end if
         end do
+      end do
 
-        if (denominator > 0.0_r8) then
-          field_out(i, kout) = numerator / denominator
+      do i = 1, ncol
+        if (denominator(i) > 0.0_r8) then
+          field_out(i, kout) = numerator(i) / denominator(i)
         else
           field_out(i, kout) = fillval
         end if

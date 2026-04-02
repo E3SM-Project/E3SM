@@ -42,7 +42,7 @@ module physpkg
   use perf_mod
   use cam_logfile,     only: iulog
   use camsrfexch,      only: cam_export
-  use eam_vcoarsen,    only: eam_vcoarsen_register, eam_vcoarsen_write
+  use eam_vcoarsen,    only: eam_vcoarsen_register
 
   use modal_aero_calcsize,    only: modal_aero_calcsize_init, &
                                     modal_aero_calcsize_reg
@@ -1451,8 +1451,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
             phys_state(c), phys_tend(c), phys_buffer_chunk, phys_diag(c),  &
             fsds(1,c))
 
-       call eam_vcoarsen_write(phys_state(c))
-
        call system_clock(count=end_chnk_cnt, count_rate=sysclock_rate, count_max=sysclock_max)
        if ( end_chnk_cnt < beg_chnk_cnt ) end_chnk_cnt = end_chnk_cnt + sysclock_max
        chunk_cost = real( (end_chnk_cnt-beg_chnk_cnt), r8)/real(sysclock_rate, r8)
@@ -2241,6 +2239,7 @@ subroutine tphysbc (ztodt,               &
     use physics_types,   only: physics_state, physics_tend, physics_ptend, &
          physics_ptend_init, physics_ptend_sum, physics_state_check, physics_ptend_scale
     use cam_diagnostics, only: diag_conv_tend_ini, diag_phys_writeout, diag_conv, diag_export, diag_state_b4_phys_write
+    use eam_vcoarsen,    only: eam_vcoarsen_write
     use cam_history,     only: outfld, fieldname_len
     use physconst,       only: cpair, latvap, gravit, rga
     use constituents,    only: pcnst, qmin, cnst_get_ind
@@ -3080,6 +3079,7 @@ end if
 
     call t_startf('bc_history_write')
     call diag_phys_writeout(state, cam_out%psl)
+    call eam_vcoarsen_write(state, pbuf)
     call diag_conv(state, ztodt, pbuf)
 
     call t_stopf('bc_history_write')
