@@ -57,7 +57,7 @@ module ace_comp_mod
   integer(c_int64_t) :: output_tensor_shape(4)
 
   ! TODO (AN): Parse from namelist
-  character(len=*), parameter :: torchscript_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace2_EAMv3_ckpt-CUDA_traced.tar"
+  character(len=*), parameter :: torchscript_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace_traced_cuda.pt"
   character(len=*), parameter :: norm_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace2_EAMv3_normalize.nc"
   character(len=*), parameter :: denorm_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace2_EAMv3_denormalize.nc"
   character(len=*), parameter :: forcing_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/forcing_data/1971.nc"
@@ -122,7 +122,7 @@ CONTAINS
     else
       net_inputs_nn = net_inputs
       ! normalize, can probably happen after tensor is made becuase it's a pointer
-      call normalizer%normalize(net_inputs_nn)
+      ! call normalizer%normalize(net_inputs_nn)
 
       ! create input/output tensors based off net input/output arrays
       call torch_tensor_from_blob(&
@@ -152,7 +152,7 @@ CONTAINS
       call torch_delete(output_tensor)
 
       ! denormalize
-      call denormalizer%denormalize(net_outputs)
+      ! call denormalizer%denormalize(net_outputs)
 
       ! fill both time levels of intrp struct with restart data
       do k = 1, n_output_channels
@@ -218,7 +218,7 @@ CONTAINS
 
       net_inputs_nn = net_inputs
       ! normalize, can probably happen after tensor is made becuase it's a pointer
-      call normalizer%normalize(net_inputs_nn)
+      ! call normalizer%normalize(net_inputs_nn)
 
       ! create input/output tensors based off net input/output arrays
       call torch_tensor_from_blob(&
@@ -248,7 +248,7 @@ CONTAINS
       call torch_delete(output_tensor)
 
       ! denormalize
-      call denormalizer%denormalize(net_outputs)
+      ! call denormalizer%denormalize(net_outputs)
 
       ! advance the time levels
       do k = 1, n_output_channels
