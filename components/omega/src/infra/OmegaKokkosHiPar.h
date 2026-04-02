@@ -16,10 +16,13 @@ using TeamPolicy      = Kokkos::TeamPolicy<ExecSpace>;
 using TeamMember      = TeamPolicy::member_type;
 using ScratchMemSpace = ExecSpace::scratch_memory_space;
 using Kokkos::PerTeam;
-using ArrayScratch1DReal =
-    Kokkos::View<Real *, ScratchMemSpace, Kokkos::MemoryUnmanaged>;
-using ArrayScratch1DI4 =
-    Kokkos::View<I4 *, ScratchMemSpace, Kokkos::MemoryUnmanaged>;
+
+template <class T>
+using ArrayScratch1D =
+    Kokkos::View<T *, ScratchMemSpace, Kokkos::MemoryUnmanaged>;
+
+using ArrayScratch1DReal = ArrayScratch1D<Real>;
+using ArrayScratch1DI4   = ArrayScratch1D<I4>;
 
 /// team_size for hierarchical parallelism
 #ifdef OMEGA_TARGET_DEVICE
@@ -41,7 +44,7 @@ template <class... T> struct TeamScratch {
 
    template <class... ArgT> TeamScratch(ArgT... Args) {
       static_assert(sizeof...(ArgT) == sizeof...(T));
-      ((BytesPerTeam += sizeof(T) * Args), ...);
+      ((BytesPerTeam += ArrayScratch1D<T>::shmem_size(Args)), ...);
    }
 };
 
