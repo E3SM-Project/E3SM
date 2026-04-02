@@ -16,6 +16,12 @@ module rof_comp_mct
   use dead_mct_mod    , only: dead_init_mct, dead_run_mct, dead_final_mct
   use seq_flds_mod    , only: seq_flds_r2x_fields, seq_flds_x2r_fields
 
+#ifdef HAVE_MOAB
+  use seq_comm_mct, only : mrofid !            iMOAB app id for rof
+  use iso_c_binding
+  use iMOAB           , only: iMOAB_RegisterApplication
+  use dead_mct_mod   , only: dead_init_moab
+#endif
   ! !PUBLIC TYPES:
   implicit none
   save
@@ -51,6 +57,9 @@ CONTAINS
   subroutine rof_init_mct( EClock, cdata, x2d, d2x, NLFilename )
 
     ! !DESCRIPTION: initialize dead rof model
+#ifdef HAVE_MOAB
+    use shr_stream_mod, only: shr_stream_getDomainInfo, shr_stream_getFile
+#endif
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            , intent(inout) :: EClock
@@ -72,6 +81,7 @@ CONTAINS
     logical                          :: rof_prognostic ! if true, component is prognostic
     logical                          :: rofice_present
     logical                          :: flood_present
+    character(*), parameter :: subName = "(rof_init_mct) "
     !-------------------------------------------------------------------------------
 
     ! Set cdata pointers to derived types (in coupler)
@@ -115,6 +125,14 @@ CONTAINS
     ! Initialize xrof
     !----------------------------------------------------------------------------
 
+#ifdef HAVE_MOAB
+    ierr = iMOAB_RegisterApplication(trim("XROF")//C_NULL_CHAR, mpicom, compid, mrofid)
+    if (ierr .ne. 0) then
+      write(logunit,*) subname,' error in registering XROF comp'
+      call shr_sys_abort(subname//' ERROR in registering XROF comp')
+    endif
+#endif
+
     call dead_init_mct('rof', Eclock, x2d, d2x, &
          seq_flds_x2r_fields, seq_flds_r2x_fields, &
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
@@ -131,6 +149,12 @@ CONTAINS
        rofice_present = .false.
        flood_present = .true.
     end if
+
+#ifdef HAVE_MOAB
+    if (rof_present) then
+      call dead_init_moab( mrofid, 'rof', gsMap, gbuf, x2d, d2x, mpicom, compid, logunit, nxg, nyg )
+    end if
+#endif
 
     call seq_infodata_PutData( infodata, dead_comps=.true., &
          rof_present=rof_present, &
@@ -179,8 +203,17 @@ CONTAINS
          dom=ggrid, &
          infodata=infodata)
 
+#ifdef HAVE_MOAB
+
+    call dead_run_mct('rof', EClock, x2d, d2x, &
+       gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, logunit, mrofid )
+
+#else
+
     call dead_run_mct('rof', EClock, x2d, d2x, &
        gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, logunit)
+
+#endif
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)

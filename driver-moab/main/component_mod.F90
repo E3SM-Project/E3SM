@@ -429,7 +429,8 @@ contains
     use seq_comm_mct,     only: mblxid ! iMOAB id for lnd migrated mesh to coupler pes
     use seq_comm_mct,     only: mbaxid ! iMOAB id for atm migrated mesh to coupler pes
     use seq_comm_mct,     only: mbrxid ! iMOAB id for rof migrated mesh to coupler pes
-    use seq_comm_mct,     only: atm_pg_active ! 
+    use seq_comm_mct,     only: atm_pg_active !
+    use seq_comm_mct,     only: mb_dead_comps
     !
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata      ! coupler information/metadata
@@ -491,7 +492,6 @@ contains
     if (rof_c2_ocn) then
        if (.not.samegrid_ro) then
           dom_s   => component_get_dom_cx(rof(1))   ! dom_rx
-
        endif
        ! samegrid_ro = true not handled.  ROF always stub then?
        ! TODO:  handle this for unified mesh?

@@ -48,6 +48,7 @@ module component_type_mod
   public :: component_get_name
   public :: component_get_suffix
   public :: component_get_iamin_compid
+  public :: component_get_mbGridType
 
   !--------------------------------------------------------------------------
   ! Public data
@@ -72,8 +73,8 @@ module component_type_mod
      type(mct_aVect) , pointer       :: c2x_cc      => null()
      real(r8)        , pointer       :: drv2mdl(:)  => null() ! area correction factors
      real(r8)        , pointer       :: mdl2drv(:)  => null() ! area correction factors
-     integer                         :: mbApCCid ! moab app id on component side 
-     integer                         :: mbGridType ! 0 for PC, 1 for cell (ocean, ice)  
+     integer                         :: mbApCCid ! moab app id on component side
+     integer                         :: mbGridType ! 0 for PC, 1 for cell (ocean, ice)
      integer                         :: mblsize    ! size of local arrays
      !
      ! Union of coupler/component pes - used by exchange routines
@@ -228,6 +229,12 @@ contains
     type(seq_map), pointer :: component_get_mapper_Cx2c
     component_get_mapper_Cx2c => comp%mapper_Cx2c
   end function component_get_mapper_Cx2c
+
+  function component_get_mbGridType(comp)
+    type(component_type), intent(in), target :: comp
+    integer :: component_get_mbGridType
+    component_get_mbGridType = comp%mbGridType
+  end function component_get_mbGridType
 
   subroutine check_fields(comp, comp_index)
     use shr_infnan_mod, only: shr_infnan_isnan

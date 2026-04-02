@@ -15,7 +15,7 @@ module prep_lnd_mod
   use seq_comm_mct,     only: mphaid   ! iMOAB id for phys atm on atm pes
   use seq_comm_mct,     only: mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   use seq_comm_mct,     only: mblxid ! iMOAB id for land migrated mesh to coupler pes
-  use seq_comm_mct,     only: mb_scm_land ! flag that identifies PC for land; 
+  use seq_comm_mct,     only: mb_scm_land ! flag that identifies PC for land;
   use seq_comm_mct,     only: mbrxid   !          iMOAB id of moab rof on coupler pes (FV now)
   use seq_comm_mct,     only: mbintxal ! iMOAB id for intx mesh between atm and lnd
   use seq_comm_mct,     only: mbintxrl ! iMOAB id for intx mesh between river and land
@@ -143,6 +143,7 @@ contains
     logical                  :: lnd_present   ! .true. => land is present
     logical                  :: cpl_compute_maps_online    ! .true.  => maps are computed online
     logical                  :: iamroot_CPLID ! .true. => CPLID masterproc
+    logical                  :: dead_comps    ! .true. => all comps are dead, so we need to be careful in map init and moab intx
     character(CL)            :: atm_gnam      ! atm grid
     character(CL)            :: lnd_gnam      ! lnd grid
     character(CL)            :: rof_gnam      ! rof grid
@@ -185,7 +186,8 @@ contains
          lnd_gnam=lnd_gnam,             &
          rof_gnam=rof_gnam,             &
          glc_gnam=glc_gnam,             &
-         cpl_compute_maps_online=cpl_compute_maps_online )
+         cpl_compute_maps_online=cpl_compute_maps_online, &
+         dead_comps=dead_comps )
 
     allocate(mapper_Sa2l)
     allocate(mapper_Fa2l)
@@ -570,7 +572,7 @@ contains
                      call shr_sys_abort(subname//' ERROR in computing ATM-LND weights ')
                   endif
 
-              else
+              else ! offline maps for atm to lnd
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
                   arearead = 0 ! no need for areas
                   call moab_map_init_rcfile( mbaxid, mblxid, mbintxal, type1, &
@@ -606,14 +608,14 @@ contains
                 call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ATM-LND')
               endif
 
-            else
+            else ! not samegrid_al
               ! This is the case where ATM and LND use the same mesh and describe same DoFs. However, LND is a subset of ATM;
               ! So, we do not need to compute an intersection, as we will just send the data from ATM to LND and vice-versa,
               ! using GLOBAL_ID matching with point-to-point communication enabled through a communication graph.
-              if (atm_pg_active) then
+              if (atm_pg_active .or. dead_comps) then
                   type1 = 3; !  fv for atm; cgll does not work anyway
               else
-                  type1 = 2 ! in this case, atm is just PC 
+                  type1 = 2 ! in this case, atm is just PC
               endif
               if (mb_scm_land) then
                 type2 = 2 ! point cloud for land too, on coupler side; just one point, actually

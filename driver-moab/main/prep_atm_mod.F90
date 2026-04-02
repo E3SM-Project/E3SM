@@ -34,6 +34,7 @@ module prep_atm_mod
   use seq_comm_mct, only : mbintxla ! iMOAB id for intx mesh between land and atmosphere
   use seq_comm_mct, only : seq_comm_getinfo => seq_comm_setptrs
   use seq_comm_mct, only : num_moab_exports
+  use seq_comm_mct, only : mb_dead_comps
 
   !use dimensions_mod, only : np     ! for atmosphere
 
@@ -143,6 +144,7 @@ contains
    logical                          :: ice_present    ! .true.  => ice is present
    logical                          :: lnd_present    ! .true.  => lnd is prsent
    logical                          :: cpl_compute_maps_online    ! .true.  => maps are computed online
+   logical                          :: dead_comps    ! .true. => all comps are dead, so we need to be careful in map init and moab intx
    character(CL)                    :: ocn_gnam       ! ocn grid
    character(CL)                    :: atm_gnam       ! atm grid
    character(CL)                    :: lnd_gnam       ! lnd grid
@@ -178,7 +180,8 @@ contains
       ocn_gnam=ocn_gnam,             &
       lnd_gnam=lnd_gnam,             &
       cpl_compute_maps_online=cpl_compute_maps_online, &
-      esmf_map_flag=esmf_map_flag)
+      esmf_map_flag=esmf_map_flag, &
+      dead_comps=dead_comps)
 
    allocate(mapper_So2a)
    allocate(mapper_Sof2a)
@@ -287,7 +290,7 @@ contains
                write(logunit,*) subname,' error in defining tags for seq_flds_o2x_fields'
                call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_o2x_fields')
             endif
-           
+
 
             if (.not. samegrid_ao) then ! most cases
 
@@ -318,7 +321,7 @@ contains
                   endif
 ! endif for MOABDEBUG
 #endif
-                  if (atm_pg_active) then
+                  if (atm_pg_active .or. mb_dead_comps) then
                      dm2 = "fv"//C_NULL_CHAR
                      dofnameT="GLOBAL_ID"//C_NULL_CHAR
                      orderT = 1 !  fv-fv
@@ -388,7 +391,7 @@ contains
                ! permutation operator, we will compute a communication graph between ATM and OCN DoFs on the
                ! coupler.
                type1 = 3;  ! FV mesh on coupler OCN
-               if (atm_pg_active) then
+               if (atm_pg_active .or. mb_dead_comps) then
                   type2 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
                else
                   type2 = 2 ! from now on, spectral is on PC on coupler side, too; no mapping allowed, just reorder?
@@ -473,7 +476,7 @@ contains
             mapper_Fo2a%intx_context = mapper_So2a%intx_context ! it could be different, based on samegrid_ao
             mapper_Fo2a%weight_identifier = wgtIdFo2a
             mapper_Fo2a%mbname = 'mapper_Fo2a'
-            ! we do not need to call compute comm graph for samegrid_ao, it was already called 
+            ! we do not need to call compute comm graph for samegrid_ao, it was already called
             ! it was called earlier, around line 403, for mapper_So2a
          endif
 
@@ -487,11 +490,6 @@ contains
             ! We also need to compute the comm graph for the second hop, from the OCN on the coupler to the
             ! OCN for the intersection of OCN-ATM context (coverage)
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
-
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in computing comm graph for second hop, ocnf -atm'
-               call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocnf-atm')
-            endif
 
             ! we identified the app mbofxid with !id_join = id_join + 1000! kind of random
             ! line 1267 in cplcomp_exchange_mod.F90
@@ -517,17 +515,28 @@ contains
             mapper_Fof2a%weight_identifier = wgtIdFo2a
             mapper_Fof2a%mbname = 'mapper_Fof2a'
 
-            type1 = 3; !  fv for ocean and atm; 
-            if (atm_pg_active) then !
-               type2 = 3
-            else
-               type2 = 2 ! PC cloud 
-            endif
-            if (.not. samegrid_ao) then ! data-OCN case
-               ! we use the same intx, because the mesh will be the same, between mbofxid and mboxid
-               ierr = iMOAB_ComputeCommGraph( mbofxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+            type1 = 3; !  fv for ocean and atm;
+            if (.not. samegrid_ao) then
+               ! Coverage/intersection mesh always has FV cells with GLOBAL_IDs,
+               ! so type2 must be 3 (element-based matching), regardless of
+               ! atm_pg_active. Using type2=2 (vertex matching) here would cause
+               ! MOAB to match against vertex GLOBAL_IDs of mbintxoa instead of
+               ! element GLOBAL_IDs, leading to an incorrect comm graph and
+               ! heap corruption in iMOAB_ReceiveElementTag.
+               ierr = iMOAB_ComputeCommGraph( mbofxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, 3, &
                                           context_id, idintx)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing comm graph for Sof2a, mbofxid-mbintxoa'
+                  call shr_sys_abort(subname//' ERROR in computing comm graph for Sof2a, mbofxid-mbintxoa')
+               endif
             else
+               ! samegrid: comm graph to ATM mesh directly
+               ! type2 depends on ATM discretization (PC for spectral, FV for PG2)
+               if (atm_pg_active .or. dead_comps) then
+                  type2 = 3
+               else
+                  type2 = 2 ! PC cloud
+               endif
                ! this is a case appearing in the data ocean case --res ne4pg2_ne4pg2 --compset FAQP
                ! also in spectral case, monogrid --res ne4_ne4 --compset F2010-SCREAMv1 ( type2 is 2, point cloud )
                ierr = iMOAB_ComputeCommGraph( mbofxid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
@@ -638,7 +647,7 @@ contains
 
             if (compute_maps_online_i2a) then
                volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
-               if (atm_pg_active) then
+               if (atm_pg_active .or. mb_dead_comps) then
                   dm2 = "fv"//C_NULL_CHAR
                   dofnameT="GLOBAL_ID"//C_NULL_CHAR
                   orderT = 1 !  fv-fv
@@ -759,8 +768,8 @@ contains
          mapper_Fi2a%weight_identifier = wgtIdFi2a
          mapper_Fi2a%mbname = 'mapper_Fi2a'
          if ( samegrid_ao ) then ! this case can appear in cice case
-            type1 = 3 !  fv for ice 
-            if (atm_pg_active) then
+            type1 = 3 !  fv for ice
+            if (atm_pg_active .or. mb_dead_comps) then
                type2 = 3
             else
                type2 = 2 ! this is spectral case , PC cloud for atm
@@ -863,7 +872,7 @@ contains
 #endif
                   ! need to compute weigths
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
-                  if (atm_pg_active) then
+                  if (atm_pg_active .or. mb_dead_comps) then
                      dm2 = "fv"//C_NULL_CHAR
                      dofnameT="GLOBAL_ID"//C_NULL_CHAR
                      orderT = 1 !  fv-fv
@@ -937,7 +946,7 @@ contains
                ! land is point cloud in this case, type1 = 2
                call seq_comm_getinfo(CPLID, mpigrp=mpigrp_CPLID) ! make sure we have the right MPI group
                type1 = 3 !  full mesh for land now
-               if (atm_pg_active) then
+               if (atm_pg_active .or. mb_dead_comps) then
                   type2 = 3  ! fv for target atm
                else
                   type2 = 2  ! point cloud for spectral
@@ -1073,7 +1082,7 @@ contains
                write(logunit,*) subname,' error in getting info '
                call shr_sys_abort(subname//' error in getting info ')
        endif
-       if (atm_pg_active) then
+       if (atm_pg_active .or. mb_dead_comps) then
           lsize = nvise(1) ! number of active cells
        else
           lsize = nvert(1) ! for the spectral case, everything is pc from now on
@@ -1286,10 +1295,10 @@ contains
     endif  ! end first-time
 
     !  Get data from MOAB
-    if (atm_pg_active) then
-       ent_type = 1 ! cells
+    if (atm_pg_active .or. mb_dead_comps) then
+       ent_type = 1 ! cells (PG atmosphere or dead comps FV mesh)
     else
-       ent_type = 0 ! vertices, it is PC 
+       ent_type = 0 ! vertices, spectral point cloud
     endif
     tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
     arrsize = naflds * lsize
@@ -1338,7 +1347,7 @@ contains
     else ! o2x_am will still be used in merge so make sure its 0 when no ocean
        o2x_am(:,:)=0.0_r8
     endif
-    
+
     if (mbixid > 0) then
        tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
        arrsize = niflds * lsize !        allocate (i2x_am (lsize, niflds))
