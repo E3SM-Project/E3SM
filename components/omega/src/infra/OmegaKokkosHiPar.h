@@ -181,7 +181,7 @@ inline void parallelReduceOuter(const LaunchConfig<N> &LConfig, F &&Functor,
 
 // parallelReduceOuter: with label and with array bounds
 template <int N, class F, class... R>
-inline void parallelReduceOuter(const std::string Label,
+inline void parallelReduceOuter(const std::string &Label,
                                 const int (&UpperBounds)[N], F &&Functor,
                                 R &&...Reducers) {
    parallelReduceOuter(Label, LaunchConfig(UpperBounds),

@@ -11,6 +11,8 @@
 
 #include "DataTypes.h"
 #include "Error.h"
+#include <algorithm>
+#include <array>
 #include <functional>
 #include <type_traits>
 #include <utility>
@@ -101,7 +103,7 @@ bool arraysEqual(const ArrayTypeA &A, const ArrayTypeB &B) {
    OMEGA_REQUIRE(A.span_is_contiguous() && B.span_is_contiguous(),
                  "arraysEqual works only for contiguous arrays");
    OMEGA_REQUIRE(A.size() == B.size(),
-                 "arrayEqual can only compare arrays of equal size");
+                 "arraysEqual can only compare arrays of equal size");
 
    // This is a debug utility and not performance critical
    // so just copy to the host and compare there

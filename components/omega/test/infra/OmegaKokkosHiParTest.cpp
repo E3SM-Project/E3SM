@@ -390,7 +390,7 @@ Error testHiparLaunchConfig1D(int N1, int N2) {
 
    Array2DReal OutD("OutD", N1, N2 - 3);
 
-#ifdef OMEGA_DEVICE
+#ifdef OMEGA_TARGET_DEVICE
    const int TeamSize = 32;
 #else
    const int TeamSize = 1;

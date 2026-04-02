@@ -165,9 +165,9 @@ The second way uses a helper struct `Range` to provide a range of valid indices
    });
 ```
 Note that this range is inclusive, i.e. the loop index `K` takes values from `N1` up to and including `N2`.
-This means that `Range{0, N}` specifies a diffrent range than the first example.
-For simplicity, most examples in this document use the first way of specyfying the range,
-but a `Range` argument can be passed to all inner iteration patters.
+This means that `Range{0, N}` specifies a different range than the first example.
+For simplicity, most examples in this document use the first way of specifying the range,
+but a `Range` argument can be passed to all inner iteration patterns.
 
 
 ### parallelForOuter
@@ -324,7 +324,7 @@ Labels are not supported by `parallelSearchInner` and only one-dimensional index
 
 ### Launch Config
 
-While specyfing loop bounds is enough to start an outer parallel loop, sometimes more control over the underlaying
+While specifying loop bounds is enough to start an outer parallel loop, sometimes more control over the underlying
 Kokkos `TeamPolicy` is desired. The most common use case is utilizing scratch memory, a concept discussed more
 thoroughly in the next sub-section. To enable more control, outer loops can be launched by providing
 a `LaunchConfig` struct as the first argument, which is composed of three parts:
@@ -341,7 +341,7 @@ with team size of 32 and enough scratch memory for 8 `Real` values and 4 `I4` va
    });
 ```
 It is not necessary to provide all three arguments to `LaunchConfig`. If you want the default team size,
-or you don't need any scratch memory, you can use the follwing constructors.
+or you don't need any scratch memory, you can use the following constructors.
 ```c++
    auto LConfig1 = LaunchConfig({N1, N2}, TeamScratch<Real, I4>(8, 4));
    auto LConfig2 = LaunchConfig({N1, N2}, 32);
@@ -356,7 +356,7 @@ In hierarchical code, it is often useful to have some amount of scratch memory p
 Scratch memory enables reuse of expensive to compute data in inner loops.
 To enable scratch memory, the outer loops needs to be launched with the `LaunchConfig` parameter described above,
 configured with the requested number of scratch values.
-Inside the outer loop, unmanaged scratch arrays can be created from a pool of memory accesible
+Inside the outer loop, unmanaged scratch arrays can be created from a pool of memory accessible
 by calling the `teamScratch(Team)` function.
 Scratch arrays have a different type than normal Omega arrays, for example `ArrayScratch1DReal` is the
 type of a 1D scratch array of Reals. They also cannot have labels.
