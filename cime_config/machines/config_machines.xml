@@ -1832,6 +1832,9 @@
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">$ENV{PARALLEL_NETCDF_ROOT}</env>
     </environment_variables>
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
   </machine>
 
   <machine MACH="ghci-snl-cpu">
