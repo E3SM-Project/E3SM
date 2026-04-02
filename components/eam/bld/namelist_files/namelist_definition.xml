@@ -504,8 +504,10 @@ or previously defined derived fields) or numeric constants (auto-detected).
 Evaluation is strict left-to-right (no operator precedence).
 Definitions are processed in order, enabling chaining (later definitions
 can reference earlier derived fields).
+Units are not inferred automatically; expressions should only combine fields
+with compatible units.
 Examples:
-  TOTAL_WATER=Q+CLDICE+CLDLIQ+QRAIN
+       TOTAL_WATER=Q+CLDICE+CLDLIQ+RAINQM
   HGTsfc=PHIS/9.80616
   TOTAL_WATER_g=TOTAL_WATER*1000.0
 Default: none

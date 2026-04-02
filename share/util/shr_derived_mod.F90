@@ -130,8 +130,13 @@ contains
         if ((ch == '+' .or. ch == '-') .and. i > start_pos) then
           ! Check if preceded by 'e' or 'E' (scientific notation)
           if (rhs(i-1:i-1) == 'e' .or. rhs(i-1:i-1) == 'E') then
-            i = i + 1
-            cycle
+            ! Only treat as scientific notation if char before e/E is a digit
+            if (i > start_pos + 1) then
+              if (rhs(i-2:i-2) >= '0' .and. rhs(i-2:i-2) <= '9') then
+                i = i + 1
+                cycle
+              end if
+            end if
           end if
         end if
         if (ch == '+' .or. ch == '-' .or. ch == '*' .or. ch == '/') then

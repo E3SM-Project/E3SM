@@ -20,7 +20,7 @@ module eam_derived
   !      Dynamics tendency = total tendency - physics tendency.
   !
   ! Configuration via namelist (eam_derived_nl):
-  !   derived_fld_defs  - expression definitions, e.g. "TOTAL_WATER=Q+CLDICE+CLDLIQ+QRAIN"
+  !   derived_fld_defs  - expression definitions, e.g. "TOTAL_WATER=Q+CLDICE+CLDLIQ+RAINQM"
   !   tend_flds         - field names for automatic tendency output
   !   tend_stages       - which stage tendencies to output: 'total', 'phys', 'dyn'
   !
@@ -28,8 +28,11 @@ module eam_derived
   !   OUTPUT_NAME=OPERAND1 op OPERAND2 op ...
   !   where op is +, -, *, / and each operand is a field name or numeric constant.
   !   Evaluation is strict left-to-right (no operator precedence).
+  !   Units are not inferred automatically; expressions must be dimensionally
+  !   consistent and derived outputs are currently registered with unit string
+  !   'derived'.
   !   Examples:
-  !     TOTAL_WATER=Q+CLDICE+CLDLIQ+QRAIN   (3D: sum of constituents)
+  !     TOTAL_WATER=Q+CLDICE+CLDLIQ+RAINQM  (3D: sum of constituents)
   !     HGTsfc=PHIS/9.80616                   (2D: surface geopotential / constant)
   !     TOTAL_WATER_g=TOTAL_WATER*1000.0       (chaining: uses earlier derived field)
   !
@@ -574,7 +577,7 @@ contains
     integer,                   intent(in)  :: ncol
     integer,                   intent(in)  :: nlev  ! target: 1 for 2D, pver for 3D
 
-    integer :: idx, pbuf_idx, errcode, k, pbuf_ndims
+    integer :: idx, pbuf_idx, k, pbuf_ndims
     character(len=max_name_len) :: uname
     real(r8), pointer :: pbuf_fld_3d(:,:)
     real(r8), pointer :: pbuf_fld_2d(:)
@@ -635,9 +638,8 @@ contains
     end if
 
     ! Try physics buffer lookup (2D or 3D)
-    errcode = -1
-    pbuf_idx = pbuf_get_index(trim(uname), errcode)
-    if (errcode == 0 .and. pbuf_idx > 0) then
+    pbuf_idx = pbuf_get_index(trim(uname), errcode=idx)
+    if (pbuf_idx > 0) then
       pbuf_chunk => pbuf_get_chunk(pbuf2d, state%lchnk)
       pbuf_ndims = pbuf_get_field_ndims(pbuf_idx)
 
@@ -681,7 +683,7 @@ contains
     integer,          intent(in) :: def_index  ! current definition index (for chaining)
     integer :: ndims
 
-    integer :: k, idx, errcode
+    integer :: k, idx
     character(len=max_name_len) :: uname
 
     uname = adjustl(fname)
@@ -722,9 +724,8 @@ contains
     end if
 
     ! Physics buffer: query dimension count
-    errcode = -1
-    idx = pbuf_get_index(trim(uname), errcode)
-    if (errcode == 0 .and. idx > 0) then
+    idx = pbuf_get_index(trim(uname), errcode=k)
+    if (idx > 0) then
       ndims = pbuf_get_field_ndims(idx)
       return
     end if
@@ -746,7 +747,7 @@ contains
     character(len=*), intent(in) :: fname
     logical :: is_2d
 
-    integer :: k, idx, errcode
+    integer :: k, idx
     character(len=max_name_len) :: uname
 
     uname = adjustl(fname)
@@ -780,9 +781,8 @@ contains
     if (idx > 0) return  ! is_2d = .false.
 
     ! Physics buffer: check ndims
-    errcode = -1
-    idx = pbuf_get_index(trim(uname), errcode)
-    if (errcode == 0 .and. idx > 0) then
+    idx = pbuf_get_index(trim(uname), errcode=k)
+    if (idx > 0) then
       is_2d = (pbuf_get_field_ndims(idx) == 1)
       return
     end if
@@ -801,7 +801,7 @@ contains
     character(len=*), intent(in) :: fname
     integer,          intent(in) :: def_index   ! index of current definition (for chaining check)
 
-    integer :: k, idx, errcode
+    integer :: k, idx
     logical :: found
     character(len=max_name_len) :: uname
 
@@ -844,9 +844,8 @@ contains
 
     ! Check physics buffer
     if (.not. found) then
-      errcode = -1
-      idx = pbuf_get_index(trim(uname), errcode)
-      found = (errcode == 0 .and. idx > 0)
+      idx = pbuf_get_index(trim(uname), errcode=k)
+      found = (idx > 0)
     end if
 
     if (.not. found) then
@@ -868,7 +867,7 @@ contains
 
     character(len=*), intent(in) :: fname
 
-    integer :: k, idx, errcode
+    integer :: k, idx
     logical :: found
     character(len=max_name_len) :: uname
 
@@ -911,9 +910,8 @@ contains
 
     ! Check physics buffer
     if (.not. found) then
-      errcode = -1
-      idx = pbuf_get_index(trim(uname), errcode)
-      found = (errcode == 0 .and. idx > 0)
+      idx = pbuf_get_index(trim(uname), errcode=k)
+      found = (idx > 0)
     end if
 
     if (.not. found) then
