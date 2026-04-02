@@ -463,13 +463,11 @@ void TimeStepper::updateThicknessByTend(OceanState *State1, int TimeLevel1,
    parallelForOuter(
        "updateThickByTend", {Mesh->NCellsAll},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
-          const int KMin   = MinLayerCell(ICell);
-          const int KMax   = MaxLayerCell(ICell);
-          const int KRange = vertRange(KMin, KMax);
+          const int KMin = MinLayerCell(ICell);
+          const int KMax = MaxLayerCell(ICell);
 
           parallelForInner(
-              Team, KRange, INNER_LAMBDA(int KChunk) {
-                 const int K = KMin + KChunk;
+              Team, Range{KMin, KMax}, INNER_LAMBDA(int K) {
                  LayerThick1(ICell, K) =
                      LayerThick2(ICell, K) +
                      CoeffSeconds * LayerThickTend(ICell, K);
@@ -498,13 +496,11 @@ void TimeStepper::updateVelocityByTend(OceanState *State1, int TimeLevel1,
    parallelForOuter(
        "updateVelByTend", {Mesh->NEdgesAll},
        KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
-          const int KMin   = MinLayerEdgeBot(IEdge);
-          const int KMax   = MaxLayerEdgeTop(IEdge);
-          const int KRange = vertRange(KMin, KMax);
+          const int KMin = MinLayerEdgeBot(IEdge);
+          const int KMax = MaxLayerEdgeTop(IEdge);
 
           parallelForInner(
-              Team, KRange, INNER_LAMBDA(int KChunk) {
-                 const int K          = KMin + KChunk;
+              Team, Range{KMin, KMax}, INNER_LAMBDA(int K) {
                  NormalVel1(IEdge, K) = NormalVel2(IEdge, K) +
                                         CoeffSeconds * NormalVelTend(IEdge, K);
               });
@@ -704,12 +700,10 @@ void TimeStepper::updateTracersByTend(const Array3DReal &NextTracers,
    parallelForOuter(
        "updateTracersByTend", {NTracers, Mesh->NCellsAll},
        KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
-          const int KMin   = MinLayerCell(ICell);
-          const int KMax   = MaxLayerCell(ICell);
-          const int KRange = vertRange(KMin, KMax);
+          const int KMin = MinLayerCell(ICell);
+          const int KMax = MaxLayerCell(ICell);
           parallelForInner(
-              Team, KRange, INNER_LAMBDA(int KChunk) {
-                 const int K = KMin + KChunk;
+              Team, Range{KMin, KMax}, INNER_LAMBDA(int K) {
                  NextTracers(L, ICell, K) =
                      (CurTracers(L, ICell, K) * LayerThick2(ICell, K) +
                       CoeffSeconds * TracerTend(L, ICell, K)) /
@@ -732,12 +726,10 @@ void TimeStepper::weightTracers(const Array3DReal &NextTracers,
    parallelForOuter(
        "weightTracers", {NTracers, Mesh->NCellsAll},
        KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
-          const int KMin   = MinLayerCell(ICell);
-          const int KMax   = MaxLayerCell(ICell);
-          const int KRange = vertRange(KMin, KMax);
+          const int KMin = MinLayerCell(ICell);
+          const int KMax = MaxLayerCell(ICell);
           parallelForInner(
-              Team, KRange, INNER_LAMBDA(int KChunk) {
-                 const int K = KMin + KChunk;
+              Team, Range{KMin, KMax}, INNER_LAMBDA(int K) {
                  NextTracers(L, ICell, K) =
                      CurTracers(L, ICell, K) * CurThickness(ICell, K);
               });
@@ -761,12 +753,10 @@ void TimeStepper::accumulateTracersUpdate(const Array3DReal &AccumTracer,
    parallelForOuter(
        "accumulateTracersUpdate", {NTracers, Mesh->NCellsAll},
        KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
-          const int KMin   = MinLayerCell(ICell);
-          const int KMax   = MaxLayerCell(ICell);
-          const int KRange = vertRange(KMin, KMax);
+          const int KMin = MinLayerCell(ICell);
+          const int KMax = MaxLayerCell(ICell);
           parallelForInner(
-              Team, KRange, INNER_LAMBDA(int KChunk) {
-                 const int K = KMin + KChunk;
+              Team, Range{KMin, KMax}, INNER_LAMBDA(int K) {
                  AccumTracer(L, ICell, K) +=
                      CoeffSeconds * TracerTend(L, ICell, K);
               });
@@ -787,12 +777,10 @@ void TimeStepper::finalizeTracersUpdate(const Array3DReal &NextTracers,
    parallelForOuter(
        "finalizeTracersUpdate", {NTracers, Mesh->NCellsAll},
        KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
-          const int KMin   = MinLayerCell(ICell);
-          const int KMax   = MaxLayerCell(ICell);
-          const int KRange = vertRange(KMin, KMax);
+          const int KMin = MinLayerCell(ICell);
+          const int KMax = MaxLayerCell(ICell);
           parallelForInner(
-              Team, KRange, INNER_LAMBDA(int KChunk) {
-                 const int K = KMin + KChunk;
+              Team, Range{KMin, KMax}, INNER_LAMBDA(int K) {
                  NextTracers(L, ICell, K) /= NextThick(ICell, K);
               });
        });
