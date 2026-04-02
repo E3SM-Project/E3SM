@@ -38,6 +38,8 @@ module ace_comp_mod
   integer, parameter, public :: n_input_channels=39  ! number of input channels to emulator
   integer, parameter, public :: n_output_channels=44 ! number of output channels to emulator
   integer, parameter, public :: eatm_idt=6 * 60 * 60 ! eatm timestep (6hr) in seconds
+  ! number of eatm steps in a year
+  integer, parameter, public :: eatm_spy=(365 * 24 * 60 * 60) / eatm_idt
 
   !--------------------------------------------------------------------------
   ! Private module data
@@ -58,6 +60,7 @@ module ace_comp_mod
   character(len=*), parameter :: torchscript_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace2_EAMv3_ckpt-CUDA_traced.tar"
   character(len=*), parameter :: norm_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace2_EAMv3_normalize.nc"
   character(len=*), parameter :: denorm_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace2_EAMv3_denormalize.nc"
+  character(len=*), parameter :: forcing_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/forcing_data/1971.nc"
   save
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -183,7 +186,9 @@ CONTAINS
     integer(in) :: stepno            ! step number
     integer(in) :: CurrentYMD        ! model date
     integer(in) :: CurrentTOD        ! model sec into model date
-    logical     :: call_inference
+
+    integer(in) :: eatm_stepno
+    integer(in) :: forcing_time_slice
 
     call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
     call seq_timemgr_EClockGetData( EClock, stepno=stepno, dtime=cpl_idt)
@@ -200,7 +205,16 @@ CONTAINS
 
     if (t_modulo .eq. 0) then
 
-      call ace_eatm_import()
+      ! stepno is zero indexed so modulo logic works
+      eatm_stepno = stepno / (eatm_idt / cpl_idt)
+      ! time slice is one-indexed to comply with netcdf
+      forcing_time_slice = mod(eatm_stepno, eatm_spy) + 1
+
+      write(logunit_atm, *) "eatm_stepno: ", eatm_stepno
+      write(logunit_atm, *) "forcing_time_slice: ", forcing_time_slice
+      call shr_sys_flush(logunit_atm)
+
+      call ace_eatm_import(forcing_file, forcing_time_slice)
 
       net_inputs_nn = net_inputs
       ! normalize, can probably happen after tensor is made becuase it's a pointer
@@ -270,7 +284,15 @@ CONTAINS
     call finalize_normalizer(denormalizer)
   end subroutine ace_comp_finalize
 
-  subroutine ace_eatm_import()
+  subroutine ace_eatm_import(forcing_file, forcing_time_slice)
+    !----------------------------------------------------------------
+    ! !DESCRIPTION:
+    ! ...
+    implicit none
+    ! !ARGUMENTS
+    character(len=*), intent(in) :: forcing_file
+    integer(in), intent(in) :: forcing_time_slice
+
     ! !LOCAL VARIABLES:
     integer :: i, j
 
@@ -279,12 +301,6 @@ CONTAINS
         net_inputs(1,  1, i, j) = lndfrac(i, j)            ! ACE2-EAMv3: LANDFRAC
         net_inputs(1,  2, i, j) = ocnfrac(i, j)            ! ACE2-EAMv3: OCNFRAC
         net_inputs(1,  3, i, j) = icefrac(i, j)            ! ACE2-EAMv3: ICEFRAC
-
-        ! net_inputs(1,  4, i, j) = net_inputs(1, 4, i, j)   ! ACE2-EAMv3: PHIS
-        ! net_inputs(1,  5, i, j) = net_inputs(1, 5, i, j)   ! ACE2-EAMv3: SOLIN
-        ! -----------------------------------------------------------------------
-        ! TODO (AN): Evolve `SOLIN`, `PS`, and TS fileds intime
-        ! -----------------------------------------------------------------------
         net_inputs(1,  6, i, j) = net_outputs(1, 1, i, j)  ! ACE2-EAMv3: PS
         ! use landfrac as weights to paint in ACE TS over land
         net_inputs(1,  7, i, j) = ts(i, j) + lndfrac(i, j) * net_outputs(1, 2, i, j)  ! ACE2-EAMv3: TS
@@ -324,6 +340,8 @@ CONTAINS
         net_inputs(1, 39, i, j) = net_outputs(1, 34, i, j) ! ACE2-EAMv3: V_7
       enddo
     enddo
+
+    call eatm_forcing_file_read( forcing_file, forcing_time_slice )
 
     write(logunit_atm, *) "----------------------------------------------------------------"
     write(logunit_atm, *) "ace_eatm_import"
@@ -486,4 +504,47 @@ CONTAINS
     deallocate(norm%means)
 
   end subroutine finalize_normalizer
+
+  subroutine eatm_forcing_file_read( file, slice)
+    !----------------------------------------------------------------
+    ! !DESCRIPTION:
+    ! ...
+    implicit none
+    ! !ARGUMENTS
+    character(len=*), intent(in) :: file
+    integer :: slice  ! time slice to read
+
+    ! !LOCAL VARIABLES:
+    type(file_desc_t) :: ncid ! netcdf id
+    logical :: readvar ! determine if variable is read
+    integer :: i ! index
+    !----------------------------------------------------------------
+
+    write(logunit_atm, *) 'Reading forcing dataset'
+    call ncd_pio_openfile(ncid, trim(file), 0)
+
+    call ncd_io(&
+      varname="PHIS", &
+      data=net_inputs(1, 4, :, :), &
+      ncid=ncid, &
+      flag='read', &
+      nt=slice, &
+      readvar=readvar &
+    )
+    call ncd_io(&
+      varname="SOLIN", &
+      data=net_inputs(1, 5, :, :), &
+      ncid=ncid, &
+      flag='read', &
+      nt=slice, &
+      readvar=readvar &
+    )
+
+    call ncd_pio_closefile(ncid)
+
+    write(logunit_atm, *)
+    write(logunit_atm, *) 'Successfully read forcing data at time level -',slice
+    write(logunit_atm,'(72a1)') ("-",i=1,60)
+
+  end subroutine eatm_forcing_file_read
 end module ace_comp_mod
