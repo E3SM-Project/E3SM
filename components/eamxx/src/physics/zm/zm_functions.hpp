@@ -685,10 +685,33 @@ struct Functions {
     const uview_1d<Real>& flxprec, // Convective flux of prec at interfaces   [kg/m2/s]
     const uview_1d<Real>& flxsnow); // Convective flux of snow at interfaces   [kg/m2/s]);
 
-  //
-  // --------- Members ---------
-  //
-  inline static ZmRuntimeOpt s_common_init;
+  KOKKOS_FUNCTION
+  static void zm_calc_fractional_entrainment(
+    // Inputs
+    const MemberType& team,
+    const Int& pver, // number of mid-point vertical levels
+    const Int& pverp, // number of interface vertical levels
+    const Int& msg, // number of levels to ignore at model top
+    const Int& jb, // updraft base level
+    const Int& jt, // updraft top level
+    // Inputs/Outputs
+    Int& j0, // level where updraft begins detraining
+    // Inputs
+    const uview_1d<const Real>& z_mid, // env altitude at mid-point
+    const uview_1d<const Real>& z_int, // env altitude at interface
+    const uview_1d<const Real>& dz, // layer thickness
+    const uview_1d<const Real>& h_env, // env moist stat energy
+    const uview_1d<const Real>& h_env_sat, // env saturated moist stat energy
+    // Inputs/Outputs
+    Real& h_env_min, // mid-tropospheric MSE minimum
+    // Outputs
+    const uview_1d<Real>& lambda, // fractional entrainment
+    Real& lambda_max); // fractional entrainment maximum
+
+    //
+    // --------- Members ---------
+    //
+    inline static ZmRuntimeOpt s_common_init;
 
 }; // struct Functions
 
@@ -712,5 +735,6 @@ struct Functions {
 # include "impl/zm_zm_conv_mcsp_tend_impl.hpp"
 # include "impl/zm_zm_conv_main_impl.hpp"
 # include "impl/zm_zm_conv_evap_impl.hpp"
+# include "impl/zm_zm_calc_fractional_entrainment_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP

@@ -242,4 +242,19 @@ subroutine zm_conv_evap_bridge_f(pcols, ncol, pver, pverp, time_step, p_mid, p_d
   call zm_conv_evap(pcols, ncol, pver, pverp, time_step, p_mid, p_del, t_mid, q_mid, prdprec, cldfrc, tend_s, tend_q, tend_s_snwprd, tend_s_snwevmlt, prec, snow, ntprprd, ntsnprd, flxprec, flxsnow)
 end subroutine zm_conv_evap_bridge_f
 
+subroutine zm_calc_fractional_entrainment_bridge_f(pcols, ncol, pver, pverp, msg, jb, jt, j0, z_mid, z_int, dz, h_env, h_env_sat, h_env_min, lambda, lambda_max) bind(C)
+  use zm_conv, only : zm_calc_fractional_entrainment
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp, msg
+  integer(kind=c_int) , intent(in), dimension(pcols) :: jb, jt
+  integer(kind=c_int) , intent(inout), dimension(pcols) :: j0
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: z_mid, dz, h_env, h_env_sat
+  real(kind=c_real) , intent(in), dimension(pcols, pverp) :: z_int
+  real(kind=c_real) , intent(inout), dimension(pcols) :: h_env_min
+  real(kind=c_real) , intent(out), dimension(pcols, pver) :: lambda
+  real(kind=c_real) , intent(out), dimension(pcols) :: lambda_max
+
+  call zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, jb, jt, j0, z_mid, z_int, dz, h_env, h_env_sat, h_env_min, lambda, lambda_max)
+end subroutine zm_calc_fractional_entrainment_bridge_f
+
 end module zm_c2f_bridge

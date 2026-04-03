@@ -77,6 +77,7 @@ struct UnitWrap {
     struct TestZmConvMcspTend;
     struct TestZmConvMain;
     struct TestZmConvEvap;
+    struct TestZmCalcFractionalEntrainment;
   }; // UnitWrap
 };
 

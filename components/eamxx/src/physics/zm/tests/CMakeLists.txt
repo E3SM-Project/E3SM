@@ -15,6 +15,7 @@ set(ZM_TESTS_SRCS
   zm_zm_conv_mcsp_tend_tests.cpp
     zm_zm_conv_main_tests.cpp
     zm_zm_conv_evap_tests.cpp
+    zm_zm_calc_fractional_entrainment_tests.cpp
 ) # ZM_TESTS_SRCS
 
 # All tests should understand the same baseline args

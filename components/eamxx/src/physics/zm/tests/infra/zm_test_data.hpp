@@ -481,6 +481,40 @@ struct ZmConvEvapData : public PhysicsTestData {
   PTD_STD_DEF(ZmConvEvapData, 5, pcols, ncol, pver, pverp, time_step);
 };
 
+struct ZmCalcFractionalEntrainmentData : public PhysicsTestData {
+  // Inputs
+  Int pcols, ncol, pver, pverp, msg;
+  Int *jb, *jt;
+  Real *z_mid, *z_int, *dz, *h_env, *h_env_sat;
+
+  // Inputs/Outputs
+  Int *j0;
+  Real *h_env_min;
+
+  // Outputs
+  Real *lambda, *lambda_max;
+
+  ZmCalcFractionalEntrainmentData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Int msg_) :
+    PhysicsTestData({
+      {pcols_, pver_},
+      {pcols_, pverp_},
+      {pcols_},
+      {pcols_}
+    },
+    {
+      {&z_mid, &dz, &h_env, &h_env_sat, &lambda},
+      {&z_int},
+      {&h_env_min, &lambda_max}
+    },
+    {
+      {&jb, &jt, &j0}
+    }),
+    pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), msg(msg_)
+  {}
+
+  PTD_STD_DEF(ZmCalcFractionalEntrainmentData, 5, pcols, ncol, pver, pverp, msg);
+};
+
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
 void ientropy_f(IentropyData& d);
 void ientropy(IentropyData& d);
@@ -506,6 +540,8 @@ void zm_conv_main_f(ZmConvMainData& d);
 void zm_conv_main(ZmConvMainData& d);
 void zm_conv_evap_f(ZmConvEvapData& d);
 void zm_conv_evap(ZmConvEvapData& d);
+void zm_calc_fractional_entrainment_f(ZmCalcFractionalEntrainmentData& d);
+void zm_calc_fractional_entrainment(ZmCalcFractionalEntrainmentData& d);
 // End glue function decls
 
 }  // namespace zm
