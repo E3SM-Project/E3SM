@@ -103,6 +103,18 @@ struct Functions {
     static inline constexpr Real MCSP_shear_min = 3.0;   // min shear value for MCSP to be active
 
     static inline constexpr Real MCSP_shear_max = 200.0; // max shear value for MCSP to be active
+
+    static inline constexpr Real cape_threshold_old = 70.;     // threshold value of cape for deep convection (old value before DCAPE)
+
+    static inline constexpr Real cape_threshold_new = 0.;      // threshold value of cape for deep convection
+
+    static inline constexpr Real dcape_threshold    = 0.;      // threshold value of dcape for deep convection
+
+    static inline constexpr Real interp_diff_min    = 1.E-6;   // minimum threshold for interpolation method - see eq (4.109), (4.118), (4.119)
+
+    static inline constexpr Real omsm               = 0.99999; // to prevent problems due to round off error
+
+    static inline constexpr Real small_conv         = 1.e-20;  // small number to limit blowup when normalizing by mass flux
   };
 
   //----------------------------------------------------------------------------
