@@ -452,6 +452,35 @@ struct ZmConvMainData : public PhysicsTestData {
   PTD_STD_DEF(ZmConvMainData, 7, pcols, ncol, pver, pverp, time_step, is_first_step, lengath);
 };
 
+struct ZmConvEvapData : public PhysicsTestData {
+  // Inputs
+  Int pcols, ncol, pver, pverp;
+  Real time_step;
+  Real *p_mid, *p_del, *t_mid, *q_mid, *prdprec, *cldfrc;
+
+  // Inputs/Outputs
+  Real *tend_s, *tend_q, *prec;
+
+  // Outputs
+  Real *tend_s_snwprd, *tend_s_snwevmlt, *snow, *ntprprd, *ntsnprd, *flxprec, *flxsnow;
+
+  ZmConvEvapData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Real time_step_) :
+    PhysicsTestData({
+      {pcols_, pver_},
+      {pcols_},
+      {pcols_, pverp_}
+    },
+    {
+      {&p_mid, &p_del, &t_mid, &q_mid, &prdprec, &cldfrc, &tend_s, &tend_q, &tend_s_snwprd, &tend_s_snwevmlt, &ntprprd, &ntsnprd},
+      {&prec, &snow},
+      {&flxprec, &flxsnow}
+    }),
+    pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), time_step(time_step_)
+  {}
+
+  PTD_STD_DEF(ZmConvEvapData, 5, pcols, ncol, pver, pverp, time_step);
+};
+
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
 void ientropy_f(IentropyData& d);
 void ientropy(IentropyData& d);
@@ -475,6 +504,8 @@ void zm_conv_mcsp_tend_f(ZmConvMcspTendData& d);
 void zm_conv_mcsp_tend(ZmConvMcspTendData& d);
 void zm_conv_main_f(ZmConvMainData& d);
 void zm_conv_main(ZmConvMainData& d);
+void zm_conv_evap_f(ZmConvEvapData& d);
+void zm_conv_evap(ZmConvEvapData& d);
 // End glue function decls
 
 }  // namespace zm

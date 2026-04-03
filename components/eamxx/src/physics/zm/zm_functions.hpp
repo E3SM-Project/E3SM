@@ -405,7 +405,7 @@ struct Functions {
     // Outputs
     const uview_2d<Real>& dqdt);            // output tendency array
 
-    KOKKOS_FUNCTION
+  KOKKOS_FUNCTION
   static void zm_transport_momentum(
     // Inputs
     const MemberType& team,
@@ -608,11 +608,6 @@ struct Functions {
     return false;
   }
 
-  //
-  // --------- Members ---------
-  //
-  inline static ZmRuntimeOpt s_common_init;
-
   KOKKOS_FUNCTION
   static void zm_conv_main(
     // Inputs
@@ -661,6 +656,40 @@ struct Functions {
     Real& rliq, // reserved liquid (not yet in cldliq) for energy integrals
     const uview_1d<Real>& rprd, // rain production rate                    [kg/kg/s]
     const uview_1d<Real>& dlf); // detrainment rate of cloud liquid water  [kg/kg/s]);
+
+  KOKKOS_FUNCTION
+  static void zm_conv_evap(
+    // Inputs
+    const MemberType& team,
+    const Int& pver, // number of mid-point vertical levels
+    const Int& pverp, // number of interface vertical levels
+    const Real& time_step, // model time step                         [s]
+    const uview_1d<const Real>& p_mid, // midpoint pressure                       [Pa]
+    const uview_1d<const Real>& p_del, // layer thickness                         [Pa]
+    const uview_1d<const Real>& t_mid, // temperature                             [K]
+    const uview_1d<const Real>& q_mid, // water vapor                             [kg/kg]
+    const uview_1d<const Real>& prdprec, // precipitation production                [kg/kg/s]
+    const uview_1d<const Real>& cldfrc, // cloud fraction
+    // Inputs/Outputs
+    const uview_1d<Real>& tend_s, // heating rate                            [J/kg/s]
+    const uview_1d<Real>& tend_q, // water vapor tendency                    [kg/kg/s]
+    // Outputs
+    const uview_1d<Real>& tend_s_snwprd, // Heating rate of snow production         [J/kg/s]
+    const uview_1d<Real>& tend_s_snwevmlt, // Heating rate of snow evap/melt          [J/kg/s]
+    // Inputs/Outputs
+    Real& prec, // Convective-scale prec rate              [m/s]
+    // Outputs
+    Real& snow, // Convective-scale snow rate              [m/s]
+    const uview_1d<Real>& ntprprd, // net precip production in layer          [kg/kg/s]
+    const uview_1d<Real>& ntsnprd, // net snow production in layer            [kg/kg/s]
+    const uview_1d<Real>& flxprec, // Convective flux of prec at interfaces   [kg/m2/s]
+    const uview_1d<Real>& flxsnow); // Convective flux of snow at interfaces   [kg/m2/s]);
+
+  //
+  // --------- Members ---------
+  //
+  inline static ZmRuntimeOpt s_common_init;
+
 }; // struct Functions
 
 } // namespace zm
@@ -682,5 +711,6 @@ struct Functions {
 # include "impl/zm_zm_conv_mcsp_calculate_shear_impl.hpp"
 # include "impl/zm_zm_conv_mcsp_tend_impl.hpp"
 # include "impl/zm_zm_conv_main_impl.hpp"
+# include "impl/zm_zm_conv_evap_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP

@@ -58,6 +58,7 @@ void zm_conv_mcsp_calculate_shear_bridge_f(Int pcols, Int ncol, Int pver, Real* 
 
 void zm_conv_mcsp_tend_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Real ztodt, Int* jctop, Real* state_pmid, Real* state_pint, Real* state_pdel, Real* state_s, Real* state_q, Real* state_u, Real* state_v, Real* ptend_zm_s, Real* ptend_zm_q, Real* ptend_s, Real* ptend_q, Real* ptend_u, Real* ptend_v, Real* mcsp_dt_out, Real* mcsp_dq_out, Real* mcsp_du_out, Real* mcsp_dv_out, Real* mcsp_freq, Real* mcsp_shear, Real* zm_depth);
 void zm_conv_main_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, bool is_first_step, Real time_step, Real* t_mid, Real* q_mid_in, Real* omega, Real* p_mid_in, Real* p_int_in, Real* p_del_in, Real* geos, Real* z_mid_in, Real* z_int_in, Real* pbl_hgt, Real* tpert, Real* landfrac, Real* t_star, Real* q_star, Int* lengath, Int* gather_index, Int* msemax_klev_g, Int* jctop, Int* jcbot, Int* jt, Real* prec, Real* heat, Real* qtnd, Real* cape, Real* dcape, Real* mcon, Real* pflx, Real* zdu, Real* mflx_up, Real* entr_up, Real* detr_up, Real* mflx_dn, Real* entr_dn, Real* p_del, Real* dsubcld, Real* ql, Real* rliq, Real* rprd, Real* dlf);
+void zm_conv_evap_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Real time_step, Real* p_mid, Real* p_del, Real* t_mid, Real* q_mid, Real* prdprec, Real* cldfrc, Real* tend_s, Real* tend_q, Real* tend_s_snwprd, Real* tend_s_snwevmlt, Real* prec, Real* snow, Real* ntprprd, Real* ntsnprd, Real* flxprec, Real* flxsnow);
 } // extern "C" : end _f decls
 
 // Inits and finalizes are not intended to be called outside this comp unit
@@ -290,6 +291,7 @@ void zm_transport_tracer(ZmTransportTracerData& d)
 
   zm_finalize_cxx();
 }
+
 void zm_transport_momentum_f(ZmTransportMomentumData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
@@ -615,6 +617,7 @@ void find_mse_max(FindMseMaxData& d)
 
   zm_finalize_cxx();
 }
+
 void compute_dilute_parcel_f(ComputeDiluteParcelData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
@@ -811,6 +814,7 @@ void compute_cape_from_parcel(ComputeCapeFromParcelData& d)
 
   zm_finalize_cxx();
 }
+
 void zm_conv_mcsp_calculate_shear_f(ZmConvMcspCalculateShearData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
@@ -866,6 +870,7 @@ void zm_conv_mcsp_calculate_shear(ZmConvMcspCalculateShearData& d)
 
   zm_finalize_cxx();
 }
+
 void zm_conv_mcsp_tend_f(ZmConvMcspTendData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
@@ -990,6 +995,7 @@ void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
 
   zm_finalize_cxx();
 }
+
 void zm_conv_main_f(ZmConvMainData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
@@ -1161,6 +1167,110 @@ void zm_conv_main(ZmConvMainData& d)
 
   std::vector<view1di_d> vec1di_out = {gather_index_d, jcbot_d, jctop_d, jt_d, msemax_klev_g_d};
   ekat::device_to_host({d.gather_index, d.jcbot, d.jctop, d.jt, d.msemax_klev_g}, d.pcols, vec1di_out);
+
+  zm_finalize_cxx();
+}
+
+void zm_conv_evap_f(ZmConvEvapData& d)
+{
+  d.transition<ekat::TransposeDirection::c2f>();
+  zm_common_init_f();
+  zm_conv_evap_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.time_step, d.p_mid, d.p_del, d.t_mid, d.q_mid, d.prdprec, d.cldfrc, d.tend_s, d.tend_q, d.tend_s_snwprd, d.tend_s_snwevmlt, d.prec, d.snow, d.ntprprd, d.ntsnprd, d.flxprec, d.flxsnow);
+  zm_common_finalize_f();
+  d.transition<ekat::TransposeDirection::f2c>();
+}
+
+void zm_conv_evap(ZmConvEvapData& d)
+{
+  zm_common_init();
+
+  // create device views and copy
+  std::vector<view1dr_d> vec1dr_in(2);
+  ekat::host_to_device({d.prec, d.snow}, d.pcols, vec1dr_in);
+
+  std::vector<view2dr_d> vec2dr_in(14);
+  std::vector<int> vec2dr_in_0_sizes = {d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols};
+  std::vector<int> vec2dr_in_1_sizes = {d.pver, d.pverp, d.pverp, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver};
+  ekat::host_to_device({d.cldfrc, d.flxprec, d.flxsnow, d.ntprprd, d.ntsnprd, d.p_del, d.p_mid, d.prdprec, d.q_mid, d.t_mid, d.tend_q, d.tend_s, d.tend_s_snwevmlt, d.tend_s_snwprd}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
+
+  view1dr_d
+    prec_d(vec1dr_in[0]),
+    snow_d(vec1dr_in[1]);
+
+  view2dr_d
+    cldfrc_d(vec2dr_in[0]),
+    flxprec_d(vec2dr_in[1]),
+    flxsnow_d(vec2dr_in[2]),
+    ntprprd_d(vec2dr_in[3]),
+    ntsnprd_d(vec2dr_in[4]),
+    p_del_d(vec2dr_in[5]),
+    p_mid_d(vec2dr_in[6]),
+    prdprec_d(vec2dr_in[7]),
+    q_mid_d(vec2dr_in[8]),
+    t_mid_d(vec2dr_in[9]),
+    tend_q_d(vec2dr_in[10]),
+    tend_s_d(vec2dr_in[11]),
+    tend_s_snwevmlt_d(vec2dr_in[12]),
+    tend_s_snwprd_d(vec2dr_in[13]);
+
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
+
+  // unpack data scalars because we do not want the lambda to capture d
+  const Real time_step = d.time_step;
+  const Int pver = d.pver;
+  const Int pverp = d.pverp;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto p_mid_c = ekat::subview(p_mid_d, i);
+    const auto p_del_c = ekat::subview(p_del_d, i);
+    const auto t_mid_c = ekat::subview(t_mid_d, i);
+    const auto q_mid_c = ekat::subview(q_mid_d, i);
+    const auto prdprec_c = ekat::subview(prdprec_d, i);
+    const auto cldfrc_c = ekat::subview(cldfrc_d, i);
+    const auto tend_s_c = ekat::subview(tend_s_d, i);
+    const auto tend_q_c = ekat::subview(tend_q_d, i);
+    const auto tend_s_snwprd_c = ekat::subview(tend_s_snwprd_d, i);
+    const auto tend_s_snwevmlt_c = ekat::subview(tend_s_snwevmlt_d, i);
+    const auto ntprprd_c = ekat::subview(ntprprd_d, i);
+    const auto ntsnprd_c = ekat::subview(ntsnprd_d, i);
+    const auto flxprec_c = ekat::subview(flxprec_d, i);
+    const auto flxsnow_c = ekat::subview(flxsnow_d, i);
+
+    ZMF::zm_conv_evap(
+      team,
+      pver,
+      pverp,
+      time_step,
+      p_mid_c,
+      p_del_c,
+      t_mid_c,
+      q_mid_c,
+      prdprec_c,
+      cldfrc_c,
+      tend_s_c,
+      tend_q_c,
+      tend_s_snwprd_c,
+      tend_s_snwevmlt_c,
+      prec_d(i),
+      snow_d(i),
+      ntprprd_c,
+      ntsnprd_c,
+      flxprec_c,
+      flxsnow_c);
+  });
+
+  // Now get arrays
+  std::vector<view1dr_d> vec1dr_out = {prec_d, snow_d};
+  ekat::device_to_host({d.prec, d.snow}, d.pcols, vec1dr_out);
+
+  std::vector<view2dr_d> vec2dr_out = {flxprec_d, flxsnow_d, ntprprd_d, ntsnprd_d, tend_q_d, tend_s_d, tend_s_snwevmlt_d, tend_s_snwprd_d};
+  std::vector<int> vec2dr_out_0_sizes = {d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols};
+  std::vector<int> vec2dr_out_1_sizes = {d.pverp, d.pverp, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver};
+  ekat::device_to_host({d.flxprec, d.flxsnow, d.ntprprd, d.ntsnprd, d.tend_q, d.tend_s, d.tend_s_snwevmlt, d.tend_s_snwprd}, vec2dr_out_0_sizes, vec2dr_out_1_sizes, vec2dr_out);
 
   zm_finalize_cxx();
 }

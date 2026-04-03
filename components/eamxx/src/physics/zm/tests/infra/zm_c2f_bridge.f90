@@ -227,4 +227,19 @@ subroutine zm_conv_main_bridge_f(pcols, ncol, pver, pverp, is_first_step, time_s
   call zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, t_mid, q_mid_in, omega, p_mid_in, p_int_in, p_del_in, geos, z_mid_in, z_int_in, pbl_hgt, tpert, landfrac, t_star, q_star, lengath, gather_index, msemax_klev_g, jctop, jcbot, jt, prec, heat, qtnd, cape, dcape, mcon, pflx, zdu, mflx_up, entr_up, detr_up, mflx_dn, entr_dn, p_del, dsubcld, ql, rliq, rprd, dlf) ! aero, microp_st)
 end subroutine zm_conv_main_bridge_f
 
+subroutine zm_conv_evap_bridge_f(pcols, ncol, pver, pverp, time_step, p_mid, p_del, t_mid, q_mid, prdprec, cldfrc, tend_s, tend_q, tend_s_snwprd, tend_s_snwevmlt, prec, snow, ntprprd, ntsnprd, flxprec, flxsnow) bind(C)
+  use zm_conv, only : zm_conv_evap
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp
+  real(kind=c_real) , value, intent(in) :: time_step
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: p_mid, p_del, t_mid, q_mid, prdprec, cldfrc
+  real(kind=c_real) , intent(inout), dimension(pcols, pver) :: tend_s, tend_q
+  real(kind=c_real) , intent(out), dimension(pcols, pver) :: tend_s_snwprd, tend_s_snwevmlt, ntprprd, ntsnprd
+  real(kind=c_real) , intent(inout), dimension(pcols) :: prec
+  real(kind=c_real) , intent(out), dimension(pcols) :: snow
+  real(kind=c_real) , intent(out), dimension(pcols, pverp) :: flxprec, flxsnow
+
+  call zm_conv_evap(pcols, ncol, pver, pverp, time_step, p_mid, p_del, t_mid, q_mid, prdprec, cldfrc, tend_s, tend_q, tend_s_snwprd, tend_s_snwevmlt, prec, snow, ntprprd, ntsnprd, flxprec, flxsnow)
+end subroutine zm_conv_evap_bridge_f
+
 end module zm_c2f_bridge
