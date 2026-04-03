@@ -1,5 +1,5 @@
 
-subroutine cpslec (ncol, pmid, phis, ps, t, psl, gravit, rair)
+subroutine cpslec (ncol, pmid, phis, ps, t, psl, gravit, rair, loc_lapse)
 
 !----------------------------------------------------------------------- 
 ! 
@@ -34,6 +34,7 @@ subroutine cpslec (ncol, pmid, phis, ps, t, psl, gravit, rair)
   real(r8), intent(in) :: T(pcols,pver)    ! Vertical slice of temperature (top to bot)
   real(r8), intent(in) :: gravit           ! Gravitational acceleration
   real(r8), intent(in) :: rair             ! gas constant for dry air
+  real(r8), optional, intent(in) :: loc_lapse(pcols) ! local lapse rate
 
   real(r8), intent(out):: psl(pcols)       ! Sea level pressures (pascals)
 !-----------------------------------------------------------------------
@@ -52,6 +53,32 @@ subroutine cpslec (ncol, pmid, phis, ps, t, psl, gravit, rair)
 !-----------------------------------------------------------------------
 !
   alpha = rair*xlapse/gravit
+  if (present(loc_lapse)) then
+  do i=1,ncol
+     if ( abs(phis(i)/gravit) < 1.e-4_r8 )then
+        psl(i)=ps(i)
+     else
+        Tstar=T(i,pver)*(1._r8+alpha*(ps(i)/pmid(i,pver)-1._r8)) ! pg 7 eq 5
+
+        TT0=Tstar + loc_lapse(i)*phis(i)/gravit                  ! pg 8 eq 13
+
+        if ( Tstar<=290.5_r8 .and. TT0>290.5_r8 ) then           ! pg 8 eq 14.1
+           alph=rair/phis(i)*(290.5_r8-Tstar)  
+        else if (Tstar>290.5_r8  .and. TT0>290.5_r8) then        ! pg 8 eq 14.2
+           alph=0._r8
+           Tstar= 0.5_r8 * (290.5_r8 + Tstar)  
+        else  
+           alph=alpha  
+           if (Tstar<255._r8) then  
+              Tstar= 0.5_r8 * (255._r8 + Tstar)                  ! pg 8 eq 14.3
+           endif
+        endif
+
+        beta = phis(i)/(rair*Tstar)
+        psl(i)=ps(i)*exp( beta*(1._r8-alph*beta/2._r8+((alph*beta)**2)/3._r8))
+     end if
+  enddo
+  else   ! no local lapse rate, use default
   do i=1,ncol
      if ( abs(phis(i)/gravit) < 1.e-4_r8 )then
         psl(i)=ps(i)
@@ -76,6 +103,7 @@ subroutine cpslec (ncol, pmid, phis, ps, t, psl, gravit, rair)
         psl(i)=ps(i)*exp( beta*(1._r8-alph*beta/2._r8+((alph*beta)**2)/3._r8))
      end if
   enddo
+  end if
 
   return
 end subroutine cpslec

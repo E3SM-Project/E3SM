@@ -321,6 +321,9 @@ subroutine diag_init()
    call addfld ('PSL',horiz_only,    'A','Pa','Sea level pressure', &
       standard_name='air_pressure_at_mean_sea_level')
 
+   call addfld ('L3LAPSE',horiz_only,    'A','Pa','L3 Lapse Rate')
+   call addfld ('L2LAPSE',horiz_only,    'A','Pa','L2 Lapse Rate')
+
 
    call addfld ('fixerCLUBB',horiz_only,    'A','J/m2','dTE fixed by CLUBB')
 
@@ -1487,7 +1490,13 @@ end subroutine diag_conv_tend_ini
 ! Sea level pressure
 !
     if (present(psl) .or. hist_fld_active('PSL')) then
-       call cpslec (ncol, state%pmid, state%phis, state%ps, state%t,psl_tmp, gravit, rair) 
+       p_surf(1:ncol) = (state%t(:ncol,pver)-state%t(:ncol,pver-1))/(state%zm(:ncol,pver-1)-state%zm(:ncol,pver))
+       call outfld('L2LAPSE ',p_surf ,  pcols,   lchnk     )
+
+       p_surf(1:ncol) = (state%t(:ncol,pver)-state%t(:ncol,pver-2))/(state%zm(:ncol,pver-2)-state%zm(:ncol,pver))
+       call outfld('L3LAPSE ',p_surf ,  pcols,   lchnk     )
+
+       call cpslec (ncol, state%pmid, state%phis, state%ps, state%t,psl_tmp, gravit, rair,p_surf) 
        call outfld ('PSL     ',psl_tmp  ,pcols, lchnk     )
        if (present(psl)) then	
           psl(:ncol) = psl_tmp(:ncol)
