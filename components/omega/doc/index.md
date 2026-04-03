@@ -131,6 +131,7 @@ design/Timers
 design/TimeStepping
 design/Tracers
 design/TridiagonalSolver
+design/VertAdv
 design/VertCoord
 design/VerticalMixingCoeff
 
