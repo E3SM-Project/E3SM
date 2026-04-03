@@ -62,6 +62,7 @@ void zm_conv_evap_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Real time_s
 void zm_calc_fractional_entrainment_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Int* jb, Int* jt, Int* j0, Real* z_mid, Real* z_int, Real* dz, Real* h_env, Real* h_env_sat, Real* h_env_min, Real* lambda, Real* lambda_max);
 void zm_downdraft_properties_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Int* jb, Int* jt, Int* j0, Int* jd, Real* z_int, Real* dz, Real* s_mid, Real* q_mid, Real* h_env, Real* lambda, Real* lambda_max, Real* qsthat, Real* hsthat, Real* gamhat, Real* rprd, Real* mflx_up, Real* mflx_dn, Real* entr_dn, Real* s_dnd, Real* q_dnd, Real* h_dnd, Real* q_dnd_sat, Real* evp, Real* totevp);
 void zm_cloud_properties_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Int limcnv, Real* p_mid, Real* z_mid, Real* z_int, Real* t_mid, Real* s_mid, Real* s_int, Real* q_mid, Real* landfrac, Real* tpert_g, Int* jb, Int* lel, Int* jt, Int* jlcl, Int* j0, Int* jd, Real* mflx_up, Real* entr_up, Real* detr_up, Real* mflx_dn, Real* entr_dn, Real* mflx_net, Real* s_upd, Real* q_upd, Real* ql, Real* s_dnd, Real* q_dnd, Real* qst, Real* cu, Real* evp, Real* pflx, Real* rprd);
+void zm_closure_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Real cape_threshold_in, Int* lcl, Int* lel, Int* jt, Int* mx, Real* dsubcld, Real* z_mid, Real* z_int, Real* p_mid, Real* p_del, Real* t_mid, Real* s_mid, Real* q_mid, Real* qs, Real* ql, Real* s_int, Real* q_int, Real* t_pcl_lcl, Real* t_pcl, Real* q_pcl_sat, Real* s_upd, Real* q_upd, Real* mflx_net, Real* detr_up, Real* mflx_up, Real* mflx_dn, Real* q_dnd, Real* s_dnd, Real* cape, Real* cld_base_mass_flux);
 } // extern "C" : end _f decls
 
 // Inits and finalizes are not intended to be called outside this comp unit
@@ -1646,6 +1647,145 @@ void zm_cloud_properties(ZmCloudPropertiesData& d)
 
   std::vector<view1di_d> vec1di_out = {j0_d, jd_d, jlcl_d, jt_d};
   ekat::device_to_host({d.j0, d.jd, d.jlcl, d.jt}, d.pcols, vec1di_out);
+
+  zm_finalize_cxx();
+}
+
+void zm_closure_f(ZmClosureData& d)
+{
+  d.transition<ekat::TransposeDirection::c2f>();
+  zm_common_init_f();
+  zm_closure_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.msg, d.cape_threshold_in, d.lcl, d.lel, d.jt, d.mx, d.dsubcld, d.z_mid, d.z_int, d.p_mid, d.p_del, d.t_mid, d.s_mid, d.q_mid, d.qs, d.ql, d.s_int, d.q_int, d.t_pcl_lcl, d.t_pcl, d.q_pcl_sat, d.s_upd, d.q_upd, d.mflx_net, d.detr_up, d.mflx_up, d.mflx_dn, d.q_dnd, d.s_dnd, d.cape, d.cld_base_mass_flux);
+  zm_common_finalize_f();
+  d.transition<ekat::TransposeDirection::f2c>();
+}
+
+void zm_closure(ZmClosureData& d)
+{
+  zm_common_init();
+
+  // create device views and copy
+  std::vector<view1dr_d> vec1dr_in(4);
+  ekat::host_to_device({d.cape, d.cld_base_mass_flux, d.dsubcld, d.t_pcl_lcl}, d.pcols, vec1dr_in);
+
+  std::vector<view2dr_d> vec2dr_in(21);
+  std::vector<int> vec2dr_in_0_sizes = {d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols};
+  std::vector<int> vec2dr_in_1_sizes = {d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pverp, d.pver};
+  ekat::host_to_device({d.detr_up, d.mflx_dn, d.mflx_net, d.mflx_up, d.p_del, d.p_mid, d.q_dnd, d.q_int, d.q_mid, d.q_pcl_sat, d.q_upd, d.ql, d.qs, d.s_dnd, d.s_int, d.s_mid, d.s_upd, d.t_mid, d.t_pcl, d.z_int, d.z_mid}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
+
+  std::vector<view1di_d> vec1di_in(4);
+  ekat::host_to_device({d.jt, d.lcl, d.lel, d.mx}, d.pcols, vec1di_in);
+
+  view1dr_d
+    cape_d(vec1dr_in[0]),
+    cld_base_mass_flux_d(vec1dr_in[1]),
+    dsubcld_d(vec1dr_in[2]),
+    t_pcl_lcl_d(vec1dr_in[3]);
+
+  view2dr_d
+    detr_up_d(vec2dr_in[0]),
+    mflx_dn_d(vec2dr_in[1]),
+    mflx_net_d(vec2dr_in[2]),
+    mflx_up_d(vec2dr_in[3]),
+    p_del_d(vec2dr_in[4]),
+    p_mid_d(vec2dr_in[5]),
+    q_dnd_d(vec2dr_in[6]),
+    q_int_d(vec2dr_in[7]),
+    q_mid_d(vec2dr_in[8]),
+    q_pcl_sat_d(vec2dr_in[9]),
+    q_upd_d(vec2dr_in[10]),
+    ql_d(vec2dr_in[11]),
+    qs_d(vec2dr_in[12]),
+    s_dnd_d(vec2dr_in[13]),
+    s_int_d(vec2dr_in[14]),
+    s_mid_d(vec2dr_in[15]),
+    s_upd_d(vec2dr_in[16]),
+    t_mid_d(vec2dr_in[17]),
+    t_pcl_d(vec2dr_in[18]),
+    z_int_d(vec2dr_in[19]),
+    z_mid_d(vec2dr_in[20]);
+
+  view1di_d
+    jt_d(vec1di_in[0]),
+    lcl_d(vec1di_in[1]),
+    lel_d(vec1di_in[2]),
+    mx_d(vec1di_in[3]);
+
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
+
+  // unpack data scalars because we do not want the lambda to capture d
+  const Real cape_threshold_in = d.cape_threshold_in;
+  const Int msg = d.msg;
+  const Int pver = d.pver;
+  const Int pverp = d.pverp;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto z_mid_c = ekat::subview(z_mid_d, i);
+    const auto z_int_c = ekat::subview(z_int_d, i);
+    const auto p_mid_c = ekat::subview(p_mid_d, i);
+    const auto p_del_c = ekat::subview(p_del_d, i);
+    const auto t_mid_c = ekat::subview(t_mid_d, i);
+    const auto s_mid_c = ekat::subview(s_mid_d, i);
+    const auto q_mid_c = ekat::subview(q_mid_d, i);
+    const auto qs_c = ekat::subview(qs_d, i);
+    const auto ql_c = ekat::subview(ql_d, i);
+    const auto s_int_c = ekat::subview(s_int_d, i);
+    const auto q_int_c = ekat::subview(q_int_d, i);
+    const auto t_pcl_c = ekat::subview(t_pcl_d, i);
+    const auto q_pcl_sat_c = ekat::subview(q_pcl_sat_d, i);
+    const auto s_upd_c = ekat::subview(s_upd_d, i);
+    const auto q_upd_c = ekat::subview(q_upd_d, i);
+    const auto mflx_net_c = ekat::subview(mflx_net_d, i);
+    const auto detr_up_c = ekat::subview(detr_up_d, i);
+    const auto mflx_up_c = ekat::subview(mflx_up_d, i);
+    const auto mflx_dn_c = ekat::subview(mflx_dn_d, i);
+    const auto q_dnd_c = ekat::subview(q_dnd_d, i);
+    const auto s_dnd_c = ekat::subview(s_dnd_d, i);
+
+    ZMF::zm_closure(
+      team,
+      pver,
+      pverp,
+      msg,
+      cape_threshold_in,
+      lcl_d(i),
+      lel_d(i),
+      jt_d(i),
+      mx_d(i),
+      dsubcld_d(i),
+      z_mid_c,
+      z_int_c,
+      p_mid_c,
+      p_del_c,
+      t_mid_c,
+      s_mid_c,
+      q_mid_c,
+      qs_c,
+      ql_c,
+      s_int_c,
+      q_int_c,
+      t_pcl_lcl_d(i),
+      t_pcl_c,
+      q_pcl_sat_c,
+      s_upd_c,
+      q_upd_c,
+      mflx_net_c,
+      detr_up_c,
+      mflx_up_c,
+      mflx_dn_c,
+      q_dnd_c,
+      s_dnd_c,
+      cape_d(i),
+      cld_base_mass_flux_d(i));
+  });
+
+  // Now get arrays
+  std::vector<view1dr_d> vec1dr_out = {cld_base_mass_flux_d};
+  ekat::device_to_host({d.cld_base_mass_flux}, d.pcols, vec1dr_out);
 
   zm_finalize_cxx();
 }

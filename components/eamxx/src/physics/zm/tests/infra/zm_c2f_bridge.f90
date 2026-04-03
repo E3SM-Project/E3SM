@@ -287,4 +287,18 @@ subroutine zm_cloud_properties_bridge_f(pcols, ncol, pver, pverp, msg, limcnv, p
   call zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, p_mid, z_mid, z_int, t_mid, s_mid, s_int, q_mid, landfrac, tpert_g, jb, lel, jt, jlcl, j0, jd, mflx_up, entr_up, detr_up, mflx_dn, entr_dn, mflx_net, s_upd, q_upd, ql, s_dnd, q_dnd, qst, cu, evp, pflx, rprd)
 end subroutine zm_cloud_properties_bridge_f
 
+subroutine zm_closure_bridge_f(pcols, ncol, pver, pverp, msg, cape_threshold_in, lcl, lel, jt, mx, dsubcld, z_mid, z_int, p_mid, p_del, t_mid, s_mid, q_mid, qs, ql, s_int, q_int, t_pcl_lcl, t_pcl, q_pcl_sat, s_upd, q_upd, mflx_net, detr_up, mflx_up, mflx_dn, q_dnd, s_dnd, cape, cld_base_mass_flux) bind(C)
+  use zm_conv, only : zm_closure
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp, msg
+  real(kind=c_real) , value, intent(in) :: cape_threshold_in
+  integer(kind=c_int) , intent(in), dimension(pcols) :: lcl, lel, jt, mx
+  real(kind=c_real) , intent(in), dimension(pcols) :: dsubcld, t_pcl_lcl, cape
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: z_mid, p_mid, p_del, t_mid, s_mid, q_mid, qs, ql, s_int, q_int, t_pcl, q_pcl_sat, s_upd, q_upd, mflx_net, detr_up, mflx_up, mflx_dn, q_dnd, s_dnd
+  real(kind=c_real) , intent(in), dimension(pcols, pverp) :: z_int
+  real(kind=c_real) , intent(out), dimension(pcols) :: cld_base_mass_flux
+
+  call zm_closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, lcl, lel, jt, mx, dsubcld, z_mid, z_int, p_mid, p_del, t_mid, s_mid, q_mid, qs, ql, s_int, q_int, t_pcl_lcl, t_pcl, q_pcl_sat, s_upd, q_upd, mflx_net, detr_up, mflx_up, mflx_dn, q_dnd, s_dnd, cape, cld_base_mass_flux)
+end subroutine zm_closure_bridge_f
+
 end module zm_c2f_bridge

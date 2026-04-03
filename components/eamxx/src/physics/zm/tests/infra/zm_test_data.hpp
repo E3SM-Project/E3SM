@@ -584,6 +584,37 @@ struct ZmCloudPropertiesData : public PhysicsTestData {
   }
 };
 
+struct ZmClosureData : public PhysicsTestData {
+  // Inputs
+  Int pcols, ncol, pver, pverp, msg;
+  Int *lcl, *lel, *jt, *mx;
+  Real cape_threshold_in;
+  Real *dsubcld, *z_mid, *z_int, *p_mid, *p_del, *t_mid, *s_mid, *q_mid, *qs, *ql, *s_int, *q_int, *t_pcl_lcl, *t_pcl, *q_pcl_sat, *s_upd, *q_upd, *mflx_net, *detr_up, *mflx_up, *mflx_dn, *q_dnd, *s_dnd, *cape;
+
+  // Outputs
+  Real *cld_base_mass_flux;
+
+  ZmClosureData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Int msg_, Real cape_threshold_in_) :
+    PhysicsTestData({
+      {pcols_},
+      {pcols_, pver_},
+      {pcols_, pverp_},
+      {pcols_}
+    },
+    {
+      {&dsubcld, &t_pcl_lcl, &cape, &cld_base_mass_flux},
+      {&z_mid, &p_mid, &p_del, &t_mid, &s_mid, &q_mid, &qs, &ql, &s_int, &q_int, &t_pcl, &q_pcl_sat, &s_upd, &q_upd, &mflx_net, &detr_up, &mflx_up, &mflx_dn, &q_dnd, &s_dnd},
+      {&z_int}
+    },
+    {
+      {&lcl, &lel, &jt, &mx}
+    }),
+    pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), msg(msg_), cape_threshold_in(cape_threshold_in_)
+  {}
+
+  PTD_STD_DEF(ZmClosureData, 6, pcols, ncol, pver, pverp, msg, cape_threshold_in);
+};
+
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
 void ientropy_f(IentropyData& d);
 void ientropy(IentropyData& d);
@@ -615,6 +646,8 @@ void zm_downdraft_properties_f(ZmDowndraftPropertiesData& d);
 void zm_downdraft_properties(ZmDowndraftPropertiesData& d);
 void zm_cloud_properties_f(ZmCloudPropertiesData& d);
 void zm_cloud_properties(ZmCloudPropertiesData& d);
+void zm_closure_f(ZmClosureData& d);
+void zm_closure(ZmClosureData& d);
 // End glue function decls
 
 }  // namespace zm

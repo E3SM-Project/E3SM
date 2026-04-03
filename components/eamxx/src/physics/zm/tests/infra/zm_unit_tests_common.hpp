@@ -80,6 +80,7 @@ struct UnitWrap {
     struct TestZmCalcFractionalEntrainment;
     struct TestZmDowndraftProperties;
     struct TestZmCloudProperties;
+    struct TestZmClosure;
   }; // UnitWrap
 };
 
