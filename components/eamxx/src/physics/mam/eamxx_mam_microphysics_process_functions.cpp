@@ -355,8 +355,8 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
 
       // Wind speed at the surface
       const Real wind_speed =
-            haero::sqrt(u_wind(icol, surface_lev) * u_wind(icol, surface_lev) +
-                        v_wind(icol, surface_lev) * v_wind(icol, surface_lev));
+            mam4::sqrt(u_wind(icol, surface_lev) * u_wind(icol, surface_lev) +
+                       v_wind(icol, surface_lev) * v_wind(icol, surface_lev));
       // Total rain at the surface
       const Real rain =
             precip_liq_surf_mass(icol) + precip_ice_surf_mass(icol);
@@ -466,8 +466,8 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
       const int kk   = i % nlev;
       const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
       const Real pdel = atm.hydrostatic_dp(kk);
-      const Real mbar = haero::Constants::molec_weight_dry_air;
-      const Real gravit = haero::Constants::gravity;
+      const Real mbar = mam4::Constants::molec_weight_dry_air;
+      const Real gravit = mam4::Constants::gravity;
       const Real x = 1.0 / mbar * pdel / gravit;
       for (int m = 0; m < num_gas_aerosol_constituents; ++m)
         gas_phase_chemistry_dvmrdt(icol, m, kk) =
@@ -520,7 +520,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
         Real cldnum = atm.cloud_liquid_number_mixing_ratio(kk);
         const auto &invariants_k = ekat::subview(invariants_icol, kk);
         // aqueous chemistry ...
-       constexpr Real mbar = haero::Constants::molec_weight_dry_air;
+       constexpr Real mbar = mam4::Constants::molec_weight_dry_air;
        constexpr int indexm = mam4::gas_chemistry::indexm;
        const auto &dqdt_aqso4_k = ekat::subview(dqdt_aqso4_icol, kk);
        const auto &dqdt_aqh2so4_k = ekat::subview(dqdt_aqh2so4_icol, kk);
@@ -550,8 +550,8 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
         const int kk   = i % nlev;
         const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
         const Real pdel = atm.hydrostatic_dp(kk);
-        const Real mbar = haero::Constants::molec_weight_dry_air;
-        const Real gravit = haero::Constants::gravity;
+        const Real mbar = mam4::Constants::molec_weight_dry_air;
+        const Real gravit = mam4::Constants::gravity;
         const Real x = 1.0 / mbar * pdel / gravit;
         for (int m = 0; m < num_gas_aerosol_constituents; ++m)
           aqueous_chemistry_dvmrdt(icol, m, kk) =
@@ -743,7 +743,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
 
        //Find tropopause (or quit simulation if not found) as extinction should be
       // applied only above tropopause */
-      const int ilev_tropp = mam4::aer_rad_props::tropopause_or_quit(atm.pressure, atm.interface_pressure,
+      const int ilev_tropp = mam4::aero_rad_props::tropopause_or_quit(atm.pressure, atm.interface_pressure,
           atm.temperature,  atm.height, ekat::subview(dry_atm.z_iface, icol));
       // Part 1: LINOZ chemistry
       Kokkos::parallel_for(

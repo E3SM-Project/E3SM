@@ -507,7 +507,7 @@ void MAMAci::run_impl(const double dt) {
 
   Kokkos::fence();
 
-  haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
+  mam4::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
 
   // FIXME: Temporary assignment of nc
   mam_coupling::copy_view_lev_slice(team_policy, wet_atm_.nc, nlev_,  // inputs

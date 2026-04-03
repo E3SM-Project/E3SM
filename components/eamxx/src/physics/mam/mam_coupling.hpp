@@ -451,12 +451,12 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
   return (mem - buffer_manager.get_memory()) * sizeof(Real);
 }
 
-// Given a dry atmosphere state, creates a haero::Atmosphere object for the
+// Given a dry atmosphere state, creates a mam4::Atmosphere object for the
 // column with the given index. This object can be provided to mam4xx for the
 // column.
 KOKKOS_INLINE_FUNCTION
-haero::Atmosphere atmosphere_for_column(const DryAtmosphere &dry_atm,
-                                        const int column_index) {
+mam4::Atmosphere atmosphere_for_column(const DryAtmosphere &dry_atm,
+                                       const int column_index) {
   EKAT_KERNEL_ASSERT_MSG(dry_atm.T_mid.data() != nullptr,
                          "T_mid not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.p_mid.data() != nullptr,
@@ -481,20 +481,20 @@ haero::Atmosphere atmosphere_for_column(const DryAtmosphere &dry_atm,
                          "cldfrac not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.w_updraft.data() != nullptr,
                          "w_updraft not defined for dry atmosphere state!");
-  return haero::Atmosphere(mam4::nlev,
-                           ekat::subview(dry_atm.T_mid, column_index),
-                           ekat::subview(dry_atm.p_mid, column_index),
-                           ekat::subview(dry_atm.qv, column_index),
-                           ekat::subview(dry_atm.qc, column_index),
-                           ekat::subview(dry_atm.nc, column_index),
-                           ekat::subview(dry_atm.qi, column_index),
-                           ekat::subview(dry_atm.ni, column_index),
-                           ekat::subview(dry_atm.z_mid, column_index),
-                           ekat::subview(dry_atm.p_del, column_index),
-                           ekat::subview(dry_atm.p_int, column_index),
-                           ekat::subview(dry_atm.cldfrac, column_index),
-                           ekat::subview(dry_atm.w_updraft, column_index),
-                           dry_atm.pblh(column_index));
+  return mam4::Atmosphere(mam4::nlev,
+                          ekat::subview(dry_atm.T_mid, column_index),
+                          ekat::subview(dry_atm.p_mid, column_index),
+                          ekat::subview(dry_atm.qv, column_index),
+                          ekat::subview(dry_atm.qc, column_index),
+                          ekat::subview(dry_atm.nc, column_index),
+                          ekat::subview(dry_atm.qi, column_index),
+                          ekat::subview(dry_atm.ni, column_index),
+                          ekat::subview(dry_atm.z_mid, column_index),
+                          ekat::subview(dry_atm.p_del, column_index),
+                          ekat::subview(dry_atm.p_int, column_index),
+                          ekat::subview(dry_atm.cldfrac, column_index),
+                          ekat::subview(dry_atm.w_updraft, column_index),
+                          dry_atm.pblh(column_index));
 }
 
 // Given an AerosolState with views for dry aerosol quantities, creates a
@@ -780,13 +780,13 @@ void set_min_background_mmr(const Team &team, const AerosolState &dry_aero,
       Kokkos::TeamVectorRange(team, nlev), [&](const int klev) {
         for(int imode = 0; imode < num_aero_modes(); ++imode) {
           dry_aero.int_aero_nmr[imode](icol, klev) =
-              haero::max(dry_aero.int_aero_nmr[imode](icol, klev),
-                         INTERSTITIAL_AERO_MIN_VAL);
+              mam4::max(dry_aero.int_aero_nmr[imode](icol, klev),
+                        INTERSTITIAL_AERO_MIN_VAL);
           for(int ispec = 0; ispec < num_aero_species(); ++ispec) {
             if(dry_aero.int_aero_mmr[imode][ispec].data()) {
               dry_aero.int_aero_mmr[imode][ispec](icol, klev) =
-                  haero::max(dry_aero.int_aero_mmr[imode][ispec](icol, klev),
-                             INTERSTITIAL_AERO_MIN_VAL);
+                  mam4::max(dry_aero.int_aero_mmr[imode][ispec](icol, klev),
+                            INTERSTITIAL_AERO_MIN_VAL);
             }
           }  // ispec
         }    // imode
@@ -795,11 +795,11 @@ void set_min_background_mmr(const Team &team, const AerosolState &dry_aero,
 
 // Computes the reciprocal of pseudo density for a column
 inline void compute_recipical_pseudo_density(
-    haero::ThreadTeamPolicy team_policy, const_view_2d pdel, const int nlev,
+    mam4::ThreadTeamPolicy team_policy, const_view_2d pdel, const int nlev,
     // output
     view_2d rpdel) {
   Kokkos::parallel_for(
-      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+      team_policy, KOKKOS_LAMBDA(const mam4::ThreadTeam &team) {
         const int icol = team.league_rank();
         Kokkos::parallel_for(
             Kokkos::TeamVectorRange(team, 0, nlev), [&](int kk) {
@@ -812,13 +812,13 @@ inline void compute_recipical_pseudo_density(
 // Scream (or EAMxx) can sometimes extend views beyond model levels (nlev) as it
 // uses "packs". Following function copies a 2d view till model levels
 inline void copy_view_lev_slice(
-    haero::ThreadTeamPolicy team_policy,  // inputs
+    mam4::ThreadTeamPolicy team_policy,   // inputs
     const_view_2d &inp_view,              // input view to copy
     const int dim,        // dimension till view should be copied
     view_2d &out_view) {  // output view
 
   Kokkos::parallel_for(
-      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+      team_policy, KOKKOS_LAMBDA(const mam4::ThreadTeam &team) {
         const int icol = team.league_rank();
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team, dim), [&](int kk) {
           out_view(icol, kk) = inp_view(icol, kk);

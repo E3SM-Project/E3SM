@@ -314,9 +314,9 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // Detraining cld H20 from deep convection [kg/kg/s]
   dlf_ = view_2d("dlf_", ncol_, nlev_);
 
-  calsize_data_.initialize();
+  calcsize_data_.initialize();
   // wetscav uses update_mmr=true;
-  calsize_data_.set_update_mmr(true);
+  calcsize_data_.set_update_mmr(true);
 
   view_2d_host scavimptblvol_host("scavimptblvol_host",
                                   mam4::aero_model::nimptblgrow_total,
@@ -428,7 +428,7 @@ void MAMWetscav::run_impl(const double dt) {
     }
   }
 
-  const auto &calsize_data  = calsize_data_;
+  const auto &calsize_data  = calcsize_data_;
   const auto &scavimptblnum = scavimptblnum_;
   const auto &scavimptblvol = scavimptblvol_;
   const Real scav_fraction_in_cloud_strat  = scav_fraction_in_cloud_strat_;   

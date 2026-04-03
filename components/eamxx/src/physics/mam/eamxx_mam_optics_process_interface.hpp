@@ -70,7 +70,7 @@ class MAMOptics final : public MAMGenericInterface {
   mam_coupling::view_3d ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_;
   // long wave extinction in the units of [1/km]
   mam_coupling::view_3d ext_cmip6_lw_;
-  mam4::modal_aer_opt::AerosolOpticsDeviceData aerosol_optics_device_data_;
+  mam4::modal_aero_opt::AerosolOpticsDeviceData aerosol_optics_device_data_;
   // physics grid for column information
   mam_coupling::view_2d work_;
   mam_coupling::view_3d tau_ssa_g_sw_, tau_ssa_sw_, tau_sw_, tau_f_sw_;
@@ -86,7 +86,7 @@ class MAMOptics final : public MAMGenericInterface {
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
   // parameters for calcsize
-  mam4::modal_aer_opt::CalcsizeData calsize_data_;
+  mam4::modal_aero_opt::CalcsizeData calsize_data_;
 
   int num_2d_scratch_= 8;
 
