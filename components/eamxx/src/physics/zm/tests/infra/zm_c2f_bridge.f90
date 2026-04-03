@@ -272,4 +272,19 @@ subroutine zm_downdraft_properties_bridge_f(pcols, ncol, pver, pverp, msg, jb, j
   call zm_downdraft_properties(pcols, ncol, pver, pverp, msg, jb, jt, j0, jd, z_int, dz, s_mid, q_mid, h_env, lambda, lambda_max, qsthat, hsthat, gamhat, rprd, mflx_up, mflx_dn, entr_dn, s_dnd, q_dnd, h_dnd, q_dnd_sat, evp, totevp)
 end subroutine zm_downdraft_properties_bridge_f
 
+subroutine zm_cloud_properties_bridge_f(pcols, ncol, pver, pverp, msg, limcnv, p_mid, z_mid, z_int, t_mid, s_mid, s_int, q_mid, landfrac, tpert_g, jb, lel, jt, jlcl, j0, jd, mflx_up, entr_up, detr_up, mflx_dn, entr_dn, mflx_net, s_upd, q_upd, ql, s_dnd, q_dnd, qst, cu, evp, pflx, rprd) bind(C)
+  use zm_conv, only : zm_cloud_properties
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp, msg, limcnv
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: p_mid, z_mid, t_mid, s_mid, s_int, q_mid
+  real(kind=c_real) , intent(in), dimension(pcols, pverp) :: z_int
+  real(kind=c_real) , intent(in), dimension(pcols) :: landfrac, tpert_g
+  integer(kind=c_int) , intent(in), dimension(pcols) :: jb, lel
+  integer(kind=c_int) , intent(out), dimension(pcols) :: jt, jlcl, j0, jd
+  real(kind=c_real) , intent(out), dimension(pcols, pver) :: mflx_up, entr_up, detr_up, mflx_dn, entr_dn, mflx_net, s_upd, q_upd, ql, s_dnd, q_dnd, qst, cu, evp, rprd
+  real(kind=c_real) , intent(out), dimension(pcols, pverp) :: pflx
+
+  call zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, p_mid, z_mid, z_int, t_mid, s_mid, s_int, q_mid, landfrac, tpert_g, jb, lel, jt, jlcl, j0, jd, mflx_up, entr_up, detr_up, mflx_dn, entr_dn, mflx_net, s_upd, q_upd, ql, s_dnd, q_dnd, qst, cu, evp, pflx, rprd)
+end subroutine zm_cloud_properties_bridge_f
+
 end module zm_c2f_bridge

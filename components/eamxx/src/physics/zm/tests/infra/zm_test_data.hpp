@@ -546,6 +546,44 @@ struct ZmDowndraftPropertiesData : public PhysicsTestData {
   PTD_STD_DEF(ZmDowndraftPropertiesData, 5, pcols, ncol, pver, pverp, msg);
 };
 
+struct ZmCloudPropertiesData : public PhysicsTestData {
+  // Inputs
+  Int pcols, ncol, pver, pverp, msg, limcnv;
+  Int *jb, *lel;
+  Real *p_mid, *z_mid, *z_int, *t_mid, *s_mid, *s_int, *q_mid, *landfrac, *tpert_g;
+
+  // Outputs
+  Int *jt, *jlcl, *j0, *jd;
+  Real *mflx_up, *entr_up, *detr_up, *mflx_dn, *entr_dn, *mflx_net, *s_upd, *q_upd, *ql, *s_dnd, *q_dnd, *qst, *cu, *evp, *pflx, *rprd;
+
+  ZmCloudPropertiesData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Int msg_, Int limcnv_) :
+    PhysicsTestData({
+      {pcols_, pver_},
+      {pcols_, pverp_},
+      {pcols_},
+      {pcols_}
+    },
+    {
+      {&p_mid, &z_mid, &t_mid, &s_mid, &s_int, &q_mid, &mflx_up, &entr_up, &detr_up, &mflx_dn, &entr_dn, &mflx_net, &s_upd, &q_upd, &ql, &s_dnd, &q_dnd, &qst, &cu, &evp, &rprd},
+      {&z_int, &pflx},
+      {&landfrac, &tpert_g}
+    },
+    {
+      {&jb, &lel, &jt, &jlcl, &j0, &jd}
+    }),
+    pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), msg(msg_), limcnv(limcnv_)
+  {}
+
+  PTD_STD_DEF(ZmCloudPropertiesData, 6, pcols, ncol, pver, pverp, msg, limcnv);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+    shift_int_scalar<D>(limcnv);
+  }
+};
+
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
 void ientropy_f(IentropyData& d);
 void ientropy(IentropyData& d);
@@ -575,6 +613,8 @@ void zm_calc_fractional_entrainment_f(ZmCalcFractionalEntrainmentData& d);
 void zm_calc_fractional_entrainment(ZmCalcFractionalEntrainmentData& d);
 void zm_downdraft_properties_f(ZmDowndraftPropertiesData& d);
 void zm_downdraft_properties(ZmDowndraftPropertiesData& d);
+void zm_cloud_properties_f(ZmCloudPropertiesData& d);
+void zm_cloud_properties(ZmCloudPropertiesData& d);
 // End glue function decls
 
 }  // namespace zm

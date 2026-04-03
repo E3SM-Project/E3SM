@@ -745,6 +745,47 @@ struct Functions {
     const uview_1d<Real>& evp, // evaporation rate
     Real& totevp); // total evap   for dndraft proportionality factor - see eq (4.106)
 
+  KOKKOS_FUNCTION
+  static void zm_cloud_properties(
+    // Inputs
+    const MemberType& team,
+    const Int& pver, // number of mid-point vertical levels
+    const Int& pverp, // number of interface vertical levels
+    const Int& msg, // number of levels to ignore at model top
+    const Int& limcnv, // convection limiting level
+    const uview_1d<const Real>& p_mid, // env pressure at mid-point
+    const uview_1d<const Real>& z_mid, // env altitude at mid-point
+    const uview_1d<const Real>& z_int, // env altitude at interface
+    const uview_1d<const Real>& t_mid, // env temperature
+    const uview_1d<const Real>& s_mid, // env dry static energy of env [K] (normalized)
+    const uview_1d<const Real>& s_int, // interface values of dry stat energy
+    const uview_1d<const Real>& q_mid, // env specific humidity
+    const Real& landfrac, // Land fraction
+    const Real& tpert_g, // PBL temperature perturbation
+    const Int& jb, // updraft base level
+    const Int& lel, // updraft parcel launch level
+    // Outputs
+    Int& jt, // updraft plume top
+    Int& jlcl, // updraft lifting cond level
+    Int& j0, // level where detrainment begins (starting at h_env_min)
+    Int& jd, // level of downdraft
+    const uview_1d<Real>& mflx_up, // updraft mass flux
+    const uview_1d<Real>& entr_up, // entrainment rate of updraft
+    const uview_1d<Real>& detr_up, // detrainement rate of updraft
+    const uview_1d<Real>& mflx_dn, // downdraft mass flux
+    const uview_1d<Real>& entr_dn, // downdraft entrainment rate
+    const uview_1d<Real>& mflx_net, // net mass flux
+    const uview_1d<Real>& s_upd, // updraft dry static energy [K] (normalized)
+    const uview_1d<Real>& q_upd, // updraft specific humidity [kg/kg]
+    const uview_1d<Real>& ql, // updraft liq water
+    const uview_1d<Real>& s_dnd, // dndraft dry static energy [K] (normalized)
+    const uview_1d<Real>& q_dnd, // dndraft specific humidity [kg/kg]
+    const uview_1d<Real>& qst, // env saturation mixing ratio
+    const uview_1d<Real>& cu, // condensation rate
+    const uview_1d<Real>& evp, // evaporation rate
+    const uview_1d<Real>& pflx, // precipitation flux thru layer
+    const uview_1d<Real>& rprd); // rate of production of precip at that layer
+
   //
   // --------- Members ---------
   //
@@ -774,5 +815,6 @@ struct Functions {
 # include "impl/zm_zm_conv_evap_impl.hpp"
 # include "impl/zm_zm_calc_fractional_entrainment_impl.hpp"
 # include "impl/zm_zm_downdraft_properties_impl.hpp"
+# include "impl/zm_zm_cloud_properties_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP
