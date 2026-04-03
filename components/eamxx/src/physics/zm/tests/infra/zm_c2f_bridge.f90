@@ -301,4 +301,16 @@ subroutine zm_closure_bridge_f(pcols, ncol, pver, pverp, msg, cape_threshold_in,
   call zm_closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, lcl, lel, jt, mx, dsubcld, z_mid, z_int, p_mid, p_del, t_mid, s_mid, q_mid, qs, ql, s_int, q_int, t_pcl_lcl, t_pcl, q_pcl_sat, s_upd, q_upd, mflx_net, detr_up, mflx_up, mflx_dn, q_dnd, s_dnd, cape, cld_base_mass_flux)
 end subroutine zm_closure_bridge_f
 
+subroutine zm_calc_output_tend_bridge_f(pcols, ncol, pver, pverp, msg, jt, mx, dsubcld, p_del, s_int, q_int, s_upd, q_upd, mflx_up, detr_up, mflx_dn, s_dnd, q_dnd, ql, evp, cu, dsdt, dqdt, dl) bind(C)
+  use zm_conv, only : zm_calc_output_tend
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp, msg
+  integer(kind=c_int) , intent(in), dimension(pcols) :: jt, mx
+  real(kind=c_real) , intent(in), dimension(pcols) :: dsubcld
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: p_del, s_int, q_int, s_upd, q_upd, mflx_up, detr_up, mflx_dn, s_dnd, q_dnd, ql, evp, cu
+  real(kind=c_real) , intent(out), dimension(pcols, pver) :: dsdt, dqdt, dl
+
+  call zm_calc_output_tend(pcols, ncol, pver, pverp, msg, jt, mx, dsubcld, p_del, s_int, q_int, s_upd, q_upd, mflx_up, detr_up, mflx_dn, s_dnd, q_dnd, ql, evp, cu, dsdt, dqdt, dl)
+end subroutine zm_calc_output_tend_bridge_f
+
 end module zm_c2f_bridge

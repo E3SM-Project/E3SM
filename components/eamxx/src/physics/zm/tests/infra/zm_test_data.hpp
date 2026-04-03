@@ -615,6 +615,34 @@ struct ZmClosureData : public PhysicsTestData {
   PTD_STD_DEF(ZmClosureData, 6, pcols, ncol, pver, pverp, msg, cape_threshold_in);
 };
 
+struct ZmCalcOutputTendData : public PhysicsTestData {
+  // Inputs
+  Int pcols, ncol, pver, pverp, msg;
+  Int *jt, *mx;
+  Real *dsubcld, *p_del, *s_int, *q_int, *s_upd, *q_upd, *mflx_up, *detr_up, *mflx_dn, *s_dnd, *q_dnd, *ql, *evp, *cu;
+
+  // Outputs
+  Real *dsdt, *dqdt, *dl;
+
+  ZmCalcOutputTendData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Int msg_) :
+    PhysicsTestData({
+      {pcols_},
+      {pcols_, pver_},
+      {pcols_}
+    },
+    {
+      {&dsubcld},
+      {&p_del, &s_int, &q_int, &s_upd, &q_upd, &mflx_up, &detr_up, &mflx_dn, &s_dnd, &q_dnd, &ql, &evp, &cu, &dsdt, &dqdt, &dl}
+    },
+    {
+      {&jt, &mx}
+    }),
+    pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), msg(msg_)
+  {}
+
+  PTD_STD_DEF(ZmCalcOutputTendData, 5, pcols, ncol, pver, pverp, msg);
+};
+
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
 void ientropy_f(IentropyData& d);
 void ientropy(IentropyData& d);
@@ -648,6 +676,8 @@ void zm_cloud_properties_f(ZmCloudPropertiesData& d);
 void zm_cloud_properties(ZmCloudPropertiesData& d);
 void zm_closure_f(ZmClosureData& d);
 void zm_closure(ZmClosureData& d);
+void zm_calc_output_tend_f(ZmCalcOutputTendData& d);
+void zm_calc_output_tend(ZmCalcOutputTendData& d);
 // End glue function decls
 
 }  // namespace zm

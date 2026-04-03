@@ -63,6 +63,7 @@ void zm_calc_fractional_entrainment_bridge_f(Int pcols, Int ncol, Int pver, Int 
 void zm_downdraft_properties_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Int* jb, Int* jt, Int* j0, Int* jd, Real* z_int, Real* dz, Real* s_mid, Real* q_mid, Real* h_env, Real* lambda, Real* lambda_max, Real* qsthat, Real* hsthat, Real* gamhat, Real* rprd, Real* mflx_up, Real* mflx_dn, Real* entr_dn, Real* s_dnd, Real* q_dnd, Real* h_dnd, Real* q_dnd_sat, Real* evp, Real* totevp);
 void zm_cloud_properties_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Int limcnv, Real* p_mid, Real* z_mid, Real* z_int, Real* t_mid, Real* s_mid, Real* s_int, Real* q_mid, Real* landfrac, Real* tpert_g, Int* jb, Int* lel, Int* jt, Int* jlcl, Int* j0, Int* jd, Real* mflx_up, Real* entr_up, Real* detr_up, Real* mflx_dn, Real* entr_dn, Real* mflx_net, Real* s_upd, Real* q_upd, Real* ql, Real* s_dnd, Real* q_dnd, Real* qst, Real* cu, Real* evp, Real* pflx, Real* rprd);
 void zm_closure_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Real cape_threshold_in, Int* lcl, Int* lel, Int* jt, Int* mx, Real* dsubcld, Real* z_mid, Real* z_int, Real* p_mid, Real* p_del, Real* t_mid, Real* s_mid, Real* q_mid, Real* qs, Real* ql, Real* s_int, Real* q_int, Real* t_pcl_lcl, Real* t_pcl, Real* q_pcl_sat, Real* s_upd, Real* q_upd, Real* mflx_net, Real* detr_up, Real* mflx_up, Real* mflx_dn, Real* q_dnd, Real* s_dnd, Real* cape, Real* cld_base_mass_flux);
+void zm_calc_output_tend_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Int* jt, Int* mx, Real* dsubcld, Real* p_del, Real* s_int, Real* q_int, Real* s_upd, Real* q_upd, Real* mflx_up, Real* detr_up, Real* mflx_dn, Real* s_dnd, Real* q_dnd, Real* ql, Real* evp, Real* cu, Real* dsdt, Real* dqdt, Real* dl);
 } // extern "C" : end _f decls
 
 // Inits and finalizes are not intended to be called outside this comp unit
@@ -1011,7 +1012,7 @@ void zm_conv_main_f(ZmConvMainData& d)
 
 void zm_conv_main(ZmConvMainData& d)
 {
-  zm_common_init(); // Might need more specific init
+  zm_common_init();
 
   // create device views and copy
   std::vector<view1dr_d> vec1dr_in(9);
@@ -1786,6 +1787,116 @@ void zm_closure(ZmClosureData& d)
   // Now get arrays
   std::vector<view1dr_d> vec1dr_out = {cld_base_mass_flux_d};
   ekat::device_to_host({d.cld_base_mass_flux}, d.pcols, vec1dr_out);
+
+  zm_finalize_cxx();
+}
+
+void zm_calc_output_tend_f(ZmCalcOutputTendData& d)
+{
+  d.transition<ekat::TransposeDirection::c2f>();
+  zm_common_init_f();
+  zm_calc_output_tend_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.msg, d.jt, d.mx, d.dsubcld, d.p_del, d.s_int, d.q_int, d.s_upd, d.q_upd, d.mflx_up, d.detr_up, d.mflx_dn, d.s_dnd, d.q_dnd, d.ql, d.evp, d.cu, d.dsdt, d.dqdt, d.dl);
+  zm_common_finalize_f();
+  d.transition<ekat::TransposeDirection::f2c>();
+}
+
+void zm_calc_output_tend(ZmCalcOutputTendData& d)
+{
+  zm_common_init();
+
+  // create device views and copy
+  std::vector<view1dr_d> vec1dr_in(1);
+  ekat::host_to_device({d.dsubcld}, d.pcols, vec1dr_in);
+
+  std::vector<view2dr_d> vec2dr_in(16);
+  ekat::host_to_device({d.cu, d.detr_up, d.dl, d.dqdt, d.dsdt, d.evp, d.mflx_dn, d.mflx_up, d.p_del, d.q_dnd, d.q_int, d.q_upd, d.ql, d.s_dnd, d.s_int, d.s_upd}, d.pcols, d.pver, vec2dr_in);
+
+  std::vector<view1di_d> vec1di_in(2);
+  ekat::host_to_device({d.jt, d.mx}, d.pcols, vec1di_in);
+
+  view1dr_d
+    dsubcld_d(vec1dr_in[0]);
+
+  view2dr_d
+    cu_d(vec2dr_in[0]),
+    detr_up_d(vec2dr_in[1]),
+    dl_d(vec2dr_in[2]),
+    dqdt_d(vec2dr_in[3]),
+    dsdt_d(vec2dr_in[4]),
+    evp_d(vec2dr_in[5]),
+    mflx_dn_d(vec2dr_in[6]),
+    mflx_up_d(vec2dr_in[7]),
+    p_del_d(vec2dr_in[8]),
+    q_dnd_d(vec2dr_in[9]),
+    q_int_d(vec2dr_in[10]),
+    q_upd_d(vec2dr_in[11]),
+    ql_d(vec2dr_in[12]),
+    s_dnd_d(vec2dr_in[13]),
+    s_int_d(vec2dr_in[14]),
+    s_upd_d(vec2dr_in[15]);
+
+  view1di_d
+    jt_d(vec1di_in[0]),
+    mx_d(vec1di_in[1]);
+
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
+
+  // unpack data scalars because we do not want the lambda to capture d
+  const Int msg = d.msg;
+  const Int pver = d.pver;
+  const Int pverp = d.pverp;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto p_del_c = ekat::subview(p_del_d, i);
+    const auto s_int_c = ekat::subview(s_int_d, i);
+    const auto q_int_c = ekat::subview(q_int_d, i);
+    const auto s_upd_c = ekat::subview(s_upd_d, i);
+    const auto q_upd_c = ekat::subview(q_upd_d, i);
+    const auto mflx_up_c = ekat::subview(mflx_up_d, i);
+    const auto detr_up_c = ekat::subview(detr_up_d, i);
+    const auto mflx_dn_c = ekat::subview(mflx_dn_d, i);
+    const auto s_dnd_c = ekat::subview(s_dnd_d, i);
+    const auto q_dnd_c = ekat::subview(q_dnd_d, i);
+    const auto ql_c = ekat::subview(ql_d, i);
+    const auto evp_c = ekat::subview(evp_d, i);
+    const auto cu_c = ekat::subview(cu_d, i);
+    const auto dsdt_c = ekat::subview(dsdt_d, i);
+    const auto dqdt_c = ekat::subview(dqdt_d, i);
+    const auto dl_c = ekat::subview(dl_d, i);
+
+    ZMF::zm_calc_output_tend(
+      team,
+      pver,
+      pverp,
+      msg,
+      jt_d(i),
+      mx_d(i),
+      dsubcld_d(i),
+      p_del_c,
+      s_int_c,
+      q_int_c,
+      s_upd_c,
+      q_upd_c,
+      mflx_up_c,
+      detr_up_c,
+      mflx_dn_c,
+      s_dnd_c,
+      q_dnd_c,
+      ql_c,
+      evp_c,
+      cu_c,
+      dsdt_c,
+      dqdt_c,
+      dl_c);
+  });
+
+  // Now get arrays
+  std::vector<view2dr_d> vec2dr_out = {dl_d, dqdt_d, dsdt_d};
+  ekat::device_to_host({d.dl, d.dqdt, d.dsdt}, d.pcols, d.pver, vec2dr_out);
 
   zm_finalize_cxx();
 }
