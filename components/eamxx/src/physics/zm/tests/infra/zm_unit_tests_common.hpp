@@ -78,6 +78,7 @@ struct UnitWrap {
     struct TestZmConvMain;
     struct TestZmConvEvap;
     struct TestZmCalcFractionalEntrainment;
+    struct TestZmDowndraftProperties;
   }; // UnitWrap
 };
 

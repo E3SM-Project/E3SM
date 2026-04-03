@@ -708,10 +708,47 @@ struct Functions {
     const uview_1d<Real>& lambda, // fractional entrainment
     Real& lambda_max); // fractional entrainment maximum
 
-    //
-    // --------- Members ---------
-    //
-    inline static ZmRuntimeOpt s_common_init;
+  KOKKOS_FUNCTION
+  static void zm_downdraft_properties(
+    // Inputs
+    const MemberType& team,
+    const Int& pver, // number of mid-point vertical levels
+    const Int& pverp, // number of interface vertical levels
+    const Int& msg, // number of levels to ignore at model top
+    const Int& jb, // updraft base level
+    // Inputs/Outputs
+    Int& jt, // updraft top level
+    // Inputs
+    const Int& j0, // level where updraft begins detraining
+    // Inputs/Outputs
+    Int& jd, // level of downdraft
+    // Inputs
+    const uview_1d<const Real>& z_int, // env altitude at interface
+    const uview_1d<const Real>& dz, // layer thickness
+    const uview_1d<const Real>& s_mid, // env dry static energy of env [K] (normalized)
+    const uview_1d<const Real>& q_mid, // env specific humidity
+    const uview_1d<const Real>& h_env, // ambient env moist stat energy
+    const uview_1d<const Real>& lambda, // fractional entrainment
+    const Real& lambda_max, // fractional entrainment max
+    const uview_1d<const Real>& qsthat, // interface interpolated qst
+    const uview_1d<const Real>& hsthat, // interface interpolated hst
+    const uview_1d<const Real>& gamhat, // interface interpolated gamma
+    const uview_1d<const Real>& rprd, // rate of production of precip at that layer
+    const uview_1d<const Real>& mflx_up, // updraft mass flux
+    // Inputs/Outputs
+    const uview_1d<Real>& mflx_dn, // downdraft mass flux
+    const uview_1d<Real>& entr_dn, // downdraft entrainment rate
+    const uview_1d<Real>& s_dnd, // dndraft dry static energy [K] (normalized)
+    const uview_1d<Real>& q_dnd, // dndraft specific humidity [kg/kg]
+    const uview_1d<Real>& h_dnd, // dndraft moist static energy
+    const uview_1d<Real>& q_dnd_sat, // dndraft saturation specific humdity
+    const uview_1d<Real>& evp, // evaporation rate
+    Real& totevp); // total evap   for dndraft proportionality factor - see eq (4.106)
+
+  //
+  // --------- Members ---------
+  //
+  inline static ZmRuntimeOpt s_common_init;
 
 }; // struct Functions
 
@@ -736,5 +773,6 @@ struct Functions {
 # include "impl/zm_zm_conv_main_impl.hpp"
 # include "impl/zm_zm_conv_evap_impl.hpp"
 # include "impl/zm_zm_calc_fractional_entrainment_impl.hpp"
+# include "impl/zm_zm_downdraft_properties_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP

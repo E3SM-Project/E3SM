@@ -515,6 +515,37 @@ struct ZmCalcFractionalEntrainmentData : public PhysicsTestData {
   PTD_STD_DEF(ZmCalcFractionalEntrainmentData, 5, pcols, ncol, pver, pverp, msg);
 };
 
+struct ZmDowndraftPropertiesData : public PhysicsTestData {
+  // Inputs
+  Int pcols, ncol, pver, pverp, msg;
+  Int *jb, *j0;
+  Real *z_int, *dz, *s_mid, *q_mid, *h_env, *lambda, *lambda_max, *qsthat, *hsthat, *gamhat, *rprd, *mflx_up;
+
+  // Inputs/Outputs
+  Int *jt, *jd;
+  Real *mflx_dn, *entr_dn, *s_dnd, *q_dnd, *h_dnd, *q_dnd_sat, *evp, *totevp;
+
+  ZmDowndraftPropertiesData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Int msg_) :
+    PhysicsTestData({
+      {pcols_, pverp_},
+      {pcols_, pver_},
+      {pcols_},
+      {pcols_}
+    },
+    {
+      {&z_int},
+      {&dz, &s_mid, &q_mid, &h_env, &lambda, &qsthat, &hsthat, &gamhat, &rprd, &mflx_up, &mflx_dn, &entr_dn, &s_dnd, &q_dnd, &h_dnd, &q_dnd_sat, &evp},
+      {&lambda_max, &totevp}
+    },
+    {
+      {&jb, &jt, &j0, &jd}
+    }),
+    pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), msg(msg_)
+  {}
+
+  PTD_STD_DEF(ZmDowndraftPropertiesData, 5, pcols, ncol, pver, pverp, msg);
+};
+
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
 void ientropy_f(IentropyData& d);
 void ientropy(IentropyData& d);
@@ -542,6 +573,8 @@ void zm_conv_evap_f(ZmConvEvapData& d);
 void zm_conv_evap(ZmConvEvapData& d);
 void zm_calc_fractional_entrainment_f(ZmCalcFractionalEntrainmentData& d);
 void zm_calc_fractional_entrainment(ZmCalcFractionalEntrainmentData& d);
+void zm_downdraft_properties_f(ZmDowndraftPropertiesData& d);
+void zm_downdraft_properties(ZmDowndraftPropertiesData& d);
 // End glue function decls
 
 }  // namespace zm

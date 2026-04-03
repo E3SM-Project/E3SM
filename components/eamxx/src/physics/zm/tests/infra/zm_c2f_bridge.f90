@@ -257,4 +257,19 @@ subroutine zm_calc_fractional_entrainment_bridge_f(pcols, ncol, pver, pverp, msg
   call zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, jb, jt, j0, z_mid, z_int, dz, h_env, h_env_sat, h_env_min, lambda, lambda_max)
 end subroutine zm_calc_fractional_entrainment_bridge_f
 
+subroutine zm_downdraft_properties_bridge_f(pcols, ncol, pver, pverp, msg, jb, jt, j0, jd, z_int, dz, s_mid, q_mid, h_env, lambda, lambda_max, qsthat, hsthat, gamhat, rprd, mflx_up, mflx_dn, entr_dn, s_dnd, q_dnd, h_dnd, q_dnd_sat, evp, totevp) bind(C)
+  use zm_conv, only : zm_downdraft_properties
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp, msg
+  integer(kind=c_int) , intent(in), dimension(pcols) :: jb, j0
+  integer(kind=c_int) , intent(inout), dimension(pcols) :: jt, jd
+  real(kind=c_real) , intent(in), dimension(pcols, pverp) :: z_int
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: dz, s_mid, q_mid, h_env, lambda, qsthat, hsthat, gamhat, rprd, mflx_up
+  real(kind=c_real) , intent(in), dimension(pcols) :: lambda_max
+  real(kind=c_real) , intent(inout), dimension(pcols, pver) :: mflx_dn, entr_dn, s_dnd, q_dnd, h_dnd, q_dnd_sat, evp
+  real(kind=c_real) , intent(inout), dimension(pcols) :: totevp
+
+  call zm_downdraft_properties(pcols, ncol, pver, pverp, msg, jb, jt, j0, jd, z_int, dz, s_mid, q_mid, h_env, lambda, lambda_max, qsthat, hsthat, gamhat, rprd, mflx_up, mflx_dn, entr_dn, s_dnd, q_dnd, h_dnd, q_dnd_sat, evp, totevp)
+end subroutine zm_downdraft_properties_bridge_f
+
 end module zm_c2f_bridge
