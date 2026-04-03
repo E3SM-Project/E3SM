@@ -158,6 +158,9 @@ Int Functions<Real,DefaultDevice>
   auto diag_eff_radius_qc      = diagnostic_outputs.diag_eff_radius_qc;
   auto diag_eff_radius_qi      = diagnostic_outputs.diag_eff_radius_qi;
   auto diag_eff_radius_qr      = diagnostic_outputs.diag_eff_radius_qr;
+//[shanyp 20260402
+  auto oomega_mp              = diagnostic_inputs.omega_mp;
+//shanyp 20260402]
   auto qv2qi_depos_tend        = diagnostic_outputs.qv2qi_depos_tend;
   auto rho_qi                  = diagnostic_outputs.rho_qi;
   auto precip_liq_flux         = diagnostic_outputs.precip_liq_flux;
@@ -279,7 +282,10 @@ Int Functions<Real,DefaultDevice>
       lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals,
       lookup_tables.revap_table_vals, pres, dpres, dz, nc_nuceat_tend, inv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i,
-      cld_frac_l, cld_frac_r, qv_prev, t_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
+//[shanyp 20260402
+//      cld_frac_l, cld_frac_r, qv_prev, t_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
+      cld_frac_l, cld_frac_r, qv_prev, t_prev, oomega_mp, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
+//shanyp 20260402]
       qv, th, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,

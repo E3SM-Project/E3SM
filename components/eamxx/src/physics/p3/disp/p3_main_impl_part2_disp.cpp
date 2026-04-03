@@ -47,6 +47,9 @@ void Functions<Real,DefaultDevice>
   const uview_2d<const Pack>& cld_frac_r,
   const uview_2d<const Pack>& qv_prev,
   const uview_2d<const Pack>& t_prev,
+//[shanyp 20260402
+  const uview_2d<const Pack>& omega_mp,
+//shanyp 20260402]
   const uview_2d<Pack>& T_atm,
   const uview_2d<Pack>& rho,
   const uview_2d<Pack>& inv_rho,
@@ -135,7 +138,10 @@ void Functions<Real,DefaultDevice>
       ekat::subview(pres, i), ekat::subview(dpres, i), ekat::subview(dz, i), ekat::subview(nc_nuceat_tend, i), ekat::subview(inv_exner, i),
       ekat::subview(exner, i), ekat::subview(inv_cld_frac_l, i), ekat::subview(inv_cld_frac_i, i), ekat::subview(inv_cld_frac_r, i),
       ekat::subview(ni_activated, i), ekat::subview(inv_qc_relvar, i), ekat::subview(cld_frac_i, i), ekat::subview(cld_frac_l, i),
-      ekat::subview(cld_frac_r, i), ekat::subview(qv_prev, i), ekat::subview(t_prev, i), ekat::subview(T_atm, i), ekat::subview(rho, i),
+//[shanyp 20260402
+//      ekat::subview(cld_frac_r, i), ekat::subview(qv_prev, i), ekat::subview(t_prev, i), ekat::subview(T_atm, i), ekat::subview(rho, i),
+      ekat::subview(cld_frac_r, i), ekat::subview(qv_prev, i), ekat::subview(t_prev, i), ekat::subview(omega_mp, i), ekat::subview(T_atm, i), ekat::subview(rho, i),
+//shanyp 20260402]
       ekat::subview(inv_rho, i), ekat::subview(qv_sat_l, i), ekat::subview(qv_sat_i, i), ekat::subview(qv_supersat_i, i), ekat::subview(rhofacr, i),
       ekat::subview(rhofaci, i), ekat::subview(acn, i), ekat::subview(qv, i), ekat::subview(th_atm, i), ekat::subview(qc, i), ekat::subview(nc, i),
       ekat::subview(qr, i), ekat::subview(nr, i), ekat::subview(qi, i), ekat::subview(ni, i), ekat::subview(qm, i), ekat::subview(bm, i),

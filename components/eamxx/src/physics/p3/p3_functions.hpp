@@ -1086,7 +1086,10 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_2d<const Pack> &ni_activated, const uview_2d<const Pack> &inv_qc_relvar,
       const uview_2d<const Pack> &cld_frac_i, const uview_2d<const Pack> &cld_frac_l,
       const uview_2d<const Pack> &cld_frac_r, const uview_2d<const Pack> &qv_prev,
-      const uview_2d<const Pack> &t_prev, const uview_2d<Pack> &T_atm, const uview_2d<Pack> &rho,
+//[shanyp 20260402
+//      const uview_2d<const Pack> &t_prev, const uview_2d<Pack> &T_atm, const uview_2d<Pack> &rho,
+      const uview_2d<const Pack> &t_prev, const uview_2d<const Pack> &oomega_mp, const uview_2d<Pack> &T_atm, const uview_2d<Pack> &rho,
+//shanyp 20260402]
       const uview_2d<Pack> &inv_rho, const uview_2d<Pack> &qv_sat_l,
       const uview_2d<Pack> &qv_sat_i, const uview_2d<Pack> &qv_supersat_i,
       const uview_2d<Pack> &rhofacr, const uview_2d<Pack> &rhofaci, const uview_2d<Pack> &acn,

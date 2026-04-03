@@ -270,6 +270,9 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.Ckh           = m_params.get<double>("coeff_kh");
   runtime_options.Ckm           = m_params.get<double>("coeff_km");
   runtime_options.shoc_1p5tke   = m_params.get<bool>("shoc_1p5tke");
+//[shanyp 20260402
+  runtime_options.shoc_nocond = m_params.get<bool>("shoc_nocond");
+//shanyp 20260402]
   runtime_options.extra_diags   = m_params.get<bool>("extra_shoc_diags");
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
@@ -415,7 +418,10 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   shoc_postprocess.set_variables(m_num_cols,m_num_levs,
                                  rrho,qv,qw,qc,qc_copy,tke,tke_copy,qtracers,shoc_ql2,
                                  cldfrac_liq,inv_qc_relvar,
-                                 T_mid, dse, z_mid, phis);
+//[shanyp 20260402
+//				 T_mid, dse, z_mid, phis);
+                                 T_mid, dse, z_mid, phis, runtime_options);
+//shanyp 20260402]
 
   if (has_column_conservation_check()) {
     const auto& vapor_flux = get_field_out("vapor_flux").get_view<Real*>();
