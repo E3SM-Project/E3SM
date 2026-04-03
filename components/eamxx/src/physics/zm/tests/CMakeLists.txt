@@ -13,6 +13,7 @@ set(ZM_TESTS_SRCS
   zm_compute_cape_from_parcel_tests.cpp
   zm_zm_conv_mcsp_calculate_shear_tests.cpp
   zm_zm_conv_mcsp_tend_tests.cpp
+    zm_zm_conv_main_tests.cpp
 ) # ZM_TESTS_SRCS
 
 # All tests should understand the same baseline args

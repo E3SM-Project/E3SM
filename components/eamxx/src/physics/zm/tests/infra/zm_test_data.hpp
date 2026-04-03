@@ -419,6 +419,39 @@ struct ZmConvMcspTendData : public PhysicsTestData {
   }
 };
 
+struct ZmConvMainData : public PhysicsTestData {
+  // Inputs
+  Int pcols, ncol, pver, pverp;
+  Real time_step;
+  Real *t_mid, *q_mid_in, *omega, *p_mid_in, *p_int_in, *p_del_in, *geos, *z_mid_in, *z_int_in, *pbl_hgt, *tpert, *landfrac, *t_star, *q_star;
+  bool is_first_step;
+
+  // Outputs
+  Int lengath;
+  Int *gather_index, *msemax_klev_g, *jctop, *jcbot, *jt;
+  Real *prec, *heat, *qtnd, *cape, *dcape, *mcon, *pflx, *zdu, *mflx_up, *entr_up, *detr_up, *mflx_dn, *entr_dn, *p_del, *dsubcld, *ql, *rliq, *rprd, *dlf;
+
+  ZmConvMainData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Real time_step_, bool is_first_step_, Int lengath_) :
+    PhysicsTestData({
+      {pcols_, pver_},
+      {pcols_, pverp_},
+      {pcols_},
+      {pcols_}
+    },
+    {
+      {&t_mid, &q_mid_in, &omega, &p_mid_in, &p_del_in, &z_mid_in, &t_star, &q_star, &heat, &qtnd, &zdu, &mflx_up, &entr_up, &detr_up, &mflx_dn, &entr_dn, &p_del, &ql, &rprd, &dlf},
+      {&p_int_in, &z_int_in, &mcon, &pflx},
+      {&geos, &pbl_hgt, &tpert, &landfrac, &prec, &cape, &dcape, &dsubcld, &rliq}
+    },
+    {
+      {&gather_index, &msemax_klev_g, &jctop, &jcbot, &jt}
+    }),
+    pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), time_step(time_step_), is_first_step(is_first_step_), lengath(lengath_)
+  {}
+
+  PTD_STD_DEF(ZmConvMainData, 7, pcols, ncol, pver, pverp, time_step, is_first_step, lengath);
+};
+
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
 void ientropy_f(IentropyData& d);
 void ientropy(IentropyData& d);
@@ -440,6 +473,8 @@ void zm_conv_mcsp_calculate_shear_f(ZmConvMcspCalculateShearData& d);
 void zm_conv_mcsp_calculate_shear(ZmConvMcspCalculateShearData& d);
 void zm_conv_mcsp_tend_f(ZmConvMcspTendData& d);
 void zm_conv_mcsp_tend(ZmConvMcspTendData& d);
+void zm_conv_main_f(ZmConvMainData& d);
+void zm_conv_main(ZmConvMainData& d);
 // End glue function decls
 
 }  // namespace zm

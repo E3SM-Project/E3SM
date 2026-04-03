@@ -204,4 +204,27 @@ subroutine zm_conv_mcsp_tend_bridge_f(pcols, ncol, pver, pverp, ztodt, jctop, st
   call zm_conv_mcsp_tend(pcols, ncol, pver, pverp, ztodt, jctop, zm_const, zm_param, state_pmid, state_pint, state_pdel, state_s, state_q, state_u, state_v, ptend_zm_s, ptend_zm_q, ptend_s, ptend_q, ptend_u, ptend_v, mcsp_dt_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, mcsp_freq, mcsp_shear, zm_depth)
 end subroutine zm_conv_mcsp_tend_bridge_f
 
+subroutine zm_conv_main_bridge_f(pcols, ncol, pver, pverp, is_first_step, time_step, t_mid, q_mid_in, omega, p_mid_in, p_int_in, p_del_in, geos, z_mid_in, z_int_in, pbl_hgt, tpert, landfrac, t_star, q_star, lengath, gather_index, msemax_klev_g, jctop, jcbot, jt, prec, heat, qtnd, cape, dcape, mcon, pflx, zdu, mflx_up, entr_up, detr_up, mflx_dn, entr_dn, p_del, dsubcld, ql, rliq, rprd, dlf) bind(C)
+  use zm_conv, only : zm_conv_main
+  use zm_aero_type,           only: zm_aero_t
+  use zm_microphysics_state,  only: zm_microp_st
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp
+  logical(kind=c_bool) , value, intent(in) :: is_first_step
+  real(kind=c_real) , value, intent(in) :: time_step
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: t_mid, q_mid_in, omega, p_mid_in, p_del_in, z_mid_in, t_star, q_star
+  real(kind=c_real) , intent(in), dimension(pcols, pverp) :: p_int_in, z_int_in
+  real(kind=c_real) , intent(in), dimension(pcols) :: geos, pbl_hgt, tpert, landfrac
+  integer(kind=c_int) , intent(out) :: lengath
+  integer(kind=c_int) , intent(out), dimension(pcols) :: gather_index, msemax_klev_g, jctop, jcbot, jt
+  real(kind=c_real) , intent(out), dimension(pcols) :: prec, cape, dcape, dsubcld, rliq
+  real(kind=c_real) , intent(out), dimension(pcols, pver) :: heat, qtnd, zdu, mflx_up, entr_up, detr_up, mflx_dn, entr_dn, p_del, ql, rprd, dlf
+  real(kind=c_real) , intent(out), dimension(pcols, pverp) :: mcon, pflx
+
+  type(zm_aero_t)    :: aero            ! aerosol object
+  type(zm_microp_st) :: microp_st
+
+  call zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, t_mid, q_mid_in, omega, p_mid_in, p_int_in, p_del_in, geos, z_mid_in, z_int_in, pbl_hgt, tpert, landfrac, t_star, q_star, lengath, gather_index, msemax_klev_g, jctop, jcbot, jt, prec, heat, qtnd, cape, dcape, mcon, pflx, zdu, mflx_up, entr_up, detr_up, mflx_dn, entr_dn, p_del, dsubcld, ql, rliq, rprd, dlf) ! aero, microp_st)
+end subroutine zm_conv_main_bridge_f
+
 end module zm_c2f_bridge
