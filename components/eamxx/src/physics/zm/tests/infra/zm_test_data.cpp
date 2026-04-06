@@ -1441,6 +1441,7 @@ void zm_downdraft_properties(ZmDowndraftPropertiesData& d)
     jt_d(vec1di_in[3]);
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
 
   // unpack data scalars because we do not want the lambda to capture d
   const Int msg = d.msg;
@@ -1473,6 +1474,7 @@ void zm_downdraft_properties(ZmDowndraftPropertiesData& d)
 
     ZMF::zm_downdraft_properties(
       team,
+      init_cp,
       pver,
       pverp,
       msg,
@@ -1578,6 +1580,8 @@ void zm_cloud_properties(ZmCloudPropertiesData& d)
     lel_d(vec1di_in[5]);
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+  WSM wsm(d.pverp, 15, policy);
 
   // unpack data scalars because we do not want the lambda to capture d
   const Int limcnv = d.limcnv;
@@ -1616,6 +1620,8 @@ void zm_cloud_properties(ZmCloudPropertiesData& d)
 
     ZMF::zm_cloud_properties(
       team,
+      wsm.get_workspace(team),
+      init_cp,
       pver,
       pverp,
       msg,
