@@ -301,9 +301,13 @@ module li_time_integration_fe_rk
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
       call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=1)
 
-
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
       call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
+
+      ! Calculate masks prior to RK loop, but do not update masks within the loop
+      ! to preserve the accuracy of time integration.
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+      err = ior(err, err_tmp)
       ! Save relevant fields before RK loop, to be used in update at the end
       temperaturePrev(:,:) = temperature(:,:)
       waterFracPrev(:,:) = waterFrac(:,:)
@@ -398,11 +402,6 @@ module li_time_integration_fe_rk
                              intArgs=(/config_rk_order/), messageType=MPAS_LOG_ERR)
          return
       endif
-
-      ! Calculate masks prior to RK loop, but do not update masks within the loop
-      ! to preserve the accuracy of time integration.
-      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-      err = ior(err, err_tmp)
 
 ! *** Start RK loop ***
       do rkStage = 1, nRKstages
