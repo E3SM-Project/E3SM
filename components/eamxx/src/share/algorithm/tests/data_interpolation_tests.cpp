@@ -62,10 +62,13 @@ void run_tests (const std::shared_ptr<const AbstractGrid>& grid,
   auto nlevs = grid->get_num_vertical_levels();
 
   auto vcoarse_grid = grid->clone("vcoarse",true);
-  vcoarse_grid->reset_vertical_configuration(data_nlevs, AbstractGrid::VKind::Pressure);
+  auto vcoarse_vkind = vr_type==NOP ? AbstractGrid::VKind::Model
+                                    : AbstractGrid::VKind::Pressure;
+
+  vcoarse_grid->reset_vertical_configuration(data_nlevs, vcoarse_vkind);
 
   // These are the fields we will compute
-  auto fields = create_fields(grid,false,false);
+  auto fields = create_fields(grid,false);
   fields.pop_back(); // We don't interpolate p1d...
 
   std::string map_file = grid->get_num_global_dofs()==data_ngcols ? "" : map_file_name;
@@ -104,9 +107,9 @@ void run_tests (const std::shared_ptr<const AbstractGrid>& grid,
     // If we do remap, there is some P0 extrapolation,
     // for which we need to know the data at the top/bot
     // NOTE: the data has NO ilev coord in this case
-    expected_vcoarse = create_fields(vcoarse_grid,false,true);
-    base_vcoarse = create_fields(vcoarse_grid,true,true);
-    ones_vcoarse = create_fields(vcoarse_grid,false,true);
+    expected_vcoarse = create_fields(vcoarse_grid,false);
+    base_vcoarse = create_fields(vcoarse_grid,true);
+    ones_vcoarse = create_fields(vcoarse_grid,false);
     for (auto& f : ones_vcoarse) {
       f.deep_copy(1);
     }
@@ -231,7 +234,7 @@ TEST_CASE ("exceptions")
   scorpio::init_subsystem(comm);
   auto grid = create_point_grid("pg",data_ngcols,data_nlevs,comm,1);
 
-  auto fields = create_fields(grid,false,false);
+  auto fields = create_fields(grid,false);
 
   REQUIRE_THROWS (create_interp(nullptr,fields)); // Invalid grid pointer
 

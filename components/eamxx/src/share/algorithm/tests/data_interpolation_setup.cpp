@@ -33,8 +33,8 @@ TEST_CASE ("data_interpolation_setup")
     "data_interpolation_1"
   };
 
-  for (auto int_same_as_mid : {true, false}) {
-    auto suffix = int_same_as_mid ? "_no_ilev.nc" : ".nc";
+  for (auto p_grid : {true, false}) {
+    auto suffix = p_grid ? "_no_ilev.nc" : ".nc";
     for (const std::string& fname : files) {
       scorpio::register_file(fname+suffix,scorpio::Write);
 
@@ -42,11 +42,11 @@ TEST_CASE ("data_interpolation_setup")
       scorpio::define_dim (fname+suffix,"lev",nlevs);
       scorpio::define_dim (fname+suffix,"dim2",ncmps);
       scorpio::define_time(fname+suffix,"days since " + t_ref.to_string());
-      if (not int_same_as_mid) {
+      if (not p_grid) {
         scorpio::define_dim (fname+suffix,"ilev",nlevs+1);
       }
 
-      std::string ilev = int_same_as_mid ? "lev" : "ilev";
+      std::string ilev = p_grid ? "lev" : "ilev";
 
       scorpio::define_var(fname+suffix,"s2d",  {"ncol"},             "real", true);
       scorpio::define_var(fname+suffix,"s2d",  {"ncol"},             "real", true);
@@ -70,9 +70,9 @@ TEST_CASE ("data_interpolation_setup")
     // NOTE: if we save a pressure field, there is not distinction
     //       between interfaces and midpoints in the file
     // NOTE: do not pad, so that we can grab pointers and pass them to scorpio
-    auto base_fields = create_fields(grid,true, int_same_as_mid,false);
-    auto fields      = create_fields(grid,false,int_same_as_mid,false);
-    auto ones        = create_fields(grid,false,int_same_as_mid,false);
+    auto base_fields = create_fields(grid,true, false);
+    auto fields      = create_fields(grid,false,false);
+    auto ones        = create_fields(grid,false,false);
     for (auto& f : ones) {
       f.deep_copy(1);
     }

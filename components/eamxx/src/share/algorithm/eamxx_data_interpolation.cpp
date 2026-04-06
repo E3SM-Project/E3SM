@@ -442,27 +442,13 @@ create_horiz_remappers (const std::string& map_file)
     nlevs_data = get_input_files_dimlen(m_input_files_dimnames[ILEV]);
   }
 
+  m_data_grid = create_point_grid("data",ncols_data,nlevs_data,m_model_grid->get_comm(),1);
   m_grid_after_hremap = m_model_grid->clone("after_hremap",true);
-  m_grid_after_hremap->reset_vertical_configuration(nlevs_data, AbstractGrid::VKind::Pressure);
+  m_grid_after_hremap->reset_vertical_configuration(nlevs_data, AbstractGrid::VKind::Model);
 
   if (map_file!="") {
-    m_horiz_remapper_beg = std::make_shared<HorizontalRemapper>(m_grid_after_hremap,map_file);
-    m_horiz_remapper_end = std::make_shared<HorizontalRemapper>(m_grid_after_hremap,map_file);
-
-    int map_ncols_src = m_horiz_remapper_beg->get_src_grid()->get_num_global_dofs();
-    int map_ncols_tgt = m_horiz_remapper_beg->get_tgt_grid()->get_num_global_dofs();
-
-
-
-    // Ensure that the map file was compatible with data/model grids
-    EKAT_REQUIRE_MSG (map_ncols_src==ncols_data,
-        "[DataInterpolation] Error! Map file src grid is incompatible with the input data.\n"
-        " - map file ncols src: " + std::to_string(map_ncols_src) + "\n"
-        " - data file ncols   : " + std::to_string(ncols_data) + "\n");
-    EKAT_REQUIRE_MSG (map_ncols_tgt==ncols_model,
-        "[DataInterpolation] Error! Map file tgt grid is incompatible with the model grid.\n"
-        " - map file ncols tgt: " + std::to_string(map_ncols_tgt) + "\n"
-        " - model file ncols  : " + std::to_string(ncols_model) + "\n");
+    m_horiz_remapper_beg = std::make_shared<HorizontalRemapper>(m_data_grid,m_grid_after_hremap,map_file);
+    m_horiz_remapper_end = std::make_shared<HorizontalRemapper>(m_data_grid,m_grid_after_hremap,map_file);
   } else {
     // No hremap: 'ncols' from the data must match the model grid (nlev can differ; vremap is not set yet)
     EKAT_REQUIRE_MSG (ncols_data==ncols_model,
@@ -499,19 +485,19 @@ create_horiz_remappers (const Real iop_lat, const Real iop_lon)
   int ncols_data = m_fields_have_col_dim ? get_input_files_dimlen (m_input_files_dimnames[COL]) : ncols_model;
 
   // Create grid for IO and load lat/lon field in IO grid from any data file
-  auto data_grid = create_point_grid("data",ncols_data,nlevs_data,m_model_grid->get_comm());
+  m_data_grid = create_point_grid("data",ncols_data,nlevs_data,m_model_grid->get_comm());
   std::vector<Field> latlon = {
-    data_grid->create_geometry_data("lat",data_grid->get_2d_scalar_layout()),
-    data_grid->create_geometry_data("lon",data_grid->get_2d_scalar_layout())
+    m_data_grid->create_geometry_data("lat",m_data_grid->get_2d_scalar_layout()),
+    m_data_grid->create_geometry_data("lon",m_data_grid->get_2d_scalar_layout())
   };
-  AtmosphereInput latlon_reader (m_time_database.files.front(),data_grid,latlon);
+  AtmosphereInput latlon_reader (m_time_database.files.front(),m_data_grid,latlon);
   latlon_reader.read_variables();
 
   // Create iop remap tgt grid
   m_grid_after_hremap = m_model_grid->clone("after_hremap",true);
-  m_grid_after_hremap->reset_vertical_configuration(nlevs_data, AbstractGrid::VKind::Pressure);
-  m_horiz_remapper_beg = std::make_shared<IOPRemapper>(data_grid,m_grid_after_hremap,iop_lat,iop_lon);
-  m_horiz_remapper_end = std::make_shared<IOPRemapper>(data_grid,m_grid_after_hremap,iop_lat,iop_lon);
+  m_grid_after_hremap->reset_vertical_configuration(nlevs_data, AbstractGrid::VKind::Model);
+  m_horiz_remapper_beg = std::make_shared<IOPRemapper>(m_data_grid,m_grid_after_hremap,iop_lat,iop_lon);
+  m_horiz_remapper_end = std::make_shared<IOPRemapper>(m_data_grid,m_grid_after_hremap,iop_lat,iop_lon);
 }
 
 void DataInterpolation::
@@ -530,7 +516,9 @@ create_vert_remapper (const VertRemapData& data)
 
   m_vr_type = data.vr_type;
 
+  int data_nlevs  = m_grid_after_hremap->get_num_vertical_levels();
   int model_nlevs = m_model_grid->get_num_vertical_levels();
+  constexpr auto vkind_p = AbstractGrid::VKind::Pressure;
 
   if (m_vr_type==VRemapType::None) {
     // Not much to do. Set up a do-nothing remapper and return
@@ -538,7 +526,6 @@ create_vert_remapper (const VertRemapData& data)
     constexpr auto SAT = IDR::SrcAliasTgt;
 
     // If no vert remap is requested, model_grid and grid_after_hremap MUST have same nlevs
-    int data_nlevs  = m_grid_after_hremap->get_num_vertical_levels();
     EKAT_REQUIRE_MSG (model_nlevs==data_nlevs,
         "[DataInterpolation] Error! No vertical remap was requested, but the 'lev' dim from file does not match the model grid one.\n"
         " - model grid num vert levels: " + std::to_string(model_nlevs) + "\n"
@@ -566,16 +553,22 @@ create_vert_remapper (const VertRemapData& data)
         "[DataInterpolation] Error! Custom vert remapper tgt grid incompatible with the model grid.\n"
         " - model grid num global cols      : " + std::to_string(m_model_grid->get_num_global_dofs()) + "\n"
         " - custom remapper num global cols : " + std::to_string(tgt_ncols) + "\n");
-    EKAT_REQUIRE_MSG (src_nlevs==m_grid_after_hremap->get_num_vertical_levels(),
+    EKAT_REQUIRE_MSG (src_nlevs==data_nlevs,
         "[DataInterpolation] Error! Custom vert remapper src grid incompatible with the grid after horiz remap.\n"
-        " - grid after horiz remap num levels: " + std::to_string(m_grid_after_hremap->get_num_vertical_levels()) + "\n"
+        " - grid after horiz remap num levels: " + std::to_string(data_nlevs) + "\n"
         " - custom remapper num levels       : " + std::to_string(src_nlevs) + "\n");
     EKAT_REQUIRE_MSG (tgt_nlevs==m_model_grid->get_num_vertical_levels(),
         "[DataInterpolation] Error! Custom vert remapper tgt grid incompatible with the model grid.\n"
-        " - model grid num levels      : " + std::to_string(m_model_grid->get_num_vertical_levels()) + "\n"
+        " - model grid num levels      : " + std::to_string(model_nlevs) + "\n"
         " - custom remapper num levels : " + std::to_string(tgt_nlevs) + "\n");
 
     m_vert_remapper = data.custom_remapper;
+
+    const auto& vr_src_grid = data.custom_remapper->get_src_grid();
+    if (vr_src_grid->get_vkind()==vkind_p) {
+      m_grid_after_hremap->reset_vertical_configuration(data_nlevs,vkind_p);
+      m_data_grid->reset_vertical_configuration(data_nlevs,vkind_p);
+    }
   } else {
     auto s2et = [](const std::string& s) {
       if (s=="P0") {
@@ -590,6 +583,10 @@ create_vert_remapper (const VertRemapData& data)
         return static_cast<VerticalRemapper::ExtrapType>(-1);
       }
     };
+
+    // The grids before/after hremap MUST have vkind=Pressure
+    m_grid_after_hremap->reset_vertical_configuration(data_nlevs,vkind_p);
+    m_data_grid->reset_vertical_configuration(data_nlevs,vkind_p);
 
     // We need to build a vert remapper based on the input data.
     // Note: on src grid, we don't distinguish midpoints from interfaces, while on tgt we do.
