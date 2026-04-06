@@ -44,6 +44,9 @@ int OceanState::init() {
       LOG_ERROR("TimeStepper needs to be initialized before OceanState");
    }
    int NTimeLevels = DefTimeStepper->getNTimeLevels();
+   LOG_INFO("OceanState: Initializing default state with {} vertical layers "
+            "and {} time levels",
+            NVertLayers, NTimeLevels);
 
    if (NTimeLevels < 2) {
       LOG_ERROR("OceanState: the number of time level is lower than 2");

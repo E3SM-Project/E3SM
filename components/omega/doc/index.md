@@ -49,6 +49,7 @@ userGuide/Reductions
 userGuide/Tracers
 userGuide/TridiagonalSolvers
 userGuide/VertCoord
+userGuide/PGrad
 userGuide/Timing
 userGuide/VerticalMixingCoeff
 userGuide/VertAdv
@@ -93,6 +94,7 @@ devGuide/Reductions
 devGuide/Tracers
 devGuide/TridiagonalSolvers
 devGuide/VertCoord
+devGuide/PGrad
 devGuide/Timing
 devGuide/VerticalMixingCoeff
 devGuide/VertAdv

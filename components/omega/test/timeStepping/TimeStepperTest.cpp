@@ -19,6 +19,7 @@
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
+#include "Eos.h"
 #include "Error.h"
 #include "Field.h"
 #include "Halo.h"
@@ -28,6 +29,7 @@
 #include "MachEnv.h"
 #include "OceanState.h"
 #include "OmegaKokkos.h"
+#include "PGrad.h"
 #include "Pacer.h"
 #include "TendencyTerms.h"
 #include "TimeMgr.h"
@@ -173,6 +175,8 @@ int initTimeStepperTest(const std::string &mesh) {
    auto *DefVAdv = VertAdv::getDefault();
 
    AuxiliaryState::init();
+   Eos::init();
+   PressureGrad::init();
    Tendencies::init();
 
    // finish initializing default time stepper
@@ -187,8 +191,10 @@ int initTimeStepperTest(const std::string &mesh) {
    // Creating non-default state and auxiliary state to use only one vertical
    // layer
 
-   auto *DefMesh = HorzMesh::getDefault();
-   auto *DefHalo = Halo::getDefault();
+   auto *DefMesh  = HorzMesh::getDefault();
+   auto *DefHalo  = Halo::getDefault();
+   auto *DefEos   = Eos::getInstance();
+   auto *DefPGrad = PressureGrad::getDefault();
 
    int NTracers          = Tracers::getNumTracers();
    const int NTimeLevels = 2;
@@ -216,8 +222,9 @@ int initTimeStepperTest(const std::string &mesh) {
 
    // Creating non-default tendencies with custom velocity tendencies
    auto *TestTendencies = Tendencies::create(
-       "TestTendencies", DefMesh, DefVertCoord, DefVAdv, NTracers, ZeroTimeStep,
-       &Options, Tendencies::CustomTendencyType{}, DecayVelocityTendency{});
+       "TestTendencies", DefMesh, DefVertCoord, DefVAdv, DefPGrad, DefEos,
+       NTracers, ZeroTimeStep, &Options, Tendencies::CustomTendencyType{},
+       DecayVelocityTendency{});
    if (!TestTendencies) {
       Err++;
       LOG_ERROR("TimeStepperTest: error creating test tendencies");
@@ -275,6 +282,8 @@ void timeLoop(TimeInstant TimeStart, Real TimeEnd) {
 void finalizeTimeStepperTest() {
    Tracers::clear();
    TimeStepper::clear();
+   PressureGrad::clear();
+   Eos::destroyInstance();
    Tendencies::clear();
    AuxiliaryState::clear();
    OceanState::clear();

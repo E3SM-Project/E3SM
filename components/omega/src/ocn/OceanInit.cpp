@@ -11,6 +11,7 @@
 #include "Config.h"
 #include "DataTypes.h"
 #include "Decomp.h"
+#include "Eos.h"
 #include "Error.h"
 #include "Field.h"
 #include "Halo.h"
@@ -21,6 +22,7 @@
 #include "MachEnv.h"
 #include "OceanDriver.h"
 #include "OceanState.h"
+#include "PGrad.h"
 #include "Pacer.h"
 #include "Tendencies.h"
 #include "TimeMgr.h"
@@ -134,6 +136,8 @@ int initOmegaModules(MPI_Comm Comm) {
    Tracers::init();
    VertAdv::init();
    AuxiliaryState::init();
+   PressureGrad::init();
+   Eos::init();
    Tendencies::init();
    TimeStepper::init2();
 

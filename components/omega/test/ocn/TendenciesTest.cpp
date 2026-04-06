@@ -1,9 +1,11 @@
 #include "Tendencies.h"
 #include "AuxiliaryState.h"
 #include "Config.h"
+#include "CustomTendencyTerms.h"
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
+#include "Eos.h"
 #include "Error.h"
 #include "Field.h"
 #include "GlobalConstants.h"
@@ -15,6 +17,7 @@
 #include "MachEnv.h"
 #include "OceanTestCommon.h"
 #include "OmegaKokkos.h"
+#include "PGrad.h"
 #include "Pacer.h"
 #include "TimeStepper.h"
 #include "VertCoord.h"
@@ -56,6 +59,11 @@ int initState() {
    auto *Mesh   = HorzMesh::getDefault();
    auto *VCoord = VertCoord::getDefault();
    auto *State  = OceanState::getDefault();
+
+   // Define tendency fields
+   int NDims = 2;
+   std::vector<std::string> DimNamesThickness(NDims);
+   DimNamesThickness[0] = "NCells";
 
    Array2DReal LayerThickCell = State->getLayerThickness(0);
    Array2DReal NormalVelEdge  = State->getNormalVelocity(0);
@@ -124,6 +132,8 @@ int initTendenciesTest(const std::string &mesh) {
    VertCoord::init();
    Tracers::init();
    VertAdv::init();
+   PressureGrad::init();
+   Eos::init();
 
    int StateErr = OceanState::init();
    if (StateErr != 0) {
@@ -138,6 +148,7 @@ int initTendenciesTest(const std::string &mesh) {
 
 int testTendencies() {
    int Err = 0;
+   Error Err1;
 
    // test initialization
    Tendencies::init();
@@ -156,13 +167,20 @@ int testTendencies() {
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
    const auto VAdv     = VertAdv::getDefault();
+   const auto PGrad    = PressureGrad::getDefault();
+   const auto EqState  = Eos::getInstance();
    VCoord->NVertLayers = 12;
+
    // test creation of another tendencies
 
    TimeInterval ZeroTimeStep; // Zero-length time step placeholder
    Config *Options = Config::getOmegaConfig();
-   Tendencies::create("TestTendencies", Mesh, VCoord, VAdv, 3, ZeroTimeStep,
-                      Options);
+   Config TendConfig("Tendencies");
+   Err1             = Options->get(TendConfig);
+   int NTracersTest = 3;
+
+   Tendencies::create("TestTendencies", Mesh, VCoord, VAdv, PGrad, EqState,
+                      NTracersTest, ZeroTimeStep, &TendConfig);
 
    // test retrievel of another tendencies
    if (Tendencies::get("TestTendencies")) {
@@ -195,9 +213,11 @@ int testTendencies() {
    Array3DReal TracerArray = Tracers::getAll(0);
    int ThickTimeLevel      = 0;
    int VelTimeLevel        = 0;
+   int TracerTimeLevel     = 0;
    TimeInstant Time;
    DefTendencies->computeAllTendencies(State, AuxState, TracerArray,
-                                       ThickTimeLevel, VelTimeLevel, Time);
+                                       ThickTimeLevel, VelTimeLevel,
+                                       TracerTimeLevel, Time);
 
    // check that everything got computed correctly
    int NCellsOwned = Mesh->NCellsOwned;
@@ -235,6 +255,8 @@ int testTendencies() {
 
 void finalizeTendenciesTest() {
    Tracers::clear();
+   PressureGrad::clear();
+   Eos::destroyInstance();
    AuxiliaryState::clear();
    OceanState::clear();
    VertAdv::clear();

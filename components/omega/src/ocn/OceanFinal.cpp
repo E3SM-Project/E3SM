@@ -16,6 +16,7 @@
 #include "MachEnv.h"
 #include "OceanDriver.h"
 #include "OceanState.h"
+#include "PGrad.h"
 #include "Tendencies.h"
 #include "TimeMgr.h"
 #include "TimeStepper.h"
@@ -40,6 +41,8 @@ int ocnFinalize(const TimeInstant &CurrTime ///< [in] current sim time
 
    Tracers::clear();
    TimeStepper::clear();
+   PressureGrad::clear();
+   Eos::destroyInstance();
    Tendencies::clear();
    AuxiliaryState::clear();
    OceanState::clear();

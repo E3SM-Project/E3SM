@@ -33,6 +33,8 @@ Omega:
     InterpType: Isotropic
   VertCoord:
     MovementWeightType: Uniform
+  PressureGrad:
+    PressureGradType: Centered
   Tendencies:
     ThicknessFluxTendencyEnable: true
     PVTendencyEnable: true
@@ -56,6 +58,7 @@ Omega:
     ThicknessVertAdvTendencyEnable: true
     VelocityVertAdvTendencyEnable: true
     TracerVertAdvTendencyEnable: true
+    PressureGradTendencyEnable: true
   Tracers:
     Base: [Temperature, Salinity]
     Debug: [Debug1, Debug2, Debug3]

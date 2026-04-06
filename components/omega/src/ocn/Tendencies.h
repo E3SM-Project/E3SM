@@ -33,11 +33,14 @@
 
 #include "AuxiliaryState.h"
 #include "Config.h"
+#include "Eos.h"
 #include "HorzMesh.h"
 #include "OceanState.h"
+#include "PGrad.h"
 #include "TendencyTerms.h"
 #include "TimeMgr.h"
 #include "VertAdv.h"
+#include "VertCoord.h"
 
 #include <functional>
 #include <memory>
@@ -69,6 +72,8 @@ class Tendencies {
    TracerDiffOnCell TracerDiffusion;
    TracerHyperDiffOnCell TracerHyperDiff;
 
+   std::string Name;
+
    // Methods to compute tendency groups
    void computeThicknessTendencies(const OceanState *State,
                                    const AuxiliaryState *AuxState,
@@ -76,8 +81,9 @@ class Tendencies {
                                    TimeInstant Time);
    void computeVelocityTendencies(const OceanState *State,
                                   const AuxiliaryState *AuxState,
+                                  const Array3DReal &TracerArray,
                                   int ThickTimeLevel, int VelTimeLevel,
-                                  TimeInstant Time);
+                                  int TracerTimeLevel, TimeInstant Time);
    void computeTracerTendencies(const OceanState *State,
                                 const AuxiliaryState *AuxState,
                                 const Array3DReal &TracerArray,
@@ -86,15 +92,17 @@ class Tendencies {
    void computeAllTendencies(const OceanState *State,
                              const AuxiliaryState *AuxState,
                              const Array3DReal &TracerArray, int ThickTimeLevel,
-                             int VelTimeLevel, TimeInstant Time);
+                             int VelTimeLevel, int TracerTimeLevel,
+                             TimeInstant Time);
    void computeThicknessTendenciesOnly(const OceanState *State,
                                        const AuxiliaryState *AuxState,
                                        int ThickTimeLevel, int VelTimeLevel,
                                        TimeInstant Time);
    void computeVelocityTendenciesOnly(const OceanState *State,
                                       const AuxiliaryState *AuxState,
+                                      const Array3DReal &TracerArray,
                                       int ThickTimeLevel, int VelTimeLevel,
-                                      TimeInstant Time);
+                                      int TracerTimeLevel, TimeInstant Time);
    void computeTracerTendenciesOnly(const OceanState *State,
                                     const AuxiliaryState *AuxState,
                                     const Array3DReal &TracerArray,
@@ -150,8 +158,10 @@ class Tendencies {
    // Construct a new tendency object
    Tendencies(const std::string &Name, ///< [in] Name for tendencies
               const HorzMesh *Mesh,    ///< [in] Horizontal mesh
-              const VertCoord *VCoord, ///< [in] Vertical coordinate
+              VertCoord *VCoord,       ///< [in] Vertical coordinate
               VertAdv *VAdv,           ///< [in] Vertical advection
+              PressureGrad *PGrad,     ///< [in] Pressure gradient
+              Eos *EqState,            ///< [in] Equation of state
               int NTracersIn,          ///< [in] Number of tracers
               TimeInterval TimeStep,   ///< [in] Time step
               Config *Options,         ///< [in] Configuration options
@@ -160,31 +170,36 @@ class Tendencies {
 
    Tendencies(const std::string &Name, ///< [in] Name for tendencies
               const HorzMesh *Mesh,    ///< [in] Horizontal mesh
-              const VertCoord *VCoord, ///< [in] Vertical coordinate
+              VertCoord *VCoord,       ///< [in] Vertical coordinate
               VertAdv *VAdv,           ///< [in] Vertical advection
+              PressureGrad *PGrad,     ///< [in] Pressure gradient
+              Eos *EqState,            ///< [in] Equation of state
               int NTracersIn,          ///< [in] Number of tracers
               TimeInterval TimeStep,   ///< [in] Time step
               Config *Options          ///< [in] Configuration options
    );
 
+   void defineFields();
+
    // forbid copy and move construction
    Tendencies(const Tendencies &) = delete;
    Tendencies(Tendencies &&)      = delete;
 
-   const HorzMesh *Mesh;    ///< Pointer to horizontal mesh
-   const VertCoord *VCoord; ///< Pointer to vertical coordinate
-   VertAdv *VAdv;           ///< Pointer to vertical advection
-   I4 NTracers;             ///< Number of tracers
-   TimeInterval TimeStep;   ///< Time step
+   const HorzMesh *Mesh; ///< Pointer to horizontal mesh
+   VertCoord *VCoord;    ///< Pointer to vertical coordinate
+   VertAdv *VAdv;        ///< Pointer to vertical advection
+   CustomTendencyType CustomThicknessTend;
+   CustomTendencyType CustomVelocityTend;
+   Eos *EqState;          ///< Pointer to equation of state
+   PressureGrad *PGrad;   ///< Pointer to pressure gradient
+   I4 NTracers;           ///< Number of tracers
+   TimeInterval TimeStep; ///< Time step
 
    // Pointer to default tendencies
    static Tendencies *DefaultTendencies;
 
    // Map of all tendency objects
    static std::map<std::string, std::unique_ptr<Tendencies>> AllTendencies;
-
-   CustomTendencyType CustomThicknessTend;
-   CustomTendencyType CustomVelocityTend;
 
 }; // end class Tendencies
 

@@ -44,7 +44,6 @@ class Teos10Eos {
                                    I4 KDisp) const {
 
       Real SpecVolPCoeffs[6 * VecLength];
-
       const I4 KStart = chunkStart(KChunk, MinLayerCell(ICell));
       const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerCell(ICell));
 
@@ -63,15 +62,15 @@ class Teos10Eos {
          if (KDisp == 0) {
             // No displacement
             SpecVol(ICell, K) =
-                calcRefProfile(Pressure(ICell, K)) +
-                calcDelta(SpecVolPCoeffs, KVec, Pressure(ICell, K));
+                calcRefProfile(Pressure(ICell, K) * Pa2Db) +
+                calcDelta(SpecVolPCoeffs, KVec, Pressure(ICell, K) * Pa2Db);
          } else {
             // Displacement, use the displaced pressure
             I4 KTmp = Kokkos::min(K + KDisp, MaxLayerCell(ICell));
             KTmp    = Kokkos::max(MinLayerCell(ICell), KTmp);
             SpecVol(ICell, K) =
-                calcRefProfile(Pressure(ICell, KTmp)) +
-                calcDelta(SpecVolPCoeffs, KVec, Pressure(ICell, KTmp));
+                calcRefProfile(Pressure(ICell, KTmp) * Pa2Db) +
+                calcDelta(SpecVolPCoeffs, KVec, Pressure(ICell, KTmp) * Pa2Db);
          }
       }
    }
@@ -312,15 +311,15 @@ class Teos10BruntVaisalaFreqSq {
             Real PInt =
                 0.5_Real * (Pressure(ICell, K) + Pressure(ICell, K - 1));
             Real SpInt = 0.5_Real * (SpecVol(ICell, K) + SpecVol(ICell, K - 1));
-            Real AlphaInt = calcAlpha(SaInt, CtInt, PInt, SpInt);
-            Real BetaInt  = calcBeta(SaInt, CtInt, PInt, SpInt);
+            Real AlphaInt = calcAlpha(SaInt, CtInt, PInt * Pa2Db, SpInt);
+            Real BetaInt  = calcBeta(SaInt, CtInt, PInt * Pa2Db, SpInt);
             Real DSa      = AbsSalinity(ICell, K) - AbsSalinity(ICell, K - 1);
             Real DCt      = ConservTemp(ICell, K) - ConservTemp(ICell, K - 1);
             Real DP       = Pressure(ICell, K) - Pressure(ICell, K - 1);
 
             BruntVaisalaFreqSq(ICell, K) = Gravity * Gravity *
                                            (BetaInt * DSa - AlphaInt * DCt) /
-                                           (SpInt * Db2Pa * DP);
+                                           (SpInt * DP);
          }
       }
    }
@@ -568,7 +567,6 @@ class Eos {
                                   const Array2DReal &AbsSalinity,
                                   const Array2DReal &Pressure,
                                   const Array2DReal &SpecVol);
-
    /// Initialize EOS from config and mesh
    static void init();
 

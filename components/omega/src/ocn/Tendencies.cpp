@@ -10,7 +10,11 @@
 
 #include "Tendencies.h"
 #include "CustomTendencyTerms.h"
+#include "Eos.h"
 #include "Error.h"
+#include "Field.h"
+#include "OceanState.h"
+#include "PGrad.h"
 #include "Pacer.h"
 #include "TimeStepper.h"
 #include "Tracers.h"
@@ -32,6 +36,8 @@ void Tendencies::init() {
    VertCoord *DefVertCoord     = VertCoord::getDefault();
    VertAdv *DefVertAdv         = VertAdv::getDefault();
    TimeStepper *DefTimeStepper = TimeStepper::getDefault();
+   Eos *DefEos                 = Eos::getInstance();
+   PressureGrad *DefPGrad      = PressureGrad::getDefault();
 
    I4 NTracers = Tracers::getNumTracers();
 
@@ -71,9 +77,9 @@ void Tendencies::init() {
    TimeInterval TimeStep = DefTimeStepper->getTimeStep();
 
    // Ceate default tendencies
-   Tendencies::DefaultTendencies =
-       create("Default", DefHorzMesh, DefVertCoord, DefVertAdv, NTracers,
-              TimeStep, &TendConfig, CustomThickTend, CustomVelTend);
+   Tendencies::DefaultTendencies = create(
+       "Default", DefHorzMesh, DefVertCoord, DefVertAdv, DefPGrad, DefEos,
+       NTracers, TimeStep, &TendConfig, CustomThickTend, CustomVelTend);
 
    DefaultTendencies->readConfig(OmegaConfig);
 
@@ -241,17 +247,76 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
       Err += TendConfig.get("EddyDiff4", this->TracerHyperDiff.EddyDiff4);
       CHECK_ERROR_ABORT(Err, "Tendencies: EddyDiff4 not found in TendConfig");
    }
+
+   Err += TendConfig.get("PressureGradTendencyEnable", this->PGrad->Enabled);
+   CHECK_ERROR_ABORT(
+       Err, "Tendencies: PressureGradTendencyEnable not found in TendConfig");
 }
 
 //------------------------------------------------------------------------------
+// Define fields associated with tendencies
+void Tendencies::defineFields() {
+   std::string LayerThicknessTendFieldName = "LayerThicknessTend";
+   std::string NormalVelocityTendFieldName = "NormalVelocityTend";
+   std::string TracerTendFieldName         = "TracerTend";
+   if (Name != "Default") {
+      LayerThicknessTendFieldName.append(Name);
+      NormalVelocityTendFieldName.append(Name);
+      TracerTendFieldName.append(Name);
+   }
+
+   int NDims = 2;
+   std::vector<std::string> DimNamesThickness(NDims);
+   DimNamesThickness[0] = "NCells";
+   DimNamesThickness[1] = "NVertLayers";
+   auto LayerThicknessTendField =
+       Field::create(LayerThicknessTendFieldName, "Layer thickness tendency",
+                     "m/s", "cell_thickness_tendency", -9.99E+10, 9.99E+10,
+                     -9.99E+30, NDims, DimNamesThickness);
+   NDims = 3;
+   std::vector<std::string> DimNamesTracer(NDims);
+   DimNamesTracer[0]    = "NTracers";
+   DimNamesTracer[1]    = "NCells";
+   DimNamesTracer[2]    = "NVertLayers";
+   auto TracerTendField = Field::create(
+       TracerTendFieldName, "Tracer tendency", "kg/m^3/s", "tracer_tendency",
+       -9.99E+10, 9.99E+10, -9.99E+30, NDims, DimNamesTracer);
+   NDims = 2;
+   std::vector<std::string> DimNamesVelocity(NDims);
+   DimNamesVelocity[0] = "NEdges";
+   DimNamesVelocity[1] = "NVertLayers";
+   auto NormalVelocityTendField =
+       Field::create(NormalVelocityTendFieldName, "Normal velocity tendency",
+                     "m/s^2", "sea_water_velocity_tendency", -9.99E+10,
+                     9.99E+10, -9.99E+30, NDims, DimNamesVelocity);
+
+   std::string TendGroupName = "Tendencies";
+   if (Name != "Default") {
+      TendGroupName.append(Name);
+   }
+   auto TendGroup = FieldGroup::create(TendGroupName);
+
+   TendGroup->addField(LayerThicknessTendFieldName);
+   TendGroup->addField(NormalVelocityTendFieldName);
+   TendGroup->addField(TracerTendFieldName);
+
+   LayerThicknessTendField->attachData<Array2DReal>(LayerThicknessTend);
+   NormalVelocityTendField->attachData<Array2DReal>(NormalVelocityTend);
+   TracerTendField->attachData<Array3DReal>(TracerTend);
+
+} // end defineFields
+
+//------------------------------------------------------------------------------
 // Construct a new group of tendencies
-Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
-                       const HorzMesh *Mesh,    ///< [in] Horizontal mesh
-                       const VertCoord *VCoord, ///< [in] Vertical coordinate
-                       VertAdv *VAdv,           ///< [in] Vertical advection
-                       int NTracersIn,          ///< [in] Number of tracers
-                       TimeInterval TimeStepIn, ///< [in] Time step
-                       Config *Options,         ///< [in] Configuration options
+Tendencies::Tendencies(const std::string &Name_, ///< [in] Name for tendencies
+                       const HorzMesh *Mesh,     ///< [in] Horizontal mesh
+                       VertCoord *VCoord,        ///< [in] Vertical coordinate
+                       VertAdv *VAdv,            ///< [in] Vertical advection
+                       PressureGrad *PGrad,      ///< [in] Pressure gradient
+                       Eos *EqState,             ///< [in] Equation of state
+                       int NTracersIn,           ///< [in] Number of tracers
+                       TimeInterval TimeStepIn,  ///< [in] Time step
+                       Config *Options,          ///< [in] Configuration options
                        CustomTendencyType InCustomThicknessTend,
                        CustomTendencyType InCustomVelocityTend)
     : Mesh(Mesh), VCoord(VCoord), VAdv(VAdv), ThicknessFluxDiv(Mesh, VCoord),
@@ -261,7 +326,7 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
       BottomDrag(Mesh, VCoord), TracerDiffusion(Mesh, VCoord),
       TracerHyperDiff(Mesh, VCoord), TracerHorzAdv(Mesh, VCoord),
       CustomThicknessTend(InCustomThicknessTend),
-      CustomVelocityTend(InCustomVelocityTend) {
+      CustomVelocityTend(InCustomVelocityTend), EqState(EqState), PGrad(PGrad) {
 
    // Tendency arrays
    LayerThicknessTend =
@@ -271,20 +336,27 @@ Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
    TracerTend = Array3DReal("TracerTend", NTracersIn, Mesh->NCellsSize,
                             VCoord->NVertLayers);
 
+   Name = Name_;
+
    NTracers = NTracersIn;
    TimeStep = TimeStepIn;
 
+   defineFields();
+
 } // end constructor
 
-Tendencies::Tendencies(const std::string &Name, ///< [in] Name for tendencies
-                       const HorzMesh *Mesh,    ///< [in] Horizontal mesh
-                       const VertCoord *VCoord, ///< [in] Vertical coordinate
-                       VertAdv *VAdv,           ///< [in] Vertical advection
-                       int NTracersIn,          ///< [in] Number of tracers
-                       TimeInterval TimeStepIn, ///< [in] Time step
-                       Config *Options)         ///< [in] Configuration options
-    : Tendencies(Name, Mesh, VCoord, VAdv, NTracersIn, TimeStepIn, Options,
-                 CustomTendencyType{}, CustomTendencyType{}) {}
+Tendencies::Tendencies(const std::string &Name_, ///< [in] Name for tendencies
+                       const HorzMesh *Mesh,     ///< [in] Horizontal mesh
+                       VertCoord *VCoord,        ///< [in] Vertical coordinate
+                       VertAdv *VAdv,            ///< [in] Vertical advection
+                       PressureGrad *PGrad,      ///< [in] Pressure gradient
+                       Eos *EqState,             ///< [in] Equation of state
+                       int NTracersIn,           ///< [in] Number of tracers
+                       TimeInterval TimeStepIn,  ///< [in] Time step
+                       Config *Options)          ///< [in] Configuration options
+    : Tendencies(Name_, Mesh, VCoord, VAdv, PGrad, EqState, NTracersIn,
+                 TimeStepIn, Options, CustomTendencyType{},
+                 CustomTendencyType{}) {}
 
 //------------------------------------------------------------------------------
 // Compute tendencies for layer thickness equation
@@ -360,8 +432,10 @@ void Tendencies::computeThicknessTendenciesOnly(
 void Tendencies::computeVelocityTendenciesOnly(
     const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
+    const Array3DReal &TracerArray, ///< [in] Tracer array
     int ThickTimeLevel,             ///< [in] Time level
     int VelTimeLevel,               ///< [in] Time level
+    int TracerTimeLevel,            ///< [in] Time level
     TimeInstant Time                ///< [in] Time
 ) {
 
@@ -532,6 +606,37 @@ void Tendencies::computeVelocityTendenciesOnly(
       Pacer::stop("Tend:customVelocityTend", 2);
    }
 
+   // Compute pressure gradient
+   if (PGrad->Enabled) {
+
+      // Temporary handling of surface pressure
+      Array1DReal SurfacePressure("SurfacePressure", Mesh->NCellsSize);
+      deepCopy(SurfacePressure, 0.0_Real);
+
+      Pacer::start("Tend:pressureGradTerm", 2);
+      Array2DReal LayerThick = State->getLayerThickness(ThickTimeLevel);
+      VCoord->computePressure(LayerThick, SurfacePressure);
+
+      const auto &PressureMid       = VCoord->PressureMid;
+      const auto &PressureInterface = VCoord->PressureInterface;
+      Array2DReal Temp     = Kokkos::subview(TracerArray, Tracers::IndxTemp,
+                                             Kokkos::ALL, Kokkos::ALL);
+      Array2DReal Salinity = Kokkos::subview(TracerArray, Tracers::IndxSalt,
+                                             Kokkos::ALL, Kokkos::ALL);
+      EqState->computeSpecVol(Temp, Salinity, PressureMid);
+
+      // Temporary: ensure vertical geometric/geopotential fields are updated
+      // for pressure-gradient tendency calculations.
+      const auto &SpecVol = EqState->SpecVol;
+      VCoord->computeZHeight(LayerThick, SpecVol);
+
+      const auto &ZInterface = VCoord->ZInterface;
+      PGrad->computePressureGrad(LocNormalVelocityTend, PressureMid,
+                                 PressureInterface, SpecVol, ZInterface,
+                                 LayerThick);
+      Pacer::stop("Tend:pressureGradTerm", 2);
+   }
+
    Pacer::stop("Tend:computeVelocityTendenciesOnly", 1);
 
 } // end velocity tendency compute
@@ -699,15 +804,17 @@ void Tendencies::computeThicknessTendencies(
 void Tendencies::computeVelocityTendencies(
     const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
+    const Array3DReal &TracerArray, ///< [in] Tracer array
     int ThickTimeLevel,             ///< [in] Time level
     int VelTimeLevel,               ///< [in] Time level
+    int TracerTimeLevel,            ///< [in] Time level
     TimeInstant Time                ///< [in] Time
 ) {
    Pacer::start("Tend:computeVelocityTendencies", 1);
 
    AuxState->computeMomAux(State, ThickTimeLevel, VelTimeLevel);
-   computeVelocityTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
-                                 Time);
+   computeVelocityTendenciesOnly(State, AuxState, TracerArray, ThickTimeLevel,
+                                 VelTimeLevel, TracerTimeLevel, Time);
 
    Pacer::stop("Tend:computeVelocityTendencies", 1);
 }
@@ -762,13 +869,15 @@ void Tendencies::computeAllTendencies(
     const Array3DReal &TracerArray, ///< [in] Tracer array
     int ThickTimeLevel,             ///< [in] Time level
     int VelTimeLevel,               ///< [in] Time level
+    int TracerTimeLevel,            ///< [in] Time level
     TimeInstant Time                ///< [in] Time
 ) {
    AuxState->computeAll(State, TracerArray, ThickTimeLevel, VelTimeLevel);
+
    computeThicknessTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
                                   Time);
-   computeVelocityTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
-                                 Time);
+   computeVelocityTendenciesOnly(State, AuxState, TracerArray, ThickTimeLevel,
+                                 VelTimeLevel, TracerTimeLevel, Time);
    computeTracerTendenciesOnly(State, AuxState, TracerArray, ThickTimeLevel,
                                VelTimeLevel, Time);
 } // end all tendency compute
