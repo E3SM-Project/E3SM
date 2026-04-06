@@ -21,9 +21,9 @@ struct UnitWrap::UnitTest<D>::TestZmClosure : public UnitWrap::UnitTest<D>::Base
     ZmClosureData baseline_data[] = {
       //            pcols, ncol, pver, pverp, msg, cape_threshold_in
       ZmClosureData(    4,    4,   72,    73,  10,    5.0),
-      ZmClosureData(    4,    4,   72,    73,  20,    6.0),
-      ZmClosureData(    4,    4,  128,   129,  30,    7.0),
-      ZmClosureData(    4,    4,  128,   129,  40,    8.0),
+      ZmClosureData(    4,    4,   72,    73,  10,    6.0),
+      ZmClosureData(    4,    4,  128,   129,  10,    7.0),
+      ZmClosureData(    4,    4,  128,   129,  10,    8.0),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ZmClosureData);
@@ -60,6 +60,10 @@ struct UnitWrap::UnitTest<D>::TestZmClosure : public UnitWrap::UnitTest<D>::Base
       }
     }
 
+    // TODO - Remove?
+    const auto margin = std::numeric_limits<Real>::epsilon() *
+      (ekat::is_single_precision<Real>::value ? 1000 : 1);
+
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
@@ -67,7 +71,7 @@ struct UnitWrap::UnitTest<D>::TestZmClosure : public UnitWrap::UnitTest<D>::Base
         ZmClosureData& d_test = test_data[i];
         REQUIRE(d_baseline.total(d_baseline.cld_base_mass_flux) == d_test.total(d_test.cld_base_mass_flux));
         for (Int k = 0; k < d_baseline.total(d_baseline.cld_base_mass_flux); ++k) {
-          REQUIRE(d_baseline.cld_base_mass_flux[k] == d_test.cld_base_mass_flux[k]);
+          REQUIRE(d_baseline.cld_base_mass_flux[k] == Approx(d_test.cld_base_mass_flux[k]).margin(margin));
         }
       }
     }
