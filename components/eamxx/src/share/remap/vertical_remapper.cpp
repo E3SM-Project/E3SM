@@ -337,12 +337,15 @@ create_layout (const FieldLayout& from_layout,
 
   auto from_grid = to_grid==m_src_grid ? m_tgt_grid : m_src_grid;
 
-  // If the from_grid is a Pressure grid, its layout uses LEVP which cannot be
-  // mapped to LEV or ILEV without additional information.
-  EKAT_REQUIRE_MSG (from_grid->get_vkind()!=AbstractGrid::VKind::Pressure,
-      "[VerticalRemapper::create_layout] Error! Starting layout uses LEVP which cannot be mapped to LEV/ILEV.\n"
-      "  - from grid: " + from_grid->name() + "\n"
-      "  - to grid  : " + to_grid->name() + "\n");
+  auto check_vkind = [&]() {
+    // If the from_grid is a Pressure grid, its layout uses LEVP.
+    // We cannot map LEVP to LEV or ILEV without additional information.
+    EKAT_REQUIRE_MSG (from_grid->get_vkind()!=AbstractGrid::VKind::Pressure or
+                      to_grid->get_vkind()==AbstractGrid::VKind::Pressure,
+        "[VerticalRemapper::create_layout] Error! Starting layout uses LEVP which cannot be mapped to LEV/ILEV.\n"
+        "  - from grid: " + from_grid->name() + "\n"
+        "  - to grid  : " + to_grid->name() + "\n");
+  };
 
   auto to_layout = FieldLayout::invalid();
   const bool to_grid_is_pressure = to_grid->get_vkind()==AbstractGrid::VKind::Pressure;
@@ -363,11 +366,13 @@ create_layout (const FieldLayout& from_layout,
       to_layout = to_grid->get_vertical_layout(vtag);
       break;
     case LayoutType::Scalar3D:
+      check_vkind();
       vtag = to_grid_is_pressure ? LEVP
            : (from_layout.tags().back()==LEV ? LEV : ILEV);
       to_layout = to_grid->get_3d_scalar_layout(vtag);
       break;
     case LayoutType::Vector3D:
+      check_vkind();
       vdim_name = from_layout.name(from_layout.get_vector_component_idx());
       vtag = to_grid_is_pressure ? LEVP
            : (from_layout.tags().back()==LEV ? LEV : ILEV);
