@@ -631,14 +631,15 @@ void VertCoord::minMaxLayerEdge(Halo *MeshHalo) {
    // Set the [MinLayerEdgeBot, MaxLayerEdgeTop] range to be invalid
    // on the outermost edges of the halo layer.
    OMEGA_SCOPE(LocNEdgesHalo0, NEdgesHalo0);
+   OMEGA_SCOPE(LocNCellsAll, NCellsAll);
    // start from NEdgesHalo(0) to exclude any edges of the owned cells
    parallelFor(
        {NEdgesAll - NEdgesHalo0}, KOKKOS_LAMBDA(int EdgeOffset) {
           const int IEdge = LocNEdgesHalo0 + EdgeOffset;
 
           // Is any cell on this edge an invalid (remote) cell ?
-          if (LocCellsOnEdge(IEdge, 0) == LocNEdgesAll ||
-              LocCellsOnEdge(IEdge, 1) == LocNEdgesAll) {
+          if (LocCellsOnEdge(IEdge, 0) == LocNCellsAll ||
+              LocCellsOnEdge(IEdge, 1) == LocNCellsAll) {
              LocMinLayerEdgeBot(IEdge) = LocNVertLayersP1;
              LocMaxLayerEdgeTop(IEdge) = -1;
           }
@@ -729,16 +730,17 @@ void VertCoord::minMaxLayerVertex(Halo *MeshHalo) {
    // Set the [MinLayerVertexBot, MaxLayerVertexTop] range to be invalid
    // on the outermost vertices of the halo layer.
    OMEGA_SCOPE(LocNVerticesHalo0, NVerticesHalo0);
+   OMEGA_SCOPE(LocNCellsAll, NCellsAll);
    // start from NVerticesHalo(0) to exclude any vertices of the owned cells
    parallelFor(
        {NVerticesAll - NVerticesHalo0}, KOKKOS_LAMBDA(int VertexOffset) {
           const int IVertex = LocNVerticesHalo0 + VertexOffset;
 
           // Is any cell on this vertex an invalid (remote) cell ?
-          bool IsOuterMost = LocCellsOnVertex(IVertex, 0) == LocNVerticesAll;
+          bool IsOuterMost = LocCellsOnVertex(IVertex, 0) == LocNCellsAll;
           for (int I = 1; I < LocVertexDegree; ++I) {
              IsOuterMost =
-                 IsOuterMost || LocCellsOnVertex(IVertex, I) == LocNVerticesAll;
+                 IsOuterMost || LocCellsOnVertex(IVertex, I) == LocNCellsAll;
           }
 
           if (IsOuterMost) {
