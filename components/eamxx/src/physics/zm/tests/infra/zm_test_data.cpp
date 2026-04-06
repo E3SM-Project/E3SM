@@ -57,12 +57,19 @@ void compute_cape_from_parcel_bridge_f(Int pcols, Int ncol, Int pver, Int pverp,
 void zm_conv_mcsp_calculate_shear_bridge_f(Int pcols, Int ncol, Int pver, Real* state_pmid, Real* state_u, Real* state_v, Real* mcsp_shear);
 
 void zm_conv_mcsp_tend_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Real ztodt, Int* jctop, Real* state_pmid, Real* state_pint, Real* state_pdel, Real* state_s, Real* state_q, Real* state_u, Real* state_v, Real* ptend_zm_s, Real* ptend_zm_q, Real* ptend_s, Real* ptend_q, Real* ptend_u, Real* ptend_v, Real* mcsp_dt_out, Real* mcsp_dq_out, Real* mcsp_du_out, Real* mcsp_dv_out, Real* mcsp_freq, Real* mcsp_shear, Real* zm_depth);
+
 void zm_conv_main_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, bool is_first_step, Real time_step, Real* t_mid, Real* q_mid_in, Real* omega, Real* p_mid_in, Real* p_int_in, Real* p_del_in, Real* geos, Real* z_mid_in, Real* z_int_in, Real* pbl_hgt, Real* tpert, Real* landfrac, Real* t_star, Real* q_star, Int* lengath, Int* gather_index, Int* msemax_klev_g, Int* jctop, Int* jcbot, Int* jt, Real* prec, Real* heat, Real* qtnd, Real* cape, Real* dcape, Real* mcon, Real* pflx, Real* zdu, Real* mflx_up, Real* entr_up, Real* detr_up, Real* mflx_dn, Real* entr_dn, Real* p_del, Real* dsubcld, Real* ql, Real* rliq, Real* rprd, Real* dlf);
+
 void zm_conv_evap_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Real time_step, Real* p_mid, Real* p_del, Real* t_mid, Real* q_mid, Real* prdprec, Real* cldfrc, Real* tend_s, Real* tend_q, Real* tend_s_snwprd, Real* tend_s_snwevmlt, Real* prec, Real* snow, Real* ntprprd, Real* ntsnprd, Real* flxprec, Real* flxsnow);
+
 void zm_calc_fractional_entrainment_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Int* jb, Int* jt, Int* j0, Real* z_mid, Real* z_int, Real* dz, Real* h_env, Real* h_env_sat, Real* h_env_min, Real* lambda, Real* lambda_max);
+
 void zm_downdraft_properties_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Int* jb, Int* jt, Int* j0, Int* jd, Real* z_int, Real* dz, Real* s_mid, Real* q_mid, Real* h_env, Real* lambda, Real* lambda_max, Real* qsthat, Real* hsthat, Real* gamhat, Real* rprd, Real* mflx_up, Real* mflx_dn, Real* entr_dn, Real* s_dnd, Real* q_dnd, Real* h_dnd, Real* q_dnd_sat, Real* evp, Real* totevp);
+
 void zm_cloud_properties_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Int limcnv, Real* p_mid, Real* z_mid, Real* z_int, Real* t_mid, Real* s_mid, Real* s_int, Real* q_mid, Real* landfrac, Real* tpert_g, Int* jb, Int* lel, Int* jt, Int* jlcl, Int* j0, Int* jd, Real* mflx_up, Real* entr_up, Real* detr_up, Real* mflx_dn, Real* entr_dn, Real* mflx_net, Real* s_upd, Real* q_upd, Real* ql, Real* s_dnd, Real* q_dnd, Real* qst, Real* cu, Real* evp, Real* pflx, Real* rprd);
+
 void zm_closure_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Real cape_threshold_in, Int* lcl, Int* lel, Int* jt, Int* mx, Real* dsubcld, Real* z_mid, Real* z_int, Real* p_mid, Real* p_del, Real* t_mid, Real* s_mid, Real* q_mid, Real* qs, Real* ql, Real* s_int, Real* q_int, Real* t_pcl_lcl, Real* t_pcl, Real* q_pcl_sat, Real* s_upd, Real* q_upd, Real* mflx_net, Real* detr_up, Real* mflx_up, Real* mflx_dn, Real* q_dnd, Real* s_dnd, Real* cape, Real* cld_base_mass_flux);
+
 void zm_calc_output_tend_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Int* jt, Int* mx, Real* dsubcld, Real* p_del, Real* s_int, Real* q_int, Real* s_upd, Real* q_upd, Real* mflx_up, Real* detr_up, Real* mflx_dn, Real* s_dnd, Real* q_dnd, Real* ql, Real* evp, Real* cu, Real* dsdt, Real* dqdt, Real* dl);
 } // extern "C" : end _f decls
 

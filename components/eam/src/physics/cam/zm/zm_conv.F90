@@ -699,7 +699,11 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, time_step, &
    call qsat( t_mid(1:ncol,1:pver), p_mid(1:ncol,1:pver), es(1:ncol,1:pver), qs(1:ncol,1:pver))
 
    ! determine ice fraction in rain production (use cloud water parameterization fraction at present)
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   call cldfrc_fice(ncol, pver, 1, t_mid, fice, fsnow_conv)
+#else
    call cldfrc_fice(ncol, t_mid, fice, fsnow_conv)
+#endif
 
    ! zero the flux integrals on the top boundary
    flxprec(:ncol,1) = 0._r8
