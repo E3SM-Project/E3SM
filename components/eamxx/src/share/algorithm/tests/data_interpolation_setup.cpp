@@ -120,7 +120,6 @@ TEST_CASE ("data_interpolation_setup")
     }
 
     for (const std::string& fname : files) {
-      write_timestamp(fname+suffix,"reference_time_stamp",t_ref);
       scorpio::release_file(fname+suffix);
     }
   }

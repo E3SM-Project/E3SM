@@ -245,21 +245,9 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
     const auto filename = list_of_files[ii];
     // Reference TimeStamp
     scorpio::register_file(filename,scorpio::FileMode::Read);
-    auto ts_file_start = read_timestamp(filename,"case_t0");
-    // Gather the units of time
+    // Parse CF-compliant time units to get both the reference timestamp and the multiplier
     auto time_units = scorpio::get_attribute<std::string>(filename,"time","units");
-    int time_mult;
-    if (time_units.find("seconds") != std::string::npos) {
-      time_mult = 1;
-    } else if (time_units.find("minutes") != std::string::npos) {
-      time_mult = 60;
-    } else if (time_units.find("hours") != std::string::npos) {
-      time_mult = 3600;
-    } else if (time_units.find("days") != std::string::npos) {
-      time_mult = 86400;
-    } else {
-      EKAT_ERROR_MSG("Error!! TimeInterpolation::set_file_triplets - unsupported units of time = (" << time_units << ") in source data file " << filename << ", supported units are: seconds, minutes, hours and days");
-    }
+    auto [ts_file_start, time_mult] = parse_cf_time_units(time_units);
     // Gather information about time in this file
     if (ii==0) {
       ts_ref = ts_file_start;
