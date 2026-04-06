@@ -47,21 +47,21 @@ public:
   using data_nd_t = typename ekat::DataND<T,N>::type;
 
   // Types of device and host views given data type and memory traits
-  template<typename DT, typename MT = Kokkos::MemoryManaged>
+  template<typename DT, typename MT = Kokkos::MemoryTraits<0>>
   using view_dev_t = typename kt_dev::template view<DT,MT>;
-  template<typename DT, typename MT = Kokkos::MemoryManaged>
+  template<typename DT, typename MT = Kokkos::MemoryTraits<0>>
   using view_host_t = typename kt_host::template view<DT,MT>;
 
   // Analogue of the above, but with LayoutStride
-  template<typename DT, typename MT = Kokkos::MemoryManaged>
+  template<typename DT, typename MT = Kokkos::MemoryTraits<0>>
   using strided_view_dev_t = typename kt_dev::template sview<DT,MT>;
-  template<typename DT, typename MT = Kokkos::MemoryManaged>
+  template<typename DT, typename MT = Kokkos::MemoryTraits<0>>
   using strided_view_host_t = typename kt_host::template sview<DT,MT>;
 
 private:
   // A bare DualView-like struct. This is an impl detail, so don't expose it.
   // NOTE: we could use DualView, but all we need is a container-like struct.
-  template<typename DT, typename MT = Kokkos::MemoryManaged>
+  template<typename DT, typename MT = Kokkos::MemoryTraits<0>>
   struct dual_view_t {
     view_dev_t<DT,MT>   d_view;
     view_host_t<DT,MT>  h_view;
@@ -78,10 +78,10 @@ private:
 public:
 
   // Type of a view given data type, HostOrDevice enum, and memory traits
-  template<typename DT, HostOrDevice HD, typename MT = Kokkos::MemoryManaged>
+  template<typename DT, HostOrDevice HD, typename MT = Kokkos::MemoryTraits<0>>
   using get_view_type = std::conditional_t<HD==Device,view_dev_t<DT,MT>,view_host_t<DT,MT>>;
 
-  template<typename DT, HostOrDevice HD, typename MT = Kokkos::MemoryManaged>
+  template<typename DT, HostOrDevice HD, typename MT = Kokkos::MemoryTraits<0>>
   using get_strided_view_type = std::conditional_t<HD==Device,strided_view_dev_t<DT,MT>,strided_view_host_t<DT,MT>>;
 
   // Field stack classes types
