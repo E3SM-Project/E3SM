@@ -6,7 +6,7 @@ endif()
 
 string(APPEND CMAKE_EXE_LINKER_FLAGS " -lxpmem -L$ENV{CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa -Wl,-rpath,$ENV{CRAY_MPICH_ROOTDIR}/gtl/lib")
 
-# Need to look into using _APU
+# APU won't work on TUO https://github.com/E3SM-Project/E3SM/pull/6916#issuecomment-2714751287
 string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=ON -DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_OPENMP=OFF -DKokkos_ARCH_ZEN4=ON -DKokkos_ARCH_AMD_GFX942=ON -DKokkos_ARCH_AMD_GFX942_APU=OFF")
 
 string(APPEND CMAKE_HIP_FLAGS "${CXXFLAGS} -O2 -munsafe-fp-atomics")
