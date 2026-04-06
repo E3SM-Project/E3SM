@@ -837,7 +837,7 @@ void Tendencies::computeTracerTendenciesOnly(
           });
       Pacer::stop("Tend:surfaceTracerRestoring", 2);
    }
-   
+
    Pacer::stop("Tend:computeTracerTendenciesOnly", 1);
 } // end tracer tendency compute
 
