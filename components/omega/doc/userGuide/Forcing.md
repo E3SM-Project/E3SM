@@ -56,7 +56,6 @@ Omega:
   SurfaceRestoring:
     TracersToRestore: [Temperature, Salinity]
     PistonVelocity: 1.585e-5
-    MaxDiff: 100.0
 
   Tendencies:
     SurfaceTracerRestoringEnable: true
@@ -64,7 +63,6 @@ Omega:
 
 - `TracersToRestore`: list of tracer names that restoring is applied to
 - `PistonVelocity`: restoring rate coefficient
-- `MaxDiff`: cap on restoring difference magnitude
 - `SurfaceTracerRestoringEnable`: switch to enable surface tracer restoring
 
 When restoring is enabled, Omega resolves `TracersToRestore` into an internal
@@ -78,7 +76,7 @@ Surface restoring uses auxiliary fields:
 - `SurfTracerRestoringDiffsCell`: computed target-minus-state differences
 
 The restoring tendency is computed at the surface layer only and is limited by
-`MaxDiff`.
+the configured `PistonVelocity` and target-minus-state difference.
 
 ## Notes
 
@@ -86,4 +84,3 @@ The restoring tendency is computed at the surface layer only and is limited by
   applied to that tracer.
 - If surface restoring is enabled but no tracer IDs are available at tendency
   compute-time, Omega aborts with an error.
-- `MaxDiff` must be positive. A runtime check will error out if not.

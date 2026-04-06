@@ -40,11 +40,9 @@ pathways in Omega, currently this includes:
 
 ### Surface tracer restoring data flow
 
-1. External fields provide target values: `TracersMonthlySurfClimoCell`
-2. Auxiliary-state compute forms bounded restoring differences:
-   - `SurfTracerRestoringDiffsCell = clamp(target - tracer_surface, +/- MaxDiff)`
-3. Tendency term applies restoring only at surface layer and only for tracers
-  selected from `SurfaceRestoring.TracersToRestore`.
+1. External fields provide target values: `TracersMonthlySurfClimoCell` (values and units should match the state variables)
+2. Auxiliary-state compute forms restoring differences: `SurfTracerRestoringDiffsCell = target - tracer_surface`
+3. Tendency term applies restoring only at surface layer and only for tracers selected from `SurfaceRestoring.TracersToRestore`.
 
 ### Surface tracer restoring key classes/components
 
@@ -63,8 +61,6 @@ pathways in Omega, currently this includes:
 
 ### Surface tracer restoring config coupling
 
-- `Omega.SurfaceRestoring.MaxDiff`
-  - bound for restoring differences
 - `Omega.SurfaceRestoring.PistonVelocity`
   - tendency scaling
 - `Omega.SurfaceRestoring.TracersToRestore`
@@ -74,11 +70,10 @@ pathways in Omega, currently this includes:
 
 ## Notes
 
-- If a tracer is not listed in `TracersToRestore`, no restoring tendency is
-  applied to that tracer.
-- If restoring is enabled but no tracer IDs are available at tendency
-  compute-time, Omega aborts with an error.
-- `MaxDiff` must be positive. A runtime check will error out if not.
-- It is assumed that the incoming `TracersMonthlySurfClimoCell` values have the correct units appropriate for Omega. If this is not true, conversion should be implemented.
+- If a tracer is not listed in `TracersToRestore`, no restoring tendency is applied to that tracer.
+- If restoring is enabled but no tracer IDs are available at tendency compute-time, Omega aborts with an error.
+- It is assumed that the incoming `TracersMonthlySurfClimoCell` fields (values and units) match the Omega state variables (i.e. conservative temperature and absolute salinity for Teos-10). If not, a pre-processing conversion should be implemented.
 - Surface tracer restoring is active everywhere if enabled. A flag to turn it off under sea ice will need to be added in later development if this feature is desired.
-- A global sum has not been implemented for the surface tracer restoring, but should be added in later development.
+- Unlike MPAS-Ocean, a `MaxDiff` clamping is not applied here. This check should instead be implemented in Ocean Validate when that is available.
+- A global scaling to ensure zero-sum has not been implemented for the surface tracer restoring, but should be added in later development.
+- At this stage, there is no temporal interpolation applied to the restoring targets, the raw `TracersMonthlySurfClimoCell` snapshot is used.

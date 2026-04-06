@@ -1060,9 +1060,7 @@ int testSurfaceTracerRestoringOnCell(int NVertLayers, int NTracers, Real RTol) {
       deepCopy(NumSurfRest, 0);
 
       // Set Input Field values. Use a combination of scalarB and vectorX to
-      // ensure the full surface tracer restoring logic is exercised (i.e.,
-      // cases where the difference is >, <, and within the max-difference
-      // threshold).
+      // ensure the full surface tracer restoring logic is exercised.
       Err += setScalar(
           KOKKOS_LAMBDA(Real X, Real Y) {
              return Setup.scalarB(X, Y) + Setup.vectorX(X, Y);
@@ -1081,9 +1079,6 @@ int testSurfaceTracerRestoringOnCell(int NVertLayers, int NTracers, Real RTol) {
           });
 
       SurfaceTracerRestoringOnCell SurfRestOnC(Mesh);
-      SurfRestOnC.MaxDiff = 0.5; // choose a small max‑difference so all
-                                 // three branches (>MaxDiff, <-MaxDiff,
-                                 // inside) are exercised.
       SurfRestOnC.PistonVelocity = 1.585e-5;
 
       // Build host-selected tracer IDs for restoring and copy to device.
@@ -1107,9 +1102,7 @@ int testSurfaceTracerRestoringOnCell(int NVertLayers, int NTracers, Real RTol) {
              const Real Diff = TracersMonthlySurfClimoCell(L, ICell) -
                                TracersOnCell(L, ICell, 0);
 
-             ExactSurfRest(L, ICell, 0) =
-                 SurfRestOnC.PistonVelocity *
-                 Kokkos::clamp(Diff, -SurfRestOnC.MaxDiff, SurfRestOnC.MaxDiff);
+             ExactSurfRest(L, ICell, 0) = SurfRestOnC.PistonVelocity * Diff;
           });
 
       // Compute numerical result

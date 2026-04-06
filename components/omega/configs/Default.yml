@@ -34,7 +34,6 @@ Omega:
   SurfaceRestoring:
     TracersToRestore: [Temperature, Salinity]
     PistonVelocity: 1.585e-5
-    MaxDiff: 100.0
   VertCoord:
     MovementWeightType: Uniform
   PressureGrad:
