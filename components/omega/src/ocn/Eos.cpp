@@ -39,11 +39,11 @@ Eos::Eos(const std::string &Name, ///< [in] Name for eos object
       ComputeBruntVaisalaFreqSqLinear(VCoord),
       ComputeBruntVaisalaFreqSqTeos10(VCoord), Name(Name), Mesh(Mesh),
       VCoord(VCoord) {
-   SpecVol = Array2DReal("SpecVol", Mesh->NCellsAll, VCoord->NVertLayers);
+   SpecVol = Array2DReal("SpecVol", Mesh->NCellsSize, VCoord->NVertLayers);
    SpecVolDisplaced =
-       Array2DReal("SpecVolDisplaced", Mesh->NCellsAll, VCoord->NVertLayers);
+       Array2DReal("SpecVolDisplaced", Mesh->NCellsSize, VCoord->NVertLayers);
    BruntVaisalaFreqSq =
-       Array2DReal("BruntVaisalaFreqSq", Mesh->NCellsAll, VCoord->NVertLayers);
+       Array2DReal("BruntVaisalaFreqSq", Mesh->NCellsSize, VCoord->NVertLayers);
 
    defineFields();
 }

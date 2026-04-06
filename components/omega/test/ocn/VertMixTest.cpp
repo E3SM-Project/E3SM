@@ -105,7 +105,6 @@ void testBackVertMix() {
    VCoord->NVertLayers = NVertLayers;
    I4 NCellsSize       = Mesh->NCellsSize;
    I4 NEdgesSize       = Mesh->NEdgesSize;
-   I4 NCellsAll        = Mesh->NCellsAll;
    I4 NEdgesAll        = Mesh->NEdgesAll;
    OMEGA_SCOPE(ZMid, VCoord->ZMid);
 
@@ -126,7 +125,7 @@ void testBackVertMix() {
    deepCopy(TestVertMix->VertVisc, 0.0);
 
    parallelFor(
-       "populateArrays", {NCellsAll, NVertLayers},
+       "populateArrays", {Mesh->NCellsAll, NVertLayers},
        KOKKOS_LAMBDA(I4 ICell, I4 K) { ZMid(ICell, K) = -K; });
 
    parallelFor(
@@ -231,7 +230,7 @@ void testConvVertMix() {
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
    VCoord->NVertLayers = NVertLayers;
-   I4 NCellsAll        = Mesh->NCellsAll;
+   I4 NCellsSize       = Mesh->NCellsSize;
    I4 NEdgesAll        = Mesh->NEdgesAll;
    OMEGA_SCOPE(ZMid, VCoord->ZMid);
 
@@ -242,7 +241,7 @@ void testConvVertMix() {
    auto NormalVelEdge = Array2DReal("NormalVelEdge", NEdgesAll, NVertLayers);
    auto TangVelEdge   = Array2DReal("TangVelEdge", NEdgesAll, NVertLayers);
    auto BruntVaisalaFreqSqCell =
-       Array2DReal("BruntVaisalaFreqSqCell", NCellsAll, NVertLayers);
+       Array2DReal("BruntVaisalaFreqSqCell", NCellsSize, NVertLayers);
 
    /// Use deep copy to initialize with the ref value
    deepCopy(NormalVelEdge, NV);
@@ -252,7 +251,7 @@ void testConvVertMix() {
    deepCopy(TestVertMix->VertVisc, 0.0);
 
    parallelFor(
-       "populateArrays", {NCellsAll, NVertLayers},
+       "populateArrays", {Mesh->NCellsAll, NVertLayers},
        KOKKOS_LAMBDA(I4 ICell, I4 K) { ZMid(ICell, K) = -K; });
 
    parallelFor(
@@ -358,7 +357,7 @@ void testShearVertMix() {
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
    VCoord->NVertLayers = NVertLayers;
-   I4 NCellsAll        = Mesh->NCellsAll;
+   I4 NCellsSize       = Mesh->NCellsSize;
    I4 NEdgesAll        = Mesh->NEdgesAll;
    OMEGA_SCOPE(ZMid, VCoord->ZMid);
    OMEGA_SCOPE(NEdgesOnCell, Mesh->NEdgesOnCell);
@@ -373,7 +372,7 @@ void testShearVertMix() {
    auto NormalVelEdge = Array2DReal("NormalVelEdge", NEdgesAll, NVertLayers);
    auto TangVelEdge   = Array2DReal("TangVelEdge", NEdgesAll, NVertLayers);
    auto BruntVaisalaFreqSqCell =
-       Array2DReal("BruntVaisalaFreqSqCell", NCellsAll, NVertLayers);
+       Array2DReal("BruntVaisalaFreqSqCell", NCellsSize, NVertLayers);
 
    /// Use Kokkos::deep_copy to fill the entire view with the ref value
    deepCopy(NormalVelEdge, NV);
@@ -383,7 +382,7 @@ void testShearVertMix() {
    deepCopy(TestVertMix->VertVisc, 0.0);
 
    parallelFor(
-       "populateArrays", {NCellsAll, NVertLayers},
+       "populateArrays", {Mesh->NCellsAll, NVertLayers},
        KOKKOS_LAMBDA(I4 ICell, I4 K) {
           ZMid(ICell, K)      = -K;
           NEdgesOnCell(ICell) = 5;
@@ -508,7 +507,7 @@ void testTotalVertMix() {
    const auto Mesh     = HorzMesh::getDefault();
    const auto VCoord   = VertCoord::getDefault();
    VCoord->NVertLayers = NVertLayers;
-   I4 NCellsAll        = Mesh->NCellsAll;
+   I4 NCellsSize       = Mesh->NCellsSize;
    I4 NEdgesAll        = Mesh->NEdgesAll;
    OMEGA_SCOPE(ZMid, VCoord->ZMid);
    OMEGA_SCOPE(NEdgesOnCell, Mesh->NEdgesOnCell);
@@ -523,7 +522,7 @@ void testTotalVertMix() {
    auto NormalVelEdge = Array2DReal("NormalVelEdge", NEdgesAll, NVertLayers);
    auto TangVelEdge   = Array2DReal("TangVelEdge", NEdgesAll, NVertLayers);
    auto BruntVaisalaFreqSqCell =
-       Array2DReal("BruntVaisalaFreqSqCell", NCellsAll, NVertLayers);
+       Array2DReal("BruntVaisalaFreqSqCell", NCellsSize, NVertLayers);
 
    /// Use deep copy to initialize with the ref value
    deepCopy(NormalVelEdge, NV);
@@ -535,7 +534,7 @@ void testTotalVertMix() {
    deepCopy(TestVertMix->VertVisc, 0.0);
 
    parallelFor(
-       "populateArrays", {NCellsAll, NVertLayers},
+       "populateArrays", {Mesh->NCellsAll, NVertLayers},
        KOKKOS_LAMBDA(I4 ICell, I4 K) {
           ZMid(ICell, K)      = -K;
           NEdgesOnCell(ICell) = 5;
