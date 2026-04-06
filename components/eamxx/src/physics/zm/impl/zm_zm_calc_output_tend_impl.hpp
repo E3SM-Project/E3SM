@@ -21,6 +21,8 @@ void Functions<S,D>::zm_calc_output_tend(
   const Int& msg, // number of levels to ignore at model top
   const Int& jt, // level index of updraft top
   const Int& mx, // level index of updraft base
+  const Int& ktm, // min jt over all columns
+  const Int& kbm, // min mx over all columns
   const Real& dsubcld, // sub-cloud layer thickness
   const uview_1d<const Real>& p_del, // pressure thickness
   const uview_1d<const Real>& s_int, // ambient interface dry energy
@@ -41,14 +43,8 @@ void Functions<S,D>::zm_calc_output_tend(
   const uview_1d<Real>& dl) // output tendency for cloud liquid water
 {
   //----------------------------------------------------------------------------
-  // find the highest level top and bottom levels of convection
-  // trivial for single column: ktm = jt, kbm = mx
-  const Int ktm = jt;
-  const Int kbm = mx;
-
-  //----------------------------------------------------------------------------
   // initialize variables
-  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg+1, pver), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg, pver), [&] (const Int& k) {
     dsdt(k) = 0;
     dqdt(k) = 0;
     dl(k)   = 0;

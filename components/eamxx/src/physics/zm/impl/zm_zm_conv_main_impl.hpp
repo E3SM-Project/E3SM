@@ -136,7 +136,7 @@ void Functions<S,D>::zm_conv_main(
   });
   team.team_barrier();
 
-  //----------------------------------------------------------------------------
+
   // Calculate local pressure [mb] and height [m] for both interface and mid-point
   Kokkos::single(Kokkos::PerTeam(team), [&] () {
     z_srf = geos / gravit;
@@ -385,9 +385,10 @@ void Functions<S,D>::zm_conv_main(
 
   //----------------------------------------------------------------------------
   // Compute temperature and moisture changes due to convection
+  int ktm=-1, ktb=-1; // TODO fix
   zm_calc_output_tend(team,
                       pver, pverp, msg,
-                      jt, msemax_klev, dsubcld,
+                      jt, msemax_klev, ktm, ktb, dsubcld,
                       p_del,
                       s_int, q_int, s_upd, q_upd,
                       mflx_up, detr_up, mflx_dn, s_dnd, q_dnd,

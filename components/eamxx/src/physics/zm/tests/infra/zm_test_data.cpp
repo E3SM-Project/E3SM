@@ -1865,6 +1865,21 @@ void zm_calc_output_tend(ZmCalcOutputTendData& d)
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
+  Int ktm, kbm;
+  Kokkos::RangePolicy<ExeSpace> rpolicy(0, d.pcols);
+  Kokkos::parallel_reduce("FindMinJt", rpolicy, KOKKOS_LAMBDA(const int i, Int& update) {
+    if (jt_d(i) < update) {
+      update = jt_d(i);
+    }
+  }, Kokkos::Min<Int>(ktm));
+
+  Kokkos::parallel_reduce("FindMinMx", rpolicy, KOKKOS_LAMBDA(const int i, Int& update) {
+    if (mx_d(i) < update) {
+      update = mx_d(i);
+    }
+  }, Kokkos::Min<Int>(kbm));
+
+
   // unpack data scalars because we do not want the lambda to capture d
   const Int msg = d.msg;
   const Int pver = d.pver;
@@ -1899,6 +1914,8 @@ void zm_calc_output_tend(ZmCalcOutputTendData& d)
       msg,
       jt_d(i),
       mx_d(i),
+      ktm,
+      kbm,
       dsubcld_d(i),
       p_del_c,
       s_int_c,
