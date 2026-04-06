@@ -340,6 +340,19 @@
         </rootpe>
       </pes>
     </mach>
+    <mach name="bebop">
+      <pes compset="DATM.+MPASO.+WW3" pesize="any">
+        <comment>--res TL319_EC30to60E2r2_wQU225EC30to60E2r2 --compset GMPAS-JRA1p5-WW3</comment>
+        <ntasks>
+          <ntasks_atm>-1</ntasks_atm>
+          <ntasks_rof>-1</ntasks_rof>
+          <ntasks_ice>-4</ntasks_ice>
+          <ntasks_ocn>-4</ntasks_ocn>
+          <ntasks_cpl>-4</ntasks_cpl>
+          <ntasks_wav>-4</ntasks_wav>
+        </ntasks>
+      </pes>
+    </mach>
   </grid>
   <grid name="oi%ECwISC30to60E2r1">
     <mach name="chrysalis">

@@ -391,13 +391,14 @@
       </queues>
     </batch_system>
 
-    <batch_system MACH="bebop" type="slurm" >
-      <queues>
-	<queue walltimemax="00:30:00" nodemax="64" strict="true">debug</queue>
-        <queue walltimemax="01:00:00" nodemax="608" default="true">bdw</queue>
-        <queue walltimemax="01:00:00" nodemax="512">knl</queue>
-      </queues>
-    </batch_system>
+  <batch_system MACH="bebop" type="pbspro">
+    <directives>
+      <directive> -l select={{ num_nodes }}:mpiprocs={{ tasks_per_node }} </directive>
+    </directives>
+    <queues>
+      <queue walltimemax="03:00:00" nodemin="1" nodemax="672" strict="true" default="true">bdwall</queue>
+    </queues>
+  </batch_system>
 
   <batch_system MACH="improv" type="pbspro">
     <directives>
