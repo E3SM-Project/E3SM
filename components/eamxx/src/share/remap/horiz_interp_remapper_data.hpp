@@ -35,7 +35,7 @@ public:
   template<typename T>
   using view_1d = typename KT::template view_1d<T>;
 
-  // If src/tgt grids are already avail, use it
+  // If src/tgt grids are already avail, use them
   void build (const std::shared_ptr<const AbstractGrid>& src_grid,
               const std::shared_ptr<const AbstractGrid>& tgt_grid,
               const std::string& map_file);
