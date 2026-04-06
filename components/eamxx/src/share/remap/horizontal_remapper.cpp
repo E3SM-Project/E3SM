@@ -15,6 +15,31 @@ namespace scream
 {
 
 HorizontalRemapper::
+HorizontalRemapper (const grid_ptr_type& src_grid,
+                    const grid_ptr_type& tgt_grid,
+                    const std::string& map_file,
+                    const bool track_mask)
+ : m_track_mask (track_mask)
+{
+  set_name("HorizRemapper " + map_file);
+
+  m_remap_data = HorizRemapperDataRepo::instance().get_data(src_grid,tgt_grid,map_file);
+
+  EKAT_REQUIRE_MSG (src_grid->get_num_vertical_levels()==tgt_grid->get_num_vertical_levels(),
+      "Error! Source and target grids have a different number of vertical levels.\n"
+      " - remapper: " + name() + "\n"
+      " - src grid name: " + src_grid->name() + "\n"
+      " - tgt grid name: " + tgt_grid->name() + "\n"
+      " - src grid nlevs: " + std::to_string(src_grid->get_num_vertical_levels()) + "\n"
+      " - tgt grid nlevs: " + std::to_string(tgt_grid->get_num_vertical_levels()) + "\n");
+
+  set_grids (src_grid,tgt_grid);
+
+  // Horiz remappers are built from a map file, which only goes in one direction
+  m_bwd_allowed = false;
+}
+
+HorizontalRemapper::
 HorizontalRemapper (const grid_ptr_type& grid,
                     const std::string& map_file,
                     const bool track_mask)
@@ -22,43 +47,37 @@ HorizontalRemapper (const grid_ptr_type& grid,
 {
   set_name("HorizRemapper " + map_file);
 
+  m_remap_data = HorizRemapperDataRepo::instance().get_data(grid,map_file);
+
   // Horiz remappers are built from a map file, which only goes in one direction
   m_bwd_allowed = false;
 
-  // Sanity checks
-  EKAT_REQUIRE_MSG (grid->type()==GridType::Point,
-      "Error! Horizontal interpolatory remap only works on PointGrid grids.\n"
-      "  - grid name: " + grid->name() + "\n"
-      "  - grid_type: " + e2str(grid->type()) + "\n");
-  EKAT_REQUIRE_MSG (grid->is_unique(),
-      "Error! HorizInterpRemapperBase requires a unique grid.\n");
-
-  // Get the remap data (if not already present, it will be built)
-  m_remap_data = HorizRemapperDataRepo::instance().get_data(grid,map_file);
-
+  auto built_from_src = grid==m_remap_data->m_src_grid;
   // The grids really only matter for the horiz part. We may have 2+ remappers with
   // grids that only differ in terms of number of levs. Such remappers cannot
   // store the same generated grid.
   // So we soft-clone the generated grid, and reset the number of levels.
   // This requires to also delete any geo data that has the lev dim, as we cannot map it
-  auto gen_grid = m_remap_data->m_generated_grid->clone(map_file,true);
-  gen_grid->reset_num_vertical_lev(grid->get_num_vertical_levels());
+
+  auto gen_grid = built_from_src ? m_remap_data->m_tgt_grid : m_remap_data->m_src_grid;
+  auto other_grid = gen_grid->clone(gen_grid->name(),true);
+  other_grid->reset_num_vertical_lev(grid->get_num_vertical_levels());
   using namespace ShortFieldTagsNames;
   for (const auto& name : gen_grid->get_geometry_data_names()) {
     const auto& f = gen_grid->get_geometry_data(name);
     const auto& fl = f.get_header().get_identifier().get_layout();
     if (fl.has_tag(LEV) or fl.has_tag(ILEV)) {
-      gen_grid->delete_geometry_data(name);
+      other_grid->delete_geometry_data(name);
     }
   }
 
-  if (m_remap_data->m_built_from_src) {
-    set_grids(grid,gen_grid);
+  if (built_from_src) {
+    set_grids(grid,other_grid);
   } else {
-    set_grids(gen_grid,grid);
+    set_grids(other_grid,grid);
   }
 
-  if (m_remap_data->m_built_from_src) {
+  if (built_from_src) {
     // If the src grid contains geo data that is not in the tgt grid, then transfer it.
     // If the geo data has the COL dimension, then remap it.
     const auto& src_geo_data_names = m_src_grid->get_geometry_data_names();
