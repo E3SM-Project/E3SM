@@ -300,7 +300,6 @@ void call_function_dropmixnuc(
       "MAMAci::run_impl::call_function_dropmixnuc", team_policy,
       KOKKOS_LAMBDA(const mam4::ThreadTeam &team) {
         const int icol = team.league_rank();
-        // for (int icol=0; icol<5; ++icol){
         MAMAci::view_3d raercol_cw_view = ekat::subview(loc_raercol_cw, icol);
 	MAMAci::view_3d raercol_view    = ekat::subview(loc_raercol, icol);
         MAMAci::view_2d qqcw_view       = ekat::subview(qqcw_fld_work_loc, icol);
