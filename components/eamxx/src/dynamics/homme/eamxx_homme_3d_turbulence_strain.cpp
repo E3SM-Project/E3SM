@@ -86,6 +86,7 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
   const int nelem      = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
   const int n0         = tl.n0;
   const int nlev_pack  = state.m_v.extent_int(5);
+  const auto w_int_dyn = state.m_w_i;
 
   // Store outputs as scalar Real fields.
   auto grad_Ux_dyn = m_helper_fields.at("grad_Ux_dyn").template get_view<Real*****>();
@@ -119,23 +120,77 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
     Scalar dsdx_Uz = 0.0;
     Scalar dsdy_Uz = 0.0;
 
-    // Put winds into cartesian coordinates.  Note that this initial implementation
-    //  is going to ignore vertical velocity for simplicity.  Will add later.
     for (int kgp = 0; kgp < NGP; ++kgp) {
-      const Scalar Ux_row = horiz_wind_to_cart_component(
-          state.m_v, vec_sph2cart, ie, n0, 0, igp, kgp, ilev_pack);
-      const Scalar Ux_col = horiz_wind_to_cart_component(
-          state.m_v, vec_sph2cart, ie, n0, 0, kgp, jgp, ilev_pack);
 
-      const Scalar Uy_row = horiz_wind_to_cart_component(
-          state.m_v, vec_sph2cart, ie, n0, 1, igp, kgp, ilev_pack);
-      const Scalar Uy_col = horiz_wind_to_cart_component(
-          state.m_v, vec_sph2cart, ie, n0, 1, kgp, jgp, ilev_pack);
+      Scalar Ux_row = 0.0;
+      Scalar Ux_col = 0.0;
+      Scalar Uy_row = 0.0;
+      Scalar Uy_col = 0.0;
+      Scalar Uz_row = 0.0;
+      Scalar Uz_col = 0.0;
 
-      const Scalar Uz_row = horiz_wind_to_cart_component(
-          state.m_v, vec_sph2cart, ie, n0, 2, igp, kgp, ilev_pack);
-      const Scalar Uz_col = horiz_wind_to_cart_component(
-          state.m_v, vec_sph2cart, ie, n0, 2, kgp, jgp, ilev_pack);
+      for (int s = 0; s < VLEN; ++s) {
+        const int ilev = ilev_pack*VLEN + s;
+
+        if (ilev < nlev_scalar) {
+
+          // --- existing horiz contribution ---
+          const Real Ux_row_h = horiz_wind_to_cart_component(
+              state.m_v, vec_sph2cart, ie, n0, 0, igp, kgp, ilev_pack)[s];
+
+          const Real Ux_col_h = horiz_wind_to_cart_component(
+              state.m_v, vec_sph2cart, ie, n0, 0, kgp, jgp, ilev_pack)[s];
+
+          const Real Uy_row_h = horiz_wind_to_cart_component(
+              state.m_v, vec_sph2cart, ie, n0, 1, igp, kgp, ilev_pack)[s];
+
+          const Real Uy_col_h = horiz_wind_to_cart_component(
+              state.m_v, vec_sph2cart, ie, n0, 1, kgp, jgp, ilev_pack)[s];
+
+          const Real Uz_row_h = horiz_wind_to_cart_component(
+              state.m_v, vec_sph2cart, ie, n0, 2, igp, kgp, ilev_pack)[s];
+
+          const Real Uz_col_h = horiz_wind_to_cart_component(
+              state.m_v, vec_sph2cart, ie, n0, 2, kgp, jgp, ilev_pack)[s];
+
+          // --- vertical velocity ---
+          // TEMPORARY HACK:
+          // use interface w at the same scalar index as the midpoint level.
+          // This avoids midpoint interpolation issues for now.
+          // Replace with ColumnOps::compute_midpoint_values later.
+
+          const auto w_row_pack = w_int_dyn(ie,n0,igp,kgp,ilev_pack);
+          const auto w_col_pack = w_int_dyn(ie,n0,kgp,jgp,ilev_pack);
+
+          const Real w_row = w_row_pack[s];
+          const Real w_col = w_col_pack[s];
+
+          // --- NEW: project w into Cartesian ---
+          const Real wx_row =
+              vec_sph2cart(ie,0,0,igp,kgp) * w_row;
+          const Real wy_row =
+              vec_sph2cart(ie,0,1,igp,kgp) * w_row;
+          const Real wz_row =
+              vec_sph2cart(ie,0,2,igp,kgp) * w_row;
+
+          const Real wx_col =
+              vec_sph2cart(ie,1,0,kgp,jgp) * w_col;
+          const Real wy_col =
+              vec_sph2cart(ie,1,1,kgp,jgp) * w_col;
+          const Real wz_col =
+              vec_sph2cart(ie,1,2,kgp,jgp) * w_col;
+
+          // --- combine ---
+          Ux_row[s] = Ux_row_h + wx_row;
+          Ux_col[s] = Ux_col_h + wx_col;
+
+          Uy_row[s] = Uy_row_h + wy_row;
+          Uy_col[s] = Uy_col_h + wy_col;
+
+          Uz_row[s] = Uz_row_h + wz_row;
+          Uz_col[s] = Uz_col_h + wz_col;
+        }
+      }
 
       dsdx_Ux += dvv(jgp,kgp) * Ux_row;
       dsdy_Ux += dvv(igp,kgp) * Ux_col;
