@@ -131,7 +131,7 @@ int main(int argc, char *argv[]) {
 
       /// Initialize layer thickness and surface pressure so that resulting
       /// interface pressure is the number of layers above plus one
-      Real Rho0 = DefVertCoord->Rho0;
+      Real Rho0 = RhoSw;
       parallelFor(
           {NCellsAll}, KOKKOS_LAMBDA(int ICell) {
              SurfacePressure(ICell) = 1.0_Real;
