@@ -465,7 +465,7 @@ get_data (const std::shared_ptr<const AbstractGrid>& src_grid,
     const auto& tgt_gids = tgt_grid->get_dofs_gids();
     const auto& data_src_gids = shared_data->m_src_grid->get_dofs_gids();
     const auto& data_tgt_gids = shared_data->m_tgt_grid->get_dofs_gids();
-    EKAT_REQUIRE_MSG (src_gids.is_aliasing(data_src_gids) and tgt_gids.is_aliasing(tgt_gids),
+    EKAT_REQUIRE_MSG (src_gids.is_aliasing(data_src_gids) and tgt_gids.is_aliasing(data_tgt_gids),
         "Error! Trying to retrieve remap data using a grid that is unrelated to the one(s) used before.\n"
         " - map file: " + map_file + "\n"
         " - src grid name: " + src_grid->name() + "\n"
