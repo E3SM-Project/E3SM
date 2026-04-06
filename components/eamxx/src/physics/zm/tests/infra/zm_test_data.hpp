@@ -450,6 +450,35 @@ struct ZmConvMainData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF(ZmConvMainData, 7, pcols, ncol, pver, pverp, time_step, is_first_step, lengath);
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine, {
+      {t_mid,    {200.0,   300.0}},    // temperature [K]
+      {t_star,   {200.0,   300.0}},
+      {q_mid_in, {0.001,   0.02}},     // specific humidity [kg/kg]
+      {q_star,   {0.001,   0.02}},
+      {omega,    {-0.5,    0.5}},      // vertical pressure velocity [Pa/s]
+      {p_mid_in, {10000.0, 100000.0}}, // pressure [Pa]
+      {p_int_in, {9000.0,  101000.0}}, // interface pressure [Pa]
+      {p_del_in, {500.0,   5000.0}},   // pressure thickness [Pa]
+      {geos,     {0.0,     1000.0}},   // surface geopotential [m2/s2]
+      {z_mid_in, {0.0,     10000.0}},  // mid-point altitude [m]
+      {z_int_in, {0.0,     10500.0}},  // interface altitude [m]
+      {pbl_hgt,  {100.0,   2000.0}},   // PBL height [m]
+      {tpert,    {0.0,     2.0}},      // temperature perturbation [K]
+      {landfrac, {0.0,     1.0}},      // land fraction
+    });
+
+    // Sort pressure ascending and z descending per column
+    for (Int c = 0; c < pcols; ++c) {
+      std::sort(p_mid_in + (c*pver), p_mid_in + ((c+1)*pver));
+      std::sort(p_int_in + (c*pverp), p_int_in + ((c+1)*pverp));
+      std::sort(z_mid_in + (c*pver), z_mid_in + ((c+1)*pver), std::greater<Real>());
+      std::sort(z_int_in + (c*pverp), z_int_in + ((c+1)*pverp), std::greater<Real>());
+    }
+  }
 };
 
 struct ZmConvEvapData : public PhysicsTestData {
@@ -484,6 +513,24 @@ struct ZmConvEvapData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF(ZmConvEvapData, 8, pcols, ncol, pver, pverp, time_step, old_snow, pergro_active, ke);
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine, {
+      {p_mid,   {10000.0, 100000.0}},  // pressure [Pa]
+      {p_del,   {2000.0,  10000.0}},   // pressure thickness [Pa]
+      {t_mid,   {200.0,   300.0}},     // temperature [K]
+      {q_mid,   {0.001,   0.02}},      // specific humidity [kg/kg]
+      {prdprec, {0.0,     1e-4}},      // precipitation production [kg/kg/s]
+      {cldfrc,  {0.0,     1.0}},       // cloud fraction
+      {tend_s,  {-1.0,    1.0}},       // heating rate [J/kg/s]
+      {tend_q,  {-1e-5,   1e-5}},      // water vapor tendency [kg/kg/s]
+      {prec,    {0.0,     1e-3}},      // precip rate [kg/m2/s] (before *1000 conversion)
+      {flxprec, {0.0,     0.1}},       // precip flux at interfaces [kg/m2/s]
+      {flxsnow, {0.0,     0.05}},      // snow flux at interfaces [kg/m2/s]
+    });
+  }
 };
 
 struct ZmCalcFractionalEntrainmentData : public PhysicsTestData {
@@ -518,6 +565,34 @@ struct ZmCalcFractionalEntrainmentData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF(ZmCalcFractionalEntrainmentData, 5, pcols, ncol, pver, pverp, msg);
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine, {
+      {z_mid,     {0.0,    10000.0}},   // altitude [m]
+      {z_int,     {0.0,    11000.0}},   // interface altitude [m]
+      {dz,        {100.0,  1000.0}},    // layer thickness [m]
+      {h_env,     {3.0e5,  3.5e5}},     // env moist static energy [J/kg]
+      {h_env_sat, {3.0e5,  3.5e5}},     // env saturated MSE [J/kg]
+      {h_env_min, {3.0e5,  3.4e5}},     // min env MSE [J/kg]
+      {lambda,    {0.0,    0.0002}},    // fractional entrainment [1/m]
+      {lambda_max,{0.0,    0.0002}},    // max fractional entrainment [1/m]
+    });
+
+    // jb (cloud base) > j0 (detrainment onset) > jt (cloud top)
+    for (Int i = 0; i < pcols; ++i) {
+      jt[i] = pver / 4 + i % (pver / 8);
+      j0[i] = pver / 3;
+      jb[i] = 3 * pver / 4;
+    }
+
+    // Sort z descending and dz positive per column
+    for (Int c = 0; c < pcols; ++c) {
+      std::sort(z_mid + (c*pver), z_mid + ((c+1)*pver), std::greater<Real>());
+      std::sort(z_int + (c*pverp), z_int + ((c+1)*pverp), std::greater<Real>());
+    }
+  }
 };
 
 struct ZmDowndraftPropertiesData : public PhysicsTestData {
@@ -549,6 +624,46 @@ struct ZmDowndraftPropertiesData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF(ZmDowndraftPropertiesData, 5, pcols, ncol, pver, pverp, msg);
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine, {
+      {z_int,     {0.0,    11000.0}},   // interface altitude [m]
+      {dz,        {100.0,  1000.0}},    // layer thickness [m]
+      {s_mid,     {200.0,  400.0}},     // dry static energy normalized [K]
+      {s_dnd,     {200.0,  400.0}},
+      {q_mid,     {0.001,  0.02}},      // specific humidity [kg/kg]
+      {q_dnd,     {0.001,  0.02}},
+      {q_dnd_sat, {0.001,  0.02}},
+      {h_env,     {3.0e5,  3.5e5}},     // env moist static energy [J/kg]
+      {h_dnd,     {3.0e5,  3.5e5}},     // downdraft moist static energy [J/kg]
+      {lambda,    {0.0,    0.0002}},    // fractional entrainment [1/m]
+      {lambda_max,{5e-5,   0.0002}},    // non-zero so downdrafts are active
+      {qsthat,    {0.001,  0.02}},      // interface saturation humidity
+      {hsthat,    {3.0e5,  3.5e5}},     // interface saturated MSE [J/kg]
+      {gamhat,    {0.1,    0.5}},       // interface gamma parameter
+      {rprd,      {0.0,    1e-4}},      // rain production rate
+      {mflx_up,   {0.0,    1.0}},       // updraft mass flux
+      {mflx_dn,   {-1.0,   0.0}},       // downdraft mass flux
+      {entr_dn,   {0.0,    0.01}},      // downdraft entrainment rate
+      {evp,       {0.0,    1e-4}},      // evaporation rate
+      {totevp,    {0.0,    0.1}},       // total evaporation
+    });
+
+    // jb (cloud base) >= jd (downdraft init) >= j0 (detrainment onset) >= jt (cloud top)
+    for (Int i = 0; i < pcols; ++i) {
+      jt[i] = pver / 4 + i % (pver / 8);
+      j0[i] = pver / 3;
+      jd[i] = jt[i] + 1;
+      jb[i] = 3 * pver / 4;
+    }
+
+    // Sort z_int descending (high altitude at index 0)
+    for (Int c = 0; c < pcols; ++c) {
+      std::sort(z_int + (c*pverp), z_int + ((c+1)*pverp), std::greater<Real>());
+    }
+  }
 };
 
 struct ZmCloudPropertiesData : public PhysicsTestData {
@@ -587,6 +702,35 @@ struct ZmCloudPropertiesData : public PhysicsTestData {
     PhysicsTestData::transition<D>();
     shift_int_scalar<D>(limcnv);
   }
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine, {
+      {p_mid,   {600.0,  1000.0}},   // pressure [mb]
+      {z_mid,   {0.0,    10000.0}},  // altitude [m]
+      {z_int,   {0.0,    11000.0}},  // interface altitude [m]
+      {t_mid,   {200.0,  300.0}},    // temperature [K]
+      {s_mid,   {200.0,  400.0}},    // dry static energy normalized [K]
+      {s_int,   {200.0,  400.0}},
+      {q_mid,   {0.001,  0.02}},     // specific humidity [kg/kg]
+      {landfrac,{0.0,    1.0}},      // land fraction
+      {tpert_g, {0.0,    2.0}},      // PBL temperature perturbation [K]
+    });
+
+    // jb (cloud base) > lel (equilibrium/launch level, cloud top)
+    for (Int i = 0; i < pcols; ++i) {
+      lel[i] = pver / 4 + i % (pver / 8);
+      jb[i]  = 3 * pver / 4;
+    }
+
+    // Sort pressure ascending and z descending per column
+    for (Int c = 0; c < pcols; ++c) {
+      std::sort(p_mid + (c*pver), p_mid + ((c+1)*pver));
+      std::sort(z_mid + (c*pver), z_mid + ((c+1)*pver), std::greater<Real>());
+      std::sort(z_int + (c*pverp), z_int + ((c+1)*pverp), std::greater<Real>());
+    }
+  }
 };
 
 struct ZmClosureData : public PhysicsTestData {
@@ -618,6 +762,52 @@ struct ZmClosureData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF(ZmClosureData, 6, pcols, ncol, pver, pverp, msg, cape_threshold_in);
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine, {
+      {z_mid,      {0.0,    10000.0}},  // altitude [m]
+      {z_int,      {0.0,    11000.0}},  // interface altitude [m]
+      {p_mid,      {600.0,  1000.0}},   // pressure [mb]
+      {p_del,      {10.0,   100.0}},    // pressure thickness [mb]
+      {t_mid,      {200.0,  300.0}},    // temperature [K]
+      {s_mid,      {200.0,  400.0}},    // dry static energy normalized [K]
+      {s_int,      {200.0,  400.0}},
+      {s_upd,      {200.0,  400.0}},
+      {s_dnd,      {200.0,  400.0}},
+      {q_mid,      {0.001,  0.02}},     // specific humidity [kg/kg]
+      {qs,         {0.001,  0.02}},
+      {q_int,      {0.001,  0.02}},
+      {q_pcl_sat,  {0.001,  0.02}},
+      {q_upd,      {0.001,  0.02}},
+      {q_dnd,      {0.001,  0.02}},
+      {ql,         {0.0,    1e-3}},     // cloud liquid water [kg/kg]
+      {t_pcl,      {200.0,  300.0}},    // parcel temperature [K]
+      {t_pcl_lcl,  {250.0,  300.0}},    // parcel temperature at LCL [K]
+      {mflx_net,   {-1.0,   1.0}},      // net mass flux
+      {mflx_up,    {0.0,    1.0}},
+      {mflx_dn,    {-1.0,   0.0}},
+      {detr_up,    {0.0,    0.01}},
+      {cape,       {0.0,    2000.0}},   // CAPE [J/kg]
+      {dsubcld,    {50.0,   200.0}},    // sub-cloud thickness [mb]
+    });
+
+    // level indices must be valid: jt (cloud top) < j0 < lel < lcl < mx (cloud base)
+    for (Int i = 0; i < pcols; ++i) {
+      jt[i]  = pver / 4 + i % (pver / 8);
+      lel[i] = jt[i] + 1;
+      lcl[i] = 3 * pver / 4 - 2;
+      mx[i]  = 3 * pver / 4;
+    }
+
+    // Sort pressure ascending and z descending per column
+    for (Int c = 0; c < pcols; ++c) {
+      std::sort(p_mid + (c*pver), p_mid + ((c+1)*pver));
+      std::sort(z_mid + (c*pver), z_mid + ((c+1)*pver), std::greater<Real>());
+      std::sort(z_int + (c*pverp), z_int + ((c+1)*pverp), std::greater<Real>());
+    }
+  }
 };
 
 struct ZmCalcOutputTendData : public PhysicsTestData {
@@ -646,6 +836,33 @@ struct ZmCalcOutputTendData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF(ZmCalcOutputTendData, 5, pcols, ncol, pver, pverp, msg);
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine, {
+      {p_del,   {10.0,  100.0}},   // pressure thickness [mb]
+      {s_int,   {200.0, 400.0}},   // dry static energy normalized [K]
+      {s_upd,   {200.0, 400.0}},
+      {s_dnd,   {200.0, 400.0}},
+      {q_int,   {0.001, 0.02}},    // specific humidity [kg/kg]
+      {q_upd,   {0.001, 0.02}},
+      {q_dnd,   {0.001, 0.02}},
+      {mflx_up, {0.0,   1.0}},     // updraft mass flux
+      {mflx_dn, {-1.0,  0.0}},     // downdraft mass flux
+      {detr_up, {0.0,   0.01}},    // detrainment rate
+      {ql,      {0.0,   1e-3}},    // cloud liquid water
+      {evp,     {0.0,   1e-4}},    // evaporation rate
+      {cu,      {0.0,   1e-4}},    // condensation rate
+      {dsubcld, {50.0,  200.0}},   // sub-cloud pressure thickness [mb]
+    });
+
+    // jt (cloud top) and mx (cloud base) must be valid level indices with jt < mx
+    for (Int i = 0; i < pcols; ++i) {
+      jt[i] = pver / 4 + i % (pver / 4);
+      mx[i] = 3 * pver / 4;
+    }
+  }
 };
 
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
