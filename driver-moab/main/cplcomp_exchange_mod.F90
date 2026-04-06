@@ -52,7 +52,7 @@ module cplcomp_exchange_mod
   ! Private interfaces
   !--------------------------------------------------------------------------
 
-  ! Shared routines for extension and computation of gsmaps, avs, and ggrids
+   ! Shared routines for helper dispatch, invariants, and comm-graph setup.
 
    private :: copy_aream_from_area
     private :: cplcomp_moab_init_atm
@@ -60,6 +60,9 @@ module cplcomp_exchange_mod
     private :: cplcomp_moab_init_lnd
       private :: cplcomp_moab_init_ice
    private :: cplcomp_moab_init_rof
+    private :: cplcomp_moab_resolve_comm_types
+    private :: cplcomp_moab_compute_comm_graph
+    private :: cplcomp_moab_atm_phys_cid
   !--------------------------------------------------------------------------
   ! Public data
   !--------------------------------------------------------------------------
@@ -72,6 +75,8 @@ module cplcomp_exchange_mod
 
   character(*),parameter :: subName = '(seq_mctext_mct)'
   real(r8),parameter :: c1 = 1.0_r8
+   integer, parameter :: ATM_PHYS_ID_OFFSET = 200
+   integer, parameter :: OCN_SECOND_COPY_ID_OFFSET = 1000
 
   !=======================================================================
 contains
@@ -190,6 +195,62 @@ subroutine  copy_aream_from_area(mbappid)
   !=======================================================================
  end subroutine copy_aream_from_area
 
+  integer function cplcomp_moab_atm_phys_cid(id_old)
+
+      integer, intent(in) :: id_old
+
+      cplcomp_moab_atm_phys_cid = ATM_PHYS_ID_OFFSET + id_old
+
+  end function cplcomp_moab_atm_phys_cid
+
+  subroutine cplcomp_moab_resolve_comm_types(src_has_cells, tgt_has_cells, typeA, typeB)
+
+      logical, intent(in) :: src_has_cells, tgt_has_cells
+      integer, intent(out) :: typeA, typeB
+
+      if (src_has_cells) then
+         typeA = 3
+      else
+         typeA = 2
+      endif
+
+      if (tgt_has_cells) then
+         typeB = 3
+      else
+         typeB = 2
+      endif
+
+  end subroutine cplcomp_moab_resolve_comm_types
+
+  subroutine cplcomp_moab_compute_comm_graph(src_appid, tgt_appid, mpicom_join, mpigrp_src, mpigrp_tgt, &
+       src_has_cells, tgt_has_cells, src_context, tgt_context, subname, graph_name)
+
+      use iMOAB, only: iMOAB_ComputeCommGraph
+
+      integer, intent(in) :: src_appid, tgt_appid
+      integer, intent(in) :: mpicom_join, mpigrp_src, mpigrp_tgt
+      logical, intent(in) :: src_has_cells, tgt_has_cells
+      integer, intent(in) :: src_context, tgt_context
+      character(len=*), intent(in) :: subname, graph_name
+
+      integer :: ierr, typeA, typeB
+
+      if (mpicom_join == MPI_COMM_NULL) then
+         write(logunit,*) subname,' invalid communicator for ', trim(graph_name)
+         call shr_sys_abort(subname//' ERROR in computing comm graph for '//trim(graph_name))
+      endif
+
+      call cplcomp_moab_resolve_comm_types(src_has_cells, tgt_has_cells, typeA, typeB)
+
+      ierr = iMOAB_ComputeCommGraph(src_appid, tgt_appid, mpicom_join, mpigrp_src, mpigrp_tgt, &
+         typeA, typeB, src_context, tgt_context)
+      if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in computing comm graph for ', trim(graph_name)
+         call shr_sys_abort(subname//' ERROR in computing comm graph for '//trim(graph_name))
+      endif
+
+  end subroutine cplcomp_moab_compute_comm_graph
+
   subroutine cplcomp_moab_init_atm(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
 
       use iMOAB, only: iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, iMOAB_ComputeCommGraph
@@ -208,7 +269,7 @@ subroutine  copy_aream_from_area(mbappid)
       character*200 :: appname, outfile, wopts, ropts, infile
       character(CL) :: atm_mesh
       integer :: tagtype, numco, tagindex
-      integer :: typeA, typeB, ATM_PHYS_CID
+      integer :: ATM_PHYS_CID
       character(CXX) :: tagname
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
 
@@ -291,26 +352,16 @@ subroutine  copy_aream_from_area(mbappid)
       endif  ! component atm pes
 
 !!!!!  back to joint COMPONENT and CPL procs
-      ! graph between atm phys, mphaid, and atm dyn on coupler, mbaxid
-      ! phys atm group is mpigrp_old, coupler group is mpigrp_cplid
-      ! typeA: entity matching type for ATM component mesh (mphaid)
-      ! For spectral ATM: point cloud (typeA=2), for dead FV ATM: cell mesh (typeA=3)
-      typeA = 2 ! default: point cloud for spectral ATM
-      if (mphaid >= 0 .and. dead_comps) then
-         typeA = 3 ! cell mesh (dead FV ATM has full RLL mesh)
-      endif
-      typeB = 2 ! in spectral case, we will have just point cloud on coupler PEs
-      if (atm_pg_active .or. dead_comps) then
-         typeB = 3 ! cell mesh (PG2 ATM or dead FV ATM with cells)
-      endif
-      ATM_PHYS_CID = 200 + id_old ! 200 + 5 for atm, see line  969   ATM_PHYS = 200 + ATMID ! in
+      ! Graph between atm phys, mphaid, and atm dyn on coupler, mbaxid.
+      ! Preserve the ATM physics offset invariant in one shared helper.
+      ATM_PHYS_CID = cplcomp_moab_atm_phys_cid(id_old) ! 200 + 5 for atm, see line  969   ATM_PHYS = 200 + ATMID ! in
                                  !  components/cam/src/cpl/atm_comp_mct.F90
                                  !  components/data_comps/datm/src/atm_comp_mct.F90 ! line 177 !!
 
       ! this is not needed for migrating point cloud to point cloud !
       ! it is needed only after migrating pg2 mesh to cpupler
-      ierr = iMOAB_ComputeCommGraph( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
-          typeA, typeB, ATM_PHYS_CID, id_join) ! ID_JOIN is now 6
+      call cplcomp_moab_compute_comm_graph(mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+          dead_comps, (atm_pg_active .or. dead_comps), ATM_PHYS_CID, id_join, subname, 'atm model')
 
       ! we can receive those tags only on coupler pes, when mbaxid exists
       ! we have to check that before we can define the tag
@@ -396,7 +447,6 @@ subroutine  copy_aream_from_area(mbappid)
       character*200 :: appname, outfile, wopts, ropts, infile
       character(CL) :: ocn_domain
       integer :: tagtype, numco, tagindex
-      integer :: typeA, typeB
       character(CXX) :: tagname
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
       real(r8), allocatable :: tagValues(:)
@@ -511,18 +561,8 @@ subroutine  copy_aream_from_area(mbappid)
   !!!!! DATA OCN
       if ( trim(ocn_domain) /= 'none' ) then
          ! we are now on joint pes, compute comm graph between data ocn and coupler model ocn
-         if (dead_comps) then
-            typeA = 3 ! dead comps create full mesh
-         else
-            typeA = 2 ! point cloud on component PEs
-         endif
-         typeB = 3 ! full mesh on coupler pes, we just read it
-         ierr = iMOAB_ComputeCommGraph( mpoid, mboxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
-            typeA, typeB, id_old, id_join)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in computing comm graph for data ocn model '
-            call shr_sys_abort(subname//' ERROR in computing comm graph for data ocn model ')
-         endif
+         call cplcomp_moab_compute_comm_graph(mpoid, mboxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+            dead_comps, .true., id_old, id_join, subname, 'data ocn model')
          ! also, frac, area,  masks has to come from ocean mpoid, not from domain file reader
          ! this is hard to digest :(
          tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
@@ -534,9 +574,9 @@ subroutine  copy_aream_from_area(mbappid)
 
 !!!!!!!!! OCEAN 2nd COPY
       ! start copy
-      ! do another ocean copy of the mesh on the coupler, just because So_fswpen field
-      ! would appear twice on original mboxid, once from xao states, once from o2x states
-      id_join = id_join + 1000! kind of random
+      ! Do another ocean copy on the coupler so So_fswpen does not collide between
+      ! xao states and o2x states. Preserve the explicit second-copy context offset.
+      id_join = id_join + OCN_SECOND_COPY_ID_OFFSET
 
 !!!!!!  OCEAN COMPONENT
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (ocean)
@@ -630,7 +670,7 @@ subroutine  copy_aream_from_area(mbappid)
       character*200 :: appname, outfile, wopts, ropts
       character(CL) :: lnd_domain
       integer :: tagtype, numco, tagindex, nghlay
-      integer :: ent_type, typeA, typeB
+      integer :: ent_type
       character(CXX) :: tagname, newlist
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
       logical :: rof_present, lnd_prognostic, single_column, scm_multcols
@@ -761,18 +801,8 @@ subroutine  copy_aream_from_area(mbappid)
       endif
       if ( .not. mb_scm_land ) then
          ! compute comm graph for tag exchange between land component and coupler
-         if (dead_comps) then
-            typeA = 3 ! dead comps create full mesh
-         else
-            typeA = 2 ! point cloud on component PEs, land
-         endif
-         typeB = 3 ! full mesh on coupler pes
-         ierr = iMOAB_ComputeCommGraph( mlnid, mblxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
-            typeA, typeB, id_old, id_join)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in computing comm graph for lnd model '
-            call shr_sys_abort(subname//' ERROR in computing comm graph for lnd model ')
-         endif
+         call cplcomp_moab_compute_comm_graph(mlnid, mblxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+            dead_comps, .true., id_old, id_join, subname, 'lnd model')
       endif
       tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
       call component_exch_moab(comp, mlnid, mblxid, 'c2x', tagname, context_exch='doml')
@@ -811,7 +841,6 @@ subroutine  copy_aream_from_area(mbappid)
       character*200 :: appname, outfile, wopts, ropts, infile
       character(CL) :: ice_domain
       integer :: tagtype, numco, tagindex
-      integer :: typeA, typeB
       character(CXX) :: tagname
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
 
@@ -922,18 +951,8 @@ subroutine  copy_aream_from_area(mbappid)
      ! in case of ice domain read, we need to compute the comm graph
      if ( trim(ice_domain) /= 'none' ) then
          ! we are now on joint pes, compute comm graph between data ice and coupler model ice
-         if (dead_comps) then
-            typeA = 3 ! dead comps create full mesh
-         else
-            typeA = 2 ! point cloud on component PEs
-         endif
-         typeB = 3 ! full mesh on coupler pes, we just read it
-         ierr = iMOAB_ComputeCommGraph( MPSIID, mbixid, mpicom_join, mpigrp_old, mpigrp_cplid, &
-            typeA, typeB, id_old, id_join)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in computing comm graph for data ice model '
-            call shr_sys_abort(subname//' ERROR in computing comm graph for data ice model ')
-         endif
+         call cplcomp_moab_compute_comm_graph(MPSIID, mbixid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+            dead_comps, .true., id_old, id_join, subname, 'data ice model')
          ! also, frac, area,  masks has to come from ice MPSIID , not from domain file reader
          ! this is hard to digest :(
          tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
@@ -975,7 +994,6 @@ subroutine  copy_aream_from_area(mbappid)
       character*200 :: appname, outfile, wopts, ropts
       character(CL) :: rtm_mesh, rof_domain
       integer :: tagtype, numco, tagindex, nghlay
-      integer :: typeA, typeB
       character(CXX) :: tagname
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
 
@@ -1073,19 +1091,8 @@ subroutine  copy_aream_from_area(mbappid)
       ! we are now on joint pes, compute comm graph between rof and coupler model
       ! typeA=3 for dead comps (full mesh), typeA=2 for regular rof (point cloud)
       ! typeB=3 always: coupler always has full mesh (loaded from file or received from dead comp)
-      if (dead_comps) then
-         typeA = 3 ! full mesh on component PEs in dead comps
-         typeB = 3 ! full mesh on coupler pes (received from component)
-      else
-         typeA = 2 ! point cloud on component PEs
-         typeB = 3 ! full mesh on coupler pes (loaded from domain file)
-      endif
-      ierr = iMOAB_ComputeCommGraph( mrofid, mbrxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
-            typeA, typeB, id_old, id_join)
-      if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in computing comm graph for rof model '
-            call shr_sys_abort(subname//' ERROR in computing comm graph for rof model ')
-      endif
+      call cplcomp_moab_compute_comm_graph(mrofid, mbrxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+         dead_comps, .true., id_old, id_join, subname, 'rof model')
 
       tagname = 'area:lon:lat:frac:mask'//C_NULL_CHAR
       call component_exch_moab(comp, mrofid, mbrxid, 'c2x', tagname, context_exch='domr')
@@ -1369,10 +1376,10 @@ subroutine  copy_aream_from_area(mbappid)
        ! the ATM_PHYS_CID offset used elsewhere in the coupler code.
        !---------------------------------------------------------------------------
        if (comp%oneletterid == 'a' .and. direction .eq. 'c2x' ) then
-          source_id = source_id + 200
+          source_id = source_id + ATM_PHYS_ID_OFFSET
        endif
        if (comp%oneletterid == 'a' .and. direction .eq. 'x2c' ) then
-          target_id = target_id + 200
+          target_id = target_id + ATM_PHYS_ID_OFFSET
        endif
 
        !---------------------------------------------------------------------------
