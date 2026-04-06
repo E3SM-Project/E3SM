@@ -302,14 +302,9 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
           static_cast<I4>(TracerIdsToRestoreVec.size());
       this->SurfaceTracerRestoring.TracerIdsToRestore = Array1DI4(
           "TracerIdsToRestore", this->SurfaceTracerRestoring.NTracersToRestore);
-      HostArray1DI4 TracerIdsToRestoreH(
-          "TracerIdsToRestoreH",
-          this->SurfaceTracerRestoring.NTracersToRestore);
-      for (I4 R = 0; R < this->SurfaceTracerRestoring.NTracersToRestore; ++R) {
-         TracerIdsToRestoreH(R) = TracerIdsToRestoreVec[R];
-      }
       deepCopy(this->SurfaceTracerRestoring.TracerIdsToRestore,
-               TracerIdsToRestoreH);
+               HostArray1DI4(TracerIdsToRestoreVec.data(),
+                             TracerIdsToRestoreVec.size()));
    }
 }
 
