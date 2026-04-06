@@ -58,6 +58,8 @@ module cplcomp_exchange_mod
     private :: cplcomp_moab_init_atm
     private :: cplcomp_moab_init_ocn
     private :: cplcomp_moab_init_lnd
+      private :: cplcomp_moab_init_ice
+   private :: cplcomp_moab_init_rof
   !--------------------------------------------------------------------------
   ! Public data
   !--------------------------------------------------------------------------
@@ -791,6 +793,322 @@ subroutine  copy_aream_from_area(mbappid)
 
   end subroutine cplcomp_moab_init_lnd
 
+  subroutine cplcomp_moab_init_ice(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
+
+      use iMOAB, only: iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, iMOAB_ComputeCommGraph
+      use seq_infodata_mod, only: seq_infodata_type, seq_infodata_GetData
+
+      type(seq_infodata_type), intent(in) :: infodata
+      type(component_type),    intent(inout) :: comp
+      integer, intent(in) :: id_old, id_join
+      integer, intent(in) :: mpicom_old, mpicom_new, mpicom_join
+      logical, intent(in) :: dead_comps
+      integer, intent(in) :: partMethod
+      character(len=*), intent(in) :: subname
+
+      integer :: mpigrp_cplid, mpigrp_old
+      integer :: ierr, context_id
+      character*200 :: appname, outfile, wopts, ropts, infile
+      character(CL) :: ice_domain
+      integer :: tagtype, numco, tagindex
+      integer :: typeA, typeB
+      character(CXX) :: tagname
+      integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+
+      call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
+      call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
+      ! find ice domain file if it exists; it would be for data ice model (ice_prognostic false)
+      call seq_infodata_GetData(infodata,ice_domain=ice_domain)
+      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component p
+#ifdef MOABDEBUG
+         outfile = 'wholeSeaIce.h5m'//C_NULL_CHAR
+         wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+         ierr = iMOAB_WriteMesh(MPSIID, outfile, wopts)
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing sea-ice'
+            call shr_sys_abort(subname//' ERROR in writing sea-ice')
+         endif
+#endif
+! start copy from ocean code
+         if (MPSIID >= 0) then
+            ierr  = iMOAB_GetMeshInfo ( MPSIID, nvert, nvise, nbl, nsurf, nvisBC )
+            comp%mbApCCid = MPSIID ! ice imoab app id
+         endif
+         if ( trim(ice_domain) == 'none' ) then ! regular ice model
+            if (dead_comps) then
+               comp%mbGridType = 1 ! dead comps create full mesh
+               comp%mblsize = nvise(1) ! cells
+            else
+               comp%mbGridType = 1 ! 0 or 1, pc or cells
+               comp%mblsize = nvise(1) ! cells
+            endif
+            !  send sea ice mesh to coupler
+            call moab_send_mesh(MPSIID, mpicom_join, mpigrp_cplid, id_join, partMethod, subname)
+         else
+            ! we could be using cice model
+            comp%mbGridType = 0 ! 0 or 1, pc or cells
+            comp%mblsize = nvert(1) ! vertices
+         endif
+      endif
+      if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+         appname = "COUPLE_MPASSI"//C_NULL_CHAR
+         ! migrated mesh gets another app id, moab moab sea ice to coupler (mbix)
+         call moab_register_app(appname, mpicom_new, id_join, mbixid, subname)
+         if ( trim(ice_domain) == 'none' ) then ! regular ice model
+            call moab_receive_mesh(mbixid, mpicom_join, mpigrp_old, id_old, subname)
+         else
+            ! we need to read the mesh ice (domain file)
+            ! we could be using cice model or data sea ice; in both cases ice_domain should be non-empty
+            ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION'//C_NULL_CHAR
+            infile = trim(ice_domain)//C_NULL_CHAR
+            if (seq_comm_iamroot(CPLID)) then
+               write(logunit,'(A)') subname//' loading ice domain mesh from file '//infile &
+                 , ' with options '//trim(ropts)
+            endif
+            call moab_load_mesh(mbixid, infile, ropts, 0, subname)
+            call moab_define_global_id_tag(mbixid, subname)
+         endif ! end data ice
+
+         if (MPSIID .ge. 0) then  ! we are on component sea ice pes
+            if ( trim(ice_domain) == 'none' ) then
+               context_id = id_join
+               call moab_free_sender_buffers(MPSIID, context_id, subname)
+            endif
+         endif
+
+         tagtype = 1  ! dense, double
+         numco = 1 !  one value per cell / entity
+         tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+         if ( ierr == 1 ) then
+            call shr_sys_abort( subname//' ERROR: cannot define tags for ice on coupler' )
+         end if
+         tagname = trim(seq_flds_x2i_fields)//C_NULL_CHAR
+         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+         if ( ierr == 1 ) then
+            call shr_sys_abort( subname//' ERROR: cannot define tags for ice on coupler' )
+         end if
+
+         !add the normalization tag
+         tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
+         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on ice on coupler '
+            call shr_sys_abort(subname//' ERROR in defining tags ')
+         endif
+
+         ! add data that is interpolated to sea ice
+         tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+         tagtype = 1 ! dense
+         numco = 1 !
+         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on ice cpl'
+            call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on ice cpl')
+         endif
+
+         ! add data that is interpolated to sea ice
+         tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
+         tagtype = 1 ! dense
+         numco = 1 !
+         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags for seq_flds_r2x_fields on ice cpl'
+            call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on ice cpl')
+         endif
+
+      endif
+
+     ! in case of ice domain read, we need to compute the comm graph
+     if ( trim(ice_domain) /= 'none' ) then
+         ! we are now on joint pes, compute comm graph between data ice and coupler model ice
+         if (dead_comps) then
+            typeA = 3 ! dead comps create full mesh
+         else
+            typeA = 2 ! point cloud on component PEs
+         endif
+         typeB = 3 ! full mesh on coupler pes, we just read it
+         ierr = iMOAB_ComputeCommGraph( MPSIID, mbixid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+            typeA, typeB, id_old, id_join)
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in computing comm graph for data ice model '
+            call shr_sys_abort(subname//' ERROR in computing comm graph for data ice model ')
+         endif
+         ! also, frac, area,  masks has to come from ice MPSIID , not from domain file reader
+         ! this is hard to digest :(
+         tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
+         call component_exch_moab(comp, MPSIID, mbixid, 'c2x', tagname, context_exch='domi')
+
+         if (mbixid > 0) then ! on coupler pes only
+            call copy_aream_from_area(mbixid)
+         endif
+      endif
+#ifdef MOABDEBUG
+!      debug test
+      outfile = 'recMeshSeaIce.h5m'//C_NULL_CHAR
+      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+!      write out the mesh file to disk
+      ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
+      if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing sea ice mesh on coupler '
+          call shr_sys_abort(subname//' ERROR in writing sea ice mesh on coupler ')
+      endif
+#endif
+
+  end subroutine cplcomp_moab_init_ice
+
+  subroutine cplcomp_moab_init_rof(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
+
+      use iMOAB, only: iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, iMOAB_ComputeCommGraph
+      use seq_infodata_mod, only: seq_infodata_type, seq_infodata_GetData
+
+      type(seq_infodata_type), intent(in) :: infodata
+      type(component_type),    intent(inout) :: comp
+      integer, intent(in) :: id_old, id_join
+      integer, intent(in) :: mpicom_old, mpicom_new, mpicom_join
+      logical, intent(in) :: dead_comps
+      integer, intent(in) :: partMethod
+      character(len=*), intent(in) :: subname
+
+      integer :: mpigrp_cplid, mpigrp_old
+      integer :: ierr, context_id
+      character*200 :: appname, outfile, wopts, ropts
+      character(CL) :: rtm_mesh, rof_domain
+      integer :: tagtype, numco, tagindex, nghlay
+      integer :: typeA, typeB
+      character(CXX) :: tagname
+      integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+
+      call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
+      call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
+      call seq_infodata_GetData(infodata,rof_domain=rof_domain,rof_mesh=rtm_mesh)
+
+      ! Component side: send mesh to coupler (BEFORE coupler registers and receives)
+      if (mrofid >= 0) then  ! component pes
+         ierr  = iMOAB_GetMeshInfo ( mrofid, nvert, nvise, nbl, nsurf, nvisBC )
+         comp%mbApCCid = mrofid !
+         if (dead_comps) then
+            comp%mbGridType = 1 ! dead comps create full mesh
+            comp%mblsize = nvise(1) ! cells
+         else
+            comp%mbGridType = 0 ! 0 or 1, pc or cells
+            comp%mblsize = nvert(1) ! vertices
+         endif
+      endif
+
+      if (dead_comps) then ! full river model
+         if (MPI_COMM_NULL /= mpicom_old .and. mrofid >= 0) then ! component pes, send mesh to coupler
+            call moab_send_mesh(mrofid, mpicom_join, mpigrp_cplid, id_join, partMethod, subname)
+         endif ! component pes
+      endif
+
+      ! Coupler side: register application and receive/load mesh
+      if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+         appname = "COUPLE_MROF"//C_NULL_CHAR
+         call moab_register_app(appname, mpicom_new, id_join, mbrxid, subname)
+
+         if (dead_comps) then
+            ! migrated mesh gets another app id, moab rof to coupler (mbrx)
+            ! Receive mesh from river component
+            call moab_receive_mesh(mbrxid, mpicom_join, mpigrp_old, id_old, subname)
+         else
+            ! we will read the mesh from domain file
+            ! first check if we already have elements in mbrxid
+            ierr  = iMOAB_GetMeshInfo ( mbrxid, nvert, nvise, nbl, nsurf, nvisBC )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in getting mesh info on ROF coupler '
+               call shr_sys_abort(subname//' ERROR in getting mesh info on ROF coupler  ')
+            endif
+            if (nvert(3) .eq. 0) then
+               ! load mesh from scrip file passed from river model, if domain file is not available
+               call seq_infodata_GetData(infodata,rof_mesh=rtm_mesh,rof_domain=rof_domain)
+               if ( trim(rof_domain) == 'none' ) then
+                  outfile = trim(rtm_mesh)//C_NULL_CHAR
+                  ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=RCBZOLTAN'//C_NULL_CHAR
+               else
+                  outfile = trim(rof_domain)//C_NULL_CHAR
+                  ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION'//C_NULL_CHAR
+               endif
+               nghlay = 0 ! no ghost layers
+               if (seq_comm_iamroot(CPLID)) then
+                  write(logunit,'(A)') subname//' loading rof from file '//trim(outfile) &
+                     , ' with options ', trim(ropts)
+               endif
+               call moab_load_mesh(mbrxid, outfile, ropts, nghlay, subname)
+            endif ! end of reading rof mesh from file
+
+         end if ! end of dead_comps check
+
+         call moab_define_global_id_tag(mbrxid, subname)
+
+         tagtype = 1  ! dense, double
+         numco = 1 !  one value per cell / entity
+         tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
+         ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco, tagindex )
+         if ( ierr == 1 ) then
+            call shr_sys_abort( subname//' ERROR: cannot define tags for rof on coupler' )
+         end if
+         tagname = trim(seq_flds_x2r_fields)//C_NULL_CHAR
+         ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco, tagindex )
+         if ( ierr == 1 ) then
+            call shr_sys_abort( subname//' ERROR: cannot define tags for rof on coupler' )
+         end if
+
+         !add the normalization tag
+         tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
+         ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on rof on coupler '
+            call shr_sys_abort(subname//' ERROR in defining tags ')
+         endif
+
+      endif  ! coupler pes
+
+      ! Free buffers on component side after send completes
+      if (mrofid >= 0 .and. dead_comps) then
+         context_id = id_join
+         call moab_free_sender_buffers(mrofid, context_id, subname)
+      endif
+
+      ! we are now on joint pes, compute comm graph between rof and coupler model
+      ! typeA=3 for dead comps (full mesh), typeA=2 for regular rof (point cloud)
+      ! typeB=3 always: coupler always has full mesh (loaded from file or received from dead comp)
+      if (dead_comps) then
+         typeA = 3 ! full mesh on component PEs in dead comps
+         typeB = 3 ! full mesh on coupler pes (received from component)
+      else
+         typeA = 2 ! point cloud on component PEs
+         typeB = 3 ! full mesh on coupler pes (loaded from domain file)
+      endif
+      ierr = iMOAB_ComputeCommGraph( mrofid, mbrxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+            typeA, typeB, id_old, id_join)
+      if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in computing comm graph for rof model '
+            call shr_sys_abort(subname//' ERROR in computing comm graph for rof model ')
+      endif
+
+      tagname = 'area:lon:lat:frac:mask'//C_NULL_CHAR
+      call component_exch_moab(comp, mrofid, mbrxid, 'c2x', tagname, context_exch='domr')
+      ! copy aream from area in all cases
+      ! initialize aream from area; it may have different values in the end, or reset again
+      if (mbrxid > 0) then ! on coupler pes only
+         call copy_aream_from_area(mbrxid)
+      endif
+#ifdef MOABDEBUG
+      if (mbrxid >= 0) then
+         outfile = 'recMeshRof.h5m'//C_NULL_CHAR
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+!         write out the mesh file to disk
+         ierr = iMOAB_WriteMesh(mbrxid, trim(outfile), trim(wopts))
+         if (ierr .ne. 0) then
+           write(logunit,*) subname,' error in writing rof mesh on coupler '
+            call shr_sys_abort(subname//' ERROR in writing rof mesh on coupler ')
+         endif
+      endif
+#endif
+
+  end subroutine cplcomp_moab_init_rof
+
    subroutine cplcomp_moab_Init(infodata,comp)
 
       ! This routine initializes iMOAB applications for each component,
@@ -898,280 +1216,13 @@ subroutine  copy_aream_from_area(mbappid)
       endif  ! End of land model
 
 !!!!!!!!!!!!!!!! SEA ICE
-      ! sea - ice
       if (comp%oneletterid == 'i'  .and. maxMSID /= -1) then
-         call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
-         call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
-         ! find ice domain file if it exists; it would be for data ice model (ice_prognostic false)
-         call seq_infodata_GetData(infodata,ice_domain=ice_domain)
-         if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component p
-#ifdef MOABDEBUG
-            outfile = 'wholeSeaIce.h5m'//C_NULL_CHAR
-            wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-            ierr = iMOAB_WriteMesh(MPSIID, outfile, wopts)
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in writing sea-ice'
-               call shr_sys_abort(subname//' ERROR in writing sea-ice')
-            endif
-#endif
-   ! start copy from ocean code
-            if (MPSIID >= 0) then
-               ierr  = iMOAB_GetMeshInfo ( MPSIID, nvert, nvise, nbl, nsurf, nvisBC )
-               comp%mbApCCid = MPSIID ! ice imoab app id
-            endif
-            if ( trim(ice_domain) == 'none' ) then ! regular ice model
-               if (dead_comps) then
-                  comp%mbGridType = 1 ! dead comps create full mesh
-                  comp%mblsize = nvise(1) ! cells
-               else
-                  comp%mbGridType = 1 ! 0 or 1, pc or cells
-                  comp%mblsize = nvise(1) ! cells
-               endif
-               !  send sea ice mesh to coupler
-               call moab_send_mesh(MPSIID, mpicom_join, mpigrp_cplid, id_join, partMethod, subname)
-            else
-               ! we could be using cice model
-               comp%mbGridType = 0 ! 0 or 1, pc or cells
-               comp%mblsize = nvert(1) ! vertices
-            endif
-         endif
-         if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-            appname = "COUPLE_MPASSI"//C_NULL_CHAR
-            ! migrated mesh gets another app id, moab moab sea ice to coupler (mbix)
-            call moab_register_app(appname, mpicom_new, id_join, mbixid, subname)
-            if ( trim(ice_domain) == 'none' ) then ! regular ice model
-               call moab_receive_mesh(mbixid, mpicom_join, mpigrp_old, id_old, subname)
-            else
-               ! we need to read the mesh ice (domain file)
-               ! we could be using cice model or data sea ice; in both cases ice_domain should be non-empty
-               ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION'//C_NULL_CHAR
-               infile = trim(ice_domain)//C_NULL_CHAR
-               if (seq_comm_iamroot(CPLID)) then
-                  write(logunit,'(A)') subname//' loading ice domain mesh from file '//infile &
-                    , ' with options '//trim(ropts)
-               endif
-               call moab_load_mesh(mbixid, infile, ropts, 0, subname)
-               call moab_define_global_id_tag(mbixid, subname)
-            endif ! end data ice
-
-            if (MPSIID .ge. 0) then  ! we are on component sea ice pes
-               if ( trim(ice_domain) == 'none' ) then
-                  context_id = id_join
-                  call moab_free_sender_buffers(MPSIID, context_id, subname)
-               endif
-            endif
-
-            tagtype = 1  ! dense, double
-            numco = 1 !  one value per cell / entity
-            tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
-            ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-            if ( ierr == 1 ) then
-               call shr_sys_abort( subname//' ERROR: cannot define tags for ice on coupler' )
-            end if
-            tagname = trim(seq_flds_x2i_fields)//C_NULL_CHAR
-            ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-            if ( ierr == 1 ) then
-               call shr_sys_abort( subname//' ERROR: cannot define tags for ice on coupler' )
-            end if
-
-            !add the normalization tag
-            tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
-            ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on ice on coupler '
-               call shr_sys_abort(subname//' ERROR in defining tags ')
-            endif
-
-            ! add data that is interpolated to sea ice
-            tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
-            tagtype = 1 ! dense
-            numco = 1 !
-            ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on ice cpl'
-               call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on ice cpl')
-            endif
-
-            ! add data that is interpolated to sea ice
-            tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
-            tagtype = 1 ! dense
-            numco = 1 !
-            ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in defining tags for seq_flds_r2x_fields on ice cpl'
-               call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on ice cpl')
-            endif
-
-         endif
-
-        ! in case of ice domain read, we need to compute the comm graph
-        if ( trim(ice_domain) /= 'none' ) then
-            ! we are now on joint pes, compute comm graph between data ice and coupler model ice
-            if (dead_comps) then
-               typeA = 3 ! dead comps create full mesh
-            else
-               typeA = 2 ! point cloud on component PEs
-            endif
-            typeB = 3 ! full mesh on coupler pes, we just read it
-            ierr = iMOAB_ComputeCommGraph( MPSIID, mbixid, mpicom_join, mpigrp_old, mpigrp_cplid, &
-               typeA, typeB, id_old, id_join)
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in computing comm graph for data ice model '
-               call shr_sys_abort(subname//' ERROR in computing comm graph for data ice model ')
-            endif
-            ! also, frac, area,  masks has to come from ice MPSIID , not from domain file reader
-            ! this is hard to digest :(
-            tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-            call component_exch_moab(comp, MPSIID, mbixid, 'c2x', tagname, context_exch='domi')
-
-            if (mbixid > 0) then ! on coupler pes only
-               call copy_aream_from_area(mbixid)
-            endif
-         endif
-#ifdef MOABDEBUG
-  !      debug test
-         outfile = 'recMeshSeaIce.h5m'//C_NULL_CHAR
-         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-  !      write out the mesh file to disk
-         ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
-         if (ierr .ne. 0) then
-             write(logunit,*) subname,' error in writing sea ice mesh on coupler '
-             call shr_sys_abort(subname//' ERROR in writing sea ice mesh on coupler ')
-         endif
-#endif
-
+         call cplcomp_moab_init_ice(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
       endif
 
 !!!!!!!!!!!!!!!! RIVER
-     ! rof
       if (comp%oneletterid == 'r'  .and. maxMRID /= -1) then
-         call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
-         call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
-         call seq_infodata_GetData(infodata,rof_domain=rof_domain,rof_mesh=rtm_mesh)
-
-         ! Component side: send mesh to coupler (BEFORE coupler registers and receives)
-         if (mrofid >= 0) then  ! component pes
-            ierr  = iMOAB_GetMeshInfo ( mrofid, nvert, nvise, nbl, nsurf, nvisBC )
-            comp%mbApCCid = mrofid !
-            if (dead_comps) then
-               comp%mbGridType = 1 ! dead comps create full mesh
-               comp%mblsize = nvise(1) ! cells
-            else
-               comp%mbGridType = 0 ! 0 or 1, pc or cells
-               comp%mblsize = nvert(1) ! vertices
-            endif
-         endif
-
-         if (dead_comps) then ! full river model
-            if (MPI_COMM_NULL /= mpicom_old .and. mrofid >= 0) then ! component pes, send mesh to coupler
-               call moab_send_mesh(mrofid, mpicom_join, mpigrp_cplid, id_join, partMethod, subname)
-            endif ! component pes
-         endif
-
-         ! Coupler side: register application and receive/load mesh
-         if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-            appname = "COUPLE_MROF"//C_NULL_CHAR
-            call moab_register_app(appname, mpicom_new, id_join, mbrxid, subname)
-
-            if (dead_comps) then
-               ! migrated mesh gets another app id, moab rof to coupler (mbrx)
-               ! Receive mesh from river component
-               call moab_receive_mesh(mbrxid, mpicom_join, mpigrp_old, id_old, subname)
-            else
-               ! we will read the mesh from domain file
-               ! first check if we already have elements in mbrxid
-               ierr  = iMOAB_GetMeshInfo ( mbrxid, nvert, nvise, nbl, nsurf, nvisBC )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in getting mesh info on ROF coupler '
-                  call shr_sys_abort(subname//' ERROR in getting mesh info on ROF coupler  ')
-               endif
-               if (nvert(3) .eq. 0) then
-                  ! load mesh from scrip file passed from river model, if domain file is not available
-                  call seq_infodata_GetData(infodata,rof_mesh=rtm_mesh,rof_domain=rof_domain)
-                  if ( trim(rof_domain) == 'none' ) then
-                     outfile = trim(rtm_mesh)//C_NULL_CHAR
-                     ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=RCBZOLTAN'//C_NULL_CHAR
-                  else
-                     outfile = trim(rof_domain)//C_NULL_CHAR
-                     ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION'//C_NULL_CHAR
-                  endif
-                  nghlay = 0 ! no ghost layers
-                  if (seq_comm_iamroot(CPLID)) then
-                     write(logunit,'(A)') subname//' loading rof from file '//trim(outfile) &
-                        , ' with options ', trim(ropts)
-                  endif
-                  call moab_load_mesh(mbrxid, outfile, ropts, nghlay, subname)
-               endif ! end of reading rof mesh from file
-
-            end if ! end of dead_comps check
-
-            call moab_define_global_id_tag(mbrxid, subname)
-
-            tagtype = 1  ! dense, double
-            numco = 1 !  one value per cell / entity
-            tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
-            ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco, tagindex )
-            if ( ierr == 1 ) then
-               call shr_sys_abort( subname//' ERROR: cannot define tags for rof on coupler' )
-            end if
-            tagname = trim(seq_flds_x2r_fields)//C_NULL_CHAR
-            ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco, tagindex )
-            if ( ierr == 1 ) then
-               call shr_sys_abort( subname//' ERROR: cannot define tags for rof on coupler' )
-            end if
-
-            !add the normalization tag
-            tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
-            ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on rof on coupler '
-               call shr_sys_abort(subname//' ERROR in defining tags ')
-            endif
-
-         endif  ! coupler pes
-
-         ! Free buffers on component side after send completes
-         if (mrofid >= 0 .and. dead_comps) then
-            context_id = id_join
-            call moab_free_sender_buffers(mrofid, context_id, subname)
-         endif
-
-         ! we are now on joint pes, compute comm graph between rof and coupler model
-         ! typeA=3 for dead comps (full mesh), typeA=2 for regular rof (point cloud)
-         ! typeB=3 always: coupler always has full mesh (loaded from file or received from dead comp)
-         if (dead_comps) then
-            typeA = 3 ! full mesh on component PEs in dead comps
-            typeB = 3 ! full mesh on coupler pes (received from component)
-         else
-            typeA = 2 ! point cloud on component PEs
-            typeB = 3 ! full mesh on coupler pes (loaded from domain file)
-         endif
-         ierr = iMOAB_ComputeCommGraph( mrofid, mbrxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
-               typeA, typeB, id_old, id_join)
-         if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in computing comm graph for rof model '
-               call shr_sys_abort(subname//' ERROR in computing comm graph for rof model ')
-         endif
-
-         tagname = 'area:lon:lat:frac:mask'//C_NULL_CHAR
-         call component_exch_moab(comp, mrofid, mbrxid, 'c2x', tagname, context_exch='domr')
-         ! copy aream from area in all cases
-         ! initialize aream from area; it may have different values in the end, or reset again
-         if (mbrxid > 0) then ! on coupler pes only
-            call copy_aream_from_area(mbrxid)
-         endif
-#ifdef MOABDEBUG
-         if (mbrxid >= 0) then
-            outfile = 'recMeshRof.h5m'//C_NULL_CHAR
-            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-  !         write out the mesh file to disk
-            ierr = iMOAB_WriteMesh(mbrxid, trim(outfile), trim(wopts))
-            if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in writing rof mesh on coupler '
-               call shr_sys_abort(subname//' ERROR in writing rof mesh on coupler ')
-            endif
-         endif
-#endif
+         call cplcomp_moab_init_rof(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
       endif ! end for rof coupler set up
 
    end subroutine cplcomp_moab_Init
