@@ -55,6 +55,7 @@ module cplcomp_exchange_mod
   ! Shared routines for extension and computation of gsmaps, avs, and ggrids
 
   private :: copy_aream_from_area
+   private :: cplcomp_moab_init_atm
   !--------------------------------------------------------------------------
   ! Public data
   !--------------------------------------------------------------------------
@@ -185,6 +186,192 @@ subroutine  copy_aream_from_area(mbappid)
   !=======================================================================
  end subroutine copy_aream_from_area
 
+  subroutine cplcomp_moab_init_atm(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
+
+      use iMOAB, only: iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, iMOAB_ComputeCommGraph
+      use seq_infodata_mod, only: seq_infodata_type, seq_infodata_GetData
+
+      type(seq_infodata_type), intent(in)  :: infodata
+      type(component_type),    intent(inout) :: comp
+      integer, intent(in) :: id_old, id_join
+      integer, intent(in) :: mpicom_old, mpicom_new, mpicom_join
+      logical, intent(in) :: dead_comps
+      integer, intent(in) :: partMethod
+      character(len=*), intent(in) :: subname
+
+      integer :: mpigrp_cplid, mpigrp_old
+      integer :: ierr, context_id
+      character*200 :: appname, outfile, wopts, ropts, infile
+      character(CL) :: atm_mesh
+      integer :: tagtype, numco, tagindex
+      integer :: typeA, typeB, ATM_PHYS_CID
+      character(CXX) :: tagname
+      integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+
+      call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
+      call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
+
+      ! find atm mesh/domain file if it exists; it would be for data atm model (atm_prognostic false)
+      call seq_infodata_GetData(infodata,atm_mesh = atm_mesh)
+
+!!!!!!!! ON ATM COMPONENT
+      if (mphaid >= 0) then  ! component atm procs
+         ierr  = iMOAB_GetMeshInfo ( mphaid, nvert, nvise, nbl, nsurf, nvisBC )
+         comp%mbApCCid = mphaid ! phys atm
+         ! Auto-detect: dead FV ATM creates a full RLL mesh with cells,
+         ! while spectral ATM sends only a point cloud (vertices).
+         if (dead_comps) then
+            comp%mbGridType = 1 ! cell mesh (dead FV ATM)
+            comp%mblsize = nvise(1)
+         else
+            comp%mbGridType = 0 ! point cloud (spectral ATM)
+            comp%mblsize = nvert(1)
+         endif
+      endif
+
+!!!!!!!! ON ATM COMPONENT
+      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
+      !  send mesh to coupler
+      !!!!  FULL ATM
+         if ( trim(atm_mesh) == 'none' ) then ! full model
+            if (atm_pg_active) then !  change : send the point cloud phys grid mesh, not coarse mesh,
+                                    !     when atm pg active
+               call moab_send_mesh(mhpgid, mpicom_join, mpigrp_cplid, id_join, partMethod, subname)
+            else
+               ! still use the mhid, original coarse mesh
+               call moab_send_mesh(mphaid, mpicom_join, mpigrp_cplid, id_join, partMethod, subname)
+            endif
+         endif
+      endif ! atmosphere pes
+!!!!!!!!  ON ATM IN CPL
+      if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+         appname = "COUPLE_ATM"//C_NULL_CHAR
+         ! migrated mesh gets another app id, moab atm to coupler (mbax)
+         call moab_register_app(appname, mpicom_new, id_join, mbaxid, subname)
+         !!!!  FULL ATM
+         if ( trim(atm_mesh) == 'none' ) then ! full atm
+            ! will receive either pg2 mesh, or point cloud mesh corresponding to GLL points
+            ! (mphaid app) for spectral case
+            ! this cannot be used for maps (either computed online or read)
+            call moab_receive_mesh(mbaxid, mpicom_join, mpigrp_old, id_old, subname)
+         !!!!  DATA ATM
+         else
+           ! we need to read the atm mesh on coupler, from domain file
+            infile = trim(atm_mesh)//C_NULL_CHAR
+            ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION;NO_CULLING'//C_NULL_CHAR
+            if (seq_comm_iamroot(CPLID)) then
+               write(logunit,'(A)') subname//' loading atm domain mesh from file '//trim(atm_mesh) &
+                , ' with options ' // trim(ropts)
+            endif
+            call moab_load_mesh(mbaxid, infile, ropts, 0, subname)
+            ! right now, turn atm_pg_active to true
+            atm_pg_active = .true. ! FIXME TODO
+            call moab_define_global_id_tag(mbaxid, subname)
+         endif
+
+      endif  ! on coupler pes
+      !  iMOAB_FreeSenderBuffers needs to be called after receiving the mesh
+
+!!!!!!!!  ATM COMPONENT
+      if (mphaid .ge. 0) then  ! we are on component atm pes
+!!!!! FULL ATM
+         if ( trim(atm_mesh) == 'none' ) then  ! full atmosphere
+            context_id = id_join
+            if (atm_pg_active) then! we send mesh from mhpgid app
+               call moab_free_sender_buffers(mhpgid, context_id, subname)
+            else
+               ! we send mesh from point cloud data
+               call moab_free_sender_buffers(mphaid, context_id, subname)
+            endif
+         endif
+      endif  ! component atm pes
+
+!!!!!  back to joint COMPONENT and CPL procs
+      ! graph between atm phys, mphaid, and atm dyn on coupler, mbaxid
+      ! phys atm group is mpigrp_old, coupler group is mpigrp_cplid
+      ! typeA: entity matching type for ATM component mesh (mphaid)
+      ! For spectral ATM: point cloud (typeA=2), for dead FV ATM: cell mesh (typeA=3)
+      typeA = 2 ! default: point cloud for spectral ATM
+      if (mphaid >= 0 .and. dead_comps) then
+         typeA = 3 ! cell mesh (dead FV ATM has full RLL mesh)
+      endif
+      typeB = 2 ! in spectral case, we will have just point cloud on coupler PEs
+      if (atm_pg_active .or. dead_comps) then
+         typeB = 3 ! cell mesh (PG2 ATM or dead FV ATM with cells)
+      endif
+      ATM_PHYS_CID = 200 + id_old ! 200 + 5 for atm, see line  969   ATM_PHYS = 200 + ATMID ! in
+                                 !  components/cam/src/cpl/atm_comp_mct.F90
+                                 !  components/data_comps/datm/src/atm_comp_mct.F90 ! line 177 !!
+
+      ! this is not needed for migrating point cloud to point cloud !
+      ! it is needed only after migrating pg2 mesh to cpupler
+      ierr = iMOAB_ComputeCommGraph( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+          typeA, typeB, ATM_PHYS_CID, id_join) ! ID_JOIN is now 6
+
+      ! we can receive those tags only on coupler pes, when mbaxid exists
+      ! we have to check that before we can define the tag
+!!!!!! On ATM ON CPL
+      if (mbaxid .ge. 0 ) then   !  coupler pes
+         tagtype = 1  ! dense, double
+
+         tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+         numco = 1 !  usually 1 value per cell
+
+         ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags on atm on coupler '
+            call shr_sys_abort(subname//' ERROR in defining tags ')
+         endif
+
+         tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
+         numco = 1 !  usually 1 value per cell
+
+         ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags seq_flds_x2a_fields on atm on coupler '
+            call shr_sys_abort(subname//' ERROR in defining tags ')
+         endif
+
+         !add the normalization tag
+
+         tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
+         numco = 1 !  usually 1 value per cell
+
+         ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on atm on coupler '
+            call shr_sys_abort(subname//' ERROR in defining tags ')
+         endif
+      endif ! coupler pes
+      ! also, frac, area,  masks has to come from atm mphaid, not from domain file reader
+      ! this is hard to digest :(
+      tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
+      ! TODO:  this should be called on the joint procs, not coupler only.
+      call component_exch_moab(comp, mphaid, mbaxid, 'c2x', tagname, context_exch='doma')
+      if (mbaxid .ge. 0 ) then   !  coupler pes only
+         ! copy aream from area in case atm_mesh
+         call copy_aream_from_area(mbaxid)
+      endif ! coupler pes
+
+#ifdef MOABDEBUG
+      if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+         ! debug test
+         if (atm_pg_active) then !
+            outfile = 'recMeshAtmPG.h5m'//C_NULL_CHAR
+         else
+            outfile = 'recMeshAtm.h5m'//C_NULL_CHAR
+         endif
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+   !      write out the mesh file to disk
+         ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing mesh '
+            call shr_sys_abort(subname//' ERROR in writing mesh ')
+         endif
+      endif ! coupler pes
+#endif
+  end subroutine cplcomp_moab_init_atm
+
    subroutine cplcomp_moab_Init(infodata,comp)
 
       ! This routine initializes an iMOAB app on the coupler pes,
@@ -277,168 +464,7 @@ subroutine  copy_aream_from_area(mbappid)
 
 !!!!!!!!!!!!!!!! ATMOSPHERE
       if ( comp%oneletterid == 'a' .and. maxMH /= -1) then
-         call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
-         call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
-
-         ! find atm mesh/domain file if it exists; it would be for data atm model (atm_prognostic false)
-         call seq_infodata_GetData(infodata,atm_mesh = atm_mesh)
-
-!!!!!!!! ON ATM COMPONENT
-         if (mphaid >= 0) then  ! component atm procs
-            ierr  = iMOAB_GetMeshInfo ( mphaid, nvert, nvise, nbl, nsurf, nvisBC )
-            comp%mbApCCid = mphaid ! phys atm
-            ! Auto-detect: dead FV ATM creates a full RLL mesh with cells,
-            ! while spectral ATM sends only a point cloud (vertices).
-            if (dead_comps) then
-               comp%mbGridType = 1 ! cell mesh (dead FV ATM)
-               comp%mblsize = nvise(1)
-            else
-               comp%mbGridType = 0 ! point cloud (spectral ATM)
-               comp%mblsize = nvert(1)
-            endif
-         endif
-
-!!!!!!!! ON ATM COMPONENT
-         if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
-         !  send mesh to coupler
-         !!!!  FULL ATM
-            if ( trim(atm_mesh) == 'none' ) then ! full model
-               if (atm_pg_active) then !  change : send the point cloud phys grid mesh, not coarse mesh,
-                                       !     when atm pg active
-                  call moab_send_mesh(mhpgid, mpicom_join, mpigrp_cplid, id_join, partMethod, subname)
-               else
-                  ! still use the mhid, original coarse mesh
-                  call moab_send_mesh(mphaid, mpicom_join, mpigrp_cplid, id_join, partMethod, subname)
-               endif
-            endif
-         endif ! atmosphere pes
-!!!!!!!!  ON ATM IN CPL
-         if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-            appname = "COUPLE_ATM"//C_NULL_CHAR
-            ! migrated mesh gets another app id, moab atm to coupler (mbax)
-            call moab_register_app(appname, mpicom_new, id_join, mbaxid, subname)
-            !!!!  FULL ATM
-            if ( trim(atm_mesh) == 'none' ) then ! full atm
-               ! will receive either pg2 mesh, or point cloud mesh corresponding to GLL points
-               ! (mphaid app) for spectral case
-               ! this cannot be used for maps (either computed online or read)
-               call moab_receive_mesh(mbaxid, mpicom_join, mpigrp_old, id_old, subname)
-            !!!!  DATA ATM
-            else
-              ! we need to read the atm mesh on coupler, from domain file
-               infile = trim(atm_mesh)//C_NULL_CHAR
-               ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION;NO_CULLING'//C_NULL_CHAR
-               if (seq_comm_iamroot(CPLID)) then
-                  write(logunit,'(A)') subname//' loading atm domain mesh from file '//trim(atm_mesh) &
-                   , ' with options ' // trim(ropts)
-               endif
-               call moab_load_mesh(mbaxid, infile, ropts, 0, subname)
-               ! right now, turn atm_pg_active to true
-               atm_pg_active = .true. ! FIXME TODO
-               call moab_define_global_id_tag(mbaxid, subname)
-            endif
-
-         endif  ! on coupler pes
-         !  iMOAB_FreeSenderBuffers needs to be called after receiving the mesh
-
-!!!!!!!!  ATM COMPONENT
-         if (mphaid .ge. 0) then  ! we are on component atm pes
-   !!!!! FULL ATM
-            if ( trim(atm_mesh) == 'none' ) then  ! full atmosphere
-               context_id = id_join
-               if (atm_pg_active) then! we send mesh from mhpgid app
-                  call moab_free_sender_buffers(mhpgid, context_id, subname)
-               else
-                  ! we send mesh from point cloud data
-                  call moab_free_sender_buffers(mphaid, context_id, subname)
-               endif
-            endif
-         endif  ! component atm pes
-
-!!!!!  back to joint COMPONENT and CPL procs
-         ! graph between atm phys, mphaid, and atm dyn on coupler, mbaxid
-         ! phys atm group is mpigrp_old, coupler group is mpigrp_cplid
-         ! typeA: entity matching type for ATM component mesh (mphaid)
-         ! For spectral ATM: point cloud (typeA=2), for dead FV ATM: cell mesh (typeA=3)
-         typeA = 2 ! default: point cloud for spectral ATM
-         if (mphaid >= 0 .and. dead_comps) then
-            typeA = 3 ! cell mesh (dead FV ATM has full RLL mesh)
-         endif
-         typeB = 2 ! in spectral case, we will have just point cloud on coupler PEs
-         if (atm_pg_active .or. dead_comps) then
-            typeB = 3 ! cell mesh (PG2 ATM or dead FV ATM with cells)
-         endif
-         ATM_PHYS_CID = 200 + id_old ! 200 + 5 for atm, see line  969   ATM_PHYS = 200 + ATMID ! in
-                                    !  components/cam/src/cpl/atm_comp_mct.F90
-                                    !  components/data_comps/datm/src/atm_comp_mct.F90 ! line 177 !!
-
-         ! this is not needed for migrating point cloud to point cloud !
-         ! it is needed only after migrating pg2 mesh to cpupler
-         ierr = iMOAB_ComputeCommGraph( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
-             typeA, typeB, ATM_PHYS_CID, id_join) ! ID_JOIN is now 6
-
-         ! we can receive those tags only on coupler pes, when mbaxid exists
-         ! we have to check that before we can define the tag
-!!!!!!! On ATM ON CPL
-         if (mbaxid .ge. 0 ) then   !  coupler pes
-            tagtype = 1  ! dense, double
-
-            tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
-            numco = 1 !  usually 1 value per cell
-
-            ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in defining tags on atm on coupler '
-               call shr_sys_abort(subname//' ERROR in defining tags ')
-            endif
-
-            tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
-            numco = 1 !  usually 1 value per cell
-
-            ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in defining tags seq_flds_x2a_fields on atm on coupler '
-               call shr_sys_abort(subname//' ERROR in defining tags ')
-            endif
-
-            !add the normalization tag
-
-            tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
-            numco = 1 !  usually 1 value per cell
-
-            ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on atm on coupler '
-               call shr_sys_abort(subname//' ERROR in defining tags ')
-            endif
-         endif ! coupler pes
-         ! also, frac, area,  masks has to come from atm mphaid, not from domain file reader
-         ! this is hard to digest :(
-         tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-         ! TODO:  this should be called on the joint procs, not coupler only.
-         call component_exch_moab(comp, mphaid, mbaxid, 'c2x', tagname, context_exch='doma')
-         if (mbaxid .ge. 0 ) then   !  coupler pes only
-            ! copy aream from area in case atm_mesh
-            call copy_aream_from_area(mbaxid)
-         endif ! coupler pes
-
-#ifdef MOABDEBUG
-         if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-            ! debug test
-            if (atm_pg_active) then !
-               outfile = 'recMeshAtmPG.h5m'//C_NULL_CHAR
-            else
-               outfile = 'recMeshAtm.h5m'//C_NULL_CHAR
-            endif
-            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
-      !      write out the mesh file to disk
-            ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in writing mesh '
-               call shr_sys_abort(subname//' ERROR in writing mesh ')
-            endif
-         endif ! coupler pes
-#endif
+         call cplcomp_moab_init_atm(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
       endif  ! comp%oneletterid == 'a'
 
 !!!!!!!!!!!!!!!! OCEAN
