@@ -16,6 +16,8 @@ KOKKOS_FUNCTION
 void Functions<S,D>::zm_conv_evap(
   // Inputs
   const MemberType& team,
+  const ZmRuntimeOpt& runtime_opt,
+  const bool& pergro_active,
   const Int& pver, // number of mid-point vertical levels
   const Int& pverp, // number of interface vertical levels
   const Real& time_step, // model time step                         [s]
@@ -40,8 +42,183 @@ void Functions<S,D>::zm_conv_evap(
   const uview_1d<Real>& flxprec, // Convective flux of prec at interfaces   [kg/m2/s]
   const uview_1d<Real>& flxsnow) // Convective flux of snow at interfaces   [kg/m2/s])
 {
-  // TODO
-  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
+  // perturbation constant used in pergro snow fraction guard
+  const Real pergro_perturbation = 8.64e-11;
+
+  // cldfrc_fice temperature thresholds for convective snow fraction
+  // (inlined from cloud_fraction.F90 cldfrc_fice, snow-fraction branch)
+  const Real tmax_fsnow = PC::Tmelt.value;        // max temperature for transition to convective snow
+  const Real tmin_fsnow = PC::Tmelt.value - 5.0;  // min temperature for transition to convective snow
+
+  // The entire k-loop is sequential due to top-to-bottom flux dependencies
+  // (flxprec and flxsnow at interface k+1 depend on interface k)
+  Kokkos::single(Kokkos::PerTeam(team), [&] () {
+
+    // convert input precip to kg/m2/s
+    prec = prec * 1000.0;
+
+    // determine saturation vapor pressure
+    // (qs_k computed per level inside the loop via qsat_hPa)
+
+    // determine ice fraction in rain production
+    // (fsnow_conv_k computed per level inside the loop via inlined cldfrc_fice logic)
+
+    // zero the flux integrals on the top boundary
+    flxprec(0) = 0.0;
+    flxsnow(0) = 0.0;
+    Real evpvint = 0.0;
+
+    for (int k = 0; k < pver; ++k) {
+
+      // determine saturation vapor pressure and mixing ratio
+      Real es_k, qs_k;
+      qsat_hPa(t_mid(k), p_mid(k) / 100.0, es_k, qs_k);
+
+      // determine convective snow fraction for this level (from cldfrc_fice)
+      // If warmer than tmax_fsnow then water phase
+      Real fsnow_conv_k;
+      if (t_mid(k) > tmax_fsnow) {
+        fsnow_conv_k = 0.0;
+      // If colder than tmin_fsnow then ice phase
+      } else if (t_mid(k) < tmin_fsnow) {
+        fsnow_conv_k = 1.0;
+      // Otherwise mixed phase, with ice fraction decreasing linearly from tmin to tmax
+      } else {
+        fsnow_conv_k = (tmax_fsnow - t_mid(k)) / (tmax_fsnow - tmin_fsnow);
+      }
+
+      // snow production rate from microphysics; 0 when zm_microp not active
+      const Real prdsnow_k = 0.0;
+
+      // Melt snow falling into layer, if necessary.
+      Real flxsntm, snowmlt;
+      if (runtime_opt.old_snow) {
+        if (t_mid(k) > PC::Tmelt.value) {
+          flxsntm = 0.0;
+          snowmlt = flxsnow(k) * PC::gravit.value / p_del(k);
+        } else {
+          flxsntm = flxsnow(k);
+          snowmlt = 0.0;
+        }
+      } else {
+        if (t_mid(k) > PC::Tmelt.value) {
+          Real dum = -PC::LatIce.value / PC::Cpair.value * flxsnow(k) * PC::gravit.value / p_del(k) * time_step;
+          if (t_mid(k) + dum <= PC::Tmelt.value) {
+            dum = (t_mid(k) - PC::Tmelt.value) * PC::Cpair.value / PC::LatIce.value / time_step;
+            dum = dum / (flxsnow(k) * PC::gravit.value / p_del(k));
+            dum = ekat::impl::max(Real(0.0), dum);
+            dum = ekat::impl::min(Real(1.0), dum);
+          } else {
+            dum = 1.0;
+          }
+          dum = dum * ZMC::omsm;
+          flxsntm = flxsnow(k) * (1.0 - dum);
+          snowmlt = dum * flxsnow(k) * PC::gravit.value / p_del(k);
+        } else {
+          flxsntm = flxsnow(k);
+          snowmlt = 0.0;
+        }
+      }
+
+      // relative humidity depression must be > 0 for evaporation
+      Real evplimit = ekat::impl::max(1.0 - q_mid(k) / qs_k, Real(0.0));
+
+      // total evaporation depends on flux in the top of the layer
+      Real evpprec = runtime_opt.ke * (1.0 - cldfrc(k)) * evplimit * std::sqrt(flxprec(k));
+
+      // Don't let evaporation supersaturate layer (approx).
+      evplimit = ekat::impl::max(Real(0.0), (qs_k - q_mid(k)) / time_step);
+
+      // Don't evaporate more than is falling into the layer from above.
+      evplimit = ekat::impl::min(evplimit, flxprec(k) * PC::gravit.value / p_del(k));
+
+      // Total evaporation cannot exceed input precipitation
+      evplimit = ekat::impl::min(evplimit, (prec - evpvint) * PC::gravit.value / p_del(k));
+
+      evpprec = ekat::impl::min(evplimit, evpprec);
+
+      if (!runtime_opt.old_snow) {
+        evpprec = ekat::impl::max(Real(0.0), evpprec);
+        evpprec = evpprec * ZMC::omsm;
+      }
+
+      // evaporation of snow depends on snow fraction
+      Real evpsnow;
+      if (flxprec(k) > 0.0) {
+        Real work1 = ekat::impl::min(ekat::impl::max(Real(0.0), flxsntm / flxprec(k)), Real(1.0));
+        if (!runtime_opt.old_snow && prdsnow_k > prdprec(k)) work1 = 1.0;
+        evpsnow = evpprec * work1;
+      } else {
+        evpsnow = 0.0;
+      }
+
+      // vertically integrated evaporation
+      evpvint = evpvint + evpprec * p_del(k) / PC::gravit.value;
+
+      // net precip production
+      ntprprd(k) = prdprec(k) - evpprec;
+
+      // net snow production
+      if (runtime_opt.old_snow) {
+        Real work1;
+        if (pergro_active) {
+          work1 = ekat::impl::min(ekat::impl::max(Real(0.0), flxsnow(k) / (flxprec(k) + pergro_perturbation)), Real(1.0));
+        } else {
+          if (flxprec(k) > 0.0) {
+            work1 = ekat::impl::min(ekat::impl::max(Real(0.0), flxsnow(k) / flxprec(k)), Real(1.0));
+          } else {
+            work1 = 0.0;
+          }
+        }
+        Real work2 = ekat::impl::max(fsnow_conv_k, work1);
+        if (snowmlt > 0.0) work2 = 0.0;
+        ntsnprd(k) = prdprec(k) * work2 - evpsnow - snowmlt;
+        tend_s_snwprd  (k) = prdprec(k) * work2 * PC::LatIce.value;
+        tend_s_snwevmlt(k) = -(evpsnow + snowmlt) * PC::LatIce.value;
+      } else {
+        ntsnprd(k) = prdsnow_k - ekat::impl::min(flxsnow(k) * PC::gravit.value / p_del(k), evpsnow + snowmlt);
+        tend_s_snwprd  (k) = prdsnow_k * PC::LatIce.value;
+        tend_s_snwevmlt(k) = -ekat::impl::min(flxsnow(k) * PC::gravit.value / p_del(k), evpsnow + snowmlt) * PC::LatIce.value;
+      }
+
+      // precipitation fluxes
+      flxprec(k+1) = flxprec(k) + ntprprd(k) * p_del(k) / PC::gravit.value;
+      flxsnow(k+1) = flxsnow(k) + ntsnprd(k) * p_del(k) / PC::gravit.value;
+
+      flxprec(k+1) = ekat::impl::max(flxprec(k+1), Real(0.0));
+      flxsnow(k+1) = ekat::impl::max(flxsnow(k+1), Real(0.0));
+
+      // heating and moistening due to evaporation
+      if (runtime_opt.old_snow) {
+        tend_s(k) = -evpprec * PC::LatVap.value + ntsnprd(k) * PC::LatIce.value;
+      } else {
+        tend_s(k) = -evpprec * PC::LatVap.value + tend_s_snwevmlt(k);
+      }
+      tend_q(k) = evpprec;
+
+    } // k loop
+
+    // protect against rounding error
+    if (!runtime_opt.old_snow) {
+      if (flxsnow(pver) > flxprec(pver)) {
+        Real dum = (flxsnow(pver) - flxprec(pver)) * PC::gravit.value;
+        for (int k = pver - 1; k >= 0; --k) {
+          if (ntsnprd(k) > ntprprd(k) && dum > 0.0) {
+            ntsnprd(k) = ntsnprd(k) - dum / p_del(k);
+            tend_s_snwevmlt(k) = tend_s_snwevmlt(k) - dum / p_del(k) * PC::LatIce.value;
+            tend_s(k) = tend_s(k) - dum / p_del(k) * PC::LatIce.value;
+            dum = 0.0;
+          }
+        }
+        flxsnow(pver) = flxprec(pver);
+      }
+    }
+
+    // set output precipitation rates (m/s)
+    prec = flxprec(pver) / 1000.0;
+    snow = flxsnow(pver) / 1000.0;
+
+  }); // Kokkos::single
 }
 
 } // namespace zm

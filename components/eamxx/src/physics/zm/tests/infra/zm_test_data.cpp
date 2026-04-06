@@ -1071,6 +1071,10 @@ void zm_conv_main(ZmConvMainData& d)
     msemax_klev_g_d(vec1di_in[4]);
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
+  // zm_conv_main takes 21 workspace arrays; nested calls (compute_dilute_cape +
+  // compute_dilute_parcel) need up to ~11 more simultaneously, so 35 is sufficient.
+  WSM wsm(d.pver, 35, policy);
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
 
   // unpack data scalars because we do not want the lambda to capture d
   const Real time_step = d.time_step;
@@ -1112,6 +1116,8 @@ void zm_conv_main(ZmConvMainData& d)
 
     ZMF::zm_conv_main(
       team,
+      wsm.get_workspace(team),
+      init_cp,
       pver,
       pverp,
       is_first_step,
@@ -1224,6 +1230,11 @@ void zm_conv_evap(ZmConvEvapData& d)
   const Real time_step = d.time_step;
   const Int pver = d.pver;
   const Int pverp = d.pverp;
+  const bool pergro_active = d.pergro_active;
+
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+  init_cp.old_snow = d.old_snow;
+  init_cp.ke       = d.ke;
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
@@ -1247,6 +1258,8 @@ void zm_conv_evap(ZmConvEvapData& d)
 
     ZMF::zm_conv_evap(
       team,
+      init_cp,
+      pergro_active,
       pver,
       pverp,
       time_step,
@@ -1714,6 +1727,9 @@ void zm_closure(ZmClosureData& d)
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
+  WSM wsm(d.pver, 3, policy);
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+
   // unpack data scalars because we do not want the lambda to capture d
   const Real cape_threshold_in = d.cape_threshold_in;
   const Int msg = d.msg;
@@ -1749,6 +1765,8 @@ void zm_closure(ZmClosureData& d)
 
     ZMF::zm_closure(
       team,
+      wsm.get_workspace(team),
+      init_cp,
       pver,
       pverp,
       msg,

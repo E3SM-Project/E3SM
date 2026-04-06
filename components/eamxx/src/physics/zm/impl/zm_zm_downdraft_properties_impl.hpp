@@ -16,6 +16,7 @@ KOKKOS_FUNCTION
 void Functions<S,D>::zm_downdraft_properties(
   // Inputs
   const MemberType& team,
+  const ZmRuntimeOpt& runtime_opt,
   const Int& pver, // number of mid-point vertical levels
   const Int& pverp, // number of interface vertical levels
   const Int& msg, // number of levels to ignore at model top
@@ -49,8 +50,100 @@ void Functions<S,D>::zm_downdraft_properties(
   const uview_1d<Real>& evp, // evaporation rate
   Real& totevp) // total evap   for dndraft proportionality factor - see eq (4.106)
 {
-  // TODO
-  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
+  //----------------------------------------------------------------------------
+  // Purpose: Calculate properties of ZM downdrafts
+  // Notes:
+  // - Downward mass flux is scaled so that net flux (up-down) at cloud base in not negative
+  // - No downdrafts if jd>=jb
+  //----------------------------------------------------------------------------
+  // Local variables
+  Real ratmjb = 0; // ?
+  //----------------------------------------------------------------------------
+  // calculate downdraft mass flux
+  Kokkos::single(Kokkos::PerTeam(team), [&]() {
+    jt = ekat::impl::min(jt, jb-1);
+    jd = ekat::impl::max(j0, jt+1);
+    jd = ekat::impl::min(jd, jb);
+    h_dnd(jd) = h_env(jd-1);
+    if (jd < jb && lambda_max > 0) {
+      // NOTE - this nonsensical lambda_max/lambda_max factor
+      // was retained to preserve BFB results during ZM refactoring
+      mflx_dn(jd) = -runtime_opt.alfa * lambda_max / lambda_max;
+    }
+  });
+  team.team_barrier();
+
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg, pver), [&](const Int& k) {
+    if ((k > jd && k <= jb) && lambda_max > 0) {
+      const Real dz_tmp = z_int(jd) - z_int(k);
+      mflx_dn(k) = -runtime_opt.alfa / (2*lambda_max) * (std::exp(2*lambda_max*dz_tmp) - 1) / dz_tmp;
+    }
+  });
+  team.team_barrier();
+
+  Kokkos::single(Kokkos::PerTeam(team), [&]() {
+    if (lambda_max > 0 && jd < jb) {
+      ratmjb = ekat::impl::min(std::abs(mflx_up(jb) / mflx_dn(jb)), Real(1));
+    }
+  });
+  team.team_barrier();
+
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg, pver), [&](const Int& k) {
+    if ((k >= jt && k <= jb) && lambda_max > 0 && jd < jb) {
+      mflx_dn(k) *= ratmjb;
+    }
+  });
+  team.team_barrier();
+
+  //----------------------------------------------------------------------------
+  // calculate downdraft entrainment and MSE
+  Kokkos::single(Kokkos::PerTeam(team), [&]() {
+    for (Int k = msg; k < pver; ++k) {
+      if (k >= jt && lambda_max > 0) {
+        entr_dn(k-1) = (mflx_dn(k-1) - mflx_dn(k)) / dz(k-1);
+        const Real mdt = ekat::impl::min(mflx_dn(k), -ZMC::small);
+        h_dnd(k) = (mflx_dn(k-1)*h_dnd(k-1) - dz(k-1)*entr_dn(k-1)*h_env(k-1)) / mdt;
+      }
+    }
+  });
+  team.team_barrier();
+
+  //----------------------------------------------------------------------------
+  // calculate downdraft specific humidity
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg+1, pver), [&](const Int& k) {
+    if ((k >= jd && k <= jb) && lambda_max > 0 && jd < jb) {
+      q_dnd_sat(k) = qsthat(k) + gamhat(k)*(h_dnd(k) - hsthat(k)) / (PC::LatVap.value*(1 + gamhat(k)));
+    }
+  });
+  team.team_barrier();
+
+  //----------------------------------------------------------------------------
+  // downdraft quantities at source level
+  Kokkos::single(Kokkos::PerTeam(team), [&]() {
+    q_dnd(jd) = q_dnd_sat(jd);
+    s_dnd(jd) = (h_dnd(jd) - PC::LatVap.value*q_dnd(jd)) / PC::Cpair.value;
+  });
+  team.team_barrier();
+
+  //----------------------------------------------------------------------------
+  // calculate downdraft evaporation
+  Kokkos::single(Kokkos::PerTeam(team), [&]() {
+    for (Int k = msg+1; k < pver; ++k) {
+      if (k >= jd && k < jb && lambda_max > 0) {
+        q_dnd(k+1) = q_dnd_sat(k+1);
+        evp(k) = -entr_dn(k)*q_mid(k) + (mflx_dn(k)*q_dnd(k) - mflx_dn(k+1)*q_dnd(k+1)) / dz(k);
+        evp(k) = ekat::impl::max(evp(k), Real(0));
+        const Real mdt = ekat::impl::min(mflx_dn(k+1), -ZMC::small);
+        s_dnd(k+1) = ((PC::LatVap.value/PC::Cpair.value*evp(k) - entr_dn(k)*s_mid(k))*dz(k) + mflx_dn(k)*s_dnd(k)) / mdt;
+        totevp -= dz(k)*entr_dn(k)*q_mid(k);
+      }
+    }
+  });
+  team.team_barrier();
+
+  Kokkos::single(Kokkos::PerTeam(team), [&]() {
+    totevp += mflx_dn(jd)*q_dnd(jd) - mflx_dn(jb)*q_dnd(jb);
+  });
 }
 
 } // namespace zm

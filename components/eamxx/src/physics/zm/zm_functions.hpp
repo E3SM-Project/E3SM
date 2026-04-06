@@ -612,6 +612,8 @@ struct Functions {
   static void zm_conv_main(
     // Inputs
     const MemberType& team,
+    const Workspace& workspace,
+    const ZmRuntimeOpt& runtime_opt,
     const Int& pver, // number of mid-point levels
     const Int& pverp, // number of interface levels
     const bool& is_first_step, // flag for first step of run
@@ -661,6 +663,8 @@ struct Functions {
   static void zm_conv_evap(
     // Inputs
     const MemberType& team,
+    const ZmRuntimeOpt& runtime_opt,
+    const bool& pergro_active,
     const Int& pver, // number of mid-point vertical levels
     const Int& pverp, // number of interface vertical levels
     const Real& time_step, // model time step                         [s]
@@ -712,6 +716,7 @@ struct Functions {
   static void zm_downdraft_properties(
     // Inputs
     const MemberType& team,
+    const ZmRuntimeOpt& runtime_opt,
     const Int& pver, // number of mid-point vertical levels
     const Int& pverp, // number of interface vertical levels
     const Int& msg, // number of levels to ignore at model top
@@ -749,6 +754,8 @@ struct Functions {
   static void zm_cloud_properties(
     // Inputs
     const MemberType& team,
+    const Workspace& workspace,
+    const ZmRuntimeOpt& runtime_opt,
     const Int& pver, // number of mid-point vertical levels
     const Int& pverp, // number of interface vertical levels
     const Int& msg, // number of levels to ignore at model top
@@ -790,6 +797,8 @@ struct Functions {
   static void zm_closure(
     // Inputs
     const MemberType& team,
+    const Workspace& workspace,
+    const ZmRuntimeOpt& runtime_opt,
     const Int& pver, // number of mid-point vertical levels
     const Int& pverp, // number of interface vertical levels
     const Int& msg, // number of levels to ignore at model top

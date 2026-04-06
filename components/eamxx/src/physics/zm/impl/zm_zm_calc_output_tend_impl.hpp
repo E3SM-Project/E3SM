@@ -40,8 +40,57 @@ void Functions<S,D>::zm_calc_output_tend(
   const uview_1d<Real>& dqdt, // output tendency for specific humidity
   const uview_1d<Real>& dl) // output tendency for cloud liquid water
 {
-  // TODO
-  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
+  //----------------------------------------------------------------------------
+  // find the highest level top and bottom levels of convection
+  // trivial for single column: ktm = jt, kbm = mx
+  const Int ktm = jt;
+  const Int kbm = mx;
+
+  //----------------------------------------------------------------------------
+  // initialize variables
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg+1, pver), [&] (const Int& k) {
+    dsdt(k) = 0;
+    dqdt(k) = 0;
+    dl(k)   = 0;
+  });
+
+  team.team_barrier();
+
+  //----------------------------------------------------------------------------
+  // calculate large-scale tendencies
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, ktm, pver-1), [&] (const Int& k) {
+    const Real emc = -cu(k) + evp(k); // condensation in updraft and evaporating rain in downdraft
+
+    dsdt(k) = -PC::LatVap.value/PC::Cpair.value*emc +
+              ( +mflx_up(k+1)*(s_upd(k+1)-s_int(k+1)) - mflx_up(k)*(s_upd(k)-s_int(k))
+                +mflx_dn(k+1)*(s_dnd(k+1)-s_int(k+1)) - mflx_dn(k)*(s_dnd(k)-s_int(k))
+              )/p_del(k);
+
+    dqdt(k) = emc +
+              ( +mflx_up(k+1)*(q_upd(k+1)-q_int(k+1)) - mflx_up(k)*(q_upd(k)-q_int(k))
+                +mflx_dn(k+1)*(q_dnd(k+1)-q_int(k+1)) - mflx_dn(k)*(q_dnd(k)-q_int(k))
+              )/p_del(k);
+
+    dl(k) = detr_up(k)*ql(k+1);
+  });
+
+  team.team_barrier();
+
+  //----------------------------------------------------------------------------
+  // calculate large-scale tendencies at and below cloud base
+  Kokkos::single(Kokkos::PerTeam(team), [&] () {
+    for (int k = kbm; k < pver; ++k) {
+      if (k == mx) {
+        dsdt(k) = (Real(1)/dsubcld)* ( -mflx_up(k)*(s_upd(k)-s_int(k))
+                                       -mflx_dn(k)*(s_dnd(k)-s_int(k)) );
+        dqdt(k) = (Real(1)/dsubcld)* ( -mflx_up(k)*(q_upd(k)-q_int(k))
+                                       -mflx_dn(k)*(q_dnd(k)-q_int(k)) );
+      } else if (k > mx) {
+        dsdt(k) = dsdt(k-1);
+        dqdt(k) = dqdt(k-1);
+      }
+    }
+  });
 }
 
 } // namespace zm
