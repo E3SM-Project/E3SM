@@ -83,12 +83,12 @@
 	path = components/gcam/src
 	url = git@github.com:E3SM-Project/giac
 	branch = aldivi/iac_gcam6_merge_co2
-[submodule "externals/cpptrace"]
-	path = externals/cpptrace
-	url = git@github.com:jeremy-rifkin/cpptrace
 [submodule "components/omega/external/yaml-cpp"]
 	path = components/omega/external/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
 [submodule "components/omega/external/GSW-C"]
 	path = components/omega/external/GSW-C
 	url = git@github.com:E3SM-Project/GSW-C.git
+[submodule "components/omega/external/cpptrace"]
+	path = components/omega/external/cpptrace
+	url = https://github.com/jeremy-rifkin/cpptrace.git

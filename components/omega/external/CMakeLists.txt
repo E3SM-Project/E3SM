@@ -137,7 +137,7 @@ endif()
 if (NOT TARGET cpptrace::cpptrace)
 	option(CPPTRACE_INHERIT_HOST_STANDARD "" ON)
 	add_subdirectory(
-	  ${E3SM_EXTERNALS_ROOT}/cpptrace
-	  ${CMAKE_CURRENT_BINARY_DIR}/cpptrace
+	  ${OMEGA_SOURCE_DIR}/external/cpptrace
+	  ${CMAKE_CURRENT_BINARY_DIR}/external/cpptrace
 	)
 endif()

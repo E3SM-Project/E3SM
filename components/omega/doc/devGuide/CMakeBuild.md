@@ -124,7 +124,6 @@ git submodule update --init --recursive \
 	externals/YAKL \
 	externals/ekat \
 	externals/scorpio \
-	externals/cpptrace \
 	components/omega/external \
 	cime
 ```
