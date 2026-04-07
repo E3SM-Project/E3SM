@@ -1,3 +1,4 @@
+<!-- markdownlint-disable -->
 # EAMxx (SCREAM) Agent Guide
 
 This guide covers standalone testing of EAMxx modifications. It does NOT
