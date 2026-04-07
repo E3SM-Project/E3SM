@@ -50,6 +50,8 @@ void initPGradTest() {
 
    // First step of time stepper initialization needed for IOstream
    TimeStepper::init1();
+   TimeStepper *DefStepper = TimeStepper::getDefault();
+   Clock *ModelClock       = DefStepper->getClock();
 
    // Initialize the IO system
    IO::init(DefComm);
@@ -57,8 +59,12 @@ void initPGradTest() {
    // Create the default decomposition (initializes the decomposition)
    Decomp::init();
 
-   // Initialize streams
-   IOStream::init();
+   // Initialize Field infrastructure
+   Field::init(ModelClock);
+
+   // Initialize IOStreams - this does not yet validate the contents
+   // of each file, only creates streams from Config
+   IOStream::init(ModelClock);
 
    // Initialize the default halo
    Err1 = Halo::init();
@@ -68,7 +74,7 @@ void initPGradTest() {
    }
 
    // Initialize the default mesh
-   HorzMesh::init();
+   HorzMesh::init(ModelClock);
 
    // Initialize the default vertical coordinate
    VertCoord::init();
