@@ -74,7 +74,7 @@ void SHOCMacrophysics::create_requests()
   add_field<Required>("p_int",          scalar3d_int, Pa,    grid_name, ps);
   add_field<Required>("pseudo_density", scalar3d_mid, Pa,    grid_name, ps);
   add_field<Required>("phis",           scalar2d    , m2/s2, grid_name);
-  add_field<Required>("strain2",        scalar3d_mid,nondim/s2,   grid_name, ps);
+  add_field<Required>("tke_shear_strain", scalar3d_mid,nondim/s2,   grid_name, ps);
 
   // Input/Output variables
   add_field<Updated>("horiz_winds",   vector3d_mid,   m/s,     grid_name, ps);
@@ -284,7 +284,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto& surf_sens_flux      = get_field_in("surf_sens_flux").get_view<const Real*>();
   const auto& surf_evap           = get_field_in("surf_evap").get_view<const Real*>();
   const auto& surf_mom_flux       = get_field_in("surf_mom_flux").get_view<const Real**>();
-  const auto& strain2             = get_field_in("strain2").get_view<const Pack**>();
+  const auto& strain2             = get_field_in("tke_shear_strain").get_view<const Pack**>();
   const auto& qtracers            = get_group_out("turbulence_advected_tracers").m_monolithic_field->get_strided_view<Pack***>();
   const auto& qc                  = get_field_out("qc").get_view<Pack**>();
   const auto& qv                  = get_field_out("qv").get_view<Pack**>();
