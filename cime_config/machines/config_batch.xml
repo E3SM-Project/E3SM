@@ -783,6 +783,23 @@
          </queues>
    </batch_system>
 
+   <batch_system MACH="pathfinder" type="slurm" >
+         <submit_args>
+           <arg flag="-A hpcl-cli185"/>         
+           <arg flag="-q normal"/>
+           <arg flag="--mem=0G"/>
+           <!--  arg flag="-ntasks-per-node 32"/   NOT SURE right now -->
+         </submit_args>
+         <directives>
+           <directive> --ntasks={{ total_tasks }}</directive>
+           <directive> --cpus-per-task={{ thread_count }}</directive>
+         </directives>
+         <queues>
+            <queue walltimemax="120:00" default="true">parallel</queue>
+            <queue walltimemax="24:00">serial</queue>
+         </queues>
+   </batch_system>
+
    <batch_system MACH="itasca" type="pbs">
      <queues>
        <queue walltimemax="24:00" default="true">batch</queue>
