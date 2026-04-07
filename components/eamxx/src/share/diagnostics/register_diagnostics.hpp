@@ -23,7 +23,8 @@
 #include "aodvis.hpp"
 #include "number_path.hpp"
 #include "aerocom_cld.hpp"
-#include "atm_backtend.hpp"
+#include "field_prev.hpp"
+#include "field_over_dt.hpp"
 #include "horiz_avg.hpp"
 #include "vert_contract.hpp"
 #include "vert_derivative.hpp"
@@ -57,7 +58,8 @@ inline void register_diagnostics () {
   diag_factory.register_product("AerosolOpticalDepth550nm",&create_atmosphere_diagnostic<AODVis>);
   diag_factory.register_product("NumberPath",&create_atmosphere_diagnostic<NumberPathDiagnostic>);
   diag_factory.register_product("AeroComCld",&create_atmosphere_diagnostic<AeroComCld>);
-  diag_factory.register_product("AtmBackTendDiag",&create_atmosphere_diagnostic<AtmBackTendDiag>);
+  diag_factory.register_product("FieldPrevDiag",&create_atmosphere_diagnostic<FieldPrevDiag>);
+  diag_factory.register_product("FieldOverDtDiag",&create_atmosphere_diagnostic<FieldOverDtDiag>);
   diag_factory.register_product("HorizAvgDiag",&create_atmosphere_diagnostic<HorizAvgDiag>);
   diag_factory.register_product("VertContractDiag",&create_atmosphere_diagnostic<VertContractDiag>);
   diag_factory.register_product("VertDerivativeDiag",&create_atmosphere_diagnostic<VertDerivativeDiag>);

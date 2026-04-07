@@ -108,10 +108,24 @@ TEST_CASE("create_diag")
     REQUIRE (d2->get_params().get<std::string>("wind_component")=="Zonal");
   }
 
-  SECTION ("atm_tend") {
+  SECTION ("atm_backtend") {
+    // _atm_backtend is a built-in alias: X_atm_backtend → X_minus_X_prev_over_dt
+    // The returned diagnostic is FieldOverDtDiag with field_name = "BlaH_123_minus_BlaH_123_prev"
     auto d1 = create_diagnostic("BlaH_123_atm_backtend",grid);
-    REQUIRE (std::dynamic_pointer_cast<AtmBackTendDiag>(d1)!=nullptr);
-    REQUIRE (d1->get_params().get<std::string>("tendency_name")=="BlaH_123");
+    REQUIRE (std::dynamic_pointer_cast<FieldOverDtDiag>(d1)!=nullptr);
+    REQUIRE (d1->get_params().get<std::string>("field_name")=="BlaH_123_minus_BlaH_123_prev");
+  }
+
+  SECTION ("field_prev") {
+    auto d1 = create_diagnostic("BlaH_123_prev",grid);
+    REQUIRE (std::dynamic_pointer_cast<FieldPrevDiag>(d1)!=nullptr);
+    REQUIRE (d1->get_params().get<std::string>("field_name")=="BlaH_123");
+  }
+
+  SECTION ("field_over_dt") {
+    auto d1 = create_diagnostic("BlaH_123_over_dt",grid);
+    REQUIRE (std::dynamic_pointer_cast<FieldOverDtDiag>(d1)!=nullptr);
+    REQUIRE (d1->get_params().get<std::string>("field_name")=="BlaH_123");
   }
 
   SECTION ("pot_temp") {
