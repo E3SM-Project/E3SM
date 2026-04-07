@@ -534,6 +534,13 @@ create_vert_remapper (const VertRemapData& data)
     return;
   }
 
+  // For non-Custom remap types, data is at pressure levels, so
+  // the grids before/after hremap MUST have vkind=Pressure
+  if (m_vr_type!=Custom) {
+    m_grid_after_hremap->reset_vertical_configuration(data_nlevs,vkind_p);
+    m_data_grid->reset_vertical_configuration(data_nlevs,vkind_p);
+  }
+
   if (data.custom_remapper) {
     // The user provided a remapper. If vr_type is not Custom, this MUST be a VerticalRemapper.
     EKAT_REQUIRE_MSG (m_vr_type==Custom or std::dynamic_pointer_cast<VerticalRemapper>(data.custom_remapper),
@@ -563,12 +570,6 @@ create_vert_remapper (const VertRemapData& data)
         " - custom remapper num levels : " + std::to_string(tgt_nlevs) + "\n");
 
     m_vert_remapper = data.custom_remapper;
-
-    const auto& vr_src_grid = data.custom_remapper->get_src_grid();
-    if (vr_src_grid->get_vkind()==vkind_p) {
-      m_grid_after_hremap->reset_vertical_configuration(data_nlevs,vkind_p);
-      m_data_grid->reset_vertical_configuration(data_nlevs,vkind_p);
-    }
   } else {
     auto s2et = [](const std::string& s) {
       if (s=="P0") {
@@ -583,10 +584,6 @@ create_vert_remapper (const VertRemapData& data)
         return static_cast<VerticalRemapper::ExtrapType>(-1);
       }
     };
-
-    // The grids before/after hremap MUST have vkind=Pressure
-    m_grid_after_hremap->reset_vertical_configuration(data_nlevs,vkind_p);
-    m_data_grid->reset_vertical_configuration(data_nlevs,vkind_p);
 
     // We need to build a vert remapper based on the input data.
     // Note: on src grid, we don't distinguish midpoints from interfaces, while on tgt we do.
