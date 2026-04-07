@@ -52,10 +52,10 @@ class GWDrag : public AtmosphereProcess
     // Structure for storing local variables initialized using the ATMBufferManager
     struct Buffer {
       static constexpr int num_3d_mid_views   = 1;
-      static constexpr int num_3d_pcnst_views = 2;
+      static constexpr int num_3d_pcnst_views = 3;
       static constexpr int num_3d_cd_views    = 1;
       static constexpr int num_3d_pgw_views   = 1;
-      static constexpr int num_2d_mid_views   = 13;
+      static constexpr int num_2d_mid_views   = 16;
       static constexpr int num_2d_int_views   = 6;
       static constexpr int num_2d_pgw_views   = 1;
       uview_2d z_mid;       // mid-point altitude
@@ -77,10 +77,15 @@ class GWDrag : public AtmosphereProcess
       uview_2d kvtt;    // molecular diffusivity
       uview_2d dse;     // dry static energy
 
-      uview_2d utgw;    // temperature tendency
-      uview_2d vtgw;    // zonal wind tendency
-      uview_2d ttgw;    // meridional wind tendency
-      uview_3d qtgw;    // constituents tendencies
+      uview_2d utgw;    // intermediate temperature tendency
+      uview_2d vtgw;    // intermediate zonal wind tendency
+      uview_2d ttgw;    // intermediate meridional wind tendency
+      uview_3d qtgw;    // intermediate constituents tendencies
+
+      uview_2d gw_tend_u;    // intermediate temperature tendency
+      uview_2d gw_tend_v;    // intermediate zonal wind tendency
+      uview_2d gw_tend_t;    // intermediate meridional wind tendency
+      uview_3d gw_tend_q;    // intermediate constituents tendencies
 
       uview_3d taucd;   // reynolds stress for waves propagating in each cardinal direction
 

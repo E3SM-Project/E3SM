@@ -162,12 +162,13 @@ void GWDrag::run_impl (const double dt) {
   const auto loc_p_int = p_int;
   const auto loc_p_del = p_del;
 
-  auto loc_T_mid = T_mid;
-  auto loc_qv    = qv;
-  auto loc_qc    = qc;
-  auto loc_qi    = qi;
-  auto loc_uwind = uwind;
-  auto loc_vwind = vwind;
+  auto loc_T_mid       = T_mid;
+  auto loc_qv          = qv;
+  auto loc_qc          = qc;
+  auto loc_qi          = qi;
+  auto loc_uwind       = uwind;
+  auto loc_vwind       = vwind;
+  auto loc_landfrac    = landfrac;
 
   auto loc_z_mid       = m_buffer.z_mid;
   auto loc_z_del       = m_buffer.z_del;
@@ -189,6 +190,10 @@ void GWDrag::run_impl (const double dt) {
   auto loc_vtgw        = m_buffer.vtgw;
   auto loc_ttgw        = m_buffer.ttgw;
   auto loc_qtgw        = m_buffer.qtgw;
+  auto loc_gw_tend_u   = m_buffer.gw_tend_u;
+  auto loc_gw_tend_v   = m_buffer.gw_tend_v;
+  auto loc_gw_tend_t   = m_buffer.gw_tend_t;
+  auto loc_gw_tend_q   = m_buffer.gw_tend_q;
   auto loc_taucd       = m_buffer.taucd;
   auto loc_egwdffi     = m_buffer.egwdffi;
   auto loc_gwut        = m_buffer.gwut;
@@ -196,7 +201,7 @@ void GWDrag::run_impl (const double dt) {
   auto loc_dttke       = m_buffer.dttke;
   //----------------------------------------------------------------------------
   // populate q_combined
-  Kokkos::parallel_for("zm_update_prognostic",KT::RangePolicy(0, m_ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int idx) {
+  Kokkos::parallel_for(KT::RangePolicy(0, m_ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int idx) {
     const int i = idx/nlev_mid_packs;
     const int k = idx%nlev_mid_packs;
     loc_q_combined(i, k, 0) = loc_qv(i,k);
@@ -236,7 +241,13 @@ void GWDrag::run_impl (const double dt) {
     loc_p_int_log(i,k) = ekat::log(loc_p_int(i,k));
   });
   //----------------------------------------------------------------------------
-
+  // initialize output tendencies
+  Kokkos::deep_copy(loc_gw_tend_u,0.0);
+  Kokkos::deep_copy(loc_gw_tend_v,0.0);
+  Kokkos::deep_copy(loc_gw_tend_t,0.0);
+  Kokkos::deep_copy(loc_gw_tend_q,0.0);
+  //----------------------------------------------------------------------------
+  // Compute profiles of background state
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
     const Int i = team.league_rank();
     // Get single-column subviews of all inputs
@@ -261,15 +272,20 @@ void GWDrag::run_impl (const double dt) {
     GWF::gw_prof(team, m_nlev, PC::Cpair.value,
                  T_mid_i, p_mid_i, p_int_i,
                  rho_int_i, T_int_i, N_mid_i, N_int_i);
-
   });
 
-  // // Calculate local molecular diffusivity
-  // if (do_molec_diff) {
-  //   ???
-  // }
-
-
+  //----------------------------------------------------------------------------
+  // Calculate local molecular diffusivity
+  // NOTE - if we need moelcular diffusion then this is where we would calculate
+  // the local diffusivity. However, the molecular viscosity coefficient increases
+  // exponentially with altitude, so this process become increasingly important
+  // in thermal conduction, species transport, and momentum damping at higher
+  // altitudes. The critical altitude is the homopause/turbopause, where the molecular
+  // diffusion/viscosity becomes comparable with turbulence diffusion, and is
+  // dominant above. So for model tops above 100 km molecular diffusion/viscosity
+  // is needed (i.e. WACCM), but currently this is not a priority for EAMxx.
+  // if (do_molec_diff) { ??? }
+  //----------------------------------------------------------------------------
   // Convective gravity waves (Beres scheme)
   if (GWF::s_common_init.use_gw_convect) {
 
@@ -329,6 +345,7 @@ void GWDrag::run_impl (const double dt) {
       const auto N_mid_i      = ekat::scalarize(ekat::subview(loc_N_mid, i));
       const auto N_int_i      = ekat::scalarize(ekat::subview(loc_N_int, i));
       const auto rho_int_i    = ekat::scalarize(ekat::subview(loc_rho_int,i));
+      const auto landfrac_i   = ekat::scalarize(ekat::subview(loc_landfrac,i));
       const auto tau_i        = ekat::scalarize(ekat::subview(loc_tau, i));
       const auto ubm_i        = ekat::scalarize(ekat::subview(loc_ubm, i));
       const auto ubi_i        = ekat::scalarize(ekat::subview(loc_ubi, i));
@@ -339,6 +356,10 @@ void GWDrag::run_impl (const double dt) {
       const auto vtgw_i       = ekat::scalarize(ekat::subview(loc_vtgw, i));
       const auto ttgw_i       = ekat::scalarize(ekat::subview(loc_ttgw, i));
       const auto qtgw_i       = ekat::scalarize(ekat::subview(loc_qtgw, i));
+      const auto loc_gw_tend_u_i = ekat::scalarize(ekat::subview(loc_gw_tend_u, i));
+      const auto loc_gw_tend_v_i = ekat::scalarize(ekat::subview(loc_gw_tend_v, i));
+      const auto loc_gw_tend_t_i = ekat::scalarize(ekat::subview(loc_gw_tend_t, i));
+      const auto loc_gw_tend_q_i = ekat::scalarize(ekat::subview(loc_gw_tend_q, i));
       const auto taucd_i      = ekat::scalarize(ekat::subview(loc_taucd, i));
       const auto egwdffi_i    = ekat::scalarize(ekat::subview(loc_egwdffi, i));
       const auto gwut_i       = ekat::scalarize(ekat::subview(loc_gwut, i));
@@ -373,37 +394,47 @@ void GWDrag::run_impl (const double dt) {
                         utgw_i, vtgw_i, ttgw_i, qtgw_i,
                         taucd_i, egwdffi_i, gwut_i, dttdf_i, dttke_i);
 
-      // // GW energy fixer
-      // do k = 1, pver
-      //    utgw(:,k) = utgw(:,k) * cam_in%landfrac(:ncol)
-      //    ptend%u(:ncol,k) = ptend%u(:ncol,k) + utgw(:,k)
-      //    vtgw(:,k) = vtgw(:,k) * cam_in%landfrac(:ncol)
-      //    ptend%v(:ncol,k) = ptend%v(:ncol,k) + vtgw(:,k)
-      //    ptend%s(:ncol,k) = ptend%s(:ncol,k) + ttgw(:,k)
-      // enddo
-
-      // dE = 0.0
-      // do k = 1, pver
-      //    dE(:ncol) = dE(:ncol) &
-      //              - dpm(:ncol,k)*(ptend%u(:ncol,k) * (u(:ncol,k)+ptend%u(:ncol,k)*0.5_r8*dt) &
-      //                             +ptend%v(:ncol,k) * (v(:ncol,k)+ptend%v(:ncol,k)*0.5_r8*dt) &
-      //                             +ptend%s(:ncol,k) )
-      // enddo
-      // dE(:ncol)=dE(:ncol) / (pint(:ncol,pver+1) - pint(:ncol,1))
-
-      // do k = 1, pver
-      //    ptend%s(:ncol,k) = ptend%s(:ncol,k) + dE(:ncol)
-      //    ttgw(:ncol,k) = ( ttgw(:ncol,k) + dE(:ncol) ) / cpairv(:ncol, k, lchnk)
-      // enddo
-
-      // // add orographic constituent tendencies to total constituent tendencies
-      // do m = 1, pcnst
-      //     do k = 1, pver
-      //        ptend%q(:ncol,k,m) = ptend%q(:ncol,k,m) + qtgw(:,k,m)
-      //     end do
-      // end do
-
     });
+
+    // add tendencies to aggregate output tendencies
+    Kokkos::parallel_for(KT::RangePolicy(0, m_ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int idx) {
+      const int i = idx/nlev_mid_packs;
+      const int k = idx%nlev_mid_packs;
+      loc_gw_tend_u(i,k) += loc_utgw(i,k) * landfrac(i);
+      loc_gw_tend_v(i,k) += loc_vtgw(i,k) * landfrac(i);
+      loc_gw_tend_t(i,k) += loc_ttgw(i,k) * landfrac(i);
+      loc_gw_tend_q(i,k) += loc_qtgw(i,k,0) * landfrac(i);
+    });
+
+    // // GW energy fixer
+    // do k = 1, pver
+    //    utgw(:,k) = utgw(:,k) * cam_in%landfrac(:ncol)
+    //    ptend%u(:ncol,k) = ptend%u(:ncol,k) + utgw(:,k)
+    //    vtgw(:,k) = vtgw(:,k) * cam_in%landfrac(:ncol)
+    //    ptend%v(:ncol,k) = ptend%v(:ncol,k) + vtgw(:,k)
+    //    ptend%s(:ncol,k) = ptend%s(:ncol,k) + ttgw(:,k)
+    // enddo
+
+    // dE = 0.0
+    // do k = 1, pver
+    //    dE(:ncol) = dE(:ncol) &
+    //              - dpm(:ncol,k)*(ptend%u(:ncol,k) * (u(:ncol,k)+ptend%u(:ncol,k)*0.5_r8*dt) &
+    //                             +ptend%v(:ncol,k) * (v(:ncol,k)+ptend%v(:ncol,k)*0.5_r8*dt) &
+    //                             +ptend%s(:ncol,k) )
+    // enddo
+    // dE(:ncol)=dE(:ncol) / (pint(:ncol,pver+1) - pint(:ncol,1))
+
+    // do k = 1, pver
+    //    ptend%s(:ncol,k) = ptend%s(:ncol,k) + dE(:ncol)
+    //    ttgw(:ncol,k) = ( ttgw(:ncol,k) + dE(:ncol) ) / cpairv(:ncol, k, lchnk)
+    // enddo
+
+    // // add orographic constituent tendencies to total constituent tendencies
+    // do m = 1, pcnst
+    //     do k = 1, pver
+    //        ptend%q(:ncol,k,m) = ptend%q(:ncol,k,m) + qtgw(:,k,m)
+    //     end do
+    // end do
   }
 
   // Convert the tendencies for the dry constituents to dry air basis.
@@ -457,7 +488,8 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
   //----------------------------------------------------------------------------
   uview_3d* buffer_3d_pcnst_view_ptrs[Buffer::num_3d_pcnst_views] = {
     &m_buffer.q_combined,
-    &m_buffer.qtgw
+    &m_buffer.qtgw,
+    &m_buffer.gw_tend_q
   };
   for (int i=0; i<Buffer::num_3d_pcnst_views; ++i) {
     *buffer_3d_pcnst_view_ptrs[i] = uview_3d(mem, m_ncol, nlev_mid_packs, pcnst);
@@ -491,6 +523,9 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
     &m_buffer.utgw,
     &m_buffer.vtgw,
     &m_buffer.ttgw,
+    &m_buffer.gw_tend_u,
+    &m_buffer.gw_tend_v,
+    &m_buffer.gw_tend_t,
     &m_buffer.dttdf,
     &m_buffer.dttke,
     &m_buffer.p_del_rcp
