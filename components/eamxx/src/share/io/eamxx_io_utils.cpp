@@ -122,7 +122,8 @@ util::TimeStamp read_timestamp (const std::string& filename,
 }
 
 std::pair<util::TimeStamp,int>
-parse_cf_time_units (const std::string& units_str)
+parse_cf_time_units (const std::string& units_str,
+                     const std::string& filename)
 {
   // Find the " since " separator
   const std::string sep = " since ";
@@ -130,7 +131,8 @@ parse_cf_time_units (const std::string& units_str)
   EKAT_REQUIRE_MSG (pos!=std::string::npos,
       "Error! Could not parse CF-compliant time units string.\n"
       " - units string: '" + units_str + "'\n"
-      " - Expected format: '<unit> since <YYYY-MM-DD> [HH[:MM[:SS]]]'\n");
+      " - Expected format: '<unit> since <YYYY-MM-DD> [HH[:MM[:SS]]]'\n"
+      " - Filename: " + filename + "\n");
 
   // Map unit name to seconds using exact matching
   auto unit_str = units_str.substr(0,pos);
@@ -148,7 +150,8 @@ parse_cf_time_units (const std::string& units_str)
         "Error! Unsupported time unit in CF-compliant units string.\n"
         " - units string: '" + units_str + "'\n"
         " - unit: '" + unit_str + "'\n"
-        " - Supported units: second(s), minute(s), hour(s), day(s)\n");
+        " - Supported units: second(s), minute(s), hour(s), day(s)\n"
+        " - Filename: " + filename + "\n");
   }
 
   // Extract and parse the reference date/time string
@@ -164,7 +167,8 @@ parse_cf_time_units (const std::string& units_str)
   EKAT_REQUIRE_MSG (date_str.size()>=10 && date_str[4]=='-' && date_str[7]=='-',
       "Error! Could not parse reference date in CF-compliant time units string.\n"
       " - units string: '" + units_str + "'\n"
-      " - date/time part: '" + date_str + "'\n");
+      " - date/time part: '" + date_str + "'\n"
+      " - Filename: " + filename + "\n");
 
   int yy = 0, mon = 0, dd = 0;
   try {
@@ -175,7 +179,8 @@ parse_cf_time_units (const std::string& units_str)
     EKAT_ERROR_MSG (
         "Error! Could not parse date components in CF-compliant time units string.\n"
         " - units string: '" + units_str + "'\n"
-        " - date/time part: '" + date_str + "'\n");
+        " - date/time part: '" + date_str + "'\n"
+        " - Filename: " + filename + "\n");
   }
   int hh = 0, min = 0, sec = 0;
 
@@ -185,11 +190,13 @@ parse_cf_time_units (const std::string& units_str)
     EKAT_REQUIRE_MSG (sep_char==' ' || sep_char=='T',
         "Error! Invalid separator between date and time in CF-compliant units string.\n"
         " - units string: '" + units_str + "'\n"
-        " - date/time part: '" + date_str + "'\n");
+        " - date/time part: '" + date_str + "'\n"
+        " - Filename: " + filename + "\n");
     auto time_part = date_str.substr(11);
     EKAT_REQUIRE_MSG (time_part.size() >= 2,
         "Error! Could not parse time in CF-compliant units string.\n"
-        " - units string: '" + units_str + "'\n");
+        " - units string: '" + units_str + "'\n"
+        " - Filename: " + filename + "\n");
     try {
       hh = std::stoi(time_part.substr(0,2));
       if (time_part.size() >= 5 && time_part[2] == ':') {
@@ -202,14 +209,16 @@ parse_cf_time_units (const std::string& units_str)
       EKAT_ERROR_MSG (
           "Error! Could not parse time components in CF-compliant time units string.\n"
           " - units string: '" + units_str + "'\n"
-          " - time part: '" + time_part + "'\n");
+          " - time part: '" + time_part + "'\n"
+          " - Filename: " + filename + "\n");
     }
   }
 
   ref_ts = util::TimeStamp({yy,mon,dd},{hh,min,sec});
   EKAT_REQUIRE_MSG (ref_ts.is_valid(),
       "Error! Could not create a valid TimeStamp from CF-compliant units string.\n"
-      " - units string: '" + units_str + "'\n");
+      " - units string: '" + units_str + "'\n"
+      " - Filename: " + filename + "\n");
 
   return {ref_ts, time_mult};
 }
