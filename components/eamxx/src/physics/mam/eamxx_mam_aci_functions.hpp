@@ -401,7 +401,7 @@ void call_function_dropmixnuc(
 
 // Update cloud borne aerosols
 void update_cloud_borne_aerosols(
-    const MAMAci::view_3d qqcw_fld_work, const int nlev,
+    const MAMAci::view_3d qqcw_fld_work,
     // output
     mam_coupling::AerosolState &dry_aero) {
   int ind_qqcw = 0;

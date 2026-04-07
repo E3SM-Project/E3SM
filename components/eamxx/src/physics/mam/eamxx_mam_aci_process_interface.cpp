@@ -605,7 +605,7 @@ void MAMAci::run_impl(const double dt) {
   //---------------------------------------------------------------
 
   // Update cloud borne aerosols
-  update_cloud_borne_aerosols(qqcw_fld_work_, nlev_,
+  update_cloud_borne_aerosols(qqcw_fld_work_,
                               // output
                               dry_aero_);
 
