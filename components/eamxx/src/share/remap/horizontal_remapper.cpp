@@ -57,18 +57,10 @@ HorizontalRemapper (const grid_ptr_type& grid,
   // grids that only differ in terms of number of levs. Such remappers cannot
   // store the same generated grid.
   // So we soft-clone the generated grid, and reset the number of levels.
-  // This requires to also delete any geo data that has the lev dim, as we cannot map it
+  // reset_vertical_configuration also deletes any geo data with lev dim, as we cannot map it
   auto gen_grid = built_from_src ? m_remap_data->m_tgt_grid : m_remap_data->m_src_grid;
   auto other_grid = gen_grid->clone(gen_grid->name(),true);
   other_grid->reset_vertical_configuration(grid->get_num_vertical_levels(), grid->get_vkind());
-  using namespace ShortFieldTagsNames;
-  for (const auto& name : gen_grid->get_geometry_data_names()) {
-    const auto& f = gen_grid->get_geometry_data(name);
-    const auto& fl = f.get_header().get_identifier().get_layout();
-    if (fl.has_tag(LEV) or fl.has_tag(ILEV) or fl.has_tag(LEVP)) {
-      other_grid->delete_geometry_data(name);
-    }
-  }
 
   if (built_from_src) {
     set_grids(grid,other_grid);
