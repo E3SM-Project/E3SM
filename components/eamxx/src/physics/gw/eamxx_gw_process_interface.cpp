@@ -217,6 +217,10 @@ void GWDrag::run_impl (const double dt) {
   auto loc_vtgw        = m_buffer.vtgw;
   auto loc_ttgw        = m_buffer.ttgw;
   auto loc_qtgw        = m_buffer.qtgw;
+  auto loc_gw_tend_u   = m_buffer.gw_tend_u;
+  auto loc_gw_tend_v   = m_buffer.gw_tend_v;
+  auto loc_gw_tend_t   = m_buffer.gw_tend_t;
+  auto loc_gw_tend_q   = m_buffer.gw_tend_q;
   auto loc_taucd       = m_buffer.taucd;
   auto loc_egwdffi     = m_buffer.egwdffi;
   auto loc_gwut        = m_buffer.gwut;
@@ -224,7 +228,7 @@ void GWDrag::run_impl (const double dt) {
   auto loc_dttke       = m_buffer.dttke;
   //----------------------------------------------------------------------------
   // populate q_combined
-  Kokkos::parallel_for("zm_update_prognostic",KT::RangePolicy(0, m_ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int idx) {
+  Kokkos::parallel_for(KT::RangePolicy(0, m_ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int idx) {
     const int i = idx/nlev_mid_packs;
     const int k = idx%nlev_mid_packs;
     loc_q_combined(i, k, 0) = loc_qv(i,k);
@@ -440,9 +444,6 @@ void GWDrag::run_impl (const double dt) {
 
   });
 
-  
-
-
   //----------------------------------------------------------------------------
   // Calculate local molecular diffusivity
   // NOTE - if we need moelcular diffusion then this is where we would calculate
@@ -517,6 +518,7 @@ void GWDrag::run_impl (const double dt) {
       const auto N_mid_i      = ekat::scalarize(ekat::subview(loc_N_mid, i));
       const auto N_int_i      = ekat::scalarize(ekat::subview(loc_N_int, i));
       const auto rho_int_i    = ekat::scalarize(ekat::subview(loc_rho_int,i));
+      const auto landfrac_i   = ekat::scalarize(ekat::subview(loc_landfrac,i));
       const auto tau_i        = ekat::scalarize(ekat::subview(loc_tau, i));
       const auto ubm_i        = ekat::scalarize(ekat::subview(loc_ubm, i));
       const auto ubi_i        = ekat::scalarize(ekat::subview(loc_ubi, i));
@@ -1127,7 +1129,8 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
   //----------------------------------------------------------------------------
   uview_3d* buffer_3d_pcnst_view_ptrs[Buffer::num_3d_pcnst_views] = {
     &m_buffer.q_combined,
-    &m_buffer.qtgw
+    &m_buffer.qtgw,
+    &m_buffer.gw_tend_q
   };
   for (int i=0; i<Buffer::num_3d_pcnst_views; ++i) {
     *buffer_3d_pcnst_view_ptrs[i] = uview_3d(mem, m_ncol, nlev_mid_packs, pcnst);
@@ -1161,6 +1164,9 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
     &m_buffer.utgw,
     &m_buffer.vtgw,
     &m_buffer.ttgw,
+    &m_buffer.gw_tend_u,
+    &m_buffer.gw_tend_v,
+    &m_buffer.gw_tend_t,
     &m_buffer.dttdf,
     &m_buffer.dttke,
     &m_buffer.p_del_rcp
