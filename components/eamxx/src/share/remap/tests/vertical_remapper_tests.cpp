@@ -13,7 +13,6 @@ constexpr auto P0 = VerticalRemapper::P0;
 constexpr auto Mask = VerticalRemapper::Mask;
 constexpr auto Top = VerticalRemapper::Top;
 constexpr auto Bot = VerticalRemapper::Bot;
-constexpr auto TopBot = VerticalRemapper::TopAndBot;
 constexpr Real fill_val = constants::fill_value<Real>;
 
 template<typename... Args>
@@ -66,12 +65,7 @@ create_field(const std::string& name,
   f.allocate_view();
 
   if (create_valid_mask) {
-    // Set a mask (1=filled, 0=valid) to be used in testing the results
-    FieldIdentifier mask_id("is_filled",fl,units,grid->name(),DataType::IntType);
-    Field mask(mask_id);
-    mask.allocate_view();
-    mask.deep_copy(0); // Init with "all good"
-    f.get_header().set_extra_data("is_filled",mask);
+    f.create_valid_mask(Field::MaskInit::Valid);
   }
   return f;
 }
@@ -172,7 +166,7 @@ void extrapolate (const Field& p_src, const Field& p_tgt, const Field& f,
   const int ncols = l.dims().front();
   const int nlevs = l.dims().back();
   const int nlevs_src = p_src.get_header().get_identifier().get_layout().dims().back();
-  auto mask = f.get_header().get_extra_data<Field>("is_filled");
+  auto mask = f.get_valid_mask();
 
   switch (l.type()) {
     case LayoutType::Scalar2D: break;
@@ -190,14 +184,14 @@ void extrapolate (const Field& p_src, const Field& p_tgt, const Field& f,
           if (p>pmax) {
             if (etype_bot==Mask) {
               v(i,j) = fill_val;
-              m(i,j) = 1;
+              m(i,j) = 0;
             } else {
               v(i,j) = data_func(i,0,pmax);
             }
           } else if (p<pmin) {
             if (etype_top==Mask) {
               v(i,j) = fill_val;
-              m(i,j) = 1;
+              m(i,j) = 0;
             } else {
               v(i,j) = data_func(i,0,pmin);
             }
@@ -368,27 +362,31 @@ TEST_CASE ("vertical_remapper") {
   // Helper lambda, to create p_int profile. If it is a 3d field, make same profile on each col
   auto create_pint = [&](const auto& grid, const bool one_d, const Real ptop, const Real pbot) {
     using namespace ShortFieldTagsNames;
-    auto layout = one_d ? grid->get_vertical_layout(ILEV)
-                        : grid->get_3d_scalar_layout(ILEV);
+    auto tag = grid->get_vkind()==AbstractGrid::VKind::Model ? ILEV : LEVP;
+    auto layout = one_d ? grid->get_vertical_layout(tag)
+                        : grid->get_3d_scalar_layout(tag);
     FieldIdentifier fid("p_int",layout,ekat::units::Pa,grid->name());
     Field pint (fid);
     pint.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     pint.allocate_view();
 
-    int nlevs = grid->get_num_vertical_levels();
-    const Real dp = (pbot-ptop)/nlevs;
+    bool p_grid = grid->get_vkind()==AbstractGrid::VKind::Pressure;
+    int num_intervals = grid->get_num_vertical_levels();
+    if (p_grid)
+      --num_intervals;
+    const Real dp = (pbot-ptop)/num_intervals;
 
     if (one_d) {
       auto pv = pint.get_view<Real*,Host>();
-      pv(nlevs) = pbot;
-      for (int k=nlevs; k>0; --k) {
+      pv(num_intervals) = pbot;
+      for (int k=num_intervals; k>0; --k) {
         pv(k-1) = pv(k) - dp;
       }
     } else {
       auto pv = pint.get_view<Real**,Host>();
       for (int i=0; i<nldofs; ++i) {
-        pv(i,nlevs) = pbot;
-        for (int k=nlevs; k>0; --k) {
+        pv(i,num_intervals) = pbot;
+        for (int k=num_intervals; k>0; --k) {
           pv(i,k-1) = pv(i,k) - dp;
         }
       }
@@ -402,6 +400,9 @@ TEST_CASE ("vertical_remapper") {
     using namespace ShortFieldTagsNames;
     auto fid_int = pint.get_header().get_identifier();
     auto layout = fid_int.get_layout();
+    if (layout.tags().back()==LEVP) {
+      return pint;
+    }
     int nlevs = layout.dims().back()-1;
     layout.strip_dim(ILEV);
     layout.append_dim(LEV,nlevs);
@@ -447,7 +448,7 @@ TEST_CASE ("vertical_remapper") {
 
             print (" -> creating tgt grid ...\n",comm);
             auto tgt_grid = src_grid->clone("tgt",true);
-            tgt_grid->reset_vertical_configuration(nlevs_tgt, AbstractGrid::VKind::Model);
+            tgt_grid->reset_vertical_configuration(nlevs_tgt, AbstractGrid::VKind::Pressure);
             print (" -> creating tgt grid ...done!\n",comm);
 
             print (" -> creating src/tgt pressure fields ...\n",comm);
@@ -471,18 +472,18 @@ TEST_CASE ("vertical_remapper") {
 
             auto tgt_s2d   = create_field("s2d",  tgt_grid,false,true,false);
             auto tgt_v2d   = create_field("v2d",  tgt_grid,false,true,true);
-            auto tgt_s3d_m = create_field("s3d_m",tgt_grid,false,false,false,LEV, 1);
-            auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,false,LEV, SCREAM_PACK_SIZE);
-            auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,false,true ,LEV, 1);
-            auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,false,true ,LEV, SCREAM_PACK_SIZE);
+            auto tgt_s3d_m = create_field("s3d_m",tgt_grid,false,false,false,LEVP, 1);
+            auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,false,LEVP, SCREAM_PACK_SIZE);
+            auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,false,true ,LEVP, 1);
+            auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,false,true ,LEVP, SCREAM_PACK_SIZE);
 
             // For expected fields, also create the mask extra data
             auto expected_s2d   = create_field("s2d",  tgt_grid,true,true,false);
             auto expected_v2d   = create_field("v2d",  tgt_grid,true,true,true);
-            auto expected_s3d_m = create_field("s3d_m",tgt_grid,true,false,false,LEV, 1);
-            auto expected_s3d_i = create_field("s3d_i",tgt_grid,true,false,false,LEV, SCREAM_PACK_SIZE);
-            auto expected_v3d_m = create_field("v3d_m",tgt_grid,true,false,true ,LEV, 1);
-            auto expected_v3d_i = create_field("v3d_i",tgt_grid,true,false,true ,LEV, SCREAM_PACK_SIZE);
+            auto expected_s3d_m = create_field("s3d_m",tgt_grid,true,false,false,LEVP, 1);
+            auto expected_s3d_i = create_field("s3d_i",tgt_grid,true,false,false,LEVP, SCREAM_PACK_SIZE);
+            auto expected_v3d_m = create_field("v3d_m",tgt_grid,true,false,true ,LEVP, 1);
+            auto expected_v3d_i = create_field("v3d_i",tgt_grid,true,false,true ,LEVP, SCREAM_PACK_SIZE);
             print (" -> creating fields ... done!\n",comm);
 
             // -------------------------------------- //
@@ -552,15 +553,16 @@ TEST_CASE ("vertical_remapper") {
             Real tol = 10*std::numeric_limits<Real>::epsilon();
 
             auto check = [&](const Field& computed, Field& expected) {
-              auto diff = computed.clone("diff");
-              diff.update(expected,1,-1);
+              auto rel_diff = computed.clone("rel_diff");
+              rel_diff.update(expected,1,-1);
+              // By construction, expected fields are always > 0, so we can divide
+              rel_diff.scale_inv(expected);
 
-              // Now set expected=0 where it's filled, so we can compute the norm
-              // (summing x[i]*x[i] would overflow in SP, causing NaN's)
-              auto mask = expected.get_header().get_extra_data<Field>("is_filled");
-              expected.deep_copy(0,mask);
-              auto ex_norm = frobenius_norm(expected).as<Real>();
-              REQUIRE (frobenius_norm(diff).as<Real>()<tol*ex_norm);
+              // Now set rel_diff=0 where mask==0, so we don't pollute the norm with masked-out entries
+              auto mask = expected.get_valid_mask();
+              rel_diff.deep_copy(0,mask,true);
+              using Catch::Matchers::WithinAbs;
+              REQUIRE_THAT (inf_norm(rel_diff).as<Real>(), WithinAbs(0,tol));
             };
 
             print (" -> check tgt fields ...\n",comm);
