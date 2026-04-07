@@ -49,6 +49,9 @@ Eos::Eos(const std::string &Name, ///< [in] Name for eos object
    BruntVaisalaFreqSq =
        Array2DReal("BruntVaisalaFreqSq", Mesh->NCellsSize, VCoord->NVertLayers);
 
+   deepCopy(SpecVol, 1.0_Real / RhoSw);
+   deepCopy(SpecVolDisplaced, 1.0_Real / RhoSw);
+
    defineFields();
 }
 
