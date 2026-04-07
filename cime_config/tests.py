@@ -909,6 +909,23 @@ _TESTS = {
         )
     },
 
+    "e3sm_moab_ersonline" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "ERS_Vmoab_Ld3.ne4pg2_r05_oQU480.WCYCL1850NS.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.ne4pg2_oQU480.WCYCL1850NS.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.ne4pg2_oQU480.F1850.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.T62_oQU240wLI.GMPAS-IAF.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.T62_oQU120.CMPASO-NYF.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.T62_oQU240.DTESTM.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.r05_r05.RMOSGPCC.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.ne4pg2_ne4pg2.F2010-SCREAMv1.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.f45_g37.X.allactive-onlinemaps",
+        )
+    },
+
     "e3sm_moab_pem" : {
         "time"  : "01:00:00",
         "tests" : (
