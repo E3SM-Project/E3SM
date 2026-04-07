@@ -49,10 +49,11 @@ public:
   std::string name() const override { return "MyDiag"; }
 
   void create_requests () override {
+    using namespace ShortFieldTagsNames;
     const auto grid = m_grids_manager->get_grid("point_grid");
     const auto& grid_name = grid->name();
     auto units = ekat::units::Units::nondimensional();
-    auto layout = grid->get_3d_scalar_layout(true);
+    auto layout = grid->get_3d_scalar_layout(LEV);
     add_field<Required>("my_f",layout,units,grid_name);
 
     // We have to initialize the m_diagnostic_output:

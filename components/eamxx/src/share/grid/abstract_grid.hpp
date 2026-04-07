@@ -46,6 +46,11 @@ public:
   using gid_view_h                     = Field::view_host_t<const gid_type *>;
   template <typename T> using strmap_t = std::map<std::string, T>;
 
+  // Describes the type of vertical configuration.
+  //   Model:    vertical levels are model levels (LEV = midpoints, ILEV = interfaces)
+  //   Pressure: vertical levels are at arbitrary pressure coordinates (LEVP)
+  enum class VKind { Model, Pressure };
+
   // Constructor(s) & Destructor
   AbstractGrid(const std::string &name, const GridType type, const int num_local_dofs,
                const int num_vertical_lev, const ekat::Comm &comm);
@@ -81,9 +86,9 @@ public:
   // Native layout of a dof. This is the natural way to index a dof in the grid.
   // E.g., for a scalar 2d field on a SE grid, this will be (nelem,np,np),
   //       for a vector 3d field on a Point grid it will be (ncols,vector_dim,nlevs)
-  FieldLayout get_vertical_layout(const bool midpoints) const;
+  FieldLayout get_vertical_layout(const FieldTag vtag) const;
   FieldLayout
-  get_vertical_layout(const bool midpoints, const int vector_dim,
+  get_vertical_layout(const FieldTag vtag, const int vector_dim,
                       const std::string &vec_dim_name = e2str(FieldTag::Component)) const;
   virtual FieldLayout get_2d_scalar_layout() const                                = 0;
   virtual FieldLayout get_2d_vector_layout(const int vector_dim,
@@ -91,11 +96,11 @@ public:
   virtual FieldLayout
   get_2d_tensor_layout(const std::vector<int> &cmp_dims,
                        const std::vector<std::string> &cmp_dims_names) const      = 0;
-  virtual FieldLayout get_3d_scalar_layout(const bool midpoints) const            = 0;
-  virtual FieldLayout get_3d_vector_layout(const bool midpoints, const int vector_dim,
+  virtual FieldLayout get_3d_scalar_layout(const FieldTag vtag) const             = 0;
+  virtual FieldLayout get_3d_vector_layout(const FieldTag vtag, const int vector_dim,
                                            const std::string &vec_dim_name) const = 0;
   virtual FieldLayout
-  get_3d_tensor_layout(const bool midpoints, const std::vector<int> &cmp_dims,
+  get_3d_tensor_layout(const FieldTag vtag, const std::vector<int> &cmp_dims,
                        const std::vector<std::string> &cmp_dims_names) const = 0;
 
   // Some shortcut versions of the above ones, where the name of the vector/tensor
@@ -103,8 +108,8 @@ public:
   FieldLayout get_2d_vector_layout(const int vector_dim) const;
   FieldLayout get_2d_tensor_layout(const std::vector<int> &cmp_dims) const;
 
-  FieldLayout get_3d_vector_layout(const bool midpoints, const int vector_dim) const;
-  FieldLayout get_3d_tensor_layout(const bool midpoints, const std::vector<int> &cmp_dims) const;
+  FieldLayout get_3d_vector_layout(const FieldTag vtag, const int vector_dim) const;
+  FieldLayout get_3d_tensor_layout(const FieldTag vtag, const std::vector<int> &cmp_dims) const;
 
   // Use the input template to create an equivalent layout on this grid
   FieldLayout equivalent_layout(const FieldLayout &template_layout) const;
@@ -114,6 +119,8 @@ public:
   {
     return m_num_vert_levs;
   }
+
+  VKind get_vkind() const { return m_vkind; }
 
   // Whether this grid contains unique dof GIDs
   bool is_unique() const;
@@ -202,8 +209,8 @@ public:
   virtual std::shared_ptr<AbstractGrid> clone(const std::string &clone_name,
                                               const bool shallow) const = 0;
 
-  // Allows to change the number of vertical levels associated with this grid.
-  void reset_num_vertical_lev(const int num_vertical_lev);
+  // Allows to change the number of vertical levels and kind associated with this grid.
+  void reset_vertical_configuration(const int num_vertical_lev, const VKind vkind);
 
   // Get a list of GIDs that are unique across all ranks in the grid comm. That is,
   // if a dof is present on 2+ ranks, it will (globally) appear just once in the
@@ -284,6 +291,11 @@ protected:
   //       since it calls get_2d_scalar_layout.
   void create_dof_fields(const int scalar2d_layout_rank);
 
+  // Throws if vtag is incompatible with m_vkind:
+  //   - VKind::Model: accepts LEV and ILEV, rejects LEVP
+  //   - VKind::Pressure: accepts LEVP, rejects LEV and ILEV
+  void check_tag_vkind_compatibility(const FieldTag vtag) const;
+
   // The grid name and type
   GridType m_type;
   std::string m_name;
@@ -298,6 +310,9 @@ protected:
   int m_num_local_dofs;
   int m_num_global_dofs;
   int m_num_vert_levs;
+
+  // Vertical kind: Model (LEV/ILEV) or Pressure (LEVP)
+  VKind m_vkind = VKind::Model;
 
   // The global ID of each dof
   Field m_dofs_gids;

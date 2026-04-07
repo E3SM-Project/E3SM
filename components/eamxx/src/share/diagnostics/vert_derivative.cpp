@@ -27,7 +27,7 @@ void VertDerivativeDiag::create_requests() {
                        m_derivative_method + "\n");
   m_diag_name = fn + "_" + m_derivative_method + "vert_derivative";
 
-  auto scalar3d = g->get_3d_scalar_layout(true);
+  auto scalar3d = g->get_3d_scalar_layout(LEV);
   add_field<Required>("pseudo_density", scalar3d, Pa, gn);
   if (m_derivative_method == "z") {
     add_field<Required>("dz", scalar3d, m, gn);

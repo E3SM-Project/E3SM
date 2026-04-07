@@ -44,8 +44,8 @@ void TurbulentMountainStress::create_requests()
   // Add required/computed fields
   auto scalar2d     = m_grid->get_2d_scalar_layout();
   auto vector2d     = m_grid->get_2d_vector_layout(2);
-  auto scalar3d_mid = m_grid->get_3d_scalar_layout(true);
-  auto vector3d_mid = m_grid->get_3d_vector_layout(true,2);
+  auto scalar3d_mid = m_grid->get_3d_scalar_layout(LEV);
+  auto vector3d_mid = m_grid->get_3d_vector_layout(LEV,2);
 
   constexpr int ps = Pack::n;
   add_field<Required>("horiz_winds",    vector3d_mid, m/s,    grid_name,            ps);

@@ -20,6 +20,7 @@ std::string MAMOptics::name() const { return "mam4_optics"; }
 
 void MAMOptics::create_requests() {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   grid_                 = m_grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
@@ -42,14 +43,14 @@ void MAMOptics::create_requests() {
   // 3D layout for short/longwave aerosol fields: columns, number of
   // short/longwave band, nlev
   FieldLayout scalar3d_swband =
-      grid_->get_3d_vector_layout(true, nswbands_, "swband");
+      grid_->get_3d_vector_layout(LEV, nswbands_, "swband");
   FieldLayout scalar3d_lwband =
-      grid_->get_3d_vector_layout(true, nlwbands_, "lwband");
+      grid_->get_3d_vector_layout(LEV, nlwbands_, "lwband");
 
   // layout for 3D (2d horiz X 1d vertical) variables at level
   // midpoints/interfaces
-  FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
-  FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
+  FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(LEV);
+  FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(ILEV);
   add_tracers_wet_atm();
   add_fields_dry_atm();
 

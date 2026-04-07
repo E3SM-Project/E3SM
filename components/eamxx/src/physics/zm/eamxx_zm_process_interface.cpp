@@ -38,7 +38,7 @@ void ZMDeepConvection::create_requests ()
   m_grid = m_grids_manager->get_grid("physics");
 
   const auto& grid_name = m_grid->name();
-  const auto layout     = m_grid->get_3d_scalar_layout(true);
+  const auto layout     = m_grid->get_3d_scalar_layout(LEV);
 
   // retrieve local grid parameters
   m_ncol = m_grid->get_num_local_dofs();
@@ -50,9 +50,9 @@ void ZMDeepConvection::create_requests ()
   const auto K2     = pow(K,2);
 
   FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();        // 2D variables
-  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);    // 3D variables at mid-levels
-  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(false);   // 3D variables at interfaces
-  FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(true,2);  // horiz_wind field
+  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(LEV);    // 3D variables at mid-levels
+  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(ILEV);   // 3D variables at interfaces
+  FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(LEV,2);  // horiz_wind field
 
   // Input variables
   add_field<Required>("p_mid",                scalar3d_mid, Pa,     grid_name, pack_size);

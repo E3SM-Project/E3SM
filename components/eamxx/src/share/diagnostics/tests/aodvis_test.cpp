@@ -51,7 +51,7 @@ TEST_CASE("aodvis") {
 
   // Input (randomized) tau
   FieldLayout scalar3d_swband_layout =
-      grid->get_3d_vector_layout(true, nbnds, "swband");
+      grid->get_3d_vector_layout(LEV, nbnds, "swband");
   FieldIdentifier tau_fid("aero_tau_sw", scalar3d_swband_layout, nondim,
                           grid->name());
   Field tau(tau_fid);

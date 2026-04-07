@@ -170,13 +170,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
         }
       }
 
-      // See comment above for ncol naming with 2+ grids
-      auto grid_nonconst = grid->clone(gname,true);
-      if (gname == "physics_gll" && pg2_grid_in_io_streams) {
-        grid_nonconst->reset_field_tag_name(ShortFieldTagsNames::COL,"ncol_d");
-      }
-
-      auto output = std::make_shared<output_type>(m_io_comm,fields,grid_nonconst);
+      auto output = std::make_shared<output_type>(m_io_comm,fields,grid);
       m_geo_data_streams.push_back(output);
     }
   }

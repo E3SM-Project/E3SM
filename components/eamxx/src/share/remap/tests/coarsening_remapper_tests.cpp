@@ -49,14 +49,15 @@ build_src_grid(const ekat::Comm& comm, const int ngdofs, int seed)
 constexpr int vec_dim = 2;
 constexpr int tens_dim1 = 3;
 constexpr int tens_dim2 = 4;
-Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, const bool midpoints)
+Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, const FieldTag vtag)
 {
+  using namespace ShortFieldTagsNames;
   const auto u = ekat::units::Units::nondimensional();
   const auto& gn = grid.name();
   Field f;
   switch (lt) {
     case LayoutType::Scalar1D:
-      f = Field(FieldIdentifier(name,grid.get_vertical_layout(midpoints),u,gn)); break;
+      f = Field(FieldIdentifier(name,grid.get_vertical_layout(vtag),u,gn)); break;
     case LayoutType::Scalar2D:
       f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),u,gn));  break;
     case LayoutType::Vector2D:
@@ -64,15 +65,15 @@ Field create_field (const std::string& name, const LayoutType lt, const Abstract
     case LayoutType::Tensor2D:
       f = Field(FieldIdentifier(name,grid.get_2d_tensor_layout({tens_dim1,tens_dim2}),u,gn));  break;
     case LayoutType::Scalar3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(midpoints),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(vtag),u,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     case LayoutType::Vector3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(midpoints,vec_dim),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(vtag,vec_dim),u,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     case LayoutType::Tensor3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_tensor_layout(midpoints,{tens_dim1,tens_dim2}),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_tensor_layout(vtag,{tens_dim1,tens_dim2}),u,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     default:
@@ -83,8 +84,8 @@ Field create_field (const std::string& name, const LayoutType lt, const Abstract
   return f;
 }
 
-Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, const bool midpoints, int seed) {
-  auto f = create_field(name,lt,grid,midpoints);
+Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, const FieldTag vtag, int seed) {
+  auto f = create_field(name,lt,grid,vtag);
 
   // Use discrete_distribution to get an integer, then use that as exponent for 2^-n.
   // This guarantees numbers that are exactly represented as FP numbers, which ensures
@@ -209,6 +210,7 @@ void create_remap_file(const std::string& filename, const int ngdofs_tgt)
 
 TEST_CASE("coarsening_remap")
 {
+  using namespace ShortFieldTagsNames;
   auto& catch_capture = Catch::getResultCapture();
 
   // This is a simple test to just make sure the coarsening remapper works
@@ -255,27 +257,27 @@ TEST_CASE("coarsening_remap")
   // Here we will simplify and just remap a simple 2D horizontal field.
   auto tgt_grid = remap->get_tgt_grid();
 
-  auto src_s1d   = create_field("s1d",  LayoutType::Scalar1D, *src_grid, true,  seed+1);
-  auto src_s2d   = create_field("s2d",  LayoutType::Scalar2D, *src_grid, false, seed+2);
-  auto src_v2d   = create_field("v2d",  LayoutType::Vector2D, *src_grid, false, seed+3);
-  auto src_t2d   = create_field("t2d",  LayoutType::Tensor2D, *src_grid, false, seed+4);
-  auto src_s3d_m = create_field("s3d_m",LayoutType::Scalar3D, *src_grid, true,  seed+5);
-  auto src_s3d_i = create_field("s3d_i",LayoutType::Scalar3D, *src_grid, false, seed+6);
-  auto src_v3d_m = create_field("v3d_m",LayoutType::Vector3D, *src_grid, true,  seed+7);
-  auto src_v3d_i = create_field("v3d_i",LayoutType::Vector3D, *src_grid, false, seed+8);
-  auto src_t3d_m = create_field("t3d_m",LayoutType::Tensor3D, *src_grid, true,  seed+9);
-  auto src_t3d_i = create_field("t3d_i",LayoutType::Tensor3D, *src_grid, false, seed+10);
+  auto src_s1d   = create_field("s1d",  LayoutType::Scalar1D, *src_grid, LEV,  seed+1);
+  auto src_s2d   = create_field("s2d",  LayoutType::Scalar2D, *src_grid, ILEV, seed+2);
+  auto src_v2d   = create_field("v2d",  LayoutType::Vector2D, *src_grid, ILEV, seed+3);
+  auto src_t2d   = create_field("t2d",  LayoutType::Tensor2D, *src_grid, ILEV, seed+4);
+  auto src_s3d_m = create_field("s3d_m",LayoutType::Scalar3D, *src_grid, LEV,  seed+5);
+  auto src_s3d_i = create_field("s3d_i",LayoutType::Scalar3D, *src_grid, ILEV, seed+6);
+  auto src_v3d_m = create_field("v3d_m",LayoutType::Vector3D, *src_grid, LEV,  seed+7);
+  auto src_v3d_i = create_field("v3d_i",LayoutType::Vector3D, *src_grid, ILEV, seed+8);
+  auto src_t3d_m = create_field("t3d_m",LayoutType::Tensor3D, *src_grid, LEV,  seed+9);
+  auto src_t3d_i = create_field("t3d_i",LayoutType::Tensor3D, *src_grid, ILEV, seed+10);
 
-  auto tgt_s1d   = create_field("s1d",  LayoutType::Scalar1D, *tgt_grid, true);
-  auto tgt_s2d   = create_field("s2d",  LayoutType::Scalar2D, *tgt_grid, false);
-  auto tgt_v2d   = create_field("v2d",  LayoutType::Vector2D, *tgt_grid, false);
-  auto tgt_t2d   = create_field("t2d",  LayoutType::Tensor2D, *tgt_grid, false);
-  auto tgt_s3d_m = create_field("s3d_m",LayoutType::Scalar3D, *tgt_grid, true );
-  auto tgt_s3d_i = create_field("s3d_i",LayoutType::Scalar3D, *tgt_grid, false);
-  auto tgt_v3d_m = create_field("v3d_m",LayoutType::Vector3D, *tgt_grid, true );
-  auto tgt_v3d_i = create_field("v3d_i",LayoutType::Vector3D, *tgt_grid, false);
-  auto tgt_t3d_m = create_field("t3d_m",LayoutType::Tensor3D, *tgt_grid, true );
-  auto tgt_t3d_i = create_field("t3d_i",LayoutType::Tensor3D, *tgt_grid, false);
+  auto tgt_s1d   = create_field("s1d",  LayoutType::Scalar1D, *tgt_grid, LEV);
+  auto tgt_s2d   = create_field("s2d",  LayoutType::Scalar2D, *tgt_grid, ILEV);
+  auto tgt_v2d   = create_field("v2d",  LayoutType::Vector2D, *tgt_grid, ILEV);
+  auto tgt_t2d   = create_field("t2d",  LayoutType::Tensor2D, *tgt_grid, ILEV);
+  auto tgt_s3d_m = create_field("s3d_m",LayoutType::Scalar3D, *tgt_grid, LEV );
+  auto tgt_s3d_i = create_field("s3d_i",LayoutType::Scalar3D, *tgt_grid, ILEV);
+  auto tgt_v3d_m = create_field("v3d_m",LayoutType::Vector3D, *tgt_grid, LEV );
+  auto tgt_v3d_i = create_field("v3d_i",LayoutType::Vector3D, *tgt_grid, ILEV);
+  auto tgt_t3d_m = create_field("t3d_m",LayoutType::Tensor3D, *tgt_grid, LEV );
+  auto tgt_t3d_i = create_field("t3d_i",LayoutType::Tensor3D, *tgt_grid, ILEV);
 
   std::vector<Field> src_f = {src_s1d,src_s2d,src_v2d,src_t2d,src_s3d_m,src_s3d_i,src_v3d_m,src_v3d_i,src_t3d_m,src_t3d_i};
   std::vector<Field> tgt_f = {tgt_s1d,tgt_s2d,tgt_v2d,tgt_t2d,tgt_s3d_m,tgt_s3d_i,tgt_v3d_m,tgt_v3d_i,tgt_t3d_m,tgt_t3d_i};

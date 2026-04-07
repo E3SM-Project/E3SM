@@ -14,6 +14,7 @@ void WindSpeed::
 create_requests()
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   auto grid  = m_grids_manager->get_grid("physics");
   const auto& grid_name = grid->name();
@@ -21,8 +22,8 @@ create_requests()
   m_ncols = grid->get_num_local_dofs();
   m_nlevs = grid->get_num_vertical_levels();
 
-  auto scalar3d = grid->get_3d_scalar_layout(true);
-  auto vector3d = grid->get_3d_vector_layout(true,2);
+  auto scalar3d = grid->get_3d_scalar_layout(LEV);
+  auto vector3d = grid->get_3d_vector_layout(LEV,2);
 
   // The fields required for this diagnostic to be computed
   add_field<Required>("horiz_winds", vector3d, Pa, grid_name);

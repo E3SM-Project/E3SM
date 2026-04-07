@@ -36,6 +36,7 @@ void WaterPathDiagnostic::
 create_requests()
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   auto m2 = pow (m,2);
 
@@ -45,7 +46,7 @@ create_requests()
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
   auto scalar2d = grid->get_2d_scalar_layout();
-  auto scalar3d = grid->get_3d_scalar_layout(true);
+  auto scalar3d = grid->get_3d_scalar_layout(LEV);
 
   // The fields required for this diagnostic to be computed
   add_field<Required>("pseudo_density", scalar3d, Pa,    grid_name);

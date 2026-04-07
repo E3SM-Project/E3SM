@@ -14,6 +14,7 @@ AtmDensityDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
 void AtmDensityDiagnostic::create_requests()
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   // Boiler Plate
   auto grid  = m_grids_manager->get_grid("physics");
@@ -22,7 +23,7 @@ void AtmDensityDiagnostic::create_requests()
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
   // Set Field Layouts
-  auto scalar3d = grid->get_3d_scalar_layout(true);
+  auto scalar3d = grid->get_3d_scalar_layout(LEV);
 
   // The fields required for this diagnostic to be computed
   add_field<Required>("T_mid",          scalar3d, K,     grid_name);

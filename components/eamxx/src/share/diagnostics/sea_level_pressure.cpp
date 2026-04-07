@@ -16,6 +16,7 @@ SeaLevelPressureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& p
 void SeaLevelPressureDiagnostic::create_requests()
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   const auto m2 = pow(m,2);
   const auto s2 = pow(s,2);
@@ -25,7 +26,7 @@ void SeaLevelPressureDiagnostic::create_requests()
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
   auto scalar2d = grid->get_2d_scalar_layout();
-  auto scalar3d = grid->get_3d_scalar_layout(true);
+  auto scalar3d = grid->get_3d_scalar_layout(LEV);
 
   // The fields required for this diagnostic to be computed
   add_field<Required>("T_mid", scalar3d, K,     grid->name());

@@ -25,6 +25,7 @@ AeroComCld::AeroComCld(const ekat::Comm &comm,
 void AeroComCld::
 create_requests() {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   auto grid             = m_grids_manager->get_grid("physics");
   const auto &grid_name = grid->name();
@@ -51,7 +52,7 @@ create_requests() {
   m_nlevs = grid->get_num_vertical_levels();
 
   // Define layouts we need (both inputs and outputs)
-  auto scalar3d = grid->get_3d_scalar_layout(true);
+  auto scalar3d = grid->get_3d_scalar_layout(LEV);
   auto vector2d = grid->get_2d_vector_layout(m_ndiag);
 
   // The fields required for this diagnostic to be computed

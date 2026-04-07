@@ -21,6 +21,7 @@ SPC::SPC (const ekat::Comm& comm, const ekat::ParameterList& params)
 void SPC::create_requests()
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   constexpr auto nondim = Units::nondimensional();
   constexpr int ps = SCREAM_PACK_SIZE;
@@ -29,7 +30,7 @@ void SPC::create_requests()
   const auto& grid_name = m_model_grid->name();
   
   // Define the different field layouts that will be used for this process
-  auto scalar3d_mid = m_model_grid->get_3d_scalar_layout(true);
+  auto scalar3d_mid = m_model_grid->get_3d_scalar_layout(LEV);
 
   // Set of fields used strictly as input
   add_field<Required>("p_mid"      , scalar3d_mid, Pa,     grid_name, ps);

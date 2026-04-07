@@ -45,7 +45,7 @@ TEST_CASE("wind_speed")
   auto grid = gm->get_grid("physics");
 
   // Input (randomized) velocity
-  auto vector3d = grid->get_3d_vector_layout(true,2);
+  auto vector3d = grid->get_3d_vector_layout(LEV,2);
   FieldIdentifier uv_fid ("horiz_winds",vector3d,m/s,grid->name());
   Field uv(uv_fid);
   uv.allocate_view();

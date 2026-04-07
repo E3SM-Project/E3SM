@@ -1409,7 +1409,8 @@ void AtmosphereDriver::set_initial_conditions ()
     constexpr auto ps0 = physics::Constants<Real>::P0.value;
     const auto min_pressure = ic_pl.get<Real>("perturbation_minimum_pressure", 1050.0);
 
-    const auto& pmask_lt = gll_grid->get_vertical_layout(true);
+    using namespace ShortFieldTagsNames;
+    const auto& pmask_lt = gll_grid->get_vertical_layout(LEV);
     const auto nondim = ekat::units::Units::nondimensional();
     FieldIdentifier pmask_fid("lev_mask",pmask_lt,nondim,gll_grid->name(),DataType::IntType);
     Field pressure_mask(pmask_fid,true);

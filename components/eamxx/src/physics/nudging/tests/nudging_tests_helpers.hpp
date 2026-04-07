@@ -48,8 +48,8 @@ create_fm (const std::shared_ptr<const AbstractGrid>& grid)
 
   const std::string& gn = grid->name();
 
-  auto scalar3d = grid->get_3d_scalar_layout(true);
-  auto vector3d = grid->get_3d_vector_layout(true,2);
+  auto scalar3d = grid->get_3d_scalar_layout(LEV);
+  auto vector3d = grid->get_3d_vector_layout(LEV,2);
 
   FieldIdentifier fid1("p_mid",scalar3d,Pa,gn);
   FieldIdentifier fid2("horiz_winds",vector3d,m/s,gn);

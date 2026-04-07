@@ -13,6 +13,7 @@ void
 IOPForcing::create_requests()
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   m_grid                = m_grids_manager->get_grid("physics");
   const auto &grid_name = m_grid->name();
@@ -22,8 +23,8 @@ IOPForcing::create_requests()
 
   // Define the different field layouts that will be used for this process
   FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();
-  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
-  FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(true, 2);
+  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(LEV);
+  FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(LEV, 2);
 
   constexpr int pack_size = Pack::n;
 

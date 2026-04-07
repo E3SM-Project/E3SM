@@ -23,6 +23,7 @@ SHOCMacrophysics::SHOCMacrophysics (const ekat::Comm& comm,const ekat::Parameter
 void SHOCMacrophysics::create_requests()
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
@@ -39,11 +40,11 @@ void SHOCMacrophysics::create_requests()
   FieldLayout vector2d = m_grid->get_2d_vector_layout(2);
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
-  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
-  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(false);
+  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(LEV);
+  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(ILEV);
 
   // Layout for horiz_wind field
-  FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(true,2);
+  FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(LEV,2);
 
   // Define fields needed in SHOC.
   // Note: shoc_main is organized by a set of 5 structures, variables below are organized

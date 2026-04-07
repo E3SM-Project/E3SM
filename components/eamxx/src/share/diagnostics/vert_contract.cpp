@@ -39,7 +39,7 @@ void VertContractDiag::create_requests() {
   // append weighting_method to name if needed
   m_diag_name = (m_weighting_method == "none") ? m_diag_name : m_diag_name + "_" + m_weighting_method + "_weighted";
 
-  auto scalar3d = g->get_3d_scalar_layout(true);
+  auto scalar3d = g->get_3d_scalar_layout(LEV);
   if (m_weighting_method == "dp") {
     add_field<Required>("pseudo_density", scalar3d, Pa, gn);
   } else if (m_weighting_method == "dz") {

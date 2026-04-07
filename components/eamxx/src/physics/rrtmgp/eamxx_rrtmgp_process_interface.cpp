@@ -87,6 +87,7 @@ void RRTMGPRadiation::create_requests() {
 
   using namespace ekat::units;
   using namespace ekat::prefixes;
+  using namespace ShortFieldTagsNames;
 
   // Declare the set of fields used by rrtmgp
   Units m2(m*m,"m2");
@@ -130,12 +131,12 @@ void RRTMGPRadiation::create_requests() {
   m_nswgpts = m_params.get<int>("nswgpts",112);
   m_nlwgpts = m_params.get<int>("nlwgpts",128);
   FieldLayout scalar2d = m_grid->get_2d_scalar_layout();
-  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
-  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(false);
-  FieldLayout scalar3d_swband = m_grid->get_3d_vector_layout(true,m_nswbands,"swband");
-  FieldLayout scalar3d_lwband = m_grid->get_3d_vector_layout(true,m_nlwbands,"lwband");
-  FieldLayout scalar3d_swgpts = m_grid->get_3d_vector_layout(true,m_nswgpts,"swgpt");
-  FieldLayout scalar3d_lwgpts = m_grid->get_3d_vector_layout(true,m_nlwgpts,"lwgpt");
+  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(LEV);
+  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(ILEV);
+  FieldLayout scalar3d_swband = m_grid->get_3d_vector_layout(LEV,m_nswbands,"swband");
+  FieldLayout scalar3d_lwband = m_grid->get_3d_vector_layout(LEV,m_nlwbands,"lwband");
+  FieldLayout scalar3d_swgpts = m_grid->get_3d_vector_layout(LEV,m_nswgpts,"swgpt");
+  FieldLayout scalar3d_lwgpts = m_grid->get_3d_vector_layout(LEV,m_nlwgpts,"lwgpt");
 
   // Set required (input) fields here
   add_field<Required>("p_mid" , scalar3d_mid, Pa, grid_name);

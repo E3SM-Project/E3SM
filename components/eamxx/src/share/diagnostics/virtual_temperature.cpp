@@ -21,7 +21,7 @@ void VirtualTemperatureDiagnostic::create_requests()
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
-  auto scalar3d = grid->get_3d_scalar_layout(true);
+  auto scalar3d = grid->get_3d_scalar_layout(LEV);
 
   // The fields required for this diagnostic to be computed
   add_field<Required>("T_mid", scalar3d, K,     grid_name);

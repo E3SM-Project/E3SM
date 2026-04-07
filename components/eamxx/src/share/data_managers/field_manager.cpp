@@ -621,7 +621,7 @@ void FieldManager::registration_ends ()
         if (lt==LayoutType::Scalar2D) {
           c_layout = cluster_grid->get_2d_vector_layout(cluster_ordered_fields.size());
         } else {
-          c_layout = cluster_grid->get_3d_vector_layout(f_layout.tags().back()==LEV,cluster_ordered_fields.size());
+          c_layout = cluster_grid->get_3d_vector_layout(f_layout.tags().back(),cluster_ordered_fields.size());
         }
 
         // The units for the monolithic field are nondimensional, cause checking whether

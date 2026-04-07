@@ -15,6 +15,7 @@ ShortwaveCloudForcingDiagnostic (const ekat::Comm& comm, const ekat::ParameterLi
 void ShortwaveCloudForcingDiagnostic::create_requests()
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   Units m2 (m*m,"m2");
 
@@ -24,7 +25,7 @@ void ShortwaveCloudForcingDiagnostic::create_requests()
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
   auto scalar2d = grid->get_2d_scalar_layout();
-  auto scalar3d = grid->get_3d_scalar_layout(true);
+  auto scalar3d = grid->get_3d_scalar_layout(LEV);
 
   // The fields required for this diagnostic to be computed
   add_field<Required>("SW_flux_dn",        scalar3d, W/m2, grid_name);

@@ -49,6 +49,7 @@ void print (const std::string& msg, const ekat::Comm& comm) {
 
 TEST_CASE("io_remap_test","io_remap_test")
 {
+  using namespace ShortFieldTagsNames;
   using gid_type = AbstractGrid::gid_type;
 
   // Init scorpio
@@ -108,7 +109,7 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   // Create the fields and randomize
   auto s2d_src = create_f("s2d",src_grid->get_2d_scalar_layout(),gname);
-  auto s3d_src = create_f("s3d",src_grid->get_3d_scalar_layout(true),gname);
+  auto s3d_src = create_f("s3d",src_grid->get_3d_scalar_layout(LEV),gname);
   randomize_uniform(s2d_src,seed++);
   randomize_uniform(s3d_src,seed++);
 
@@ -138,7 +139,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   auto tgt_grid = create_point_grid(gname + "_tgt",ngcols_tgt,nlevs,comm);
 
   auto s2d_tgt = create_f("s2d",tgt_grid->get_2d_scalar_layout(),gname+"_tgt");
-  auto s3d_tgt = create_f("s3d",tgt_grid->get_3d_scalar_layout(true),gname+"_tgt");
+  auto s3d_tgt = create_f("s3d",tgt_grid->get_3d_scalar_layout(LEV),gname+"_tgt");
 
   std::vector<Field> fields = {s2d_tgt,s3d_tgt};
 

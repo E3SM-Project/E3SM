@@ -78,7 +78,7 @@ void MAMAci::create_requests() {
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and
   // interfaces
-  const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
+  const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(LEV);
 
   using namespace ekat::units;
   constexpr auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
@@ -122,7 +122,7 @@ void MAMAci::create_requests() {
 
   // layout for 3D (ncol, nmodes, nlevs)
   FieldLayout scalar3d_mid_nmodes =
-      grid_->get_3d_vector_layout(true, nmodes, "nmodes");
+      grid_->get_3d_vector_layout(LEV, nmodes, "nmodes");
 
   // dry diameter of aerosols [m]
   add_field<Required>("dgnum", scalar3d_mid_nmodes, m, grid_name);
