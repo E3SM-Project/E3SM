@@ -5596,6 +5596,16 @@
 </ul>
 <h2 id="mam4_aero_microphys">mam4_aero_microphys</h2>
 <ul>
+<li>mam4_aero_microphys::mam4_do_gas_phase_chemistry:<ul>
+<li>description: Switch to enable gas phase chemistry</li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>mam4_aero_microphys::mam4_do_aqueous_phase_chemistry:<ul>
+<li>description: Switch to enable aqueous chemistry (setsox)</li>
+<li>type: logical</li>
+</ul>
+</li>
 <li>mam4_aero_microphys::extra_mam4_aero_microphys_diags:<ul>
 <li>description: Extra MAM4xx aerosol microphysics diagnostics</li>
 <li>type: logical</li>
@@ -7210,6 +7220,11 @@
 <li>ctl_nl::nu_top:<ul>
 <li>description: <strong>MISSING</strong></li>
 <li>type: <strong>MISSING</strong></li>
+</ul>
+</li>
+<li>ctl_nl::tom_sponge_start:<ul>
+<li>description: Starting height of the sponge layer, in hPa.</li>
+<li>type: real</li>
 </ul>
 </li>
 <li>ctl_nl::pgrad_correction:<ul>
