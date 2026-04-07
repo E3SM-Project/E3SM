@@ -36,6 +36,7 @@
 
 #include <cmath>
 #include <limits>
+#include <vector>
 
 using namespace OMEGA;
 
@@ -58,6 +59,7 @@ struct TestSetupPlane {
                                               0.00290978146207349032};
    ErrorMeasures ExpectedTrDel4Errors      = {0.00508833446725232875,
                                               0.00523080740758275625};
+   ErrorMeasures ExpectedSurfTrRestErrors  = {0, 0};
    ErrorMeasures ExpectedWindForcingErrors = {0, 0};
    ErrorMeasures ExpectedBottomDragErrors  = {0.033848740052302935,
                                               0.01000133508329411};
@@ -197,6 +199,7 @@ struct TestSetupSphere {
                                               0.005105510870642706};
    ErrorMeasures ExpectedTrDel4Errors      = {0.0008646345116716073,
                                               0.0007118574326665881};
+   ErrorMeasures ExpectedSurfTrRestErrors  = {0, 0};
    ErrorMeasures ExpectedWindForcingErrors = {0, 0};
    ErrorMeasures ExpectedBottomDragErrors  = {0.0015333449035655053,
                                               0.0014897009917655022};
@@ -1011,6 +1014,121 @@ int testTracerHyperDiffOnCell(int NVertLayers, int NTracers, Real RTol) {
    return Err;
 } // end testTracerHyperDiffOnCell
 
+int testSurfaceTracerRestoringOnCell(int NVertLayers, int NTracers, Real RTol) {
+
+   I4 Err = 0;
+   TestSetup Setup;
+
+   const auto Mesh = HorzMesh::getDefault();
+
+   if (NTracers < 3) {
+      LOG_ERROR("TendencyTermsTest: SurfaceTracerRestoring requires at least 3 "
+                "tracers, found {}",
+                NTracers);
+      return 1;
+   }
+
+   // Test multiple cases with different combinations of tracers being restored
+   const char *CaseLabels[3] = {"SurfaceTracerRestoringSalinityOnly",
+                                "SurfaceTracerRestoringTemperatureOnly",
+                                "SurfaceTracerRestoringTempSaltDebug"};
+
+   const std::vector<std::vector<I4>> CaseTracerIds = {
+       {1},       // Salinity Only
+       {0},       // Temperature Only
+       {0, 1, 2}, // Temperature, Salinity, and a Debug Tracer
+   };
+
+   // Loop over cases, computing exact result, numerical result, and
+   // errors for each.
+   for (int Case = 0; Case < 3; ++Case) {
+
+      Array3DReal ExactSurfRest("ExactSurfRest", NTracers, Mesh->NCellsOwned,
+                                NVertLayers);
+      Array2DReal InputField("InputField", Mesh->NCellsSize, 1);
+      Array2DReal TracersMonthlySurfClimoCell("TracersMonthlySurfClimoCell",
+                                              NTracers, Mesh->NCellsSize);
+      Array3DReal TracersOnCell("TracersOnCell", NTracers, Mesh->NCellsSize,
+                                NVertLayers);
+      Array3DReal NumSurfRest("NumSurfRest", NTracers, Mesh->NCellsOwned,
+                              NVertLayers);
+
+      deepCopy(ExactSurfRest, 0);
+      deepCopy(InputField, 0);
+      deepCopy(TracersMonthlySurfClimoCell, 0);
+      deepCopy(TracersOnCell, 0);
+      deepCopy(NumSurfRest, 0);
+
+      // Set Input Field values. Use a combination of scalarB and vectorX to
+      // ensure the full surface tracer restoring logic is exercised.
+      Err += setScalar(
+          KOKKOS_LAMBDA(Real X, Real Y) {
+             return Setup.scalarB(X, Y) + Setup.vectorX(X, Y);
+          },
+          InputField, Geom, Mesh, OnCell);
+
+      // Set TracersOnCell values (use scalarB for simplicity, but could be
+      // any field).
+      Err += setScalar(
+          KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarB(X, Y); },
+          TracersOnCell, Geom, Mesh, OnCell);
+      parallelFor(
+          {NTracers, Mesh->NCellsSize, NVertLayers},
+          KOKKOS_LAMBDA(int L, int ICell, int K) {
+             TracersOnCell(L, ICell, K) += 0.04_Real * K;
+          });
+
+      SurfaceTracerRestoringOnCell SurfRestOnC(Mesh);
+      SurfRestOnC.PistonVelocity = 1.585e-5;
+
+      // Build host-selected tracer IDs for restoring and copy to device.
+      const I4 NTracersToRestore = static_cast<I4>(CaseTracerIds[Case].size());
+      Array1DI4 TracerIdsToRestore("TracerIdsToRestore", NTracersToRestore);
+      HostArray1DI4 TracerIdsToRestoreH("TracerIdsToRestoreH",
+                                        NTracersToRestore);
+      for (I4 R = 0; R < NTracersToRestore; ++R) {
+         TracerIdsToRestoreH(R) = CaseTracerIds[Case][R];
+      }
+      deepCopy(TracerIdsToRestore, TracerIdsToRestoreH);
+
+      // Compute exact result using the same logic as
+      // SurfaceTracerRestoringOnCell, but iterating
+      // selected tracer IDs to match restoring implementation.
+      parallelFor(
+          {NTracersToRestore, Mesh->NCellsOwned},
+          KOKKOS_LAMBDA(int R, int ICell) {
+             const int L                           = TracerIdsToRestore(R);
+             TracersMonthlySurfClimoCell(L, ICell) = InputField(ICell, 0);
+             const Real Diff = TracersMonthlySurfClimoCell(L, ICell) -
+                               TracersOnCell(L, ICell, 0);
+
+             ExactSurfRest(L, ICell, 0) = SurfRestOnC.PistonVelocity * Diff;
+          });
+
+      // Compute numerical result
+      parallelFor(
+          {NTracersToRestore, Mesh->NCellsOwned},
+          KOKKOS_LAMBDA(int R, int ICell) {
+             const int L = TracerIdsToRestore(R);
+             SurfRestOnC(NumSurfRest, L, ICell, 0, TracersMonthlySurfClimoCell,
+                         TracersOnCell);
+          });
+
+      ErrorMeasures SurfRestErrors;
+      Err += computeErrors(SurfRestErrors, NumSurfRest, ExactSurfRest, Mesh,
+                           OnCell);
+
+      Err += checkErrors("TendencyTermsTest", CaseLabels[Case], SurfRestErrors,
+                         Setup.ExpectedSurfTrRestErrors, RTol);
+   }
+
+   if (Err == 0) {
+      LOG_INFO("TendencyTermsTest: SurfaceTracerRestoring PASS");
+   }
+
+   return Err;
+} // end testSurfaceTracerRestoringOnCell
+
 void initTendTest(const std::string &MeshFile, int NVertLayers) {
 
    Error Err;
@@ -1090,6 +1208,8 @@ int tendencyTermsTest(const std::string &MeshFile = DefaultMeshFile) {
    Err += testTracerDiffOnCell(NVertLayers, NTracers, RTol);
 
    Err += testTracerHyperDiffOnCell(NVertLayers, NTracers, RTol);
+
+   Err += testSurfaceTracerRestoringOnCell(NVertLayers, NTracers, RTol);
 
    if (Err == 0) {
       LOG_INFO("TendencyTermsTest: Successful completion");

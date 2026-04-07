@@ -53,6 +53,7 @@ userGuide/PGrad
 userGuide/Timing
 userGuide/VerticalMixingCoeff
 userGuide/VertAdv
+userGuide/Forcing
 ```
 
 ```{toctree}
@@ -98,6 +99,7 @@ devGuide/PGrad
 devGuide/Timing
 devGuide/VerticalMixingCoeff
 devGuide/VertAdv
+devGuide/Forcing
 ```
 
 ```{toctree}

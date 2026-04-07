@@ -3,6 +3,7 @@
 #include "Field.h"
 #include "Logging.h"
 #include "Pacer.h"
+#include "Tendencies.h"
 #include "TimeStepper.h"
 
 namespace OMEGA {
@@ -28,6 +29,7 @@ AuxiliaryState::AuxiliaryState(const std::string &Name, const HorzMesh *Mesh,
       VorticityAux(stripDefault(Name), Mesh, VCoord),
       VelocityDel2Aux(stripDefault(Name), Mesh, VCoord),
       WindForcingAux(stripDefault(Name), Mesh),
+      SurfTracerRestAux(stripDefault(Name), Mesh, NTracers),
       TracerAux(stripDefault(Name), Mesh, VCoord, NTracers) {
 
    GroupName = "AuxiliaryState";
@@ -43,6 +45,7 @@ AuxiliaryState::AuxiliaryState(const std::string &Name, const HorzMesh *Mesh,
    VorticityAux.registerFields(GroupName, AuxMeshName);
    VelocityDel2Aux.registerFields(GroupName, AuxMeshName);
    WindForcingAux.registerFields(GroupName, AuxMeshName);
+   SurfTracerRestAux.registerFields(GroupName, AuxMeshName);
    TracerAux.registerFields(GroupName, AuxMeshName);
 }
 
@@ -54,6 +57,7 @@ AuxiliaryState::~AuxiliaryState() {
    VorticityAux.unregisterFields();
    VelocityDel2Aux.unregisterFields();
    WindForcingAux.unregisterFields();
+   SurfTracerRestAux.unregisterFields();
    TracerAux.unregisterFields();
 
    FieldGroup::destroy(GroupName);
@@ -405,6 +409,16 @@ I4 AuxiliaryState::exchangeHalo() {
        MeshHalo->exchangeFullArrayHalo(WindForcingAux.ZonalStressCell, OnCell);
    Err +=
        MeshHalo->exchangeFullArrayHalo(WindForcingAux.MeridStressCell, OnCell);
+
+   // Performing halo exchange on individual tracers because full halo exchange
+   // on a 2D array assumes the first dimension is the vertical
+   const I4 NTracers =
+       SurfTracerRestAux.TracersMonthlySurfClimoCell.extent_int(0);
+   for (I4 LTracer = 0; LTracer < NTracers; ++LTracer) {
+      auto TracerSurfClimoCell = Kokkos::subview(
+          SurfTracerRestAux.TracersMonthlySurfClimoCell, LTracer, Kokkos::ALL);
+      Err += MeshHalo->exchangeFullArrayHalo(TracerSurfClimoCell, OnCell);
+   }
 
    return Err;
 

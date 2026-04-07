@@ -251,6 +251,61 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
    Err += TendConfig.get("PressureGradTendencyEnable", this->PGrad->Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: PressureGradTendencyEnable not found in TendConfig");
+
+   Err += TendConfig.get("SurfaceTracerRestoringEnable",
+                         this->SurfaceTracerRestoring.Enabled);
+   CHECK_ERROR_ABORT(
+       Err, "Tendencies: SurfaceTracerRestoringEnable not found in TendConfig");
+   if (this->SurfaceTracerRestoring.Enabled) {
+      Config SurfRestConfig("SurfaceRestoring");
+      Err += OmegaConfig->get(SurfRestConfig);
+      Err += SurfRestConfig.get("PistonVelocity",
+                                this->SurfaceTracerRestoring.PistonVelocity);
+      CHECK_ERROR_ABORT(
+          Err,
+          "Tendencies: PistonVelocity not found in SurfaceRestoringConfig");
+
+      std::vector<std::string> TracersToRestore;
+      SurfRestConfig.get("TracersToRestore", TracersToRestore);
+
+      // Enable restoring for specified individual tracers
+      I4 NumInvalidTracers = 0;
+      std::vector<I4> TracerIdsToRestoreVec;
+      for (const auto &TracerName : TracersToRestore) {
+         I4 TracerIndex = -1;
+         Tracers::getIndex(TracerIndex, TracerName);
+         if (TracerIndex == -1) {
+            LOG_ERROR("Tendencies: Tracer {} in TracersToRestore is not "
+                      "defined",
+                      TracerName);
+            NumInvalidTracers++;
+         } else {
+            bool IsDuplicate = false;
+            for (const auto ExistingTracerIndex : TracerIdsToRestoreVec) {
+               if (ExistingTracerIndex == TracerIndex) {
+                  IsDuplicate = true;
+                  break;
+               }
+            }
+            if (!IsDuplicate) {
+               TracerIdsToRestoreVec.push_back(TracerIndex);
+            }
+         }
+      }
+      if (NumInvalidTracers > 0) {
+         ABORT_ERROR("Tendencies: {} invalid tracer(s) in TracersToRestore "
+                     "configuration",
+                     NumInvalidTracers);
+      }
+
+      this->SurfaceTracerRestoring.NTracersToRestore =
+          static_cast<I4>(TracerIdsToRestoreVec.size());
+      this->SurfaceTracerRestoring.TracerIdsToRestore = Array1DI4(
+          "TracerIdsToRestore", this->SurfaceTracerRestoring.NTracersToRestore);
+      deepCopy(this->SurfaceTracerRestoring.TracerIdsToRestore,
+               HostArray1DI4(TracerIdsToRestoreVec.data(),
+                             TracerIdsToRestoreVec.size()));
+   }
 }
 
 //------------------------------------------------------------------------------
@@ -325,7 +380,7 @@ Tendencies::Tendencies(const std::string &Name_, ///< [in] Name for tendencies
       VelocityHyperDiff(Mesh, VCoord), WindForcing(Mesh, VCoord),
       BottomDrag(Mesh, VCoord), TracerDiffusion(Mesh, VCoord),
       TracerHyperDiff(Mesh, VCoord), TracerHorzAdv(Mesh, VCoord),
-      CustomThicknessTend(InCustomThicknessTend),
+      SurfaceTracerRestoring(Mesh), CustomThicknessTend(InCustomThicknessTend),
       CustomVelocityTend(InCustomVelocityTend), EqState(EqState), PGrad(PGrad) {
 
    // Tendency arrays
@@ -653,6 +708,7 @@ void Tendencies::computeTracerTendenciesOnly(
    OMEGA_SCOPE(LocTracerHorzAdv, TracerHorzAdv);
    OMEGA_SCOPE(LocTracerDiffusion, TracerDiffusion);
    OMEGA_SCOPE(LocTracerHyperDiff, TracerHyperDiff);
+   OMEGA_SCOPE(LocSurfaceTracerRestoring, SurfaceTracerRestoring);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
    OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
@@ -746,8 +802,8 @@ void Tendencies::computeTracerTendenciesOnly(
       Pacer::stop("Tend:tracerHyperDiff", 2);
    }
 
+   // compute tracer tendency from vertical advection
    Pacer::start("Tend:computeTracerVAdvTend", 2);
-   // compute tracer tendencies from vertical advection
    Array2DReal ThicknessForVAdv;
    if (VAdv->VertAdvChoice == VertAdvOption::Standard) {
       ThicknessForVAdv = State->getLayerThickness(ThickTimeLevel);
@@ -757,6 +813,25 @@ void Tendencies::computeTracerTendenciesOnly(
    VAdv->computeTracerVAdvTend(LocTracerTend, TracerArray, ThicknessForVAdv,
                                TimeStep);
    Pacer::stop("Tend:computeTracerVAdvTend", 2);
+
+   // compute tracer surface restoring
+   const Array2DReal &TracersMonthlySurfClimo =
+       AuxState->SurfTracerRestAux.TracersMonthlySurfClimoCell;
+   const I4 NTracersToRestore = LocSurfaceTracerRestoring.NTracersToRestore;
+   const auto &TracerIdsToRestore =
+       LocSurfaceTracerRestoring.TracerIdsToRestore;
+   if (LocSurfaceTracerRestoring.Enabled && NTracersToRestore > 0) {
+      Pacer::start("Tend:surfaceTracerRestoring", 2);
+      parallelFor(
+          {NTracersToRestore, Mesh->NCellsAll},
+          KOKKOS_LAMBDA(int R, int ICell) {
+             const int KMin = MinLayerCell(ICell);
+             const int L    = TracerIdsToRestore(R);
+             LocSurfaceTracerRestoring(LocTracerTend, L, ICell, KMin,
+                                       TracersMonthlySurfClimo, TracerArray);
+          });
+      Pacer::stop("Tend:surfaceTracerRestoring", 2);
+   }
 
    Pacer::stop("Tend:computeTracerTendenciesOnly", 1);
 } // end tracer tendency compute

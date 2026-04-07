@@ -139,6 +139,15 @@ int initOmegaModules(MPI_Comm Comm) {
    PressureGrad::init();
    Eos::init();
    Tendencies::init();
+
+   // Validate SurfaceTracerRestoring configuration
+   Tendencies *DefTend = Tendencies::getDefault();
+   if (DefTend->SurfaceTracerRestoring.Enabled &&
+       DefTend->SurfaceTracerRestoring.NTracersToRestore == 0) {
+      ABORT_ERROR("OceanInit: SurfaceTracerRestoring is enabled but "
+                  "TracersToRestore is empty");
+   }
+
    TimeStepper::init2();
 
    Err = OceanState::init();

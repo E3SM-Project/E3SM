@@ -20,6 +20,7 @@ tendency terms are currently implemented:
 | TracerHyperDiffOnCell | biharmonic horizontal mixing of thickness-weighted tracers
 | WindForcingOnEdge | forcing by wind stress, defined on edges
 | BottomDragOnEdge | bottom drag, defined on edges
+| SurfaceTracerRestoringOnCell | surface tracer restoring, defined on cells
 
 Among the internal data stored by each functor is a `bool` which can enable or
 disable the contribution of that particular term to the tendency. These flags
@@ -54,7 +55,7 @@ the currently available tendency terms:
 | WindForcingOnEdge | WindForcingTendencyEnable | enable/disable term
 | BottomDragOnEdge | BottomDragTendencyEnable | enable/disable term
 | | BottomDragCoeff | bottom drag coefficient
-
+| SurfaceTracerRestoringOnCell | SurfaceTracerRestoringEnable | enable/disable term
 
 ## Second Order Horizontal Advection Algorithm
 
@@ -136,3 +137,8 @@ is about order 1.7 as shown in  {numref}`tracer-higher-order-convergence`:
 :width: 600 px
 Tracer higer order convergence example of a cosine bell advected on a sphere showing an order 1.71 convergence rate
 ```
+
+## See Also
+
+Additional information on forcing (currently wind forcing and surface tracer
+restoring) is detailed in [](omega-user-forcing).

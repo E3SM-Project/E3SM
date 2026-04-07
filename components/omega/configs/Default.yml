@@ -31,6 +31,9 @@ Omega:
     VerticalTracerFluxOrder: 3
   WindStress:
     InterpType: Isotropic
+  SurfaceRestoring:
+    TracersToRestore: [Temperature, Salinity]
+    PistonVelocity: 1.585e-5
   VertCoord:
     MovementWeightType: Uniform
   PressureGrad:
@@ -46,6 +49,7 @@ Omega:
     ViscDel4: 1.2e11
     DivFactor: 1.0
     WindForcingTendencyEnable: false
+    SurfaceTracerRestoringEnable: false
     BottomDragTendencyEnable: false
     BottomDragCoeff: 0.0
     TracerHorzAdvTendencyEnable: true

@@ -32,3 +32,10 @@ The following auxiliary variables are currently available:
 | ZonalStressCell | zonal component of wind stress on cells
 | MeridStressCell | meridional component of wind stress on cells
 | NormalStressEdge | normal component of wind stress on edge
+| SurfTracerRestoringDiffsCell | surface tracer restoring differences on cells
+| TracersMonthlySurfClimoCell | monthly climatology values to restore to for surface tracer on cells
+
+## See Also
+
+Additional information on forcing (currently wind forcing and surface tracer
+restoring) is detailed in [](omega-user-forcing).

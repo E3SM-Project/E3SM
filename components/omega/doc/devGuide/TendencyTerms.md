@@ -41,3 +41,9 @@ implemented:
 - `TracerHighOrderHorzAdvOnCell`
 - `TracerDiffOnCell`
 - `TracerHyperDiffOnCell`
+- `SurfaceTracerRestoringOnCell`
+
+## See Also
+
+Additional information on forcing (currently wind forcing and surface tracer
+restoring) is detailed in [](omega-dev-forcing).

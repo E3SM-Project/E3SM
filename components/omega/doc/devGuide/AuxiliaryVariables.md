@@ -104,3 +104,9 @@ The following auxiliary variable groups are currently implemented:
 | WindForcingAuxVars |  ZonalStressCell ||
 ||  MeridStressCell ||
 ||  NormalStressEdge ||
+| SurfTracerRestAuxVars | TracersMonthlySurfClimoCell ||
+
+## See Also
+
+Additional information on forcing (currently wind forcing and surface tracer
+restoring) is detailed in [](omega-dev-forcing).
