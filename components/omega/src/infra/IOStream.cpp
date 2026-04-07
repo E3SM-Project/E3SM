@@ -150,6 +150,16 @@ IOStream::getFilename(const std::string &StreamName ///< [in] name of stream
 } // End getFilename
 
 //------------------------------------------------------------------------------
+// Changes the filename associated with a stream (eg during unit testing)
+void IOStream::changeFilename(
+    const std::string &StreamName, ///< [in] name of stream to modify
+    const std::string &NewFilename ///< [in] new filename for stream
+) {
+   auto StreamPtr      = get(StreamName);
+   StreamPtr->Filename = NewFilename;
+} // End changeFilename
+
+//------------------------------------------------------------------------------
 // Adds a field to the contents of a stream. Because streams may be created
 // before all Fields have been defined, we only store the name. Validity
 // is either checked during read/write or can be checked using the validate
@@ -2294,6 +2304,11 @@ Error IOStream::readStream(
    // First check that this is an input stream
    if (Mode != IO::ModeRead)
       ABORT_ERROR("IOStream read: cannot read stream defined as output stream");
+
+   // Validate the stream if not already validated (this also expands group
+   // names into field names).
+   if (!validate())
+      ABORT_ERROR("Unable to validate stream {}", Name);
 
    // If it is not time to read, return
    if (!ForceRead) {

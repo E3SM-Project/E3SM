@@ -16,7 +16,26 @@ additional mesh variables, which are not required for Decomp.
 
 Currently, the Mesh class reads in all variables from the MPAS mesh
 specification except those read by [Decomp](#omega-dev-decomp).
-This includes the following variables:
+These are all read using the input [IOStream](#omega-user-iostreams) HorzMeshIn
+```yaml
+  IOStreams:
+    HorzMeshIn:
+      UsePointerFile: false
+      Filename: OmegaMesh.nc
+      Mode: read
+      Precision: double
+      Freq: 1
+      FreqUnits: OnStartup
+      UseStartEnd: false
+      Contents:
+        - HorzMeshIn
+```
+Only the Filename should be changed by the user to point to the relevant input
+mesh file. The mesh Filename is sometimes overridden by the driver routine in
+the case of unit tests using an optional argument to the
+[decomposition](#omega-dev-decomp). The input contents are defined by the
+HorzMeshIn [FieldGroup](#omega-dev-field) that currently includes the following
+variables:
 
 | Variable Name | Description | Units |
 | ------------- | ----------- | ----- |

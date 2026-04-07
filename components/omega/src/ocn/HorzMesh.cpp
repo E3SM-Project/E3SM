@@ -10,13 +10,13 @@
 //===----------------------------------------------------------------------===//
 
 #include "HorzMesh.h"
-#include "Config.h"
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
 #include "Error.h"
-#include "IO.h"
-#include "Logging.h"
+#include "Field.h"
+#include "Halo.h"
+#include "IOStream.h"
 #include "OmegaKokkos.h"
 
 namespace OMEGA {
@@ -29,28 +29,28 @@ std::map<std::string, std::unique_ptr<HorzMesh>> HorzMesh::AllHorzMeshes;
 // Initialize the mesh. Assumes that Decomp and VertCoord have already been
 // initialized.
 
-void HorzMesh::init() {
-
-   Error Err; // default successful error code
+void HorzMesh::init(const Clock *ModelClock //< [in] Model clock for IO alarms
+) {
 
    // Retrieve the default decomposition
    Decomp *DefDecomp = Decomp::getDefault();
 
    // Create the default mesh and set pointer to it
-   HorzMesh::DefaultHorzMesh = create("Default", DefDecomp);
+   HorzMesh::DefaultHorzMesh = create("Default", DefDecomp, ModelClock);
 }
 
 //------------------------------------------------------------------------------
 // Construct a new local mesh given a decomposition
 
 HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
-                   Decomp *MeshDecomp       //< [in] Decomp for the new mesh
-                   )
-    : CellID(MeshDecomp->CellID) ///< global cell ID for each local cell
-{
+                   Decomp *MeshDecomp,      //< [in] Decomp for the new mesh
+                   const Clock *ModelClock  //< [in] Model clock for IO alarms
+) {
+
+   // Set mesh name based on input
    MeshName = Name;
 
-   // Retrieve mesh files name from Decomp
+   // Mesh filename should be the same as that used for the decomposition
    MeshFileName = MeshDecomp->MeshFileName;
 
    // Retrieve mesh cell/edge/vertex totals from Decomp
@@ -68,6 +68,7 @@ HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
    NEdgesSize     = MeshDecomp->NEdgesSize;
    MaxCellsOnEdge = MeshDecomp->MaxCellsOnEdge;
    MaxEdges       = MeshDecomp->MaxEdges;
+   MaxEdges2      = 2 * MaxEdges;
    NEdgesGlobal   = MeshDecomp->NEdgesGlobal;
 
    NVerticesHalo  = MeshDecomp->NVerticesHalo;
@@ -78,6 +79,9 @@ HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
    VertexDegree   = MeshDecomp->VertexDegree;
 
    // Retrieve connectivity arrays from Decomp
+
+   CellID = MeshDecomp->CellID;
+
    CellsOnCellH    = MeshDecomp->CellsOnCellH;
    EdgesOnCellH    = MeshDecomp->EdgesOnCellH;
    NEdgesOnCellH   = MeshDecomp->NEdgesOnCellH;
@@ -100,62 +104,48 @@ HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
    CellsOnVertex  = MeshDecomp->CellsOnVertex;
    EdgesOnVertex  = MeshDecomp->EdgesOnVertex;
 
-   // Open the mesh file for reading (assume IO has already been initialized)
-   IO::openFileRead(MeshFileID, MeshFileName);
-
    // Create Omega Dimensions associated with this mesh
    createDimensions(MeshDecomp);
 
-   // Temporary - remove when IOStreams implemented
-   // Create the parallel IO decompositions required to read in mesh variables
-   initParallelIO(MeshDecomp);
+   // Allocate remaining device arrays and define all mesh fields for associated
+   // I/O and initialization.  Equivalent host arrays will be allocated and
+   // initialized after the fields are filled on the device.
+   defineMeshFields();
 
-   // Read x/y/z and lon/lat coordinates for cells, edges, and vertices
-   readCoordinates();
+   // Read the input mesh stream to fill most of the fields
+   Metadata ReqMetaData; // empty - we do not require any global metadata
+   Error Err = IOStream::read("HorzMeshIn", ModelClock, ReqMetaData);
+   CHECK_ERROR_ABORT(Err, "HorzMesh: error reading input mesh stream");
 
-   // Read the mesh areas, lengths, and angles
-   readMeasurements();
+   // Complete read arrays (fill halos and duplicate on host)
+   completeReadArrays();
 
-   // Read the edge mesh weights
-   readWeights();
-
-   // Read the Coriolis parameter at the cells, edges, and vertices
-   readCoriolis();
-
-   // Destroy the parallel IO decompositions
-   finalizeParallelIO();
-
-   // Copy host data to device
-   copyToDevice();
-
-   // TODO: add ability to compute (rather than read in)
-   // dependent mesh quantities
-
+   // Compute additional mesh quantities
    // Compute EdgeSignOnCells and EdgeSignOnVertex
    computeEdgeSign();
 
-   // set mesh scaling coefficients
-   setMeshScaling();
+   // Compute mesh scaling coefficients
+   computeMeshScaling();
 
 } // end horizontal mesh constructor
 
-/// Creates a new mesh by calling the constructor and puts it in the
-/// AllHorzMeshes map
+//------------------------------------------------------------------------------
+// Creates a new mesh by calling the constructor and adding to the map of
+// all horizontal meshes
 HorzMesh *HorzMesh::create(const std::string &Name, //< [in] Name for new mesh
-                           Decomp *MeshDecomp //< [in] Decomp for the new mesh
+                           Decomp *MeshDecomp,      //< [in] Decomp for new mesh
+                           const Clock *ModelClock  //< [in] Model clock for IO
 ) {
    // Check to see if a mesh of the same name already exists and
    // if so, exit with an error
-   if (AllHorzMeshes.find(Name) != AllHorzMeshes.end()) {
-      LOG_ERROR("Attempted to create a HorzMesh with name {} but a HorzMesh of "
-                "that name already exists",
-                Name);
-      return nullptr;
-   }
+   if (AllHorzMeshes.find(Name) != AllHorzMeshes.end())
+      ABORT_ERROR("Attempted to create a HorzMesh with name {} but a HorzMesh "
+                  "of that name already exists",
+                  Name);
 
    // create a new mesh on the heap and put it in a map of
    // unique_ptrs, which will manage its lifetime
-   auto *NewHorzMesh = new HorzMesh(Name, MeshDecomp);
+   auto *NewHorzMesh = new HorzMesh(Name, MeshDecomp, ModelClock);
    AllHorzMeshes.emplace(Name, NewHorzMesh);
 
    return NewHorzMesh;
@@ -183,7 +173,7 @@ void HorzMesh::erase(std::string InName // [in] name of mesh to remove
 void HorzMesh::clear() {
 
    AllHorzMeshes.clear(); // removes all meshes from the list and in
-                          // the porcess, calls the destructors for each
+                          // the process, calls the destructors for each
 
    DefaultHorzMesh = nullptr; // prevent dangling pointer
 } // end clear
@@ -193,12 +183,14 @@ void HorzMesh::clear() {
 void HorzMesh::createDimensions(Decomp *MeshDecomp) {
 
    // Create non-distributed dimensions
-   // If these have already been created (eg not the default mesh), skip
+   // If these have already been created, skip since the dims should not change
    if (!Dimension::exists("MaxCellsOnEdge"))
       auto MaxCellsOnEdgeDim =
           Dimension::create("MaxCellsOnEdge", MaxCellsOnEdge);
    if (!Dimension::exists("MaxEdges"))
       auto MaxEdgesDim = Dimension::create("MaxEdges", MaxEdges);
+   if (!Dimension::exists("MaxEdges2"))
+      auto MaxEdgesDim = Dimension::create("MaxEdges2", MaxEdges2);
    if (!Dimension::exists("VertexDegree"))
       auto VertexDegreeDim = Dimension::create("VertexDegree", VertexDegree);
 
@@ -265,252 +257,8 @@ void HorzMesh::createDimensions(Decomp *MeshDecomp) {
 } // end createDimensions
 
 //------------------------------------------------------------------------------
-// Initialize the parallel IO decompositions for the mesh variables
-void HorzMesh::initParallelIO(Decomp *MeshDecomp) {
-
-   I4 NDims             = 1;
-   IO::Rearranger Rearr = IO::RearrBox;
-
-   // Create the IO decomp for arrays with (NCells) dimensions
-   std::vector<I4> CellDims{MeshDecomp->NCellsGlobal};
-   std::vector<I4> CellID(NCellsAll);
-   for (int Cell = 0; Cell < NCellsAll; ++Cell) {
-      CellID[Cell] = MeshDecomp->CellIDH(Cell) - 1;
-   }
-
-   CellDecompR8 = IO::createDecomp(IO::IOTypeR8, NDims, CellDims, NCellsAll,
-                                   CellID, Rearr);
-
-   // Create the IO decomp for arrays with (NEdges) dimensions
-   std::vector<I4> EdgeDims{MeshDecomp->NEdgesGlobal};
-   std::vector<I4> EdgeID(NEdgesAll);
-   for (int Edge = 0; Edge < NEdgesAll; ++Edge) {
-      EdgeID[Edge] = MeshDecomp->EdgeIDH(Edge) - 1;
-   }
-
-   EdgeDecompR8 = IO::createDecomp(IO::IOTypeR8, NDims, EdgeDims, NEdgesAll,
-                                   EdgeID, Rearr);
-
-   // Create the IO decomp for arrays with (NVertices) dimensions
-   std::vector<I4> VertexDims{MeshDecomp->NVerticesGlobal};
-   std::vector<I4> VertexID(NVerticesAll);
-   for (int Vertex = 0; Vertex < NVerticesAll; ++Vertex) {
-      VertexID[Vertex] = MeshDecomp->VertexIDH(Vertex) - 1;
-   }
-
-   VertexDecompR8 = IO::createDecomp(IO::IOTypeR8, NDims, VertexDims,
-                                     NVerticesAll, VertexID, Rearr);
-
-   // Create the IO decomp for arrays with (NEdges, 2*MaxEdges) dimensions
-   NDims     = 2;
-   MaxEdges2 = 2 * MaxEdges;
-   std::vector<I4> OnEdgeDims2{MeshDecomp->NEdgesGlobal, MaxEdges2};
-   I4 OnEdgeSize2 = NEdgesAll * MaxEdges2;
-   std::vector<I4> OnEdgeOffset2(OnEdgeSize2, -1);
-   for (int Edge = 0; Edge < NEdgesAll; Edge++) {
-      for (int i = 0; i < MaxEdges2; i++) {
-         I4 GlobalID = EdgeID[Edge] * MaxEdges2 + i;
-
-         OnEdgeOffset2[Edge * MaxEdges2 + i] = GlobalID;
-      }
-   }
-
-   OnEdgeDecompR8 = IO::createDecomp(IO::IOTypeR8, NDims, OnEdgeDims2,
-                                     OnEdgeSize2, OnEdgeOffset2, Rearr);
-
-   // Create the IO decomp for arrays with (NVertices, VertexDegree) dimensions
-   std::vector<I4> OnVertexDims{MeshDecomp->NVerticesGlobal, VertexDegree};
-   I4 OnVertexSize = NVerticesAll * VertexDegree;
-   std::vector<I4> OnVertexOffset(OnVertexSize, -1);
-   for (int Vertex = 0; Vertex < NVerticesAll; Vertex++) {
-      for (int i = 0; i < VertexDegree; i++) {
-         I4 GlobalID = VertexID[Vertex] * VertexDegree + i;
-         OnVertexOffset[Vertex * VertexDegree + i] = GlobalID;
-      }
-   }
-
-   OnVertexDecompR8 = IO::createDecomp(IO::IOTypeR8, NDims, OnVertexDims,
-                                       OnVertexSize, OnVertexOffset, Rearr);
-
-} // end initParallelIO
-
-//------------------------------------------------------------------------------
-// Destroy parallel decompositions
-void HorzMesh::finalizeParallelIO() {
-
-   IO::destroyDecomp(CellDecompR8);
-   IO::destroyDecomp(EdgeDecompR8);
-   IO::destroyDecomp(VertexDecompR8);
-   IO::destroyDecomp(OnEdgeDecompR8);
-   IO::destroyDecomp(OnVertexDecompR8);
-
-} // end finalizeParallelIO
-
-// Read 1D vertex array
-void HorzMesh::readVertexArray(HostArray1DReal &VertexArrayH,
-                               const std::string &MPASName) {
-   Error Err;
-
-   std::string OmegaName;
-   std::transform(MPASName.begin(), MPASName.end(), OmegaName.begin(),
-                  [](unsigned char c) { return std::toupper(c); });
-
-   // Temporary double precision array for reading
-   HostArray1DR8 TmpArrayR8(OmegaName + "Tmp", NVerticesSize);
-   int ArrayID;
-   Err = IO::readArray(TmpArrayR8.data(), NVerticesAll, MPASName, MeshFileID,
-                       VertexDecompR8, ArrayID);
-   CHECK_ERROR_ABORT(Err, "HorzMesh: error reading {}", MPASName);
-
-   // Create host array of desired precision and copy the read data into it
-   VertexArrayH = HostArray1DReal(OmegaName + "H", NVerticesSize);
-   deepCopy(VertexArrayH, TmpArrayR8);
-}
-
-// Read 1D edge array
-void HorzMesh::readEdgeArray(HostArray1DReal &EdgeArrayH,
-                             const std::string &MPASName) {
-   Error Err;
-
-   std::string OmegaName;
-   std::transform(MPASName.begin(), MPASName.end(), OmegaName.begin(),
-                  [](unsigned char c) { return std::toupper(c); });
-
-   // Temporary double precision array for reading
-   HostArray1DR8 TmpArrayR8(OmegaName + "Tmp", NEdgesSize);
-   int ArrayID;
-   Err = IO::readArray(TmpArrayR8.data(), NEdgesAll, MPASName, MeshFileID,
-                       EdgeDecompR8, ArrayID);
-   CHECK_ERROR_ABORT(Err, "HorzMesh: error reading {}", MPASName);
-
-   // Create host array of desired precision and copy the read data into it
-   EdgeArrayH = HostArray1DReal(OmegaName + "H", NEdgesSize);
-   deepCopy(EdgeArrayH, TmpArrayR8);
-}
-
-// Read 1D cell array
-void HorzMesh::readCellArray(HostArray1DReal &CellArrayH,
-                             const std::string &MPASName) {
-   Error Err;
-
-   std::string OmegaName;
-   std::transform(MPASName.begin(), MPASName.end(), OmegaName.begin(),
-                  [](unsigned char c) { return std::toupper(c); });
-
-   // Temporary double precision array for reading
-   HostArray1DR8 TmpArrayR8(OmegaName + "Tmp", NCellsSize);
-   int ArrayID;
-   Err = IO::readArray(TmpArrayR8.data(), NCellsAll, MPASName, MeshFileID,
-                       CellDecompR8, ArrayID);
-   CHECK_ERROR_ABORT(Err, "HorzMesh: error reading {}", MPASName);
-
-   // Create host array of desired precision and copy the read data into it
-   CellArrayH = HostArray1DReal(OmegaName + "H", NCellsSize);
-   deepCopy(CellArrayH, TmpArrayR8);
-}
-
-//------------------------------------------------------------------------------
-// Read x/y/z and lon/lat coordinates for cells, edges, and vertices
-void HorzMesh::readCoordinates() {
-
-   // Read mesh cell coordinates
-   readCellArray(XCellH, "xCell");
-   readCellArray(YCellH, "yCell");
-   readCellArray(ZCellH, "zCell");
-
-   readCellArray(LonCellH, "lonCell");
-   readCellArray(LatCellH, "latCell");
-
-   // Read mesh edge coordinate
-   readEdgeArray(XEdgeH, "xEdge");
-   readEdgeArray(YEdgeH, "yEdge");
-   readEdgeArray(ZEdgeH, "zEdge");
-
-   readEdgeArray(LonEdgeH, "lonEdge");
-   readEdgeArray(LatEdgeH, "latEdge");
-
-   // Read mesh vertex coordinates
-   readVertexArray(XVertexH, "xVertex");
-   readVertexArray(YVertexH, "yVertex");
-   readVertexArray(ZVertexH, "zVertex");
-
-   readVertexArray(LonVertexH, "lonVertex");
-   readVertexArray(LatVertexH, "latVertex");
-
-} // end readCoordinates
-
-//------------------------------------------------------------------------------
-// Read the mesh areas (cell, triangle, and kite),
-// lengths (between centers and vertices), and edge angles
-void HorzMesh::readMeasurements() {
-
-   readCellArray(AreaCellH, "areaCell");
-
-   readVertexArray(AreaTriangleH, "areaTriangle");
-
-   readEdgeArray(DvEdgeH, "dvEdge");
-
-   readEdgeArray(DcEdgeH, "dcEdge");
-
-   readEdgeArray(AngleEdgeH, "angleEdge");
-
-   readCellArray(MeshDensityH, "meshDensity");
-
-   // not using helper function since it kiteAreas is a 2d array
-   Error Err;
-
-   // Read into a temporary double precision array
-   int KiteAreasOnVertexID;
-
-   HostArray2DR8 TmpKiteAreasOnVertexR8("KiteAreasOnVertex", NVerticesSize,
-                                        VertexDegree);
-   Err = IO::readArray(TmpKiteAreasOnVertexR8.data(),
-                       NVerticesAll * VertexDegree, "kiteAreasOnVertex",
-                       MeshFileID, OnVertexDecompR8, KiteAreasOnVertexID);
-   CHECK_ERROR_ABORT(Err, "HorzMesh: error reading kiteAreasOnVertex");
-
-   // Create and fill array with Real precision
-   KiteAreasOnVertexH =
-       HostArray2DReal("KiteAreasOnVertex", NVerticesSize, VertexDegree);
-   deepCopy(KiteAreasOnVertexH, TmpKiteAreasOnVertexR8);
-
-} // end readMeasurements
-
-//------------------------------------------------------------------------------
-// Read the edge weights used in the discrete potential vorticity flux term
-void HorzMesh::readWeights() {
-
-   Error Err;
-
-   int WeightsOnEdgeID;
-   HostArray2DR8 TmpWeightsOnEdgeR8("WeightsOnEdge", NEdgesSize, MaxEdges2);
-   Err = IO::readArray(TmpWeightsOnEdgeR8.data(), NEdgesAll * MaxEdges2,
-                       "weightsOnEdge", MeshFileID, OnEdgeDecompR8,
-                       WeightsOnEdgeID);
-   CHECK_ERROR_ABORT(Err, "HorzMesh: error reading weightsOnEdge");
-
-   WeightsOnEdgeH = HostArray2DReal("WeightsOnEdge", NEdgesSize, MaxEdges2);
-   deepCopy(WeightsOnEdgeH, TmpWeightsOnEdgeR8);
-
-} // end readWeights
-
-//------------------------------------------------------------------------------
-// Read the Coriolis parameter at the cells, edges, and vertices
-void HorzMesh::readCoriolis() {
-
-   readCellArray(FCellH, "fCell");
-
-   readVertexArray(FVertexH, "fVertex");
-
-   readEdgeArray(FEdgeH, "fEdge");
-
-} // end readCoriolis
-
-//------------------------------------------------------------------------------
 // Compute the sign of edge contributions to a cell/vertex for each edge
 void HorzMesh::computeEdgeSign() {
-
-   EdgeSignOnCell = Array2DReal("EdgeSignOnCell", NCellsSize, MaxEdges);
 
    OMEGA_SCOPE(o_NEdgesOnCell, NEdgesOnCell);
    OMEGA_SCOPE(o_EdgesOnCell, EdgesOnCell);
@@ -561,10 +309,7 @@ void HorzMesh::computeEdgeSign() {
 //------------------------------------------------------------------------------
 // Set mesh scaling coefficients for mixing terms in momentum and tracer
 // equations so viscosity and diffusion scale with mesh.
-void HorzMesh::setMeshScaling() {
-
-   MeshScalingDel2 = Array1DReal("MeshScalingDel2", NEdgesSize);
-   MeshScalingDel4 = Array1DReal("MeshScalingDel4", NEdgesSize);
+void HorzMesh::computeMeshScaling() {
 
    OMEGA_SCOPE(o_MeshScalingDel2, MeshScalingDel2);
    OMEGA_SCOPE(o_MeshScalingDel4, MeshScalingDel4);
@@ -580,27 +325,73 @@ void HorzMesh::setMeshScaling() {
    MeshScalingDel2H = createHostMirrorCopy(MeshScalingDel2);
    MeshScalingDel4H = createHostMirrorCopy(MeshScalingDel4);
 
-} // end setMeshScaling
+} // end computeMeshScaling
 
 //------------------------------------------------------------------------------
-// Perform copy to device for mesh variables
-void HorzMesh::copyToDevice() {
+// Finish filling arrays read from a file by filling halos and copying to host
+void HorzMesh::completeReadArrays() {
 
-   AreaCell          = createDeviceMirrorCopy(AreaCellH);
-   AreaTriangle      = createDeviceMirrorCopy(AreaTriangleH);
-   KiteAreasOnVertex = createDeviceMirrorCopy(KiteAreasOnVertexH);
-   DcEdge            = createDeviceMirrorCopy(DcEdgeH);
-   DvEdge            = createDeviceMirrorCopy(DvEdgeH);
-   AngleEdge         = createDeviceMirrorCopy(AngleEdgeH);
-   WeightsOnEdge     = createDeviceMirrorCopy(WeightsOnEdgeH);
-   FVertex           = createDeviceMirrorCopy(FVertexH);
-   FEdge             = createDeviceMirrorCopy(FEdgeH);
-   XCell             = createDeviceMirrorCopy(XCellH);
-   YCell             = createDeviceMirrorCopy(YCellH);
-   XEdge             = createDeviceMirrorCopy(XEdgeH);
-   YEdge             = createDeviceMirrorCopy(YEdgeH);
+   // Get precomputed halo information by name - mesh name is assumed to be
+   // same as halo name (including Default)
+   Halo *HorzMeshHalo = Halo::get(MeshName);
 
-} // end copyToDevice
+   // Fill halos for all arrays read from file
+   HorzMeshHalo->exchangeFullArrayHalo(XCell, OnCell);
+   HorzMeshHalo->exchangeFullArrayHalo(YCell, OnCell);
+   HorzMeshHalo->exchangeFullArrayHalo(ZCell, OnCell);
+   HorzMeshHalo->exchangeFullArrayHalo(XEdge, OnEdge);
+   HorzMeshHalo->exchangeFullArrayHalo(YEdge, OnEdge);
+   HorzMeshHalo->exchangeFullArrayHalo(ZEdge, OnEdge);
+   HorzMeshHalo->exchangeFullArrayHalo(XVertex, OnVertex);
+   HorzMeshHalo->exchangeFullArrayHalo(YVertex, OnVertex);
+   HorzMeshHalo->exchangeFullArrayHalo(ZVertex, OnVertex);
+   HorzMeshHalo->exchangeFullArrayHalo(LatCell, OnCell);
+   HorzMeshHalo->exchangeFullArrayHalo(LonCell, OnCell);
+   HorzMeshHalo->exchangeFullArrayHalo(LatEdge, OnEdge);
+   HorzMeshHalo->exchangeFullArrayHalo(LonEdge, OnEdge);
+   HorzMeshHalo->exchangeFullArrayHalo(LatVertex, OnVertex);
+   HorzMeshHalo->exchangeFullArrayHalo(LonVertex, OnVertex);
+   HorzMeshHalo->exchangeFullArrayHalo(AreaCell, OnCell);
+   HorzMeshHalo->exchangeFullArrayHalo(MeshDensity, OnCell);
+   HorzMeshHalo->exchangeFullArrayHalo(AreaTriangle, OnVertex);
+   HorzMeshHalo->exchangeFullArrayHalo(KiteAreasOnVertex, OnVertex);
+   HorzMeshHalo->exchangeFullArrayHalo(DcEdge, OnEdge);
+   HorzMeshHalo->exchangeFullArrayHalo(DvEdge, OnEdge);
+   HorzMeshHalo->exchangeFullArrayHalo(AngleEdge, OnEdge);
+   HorzMeshHalo->exchangeFullArrayHalo(WeightsOnEdge, OnEdge);
+   HorzMeshHalo->exchangeFullArrayHalo(FCell, OnCell);
+   HorzMeshHalo->exchangeFullArrayHalo(FEdge, OnEdge);
+   HorzMeshHalo->exchangeFullArrayHalo(FVertex, OnVertex);
+
+   // Create host copies
+   XCellH             = createHostMirrorCopy(XCell);
+   YCellH             = createHostMirrorCopy(YCell);
+   ZCellH             = createHostMirrorCopy(ZCell);
+   XEdgeH             = createHostMirrorCopy(XEdge);
+   YEdgeH             = createHostMirrorCopy(YEdge);
+   ZEdgeH             = createHostMirrorCopy(ZEdge);
+   XVertexH           = createHostMirrorCopy(XVertex);
+   YVertexH           = createHostMirrorCopy(YVertex);
+   ZVertexH           = createHostMirrorCopy(ZVertex);
+   LatCellH           = createHostMirrorCopy(LatCell);
+   LonCellH           = createHostMirrorCopy(LonCell);
+   LatEdgeH           = createHostMirrorCopy(LatEdge);
+   LonEdgeH           = createHostMirrorCopy(LonEdge);
+   LatVertexH         = createHostMirrorCopy(LatVertex);
+   LonVertexH         = createHostMirrorCopy(LonVertex);
+   AreaCellH          = createHostMirrorCopy(AreaCell);
+   MeshDensityH       = createHostMirrorCopy(MeshDensity);
+   AreaTriangleH      = createHostMirrorCopy(AreaTriangle);
+   KiteAreasOnVertexH = createHostMirrorCopy(KiteAreasOnVertex);
+   DcEdgeH            = createHostMirrorCopy(DcEdge);
+   DvEdgeH            = createHostMirrorCopy(DvEdge);
+   AngleEdgeH         = createHostMirrorCopy(AngleEdge);
+   WeightsOnEdgeH     = createHostMirrorCopy(WeightsOnEdge);
+   FCellH             = createHostMirrorCopy(FCell);
+   FEdgeH             = createHostMirrorCopy(FEdge);
+   FVertexH           = createHostMirrorCopy(FVertex);
+
+} // end completeReadArrays
 
 //------------------------------------------------------------------------------
 // Get default mesh
@@ -614,17 +405,630 @@ HorzMesh *HorzMesh::get(const std::string Name ///< [in] Name of mesh
    // look for an instance of this name
    auto it = AllHorzMeshes.find(Name);
 
-   // if found, return the mesh pointer
-   if (it != AllHorzMeshes.end()) {
-      return it->second.get();
+   // if not found, abort
+   if (it == AllHorzMeshes.end())
+      ABORT_ERROR("HorzMesh::get: Mesh {} not found. Mesh has not been defined "
+                  "or has been removed",
+                  Name);
 
-      // otherwise print error and return null pointer
-   } else {
-      LOG_ERROR("HorzMesh::get: Attempt to retrieve non-existent mesh:");
-      LOG_ERROR("{} has not been defined or has been removed", Name);
-      return nullptr;
-   }
+   // found the mesh, return the pointer
+   return it->second.get();
+
 } // end get mesh
+
+//------------------------------------------------------------------------------
+// Define all Horz mesh fields and associated mesh stream for any mesh I/O
+void HorzMesh::defineMeshFields() {
+
+   // First create a field group for mesh fields - simply HorzMesh for default,
+   // but add name of mesh for any other instances. We do not add the suffix to
+   // the field names because we expect any file containing the mesh fields
+   // to use the standard field names.
+   // We currently define a mesh group only for fields that are read in after
+   // the decomposition (HorzMeshIn). Other mesh groups may be defined later
+   // if fields are required in output, but connectivity arrays are not
+   // available after the mesh Decomposition has been defined.
+
+   std::string MeshSuffix = "";
+   if (MeshName != "Default")
+      MeshSuffix = MeshName;
+
+   std::string MeshGroupName = "HorzMeshIn" + MeshSuffix;
+   auto MeshGroupIn          = FieldGroup::create(MeshGroupName);
+
+   // Check whether the file name in the input stream matches that of
+   // the Decomp. They are typically different only for unit testing where
+   // an internal variable overrides the default configuration. The stream
+   // name is assumed to be the same as the constructed group name above.
+
+   IOStream::changeFilename(MeshGroupName, MeshFileName);
+
+   // The connectivity arrays are computed in decomp and here contain only local
+   // connectivity and local addresses that are dependent on that decomposition.
+   // They should not be read or written and are therefore not included in
+   // mesh field groups.
+
+   // CellID;                          < global cell ID for each local cell
+   // CellsOnCell, CellsOnCellH;       < Indx of cells that neighbor each cell
+   // EdgesOnCell, EdgesOnCellH;       < Indx of edges that border each cell
+   // NEdgesOnCell, NEdgesOnCellH;     < Num of active edges around each cell
+   // VerticesOnCell, VerticesOnCellH; < Indx of vertices bordering each cell
+   // CellsOnEdge, CellsOnEdgeH;       < Indx of cells straddling each edge
+   // EdgesOnEdge, EdgesOnEdgeH;       < Indx of edges around cells across edge
+   // NEdgesOnEdge, NEdgesOnEdgeH;     < Num of edges around cells across edge
+   // VerticesOnEdge, VerticesOnEdgeH; < Indx of vertices straddling each edge
+   // CellsOnVertex, CellsOnVertexH;   < Indx of cells that share a vertex
+   // EdgesOnVertex, EdgesOnVertexH;   < Indx of edges sharing vertex as endpt
+
+   // These fields are all read from the mesh file so are added to both the
+   // full mesh group and the input mesh group
+
+   // Coordinate arrays
+   // Cell coords
+   std::string FieldName = "XCell";
+   XCell = Array1DReal("XCell", NCellsSize); // allocate space and init to zero
+   int NDims = 1;
+   std::vector<std::string> DimNames(NDims);
+   DimNames[0] = "NCells";
+   auto XCellField =
+       Field::create(FieldName,                           // field name
+                     "X Coordinates of cell centers (m)", // long Name
+                     "m",                                 // units
+                     "x",                                 // CF standard Name
+                     0.0,                                 // min valid value
+                     7.0E+6,                              // max valid value
+                     -9.99E+30, // scalar for undefined entries
+                     NDims,     // num of dimensions
+                     DimNames,  // dimension names
+                     false      // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, XCell);
+
+   FieldName = "YCell";
+   YCell = Array1DReal("YCell", NCellsSize); // allocate space and init to zero
+   auto YCellField =
+       Field::create(FieldName,                           // field name
+                     "Y Coordinates of cell centers (m)", // long Name
+                     "m",                                 // units
+                     "y",                                 // CF standard Name
+                     0.0,                                 // min valid value
+                     7.0E+6,                              // max valid value
+                     -9.99E+30, // scalar for undefined entries
+                     NDims,     // num of dimensions
+                     DimNames,  // dimension names
+                     false      // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, YCell);
+
+   FieldName = "ZCell";
+   ZCell = Array1DReal("ZCell", NCellsSize); // allocate space and init to zero
+   auto ZCellField =
+       Field::create(FieldName,                           // field name
+                     "Z Coordinates of cell centers (m)", // long Name
+                     "m",                                 // units
+                     "z",                                 // CF standard Name
+                     0.0,                                 // min valid value
+                     7.0E+6,                              // max valid value
+                     -9.99E+30, // scalar for undefined entries
+                     NDims,     // num of dimensions
+                     DimNames,  // dimension names
+                     false      // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, ZCell);
+
+   FieldName = "LatCell";
+   LatCell = Array1DReal("LatCell", NCellsSize); // allocate space init to zero
+   auto LatCellField =
+       Field::create(FieldName,                              // field name
+                     "Latitude coordinates of cell centers", // long Name
+                     "radians",                              // units
+                     "latitude",                             // CF standard Name
+                     -3.1415927,                             // min valid value
+                     3.1415927,                              // max valid value
+                     -9.99E+30, // scalar for undefined entries
+                     NDims,     // num of dimensions
+                     DimNames,  // dimension names
+                     false      // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, LatCell);
+
+   FieldName = "LonCell";
+   LonCell = Array1DReal("LonCell", NCellsSize); // allocate space init to zero
+   auto LonCellField =
+       Field::create(FieldName,                               // field name
+                     "Longitude coordinates of cell centers", // long Name
+                     "radians",                               // units
+                     "longitude", // CF standard Name
+                     0.0,         // min valid value
+                     6.28319,     // max valid value
+                     -9.99E+30,   // scalar for undefined entries
+                     NDims,       // num of dimensions
+                     DimNames,    // dimension names
+                     false        // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, LonCell);
+
+   // Edge coords
+   DimNames[0] = "NEdges";
+   FieldName   = "XEdge";
+   XEdge = Array1DReal("XEdge", NEdgesSize); // allocate space init to zero
+   auto XEdgeField =
+       Field::create(FieldName,                         // field name
+                     "X Coordinates of cell edges (m)", // long Name
+                     "m",                               // units
+                     "x",                               // CF standard Name
+                     0.0,                               // min valid value
+                     7.0E+6,                            // max valid value
+                     -9.99E+30, // scalar for undefined entries
+                     NDims,     // num of dimensions
+                     DimNames,  // dimension names
+                     false      // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, XEdge);
+
+   FieldName = "YEdge";
+   YEdge     = Array1DReal("YEdge", NEdgesSize); // allocate space init to zero
+   auto YEdgeField =
+       Field::create(FieldName,                         // field name
+                     "Y Coordinates of cell edges (m)", // long Name
+                     "m",                               // units
+                     "y",                               // CF standard Name
+                     0.0,                               // min valid value
+                     7.0E+6,                            // max valid value
+                     -9.99E+30, // scalar for undefined entries
+                     NDims,     // num of dimensions
+                     DimNames,  // dimension names
+                     false      // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, YEdge);
+
+   FieldName = "ZEdge";
+   ZEdge     = Array1DReal("ZEdge", NEdgesSize); // allocate space init to zero
+   auto ZEdgeField =
+       Field::create(FieldName,                         // field name
+                     "Z Coordinates of cell edges (m)", // long Name
+                     "m",                               // units
+                     "z",                               // CF standard Name
+                     0.0,                               // min valid value
+                     7.0E+6,                            // max valid value
+                     -9.99E+30, // scalar for undefined entries
+                     NDims,     // num of dimensions
+                     DimNames,  // dimension names
+                     false      // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, ZEdge);
+
+   FieldName = "LatEdge";
+   LatEdge = Array1DReal("LatEdge", NEdgesSize); // allocate space init to zero
+   auto LatEdgeField =
+       Field::create(FieldName,                            // field name
+                     "Latitude coordinates of cell edges", // long Name
+                     "radians",                            // units
+                     "latitude",                           // CF standard Name
+                     -3.1415927,                           // min valid value
+                     3.1415927,                            // max valid value
+                     -9.99E+30, // scalar for undefined entries
+                     NDims,     // num of dimensions
+                     DimNames,  // dimension names
+                     false      // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, LatEdge);
+
+   FieldName = "LonEdge";
+   LonEdge = Array1DReal("LonEdge", NEdgesSize); // allocate space init to zero
+   auto LonEdgeField =
+       Field::create(FieldName,                             // field name
+                     "Longitude coordinates of cell edges", // long Name
+                     "radians",                             // units
+                     "longitude",                           // CF standard Name
+                     0.0,                                   // min valid value
+                     6.28319,                               // max valid value
+                     -9.99E+30, // scalar for undefined entries
+                     NDims,     // num of dimensions
+                     DimNames,  // dimension names
+                     false      // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, LonEdge);
+
+   // Vertex coordinates
+   DimNames[0] = "NVertices";
+   FieldName   = "XVertex";
+   XVertex     = Array1DReal("XVertex", NVerticesSize); // allocate space
+   auto XVertexField =
+       Field::create(FieldName,                            // field name
+                     "X Coordinates of cell vertices (m)", // long Name
+                     "m",                                  // units
+                     "x",                                  // CF standard Name
+                     0.0,                                  // min valid value
+                     7.0E+6,                               // max valid value
+                     -9.99E+30, // scalar for undefined entries
+                     NDims,     // num of dimensions
+                     DimNames,  // dimension names
+                     false      // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, XVertex);
+
+   FieldName = "YVertex";
+   YVertex   = Array1DReal("YVertex", NVerticesSize); // allocate space
+   auto YVertexField =
+       Field::create(FieldName,                            // field name
+                     "Y Coordinates of cell vertices (m)", // long Name
+                     "m",                                  // units
+                     "y",                                  // CF standard Name
+                     0.0,                                  // min valid value
+                     7.0E+6,                               // max valid value
+                     -9.99E+30, // scalar for undefined entries
+                     NDims,     // num of dimensions
+                     DimNames,  // dimension names
+                     false      // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, YVertex);
+
+   FieldName = "ZVertex";
+   ZVertex   = Array1DReal("ZVertex", NVerticesSize); // allocate space
+   auto ZVertexField =
+       Field::create(FieldName,                            // field name
+                     "Z Coordinates of cell vertices (m)", // long Name
+                     "m",                                  // units
+                     "z",                                  // CF standard Name
+                     0.0,                                  // min valid value
+                     7.0E+6,                               // max valid value
+                     -9.99E+30, // scalar for undefined entries
+                     NDims,     // num of dimensions
+                     DimNames,  // dimension names
+                     false      // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, ZVertex);
+
+   FieldName = "LatVertex";
+   LatVertex = Array1DReal("LatVertex", NVerticesSize); // allocate space
+   auto LatVertexField =
+       Field::create(FieldName,                               // field name
+                     "Latitude coordinates of cell vertices", // long Name
+                     "radians",                               // units
+                     "latitude", // CF standard Name
+                     -3.1415927, // min valid value
+                     3.1415927,  // max valid value
+                     -9.99E+30,  // scalar for undefined entries
+                     NDims,      // num of dimensions
+                     DimNames,   // dimension names
+                     false       // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, LatVertex);
+
+   FieldName = "LonVertex";
+   LonVertex = Array1DReal("LonVertex", NVerticesSize); // allocate space
+   auto LonVertexField =
+       Field::create(FieldName,                                // field name
+                     "Longitude coordinates of cell vertices", // long Name
+                     "radians",                                // units
+                     "longitude", // CF standard Name
+                     0.0,         // min valid value
+                     6.28319,     // max valid value
+                     -9.99E+30,   // scalar for undefined entries
+                     NDims,       // num of dimensions
+                     DimNames,    // dimension names
+                     false        // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, LonVertex);
+
+   // Other mesh properties
+   // Mesh areas, lengths, and angles
+   DimNames[0]        = "NCells";
+   FieldName          = "AreaCell";
+   AreaCell           = Array1DReal("AreaCell", NCellsSize); // allocate space
+   auto AreaCellField = Field::create(FieldName,             // field name
+                                      "Area of each cell (m^2)", // long name
+                                      "m2",                      // units
+                                      "cell_area", // CF standard name
+                                      0.0,         // min valid value
+                                      9.99E+30,    // max valid value
+                                      -9.99E+30, // scalar for undefined entries
+                                      NDims,     // num of dimensions
+                                      DimNames,  // dimension names
+                                      false      // not time dependent
+   );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, AreaCell);
+
+   FieldName   = "MeshDensity";
+   MeshDensity = Array1DReal("MeshDensity", NCellsSize); // allocate space
+   auto MeshDensityField =
+       Field::create(FieldName, // field name
+                     "Value of density function used to generate mesh cell at"
+                     " cell centers", // long name
+                     "",              // units
+                     "",              // CF standard name
+                     0.0,             // min valid value
+                     9.99E+30,        // max valid value
+                     -9.99E+30,       // scalar for undefined entries
+                     NDims,           // num of dimensions
+                     DimNames,        // dimension names
+                     false            // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, MeshDensity);
+
+   DimNames[0]  = "NVertices";
+   FieldName    = "AreaTriangle";
+   AreaTriangle = Array1DReal("AreaTriangle", NVerticesSize); // allocate space
+   auto AreaTriangleField =
+       Field::create(FieldName, // field name
+                     "Area of each triangle in the dual grid (m^2)", // lng name
+                     "m2",                                           // units
+                     "cell_area", // CF standard name
+                     0.0,         // min valid value
+                     9.99E+30,    // max valid value
+                     -9.99E+30,   // scalar for undefined entries
+                     NDims,       // num of dimensions
+                     DimNames,    // dimension names
+                     false        // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, AreaTriangle);
+
+   DimNames[0] = "NEdges";
+   FieldName   = "DvEdge";
+   DvEdge      = Array1DReal("DvEdge", NEdgesSize); // allocate space
+   auto DvEdgeField =
+       Field::create(FieldName, // field name
+                     "Length of each edge, computed as the distance between"
+                     " verticesOnEdge (m)", // long name
+                     "m",                   // units
+                     "",                    // CF standard name
+                     0.0,                   // min valid value
+                     9.99E+30,              // max valid value
+                     -9.99E+30,             // scalar for undefined entries
+                     NDims,                 // num of dimensions
+                     DimNames,              // dimension names
+                     false                  // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, DvEdge);
+
+   FieldName = "DcEdge";
+   DcEdge    = Array1DReal("DcEdge", NEdgesSize); // allocate space
+   auto DcEdgeField =
+       Field::create(FieldName, // field name
+                     "Length of each edge, computed as the distance between"
+                     " CellsOnEdge (m)", // long name
+                     "m",                // units
+                     "",                 // CF standard name
+                     0.0,                // min valid value
+                     9.99E+30,           // max valid value
+                     -9.99E+30,          // scalar for undefined entries
+                     NDims,              // num of dimensions
+                     DimNames,           // dimension names
+                     false               // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, DcEdge);
+
+   FieldName = "AngleEdge";
+   AngleEdge = Array1DReal("AngleEdge", NEdgesSize); // allocate space
+   auto AngleEdgeField =
+       Field::create(FieldName, // field name
+                     "Angle the edge normal makes with local eastward direction"
+                     " (radians)", // long name
+                     "radians",    // units
+                     "",           // CF standard name
+                     -3.1415927,   // min valid value
+                     3.1415927,    // max valid value
+                     -9.99E+30,    // scalar for undefined entries
+                     NDims,        // num of dimensions
+                     DimNames,     // dimension names
+                     false         // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, AngleEdge);
+
+   NDims = 2;
+   DimNames.resize(2);
+   DimNames[0] = "NVertices";
+   DimNames[1] = "VertexDegree";
+   FieldName   = "KiteAreasOnVertex";
+   KiteAreasOnVertex =
+       Array2DReal("KiteAreasOnVertex", NVerticesSize, VertexDegree);
+   auto KiteAreasOnVertexField =
+       Field::create(FieldName, // field name
+                     "Area of the portions of each dual cell that are part of "
+                     "each cellsOnVertex (m^2)", // long name
+                     "m2",                       // units
+                     "",                         // CF standard name
+                     0.0,                        // min valid value
+                     9.99E+30,                   // max valid value
+                     -9.99E+30,                  // scalar for undefined entries
+                     NDims,                      // num of dimensions
+                     DimNames,                   // dimension names
+                     false                       // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array2DReal>(FieldName, KiteAreasOnVertex);
+
+   // Mesh weights
+   DimNames[0]   = "NEdges";
+   DimNames[1]   = "MaxEdges2";
+   FieldName     = "WeightsOnEdge";
+   WeightsOnEdge = Array2DReal("KiteAreasOnVertex", NEdgesSize, MaxEdges2);
+   auto WeightsOnEdgeField =
+       Field::create(FieldName, // field name
+                     "Reconstruction weights associated with each of the"
+                     " edgesOnEdge", // long name
+                     "",             // units
+                     "",             // CF standard name
+                     -1.0,           // min valid value
+                     1.0,            // max valid value
+                     -9.99E+30,      // scalar for undefined entries
+                     NDims,          // num of dimensions
+                     DimNames,       // dimension names
+                     false           // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array2DReal>(FieldName, WeightsOnEdge);
+
+   // Coriolis parameter at the cells, edges, and vertices
+   NDims = 1;
+   DimNames.resize(1);
+   DimNames[0] = "NEdges";
+   FieldName   = "FEdge";
+   FEdge       = Array1DReal("FEdge", NEdgesSize);
+   auto FEdgeField =
+       Field::create(FieldName,                                    // field name
+                     "Coriolis parameter at edges (radians s^-1)", // long name
+                     "radians s-1",                                // units
+                     "coriolis_parameter", // CF standard name
+                     -1.0E-3,              // min valid value
+                     1.0E-3,               // max valid value
+                     -9.99E+30,            // scalar for undefined entries
+                     NDims,                // num of dimensions
+                     DimNames,             // dimension names
+                     false                 // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, FEdge);
+
+   DimNames[0] = "NVertices";
+   FieldName   = "FVertex";
+   FVertex     = Array1DReal("FVertex", NVerticesSize);
+   auto FVertexField =
+       Field::create(FieldName, // field name
+                     "Coriolis parameter at vertices (radians s^-1)",
+                     "radians s-1",        // units
+                     "coriolis_parameter", // CF standard name
+                     -1.0E-3,              // min valid value
+                     1.0E-3,               // max valid value
+                     -9.99E+30,            // scalar for undefined entries
+                     NDims,                // num of dimensions
+                     DimNames,             // dimension names
+                     false                 // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, FVertex);
+
+   DimNames[0] = "NCells";
+   FieldName   = "FCell";
+   FCell       = Array1DReal("FCell", NCellsSize);
+   auto FCellField =
+       Field::create(FieldName, // field name
+                     "Coriolis parameter at cell centers (radians s^-1)",
+                     "radians s-1",        // units
+                     "coriolis_parameter", // CF standard name
+                     -1.0E-3,              // min valid value
+                     1.0E-3,               // max valid value
+                     -9.99E+30,            // scalar for undefined entries
+                     NDims,                // num of dimensions
+                     DimNames,             // dimension names
+                     false                 // not time dependent
+       );
+   MeshGroupIn->addField(FieldName);
+   Field::attachFieldData<Array1DReal>(FieldName, FCell);
+
+   // The sign and scaling fields are computed internally so are allocated
+   // here. Because they are not read from a file or typically written to a
+   // file, we do not create field metadata, though the definitions are
+   // included here in comments in case they are needed later.
+
+   EdgeSignOnCell = Array2DReal("EdgeSignOnCell", NCellsSize, MaxEdges);
+   EdgeSignOnVertex =
+       Array2DReal("EdgeSignOnVertex", NVerticesSize, VertexDegree);
+   MeshScalingDel2 = Array1DReal("MeshScalingDel2", NEdgesSize);
+   MeshScalingDel4 = Array1DReal("MeshScalingDel4", NEdgesSize);
+
+   // Sign vectors
+   //
+   // NDims = 2;
+   // DimNames.resize(2);
+   // DimNames[0] = "NCells";
+   // DimNames[1] = "MaxEdges";
+   // FieldName = "EdgeSignOnCell";
+   // auto EdgeSignOnCellField =
+   //    Field::create(FieldName,            // field name
+   //                  "Sign of vector connecting cells", // long name
+   //                  "",                   // units
+   //                  "",                   // CF standard name
+   //                  -1.0,                 // min valid value
+   //                  1.0,                  // max valid value
+   //                  -9.99E+30,            // scalar for undefined entries
+   //                  NDims,                // num of dimensions
+   //                  DimNames,             // dimension names
+   //                  false                 // not time dependent
+   //    );
+   // MeshGroupIn->addField(FieldName);
+   // Field::attachFieldData<Array2DReal>(FieldName, EdgeSignOnCell);
+   //
+   // DimNames[0] = "NVertices";
+   // DimNames[1] = "VertexDegree";
+   // FieldName = "EdgeSignOnVertex";
+   // auto EdgeSignOnVertexField =
+   //    Field::create(FieldName,            // field name
+   //                  "Sign of vector connecting vertices", // long name
+   //                  "",                   // units
+   //                  "",                   // CF standard name
+   //                  -1.0,                 // min valid value
+   //                  1.0,                  // max valid value
+   //                  -9.99E+30,            // scalar for undefined entries
+   //                  NDims,                // num of dimensions
+   //                  DimNames,             // dimension names
+   //                  false                 // not time dependent
+   //    );
+   // MeshGroupIn->addField(FieldName);
+   // Field::attachFieldData<Array2DReal>(FieldName, EdgeSignOnVertex);
+   //
+   // Mesh scaling
+   //
+   // NDims = 1;
+   // DimNames.resize(1);
+   // DimNames[0] = "NEdges";
+   // FieldName = "MeshScalingDel2";
+   // auto MeshScalingDel2Field =
+   //    Field::create(FieldName,            // field name
+   //                  "Coefficient to Laplacian mixing terms", // long name
+   //                  "",                   // units
+   //                  "",                   // CF standard name
+   //                  -9.99E+30,            // min valid value
+   //                  9.99E+30,             // max valid value
+   //                  -9.99E+30,            // scalar for undefined entries
+   //                  NDims,                // num of dimensions
+   //                  DimNames,             // dimension names
+   //                  false                 // not time dependent
+   //    );
+   // MeshGroupIn->addField(FieldName);
+   // Field::attachFieldData<Array1DReal>(FieldName, MeshScalingDel2);
+   //
+   // FieldName = "MeshScalingDel4";
+   // auto MeshScalingDel4Field =
+   //    Field::create(FieldName,            // field name
+   //                  "Coefficient to biharmonic mixing terms", // long name
+   //                  "",                   // units
+   //                  "",                   // CF standard name
+   //                  -9.99E+30,            // min valid value
+   //                  9.99E+30,             // max valid value
+   //                  -9.99E+30,            // scalar for undefined entries
+   //                  NDims,                // num of dimensions
+   //                  DimNames,             // dimension names
+   //                  false                 // not time dependent
+   //    );
+   // MeshGroupIn->addField(FieldName);
+   // Field::attachFieldData<Array1DReal>(FieldName, MeshScalingDel4);
+
+} // end defineMeshFields
+
+//------------------------------------------------------------------------------
 
 } // end namespace OMEGA
 

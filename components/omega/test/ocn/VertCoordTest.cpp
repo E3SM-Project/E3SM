@@ -12,6 +12,7 @@
 #include "Decomp.h"
 #include "Dimension.h"
 #include "Error.h"
+#include "Field.h"
 #include "GlobalConstants.h"
 #include "Halo.h"
 #include "HorzMesh.h"
@@ -45,8 +46,10 @@ int initVertCoordTest() {
    Config("Omega");
    Config::readAll("omega.yml");
 
-   // First step of time stepper initialization needed for IOstream
+   // First step of time stepper initialization needed for IOstream and clock
    TimeStepper::init1();
+   TimeStepper *DefStepper = TimeStepper::getDefault();
+   Clock *ModelClock       = DefStepper->getClock();
 
    // Initialize the IO system
    IO::init(DefComm);
@@ -55,7 +58,8 @@ int initVertCoordTest() {
    Decomp::init();
 
    // Initialize streams
-   IOStream::init();
+   Field::init(ModelClock);
+   IOStream::init(ModelClock);
 
    // Initialize the default halo
    Err = Halo::init();
@@ -63,7 +67,7 @@ int initVertCoordTest() {
       LOG_ERROR("VertCoordTest: error initializing default halo");
 
    // Initialize the default mesh
-   HorzMesh::init();
+   HorzMesh::init(ModelClock);
 
    // Initialize the default vertical coordinate
    VertCoord::init();
@@ -699,6 +703,7 @@ int main(int argc, char *argv[]) {
       TimeStepper::clear();
       HorzMesh::clear();
       VertCoord::clear();
+      Field::clear();
       Dimension::clear();
       Halo::clear();
       Decomp::clear();

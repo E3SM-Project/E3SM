@@ -114,13 +114,17 @@ int initTendenciesTest(const std::string &mesh) {
    Config("Omega");
    Config::readAll("omega.yml");
 
+   // Initialize time stepping and model clock
    TimeStepper::init1();
+   TimeStepper *DefStepper = TimeStepper::getDefault();
+   Clock *ModelClock       = DefStepper->getClock();
 
    IO::init(DefComm);
    Decomp::init(mesh);
 
    // Initialize streams
-   IOStream::init();
+   Field::init(ModelClock);
+   IOStream::init(ModelClock);
 
    int HaloErr = Halo::init();
    if (HaloErr != 0) {
@@ -128,8 +132,10 @@ int initTendenciesTest(const std::string &mesh) {
       LOG_ERROR("TendenciesTest: error initializing default halo");
    }
 
-   HorzMesh::init();
+   // Read mesh
+   HorzMesh::init(ModelClock);
    VertCoord::init();
+
    Tracers::init();
    VertAdv::init();
    PressureGrad::init();

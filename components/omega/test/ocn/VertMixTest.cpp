@@ -87,8 +87,19 @@ void initVertMixTest() {
    /// Initialize Halo
    Halo::init();
 
+   /// Create dummy model clock for stream IO
+   Calendar::init("No Leap");
+   TimeInstant StartTime(0, 1, 1, 0, 0, 0.0);
+   TimeInterval TimeStep(1, TimeUnits::Hours);
+   Clock ModelClockTmp(StartTime, TimeStep);
+   Clock *ModelClock = &ModelClockTmp;
+
+   /// Initialize IO streams for mesh IO
+   Field::init(ModelClock);
+   IOStream::init(ModelClock);
+
    /// Initialize mesh
-   HorzMesh::init();
+   HorzMesh::init(ModelClock);
 
    /// Initialize vertical coordinate
    VertCoord::init(false);

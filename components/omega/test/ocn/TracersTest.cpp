@@ -54,8 +54,10 @@ I4 initTracersTest() {
    Config("Omega");
    Config::readAll("omega.yml");
 
-   // Initialize the default time stepper
+   // Initialize the default time stepper and model clock
    TimeStepper::init1();
+   TimeStepper *DefStepper = TimeStepper::getDefault();
+   Clock *ModelClock       = DefStepper->getClock();
 
    // Initialize the IO system
    IO::init(DefComm);
@@ -73,8 +75,10 @@ I4 initTracersTest() {
       return Err;
    }
 
-   // Initialize the default mesh
-   HorzMesh::init();
+   // Read in the default mesh
+   Field::init(ModelClock);
+   IOStream::init(ModelClock);
+   HorzMesh::init(ModelClock);
 
    // Initialize the vertical coordinate
    VertCoord::init(false);

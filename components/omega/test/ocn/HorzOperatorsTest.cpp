@@ -3,10 +3,12 @@
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
+#include "Field.h"
 #include "GlobalConstants.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
+#include "IOStream.h"
 #include "Logging.h"
 #include "MachEnv.h"
 #include "OceanTestCommon.h"
@@ -926,6 +928,7 @@ int initOperatorsTest(const std::string &MeshFile) {
 
    // Initialize the Logging system
    initLogging(DefEnv);
+   LOG_INFO("------ Horz Operators unit tests ------");
 
    // Open config file
    Config("Omega");
@@ -940,13 +943,25 @@ int initOperatorsTest(const std::string &MeshFile) {
       LOG_ERROR("OperatorsTest: error initializing default halo");
    }
 
-   HorzMesh::init();
+   // Create dummy model clock
+   Calendar::init("No Leap");
+   TimeInstant StartTime(0, 1, 1, 0, 0, 0.0);
+   TimeInterval TimeStep(1, TimeUnits::Hours);
+   Clock ModelClockTmp(StartTime, TimeStep);
+   Clock *ModelClock = &ModelClockTmp;
+
+   // Read horizontal mesh
+   Field::init(ModelClock);
+   IOStream::init(ModelClock);
+   HorzMesh::init(ModelClock);
 
    return Err;
 }
 
 void finalizeOperatorsTest() {
+   IOStream::finalize();
    HorzMesh::clear();
+   Field::clear();
    Dimension::clear();
    Halo::clear();
    Decomp::clear();
@@ -992,6 +1007,8 @@ int main(int argc, char *argv[]) {
 
    Pacer::finalize();
    Kokkos::finalize();
+   if (RetVal == 0)
+      LOG_INFO("------ Horz Operators unit tests successful ------");
    MPI_Finalize();
 
    if (RetVal >= 256)

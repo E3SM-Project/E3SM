@@ -7,6 +7,7 @@
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
+#include "IOStream.h"
 #include "Logging.h"
 #include "MachEnv.h"
 #include "OceanTestCommon.h"
@@ -803,7 +804,17 @@ int initAuxVarsTest(const std::string &mesh) {
       LOG_ERROR("AuxVarsTest: error initializing default halo");
    }
 
-   HorzMesh::init();
+   // Create dummy clock for IO
+   Calendar::init("No Leap");
+   TimeInstant StartTime(0, 1, 1, 0, 0, 0.0);
+   TimeInterval TimeStep(1, TimeUnits::Hours);
+   Clock ModelClockTmp(StartTime, TimeStep);
+   Clock *ModelClock = &ModelClockTmp;
+
+   // Read horizontal mesh
+   Field::init(ModelClock);
+   IOStream::init(ModelClock);
+   HorzMesh::init(ModelClock);
 
    // initialize vertical coordinate, do not read stream and use local
    // NVertLayers value

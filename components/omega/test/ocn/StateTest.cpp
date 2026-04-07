@@ -65,12 +65,12 @@ void initStateTest() {
    // Initialize the IO system
    IO::init(DefComm);
 
+   // Initialize Field infrastructure
+   Field::init(ModelClock);
+
    // Initialize IOStreams - this does not yet validate the contents
    // of each file, only creates streams from Config
    IOStream::init(ModelClock);
-
-   // Initialize Field infrastructure
-   Field::init(ModelClock);
 
    // Create the default decomposition (initializes the decomposition)
    Decomp::init();
@@ -81,7 +81,7 @@ void initStateTest() {
       ABORT_ERROR("State: error initializing default halo");
 
    // Initialize the default mesh
-   HorzMesh::init();
+   HorzMesh::init(ModelClock);
 
    // Initialize the vertical coordinate
    VertCoord::init();
