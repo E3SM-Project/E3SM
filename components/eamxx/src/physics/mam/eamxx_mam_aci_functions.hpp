@@ -240,7 +240,6 @@ void call_function_dropmixnuc(
   //----------------------------------------------------------------------
   MAMAci::view_4d loc_raercol_cw = raercol_cw;
   MAMAci::view_4d loc_raercol = raercol;
-  MAMAci::view_2d loc_qqcw[mam4::ndrop::ncnst_tot];
   MAMAci::view_3d loc_ptend_q = ptend_q;
   MAMAci::view_3d loc_coltend = coltend;
   MAMAci::view_3d loc_coltend_cw = coltend_cw;

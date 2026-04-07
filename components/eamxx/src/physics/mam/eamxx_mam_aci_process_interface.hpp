@@ -24,7 +24,7 @@ class MAMAci final : public MAMGenericInterface {
   using view_2d       = scream::mam_coupling::view_2d;
   using const_view_2d = scream::mam_coupling::const_view_2d;
   using view_3d       = scream::mam_coupling::view_3d;
-  using view_4d       = scream::mam_coupling::view_4d;;
+  using view_4d       = scream::mam_coupling::view_4d;
   using const_view_3d = scream::mam_coupling::const_view_3d;
   template <int X, int Y>
   using view_2d_table = typename KT::template view_2d_table<const Real, X, Y>;
@@ -105,8 +105,8 @@ class MAMAci final : public MAMGenericInterface {
   view_3d coltend_; 
   view_3d coltend_cw_; 
 
-  // raercol_cw_ and raercol_ are work arrays for dropmixnuc, allocated on the
-  // stack.
+  // raercol_cw_ and raercol_ are work-array views for dropmixnuc whose
+  // storage is allocated from the temporary buffer in init_temporary_views().
   view_4d raercol_cw_;
   view_4d raercol_;
 
@@ -135,7 +135,8 @@ class MAMAci final : public MAMGenericInterface {
   view_2d w_sec_int_;        // Vertical velocity variance at interfaces
 
   // A view array to carry cloud borne aerosol mmrs/nmrs
-  view_3d qqcw_fld_work_; //[mam4::ndrop::ncnst_tot];
+  // Dimensions/order: [ncol][nlev][mam4::ndrop::ncnst_tot]
+  view_3d qqcw_fld_work_;
 
   // A view to carry interstitial aerosol mmrs/nmrs
   view_3d state_q_work_;
