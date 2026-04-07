@@ -51,6 +51,7 @@ class GWDrag : public AtmosphereProcess
 
     // Structure for storing local variables initialized using the ATMBufferManager
     struct Buffer {
+      static constexpr int pcnst               = 3; // number of constituents (qv, qc, qi)
       static constexpr int num_3d_mid_views   = 1;
       static constexpr int num_3d_pcnst_views = 3;
       static constexpr int num_3d_cd_views    = 1;

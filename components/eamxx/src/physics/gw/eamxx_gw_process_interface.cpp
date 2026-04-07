@@ -403,7 +403,14 @@ void GWDrag::run_impl (const double dt) {
       loc_gw_tend_u(i,k) += loc_utgw(i,k) * landfrac(i);
       loc_gw_tend_v(i,k) += loc_vtgw(i,k) * landfrac(i);
       loc_gw_tend_t(i,k) += loc_ttgw(i,k) * landfrac(i);
-      loc_gw_tend_q(i,k) += loc_qtgw(i,k,0) * landfrac(i);
+    });
+
+    constexpr int pcnst = Buffer::pcnst;
+    Kokkos::parallel_for(KT::RangePolicy(0, m_ncol*nlev_mid_packs*pcnst), KOKKOS_LAMBDA (const int idx) {
+      const int i = idx / (nlev_mid_packs*pcnst);
+      const int k = (idx / pcnst) % nlev_mid_packs;
+      const int m = idx % pcnst;
+      loc_gw_tend_q(i,k,m) += loc_qtgw(i,k,m) * landfrac(i);
     });
 
     // // GW energy fixer
@@ -454,7 +461,7 @@ size_t GWDrag::requested_buffer_size_in_bytes() const
 {
   const int nlev_mid_packs = ekat::npack<Pack>(m_nlev);
   const int nlev_int_packs = ekat::npack<Pack>(m_nlev+1);
-  constexpr int pcnst = 3; // number of constituents (qv, qc, qi)
+  constexpr int pcnst = Buffer::pcnst;
   size_t gw_buffer_size = 0;
 
   gw_buffer_size += Buffer::num_3d_mid_views*m_ncol*m_npgw*nlev_mid_packs*sizeof(Pack);
@@ -476,7 +483,7 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
   Pack* mem = reinterpret_cast<Pack*>(buffer_manager.get_memory());
   const int nlev_mid_packs = ekat::npack<Pack>(m_nlev);
   const int nlev_int_packs = ekat::npack<Pack>(m_nlev+1);
-  constexpr int pcnst = 3; // number of constituents (qv, qc, qi)
+  constexpr int pcnst = Buffer::pcnst;
   //----------------------------------------------------------------------------
   uview_3d* buffer_3d_mid_view_ptrs[Buffer::num_3d_mid_views] = {
     &m_buffer.tau
