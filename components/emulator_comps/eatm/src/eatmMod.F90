@@ -23,6 +23,12 @@ module eatmMod
   character(len=16), public :: inst_name
   character(len=16), public :: inst_suffix = ""    ! char string associated with instance (ie. "_0001" or "")
 
+  ! Orbital parameters (set from coupler infodata at init)
+  real(kind=R8), public :: orb_eccen     ! orbital eccentricity
+  real(kind=R8), public :: orb_obliqr    ! obliquity in radians
+  real(kind=R8), public :: orb_lambm0    ! mean lon of perihelion at vernal equinox (rad)
+  real(kind=R8), public :: orb_mvelpp    ! moving vernal equinox lon of perihelion + pi (rad)
+
   ! imported arrays first
   real(kind=R8), dimension(:,:), allocatable, public :: shf          ! sensible heat flux
   real(kind=R8), dimension(:,:), allocatable, public :: cflx         ! constituent flux (emissions)

@@ -6,8 +6,10 @@ module ace_comp_mod
   use mct_mod
   use seq_timemgr_mod, only: seq_timemgr_EClockGetData
   use shr_const_mod
-  use shr_kind_mod, only: R4=>SHR_KIND_R4, R8=>SHR_KIND_R8, CL=>SHR_KIND_CL, IN=>SHR_KIND_IN
+  use shr_kind_mod, only: R4=>SHR_KIND_R4, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL, IN=>SHR_KIND_IN
   use shr_sys_mod,  only: shr_sys_flush, shr_sys_abort
+  use shr_orb_mod,  only: shr_orb_decl, shr_orb_cosz
+  use shr_cal_mod,  only: shr_cal_date2julian
 
   use ftorch, only: &
     torch_kCPU, &
@@ -49,6 +51,8 @@ module ace_comp_mod
   real(R8), parameter :: rdair  = SHR_CONST_RDAIR  ! dry air gas constant   ~ J/K/kg
   real(R8), parameter :: tKFrz  = SHR_CONST_TKFRZ
 
+  real(R8), parameter :: solar_const = 1368.22_R8  ! total solar irradiance (W/m2), matches RRTMG
+
   ! Set up Torch data structures
   type(torch_model) :: ace_model
   type(torch_tensor), dimension(1) :: input_tensor
@@ -59,10 +63,9 @@ module ace_comp_mod
   integer(c_int64_t) :: output_tensor_shape(4)
 
   ! TODO (AN): Parse from namelist
-  character(len=*), parameter :: torchscript_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace_traced_cuda.pt"
-  character(len=*), parameter :: norm_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace2_EAMv3_normalize.nc"
-  character(len=*), parameter :: denorm_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace2_EAMv3_denormalize.nc"
-  character(len=*), parameter :: forcing_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/forcing_data/1971.nc"
+  character(len=*), parameter :: torchscript_file="/pscratch/sd/m/mahf708/test_ace_repo/test_trace_cuda.pt"
+  ! character(len=*), parameter :: norm_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace2_EAMv3_normalize.nc"
+  ! character(len=*), parameter :: denorm_file="/global/cfs/cdirs/e3sm/anolan/ACE2-E3SMv3/ace2_EAMv3_denormalize.nc"
   save
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -97,8 +100,8 @@ CONTAINS
 
     tensor_layout = [1_c_int, 2_c_int, 4_c_int, 3_c_int]
 
-    call init_normalizer(normalizer, norm_file, n_input_channels)
-    call init_normalizer(denormalizer, denorm_file, n_output_channels)
+    ! call init_normalizer(normalizer, norm_file, n_input_channels)
+    ! call init_normalizer(denormalizer, denorm_file, n_output_channels)
 
     ! load the traced model
     call torch_model_load(ace_model, torchscript_file, torch_kCUDA)
@@ -122,6 +125,8 @@ CONTAINS
       end do
 
     else
+      call ace_compute_solin(EClock, ggrid)
+
       net_inputs_nn = net_inputs
       ! normalize, can probably happen after tensor is made becuase it's a pointer
       ! call normalizer%normalize(net_inputs_nn)
@@ -189,9 +194,6 @@ CONTAINS
     integer(in) :: CurrentYMD        ! model date
     integer(in) :: CurrentTOD        ! model sec into model date
 
-    integer(in) :: eatm_stepno
-    integer(in) :: forcing_time_slice
-
     call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
     call seq_timemgr_EClockGetData( EClock, stepno=stepno, dtime=cpl_idt)
 
@@ -207,16 +209,8 @@ CONTAINS
 
     if (t_modulo .eq. 0) then
 
-      ! stepno is zero indexed so modulo logic works
-      eatm_stepno = stepno / (eatm_idt / cpl_idt)
-      ! time slice is one-indexed to comply with netcdf
-      forcing_time_slice = mod(eatm_stepno, eatm_spy) + 1
-
-      write(logunit_atm, *) "eatm_stepno: ", eatm_stepno
-      write(logunit_atm, *) "forcing_time_slice: ", forcing_time_slice
-      call shr_sys_flush(logunit_atm)
-
-      call ace_eatm_import(forcing_file, forcing_time_slice)
+      call ace_eatm_import()
+      call ace_compute_solin(EClock, ggrid)
 
       net_inputs_nn = net_inputs
       ! normalize, can probably happen after tensor is made becuase it's a pointer
@@ -252,7 +246,9 @@ CONTAINS
       ! denormalize
       ! call denormalizer%denormalize(net_outputs)
 
-      ! advance the time levels
+      ! advance the time levels: old t_ip1 (state at current time T)
+      ! becomes t_im1; new inference (state at T+6h) becomes t_ip1.
+      ! Interpolation between them gives smooth transition over [T, T+6h].
       do k = 1, n_output_channels
         do j = 1, lsize_y
           do i = 1, lsize_x
@@ -282,18 +278,18 @@ CONTAINS
 
   subroutine ace_comp_finalize()
     call torch_delete(ace_model)
-    call finalize_normalizer(normalizer)
-    call finalize_normalizer(denormalizer)
+    ! call finalize_normalizer(normalizer)
+    ! call finalize_normalizer(denormalizer)
   end subroutine ace_comp_finalize
 
-  subroutine ace_eatm_import(forcing_file, forcing_time_slice)
+  subroutine ace_eatm_import()
     !----------------------------------------------------------------
     ! !DESCRIPTION:
-    ! ...
+    ! Set net_inputs from coupler imports and previous model outputs.
+    ! PHIS (channel 4) persists from init. SOLIN (channel 5) is
+    ! computed separately by ace_compute_solin.
+    !----------------------------------------------------------------
     implicit none
-    ! !ARGUMENTS
-    character(len=*), intent(in) :: forcing_file
-    integer(in), intent(in) :: forcing_time_slice
 
     ! !LOCAL VARIABLES:
     integer :: i, j
@@ -342,8 +338,6 @@ CONTAINS
         net_inputs(1, 39, i, j) = net_outputs(1, 34, i, j) ! ACE2-EAMv3: V_7
       enddo
     enddo
-
-    call eatm_forcing_file_read( forcing_file, forcing_time_slice )
 
     write(logunit_atm, *) "----------------------------------------------------------------"
     write(logunit_atm, *) "ace_eatm_import"
@@ -473,6 +467,64 @@ CONTAINS
 
   end function datm_shr_eSat
 
+  subroutine ace_compute_solin(EClock, ggrid)
+    !----------------------------------------------------------------
+    ! Compute SOLIN (solar insolation at TOA) from orbital mechanics.
+    ! SOLIN = S0 * eccf * max(0, cosz)
+    !
+    ! The ACE emulator predicts state at T+dt from inputs at T, so
+    ! SOLIN is computed for T+dt (the prediction target time) to ensure
+    ! the output FSDS matches the correct solar geometry. This enables
+    ! smooth time interpolation between consecutive ACE outputs.
+    !----------------------------------------------------------------
+    implicit none
+    type(ESMF_Clock), intent(in) :: EClock
+    type(mct_gGrid),  intent(in), pointer :: ggrid
+
+    integer(IN)       :: CurrentYMD, CurrentTOD
+    character(len=CS) :: calendar
+    real(R8)          :: julday
+    real(R8)          :: delta, eccf
+    real(R8)          :: lat_r, lon_r
+    real(R8)          :: cosz_val, solin_val
+    real(R8), parameter :: degtorad = SHR_CONST_PI / 180.0_R8
+
+    integer     :: klat, klon, n, i, j
+    real(R8), pointer :: yc(:), xc(:)
+
+    call seq_timemgr_EClockGetData(EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
+    call seq_timemgr_EClockGetData(EClock, calendar=calendar)
+
+    call shr_cal_date2julian(CurrentYMD, CurrentTOD, julday, calendar)
+
+    ! Advance julday by one ACE timestep: the emulator predicts state
+    ! at T+dt, so SOLIN must represent solar geometry at T+dt.
+    julday = julday + real(eatm_idt, R8) / SHR_CONST_CDAY
+
+    call shr_orb_decl(julday, orb_eccen, orb_mvelpp, orb_lambm0, orb_obliqr, delta, eccf)
+
+    allocate(yc(lsize), xc(lsize))
+    klat = mct_aVect_indexRA(ggrid%data, 'lat')
+    klon = mct_aVect_indexRA(ggrid%data, 'lon')
+    yc(:) = ggrid%data%rAttr(klat, :)
+    xc(:) = ggrid%data%rAttr(klon, :)
+
+    n = 0
+    do j = 1, lsize_y
+      do i = 1, lsize_x
+        n = n + 1
+        lat_r = yc(n) * degtorad
+        lon_r = xc(n) * degtorad
+        cosz_val = shr_orb_cosz(julday, lat_r, lon_r, delta)
+        solin_val = solar_const * eccf * max(0.0_R8, cosz_val)
+        net_inputs(1, 5, i, j) = real(solin_val, R4)
+      end do
+    end do
+
+    deallocate(yc, xc)
+
+  end subroutine ace_compute_solin
+
   ! Define here becasue we need the eatmIO mod and trying to avoid circular imports
   subroutine init_normalizer(norm, norm_file, n)
     implicit none
@@ -507,46 +559,4 @@ CONTAINS
 
   end subroutine finalize_normalizer
 
-  subroutine eatm_forcing_file_read( file, slice)
-    !----------------------------------------------------------------
-    ! !DESCRIPTION:
-    ! ...
-    implicit none
-    ! !ARGUMENTS
-    character(len=*), intent(in) :: file
-    integer :: slice  ! time slice to read
-
-    ! !LOCAL VARIABLES:
-    type(file_desc_t) :: ncid ! netcdf id
-    logical :: readvar ! determine if variable is read
-    integer :: i ! index
-    !----------------------------------------------------------------
-
-    write(logunit_atm, *) 'Reading forcing dataset'
-    call ncd_pio_openfile(ncid, trim(file), 0)
-
-    call ncd_io(&
-      varname="PHIS", &
-      data=net_inputs(1, 4, :, :), &
-      ncid=ncid, &
-      flag='read', &
-      nt=slice, &
-      readvar=readvar &
-    )
-    call ncd_io(&
-      varname="SOLIN", &
-      data=net_inputs(1, 5, :, :), &
-      ncid=ncid, &
-      flag='read', &
-      nt=slice, &
-      readvar=readvar &
-    )
-
-    call ncd_pio_closefile(ncid)
-
-    write(logunit_atm, *)
-    write(logunit_atm, *) 'Successfully read forcing data at time level -',slice
-    write(logunit_atm,'(72a1)') ("-",i=1,60)
-
-  end subroutine eatm_forcing_file_read
 end module ace_comp_mod
