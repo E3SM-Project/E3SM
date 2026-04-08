@@ -54,6 +54,7 @@ void horiz_contraction(const Field& f_out, const Field& f_in, const Field& weigh
 // Reduce field to a single scalar, and return an opaque type, to allow hiding impl in cpp file.
 // NOTE: all calculations are done serially HOST
 ScalarWrapper frobenius_norm(const Field& f, const ekat::Comm* comm = nullptr);
+ScalarWrapper inf_norm(const Field& f, const ekat::Comm* comm = nullptr);
 ScalarWrapper field_sum(const Field& f, const ekat::Comm* comm = nullptr);
 ScalarWrapper field_max(const Field& f, const ekat::Comm* comm = nullptr);
 ScalarWrapper field_min(const Field& f, const ekat::Comm* comm = nullptr);
