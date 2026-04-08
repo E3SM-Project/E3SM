@@ -372,9 +372,6 @@ void Field::set_valid_mask (const Field& mask)
   EKAT_REQUIRE_MSG (not has_valid_mask(),
       "Error! Cannot reset the mask field.\n"
       " - field name: " + name() + "\n");
-  EKAT_REQUIRE_MSG (is_allocated(),
-      "Error! Cannot set a mask field until this field has been allocated.\n"
-      " - field name: " + name() + "\n");
 
   // Check that the input field has the expected properties
   EKAT_REQUIRE_MSG (mask.data_type()==DataType::IntType,
@@ -392,7 +389,7 @@ void Field::set_valid_mask (const Field& mask)
   m_header->set_extra_data("valid_mask",mask);
 }
 
-Field& Field::create_valid_mask (const std::string& mask_name)
+Field& Field::create_valid_mask (const std::string& mask_name, const MaskInit init)
 {
   EKAT_REQUIRE_MSG (not has_valid_mask(),
       "Error! Cannot create mask field, as it was already created.\n"
@@ -410,6 +407,11 @@ Field& Field::create_valid_mask (const std::string& mask_name)
   Field mask(mfid);
   mask.get_header().get_alloc_properties().request_allocation(props.get_largest_pack_size());
   mask.allocate_view();
+  if (init==MaskInit::Valid) {
+    mask.deep_copy(1);
+  } else if (init==MaskInit::Invalid) {
+    mask.deep_copy(0);
+  }
   set_valid_mask(mask);
 
   return get_valid_mask();

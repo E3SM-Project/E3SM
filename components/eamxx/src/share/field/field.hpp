@@ -210,9 +210,12 @@ public:
   // valid (mask!=0) or invalid/garbage (mask==0).
   // When this mask is present, certain users of this field may decide to
   // perform masked manipulations.
+
+  enum class MaskInit { Valid, Invalid, None };
+
   bool has_valid_mask () const;
-  Field& create_valid_mask (const std::string& mask_name);
-  Field& create_valid_mask () { return create_valid_mask(name()+"_valid_mask"); }
+  Field& create_valid_mask (const std::string& mask_name, const MaskInit init = MaskInit::None);
+  Field& create_valid_mask (const MaskInit init = MaskInit::None) { return create_valid_mask(name()+"_valid_mask", init); }
 
   void set_valid_mask (const Field& mask);
   const Field& get_valid_mask () const;
