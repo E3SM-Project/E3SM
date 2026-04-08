@@ -42,6 +42,20 @@ void Functions<S,D>::zm_common_init()
   s_common_init.mcsp_q_coeff    = 0;
   s_common_init.mcsp_u_coeff    = 0;
   s_common_init.mcsp_v_coeff    = 0;
+
+  //
+  // set up table values of saturation vapor pressure
+  //
+
+  // Add two to make the table slightly too big, just in case.
+  const Int plenest = static_cast<Int>(ZMC::tmax-ZMC::tmin) + 3;
+
+  // Allocate SVP table.
+  view_1d<Real> estbl("estbl", plenest);
+  Kokkos::parallel_for("MyLabel", Kokkos::RangePolicy<typename KT::ExeSpace>(0, plenest), KOKKOS_LAMBDA(const int i) {
+    estbl(i) = svp_trans(ZMC::tmin + i);
+  });
+  s_common_init.estbl = estbl;
 }
 
 } // namespace zm

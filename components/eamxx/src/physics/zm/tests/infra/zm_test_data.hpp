@@ -485,9 +485,6 @@ struct ZmConvEvapData : public PhysicsTestData {
   // Inputs
   Int pcols, ncol, pver, pverp;
   Real time_step;
-  bool old_snow;      // runtime_opt: old snow treatment flag (matches Fortran bridge default: true)
-  bool pergro_active; // flag for pergro perturbation in snow fraction
-  Real ke;            // runtime_opt: evaporation efficiency (matches Fortran bridge default: 2.5E-6)
   Real *p_mid, *p_del, *t_mid, *q_mid, *prdprec, *cldfrc;
 
   // Inputs/Outputs
@@ -496,8 +493,7 @@ struct ZmConvEvapData : public PhysicsTestData {
   // Outputs
   Real *tend_s_snwprd, *tend_s_snwevmlt, *snow, *ntprprd, *ntsnprd, *flxprec, *flxsnow;
 
-  ZmConvEvapData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Real time_step_,
-                 bool old_snow_ = true, bool pergro_active_ = false, Real ke_ = 2.5E-6) :
+  ZmConvEvapData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Real time_step_) :
     PhysicsTestData({
       {pcols_, pver_},
       {pcols_},
@@ -508,11 +504,10 @@ struct ZmConvEvapData : public PhysicsTestData {
       {&prec, &snow},
       {&flxprec, &flxsnow}
     }),
-    pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), time_step(time_step_),
-    old_snow(old_snow_), pergro_active(pergro_active_), ke(ke_)
+    pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), time_step(time_step_)
   {}
 
-  PTD_STD_DEF(ZmConvEvapData, 8, pcols, ncol, pver, pverp, time_step, old_snow, pergro_active, ke);
+  PTD_STD_DEF(ZmConvEvapData, 5, pcols, ncol, pver, pverp, time_step);
 
   template <typename Engine>
   void randomize(Engine& engine)

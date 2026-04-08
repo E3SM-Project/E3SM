@@ -17,7 +17,6 @@ void Functions<S,D>::zm_conv_evap(
   // Inputs
   const MemberType& team,
   const ZmRuntimeOpt& runtime_opt,
-  const bool& pergro_active,
   const Int& pver, // number of mid-point vertical levels
   const Int& pverp, // number of interface vertical levels
   const Real& time_step, // model time step                         [s]
@@ -44,6 +43,12 @@ void Functions<S,D>::zm_conv_evap(
 {
   // perturbation constant used in pergro snow fraction guard
   const Real pergro_perturbation = 8.64e-11;
+
+#ifdef PERGRO
+  const bool pergro_active = true;
+#else
+  const bool pergro_active = false;
+#endif
 
   // cldfrc_fice temperature thresholds for convective snow fraction
   // (inlined from cloud_fraction.F90 cldfrc_fice, snow-fraction branch)
@@ -72,7 +77,7 @@ void Functions<S,D>::zm_conv_evap(
 
       // determine saturation vapor pressure and mixing ratio
       Real es_k, qs_k;
-      qsat_hPa(t_mid(k), p_mid(k) / 100.0, es_k, qs_k);
+      qsat(t_mid(k), p_mid(k), runtime_opt, es_k, qs_k);
 
       // determine convective snow fraction for this level (from cldfrc_fice)
       // If warmer than tmax_fsnow then water phase

@@ -1237,11 +1237,8 @@ void zm_conv_evap(ZmConvEvapData& d)
   const Real time_step = d.time_step;
   const Int pver = d.pver;
   const Int pverp = d.pverp;
-  const bool pergro_active = d.pergro_active;
 
   ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
-  init_cp.old_snow = d.old_snow;
-  init_cp.ke       = d.ke;
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
@@ -1266,7 +1263,6 @@ void zm_conv_evap(ZmConvEvapData& d)
     ZMF::zm_conv_evap(
       team,
       init_cp,
-      pergro_active,
       pver,
       pverp,
       time_step,

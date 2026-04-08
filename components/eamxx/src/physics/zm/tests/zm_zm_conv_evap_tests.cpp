@@ -22,8 +22,8 @@ struct UnitWrap::UnitTest<D>::TestZmConvEvap : public UnitWrap::UnitTest<D>::Bas
       //             pcols, ncol, pver, pverp, time_step
       ZmConvEvapData(    4,    4,   72,    73, 2.0),
       ZmConvEvapData(    4,    4,   72,    73, 3.0),
-      ZmConvEvapData(    4,    4,  128,    73, 4.0),
-      ZmConvEvapData(    4,    4,  128,    73, 5.0),
+      ZmConvEvapData(    4,    4,  128,   129, 4.0),
+      ZmConvEvapData(    4,    4,  128,   129, 5.0),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ZmConvEvapData);

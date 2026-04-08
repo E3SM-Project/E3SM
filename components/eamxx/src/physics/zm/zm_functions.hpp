@@ -115,6 +115,17 @@ struct Functions {
     static inline constexpr Real omsm               = 0.99999; // to prevent problems due to round off error
 
     static inline constexpr Real small_conv         = 1.e-20;  // small number to limit blowup when normalizing by mass flux
+
+    // Table of saturation vapor pressure values (estbl) from tmin to
+    // tmax+1 Kelvin, in one degree increments.  ttrice defines the
+    // transition region, estbl contains a combination of ice & water
+    // values.
+    static inline constexpr Real tmin = 127.16;
+    static inline constexpr Real tmax = 375.16;
+
+    static inline constexpr Real h2otrip = 273.16;
+
+    static inline constexpr Real ttrice = 20.0;  // transition range from es over H2O to es over ice
   };
 
   //----------------------------------------------------------------------------
@@ -156,6 +167,7 @@ struct Functions {
     Real mcsp_q_coeff;  // MCSP coefficient for specific humidity tendencies
     Real mcsp_u_coeff;  // MCSP coefficient for zonal momentum tendencies
     Real mcsp_v_coeff;  // MCSP coefficient for meridional momentum tendencies
+    view_1d<Real> estbl; // table values of saturation vapor pressure
   };
 
   // -----------------------------------------------------------------------------------------------
@@ -316,7 +328,9 @@ struct Functions {
   //
   static void zm_common_init();
 
-  static void zm_finalize() {}
+  static void zm_finalize() {
+    s_common_init.estbl = view_1d<Real>();
+  }
 
   // static Int zm_main()
 
@@ -344,12 +358,9 @@ struct Functions {
     const Real& qtot); // total water mixing ratio [kg/kg]
 
   KOKKOS_INLINE_FUNCTION
-  static void qsat_hPa(
+  static Real goffgratch_svp_water(
     // Inputs
-    const Real& t,    // Temperature                  [K]
-    const Real& p,    // Pressure                     [hPa]
-    Real& es,         // Saturation vapor pressure    [hPa]
-    Real& qm)         // Saturation mass mixing ratio [kg/kg] (vapor mass over dry mass)
+    const Real& t)    // Temperature                  [K]
   {
     // GoffGratch_svp_water
     static constexpr Real magic1 = -7.90298;
@@ -359,11 +370,77 @@ struct Functions {
     static constexpr Real magic5 = 8.1328e-3;
     static constexpr Real magic6 = -3.49149;
     static constexpr Real magic7 = 1013.246;
-    es = std::pow(10, magic1*(ZMC::tboil/t-1) +
-                  magic2*std::log10(ZMC::tboil/t) -
-                  magic3*(std::pow(10, magic4*(1 - t/ZMC::tboil)) - 1) +
-                  magic5*(std::pow(10, magic6*(ZMC::tboil/t-1)) - 1) +
-                  std::log10(magic7))*100;
+    return std::pow(10, magic1*(ZMC::tboil/t-1) +
+                    magic2*std::log10(ZMC::tboil/t) -
+                    magic3*(std::pow(10, magic4*(1 - t/ZMC::tboil)) - 1) +
+                    magic5*(std::pow(10, magic6*(ZMC::tboil/t-1)) - 1) +
+                    std::log10(magic7))*100;
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  static Real goffgratch_svp_ice(
+    // Inputs
+    const Real& t)    // Temperature                  [K]
+  {
+    // good down to -100 C
+    static constexpr Real magic1 = -9.09718;
+    static constexpr Real magic2 = 3.56654;
+    static constexpr Real magic3 = 0.876793;
+    static constexpr Real magic4 = 6.1071;
+
+    return std::pow(10, magic1*(ZMC::h2otrip/t - 1) -
+                    magic2*std::log10(ZMC::h2otrip/t) +
+                    magic3*(1 - t/ZMC::h2otrip) +
+                    std::log10(magic4))*100;
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  static Real svp_trans(
+    // Inputs
+    const Real& t)    // Temperature                  [K]
+  {
+    Real es;
+
+    //
+    // Water
+    //
+    if (t >= (PC::Tmelt.value - ZMC::ttrice)) {
+      es = goffgratch_svp_water(t);
+    }
+    else {
+      es = 0;
+    }
+
+    //
+    // Ice
+    //
+    if (t < PC::Tmelt.value) {
+
+      const Real esice = goffgratch_svp_ice(t);
+
+      Real weight;
+      if ( (PC::Tmelt.value - t) > ZMC::ttrice ) {
+        weight = 1;
+      }
+      else {
+        weight = (PC::Tmelt.value - t)/ZMC::ttrice;
+      }
+
+      es = weight*esice + (1 - weight)*es;
+    }
+    return es;
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  static void qsat_hPa(
+    // Inputs
+    const Real& t,    // Temperature                  [K]
+    const Real& p,    // Pressure                     [hPa]
+    // Outputs
+    Real& es,         // Saturation vapor pressure    [hPa]
+    Real& qm)         // Saturation mass mixing ratio [kg/kg] (vapor mass over dry mass)
+  {
+    es = goffgratch_svp_water(t);
 
     // If pressure is less than SVP, set qs to maximum of 1.
     if ( (p*100 - es) <= 0 ) {
@@ -378,6 +455,35 @@ struct Functions {
 
     es = es*0.01;
   }
+
+  KOKKOS_INLINE_FUNCTION
+  static void qsat(
+    // Inputs
+    const Real& t,    // Temperature                  [K]
+    const Real& p,    // Pressure                     [hPa]
+    const ZmRuntimeOpt& runtime_opt,
+    // Outputs
+    Real& es,         // Saturation vapor pressure    [hPa]
+    Real& qs)         // Saturation mass mixing ratio [kg/kg] (vapor mass over dry mass)
+  {
+    constexpr Real mmin = 0.0;
+    const Real t_tmp = Kokkos::max(Kokkos::min(t,ZMC::tmax)-ZMC::tmin, mmin);     // Number of table entries above tmin
+    const Int i = int(t_tmp);                        // Corresponding index.
+    const Real weight = t_tmp - Kokkos::trunc(t_tmp);// Fractional part of t_tmp (for interpolation).
+    es = (1 - weight)*runtime_opt.estbl(i) + weight*runtime_opt.estbl(i+1);
+
+    // If pressure is less than SVP, set qs to maximum of 1.
+    if ( (p - es) < 0 ) {
+      qs = 1;
+    }
+    else {
+      qs = PC::ep_2.value*es / (p - ZMC::omeps*es);
+    }
+
+    // Ensures returned es is consistent with limiters on qs.
+    es = Kokkos::min(es, p);
+  }
+
 
   KOKKOS_FUNCTION
   static void zm_transport_tracer(
@@ -664,7 +770,6 @@ struct Functions {
     // Inputs
     const MemberType& team,
     const ZmRuntimeOpt& runtime_opt,
-    const bool& pergro_active,
     const Int& pver, // number of mid-point vertical levels
     const Int& pverp, // number of interface vertical levels
     const Real& time_step, // model time step                         [s]
