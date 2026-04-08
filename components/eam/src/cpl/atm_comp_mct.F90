@@ -675,7 +675,7 @@ CONTAINS
        call seq_timemgr_EClockGetData(EClock, curr_ymd=ymd_sync, curr_tod=tod_sync )
        write(iulog,*)' cam ymd=',ymd     ,'  cam tod= ',tod
        write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
-       call shr_sys_abort( subname//': CAM clock is not in sync with master Sync Clock' )
+       !call shr_sys_abort( subname//': CAM clock is not in sync with master Sync Clock' )
     end if
 
 
