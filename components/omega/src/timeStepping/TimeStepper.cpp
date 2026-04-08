@@ -653,14 +653,15 @@ void TimeStepper::prescribeVelocity(OceanState *State1, int TimeLevel1,
              const R8 lon_p =
                  LonEdge(IEdge) - 2.0 * Pi * TSim / Tau;
              const R8 u = (1.0 / Tau) *
-                          (-10.0 * Kokkos::pow(sin(lon_p / 2), 2) *
+                          (-5.0 * Kokkos::pow(sin(lon_p / 2), 2) *
                           sin(2.0 * LatEdge(IEdge)) *
                           Kokkos::pow(cos(LatEdge(IEdge)), 2) *
-                          cos(Pi * TSim / Tau)) +
-                          2.0 * Pi * cos(LatEdge(IEdge));
-             const R8 v = (10.0 / (2 * Tau)) *
-                          (sin(lon_p) * Kokkos::pow(cos(LatEdge(IEdge)), 3) *
-                          cos(Pi * TSim / Tau));
+                          cos(Pi * TSim / Tau) +
+                          2.0 * Pi * cos(LatEdge(IEdge)));
+             const R8 v = ((2.5 / Tau) *
+                           sin(lon_p) *
+                           Kokkos::pow(cos(LatEdge(IEdge)), 3) *
+                           cos(Pi * TSim / Tau));
              const R8 normalVel = REarth * (
                  u * cos(AngleEdge(IEdge)) + v * sin(AngleEdge(IEdge)));
 
