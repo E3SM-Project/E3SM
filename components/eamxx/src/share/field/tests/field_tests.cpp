@@ -271,6 +271,35 @@ TEST_CASE("field", "") {
     // Attempting to allocate should fail
     REQUIRE_THROWS (f.allocate_view());
   }
+
+  SECTION ("valid_mask") {
+    auto mfid = fid.clone("mask").reset_dtype(DataType::IntType);
+    auto ml = mfid.get_layout();
+
+    Field f1(fid,true);
+    REQUIRE (not f1.has_valid_mask());
+    REQUIRE_THROWS (f1.get_valid_mask()); // no mask stored
+
+    Field badm1(mfid.clone().reset_layout(ml.clone().reset_dim(0,999)),true);
+    Field badm2(mfid.clone().reset_dtype(DataType::RealType),true);
+    REQUIRE_THROWS (f1.set_valid_mask(badm1)); // bad mask layout
+    REQUIRE_THROWS (f1.set_valid_mask(badm2)); // bad mask dtype
+
+    f1.create_valid_mask();
+    REQUIRE_THROWS(f1.create_valid_mask());              // mask already set
+    REQUIRE_THROWS(f1.set_valid_mask(Field(mfid,true))); // mask already set
+
+    Field f2(fid,true),f3(fid,true);
+    f2.create_valid_mask(Field::MaskInit::Valid);
+    f3.create_valid_mask("my_mask",Field::MaskInit::Invalid);
+
+    Field ones(mfid,true), zeros(mfid,true);
+    ones.deep_copy(1);
+    zeros.deep_copy(0);
+    REQUIRE (views_are_equal(f2.get_valid_mask(),ones));
+    REQUIRE (views_are_equal(f3.get_valid_mask(),zeros));
+    REQUIRE (f3.get_valid_mask().name()=="my_mask");
+  }
 }
 
 } // anonymous namespace
