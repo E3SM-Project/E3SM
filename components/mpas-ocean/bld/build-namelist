@@ -752,26 +752,26 @@ add_default($nl, 'config_precip_scaling_write_to_logfile');
 # Namelist group: coupling #
 ############################
 
-# When we have a data representation of icebergs, remove ice runoff
-if ($OCN_ICEBERG eq 'true') {
-	add_default($nl, 'config_remove_ais_ice_runoff', 'val'=>".true.");
+# handling of config_remove_ais_ice_runoff:
+if ($OCN_FORCING eq 'active_atm') {
+  # For fully coupled B-cases with active ATM/LND/ROF:
+  if ($OCN_ICEBERG eq 'true') {
+    # When we have a data representation of icebergs, remove ice runoff
+    add_default($nl, 'config_remove_ais_ice_runoff', 'val'=>".true.");
+  } else {
+    add_default($nl, 'config_remove_ais_ice_runoff', 'val'=>".false.");
+  }
 } else {
-	add_default($nl, 'config_remove_ais_ice_runoff', 'val'=>".false.");
+  # For cases without active ATM/LND/ROF (i.e. G cases),
+  # removal of AIS ice runoff is handled in the DROF component,
+  # so this option should be set to false in MPAS-O.
+  add_default($nl, 'config_remove_ais_ice_runoff', 'val'=>".false.");
 }
-# Assume river runoff corresponds to ISMF in Southern Ocean only for G-cases
-# (true for JRA). When atm active, we assume liquid runoff corresonds to precip
-# or snow melt so we do not remove it. In either case, the energy for melting
-# doesn't come from the ocean.
-if ((   ($OCN_GLC_ISMF_COUPLING eq 'coupler')
-     || ($OCN_GLC_ISMF_COUPLING eq 'internal_mpaso')
-     || ($OCN_GLC_ISMF_COUPLING eq 'data_mpaso')
-    )
-    && ($OCN_FORCING ne 'active_atm'))
-{
-	add_default($nl, 'config_remove_ais_river_runoff', 'val'=>".true.");
-} else {
-	add_default($nl, 'config_remove_ais_river_runoff', 'val'=>".false.");
-}
+# The functionality of config_remove_ais_river_runoff is now handled in
+# the DROF component at components/data_comps/drof/cime_config/buildnml,
+# so there no longer is a situation where it needs to change from its
+# default value of false.
+add_default($nl, 'config_remove_ais_river_runoff');
 add_default($nl, 'config_scale_dismf_by_removed_ice_runoff');
 add_default($nl, 'config_ais_ice_runoff_history_days');
 add_default($nl, 'config_n_glc_z_levels', 'val'=>"$GLC_NZOC");
