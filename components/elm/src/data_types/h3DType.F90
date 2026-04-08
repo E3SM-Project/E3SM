@@ -58,45 +58,45 @@ contains
     allocate(this%eflx_lh_tot_lun   (begl:endl,1:nh3dc_per_lunit))       ; this%eflx_lh_tot_lun   (:,:)   = spval
     allocate(this%eflx_sh_tot_lun   (begl:endl,1:nh3dc_per_lunit))       ; this%eflx_sh_tot_lun   (:,:)   = spval
 
-    call hist_addfld2d (fname='h3d_evap_tot',  units='mm SH2O/s', type2d='h3dc', &
-         avgflag='A', long_name='h3d total evapotranspiration (vegetated landunits only)', &
-         ptr_lunit=this%qflx_evap_tot_lun, l2g_scale_type='veg')
+!    call hist_addfld2d (fname='h3d_evap_tot',  units='mm SH2O/s', type2d='h3dc', &
+!         avgflag='A', long_name='h3d total evapotranspiration (vegetated landunits only)', &
+!         ptr_lunit=this%qflx_evap_tot_lun, l2g_scale_type='veg')
  
-    call hist_addfld2d (fname='h3d_tran_veg',  units='mm SH2O/s', type2d='h3dc', &
-         avgflag='A', long_name='h3d vegetation transpiration (vegetated landunits only)', &
-         ptr_lunit=this%qflx_tran_veg_lun, l2g_scale_type='veg')
+!    call hist_addfld2d (fname='h3d_tran_veg',  units='mm SH2O/s', type2d='h3dc', &
+!         avgflag='A', long_name='h3d vegetation transpiration (vegetated landunits only)', &
+!         ptr_lunit=this%qflx_tran_veg_lun, l2g_scale_type='veg')
 
-    call hist_addfld2d (fname='h3d_rsub_sat',  units='mm SH2O/s', type2d='h3dc', &
-         avgflag='A', long_name='soil saturation excess (vegetated landunits only)', &
-         ptr_lunit=this%qflx_rsub_sat_lun, l2g_scale_type='veg')
+!    call hist_addfld2d (fname='h3d_rsub_sat',  units='mm SH2O/s', type2d='h3dc', &
+!         avgflag='A', long_name='soil saturation excess (vegetated landunits only)', &
+!         ptr_lunit=this%qflx_rsub_sat_lun, l2g_scale_type='veg')
     
-    call hist_addfld2d (fname='h3d_h2osfc',  units='mm SH2O', type2d='h3dc', &
-         avgflag='A', long_name='soil saturation excess (vegetated landunits only)', &
-         ptr_lunit=this%h2osfc_lun, l2g_scale_type='veg')
+!    call hist_addfld2d (fname='h3d_h2osfc',  units='mm SH2O', type2d='h3dc', &
+!         avgflag='A', long_name='soil saturation excess (vegetated landunits only)', &
+!         ptr_lunit=this%h2osfc_lun, l2g_scale_type='veg')
 
-    call hist_addfld2d (fname='h3d_h2osoi_liq',  units='mm SH2O', type2d='h3dc', &
-         avgflag='A', long_name='soil liquid water (vegetated landunits only)', &
-         ptr_lunit=this%h2osoi_liq_lun, l2g_scale_type='veg')
+!    call hist_addfld2d (fname='h3d_h2osoi_liq',  units='mm SH2O', type2d='h3dc', &
+!         avgflag='A', long_name='soil liquid water (vegetated landunits only)', &
+!         ptr_lunit=this%h2osoi_liq_lun, l2g_scale_type='veg')
 
-    call hist_addfld2d (fname='h3d_lh_tot',  units='W/m2', type2d='h3dc', &
-         avgflag='A', long_name='total latent heat flux  (vegetated landunits only)', &
-         ptr_lunit=this%eflx_lh_tot_lun, l2g_scale_type='veg')
+!    call hist_addfld2d (fname='h3d_lh_tot',  units='W/m2', type2d='h3dc', &
+!         avgflag='A', long_name='total latent heat flux  (vegetated landunits only)', &
+!         ptr_lunit=this%eflx_lh_tot_lun, l2g_scale_type='veg')
 
-    call hist_addfld2d (fname='h3d_sh_tot',  units='W/m2', type2d='h3dc', &
-         avgflag='A', long_name='total sensible heat flux  (vegetated landunits only)', &
-         ptr_lunit=this%eflx_sh_tot_lun, l2g_scale_type='veg')
+!    call hist_addfld2d (fname='h3d_sh_tot',  units='W/m2', type2d='h3dc', &
+!         avgflag='A', long_name='total sensible heat flux  (vegetated landunits only)', &
+!         ptr_lunit=this%eflx_sh_tot_lun, l2g_scale_type='veg')
 
-    call hist_addfld2d (fname='h3d_qdrain',  units='mm/s', type2d='h3dc', &
-         avgflag='A', long_name='sub-surface drainage', &
-         ptr_lunit=this%qflx_drain_lun, l2g_scale_type='veg')
+!    call hist_addfld2d (fname='h3d_qdrain',  units='mm/s', type2d='h3dc', &
+!         avgflag='A', long_name='sub-surface drainage', &
+!         ptr_lunit=this%qflx_drain_lun, l2g_scale_type='veg')
 
-    call hist_addfld2d (fname='h3d_qsurf',  units='mm/s', type2d='h3dc', &
-         avgflag='A', long_name='surface runoff', &
-         ptr_lunit=this%qflx_surf_lun, l2g_scale_type='veg')
+!    call hist_addfld2d (fname='h3d_qsurf',  units='mm/s', type2d='h3dc', &
+!         avgflag='A', long_name='surface runoff', &
+!         ptr_lunit=this%qflx_surf_lun, l2g_scale_type='veg')
 
-    call hist_addfld2d (fname='h3d_qcharge',  units='mm/s', type2d='h3dc', &
-         avgflag='A', long_name='aquifer recharge rate (vegetated landunits only)', &
-         ptr_lunit=this%qflx_charge_lun, l2g_scale_type='veg')
+!    call hist_addfld2d (fname='h3d_qcharge',  units='mm/s', type2d='h3dc', &
+!         avgflag='A', long_name='aquifer recharge rate (vegetated landunits only)', &
+!         ptr_lunit=this%qflx_charge_lun, l2g_scale_type='veg')
 
   end subroutine h3d_vars_init
 
