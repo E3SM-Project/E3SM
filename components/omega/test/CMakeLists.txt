@@ -544,3 +544,14 @@ add_omega_test(
     ocn/VertAdvTest.cpp
     "-n;1"
 )
+
+##########################
+# State Validation test
+##########################
+
+add_omega_test(
+    STATE_VALIDATION_TEST
+    testStateValidation.exe
+    ocn/StateValidationTest.cpp
+    "-n;8"
+)
