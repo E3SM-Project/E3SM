@@ -83,156 +83,156 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
   const auto& ref_fe = c.get<ReferenceElement>();
   const auto& tl     = c.get<TimeLevel>();
 
-  const int nelem      = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
-  const int n0         = tl.n0;
-  const int nlev_pack  = state.m_v.extent_int(5);
+  const int nelem        = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
+  const int n0           = tl.n0;
+  const int nlev_pack    = state.m_v.extent_int(5);
+  const int nlev_scalar  = m_helper_fields.at("grad_Ux_dyn")
+                             .template get_view<Real*****>().extent_int(4);
+  const int nlevi_scalar = state.m_w_i.extent_int(4) * VLEN;
+
   const auto w_int_dyn = state.m_w_i;
 
-  // Store outputs as scalar Real fields.
   auto grad_Ux_dyn = m_helper_fields.at("grad_Ux_dyn").template get_view<Real*****>();
   auto grad_Uy_dyn = m_helper_fields.at("grad_Uy_dyn").template get_view<Real*****>();
   auto grad_Uz_dyn = m_helper_fields.at("grad_Uz_dyn").template get_view<Real*****>();
-
-  const int nlev_scalar = grad_Ux_dyn.extent_int(4);
 
   const auto dvv              = ref_fe.get_deriv();
   const auto dinv             = geom.m_dinv;
   const auto vec_sph2cart     = geom.m_vec_sph2cart;
   const Real scale_factor_inv = 1.0 / geom.m_scale_factor;
 
-  // Flatten over element, GLL point, and PACKED vertical level.
+  using TeamPolicy = Kokkos::TeamPolicy<KT::ExeSpace>;
+  using MemberType = typename TeamPolicy::member_type;
+
   Kokkos::parallel_for(
       "compute_horizontal_derivs_of_car_velocity",
-      Kokkos::RangePolicy<KT::ExeSpace>(0, nelem*NGP*NGP*nlev_pack),
-      KOKKOS_LAMBDA (const int idx) {
+      TeamPolicy(nelem, Kokkos::AUTO()),
+      KOKKOS_LAMBDA (const MemberType& team) {
 
-    const int ie        =  idx / (NGP*NGP*nlev_pack);
-    const int rem1      =  idx % (NGP*NGP*nlev_pack);
-    const int igp       =  rem1 / (NGP*nlev_pack);
-    const int rem2      =  rem1 % (NGP*nlev_pack);
-    const int jgp       =  rem2 / nlev_pack;
-    const int ilev_pack =  rem2 % nlev_pack;
+    const int ie = team.league_rank();
 
-    Scalar dsdx_Ux = 0.0;
-    Scalar dsdy_Ux = 0.0;
-    Scalar dsdx_Uy = 0.0;
-    Scalar dsdy_Uy = 0.0;
-    Scalar dsdx_Uz = 0.0;
-    Scalar dsdy_Uz = 0.0;
+    Kokkos::parallel_for(
+        Kokkos::TeamThreadRange(team, NGP*NGP),
+        [&] (const int idx) {
 
-    for (int kgp = 0; kgp < NGP; ++kgp) {
+      const int igp = idx / NGP;
+      const int jgp = idx % NGP;
 
-      Scalar Ux_row = 0.0;
-      Scalar Ux_col = 0.0;
-      Scalar Uy_row = 0.0;
-      Scalar Uy_col = 0.0;
-      Scalar Uz_row = 0.0;
-      Scalar Uz_col = 0.0;
+      Kokkos::parallel_for(
+          Kokkos::ThreadVectorRange(team, nlev_pack),
+          [&] (const int ilev_pack) {
 
-      for (int s = 0; s < VLEN; ++s) {
-        const int ilev = ilev_pack*VLEN + s;
+        Scalar dsdx_Ux = 0.0;
+        Scalar dsdy_Ux = 0.0;
+        Scalar dsdx_Uy = 0.0;
+        Scalar dsdy_Uy = 0.0;
+        Scalar dsdx_Uz = 0.0;
+        Scalar dsdy_Uz = 0.0;
 
-        if (ilev < nlev_scalar) {
+        for (int kgp = 0; kgp < NGP; ++kgp) {
 
-          // --- existing horiz contribution ---
-          const Real Ux_row_h = horiz_wind_to_cart_component(
-              state.m_v, vec_sph2cart, ie, n0, 0, igp, kgp, ilev_pack)[s];
+          Scalar Ux_row = 0.0;
+          Scalar Ux_col = 0.0;
+          Scalar Uy_row = 0.0;
+          Scalar Uy_col = 0.0;
+          Scalar Uz_row = 0.0;
+          Scalar Uz_col = 0.0;
 
-          const Real Ux_col_h = horiz_wind_to_cart_component(
-              state.m_v, vec_sph2cart, ie, n0, 0, kgp, jgp, ilev_pack)[s];
+          for (int s = 0; s < VLEN; ++s) {
+            const int ilev = ilev_pack*VLEN + s;
 
-          const Real Uy_row_h = horiz_wind_to_cart_component(
-              state.m_v, vec_sph2cart, ie, n0, 1, igp, kgp, ilev_pack)[s];
+            if (ilev < nlev_scalar) {
 
-          const Real Uy_col_h = horiz_wind_to_cart_component(
-              state.m_v, vec_sph2cart, ie, n0, 1, kgp, jgp, ilev_pack)[s];
+              // Horizontal wind contribution projected into Cartesian components.
+              const Real Ux_row_h = horiz_wind_to_cart_component(
+                  state.m_v, vec_sph2cart, ie, n0, 0, igp, kgp, ilev_pack)[s];
 
-          const Real Uz_row_h = horiz_wind_to_cart_component(
-              state.m_v, vec_sph2cart, ie, n0, 2, igp, kgp, ilev_pack)[s];
+              const Real Ux_col_h = horiz_wind_to_cart_component(
+                  state.m_v, vec_sph2cart, ie, n0, 0, kgp, jgp, ilev_pack)[s];
 
-          const Real Uz_col_h = horiz_wind_to_cart_component(
-              state.m_v, vec_sph2cart, ie, n0, 2, kgp, jgp, ilev_pack)[s];
+              const Real Uy_row_h = horiz_wind_to_cart_component(
+                  state.m_v, vec_sph2cart, ie, n0, 1, igp, kgp, ilev_pack)[s];
 
-          // --- vertical velocity ---
-          // TEMPORARY HACK:
-          // use interface w at the same scalar index as the midpoint level.
-          // This avoids midpoint interpolation issues for now.
-          // Replace with ColumnOps::compute_midpoint_values later.
+              const Real Uy_col_h = horiz_wind_to_cart_component(
+                  state.m_v, vec_sph2cart, ie, n0, 1, kgp, jgp, ilev_pack)[s];
 
-          const auto w_row_pack = w_int_dyn(ie,n0,igp,kgp,ilev_pack);
-          const auto w_col_pack = w_int_dyn(ie,n0,kgp,jgp,ilev_pack);
+              const Real Uz_row_h = horiz_wind_to_cart_component(
+                  state.m_v, vec_sph2cart, ie, n0, 2, igp, kgp, ilev_pack)[s];
 
-          const Real w_row = w_row_pack[s];
-          const Real w_col = w_col_pack[s];
+              const Real Uz_col_h = horiz_wind_to_cart_component(
+                  state.m_v, vec_sph2cart, ie, n0, 2, kgp, jgp, ilev_pack)[s];
 
-          // --- NEW: project w into Cartesian ---
-          const Real wx_row =
-              vec_sph2cart(ie,0,0,igp,kgp) * w_row;
-          const Real wy_row =
-              vec_sph2cart(ie,0,1,igp,kgp) * w_row;
-          const Real wz_row =
-              vec_sph2cart(ie,0,2,igp,kgp) * w_row;
+              // Vertical velocity contribution.
+              // This is a hack, replace with ColOps later
+              const auto w_row_pack = w_int_dyn(ie,n0,igp,kgp,ilev_pack);
+              const auto w_col_pack = w_int_dyn(ie,n0,kgp,jgp,ilev_pack);
 
-          const Real wx_col =
-              vec_sph2cart(ie,1,0,kgp,jgp) * w_col;
-          const Real wy_col =
-              vec_sph2cart(ie,1,1,kgp,jgp) * w_col;
-          const Real wz_col =
-              vec_sph2cart(ie,1,2,kgp,jgp) * w_col;
+              const Real w_row = w_row_pack[s];
+              const Real w_col = w_col_pack[s];
 
-          // --- combine ---
-          Ux_row[s] = Ux_row_h + wx_row;
-          Ux_col[s] = Ux_col_h + wx_col;
+              // Project vertical velocity into Cartesian components.
+              const Real wx_row = vec_sph2cart(ie,0,0,igp,kgp) * w_row;
+              const Real wy_row = vec_sph2cart(ie,0,1,igp,kgp) * w_row;
+              const Real wz_row = vec_sph2cart(ie,0,2,igp,kgp) * w_row;
 
-          Uy_row[s] = Uy_row_h + wy_row;
-          Uy_col[s] = Uy_col_h + wy_col;
+              const Real wx_col = vec_sph2cart(ie,1,0,kgp,jgp) * w_col;
+              const Real wy_col = vec_sph2cart(ie,1,1,kgp,jgp) * w_col;
+              const Real wz_col = vec_sph2cart(ie,1,2,kgp,jgp) * w_col;
 
-          Uz_row[s] = Uz_row_h + wz_row;
-          Uz_col[s] = Uz_col_h + wz_col;
+              Ux_row[s] = Ux_row_h + wx_row;
+              Ux_col[s] = Ux_col_h + wx_col;
+
+              Uy_row[s] = Uy_row_h + wy_row;
+              Uy_col[s] = Uy_col_h + wy_col;
+
+              Uz_row[s] = Uz_row_h + wz_row;
+              Uz_col[s] = Uz_col_h + wz_col;
+            }
+          }
+
+          dsdx_Ux += dvv(jgp,kgp) * Ux_row;
+          dsdy_Ux += dvv(igp,kgp) * Ux_col;
+
+          dsdx_Uy += dvv(jgp,kgp) * Uy_row;
+          dsdy_Uy += dvv(igp,kgp) * Uy_col;
+
+          dsdx_Uz += dvv(jgp,kgp) * Uz_row;
+          dsdy_Uz += dvv(igp,kgp) * Uz_col;
         }
-      }
 
-      dsdx_Ux += dvv(jgp,kgp) * Ux_row;
-      dsdy_Ux += dvv(igp,kgp) * Ux_col;
+        dsdx_Ux *= scale_factor_inv;
+        dsdy_Ux *= scale_factor_inv;
+        dsdx_Uy *= scale_factor_inv;
+        dsdy_Uy *= scale_factor_inv;
+        dsdx_Uz *= scale_factor_inv;
+        dsdy_Uz *= scale_factor_inv;
 
-      dsdx_Uy += dvv(jgp,kgp) * Uy_row;
-      dsdy_Uy += dvv(igp,kgp) * Uy_col;
+        for (int h = 0; h < 2; ++h) {
+          const Scalar gx =
+              dinv(ie,h,0,igp,jgp) * dsdx_Ux
+            + dinv(ie,h,1,igp,jgp) * dsdy_Ux;
 
-      dsdx_Uz += dvv(jgp,kgp) * Uz_row;
-      dsdy_Uz += dvv(igp,kgp) * Uz_col;
-    }
+          const Scalar gy =
+              dinv(ie,h,0,igp,jgp) * dsdx_Uy
+            + dinv(ie,h,1,igp,jgp) * dsdy_Uy;
 
-    dsdx_Ux *= scale_factor_inv;
-    dsdy_Ux *= scale_factor_inv;
-    dsdx_Uy *= scale_factor_inv;
-    dsdy_Uy *= scale_factor_inv;
-    dsdx_Uz *= scale_factor_inv;
-    dsdy_Uz *= scale_factor_inv;
+          const Scalar gz =
+              dinv(ie,h,0,igp,jgp) * dsdx_Uz
+            + dinv(ie,h,1,igp,jgp) * dsdy_Uz;
 
-    // Final transformed horizontal gradients in the local 2-dir basis.
-    for (int h = 0; h < 2; ++h) {
-      const Scalar gx =
-          dinv(ie,h,0,igp,jgp) * dsdx_Ux
-        + dinv(ie,h,1,igp,jgp) * dsdy_Ux;
-
-      const Scalar gy =
-          dinv(ie,h,0,igp,jgp) * dsdx_Uy
-        + dinv(ie,h,1,igp,jgp) * dsdy_Uy;
-
-      const Scalar gz =
-          dinv(ie,h,0,igp,jgp) * dsdx_Uz
-        + dinv(ie,h,1,igp,jgp) * dsdy_Uz;
-
-      for (int s = 0; s < VLEN; ++s) {
-        const int ilev = ilev_pack*VLEN + s;
-        if (ilev < nlev_scalar) {
-          grad_Ux_dyn(ie,h,igp,jgp,ilev) = gx[s];
-          grad_Uy_dyn(ie,h,igp,jgp,ilev) = gy[s];
-          grad_Uz_dyn(ie,h,igp,jgp,ilev) = gz[s];
+          for (int s = 0; s < VLEN; ++s) {
+            const int ilev = ilev_pack*VLEN + s;
+            if (ilev < nlev_scalar) {
+              grad_Ux_dyn(ie,h,igp,jgp,ilev) = gx[s];
+              grad_Uy_dyn(ie,h,igp,jgp,ilev) = gy[s];
+              grad_Uz_dyn(ie,h,igp,jgp,ilev) = gz[s];
+            }
+          }
         }
-      }
-    }
-  });
+
+      }); // ThreadVectorRange
+    });   // TeamThreadRange
+  });     // TeamPolicy
 
   Kokkos::fence();
 }
@@ -244,9 +244,9 @@ void HommeDynamics::contract_to_local_strain2 ()
   constexpr int NGP  = HOMMEXX_NP;
   constexpr int VLEN = VECTOR_SIZE;
 
-  const auto& c      = Context::singleton();
-  const auto& geom   = c.get<ElementsGeometry>();
-  const auto& elems  = c.get<Elements>();
+  const auto& c     = Context::singleton();
+  const auto& geom  = c.get<ElementsGeometry>();
+  const auto& elems = c.get<Elements>();
 
   const int nelem = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
 
@@ -254,69 +254,75 @@ void HommeDynamics::contract_to_local_strain2 ()
   auto grad_Uy_dyn = m_helper_fields.at("grad_Uy_dyn").template get_view<Real*****>();
   auto grad_Uz_dyn = m_helper_fields.at("grad_Uz_dyn").template get_view<Real*****>();
 
-  // Optional: keep this helper field if you still want it for diagnostics/debugging.
   auto strain2_dyn = m_helper_fields.at("strain2_dyn").template get_view<Real****>();
 
-  // HOMME packed field used later by dyn->phys coupling
   const auto turb_strain2 = elems.m_derived.m_turb_strain2;
-
   const auto vec_sph2cart = geom.m_vec_sph2cart;
 
   const int nlev_scalar = grad_Ux_dyn.extent_int(4);
   const int nlev_pack   = turb_strain2.extent_int(3);
 
+  using TeamPolicy = Kokkos::TeamPolicy<KT::ExeSpace>;
+  using MemberType = typename TeamPolicy::member_type;
+
   Kokkos::parallel_for(
       "contract_to_local_strain2",
-      Kokkos::RangePolicy<KT::ExeSpace>(0, nelem*NGP*NGP*nlev_pack),
-      KOKKOS_LAMBDA (const int idx) {
+      TeamPolicy(nelem, Kokkos::AUTO()),
+      KOKKOS_LAMBDA (const MemberType& team) {
 
-    const int ie        =  idx / (NGP*NGP*nlev_pack);
-    const int rem1      =  idx % (NGP*NGP*nlev_pack);
-    const int igp       =  rem1 / (NGP*nlev_pack);
-    const int rem2      =  rem1 % (NGP*nlev_pack);
-    const int jgp       =  rem2 / nlev_pack;
-    const int ilev_pack =  rem2 % nlev_pack;
+    const int ie = team.league_rank();
 
-    Scalar strain2_pack(0.0);
+    Kokkos::parallel_for(
+        Kokkos::TeamThreadRange(team, NGP*NGP),
+        [&] (const int idx) {
 
-    for (int s = 0; s < VLEN; ++s) {
-      const int ilev = ilev_pack*VLEN + s;
+      const int igp = idx / NGP;
+      const int jgp = idx % NGP;
 
-      if (ilev < nlev_scalar) {
-        const Real A00 = cart_grad_to_local_component(
-            grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
-            vec_sph2cart, ie, 0, 0, igp, jgp, ilev);
+      Kokkos::parallel_for(
+          Kokkos::ThreadVectorRange(team, nlev_pack),
+          [&] (const int ilev_pack) {
 
-        const Real A01 = cart_grad_to_local_component(
-            grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
-            vec_sph2cart, ie, 0, 1, igp, jgp, ilev);
+        Scalar strain2_pack(0.0);
 
-        const Real A10 = cart_grad_to_local_component(
-            grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
-            vec_sph2cart, ie, 1, 0, igp, jgp, ilev);
+        for (int s = 0; s < VLEN; ++s) {
+          const int ilev = ilev_pack*VLEN + s;
 
-        const Real A11 = cart_grad_to_local_component(
-            grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
-            vec_sph2cart, ie, 1, 1, igp, jgp, ilev);
+          if (ilev < nlev_scalar) {
+            const Real A00 = cart_grad_to_local_component(
+                grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
+                vec_sph2cart, ie, 0, 0, igp, jgp, ilev);
 
-        const Real S00 = A00;
-        const Real S11 = A11;
-        const Real S01 = 0.5 * (A01 + A10);
+            const Real A01 = cart_grad_to_local_component(
+                grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
+                vec_sph2cart, ie, 0, 1, igp, jgp, ilev);
 
-        const Real strain2_val =
-            2.0 * (S00*S00 + 2.0*S01*S01 + S11*S11);
+            const Real A10 = cart_grad_to_local_component(
+                grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
+                vec_sph2cart, ie, 1, 0, igp, jgp, ilev);
 
-        strain2_pack[s] = strain2_val;
+            const Real A11 = cart_grad_to_local_component(
+                grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
+                vec_sph2cart, ie, 1, 1, igp, jgp, ilev);
 
-        // Optional: keep scalar helper output too
-        strain2_dyn(ie,igp,jgp,ilev) = strain2_val;
-      } else {
-        strain2_pack[s] = 0.0;
-      }
-    }
+            const Real S00 = A00;
+            const Real S11 = A11;
+            const Real S01 = 0.5 * (A01 + A10);
 
-    turb_strain2(ie,igp,jgp,ilev_pack) = strain2_pack;
-  });
+            const Real strain2_val =
+                2.0 * (S00*S00 + 2.0*S01*S01 + S11*S11);
+
+            strain2_pack[s] = strain2_val;
+            strain2_dyn(ie,igp,jgp,ilev) = strain2_val;
+          } else {
+            strain2_pack[s] = 0.0;
+          }
+        }
+
+        turb_strain2(ie,igp,jgp,ilev_pack) = strain2_pack;
+      }); // ThreadVectorRange
+    });   // TeamThreadRange
+  });     // TeamPolicy
 
   Kokkos::fence();
 }
