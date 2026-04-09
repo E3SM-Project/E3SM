@@ -30,11 +30,11 @@ IOType str2iotype(const std::string &str)
     return IOType::PnetCDF;
   } else if(str == "netcdf") {
     return IOType::NetCDF;
-  } else if(str == "netcdf4") {
+  } else if(str == "netcdf4" || str == "netcdf4c") {
     return IOType::NetCDF4C;
-  } else if(str == "pnetcdf4") {
+  } else if(str == "pnetcdf4" || str == "netcdf4p") {
     return IOType::NetCDF4P;
-  } else if(str == "pnetcdf4_zarr") {
+  } else if(str == "pnetcdf4_zarr" || str == "netcdf4z") {
     return IOType::NetCDF4P_NCZARR;
   } else if(str == "adios") {
     return IOType::Adios;
@@ -56,9 +56,9 @@ std::string iotype2str(const IOType iotype)
     case IOType::DefaultIOType:   s = "default";       break;
     case IOType::PnetCDF:         s = "pnetcdf";       break;
     case IOType::NetCDF:          s = "netcdf";        break;
-    case IOType::NetCDF4C:        s = "netcdf4";       break;
-    case IOType::NetCDF4P:        s = "pnetcdf4";      break;
-    case IOType::NetCDF4P_NCZARR: s = "pnetcdf4_zarr"; break;
+    case IOType::NetCDF4C:        s = "netcdf4c";      break;
+    case IOType::NetCDF4P:        s = "netcdf4p";      break;
+    case IOType::NetCDF4P_NCZARR: s = "netcdf4z";      break;
     case IOType::Adios:           s = "adios";         break;
     case IOType::Adiosc:          s = "adiosc";        break;
     case IOType::Hdf5:            s = "hdf5";          break;
