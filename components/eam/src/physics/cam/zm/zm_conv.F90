@@ -323,6 +323,12 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
          ql_g(i,k)  = 0._r8
          dlf(i,k)   = 0._r8
          dl_g(i,k)  = 0._r8
+         p_del(i,k) = 0._r8
+         mflx_up(i,k) = 0._r8
+         entr_up(i,k) = 0._r8
+         detr_up(i,k) = 0._r8
+         mflx_dn(i,k) = 0._r8
+         entr_dn(i,k) = 0._r8
       end do
       prec(i)        = 0._r8
       rliq(i)        = 0._r8
@@ -332,6 +338,9 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
       dsubcld(i)     = 0._r8
       jctop(i)       = pver
       jcbot(i)       = 1
+      cape(i)       = 0._r8;
+      dcape(i)      = 0._r8; ! This was also a bug
+      msemax_klev_g   = 1
    end do
 
    !----------------------------------------------------------------------------
@@ -585,13 +594,13 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
          ql(gather_index(i),k)    = ql_g(i,k)
       end do
    end do
+
    ! scatter 1d variables
    do i = 1,lengath
       jctop(gather_index(i)) = jt(i)
       jcbot(gather_index(i)) = msemax_klev_g(i)
       pflx(gather_index(i),pverp) = pflx_g(i,pverp)
    end do
-
 
 #ifdef CPRCRAY
 !DIR$ CONCURRENT
@@ -1541,28 +1550,27 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
          end do ! i
       end do ! k
 
-
       ! compute condensed liquid, rain production rate
       ! accumulate total precipitation (condensation - detrainment of liquid)
       ! Note: ql1 = ql(k) + rprd(k)*dz(k)/mflx_up(k)
       ! The differencing is somewhat strange (e.g. detr_up(i,k)*ql(i,k+1)) but is consistently applied.
       !   interface quantities => mflx_up, ql are 
       !   mid-point quantities => cu, detr_up, entr_up, rprd
-         do k = pver, msg+2, -1
-            do i = 1,ncol
-               rprd(i,k) = 0._r8
-               if (k >= jt(i) .and. k < jb(i) .and. lambda_max(i) > 0._r8 .and. mflx_up(i,k) >= 0.0_r8) then
-                  if (mflx_up(i,k) > 0._r8) then
-                     ql1 = 1._r8/mflx_up(i,k) * ( mflx_up(i,k+1)*ql(i,k+1) - dz(i,k)*detr_up(i,k)*ql(i,k+1) + dz(i,k)*cu(i,k) )
-                     ql(i,k) = ql1 / (1._r8+dz(i,k)*c0mask(i))
-                  else
-                     ql(i,k) = 0._r8
-                  end if
-                  totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-detr_up(i,k)*ql(i,k+1))
-                  rprd(i,k) = c0mask(i)*mflx_up(i,k)*ql(i,k)
+      do k = pver, msg+2, -1
+         do i = 1,ncol
+            rprd(i,k) = 0._r8
+            if (k >= jt(i) .and. k < jb(i) .and. lambda_max(i) > 0._r8 .and. mflx_up(i,k) >= 0.0_r8) then
+               if (mflx_up(i,k) > 0._r8) then
+                  ql1 = 1._r8/mflx_up(i,k) * ( mflx_up(i,k+1)*ql(i,k+1) - dz(i,k)*detr_up(i,k)*ql(i,k+1) + dz(i,k)*cu(i,k) )
+                  ql(i,k) = ql1 / (1._r8+dz(i,k)*c0mask(i))
+               else
+                  ql(i,k) = 0._r8
                end if
-            end do ! i
-         end do ! k
+               totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-detr_up(i,k)*ql(i,k+1))
+               rprd(i,k) = c0mask(i)*mflx_up(i,k)*ql(i,k)
+            end if
+         end do ! i
+      end do ! k
 
    end do ! iter = 1,itnum
 

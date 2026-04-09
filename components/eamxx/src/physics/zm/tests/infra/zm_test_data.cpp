@@ -1012,7 +1012,7 @@ void zm_conv_main_f(ZmConvMainData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
   zm_common_init_f();
-  zm_conv_main_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.is_first_step, d.time_step, d.t_mid, d.q_mid_in, d.omega, d.p_mid_in, d.p_int_in, d.p_del_in, d.geos, d.z_mid_in, d.z_int_in, d.pbl_hgt, d.tpert, d.landfrac, d.t_star, d.q_star, &d.lengath, d.gather_index, d.msemax_klev_g, d.jctop, d.jcbot, d.jt, d.prec, d.heat, d.qtnd, d.cape, d.dcape, d.mcon, d.pflx, d.zdu, d.mflx_up, d.entr_up, d.detr_up, d.mflx_dn, d.entr_dn, d.p_del, d.dsubcld, d.ql, d.rliq, d.rprd, d.dlf);
+  zm_conv_main_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.is_first_step, d.time_step, d.t_mid, d.q_mid_in, d.omega, d.p_mid_in, d.p_int_in, d.p_del_in, d.geos, d.z_mid_in, d.z_int_in, d.pbl_hgt, d.tpert, d.landfrac, d.t_star, d.q_star, &d.lengath, d.gather_index, d.msemax_klev, d.jctop, d.jcbot, d.jt, d.prec, d.heat, d.qtnd, d.cape, d.dcape, d.mcon, d.pflx, d.zdu, d.mflx_up, d.entr_up, d.detr_up, d.mflx_dn, d.entr_dn, d.p_del, d.dsubcld, d.ql, d.rliq, d.rprd, d.dlf);
   zm_common_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -1031,7 +1031,7 @@ void zm_conv_main(ZmConvMainData& d)
   ekat::host_to_device({d.detr_up, d.dlf, d.entr_dn, d.entr_up, d.heat, d.mcon, d.mflx_dn, d.mflx_up, d.omega, d.p_del, d.p_del_in, d.p_int_in, d.p_mid_in, d.pflx, d.q_mid_in, d.q_star, d.ql, d.qtnd, d.rprd, d.t_mid, d.t_star, d.z_int_in, d.z_mid_in, d.zdu}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
 
   std::vector<view1di_d> vec1di_in(5);
-  ekat::host_to_device({d.gather_index, d.jcbot, d.jctop, d.jt, d.msemax_klev_g}, d.pcols, vec1di_in);
+  ekat::host_to_device({d.gather_index, d.jcbot, d.jctop, d.jt, d.msemax_klev}, d.pcols, vec1di_in);
 
   view1dr_d
     cape_d(vec1dr_in[0]),
@@ -1075,12 +1075,10 @@ void zm_conv_main(ZmConvMainData& d)
     jcbot_d(vec1di_in[1]),
     jctop_d(vec1di_in[2]),
     jt_d(vec1di_in[3]),
-    msemax_klev_g_d(vec1di_in[4]);
+    msemax_klev_d(vec1di_in[4]);
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
-  // zm_conv_main takes 21 workspace arrays; nested calls (compute_dilute_cape +
-  // compute_dilute_parcel) need up to ~11 more simultaneously, so 35 is sufficient.
-  WSM wsm(d.pver, 35, policy);
+  WSM wsm(d.pverp, 36, policy);
   ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
 
   // unpack data scalars because we do not want the lambda to capture d
@@ -1088,10 +1086,9 @@ void zm_conv_main(ZmConvMainData& d)
   const Int pver = d.pver;
   const Int pverp = d.pverp;
   const bool is_first_step = d.is_first_step;
-  view0di_d lengath_d("lengath_h");
-  auto      lengath_h = Kokkos::create_mirror_view(lengath_d);
 
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+  Int num_active = 0;
+  Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Int& num_active_inner) {
     const Int i = team.league_rank();
 
     // Get single-column subviews of all inputs, shouldn't need any i-indexing
@@ -1121,7 +1118,7 @@ void zm_conv_main(ZmConvMainData& d)
     const auto rprd_c = ekat::subview(rprd_d, i);
     const auto dlf_c = ekat::subview(dlf_d, i);
 
-    ZMF::zm_conv_main(
+    bool active = ZMF::zm_conv_main(
       team,
       wsm.get_workspace(team),
       init_cp,
@@ -1143,9 +1140,7 @@ void zm_conv_main(ZmConvMainData& d)
       landfrac_d(i),
       t_star_c,
       q_star_c,
-      lengath_d(),
-      gather_index_d(i),
-      msemax_klev_g_d(i),
+      msemax_klev_d(i),
       jctop_d(i),
       jcbot_d(i),
       jt_d(i),
@@ -1168,11 +1163,14 @@ void zm_conv_main(ZmConvMainData& d)
       rliq_d(i),
       rprd_c,
       dlf_c);
-  });
 
-  // Get outputs back, start with scalars
-  Kokkos::deep_copy(lengath_h, lengath_d);
-  d.lengath = lengath_h();
+    if (active) {
+      num_active_inner += 1;
+      gather_index_d(i) = i;
+    }
+  }, num_active);
+
+  d.lengath = num_active;
 
   // Now get arrays
   std::vector<view1dr_d> vec1dr_out = {cape_d, dcape_d, dsubcld_d, prec_d, rliq_d};
@@ -1183,8 +1181,8 @@ void zm_conv_main(ZmConvMainData& d)
   std::vector<int> vec2dr_out_1_sizes = {d.pver, d.pver, d.pver, d.pver, d.pver, d.pverp, d.pver, d.pver, d.pver, d.pverp, d.pver, d.pver, d.pver, d.pver};
   ekat::device_to_host({d.detr_up, d.dlf, d.entr_dn, d.entr_up, d.heat, d.mcon, d.mflx_dn, d.mflx_up, d.p_del, d.pflx, d.ql, d.qtnd, d.rprd, d.zdu}, vec2dr_out_0_sizes, vec2dr_out_1_sizes, vec2dr_out);
 
-  std::vector<view1di_d> vec1di_out = {gather_index_d, jcbot_d, jctop_d, jt_d, msemax_klev_g_d};
-  ekat::device_to_host({d.gather_index, d.jcbot, d.jctop, d.jt, d.msemax_klev_g}, d.pcols, vec1di_out);
+  std::vector<view1di_d> vec1di_out = {gather_index_d, jcbot_d, jctop_d, jt_d, msemax_klev_d};
+  ekat::device_to_host({d.gather_index, d.jcbot, d.jctop, d.jt, d.msemax_klev}, d.pcols, vec1di_out);
 
   zm_finalize_cxx();
 }
@@ -1881,7 +1879,6 @@ void zm_calc_output_tend(ZmCalcOutputTendData& d)
       update = mx_d(i);
     }
   }, Kokkos::Min<Int>(kbm));
-
 
   // unpack data scalars because we do not want the lambda to capture d
   const Int msg = d.msg;

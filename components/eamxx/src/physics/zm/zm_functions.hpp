@@ -715,7 +715,7 @@ struct Functions {
   }
 
   KOKKOS_FUNCTION
-  static void zm_conv_main(
+  static bool zm_conv_main(
     // Inputs
     const MemberType& team,
     const Workspace& workspace,
@@ -739,9 +739,7 @@ struct Functions {
     const uview_1d<const Real>& t_star, // for DCAPE - prev temperature            [K]
     const uview_1d<const Real>& q_star, // for DCAPE - prev sp. humidity           [kg/kg]
     // Outputs
-    Int& lengath, // number of active columns in chunk for gathering
-    Int& gather_index, // flag for active columns
-    Int& msemax_klev_g, // gathered level indices of max MSE (msemax_klev)
+    Int& msemax_klev, // level indices of max MSE
     Int& jctop, // top-of-deep-convection indices
     Int& jcbot, // base of cloud indices
     Int& jt, // gathered top level index of convection

@@ -428,7 +428,7 @@ struct ZmConvMainData : public PhysicsTestData {
 
   // Outputs
   Int lengath;
-  Int *gather_index, *msemax_klev_g, *jctop, *jcbot, *jt;
+  Int *gather_index, *msemax_klev, *jctop, *jcbot, *jt;
   Real *prec, *heat, *qtnd, *cape, *dcape, *mcon, *pflx, *zdu, *mflx_up, *entr_up, *detr_up, *mflx_dn, *entr_dn, *p_del, *dsubcld, *ql, *rliq, *rprd, *dlf;
 
   ZmConvMainData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Real time_step_, bool is_first_step_, Int lengath_) :
@@ -444,7 +444,7 @@ struct ZmConvMainData : public PhysicsTestData {
       {&geos, &pbl_hgt, &tpert, &landfrac, &prec, &cape, &dcape, &dsubcld, &rliq}
     },
     {
-      {&gather_index, &msemax_klev_g, &jctop, &jcbot, &jt}
+      {&gather_index, &msemax_klev, &jctop, &jcbot, &jt}
     }),
     pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), time_step(time_step_), is_first_step(is_first_step_), lengath(lengath_)
   {}

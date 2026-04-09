@@ -13,7 +13,7 @@ namespace zm {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::zm_conv_main(
+bool Functions<S,D>::zm_conv_main(
   // Inputs
   const MemberType& team,
   const Workspace& workspace,
@@ -37,9 +37,7 @@ void Functions<S,D>::zm_conv_main(
   const uview_1d<const Real>& t_star, // for DCAPE - prev temperature            [K]
   const uview_1d<const Real>& q_star, // for DCAPE - prev sp. humidity           [kg/kg]
   // Outputs
-  Int& lengath, // number of active columns in chunk for gathering
-  Int& gather_index, // flag for active columns
-  Int& msemax_klev_g, // gathered level indices of max MSE (msemax_klev)
+  Int& msemax_klev, // indx of max MSE
   Int& jctop, // top-of-deep-convection indices
   Int& jcbot, // base of cloud indices
   Int& jt, // gathered top level index of convection
@@ -94,7 +92,7 @@ void Functions<S,D>::zm_conv_main(
   // Scalar local variables
   Real z_srf = 0;
   Int  pbl_top = pver - 1;
-  Int  lcl = 0, lel = pver - 1, msemax_klev = 0;
+  Int  lcl = 0, lel = pver - 1;
   Int  lcl_m1 = 0, lel_m1 = pver - 1, msemax_klev_m1 = 0;
   Real cape_m1 = 0, t_pcl_lcl = 400, t_pcl_lcl_m1 = 400;
   Real cld_base_mass_flux = 0, mflx_up_max_val = 0;
@@ -128,9 +126,7 @@ void Functions<S,D>::zm_conv_main(
     jcbot      = 0;
     cape       = 0;
     dcape      = 0;
-    lengath    = 0;
-    gather_index = 0;
-    msemax_klev_g = 0;
+    msemax_klev = 0;
     // initialize pflx at the last interface (pver index in 0-based, pverp-1)
     pflx(pver) = 0;
   });
@@ -217,10 +213,7 @@ void Functions<S,D>::zm_conv_main(
 
   //----------------------------------------------------------------------------
   // Determine whether column is active (replaces zm_get_gather_index)
-  bool active = false;
-  Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    active = is_conv_active(runtime_opt, is_first_step, cape, dcape, cape_threshold_loc);
-  });
+  const bool active = is_conv_active(runtime_opt, is_first_step, cape, dcape, cape_threshold_loc);
   team.team_barrier();
 
   if (!active) {
@@ -230,17 +223,8 @@ void Functions<S,D>::zm_conv_main(
        &t_pcl, &q_pcl_sat, &t_pcl_m1, &q_pcl_sat_m1,
        &dqdt, &dsdt, &mflx_net, &q_upd, &s_upd,
        &q_dnd, &s_dnd, &qst, &cu, &evp, &dl});
-    return;
+    return false;
   }
-
-  //----------------------------------------------------------------------------
-  // Column is active: lengath = 1, gather_index = 0 (single column, no gathering needed)
-  Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    lengath      = 1;
-    gather_index = 0;
-    msemax_klev_g = msemax_klev;
-  });
-  team.team_barrier();
 
   //----------------------------------------------------------------------------
   // Convert p_del to mb (gathered layer thickness)
@@ -251,6 +235,7 @@ void Functions<S,D>::zm_conv_main(
 
   //----------------------------------------------------------------------------
   // Calculate sub-cloud layer pressure "thickness" for closure and tendency calculations
+  // TODO - can be parallel
   Kokkos::single(Kokkos::PerTeam(team), [&] () {
     for (Int k = msg + 1; k < pver; ++k) {
       if (k >= msemax_klev) {
@@ -385,7 +370,7 @@ void Functions<S,D>::zm_conv_main(
 
   //----------------------------------------------------------------------------
   // Compute temperature and moisture changes due to convection
-  int ktm=-1, ktb=-1; // TODO fix
+  int ktm=jt, ktb=msemax_klev; // TODO fix
   zm_calc_output_tend(team,
                       pver, pverp, msg,
                       jt, msemax_klev, ktm, ktb, dsubcld,
@@ -454,6 +439,8 @@ void Functions<S,D>::zm_conv_main(
      &t_pcl, &q_pcl_sat, &t_pcl_m1, &q_pcl_sat_m1,
      &dqdt, &dsdt, &mflx_net, &q_upd, &s_upd,
      &q_dnd, &s_dnd, &qst, &cu, &evp, &dl});
+
+  return true;
 }
 
 } // namespace zm
