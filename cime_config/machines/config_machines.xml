@@ -4337,24 +4337,24 @@
   </machine>
 
   <machine MACH="pathfinder">
-    <DESC>ornl-ITSD, Pathfinder, os is Linux, 32 pes/node, batch system is slurm</DESC>
+    <DESC>ornl-ITSD, Pathfinder, os is Linux, 32x2 pes/node, batch system is slurm</DESC>
     <NODENAME_REGEX>pfc*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>openmpi,openmpi-amanzitpls,mpi-serial</MPILIBS>
-    <CIME_OUTPUT_ROOT>/projects/hpcl-cli185/users/$USER</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/projects/hpcl-cli185/users/$USER/cime_output_dirs</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/projects/hpcl-cli185/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/hpcl-cli185/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/projects/hpcl-cli185/e3sm/archive/$USER/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/projects/hpcl-cli185/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <DOUT_S_ROOT>/projects/hpcl-cli185/users/$USER/archive/e3sm/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/projects/hpcl-cli185/world-shared/e3sm/baselines/$COMPILER-$MPILIB</BASELINE_ROOT>
     <CCSM_CPRNC>/projects/hpcl-cli185/world-shared/e3sm/tools/cprnc/bin/cprnc</CCSM_CPRNC>
     <GMAKE_J>32</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>32</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>yuanf -at- ornl.gov</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="openmpi" compiler="gnu">
       <executable>srun</executable>
@@ -4423,7 +4423,10 @@
     <environment_variables compiler="gnu" mpilib="openmpi">
       <env name="PETSC_PATH">/projects/hpcl-cli185/ccsi-apps/petsc-3.x-noopt/</env>
       <!--  perl5 lib</env> -->
-      <env name="PATH">/home/f9y/perl5/bin:$ENV{PATH}/</env>
+      <!--  env name="PATH">/home/f9y/perl5/bin:$ENV{PATH}/</env> -->
+      <env name="PATH">/software/baseline/nsp/spack-envs/core-25.05/opt/gcc-8.5.0.core/perl-5.40.0-pwv5237oq3rfrgdyou22rp4sf3dywvuz/bin:$ENV{PATH}</env>
+      <env name="PERL5LIB">/projects/hpcl-cli185/users/zdr/perl/pathfinder/local/lib/perl5:/projects/hpcl-cli185/users/zdr/perl/pathfinder/local/lib/perl5/x86_64-linux-thread-multi</env>
+      
       <!--  either of the following approaches is working very well
       <env name="HDF5_ROOT">$SHELL{dirname $(dirname $(which h5dump))}</env>
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
