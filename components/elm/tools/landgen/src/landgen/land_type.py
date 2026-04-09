@@ -41,7 +41,7 @@ def calc_ll_limits(size_degrees):
 
 ##### process_single_year()
 def _process_single_year(lt_year_data, year, prev_year, out_fname, lc_rs_path, lc_rs_name, crop_path, urban_path,
-                         lake_path, ice_path, wetland_path, harvest_path, assoc_path, com_config_dict, out_grid_data,
+                         lake_path, ice_path, wetland_path, harvest_path, harvest_name, grazing_path, grazing_names, assoc_path, com_config_dict, out_grid_data,
                          manager, grid_manager, lt_manager):
     """Process land type data for a single year."""
 
@@ -114,8 +114,8 @@ def _process_single_year(lt_year_data, year, prev_year, out_fname, lc_rs_path, l
 
     # Process harvest/grazing data - adjust harvest/grazing area
     harvest = importlib.import_module('harvest')
-    lc_data = harvest.run(lt_year_data, year, prev_year, harvest_path, com_config_dict, out_grid_data, ll_limits, cell_ids,
-                          manager, grid_manager, lt_manager)
+    lc_data = harvest.run(lt_year_data, year, prev_year, harvest_path, harvest_name, grazing_path, grazing_names,
+                          com_config_dict, out_grid_data, manager, grid_manager, lt_manager)
 
     # Normalize cell
     normalize_cell = importlib.import_module('normalize_cell')
@@ -146,7 +146,7 @@ def _process_single_year(lt_year_data, year, prev_year, out_fname, lc_rs_path, l
 ## output
 
 def run(active, out_fname, lc_rs_path, lc_rs_name, crop_path, urban_path, lake_path, ice_path,
-        wetland_path, harvest_path, assoc_path, com_config_dict, out_grid_data, manager, grid_manager):
+        wetland_path, harvest_path, harvest_name, grazing_path, grazing_names, assoc_path, com_config_dict, out_grid_data, manager, grid_manager):
     if active is False:
         print(f"Skipping land_type module")
         return
@@ -173,7 +173,7 @@ def run(active, out_fname, lc_rs_path, lc_rs_name, crop_path, urban_path, lake_p
         # 2. Process single year
         print(f"  Processing year: {year}")
         _process_single_year(lt_year_data, year, prev_year, out_fname, lc_rs_path, lc_rs_name, crop_path, urban_path,
-                             lake_path, ice_path, wetland_path, harvest_path, assoc_path, com_config_dict, out_grid_data,
+                             lake_path, ice_path, wetland_path, harvest_path, harvest_name, grazing_path, grazing_names, assoc_path, com_config_dict, out_grid_data,
                              manager, grid_manager, lt_manager)
         
 

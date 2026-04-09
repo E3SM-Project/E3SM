@@ -24,7 +24,13 @@
         "lake_path": "",
         "ice_path": "",
         "wetland_path": "",
-        "harvest_path": "",
+        "harvest_path": "/global/cfs/cdirs/e3sm/landgen/rawdata/LUH2/LUH2_v2h",
+        "harvest_name": "transitions.nc",
+        "grazing_path": "/global/cfs/cdirs/e3sm/landgen/rawdata/HYDE3.5/original/gbc2025_7apr_base/NetCDF",
+        "grazing_names": {
+          "pasture": "pasture.nc",
+          "rangeland": "rangeland.nc"
+        },
         "assoc_path": ""
       }
     },
