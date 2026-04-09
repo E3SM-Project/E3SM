@@ -610,16 +610,30 @@ void AtmosphereDriver::create_fields()
 
   // Now go through the input fields/groups to the atm proc group,
   // and mark them as part of the RESTART group.
+  // Skip fields in the ACCUMULATED group, since those are reset to 0
+  // at the beginning of each atm step, so there is no need to read
+  // them from the IC or restart file.
   for (const auto& f : m_atm_process_group->get_fields_in()) {
     const auto& fid = f.get_header().get_identifier();
-    m_field_mgr->add_to_group(fid, "RESTART");
+    const auto& fgroups = f.get_header().get_tracking().get_groups_names();
+    if (not ekat::contains(fgroups, "ACCUMULATED")) {
+      m_field_mgr->add_to_group(fid, "RESTART");
+    }
   }
   for (const auto& g : m_atm_process_group->get_groups_in()) {
     if (g.m_monolithic_field) {
-      m_field_mgr->add_to_group(g.m_monolithic_field->get_header().get_identifier(), "RESTART");
+      const auto& mf = *g.m_monolithic_field;
+      const auto& mfgroups = mf.get_header().get_tracking().get_groups_names();
+      if (not ekat::contains(mfgroups, "ACCUMULATED")) {
+        m_field_mgr->add_to_group(mf.get_header().get_identifier(), "RESTART");
+      }
     } else {
       for (const auto& fn : g.m_info->m_fields_names) {
-        m_field_mgr->add_to_group(fn, g.grid_name(), "RESTART");
+        auto field = m_field_mgr->get_field(fn, g.grid_name());
+        const auto& fgroups = field.get_header().get_tracking().get_groups_names();
+        if (not ekat::contains(fgroups, "ACCUMULATED")) {
+          m_field_mgr->add_to_group(fn, g.grid_name(), "RESTART");
+        }
       }
     }
   }
@@ -1144,7 +1158,12 @@ void AtmosphereDriver::set_initial_conditions ()
   // First the individual input fields...
   m_atm_logger->debug("    [EAMxx] Processing input fields ...");
   for (const auto& f : m_atm_process_group->get_fields_in()) {
-    process_ic_field (f);
+    // Skip ACCUMULATED fields: those are reset to 0 at the beginning of
+    // each atm step, so there is no need to read them from the IC file.
+    const auto& fgroups = f.get_header().get_tracking().get_groups_names();
+    if (not ekat::contains(fgroups, "ACCUMULATED")) {
+      process_ic_field (f);
+    }
   }
   m_atm_logger->debug("    [EAMxx] Processing input fields ... done!");
 
@@ -1152,10 +1171,18 @@ void AtmosphereDriver::set_initial_conditions ()
   m_atm_logger->debug("    [EAMxx] Processing input groups ...");
   for (const auto& g : m_atm_process_group->get_groups_in()) {
     if (g.m_monolithic_field) {
-      process_ic_field(*g.m_monolithic_field);
+      const auto& mf = *g.m_monolithic_field;
+      const auto& mfgroups = mf.get_header().get_tracking().get_groups_names();
+      if (not ekat::contains(mfgroups, "ACCUMULATED")) {
+        process_ic_field(mf);
+      }
     }
     for (auto it : g.m_individual_fields) {
-      process_ic_field(*it.second);
+      const auto& f = *it.second;
+      const auto& fgroups = f.get_header().get_tracking().get_groups_names();
+      if (not ekat::contains(fgroups, "ACCUMULATED")) {
+        process_ic_field(f);
+      }
     }
   }
   m_atm_logger->debug("    [EAMxx] Processing input groups ... done!");
