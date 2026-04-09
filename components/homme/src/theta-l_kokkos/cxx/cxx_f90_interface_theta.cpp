@@ -91,8 +91,10 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
 
   if (theta_adv_form==0) {
     params.theta_adv_form = AdvectionForm::Conservative;
-  } else {
+  } else if (theta_adv_form==1) {
     params.theta_adv_form = AdvectionForm::NonConservative;
+  } else if (theta_adv_form==2) {
+    params.theta_adv_form = AdvectionForm::Split;
   }
 
   params.limiter_option                = limiter_option;
