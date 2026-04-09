@@ -12,6 +12,7 @@
 
 // Scream includes
 #include "dynamics/homme/homme_dimensions.hpp"
+#include "ColumnOps.hpp"
 
 // EKAT includes
 #include <ekat_assert.hpp>
@@ -82,15 +83,18 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
   const auto& geom   = c.get<ElementsGeometry>();
   const auto& ref_fe = c.get<ReferenceElement>();
   const auto& tl     = c.get<TimeLevel>();
+  const auto& elems  = c.get<Elements>();
 
-  const int nelem        = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
-  const int n0           = tl.n0;
-  const int nlev_pack    = state.m_v.extent_int(5);
-  const int nlev_scalar  = m_helper_fields.at("grad_Ux_dyn")
-                             .template get_view<Real*****>().extent_int(4);
-  const int nlevi_scalar = state.m_w_i.extent_int(4) * VLEN;
+  const int nelem       = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
+  const int n0          = tl.n0;
+  const int nlev_pack   = state.m_v.extent_int(5);
+  const int nlev_scalar = m_helper_fields.at("grad_Ux_dyn")
+                            .template get_view<Real*****>().extent_int(4);
 
   const auto w_int_dyn = state.m_w_i;
+
+  using MidColumn = decltype(Homme::subview(elems.m_derived.m_turb_strain2, 0, 0, 0));
+  using IntColumn = decltype(Homme::subview(state.m_w_i, 0, 0, 0, 0));
 
   auto grad_Ux_dyn = m_helper_fields.at("grad_Ux_dyn").template get_view<Real*****>();
   auto grad_Uy_dyn = m_helper_fields.at("grad_Uy_dyn").template get_view<Real*****>();
@@ -111,6 +115,9 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
 
     const int ie = team.league_rank();
 
+    // Construct the KernelVariables object needed by ColumnOps.
+    KernelVariables kv(team, ie);
+
     Kokkos::parallel_for(
         Kokkos::TeamThreadRange(team, NGP*NGP),
         [&] (const int idx) {
@@ -118,18 +125,45 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
       const int igp = idx / NGP;
       const int jgp = idx % NGP;
 
-      Kokkos::parallel_for(
-          Kokkos::ThreadVectorRange(team, nlev_pack),
-          [&] (const int ilev_pack) {
+      // One packed vertical accumulator per midpoint level.
+      Scalar dsdx_Ux[NUM_LEV];
+      Scalar dsdy_Ux[NUM_LEV];
+      Scalar dsdx_Uy[NUM_LEV];
+      Scalar dsdy_Uy[NUM_LEV];
+      Scalar dsdx_Uz[NUM_LEV];
+      Scalar dsdy_Uz[NUM_LEV];
 
-        Scalar dsdx_Ux = 0.0;
-        Scalar dsdy_Ux = 0.0;
-        Scalar dsdx_Uy = 0.0;
-        Scalar dsdy_Uy = 0.0;
-        Scalar dsdx_Uz = 0.0;
-        Scalar dsdy_Uz = 0.0;
+      for (int k = 0; k < nlev_pack; ++k) {
+        dsdx_Ux[k] = 0.0;
+        dsdy_Ux[k] = 0.0;
+        dsdx_Uy[k] = 0.0;
+        dsdy_Uy[k] = 0.0;
+        dsdx_Uz[k] = 0.0;
+        dsdy_Uz[k] = 0.0;
+      }
 
-        for (int kgp = 0; kgp < NGP; ++kgp) {
+      for (int kgp = 0; kgp < NGP; ++kgp) {
+
+        // Full interface columns for w at the two stencil points.
+        const auto w_int_row = Homme::subview(w_int_dyn, ie, n0, igp, kgp);
+        const auto w_int_col = Homme::subview(w_int_dyn, ie, n0, kgp, jgp);
+
+        // Temporary midpoint columns.
+        Scalar w_mid_row_buf[NUM_LEV];
+        Scalar w_mid_col_buf[NUM_LEV];
+
+        MidColumn w_mid_row(w_mid_row_buf);
+        MidColumn w_mid_col(w_mid_col_buf);
+
+        // Put vertical velocity on the midpoint grid
+        ColumnOps::compute_midpoint_values(kv, w_int_row, w_mid_row);
+        ColumnOps::compute_midpoint_values(kv, w_int_col, w_mid_col);
+
+        team.team_barrier();
+
+        Kokkos::parallel_for(
+            Kokkos::ThreadVectorRange(team, nlev_pack),
+            [&] (const int ilev_pack) {
 
           Scalar Ux_row = 0.0;
           Scalar Ux_col = 0.0;
@@ -143,7 +177,6 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
 
             if (ilev < nlev_scalar) {
 
-              // Horizontal wind contribution projected into Cartesian components.
               const Real Ux_row_h = horiz_wind_to_cart_component(
                   state.m_v, vec_sph2cart, ie, n0, 0, igp, kgp, ilev_pack)[s];
 
@@ -162,15 +195,10 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
               const Real Uz_col_h = horiz_wind_to_cart_component(
                   state.m_v, vec_sph2cart, ie, n0, 2, kgp, jgp, ilev_pack)[s];
 
-              // Vertical velocity contribution.
-              // This is a hack, replace with ColOps later
-              const auto w_row_pack = w_int_dyn(ie,n0,igp,kgp,ilev_pack);
-              const auto w_col_pack = w_int_dyn(ie,n0,kgp,jgp,ilev_pack);
+              const Real w_row = w_mid_row(ilev_pack)[s];
+              const Real w_col = w_mid_col(ilev_pack)[s];
 
-              const Real w_row = w_row_pack[s];
-              const Real w_col = w_col_pack[s];
-
-              // Project vertical velocity into Cartesian components.
+              // Need to visit the below code to see if the indexing is correct
               const Real wx_row = vec_sph2cart(ie,0,0,igp,kgp) * w_row;
               const Real wy_row = vec_sph2cart(ie,0,1,igp,kgp) * w_row;
               const Real wz_row = vec_sph2cart(ie,0,2,igp,kgp) * w_row;
@@ -190,49 +218,57 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
             }
           }
 
-          dsdx_Ux += dvv(jgp,kgp) * Ux_row;
-          dsdy_Ux += dvv(igp,kgp) * Ux_col;
+          dsdx_Ux[ilev_pack] += dvv(jgp,kgp) * Ux_row;
+          dsdy_Ux[ilev_pack] += dvv(igp,kgp) * Ux_col;
 
-          dsdx_Uy += dvv(jgp,kgp) * Uy_row;
-          dsdy_Uy += dvv(igp,kgp) * Uy_col;
+          dsdx_Uy[ilev_pack] += dvv(jgp,kgp) * Uy_row;
+          dsdy_Uy[ilev_pack] += dvv(igp,kgp) * Uy_col;
 
-          dsdx_Uz += dvv(jgp,kgp) * Uz_row;
-          dsdy_Uz += dvv(igp,kgp) * Uz_col;
-        }
+          dsdx_Uz[ilev_pack] += dvv(jgp,kgp) * Uz_row;
+          dsdy_Uz[ilev_pack] += dvv(igp,kgp) * Uz_col;
+        });
 
-        dsdx_Ux *= scale_factor_inv;
-        dsdy_Ux *= scale_factor_inv;
-        dsdx_Uy *= scale_factor_inv;
-        dsdy_Uy *= scale_factor_inv;
-        dsdx_Uz *= scale_factor_inv;
-        dsdy_Uz *= scale_factor_inv;
+        team.team_barrier();
+      }
 
-        for (int h = 0; h < 2; ++h) {
-          const Scalar gx =
-              dinv(ie,h,0,igp,jgp) * dsdx_Ux
-            + dinv(ie,h,1,igp,jgp) * dsdy_Ux;
+      Kokkos::parallel_for(
+          Kokkos::ThreadVectorRange(team, nlev_pack),
+          [&] (const int ilev_pack) {
 
-          const Scalar gy =
-              dinv(ie,h,0,igp,jgp) * dsdx_Uy
-            + dinv(ie,h,1,igp,jgp) * dsdy_Uy;
+        Scalar gx0 = (dinv(ie,0,0,igp,jgp) * dsdx_Ux[ilev_pack]
+                    + dinv(ie,0,1,igp,jgp) * dsdy_Ux[ilev_pack]) * scale_factor_inv;
 
-          const Scalar gz =
-              dinv(ie,h,0,igp,jgp) * dsdx_Uz
-            + dinv(ie,h,1,igp,jgp) * dsdy_Uz;
+        Scalar gy0 = (dinv(ie,0,0,igp,jgp) * dsdx_Uy[ilev_pack]
+                    + dinv(ie,0,1,igp,jgp) * dsdy_Uy[ilev_pack]) * scale_factor_inv;
 
-          for (int s = 0; s < VLEN; ++s) {
-            const int ilev = ilev_pack*VLEN + s;
-            if (ilev < nlev_scalar) {
-              grad_Ux_dyn(ie,h,igp,jgp,ilev) = gx[s];
-              grad_Uy_dyn(ie,h,igp,jgp,ilev) = gy[s];
-              grad_Uz_dyn(ie,h,igp,jgp,ilev) = gz[s];
-            }
+        Scalar gz0 = (dinv(ie,0,0,igp,jgp) * dsdx_Uz[ilev_pack]
+                    + dinv(ie,0,1,igp,jgp) * dsdy_Uz[ilev_pack]) * scale_factor_inv;
+
+        Scalar gx1 = (dinv(ie,1,0,igp,jgp) * dsdx_Ux[ilev_pack]
+                    + dinv(ie,1,1,igp,jgp) * dsdy_Ux[ilev_pack]) * scale_factor_inv;
+
+        Scalar gy1 = (dinv(ie,1,0,igp,jgp) * dsdx_Uy[ilev_pack]
+                    + dinv(ie,1,1,igp,jgp) * dsdy_Uy[ilev_pack]) * scale_factor_inv;
+
+        Scalar gz1 = (dinv(ie,1,0,igp,jgp) * dsdx_Uz[ilev_pack]
+                    + dinv(ie,1,1,igp,jgp) * dsdy_Uz[ilev_pack]) * scale_factor_inv;
+
+        for (int s = 0; s < VLEN; ++s) {
+          const int ilev = ilev_pack*VLEN + s;
+          if (ilev < nlev_scalar) {
+            grad_Ux_dyn(ie,0,igp,jgp,ilev) = gx0[s];
+            grad_Uy_dyn(ie,0,igp,jgp,ilev) = gy0[s];
+            grad_Uz_dyn(ie,0,igp,jgp,ilev) = gz0[s];
+
+            grad_Ux_dyn(ie,1,igp,jgp,ilev) = gx1[s];
+            grad_Uy_dyn(ie,1,igp,jgp,ilev) = gy1[s];
+            grad_Uz_dyn(ie,1,igp,jgp,ilev) = gz1[s];
           }
         }
+      });
 
-      }); // ThreadVectorRange
-    });   // TeamThreadRange
-  });     // TeamPolicy
+    });
+  });
 
   Kokkos::fence();
 }
