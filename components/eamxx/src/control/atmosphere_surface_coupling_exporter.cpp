@@ -59,8 +59,8 @@ void SurfaceCouplingExporter::create_requests()
   add_field<Required>("precip_liq_surf_mass", scalar2d_layout,      kg/m2,  grid_name);
   add_field<Required>("precip_ice_surf_mass", scalar2d_layout,      kg/m2,  grid_name);
   // Required for implicit flux coupling
-  add_field<Required>("um_pert_diff",         scalar3d_layout_mid,  m/s,    grid_name, "ACCUMULATED");
-  add_field<Required>("vm_pert_diff",         scalar3d_layout_mid,  m/s,    grid_name, "ACCUMULATED");
+  add_field<Required>("um_pert_diff",         scalar3d_layout_mid,  m/s,    grid_name, "ACCUMULATED", ps);
+  add_field<Required>("vm_pert_diff",         scalar3d_layout_mid,  m/s,    grid_name, "ACCUMULATED", ps);
   add_field<Required>("surf_mom_flux",        vector2d_layout,      N/m2,   grid_name);
   add_field<Required>("tau_est",              scalar2d_layout,      Pa,     grid_name);
   // Required for ugust
