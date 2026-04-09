@@ -205,6 +205,9 @@ void setup_import_and_export_data(
   do_export_during_init_view(6) = true;
   do_export_during_init_view(7) = true;
   do_export_during_init_view(8) = true;
+  do_export_during_init_view(17) = true;
+  do_export_during_init_view(18) = true;
+  do_export_during_init_view(19) = true;
 }
 
 void test_imports(const FieldManager& fm,
@@ -317,6 +320,10 @@ void test_exports(const FieldManager& fm,
   const auto phis                 = fm.get_field("phis").get_view<const Real*>();
   const auto precip_liq_surf_mass = fm.get_field("precip_liq_surf_mass").get_view<const Real*>();
   const auto precip_ice_surf_mass = fm.get_field("precip_ice_surf_mass").get_view<const Real*>();
+  const auto surf_mom_flux        = fm.get_field("surf_mom_flux").get_view<const Real**>();
+  const auto um_pert_diff         = fm.get_field("um_pert_diff").get_view<const Real**>();
+  const auto vm_pert_diff         = fm.get_field("vm_pert_diff").get_view<const Real**>();
+  const auto tke                  = fm.get_field("tke").get_view<const Real**>();
 
   const int ncols = fm.get_grid()->get_num_local_dofs();
   const int nlevs = fm.get_grid()->get_num_vertical_levels();
@@ -331,6 +338,9 @@ void test_exports(const FieldManager& fm,
   KokkosTypes<DefaultDevice>::view_1d<Real> Sa_pslv   ("Sa_pslv",    ncols);
   KokkosTypes<DefaultDevice>::view_1d<Real> Faxa_rainl("Faxa_rainl", ncols);
   KokkosTypes<DefaultDevice>::view_1d<Real> Faxa_snowl("Faxa_snowl", ncols);
+  KokkosTypes<DefaultDevice>::view_1d<Real> Sa_wsresp ("Sa_wsresp",  ncols);
+  KokkosTypes<DefaultDevice>::view_1d<Real> Sa_tau_est("Sa_tau_est", ncols);
+  KokkosTypes<DefaultDevice>::view_1d<Real> Sa_ugust  ("Sa_ugust",   ncols);
 
   const auto setup_policy = TPF::get_thread_range_parallel_scan_team_policy(ncols, nlevs);
   Kokkos::parallel_for(setup_policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KokkosTypes<DefaultDevice>::ExeSpace>::member_type& team) {
@@ -344,6 +354,10 @@ void test_exports(const FieldManager& fm,
     const auto dz_i              = ekat::subview(dz,             i);
     const auto z_int_i           = ekat::subview(z_int,          i);
     const auto z_mid_i           = ekat::subview(z_mid,          i);
+    const auto surf_mom_flux_i   = ekat::subview(surf_mom_flux,  i);
+    const auto um_pert_diff_i    = ekat::subview(um_pert_diff,   i);
+    const auto vm_pert_diff_i    = ekat::subview(vm_pert_diff,   i);
+    const auto tke_i             = ekat::subview(tke,            i);
 
     // Compute vertical layer thickness
     PF::calculate_dz(team, pseudo_density_i, p_mid_i, T_mid_i, qv_i, dz_i);
@@ -375,6 +389,10 @@ void test_exports(const FieldManager& fm,
       Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O.value);
       Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O.value);
     }
+
+    Sa_wsresp(i) = PF::calculate_wind_speed_sensitivity(surf_mom_flux_i(0), surf_mom_flux_i(1),
+                                                        um_pert_diff_i(nlevs-1), vm_pert_diff_i(nlevs-1));
+    Sa_ugust(i) = PF::calculate_gustiness_speed(tke_i(nlevs-1));
   });
 
   // Sync to host for comparing to export data
@@ -388,6 +406,7 @@ void test_exports(const FieldManager& fm,
   fm.get_field("sfc_flux_dif_vis").sync_to_host();
   fm.get_field("sfc_flux_sw_net" ).sync_to_host();
   fm.get_field("sfc_flux_lw_dn"  ).sync_to_host();
+  fm.get_field("tau_est"         ).sync_to_host();
   const auto p_mid_h            = fm.get_field("p_mid"           ).get_view<const Real**,  Host>();
   const auto T_mid_h            = fm.get_field("T_mid"           ).get_view<const Real**,  Host>();
   const auto qv_h               = fm.get_field("qv"              ).get_view<const Real**,  Host>();
@@ -398,12 +417,15 @@ void test_exports(const FieldManager& fm,
   const auto sfc_flux_dif_vis_h = fm.get_field("sfc_flux_dif_vis").get_view<const Real*,   Host>();
   const auto sfc_flux_sw_net_h  = fm.get_field("sfc_flux_sw_net" ).get_view<const Real*,   Host>();
   const auto sfc_flux_lw_dn_h   = fm.get_field("sfc_flux_lw_dn"  ).get_view<const Real*,   Host>();
+  const auto tau_est_h          = fm.get_field("tau_est"         ).get_view<const Real*,   Host>();
   const auto Sa_z_h       = Kokkos::create_mirror_view_and_copy(HostDevice(), Sa_z);
   const auto Sa_ptem_h    = Kokkos::create_mirror_view_and_copy(HostDevice(), Sa_ptem);
   const auto Sa_dens_h    = Kokkos::create_mirror_view_and_copy(HostDevice(), Sa_dens);
   const auto Sa_pslv_h    = Kokkos::create_mirror_view_and_copy(HostDevice(), Sa_pslv);
   const auto Faxa_rainl_h = Kokkos::create_mirror_view_and_copy(HostDevice(), Faxa_rainl);
   const auto Faxa_snowl_h = Kokkos::create_mirror_view_and_copy(HostDevice(), Faxa_snowl);
+  const auto Sa_wsresp_h  = Kokkos::create_mirror_view_and_copy(HostDevice(), Sa_wsresp);
+  const auto Sa_ugust_h   = Kokkos::create_mirror_view_and_copy(HostDevice(), Sa_ugust);
 
   // Recall that two fields have been set to export to a constant value, so we load those constants from the parameter list here:
   using vor_type = std::vector<Real>;
@@ -448,6 +470,9 @@ void test_exports(const FieldManager& fm,
       EKAT_REQUIRE(export_constant_multiple_view(15)*sfc_flux_sw_net_h(i)  == export_data_view(i, export_cpl_indices_view(15)));
       EKAT_REQUIRE(std::abs(Faxa_lwdn_file - export_data_view(i, export_cpl_indices_view(16)))<test_tol);
     }
+    EKAT_REQUIRE(export_constant_multiple_view(17)*Sa_wsresp_h(i) == export_data_view(i, export_cpl_indices_view(17)));
+    EKAT_REQUIRE(export_constant_multiple_view(18)*tau_est_h(i)   == export_data_view(i, export_cpl_indices_view(18)));
+    EKAT_REQUIRE(export_constant_multiple_view(19)*Sa_ugust_h(i)  == export_data_view(i, export_cpl_indices_view(19)));
   }
 }
 
