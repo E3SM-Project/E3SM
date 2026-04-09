@@ -83,8 +83,8 @@ void SHOCMacrophysics::create_requests()
   add_field<Updated>("cldfrac_liq",   scalar3d_mid, nondim,  grid_name, ps);
   add_tracer<Updated>("tke", m_grid, m2/s2, ps);
   add_tracer<Updated>("qc",  m_grid, kg/kg, ps);
-  add_field<Updated>("um_pert_diff",  scalar3d_mid, m/s,     grid_name, "ACCUMULATED");
-  add_field<Updated>("vm_pert_diff",  scalar3d_mid, m/s,     grid_name, "ACCUMULATED");
+  add_field<Updated>("um_pert_diff",  scalar3d_mid, m/s,     grid_name, "ACCUMULATED", ps);
+  add_field<Updated>("vm_pert_diff",  scalar3d_mid, m/s,     grid_name, "ACCUMULATED", ps);
 
   // Output variables
   add_field<Computed>("pbl_height",    scalar2d    , m,            grid_name);
