@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -2366,6 +2366,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#intermediate-only-fields-aliases-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Intermediate-only fields (aliases section)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#caveats" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3476,6 +3487,8 @@
       
         
       
+        
+      
     
     
     
@@ -3525,6 +3538,186 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_4_2" id="__nav_3_3_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Physics
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Physics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_4_2_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_4_2_1" id="__nav_3_3_4_2_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    P3
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_3_3_4_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_4_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    P3
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../technical/physics/p3/autoconversion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Autoconversion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../technical/physics/p3/back_to_cell_average/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Back to Cell Average
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
               
             
               
@@ -4606,6 +4799,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#intermediate-only-fields-aliases-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Intermediate-only fields (aliases section)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#caveats" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4775,6 +4979,28 @@ are preserved from the original fields, and <code>alias_of</code>
 is added to the netcdf files to document aliasing</p>
 </li>
 </ol>
+<h2 id="intermediate-only-fields-aliases-section">Intermediate-only fields (<code>aliases</code> section)</h2>
+<p>Sometimes a diagnostic is only needed as a building block for another
+diagnostic, and you do not want it written to the NetCDF output file.
+Declare such fields in an <code>aliases</code> subsection of the per-grid block:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">fields</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">physics_pg2</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">aliases</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;MyDiag:=T_mid_times_p_mid&quot;</span><span class="w">       </span><span class="c1"># computed but NOT written to NC</span>
+<span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;MyDiagSqrd:=MyDiag_times_MyDiag&quot;</span><span class="w"> </span><span class="c1"># uses MyDiag; IS written to NC</span>
+</code></pre></div>
+<p><code>MyDiag</code> is created and registered in the internal field manager so that
+<code>MyDiagSqrd</code> can depend on it, but it does not appear in the output file.
+Only <code>MyDiagSqrd</code> is written.</p>
+<p>The <code>aliases</code> section uses the same <code>alias:=original</code> syntax as
+<code>field_names</code> entries, and the expression on the right-hand side is
+resolved with the same composable-diagnostic parser.</p>
+<p>Rules:</p>
+<ul>
+<li>A name declared in <code>aliases</code> must not also appear in <code>field_names</code>.</li>
+<li>The same alias name cannot appear in both <code>aliases</code> and <code>field_names</code>.</li>
+</ul>
 <h2 id="caveats">Caveats</h2>
 <p>Currently, a field can be requested only once in a single stream,
 but we do allow requesting the same field again but with an alias</p>
