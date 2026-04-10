@@ -10,7 +10,6 @@ Created May, 2025 by Walter Hannah (LLNL)
 import datetime, os, numpy as np, xarray as xr, numba
 user, host = os.getenv('USER'), os.getenv('HOST')
 source_code_meta = 'HOMME2SCRIP.py'
-# output_netcdf_type = 'NETCDF3_64BIT_DATA'
 # NOTE - NETCDF3_64BIT_DATA was problematically slow for certain grids on Perlmutter (2026)
 # The cause was never fully explained, but switching to NETCDF4 does not pose any problem
 output_netcdf_type = 'NETCDF4'
