@@ -100,6 +100,7 @@ module controlMod
                         use_snicar_frc, use_snicar_ad, use_firn_percolation_and_compaction, &
                         convert_ice_to_river_runoff_latband, &
                         convert_ice_to_river_runoff_latband_width_degrees, &
+                        snowcap_latband_diag_write, snowcap_latband_diag_nstep, &
                         use_extrasnowlayers, use_T_rho_dependent_snowthk, &
                         use_vancouver, use_mexicocity, use_noio, use_finetop_rad
   !
@@ -351,6 +352,7 @@ contains
          use_snicar_ad, use_firn_percolation_and_compaction, use_extrasnowlayers,&
           convert_ice_to_river_runoff_latband, &
           convert_ice_to_river_runoff_latband_width_degrees, &
+          snowcap_latband_diag_write, snowcap_latband_diag_nstep, &
          use_T_rho_dependent_snowthk, use_vancouver, use_mexicocity, use_noio
 
     ! cpl_bypass variables
@@ -975,6 +977,10 @@ contains
     call mpi_bcast (const_climate_hist, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_top_solar_rad, 1, MPI_LOGICAL, 0, mpicom, ier)  ! TOP solar radiation parameterization
     call mpi_bcast (use_finetop_rad, 1, MPI_LOGICAL, 0, mpicom, ier)  ! fineTOP radiation parameterization
+   call mpi_bcast (convert_ice_to_river_runoff_latband, 1, MPI_LOGICAL, 0, mpicom, ier)
+   call mpi_bcast (convert_ice_to_river_runoff_latband_width_degrees, 1, MPI_REAL8, 0, mpicom, ier)
+   call mpi_bcast (snowcap_latband_diag_write, 1, MPI_LOGICAL, 0, mpicom, ier)
+   call mpi_bcast (snowcap_latband_diag_nstep, 1, MPI_INTEGER, 0, mpicom, ier)
     
     ! glacier_mec variables
     call mpi_bcast (create_glacier_mec_landunit, 1, MPI_LOGICAL, 0, mpicom, ier)

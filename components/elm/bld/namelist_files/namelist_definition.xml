@@ -875,6 +875,17 @@ Half-width of latitude band in degrees for local ELM latent-heat extraction
 when convert_ice_to_river_runoff_latband is TRUE.
 </entry>
 
+<entry id="snowcap_latband_diag_write" type="logical" category="history"
+       group="elm_inparm" valid_values="" value=".false.">
+If TRUE, write per-land-timestep snowcapping diagnostics in the active
+ice-to-river lat band to the ELM log.
+</entry>
+
+<entry id="snowcap_latband_diag_nstep" type="integer" category="history"
+       group="elm_inparm" valid_values="">
+Write frequency (in land-model timesteps) for snowcapping lat-band diagnostics.
+</entry>
+
 <entry id="use_T_rho_dependent_snowthk" type="logical" category="physics"
        group="elm_inparm" valid_values="" value=".false.">
 Toggle to use new snow thermal conductivity that relies on snow temperature and density. 

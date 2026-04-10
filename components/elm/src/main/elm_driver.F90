@@ -51,6 +51,7 @@ module elm_driver
   use LakeHydrologyMod       , only : LakeHydrology
   !
   use AerosolMod             , only : AerosolMasses
+   use SnowHydrologyMod       , only : SnowCappingDiagReset, SnowCappingDiagLog
   use SnowSnicarMod          , only : SnowAge_grain
   use SurfaceAlbedoMod       , only : SurfaceAlbedo
   use UrbanAlbedoMod         , only : UrbanAlbedo
@@ -676,6 +677,8 @@ contains
     ! of foliage that is dry and transpiring. Initialize snow layer if the
     ! snow accumulation exceeds 10 mm.
     ! ============================================================================
+
+   call SnowCappingDiagReset()
 
     !$OMP PARALLEL DO PRIVATE (nc,l,c, bounds_clump)
     do nc = 1,nclumps
@@ -1483,6 +1486,7 @@ contains
     if (wrtdia) call mpi_barrier(mpicom,ier)
     call t_startf('wrtdiag')
     call write_diagnostic(bounds_proc, wrtdia, nstep, lnd2atm_vars)
+   call SnowCappingDiagLog(nstep)
     call t_stopf('wrtdiag')
 
     ! ============================================================================
