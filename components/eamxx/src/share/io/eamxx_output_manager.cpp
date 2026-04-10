@@ -161,25 +161,21 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
         if (use_suffix) {
           fields.push_back(f.clone(f.name() + grid->m_disambiguation_suffix, gname));
 
-          // Transfer io: string attributes from original field (e.g., "bounds" attribute)
-          if (f.get_header().has_extra_data("io: string attributes")) {
-            const auto& src_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
-            auto& dst_atts = fields.back().get_header().get_extra_data<stratts_t>("io: string attributes");
-            dst_atts.insert(src_atts.begin(), src_atts.end());
-          }
-
           // Adjust long/std name, as the default metadata does not recognize the names with suffix
           auto& str_atts = fields.back().get_header().get_extra_data<stratts_t>("io: string attributes");
           str_atts["long_name"] = meta.get_longname(f.name());
           str_atts["standard_name"] = meta.get_standardname(f.name());
         } else {
           fields.push_back(f.clone(f.name(), gname));
+        }
 
-          // Transfer io: string attributes from original field (e.g., "bounds" attribute)
-          if (f.get_header().has_extra_data("io: string attributes")) {
-            const auto& src_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
-            auto& dst_atts = fields.back().get_header().get_extra_data<stratts_t>("io: string attributes");
-            dst_atts.insert(src_atts.begin(), src_atts.end());
+        // Transfer io: string attributes from original field (e.g., "bounds" attribute).
+        // Use insert so that we don't override entries already set above (e.g., long_name).
+        if (f.get_header().has_extra_data("io: string attributes")) {
+          const auto& src_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
+          auto& dst_atts = fields.back().get_header().get_extra_data<stratts_t>("io: string attributes");
+          for (const auto& [k,v] : src_atts) {
+            dst_atts.emplace(k, v);
           }
         }
       }
