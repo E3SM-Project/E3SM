@@ -10,7 +10,8 @@ Created May, 2025 by Walter Hannah (LLNL)
 import datetime, os, numpy as np, xarray as xr, numba
 user, host = os.getenv('USER'), os.getenv('HOST')
 source_code_meta = 'HOMME2SCRIP.py'
-output_netcdf_type = 'NETCDF3_64BIT_DATA'
+# output_netcdf_type = 'NETCDF3_64BIT_DATA' # note - this was causing problems for large grids
+output_netcdf_type = 'NETCDF4'
 from time import perf_counter
 enable_timers = True
 # ------------------------------------------------------------------------------
