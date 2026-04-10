@@ -77,16 +77,16 @@ bool Functions<S,D>::zm_conv_main(
   uview_1d<Real> s_mid, q_mid, p_mid, z_mid, s_int, q_int,
                  t_pcl, q_pcl_sat, t_pcl_m1, q_pcl_sat_m1,
                  dqdt, dsdt, mflx_net, q_upd, s_upd,
-                 q_dnd, s_dnd, qst, cu, evp, dl;
-  workspace.template take_many_contiguous_unsafe<21>(
+    q_dnd, s_dnd, qst, cu, evp, dl, p_int, z_int;
+  workspace.template take_many_contiguous_unsafe<23>(
     {"s_mid", "q_mid", "p_mid", "z_mid", "s_int", "q_int",
      "t_pcl", "q_pcl_sat", "t_pcl_m1", "q_pcl_sat_m1",
      "dqdt", "dsdt", "mflx_net", "q_upd", "s_upd",
-     "q_dnd", "s_dnd", "qst", "cu", "evp", "dl"},
+     "q_dnd", "s_dnd", "qst", "cu", "evp", "dl", "p_int", "z_int"},
     {&s_mid, &q_mid, &p_mid, &z_mid, &s_int, &q_int,
      &t_pcl, &q_pcl_sat, &t_pcl_m1, &q_pcl_sat_m1,
      &dqdt, &dsdt, &mflx_net, &q_upd, &s_upd,
-     &q_dnd, &s_dnd, &qst, &cu, &evp, &dl});
+     &q_dnd, &s_dnd, &qst, &cu, &evp, &dl, &p_int, &z_int});
 
   //----------------------------------------------------------------------------
   // Scalar local variables
@@ -132,7 +132,6 @@ bool Functions<S,D>::zm_conv_main(
   });
   team.team_barrier();
 
-
   // Calculate local pressure [mb] and height [m] for both interface and mid-point
   Kokkos::single(Kokkos::PerTeam(team), [&] () {
     z_srf = geos / gravit;
@@ -142,6 +141,12 @@ bool Functions<S,D>::zm_conv_main(
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver), [&] (const Int& k) {
     p_mid(k) = p_mid_in(k) * 0.01;
     z_mid(k) = z_mid_in(k) + z_srf;
+    p_int(k) = p_int_in(k) * 0.01;
+    z_int(k) = z_int_in(k) + z_srf;
+    if (k == pver-1) {
+      p_int(k+1) = p_int_in(k+1) * 0.01;
+      z_int(k+1) = z_int_in(k+1) + z_srf;
+    }
   });
   team.team_barrier();
 
@@ -150,7 +155,7 @@ bool Functions<S,D>::zm_conv_main(
   // pbl_top is initialized to pver-1 (0-based bottom), then adjusted upward
   Kokkos::single(Kokkos::PerTeam(team), [&] () {
     for (Int k = pver - 2; k >= msg + 1; --k) {
-      if (std::abs(z_mid_in(k) - pbl_hgt) < (z_int_in(k) - z_int_in(k + 1)) * 0.5) {
+      if (std::abs(z_mid(k) - pbl_hgt) < (z_int(k) - z_int(k + 1)) * 0.5) {
         pbl_top = k;
       }
     }
@@ -176,8 +181,7 @@ bool Functions<S,D>::zm_conv_main(
   compute_dilute_cape(team, workspace, runtime_opt,
                       pver, pverp,
                       runtime_opt.num_cin, msg,
-                      q_mid, t_mid, z_mid, p_mid,
-                      p_int_in, // units cancel in log ratio inside function
+                      q_mid, t_mid, z_mid, p_mid, p_int,
                       pbl_top, tpert,
                       true,  // calc_msemax_klev
                       0,     // prev_msemax_klev (unused for first call)
@@ -195,8 +199,7 @@ bool Functions<S,D>::zm_conv_main(
     compute_dilute_cape(team, workspace, runtime_opt,
                         pver, pverp,
                         runtime_opt.num_cin, msg,
-                        q_star, t_star, z_mid, p_mid,
-                        p_int_in,
+                        q_star, t_star, z_mid, p_mid, p_int,
                         pbl_top, tpert,
                         false, // calc_msemax_klev
                         prev_msemax_klev_val,
@@ -218,11 +221,11 @@ bool Functions<S,D>::zm_conv_main(
 
   if (!active) {
     // Column is inactive: outputs remain at zero (already initialized above)
-    workspace.template release_many_contiguous<21>(
+    workspace.template release_many_contiguous<23>(
       {&s_mid, &q_mid, &p_mid, &z_mid, &s_int, &q_int,
        &t_pcl, &q_pcl_sat, &t_pcl_m1, &q_pcl_sat_m1,
        &dqdt, &dsdt, &mflx_net, &q_upd, &s_upd,
-       &q_dnd, &s_dnd, &qst, &cu, &evp, &dl});
+       &q_dnd, &s_dnd, &qst, &cu, &evp, &dl, &p_int, &z_int});
     return false;
   }
 
@@ -278,7 +281,7 @@ bool Functions<S,D>::zm_conv_main(
   // Calculate updraft and downdraft properties
   zm_cloud_properties(team, workspace, runtime_opt,
                       pver, pverp, msg, runtime_opt.limcnv,
-                      p_mid, z_mid, z_int_in, // z_srf cancels in dz computations
+                      p_mid, z_mid, z_int,
                       t_mid, s_mid, s_int, q_mid,
                       landfrac, tpert,
                       msemax_klev, lel,
@@ -292,7 +295,7 @@ bool Functions<S,D>::zm_conv_main(
   //----------------------------------------------------------------------------
   // Convert from units of "per length" [1/m] to "per pressure" [1/mb]
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg + 1, pver), [&] (const Int& k) {
-    const Real dz = z_int_in(k) - z_int_in(k + 1); // z_srf cancels in difference
+    const Real dz = z_int(k) - z_int(k + 1);
     detr_up(k) = detr_up(k) * dz / p_del(k);
     entr_up(k) = entr_up(k) * dz / p_del(k);
     entr_dn(k) = entr_dn(k) * dz / p_del(k);
@@ -307,7 +310,7 @@ bool Functions<S,D>::zm_conv_main(
   zm_closure(team, workspace, runtime_opt,
              pver, pverp, msg, cape_threshold_loc,
              lcl, lel, jt, msemax_klev, dsubcld,
-             z_mid, z_int_in,
+             z_mid, z_int,
              p_mid, p_del, t_mid,
              s_mid, q_mid, qst, ql, s_int, q_int,
              t_pcl_lcl, t_pcl, q_pcl_sat,
@@ -408,8 +411,8 @@ bool Functions<S,D>::zm_conv_main(
   Real prec_sum = 0;
   Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, msg + 1, pver),
     [&] (const Int& k, Real& local_sum) {
-      local_sum -= p_del_in(k) * (q_mid(k) - q_mid_in(k))
-                 - p_del_in(k) * dlf(k) * time_step;
+      const Real local = p_del_in(k) * (q_mid(k) - q_mid_in(k)) - p_del_in(k) * dlf(k) * time_step;
+      local_sum -= local;
     }, prec_sum);
   team.team_barrier();
 
@@ -434,11 +437,11 @@ bool Functions<S,D>::zm_conv_main(
   });
   team.team_barrier();
 
-  workspace.template release_many_contiguous<21>(
+  workspace.template release_many_contiguous<23>(
     {&s_mid, &q_mid, &p_mid, &z_mid, &s_int, &q_int,
      &t_pcl, &q_pcl_sat, &t_pcl_m1, &q_pcl_sat_m1,
      &dqdt, &dsdt, &mflx_net, &q_upd, &s_upd,
-     &q_dnd, &s_dnd, &qst, &cu, &evp, &dl});
+     &q_dnd, &s_dnd, &qst, &cu, &evp, &dl, &p_int, &z_int});
 
   return true;
 }

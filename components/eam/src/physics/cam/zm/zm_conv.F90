@@ -906,9 +906,9 @@ subroutine zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
    real(r8), dimension(pcols,pver) :: i2           ! term for Taylor series
    real(r8), dimension(pcols,pver) :: i3           ! term for Taylor series
    real(r8), dimension(pcols,pver) :: i4           ! term for Taylor series
-   real(r8), dimension(pcols,pver) :: ihat         ! term for Taylor series
-   real(r8), dimension(pcols,pver) :: idag         ! term for Taylor series
-   real(r8), dimension(pcols,pver) :: iprm         ! term for Taylor series
+   real(r8) :: ihat         ! term for Taylor series
+   real(r8) :: idag         ! term for Taylor series
+   real(r8) :: iprm         ! term for Taylor series
    real(r8) :: tmp          ! term for Taylor series
    real(r8) :: expnum       ! term for Taylor series
 
@@ -934,12 +934,12 @@ subroutine zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
       do i = 1,ncol
          if (k < jb(i) .and. k >= jt(i)) then
             k1(i,k) = k1(i,k+1) + (h_env(i,jb(i))-h_env(i,k))*dz(i,k)
-            ihat(i,k) = 0.5_r8* (k1(i,k+1)+k1(i,k))
-            i2(i,k) = i2(i,k+1) + ihat(i,k)*dz(i,k)
-            idag(i,k) = 0.5_r8* (i2(i,k+1)+i2(i,k))
-            i3(i,k) = i3(i,k+1) + idag(i,k)*dz(i,k)
-            iprm(i,k) = 0.5_r8* (i3(i,k+1)+i3(i,k))
-            i4(i,k) = i4(i,k+1) + iprm(i,k)*dz(i,k)
+            ihat = 0.5_r8* (k1(i,k+1)+k1(i,k))
+            i2(i,k) = i2(i,k+1) + ihat*dz(i,k)
+            idag = 0.5_r8* (i2(i,k+1)+i2(i,k))
+            i3(i,k) = i3(i,k+1) + idag*dz(i,k)
+            iprm = 0.5_r8* (i3(i,k+1)+i3(i,k))
+            i4(i,k) = i4(i,k+1) + iprm*dz(i,k)
          end if
       end do ! i
    end do ! k
@@ -1255,8 +1255,6 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
    logical(btype), dimension(pcols) :: done ! flag for LCL determination
 
    real(r8), parameter :: mu_min       = 0.02_r8      ! minimum value of mu
-   real(r8), parameter :: t_homofrz    = 233.15_r8    ! homogeneous freezing temperature
-   real(r8), parameter :: t_mphase     = 40._r8       ! mixed phase temperature = tfreez-t_homofrz = 273.15K - 233.15K
    real(r8), parameter :: hu_diff_min  = -2000._r8    ! limit on hu(i,k)-hsthat(i,k)
 
    !----------------------------------------------------------------------------
@@ -1392,187 +1390,181 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
 
    !----------------------------------------------------------------------------
    ! iteration to set cloud properties
-   itnum = 1
-
-   do iter = 1,itnum
-
-      do k = pver, msg+1, -1
-         do i = 1,ncol
-            cu(i,k) = 0._r8
-            ql(i,k) = 0._r8
-         end do ! i
-      end do ! k
+   do k = pver, msg+1, -1
       do i = 1,ncol
-         totpcp(i) = 0._r8
-      end do
-
-      do k = pver, msg+1, -1
-         do i = 1,ncol
-            ! intialize updraft mass flux variables - here and below all normalized by cloud base mass flux (mb)
-            if (lambda_max(i) > 0._r8) then
-               mflx_up(i,jb(i)) = 1._r8
-               entr_up(i,jb(i)) = mflx_up(i,jb(i))/dz(i,jb(i))
-               tmp_k_limit = jt(i)
-               ! compute profiles of updraft mass fluxes - see eq (4.79) - (4.81)
-               if ( k>=tmp_k_limit .and. k<jb(i) ) then
-                  zuef = z_int(i,k) - z_int(i,jb(i))
-                  rmue = (1._r8/lambda_max(i))* (exp(lambda(i,k+1)*zuef)-1._r8)/zuef
-                  mflx_up(i,k) = (1._r8/lambda_max(i))* (exp(lambda(i,k  )*zuef)-1._r8)/zuef
-                  entr_up(i,k) = (rmue-mflx_up(i,k+1))/dz(i,k)
-                  detr_up(i,k) = (rmue-mflx_up(i,k))/dz(i,k)
-               end if
-            end if ! lambda_max(i)>0._r8
-         end do ! i
-      end do ! k
-
-      khighest = pverp
-      klowest = 1
-      do i = 1,ncol
-         khighest = min(khighest,lel(i))
-         klowest = max(klowest,jb(i))
-      end do
-
-      do k = klowest-1,khighest,-1
-         do i = 1,ncol
-            if (k <= jb(i)-1 .and. k >= lel(i) .and. lambda_max(i) > 0._r8) then
-               if (mflx_up(i,k) < 0.02_r8) then
-                  h_upd(i,k) = h_env(i,k)
-                  mflx_up(i,k) = 0._r8
-                  entr_up(i,k) = 0._r8
-                  detr_up(i,k) = mflx_up(i,k+1)/dz(i,k)
-               else
-                  h_upd(i,k) = mflx_up(i,k+1)/mflx_up(i,k)*h_upd(i,k+1) + &
-                       dz(i,k)/mflx_up(i,k)* (entr_up(i,k)*h_env(i,k)- detr_up(i,k)*h_env_sat(i,k))
-               end if
-            end if
-         end do ! i
-      end do ! k
-
-      ! reset cloud top index beginning from two layers above the
-      ! cloud base (i.e. if cloud is only one layer thick, top is not reset
-      do i = 1,ncol
-         doit(i) = .true.
-         tot_frz(i)= 0._r8
-         do k = pver, msg+1, -1
-            tot_frz(i)= tot_frz(i) + tmp_frz(i,k)*dz(i,k)
-         end do ! k
+         cu(i,k) = 0._r8
+         ql(i,k) = 0._r8
       end do ! i
+   end do ! k
+   do i = 1,ncol
+      totpcp(i) = 0._r8
+   end do
 
-      do k = klowest-2, khighest-1, -1
-         do i = 1,ncol
-            if (doit(i) .and. k <= jb(i)-2 .and. k >= lel(i)-1) then
-               if (h_upd(i,k)  <= hsthat(i,k) .and. &
-                   h_upd(i,k+1) > hsthat(i,k+1) .and. &
-                   mflx_up(i,k)  >= mu_min) then
-                  if ( h_upd(i,k)-hsthat(i,k) < hu_diff_min) then
-                     jt(i) = k + 1
-                     doit(i) = .false.
-                  else
-                     jt(i) = k
-                     doit(i) = .false.
-                  end if
-                else if ( (h_upd(i,k) > h_upd(i,jb(i)) .and. tot_frz(i)<=0._r8) .or. mflx_up(i,k) < mu_min) then
+   do k = pver, msg+1, -1
+      do i = 1,ncol
+         ! intialize updraft mass flux variables - here and below all normalized by cloud base mass flux (mb)
+         if (lambda_max(i) > 0._r8) then
+            mflx_up(i,jb(i)) = 1._r8
+            entr_up(i,jb(i)) = mflx_up(i,jb(i))/dz(i,jb(i))
+            tmp_k_limit = jt(i)
+            ! compute profiles of updraft mass fluxes - see eq (4.79) - (4.81)
+            if ( k>=tmp_k_limit .and. k<jb(i) ) then
+               zuef = z_int(i,k) - z_int(i,jb(i))
+               rmue = (1._r8/lambda_max(i))* (exp(lambda(i,k+1)*zuef)-1._r8)/zuef
+               mflx_up(i,k) = (1._r8/lambda_max(i))* (exp(lambda(i,k  )*zuef)-1._r8)/zuef
+               entr_up(i,k) = (rmue-mflx_up(i,k+1))/dz(i,k)
+               detr_up(i,k) = (rmue-mflx_up(i,k))/dz(i,k)
+            end if
+         end if ! lambda_max(i)>0._r8
+      end do ! i
+   end do ! k
+
+   khighest = pverp
+   klowest = 1
+   do i = 1,ncol
+      khighest = min(khighest,lel(i))
+      klowest = max(klowest,jb(i))
+   end do
+
+   do k = klowest-1,khighest,-1
+      do i = 1,ncol
+         if (k <= jb(i)-1 .and. k >= lel(i) .and. lambda_max(i) > 0._r8) then
+            if (mflx_up(i,k) < 0.02_r8) then
+               h_upd(i,k) = h_env(i,k)
+               mflx_up(i,k) = 0._r8
+               entr_up(i,k) = 0._r8
+               detr_up(i,k) = mflx_up(i,k+1)/dz(i,k)
+            else
+               h_upd(i,k) = mflx_up(i,k+1)/mflx_up(i,k)*h_upd(i,k+1) + &
+                    dz(i,k)/mflx_up(i,k)* (entr_up(i,k)*h_env(i,k)- detr_up(i,k)*h_env_sat(i,k))
+            end if
+         end if
+      end do ! i
+   end do ! k
+
+   ! reset cloud top index beginning from two layers above the
+   ! cloud base (i.e. if cloud is only one layer thick, top is not reset
+   do i = 1,ncol
+      doit(i) = .true.
+      tot_frz(i)= 0._r8
+      do k = pver, msg+1, -1
+         tot_frz(i)= tot_frz(i) + tmp_frz(i,k)*dz(i,k)
+      end do ! k
+   end do ! i
+
+   do k = klowest-2, khighest-1, -1
+      do i = 1,ncol
+         if (doit(i) .and. k <= jb(i)-2 .and. k >= lel(i)-1) then
+            if (h_upd(i,k)  <= hsthat(i,k) .and. &
+                 h_upd(i,k+1) > hsthat(i,k+1) .and. &
+                 mflx_up(i,k)  >= mu_min) then
+               if ( h_upd(i,k)-hsthat(i,k) < hu_diff_min) then
                   jt(i) = k + 1
                   doit(i) = .false.
+               else
+                  jt(i) = k
+                  doit(i) = .false.
                end if
+            else if ( (h_upd(i,k) > h_upd(i,jb(i)) .and. tot_frz(i)<=0._r8) .or. mflx_up(i,k) < mu_min) then
+               jt(i) = k + 1
+               doit(i) = .false.
             end if
-         end do ! i
-      end do ! k
+         end if
+      end do ! i
+   end do ! k
 
+   do i = 1,ncol
+      if (iter == 1) jto(i) = jt(i)
+   end do
+
+   do k = pver, msg+1, -1
       do i = 1,ncol
-         if (iter == 1) jto(i) = jt(i)
-      end do
+         if (k >= lel(i) .and. k <= jt(i) .and. lambda_max(i) > 0._r8) then
+            mflx_up(i,k) = 0._r8
+            entr_up(i,k) = 0._r8
+            detr_up(i,k) = 0._r8
+            h_upd(i,k) = h_env(i,k)
+         end if
+         if (k == jt(i) .and. lambda_max(i) > 0._r8) then
+            detr_up(i,k) = mflx_up(i,k+1)/dz(i,k)
+            entr_up(i,k) = 0._r8
+            mflx_up(i,k) = 0._r8
+         end if
+      end do ! i
+   end do ! k
 
-      do k = pver, msg+1, -1
-         do i = 1,ncol
-            if (k >= lel(i) .and. k <= jt(i) .and. lambda_max(i) > 0._r8) then
-               mflx_up(i,k) = 0._r8
-               entr_up(i,k) = 0._r8
-               detr_up(i,k) = 0._r8
-               h_upd(i,k) = h_env(i,k)
+   ! determine LCL - see eq (4.127)- (4.130) of Neale et al. (2012)
+   done(1:ncol) = .false.
+   kount = 0
+   do k = pver, msg+2, -1
+      do i = 1,ncol
+         if (k == jb(i) .and. lambda_max(i) > 0._r8) then
+            q_upd(i,k) = q_mid(i,jb(i))
+            s_upd(i,k) = (h_upd(i,k)-zm_const%latvap*q_upd(i,k))/zm_const%cpair
+         end if
+         if (( .not. done(i) .and. k > jt(i) .and. k < jb(i)) .and. lambda_max(i) > 0._r8) then
+            s_upd(i,k) = mflx_up(i,k+1)/mflx_up(i,k)*s_upd(i,k+1) + dz(i,k)/mflx_up(i,k)* (entr_up(i,k)-detr_up(i,k))*s_mid(i,k)
+            q_upd(i,k) = mflx_up(i,k+1)/mflx_up(i,k)*q_upd(i,k+1) + dz(i,k)/mflx_up(i,k)* (entr_up(i,k)*q_mid(i,k) - detr_up(i,k)*qst(i,k))
+            tu = s_upd(i,k) - zm_const%grav/zm_const%cpair*z_int(i,k)
+            call qsat_hPa(tu, (p_mid(i,k)+p_mid(i,k-1))/2._r8, estu, qstu)
+            if (q_upd(i,k) >= qstu) then
+               jlcl(i) = k
+               kount = kount + 1
+               done(i) = .true.
             end if
-            if (k == jt(i) .and. lambda_max(i) > 0._r8) then
-               detr_up(i,k) = mflx_up(i,k+1)/dz(i,k)
-               entr_up(i,k) = 0._r8
-               mflx_up(i,k) = 0._r8
-            end if
-         end do ! i
-      end do ! k
-
-      ! determine LCL - see eq (4.127)- (4.130) of Neale et al. (2012)
-      done(1:ncol) = .false.
-      kount = 0
-      do k = pver, msg+2, -1
-         do i = 1,ncol
-            if (k == jb(i) .and. lambda_max(i) > 0._r8) then
-               q_upd(i,k) = q_mid(i,jb(i))
-               s_upd(i,k) = (h_upd(i,k)-zm_const%latvap*q_upd(i,k))/zm_const%cpair
-            end if
-            if (( .not. done(i) .and. k > jt(i) .and. k < jb(i)) .and. lambda_max(i) > 0._r8) then
-               s_upd(i,k) = mflx_up(i,k+1)/mflx_up(i,k)*s_upd(i,k+1) + dz(i,k)/mflx_up(i,k)* (entr_up(i,k)-detr_up(i,k))*s_mid(i,k)
-               q_upd(i,k) = mflx_up(i,k+1)/mflx_up(i,k)*q_upd(i,k+1) + dz(i,k)/mflx_up(i,k)* (entr_up(i,k)*q_mid(i,k) - detr_up(i,k)*qst(i,k))
-               tu = s_upd(i,k) - zm_const%grav/zm_const%cpair*z_int(i,k)
-               call qsat_hPa(tu, (p_mid(i,k)+p_mid(i,k-1))/2._r8, estu, qstu)
-               if (q_upd(i,k) >= qstu) then
-                  jlcl(i) = k
-                  kount = kount + 1
-                  done(i) = .true.
-               end if
-            end if
-         end do ! i
-         if (kount >= ncol) goto 690
-      end do ! k
+         end if
+      end do ! i
+      if (kount >= ncol) goto 690
+   end do ! k
 
 690 continue
 
-      do k = msg+2, pver
-         do i = 1,ncol
-            if ((k > jt(i) .and. k <= jlcl(i)) .and. lambda_max(i) > 0._r8) then
-               s_upd(i,k) = s_int(i,k)  +             (h_upd(i,k)-hsthat(i,k)) / (zm_const%cpair* (1._r8+gamhat(i,k)))
-               q_upd(i,k) = qsthat(i,k) + gamhat(i,k)*(h_upd(i,k)-hsthat(i,k)) / (zm_const%latvap* (1._r8+gamhat(i,k)))
+   do k = msg+2, pver
+      do i = 1,ncol
+         if ((k > jt(i) .and. k <= jlcl(i)) .and. lambda_max(i) > 0._r8) then
+            s_upd(i,k) = s_int(i,k)  +             (h_upd(i,k)-hsthat(i,k)) / (zm_const%cpair* (1._r8+gamhat(i,k)))
+            q_upd(i,k) = qsthat(i,k) + gamhat(i,k)*(h_upd(i,k)-hsthat(i,k)) / (zm_const%latvap* (1._r8+gamhat(i,k)))
+         end if
+      end do ! i
+   end do ! k
+
+   ! compute condensation in updraft
+   do k = pver, msg+2, -1
+      do i = 1,ncol
+         if (lambda_max(i)>0._r8) then
+            tmp_k_limit = jb(i)
+            if ( k>=jt(i) .and. k<tmp_k_limit ) then
+               cu(i,k) = ( ( mflx_up(i,k)*s_upd(i,k) - mflx_up(i,k+1)*s_upd(i,k+1) )/dz(i,k) - ( entr_up(i,k) - detr_up(i,k) )*s_mid(i,k) &
+                    )/(zm_const%latvap/zm_const%cpair)
+               ! apply limiters
+               if (k == jt(i)) cu(i,k) = 0._r8
+               cu(i,k) = max(0._r8,cu(i,k))
             end if
-         end do ! i
-      end do ! k
+         end if ! lambda_max(i)>0._r8
+      end do ! i
+   end do ! k
 
-      ! compute condensation in updraft
-      do k = pver, msg+2, -1
-         do i = 1,ncol
-            if (lambda_max(i)>0._r8) then
-               tmp_k_limit = jb(i)
-               if ( k>=jt(i) .and. k<tmp_k_limit ) then
-                  cu(i,k) = ( ( mflx_up(i,k)*s_upd(i,k) - mflx_up(i,k+1)*s_upd(i,k+1) )/dz(i,k) - ( entr_up(i,k) - detr_up(i,k) )*s_mid(i,k) &
-                       )/(zm_const%latvap/zm_const%cpair)
-                  ! apply limiters
-                  if (k == jt(i)) cu(i,k) = 0._r8
-                  cu(i,k) = max(0._r8,cu(i,k))
-               end if
-            end if ! lambda_max(i)>0._r8
-         end do ! i
-      end do ! k
-
-      ! compute condensed liquid, rain production rate
-      ! accumulate total precipitation (condensation - detrainment of liquid)
-      ! Note: ql1 = ql(k) + rprd(k)*dz(k)/mflx_up(k)
-      ! The differencing is somewhat strange (e.g. detr_up(i,k)*ql(i,k+1)) but is consistently applied.
-      !   interface quantities => mflx_up, ql are 
-      !   mid-point quantities => cu, detr_up, entr_up, rprd
-      do k = pver, msg+2, -1
-         do i = 1,ncol
-            rprd(i,k) = 0._r8
-            if (k >= jt(i) .and. k < jb(i) .and. lambda_max(i) > 0._r8 .and. mflx_up(i,k) >= 0.0_r8) then
-               if (mflx_up(i,k) > 0._r8) then
-                  ql1 = 1._r8/mflx_up(i,k) * ( mflx_up(i,k+1)*ql(i,k+1) - dz(i,k)*detr_up(i,k)*ql(i,k+1) + dz(i,k)*cu(i,k) )
-                  ql(i,k) = ql1 / (1._r8+dz(i,k)*c0mask(i))
-               else
-                  ql(i,k) = 0._r8
-               end if
-               totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-detr_up(i,k)*ql(i,k+1))
-               rprd(i,k) = c0mask(i)*mflx_up(i,k)*ql(i,k)
+   ! compute condensed liquid, rain production rate
+   ! accumulate total precipitation (condensation - detrainment of liquid)
+   ! Note: ql1 = ql(k) + rprd(k)*dz(k)/mflx_up(k)
+   ! The differencing is somewhat strange (e.g. detr_up(i,k)*ql(i,k+1)) but is consistently applied.
+   !   interface quantities => mflx_up, ql are 
+   !   mid-point quantities => cu, detr_up, entr_up, rprd
+   do k = pver, msg+2, -1
+      do i = 1,ncol
+         rprd(i,k) = 0._r8
+         if (k >= jt(i) .and. k < jb(i) .and. lambda_max(i) > 0._r8 .and. mflx_up(i,k) >= 0.0_r8) then
+            if (mflx_up(i,k) > 0._r8) then
+               ql1 = 1._r8/mflx_up(i,k) * ( mflx_up(i,k+1)*ql(i,k+1) - dz(i,k)*detr_up(i,k)*ql(i,k+1) + dz(i,k)*cu(i,k) )
+               ql(i,k) = ql1 / (1._r8+dz(i,k)*c0mask(i))
+            else
+               ql(i,k) = 0._r8
             end if
-         end do ! i
-      end do ! k
-
-   end do ! iter = 1,itnum
+            totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-detr_up(i,k)*ql(i,k+1))
+            rprd(i,k) = c0mask(i)*mflx_up(i,k)*ql(i,k)
+         end if
+      end do ! i
+   end do ! k
 
    !----------------------------------------------------------------------------
    ! calculate downdraft properties

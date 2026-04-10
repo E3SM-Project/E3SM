@@ -1078,7 +1078,7 @@ void zm_conv_main(ZmConvMainData& d)
     msemax_klev_d(vec1di_in[4]);
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
-  WSM wsm(d.pverp, 36, policy);
+  WSM wsm(d.pverp, 38, policy);
   ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
 
   // unpack data scalars because we do not want the lambda to capture d
