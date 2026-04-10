@@ -10,8 +10,6 @@
 #include <ekat_assert.hpp>
 #include <ekat_units.hpp>
 
-#include <array>
-
 namespace scream
 {
 // =========================================================================================
@@ -143,8 +141,7 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   using namespace ekat::units;
 
   // Add COSP dimension coordinate variables and their bounds as geometry data.
-  // These are the bin centers and edges for the ISCCP, MODIS, and MISR histograms.
-  // The values here match the bin definitions in the COSP simulator (mod_cosp_config).
+  // Values come directly from the COSP simulator (mod_cosp_config) via the F90 interface.
 
   // Layouts for 1D coordinate variables
   FieldLayout cosp_tau_layout ({CMP}, {m_num_tau}, {"cosp_tau"});
@@ -162,50 +159,25 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   auto cosp_prs_bnds_f = m_grid->create_geometry_data("cosp_prs_bnds", cosp_prs_bnds_layout, Pa);
   auto cosp_cth_bnds_f = m_grid->create_geometry_data("cosp_cth_bnds", cosp_cth_bnds_layout, m);
 
-  // Optical depth (tau) bin centers and edges
-  const std::array<Real,7> tau_centers = {0.15, 0.80, 2.45, 6.5, 16.2, 41.5, 100.0};
-  const std::array<Real,14> tau_edges  = {0.0, 0.3, 0.3, 1.3, 1.3, 3.6, 3.6, 9.4,
-                                          9.4, 23.0, 23.0, 60.0, 60.0, 100000.0};
+  // Retrieve bin centers and edges from the Fortran COSP interface (mod_cosp_config).
+  // The F90 arrays for edges have shape (2, nbins) in Fortran column-major order, so the
+  // flat memory layout is [lower_0, upper_0, lower_1, upper_1, ...], which maps directly
+  // onto the (nbins, 2) host views below.
   auto tau_h      = cosp_tau_f.get_view<Real*,Host>();
   auto tau_bnds_h = cosp_tau_bnds_f.get_view<Real**,Host>();
-  for (int i = 0; i < m_num_tau; i++) {
-    tau_h(i)        = tau_centers[i];
-    tau_bnds_h(i,0) = tau_edges[2*i];
-    tau_bnds_h(i,1) = tau_edges[2*i+1];
-  }
-  cosp_tau_f.sync_to_dev();
-  cosp_tau_bnds_f.sync_to_dev();
-
-  // Cloud-top pressure (prs) bin centers and edges (Pa)
-  const std::array<Real,7> prs_centers = {90000., 74000., 62000., 50000., 37500., 24500., 9000.};
-  const std::array<Real,14> prs_edges  = {100000.0, 80000.0, 80000.0, 68000.0, 68000.0, 56000.0,
-                                           56000.0, 44000.0, 44000.0, 31000.0, 31000.0, 18000.0,
-                                           18000.0,     0.0};
   auto prs_h      = cosp_prs_f.get_view<Real*,Host>();
   auto prs_bnds_h = cosp_prs_bnds_f.get_view<Real**,Host>();
-  for (int i = 0; i < m_num_ctp; i++) {
-    prs_h(i)        = prs_centers[i];
-    prs_bnds_h(i,0) = prs_edges[2*i];
-    prs_bnds_h(i,1) = prs_edges[2*i+1];
-  }
-  cosp_prs_f.sync_to_dev();
-  cosp_prs_bnds_f.sync_to_dev();
-
-  // Cloud-top height (cth) bin centers and edges (m)
-  const std::array<Real,16> cth_centers = {0., 250., 750., 1250., 1750., 2250., 2750., 3500.,
-                                            4500., 6000., 8000., 10000., 12000., 14500., 16000., 18000.};
-  // Note: -99000 and 99000 are sentinel values representing unbounded lower/upper bins
-  const std::array<Real,32> cth_edges   = {-99000.,  0.,     0.,  500.,   500., 1000.,  1000., 1500.,
-                                             1500., 2000.,  2000., 2500.,  2500., 3000.,  3000., 4000.,
-                                             4000., 5000.,  5000., 7000.,  7000., 9000.,  9000.,11000.,
-                                            11000.,13000., 13000.,15000., 15000.,17000., 17000.,99000.};
   auto cth_h      = cosp_cth_f.get_view<Real*,Host>();
   auto cth_bnds_h = cosp_cth_bnds_f.get_view<Real**,Host>();
-  for (int i = 0; i < m_num_cth; i++) {
-    cth_h(i)        = cth_centers[i];
-    cth_bnds_h(i,0) = cth_edges[2*i];
-    cth_bnds_h(i,1) = cth_edges[2*i+1];
-  }
+
+  cosp_c2f_get_bins(tau_h.data(), tau_bnds_h.data(),
+                    prs_h.data(), prs_bnds_h.data(),
+                    cth_h.data(), cth_bnds_h.data());
+
+  cosp_tau_f.sync_to_dev();
+  cosp_tau_bnds_f.sync_to_dev();
+  cosp_prs_f.sync_to_dev();
+  cosp_prs_bnds_f.sync_to_dev();
   cosp_cth_f.sync_to_dev();
   cosp_cth_bnds_f.sync_to_dev();
 
