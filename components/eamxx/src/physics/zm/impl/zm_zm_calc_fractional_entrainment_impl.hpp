@@ -49,6 +49,13 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   constexpr Real lambda_limit_max = 0.0002;    // limiter
   constexpr Real lambda_threshold = 1.e-6;     // threshold for moving detrainment level
 
+  //view_1d<Real> lambda_tmp("asda", pver);
+  std::vector<Real> lambda_tmp(pver, 0);
+  std::vector<Real> k1(pver, 0);
+  std::vector<Real> i2(pver, 0);
+  std::vector<Real> i3(pver, 0);
+  std::vector<Real> i4(pver, 0);
+
   //----------------------------------------------------------------------------
   // initialize variables
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver), [&](const Int& k) {
@@ -77,6 +84,20 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   });
   team.team_barrier();
 
+  //!----------------------------------------------------------------------------
+  // compute taylor series for approximate lambda(z) below
+  for (Int k = pver-2; k >= msg; --k) {
+    if (k < jb && k >= jt) {
+      k1[k] = k1[k+1] + (h_env(jb)-h_env(k))*dz(k);
+      const Real ihat = 0.5* (k1[k+1]+k1[k]);
+      i2[k] = i2[k+1] + ihat*dz(k);
+      const Real idag = 0.5* (i2[k+1]+i2[k]);
+      i3[k] = i3[k+1] + idag*dz(k);
+      const Real iprm = 0.5* (i3[k+1]+i3[k]);
+      i4[k] = i4[k+1] + iprm*dz(k);
+    }
+  }
+
   //----------------------------------------------------------------------------
   // compute taylor series for approximate lambda(z) below, then
   // compute approximate lambda(z) using above taylor series - see eq (A6) in ZM95
@@ -84,44 +105,26 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   // accumulators for k1/i2/i3/i4, avoiding the need for workspace arrays.
   Kokkos::single(Kokkos::PerTeam(team), [&] {
     // Rolling accumulators initialised to the k=pver-1 (0-based) boundary values (all 0)
-    Real k1_kp1 = 0.0, i2_kp1 = 0.0, i3_kp1 = 0.0, i4_kp1 = 0.0;
-    for (Int k = pver-2; k >= msg; --k) {
-      // --- Taylor series terms ---
-      Real k1_k = k1_kp1, i2_k = i2_kp1, i3_k = i3_kp1, i4_k = i4_kp1;
-      if (k < jb && k >= jt) {
-        k1_k = k1_kp1 + (h_env(jb) - h_env(k)) * dz(k);
-        const Real ihat = ZMC::half * (k1_kp1 + k1_k);   // term for Taylor series
-        i2_k = i2_kp1 + ihat * dz(k);
-        const Real idag = ZMC::half * (i2_kp1 + i2_k);   // term for Taylor series
-        i3_k = i3_kp1 + idag * dz(k);
-        const Real iprm = ZMC::half * (i3_kp1 + i3_k);   // term for Taylor series
-        i4_k = i4_kp1 + iprm * dz(k);
-      }
+    for (Int k = msg+1; k < pver; ++k) {
       // --- lambda computation (Fortran: k from msg+2 to pver 1-based = k>=msg+1 0-based) ---
-      if (k >= msg+1) {
-        Real expnum = 0.0;  // term for Taylor series
-        if (k < jt || k >= jb) {
-          expnum = 0.0;
-        } else {
-          expnum = h_env(jb) - (h_env_sat(k-1)*(z_int(k) - z_mid(k)) +
-                                h_env_sat(k)*(z_mid(k-1) - z_int(k))) /
-                               (z_mid(k-1) - z_mid(k));
-        }
-        if ((h_env(jb) - h_env_min > 100.0 && expnum > 0.0) && k1_k > expnum*dz(k)) {
-          const Real tmp = expnum / k1_k;  // term for Taylor series
-          lambda(k) = tmp +
-                      i2_k/k1_k * tmp*tmp +
-                      (2.0*i2_k*i2_k - k1_k*i3_k)/(k1_k*k1_k) * tmp*tmp*tmp +
-                      (-5.0*k1_k*i2_k*i3_k + 5.0*i2_k*i2_k*i2_k + k1_k*k1_k*i4_k)/
-                      (k1_k*k1_k*k1_k) * tmp*tmp*tmp*tmp;
-          lambda(k) = ekat::impl::max(lambda(k), lambda_limit_min);
-          lambda(k) = ekat::impl::min(lambda(k), lambda_limit_max);
-        }
+      Real expnum = 0.0;  // term for Taylor series
+      if (k < jt || k >= jb) {
+        expnum = 0.0;
+      } else {
+        expnum = h_env(jb) - (h_env_sat(k-1)*(z_int(k) - z_mid(k)) +
+                              h_env_sat(k)*(z_mid(k-1) - z_int(k))) /
+          (z_mid(k-1) - z_mid(k));
       }
-      k1_kp1 = k1_k;
-      i2_kp1 = i2_k;
-      i3_kp1 = i3_k;
-      i4_kp1 = i4_k;
+      if ((h_env(jb) - h_env_min > 100.0 && expnum > 0.0) && k1[k] > expnum*dz(k)) {
+        const Real tmp = expnum / k1[k];  // term for Taylor series
+        lambda(k) = tmp +
+          i2[k]/k1[k] * tmp*tmp +
+          (2.0*i2[k]*i2[k] - k1[k]*i3[k])/(k1[k]*k1[k]) * tmp*tmp*tmp +
+          (-5.0*k1[k]*i2[k]*i3[k] + 5.0*i2[k]*i2[k]*i2[k] + k1[k]*k1[k]*i4[k])/
+          (k1[k]*k1[k]*k1[k]) * tmp*tmp*tmp*tmp;
+        lambda(k) = ekat::impl::max(lambda(k), lambda_limit_min);
+        lambda(k) = ekat::impl::min(lambda(k), lambda_limit_max);
+      }
     }
   });
   team.team_barrier();
@@ -130,7 +133,7 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   // move detrainment level downward if fractional entrainment is too low
   Kokkos::single(Kokkos::PerTeam(team), [&] {
     if (j0 < jb) {
-      if (lambda(j0) < lambda_threshold && lambda(j0+1) > lambda(j0)) {
+      if (lambda_tmp[j0] < lambda_threshold && lambda_tmp[j0+1] > lambda_tmp[j0]) {
         j0 = j0 + 1;
       }
     }
@@ -142,7 +145,7 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   Kokkos::single(Kokkos::PerTeam(team), [&] {
     for (Int k = msg+1; k < pver; ++k) {
       if (k >= jt && k <= j0) {
-        lambda(k) = ekat::impl::max(lambda(k), lambda(k-1));
+        lambda_tmp[k] = ekat::impl::max(lambda_tmp[k], lambda_tmp[k-1]);
       }
     }
   });
@@ -151,7 +154,7 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   //----------------------------------------------------------------------------
   // specify maximum fractional entrainment
   Kokkos::single(Kokkos::PerTeam(team), [&] {
-    lambda_max = lambda(j0);
+    lambda_max = lambda_tmp[j0];
     lambda(jb) = lambda_max;
   });
   team.team_barrier();
@@ -161,8 +164,8 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   //   Rasch, P. J., J. E. Kristjánsson, A comparison of the CCM3 model climate
   //   using diagnosed and predicted condensate parameterizations, J. Clim., 1997.
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg, pver), [&](const Int& k) {
-    if (k >= j0 && k <= jb) lambda(k) = lambda_max;
-    // if k < j0 && k >= jt: lambda(k) = lambda(k), already set correctly
+    if (k >= j0 && k <= jb) lambda(k) = lambda_tmp[j0];
+    if (k < j0 && k >= jt)  lambda(k) = lambda_tmp[k];
   });
   team.team_barrier();
 }
