@@ -125,7 +125,6 @@ module li_tracer_advection_fct
          tracerCur,     &! reordered current tracer
          tracerMax,     &! max tracer in neighbors for limiting
          tracerMin,     &! min tracer in neighbors for limiting
-         hNewInv,       &! inverse of new layer thickness
          hProv,         &! provisional layer thickness
          hProvInv,      &! inverse of provisional layer thickness
          flxIn,         &! flux coming into each cell
@@ -152,7 +151,6 @@ module li_tracer_advection_fct
                tracerCur   (nVertLevels  ,nCells+1), &
                tracerMin   (nVertLevels  ,nCells), &
                tracerMax   (nVertLevels  ,nCells), &
-               hNewInv     (nVertLevels  ,nCells), &
                hProv       (nVertLevels  ,nCells), &
                hProvInv    (nVertLevels  ,nCells), &
                flxIn       (nVertLevels  ,nCells+1), &
@@ -168,7 +166,6 @@ module li_tracer_advection_fct
       tracerCur(:,:) = 0.0_RKIND
       tracerMin(:,:) = 0.0_RKIND
       tracerMax(:,:) = 0.0_RKIND
-      hNewInv(:,:) = 0.0_RKIND
       hProv(:,:) = 0.0_RKIND
       hProvInv(:,:) = 0.0_RKIND
       flxIn(:,:) = 0.0_RKIND
@@ -210,12 +207,9 @@ module li_tracer_advection_fct
          ! thickness flux
          do k = kmin, kmax
             if (hProv(k, iCell) > 0.0_RKIND) then
-               hProvInv(k,iCell) = 1.0_RKIND/ hProv(k,iCell)
-               hNewInv (k,iCell) = 1.0_RKIND/(hProv(k,iCell) - &
-                                   dt*w(k,iCell) + dt*w(k+1, iCell))
+               hProvInv(k, iCell) = 1.0_RKIND / hProv(k, iCell)
             else
                hProvInv(k, iCell) = 0.0_RKIND
-               hNewInv(k, iCell)  = 0.0_RKIND
             endif
          end do
       end do
@@ -530,7 +524,6 @@ module li_tracer_advection_fct
                  tracerCur,    &
                  tracerMin,    &
                  tracerMax,    &
-                 hNewInv,      &
                  hProv,        &
                  hProvInv,     &
                  flxIn,        &
