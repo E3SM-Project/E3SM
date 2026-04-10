@@ -196,7 +196,7 @@ subroutine compute_cape_diags( state, pbuf, pcols, pver, pverp, cape_out, dcape_
 
   integer :: idx, kk, lchnk, ncol, msg
 
-  logical :: iclosure = .true.  ! set to .true. to avoid interference with trig_dcape
+  logical :: calc_msemax_klev = .true.  ! set to .true. to avoid interference with trig_dcape
 
   ! variables that distinguish different calls of compute_dilute_cape 
 
@@ -290,7 +290,7 @@ subroutine compute_cape_diags( state, pbuf, pcols, pver, pverp, cape_out, dcape_
   ! Calculate CAPE using the new state; also return launching level index
   ! and T, qv values at (new) launching level
   !------------------------------------------------------------------------
-  iclosure = .true.
+  calc_msemax_klev = .true.
   call compute_dilute_cape( pcols, ncol, pver, pverp,         &
                             zm_param%num_cin, msg,            &
                             qv_new, temp_new,                 &
@@ -301,7 +301,7 @@ subroutine compute_cape_diags( state, pbuf, pcols, pver, pverp, cape_out, dcape_
                             ztl, zlcl, zlel,                  &
                             cape_new_pcl_new_env,             &
                             zm_const, zm_param,               &
-                            iclosure,                         &
+                            calc_msemax_klev,                 &
                             use_input_tq_mx = .false.,        &
                             q_mx = q_mx_new,                  &
                             t_mx = t_mx_new                   )
@@ -323,7 +323,7 @@ subroutine compute_cape_diags( state, pbuf, pcols, pver, pverp, cape_out, dcape_
     ! Calculate cape_old_pcl_new_env using
     !  - new state (T, qv profiles)
     !  - old launching level and parcel T, qv
-    iclosure = .true.
+    calc_msemax_klev = .true.
     call compute_dilute_cape( pcols, ncol, pver, pverp,         &
                               zm_param%num_cin, msg,            &
                               qv_new, temp_new,                 &
@@ -334,8 +334,8 @@ subroutine compute_cape_diags( state, pbuf, pcols, pver, pverp, cape_out, dcape_
                               ztl, zlcl, zlel,                  &
                               cape_old_pcl_new_env,             &
                               zm_const, zm_param,               &
-                              iclosure,                         &
-                              dcapemx = mx_old,                 &
+                              calc_msemax_klev,                 &
+                              prev_msemax_klev = mx_old,        &
                               use_input_tq_mx = .true.,         &
                               q_mx = q_mx_old,                  &
                               t_mx = t_mx_old                   )

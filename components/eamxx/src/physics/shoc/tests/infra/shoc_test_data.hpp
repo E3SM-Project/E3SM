@@ -1,8 +1,8 @@
 #ifndef SCREAM_SHOC_FUNCTIONS_F90_HPP
 #define SCREAM_SHOC_FUNCTIONS_F90_HPP
 
-#include "share/eamxx_types.hpp"
-#include "physics/share/physics_test_data.hpp"
+#include "share/core/eamxx_types.hpp"
+#include "share/physics/physics_test_data.hpp"
 
 #include "shoc_functions.hpp"
 #include "physics_constants.hpp"
@@ -295,16 +295,15 @@ struct AdvSgsTkeData : public PhysicsTestData {
 struct EddyDiffusivitiesData : public PhysicsTestData {
   // Inputs
   Int shcol, nlev;
-  bool shoc_1p5tke;
   Real *pblh, *zt_grid, *tabs, *shoc_mix, *sterm_zt, *isotropy, *tke;
 
   // Outputs
   Real *tkh, *tk;
 
-  EddyDiffusivitiesData(Int shcol_, Int nlev_, bool shoc_1p5tke_) :
-    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &pblh }, { &zt_grid, &tabs, &shoc_mix, &sterm_zt, &isotropy, &tke, &tkh, &tk }}), shcol(shcol_), nlev(nlev_), shoc_1p5tke(shoc_1p5tke_) {}
+  EddyDiffusivitiesData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &pblh }, { &zt_grid, &tabs, &shoc_mix, &sterm_zt, &isotropy, &tke, &tkh, &tk }}), shcol(shcol_), nlev(nlev_) {}
 
-  PTD_STD_DEF(EddyDiffusivitiesData, 3, shcol, nlev, shoc_1p5tke);
+  PTD_STD_DEF(EddyDiffusivitiesData, 2, shcol, nlev);
 };
 
 struct ShocLengthData : public ShocTestGridDataBase {
@@ -316,10 +315,10 @@ struct ShocLengthData : public ShocTestGridDataBase {
   // Outputs
   Real *brunt, *shoc_mix;
 
-  ShocLengthData(Int shcol_, Int nlev_, Int nlevi_, bool shoc_1p5tke_) :
-    ShocTestGridDataBase({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &host_dx, &host_dy }, { &zt_grid, &dz_zt, &tke, &thv, &tk, &brunt, &shoc_mix }, { &zi_grid }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), shoc_1p5tke(shoc_1p5tke_) {}
+  ShocLengthData(Int shcol_, Int nlev_, Int nlevi_) :
+    ShocTestGridDataBase({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &host_dx, &host_dy }, { &zt_grid, &dz_zt, &tke, &thv, &brunt, &shoc_mix }, { &zi_grid }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
 
-  PTD_STD_DEF(ShocLengthData, 4, shcol, nlev, nlevi, shoc_1p5tke);
+  PTD_STD_DEF(ShocLengthData, 3, shcol, nlev, nlevi);
 };
 
 struct ComputeBruntShocLengthData : public PhysicsTestData {
@@ -367,16 +366,15 @@ struct ComputeConvTimeShocLengthData : public PhysicsTestData {
 struct ComputeShocMixShocLengthData : public PhysicsTestData {
   // Inputs
   Int shcol, nlev;
-  bool shoc_1p5tke;
-  Real *tke, *brunt, *zt_grid, *dz_zt, *tk, *l_inf;
+  Real *tke, *brunt, *zt_grid, *l_inf;
 
   // Outputs
   Real *shoc_mix;
 
-  ComputeShocMixShocLengthData(Int shcol_, Int nlev_, bool shoc_1p5tke_) :
-    PhysicsTestData({{ shcol_, nlev_ }, { shcol_ }}, {{ &tke, &brunt, &zt_grid, &dz_zt, &tk, &shoc_mix }, { &l_inf }}), shcol(shcol_), nlev(nlev_), shoc_1p5tke(shoc_1p5tke_) {}
+  ComputeShocMixShocLengthData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_ }}, {{ &tke, &brunt, &zt_grid, &shoc_mix }, { &l_inf }}), shcol(shcol_), nlev(nlev_) {}
 
-  PTD_STD_DEF(ComputeShocMixShocLengthData, 3, shcol, nlev, shoc_1p5tke);
+  PTD_STD_DEF(ComputeShocMixShocLengthData, 2, shcol, nlev);
 };
 
 struct CheckLengthScaleShocLengthData : public PhysicsTestData {
@@ -750,8 +748,8 @@ struct ShocMainData : public ShocTestGridDataBase {
   void compute_column_pressure(Int shcol, Int nlev, const Real* z,
                                Real* pres) {
     using consts = scream::physics::Constants<Real>;
-    const Real k = consts::Rair / consts::Cpair;
-    const Real c = -consts::gravit * pow(consts::P0, k) / consts::Rair;
+    const Real k = consts::Rair.value / consts::Cpair.value;
+    const Real c = -consts::gravit.value * pow(consts::P0.value, k) / consts::Rair.value;
     const Real p_s = 1015e2;
 
     const std::array<Real, 5> z_ref = {0.0, 520.0, 1480.0, 2000.0, 3000.0};
@@ -801,14 +799,14 @@ struct ShocMainData : public ShocTestGridDataBase {
       const auto nlevi_offset = i * nlevi;
       for (auto k = decltype(nlev){0}; k < nlev; ++k) {
         pdel[nlev_offset + k] = std::abs(presi[nlevi_offset + k] - presi[nlevi_offset + k+1]);
-        inv_exner[nlev_offset + k] = pow(pres[nlev_offset + k]/consts::P0, consts::Rair/consts::Cpair);
-        host_dse[nlev_offset + k] = consts::Cpair * inv_exner[nlev_offset + k] * thv[nlev_offset + k] +
-          consts::gravit * zt_grid[nlev_offset + k];
+        inv_exner[nlev_offset + k] = pow(pres[nlev_offset + k]/consts::P0.value, consts::Rair.value/consts::Cpair.value);
+        host_dse[nlev_offset + k] = consts::Cpair.value * inv_exner[nlev_offset + k] * thv[nlev_offset + k] +
+          consts::gravit.value * zt_grid[nlev_offset + k];
 
         const Real qv = qw[nlev_offset+k] - shoc_ql[nlev_offset+k];
-        thetal[nlev_offset+k] = pot_temp - (consts::LatVap/consts::Cpair)*shoc_ql[nlev_offset+k];
+        thetal[nlev_offset+k] = pot_temp - (consts::LatVap.value/consts::Cpair.value)*shoc_ql[nlev_offset+k];
         thv[nlev_offset+k] = pot_temp * (1 + 0.61*qv - shoc_ql[nlev_offset+k]);
-        inv_exner[nlev_offset+k] = 1/std::pow(pres[nlev_offset+k]/consts::P0,consts::Rair/consts::Cpair);
+        inv_exner[nlev_offset+k] = 1/std::pow(pres[nlev_offset+k]/consts::P0.value,consts::Rair.value/consts::Cpair.value);
       }
     }
 
@@ -1016,8 +1014,8 @@ void compute_diag_third_shoc_moment_host(Int shcol, Int nlev, Int nlevi, bool sh
                                       Real* brunt_zi, Real* w_sec_zi, Real* thetal_zi,
                                       Real* w3);
 void shoc_pblintd_init_pot_host(Int shcol, Int nlev, Real* thl, Real* ql, Real* q, Real* thv);
-void compute_shoc_mix_shoc_length_host(Int nlev, Int shcol, bool shoc_1p5tke, Real* tke, Real* brunt,
-                                    Real* zt_grid, Real* dz_zt, Real* tk, Real* l_inf, Real* shoc_mix);
+void compute_shoc_mix_shoc_length_host(Int nlev, Int shcol, Real* tke, Real* brunt,
+                                    Real* zt_grid, Real* l_inf, Real* shoc_mix);
 void check_tke_host(Int shcol, Int nlev, Real* tke);
 void linear_interp_host(Real* x1, Real* x2, Real* y1, Real* y2, Int km1, Int km2, Int ncol, Real minthresh);
 void clipping_diag_third_shoc_moments_host(Int nlevi, Int shcol, Real *w_sec_zi,
@@ -1045,9 +1043,9 @@ void shoc_diag_obklen_host(Int shcol, Real* uw_sfc, Real* vw_sfc, Real* wthl_sfc
                         Real* thl_sfc, Real* cldliq_sfc, Real* qv_sfc, Real* ustar, Real* kbfs, Real* obklen);
 void shoc_pblintd_cldcheck_host(Int shcol, Int nlev, Int nlevi, Real* zi, Real* cldn, Real* pblh);
 void compute_shr_prod_host(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_wind, Real* v_wind, Real* sterm);
-void shoc_length_host(Int shcol, Int nlev, Int nlevi, bool shoc_1p5tke, Real* host_dx, Real* host_dy,
+void shoc_length_host(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy,
                    Real* zt_grid, Real* zi_grid, Real*dz_zt, Real* tke,
-                   Real* thv, Real* tk, Real*brunt, Real* shoc_mix);
+                   Real* thv, Real* brunt, Real* shoc_mix);
 void shoc_energy_fixer_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* zt_grid,
                          Real* zi_grid, Real* se_b, Real* ke_b, Real* wv_b, Real* wl_b,
                          Real* se_a, Real* ke_a, Real* wv_a, Real* wl_a, Real* wthl_sfc,
@@ -1097,7 +1095,7 @@ void pblintd_check_pblh_host(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, 
 
 void pblintd_host(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh);
 void shoc_grid_host(Int shcol, Int nlev, Int nlevi, Real* zt_grid, Real* zi_grid, Real* pdel, Real* dz_zt, Real* dz_zi, Real* rho_zt);
-void eddy_diffusivities_host(Int nlev, Int shcol, bool shoc_1p5tke, Real* pblh, Real* zt_grid, Real* tabs, Real* shoc_mix, Real* sterm_zt, Real* isotropy,
+void eddy_diffusivities_host(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Real* tabs, Real* shoc_mix, Real* sterm_zt, Real* isotropy,
                           Real* tke, Real* tkh, Real* tk);
 void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, bool shoc_1p5tke, Real* wthv_sec, Real* shoc_mix, Real* dz_zi, Real* dz_zt, Real* pres,
                 Real* u_wind, Real* v_wind, Real* brunt, Real* obklen, Real* zt_grid, Real* zi_grid, Real* pblh, Real* tke,

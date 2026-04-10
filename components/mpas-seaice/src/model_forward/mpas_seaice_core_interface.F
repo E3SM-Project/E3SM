@@ -7,6 +7,7 @@ module seaice_core_interface
    use seaice_core
    use seaice_analysis_driver
    use mpas_log, only: mpas_log_write
+   use seaice_core_interface_structs
 
    implicit none
    public
@@ -874,11 +875,5 @@ module seaice_core_interface
 #include "../inc/block_dimension_routines.inc"
 
 #include "../inc/define_packages.inc"
-
-#include "../inc/structs_and_variables.inc"
-
-#include "../inc/namelist_call.inc"
-
-#include "../inc/namelist_defines.inc"
 
 end module seaice_core_interface

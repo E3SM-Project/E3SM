@@ -1,10 +1,10 @@
 #ifndef CLD_FRAC_FUNCTIONS_HPP
 #define CLD_FRAC_FUNCTIONS_HPP
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
-#include "ekat/ekat_pack_kokkos.hpp"
-#include "ekat/ekat_workspace.hpp"
+#include <ekat_pack_kokkos.hpp>
+#include <ekat_workspace.hpp>
 
 namespace scream {
 namespace cld_fraction {
@@ -20,16 +20,9 @@ struct CldFractionFunctions
   using Scalar = ScalarT;
   using Device = DeviceT;
 
-  template <typename S>
-  using BigPack = ekat::Pack<S,SCREAM_PACK_SIZE>;
-  template <typename S>
-  using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
+  using Pack = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
 
-  using Pack = BigPack<Scalar>;
-  using Spack = SmallPack<Scalar>;
-
-  using Mask = ekat::Mask<BigPack<Scalar>::n>;
-  using Smask = ekat::Mask<SmallPack<Scalar>::n>;
+  using Mask = ekat::Mask<Pack::n>;
 
   using KT = KokkosTypes<Device>;
   using MemberType = typename KT::MemberType;
@@ -58,16 +51,16 @@ struct CldFractionFunctions
     const MemberType& team,
     const Int& nk,
     const Real& threshold,
-    const uview_1d<const Spack>& qi,
-    const uview_1d<Spack>&       ice_cld_frac);
+    const uview_1d<const Pack>& qi,
+    const uview_1d<Pack>&       ice_cld_frac);
 
   KOKKOS_FUNCTION
   static void calc_totalfrac( 
     const MemberType& team,
     const Int& nk,
-    const uview_1d<const Spack>& liq_cld_frac,
-    const uview_1d<const Spack>& ice_cld_frac,
-    const uview_1d<Spack>&       tot_cld_frac);
+    const uview_1d<const Pack>& liq_cld_frac,
+    const uview_1d<const Pack>& ice_cld_frac,
+    const uview_1d<Pack>&       tot_cld_frac);
 
 }; // struct Functions
 

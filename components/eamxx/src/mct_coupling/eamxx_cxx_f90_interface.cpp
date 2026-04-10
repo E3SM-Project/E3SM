@@ -1,25 +1,24 @@
-#include "eamxx_config.h"
-
 #include "share/atm_process/atmosphere_process.hpp"
 #include "control/atmosphere_driver.hpp"
 #include "control/surface_coupling_utils.hpp"
 
 #include "dynamics/register_dynamics.hpp"
 #include "physics/register_physics.hpp"
-#include "diagnostics/register_diagnostics.hpp"
+#include "share/diagnostics/register_diagnostics.hpp"
 #include "control/register_surface_coupling.hpp"
 
 #include "mct_coupling/ScreamContext.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/eamxx_session.hpp"
-#include "share/eamxx_config.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_session.hpp"
+#include "share/core/eamxx_config.hpp"
+#include "share/core/eamxx_types.hpp"
 
-#include "ekat/ekat_parse_yaml_file.hpp"
-#include "ekat/logging/ekat_logger.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_assert.hpp"
+#include <ekat_yaml.hpp>
+#include <ekat_logger.hpp>
+#include <ekat_comm.hpp>
+#include <ekat_pack.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_fpe.hpp>
 
 #if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
 #include <hip/hip_runtime.h>
@@ -175,9 +174,9 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
 
     ad.set_comm(atm_comm);
     ad.set_params(scream_params);
+    ad.set_provenance_data (caseid,rest_caseid,hostname,username,versionid);
     ad.init_scorpio(atm_id);
     ad.init_time_stamps(run_t0,case_t0,run_type);
-    ad.set_provenance_data (caseid,rest_caseid,hostname,username,versionid);
     ad.create_output_managers ();
     ad.create_atm_processes ();
     ad.create_grids ();
@@ -187,17 +186,11 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
 
 void scream_setup_surface_coupling (const char*& import_field_names, int*& import_cpl_indices,
                                     double*& x2a_ptr,
-#ifdef HAVE_MOAB
-                                    double*& x2a_moab_ptr,
-#endif
                                     int*& import_vector_components,
                                     double*& import_constant_multiple, bool*& do_import_during_init,
                                     const int& num_cpl_imports, const int& num_scream_imports, const int& import_field_size,
                                     char*& export_field_names, int*& export_cpl_indices,
                                     double*& a2x_ptr,
-#ifdef HAVE_MOAB
-                                    double*& a2x_moab_ptr,
-#endif
                                     int*& export_vector_components,
                                     double*& export_constant_multiple, bool*& do_export_during_init,
                                     const int& num_cpl_exports, const int& num_scream_exports, const int& export_field_size)
@@ -226,16 +219,10 @@ void scream_setup_surface_coupling (const char*& import_field_names, int*& impor
 
     ad.setup_surface_coupling_data_manager(scream::SurfaceCouplingTransferType::Import,
                                            num_cpl_imports, num_scream_imports, import_field_size, x2a_ptr,
-#ifdef HAVE_MOAB
-                                           x2a_moab_ptr,
-#endif
                                            names_in[0], import_cpl_indices, import_vector_components,
                                            import_constant_multiple, do_import_during_init);
     ad.setup_surface_coupling_data_manager(scream::SurfaceCouplingTransferType::Export,
                                            num_cpl_exports, num_scream_exports, export_field_size, a2x_ptr,
-#ifdef HAVE_MOAB
-                                           a2x_moab_ptr,
-#endif
                                            names_out[0], export_cpl_indices, export_vector_components,
                                            export_constant_multiple, do_export_during_init);
   });

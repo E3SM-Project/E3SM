@@ -1,12 +1,10 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-
 #include "p3_unit_tests_common.hpp"
+
+#include "share/core/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -72,17 +70,17 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing : public UnitWrap::UnitTest<D>::
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        self[i].read(Base::m_fid);
+        self[i].read(Base::m_ifile);
       }
     }
 
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init pack inputs
-      Spack qc, qr, qi, qm, nc, nr, ni, bm, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r;
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      Pack qc, qr, qi, qm, nc, nr, ni, bm, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r;
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         qc[s]             = self_device(vs).qc;
         qr[s]             = self_device(vs).qr;
         qi[s]             = self_device(vs).qi;
@@ -96,14 +94,14 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing : public UnitWrap::UnitTest<D>::
         inv_cld_frac_r[s] = self_device(vs).inv_cld_frac_r;
       }
       // outputs
-      Spack qc_incld{0.}, qr_incld{0.}, qi_incld{0.}, qm_incld{0.};
-      Spack nc_incld{0.}, nr_incld{0.}, ni_incld{0.}, bm_incld{0.};
+      Pack qc_incld{0.}, qr_incld{0.}, qi_incld{0.}, qm_incld{0.};
+      Pack nc_incld{0.}, nr_incld{0.}, ni_incld{0.}, bm_incld{0.};
 
       Functions::calculate_incloud_mixingratios(qc, qr, qi, qm, nc, nr, ni, bm, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r,
                                                 qc_incld, qr_incld, qi_incld, qm_incld,
                                                 nc_incld, nr_incld, ni_incld, bm_incld);
 
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         self_device(vs).qc_incld = qc_incld[s];
         self_device(vs).qr_incld = qr_incld[s];
         self_device(vs).qi_incld = qi_incld[s];
@@ -131,7 +129,7 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing : public UnitWrap::UnitTest<D>::
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        self_host(s).write(Base::m_fid);
+        self_host(s).write(Base::m_ofile);
       }
     }
   }

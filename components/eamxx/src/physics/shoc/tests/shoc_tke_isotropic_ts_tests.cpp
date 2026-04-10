@@ -3,13 +3,10 @@
 #include "shoc_unit_tests_common.hpp"
 #include "shoc_functions.hpp"
 #include "shoc_test_data.hpp"
-#include "physics/share/physics_constants.hpp"
-#include "share/eamxx_types.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/physics/physics_constants.hpp"
+#include "share/core/eamxx_types.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 
 #include <algorithm>
 #include <array>
@@ -205,7 +202,7 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public UnitWrap::UnitTest<D>
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (auto& d : baseline_data) {
-        d.read(Base::m_fid);
+        d.read(Base::m_ifile);
       }
     }
 
@@ -227,7 +224,7 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public UnitWrap::UnitTest<D>
     } // SCREAM_BFB_TESTING
     else if (this->m_baseline_action == GENERATE) {
       for (auto& d : cxx_data) {
-        d.write(Base::m_fid);
+        d.write(Base::m_ofile);
       }
     }
   }//run_bfb

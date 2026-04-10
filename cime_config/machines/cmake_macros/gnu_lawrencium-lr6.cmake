@@ -1,2 +1,0 @@
-string(APPEND CMAKE_C_FLAGS_RELEASE " -O2")
-string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2")

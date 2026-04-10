@@ -1883,7 +1883,7 @@ module li_advection
       !-----------------------------------------------------------------
 
       integer, pointer :: &
-           nEdgesSolve,     & ! dnumber of locally owned edges
+           nEdges,     & ! number of edges
            nVertLevels        ! number of vertical layers
 
       real (kind=RKIND), dimension(:), pointer :: &
@@ -1906,7 +1906,7 @@ module li_advection
       err = 0
 
       ! get dimensions
-      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       ! get mesh arrays
@@ -1919,8 +1919,8 @@ module li_advection
       ! initialize output variables
       minOfMaxAllowableDt = bigNumber
 
-      ! loop over local edges
-      do iEdge = 1, nEdgesSolve
+      ! loop over edges
+      do iEdge = 1, nEdges
 
          if (li_mask_is_dynamic_ice(edgeMask(iEdge))) then
 

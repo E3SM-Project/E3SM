@@ -6,7 +6,9 @@
 // For EKAT units package
 #include <physics/mam/physical_limits.hpp>
 
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_units.hpp>
+
 /*
 -----------------------------------------------------------------
 NOTES:
@@ -54,11 +56,10 @@ MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params)
 // ================================================================
 //  SET_GRIDS
 // ================================================================
-void MAMAci::set_grids(
-    const std::shared_ptr<const GridsManager> grids_manager) {
+void MAMAci::create_requests() {
   // set grid for all the inputs and outputs
   // use physics grid
-  grid_ = grids_manager->get_grid("physics");
+  grid_ = m_grids_manager->get_grid("physics");
 
   // Name of the grid
   const auto &grid_name = grid_->name();
@@ -77,7 +78,7 @@ void MAMAci::set_grids(
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and
   // interfaces
-  const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
+  const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(LEV);
 
   using namespace ekat::units;
   constexpr auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
@@ -121,7 +122,7 @@ void MAMAci::set_grids(
 
   // layout for 3D (ncol, nmodes, nlevs)
   FieldLayout scalar3d_mid_nmodes =
-      grid_->get_3d_vector_layout(true, nmodes, "nmodes");
+      grid_->get_3d_vector_layout(LEV, nmodes, "nmodes");
 
   // dry diameter of aerosols [m]
   add_field<Required>("dgnum", scalar3d_mid_nmodes, m, grid_name);
@@ -496,8 +497,9 @@ void MAMAci::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMAci::run_impl(const double dt) {
-  const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of local derivied
   // quantities
@@ -505,13 +507,13 @@ void MAMAci::run_impl(const double dt) {
 
   Kokkos::fence();
 
-  haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
+  mam4::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
 
   // FIXME: Temporary assignment of nc
   mam_coupling::copy_view_lev_slice(team_policy, wet_atm_.nc, nlev_,  // inputs
                                     nc_inp_to_aci_);                  // output
 
-  compute_w0_and_rho(team_policy, dry_atm_, top_lev_, nlev_,
+  compute_w0_and_rho(ncol_, dry_atm_, top_lev_, nlev_,
                      // output
                      w0_, rho_);
 
@@ -521,7 +523,7 @@ void MAMAci::run_impl(const double dt) {
                             tke_);
 
   Kokkos::fence();  // wait for tke_ to be computed.
-  compute_subgrid_scale_velocities(team_policy, tke_, wsubmin_, top_lev_, nlev_,
+  compute_subgrid_scale_velocities(ncol_, tke_, wsubmin_, top_lev_, nlev_,
                                    // output
                                    wsub_, wsubice_, wsig_);
 
@@ -544,7 +546,7 @@ void MAMAci::run_impl(const double dt) {
       naai_);
 
   // Compute cloud fractions based on cloud threshold
-  store_liquid_cloud_fraction(team_policy, dry_atm_, liqcldf_, liqcldf_prev_,
+  store_liquid_cloud_fraction(ncol_, dry_atm_, liqcldf_, liqcldf_prev_,
                               top_lev_, nlev_,
                               // output
                               cloud_frac_, cloud_frac_prev_);
@@ -609,7 +611,7 @@ void MAMAci::run_impl(const double dt) {
                               dry_aero_);
 
   // Update interstitial aerosols using tendencies
-  update_interstitial_aerosols(team_policy, ptend_q_, nlev_, dt,
+  update_interstitial_aerosols(ncol_, ptend_q_, nlev_, dt,
                                // output
                                dry_aero_);
 

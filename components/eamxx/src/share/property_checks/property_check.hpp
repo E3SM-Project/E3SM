@@ -3,7 +3,7 @@
 
 #include "share/field/field.hpp"
 
-#include <ekat/ekat_assert.hpp>
+#include <ekat_assert.hpp>
 
 #include <string>
 #include <list>

@@ -1,7 +1,7 @@
 #ifndef RRTMGP_UTILS_HPP
 #define RRTMGP_UTILS_HPP
 
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "cpp/rrtmgp_const.h"
 #include "cpp/rrtmgp_conversion.h"
 
@@ -33,19 +33,19 @@ void compute_heating_rate (
     heating_rate(icol,ilay) = (
       flux_up(icol,ilay+1) - flux_up(icol,ilay) -
       flux_dn(icol,ilay+1) + flux_dn(icol,ilay)
-                               ) * physconst::gravit / (physconst::Cpair * pdel(icol,ilay));
+                               ) * physconst::gravit.value / (physconst::Cpair.value * pdel(icol,ilay));
                                   ));
 }
 
-inline bool radiation_do(const int rad_freq, const int nstep) {
-  // If rad_freq == 0, then never do radiation;
+inline bool radiation_do(const int irad, const int nstep) {
+  // If irad == 0, then never do radiation;
   // Otherwise, we always call radiation at the first step,
   // and afterwards we do radiation if the timestep is divisible
-  // by rad_freq
-  if (rad_freq == 0) {
+  // by irad
+  if (irad == 0) {
     return false;
   } else {
-    return nstep % rad_freq == 0;
+    return ( (nstep == 0) || (nstep % irad == 0) );
   }
 }
 

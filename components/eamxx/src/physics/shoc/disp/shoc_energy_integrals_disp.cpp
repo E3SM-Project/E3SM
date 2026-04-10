@@ -1,6 +1,7 @@
 #include "shoc_functions.hpp"
 
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+#include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 namespace shoc {
@@ -10,21 +11,22 @@ void Functions<Real,DefaultDevice>
 ::shoc_energy_integrals_disp(
   const Int&                   shcol,
   const Int&                   nlev,
-  const view_2d<const Spack>& host_dse,
-  const view_2d<const Spack>& pdel,
-  const view_2d<const Spack>& rtm,
-  const view_2d<const Spack>& rcm,
-  const uview_2d<const Spack>& u_wind,
-  const uview_2d<const Spack>& v_wind,
+  const view_2d<const Pack>& host_dse,
+  const view_2d<const Pack>& pdel,
+  const view_2d<const Pack>& rtm,
+  const view_2d<const Pack>& rcm,
+  const uview_2d<const Pack>& u_wind,
+  const uview_2d<const Pack>& v_wind,
   const view_1d<Scalar>& se_b,
   const view_1d<Scalar>& ke_b,
   const view_1d<Scalar>& wv_b,
   const view_1d<Scalar>& wl_b)
 {
   using ExeSpace = typename KT::ExeSpace;
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
 
-  const auto nlev_packs = ekat::npack<Spack>(nlev);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
+  const auto nlev_packs = ekat::npack<Pack>(nlev);
+  const auto policy = TPF::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 

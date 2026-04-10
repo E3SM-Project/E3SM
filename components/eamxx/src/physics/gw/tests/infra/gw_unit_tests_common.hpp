@@ -1,18 +1,44 @@
 #ifndef GW_UNIT_TESTS_COMMON_HPP
 #define GW_UNIT_TESTS_COMMON_HPP
 
-#include "share/eamxx_types.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
 #include "gw_functions.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
 #include "gw_test_data.hpp"
+
+#include "share/core/eamxx_types.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 
 #include <vector>
 #include <sstream>
+#include <array>
 
 namespace scream {
 namespace gw {
 namespace unit_test {
+
+// Most bfb unit tests will use the same init
+template <typename Engine>
+inline auto get_common_init_data(Engine& engine)
+{
+  std::array<GwCommonInit, 4> rv = {
+    // gw_ediff::vd_lu_decomp breaks if kbot==pver
+
+    // NOTE: All integer data is assumed to be 0-based (C style)! The
+    // unit-test -> F90 GW layer needs to adjust these in d.transition if
+    // it represents an index
+
+    //           pver, pgwv,   dc, orog_only, molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv
+    GwCommonInit(  72,   20, 2.5,     false,      false,     false,         16,   8,     66,    .67, 6.28e-5),
+    GwCommonInit(  72,   20, 2.5,     true ,      false,     true ,         16,   6,     68,    .67, 6.28e-5),
+    GwCommonInit(  72,   20, 2.5,     false,      true ,     true ,         16,   3,     70,    .67, 6.28e-5),
+    GwCommonInit(  72,   20, 2.5,     true ,      true ,     false,         16,   0,     70,    .67, 6.28e-5),
+  };
+
+  for (auto& d : rv) {
+    d.randomize(engine);
+  }
+
+  return rv;
+}
 
 /*
  * Unit test infrastructure for gw unit tests.
@@ -52,17 +78,16 @@ struct UnitWrap {
     // using view_2d_table      = typename Functions::view_2d_table;
     // using view_dnu_table     = typename Functions::view_dnu_table;
     using Scalar             = typename Functions::Scalar;
-    using Spack              = typename Functions::Spack;
-    // using Pack               = typename Functions::Pack;
-    // using IntSmallPack       = typename Functions::IntSmallPack;
-    // using Smask              = typename Functions::Smask;
+    using Pack              = typename Functions::Pack;
+    // using IntPack       = typename Functions::IntPack;
+    // using Mask              = typename Functions::Mask;
     // using TableIce           = typename Functions::TableIce;
     // using TableRain          = typename Functions::TableRain;
     // using Table3             = typename Functions::Table3;
     // using C                  = typename Functions::C;
 
     static constexpr Int max_pack_size = 16;
-    static constexpr Int num_test_itrs = max_pack_size / Spack::n;
+    static constexpr Int num_test_itrs = max_pack_size / Pack::n;
 
     struct Base : public UnitBase {
 
@@ -86,6 +111,16 @@ struct UnitWrap {
     struct TestGwFrontProjectWinds;
     struct TestGwFrontGwSources;
     struct TestGwCmSrc;
+    struct TestGwConvectProjectWinds;
+    struct TestGwHeatingDepth;
+    struct TestGwStormSpeed;
+    struct TestGwConvectGwSources;
+    struct TestGwBeresSrc;
+    struct TestGwEdiff;
+    struct TestGwDiffTend;
+    struct TestGwOroSrc;
+    struct TestVdLuDecomp;
+    struct TestVdLuSolve;
   }; // UnitWrap
 };
 

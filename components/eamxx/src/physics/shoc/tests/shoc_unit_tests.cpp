@@ -5,11 +5,8 @@
 #include "shoc_functions.hpp"
 #include "shoc_test_data.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/util/ekat_arch.hpp"
 
 #include <thread>
 #include <array>

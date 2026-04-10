@@ -3,13 +3,10 @@
 #include "shoc_unit_tests_common.hpp"
 #include "shoc_functions.hpp"
 #include "shoc_test_data.hpp"
-#include "physics/share/physics_constants.hpp"
-#include "share/eamxx_types.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/physics/physics_constants.hpp"
+#include "share/core/eamxx_types.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 
 #include <algorithm>
 #include <array>
@@ -51,11 +48,6 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
     static constexpr Real thv[nlev] = {315, 310, 305, 300, 295};
     // Turbulent kinetc energy [m2/s2]
     static constexpr Real tke[nlev] = {0.1, 0.15, 0.2, 0.25, 0.3};
-    // Eddy viscosity [m2/s]
-    static constexpr Real tk[nlev] = {0.1, 10.0, 12.0, 15.0, 20.0};
-
-    // Default SHOC formulation, not 1.5 TKE closure assumptions
-    const bool shoc_1p5tke = false;
 
     // compute geometric grid mesh
     const auto grid_mesh = sqrt(host_dx*host_dy);
@@ -70,7 +62,7 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
     }
 
     // Initialize data structure for bridging to F90
-    ShocLengthData SDS(shcol, nlev, nlevi, shoc_1p5tke);
+    ShocLengthData SDS(shcol, nlev, nlevi);
 
     // Load up input data
     for(Int s = 0; s < shcol; ++s) {
@@ -86,8 +78,6 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
         SDS.zt_grid[offset] = zt_grid[n];
         SDS.thv[offset] = thv[n];
         SDS.dz_zt[offset] = dz_zt[n];
-	// eddy viscosity below not relevant for default SHOC
-	SDS.tk[offset] = 0;
       }
 
       // Fill in test data on zi_grid
@@ -157,50 +147,6 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
       }
     }
 
-    // Repeat this test but for 1.5 TKE closure option activated
-
-    // Activate 1.5 TKE closure assumptions
-    SDS.shoc_1p5tke = true;
-
-    // We will use the same input data as above but with the SGS buoyancy
-    //  flux set to zero, as will be the case with the 1.5 TKE option.
-    //  Additionally, we will fill the value of the brunt vaisala frequency.
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
-        const auto offset = n + s * nlev;
-
-        SDS.tk[offset] = tk[n];
-      }
-    }
-
-    // Call the C++ implementation
-    shoc_length(SDS);
-
-    // Verify output
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
-        const auto offset = n + s * nlev;
-        // Require mixing length is greater than zero and is
-        //  less than geometric grid mesh length + 1 m
-        REQUIRE(SDS.shoc_mix[offset] >= minlen);
-        REQUIRE(SDS.shoc_mix[offset] <= maxlen);
-        REQUIRE(SDS.shoc_mix[offset] < 1.0+grid_mesh);
-
-        // Be sure brunt vaisalla frequency is reasonable
-        REQUIRE(SDS.brunt[offset] < 1);
-
-	// Ensure length scale is equal to dz if brunt =< 0, else
-        //   length scale should be less then dz
-        if (SDS.brunt[offset] <= 0){
-	  REQUIRE(SDS.shoc_mix[offset] == SDS.dz_zt[offset]);
-        }
-        else{
-          REQUIRE(SDS.shoc_mix[offset] < SDS.dz_zt[offset]);
-        }
-
-      }
-    }
-
     // TEST TWO
     // Small grid mesh test.  Given a very small grid mesh, verify that
     //  the length scale is confined to this value.  Input from first
@@ -210,9 +156,6 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
     static constexpr Real host_dx_small = 3;
     // Defin the host grid box size y-direction [m]
     static constexpr Real host_dy_small = 5;
-
-    // Call default SHOC closure assumptions
-    SDS.shoc_1p5tke = false;
 
     // compute geometric grid mesh
     const auto grid_mesh_small = sqrt(host_dx_small*host_dy_small);
@@ -238,26 +181,6 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
       }
     }
 
-    // Repeat this test but for 1.5 TKE closure option activated
-
-    // Activate 1.5 TKE closure assumptions
-    SDS.shoc_1p5tke = true;
-
-    // call C++ implementation
-    shoc_length(SDS);
-
-    // Verify output
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
-        const auto offset = n + s * nlev;
-        // Require mixing length is greater than zero and is
-        //  less than geometric grid mesh length + 1 m
-        REQUIRE(SDS.shoc_mix[offset] > 0);
-        REQUIRE(SDS.shoc_mix[offset] <= maxlen);
-        REQUIRE(SDS.shoc_mix[offset] < 1.0+grid_mesh_small);
-      }
-    }
-
   }
 
   void run_bfb()
@@ -266,10 +189,10 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
 
     ShocLengthData SDS_baseline[] = {
       //        shcol, nlev, nlevi
-      ShocLengthData(12, 71, 72, false),
-      ShocLengthData(10, 12, 13, false),
-      ShocLengthData(7,  16, 17, false),
-      ShocLengthData(2, 7, 8, false),
+      ShocLengthData(12, 71, 72),
+      ShocLengthData(10, 12, 13),
+      ShocLengthData(7,  16, 17),
+      ShocLengthData(2, 7, 8),
     };
 
     // Generate random input data
@@ -293,7 +216,7 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (auto& d : SDS_baseline) {
-        d.read(Base::m_fid);
+        d.read(Base::m_ifile);
       }
     }
 
@@ -315,7 +238,7 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
     } // SCREAM_BFB_TESTING
     else if (this->m_baseline_action == GENERATE) {
       for (Int i = 0; i < num_runs; ++i) {
-        SDS_cxx[i].write(Base::m_fid);
+        SDS_cxx[i].write(Base::m_ofile);
       }
     }
   }

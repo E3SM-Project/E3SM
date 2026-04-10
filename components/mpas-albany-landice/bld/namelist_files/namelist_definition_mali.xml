@@ -175,6 +175,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_smb_source" type="char*1024"
+	category="advection" group="advection">
+Source of surface mass balance used by sfcMassBal variable.  'file' uses whatever value has been read into the sfcMassBal field from an input or forcing file. 'coupler' uses a value passed from the E3SM coupler.  The option 'coupler' behaves the same as 'file' when MALI is run in standalone mode.
+
+Valid values: 'file' or 'coupler'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_zero_sfcMassBalApplied_over_bare_land" type="logical"
 	category="advection" group="advection">
 Mask to zero out sfcMassBalApplied in regions where there is no ice at the timestep.
@@ -225,7 +233,7 @@ Default: Defined in namelist_defaults.xml
 	category="calving" group="calving">
 Selection of the method for calving ice (as defined below). 'von_Mises_stress' and 'eigencalving' options can be used in combination with damage threshold calving (see descrption of config_damage_calving_method for details).
 
-Valid values: 'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'specified_calving_velocity', 'von_Mises_stress', 'damagecalving', 'ismip6_retreat'
+Valid values: 'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'specified_calving_velocity', 'specified_retreat_velocity', 'von_Mises_stress', 'damagecalving', 'ismip6_retreat', 'crevasse_depth'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -279,15 +287,15 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_calving_specified_source" type="char*1024"
 	category="calving" group="calving">
-method of specified calving velocity
+method of specified calving velocity (for config_calving='specified_calving_velocity') or specified retreat velocity (for config_calving='specified_retreat_velocity')
 
-Valid values: 'const' (constant calving velocity), 'data' (calving velocity given by data input)
+Valid values: 'const' (constant calving or retreat velocity), 'data' (calving or retreat velocity given by data input)
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_calving_velocity_const" type="real"
 	category="calving" group="calving">
-constant calving velocity specified in the namelist
+constant velocity used by specified_calving_velocity and specified_retreat_velocity options for config_calving.  If config_calving='specified_calving_velocity', then config_calving_velocity_const is the calving velocity.  If config_calving=specified_retreat_velocity, then config_calving_velocity_const is the retreat velocity.
 
 Valid values: Any positive real value
 Default: Defined in namelist_defaults.xml
@@ -346,6 +354,22 @@ Default: Defined in namelist_defaults.xml
 Limit calvingVelocity to this value. Currently only supported for von Mises calving.
 
 Valid values: Any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_apply_facemelt_strainrate_enhancement" type="logical"
+	category="calving" group="calving">
+If true, a multiplicative factor will be calculated as a function of faceMeltSpeed to be applied to strain rates for calving calculations. This is a simple parameterization of the effect of melt undercutting on calving.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_calving_strainrate_scaling" type="real"
+	category="calving" group="calving">
+the slope used to calculate the strain-rate enhancement multiplier from faceMeltSpeed.  Implied values from Ma and Bassis (2018) range from approximately -0.5 to 10.0. 0.0 yields a factor of 1.0
+
+Valid values: any real value
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -458,6 +482,22 @@ Default: Defined in namelist_defaults.xml
 A scalar parameter that specifies a calving rate as proportional to the value of damage above some threshold value when using the 'calving_rate' method for the 'config_damage_calving_method' option (with the threshold damage value specified by 'config_damage_calving_threshold').
 
 Valid values: any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_crevasse_water_depth_source" type="char*1024"
+	category="calving" group="calving">
+Source of water depth in crevasses for use with crevasse-depth calving law.
+
+Valid values: 'data' (read from input file), 'scalar' (specified by config_crevasse_water_depth)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_crevasse_water_depth" type="real"
+	category="calving" group="calving">
+Water depth in crevasses for Nick et al. (2010) crevasse depth calving law.
+
+Valid values: any non-negative real value
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -797,15 +837,55 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_ocean_data_extrapolation" type="logical"
 	category="iceshelf_melt" group="iceshelf_melt">
-If true, extrapolate ocean data (temperature, salinity, thermal forcing) from external source into underneath the ice draft.
+If true, extrapolate ocean data (temperature and salinity, or thermal forcing) from external source into underneath the ice draft.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_calculate_thermal_forcing" type="logical"
+	category="iceshelf_melt" group="iceshelf_melt">
+If true, ocean temperature and salinity are extrapolated under ice drafts and to glacier termini, where thermal forcing is then calculated according to options config_extrap_sill_blocking, config_TF_vertical_calc, config_TF_iceberg_melt, and config_TF_iceberg_depth. If false, MALI will look for an external thermal forcing field to extrapolate instead, and the subsequent 2d thermal forcing field will be defined at the grounding line. Option is only valid if config_ocean_data_extrapolation is true.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_extrap_sill_blocking" type="logical"
+	category="iceshelf_melt" group="iceshelf_melt">
+Option to account for sill blocking of external water when extrapolated ocean properties to glacier termini. config_ocean_data_extrapolation and config_calculate_thermal_forcing must both be true for this option to be valid. If only config_ocean_data_extrapolation is true while config_calculate_thermal_forcing is false, then sill blocking will automatically be activated during extrapolation.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_TF_vertical_calc" type="char*1024"
+	category="iceshelf_melt" group="iceshelf_melt">
+Method for calculating 2D thermal forcing from the 3d field. 'seafloor' uses the thermal forcing value immediately above the ocean floor (at grounding line depth); 'average' averages the full water column; '200-500' averages only between 200 - 500 m depth
+
+Valid values: 'seafloor', 'average', '200-500'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_TF_iceberg_melt" type="char*1024"
+	category="iceshelf_melt" group="iceshelf_melt">
+Option to modify ocean temperature in the upper portion of the water column (above depth specified by config_TF_iceberg_depth) to resemble iceberg melt-driven cooling. Done before calculating the 3d thermal forcing field if both config_ocean_data_extrapolation and config_calculate_thermal_forcing are also true. 'on' applies modification universally, while 'mask' uses binary mask 'icebergFjordMask' to apply the correction. 
+
+Valid values: 'off', 'on', 'mask'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_TF_iceberg_depth" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+Depth above which to iceberg meltwater is important. If config_TF_iceberg_melt is set to 'true' or 'mask', water above this depth will be altered to follow the submarine meltwater mixing line. Default value is taken from Hager et al. (2024).
+
+Valid values: Any negative real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_ocean_data_extrap_ncells_extra" type="integer"
 	category="iceshelf_melt" group="iceshelf_melt">
-number of extra cells for over-extrapolation into grounded ice
+number of extra cells for over-extrapolation into grounded ice. Note: value must >=3 when used with facemelting.
 
 Valid values: any non-negative value
 Default: Defined in namelist_defaults.xml
@@ -856,7 +936,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_default_flowParamA" type="real"
 	category="physical_parameters" group="physical_parameters">
-Defines the default value of the flow law parameter A to be used if it is not being calculated from ice temperature.  This value will be used by either the sia or FO velocity solver if they are respectively configured to use a scalar A value.  Defaults to the SI representation of 1.0e-16 yr$^{-1}$ Pa$^{-3}$.
+Defines the default value of the flow law parameter A to be used if it is not being calculated from ice temperature.  This value will be used by either the sia or FO velocity solver if they are respectively configured to use a scalar A value.  Defaults to the SI representation of 1.0e-16 yr^-1 Pa^-3.
 
 Valid values: Any positive real value
 Default: Defined in namelist_defaults.xml
@@ -1544,6 +1624,49 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_regionalStats_write_on_startup" type="logical"
 	category="AM_regionalStats" group="AM_regionalStats">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_fluxGates -->
+
+<entry id="config_AM_fluxGates_enable" type="logical"
+	category="AM_fluxGates" group="AM_fluxGates">
+If true, landice analysis member fluxGates is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fluxGates_compute_interval" type="char*1024"
+	category="AM_fluxGates" group="AM_fluxGates">
+Timestamp determining how often analysis member computations should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fluxGates_stream_name" type="char*1024"
+	category="AM_fluxGates" group="AM_fluxGates">
+Name of the stream that the fluxGates analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fluxGates_compute_on_startup" type="logical"
+	category="AM_fluxGates" group="AM_fluxGates">
+Logical flag determining if analysis member computations occur on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fluxGates_write_on_startup" type="logical"
+	category="AM_fluxGates" group="AM_fluxGates">
 Logical flag determining if an analysis member write occurs on start-up.
 
 Valid values: .true. or .false.

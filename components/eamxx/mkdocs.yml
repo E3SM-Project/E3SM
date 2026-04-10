@@ -11,14 +11,18 @@ nav:
     - 'COSP': 'user/cosp.md'
     - 'Regionally Refined EAMxx': 'user/rrm_eamxx.md'
     - 'Doubly Periodic EAMxx': 'user/dp_eamxx.md'
-    - 'PyEAMxx': 'user/pyeamxx.md'
+    - 'Python support': 'user/python.md'
     - 'IO Metadata': 'user/io_metadata.md'
-    - 'Multi-Instance and NBFB': 'user/multi-instance-mvk.md'
+    - 'Multi-Instance and NBFB': 'user/multi-instance-rcs.md'
     - 'EAMxx runtime parameters': 'user/eamxx_params.md'
     - 'Diagnostics':
       - 'Overview': 'user/diags/index.md'
-      - 'Field contraction diagnostics': 'user/diags/field_contraction.md'
+      - 'Field contraction': 'user/diags/field_contraction.md'
+      - 'Conditional sampling': 'user/diags/conditional_sampling.md'
+      - 'Binary arithmetics': 'user/diags/binary_ops.md'
+      - 'Vertical derivative': 'user/diags/vert_derivative.md'
     - 'Presentations': 'user/presentations.md'
+    - 'IO Aliases': 'user/io_aliases.md'
   - 'Developer Guide':
     - 'Quick-start Guide': 'developer/dev_quickstart.md'
     - 'Code Structure and Organization': 'developer/code_structure.md'
@@ -46,8 +50,14 @@ nav:
       - 'Atmosphere Processes': 'developer/processes.md'
       - 'Input/Output': 'developer/io.md'
       - 'Third-party Libraries': 'developer/TPLs.md'
+    - 'How to':
+      - 'Wrap Torch emulators': 'developer/torch_support.md'
   - 'Technical Guide':
     - 'Overview': 'technical/index.md'
+    - 'Physics':
+      - 'P3':
+        - 'Autoconversion': 'technical/physics/p3/autoconversion.md'
+        - 'Back to Cell Average': 'technical/physics/p3/back_to_cell_average.md'
     - 'AeroCom cloud top': 'technical/aerocom_cldtop.md'
 
 edit_uri: ""

@@ -11,8 +11,6 @@
 
 <sim_year_range>constant</sim_year_range>
 
-<clm_demand >flanduse_timeseries</clm_demand>
-
 
 <stream_year_first_ndep phys="elm" use_cn=".true." ndepsrc="stream" >1850</stream_year_first_ndep>
 <stream_year_last_ndep  phys="elm" use_cn=".true." ndepsrc="stream" >1850</stream_year_last_ndep>

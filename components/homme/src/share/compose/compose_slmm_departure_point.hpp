@@ -66,9 +66,10 @@ void fill_normals (LocalMesh<ko::MachineTraits::HES>& m) {
     for (Int iv = 0; iv < szslice(m.e); ++iv)
       if (m.e(ip,iv) == -1) break; else ++ne;
   // Fill.
-  siqk::Idxs::HostMirror en("en", nslices(m.e), szslice(m.e));
+  // Use LocalMesh types directly to avoid HIPSpace/HostSpace mismatch on APU.
+  typename LocalMesh<ko::MachineTraits::HES>::IntArray en("en", nslices(m.e), szslice(m.e));
   ko::deep_copy(en, -1);
-  siqk::Vec3s::HostMirror nml("nml", ne);
+  typename LocalMesh<ko::MachineTraits::HES>::RealArray nml("nml", ne);
   Int ie = 0;
   for (Int ip = 0; ip < nslices(m.e); ++ip)
     for (Int iv = 0; iv < szslice(m.e); ++iv)

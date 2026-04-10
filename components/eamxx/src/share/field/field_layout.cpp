@@ -1,6 +1,6 @@
 #include "field_layout.hpp"
 
-#include <ekat/util/ekat_string_utils.hpp>
+#include <ekat_string_utils.hpp>
 
 namespace scream
 {
@@ -197,7 +197,21 @@ FieldLayout::prepend_dim (const FieldTag t, const int extent, const std::string&
 
 FieldLayout FieldLayout::clone() const
 {
-  return *this;
+  FieldLayout copy(*this);
+  copy.set_extents();
+  return copy;
+}
+
+FieldLayout FieldLayout::transpose() const
+{
+  auto flt = clone();
+  std::reverse(flt.m_dims.begin(),flt.m_dims.end());
+  std::reverse(flt.m_tags.begin(),flt.m_tags.end());
+  std::reverse(flt.m_names.begin(),flt.m_names.end());
+
+  flt.set_extents();
+
+  return flt;
 }
 
 FieldLayout& FieldLayout::rename_dim (const int idim, const std::string& n)
@@ -299,7 +313,7 @@ void FieldLayout::compute_type () {
   const int n_element = count(tags,EL);
   const int n_column  = count(tags,COL);
   const int ngp       = count(tags,GP);
-  const int nvlevs    = count(tags,LEV) + count(tags,ILEV);
+  const int nvlevs    = count(tags,LEV) + count(tags,ILEV) + count(tags,LEVP);
   const int ncomps    = count(tags,CMP);
 
   // We don't care about TimeLevel
@@ -335,14 +349,14 @@ void FieldLayout::compute_type () {
   // Get the size of what's left
   const auto size = tags.size();
   auto is_lev_tag = [](const FieldTag t) {
-    return t==LEV or t==ILEV;
+    return t==LEV or t==ILEV or t==LEVP;
   };
   switch (size) {
     case 0:
       m_type = LayoutType::Scalar2D;
       break;
     case 1:
-      // The only tag left should be 'CMP', 'TL', or 'LEV'/'ILEV'
+      // The only tag left should be 'CMP', 'TL', or 'LEV'/'ILEV'/'LEVP'
       if (tags[0]==CMP || tags[0]==TL) {
         m_type = LayoutType::Vector2D;
       } else if (is_lev_tag(tags[0])) {
@@ -351,7 +365,7 @@ void FieldLayout::compute_type () {
       break;
     case 2:
       // Possible supported scenarios:
-      //  1) <CMP|TL,LEV|ILEV>
+      //  1) <CMP|TL,LEV|ILEV|LEVP>
       //  2) <TL,CMP>
       //  3) <CMP,CMP>
       if ( is_lev_tag(tags[1]) && (tags[0]==CMP || tags[0]==TL)) {
@@ -364,8 +378,8 @@ void FieldLayout::compute_type () {
       break;
     case 3:
       // The only supported scenarios are:
-      //  1) <TL,  CMP, LEV|ILEV>
-      //  2) <CMP, CMP, LEV|ILEV>
+      //  1) <TL,  CMP, LEV|ILEV|LEVP>
+      //  2) <CMP, CMP, LEV|ILEV|LEVP>
       if ( tags[0]==TL && tags[1]==CMP && is_lev_tag(tags[2])) {
         m_type = LayoutType::Tensor3D;
       } else if ( tags[0]==CMP && tags[1]==CMP && is_lev_tag(tags[2])) {

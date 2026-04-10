@@ -1,5 +1,6 @@
 #include "share/field/field_identifier.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
+
+#include <ekat_string_utils.hpp>
 
 namespace scream
 {
@@ -31,11 +32,44 @@ FieldIdentifier (const std::string& name,
 
 FieldIdentifier
 FieldIdentifier::
-alias (const std::string& name) const
+clone (const std::string& name) const
 {
   auto fid = *this;
   fid.m_name = name;
+  fid.update_identifier();
   return fid;
+}
+
+FieldIdentifier& FieldIdentifier::
+reset_layout (const FieldLayout& layout)
+{
+  m_layout = layout;
+  update_identifier();
+  return *this;
+}
+
+FieldIdentifier& FieldIdentifier::
+reset_units  (const Units& units)
+{
+  m_units = units;
+  update_identifier();
+  return *this;
+}
+
+FieldIdentifier& FieldIdentifier::
+reset_grid   (const std::string& grid)
+{
+  m_grid_name = grid;
+  update_identifier();
+  return *this;
+}
+
+FieldIdentifier& FieldIdentifier::
+reset_dtype  (const DataType dtype)
+{
+  m_data_type = dtype;
+  update_identifier();
+  return *this;
 }
 
 void FieldIdentifier::update_identifier () {

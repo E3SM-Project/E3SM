@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+
+import os, sys, argparse, logging, shutil
+
+from standard_script_setup import *
+from CIME import utils
+from CIME.utils import expect, run_bld_cmd_ensure_logging
+from CIME.case import Case
+
+sys.path.append(os.path.dirname(__file__))
+from buildlib_util import extract_from_macros, config_if_not_configured
+
+logger = logging.getLogger(__name__)
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} [--debug]
+OR
+{0} --verbose
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run \033[0m
+    > {0}
+""".format(
+            os.path.basename(args[0])
+        ),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("buildroot", help="build path root")
+
+    parser.add_argument("installpath", help="install path ")
+
+    parser.add_argument(
+        "caseroot", nargs="?", default=os.getcwd(), help="Case directory to build"
+    )
+
+    args = utils.parse_args_and_handle_standard_logging_options(args, parser)
+
+    return args.buildroot, args.installpath, args.caseroot
+
+###############################################################################
+def buildlib(bldroot, installpath, case):
+###############################################################################
+
+    # Figure out where we are getting Kokkos from
+    if case.get_value("USE_ALBANY") or case.get_value("USE_TRILINOS"):
+        print ("case is using Trilinos and will use its Kokkos")
+
+        # Set Kokkos_ROOT so Ekat knows to find Kokkos from Albany/Trilinos
+        expect(os.environ.get("Trilinos_ROOT") is not None,
+               "USE_TRILINOS|USE_ALBANY is On, but Trilinos_ROOT is not set!")
+        os.environ["Kokkos_ROOT"] = os.environ.get("Trilinos_ROOT")
+
+    installed_ekat_dir = os.environ.get("Ekat_ROOT")
+    if installed_ekat_dir is not None:
+        # We are trying to use a pre-installed ekat. Look for the relevant folders/libs,
+        # and if all looks good, return. Otherwise, crap out
+        ekat_root = os.path.abspath(installed_ekat_dir)
+        include_dir = os.path.join(ekat_root,'include')
+
+        expect (os.path.isdir(ekat_root),f"Non-existent ekat install dir '{ekat_root}'")
+        expect (os.path.isdir(include_dir),f"Missing include subfolder in ekat install dir '{ekat_root}'")
+        expect (os.path.isdir(os.path.join(include_dir,"ekat")),f"Missing ekat headers in '{include_dir}'")
+
+        print (f"Using pre-installed Ekat_ROOT: {ekat_root}")
+        return
+    else:
+        print ("no value found in env for Ekat_ROOT. building from scratch")
+
+    srcroot = case.get_value("SRCROOT")
+    ekat_dir = os.path.join(srcroot, "externals", "ekat")
+    ekat_cmake_files = os.path.join(ekat_dir, "cmake", "machine-files")
+    mach = case.get_value("MACH")
+    ekat_cmake_mach_file = os.path.join(ekat_cmake_files, f"{mach}.cmake")
+    expect(os.path.isdir(ekat_dir), "Missing ekat submodule")
+
+    # We want to get the compiler and kokkos_options from Macros.make
+    # (generated from cmake_macros), but we want to otherwise
+    # let kokkos control flags
+    mpilib = case.get_value("MPILIB")
+    macro_vals = extract_from_macros(case, "kokkos",
+                                     extra_vars=("KOKKOS_OPTIONS", "KOKKOS_USE_EKAT_MACH_FILE"))
+    cc, cxx, kokkos_options_raw, use_ekat_mach_file = \
+        macro_vals[4], macro_vals[5], macro_vals[-2], macro_vals[-1]
+    use_ekat_mach_file = True if use_ekat_mach_file.upper() == "TRUE" else False
+    if mpilib == "mpi-serial":
+        # Use serial compilers
+        cc, cxx = macro_vals[1], macro_vals[2]
+
+    # Use the ekat mach file if requested
+    if use_ekat_mach_file:
+        expect(os.path.exists(ekat_cmake_mach_file),
+               f"No KOKKOS_OPTIONS provided and no ekat machine file exists for {mach}")
+        kokkos_options = f"-C {ekat_cmake_mach_file}"
+    else:
+        kokkos_options = kokkos_options_raw.split(":=")[-1].strip()
+
+    # Turn off threading for non-threaded cases
+    if not case.get_build_threaded():
+        kokkos_options += " -DKokkos_ENABLE_OPENMP=Off"
+
+    # We will take care of setting CMAKE_CXX_COMPILER unless user has explictly
+    # set one in their KOKKOS_OPTIONS.
+    if "DCMAKE_CXX_COMPILER" not in kokkos_options:
+        if "/" in cxx:
+            cxx = "-DCMAKE_CXX_COMPILER={}".format(cxx)
+        else:
+            cxx_path = shutil.which(cxx)
+            expect(cxx_path is not None, "{} is not in PATH?".format(cxx))
+            cxx = "-DCMAKE_CXX_COMPILER={}".format(cxx_path)
+
+    if "/" in cc:
+        cc = "-DCMAKE_C_COMPILER={}".format(cc)
+    else:
+        cc_path = shutil.which(cc)
+        expect(cc_path is not None, "{} is not in PATH?".format(cc))
+        cc = "-DCMAKE_C_COMPILER={}".format(cc_path)
+
+    gmake_cmd = case.get_value("GMAKE")
+    gmake_j = case.get_value("GMAKE_J")
+
+    # Just enable all ekat packages?
+    debug = case.get_value("DEBUG")
+    ekat_cmake_options = "-DEKAT_ENABLE_ALL_PACKAGES=On -DEKAT_ENABLE_TESTS=Off -DKokkos_ENABLE_SERIAL=On"
+    if mpilib == "mpi-serial":
+        ekat_cmake_options += " -DEKAT_ENABLE_MPI=Off"
+    if debug:
+        ekat_cmake_options += " -DCMAKE_BUILD_TYPE=Debug"
+        # Kokkos bounds checking is too expensive to always turn on
+        if "E3SM_ENABLE_KOKKOS_BOUNDS_CHECKING" in os.environ:
+            ekat_cmake_options += " -DKokkos_ENABLE_DEBUG_BOUNDS_CHECK=On"
+
+    gen_makefile_cmd = f"cmake {kokkos_options} {cc} {cxx} -DCMAKE_CXX_STANDARD=17 {ekat_cmake_options} -DCMAKE_INSTALL_PREFIX={installpath} {ekat_dir}"
+
+    # When later we use find_package to get kokkos in CMake, the folder
+    # install_sharedpath/kokkos (which is bldroot here) gets picked over
+    # the actual install folders. Since a KokkosConfig.cmake file *is* present
+    # there, but the other cmake config files aren't, this causes config errors.
+    # To prevent find_package from picking up that folder, we actually use
+    # ${bldroot}/build as a binary dir, so that CMake won't consider it when
+    # executing find_package.
+    bldroot = f"{bldroot}/build"
+    if not os.path.isdir(bldroot):
+        os.makedirs(bldroot)
+
+    config_if_not_configured("EKAT", bldroot, gen_makefile_cmd, logger)
+    run_bld_cmd_ensure_logging(
+        "{} VERBOSE=1 -j {}".format(gmake_cmd, gmake_j), logger, from_dir=bldroot
+    )
+    run_bld_cmd_ensure_logging("{} install".format(gmake_cmd), logger, from_dir=bldroot)
+
+###############################################################################
+def _main(argv, documentation):
+###############################################################################
+    bldroot, installpath, caseroot = parse_command_line(argv, documentation)
+    with Case(caseroot, read_only=False) as case:
+        buildlib(bldroot, installpath, case)
+
+###############################################################################
+if __name__ == "__main__":
+    _main(sys.argv, __doc__)

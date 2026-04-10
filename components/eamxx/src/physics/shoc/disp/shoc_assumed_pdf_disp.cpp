@@ -1,6 +1,7 @@
 #include "shoc_functions.hpp"
 
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+#include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 namespace shoc {
@@ -11,34 +12,35 @@ void Functions<Real,DefaultDevice>
   const Int&                  shcol,
   const Int&                  nlev,
   const Int&                  nlevi,
-  const view_2d<const Spack>& thetal,
-  const view_2d<const Spack>& qw,
-  const view_2d<const Spack>& w_field,
-  const view_2d<const Spack>& thl_sec,
-  const view_2d<const Spack>& qw_sec,
+  const view_2d<const Pack>& thetal,
+  const view_2d<const Pack>& qw,
+  const view_2d<const Pack>& w_field,
+  const view_2d<const Pack>& thl_sec,
+  const view_2d<const Pack>& qw_sec,
   const Scalar&               dtime,
   const bool&                 extra_diags,
-  const view_2d<const Spack>& wthl_sec,
-  const view_2d<const Spack>& w_sec,
-  const view_2d<const Spack>& wqw_sec,
-  const view_2d<const Spack>& qwthl_sec,
-  const view_2d<const Spack>& w3,
-  const view_2d<const Spack>& pres,
-  const view_2d<const Spack>& zt_grid,
-  const view_2d<const Spack>& zi_grid,
+  const view_2d<const Pack>& wthl_sec,
+  const view_2d<const Pack>& w_sec,
+  const view_2d<const Pack>& wqw_sec,
+  const view_2d<const Pack>& qwthl_sec,
+  const view_2d<const Pack>& w3,
+  const view_2d<const Pack>& pres,
+  const view_2d<const Pack>& zt_grid,
+  const view_2d<const Pack>& zi_grid,
   const WorkspaceMgr&         workspace_mgr,
-  const view_2d<Spack>&       shoc_cond,
-  const view_2d<Spack>&       shoc_evap,
-  const view_2d<Spack>&       shoc_cldfrac,
-  const view_2d<Spack>&       shoc_ql,
-  const view_2d<Spack>&       wqls,
-  const view_2d<Spack>&       wthv_sec,
-  const view_2d<Spack>&       shoc_ql2)
+  const view_2d<Pack>&       shoc_cond,
+  const view_2d<Pack>&       shoc_evap,
+  const view_2d<Pack>&       shoc_cldfrac,
+  const view_2d<Pack>&       shoc_ql,
+  const view_2d<Pack>&       wqls,
+  const view_2d<Pack>&       wthv_sec,
+  const view_2d<Pack>&       shoc_ql2)
 {
   using ExeSpace = typename KT::ExeSpace;
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
 
-  const auto nlev_packs = ekat::npack<Spack>(nlev);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
+  const auto nlev_packs = ekat::npack<Pack>(nlev);
+  const auto policy = TPF::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 

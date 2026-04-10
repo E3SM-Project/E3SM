@@ -321,7 +321,11 @@ contains
        yc = -90.0_R8 + (jg-0.5_R8)*180.0_R8/(nyg)
        yn = -90.0_R8 + (jg-0.0_R8)*180.0_R8/(nyg)
        dy = sin(yn*deg2rad) - sin(ys*deg2rad)
-       area = dx*dy*re*re
+       ! area normalized to unit sphere (steradians), consistent with
+       ! mapping file areas (area_a/area_b in SCRIP format).
+       ! Real model components also use unit-sphere areas, not physical m².
+      !  area = dx*dy*re*re   ! old: physical area in m², causes ~re² mismatch with mapping files
+       area = dx*dy
 
        gbuf(n,dead_grid_lon  ) = (ig-1.0_R8)*360.0_R8/(nxg)
        gbuf(n,dead_grid_lat  ) = yc

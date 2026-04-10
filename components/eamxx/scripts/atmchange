@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 from eamxx_buildnml_impl import check_value, is_array_type
 from eamxx_buildnml import create_raw_xml_file
-from atm_manip import atm_config_chg_impl, buffer_changes, reset_buffer, get_xml_nodes, parse_change
+from atm_manip import atm_config_chg_impl, buffer_changes, reset_buffer, reset_node_changes, get_xml_nodes, parse_change
 from utils import run_cmd_no_fail, expect, GoodFormatter
 
 # Add path to cime
@@ -47,9 +47,17 @@ def atm_config_chg(changes, reset=False, buffer_only=False):
         expect(not reset, "Makes no sense for buffer_only and reset to both be on")
 
     if reset:
-        reset_buffer()
-        print("All buffered atmchanges have been removed.")
         hack_xml = run_cmd_no_fail("./xmlquery SCREAM_HACK_XML --value")
+        if reset is True:
+            reset_buffer()
+            print("All buffered atmchanges have been removed.")
+        else:
+            with open("namelist_scream.xml", "r") as fd:
+                tree = ET.parse(fd)
+                root = tree.getroot()
+            reset_node_changes(root, reset)
+            print(f"Buffered atmchanges for '{reset}' have been removed.")
+
         if hack_xml == "TRUE":
             print("SCREAM_HACK_XML is on. Removing namelist_scream.xml to force regen")
             os.remove("namelist_scream.xml")
@@ -62,7 +70,7 @@ def atm_config_chg(changes, reset=False, buffer_only=False):
     # Before applying/buffering changes, at the very least check the syntax
     for c in changes:
         # This will throw if the syntax is bad
-        _, _, _ = parse_change(c)
+        _, _, _, _ = parse_change(c)
 
     # If buffer_only=True, we must assume there were changes (we can't check).
     # Otherwise, we'll assume no changes, and if we find one, we'll adjust
@@ -75,7 +83,6 @@ def atm_config_chg(changes, reset=False, buffer_only=False):
         for change in changes:
             this_changed = atm_config_chg_impl(root, change)
             any_change |= this_changed
-
 
     if any_change:
         # NOTE: if a change is wrong (e.g., typo in param name), we are still buffering it.
@@ -108,6 +115,9 @@ OR
 
     \033[1;32m# Change params foo to 'hi' and append 'there' to bar (only works if both are unambiguous)\033[0m
     > {0} foo=hi bar+=there
+
+    \033[1;32m# Remove 'item' from array param baz (only works if baz is unambiguous)\033[0m
+    > {0} baz-=item
 """.format(pathlib.Path(args[0]).name),
         description=description,
         formatter_class=GoodFormatter
@@ -116,8 +126,10 @@ OR
     parser.add_argument(
         "-r", "--reset",
         default=False,
-        action="store_true",
-        help="Forget all previous atmchanges",
+        nargs="?",
+        const=True,
+        metavar="NODE",
+        help="Forget all previous atmchanges (if NODE is given, only forget changes targeting that XML node)",
     )
 
     parser.add_argument(

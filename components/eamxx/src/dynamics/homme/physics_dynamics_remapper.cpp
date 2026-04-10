@@ -13,8 +13,8 @@
 #include "share/grid/se_grid.hpp"
 #include "share/util/eamxx_utils.hpp"
 
-#include "ekat/ekat_pack_utils.hpp"
-#include "ekat/ekat_assert.hpp"
+#include <ekat_pack_utils.hpp>
+#include <ekat_assert.hpp>
 
 namespace {
 
@@ -152,10 +152,6 @@ initialize_device_variables()
         pap.template is_compatible<pack_type>() &&
         dap.template is_compatible<pack_type>()) {
       h_pack_alloc_property(i) = AllocPropType::PackAlloc;
-    } else if (is_field_3d &&
-               pap.template is_compatible<small_pack_type>() &&
-               dap.template is_compatible<small_pack_type>()) {
-      h_pack_alloc_property(i) = AllocPropType::SmallPackAlloc;
     } else {
       h_pack_alloc_property(i) = AllocPropType::RealAlloc;
     }
@@ -181,7 +177,7 @@ subfields_info_has_changed (const std::map<int,SubviewInfo>& subfield_info,
 }
 
 void PhysicsDynamicsRemapper::
-update_subfields_views (const std::map<int,SubviewInfo>& subfield_info,
+update_subfields_views (std::map<int,SubviewInfo>& subfield_info,
                         const ViewsRepo& repo,
                         const std::vector<Field>& fields) const
 {
@@ -205,10 +201,12 @@ update_subfields_views (const std::map<int,SubviewInfo>& subfield_info,
     }
   };
 
-  for (const auto& it : subfield_info) {
-    const auto& f = fields[it.first];
-    if ( not(it.second==f.get_header().get_alloc_properties().get_subview_info()) ){
-      get_view(it.first,fields[it.first]);
+  for (auto& [fname, svi] : subfield_info) {
+    const auto& f = fields[fname];
+    const auto& new_svi = f.get_header().get_alloc_properties().get_subview_info();
+    if ( not(svi==new_svi) ) {
+      get_view(fname,f);
+      svi = new_svi;
     }
   }
   Kokkos::deep_copy(repo.views,  repo.h_views);
@@ -658,11 +656,6 @@ operator()(const RemapFwdTag&, const MT& team) const
         team.team_barrier();
 
         local_remap_fwd_3d<pack_type>(team);
-      } else if (m_pack_alloc_property(i) == AllocPropType::SmallPackAlloc) {
-        set_dyn_to_zero<small_pack_type>(team);
-        team.team_barrier();
-
-        local_remap_fwd_3d<small_pack_type>(team);
       } else {
         set_dyn_to_zero<Real>(team);
         team.team_barrier();
@@ -692,8 +685,6 @@ operator()(const RemapBwdTag&, const MT& team) const
     case etoi(LayoutType::Vector3D):
       if (m_pack_alloc_property(i) == AllocPropType::PackAlloc) {
         local_remap_bwd_3d<pack_type>(team);
-      } else if (m_pack_alloc_property(i) == AllocPropType::SmallPackAlloc) {
-        local_remap_bwd_3d<small_pack_type>(team);
       } else {
         local_remap_bwd_3d<Real>(team);
       }

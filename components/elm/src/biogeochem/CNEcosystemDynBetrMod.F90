@@ -9,7 +9,7 @@ module CNEcosystemDynBetrMod
   ! be enabled gradually.
   use shr_kind_mod              , only : r8 => shr_kind_r8
   use shr_sys_mod               , only : shr_sys_flush
-  use elm_varctl                , only : use_c13, use_c14, use_fates, use_dynroot
+  use elm_varctl                , only : use_c13, use_c14, use_fates, use_dynroot, iac_present, use_fan
   use decompMod                 , only : bounds_type
   use perf_mod                  , only : t_startf, t_stopf
   use spmdMod                   , only : masterproc
@@ -46,6 +46,7 @@ module CNEcosystemDynBetrMod
   use VegetationDataType        , only : veg_cf, c13_veg_cf, c14_veg_cf
   use VegetationDataType        , only : veg_ns, veg_nf
   use VegetationDataType        , only : veg_ps, veg_pf
+  use FanUpdateMod              , only : fan_eval
 
   implicit none
 
@@ -58,7 +59,8 @@ module CNEcosystemDynBetrMod
   !-----------------------------------------------------------------------
   subroutine CNEcosystemDynBetr(bounds,                             &
          num_soilc, filter_soilc,                                        &
-         num_soilp, filter_soilp, num_pcropp, filter_pcropp, doalb,      &
+         num_soilp, filter_soilp, num_pcropp, filter_pcropp,             &
+         num_ppercropp, filter_ppercropp, doalb,                         &
          cnstate_vars, carbonflux_vars, carbonstate_vars,                &
          c13_carbonflux_vars, c13_carbonstate_vars,                      &
          c14_carbonflux_vars, c14_carbonstate_vars,                      &
@@ -117,6 +119,8 @@ module CNEcosystemDynBetrMod
     integer                          , intent(in)    :: filter_soilp(:)   ! filter for soil patches
     integer                          , intent(in)    :: num_pcropp        ! number of prog. crop patches in filter
     integer                          , intent(in)    :: filter_pcropp(:)  ! filter for prognostic crop patches
+    integer                          , intent(in)    :: num_ppercropp     ! number of prog perennial crop patches in filter
+    integer                          , intent(in)    :: filter_ppercropp(:) ! filter for prognostic perennial crop patches
     logical                          , intent(in)    :: doalb             ! true = surface albedo calculation time step
     type(cnstate_type)               , intent(inout) :: cnstate_vars
     type(carbonflux_type)            , intent(inout) :: carbonflux_vars
@@ -178,14 +182,18 @@ module CNEcosystemDynBetrMod
        ! --------------------------------------------------
 
        call t_startf('CNDeposition')
-       call NitrogenDeposition(bounds, &
-            atm2lnd_vars, frictionvel_vars,  &
-            soilstate_vars, filter_soilc, num_soilc,dt )
+       call NitrogenDeposition(bounds, atm2lnd_vars)
+
+       if (use_fan) then
+          call fan_eval(bounds, num_soilc, filter_soilc, &
+             atm2lnd_vars, soilstate_vars, frictionvel_vars)
+       end if
        call t_stopf('CNDeposition')
 
        call t_startf('MaintenanceResp')
        if (crop_prog) then
-          call NitrogenFert(bounds, num_soilc,filter_soilc, num_pcropp, filter_pcropp )
+          call NitrogenFert(bounds, num_soilc,filter_soilc, num_pcropp, filter_pcropp, &
+                            num_ppercropp, filter_ppercropp )
 
        end if
        call MaintenanceResp(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -397,7 +405,7 @@ module CNEcosystemDynBetrMod
        call PhosphorusStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dt)
 
-       if (get_do_harvest()) then
+       if (get_do_harvest() .or. iac_present) then
           call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars)
        end if

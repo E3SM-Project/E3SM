@@ -1,13 +1,13 @@
 #include "physics/rrtmgp/eamxx_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/rrtmgp_test_utils.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "share/eamxx_session.hpp"
+#include "share/core/eamxx_types.hpp"
+#include "share/core/eamxx_session.hpp"
 
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "examples/all-sky/mo_garand_atmos_io.h"
 
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_test_utils.hpp>
 
 #include <cmath>
 #include <mpi.h>

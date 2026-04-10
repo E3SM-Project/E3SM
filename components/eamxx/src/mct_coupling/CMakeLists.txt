@@ -38,14 +38,17 @@ set (SCREAM_LIBS
      eamxx_cosp
      cld_fraction
      spa
+     spc
      iop_forcing
      nudging
-     diagnostics
      tms
 )
-if (SCREAM_ENABLE_ML_CORRECTION)
-  list (APPEND SCREAM_LIBS ml_correction)
-endif ()
+
+# ZM is not always on yet
+if (TARGET zm)
+  list(APPEND SCREAM_LIBS zm)
+endif()
+
 if (SCREAM_ENABLE_MAM)
   list (APPEND SCREAM_LIBS mam)
 endif()

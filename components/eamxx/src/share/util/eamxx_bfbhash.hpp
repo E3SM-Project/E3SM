@@ -3,8 +3,8 @@
 
 #include <cstdint>
 
-#include <ekat/kokkos/ekat_kokkos_types.hpp>
-#include <ekat/mpi/ekat_comm.hpp>
+#include <ekat_kokkos_types.hpp>
+#include <ekat_comm.hpp>
 
 namespace scream {
 namespace bfbhash {
@@ -26,6 +26,10 @@ KOKKOS_INLINE_FUNCTION void hash (const double v_, HashType& accum) {
 }
 
 KOKKOS_INLINE_FUNCTION void hash (const float v, HashType& accum) {
+  hash(double(v), accum);
+}
+
+KOKKOS_INLINE_FUNCTION void hash (const int v, HashType& accum) {
   hash(double(v), accum);
 }
 

@@ -8,7 +8,7 @@ time_stepping:
   run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
   number_of_steps: ${NUM_STEPS}
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [mam4_optics]
   mam4_optics:
     create_fields_interval_checks: true
@@ -41,6 +41,7 @@ initial_conditions:
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   pbl_height : 1.0
   phis : 1.0
+  z_mam4_int : 0.0
 
 # The parameters for I/O control
 scorpio:

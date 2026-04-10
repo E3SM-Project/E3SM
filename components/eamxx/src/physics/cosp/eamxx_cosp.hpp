@@ -2,8 +2,8 @@
 #define SCREAM_COSP_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/util/eamxx_common_physics_functions.hpp"
-#include "ekat/ekat_parameter_list.hpp"
+
+#include <ekat_parameter_list.hpp>
 
 #include <string>
 
@@ -30,15 +30,17 @@ public:
   std::string name () const { return "cosp"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void create_requests ();
 
-  inline bool cosp_do(const int cosp_freq, const int nstep) {
+  inline bool cosp_do(const int icosp, const int nstep) {
       // If icosp == 0, then never do cosp;
-      // Otherwise, do cosp if the timestep is divisible by cosp_freq
-      if (cosp_freq == 0) {
+      // Otherwise, we always call cosp at the first step,
+      // and afterwards we do cosp if the timestep is divisible
+      // by icosp
+      if (icosp == 0) {
           return false;
       } else {
-          return nstep % cosp_freq == 0;
+          return ( (nstep == 0) || (nstep % icosp == 0) );
       }
   }
 
@@ -72,6 +74,7 @@ protected:
   // TODO: use atm buffer instead
   Field m_z_mid;
   Field m_z_int;
+  Field m_sunlit_real;
 }; // class Cosp
 
 } // namespace scream

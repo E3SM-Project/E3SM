@@ -4,6 +4,9 @@
 // Get hommexx dimensions header
 #include "Dimensions.hpp"
 
+// Get eamxx configs
+#include "share/core/eamxx_config.hpp"
+
 namespace scream {
 
 // Until whenever CUDA supports constexpr properly

@@ -1,13 +1,11 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
 #include "p3_data.hpp"
-
 #include "p3_unit_tests_common.hpp"
+
+#include "share/core/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -79,29 +77,29 @@ void run_bfb_rain_vel()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < max_pack_size; ++i) {
-      crfv_baseline[i].read(Base::m_fid);
+      crfv_baseline[i].read(Base::m_ifile);
     }
   }
 
   // Calc bulk rime from a kernel and copy results back to host
   Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-    const Int offset = i * Spack::n;
+    const Int offset = i * Pack::n;
 
     // Init pack inputs
-    Spack qr_incld, cld_frac_r, rhofacr, nr_incld;
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    Pack qr_incld, cld_frac_r, rhofacr, nr_incld;
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       qr_incld[s] = crfv_device(vs).qr_incld;
       rhofacr[s]  = crfv_device(vs).rhofacr;
       nr_incld[s] = crfv_device(vs).nr_incld;
     }
 
-    Spack mu_r(0), lamr(0), V_qr(0), V_nr(0);
+    Pack mu_r(0), lamr(0), V_qr(0), V_nr(0);
     Functions::compute_rain_fall_velocity(
         vn_table_vals, vm_table_vals, qr_incld, rhofacr, nr_incld, mu_r, lamr,
         V_qr, V_nr, p3::Functions<Real,DefaultDevice>::P3Runtime());
 
     // Copy results back into views
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       crfv_device(vs).nr_incld = nr_incld[s];
       crfv_device(vs).mu_r     = mu_r[s];
       crfv_device(vs).lamr     = lamr[s];
@@ -125,7 +123,7 @@ void run_bfb_rain_vel()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int s = 0; s < max_pack_size; ++s) {
-      crfv_host(s).write(Base::m_fid);
+      crfv_host(s).write(Base::m_ofile);
     }
   }
 }
@@ -170,7 +168,7 @@ void run_bfb_rain_sed()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (auto& d : rsds_baseline) {
-      d.read(Base::m_fid);
+      d.read(Base::m_ifile);
     }
   }
 
@@ -210,7 +208,7 @@ void run_bfb_rain_sed()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      rsds_cxx[i].write(Base::m_fid);
+      rsds_cxx[i].write(Base::m_ofile);
     }
   }
 }

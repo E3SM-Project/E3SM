@@ -1,28 +1,24 @@
 #include <catch2/catch.hpp>
 
 #include "share/io/scorpio_scm_input.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include "share/grid/point_grid.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_utils.hpp"
 
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 
 namespace scream {
 
 // Returns fields after initialization
-void write (const int seed, const ekat::Comm& comm)
+void write (int seed, const ekat::Comm& comm)
 {
   using ekat::units::Units;
-  using RPDF = std::uniform_real_distribution<Real>;
+  using namespace ShortFieldTagsNames;
   using IPDF = std::uniform_int_distribution<int>;
-  using Engine = std::mt19937_64;
 
-  Engine engine(seed);
-
-  RPDF lat_pdf(-90.0,90.0);
-  RPDF lon_pdf(-180.0,180.0);
+  std::mt19937_64 engine(seed);
 
   int nlevs = IPDF(5,8)(engine);
   int ncols = IPDF(4,5)(engine);
@@ -37,14 +33,14 @@ void write (const int seed, const ekat::Comm& comm)
   Units deg (Units::nondimensional(),"deg");
   auto lat = grid->create_geometry_data("lat",grid->get_2d_scalar_layout(),deg);
   auto lon = grid->create_geometry_data("lon",grid->get_2d_scalar_layout(),deg);
-  randomize(lat,engine,lat_pdf);
-  randomize(lon,engine,lon_pdf);
+  randomize_uniform(lat,seed++,-90,90);
+  randomize_uniform(lon,seed++,-180,180);
 
   // Create variable data
-  FieldIdentifier fid("var",grid->get_3d_scalar_layout(true),Units::nondimensional(),"");
+  FieldIdentifier fid("var",grid->get_3d_scalar_layout(LEV),Units::nondimensional(),"");
   Field var(fid);
   var.allocate_view();
-  randomize(var,engine,RPDF(-1.0,1.0));
+  randomize_uniform(var,seed++,-1,1);
 
   // Create file
   auto filename = "io_scm_np" + std::to_string(comm.size()) + ".nc";
@@ -77,6 +73,7 @@ void write (const int seed, const ekat::Comm& comm)
 void read (const int seed, const ekat::Comm& comm)
 {
   using ekat::units::Units;
+  using namespace ShortFieldTagsNames;
   using IPDF = std::uniform_int_distribution<int>;
   using Engine = std::mt19937_64;
 
@@ -107,7 +104,7 @@ void read (const int seed, const ekat::Comm& comm)
   dofs_gids.deep_copy(0);
 
   // Create field to read
-  FieldIdentifier fid("var",grid->get_3d_scalar_layout(true),Units::nondimensional(),"");
+  FieldIdentifier fid("var",grid->get_3d_scalar_layout(LEV),Units::nondimensional(),"");
   Field var_f(fid);
   var_f.allocate_view();
 

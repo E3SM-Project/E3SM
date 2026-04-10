@@ -132,7 +132,7 @@ def get_model_start_of_step_lines (atm_log):
     lines = []
     with gzip.open(atm_log,'rt') as file:
         for line in file:
-            if "model start-of-step time" in line:
+            if "model beg-of-step timestamp" in line:
                 lines.append(line)
     return lines
 

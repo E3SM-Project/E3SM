@@ -12,7 +12,7 @@ set(SCREAM_CONTROL_HEADERS
 )
 
 add_library(scream_control ${SCREAM_CONTROL_SOURCES})
-target_link_libraries(scream_control PUBLIC scream_share scream_io)
+target_link_libraries(scream_control PUBLIC scream_share eamxx_io ekat::YamlParser)
 
 if (Kokkos_ENABLE_CUDA)
   # This is to silence some nvcc warning that is a CUDA compiler bug

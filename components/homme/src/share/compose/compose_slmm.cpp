@@ -124,8 +124,7 @@ void finalize_init_phase (IslMpi<MT>& cm, typename IslMpi<MT>::Advecter& advecte
 }
 
 template <typename MT>
-void set_hvcoord (IslMpi<MT>& cm, const Real etai_beg, const Real etai_end,
-                  const Real* etam) {
+void set_hvcoord (IslMpi<MT>& cm, const Real* etai, const Real* etam) {
   if (cm.etam.size() > 0) return;
 #if defined COMPOSE_HORIZ_OPENMP
 # pragma omp barrier
@@ -133,16 +132,24 @@ void set_hvcoord (IslMpi<MT>& cm, const Real etai_beg, const Real etai_end,
 #endif
   {
     slmm_assert(cm.nlev > 0);
-    cm.etai_beg = etai_beg;
-    cm.etai_end = etai_end;
+    cm.etai_beg = etai[0];
+    cm.etai_end = etai[cm.nlev];
+    cm.etai = typename IslMpi<MT>::template ArrayD<Real*>("etai", cm.nlev+1);
     cm.etam = typename IslMpi<MT>::template ArrayD<Real*>("etam", cm.nlev);
-    const auto h = ko::create_mirror_view(cm.etam);
-    for (int k = 0; k < cm.nlev; ++k) {
-      h(k) = etam[k];
-      slmm_assert(k == 0 || h(k) > h(k-1));
-      slmm_assert(h(k) > 0 && h(k) < 1);
+    const auto hi = ko::create_mirror_view(cm.etai);
+    const auto hm = ko::create_mirror_view(cm.etam);
+    for (int k = 0; k <= cm.nlev; ++k) {
+      hi(k) = etai[k];
+      slmm_assert(k == 0 or hi(k) > hi(k-1));
+      slmm_assert(hi(k) >= 0 && hi(k) <= 1);
     }
-    ko::deep_copy(cm.etam, h);
+    for (int k = 0; k < cm.nlev; ++k) {
+      hm(k) = etam[k];
+      slmm_assert(k == 0 or hm(k) > hm(k-1));
+      slmm_assert(hm(k) > 0 && hm(k) < 1);
+    }
+    ko::deep_copy(cm.etai, hi);
+    ko::deep_copy(cm.etam, hm);
   }
 #if defined COMPOSE_HORIZ_OPENMP
 # pragma omp barrier
@@ -150,15 +157,14 @@ void set_hvcoord (IslMpi<MT>& cm, const Real etai_beg, const Real etai_end,
 }
 
 template void set_hvcoord(
-  IslMpi<ko::MachineTraits>& cm, const Real etai_beg, const Real etai_end,
-  const Real* etam);
+  IslMpi<ko::MachineTraits>& cm, const Real* etai, const Real* etam);
 
 // Set pointers to HOMME data arrays.
 template <typename MT>
 void set_elem_data (IslMpi<MT>& cm, const Int ie, Real* qdp, const Int n0_qdp,
                     const Real* dp, Real* q, const Int nelem_in_patch) {
   slmm_assert(ie < cm.ed_h.size());
-  slmm_assert(cm.halo > 1 || cm.ed_h(ie).nbrs.size() == nelem_in_patch);
+  slmm_assert(cm.halo > 1 or cm.ed_h(ie).nbrs.size() == nelem_in_patch);
   auto& e = cm.ed_h(ie);
 #if defined COMPOSE_PORT
   cm.tracer_arrays->pqdp.set_ie_ptr(ie, qdp);
@@ -275,21 +281,6 @@ static void initialize_kokkos () {
   if (Kokkos::is_initialized()) return;
   in_charge_of_kokkos = true;
   std::vector<char*> args;
-#ifdef HOMMEXX_ENABLE_GPU
-  int nd;
-  const auto ret = cudaGetDeviceCount(&nd);
-  if (ret != cudaSuccess) {
-    // It isn't a big deal if we can't get the device count.
-    nd = 1;
-  }
-  std::stringstream ss;
-  ss << "--kokkos-ndevices=" << nd;
-  const auto key = ss.str();
-  std::vector<char> str(key.size()+1);
-  std::copy(key.begin(), key.end(), str.begin());
-  str.back() = 0;
-  args.push_back(const_cast<char*>(str.data()));
-#endif
   const char* silence = "--kokkos-disable-warnings";
   args.push_back(const_cast<char*>(silence));
   int narg = args.size();
@@ -410,15 +401,14 @@ void slmm_check_ref2sphere (homme::Int ie, homme::Cartesian3D* p) {
   amb::dev_fin_threads();
 }
 
-void slmm_set_hvcoord (const homme::Real etai_beg, const homme::Real etai_end,
-                       const homme::Real* etam) {
+void slmm_set_hvcoord (const homme::Real* etai, const homme::Real* etam) {
   amb::dev_init_threads();
   slmm_assert(homme::g_csl_mpi);
-  homme::islmpi::set_hvcoord(*homme::g_csl_mpi, etai_beg, etai_end, etam);
+  homme::islmpi::set_hvcoord(*homme::g_csl_mpi, etai, etam);
   amb::dev_fin_threads();
 }
 
-void slmm_calc_v_departure (
+void slmm_interp_v_update (
   homme::Int nets, homme::Int nete, homme::Int step, homme::Real dtsub,
   homme::Real* dep_points, homme::Int dep_points_ndim, homme::Real* vnode,
   homme::Real* vdep, homme::Int* info)
@@ -434,8 +424,8 @@ void slmm_calc_v_departure (
     homme::sl_traj_h2d(*cm.tracer_arrays, dep_points, vnode, vdep,
                        cm.dep_points_ndim);
   }
-  homme::islmpi::calc_v_departure(cm, nets - 1, nete - 1, step - 1,
-                                  dtsub, dep_points, vnode, vdep);
+  homme::islmpi::interp_v_update(cm, nets - 1, nete - 1, step - 1,
+                                 dtsub, dep_points, vnode, vdep);
   *info = 0;
   {
     slmm::Timer timer("d2h");

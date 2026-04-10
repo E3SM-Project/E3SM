@@ -537,7 +537,7 @@ contains
 
 
   !-----------------------------------------------------------------------
-  subroutine add_column(ci, li, ctype, wtlunit)
+  subroutine add_column(ci, li, ctype, wtlunit, is_soil, is_crop, is_lake)
     !
     ! !DESCRIPTION:
     ! Add an entry in the column-level arrays. ci gives the index of the last column
@@ -549,6 +549,9 @@ contains
     integer  , intent(in)    :: li      ! landunit index on which this column should be placed (assumes this landunit has already been created)
     integer  , intent(in)    :: ctype   ! column type
     real(r8) , intent(in)    :: wtlunit ! weight of the column relative to the landunit
+    logical  , optional      :: is_soil ! true for a soil column
+    logical  , optional      :: is_crop ! true for a crop column
+    logical  , optional      :: is_lake ! true for a lake column
     !
     ! !LOCAL VARIABLES:
     character(len=*), parameter :: subname = 'add_column'
@@ -562,11 +565,15 @@ contains
     
     col_pp%wtlunit(ci) = wtlunit
     col_pp%itype(ci) = ctype
-    
+
+    if (present(is_soil)) col_pp%is_soil(ci) = is_soil
+    if (present(is_crop)) col_pp%is_crop(ci) = is_crop
+    if (present(is_lake)) col_pp%is_lake(ci) = is_lake
+
   end subroutine add_column
 
   !-----------------------------------------------------------------------
-  subroutine add_patch(pi, ci, ptype, wtcol)
+  subroutine add_patch(pi, ci, ptype, wtcol, is_on_soil_col, is_on_crop_col)
     !
     ! !DESCRIPTION:
     ! Add an entry in the patch-level arrays. pi gives the index of the last patch added; the
@@ -582,6 +589,8 @@ contains
     integer  , intent(in)    :: ci    ! column index on which this patch should be placed (assumes this column has already been created)
     integer  , intent(in)    :: ptype ! patch type
     real(r8) , intent(in)    :: wtcol ! weight of the patch relative to the column
+    logical,   optional      :: is_on_soil_col
+    logical,   optional      :: is_on_crop_col
     !
     ! !LOCAL VARIABLES:
     integer :: li  ! landunit index, for convenience
@@ -607,6 +616,9 @@ contains
     else
        veg_pp%mxy(pi) = ispval
     end if
+
+    if (present(is_on_soil_col)) veg_pp%is_on_soil_col(pi) = is_on_soil_col
+    if (present(is_on_crop_col)) veg_pp%is_on_crop_col(pi) = is_on_crop_col
 
   end subroutine add_patch
 

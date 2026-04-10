@@ -328,12 +328,12 @@
 
   <compset>
     <alias>ICRUELM</alias>
-    <lname>2000_DATM%CRU_ELM_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+    <lname>2000_DATM%CRU_ELM%SP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>I2010CRUELM</alias>
-    <lname>2010_DATM%CRU_ELM_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+    <lname>2010_DATM%CRU_ELM%SP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -494,7 +494,7 @@
    <!---I GSWP3 compsets-->
   <compset>
     <alias>IGSWELM</alias>
-    <lname>2000_DATM%GSWP3v1_ELM_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+    <lname>2000_DATM%GSWP3v1_ELM%SP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -981,6 +981,13 @@
     <alias>I1PTELM</alias>
     <lname>2000_DATM%1PT_ELM%SP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>	  
+
+  <!---One way OCN to LND   -->
+
+  <compset>
+    <alias>GTSM2ELM</alias>
+    <lname>2000_DATM%GSWP3v1_ELM_SICE_DOCN%GTSM_SROF_SGLC_SWAV</lname>
+  </compset>    
 
   <entries>
     <entry id="RUN_STARTDATE">

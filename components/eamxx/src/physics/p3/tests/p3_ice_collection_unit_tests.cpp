@@ -1,8 +1,6 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "share/core/eamxx_types.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
 
@@ -66,17 +64,17 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        cldliq[i].read(Base::m_fid);
+        cldliq[i].read(Base::m_ifile);
       }
     }
 
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init pack inputs
-      Spack rho, temp, rhofaci, table_val_qc2qi_collect, qi_incld, qc_incld, ni_incld, nc_incld;
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      Pack rho, temp, rhofaci, table_val_qc2qi_collect, qi_incld, qc_incld, ni_incld, nc_incld;
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         rho[s]                     = cldliq_device(vs).rho;
         temp[s]                    = cldliq_device(vs).temp;
         rhofaci[s]                 = cldliq_device(vs).rhofaci;
@@ -87,10 +85,10 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
         nc_incld[s]                = cldliq_device(vs).nc_incld;
       }
 
-      Spack qc2qi_collect_tend{0.0};
-      Spack nc_collect_tend{0.0};
-      Spack qc2qr_ice_shed_tend{0.0};
-      Spack ncshdc{0.0};
+      Pack qc2qi_collect_tend{0.0};
+      Pack nc_collect_tend{0.0};
+      Pack qc2qr_ice_shed_tend{0.0};
+      Pack ncshdc{0.0};
 
       Functions::ice_cldliq_collection(
           rho, temp, rhofaci, table_val_qc2qi_collect, qi_incld, qc_incld,
@@ -99,7 +97,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
           p3::Functions<Real,DefaultDevice>::P3Runtime());
 
       // Copy results back into views
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         cldliq_device(vs).qc2qi_collect_tend  = qc2qi_collect_tend[s];
         cldliq_device(vs).nc_collect_tend     = nc_collect_tend[s];
         cldliq_device(vs).qc2qr_ice_shed_tend = qc2qr_ice_shed_tend[s];
@@ -121,7 +119,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        cldliq_host(s).write(Base::m_fid);
+        cldliq_host(s).write(Base::m_ofile);
       }
     }
   }
@@ -167,17 +165,17 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        rain[i].read(Base::m_fid);
+        rain[i].read(Base::m_ifile);
       }
     }
 
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init pack inputs
-      Spack rho, temp, rhofaci, logn0r, table_val_nr_collect, table_val_qr2qi_collect, qi_incld, ni_incld, qr_incld;
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      Pack rho, temp, rhofaci, logn0r, table_val_nr_collect, table_val_qr2qi_collect, qi_incld, ni_incld, qr_incld;
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         rho[s]                     = rain_device(vs).rho;
         temp[s]                    = rain_device(vs).temp;
         rhofaci[s]                 = rain_device(vs).rhofaci;
@@ -189,7 +187,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
         qr_incld[s]                = rain_device(vs).qr_incld;
       }
 
-      Spack qr2qi_collect_tend(0.0), nr_collect_tend(0.0);
+      Pack qr2qi_collect_tend(0.0), nr_collect_tend(0.0);
       Functions::ice_rain_collection(
           rho, temp, rhofaci, logn0r, table_val_nr_collect,
           table_val_qr2qi_collect, qi_incld, ni_incld, qr_incld,
@@ -197,7 +195,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
           p3::Functions<Real, DefaultDevice>::P3Runtime());
 
       // Copy results back into views
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         rain_device(vs).qr2qi_collect_tend = qr2qi_collect_tend[s];
         rain_device(vs).nr_collect_tend    = nr_collect_tend[s];
       }
@@ -215,7 +213,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        rain_host(s).write(Base::m_fid);
+        rain_host(s).write(Base::m_ofile);
       }
     }
   }
@@ -261,17 +259,17 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        self[i].read(Base::m_fid);
+        self[i].read(Base::m_ifile);
       }
     }
 
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init pack inputs
-      Spack rho, rhofaci, table_val_ni_self_collect, eii, qm_incld, qi_incld, ni_incld;
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      Pack rho, rhofaci, table_val_ni_self_collect, eii, qm_incld, qi_incld, ni_incld;
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         rho[s]                        = self_device(vs).rho;
         rhofaci[s]                    = self_device(vs).rhofaci;
         table_val_ni_self_collect[s]  = self_device(vs).table_val_ni_self_collect;
@@ -281,11 +279,11 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
         ni_incld[s]                   = self_device(vs).ni_incld;
       }
 
-      Spack ni_selfcollect_tend{0.0};
+      Pack ni_selfcollect_tend{0.0};
       Functions::ice_self_collection(rho, rhofaci, table_val_ni_self_collect, eii, qm_incld, qi_incld, ni_incld,
                                      ni_selfcollect_tend);
 
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         self_device(vs).ni_selfcollect_tend = ni_selfcollect_tend[s];
       }
     });
@@ -299,7 +297,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        self_host(s).write(Base::m_fid);
+        self_host(s).write(Base::m_ofile);
       }
     }
   }

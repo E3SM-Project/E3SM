@@ -1,16 +1,11 @@
 #include "catch2/catch.hpp"
 
 #include "p3_unit_tests_common.hpp"
-
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
 #include "p3_data.hpp"
-#include "share/eamxx_types.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/util/ekat_file_utils.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -59,10 +54,10 @@ struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap::UnitTest<D>::Base {
   }
 
   // Perform the table lookup and interpolation operations for (mu_r, lamr).
-  KOKKOS_FUNCTION static Spack interp (const view_2d_table& table, const Scalar& mu_r,
+  KOKKOS_FUNCTION static Pack interp (const view_2d_table& table, const Scalar& mu_r,
                                        const Scalar& lamr) {
     // Init the pack to all the same value, and compute in every pack slot.
-    Spack mu_r_p(mu_r), lamr_p(lamr);
+    Pack mu_r_p(mu_r), lamr_p(lamr);
     Table3 t3;
     Functions::lookup(mu_r_p, lamr_p, t3);
     return Functions::apply_table(table, t3);

@@ -1,7 +1,7 @@
 #ifndef SCREAM_FIELD_TAG_HPP
 #define SCREAM_FIELD_TAG_HPP
 
-#include "ekat/ekat_assert.hpp"
+#include <ekat_assert.hpp>
 
 #include <string>
 #include <vector>
@@ -30,6 +30,7 @@ enum class FieldTag {
   Element,
   LevelMidPoint,
   LevelInterface,
+  LevelPressure,
   Column,
   GaussPoint,
   Component,
@@ -49,6 +50,7 @@ namespace ShortFieldTagsNames {
   constexpr auto TL   = FieldTag::TimeLevel;
   constexpr auto LEV  = FieldTag::LevelMidPoint;
   constexpr auto ILEV = FieldTag::LevelInterface;
+  constexpr auto LEVP = FieldTag::LevelPressure;
   constexpr auto CMP  = FieldTag::Component;
 }
 
@@ -67,6 +69,9 @@ inline std::string e2str (const FieldTag ft) {
       break;
     case ILEV:
       name = "ilev";
+      break;
+    case LEVP:
+      name = "lev";
       break;
     case FieldTag::TimeLevel:
       name = "tl";

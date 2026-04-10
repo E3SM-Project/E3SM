@@ -2,9 +2,8 @@
 #define TMS_UNIT_TESTS_COMMON_HPP
 
 #include "tms_functions.hpp"
-#include "share/eamxx_types.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "physics/share/physics_test_data.hpp"
+#include "share/core/eamxx_types.hpp"
+#include "share/physics/physics_test_data.hpp"
 
 namespace scream {
 namespace tms {
@@ -43,7 +42,7 @@ struct UnitWrap {
 
     using Functions          = scream::tms::Functions<Real, Device>;
     using Scalar             = typename Functions::Scalar;
-    using Spack              = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
+    using Pack               = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
 
     struct Base : public UnitBase {
 

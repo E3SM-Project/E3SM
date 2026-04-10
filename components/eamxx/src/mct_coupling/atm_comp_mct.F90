@@ -263,17 +263,19 @@ CONTAINS
 #endif
 
     call scream_setup_surface_coupling (c_loc(import_field_names), c_loc(import_cpl_indices), &
-                                        c_loc(x2a%rAttr), &
 #ifdef HAVE_MOAB
                                         c_loc(x2a_am),  &
+#else
+                                        c_loc(x2a%rAttr), &
 #endif
                                         c_loc(import_vector_components), &
                                         c_loc(import_constant_multiple), c_loc(do_import_during_init), &
                                         num_cpl_imports, num_scream_imports, import_field_size, &
                                         c_loc(export_field_names), c_loc(export_cpl_indices), &
-                                        c_loc(a2x%rAttr), &
 #ifdef HAVE_MOAB
                                         c_loc(a2x_am),  &
+#else
+                                        c_loc(a2x%rAttr), &
 #endif
                                         c_loc(export_vector_components), &
                                         c_loc(export_constant_multiple), c_loc(do_export_during_init), &
@@ -617,6 +619,22 @@ CONTAINS
     ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  then
       print *, 'Error: fail to create  tags from seq_flds_dom_fields '
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+
+
+    ! lat and lon are in data1 and data2
+    tagname = 'lat'//C_NULL_CHAR !
+    ierr = iMOAB_SetDoubleTagStorage(mphaid, tagname, num_local_cols , ent_type, data1)
+    if (ierr > 0 )  then
+      print *, 'Error: fail to set lat '
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+
+    tagname = 'lon'//C_NULL_CHAR !
+    ierr = iMOAB_SetDoubleTagStorage(mphaid, tagname, num_local_cols , ent_type, data2)
+    if (ierr > 0 )  then
+      print *, 'Error: fail to set lon '
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)
     endif
 

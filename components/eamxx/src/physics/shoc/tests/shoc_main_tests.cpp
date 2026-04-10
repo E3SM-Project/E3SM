@@ -1,11 +1,9 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "share/core/eamxx_types.hpp"
 #include "shoc_functions.hpp"
 #include "shoc_test_data.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 
 #include "shoc_unit_tests_common.hpp"
 
@@ -22,11 +20,11 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
     static constexpr Real minlen = scream::shoc::Constants<Real>::minlen;
     static constexpr Real maxlen = scream::shoc::Constants<Real>::maxlen;
     static constexpr Real maxiso = scream::shoc::Constants<Real>::maxiso;
-    static constexpr Real Cpair = scream::physics::Constants<Real>::Cpair;
-    static constexpr Real gravit = scream::physics::Constants<Real>::gravit;
-    static constexpr Real LatVap = scream::physics::Constants<Real>::LatVap;
-    static constexpr Real Rair = scream::physics::Constants<Real>::Rair;
-    static constexpr Real p0 = scream::physics::Constants<Real>::P0;
+    static constexpr Real Cpair = scream::physics::Constants<Real>::Cpair.value;
+    static constexpr Real gravit = scream::physics::Constants<Real>::gravit.value;
+    static constexpr Real LatVap = scream::physics::Constants<Real>::LatVap.value;
+    static constexpr Real Rair = scream::physics::Constants<Real>::Rair.value;
+    static constexpr Real p0 = scream::physics::Constants<Real>::P0.value;
 
     static constexpr Int shcol    = 5;
     static constexpr Int nlev     = 5;
@@ -270,8 +268,8 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
         REQUIRE( (SDS.qw[offset] > qw_lbound && SDS.qw[offset] < qw_ubound) );
         REQUIRE( (SDS.tke[offset] > tke_lbound && SDS.tke[offset] < tke_ubound) );
         // Increase wind bounds by 2 m/s to allow for surface flux effects
-        REQUIRE(std::abs(SDS.u_wind[offset] < wind_bounds+2));
-        REQUIRE(std::abs(SDS.v_wind[offset] < wind_bounds+2));
+        REQUIRE(std::abs(SDS.u_wind[offset]) < wind_bounds+2);
+        REQUIRE(std::abs(SDS.v_wind[offset]) < wind_bounds+2);
 
         REQUIRE( (SDS.shoc_mix[offset] >= minlen && SDS.shoc_mix[offset] <= maxlen) );
         REQUIRE( (SDS.isotropy[offset] >= 0 && SDS.isotropy[offset] < maxiso) );
@@ -280,7 +278,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
         REQUIRE( (SDS.tk[offset] >= 0 && SDS.tk[offset] < 100) );
         REQUIRE( (SDS.tkh[offset] >= 0 && SDS.tkh[offset] < 100) );
         REQUIRE(std::abs(SDS.wthv_sec[offset]) < 1);
-        REQUIRE(std::abs(SDS.brunt[offset] < 1));
+        REQUIRE(std::abs(SDS.brunt[offset]) < 1);
 
         // Make sure there are no "empty" clouds
         if (SDS.shoc_cldfrac[offset] > 0){
@@ -300,7 +298,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
         REQUIRE(SDS.host_dse[offset] < dse_upper);
 
         // Verify that w2 is less than tke
-        REQUIRE(std::abs(SDS.w_sec[offset] < SDS.tke[offset]));
+        REQUIRE(std::abs(SDS.w_sec[offset]) < SDS.tke[offset]);
 
         // Verify tracer output is reasonable
         for (Int t = 0; t < num_qtracers; ++t){
@@ -316,12 +314,12 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
         // Make sure turbulence output is appropriate
         REQUIRE( (SDS.thl_sec[offset] >= 0 && SDS.thl_sec[offset] < 1e2 ) );
         REQUIRE( (SDS.qw_sec[offset] >= 0 && SDS.qw_sec[offset] < 1e-3) );
-        REQUIRE(std::abs(SDS.wthl_sec[offset] < 1));
-        REQUIRE(std::abs(SDS.wqw_sec[offset] < 1e-3));
-        REQUIRE(std::abs(SDS.w3[offset] < 10));
-        REQUIRE(std::abs(SDS.qwthl_sec[offset] < 1));
-        REQUIRE(std::abs(SDS.uw_sec[offset] < 1));
-        REQUIRE(std::abs(SDS.vw_sec[offset] < 1));
+        REQUIRE(std::abs(SDS.wthl_sec[offset]) < 1);
+        REQUIRE(std::abs(SDS.wqw_sec[offset]) < 1e-3);
+        REQUIRE(std::abs(SDS.w3[offset]) < 10);
+        REQUIRE(std::abs(SDS.qwthl_sec[offset]) < 1);
+        REQUIRE(std::abs(SDS.uw_sec[offset]) < 1);
+        REQUIRE(std::abs(SDS.vw_sec[offset]) < 1);
       }
 
     }
@@ -377,7 +375,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (auto& d : baseline_data) {
-        d.read(Base::m_fid);
+        d.read(Base::m_ifile);
       }
     }
 
@@ -463,7 +461,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
     } // SCREAM_BFB_TESTING
     else if (this->m_baseline_action == GENERATE) {
       for (auto& d : cxx_data) {
-        d.write(Base::m_fid);
+        d.write(Base::m_ofile);
       }
     }
   } // run_bfb

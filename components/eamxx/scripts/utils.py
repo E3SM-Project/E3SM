@@ -363,7 +363,10 @@ def pip_install_lib(pip_libname):
 
     # Note: --trusted-host may not work for ancient versions of python
     #       --upgrade makes sure we get the latest version, even if one is already installed
-    stat, _, err = run_cmd("{} -m pip install --upgrade {} --trusted-host files.pythonhosted.org --user".format(sys.executable, pip_libname))
+    # If we are inside a virtual environment, do NOT use --user (it is not allowed)
+    in_venv = sys.prefix != sys.base_prefix
+    user_flag = "" if in_venv else "--user"
+    stat, _, err = run_cmd("{} -m pip install --upgrade {} --trusted-host files.pythonhosted.org {}".format(sys.executable, pip_libname, user_flag))
     expect(stat == 0, "Failed to install {}, cannot continue:\n{}".format(pip_libname, err))
 
     # needed to "rehash" available libs

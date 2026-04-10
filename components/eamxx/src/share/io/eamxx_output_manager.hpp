@@ -2,19 +2,19 @@
 #define SCREAM_OUTPUT_MANAGER_HPP
 
 #include "share/io/scorpio_output.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/io/eamxx_io_file_specs.hpp"
 #include "share/io/eamxx_io_control.hpp"
 
-#include "share/field/field_manager.hpp"
-#include "share/grid/grids_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
+#include "share/data_managers/grids_manager.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
+#include "share/util/eamxx_utils.hpp"
 
-#include "ekat/logging/ekat_logger.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_parse_yaml_file.hpp"
+#include <ekat_logger.hpp>
+#include <ekat_comm.hpp>
+#include <ekat_parameter_list.hpp>
 
 namespace scream
 {
@@ -64,7 +64,7 @@ class OutputManager
 public:
   using fm_type = FieldManager;
   using gm_type = GridsManager;
-  using globals_map_t = std::map<std::string,ekat::any>;
+  using globals_map_t = std::map<std::string,std::shared_ptr<std::any>>;
 
   // Constructor(s) & Destructor
   OutputManager() = default;
@@ -103,10 +103,8 @@ public:
   void setup (const std::shared_ptr<fm_type>& field_mgr,
               const std::set<std::string>& grid_names);
 
-  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
-      m_atm_logger = atm_logger;
-  }
-  void add_global (const std::string& name, const ekat::any& global);
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger);
+  void add_global (const std::string& name, const std::shared_ptr<std::any>& global);
 
   void init_timestep (const util::TimeStamp& start_of_step, const Real dt);
   void run (const util::TimeStamp& current_ts);
@@ -186,8 +184,7 @@ protected:
   util::TimeStamp   m_case_t0;
   util::TimeStamp   m_run_t0;
 
-  // The logger to be used throughout the ATM to log message
-  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
+  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger = console_logger(ekat::logger::LogLevel::warn);
 
   // If true, we save grid data in output file
   bool m_save_grid_data;

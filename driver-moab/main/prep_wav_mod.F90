@@ -75,7 +75,7 @@ contains
     type(seq_infodata_type) , intent(in)    :: infodata
     logical                 , intent(in)    :: atm_c2_wav ! .true.  => atm to wav coupling on
     logical                 , intent(in)    :: ocn_c2_wav ! .true.  => ocn to wav coupling on
-    logical                 , intent(in)    :: ice_c2_wav ! .true.  => ocn to wav coupling on
+    logical                 , intent(in)    :: ice_c2_wav ! .true.  => ice to wav coupling on
     !
     ! Local Variables
     integer                     :: eai , eoi, eii

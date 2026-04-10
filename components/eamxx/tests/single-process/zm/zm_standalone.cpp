@@ -8,7 +8,7 @@
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 
-#include "ekat/ekat_parse_yaml_file.hpp"
+#include <ekat_yaml.hpp>
 
 #include <iostream>
 #include <iomanip>
@@ -43,7 +43,7 @@ TEST_CASE("zm-standalone", "") {
   // Need to register grids managers before we create the driver
   auto& proc_factory = AtmosphereProcessFactory::instance();
   auto& gm_factory = GridsManagerFactory::instance();
-  proc_factory.register_product("ZM",&create_atmosphere_process<ZMDeepConvection>);
+  proc_factory.register_product("ZM",&create_atmosphere_process<zm_deep_convection>);
   gm_factory.register_product("mesh_free",&create_mesh_free_grids_manager);
   register_diagnostics();
 

@@ -1,11 +1,11 @@
 #ifndef SCREAM_PHYSICS_DYNAMICS_REMAPPER_HPP
 #define SCREAM_PHYSICS_DYNAMICS_REMAPPER_HPP
 
-#include "share/eamxx_config.hpp"
+#include "share/remap/abstract_remapper.hpp"
 
-#include "share/grid/remap/abstract_remapper.hpp"
+#include "share/core/eamxx_config.hpp"
 
-#include "ekat/ekat_pack.hpp"
+#include <ekat_pack.hpp>
 
 namespace Homme {
 class BoundaryExchange;
@@ -29,7 +29,6 @@ public:
   using view_1d = view_Nd<T,1>;
 
   using pack_type = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-  using small_pack_type = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>;
 
   PhysicsDynamicsRemapper (const grid_ptr_type& phys_grid,
                            const grid_ptr_type& dyn_grid);
@@ -73,7 +72,6 @@ public:
 
   enum AllocPropType : int {
     PackAlloc      = 0,
-    SmallPackAlloc = 1,
     RealAlloc      = 2
   };
 
@@ -151,7 +149,7 @@ protected:
 
   bool subfields_info_has_changed (const std::map<int,SubviewInfo>& subfield_info,
                                    const std::vector<Field>& fields) const;
-  void update_subfields_views (const std::map<int,SubviewInfo>& subfield_info,
+  void update_subfields_views (std::map<int,SubviewInfo>& subfield_info,
                                const ViewsRepo& repo,
                                const std::vector<Field>& fields) const;
 

@@ -10,22 +10,22 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::update_prognostic_ice(
-  const Spack& qc2qi_hetero_freeze_tend, const Spack& qc2qi_collect_tend,  const Spack& qc2qr_ice_shed_tend, const Spack& nc_collect_tend,
-  const Spack& nc2ni_immers_freeze_tend, const Spack& ncshdc, const Spack& qr2qi_collect_tend, const Spack& nr_collect_tend,
-  const Spack& qr2qi_immers_freeze_tend, const Spack& nr2ni_immers_freeze_tend, const Spack& nr_ice_shed_tend, const Spack& qi2qr_melt_tend,
-  const Spack& ni2nr_melt_tend, const Spack& qi2qv_sublim_tend, const Spack& qv2qi_vapdep_tend, const Spack& qv2qi_nucleat_tend,
-  const Spack& ni_nucleat_tend, const Spack& ni_selfcollect_tend, const Spack& ni_sublim_tend, const Spack& qc2qi_berg_tend,
-  const Spack& inv_exner, const bool do_predict_nc,
-  const Smask& log_wetgrowth, const Scalar dt,  const Scalar& nmltratio, const Spack& rho_qm_cloud,
-  Spack& ncheti_cnt, Spack& nicnt, Spack& ninuc_cnt, Spack& qcheti_cnt, Spack& qicnt, Spack& qinuc_cnt,
-  Spack& th_atm, Spack& qv, Spack& qi, Spack& ni, Spack& qm, Spack& bm, Spack& qc,
-  Spack& nc, Spack& qr, Spack& nr, const bool& use_hetfrz_classnuc,
-  const Smask& context)
+  const Pack& qc2qi_hetero_freeze_tend, const Pack& qc2qi_collect_tend,  const Pack& qc2qr_ice_shed_tend, const Pack& nc_collect_tend,
+  const Pack& nc2ni_immers_freeze_tend, const Pack& ncshdc, const Pack& qr2qi_collect_tend, const Pack& nr_collect_tend,
+  const Pack& qr2qi_immers_freeze_tend, const Pack& nr2ni_immers_freeze_tend, const Pack& nr_ice_shed_tend, const Pack& qi2qr_melt_tend,
+  const Pack& ni2nr_melt_tend, const Pack& qi2qv_sublim_tend, const Pack& qv2qi_vapdep_tend, const Pack& qv2qi_nucleat_tend,
+  const Pack& ni_nucleat_tend, const Pack& ni_selfcollect_tend, const Pack& ni_sublim_tend, const Pack& qc2qi_berg_tend,
+  const Pack& inv_exner, const bool do_predict_nc,
+  const Mask& log_wetgrowth, const Scalar dt,  const Scalar& nmltratio, const Pack& rho_qm_cloud,
+  Pack& ncheti_cnt, Pack& nicnt, Pack& ninuc_cnt, Pack& qcheti_cnt, Pack& qicnt, Pack& qinuc_cnt,
+  Pack& th_atm, Pack& qv, Pack& qi, Pack& ni, Pack& qm, Pack& bm, Pack& qc,
+  Pack& nc, Pack& qr, Pack& nr, const bool& use_hetfrz_classnuc,
+  const Mask& context)
 {
   constexpr Scalar QSMALL          = C::QSMALL;
   constexpr Scalar INV_RHO_RIMEMAX = C::INV_RHO_RIMEMAX;
-  constexpr Scalar latvap          = C::LatVap;
-  constexpr Scalar latice          = C::LatIce;
+  constexpr Scalar latvap          = C::LatVap.value;
+  constexpr Scalar latice          = C::LatIce.value;
 
   if(use_hetfrz_classnuc){
     qc.set(context, qc + (-qcheti_cnt-qicnt-qc2qi_collect_tend-qc2qr_ice_shed_tend-qc2qi_berg_tend)*dt);
@@ -97,7 +97,7 @@ void Functions<S,D>
   //   and bm such that rho_rim (qm/bm) --> rho_liq during melting.
   // ==
 
-  constexpr Scalar INV_CP = C::INV_CP;
+  constexpr Scalar INV_CP = C::INV_CP.value;
   if(use_hetfrz_classnuc){
     qv.set(context, qv + (-qv2qi_vapdep_tend+qi2qv_sublim_tend-qv2qi_nucleat_tend-qinuc_cnt)*dt);
     th_atm.set(context, th_atm + inv_exner * ((qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend+qinuc_cnt) * (latvap+latice) * INV_CP +
@@ -116,17 +116,17 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::update_prognostic_liquid(
-  const Spack& qc2qr_accret_tend, const Spack& nc_accret_tend,
-  const Spack& qc2qr_autoconv_tend,const Spack& nc2nr_autoconv_tend, const Spack& ncautr,
-  const Spack& nc_selfcollect_tend, const Spack& qr2qv_evap_tend, const Spack& nr_evap_tend, const Spack& nr_selfcollect_tend,
-  const bool do_predict_nc, const bool do_prescribed_CCN, const Spack& inv_rho, const Spack& inv_exner,
-  const Scalar dt, Spack& th_atm, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr,
-  const Smask& context)
+  const Pack& qc2qr_accret_tend, const Pack& nc_accret_tend,
+  const Pack& qc2qr_autoconv_tend,const Pack& nc2nr_autoconv_tend, const Pack& ncautr,
+  const Pack& nc_selfcollect_tend, const Pack& qr2qv_evap_tend, const Pack& nr_evap_tend, const Pack& nr_selfcollect_tend,
+  const bool do_predict_nc, const bool do_prescribed_CCN, const Pack& inv_rho, const Pack& inv_exner,
+  const Scalar dt, Pack& th_atm, Pack& qv, Pack& qc, Pack& nc, Pack& qr, Pack& nr,
+  const Mask& context)
 {
   constexpr Scalar NCCNST = C::NCCNST;
   constexpr int IPARAM    = C::IPARAM;
-  constexpr Scalar INV_CP = C::INV_CP;
-  constexpr Scalar latvap       = C::LatVap;
+  constexpr Scalar INV_CP = C::INV_CP.value;
+  constexpr Scalar latvap = C::LatVap.value;
 
   qc.set(context, qc + (-qc2qr_accret_tend-qc2qr_autoconv_tend)*dt);
   qr.set(context, qr + (qc2qr_accret_tend+qc2qr_autoconv_tend-qr2qv_evap_tend)*dt);

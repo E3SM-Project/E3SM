@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 
-#include "diagnostics/register_diagnostics.hpp"
+#include "share/diagnostics/register_diagnostics.hpp"
 
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/grid/point_grid.hpp"
@@ -98,16 +98,6 @@ TEST_CASE("create_diag")
     REQUIRE (d8->get_params().get<std::string>("number_kind")=="Rain");
   }
 
-  SECTION ("aerocom_cld") {
-    auto d1 = create_diagnostic("AeroComCldTop",grid);
-    REQUIRE (std::dynamic_pointer_cast<AeroComCld>(d1)!=nullptr);
-    REQUIRE (d1->get_params().get<std::string>("aero_com_cld_kind")=="Top");
-
-    auto d2 = create_diagnostic("AeroComCldBot",grid);
-    REQUIRE (std::dynamic_pointer_cast<AeroComCld>(d2)!=nullptr);
-    REQUIRE (d2->get_params().get<std::string>("aero_com_cld_kind")=="Bot");
-  }
-
   SECTION ("vapor_flux") {
     auto d1 = create_diagnostic("MeridionalVapFlux",grid);
     REQUIRE (std::dynamic_pointer_cast<VaporFluxDiagnostic>(d1)!=nullptr);
@@ -118,10 +108,24 @@ TEST_CASE("create_diag")
     REQUIRE (d2->get_params().get<std::string>("wind_component")=="Zonal");
   }
 
-  SECTION ("atm_tend") {
+  SECTION ("atm_backtend") {
+    // _atm_backtend is a built-in alias: X_atm_backtend → X_minus_X_prev_over_dt
+    // The returned diagnostic is FieldOverDtDiag with field_name = "BlaH_123_minus_BlaH_123_prev"
     auto d1 = create_diagnostic("BlaH_123_atm_backtend",grid);
-    REQUIRE (std::dynamic_pointer_cast<AtmBackTendDiag>(d1)!=nullptr);
-    REQUIRE (d1->get_params().get<std::string>("tendency_name")=="BlaH_123");
+    REQUIRE (std::dynamic_pointer_cast<FieldOverDtDiag>(d1)!=nullptr);
+    REQUIRE (d1->get_params().get<std::string>("field_name")=="BlaH_123_minus_BlaH_123_prev");
+  }
+
+  SECTION ("field_prev") {
+    auto d1 = create_diagnostic("BlaH_123_prev",grid);
+    REQUIRE (std::dynamic_pointer_cast<FieldPrevDiag>(d1)!=nullptr);
+    REQUIRE (d1->get_params().get<std::string>("field_name")=="BlaH_123");
+  }
+
+  SECTION ("field_over_dt") {
+    auto d1 = create_diagnostic("BlaH_123_over_dt",grid);
+    REQUIRE (std::dynamic_pointer_cast<FieldOverDtDiag>(d1)!=nullptr);
+    REQUIRE (d1->get_params().get<std::string>("field_name")=="BlaH_123");
   }
 
   SECTION ("pot_temp") {

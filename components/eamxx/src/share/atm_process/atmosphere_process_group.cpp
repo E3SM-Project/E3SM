@@ -3,8 +3,9 @@
 
 #include "share/property_checks/field_nan_check.hpp"
 
-#include "ekat/std_meta/ekat_std_utils.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
+#include <ekat_std_utils.hpp>
+#include <ekat_string_utils.hpp>
+#include <ekat_assert.hpp>
 
 #include <memory>
 
@@ -24,9 +25,9 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
       m_group_schedule_type = ScheduleType::Sequential;
     } else if (m_params.get<std::string>("schedule_type") == "parallel") {
       m_group_schedule_type = ScheduleType::Parallel;
-      ekat::error::runtime_abort("Error! Parallel schedule not yet implemented.\n");
+      EKAT_ERROR_MSG("Error! Parallel schedule not yet implemented.\n");
     } else {
-      ekat::error::runtime_abort("Error! Invalid 'schedule_type'. Available choices are 'parallel' and 'sequential'.\n");
+      EKAT_ERROR_MSG("Error! Invalid 'schedule_type'. Available choices are 'parallel' and 'sequential'.\n");
     }
   } else {
     // Pointless to handle this group as parallel, if only one process is in it
@@ -146,54 +147,39 @@ bool AtmosphereProcessGroup::has_process(const std::string& name) const {
   return false;
 }
 
-void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager> grids_manager) {
+void AtmosphereProcessGroup::create_requests () {
 
   // The atm process group (APG) simply 'concatenates' required/computed
   // fields of the stored process. There is a single exception to this
   // rule, in case of sequential splitting: if an atm proc requires a
   // field that is computed by a previous atm proc in the group, that
   // field is not exposed as a required field of the group.
-
+  const bool seq_splitting = m_group_schedule_type==ScheduleType::Sequential;
   for (auto& atm_proc : m_atm_processes) {
-    atm_proc->set_grids(grids_manager);
+    atm_proc->set_grids(m_grids_manager);
 
     // Add inputs/outputs to the list of inputs of the group
-    for (const auto& req : atm_proc->get_required_field_requests()) {
-      process_required_field(req);
+    for (const auto& ap_req : atm_proc->get_field_requests()) {
+      bool already_computed = has_computed_field(ap_req.fid);
+      auto& req = m_field_requests.emplace_back(ap_req);
+      if (seq_splitting and req.usage & Required and already_computed)
+        req.usage = Computed;
     }
-    for (const auto& req : atm_proc->get_computed_field_requests()) {
-      add_field<Computed>(req);
-    }
-    for (const auto& req : atm_proc->get_required_group_requests()) {
-      process_required_group(req);
-    }
-    for (const auto& req : atm_proc->get_computed_group_requests()) {
-      add_group<Computed>(req);
+    for (const auto& ap_req : atm_proc->get_group_requests()) {
+      bool already_computed = has_computed_group(ap_req.name,ap_req.grid);
+      auto& req = m_group_requests.emplace_back(ap_req);
+      if (seq_splitting and req.usage & Required and already_computed)
+        req.usage = Computed;
     }
   }
-
-  m_grids_mgr = grids_manager;
 }
 
-void AtmosphereProcessGroup::setup_tendencies_requests () {
-  auto is_tend = [](const std::string& name) -> bool
-  {
-    return name.size()>5 &&
-           name.substr(name.size()-5)=="_tend";
-  };
-
-  AtmosphereProcess::setup_tendencies_requests();
+void AtmosphereProcessGroup::
+setup_step_tendencies (const std::string& default_grid) {
   for (const auto& atm_proc : m_atm_processes) {
-    atm_proc->setup_tendencies_requests();
-
-    // Redo the add_field<Computed> for all XYZ_tend fields, since
-    // they were added *after* the call to set_grids.
-    for (const auto& req : atm_proc->get_computed_field_requests()) {
-      if (is_tend(req.fid.name())) {
-        add_field<Computed>(req);
-      }
-    }
+    atm_proc->setup_step_tendencies(default_grid);
   }
+  AtmosphereProcess::setup_step_tendencies(default_grid);
 }
 
 void AtmosphereProcessGroup::
@@ -221,7 +207,7 @@ gather_internal_fields  () {
 }
 
 bool AtmosphereProcessGroup::
-are_column_conservation_checks_enabled () const
+are_conservation_checks_enabled () const
 {
   // Loop through processes and return true if an instance is found.
   for (auto atm_proc : m_atm_processes) {
@@ -230,7 +216,7 @@ are_column_conservation_checks_enabled () const
     // else continue to the next process.
     auto atm_proc_group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_proc);
     if (atm_proc_group) {
-      if (atm_proc_group->are_column_conservation_checks_enabled()) {
+      if (atm_proc_group->are_conservation_checks_enabled()) {
         return true;
       } else {
         continue;
@@ -239,7 +225,7 @@ are_column_conservation_checks_enabled () const
 
     // If this process is not a group, query enable_column_conservation_checks
     // and return true if true.
-    if (atm_proc->has_column_conservation_check()) {
+    if (atm_proc->has_column_conservation_check() || atm_proc->has_energy_fixer()) {
       return true;
     }
   }
@@ -249,7 +235,7 @@ are_column_conservation_checks_enabled () const
 }
 
 void AtmosphereProcessGroup::
-setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConservationCheck>& conservation_check,
+setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyConservationCheck>& conservation_check,
                                   const CheckFailHandling                                      fail_handling_type) const
 {
   // Loop over atm processes and add mass and energy checker where relevant
@@ -265,38 +251,28 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConse
       // fluxes over multiple processes implemented in the model.
       EKAT_REQUIRE_MSG(not atm_proc_group->has_column_conservation_check(),
                        "Error! The ATM process group \"" + atm_proc_group->name() + "\" attempted to enable "
-                       "conservation checks. Should have enable_column_conservation_checks=false for all "
-                       "process groups.\n");
-
+                       "conservation checks. A process group cannot have enable_column_conservation_checks=true. \n");
       atm_proc_group->setup_column_conservation_checks(conservation_check, fail_handling_type);
       continue;
     }
 
     // For individual processes, first query if the checks are enabled.
     // If not, continue to the next process.
-    if (not atm_proc->has_column_conservation_check()) {
+    if (not (atm_proc->has_column_conservation_check() || atm_proc->has_energy_fixer()) ) {
       continue;
     }
-
-    // Since the checker is column local, require that an atm
-    // process that enables the check is a Physics process.
-    EKAT_REQUIRE_MSG(atm_proc->type() == AtmosphereProcessType::Physics,
-                     "Error! enable_column_conservation_checks=true "
-                     "for non-physics process \"" + atm_proc->name() + "\". "
-                     "This check is column local and therefore can only be run "
-                     "on physics processes.\n");
 
     // Query the computed fields for this atm process and see if either the mass or energy computation
     // might be changed after the process has run. If no field used in the mass or energy calculate
     // is updated by this process, there is no need to run the check.
     const std::string phys_grid_name  = conservation_check->get_grid()->name();
-    const bool updates_static_energy  = atm_proc->has_computed_field("T_mid", phys_grid_name);
+    const bool updates_internal_energy  = atm_proc->has_computed_field("T_mid", phys_grid_name);
     const bool updates_kinetic_energy = atm_proc->has_computed_field("horiz_winds", phys_grid_name);
     const bool updates_water_vapor    = atm_proc->has_computed_field("qv", phys_grid_name);
     const bool updates_water_liquid   = atm_proc->has_computed_field("qc", phys_grid_name) ||
                                         atm_proc->has_computed_field("qr", phys_grid_name);
     const bool updates_water_ice      = atm_proc->has_computed_field("qi", phys_grid_name);
-    const bool mass_or_energy_is_updated = updates_static_energy || updates_kinetic_energy ||
+    const bool mass_or_energy_is_updated = updates_internal_energy || updates_kinetic_energy ||
                                            updates_water_vapor   || updates_water_liquid ||
                                            updates_water_ice;
     EKAT_REQUIRE_MSG(mass_or_energy_is_updated, "Error! enable_column_conservation_checks=true for "
@@ -319,7 +295,8 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConse
 
     // If all conditions are satisfied, add as postcondition_check
     atm_proc->add_column_conservation_check(conservation_check, fail_handling_type);
-  }
+  }// for (auto atm_proc : m_atm_processes) 
+
 }
 
 void AtmosphereProcessGroup::add_postcondition_nan_checks () const {
@@ -329,14 +306,20 @@ void AtmosphereProcessGroup::add_postcondition_nan_checks () const {
       group->add_postcondition_nan_checks();
     } else {
       for (const auto& f : proc->get_fields_out()) {
+        if (f.data_type()==DataType::IntType)
+          continue;
+
         const auto& grid_name = f.get_header().get_identifier().get_grid_name();
-        auto nan_check = std::make_shared<FieldNaNCheck>(f,m_grids_mgr->get_grid(grid_name));
+        auto nan_check = std::make_shared<FieldNaNCheck>(f,m_grids_manager->get_grid(grid_name));
         proc->add_postcondition_check(nan_check, CheckFailHandling::Fatal);
       }
 
       for (const auto& g : proc->get_groups_out()) {
-        const auto& grid = m_grids_mgr->get_grid(g.grid_name());
+        const auto& grid = m_grids_manager->get_grid(g.grid_name());
         for (const auto& f : g.m_individual_fields) {
+          if (f.second->data_type()==DataType::IntType)
+            continue;
+
           auto nan_check = std::make_shared<FieldNaNCheck>(*f.second,grid);
           proc->add_postcondition_check(nan_check, CheckFailHandling::Fatal);
         }
@@ -358,7 +341,7 @@ void AtmosphereProcessGroup::add_additional_data_fields_to_property_checks (cons
         prop_check.second->set_additional_data_field(data_field);
       }
       if (proc->has_column_conservation_check()) {
-        proc->get_column_conservation_check().second->set_additional_data_field(data_field);
+        proc->get_conservation().second->set_additional_data_field(data_field);
       }
     }
   }
@@ -372,10 +355,7 @@ void AtmosphereProcessGroup::pre_process_tracer_requests () {
       tracer_requests[req.fid.name()].push_back(req);
     }
   };
-  for (auto& req : m_required_field_requests){
-    gather_tracer_requests(req);
-  }
-  for (auto& req : m_computed_field_requests) {
+  for (auto& req : m_field_requests){
     gather_tracer_requests(req);
   }
 
@@ -425,12 +405,7 @@ void AtmosphereProcessGroup::pre_process_tracer_requests () {
       req.groups.push_back(advect_type);
     }
   };
-  for (auto& req : m_required_field_requests){
-    if (ekat::contains(req.groups, "tracers")) {
-      add_correct_tracer_group(req, tracer_advection_type.at(req.fid.name()));
-    }
-  }
-  for (auto& req : m_computed_field_requests) {
+  for (auto& req : m_field_requests){
     if (ekat::contains(req.groups, "tracers")) {
       add_correct_tracer_group(req, tracer_advection_type.at(req.fid.name()));
     }
@@ -520,9 +495,9 @@ set_required_field (const Field& f) {
   // by a previous process. If so, then this FG is not a "required" FG
   // for this AtmosphereProcessGroup.
   // NOTE: the case where the FG itself is computed by a previous atm proc
-  //       is already handled during `set_grids` (see process_required_group).
+  //       is already handled during `set_grids`
   // NOTE: we still check also the groups computed by the previous procs,
-  //       in case they contain some of the fields in this group.
+  //       in case they contain this field
   bool computed = false;
   for (int iproc=0; iproc<first_proc_that_needs_f; ++iproc) {
     if (m_atm_processes[iproc]->has_computed_field(fid)) {
@@ -588,9 +563,9 @@ set_required_group (const FieldGroup& group) {
   // by a previous process. If so, then this group is not a "required" group
   // for this group.
   // NOTE: the case where the group itself is computed by a previous atm proc
-  // is already handled during `set_grids` (see process_required_group).
+  // is already handled during `set_grids`
   // NOTE: we still check also the groups computed by the previous procs,
-  //       in case they contain some of the fields in this group.
+  //       in case they contain all the fields in this group.
   std::set<std::string> computed;
   for (const auto& it : group.m_individual_fields) {
     const auto& fn = it.first;
@@ -687,49 +662,6 @@ void AtmosphereProcessGroup::set_computed_field_impl (const Field& f) {
     if (atm_proc->has_required_field(fid)) {
       atm_proc->set_required_field(f.get_const());
     }
-  }
-}
-
-void AtmosphereProcessGroup::
-process_required_group (const GroupRequest& req) {
-  if (m_group_schedule_type==ScheduleType::Sequential) {
-    if (has_computed_group(req.name,req.grid)) {
-      // Some previous atm proc computes this group, so it's not an 'input'
-      // of the atm group as a whole. However, we might need a different
-      // pack size. So, instead of adding to the required groups,
-      // we add to the computed ones. This way we don't modify the inputs
-      // of the group, and still manage to communicate to the AD the pack size
-      // that we need.
-      // NOTE; we don't have a way to check if all the fields in the group
-      //       are computed by previous processes, since we don't have
-      //       the list of all fields in this group.
-      add_group<Computed>(req);
-    } else {
-      add_group<Required>(req);
-    }
-  } else {
-    // In parallel schedule, the inputs of all processes are inputs of the group
-    add_group<Required>(req);
-  }
-}
-
-void AtmosphereProcessGroup::
-process_required_field (const FieldRequest& req) {
-  if (m_group_schedule_type==ScheduleType::Sequential) {
-    if (has_computed_field(req.fid)) {
-      // Some previous atm proc computes this field, so it's not an 'input'
-      // of the group as a whole. However, we might need a different pack size,
-      // or want to add it to a different group. So, instead of adding to
-      // the required fields, we add to the computed fields. This way we
-      // don't modify the inputs of the group, and still manage to communicate
-      // to the AD the pack size and group affiliations that we need
-      add_field<Computed>(req);
-    } else {
-      add_field<Required>(req);
-    }
-  } else {
-    // In parallel schedule, the inputs of all processes are inputs of the group
-    add_field<Required>(req);
   }
 }
 

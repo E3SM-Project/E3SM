@@ -5,26 +5,37 @@
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
 
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
 
 #include "share/field/field_utils.hpp"
 #include "share/field/field.hpp"
-#include "share/field/field_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
-#include "ekat/util/ekat_units.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_assert.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_units.hpp>
+#include <ekat_parameter_list.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_comm.hpp>
 
 #include <iomanip>
 #include <memory>
 
 namespace scream {
+
+// Small class to expose protected members of Atm output
+class OutputTester : public AtmosphereOutput
+{
+public:
+  OutputTester(const ekat::Comm& comm, const ekat::ParameterList& params,
+               const std::shared_ptr<const fm_type>& field_mgr, const std::string& grid_name)
+    : AtmosphereOutput (comm,params,field_mgr,grid_name)
+  { /* Nothing to do here */ }
+
+  std::list<diag_ptr_type> get_diags () const { return m_diagnostics; }
+};
 
 class MyDiag : public AtmosphereDiagnostic
 {
@@ -37,27 +48,16 @@ public:
 
   std::string name() const override { return "MyDiag"; }
 
-  void set_grids (const std::shared_ptr<const GridsManager> gm) override {
-    using namespace ekat::units;
+  void create_requests () override {
     using namespace ShortFieldTagsNames;
-    using FL = FieldLayout;
-
-    const auto grid = gm->get_grid("point_grid");
+    const auto grid = m_grids_manager->get_grid("point_grid");
     const auto& grid_name = grid->name();
-    m_num_cols  = grid->get_num_local_dofs(); // Number of columns on this rank
-    m_num_levs  = grid->get_num_vertical_levels();  // Number of levels per column
-
-    std::vector<FieldTag> tag_2d = {COL,LEV};
-    std::vector<Int>     dims_2d = {m_num_cols,m_num_levs};
-    FL lt( tag_2d, dims_2d );
-
-    m_f_in = "f_"+std::to_string(lt.size());
-
-    auto units = Units::nondimensional();
-    add_field<Required>(m_f_in,lt,units,grid_name);
+    auto units = ekat::units::Units::nondimensional();
+    auto layout = grid->get_3d_scalar_layout(LEV);
+    add_field<Required>("my_f",layout,units,grid_name);
 
     // We have to initialize the m_diagnostic_output:
-    FieldIdentifier fid (name(), lt, units, grid_name);
+    FieldIdentifier fid ("MyDiag", layout, units, grid_name);
     m_diagnostic_output = Field(fid);
     m_diagnostic_output.allocate_view();
     m_one = m_diagnostic_output.clone("one");
@@ -68,16 +68,19 @@ public:
     m_t_beg = start_of_step;
   }
 
+  int get_num_evaluations () const { return m_num_evaluations; }
 protected:
 
   void compute_diagnostic_impl () override {
-    const auto& f_in  = get_field_in(m_f_in);
+    const auto& f_in  = get_field_in("my_f");
 
     const auto& t = f_in.get_header().get_tracking().get_time_stamp();
     const double dt = t - m_t_beg;
 
     m_diagnostic_output.deep_copy(f_in);
     m_diagnostic_output.update(m_one,dt,2.0);
+
+    ++m_num_evaluations;
   }
 
   void initialize_impl (const RunType /* run_type */ ) override {
@@ -87,13 +90,10 @@ protected:
   // Clean up
   void finalize_impl ( /* inputs */ ) override {}
 
-  // Internal variables
-  int m_num_cols, m_num_levs;
-
-  std::string m_f_in;
-
   util::TimeStamp m_t_beg;
   Field m_one;
+
+  int m_num_evaluations = 0;
 };
 
 util::TimeStamp get_t0 () {
@@ -117,26 +117,18 @@ get_gm (const ekat::Comm& comm)
 
 std::shared_ptr<FieldManager>
 get_fm (const std::shared_ptr<const AbstractGrid>& grid,
-        const util::TimeStamp& t0, const int seed,
+        const util::TimeStamp& t0, int seed,
         const bool add_diag_field = false)
 {
   using FL  = FieldLayout;
   using FID = FieldIdentifier;
   using namespace ShortFieldTagsNames;
 
-  // Random number generation stuff
-  // NOTES
-  //  - Use integers, so we can check answers without risk of
-  //    non bfb diffs due to different order of sums.
-  //  - Uniform_int_distribution returns an int, and the randomize
-  //    util checks that return type matches the Field data type.
-  //    So wrap the int pdf in a lambda, that does the cast.
-  std::mt19937_64 engine(seed);
-  auto my_pdf = [&](std::mt19937_64& engine) -> Real {
-    std::uniform_int_distribution<int> pdf (0,100);
-    Real v = pdf(engine);
-    return v;
-  };
+  // Note: we use a discrete set of random values, so we can
+  // check answers without risk of non-bfb diffs due to ops order
+  std::vector<Real> values;
+  for (int i=0; i<=100; ++i)
+    values.push_back(static_cast<Real>(i));
 
   const int nlcols = grid->get_num_local_dofs();
   const int nlevs  = grid->get_num_vertical_levels();
@@ -146,10 +138,10 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   const auto units = ekat::units::Units::nondimensional();
   FL fl ({COL,LEV}, {nlcols,nlevs});
 
-  FID fid("f_"+std::to_string(fl.size()),fl,units,grid->name());
+  FID fid("my_f",fl,units,grid->name());
   Field f(fid);
   f.allocate_view();
-  randomize (f,engine,my_pdf);
+  randomize_discrete (f,seed++,values);
   f.get_header().get_tracking().update_time_stamp(t0);
   fm->add_field(f);
 
@@ -157,7 +149,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
     FID diag_id("MyDiag",fl,units,grid->name());
     Field diag(diag_id);
     diag.allocate_view();
-    randomize (diag,engine,my_pdf);
+    randomize_discrete (diag,seed++,values);
     fm->add_field(diag);
   }
 
@@ -301,6 +293,62 @@ TEST_CASE ("io_diags") {
   read(seed,comm);
   print(" PASS\n");
   scorpio::finalize_subsystem();
+}
+
+TEST_CASE ("diags_sharing_check") {
+  // NOTE: this test does NOT do any scorpio call. We create AtmosphereOutput objects
+  // rather than OutputManager objects (which WOULD do scorpio calls), and set up the
+  // output specs so that when we call the run method ONCE, we don't trigger a write.
+  // All we want to do is verify that the two writers share the same diag object,
+  // and that the diag object only runs once, skipping the compute call for the second stream
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  // Make MyDiag available via diag factory
+  auto& diag_factory = AtmosphereDiagnosticFactory::instance();
+  diag_factory.register_product("MyDiag",&create_atmosphere_diagnostic<MyDiag>);
+
+  // Time stamp
+  auto time = get_t0();
+
+  // Create grids and field managers
+  auto gm = get_gm (comm);
+  auto grid = gm->get_grid("point_grid");
+  auto fm = get_fm(grid,time,123);
+
+  // Create output params
+  ekat::ParameterList params;
+  params.set("averaging_type", std::string("average"));
+  params.sublist("fields").sublist(grid->name()).set<std::vector<std::string>>("field_names",{"MyDiag"});
+
+  // Create Output testers
+  OutputTester out1(comm,params,fm,grid->name());
+  OutputTester out2(comm,params,fm,grid->name());
+
+  // Check the diags in the two streams are the SAME instance
+  auto diags1 = out1.get_diags();
+  auto diags2 = out2.get_diags();
+
+  REQUIRE (diags1.size()==1);
+  REQUIRE (diags2.size()==1);
+  REQUIRE (diags1.front()==diags2.front());
+  auto d = std::dynamic_pointer_cast<MyDiag>(diags1.front());
+
+  // Run outputs and verify the diag was evaluated only once
+  out1.init_timestep(time);
+  out2.init_timestep(time);
+
+  out1.run("UNUSED", false, false, 0, false);
+  out2.run("UNUSED", false, false, 0, false);
+
+  REQUIRE (d->get_num_evaluations()==1);
+
+  // Update diag input, then run again, and verify the diag was evaluated one more time
+  time += 1.0;
+  fm->get_field("my_f").get_header().get_tracking().update_time_stamp(time);
+  out1.run("UNUSED", false, false, 0, false);
+  out2.run("UNUSED", false, false, 0, false);
+
+  REQUIRE (d->get_num_evaluations()==2);
 }
 
 } // anonymous namespace

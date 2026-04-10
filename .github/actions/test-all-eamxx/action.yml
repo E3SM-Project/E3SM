@@ -41,6 +41,13 @@ inputs:
     description: 'Semicolon-separated list of key=value pairs for CMake to pass to test-all-eamxx'
     required: false
     default: ''
+  kokkos_develop:
+    description: 'Whether or not this is a test using Kokkos develop branch'
+    required: false
+    default: 'false'
+    valid_values:
+      - 'true'
+      - 'false'
 
 runs:
   using: "composite"
@@ -61,14 +68,14 @@ runs:
           echo "Unsupported Linux distribution"
           exit 1
         fi
-      shell: sh
+      shell: bash --login {0}
     - name: Check repo presence
       run: |
         if [ ! -d ".git" ]; then
           echo "Repository is not checked out. Please ensure the repository is checked out before running this action."
           exit 1
         fi
-      shell: sh
+      shell: bash --login {0}
     - name: Print build specs
       run: |
         echo "Testing EAMxx standalone, for the following configuration:"
@@ -77,7 +84,19 @@ runs:
         echo "  generate     : ${{ inputs.generate }}"
         echo "  submit       : ${{ inputs.submit }}"
         echo "  cmake-configs: ${{ inputs.cmake-configs }}"
-      shell: sh
+        echo "  kokkos dev   : ${{ inputs.kokkos_develop }}"
+      shell: bash --login {0}
+    - name: Checkout Kokkos develop branch
+      if: ${{ inputs.kokkos_develop == 'true' }}
+      working-directory: externals/ekat/extern/kokkos
+      run: |
+        echo "Check out up-to-date Kokkos develop branch"
+        if ! git remote | grep -q upstream; then
+          git remote add upstream https://github.com/kokkos/kokkos.git
+        fi
+        git fetch upstream
+        git checkout upstream/develop
+      shell: bash --login {0}
     - name: Run test-all-eamxx
       working-directory: components/eamxx
       run: |
@@ -98,18 +117,26 @@ runs:
           cmd+=" -c $config"
         done
 
+        # Add suffix for CDASH build name, and necessary cmake vars if this is a kokkos-develop test
+        if [ "${{ inputs.kokkos_develop }}" = "true" ]; then
+          cmd+=" --build-name-suffix kokkos_develop"
+          cmd+=" -c CMAKE_CXX_STANDARD=20"
+          cmd+=" -c Kokkos_ENABLE_IMPL_VIEW_LEGACY=ON"
+          cmd+=" -c Kokkos_ENABLE_DEPRECATED_CODE_4=ON"
+        fi
+
         # Print the full command, then run it
         echo "test-all-eamxx call: $cmd"
         $cmd
-      shell: sh
+      shell: bash --login {0}
     - name: Upload ctest logs
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: log-files-${{ inputs.build_type }}-${{ inputs.machine }}
         path: |
-          components/eamxx/ctest-build/*/Testing/Temporary/Last*.log
-          components/eamxx/ctest-build/*/ctest_resource_file.json
-          components/eamxx/ctest-build/*/CMakeCache.txt
+          components/eamxx/ctest-build/**/Testing/Temporary/Last*.log
+          components/eamxx/ctest-build/**/ctest_resource_file.json
+          components/eamxx/ctest-build/**/CMakeCache.txt
       env:
         NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}

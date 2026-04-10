@@ -1,12 +1,14 @@
 #include "eamxx_cosp.hpp"
 #include "cosp_functions.hpp"
+#include "share/physics/physics_constants.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
-#include "physics/share/physics_constants.hpp"
-
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_units.hpp"
-
 #include "share/field/field_utils.hpp"
+
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_units.hpp>
 
 #include <array>
 
@@ -29,7 +31,7 @@ Cosp::Cosp (const ekat::Comm& comm, const ekat::ParameterList& params)
 }
 
 // =========================================================================================
-void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void Cosp::create_requests()
 {
   using namespace ekat::units;
   using namespace ekat::prefixes;
@@ -43,7 +45,7 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   auto m2 = pow(m, 2);
   auto s2 = pow(s, 2);
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
@@ -52,8 +54,8 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
   FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();
-  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
-  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(false);
+  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(LEV);
+  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(ILEV);
   FieldLayout scalar4d_ctptau ( {COL,CMP,CMP},
                                 {m_num_cols,m_num_tau,m_num_ctp},
                                 {e2str(COL), "cosp_tau", "cosp_prs"});
@@ -66,7 +68,7 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("surf_radiative_T", scalar2d    , K,      grid_name);
   //add_field<Required>("surfelev",    scalar2d    , m,      grid_name);
   //add_field<Required>("landmask",    scalar2d    , nondim, grid_name);
-  add_field<Required>("sunlit",           scalar2d    , nondim, grid_name);
+  add_field<Required>(FieldIdentifier("sunlit_mask", scalar2d, nondim, grid_name, DataType::IntType));
   add_field<Required>("p_mid",             scalar3d_mid, Pa,     grid_name);
   add_field<Required>("p_int",             scalar3d_int, Pa,     grid_name);
   //add_field<Required>("height_mid",  scalar3d_mid, m,      grid_name);
@@ -89,17 +91,16 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("eff_radius_qc",     scalar3d_mid, micron,      grid_name);
   add_field<Required>("eff_radius_qi",     scalar3d_mid, micron,      grid_name);
   // Set of fields used strictly as output
+  // NOTE we set their corresponding masks in init impl
   add_field<Computed>("isccp_cldtot", scalar2d, percent, grid_name);
   add_field<Computed>("isccp_ctptau", scalar4d_ctptau, percent, grid_name, 1);
   add_field<Computed>("modis_ctptau", scalar4d_ctptau, percent, grid_name, 1);
   add_field<Computed>("misr_cthtau", scalar4d_cthtau, percent, grid_name, 1);
-  add_field<Computed>("cosp_sunlit", scalar2d, nondim, grid_name);
 
   // We can allocate these now
-  m_z_mid = Field(FieldIdentifier("z_mid",scalar3d_mid,m,grid_name));
-  m_z_int = Field(FieldIdentifier("z_int",scalar3d_int,m,grid_name));
-  m_z_mid.allocate_view();
-  m_z_int.allocate_view();
+  m_z_mid = Field(FieldIdentifier("z_mid",scalar3d_mid,m,grid_name),true);
+  m_z_int = Field(FieldIdentifier("z_int",scalar3d_int,m,grid_name),true);
+  m_sunlit_real = Field(FieldIdentifier("sunlit_mask_real",scalar2d,nondim,grid_name),true);
 }
 
 // =========================================================================================
@@ -108,15 +109,35 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   // Set property checks for fields in this process
   CospFunc::initialize(m_num_cols, m_num_subcols, m_num_levs);
 
+  using namespace ShortFieldTagsNames;
 
-  // Add note to output files about processing ISCCP fields that are only valid during
-  // daytime. This can go away once I/O can handle masked time averages.
-  using stratts_t = std::map<std::string,std::string>;
+  // Create the masks for the 4d fields
+  FieldLayout scalar4d_ctptau ( {COL,CMP,CMP},
+                                {m_num_cols,m_num_tau,m_num_ctp},
+                                {e2str(COL), "cosp_tau", "cosp_prs"});
+  FieldLayout scalar4d_cthtau ( {COL,CMP,CMP},
+                                {m_num_cols,m_num_tau,m_num_cth},
+                                {e2str(COL), "cosp_tau", "cosp_cth"});
+
+  const auto nondim = ekat::units::Units::nondimensional();
+  FieldIdentifier mctp_fid ("sunlit_mask_ctptau", scalar4d_ctptau, nondim, m_grid->name(), DataType::IntType);
+  FieldIdentifier mcth_fid ("sunlit_mask_cthtau", scalar4d_cthtau, nondim, m_grid->name(), DataType::IntType);
+  Field mctp(mctp_fid,true);
+  Field mcth(mcth_fid,true);
+  std::map<std::string,Field> masks = {
+    {"isccp_cldtot", get_field_in("sunlit_mask")},
+    {"isccp_ctptau", mctp},
+    {"modis_ctptau", mctp},
+    {"misr_cthtau",  mcth},
+  };
+  // Set the mask field for each of the cosp computed fields
   std::list<std::string> vnames = {"isccp_cldtot", "isccp_ctptau", "modis_ctptau", "misr_cthtau"};
-  for (const auto field_name : {"isccp_cldtot", "isccp_ctptau", "modis_ctptau", "misr_cthtau"}) {
-      auto& f = get_field_out(field_name);
-      auto& atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
-      atts["note"] = "Night values are zero; divide by cosp_sunlit to get daytime mean";
+  for (const auto& field_name : vnames) {
+    // the mask here is just the sunlit mask, so set it
+    auto& f = get_field_out(field_name);
+
+    f.get_header().set_extra_data("valid_mask", masks.at(field_name));
+    f.get_header().set_may_be_filled(true);
   }
 }
 
@@ -151,7 +172,6 @@ void Cosp::run_impl (const double dt)
     get_field_in("qv").sync_to_host();
     get_field_in("qc").sync_to_host();
     get_field_in("qi").sync_to_host();
-    get_field_in("sunlit").sync_to_host();
     get_field_in("surf_radiative_T").sync_to_host();
     get_field_in("T_mid").sync_to_host();
     get_field_in("p_mid").sync_to_host();
@@ -162,6 +182,8 @@ void Cosp::run_impl (const double dt)
     get_field_in("dtau067").sync_to_host();
     get_field_in("dtau105").sync_to_host();
 
+    m_sunlit_real.deep_copy(get_field_in("sunlit_mask"));
+    m_sunlit_real.sync_to_host();
     // Compute z_mid
     const auto T_mid_d = get_field_in("T_mid").get_view<const Real**>();
     const auto qv_d  = get_field_in("qv").get_view<const Real**>();
@@ -175,11 +197,11 @@ void Cosp::run_impl (const double dt)
 
     using KT       = KokkosTypes<DefaultDevice>;
     using ExeSpace = typename KT::ExeSpace;
-    using ESU      = ekat::ExeSpaceUtils<ExeSpace>;
+    using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
     using PF       = scream::PhysicsFunctions<DefaultDevice>;
 
-    const auto scan_policy = ESU::get_thread_range_parallel_scan_team_policy(ncol, nlev);
-    const auto g = physics::Constants<Real>::gravit;
+    const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol, nlev);
+    const Real g = physics::Constants<Real>::gravit.value;
     Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
         const int i = team.league_rank();
         const auto p_mid_s = ekat::subview(p_mid_d, i);
@@ -212,7 +234,7 @@ void Cosp::run_impl (const double dt)
     const auto p_mid_h   = get_field_in("p_mid").get_view<const Real**,Host>();
     const auto qc_h      = get_field_in("qc").get_view<const Real**, Host>();
     const auto qi_h      = get_field_in("qi").get_view<const Real**, Host>();
-    const auto sunlit_h  = get_field_in("sunlit").get_view<const Real*, Host>();
+    const auto sunlit_h  = m_sunlit_real.get_view<const Real*, Host>();
     const auto skt_h     = get_field_in("surf_radiative_T").get_view<const Real*, Host>();
     const auto p_int_h   = get_field_in("p_int").get_view<const Real**, Host>();
     const auto cldfrac_h = get_field_in("cldfrac_rad").get_view<const Real**, Host>();
@@ -224,29 +246,28 @@ void Cosp::run_impl (const double dt)
     auto isccp_cldtot_h = get_field_out("isccp_cldtot").get_view<Real*, Host>();
     auto isccp_ctptau_h = get_field_out("isccp_ctptau").get_view<Real***, Host>();
     auto modis_ctptau_h = get_field_out("modis_ctptau").get_view<Real***, Host>();
-    auto misr_cthtau_h  = get_field_out("misr_cthtau").get_view<Real***, Host>();
-    auto cosp_sunlit_h  = get_field_out("cosp_sunlit").get_view<Real*, Host>();  // Copy of sunlit flag with COSP frequency for proper averaging
+    auto misr_cthtau_h  = get_field_out("misr_cthtau"). get_view<Real***, Host>();
 
     Real emsfc_lw = 0.99;
-    Kokkos::deep_copy(cosp_sunlit_h, sunlit_h);
     CospFunc::main(
             m_num_cols, m_num_subcols, m_num_levs, m_num_tau, m_num_ctp, m_num_cth, emsfc_lw,
             sunlit_h, skt_h, T_mid_h, p_mid_h, p_int_h, z_mid_h, qv_h, qc_h, qi_h,
             cldfrac_h, reff_qc_h, reff_qi_h, dtau067_h, dtau105_h,
             isccp_cldtot_h, isccp_ctptau_h, modis_ctptau_h, misr_cthtau_h
     );
-    // Remask night values to ZERO since our I/O does not know how to handle masked/missing values
-    // in temporal averages; this is all host data, so we can just use host loops like its the 1980s
+    // Mask night values
+    constexpr auto fill_value = constants::fill_value<Real>;
     for (int i = 0; i < m_num_cols; i++) {
       if (sunlit_h(i) == 0) {
-        isccp_cldtot_h(i) = 0;
+        // if night, set to fill val
+        isccp_cldtot_h(i) = fill_value;
         for (int j = 0; j < m_num_tau; j++) {
           for (int k = 0; k < m_num_ctp; k++) {
-            isccp_ctptau_h(i,j,k) = 0;
-            modis_ctptau_h(i,j,k) = 0;
+            isccp_ctptau_h(i,j,k) = fill_value;
+            modis_ctptau_h(i,j,k) = fill_value;
           }
           for (int k = 0; k < m_num_cth; k++) {
-            misr_cthtau_h (i,j,k) = 0;
+            misr_cthtau_h (i,j,k) = fill_value;
           }
         }
       }
@@ -257,22 +278,27 @@ void Cosp::run_impl (const double dt)
     get_field_out("isccp_ctptau").sync_to_dev();
     get_field_out("modis_ctptau").sync_to_dev();
     get_field_out("misr_cthtau").sync_to_dev();
-    get_field_out("cosp_sunlit").sync_to_dev();
-  } else {
-    // If not updating COSP statistics, set these to ZERO; this essentially weights
-    // the ISCCP cloud properties by the sunlit mask. What will be output for time-averages
-    // then is the time-average mask-weighted statistics; to get true averages, we need to
-    // divide by the time-average of the mask. I.e., if M is the sunlit mask, and X is the ISCCP
-    // statistic, then
-    //
-    //     avg(X) = sum(M * X) / sum(M) = (sum(M * X)/N) / (sum(M)/N) = avg(M * X) / avg(M)
-    //
-    // TODO: mask this when/if the AD ever supports masked averages
-    get_field_out("isccp_cldtot").deep_copy(0);
-    get_field_out("isccp_ctptau").deep_copy(0);
-    get_field_out("modis_ctptau").deep_copy(0);
-    get_field_out("misr_cthtau").deep_copy(0);
-    get_field_out("cosp_sunlit").deep_copy(0);
+
+    // Update the ctptau and cthtau masks by broadcasting sunlit mask
+    const auto& sunlit = get_field_in("sunlit_mask");
+    auto& ctptau = get_field_out("isccp_ctptau").get_header().get_extra_data<Field>("valid_mask");
+    auto& cthtau = get_field_out("misr_cthtau").get_header().get_extra_data<Field>("valid_mask");
+
+    auto sunlit_v = sunlit.get_view<const int*>();
+    auto ctptau_v = ctptau.get_view<int***>();
+    auto cthtau_v = cthtau.get_view<int***>();
+    auto do_ctp = KOKKOS_LAMBDA (int icol, int itau, int ictp) {
+      ctptau_v(icol,itau,ictp) = sunlit_v(icol);
+    };
+    auto do_cth = KOKKOS_LAMBDA (int icol, int itau, int icth) {
+      cthtau_v(icol,itau,icth) = sunlit_v(icol);
+    };
+    using exec_space = typename DefaultDevice::execution_space;
+    using policy_t = Kokkos::MDRangePolicy<exec_space,Kokkos::Rank<3>>;
+    policy_t policy_ctp({0,0,0},{m_num_cols,m_num_tau,m_num_ctp});
+    policy_t policy_cth({0,0,0},{m_num_cols,m_num_tau,m_num_cth});
+    Kokkos::parallel_for(policy_ctp,do_ctp);
+    Kokkos::parallel_for(policy_cth,do_cth);
   }
 }
 

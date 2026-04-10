@@ -25,6 +25,7 @@ add_default($nl, 'config_tracer_advection');
 add_default($nl, 'config_horiz_tracer_adv_order');
 add_default($nl, 'config_advection_coef_3rd_order');
 add_default($nl, 'config_restore_thickness_after_advection');
+add_default($nl, 'config_smb_source');
 add_default($nl, 'config_zero_sfcMassBalApplied_over_bare_land');
 
 ##############################
@@ -56,6 +57,8 @@ add_default($nl, 'config_restore_calving_front_prevent_retreat');
 add_default($nl, 'config_remove_icebergs');
 add_default($nl, 'config_remove_small_islands');
 add_default($nl, 'config_calving_speed_limit');
+add_default($nl, 'config_apply_facemelt_strainrate_enhancement');
+add_default($nl, 'config_calving_strainrate_scaling');
 add_default($nl, 'config_grounded_von_Mises_threshold_stress');
 add_default($nl, 'config_floating_von_Mises_threshold_stress');
 add_default($nl, 'config_grounded_von_Mises_threshold_stress_source');
@@ -70,6 +73,8 @@ add_default($nl, 'config_damage_rheology_coupling');
 add_default($nl, 'config_damage_gl_setting');
 add_default($nl, 'config_damage_calving_method');
 add_default($nl, 'config_damagecalvingParameter');
+add_default($nl, 'config_crevasse_water_depth_source');
+add_default($nl, 'config_crevasse_water_depth');
 add_default($nl, 'config_ismip6_retreat_k');
 add_default($nl, 'config_calving_error_threshold');
 add_default($nl, 'config_distribute_unablatedVolumeDynCell');
@@ -122,6 +127,11 @@ add_default($nl, 'config_subglacial_discharge_coefficient');
 add_default($nl, 'config_subglacial_discharge_intercept');
 add_default($nl, 'config_uniform_face_melt_rate');
 add_default($nl, 'config_ocean_data_extrapolation');
+add_default($nl, 'config_calculate_thermal_forcing');
+add_default($nl, 'config_extrap_sill_blocking');
+add_default($nl, 'config_TF_vertical_calc');
+add_default($nl, 'config_TF_iceberg_melt');
+add_default($nl, 'config_TF_iceberg_depth');
 add_default($nl, 'config_ocean_data_extrap_ncells_extra');
 add_default($nl, 'config_invalid_value_TF');
 add_default($nl, 'config_weight_value_cell');
@@ -263,4 +273,14 @@ add_default($nl, 'config_AM_regionalStats_compute_interval');
 add_default($nl, 'config_AM_regionalStats_stream_name');
 add_default($nl, 'config_AM_regionalStats_compute_on_startup');
 add_default($nl, 'config_AM_regionalStats_write_on_startup');
+
+################################
+# Namelist group: AM_fluxGates #
+################################
+
+add_default($nl, 'config_AM_fluxGates_enable');
+add_default($nl, 'config_AM_fluxGates_compute_interval');
+add_default($nl, 'config_AM_fluxGates_stream_name');
+add_default($nl, 'config_AM_fluxGates_compute_on_startup');
+add_default($nl, 'config_AM_fluxGates_write_on_startup');
 

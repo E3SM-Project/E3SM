@@ -24,7 +24,7 @@ module FrictionVelocityMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: FrictionVelocity       ! Calculate friction velocity
-  public :: MoninObukIni           ! Initialization of the Monin-Obukhov length
+  public :: MoninObukIni           ! Initialization of the Obukhov length scale
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: StabilityFunc1        ! Stability function for rib < 0.
@@ -62,7 +62,7 @@ contains
     real(r8) , intent(in)    :: z0m     ( lbn: )         ! roughness length over vegetation, momentum [m] [lbn:ubn]
     real(r8) , intent(in)    :: z0h     ( lbn: )         ! roughness length over vegetation, sensible heat [m] [lbn:ubn]
     real(r8) , intent(in)    :: z0q     ( lbn: )         ! roughness length over vegetation, latent heat [m] [lbn:ubn]
-    real(r8) , intent(in)    :: obu     ( lbn: )         ! monin-obukhov length (m) [lbn:ubn]
+    real(r8) , intent(in)    :: obu     ( lbn: )         ! Obukhov length scale (m) [lbn:ubn]
     integer  , intent(in)    :: iter                     ! iteration number
     real(r8) , intent(in)    :: ur      ( lbn: )         ! wind speed at reference height [m/s] [lbn:ubn]
     real(r8) , intent(in)    :: um      ( lbn: )         ! wind speed including the stablity effect [m/s] [lbn:ubn]
@@ -445,7 +445,7 @@ contains
   subroutine MoninObukIni (ur, thv, dthv, zldis, z0m, um, obu)
     !$acc routine seq
     ! !DESCRIPTION:
-    ! Initialization of the Monin-Obukhov length.
+    ! Initialization of the Obukhov length scale.
     ! The scheme is based on the work of Zeng et al. (1998):
     ! Intercomparison of bulk aerodynamic algorithms for the computation
     ! of sea surface fluxes using TOGA CORE and TAO data. J. Climate,
@@ -462,7 +462,7 @@ contains
     real(r8), intent(in)  :: zldis ! reference height "minus" zero displacement heght [m]
     real(r8), intent(in)  :: z0m   ! roughness length, momentum [m]
     real(r8), intent(out) :: um    ! wind speed including the stability effect [m/s]
-    real(r8), intent(out) :: obu   ! monin-obukhov length (m)
+    real(r8), intent(out) :: obu   ! Obukhov length scale (m)
     !
     ! !LOCAL VARIABLES:
     real(r8) :: wc    ! convective velocity [m/s]

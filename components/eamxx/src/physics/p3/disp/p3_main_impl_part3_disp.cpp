@@ -1,9 +1,9 @@
-
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
-#include "physics/share/physics_saturation_impl.hpp"
+#include "share/physics/physics_functions.hpp" // also for ETI not on GPUs
+#include "share/physics/physics_saturation_impl.hpp"
 
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+#include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 namespace p3 {
@@ -21,44 +21,46 @@ void Functions<Real,DefaultDevice>
   const Scalar& max_total_ni,
   const view_dnu_table& dnu_table_vals,
   const view_ice_table& ice_table_vals,
-  const uview_2d<const Spack>& inv_exner,
-  const uview_2d<const Spack>& cld_frac_l,
-  const uview_2d<const Spack>& cld_frac_r,
-  const uview_2d<const Spack>& cld_frac_i,
-  const uview_2d<Spack>& rho,
-  const uview_2d<Spack>& inv_rho,
-  const uview_2d<Spack>& rhofaci,
-  const uview_2d<Spack>& qv,
-  const uview_2d<Spack>& th_atm,
-  const uview_2d<Spack>& qc,
-  const uview_2d<Spack>& nc,
-  const uview_2d<Spack>& qr,
-  const uview_2d<Spack>& nr,
-  const uview_2d<Spack>& qi,
-  const uview_2d<Spack>& ni,
-  const uview_2d<Spack>& qm,
-  const uview_2d<Spack>& bm,
-  const uview_2d<Spack>& mu_c,
-  const uview_2d<Spack>& nu,
-  const uview_2d<Spack>& lamc,
-  const uview_2d<Spack>& mu_r,
-  const uview_2d<Spack>& lamr,
-  const uview_2d<Spack>& vap_liq_exchange,
-  const uview_2d<Spack>& ze_rain,
-  const uview_2d<Spack>& ze_ice,
-  const uview_2d<Spack>& diag_vm_qi,
-  const uview_2d<Spack>& diag_eff_radius_qi,
-  const uview_2d<Spack>& diag_diam_qi,
-  const uview_2d<Spack>& rho_qi,
-  const uview_2d<Spack>& diag_equiv_reflectivity,
-  const uview_2d<Spack>& diag_eff_radius_qc,
-  const uview_2d<Spack>& diag_eff_radius_qr,
+  const uview_2d<const Pack>& inv_exner,
+  const uview_2d<const Pack>& cld_frac_l,
+  const uview_2d<const Pack>& cld_frac_r,
+  const uview_2d<const Pack>& cld_frac_i,
+  const uview_2d<Pack>& rho,
+  const uview_2d<Pack>& inv_rho,
+  const uview_2d<Pack>& rhofaci,
+  const uview_2d<Pack>& qv,
+  const uview_2d<Pack>& th_atm,
+  const uview_2d<Pack>& qc,
+  const uview_2d<Pack>& nc,
+  const uview_2d<Pack>& qr,
+  const uview_2d<Pack>& nr,
+  const uview_2d<Pack>& qi,
+  const uview_2d<Pack>& ni,
+  const uview_2d<Pack>& qm,
+  const uview_2d<Pack>& bm,
+  const uview_2d<Pack>& mu_c,
+  const uview_2d<Pack>& nu,
+  const uview_2d<Pack>& lamc,
+  const uview_2d<Pack>& mu_r,
+  const uview_2d<Pack>& lamr,
+  const uview_2d<Pack>& vap_liq_exchange,
+  const uview_2d<Pack>& ze_rain,
+  const uview_2d<Pack>& ze_ice,
+  const uview_2d<Pack>& diag_vm_qi,
+  const uview_2d<Pack>& diag_eff_radius_qi,
+  const uview_2d<Pack>& diag_diam_qi,
+  const uview_2d<Pack>& rho_qi,
+  const uview_2d<Pack>& diag_equiv_reflectivity,
+  const uview_2d<Pack>& diag_eff_radius_qc,
+  const uview_2d<Pack>& diag_eff_radius_qr,
   const uview_1d<bool>& nucleationPossible,
   const uview_1d<bool>& hydrometeorsPresent,
   const P3Runtime& runtime_options)
 {
   using ExeSpace = typename KT::ExeSpace;
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
+
+  const auto policy = TPF::get_default_team_policy(nj, nk_pack);
   // p3_cloud_sedimentation loop
   Kokkos::parallel_for(
     "p3_main_part3_disp",

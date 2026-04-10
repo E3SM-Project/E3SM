@@ -13,7 +13,7 @@ namespace p3 {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::nr_conservation(const Spack& nr, const Spack& ni2nr_melt_tend, const Spack& nr_ice_shed_tend, const Spack& ncshdc, const Spack& nc2nr_autoconv_tend, const Real& dt, const Real& nmltratio, Spack& nr_collect_tend, Spack& nr2ni_immers_freeze_tend, Spack& nr_selfcollect_tend, Spack& nr_evap_tend, const Smask& context)
+void Functions<S,D>::nr_conservation(const Pack& nr, const Pack& ni2nr_melt_tend, const Pack& nr_ice_shed_tend, const Pack& ncshdc, const Pack& nc2nr_autoconv_tend, const Real& dt, const Real& nmltratio, Pack& nr_collect_tend, Pack& nr2ni_immers_freeze_tend, Pack& nr_selfcollect_tend, Pack& nr_evap_tend, const Mask& context)
 {
   const auto sink_nr = (nr_collect_tend + nr2ni_immers_freeze_tend + nr_selfcollect_tend + nr_evap_tend)*dt;
   const auto source_nr = nr + (ni2nr_melt_tend*nmltratio + nr_ice_shed_tend + ncshdc + nc2nr_autoconv_tend)*dt;

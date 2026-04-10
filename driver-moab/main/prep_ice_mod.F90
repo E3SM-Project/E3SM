@@ -6,13 +6,16 @@ module prep_ice_mod
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct    , only: num_inst_atm, num_inst_ocn, num_inst_glc
   use seq_comm_mct    , only: num_inst_ice, num_inst_frc, num_inst_rof
+  use seq_comm_mct    , only: num_inst_wav
   use seq_comm_mct    , only: CPLID, ICEID, logunit
   use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs
-  use seq_comm_mct,     only: mboxid ! iMOAB id for mpas ocean migrated mesh to coupler pes
-  use seq_comm_mct,     only : mbixid   ! iMOAB for sea-ice migrated to coupler
-  use seq_comm_mct,     only : num_moab_exports
+  use seq_comm_mct    , only: mboxid   ! iMOAB id for MPAS-O migrated mesh to coupler PEs
+  use seq_comm_mct    , only: mbrxid   ! iMOAB id of moab ROF read on couple PEs
+  use seq_comm_mct    , only: mbixid   ! iMOAB for SEA-ICE migrated to coupler PEs
+  use seq_comm_mct    , only: mbintxri ! iMOAB id for intx mesh between ROF and ICE
+  use seq_comm_mct    , only: num_moab_exports
 
-  use seq_comm_mct,     only : seq_comm_getinfo => seq_comm_setptrs
+  use seq_comm_mct    , only: seq_comm_getinfo => seq_comm_setptrs
 
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
   use seq_map_type_mod
@@ -22,11 +25,8 @@ module prep_ice_mod
   use mct_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
-  use component_type_mod, only: ice, atm, ocn, glc, rof
+  use component_type_mod, only: ice, atm, ocn, glc, rof, wav
   use iso_c_binding
-#ifdef MOABCOMP
-  use component_type_mod, only:  compare_mct_av_moab_tag
-#endif
 
   implicit none
   save
@@ -37,7 +37,6 @@ module prep_ice_mod
   !--------------------------------------------------------------------------
 
   public :: prep_ice_init
-  public :: prep_ice_mrg
   public :: prep_ice_mrg_moab
 
   public :: prep_ice_calc_a2x_ix
@@ -45,22 +44,23 @@ module prep_ice_mod
   public :: prep_ice_calc_r2x_ix
   public :: prep_ice_calc_g2x_ix
   public :: prep_ice_shelf_calc_g2x_ix
+  public :: prep_ice_calc_w2x_ix
 
   public :: prep_ice_get_a2x_ix
   public :: prep_ice_get_o2x_ix
   public :: prep_ice_get_g2x_ix
   public :: prep_ice_get_r2x_ix
+  public :: prep_ice_get_w2x_ix
 
   public :: prep_ice_get_mapper_SFo2i
   public :: prep_ice_get_mapper_Rg2i
   public :: prep_ice_get_mapper_Sg2i
   public :: prep_ice_get_mapper_Fg2i
+  public :: prep_ice_get_mapper_Sw2i
 
   !--------------------------------------------------------------------------
   ! Private interfaces
   !--------------------------------------------------------------------------
-
-  private :: prep_ice_merge
 
   !--------------------------------------------------------------------------
   ! Private data
@@ -72,12 +72,14 @@ module prep_ice_mod
   type(seq_map), pointer :: mapper_Sg2i
   type(seq_map), pointer :: mapper_Fg2i
   type(seq_map), pointer :: mapper_Rr2i
+  type(seq_map), pointer :: mapper_Sw2i
 
   ! attribute vectors
   type(mct_aVect), pointer :: a2x_ix(:) ! Atm export, ice grid, cpl pes - allocated in driver
   type(mct_aVect), pointer :: o2x_ix(:) ! Ocn export, ice grid, cpl pes - allocated in driver
   type(mct_aVect), pointer :: g2x_ix(:) ! Glc export, ice grid, cpl pes - allocated in driver
   type(mct_aVect), pointer :: r2x_ix(:) ! Rof export, ice grid, cpl pes - allocated in driver
+  type(mct_aVect), pointer :: w2x_ix(:) ! Wav export, ice grid, cpl pes - allocated in driver
 
 ! MOAB arrays
   real (kind=r8) , allocatable, private :: x2i_im (:,:)
@@ -85,13 +87,19 @@ module prep_ice_mod
   real (kind=r8) , allocatable, private :: r2x_im (:,:)
   ! seq_comm_getData variables
   integer :: mpicom_CPLID                         ! MPI cpl communicator
+
+  logical :: no_match ! used to force a new mapper
+  logical :: compute_maps_online_r2i
+  character*32             :: wgtIdSr2i
+
   !================================================================================================
 
 contains
 
   !================================================================================================
 
-  subroutine prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice)
+  subroutine prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice, &
+                           wav_c2_ice)
 
     use iMOAB, only: iMOAB_RegisterApplication, &
       iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph
@@ -106,19 +114,22 @@ contains
     logical,                   intent(in)    :: glc_c2_ice ! .true.  => glc to ice coupling on
     logical,                   intent(in)    :: glcshelf_c2_ice ! .true.  => glc ice shelf to ice coupling on
     logical,                   intent(in)    :: rof_c2_ice ! .true.  => rof to ice coupling on
+    logical,                   intent(in)    :: wav_c2_ice ! .true. => wav to ice coupling on
     !
     ! Local Variables
     integer                          :: lsize_i
-    integer                          :: eai, eoi, egi, eri
+    integer                          :: eai, eoi, egi, eri, ewi
     logical                          :: iamroot_CPLID ! .true. => CPLID masterproc
     logical                          :: samegrid_ig   ! samegrid glc and ice
     logical                          :: samegrid_ro   ! samegrid rof and ice/ocn
+    logical                          :: samegrid_iw   ! samegrid ice and wav
     logical                          :: ice_present   ! .true. => ice is present
     logical                          :: esmf_map_flag ! .true. => use esmf for mapping
     character(CL)                    :: ice_gnam      ! ice grid
     character(CL)                    :: ocn_gnam      ! ocn grid
     character(CL)                    :: glc_gnam      ! glc grid
     character(CL)                    :: rof_gnam      ! rof grid
+    character(CL)                    :: wav_gnam      ! wav grid
     type(mct_avect), pointer         :: i2x_ix
     character(*), parameter          :: subname = '(prep_ice_init)'
     logical                          :: no_match      ! to force a new map between ocean and ice, always
@@ -133,6 +144,7 @@ contains
     integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
 
     integer                  :: type1, type2 ! type for computing graph; should be the same type for ocean, 3 (FV)
+    integer                  :: arearead
     integer                  :: tagtype, numco, tagindex
     character(CXX)           :: tagName
 
@@ -144,13 +156,19 @@ contains
          ice_gnam=ice_gnam            , &
          ocn_gnam=ocn_gnam            , &
          rof_gnam=rof_gnam            , &
+         wav_gnam=wav_gnam            , &
          glc_gnam=glc_gnam)
+
+    wgtIdSr2i = 'scalar_r2i'//C_NULL_CHAR
+    compute_maps_online_r2i = .false. ! force read from disk
+    no_match = .true. ! force to create a new mapper object
 
     allocate(mapper_SFo2i)
     allocate(mapper_Rg2i)
     allocate(mapper_Sg2i)
     allocate(mapper_Fg2i)
     allocate(mapper_Rr2i)
+    allocate(mapper_Sw2i)
 
     if (ice_present) then
 
@@ -180,21 +198,28 @@ contains
           call mct_aVect_init(r2x_ix(eri), rList=seq_flds_r2x_fields, lsize=lsize_i)
           call mct_aVect_zero(r2x_ix(eri))
        end do
+       allocate(w2x_ix(num_inst_wav))
+       do ewi = 1,num_inst_wav
+          call mct_aVect_init(w2x_ix(ewi), rList=seq_flds_w2x_fields, lsize=lsize_i)
+          call mct_aVect_zero(w2x_ix(ewi))
+       end do
 
        samegrid_ig = .true.
        samegrid_ro = .true.
+       samegrid_iw = .true.
        if (trim(ice_gnam) /= trim(glc_gnam)) samegrid_ig = .false.
        if (trim(rof_gnam) /= trim(ocn_gnam)) samegrid_ro = .false.
+       if (trim(ice_gnam) /= trim(wav_gnam)) samegrid_iw = .false.
 
        if (ocn_c2_ice) then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_SFo2i'
           end if
-          no_match = .true.
-          call seq_map_init_rearrolap(mapper_SFo2i, ocn(1), ice(1), 'mapper_SFo2i', no_match) ! force a new map always
+          call seq_map_mapinit(mapper_SFo2i, mpicom_CPLID)
+          mapper_SFo2i%rearrange_only = .true.
+          mapper_SFo2i%strategy = "rearrange"
 
-#ifdef HAVE_MOAB
           if ( (mbixid .ge. 0) .and. (mboxid .ge. 0)) then
             if (iamroot_CPLID) then
                write(logunit,*) ' '
@@ -235,13 +260,7 @@ contains
             mapper_SFo2i%src_context = ocn(1)%cplcompid
             mapper_SFo2i%intx_context = ice(1)%cplcompid
             mapper_SFo2i%mbname = 'mapper_SFo2i'
-
-            if(mapper_SFo2i%copy_only) then
-               call seq_map_set_type(mapper_SFo2i, mboxid, 1) ! type is cells
-            endif
-
          endif
-#endif
        endif
 
        if (glc_c2_ice) then
@@ -277,9 +296,54 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Rr2i'
           end if
-          call seq_map_init_rcfile(mapper_Rr2i, rof(1), ice(1), &
-               'seq_maps.rc','rof2ice_rmapname:','rof2ice_rmaptype:',samegrid_ro, &
-               'mapper_Rr2i initialization', esmf_map_flag)
+          call seq_map_mapinit(mapper_Rr2i, mpicom_CPLID)
+          if (samegrid_ro) then
+             mapper_Rr2i%rearrange_only = .true.
+             mapper_Rr2i%strategy = "rearrange"
+          endif
+          if ((mbrxid .ge. 0) .and.  (mbixid .ge. 0)) then
+            ! now take care of the mapper
+            if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing MOAB mapper_Rr2i'
+            end if
+
+            appname = "ROF_ICE_COU"//C_NULL_CHAR
+            ! idintx is a unique number of MOAB app that takes care of intx between lnd and rof mesh
+            idintx = 100*rof(1)%cplcompid + ice(1)%cplcompid ! something different, to differentiate it
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxri)
+            if (ierr .ne. 0) then
+              write(logunit,*) subname,' error in registering ROF-ICE intersection'
+              call shr_sys_abort(subname//' ERROR in registering ROF-ICE intersection')
+            endif
+
+            ! If loading map from disk, then load the scalar map as well
+            if (.not. compute_maps_online_r2i) then
+               type1 = 3 ! this is type of grid
+               arearead = 0
+               call moab_map_init_rcfile( mbrxid, mbixid, mbintxri, type1, &
+                     'seq_maps.rc', 'rof2ice_rmapname:', 'rof2ice_rmaptype:', samegrid_ro, &
+                     arearead, wgtIdSr2i, 'mapper_Rr2i MOAB initialization', esmf_map_flag )
+            end if
+            mapper_Rr2i%src_mbid = mbrxid
+            mapper_Rr2i%tgt_mbid = mbixid
+            mapper_Rr2i%intx_mbid = mbintxri
+            mapper_Rr2i%src_context = rof(1)%cplcompid
+            mapper_Rr2i%intx_context = idintx
+            mapper_Rr2i%weight_identifier = wgtIdSr2i
+            mapper_Rr2i%mbname = 'mapper_Rr2i'
+          end if ! if ((mbrxid .ge. 0) .and.  (mbixid .ge. 0)) then
+       endif
+       call shr_sys_flush(logunit)
+
+       if (wav_c2_ice) then
+          if (iamroot_CPLID) then
+             write(logunit,*) ' '
+             write(logunit,F00) 'Initializing mapper_Sw2i'
+          end if
+          call seq_map_init_rcfile(mapper_Sw2i, wav(1), ice(1), &
+               'seq_maps.rc','wav2ice_smapname:','wav2ice_smaptype:',samegrid_iw, &
+               'mapper_Sw2i initialization', esmf_map_flag)
        endif
        call shr_sys_flush(logunit)
 
@@ -289,264 +353,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_ice_mrg(infodata, timer_mrg)
-
-    !---------------------------------------------------------------
-    ! Description
-    ! Prepare run phase, including running the merge
-    !
-    ! Arguments
-    type(seq_infodata_type) , intent(in)    :: infodata
-    character(len=*)        , intent(in)    :: timer_mrg
-    !
-    ! Local Variables
-    integer                  :: eoi, eai, egi, eii, eri
-    real(r8)                 :: flux_epbalfact ! adjusted precip factor
-    type(mct_avect), pointer :: x2i_ix
-    character(*), parameter  :: subname = '(prep_ice_mrg)'
-    !---------------------------------------------------------------
-
-    call seq_infodata_GetData(infodata, &
-         flux_epbalfact=flux_epbalfact)
-
-    call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
-    do eii = 1,num_inst_ice
-       ! Use fortran mod to address ensembles in merge
-       eai = mod((eii-1),num_inst_atm) + 1
-       eoi = mod((eii-1),num_inst_ocn) + 1
-       eri = mod((eii-1),num_inst_rof) + 1
-       egi = mod((eii-1),num_inst_glc) + 1
-
-       ! Apply correction to precipitation of requested driver namelist
-       x2i_ix   => component_get_x2c_cx(ice(eii))  ! This is actually modifying x2i_ix
-       call prep_ice_merge(flux_epbalfact, a2x_ix(eai), o2x_ix(eoi), r2x_ix(eri), g2x_ix(egi), &
-            x2i_ix)
-    enddo
-    call t_drvstopf (trim(timer_mrg))
-
-  end subroutine prep_ice_mrg
-
-  !================================================================================================
-
-  subroutine prep_ice_merge(flux_epbalfact, a2x_i, o2x_i, r2x_i, g2x_i, x2i_i )
-
-    !-----------------------------------------------------------------------
-    !
-    ! Arguments
-    real(r8)        , intent(inout) :: flux_epbalfact
-    type(mct_aVect) , intent(in)    :: a2x_i
-    type(mct_aVect) , intent(in)    :: o2x_i
-    type(mct_aVect) , intent(in)    :: r2x_i
-    type(mct_aVect) , intent(in)    :: g2x_i
-    type(mct_aVect) , intent(inout) :: x2i_i
-    !
-    ! Local variables
-    integer       :: i,i1,o1,lsize
-    integer       :: niflds
-    integer, save :: index_a2x_Faxa_rainc
-    integer, save :: index_a2x_Faxa_rainl
-    integer, save :: index_a2x_Faxa_snowc
-    integer, save :: index_a2x_Faxa_snowl
-    integer, save :: index_g2x_Figg_rofi
-    integer, save :: index_r2x_Firr_rofi
-    integer, save :: index_x2i_Faxa_rain
-    integer, save :: index_x2i_Faxa_snow
-    integer, save :: index_x2i_Fixx_rofi
-    !wiso fields:
-    integer, save :: index_a2x_Faxa_rainc_16O
-    integer, save :: index_a2x_Faxa_rainl_16O
-    integer, save :: index_a2x_Faxa_snowc_16O
-    integer, save :: index_a2x_Faxa_snowl_16O
-    integer, save :: index_x2i_Faxa_rain_16O
-    integer, save :: index_x2i_Faxa_snow_16O
-    integer, save :: index_a2x_Faxa_rainc_18O
-    integer, save :: index_a2x_Faxa_rainl_18O
-    integer, save :: index_a2x_Faxa_snowc_18O
-    integer, save :: index_a2x_Faxa_snowl_18O
-    integer, save :: index_x2i_Faxa_rain_18O
-    integer, save :: index_x2i_Faxa_snow_18O
-    integer, save :: index_a2x_Faxa_rainc_HDO
-    integer, save :: index_a2x_Faxa_rainl_HDO
-    integer, save :: index_a2x_Faxa_snowc_HDO
-    integer, save :: index_a2x_Faxa_snowl_HDO
-    integer, save :: index_x2i_Faxa_rain_HDO
-    integer, save :: index_x2i_Faxa_snow_HDO
-    logical, save :: first_time = .true.
-    logical       :: iamroot
-    character(CL),allocatable :: mrgstr(:)   ! temporary string
-    character(CL) :: field   ! string converted to char
-    type(mct_aVect_sharedindices),save :: o2x_sharedindices
-    type(mct_aVect_sharedindices),save :: a2x_sharedindices
-    type(mct_aVect_sharedindices),save :: g2x_sharedindices
-    character(*), parameter   :: subname = '(prep_ice_merge) '
-    !-----------------------------------------------------------------------
-
-    call seq_comm_getdata(CPLID, iamroot=iamroot)
-    lsize = mct_aVect_lsize(x2i_i)
-
-    if (first_time) then
-       niflds = mct_aVect_nRattr(x2i_i)
-
-       allocate(mrgstr(niflds))
-       index_a2x_Faxa_snowc = mct_aVect_indexRA(a2x_i,'Faxa_snowc')
-       index_a2x_Faxa_snowl = mct_aVect_indexRA(a2x_i,'Faxa_snowl')
-       index_a2x_Faxa_rainc = mct_aVect_indexRA(a2x_i,'Faxa_rainc')
-       index_a2x_Faxa_rainl = mct_aVect_indexRA(a2x_i,'Faxa_rainl')
-       index_g2x_Figg_rofi  = mct_aVect_indexRA(g2x_i,'Figg_rofi')
-       index_r2x_Firr_rofi  = mct_aVect_indexRA(r2x_i,'Firr_rofi')
-       index_x2i_Faxa_rain  = mct_aVect_indexRA(x2i_i,'Faxa_rain' )
-       index_x2i_Faxa_snow  = mct_aVect_indexRA(x2i_i,'Faxa_snow' )
-       index_x2i_Fixx_rofi  = mct_aVect_indexRA(x2i_i,'Fixx_rofi')
-
-       ! Water isotope fields
-       index_a2x_Faxa_snowc_16O = mct_aVect_indexRA(a2x_i,'Faxa_snowc_16O', perrWith='quiet')
-       index_a2x_Faxa_snowl_16O = mct_aVect_indexRA(a2x_i,'Faxa_snowl_16O', perrWith='quiet')
-       index_a2x_Faxa_rainc_16O = mct_aVect_indexRA(a2x_i,'Faxa_rainc_16O', perrWith='quiet')
-       index_a2x_Faxa_rainl_16O = mct_aVect_indexRA(a2x_i,'Faxa_rainl_16O', perrWith='quiet')
-       index_x2i_Faxa_rain_16O  = mct_aVect_indexRA(x2i_i,'Faxa_rain_16O',  perrWith='quiet' )
-       index_x2i_Faxa_snow_16O  = mct_aVect_indexRA(x2i_i,'Faxa_snow_16O',  perrWith='quiet' )
-
-       index_a2x_Faxa_snowc_18O = mct_aVect_indexRA(a2x_i,'Faxa_snowc_18O', perrWith='quiet')
-       index_a2x_Faxa_snowl_18O = mct_aVect_indexRA(a2x_i,'Faxa_snowl_18O', perrWith='quiet')
-       index_a2x_Faxa_rainc_18O = mct_aVect_indexRA(a2x_i,'Faxa_rainc_18O', perrWith='quiet')
-       index_a2x_Faxa_rainl_18O = mct_aVect_indexRA(a2x_i,'Faxa_rainl_18O', perrWith='quiet')
-       index_x2i_Faxa_rain_18O  = mct_aVect_indexRA(x2i_i,'Faxa_rain_18O',  perrWith='quiet' )
-       index_x2i_Faxa_snow_18O  = mct_aVect_indexRA(x2i_i,'Faxa_snow_18O',  perrWith='quiet' )
-
-       index_a2x_Faxa_snowc_HDO = mct_aVect_indexRA(a2x_i,'Faxa_snowc_HDO', perrWith='quiet')
-       index_a2x_Faxa_snowl_HDO = mct_aVect_indexRA(a2x_i,'Faxa_snowl_HDO', perrWith='quiet')
-       index_a2x_Faxa_rainc_HDO = mct_aVect_indexRA(a2x_i,'Faxa_rainc_HDO', perrWith='quiet')
-       index_a2x_Faxa_rainl_HDO = mct_aVect_indexRA(a2x_i,'Faxa_rainl_HDO', perrWith='quiet')
-       index_x2i_Faxa_rain_HDO  = mct_aVect_indexRA(x2i_i,'Faxa_rain_HDO',  perrWith='quiet' )
-       index_x2i_Faxa_snow_HDO  = mct_aVect_indexRA(x2i_i,'Faxa_snow_HDO',  perrWith='quiet' )
-
-       do i = 1,niflds
-          field = mct_aVect_getRList2c(i, x2i_i)
-          mrgstr(i) = subname//'x2i%'//trim(field)//' ='
-       enddo
-
-       call mct_aVect_setSharedIndices(o2x_i, x2i_i, o2x_SharedIndices)
-       call mct_aVect_setSharedIndices(a2x_i, x2i_i, a2x_SharedIndices)
-       call mct_aVect_setSharedIndices(g2x_i, x2i_i, g2x_SharedIndices)
-
-       !--- document copy operations ---
-       do i=1,o2x_SharedIndices%shared_real%num_indices
-          i1=o2x_SharedIndices%shared_real%aVindices1(i)
-          o1=o2x_SharedIndices%shared_real%aVindices2(i)
-          field = mct_aVect_getRList2c(i1, o2x_i)
-          mrgstr(o1) = trim(mrgstr(o1))//' = o2x%'//trim(field)
-       enddo
-       do i=1,a2x_SharedIndices%shared_real%num_indices
-          i1=a2x_SharedIndices%shared_real%aVindices1(i)
-          o1=a2x_SharedIndices%shared_real%aVindices2(i)
-          field = mct_aVect_getRList2c(i1, a2x_i)
-          mrgstr(o1) = trim(mrgstr(o1))//' = a2x%'//trim(field)
-       enddo
-       do i=1,g2x_SharedIndices%shared_real%num_indices
-          i1=g2x_SharedIndices%shared_real%aVindices1(i)
-          o1=g2x_SharedIndices%shared_real%aVindices2(i)
-          field = mct_aVect_getRList2c(i1, g2x_i)
-          mrgstr(o1) = trim(mrgstr(o1))//' = g2x%'//trim(field)
-       enddo
-
-       !--- document manual merges ---
-       mrgstr(index_x2i_Faxa_rain) = trim(mrgstr(index_x2i_Faxa_rain))//' = '// &
-            '(a2x%Faxa_rainc + a2x%Faxa_rainl)*flux_epbalfact'
-       mrgstr(index_x2i_Faxa_snow) = trim(mrgstr(index_x2i_Faxa_snow))//' = '// &
-            '(a2x%Faxa_snowc + a2x%Faxa_snowl)*flux_epbalfact'
-       mrgstr(index_x2i_Fixx_rofi) = trim(mrgstr(index_x2i_Fixx_rofi))//' = '// &
-            '(g2x%Figg_rofi + r2x%Firr_rofi)*flux_epbalfact'
-
-       !--- water isotope document manual merges ---
-       if ( index_x2i_Faxa_rain_16O /= 0 ) then
-          mrgstr(index_x2i_Faxa_rain_16O) = trim(mrgstr(index_x2i_Faxa_rain_16O))//' = '// &
-               '(a2x%Faxa_rainc_16O + a2x%Faxa_rainl_16O)*flux_epbalfact'
-          mrgstr(index_x2i_Faxa_snow_16O) = trim(mrgstr(index_x2i_Faxa_snow_16O))//' = '// &
-               '(a2x%Faxa_snowc_16O + a2x%Faxa_snowl_16O)*flux_epbalfact'
-       end if
-       if ( index_x2i_Faxa_rain_18O /= 0 ) then
-          mrgstr(index_x2i_Faxa_rain_18O) = trim(mrgstr(index_x2i_Faxa_rain_18O))//' = '// &
-               '(a2x%Faxa_rainc_18O + a2x%Faxa_rainl_18O)*flux_epbalfact'
-          mrgstr(index_x2i_Faxa_snow_18O) = trim(mrgstr(index_x2i_Faxa_snow_18O))//' = '// &
-               '(a2x%Faxa_snowc_18O + a2x%Faxa_snowl_18O)*flux_epbalfact'
-       end if
-       if ( index_x2i_Faxa_rain_HDO /= 0 ) then
-          mrgstr(index_x2i_Faxa_rain_HDO) = trim(mrgstr(index_x2i_Faxa_rain_HDO))//' = '// &
-               '(a2x%Faxa_rainc_HDO + a2x%Faxa_rainl_HDO)*flux_epbalfact'
-          mrgstr(index_x2i_Faxa_snow_HDO) = trim(mrgstr(index_x2i_Faxa_snow_HDO))//' = '// &
-               '(a2x%Faxa_snowc_HDO + a2x%Faxa_snowl_HDO)*flux_epbalfact'
-       end if
-
-    endif
-
-    !    call mct_aVect_copy(aVin=o2x_i, aVout=x2i_i, vector=mct_usevector)
-    !    call mct_aVect_copy(aVin=a2x_i, aVout=x2i_i, vector=mct_usevector)
-    !    call mct_aVect_copy(aVin=g2x_i, aVout=x2i_i, vector=mct_usevector)
-    call mct_aVect_copy(aVin=o2x_i, aVout=x2i_i, vector=mct_usevector, sharedIndices=o2x_SharedIndices)
-    call mct_aVect_copy(aVin=a2x_i, aVout=x2i_i, vector=mct_usevector, sharedIndices=a2x_SharedIndices)
-    call mct_aVect_copy(aVin=g2x_i, aVout=x2i_i, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
-
-    ! Merge total snow and precip for ice input
-    ! Scale total precip and runoff by flux_epbalfact
-
-    do i = 1,lsize
-       x2i_i%rAttr(index_x2i_Faxa_rain,i) = a2x_i%rAttr(index_a2x_Faxa_rainc,i) + &
-            a2x_i%rAttr(index_a2x_Faxa_rainl,i)
-       x2i_i%rAttr(index_x2i_Faxa_snow,i) = a2x_i%rAttr(index_a2x_Faxa_snowc,i) + &
-            a2x_i%rAttr(index_a2x_Faxa_snowl,i)
-       x2i_i%rAttr(index_x2i_Fixx_rofi,i) = g2x_i%rAttr(index_g2x_Figg_rofi,i) + &
-            r2x_i%rAttr(index_r2x_Firr_rofi,i)
-
-       x2i_i%rAttr(index_x2i_Faxa_rain,i) = x2i_i%rAttr(index_x2i_Faxa_rain,i) * flux_epbalfact
-       x2i_i%rAttr(index_x2i_Faxa_snow,i) = x2i_i%rAttr(index_x2i_Faxa_snow,i) * flux_epbalfact
-       x2i_i%rAttr(index_x2i_Fixx_rofi,i) = x2i_i%rAttr(index_x2i_Fixx_rofi,i) * flux_epbalfact
-
-       ! For water isotopes
-       if ( index_x2i_Faxa_rain_16O /= 0 ) then
-          x2i_i%rAttr(index_x2i_Faxa_rain_16O,i) = a2x_i%rAttr(index_a2x_Faxa_rainc_16O,i) + &
-               a2x_i%rAttr(index_a2x_Faxa_rainl_16O,i)
-          x2i_i%rAttr(index_x2i_Faxa_snow_16O,i) = a2x_i%rAttr(index_a2x_Faxa_snowc_16O,i) + &
-               a2x_i%rAttr(index_a2x_Faxa_snowl_16O,i)
-
-          x2i_i%rAttr(index_x2i_Faxa_rain_16O,i) = x2i_i%rAttr(index_x2i_Faxa_rain_16O,i) * flux_epbalfact
-          x2i_i%rAttr(index_x2i_Faxa_snow_16O,i) = x2i_i%rAttr(index_x2i_Faxa_snow_16O,i) * flux_epbalfact
-       end if
-       if ( index_x2i_Faxa_rain_18O /= 0 ) then
-          x2i_i%rAttr(index_x2i_Faxa_rain_18O,i) = a2x_i%rAttr(index_a2x_Faxa_rainc_18O,i) + &
-               a2x_i%rAttr(index_a2x_Faxa_rainl_18O,i)
-          x2i_i%rAttr(index_x2i_Faxa_snow_18O,i) = a2x_i%rAttr(index_a2x_Faxa_snowc_18O,i) + &
-               a2x_i%rAttr(index_a2x_Faxa_snowl_18O,i)
-
-          x2i_i%rAttr(index_x2i_Faxa_rain_18O,i) = x2i_i%rAttr(index_x2i_Faxa_rain_18O,i) * flux_epbalfact
-          x2i_i%rAttr(index_x2i_Faxa_snow_18O,i) = x2i_i%rAttr(index_x2i_Faxa_snow_18O,i) * flux_epbalfact
-       end if
-       if ( index_x2i_Faxa_rain_HDO /= 0 ) then
-          x2i_i%rAttr(index_x2i_Faxa_rain_HDO,i) = a2x_i%rAttr(index_a2x_Faxa_rainc_HDO,i) + &
-               a2x_i%rAttr(index_a2x_Faxa_rainl_HDO,i)
-          x2i_i%rAttr(index_x2i_Faxa_snow_HDO,i) = a2x_i%rAttr(index_a2x_Faxa_snowc_HDO,i) + &
-               a2x_i%rAttr(index_a2x_Faxa_snowl_HDO,i)
-
-          x2i_i%rAttr(index_x2i_Faxa_rain_HDO,i) = x2i_i%rAttr(index_x2i_Faxa_rain_HDO,i) * flux_epbalfact
-          x2i_i%rAttr(index_x2i_Faxa_snow_HDO,i) = x2i_i%rAttr(index_x2i_Faxa_snow_HDO,i) * flux_epbalfact
-       end if
-
-    end do
-
-    if (first_time) then
-       if (iamroot) then
-          write(logunit,'(A)') subname//' Summary:'
-          do i = 1,niflds
-             write(logunit,'(A)') trim(mrgstr(i))
-          enddo
-       endif
-       deallocate(mrgstr)
-    endif
-
-    first_time = .false.
-
-  end subroutine prep_ice_merge
-
-  subroutine prep_ice_mrg_moab(infodata, rof_c2_ice)
+  subroutine prep_ice_mrg_moab(infodata, rof_c2_ice, timer_mrg)
     use iMOAB , only : iMOAB_GetDoubleTagStorage, &
     iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh, iMOAB_GetMeshInfo
 
@@ -555,6 +362,7 @@ contains
     ! Arguments
     type(seq_infodata_type) , intent(in)    :: infodata
     logical,                   intent(in)    :: rof_c2_ice ! .true.  => rof to ice coupling on
+    character(len=*)        , intent(in)    :: timer_mrg
     !
     ! Local variables
     real(r8)        :: flux_epbalfact
@@ -611,16 +419,11 @@ contains
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
 #endif
-#ifdef MOABCOMP
-    real(r8)                 :: difference
-    type(mct_list) :: temp_list
-    integer :: size_list, index_list
-    type(mct_string)    :: mctOStr  !
-#endif
 
 
     character(*), parameter   :: subname = '(prep_ice_mrg_moab) '
     !-----------------------------------------------------------------------
+    call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
     call seq_infodata_GetData(infodata, &
          flux_epbalfact=flux_epbalfact)
 
@@ -857,22 +660,6 @@ contains
 
 
 
-#ifdef MOABCOMP
- !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
-    x2i_i => component_get_x2c_cx(ice(1))
-    ! loop over all fields in seq_flds_x2i_fields
-    call mct_list_init(temp_list ,seq_flds_x2i_fields)
-    size_list=mct_list_nitem (temp_list)
-    ent_type = 1 ! cell for ice/ocean
-    if (iamroot) print *, num_moab_exports, trim(seq_flds_x2i_fields)
-    do index_list = 1, size_list
-      call mct_list_get(mctOStr,index_list,temp_list)
-      mct_field = mct_string_toChar(mctOStr)
-      tagname= trim(mct_field)//C_NULL_CHAR
-      call compare_mct_av_moab_tag(ice(1), x2i_i, mct_field,  mbixid, tagname, ent_type, difference, first_time)
-    enddo
-    call mct_list_clean(temp_list)
-#endif
     first_time = .false.
 #ifdef MOABDEBUG
     if (mbixid .ge. 0 ) then !  we are on coupler pes, for sure
@@ -883,6 +670,7 @@ contains
     endif
 #endif
 
+    call t_drvstopf (trim(timer_mrg))
 
   end subroutine prep_ice_mrg_moab
 
@@ -1016,6 +804,31 @@ contains
 
   !================================================================================================
 
+  subroutine prep_ice_calc_w2x_ix(timer)
+    !---------------------------------------------------------------
+    ! Description
+    ! Create w2x_ix (note that w2x_ix is a local module variable)
+    !
+    ! Arguments
+    character(len=*), intent(in) :: timer
+    !
+    ! Local Variables
+    integer :: ewi
+    type(mct_aVect), pointer :: w2x_wx
+    character(*), parameter :: subname = '(prep_ice_calc_w2x_ix)'
+    !---------------------------------------------------------------
+
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+    do ewi = 1,num_inst_wav
+       w2x_wx => component_get_c2x_cx(wav(ewi))
+       call seq_map_map(mapper_Sw2i, w2x_wx, w2x_ix(ewi), fldlist=seq_flds_w2x_states, norm=.true.)
+    enddo
+    call t_drvstopf  (trim(timer))
+
+  end subroutine prep_ice_calc_w2x_ix
+
+  !================================================================================================
+
   function prep_ice_get_a2x_ix()
     type(mct_aVect), pointer :: prep_ice_get_a2x_ix(:)
     prep_ice_get_a2x_ix => a2x_ix(:)
@@ -1036,6 +849,11 @@ contains
     prep_ice_get_r2x_ix => r2x_ix(:)
   end function prep_ice_get_r2x_ix
 
+  function prep_ice_get_w2x_ix()
+    type(mct_aVect), pointer :: prep_ice_get_w2x_ix(:)
+    prep_ice_get_w2x_ix => w2x_ix(:)
+  end function prep_ice_get_w2x_ix
+
   function prep_ice_get_mapper_SFo2i()
     type(seq_map), pointer :: prep_ice_get_mapper_SFo2i
     prep_ice_get_mapper_SFo2i => mapper_SFo2i
@@ -1055,5 +873,10 @@ contains
     type(seq_map), pointer :: prep_ice_get_mapper_Fg2i
     prep_ice_get_mapper_Fg2i => mapper_Fg2i
   end function prep_ice_get_mapper_Fg2i
+
+  function prep_ice_get_mapper_Sw2i()
+    type(seq_map), pointer :: prep_ice_get_mapper_Sw2i
+    prep_ice_get_mapper_Sw2i => mapper_Sw2i
+  end function prep_ice_get_mapper_Sw2i
 
 end module prep_ice_mod

@@ -4,15 +4,12 @@
 
 #include "shoc_functions.hpp"
 #include "shoc_test_data.hpp"
-#include "physics/share/physics_constants.hpp"
-#include "share/eamxx_types.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/physics/physics_constants.hpp"
+#include "share/core/eamxx_types.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 
-//#include "share/eamxx_types.hpp"
+//#include "share/core/eamxx_types.hpp"
 #include <algorithm>
 #include <array>
 #include <random>
@@ -90,7 +87,7 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond : public UnitWrap::UnitTest<D
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (auto& d : uby_fortran) {
-        d.read(Base::m_fid);
+        d.read(Base::m_ifile);
       }
     }
 
@@ -115,7 +112,7 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond : public UnitWrap::UnitTest<D
     } // SCREAM_BFB_TESTING
     else if (this->m_baseline_action == GENERATE) {
       for (Int i = 0; i < num_runs; ++i) {
-        uby_cxx[i].write(Base::m_fid);
+        uby_cxx[i].write(Base::m_ofile);
       }
     }
   }

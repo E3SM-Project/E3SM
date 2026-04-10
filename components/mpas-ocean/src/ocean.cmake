@@ -8,7 +8,7 @@ list(APPEND INCLUDES "core_ocean/gotm/include")
 # check if lapack is linked
 if (LAPACK_FOUND AND BLAS_FOUND)
   list(APPEND CPPDEFS "-DUSE_LAPACK")
-  list(APPEND LIBRARIES BLAS::BLAS LAPACK::LAPACK)
+  list(APPEND LIBRARIES LAPACK::LAPACK)
 endif()
 
 if (USE_PETSC)
@@ -115,6 +115,7 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_manufactured_solution.F
   core_ocean/shared/mpas_ocn_subgrid.F
   core_ocean/shared/mpas_ocn_scaled_dismf.F
+  core_ocean/shared/mpas_ocn_scaled_sfwf.F
 )
 
 set(OCEAN_DRIVER

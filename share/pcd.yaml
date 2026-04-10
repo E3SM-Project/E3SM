@@ -1,0 +1,855 @@
+# Physical Constants Dictionary (PCD)
+#
+# This YAML file contains a dictionary of physical constants. The constants are grouped
+# in categories, such as mathematical (like pi), universal physical constants (such as
+# the Boltzman constant), water properties, and more. Each constant in these groups
+# provides important data and metadata, such as name, units, uncertainty, a reference,
+# and more. More details can be found in the upstream project github documentation:
+#
+# https://icams-us.github.io/PhysicalConstantsDictionary/
+#
+
+physical_constants_dictionary:
+  version_number: 0.1.0
+  institution: E3SM Project
+  description: Community-based dictionary for consistent physical constant sets
+  contact: E3SM Project
+
+  references:
+    ASHandbook1964:
+      description: "Standard reference for mathematical functions and constants"
+      citation: "
+        Abramowitz, A., and Stegun, I.A., Handbook of Mathematical Functions
+        With Formulas, Graphs, and Mathematical Tables, DOC/National Bureau of Standards,
+        Applied Mathematics Series, 55, June 1964.
+      "
+    NIST_CODATA2022:
+      description: "CODATA 2022 recommended values of fundamental physical constants"
+      citation: "
+        Mohr, P.J., Newell, D.B., Taylor, B.N. and Tiesinga, E., Rev. Mod. Phys., 97,
+        025002 (2025); doi: 10.1103/RevModPhys.97.025002
+      "
+    GRS80:
+      description: "Geodetic Reference System 1980 for Earth's physical parameters"
+      citation: "
+        Moritz, H, Geodetic Reference System 1980. J. Geodesy, 74 128-133, 2000.
+      "
+    TIM_SORCE_2005:
+      description: "Total solar irradiance measurements from SORCE TIM instrument"
+      citation: "
+        Kopp, G., Lawrence, G., and Rottman, G., The Total Irradiance Monitor (TIM):
+        Science results, Sol. Phys., 230, 129-139, 2005. doi:10.1007/s11207-005-7433-9.
+      "
+    IAPWS_95:
+      description: "IAPWS_95 formulation for thermodynamic properties of water"
+      citation: "
+        Wagner, W., and Pruss, A., The IAPWS Formulation 1995 for the Thermodynamic
+        Properties of Ordinary Water Substance for General and Scientific Use,
+        J. Phys. Chem. Ref. Data, 31, 387-535, 2002.
+      "
+    SI2019:
+      description: "SI brochure defining units and accepted non-SI units"
+      citation: "
+        Bureau International des Poids et Mesures (BIPM), The International
+        System of Units (SI), 9th edition, 2019.
+      "
+    CGPM1948_1954:
+      description: "CGPM resolutions linking the triple point and the 0.01 degree offset"
+      citation: "
+        9th CGPM (1948), Resolution 3, stating that the zero of the centesimal
+        thermodynamic scale is 0.0100 degree below the triple point of water
+        (DOI: 10.59161/CGPM1948RES3E);
+        and 10th CGPM (1954), Resolution 3, assigning the triple point of water
+        the exact temperature 273.16 kelvin
+        (DOI: 10.59161/CGPM1954RES3E).
+      "
+    US_StdAtm_1976:
+      description: "U.S. Standard Atmosphere reference state values"
+      citation: "
+        NOAA, NASA, and USAF, U.S. Standard Atmosphere, 1976,
+        U.S. Government Printing Office, Washington, D.C., 1976.
+      "
+    CRC2018:
+      description: "CRC handbook tabulations for thermophysical properties"
+      citation: "
+        Rumble, J. R. (ed.), CRC Handbook of Chemistry and Physics,
+        99th Edition, CRC Press, 2018.
+      "
+    Smithsonian1951:
+      description: "Smithsonian meteorological tables with latent-heat tabulations"
+      citation: "
+        List, R. J., Smithsonian Meteorological Tables,
+        Smithsonian Institution, Washington, D.C., 1951.
+      "
+    Gill_1982:
+      description: "Atmosphere-Ocean Dynamics textbook with canonical Boussinesq scaling"
+      citation: "
+        Gill, A. E., Atmosphere-Ocean Dynamics,
+        International Geophysics Series, Vol. 30,
+        Academic Press, 1982.
+      "
+    Levitus1982:
+      description: "Climatological atlas source for world-ocean salinity fields"
+      citation: "
+        Levitus, S., Climatological Atlas of the World Ocean,
+        NOAA Professional Paper 13, U.S. Department of Commerce, 1982.
+      "
+    IUPAC1997:
+      description: "IUPAC Commission on Atomic Weights and Isotopic Abundances, 1997 table"
+      citation: "
+        IUPAC Commission on Atomic Weights and Isotopic Abundances,
+        Atomic Weights of the Elements 1997,
+        Pure Appl. Chem., 71(8), 1593-1607, 1999.
+        doi:10.1351/pac199971081593.
+      "
+    Untersteiner1961:
+      description: "Arctic sea-ice mass and heat budget study"
+      citation: "
+        Untersteiner, N., On the Mass and Heat Budget of Arctic Sea Ice,
+        Archiv für Meteorologie, Geophysik und Bioklimatologie, Serie A, 1961.
+      "
+    MaykutUntersteiner1971:
+      description: "Time-dependent thermodynamic sea-ice model results"
+      citation: "
+        Maykut, G. A., and N. Untersteiner, Some results from a time-dependent
+        thermodynamic model of sea ice, Journal of Geophysical Research,
+        76(6), 1550-1575, 1971.
+      "
+    CuffeyPaterson2010:
+      description: "Glaciology textbook reference for ice physical properties"
+      citation: "
+        Cuffey, K. M., and W. S. B. Paterson, The Physics of Glaciers,
+        4th ed., Butterworth-Heinemann, 2010.
+      "
+    IAEA1995:
+      description: "IAEA reference materials for stable isotopes of light elements"
+      citation: "
+        IAEA, Reference and intercomparison materials for stable isotopes of
+        light elements, IAEA-TECDOC-825, Vienna, 1995.
+      "
+    Craig1957:
+      description: "Isotopic standards for carbon and oxygen"
+      citation: "
+        Craig, H., Isotopic standards for carbon and oxygen and correction
+        factors for mass-spectrometric analysis of carbon dioxide,
+        Geochimica et Cosmochimica Acta, 12(1-2), 133-149, 1957.
+      "
+
+  set:
+    - mathematical:
+        description: "
+          Common mathematical constants.
+        "
+        entries:
+          - name: pi
+            value: 3.141592653589793238462643
+            units: none
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: ASHandbook1964
+            description: "
+              Ratio of a circle's circumference to its diameter.
+            "
+          - name: e
+            value: 2.718281828459045235360287
+            units: none
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: ASHandbook1964
+            description: "
+              Base of natural logarithms.
+            "
+          - name: em_gamma
+            value: 0.577215664901532860606512
+            units: none
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: ASHandbook1964
+            description: "
+              Euler-Mascheroni constant.
+            "
+          - name: radian
+            value: 57.295779513082320876798155
+            units: degree
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: ASHandbook1964
+            description: "
+              Radian to degrees conversion factor.
+            "
+          - name: degree
+            value: 0.017453292519943295769237
+            units: rad
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: ASHandbook1964
+            description: "
+              Degree to radiant conversion factor.
+            "
+          - name: square_root_of_2
+            value: 1.4142135623730950488
+            units: rad
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: ASHandbook1964
+            description: "
+              Square root of 2.
+            "
+          - name: square_root_of_3
+            value: 1.7320508075688772935
+            units: rad
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: ASHandbook1964
+            description: "
+              Square root of 3.
+            "
+    - universal_physical:
+        description: "
+          Fundamental Physical Constants
+        "
+        entries:
+          - name: speed_of_light_in_vacuum
+            value: 299792458
+            units: m s-1
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: NIST_CODATA2022
+            description: "
+              The speed at which light propagates in vacuum.
+              Albert Einstein postulated that the speed of light with respect to
+              an inertial frame is independent of the motion of the light source.
+            "
+          - name: newtonian_gravitation_constant
+            value: 6.67430E-11
+            units: m3 kg-1 s-2
+            prec: double
+            type: strict
+            relative_uncertainty: 2.2E-05
+            reference: NIST_CODATA2022
+            description: "
+              Empirical constant used to calculate the attractive force between
+              two bodies according to Newton's law of universal gravitation.
+            "
+          - name: standard_acceleration_of_gravity
+            value: 9.80665
+            units: m s-2
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: NIST_CODATA2022
+            description: "
+              Nominal acceleration of an object in a vacuum at sea level at a
+              geodetic latitude of 45 degrees.
+            "
+          - name: standard_atmosphere
+            value: 101325
+            units: Pa
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: NIST_CODATA2022
+            description: "
+              Unit of pressure equivalent to 760 mmHg (torr), 29.92 inches Hg and 14.696 psi.
+            "
+          - name: avogadro_constant
+            value: 6.02214076E+23
+            units: mol-1
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: NIST_CODATA2022
+            description: "
+              Number of particles (atoms, molecules) in one mole.
+            "
+          - name: boltzmann_constant
+            value: 1.380649E-23
+            units: J K-1
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: NIST_CODATA2022
+            description: "
+              Proportionality constant between the average kinetic energy
+              of particles in a gas and its temperature.
+            "
+          - name: stefan_boltzmann_constant
+            value: 5.670374419E-08
+            units: W m-2 K-4
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: NIST_CODATA2022
+            description: "
+              Proportionality constant between the power emitted by
+              a black body and the fourth power of its temperature,
+              according to Stefan-Boltzmann's law.
+            "
+
+          - name: planck_constant
+            value: 6.62607015E-34
+            units: J Hz-1
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: NIST_CODATA2022
+            description: "
+              Proportionality constant between the wavelength of
+              a photon and its energy.
+            "
+
+          - name: molar_gas_constant
+            value: 8.314462618
+            units: J mol-1 K-1
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: NIST_CODATA2022
+            description: "
+              Gas constant used in the ideal gas law. It is equivalent to
+              Boltzmann's constant espressed in J mol-1 K-1.
+            "
+          - name: molar_volume_of_ideal_gas
+            value: 22.71095464E-03
+            units: m3 mol-1
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: NIST_CODATA2022
+            description: "
+              Ideal gas molar volume as computed by the ideal gas law (RT/p)
+              at Standard Temperature and Pressure (STP: 273.15K, 100 kPa).
+            "
+    - chemical_molar_masses:
+        description: "
+          Reference molar masses for chemical elements and compounds used
+          across model components.
+        "
+        entries:
+          - name: carbon_molar_mass_reference
+            value: 0.0120107
+            units: kg mol-1
+            prec: double
+            type: strict
+            reference: IUPAC1997
+            description: "
+              Reference molar mass of elemental carbon.
+            "
+          - name: oxygen_molar_mass_reference
+            value: 0.0159994
+            units: kg mol-1
+            prec: double
+            type: strict
+            reference: IUPAC1997
+            description: "
+              Reference molar mass of elemental oxygen.
+            "
+          - name: carbon_dioxide_molar_mass_reference
+            value: 0.0440095
+            units: kg mol-1
+            prec: double
+            type: strict
+            reference: IUPAC1997
+            description: "
+              Derived from IUPAC standard atomic weights as
+              carbon_molar_mass_reference + 2*oxygen_molar_mass_reference.
+            "
+    - earth_physical:
+        description: "
+          Properties of the planet Earth
+        "
+        entries:
+          - name: geocentric_gravitational_constant
+            value: 3986005E+08
+            units: m3 s-2
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: GRS80
+            description: "
+              Product (GM) of the mass of the Earth (M) and the universal gravitational
+              constant (G).
+            "
+          - name: semimajor_axis
+            value: 6378137
+            units: m
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: GRS80
+            description: "
+              The semi-major axis of Earth's reference ellipsoid.
+            "
+          - name: dynamic_form_factor
+            value: 108263E-08
+            units: none
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: GRS80
+            description: "
+              Mechanical ellipticity of Earth.
+            "
+          - name: angular_velocity
+            value: 7292115E-11
+            units: rad s-1
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: GRS80
+            description: "
+              Angular velocity of Earth's rotation.
+            "
+          - name: semiminor_axis
+            value: 6356752.3141
+            units: m
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: GRS80
+            description: "
+              The semi-major axis of Earth's reference ellipsoid.
+              Derived constant.
+            "
+          - name: flattening
+            value: 0.00335281068118
+            units: none
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: GRS80
+            description: "
+              Defined as f = (semimajor_axis - semiminor_axis) / semimajor_axis.
+              Derived constant.
+            "
+          - name: reciprocal_flattening
+            value: 298.257222101
+            units: none
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: GRS80
+            description: "
+              Defined as 1/f. Derived constant.
+            "
+          - name: mean_radius
+            value: 6371008.7714
+            units: m
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: GRS80
+            description: "
+              Derived constant. Equal to (2 semimajor_axis + semiminor_axis) / 3.
+            "
+          - name: radius_of_sphere_of_same_surface
+            value: 6371007.1810
+            units: m
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: GRS80
+            description: "
+              Radius of Earth's reference sphere with same surface as ellipsoid's.
+              Derived constant.
+            "
+          - name: radius_of_sphere_of_same_volume
+            value: 6371000.7900
+            units: m
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: GRS80
+            description: "
+              Radius of Earth's reference sphere with same volume as ellipsoid's.
+              Derived constant.
+            "
+    - solar:
+        description: "
+          Properties of the Sun
+        "
+        entries:
+          - name: total_solar_irradiance
+            value: 1360.8
+            units: W m-2
+            prec: double
+            type: strict
+            uncertainty: 0.5
+            reference: TIM_SORCE_2005
+            description: "
+              Most probable value of total solar irradiance representative of
+              solar minimum (aka solar constant).
+            "
+    - water:
+        description: "
+          Properties of pure water
+        "
+        entries:
+          - name: water_molar_mass
+            value: 0.018015268
+            units: kg mol-1
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: IAPWS_95
+            description: "
+              Molar mass of H2O.
+            "
+          - name: water_specific_gas_constant
+            value: 0.46151805
+            units: kJ kg-1 K-1
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: IAPWS_95
+            description: "
+              Specific gas constant for water vapor.
+            "
+          - name: water_triple_point_temperature
+            value: 273.16
+            units: K
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: IAPWS_95
+            description: "
+              Triple point temperature of H2O.
+            "
+          - name: water_triple_point_pressure
+            value: 611.655
+            units: Pa
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: IAPWS_95
+            description: "
+              Triple point pressure of H2O.
+              Calculated from Eq. (6.4).
+            "
+          - name: liquid_water_triple_point_density
+            value: 999.793
+            units: kg m-3
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: IAPWS_95
+            description: "
+              Triple point density of liquid H2O.
+              Calculated from Eq. (6.4).
+            "
+          - name: vapor_water_triple_point_density
+            value: 0.00485458
+            units: kg m-3
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: IAPWS_95
+            description: "
+              Triple point density of vapor H2O.
+              Calculated from Eq. (6.4).
+            "
+          - name: pure_water_freezing_temperature_reference
+            value: 273.15
+            units: K
+            prec: double
+            type: strict
+            reference: CGPM1948_1954
+            description: "
+              Conventional 0 C reference temperature in kelvin (273.15 K),
+              linked historically to the water-triple-point definition and the
+              0.01 degree centesimal offset.
+            "
+          - name: pure_water_density_reference
+            value: 1000.0
+            units: kg m-3
+            prec: double
+            type: strict
+            reference: Gill_1982
+            description: "
+              Conventional reference density of pure water used in coupled
+              modeling; this is an approximation and not an exact
+              thermodynamic density at a specific state point.
+            "
+          - name: pure_water_specific_heat_capacity_reference
+            value: 4188.0
+            units: J kg-1 K-1
+            prec: double
+            type: strict
+            reference: Smithsonian1951
+            description: "
+              Conventional reference specific heat capacity of pure water.
+            "
+          - name: latent_heat_of_fusion_reference
+            value: 333700.0
+            units: J kg-1
+            prec: double
+            type: strict
+            reference: CRC2018
+            description: "
+              Reference latent heat released during freezing or absorbed during
+              melting of water.
+            "
+          - name: latent_heat_of_vaporization_reference
+            value: 2501000.0
+            units: J kg-1
+            prec: double
+            type: strict
+            reference: Smithsonian1951
+            description: "
+              Reference latent heat required to convert liquid water to vapor.
+            "
+          - name: latent_heat_of_sublimation_reference
+            value: 2834700.0
+            units: J kg-1
+            prec: double
+            type: strict
+            reference: Smithsonian1951
+            description: "
+              Derived constant. Defined as latent_heat_of_fusion_reference +
+              latent_heat_of_vaporization_reference.
+            "
+    - earth_atmosphere:
+        description: "
+          Thermophysical reference constants primarily associated with
+          Earth's atmospheric processes, and used across coupled components
+        "
+        entries:
+          - name: dry_air_molar_mass_reference
+            value: 0.028966
+            units: kg mol-1
+            prec: double
+            type: strict
+            reference: Smithsonian1951
+            description: "
+              Reference molar mass of dry air used in atmospheric
+              thermodynamic parameterizations.
+            "
+          - name: water_vapor_molar_mass_reference
+            value: 0.018016
+            units: kg mol-1
+            prec: double
+            type: strict
+            reference: Smithsonian1951
+            description: "
+              Reference molar mass of water vapor used in atmospheric
+              thermodynamic parameterizations.
+            "
+          - name: dry_air_specific_gas_constant_reference
+            value: 287.04213968100532
+            units: J kg-1 K-1
+            prec: double
+            type: strict
+            reference: US_StdAtm_1976
+            description: "
+              Derived constant. Defined as molar_gas_constant /
+              dry_air_molar_mass_reference.
+            "
+          - name: water_vapor_specific_gas_constant_reference
+            value: 461.50436378774424
+            units: J kg-1 K-1
+            prec: double
+            type: strict
+            reference: US_StdAtm_1976
+            description: "
+              Derived constant. Defined as molar_gas_constant /
+              water_vapor_molar_mass_reference.
+            "
+          - name: dry_air_density_at_standard_temperature_and_pressure
+            value: 1.2923190576466714
+            units: kg m-3
+            prec: double
+            type: strict
+            reference: US_StdAtm_1976
+            description: "
+              Derived constant. Defined as standard_atmosphere /
+              (dry_air_specific_gas_constant_reference *
+              pure_water_freezing_temperature).
+            "
+          - name: dry_air_specific_heat_capacity_reference
+            value: 1004.64
+            units: J kg-1 K-1
+            prec: double
+            type: strict
+            reference: Smithsonian1951
+            description: "
+              Reference specific heat capacity of dry air at constant pressure.
+            "
+          - name: water_vapor_specific_heat_capacity_reference
+            value: 1810.0
+            units: J kg-1 K-1
+            prec: double
+            type: strict
+            reference: Smithsonian1951
+            description: "
+              Reference specific heat capacity of water vapor used in
+              atmospheric thermodynamic parameterizations.
+            "
+    - earth_seawater:
+        description: "
+          Thermophysical reference constants associated with seawater (both
+          liquid and solid) on Earth
+        "
+        entries:
+          - name: seawater_density_reference
+            value: 1026.0
+            units: kg m-3
+            prec: double
+            type: strict
+            reference: Gill_1982
+            description: "
+              Canonical reference-scale seawater density; model adopts
+              1026 kg m-3.
+            "
+          - name: seawater_specific_heat_capacity_reference
+            value: 3996.0
+            units: J kg-1 K-1
+            prec: double
+            type: strict
+            reference: Gill_1982
+            description: "
+              Reference seawater specific heat capacity.
+            "
+          - name: ocean_reference_salinity
+            value: 34.7
+            units: g kg-1
+            prec: double
+            type: strict
+            reference: Levitus1982
+            description: "
+              Reference ocean salinity.
+            "
+          - name: speed_of_sound_in_seawater_reference
+            value: 1500.0
+            units: m s-1
+            prec: double
+            type: strict
+            reference: Gill_1982
+            description: "
+              Typical reference speed of sound in seawater.
+            "
+          - name: vsmow_ratio_18o_to_16o
+            value: 2005.2E-6
+            units: none
+            prec: double
+            type: strict
+            reference: IAEA1995
+            description: "
+              Isotopic ratio 18O/16O in Vienna Standard Mean Ocean Water (VSMOW).
+            "
+          - name: vsmow_ratio_17o_to_16o
+            value: 379.0E-6
+            units: none
+            prec: double
+            type: strict
+            reference: IAEA1995
+            description: "
+              Isotopic ratio 17O/16O in Vienna Standard Mean Ocean Water (VSMOW).
+            "
+          - name: vsmow_fraction_16o_of_total_oxygen
+            value: 0.997628
+            units: none
+            prec: double
+            type: strict
+            reference: IAEA1995
+            description: "
+              Isotopic fraction of 16O in total oxygen for Vienna Standard Mean
+              Ocean Water (VSMOW).
+            "
+          - name: vsmow_ratio_2h_to_1h
+            value: 155.76E-6
+            units: none
+            prec: double
+            type: strict
+            reference: IAEA1995
+            description: "
+              Isotopic ratio 2H/1H in Vienna Standard Mean Ocean Water (VSMOW).
+            "
+          - name: vsmow_ratio_3h_to_1h
+            value: 1.85E-6
+            units: none
+            prec: double
+            type: strict
+            reference: IAEA1995
+            description: "
+              Isotopic ratio 3H/1H in Vienna Standard Mean Ocean Water (VSMOW).
+            "
+          - name: vsmow_fraction_1h_of_total_hydrogen
+            value: 0.99984426
+            units: none
+            prec: double
+            type: strict
+            reference: IAEA1995
+            description: "
+              Isotopic fraction of 1H in total hydrogen for Vienna Standard Mean
+              Ocean Water (VSMOW).
+            "
+          - name: sea_ice_density_reference
+            value: 917.0
+            units: kg m-3
+            prec: double
+            type: strict
+            reference: Smithsonian1951
+            description: "
+              Reference density of sea ice.
+            "
+          - name: sea_ice_specific_heat_capacity_reference
+            value: 2117.27
+            units: J kg-1 K-1
+            prec: double
+            type: strict
+            reference: Smithsonian1951
+            description: "
+              Reference specific heat capacity of sea ice.
+            "
+          - name: sea_ice_thermal_conductivity_reference
+            value: 2.1
+            units: W m-1 K-1
+            prec: double
+            type: strict
+            reference: MaykutUntersteiner1971
+            description: "
+              Reference thermal conductivity of sea ice.
+            "
+          - name: sea_ice_reference_salinity
+            value: 4.0
+            units: g kg-1
+            prec: double
+            type: strict
+            reference: Untersteiner1961
+            description: "
+              Reference sea-ice salinity.
+            "
+          - name: sea_ice_thermal_diffusivity_reference
+            value: 1.0863739733765951E-06
+            units: m2 s-1
+            prec: double
+            type: strict
+            reference: CuffeyPaterson2010
+            description: "
+              Derived constant. Defined as
+              sea_ice_thermal_conductivity_reference /
+              (sea_ice_density_reference * sea_ice_specific_heat_capacity_reference).
+            "
+    - isotopic_standards:
+        description: "
+          Isotopic ratio and fraction standards used across Earth system components
+        "
+        entries:
+          - name: pee_dee_belemnite_ratio_13c_to_12c
+            value: 0.0112372
+            units: none
+            prec: double
+            type: strict
+            reference: Craig1957
+            description: "
+              Reference isotopic ratio 13C/12C for the Pee Dee Belemnite carbon
+              isotope standard.
+            "

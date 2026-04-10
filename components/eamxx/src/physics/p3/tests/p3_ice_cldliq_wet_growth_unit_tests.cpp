@@ -1,12 +1,10 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-
 #include "p3_unit_tests_common.hpp"
+
+#include "share/core/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -25,8 +23,8 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth : public UnitWrap::UnitTest
   {
     using KTH = KokkosTypes<HostDevice>;
 
-    constexpr Scalar latvap = C::LatVap;
-    constexpr Scalar latice = C::LatIce;
+    constexpr Scalar latvap = C::LatVap.value;
+    constexpr Scalar latice = C::LatIce.value;
 
     IceWetGrowthData self[max_pack_size] = {
       // rho,temp,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,latent_heat_vapor,latent_heat_fusion,dv,kap,mu,sc,qv,qc_incld,qi_incld,ni_incld,qr_incld,log_wetgrowth,qr2qi_collect_tend,qc2qi_collect_tend,qc_growth_rate,nr_ice_shed_tend,qc2qr_ice_shed_tend
@@ -60,23 +58,23 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth : public UnitWrap::UnitTest
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        self[i].read(Base::m_fid);
+        self[i].read(Base::m_ifile);
       }
     }
 
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init pack inputs
-      Spack rho,temp, pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,dv,kap,mu,sc,
+      Pack rho,temp, pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,dv,kap,mu,sc,
         qv,qc_incld,qi_incld,ni_incld,qr_incld;
 
-      Smask log_wetgrowth;
+      Mask log_wetgrowth;
 
-      Spack qr2qi_collect_tend,qc2qi_collect_tend,qc_growth_rate,nr_ice_shed_tend,qc2qr_ice_shed_tend;
+      Pack qr2qi_collect_tend,qc2qi_collect_tend,qc_growth_rate,nr_ice_shed_tend,qc2qr_ice_shed_tend;
 
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         rho[s]                        = self_device(vs).rho;
         temp[s]                       = self_device(vs).temp;
         pres[s]                       = self_device(vs).pres;
@@ -104,7 +102,7 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth : public UnitWrap::UnitTest
                                        qv, qc_incld, qi_incld, ni_incld, qr_incld,
                                        log_wetgrowth, qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate, nr_ice_shed_tend, qc2qr_ice_shed_tend);
 
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         self_device(vs).log_wetgrowth       = log_wetgrowth[s];
         self_device(vs).qr2qi_collect_tend  = qr2qi_collect_tend[s];
         self_device(vs).qc2qi_collect_tend  = qc2qi_collect_tend[s];
@@ -129,7 +127,7 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth : public UnitWrap::UnitTest
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        self_host(s).write(Base::m_fid);
+        self_host(s).write(Base::m_ofile);
       }
     }
   }

@@ -2,10 +2,11 @@
 #define P3_MAIN_IMPL_HPP
 
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
-#include "physics/share/physics_saturation_impl.hpp"
+#include "share/physics/physics_functions.hpp" // also for ETI not on GPUs
+#include "share/physics/physics_saturation_impl.hpp"
 
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+#include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 namespace p3 {
@@ -21,28 +22,28 @@ void Functions<S,D>
 ::p3_main_init(
   const MemberType& team,
   const Int& nk_pack,
-  const uview_1d<const Spack>& cld_frac_i,
-  const uview_1d<const Spack>& cld_frac_l,
-  const uview_1d<const Spack>& cld_frac_r,
-  const uview_1d<const Spack>& inv_exner,
-  const uview_1d<const Spack>& th_atm,
-  const uview_1d<const Spack>& dz,
-  const uview_1d<Spack>& diag_equiv_reflectivity,
-  const uview_1d<Spack>& ze_ice,
-  const uview_1d<Spack>& ze_rain,
-  const uview_1d<Spack>& diag_eff_radius_qc,
-  const uview_1d<Spack>& diag_eff_radius_qi,
-  const uview_1d<Spack>& diag_eff_radius_qr,
-  const uview_1d<Spack>& inv_cld_frac_i,
-  const uview_1d<Spack>& inv_cld_frac_l,
-  const uview_1d<Spack>& inv_cld_frac_r,
-  const uview_1d<Spack>& exner,
-  const uview_1d<Spack>& T_atm,
-  const uview_1d<Spack>& qv,
-  const uview_1d<Spack>& inv_dz,
+  const uview_1d<const Pack>& cld_frac_i,
+  const uview_1d<const Pack>& cld_frac_l,
+  const uview_1d<const Pack>& cld_frac_r,
+  const uview_1d<const Pack>& inv_exner,
+  const uview_1d<const Pack>& th_atm,
+  const uview_1d<const Pack>& dz,
+  const uview_1d<Pack>& diag_equiv_reflectivity,
+  const uview_1d<Pack>& ze_ice,
+  const uview_1d<Pack>& ze_rain,
+  const uview_1d<Pack>& diag_eff_radius_qc,
+  const uview_1d<Pack>& diag_eff_radius_qi,
+  const uview_1d<Pack>& diag_eff_radius_qr,
+  const uview_1d<Pack>& inv_cld_frac_i,
+  const uview_1d<Pack>& inv_cld_frac_l,
+  const uview_1d<Pack>& inv_cld_frac_r,
+  const uview_1d<Pack>& exner,
+  const uview_1d<Pack>& T_atm,
+  const uview_1d<Pack>& qv,
+  const uview_1d<Pack>& inv_dz,
   Scalar& precip_liq_surf,
   Scalar& precip_ice_surf,
-  view_1d_ptr_array<Spack, 36>& zero_init)
+  view_1d_ptr_array<Pack, 36>& zero_init)
 {
   precip_liq_surf = 0;
   precip_ice_surf = 0;
@@ -86,11 +87,12 @@ Int Functions<S,D>
   Int nk)
 {
   using ExeSpace = typename KT::ExeSpace;
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
   using ScratchViewType = Kokkos::View<bool*, typename ExeSpace::scratch_memory_space>;
 
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
   const auto scratch_size = ScratchViewType::shmem_size(2);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack).set_scratch_size(0, Kokkos::PerTeam(scratch_size));
+  const auto policy = TPF::get_default_team_policy(nj, nk_pack).set_scratch_size(0, Kokkos::PerTeam(scratch_size));
 
   // load constants into local vars
   const     Scalar inv_dt          = 1 / infrastructure.dt;
@@ -117,7 +119,7 @@ Int Functions<S,D>
     //
     // Get temporary workspaces needed for p3
     //
-    uview_1d<Spack>
+    uview_1d<Pack>
       mu_r,   // shape parameter of rain
       T_atm,      // temperature at the beginning of the microphysics step [K]
 
@@ -228,7 +230,7 @@ Int Functions<S,D>
     bool &nucleationPossible  = bools(0);
     bool &hydrometeorsPresent = bools(1);
 
-    view_1d_ptr_array<Spack, 36> zero_init = {
+    view_1d_ptr_array<Pack, 36> zero_init = {
       &mu_r, &lamr, &logn0r, &nu, &cdist, &cdist1, &cdistr,
       &qc_incld, &qr_incld, &qi_incld, &qm_incld,
       &nc_incld, &nr_incld, &ni_incld, &bm_incld,

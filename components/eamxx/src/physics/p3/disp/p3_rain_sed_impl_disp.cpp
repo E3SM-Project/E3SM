@@ -1,6 +1,7 @@
-
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+
+#include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 namespace p3 {
@@ -8,31 +9,33 @@ namespace p3 {
 template <>
 void Functions<Real,DefaultDevice>
 ::rain_sedimentation_disp(
-  const uview_2d<const Spack>& rho,
-  const uview_2d<const Spack>& inv_rho,
-  const uview_2d<const Spack>& rhofacr,
-  const uview_2d<const Spack>& cld_frac_r,
-  const uview_2d<const Spack>& inv_dz,
-  const uview_2d<Spack>& qr_incld,
+  const uview_2d<const Pack>& rho,
+  const uview_2d<const Pack>& inv_rho,
+  const uview_2d<const Pack>& rhofacr,
+  const uview_2d<const Pack>& cld_frac_r,
+  const uview_2d<const Pack>& inv_dz,
+  const uview_2d<Pack>& qr_incld,
   const WorkspaceManager& workspace_mgr,
   const view_2d_table& vn_table_vals, const view_2d_table& vm_table_vals,
   const Int& nj, const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& inv_dt,
-  const uview_2d<Spack>& qr,
-  const uview_2d<Spack>& nr,
-  const uview_2d<Spack>& nr_incld,
-  const uview_2d<Spack>& mu_r,
-  const uview_2d<Spack>& lamr,
-  const uview_2d<Spack>& precip_liq_flux,
-  const uview_2d<Spack>& qr_tend,
-  const uview_2d<Spack>& nr_tend,
+  const uview_2d<Pack>& qr,
+  const uview_2d<Pack>& nr,
+  const uview_2d<Pack>& nr_incld,
+  const uview_2d<Pack>& mu_r,
+  const uview_2d<Pack>& lamr,
+  const uview_2d<Pack>& precip_liq_flux,
+  const uview_2d<Pack>& qr_tend,
+  const uview_2d<Pack>& nr_tend,
   const uview_1d<Scalar>& precip_liq_surf,
   const uview_1d<bool>& nucleationPossible,
   const uview_1d<bool>& hydrometeorsPresent,
   const P3Runtime& runtime_options)
 {
   using ExeSpace = typename KT::ExeSpace;
-  const Int nk_pack = ekat::npack<Spack>(nk);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
+
+  const Int nk_pack = ekat::npack<Pack>(nk);
+  const auto policy = TPF::get_default_team_policy(nj, nk_pack);
   // p3_rain_sedimentation loop
   Kokkos::parallel_for("p3_rain_sed_disp",
     policy, KOKKOS_LAMBDA(const MemberType& team) {

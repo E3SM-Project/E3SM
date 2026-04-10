@@ -3,10 +3,14 @@
 
 #include "share/util/eamxx_universal_constants.hpp"
 
+#include <ekat_scalar_traits.hpp>
+#include <ekat_math_utils.hpp>
+#include <ekat_pack_where.hpp>
+#include <ekat_kernel_assert.hpp>
+
 // For KOKKOS_INLINE_FUNCTION
 #include <Kokkos_Core.hpp>
 #include <type_traits>
-#include "ekat/ekat_scalar_traits.hpp"
 
 namespace scream {
 
@@ -30,26 +34,28 @@ enum class CombineMode {
   Replace,    // out = alpha*in
   Update,     // out = beta*out + alpha*in
   Multiply,   // out = (beta*out)*(alpha*in)
-  Divide      // out = (beta*out)/(alpha*in)
+  Divide,     // out = (beta*out)/(alpha*in)
+  Max,        // out = max(beta*out,alpha*in)
+  Min         // out = min(beta*out,alpha*in)
 };
 
 // Small helper functions to combine a new value with an old one.
 // The template argument help reducing the number of operations
 // performed (the if is resolved at compile time). In the most
-// complete form, the function performs
-//    result = beta*result + alpha*newVal
+// complete form, the function performs (in functional programming notation):
+//    result = (op beta*result alpha*newVal) (where op can be +, *, /, max, min)
 // This routine should have no overhead compared to a manual
 // update (assuming you call it with the proper CM)
-
-template<CombineMode CM, typename ScalarIn, typename ScalarOut,
-         typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
+template<CombineMode CM, typename ScalarIn, typename ScalarOut, typename CoeffType>
 KOKKOS_FORCEINLINE_FUNCTION
 void combine (const ScalarIn& newVal, ScalarOut& result,
               const CoeffType alpha, const CoeffType beta)
 {
+  using ekat::impl::max;
+  using ekat::impl::min;
   switch (CM) {
     case CombineMode::Replace:
-      result = alpha*newVal;
+      result = newVal;
       break;
     case CombineMode::Update:
       result *= beta;
@@ -61,28 +67,44 @@ void combine (const ScalarIn& newVal, ScalarOut& result,
     case CombineMode::Divide:
       result /= (alpha/beta) * newVal;
       break;
+    case CombineMode::Max:
+      result = max(beta*result,static_cast<const ScalarOut&>(alpha*newVal));
+      break;
+    case CombineMode::Min:
+      result = min(beta*result,static_cast<const ScalarOut&>(alpha*newVal));
+      break;
+    default:
+      EKAT_KERNEL_ASSERT ("Unsupported/unexpected combine mode.\n");
   }
 }
-/* Special version of combine that takes a mask into account */
+
+// This is similar to the above one, but only does something if newVal is NOT equal to fill_value.
+// The only exception is the case CM=Replace, in which case we ALWAYS perform the copy
 template<CombineMode CM, typename ScalarIn, typename ScalarOut,
          typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
 KOKKOS_FORCEINLINE_FUNCTION
-void combine_and_fill (const ScalarIn& newVal, ScalarOut& result, const ScalarOut fill_val,
-              const CoeffType alpha, const CoeffType beta)
+void combine_fill_aware (const ScalarIn& newVal, ScalarOut& result,
+                         const CoeffType alpha, const CoeffType beta)
 {
-  switch (CM) {
-    case CombineMode::Replace:
+  // If CM==Replace, we don't check for FV. We ALWAYS replace
+  if constexpr (CM==CombineMode::Replace) {
+    return combine<CM>(newVal,result,alpha,beta);
+  }
+
+  // For the non-simd type case, we can avoid ekat::where, and simply check newVal against fill_value
+  if constexpr (ekat::ScalarTraits<ScalarIn>::is_simd) {
+    using inner_type = typename ekat::ScalarTraits<ScalarIn>::scalar_type;
+    constexpr auto fill_val = constants::fill_value<inner_type>;
+    auto where = ekat::where(newVal!=fill_val,result);
+    if (where.any()) {
+      auto tmp = result;
+      combine<CM>(newVal,tmp,alpha,beta);
+      where = tmp;
+    }
+  } else {
+    if (newVal!=constants::fill_value<ScalarIn>) {
       combine<CM>(newVal,result,alpha,beta);
-      break;
-    case CombineMode::Update:
-    case CombineMode::Multiply:
-    case CombineMode::Divide:
-      if (result == fill_val || newVal == fill_val) {
-        result = fill_val;
-      } else {
-        combine<CM>(newVal,result,alpha,beta);
-      }
-      break;
+    }
   }
 }
 

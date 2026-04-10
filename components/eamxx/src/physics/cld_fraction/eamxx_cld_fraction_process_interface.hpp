@@ -1,9 +1,9 @@
 #ifndef SCREAM_CLD_FRACTION_HPP
 #define SCREAM_CLD_FRACTION_HPP
 
-#include "physics/cld_fraction/cld_fraction_functions.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/ekat_parameter_list.hpp"
+
+#include <ekat_parameter_list.hpp>
 
 #include <string>
 
@@ -20,11 +20,6 @@ namespace scream
 class CldFraction : public AtmosphereProcess
 {
 public:
-  using CldFractionFunc = cld_fraction::CldFractionFunctions<Real, DefaultDevice>;
-  using Spack           = CldFractionFunc::Spack;
-  using Smask           = CldFractionFunc::Smask;
-  using Pack            = ekat::Pack<Real,Spack::n>;
-
   // Constructors
   CldFraction (const ekat::Comm& comm, const ekat::ParameterList& params);
 
@@ -35,7 +30,7 @@ public:
   std::string name () const { return "cld_fraction"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void create_requests ();
 
 protected:
 

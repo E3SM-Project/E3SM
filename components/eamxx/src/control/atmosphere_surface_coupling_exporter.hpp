@@ -4,12 +4,12 @@
 #include "surface_coupling_utils.hpp"
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/util/eamxx_common_physics_functions.hpp"
-#include "share/util/eamxx_time_interpolation.hpp"
+#include "share/algorithm/eamxx_time_interpolation.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
-#include "share/atm_process/SCDataManager.hpp"
+#include "share/data_managers/SCDataManager.hpp"
 
-#include <ekat/ekat_parameter_list.hpp>
+#include <ekat_parameter_list.hpp>
+
 #include <string>
 
 namespace scream
@@ -34,9 +34,8 @@ class SurfaceCouplingExporter : public AtmosphereProcess
 {
 public:
 
-  using PF      = scream::PhysicsFunctions<DefaultDevice>;
   using KT      = ekat::KokkosTypes<DefaultDevice>;
-  using Spack   = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>;
+  using Pack   = ekat::Pack<Real,SCREAM_PACK_SIZE>;
 
   template<typename DevT, typename DataT>
   using view_1d = typename KokkosTypes<DevT>::template view_1d<DataT>;
@@ -62,16 +61,16 @@ public:
   std::string name () const { return "SurfaceCouplingExporter"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void create_requests ();
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
     static constexpr int num_2d_vector_mid = 2;
     static constexpr int num_2d_vector_int = 1;
 
-    uview_2d<DefaultDevice, Spack> dz;
-    uview_2d<DefaultDevice, Spack> z_mid;
-    uview_2d<DefaultDevice, Spack> z_int;
+    uview_2d<DefaultDevice, Pack> dz;
+    uview_2d<DefaultDevice, Pack> z_mid;
+    uview_2d<DefaultDevice, Pack> z_int;
   };
 
   // Function which performes the export from scream fields,
@@ -135,19 +134,11 @@ protected:
   util::TimeInterpolation           m_time_interp;
   std::vector<std::string>          m_export_from_file_field_names;
 
-  // Views storing a 2d array with dims (num_cols,num_fields) for cpl export data.
-  // The field idx strides faster, since that's what mct does (so we can "view" the
-  // pointer to the whole a2x array from Fortran)
+  // Views storing a 2d array for cpl export data.
+  // MCT layout: (num_cols, num_fields) - field idx strides faster
+  // MOAB layout: (num_fields, num_cols) - column idx strides faster
   view_2d <DefaultDevice, Real> m_cpl_exports_view_d;
   uview_2d<HostDevice,    Real> m_cpl_exports_view_h;
-
-#ifdef HAVE_MOAB
-  // Views storing a 2d array with dims (num_fields, num_cols) for moab cpl export data.
-  // The field cols strides faster, since that's what moab does (so we can "view" the
-  // pointer to the whole a2x_am(:,:) array from Fortran)
-  view_2d <DefaultDevice, Real> m_moab_cpl_exports_view_d;
-  uview_2d<HostDevice,    Real> m_moab_cpl_exports_view_h;
-#endif
   // Array storing the field names for exports
   name_t*                   m_export_field_names;
   std::vector<std::string>  m_export_field_names_vector;

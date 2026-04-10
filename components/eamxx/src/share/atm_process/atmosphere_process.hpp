@@ -3,28 +3,32 @@
 
 #include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
-#include "share/atm_process/SCDataManager.hpp"
-#include "share/atm_process/IOPDataManager.hpp"
-#include "share/field/field_identifier.hpp"
-#include "share/field/field_manager.hpp"
+#include "share/data_managers/IOPDataManager.hpp"
+#include "share/data_managers/SCDataManager.hpp"
+#include "share/data_managers/grids_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
+#include "share/data_managers/field_request.hpp"
 #include "share/property_checks/property_check.hpp"
-#include "share/field/field_request.hpp"
+#include "share/field/field_identifier.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_group.hpp"
-#include "share/grid/grids_manager.hpp"
 
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/util/ekat_factory.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
-#include "ekat/std_meta/ekat_std_any.hpp"
-#include "ekat/logging/ekat_logger.hpp"
+#include <ekat_comm.hpp>
+#include <ekat_parameter_list.hpp>
+#include <ekat_factory.hpp>
+#include <ekat_string_utils.hpp>
+#include <ekat_logger.hpp>
+
+namespace pybind11 {
+class array;
+}
 
 #include <memory>
 #include <string>
 #include <set>
+#include <any>
 #include <list>
+#include <any>
 
 namespace scream
 {
@@ -70,7 +74,7 @@ namespace scream
  *     to override the get_internal_fields method.
  */
 
-class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess>
+class AtmosphereProcess : public std::enable_shared_from_this<AtmosphereProcess>
 {
 public:
   using TimeStamp = util::TimeStamp;
@@ -83,7 +87,7 @@ public:
 
   using prop_check_ptr = std::shared_ptr<PropertyCheck>;
 
-  using iop_data_ptr = std::shared_ptr<control::IOPDataManager>;
+  using iop_data_ptr = std::shared_ptr<IOPDataManager>;
 
   // Base constructor to set MPI communicator and params
   AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -99,7 +103,13 @@ public:
   // Give the grids manager to the process, so it can grab its grid
   // Upon return, the atm proc should have a valid and complete list
   // of in/out/inout FieldRequest and GroupRequest.
-  virtual void set_grids (const std::shared_ptr<const GridsManager> grids_manager) = 0;
+  // This method stores the grids manager and calls the purely virtual
+  // create_requests() method that derived classes must implement.
+  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+
+  // Derived classes must override this method to create their field/group requests.
+  // This is called by set_grids after storing the grids manager.
+  virtual void create_requests () = 0;
 
   // These are the three main interfaces:
   //   - the initialize method sets up all the stuff the process needs in order to run,
@@ -111,7 +121,9 @@ public:
   // TODO: should we check that initialize has been called, when calling run/finalize?
   void initialize (const TimeStamp& t0, const RunType run_type);
   void run (const double dt);
-  void finalize   (/* what inputs? */);
+  void finalize ();
+
+  bool is_initialized () const { return m_is_initialized; }
 
   // Return the MPI communicator
   const ekat::Comm& get_comm () const { return m_comm; }
@@ -121,7 +133,8 @@ public:
 
   // This method prepares the atm proc for computing the tendency of
   // output fields, as prescribed via parameter list
-  virtual void setup_tendencies_requests ();
+  // NOTE: virtual, as AtmProcGroup will override and just call it on stored procs
+  virtual void setup_step_tendencies (const std::string& default_grid);
 
   // Note: if we are being subcycled from the outside, the host will set
   //       do_update=false, and we will not update the timestamp of the AP
@@ -165,21 +178,19 @@ public:
     return m_postcondition_checks;
   }
   std::pair<CheckFailHandling,prop_check_ptr>
-  get_column_conservation_check() {
-    return m_column_conservation_check;
+  get_conservation() {
+    return m_conservation;
   }
 
 
   void init_step_tendencies ();
-  void compute_step_tendencies (const double dt);
+  void compute_step_tendencies ();
 
   // These methods allow the AD to figure out what each process needs, with very fine
   // grain detail. See field_request.hpp for more info on what FieldRequest and GroupRequest
   // are, and field_group.hpp for what groups of fields are.
-  const std::list<FieldRequest>& get_required_field_requests () const { return m_required_field_requests; }
-  const std::list<FieldRequest>& get_computed_field_requests () const { return m_computed_field_requests; }
-  const std::list<GroupRequest>& get_required_group_requests () const { return m_required_group_requests; }
-  const std::list<GroupRequest>& get_computed_group_requests () const { return m_computed_group_requests; }
+  const std::list<FieldRequest>& get_field_requests () const { return m_field_requests; }
+  const std::list<GroupRequest>& get_group_requests () const { return m_group_requests; }
 
   // These sets allow to get all the actual in/out fields stored by the atm proc
   // Note: if an atm proc requires a group, then all the fields in the group, as well as
@@ -263,20 +274,23 @@ public:
   // For restarts, it is possible that some atm proc need to write/read some ad-hoc data.
   // E.g., some atm proc might need to read/write certain scalar values.
   // Assumptions:
-  //  - these maps are: data_name -> ekat::any
+  //  - these maps are: data_name -> std::any
   //  - the data_name is unique across the whole atm
   // The AD will take care of ensuring these are written/read to/from restart files.
-  const strmap_t<ekat::any>& get_restart_extra_data () const { return m_restart_extra_data; }
-        strmap_t<ekat::any>& get_restart_extra_data ()       { return m_restart_extra_data; }
+  const strmap_t<std::shared_ptr<std::any>>& get_restart_extra_data () const { return m_restart_extra_data; }
+        strmap_t<std::shared_ptr<std::any>>& get_restart_extra_data ()       { return m_restart_extra_data; }
 
   // Boolean that dictates whether or not the conservation checks are run for this process
-  bool has_column_conservation_check () { return m_column_conservation_check_data.has_check; }
+  bool has_column_conservation_check () { return m_conservation_data.has_column_conservation_check; }
+  bool has_energy_fixer () { return m_conservation_data.has_energy_fixer; }
+  bool has_air_sea_surface_water_thermo_fixer () { return m_conservation_data.has_air_sea_surface_water_thermo_fixer; }
+  bool has_energy_fixer_debug_info () { return m_conservation_data.has_energy_fixer_debug_info; }
 
   // Print a global hash of internal fields (useful for debugging non-bfbness)
   // Note: (mem, nmem) describe an arbitrary device array. If mem!=nullptr,
   // the array will be hashed and reported as an additional entry
   void print_global_state_hash(const std::string& label, const TimeStamp& t,
-                               const bool in = true, const bool out = true, const bool internal = true,
+                               const bool pre_run,
                                const Real* mem = nullptr, const int nmem = 0) const;
 
   // For BFB tracking in production simulations.
@@ -371,7 +385,7 @@ protected:
       tracer_groups.push_back("non_turbulence_advected_tracers");
     }
 
-    FieldIdentifier fid(name, grid->get_3d_scalar_layout(true), u, grid->name());
+    FieldIdentifier fid(name, grid->get_3d_scalar_layout(FieldTag::LevelMidPoint), u, grid->name());
     FieldRequest req(fid, tracer_groups, ps);
     req.calling_process = this->name();
 
@@ -396,18 +410,8 @@ protected:
     static_assert(RT==Required || RT==Computed || RT==Updated,
                   "Error! Invalid request type in call to add_field.\n");
 
-    switch (RT) {
-      case Required:
-        m_required_field_requests.push_back(req);
-        break;
-      case Computed:
-        m_computed_field_requests.push_back(req);
-        break;
-      case Updated:
-        m_required_field_requests.push_back(req);
-        m_computed_field_requests.push_back(req);
-        break;
-    }
+    auto& r = m_field_requests.emplace_back(req);
+    r.usage = RT;
   }
 
   template<RequestType RT>
@@ -416,18 +420,9 @@ protected:
     // Since we use C-style enum, let's avoid invalid integers casts
     static_assert(RT==Required || RT==Updated || RT==Computed,
         "Error! Invalid request type in call to add_group.\n");
-    switch (RT) {
-      case Required:
-        m_required_group_requests.push_back(req);
-        break;
-      case Computed:
-        m_computed_group_requests.push_back(req);
-        break;
-      case Updated:
-        m_required_group_requests.push_back(req);
-        m_computed_group_requests.push_back(req);
-        break;
-    }
+
+    auto& r = m_group_requests.emplace_back(req);
+    r.usage = RT;
   }
 
   // Override this method to initialize the derived
@@ -462,8 +457,8 @@ protected:
   virtual void set_required_group_impl (const FieldGroup& /* group */) {}
   virtual void set_computed_group_impl (const FieldGroup& /* group */) {}
 
-  // Adds a field to the list of internal fields
-  void add_internal_field (const Field& f);
+  // Adds a field to the list of internal fields, possibly adding it to the given groups
+  void add_internal_field (const Field& f, const std::vector<std::string>& groups = {});
 
   // These methods set up an extra pointer in the m_[fields|groups]_[in|out]_pointers,
   // for convenience of use (e.g., use a short name for a field/group).
@@ -506,7 +501,7 @@ protected:
   std::shared_ptr<logger_t>  m_atm_logger;
 
   // Extra data needed for restart
-  strmap_t<ekat::any>  m_restart_extra_data;
+  strmap_t<std::shared_ptr<std::any>>  m_restart_extra_data;
 
   // Use at your own risk. Motivation: Free up device memory for a field that is
   // no longer used, such as a field read in the ICs used only to initialize
@@ -535,7 +530,9 @@ private:
 
   // Compute/store data needed for this processes mass and energy conservation
   // check: dt, tolerance, current mass and energy value per column.
-  void compute_column_conservation_checks_data (const int dt);
+  void compute_column_conservation_checks_data (const double dt);
+
+  void fix_energy (const double dt, const bool water_thermo_fixer, const bool print_debug_info);
 
   // Run an individual property check. The input property_check_category_name
   void run_property_check (const prop_check_ptr&       property_check,
@@ -555,9 +552,8 @@ private:
   std::list<Field>        m_internal_fields;
 
   // Data structures necessary to compute tendencies of updated fields
-  strmap_t<std::string>    m_tend_to_field;
-  strmap_t<Field>          m_proc_tendencies;
-  strmap_t<Field>          m_start_of_step_fields;
+  strmap_t<Field>    m_proc_tendencies;
+  strmap_t<Field>    m_start_of_step_fields;
 
   // These maps help to retrieve a field/group stored in the lists above. E.g.,
   //   auto ptr = m_field_in_pointers[field_name][grid_name];
@@ -573,17 +569,21 @@ private:
   std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_postcondition_checks;
 
   // Column local mass and energy conservation check
-  std::pair<CheckFailHandling,prop_check_ptr> m_column_conservation_check;
+  std::pair<CheckFailHandling,prop_check_ptr> m_conservation;
 
   // Store data related to this processes conservation check.
-  struct ColumnConservationCheckData {
+  struct ConservationData {
     // Boolean which dictates whether or not this process
     // contains the mass and energy conservation checks.
-    bool has_check;
+    bool has_column_conservation_check;
     // Tolerance used for the conservation check
+    // mass or energy or both? rename
     Real tolerance;
+    bool has_energy_fixer;
+    bool has_air_sea_surface_water_thermo_fixer;
+    bool has_energy_fixer_debug_info;
   };
-  ColumnConservationCheckData m_column_conservation_check_data;
+  ConservationData m_conservation_data;
 
   // This process's copy of the timestamps (current, as well as beg/end of step)
   TimeStamp m_start_of_step_ts;
@@ -592,15 +592,14 @@ private:
   // The number of times this process needs to be subcycled
   int m_num_subcycles = 1;
 
+  bool m_is_initialized = false;
+
   // This can be queried by derived classes, in case they need to know which
   // iteration of the subcycle this is
   int m_subcycle_iter;
 
   // Whether we need to update time stamps at the end of the run method
   bool m_update_time_stamps = true;
-
-  // Whether this atm proc should compute tendencies for any of its updated fields
-  bool m_compute_proc_tendencies = false;
 
   // Log level for when property checks perform a repair
   ekat::logger::LogLevel  m_repair_log_level;
@@ -613,11 +612,41 @@ protected:
   // IOP object
   iop_data_ptr m_iop_data_manager;
 
-  // The list of in/out field/group requests.
-  std::list<FieldRequest>   m_required_field_requests;
-  std::list<FieldRequest>   m_computed_field_requests;
-  std::list<GroupRequest>   m_required_group_requests;
-  std::list<GroupRequest>   m_computed_group_requests;
+  // Grids manager
+  std::shared_ptr<const GridsManager> m_grids_manager;
+
+  // A map grid_name->requests for in/out field/group.
+  std::list<FieldRequest>   m_field_requests;
+  std::list<GroupRequest>   m_group_requests;
+
+  void add_py_fields (const Field& f);
+  void add_py_fields (const FieldGroup& g);
+#ifdef EAMXX_HAS_PYTHON
+
+  // NOTE: we need to use std::any instead of pybind11::XYZ to avoid
+  //       namespace visibility warnings. Derived classes need to
+  //       manually call std::any_cast<pybind11::array> on the fields
+  //       and std::any_cast<pybind11::module> on the module
+  std::any  m_py_module;
+
+  strmap_t<strmap_t<std::any>> m_py_fields_dev;
+  strmap_t<strmap_t<std::any>> m_py_fields_host;
+
+  bool has_py_module () const { return m_py_module.has_value(); }
+
+  template<typename... Args>
+  void py_module_call (const std::string& name, const Args&... args);
+
+  // These utilities allow to retrieve pybind11 objects from the std::any wrappers
+  const pybind11::array& get_py_field_host (const std::string& fname) const;
+  const pybind11::array& get_py_field_dev (const std::string& fname) const;
+
+  const pybind11::array& get_py_field_host (const std::string& fname, const std::string& grid) const;
+  const pybind11::array& get_py_field_dev (const std::string& fname, const std::string& grid) const;
+
+  const pybind11::array& get_py_field_impl (const strmap_t<strmap_t<std::any>>& py_fields,
+                                     const std::string& fname, const std::string& grid) const;
+#endif
 };
 
 // ================= IMPLEMENTATION ================== //
@@ -641,6 +670,7 @@ add_invariant_check (const Args... args) {
   add_invariant_check(fpc);
 }
 
+
 // A short name for the factory for atmosphere processes
 // WARNING: you do not need to write your own creator function to register your atmosphere process in the factory.
 //          You could, but there's no need. You can simply register the common one right below, using your
@@ -658,9 +688,7 @@ using AtmosphereProcessFactory =
 template <typename AtmProcType>
 inline std::shared_ptr<AtmosphereProcess>
 create_atmosphere_process (const ekat::Comm& comm, const ekat::ParameterList& p) {
-  auto ptr = std::make_shared<AtmProcType>(comm,p);
-  ptr->setSelfPointer(ptr);
-  return ptr;
+  return std::make_shared<AtmProcType>(comm,p);
 }
 
 } // namespace scream

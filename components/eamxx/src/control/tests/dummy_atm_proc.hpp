@@ -2,8 +2,6 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 
-#include "ekat/ekat_pack.hpp"
-
 namespace scream {
 
 // === A dummy atm process, on Physics grid === //
@@ -35,10 +33,10 @@ public:
   // Return some sort of name, linked to PType
   std::string name () const { return m_name; }
 
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager) {
+  void create_requests () {
     using namespace ShortFieldTagsNames;
 
-    m_grid = grids_manager->get_grid(m_params.get<std::string>("grid_name"));
+    m_grid = m_grids_manager->get_grid(m_params.get<std::string>("grid_name"));
 
     const auto num_cols = m_grid->get_num_local_dofs();
     const auto num_levs = m_grid->get_num_vertical_levels();

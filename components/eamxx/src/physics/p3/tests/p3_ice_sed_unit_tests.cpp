@@ -1,12 +1,10 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-
 #include "p3_unit_tests_common.hpp"
+
+#include "share/core/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -80,29 +78,29 @@ void run_bfb_calc_bulk_rhime()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < max_pack_size; ++i) {
-      cbrr_baseline[i].read(Base::m_fid);
+      cbrr_baseline[i].read(Base::m_ifile);
     }
   }
 
   // Calc bulk rime from a kernel and copy results back to host
   Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-    const Int offset = i * Spack::n;
+    const Int offset = i * Pack::n;
 
     // Init pack inputs
-    Spack qi_tot, qi_rim, bi_rim;
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    Pack qi_tot, qi_rim, bi_rim;
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       qi_tot[s] = cbrr_device(vs).qi_tot;
       qi_rim[s] = cbrr_device(vs).qi_rim;
       bi_rim[s] = cbrr_device(vs).bi_rim;
     }
 
-    Smask gt_small(qi_tot > qsmall);
-    Spack rho_rime = Functions::calc_bulk_rho_rime(
+    Mask gt_small(qi_tot > qsmall);
+    Pack rho_rime = Functions::calc_bulk_rho_rime(
         qi_tot, qi_rim, bi_rim, p3::Functions<Real, DefaultDevice>::P3Runtime(),
         gt_small);
 
     // Copy results back into views
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       cbrr_device(vs).qi_rim   = qi_rim[s];
       cbrr_device(vs).bi_rim   = bi_rim[s];
       cbrr_device(vs).rho_rime = rho_rime[s];
@@ -122,7 +120,7 @@ void run_bfb_calc_bulk_rhime()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int s = 0; s < max_pack_size; ++s) {
-      cbrr_host(s).write(Base::m_fid);
+      cbrr_host(s).write(Base::m_ofile);
     }
   }
 }
@@ -158,7 +156,7 @@ void run_bfb_ice_sed()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < num_runs; ++i) {
-      isds_baseline[i].read(Base::m_fid);
+      isds_baseline[i].read(Base::m_ifile);
     }
   }
 
@@ -193,14 +191,14 @@ void run_bfb_ice_sed()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      isds_cxx[i].write(Base::m_fid);
+      isds_cxx[i].write(Base::m_ofile);
     }
   }
 }
 
 void run_bfb_homogeneous_freezing()
 {
-  constexpr Scalar latice = C::LatIce;
+  constexpr Scalar latice = C::LatIce.value;
 
   auto engine = Base::get_engine();
 
@@ -217,7 +215,7 @@ void run_bfb_homogeneous_freezing()
   // Set up random input data
   for (auto& d : hfds_baseline) {
     const auto qsmall_r = std::make_pair(C::QSMALL/2, C::QSMALL*2);
-    d.randomize(engine, { {d.T_atm, {C::T_homogfrz - 10, C::T_homogfrz + 10}}, {d.qc, qsmall_r}, {d.qr, qsmall_r} });
+    d.randomize(engine, { {d.T_atm, {C::T_homogfrz.value - 10, C::T_homogfrz.value + 10}}, {d.qc, qsmall_r}, {d.qr, qsmall_r} });
 
     // C++ impl uses constants for latent_heat values. Manually set here
     // so F90 can match
@@ -238,7 +236,7 @@ void run_bfb_homogeneous_freezing()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (auto& d : hfds_baseline) {
-      d.read(Base::m_fid);
+      d.read(Base::m_ifile);
     }
   }
 
@@ -269,7 +267,7 @@ void run_bfb_homogeneous_freezing()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      hfds_cxx[i].write(Base::m_fid);
+      hfds_cxx[i].write(Base::m_ofile);
     }
   }
 

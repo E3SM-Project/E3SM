@@ -8,16 +8,16 @@
 #include "physics/rrtmgp/eamxx_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/eamxx_rrtmgp_process_interface.hpp"
 #include "physics/register_physics.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
 // scream share headers
-#include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/util/eamxx_common_physics_functions.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
 
 // EKAT headers
-#include <ekat/ekat_parse_yaml_file.hpp>
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
-#include <ekat/util/ekat_test_utils.hpp>
+#include <ekat_yaml.hpp>
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_test_utils.hpp>
 
 // RRTMGP
 #include <mo_gas_concentrations.h>
@@ -37,6 +37,7 @@ using namespace scream;
 using namespace scream::control;
 using KT = KokkosTypes<DefaultDevice>;
 using ExeSpace = KT::ExeSpace;
+using TPF = ekat::TeamPolicyFactory<ExeSpace>;
 using MemberType = KT::MemberType;
 using PC = scream::physics::Constants<Real>;
 
@@ -199,7 +200,7 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
 
   // Need to calculate a dummy pseudo_density for our test problem
   Kokkos::parallel_for(MDRP::template get<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
-    p_del(icol,ilay) = abs(p_lev(icol,ilay+1) - p_lev(icol,ilay));
+    p_del(icol,ilay) = ekat::abs(p_lev(icol,ilay+1) - p_lev(icol,ilay));
   });
 
   // We do not want to pass lwp and iwp through the FM, so back out qc and qi for this test
@@ -208,8 +209,8 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
   auto nc = real2dk("nc", ncol, nlay);
   auto qi = real2dk("qi", ncol, nlay);
   Kokkos::parallel_for(MDRP::template get<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
-    qc(icol,ilay) = 1e-3 * lwp(icol,ilay) * cld(icol,ilay) * PC::gravit / p_del(icol,ilay);
-    qi(icol,ilay) = 1e-3 * iwp(icol,ilay) * cld(icol,ilay) * PC::gravit / p_del(icol,ilay);
+    qc(icol,ilay) = 1e-3 * lwp(icol,ilay) * cld(icol,ilay) * PC::gravit.value / p_del(icol,ilay);
+    qi(icol,ilay) = 1e-3 * iwp(icol,ilay) * cld(icol,ilay) * PC::gravit.value / p_del(icol,ilay);
   });
 
   // Copy gases from gas_concs to gas_vmr array
@@ -255,7 +256,7 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
   // Gather molecular weights of all the active gases in the test for conversion
   // to mass-mixing-ratio.
   {
-    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, nlay);
+    const auto policy = TPF::get_default_team_policy(ncol, nlay);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int i = team.league_rank();
 
@@ -282,7 +283,7 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
         d_cld(i,k)  = cld(i,k);
         d_pint(i,k) = p_lev(i,k);
         // qv specified as a wet mixing ratio
-        Real qv_dry = gas_vmr(i,k,0)*PC::ep_2;
+        Real qv_dry = gas_vmr(i,k,0)*PC::ep_2.value;
         Real qv_wet = qv_dry/(1.0+qv_dry);
         d_qv(i,k)  = qv_wet;
         // rest of active gases are specified as volume mixing ratios
@@ -299,7 +300,7 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
 
       // Compute surface flux from surface temperature
       auto ibot = (p_lay(0,0) > p_lay(0,nlay-1)) ? 0 : nlay;
-      d_surf_lw_flux_up(i) = PC::stebol * pow(t_lev(i,ibot), 4.0);
+      d_surf_lw_flux_up(i) = PC::stebol.value * pow(t_lev(i,ibot), 4.0);
     });
   }
   Kokkos::fence();
@@ -320,7 +321,7 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
   auto lw_flux_up_test = real2dk("lw_flux_up_test", ncol, nlay+1);
   auto lw_flux_dn_test = real2dk("lw_flux_dn_test", ncol, nlay+1);
   {
-    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, nlay);
+    const auto policy = TPF::get_default_team_policy(ncol, nlay);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int i = team.league_rank();
 

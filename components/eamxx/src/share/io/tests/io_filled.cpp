@@ -4,22 +4,21 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
 
 #include "share/field/field_utils.hpp"
 #include "share/field/field.hpp"
-#include "share/field/field_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 
 #include "share/util/eamxx_universal_constants.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
-#include "ekat/util/ekat_units.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_assert.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_units.hpp>
+#include <ekat_parameter_list.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_comm.hpp>
 
 #include <iomanip>
 #include <memory>
@@ -27,7 +26,7 @@
 namespace scream {
 
 constexpr int num_output_steps = 5;
-constexpr Real FillValue = constants::DefaultFillValue<float>().value;
+constexpr Real fill_value = constants::fill_value<Real>;
 constexpr Real fill_threshold = 0.5;
 
 void set (const Field& f, const double v) {
@@ -101,6 +100,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
     f.allocate_view();
     f.deep_copy(0.0); // For the "filled" field we start with a filled value.
     f.get_header().get_tracking().update_time_stamp(t0);
+    f.get_header().set_may_be_filled(true);
     fm->add_field(f);
   }
 
@@ -131,7 +131,6 @@ void write (const std::string& avg_type, const std::string& freq_units,
   om_pl.set("filename_prefix",std::string("io_filled"));
   om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", avg_type);
-  om_pl.set<double>("fill_value",FillValue);
   om_pl.set<Real>("fill_threshold",fill_threshold);
   om_pl.set("track_avg_cnt",true);
   auto& ctrl_pl = om_pl.sublist("output_control");
@@ -152,8 +151,10 @@ void write (const std::string& avg_type, const std::string& freq_units,
     // Update time
     t += dt;
 
-    // Set fields to n or the FillValue, depending on timesnap
-    Real setval = ((n+1) % 2 == 0) ? 1.0*(n+1) : FillValue;
+    // Set fields to n+1 or the fill_value, depending on step:
+    //  - n+1 if n+1 is odd
+    //  - fill_value if n+1 is even
+    Real setval = ((n+1) % 2 == 0) ? 1.0*(n+1) : fill_value;
     for (const auto& n : fnames) {
       auto f = fm->get_field(n);
       set(f,setval);
@@ -204,7 +205,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   reader_pl.set("field_names",fnames);
   AtmosphereInput reader(reader_pl,fm);
 
-  // We set the value n to each input field for each odd valued timestep and FillValue for each even valued timestep
+  // We set the value n to each input field for each odd valued timestep and fill_value for each even valued timestep
   // Hence, at output step N = snap*freq, we should get
   //  avg=INSTANT: output = N if (N%2=0), else Fillvalue
   //  avg=MAX:     output = N if (N%2=0), else N-1
@@ -230,17 +231,18 @@ void read (const std::string& avg_type, const std::string& freq_units,
         set(f0,test_val);
         REQUIRE (views_are_equal(f,f0));
       } else if (avg_type=="INSTANT") {
-        Real test_val = (n*freq%2==0) ? n*freq : FillValue;
+        Real test_val = (n*freq%2==0) ? n*freq : fill_value;
         set(f0,test_val);
         REQUIRE (views_are_equal(f,f0));
       } else { // Is avg_type = AVERAGE
         // Note, for AVERAGE type output with filling we need to check that the
         // number of contributing fill steps surpasses the fill_threshold, if not
         // then we know that the snap will reflect the fill value.
+
         Real test_val;
         Real M = freq/2 + (n%2==0 ? 0.0 :  1.0);
         Real a = n*freq + (n%2==0 ? 0.0 : -1.0);
-        test_val = (M/freq > fill_threshold) ? a + (M+1.0) : FillValue;
+        test_val = (M/freq > fill_threshold) ? a + (M+1.0) : fill_value;
         set(f0,test_val);
         REQUIRE (views_are_equal(f,f0));
       }
@@ -251,7 +253,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   for (const auto& fn: fnames) {
     // NOTE: use float, since default fp_precision for I/O is 'single'
     auto att_fill = scorpio::get_attribute<float>(filename,fn,"_FillValue");
-    REQUIRE(att_fill==constants::DefaultFillValue<float>().value);
+    REQUIRE(att_fill==constants::fill_value<Real>);
   }
 }
 

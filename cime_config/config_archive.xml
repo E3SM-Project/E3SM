@@ -124,6 +124,8 @@
   <comp_archive_spec compname="mali" compclass="glc">
     <rest_file_extension>rst</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
+    <hist_file_ext_regex>\w+</hist_file_ext_regex>
+    <hist_file_ext_regex>\w+\.\w+</hist_file_ext_regex>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.glc$NINST_STRING</rpointer_file>

@@ -24,6 +24,10 @@ module drof_comp_mod
   use drof_shr_mod   , only: decomp         ! namelist input
   use drof_shr_mod   , only: rest_file      ! namelist input
   use drof_shr_mod   , only: rest_file_strm ! namelist input
+  use drof_shr_mod   , only: remove_ais_rofl! namelist input
+  use drof_shr_mod   , only: remove_ais_rofi! namelist input
+  use drof_shr_mod   , only: remove_gis_rofl! namelist input
+  use drof_shr_mod   , only: remove_gis_rofi! namelist input
   use drof_shr_mod   , only: nullstr
 #ifdef HAVE_MOAB
   use seq_comm_mct,     only : mrofid ! id of moab rof app
@@ -233,12 +237,28 @@ CONTAINS
       call shr_sys_abort('Error: fail to update mesh info ')
 
    allocate(data(lsize))
-   ierr = iMOAB_DefineTagStorage( mrofid, "area:aream:frac:mask"//C_NULL_CHAR, &
+   ierr = iMOAB_DefineTagStorage( mrofid, "lat:lon:area:aream:frac:mask"//C_NULL_CHAR, &
                                     1, & ! dense, double
                                     1, & ! number of components
                                     tagindex )
    if (ierr > 0 )  &
       call shr_sys_abort('Error: fail to create tag: area:aream:frac:mask' )
+
+   data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'lat'),:)
+   tagname='lat'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsize, &
+                                    0, & ! set data on vertices
+                                    data)
+   if (ierr > 0 )  &
+      call shr_sys_abort('Error: fail to set lat tag ')
+
+   data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'lon'),:)
+   tagname='lon'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsize, &
+                                    0, & ! set data on vertices
+                                    data)
+   if (ierr > 0 )  &
+      call shr_sys_abort('Error: fail to set lon tag ')
 
    data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'area'),:)
    tagname='area'//C_NULL_CHAR
@@ -246,7 +266,7 @@ CONTAINS
                                     0, & ! set data on vertices
                                     data)
    if (ierr > 0 )  &
-      call shr_sys_abort('Error: fail to get area tag ')
+      call shr_sys_abort('Error: fail to set area tag ')
 
    ! set the same data for aream (model area) as area
    ! data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'aream'),:)
@@ -397,8 +417,8 @@ CONTAINS
     use iMOAB, only: iMOAB_WriteMesh
 #endif
 #ifdef HAVE_MOAB
-    use seq_flds_mod    , only: seq_flds_r2x_fields 
-    use seq_flds_mod    , only: moab_set_tag_from_av
+    use seq_flds_mod    , only: seq_flds_r2x_fields
+    use shr_moab_mod    , only: moab_set_tag_from_av
 #endif
     ! !DESCRIPTION:  run method for drof model
     implicit none
@@ -429,6 +449,7 @@ CONTAINS
     integer(IN)   :: nu                ! unit number
     integer(IN)   :: nflds_r2x
     character(len=18) :: date_str
+    integer :: index_r2x_rofl, index_r2x_rofi
 #ifdef HAVE_MOAB
     real(R8), allocatable, target :: datam(:)
     type(mct_list) :: temp_list
@@ -504,7 +525,25 @@ CONTAINS
     select case (trim(datamode))
 
     case('COPYALL')
-       ! do nothing extra
+       ! COPYALL mode with optional runoff masking near ice sheets
+
+       ! Apply modifications around ice sheets if required
+       lsize = mct_avect_lsize(r2x)
+       nflds_r2x = mct_avect_nRattr(r2x)
+       index_r2x_rofl = mct_avect_indexra(r2x,'Forr_rofl')
+       index_r2x_rofi = mct_avect_indexra(r2x,'Forr_rofi')
+       if (remove_ais_rofl) then
+          call apply_ais_mask(r2x, ggrid, lsize, index_r2x_rofl)
+       endif
+       if (remove_ais_rofi) then
+          call apply_ais_mask(r2x, ggrid, lsize, index_r2x_rofi)
+       endif
+       if (remove_gis_rofl) then
+          call apply_gis_mask(r2x, ggrid, lsize, index_r2x_rofl)
+       endif
+       if (remove_gis_rofi) then
+          call apply_gis_mask(r2x, ggrid, lsize, index_r2x_rofi)
+       endif
 
     end select
     call t_stopf('drof_datamode')
@@ -576,6 +615,71 @@ CONTAINS
     call t_stopf('DROF_RUN')
 
   end subroutine drof_comp_run
+
+  !===============================================================================
+  subroutine apply_ais_mask(r2x, ggrid, lsize, field_index)
+
+    implicit none
+
+    type(mct_aVect) , intent(inout) :: r2x
+    type(mct_gGrid) , pointer       :: ggrid
+    integer(IN)     , intent(in)    :: lsize
+    integer(IN)     , intent(in)    :: field_index
+
+    integer(IN) :: n, ilat
+    real(R8)    :: latv
+
+    ilat = mct_aVect_indexRA(ggrid%data,'lat')
+    do n=1,lsize
+       latv = ggrid%data%rAttr(ilat, n)
+       if (latv < -60.0_r8) then
+          r2x%rAttr(field_index,n) = 0.0_r8
+       end if
+    enddo
+
+  end subroutine apply_ais_mask
+
+  !===============================================================================
+  subroutine apply_gis_mask(r2x, ggrid, lsize, field_index)
+
+    implicit none
+
+    type(mct_aVect) , intent(inout) :: r2x
+    type(mct_gGrid) , pointer       :: ggrid
+    integer(IN)     , intent(in)    :: lsize
+    integer(IN)     , intent(in)    :: field_index
+
+    integer(IN) :: n, ilat, ilon
+    real(R8)    :: latv, lonv
+    logical     :: in_greenland, in_baffin, in_ellesmere, in_iceland
+
+    ilat = mct_aVect_indexRA(ggrid%data,'lat')
+    ilon = mct_aVect_indexRA(ggrid%data,'lon')
+
+    do n=1,lsize
+       lonv = ggrid%data%rAttr(ilon, n)
+       latv = ggrid%data%rAttr(ilat, n)
+
+       in_greenland = (latv > 59.5_r8) .and. (latv < 83.66_r8) .and. &
+                      (lonv > 287.0_r8) .and. (lonv < 349.2_r8)
+
+       in_baffin = (latv > 59.5_r8) .and. (latv < 73.0_r8) .and. &
+                   (lonv > 287.0_r8) .and. (lonv < 300.0_r8)
+
+       ! This region is a right triangle with a hypotenuse passing through Nares Strait
+       in_ellesmere = (latv > 76.5_r8) .and. (latv < 83.66_r8) .and. &
+                      (lonv > 280.0_r8) .and. &
+                      (lonv < 280.0_r8 + (latv - 76.5_r8) * 3.4_r8)
+
+       in_iceland = (latv > 63.0_r8) .and. (latv < 67.0_r8) .and. &
+                    (lonv > 334.0_r8) .and. (lonv < 347.0_r8)
+
+       if (in_greenland .and. .not.(in_baffin .or. in_ellesmere .or. in_iceland)) then
+          r2x%rAttr(field_index,n) = 0.0_r8
+       end if
+    enddo
+
+  end subroutine apply_gis_mask
 
   !===============================================================================
   subroutine drof_comp_final(my_task, master_task, logunit)

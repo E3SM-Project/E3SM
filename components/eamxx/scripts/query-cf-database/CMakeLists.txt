@@ -11,5 +11,4 @@ target_compile_definitions(query-cf-database PUBLIC
                            CF_SCREAM_NAME_FILE=${CF_SCREAM_NAME_FILE})
 
 find_package (ekat HINTS ${EKAT_ROOT})
-find_package (yaml-cpp HINTS ${YAML_CPP_ROOT})
-target_link_libraries(query-cf-database ekat yaml-cpp)
+target_link_libraries(query-cf-database ekat::AllLibs)

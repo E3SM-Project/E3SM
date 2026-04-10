@@ -4,8 +4,10 @@
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "physics/rrtmgp/eamxx_rrtmgp_interface.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
+
+#include <ekat_parameter_list.hpp>
+#include <ekat_string_utils.hpp>
+
 #include <string>
 
 namespace scream {
@@ -58,7 +60,7 @@ public:
   std::string name () const { return "rrtmgp"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grid_manager);
+  void create_requests ();
 
 // NOTE: cannot use lambda functions for CUDA devices if these are protected!
 public:
@@ -238,8 +240,6 @@ protected:
 
   // Struct which contains local variables
   Buffer m_buffer;
-
-  bool m_force_run_on_next_step = false;
 };  // class RRTMGPRadiation
 
 }  // namespace scream
