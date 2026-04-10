@@ -157,16 +157,30 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
           // This field is NOT to be saved as geo data
           continue;
         }
+        using stratts_t = std::map<std::string,std::string>;
         if (use_suffix) {
           fields.push_back(f.clone(f.name() + grid->m_disambiguation_suffix, gname));
 
+          // Transfer io: string attributes from original field (e.g., "bounds" attribute)
+          if (f.get_header().has_extra_data("io: string attributes")) {
+            const auto& src_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
+            auto& dst_atts = fields.back().get_header().get_extra_data<stratts_t>("io: string attributes");
+            dst_atts.insert(src_atts.begin(), src_atts.end());
+          }
+
           // Adjust long/std name, as the default metadata does not recognize the names with suffix
-          using stratts_t = std::map<std::string,std::string>;
           auto& str_atts = fields.back().get_header().get_extra_data<stratts_t>("io: string attributes");
           str_atts["long_name"] = meta.get_longname(f.name());
           str_atts["standard_name"] = meta.get_standardname(f.name());
         } else {
           fields.push_back(f.clone(f.name(), gname));
+
+          // Transfer io: string attributes from original field (e.g., "bounds" attribute)
+          if (f.get_header().has_extra_data("io: string attributes")) {
+            const auto& src_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
+            auto& dst_atts = fields.back().get_header().get_extra_data<stratts_t>("io: string attributes");
+            dst_atts.insert(src_atts.begin(), src_atts.end());
+          }
         }
       }
 
