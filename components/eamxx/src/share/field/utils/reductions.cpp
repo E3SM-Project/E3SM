@@ -114,6 +114,89 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
 }
 
 template<typename ST>
+ST inf_norm(const Field& f, const ekat::Comm* comm)
+{
+  const auto& fl = f.get_header().get_identifier().get_layout();
+
+  // TODO: compute directly on device
+  f.sync_to_host();
+
+  ST norm = 0;
+  switch (fl.rank()) {
+    case 1:
+      {
+        auto v = f.template get_strided_view<const ST*,Host>();
+        for (int i=0; i<fl.dim(0); ++i) {
+          norm = std::max(norm,std::abs(v(i)));
+        }
+      }
+      break;
+    case 2:
+      {
+        auto v = f.template get_strided_view<const ST**,Host>();
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            norm = std::max(norm,std::abs(v(i,j)));
+        }}
+      }
+      break;
+    case 3:
+      {
+        auto v = f.template get_strided_view<const ST***,Host>();
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              norm = std::max(norm,std::abs(v(i,j,k)));
+        }}}
+      }
+      break;
+    case 4:
+      {
+        auto v = f.template get_strided_view<const ST****,Host>();
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              for (int l=0; l<fl.dim(3); ++l) {
+                norm = std::max(norm,std::abs(v(i,j,k,l)));
+        }}}}
+      }
+      break;
+    case 5:
+      {
+        auto v = f.template get_strided_view<const ST*****,Host>();
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              for (int l=0; l<fl.dim(3); ++l) {
+                for (int m=0; m<fl.dim(4); ++m) {
+                  norm = std::max(norm,std::abs(v(i,j,k,l,m)));
+        }}}}}
+      }
+      break;
+    case 6:
+      {
+        auto v = f.template get_strided_view<const ST******,Host>();
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              for (int l=0; l<fl.dim(3); ++l) {
+                for (int m=0; m<fl.dim(4); ++m) {
+                  for (int n=0; n<fl.dim(5); ++n) {
+                    norm = std::max(norm,std::abs(v(i,j,k,l,m,n)));
+        }}}}}}
+      }
+      break;
+    default:
+      EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
+  }
+
+  if (comm) {
+    comm->all_reduce(&norm,1,MPI_MAX);
+  }
+  return norm;
+}
+
+template<typename ST>
 ST field_sum(const Field& f, const ekat::Comm* comm)
 {
   const auto& fl = f.get_header().get_identifier().get_layout();
@@ -411,11 +494,36 @@ ScalarWrapper frobenius_norm(const Field& f, const ekat::Comm* comm)
       norm.set(impl::frobenius_norm<double>(f,comm));
       break;
     default:
-      EKAT_ERROR_MSG ("[print_field] Error! Invalid/unsupported data type.\n"
+      EKAT_ERROR_MSG ("[frobenius_norm] Error! Invalid/unsupported data type.\n"
           " - field name: " + f.name() + "\n");
   }
   return norm;
 }
+
+ScalarWrapper inf_norm(const Field& f, const ekat::Comm* comm)
+{
+  EKAT_REQUIRE_MSG (f.is_allocated(),
+    "[inf_norm] Error! Input field was not yet allocated.\n");
+
+  ScalarWrapper norm;
+  switch (f.data_type()) {
+    case DataType::IntType:
+      EKAT_ERROR_MSG ("[inf_norm] Error! IntType fields are not supported.\n"
+          " - field name: " + f.name() + "\n");
+      break;
+    case DataType::FloatType:
+      norm.set(impl::inf_norm<float>(f,comm));
+      break;
+    case DataType::DoubleType:
+      norm.set(impl::inf_norm<double>(f,comm));
+      break;
+    default:
+      EKAT_ERROR_MSG ("[inf_norm] Error! Invalid/unsupported data type.\n"
+          " - field name: " + f.name() + "\n");
+  }
+  return norm;
+}
+
 
 ScalarWrapper field_sum(const Field& f, const ekat::Comm* comm)
 {
@@ -434,7 +542,7 @@ ScalarWrapper field_sum(const Field& f, const ekat::Comm* comm)
       norm.set(impl::field_sum<double>(f,comm));
       break;
     default:
-      EKAT_ERROR_MSG ("[print_field] Error! Invalid/unsupported data type.\n"
+      EKAT_ERROR_MSG ("[field_sum] Error! Invalid/unsupported data type.\n"
           " - field name: " + f.name() + "\n");
   }
   return norm;
@@ -457,7 +565,7 @@ ScalarWrapper field_max(const Field& f, const ekat::Comm* comm)
       norm.set(impl::field_max<double>(f,comm));
       break;
     default:
-      EKAT_ERROR_MSG ("[print_field] Error! Invalid/unsupported data type.\n"
+      EKAT_ERROR_MSG ("[field_max] Error! Invalid/unsupported data type.\n"
           " - field name: " + f.name() + "\n");
   }
   return norm;
@@ -480,7 +588,7 @@ ScalarWrapper field_min(const Field& f, const ekat::Comm* comm)
       norm.set(impl::field_min<double>(f,comm));
       break;
     default:
-      EKAT_ERROR_MSG ("[print_field] Error! Invalid/unsupported data type.\n"
+      EKAT_ERROR_MSG ("[field_min] Error! Invalid/unsupported data type.\n"
           " - field name: " + f.name() + "\n");
   }
   return norm;

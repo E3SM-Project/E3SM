@@ -98,7 +98,7 @@ TEST_CASE("aodvis") {
     const auto sun_h  = sunlit.get_view<const int *, Host>();
     const auto tau_h  = tau.get_view<const Real ***, Host>();
     const auto aod_hf = diag->get_diagnostic();
-    const auto aod_mask = aod_hf.get_header().get_extra_data<Field>("valid_mask");
+    const auto aod_mask = aod_hf.get_valid_mask();
 
     Field aod_tf = diag->get_diagnostic().clone();
     auto aod_t = aod_tf.get_view<Real *, Host>();

@@ -208,10 +208,14 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
     sf.initialize_contiguous_helper_field();
   }
 
-  if (m_header->has_extra_data("valid_mask")) {
-    const auto& mask = m_header->get_extra_data<Field>("valid_mask");
-    const auto& mfid = mask.get_header().get_identifier();
-    sf.m_header->set_extra_data("valid_mask",mask.subfield(mask.name(),mfid.get_units(),idim,index,dynamic));
+  if (has_valid_mask()) {
+    EKAT_REQUIRE_MSG (not dynamic,
+        "Error! We do not support getting a dynamic subview of a masked field. It's too much work...\n"
+        " - field name: " + name() + "\n"
+        "NOTE: if this is REALLY needed, contact developers, and we can accommodate it.\n");
+
+    const auto& mask = get_valid_mask();
+    sf.set_valid_mask(mask.subfield(mask.name(),idim,index,dynamic));
   }
 
   return sf;
@@ -357,6 +361,70 @@ void Field::allocate_view ()
 
   m_data->d_view = decltype(m_data->d_view)(id.name(),view_dim);
   m_data->h_view = Kokkos::create_mirror_view(m_data->d_view);
+}
+
+bool Field::has_valid_mask () const {
+  return m_header->has_extra_data("valid_mask");
+}
+
+void Field::set_valid_mask (const Field& mask)
+{
+  EKAT_REQUIRE_MSG (not has_valid_mask(),
+      "Error! Cannot reset the mask field.\n"
+      " - field name: " + name() + "\n");
+
+  // Check that the input field has the expected properties
+  EKAT_REQUIRE_MSG (mask.data_type()==DataType::IntType,
+      "Error! Input mask field must have IntType data type.\n"
+      " - field name: " + name() + "\n"
+      " - mask name : " + mask.name() + "\n"
+      " - mask data type: " + e2str(mask.data_type()) + "\n");
+  EKAT_REQUIRE_MSG (mask.get_header().get_identifier().get_layout()==get_header().get_identifier().get_layout(),
+      "Error! Input mask field must have same layout as this field.\n"
+      " - field name: " + name() + "\n"
+      " - mask name : " + mask.name() + "\n"
+      " - field layout: " + get_header().get_identifier().get_layout().to_string() + "\n"
+      " - mask layout: " + mask.get_header().get_identifier().get_layout().to_string() + "\n");
+
+  m_header->set_extra_data("valid_mask",mask);
+}
+
+Field& Field::create_valid_mask (const std::string& mask_name, const MaskInit init)
+{
+  EKAT_REQUIRE_MSG (not has_valid_mask(),
+      "Error! Cannot create mask field, as it was already created.\n"
+      " - field name: " + name() + "\n");
+
+  EKAT_REQUIRE_MSG (is_allocated(),
+      "Error! You cannot create the mask field until the field has been allocated.\n"
+      " - field name: " + name() + "\n");
+
+  const auto& fid = m_header->get_identifier();
+  const auto& props = m_header->get_alloc_properties();
+  const auto nondim = ekat::units::Units::nondimensional();
+
+  auto mfid = fid.clone(mask_name).reset_units(nondim).reset_dtype(DataType::IntType);
+  Field mask(mfid);
+  mask.get_header().get_alloc_properties().request_allocation(props.get_largest_pack_size());
+  mask.allocate_view();
+  if (init==MaskInit::Valid) {
+    mask.deep_copy(1);
+  } else if (init==MaskInit::Invalid) {
+    mask.deep_copy(0);
+  }
+  set_valid_mask(mask);
+
+  return get_valid_mask();
+}
+
+Field& Field::get_valid_mask ()
+{
+  return m_header->get_extra_data<Field>("valid_mask");
+}
+
+const Field& Field::get_valid_mask () const
+{
+  return m_header->get_extra_data<Field>("valid_mask");
 }
 
 void Field::deep_copy (const ScalarWrapper value)
