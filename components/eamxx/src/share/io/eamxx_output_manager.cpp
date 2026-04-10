@@ -138,6 +138,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
 
     // If 2+ grids are present, we mandate suffix on all geo_data fields,
     // to avoid clashes of names.
+    using stratts_t = std::map<std::string,std::string>;
     bool use_suffix = grids.size()>1;
     for (const auto& [gname,grid] : grids) {
       std::vector<Field> fields;
@@ -157,7 +158,6 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
           // This field is NOT to be saved as geo data
           continue;
         }
-        using stratts_t = std::map<std::string,std::string>;
         if (use_suffix) {
           fields.push_back(f.clone(f.name() + grid->m_disambiguation_suffix, gname));
 
@@ -174,9 +174,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
         if (f.get_header().has_extra_data("io: string attributes")) {
           const auto& src_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
           auto& dst_atts = fields.back().get_header().get_extra_data<stratts_t>("io: string attributes");
-          for (const auto& [k,v] : src_atts) {
-            dst_atts.emplace(k, v);
-          }
+          dst_atts.insert(src_atts.begin(), src_atts.end());
         }
       }
 

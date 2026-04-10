@@ -194,6 +194,7 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   // Cloud-top height (cth) bin centers and edges (m)
   const std::array<Real,16> cth_centers = {0., 250., 750., 1250., 1750., 2250., 2750., 3500.,
                                             4500., 6000., 8000., 10000., 12000., 14500., 16000., 18000.};
+  // Note: -99000 and 99000 are sentinel values representing unbounded lower/upper bins
   const std::array<Real,32> cth_edges   = {-99000.,  0.,     0.,  500.,   500., 1000.,  1000., 1500.,
                                              1500., 2000.,  2000., 2500.,  2500., 3000.,  3000., 4000.,
                                              4000., 5000.,  5000., 7000.,  7000., 9000.,  9000.,11000.,
