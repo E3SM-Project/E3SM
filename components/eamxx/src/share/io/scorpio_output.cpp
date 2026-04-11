@@ -790,6 +790,28 @@ register_variables(const std::string& filename,
     const auto& dimnames = m_vars_dims.at(field_name);
     std::string units = fid.get_units().to_string();
 
+    // CF compliance: Fix units for lat/lon/area coordinate variables
+    // lat/lon with standard_name "latitude"/"longitude" must use degree units
+    // area with standard_name "cell_area" must use m2, but we use steradians, so we fix units
+    if (field_name == "lat") {
+      units = "degrees_north";
+    } else if (field_name == "lon") {
+      units = "degrees_east";
+    } else if (field_name == "area") {
+      // Area is in steradians (rad^2 or sr), not m2
+      // We'll override the standard_name later to avoid CF violation
+      units = "sr";
+    }
+
+    // Check if this is a coordinate/dimension variable
+    // Coordinate variables should not have _FillValue or coordinates attributes
+    const bool is_coord_var = (dimnames.size() == 1 && dimnames[0] == field_name) ||
+                              field_name == "lat" || field_name == "lon" || field_name == "area" ||
+                              field_name == "hyam" || field_name == "hybm" ||
+                              field_name == "hyai" || field_name == "hybi" ||
+                              field_name == "lev" || field_name == "ilev" ||
+                              field_name == "lwband" || field_name == "swband";
+
     // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
     // but in the future if non-Real variables are added we will want to accomodate that.
@@ -823,13 +845,15 @@ register_variables(const std::string& filename,
       scorpio::define_var (filename, field_name, units, dimnames,
                             "real",fp_precision, m_add_time_dim);
 
-      // Add FillValue as an attribute of each variable
-      // FillValue is a protected metadata, do not add it if it already existed
-      if (fp_precision=="double" or
-          (fp_precision=="real" and std::is_same<Real,double>::value)) {
-        scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<double>);
-      } else {
-        scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<float>);
+      // CF compliance: Coordinate variables should not have _FillValue attribute
+      // Add FillValue as an attribute only for non-coordinate variables
+      if (!is_coord_var) {
+        if (fp_precision=="double" or
+            (fp_precision=="real" and std::is_same<Real,double>::value)) {
+          scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<double>);
+        } else {
+          scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<float>);
+        }
       }
       if (m_alias_to_orig.count(field_name)==1) {
         // Store what this field is the alias of
@@ -875,30 +899,39 @@ register_variables(const std::string& filename,
       // Gather standard name, CF-Compliant (if not already in the io: string attributes)
       if (str_atts.count("standard_name")==0) {
         auto standardname = m_default_metadata.get_standardname(field_name);
-        scorpio::set_attribute(filename, field_name, "standard_name", standardname);
-      }
-      
-      // If output represents an statistic over a time range add a "cell methods"
-      // attribute.
-      switch (m_avg_type) {
-        case OutputAvgType::Instant:
-          scorpio::set_attribute(filename, field_name, "cell_methods", "time: point");
-          break;  // Don't add the attribute
-        case OutputAvgType::Max:
-          scorpio::set_attribute(filename, field_name, "cell_methods", "time: maximum");
-          break;
-        case OutputAvgType::Min:
-          scorpio::set_attribute(filename, field_name, "cell_methods", "time: minimum");
-          break;
-        case OutputAvgType::Average:
-          scorpio::set_attribute(filename, field_name, "cell_methods", "time: mean");
-          break;
-        default:
-          EKAT_ERROR_MSG ("Unexpected/unsupported averaging type.\n");
+        // CF compliance: area with standard_name "cell_area" requires units of m2
+        // Since we use steradians (sr), we skip the standard_name for area
+        if (field_name == "area") {
+          // Don't set standard_name for area since units are sr, not m2
+        } else {
+          scorpio::set_attribute(filename, field_name, "standard_name", standardname);
+        }
       }
 
-      // If output contains the column dimension add a "coordinates" attribute.
-      if (fid.get_layout().has_tag(COL)) {
+      // CF compliance: Only add cell_methods to variables with a time dimension
+      // Coordinate variables typically don't have a time dimension, so skip cell_methods for them
+      if (m_add_time_dim && !is_coord_var) {
+        switch (m_avg_type) {
+          case OutputAvgType::Instant:
+            scorpio::set_attribute(filename, field_name, "cell_methods", "time: point");
+            break;
+          case OutputAvgType::Max:
+            scorpio::set_attribute(filename, field_name, "cell_methods", "time: maximum");
+            break;
+          case OutputAvgType::Min:
+            scorpio::set_attribute(filename, field_name, "cell_methods", "time: minimum");
+            break;
+          case OutputAvgType::Average:
+            scorpio::set_attribute(filename, field_name, "cell_methods", "time: mean");
+            break;
+          default:
+            EKAT_ERROR_MSG ("Unexpected/unsupported averaging type.\n");
+        }
+      }
+
+      // CF compliance: Auxiliary coordinate variables (lat, lon) should not list themselves
+      // in the coordinates attribute. Only add coordinates to non-coordinate variables.
+      if (fid.get_layout().has_tag(COL) && field_name != "lat" && field_name != "lon") {
         scorpio::set_attribute(filename, field_name, "coordinates", "lat lon");
       }
 
