@@ -2957,7 +2957,7 @@
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks">--tag-output -n {{ total_tasks }}</arg>
-        <arg name="tasks_per_node"> --map-by ppr:1:core:PE=$ENV{OMP_NUM_THREADS} --bind-to core --oversubscribe</arg>
+        <arg name="tasks_per_node">--map-by ppr:1:core:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
       </arguments>
     </mpirun>
     <module_system type="module">

@@ -200,7 +200,6 @@
     </submit_args>
     <directives>
       <directive> -N {{ job_id }}</directive>
-      <directive> -l select={{ num_nodes }} </directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
       <directive> -j oe </directive>
     </directives>
@@ -584,6 +583,7 @@
       <batch_submit>/lus/flare/projects/E3SMinput/tools/qsub/throttle</batch_submit>
       <jobid_pattern>(\d+)\.aurora-pbs</jobid_pattern>
       <directives>
+        <directive> -l select={{ num_nodes }} </directive>
         <directive> -l filesystems=home:flare </directive>
       </directives>
       <queues>
@@ -600,6 +600,7 @@
       <batch_submit>/grand/E3SMinput/soft/qsub/throttle</batch_submit>
       <jobid_pattern>(\d+)\.polaris-pbs</jobid_pattern>
       <directives>
+        <directive> -l select={{ num_nodes }} </directive>
         <directive> -l filesystems=home:grand:eagle </directive>
       </directives>
       <queues>
@@ -614,6 +615,7 @@
     <batch_system MACH="crux" type="pbspro">
       <batch_submit>/grand/E3SMinput/soft/qsub/throttle</batch_submit>
       <directives>
+        <directive> -l select={{ num_nodes }} </directive>
         <directive> -l filesystems=home:grand:eagle </directive>
       </directives>
       <queues>
