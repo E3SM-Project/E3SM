@@ -412,6 +412,16 @@ struct DefaultMetadata {
     }
   }
 
+  // CF conventions require specific units for certain standard_names.
+  // This function returns the required units given a standard_name,
+  // or an empty string if no override is needed.
+  static std::string get_cf_units_from_standardname(const std::string &stdname) {
+    if (stdname == "latitude")  return "degrees_north";
+    if (stdname == "longitude") return "degrees_east";
+    if (stdname == "cell_area") return "m2";
+    return "";
+  }
+
   static void read_csv_file_to_maps(
       const std::string &filename,
       std::map<std::string, std::string> &name_2_standardname,

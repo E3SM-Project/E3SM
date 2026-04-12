@@ -790,27 +790,19 @@ register_variables(const std::string& filename,
     const auto& dimnames = m_vars_dims.at(field_name);
     std::string units = fid.get_units().to_string();
 
-    // CF compliance: Fix units for lat/lon/area coordinate variables
-    // lat/lon with standard_name "latitude"/"longitude" must use degree units
-    // area with standard_name "cell_area" must use m2, but we use steradians, so we fix units
-    if (field_name == "lat") {
-      units = "degrees_north";
-    } else if (field_name == "lon") {
-      units = "degrees_east";
-    } else if (field_name == "area") {
-      // Area is in steradians (rad^2 or sr), not m2
-      // We'll override the standard_name later to avoid CF violation
-      units = "sr";
+    // CF compliance: certain standard_names require specific units
+    // (e.g., "latitude" -> "degrees_north", "cell_area" -> "m2").
+    // Look up the standard_name and override units if CF mandates it.
+    auto standardname = m_default_metadata.get_standardname(field_name);
+    auto cf_units = m_default_metadata.get_cf_units_from_standardname(standardname);
+    if (!cf_units.empty()) {
+      units = cf_units;
     }
 
-    // Check if this is a coordinate/dimension variable
-    // Coordinate variables should not have _FillValue or coordinates attributes
-    const bool is_coord_var = (dimnames.size() == 1 && dimnames[0] == field_name) ||
-                              field_name == "lat" || field_name == "lon" || field_name == "area" ||
-                              field_name == "hyam" || field_name == "hybm" ||
-                              field_name == "hyai" || field_name == "hybi" ||
-                              field_name == "lev" || field_name == "ilev" ||
-                              field_name == "lwband" || field_name == "swband";
+    // A dimension coordinate variable has a single dimension matching its name
+    // (e.g., lev(lev), lwband(lwband)). Per CF, these should not have
+    // cell_methods or _FillValue attributes.
+    const bool is_dim_coord_var = (dimnames.size() == 1 && dimnames[0] == field_name);
 
     // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
@@ -845,9 +837,10 @@ register_variables(const std::string& filename,
       scorpio::define_var (filename, field_name, units, dimnames,
                             "real",fp_precision, m_add_time_dim);
 
-      // CF compliance: Coordinate variables should not have _FillValue attribute
-      // Add FillValue as an attribute only for non-coordinate variables
-      if (!is_coord_var) {
+      // CF compliance: Only add _FillValue for fields that may actually contain
+      // fill values (e.g., pressure-interpolated fields). Coordinate variables
+      // and regular fields without missing values should not have _FillValue.
+      if (f.get_header().may_be_filled()) {
         if (fp_precision=="double" or
             (fp_precision=="real" and std::is_same<Real,double>::value)) {
           scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<double>);
@@ -898,19 +891,12 @@ register_variables(const std::string& filename,
 
       // Gather standard name, CF-Compliant (if not already in the io: string attributes)
       if (str_atts.count("standard_name")==0) {
-        auto standardname = m_default_metadata.get_standardname(field_name);
-        // CF compliance: area with standard_name "cell_area" requires units of m2
-        // Since we use steradians (sr), we skip the standard_name for area
-        if (field_name == "area") {
-          // Don't set standard_name for area since units are sr, not m2
-        } else {
-          scorpio::set_attribute(filename, field_name, "standard_name", standardname);
-        }
+        scorpio::set_attribute(filename, field_name, "standard_name", standardname);
       }
 
-      // CF compliance: Only add cell_methods to variables with a time dimension
-      // Coordinate variables typically don't have a time dimension, so skip cell_methods for them
-      if (m_add_time_dim && !is_coord_var) {
+      // CF compliance: Only add cell_methods to variables with a time dimension.
+      // Dimension coordinate variables (e.g., lev(lev)) don't have time, so skip them.
+      if (m_add_time_dim && !is_dim_coord_var) {
         switch (m_avg_type) {
           case OutputAvgType::Instant:
             scorpio::set_attribute(filename, field_name, "cell_methods", "time: point");
@@ -929,9 +915,11 @@ register_variables(const std::string& filename,
         }
       }
 
-      // CF compliance: Auxiliary coordinate variables (lat, lon) should not list themselves
-      // in the coordinates attribute. Only add coordinates to non-coordinate variables.
-      if (fid.get_layout().has_tag(COL) && field_name != "lat" && field_name != "lon") {
+      // CF compliance: Auxiliary coordinate variables (lat, lon) should not list
+      // themselves in the coordinates attribute. Skip if this variable's
+      // standard_name identifies it as a coordinate (latitude or longitude).
+      if (fid.get_layout().has_tag(COL) &&
+          standardname != "latitude" && standardname != "longitude") {
         scorpio::set_attribute(filename, field_name, "coordinates", "lat lon");
       }
 
