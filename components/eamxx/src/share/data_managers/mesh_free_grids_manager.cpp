@@ -150,11 +150,10 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
     FieldLayout layout_mid ({LEV},{grid->get_num_vertical_levels()});
     FieldLayout layout_int ({ILEV},{grid->get_num_vertical_levels()+1});
     const auto units = Units::nondimensional();
-    const Units deg_north (units,"degrees_north");
-    const Units deg_east  (units,"degrees_east");
+    const Units rad (units,"rad");
 
-    auto lat  = grid->create_geometry_data("lat" ,  grid->get_2d_scalar_layout(), deg_north);
-    auto lon  = grid->create_geometry_data("lon" ,  grid->get_2d_scalar_layout(), deg_east);
+    auto lat  = grid->create_geometry_data("lat" ,  grid->get_2d_scalar_layout(), rad);
+    auto lon  = grid->create_geometry_data("lon" ,  grid->get_2d_scalar_layout(), rad);
     auto hyam = grid->create_geometry_data("hyam" , layout_mid, units);
     auto hybm = grid->create_geometry_data("hybm" , layout_mid, units);
     auto hyai = grid->create_geometry_data("hyai" , layout_int, units);

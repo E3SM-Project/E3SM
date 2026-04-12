@@ -155,17 +155,16 @@ void HommeGridsManager::build_dynamics_grid () {
   auto dyn_grid = std::make_shared<SEGrid>("dynamics",nlelem,HOMMEXX_NP,nlev,m_comm);
 
   const auto layout2d = dyn_grid->get_2d_scalar_layout();
-  // Lat/lon values are converted to degrees in the Fortran layer (get_my_dyn_data)
-  const Units deg_north (Units::nondimensional(),"degrees_north");
-  const Units deg_east  (Units::nondimensional(),"degrees_east");
+  // NOTE: Fortran converts lat/lon to degrees, but we keep units as "rad" for compatibility
+  const Units rad (Units::nondimensional(),"rad");
 
   // Filling the cg/dg gids, elgpgp, coords, lat/lon views
   auto dg_dofs = dyn_grid->get_dofs_gids();
   auto cg_dofs = dyn_grid->get_cg_dofs_gids();
   auto elgpgp  = dyn_grid->get_lid_to_idx_map();
   auto elgids  = dyn_grid->get_partitioned_dim_gids ();
-  auto lat     = dyn_grid->create_geometry_data("lat",layout2d,deg_north);
-  auto lon     = dyn_grid->create_geometry_data("lon",layout2d,deg_east);
+  auto lat     = dyn_grid->create_geometry_data("lat",layout2d,rad);
+  auto lon     = dyn_grid->create_geometry_data("lon",layout2d,rad);
 
   auto dg_dofs_h = dg_dofs.get_view<gid_type*,Host>();
   auto cg_dofs_h = cg_dofs.get_view<gid_type*,Host>();
@@ -227,14 +226,13 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
   const auto layout2d = phys_grid->get_2d_scalar_layout();
-  // Lat/lon values are converted to degrees in the Fortran layer (get_my_phys_data)
-  const Units deg_north (Units::nondimensional(),"degrees_north");
-  const Units deg_east  (Units::nondimensional(),"degrees_east");
+  // NOTE: Fortran converts lat/lon to degrees, but we keep units as "rad" for compatibility
+  const Units rad (Units::nondimensional(),"rad");
   const Units sr (Units::nondimensional(),"sr");
 
   auto dofs = phys_grid->get_dofs_gids();
-  auto lat  = phys_grid->create_geometry_data("lat",layout2d,deg_north);
-  auto lon  = phys_grid->create_geometry_data("lon",layout2d,deg_east);
+  auto lat  = phys_grid->create_geometry_data("lat",layout2d,rad);
+  auto lon  = phys_grid->create_geometry_data("lon",layout2d,rad);
   auto area = phys_grid->create_geometry_data("area",layout2d,sr);
 
   using gid_type = AbstractGrid::gid_type;
