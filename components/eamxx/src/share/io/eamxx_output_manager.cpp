@@ -168,18 +168,6 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
         } else {
           fields.push_back(f.clone(f.name(), gname));
         }
-
-        // CF compliance: Convert area from steradians to m2 for output
-        if (fn == "area") {
-          using PC = physics::Constants<Real>;
-          const Real r_earth = PC::r_earth.value;
-          auto& area_field = fields.back();
-          auto area_h = area_field.get_view<Real*,Host>();
-          for (int i = 0; i < area_field.get_header().get_identifier().get_layout().size(); ++i) {
-            area_h(i) *= r_earth * r_earth;
-          }
-          area_field.sync_to_dev();
-        }
       }
 
       auto output = std::make_shared<output_type>(m_io_comm,fields,grid);
