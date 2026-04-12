@@ -790,18 +790,6 @@ register_variables(const std::string& filename,
     const auto& dimnames = m_vars_dims.at(field_name);
     std::string units = fid.get_units().to_string();
 
-    // Get standard name for later use
-    auto standardname = m_default_metadata.get_standardname(field_name);
-
-    // A dimension coordinate variable has a single dimension matching its name
-    // (e.g., lev(lev), lwband(lwband)). Per CF, these should not have
-    // cell_methods or _FillValue attributes.
-    const bool is_dim_coord_var = (dimnames.size() == 1 && dimnames[0] == field_name);
-
-    // Auxiliary coordinate variables (lat, lon) should not list themselves
-    // in the coordinates attribute
-    const bool is_aux_coord = (standardname == "latitude" || standardname == "longitude");
-
     // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
     // but in the future if non-Real variables are added we will want to accomodate that.
@@ -835,16 +823,13 @@ register_variables(const std::string& filename,
       scorpio::define_var (filename, field_name, units, dimnames,
                             "real",fp_precision, m_add_time_dim);
 
-      // CF compliance: Only add _FillValue for fields that may actually contain
-      // fill values (e.g., pressure-interpolated fields). Coordinate variables
-      // and regular fields without missing values should not have _FillValue.
-      if (f.get_header().may_be_filled()) {
-        if (fp_precision=="double" or
-            (fp_precision=="real" and std::is_same<Real,double>::value)) {
-          scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<double>);
-        } else {
-          scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<float>);
-        }
+      // Add FillValue as an attribute of each variable
+      // FillValue is a protected metadata, do not add it if it already existed
+      if (fp_precision=="double" or
+          (fp_precision=="real" and std::is_same<Real,double>::value)) {
+        scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<double>);
+      } else {
+        scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<float>);
       }
       if (m_alias_to_orig.count(field_name)==1) {
         // Store what this field is the alias of
@@ -889,33 +874,31 @@ register_variables(const std::string& filename,
 
       // Gather standard name, CF-Compliant (if not already in the io: string attributes)
       if (str_atts.count("standard_name")==0) {
+        auto standardname = m_default_metadata.get_standardname(field_name);
         scorpio::set_attribute(filename, field_name, "standard_name", standardname);
       }
-
-      // CF compliance: Only add cell_methods to variables with a time dimension.
-      // Dimension coordinate variables (e.g., lev(lev)) don't have time, so skip them.
-      if (m_add_time_dim && !is_dim_coord_var) {
-        switch (m_avg_type) {
-          case OutputAvgType::Instant:
-            scorpio::set_attribute(filename, field_name, "cell_methods", "time: point");
-            break;
-          case OutputAvgType::Max:
-            scorpio::set_attribute(filename, field_name, "cell_methods", "time: maximum");
-            break;
-          case OutputAvgType::Min:
-            scorpio::set_attribute(filename, field_name, "cell_methods", "time: minimum");
-            break;
-          case OutputAvgType::Average:
-            scorpio::set_attribute(filename, field_name, "cell_methods", "time: mean");
-            break;
-          default:
-            EKAT_ERROR_MSG ("Unexpected/unsupported averaging type.\n");
-        }
+      
+      // If output represents an statistic over a time range add a "cell methods"
+      // attribute.
+      switch (m_avg_type) {
+        case OutputAvgType::Instant:
+          scorpio::set_attribute(filename, field_name, "cell_methods", "time: point");
+          break;  // Don't add the attribute
+        case OutputAvgType::Max:
+          scorpio::set_attribute(filename, field_name, "cell_methods", "time: maximum");
+          break;
+        case OutputAvgType::Min:
+          scorpio::set_attribute(filename, field_name, "cell_methods", "time: minimum");
+          break;
+        case OutputAvgType::Average:
+          scorpio::set_attribute(filename, field_name, "cell_methods", "time: mean");
+          break;
+        default:
+          EKAT_ERROR_MSG ("Unexpected/unsupported averaging type.\n");
       }
 
-      // CF compliance: Auxiliary coordinate variables (lat, lon) should not list
-      // themselves in the coordinates attribute.
-      if (fid.get_layout().has_tag(COL) && !is_aux_coord) {
+      // If output contains the column dimension add a "coordinates" attribute.
+      if (fid.get_layout().has_tag(COL)) {
         scorpio::set_attribute(filename, field_name, "coordinates", "lat lon");
       }
 
