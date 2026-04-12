@@ -230,12 +230,12 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   // Lat/lon values are converted to degrees in the Fortran layer (get_my_phys_data)
   const Units deg_north (Units::nondimensional(),"degrees_north");
   const Units deg_east  (Units::nondimensional(),"degrees_east");
-  const Units m2 (m*m,"m2");
+  const Units sr (Units::nondimensional(),"sr");
 
   auto dofs = phys_grid->get_dofs_gids();
   auto lat  = phys_grid->create_geometry_data("lat",layout2d,deg_north);
   auto lon  = phys_grid->create_geometry_data("lon",layout2d,deg_east);
-  auto area = phys_grid->create_geometry_data("area",layout2d,m2);
+  auto area = phys_grid->create_geometry_data("area",layout2d,sr);
 
   using gid_type = AbstractGrid::gid_type;
 
@@ -247,11 +247,6 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   // Get all specs of phys grid cols (gids, coords, area)
   // NOTE: Fortran returns lat/lon in degrees, area in steradians
   get_phys_grid_data_f90 (pg_code, dofs_h.data(), lat_h.data(), lon_h.data(), area_h.data());
-
-  // Convert area from steradians to m2
-  for (int i = 0; i < nlcols; ++i) {
-    area_h(i) *= Homme::PhysicalConstants::rearth0 * Homme::PhysicalConstants::rearth0;
-  }
 
   dofs.sync_to_dev();
   lat.sync_to_dev();

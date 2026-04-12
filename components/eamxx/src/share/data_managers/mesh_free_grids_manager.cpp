@@ -117,16 +117,15 @@ build_point_grid (const std::string& name, ekat::ParameterList& params)
   auto pt_grid = create_point_grid(name,num_global_cols,num_vertical_levels,m_comm,gid_base);
 
   using namespace ekat::units;
-  const Units m2(m*m,"m2");
+  const Units sr(Units::nondimensional(),"sr");
 
-  auto area = pt_grid->create_geometry_data("area", pt_grid->get_2d_scalar_layout(), m2);
+  auto area = pt_grid->create_geometry_data("area", pt_grid->get_2d_scalar_layout(), sr);
 
   // Estimate cell area for a uniform grid by taking the surface area
-  // of the earth divided by the number of columns, in m2.
+  // of the unit sphere divided by the number of columns, in steradians.
   using PC             = scream::physics::Constants<Real>;
   const Real pi        = PC::Pi;
-  const Real r_earth   = PC::r_earth.value;
-  const Real cell_area = 4.0*pi*r_earth*r_earth/num_global_cols;
+  const Real cell_area = 4.0*pi/num_global_cols;
   area.deep_copy(cell_area);
   area.sync_to_host();
 

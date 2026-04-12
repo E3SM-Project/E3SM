@@ -33,7 +33,7 @@ cldfrac_ice_at_cldtop,ice_cloud_area_fraction,
 cldfrac_ice,ice_cloud_area_fraction_in_atmosphere_layer,
 omega,lagrangian_tendency_of_air_pressure,
 landfrac,land_area_fraction,land fraction
-area,cell_area,cell area
+area,,cell area
 lat,latitude,latitude
 cldfrac_liq_at_cldtop,liquid_water_cloud_area_fraction,
 cldfrac_liq,liquid_water_cloud_area_fraction_in_atmosphere_layer,
