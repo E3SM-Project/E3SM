@@ -790,19 +790,17 @@ register_variables(const std::string& filename,
     const auto& dimnames = m_vars_dims.at(field_name);
     std::string units = fid.get_units().to_string();
 
-    // CF compliance: certain standard_names require specific units
-    // (e.g., "latitude" -> "degrees_north", "cell_area" -> "m2").
-    // Look up the standard_name and override units if CF mandates it.
+    // Get standard name for later use
     auto standardname = m_default_metadata.get_standardname(field_name);
-    auto cf_units = m_default_metadata.get_cf_units_from_standardname(standardname);
-    if (!cf_units.empty()) {
-      units = cf_units;
-    }
 
     // A dimension coordinate variable has a single dimension matching its name
     // (e.g., lev(lev), lwband(lwband)). Per CF, these should not have
     // cell_methods or _FillValue attributes.
     const bool is_dim_coord_var = (dimnames.size() == 1 && dimnames[0] == field_name);
+
+    // Auxiliary coordinate variables (lat, lon) should not list themselves
+    // in the coordinates attribute
+    const bool is_aux_coord = (standardname == "latitude" || standardname == "longitude");
 
     // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
@@ -916,10 +914,8 @@ register_variables(const std::string& filename,
       }
 
       // CF compliance: Auxiliary coordinate variables (lat, lon) should not list
-      // themselves in the coordinates attribute. Skip if this variable's
-      // standard_name identifies it as a coordinate (latitude or longitude).
-      if (fid.get_layout().has_tag(COL) &&
-          standardname != "latitude" && standardname != "longitude") {
+      // themselves in the coordinates attribute.
+      if (fid.get_layout().has_tag(COL) && !is_aux_coord) {
         scorpio::set_attribute(filename, field_name, "coordinates", "lat lon");
       }
 
