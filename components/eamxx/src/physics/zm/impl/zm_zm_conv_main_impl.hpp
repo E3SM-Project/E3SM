@@ -151,14 +151,20 @@ bool Functions<S,D>::zm_conv_main(
   team.team_barrier();
 
   //----------------------------------------------------------------------------
-  // Locate PBL top index
-  // pbl_top is initialized to pver-1 (0-based bottom), then adjusted upward
-  Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    for (Int k = pver - 2; k >= msg + 1; --k) {
+  // Locate PBL top index: find the topmost level (min k) where z_mid is
+  // within half a layer thickness of pbl_hgt.
+  Int pbl_top_result = pver - 1;
+  Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, msg + 1, pver - 1),
+    [&] (const Int& k, Int& val) {
       if (std::abs(z_mid(k) - pbl_hgt) < (z_int(k) - z_int(k + 1)) * 0.5) {
-        pbl_top = k;
+        val = ekat::impl::min(val, k);
       }
-    }
+    },
+    Kokkos::Min<Int>(pbl_top_result));
+  team.team_barrier();
+  Kokkos::single(Kokkos::PerTeam(team), [&] () {
+    // Min reducer uses max-int as identity; clamp to default if nothing satisfied
+    pbl_top = ekat::impl::min(pbl_top_result, pver - 1);
   });
   team.team_barrier();
 
@@ -238,41 +244,33 @@ bool Functions<S,D>::zm_conv_main(
 
   //----------------------------------------------------------------------------
   // Calculate sub-cloud layer pressure "thickness" for closure and tendency calculations
-  // TODO - can be parallel
-  Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    for (Int k = msg + 1; k < pver; ++k) {
-      if (k >= msemax_klev) {
-        dsubcld += p_del(k);
-      }
-    }
-  });
+  Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, msemax_klev, pver),
+    [&] (const Int& k, Real& sum) { sum += p_del(k); }, dsubcld);
   team.team_barrier();
 
   //----------------------------------------------------------------------------
   // Define interfacial values of (s, q) used in subsequent routines
-  Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    for (Int k = msg + 1; k < pver; ++k) {
-      Real sdifr = 0, qdifr = 0;
-      if (s_mid(k) > 0 || s_mid(k - 1) > 0) {
-        sdifr = std::abs((s_mid(k) - s_mid(k - 1)) /
-                         ekat::impl::max(s_mid(k - 1), s_mid(k)));
-      }
-      if (q_mid(k) > 0 || q_mid(k - 1) > 0) {
-        qdifr = std::abs((q_mid(k) - q_mid(k - 1)) /
-                         ekat::impl::max(q_mid(k - 1), q_mid(k)));
-      }
-      if (sdifr > ZMC::interp_diff_min) {
-        s_int(k) = std::log(s_mid(k - 1) / s_mid(k)) *
-                   s_mid(k - 1) * s_mid(k) / (s_mid(k - 1) - s_mid(k));
-      } else {
-        s_int(k) = 0.5 * (s_mid(k) + s_mid(k - 1));
-      }
-      if (qdifr > ZMC::interp_diff_min) {
-        q_int(k) = std::log(q_mid(k - 1) / q_mid(k)) *
-                   q_mid(k - 1) * q_mid(k) / (q_mid(k - 1) - q_mid(k));
-      } else {
-        q_int(k) = 0.5 * (q_mid(k) + q_mid(k - 1));
-      }
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg + 1, pver), [&] (const Int& k) {
+    Real sdifr = 0, qdifr = 0;
+    if (s_mid(k) > 0 || s_mid(k - 1) > 0) {
+      sdifr = std::abs((s_mid(k) - s_mid(k - 1)) /
+                       ekat::impl::max(s_mid(k - 1), s_mid(k)));
+    }
+    if (q_mid(k) > 0 || q_mid(k - 1) > 0) {
+      qdifr = std::abs((q_mid(k) - q_mid(k - 1)) /
+                       ekat::impl::max(q_mid(k - 1), q_mid(k)));
+    }
+    if (sdifr > ZMC::interp_diff_min) {
+      s_int(k) = std::log(s_mid(k - 1) / s_mid(k)) *
+                 s_mid(k - 1) * s_mid(k) / (s_mid(k - 1) - s_mid(k));
+    } else {
+      s_int(k) = 0.5 * (s_mid(k) + s_mid(k - 1));
+    }
+    if (qdifr > ZMC::interp_diff_min) {
+      q_int(k) = std::log(q_mid(k - 1) / q_mid(k)) *
+                 q_mid(k - 1) * q_mid(k) / (q_mid(k - 1) - q_mid(k));
+    } else {
+      q_int(k) = 0.5 * (q_mid(k) + q_mid(k - 1));
     }
   });
   team.team_barrier();

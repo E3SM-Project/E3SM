@@ -169,7 +169,6 @@ void Functions<S,D>::zm_cloud_properties(
 
   // =========================================================================
   // 3. Initialize jt, jd, jlcl; find j0 (level of min saturated MSE)
-  //    Running minimum: serial
   // =========================================================================
   Kokkos::single(Kokkos::PerTeam(team), [&] () {
     // Initial cloud top estimate: at least one level below the convection limit
@@ -178,15 +177,27 @@ void Functions<S,D>::zm_cloud_properties(
     jd   = pver - 1;
     jlcl = lel;
     h_env_min = 1.e6;
+  });
+  team.team_barrier();
 
-    // Find level of minimum h_env_sat between jt and jb (detrainment onset level)
-    for (Int k = msg; k < pver; ++k) {
-      if (h_env_sat(k) <= h_env_min && k >= jt && k <= jb) {
-        h_env_min = h_env_sat(k);
-        j0 = k;
+  // Find level of minimum h_env_sat between jt and jb (detrainment onset level)
+  using ValLocType = Kokkos::ValLocScalar<Real, Int>;
+  ValLocType j0_result;
+  Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, jt, jb + 1),
+    [&] (const Int& k, ValLocType& local) {
+      if (h_env_sat(k) < local.val) {
+        local.val = h_env_sat(k);
+        local.loc = k;
       }
-    }
+    },
+    Kokkos::MinLoc<Real, Int>(j0_result));
+  team.team_barrier();
 
+  Kokkos::single(Kokkos::PerTeam(team), [&] () {
+    if (j0_result.val < 1.e6) {
+      h_env_min = j0_result.val;
+      j0 = j0_result.loc;
+    }
     // Constrain j0 to a physically valid detrainment range
     j0 = ekat::impl::min(j0, jb - 2);
     j0 = ekat::impl::max(j0, jt + 2);
