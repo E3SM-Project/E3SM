@@ -796,15 +796,6 @@ register_variables(const std::string& filename,
     const auto& dimnames = m_vars_dims.at(field_name);
     std::string units = fid.get_units().to_string();
 
-    // CF compliance: Fix unit labels for output
-    // NOTE: lat/lon VALUES are already in degrees (from Fortran), just mislabeled as "rad"
-    // area stays in steradians for BFB compatibility (units="sr", no standard_name)
-    if (field_name == "lat") {
-      units = "degrees_north";
-    } else if (field_name == "lon") {
-      units = "degrees_east";
-    }
-
     // Get standard name for CF compliance checks
     auto standardname = m_default_metadata.get_standardname(field_name);
 
