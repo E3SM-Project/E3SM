@@ -42,7 +42,6 @@ void Functions<S,D>::zm_conv_evap(
   const uview_1d<Real>& flxsnow) // Convective flux of snow at interfaces   [kg/m2/s])
 {
   // perturbation constant used in pergro snow fraction guard
-  const Real pergro_perturbation = 8.64e-11;
 
 #ifdef PERGRO
   const bool pergro_active = true;

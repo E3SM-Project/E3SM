@@ -72,7 +72,6 @@ void Functions<S,D>::zm_closure(
   constexpr Real epsilo = PC::ep_2.value;
 
   // proportion to use liquid water from layer below
-  constexpr Real beta = 0;
 
   // dtmdt: free tropospheric tendencies
   // dqmdt: free tropospheric tendencies
@@ -129,12 +128,12 @@ void Functions<S,D>::zm_closure(
     if (k > jt && k < mx) {
       dtmdt(k) = (mflx_net(k  )*(s_int(k  ) - s_mid(k))
                   + mflx_net(k+1)*(s_mid(k  ) - s_int(k+1))) / p_del(k)
-                 - latvap/cpair * detr_up(k)*(beta*ql(k) + (1-beta)*ql(k+1));
+                 - latvap/cpair * detr_up(k)*(ZMC::beta*ql(k) + (1-ZMC::beta)*ql(k+1));
       dqmdt(k) = (mflx_up(k+1)*(q_upd(k+1) - q_int(k+1) + cpair/latvap*(s_upd(k+1) - s_mid(k)))
                   - mflx_up(k  )*(q_upd(k  ) - q_int(k  ) + cpair/latvap*(s_upd(k  ) - s_mid(k)))
                   + mflx_dn(k+1)*(q_dnd(k+1) - q_int(k+1) + cpair/latvap*(s_dnd(k+1) - s_mid(k)))
                   - mflx_dn(k  )*(q_dnd(k  ) - q_int(k  ) + cpair/latvap*(s_dnd(k  ) - s_mid(k)))) / p_del(k)
-                 + detr_up(k)*(beta*ql(k) + (1-beta)*ql(k+1));
+                 + detr_up(k)*(ZMC::beta*ql(k) + (1-ZMC::beta)*ql(k+1));
     }
   });
   team.team_barrier();

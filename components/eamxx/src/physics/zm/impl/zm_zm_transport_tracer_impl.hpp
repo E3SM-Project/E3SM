@@ -38,7 +38,6 @@ void Functions<S,D>::zm_transport_tracer(
   // Outputs
   const uview_2d<Real>& dqdt)             // output tendency array
 {
-  constexpr Real small = ZMC::small;
   // Allocate temporary arrays (2D: ncnst x pver)
   uview_1d<Real> chat1d, cond1d, const_arr1d, fisg1d, conu1d, dcondt1d, dutmp1d, eutmp1d, edtmp1d, dptmp1d;
   workspace.template take_many_contiguous_unsafe<10>(
@@ -94,7 +93,7 @@ void Functions<S,D>::zm_transport_tracer(
       if (minc < 0) {
         cdifr = 0;
       } else {
-        cdifr = std::abs(const_arr(m, k) - const_arr(m, km1)) / ekat::impl::max(maxc, small);
+        cdifr = std::abs(const_arr(m, k) - const_arr(m, km1)) / ekat::impl::max(maxc, ZMC::small);
       }
 
       // If the two layers differ significantly use a geometric averaging

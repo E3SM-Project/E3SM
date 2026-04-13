@@ -116,6 +116,17 @@ struct Functions {
 
     static inline constexpr Real small_conv         = 1.e-20;  // small number to limit blowup when normalizing by mass flux
 
+    static inline constexpr Real beta               = 0;       // proportion of liquid water from layer below used in closure
+    static inline constexpr Real mu_min             = 0.02;    // minimum updraft mass flux threshold [mb/s]
+    static inline constexpr Real hu_diff_min        = -2000;   // updraft MSE undershoot threshold for cloud top determination [J/kg]
+    static inline constexpr Real lambda_limit_min   = 0;       // minimum fractional entrainment limiter [1/m]
+    static inline constexpr Real lambda_limit_max   = 0.0002;  // maximum fractional entrainment limiter [1/m]
+    static inline constexpr Real lambda_threshold   = 1.e-6;   // threshold for moving detrainment level downward
+    static inline constexpr Real pergro_rhd_threshold  = -1.e-4;  // MSE relative difference threshold for perturbation growth test
+    static inline constexpr Real pergro_perturbation   = 8.64e-11; // perturbation magnitude added to avoid div-by-zero in pergro test
+    static inline constexpr Real momcu             = 0.4;      // pressure gradient term constant for updrafts
+    static inline constexpr Real momcd             = 0.4;      // pressure gradient term constant for downdrafts
+
     // Table of saturation vapor pressure values (estbl) from tmin to
     // tmax+1 Kelvin, in one degree increments.  ttrice defines the
     // transition region, estbl contains a combination of ice & water

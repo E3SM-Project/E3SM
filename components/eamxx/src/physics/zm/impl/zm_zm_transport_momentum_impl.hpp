@@ -43,8 +43,6 @@ void Functions<S,D>::zm_transport_momentum(
   const uview_2d<Real>& icwd, // in-cloud winds in downdraft
   const uview_1d<Real>& seten) // dry energy tendency)
 {
-  constexpr Real momcu = 0.4; // pressure gradient term constant for updrafts
-  constexpr Real momcd = 0.4; // pressure gradient term constant for downdrafts
 
   // Allocate temporary arrays (2D: pver x nwind or pverp x nwind)
   uview_1d<Real> wind0_1d, windf_1d, wind_mid_1d, wind_int_1d, wind_int_d_1d, wind_int_u_1d;

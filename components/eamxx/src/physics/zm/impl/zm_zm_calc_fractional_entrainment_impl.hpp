@@ -44,9 +44,6 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   // Note: k1, i2, i3, i4 are maintained as running accumulators (downward
   // k+1→k direction). lambda_tmp holds the computed lambda values before the
   // monotonicity pass and the final write into lambda.
-  constexpr Real lambda_limit_min = 0;       // limiter
-  constexpr Real lambda_limit_max = 0.0002;    // limiter
-  constexpr Real lambda_threshold = 1.e-6;     // threshold for moving detrainment level
 
   uview_1d<Real> lambda_tmp, k1, i2, i3, i4;
   workspace.template take_many_contiguous_unsafe<5>(

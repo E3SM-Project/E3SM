@@ -32,7 +32,6 @@ void Functions<S,D>::find_mse_max(
   // Purpose: find level of max moist static energy for parcel initialization
   //----------------------------------------------------------------------------
   // Local variables
-  constexpr Real pergro_rhd_threshold = -1.e-4; // MSE difference threshold for perturbation growth test
 
   //----------------------------------------------------------------------------
   // initialize values
