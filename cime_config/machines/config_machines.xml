@@ -4337,7 +4337,7 @@
   </machine>
 
   <machine MACH="pathfinder">
-    <DESC>ornl-ITSD, Pathfinder, os is Linux, 32x2 pes/node, batch system is slurm</DESC>
+    <DESC>ornl-ITSD, Pathfinder, os is Linux, Dell 7615  each with 84 cores and 754gb ram, batch system is slurm</DESC>
     <NODENAME_REGEX>pfc*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
@@ -4353,8 +4353,8 @@
     <NTEST_PARALLEL_JOBS>32</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>yuanf -at- ornl.gov</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>84</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="openmpi" compiler="gnu">
       <executable>srun</executable>
@@ -4405,7 +4405,7 @@
         <command name="load">gcc/12.4.0</command>
         <command name="load">openmpi/5.0.5</command>
         <command name="load">openblas/0.3.28</command>
-        <command name="use">-a /projects/hpcl-cli185/ccsi-apps/ats-dev/modulefiles</command>
+        <command name="use">-a /projects/hpcl-cli185/proj-shared/ccsi-apps/ats-dev/modulefiles</command>
         <command name="load">ats/tpls-0.98.13+master/cades-baseline/openblas-0.3.28-openmpi-5.0.5-gcc-12.4.0/opt</command>
       </modules>
 
@@ -4421,7 +4421,7 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables compiler="gnu" mpilib="openmpi">
-      <env name="PETSC_PATH">/projects/hpcl-cli185/ccsi-apps/petsc-3.x-noopt/</env>
+      <env name="PETSC_PATH">/projects/hpcl-cli185/proj-shared/ccsi-apps/petsc-3.x-noopt/</env>
       <!--  perl5 lib</env> -->
       <!--  env name="PATH">/home/f9y/perl5/bin:$ENV{PATH}/</env> -->
       <env name="PATH">/software/baseline/nsp/spack-envs/core-25.05/opt/gcc-8.5.0.core/perl-5.40.0-pwv5237oq3rfrgdyou22rp4sf3dywvuz/bin:$ENV{PATH}</env>
