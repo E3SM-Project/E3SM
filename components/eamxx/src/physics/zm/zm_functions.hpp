@@ -796,6 +796,7 @@ struct Functions {
   static void zm_calc_fractional_entrainment(
     // Inputs
     const MemberType& team,
+    const Workspace& workspace,
     const Int& pver, // number of mid-point vertical levels
     const Int& pverp, // number of interface vertical levels
     const Int& msg, // number of levels to ignore at model top

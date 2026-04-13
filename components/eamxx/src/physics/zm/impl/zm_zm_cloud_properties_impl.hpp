@@ -226,7 +226,7 @@ void Functions<S,D>::zm_cloud_properties(
   // =========================================================================
   // 5. Compute fractional entrainment rate profile
   // =========================================================================
-  zm_calc_fractional_entrainment(team, pver, pverp, msg, jb, jt, j0,
+  zm_calc_fractional_entrainment(team, workspace, pver, pverp, msg, jb, jt, j0,
                                   z_mid, z_int, dz, h_env, h_env_sat,
                                   h_env_min, lambda, lambda_max);
   team.team_barrier();

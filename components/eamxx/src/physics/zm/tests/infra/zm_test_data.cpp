@@ -1338,6 +1338,8 @@ void zm_calc_fractional_entrainment(ZmCalcFractionalEntrainmentData& d)
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
+  WSM wsm(d.pver, 5, policy);
+
   // unpack data scalars because we do not want the lambda to capture d
   const Int msg = d.msg;
   const Int pver = d.pver;
@@ -1357,6 +1359,7 @@ void zm_calc_fractional_entrainment(ZmCalcFractionalEntrainmentData& d)
 
     ZMF::zm_calc_fractional_entrainment(
       team,
+      wsm.get_workspace(team),
       pver,
       pverp,
       msg,
