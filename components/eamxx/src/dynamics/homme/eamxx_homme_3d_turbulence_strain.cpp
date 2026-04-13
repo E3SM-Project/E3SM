@@ -381,7 +381,7 @@ void HommeDynamics::compute_vertical_derivs ()
         const Real exner   = std::pow(pmid / p0, kappa);
         const Real Tv      = exner * theta_v;
 
-        Real dz = (Rgas * Tv / (p_safe * gravit)) * dpk;
+        Real dz = (Rgas * Tv / (pmid * gravit)) * dpk;
 
         dz_mid[ilev / VLEN][ilev % VLEN] = dz;
       }
@@ -438,6 +438,7 @@ void HommeDynamics::contract_to_local_strain2 ()
   auto grad_Ux_dyn = m_helper_fields.at("grad_Ux_dyn").template get_view<Real*****>();
   auto grad_Uy_dyn = m_helper_fields.at("grad_Uy_dyn").template get_view<Real*****>();
   auto grad_Uz_dyn = m_helper_fields.at("grad_Uz_dyn").template get_view<Real*****>();
+  auto grad_vertical = m_helper_fields.at("grad_vertical").template get_view<Real*****>();
 
   auto strain2_dyn = m_helper_fields.at("strain2_dyn").template get_view<Real****>();
 
@@ -490,20 +491,28 @@ void HommeDynamics::contract_to_local_strain2 ()
                 grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
                 vec_sph2cart, ie, 1, 1, igp, jgp, ilev);
 
-            // Planar DP mode: vertical velocity is already Cartesian z,
-            // so these are just dw/dx and dw/dy directly.
-            const Real A20 = grad_Uz_dyn(ie,0,igp,jgp,ilev);
-            const Real A21 = grad_Uz_dyn(ie,1,igp,jgp,ilev);
+            // DP planar assumption:
+            // z is already Cartesian vertical, so these are direct derivatives.
+            const Real A20 = grad_Uz_dyn(ie,0,igp,jgp,ilev);  // dw/dx
+            const Real A21 = grad_Uz_dyn(ie,1,igp,jgp,ilev);  // dw/dy
+
+            const Real A02 = grad_vertical(ie,0,igp,jgp,ilev); // du/dz
+            const Real A12 = grad_vertical(ie,1,igp,jgp,ilev); // dv/dz
+            const Real A22 = grad_vertical(ie,2,igp,jgp,ilev); // dw/dz
 
             const Real S00 = A00;
             const Real S11 = A11;
+            const Real S22 = A22;
+
             const Real S01 = 0.5 * (A01 + A10);
-	    const Real S02 = 0.5 * A20;
-	    const Real S12 = 0.5 * A21;
+            const Real S02 = 0.5 * (A02 + A20);
+            const Real S12 = 0.5 * (A12 + A21);
 
             const Real strain2_val =
-                2.0 * (S00*S00 + 2.0*S01*S01 + S11*S11
-		       + 2.0*S02*S02 + 2.0*S12*S12);
+                2.0 * (S00*S00 + S11*S11 + S22*S22
+                     + 2.0*S01*S01
+                     + 2.0*S02*S02
+                     + 2.0*S12*S12);
 
             strain2_pack[s] = strain2_val;
             strain2_dyn(ie,igp,jgp,ilev) = strain2_val;
@@ -513,9 +522,9 @@ void HommeDynamics::contract_to_local_strain2 ()
         }
 
         turb_strain2(ie,igp,jgp,ilev_pack) = strain2_pack;
-      }); // ThreadVectorRange
-    });   // TeamThreadRange
-  });     // TeamPolicy
+      });
+    });
+  });
 
   Kokkos::fence();
 }

@@ -535,6 +535,7 @@ void HommeDynamics::run_impl (const double dt)
     // This is where we will compute the strain term needed for Shear Production of TKE
     if (params.do_3d_turbulence){
       compute_horizontal_derivs_of_car_velocity();
+      compute_vertical_derivs();
       contract_to_local_strain2();
     }
 
