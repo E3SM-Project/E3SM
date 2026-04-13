@@ -368,7 +368,13 @@ bool Functions<S,D>::zm_conv_main(
 
   //----------------------------------------------------------------------------
   // Compute temperature and moisture changes due to convection
-  int ktm=jt, ktb=msemax_klev; // TODO fix
+  //
+  // ktm and ktb are problematic here. In order to exactly match fortran behavior,
+  // we'd need to know the minimum of jt and msemax_klev across all columns (thread teams),
+  // but we can't do that without exiting the current kernel and doing a parallel_reduce.
+  // This is why the zm_conv_main BFB unit test only does 1-column inputs. Walter thinks this
+  // won't be a problem on the CXX/EAMXX side.
+  int ktm=jt, ktb=msemax_klev;
   zm_calc_output_tend(team,
                       pver, pverp, msg,
                       jt, msemax_klev, ktm, ktb, dsubcld,
