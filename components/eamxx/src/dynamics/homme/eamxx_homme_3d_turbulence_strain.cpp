@@ -198,14 +198,15 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
               const Real w_row = w_mid_row(ilev_pack)[s];
               const Real w_col = w_mid_col(ilev_pack)[s];
 
-              // Need to visit the below code to see if the indexing is correct
-              const Real wx_row = vec_sph2cart(ie,0,0,igp,kgp) * w_row;
-              const Real wy_row = vec_sph2cart(ie,0,1,igp,kgp) * w_row;
-              const Real wz_row = vec_sph2cart(ie,0,2,igp,kgp) * w_row;
+              // This is currently only correct for DPxx, need to add in correct
+              //  conversion for spherical coordinates later
+              const Real wx_row = 0.0;
+              const Real wy_row = 0.0;
+              const Real wz_row = w_row;
 
-              const Real wx_col = vec_sph2cart(ie,1,0,kgp,jgp) * w_col;
-              const Real wy_col = vec_sph2cart(ie,1,1,kgp,jgp) * w_col;
-              const Real wz_col = vec_sph2cart(ie,1,2,kgp,jgp) * w_col;
+              const Real wx_col = 0.0;
+              const Real wy_col = 0.0;
+              const Real wz_col = w_col;
 
               Ux_row[s] = Ux_row_h + wx_row;
               Ux_col[s] = Ux_col_h + wx_col;
@@ -341,12 +342,20 @@ void HommeDynamics::contract_to_local_strain2 ()
                 grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
                 vec_sph2cart, ie, 1, 1, igp, jgp, ilev);
 
+            // Planar DP mode: vertical velocity is already Cartesian z,
+            // so these are just dw/dx and dw/dy directly.
+            const Real A20 = grad_Uz_dyn(ie,0,igp,jgp,ilev);
+            const Real A21 = grad_Uz_dyn(ie,1,igp,jgp,ilev);
+
             const Real S00 = A00;
             const Real S11 = A11;
             const Real S01 = 0.5 * (A01 + A10);
+	    const Real S02 = 0.5 * A20;
+	    const Real S12 = 0.5 * A21;
 
             const Real strain2_val =
-                2.0 * (S00*S00 + 2.0*S01*S01 + S11*S11);
+                2.0 * (S00*S00 + 2.0*S01*S01 + S11*S11
+		       + 2.0*S02*S02 + 2.0*S12*S12);
 
             strain2_pack[s] = strain2_val;
             strain2_dyn(ie,igp,jgp,ilev) = strain2_val;
