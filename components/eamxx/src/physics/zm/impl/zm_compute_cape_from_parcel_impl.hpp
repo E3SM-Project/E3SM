@@ -112,7 +112,7 @@ void Functions<S,D>::compute_cape_from_parcel(
     }
 
     // Apply limiter to ensure CAPE is positive
-    cape = ekat::impl::max(cape, 0);
+    cape = ekat::impl::max(cape, 0.);
   });
 
   workspace.template release_many_contiguous<3>(

@@ -148,7 +148,7 @@ void Functions<S,D>::ZmInputState::calculate_tpert(int ncol, int nlev, bool is_f
         auto thl_sec_pbl  = loc_thl_sec(i,pblh_k_ind/Pack::n)[pblh_k_ind%Pack::n];
         auto thl_std_pbl  = sqrt( thl_sec_pbl ); // std deviation of thetal;
         loc_tpert(i) = ( thl_std_pbl + (latvap/cpair)*qc_pbl ) / exner_pbl;
-        loc_tpert(i) = ekat::impl::min(2,loc_tpert(i)); // apply limiter
+        loc_tpert(i) = ekat::impl::min(2.0,loc_tpert(i)); // apply limiter
       }
     }
   });
