@@ -9,6 +9,7 @@
 #include "ReferenceElement.hpp"
 #include "TimeLevel.hpp"
 #include "Types.hpp"
+#include "PhysicalConstants.hpp"
 
 // Scream includes
 #include "dynamics/homme/homme_dimensions.hpp"
@@ -264,6 +265,153 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
             grad_Ux_dyn(ie,1,igp,jgp,ilev) = gx1[s];
             grad_Uy_dyn(ie,1,igp,jgp,ilev) = gy1[s];
             grad_Uz_dyn(ie,1,igp,jgp,ilev) = gz1[s];
+          }
+        }
+      });
+
+    });
+  });
+
+  Kokkos::fence();
+}
+
+void HommeDynamics::compute_vertical_derivs ()
+{
+  using namespace Homme;
+
+  constexpr int NGP  = HOMMEXX_NP;
+  constexpr int VLEN = VECTOR_SIZE;
+
+  const auto& c      = Context::singleton();
+  const auto& state  = c.get<ElementsState>();
+  const auto& tl     = c.get<TimeLevel>();
+  const auto& elems  = c.get<Elements>();
+
+  const int nelem       = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
+  const int n0          = tl.n0;
+  const int nlev_pack   = state.m_v.extent_int(5);
+  const int nlev_scalar = m_helper_fields.at("grad_vertical")
+                            .template get_view<Real*****>().extent_int(4);
+
+  const auto v_dyn        = state.m_v;
+  const auto w_int_dyn    = state.m_w_i;
+  const auto dp3d_dyn     = state.m_dp3d;
+  const auto vtheta_dp_dyn = state.m_vtheta_dp;
+
+  using MidColumn = decltype(Homme::subview(elems.m_derived.m_turb_strain2, 0, 0, 0));
+  using IntColumn = decltype(Homme::subview(state.m_w_i, 0, 0, 0, 0));
+
+  auto grad_vertical = m_helper_fields.at("grad_vertical").template get_view<Real*****>();
+
+  using TeamPolicy = Kokkos::TeamPolicy<KT::ExeSpace>;
+  using MemberType = typename TeamPolicy::member_type;
+
+  Kokkos::parallel_for(
+      "compute_vertical_derivs",
+      TeamPolicy(nelem, Kokkos::AUTO()),
+      KOKKOS_LAMBDA (const MemberType& team) {
+
+    const int ie = team.league_rank();
+
+    KernelVariables kv(team, ie);
+
+    Kokkos::parallel_for(
+        Kokkos::TeamThreadRange(team, NGP*NGP),
+        [&] (const int idx) {
+
+      const int igp = idx / NGP;
+      const int jgp = idx % NGP;
+
+      // Column views
+      const auto u_mid = Homme::subview(v_dyn,     ie, n0, 0, igp, jgp);
+      const auto v_mid = Homme::subview(v_dyn,     ie, n0, 1, igp, jgp);
+      const auto w_int = Homme::subview(w_int_dyn, ie, n0,    igp, jgp);
+      const auto dp    = Homme::subview(dp3d_dyn,  ie, n0,    igp, jgp);
+      const auto vtheta_dp = Homme::subview(vtheta_dp_dyn, ie, n0, igp, jgp);
+
+      // Temporary interface columns for u,v
+      Scalar u_int_buf[NUM_LEV_P];
+      Scalar v_int_buf[NUM_LEV_P];
+
+      IntColumn u_int(u_int_buf);
+      IntColumn v_int(v_int_buf);
+
+      // Temporary midpoint dz column
+      Scalar dz_mid_buf[NUM_LEV];
+      MidColumn dz_mid(dz_mid_buf);
+
+      // ------------------------------------------
+      // 1) Put u and v on interface levels
+      // ------------------------------------------
+      ColumnOps::compute_interface_values(kv, u_mid, u_int);
+      ColumnOps::compute_interface_values(kv, v_mid, v_int);
+
+      team.team_barrier();
+
+      // ------------------------------------------
+      // 2) Compute dz on midpoint levels
+      // ------------------------------------------
+      // Use hydrostatic approximation
+      // We reconstruct interface pressure by cumulative summation of dp from top.
+      //
+      constexpr Real Rgas   = PhysicalConstants::Rgas;
+      constexpr Real gravit = PhysicalConstants::g;
+      constexpr Real p0     = PhysicalConstants::p0;
+      constexpr Real kappa  = PhysicalConstants::kappa;
+
+      constexpr Real p_floor  = 1e-3;
+      constexpr Real dp_floor = 1e-12;
+      constexpr Real dz_floor = 1e-12;
+
+      // Reconstruct interface pressure into a local scalar array.
+      Real p_int[NUM_LEV_P];
+      p_int[0] = 0.0;
+
+      for (int ilev = 0; ilev < nlev_scalar; ++ilev) {
+        const Real dpk = dp[ilev / VLEN][ilev % VLEN];
+        p_int[ilev+1] = p_int[ilev] + dpk;
+      }
+
+      for (int ilev = 0; ilev < nlev_scalar; ++ilev) {
+        const Real dpk = dp[ilev / VLEN][ilev % VLEN];
+
+        const Real pmid = 0.5 * (p_int[ilev] + p_int[ilev+1]);
+
+        const Real theta_v = vtheta_dp[ilev / VLEN][ilev % VLEN] / dpk;
+        const Real exner   = std::pow(pmid / p0, kappa);
+        const Real Tv      = exner * theta_v;
+
+        Real dz = (Rgas * Tv / (p_safe * gravit)) * dpk;
+
+        dz_mid[ilev / VLEN][ilev % VLEN] = dz;
+      }
+
+      team.team_barrier();
+
+      // ------------------------------------------
+      // 3) Compute du/dz, dv/dz, dw/dz on midpoints
+      // ------------------------------------------
+      Kokkos::parallel_for(
+          Kokkos::ThreadVectorRange(team, nlev_pack),
+          [&] (const int ilev_pack) {
+
+        for (int s = 0; s < VLEN; ++s) {
+          const int ilev = ilev_pack*VLEN + s;
+
+          if (ilev < nlev_scalar) {
+            const Real dz = dz_mid(ilev_pack)[s];
+            const Real inv_dz = 1.0 / dz;
+
+            // Assuming top->bottom level indexing, so z decreases with ilev.
+            // Hence the minus sign.
+            grad_vertical(ie,0,igp,jgp,ilev) =
+              -(u_int(ilev_pack+1)[s] - u_int(ilev_pack)[s]) * inv_dz;
+
+            grad_vertical(ie,1,igp,jgp,ilev) =
+              -(v_int(ilev_pack+1)[s] - v_int(ilev_pack)[s]) * inv_dz;
+
+            grad_vertical(ie,2,igp,jgp,ilev) =
+              -(w_int(ilev_pack+1)[s] - w_int(ilev_pack)[s]) * inv_dz;
           }
         }
       });
