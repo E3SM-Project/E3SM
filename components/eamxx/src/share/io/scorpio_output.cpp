@@ -640,14 +640,11 @@ run (const std::string& filename,
       // Write to file
       auto func_start = std::chrono::steady_clock::now();
 
-      // CF compliance: Convert units for output (rad->degrees, sr->m2)
-      // Internal: rad/sr (for calculations), Output: degrees/m2 (for CF)
+      // CF compliance: Convert units for output
+      // NOTE: lat/lon are already in degrees (from Fortran), but labeled as "rad"
+      // area is in steradians, needs conversion to m² for CF compliance
       Real scale_factor = 1.0;
-      if (field_name == "lat" || field_name == "lon") {
-        // Convert from radians to degrees: multiply by 180/π
-        using PC = scream::physics::Constants<Real>;
-        scale_factor = 180.0 / PC::Pi;
-      } else if (field_name == "area") {
+      if (field_name == "area") {
         // Convert from steradians to m²: multiply by R_earth²
         using PC = scream::physics::Constants<Real>;
         const Real r_earth = PC::r_earth.value;
@@ -818,9 +815,9 @@ register_variables(const std::string& filename,
     const auto& dimnames = m_vars_dims.at(field_name);
     std::string units = fid.get_units().to_string();
 
-    // CF compliance: Convert units for output
-    // Internal: rad/sr (for calculations), Output: degrees_north/degrees_east/m2 (for CF)
-    // Note: Actual value conversion happens during write, not here
+    // CF compliance: Fix unit labels for output
+    // NOTE: lat/lon VALUES are already in degrees (from Fortran), just mislabeled as "rad"
+    // area VALUES are in steradians, will be converted to m² during write
     if (field_name == "lat") {
       units = "degrees_north";
     } else if (field_name == "lon") {
