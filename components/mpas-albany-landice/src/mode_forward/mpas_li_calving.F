@@ -3568,6 +3568,7 @@ module li_calving
       integer, pointer :: nCells
       integer :: iCell, jCell, iNeighbor, n_damage_downstream
       real(kind=RKIND) :: damage_downstream
+      real(kind=RKIND), parameter :: eps = 1.0e-10_RKIND  ! small threshold to avoid divide-by-zero
       real(kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY
       real(kind=RKIND), dimension(6) :: localMinInfo, localMaxInfo, globalMinInfo, globalMaxInfo
 
@@ -3612,7 +3613,7 @@ module li_calving
          call mpas_pool_get_array(velocityPool, 'tauMin', tauMin)
          call mpas_pool_get_array(velocityPool, 'principalStrainRateRatio', principalStrainRateRatio)
 
-         where ( thickness == 0.0_RKIND .or. tauMax == 0.0_RKIND )
+         where ( thickness <= eps .or. tauMax <= eps )
              principalStrainRateRatio = 0.0_RKIND
              s0 = 0.0_RKIND
              nstar = 0.0_RKIND
@@ -3634,7 +3635,7 @@ module li_calving
 
 
          do iCell = 1, nCells
-         if (thickness(iCell) == 0.0_RKIND) then
+         if (thickness(iCell) <= eps) then
              damageSource(iCell) = 0.0_RKIND
          else
              damageSource(iCell) = nstar(iCell) * (1.0_RKIND - s0(iCell)) * eMax(iCell) - floatingBasalMassBal(iCell) &
@@ -3656,7 +3657,7 @@ module li_calving
          damage(:) = damage(:) + ddamagedt(:) * deltat
 
          do iCell = 1, nCells
-             if (thickness(iCell) == 0.0_RKIND) then
+             if (thickness(iCell) <= eps) then
                  damageNye(iCell) = 0.0_RKIND
              else
                  damageNye(iCell) = (2.0_RKIND + principalStrainRateRatio(iCell)) * tauMax(iCell) / &
