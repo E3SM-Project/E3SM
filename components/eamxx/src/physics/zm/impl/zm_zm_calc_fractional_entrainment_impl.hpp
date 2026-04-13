@@ -120,8 +120,8 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
           (2*i2(k)*i2(k) - k1(k)*i3(k))/(k1(k)*k1(k)) * tmp*tmp*tmp +
           (-5*k1(k)*i2(k)*i3(k) + 5*i2(k)*i2(k)*i2(k) + k1(k)*k1(k)*i4(k))/
           (k1(k)*k1(k)*k1(k)) * tmp*tmp*tmp*tmp;
-        lambda_tmp(k) = ekat::impl::max(lambda_tmp(k), lambda_limit_min);
-        lambda_tmp(k) = ekat::impl::min(lambda_tmp(k), lambda_limit_max);
+        lambda_tmp(k) = ekat::impl::max(lambda_tmp(k), ZMC::lambda_limit_min);
+        lambda_tmp(k) = ekat::impl::min(lambda_tmp(k), ZMC::lambda_limit_max);
       }
     }
   });
@@ -131,7 +131,7 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   // move detrainment level downward if fractional entrainment is too low
   Kokkos::single(Kokkos::PerTeam(team), [&] {
     if (j0 < jb) {
-      if (lambda_tmp(j0) < lambda_threshold && lambda_tmp(j0+1) > lambda_tmp(j0)) {
+      if (lambda_tmp(j0) < ZMC::lambda_threshold && lambda_tmp(j0+1) > lambda_tmp(j0)) {
         j0 = j0 + 1;
       }
     }

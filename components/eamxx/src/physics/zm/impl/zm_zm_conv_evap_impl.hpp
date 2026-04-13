@@ -166,7 +166,7 @@ void Functions<S,D>::zm_conv_evap(
       if (runtime_opt.old_snow) {
         Real work1;
         if (pergro_active) {
-          work1 = ekat::impl::min(ekat::impl::max(Real(0), flxsnow(k) / (flxprec(k) + pergro_perturbation)), Real(1));
+          work1 = ekat::impl::min(ekat::impl::max(Real(0), flxsnow(k) / (flxprec(k) + ZMC::pergro_perturbation)), Real(1));
         } else {
           if (flxprec(k) > 0) {
             work1 = ekat::impl::min(ekat::impl::max(Real(0), flxsnow(k) / flxprec(k)), Real(1));

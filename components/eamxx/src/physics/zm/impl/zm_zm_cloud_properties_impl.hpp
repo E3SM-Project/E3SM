@@ -276,7 +276,7 @@ void Functions<S,D>::zm_cloud_properties(
     klowest  = jb;
     for (Int k = klowest - 1; k >= khighest; --k) {
       if (k <= jb - 1 && k >= lel && lambda_max > 0) {
-        if (mflx_up(k) < mu_min) {
+        if (mflx_up(k) < ZMC::mu_min) {
           // Below threshold: detrain all upward flux, reset to environment
           h_upd(k)   = h_env(k);
           mflx_up(k) = 0;
@@ -311,16 +311,16 @@ void Functions<S,D>::zm_cloud_properties(
     for (Int k = klowest - 2; k >= khighest - 1; --k) {
       if (doit && k <= jb - 2 && k >= lel - 1) {
         if (h_upd(k) <= hsthat(k) && h_upd(k+1) > hsthat(k+1)
-            && mflx_up(k) >= mu_min) {
+            && mflx_up(k) >= ZMC::mu_min) {
           // Updraft MSE crosses saturation MSE from above: this is the cloud top
-          if (h_upd(k) - hsthat(k) < hu_diff_min) {
+          if (h_upd(k) - hsthat(k) < ZMC::hu_diff_min) {
             jt = k + 1;  // Large undershoot: cloud top is one level higher
           } else {
             jt = k;
           }
           doit = false;
         } else if ((h_upd(k) > h_upd(jb) && tot_frz <= 0)
-                   || mflx_up(k) < mu_min) {
+                   || mflx_up(k) < ZMC::mu_min) {
           // Neutral or negative buoyancy, or sub-threshold mass flux
           jt   = k + 1;
           doit = false;

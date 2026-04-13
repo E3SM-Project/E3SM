@@ -125,8 +125,8 @@ void Functions<S,D>::zm_transport_momentum(
                      mu(kp1)*(wind_mid(m,kp1)-wind_mid(m,k)  )/dp(k));
       mddudp(m,k) = (md(k)  *(wind_mid(m,k)  -wind_mid(m,km1))/dp(km1) +
                      md(kp1)*(wind_mid(m,kp1)-wind_mid(m,k)  )/dp(k));
-      pgu(m,k) = -momcu * ZMC::half * mududp(m,k);
-      pgd(m,k) = -momcd * ZMC::half * mddudp(m,k);
+      pgu(m,k) = -ZMC::momcu * ZMC::half * mududp(m,k);
+      pgd(m,k) = -ZMC::momcd * ZMC::half * mddudp(m,k);
     }
 
     // bottom boundary
@@ -135,8 +135,8 @@ void Functions<S,D>::zm_transport_momentum(
       const Int km1 = k-1;
       mududp(m,k) = mu(k) * (wind_mid(m,k)-wind_mid(m,km1))/dp(km1);
       mddudp(m,k) = md(k) * (wind_mid(m,k)-wind_mid(m,km1))/dp(km1);
-      pgu(m,k) = -momcu * mududp(m,k);
-      pgd(m,k) = -momcd * mddudp(m,k);
+      pgu(m,k) = -ZMC::momcu * mududp(m,k);
+      pgd(m,k) = -ZMC::momcd * mddudp(m,k);
     }
 
     // -------------------------------------------------------------------------
