@@ -65,7 +65,7 @@ void Functions<S,D>::zm_cloud_properties(
   // Minimum updraft mass flux below which the layer is considered inactive
   constexpr Real mu_min      = 0.02;
   // If updraft MSE undershoots saturated MSE by more than this, cloud top is 1 level up
-  constexpr Real hu_diff_min = -2000.0;
+  constexpr Real hu_diff_min = -2000;
 
   // =========================================================================
   // Allocate temporary workspace arrays (all pver-sized; pflxs used as pverp)

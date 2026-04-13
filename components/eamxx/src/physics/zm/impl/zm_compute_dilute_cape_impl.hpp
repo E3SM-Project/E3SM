@@ -67,8 +67,8 @@ void Functions<S,D>::compute_dilute_cape(
     {"sp_humidity", "temperature", "tv", "parcel_vtemp"},
     {&sp_humidity, &temperature, &tv, &parcel_vtemp});
 
-  Real lcl_pmid = 0.0;
-  Real mse_max_val = 0.0;
+  Real lcl_pmid = 0;
+  Real mse_max_val = 0;
   Int pblt_ull = 0;
   Int msemax_top_k = 0;
 

@@ -44,7 +44,7 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   // Note: k1, i2, i3, i4 are maintained as running accumulators (downward
   // k+1→k direction). lambda_tmp holds the computed lambda values before the
   // monotonicity pass and the final write into lambda.
-  constexpr Real lambda_limit_min = 0.0;       // limiter
+  constexpr Real lambda_limit_min = 0;       // limiter
   constexpr Real lambda_limit_max = 0.0002;    // limiter
   constexpr Real lambda_threshold = 1.e-6;     // threshold for moving detrainment level
 
@@ -56,12 +56,12 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   //----------------------------------------------------------------------------
   // initialize variables
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver), [&](const Int& k) {
-    lambda(k)     = 0.0;
-    lambda_tmp(k) = 0.0;
-    k1(k) = 0.0;
-    i2(k) = 0.0;
-    i3(k) = 0.0;
-    i4(k) = 0.0;
+    lambda(k)     = 0;
+    lambda_tmp(k) = 0;
+    k1(k) = 0;
+    i2(k) = 0;
+    i3(k) = 0;
+    i4(k) = 0;
   });
   team.team_barrier();
 
@@ -108,20 +108,20 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   Kokkos::single(Kokkos::PerTeam(team), [&] {
     for (Int k = msg+1; k < pver; ++k) {
       // --- lambda computation (Fortran: k from msg+2 to pver 1-based = k>=msg+1 0-based) ---
-      Real expnum = 0.0;  // term for Taylor series
+      Real expnum = 0;  // term for Taylor series
       if (k < jt || k >= jb) {
-        expnum = 0.0;
+        expnum = 0;
       } else {
         expnum = h_env(jb) - (h_env_sat(k-1)*(z_int(k) - z_mid(k)) +
                               h_env_sat(k)*(z_mid(k-1) - z_int(k))) /
           (z_mid(k-1) - z_mid(k));
       }
-      if ((h_env(jb) - h_env_min > 100.0 && expnum > 0.0) && k1(k) > expnum*dz(k)) {
+      if ((h_env(jb) - h_env_min > 100 && expnum > 0) && k1(k) > expnum*dz(k)) {
         const Real tmp = expnum / k1(k);  // term for Taylor series
         lambda_tmp(k) = tmp +
           i2(k)/k1(k) * tmp*tmp +
-          (2.0*i2(k)*i2(k) - k1(k)*i3(k))/(k1(k)*k1(k)) * tmp*tmp*tmp +
-          (-5.0*k1(k)*i2(k)*i3(k) + 5.0*i2(k)*i2(k)*i2(k) + k1(k)*k1(k)*i4(k))/
+          (2*i2(k)*i2(k) - k1(k)*i3(k))/(k1(k)*k1(k)) * tmp*tmp*tmp +
+          (-5*k1(k)*i2(k)*i3(k) + 5*i2(k)*i2(k)*i2(k) + k1(k)*k1(k)*i4(k))/
           (k1(k)*k1(k)*k1(k)) * tmp*tmp*tmp*tmp;
         lambda_tmp(k) = ekat::impl::max(lambda_tmp(k), lambda_limit_min);
         lambda_tmp(k) = ekat::impl::min(lambda_tmp(k), lambda_limit_max);

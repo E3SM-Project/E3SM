@@ -327,7 +327,7 @@ bool Functions<S,D>::zm_conv_main(
   Kokkos::single(Kokkos::PerTeam(team), [&] () {
     if (mflx_up_max_val > 0) {
       cld_base_mass_flux = ekat::impl::min(cld_base_mass_flux,
-                                           1.0 / (time_step * mflx_up_max_val));
+                                           1 / (time_step * mflx_up_max_val));
     } else {
       cld_base_mass_flux = 0;
     }
@@ -362,7 +362,7 @@ bool Functions<S,D>::zm_conv_main(
     cu(k)       *= cld_base_mass_flux;
     evp(k)      *= cld_base_mass_flux;
     // pflx is indexed at k+1; scaling for k+1 index (surface pressure flux)
-    pflx(k + 1) *= cld_base_mass_flux * 100.0 / gravit;
+    pflx(k + 1) *= cld_base_mass_flux * 100 / gravit;
   });
   team.team_barrier();
 
@@ -413,7 +413,7 @@ bool Functions<S,D>::zm_conv_main(
 
   // Obtain final precipitation rate in m/s
   Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    prec = (1.0 / gravit) * ekat::impl::max(prec_sum, Real(0)) / time_step / 1000.0;
+    prec = (1 / gravit) * ekat::impl::max(prec_sum, Real(0)) / time_step / 1000;
   });
   team.team_barrier();
 
@@ -428,7 +428,7 @@ bool Functions<S,D>::zm_conv_main(
   team.team_barrier();
 
   Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    rliq = rliq_sum / 1000.0;
+    rliq = rliq_sum / 1000;
   });
   team.team_barrier();
 

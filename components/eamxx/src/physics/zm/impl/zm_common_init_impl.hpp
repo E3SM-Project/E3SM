@@ -14,12 +14,12 @@ namespace zm {
 template<typename S, typename D>
 void Functions<S,D>::zm_common_init()
 {
-  s_common_init.tau             = 3600.0;
+  s_common_init.tau             = 3600;
   s_common_init.alfa            = 0.14;
   s_common_init.ke              = 2.5E-6;
   s_common_init.dmpdz           = -0.7e-3;
   s_common_init.tpert_fix       = true;
-  s_common_init.tpert_fac       = 2.0;
+  s_common_init.tpert_fac       = 2;
   s_common_init.tiedke_add      = 0.8;
   s_common_init.c0_lnd          = 0.0020;
   s_common_init.c0_ocn          = 0.0020;
@@ -33,7 +33,7 @@ void Functions<S,D>::zm_common_init()
   // ZM micro parameters
   s_common_init.zm_microp       = false;
   s_common_init.old_snow        = false;
-  s_common_init.auto_fac        = 7.0;
+  s_common_init.auto_fac        = 7;
   s_common_init.accr_fac        = 1.5;
   s_common_init.micro_dcs       = 150.E-6;
   // MCSP parameters

@@ -72,7 +72,7 @@ void Functions<S,D>::zm_closure(
   constexpr Real epsilo = PC::ep_2.value;
 
   // proportion to use liquid water from layer below
-  constexpr Real beta = 0.0;
+  constexpr Real beta = 0;
 
   // dtmdt: free tropospheric tendencies
   // dqmdt: free tropospheric tendencies
@@ -101,15 +101,15 @@ void Functions<S,D>::zm_closure(
   Kokkos::single(Kokkos::PerTeam(team), [&]() {
     cld_base_mass_flux = 0;
     Real eb   = p_mid(mx)*q_mid(mx) / (epsilo + q_mid(mx));
-    dtbdt     = (1.0/dsubcld)
+    dtbdt     = (1/dsubcld)
                 * (mflx_up(mx)*(s_int(mx) - s_upd(mx))
                    + mflx_dn(mx)*(s_int(mx) - s_dnd(mx)));
-    dqbdt     = (1.0/dsubcld)
+    dqbdt     = (1/dsubcld)
                 * (mflx_up(mx)*(q_int(mx) - q_upd(mx))
                    + mflx_dn(mx)*(q_int(mx) - q_dnd(mx)));
     Real debdt = epsilo*p_mid(mx) / ((epsilo + q_mid(mx))*(epsilo + q_mid(mx))) * dqbdt;
     Real log_arg = 3.5*std::log(t_mid(mx)) - std::log(eb) - 4.805;
-    dtldt     = -2840.0 * (3.5/t_mid(mx)*dtbdt - debdt/eb) / (log_arg*log_arg);
+    dtldt     = -2840 * (3.5/t_mid(mx)*dtbdt - debdt/eb) / (log_arg*log_arg);
   });
   team.team_barrier();
 
@@ -118,10 +118,10 @@ void Functions<S,D>::zm_closure(
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg, pver-1), [&](const Int& k) {
     // cloud top
     if (k == jt) {
-      dtmdt(k) = (1.0/p_del(k))
+      dtmdt(k) = (1/p_del(k))
                  * (mflx_up(k+1)*(s_upd(k+1) - s_int(k+1) - latvap/cpair*ql(k+1))
                     + mflx_dn(k+1)*(s_dnd(k+1) - s_int(k+1)));
-      dqmdt(k) = (1.0/p_del(k))
+      dqmdt(k) = (1/p_del(k))
                  * (mflx_up(k+1)*(q_upd(k+1) - q_int(k+1) + ql(k+1))
                     + mflx_dn(k+1)*(q_dnd(k+1) - q_int(k+1)));
     }
@@ -145,27 +145,27 @@ void Functions<S,D>::zm_closure(
     // levels between parcel launch and LCL
     if (k > lcl && k < mx) {
       Real thetavp = t_pcl(k) * std::pow(Real(1000)/p_mid(k), Rair/cpair)
-                     * (1.0 + 0.608*q_mid(mx));
+                     * (1 + 0.608*q_mid(mx));
       Real thetavm = t_mid(k) * std::pow(Real(1000)/p_mid(k), Rair/cpair)
-                     * (1.0 + 0.608*q_mid(k));
-      dboydt(k) = (dtbdt/t_mid(mx) + 0.608/(1.0 + 0.608*q_mid(mx))*dqbdt
-                   - dtmdt(k)/t_mid(k) - 0.608/(1.0 + 0.608*q_mid(k))*dqmdt(k))
+                     * (1 + 0.608*q_mid(k));
+      dboydt(k) = (dtbdt/t_mid(mx) + 0.608/(1 + 0.608*q_mid(mx))*dqbdt
+                   - dtmdt(k)/t_mid(k) - 0.608/(1 + 0.608*q_mid(k))*dqmdt(k))
                   * grav * thetavp/thetavm;
     }
     // levels between LCL and cloud top
     if (k >= lel && k <= lcl) {
       Real thetavp = t_pcl(k) * std::pow(Real(1000)/p_mid(k), Rair/cpair)
-                     * (1.0 + 1.608*q_pcl_sat(k) - q_mid(mx));
+                     * (1 + 1.608*q_pcl_sat(k) - q_mid(mx));
       Real thetavm = t_mid(k) * std::pow(Real(1000)/p_mid(k), Rair/cpair)
-                     * (1.0 + 0.608*q_mid(k));
-      Real dqsdtp  = q_pcl_sat(k) * (1.0 + q_pcl_sat(k)/epsilo) * epsilo*latvap
+                     * (1 + 0.608*q_mid(k));
+      Real dqsdtp  = q_pcl_sat(k) * (1 + q_pcl_sat(k)/epsilo) * epsilo*latvap
                      / (Rair*t_pcl(k)*t_pcl(k));
-      Real dtpdt   = t_pcl(k) / (1.0 + latvap/cpair*(dqsdtp - q_pcl_sat(k)/t_pcl(k)))
+      Real dtpdt   = t_pcl(k) / (1 + latvap/cpair*(dqsdtp - q_pcl_sat(k)/t_pcl(k)))
                      * (dtbdt/t_mid(mx) + latvap/cpair*(dqbdt/t_pcl_lcl
                         - q_mid(mx)/(t_pcl_lcl*t_pcl_lcl)*dtldt));
-      dboydt(k) = ((dtpdt/t_pcl(k) + 1.0/(1.0 + 1.608*q_pcl_sat(k) - q_mid(mx))
+      dboydt(k) = ((dtpdt/t_pcl(k) + 1/(1 + 1.608*q_pcl_sat(k) - q_mid(mx))
                     * (1.608*dqsdtp*dtpdt - dqbdt))
-                   - (dtmdt(k)/t_mid(k) + 0.608/(1.0 + 0.608*q_mid(k))*dqmdt(k)))
+                   - (dtmdt(k)/t_mid(k) + 0.608/(1 + 0.608*q_mid(k))*dqmdt(k)))
                   * grav * thetavp/thetavm;
     }
   });
@@ -183,8 +183,8 @@ void Functions<S,D>::zm_closure(
   //----------------------------------------------------------------------------
   // Calculate cloud base mass flux - see eq (8) in Z02
   Kokkos::single(Kokkos::PerTeam(team), [&]() {
-    Real dltaa = -1.0 * (cape - cape_threshold_in);
-    if (dadt != 0.0) {
+    Real dltaa = -1 * (cape - cape_threshold_in);
+    if (dadt != 0) {
       cld_base_mass_flux = Kokkos::max(dltaa/runtime_opt.tau/dadt, Real(0));
     }
   });

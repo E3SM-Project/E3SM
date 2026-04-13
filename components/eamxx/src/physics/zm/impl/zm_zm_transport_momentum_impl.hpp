@@ -73,19 +73,19 @@ void Functions<S,D>::zm_transport_momentum(
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver*nwind), [&] (const Int& idx) {
     const Int k = idx / nwind;
     const Int m = idx % nwind;
-    wind_tend(k,m) = 0.0;
-    pguall(k,m) = 0.0;
-    pgdall(k,m) = 0.0;
+    wind_tend(k,m) = 0;
+    pguall(k,m) = 0;
+    pgdall(k,m) = 0;
     icwu(k,m) = wind_in(k,m);
     icwd(k,m) = wind_in(k,m);
-    wind0(m,k) = 0.0;
-    windf(m,k) = 0.0;
-    mflux(m,k) = 0.0;
+    wind0(m,k) = 0;
+    windf(m,k) = 0;
+    mflux(m,k) = 0;
     if (k == pver-1) {
-      mflux(m, k+1) = 0.0;
+      mflux(m, k+1) = 0;
     }
     if (m == 0) {
-      seten(k) = 0.0;
+      seten(k) = 0;
     }
   });
 
@@ -109,15 +109,15 @@ void Functions<S,D>::zm_transport_momentum(
       wind_int_u(m,k) = wind_int(m,k);
       wind_int_d(m,k) = wind_int(m,k);
       // provisional tendency
-      wind_tend_tmp(m,k) = 0.0;
+      wind_tend_tmp(m,k) = 0;
     }
 
     // -------------------------------------------------------------------------
     // Calculate pressure perturbation terms
 
     // upper boundary
-    pgu(m,0) = 0.0;
-    pgd(m,0) = 0.0;
+    pgu(m,0) = 0;
+    pgd(m,0) = 0;
 
     // interior points
     for (Int k = 1; k < pver-1; ++k) {

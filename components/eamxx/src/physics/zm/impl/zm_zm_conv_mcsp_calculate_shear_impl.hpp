@@ -27,7 +27,7 @@ void Functions<S,D>::zm_conv_mcsp_calculate_shear(
   //----------------------------------------------------------------------------
 
   // Local variables
-  Real storm_u = 0.0;         // u wind at storm reference level set by MCSP_storm_speed_pref
+  Real storm_u = 0;         // u wind at storm reference level set by MCSP_storm_speed_pref
 
   //----------------------------------------------------------------------------
   // Interpolate wind to pressure level specified by MCSP_storm_speed_pref
@@ -65,7 +65,7 @@ void Functions<S,D>::zm_conv_mcsp_calculate_shear(
     if (state_pmid(pver - 1) > ZMC::MCSP_storm_speed_pref) {
       mcsp_shear = storm_u - state_u(pver - 1);
     } else {
-      mcsp_shear = -999.0;
+      mcsp_shear = -999;
     }
   });
 }

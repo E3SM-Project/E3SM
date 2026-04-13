@@ -127,7 +127,7 @@ void Functions<S,D>::ZmInputState::calculate_tpert(int ncol, int nlev, bool is_f
 
   Kokkos::parallel_for("zm_calculate_tpert",ncol, KOKKOS_LAMBDA (const int i) {
     if (is_first_step) {
-      loc_tpert(i) = 0.0;
+      loc_tpert(i) = 0;
     } else {
       // identify interface index for top of PBL
       int pblh_k_ind = -1;
@@ -140,7 +140,7 @@ void Functions<S,D>::ZmInputState::calculate_tpert(int ncol, int nlev, bool is_f
       }
       if (pblh_k_ind==-1) {
         // PBL top index not found, so just set the perturbation to zero
-        loc_tpert(i) = 0.0;
+        loc_tpert(i) = 0;
       } else {
         // calculate tpert as std deviation of temperature from SHOC's theta-l variance
         auto exner_pbl    = PF::exner_function( loc_p_mid(i,pblh_k_ind/Pack::n)[pblh_k_ind%Pack::n] );
@@ -148,7 +148,7 @@ void Functions<S,D>::ZmInputState::calculate_tpert(int ncol, int nlev, bool is_f
         auto thl_sec_pbl  = loc_thl_sec(i,pblh_k_ind/Pack::n)[pblh_k_ind%Pack::n];
         auto thl_std_pbl  = sqrt( thl_sec_pbl ); // std deviation of thetal;
         loc_tpert(i) = ( thl_std_pbl + (latvap/cpair)*qc_pbl ) / exner_pbl;
-        loc_tpert(i) = ekat::impl::min(2.0,loc_tpert(i)); // apply limiter
+        loc_tpert(i) = ekat::impl::min(2,loc_tpert(i)); // apply limiter
       }
     }
   });
