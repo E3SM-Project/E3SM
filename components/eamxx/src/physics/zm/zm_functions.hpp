@@ -127,6 +127,24 @@ struct Functions {
     static inline constexpr Real momcu             = 0.4;      // pressure gradient term constant for updrafts
     static inline constexpr Real momcd             = 0.4;      // pressure gradient term constant for downdrafts
 
+    static inline constexpr Real zvir              = 0.608;    // virtual temperature factor (Rv/Rd - 1)
+    static inline constexpr Real lcl_coeff_a       = 2840;     // Bolton (1980) LCL temperature formula coefficient A
+    static inline constexpr Real lcl_coeff_b       = 3.5;      // Bolton (1980) LCL temperature formula coefficient B
+    static inline constexpr Real lcl_coeff_c       = 4.805;    // Bolton (1980) LCL temperature formula coefficient C
+    static inline constexpr Real pa_to_mb          = 0.01;     // Pa to mb conversion factor
+    static inline constexpr Real mb_to_pa          = 100;      // mb to Pa conversion factor
+    static inline constexpr Real mse_min_diff      = 100;      // min MSE buoyancy difference for Taylor series in entrainment [J/kg]
+    static inline constexpr Real tpert_limiter     = 2;        // upper limit on temperature perturbation in input state [K]
+
+    // Default values for ZmRuntimeOpt fields
+    static inline constexpr Real alfa              = 0.14;     // default downdraft proportionality factor
+    static inline constexpr Real ke                = 2.5E-6;   // default evaporation efficiency
+    static inline constexpr Real dmpdz             = -0.7e-3;  // default convective entrainment parameter [1/m]
+    static inline constexpr Real tiedke_add        = 0.8;      // default Tiedke temperature perturbation addition [K]
+    static inline constexpr Real c0                = 0.0020;   // default autoconversion coefficient
+    static inline constexpr Real accr_fac          = 1.5;      // default accretion factor
+    static inline constexpr Real mcsp_t_coeff      = 0.3;      // default MCSP temperature coefficient
+
     // Table of saturation vapor pressure values (estbl) from tmin to
     // tmax+1 Kelvin, in one degree increments.  ttrice defines the
     // transition region, estbl contains a combination of ice & water

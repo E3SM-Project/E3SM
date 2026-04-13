@@ -139,12 +139,12 @@ bool Functions<S,D>::zm_conv_main(
   team.team_barrier();
 
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver), [&] (const Int& k) {
-    p_mid(k) = p_mid_in(k) * 0.01;
+    p_mid(k) = p_mid_in(k) * ZMC::pa_to_mb;
     z_mid(k) = z_mid_in(k) + z_srf;
-    p_int(k) = p_int_in(k) * 0.01;
+    p_int(k) = p_int_in(k) * ZMC::pa_to_mb;
     z_int(k) = z_int_in(k) + z_srf;
     if (k == pver-1) {
-      p_int(k+1) = p_int_in(k+1) * 0.01;
+      p_int(k+1) = p_int_in(k+1) * ZMC::pa_to_mb;
       z_int(k+1) = z_int_in(k+1) + z_srf;
     }
   });
@@ -156,7 +156,7 @@ bool Functions<S,D>::zm_conv_main(
   Int pbl_top_result = pver - 1;
   Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, msg + 1, pver - 1),
     [&] (const Int& k, Int& val) {
-      if (std::abs(z_mid(k) - pbl_hgt) < (z_int(k) - z_int(k + 1)) * 0.5) {
+      if (std::abs(z_mid(k) - pbl_hgt) < (z_int(k) - z_int(k + 1)) * ZMC::half) {
         val = ekat::impl::min(val, k);
       }
     },
@@ -235,7 +235,7 @@ bool Functions<S,D>::zm_conv_main(
   //----------------------------------------------------------------------------
   // Convert p_del to mb (gathered layer thickness)
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver), [&] (const Int& k) {
-    p_del(k) = p_del_in(k) * 0.01;
+    p_del(k) = p_del_in(k) * ZMC::pa_to_mb;
   });
   team.team_barrier();
 
@@ -261,13 +261,13 @@ bool Functions<S,D>::zm_conv_main(
       s_int(k) = std::log(s_mid(k - 1) / s_mid(k)) *
                  s_mid(k - 1) * s_mid(k) / (s_mid(k - 1) - s_mid(k));
     } else {
-      s_int(k) = 0.5 * (s_mid(k) + s_mid(k - 1));
+      s_int(k) = ZMC::half * (s_mid(k) + s_mid(k - 1));
     }
     if (qdifr > ZMC::interp_diff_min) {
       q_int(k) = std::log(q_mid(k - 1) / q_mid(k)) *
                  q_mid(k - 1) * q_mid(k) / (q_mid(k - 1) - q_mid(k));
     } else {
-      q_int(k) = 0.5 * (q_mid(k) + q_mid(k - 1));
+      q_int(k) = ZMC::half * (q_mid(k) + q_mid(k - 1));
     }
   });
   team.team_barrier();
@@ -333,7 +333,7 @@ bool Functions<S,D>::zm_conv_main(
     }
     if (runtime_opt.clos_dyn_adj) {
       cld_base_mass_flux = ekat::impl::max(
-        cld_base_mass_flux - omega(pbl_top) * 0.01, Real(0));
+        cld_base_mass_flux - omega(pbl_top) * ZMC::pa_to_mb, Real(0));
     }
   });
   team.team_barrier();
@@ -362,7 +362,7 @@ bool Functions<S,D>::zm_conv_main(
     cu(k)       *= cld_base_mass_flux;
     evp(k)      *= cld_base_mass_flux;
     // pflx is indexed at k+1; scaling for k+1 index (surface pressure flux)
-    pflx(k + 1) *= cld_base_mass_flux * 100 / gravit;
+    pflx(k + 1) *= cld_base_mass_flux * ZMC::mb_to_pa / gravit;
   });
   team.team_barrier();
 

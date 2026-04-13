@@ -107,8 +107,8 @@ void Functions<S,D>::zm_closure(
                 * (mflx_up(mx)*(q_int(mx) - q_upd(mx))
                    + mflx_dn(mx)*(q_int(mx) - q_dnd(mx)));
     Real debdt = epsilo*p_mid(mx) / ((epsilo + q_mid(mx))*(epsilo + q_mid(mx))) * dqbdt;
-    Real log_arg = 3.5*std::log(t_mid(mx)) - std::log(eb) - 4.805;
-    dtldt     = -2840 * (3.5/t_mid(mx)*dtbdt - debdt/eb) / (log_arg*log_arg);
+    Real log_arg = ZMC::lcl_coeff_b*std::log(t_mid(mx)) - std::log(eb) - ZMC::lcl_coeff_c;
+    dtldt     = -ZMC::lcl_coeff_a * (ZMC::lcl_coeff_b/t_mid(mx)*dtbdt - debdt/eb) / (log_arg*log_arg);
   });
   team.team_barrier();
 
@@ -144,27 +144,27 @@ void Functions<S,D>::zm_closure(
     // levels between parcel launch and LCL
     if (k > lcl && k < mx) {
       Real thetavp = t_pcl(k) * std::pow(Real(1000)/p_mid(k), Rair/cpair)
-                     * (1 + 0.608*q_mid(mx));
+                     * (1 + ZMC::zvir*q_mid(mx));
       Real thetavm = t_mid(k) * std::pow(Real(1000)/p_mid(k), Rair/cpair)
-                     * (1 + 0.608*q_mid(k));
-      dboydt(k) = (dtbdt/t_mid(mx) + 0.608/(1 + 0.608*q_mid(mx))*dqbdt
-                   - dtmdt(k)/t_mid(k) - 0.608/(1 + 0.608*q_mid(k))*dqmdt(k))
+                     * (1 + ZMC::zvir*q_mid(k));
+      dboydt(k) = (dtbdt/t_mid(mx) + ZMC::zvir/(1 + ZMC::zvir*q_mid(mx))*dqbdt
+                   - dtmdt(k)/t_mid(k) - ZMC::zvir/(1 + ZMC::zvir*q_mid(k))*dqmdt(k))
                   * grav * thetavp/thetavm;
     }
     // levels between LCL and cloud top
     if (k >= lel && k <= lcl) {
       Real thetavp = t_pcl(k) * std::pow(Real(1000)/p_mid(k), Rair/cpair)
-                     * (1 + 1.608*q_pcl_sat(k) - q_mid(mx));
+                     * (1 + (1 + ZMC::zvir)*q_pcl_sat(k) - q_mid(mx));
       Real thetavm = t_mid(k) * std::pow(Real(1000)/p_mid(k), Rair/cpair)
-                     * (1 + 0.608*q_mid(k));
+                     * (1 + ZMC::zvir*q_mid(k));
       Real dqsdtp  = q_pcl_sat(k) * (1 + q_pcl_sat(k)/epsilo) * epsilo*latvap
                      / (Rair*t_pcl(k)*t_pcl(k));
       Real dtpdt   = t_pcl(k) / (1 + latvap/cpair*(dqsdtp - q_pcl_sat(k)/t_pcl(k)))
                      * (dtbdt/t_mid(mx) + latvap/cpair*(dqbdt/t_pcl_lcl
                         - q_mid(mx)/(t_pcl_lcl*t_pcl_lcl)*dtldt));
-      dboydt(k) = ((dtpdt/t_pcl(k) + 1/(1 + 1.608*q_pcl_sat(k) - q_mid(mx))
-                    * (1.608*dqsdtp*dtpdt - dqbdt))
-                   - (dtmdt(k)/t_mid(k) + 0.608/(1 + 0.608*q_mid(k))*dqmdt(k)))
+      dboydt(k) = ((dtpdt/t_pcl(k) + 1/(1 + (1 + ZMC::zvir)*q_pcl_sat(k) - q_mid(mx))
+                    * ((1 + ZMC::zvir)*dqsdtp*dtpdt - dqbdt))
+                   - (dtmdt(k)/t_mid(k) + ZMC::zvir/(1 + ZMC::zvir*q_mid(k))*dqmdt(k)))
                   * grav * thetavp/thetavm;
     }
   });

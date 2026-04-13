@@ -89,11 +89,11 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
     for (Int k = pver-2; k >= msg; --k) {
       if (k < jb && k >= jt) {
         k1(k) = k1(k+1) + (h_env(jb)-h_env(k))*dz(k);
-        const Real ihat = 0.5* (k1(k+1)+k1(k));
+        const Real ihat = ZMC::half* (k1(k+1)+k1(k));
         i2(k) = i2(k+1) + ihat*dz(k);
-        const Real idag = 0.5* (i2(k+1)+i2(k));
+        const Real idag = ZMC::half* (i2(k+1)+i2(k));
         i3(k) = i3(k+1) + idag*dz(k);
-        const Real iprm = 0.5* (i3(k+1)+i3(k));
+        const Real iprm = ZMC::half* (i3(k+1)+i3(k));
         i4(k) = i4(k+1) + iprm*dz(k);
       }
     }
@@ -113,7 +113,7 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
                               h_env_sat(k)*(z_mid(k-1) - z_int(k))) /
           (z_mid(k-1) - z_mid(k));
       }
-      if ((h_env(jb) - h_env_min > 100 && expnum > 0) && k1(k) > expnum*dz(k)) {
+      if ((h_env(jb) - h_env_min > ZMC::mse_min_diff && expnum > 0) && k1(k) > expnum*dz(k)) {
         const Real tmp = expnum / k1(k);  // term for Taylor series
         lambda_tmp(k) = tmp +
           i2(k)/k1(k) * tmp*tmp +
