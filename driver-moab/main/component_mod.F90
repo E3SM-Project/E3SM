@@ -22,7 +22,6 @@ module component_mod
   use seq_comm_mct,     only: seq_comm_getinfo => seq_comm_setptrs
   use seq_infodata_mod, only: seq_infodata_putData, seq_infodata_GetData
   use seq_infodata_mod, only: seq_infodata_exchange, seq_infodata_type
-  use seq_diag_mct,     only: seq_diag_avect_mct
   use seq_map_type_mod
   use seq_map_mod
   use t_drv_timers_mod
@@ -1040,12 +1039,12 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
 
        do eci = 1,size(comp)
           if (flow == 'x2c') then  ! coupler to component
-             call seq_diag_avect_mct(infodata, CPLID, comp(eci)%x2c_cx, &
-                  comp(eci)%dom_cx, comp(eci)%gsmap_cx, trim(comment)//comp(eci)%suffix)
+!            call seq_diag_avect_mct(infodata, CPLID, comp(eci)%x2c_cx, &
+!                 comp(eci)%dom_cx, comp(eci)%gsmap_cx, trim(comment)//comp(eci)%suffix)
           end if
           if (flow == 'c2x') then  ! component to coupler
-             call seq_diag_avect_mct(infodata, CPLID, comp(eci)%c2x_cx, &
-                  comp(eci)%dom_cx, comp(eci)%gsmap_cx, trim(comment)//comp(eci)%suffix)
+!            call seq_diag_avect_mct(infodata, CPLID, comp(eci)%c2x_cx, &
+!                 comp(eci)%dom_cx, comp(eci)%gsmap_cx, trim(comment)//comp(eci)%suffix)
           end if
        enddo
 
