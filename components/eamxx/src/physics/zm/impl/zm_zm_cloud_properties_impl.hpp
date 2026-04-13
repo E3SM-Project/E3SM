@@ -183,7 +183,8 @@ void Functions<S,D>::zm_cloud_properties(
   // Find level of minimum h_env_sat between jt and jb (detrainment onset level)
   using ValLocType = Kokkos::ValLocScalar<Real, Int>;
   ValLocType j0_result;
-  Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, jt, jb + 1),
+  const Int range_start = ekat::impl::max(msg, jt);
+  Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, range_start, jb + 1),
     [&] (const Int& k, ValLocType& local) {
       if (h_env_sat(k) < local.val) {
         local.val = h_env_sat(k);
@@ -194,7 +195,7 @@ void Functions<S,D>::zm_cloud_properties(
   team.team_barrier();
 
   Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    if (j0_result.val < 1.e6) {
+    if (j0_result.val < h_env_min) {
       h_env_min = j0_result.val;
       j0 = j0_result.loc;
     }

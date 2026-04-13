@@ -162,11 +162,8 @@ bool Functions<S,D>::zm_conv_main(
     },
     Kokkos::Min<Int>(pbl_top_result));
   team.team_barrier();
-  Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    // Min reducer uses max-int as identity; clamp to default if nothing satisfied
-    pbl_top = ekat::impl::min(pbl_top_result, pver - 1);
-  });
-  team.team_barrier();
+  // Min reducer uses max-int as identity; clamp to default if nothing satisfied
+  pbl_top = ekat::impl::min(pbl_top_result, pbl_top);
 
   //----------------------------------------------------------------------------
   // Store input specific humidity for precip calculation

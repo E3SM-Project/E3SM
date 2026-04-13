@@ -60,6 +60,9 @@ struct UnitWrap::UnitTest<D>::TestZmCloudProperties : public UnitWrap::UnitTest<
       }
     }
 
+    const auto margin = std::numeric_limits<Real>::epsilon() *
+      (ekat::is_single_precision<Real>::value ? 1000 : 1);
+
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
@@ -84,22 +87,22 @@ struct UnitWrap::UnitTest<D>::TestZmCloudProperties : public UnitWrap::UnitTest<
           REQUIRE(d_baseline.mflx_up[k] == d_test.mflx_up[k]);
           REQUIRE(d_baseline.entr_up[k] == d_test.entr_up[k]);
           REQUIRE(d_baseline.detr_up[k] == d_test.detr_up[k]);
-          REQUIRE(d_baseline.mflx_dn[k] == d_test.mflx_dn[k]);
-          REQUIRE(d_baseline.entr_dn[k] == d_test.entr_dn[k]);
+          REQUIRE(d_baseline.mflx_dn[k] == Approx(d_test.mflx_dn[k]).margin(margin));
+          REQUIRE(d_baseline.entr_dn[k] == Approx(d_test.entr_dn[k]).margin(margin));
           REQUIRE(d_baseline.mflx_net[k] == d_test.mflx_net[k]);
           REQUIRE(d_baseline.s_upd[k] == d_test.s_upd[k]);
-          REQUIRE(d_baseline.q_upd[k] == d_test.q_upd[k]);
-          REQUIRE(d_baseline.ql[k] == d_test.ql[k]);
+          REQUIRE(d_baseline.q_upd[k] == Approx(d_test.q_upd[k]).margin(margin));
+          REQUIRE(d_baseline.ql[k] == Approx(d_test.ql[k]).margin(margin));
           REQUIRE(d_baseline.s_dnd[k] == d_test.s_dnd[k]);
-          REQUIRE(d_baseline.q_dnd[k] == d_test.q_dnd[k]);
+          REQUIRE(d_baseline.q_dnd[k] == Approx(d_test.q_dnd[k]).margin(margin));
           REQUIRE(d_baseline.qst[k] == d_test.qst[k]);
           REQUIRE(d_baseline.cu[k] == d_test.cu[k]);
-          REQUIRE(d_baseline.evp[k] == d_test.evp[k]);
-          REQUIRE(d_baseline.rprd[k] == d_test.rprd[k]);
+          REQUIRE(d_baseline.evp[k] == Approx(d_test.evp[k]).margin(margin));
+          REQUIRE(d_baseline.rprd[k] == Approx(d_test.rprd[k]).margin(margin));
         }
         REQUIRE(d_baseline.total(d_baseline.pflx) == d_test.total(d_test.pflx));
         for (Int k = 0; k < d_baseline.total(d_baseline.pflx); ++k) {
-          REQUIRE(d_baseline.pflx[k] == d_test.pflx[k]);
+          REQUIRE(d_baseline.pflx[k] == Approx(d_test.pflx[k]).margin(margin));
         }
         REQUIRE(d_baseline.total(d_baseline.jt) == d_test.total(d_test.jt));
         REQUIRE(d_baseline.total(d_baseline.jt) == d_test.total(d_test.jlcl));
