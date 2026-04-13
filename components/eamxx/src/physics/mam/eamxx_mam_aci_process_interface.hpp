@@ -24,7 +24,11 @@ class MAMAci final : public MAMGenericInterface {
   using view_2d       = scream::mam_coupling::view_2d;
   using const_view_2d = scream::mam_coupling::const_view_2d;
   using view_3d       = scream::mam_coupling::view_3d;
+  using view_4d       = scream::mam_coupling::view_4d;
   using const_view_3d = scream::mam_coupling::const_view_3d;
+  template <int X, int Y>
+  using view_2d_table = typename KT::template view_2d_table<const Real, X, Y>;
+
 
  private:
   using KT = ekat::KokkosTypes<DefaultDevice>;
@@ -82,7 +86,7 @@ class MAMAci final : public MAMGenericInterface {
   view_2d cloud_frac_;
   view_2d cloud_frac_prev_;
   view_2d qcld_;
-  view_2d ptend_q_[mam4::aero_model::pcnst];
+  view_3d ptend_q_;
   view_3d factnum_;
   const_view_3d qqcw_input_;
   view_2d qqcw_[mam4::ndrop::ncnst_tot];
@@ -98,13 +102,13 @@ class MAMAci final : public MAMGenericInterface {
   view_2d ccn_1p0_;        // FIXME: TEMPORARY output
   view_2d wtke_;
   view_3d ccn_;
-  view_2d coltend_[mam4::ndrop::ncnst_tot];
-  view_2d coltend_cw_[mam4::ndrop::ncnst_tot];
+  view_3d coltend_; 
+  view_3d coltend_cw_; 
 
-  // raercol_cw_ and raercol_ are work arrays for dropmixnuc, allocated on the
-  // stack.
-  view_2d raercol_cw_[mam4::ndrop::pver][2];
-  view_2d raercol_[mam4::ndrop::pver][2];
+  // raercol_cw_ and raercol_ are work-array views for dropmixnuc whose
+  // storage is allocated from the temporary buffer in init_temporary_views().
+  view_4d raercol_cw_;
+  view_4d raercol_;
 
   view_3d nact_;
   view_3d mact_;
@@ -131,7 +135,8 @@ class MAMAci final : public MAMGenericInterface {
   view_2d w_sec_int_;        // Vertical velocity variance at interfaces
 
   // A view array to carry cloud borne aerosol mmrs/nmrs
-  view_2d qqcw_fld_work_[mam4::ndrop::ncnst_tot];
+  // Dimensions/order: [ncol][nlev][mam4::ndrop::ncnst_tot]
+  view_3d qqcw_fld_work_;
 
   // A view to carry interstitial aerosol mmrs/nmrs
   view_3d state_q_work_;
@@ -221,7 +226,7 @@ class MAMAci final : public MAMGenericInterface {
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
 
-  int num_2d_scratch_ = 94;
+  int num_2d_scratch_ = 19;
   int len_temporary_views_{0};
 
 };  // MAMAci

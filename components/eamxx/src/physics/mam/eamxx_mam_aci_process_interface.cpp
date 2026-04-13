@@ -217,6 +217,10 @@ int MAMAci::get_len_temporary_views() {
   work_len += ncol_ * nlev_ * mam4::ndrop::psat;
   // raercol_cw_ and raercol_
   work_len += 2 * ncol_ * mam4::ndrop::ncnst_tot * nlev_ * 2;
+  // qqcw_fld_work_
+  work_len += ncol_ * nlev_ * mam4::ndrop::ncnst_tot;
+  // coltend_ & coltend_cw_
+  work_len += 2 *  ncol_ * nlev_ * mam4::ndrop::ncnst_tot;
   // factnum_, nact_, mact_
   work_len += 3 * ncol_ * mam_coupling::num_aero_modes() * nlev_;
   // kvh_int_, w_sec_int_
@@ -237,16 +241,21 @@ void MAMAci::init_temporary_views() {
   ccn_ = view_3d(work_ptr, ncol_, nlev_, mam4::ndrop::psat);
   work_ptr += ncol_ * nlev_ * mam4::ndrop::psat;
 
-  for(int i = 0; i < nlev_; ++i) {
-    for(int j = 0; j < 2; ++j) {
-      // Kokkos::resize(raercol_cw_[i][j], ncol_, mam4::ndrop::ncnst_tot);
-      raercol_cw_[i][j] = view_2d(work_ptr, ncol_, mam4::ndrop::ncnst_tot);
-      work_ptr += ncol_ * mam4::ndrop::ncnst_tot;
-      // Kokkos::resize(raercol_[i][j], ncol_, mam4::ndrop::ncnst_tot);
-      raercol_[i][j] = view_2d(work_ptr, ncol_, mam4::ndrop::ncnst_tot);
-      work_ptr += ncol_ * mam4::ndrop::ncnst_tot;
-    }
-  }
+  raercol_cw_ = view_4d(work_ptr, ncol_, nlev_, 2, mam4::ndrop::ncnst_tot);
+  work_ptr += raercol_cw_.size();
+  raercol_ = view_4d(work_ptr, ncol_, nlev_, 2, mam4::ndrop::ncnst_tot);
+  work_ptr += raercol_.size();
+
+  qqcw_fld_work_ = view_3d(work_ptr, ncol_, mam4::ndrop::ncnst_tot, nlev_);
+  work_ptr += qqcw_fld_work_.size();
+
+  // column tendency for diagnostic output
+  coltend_ = view_3d(work_ptr, ncol_, mam4::ndrop::ncnst_tot, nlev_);
+  work_ptr += coltend_.size();
+  // column tendency
+  coltend_cw_ = view_3d(work_ptr, ncol_, mam4::ndrop::ncnst_tot, nlev_);
+  work_ptr += coltend_cw_.size();
+
   // activation fraction for aerosol number [fraction]
   // Kokkos::resize(factnum_, ncol_, num_aero_modes, nlev_);
   factnum_ = view_3d(work_ptr, ncol_, mam_coupling::num_aero_modes(), nlev_);
@@ -449,21 +458,10 @@ void MAMAci::initialize_impl(const RunType run_type) {
     dropmixnuc_scratch_mem_[i] =
         view_2d("dropmixnuc_scratch_mem_", ncol_, nlev_);
   }
-  for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
-    // column tendency for diagnostic output
-    set_field_w_scratch_buffer(coltend_[i], buffer_, true);
-    // column tendency
-    set_field_w_scratch_buffer(coltend_cw_[i], buffer_, true);
-  }
   // NOTE: If we use buffer_ to initialize ptend_q_,
   //  we must reset these values to zero each time run_impl is called.
-  for(int i = 0; i < mam4::aero_model::pcnst; ++i) {
-    ptend_q_[i] = view_2d("ptend_q_", ncol_, nlev_);
-  }
-  // Allocate work arrays
-  for(int icnst = 0; icnst < mam4::ndrop::ncnst_tot; ++icnst) {
-    set_field_w_scratch_buffer(qqcw_fld_work_[icnst], buffer_, true);
-  }
+  ptend_q_ = view_3d("ptend_q_", ncol_, mam4::aero_model::pcnst, nlev_);
+
   //---------------------------------------------------------------------------------
   // Diagnotics variables from the hetrozenous ice nucleation scheme
   //---------------------------------------------------------------------------------
@@ -561,6 +559,7 @@ void MAMAci::run_impl(const double dt) {
   //  Compute activated CCN number tendency (tendnd_) and updated
   //  cloud borne aerosols (stored in a work array) and interstitial
   //  aerosols tendencies
+  Kokkos::deep_copy(ccn_, 0.0);
   call_function_dropmixnuc(
       team_policy, dt, dry_atm_, rpdel_, kvh_mid_, kvh_int_, wsub_, cloud_frac_,
       cloud_frac_prev_, dry_aero_, nlev_, top_lev_, enable_aero_vertical_mix_,
@@ -606,7 +605,7 @@ void MAMAci::run_impl(const double dt) {
   //---------------------------------------------------------------
 
   // Update cloud borne aerosols
-  update_cloud_borne_aerosols(qqcw_fld_work_, nlev_,
+  update_cloud_borne_aerosols(qqcw_fld_work_,
                               // output
                               dry_aero_);
 
