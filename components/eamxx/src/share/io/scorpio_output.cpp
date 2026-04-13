@@ -640,16 +640,10 @@ run (const std::string& filename,
       // Write to file
       auto func_start = std::chrono::steady_clock::now();
 
-      // CF compliance: Convert units for output
-      // NOTE: lat/lon are already in degrees (from Fortran), but labeled as "rad"
-      // area is in steradians, needs conversion to m² for CF compliance
-      Real scale_factor = 1.0;
-      if (field_name == "area") {
-        // Convert from steradians to m²: multiply by R_earth²
-        using PC = scream::physics::Constants<Real>;
-        const Real r_earth = PC::r_earth.value;
-        scale_factor = r_earth * r_earth;
-      }
+      // No value conversion needed:
+      // - lat/lon are already in degrees (from Fortran), just mislabeled as "rad"
+      // - area stays in steradians (sr) to maintain BFB compatibility
+      //   (converting to m² would be CF-compliant but breaks BFB tests)
 
       if (m_transpose) {
         const auto& id = f_out.get_header().get_identifier();
@@ -658,25 +652,12 @@ run (const std::string& filename,
         const std::string helper_name = get_transposed_helper_name(layout, data_type);
         auto& temp = m_helper_fields.at(helper_name);
         transpose(f_out,temp);
-        if (scale_factor != 1.0) {
-          temp.scale(scale_factor);
-        }
         temp.sync_to_host();
         scorpio::write_var(filename,field_name,temp.get_internal_view_data<Real,Host>());
       } else {
         // Bring data to host (only needed for non-transposed output)
         f_out.sync_to_host();
-        if (scale_factor != 1.0) {
-          // Create temporary scaled copy for writing
-          auto data_view = f_out.get_view<Real*,Host>();
-          std::vector<Real> scaled_data(data_view.size());
-          for (size_t i = 0; i < data_view.size(); ++i) {
-            scaled_data[i] = data_view(i) * scale_factor;
-          }
-          scorpio::write_var(filename,field_name,scaled_data.data());
-        } else {
-          scorpio::write_var(filename,field_name,f_out.get_internal_view_data<Real,Host>());
-        }
+        scorpio::write_var(filename,field_name,f_out.get_internal_view_data<Real,Host>());
       }
       auto func_finish = std::chrono::steady_clock::now();
       auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
@@ -817,13 +798,11 @@ register_variables(const std::string& filename,
 
     // CF compliance: Fix unit labels for output
     // NOTE: lat/lon VALUES are already in degrees (from Fortran), just mislabeled as "rad"
-    // area VALUES are in steradians, will be converted to m² during write
+    // area stays in steradians for BFB compatibility (units="sr", no standard_name)
     if (field_name == "lat") {
       units = "degrees_north";
     } else if (field_name == "lon") {
       units = "degrees_east";
-    } else if (field_name == "area") {
-      units = "m2";
     }
 
     // Get standard name for CF compliance checks
