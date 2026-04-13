@@ -259,7 +259,7 @@ macro(build_model COMP_CLASS COMP_NAME)
 
     # Make sure we link blas/lapack
     if (NOT DEFINED ENV{SKIP_BLAS})
-      target_link_libraries(${TARGET_NAME} BLAS::BLAS LAPACK::LAPACK)
+      target_link_libraries(${TARGET_NAME} LAPACK::LAPACK)
     endif()
 
     if (E3SM_LINK_WITH_FORTRAN)

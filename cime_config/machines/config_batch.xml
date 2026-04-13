@@ -214,10 +214,8 @@
     </submit_args>
     <directives>
       <directive> -N {{ job_id }}</directive>
-      <directive> -l select={{ num_nodes }} </directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
       <directive> -j oe </directive>
-      <directive> -V </directive>
     </directives>
   </batch_system>
 
@@ -391,15 +389,18 @@
       </queues>
     </batch_system>
 
-    <batch_system MACH="bebop" type="slurm" >
-      <queues>
-	<queue walltimemax="00:30:00" nodemax="64" strict="true">debug</queue>
-        <queue walltimemax="01:00:00" nodemax="608" default="true">bdw</queue>
-        <queue walltimemax="01:00:00" nodemax="512">knl</queue>
-      </queues>
-    </batch_system>
+  <batch_system MACH="bebop" type="pbspro">
+    <jobid_pattern>(\d+)\.bebopmgt*</jobid_pattern>
+    <directives>
+      <directive> -l select={{ num_nodes }}:mpiprocs={{ tasks_per_node }} </directive>
+    </directives>
+    <queues>
+      <queue walltimemax="03:00:00" nodemin="1" nodemax="672" strict="true" default="true">bdwall</queue>
+    </queues>
+  </batch_system>
 
   <batch_system MACH="improv" type="pbspro">
+    <jobid_pattern>(\d+)\.imgt*</jobid_pattern>
     <directives>
       <directive> -l select={{ num_nodes }}:mpiprocs={{ tasks_per_node }} </directive>
     </directives>
@@ -571,6 +572,7 @@
       <batch_submit>/lus/flare/projects/E3SMinput/tools/qsub/throttle</batch_submit>
       <jobid_pattern>(\d+)\.aurora-pbs</jobid_pattern>
       <directives>
+        <directive> -l select={{ num_nodes }} </directive>
         <directive> -l filesystems=home:flare </directive>
       </directives>
       <queues>
@@ -585,6 +587,7 @@
       <batch_submit>/grand/E3SMinput/soft/qsub/throttle</batch_submit>
       <jobid_pattern>(\d+)\.polaris-pbs</jobid_pattern>
       <directives>
+        <directive> -l select={{ num_nodes }} </directive>
         <directive> -l filesystems=home:grand:eagle </directive>
       </directives>
       <queues>
@@ -600,6 +603,7 @@
       <batch_submit>/grand/E3SMinput/soft/qsub/throttle</batch_submit>
       <jobid_pattern>(\d+)\.crux-pbs</jobid_pattern>
       <directives>
+        <directive> -l select={{ num_nodes }} </directive>
         <directive> -l filesystems=home:grand:eagle </directive>
       </directives>
       <queues>
