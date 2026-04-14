@@ -154,8 +154,8 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
 
   //----------------------------------------------------------------------------
   // specify maximum fractional entrainment
+  lambda_max = lambda_tmp(j0);
   Kokkos::single(Kokkos::PerTeam(team), [&] {
-    lambda_max = lambda_tmp(j0);
     lambda(jb) = lambda_max;
   });
   team.team_barrier();

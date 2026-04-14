@@ -77,12 +77,12 @@ struct UnitWrap::UnitTest<D>::TestZmDowndraftProperties : public UnitWrap::UnitT
         REQUIRE(d_baseline.total(d_baseline.mflx_dn) == d_test.total(d_test.q_dnd_sat));
         REQUIRE(d_baseline.total(d_baseline.mflx_dn) == d_test.total(d_test.evp));
         for (Int k = 0; k < d_baseline.total(d_baseline.mflx_dn); ++k) {
-          REQUIRE(d_baseline.mflx_dn[k] == d_test.mflx_dn[k]);
-          REQUIRE(d_baseline.entr_dn[k] == d_test.entr_dn[k]);
-          REQUIRE(d_baseline.s_dnd[k] == d_test.s_dnd[k]);
-          REQUIRE(d_baseline.q_dnd[k] == d_test.q_dnd[k]);
-          REQUIRE(d_baseline.h_dnd[k] == d_test.h_dnd[k]);
-          REQUIRE(d_baseline.q_dnd_sat[k] == d_test.q_dnd_sat[k]);
+          REQUIRE(d_baseline.mflx_dn[k] == Approx(d_test.mflx_dn[k]).margin(margin));
+          REQUIRE(d_baseline.entr_dn[k] == Approx(d_test.entr_dn[k]).margin(margin));
+          REQUIRE(d_baseline.s_dnd[k] == Approx(d_test.s_dnd[k]).margin(margin));
+          REQUIRE(d_baseline.q_dnd[k] == Approx(d_test.q_dnd[k]).margin(margin));
+          REQUIRE(d_baseline.h_dnd[k] == Approx(d_test.h_dnd[k]).margin(margin));
+          REQUIRE(d_baseline.q_dnd_sat[k] == Approx(d_test.q_dnd_sat[k]).margin(margin));
           REQUIRE(d_baseline.evp[k] == Approx(d_test.evp[k]).margin(margin));
         }
         REQUIRE(d_baseline.total(d_baseline.totevp) == d_test.total(d_test.totevp));

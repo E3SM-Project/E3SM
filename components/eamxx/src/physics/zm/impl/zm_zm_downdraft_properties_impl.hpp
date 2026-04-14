@@ -81,11 +81,9 @@ void Functions<S,D>::zm_downdraft_properties(
   });
   team.team_barrier();
 
-  Kokkos::single(Kokkos::PerTeam(team), [&]() {
-    if (lambda_max > 0 && jd < jb) {
-      ratmjb = ekat::impl::min(std::abs(mflx_up(jb) / mflx_dn(jb)), Real(1));
-    }
-  });
+  if (lambda_max > 0 && jd < jb) {
+    ratmjb = ekat::impl::min(std::abs(mflx_up(jb) / mflx_dn(jb)), Real(1));
+  }
   team.team_barrier();
 
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg, pver), [&](const Int& k) {

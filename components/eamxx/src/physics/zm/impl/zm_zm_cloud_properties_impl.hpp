@@ -77,20 +77,12 @@ void Functions<S,D>::zm_cloud_properties(
      &gamhat, &q_dnd_sat, &lambda, &fice, &tug, &tmp_frz, &pflxs});
 
   // Scalar locals (captured by reference in Kokkos lambdas)
-  Real c0mask = 0, totpcp = 0, totevp = 0, h_env_min = 0, lambda_max = 0, tot_frz = 0;
-  Int  jto = 0, khighest = 0, klowest = 0, kount = 0;
+  Real c0mask = 0, totpcp = 0, totevp = 0, h_env_min = 1.e6, lambda_max = 0, tot_frz = 0;
+  Int  khighest = 0, klowest = 0;
+  j0 = msg;
 
-  // Initialize scalar parameters (serial)
-  Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    totpcp  = 0;
-    totevp  = 0;
-    // Land/ocean blend of autoconversion coefficient
-    c0mask  = runtime_opt.c0_ocn * (1 - landfrac) + runtime_opt.c0_lnd * landfrac;
-    h_env_min  = 1.e6;
-    lambda_max = 0;
-    tot_frz    = 0;
-    j0         = msg;
-  });
+  // Land/ocean blend of autoconversion coefficient
+  c0mask = runtime_opt.c0_ocn * (1 - landfrac) + runtime_opt.c0_lnd * landfrac;
 
   // =========================================================================
   // 1. Initialize 2D variables (each k independent)
@@ -168,15 +160,13 @@ void Functions<S,D>::zm_cloud_properties(
   // =========================================================================
   // 3. Initialize jt, jd, jlcl; find j0 (level of min saturated MSE)
   // =========================================================================
+  // Initial cloud top estimate: at least one level below the convection limit
   Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    // Initial cloud top estimate: at least one level below the convection limit
     jt   = ekat::impl::max(lel, limcnv + 1);
     jt   = ekat::impl::min(jt,  pver - 1);
     jd   = pver - 1;
     jlcl = lel;
-    h_env_min = 1.e6;
   });
-  team.team_barrier();
 
   // Find level of minimum h_env_sat between jt and jb (detrainment onset level)
   using ValLocType = Kokkos::ValLocScalar<Real, Int>;
@@ -194,7 +184,6 @@ void Functions<S,D>::zm_cloud_properties(
 
   Kokkos::single(Kokkos::PerTeam(team), [&] () {
     if (j0_result.val < h_env_min) {
-      h_env_min = j0_result.val;
       j0 = j0_result.loc;
     }
     // Constrain j0 to a physically valid detrainment range
@@ -202,7 +191,10 @@ void Functions<S,D>::zm_cloud_properties(
     j0 = ekat::impl::max(j0, jt + 2);
     j0 = ekat::impl::min(j0, pver - 1);
   });
-  team.team_barrier();
+
+  if (j0_result.val < h_env_min) {
+    h_env_min = j0_result.val;
+  }
 
   // =========================================================================
   // 4. Initialize updraft MSE with PBL temperature perturbation (each k independent)
@@ -271,9 +263,9 @@ void Functions<S,D>::zm_cloud_properties(
   // 6c. Update updraft MSE profile from cloud base upward
   //     (serial: h_upd(k) depends on h_upd(k+1) from previous iteration)
   // =========================================================================
+  khighest = lel;
+  klowest  = jb;
   Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    khighest = lel;
-    klowest  = jb;
     for (Int k = klowest - 1; k >= khighest; --k) {
       if (k <= jb - 1 && k >= lel && lambda_max > 0) {
         if (mflx_up(k) < ZMC::mu_min) {
@@ -327,8 +319,6 @@ void Functions<S,D>::zm_cloud_properties(
         }
       }
     }
-    // Save cloud top from this (only) iteration
-    jto = jt;
   });
   team.team_barrier();
 
@@ -361,7 +351,6 @@ void Functions<S,D>::zm_cloud_properties(
   // =========================================================================
   Kokkos::single(Kokkos::PerTeam(team), [&] () {
     bool done = false;
-    kount = 0;
     for (Int k = pver - 1; k >= msg + 1; --k) {
       // Initialize s_upd, q_upd at cloud base from h_upd
       if (k == jb && lambda_max > 0) {
@@ -385,7 +374,6 @@ void Functions<S,D>::zm_cloud_properties(
         // LCL is the highest level where updraft is just saturated on ascent
         if (q_upd(k) >= qstu) {
           jlcl = k;
-          ++kount;
           done = true;  // Fortran equivalent: goto 690
         }
       }
@@ -425,8 +413,8 @@ void Functions<S,D>::zm_cloud_properties(
   // 6j. Liquid water budget, rain production, total precipitation
   //     (serial: ql(k) depends on ql(k+1) from level below)
   // =========================================================================
-  Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    totpcp = 0;
+  Kokkos::single(Kokkos::PerTeam(team), [&] (Real& val) {
+    Real return_val = 0;
     for (Int k = pver - 1; k >= msg + 1; --k) {
       rprd(k) = 0;
       if (k >= jt && k < jb && lambda_max > 0 && mflx_up(k) >= 0) {
@@ -441,12 +429,13 @@ void Functions<S,D>::zm_cloud_properties(
           ql(k) = 0;
         }
         // Net column precipitation = condensation minus detrained liquid
-        totpcp += dz(k) * (cu(k) - detr_up(k)*ql(k+1));
+        return_val += dz(k) * (cu(k) - detr_up(k)*ql(k+1));
         // Rain production rate by autoconversion
         rprd(k) = c0mask * mflx_up(k) * ql(k);
       }
     }
-  });
+    val = return_val;
+  }, totpcp);
   team.team_barrier();
 
   // =========================================================================
@@ -464,11 +453,8 @@ void Functions<S,D>::zm_cloud_properties(
   // =========================================================================
   // 8. Scale downdraft by precipitation availability - see eq (4.106)
   // =========================================================================
-  Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    totpcp = ekat::impl::max(Real(0), totpcp);
-    totevp = ekat::impl::max(Real(0), totevp);
-  });
-  team.team_barrier();
+  totpcp = ekat::impl::max(Real(0), totpcp);
+  totevp = ekat::impl::max(Real(0), totevp);
 
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg + 1, pver), [&] (const Int& k) {
     if (totevp > 0 && totpcp > 0) {
