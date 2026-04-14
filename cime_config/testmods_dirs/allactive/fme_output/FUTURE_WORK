@@ -1,6 +1,6 @@
 FME Online Output Processing — Future Work
 ============================================
-Updated: 2026-04-04 (ALL CHECKS PASSED)
+Updated: 2026-04-14 (reconciliation complete)
 
 ========================================================================
 PRIORITY 1: Testmod and verification expansion
@@ -68,7 +68,8 @@ PRIORITY 3: Extensions
 10. SHARED MODULE ROBUSTNESS
     - MPI error return code checks in shr_horiz_remap_mod
     - PIO offset overflow guard for very large grids
-    - shr_vcoarsen_mod: bounds monotonicity validation
+    - [DONE] shr_vcoarsen_mod: bounds monotonicity doc + declaration order
+    - [DONE] shr_derived_mod: d/D exponent markers + . before exponent
     - shr_derived_mod: reject empty operand tokens at parse time
 
 11. PERFORMANCE

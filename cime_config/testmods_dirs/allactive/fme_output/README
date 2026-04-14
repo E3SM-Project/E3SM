@@ -31,9 +31,9 @@ Run from the repo root. Requires micromamba env with xarray, matplotlib, cartopy
 
   # MPAS-Ocean and MPAS-SeaIce verification
   micromamba run -n xgns python \
-    /pscratch/sd/m/mahf708/e3sm-repo/mahf708-e3sm/cime_config/testmods_dirs/allactive/fme_output/verify_mpas.py \
+    cime_config/testmods_dirs/allactive/fme_output/verify_mpas.py \
     --rundir /path/to/fme_output_case/run \
-    --outdir /pscratch/sd/m/mahf708/aifigs_v3LRpiControlSamudrACE
+    --outdir /path/to/output_figs
 
 Dashboards are written to:
   <outdir>/verify_eam.html
