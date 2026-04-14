@@ -236,12 +236,14 @@ contains
       if (allocated(send_gcol_list)) deallocate(send_gcol_list)
       if (allocated(gcol_to_ocean_col)) deallocate(gcol_to_ocean_col)
 
-      ! Validate: all send_local_cell entries must be > 0
+      ! Validate that all needed source cells were found locally.
       do i = 1, remap_data%n_send_total
-         if (send_local_cell(i) <= 0) then
-            call mpas_log_write('seaice_fme_horiz_remap_init: WARNING send_local_cell($i)=0', &
-                 intArgs=(/i/), messageType=MPAS_LOG_WARN)
-            send_local_cell(i) = 1
+         if (send_local_cell(i) == 0) then
+            call mpas_log_write('seaice_fme_horiz_remap_init: FATAL - source cell $i ' // &
+                 'not found in local blocks. Map file may be incompatible with mesh.', &
+                 messageType=MPAS_LOG_CRIT, intArgs=(/i/))
+            err = 1
+            return
          end if
       end do
 
@@ -387,6 +389,7 @@ contains
                  real(fld_out(1:remap_data%n_b_local), 4)
             call pio_write_darray(pio_file, pio_var_descs(iv), iodesc_2d, &
                  fld_out_r4, ierr)
+            err = ierr
             return
          end if
       end do

@@ -12,9 +12,11 @@ module shr_vcoarsen_mod
   ! dependencies. Each component provides a thin wrapper that builds the
   ! coordinate arrays from its own data structures and calls these routines.
   !
-  ! The overlap-weighted averaging algorithm works for any monotonic vertical
-  ! coordinate (pressure, depth, etc.) as long as coord_iface and bounds use
-  ! the same convention (both increasing or both decreasing).
+  ! The overlap-weighted averaging algorithm requires monotonically INCREASING
+  ! coordinates: coord_iface(k) < coord_iface(k+1) and bounds(j) < bounds(j+1).
+  ! This covers pressure (Pa, increasing downward from TOA) and depth (m,
+  ! increasing downward from surface).  The overlap formula
+  ! max(0, min(c_hi,b_hi) - max(c_lo,b_lo)) assumes c_lo < c_hi and b_lo < b_hi.
   !
   !-------------------------------------------------------------------------------------------
 
@@ -59,10 +61,10 @@ contains
     ! For land: coord_iface = soil depth interfaces (m), bounds = depth bounds
     !--------------------------------------------------------------------------
     integer,  intent(in)  :: nlev              ! number of input vertical levels
+    integer,  intent(in)  :: n_out             ! number of output layers
     real(r8), intent(in)  :: field(nlev)       ! input field values
     real(r8), intent(in)  :: coord_iface(nlev+1) ! interface coordinates
     real(r8), intent(in)  :: bounds(n_out+1)   ! target layer boundaries
-    integer,  intent(in)  :: n_out             ! number of output layers
     real(r8), intent(in)  :: fillval           ! fill value for empty layers
     real(r8), intent(out) :: field_out(n_out)  ! output coarsened values
 
@@ -116,10 +118,10 @@ contains
     !--------------------------------------------------------------------------
     integer,  intent(in)  :: ncol                      ! number of columns
     integer,  intent(in)  :: nlev                      ! number of input levels
+    integer,  intent(in)  :: n_out                     ! number of output layers
     real(r8), intent(in)  :: field(ncol, nlev)         ! input field values
     real(r8), intent(in)  :: coord_iface(ncol, nlev+1) ! interface coordinates
     real(r8), intent(in)  :: bounds(n_out+1)           ! target layer boundaries
-    integer,  intent(in)  :: n_out                     ! number of output layers
     real(r8), intent(in)  :: fillval                   ! fill value for empty layers
     real(r8), intent(out) :: field_out(ncol, n_out)    ! output coarsened values
 
