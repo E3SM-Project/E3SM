@@ -120,8 +120,6 @@ Example: `FME_EAM_OUTPUT_HOURS=24 FME_MPAS_INTERVAL=00-00-05_00:00:00 ./create_t
 - Add CI test variant (SMS_Ld2, ne4pg2_oQU480 for fast builds)
 - Add ERS restart test and PEM MPI reproducibility test
 - Parameterize map file paths via env variables in shell_commands
-- xtime coordinate variable in remapped output (needs StrLen PIO dimension)
-- time_bnds variable for CF-compliant time bounds
 
 ### Code quality
 - 3D PIO decomposition for depth-coarsened fields (single 3D var instead of

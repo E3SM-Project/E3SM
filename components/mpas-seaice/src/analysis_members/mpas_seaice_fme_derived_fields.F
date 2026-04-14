@@ -393,6 +393,7 @@ contains
       real(r8), allocatable :: fld_remap(:)
       integer :: ierr_remap
       type(MPAS_Time_Type) :: currTime
+      character(len=StrKIND) :: timeStr
 
       real(kind=RKIND) :: &
            areaSum, &
@@ -515,9 +516,10 @@ contains
                ! Check if output interval elapsed
                currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr_remap)
                if (currTime - avg_last_output_time >= avg_output_interval) then
+                  call mpas_get_time(currTime, dateTimeString=timeStr)
                   call seaice_fme_horiz_remap_check_rotate(domain, ierr_remap)
                   if (file_is_open) then
-                     call seaice_fme_horiz_remap_write_time('', ierr_remap)
+                     call seaice_fme_horiz_remap_write_time(trim(timeStr), ierr_remap)
                      call write_avg_field('iceAreaTotal', 1)
                      call write_avg_field('iceVolumeTotal', 2)
                      call write_avg_field('snowVolumeTotal', 3)
@@ -532,9 +534,11 @@ contains
                end if
             else
                ! Instantaneous: write immediately
+               currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr_remap)
+               call mpas_get_time(currTime, dateTimeString=timeStr)
                call seaice_fme_horiz_remap_check_rotate(domain, ierr_remap)
                if (file_is_open) then
-                  call seaice_fme_horiz_remap_write_time('', ierr_remap)
+                  call seaice_fme_horiz_remap_write_time(trim(timeStr), ierr_remap)
                   call write_inst_field('iceAreaTotal')
                   call write_inst_field('iceVolumeTotal')
                   call write_inst_field('snowVolumeTotal')

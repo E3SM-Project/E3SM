@@ -506,9 +506,10 @@ contains
                ! Check if output interval elapsed
                currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
                if (currTime - avg_last_output_time >= avg_output_interval) then
+                  call mpas_get_time(currTime, dateTimeString=timeStr)
                   call remap_outfile%check_rotate(domain, ierr)
                   if (remap_outfile%file_is_open) then
-                     call remap_outfile%write_time('', ierr)
+                     call remap_outfile%write_time(trim(timeStr), ierr)
 
                      do ifld = 1, nCoarsenFields
                         do kOut = 0, nCoarsenLevels - 1

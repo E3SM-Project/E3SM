@@ -78,7 +78,8 @@ module seaice_fme_horiz_remap
    integer :: n_pio_vars = 0
    character(len=64) :: pio_var_names(max_pio_vars)
    type(var_desc_t) :: pio_var_descs(max_pio_vars)
-   type(var_desc_t) :: pio_lon_var, pio_lat_var
+   type(var_desc_t) :: pio_lon_var, pio_lat_var, pio_xtime_var
+   integer :: dim_strlen_id = 0
 
    ! Stored var metadata for replay on rotation
    integer :: n_registered_vars = 0
@@ -326,6 +327,7 @@ contains
       ierr = pio_def_dim(pio_file, 'lon', remap_data%nlon, dim_lon_id)
       ierr = pio_def_dim(pio_file, 'lat', remap_data%nlat, dim_lat_id)
       ierr = pio_def_dim(pio_file, 'Time', PIO_UNLIMITED, dim_time_id)
+      ierr = pio_def_dim(pio_file, 'StrLen', 64, dim_strlen_id)
 
       ! Define coordinate variables; descriptors saved at module scope for write_time
       ierr = pio_def_var(pio_file, 'lon', PIO_DOUBLE, (/dim_lon_id/), pio_lon_var)
@@ -336,6 +338,10 @@ contains
       ierr = pio_put_att(pio_file, pio_lat_var, 'units', 'degrees_north')
       ierr = pio_put_att(pio_file, pio_lat_var, 'long_name', 'latitude')
       ierr = pio_put_att(pio_file, pio_lat_var, 'axis', 'Y')
+
+      ierr = pio_def_var(pio_file, 'xtime', PIO_CHAR, &
+           (/dim_strlen_id, dim_time_id/), pio_xtime_var)
+      ierr = pio_put_att(pio_file, pio_xtime_var, 'long_name', 'model time')
 
       ierr = pio_put_att(pio_file, PIO_GLOBAL, 'source', 'E3SM FME online remapping')
       ierr = pio_put_att(pio_file, PIO_GLOBAL, 'Conventions', 'CF-1.8')
@@ -403,15 +409,22 @@ contains
       character(len=*), intent(in) :: time_str
       integer, intent(out) :: err
       integer :: ierr
+      character(len=64) :: xtime_buf
 
       err = 0
       if (time_record == 0) then
          ierr = pio_enddef(pio_file)
-         ! Write lat/lon coordinate variables using module-level var descriptors
          ierr = pio_put_var(pio_file, pio_lon_var, remap_data%lon(1:remap_data%nlon))
          ierr = pio_put_var(pio_file, pio_lat_var, remap_data%lat(1:remap_data%nlat))
       end if
       time_record = time_record + 1
+
+      ! Write xtime string for this record
+      xtime_buf = ' '
+      xtime_buf(1:min(len_trim(time_str), 64)) = &
+           time_str(1:min(len_trim(time_str), 64))
+      ierr = pio_put_var(pio_file, pio_xtime_var, &
+           (/1, time_record/), (/64, 1/), xtime_buf)
    end subroutine seaice_fme_horiz_remap_write_time!}}}
 
    subroutine seaice_fme_horiz_remap_close_file(err)!{{{
