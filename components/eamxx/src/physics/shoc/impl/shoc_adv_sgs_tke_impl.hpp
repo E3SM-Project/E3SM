@@ -63,7 +63,7 @@ void Functions<S,D>
 
     // Shear production term, use diffusivity from previous timestep
     if (do_3d_turb){
-      a_prod_sh = tk(k)*strain2(k);
+      a_prod_sh = Ck*tk(k)*strain2(k);
     }
     else{
       a_prod_sh = tk(k)*sterm_zt(k);
