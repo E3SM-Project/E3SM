@@ -10,8 +10,6 @@
 #include <ekat_assert.hpp>
 #include <ekat_units.hpp>
 
-#include <array>
-
 namespace scream
 {
 // =========================================================================================
@@ -139,6 +137,55 @@ void Cosp::initialize_impl (const RunType /* run_type */)
     f.set_valid_mask(masks.at(field_name));
     f.get_header().set_may_be_filled(true);
   }
+
+  using namespace ekat::units;
+
+  // Add COSP dimension coordinate variables and their bounds as geometry data.
+  // Values come directly from the COSP simulator (mod_cosp_config) via the F90 interface.
+
+  // Layouts for 1D coordinate variables
+  FieldLayout cosp_tau_layout ({CMP}, {m_num_tau}, {"cosp_tau"});
+  FieldLayout cosp_prs_layout ({CMP}, {m_num_ctp}, {"cosp_prs"});
+  FieldLayout cosp_cth_layout ({CMP}, {m_num_cth}, {"cosp_cth"});
+  // Layouts for 2D bounds variables (dim x 2)
+  FieldLayout cosp_tau_bnds_layout ({CMP,CMP}, {m_num_tau,2}, {"cosp_tau","nbnd"});
+  FieldLayout cosp_prs_bnds_layout ({CMP,CMP}, {m_num_ctp,2}, {"cosp_prs","nbnd"});
+  FieldLayout cosp_cth_bnds_layout ({CMP,CMP}, {m_num_cth,2}, {"cosp_cth","nbnd"});
+
+  auto cosp_tau_f      = m_grid->create_geometry_data("cosp_tau",      cosp_tau_layout,     nondim);
+  auto cosp_prs_f      = m_grid->create_geometry_data("cosp_prs",      cosp_prs_layout,     Pa);
+  auto cosp_cth_f      = m_grid->create_geometry_data("cosp_cth",      cosp_cth_layout,     m);
+  auto cosp_tau_bnds_f = m_grid->create_geometry_data("cosp_tau_bnds", cosp_tau_bnds_layout, nondim);
+  auto cosp_prs_bnds_f = m_grid->create_geometry_data("cosp_prs_bnds", cosp_prs_bnds_layout, Pa);
+  auto cosp_cth_bnds_f = m_grid->create_geometry_data("cosp_cth_bnds", cosp_cth_bnds_layout, m);
+
+  // Retrieve bin centers and edges from the Fortran COSP interface (mod_cosp_config).
+  // The F90 arrays for edges have shape (2, nbins) in Fortran column-major order, so the
+  // flat memory layout is [lower_0, upper_0, lower_1, upper_1, ...], which maps directly
+  // onto the (nbins, 2) host views below.
+  auto tau_h      = cosp_tau_f.get_view<Real*,Host>();
+  auto tau_bnds_h = cosp_tau_bnds_f.get_view<Real**,Host>();
+  auto prs_h      = cosp_prs_f.get_view<Real*,Host>();
+  auto prs_bnds_h = cosp_prs_bnds_f.get_view<Real**,Host>();
+  auto cth_h      = cosp_cth_f.get_view<Real*,Host>();
+  auto cth_bnds_h = cosp_cth_bnds_f.get_view<Real**,Host>();
+
+  cosp_c2f_get_bins(tau_h.data(), tau_bnds_h.data(),
+                    prs_h.data(), prs_bnds_h.data(),
+                    cth_h.data(), cth_bnds_h.data());
+
+  cosp_tau_f.sync_to_dev();
+  cosp_tau_bnds_f.sync_to_dev();
+  cosp_prs_f.sync_to_dev();
+  cosp_prs_bnds_f.sync_to_dev();
+  cosp_cth_f.sync_to_dev();
+  cosp_cth_bnds_f.sync_to_dev();
+
+  // Set "bounds" CF attribute on each coordinate variable to link to its bounds variable
+  using stratts_t = std::map<std::string,std::string>;
+  cosp_tau_f.get_header().get_extra_data<stratts_t>("io: string attributes")["bounds"] = "cosp_tau_bnds";
+  cosp_prs_f.get_header().get_extra_data<stratts_t>("io: string attributes")["bounds"] = "cosp_prs_bnds";
+  cosp_cth_f.get_header().get_extra_data<stratts_t>("io: string attributes")["bounds"] = "cosp_cth_bnds";
 }
 
 // =========================================================================================
