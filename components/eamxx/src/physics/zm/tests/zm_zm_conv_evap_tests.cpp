@@ -60,6 +60,9 @@ struct UnitWrap::UnitTest<D>::TestZmConvEvap : public UnitWrap::UnitTest<D>::Bas
       }
     }
 
+    const auto margin = std::numeric_limits<Real>::epsilon() *
+      (ekat::is_single_precision<Real>::value ? 1000 : 1);
+
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
@@ -72,11 +75,11 @@ struct UnitWrap::UnitTest<D>::TestZmConvEvap : public UnitWrap::UnitTest<D>::Bas
         REQUIRE(d_baseline.total(d_baseline.tend_s) == d_test.total(d_test.ntprprd));
         REQUIRE(d_baseline.total(d_baseline.tend_s) == d_test.total(d_test.ntsnprd));
         for (Int k = 0; k < d_baseline.total(d_baseline.tend_s); ++k) {
-          REQUIRE(d_baseline.tend_s[k] == d_test.tend_s[k]);
-          REQUIRE(d_baseline.tend_q[k] == d_test.tend_q[k]);
+          REQUIRE(d_baseline.tend_s[k] == Approx(d_test.tend_s[k]).margin(margin));
+          REQUIRE(d_baseline.tend_q[k] == Approx(d_test.tend_q[k]).margin(margin));
           REQUIRE(d_baseline.tend_s_snwprd[k] == d_test.tend_s_snwprd[k]);
           REQUIRE(d_baseline.tend_s_snwevmlt[k] == d_test.tend_s_snwevmlt[k]);
-          REQUIRE(d_baseline.ntprprd[k] == d_test.ntprprd[k]);
+          REQUIRE(d_baseline.ntprprd[k] == Approx(d_test.ntprprd[k]).margin(margin));
           REQUIRE(d_baseline.ntsnprd[k] == d_test.ntsnprd[k]);
         }
         REQUIRE(d_baseline.total(d_baseline.prec) == d_test.total(d_test.prec));

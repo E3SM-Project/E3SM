@@ -56,6 +56,8 @@ void Functions<S,D>::zm_transport_tracer(
     edtmp(edtmp1d.data(), ncnst, pver),
     dptmp(dptmp1d.data(), ncnst, pver);
 
+  constexpr Real small = ZMC::small;
+
   // Parallel loop over each constituent (skip water vapor at m=0)
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 1, ncnst), [&] (const Int& m) {
     if (!doconvtran(m)) return;
@@ -93,7 +95,7 @@ void Functions<S,D>::zm_transport_tracer(
       if (minc < 0) {
         cdifr = 0;
       } else {
-        cdifr = std::abs(const_arr(m, k) - const_arr(m, km1)) / ekat::impl::max(maxc, ZMC::small);
+        cdifr = std::abs(const_arr(m, k) - const_arr(m, km1)) / ekat::impl::max(maxc, small);
       }
 
       // If the two layers differ significantly use a geometric averaging

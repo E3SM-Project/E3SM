@@ -62,6 +62,9 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   });
   team.team_barrier();
 
+  constexpr Real lambda_limit_min = ZMC::lambda_limit_min;
+  constexpr Real lambda_limit_max = ZMC::lambda_limit_max;
+
   //----------------------------------------------------------------------------
   // re-initialize minimum MSE for ensuing calculation
   Kokkos::single(Kokkos::PerTeam(team), [&] {
@@ -120,8 +123,8 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
           (2*i2(k)*i2(k) - k1(k)*i3(k))/(k1(k)*k1(k)) * tmp*tmp*tmp +
           (-5*k1(k)*i2(k)*i3(k) + 5*i2(k)*i2(k)*i2(k) + k1(k)*k1(k)*i4(k))/
           (k1(k)*k1(k)*k1(k)) * tmp*tmp*tmp*tmp;
-        lambda_tmp(k) = ekat::impl::max(lambda_tmp(k), ZMC::lambda_limit_min);
-        lambda_tmp(k) = ekat::impl::min(lambda_tmp(k), ZMC::lambda_limit_max);
+        lambda_tmp(k) = ekat::impl::max(lambda_tmp(k), lambda_limit_min);
+        lambda_tmp(k) = ekat::impl::min(lambda_tmp(k), lambda_limit_max);
       }
     }
   });

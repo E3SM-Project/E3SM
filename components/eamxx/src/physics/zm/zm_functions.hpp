@@ -496,7 +496,9 @@ struct Functions {
     Real& qs)         // Saturation mass mixing ratio [kg/kg] (vapor mass over dry mass)
   {
     constexpr Real mmin = 0.0;
-    const Real t_tmp = Kokkos::max(Kokkos::min(t,ZMC::tmax)-ZMC::tmin, mmin);     // Number of table entries above tmin
+    constexpr Real tmin = ZMC::tmin;
+    constexpr Real tmax = ZMC::tmax;
+    const Real t_tmp = Kokkos::max(Kokkos::min(t, tmax) - tmin, mmin);     // Number of table entries above tmin
     const Int i = int(t_tmp);                        // Corresponding index.
     const Real weight = t_tmp - Kokkos::trunc(t_tmp);// Fractional part of t_tmp (for interpolation).
     es = (1 - weight)*runtime_opt.estbl(i) + weight*runtime_opt.estbl(i+1);

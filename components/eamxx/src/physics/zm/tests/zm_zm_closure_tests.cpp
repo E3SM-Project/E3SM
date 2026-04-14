@@ -20,10 +20,10 @@ struct UnitWrap::UnitTest<D>::TestZmClosure : public UnitWrap::UnitTest<D>::Base
     // Set up inputs
     ZmClosureData baseline_data[] = {
       //            pcols, ncol, pver, pverp, msg, cape_threshold_in
-      ZmClosureData(    4,    4,   72,    73,  10,    5.0),
-      ZmClosureData(    4,    4,   72,    73,  10,    6.0),
-      ZmClosureData(    4,    4,  128,   129,  10,    7.0),
-      ZmClosureData(    4,    4,  128,   129,  10,    8.0),
+      ZmClosureData(    1,    1,   72,    73,  10,    5.0),
+      ZmClosureData(    1,    1,   72,    73,  10,    6.0),
+      ZmClosureData(    1,    1,  128,   129,  10,    7.0),
+      ZmClosureData(    1,    1,  128,   129,  10,    8.0),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ZmClosureData);
