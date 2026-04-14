@@ -126,13 +126,15 @@ contains
       i = start_pos
       do while (i <= rhs_len)
         ch = rhs(i:i)
-        ! Skip if this could be part of scientific notation (e.g., 1.5e-3)
+        ! Skip if this could be part of scientific notation (e.g., 1.5e-3, 1.e+2, 1.0d3)
         if ((ch == '+' .or. ch == '-') .and. i > start_pos) then
-          ! Check if preceded by 'e' or 'E' (scientific notation)
-          if (rhs(i-1:i-1) == 'e' .or. rhs(i-1:i-1) == 'E') then
-            ! Only treat as scientific notation if char before e/E is a digit
+          ! Check if preceded by 'e', 'E', 'd', or 'D' (Fortran exponent marker)
+          if (rhs(i-1:i-1) == 'e' .or. rhs(i-1:i-1) == 'E' .or. &
+              rhs(i-1:i-1) == 'd' .or. rhs(i-1:i-1) == 'D') then
+            ! Treat as scientific notation if char before exponent is a digit or '.'
             if (i > start_pos + 1) then
-              if (rhs(i-2:i-2) >= '0' .and. rhs(i-2:i-2) <= '9') then
+              if ((rhs(i-2:i-2) >= '0' .and. rhs(i-2:i-2) <= '9') .or. &
+                   rhs(i-2:i-2) == '.') then
                 i = i + 1
                 cycle
               end if

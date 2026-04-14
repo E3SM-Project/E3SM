@@ -295,13 +295,16 @@ contains
       if (allocated(send_gcol_list)) deallocate(send_gcol_list)
       if (allocated(gcol_to_ocean_col)) deallocate(gcol_to_ocean_col)
 
-      ! Validate: all send_local_cell entries must be > 0
+      ! Validate that all needed source cells were found locally.
+      ! A zero entry means the map file references a global cell not in any
+      ! local block, which would cause out-of-bounds array access during remap.
       do i = 1, remap_data%n_send_total
-         if (send_local_cell(i) <= 0) then
-            call mpas_log_write('ocn_fme_horiz_remap_init: WARNING send_local_cell($i)=0, ' &
-                 // 'cell not found in local block', intArgs=(/i/), &
-                 messageType=MPAS_LOG_WARN)
-            send_local_cell(i) = 1  ! fallback: use cell 1 to avoid out-of-bounds
+         if (send_local_cell(i) == 0) then
+            call mpas_log_write('ocn_fme_horiz_remap_init: FATAL - source cell $i ' // &
+                 'not found in local blocks. Map file may be incompatible with mesh.', &
+                 messageType=MPAS_LOG_CRIT, intArgs=(/i/))
+            err = 1
+            return
          end if
       end do
 
@@ -541,6 +544,7 @@ contains
                  real(fld_out(1:remap_data%n_b_local, 1), 4)
             call pio_write_darray(self%pio_file, self%pio_var_descs(iv), &
                  iodesc_2d, fld_1d_r4, ierr)
+            err = ierr
             return
          end if
       end do
