@@ -1,0 +1,94 @@
+	<nml_record name="AM_fmeVerticalReduce" mode="forward;analysis">
+		<nml_option name="config_AM_fmeVerticalReduce_enable" type="logical" default_value=".false."
+			description="If true, ocean analysis member fmeVerticalReduce is called."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_fmeVerticalReduce_compute_interval" type="character" default_value="output_interval"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_fmeVerticalReduce_output_stream" type="character" default_value="fmeVerticalReduceOutput"
+			description="Name of the stream that the fmeVerticalReduce analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_fmeVerticalReduce_compute_on_startup" type="logical" default_value=".true."
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_fmeVerticalReduce_write_on_startup" type="logical" default_value=".true."
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_fmeVerticalReduce_fields" type="character" default_value="none"
+			description="Comma-separated field names for generic vertical reduction (user-configurable)."
+			possible_values="Comma-separated list of field names or 'none'"
+		/>
+		<nml_option name="config_AM_fmeVerticalReduce_methods" type="character" default_value="none"
+			description="Comma-separated reduction methods (sum or avg) for each field in fields list."
+			possible_values="Comma-separated list of 'sum' or 'avg' or 'none'"
+		/>
+		<nml_option name="config_AM_fmeVerticalReduce_reference_salinity" type="real" default_value="34.8"
+			description="Reference salinity (PSU) for freshwater content calculation."
+			possible_values="Any positive real number"
+		/>
+		<nml_option name="config_AM_fmeVerticalReduce_horiz_remap_file" type="character" default_value="none"
+			description="Path to ESMF/TempestRemap weight file for horizontal remapping vertically reduced fields to lat-lon grid."
+			possible_values="Any valid file path or 'none'"
+		/>
+		<nml_option name="config_AM_fmeVerticalReduce_stream_output_interval" type="character" default_value="00-00-01_00:00:00"
+			description="Output interval for the fmeVerticalReduce stream. Format: YY-MM-DD_HH:MM:SS"
+			possible_values="Any valid MPAS time interval string"
+		/>
+	</nml_record>
+	<packages>
+		<package name="fmeVerticalReduceAMPKG" description="This package includes variables required for the fmeVerticalReduce analysis member."/>
+	</packages>
+	<var_struct name="fmeVerticalReduceAM" time_levs="1" packages="fmeVerticalReduceAMPKG">
+		<var name="oceanHeatContent" type="real" dimensions="nCells Time" units="J m^-2"
+			description="Column-integrated ocean heat content: sum of T * h * rho_sw * cp_sw"
+		/>
+		<var name="freshwaterContent" type="real" dimensions="nCells Time" units="m"
+			description="Column-integrated freshwater content: sum of (S_ref - S)/S_ref * h"
+		/>
+		<var name="kineticEnergy" type="real" dimensions="nCells Time" units="J m^-2"
+			description="Column-integrated kinetic energy: sum of 0.5*(u^2+v^2)*h*rho_sw"
+		/>
+		<var name="vertReduceField01" type="real" dimensions="nCells Time" units="varies"
+			description="Generic vertical reduction output slot 1 (user-configured via namelist)"
+		/>
+		<var name="vertReduceField02" type="real" dimensions="nCells Time" units="varies"
+			description="Generic vertical reduction output slot 2 (user-configured via namelist)"
+		/>
+		<var name="vertReduceField03" type="real" dimensions="nCells Time" units="varies"
+			description="Generic vertical reduction output slot 3 (user-configured via namelist)"
+		/>
+		<var name="vertReduceField04" type="real" dimensions="nCells Time" units="varies"
+			description="Generic vertical reduction output slot 4 (user-configured via namelist)"
+		/>
+		<var name="vertReduceField05" type="real" dimensions="nCells Time" units="varies"
+			description="Generic vertical reduction output slot 5 (user-configured via namelist)"
+		/>
+	</var_struct>
+	<streams>
+		<!-- output_interval default is daily; override via SourceMods/streams.ocean_forward -->
+		<stream name="fmeVerticalReduceOutput" type="output"
+				mode="forward;analysis"
+				precision="single"
+				filename_template="analysis_members/fmeVerticalReduce.$Y-$M-$D.nc"
+				filename_interval="01-00-00_00:00:00"
+				output_interval="00-00-01_00:00:00"
+				reference_time="0001-01-01_00:00:00"
+				packages="fmeVerticalReduceAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+			<var name="xtime"/>
+			<var name="oceanHeatContent"/>
+			<var name="freshwaterContent"/>
+			<var name="kineticEnergy"/>
+			<var name="vertReduceField01"/>
+			<var name="vertReduceField02"/>
+			<var name="vertReduceField03"/>
+			<var name="vertReduceField04"/>
+			<var name="vertReduceField05"/>
+		</stream>
+	</streams>

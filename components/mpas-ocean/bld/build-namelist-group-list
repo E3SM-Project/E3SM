@@ -83,4 +83,7 @@ my @groups = qw(run_modes
                 am_sedimenttransport
                 am_harmonicanalysis
                 am_conservationcheck
+                am_fmedepthcoarsening
+                am_fmederivedfields
+                am_fmeverticalreduce
                 );

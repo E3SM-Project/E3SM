@@ -55,6 +55,9 @@ module ocn_analysis_driver
    use ocn_sediment_transport
    use ocn_harmonic_analysis
    use ocn_conservation_check
+   use ocn_fme_depth_coarsening
+   use ocn_fme_derived_fields
+   use ocn_fme_vertical_reduce
 !   use ocn_TEM_PLATE
 
    implicit none
@@ -208,6 +211,9 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'sedimentTransport', 1)
       call mpas_pool_add_config(analysisMemberList, 'harmonicAnalysis', 1)
       call mpas_pool_add_config(analysisMemberList, 'conservationCheck', 1)
+      call mpas_pool_add_config(analysisMemberList, 'fmeDepthCoarsening', 1)
+      call mpas_pool_add_config(analysisMemberList, 'fmeDerivedFields', 1)
+      call mpas_pool_add_config(analysisMemberList, 'fmeVerticalReduce', 1)
 !     call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
 
       ! DON'T EDIT BELOW HERE
@@ -1165,6 +1171,12 @@ contains
         call ocn_init_transect_transport(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
          call ocn_init_conservation_check(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeDepthCoarsening' ) then
+         call ocn_init_fme_depth_coarsening(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeDerivedFields' ) then
+         call ocn_init_fme_derived_fields(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeVerticalReduce' ) then
+         call ocn_init_fme_vertical_reduce(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
       end if
@@ -1244,6 +1256,12 @@ contains
         call ocn_init_harmonic_analysis(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
          call ocn_init_conservation_check(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeDepthCoarsening' ) then
+         call ocn_init_fme_depth_coarsening(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeDerivedFields' ) then
+         call ocn_init_fme_derived_fields(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeVerticalReduce' ) then
+         call ocn_init_fme_vertical_reduce(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last
@@ -1379,6 +1397,12 @@ contains
          call ocn_compute_harmonic_analysis(domain, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
          call ocn_compute_conservation_check(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeDepthCoarsening' ) then
+         call ocn_compute_fme_depth_coarsening(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeDerivedFields' ) then
+         call ocn_compute_fme_derived_fields(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeVerticalReduce' ) then
+         call ocn_compute_fme_vertical_reduce(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_compute_TEM_PLATE(domain, timeLevel, err_tmp)
       ! rpn is third to last
@@ -1488,6 +1512,12 @@ contains
         call ocn_restart_harmonic_analysis(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
          call ocn_restart_conservation_check(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeDepthCoarsening' ) then
+         call ocn_restart_fme_depth_coarsening(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeDerivedFields' ) then
+         call ocn_restart_fme_derived_fields(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeVerticalReduce' ) then
+         call ocn_restart_fme_vertical_reduce(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_restart_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last
@@ -1591,6 +1621,12 @@ contains
          call ocn_finalize_harmonic_analysis(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
          call ocn_finalize_conservation_check(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeDepthCoarsening' ) then
+         call ocn_finalize_fme_depth_coarsening(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeDerivedFields' ) then
+         call ocn_finalize_fme_derived_fields(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeVerticalReduce' ) then
+         call ocn_finalize_fme_vertical_reduce(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_finalize_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last

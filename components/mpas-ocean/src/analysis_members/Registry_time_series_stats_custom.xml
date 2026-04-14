@@ -91,18 +91,22 @@
 				runtime_format="single_file">
 
 			<var name="xtime"/>
-			<var_array name="tracersSurfaceValue"/>
-			<var_array name="surfaceVelocity"/>
-			<var_array name="SSHGradient"/>
 			<var name="ssh"/>
-			<var name="normalVelocity"/>
+			<var_array name="activeTracers"/>
 			<var name="velocityZonal"/>
 			<var name="velocityMeridional"/>
-			<var name="vertVelocityTop"/>
-			<var name="normalTransportVelocity"/>
-			<var name="transportVelocityZonal"/>
-			<var name="transportVelocityMeridional"/>
-			<var name="vertTransportVelocityTop"/>
+			<var name="rainFlux"/>
+			<var name="snowFlux"/>
+			<var name="evaporationFlux"/>
+			<var name="totalFreshWaterTemperatureFlux"/>
+			<var name="frazilIceFreshwaterFlux"/>
+			<var name="longWaveHeatFluxDown"/>
+			<var name="evapTemperatureFlux"/>
+			<var name="sensibleHeatFlux"/>
+			<var name="shortWaveHeatFlux"/>
+			<var name="windStressZonal"/>
+			<var name="windStressMeridional"/>
+			<var name="surfaceFrictionVelocity"/>
 		</stream>
 
 		<stream name="timeSeriesStatsCustomRestart"

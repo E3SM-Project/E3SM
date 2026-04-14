@@ -1771,6 +1771,49 @@ add_default($nl, 'config_AM_conservationCheck_write_on_startup');
 add_default($nl, 'config_AM_conservationCheck_write_to_logfile');
 add_default($nl, 'config_AM_conservationCheck_restart_stream');
 
+##########################################
+# Namelist group: AM_fmeDepthCoarsening  #
+##########################################
+
+add_default($nl, 'config_AM_fmeDepthCoarsening_enable');
+add_default($nl, 'config_AM_fmeDepthCoarsening_compute_interval');
+add_default($nl, 'config_AM_fmeDepthCoarsening_output_stream');
+add_default($nl, 'config_AM_fmeDepthCoarsening_compute_on_startup');
+add_default($nl, 'config_AM_fmeDepthCoarsening_write_on_startup');
+add_default($nl, 'config_AM_fmeDepthCoarsening_depth_bounds');
+add_default($nl, 'config_AM_fmeDepthCoarsening_fields');
+add_default($nl, 'config_AM_fmeDepthCoarsening_horiz_remap_file');
+add_default($nl, 'config_AM_fmeDepthCoarsening_stream_output_interval');
+add_default($nl, 'config_AM_fmeDepthCoarsening_horiz_remap_file');
+
+########################################
+# Namelist group: AM_fmeDerivedFields  #
+########################################
+
+add_default($nl, 'config_AM_fmeDerivedFields_enable');
+add_default($nl, 'config_AM_fmeDerivedFields_compute_interval');
+add_default($nl, 'config_AM_fmeDerivedFields_output_stream');
+add_default($nl, 'config_AM_fmeDerivedFields_compute_on_startup');
+add_default($nl, 'config_AM_fmeDerivedFields_write_on_startup');
+add_default($nl, 'config_AM_fmeDerivedFields_stream_output_interval');
+add_default($nl, 'config_AM_fmeDerivedFields_horiz_remap_file');
+
+#########################################
+# Namelist group: AM_fmeVerticalReduce  #
+#########################################
+
+add_default($nl, 'config_AM_fmeVerticalReduce_enable');
+add_default($nl, 'config_AM_fmeVerticalReduce_compute_interval');
+add_default($nl, 'config_AM_fmeVerticalReduce_output_stream');
+add_default($nl, 'config_AM_fmeVerticalReduce_compute_on_startup');
+add_default($nl, 'config_AM_fmeVerticalReduce_write_on_startup');
+add_default($nl, 'config_AM_fmeVerticalReduce_fields');
+add_default($nl, 'config_AM_fmeVerticalReduce_methods');
+add_default($nl, 'config_AM_fmeVerticalReduce_reference_salinity');
+add_default($nl, 'config_AM_fmeVerticalReduce_horiz_remap_file');
+add_default($nl, 'config_AM_fmeVerticalReduce_stream_output_interval');
+add_default($nl, 'config_AM_fmeVerticalReduce_horiz_remap_file');
+
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpaso_in) and input dataset list (mpaso.input_data_list) ***
 #-----------------------------------------------------------------------------------------------
@@ -1862,6 +1905,9 @@ my @groups = qw(run_modes
                 am_sedimenttransport
                 am_harmonicanalysis
                 am_conservationcheck
+                am_fmedepthcoarsening
+                am_fmederivedfields
+                am_fmeverticalreduce
                 );
 
 # Check for variables in the "derived" group, add them to appropriate group

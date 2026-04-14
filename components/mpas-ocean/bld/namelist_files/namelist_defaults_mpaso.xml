@@ -1257,4 +1257,36 @@
 <config_AM_conservationCheck_write_to_logfile>.true.</config_AM_conservationCheck_write_to_logfile>
 <config_AM_conservationCheck_restart_stream>'conservationCheckRestart'</config_AM_conservationCheck_restart_stream>
 
+<!-- AM_fmeDepthCoarsening -->
+<config_AM_fmeDepthCoarsening_enable>.false.</config_AM_fmeDepthCoarsening_enable>
+<config_AM_fmeDepthCoarsening_compute_interval>'output_interval'</config_AM_fmeDepthCoarsening_compute_interval>
+<config_AM_fmeDepthCoarsening_output_stream>'fmeDepthCoarseningOutput'</config_AM_fmeDepthCoarsening_output_stream>
+<config_AM_fmeDepthCoarsening_compute_on_startup>.true.</config_AM_fmeDepthCoarsening_compute_on_startup>
+<config_AM_fmeDepthCoarsening_write_on_startup>.true.</config_AM_fmeDepthCoarsening_write_on_startup>
+<config_AM_fmeDepthCoarsening_depth_bounds>'none'</config_AM_fmeDepthCoarsening_depth_bounds>
+<config_AM_fmeDepthCoarsening_fields>'none'</config_AM_fmeDepthCoarsening_fields>
+<config_AM_fmeDepthCoarsening_horiz_remap_file>'none'</config_AM_fmeDepthCoarsening_horiz_remap_file>
+<config_AM_fmeDepthCoarsening_stream_output_interval>'00-00-01_00:00:00'</config_AM_fmeDepthCoarsening_stream_output_interval>
+
+<!-- AM_fmeDerivedFields -->
+<config_AM_fmeDerivedFields_enable>.false.</config_AM_fmeDerivedFields_enable>
+<config_AM_fmeDerivedFields_compute_interval>'output_interval'</config_AM_fmeDerivedFields_compute_interval>
+<config_AM_fmeDerivedFields_output_stream>'fmeDerivedFieldsOutput'</config_AM_fmeDerivedFields_output_stream>
+<config_AM_fmeDerivedFields_compute_on_startup>.true.</config_AM_fmeDerivedFields_compute_on_startup>
+<config_AM_fmeDerivedFields_write_on_startup>.true.</config_AM_fmeDerivedFields_write_on_startup>
+<config_AM_fmeDerivedFields_stream_output_interval>'00-00-01_00:00:00'</config_AM_fmeDerivedFields_stream_output_interval>
+<config_AM_fmeDerivedFields_horiz_remap_file>'none'</config_AM_fmeDerivedFields_horiz_remap_file>
+
+<!-- AM_fmeVerticalReduce -->
+<config_AM_fmeVerticalReduce_enable>.false.</config_AM_fmeVerticalReduce_enable>
+<config_AM_fmeVerticalReduce_compute_interval>'output_interval'</config_AM_fmeVerticalReduce_compute_interval>
+<config_AM_fmeVerticalReduce_output_stream>'fmeVerticalReduceOutput'</config_AM_fmeVerticalReduce_output_stream>
+<config_AM_fmeVerticalReduce_compute_on_startup>.true.</config_AM_fmeVerticalReduce_compute_on_startup>
+<config_AM_fmeVerticalReduce_write_on_startup>.true.</config_AM_fmeVerticalReduce_write_on_startup>
+<config_AM_fmeVerticalReduce_fields>'none'</config_AM_fmeVerticalReduce_fields>
+<config_AM_fmeVerticalReduce_methods>'none'</config_AM_fmeVerticalReduce_methods>
+<config_AM_fmeVerticalReduce_reference_salinity>34.8</config_AM_fmeVerticalReduce_reference_salinity>
+<config_AM_fmeVerticalReduce_horiz_remap_file>'none'</config_AM_fmeVerticalReduce_horiz_remap_file>
+<config_AM_fmeVerticalReduce_stream_output_interval>'00-00-01_00:00:00'</config_AM_fmeVerticalReduce_stream_output_interval>
+
 </namelist_defaults>

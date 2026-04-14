@@ -6504,4 +6504,218 @@ Valid values: A restart stream with state of the conservation check.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<!-- AM_fmeDepthCoarsening -->
+
+<entry id="config_AM_fmeDepthCoarsening_enable" type="logical"
+	category="AM_fmeDepthCoarsening" group="AM_fmeDepthCoarsening">
+If true, ocean analysis member fmeDepthCoarsening is called.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeDepthCoarsening_compute_interval" type="char*1024"
+	category="AM_fmeDepthCoarsening" group="AM_fmeDepthCoarsening">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeDepthCoarsening_output_stream" type="char*1024"
+	category="AM_fmeDepthCoarsening" group="AM_fmeDepthCoarsening">
+Name of the stream that the fmeDepthCoarsening analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeDepthCoarsening_compute_on_startup" type="logical"
+	category="AM_fmeDepthCoarsening" group="AM_fmeDepthCoarsening">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeDepthCoarsening_write_on_startup" type="logical"
+	category="AM_fmeDepthCoarsening" group="AM_fmeDepthCoarsening">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeDepthCoarsening_depth_bounds" type="char*1024"
+	category="AM_fmeDepthCoarsening" group="AM_fmeDepthCoarsening">
+Comma-separated depth boundaries in meters for coarsened depth levels.
+
+Valid values: Comma-separated list of depth values in meters or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeDepthCoarsening_fields" type="char*1024"
+	category="AM_fmeDepthCoarsening" group="AM_fmeDepthCoarsening">
+Comma-separated tracer names to coarsen in the vertical.
+
+Valid values: Comma-separated list of tracer field names or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeDepthCoarsening_horiz_remap_file" type="char*1024"
+	category="AM_fmeDepthCoarsening" group="AM_fmeDepthCoarsening">
+Path to ESMF/TempestRemap weight file for horizontal remapping depth-coarsened fields to lat-lon grid. Each depth level is output as a separate 2D variable (e.g., temperatureCoarsened_0, temperatureCoarsened_1, ...).
+
+Valid values: Any valid file path or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeDepthCoarsening_stream_output_interval" type="char*1024"
+	category="AM_fmeDepthCoarsening" group="AM_fmeDepthCoarsening">
+Output interval for the fmeDepthCoarsening stream. Format: YY-MM-DD_HH:MM:SS
+
+Valid values: Any valid MPAS time interval string
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<!-- AM_fmeDerivedFields -->
+
+<entry id="config_AM_fmeDerivedFields_enable" type="logical"
+	category="AM_fmeDerivedFields" group="AM_fmeDerivedFields">
+If true, ocean analysis member fmeDerivedFields is called.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeDerivedFields_compute_interval" type="char*1024"
+	category="AM_fmeDerivedFields" group="AM_fmeDerivedFields">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeDerivedFields_output_stream" type="char*1024"
+	category="AM_fmeDerivedFields" group="AM_fmeDerivedFields">
+Name of the stream that the fmeDerivedFields analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeDerivedFields_compute_on_startup" type="logical"
+	category="AM_fmeDerivedFields" group="AM_fmeDerivedFields">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeDerivedFields_write_on_startup" type="logical"
+	category="AM_fmeDerivedFields" group="AM_fmeDerivedFields">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeDerivedFields_stream_output_interval" type="char*1024"
+	category="AM_fmeDerivedFields" group="AM_fmeDerivedFields">
+Output interval for the fmeDerivedFields stream. Format: YY-MM-DD_HH:MM:SS
+
+Valid values: Any valid MPAS time interval string
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeDerivedFields_horiz_remap_file" type="char*1024"
+	category="AM_fmeDerivedFields" group="AM_fmeDerivedFields">
+Path to ESMF/TempestRemap weight file for horizontal remapping to lat-lon grid.
+
+Valid values: Any valid file path or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<!-- AM_fmeVerticalReduce -->
+
+<entry id="config_AM_fmeVerticalReduce_enable" type="logical"
+	category="AM_fmeVerticalReduce" group="AM_fmeVerticalReduce">
+If true, ocean analysis member fmeVerticalReduce is called.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeVerticalReduce_compute_interval" type="char*1024"
+	category="AM_fmeVerticalReduce" group="AM_fmeVerticalReduce">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeVerticalReduce_output_stream" type="char*1024"
+	category="AM_fmeVerticalReduce" group="AM_fmeVerticalReduce">
+Name of the stream that the fmeVerticalReduce analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeVerticalReduce_compute_on_startup" type="logical"
+	category="AM_fmeVerticalReduce" group="AM_fmeVerticalReduce">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeVerticalReduce_write_on_startup" type="logical"
+	category="AM_fmeVerticalReduce" group="AM_fmeVerticalReduce">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeVerticalReduce_fields" type="char*1024"
+	category="AM_fmeVerticalReduce" group="AM_fmeVerticalReduce">
+Comma-separated field names for generic vertical reduction.
+
+Valid values: Comma-separated list of field names or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeVerticalReduce_methods" type="char*1024"
+	category="AM_fmeVerticalReduce" group="AM_fmeVerticalReduce">
+Comma-separated reduction methods (sum or avg) for each field in fields list.
+
+Valid values: Comma-separated list of 'sum' or 'avg' or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeVerticalReduce_reference_salinity" type="real"
+	category="AM_fmeVerticalReduce" group="AM_fmeVerticalReduce">
+Reference salinity (PSU) for freshwater content calculation.
+
+Valid values: Any positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeVerticalReduce_horiz_remap_file" type="char*1024"
+	category="AM_fmeVerticalReduce" group="AM_fmeVerticalReduce">
+Path to ESMF/TempestRemap weight file for horizontal remapping vertically reduced fields to lat-lon grid.
+
+Valid values: Any valid file path or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeVerticalReduce_stream_output_interval" type="char*1024"
+	category="AM_fmeVerticalReduce" group="AM_fmeVerticalReduce">
+Output interval for the fmeVerticalReduce stream. Format: YY-MM-DD_HH:MM:SS
+
+Valid values: Any valid MPAS time interval string
+Default: Defined in namelist_defaults.xml
+</entry>
+
 </namelist_definition>
