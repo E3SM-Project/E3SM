@@ -116,13 +116,13 @@ build_point_grid (const std::string& name, ekat::ParameterList& params)
   const int gid_base = params.get<int>("gid_base",0);
   auto pt_grid = create_point_grid(name,num_global_cols,num_vertical_levels,m_comm,gid_base);
 
-  using namespace ekat::units;
-  const Units sr(Units::nondimensional(),"sr");
+  const auto units = ekat::units::Units::nondimensional();
 
-  auto area = pt_grid->create_geometry_data("area", pt_grid->get_2d_scalar_layout(), sr);
+  auto area = pt_grid->create_geometry_data("area", pt_grid->get_2d_scalar_layout(), units);
 
   // Estimate cell area for a uniform grid by taking the surface area
-  // of the unit sphere divided by the number of columns, in steradians.
+  // of the earth divided by the number of columns.  Note we do this in
+  // units of radians-squared.
   using PC             = scream::physics::Constants<Real>;
   const Real pi        = PC::Pi;
   const Real cell_area = 4.0*pi/num_global_cols;
@@ -146,14 +146,12 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
   const auto& geo_data_source = m_params.get<std::string>("geo_data_source");
   if (geo_data_source=="CREATE_EMPTY_DATA") {
     using namespace ShortFieldTagsNames;
-    using namespace ekat::units;
     FieldLayout layout_mid ({LEV},{grid->get_num_vertical_levels()});
     FieldLayout layout_int ({ILEV},{grid->get_num_vertical_levels()+1});
-    const auto units = Units::nondimensional();
-    const Units rad (units,"rad");
+    const auto units = ekat::units::Units::nondimensional();
 
-    auto lat  = grid->create_geometry_data("lat" ,  grid->get_2d_scalar_layout(), rad);
-    auto lon  = grid->create_geometry_data("lon" ,  grid->get_2d_scalar_layout(), rad);
+    auto lat  = grid->create_geometry_data("lat" ,  grid->get_2d_scalar_layout(), units);
+    auto lon  = grid->create_geometry_data("lon" ,  grid->get_2d_scalar_layout(), units);
     auto hyam = grid->create_geometry_data("hyam" , layout_mid, units);
     auto hybm = grid->create_geometry_data("hybm" , layout_mid, units);
     auto hyai = grid->create_geometry_data("hyai" , layout_int, units);
@@ -194,12 +192,10 @@ void MeshFreeGridsManager::
 load_lat_lon (const nonconstgrid_ptr_type& grid, const std::string& filename) const
 {
   using gid_type = AbstractGrid::gid_type;
-  const auto nondim = ekat::units::Units::nondimensional();
-  const ekat::units::Units deg_north (nondim,"degrees_north");
-  const ekat::units::Units deg_east  (nondim,"degrees_east");
+  const auto units = ekat::units::Units::nondimensional();
 
-  auto lat = grid->create_geometry_data("lat" , grid->get_2d_scalar_layout(), deg_north);
-  auto lon = grid->create_geometry_data("lon" , grid->get_2d_scalar_layout(), deg_east);
+  auto lat = grid->create_geometry_data("lat" , grid->get_2d_scalar_layout(), units);
+  auto lon = grid->create_geometry_data("lon" , grid->get_2d_scalar_layout(), units);
 
   auto lat_v = lat.get_view<Real*,Host>();
   auto lon_v = lon.get_view<Real*,Host>();

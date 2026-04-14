@@ -155,7 +155,6 @@ void HommeGridsManager::build_dynamics_grid () {
   auto dyn_grid = std::make_shared<SEGrid>("dynamics",nlelem,HOMMEXX_NP,nlev,m_comm);
 
   const auto layout2d = dyn_grid->get_2d_scalar_layout();
-  // NOTE: Fortran converts lat/lon to degrees, but we keep units as "rad" for compatibility
   const Units rad (Units::nondimensional(),"rad");
 
   // Filling the cg/dg gids, elgpgp, coords, lat/lon views
@@ -226,14 +225,12 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
   const auto layout2d = phys_grid->get_2d_scalar_layout();
-  // NOTE: Fortran converts lat/lon to degrees, but we keep units as "rad" for compatibility
   const Units rad (Units::nondimensional(),"rad");
-  const Units sr (Units::nondimensional(),"sr");
 
   auto dofs = phys_grid->get_dofs_gids();
   auto lat  = phys_grid->create_geometry_data("lat",layout2d,rad);
   auto lon  = phys_grid->create_geometry_data("lon",layout2d,rad);
-  auto area = phys_grid->create_geometry_data("area",layout2d,sr);
+  auto area = phys_grid->create_geometry_data("area",layout2d,rad*rad);
 
   using gid_type = AbstractGrid::gid_type;
 
@@ -243,7 +240,6 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   auto area_h = area.get_view<Real*,Host>();
 
   // Get all specs of phys grid cols (gids, coords, area)
-  // NOTE: Fortran returns lat/lon in degrees, area in steradians
   get_phys_grid_data_f90 (pg_code, dofs_h.data(), lat_h.data(), lon_h.data(), area_h.data());
 
   dofs.sync_to_dev();
