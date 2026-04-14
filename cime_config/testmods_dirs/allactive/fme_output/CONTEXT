@@ -1,8 +1,8 @@
 FME Online Output Processing — Handoff Context
 ================================================
-Date: 2026-04-04
-Branch: claude/extend-derived-diagnostics-LNfYG
-Status: ALL CHECKS PASSED. Ready for review/expansion.
+Date: 2026-04-14 (reconciled from 3 development branches)
+Branch: claude/fme-reconciled (rebased on upstream/master)
+Status: RECONCILED. Clean 6-commit history on current upstream/master.
 
 ========================================================================
 WHAT THIS BRANCH DOES
@@ -26,22 +26,52 @@ Key source files:
   cime_config/testmods_dirs/allactive/fme_output/  -- testmod + verify
 
 ========================================================================
+RECONCILIATION SUMMARY
+========================================================================
+
+Three branches were reconciled into this clean branch:
+
+1. claude/extend-derived-diagnostics-LNfYG (primary development)
+   - Best FME implementation: apply_masked fill architecture, computed
+     frac_b from CRS weights, SHR_FILL_VALUE constant, MPI buffer safety
+   - Comprehensive verify scripts (verify_eam.py, verify_mpas.py)
+   - Legacy output testmod for cross-verification
+   - Had stale EAMxx/DROF/driver-mct artifacts from old fork point
+
+2. claude/review-fme-diagnostics-lKsJV (code review improvements)
+   - Bounds checks: nCoarsenLevels vs nFmeDepthLevels, send_local_cell
+   - Validation: depth bound parsing with iostat, monotonicity checks
+   - Portability: shr_vcoarsen_mod declaration order fix
+   - Parsing: scientific notation d/D markers and . before exponent
+   - Error propagation: PIO write errors to caller
+
+3. claude/review-fme-output-7s4M3 (clean rewrite, oldest base)
+   - Clean 10-commit structure (used as template for commit organization)
+   - Good documentation (informed the doc updates)
+   - Largely superseded by branch 1
+
+Result: 6 clean commits on upstream/master, 55 files, ~14.8k lines added.
+All stale artifacts (EAMxx regressions, DROF reversions, driver-mct
+reversions, mam4xx submodule drift) eliminated by rebasing onto current
+upstream/master.
+
+========================================================================
 CURRENT STATUS — ALL COMPONENTS WORKING
 ========================================================================
 
 EAM:
   - Per-tape horiz_remap via cam_history (transparent, 3 tapes)
   - Vertical coarsening: 8 pressure layers, T/Q/U/V/OMEGA/CLDLIQ/
-    CLDICE/RAINQM/TOTAL_WATER (all 8 layers × 9 fields passing)
+    CLDICE/RAINQM/TOTAL_WATER (all 8 layers x 9 fields passing)
   - Column integration (TOTAL_WATER_INT) + tendencies
   - Derived fields (TOTAL_WATER expression parser)
-  - Output on 180×360 lat-lon grid
+  - Output on 180x360 lat-lon grid
 
 MPAS-O:
-  - fmeDepthCoarsening: 25 depth levels × 5 fields, native + remapped
+  - fmeDepthCoarsening: 25 depth levels x 5 fields, native + remapped
   - fmeDerivedFields: SST, SSS, surfaceHeatFluxTotal + 10 more
   - fmeVerticalReduce: OHC, FWC, KE
-  - All remapped to 180×360 lat-lon with proper fill masking
+  - All remapped to 180x360 lat-lon with proper fill masking
 
 MPAS-SI:
   - fmeSeaiceDerivedFields: 7 fields (ice area/volume/snow/thickness/
@@ -57,7 +87,7 @@ BUGS FIXED (all verified with 0 issues)
    Fix: convert to real(4) before write in both MPAS components.
 
 2. FILL-VALUE ARCHITECTURE (apply_masked)
-   Old approach zeroed fills + normalized by frac_b → diluted coastal
+   Old approach zeroed fills + normalized by frac_b -> diluted coastal
    values, land=0 instead of fill. New approach: pack validity mask as
    extra level in SpMV, normalize by valid_frac = sum(w_j * mask_j).
    SHR_FILL_VALUE = 1e20 (shared constant, matches cam_history).
@@ -74,6 +104,14 @@ BUGS FIXED (all verified with 0 issues)
 
 5. REGISTER_VAR DUPLICATE — PIO "name in use" errors
    MPAS framework calls init twice. register_var now skips duplicates.
+
+6. REVIEW IMPROVEMENTS (from reconciliation)
+   - Declaration order fix in shr_vcoarsen_mod (portability)
+   - Scientific notation d/D parsing + . before exponent in shr_derived_mod
+   - Depth bound iostat error handling + monotonicity validation
+   - nCoarsenLevels > nFmeDepthLevels bounds check
+   - send_local_cell==0 upgraded from WARN to CRIT (fatal on bad map file)
+   - PIO write error propagation in both MPAS horiz remap modules
 
 ========================================================================
 PERFORMANCE
@@ -95,14 +133,15 @@ HOW TO BUILD AND TEST
   ./create_test SMS_Ld2_P512.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850NS.pm-cpu_gnu \
       --testmod allactive/fme_output
 
-  # After run:
-  micromamba run -n xgns python verify_fme_output.py \
-      --rundir $RUNDIR \
-      --outdir /pscratch/sd/m/mahf708/aifigs_v3LRpiControlSamudrACE \
-      --verbose
+  # After run — EAM verification:
+  micromamba run -n xgns python \
+      cime_config/testmods_dirs/allactive/fme_output/verify_eam.py \
+      --rundir $RUNDIR --outdir /path/to/output_figs
 
-  # View results (has lightbox — click any figure to zoom):
-  https://mahf708.github.io/aifigs_v3LRpiControlSamudrACE/fme_output.html
+  # MPAS verification:
+  micromamba run -n xgns python \
+      cime_config/testmods_dirs/allactive/fme_output/verify_mpas.py \
+      --rundir $RUNDIR --outdir /path/to/output_figs
 
 Map files: /pscratch/sd/m/mahf708/fme_maps/
   map_ne30pg2_to_gaussian_180by360_shifted.nc          (EAM, n_a=21600)
@@ -128,12 +167,27 @@ ARCHITECTURE NOTES
 
 5. MPAS framework calls AM init twice. register_var skips duplicates.
 
-6. Fill value flow: AM sets 1e34 at source → remap caller detects fills
-   (named constant threshold, not magic number) → zeros field + mask=0
-   → apply_masked normalizes by valid_frac → output SHR_FILL_VALUE (1e20).
+6. Fill value flow: AM sets 1e34 at source -> remap caller detects fills
+   (named constant threshold, not magic number) -> zeros field + mask=0
+   -> apply_masked normalizes by valid_frac -> output SHR_FILL_VALUE (1e20).
 
 7. Map file uses global cell IDs (n_a = N_total), not ocean-only. The
    gcol_to_ocean_col identity branch is taken.
+
+8. shr_vcoarsen_mod requires monotonically INCREASING coordinates.
+   The overlap formula max(0, min(c_hi,b_hi) - max(c_lo,b_lo)) assumes
+   c_lo < c_hi and b_lo < b_hi.
+
+========================================================================
+COMMIT HISTORY
+========================================================================
+
+1. Add shared FME infrastructure (shr_horiz_remap, shr_vcoarsen, shr_derived)
+2. Add FME online output processing for EAM
+3. Add FME analysis members for MPAS-Ocean
+4. Add FME derived fields and horizontal remapping for MPAS-Sea-Ice
+5. Add FME testmod configuration, verification scripts, and documentation
+6. Add bounds checks, validation, and error propagation from code review
 
 ========================================================================
 FILE INVENTORY
@@ -142,13 +196,12 @@ FILE INVENTORY
 Testmod files:
   CONTEXT        -- this file
   FUTURE_WORK    -- prioritized work items
-  PLAN           -- original architecture overview
-  REVIEW         -- original code review findings
-  README         -- quick-start description
+  PLAN           -- architecture overview and implementation roadmap
+  REVIEW         -- code review findings and recommendations
+  README         -- quick-start description and ACE variable specification
   shell_commands -- case setup, map file detection, namelist generation
-  user_nl_eam    -- 3 tapes, vcoarsen bounds, derived fields, tendencies
-  user_nl_mpaso  -- 3 AMs: depth coarsen, derived, vertical reduce
-  user_nl_mpassi -- 1 AM: sea ice derived fields
-  user_nl_elm    -- stub (deferred)
-  user_nl_mosart -- stub (deferred)
-  verify_fme_output.py -- verification + figures + HTML viewer
+  verify_eam.py  -- EAM verification dashboard with ACE variable mapping
+  verify_mpas.py -- MPAS-O/SI verification dashboard
+
+Companion testmod:
+  fme_legacy_output/ -- produces raw output for offline pipeline comparison

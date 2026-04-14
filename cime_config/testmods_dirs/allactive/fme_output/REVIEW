@@ -1,7 +1,7 @@
 FME Online Output Processing — Code Review
 ============================================
-Date: 2026-04-04
-Branch: claude/extend-derived-diagnostics-LNfYG (rebased on origin/master)
+Date: 2026-04-04 (original), 2026-04-14 (reconciliation update)
+Branch: claude/fme-reconciled (rebased on upstream/master)
 Scope: EAM, MPAS-O, MPAS-SI (ELM and MOSART deferred)
 
 ========================================================================
@@ -319,11 +319,15 @@ The testmod (shell_commands) configures:
   - MPAS-SI: 1 AM (derived fields)
   - Horiz remap enabled when map files exist at /pscratch/sd/m/mahf708/fme_maps/
 
-Not yet tested after rebase. Known test configuration:
+Not yet tested after reconciliation/rebase to upstream/master (2026-04-14).
+Previously verified on ne30pg2 at 512 MPI tasks (2026-04-04).
+
+Known test configurations:
+  SMS_Ld2_P512.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850NS --testmod allactive/fme_output
   SMS_D_Ln5.ne4pg2_oQU480.WCYCL1850NS --testmod allactive/fme_output
 
 TESTING CHECKLIST:
-[ ] Build succeeds after rebase
+[ ] Build succeeds after reconciliation rebase
 [ ] MPAS-O streams generated correctly in streams.ocean_forward
 [ ] MPAS-SI stream generated correctly
 [ ] Native-grid output files produced for all 4 AMs
@@ -333,6 +337,8 @@ TESTING CHECKLIST:
 [ ] Fill values handled correctly in land-masked ocean cells
 [ ] EAM tapes produced with correct remapped grid
 [ ] ERS restart test: bit-for-bit with FME enabled
+[ ] verify_eam.py runs successfully against output
+[ ] verify_mpas.py runs successfully against output
 
 ========================================================================
 PART 6: RECOMMENDED IMPLEMENTATION ORDER
@@ -344,6 +350,9 @@ Phase 1 (Minimum viable: make remapped output usable):
   3. [DONE] Add _FillValue attributes to remapped variables
   4. [DONE] Add bounds check on max_pio_vars (with error message)
   5. [DONE] Add associated() guards on velocity pointers
+  5b.[DONE] Bounds checks from review: depth bounds validation,
+            nCoarsenLevels check, send_local_cell fatal, PIO error propagation
+  5c.[DONE] Portability: shr_vcoarsen_mod declaration order, d/D parsing
 
 Phase 2 (Parity with native stream output):
   6. File rotation by date (match stream filename_interval)
@@ -364,8 +373,8 @@ PART 7: COMPARISON TABLE
 Feature                    | EAM          | MPAS (current)    | MPAS (target)
 ---------------------------|--------------|-------------------|------------------
 Remap config              | per-tape NL  | per-AM NL         | per-AM NL (OK)
-Output filename           | UNCHANGED    | hardcoded separate | case+date template
-File rotation             | automatic    | none (monolithic)  | date-based
+Output filename           | UNCHANGED    | case+date template | case+date template (DONE)
+File rotation             | automatic    | date-based         | date-based (DONE)
 Grid in output            | (lon,lat)    | (lon,lat)         | (lon,lat) (OK)
 Fields remapped           | ALL on tape  | hardcoded subset  | ALL in stream
 3D field handling         | native dims  | split per-level   | 3D with depth dim

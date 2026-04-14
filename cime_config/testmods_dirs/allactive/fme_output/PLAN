@@ -1,7 +1,7 @@
 # FME Online Output Processing — Implementation Plan
 
-## Branch: claude/extend-derived-diagnostics-LNfYG
-## Base: origin/master (rebased 2026-04-04)
+## Branch: claude/fme-reconciled
+## Base: upstream/master (reconciled and rebased 2026-04-14)
 
 ---
 
@@ -42,10 +42,10 @@ Shared (shared/):
   totals, area-weighted means) + air stress rotation via
   seaice_latlon_vector_rotation_backward. Optional horiz remap.
 - `mpas_seaice_fme_horiz_remap.F` — Module-scope PIO pattern (single file).
-- STATUS: Functional. Only 3 of 7 fields remapped. Needs same fixes as MPAS-O.
+- STATUS: Functional. All 7 fields remapped with proper fill masking.
 
-### ELM and MOSART (DEFERRED — files removed)
-- See FUTURE_WORK items 12-13.
+### ELM and MOSART (DEFERRED)
+- See FUTURE_WORK item 9.
 
 ---
 
@@ -100,6 +100,14 @@ All Phase 1 items done:
 5. [DONE] associated() guards on velocity pointers
 6. [DONE] Date-based file rotation via register_var/check_rotate
 7. [DONE] CF-1.8 Conventions attribute
+
+Review improvements applied (2026-04-14 reconciliation):
+8. [DONE] shr_vcoarsen_mod declaration order fix (portability)
+9. [DONE] shr_derived_mod d/D exponent + . before exponent parsing
+10. [DONE] Depth bound iostat error handling + monotonicity validation
+11. [DONE] nCoarsenLevels > nFmeDepthLevels bounds check
+12. [DONE] send_local_cell==0 fatal error (was WARN with silent fallback)
+13. [DONE] PIO write error propagation in MPAS-O and MPAS-SI horiz remap
 
 ## Remaining Work
 
@@ -169,8 +177,9 @@ python verify_fme_output.py --rundir . --verbose
 
 - PLAN (this file) — Architecture overview and implementation roadmap
 - REVIEW — Detailed code review with findings and recommendations
-- FUTURE_WORK — Prioritized work items and testing checklist
-- README — Quick-start description
+- FUTURE_WORK — Prioritized work items
+- CONTEXT — Handoff context with reconciliation summary
+- README — Quick-start description and ACE variable specification
 - shell_commands — Case setup and namelist generation
-- user_nl_* — Per-component namelist settings
-- verify_fme_output.py — Python validation script
+- verify_eam.py — EAM verification dashboard
+- verify_mpas.py — MPAS-O/SI verification dashboard
