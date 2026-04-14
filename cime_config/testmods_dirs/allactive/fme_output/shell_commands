@@ -5,10 +5,21 @@
 # data generation. Enables online horizontal remapping, vertical coarsening,
 # derived diagnostics, and column-integrated fields.
 #
-# Output frequencies:
-#   EAM:     6-hourly (averaged and instantaneous)
-#   MPAS-O:  daily (analysis member streams, configurable in Registry)
-#   MPAS-SI: daily (analysis member stream)
+# ---------------------------------------------------------------------------
+# Runtime-configurable parameters (override via environment variables)
+# ---------------------------------------------------------------------------
+# EAM output frequency in hours (negative = hours in EAM convention)
+FME_EAM_OUTPUT_HOURS=${FME_EAM_OUTPUT_HOURS:-6}
+# EAM averaging flag: 'A' = time-averaged, 'I' = instantaneous
+FME_EAM_AVGFLAG=${FME_EAM_AVGFLAG:-A}
+# Number of EAM time samples per output file
+FME_EAM_MFILT=${FME_EAM_MFILT:-4}
+# MPAS compute/output interval (MPAS time interval string)
+FME_MPAS_INTERVAL=${FME_MPAS_INTERVAL:-00-00-01_00:00:00}
+
+echo "FME output configuration:"
+echo "  EAM: ${FME_EAM_OUTPUT_HOURS}-hourly, avgflag=${FME_EAM_AVGFLAG}, mfilt=${FME_EAM_MFILT}"
+echo "  MPAS: interval=${FME_MPAS_INTERVAL}"
 #
 # ---------------------------------------------------------------------------
 # Map file generation (run once per grid combination, outside the case):
@@ -82,7 +93,7 @@ echo "  OCN map : ${OCN_MAP} $([ -f "${OCN_MAP}" ] && echo '[found]' || echo '[N
 # ---------------------------------------------------------------------------
 # EAM namelist
 # ---------------------------------------------------------------------------
-cat >> user_nl_eam << 'EOF'
+cat >> user_nl_eam << EOF
 ! FME (Full Model Emulation) online output processing -- EAM
 !
 ! Production configuration for ACE/Samudra training data generation.
@@ -94,9 +105,9 @@ cat >> user_nl_eam << 'EOF'
 ! Derived from hyai/hybi in eami_mam4_Linoz_ne30np4_L80_c20231010.nc.
 
 empty_htapes = .true.
-avgflag_pertape = 'I'
-nhtfrq = -6
-mfilt  = 4
+avgflag_pertape = '${FME_EAM_AVGFLAG}'
+nhtfrq = -${FME_EAM_OUTPUT_HOURS}
+mfilt  = ${FME_EAM_MFILT}
 
 ! Derived fields (computed at full resolution before vcoarsen)
 ! STW -> specific_total_water in ACE naming
@@ -110,23 +121,18 @@ vcoarsen_pbounds = 10.0, 4803.81, 13913.06, 26856.34,
                    43998.31, 59659.67, 76854.15, 90711.83, 101325.0
 vcoarsen_avg_flds = 'T','U','V','STW'
 
-! Tape 1: 6-hourly mixed instantaneous/averaged.
-! Default is instantaneous; fields with :A suffix are time-averaged.
-! DTENDTTW is the dynamics-only tendency of column-integrated total water
-! (= tendency_of_total_water_path_due_to_advection in ACE naming).
-! It captures the change between end-of-previous-physics and start-of-current-physics,
-! spanning exactly the dynamics step. Native EAM diagnostic in cam_diagnostics.F90.
-fincl1 = 'SOLIN:A', 'PHIS',
+! Tape 1: ${FME_EAM_OUTPUT_HOURS}-hourly output (avgflag=${FME_EAM_AVGFLAG}).
+fincl1 = 'SOLIN', 'PHIS',
           'LANDFRAC', 'OCNFRAC', 'ICEFRAC',
           'PS', 'TS',
           'T_0','T_1','T_2','T_3','T_4','T_5','T_6','T_7',
           'STW_0', 'STW_1','STW_2','STW_3','STW_4','STW_5','STW_6','STW_7',
           'U_0','U_1','U_2','U_3','U_4','U_5','U_6','U_7',
           'V_0','V_1','V_2','V_3','V_4','V_5','V_6','V_7',
-          'FLUT:A', 'FSUTOA:A', 'FLDS:A', 'FLUS:A', 'FSDS:A', 'FSUS:A',
-          'LHFLX:A','SHFLX:A',
-          'TAUX:A', 'TAUY:A',
-          'PRECT:A',
+          'FLUT', 'FSUTOA', 'FLDS', 'FLUS', 'FSDS', 'FSUS',
+          'LHFLX','SHFLX',
+          'TAUX', 'TAUY',
+          'PRECT',
           'DTENDTTW'
 
 EOF
@@ -156,23 +162,22 @@ EOF
 # ---------------------------------------------------------------------------
 # MPAS-Ocean namelist
 # ---------------------------------------------------------------------------
-cat >> user_nl_mpaso << 'EOF'
+cat >> user_nl_mpaso << EOF
 !----------------------------------------------------------------------------------
 ! FME online output -- MPAS-Ocean
 !
 ! ACE needs: sst, ssh (zos), and depth-coarsened temperature (thetao),
 ! salinity (so), velocityZonal (uo), velocityMeridional (vo) at 19 layers.
-! 5-daily compute interval to match legacy timeSeriesStatsCustom averaging.
 !----------------------------------------------------------------------------------
 
 config_AM_fmeDepthCoarsening_enable = .true.
-config_AM_fmeDepthCoarsening_compute_interval = '00-00-05_00:00:00'
+config_AM_fmeDepthCoarsening_compute_interval = '${FME_MPAS_INTERVAL}'
 ! 19 depth layers matching ACE ocean interface levels
 config_AM_fmeDepthCoarsening_depth_bounds = '0,20,30,40,50,80,110,140,170,230,410,530,1020,1080,1720,1980,2820,3380,4620,6380'
 config_AM_fmeDepthCoarsening_fields = 'temperature,salinity,velocityZonal,velocityMeridional'
 
 config_AM_fmeDerivedFields_enable = .true.
-config_AM_fmeDerivedFields_compute_interval = '00-00-05_00:00:00'
+config_AM_fmeDerivedFields_compute_interval = '${FME_MPAS_INTERVAL}'
 EOF
 
 if [ -f "${OCN_MAP}" ]; then
@@ -187,16 +192,15 @@ fi
 # ---------------------------------------------------------------------------
 # MPAS-SeaIce namelist
 # ---------------------------------------------------------------------------
-cat >> user_nl_mpassi << 'EOF'
+cat >> user_nl_mpassi << EOF
 !----------------------------------------------------------------------------------
 ! FME online output -- MPAS-Sea-Ice
 !
 ! ACE needs: iceAreaTotal (ocean_sea_ice_fraction), iceVolumeTotal (sea_ice_volume).
-! 5-daily compute interval to match legacy.
 !----------------------------------------------------------------------------------
 
 config_AM_fmeSeaiceDerivedFields_enable = .true.
-config_AM_fmeSeaiceDerivedFields_compute_interval = '00-00-05_00:00:00'
+config_AM_fmeSeaiceDerivedFields_compute_interval = '${FME_MPAS_INTERVAL}'
 EOF
 
 if [ -f "${OCN_MAP}" ]; then
