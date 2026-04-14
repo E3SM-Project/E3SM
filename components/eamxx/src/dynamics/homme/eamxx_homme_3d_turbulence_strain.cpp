@@ -354,26 +354,12 @@ void HommeDynamics::compute_vertical_derivs ()
       //
       // Hydrostatic approximation:
       //
-      //   dp/dz = - rho g
-      //   rho   = p / (R T)
-      //
-      // => dz = (R T / (p g)) dp
-      //
-      // Here:
-      //   theta_v = vtheta_dp / dp
-      //   T_v     = exner * theta_v
-      //   exner   = (p/p0)^kappa
-      //
       // We reconstruct interface pressure by cumulative summation of dp from top.
       //
       constexpr Real Rgas   = PhysicalConstants::Rgas;
       constexpr Real gravit = PhysicalConstants::g;
       constexpr Real p0     = PhysicalConstants::p0;
       constexpr Real kappa  = PhysicalConstants::kappa;
-
-      constexpr Real p_floor  = 1e-3;
-      constexpr Real dp_floor = 1e-12;
-      constexpr Real dz_floor = 1e-12;
 
       // Reconstruct interface pressure into a local scalar array.
       Real p_int[NUM_LEV_P];
@@ -386,17 +372,13 @@ void HommeDynamics::compute_vertical_derivs ()
 
       for (int ilev = 0; ilev < nlev_scalar; ++ilev) {
         const Real dpk = dp[ilev / VLEN][ilev % VLEN];
-        const Real dp_safe = dpk > dp_floor ? dpk : dp_floor;
-
         const Real pmid = 0.5 * (p_int[ilev] + p_int[ilev+1]);
-        const Real p_safe = pmid > p_floor ? pmid : p_floor;
 
-        const Real theta_v = vtheta_dp[ilev / VLEN][ilev % VLEN] / dp_safe;
-        const Real exner   = std::pow(p_safe / p0, kappa);
+        const Real theta_v = vtheta_dp[ilev / VLEN][ilev % VLEN] / dpk;
+        const Real exner   = std::pow(pmid / p0, kappa);
         const Real Tv      = exner * theta_v;
 
-        Real dz = (Rgas * Tv / (p_safe * gravit)) * dp_safe;
-        if (dz < dz_floor) dz = dz_floor;
+        Real dz = (Rgas * Tv / (pmid * gravit)) * dpk;
 
         dz_mid[ilev / VLEN][ilev % VLEN] = dz;
       }
