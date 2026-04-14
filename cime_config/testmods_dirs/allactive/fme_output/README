@@ -1,0 +1,322 @@
+Testmod for FME (Full Model Emulation) online output processing.
+
+Enables horizontal remapping, vertical coarsening, and derived diagnostics
+for EAM, MPAS-Ocean, and MPAS-Sea-Ice.
+
+Designed for ACE/Samudra coupled model emulation training data generation.
+See shell_commands for map file generation instructions.
+
+## Running tests
+
+  cd cime/scripts
+  ./create_test SMS_Ld2_P512.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850 --testmod allactive/fme_output
+  ./create_test SMS_Ld2_P512.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850 --testmod allactive/fme_legacy_output
+
+## Verification
+
+Run from the repo root. Requires micromamba env with xarray, matplotlib, cartopy, netCDF4.
+
+  # EAM verification (standalone)
+  micromamba run -n xgns python \
+    cime_config/testmods_dirs/allactive/fme_output/verify_eam.py \
+    --rundir /path/to/fme_output_case/run \
+    --outdir /path/to/output_figs
+
+  # EAM cross-verification (FME vs legacy)
+  micromamba run -n xgns python \
+    cime_config/testmods_dirs/allactive/fme_output/verify_eam.py \
+    --rundir /path/to/fme_output_case/run \
+    --legacy-rundir /path/to/fme_legacy_output_case/run \
+    --outdir /path/to/output_figs
+
+  # MPAS-Ocean and MPAS-SeaIce verification
+  micromamba run -n xgns python \
+    /pscratch/sd/m/mahf708/e3sm-repo/mahf708-e3sm/cime_config/testmods_dirs/allactive/fme_output/verify_mpas.py \
+    --rundir /path/to/fme_output_case/run \
+    --outdir /pscratch/sd/m/mahf708/aifigs_v3LRpiControlSamudrACE
+
+Dashboards are written to:
+  <outdir>/verify_eam.html
+  <outdir>/verify_mpas.html
+
+
+## ATMOSPHERE
+
+```yaml
+next_step_forcing_names:
+  - SOLIN
+in_names:
+  - land_fraction
+  - ocean_fraction
+  - sea_ice_fraction
+  - PHIS
+  - SOLIN
+  - PS
+  - TS
+  - T_0
+  - T_1
+  - T_2
+  - T_3
+  - T_4
+  - T_5
+  - T_6
+  - T_7
+  - specific_total_water_0
+  - specific_total_water_1
+  - specific_total_water_2
+  - specific_total_water_3
+  - specific_total_water_4
+  - specific_total_water_5
+  - specific_total_water_6
+  - specific_total_water_7
+  - U_0
+  - U_1
+  - U_2
+  - U_3
+  - U_4
+  - U_5
+  - U_6
+  - U_7
+  - V_0
+  - V_1
+  - V_2
+  - V_3
+  - V_4
+  - V_5
+  - V_6
+  - V_7
+out_names:
+  - PS
+  - TS
+  - T_0
+  - T_1
+  - T_2
+  - T_3
+  - T_4
+  - T_5
+  - T_6
+  - T_7
+  - specific_total_water_0
+  - specific_total_water_1
+  - specific_total_water_2
+  - specific_total_water_3
+  - specific_total_water_4
+  - specific_total_water_5
+  - specific_total_water_6
+  - specific_total_water_7
+  - U_0
+  - U_1
+  - U_2
+  - U_3
+  - U_4
+  - U_5
+  - U_6
+  - U_7
+  - V_0
+  - V_1
+  - V_2
+  - V_3
+  - V_4
+  - V_5
+  - V_6
+  - V_7
+  - LHFLX
+  - SHFLX
+  - surface_precipitation_rate
+  - surface_upward_longwave_flux
+  - FLUT
+  - FLDS
+  - FSDS
+  - surface_upward_shortwave_flux
+  - top_of_atmos_upward_shortwave_flux
+  - tendency_of_total_water_path_due_to_advection
+  - TAUX
+  - TAUY
+```
+
+## MPAS
+
+```yaml
+next_step_forcing_names:
+  - TAUX
+  - TAUY
+  - surface_precipitation_rate
+  - surface_upward_longwave_flux
+  - surface_upward_shortwave_flux
+  - FLDS
+  - FSDS
+  - LHFLX
+  - SHFLX
+in_names:
+  - zos
+  - TAUX
+  - TAUY
+  - surface_precipitation_rate
+  - surface_upward_longwave_flux
+  - surface_upward_shortwave_flux
+  - FLDS
+  - FSDS
+  - LHFLX
+  - SHFLX
+  - land_fraction
+  - ocean_sea_ice_fraction
+  - sea_ice_volume
+  - sst
+  - so_0
+  - so_1
+  - so_2
+  - so_3
+  - so_4
+  - so_5
+  - so_6
+  - so_7
+  - so_8
+  - so_9
+  - so_10
+  - so_11
+  - so_12
+  - so_13
+  - so_14
+  - so_15
+  - so_16
+  - so_17
+  - so_18
+  - thetao_0
+  - thetao_1
+  - thetao_2
+  - thetao_3
+  - thetao_4
+  - thetao_5
+  - thetao_6
+  - thetao_7
+  - thetao_8
+  - thetao_9
+  - thetao_10
+  - thetao_11
+  - thetao_12
+  - thetao_13
+  - thetao_14
+  - thetao_15
+  - thetao_16
+  - thetao_17
+  - thetao_18
+  - uo_0
+  - uo_1
+  - uo_2
+  - uo_3
+  - uo_4
+  - uo_5
+  - uo_6
+  - uo_7
+  - uo_8
+  - uo_9
+  - uo_10
+  - uo_11
+  - uo_12
+  - uo_13
+  - uo_14
+  - uo_15
+  - uo_16
+  - uo_17
+  - uo_18
+  - vo_0
+  - vo_1
+  - vo_2
+  - vo_3
+  - vo_4
+  - vo_5
+  - vo_6
+  - vo_7
+  - vo_8
+  - vo_9
+  - vo_10
+  - vo_11
+  - vo_12
+  - vo_13
+  - vo_14
+  - vo_15
+  - vo_16
+  - vo_17
+  - vo_18
+out_names:
+  - zos
+  - sst
+  - so_0
+  - so_1
+  - so_2
+  - so_3
+  - so_4
+  - so_5
+  - so_6
+  - so_7
+  - so_8
+  - so_9
+  - so_10
+  - so_11
+  - so_12
+  - so_13
+  - so_14
+  - so_15
+  - so_16
+  - so_17
+  - so_18
+  - thetao_0
+  - thetao_1
+  - thetao_2
+  - thetao_3
+  - thetao_4
+  - thetao_5
+  - thetao_6
+  - thetao_7
+  - thetao_8
+  - thetao_9
+  - thetao_10
+  - thetao_11
+  - thetao_12
+  - thetao_13
+  - thetao_14
+  - thetao_15
+  - thetao_16
+  - thetao_17
+  - thetao_18
+  - uo_0
+  - uo_1
+  - uo_2
+  - uo_3
+  - uo_4
+  - uo_5
+  - uo_6
+  - uo_7
+  - uo_8
+  - uo_9
+  - uo_10
+  - uo_11
+  - uo_12
+  - uo_13
+  - uo_14
+  - uo_15
+  - uo_16
+  - uo_17
+  - uo_18
+  - vo_0
+  - vo_1
+  - vo_2
+  - vo_3
+  - vo_4
+  - vo_5
+  - vo_6
+  - vo_7
+  - vo_8
+  - vo_9
+  - vo_10
+  - vo_11
+  - vo_12
+  - vo_13
+  - vo_14
+  - vo_15
+  - vo_16
+  - vo_17
+  - vo_18
+  - ocean_sea_ice_fraction
+  - sea_ice_volume
+```

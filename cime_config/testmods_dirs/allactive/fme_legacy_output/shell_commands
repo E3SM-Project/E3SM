@@ -1,0 +1,67 @@
+#!/bin/bash
+# FME Legacy Output testmod
+#
+# Produces raw E3SM output needed by the ACE/Samudra offline postprocessing
+# pipeline. No online remapping, vertical coarsening, or derived fields.
+#
+# Output frequencies:
+#   EAM:     Tape 1: monthly averaged, Tape 2: 6-hourly instantaneous 3D,
+#            Tape 3: 6-hourly averaged 2D fluxes
+#   ELM:     Tape 1: monthly averaged, Tape 2: 6-hourly averaged soil/snow
+#   MPAS-O:  5-daily averaged via timeSeriesStatsCustom
+#   MPAS-SI: 5-daily averaged via timeSeriesStatsCustom
+#
+# Compare with allactive/fme_output for the online-processed equivalent.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# EAM namelist — raw output for ACE offline pipeline
+# ---------------------------------------------------------------------------
+cat >> user_nl_eam << 'EOF'
+cosp_lite = .true.
+empty_htapes = .true.
+avgflag_pertape = 'I'
+nhtfrq = -6
+mfilt  = 4
+
+fincl1 =  'T','Q','U','V','PS','PHIS',
+          'CLDLIQ','CLDICE','RAINQM',
+          'TMQ','TGCLDLWP','TGCLDIWP',
+          'TEFIX','TS','QREFHT','U10','TREFHT',
+          'PSL','LANDFRAC','OCNFRAC','ICEFRAC',
+          'FSDS:A','FLDS:A','FSNS:A','FLNS:A','SOLIN:A',
+          'FSNTOA:A','FLUT:A','FLNT:A','LHFLX:A','QFLX:A',
+          'SHFLX:A','PRECT:A','PRECC:A','PRECSL:A','PRECSC:A','TAUX:A','TAUY:A'
+
+EOF
+
+# ---------------------------------------------------------------------------
+# ELM namelist
+# ---------------------------------------------------------------------------
+cat >> user_nl_elm << 'EOF'
+hist_empty_htapes = .true.
+EOF
+
+# ---------------------------------------------------------------------------
+# MOSART namelist
+# ---------------------------------------------------------------------------
+cat >> user_nl_mosart << 'EOF'
+EOF
+
+# ---------------------------------------------------------------------------
+# MPAS-Ocean namelist — enable timeSeriesStatsCustom for 5-daily raw output
+# Stream variables are defined in Registry_time_series_stats_custom.xml
+# ---------------------------------------------------------------------------
+cat >> user_nl_mpaso << 'EOF'
+config_am_timeseriesstatscustom_enable = .true.
+config_am_timeseriesstatscustom_reset_intervals = '00-00-05_00:00:00'
+EOF
+
+# ---------------------------------------------------------------------------
+# MPAS-SeaIce namelist — enable timeSeriesStatsCustom for 5-daily raw output
+# Stream variables are defined in Registry_seaice_time_series_stats_custom.xml
+# ---------------------------------------------------------------------------
+cat >> user_nl_mpassi << 'EOF'
+config_am_timeseriesstatscustom_enable = .true.
+config_am_timeseriesstatscustom_reset_intervals = '00-00-05_00:00:00'
+EOF
