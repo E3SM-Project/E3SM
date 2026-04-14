@@ -130,6 +130,7 @@ module physics_buffer
             pbuf_register_subcol, &
             physics_buffer_desc,  &
             pbuf_get_index,       &
+            pbuf_get_field_ndims, &
             pbuf_get_chunk,       &
             pbuf_allocate,        &
             pbuf_deallocate,      &
@@ -765,7 +766,37 @@ CONTAINS
 
   !=========================================================================================
 
-  ! 
+  function pbuf_get_field_ndims(index) result(ndims)
+    !--------------------------------------------------------------------------
+    ! Return the number of non-trivial dimensions for a physics buffer field.
+    ! A field with dimsizes = (pcols, 0, 0, ...) has ndims=1 (horizontal only).
+    ! A field with dimsizes = (pcols, pver, 0, ...) has ndims=2 (3D field).
+    !--------------------------------------------------------------------------
+    integer, intent(in) :: index
+    integer :: ndims
+
+    integer :: i
+    type(physics_buffer_hdr), pointer :: bufptr
+
+    bufptr => hdrbuffertop
+    do i = 2, index
+      bufptr => bufptr%nexthdr
+    end do
+
+    ndims = 0
+    do i = 1, 6
+      if (bufptr%dimsizes(i, col_type_grid) > 0) then
+        ndims = ndims + 1
+      else
+        exit
+      end if
+    end do
+
+  end function pbuf_get_field_ndims
+
+  !=========================================================================================
+
+  !
   ! Given a pbuf2d chunk and an index return a pointer to a field chunk 
   ! 
   !
