@@ -4,34 +4,43 @@
 # Produces raw E3SM output needed by the ACE/Samudra offline postprocessing
 # pipeline. No online remapping, vertical coarsening, or derived fields.
 #
-# Output frequencies:
-#   EAM:     Tape 1: monthly averaged, Tape 2: 6-hourly instantaneous 3D,
-#            Tape 3: 6-hourly averaged 2D fluxes
-#   ELM:     Tape 1: monthly averaged, Tape 2: 6-hourly averaged soil/snow
-#   MPAS-O:  5-daily averaged via timeSeriesStatsCustom
-#   MPAS-SI: 5-daily averaged via timeSeriesStatsCustom
-#
 # Compare with allactive/fme_output for the online-processed equivalent.
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-# EAM namelist — raw output for ACE offline pipeline
+# Runtime-configurable parameters (override via environment variables)
 # ---------------------------------------------------------------------------
-cat >> user_nl_eam << 'EOF'
+# EAM output frequency in hours
+FME_EAM_OUTPUT_HOURS=${FME_EAM_OUTPUT_HOURS:-6}
+# EAM averaging flag: 'A' = time-averaged, 'I' = instantaneous
+FME_EAM_AVGFLAG=${FME_EAM_AVGFLAG:-A}
+# Number of EAM time samples per output file
+FME_EAM_MFILT=${FME_EAM_MFILT:-4}
+# MPAS timeSeriesStatsCustom reset/averaging interval
+FME_MPAS_INTERVAL=${FME_MPAS_INTERVAL:-00-00-01_00:00:00}
+
+echo "FME legacy output configuration:"
+echo "  EAM: ${FME_EAM_OUTPUT_HOURS}-hourly, avgflag=${FME_EAM_AVGFLAG}, mfilt=${FME_EAM_MFILT}"
+echo "  MPAS: interval=${FME_MPAS_INTERVAL}"
+
+# ---------------------------------------------------------------------------
+# EAM namelist -- raw output for ACE offline pipeline
+# ---------------------------------------------------------------------------
+cat >> user_nl_eam << EOF
 cosp_lite = .true.
 empty_htapes = .true.
-avgflag_pertape = 'I'
-nhtfrq = -6
-mfilt  = 4
+avgflag_pertape = '${FME_EAM_AVGFLAG}'
+nhtfrq = -${FME_EAM_OUTPUT_HOURS}
+mfilt  = ${FME_EAM_MFILT}
 
 fincl1 =  'T','Q','U','V','PS','PHIS',
           'CLDLIQ','CLDICE','RAINQM',
           'TMQ','TGCLDLWP','TGCLDIWP',
           'TEFIX','TS','QREFHT','U10','TREFHT',
           'PSL','LANDFRAC','OCNFRAC','ICEFRAC',
-          'FSDS:A','FLDS:A','FSNS:A','FLNS:A','SOLIN:A',
-          'FSNTOA:A','FLUT:A','FLNT:A','LHFLX:A','QFLX:A',
-          'SHFLX:A','PRECT:A','PRECC:A','PRECSL:A','PRECSC:A','TAUX:A','TAUY:A'
+          'FSDS','FLDS','FSNS','FLNS','SOLIN',
+          'FSNTOA','FLUT','FLNT','LHFLX','QFLX',
+          'SHFLX','PRECT','PRECC','PRECSL','PRECSC','TAUX','TAUY'
 
 EOF
 
@@ -49,19 +58,19 @@ cat >> user_nl_mosart << 'EOF'
 EOF
 
 # ---------------------------------------------------------------------------
-# MPAS-Ocean namelist — enable timeSeriesStatsCustom for 5-daily raw output
+# MPAS-Ocean namelist -- enable timeSeriesStatsCustom for raw output
 # Stream variables are defined in Registry_time_series_stats_custom.xml
 # ---------------------------------------------------------------------------
-cat >> user_nl_mpaso << 'EOF'
+cat >> user_nl_mpaso << EOF
 config_am_timeseriesstatscustom_enable = .true.
-config_am_timeseriesstatscustom_reset_intervals = '00-00-05_00:00:00'
+config_am_timeseriesstatscustom_reset_intervals = '${FME_MPAS_INTERVAL}'
 EOF
 
 # ---------------------------------------------------------------------------
-# MPAS-SeaIce namelist — enable timeSeriesStatsCustom for 5-daily raw output
+# MPAS-SeaIce namelist -- enable timeSeriesStatsCustom for raw output
 # Stream variables are defined in Registry_seaice_time_series_stats_custom.xml
 # ---------------------------------------------------------------------------
-cat >> user_nl_mpassi << 'EOF'
+cat >> user_nl_mpassi << EOF
 config_am_timeseriesstatscustom_enable = .true.
-config_am_timeseriesstatscustom_reset_intervals = '00-00-05_00:00:00'
+config_am_timeseriesstatscustom_reset_intervals = '${FME_MPAS_INTERVAL}'
 EOF
