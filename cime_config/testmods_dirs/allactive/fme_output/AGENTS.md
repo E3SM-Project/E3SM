@@ -101,21 +101,32 @@ These are hard-won lessons. Read before modifying FME code.
     unmapped source cells. This is caught at init with `MPAS_LOG_CRIT`, not
     silently masked.
 
+## Runtime Configuration
+
+Both `fme_output` and `fme_legacy_output` testmods accept environment variables:
+
+```bash
+FME_EAM_OUTPUT_HOURS=6          # EAM output frequency in hours (default: 6)
+FME_EAM_AVGFLAG=A               # 'A' = time-averaged, 'I' = instantaneous (default: A)
+FME_EAM_MFILT=4                 # samples per output file (default: 4)
+FME_MPAS_INTERVAL=00-00-01_00:00:00  # MPAS compute/output interval (default: daily)
+```
+
+Example: `FME_EAM_OUTPUT_HOURS=24 FME_MPAS_INTERVAL=00-00-05_00:00:00 ./create_test ...`
+
 ## Remaining Work
 
 ### Near-term
 - Add CI test variant (SMS_Ld2, ne4pg2_oQU480 for fast builds)
 - Add ERS restart test and PEM MPI reproducibility test
 - Parameterize map file paths via env variables in shell_commands
-- Fill value consistency: MPAS native uses 1e34, remapped uses 1e20
-- Conditional stream generation in buildnml (skip when output_stream='none')
+- xtime coordinate variable in remapped output (needs StrLen PIO dimension)
+- time_bnds variable for CF-compliant time bounds
 
 ### Code quality
-- CF-compliant metadata: calendar, time_bnds, depth coordinate, units
 - 3D PIO decomposition for depth-coarsened fields (single 3D var instead of
   per-level 2D vars like `temperatureCoarsened_0..24`)
-- MPI error return code checks in shr_horiz_remap_mod
-- Reject empty operand tokens in shr_derived_mod expression parser
+- Depth coordinate variable in remapped 3D output
 
 ### Extensions
 - Online spherical harmonics roundtrip (replaces ACE offline SH smoothing)
