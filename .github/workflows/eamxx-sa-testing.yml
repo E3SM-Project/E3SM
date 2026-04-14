@@ -166,6 +166,9 @@ jobs:
                   exit 1
                   ;;
           esac
+      - name: Get number of available GPUs
+        run: |
+          echo "NUM_GPUS=$(nvidia-smi --list-gpus | wc -l)" >> $GITHUB_ENV
       - name: Run tests
         uses: ./.github/actions/test-all-eamxx
         with:
@@ -173,6 +176,6 @@ jobs:
           machine: ghci-snl-cuda
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
-          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }};SCREAM_SMALL_KERNELS=${{ matrix.test.SK }}
+          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }};SCREAM_SMALL_KERNELS=${{ matrix.test.SK }};SCREAM_TEST_MAX_RANKS=${{ env.NUM_GPUS }}
           ekat: ${{ env.ekat }}
           kokkos_develop: ${{ env.kokkos_dev_test }}
