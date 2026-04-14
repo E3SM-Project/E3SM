@@ -1,0 +1,154 @@
+FME Online Output Processing — Handoff Context
+================================================
+Date: 2026-04-04
+Branch: claude/extend-derived-diagnostics-LNfYG
+Status: ALL CHECKS PASSED. Ready for review/expansion.
+
+========================================================================
+WHAT THIS BRANCH DOES
+========================================================================
+
+Adds online horizontal remapping, vertical coarsening, derived field
+computation, and vertical reduction to E3SM for FME (Full Model
+Emulation) training data generation (ACE/Samudra). Eliminates offline
+postprocessing for FME training data.
+
+Overhead: +1.6% wallclock (7.56 s on 485 s baseline, 512 tasks).
+
+Key source files:
+  share/util/shr_horiz_remap_mod.F90    -- CRS SpMV remap + apply_masked
+  share/util/shr_vcoarsen_mod.F90       -- vertical coarsening math
+  share/util/shr_derived_mod.F90        -- expression parser (TOTAL_WATER)
+  components/eam/src/control/           -- EAM wrappers (horiz_remap,
+                                           vcoarsen, derived, tendencies)
+  components/mpas-ocean/src/            -- 3 AMs + horiz_remap wrapper
+  components/mpas-seaice/src/           -- 1 AM + horiz_remap wrapper
+  cime_config/testmods_dirs/allactive/fme_output/  -- testmod + verify
+
+========================================================================
+CURRENT STATUS — ALL COMPONENTS WORKING
+========================================================================
+
+EAM:
+  - Per-tape horiz_remap via cam_history (transparent, 3 tapes)
+  - Vertical coarsening: 8 pressure layers, T/Q/U/V/OMEGA/CLDLIQ/
+    CLDICE/RAINQM/TOTAL_WATER (all 8 layers × 9 fields passing)
+  - Column integration (TOTAL_WATER_INT) + tendencies
+  - Derived fields (TOTAL_WATER expression parser)
+  - Output on 180×360 lat-lon grid
+
+MPAS-O:
+  - fmeDepthCoarsening: 25 depth levels × 5 fields, native + remapped
+  - fmeDerivedFields: SST, SSS, surfaceHeatFluxTotal + 10 more
+  - fmeVerticalReduce: OHC, FWC, KE
+  - All remapped to 180×360 lat-lon with proper fill masking
+
+MPAS-SI:
+  - fmeSeaiceDerivedFields: 7 fields (ice area/volume/snow/thickness/
+    temperature/airStress zonal+meridional)
+  - All remapped with proper fill at ice-free cells
+
+========================================================================
+BUGS FIXED (all verified with 0 issues)
+========================================================================
+
+1. PIO TYPE MISMATCH — root cause of 171 MPAS remap issues
+   pio_initdecomp(PIO_REAL) + pio_write_darray(real(r8)) garbled output.
+   Fix: convert to real(4) before write in both MPAS components.
+
+2. FILL-VALUE ARCHITECTURE (apply_masked)
+   Old approach zeroed fills + normalized by frac_b → diluted coastal
+   values, land=0 instead of fill. New approach: pack validity mask as
+   extra level in SpMV, normalize by valid_frac = sum(w_j * mask_j).
+   SHR_FILL_VALUE = 1e20 (shared constant, matches cam_history).
+
+3. SOURCE-SIDE FILL VALUES
+   MPAS-SI: iceThicknessMean, surfaceTemperatureMean, airStress set to
+   fillValue at ice-free cells (was 0.0, caused ice-edge leakage).
+   MPAS-O: sst/sss/heatflux/OHC/FWC/KE set to fillValue at land cells.
+
+4. VCOARSEN ARRAY STRIDE MISMATCH — root cause of EAM T_1..T_8 artifacts
+   shr_vcoarsen_avg_cols declares field(ncol,nlev) but received
+   src_field(pcols,pver). When ncol<pcols (14 vs 15 in some chunks),
+   levels k>1 read wrong memory. Fix: pass src_field(1:ncol,:).
+
+5. REGISTER_VAR DUPLICATE — PIO "name in use" errors
+   MPAS framework calls init twice. register_var now skips duplicates.
+
+========================================================================
+PERFORMANCE
+========================================================================
+
+512 MPI tasks, ne30pg2_r05_IcoswISC30E3r5, WCYCL1850NS, 5 days:
+  Baseline:     485.47 s  (2.44 SYPD)
+  FME-enabled:  493.03 s  (2.40 SYPD)
+  Overhead:     +7.56 s   (+1.6%)
+
+Breakdown: MPAS-O depth coarsening 1.7s, MPAS-SI derived 0.6s,
+EAM derived/vcoarsen 0.4s, MPAS-O derived+vertreduce 0.3s.
+
+========================================================================
+HOW TO BUILD AND TEST
+========================================================================
+
+  cd cime/scripts
+  ./create_test SMS_Ld2_P512.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850NS.pm-cpu_gnu \
+      --testmod allactive/fme_output
+
+  # After run:
+  micromamba run -n xgns python verify_fme_output.py \
+      --rundir $RUNDIR \
+      --outdir /pscratch/sd/m/mahf708/aifigs_v3LRpiControlSamudrACE \
+      --verbose
+
+  # View results (has lightbox — click any figure to zoom):
+  https://mahf708.github.io/aifigs_v3LRpiControlSamudrACE/fme_output.html
+
+Map files: /pscratch/sd/m/mahf708/fme_maps/
+  map_ne30pg2_to_gaussian_180by360_shifted.nc          (EAM, n_a=21600)
+  map_IcoswISC30E3r5_to_gaussian_180by360_shifted.nc   (MPAS, n_a=465044)
+
+========================================================================
+ARCHITECTURE NOTES
+========================================================================
+
+1. MPAS stream manager only supports nCells/nEdges/nVertices decomposed
+   dims. Remapped (lon,lat) output bypasses stream manager via direct PIO.
+
+2. PIO decomposition type MUST match Fortran array type passed to
+   pio_write_darray. PIO_REAL requires real(4). Mismatch silently garbles.
+
+3. apply_masked packs validity mask as level numlev+1 in the same send
+   buffer. ONE alltoallv + ONE SpMV for both field and mask. Normalizes
+   by valid_frac, outputs SHR_FILL_VALUE where valid_frac < epsilon.
+
+4. Fortran sequence association: passing array(pcols,nlev) to a dummy
+   declared as (ncol,nlev) with ncol<pcols causes wrong memory access at
+   levels k>1. ALWAYS pass explicit sections array(1:ncol,:).
+
+5. MPAS framework calls AM init twice. register_var skips duplicates.
+
+6. Fill value flow: AM sets 1e34 at source → remap caller detects fills
+   (named constant threshold, not magic number) → zeros field + mask=0
+   → apply_masked normalizes by valid_frac → output SHR_FILL_VALUE (1e20).
+
+7. Map file uses global cell IDs (n_a = N_total), not ocean-only. The
+   gcol_to_ocean_col identity branch is taken.
+
+========================================================================
+FILE INVENTORY
+========================================================================
+
+Testmod files:
+  CONTEXT        -- this file
+  FUTURE_WORK    -- prioritized work items
+  PLAN           -- original architecture overview
+  REVIEW         -- original code review findings
+  README         -- quick-start description
+  shell_commands -- case setup, map file detection, namelist generation
+  user_nl_eam    -- 3 tapes, vcoarsen bounds, derived fields, tendencies
+  user_nl_mpaso  -- 3 AMs: depth coarsen, derived, vertical reduce
+  user_nl_mpassi -- 1 AM: sea ice derived fields
+  user_nl_elm    -- stub (deferred)
+  user_nl_mosart -- stub (deferred)
+  verify_fme_output.py -- verification + figures + HTML viewer

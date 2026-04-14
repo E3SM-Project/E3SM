@@ -1,0 +1,378 @@
+FME Online Output Processing — Code Review
+============================================
+Date: 2026-04-04
+Branch: claude/extend-derived-diagnostics-LNfYG (rebased on origin/master)
+Scope: EAM, MPAS-O, MPAS-SI (ELM and MOSART deferred)
+
+========================================================================
+EXECUTIVE SUMMARY
+========================================================================
+
+The branch adds FME (Full Model Emulation) online output processing to
+E3SM, enabling horizontal remapping, vertical coarsening, derived field
+computation, and vertical reduction for training data generation.
+
+EAM integration is mature: remapping is transparent and per-tape,
+filenames are unchanged, and the remap is applied at write time within
+the existing cam_history infrastructure.
+
+MPAS-O and MPAS-SI integration works but has a fundamental architectural
+mismatch with the stated goal: remapped output is written to SEPARATE
+hardcoded files, bypassing the MPAS stream manager entirely. This review
+documents what needs to change to align with the EAM model.
+
+========================================================================
+PART 1: EAM — HOW IT WORKS (THE TARGET PATTERN)
+========================================================================
+
+EAM's approach is the gold standard we want MPAS to emulate:
+
+1. USER INTERFACE
+   - Per-tape namelist: horiz_remap_file(1) = '/path/to/map.nc'
+   - Each history tape (1..15) independently remapped or not
+   - No new streams or filenames — same tape, same name
+
+2. TRANSPARENCY
+   - Output filename UNCHANGED when remapped
+   - File contains (lon, lat) dims instead of (ncol) — that's the only
+     difference a consumer sees
+   - Map file path stored as attribute for provenance
+
+3. DATA FLOW
+   outfld() -> accumulate on native grid -> normalize at write time
+   -> remap_field() via CRS SpMV -> write_field() via PIO to lat-lon
+
+4. IMPLEMENTATION
+   - horiz_remap_mod.F90: type eam_horiz_remap_t with init/remap/write
+   - cam_history.F90: dump_field checks horiz_remap_data(t)%is_active()
+   - Grid registered with cam_grid_register (IDs 301-315)
+   - PIO decomposition cached per tape
+
+Key insight: EAM remaps WITHIN the history system. There is no separate
+output path. The remap is just a transformation applied to the buffer
+before the existing write call.
+
+========================================================================
+PART 2: MPAS — CURRENT STATE AND ARCHITECTURAL CONSTRAINTS
+========================================================================
+
+2A. WHY MPAS CAN'T DO EXACTLY WHAT EAM DOES
+---------------------------------------------
+
+The MPAS stream manager is fundamentally tied to unstructured grids:
+- Only recognizes nCells, nEdges, nVertices as decomposed dimensions
+  (hard-coded in mpas_stream_manager.F:is_decomposed_dim)
+- No mechanism to register arbitrary output grids (nlon, nlat)
+- No field transformation/interpolation infrastructure
+- Connectivity reindexing logic is MPAS-specific
+
+This means: integrating remapping INTO the stream manager is not feasible
+without major framework changes. The separate-file approach is currently
+the only viable path for lat-lon output from MPAS.
+
+2B. CURRENT MPAS ARCHITECTURE (DUAL OUTPUT)
+--------------------------------------------
+
+Path 1 — MPAS Stream Manager (native grid):
+  Variables stored in AM pool -> stream manager writes to
+  {casename}.mpaso.hist.am.fme{Module}.$Y-$M-$D.nc
+  Grid: MPAS unstructured (nCells)
+
+Path 2 — Direct PIO (remapped grid):
+  Each AM independently creates remapped output files
+  Filenames HARDCODED in source code:
+    - fmeDerivedFieldsRemapped.nc
+    - fmeDepthCoarseningRemapped.nc
+    - fmeVerticalReduceRemapped.nc
+    - fmeSeaiceDerivedFieldsRemapped.nc
+  Grid: lat-lon (nlon x nlat)
+  Managed by ocn_fme_remap_file_t / seaice_fme_horiz_remap_* procedures
+
+When output_stream='none', the analysis driver skips stream manager
+writes (proper guards exist). But buildnml STILL generates stream
+definitions unconditionally, producing empty/unused stream XML entries.
+
+========================================================================
+PART 3: WHAT NEEDS TO CHANGE (ACTIONABLE ITEMS)
+========================================================================
+
+GOAL: Make MPAS remapped output behave as much like EAM as possible,
+given the stream manager constraints.
+
+3A. FILENAME AND NAMING [HIGH PRIORITY]
+-----------------------------------------
+
+Current: Hardcoded names like 'fmeDerivedFieldsRemapped.nc'
+  - No date templating (single monolithic file for entire run)
+  - No case name prefix
+  - No instance string for multi-instance runs
+  - No consistency with MPAS stream naming conventions
+
+Proposed: Generate filenames from case metadata + date templating:
+  {casename}.mpaso{inst}.hist.am.fmeDerivedFields.remapped.$Y-$M-$D.nc
+
+Implementation:
+  1. Pass casename and inst_string into the remap file open routine
+  2. Add date templating using MPAS timekeeping (already have currTime)
+  3. Either:
+     a) Generate filename in the AM compute routine from config, OR
+     b) Add a namelist option: config_AM_fme*_horiz_remap_filename_template
+
+  The simplest approach: construct the filename from the stream name.
+  If output_stream = 'fmeDerivedFieldsOutput', the remapped filename
+  should be derived from that with a '.remapped' suffix, matching the
+  same date template the stream would use.
+
+3B. FILE ROTATION / DATE SPLITTING [HIGH PRIORITY]
+----------------------------------------------------
+
+Current: Single file for entire run (all time records appended)
+  - Grows unbounded
+  - No date-based splitting
+  - No clobber/append mode control
+
+Proposed: Match the stream manager's behavior:
+  - Split files by filename_interval (e.g., monthly or yearly)
+  - Close current file and open new one when date boundary crossed
+  - Use same $Y-$M-$D template substitution as native streams
+
+Implementation: Add a check in the compute routine:
+  - Track current output filename (with date substitution)
+  - When date changes, close old file, open new one
+  - Or: track number of records per file and rotate based on config
+
+3C. INCOMPLETE FIELD SETS IN REMAPPED OUTPUT [HIGH PRIORITY]
+--------------------------------------------------------------
+
+MPAS-SI: Only 3 of 7 derived fields are remapped:
+  Remapped:  iceAreaTotal, iceVolumeTotal, surfaceTemperatureMean
+  MISSING:   snowVolumeTotal, iceThicknessMean,
+             airStressZonal, airStressMeridional
+
+MPAS-O Derived: All 3 fields remapped (SST, SSS, surfaceHeatFluxTotal)
+  But the Registry stream also includes ssh, windStressZonal,
+  windStressMeridional, shortWaveHeatFlux, etc. — these external fields
+  are NOT remapped.
+
+MPAS-O Depth Coarsening: Remapped output splits 3D fields into per-level
+  2D variables (temperatureCoarsened_0, _1, ...). This is workable but:
+  - Different structure from native stream (which has nFmeDepthLevels dim)
+  - layerThicknessCoarsened is NOT in remapped output
+
+MPAS-O Vertical Reduce: 3 built-in fields (OHC, FWC, KE) + up to 5
+  generic fields remapped. This is complete.
+
+Proposed: Remap ALL fields that appear in the native stream, not a
+  hardcoded subset. Options:
+  a) Enumerate all AM pool variables and remap each one, OR
+  b) At minimum, explicitly add the missing fields
+
+3D. STREAM SUPPRESSION IN BUILDNML [MEDIUM PRIORITY]
+------------------------------------------------------
+
+Current: buildnml generates FME stream definitions unconditionally.
+When output_stream='none', the stream XML is still written but the
+runtime guard in the analysis driver prevents actual writes. This works
+but wastes stream manager bookkeeping and creates confusing XML.
+
+Proposed: Add conditional logic in buildnml:
+  if config_AM_fme*_output_stream != 'none':
+      generate stream definition
+  else:
+      skip (or generate with type="none")
+
+This affects:
+  - components/mpas-ocean/cime_config/buildnml (lines 1237-1305)
+  - components/mpas-seaice/cime_config/buildnml (lines 839-860)
+
+3E. SINGLETON REMAP STATE [MEDIUM PRIORITY]
+---------------------------------------------
+
+Current: MPAS-O uses a module-scope singleton shr_horiz_remap_t and
+shared PIO state. All three AMs share the same remap object.
+
+Problem: Only works because all AMs use the same map file. If any AM
+  ever needed a different target grid, this would break.
+
+Also: The MPAS-SI horiz_remap module has all PIO state at module scope
+  (pio_file, dim IDs, iodesc_2d, etc.) — only one file can be open at
+  a time.
+
+The MPAS-O refactoring (ocn_fme_remap_file_t) is better — each AM gets
+its own file instance. But they still share the singleton remap_data for
+the actual SpMV computation, which is fine as long as the map is shared.
+
+Proposed (future): If different AMs need different target grids, convert
+  remap_data to per-AM instances. For now, the singleton is acceptable
+  since all AMs target the same lat-lon grid.
+
+3F. 3D FIELD REMAPPING FOR DEPTH COARSENING [MEDIUM PRIORITY]
+---------------------------------------------------------------
+
+Current: Depth-coarsened fields are split into per-level 2D variables
+  (temperatureCoarsened_0, temperatureCoarsened_1, ...) in remapped output.
+
+Problem:
+  - Different representation from native stream (nFmeDepthLevels, nCells)
+  - Harder to work with in analysis tools (xarray, NCO)
+  - Variable count scales with nCoarsenLevels * nFields
+
+Better approach: Write 3D variables to remapped file with dimensions
+  (nlon, nlat, nFmeDepthLevels, Time). This requires:
+  - A 3D PIO decomposition (currently only 2D exists)
+  - Modifying remap_file_t to support nlev dimension in def_var/write_var
+  - Remapping each level, then assembling into 3D write buffer
+
+This is the most complex change but produces much cleaner output.
+
+3G. COORDINATE VARIABLES AND METADATA [LOW PRIORITY]
+------------------------------------------------------
+
+Current: Remapped files write lon/lat coordinate arrays on first
+  write_time() call. Missing:
+  - depth coordinate for 3D fields
+  - Calendar and time_bnds attributes
+  - CF-compliant global attributes (Conventions, source, history)
+  - Map file path as provenance attribute
+  - _FillValue attributes on variables
+
+Proposed: Add standard CF metadata to remapped output files.
+
+========================================================================
+PART 4: BUGS AND CODE QUALITY ISSUES
+========================================================================
+
+4A. VELOCITY VARIABLE ACCESS IN DEPTH COARSENING / VERTICAL REDUCE
+--------------------------------------------------------------------
+File: mpas_ocn_fme_depth_coarsening.F:330,338
+File: mpas_ocn_fme_vertical_reduce.F:302-304
+
+Code: field_1d(1:nVertLevels) = velocityZonal(1:nVertLevels, iCell)
+
+These access module-level pointers from ocn_diagnostics_variables.
+This is actually the standard MPAS-Ocean pattern (not a bug per se),
+but it creates an implicit dependency: the diagnostics driver MUST
+populate these pointers before FME analysis members run. Currently
+this is guaranteed by the analysis driver call order, but there is
+no explicit guard or error check. If the pointer is unassociated,
+it will SIGSEGV.
+
+Recommendation: Add associated() check with clear error message.
+
+4B. INTEGER OVERFLOW RISK IN PIO DECOMPOSITION
+------------------------------------------------
+File: mpas_ocn_fme_horiz_remap.F (build_iodesc_2d)
+
+For large grids (e.g., 0.25-degree = 1440x720 = 1M+ cells), the
+row-major index computation could overflow 32-bit integers before
+the cast to PIO_OFFSET_KIND. Current code:
+  idof(i) = int(ilon, PIO_OFFSET_KIND) + int(nlon, PIO_OFFSET_KIND) * ...
+
+This is actually safe because the cast happens before multiplication.
+But should be verified for very high-resolution grids (0.1-degree).
+
+4C. MAX_PIO_VARS LIMIT
+------------------------
+File: mpas_ocn_fme_horiz_remap.F:79
+
+  integer, parameter :: max_pio_vars = 100
+
+Depth coarsening with 4 fields * 19 levels = 76 variables per file.
+This fits within the limit, but adding more fields or finer depth
+levels could exceed 100. No runtime check — would silently corrupt
+memory.
+
+Recommendation: Add bounds check in def_var with clear error message.
+
+4D. REMAPPED FILE OPENED DURING COMPUTE, NOT INIT
+---------------------------------------------------
+Files: All three MPAS-O AMs and MPAS-SI derived fields
+
+Remapped output files are opened on the FIRST compute call, not
+during initialization. This means:
+  - If compute is never called (e.g., compute_interval > run length),
+    no file is created (acceptable)
+  - File creation happens during the time-stepping loop, which may
+    have different MPI synchronization requirements
+  - No way to validate output file creation at setup time
+
+This is a minor issue — the current approach works. But moving file
+creation to init (or a separate setup phase) would be cleaner.
+
+4E. FILL VALUE INCONSISTENCY
+------------------------------
+File: mpas_ocn_fme_depth_coarsening.F
+
+Uses fillValue = 1.0E34_RKIND (from MPAS constants) but the remapped
+output variables do not have _FillValue attributes. NetCDF consumers
+will not know which values are fill unless they check for 1e34.
+
+Recommendation: Add _FillValue attribute when defining remapped vars.
+
+========================================================================
+PART 5: TESTING STATUS
+========================================================================
+
+The testmod (shell_commands) configures:
+  - EAM: 3 tapes, vcoarsen, derived fields, tendencies, horiz remap
+  - MPAS-O: 3 AMs (depth coarsening, derived, vertical reduce)
+  - MPAS-SI: 1 AM (derived fields)
+  - Horiz remap enabled when map files exist at /pscratch/sd/m/mahf708/fme_maps/
+
+Not yet tested after rebase. Known test configuration:
+  SMS_D_Ln5.ne4pg2_oQU480.WCYCL1850NS --testmod allactive/fme_output
+
+TESTING CHECKLIST:
+[ ] Build succeeds after rebase
+[ ] MPAS-O streams generated correctly in streams.ocean_forward
+[ ] MPAS-SI stream generated correctly
+[ ] Native-grid output files produced for all 4 AMs
+[ ] Remapped output files produced when map files present
+[ ] Remapped files have correct (nlon, nlat, Time) structure
+[ ] All expected fields present in remapped output
+[ ] Fill values handled correctly in land-masked ocean cells
+[ ] EAM tapes produced with correct remapped grid
+[ ] ERS restart test: bit-for-bit with FME enabled
+
+========================================================================
+PART 6: RECOMMENDED IMPLEMENTATION ORDER
+========================================================================
+
+Phase 1 (Minimum viable: make remapped output usable):
+  1. [DONE] Fix filenames: derived from native stream template + date
+  2. [DONE] Fix incomplete field sets (MPAS-SI now remaps all 7 fields)
+  3. [DONE] Add _FillValue attributes to remapped variables
+  4. [DONE] Add bounds check on max_pio_vars (with error message)
+  5. [DONE] Add associated() guards on velocity pointers
+
+Phase 2 (Parity with native stream output):
+  6. File rotation by date (match stream filename_interval)
+  7. Conditional stream generation in buildnml
+  8. CF-compliant metadata (Conventions, calendar, provenance)
+  9. Write depth coordinate for 3D remapped output
+
+Phase 3 (Clean architecture):
+  10. 3D PIO decomposition for depth-coarsened fields
+  11. Per-AM remap instances (remove singleton constraint)
+  12. Move file creation to init phase
+  13. Remap all fields in native stream (not hardcoded subset)
+
+========================================================================
+PART 7: COMPARISON TABLE
+========================================================================
+
+Feature                    | EAM          | MPAS (current)    | MPAS (target)
+---------------------------|--------------|-------------------|------------------
+Remap config              | per-tape NL  | per-AM NL         | per-AM NL (OK)
+Output filename           | UNCHANGED    | hardcoded separate | case+date template
+File rotation             | automatic    | none (monolithic)  | date-based
+Grid in output            | (lon,lat)    | (lon,lat)         | (lon,lat) (OK)
+Fields remapped           | ALL on tape  | hardcoded subset  | ALL in stream
+3D field handling         | native dims  | split per-level   | 3D with depth dim
+Stream integration        | within hist  | bypasses streams  | separate (OK*)
+Fill value attrs          | yes          | no                | yes
+CF metadata               | yes          | minimal           | yes
+Provenance (map path)     | yes          | no                | yes
+
+* Given MPAS stream manager constraints, separate files are acceptable.
+  The key is making them WELL-NAMED and COMPLETE.
