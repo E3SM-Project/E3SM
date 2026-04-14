@@ -436,6 +436,8 @@ void HommeDynamics::contract_to_local_strain2 ()
   auto grad_Uy_dyn = m_helper_fields.at("grad_Uy_dyn").template get_view<Real*****>();
   auto grad_Uz_dyn = m_helper_fields.at("grad_Uz_dyn").template get_view<Real*****>();
 
+  auto grad_vertical = m_helper_fields.at("grad_dz_dyn").template get_view<Real*****>();
+
   auto strain2_dyn = m_helper_fields.at("strain2_dyn").template get_view<Real****>();
 
   const auto turb_strain2 = elems.m_derived.m_turb_strain2;
@@ -492,16 +494,23 @@ void HommeDynamics::contract_to_local_strain2 ()
             const Real A20 = grad_Uz_dyn(ie,0,igp,jgp,ilev);  // dw/dx
             const Real A21 = grad_Uz_dyn(ie,1,igp,jgp,ilev);  // dw/dy
 
+            const Real A02 = grad_vertical(ie,0,igp,jgp,ilev); // du/dz
+            const Real A12 = grad_vertical(ie,1,igp,jgp,ilev); // dv/dz
+            const Real A22 = grad_vertical(ie,2,igp,jgp,ilev); // dw/dz
+
             const Real S00 = A00;
             const Real S11 = A11;
+            const Real S22 = A22;
 
             const Real S01 = 0.5 * (A01 + A10);
-            const Real S02 = 0.5 * A20;
-            const Real S12 = 0.5 * A21;
+            const Real S02 = 0.5 * (A02 + A20);
+            const Real S12 = 0.5 * (A12 + A21);
 
             const Real strain2_val =
-                2.0 * (S00*S00 + 2.0*S01*S01 + S11*S11
-               +2.0*S02*S02 + 2.0*S12*S12);
+                2.0 * (S00*S00 + S11*S11 + S22*S22
+                     + 2.0*S01*S01
+                     + 2.0*S02*S02
+                     + 2.0*S12*S12);
 
             strain2_pack[s] = strain2_val;
             strain2_dyn(ie,igp,jgp,ilev) = strain2_val;
