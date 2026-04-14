@@ -60,6 +60,14 @@ module ocn_fme_vertical_reduce
    type(ocn_fme_remap_file_t) :: remap_outfile
    integer :: remap_nlat = 0, remap_nlon = 0, remap_nb_local = 0
 
+   ! Time-averaging state for remapped output
+   logical :: time_avg_enabled = .false.
+   integer :: nAccum = 0
+   type(MPAS_TimeInterval_type) :: avg_output_interval
+   type(MPAS_Time_type) :: avg_last_output_time
+   integer, parameter :: N_AVG_FIELDS = 8  ! 3 built-in + up to 5 generic
+   real(r8), allocatable :: remap_accum(:,:)  ! (remap_nb_local, N_AVG_FIELDS)
+
    !> Number of user-configured generic reduction fields (parsed from config)
    integer :: nReduceFields = 0
 
@@ -85,6 +93,8 @@ contains
       character(len=StrKIND), pointer :: config_AM_fmeVerticalReduce_fields
       character(len=StrKIND), pointer :: config_AM_fmeVerticalReduce_methods
       character(len=StrKIND), pointer :: config_AM_fmeVerticalReduce_horiz_remap_file
+      logical, pointer :: config_time_averaging
+      character(len=StrKIND), pointer :: config_stream_output_interval
       character(len=StrKIND) :: tempStr, methodStr
       character(len=32) :: slotName
       integer :: nFields, nMethods, i, iStart, iEnd, strLen
@@ -225,6 +235,29 @@ contains
                      call remap_outfile%register_var(trim(slotName), 'varies', &
                           'User-configured vertical reduction field', ierr)
                   end do
+
+                  ! Time-averaging setup
+                  call mpas_pool_get_config(domain % configs, &
+                       'config_AM_fmeVerticalReduce_time_averaging', &
+                       config_time_averaging)
+                  if (associated(config_time_averaging)) then
+                     if (config_time_averaging) then
+                        call mpas_pool_get_config(domain % configs, &
+                             'config_AM_fmeVerticalReduce_stream_output_interval', &
+                             config_stream_output_interval)
+                        call mpas_set_timeInterval(avg_output_interval, &
+                             timeString=trim(config_stream_output_interval), &
+                             ierr=ierr)
+                        avg_last_output_time = mpas_get_clock_time( &
+                             domain % clock, MPAS_START_TIME, ierr)
+                        allocate(remap_accum(remap_nb_local, N_AVG_FIELDS))
+                        remap_accum = 0.0_r8
+                        nAccum = 0
+                        time_avg_enabled = .true.
+                        call mpas_log_write( &
+                             'fmeVerticalReduce: time averaging enabled')
+                     end if
+                  end if
                end if
             end if
          end if
@@ -386,52 +419,93 @@ contains
          if (do_horiz_remap) then
             call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
 
-            call remap_outfile%check_rotate(domain, ierr)
+            allocate(fld_remap(remap_nb_local, 1))
+            allocate(field_1lev(1, nCells))
 
-            if (remap_outfile%file_is_open) then
-               allocate(fld_remap(remap_nb_local, 1))
-               allocate(field_1lev(1, nCells))
+            ! Remap each field to lat-lon
+            call remap_1field(oceanHeatContent, 1)
+            call remap_1field(freshwaterContent, 2)
+            call remap_1field(kineticEnergy, 3)
 
-               ! Get current time string
+            ! Remap generic reduction slots
+            do iGeneric = 1, min(nReduceFields, 5)
+               write(slotName, '(A,I2.2)') 'vertReduceField', iGeneric
+               call mpas_pool_get_array(amPool, trim(slotName), genSlot)
+               if (associated(genSlot)) then
+                  call remap_1field(genSlot, 3 + iGeneric)
+               end if
+            end do
+
+            if (time_avg_enabled) then
+               ! Accumulate (remapped fields already added in remap_1field)
+               nAccum = nAccum + 1
+
+               ! Check if output interval elapsed
                currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
-               call mpas_get_time(currTime, dateTimeString=timeStr)
-               call remap_outfile%write_time(trim(timeStr), ierr)
+               if (currTime - avg_last_output_time >= avg_output_interval) then
+                  call remap_outfile%check_rotate(domain, ierr)
+                  if (remap_outfile%file_is_open) then
+                     call remap_outfile%write_time('', ierr)
+                     call write_avg_field('oceanHeatContent', 1)
+                     call write_avg_field('freshwaterContent', 2)
+                     call write_avg_field('kineticEnergy', 3)
+                     do iGeneric = 1, min(nReduceFields, 5)
+                        write(slotName, '(A,I2.2)') 'vertReduceField', iGeneric
+                        call write_avg_field(trim(slotName), 3 + iGeneric)
+                     end do
+                  end if
+                  remap_accum = 0.0_r8
+                  nAccum = 0
+                  avg_last_output_time = currTime
+               end if
+            else
+               ! Instantaneous: write immediately
+               call remap_outfile%check_rotate(domain, ierr)
+               if (remap_outfile%file_is_open) then
+                  currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
+                  call mpas_get_time(currTime, dateTimeString=timeStr)
+                  call remap_outfile%write_time(trim(timeStr), ierr)
 
-               ! Remap oceanHeatContent
-               field_1lev(1, 1:nCells) = oceanHeatContent(1:nCells)
-               call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
-                    mask=maxLevelCell)
-               call remap_outfile%write_var('oceanHeatContent', fld_remap, 1, ierr)
-
-               ! Remap freshwaterContent
-               field_1lev(1, 1:nCells) = freshwaterContent(1:nCells)
-               call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
-                    mask=maxLevelCell)
-               call remap_outfile%write_var('freshwaterContent', fld_remap, 1, ierr)
-
-               ! Remap kineticEnergy
-               field_1lev(1, 1:nCells) = kineticEnergy(1:nCells)
-               call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
-                    mask=maxLevelCell)
-               call remap_outfile%write_var('kineticEnergy', fld_remap, 1, ierr)
-
-               ! Remap generic reduction slots
-               do iGeneric = 1, min(nReduceFields, 5)
-                  write(slotName, '(A,I2.2)') 'vertReduceField', iGeneric
-                  call mpas_pool_get_array(amPool, trim(slotName), genSlot)
-                  if (.not. associated(genSlot)) cycle
-                  field_1lev(1, 1:nCells) = genSlot(1:nCells)
-                  call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
-                       mask=maxLevelCell)
-                  call remap_outfile%write_var(trim(slotName), fld_remap, 1, ierr)
-               end do
-
-               deallocate(fld_remap, field_1lev)
+                  call write_inst_field('oceanHeatContent')
+                  call write_inst_field('freshwaterContent')
+                  call write_inst_field('kineticEnergy')
+                  do iGeneric = 1, min(nReduceFields, 5)
+                     write(slotName, '(A,I2.2)') 'vertReduceField', iGeneric
+                     call write_inst_field(trim(slotName))
+                  end do
+               end if
             end if
+
+            deallocate(fld_remap, field_1lev)
          end if
 
          block => block % next
       end do
+
+   contains
+
+      subroutine remap_1field(native_fld, idx)
+         real(kind=RKIND), dimension(:), intent(in) :: native_fld
+         integer, intent(in) :: idx
+         field_1lev(1, 1:nCells) = native_fld(1:nCells)
+         call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
+              mask=maxLevelCell)
+         if (time_avg_enabled) then
+            remap_accum(:, idx) = remap_accum(:, idx) + fld_remap(:, 1)
+         end if
+      end subroutine remap_1field
+
+      subroutine write_avg_field(varname, idx)
+         character(len=*), intent(in) :: varname
+         integer, intent(in) :: idx
+         fld_remap(:, 1) = remap_accum(:, idx) / real(nAccum, r8)
+         call remap_outfile%write_var(varname, fld_remap, 1, ierr)
+      end subroutine write_avg_field
+
+      subroutine write_inst_field(varname)
+         character(len=*), intent(in) :: varname
+         call remap_outfile%write_var(varname, fld_remap, 1, ierr)
+      end subroutine write_inst_field
 
    end subroutine ocn_compute_fme_vertical_reduce!}}}
 
@@ -460,6 +534,7 @@ contains
 
       if (allocated(reduceFieldNames)) deallocate(reduceFieldNames)
       if (allocated(reduceFieldMethods)) deallocate(reduceFieldMethods)
+      if (allocated(remap_accum)) deallocate(remap_accum)
 
    end subroutine ocn_finalize_fme_vertical_reduce!}}}
 

@@ -6578,6 +6578,15 @@ Valid values: Any valid MPAS time interval string
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_AM_fmeDepthCoarsening_time_averaging" type="logical"
+	category="AM_fmeDepthCoarsening" group="AM_fmeDepthCoarsening">
+If true, remapped output fields are time-averaged over the output interval.
+Set compute_interval to 'dt' or a frequent value when enabling.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <!-- AM_fmeDerivedFields -->
 
 <entry id="config_AM_fmeDerivedFields_enable" type="logical"
@@ -6633,6 +6642,15 @@ Default: Defined in namelist_defaults.xml
 Path to ESMF/TempestRemap weight file for horizontal remapping to lat-lon grid.
 
 Valid values: Any valid file path or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeDerivedFields_time_averaging" type="logical"
+	category="AM_fmeDerivedFields" group="AM_fmeDerivedFields">
+If true, remapped output fields are time-averaged over the output interval.
+Set compute_interval to 'dt' or a frequent value when enabling.
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -6715,6 +6733,15 @@ Default: Defined in namelist_defaults.xml
 Output interval for the fmeVerticalReduce stream. Format: YY-MM-DD_HH:MM:SS
 
 Valid values: Any valid MPAS time interval string
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeVerticalReduce_time_averaging" type="logical"
+	category="AM_fmeVerticalReduce" group="AM_fmeVerticalReduce">
+If true, remapped output fields are time-averaged over the output interval.
+Set compute_interval to 'dt' or a frequent value when enabling.
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 

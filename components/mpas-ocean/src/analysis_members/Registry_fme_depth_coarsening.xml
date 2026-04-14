@@ -40,6 +40,10 @@
 			description="Output interval for the fmeDepthCoarsening stream. Format: YY-MM-DD_HH:MM:SS"
 			possible_values="Any valid MPAS time interval string"
 		/>
+		<nml_option name="config_AM_fmeDepthCoarsening_time_averaging" type="logical" default_value=".false."
+			description="If true, remapped output fields are time-averaged over the output interval instead of instantaneous. Set compute_interval to a frequent value (e.g. dt) when enabling."
+			possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<packages>
 		<package name="fmeDepthCoarseningAMPKG" description="This package includes variables required for the fmeDepthCoarsening analysis member."/>
