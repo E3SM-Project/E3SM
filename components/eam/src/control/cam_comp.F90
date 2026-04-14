@@ -21,6 +21,7 @@ module cam_comp
    use perf_mod
    use cam_logfile,       only: iulog
    use physics_buffer,            only: physics_buffer_desc
+   use eam_derived,               only: eam_derived_stage
 
    implicit none
    private
@@ -230,6 +231,7 @@ subroutine cam_run1(cam_in, cam_out)
    type(cam_in_t)  :: cam_in(begchunk:endchunk)
    type(cam_out_t) :: cam_out(begchunk:endchunk)
 
+   integer :: c  ! chunk loop index
 #if ( defined SPMD )
    real(r8) :: mpi_wtime
 #endif
@@ -250,6 +252,14 @@ subroutine cam_run1(cam_in, cam_out)
    call t_startf ('stepon_run1')
    call stepon_run1( dtime, phys_state, phys_tend, pbuf2d, dyn_in, dyn_out )
    call t_stopf  ('stepon_run1')
+
+   ! Snapshot state after dynamics, before physics begins.
+   ! Used to split tendencies into physics vs dynamics contributions.
+   call t_startf ('eam_derived_stage')
+   do c = begchunk, endchunk
+     call eam_derived_stage(phys_state(c), pbuf2d)
+   end do
+   call t_stopf  ('eam_derived_stage')
 
    if (single_column) then
      call scam_use_iop_srf( cam_in)
