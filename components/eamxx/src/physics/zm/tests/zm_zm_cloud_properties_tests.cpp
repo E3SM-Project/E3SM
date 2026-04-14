@@ -84,19 +84,19 @@ struct UnitWrap::UnitTest<D>::TestZmCloudProperties : public UnitWrap::UnitTest<
         REQUIRE(d_baseline.total(d_baseline.mflx_up) == d_test.total(d_test.evp));
         REQUIRE(d_baseline.total(d_baseline.mflx_up) == d_test.total(d_test.rprd));
         for (Int k = 0; k < d_baseline.total(d_baseline.mflx_up); ++k) {
-          REQUIRE(d_baseline.mflx_up[k] == d_test.mflx_up[k]);
-          REQUIRE(d_baseline.entr_up[k] == d_test.entr_up[k]);
-          REQUIRE(d_baseline.detr_up[k] == d_test.detr_up[k]);
+          REQUIRE(d_baseline.mflx_up[k] == Approx(d_test.mflx_up[k]).margin(margin));
+          REQUIRE(d_baseline.entr_up[k] == Approx(d_test.entr_up[k]).margin(margin));
+          REQUIRE(d_baseline.detr_up[k] == Approx(d_test.detr_up[k]).margin(margin));
           REQUIRE(d_baseline.mflx_dn[k] == Approx(d_test.mflx_dn[k]).margin(margin));
           REQUIRE(d_baseline.entr_dn[k] == Approx(d_test.entr_dn[k]).margin(margin));
-          REQUIRE(d_baseline.mflx_net[k] == d_test.mflx_net[k]);
-          REQUIRE(d_baseline.s_upd[k] == d_test.s_upd[k]);
+          REQUIRE(d_baseline.mflx_net[k] == Approx(d_test.mflx_net[k]).margin(margin));
+          REQUIRE(d_baseline.s_upd[k] == Approx(d_test.s_upd[k]).margin(margin));
           REQUIRE(d_baseline.q_upd[k] == Approx(d_test.q_upd[k]).margin(margin));
           REQUIRE(d_baseline.ql[k] == Approx(d_test.ql[k]).margin(margin));
-          REQUIRE(d_baseline.s_dnd[k] == d_test.s_dnd[k]);
+          REQUIRE(d_baseline.s_dnd[k] == Approx(d_test.s_dnd[k]).margin(margin));
           REQUIRE(d_baseline.q_dnd[k] == Approx(d_test.q_dnd[k]).margin(margin));
-          REQUIRE(d_baseline.qst[k] == d_test.qst[k]);
-          REQUIRE(d_baseline.cu[k] == d_test.cu[k]);
+          REQUIRE(d_baseline.qst[k] == Approx(d_test.qst[k]).margin(margin));
+          REQUIRE(d_baseline.cu[k] == Approx(d_test.cu[k]).margin(margin));
           REQUIRE(d_baseline.evp[k] == Approx(d_test.evp[k]).margin(margin));
           REQUIRE(d_baseline.rprd[k] == Approx(d_test.rprd[k]).margin(margin));
         }

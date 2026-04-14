@@ -125,7 +125,9 @@ void Functions<S,D>::zm_downdraft_properties(
 
   //----------------------------------------------------------------------------
   // calculate downdraft evaporation
-  Kokkos::single(Kokkos::PerTeam(team), [&]() {
+  Real totevp_tmp = 0;
+  Kokkos::single(Kokkos::PerTeam(team), [&](Real& val) {
+    Real return_val = 0;
     for (Int k = msg+1; k < pver; ++k) {
       if (k >= jd && k < jb && lambda_max > 0) {
         q_dnd(k+1) = q_dnd_sat(k+1);
@@ -133,15 +135,17 @@ void Functions<S,D>::zm_downdraft_properties(
         evp(k) = ekat::impl::max(evp(k), Real(0));
         const Real mdt = ekat::impl::min(mflx_dn(k+1), -ZMC::small);
         s_dnd(k+1) = ((PC::LatVap.value/PC::Cpair.value*evp(k) - entr_dn(k)*s_mid(k))*dz(k) + mflx_dn(k)*s_dnd(k)) / mdt;
-        totevp -= dz(k)*entr_dn(k)*q_mid(k);
+        return_val += dz(k)*entr_dn(k)*q_mid(k);
       }
     }
-  });
+    val = return_val;
+  }, totevp_tmp);
   team.team_barrier();
 
-  Kokkos::single(Kokkos::PerTeam(team), [&]() {
-    totevp += mflx_dn(jd)*q_dnd(jd) - mflx_dn(jb)*q_dnd(jb);
-  });
+  totevp -= totevp_tmp;
+  totevp += mflx_dn(jd)*q_dnd(jd) - mflx_dn(jb)*q_dnd(jb);
+
+  team.team_barrier();
 }
 
 } // namespace zm
