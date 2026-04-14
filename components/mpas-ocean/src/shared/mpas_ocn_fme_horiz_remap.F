@@ -92,7 +92,8 @@ module ocn_fme_horiz_remap
       integer :: n_pio_vars = 0
       character(len=64)  :: pio_var_names(max_pio_vars)
       type(var_desc_t)   :: pio_var_descs(max_pio_vars)
-      type(var_desc_t)   :: pio_lon_var, pio_lat_var
+      type(var_desc_t)   :: pio_lon_var, pio_lat_var, pio_xtime_var
+      integer :: dim_strlen_id = 0
       ! Stored metadata for replaying var definitions after rotation
       character(len=64)  :: stored_units(max_pio_vars)
       character(len=128) :: stored_long_names(max_pio_vars)
@@ -468,6 +469,7 @@ contains
       ierr = pio_def_dim(self%pio_file, 'lon', nlon, self%dim_lon_id)
       ierr = pio_def_dim(self%pio_file, 'lat', nlat, self%dim_lat_id)
       ierr = pio_def_dim(self%pio_file, 'Time', PIO_UNLIMITED, self%dim_time_id)
+      ierr = pio_def_dim(self%pio_file, 'StrLen', 64, self%dim_strlen_id)
 
       ierr = pio_def_var(self%pio_file, 'lon', PIO_DOUBLE, &
            (/self%dim_lon_id/), self%pio_lon_var)
@@ -480,6 +482,10 @@ contains
       ierr = pio_put_att(self%pio_file, self%pio_lat_var, 'units', 'degrees_north')
       ierr = pio_put_att(self%pio_file, self%pio_lat_var, 'long_name', 'latitude')
       ierr = pio_put_att(self%pio_file, self%pio_lat_var, 'axis', 'Y')
+
+      ierr = pio_def_var(self%pio_file, 'xtime', PIO_CHAR, &
+           (/self%dim_strlen_id, self%dim_time_id/), self%pio_xtime_var)
+      ierr = pio_put_att(self%pio_file, self%pio_xtime_var, 'long_name', 'model time')
 
       ierr = pio_put_att(self%pio_file, PIO_GLOBAL, 'source', 'E3SM FME online remapping')
       ierr = pio_put_att(self%pio_file, PIO_GLOBAL, 'Conventions', 'CF-1.8')
@@ -563,6 +569,7 @@ contains
       character(len=*), intent(in) :: time_str
       integer, intent(out) :: err
       integer :: ierr
+      character(len=64) :: xtime_buf
 
       err = 0
       if (self%time_record == 0) then
@@ -573,6 +580,13 @@ contains
               remap_data%lat(1:remap_data%nlat))
       end if
       self%time_record = self%time_record + 1
+
+      ! Write xtime string for this record
+      xtime_buf = ' '
+      xtime_buf(1:min(len_trim(time_str), 64)) = &
+           time_str(1:min(len_trim(time_str), 64))
+      ierr = pio_put_var(self%pio_file, self%pio_xtime_var, &
+           (/1, self%time_record/), (/64, 1/), xtime_buf)
 
    end subroutine remap_file_write_time!}}}
 

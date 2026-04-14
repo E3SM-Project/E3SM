@@ -275,9 +275,10 @@ contains
                ! Check if output interval elapsed
                currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
                if (currTime - avg_last_output_time >= avg_output_interval) then
+                  call mpas_get_time(currTime, dateTimeString=timeStr)
                   call remap_outfile%check_rotate(domain, ierr)
                   if (remap_outfile%file_is_open) then
-                     call remap_outfile%write_time('', ierr)
+                     call remap_outfile%write_time(trim(timeStr), ierr)
                      call write_avg_field('sst', 1)
                      call write_avg_field('sss', 2)
                      call write_avg_field('surfaceHeatFluxTotal', 3)
@@ -295,9 +296,11 @@ contains
                end if
             else
                ! Instantaneous: write immediately
+               currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
+               call mpas_get_time(currTime, dateTimeString=timeStr)
                call remap_outfile%check_rotate(domain, ierr)
                if (remap_outfile%file_is_open) then
-                  call remap_outfile%write_time('', ierr)
+                  call remap_outfile%write_time(trim(timeStr), ierr)
                   call write_inst_field('sst', 1)
                   call write_inst_field('sss', 2)
                   call write_inst_field('surfaceHeatFluxTotal', 3)
