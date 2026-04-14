@@ -528,8 +528,6 @@ add_default($nl, 'config_restart_timestamp_name');
 ##############################
 
 add_default($nl, 'config_nCategories');
-add_default($nl, 'config_nIceLayers');
-add_default($nl, 'config_nSnowLayers');
 if ($wave_comp eq 'ww3' or $wave_comp eq 'dwav') {
 	add_default($nl, 'config_nFloeCategories', 'val'=>"12");
 } else {
@@ -544,6 +542,8 @@ if ($wave_spec eq 'sp25x36') {
 } else {
 	add_default($nl, 'config_nFrequencies');
 }
+add_default($nl, 'config_nIceLayers');
+add_default($nl, 'config_nSnowLayers');
 
 ##############################
 # Namelist group: initialize #
@@ -678,9 +678,9 @@ if ($wave_comp eq 'ww3' or $wave_comp eq 'dwav') {
    add_default($nl, 'config_use_floe_size_distribution');
 }
 
-##################################
+###############################
 # Namelist group: wave_config #
-##################################
+###############################
 # the frequency values below should not be modified.
 # They are defined to match available WW3 configurations
 if ($wave_spec eq 'sp25x36') {
