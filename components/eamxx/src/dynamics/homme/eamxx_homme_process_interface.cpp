@@ -219,6 +219,7 @@ void HommeDynamics::create_requests ()
   create_helper_field("grad_Ux_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
   create_helper_field("grad_Uy_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
   create_helper_field("grad_Uz_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
+  create_helper_field("grad_dz_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,3,    NP,NP,nlev_mid}, dgn);
   create_helper_field("strain2_dyn",  {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
 
   // For BFB restart, we need to read in the state on the dyn grid. The state above has NTL time slices,

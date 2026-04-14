@@ -290,7 +290,7 @@ void HommeDynamics::compute_vertical_derivs ()
   const int nelem       = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
   const int n0          = tl.n0;
   const int nlev_pack   = state.m_v.extent_int(5);
-  const int nlev_scalar = m_helper_fields.at("grad_vertical")
+  const int nlev_scalar = m_helper_fields.at("grad_dz_dyn")
                             .template get_view<Real*****>().extent_int(4);
 
   const auto v_dyn        = state.m_v;
@@ -301,7 +301,7 @@ void HommeDynamics::compute_vertical_derivs ()
   using MidColumn = decltype(Homme::subview(elems.m_derived.m_turb_strain2, 0, 0, 0));
   using IntColumn = decltype(Homme::subview(state.m_w_i, 0, 0, 0, 0));
 
-  auto grad_vertical = m_helper_fields.at("grad_vertical").template get_view<Real*****>();
+  auto grad_vertical = m_helper_fields.at("grad_dz_dyn").template get_view<Real*****>();
 
   using TeamPolicy = Kokkos::TeamPolicy<KT::ExeSpace>;
   using MemberType = typename TeamPolicy::member_type;
@@ -351,7 +351,19 @@ void HommeDynamics::compute_vertical_derivs ()
       // ------------------------------------------
       // 2) Compute dz on midpoint levels
       // ------------------------------------------
-      // Use hydrostatic approximation
+      //
+      // Hydrostatic approximation:
+      //
+      //   dp/dz = - rho g
+      //   rho   = p / (R T)
+      //
+      // => dz = (R T / (p g)) dp
+      //
+      // Here:
+      //   theta_v = vtheta_dp / dp
+      //   T_v     = exner * theta_v
+      //   exner   = (p/p0)^kappa
+      //
       // We reconstruct interface pressure by cumulative summation of dp from top.
       //
       constexpr Real Rgas   = PhysicalConstants::Rgas;
@@ -374,14 +386,17 @@ void HommeDynamics::compute_vertical_derivs ()
 
       for (int ilev = 0; ilev < nlev_scalar; ++ilev) {
         const Real dpk = dp[ilev / VLEN][ilev % VLEN];
+        const Real dp_safe = dpk > dp_floor ? dpk : dp_floor;
 
         const Real pmid = 0.5 * (p_int[ilev] + p_int[ilev+1]);
+        const Real p_safe = pmid > p_floor ? pmid : p_floor;
 
-        const Real theta_v = vtheta_dp[ilev / VLEN][ilev % VLEN] / dpk;
-        const Real exner   = std::pow(pmid / p0, kappa);
+        const Real theta_v = vtheta_dp[ilev / VLEN][ilev % VLEN] / dp_safe;
+        const Real exner   = std::pow(p_safe / p0, kappa);
         const Real Tv      = exner * theta_v;
 
-        Real dz = (Rgas * Tv / (pmid * gravit)) * dpk;
+        Real dz = (Rgas * Tv / (p_safe * gravit)) * dp_safe;
+        if (dz < dz_floor) dz = dz_floor;
 
         dz_mid[ilev / VLEN][ilev % VLEN] = dz;
       }
@@ -438,7 +453,6 @@ void HommeDynamics::contract_to_local_strain2 ()
   auto grad_Ux_dyn = m_helper_fields.at("grad_Ux_dyn").template get_view<Real*****>();
   auto grad_Uy_dyn = m_helper_fields.at("grad_Uy_dyn").template get_view<Real*****>();
   auto grad_Uz_dyn = m_helper_fields.at("grad_Uz_dyn").template get_view<Real*****>();
-  auto grad_vertical = m_helper_fields.at("grad_vertical").template get_view<Real*****>();
 
   auto strain2_dyn = m_helper_fields.at("strain2_dyn").template get_view<Real****>();
 
@@ -496,23 +510,16 @@ void HommeDynamics::contract_to_local_strain2 ()
             const Real A20 = grad_Uz_dyn(ie,0,igp,jgp,ilev);  // dw/dx
             const Real A21 = grad_Uz_dyn(ie,1,igp,jgp,ilev);  // dw/dy
 
-            const Real A02 = grad_vertical(ie,0,igp,jgp,ilev); // du/dz
-            const Real A12 = grad_vertical(ie,1,igp,jgp,ilev); // dv/dz
-            const Real A22 = grad_vertical(ie,2,igp,jgp,ilev); // dw/dz
-
             const Real S00 = A00;
             const Real S11 = A11;
-            const Real S22 = A22;
 
             const Real S01 = 0.5 * (A01 + A10);
-            const Real S02 = 0.5 * (A02 + A20);
-            const Real S12 = 0.5 * (A12 + A21);
+            const Real S02 = 0.5 * A20;
+            const Real S12 = 0.5 * A21;
 
             const Real strain2_val =
-                2.0 * (S00*S00 + S11*S11 + S22*S22
-                     + 2.0*S01*S01
-                     + 2.0*S02*S02
-                     + 2.0*S12*S12);
+                2.0 * (S00*S00 + 2.0*S01*S01 + S11*S11
+               +2.0*S02*S02 + 2.0*S12*S12);
 
             strain2_pack[s] = strain2_val;
             strain2_dyn(ie,igp,jgp,ilev) = strain2_val;
