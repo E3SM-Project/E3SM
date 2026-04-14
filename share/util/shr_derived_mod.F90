@@ -166,6 +166,21 @@ contains
         expr%operands(n)%op = next_op
       end if
 
+      ! Reject empty or invalid tokens (consecutive/trailing operators)
+      if (len_trim(token) == 0) then
+        ierr = 4  ! empty operand (e.g., "A++B" or "A+")
+        return
+      end if
+      ! Reject tokens starting with an operator char (e.g., "+A" from "++A")
+      ch = token(1:1)
+      if (ch == '+' .or. ch == '-' .or. ch == '*' .or. ch == '/') then
+        ! Allow leading +/- only if the token parses as a number (e.g., "-1.5")
+        if (.not. shr_derived_is_number(token, val)) then
+          ierr = 4  ! malformed operand
+          return
+        end if
+      end if
+
       ! Determine if token is a constant or field name
       if (shr_derived_is_number(token, val)) then
         expr%operands(n)%is_constant = .true.

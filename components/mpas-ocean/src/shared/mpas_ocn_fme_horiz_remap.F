@@ -79,7 +79,7 @@ module ocn_fme_horiz_remap
    logical :: iodesc_2d_valid = .false.
 
    ! MPAS-O fill value for input field detection (matches def_var _FillValue)
-   real(r8), parameter :: MPAS_OCN_FILL = 1.0E34_r8
+   real(r8), parameter :: MPAS_OCN_FILL = SHR_FILL_VALUE
 
    ! Per-file output state: each AM creates its own instance
    integer, parameter :: max_pio_vars = 512
@@ -472,12 +472,18 @@ contains
       ierr = pio_def_var(self%pio_file, 'lon', PIO_DOUBLE, &
            (/self%dim_lon_id/), self%pio_lon_var)
       ierr = pio_put_att(self%pio_file, self%pio_lon_var, 'units', 'degrees_east')
+      ierr = pio_put_att(self%pio_file, self%pio_lon_var, 'long_name', 'longitude')
+      ierr = pio_put_att(self%pio_file, self%pio_lon_var, 'axis', 'X')
+
       ierr = pio_def_var(self%pio_file, 'lat', PIO_DOUBLE, &
            (/self%dim_lat_id/), self%pio_lat_var)
       ierr = pio_put_att(self%pio_file, self%pio_lat_var, 'units', 'degrees_north')
+      ierr = pio_put_att(self%pio_file, self%pio_lat_var, 'long_name', 'latitude')
+      ierr = pio_put_att(self%pio_file, self%pio_lat_var, 'axis', 'Y')
 
       ierr = pio_put_att(self%pio_file, PIO_GLOBAL, 'source', 'E3SM FME online remapping')
       ierr = pio_put_att(self%pio_file, PIO_GLOBAL, 'Conventions', 'CF-1.8')
+      ierr = pio_put_att(self%pio_file, PIO_GLOBAL, 'calendar', 'noleap')
 
       self%n_pio_vars = 0
       self%time_record = 0

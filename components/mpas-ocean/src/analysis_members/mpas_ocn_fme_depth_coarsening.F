@@ -33,6 +33,7 @@ module ocn_fme_depth_coarsening
    use ocn_diagnostics_variables
    use shr_vcoarsen_mod, only: shr_vcoarsen_avg
    use shr_kind_mod, only: r8 => shr_kind_r8
+   use shr_horiz_remap_mod, only: SHR_FILL_VALUE
    use mpas_log, only: mpas_log_write
    use ocn_fme_horiz_remap, only: ocn_fme_horiz_remap_init, &
         ocn_fme_horiz_remap_field, ocn_fme_horiz_remap_active, &
@@ -57,7 +58,7 @@ module ocn_fme_depth_coarsening
    !> Field names parsed from comma-separated config string
    character(len=64), allocatable :: coarsenFieldNames(:)
 
-   real(kind=RKIND), parameter :: fillValue = 1.0E34_RKIND
+   real(kind=RKIND), parameter :: fillValue = real(SHR_FILL_VALUE, RKIND)
 
    !> Horizontal remapping state
    logical :: do_horiz_remap = .false.
