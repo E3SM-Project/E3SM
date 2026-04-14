@@ -75,10 +75,10 @@ These are hard-won lessons. Read before modifying FME code.
 4. **MPAS framework calls AM init twice.** `register_var` must skip duplicates
    or PIO throws "name in use" errors.
 
-5. **Fill value flow.** AM sets 1e34 at source -> remap caller zeros field +
-   sets mask=0 -> `apply_masked` normalizes by valid_frac -> output gets
-   `SHR_FILL_VALUE` (1e20). The 1e34 threshold is a named constant, not a
-   magic number.
+5. **Fill value flow.** All FME code uses `SHR_FILL_VALUE` (1e20) consistently.
+   AMs set fill at source -> remap caller zeros field + sets mask=0 ->
+   `apply_masked` normalizes by valid_frac -> output gets `SHR_FILL_VALUE`.
+   Detection threshold is `SHR_FILL_VALUE * 0.1` (1e19).
 
 6. **MPAS remapped output bypasses the stream manager.** The stream manager only
    supports `nCells`/`nEdges`/`nVertices` decomposed dims (hardcoded in
@@ -101,6 +101,17 @@ These are hard-won lessons. Read before modifying FME code.
     unmapped source cells. This is caught at init with `MPAS_LOG_CRIT`, not
     silently masked.
 
+11. **MPAS time averaging accumulates in remap space.** Accumulators are
+    module-scope arrays of size `n_b_local` (target grid points on this rank).
+    Each compute call remaps fields and adds to accumulators. When the output
+    interval elapses, values are normalized by `nAccum` and written. Native
+    stream output remains instantaneous (last snapshot).
+
+12. **Remapped output files include xtime.** The `xtime(StrLen, Time)` character
+    variable records the MPAS date-time string for each output record. CF
+    attributes include `axis='X'`/`'Y'` on lon/lat and `calendar='noleap'`
+    as a global attribute.
+
 ## Runtime Configuration
 
 Both `fme_output` and `fme_legacy_output` testmods accept environment variables:
@@ -109,10 +120,16 @@ Both `fme_output` and `fme_legacy_output` testmods accept environment variables:
 FME_EAM_OUTPUT_HOURS=6          # EAM output frequency in hours (default: 6)
 FME_EAM_AVGFLAG=A               # 'A' = time-averaged, 'I' = instantaneous (default: A)
 FME_EAM_MFILT=4                 # samples per output file (default: 4)
-FME_MPAS_INTERVAL=00-00-01_00:00:00  # MPAS compute/output interval (default: daily)
+FME_MPAS_INTERVAL=00-00-01_00:00:00  # MPAS output/averaging interval (default: daily)
 ```
 
 Example: `FME_EAM_OUTPUT_HOURS=24 FME_MPAS_INTERVAL=00-00-05_00:00:00 ./create_test ...`
+
+MPAS FME AMs support time averaging via namelist:
+- `config_AM_fme*_time_averaging = .true.` enables accumulation
+- `config_AM_fme*_compute_interval = 'dt'` samples every timestep
+- `config_AM_fme*_stream_output_interval` sets the averaging window
+- The `fme_output` testmod enables averaging by default
 
 ## Remaining Work
 
@@ -127,6 +144,7 @@ Example: `FME_EAM_OUTPUT_HOURS=24 FME_MPAS_INTERVAL=00-00-05_00:00:00 ./create_t
 - Depth coordinate variable in remapped 3D output
 
 ### Extensions
+- Numeric `time` coordinate + `time_bnds` for CF-compliant time axis
 - Online spherical harmonics roundtrip (replaces ACE offline SH smoothing)
 - 2D/3D wetmask computation
 - ELM / MOSART FME integration (deferred -- needs reimplementation)
