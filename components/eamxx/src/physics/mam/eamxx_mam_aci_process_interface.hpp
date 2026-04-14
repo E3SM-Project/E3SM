@@ -17,7 +17,6 @@ namespace scream {
 class MAMAci final : public MAMGenericInterface {
  public:
   // declare some constant scratch space lengths
-  static constexpr int hetro_scratch_   = 43;
   static constexpr int dropmix_scratch_ = 15;
 
   // views for multi-column data
@@ -123,7 +122,7 @@ class MAMAci final : public MAMGenericInterface {
   view_2d hetfrz_contact_nucleation_tend_;
   view_2d hetfrz_deposition_nucleation_tend_;
 
-  view_2d diagnostic_scratch_[hetro_scratch_];
+  view_3d diagnostic_scratch_;
 
   // Subgrid scale velocities
   view_2d wsub_, wsubice_, wsig_;  //, w2_;

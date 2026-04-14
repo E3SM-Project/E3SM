@@ -467,8 +467,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   //---------------------------------------------------------------------------------
   // NOTE: If we use buffer_ to initialize diagnostic_scratch_,
   // we must reset these values to zero each time run_impl is called.
-  for(int i = 0; i < hetro_scratch_; ++i)
-    diagnostic_scratch_[i] = view_2d("diagnostic_scratch_", ncol_, nlev_);
+  diagnostic_scratch_ = view_3d("diagnostic_scratch_", ncol_, mam4::Diagnostics::number_of_hetfrz_diag, nlev_);
   //---------------------------------------------------------------------------------
   // Initialize the processes
   //---------------------------------------------------------------------------------
