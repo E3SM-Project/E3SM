@@ -65,6 +65,14 @@ module ocn_fme_depth_coarsening
    type(ocn_fme_remap_file_t) :: remap_outfile
    integer :: remap_nlat = 0, remap_nlon = 0, remap_nb_local = 0
 
+   !> Time-averaging state for remapped output
+   logical :: time_avg_enabled = .false.
+   integer :: nAccum = 0
+   type(MPAS_TimeInterval_type) :: avg_output_interval
+   type(MPAS_Time_type) :: avg_last_output_time
+   integer :: n_avg_fields = 0       ! nCoarsenLevels * nCoarsenFields + nCoarsenLevels
+   real(r8), allocatable :: remap_accum(:,:)  ! (remap_nb_local, n_avg_fields)
+
 !***********************************************************************
 
 contains
@@ -79,6 +87,8 @@ contains
       character(len=StrKIND), pointer :: config_AM_fmeDepthCoarsening_depth_bounds
       character(len=StrKIND), pointer :: config_AM_fmeDepthCoarsening_fields
       character(len=StrKIND), pointer :: config_AM_fmeDepthCoarsening_horiz_remap_file
+      logical, pointer :: config_time_averaging
+      character(len=StrKIND), pointer :: config_stream_output_interval
       character(len=StrKIND) :: tempStr
       character(len=128) :: varName, longName
       integer :: nBounds, i, iStart, iEnd, strLen, ierr, iField, kOut
@@ -230,6 +240,31 @@ contains
                   call remap_outfile%register_var(trim(varName), 'm', &
                        trim(longName), ierr)
                end do
+
+               ! Time-averaging setup
+               call mpas_pool_get_config(domain % configs, &
+                    'config_AM_fmeDepthCoarsening_time_averaging', &
+                    config_time_averaging)
+               if (associated(config_time_averaging)) then
+                  if (config_time_averaging) then
+                     call mpas_pool_get_config(domain % configs, &
+                          'config_AM_fmeDepthCoarsening_stream_output_interval', &
+                          config_stream_output_interval)
+                     call mpas_set_timeInterval(avg_output_interval, &
+                          timeString=trim(config_stream_output_interval), &
+                          ierr=ierr)
+                     avg_last_output_time = mpas_get_clock_time( &
+                          domain % clock, MPAS_START_TIME, ierr)
+                     n_avg_fields = nCoarsenLevels * nCoarsenFields &
+                          + nCoarsenLevels
+                     allocate(remap_accum(remap_nb_local, n_avg_fields))
+                     remap_accum = 0.0_r8
+                     nAccum = 0
+                     time_avg_enabled = .true.
+                     call mpas_log_write( &
+                          'fmeDepthCoarsening: time averaging enabled')
+                  end if
+               end if
             end if
          end if
       end if
@@ -431,82 +466,132 @@ contains
          if (do_horiz_remap) then
             call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
 
-            call remap_outfile%check_rotate(domain, ierr)
+            allocate(fld_remap(remap_nb_local, 1))
+            allocate(field_1lev(1, nCells))
 
-            if (remap_outfile%file_is_open) then
-               allocate(fld_remap(remap_nb_local, 1))
-               allocate(field_1lev(1, nCells))
+            ! Per-level validity mask: 1=valid ocean cell at this depth, 0=fill
+            allocate(levelMask(nCells))
 
-               ! Per-level validity mask: 1=valid ocean cell at this depth, 0=fill
-               ! This is needed because maxLevelCell only catches land cells,
-               ! but shallow ocean cells have fillValue at deep coarsened levels.
-               allocate(levelMask(nCells))
+            ! Remap each coarsened field, one depth level at a time
+            do ifld = 1, nCoarsenFields
+               select case (trim(coarsenFieldNames(ifld)))
+               case ('temperature')
+                  coarsenedPtr => temperatureCoarsened
+               case ('salinity')
+                  coarsenedPtr => salinityCoarsened
+               case ('velocityZonal')
+                  coarsenedPtr => velocityZonalCoarsened
+               case ('velocityMeridional')
+                  coarsenedPtr => velocityMeridionalCoarsened
+               case default
+                  cycle
+               end select
 
-               ! Write time record
-               currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
-               call mpas_get_time(currTime, dateTimeString=timeStr)
-               call remap_outfile%write_time(trim(timeStr), ierr)
-
-               ! Remap each coarsened field, one depth level at a time
-               do ifld = 1, nCoarsenFields
-                  select case (trim(coarsenFieldNames(ifld)))
-                  case ('temperature')
-                     coarsenedPtr => temperatureCoarsened
-                  case ('salinity')
-                     coarsenedPtr => salinityCoarsened
-                  case ('velocityZonal')
-                     coarsenedPtr => velocityZonalCoarsened
-                  case ('velocityMeridional')
-                     coarsenedPtr => velocityMeridionalCoarsened
-                  case default
-                     cycle
-                  end select
-
-                  do kOut = 0, nCoarsenLevels - 1
-                     ! Build per-level mask from layerThicknessCoarsened:
-                     ! valid=1 where thickness is not fill, invalid=0 otherwise
-                     do iCell = 1, nCells
-                        if (layerThicknessCoarsened(kOut + 1, iCell) < fillValue * 0.5_RKIND) then
-                           levelMask(iCell) = 1
-                           field_1lev(1, iCell) = coarsenedPtr(kOut + 1, iCell)
-                        else
-                           levelMask(iCell) = 0
-                           field_1lev(1, iCell) = 0.0_RKIND
-                        end if
-                     end do
-                     call ocn_fme_horiz_remap_field(domain, field_1lev, 1, &
-                          fld_remap, ierr, mask=levelMask)
-                     write(varName, '(A,A,I0)') &
-                          trim(coarsenFieldNames(ifld)), 'Coarsened_', kOut
-                     call remap_outfile%write_var(trim(varName), &
-                          fld_remap, 1, ierr)
-                  end do
-               end do
-
-               ! Remap layerThicknessCoarsened split levels
                do kOut = 0, nCoarsenLevels - 1
-                  do iCell = 1, nCells
-                     if (layerThicknessCoarsened(kOut + 1, iCell) < fillValue * 0.5_RKIND) then
-                        levelMask(iCell) = 1
-                        field_1lev(1, iCell) = layerThicknessCoarsened(kOut + 1, iCell)
-                     else
-                        levelMask(iCell) = 0
-                        field_1lev(1, iCell) = 0.0_RKIND
-                     end if
-                  end do
-                  call ocn_fme_horiz_remap_field(domain, field_1lev, 1, &
-                       fld_remap, ierr, mask=levelMask)
-                  write(varName, '(A,I0)') 'layerThicknessCoarsened_', kOut
-                  call remap_outfile%write_var(trim(varName), &
-                       fld_remap, 1, ierr)
+                  call remap_1level(coarsenedPtr, kOut, &
+                       (ifld - 1) * nCoarsenLevels + kOut + 1)
                end do
+            end do
 
-               deallocate(fld_remap, field_1lev, levelMask)
+            ! Remap layerThicknessCoarsened split levels
+            do kOut = 0, nCoarsenLevels - 1
+               call remap_1level(layerThicknessCoarsened, kOut, &
+                    nCoarsenFields * nCoarsenLevels + kOut + 1)
+            end do
+
+            if (time_avg_enabled) then
+               ! Accumulate (remapped fields already added in remap_1level)
+               nAccum = nAccum + 1
+
+               ! Check if output interval elapsed
+               currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
+               if (currTime - avg_last_output_time >= avg_output_interval) then
+                  call remap_outfile%check_rotate(domain, ierr)
+                  if (remap_outfile%file_is_open) then
+                     call remap_outfile%write_time('', ierr)
+
+                     do ifld = 1, nCoarsenFields
+                        do kOut = 0, nCoarsenLevels - 1
+                           write(varName, '(A,A,I0)') &
+                                trim(coarsenFieldNames(ifld)), &
+                                'Coarsened_', kOut
+                           call write_avg_field(trim(varName), &
+                                (ifld - 1) * nCoarsenLevels + kOut + 1)
+                        end do
+                     end do
+                     do kOut = 0, nCoarsenLevels - 1
+                        write(varName, '(A,I0)') &
+                             'layerThicknessCoarsened_', kOut
+                        call write_avg_field(trim(varName), &
+                             nCoarsenFields * nCoarsenLevels + kOut + 1)
+                     end do
+                  end if
+                  remap_accum = 0.0_r8
+                  nAccum = 0
+                  avg_last_output_time = currTime
+               end if
+            else
+               ! Instantaneous: write immediately
+               call remap_outfile%check_rotate(domain, ierr)
+               if (remap_outfile%file_is_open) then
+                  currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
+                  call mpas_get_time(currTime, dateTimeString=timeStr)
+                  call remap_outfile%write_time(trim(timeStr), ierr)
+
+                  do ifld = 1, nCoarsenFields
+                     do kOut = 0, nCoarsenLevels - 1
+                        write(varName, '(A,A,I0)') &
+                             trim(coarsenFieldNames(ifld)), &
+                             'Coarsened_', kOut
+                        call write_inst_field(trim(varName))
+                     end do
+                  end do
+                  do kOut = 0, nCoarsenLevels - 1
+                     write(varName, '(A,I0)') &
+                          'layerThicknessCoarsened_', kOut
+                     call write_inst_field(trim(varName))
+                  end do
+               end if
             end if
+
+            deallocate(fld_remap, field_1lev, levelMask)
          end if
 
          block => block % next
       end do
+
+   contains
+
+      subroutine remap_1level(srcArray, kLevel, idx)
+         real(kind=RKIND), dimension(:,:), intent(in) :: srcArray
+         integer, intent(in) :: kLevel, idx
+         do iCell = 1, nCells
+            if (layerThicknessCoarsened(kLevel + 1, iCell) < fillValue * 0.5_RKIND) then
+               levelMask(iCell) = 1
+               field_1lev(1, iCell) = srcArray(kLevel + 1, iCell)
+            else
+               levelMask(iCell) = 0
+               field_1lev(1, iCell) = 0.0_RKIND
+            end if
+         end do
+         call ocn_fme_horiz_remap_field(domain, field_1lev, 1, &
+              fld_remap, ierr, mask=levelMask)
+         if (time_avg_enabled) then
+            remap_accum(:, idx) = remap_accum(:, idx) + fld_remap(:, 1)
+         end if
+      end subroutine remap_1level
+
+      subroutine write_avg_field(vname, idx)
+         character(len=*), intent(in) :: vname
+         integer, intent(in) :: idx
+         fld_remap(:, 1) = remap_accum(:, idx) / real(nAccum, r8)
+         call remap_outfile%write_var(vname, fld_remap, 1, ierr)
+      end subroutine write_avg_field
+
+      subroutine write_inst_field(vname)
+         character(len=*), intent(in) :: vname
+         call remap_outfile%write_var(vname, fld_remap, 1, ierr)
+      end subroutine write_inst_field
 
    end subroutine ocn_compute_fme_depth_coarsening!}}}
 
@@ -555,6 +640,7 @@ contains
 
       if (allocated(depthBounds)) deallocate(depthBounds)
       if (allocated(coarsenFieldNames)) deallocate(coarsenFieldNames)
+      if (allocated(remap_accum)) deallocate(remap_accum)
 
    end subroutine ocn_finalize_fme_depth_coarsening!}}}
 

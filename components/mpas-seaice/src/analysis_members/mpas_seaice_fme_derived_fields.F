@@ -39,6 +39,14 @@ module seaice_fme_derived_fields
    logical :: do_horiz_remap = .false.
    integer :: remap_nlat = 0, remap_nlon = 0, remap_nb_local = 0
 
+   ! Time-averaging state for remapped output
+   logical :: time_avg_enabled = .false.
+   integer :: nAccum = 0
+   type(MPAS_TimeInterval_type) :: avg_output_interval
+   type(MPAS_Time_type) :: avg_last_output_time
+   integer, parameter :: N_AVG_FIELDS = 7
+   real(r8), allocatable :: remap_accum(:,:)  ! (remap_nb_local, N_AVG_FIELDS)
+
    !--------------------------------------------------------------------
    !
    ! Public parameters
@@ -163,6 +171,8 @@ contains
       !-----------------------------------------------------------------
 
       character(len=StrKIND), pointer :: config_horiz_remap_file
+      logical, pointer :: config_time_averaging
+      character(len=StrKIND), pointer :: config_stream_output_interval
       integer :: ierr
 
       err = 0
@@ -200,6 +210,29 @@ contains
                        'N m^-2', 'Zonal air stress on ice', ierr)
                   call seaice_fme_horiz_remap_register_var('airStressMeridional', &
                        'N m^-2', 'Meridional air stress on ice', ierr)
+
+                  ! Time-averaging setup
+                  call mpas_pool_get_config(domain % configs, &
+                       'config_AM_fmeSeaiceDerivedFields_time_averaging', &
+                       config_time_averaging)
+                  if (associated(config_time_averaging)) then
+                     if (config_time_averaging) then
+                        call mpas_pool_get_config(domain % configs, &
+                             'config_AM_fmeSeaiceDerivedFields_stream_output_interval', &
+                             config_stream_output_interval)
+                        call mpas_set_timeInterval(avg_output_interval, &
+                             timeString=trim(config_stream_output_interval), &
+                             ierr=ierr)
+                        avg_last_output_time = mpas_get_clock_time( &
+                             domain % clock, MPAS_START_TIME, ierr)
+                        allocate(remap_accum(remap_nb_local, N_AVG_FIELDS))
+                        remap_accum = 0.0_r8
+                        nAccum = 0
+                        time_avg_enabled = .true.
+                        call mpas_log_write( &
+                             'fmeSeaiceDerivedFields: time averaging enabled')
+                     end if
+                  end if
                end if
             end if
          end if
@@ -359,7 +392,7 @@ contains
       ! Remap workspace
       real(r8), allocatable :: fld_remap(:)
       integer :: ierr_remap
-
+      type(MPAS_Time_Type) :: currTime
 
       real(kind=RKIND) :: &
            areaSum, &
@@ -464,47 +497,83 @@ contains
 
          ! --- Horizontal remapping to lat-lon grid ---
          if (do_horiz_remap) then
-            call seaice_fme_horiz_remap_check_rotate(domain, ierr_remap)
+            allocate(fld_remap(remap_nb_local))
 
-            if (file_is_open) then
-               allocate(fld_remap(remap_nb_local))
+            ! Remap each field to lat-lon
+            call remap_1field(iceAreaTotal, 1)
+            call remap_1field(iceVolumeTotal, 2)
+            call remap_1field(snowVolumeTotal, 3)
+            call remap_1field(iceThicknessMean, 4)
+            call remap_1field(surfaceTemperatureMean, 5)
+            call remap_1field(airStressZonal, 6)
+            call remap_1field(airStressMeridional, 7)
 
-               call seaice_fme_horiz_remap_write_time('', ierr_remap)
+            if (time_avg_enabled) then
+               ! Accumulate (remapped fields already added in remap_1field)
+               nAccum = nAccum + 1
 
-               call seaice_fme_horiz_remap_field(domain, iceAreaTotal, &
-                    nCellsSolve, fld_remap, ierr_remap)
-               call seaice_fme_horiz_remap_write_var('iceAreaTotal', fld_remap, 1, ierr_remap)
-
-               call seaice_fme_horiz_remap_field(domain, iceVolumeTotal, &
-                    nCellsSolve, fld_remap, ierr_remap)
-               call seaice_fme_horiz_remap_write_var('iceVolumeTotal', fld_remap, 1, ierr_remap)
-
-               call seaice_fme_horiz_remap_field(domain, snowVolumeTotal, &
-                    nCellsSolve, fld_remap, ierr_remap)
-               call seaice_fme_horiz_remap_write_var('snowVolumeTotal', fld_remap, 1, ierr_remap)
-
-               call seaice_fme_horiz_remap_field(domain, iceThicknessMean, &
-                    nCellsSolve, fld_remap, ierr_remap)
-               call seaice_fme_horiz_remap_write_var('iceThicknessMean', fld_remap, 1, ierr_remap)
-
-               call seaice_fme_horiz_remap_field(domain, surfaceTemperatureMean, &
-                    nCellsSolve, fld_remap, ierr_remap)
-               call seaice_fme_horiz_remap_write_var('surfaceTemperatureMean', fld_remap, 1, ierr_remap)
-
-               call seaice_fme_horiz_remap_field(domain, airStressZonal, &
-                    nCellsSolve, fld_remap, ierr_remap)
-               call seaice_fme_horiz_remap_write_var('airStressZonal', fld_remap, 1, ierr_remap)
-
-               call seaice_fme_horiz_remap_field(domain, airStressMeridional, &
-                    nCellsSolve, fld_remap, ierr_remap)
-               call seaice_fme_horiz_remap_write_var('airStressMeridional', fld_remap, 1, ierr_remap)
-
-               deallocate(fld_remap)
+               ! Check if output interval elapsed
+               currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr_remap)
+               if (currTime - avg_last_output_time >= avg_output_interval) then
+                  call seaice_fme_horiz_remap_check_rotate(domain, ierr_remap)
+                  if (file_is_open) then
+                     call seaice_fme_horiz_remap_write_time('', ierr_remap)
+                     call write_avg_field('iceAreaTotal', 1)
+                     call write_avg_field('iceVolumeTotal', 2)
+                     call write_avg_field('snowVolumeTotal', 3)
+                     call write_avg_field('iceThicknessMean', 4)
+                     call write_avg_field('surfaceTemperatureMean', 5)
+                     call write_avg_field('airStressZonal', 6)
+                     call write_avg_field('airStressMeridional', 7)
+                  end if
+                  remap_accum = 0.0_r8
+                  nAccum = 0
+                  avg_last_output_time = currTime
+               end if
+            else
+               ! Instantaneous: write immediately
+               call seaice_fme_horiz_remap_check_rotate(domain, ierr_remap)
+               if (file_is_open) then
+                  call seaice_fme_horiz_remap_write_time('', ierr_remap)
+                  call write_inst_field('iceAreaTotal')
+                  call write_inst_field('iceVolumeTotal')
+                  call write_inst_field('snowVolumeTotal')
+                  call write_inst_field('iceThicknessMean')
+                  call write_inst_field('surfaceTemperatureMean')
+                  call write_inst_field('airStressZonal')
+                  call write_inst_field('airStressMeridional')
+               end if
             end if
+
+            deallocate(fld_remap)
          end if
 
          block => block % next
       end do
+
+   contains
+
+      subroutine remap_1field(native_fld, idx)
+         real(kind=RKIND), dimension(:), intent(in) :: native_fld
+         integer, intent(in) :: idx
+         call seaice_fme_horiz_remap_field(domain, native_fld, &
+              nCellsSolve, fld_remap, ierr_remap)
+         if (time_avg_enabled) then
+            remap_accum(:, idx) = remap_accum(:, idx) + fld_remap(:)
+         end if
+      end subroutine remap_1field
+
+      subroutine write_avg_field(varname, idx)
+         character(len=*), intent(in) :: varname
+         integer, intent(in) :: idx
+         fld_remap(:) = remap_accum(:, idx) / real(nAccum, r8)
+         call seaice_fme_horiz_remap_write_var(varname, fld_remap, 1, ierr_remap)
+      end subroutine write_avg_field
+
+      subroutine write_inst_field(varname)
+         character(len=*), intent(in) :: varname
+         call seaice_fme_horiz_remap_write_var(varname, fld_remap, 1, ierr_remap)
+      end subroutine write_inst_field
 
    end subroutine seaice_compute_fme_derived_fields!}}}
 
@@ -607,6 +676,7 @@ contains
       err = 0
 
       call seaice_fme_horiz_remap_close_file(ierr)
+      if (allocated(remap_accum)) deallocate(remap_accum)
 
    end subroutine seaice_finalize_fme_derived_fields!}}}
 

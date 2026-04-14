@@ -58,6 +58,14 @@ module ocn_fme_derived_fields
    integer :: remap_nlat = 0, remap_nlon = 0, remap_nb_local = 0
    type(ocn_fme_remap_file_t) :: remap_outfile
 
+   ! Time-averaging state for remapped output
+   logical :: time_avg_enabled = .false.
+   integer :: nAccum = 0
+   type(MPAS_TimeInterval_type) :: avg_output_interval
+   type(MPAS_Time_type) :: avg_last_output_time
+   integer, parameter :: N_AVG_FIELDS = 10
+   real(r8), allocatable :: remap_accum(:,:)  ! (n_b_local, N_AVG_FIELDS)
+
 !***********************************************************************
 
 contains
@@ -70,6 +78,8 @@ contains
       integer, intent(out) :: err
 
       character(len=StrKIND), pointer :: config_AM_fmeDerivedFields_horiz_remap_file
+      character(len=StrKIND), pointer :: config_stream_output_interval
+      logical, pointer :: config_time_averaging
       integer :: ierr
 
       err = 0
@@ -118,6 +128,26 @@ contains
                        'Zonal wind stress on ocean', ierr)
                   call remap_outfile%register_var('windStressMeridional', 'N m^-2', &
                        'Meridional wind stress on ocean', ierr)
+
+                  ! Time-averaging setup
+                  call mpas_pool_get_config(domain % configs, &
+                       'config_AM_fmeDerivedFields_time_averaging', config_time_averaging)
+                  if (associated(config_time_averaging)) then
+                     if (config_time_averaging) then
+                        call mpas_pool_get_config(domain % configs, &
+                             'config_AM_fmeDerivedFields_stream_output_interval', &
+                             config_stream_output_interval)
+                        call mpas_set_timeInterval(avg_output_interval, &
+                             timeString=trim(config_stream_output_interval), ierr=ierr)
+                        avg_last_output_time = mpas_get_clock_time( &
+                             domain % clock, MPAS_START_TIME, ierr)
+                        allocate(remap_accum(remap_nb_local, N_AVG_FIELDS))
+                        remap_accum = 0.0_r8
+                        nAccum = 0
+                        time_avg_enabled = .true.
+                        call mpas_log_write('fmeDerivedFields: time averaging enabled')
+                     end if
+                  end if
                end if
             end if
          end if
@@ -221,89 +251,97 @@ contains
             call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
             call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-            ! Open or rotate file based on current date
-            call remap_outfile%check_rotate(domain, ierr)
+            allocate(fld_remap(remap_nb_local, 1))
+            allocate(field_1lev(1, nCells))
 
-            if (remap_outfile%file_is_open) then
-               allocate(fld_remap(remap_nb_local, 1))
-               allocate(field_1lev(1, nCells))
+            ! Remap each field to lat-lon
+            call mpas_pool_get_array(statePool, 'ssh', ssh_ptr, 1)
 
-               call remap_outfile%write_time('', ierr)
+            call remap_1field(sst, 1)
+            call remap_1field(sss, 2)
+            call remap_1field(surfaceHeatFluxTotal, 3)
+            if (associated(ssh_ptr)) call remap_1field(ssh_ptr, 4)
+            if (associated(shortWaveHeatFlux)) call remap_1field(shortWaveHeatFlux, 5)
+            if (associated(longWaveHeatFluxDown)) call remap_1field(longWaveHeatFluxDown, 6)
+            if (associated(latentHeatFlux)) call remap_1field(latentHeatFlux, 7)
+            if (associated(sensibleHeatFlux)) call remap_1field(sensibleHeatFlux, 8)
+            if (associated(windStressZonalPtr)) call remap_1field(windStressZonalPtr, 9)
+            if (associated(windStressMeridionalPtr)) call remap_1field(windStressMeridionalPtr, 10)
 
-               field_1lev(1, 1:nCells) = sst(1:nCells)
-               call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
-                    mask=maxLevelCell)
-               call remap_outfile%write_var('sst', fld_remap, 1, ierr)
+            if (time_avg_enabled) then
+               ! Accumulate (remapped fields already added in remap_1field)
+               nAccum = nAccum + 1
 
-               field_1lev(1, 1:nCells) = sss(1:nCells)
-               call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
-                    mask=maxLevelCell)
-               call remap_outfile%write_var('sss', fld_remap, 1, ierr)
-
-               field_1lev(1, 1:nCells) = surfaceHeatFluxTotal(1:nCells)
-               call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
-                    mask=maxLevelCell)
-               call remap_outfile%write_var('surfaceHeatFluxTotal', fld_remap, 1, ierr)
-
-               ! ssh (from state pool)
-               call mpas_pool_get_array(statePool, 'ssh', ssh_ptr, 1)
-               if (associated(ssh_ptr)) then
-                  field_1lev(1, 1:nCells) = ssh_ptr(1:nCells)
-                  call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
-                       mask=maxLevelCell)
-                  call remap_outfile%write_var('ssh', fld_remap, 1, ierr)
+               ! Check if output interval elapsed
+               currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
+               if (currTime - avg_last_output_time >= avg_output_interval) then
+                  call remap_outfile%check_rotate(domain, ierr)
+                  if (remap_outfile%file_is_open) then
+                     call remap_outfile%write_time('', ierr)
+                     call write_avg_field('sst', 1)
+                     call write_avg_field('sss', 2)
+                     call write_avg_field('surfaceHeatFluxTotal', 3)
+                     call write_avg_field('ssh', 4)
+                     call write_avg_field('shortWaveHeatFlux', 5)
+                     call write_avg_field('longWaveHeatFluxDown', 6)
+                     call write_avg_field('latentHeatFlux', 7)
+                     call write_avg_field('sensibleHeatFlux', 8)
+                     call write_avg_field('windStressZonal', 9)
+                     call write_avg_field('windStressMeridional', 10)
+                  end if
+                  remap_accum = 0.0_r8
+                  nAccum = 0
+                  avg_last_output_time = currTime
                end if
-
-               ! Flux fields (already fetched from forcingPool)
-               if (associated(shortWaveHeatFlux)) then
-                  field_1lev(1, 1:nCells) = shortWaveHeatFlux(1:nCells)
-                  call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
-                       mask=maxLevelCell)
-                  call remap_outfile%write_var('shortWaveHeatFlux', fld_remap, 1, ierr)
+            else
+               ! Instantaneous: write immediately
+               call remap_outfile%check_rotate(domain, ierr)
+               if (remap_outfile%file_is_open) then
+                  call remap_outfile%write_time('', ierr)
+                  call write_inst_field('sst', 1)
+                  call write_inst_field('sss', 2)
+                  call write_inst_field('surfaceHeatFluxTotal', 3)
+                  if (associated(ssh_ptr)) call write_inst_field('ssh', 4)
+                  if (associated(shortWaveHeatFlux)) call write_inst_field('shortWaveHeatFlux', 5)
+                  if (associated(longWaveHeatFluxDown)) call write_inst_field('longWaveHeatFluxDown', 6)
+                  if (associated(latentHeatFlux)) call write_inst_field('latentHeatFlux', 7)
+                  if (associated(sensibleHeatFlux)) call write_inst_field('sensibleHeatFlux', 8)
+                  if (associated(windStressZonalPtr)) call write_inst_field('windStressZonal', 9)
+                  if (associated(windStressMeridionalPtr)) call write_inst_field('windStressMeridional', 10)
                end if
-
-               if (associated(longWaveHeatFluxDown)) then
-                  field_1lev(1, 1:nCells) = longWaveHeatFluxDown(1:nCells)
-                  call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
-                       mask=maxLevelCell)
-                  call remap_outfile%write_var('longWaveHeatFluxDown', fld_remap, 1, ierr)
-               end if
-
-               if (associated(latentHeatFlux)) then
-                  field_1lev(1, 1:nCells) = latentHeatFlux(1:nCells)
-                  call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
-                       mask=maxLevelCell)
-                  call remap_outfile%write_var('latentHeatFlux', fld_remap, 1, ierr)
-               end if
-
-               if (associated(sensibleHeatFlux)) then
-                  field_1lev(1, 1:nCells) = sensibleHeatFlux(1:nCells)
-                  call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
-                       mask=maxLevelCell)
-                  call remap_outfile%write_var('sensibleHeatFlux', fld_remap, 1, ierr)
-               end if
-
-               ! Wind stress (from forcing pool)
-               if (associated(windStressZonalPtr)) then
-                  field_1lev(1, 1:nCells) = windStressZonalPtr(1:nCells)
-                  call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
-                       mask=maxLevelCell)
-                  call remap_outfile%write_var('windStressZonal', fld_remap, 1, ierr)
-               end if
-
-               if (associated(windStressMeridionalPtr)) then
-                  field_1lev(1, 1:nCells) = windStressMeridionalPtr(1:nCells)
-                  call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
-                       mask=maxLevelCell)
-                  call remap_outfile%write_var('windStressMeridional', fld_remap, 1, ierr)
-               end if
-
-               deallocate(fld_remap, field_1lev)
             end if
+
+            deallocate(fld_remap, field_1lev)
          end if
 
          block => block % next
       end do
+
+   contains
+
+      subroutine remap_1field(native_fld, idx)
+         real(kind=RKIND), dimension(:), intent(in) :: native_fld
+         integer, intent(in) :: idx
+         field_1lev(1, 1:nCells) = native_fld(1:nCells)
+         call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
+              mask=maxLevelCell)
+         if (time_avg_enabled) then
+            remap_accum(:, idx) = remap_accum(:, idx) + fld_remap(:, 1)
+         end if
+      end subroutine remap_1field
+
+      subroutine write_avg_field(varname, idx)
+         character(len=*), intent(in) :: varname
+         integer, intent(in) :: idx
+         fld_remap(:, 1) = remap_accum(:, idx) / real(nAccum, r8)
+         call remap_outfile%write_var(varname, fld_remap, 1, ierr)
+      end subroutine write_avg_field
+
+      subroutine write_inst_field(varname, idx)
+         character(len=*), intent(in) :: varname
+         integer, intent(in) :: idx
+         call remap_outfile%write_var(varname, fld_remap, 1, ierr)
+      end subroutine write_inst_field
 
    end subroutine ocn_compute_fme_derived_fields!}}}
 

@@ -4133,4 +4133,13 @@ Valid values: Any valid file path or 'none'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_AM_fmeSeaiceDerivedFields_time_averaging" type="logical"
+	category="AM_fmeSeaiceDerivedFields" group="AM_fmeSeaiceDerivedFields">
+If true, remapped output fields are time-averaged over the output interval.
+Set compute_interval to 'dt' or a frequent value when enabling.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
 </namelist_definition>

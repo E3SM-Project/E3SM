@@ -27,6 +27,10 @@
 			description="Path to ESMF/TempestRemap weight file for horizontal remapping to lat-lon grid. When set, derived fields are also written to a separate remapped NetCDF file."
 			possible_values="Any valid file path or 'none'"
 		/>
+		<nml_option name="config_AM_fmeDerivedFields_time_averaging" type="logical" default_value=".false."
+			description="If true, remapped output fields are time-averaged over the output interval instead of instantaneous. Set compute_interval to a frequent value (e.g. dt) when enabling."
+			possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<packages>
 		<package name="fmeDerivedFieldsAMPKG" description="This package includes variables required for the fmeDerivedFields analysis member."/>

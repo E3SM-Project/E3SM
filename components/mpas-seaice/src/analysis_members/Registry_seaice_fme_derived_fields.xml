@@ -27,6 +27,10 @@
 			description="Path to ESMF/TempestRemap weight file for horizontal remapping of sea ice derived fields to lat-lon grid."
 			possible_values="Any valid file path or 'none'"
 		/>
+		<nml_option name="config_AM_fmeSeaiceDerivedFields_time_averaging" type="logical" default_value="false" units="unitless"
+			description="If true, remapped output fields are time-averaged over the output interval instead of instantaneous. Set compute_interval to a frequent value (e.g. dt) when enabling."
+			possible_values="true or false"
+		/>
 	</nml_record>
 	<packages>
 		<package name="fmeSeaiceDerivedFieldsAMPKG" description="This package includes variables required for the fmeSeaiceDerivedFields analysis member."/>
