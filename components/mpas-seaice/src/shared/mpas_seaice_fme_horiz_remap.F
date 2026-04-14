@@ -63,7 +63,7 @@ module seaice_fme_horiz_remap
    logical :: is_initialized = .false.
 
    ! MPAS-SI fill value for input field detection (matches def_var _FillValue)
-   real(r8), parameter :: MPAS_SI_FILL = 1.0E34_r8
+   real(r8), parameter :: MPAS_SI_FILL = SHR_FILL_VALUE
 
    ! PIO output
    type(file_desc_t) :: pio_file
@@ -331,12 +331,15 @@ contains
       ierr = pio_def_var(pio_file, 'lon', PIO_DOUBLE, (/dim_lon_id/), pio_lon_var)
       ierr = pio_put_att(pio_file, pio_lon_var, 'units', 'degrees_east')
       ierr = pio_put_att(pio_file, pio_lon_var, 'long_name', 'longitude')
+      ierr = pio_put_att(pio_file, pio_lon_var, 'axis', 'X')
       ierr = pio_def_var(pio_file, 'lat', PIO_DOUBLE, (/dim_lat_id/), pio_lat_var)
       ierr = pio_put_att(pio_file, pio_lat_var, 'units', 'degrees_north')
       ierr = pio_put_att(pio_file, pio_lat_var, 'long_name', 'latitude')
+      ierr = pio_put_att(pio_file, pio_lat_var, 'axis', 'Y')
 
       ierr = pio_put_att(pio_file, PIO_GLOBAL, 'source', 'E3SM FME online remapping')
       ierr = pio_put_att(pio_file, PIO_GLOBAL, 'Conventions', 'CF-1.8')
+      ierr = pio_put_att(pio_file, PIO_GLOBAL, 'calendar', 'noleap')
 
       n_pio_vars = 0
       time_record = 0

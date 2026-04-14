@@ -284,7 +284,7 @@ CONTAINS
     ! Output:
     !   send_gcol_list(1:n_send_total) - global column IDs this rank must send
     !--------------------------------------------------------------------------
-    use mpi, only: MPI_INTEGER
+    use mpi, only: MPI_INTEGER, MPI_SUCCESS
 
     class(shr_horiz_remap_t), intent(inout) :: rd
     integer, intent(in) :: gcol_to_rank(:)  ! (n_a)
@@ -347,6 +347,7 @@ CONTAINS
 
     call mpi_alltoall(rd%recv_counts, 1, MPI_INTEGER, &
                       rd%send_counts, 1, MPI_INTEGER, comm, ierr)
+    if (ierr /= MPI_SUCCESS) return
 
     rd%send_displs(0) = 0
     do r = 1, nprocs-1
@@ -358,6 +359,7 @@ CONTAINS
     call mpi_alltoallv(recv_gcols, rd%recv_counts, rd%recv_displs, MPI_INTEGER, &
                        send_gcol_list, rd%send_counts, rd%send_displs, MPI_INTEGER, &
                        comm, ierr)
+    if (ierr /= MPI_SUCCESS) return
     deallocate(recv_gcols)
 
     ! --- Step 5: build CRS matrix from temporary triplets ---
@@ -465,6 +467,7 @@ CONTAINS
     call mpi_alltoallv(send_buf, send_counts_lev, send_displs_lev, MPI_DOUBLE_PRECISION, &
                        rd%ws_recv_buf, recv_counts_lev, recv_displs_lev, MPI_DOUBLE_PRECISION, &
                        comm, ierr)
+    if (ierr /= 0) return
 
     ! CRS SpMV with first-contribution initialization
     do i = 1, rd%n_b_local
@@ -563,6 +566,7 @@ CONTAINS
     call mpi_alltoallv(send_buf, send_counts_lev, send_displs_lev, MPI_DOUBLE_PRECISION, &
                        rd%ws_recv_buf, recv_counts_lev, recv_displs_lev, MPI_DOUBLE_PRECISION, &
                        comm, ierr)
+    if (ierr /= 0) return
 
     ! CRS SpMV over field levels + mask level, with per-row normalization
     do i = 1, rd%n_b_local

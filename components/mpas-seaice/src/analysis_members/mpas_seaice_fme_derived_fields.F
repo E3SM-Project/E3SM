@@ -23,6 +23,7 @@ module seaice_fme_derived_fields
    use mpas_log, only: mpas_log_write
 
    use shr_kind_mod, only: r8 => shr_kind_r8
+   use shr_horiz_remap_mod, only: SHR_FILL_VALUE
    use seaice_fme_horiz_remap, only: seaice_fme_horiz_remap_init, &
         seaice_fme_horiz_remap_field, seaice_fme_horiz_remap_active, &
         seaice_fme_horiz_remap_write_var, seaice_fme_horiz_remap_write_time, &
@@ -365,8 +366,8 @@ contains
            tempSum
 
       ! Fill value for intensive quantities at ice-free cells.
-      ! Must match the _FillValue attribute in remapped output files.
-      real(kind=RKIND), parameter :: fillValue = 1.0E34_RKIND
+      ! Matches _FillValue attribute in remapped output files.
+      real(kind=RKIND), parameter :: fillValue = real(SHR_FILL_VALUE, RKIND)
 
       err = 0
 

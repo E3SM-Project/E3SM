@@ -38,6 +38,7 @@ module ocn_fme_vertical_reduce
    use mpas_log, only: mpas_log_write
 
    use shr_kind_mod, only: r8 => shr_kind_r8
+   use shr_horiz_remap_mod, only: SHR_FILL_VALUE
    use ocn_fme_horiz_remap, only: ocn_fme_horiz_remap_init, &
         ocn_fme_horiz_remap_field, ocn_fme_horiz_remap_active, &
         ocn_fme_horiz_remap_get_dims, ocn_fme_remap_file_t, &
@@ -263,7 +264,7 @@ contains
 
       real(kind=RKIND) :: ohc_sum, fwc_sum, ke_sum, h_k
       real(kind=RKIND) :: gen_sum, gen_wgt
-      real(kind=RKIND), parameter :: fillValue = 1.0E34_RKIND
+      real(kind=RKIND), parameter :: fillValue = real(SHR_FILL_VALUE, RKIND)
 
       ! Remap workspace
       real(r8), allocatable :: fld_remap(:,:)

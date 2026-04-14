@@ -38,6 +38,7 @@ module ocn_fme_derived_fields
    use ocn_diagnostics_variables
 
    use shr_kind_mod, only: r8 => shr_kind_r8
+   use shr_horiz_remap_mod, only: SHR_FILL_VALUE
    use ocn_fme_horiz_remap, only: ocn_fme_horiz_remap_init, &
         ocn_fme_horiz_remap_field, ocn_fme_horiz_remap_active, &
         ocn_fme_horiz_remap_get_dims, ocn_fme_remap_file_t, &
@@ -154,8 +155,8 @@ contains
       real(kind=RKIND), dimension(:), pointer :: windStressZonalPtr
       real(kind=RKIND), dimension(:), pointer :: windStressMeridionalPtr
 
-      ! Fill value for land cells (must match _FillValue in remapped output)
-      real(kind=RKIND), parameter :: fillValue = 1.0E34_RKIND
+      ! Fill value for land cells (matches _FillValue in remapped output)
+      real(kind=RKIND), parameter :: fillValue = real(SHR_FILL_VALUE, RKIND)
       ! Remap workspace
       real(r8), allocatable :: fld_remap(:,:)
       real(kind=RKIND), allocatable :: field_1lev(:,:)
