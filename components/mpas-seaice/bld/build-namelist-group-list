@@ -43,4 +43,5 @@ my @groups = qw(seaice_model
                 am_timeseriesstatsmonthly
                 am_timeseriesstatsclimatology
                 am_timeseriesstatscustom
+                am_fmeseaicederivedfields
                 );

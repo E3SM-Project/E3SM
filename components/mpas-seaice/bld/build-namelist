@@ -1241,6 +1241,18 @@ add_default($nl, 'config_AM_timeSeriesStatsCustom_repeat_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsCustom_reset_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsCustom_backward_output_offset');
 
+##############################################
+# Namelist group: AM_fmeSeaiceDerivedFields  #
+##############################################
+
+add_default($nl, 'config_AM_fmeSeaiceDerivedFields_enable');
+add_default($nl, 'config_AM_fmeSeaiceDerivedFields_compute_interval');
+add_default($nl, 'config_AM_fmeSeaiceDerivedFields_output_stream');
+add_default($nl, 'config_AM_fmeSeaiceDerivedFields_compute_on_startup');
+add_default($nl, 'config_AM_fmeSeaiceDerivedFields_write_on_startup');
+add_default($nl, 'config_AM_fmeSeaiceDerivedFields_stream_output_interval');
+add_default($nl, 'config_AM_fmeSeaiceDerivedFields_horiz_remap_file');
+
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpassi_in) and input dataset list (mpassi.input_data_list) ***
 #-----------------------------------------------------------------------------------------------
@@ -1291,6 +1303,7 @@ my @groups = qw(seaice_model
                 am_timeseriesstatsmonthly
                 am_timeseriesstatsclimatology
                 am_timeseriesstatscustom
+                am_fmeseaicederivedfields
                 );
 
 # Check for variables in the "derived" group, add them to appropriate group

@@ -1,0 +1,83 @@
+	<nml_record name="AM_fmeSeaiceDerivedFields" mode="forward;analysis">
+		<nml_option name="config_AM_fmeSeaiceDerivedFields_enable" type="logical" default_value="false" units="unitless"
+			description="If true, sea ice analysis member fmeSeaiceDerivedFields is called."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_fmeSeaiceDerivedFields_compute_interval" type="character" default_value="output_interval" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_fmeSeaiceDerivedFields_output_stream" type="character" default_value="fmeSeaiceDerivedFieldsOutput" units="unitless"
+			description="Name of the stream that the fmeSeaiceDerivedFields analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_fmeSeaiceDerivedFields_compute_on_startup" type="logical" default_value="true" units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_fmeSeaiceDerivedFields_write_on_startup" type="logical" default_value="true" units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_fmeSeaiceDerivedFields_stream_output_interval" type="character" default_value="00-00-01_00:00:00"
+			description="Output interval for the fmeSeaiceDerivedFields stream. Format: YY-MM-DD_HH:MM:SS"
+			possible_values="Any valid MPAS time interval string"
+		/>
+		<nml_option name="config_AM_fmeSeaiceDerivedFields_horiz_remap_file" type="character" default_value="none" units="unitless"
+			description="Path to ESMF/TempestRemap weight file for horizontal remapping of sea ice derived fields to lat-lon grid."
+			possible_values="Any valid file path or 'none'"
+		/>
+	</nml_record>
+	<packages>
+		<package name="fmeSeaiceDerivedFieldsAMPKG" description="This package includes variables required for the fmeSeaiceDerivedFields analysis member."/>
+	</packages>
+	<var_struct name="fmeSeaiceDerivedFieldsAM" time_levs="1" packages="fmeSeaiceDerivedFieldsAMPKG">
+		<var name="iceAreaTotal" type="real" dimensions="nCells Time" units="unitless"
+			description="Total ice area fraction summed over categories"
+		/>
+		<var name="iceVolumeTotal" type="real" dimensions="nCells Time" units="m"
+			description="Total ice volume per unit grid cell area summed over categories"
+		/>
+		<var name="snowVolumeTotal" type="real" dimensions="nCells Time" units="m"
+			description="Total snow volume per unit grid cell area summed over categories"
+		/>
+		<var name="iceThicknessMean" type="real" dimensions="nCells Time" units="m"
+			description="Area-weighted mean ice thickness"
+		/>
+		<var name="surfaceTemperatureMean" type="real" dimensions="nCells Time" units="K"
+			description="Area-weighted mean surface temperature"
+		/>
+		<var name="airStressZonal" type="real" dimensions="nCells Time" units="N m^-2"
+			description="Zonal component of air stress on ice in geographical coordinates"
+		/>
+		<var name="airStressMeridional" type="real" dimensions="nCells Time" units="N m^-2"
+			description="Meridional component of air stress on ice in geographical coordinates"
+		/>
+	</var_struct>
+	<streams>
+		<!-- output_interval default is daily; override via SourceMods/streams.ocean_forward -->
+		<stream name="fmeSeaiceDerivedFieldsOutput" type="output"
+				mode="forward;analysis"
+				filename_template="analysis_members/seaice_fmeSeaiceDerivedFields.$Y-$M-$D.nc"
+				filename_interval="01-00-00_00:00:00"
+				output_interval="00-00-01_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				packages="fmeSeaiceDerivedFieldsAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+			<stream name="mesh"/>
+			<var name="xtime"/>
+			<var name="iceAreaTotal"/>
+			<var name="iceVolumeTotal"/>
+			<var name="snowVolumeTotal"/>
+			<var name="iceThicknessMean"/>
+			<var name="surfaceTemperatureMean"/>
+			<var name="airStressZonal"/>
+			<var name="airStressMeridional"/>
+			<var name="iceAreaCell"/>
+			<var name="iceVolumeCell"/>
+			<var name="snowVolumeCell"/>
+			<var name="uVelocity"/>
+			<var name="vVelocity"/>
+		</stream>
+	</streams>

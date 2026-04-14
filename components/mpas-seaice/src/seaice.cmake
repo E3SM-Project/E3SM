@@ -112,10 +112,12 @@ list(APPEND RAW_SOURCES
   core_seaice/shared/mpas_seaice_mesh_pool.F
   core_seaice/shared/mpas_seaice_prescribed.F
   core_seaice/shared/mpas_seaice_special_boundaries.F
+  core_seaice/shared/mpas_seaice_fme_horiz_remap.F
 )
 
 # analysis members
 list(APPEND RAW_SOURCES
+  core_seaice/analysis_members/mpas_seaice_fme_derived_fields.F
   core_seaice/analysis_members/mpas_seaice_analysis_driver.F
   core_seaice/analysis_members/mpas_seaice_high_frequency_output.F
   core_seaice/analysis_members/mpas_seaice_temperatures.F

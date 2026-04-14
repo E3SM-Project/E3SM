@@ -657,4 +657,13 @@
 <config_AM_timeSeriesStatsCustom_reset_intervals>'00-00-07_00:00:00'</config_AM_timeSeriesStatsCustom_reset_intervals>
 <config_AM_timeSeriesStatsCustom_backward_output_offset>'00-00-01_00:00:00'</config_AM_timeSeriesStatsCustom_backward_output_offset>
 
+<!-- AM_fmeSeaiceDerivedFields -->
+<config_AM_fmeSeaiceDerivedFields_enable>false</config_AM_fmeSeaiceDerivedFields_enable>
+<config_AM_fmeSeaiceDerivedFields_compute_interval>'output_interval'</config_AM_fmeSeaiceDerivedFields_compute_interval>
+<config_AM_fmeSeaiceDerivedFields_output_stream>'fmeSeaiceDerivedFieldsOutput'</config_AM_fmeSeaiceDerivedFields_output_stream>
+<config_AM_fmeSeaiceDerivedFields_compute_on_startup>true</config_AM_fmeSeaiceDerivedFields_compute_on_startup>
+<config_AM_fmeSeaiceDerivedFields_write_on_startup>true</config_AM_fmeSeaiceDerivedFields_write_on_startup>
+<config_AM_fmeSeaiceDerivedFields_stream_output_interval>'00-00-01_00:00:00'</config_AM_fmeSeaiceDerivedFields_stream_output_interval>
+<config_AM_fmeSeaiceDerivedFields_horiz_remap_file>'none'</config_AM_fmeSeaiceDerivedFields_horiz_remap_file>
+
 </namelist_defaults>
