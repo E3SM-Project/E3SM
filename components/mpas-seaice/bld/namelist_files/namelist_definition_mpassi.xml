@@ -4075,4 +4075,62 @@ Valid values: A time interval in YYYY-MM-DD_hh:mm:ss.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<!-- AM_fmeSeaiceDerivedFields -->
+
+<entry id="config_AM_fmeSeaiceDerivedFields_enable" type="logical"
+	category="AM_fmeSeaiceDerivedFields" group="AM_fmeSeaiceDerivedFields">
+If true, sea ice analysis member fmeSeaiceDerivedFields is called.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeSeaiceDerivedFields_compute_interval" type="char*1024"
+	category="AM_fmeSeaiceDerivedFields" group="AM_fmeSeaiceDerivedFields">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeSeaiceDerivedFields_output_stream" type="char*1024"
+	category="AM_fmeSeaiceDerivedFields" group="AM_fmeSeaiceDerivedFields">
+Name of the stream that the fmeSeaiceDerivedFields analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeSeaiceDerivedFields_compute_on_startup" type="logical"
+	category="AM_fmeSeaiceDerivedFields" group="AM_fmeSeaiceDerivedFields">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeSeaiceDerivedFields_write_on_startup" type="logical"
+	category="AM_fmeSeaiceDerivedFields" group="AM_fmeSeaiceDerivedFields">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeSeaiceDerivedFields_stream_output_interval" type="char*1024"
+	category="AM_fmeSeaiceDerivedFields" group="AM_fmeSeaiceDerivedFields">
+Output interval for the fmeSeaiceDerivedFields stream. Format: YY-MM-DD_HH:MM:SS
+
+Valid values: Any valid MPAS time interval string
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_fmeSeaiceDerivedFields_horiz_remap_file" type="char*1024"
+	category="AM_fmeSeaiceDerivedFields" group="AM_fmeSeaiceDerivedFields">
+Path to ESMF/TempestRemap weight file for horizontal remapping of sea ice derived fields to lat-lon grid.
+
+Valid values: Any valid file path or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 </namelist_definition>
