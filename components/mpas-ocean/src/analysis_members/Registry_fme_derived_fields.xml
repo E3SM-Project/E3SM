@@ -1,0 +1,77 @@
+	<nml_record name="AM_fmeDerivedFields" mode="forward;analysis">
+		<nml_option name="config_AM_fmeDerivedFields_enable" type="logical" default_value=".false."
+			description="If true, ocean analysis member fmeDerivedFields is called."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_fmeDerivedFields_compute_interval" type="character" default_value="output_interval"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_fmeDerivedFields_output_stream" type="character" default_value="fmeDerivedFieldsOutput"
+			description="Name of the stream that the fmeDerivedFields analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_fmeDerivedFields_compute_on_startup" type="logical" default_value=".true."
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_fmeDerivedFields_write_on_startup" type="logical" default_value=".true."
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_fmeDerivedFields_stream_output_interval" type="character" default_value="00-00-01_00:00:00"
+			description="Output interval for the fmeDerivedFields stream. Format: YY-MM-DD_HH:MM:SS"
+			possible_values="Any valid MPAS time interval string"
+		/>
+		<nml_option name="config_AM_fmeDerivedFields_horiz_remap_file" type="character" default_value="none"
+			description="Path to ESMF/TempestRemap weight file for horizontal remapping to lat-lon grid. When set, derived fields are also written to a separate remapped NetCDF file."
+			possible_values="Any valid file path or 'none'"
+		/>
+	</nml_record>
+	<packages>
+		<package name="fmeDerivedFieldsAMPKG" description="This package includes variables required for the fmeDerivedFields analysis member."/>
+	</packages>
+	<var_struct name="fmeDerivedFieldsAM" time_levs="1" packages="fmeDerivedFieldsAMPKG">
+		<var name="sst" type="real" dimensions="nCells Time" units="degC"
+			description="Sea surface temperature extracted from top-level temperature tracer"
+		/>
+		<var name="sss" type="real" dimensions="nCells Time" units="PSU"
+			description="Sea surface salinity extracted from top-level salinity tracer"
+		/>
+		<var name="surfaceHeatFluxTotal" type="real" dimensions="nCells Time" units="W m^-2"
+			description="Total surface downward heat flux (shortwave + longwave down + latent + sensible)"
+		/>
+	</var_struct>
+	<streams>
+		<!-- output_interval default is daily; override via SourceMods/streams.ocean_forward -->
+		<stream name="fmeDerivedFieldsOutput" type="output"
+				mode="forward;analysis"
+				precision="single"
+				filename_template="analysis_members/fmeDerivedFields.$Y-$M-$D.nc"
+				filename_interval="01-00-00_00:00:00"
+				output_interval="00-00-01_00:00:00"
+				reference_time="0001-01-01_00:00:00"
+				packages="fmeDerivedFieldsAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+			<var name="xtime"/>
+			<var name="sst"/>
+			<var name="sss"/>
+			<var name="surfaceHeatFluxTotal"/>
+			<var name="ssh"/>
+			<var name="windStressZonal"/>
+			<var name="windStressMeridional"/>
+			<var name="latentHeatFlux"/>
+			<var name="sensibleHeatFlux"/>
+			<var name="shortWaveHeatFlux"/>
+			<var name="longWaveHeatFluxUp"/>
+			<var name="longWaveHeatFluxDown"/>
+			<var name="surfaceThicknessFlux"/>
+			<var name="rainFlux"/>
+			<var name="snowFlux"/>
+			<var name="evaporationFlux"/>
+			<var name="totalFreshWaterTemperatureFlux"/>
+			<var name="frazilIceFreshwaterFlux"/>
+			<var name="surfaceFrictionVelocity"/>
+		</stream>
+	</streams>
