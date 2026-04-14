@@ -935,13 +935,6 @@ void OutputManager::set_file_header(const IOFileSpecs& file_specs)
   set_str_att("history",ts_str);
   set_str_att("Conventions","CF-1.8");
   set_str_att("product",e2str(file_specs.ftype));
-
-  // Add sphere radius (per czender feedback) for users who want to convert
-  // area from steradians to m² (area_m2 = area_sr * sphere_radius^2)
-  // MPAS uses this same attribute name with value 6371220 m
-  // EAMxx uses r_earth = 6.376e6 m from physics constants
-  using PC = scream::physics::Constants<Real>;
-  scorpio::set_attribute(filename,"GLOBAL","sphere_radius",PC::r_earth.value);
 }
 
 void OutputManager::
