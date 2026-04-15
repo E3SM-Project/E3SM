@@ -225,7 +225,9 @@ contains
                              ierr=ierr)
                         avg_last_output_time = mpas_get_clock_time( &
                              domain % clock, MPAS_START_TIME, ierr)
-                        allocate(remap_accum(remap_nb_local, N_AVG_FIELDS))
+                        if (.not. allocated(remap_accum)) then
+                           allocate(remap_accum(remap_nb_local, N_AVG_FIELDS))
+                        end if
                         remap_accum = 0.0_r8
                         nAccum = 0
                         time_avg_enabled = .true.

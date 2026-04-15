@@ -257,7 +257,9 @@ contains
                           domain % clock, MPAS_START_TIME, ierr)
                      n_avg_fields = nCoarsenLevels * nCoarsenFields &
                           + nCoarsenLevels
-                     allocate(remap_accum(remap_nb_local, n_avg_fields))
+                     if (.not. allocated(remap_accum)) then
+                        allocate(remap_accum(remap_nb_local, n_avg_fields))
+                     end if
                      remap_accum = 0.0_r8
                      nAccum = 0
                      time_avg_enabled = .true.

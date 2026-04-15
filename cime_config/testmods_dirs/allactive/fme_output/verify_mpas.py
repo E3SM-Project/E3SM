@@ -236,6 +236,39 @@ DEPTH_BOUNDS = [0, 20, 30, 40, 50, 80, 110, 140, 170, 230, 410, 530,
 EXPECTED_NLON = 360
 EXPECTED_NLAT = 180
 
+# -- Legacy vs FME variable mapping -------------------------------------------
+# (legacy_var, fme_var, fme_stream, label, extract, cmap, vmin, vmax, units)
+# extract: "last2d" = last timestep of (Time, nCells)
+#          "surface" = last timestep, level 0 of (Time, nVertLevels, nCells)
+
+LEGACY_FME_OCN_PAIRS = [
+    ("timeCustom_avg_ssh", "ssh", "fmeDerivedFields",
+     "SSH", "last2d", "RdBu_r", -2, 2, "m"),
+    ("timeCustom_avg_activeTracers_temperature", "sst", "fmeDerivedFields",
+     "SST", "surface", "RdYlBu_r", -2, 30, "degC"),
+    ("timeCustom_avg_activeTracers_salinity", "sss", "fmeDerivedFields",
+     "SSS", "surface", "viridis", 30, 40, "PSU"),
+    ("timeCustom_avg_shortWaveHeatFlux", "shortWaveHeatFlux", "fmeDerivedFields",
+     "SW Heat Flux", "last2d", "YlOrRd", 0, 400, "W/m2"),
+    ("timeCustom_avg_longWaveHeatFluxDown", "longWaveHeatFluxDown", "fmeDerivedFields",
+     "LW Heat Flux", "last2d", "inferno", 200, 450, "W/m2"),
+    ("timeCustom_avg_sensibleHeatFlux", "sensibleHeatFlux", "fmeDerivedFields",
+     "Sensible Heat", "last2d", "RdBu_r", -100, 100, "W/m2"),
+    ("timeCustom_avg_windStressZonal", "windStressZonal", "fmeDerivedFields",
+     "Wind Stress (zonal)", "last2d", "RdBu_r", -0.3, 0.3, "N/m2"),
+    ("timeCustom_avg_windStressMeridional", "windStressMeridional", "fmeDerivedFields",
+     "Wind Stress (merid)", "last2d", "RdBu_r", -0.2, 0.2, "N/m2"),
+]
+
+LEGACY_FME_ICE_PAIRS = [
+    ("timeCustom_avg_iceAreaCell", "iceAreaTotal", "fmeSeaiceDerivedFields",
+     "Ice Area", "last2d", "Blues", 0, 1, "fraction"),
+    ("timeCustom_avg_iceVolumeCell", "iceVolumeTotal", "fmeSeaiceDerivedFields",
+     "Ice Volume", "last2d", "viridis", 0, 5, "m"),
+    ("timeCustom_avg_snowVolumeCell", "snowVolumeTotal", "fmeSeaiceDerivedFields",
+     "Snow Volume", "last2d", "PuBu", 0, 2, "m"),
+]
+
 
 # -----------------------------------------------------------------------------
 # Utility helpers
@@ -388,6 +421,60 @@ def last_time_index(arr):
     if arr.ndim >= 2 and arr.shape[0] > 0:
         return -1
     return -1
+
+
+def _extract_field(arr, mode):
+    """Extract a 1D (nCells) field from a multi-dimensional array.
+
+    mode: 'last2d' = last timestep of (Time, nCells)
+          'surface' = last timestep, level 0 of (Time, nVertLevels, nCells)
+    """
+    if arr is None:
+        return None
+    if mode == "surface":
+        if arr.ndim == 3:      # (Time, nVertLevels, nCells)
+            return arr[-1, 0, :]
+        elif arr.ndim == 2:    # (nVertLevels, nCells) -- no time
+            return arr[0, :]
+    else:  # last2d
+        if arr.ndim == 2:      # (Time, nCells)
+            return arr[-1, :]
+        elif arr.ndim == 1:    # (nCells)
+            return arr[:]
+    return None
+
+
+def _diff_stats(leg, fme, fill_thresh=1e10):
+    """Compute difference statistics between two 1D fields on the same grid.
+
+    Returns dict with n_valid, legacy_mean, fme_mean, diff_mean, diff_rms,
+    diff_max_abs, correlation -- or None if no valid overlap.
+    """
+    if leg is None or fme is None:
+        return None
+    a = leg.ravel().astype(float)
+    b = fme.ravel().astype(float)
+    if a.size != b.size:
+        return None
+    ok = ((np.abs(a) < fill_thresh) & np.isfinite(a) &
+          (np.abs(b) < fill_thresh) & np.isfinite(b))
+    if ok.sum() == 0:
+        return None
+    a, b = a[ok], b[ok]
+    d = b - a
+    s = {
+        "n_valid": int(ok.sum()),
+        "legacy_mean": float(a.mean()),
+        "fme_mean": float(b.mean()),
+        "diff_mean": float(d.mean()),
+        "diff_rms": float(np.sqrt((d ** 2).mean())),
+        "diff_max_abs": float(np.abs(d).max()),
+    }
+    if a.std() > 0 and b.std() > 0:
+        s["correlation"] = float(np.corrcoef(a, b)[0, 1])
+    else:
+        s["correlation"] = float("nan")
+    return s
 
 
 # -----------------------------------------------------------------------------
@@ -1639,6 +1726,220 @@ def generate_comparison_figures(rundir, fig_root, all_plots_by_comp):
 
 
 # -----------------------------------------------------------------------------
+# Legacy vs FME cross-verification
+# -----------------------------------------------------------------------------
+
+def compare_legacy_vs_fme(legacy_rundir, fme_rundir, outdir, verbose):
+    """Compare legacy timeSeriesStatsCustom output with FME online output.
+
+    Both cases must use the same MPAS mesh (same nCells).  The legacy case
+    produces time-averaged fields via the standard timeSeriesStatsCustom AM;
+    the FME case produces instantaneous native-grid snapshots plus remapped
+    time-averaged output.  This function compares the native-grid fields
+    side-by-side and reports difference statistics.
+
+    Returns (issues, plots, stats):
+        issues: list of issue strings
+        plots:  list of figure paths
+        stats:  list of dicts (one per variable pair) for the HTML table
+    """
+    print("\n=== Legacy vs FME Cross-Verification ===")
+    issues = []
+    plots = []
+    stats = []
+
+    # --- locate files ---
+    leg_ocn = find_files(legacy_rundir,
+                         "*.mpaso.hist.am.timeSeriesStatsCustom.*.nc")
+    leg_ice = find_files(legacy_rundir,
+                         "*.mpassi.hist.am.timeSeriesStatsCustom.*.nc")
+    fme_ocn = find_files(fme_rundir,
+                         "*.mpaso.hist.am.fmeDerivedFields.*.nc",
+                         exclude=".remapped.")
+    fme_ice = find_files(fme_rundir,
+                         "*.mpassi.hist.am.fmeSeaiceDerivedFields.*.nc",
+                         exclude=".remapped.")
+
+    if not leg_ocn and not leg_ice:
+        print("  SKIP: no legacy timeSeriesStatsCustom files found")
+        return issues, plots, stats
+
+    os.makedirs(outdir, exist_ok=True)
+
+    # --- helper: process one pair list ---
+    def _compare_pairs(ds_leg, ds_fme, pairs, component,
+                       lon_deg, lat_deg):
+        for (lvar, fvar, _stream, label, extract,
+             cmap, vm, vx, units) in pairs:
+            arr_leg = get_var(ds_leg, lvar)
+            arr_fme = get_var(ds_fme, fvar)
+            if arr_leg is None or arr_fme is None:
+                if arr_leg is None and verbose:
+                    print(f"  {component}: legacy missing {lvar}")
+                if arr_fme is None and verbose:
+                    print(f"  {component}: FME missing {fvar}")
+                continue
+
+            d_leg = _extract_field(arr_leg, extract)
+            d_fme = _extract_field(arr_fme, "last2d")
+            if d_leg is None or d_fme is None:
+                continue
+
+            # statistics
+            s = _diff_stats(d_leg, d_fme)
+            if s is not None:
+                s["component"] = component
+                s["label"] = label
+                s["legacy_var"] = lvar
+                s["fme_var"] = fvar
+                stats.append(s)
+                print(f"  {label:24s}  corr={s['correlation']:.6f}"
+                      f"  rms={s['diff_rms']:.4g}"
+                      f"  bias={s['diff_mean']:.4g}")
+
+            # side-by-side plot
+            if HAS_MPL and lon_deg is not None:
+                fname = (f"xverify_{component.lower().replace('-','')}"
+                         f"_{fvar}.png")
+                p = side_by_side_comparison(
+                    d_leg, lon_deg, lat_deg,
+                    f"Legacy ({lvar.replace('timeCustom_avg_','')})",
+                    d_fme, lon_deg, lat_deg,
+                    f"FME ({fvar})",
+                    f"{component} {label}: Legacy vs FME",
+                    outdir, fname,
+                    cmap=cmap, vmin=vm, vmax=vx, units=units)
+                if p:
+                    plots.append(p)
+
+                # difference map
+                if d_leg.size == d_fme.size:
+                    diff = d_fme.astype(float) - d_leg.astype(float)
+                    # mask fill values
+                    bad = ((np.abs(d_leg) >= 1e10) |
+                           (np.abs(d_fme) >= 1e10) |
+                           ~np.isfinite(d_leg) |
+                           ~np.isfinite(d_fme))
+                    diff[bad] = np.nan
+                    vabs = np.nanpercentile(np.abs(diff[np.isfinite(diff)]),
+                                            98) if np.any(np.isfinite(diff)) else 1
+                    fname_d = fname.replace(".png", "_diff.png")
+                    p2 = global_map(
+                        diff, lon_deg, lat_deg,
+                        f"{component} {label}: FME minus Legacy",
+                        cmap="RdBu_r", vmin=-vabs, vmax=vabs,
+                        outdir=outdir, fname=fname_d, units=units)
+                    if p2:
+                        plots.append(p2)
+
+    # --- Ocean ---
+    if leg_ocn and fme_ocn:
+        ds_leg = safe_open(leg_ocn[0])
+        ds_fme = safe_open(fme_ocn[0])
+        if not has_time_zero(ds_leg) and not has_time_zero(ds_fme):
+            lon = get_var(ds_leg, "lonCell")
+            lat = get_var(ds_leg, "latCell")
+            lon_deg = np.degrees(lon) if lon is not None else None
+            lat_deg = np.degrees(lat) if lat is not None else None
+            _compare_pairs(ds_leg, ds_fme, LEGACY_FME_OCN_PAIRS,
+                           "MPAS-O", lon_deg, lat_deg)
+        else:
+            print("  SKIP: time dimension empty in ocean files")
+        close_ds(ds_leg)
+        close_ds(ds_fme)
+    elif not fme_ocn:
+        print("  SKIP: no FME fmeDerivedFields files found")
+
+    # --- Sea ice ---
+    if leg_ice and fme_ice:
+        ds_leg = safe_open(leg_ice[0])
+        ds_fme = safe_open(fme_ice[0])
+        if not has_time_zero(ds_leg) and not has_time_zero(ds_fme):
+            lon = get_var(ds_leg, "lonCell")
+            lat = get_var(ds_leg, "latCell")
+            lon_deg = np.degrees(lon) if lon is not None else None
+            lat_deg = np.degrees(lat) if lat is not None else None
+            _compare_pairs(ds_leg, ds_fme, LEGACY_FME_ICE_PAIRS,
+                           "MPAS-SI", lon_deg, lat_deg)
+        else:
+            print("  SKIP: time dimension empty in sea-ice files")
+        close_ds(ds_leg)
+        close_ds(ds_fme)
+    elif not fme_ice:
+        print("  SKIP: no FME fmeSeaiceDerivedFields files found")
+
+    n_pairs = len(stats)
+    if n_pairs == 0:
+        issues.append("No overlapping variable pairs found for comparison")
+    else:
+        high_rms = [s for s in stats if s["diff_rms"] > 1e3]
+        low_corr = [s for s in stats
+                    if np.isfinite(s["correlation"]) and s["correlation"] < 0.9]
+        if high_rms:
+            for s in high_rms:
+                issues.append(f"  {s['label']}: RMS diff = {s['diff_rms']:.4g}")
+        if low_corr:
+            for s in low_corr:
+                issues.append(
+                    f"  {s['label']}: correlation = {s['correlation']:.4f}")
+        print(f"  Compared {n_pairs} variable pairs, "
+              f"{len(issues)} issue(s)")
+
+    return issues, plots, stats
+
+
+def write_cross_verify_html(stats, legacy_rundir):
+    """Generate HTML for the Legacy vs FME cross-verification section."""
+    if not stats:
+        return ""
+
+    import html as html_mod
+
+    html = '<h2 id="Cross_Verify">Legacy vs FME Cross-Verification</h2>\n'
+    html += '<div class="card">\n'
+    html += (f'<p>Comparing <code>{html_mod.escape(legacy_rundir)}</code> '
+             f'(timeSeriesStatsCustom) with FME native output.</p>\n')
+    html += ('<p style="font-size:0.85em;color:var(--text-muted)">'
+             'Note: legacy output is time-averaged; FME native output is '
+             'instantaneous. Differences are expected — focus on spatial '
+             'patterns and correlation.</p>\n')
+    html += '</div>\n'
+
+    html += ('<table class="sortable" id="xverify-table"><thead><tr>'
+             '<th onclick="sortTable(this,0)">Component</th>'
+             '<th onclick="sortTable(this,1)">Field</th>'
+             '<th onclick="sortTable(this,2)">Legacy Var</th>'
+             '<th onclick="sortTable(this,3)">FME Var</th>'
+             '<th onclick="sortTable(this,4)">Legacy Mean</th>'
+             '<th onclick="sortTable(this,5)">FME Mean</th>'
+             '<th onclick="sortTable(this,6)">Bias</th>'
+             '<th onclick="sortTable(this,7)">RMS Diff</th>'
+             '<th onclick="sortTable(this,8)">Correlation</th>'
+             '</tr></thead><tbody>\n')
+
+    for s in stats:
+        corr = s["correlation"]
+        corr_cls = "pass" if (np.isfinite(corr) and corr > 0.95) else (
+            "fail" if (np.isfinite(corr) and corr < 0.8) else "")
+        corr_str = f"{corr:.6f}" if np.isfinite(corr) else "N/A"
+        lv = s["legacy_var"].replace("timeCustom_avg_", "")
+        html += (f'<tr>'
+                 f'<td>{s["component"]}</td>'
+                 f'<td>{s["label"]}</td>'
+                 f'<td><code>{lv}</code></td>'
+                 f'<td><code>{s["fme_var"]}</code></td>'
+                 f'<td>{s["legacy_mean"]:.4g}</td>'
+                 f'<td>{s["fme_mean"]:.4g}</td>'
+                 f'<td>{s["diff_mean"]:.4g}</td>'
+                 f'<td>{s["diff_rms"]:.4g}</td>'
+                 f'<td class="{corr_cls}">{corr_str}</td>'
+                 f'</tr>\n')
+
+    html += '</tbody></table>\n'
+    return html
+
+
+# -----------------------------------------------------------------------------
 # File inventory
 # -----------------------------------------------------------------------------
 
@@ -2535,6 +2836,9 @@ def main():
     parser.add_argument("--outdir", required=True,
                         help="Output directory for figures and HTML index")
     parser.add_argument("--verbose", "-v", action="store_true")
+    parser.add_argument("--legacy-rundir", default=None,
+                        help="Legacy FME output rundir (timeSeriesStatsCustom) "
+                             "for cross-verification against FME online output")
     args = parser.parse_args()
 
     if not os.path.isdir(args.rundir):
@@ -2618,6 +2922,20 @@ def main():
     # Reproducibility info
     repro_info = collect_repro_info(args)
 
+    # Legacy vs FME cross-verification
+    extra_html = ""
+    if args.legacy_rundir:
+        if not os.path.isdir(args.legacy_rundir):
+            print(f"WARNING: legacy-rundir not found: {args.legacy_rundir}")
+        else:
+            xv_outdir = os.path.join(fig_root, "cross_verify")
+            os.makedirs(xv_outdir, exist_ok=True)
+            xv_issues, xv_plots, xv_stats = compare_legacy_vs_fme(
+                args.legacy_rundir, args.rundir, xv_outdir, args.verbose)
+            all_issues["Legacy vs FME"] = xv_issues
+            all_plots_by_comp["Cross-Verification"] = xv_plots
+            extra_html = write_cross_verify_html(xv_stats, args.legacy_rundir)
+
     # Executive summary
     exec_summary = build_executive_summary(all_issues, coverage,
                                            file_inventory_data)
@@ -2625,6 +2943,7 @@ def main():
     write_html_index(args.outdir, all_plots_by_comp, all_issues,
                      file_inventory_data, all_fill_reports,
                      timing_summary=timing_summary,
+                     extra_html=extra_html,
                      repro_info=repro_info,
                      coverage=coverage,
                      exec_summary=exec_summary)
