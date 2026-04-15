@@ -438,8 +438,13 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
       const auto het_rates_icol = ekat::subview(het_rates, icol);
       const auto& vmr_icol = ekat::subview(vmr, icol);
 
+      //Find tropopause (or quit simulation if not found) as extinction should be
+      // applied only above tropopause */
+      const int ilev_tropp = mam4::aer_rad_props::tropopause_or_quit(atm.pressure, atm.interface_pressure,
+          atm.temperature,  atm.height, ekat::subview(dry_atm.z_iface, icol));
+
       Kokkos::parallel_for(
-       Kokkos::TeamVectorRange(team, nlev),
+       Kokkos::TeamVectorRange(team, ilev_tropp, nlev),
        [&](const int kk) {
         const auto &extfrc_k = ekat::subview(extfrc_icol, kk);
         const auto &invariants_k = ekat::subview(invariants_icol, kk);
