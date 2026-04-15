@@ -114,14 +114,16 @@ These are hard-won lessons. Read before modifying FME code.
     character array (`character(len=64) :: buf(1)`), not a scalar — PIO's
     `put_vara_1d_text` interface demands `character(len=*) :: val(:)`.
 
-13. **MPAS coupler fluxes are ice-fraction-weighted.** The forcing pool fields
+13. **MPAS coupler fluxes are ice-fraction-corrected.** The forcing pool fields
     (`shortWaveHeatFlux`, `longWaveHeatFluxDown`, `latentHeatFlux`,
-    `sensibleHeatFlux`, `windStressZonal`, `windStressMeridional`) represent
-    the flux received by the ocean surface, NOT the atmospheric flux.
-    Under heavy ice coverage (iceFraction >= 0.99), these values are near
-    zero and not physically meaningful. The FME derived fields AM masks them
-    to `fillValue` before remapping. `surfaceHeatFluxTotal` (the sum of
-    coupler fluxes) is likewise masked. SST/SSS remain valid under ice.
+    `sensibleHeatFlux`, `windStressZonal`, `windStressMeridional`) are
+    delivered by the coupler as `flux_atm * (1 - iceFraction)`. The FME
+    derived fields AM recovers the atmospheric flux by dividing by
+    `(1 - iceFraction)` via the `mask_and_remap` subroutine. At nearly
+    full ice coverage (iceFraction >= 0.99), division would amplify noise,
+    so those cells get `fillValue` instead. `surfaceHeatFluxTotal` (sum of
+    coupler fluxes) gets the same correction in the cell loop. SST, SSS,
+    and SSH are state variables and are NOT corrected.
 
 14. **EAM averaging convention.** State variables (T, U, V, STW, PS, TS)
     are instantaneous snapshots (`avgflag_pertape='I'`). Fluxes and
@@ -168,14 +170,15 @@ python verify_mpas.py --rundir $RUNDIR --outdir /path/to/figs \
 - Add CI test variant (SMS_Ld2, ne4pg2_oQU480 for fast builds)
 - Add ERS restart test and PEM MPI reproducibility test
 - Parameterize map file paths via env variables in shell_commands
-- Add FSUTOA, FSNTOA to legacy testmod fincl1 for native-vs-interpolated comparison
 
 ### Code quality
 - 3D PIO decomposition for depth-coarsened fields (single 3D var instead of
   per-level 2D vars like `temperatureCoarsened_0..24`)
 - Depth coordinate variable in remapped 3D output
-- SSH masking under ice shelf cavities (currently only masked by iceFraction;
-  cavities have maxLevelCell > 0 and can have SSH < -1000m)
+- SSH masking under ice shelf cavities (cavities have maxLevelCell > 0 and
+  can have SSH < -1000m; not caught by iceFraction correction)
+- Add lonCell/latCell to MPAS-O FME Registry stream definitions for native
+  grid diagnostic plots
 
 ### Extensions
 - Numeric `time` coordinate + `time_bnds` for CF-compliant time axis
