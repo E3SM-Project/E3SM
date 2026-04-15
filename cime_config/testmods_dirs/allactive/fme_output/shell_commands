@@ -182,6 +182,12 @@ config_AM_fmeDerivedFields_enable = .true.
 config_AM_fmeDerivedFields_compute_interval = 'dt'
 config_AM_fmeDerivedFields_time_averaging = .true.
 config_AM_fmeDerivedFields_stream_output_interval = '${FME_MPAS_INTERVAL}'
+
+config_AM_fmeVerticalReduce_enable = .true.
+config_AM_fmeVerticalReduce_compute_interval = 'dt'
+config_AM_fmeVerticalReduce_time_averaging = .true.
+config_AM_fmeVerticalReduce_stream_output_interval = '${FME_MPAS_INTERVAL}'
+config_AM_fmeVerticalReduce_fields = 'oceanHeatContent,freshwaterContent,kineticEnergy'
 EOF
 
 if [ -f "${OCN_MAP}" ]; then
@@ -190,6 +196,8 @@ config_AM_fmeDepthCoarsening_output_stream = 'none'
 config_AM_fmeDepthCoarsening_horiz_remap_file = '${OCN_MAP}'
 config_AM_fmeDerivedFields_output_stream = 'none'
 config_AM_fmeDerivedFields_horiz_remap_file = '${OCN_MAP}'
+config_AM_fmeVerticalReduce_output_stream = 'none'
+config_AM_fmeVerticalReduce_horiz_remap_file = '${OCN_MAP}'
 EOF
 fi
 
