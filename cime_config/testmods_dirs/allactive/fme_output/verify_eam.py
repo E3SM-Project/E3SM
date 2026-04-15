@@ -450,6 +450,9 @@ def _fix_lon(lons):
 
 def _plot_on_ax(ax, data, lons, lats, cmap, vmin, vmax, is_cartopy):
     """Plot data on an axis -- tripcolor for 1D, pcolormesh for 2D."""
+    # Mask fill values so they render as transparent (not clipped to vmax)
+    data = np.where((np.abs(data) < 1e10) & np.isfinite(data),
+                    data.astype(float), np.nan)
     transform = ccrs.PlateCarree() if is_cartopy else None
     if data.ndim == 2:
         kw = dict(transform=transform) if is_cartopy else {}

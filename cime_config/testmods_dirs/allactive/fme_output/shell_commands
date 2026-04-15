@@ -10,8 +10,8 @@
 # ---------------------------------------------------------------------------
 # EAM output frequency in hours (negative = hours in EAM convention)
 FME_EAM_OUTPUT_HOURS=${FME_EAM_OUTPUT_HOURS:-6}
-# EAM averaging flag: 'A' = time-averaged, 'I' = instantaneous
-FME_EAM_AVGFLAG=${FME_EAM_AVGFLAG:-A}
+# EAM averaging flag: 'I' = instantaneous (default), fluxes use per-field :A
+FME_EAM_AVGFLAG=${FME_EAM_AVGFLAG:-I}
 # Number of EAM time samples per output file
 FME_EAM_MFILT=${FME_EAM_MFILT:-4}
 # MPAS compute/output interval (MPAS time interval string)
@@ -121,18 +121,19 @@ vcoarsen_pbounds = 10.0, 4803.81, 13913.06, 26856.34,
                    43998.31, 59659.67, 76854.15, 90711.83, 101325.0
 vcoarsen_avg_flds = 'T','U','V','STW'
 
-! Tape 1: ${FME_EAM_OUTPUT_HOURS}-hourly output (avgflag=${FME_EAM_AVGFLAG}).
-fincl1 = 'SOLIN', 'PHIS',
+! Tape 1: ${FME_EAM_OUTPUT_HOURS}-hourly output.
+! State variables are instantaneous; fluxes/tendencies use :A (time-averaged).
+fincl1 = 'SOLIN:A', 'PHIS',
           'LANDFRAC', 'OCNFRAC', 'ICEFRAC',
           'PS', 'TS',
           'T_0','T_1','T_2','T_3','T_4','T_5','T_6','T_7',
           'STW_0', 'STW_1','STW_2','STW_3','STW_4','STW_5','STW_6','STW_7',
           'U_0','U_1','U_2','U_3','U_4','U_5','U_6','U_7',
           'V_0','V_1','V_2','V_3','V_4','V_5','V_6','V_7',
-          'FLUT', 'FSUTOA', 'FLDS', 'FLUS', 'FSDS', 'FSUS',
-          'LHFLX','SHFLX',
-          'TAUX', 'TAUY',
-          'PRECT',
+          'FLUT:A', 'FSUTOA:A', 'FLDS:A', 'FLUS:A', 'FSDS:A', 'FSUS:A',
+          'LHFLX:A','SHFLX:A',
+          'TAUX:A', 'TAUY:A',
+          'PRECT:A',
           'DTENDTTW'
 
 EOF

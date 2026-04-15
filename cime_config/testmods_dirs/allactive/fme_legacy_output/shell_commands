@@ -12,8 +12,8 @@
 # ---------------------------------------------------------------------------
 # EAM output frequency in hours
 FME_EAM_OUTPUT_HOURS=${FME_EAM_OUTPUT_HOURS:-6}
-# EAM averaging flag: 'A' = time-averaged, 'I' = instantaneous
-FME_EAM_AVGFLAG=${FME_EAM_AVGFLAG:-A}
+# EAM averaging flag: 'I' = instantaneous (default), fluxes use per-field :A
+FME_EAM_AVGFLAG=${FME_EAM_AVGFLAG:-I}
 # Number of EAM time samples per output file
 FME_EAM_MFILT=${FME_EAM_MFILT:-4}
 # MPAS timeSeriesStatsCustom reset/averaging interval
@@ -38,9 +38,9 @@ fincl1 =  'T','Q','U','V','PS','PHIS',
           'TMQ','TGCLDLWP','TGCLDIWP',
           'TEFIX','TS','QREFHT','U10','TREFHT',
           'PSL','LANDFRAC','OCNFRAC','ICEFRAC',
-          'FSDS','FLDS','FSNS','FLNS','SOLIN',
-          'FSNTOA','FLUT','FLNT','LHFLX','QFLX',
-          'SHFLX','PRECT','PRECC','PRECSL','PRECSC','TAUX','TAUY'
+          'FSDS:A','FLDS:A','FSNS:A','FLNS:A','SOLIN:A',
+          'FSNTOA:A','FLUT:A','FLNT:A','LHFLX:A','QFLX:A',
+          'SHFLX:A','PRECT:A','PRECC:A','PRECSL:A','PRECSC:A','TAUX:A','TAUY:A'
 
 EOF
 

@@ -186,9 +186,14 @@ contains
       real(kind=RKIND), dimension(:), pointer :: ssh_ptr
       real(kind=RKIND), dimension(:), pointer :: windStressZonalPtr
       real(kind=RKIND), dimension(:), pointer :: windStressMeridionalPtr
+      real(kind=RKIND), dimension(:), pointer :: iceFractionPtr
 
-      ! Fill value for land cells (matches _FillValue in remapped output)
+      ! Fill value for land/ice-masked cells
       real(kind=RKIND), parameter :: fillValue = real(SHR_FILL_VALUE, RKIND)
+      ! Threshold: mask coupler fluxes where ice covers > 99% of cell
+      real(kind=RKIND), parameter :: iceMaskThresh = 0.99_RKIND
+      ! Workspace for masked copies of forcing fields
+      real(kind=RKIND), allocatable :: fld_masked(:)
       ! Remap workspace
       real(r8), allocatable :: fld_remap(:,:)
       real(kind=RKIND), allocatable :: field_1lev(:,:)
@@ -220,6 +225,7 @@ contains
          call mpas_pool_get_array(forcingPool, 'sensibleHeatFlux', sensibleHeatFlux)
          call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonalPtr)
          call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridionalPtr)
+         call mpas_pool_get_array(forcingPool, 'iceFraction', iceFractionPtr)
 
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
          do iCell = 1, nCellsSolve
@@ -234,6 +240,16 @@ contains
 
             sst(iCell) = tracers(index_temperature, 1, iCell)
             sss(iCell) = tracers(index_salinity, 1, iCell)
+
+            ! Coupler fluxes are weighted by (1 - iceFraction).
+            ! At heavily ice-covered cells the ocean-received flux is
+            ! near zero and not meaningful -- set to fill.
+            if (associated(iceFractionPtr)) then
+               if (iceFractionPtr(iCell) >= iceMaskThresh) then
+                  surfaceHeatFluxTotal(iCell) = fillValue
+                  cycle
+               end if
+            end if
 
             if (associated(shortWaveHeatFlux) .and. &
                 associated(longWaveHeatFluxDown) .and. &
@@ -255,6 +271,7 @@ contains
 
             allocate(fld_remap(remap_nb_local, 1))
             allocate(field_1lev(1, nCells))
+            allocate(fld_masked(nCells))
 
             ! Remap each field to lat-lon
             call mpas_pool_get_array(statePool, 'ssh', ssh_ptr, 1)
@@ -262,13 +279,26 @@ contains
             call remap_1field(sst, 1)
             call remap_1field(sss, 2)
             call remap_1field(surfaceHeatFluxTotal, 3)
-            if (associated(ssh_ptr)) call remap_1field(ssh_ptr, 4)
-            if (associated(shortWaveHeatFlux)) call remap_1field(shortWaveHeatFlux, 5)
-            if (associated(longWaveHeatFluxDown)) call remap_1field(longWaveHeatFluxDown, 6)
-            if (associated(latentHeatFlux)) call remap_1field(latentHeatFlux, 7)
-            if (associated(sensibleHeatFlux)) call remap_1field(sensibleHeatFlux, 8)
-            if (associated(windStressZonalPtr)) call remap_1field(windStressZonalPtr, 9)
-            if (associated(windStressMeridionalPtr)) call remap_1field(windStressMeridionalPtr, 10)
+
+            ! SSH: mask ice-shelf cavities (extremely negative SSH)
+            if (associated(ssh_ptr)) then
+               call mask_and_remap(ssh_ptr, 4)
+            end if
+
+            ! Coupler fluxes: mask cells with high ice coverage where
+            ! the coupler delivers near-zero flux to the ocean surface.
+            if (associated(shortWaveHeatFlux)) &
+                 call mask_and_remap(shortWaveHeatFlux, 5)
+            if (associated(longWaveHeatFluxDown)) &
+                 call mask_and_remap(longWaveHeatFluxDown, 6)
+            if (associated(latentHeatFlux)) &
+                 call mask_and_remap(latentHeatFlux, 7)
+            if (associated(sensibleHeatFlux)) &
+                 call mask_and_remap(sensibleHeatFlux, 8)
+            if (associated(windStressZonalPtr)) &
+                 call mask_and_remap(windStressZonalPtr, 9)
+            if (associated(windStressMeridionalPtr)) &
+                 call mask_and_remap(windStressMeridionalPtr, 10)
 
             if (time_avg_enabled) then
                ! Accumulate (remapped fields already added in remap_1field)
@@ -316,7 +346,7 @@ contains
                end if
             end if
 
-            deallocate(fld_remap, field_1lev)
+            deallocate(fld_remap, field_1lev, fld_masked)
          end if
 
          block => block % next
@@ -334,6 +364,25 @@ contains
             remap_accum(:, idx) = remap_accum(:, idx) + fld_remap(:, 1)
          end if
       end subroutine remap_1field
+
+      subroutine mask_and_remap(native_fld, idx)
+         ! Copy field, set fillValue at land and heavily ice-covered cells,
+         ! then remap. Avoids corrupting the original forcing array.
+         real(kind=RKIND), dimension(:), intent(in) :: native_fld
+         integer, intent(in) :: idx
+         integer :: ic
+         fld_masked(1:nCells) = native_fld(1:nCells)
+         do ic = 1, nCells
+            if (maxLevelCell(ic) == 0) then
+               fld_masked(ic) = fillValue
+            else if (associated(iceFractionPtr)) then
+               if (iceFractionPtr(ic) >= iceMaskThresh) then
+                  fld_masked(ic) = fillValue
+               end if
+            end if
+         end do
+         call remap_1field(fld_masked, idx)
+      end subroutine mask_and_remap
 
       subroutine write_avg_field(varname, idx)
          character(len=*), intent(in) :: varname
