@@ -246,7 +246,8 @@
     </submit_args>
     <directives>
       <directive> --job-name={{ job_id }}</directive>
-      <directive> --output={{ job_id }}.\{\{jobid\}\}</directive>
+      <directive> --output={{ job_id }}.{{jobid}}</directive>
+      <directive> --error={{ job_id }}.{{jobid}}</directive>
       <directive> -N{{ num_nodes }}</directive>
       <directive> -n{{ total_tasks }}</directive>
       <directive> --exclusive</directive>

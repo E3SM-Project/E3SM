@@ -3149,16 +3149,20 @@
     <BATCH_SYSTEM>flux</BATCH_SYSTEM>
     <SUPPORTED_BY>boutte3 -at- llnl.gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="gnugpu">4</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="gnugpu">84</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>84</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="gnugpu">4</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>flux run</executable>
       <arguments>
-	<arg name="label"> --label-io</arg>
-	<arg name="debug"> -o mpibind=verbose:1</arg>
-	<arg name="num_tasks"> -N{{ num_nodes }} -n{{ total_tasks }} --exclusive --env='MPI_LOCALRANKID={{task.localid}}'</arg>
-    	</arguments>
+	<arg name="debug"> --label-io --verbose --setopt=mpibind=verbose:1</arg>
+	<arg name="num_tasks"> -N{{ num_nodes }} -n{{ total_tasks }} --exclusive</arg>
+	<arg name="bind"> -g1</arg>
+	<arg name="kokkos_bind"> --env=MPI_LOCALRANKID={{task.localid}}</arg>
+	<arg name="amd"> --env-remove=ROCR_VISIBLE_DEVICES --env=ROCR_VISIBLE_DEVICES=0</arg>
+	<arg name="hip"> --env-remove=HIP_VISIBLE_DEVICES --env=HIP_VISIBLE_DEVICES=0</arg>
+	<arg name="log"> --output=output.{{task.rank}} --error=error.{{task.rank}}</arg>
+      </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
       <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
@@ -3232,6 +3236,7 @@
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
       <env name="HSA_XNACK">1</env>
       <env name="MPICH_SMP_SINGLE_COPY_MODE">XPMEM</env>
+      <env name="HIP_LAUNCH_BLOCKING">1</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
