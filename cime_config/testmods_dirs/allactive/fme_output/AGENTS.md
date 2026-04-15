@@ -110,7 +110,26 @@ These are hard-won lessons. Read before modifying FME code.
 12. **Remapped output files include xtime.** The `xtime(StrLen, Time)` character
     variable records the MPAS date-time string for each output record. CF
     attributes include `axis='X'`/`'Y'` on lon/lat and `calendar='noleap'`
-    as a global attribute.
+    as a global attribute. PIO `pio_put_var` for xtime requires a 1-element
+    character array (`character(len=64) :: buf(1)`), not a scalar — PIO's
+    `put_vara_1d_text` interface demands `character(len=*) :: val(:)`.
+
+13. **MPAS coupler fluxes are ice-fraction-weighted.** The forcing pool fields
+    (`shortWaveHeatFlux`, `longWaveHeatFluxDown`, `latentHeatFlux`,
+    `sensibleHeatFlux`, `windStressZonal`, `windStressMeridional`) represent
+    the flux received by the ocean surface, NOT the atmospheric flux.
+    Under heavy ice coverage (iceFraction >= 0.99), these values are near
+    zero and not physically meaningful. The FME derived fields AM masks them
+    to `fillValue` before remapping. `surfaceHeatFluxTotal` (the sum of
+    coupler fluxes) is likewise masked. SST/SSS remain valid under ice.
+
+14. **EAM averaging convention.** State variables (T, U, V, STW, PS, TS)
+    are instantaneous snapshots (`avgflag_pertape='I'`). Fluxes and
+    tendencies (FSDS, FLDS, FLUT, FSUTOA, FLUS, FSUS, LHFLX, SHFLX,
+    TAUX, TAUY, PRECT, SOLIN) use per-field `:A` suffix for time
+    averaging over the output interval. EAM shortwave radiation fields
+    (FSUTOA, FSUS) show sharp gradients at ice edges — this is real
+    surface albedo contrast (ice ~55% vs ocean ~3%), not an artifact.
 
 ## Runtime Configuration
 
@@ -118,7 +137,7 @@ Both `fme_output` and `fme_legacy_output` testmods accept environment variables:
 
 ```bash
 FME_EAM_OUTPUT_HOURS=6          # EAM output frequency in hours (default: 6)
-FME_EAM_AVGFLAG=A               # 'A' = time-averaged, 'I' = instantaneous (default: A)
+FME_EAM_AVGFLAG=I               # 'I' = instantaneous (default); fluxes use per-field :A
 FME_EAM_MFILT=4                 # samples per output file (default: 4)
 FME_MPAS_INTERVAL=00-00-01_00:00:00  # MPAS output/averaging interval (default: daily)
 ```
@@ -130,6 +149,18 @@ MPAS FME AMs support time averaging via namelist:
 - `config_AM_fme*_compute_interval = 'dt'` samples every timestep
 - `config_AM_fme*_stream_output_interval` sets the averaging window
 - The `fme_output` testmod enables averaging by default
+- Three ocean AMs enabled: fmeDepthCoarsening, fmeDerivedFields, fmeVerticalReduce
+- One sea-ice AM enabled: fmeSeaiceDerivedFields
+
+Verification scripts support cross-comparison:
+```bash
+# EAM verification
+python verify_eam.py --rundir $RUNDIR --outdir /path/to/figs
+
+# MPAS verification with legacy cross-comparison
+python verify_mpas.py --rundir $RUNDIR --outdir /path/to/figs \
+    --legacy-rundir $LEGACY_RUNDIR
+```
 
 ## Remaining Work
 
@@ -137,11 +168,14 @@ MPAS FME AMs support time averaging via namelist:
 - Add CI test variant (SMS_Ld2, ne4pg2_oQU480 for fast builds)
 - Add ERS restart test and PEM MPI reproducibility test
 - Parameterize map file paths via env variables in shell_commands
+- Add FSUTOA, FSNTOA to legacy testmod fincl1 for native-vs-interpolated comparison
 
 ### Code quality
 - 3D PIO decomposition for depth-coarsened fields (single 3D var instead of
   per-level 2D vars like `temperatureCoarsened_0..24`)
 - Depth coordinate variable in remapped 3D output
+- SSH masking under ice shelf cavities (currently only masked by iceFraction;
+  cavities have maxLevelCell > 0 and can have SSH < -1000m)
 
 ### Extensions
 - Numeric `time` coordinate + `time_bnds` for CF-compliant time axis
