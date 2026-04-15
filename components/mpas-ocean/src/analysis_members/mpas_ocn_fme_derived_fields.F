@@ -241,24 +241,25 @@ contains
             sst(iCell) = tracers(index_temperature, 1, iCell)
             sss(iCell) = tracers(index_salinity, 1, iCell)
 
-            ! Coupler fluxes are weighted by (1 - iceFraction).
-            ! At heavily ice-covered cells the ocean-received flux is
-            ! near zero and not meaningful -- set to fill.
-            if (associated(iceFractionPtr)) then
-               if (iceFractionPtr(iCell) >= iceMaskThresh) then
-                  surfaceHeatFluxTotal(iCell) = fillValue
-                  cycle
-               end if
-            end if
-
             if (associated(shortWaveHeatFlux) .and. &
                 associated(longWaveHeatFluxDown) .and. &
                 associated(latentHeatFlux) .and. &
                 associated(sensibleHeatFlux)) then
+               ! Sum of coupler fluxes; undo ice-fraction weighting
+               ! to recover atmospheric total (same correction as
+               ! mask_and_remap applies to individual components).
                surfaceHeatFluxTotal(iCell) = shortWaveHeatFlux(iCell) &
                     + longWaveHeatFluxDown(iCell) &
                     + latentHeatFlux(iCell) &
                     + sensibleHeatFlux(iCell)
+               if (associated(iceFractionPtr)) then
+                  if (iceFractionPtr(iCell) >= iceMaskThresh) then
+                     surfaceHeatFluxTotal(iCell) = fillValue
+                  else if (iceFractionPtr(iCell) > 0.0_RKIND) then
+                     surfaceHeatFluxTotal(iCell) = surfaceHeatFluxTotal(iCell) &
+                          / (1.0_RKIND - iceFractionPtr(iCell))
+                  end if
+               end if
             else
                surfaceHeatFluxTotal(iCell) = fillValue
             end if
@@ -280,12 +281,10 @@ contains
             call remap_1field(sss, 2)
             call remap_1field(surfaceHeatFluxTotal, 3)
 
-            ! SSH: mask ice-shelf cavities (extremely negative SSH)
-            if (associated(ssh_ptr)) then
-               call mask_and_remap(ssh_ptr, 4)
-            end if
+            ! SSH: state variable, no ice-fraction correction needed
+            if (associated(ssh_ptr)) call remap_1field(ssh_ptr, 4)
 
-            ! Coupler fluxes: mask cells with high ice coverage where
+            ! Coupler fluxes: undo ice-fraction weighting to recover
             ! the coupler delivers near-zero flux to the ocean surface.
             if (associated(shortWaveHeatFlux)) &
                  call mask_and_remap(shortWaveHeatFlux, 5)
@@ -366,11 +365,17 @@ contains
       end subroutine remap_1field
 
       subroutine mask_and_remap(native_fld, idx)
-         ! Copy field, set fillValue at land and heavily ice-covered cells,
-         ! then remap. Avoids corrupting the original forcing array.
+         ! Copy field, undo coupler ice-fraction weighting to recover the
+         ! atmospheric flux, then remap.  Coupler delivers:
+         !   flux_ocean = flux_atm * (1 - iceFraction)
+         ! We recover flux_atm = flux_ocean / (1 - iceFraction).
+         ! At nearly full ice coverage (>= iceMaskThresh), set fillValue
+         ! to avoid division by near-zero.
+         ! Land cells (maxLevelCell==0) also get fillValue.
          real(kind=RKIND), dimension(:), intent(in) :: native_fld
          integer, intent(in) :: idx
          integer :: ic
+         real(kind=RKIND) :: openFrac
          fld_masked(1:nCells) = native_fld(1:nCells)
          do ic = 1, nCells
             if (maxLevelCell(ic) == 0) then
@@ -378,6 +383,9 @@ contains
             else if (associated(iceFractionPtr)) then
                if (iceFractionPtr(ic) >= iceMaskThresh) then
                   fld_masked(ic) = fillValue
+               else if (iceFractionPtr(ic) > 0.0_RKIND) then
+                  openFrac = 1.0_RKIND - iceFractionPtr(ic)
+                  fld_masked(ic) = native_fld(ic) / openFrac
                end if
             end if
          end do

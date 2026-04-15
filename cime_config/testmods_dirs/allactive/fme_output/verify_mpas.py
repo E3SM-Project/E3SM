@@ -823,6 +823,266 @@ def side_by_side_comparison(data1, lons1, lats1, title1,
     return path
 
 
+def trio_comparison(d_nat, lon_nat, lat_nat, d_rem, lon_rem, lat_rem,
+                    title, outdir, fname, cmap="RdBu_r",
+                    vmin=None, vmax=None, units=""):
+    """Three-panel diagnostic: native tripcolor | remapped pcolormesh | zonal mean overlay.
+
+    Produces a single figure with the most informative comparison layout.
+    """
+    if not HAS_MPL:
+        return None
+    from matplotlib.tri import Triangulation
+
+    fig = plt.figure(figsize=(18, 4.5))
+    is_cart = HAS_CARTOPY
+
+    # --- Panel 1: native (tripcolor, subsampled) ---
+    kw = dict(projection=ccrs.PlateCarree()) if is_cart else {}
+    ax1 = fig.add_subplot(1, 3, 1, **kw)
+    if is_cart:
+        ax1.add_feature(cfeature.COASTLINE, linewidth=0.3)
+        ax1.set_global()
+    lon_fix = _fix_lon(lon_nat)
+    max_pts = 50000
+    rng = np.random.default_rng(42)
+    if d_nat.size > max_pts:
+        idx = rng.choice(d_nat.size, max_pts, replace=False)
+    else:
+        idx = np.arange(d_nat.size)
+    # Mask fill for tripcolor data
+    d_sub = np.where((np.abs(d_nat[idx]) < 1e10) & np.isfinite(d_nat[idx]),
+                     d_nat[idx].astype(float), np.nan)
+    try:
+        tri = Triangulation(lon_fix[idx], lat_nat[idx])
+        tri_lons = lon_fix[idx][tri.triangles]
+        tri.set_mask((tri_lons.max(axis=1) - tri_lons.min(axis=1)) > 180)
+        tkw = dict(transform=ccrs.PlateCarree()) if is_cart else {}
+        im1 = ax1.tripcolor(tri, d_sub, cmap=cmap, vmin=vmin, vmax=vmax, **tkw)
+    except Exception:
+        tkw = dict(transform=ccrs.PlateCarree()) if is_cart else {}
+        im1 = ax1.scatter(lon_fix[idx], lat_nat[idx], c=d_sub, s=0.3,
+                          cmap=cmap, vmin=vmin, vmax=vmax, **tkw)
+    ax1.set_title("Native (MPAS)", fontsize=10)
+    plt.colorbar(im1, ax=ax1, shrink=0.6, label=units)
+
+    # --- Panel 2: remapped (pcolormesh) ---
+    kw = dict(projection=ccrs.PlateCarree()) if is_cart else {}
+    ax2 = fig.add_subplot(1, 3, 2, **kw)
+    if is_cart:
+        ax2.add_feature(cfeature.COASTLINE, linewidth=0.3)
+        ax2.set_global()
+    d_rem_masked = np.where((np.abs(d_rem) < 1e10) & np.isfinite(d_rem),
+                            d_rem.astype(float), np.nan)
+    if lon_rem.ndim == 1:
+        lons_g, lats_g = np.meshgrid(lon_rem, lat_rem)
+    else:
+        lons_g, lats_g = lon_rem, lat_rem
+    tkw = dict(transform=ccrs.PlateCarree()) if is_cart else {}
+    im2 = ax2.pcolormesh(lons_g, lats_g, d_rem_masked, cmap=cmap,
+                         vmin=vmin, vmax=vmax, shading="auto", **tkw)
+    ax2.set_title("Remapped (lat-lon)", fontsize=10)
+    plt.colorbar(im2, ax=ax2, shrink=0.6, label=units)
+
+    # --- Panel 3: zonal mean overlay ---
+    ax3 = fig.add_subplot(1, 3, 3)
+    # Remapped zonal mean
+    zm_rem = _compute_zonal_mean(d_rem_masked[np.newaxis, :, :] if d_rem_masked.ndim == 2
+                                 else d_rem_masked)
+    lat_1d = lat_rem if lat_rem.ndim == 1 else lat_rem[:, 0]
+    if zm_rem is not None:
+        ax3.plot(lat_1d, zm_rem, "b-", linewidth=1.5, label="Remapped")
+    # Native zonal mean (bin into latitude bands)
+    lat_edges = np.linspace(-90, 90, 181)
+    lat_centers = 0.5 * (lat_edges[:-1] + lat_edges[1:])
+    ok_nat = (np.abs(d_nat) < 1e10) & np.isfinite(d_nat)
+    zm_nat = np.full(180, np.nan)
+    for b in range(180):
+        mask = ok_nat & (lat_nat >= lat_edges[b]) & (lat_nat < lat_edges[b + 1])
+        if mask.sum() > 0:
+            zm_nat[b] = d_nat[mask].mean()
+    ax3.plot(lat_centers, zm_nat, "r--", linewidth=1.2, alpha=0.8, label="Native")
+    ax3.set_xlabel("Latitude")
+    ax3.set_ylabel(units)
+    ax3.set_title("Zonal Mean", fontsize=10)
+    ax3.legend(fontsize=8)
+    ax3.set_xlim(-90, 90)
+    ax3.grid(True, alpha=0.3)
+
+    fig.suptitle(title, fontsize=12, y=1.02)
+    plt.tight_layout()
+    path = os.path.join(outdir, fname)
+    fig.savefig(path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+# All remapped fields with their plot parameters: (varname, cmap, vmin, vmax, units)
+ALL_DERIVED_FIELD_PARAMS = [
+    ("sst",                   "RdYlBu_r",  -2,   30,  "degC"),
+    ("sss",                   "viridis",    30,   40,  "PSU"),
+    ("ssh",                   "RdBu_r",     -2,    2,  "m"),
+    ("surfaceHeatFluxTotal",  "RdBu_r",  -300,  300,  "W/m2"),
+    ("shortWaveHeatFlux",     "YlOrRd",     0,  400,  "W/m2"),
+    ("longWaveHeatFluxDown",  "inferno",  200,  450,  "W/m2"),
+    ("latentHeatFlux",        "RdBu_r",  -300,  300,  "W/m2"),
+    ("sensibleHeatFlux",      "RdBu_r",  -100,  100,  "W/m2"),
+    ("windStressZonal",       "RdBu_r",  -0.3,  0.3,  "N/m2"),
+    ("windStressMeridional",  "RdBu_r",  -0.2,  0.2,  "N/m2"),
+]
+
+ALL_SEAICE_FIELD_PARAMS = [
+    ("iceAreaTotal",           "Blues",       0,    1,  "fraction"),
+    ("iceVolumeTotal",         "viridis",     0,    5,  "m"),
+    ("snowVolumeTotal",        "PuBu",        0,    2,  "m"),
+    ("iceThicknessMean",       "viridis",     0,    5,  "m"),
+    ("surfaceTemperatureMean", "RdBu_r",    210,  275,  "K"),
+    ("airStressZonal",         "RdBu_r",     -1,    1,  "N/m2"),
+    ("airStressMeridional",    "RdBu_r",     -1,    1,  "N/m2"),
+]
+
+
+def _remapped_with_zonal(d_rem, lon_rem, lat_rem, title, outdir, fname,
+                         cmap="RdBu_r", vmin=None, vmax=None, units=""):
+    """Two-panel diagnostic: remapped pcolormesh | zonal mean.
+
+    Used when native-grid coordinates are not available.
+    """
+    if not HAS_MPL:
+        return None
+
+    fig = plt.figure(figsize=(14, 4.5))
+    is_cart = HAS_CARTOPY
+
+    d_masked = np.where((np.abs(d_rem) < 1e10) & np.isfinite(d_rem),
+                        d_rem.astype(float), np.nan)
+    lat_1d = lat_rem if lat_rem.ndim == 1 else lat_rem[:, 0]
+    if lon_rem.ndim == 1:
+        lons_g, lats_g = np.meshgrid(lon_rem, lat_rem)
+    else:
+        lons_g, lats_g = lon_rem, lat_rem
+
+    # Panel 1: remapped map
+    kw = dict(projection=ccrs.PlateCarree()) if is_cart else {}
+    ax1 = fig.add_subplot(1, 2, 1, **kw)
+    if is_cart:
+        ax1.add_feature(cfeature.COASTLINE, linewidth=0.3)
+        ax1.set_global()
+    tkw = dict(transform=ccrs.PlateCarree()) if is_cart else {}
+    im = ax1.pcolormesh(lons_g, lats_g, d_masked, cmap=cmap,
+                        vmin=vmin, vmax=vmax, shading="auto", **tkw)
+    ax1.set_title("Remapped (lat-lon)", fontsize=10)
+    plt.colorbar(im, ax=ax1, shrink=0.6, label=units)
+
+    # Panel 2: zonal mean
+    ax2 = fig.add_subplot(1, 2, 2)
+    zm = _compute_zonal_mean(d_masked[np.newaxis, :, :] if d_masked.ndim == 2
+                             else d_masked)
+    if zm is not None:
+        ax2.plot(lat_1d, zm, "b-", linewidth=1.5)
+    ax2.set_xlabel("Latitude")
+    ax2.set_ylabel(units)
+    ax2.set_title("Zonal Mean", fontsize=10)
+    ax2.set_xlim(-90, 90)
+    ax2.grid(True, alpha=0.3)
+
+    fig.suptitle(title, fontsize=12, y=1.02)
+    plt.tight_layout()
+    path = os.path.join(outdir, fname)
+    fig.savefig(path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+def generate_trio_comparisons(rundir, fig_root, all_plots_by_comp):
+    """Generate native-vs-remapped trio plots for all fields."""
+    if not HAS_MPL:
+        return
+
+    trio_outdir = os.path.join(fig_root, "trio_comparisons")
+    os.makedirs(trio_outdir, exist_ok=True)
+    trio_plots = []
+
+    def _process_component(nat_pattern, rem_pattern, field_params, component):
+        nat_files = find_files(rundir, nat_pattern, exclude=".remapped.")
+        rem_files = find_files(rundir, rem_pattern)
+        if not rem_files:
+            return
+        ds_nat = safe_open(nat_files[0]) if nat_files else None
+        ds_rem = safe_open(rem_files[-1])
+        if has_time_zero(ds_rem):
+            if ds_nat: close_ds(ds_nat)
+            close_ds(ds_rem)
+            return
+
+        # Native coords may be missing in MPAS-O AM output
+        lon_nat = lat_nat = None
+        lon_nat_deg = lat_nat_deg = None
+        if ds_nat is not None:
+            lon_nat = get_var(ds_nat, "lonCell")
+            lat_nat = get_var(ds_nat, "latCell")
+            if lon_nat is not None and lat_nat is not None:
+                lon_nat_deg = np.degrees(lon_nat)
+                lat_nat_deg = np.degrees(lat_nat)
+
+        lon_rem = get_var(ds_rem, "lon")
+        lat_rem = get_var(ds_rem, "lat")
+        if lon_rem is None or lat_rem is None:
+            if ds_nat: close_ds(ds_nat)
+            close_ds(ds_rem)
+            return
+
+        for vname, cmap, vm, vx, units in field_params:
+            arr_rem = get_var(ds_rem, vname)
+            if arr_rem is None:
+                continue
+            d_rem = arr_rem[-1] if arr_rem.ndim == 3 else arr_rem
+
+            # Get native data if available
+            d_nat = None
+            if ds_nat is not None:
+                arr_nat = get_var(ds_nat, vname)
+                if arr_nat is not None:
+                    d_nat = arr_nat[-1] if arr_nat.ndim > 1 else arr_nat
+
+            fname = f"trio_{component.lower().replace('-','')}_{vname}.png"
+            if d_nat is not None and lon_nat_deg is not None:
+                # Full trio: native + remapped + zonal
+                p = trio_comparison(
+                    d_nat, lon_nat_deg, lat_nat_deg,
+                    d_rem, lon_rem, lat_rem,
+                    f"{component} {vname}",
+                    trio_outdir, fname,
+                    cmap=cmap, vmin=vm, vmax=vx, units=units)
+            else:
+                # Remapped-only: map + zonal mean (2 panels)
+                p = _remapped_with_zonal(
+                    d_rem, lon_rem, lat_rem,
+                    f"{component} {vname}",
+                    trio_outdir, fname,
+                    cmap=cmap, vmin=vm, vmax=vx, units=units)
+            if p:
+                trio_plots.append(p)
+                print(f"  Wrote {fname}")
+
+        if ds_nat: close_ds(ds_nat)
+        close_ds(ds_rem)
+
+    print("\n=== Generating trio comparison plots ===")
+    _process_component(
+        "*.mpaso.hist.am.fmeDerivedFields.*.nc",
+        "*.mpaso.hist.am.fmeDerivedFields.*.remapped.nc",
+        ALL_DERIVED_FIELD_PARAMS, "MPAS-O")
+
+    _process_component(
+        "*.mpassi.hist.am.fmeSeaiceDerivedFields.*.nc",
+        "*.mpassi.hist.am.fmeSeaiceDerivedFields.*.remapped.nc",
+        ALL_SEAICE_FIELD_PARAMS, "MPAS-SI")
+
+    if trio_plots:
+        all_plots_by_comp["Native vs Remapped (all fields)"] = trio_plots
+
+
 # -----------------------------------------------------------------------------
 # Remapped file verification helpers
 # -----------------------------------------------------------------------------
@@ -1440,6 +1700,221 @@ def check_mpassi_derived_remapped(rundir, outdir, verbose):
     return issues, plots, fill_reports
 
 
+def _area_weighted_mean(data_1d, area_1d, fill_thresh=1e10):
+    """Area-weighted mean of a 1D field, excluding fill values."""
+    ok = (np.abs(data_1d) < fill_thresh) & np.isfinite(data_1d) & np.isfinite(area_1d)
+    if ok.sum() == 0:
+        return float("nan")
+    return float(np.sum(data_1d[ok] * area_1d[ok]) / np.sum(area_1d[ok]))
+
+
+def _cosine_weighted_mean(data_2d, lat_1d, fill_thresh=1e10):
+    """Cosine-of-latitude-weighted mean of a (lat, lon) field."""
+    w = np.cos(np.deg2rad(lat_1d))
+    w2d = np.broadcast_to(w[:, None], data_2d.shape)
+    ok = (np.abs(data_2d) < fill_thresh) & np.isfinite(data_2d)
+    if ok.sum() == 0:
+        return float("nan")
+    return float(np.sum(data_2d[ok] * w2d[ok]) / np.sum(w2d[ok]))
+
+
+# -----------------------------------------------------------------------------
+# Self-consistency checks
+# -----------------------------------------------------------------------------
+
+def check_remap_conservation(rundir, outdir, verbose):
+    """Verify area-weighted global means match between native and remapped grids."""
+    print("\n=== Remap Conservation Check ===")
+    issues = []
+    plots = []
+    fill_reports = []
+
+    nat_files = find_files(rundir, "*.mpaso.hist.am.fmeDerivedFields.*.nc",
+                           exclude=".remapped.")
+    rem_files = find_files(rundir, "*.mpaso.hist.am.fmeDerivedFields.*.remapped.nc")
+    if not nat_files or not rem_files:
+        print("  SKIP: need both native and remapped fmeDerivedFields files")
+        return issues, plots, fill_reports
+
+    ds_nat = safe_open(nat_files[0])
+    ds_rem = safe_open(rem_files[0])
+    if has_time_zero(ds_nat) or has_time_zero(ds_rem):
+        print("  SKIP: time dimension empty")
+        close_ds(ds_nat); close_ds(ds_rem)
+        return issues, plots, fill_reports
+
+    area = get_var(ds_nat, "areaCell")  # may be None in AM output
+    lat = get_var(ds_rem, "lat")
+    if lat is None:
+        print("  SKIP: missing lat in remapped file")
+        close_ds(ds_nat); close_ds(ds_rem)
+        return issues, plots, fill_reports
+
+    tol = 0.05  # 5% relative tolerance (remap + fill boundary effects)
+    for vname in ["sst", "ssh"]:
+        arr_nat = get_var(ds_nat, vname)
+        arr_rem = get_var(ds_rem, vname)
+        if arr_nat is None or arr_rem is None:
+            continue
+        d_nat = arr_nat[-1] if arr_nat.ndim > 1 else arr_nat
+        d_rem = arr_rem[-1] if arr_rem.ndim == 3 else arr_rem
+
+        # Native: area-weighted if areaCell available, else unweighted
+        # (MPAS quasi-uniform mesh: unweighted is a good approximation)
+        if area is not None:
+            m_nat = _area_weighted_mean(d_nat, area)
+        else:
+            v = valid_data(d_nat)
+            m_nat = float(v.mean()) if v is not None and v.size > 0 else float("nan")
+        m_rem = _cosine_weighted_mean(d_rem, lat)
+        denom = max(abs(m_nat), 1e-30)
+        rel_diff = abs(m_nat - m_rem) / denom
+        status = "PASS" if rel_diff < tol else "FAIL"
+        if status == "FAIL":
+            issues.append(f"  {vname}: native={m_nat:.4g} remap={m_rem:.4g} "
+                          f"rel_diff={rel_diff:.2%}")
+        print(f"  {vname:6s}  native={m_nat:+.4f}  remap={m_rem:+.4f}  "
+              f"rel_diff={rel_diff:.2%}  {status}")
+
+    close_ds(ds_nat); close_ds(ds_rem)
+    _report("Remap conservation", issues)
+    return issues, plots, fill_reports
+
+
+def check_heat_flux_closure(rundir, outdir, verbose):
+    """Verify surfaceHeatFluxTotal = SW + LW_down + latent + sensible."""
+    print("\n=== Heat Flux Budget Closure ===")
+    issues = []
+    plots = []
+    fill_reports = []
+
+    files = find_files(rundir, "*.mpaso.hist.am.fmeDerivedFields.*.nc",
+                       exclude=".remapped.")
+    if not files:
+        print("  SKIP: no native fmeDerivedFields files")
+        return issues, plots, fill_reports
+
+    ds = safe_open(files[0])
+    if has_time_zero(ds):
+        print("  SKIP: time dimension empty")
+        close_ds(ds)
+        return issues, plots, fill_reports
+
+    total = get_var(ds, "surfaceHeatFluxTotal")
+    sw = get_var(ds, "shortWaveHeatFlux")
+    lw = get_var(ds, "longWaveHeatFluxDown")
+    lat_hf = get_var(ds, "latentHeatFlux")
+    sens = get_var(ds, "sensibleHeatFlux")
+
+    if any(v is None for v in [total, sw, lw, lat_hf, sens]):
+        print("  SKIP: missing flux fields")
+        close_ds(ds)
+        return issues, plots, fill_reports
+
+    t = total[-1] if total.ndim > 1 else total
+    computed = (sw[-1] if sw.ndim > 1 else sw) + \
+               (lw[-1] if lw.ndim > 1 else lw) + \
+               (lat_hf[-1] if lat_hf.ndim > 1 else lat_hf) + \
+               (sens[-1] if sens.ndim > 1 else sens)
+
+    ok = ((np.abs(t) < 1e10) & np.isfinite(t) &
+          (np.abs(computed) < 1e10) & np.isfinite(computed))
+    if ok.sum() == 0:
+        print("  SKIP: no valid overlapping cells")
+        close_ds(ds)
+        return issues, plots, fill_reports
+
+    residual = t[ok].astype(float) - computed[ok].astype(float)
+    rms = float(np.sqrt((residual ** 2).mean()))
+    max_abs = float(np.abs(residual).max())
+    mean_res = float(residual.mean())
+
+    # These should be BFB identical (same Fortran computation)
+    status = "PASS" if max_abs < 1.0 else "FAIL"
+    if status == "FAIL":
+        issues.append(f"  Heat flux residual: rms={rms:.4g} max={max_abs:.4g}")
+    print(f"  residual: mean={mean_res:.4g}  rms={rms:.4g}  max={max_abs:.4g}  "
+          f"n_valid={ok.sum()}  {status}")
+
+    # Residual map
+    if HAS_MPL and max_abs > 1e-10:
+        lon = get_var(ds, "lonCell")
+        lat_c = get_var(ds, "latCell")
+        if lon is not None and lat_c is not None:
+            res_full = np.full_like(t, np.nan, dtype=float)
+            res_full[ok] = residual
+            p = global_map(res_full, np.degrees(lon), np.degrees(lat_c),
+                           "Heat Flux Closure Residual (total - components)",
+                           cmap="RdBu_r", vmin=-max_abs, vmax=max_abs,
+                           outdir=outdir, fname="heat_flux_residual.png",
+                           units="W/m2")
+            if p:
+                plots.append(p)
+
+    close_ds(ds)
+    _report("Heat flux closure", issues)
+    return issues, plots, fill_reports
+
+
+def check_temporal_consistency(rundir, outdir, verbose):
+    """Check global-mean SST/SSH time series for discontinuities."""
+    print("\n=== Temporal Consistency ===")
+    issues = []
+    plots = []
+    fill_reports = []
+
+    files = find_files(rundir, "*.mpaso.hist.am.fmeDerivedFields.*.nc",
+                       exclude=".remapped.")
+    if not files:
+        print("  SKIP: no native fmeDerivedFields files")
+        return issues, plots, fill_reports
+
+    ts_data = {v: [] for v in ["sst", "ssh"]}
+    for f in files:
+        ds = safe_open(f)
+        if has_time_zero(ds):
+            close_ds(ds)
+            continue
+        area = get_var(ds, "areaCell")  # may be None in AM output
+        dims = get_dims(ds)
+        nt = dims.get("Time", dims.get("time", 1))
+        for vname in ts_data:
+            arr = get_var(ds, vname)
+            if arr is None:
+                continue
+            for t in range(nt):
+                d = arr[t] if arr.ndim > 1 else arr
+                if area is not None:
+                    m = _area_weighted_mean(d, area)
+                else:
+                    v = valid_data(d)
+                    m = float(v.mean()) if v is not None and v.size > 0 else float("nan")
+                ts_data[vname].append(m)
+        close_ds(ds)
+
+    for vname, series in ts_data.items():
+        if len(series) < 2:
+            print(f"  {vname}: {len(series)} timestep(s), skipping")
+            continue
+        s = np.array(series)
+        deltas = np.abs(np.diff(s))
+        thresh = 5.0 if vname == "sst" else 1.0
+        jumps = np.where(deltas > thresh)[0]
+        status = "PASS" if len(jumps) == 0 else "FAIL"
+        if len(jumps) > 0:
+            issues.append(f"  {vname}: {len(jumps)} jump(s) > {thresh}")
+        print(f"  {vname:6s}  {len(series)} steps  range=[{s.min():.4f}, {s.max():.4f}]  "
+              f"max_delta={deltas.max():.4g}  {status}")
+
+        if HAS_MPL and len(series) > 1:
+            time_series(series, "Output record", f"Global-mean {vname.upper()}",
+                        vname.upper(), outdir, f"temporal_{vname}.png")
+            plots.append(os.path.join(outdir, f"temporal_{vname}.png"))
+
+    _report("Temporal consistency", issues)
+    return issues, plots, fill_reports
+
+
 def _report(name, issues):
     if issues:
         print(f"  FAIL ({len(issues)} issues):")
@@ -1752,16 +2227,25 @@ def compare_legacy_vs_fme(legacy_rundir, fme_rundir, outdir, verbose):
     stats = []
 
     # --- locate files ---
+    # Legacy: native-grid time-averaged (timeSeriesStatsCustom)
     leg_ocn = find_files(legacy_rundir,
                          "*.mpaso.hist.am.timeSeriesStatsCustom.*.nc")
     leg_ice = find_files(legacy_rundir,
                          "*.mpassi.hist.am.timeSeriesStatsCustom.*.nc")
+    # FME: prefer remapped (time-averaged) for apples-to-apples temporal comparison;
+    # fall back to native (instantaneous) if remapped not available
     fme_ocn = find_files(fme_rundir,
-                         "*.mpaso.hist.am.fmeDerivedFields.*.nc",
-                         exclude=".remapped.")
+                         "*.mpaso.hist.am.fmeDerivedFields.*.remapped.nc")
+    if not fme_ocn:
+        fme_ocn = find_files(fme_rundir,
+                             "*.mpaso.hist.am.fmeDerivedFields.*.nc",
+                             exclude=".remapped.")
     fme_ice = find_files(fme_rundir,
-                         "*.mpassi.hist.am.fmeSeaiceDerivedFields.*.nc",
-                         exclude=".remapped.")
+                         "*.mpassi.hist.am.fmeSeaiceDerivedFields.*.remapped.nc")
+    if not fme_ice:
+        fme_ice = find_files(fme_rundir,
+                             "*.mpassi.hist.am.fmeSeaiceDerivedFields.*.nc",
+                             exclude=".remapped.")
 
     if not leg_ocn and not leg_ice:
         print("  SKIP: no legacy timeSeriesStatsCustom files found")
@@ -1771,7 +2255,24 @@ def compare_legacy_vs_fme(legacy_rundir, fme_rundir, outdir, verbose):
 
     # --- helper: process one pair list ---
     def _compare_pairs(ds_leg, ds_fme, pairs, component,
-                       lon_deg, lat_deg):
+                       leg_lon, leg_lat, fme_lon, fme_lat):
+        """Compare legacy (native, time-averaged) vs FME (remapped or native).
+
+        Coordinates may be on different grids:
+        - Legacy: 1D (nCells) from native MPAS
+        - FME: 1D coordinate arrays from remapped lat-lon, or 1D (nCells) native
+        """
+        # Build FME meshgrid if it's a lat-lon grid
+        if fme_lon is not None and fme_lat is not None:
+            if fme_lon.ndim == 1 and fme_lat.ndim == 1 and \
+               fme_lon.size != fme_lat.size:
+                # lat-lon coordinate arrays (different sizes = regular grid)
+                fme_lons_2d, fme_lats_2d = np.meshgrid(fme_lon, fme_lat)
+            else:
+                fme_lons_2d, fme_lats_2d = fme_lon, fme_lat
+        else:
+            fme_lons_2d = fme_lats_2d = None
+
         for (lvar, fvar, _stream, label, extract,
              cmap, vm, vx, units) in pairs:
             arr_leg = get_var(ds_leg, lvar)
@@ -1788,26 +2289,45 @@ def compare_legacy_vs_fme(legacy_rundir, fme_rundir, outdir, verbose):
             if d_leg is None or d_fme is None:
                 continue
 
-            # statistics
-            s = _diff_stats(d_leg, d_fme)
+            # Statistics (only meaningful when grids match)
+            if d_leg.size == d_fme.size:
+                s = _diff_stats(d_leg, d_fme)
+            else:
+                # Different grids: compute global means for comparison
+                v_leg = valid_data(d_leg)
+                v_fme = valid_data(d_fme.ravel() if d_fme.ndim > 1 else d_fme)
+                s = {
+                    "n_valid": int(v_leg.size) if v_leg is not None else 0,
+                    "legacy_mean": float(v_leg.mean()) if v_leg is not None and v_leg.size else float("nan"),
+                    "fme_mean": float(v_fme.mean()) if v_fme is not None and v_fme.size else float("nan"),
+                    "diff_mean": float("nan"),
+                    "diff_rms": float("nan"),
+                    "diff_max_abs": float("nan"),
+                    "correlation": float("nan"),
+                }
+                s["diff_mean"] = s["fme_mean"] - s["legacy_mean"]
+
             if s is not None:
                 s["component"] = component
                 s["label"] = label
                 s["legacy_var"] = lvar
                 s["fme_var"] = fvar
                 stats.append(s)
-                print(f"  {label:24s}  corr={s['correlation']:.6f}"
+                corr_str = f"{s['correlation']:.6f}" if np.isfinite(s['correlation']) else "N/A (diff grids)"
+                print(f"  {label:24s}  corr={corr_str}"
                       f"  rms={s['diff_rms']:.4g}"
                       f"  bias={s['diff_mean']:.4g}")
 
             # side-by-side plot
-            if HAS_MPL and lon_deg is not None:
+            if HAS_MPL and leg_lon is not None:
                 fname = (f"xverify_{component.lower().replace('-','')}"
                          f"_{fvar}.png")
+                fme_lon_plot = fme_lons_2d if fme_lons_2d is not None else leg_lon
+                fme_lat_plot = fme_lats_2d if fme_lats_2d is not None else leg_lat
                 p = side_by_side_comparison(
-                    d_leg, lon_deg, lat_deg,
+                    d_leg, leg_lon, leg_lat,
                     f"Legacy ({lvar.replace('timeCustom_avg_','')})",
-                    d_fme, lon_deg, lat_deg,
+                    d_fme, fme_lon_plot, fme_lat_plot,
                     f"FME ({fvar})",
                     f"{component} {label}: Legacy vs FME",
                     outdir, fname,
@@ -1815,37 +2335,30 @@ def compare_legacy_vs_fme(legacy_rundir, fme_rundir, outdir, verbose):
                 if p:
                     plots.append(p)
 
-                # difference map
-                if d_leg.size == d_fme.size:
-                    diff = d_fme.astype(float) - d_leg.astype(float)
-                    # mask fill values
-                    bad = ((np.abs(d_leg) >= 1e10) |
-                           (np.abs(d_fme) >= 1e10) |
-                           ~np.isfinite(d_leg) |
-                           ~np.isfinite(d_fme))
-                    diff[bad] = np.nan
-                    vabs = np.nanpercentile(np.abs(diff[np.isfinite(diff)]),
-                                            98) if np.any(np.isfinite(diff)) else 1
-                    fname_d = fname.replace(".png", "_diff.png")
-                    p2 = global_map(
-                        diff, lon_deg, lat_deg,
-                        f"{component} {label}: FME minus Legacy",
-                        cmap="RdBu_r", vmin=-vabs, vmax=vabs,
-                        outdir=outdir, fname=fname_d, units=units)
-                    if p2:
-                        plots.append(p2)
-
     # --- Ocean ---
     if leg_ocn and fme_ocn:
         ds_leg = safe_open(leg_ocn[0])
         ds_fme = safe_open(fme_ocn[0])
         if not has_time_zero(ds_leg) and not has_time_zero(ds_fme):
-            lon = get_var(ds_leg, "lonCell")
-            lat = get_var(ds_leg, "latCell")
-            lon_deg = np.degrees(lon) if lon is not None else None
-            lat_deg = np.degrees(lat) if lat is not None else None
+            # Legacy coordinates (native MPAS grid)
+            lon_leg = get_var(ds_leg, "lonCell")
+            lat_leg = get_var(ds_leg, "latCell")
+            lon_leg_deg = np.degrees(lon_leg) if lon_leg is not None else None
+            lat_leg_deg = np.degrees(lat_leg) if lat_leg is not None else None
+            # FME coordinates (may be remapped lat-lon or native)
+            fme_lon = get_var(ds_fme, "lon")
+            fme_lat = get_var(ds_fme, "lat")
+            if fme_lon is None:
+                fme_lon = get_var(ds_fme, "lonCell")
+                if fme_lon is not None:
+                    fme_lon = np.degrees(fme_lon)
+            if fme_lat is None:
+                fme_lat = get_var(ds_fme, "latCell")
+                if fme_lat is not None:
+                    fme_lat = np.degrees(fme_lat)
             _compare_pairs(ds_leg, ds_fme, LEGACY_FME_OCN_PAIRS,
-                           "MPAS-O", lon_deg, lat_deg)
+                           "MPAS-O", lon_leg_deg, lat_leg_deg,
+                           fme_lon, fme_lat)
         else:
             print("  SKIP: time dimension empty in ocean files")
         close_ds(ds_leg)
@@ -1858,12 +2371,23 @@ def compare_legacy_vs_fme(legacy_rundir, fme_rundir, outdir, verbose):
         ds_leg = safe_open(leg_ice[0])
         ds_fme = safe_open(fme_ice[0])
         if not has_time_zero(ds_leg) and not has_time_zero(ds_fme):
-            lon = get_var(ds_leg, "lonCell")
-            lat = get_var(ds_leg, "latCell")
-            lon_deg = np.degrees(lon) if lon is not None else None
-            lat_deg = np.degrees(lat) if lat is not None else None
+            lon_leg = get_var(ds_leg, "lonCell")
+            lat_leg = get_var(ds_leg, "latCell")
+            lon_leg_deg = np.degrees(lon_leg) if lon_leg is not None else None
+            lat_leg_deg = np.degrees(lat_leg) if lat_leg is not None else None
+            fme_lon = get_var(ds_fme, "lon")
+            fme_lat = get_var(ds_fme, "lat")
+            if fme_lon is None:
+                fme_lon = get_var(ds_fme, "lonCell")
+                if fme_lon is not None:
+                    fme_lon = np.degrees(fme_lon)
+            if fme_lat is None:
+                fme_lat = get_var(ds_fme, "latCell")
+                if fme_lat is not None:
+                    fme_lat = np.degrees(fme_lat)
             _compare_pairs(ds_leg, ds_fme, LEGACY_FME_ICE_PAIRS,
-                           "MPAS-SI", lon_deg, lat_deg)
+                           "MPAS-SI", lon_leg_deg, lat_leg_deg,
+                           fme_lon, fme_lat)
         else:
             print("  SKIP: time dimension empty in sea-ice files")
         close_ds(ds_leg)
@@ -2896,9 +3420,20 @@ def main():
     run_check("MPAS-SI Derived Fields (remapped)", check_mpassi_derived_remapped, "mpassi_remapped",
               args.rundir, args.verbose)
 
+    # Self-consistency checks
+    run_check("Remap Conservation", check_remap_conservation, "self_checks",
+              args.rundir, args.verbose)
+    run_check("Heat Flux Closure", check_heat_flux_closure, "self_checks",
+              args.rundir, args.verbose)
+    run_check("Temporal Consistency", check_temporal_consistency, "self_checks",
+              args.rundir, args.verbose)
+
     # Cross-component comparison figures (native vs remapped side-by-side,
     # zonal means)
     generate_comparison_figures(args.rundir, fig_root, all_plots_by_comp)
+
+    # Trio comparison plots: native | remapped | zonal mean for all fields
+    generate_trio_comparisons(args.rundir, fig_root, all_plots_by_comp)
 
     # Timing summary
     timing_summary = read_timing_summary(args.rundir)

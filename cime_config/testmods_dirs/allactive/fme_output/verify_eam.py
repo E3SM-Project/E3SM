@@ -158,7 +158,8 @@ N_VCOARSEN_LAYERS = len(VCOARSEN_PBOUNDS) - 1  # 8
 # Instantaneous (no :A suffix)
 BFB_INST_FIELDS = ["PS", "TS", "PHIS", "LANDFRAC", "OCNFRAC", "ICEFRAC"]
 # Averaged (:A suffix in both cases)
-BFB_AVG_FIELDS = ["SOLIN", "FSNTOA", "FLUT", "FLDS", "FSDS",
+BFB_AVG_FIELDS = ["SOLIN", "FSNTOA", "FSUTOA", "FLUT", "FLNT",
+                   "FLDS", "FLUS", "FSDS", "FSUS", "FSNS", "FLNS",
                    "LHFLX", "SHFLX", "TAUX", "TAUY", "PRECT"]
 
 # FME vcoarsen fields -> legacy raw source (for offline recomputation)
@@ -1448,14 +1449,31 @@ def cross_verify(fme_rundir, legacy_rundir, outdir, verbose=False):
                 rem_lons, rem_lats = fme_lon, fme_lat
 
             plot_specs = [
+                # State
                 ("TS",       "RdBu_r",   220, 320, "K"),
                 ("PS",       "viridis",  50000, 105000, "Pa"),
-                ("LHFLX",    "YlOrRd",   0,   300, "W/m2"),
-                ("PRECT",    "Blues",     0,   1e-6, "m/s"),
                 ("ICEFRAC",  "Blues",     0,   1,   "fraction"),
-                ("FLUT",     "inferno",   100, 320, "W/m2"),
-                ("SOLIN",    "YlOrRd",   0,   500, "W/m2"),
-                ("DTENDTTW", "RdBu_r",   -5e-4, 5e-4, "kg/m2/s"),
+                ("LANDFRAC", "YlGn",     0,   1,   "fraction"),
+                # Surface radiation
+                ("FSDS",     "YlOrRd",   0,   500, "W/m2"),
+                ("FSUS",     "YlOrRd",   0,   300, "W/m2"),
+                ("FSNS",     "YlOrRd",   0,   400, "W/m2"),
+                ("FLDS",     "inferno",  100, 450, "W/m2"),
+                ("FLUS",     "inferno",  150, 550, "W/m2"),
+                ("FLNS",     "inferno",  0,   200, "W/m2"),
+                # TOA radiation
+                ("SOLIN",    "YlOrRd",   0,  1000, "W/m2"),
+                ("FSNTOA",   "YlOrRd",   0,   500, "W/m2"),
+                ("FSUTOA",   "YlOrRd",   0,   600, "W/m2"),
+                ("FLUT",     "inferno",  100, 320, "W/m2"),
+                ("FLNT",     "inferno",  0,   200, "W/m2"),
+                # Surface fluxes
+                ("LHFLX",    "YlOrRd",   0,   300, "W/m2"),
+                ("SHFLX",    "RdBu_r",  -50,  100, "W/m2"),
+                ("TAUX",     "RdBu_r",  -0.5, 0.5, "N/m2"),
+                ("TAUY",     "RdBu_r",  -0.3, 0.3, "N/m2"),
+                ("PRECT",    "Blues",     0,   1e-6, "m/s"),
+                ("DTENDTTW", "RdBu_r",  -5e-4, 5e-4, "kg/m2/s"),
             ]
             for var, cmap, vm, vx, units in plot_specs:
                 nat_arr = get_var(ds_leg, var)

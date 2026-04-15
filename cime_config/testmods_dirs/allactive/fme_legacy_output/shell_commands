@@ -39,7 +39,9 @@ fincl1 =  'T','Q','U','V','PS','PHIS',
           'TEFIX','TS','QREFHT','U10','TREFHT',
           'PSL','LANDFRAC','OCNFRAC','ICEFRAC',
           'FSDS:A','FLDS:A','FSNS:A','FLNS:A','SOLIN:A',
-          'FSNTOA:A','FLUT:A','FLNT:A','LHFLX:A','QFLX:A',
+          'FSNTOA:A','FSUTOA:A','FLUT:A','FLNT:A',
+          'FSUS:A','FLUS:A',
+          'LHFLX:A','QFLX:A',
           'SHFLX:A','PRECT:A','PRECC:A','PRECSL:A','PRECSC:A','TAUX:A','TAUY:A'
 
 EOF
