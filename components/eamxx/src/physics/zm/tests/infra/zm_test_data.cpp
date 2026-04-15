@@ -1021,168 +1021,97 @@ void zm_conv_main(ZmConvMainData& d)
 {
   zm_common_init();
 
-  // create device views and copy
-  std::vector<view1dr_d> vec1dr_in(9);
-  ekat::host_to_device({d.cape, d.dcape, d.dsubcld, d.geos, d.landfrac, d.pbl_hgt, d.prec, d.rliq, d.tpert}, d.pcols, vec1dr_in);
-
-  std::vector<view2dr_d> vec2dr_in(24);
-  std::vector<int> vec2dr_in_0_sizes = {d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols};
-  std::vector<int> vec2dr_in_1_sizes = {d.pver, d.pver, d.pver, d.pver, d.pver, d.pverp, d.pver, d.pver, d.pver, d.pver, d.pver, d.pverp, d.pver, d.pverp, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pverp, d.pver, d.pver};
-  ekat::host_to_device({d.detr_up, d.dlf, d.entr_dn, d.entr_up, d.heat, d.mcon, d.mflx_dn, d.mflx_up, d.omega, d.p_del, d.p_del_in, d.p_int_in, d.p_mid_in, d.pflx, d.q_mid_in, d.q_star, d.ql, d.qtnd, d.rprd, d.t_mid, d.t_star, d.z_int_in, d.z_mid_in, d.zdu}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
-
-  std::vector<view1di_d> vec1di_in(5);
-  ekat::host_to_device({d.gather_index, d.jcbot, d.jctop, d.jt, d.msemax_klev}, d.pcols, vec1di_in);
-
-  view1dr_d
-    cape_d(vec1dr_in[0]),
-    dcape_d(vec1dr_in[1]),
-    dsubcld_d(vec1dr_in[2]),
-    geos_d(vec1dr_in[3]),
-    landfrac_d(vec1dr_in[4]),
-    pbl_hgt_d(vec1dr_in[5]),
-    prec_d(vec1dr_in[6]),
-    rliq_d(vec1dr_in[7]),
-    tpert_d(vec1dr_in[8]);
-
+  // Upload all 2D input/output arrays [pcols, pver] or [pcols, pverp]
+  std::vector<view2dr_d> vec2dr(24);
+  std::vector<int> dim0(24, d.pcols);
+  std::vector<int> dim1 = {d.pver, d.pver, d.pver, d.pver, d.pver, d.pverp,
+                             d.pver, d.pver, d.pver, d.pver, d.pver, d.pverp,
+                             d.pver, d.pverp, d.pver, d.pver, d.pver, d.pver,
+                             d.pver, d.pver, d.pver, d.pverp, d.pver, d.pver};
+  ekat::host_to_device({d.detr_up, d.dlf, d.entr_dn, d.entr_up, d.heat, d.mcon,
+                         d.mflx_dn, d.mflx_up, d.omega, d.p_del, d.p_del_in,
+                         d.p_int_in, d.p_mid_in, d.pflx, d.q_mid_in, d.q_star,
+                         d.ql, d.qtnd, d.rprd, d.t_mid, d.t_star,
+                         d.z_int_in, d.z_mid_in, d.zdu},
+                        dim0, dim1, vec2dr);
   view2dr_d
-    detr_up_d(vec2dr_in[0]),
-    dlf_d(vec2dr_in[1]),
-    entr_dn_d(vec2dr_in[2]),
-    entr_up_d(vec2dr_in[3]),
-    heat_d(vec2dr_in[4]),
-    mcon_d(vec2dr_in[5]),
-    mflx_dn_d(vec2dr_in[6]),
-    mflx_up_d(vec2dr_in[7]),
-    omega_d(vec2dr_in[8]),
-    p_del_d(vec2dr_in[9]),
-    p_del_in_d(vec2dr_in[10]),
-    p_int_in_d(vec2dr_in[11]),
-    p_mid_in_d(vec2dr_in[12]),
-    pflx_d(vec2dr_in[13]),
-    q_mid_in_d(vec2dr_in[14]),
-    q_star_d(vec2dr_in[15]),
-    ql_d(vec2dr_in[16]),
-    qtnd_d(vec2dr_in[17]),
-    rprd_d(vec2dr_in[18]),
-    t_mid_d(vec2dr_in[19]),
-    t_star_d(vec2dr_in[20]),
-    z_int_in_d(vec2dr_in[21]),
-    z_mid_in_d(vec2dr_in[22]),
-    zdu_d(vec2dr_in[23]);
+    detr_up_d  (vec2dr[0]),  dlf_d      (vec2dr[1]),
+    entr_dn_d  (vec2dr[2]),  entr_up_d  (vec2dr[3]),
+    heat_d     (vec2dr[4]),  mcon_d     (vec2dr[5]),
+    mflx_dn_d  (vec2dr[6]),  mflx_up_d  (vec2dr[7]),
+    omega_d    (vec2dr[8]),  p_del_d    (vec2dr[9]),
+    p_del_in_d (vec2dr[10]), p_int_in_d (vec2dr[11]),
+    p_mid_in_d (vec2dr[12]), pflx_d     (vec2dr[13]),
+    q_mid_in_d (vec2dr[14]), q_star_d   (vec2dr[15]),
+    ql_d       (vec2dr[16]), qtnd_d     (vec2dr[17]),
+    rprd_d     (vec2dr[18]), t_mid_d    (vec2dr[19]),
+    t_star_d   (vec2dr[20]), z_int_in_d (vec2dr[21]),
+    z_mid_in_d (vec2dr[22]), zdu_d      (vec2dr[23]);
 
-  view1di_d
-    gather_index_d(vec1di_in[0]),
-    jcbot_d(vec1di_in[1]),
-    jctop_d(vec1di_in[2]),
-    jt_d(vec1di_in[3]),
-    msemax_klev_d(vec1di_in[4]);
+  // Upload 1D scalar arrays [pcols]
+  std::vector<view1dr_d> vec1dr(9);
+  ekat::host_to_device({d.cape, d.dcape, d.dsubcld, d.geos, d.landfrac,
+                         d.pbl_hgt, d.prec, d.rliq, d.tpert},
+                        d.pcols, vec1dr);
+  view1dr_d cape_d(vec1dr[0]), dcape_d(vec1dr[1]), dsubcld_d(vec1dr[2]),
+            geos_d(vec1dr[3]), landfrac_d(vec1dr[4]), pbl_hgt_d(vec1dr[5]),
+            prec_d(vec1dr[6]), rliq_d(vec1dr[7]), tpert_d(vec1dr[8]);
 
-  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
-  WSM wsm(d.pverp, 43, policy);
+  std::vector<view1di_d> vec1di(4);
+  ekat::host_to_device({d.jcbot, d.jctop, d.jt, d.msemax_klev}, d.pcols, vec1di);
+  view1di_d jcbot_d(vec1di[0]), jctop_d(vec1di[1]), jt_d(vec1di[2]),
+            msemax_klev_d(vec1di[3]);
+
   ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
 
-  // unpack data scalars because we do not want the lambda to capture d
-  const Real time_step = d.time_step;
-  const Int pver = d.pver;
-  const Int pverp = d.pverp;
-  const bool is_first_step = d.is_first_step;
+  ZMF::zm_conv_main(
+    init_cp,
+    d.ncol, d.pver, d.pverp, d.is_first_step, d.time_step,
+    t_mid_d, q_mid_in_d, omega_d, p_mid_in_d, p_int_in_d, p_del_in_d,
+    geos_d, z_mid_in_d, z_int_in_d, pbl_hgt_d, tpert_d, landfrac_d,
+    t_star_d, q_star_d,
+    msemax_klev_d, jctop_d, jcbot_d, jt_d, prec_d,
+    heat_d, qtnd_d, cape_d, dcape_d,
+    mcon_d, pflx_d, zdu_d, mflx_up_d, entr_up_d, detr_up_d,
+    mflx_dn_d, entr_dn_d, p_del_d, dsubcld_d, ql_d, rliq_d, rprd_d, dlf_d);
 
+  // Determine active columns for gather_index (matches is_conv_active logic)
+  const bool use_dcape = init_cp.trig_dcape && !d.is_first_step;
+  const Real cape_thresh = use_dcape ? ZMF::ZMC::cape_threshold_new
+                                     : ZMF::ZMC::cape_threshold_old;
+  view1di_d gather_index_d("gather_index", d.pcols);
+  Kokkos::deep_copy(gather_index_d, 0);
   Int num_active = 0;
-  Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Int& num_active_inner) {
-    const Int i = team.league_rank();
-
-    // Get single-column subviews of all inputs, shouldn't need any i-indexing
-    // after this.
-    const auto t_mid_c = ekat::subview(t_mid_d, i);
-    const auto q_mid_in_c = ekat::subview(q_mid_in_d, i);
-    const auto omega_c = ekat::subview(omega_d, i);
-    const auto p_mid_in_c = ekat::subview(p_mid_in_d, i);
-    const auto p_int_in_c = ekat::subview(p_int_in_d, i);
-    const auto p_del_in_c = ekat::subview(p_del_in_d, i);
-    const auto z_mid_in_c = ekat::subview(z_mid_in_d, i);
-    const auto z_int_in_c = ekat::subview(z_int_in_d, i);
-    const auto t_star_c = ekat::subview(t_star_d, i);
-    const auto q_star_c = ekat::subview(q_star_d, i);
-    const auto heat_c = ekat::subview(heat_d, i);
-    const auto qtnd_c = ekat::subview(qtnd_d, i);
-    const auto mcon_c = ekat::subview(mcon_d, i);
-    const auto pflx_c = ekat::subview(pflx_d, i);
-    const auto zdu_c = ekat::subview(zdu_d, i);
-    const auto mflx_up_c = ekat::subview(mflx_up_d, i);
-    const auto entr_up_c = ekat::subview(entr_up_d, i);
-    const auto detr_up_c = ekat::subview(detr_up_d, i);
-    const auto mflx_dn_c = ekat::subview(mflx_dn_d, i);
-    const auto entr_dn_c = ekat::subview(entr_dn_d, i);
-    const auto p_del_c = ekat::subview(p_del_d, i);
-    const auto ql_c = ekat::subview(ql_d, i);
-    const auto rprd_c = ekat::subview(rprd_d, i);
-    const auto dlf_c = ekat::subview(dlf_d, i);
-
-    bool active = ZMF::zm_conv_main(
-      team,
-      wsm.get_workspace(team),
-      init_cp,
-      pver,
-      pverp,
-      is_first_step,
-      time_step,
-      t_mid_c,
-      q_mid_in_c,
-      omega_c,
-      p_mid_in_c,
-      p_int_in_c,
-      p_del_in_c,
-      geos_d(i),
-      z_mid_in_c,
-      z_int_in_c,
-      pbl_hgt_d(i),
-      tpert_d(i),
-      landfrac_d(i),
-      t_star_c,
-      q_star_c,
-      msemax_klev_d(i),
-      jctop_d(i),
-      jcbot_d(i),
-      jt_d(i),
-      prec_d(i),
-      heat_c,
-      qtnd_c,
-      cape_d(i),
-      dcape_d(i),
-      mcon_c,
-      pflx_c,
-      zdu_c,
-      mflx_up_c,
-      entr_up_c,
-      detr_up_c,
-      mflx_dn_c,
-      entr_dn_c,
-      p_del_c,
-      dsubcld_d(i),
-      ql_c,
-      rliq_d(i),
-      rprd_c,
-      dlf_c);
-
-    if (active) {
-      num_active_inner += 1;
-      gather_index_d(i) = i;
-    }
-  }, num_active);
-
+  Kokkos::parallel_reduce(Kokkos::RangePolicy<ExeSpace>(0, d.ncol),
+    KOKKOS_LAMBDA(const Int i, Int& cnt) {
+      const bool col_active = use_dcape
+        ? (cape_d(i) > cape_thresh && dcape_d(i) > ZMF::ZMC::dcape_threshold)
+        : (cape_d(i) > cape_thresh);
+      if (col_active) {
+        gather_index_d(i) = i;
+        cnt++;
+      }
+    }, num_active);
   d.lengath = num_active;
 
-  // Now get arrays
+  // Copy results back to host
   std::vector<view1dr_d> vec1dr_out = {cape_d, dcape_d, dsubcld_d, prec_d, rliq_d};
   ekat::device_to_host({d.cape, d.dcape, d.dsubcld, d.prec, d.rliq}, d.pcols, vec1dr_out);
 
-  std::vector<view2dr_d> vec2dr_out = {detr_up_d, dlf_d, entr_dn_d, entr_up_d, heat_d, mcon_d, mflx_dn_d, mflx_up_d, p_del_d, pflx_d, ql_d, qtnd_d, rprd_d, zdu_d};
-  std::vector<int> vec2dr_out_0_sizes = {d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols};
-  std::vector<int> vec2dr_out_1_sizes = {d.pver, d.pver, d.pver, d.pver, d.pver, d.pverp, d.pver, d.pver, d.pver, d.pverp, d.pver, d.pver, d.pver, d.pver};
-  ekat::device_to_host({d.detr_up, d.dlf, d.entr_dn, d.entr_up, d.heat, d.mcon, d.mflx_dn, d.mflx_up, d.p_del, d.pflx, d.ql, d.qtnd, d.rprd, d.zdu}, vec2dr_out_0_sizes, vec2dr_out_1_sizes, vec2dr_out);
+  std::vector<view2dr_d> vec2dr_out = {detr_up_d, dlf_d, entr_dn_d, entr_up_d, heat_d,
+                                        mcon_d, mflx_dn_d, mflx_up_d, p_del_d, pflx_d,
+                                        ql_d, qtnd_d, rprd_d, zdu_d};
+  std::vector<int> out0(14, d.pcols);
+  std::vector<int> out1 = {d.pver, d.pver, d.pver, d.pver, d.pver, d.pverp,
+                             d.pver, d.pver, d.pver, d.pverp, d.pver, d.pver,
+                             d.pver, d.pver};
+  ekat::device_to_host({d.detr_up, d.dlf, d.entr_dn, d.entr_up, d.heat, d.mcon,
+                         d.mflx_dn, d.mflx_up, d.p_del, d.pflx, d.ql, d.qtnd, d.rprd, d.zdu},
+                        out0, out1, vec2dr_out);
 
   std::vector<view1di_d> vec1di_out = {gather_index_d, jcbot_d, jctop_d, jt_d, msemax_klev_d};
-  ekat::device_to_host({d.gather_index, d.jcbot, d.jctop, d.jt, d.msemax_klev}, d.pcols, vec1di_out);
+  ekat::device_to_host({d.gather_index, d.jcbot, d.jctop, d.jt, d.msemax_klev},
+                        d.pcols, vec1di_out);
 
   zm_finalize_cxx();
 }

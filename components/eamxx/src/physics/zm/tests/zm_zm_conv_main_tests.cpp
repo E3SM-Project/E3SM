@@ -17,9 +17,7 @@ struct UnitWrap::UnitTest<D>::TestZmConvMain : public UnitWrap::UnitTest<D>::Bas
   {
     auto engine = Base::get_engine();
 
-    // Set up inputs. NOTE: We only due single-column tests in order to avoid
-    // issues with gather/cross-column dependencies that we aren't going to deal
-    // with on the eamxx side.
+    // Set up inputs.
     ZmConvMainData baseline_data[] = {
       //             pcols, ncol, pver, pverp, time_step, is_first_step, lengath (output, set to zero)
       ZmConvMainData(    1,    1,   72,    73,       2.0,         true, 0),
