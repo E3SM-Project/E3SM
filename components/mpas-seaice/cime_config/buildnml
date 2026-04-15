@@ -903,7 +903,7 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="uOceanVelocityVertexGeo"/>')
             lines.append('    <var name="vOceanVelocityVertexGeo"/>')
             lines.append('    <var name="surfaceTiltForceUGeo"/>')
-            lines.append('    <var name="surfaceTiltForceUGeo"/>')
+            lines.append('    <var name="surfaceTiltForceVGeo"/>')
             lines.append('    <var name="oceanStressUGeo"/>')
             lines.append('    <var name="oceanStressVGeo"/>')
             lines.append('    <var name="stressDivergenceUGeo"/>')
