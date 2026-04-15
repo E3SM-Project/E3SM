@@ -425,7 +425,11 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    !----------------------------------------------------------------------------
    ! determine whether active columns for gathering
    call zm_get_gather_index(pcols, ncol, pver, pverp, is_first_step, cape, dcape, &
-                            cape_threshold_loc, gather_index, lengath)
+        cape_threshold_loc, gather_index, lengath)
+   if (lengath .eq. 0) then
+      ! NO active columns!
+      return
+   end if
 
    !----------------------------------------------------------------------------
    ! copy data to gathered arrays

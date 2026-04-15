@@ -745,7 +745,7 @@ struct Functions {
     return false;
   }
 
-  static void zm_conv_main(
+  static view_1d<bool> zm_conv_main(
     // Inputs
     const ZmRuntimeOpt& runtime_opt,
     const Int& ncol, // number of columns

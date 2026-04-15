@@ -1064,7 +1064,7 @@ void zm_conv_main(ZmConvMainData& d)
 
   ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
 
-  ZMF::zm_conv_main(
+  auto active = ZMF::zm_conv_main(
     init_cp,
     d.ncol, d.pver, d.pverp, d.is_first_step, d.time_step,
     t_mid_d, q_mid_in_d, omega_d, p_mid_in_d, p_int_in_d, p_del_in_d,
@@ -1084,9 +1084,7 @@ void zm_conv_main(ZmConvMainData& d)
   Int num_active = 0;
   Kokkos::parallel_reduce(Kokkos::RangePolicy<ExeSpace>(0, d.ncol),
     KOKKOS_LAMBDA(const Int i, Int& cnt) {
-      const bool col_active = use_dcape
-        ? (cape_d(i) > cape_thresh && dcape_d(i) > ZMF::ZMC::dcape_threshold)
-        : (cape_d(i) > cape_thresh);
+      const bool col_active = active(i);
       if (col_active) {
         gather_index_d(i) = i;
         cnt++;
