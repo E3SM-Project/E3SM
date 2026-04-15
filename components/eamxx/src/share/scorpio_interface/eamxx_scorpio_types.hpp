@@ -107,7 +107,6 @@ struct PIOVar : public PIOFileEntity {
   }
 
   std::string dtype;
-  std::string nc_dtype;
   std::string units;
 
   bool time_dep = false;
@@ -117,10 +116,6 @@ struct PIOVar : public PIOFileEntity {
   int num_records = 0;
 
   std::shared_ptr<const PIODecomp> decomp;
-
-  // Used only if a) var is not decomposed, and b) dtype!=nc_dtype
-  int size = -1; // Product of all dims
-  std::vector<char> buf;
 };
 
 // A file, which is basically a container for dims and vars

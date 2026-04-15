@@ -48,13 +48,6 @@ private:
 
 // --------------------------------------------------------------------------------------------- //
 
-template<typename S, typename D>
-void copy_data (const S* src, D* dst, int n) {
-  for (int i=0; i<n; ++i) {
-    dst[i] = src[i];
-  }
-}
-
 // Utility for common IO operation failure
 void check_scorpio_noerr (const int err,
                           const std::string& func_name,
@@ -183,21 +176,6 @@ std::string refine_dtype (const std::string& dtype) {
   } else {
     return dtype;
   }
-}
-
-size_t dtype_size (const std::string& dtype) {
-  if (dtype=="int") {
-    return sizeof(int);
-  } else if (dtype=="int64") {
-    return sizeof(long long);
-  } else if (dtype=="float") {
-    return sizeof(float);
-  } else if (dtype=="double") {
-    return sizeof(double);
-  } else {
-    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported data type '" + dtype + "'.\n");
-  }
-  return 0;
 }
 
 int pio_iotype (IOType iotype) {
@@ -482,7 +460,7 @@ void register_file (const std::string& filename,
 
         for (const auto& dt : {"int","int64","float","double","char"}) {
           if (nctype(dt)==dtype) {
-            var->dtype = var->nc_dtype = dt;
+            var->dtype = dt;
             break;
           }
         }
@@ -1100,8 +1078,7 @@ void clear_unused_decomps ()
 // Define var on output file (cannot call on Read/Append files)
 void define_var (const std::string& filename, const std::string& varname,
                  const std::string& units, const std::vector<std::string>& dimensions,
-                 const std::string& dtype, const std::string& nc_dtype,
-                 const bool time_dep)
+                 const std::string& dtype, const bool time_dep)
 {
   auto& f = impl::get_file(filename,"scorpio::define_var");
 
@@ -1126,7 +1103,6 @@ void define_var (const std::string& filename, const std::string& varname,
     var->fid = f.ncid;
     var->units = units;
     var->dtype = refine_dtype(dtype);
-    var->nc_dtype = refine_dtype(nc_dtype);
     var->time_dep = time_dep;
     int ndims = dimensions.size() + (time_dep ? 1 : 0);
     std::vector<int> dimids;
@@ -1146,7 +1122,7 @@ void define_var (const std::string& filename, const std::string& varname,
     }
 
     // Define the variable in PIO
-    int err = PIOc_def_var(f.ncid,varname.c_str(),nctype(nc_dtype),ndims,dimids.data(),&var->ncid);
+    int err = PIOc_def_var(f.ncid,varname.c_str(),nctype(dtype),ndims,dimids.data(),&var->ncid);
     check_scorpio_noerr(err,f.name,"variable",varname,"define_var","def_var");
 
     f.vars[varname] = var;
@@ -1173,12 +1149,6 @@ void define_var (const std::string& filename, const std::string& varname,
           " - varname  : " + varname + "\n"
           " - old dtype: " + var->dtype + "\n"
           " - new dtype: " +      refine_dtype(dtype) + "\n");
-    EKAT_REQUIRE_MSG (var->nc_dtype==refine_dtype(nc_dtype),
-        "Error! Attempt to redefine variable with different PIO data type.\n"
-          " - filename : " + filename + "\n"
-          " - varname  : " + varname + "\n"
-          " - old pio dtype: " + var->nc_dtype + "\n"
-          " - new pio dtype: " +      refine_dtype(nc_dtype) + "\n");
     EKAT_REQUIRE_MSG (var->time_dep==time_dep,
         "Error! Attempt to redefine variable with different time dep flag.\n"
           " - filename : " + filename + "\n"
@@ -1201,33 +1171,6 @@ void define_var (const std::string& filename, const std::string& varname,
                  const bool time_dependent)
 {
   define_var(filename,varname,"",dimensions,dtype,dtype,time_dependent);
-}
-
-// This overload is not exposed externally. Also, filename is only
-// used to print it in case there are errors
-void change_var_dtype (PIOVar& var,
-                       const std::string& dtype,
-                       const std::string& filename)
-{
-  if (refine_dtype(dtype)==refine_dtype(var.dtype)) {
-    // The type is not changing, nothing to do
-    return;
-  }
-
-  var.dtype = refine_dtype(dtype);
-  if (var.decomp) {
-    // Re-decompose the variable, with new data type
-    var.decomp = nullptr;
-    set_var_decomp (var,filename);
-  }
-}
-
-void change_var_dtype (const std::string& filename,
-                       const std::string& varname,
-                       const std::string& dtype)
-{
-  auto& var = impl::get_var(filename,varname,"scorpio::change_var_dtype");
-  change_var_dtype(var,dtype,filename);
 }
 
 bool has_var (const std::string& filename, const std::string& varname)
@@ -1288,7 +1231,6 @@ void mark_dim_as_time (const std::string& filename, const std::string& dimname)
       auto& v = it.second;
       if (v->dims.size()>0 and v->dims[0]->name==dimname) {
         v->dims.erase(v->dims.begin());
-        v->size = -1;
         v->time_dep = true;
       }
     }
@@ -1349,8 +1291,12 @@ void read_var (const std::string &filename, const std::string &varname, T* buf, 
   const auto& f = impl::get_file(filename,"scorpio::read_var");
         auto& var = impl::get_var(filename,varname,"scorpio::read_var");
 
-  // If the input pointer type already matches var.dtype, this is a no-op
-  change_var_dtype(var,get_dtype<T>(),filename);
+  EKAT_REQUIRE_MSG (var.dtype==get_dtype<T>(),
+      "Error! Read buffer type does not match variable dtype.\n"
+      " - filename: " + filename + "\n"
+      " - varname : " + varname + "\n"
+      " - var dtype    : " + var.dtype + "\n"
+      " - buffer dtype : " + get_dtype<T>() + "\n");
 
   int err;
   int frame = -1;
@@ -1374,19 +1320,6 @@ void read_var (const std::string &filename, const std::string &varname, T* buf, 
   } else {
     // A non-decomposed variable, use PIOc_get_var(a)
 
-    // If nc data type doesn't match the input pointer, we need to use the var internal buffer
-    void* io_buf = buf;
-    if (var.dtype!=var.nc_dtype) {
-      if (var.size==-1) {
-        var.size = 1;
-        for (auto d : var.dims) {
-          var.size *= d->length;
-        }
-        var.buf.resize(var.size*dtype_size(var.nc_dtype));
-      }
-      io_buf = var.buf.data();
-    }
-
     if (frame>=0) {
       // We need to get the start/count for each dimension
       int ndims = var.dims.size();
@@ -1396,24 +1329,11 @@ void read_var (const std::string &filename, const std::string &varname, T* buf, 
       for (int idim=0; idim<ndims; ++idim) {
         count[idim+1] = var.dims[idim]->length;
       }
-      err = PIOc_get_vara(f.ncid,var.ncid,start.data(),count.data(),io_buf);
+      err = PIOc_get_vara(f.ncid,var.ncid,start.data(),count.data(),buf);
       pioc_func = "get_vara";
     } else {
-      err = PIOc_get_var(f.ncid,var.ncid,io_buf);
+      err = PIOc_get_var(f.ncid,var.ncid,buf);
       pioc_func = "get_var";
-    }
-
-    // If we used the var tmp buffer, copy back into the user-provided pointer
-    if (var.dtype!=var.nc_dtype) {
-      if (var.nc_dtype=="int") {
-        copy_data(reinterpret_cast<int*>(io_buf),buf,var.size);
-      } else if (var.nc_dtype=="int64") {
-        copy_data(reinterpret_cast<long long*>(io_buf),buf,var.size);
-      } else if (var.nc_dtype=="float") {
-        copy_data(reinterpret_cast<float*>(io_buf),buf,var.size);
-      } else if (var.nc_dtype=="double") {
-        copy_data(reinterpret_cast<double*>(io_buf),buf,var.size);
-      }
     }
   }
   check_scorpio_noerr (err,f.name,"variable",varname,"read_var",pioc_func);
@@ -1431,8 +1351,12 @@ void write_var (const std::string &filename, const std::string &varname, const T
   const auto& f = impl::get_file(filename,"scorpio::write_var");
   auto& var = impl::get_var(filename,varname,"scorpio::write_var");
 
-  // If the input pointer type already matches var.dtype, this is a no-op
-  change_var_dtype(var,get_dtype<T>(),filename);
+  EKAT_REQUIRE_MSG (var.dtype==get_dtype<T>(),
+      "Error! Write buffer type does not match variable dtype.\n"
+      " - filename: " + filename + "\n"
+      " - varname : " + varname + "\n"
+      " - var dtype    : " + var.dtype + "\n"
+      " - buffer dtype : " + get_dtype<T>() + "\n");
 
   int err;
 
@@ -1455,29 +1379,6 @@ void write_var (const std::string &filename, const std::string &varname, const T
     pioc_func = "write_darray";
   } else {
     // A non-decomposed variable, use PIOc_put_var(a)
-    // If nc data type doesn't match the input pointer, we need to use the var internal buffer
-    const void* io_buf = buf;
-    if (var.dtype!=var.nc_dtype) {
-      if (var.size==-1) {
-        var.size = 1;
-        for (auto d : var.dims) {
-          var.size *= d->length;
-        }
-        var.buf.resize(var.size*dtype_size(var.nc_dtype));
-      }
-      io_buf = var.buf.data();
-      void* var_buf = var.buf.data();
-      if (var.nc_dtype=="int") {
-        copy_data(buf,reinterpret_cast<int*>(var_buf),var.size);
-      } else if (var.nc_dtype=="int64") {
-        copy_data(buf,reinterpret_cast<long long*>(var_buf),var.size);
-      } else if (var.nc_dtype=="float") {
-        copy_data(buf,reinterpret_cast<float*>(var_buf),var.size);
-      } else if (var.nc_dtype=="double") {
-        copy_data(buf,reinterpret_cast<double*>(var_buf),var.size);
-      }
-    }
-
     if (var.time_dep) {
       // We need to get the start/count for each dimension
       int ndims = var.dims.size();
@@ -1487,11 +1388,11 @@ void write_var (const std::string &filename, const std::string &varname, const T
       for (int idim=0; idim<ndims; ++idim) {
         count[idim+1] = var.dims[idim]->length;
       }
-      err = PIOc_put_vara(f.ncid,var.ncid,start.data(),count.data(),io_buf);
+      err = PIOc_put_vara(f.ncid,var.ncid,start.data(),count.data(),buf);
       pioc_func = "put_vara";
     } else {
       // Easy: just pass the buffer, and write all entries
-      err = PIOc_put_var(f.ncid,var.ncid,io_buf);
+      err = PIOc_put_var(f.ncid,var.ncid,buf);
       pioc_func = "put_var";
     }
   }
