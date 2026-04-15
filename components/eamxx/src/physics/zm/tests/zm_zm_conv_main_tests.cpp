@@ -20,10 +20,10 @@ struct UnitWrap::UnitTest<D>::TestZmConvMain : public UnitWrap::UnitTest<D>::Bas
     // Set up inputs.
     ZmConvMainData baseline_data[] = {
       //             pcols, ncol, pver, pverp, time_step, is_first_step, lengath (output, set to zero)
-      ZmConvMainData(    1,    1,   72,    73,       2.0,         true, 0),
-      ZmConvMainData(    1,    1,   72,    73,       3.0,         false , 0),
-      ZmConvMainData(    1,    1,  128,   129,       4.0,         true, 0),
-      ZmConvMainData(    1,    1,  128,   129,       5.0,         false , 0),
+      ZmConvMainData(    4,    4,   72,    73,       2.0,         true, 0),
+      ZmConvMainData(    4,    4,   72,    73,       3.0,         false , 0),
+      ZmConvMainData(    4,    4,  128,   129,       4.0,         true, 0),
+      ZmConvMainData(    4,    4,  128,   129,       5.0,         false , 0),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ZmConvMainData);
