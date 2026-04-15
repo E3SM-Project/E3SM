@@ -10,7 +10,8 @@ void update_checks (const std::string& caller,
                     const Field& y, const Field& x,
                     const ScalarWrapper& alpha,
                     const ScalarWrapper& beta,
-                    const Field* mask = nullptr)
+                    const Field* mask = nullptr,
+                    const bool allow_narrowing_x = false)
 {
   // Check output field is writable
   EKAT_REQUIRE_MSG (not y.is_read_only(),
@@ -42,7 +43,7 @@ void update_checks (const std::string& caller,
   // will use such large factors).
   // Similarly, we allow updating a field Y with another X as long as converting the data type of X
   // to the data type of Y does not require narrowing
-  EKAT_REQUIRE_MSG (not is_narrowing_conversion(x_dt,y_dt),
+  EKAT_REQUIRE_MSG (allow_narrowing_x or not is_narrowing_conversion(x_dt,y_dt),
       "[" + caller + "] Error! Rhs data type may be narrowed when converted to lhs data type.\n"
       " - lhs name: " + y.name() + "\n"
       " - rhs name: " + x.name() + "\n"
@@ -471,16 +472,56 @@ void Field::deep_copy (const ScalarWrapper value, const Field& mask, const bool 
   }
 }
 
-void Field::deep_copy (const Field& x)
+void Field::deep_copy (const Field& x, const bool allow_narrowing)
 {
   constexpr auto CM = CombineMode::Replace;
-  update_cm<CM>("Field::deep_copy",x,1,0);
+  update_checks("Field::deep_copy",*this,x,1,0,nullptr,allow_narrowing);
+  if (data_type()==DataType::IntType) {
+    return update_impl<CM,int,int>(x,1,0);
+  } else if (data_type()==DataType::FloatType) {
+    if (x.data_type()==DataType::FloatType) {
+      return update_impl<CM,float,float>(x,1,0);
+    } else if (x.data_type()==DataType::DoubleType) {
+      return update_impl<CM,float,double>(x,1,0);
+    } else {
+      return update_impl<CM,float,int>(x,1,0);
+    }
+  } else if (data_type()==DataType::DoubleType) {
+    if (x.data_type()==DataType::DoubleType) {
+      return update_impl<CM,double,double>(x,1,0);
+    } else if (x.data_type()==DataType::FloatType) {
+      return update_impl<CM,double,float>(x,1,0);
+    } else {
+      return update_impl<CM,double,int>(x,1,0);
+    }
+  }
+  EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");
 }
 
-void Field::deep_copy (const Field& x, const Field& mask)
+void Field::deep_copy (const Field& x, const Field& mask, const bool allow_narrowing)
 {
   constexpr auto CM = CombineMode::Replace;
-  update_cm<CM>("Field::deep_copy (masked)",x,1,0,mask);
+  update_checks("Field::deep_copy (masked)",*this,x,1,0,&mask,allow_narrowing);
+  if (data_type()==DataType::IntType) {
+    return update_masked<CM,int,int>(x,1,0,mask);
+  } else if (data_type()==DataType::FloatType) {
+    if (x.data_type()==DataType::FloatType) {
+      return update_masked<CM,float,float>(x,1,0,mask);
+    } else if (x.data_type()==DataType::DoubleType) {
+      return update_masked<CM,float,double>(x,1,0,mask);
+    } else {
+      return update_masked<CM,float,int>(x,1,0,mask);
+    }
+  } else if (data_type()==DataType::DoubleType) {
+    if (x.data_type()==DataType::DoubleType) {
+      return update_masked<CM,double,double>(x,1,0,mask);
+    } else if (x.data_type()==DataType::FloatType) {
+      return update_masked<CM,double,float>(x,1,0,mask);
+    } else {
+      return update_masked<CM,double,int>(x,1,0,mask);
+    }
+  }
+  EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy (masked).\n");
 }
 
 void Field::scale (const ScalarWrapper beta)
