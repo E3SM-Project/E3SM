@@ -1091,6 +1091,9 @@ void zm_conv_main(ZmConvMainData& d)
         gather_index_d(i) = i;
         cnt++;
       }
+      else {
+        EKAT_KERNEL_ERROR_MSG("Cannot match f90 results when there are inactive columns");
+      }
     }, num_active);
   d.lengath = num_active;
 
@@ -1669,6 +1672,16 @@ void zm_closure(ZmClosureData& d)
   WSM wsm(d.pver, 3, policy);
   ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
 
+  Int kmin, kmax;
+  Kokkos::RangePolicy<ExeSpace> rpolicy(0, d.pcols);
+  Kokkos::parallel_reduce(rpolicy, KOKKOS_LAMBDA(const int i, Int& update) {
+    update = ekat::impl::min(update, lel_d(i));
+  }, Kokkos::Min<Int>(kmin));
+
+  Kokkos::parallel_reduce(rpolicy, KOKKOS_LAMBDA(const int i, Int& update) {
+    update = ekat::impl::min(update, mx_d(i));
+  }, Kokkos::Min<Int>(kmax));
+
   // unpack data scalars because we do not want the lambda to capture d
   const Real cape_threshold_in = d.cape_threshold_in;
   const Int msg = d.msg;
@@ -1714,6 +1727,7 @@ void zm_closure(ZmClosureData& d)
       lel_d(i),
       jt_d(i),
       mx_d(i),
+      kmin, kmax,
       dsubcld_d(i),
       z_mid_c,
       z_int_c,

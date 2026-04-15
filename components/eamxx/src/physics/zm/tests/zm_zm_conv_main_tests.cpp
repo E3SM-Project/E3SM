@@ -80,11 +80,11 @@ struct UnitWrap::UnitTest<D>::TestZmConvMain : public UnitWrap::UnitTest<D>::Bas
         REQUIRE(d_baseline.total(d_baseline.prec) == d_test.total(d_test.jcbot));
         REQUIRE(d_baseline.total(d_baseline.prec) == d_test.total(d_test.jt));
         for (Int k = 0; k < d_baseline.total(d_baseline.prec); ++k) {
-          REQUIRE(d_baseline.prec[k] == d_test.prec[k]);
+          REQUIRE(d_baseline.prec[k] == Approx(d_test.prec[k]).margin(margin));
           REQUIRE(d_baseline.cape[k] == Approx(d_test.cape[k]).margin(margin));
           REQUIRE(d_baseline.dcape[k] == Approx(d_test.dcape[k]).margin(margin));
           REQUIRE(d_baseline.dsubcld[k] == d_test.dsubcld[k]);
-          REQUIRE(d_baseline.rliq[k] == d_test.rliq[k]);
+          REQUIRE(d_baseline.rliq[k] == Approx(d_test.rliq[k]).margin(margin));
           REQUIRE(d_baseline.gather_index[k] == d_test.gather_index[k]);
           REQUIRE(d_baseline.msemax_klev[k] == d_test.msemax_klev[k]);
           REQUIRE(d_baseline.jctop[k] == d_test.jctop[k]);

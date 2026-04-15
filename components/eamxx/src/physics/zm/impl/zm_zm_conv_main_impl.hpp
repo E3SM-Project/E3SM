@@ -306,7 +306,8 @@ void Functions<S,D>::zm_conv_main(
     team.team_barrier();
 
     // Sub-cloud layer pressure thickness
-    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, msemax_klev(i), pver),
+    Int max_idx = ekat::impl::max(msg, msemax_klev(i));
+    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, max_idx, pver),
       [&](const Int k, Real& sum) { sum += p_del(i,k); }, dsubcld(i));
     team.team_barrier();
 
@@ -409,7 +410,7 @@ void Functions<S,D>::zm_conv_main(
     auto ws = wsm.get_workspace(team);
     zm_closure(team, ws, runtime_opt,
                pver, pverp, msg, cape_threshold_loc,
-               lcl(i), lel(i), jt(i), msemax_klev(i), dsubcld(i),
+               lcl(i), lel(i), jt(i), msemax_klev(i), lel_min, msemax_klev_min, dsubcld(i),
                ekat::subview(z_mid, i), ekat::subview(z_int, i),
                ekat::subview(p_mid, i), ekat::subview(p_del, i),
                ekat::subview(t_mid, i),

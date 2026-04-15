@@ -26,6 +26,8 @@ void Functions<S,D>::zm_closure(
   const Int& lel, // index of launch leve
   const Int& jt, // top of updraft
   const Int& mx, // base of updraft
+  const Int& kmin,
+  const Int& kmax,
   const Real& dsubcld, // thickness of subcloud layer
   const uview_1d<const Real>& z_mid, // altitude (m)
   const uview_1d<const Real>& z_int, // height of interface levels
@@ -173,11 +175,7 @@ void Functions<S,D>::zm_closure(
   //----------------------------------------------------------------------------
   // vertically integrate buoyancy change
   // kmin = lel, kmax = mx - 1 (TeamVectorRange is half-open: [lel, mx))
-  //
-  // This is another place where there's inter-column dependencies in the fortran related
-  // to gathering. The fortran uses kmin=minval(lel) and kmax=maxval(mx) as the bounds for
-  // this loop
-  Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, lel, mx),
+  Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, kmin, kmax),
     [&](const Int& k, Real& dadt_sum) {
       dadt_sum += dboydt(k) * (z_int(k) - z_int(k+1));
     }, dadt);
