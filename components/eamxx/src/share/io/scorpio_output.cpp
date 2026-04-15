@@ -572,17 +572,19 @@ run (const std::string& filename,
         // If it's an output step, for Avg we need to ensure count>threshold.
         // If count<=threshold, we set count=fill_value, so that fill_val propagates
         // to the output fields when we divide by count later
-        if (output_step and m_avg_type==OutputAvgType::Average) {
+        if (output_step and m_track_avg_cnt) {
           int min_count = static_cast<int>(std::floor(m_avg_coeff_threshold*nsteps_since_last_output));
 
           // Recycle mask to find where count<thresh
           compute_mask(count,min_count,Comparison::LE,mask);
 
-          // Later, we divide fields by count. By setting count=1 where count<thresholt,
-          // we can later do
-          //   f.scale_inv(count); // Requires count!=0 anywhere
-          //   f.deep_copy(fill_val,mask)
-          count.deep_copy(1,mask);
+          if (m_avg_type==OutputAvgType::Average) {
+            // Later, we divide fields by count. By setting count=1 where count<thresholt,
+            // we can later do
+            //   f.scale_inv(count); // Requires count!=0 anywhere
+            //   f.deep_copy(fill_val,mask)
+            count.deep_copy(1,mask);
+          }
         }
       }
       count.get_header().set_extra_data("updated",true);
@@ -597,13 +599,17 @@ run (const std::string& filename,
     const auto& f_in  = fm_after_hr->get_field(field_name);
           auto& f_out = fm_scorpio->get_field(field_name);
 
-    // Safety check: if a field may contain fill values and we are computing an Average,
-    // we must have created an avg-count tracking field; otherwise division by the raw
-    // number of steps would bias the result wherever fill values occurred.
-    if (m_avg_type==OutputAvgType::Average && f_in.get_header().may_be_filled()) {
+    // Safety check: if a field may contain fill values and we are computing an Average/Max/Min,
+    // we must have created an avg-count tracking field; otherwise we cannot detect locations
+    // where all timesteps had fill values and substitute fill_value in the output.
+    if ((m_avg_type==OutputAvgType::Average ||
+         m_avg_type==OutputAvgType::Max     ||
+         m_avg_type==OutputAvgType::Min)
+        && f_in.get_header().may_be_filled()) {
       EKAT_REQUIRE_MSG(m_field_to_avg_count.count(field_name),
         "[AtmosphereOutput::run] Error! Averaging a fill-aware field without avg-count tracking.\n"
         " - field name : " + field_name + "\n"
+        " - avg type   : " + e2str(m_avg_type) + "\n"
         "This indicates the field was marked may_be_filled after output initialization or tracking logic missed it." );
     }
 
@@ -622,18 +628,20 @@ run (const std::string& filename,
 
     if (is_write_step) {
       // NOTE: we don't divide by the avg cnt for checkpoint output
-      if (output_step and m_avg_type==OutputAvgType::Average) {
-        // Even if m_track_avg_cnt=true, this field may not need it
-        if (m_track_avg_cnt) {
-          auto avg_count = m_field_to_avg_count.at(field_name);
-
-          f_out.scale_inv(avg_count);
-
-          const auto& mask = avg_count.get_valid_mask();
-          f_out.deep_copy(constants::fill_value<Real>,mask);
+      if (output_step) {
+        if (m_field_to_avg_count.count(field_name)) {
+          auto& avg_count = m_field_to_avg_count.at(field_name);
+          auto& valid_count = avg_count.get_valid_mask();
+          if (m_avg_type==OutputAvgType::Average) {
+            f_out.scale_inv(avg_count);
+          }
+          // Replace sentinel values with fill_value where count is not valid
+          f_out.deep_copy(constants::fill_value<Real>,valid_count,true);
         } else {
-          // Divide by steps count only when the summation is complete
-          f_out.scale(Real(1.0) / nsteps_since_last_output);
+          if (m_avg_type==OutputAvgType::Average) {
+            // No avg count, but for avg, we have to divide by num_snapshots
+            f_out.scale(Real(1) / nsteps_since_last_output);
+          }
         }
       }
 
