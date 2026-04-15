@@ -260,6 +260,8 @@ MAMMicrophysics::create_requests()
                         vector3d_num_gas_aerosol_constituents, nondim, grid_name);
     constexpr auto cm2 = m * m / 10000;
     add_field<Computed>("mam4_gas_dry_deposition_flux", vector2d_gas_pcnst, 1 / cm2 / s, grid_name);
+    // Number of convergence failures in the implicit ODE solver per (col, lev) [-]
+    add_field<Computed>(FieldIdentifier("mam4_gas_phase_chemistry_fail_cnt", scalar3d_mid, nondim, grid_name, DataType::IntType));
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
