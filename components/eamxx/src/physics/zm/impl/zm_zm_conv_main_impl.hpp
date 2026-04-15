@@ -383,6 +383,24 @@ void Functions<S,D>::zm_conv_main(
   Kokkos::fence();
 
   //============================================================================
+  // Host: Compute lel_min and msemax_klev_min across active columns.
+  // These cross-column minimums are available to zm_closure for consistent
+  // loop bounds across the column ensemble.
+  //============================================================================
+  Int lel_min = pver - 1, msemax_klev_min = pver - 1;
+  Kokkos::parallel_reduce("zm_conv_main_lel_min",
+    RangePolicy(0, ncol),
+    KOKKOS_LAMBDA(const Int i, Int& mn) {
+      if (active(i)) mn = ekat::impl::min(mn, lel(i));
+    }, Kokkos::Min<Int>(lel_min));
+  Kokkos::parallel_reduce("zm_conv_main_msemax_klev_min",
+    RangePolicy(0, ncol),
+    KOKKOS_LAMBDA(const Int i, Int& mn) {
+      if (active(i)) mn = ekat::impl::min(mn, msemax_klev(i));
+    }, Kokkos::Min<Int>(msemax_klev_min));
+  Kokkos::fence();
+
+  //============================================================================
   // Kernel 7: Closure — cloud base mass flux
   //============================================================================
   Kokkos::parallel_for("zm_conv_main_closure", policy, KOKKOS_LAMBDA(const MemberType& team) {
