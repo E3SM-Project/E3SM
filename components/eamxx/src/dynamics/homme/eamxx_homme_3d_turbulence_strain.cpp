@@ -281,6 +281,8 @@ void HommeDynamics::compute_vertical_derivs ()
 
   constexpr int NGP  = HOMMEXX_NP;
   constexpr int VLEN = VECTOR_SIZE;
+  constexpr int NLEV_SCALAR = HOMMEXX_NUM_PHYSICAL_LEV;
+  constexpr int NLEV_SCALAR_P = HOMMEXX_NUM_INTERFACE_LEV;
 
   const auto& c      = Context::singleton();
   const auto& state  = c.get<ElementsState>();
@@ -362,7 +364,7 @@ void HommeDynamics::compute_vertical_derivs ()
       constexpr Real kappa  = PhysicalConstants::kappa;
 
       // Reconstruct interface pressure into a local scalar array.
-      Real p_int[NUM_LEV_P];
+      Real p_int[NLEV_SCALAR_P];
       p_int[0] = 0.0;
 
       for (int ilev = 0; ilev < nlev_scalar; ++ilev) {
