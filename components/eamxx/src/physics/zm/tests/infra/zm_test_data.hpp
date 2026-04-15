@@ -455,41 +455,28 @@ struct ZmConvMainData : public PhysicsTestData {
   void randomize(Engine& engine)
   {
     PhysicsTestData::randomize(engine, {
-      {q_mid_in, {0.008,   0.02}},     // specific humidity [kg/kg] — keep moist for CAPE
-      {q_star,   {0.008,   0.02}},
+      {t_mid,    {200.0,   300.0}},    // temperature [K]
+      {t_star,   {200.0,   300.0}},
+      {q_mid_in, {0.001,   0.02}},     // specific humidity [kg/kg]
+      {q_star,   {0.001,   0.02}},
       {omega,    {-0.5,    0.5}},      // vertical pressure velocity [Pa/s]
       {p_mid_in, {10000.0, 100000.0}}, // pressure [Pa]
       {p_int_in, {9000.0,  101000.0}}, // interface pressure [Pa]
       {p_del_in, {500.0,   5000.0}},   // pressure thickness [Pa]
       {geos,     {0.0,     1000.0}},   // surface geopotential [m2/s2]
-      {z_mid_in, {100.0,   10000.0}},  // mid-point altitude [m]
+      {z_mid_in, {0.0,     10000.0}},  // mid-point altitude [m]
       {z_int_in, {0.0,     10500.0}},  // interface altitude [m]
       {pbl_hgt,  {100.0,   2000.0}},   // PBL height [m]
       {tpert,    {0.0,     2.0}},      // temperature perturbation [K]
       {landfrac, {0.0,     1.0}},      // land fraction
     });
 
-    // Sort pressure ascending, z descending, and q descending (more moisture at surface)
-    std::uniform_real_distribution<Real> t_surf_dist(290.0, 300.0);
-    constexpr Real gamma = 8.0e-3; // 8 K/km lapse rate — super-moist-adiabatic, guarantees CAPE
+    // Sort pressure ascending and z descending per column
     for (Int c = 0; c < pcols; ++c) {
-      std::sort(p_mid_in + (c*pver),  p_mid_in + ((c+1)*pver));
+      std::sort(p_mid_in + (c*pver), p_mid_in + ((c+1)*pver));
       std::sort(p_int_in + (c*pverp), p_int_in + ((c+1)*pverp));
-      std::sort(z_mid_in + (c*pver),  z_mid_in + ((c+1)*pver),  std::greater<Real>());
+      std::sort(z_mid_in + (c*pver), z_mid_in + ((c+1)*pver), std::greater<Real>());
       std::sort(z_int_in + (c*pverp), z_int_in + ((c+1)*pverp), std::greater<Real>());
-      std::sort(q_mid_in + (c*pver),  q_mid_in + ((c+1)*pver),  std::greater<Real>());
-      std::sort(q_star   + (c*pver),  q_star   + ((c+1)*pver),  std::greater<Real>());
-
-      // Build temperature profile with 8 K/km lapse rate anchored at a warm surface.
-      // This exceeds the moist adiabatic lapse rate (~6 K/km), guaranteeing all
-      // columns have CAPE > ZMC::cape_threshold_old (70 J/kg).
-      const Real t_surf = t_surf_dist(engine);
-      const Real z_bot  = z_mid_in[c*pver + (pver-1)]; // lowest mid-level altitude [m]
-      for (Int k = 0; k < pver; ++k) {
-        const Real t = t_surf - gamma * (z_mid_in[c*pver + k] - z_bot);
-        t_mid [c*pver + k] = std::max(t, Real(180.0));
-        t_star[c*pver + k] = t_mid[c*pver + k];
-      }
     }
   }
 };
