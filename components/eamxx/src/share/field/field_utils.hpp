@@ -47,7 +47,7 @@ void perturb (Field& f,
               const Field& dof_gids = Field());
 
 // Vertical/horizontal contractions of field (possibly averaging)
-void vert_contraction (const Field& f_out, const Field& f_in, const Field& weight, bool AVG = false);
+void vert_contraction (const Field& f_out, const Field& f_in, const Field& weight);
 void horiz_contraction(const Field& f_out, const Field& f_in, const Field& weight, bool AVG = true,
                        const ekat::Comm* comm = nullptr, const Field& f_tmp = Field());
 

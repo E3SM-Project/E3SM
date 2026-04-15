@@ -3,6 +3,7 @@
 #include "share/physics/physics_constants.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 
@@ -54,13 +55,15 @@ void VertContractDiag::create_requests() {
   }
 }
 
-void VertContractDiag::initialize_impl(const RunType /*run_type*/) {
+void VertContractDiag::initialize_impl(const RunType /*run_type*/)
+{
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
   const auto &f      = get_fields_in().front();
   const auto &fid    = f.get_header().get_identifier();
   const auto &layout = fid.get_layout();
+  const auto vtag    = layout.tags().back();
 
   // if dp or dz, gotta give us ncol,nlev as inputs (so rank>=2)
   // else, can give us just nlev
@@ -76,129 +79,81 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/) {
                    " - field name  : " + fid.name() + "\n"
                    " - field layout: " + layout.to_string() + "\n");
 
-  ekat::units::Units diag_units = fid.get_units();
+  auto diag_units = fid.get_units();
 
-  // set up the weighting fields
+  auto w_units = Units::nondimensional();
+  // set up the weighting field
   if (m_weighting_method == "dp") {
-    m_weighting = get_field_in("pseudo_density").clone("vert_contract_wts");
+    m_weight = get_field_in("pseudo_density").clone("vert_contract_wts");
+    constexpr auto g_units = physics::Constants<Real>::gravit.units;
+    w_units = m_weight.get_header().get_identifier().get_units() / g_units;
   } else if (m_weighting_method == "dz") {
     // TODO: for some reason the dz field keeps getting set to 0
     // TODO: as a workaround, just calculate dz here (sigh...)
-    // m_weighting = get_field_in("dz").clone("vert_contract_wts");
-    m_weighting = get_field_in("pseudo_density").clone("vert_contract_wts");
+    // m_weight = get_field_in("dz").clone("vert_contract_wts");
+    m_weight = get_field_in("pseudo_density").clone("vert_contract_wts");
+    w_units = m;
   } else {
     // no weighting needed, so we set it to 1 with layout of (lev)
-    FieldLayout layout_wts = {{LEV}, {layout.dim(LEV)}};
-    FieldIdentifier f_id("vert_contract_wts", layout_wts, ekat::units::Units::nondimensional(), fid.get_grid_name());
-    m_weighting = Field(f_id);
-    m_weighting.allocate_view();
-    m_weighting.deep_copy(sp(1));
+    FieldLayout layout_wts = {{vtag}, {layout.dim(vtag)}};
+    FieldIdentifier w_fid("vert_contract_wts", layout_wts, w_units, fid.get_grid_name());
+    m_weight = Field(w_fid,true);
+    m_weight.deep_copy(1);
   }
 
-  if (m_weighting_method == "dp" && m_contract_method == "sum") {
-    // we scale by the weighting, so we use fid units * Pa (but we scale by 1/g for dp)
-    diag_units = fid.get_units() * Pa / (m/(s*s));
-  } else if (m_weighting_method == "dz" && m_contract_method == "sum") {
-    // we scale by the weighting, so we use fid units * m
-    diag_units = fid.get_units() * m;
-  }
-
+  diag_units = diag_units * w_units;
   if (m_contract_method == "avg") {
-    auto wts_layout = m_weighting.get_header().get_identifier().get_layout();
-    FieldIdentifier wts_sum_fid("vert_contract_wts_sum", wts_layout.clone().strip_dim(LEV), diag_units, fid.get_grid_name());
-    m_weighting_sum = Field(wts_sum_fid);
-    m_weighting_sum.allocate_view();
-    m_weighting_one = m_weighting.clone("vert_contract_wts_one");
-    m_weighting_one.deep_copy(sp(1));
-    vert_contraction(m_weighting_sum, m_weighting, m_weighting_one);
-    VertContractDiag::scale_wts(m_weighting, m_weighting_sum);
+    diag_units = diag_units / w_units;
   }
 
   auto d_fid = fid.clone(m_diag_name).reset_layout(layout.clone().strip_dim(LEV)).reset_units(diag_units);
-  m_diagnostic_output = Field(d_fid);
-  m_diagnostic_output.allocate_view();
+  m_diagnostic_output = Field(d_fid,true);
 
-  if (f.get_header().has_extra_data("mask_data")) {
-    m_diagnostic_output.get_header().set_extra_data("mask_data", m_diagnostic_output.clone(m_diag_name+"_mask"));
-    m_diagnostic_output.get_header().set_extra_data("mask_value", f.get_header().get_extra_data<Real>("mask_value"));
+  if (m_contract_method == "avg") {
+    // m_weight_sum must have the same layout as d (f's layout without vtag)
+    // so that scale_inv(m_weight_sum) is valid regardless of input rank.
+    auto wsum_fid = fid.clone("weight_sum")
+                       .reset_layout(layout.clone().strip_dim(vtag))
+                       .reset_units(w_units);
+    m_weight_sum = Field(wsum_fid,true);
+
+    // m_ones is a ones-field with f's layout (not m_weight's layout).
+    // Using f's layout ensures vert_contraction(m_weight_sum, m_ones, m_weight)
+    // produces the correct (COL[xCMP]) denominator for any input rank.
+    m_ones = f.clone("ones");
+    m_ones.deep_copy(1);
+    if (f.has_valid_mask()) {
+      // Share the valid_mask so the denominator honours the same masking
+      m_ones.set_valid_mask(f.get_valid_mask());
+      // Output gets a valid_mask: 1 where at least one level was valid
+      m_diagnostic_output.create_valid_mask(Field::MaskInit::None);
+      m_diagnostic_output.get_header().set_may_be_filled(true);
+    }
   }
 }
 
-// TODO: move this to field_utils.hpp
-//       by allowing update fxns there to op
-//       on fields of ranks \in ranks, e.g.,
-//       f1.scale_inv(f2) should work for:
-//       - f2 scalar (rank-0)
-//       - f2 with same layout as f1
-//       - f2 with layout that is a subset of f1
-//         (ncol,lev) is subset of (ncol, dim, lev)
-//         (ncol) is subset of (ncol, lev), etc.
-void VertContractDiag::scale_wts(Field &wts, const Field &wts_sum) {
-  using KT = KokkosTypes<DefaultDevice>;
-  using RP = typename KT::RangePolicy;
-
-  auto wts_l          = wts.get_header().get_identifier().get_layout();
-  const auto wts_rank = wts_l.rank();
-
-  if (wts_rank == 1) {
-    // no ncols, just nlevs
-    const int nlevs      = wts_l.dim(0);
-    const auto wts_v     = wts.get_view<Real *>();
-    const auto wts_sum_v = wts_sum.get_view<const Real>();
-
-    Kokkos::parallel_for(
-        "VertContractDiag::scale_wts" + m_diag_name, RP(0, nlevs), KOKKOS_LAMBDA(const int &ilev) {
-          if (wts_sum_v() != 0) {
-            wts_v(ilev) /= wts_sum_v();
-          } else {
-            wts_v(ilev) = 0; // Handle division by zero by setting to 0
-          }
-        });
-
-  } else if (wts_rank == 2) {
-    // we have both ncols and nlevs
-    const int ncols      = wts_l.dim(0);
-    const int nlevs      = wts_l.dim(1);
-    const auto wts_v     = wts.get_view<Real **>();
-    const auto wts_sum_v = wts_sum.get_view<const Real *>();
-    Kokkos::parallel_for(
-        "VertContractDiag::scale_wts" + m_diag_name, RP(0, nlevs * ncols),
-        KOKKOS_LAMBDA(const int &idx) {
-          const int icol = idx / nlevs;
-          const int ilev = idx % nlevs;
-          if (wts_sum_v(icol) != 0) {
-            wts_v(icol, ilev) /= wts_sum_v(icol);
-          } else {
-            wts_v(icol, ilev) = 0; // Handle division by zero by setting to 0
-          }
-        });
-  } else {
-    // you shouldn't have arrived here, error out
-    EKAT_ERROR_MSG("Error!! VertContractDiag::scale_wts, unexpected field layout.");
-  }
-}
-
-void VertContractDiag::compute_diagnostic_impl() {
+void VertContractDiag::compute_diagnostic_impl()
+{
   const auto &f = get_fields_in().front();
-  const auto &d = m_diagnostic_output;
+  auto &d = m_diagnostic_output;
 
-  // update the weights; if weighting by dp, we need to scale by 1/g
+  // Update the weights; if weighting by dp, we need to scale by 1/g
   if (m_weighting_method == "dp") {
     auto g = scream::physics::Constants<Real>::gravit.value;
-    m_weighting.update(get_field_in("pseudo_density"), 1 / g, sp(0.0));
+    m_weight.update(get_field_in("pseudo_density"), 1 / g, sp(0.0));
   } else if (m_weighting_method == "dz") {
     // TODO: for some reason the dz field keeps getting set to 0
     // TODO: as a workaround, just calculate dz here (sigh...)
-    // m_weighting.update(get_field_in("dz"), 1.0, 0.0);
+    // m_weight.update(get_field_in("dz"), 1.0, 0.0);
     using KT          = KokkosTypes<DefaultDevice>;
     using MT          = typename KT::MemberType;
     using TPF         = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
     using PF          = scream::PhysicsFunctions<DefaultDevice>;
-    const int ncols   = m_weighting.get_header().get_identifier().get_layout().dim(0);
-    const int nlevs   = m_weighting.get_header().get_identifier().get_layout().dim(1);
+    const int ncols   = m_weight.get_header().get_identifier().get_layout().dim(0);
+    const int nlevs   = m_weight.get_header().get_identifier().get_layout().dim(1);
     const auto policy = TPF::get_default_team_policy(ncols, nlevs);
 
-    auto dz_v = m_weighting.get_view<Real **>();
+    auto dz_v = m_weight.get_view<Real **>();
     auto dp_v = get_field_in("pseudo_density").get_view<const Real **>();
     auto pm_v = get_field_in("p_mid").get_view<const Real **>();
     auto tm_v = get_field_in("T_mid").get_view<const Real **>();
@@ -215,16 +170,24 @@ void VertContractDiag::compute_diagnostic_impl() {
         });
   }
 
-  // if dp|dz_weighted and avg, we need to scale the weighting by its 1/sum
-  if ((m_weighting_method == "dp" || m_weighting_method == "dz") && m_contract_method == "avg") {
-    vert_contraction(m_weighting_sum, m_weighting, m_weighting_one);
-    VertContractDiag::scale_wts(m_weighting, m_weighting_sum);
-  }
+  // Now do the contraction itself
+  vert_contraction(d, f, m_weight);
 
-  // call the vert_contraction impl that will take care of everything
-  // if f has a mask and we are averaging, need to call the avg specialization
-  bool avg = m_contract_method == "avg" && f.get_header().has_extra_data("mask_data");
-  vert_contraction(d, f, m_weighting, avg);
+  if (m_contract_method == "avg") {
+    // Denominator: sum_lev(weight * 1 * mask); layout matches d
+    vert_contraction(m_weight_sum, m_ones, m_weight);
+    if (d.has_valid_mask()) {
+      // Mark where denominator is nonzero, then divide, then fill elsewhere
+      auto& valid_out = d.get_valid_mask();
+      compute_mask(m_weight_sum, 0, Comparison::NE, valid_out);
+      d.scale_inv(m_weight_sum, valid_out);
+      // IO relies on fill_value for masked-out entries
+      d.deep_copy(constants::fill_value<Real>, valid_out, true);
+    } else {
+      d.scale_inv(m_weight_sum);
+    }
+  }
 }
 
 } // namespace scream
+
