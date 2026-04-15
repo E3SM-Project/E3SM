@@ -1115,7 +1115,7 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="improv|bebop">
+    <mach name="improv">
       <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="M">
         <comment>--res conusx4v1_r05_oECv3 --compset F2010 </comment>
         <ntasks>
@@ -1127,6 +1127,19 @@
           <ntasks_ice>-4</ntasks_ice>
           <ntasks_glc>-4</ntasks_glc>
           <ntasks_wav>-4</ntasks_wav>
+        </ntasks>
+      </pes>
+    </mach>
+    <mach name="bebop">
+      <pes compset="any" pesize="any">
+        <comment>bebop: LR conus eamxx 6 nodes</comment>
+        <ntasks>
+          <ntasks_atm>-8</ntasks_atm>
+          <ntasks_cpl>-8</ntasks_cpl>
+          <ntasks_ice>-8</ntasks_ice>
+          <ntasks_lnd>-8</ntasks_lnd>
+          <ntasks_rof>-8</ntasks_rof>
+          <ntasks_ocn>-8</ntasks_ocn>
         </ntasks>
       </pes>
     </mach>
