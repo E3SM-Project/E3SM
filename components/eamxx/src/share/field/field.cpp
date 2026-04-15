@@ -49,24 +49,25 @@ void update_checks (const std::string& caller,
   // will use such large factors).
   // Similarly, we allow updating a field Y with another X as long as converting the data type of X
   // to the data type of Y does not require narrowing
-  EKAT_REQUIRE_MSG (not is_narrowing_conversion(x_dt,y_dt),
-      "[" + caller + "] Error! Rhs data type may be narrowed when converted to lhs data type.\n"
+  EKAT_REQUIRE_MSG (not is_unsafe_conversion(x_dt,y_dt),
+      "[" + caller + "] Error! Rhs data type conversion to lhs data type seems unsafe.\n"
       " - lhs name: " + y.name() + "\n"
       " - rhs name: " + x.name() + "\n"
       " - rhs data type: " + e2str(x_dt) + "\n"
       " - lhs data type: " + e2str(y_dt) + "\n");
-  EKAT_REQUIRE_MSG (not is_narrowing_conversion(a_dt,y_dt),
-      "[" + caller + "] Error! Coefficient alpha may be narrowed when converted to lhs data type.\n"
+
+  EKAT_REQUIRE_MSG (not is_unsafe_conversion(a_dt,y_dt),
+      "[" + caller + "] Error! Coefficient alpha conversion to lhs data type seems unsafe.\n"
       " - lhs name: " + y.name() + "\n"
       " - lhs data type  : " + e2str(y_dt) + "\n"
       " - alpha data type: " + e2str(a_dt) + "\n");
-  EKAT_REQUIRE_MSG (not is_narrowing_conversion(b_dt,y_dt),
-      "[" + caller + "] Error! Coefficient beta may be narrowed when converted to lhs data type.\n"
+  EKAT_REQUIRE_MSG (not is_unsafe_conversion(b_dt,y_dt),
+      "[" + caller + "] Error! Coefficient beta conversion to lhs data type seems unsafe.\n"
       " - lhs name: " + y.name() + "\n"
       " - lhs data type  : " + e2str(y_dt) + "\n"
       " - beta data type: " + e2str(b_dt) + "\n");
-  EKAT_REQUIRE_MSG (not is_narrowing_conversion(g_dt,y_dt),
-      "[" + caller + "] Error! Coefficient gamma may be narrowed when converted to lhs data type.\n"
+  EKAT_REQUIRE_MSG (not is_unsafe_conversion(g_dt,y_dt),
+      "[" + caller + "] Error! Coefficient gamma convesion to lhs data type seems unsafe.\n"
       " - lhs name: " + y.name() + "\n"
       " - lhs data type  : " + e2str(y_dt) + "\n"
       " - gamma data type: " + e2str(g_dt) + "\n");

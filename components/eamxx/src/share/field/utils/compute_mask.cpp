@@ -301,8 +301,8 @@ void compute_mask (const Field& f, const ScalarWrapper value, Comparison CMP, co
       " - mask layout : " + m_layout.to_string() + "\n");
 
   const auto f_dt   = f.data_type();
-  EKAT_REQUIRE_MSG (not is_narrowing_conversion(value.type,f_dt),
-      "[compute_mask] Error! Target value may be narrowed when converted to field data type.\n"
+  EKAT_REQUIRE_MSG (not is_unsafe_conversion(value.type,f_dt),
+      "[compute_mask] Error! Target value conversion to field data type seems unsafe.\n"
       " - field data type: " + e2str(f_dt) + "\n"
       " - value data type: " + e2str(value.type) + "\n");
 
