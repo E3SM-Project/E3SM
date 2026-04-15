@@ -569,7 +569,7 @@ contains
       character(len=*), intent(in) :: time_str
       integer, intent(out) :: err
       integer :: ierr
-      character(len=64) :: xtime_buf
+      character(len=64) :: xtime_buf(1)
 
       err = 0
       if (self%time_record == 0) then
@@ -582,8 +582,8 @@ contains
       self%time_record = self%time_record + 1
 
       ! Write xtime string for this record
-      xtime_buf = ' '
-      xtime_buf(1:min(len_trim(time_str), 64)) = &
+      xtime_buf(1) = ' '
+      xtime_buf(1)(1:min(len_trim(time_str), 64)) = &
            time_str(1:min(len_trim(time_str), 64))
       ierr = pio_put_var(self%pio_file, self%pio_xtime_var, &
            (/1, self%time_record/), (/64, 1/), xtime_buf)
