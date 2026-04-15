@@ -5149,7 +5149,7 @@ git commit -m &quot;update from cice-consortium main&quot;
 </code></pre></div>
 <p>Create a PR from branch to cice-consortium/icepack -b main.</p>
 <p>Once the PR has been tested and merged into the main Icepack codebase, a new PR is submitted to E3SM.</p>
-<p>More extensive documentation of this workflow tool used for the Icepack merge project is available <a href="https://acme-climate.atlassian.net/wiki/spaces/ICE/pages/3450339435/Project+Workflow">here</a>.</p>
+<p><a href="https://e3sm.atlassian.net/wiki/spaces/pd/pages/3450339435/Project+Workflow">An extensive example of this workflow</a> is available.</p>
 <h2 id="cice-qc-quality-control-testing">CICE-QC Quality Control Testing</h2>
 <p>Example to run a CICE-QC comparison between two E3SM simulations with changes to the sea ice component.</p>
 <h3 id="set-up-and-run-simulations-to-be-compared">Set up and run simulations to be compared</h3>
@@ -5215,19 +5215,19 @@ cp ~/E3SM-Polar/code/qcbaseline/components/mpas-seaice/cime_config/buildnml .
 <h3 id="run-qc-comparison">Run QC comparison</h3>
 <div class="highlight"><pre><span></span><code>cd ~/E3SM-Polar/code/newdev01/components/mpas-seaice/testing/cice-qc
 </code></pre></div>
-<p>See README.md.  This example is for anvil.</p>
-<p>Edit <code>job_script.cice-qc.anvil</code> to export (insert your username)</p>
-<div class="highlight"><pre><span></span><code>BASE = /lcrc/group/e3sm/[username]/E3SM-Polar/D12.qcbase.emc.qcbaseline.master.E3SM-Project.anvil/run.k000/
-TEST = /lcrc/group/e3sm/[username]/E3SM-Polar/D12.qcbase.emc.newdev01.branch.E3SM-Project.anvil/run.k000
+<p>See README.md.  This example is for chrysalis.</p>
+<p>Edit <code>job_script.cice-qc.chrysalis</code> to export (insert your username)</p>
+<div class="highlight"><pre><span></span><code>BASE = /lcrc/group/e3sm/[username]/E3SM-Polar/D12.qcbase.emc.qcbaseline.master.E3SM-Project.chrysalis/run.k000/
+TEST = /lcrc/group/e3sm/[username]/E3SM-Polar/D12.qcbase.emc.newdev01.branch.E3SM-Project.chrysalis/run.k000
 </code></pre></div>
 <p>Submit QC test. Test results will be in the file <code>qc_log.txt</code>.</p>
-<div class="highlight"><pre><span></span><code>sbatch job_script.qc-testing-mpassi.anvil
+<div class="highlight"><pre><span></span><code>sbatch job_script.qc-testing-mpassi.chrysalis
 less qc_log.txt
 </code></pre></div>
 <p>Example of desired result:</p>
 <div class="highlight"><pre><span></span><code>Running QC test on the following directories:
-  /lcrc/group/e3sm/ac.eclare/E3SM-Polar/D12.qcbase.emc.qcbaseline.master.E3SM-Project.anvil/run.k000/
-  /lcrc/group/e3sm/ac.eclare/E3SM-Polar/D12.qcbase.emc.newdev01.branch.E3SM-Project.anvil/run.k000
+  /lcrc/group/e3sm/ac.eclare/E3SM-Polar/D12.qcbase.emc.qcbaseline.master.E3SM-Project.chrysalis/run.k000/
+  /lcrc/group/e3sm/ac.eclare/E3SM-Polar/D12.qcbase.emc.newdev01.branch.E3SM-Project.chrysalis/run.k000
 Number of files: 61
 2 Stage Test Passed
 Quadratic Skill Test Passed for Northern Hemisphere
@@ -5236,15 +5236,17 @@ Quadratic Skill Test Passed for Southern Hemisphere
 <h3 id="generate-statistics-from-the-cice-qc-runs">Generate statistics from the CICE-QC runs</h3>
 <p>This only works if the .nlk filename is the same for both cases.  If comparing only namelist changes within MPAS-seaice, use the <code>./E3SM-Polar-Developer.sh</code> script with a single .nlk file that includes each option.</p>
 <div class="highlight"><pre><span></span><code>cd ~/SimulationScripts/archive/PolarGroup/
-$ ./E3SM-Polar-Developer.sh -s qcbaseline -k qcbase.nlk -e -d60 -a D12.qcbase.emc.newdev01.branch.E3SM-Project.anvil -v
+$ ./E3SM-Polar-Developer.sh -s qcbaseline -k qcbase.nlk -e -d60 -a D12.qcbase.emc.newdev01.branch.E3SM-Project.chrysalis -v
 </code></pre></div>
 <h3 id="create-comparison-plots">Create comparison plots</h3>
 <p>To generate MPAS-Analysis plots from the CICE-QC runs and compare:</p>
-<p>Copy the scripts in the file <a href="MPAS-Analysis_scripts.zip">MPAS-Analysis_scripts.zip</a> to anvil or chrysalis.</p>
-<p>Edit each script for your run names, directories, etc (search for 'echmod' to find settings used for a QC comparison)</p>
-<p>Edit and submit (on chrysalis) the job script 3 times, once for icepack, once for column, and finally for the comparison.</p>
-<p>Browse the html output by navigating to the location indicated by <code>htmlSubdirectory</code> in the comparison script, e.g.
-<code>https://web.lcrc.anl.gov/public/e3sm/diagnostic_output/ac.eclare/icepack-testing/D12.qcPR19.emc.qcPR19.snicar_active.eclare108213.anvil/mpas_analysis_output/</code></p>
+<div class="highlight"><pre><span></span><code>cd ~/SimulationScripts/archive/PolarGroup/QC_MPAS-SI
+</code></pre></div>
+<p>Edit each script for your run names, directories, etc (search for 'echmod' to find settings used for a QC comparison).</p>
+<p>Edit and submit (on chrysalis) the job script 3 times, once for the baseline run, once for the test run, and finally to generate comparison plots.</p>
+<div class="highlight"><pre><span></span><code>sbatch job_script
+</code></pre></div>
+<p>Browse the html output by navigating to the location indicated by <code>htmlSubdirectory</code> in the comparison script.</p>
 
 
 
