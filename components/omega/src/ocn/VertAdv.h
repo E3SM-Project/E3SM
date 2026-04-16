@@ -47,6 +47,7 @@ class VertAdv {
    I4 NVertLayers;
    I4 NVertLayersP1;
    I4 NCellsOwned;
+   I4 NCellsHalo0;
    I4 NCellsAll;
    I4 NCellsSize;
    I4 NEdgesOwned;

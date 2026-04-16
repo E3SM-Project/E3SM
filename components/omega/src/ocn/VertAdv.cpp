@@ -55,6 +55,7 @@ VertAdv::VertAdv(const std::string &Name_,  //< [in] name for new VertAdv
    NVertLayers   = VCoord->NVertLayers;
    NVertLayersP1 = VCoord->NVertLayersP1;
    NCellsOwned   = Mesh->NCellsOwned;
+   NCellsHalo0   = Mesh->NCellsHaloH(0);
    NCellsAll     = Mesh->NCellsAll;
    NCellsSize    = Mesh->NCellsSize;
    NEdgesOwned   = Mesh->NEdgesOwned;
@@ -374,10 +375,11 @@ void VertAdv::computeVerticalVelocity(
    OMEGA_SCOPE(LocEOnC, Mesh->EdgesOnCell);
    OMEGA_SCOPE(LocDvE, Mesh->DvEdge);
    OMEGA_SCOPE(LocESOnC, Mesh->EdgeSignOnCell);
+   OMEGA_SCOPE(LocNCellsHalo0, NCellsHalo0);
 
    // Loop over all cells owned by the task
    parallelForOuter(
-       "computeVerticalVelocity", {NCellsOwned},
+       "computeVerticalVelocity", {LocNCellsHalo0},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
           RealScratchArray DivHU(Team.team_scratch(0), LocNVertLayers);
 
