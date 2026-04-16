@@ -505,6 +505,11 @@ void call_hetfrz_compute_tendencies(
 
 	diags.hetfrz = ekat::subview(diagnostic_scratch, icol);
 
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int k) {
+          for (int d = 0; d < mam4::Diagnostics::number_of_hetfrz_diag; ++d)
+            diags.hetfrz(d, k) = 0.;
+        });
+
         // assign cloud fraction
         constexpr auto pver = mam4::ndrop::pver;
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0u, pver),
