@@ -1170,7 +1170,7 @@ void define_var (const std::string& filename, const std::string& varname,
                  const std::string& dtype,
                  const bool time_dependent)
 {
-  define_var(filename,varname,"",dimensions,dtype,dtype,time_dependent);
+  define_var(filename,varname,"",dimensions,dtype,time_dependent);
 }
 
 bool has_var (const std::string& filename, const std::string& varname)
@@ -1197,7 +1197,7 @@ void define_time (const std::string& filename, const std::string& units, const s
   define_dim(filename,time_name,0);
   f.time_dim = f.dims.at(time_name);
 
-  define_var(filename,time_name,units,{},"double","double",true);
+  define_var(filename,time_name,units,{},"double",true);
 }
 
 void mark_dim_as_time (const std::string& filename, const std::string& dimname)

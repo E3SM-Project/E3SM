@@ -831,7 +831,7 @@ setup_file (      IOFileSpecs& filespecs,
     auto time_units="days since " + m_case_t0.get_date_string() + " " + m_case_t0.get_time_string();
     scorpio::define_time(filename,time_units,"time");
 
-    scorpio::define_var(filename,"time",time_units,{}, "double", "double",true);
+    scorpio::define_var(filename,"time",time_units,{},"double",true);
     if (use_leap_year()) {
       scorpio::set_attribute (filename,"time","calendar","gregorian");
     } else {
@@ -841,7 +841,7 @@ setup_file (      IOFileSpecs& filespecs,
     if (m_avg_type!=OutputAvgType::Instant) {
       // First, ensure a 'dim2' dimension with len=2 is registered.
       scorpio::define_dim(filename,"dim2",2);
-      scorpio::define_var(filename,"time_bnds",time_units,{"dim2"},"double","double",true);
+      scorpio::define_var(filename,"time_bnds",time_units,{"dim2"},"double",true);
 
       // Make it clear how the time_bnds should be interpreted
       scorpio::set_attribute<std::string> (filename,"time_bnds","note","right endpoint accumulation");

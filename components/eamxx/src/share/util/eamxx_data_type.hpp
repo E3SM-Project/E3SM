@@ -41,7 +41,9 @@ DataType get_data_type () {
 
 KOKKOS_INLINE_FUNCTION
 bool is_narrowing_conversion (const DataType from, const DataType to) {
-  return (from==DataType::FloatType || from==DataType::DoubleType) && to==DataType::IntType;
+  return (from==DataType::DoubleType && to==DataType::FloatType) ||
+         ((from==DataType::FloatType || from==DataType::DoubleType) &&
+          to==DataType::IntType);
 }
 
 KOKKOS_INLINE_FUNCTION
