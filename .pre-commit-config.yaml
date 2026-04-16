@@ -50,3 +50,9 @@ repos:
         verbose: true
         additional_dependencies: ['types-requests']
 
+  # Can run individually with `pre-commit run fortitude --all-files`
+  - repo: https://github.com/PlasmaFAIR/fortitude-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: fortitude
+        args: ["--config-file=components/omega/.fortitude.toml", "--fix", "--preview"]

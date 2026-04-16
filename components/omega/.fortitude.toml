@@ -1,0 +1,4 @@
+[check]
+# Ignored Rules and justification:
+#   C003: 'implicit none' missing 'external' - Fortran 2013 feature and we support older standards
+ignore = ["C003"]
