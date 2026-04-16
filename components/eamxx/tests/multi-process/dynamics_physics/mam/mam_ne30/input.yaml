@@ -234,6 +234,7 @@ eamxx:
       srf_emis_specifier_for_pom_a4: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_pom_a4_surf_ne30pg2_2010_clim_c20240816.nc
       srf_emis_specifier_for_so4_a1: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_so4_a1_surf_ne30pg2_2010_clim_c20240816.nc
       srf_emis_specifier_for_so4_a2: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_so4_a2_surf_ne30pg2_2010_clim_c20240816.nc
+      srf_emis_scale_factor_for_dms: 1.0
       soil_erodibility_file: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne30pg2/dst_ne30pg2_c20241028.nc
       marine_organics_file: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne30pg2/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne30pg2_c20241030.nc
       srf_remap_file: none
@@ -245,6 +246,8 @@ eamxx:
       repair_log_level: trace
       internal_diagnostics_level: 0
     mam4_aero_microphys:
+      mam4_do_gas_phase_chemistry: true
+      mam4_do_aqueous_phase_chemistry: true
       extra_mam4_aero_microphys_diags: false
       mam4_do_cond: true
       mam4_do_newnuc: true
@@ -255,6 +258,7 @@ eamxx:
       mam4_o3_lbl: 4
       mam4_psc_T: 193.0
       mam4_linoz_file_name: ${SCREAM_DATA_DIR}/mam4xx/linoz/ne30pg2/linoz2010_2010JPL_CMIP6_10deg_58km_ne30pg2_c20260303.nc
+      mam4_exo_coldens_file_name: ${SCREAM_DATA_DIR}/mam4xx/linoz/ne30pg2/exo_coldens_ne30pg2_c20260128.nc
       mam4_oxid_file_name: ${SCREAM_DATA_DIR}/mam4xx/invariants/ne30pg2/oxid_1.9x2.5_L26_2015_ne30pg2_c20250813.nc
       mam4_chlorine_loading_ymd: 20100101
       mam4_linoz_chlorine_file: ${SCREAM_DATA_DIR}/mam4xx/linoz/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc
@@ -291,17 +295,19 @@ eamxx:
 grids_manager:
   type: homme
   physics_grid_type: pg2
+  physics_grid_rebalance: none
   dynamics_namelist_file_name: namelist.nl
   vertical_coordinate_filename: ${SCREAM_DATA_DIR}/init/vertical_coordinates_L72_20220927.nc
 initial_conditions:
-  filename: ${SCREAM_DATA_DIR}/screami_mam_ne30np4L72_c20240623.nc
-  topography_filename: ${SCREAM_DATA_DIR}/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.c20210614.nc
+  filename: ${SCREAM_DATA_DIR}/init/screami_mam_ne30np4L72_c20240623.nc
+  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne30np4pg2_x6t-SGH.c20210614.nc
   surf_evap: 0.0
   precip_liq_surf_mass: 0.0
   precip_ice_surf_mass: 0.0
   cldfrac_liq: 0.0
   sgs_buoy_flux: 0.0
   eddy_diff_mom: 0.0
+  eddy_diff_heat: 0.0
   T_prev_micro_step: 0.0
   qv_prev_micro_step: 0.0
   qr: 0.0
