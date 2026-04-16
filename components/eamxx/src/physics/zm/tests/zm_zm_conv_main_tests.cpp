@@ -20,7 +20,7 @@ struct UnitWrap::UnitTest<D>::TestZmConvMain : public UnitWrap::UnitTest<D>::Bas
     // Set up inputs.
     ZmConvMainData baseline_data[] = {
       //             pcols, ncol, pver, pverp, time_step, is_first_step, lengath (output, set to zero)
-      ZmConvMainData(    4,    4,   72,    73,       2.0,         true, 0),
+      ZmConvMainData(    4,    4,   72,    73,       2.0,         true,  0),
       ZmConvMainData(    4,    4,   72,    73,       3.0,         false , 0),
       ZmConvMainData(    4,    4,  128,   129,       4.0,         true, 0),
       ZmConvMainData(    4,    4,  128,   129,       5.0,         false , 0),
@@ -51,12 +51,14 @@ struct UnitWrap::UnitTest<D>::TestZmConvMain : public UnitWrap::UnitTest<D>::Bas
     }
 
     // Get data from test
+    std::vector<std::vector<bool>> actives;
     for (auto& d : test_data) {
       if (this->m_baseline_action == GENERATE) {
         zm_conv_main_f(d);
       }
       else {
-        zm_conv_main(d);
+        auto active = zm_conv_main(d);
+        actives.push_back(active);
       }
     }
 
@@ -68,7 +70,11 @@ struct UnitWrap::UnitTest<D>::TestZmConvMain : public UnitWrap::UnitTest<D>::Bas
       for (Int i = 0; i < num_runs; ++i) {
         ZmConvMainData& d_baseline = baseline_data[i];
         ZmConvMainData& d_test = test_data[i];
+        const Int ncol = d_test.ncol;
+        const Int pver = d_test.pver;
+        const Int pverp = d_test.pverp;
         REQUIRE(d_baseline.lengath == d_test.lengath);
+        REQUIRE(d_baseline.total(d_baseline.prec) == ncol);
         REQUIRE(d_baseline.total(d_baseline.prec) == d_test.total(d_test.prec));
         REQUIRE(d_baseline.total(d_baseline.prec) == d_test.total(d_test.cape));
         REQUIRE(d_baseline.total(d_baseline.prec) == d_test.total(d_test.dcape));
@@ -79,7 +85,10 @@ struct UnitWrap::UnitTest<D>::TestZmConvMain : public UnitWrap::UnitTest<D>::Bas
         REQUIRE(d_baseline.total(d_baseline.prec) == d_test.total(d_test.jctop));
         REQUIRE(d_baseline.total(d_baseline.prec) == d_test.total(d_test.jcbot));
         REQUIRE(d_baseline.total(d_baseline.prec) == d_test.total(d_test.jt));
+        Int inactive_cnt = 0;
         for (Int k = 0; k < d_baseline.total(d_baseline.prec); ++k) {
+          const bool active_col = actives[i][k];
+          if (!active_col) ++inactive_cnt;
           REQUIRE(d_baseline.prec[k] == Approx(d_test.prec[k]).margin(margin));
           REQUIRE(d_baseline.cape[k] == Approx(d_test.cape[k]).margin(margin));
           REQUIRE(d_baseline.dcape[k] == Approx(d_test.dcape[k]).margin(margin));
@@ -87,9 +96,12 @@ struct UnitWrap::UnitTest<D>::TestZmConvMain : public UnitWrap::UnitTest<D>::Bas
           REQUIRE(d_baseline.rliq[k] == Approx(d_test.rliq[k]).margin(margin));
           REQUIRE(d_baseline.gather_index[k] == d_test.gather_index[k]);
           REQUIRE(d_baseline.msemax_klev[k] == d_test.msemax_klev[k]);
-          REQUIRE(d_baseline.jctop[k] == d_test.jctop[k]);
-          REQUIRE(d_baseline.jcbot[k] == d_test.jcbot[k]);
           REQUIRE(d_baseline.jt[k] == d_test.jt[k]);
+          // Gathered 1-d variables
+          if (active_col) {
+            REQUIRE(d_baseline.jctop[k-inactive_cnt] == d_test.jctop[k]);
+            REQUIRE(d_baseline.jcbot[k-inactive_cnt] == d_test.jcbot[k]);
+          }
         }
         REQUIRE(d_baseline.total(d_baseline.heat) == d_test.total(d_test.heat));
         REQUIRE(d_baseline.total(d_baseline.heat) == d_test.total(d_test.qtnd));
@@ -103,25 +115,40 @@ struct UnitWrap::UnitTest<D>::TestZmConvMain : public UnitWrap::UnitTest<D>::Bas
         REQUIRE(d_baseline.total(d_baseline.heat) == d_test.total(d_test.ql));
         REQUIRE(d_baseline.total(d_baseline.heat) == d_test.total(d_test.rprd));
         REQUIRE(d_baseline.total(d_baseline.heat) == d_test.total(d_test.dlf));
-        for (Int k = 0; k < d_baseline.total(d_baseline.heat); ++k) {
-          REQUIRE(d_baseline.heat[k] == d_test.heat[k]);
-          REQUIRE(d_baseline.qtnd[k] == d_test.qtnd[k]);
-          REQUIRE(d_baseline.zdu[k] == d_test.zdu[k]);
-          REQUIRE(d_baseline.mflx_up[k] == Approx(d_test.mflx_up[k]).margin(margin));
-          REQUIRE(d_baseline.entr_up[k] == Approx(d_test.entr_up[k]).margin(margin));
-          REQUIRE(d_baseline.detr_up[k] == Approx(d_test.detr_up[k]).margin(margin));
-          REQUIRE(d_baseline.mflx_dn[k] == Approx(d_test.mflx_dn[k]).margin(margin));
-          REQUIRE(d_baseline.entr_dn[k] == d_test.entr_dn[k]);
-          REQUIRE(d_baseline.p_del[k] == d_test.p_del[k]);
-          REQUIRE(d_baseline.ql[k] == Approx(d_test.ql[k]).margin(margin));
-          REQUIRE(d_baseline.rprd[k] == Approx(d_test.rprd[k]).margin(margin));
-          REQUIRE(d_baseline.dlf[k] == d_test.dlf[k]);
-        }
         REQUIRE(d_baseline.total(d_baseline.mcon) == d_test.total(d_test.mcon));
         REQUIRE(d_baseline.total(d_baseline.mcon) == d_test.total(d_test.pflx));
-        for (Int k = 0; k < d_baseline.total(d_baseline.mcon); ++k) {
-          REQUIRE(d_baseline.mcon[k] == d_test.mcon[k]);
-          REQUIRE(d_baseline.pflx[k] == Approx(d_test.pflx[k]).margin(margin));
+        inactive_cnt = 0;
+        for (Int n = 0; n < ncol; ++n) {
+          const bool active_col = actives[i][n];
+          if (!active_col) ++inactive_cnt;
+          for (Int k = 0; k < pverp; ++k) {
+            const Int offset    = n*pver + k;
+            const Int offsetp   = n*pverp + k;
+            const Int fgoffset  = (n-inactive_cnt)*pver + k;
+            const Int fgoffsetp = (n-inactive_cnt)*pverp + k;
+            if (k < pver) {
+              REQUIRE(d_baseline.mflx_up[offset] == Approx(d_test.mflx_up[offset]).margin(margin));
+              REQUIRE(d_baseline.entr_up[offset] == Approx(d_test.entr_up[offset]).margin(margin));
+              REQUIRE(d_baseline.detr_up[offset] == Approx(d_test.detr_up[offset]).margin(margin));
+              REQUIRE(d_baseline.mflx_dn[offset] == Approx(d_test.mflx_dn[offset]).margin(margin));
+              REQUIRE(d_baseline.entr_dn[offset] == d_test.entr_dn[offset]);
+              REQUIRE(d_baseline.p_del[offset] == d_test.p_del[offset]);
+              // gathered variables: qtnd, rprd, zdu, mcon, heat, dlf, pflx, ql
+              if (active_col) {
+                REQUIRE(d_baseline.heat[fgoffset] == d_test.heat[offset]);
+                REQUIRE(d_baseline.qtnd[fgoffset] == d_test.qtnd[offset]);
+                REQUIRE(d_baseline.zdu[fgoffset] == d_test.zdu[offset]);
+                REQUIRE(d_baseline.ql[fgoffset] == Approx(d_test.ql[offset]).margin(margin));
+                REQUIRE(d_baseline.rprd[fgoffset] == Approx(d_test.rprd[offset]).margin(margin));
+                REQUIRE(d_baseline.dlf[fgoffset] == d_test.dlf[offset]);
+              }
+            }
+            // pverp variables (both gathered)
+            if (active_col) {
+              REQUIRE(d_baseline.mcon[fgoffsetp] == d_test.mcon[offsetp]);
+              REQUIRE(d_baseline.pflx[fgoffsetp] == Approx(d_test.pflx[offsetp]).margin(margin));
+            }
+          }
         }
       }
     }

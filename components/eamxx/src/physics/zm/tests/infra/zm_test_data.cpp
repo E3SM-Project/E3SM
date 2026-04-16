@@ -1017,7 +1017,7 @@ void zm_conv_main_f(ZmConvMainData& d)
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
-void zm_conv_main(ZmConvMainData& d)
+std::vector<bool> zm_conv_main(ZmConvMainData& d)
 {
   zm_common_init();
 
@@ -1076,9 +1076,6 @@ void zm_conv_main(ZmConvMainData& d)
     mflx_dn_d, entr_dn_d, p_del_d, dsubcld_d, ql_d, rliq_d, rprd_d, dlf_d);
 
   // Determine active columns for gather_index (matches is_conv_active logic)
-  const bool use_dcape = init_cp.trig_dcape && !d.is_first_step;
-  const Real cape_thresh = use_dcape ? ZMF::ZMC::cape_threshold_new
-                                     : ZMF::ZMC::cape_threshold_old;
   view1di_d gather_index_d("gather_index", d.pcols);
   Kokkos::deep_copy(gather_index_d, 0);
   Int num_active = 0;
@@ -1089,13 +1086,13 @@ void zm_conv_main(ZmConvMainData& d)
         gather_index_d(i) = i;
         cnt++;
       }
-      else {
-        EKAT_KERNEL_ERROR_MSG("Cannot match f90 results when there are inactive columns");
-      }
     }, num_active);
   d.lengath = num_active;
 
   // Copy results back to host
+  auto active_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), active);
+  std::vector<bool> active_v(active_h.data(), active_h.data() + active_h.size());
+
   std::vector<view1dr_d> vec1dr_out = {cape_d, dcape_d, dsubcld_d, prec_d, rliq_d};
   ekat::device_to_host({d.cape, d.dcape, d.dsubcld, d.prec, d.rliq}, d.pcols, vec1dr_out);
 
@@ -1115,6 +1112,8 @@ void zm_conv_main(ZmConvMainData& d)
                         d.pcols, vec1di_out);
 
   zm_finalize_cxx();
+
+  return active_v;
 }
 
 void zm_conv_evap_f(ZmConvEvapData& d)

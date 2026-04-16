@@ -284,12 +284,19 @@ typename Functions<S,D>::view_1d<bool> Functions<S,D>::zm_conv_main(
                                     ? ZMC::cape_threshold_new
                                     : ZMC::cape_threshold_old;
   const bool use_dcape_trigger = runtime_opt.trig_dcape && !is_first_step;
-  Kokkos::parallel_for("zm_conv_main_active", RangePolicy(0, ncol),
-    KOKKOS_LAMBDA(const Int i) {
+  int inactive_cnt = 0;
+  Kokkos::parallel_reduce("zm_conv_main_active", RangePolicy(0, ncol),
+                          KOKKOS_LAMBDA(const Int i, Int& local_inactive) {
       active(i) = use_dcape_trigger
         ? (cape(i) > cape_threshold_loc && dcape(i) > ZMC::dcape_threshold)
         : (cape(i) > cape_threshold_loc);
-    });
+      if (!active(i)) {
+        local_inactive+=1;
+      }
+  }, inactive_cnt);
+  // The inactive count may be worth looking at as a high inactive count could indicate
+  // an issue with randomly generated input data for testing.
+  // std::cout << "INACTIVE COUNT: " << inactive_cnt << std::endl;
   Kokkos::fence();
 
   //============================================================================
