@@ -290,7 +290,7 @@ def buildnml(case, caseroot, compname):
 
     # === Symlinks formerly created by the run script ===
     _ensure_symlink(os.path.join(gcam_idir, "input"),
-                    os.path.join(os.path.dirname(caseroot), "input"))
+                    os.path.join(os.path.dirname(rundir), "input"))
     _ensure_symlink(os.path.join(gcam_idir, "configuration", "log_conf.xml"),
                     os.path.join(rundir, "log_conf.xml"))
     _ensure_symlink(os.path.join(glm_idir, "glm.fut.conf.{}".format(mach)),
