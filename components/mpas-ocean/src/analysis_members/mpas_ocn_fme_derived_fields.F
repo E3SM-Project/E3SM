@@ -170,6 +170,7 @@ contains
       type(mpas_pool_type), pointer :: meshPool
       type(mpas_pool_type), pointer :: tracersPool
       type(mpas_pool_type), pointer :: forcingPool
+      type(mpas_pool_type), pointer :: diagnosticsPool
       type(mpas_pool_type), pointer :: amPool
 
       integer, pointer :: nCellsSolve, nCells
@@ -204,6 +205,7 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
          call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'fmeDerivedFieldsAM', amPool)
 
          call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
@@ -261,13 +263,15 @@ contains
             allocate(fld_masked(nCells))
 
             ! Remap each field to lat-lon
-            call mpas_pool_get_array(statePool, 'ssh', ssh_ptr, 1)
+            ! Use pressureAdjustedSSH (from diagnostics) instead of raw ssh
+            ! (from state) to avoid extreme values under ice shelves.
+            call mpas_pool_get_array(diagnosticsPool, 'pressureAdjustedSSH', ssh_ptr)
 
             call remap_1field(sst, 1)
             call remap_1field(sss, 2)
             call remap_1field(surfaceHeatFluxTotal, 3)
 
-            ! SSH: state variable, no ice-fraction correction needed
+            ! SSH: use pressure-adjusted version for physically meaningful values
             if (associated(ssh_ptr)) call remap_1field(ssh_ptr, 4)
 
             ! Coupler fluxes: land-mask and remap (raw coupler values,

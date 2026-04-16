@@ -62,7 +62,7 @@
 			<var name="sst"/>
 			<var name="sss"/>
 			<var name="surfaceHeatFluxTotal"/>
-			<var name="ssh"/>
+			<var name="pressureAdjustedSSH"/>
 			<var name="windStressZonal"/>
 			<var name="windStressMeridional"/>
 			<var name="latentHeatFlux"/>
