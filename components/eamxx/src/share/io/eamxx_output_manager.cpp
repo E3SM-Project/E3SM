@@ -878,7 +878,7 @@ setup_file (      IOFileSpecs& filespecs,
     for (const auto& n: pc_names) {
       const auto& c = pc_dict.at(n);
       scorpio::define_var (filename, n, c.units.to_string(), {},
-                           "real", "real", false);
+                           "real", false);
       scorpio::write_var (filename, n, &c.value);
     }
   }
