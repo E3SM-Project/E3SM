@@ -569,22 +569,20 @@ run (const std::string& filename,
         auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
         duration_write += duration_loc.count();
 
-        // If it's an output step, for Avg we need to ensure count>threshold.
-        // If count<=threshold, we set count=fill_value, so that fill_val propagates
-        // to the output fields when we divide by count later
-        if (output_step and m_track_avg_cnt) {
+        // If it's an output step for Average, ensure count>threshold.
+        // Set count=1 where count<=threshold so that scale_inv is safe,
+        // then deep_copy fill_value over those locations afterward.
+        if (output_step and m_avg_type==OutputAvgType::Average) {
           int min_count = static_cast<int>(std::floor(m_avg_coeff_threshold*nsteps_since_last_output));
 
-          // Recycle mask to find where count<thresh
+          // Recycle mask to find where count<=thresh
           compute_mask(count,min_count,Comparison::LE,mask);
 
-          if (m_avg_type==OutputAvgType::Average) {
-            // Later, we divide fields by count. By setting count=1 where count<thresholt,
-            // we can later do
-            //   f.scale_inv(count); // Requires count!=0 anywhere
-            //   f.deep_copy(fill_val,mask)
-            count.deep_copy(1,mask);
-          }
+          // Later, we divide fields by count. By setting count=1 where count<=threshold,
+          // we can later do:
+          //   f.scale_inv(count); // safe: count!=0 everywhere
+          //   f.deep_copy(fill_val,mask)  // overwrite under-sampled locations
+          count.deep_copy(1,mask);
         }
       }
       count.get_header().set_extra_data("updated",true);
@@ -631,12 +629,20 @@ run (const std::string& filename,
       if (output_step) {
         if (m_field_to_avg_count.count(field_name)) {
           auto& avg_count = m_field_to_avg_count.at(field_name);
-          auto& valid_count = avg_count.get_valid_mask();
+          auto& fill_mask = avg_count.get_valid_mask();
           if (m_avg_type==OutputAvgType::Average) {
             f_out.scale_inv(avg_count);
+            // For Average: fill_mask was set to (count<=threshold) by the tracking loop.
+            // Set fill_value wherever we did not have enough valid data.
+            f_out.deep_copy(constants::fill_value<Real>,fill_mask);
+          } else if (m_avg_type==OutputAvgType::Max or
+                     m_avg_type==OutputAvgType::Min) {
+            // For Max/Min: the sentinel (-inf/+inf) accumulates only where ALL
+            // timesteps in the window were fill_value (i.e., count==0).
+            // Replace those sentinels with fill_value.
+            compute_mask(avg_count,0,Comparison::EQ,fill_mask);
+            f_out.deep_copy(constants::fill_value<Real>,fill_mask);
           }
-          // Replace sentinel values with fill_value where count is not valid
-          f_out.deep_copy(constants::fill_value<Real>,valid_count,true);
         } else {
           if (m_avg_type==OutputAvgType::Average) {
             // No avg count, but for avg, we have to divide by num_snapshots
