@@ -8030,6 +8030,15 @@ Defines n-1 coarsened layers from n boundary values. Unused entries should be -1
 Default: -1.0 (inactive)
 </entry>
 
+<entry id="vcoarsen_level_bounds" type="integer(51)" category="physics"
+       group="eam_vcoarsen_nl" valid_values="" >
+Level index boundaries (0-based) for vertical coarsening layers, from top to bottom.
+Defines n-1 coarsened layers from n boundary values. Each output layer k averages
+levels [level_bounds(k), level_bounds(k+1)) with dp-weighting.
+Takes precedence over vcoarsen_pbounds if both are set. Unused entries should be -1.
+Default: -1 (inactive)
+</entry>
+
 <entry id="vcoarsen_avg_flds" type="char*34(100)" category="physics"
        group="eam_vcoarsen_nl" valid_values="" >
 Field names to average onto coarsened pressure layers.

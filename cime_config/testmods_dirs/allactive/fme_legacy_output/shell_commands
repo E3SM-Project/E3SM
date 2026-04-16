@@ -64,15 +64,18 @@ EOF
 # Stream variables are defined in Registry_time_series_stats_custom.xml
 # ---------------------------------------------------------------------------
 cat >> user_nl_mpaso << EOF
+! Enable daily time-averaged output for legacy comparison.
+! timeSeriesStatsDaily has daily output_interval and includes SST, SSS, SSH,
+! velocities. For heat flux comparisons, timeSeriesStatsCustom is needed
+! but its default output_interval (5-7 days) exceeds short test runs.
+config_am_timeseriesstatsdaily_enable = .true.
 config_am_timeseriesstatscustom_enable = .true.
 config_am_timeseriesstatscustom_reset_intervals = '${FME_MPAS_INTERVAL}'
 EOF
 
 # ---------------------------------------------------------------------------
-# MPAS-SeaIce namelist -- enable timeSeriesStatsCustom for raw output
-# Stream variables are defined in Registry_seaice_time_series_stats_custom.xml
+# MPAS-SeaIce namelist -- enable timeSeriesStatsDaily for raw output
 # ---------------------------------------------------------------------------
 cat >> user_nl_mpassi << EOF
-config_am_timeseriesstatscustom_enable = .true.
-config_am_timeseriesstatscustom_reset_intervals = '${FME_MPAS_INTERVAL}'
+config_am_timeseriesstatsdaily_enable = .true.
 EOF

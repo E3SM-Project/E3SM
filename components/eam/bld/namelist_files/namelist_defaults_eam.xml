@@ -1990,6 +1990,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 
 <!-- Vertical coarsening defaults (inactive by default) -->
 <vcoarsen_pbounds phys="default"> -1.0 </vcoarsen_pbounds>
+<vcoarsen_level_bounds phys="default"> -1 </vcoarsen_level_bounds>
 <vcoarsen_avg_flds phys="default"> </vcoarsen_avg_flds>
 <vcoarsen_select_levs phys="default"> -1 </vcoarsen_select_levs>
 <vcoarsen_select_lev_flds phys="default"> </vcoarsen_select_lev_flds>

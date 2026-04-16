@@ -284,6 +284,7 @@ contains
       type(block_type), pointer :: block
       type(mpas_pool_type), pointer :: statePool
       type(mpas_pool_type), pointer :: meshPool
+      type(mpas_pool_type), pointer :: verticalMeshPool
       type(mpas_pool_type), pointer :: tracersPool
       type(mpas_pool_type), pointer :: amPool
 
@@ -294,7 +295,7 @@ contains
       integer, dimension(:), pointer :: maxLevelCell
 
       real(kind=RKIND), dimension(:, :, :), pointer :: tracers
-      real(kind=RKIND), dimension(:, :), pointer :: layerThickness
+      real(kind=RKIND), dimension(:, :), pointer :: restingThickness
       real(kind=RKIND), dimension(:, :), pointer :: temperatureCoarsened
       real(kind=RKIND), dimension(:, :), pointer :: salinityCoarsened
       real(kind=RKIND), dimension(:, :), pointer :: velocityZonalCoarsened
@@ -378,7 +379,8 @@ contains
          end if
 
          call mpas_pool_get_array(tracersPool, 'activeTracers', tracers, timeLevel)
-         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
+         call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
+         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
          call mpas_pool_get_array(amPool, 'temperatureCoarsened', temperatureCoarsened)
@@ -401,10 +403,10 @@ contains
 
          do iCell = 1, nCellsSolve
 
-            ! Build depth interface array from layer thicknesses
+            ! Build depth interface array from resting (reference) layer thicknesses
             coord_iface(1) = 0.0_r8
             do k = 1, maxLevelCell(iCell)
-               coord_iface(k + 1) = coord_iface(k) + layerThickness(k, iCell)
+               coord_iface(k + 1) = coord_iface(k) + restingThickness(k, iCell)
             end do
             ! Fill remaining interfaces for unused levels
             do k = maxLevelCell(iCell) + 1, nVertLevels
@@ -450,9 +452,9 @@ contains
             end do
             depthTop = 0.0_RKIND
             do k = 1, maxLevelCell(iCell)
-               call accumulate_thickness(depthTop, layerThickness(k, iCell), &
+               call accumulate_thickness(depthTop, restingThickness(k, iCell), &
                     nCoarsenLevels, layerThicknessCoarsened(:, iCell))
-               depthTop = depthTop + layerThickness(k, iCell)
+               depthTop = depthTop + restingThickness(k, iCell)
             end do
             do k = 1, nCoarsenLevels
                if (layerThicknessCoarsened(k, iCell) == 0.0_RKIND) then

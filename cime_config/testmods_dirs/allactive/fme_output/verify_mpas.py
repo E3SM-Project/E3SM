@@ -604,7 +604,7 @@ def latlon_map(ds, varname, title, cmap="RdBu_r", vmin=None, vmax=None,
 def layer_profiles(data3d, label, outdir, fname, ylabel="Level index", subdir=None):
     """Plot global-mean vertical profile from (nlev x ncells) array."""
     if not HAS_MPL:
-        return
+        return None
     means = []
     for lev in range(data3d.shape[0]):
         v = valid_data(data3d[lev])
@@ -616,13 +616,13 @@ def layer_profiles(data3d, label, outdir, fname, ylabel="Level index", subdir=No
     ax.set_ylabel(ylabel)
     ax.set_title(f"Global-mean vertical profile: {label}")
     ax.grid(True, alpha=0.4)
-    savefig(fig, outdir, fname, subdir=subdir)
+    return savefig(fig, outdir, fname, subdir=subdir)
 
 
 def time_series(values, times_label, title, ylabel, outdir, fname, subdir=None):
     """Plot a simple time series."""
     if not HAS_MPL:
-        return
+        return None
     fig, ax = plt.subplots(figsize=(8, 3))
     ax.plot(values, ".-")
     ax.set_xlabel(times_label)
@@ -630,7 +630,7 @@ def time_series(values, times_label, title, ylabel, outdir, fname, subdir=None):
     ax.set_title(title)
     ax.grid(True, alpha=0.4)
     plt.tight_layout()
-    savefig(fig, outdir, fname, subdir=subdir)
+    return savefig(fig, outdir, fname, subdir=subdir)
 
 
 def multi_panel_maps(panels, suptitle, outdir, fname, ncols=4,
@@ -994,8 +994,15 @@ def _remapped_with_zonal(d_rem, lon_rem, lat_rem, title, outdir, fname,
     return path
 
 
-def generate_trio_comparisons(rundir, fig_root, all_plots_by_comp):
-    """Generate native-vs-remapped trio plots for all fields."""
+def generate_trio_comparisons(rundir, fig_root, all_plots_by_comp,
+                              legacy_rundir=None):
+    """Generate native-vs-remapped trio plots for all fields.
+
+    For MPAS-O derived fields (fluxes), the native panel uses legacy
+    timeSeriesStatsDaily data (if legacy_rundir is provided) rather than the
+    FME native stream, because the FME native stream writes instantaneous
+    forcing-pool snapshots that aren't comparable to time-averaged remapped output.
+    """
     if not HAS_MPL:
         return
 
@@ -1003,8 +1010,36 @@ def generate_trio_comparisons(rundir, fig_root, all_plots_by_comp):
     os.makedirs(trio_outdir, exist_ok=True)
     trio_plots = []
 
-    def _process_component(nat_pattern, rem_pattern, field_params, component):
-        nat_files = find_files(rundir, nat_pattern, exclude=".remapped.")
+    # Get shared MPAS mesh coords for files that lack their own.
+    # Search FME rundir first, then legacy rundir.
+    shared_lon = shared_lat = None
+    search_dirs = [rundir]
+    if legacy_rundir:
+        search_dirs.append(legacy_rundir)
+    for sdir in search_dirs:
+        for pat in ["*.mpassi.hist.am.fmeSeaiceDerivedFields.*.nc",
+                    "*.mpaso.hist.am.fmeDerivedFields.*.nc",
+                    "*.mpaso.hist.am.timeSeriesStatsDaily.*.nc",
+                    "*.mpassi.hist.am.timeSeriesStatsDaily.*.nc"]:
+            for f in find_files(sdir, pat, exclude=".remapped."):
+                ds_tmp = safe_open(f)
+                lo = get_var(ds_tmp, "lonCell")
+                la = get_var(ds_tmp, "latCell")
+                if lo is not None and la is not None:
+                    shared_lon = np.degrees(lo)
+                    shared_lat = np.degrees(la)
+                    close_ds(ds_tmp)
+                    break
+                close_ds(ds_tmp)
+            if shared_lon is not None:
+                break
+        if shared_lon is not None:
+            break
+
+    def _process_component(nat_pattern, rem_pattern, field_params, component,
+                           nat_rundir=None):
+        search_dir = nat_rundir if nat_rundir else rundir
+        nat_files = find_files(search_dir, nat_pattern, exclude=".remapped.")
         rem_files = find_files(rundir, rem_pattern)
         if not rem_files:
             return
@@ -1015,8 +1050,7 @@ def generate_trio_comparisons(rundir, fig_root, all_plots_by_comp):
             close_ds(ds_rem)
             return
 
-        # Native coords may be missing in MPAS-O AM output
-        lon_nat = lat_nat = None
+        # Native coords: try file first, fall back to shared mesh
         lon_nat_deg = lat_nat_deg = None
         if ds_nat is not None:
             lon_nat = get_var(ds_nat, "lonCell")
@@ -1024,6 +1058,9 @@ def generate_trio_comparisons(rundir, fig_root, all_plots_by_comp):
             if lon_nat is not None and lat_nat is not None:
                 lon_nat_deg = np.degrees(lon_nat)
                 lat_nat_deg = np.degrees(lat_nat)
+            elif shared_lon is not None:
+                lon_nat_deg = shared_lon
+                lat_nat_deg = shared_lat
 
         lon_rem = get_var(ds_rem, "lon")
         lat_rem = get_var(ds_rem, "lat")
@@ -1038,12 +1075,36 @@ def generate_trio_comparisons(rundir, fig_root, all_plots_by_comp):
                 continue
             d_rem = arr_rem[-1] if arr_rem.ndim == 3 else arr_rem
 
-            # Get native data if available
+            # Get native data if available.
+            # Legacy timeSeriesStats files use prefixed and sometimes
+            # different variable names. Try multiple candidates.
+            _LEGACY_NAME_MAP = {
+                "sst": ["timeDaily_avg_tracersSurfaceValue_temperatureSurfaceValue",
+                         "timeCustom_avg_activeTracers_temperature"],
+                "sss": ["timeDaily_avg_tracersSurfaceValue_salinitySurfaceValue",
+                         "timeCustom_avg_activeTracers_salinity"],
+                "ssh": ["timeDaily_avg_pressureAdjustedSSH",
+                         "timeCustom_avg_ssh"],
+            }
             d_nat = None
             if ds_nat is not None:
                 arr_nat = get_var(ds_nat, vname)
+                if arr_nat is None:
+                    arr_nat = get_var(ds_nat, f"timeDaily_avg_{vname}")
+                if arr_nat is None:
+                    arr_nat = get_var(ds_nat, f"timeCustom_avg_{vname}")
+                if arr_nat is None:
+                    for alt in _LEGACY_NAME_MAP.get(vname, []):
+                        arr_nat = get_var(ds_nat, alt)
+                        if arr_nat is not None:
+                            break
                 if arr_nat is not None:
                     d_nat = arr_nat[-1] if arr_nat.ndim > 1 else arr_nat
+                    # SST/SSS from legacy tracers may need extraction:
+                    # activeTracers_temperature is (Time, nVertLevels, nCells)
+                    # — take surface level (index 0)
+                    if d_nat.ndim == 2 and vname in ("sst", "sss"):
+                        d_nat = d_nat[0, :]  # surface level
 
             fname = f"trio_{component.lower().replace('-','')}_{vname}.png"
             if d_nat is not None and lon_nat_deg is not None:
@@ -1069,15 +1130,56 @@ def generate_trio_comparisons(rundir, fig_root, all_plots_by_comp):
         close_ds(ds_rem)
 
     print("\n=== Generating trio comparison plots ===")
-    _process_component(
-        "*.mpaso.hist.am.fmeDerivedFields.*.nc",
-        "*.mpaso.hist.am.fmeDerivedFields.*.remapped.nc",
-        ALL_DERIVED_FIELD_PARAMS, "MPAS-O")
+    # MPAS-O derived fields: use legacy native data for the native panel
+    # (the FME native stream writes instantaneous forcing-pool snapshots
+    # that aren't comparable to the time-averaged remapped output).
+    if legacy_rundir:
+        _process_component(
+            "*.mpaso.hist.am.timeSeriesStatsDaily.*.nc",
+            "*.mpaso.hist.am.fmeDerivedFields.*.remapped.nc",
+            ALL_DERIVED_FIELD_PARAMS, "MPAS-O",
+            nat_rundir=legacy_rundir)
+    else:
+        _process_component(
+            "SKIP_NATIVE_INTENTIONALLY",
+            "*.mpaso.hist.am.fmeDerivedFields.*.remapped.nc",
+            ALL_DERIVED_FIELD_PARAMS, "MPAS-O")
 
     _process_component(
         "*.mpassi.hist.am.fmeSeaiceDerivedFields.*.nc",
         "*.mpassi.hist.am.fmeSeaiceDerivedFields.*.remapped.nc",
         ALL_SEAICE_FIELD_PARAMS, "MPAS-SI")
+
+    # Depth-coarsened fields: trio at representative layers for each ACE variable
+    # ACE uses thetao_k, so_k, uo_k, vo_k — compare at representative depths
+    depth_layer_params = []
+    repr_layers = [0, 5, 10, 15, 18]
+    for base, ace, cmap, vm, vx, units in [
+        ("temperatureCoarsened", "thetao", "RdYlBu_r", -2, 30, "degC"),
+        ("salinityCoarsened",    "so",     "viridis",   30, 40, "PSU"),
+        ("velocityZonalCoarsened",      "uo", "RdBu_r", -1, 1, "m/s"),
+        ("velocityMeridionalCoarsened", "vo", "RdBu_r", -0.5, 0.5, "m/s"),
+        ("layerThicknessCoarsened", "layerThickness", "viridis", 0, 500, "m"),
+    ]:
+        for k in repr_layers:
+            depth_layer_params.append(
+                (f"{base}_{k}", cmap, vm, vx, units))
+
+    _process_component(
+        "*.mpaso.hist.am.fmeDepthCoarsening.*.nc",
+        "*.mpaso.hist.am.fmeDepthCoarsening.*.remapped.nc",
+        depth_layer_params, "MPAS-O depth")
+
+    # Vertical reduce fields
+    vertreduce_params = [
+        ("oceanHeatContent",  "inferno", None, None, "J/m2"),
+        ("freshwaterContent", "RdBu_r",  None, None, "m"),
+        ("kineticEnergy",     "YlOrRd",  0,    None, "J/m2"),
+    ]
+    _process_component(
+        "*.mpaso.hist.am.fmeVerticalReduce.*.nc",
+        "*.mpaso.hist.am.fmeVerticalReduce.*.remapped.nc",
+        vertreduce_params, "MPAS-O vertreduce")
 
     if trio_plots:
         all_plots_by_comp["Native vs Remapped (all fields)"] = trio_plots
@@ -1187,9 +1289,11 @@ def check_mpaso_depth_coarsening(rundir, outdir, verbose):
 
         # Vertical profile plot (global mean across all cells, last timestep)
         if HAS_MPL and arr.ndim == 3:
-            layer_profiles(arr[-1], f"{var} [{ace_name}]", outdir,
-                           f"mpaso_depth_profile_{var}.png",
-                           ylabel="Depth layer (0=surface)")
+            p = layer_profiles(arr[-1], f"{var} [{ace_name}]", outdir,
+                               f"mpaso_depth_profile_{var}.png",
+                               ylabel="Depth layer (0=surface)")
+            if p:
+                plots.append(p)
 
     # Surface maps -- last timestep
     if HAS_MPL:
@@ -1981,94 +2085,11 @@ def generate_comparison_figures(rundir, fig_root, all_plots_by_comp):
     os.makedirs(comp_outdir, exist_ok=True)
     comp_plots = []
 
-    # --- MPAS-O Derived: native vs remapped side-by-side ---
-    nat_files = find_files(rundir, "*.mpaso.hist.am.fmeDerivedFields.*.nc",
-                           exclude=".remapped.")
-    rem_files = find_files(rundir, "*.mpaso.hist.am.fmeDerivedFields.*.remapped.nc")
-    if nat_files and rem_files:
-        print("\n=== Generating native vs remapped comparisons ===")
-        ds_nat = safe_open(nat_files[0])
-        ds_rem = safe_open(rem_files[-1])  # latest remapped
-        if not has_time_zero(ds_nat) and not has_time_zero(ds_rem):
-            lon_nat = get_var(ds_nat, "lonCell")
-            lat_nat = get_var(ds_nat, "latCell")
-            lon_rem = get_var(ds_rem, "lon")
-            lat_rem = get_var(ds_rem, "lat")
-            if lon_nat is not None and lat_nat is not None and \
-               lon_rem is not None and lat_rem is not None:
-                lon_nat_deg = np.degrees(lon_nat)
-                lat_nat_deg = np.degrees(lat_nat)
-                if lon_rem.ndim == 1 and lat_rem.ndim == 1:
-                    lons_rem, lats_rem = np.meshgrid(lon_rem, lat_rem)
-                else:
-                    lons_rem, lats_rem = lon_rem, lat_rem
-
-                for var, cmap, vm, vx, units_str in [
-                    ("sst", "RdYlBu_r", -2, 30, "degC"),
-                    ("sss", "viridis", 30, 40, "PSU"),
-                    ("surfaceHeatFluxTotal", "RdBu_r", -300, 300, "W/m2"),
-                ]:
-                    arr_nat = get_var(ds_nat, var)
-                    arr_rem = get_var(ds_rem, var)
-                    if arr_nat is None or arr_rem is None:
-                        continue
-                    d_nat = arr_nat[-1] if arr_nat.ndim > 1 else arr_nat
-                    d_rem = arr_rem[-1] if arr_rem.ndim == 3 else arr_rem
-                    p = side_by_side_comparison(
-                        d_nat, lon_nat_deg, lat_nat_deg, f"Native ({var})",
-                        d_rem, lons_rem, lats_rem, f"Remapped ({var})",
-                        f"MPAS-O {var}: Native vs Remapped",
-                        comp_outdir, f"compare_mpaso_{var}.png",
-                        cmap=cmap, vmin=vm, vmax=vx, units=units_str)
-                    if p:
-                        comp_plots.append(p)
-                        print(f"  Wrote {os.path.basename(p)}")
-        close_ds(ds_nat)
-        close_ds(ds_rem)
-
-    # --- MPAS-SI Derived: native vs remapped side-by-side ---
-    nat_files = find_files(rundir, "*.mpassi.hist.am.fmeSeaiceDerivedFields.*.nc",
-                           exclude=".remapped.")
-    rem_files = find_files(rundir, "*.mpassi.hist.am.fmeSeaiceDerivedFields.*.remapped.nc")
-    if nat_files and rem_files:
-        ds_nat = safe_open(nat_files[0])
-        ds_rem = safe_open(rem_files[-1])
-        if not has_time_zero(ds_nat) and not has_time_zero(ds_rem):
-            lon_nat = get_var(ds_nat, "lonCell")
-            lat_nat = get_var(ds_nat, "latCell")
-            lon_rem = get_var(ds_rem, "lon")
-            lat_rem = get_var(ds_rem, "lat")
-            if lon_nat is not None and lat_nat is not None and \
-               lon_rem is not None and lat_rem is not None:
-                lon_nat_deg = np.degrees(lon_nat)
-                lat_nat_deg = np.degrees(lat_nat)
-                if lon_rem.ndim == 1 and lat_rem.ndim == 1:
-                    lons_rem, lats_rem = np.meshgrid(lon_rem, lat_rem)
-                else:
-                    lons_rem, lats_rem = lon_rem, lat_rem
-
-                for var, cmap, vm, vx, units_str in [
-                    ("iceAreaTotal", "Blues", 0, 1, "fraction"),
-                    ("iceVolumeTotal", "viridis", 0, 5, "m"),
-                    ("surfaceTemperatureMean", "RdBu_r", 210, 275, "K"),
-                ]:
-                    arr_nat = get_var(ds_nat, var)
-                    arr_rem = get_var(ds_rem, var)
-                    if arr_nat is None or arr_rem is None:
-                        continue
-                    d_nat = arr_nat[-1] if arr_nat.ndim > 1 else arr_nat
-                    d_rem = arr_rem[-1] if arr_rem.ndim == 3 else arr_rem
-                    p = side_by_side_comparison(
-                        d_nat, lon_nat_deg, lat_nat_deg, f"Native ({var})",
-                        d_rem, lons_rem, lats_rem, f"Remapped ({var})",
-                        f"MPAS-SI {var}: Native vs Remapped",
-                        comp_outdir, f"compare_mpassi_{var}.png",
-                        cmap=cmap, vmin=vm, vmax=vx, units=units_str)
-                    if p:
-                        comp_plots.append(p)
-                        print(f"  Wrote {os.path.basename(p)}")
-        close_ds(ds_nat)
-        close_ds(ds_rem)
+    # NOTE: Native-vs-remapped side-by-side comparisons within the same FME run
+    # are NOT generated here because the native stream writes instantaneous
+    # forcing-pool snapshots while the remapped stream writes time-averaged values.
+    # The meaningful comparison is legacy native (timeSeriesStatsCustom) vs FME
+    # remapped — that is handled by compare_legacy_vs_fme().
 
     # --- Zonal means for remapped MPAS-O fields ---
     rem_derived = find_files(rundir, "*.mpaso.hist.am.fmeDerivedFields.*.remapped.nc")
@@ -2088,6 +2109,114 @@ def generate_comparison_figures(rundir, fig_root, all_plots_by_comp):
                         "MPAS-O Zonal Mean SST/SSS (remapped)",
                         comp_outdir, "mpaso_zonal_mean_sst_sss.png",
                         ylabel="degC / PSU")
+                    if p:
+                        comp_plots.append(p)
+                        print(f"  Wrote {os.path.basename(p)}")
+
+                # Zonal mean of heat fluxes
+                flux_profiles = []
+                for var in ["shortWaveHeatFlux", "longWaveHeatFluxDown",
+                            "latentHeatFlux", "sensibleHeatFlux",
+                            "surfaceHeatFluxTotal"]:
+                    zm = _compute_zonal_mean(get_var(ds, var))
+                    if zm is not None:
+                        flux_profiles.append((zm, var))
+                if flux_profiles:
+                    p = zonal_mean_plot(
+                        flux_profiles, lat,
+                        "MPAS-O Zonal Mean Heat Fluxes (remapped)",
+                        comp_outdir, "mpaso_zonal_mean_heat_fluxes.png",
+                        ylabel="W/m2")
+                    if p:
+                        comp_plots.append(p)
+                        print(f"  Wrote {os.path.basename(p)}")
+
+                # Zonal mean of wind stress
+                stress_profiles = []
+                for var in ["windStressZonal", "windStressMeridional"]:
+                    zm = _compute_zonal_mean(get_var(ds, var))
+                    if zm is not None:
+                        stress_profiles.append((zm, var))
+                if stress_profiles:
+                    p = zonal_mean_plot(
+                        stress_profiles, lat,
+                        "MPAS-O Zonal Mean Wind Stress (remapped)",
+                        comp_outdir, "mpaso_zonal_mean_wind_stress.png",
+                        ylabel="N/m2")
+                    if p:
+                        comp_plots.append(p)
+                        print(f"  Wrote {os.path.basename(p)}")
+
+                # Zonal mean of SSH
+                ssh_zm = _compute_zonal_mean(get_var(ds, "ssh"))
+                if ssh_zm is not None:
+                    p = zonal_mean_plot(
+                        [(ssh_zm, "ssh")], lat,
+                        "MPAS-O Zonal Mean SSH (remapped)",
+                        comp_outdir, "mpaso_zonal_mean_ssh.png",
+                        ylabel="m")
+                    if p:
+                        comp_plots.append(p)
+                        print(f"  Wrote {os.path.basename(p)}")
+        close_ds(ds)
+
+    # --- Zonal means for remapped vertical reduce fields ---
+    rem_vr = find_files(rundir, "*.mpaso.hist.am.fmeVerticalReduce.*.remapped.nc")
+    if rem_vr:
+        ds = safe_open(rem_vr[-1])
+        if not has_time_zero(ds):
+            lat = get_var(ds, "lat")
+            if lat is not None:
+                for var, ylabel in [("oceanHeatContent", "J/m2"),
+                                     ("freshwaterContent", "m"),
+                                     ("kineticEnergy", "J/m2")]:
+                    zm = _compute_zonal_mean(get_var(ds, var))
+                    if zm is not None:
+                        p = zonal_mean_plot(
+                            [(zm, var)], lat,
+                            f"MPAS-O Zonal Mean {var} (remapped)",
+                            comp_outdir, f"mpaso_zonal_mean_{var}.png",
+                            ylabel=ylabel)
+                        if p:
+                            comp_plots.append(p)
+                            print(f"  Wrote {os.path.basename(p)}")
+        close_ds(ds)
+
+    # --- Zonal means for remapped sea ice fields ---
+    rem_ice_cmp = find_files(rundir,
+                             "*.mpassi.hist.am.fmeSeaiceDerivedFields.*.remapped.nc")
+    if rem_ice_cmp:
+        ds = safe_open(rem_ice_cmp[-1])
+        if not has_time_zero(ds):
+            lat = get_var(ds, "lat")
+            if lat is not None:
+                ice_profiles = []
+                for var in ["iceAreaTotal", "iceVolumeTotal", "snowVolumeTotal",
+                            "iceThicknessMean"]:
+                    zm = _compute_zonal_mean(get_var(ds, var))
+                    if zm is not None:
+                        ice_profiles.append((zm, var))
+                if ice_profiles:
+                    p = zonal_mean_plot(
+                        ice_profiles, lat,
+                        "MPAS-SI Zonal Mean Ice Properties (remapped)",
+                        comp_outdir, "mpassi_zonal_mean_ice_props.png",
+                        ylabel="fraction / m")
+                    if p:
+                        comp_plots.append(p)
+                        print(f"  Wrote {os.path.basename(p)}")
+
+                stress_profiles = []
+                for var in ["airStressZonal", "airStressMeridional"]:
+                    zm = _compute_zonal_mean(get_var(ds, var))
+                    if zm is not None:
+                        stress_profiles.append((zm, var))
+                if stress_profiles:
+                    p = zonal_mean_plot(
+                        stress_profiles, lat,
+                        "MPAS-SI Zonal Mean Air Stress (remapped)",
+                        comp_outdir, "mpassi_zonal_mean_air_stress.png",
+                        ylabel="N/m2")
                     if p:
                         comp_plots.append(p)
                         print(f"  Wrote {os.path.basename(p)}")
@@ -2227,11 +2356,18 @@ def compare_legacy_vs_fme(legacy_rundir, fme_rundir, outdir, verbose):
     stats = []
 
     # --- locate files ---
-    # Legacy: native-grid time-averaged (timeSeriesStatsCustom)
+    # Legacy: native-grid time-averaged (prefer timeSeriesStatsCustom,
+    # fall back to timeSeriesStatsDaily)
     leg_ocn = find_files(legacy_rundir,
                          "*.mpaso.hist.am.timeSeriesStatsCustom.*.nc")
+    if not leg_ocn:
+        leg_ocn = find_files(legacy_rundir,
+                             "*.mpaso.hist.am.timeSeriesStatsDaily.*.nc")
     leg_ice = find_files(legacy_rundir,
                          "*.mpassi.hist.am.timeSeriesStatsCustom.*.nc")
+    if not leg_ice:
+        leg_ice = find_files(legacy_rundir,
+                             "*.mpassi.hist.am.timeSeriesStatsDaily.*.nc")
     # FME: prefer remapped (time-averaged) for apples-to-apples temporal comparison;
     # fall back to native (instantaneous) if remapped not available
     fme_ocn = find_files(fme_rundir,
@@ -2248,7 +2384,8 @@ def compare_legacy_vs_fme(legacy_rundir, fme_rundir, outdir, verbose):
                              exclude=".remapped.")
 
     if not leg_ocn and not leg_ice:
-        print("  SKIP: no legacy timeSeriesStatsCustom files found")
+        print("  SKIP: no legacy time series files found "
+              "(tried timeSeriesStatsCustom and timeSeriesStatsDaily)")
         return issues, plots, stats
 
     os.makedirs(outdir, exist_ok=True)
@@ -2276,6 +2413,10 @@ def compare_legacy_vs_fme(legacy_rundir, fme_rundir, outdir, verbose):
         for (lvar, fvar, _stream, label, extract,
              cmap, vm, vx, units) in pairs:
             arr_leg = get_var(ds_leg, lvar)
+            # Fall back: if timeCustom_avg_ not found, try timeDaily_avg_
+            if arr_leg is None and lvar.startswith("timeCustom_avg_"):
+                alt_lvar = lvar.replace("timeCustom_avg_", "timeDaily_avg_")
+                arr_leg = get_var(ds_leg, alt_lvar)
             arr_fme = get_var(ds_fme, fvar)
             if arr_leg is None or arr_fme is None:
                 if arr_leg is None and verbose:
@@ -3433,7 +3574,8 @@ def main():
     generate_comparison_figures(args.rundir, fig_root, all_plots_by_comp)
 
     # Trio comparison plots: native | remapped | zonal mean for all fields
-    generate_trio_comparisons(args.rundir, fig_root, all_plots_by_comp)
+    generate_trio_comparisons(args.rundir, fig_root, all_plots_by_comp,
+                              legacy_rundir=args.legacy_rundir)
 
     # Timing summary
     timing_summary = read_timing_summary(args.rundir)
