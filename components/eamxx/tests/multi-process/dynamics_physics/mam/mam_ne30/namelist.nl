@@ -16,6 +16,7 @@ hypervis_subcycle_tom = 1
 hypervis_subcycle_q = 6
 nu = 3.4e-08
 nu_top = 250000.0
+tom_sponge_start = 0.0
 pgrad_correction = 1
 se_ftype = 2
 se_geometry = 'sphere'
@@ -42,4 +43,5 @@ semi_lagrange_trajectory_nvelocity = -1
 semi_lagrange_halo = -1
 semi_lagrange_diagnostics = 0
 mesh_file = 'none'
+do_3d_turbulence = .false.
 /
