@@ -186,10 +186,10 @@ eamxx:
       repair_log_level: trace
       internal_diagnostics_level: 0
     rrtmgp:
-      rrtmgp_coefficients_file_sw: ${SCREAM_DATA_DIR}/atm/scream/init/rrtmgp-data-sw-g112-210809.nc
-      rrtmgp_coefficients_file_lw: ${SCREAM_DATA_DIR}/atm/scream/init/rrtmgp-data-lw-g128-210809.nc
-      rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc
-      rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc
+      rrtmgp_coefficients_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-sw-g112-210809.nc
+      rrtmgp_coefficients_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-lw-g128-210809.nc
+      rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
+      rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
       column_chunk_size: 1280
       active_gases:
       - h2o
