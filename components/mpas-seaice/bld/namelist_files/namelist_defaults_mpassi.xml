@@ -442,6 +442,7 @@
 <config_macro_drainage_timescale_topoponds>10.</config_macro_drainage_timescale_topoponds>
 <config_congelation_freezing_method>'two-step'</config_congelation_freezing_method>
 <config_congelation_freezing_method ice_grid="RRSwISC6to18E3r5">'one-step'</config_congelation_freezing_method>
+<config_congelation_freezing_method ice_grid="SOwISC12to30E3r3">'one-step'</config_congelation_freezing_method>
 <config_congelation_ice_porosity>0.85</config_congelation_ice_porosity>
 
 <!-- itd -->
