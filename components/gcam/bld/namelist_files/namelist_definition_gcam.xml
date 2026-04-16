@@ -115,9 +115,6 @@ Configuration file for gcam model
 Default is false; true enables GCAM-USA
 </entry>
 
-Configuration file for gcam model
-</entry>
-
 <entry id="base_gcam_co2_file"
         type="char*256"
         category="gcam"
