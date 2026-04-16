@@ -85,7 +85,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const std::vector<Fie
   }
 
   // No remaps: set all FM except the one for scorpio (created in init())
-  m_field_mgrs[FromModel] = m_field_mgrs[AfterVertRemap] = m_field_mgrs[AfterHorizRemap] = fm;
+  m_field_mgrs[FromModel] = m_field_mgrs[AfterVertRemap] = m_field_mgrs[AfterHorizRemap] = m_field_mgrs[AfterTally] = fm;
 
   // Setup I/O structures
   init();
@@ -314,7 +314,7 @@ set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
 void AtmosphereOutput::restart (const std::string& filename)
 {
   // Create an input stream on the fly, and init averaging data
-  const auto& fm = m_field_mgrs[Scorpio];
+  const auto& fm = m_field_mgrs[AfterTally];
   std::vector<Field> fields;
   for (const auto& [name,f_ptr] : fm->get_repo()) {
     fields.push_back(*f_ptr);
@@ -330,6 +330,7 @@ void AtmosphereOutput::restart (const std::string& filename)
 void AtmosphereOutput::init()
 {
   auto fm_after_hr = m_field_mgrs[AfterHorizRemap];
+  auto& fm_after_tally = m_field_mgrs[AfterTally];
   m_io_grid  = fm_after_hr->get_grid();
   m_latlon_output = m_io_grid->has_geometry_data("lat_idx");
 
@@ -340,8 +341,8 @@ void AtmosphereOutput::init()
       (m_io_grid->get_global_max_dof_gid()-m_io_grid->get_global_min_dof_gid()+1)==m_io_grid->get_num_global_dofs(),
       "Error! In order for IO to work, the grid must (globally) have dof gids in interval [gid_0,gid_0+num_global_dofs).\n");
 
-  // Create FM for scorpio. The fields in this FM are guaranteed to NOT have parents/padding
-  auto fm_scorpio = m_field_mgrs[Scorpio] = std::make_shared<FieldManager>(fm_after_hr->get_grid(),RepoState::Closed);
+  // Create FM for post-tally data. The fields in this FM are guaranteed to NOT have parents/padding
+  fm_after_tally = std::make_shared<FieldManager>(fm_after_hr->get_grid(),RepoState::Closed);
   for (size_t i = 0; i < m_fields_names.size(); ++i) {
     const auto& fname = m_fields_names[i];
     const auto& f = fm_after_hr->get_field(fname);
@@ -358,9 +359,9 @@ void AtmosphereOutput::init()
       Field copy(fid);
       copy.allocate_view();
       transfer_extra_data (f,copy);
-      fm_scorpio->add_field(copy);
+      fm_after_tally->add_field(copy);
     } else {
-      fm_scorpio->add_field(f);
+      fm_after_tally->add_field(f);
     }
 
     // Store the field layout, so that calls to setup_output_file are easier
@@ -438,7 +439,10 @@ void AtmosphereOutput::init()
     }
   }
 
-  // For non-instantaneous output, ensure scorpio fields are
+  // By default, scorpio fields alias post-tally fields.
+  m_field_mgrs[Scorpio] = fm_after_tally;
+
+  // For non-instantaneous output, ensure tally fields are
   // inited with correct value for accumulation
   if (m_avg_type!=OutputAvgType::Instant)
     reset_scorpio_fields();
@@ -502,6 +506,7 @@ run (const std::string& filename,
     stop_timer("EAMxx::IO::horiz_remap");
   }
 
+  auto fm_after_tally = m_field_mgrs[AfterTally];
   auto fm_scorpio = m_field_mgrs[Scorpio];
   auto fm_after_hr = m_field_mgrs[AfterHorizRemap];
 
@@ -595,7 +600,7 @@ run (const std::string& filename,
     
     // Get all the info for this field.
     const auto& f_in  = fm_after_hr->get_field(field_name);
-          auto& f_out = fm_scorpio->get_field(field_name);
+          auto& f_tally = fm_after_tally->get_field(field_name);
 
     // Safety check: if a field may contain fill values and we are computing an Average,
     // we must have created an avg-count tracking field; otherwise division by the raw
@@ -609,49 +614,90 @@ run (const std::string& filename,
 
     switch (m_avg_type) {
       case OutputAvgType::Instant:
-        f_out.deep_copy(f_in);  break; // Note: if f_in aliases f_out, this is a no-op
+        f_tally.deep_copy(f_in);  break; // Note: if f_in aliases f_tally, this is a no-op
       case OutputAvgType::Max:
-        f_out.max(f_in);        break;
+        f_tally.max(f_in);        break;
       case OutputAvgType::Min:
-        f_out.min(f_in);        break;
+        f_tally.min(f_in);        break;
       case OutputAvgType::Average:
-        f_out.update(f_in,1,1); break;
+        f_tally.update(f_in,1,1); break;
       default:
         EKAT_ERROR_MSG ("Unexpected/unsupported averaging type.\n");
     }
 
     if (is_write_step) {
+      Field* f_out = &f_tally;
+      if (output_step) {
+        auto& f_scorpio = fm_scorpio->get_field(field_name);
+        if (!f_scorpio.is_aliasing(f_tally)) {
+          f_scorpio.deep_copy(f_tally,true);
+        }
+        f_out = &f_scorpio;
+      }
+
       // NOTE: we don't divide by the avg cnt for checkpoint output
       if (output_step and m_avg_type==OutputAvgType::Average) {
         // Even if m_track_avg_cnt=true, this field may not need it
         if (m_track_avg_cnt) {
           auto avg_count = m_field_to_avg_count.at(field_name);
 
-          f_out.scale_inv(avg_count);
+          f_out->scale_inv(avg_count);
 
           const auto& mask = avg_count.get_valid_mask();
-          f_out.deep_copy(constants::fill_value<Real>,mask);
+          switch (f_out->data_type()) {
+            case DataType::FloatType:
+              f_out->deep_copy(constants::fill_value<float>,mask);
+              break;
+            case DataType::DoubleType:
+              f_out->deep_copy(constants::fill_value<double>,mask);
+              break;
+            case DataType::IntType:
+              f_out->deep_copy(constants::fill_value<int>,mask);
+              break;
+            default:
+              EKAT_ERROR_MSG ("Unexpected field dtype while setting fill values.\n");
+          }
         } else {
           // Divide by steps count only when the summation is complete
-          f_out.scale(Real(1.0) / nsteps_since_last_output);
+          f_out->scale(Real(1.0) / nsteps_since_last_output);
         }
       }
 
       // Write to file
       auto func_start = std::chrono::steady_clock::now();
+      const Field* f_write = f_out;
       if (m_transpose) {
-        const auto& id = f_out.get_header().get_identifier();
+        const auto& id = f_out->get_header().get_identifier();
         const auto& layout = id.get_layout();
         const auto data_type = id.data_type();
         const std::string helper_name = get_transposed_helper_name(layout, data_type);
+        if (m_helper_fields.find(helper_name)==m_helper_fields.end()) {
+          using namespace ekat::units;
+          FieldIdentifier fid_helper(helper_name,layout.transpose(),Units::invalid(),id.get_grid_name(),data_type);
+          Field helper(fid_helper);
+          helper.get_header().get_alloc_properties().request_allocation();
+          helper.allocate_view();
+          m_helper_fields[helper_name] = helper;
+        }
         auto& temp = m_helper_fields.at(helper_name);
-        transpose(f_out,temp);
-        temp.sync_to_host();
-        scorpio::write_var(filename,field_name,temp.get_internal_view_data<Real,Host>());
-      } else {
-        // Bring data to host (only needed for non-transposed output)
-        f_out.sync_to_host();
-        scorpio::write_var(filename,field_name,f_out.get_internal_view_data<Real,Host>());
+        transpose(*f_out,temp);
+        f_write = &temp;
+      }
+
+      // Bring data to host and write
+      f_write->sync_to_host();
+      switch (f_write->data_type()) {
+        case DataType::FloatType:
+          scorpio::write_var(filename,field_name,f_write->get_internal_view_data<float,Host>());
+          break;
+        case DataType::DoubleType:
+          scorpio::write_var(filename,field_name,f_write->get_internal_view_data<double,Host>());
+          break;
+        case DataType::IntType:
+          scorpio::write_var(filename,field_name,f_write->get_internal_view_data<int,Host>());
+          break;
+        default:
+          EKAT_ERROR_MSG ("Unexpected field dtype while writing output.\n");
       }
       auto func_finish = std::chrono::steady_clock::now();
       auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
@@ -762,7 +808,7 @@ reset_scorpio_fields()
       EKAT_ERROR_MSG ("Unrecognized/unexpected averaging type.\n");
   }
 
-  auto fm = m_field_mgrs[Scorpio];
+  auto fm = m_field_mgrs[AfterTally];
   for (const auto& name : m_fields_names) {
     fm->get_field(name).deep_copy(value);
   }
@@ -770,7 +816,43 @@ reset_scorpio_fields()
     count.deep_copy(0);
   }
 }
-/* ---------------------------------------------------------- */
+
+void AtmosphereOutput::
+reset_scorpio_field_manager (const std::string& fp_precision)
+{
+  auto fm_after_tally = m_field_mgrs[AfterTally];
+  auto& fm_scorpio = m_field_mgrs[Scorpio];
+
+  bool can_alias = true;
+  auto fp_dtype = str2dtype(scorpio::refine_dtype(fp_precision));
+  for (const auto& name : m_fields_names) {
+    const auto& f = fm_after_tally->get_field(name);
+    if (is_floating_point(f.data_type()) and f.data_type()!=fp_dtype) {
+      can_alias = false;
+      break;
+    }
+  }
+
+  if (can_alias) {
+    fm_scorpio = fm_after_tally;
+    return;
+  }
+
+  fm_scorpio = std::make_shared<FieldManager>(fm_after_tally->get_grid(),RepoState::Closed);
+  for (const auto& name : m_fields_names) {
+    const auto& f = fm_after_tally->get_field(name);
+    if (not is_floating_point(f.data_type()) or f.data_type()==fp_dtype) {
+      fm_scorpio->add_field(f);
+    } else {
+      auto fid = f.get_header().get_identifier().clone(name).reset_dtype(fp_dtype);
+      Field copy(fid);
+      copy.allocate_view();
+      transfer_extra_data(f,copy);
+      fm_scorpio->add_field(copy);
+    }
+  }
+}
+
 void AtmosphereOutput::
 register_variables(const std::string& filename,
                    const std::string& fp_precision,
@@ -789,6 +871,7 @@ register_variables(const std::string& filename,
     const auto& fid  = f.get_header().get_identifier();
     const auto& dimnames = m_vars_dims.at(field_name);
     std::string units = fid.get_units().to_string();
+    const std::string dtype = e2str(fid.data_type());
 
     // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
@@ -819,17 +902,30 @@ register_variables(const std::string& filename,
           "  - varname  : " + field_name + "\n"
           "  - var time dep: " + (m_add_time_dim ? "yes" : "no") + "\n"
           "  - var time dep from file: " + (var.time_dep ? "yes" : "no") + "\n");
+      EKAT_REQUIRE_MSG (var.dtype==dtype,
+          "Error! Cannot append, due to variable dtype mismatch.\n"
+          "  - filename : " + filename + "\n"
+          "  - varname  : " + field_name + "\n"
+          "  - var dtype: " + dtype + "\n"
+          "  - var dtype from file: " + var.dtype + "\n");
     } else {
       scorpio::define_var (filename, field_name, units, dimnames,
-                            "real",fp_precision, m_add_time_dim);
+                            dtype, m_add_time_dim);
 
       // Add FillValue as an attribute of each variable
       // FillValue is a protected metadata, do not add it if it already existed
-      if (fp_precision=="double" or
-          (fp_precision=="real" and std::is_same<Real,double>::value)) {
-        scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<double>);
-      } else {
-        scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<float>);
+      switch (fid.data_type()) {
+        case DataType::DoubleType:
+          scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<double>);
+          break;
+        case DataType::FloatType:
+          scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<float>);
+          break;
+        case DataType::IntType:
+          scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<int>);
+          break;
+        default:
+          EKAT_ERROR_MSG ("Unexpected field dtype while setting _FillValue attribute.\n");
       }
       if (m_alias_to_orig.count(field_name)==1) {
         // Store what this field is the alias of
@@ -996,6 +1092,7 @@ setup_output_file(const std::string& filename,
   }
 
   // Register variables with netCDF file.  Must come after dimensions are registered.
+  reset_scorpio_field_manager(fp_precision);
   register_variables(filename,fp_precision,mode);
 
   // Set the offsets of the local dofs in the global vector.

@@ -41,7 +41,14 @@ DataType get_data_type () {
 
 KOKKOS_INLINE_FUNCTION
 bool is_narrowing_conversion (const DataType from, const DataType to) {
-  return (from==DataType::FloatType || from==DataType::DoubleType) && to==DataType::IntType;
+  return (from==DataType::DoubleType && to==DataType::FloatType) ||
+         ((from==DataType::FloatType || from==DataType::DoubleType) &&
+          to==DataType::IntType);
+}
+
+KOKKOS_INLINE_FUNCTION
+bool is_floating_point (const DataType dt) {
+  return dt==DataType::FloatType || dt==DataType::DoubleType;
 }
 
 inline std::string e2str (const DataType data_type) {
@@ -54,6 +61,24 @@ inline std::string e2str (const DataType data_type) {
       EKAT_ERROR_MSG("Error! Unsupported DataType value.\n");
   }
   return "";
+}
+
+inline DataType str2dtype (const std::string& s) {
+  if (s=="int") {
+    return DataType::IntType;
+  } else if (s=="float" || s=="single") {
+    return DataType::FloatType;
+  } else if (s=="double") {
+    return DataType::DoubleType;
+  } else if (s=="real") {
+#ifdef SCREAM_DOUBLE_PRECISION
+    return DataType::DoubleType;
+#else
+    return DataType::FloatType;
+#endif
+  } else {
+    return DataType::Invalid;
+  }
 }
 
 inline int get_type_size (const DataType data_type) {

@@ -62,6 +62,24 @@ TEST_CASE ("update") {
       f2.deep_copy(f_int);
       REQUIRE (views_are_equal(f2,f_int));
     }
+    SECTION ("narrowing_requires_opt_in") {
+      FieldIdentifier fid_d ("fd", {tags,dims}, kg, "some_grid", DataType::DoubleType);
+      FieldIdentifier fid_f ("ff", {tags,dims}, kg, "some_grid", DataType::FloatType);
+      Field f_d (fid_d);
+      Field f_f (fid_f);
+      f_d.allocate_view();
+      f_f.allocate_view();
+      randomize_uniform(f_d,seed++);
+
+      REQUIRE_THROWS (f_f.deep_copy(f_d));
+      REQUIRE_NOTHROW (f_f.deep_copy(f_d,true));
+
+      f_d.sync_to_host();
+      f_f.sync_to_host();
+      auto vd = f_d.get_view<double***,Host>();
+      auto vf = f_f.get_view<float***,Host>();
+      REQUIRE (vf(0,0,0)==static_cast<float>(vd(0,0,0)));
+    }
   }
 
   SECTION ("scale") {

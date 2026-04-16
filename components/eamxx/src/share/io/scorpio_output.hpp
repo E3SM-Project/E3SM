@@ -176,6 +176,7 @@ protected:
   void compute_diagnostics(const bool allow_invalid_fields);
   void process_requested_fields();
   strvec_t get_var_dimnames(const FieldLayout &layout) const;
+  void reset_scorpio_field_manager(const std::string& fp_precision);
 
   // Tracking the averaging of any filled values:
   void set_avg_cnt_tracking(const FieldIdentifier& fid);
@@ -191,9 +192,9 @@ protected:
   //  - horiz remap (if any)
   //  - call scorpio
   // and the field mgrs are connected by the following ops
-  //         VERT_REMAP        HORIZ_REMAP       TALLY_UPDATE
-  //  FromModel -> AfterVertRemap -> AfterHorizRemap -> Scorpio
-  // The last 2 field mgrs contain DIFFERENT fields if 1+ of the following happens:
+  //         VERT_REMAP        HORIZ_REMAP       TALLY_UPDATE       PRECISION_CHANGE
+  //  FromModel -> AfterVertRemap -> AfterHorizRemap -> AfterTally -> Scorpio
+  // The last 3 field mgrs contain DIFFERENT fields if 1+ of the following happens:
   //  - fields are padded: we have PackSize>1 during remaps, but Scorpio needs CONTIGUOUS memory
   //  - there's no remap (so the first 3 FM are the same), but the field is a subfield: again NOT
   //  CONTIGUOUS
@@ -209,6 +210,7 @@ protected:
     FromModel,       // Output fields as from the model (or diags computed from model fields)
     AfterVertRemap,  // Output fields after vertical remap
     AfterHorizRemap, // Output fields after horiz remap
+    AfterTally,      // Output fields after tally update (full model precision)
     Scorpio // Output fields to pass to scorpio (may differ from the above in case of packing)
   };
   std::map<Phase, std::shared_ptr<fm_type>> m_field_mgrs;
