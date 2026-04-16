@@ -73,6 +73,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
   };
   auto spa_data_file = m_params.get<std::string>("spa_data_file");
   auto spa_map_file  = m_params.get<std::string>("spa_remap_file","");
+  auto time_interpolation_method = m_params.get<std::string>("time_interpolation_method","yearly_periodic");
 
   // SPA doesn't really *need* pint, but DataInterpolation does. It's important to stress that
   // NO FIELD VALUES from p_int are accessed in the DataInterpolation we build, since we
@@ -86,9 +87,22 @@ void SPA::initialize_impl (const RunType /* run_type */)
   pint.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
   pint.allocate_view();
 
-  util::TimeStamp ref_ts (1,1,1,0,0,0); // Beg of any year, since we use yearly periodic timeline
+  util::TimeLine timeline;
+  util::TimeStamp ref_ts;
+  if (time_interpolation_method=="yearly_periodic") {
+    timeline = util::TimeLine::YearlyPeriodic;
+    ref_ts = util::TimeStamp(1,1,1,0,0,0); // Beg of any year, since we use yearly periodic timeline
+  } else if (time_interpolation_method=="linear") {
+    timeline = util::TimeLine::Linear;
+    // For linear interpolation we read reference timestamp from the input file's time var units
+  } else {
+    EKAT_ERROR_MSG("Error! Invalid time_interpolation_method: " +
+                   time_interpolation_method +
+                   ". Valid options are: yearly_periodic, linear.\n");
+  }
+
   m_data_interpolation = std::make_shared<DataInterpolation>(m_model_grid,spa_fields);
-  m_data_interpolation->setup_time_database ({spa_data_file},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts);
+  m_data_interpolation->setup_time_database ({spa_data_file},timeline, DataInterpolation::Linear, ref_ts);
 
   if (m_iop_data_manager!=nullptr) {
     // IOP cases cannot have a remap file. We will create a IOPRemapper as the horiz remapper
