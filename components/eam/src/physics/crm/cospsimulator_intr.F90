@@ -1061,6 +1061,7 @@ CONTAINS
 
     ! Number of columns in this physics chunk
     ncol = state%ncol
+
     ! Construct COSP output derived type.
     call t_startf('cosp_construct_cosp_outputs')
     call construct_cosp_outputs(npoints,nscol_cosp,pver,Nlvgrid,0,cospOUT)
@@ -1468,9 +1469,7 @@ CONTAINS
            do ix = 1,crm_nx_rad
              do i = 1,ncol
                j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
-
                k = pver - iz + 1
-
                ! Mixing ratios
                mr_lsliq(j,k) = crm_qc(i,ix,iy,iz)
                mr_lsice(j,k) = crm_qi(i,ix,iy,iz)
@@ -2343,7 +2342,7 @@ CONTAINS
              end if
           enddo
        enddo
-
+             
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
        ! Convert precipitation fluxes to mixing ratios
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2558,7 +2557,7 @@ CONTAINS
     real(wp), dimension(npoints,ncolumns,nlvgrid) :: fracPrecipIce_statGrid
     real(wp), dimension(npoints,nlevels)          :: g_vol
     integer :: i, j, k
-
+                                               
        ! Compute gaseous absorption (assume identical for each subcolun)
        g_vol(:,:)=0._wp
        do i = 1, nPoints
@@ -2575,7 +2574,6 @@ CONTAINS
        ! Loop over all subcolumns
        fracPrecipIce(:,:,:) = 0._wp
        do k=1,nColumns
-
           call quickbeam_optics(sd, cospIN%rcfg_cloudsat, nPoints, nLevels, R_UNDEF, &
                mr_hydro(:,k,:,1:nHydro)*1000._wp, Reff(:,k,:,1:nHydro)*1.e6_wp,      &
                Np(:,k,:,1:nHydro), cospstateIN%pfull, cospstateIN%at,                &
@@ -2616,7 +2614,6 @@ CONTAINS
   ! SUBROUTINE construct_cospIN
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   subroutine construct_cospIN(npoints,ncolumns,nlevels,y)
-    use cosp_kinds, only: wp
     ! Inputs
     integer,intent(in) :: &
          npoints,  & ! Number of horizontal gridpoints
@@ -2660,7 +2657,6 @@ CONTAINS
   ! SUBROUTINE construct_cospstateIN
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     
   subroutine construct_cospstateIN(npoints,nlevels,nchan,y)
-    use cosp_kinds, only: wp
     ! Inputs
     integer,intent(in) :: &
          npoints, & ! Number of horizontal gridpoints
@@ -2711,7 +2707,6 @@ CONTAINS
        allocate(x%isccp_meantb(Npoints))
        allocate(x%isccp_meantbclr(Npoints))
        allocate(x%isccp_meanalbedocld(Npoints))
-
     end if
 
     ! MISR simulator
@@ -2722,9 +2717,9 @@ CONTAINS
        !        outputs.
        allocate(x%misr_dist_model_layertops(Npoints,numMISRHgtBins))
        allocate(x%misr_meanztop(Npoints))
-       allocate(x%misr_cldarea(Npoints))
+       allocate(x%misr_cldarea(Npoints))    
     end if
-
+    
     ! MODIS simulator
     if (lmodis_sim) then
        allocate(x%modis_Cloud_Fraction_Total_Mean(Npoints))
@@ -2745,7 +2740,7 @@ CONTAINS
        allocate(x%modis_Liquid_Water_Path_Mean(Npoints))
        allocate(x%modis_Ice_Water_Path_Mean(Npoints))
        allocate(x%modis_Optical_Thickness_vs_Cloud_Top_Pressure(nPoints,numModisTauBins,numMODISPresBins))
-       allocate(x%modis_Optical_thickness_vs_ReffLIQ(nPoints,numMODISTauBins,numMODISReffLiqBins))
+       allocate(x%modis_Optical_thickness_vs_ReffLIQ(nPoints,numMODISTauBins,numMODISReffLiqBins))   
        allocate(x%modis_Optical_Thickness_vs_ReffICE(nPoints,numMODISTauBins,numMODISReffIceBins))
 
        x%modis_Cloud_Fraction_Total_Mean     = 0.0_wp
@@ -2776,7 +2771,7 @@ CONTAINS
        allocate(x%calipso_beta_tot(Npoints,Ncolumns,Nlevels))
        allocate(x%calipso_srbval(SR_BINS+1))
        allocate(x%calipso_cfad_sr(Npoints,SR_BINS,Nlvgrid))
-       allocate(x%calipso_betaperp_tot(Npoints,Ncolumns,Nlevels))
+       allocate(x%calipso_betaperp_tot(Npoints,Ncolumns,Nlevels))  
        allocate(x%calipso_lidarcld(Npoints,Nlvgrid))
        allocate(x%calipso_cldlayer(Npoints,LIDAR_NCAT))        
        allocate(x%calipso_lidarcldphase(Npoints,Nlvgrid,6))
