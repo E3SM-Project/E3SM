@@ -70,6 +70,17 @@ pre-commit run mypy --all-files
 ```
 You can specify one more more files instead of `--all-files`.
 
+## Linting Fortran Code
+
+The tool used to lint Fortran code is
+[fortitude](https://fortitude.readthedocs.io/en/stable/).
+
+You can run  this tool individually if you need to:
+```
+pre-commit run fortitude --all-files
+```
+You can specify one more more files instead of `--all-files`.
+
 ## Updating the linting pacakge
 
 To update the linting packages, you just need to recreate the development
