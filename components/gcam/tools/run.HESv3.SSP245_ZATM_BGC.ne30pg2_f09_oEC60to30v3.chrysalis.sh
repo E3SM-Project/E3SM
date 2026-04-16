@@ -1,5 +1,11 @@
 #!/bin/bash -fe
 # E3SM+GCAM v3 SSP245 production run script for chrysalis
+# The only thing that must be set correctly below by the user is the MACHINE variable
+# If you alread have a code clone, set CLONE_NAME and CODE_PARENT appropriately below
+# If you want to fetch the code then set and uncomment 'code and compilation' below,
+#    and set do_fetch_code=true
+# You may consider setting a more specific CASE_NAME below
+# If desired, the user can change other things below, but this script will perform as desired
 
 main() {
 
@@ -12,7 +18,6 @@ do_create_newcase=true
 do_modify_pe_layout=true
 do_case_setup=true
 do_case_build=true
-#do_case_submit=true
 do_case_submit=false
 
 # --- Configuration flags ----
@@ -20,9 +25,12 @@ do_case_submit=false
 # Machine and project
 # Be sure to set your machine here!
 readonly PROJECT="e3sm"
-readonly MACHINE="chrysalis"
+#readonly MACHINE="chrysalis"
 #readonly MACHINE="compy"
-#readonly MACHINE="pm-cpu"
+readonly MACHINE="pm-cpu"
+
+# if true this increases the active component ntasks to ~5400 from ~3200
+ehc_pe_xl=false
 
 # set the machine inputdata directory
 if [ "${MACHINE}" == "chrysalis" ]; then
@@ -38,9 +46,9 @@ fi
 # Simulation
 readonly MYDATE=$(date '+%Y%m%d%H') # use current date if MYDATE is not set to a specific date
 # export COMPSET=SSP245_EAM%CMIP6_ELM%TOPCNPRDCTCBCPHS_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM_BGC%LNDATM
-export COMPSET="SSP245_ZATM_BGC" # see long name above
+readonly COMPSET="SSP245_ZATM_BGC" # see long name above
 readonly RESOLUTION="ne30pg2_f09_oEC60to30v3" 
-readonly CASE_NAME="${COMPSET}_${RESOLUTION}_${MYDATE}_v3_test1"
+readonly CASE_NAME="${COMPSET}_${RESOLUTION}_${MYDATE}_v3_prerebase_compile_test"
 # readonly CASE_GROUP="E3SM_GCAM"
 
 # Code and compilation
@@ -59,7 +67,6 @@ readonly START_DATE="2015-01-01"
 readonly GET_REFCASE=TRUE
 readonly RUN_REFCASE="20260303_I20TREAMELMCNPRDCTCBCPHSBGC_${RESOLUTION}" 
 readonly RUN_REFDATE="2015-01-01"
-#readonly RUN_REFDIR="/lcrc/group/e3sm/ac.eva.sinha/E3SM_GCAM_lnd_init/${RUN_REFCASE}"
 readonly RUN_REFDIR="$din_loc_root/e3sm_init/${RUN_REFCASE}/${RUN_REFDATE}-00000"
 readonly MPASSI_CONFIG_START=2015-01-01_0
 
@@ -67,7 +74,8 @@ readonly MPASSI_CONFIG_START=2015-01-01_0
 # note that fetch_code below will use CLONE_NAME in place of E3SM, so that CODE_ROOT points to the root of the cloned repository, and not to a parent directory containing multiple clones
 readonly CLONE_DATE=$(date '+%d%B%Y')
 
-readonly CLONE_NAME="e3sm_gcam_${CLONE_DATE}"
+#readonly CLONE_NAME="e3sm_gcam_${CLONE_DATE}"
+export CLONE_NAME="e3sm_gcam_april2026_for_rebase"
 
 readonly CODE_PARENT="${HOME}/e3sm"
 readonly CODE_ROOT="${CODE_PARENT}/${CLONE_NAME}"
@@ -194,9 +202,9 @@ cat << EOF >> user_nl_eam
  ncdata		= '${ncd_string}'
 EOF
 
+# don't need finidat because doing hybrid run from initial conditions refcase restart
 cat << EOF >> user_nl_elm
 
-! finidat = '/lcrc/group/e3sm/ac.eva.sinha/20260205_I20TREAMELMCNPRDCTCBCPHSBGC_ne30pg2_f09_oEC60to30v3/run/20260205_I20TREAMELMCNPRDCTCBCPHSBGC_ne30pg2_f09_oEC60to30v3.elm.r.1940-01-01-00000.nc' 
  hist_mfilt = 1, 365, 1
  hist_nhtfrq = 0, -24, 0
  hist_dov2xy = .true., .true., .false.
@@ -331,15 +339,27 @@ modify_pe_layout() {
     if [ `./xmlquery --value MACH` == chrysalis ]; then
         ./xmlchange MAX_TASKS_PER_NODE=64
         ./xmlchange MAX_MPITASKS_PER_NODE=64
-        readonly nnodes=52
+        if [ "${ehc_pe_xl}" == "true" ]; then
+           readonly nnodes=85
+        else
+           readonly nnodes=52
+        fi
     fi
     if [ `./xmlquery --value MACH` == compy ]; then
-        readonly nnodes=80
-	./xmlchange MAX_TASKS_PER_NODE=40
+        if [ "${ehc_pe_xl}" == "true" ]; then
+           readonly nnodes=136
+        else
+           readonly nnodes=80
+        fi
+	    ./xmlchange MAX_TASKS_PER_NODE=40
         ./xmlchange MAX_MPITASKS_PER_NODE=40
     fi
-     if [ `./xmlquery --value MACH` == pm-cpu ]; then
-        readonly nnodes=26
+    if [ `./xmlquery --value MACH` == pm-cpu ]; then
+        if [ "${ehc_pe_xl}" == "true" ]; then
+           readonly nnodes=43
+        else
+           readonly nnodes=26
+        fi
         ./xmlchange MAX_TASKS_PER_NODE=128
         ./xmlchange MAX_MPITASKS_PER_NODE=128
     fi
@@ -421,8 +441,8 @@ modify_pe_layout() {
          echo $'\n----- changing PE layout to EHC-ELM-EAM -----\n'
          ./xmlchange NTASKS_ATM=$(($ppn * $nnodes))
          ./xmlchange NTASKS_CPL=$(($ppn * $nnodes))
-         ./xmlchange NTASKS_ICE=$(($ppn * $nnodes))
          ./xmlchange NTASKS_LND=$(($ppn * $nnodes))
+         ./xmlchange NTASKS_ICE=256
          ./xmlchange NTASKS_OCN=256
          ./xmlchange NTASKS_ROF=1
     else
@@ -515,7 +535,6 @@ case_setup() {
     fi
 
     ./xmlchange SAVE_TIMING=TRUE
-    # ./xmlchange DOUT_S_ROOT=${CASE_ARCHIVE_DIR} # may not be neccessary 
 
     # docn setup
     ./xmlchange --id PIO_TYPENAME  --val "pnetcdf"

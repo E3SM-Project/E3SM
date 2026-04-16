@@ -563,11 +563,12 @@ CONTAINS
           call t_startf('cam_run1')
           call cam_run1 ( cam_in, cam_out )
           call t_stopf('cam_run1')
-       end if
 
 !!!! todo: delete this !!!!!
    if (masterproc) write(iulog,*)'cflx-log: atm_import and cam_run1 for restart in atm_init_mct'
    if (masterproc) write(iulog,*)'sync ymd=',CurrentYMD
+
+       end if
 
        ! Compute time of next radiation computation, like in run method for exact restart
 
@@ -684,9 +685,6 @@ CONTAINS
        curr_yr=yr_sync,curr_mon=mon_sync,curr_day=day_sync)
 
 !!!! todo: delete this !!!!!
-    call get_curr_date( yr, mon, day, tod)
-    ymd = yr*10000 + mon*100 + day
-    tod = tod
    if (masterproc) write(iulog,*)'cflx-log: at beginning of atm_run_mct'
    if (masterproc) write(iulog,*)' cam ymd=',ymd     ,'  cam tod= ',tod
    if (masterproc) write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
@@ -781,8 +779,8 @@ CONTAINS
 
 
        !!!! todo: delete this !!!!!
-       if (masterproc) write(iulog,*)'cflx-log: after cam time advance in while(!dosend) loop in atm_run_mct, calling cam_run1'
-       if (masterproc) write(iulog,*)' cam ymd=',ymd     ,'  cam tod= ',tod
+       if (masterproc) write(iulog,*)'cflx-log: after cam time advance in while(!dosend) loop in atm_run_mct, calling cam_run1 and atm_export'
+       if (masterproc) write(iulog,*)'adding the advance manually: cam ymd=',ymd,'  cam tod= ',tod + get_step_size()
        if (masterproc) write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
 
 
@@ -862,7 +860,7 @@ CONTAINS
 
    !!!! todo: delete this !!!!!
    if (masterproc) write(iulog,*)'cflx-log: after writing srfc rstrt, at end of atm_run_mct'
-   if (masterproc) write(iulog,*)' cam ymd=',ymd     ,'  cam tod= ',tod
+   if (masterproc) write(iulog,*)'including -dtime offset: cam ymd=',ymd     ,'  cam tod= ',tod
    if (masterproc) write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
 
 

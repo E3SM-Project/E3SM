@@ -57,6 +57,8 @@
 
    <entry id="NCPL_BASE_PERIOD">
      <values>
+       <value compset=".*_GCAM.*">year</value>
+       <value compset="Z">year</value>
        <value compset="ZLND">year</value>
        <value compset="ZATM">year</value>
        <value compset="SSP245_ZATM">year</value>
@@ -71,6 +73,8 @@
 
    <entry id="IAC_NCPL">
      <values>
+       <value compset=".*_GCAM.*">1</value>
+       <value compset="Z">1</value>
        <value compset="ZLND">1</value>
        <value compset="ZATM">1</value>
        <value compset="SSP245_ZATM">1</value>
@@ -85,6 +89,8 @@
 
    <entry id="GLC_NCPL">
      <values>
+       <value compset=".*_GCAM.*">1</value>
+       <value compset="Z">1</value>
        <value compset="ZLND">1</value>
        <value compset="ZATM">1</value>
        <value compset="SSP245_ZATM">1</value>
@@ -98,8 +104,23 @@
    </entry>
 
    <entry id="LND_NCPL">
-     <values>
+     <values>\
+       <value compset=".*_GCAM.*">17520</value>
+       <value compset="Z">17520</value>
        <value compset="ZLND">17520</value>
+       <value compset="ZATM">17520</value>
+       <value compset="SSP245_ZATM">17520</value>
+       <value compset="SSP245_ZATM_BGC">17520</value>
+       <value compset="SSP370_ZATM_BGC">17520</value>
+       <value compset="SSP245_ZB">17520</value>
+       <value compset="SSP245_ZB_BGC">17520</value>
+     </values>
+   </entry>
+
+   <entry id="ROF_NCPL">
+     <values>
+       <value compset=".*_GCAM.*">17520</value>
+       <value compset="Z">17520</value>
        <value compset="ZATM">17520</value>
        <value compset="SSP245_ZATM">17520</value>
        <value compset="SSP245_ZATM_BGC">17520</value>
@@ -111,6 +132,47 @@
 
    <entry id="ATM_NCPL">
      <values>
+       <value compset=".*_GCAM.*">17520</value>
+       <value compset="Z">17520</value>
+       <value compset="ZATM">17520</value>
+       <value compset="SSP245_ZATM">17520</value>
+       <value compset="SSP245_ZATM_BGC">17520</value>
+       <value compset="SSP370_ZATM_BGC">17520</value>
+       <value compset="SSP245_ZB">17520</value>
+       <value compset="SSP245_ZB_BGC">17520</value>
+     </values>
+   </entry>
+
+   <entry id="ICE_NCPL">
+     <values>
+       <value compset=".*_GCAM.*">17520</value>
+       <value compset="Z">17520</value>
+       <value compset="ZATM">17520</value>
+       <value compset="SSP245_ZATM">17520</value>
+       <value compset="SSP245_ZATM_BGC">17520</value>
+       <value compset="SSP370_ZATM_BGC">17520</value>
+       <value compset="SSP245_ZB">17520</value>
+       <value compset="SSP245_ZB_BGC">17520</value>
+     </values>
+   </entry>
+
+   <entry id="OCN_NCPL">
+     <values>
+       <value compset=".*_GCAM.*">17520</value>
+       <value compset="Z">17520</value>
+       <value compset="ZATM">17520</value>
+       <value compset="SSP245_ZATM">17520</value>
+       <value compset="SSP245_ZATM_BGC">17520</value>
+       <value compset="SSP370_ZATM_BGC">17520</value>
+       <value compset="SSP245_ZB">17520</value>
+       <value compset="SSP245_ZB_BGC">17520</value>
+     </values>
+   </entry>
+
+   <entry id="WAV_NCPL">
+     <values>
+       <value compset=".*_GCAM.*">17520</value>
+       <value compset="Z">17520</value>
        <value compset="ZATM">17520</value>
        <value compset="SSP245_ZATM">17520</value>
        <value compset="SSP245_ZATM_BGC">17520</value>

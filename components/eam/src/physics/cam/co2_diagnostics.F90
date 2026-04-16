@@ -123,7 +123,13 @@ contains
       call pbuf_add_field('tc_init',    'global', dtype_r8, (/pcols/), idx)
       call pbuf_add_field('tc_mnst',    'global', dtype_r8, (/pcols/), idx)
       call pbuf_add_field('tc_prev',    'global', dtype_r8, (/pcols/), idx)
+      
+      ! timestep accumulated carbon emissions and fluxes
+      call pbuf_add_field('c_flux_sfc', 'global', dtype_r8, (/pcols/), idx)
       call pbuf_add_field('c_flux_air', 'global', dtype_r8, (/pcols/), idx)
+      call pbuf_add_field('c_flux_sff', 'global', dtype_r8, (/pcols/), idx)
+      call pbuf_add_field('c_flux_lnd', 'global', dtype_r8, (/pcols/), idx)
+      call pbuf_add_field('c_flux_ocn', 'global', dtype_r8, (/pcols/), idx)
 
       ! monthly accumulated carbon emissions and fluxes
       call pbuf_add_field('c_mflx_sfc', 'global', dtype_r8, (/pcols/), idx)

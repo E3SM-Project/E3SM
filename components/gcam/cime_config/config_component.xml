@@ -29,6 +29,7 @@
     <valid_values></valid_values>
     <default_value>UNSET</default_value>
     <values>
+      <value compset="2000_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV_GCAM" >SSP245_ehc</value>
       <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM" >SSP245_ehc</value>
       <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM" >SSP370_ehc</value>
     </values>
