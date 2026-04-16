@@ -1061,8 +1061,6 @@ CONTAINS
 
     ! Number of columns in this physics chunk
     ncol = state%ncol
-    cosp_status = ""
-
     ! Construct COSP output derived type.
     call t_startf('cosp_construct_cosp_outputs')
     call construct_cosp_outputs(npoints,nscol_cosp,pver,Nlvgrid,0,cospOUT)
@@ -2207,8 +2205,6 @@ CONTAINS
        ! Sum up precipitation rates. If not using preciitation fluxes, mixing ratios are 
        ! stored in _rate variables.
        allocate(ls_p_rate(nPoints,nLevels),cv_p_rate(nPoints,Nlevels))
-       ls_p_rate = 0.0_wp
-       cv_p_rate = 0.0_wp
        if(use_precipitation_fluxes) then
           ls_p_rate(:,1:nLevels) = fl_lsrainIN + fl_lssnowIN + fl_lsgrplIN
           cv_p_rate(:,1:nLevels) = fl_ccrainIN + fl_ccsnowIN
@@ -2219,7 +2215,6 @@ CONTAINS
        
        ! Call PREC_SCOPS
        allocate(frac_prec(nPoints,nColumns,nLevels))
-       frac_prec = 0.0_wp
        call prec_scops(nPoints,nLevels,nColumns,ls_p_rate,cv_p_rate,cospIN%frac_out,frac_prec)
        deallocate(ls_p_rate,cv_p_rate)
              
@@ -2349,8 +2344,6 @@ CONTAINS
           enddo
        enddo
 
-       ! This ensures that no matter what the CRM or interpolation produced,
-       ! the optics routine only sees physically valid (non-negative) mass.
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
        ! Convert precipitation fluxes to mixing ratios
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2503,16 +2496,6 @@ CONTAINS
                 MODIS_opticalThicknessIce(nPoints,nColumns,nLevels),                     &
                 MODIS_opticalThicknessSnow(nPoints,nColumns,nLevels))
 
-       MODIS_cloudWater           = 0.0_wp
-       MODIS_cloudIce             = 0.0_wp
-       MODIS_cloudSnow            = 0.0_wp
-       MODIS_waterSize            = 0.0_wp
-       MODIS_iceSize              = 0.0_wp
-       MODIS_snowSize             = 0.0_wp
-       MODIS_opticalThicknessLiq  = 0.0_wp
-       MODIS_opticalThicknessIce  = 0.0_wp
-       MODIS_opticalThicknessSnow = 0.0_wp
-
        ! Cloud water
        call cosp_simulator_optics(nPoints,nColumns,nLevels,cospIN%frac_out,              &
             mr_hydro(:,:,:,I_CVCLIQ),mr_hydro(:,:,:,I_LSCLIQ),MODIS_cloudWater)
@@ -2589,10 +2572,6 @@ CONTAINS
           end do
        end do
 
-       Np = 0.0_wp
-       cospIN%kr_vol_cloudsat = 0.0_wp
-       cospIN%z_vol_cloudsat  = 0.0_wp
-
        ! Loop over all subcolumns
        fracPrecipIce(:,:,:) = 0._wp
        do k=1,nColumns
@@ -2603,8 +2582,8 @@ CONTAINS
                cospstateIN%qv, cospIN%z_vol_cloudsat(1:nPoints,k,:),                 &
                cospIN%kr_vol_cloudsat(1:nPoints,k,:))
 
-          ! Numerical safety rail: quickbeam_optics can produce small negative
-          ! values (noise) that trigger COSP range checks, especially with Intel 2025.
+          ! quickbeam_optics can return slightly negative attenuation values,
+          ! but COSP treats any negative kr_vol as fatal input.
           where (cospIN%kr_vol_cloudsat(1:nPoints,k,:) < 0.0_wp)
              cospIN%kr_vol_cloudsat(1:nPoints,k,:) = 0.0_wp
           end where
@@ -2675,28 +2654,6 @@ CONTAINS
              y%fracPrecipIce(npoints,   ncolumns))
     allocate(y%rcfg_cloudsat)
 
-    y%tau_067             = 0.0_wp
-    y%emiss_11            = 0.0_wp
-    y%frac_out            = 0.0_wp
-    y%betatot_calipso     = 0.0_wp
-    y%betatot_ice_calipso = 0.0_wp
-    y%fracLiq             = 0.0_wp
-    y%betatot_liq_calipso = 0.0_wp
-    y%tautot_calipso      = 0.0_wp
-    y%tautot_ice_calipso  = 0.0_wp
-    y%tautot_liq_calipso  = 0.0_wp
-    y%asym                = 0.0_wp
-    y%ss_alb              = 0.0_wp
-    y%beta_mol_calipso    = 0.0_wp
-    y%tau_mol_calipso     = 0.0_wp
-    y%tautot_S_ice        = 0.0_wp
-    y%tautot_S_liq        = 0.0_wp
-    y%fracPrecipIce       = 0.0_wp
-
-    y%kr_vol_cloudsat     = 0.0_wp
-    y%z_vol_cloudsat      = 0.0_wp
-    y%g_vol_cloudsat      = 0.0_wp
-
   end subroutine construct_cospIN
   
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2722,28 +2679,6 @@ CONTAINS
              y%cloudIce(nPoints,nLevels),y%cloudLiq(nPoints,nLevels),y%surfelev(nPoints),&
              y%fl_snow(nPoints,nLevels),y%fl_rain(nPoints,nLevels),y%seaice(npoints),    &
              y%tca(nPoints,nLevels),y%hgt_matrix_half(npoints,nlevels))
-
-    y%sunlit           = 0
-    y%land             = 0
-    y%skt              = 0.0_wp
-    y%at               = 0.0_wp
-    y%pfull            = 0.0_wp
-    y%phalf            = 0.0_wp
-    y%qv               = 0.0_wp
-    y%o3               = 0.0_wp
-    y%hgt_matrix       = 0.0_wp
-    y%hgt_matrix_half  = 0.0_wp
-    y%u_sfc            = 0.0_wp
-    y%lat              = 0.0_wp
-    y%lon              = 0.0_wp
-    y%emis_sfc         = 0.0_wp
-    y%cloudIce         = 0.0_wp
-    y%cloudLiq         = 0.0_wp
-    y%surfelev         = 0.0_wp
-    y%fl_snow          = 0.0_wp
-    y%fl_rain          = 0.0_wp
-    y%seaice           = 0.0_wp
-    y%tca              = 0.0_wp
 
   end subroutine construct_cospstateIN
   ! ######################################################################################
@@ -2777,15 +2712,6 @@ CONTAINS
        allocate(x%isccp_meantbclr(Npoints))
        allocate(x%isccp_meanalbedocld(Npoints))
 
-       x%isccp_boxtau        = 0.0_wp
-       x%isccp_boxptop       = 0.0_wp
-       x%isccp_fq            = 0.0_wp
-       x%isccp_totalcldarea  = 0.0_wp
-       x%isccp_meanptop      = 0.0_wp
-       x%isccp_meantaucld    = 0.0_wp
-       x%isccp_meantb        = 0.0_wp
-       x%isccp_meantbclr     = 0.0_wp
-       x%isccp_meanalbedocld = 0.0_wp
     end if
 
     ! MISR simulator
@@ -2797,11 +2723,6 @@ CONTAINS
        allocate(x%misr_dist_model_layertops(Npoints,numMISRHgtBins))
        allocate(x%misr_meanztop(Npoints))
        allocate(x%misr_cldarea(Npoints))
-
-       x%misr_fq                   = 0.0_wp
-       x%misr_dist_model_layertops = 0.0_wp
-       x%misr_meanztop             = 0.0_wp
-       x%misr_cldarea              = 0.0_wp
     end if
 
     ! MODIS simulator
