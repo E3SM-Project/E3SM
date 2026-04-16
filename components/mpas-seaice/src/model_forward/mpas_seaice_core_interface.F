@@ -606,7 +606,6 @@ module seaice_core_interface
           config_use_iron_solubility_file, &
           config_use_atm_dust_file, &
           config_testing_system_test, &
-          config_use_snicar_ad, &
           config_use_prescribed_ice, &
           config_use_special_boundaries_velocity, &
           config_use_special_boundaries_velocity_masks, &
@@ -615,7 +614,6 @@ module seaice_core_interface
      logical, pointer :: &
           pkgForcingActive, &
           pkgTestingSystemTestActive, &
-          pkgSnicarActive, &
           pkgPrescribedActive, &
           pkgSpecialBoundariesActive
 
@@ -656,12 +654,6 @@ module seaice_core_interface
      if (config_testing_system_test) then
         pkgTestingSystemTestActive = .true.
      endif
-
-     ! pkgSnicar
-     call MPAS_pool_get_config(configPool, "config_use_snicar_ad", config_use_snicar_ad)
-     call MPAS_pool_get_package(packagePool, "pkgSnicarActive", pkgSnicarActive)
-     ! see if we are using the snicar_ad system
-     pkgSnicarActive = .true.
 
      ! pkgPrescribed
      call MPAS_pool_get_config(configPool, "config_use_prescribed_ice", config_use_prescribed_ice)
