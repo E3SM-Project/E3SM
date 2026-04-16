@@ -238,7 +238,8 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                     output_prec, output_tend_s, output_tend_q, &
                     output_cape, dcape, output_mass_flux, output_prec_flux, &
                     zdu, mu, eu, du, md, ed, dp, dsubcld, &
-                    zm_qc, rliq, output_rain_prod, dlf)
+                    zm_qc, rliq, output_rain_prod, dlf, &
+                    aero, microp_st )
 
   !-----------------------------------------------------------------------------
   ! mesoscale coherent structure parameterization (MCSP)- modifies tendencies from zm_conv_main() prior to updating the state
@@ -301,7 +302,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                     local_tend_s, local_tend_q, &
                     tend_s_snwprd, tend_s_snwevmlt, &
                     output_prec, output_snow, ntprprd, ntsnprd, &
-                    output_prec_flux, output_snow_flux)
+                    output_prec_flux, output_snow_flux, microp_st)
 
   ! add tendencies from zm_conv_evap() to output tendencies
   do i = 1,ncol

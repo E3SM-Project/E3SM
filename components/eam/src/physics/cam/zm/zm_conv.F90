@@ -57,6 +57,7 @@ module zm_conv
    public zm_closure
    public zm_calc_output_tend
 #endif
+
    !----------------------------------------------------------------------------
    ! public variables
    type(zm_const_t), public :: zm_const ! derived type to hold ZM constants
@@ -167,7 +168,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
                         lengath, gather_index, msemax_klev_g, jctop, jcbot, jt, &
                         prec, heat, qtnd, cape, dcape, &
                         mcon, pflx, zdu, mflx_up, entr_up, detr_up, mflx_dn, entr_dn, p_del, dsubcld, &
-                        ql, rliq, rprd, dlf)
+                        ql, rliq, rprd, dlf, aero, microp_st )
    !----------------------------------------------------------------------------
    ! Purpose: Main driver for Zhang-Mcfarlane convection scheme
    !----------------------------------------------------------------------------
@@ -190,8 +191,8 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    real(r8), dimension(pcols),      intent(in   ) :: pbl_hgt         ! boundary layer height                   [m]
    real(r8), dimension(pcols),      intent(in   ) :: tpert           ! parcel temperature perturbation         [K]
    real(r8), dimension(pcols),      intent(in   ) :: landfrac        ! land fraction                           []
-   real(r8), dimension(pcols,pver), intent(in   ) :: t_star          ! for DCAPE - prev temperature            [K]
-   real(r8), dimension(pcols,pver), intent(in   ) :: q_star          ! for DCAPE - prev sp. humidity           [kg/kg]
+   real(r8),pointer,dimension(:,:), intent(in   ) :: t_star          ! for DCAPE - prev temperature            [K]
+   real(r8),pointer,dimension(:,:), intent(in   ) :: q_star          ! for DCAPE - prev sp. humidity           [kg/kg]
    integer,                         intent(  out) :: lengath         ! number of active columns in chunk for gathering
    integer,  dimension(pcols),      intent(  out) :: gather_index    ! flag for active columns
    integer,  dimension(pcols),      intent(  out) :: msemax_klev_g   ! gathered level indices of max MSE (msemax_klev)
@@ -217,6 +218,8 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    real(r8), dimension(pcols),      intent(  out) :: rliq            ! reserved liquid (not yet in cldliq) for energy integrals
    real(r8), dimension(pcols,pver), intent(  out) :: rprd            ! rain production rate                    [kg/kg/s]
    real(r8), dimension(pcols,pver), intent(  out) :: dlf             ! detrainment rate of cloud liquid water  [kg/kg/s]
+   type(zm_aero_t),                 intent(inout) :: aero            ! aerosol object
+   type(zm_microp_st),              intent(inout) :: microp_st       ! convective microphysics state and tendencies
    !----------------------------------------------------------------------------
    ! Local variables
    real(r8), dimension(pcols,pver) :: s_mid           ! scaled dry static energy (t+gz/cp)      [K]
@@ -290,6 +293,8 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
 
    real(r8), dimension(pcols)      :: cld_base_mass_flux ! cloud base mass flux determined from zm_closure()
 
+   type(zm_microp_st) :: loc_microp_st ! local (gathered) convective microphysics state and tendencies
+
    integer i, ii, k, kk             ! loop iterators
    integer msg                      ! number of missing moisture levels at the top of model
 
@@ -339,9 +344,19 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
       jctop(i)       = pver
       jcbot(i)       = 1
       cape(i)       = 0._r8;
-      dcape(i)      = 0._r8; ! This was also a bug
+      dcape(i)      = 0._r8;
       msemax_klev_g   = 1
    end do
+
+   !----------------------------------------------------------------------------
+   ! Allocate and/or Initialize microphysics state/tend derived types
+   if (zm_param%zm_microp) then
+      call zm_microp_st_alloc(loc_microp_st, pcols, pver)
+      call zm_microp_st_ini(loc_microp_st, pcols, pver)
+      call zm_microp_st_ini(microp_st, pcols, pver)
+      loc_microp_st%lambdadpcu  = (mucon + 1._r8)/dcon
+      loc_microp_st%mudpcu      = mucon
+   end if
 
    !----------------------------------------------------------------------------
    ! calculate local pressure [mb] and height [m] for both interface and mid-point
@@ -425,9 +440,10 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    !----------------------------------------------------------------------------
    ! determine whether active columns for gathering
    call zm_get_gather_index(pcols, ncol, pver, pverp, is_first_step, cape, dcape, &
-        cape_threshold_loc, gather_index, lengath)
-   if (lengath .eq. 0) then
-      ! NO active columns!
+                            cape_threshold_loc, gather_index, lengath)
+   if (lengath.eq.0) then
+      ! Deallocate local microphysics arrays before returning
+      if (zm_param%zm_microp) call zm_microp_st_dealloc(loc_microp_st)
       return
    end if
 
@@ -456,6 +472,32 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
       pbl_top_g(i)         = pbl_top(gather_index(i))
       tpert_g(i)           = tpert(gather_index(i))
    end do
+
+   !----------------------------------------------------------------------------
+   ! copy aerosol data to gathered arrays
+   if (zm_param%zm_microp) then
+      if (aero%scheme == 'modal') then
+         do m = 1, aero%nmodes
+            do i = 1,lengath
+               do k = 1,pver
+                  aero%numg_a(i,k,m) = aero%num_a(m)%val(gather_index(i),k)
+                  aero%dgnumg(i,k,m) = aero%dgnum(m)%val(gather_index(i),k)
+                  do l = 1, aero%nspec(m)
+                     aero%mmrg_a(i,k,l,m) = aero%mmr_a(l,m)%val(gather_index(i),k)
+                  end do
+               end do
+            end do
+         end do
+      else if (aero%scheme == 'bulk') then
+         do m = 1, aero%nbulk
+            do k = 1,pver
+               do i = 1,lengath
+                  aero%mmrg_bulk(i,k,m) = aero%mmr_bulk(m)%val(gather_index(i),k)
+               end do
+            end do
+         end do
+      end if
+   end if
 
    !----------------------------------------------------------------------------
    ! calculate sub-cloud layer pressure "thickness" for closure and tendency calculations
@@ -498,7 +540,8 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
                             msemax_klev_g, lel_g, jt, jlcl, j0, jd, &
                             mflx_up, entr_up, detr_up, mflx_dn, entr_dn, mflx_net, &
                             s_upd, q_upd, ql_g, s_dnd, q_dnd,  &
-                            q_mid_sat_g, cu_g, evp_g, pflx_g, rprd_g)
+                            q_mid_sat_g, cu_g, evp_g, pflx_g, rprd_g, &
+                            aero, loc_microp_st )
 
    !---------------------------------------------------------------------------
    ! convert from units of "per length" [1/m] to "per pressure" [1/mb].
@@ -510,6 +553,10 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
          cu_g(i,k)   = cu_g(i,k)    * (z_int_g(i,k)-z_int_g(i,k+1))/p_del(i,k)
          rprd_g(i,k) = rprd_g(i,k)  * (z_int_g(i,k)-z_int_g(i,k+1))/p_del(i,k)
          evp_g(i,k)  = evp_g(i,k)   * (z_int_g(i,k)-z_int_g(i,k+1))/p_del(i,k)
+         if (zm_param%zm_microp) then
+            loc_microp_st%frz (i,k) = loc_microp_st%frz (i,k) * (z_int_g(i,k)-z_int_g(i,k+1))/p_del(i,k)
+            loc_microp_st%sprd(i,k) = loc_microp_st%sprd(i,k) * (z_int_g(i,k)-z_int_g(i,k+1))/p_del(i,k)
+         end if
       end do
    end do
 
@@ -553,6 +600,8 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    !----------------------------------------------------------------------------
    ! apply cloud base mass flux scaling
    do i = 1,lengath
+      ! zero out micro data for inactive columns
+      if ( zm_param%zm_microp .and. cld_base_mass_flux(i).eq.0._r8) call zm_microp_st_zero(loc_microp_st,i,pver)
       ! scale variables
       do k = msg+1,pver
          mflx_up(i,k)   = mflx_up(i,k)  *cld_base_mass_flux(i)
@@ -565,6 +614,14 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
          cu_g(i,k)      = cu_g(i,k)     *cld_base_mass_flux(i)
          evp_g(i,k)     = evp_g(i,k)    *cld_base_mass_flux(i)
          pflx_g(i,k+1)  = pflx_g(i,k+1) *cld_base_mass_flux(i)*100._r8/zm_const%grav
+         ! scale microphysics variables
+         if (zm_param%zm_microp) then
+            loc_microp_st%sprd(i,k)  = loc_microp_st%sprd(i,k)*cld_base_mass_flux(i)
+            loc_microp_st%frz (i,k)  = loc_microp_st%frz (i,k)*cld_base_mass_flux(i)
+            if (cld_base_mass_flux(i).eq.0._r8) then
+               ql_g(i,k) = 0._r8
+            end if
+         end if
       end do ! k
    end do ! i
 
@@ -574,10 +631,17 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
                             jt, msemax_klev_g, dsubcld, p_del, &
                             s_int_g, q_int_g, s_upd, q_upd, mflx_up, detr_up, &
                             mflx_dn, s_dnd, q_dnd, ql_g, evp_g, cu_g, &
-                            dsdt, dqdt, dl_g)
+                            dsdt, dqdt, dl_g, &
+                            loc_microp_st)
 
    !----------------------------------------------------------------------------
    ! conservation check and adjusment
+#ifndef SCREAM_CONFIG_IS_CMAKE
+   if (zm_param%zm_microp) then
+      call zm_microphysics_adjust(pcols, lengath, pver, jt, msg, time_step, zm_const, &
+                                  p_del, q_mid_g, dl_g, dsdt, dqdt, rprd_g, loc_microp_st)
+   end if
+#endif
 
    !----------------------------------------------------------------------------
    ! scatter data (i.e. undo the gathering)
@@ -598,13 +662,18 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
          ql(gather_index(i),k)    = ql_g(i,k)
       end do
    end do
-
    ! scatter 1d variables
    do i = 1,lengath
       jctop(gather_index(i)) = jt(i)
       jcbot(gather_index(i)) = msemax_klev_g(i)
       pflx(gather_index(i),pverp) = pflx_g(i,pverp)
    end do
+
+   !----------------------------------------------------------------------------
+   ! scatter microphysics data (i.e. undo the gathering)
+   if (zm_param%zm_microp) then
+      call zm_microp_st_scatter(loc_microp_st,microp_st,pcols,lengath,pver,gather_index)
+   end if
 
 #ifdef CPRCRAY
 !DIR$ CONCURRENT
@@ -614,7 +683,11 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    ! Compute precip by integrating change in water vapor minus detrained cloud water
    do i = 1,ncol
       do k = pver, msg+1, -1
-         prec(i) = prec(i) - p_del_in(i,k)*(q_mid(i,k)-q_mid_in(i,k)) - p_del_in(i,k)*(dlf(i,k))*time_step
+         if (zm_param%zm_microp) then
+            prec(i) = prec(i) - p_del_in(i,k)*(q_mid(i,k)-q_mid_in(i,k)) - p_del_in(i,k)*(dlf(i,k)+microp_st%dif(i,k)+microp_st%dsf(i,k))*time_step
+         else
+            prec(i) = prec(i) - p_del_in(i,k)*(q_mid(i,k)-q_mid_in(i,k)) - p_del_in(i,k)*(dlf(i,k))*time_step
+         end if
       end do
       ! obtain final precipitation rate in m/s
       prec(i) = zm_const%rgrav*max(prec(i),0._r8)/ time_step/1000._r8
@@ -625,10 +698,21 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    ! Treat rliq as flux out bottom, to be added back later
    do k = 1,pver
       do i = 1,ncol
-         rliq(i) = rliq(i) + dlf(i,k)*p_del_in(i,k)/zm_const%grav
+         if (zm_param%zm_microp) then
+            rliq(i) = rliq(i) + (dlf(i,k)+microp_st%dif(i,k)+microp_st%dsf(i,k))*p_del_in(i,k)/zm_const%grav
+            microp_st%rice(i) = microp_st%rice(i) &
+                              + (microp_st%dif(i,k)+microp_st%dsf(i,k))*p_del_in(i,k)/zm_const%grav
+         else
+            rliq(i) = rliq(i) + dlf(i,k)*p_del_in(i,k)/zm_const%grav
+         end if
       end do
    end do
    rliq(:ncol) = rliq(:ncol) /1000._r8
+   if (zm_param%zm_microp) microp_st%rice(:ncol) = microp_st%rice(:ncol) /1000._r8
+
+   !----------------------------------------------------------------------------
+   ! Deallocate microphysics arrays
+   if (zm_param%zm_microp) call zm_microp_st_dealloc(loc_microp_st)
 
    !----------------------------------------------------------------------------
    return
@@ -640,7 +724,7 @@ end subroutine zm_conv_main
 subroutine zm_conv_evap(pcols, ncol, pver, pverp, time_step, &
                         p_mid, p_del, t_mid, q_mid, prdprec, cldfrc, &
                         tend_s, tend_q, tend_s_snwprd, tend_s_snwevmlt, &
-                        prec, snow, ntprprd, ntsnprd, flxprec, flxsnow )
+                        prec, snow, ntprprd, ntsnprd, flxprec, flxsnow, microp_st )
    !----------------------------------------------------------------------------
    ! Purpose: - compute tendencies due to evaporation of rain from ZM scheme,
    !          - compute total precip and snow fluxes at the surface
@@ -675,6 +759,7 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, time_step, &
    real(r8), dimension(pcols,pver), intent(out  ) :: ntsnprd            ! net snow production in layer            [kg/kg/s]
    real(r8), dimension(pcols,pverp),intent(out  ) :: flxprec            ! Convective flux of prec at interfaces   [kg/m2/s]
    real(r8), dimension(pcols,pverp),intent(out  ) :: flxsnow            ! Convective flux of snow at interfaces   [kg/m2/s]
+   type(zm_microp_st),              intent(inout) :: microp_st          ! ZM microphysics data structure
    !----------------------------------------------------------------------------
    ! Local variables
    integer  :: i,k ! loop iterators
@@ -703,7 +788,11 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, time_step, &
    pergro_active = .false.
 #endif
    !----------------------------------------------------------------------------
-   prdsnow(1:ncol,1:pver) = 0._r8
+   if (zm_param%zm_microp) then
+      prdsnow(1:ncol,1:pver) = microp_st%sprd(1:ncol,1:pver)
+   else
+      prdsnow(1:ncol,1:pver) = 0._r8
+   end if
 
    ! convert input precip to kg/m2/s
    prec(:ncol) = prec(:ncol)*1000._r8
@@ -1144,6 +1233,7 @@ subroutine zm_downdraft_properties(pcols, ncol, pver, pverp, msg, &
             evp(i,k) = -entr_dn(i,k)*q_mid(i,k) + (mflx_dn(i,k)*q_dnd(i,k)-mflx_dn(i,k+1)*q_dnd(i,k+1))/dz(i,k)
             evp(i,k) = max(evp(i,k),0._r8)
             mdt = min(mflx_dn(i,k+1),-small)
+            if (zm_param%zm_microp)   evp(i,k) = min(evp(i,k),rprd(i,k))
             s_dnd(i,k+1) = ((zm_const%latvap/zm_const%cpair*evp(i,k)-entr_dn(i,k)*s_mid(i,k))*dz(i,k) + mflx_dn(i,k)*s_dnd(i,k))/mdt
             totevp(i) = totevp(i) - dz(i,k)*entr_dn(i,k)*q_mid(i,k)
          end if
@@ -1167,7 +1257,8 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
                                jb, lel, jt, jlcl, j0, jd, &
                                mflx_up, entr_up, detr_up, mflx_dn, entr_dn, mflx_net, &
                                s_upd, q_upd, ql, s_dnd, q_dnd,  &
-                               qst, cu, evp, pflx, rprd)
+                               qst, cu, evp, pflx, rprd, &
+                               aero, loc_microp_st )
    !----------------------------------------------------------------------------
    ! Purpose: Determine properties of ZM updrafts and downdrafts
    !----------------------------------------------------------------------------
@@ -1211,6 +1302,8 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
    real(r8), dimension(pcols,pver), intent(out) :: evp            ! evaporation rate
    real(r8), dimension(pcols,pverp),intent(out) :: pflx           ! precipitation flux thru layer
    real(r8), dimension(pcols,pver), intent(out) :: rprd           ! rate of production of precip at that layer
+   type(zm_aero_t),                 intent(in ) :: aero           ! aerosol object
+   type(zm_microp_st)                           :: loc_microp_st  ! state and tendency of convective microphysics
    !----------------------------------------------------------------------------
    ! Local variables
    real(r8), dimension(pcols,pver) :: gamma        ! latent-heating correction for pseudo-adiabatic parcel lifting
@@ -1259,6 +1352,8 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
    logical(btype), dimension(pcols) :: done ! flag for LCL determination
 
    real(r8), parameter :: mu_min       = 0.02_r8      ! minimum value of mu
+   real(r8), parameter :: t_homofrz    = 233.15_r8    ! homogeneous freezing temperature
+   real(r8), parameter :: t_mphase     = 40._r8       ! mixed phase temperature = tfreez-t_homofrz = 273.15K - 233.15K
    real(r8), parameter :: hu_diff_min  = -2000._r8    ! limit on hu(i,k)-hsthat(i,k)
 
    !----------------------------------------------------------------------------
@@ -1394,181 +1489,308 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
 
    !----------------------------------------------------------------------------
    ! iteration to set cloud properties
-   do k = pver, msg+1, -1
-      do i = 1,ncol
-         cu(i,k) = 0._r8
-         ql(i,k) = 0._r8
-      end do ! i
-   end do ! k
-   do i = 1,ncol
-      totpcp(i) = 0._r8
-   end do
+   itnum = 1
+   if (zm_param%zm_microp) itnum = 2
 
-   do k = pver, msg+1, -1
-      do i = 1,ncol
-         ! intialize updraft mass flux variables - here and below all normalized by cloud base mass flux (mb)
-         if (lambda_max(i) > 0._r8) then
-            mflx_up(i,jb(i)) = 1._r8
-            entr_up(i,jb(i)) = mflx_up(i,jb(i))/dz(i,jb(i))
-            tmp_k_limit = jt(i)
-            ! compute profiles of updraft mass fluxes - see eq (4.79) - (4.81)
-            if ( k>=tmp_k_limit .and. k<jb(i) ) then
-               zuef = z_int(i,k) - z_int(i,jb(i))
-               rmue = (1._r8/lambda_max(i))* (exp(lambda(i,k+1)*zuef)-1._r8)/zuef
-               mflx_up(i,k) = (1._r8/lambda_max(i))* (exp(lambda(i,k  )*zuef)-1._r8)/zuef
-               entr_up(i,k) = (rmue-mflx_up(i,k+1))/dz(i,k)
-               detr_up(i,k) = (rmue-mflx_up(i,k))/dz(i,k)
-            end if
-         end if ! lambda_max(i)>0._r8
-      end do ! i
-   end do ! k
+   do iter = 1,itnum
 
-   khighest = pverp
-   klowest = 1
-   do i = 1,ncol
-      khighest = min(khighest,lel(i))
-      klowest = max(klowest,jb(i))
-   end do
-
-   do k = klowest-1,khighest,-1
-      do i = 1,ncol
-         if (k <= jb(i)-1 .and. k >= lel(i) .and. lambda_max(i) > 0._r8) then
-            if (mflx_up(i,k) < 0.02_r8) then
-               h_upd(i,k) = h_env(i,k)
-               mflx_up(i,k) = 0._r8
-               entr_up(i,k) = 0._r8
-               detr_up(i,k) = mflx_up(i,k+1)/dz(i,k)
-            else
-               h_upd(i,k) = mflx_up(i,k+1)/mflx_up(i,k)*h_upd(i,k+1) + &
-                    dz(i,k)/mflx_up(i,k)* (entr_up(i,k)*h_env(i,k)- detr_up(i,k)*h_env_sat(i,k))
-            end if
-         end if
-      end do ! i
-   end do ! k
-
-   ! reset cloud top index beginning from two layers above the
-   ! cloud base (i.e. if cloud is only one layer thick, top is not reset
-   do i = 1,ncol
-      doit(i) = .true.
-      tot_frz(i)= 0._r8
       do k = pver, msg+1, -1
-         tot_frz(i)= tot_frz(i) + tmp_frz(i,k)*dz(i,k)
+         do i = 1,ncol
+            cu(i,k) = 0._r8
+            ql(i,k) = 0._r8
+            if (zm_param%zm_microp) then
+               loc_microp_st%qliq(i,k) = 0._r8
+               loc_microp_st%qice(i,k) = 0._r8
+               loc_microp_st%frz(i,k)  = 0._r8
+            end if
+         end do ! i
       end do ! k
-   end do ! i
-
-   do k = klowest-2, khighest-1, -1
       do i = 1,ncol
-         if (doit(i) .and. k <= jb(i)-2 .and. k >= lel(i)-1) then
-            if (h_upd(i,k)  <= hsthat(i,k) .and. &
-                 h_upd(i,k+1) > hsthat(i,k+1) .and. &
-                 mflx_up(i,k)  >= mu_min) then
-               if ( h_upd(i,k)-hsthat(i,k) < hu_diff_min) then
+         totpcp(i) = 0._r8
+         if (zm_param%zm_microp) h_upd(i,jb(i)) = h_env(i,jb(i)) + zm_const%cpair*zm_param%tiedke_add
+      end do
+
+      do k = pver, msg+1, -1
+         do i = 1,ncol
+            ! intialize updraft mass flux variables - here and below all normalized by cloud base mass flux (mb)
+            if (lambda_max(i) > 0._r8) then
+               mflx_up(i,jb(i)) = 1._r8
+               entr_up(i,jb(i)) = mflx_up(i,jb(i))/dz(i,jb(i))
+               if (     zm_param%zm_microp) tmp_k_limit = lel(i)
+               if (.not.zm_param%zm_microp) tmp_k_limit = jt(i)
+               ! compute profiles of updraft mass fluxes - see eq (4.79) - (4.81)
+               if ( k>=tmp_k_limit .and. k<jb(i) ) then
+                  zuef = z_int(i,k) - z_int(i,jb(i))
+                  rmue = (1._r8/lambda_max(i))* (exp(lambda(i,k+1)*zuef)-1._r8)/zuef
+                  mflx_up(i,k) = (1._r8/lambda_max(i))* (exp(lambda(i,k  )*zuef)-1._r8)/zuef
+                  entr_up(i,k) = (rmue-mflx_up(i,k+1))/dz(i,k)
+                  detr_up(i,k) = (rmue-mflx_up(i,k))/dz(i,k)
+               end if
+            end if ! lambda_max(i)>0._r8
+         end do ! i
+      end do ! k
+
+      khighest = pverp
+      klowest = 1
+      do i = 1,ncol
+         khighest = min(khighest,lel(i))
+         klowest = max(klowest,jb(i))
+      end do
+
+      do k = klowest-1,khighest,-1
+         do i = 1,ncol
+            if (k <= jb(i)-1 .and. k >= lel(i) .and. lambda_max(i) > 0._r8) then
+               if (mflx_up(i,k) < 0.02_r8) then
+                  h_upd(i,k) = h_env(i,k)
+                  mflx_up(i,k) = 0._r8
+                  entr_up(i,k) = 0._r8
+                  detr_up(i,k) = mflx_up(i,k+1)/dz(i,k)
+               else
+                 if (zm_param%zm_microp) then
+                   h_upd(i,k) = ( mflx_up(i,k+1)*h_upd(i,k+1) &
+                                 +dz(i,k)*( entr_up(i,k)*h_env(i,k) &
+                                           +zm_const%latice*tmp_frz(i,k) ) &
+                                ) / ( mflx_up(i,k) + dz(i,k)*detr_up(i,k) )
+                 else
+                   h_upd(i,k) = mflx_up(i,k+1)/mflx_up(i,k)*h_upd(i,k+1) + &
+                                dz(i,k)/mflx_up(i,k)* (entr_up(i,k)*h_env(i,k)- detr_up(i,k)*h_env_sat(i,k))
+                 end if
+               end if
+            end if
+         end do ! i
+      end do ! k
+
+      ! reset cloud top index beginning from two layers above the
+      ! cloud base (i.e. if cloud is only one layer thick, top is not reset
+      do i = 1,ncol
+         doit(i) = .true.
+         tot_frz(i)= 0._r8
+         do k = pver, msg+1, -1
+            tot_frz(i)= tot_frz(i) + tmp_frz(i,k)*dz(i,k)
+         end do ! k
+      end do ! i
+
+      do k = klowest-2, khighest-1, -1
+         do i = 1,ncol
+            if (doit(i) .and. k <= jb(i)-2 .and. k >= lel(i)-1) then
+               if (h_upd(i,k)  <= hsthat(i,k) .and. &
+                   h_upd(i,k+1) > hsthat(i,k+1) .and. &
+                   mflx_up(i,k)  >= mu_min) then
+                  if ( h_upd(i,k)-hsthat(i,k) < hu_diff_min) then
+                     jt(i) = k + 1
+                     doit(i) = .false.
+                  else
+                     jt(i) = k
+                     doit(i) = .false.
+                  end if
+                else if ( (h_upd(i,k) > h_upd(i,jb(i)) .and. tot_frz(i)<=0._r8) .or. mflx_up(i,k) < mu_min) then
                   jt(i) = k + 1
                   doit(i) = .false.
-               else
-                  jt(i) = k
-                  doit(i) = .false.
                end if
-            else if ( (h_upd(i,k) > h_upd(i,jb(i)) .and. tot_frz(i)<=0._r8) .or. mflx_up(i,k) < mu_min) then
-               jt(i) = k + 1
-               doit(i) = .false.
             end if
-         end if
-      end do ! i
-   end do ! k
+         end do ! i
+      end do ! k
 
-   do i = 1,ncol
-      if (iter == 1) jto(i) = jt(i)
-   end do
-
-   do k = pver, msg+1, -1
       do i = 1,ncol
-         if (k >= lel(i) .and. k <= jt(i) .and. lambda_max(i) > 0._r8) then
-            mflx_up(i,k) = 0._r8
-            entr_up(i,k) = 0._r8
-            detr_up(i,k) = 0._r8
-            h_upd(i,k) = h_env(i,k)
-         end if
-         if (k == jt(i) .and. lambda_max(i) > 0._r8) then
-            detr_up(i,k) = mflx_up(i,k+1)/dz(i,k)
-            entr_up(i,k) = 0._r8
-            mflx_up(i,k) = 0._r8
-         end if
-      end do ! i
-   end do ! k
+         if (iter == 1) jto(i) = jt(i)
+      end do
 
-   ! determine LCL - see eq (4.127)- (4.130) of Neale et al. (2012)
-   done(1:ncol) = .false.
-   kount = 0
-   do k = pver, msg+2, -1
-      do i = 1,ncol
-         if (k == jb(i) .and. lambda_max(i) > 0._r8) then
-            q_upd(i,k) = q_mid(i,jb(i))
-            s_upd(i,k) = (h_upd(i,k)-zm_const%latvap*q_upd(i,k))/zm_const%cpair
-         end if
-         if (( .not. done(i) .and. k > jt(i) .and. k < jb(i)) .and. lambda_max(i) > 0._r8) then
-            s_upd(i,k) = mflx_up(i,k+1)/mflx_up(i,k)*s_upd(i,k+1) + dz(i,k)/mflx_up(i,k)* (entr_up(i,k)-detr_up(i,k))*s_mid(i,k)
-            q_upd(i,k) = mflx_up(i,k+1)/mflx_up(i,k)*q_upd(i,k+1) + dz(i,k)/mflx_up(i,k)* (entr_up(i,k)*q_mid(i,k) - detr_up(i,k)*qst(i,k))
-            tu = s_upd(i,k) - zm_const%grav/zm_const%cpair*z_int(i,k)
-            call qsat_hPa(tu, (p_mid(i,k)+p_mid(i,k-1))/2._r8, estu, qstu)
-            if (q_upd(i,k) >= qstu) then
-               jlcl(i) = k
-               kount = kount + 1
-               done(i) = .true.
+      do k = pver, msg+1, -1
+         do i = 1,ncol
+            if (k >= lel(i) .and. k <= jt(i) .and. lambda_max(i) > 0._r8) then
+               mflx_up(i,k) = 0._r8
+               entr_up(i,k) = 0._r8
+               detr_up(i,k) = 0._r8
+               h_upd(i,k) = h_env(i,k)
             end if
-         end if
-      end do ! i
-      if (kount >= ncol) goto 690
-   end do ! k
+            if (k == jt(i) .and. lambda_max(i) > 0._r8) then
+               detr_up(i,k) = mflx_up(i,k+1)/dz(i,k)
+               entr_up(i,k) = 0._r8
+               mflx_up(i,k) = 0._r8
+            end if
+         end do ! i
+      end do ! k
+
+      ! determine LCL - see eq (4.127)- (4.130) of Neale et al. (2012)
+      done(1:ncol) = .false.
+      kount = 0
+      do k = pver, msg+2, -1
+         do i = 1,ncol
+            if (k == jb(i) .and. lambda_max(i) > 0._r8) then
+               q_upd(i,k) = q_mid(i,jb(i))
+               s_upd(i,k) = (h_upd(i,k)-zm_const%latvap*q_upd(i,k))/zm_const%cpair
+            end if
+            if (( .not. done(i) .and. k > jt(i) .and. k < jb(i)) .and. lambda_max(i) > 0._r8) then
+               s_upd(i,k) = mflx_up(i,k+1)/mflx_up(i,k)*s_upd(i,k+1) + dz(i,k)/mflx_up(i,k)* (entr_up(i,k)-detr_up(i,k))*s_mid(i,k)
+               q_upd(i,k) = mflx_up(i,k+1)/mflx_up(i,k)*q_upd(i,k+1) + dz(i,k)/mflx_up(i,k)* (entr_up(i,k)*q_mid(i,k) - detr_up(i,k)*qst(i,k))
+               tu = s_upd(i,k) - zm_const%grav/zm_const%cpair*z_int(i,k)
+               call qsat_hPa(tu, (p_mid(i,k)+p_mid(i,k-1))/2._r8, estu, qstu)
+               if (q_upd(i,k) >= qstu) then
+                  jlcl(i) = k
+                  kount = kount + 1
+                  done(i) = .true.
+               end if
+            end if
+         end do ! i
+         if (kount >= ncol) goto 690
+      end do ! k
 
 690 continue
 
-   do k = msg+2, pver
-      do i = 1,ncol
-         if ((k > jt(i) .and. k <= jlcl(i)) .and. lambda_max(i) > 0._r8) then
-            s_upd(i,k) = s_int(i,k)  +             (h_upd(i,k)-hsthat(i,k)) / (zm_const%cpair* (1._r8+gamhat(i,k)))
-            q_upd(i,k) = qsthat(i,k) + gamhat(i,k)*(h_upd(i,k)-hsthat(i,k)) / (zm_const%latvap* (1._r8+gamhat(i,k)))
-         end if
-      end do ! i
-   end do ! k
-
-   ! compute condensation in updraft
-   do k = pver, msg+2, -1
-      do i = 1,ncol
-         if (lambda_max(i)>0._r8) then
-            tmp_k_limit = jb(i)
-            if ( k>=jt(i) .and. k<tmp_k_limit ) then
-               cu(i,k) = ( ( mflx_up(i,k)*s_upd(i,k) - mflx_up(i,k+1)*s_upd(i,k+1) )/dz(i,k) - ( entr_up(i,k) - detr_up(i,k) )*s_mid(i,k) &
-                    )/(zm_const%latvap/zm_const%cpair)
-               ! apply limiters
-               if (k == jt(i)) cu(i,k) = 0._r8
-               cu(i,k) = max(0._r8,cu(i,k))
+      do k = msg+2, pver
+         do i = 1,ncol
+            if ((k > jt(i) .and. k <= jlcl(i)) .and. lambda_max(i) > 0._r8) then
+               s_upd(i,k) = s_int(i,k)  +             (h_upd(i,k)-hsthat(i,k)) / (zm_const%cpair* (1._r8+gamhat(i,k)))
+               q_upd(i,k) = qsthat(i,k) + gamhat(i,k)*(h_upd(i,k)-hsthat(i,k)) / (zm_const%latvap* (1._r8+gamhat(i,k)))
             end if
-         end if ! lambda_max(i)>0._r8
-      end do ! i
-   end do ! k
+         end do ! i
+      end do ! k
 
-   ! compute condensed liquid, rain production rate
-   ! accumulate total precipitation (condensation - detrainment of liquid)
-   ! Note: ql1 = ql(k) + rprd(k)*dz(k)/mflx_up(k)
-   ! The differencing is somewhat strange (e.g. detr_up(i,k)*ql(i,k+1)) but is consistently applied.
-   !   interface quantities => mflx_up, ql are 
-   !   mid-point quantities => cu, detr_up, entr_up, rprd
-   do k = pver, msg+2, -1
-      do i = 1,ncol
-         rprd(i,k) = 0._r8
-         if (k >= jt(i) .and. k < jb(i) .and. lambda_max(i) > 0._r8 .and. mflx_up(i,k) >= 0.0_r8) then
-            if (mflx_up(i,k) > 0._r8) then
-               ql1 = 1._r8/mflx_up(i,k) * ( mflx_up(i,k+1)*ql(i,k+1) - dz(i,k)*detr_up(i,k)*ql(i,k+1) + dz(i,k)*cu(i,k) )
-               ql(i,k) = ql1 / (1._r8+dz(i,k)*c0mask(i))
-            else
-               ql(i,k) = 0._r8
-            end if
-            totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-detr_up(i,k)*ql(i,k+1))
-            rprd(i,k) = c0mask(i)*mflx_up(i,k)*ql(i,k)
-         end if
-      end do ! i
-   end do ! k
+      ! compute condensation in updraft
+      do k = pver, msg+2, -1
+         do i = 1,ncol
+            if (lambda_max(i)>0._r8) then
+               if (     zm_param%zm_microp) tmp_k_limit = jlcl(i)+1
+               if (.not.zm_param%zm_microp) tmp_k_limit = jb(i)
+               if ( k>=jt(i) .and. k<tmp_k_limit ) then
+                  if (zm_param%zm_microp) then
+                     cu(i,k) = ( ( mflx_up(i,k)*s_upd(i,k) - mflx_up(i,k+1)*s_upd(i,k+1) )/dz(i,k) - entr_up(i,k)*s_mid(i,k) + detr_up(i,k)*s_upd(i,k) &
+                               )/(zm_const%latvap/zm_const%cpair) - zm_const%latice*tmp_frz(i,k)/zm_const%latvap
+                  else
+                     cu(i,k) = ( ( mflx_up(i,k)*s_upd(i,k) - mflx_up(i,k+1)*s_upd(i,k+1) )/dz(i,k) - ( entr_up(i,k) - detr_up(i,k) )*s_mid(i,k) &
+                               )/(zm_const%latvap/zm_const%cpair)
+                  end if
+                  ! apply limiters
+                  if (k == jt(i)) cu(i,k) = 0._r8
+                  cu(i,k) = max(0._r8,cu(i,k))
+               end if
+            end if ! lambda_max(i)>0._r8
+         end do ! i
+      end do ! k
+
+      !-------------------------------------------------------------------------
+      ! microphysical calculations
+      if (zm_param%zm_microp) then
+
+         ! calculate updraft temperature
+         tug(1:ncol,:) = t_mid(1:ncol,:)
+         do k = pver, msg+2, -1
+            do i = 1,ncol
+               tug(i,k) = s_upd(i,k) - zm_const%grav/zm_const%cpair*z_int(i,k)
+            end do ! i
+         end do ! k
+
+         ! specify ice fraction
+         fice(1:ncol,:) = 0._r8
+         do k = 1,pver-1
+            do i = 1,ncol
+               if (tug(i,k+1) > zm_const%tfreez) then
+                  ! If warmer than zm_const%tfreez then water phase
+                  fice(i,k) = 0._r8
+               else if (tug(i,k+1) < t_homofrz) then
+                  ! If colder than t_homofrz then ice phase
+                  fice(i,k) = 1._r8
+               else
+                  ! mixed phase - ice frac decreasing linearly from t_homofrz to zm_const%tfreez
+                  fice(i,k) =(zm_const%tfreez - tug(i,k+1)) / t_mphase
+               end if
+            end do ! i
+         end do ! k
+
+         do k = 1,pver
+            do i = 1,ncol
+               loc_microp_st%cmei(i,k) = cu(i,k) * fice(i,k)
+               loc_microp_st%cmel(i,k) = cu(i,k) * (1._r8-fice(i,k))
+            end do ! i
+         end do ! k
+
+#ifndef SCREAM_CONFIG_IS_CMAKE
+         call  zm_mphy( pcols, ncol, msg, &
+                        zm_const%grav, zm_const%cpair, zm_const%rdair, &
+                        zm_param%auto_fac, zm_param%accr_fac, zm_param%micro_dcs, &
+                        jb, jt, jlcl, s_upd, q_upd, mflx_up, detr_up, entr_up, z_int, p_mid, t_mid, q_mid, gamhat, lambda_max, &
+                        loc_microp_st%cmel,  loc_microp_st%cmei, aero, &
+                        loc_microp_st%qliq,     loc_microp_st%qice,     loc_microp_st%qnl,      loc_microp_st%qni,     &
+                        loc_microp_st%qcde,     loc_microp_st%qide,     loc_microp_st%ncde,     loc_microp_st%nide,    &
+                        rprd,                   loc_microp_st%sprd,     tmp_frz,                loc_microp_st%wu,      &
+                        loc_microp_st%qrain,    loc_microp_st%qsnow,    loc_microp_st%qnr,      loc_microp_st%qns,     &
+                        loc_microp_st%qgraupel, loc_microp_st%qng,      loc_microp_st%qsde,     loc_microp_st%nsde,    &
+                        loc_microp_st%autolm,   loc_microp_st%accrlm,   &
+                        loc_microp_st%bergnm,   loc_microp_st%fhtimm,   loc_microp_st%fhtctm,   loc_microp_st%fhmlm,   &
+                        loc_microp_st%hmpim,    loc_microp_st%accslm,   loc_microp_st%dlfm,     loc_microp_st%autoln,  &
+                        loc_microp_st%accrln,   loc_microp_st%bergnn,   loc_microp_st%fhtimn,   loc_microp_st%fhtctn,  &
+                        loc_microp_st%fhmln,    loc_microp_st%accsln,   loc_microp_st%activn,   loc_microp_st%dlfn,    &
+                        loc_microp_st%autoim,   loc_microp_st%accsim,   loc_microp_st%difm,     loc_microp_st%nuclin,  &
+                        loc_microp_st%autoin,   loc_microp_st%accsin,   loc_microp_st%hmpin,    loc_microp_st%difn,    &
+                        loc_microp_st%trspcm,   loc_microp_st%trspcn,   loc_microp_st%trspim,   loc_microp_st%trspin,  &
+                        loc_microp_st%lambdadpcu,loc_microp_st%mudpcu,  &
+                        loc_microp_st%accgrm,   loc_microp_st%accglm,   loc_microp_st%accgslm,  loc_microp_st%accgsrm, &
+                        loc_microp_st%accgirm,  loc_microp_st%accgrim,  loc_microp_st%accgrsm,  loc_microp_st%accgsln, &
+                        loc_microp_st%accgsrn,  loc_microp_st%accgirn,  loc_microp_st%accsrim,  loc_microp_st%acciglm, &
+                        loc_microp_st%accigrm,  loc_microp_st%accsirm,  loc_microp_st%accigln,  loc_microp_st%accigrn, &
+                        loc_microp_st%accsirn,  loc_microp_st%accgln,   loc_microp_st%accgrn,   loc_microp_st%accilm,  &
+                        loc_microp_st%acciln,   loc_microp_st%fallrm,   loc_microp_st%fallsm,   loc_microp_st%fallgm,  &
+                        loc_microp_st%fallrn,   loc_microp_st%fallsn,   loc_microp_st%fallgn,   loc_microp_st%fhmrm,   &
+                        loc_microp_st%dsfm,     loc_microp_st%dsfn )
+#endif
+
+         do k = pver, msg+2, -1
+            do i = 1,ncol
+               ! In the original ZM scheme, which does not consider ice phase, ql actually represents total cloud
+               ! water. With convective microphysics, loc_microp_st%qliq and loc_microp_st%qice represent cloud
+               ! liquid water and cloud ice, respectively. Since ql is still used in other subroutines as total
+               ! cloud water, here ql is calculated as total cloud water for consistency.
+               ql(i,k) = loc_microp_st%qliq(i,k)+ loc_microp_st%qice(i,k)
+               loc_microp_st%frz(i,k) = tmp_frz(i,k)
+            end do ! i
+         end do ! k
+
+         do i = 1,ncol
+           if (iter == 2 .and. jt(i)> jto(i)) then
+             do k = jt(i), jto(i), -1
+                loc_microp_st%frz(i,k) = 0.0_r8
+                cu(i,k)=0.0_r8
+             end do ! k
+           end if
+         end do ! i
+
+         do k = pver, msg+2, -1
+            do i = 1,ncol
+               if (k >= jt(i) .and. k < jb(i) .and. lambda_max(i) > 0._r8 .and. mflx_up(i,k) >= 0.0_r8) then
+                  totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-detr_up(i,k)*( loc_microp_st%qcde(i,k+1) &
+                                                                         +loc_microp_st%qide(i,k+1) &
+                                                                         +loc_microp_st%qsde(i,k+1) ))
+               end if
+            end do ! i
+         end do ! k
+
+      else  ! no microphysics
+
+         ! compute condensed liquid, rain production rate
+         ! accumulate total precipitation (condensation - detrainment of liquid)
+         ! Note: ql1 = ql(k) + rprd(k)*dz(k)/mflx_up(k)
+         ! The differencing is somewhat strange (e.g. detr_up(i,k)*ql(i,k+1)) but is consistently applied.
+         !   interface quantities => mflx_up, ql are 
+         !   mid-point quantities => cu, detr_up, entr_up, rprd
+         do k = pver, msg+2, -1
+            do i = 1,ncol
+               rprd(i,k) = 0._r8
+               if (k >= jt(i) .and. k < jb(i) .and. lambda_max(i) > 0._r8 .and. mflx_up(i,k) >= 0.0_r8) then
+                  if (mflx_up(i,k) > 0._r8) then
+                     ql1 = 1._r8/mflx_up(i,k) * ( mflx_up(i,k+1)*ql(i,k+1) - dz(i,k)*detr_up(i,k)*ql(i,k+1) + dz(i,k)*cu(i,k) )
+                     ql(i,k) = ql1 / (1._r8+dz(i,k)*c0mask(i))
+                  else
+                     ql(i,k) = 0._r8
+                  end if
+                  totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-detr_up(i,k)*ql(i,k+1))
+                  rprd(i,k) = c0mask(i)*mflx_up(i,k)*ql(i,k)
+               end if
+            end do ! i
+         end do ! k
+
+      end if  ! zm_param%zm_microp
+
+   end do ! iter = 1,itnum
 
    !----------------------------------------------------------------------------
    ! calculate downdraft properties
@@ -1597,6 +1819,12 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
             evp(i,k) = 0._r8
          end if
          ! rprd is the cloud water converted to rain - (rain evaporated)
+         if (zm_param%zm_microp) then
+           if (rprd(i,k)> 0._r8)  then
+              loc_microp_st%frz(i,k)  = loc_microp_st%frz(i,k) - evp(i,k)*min(1._r8,loc_microp_st%sprd(i,k)/rprd(i,k))
+              loc_microp_st%sprd(i,k) = loc_microp_st%sprd(i,k)- evp(i,k)*min(1._r8,loc_microp_st%sprd(i,k)/rprd(i,k))
+           end if
+         end if
          rprd(i,k) = rprd(i,k)-evp(i,k)
       end do ! i
    end do ! k
@@ -1605,6 +1833,9 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
    do k = 2,pverp
       do i = 1,ncol
          pflx(i,k) = pflx(i,k-1) + rprd(i,k-1)*dz(i,k-1)
+         if (zm_param%zm_microp) then
+            pflxs(i,k) = pflxs(i,k-1) + loc_microp_st%sprd(i,k-1)*dz(i,k-1)
+         end if
       end do ! i
    end do ! k
 
@@ -1614,6 +1845,40 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
          mflx_net(i,k) = mflx_up(i,k) + mflx_dn(i,k)
       end do ! i
    end do ! k
+
+   if (zm_param%zm_microp) then
+      do i = 1,ncol
+         ! protect against rounding error
+         if (pflxs(i,pverp).gt.pflx(i,pverp)) then
+            dum = (pflxs(i,pverp)-pflx(i,pverp))/omsm
+            do k = pver, msg+2, -1
+               if (loc_microp_st%sprd(i,k) > 0._r8 .and. dum > 0._r8) then
+                  sdum = min(loc_microp_st%sprd(i,k),dum/dz(i,k))
+                  loc_microp_st%sprd(i,k) = loc_microp_st%sprd(i,k)- sdum
+                  loc_microp_st%frz(i,k)  = loc_microp_st%frz(i,k) - sdum
+                  dum = dum - sdum*dz(i,k)
+               end if
+            end do ! k
+         end if
+         ! disable columns if top is at or below LCL if using ZM microphysics
+         if ( jt(i)>=jlcl(i) ) then
+            do k = msg+1, pver
+               mflx_up(i,k)   = 0._r8
+               entr_up(i,k)   = 0._r8
+               detr_up(i,k)   = 0._r8
+               ql(i,k)        = 0._r8
+               cu(i,k)        = 0._r8
+               evp(i,k)       = 0._r8
+               mflx_dn(i,k)   = 0._r8
+               entr_dn(i,k)   = 0._r8
+               mflx_net(i,k)  = 0._r8
+               rprd(i,k)      = 0._r8
+               fice(i,k)      = 0._r8
+            end do ! k
+            call zm_microp_st_zero(loc_microp_st,i,pver)
+         end if
+      end do ! i
+   end if ! zm_microp
 
    !----------------------------------------------------------------------------
    return
@@ -1793,6 +2058,9 @@ subroutine zm_closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
       if (dadt(i) /= 0._r8) then
          cld_base_mass_flux(i) = max( dltaa/zm_param%tau/dadt(i), 0._r8)
       end if
+      if (zm_param%zm_microp .and. mx(i)-jt(i) < 2._r8) then
+         cld_base_mass_flux(i) = 0.0_r8
+      end if
    end do
 
    !----------------------------------------------------------------------------
@@ -1806,8 +2074,8 @@ subroutine zm_calc_output_tend(pcols, ncol, pver, pverp, msg, &
                                jt, mx, dsubcld, p_del, s_int, q_int, &
                                s_upd, q_upd, mflx_up, detr_up, &
                                mflx_dn, s_dnd, q_dnd, ql, evp, cu, &
-                               dsdt, dqdt, dl)
-
+                               dsdt, dqdt, dl, &
+                               loc_microp_st)
    !----------------------------------------------------------------------------
    ! Purpose: calculate final output tendencies for the ZM convection scheme
    !----------------------------------------------------------------------------
@@ -1838,6 +2106,7 @@ subroutine zm_calc_output_tend(pcols, ncol, pver, pverp, msg, &
    real(r8), dimension(pcols,pver), intent(  out) :: dqdt         ! output tendency for specific humidity
    real(r8), dimension(pcols,pver), intent(  out) :: dsdt         ! output tendency for dry static energy
    real(r8), dimension(pcols,pver), intent(  out) :: dl           ! output tendency for cloud liquid water
+   type(zm_microp_st),              intent(inout) :: loc_microp_st! convective microphysics state and tendencies
    !----------------------------------------------------------------------------
    ! Local variables
    integer i,k
@@ -1851,6 +2120,14 @@ subroutine zm_calc_output_tend(pcols, ncol, pver, pverp, msg, &
          dsdt(i,k) = 0._r8
          dqdt(i,k) = 0._r8
          dl(i,k) = 0._r8
+         ! Convective microphysics
+         if (zm_param%zm_microp) then
+            loc_microp_st%dif(i,k)   = 0._r8
+            loc_microp_st%dsf(i,k)   = 0._r8
+            loc_microp_st%dnlf(i,k)  = 0._r8
+            loc_microp_st%dnif(i,k)  = 0._r8
+            loc_microp_st%dnsf(i,k)  = 0._r8
+         end if
       end do
    end do
 
@@ -1879,7 +2156,17 @@ subroutine zm_calc_output_tend(pcols, ncol, pver, pverp, msg, &
                       +mflx_dn(i,k+1)*(q_dnd(i,k+1)-q_int(i,k+1)) - mflx_dn(i,k)*(q_dnd(i,k)-q_int(i,k)) &
                      )/p_del(i,k)
 
-         dl(i,k) = detr_up(i,k)*ql(i,k+1)
+         if (zm_param%zm_microp) then
+            dsdt(i,k) = dsdt(i,k) + zm_const%latice/zm_const%cpair*loc_microp_st%frz(i,k)
+            loc_microp_st%dif (i,k) = detr_up(i,k)*loc_microp_st%qide(i,k+1)
+            loc_microp_st%dnlf(i,k) = detr_up(i,k)*loc_microp_st%ncde(i,k+1)
+            loc_microp_st%dnif(i,k) = detr_up(i,k)*loc_microp_st%nide(i,k+1)
+            loc_microp_st%dsf (i,k) = detr_up(i,k)*loc_microp_st%qsde(i,k+1)
+            loc_microp_st%dnsf(i,k) = detr_up(i,k)*loc_microp_st%nsde(i,k+1)
+            dl(i,k) = detr_up(i,k)*loc_microp_st%qcde(i,k+1)
+         else
+            dl(i,k) = detr_up(i,k)*ql(i,k+1)
+         end if
 
       end do
    end do
