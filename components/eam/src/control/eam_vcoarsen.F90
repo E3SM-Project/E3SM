@@ -67,6 +67,7 @@ module eam_vcoarsen
 
   ! Namelist variables
   real(r8) :: vcoarsen_pbounds(max_pbounds)
+  integer  :: vcoarsen_level_bounds(max_pbounds)
   character(len=max_name_len) :: vcoarsen_avg_flds(max_flds)
   integer  :: vcoarsen_select_levs(max_select_vals)
   character(len=max_name_len) :: vcoarsen_select_lev_flds(max_flds)
@@ -75,8 +76,9 @@ module eam_vcoarsen
   character(len=max_name_len) :: vcoarsen_int_flds(max_flds)
 
   ! Parsed counts
-  integer :: n_avg_levs      = 0   ! number of coarsened pressure layers
+  integer :: n_avg_levs      = 0   ! number of coarsened output layers
   integer :: n_avg_flds      = 0   ! number of fields for averaging
+  logical :: use_level_bounds = .false.  ! true = index-based, false = pressure-based
   integer :: n_sel_levs      = 0   ! number of level indices for selection
   integer :: n_sel_lev_flds  = 0   ! number of fields for level selection
   integer :: n_sel_pres      = 0   ! number of pressure values for selection
@@ -105,13 +107,15 @@ contains
 
     integer :: unitn, ierr, i
 
-    namelist /eam_vcoarsen_nl/ vcoarsen_pbounds, vcoarsen_avg_flds, &
+    namelist /eam_vcoarsen_nl/ vcoarsen_pbounds, vcoarsen_level_bounds, &
+         vcoarsen_avg_flds, &
          vcoarsen_select_levs, vcoarsen_select_lev_flds, &
          vcoarsen_select_pres, vcoarsen_select_pres_flds, &
          vcoarsen_int_flds
 
     ! Initialize defaults
     vcoarsen_pbounds(:)         = -1.0_r8
+    vcoarsen_level_bounds(:)    = -1
     vcoarsen_avg_flds(:)        = ''
     vcoarsen_select_levs(:)     = -1
     vcoarsen_select_lev_flds(:) = ''
@@ -135,30 +139,52 @@ contains
 
     ! Broadcast
     call mpi_bcast(vcoarsen_pbounds, max_pbounds, mpi_real8, masterprocid, mpicom, ierr)
+    call mpi_bcast(vcoarsen_level_bounds, max_pbounds, mpi_integer, masterprocid, mpicom, ierr)
     call mpi_bcast(vcoarsen_avg_flds, max_name_len*max_flds, mpi_character, masterprocid, mpicom, ierr)
     call mpi_bcast(vcoarsen_select_levs, max_select_vals, mpi_integer, masterprocid, mpicom, ierr)
     call mpi_bcast(vcoarsen_select_lev_flds, max_name_len*max_flds, mpi_character, masterprocid, mpicom, ierr)
     call mpi_bcast(vcoarsen_select_pres, max_select_vals, mpi_real8, masterprocid, mpicom, ierr)
     call mpi_bcast(vcoarsen_select_pres_flds, max_name_len*max_flds, mpi_character, masterprocid, mpicom, ierr)
 
-    ! Parse pressure bounds for averaging
+    ! Determine averaging mode: level-index bounds take precedence over pressure bounds
+    ! Parse level-index bounds first
     n_avg_levs = 0
+    use_level_bounds = .false.
     do i = 2, max_pbounds
-      if (vcoarsen_pbounds(i) < 0.0_r8) exit
+      if (vcoarsen_level_bounds(i) < 0) exit
       n_avg_levs = n_avg_levs + 1
     end do
-    has_avg = (n_avg_levs > 0)
-
-    ! Validate pressure bounds
-    if (has_avg) then
-      if (vcoarsen_pbounds(1) < 0.0_r8) then
-        call endrun('eam_vcoarsen_readnl: vcoarsen_pbounds(1) must be non-negative')
+    if (n_avg_levs > 0) then
+      use_level_bounds = .true.
+      has_avg = .true.
+      ! Validate: bounds must be non-negative and strictly increasing
+      if (vcoarsen_level_bounds(1) < 0) then
+        call endrun('eam_vcoarsen_readnl: vcoarsen_level_bounds(1) must be non-negative')
       end if
       do i = 1, n_avg_levs
-        if (vcoarsen_pbounds(i+1) <= vcoarsen_pbounds(i)) then
-          call endrun('eam_vcoarsen_readnl: vcoarsen_pbounds must be strictly increasing')
+        if (vcoarsen_level_bounds(i+1) <= vcoarsen_level_bounds(i)) then
+          call endrun('eam_vcoarsen_readnl: vcoarsen_level_bounds must be strictly increasing')
         end if
       end do
+    else
+      ! Fall back to pressure bounds
+      do i = 2, max_pbounds
+        if (vcoarsen_pbounds(i) < 0.0_r8) exit
+        n_avg_levs = n_avg_levs + 1
+      end do
+      has_avg = (n_avg_levs > 0)
+
+      ! Validate pressure bounds
+      if (has_avg) then
+        if (vcoarsen_pbounds(1) < 0.0_r8) then
+          call endrun('eam_vcoarsen_readnl: vcoarsen_pbounds(1) must be non-negative')
+        end if
+        do i = 1, n_avg_levs
+          if (vcoarsen_pbounds(i+1) <= vcoarsen_pbounds(i)) then
+            call endrun('eam_vcoarsen_readnl: vcoarsen_pbounds must be strictly increasing')
+          end if
+        end do
+      end if
     end if
 
     ! Count averaging fields; expand 'all'
@@ -193,8 +219,13 @@ contains
 
     if (masterproc) then
       if (has_avg) then
-        write(iulog,*) 'eam_vcoarsen_readnl: averaging enabled, ', n_avg_levs, &
-             ' layers, ', n_avg_flds, ' fields'
+        if (use_level_bounds) then
+          write(iulog,*) 'eam_vcoarsen_readnl: index-based dp-weighted averaging, ', &
+               n_avg_levs, ' layers, ', n_avg_flds, ' fields'
+        else
+          write(iulog,*) 'eam_vcoarsen_readnl: pressure-bounds averaging, ', &
+               n_avg_levs, ' layers, ', n_avg_flds, ' fields'
+        end if
       end if
       if (has_sel_lev) then
         write(iulog,*) 'eam_vcoarsen_readnl: level selection enabled, ', n_sel_levs, &
@@ -230,10 +261,17 @@ contains
         call validate_field_name(vcoarsen_avg_flds(i))
         do k = 1, n_avg_levs
           call make_avg_name(vcoarsen_avg_flds(i), k-1, fname)  ! 0-indexed for ACE
-          write(lname, '(A,A,I0,A,F0.1,A,F0.1,A)') &
-               trim(vcoarsen_avg_flds(i)), ' vcoarsen layer ', k-1, &
-               ' (', vcoarsen_pbounds(k)/100.0_r8, '-', &
-               vcoarsen_pbounds(k+1)/100.0_r8, ' hPa)'
+          if (use_level_bounds) then
+            write(lname, '(A,A,I0,A,I0,A,I0,A)') &
+                 trim(vcoarsen_avg_flds(i)), ' vcoarsen layer ', k-1, &
+                 ' (levels ', vcoarsen_level_bounds(k), '-', &
+                 vcoarsen_level_bounds(k+1), ')'
+          else
+            write(lname, '(A,A,I0,A,F0.1,A,F0.1,A)') &
+                 trim(vcoarsen_avg_flds(i)), ' vcoarsen layer ', k-1, &
+                 ' (', vcoarsen_pbounds(k)/100.0_r8, '-', &
+                 vcoarsen_pbounds(k+1)/100.0_r8, ' hPa)'
+          end if
           call addfld(trim(fname), horiz_only, 'A', 'varies', trim(lname), &
                flag_xyfill=.true.)
         end do
@@ -299,7 +337,8 @@ contains
     use physics_buffer, only: physics_buffer_desc
     use cam_history,    only: outfld
     use shr_vcoarsen_mod, only: shr_vcoarsen_avg_cols, shr_vcoarsen_select_index, &
-                                shr_vcoarsen_select_nearest
+                                shr_vcoarsen_select_nearest, &
+                                shr_vcoarsen_avg_by_index_cols
     use physconst,      only: gravit
     use time_manager,   only: get_step_size
 
@@ -325,22 +364,28 @@ contains
     ! All columns have pver valid levels in EAM
     nlev_max(1:ncol) = pver
 
-    ! --- Overlap-weighted averaging ---
+    ! --- dp-weighted vertical averaging ---
     if (has_avg) then
-      ! Build interface pressure array
-      coord_iface(1:ncol, 1:pverp) = state%pint(1:ncol, 1:pverp)
-
       do i = 1, n_avg_flds
         call get_state_field(state, pbuf_chunk, vcoarsen_avg_flds(i), src_field, ncol)
 
-        ! Pass array sections (1:ncol, :) so that Fortran creates contiguous
-        ! copies matching the declared shape (ncol, nlev) in shr_vcoarsen_avg_cols.
-        ! Without this, when ncol < pcols the dummy array's stride doesn't
-        ! match the actual array's stride, causing levels k>1 to read from
-        ! wrong memory offsets (padding columns of the previous level).
-        call shr_vcoarsen_avg_cols(src_field(1:ncol, :), coord_iface(1:ncol, :), &
-             ncol, pver, vcoarsen_pbounds(1:n_avg_levs+1), n_avg_levs, &
-             fillvalue, coarsened(1:ncol, :))
+        if (use_level_bounds) then
+          ! Index-based: dp-weighted average over level index ranges.
+          ! dp(k) = pint(k+1) - pint(k), the pressure thickness of each level.
+          do k = 1, pver
+            coord_mid(1:ncol, k) = state%pint(1:ncol, k+1) - state%pint(1:ncol, k)
+          end do
+          call shr_vcoarsen_avg_by_index_cols(src_field(1:ncol, :), &
+               coord_mid(1:ncol, :), ncol, pver, &
+               vcoarsen_level_bounds(1:n_avg_levs+1), n_avg_levs, &
+               fillvalue, coarsened(1:ncol, :))
+        else
+          ! Pressure-bounds: overlap-weighted averaging between pressure interfaces.
+          coord_iface(1:ncol, 1:pverp) = state%pint(1:ncol, 1:pverp)
+          call shr_vcoarsen_avg_cols(src_field(1:ncol, :), coord_iface(1:ncol, :), &
+               ncol, pver, vcoarsen_pbounds(1:n_avg_levs+1), n_avg_levs, &
+               fillvalue, coarsened(1:ncol, :))
+        end if
 
         do k = 1, n_avg_levs
           ! Fill inactive columns

@@ -148,11 +148,15 @@ RANGE_CHECKS = {
 # -- Vcoarsen constants -------------------------------------------------------
 GRAVIT = 9.80616       # m/s2, matches EAM physconst
 P0     = 100000.0      # Pa, reference pressure for hybrid coordinates
+# Level index boundaries (0-based) for dp-weighted averaging.
+# 9 boundaries -> 8 layers, matching ACE L80 coarsening indices.
+VCOARSEN_LEVEL_BOUNDS = np.array([0, 25, 38, 46, 52, 56, 61, 69, 80])
+N_VCOARSEN_LAYERS = len(VCOARSEN_LEVEL_BOUNDS) - 1  # 8
+# Legacy pressure bounds (kept for topographic fill validation reference)
 VCOARSEN_PBOUNDS = np.array([
     10.0, 4803.81, 13913.06, 26856.34,
     43998.31, 59659.67, 76854.15, 90711.83, 101325.0
-])  # 9 interfaces -> 8 layers, matching ACE L80 indices [0,25,38,46,52,56,61,69,80]
-N_VCOARSEN_LAYERS = len(VCOARSEN_PBOUNDS) - 1  # 8
+])
 
 # Fields that appear in BOTH fme_output and fme_legacy_output for BFB identity checks
 # Instantaneous (no :A suffix)
@@ -207,12 +211,13 @@ def compute_pdel(pint):
     return pint[:, 1:] - pint[:, :-1]
 
 
-def offline_vcoarsen_avg(field, pint, pbounds=None):
-    """Overlap-weighted vertical averaging onto coarsened pressure layers.
+def offline_vcoarsen_avg(field, pint, level_bounds=None):
+    """dp-weighted vertical averaging by level index ranges.
 
-    Implements the same algorithm as shr_vcoarsen_avg in shr_vcoarsen_mod.F90.
-    For each target layer [pb_top, pb_bot], computes the pressure-weighted mean
-    of all model levels that overlap with it.
+    Implements the same algorithm as shr_vcoarsen_avg_by_index_cols in
+    shr_vcoarsen_mod.F90. For each target layer defined by level index
+    range [level_bounds[k], level_bounds[k+1]), computes the dp-weighted
+    mean where dp = pint[:,k+1] - pint[:,k].
 
     Parameters
     ----------
@@ -220,41 +225,42 @@ def offline_vcoarsen_avg(field, pint, pbounds=None):
         Full-resolution field values.
     pint : ndarray, shape (ncol, nlev+1)
         Interface pressures from compute_pint.
-    pbounds : ndarray, shape (nlayers+1,), optional
-        Target layer pressure boundaries. Defaults to VCOARSEN_PBOUNDS.
+    level_bounds : ndarray, shape (nlayers+1,), optional
+        0-based level index boundaries. Defaults to VCOARSEN_LEVEL_BOUNDS.
 
     Returns
     -------
     coarsened : ndarray, shape (ncol, nlayers)
         Coarsened field values.
     """
-    if pbounds is None:
-        pbounds = VCOARSEN_PBOUNDS
-    nlayers = len(pbounds) - 1
+    if level_bounds is None:
+        level_bounds = VCOARSEN_LEVEL_BOUNDS
+    nlayers = len(level_bounds) - 1
     ncol, nlev = field.shape
+    dp = pint[:, 1:] - pint[:, :-1]  # (ncol, nlev)
 
-    coarsened = np.zeros((ncol, nlayers))
+    coarsened = np.full((ncol, nlayers), np.nan)
     for layer in range(nlayers):
-        pb_top = pbounds[layer]
-        pb_bot = pbounds[layer + 1]
+        k_lo = level_bounds[layer]      # 0-based, inclusive
+        k_hi = level_bounds[layer + 1]  # 0-based, exclusive
 
-        weight_sum = np.zeros(ncol)
-        for k in range(nlev):
-            # Overlap between model level k and target layer
-            overlap_top = np.maximum(pb_top, pint[:, k])
-            overlap_bot = np.minimum(pb_bot, pint[:, k + 1])
-            overlap = np.maximum(0.0, overlap_bot - overlap_top)
+        if k_lo >= nlev or k_hi <= 0:
+            continue
 
-            # Skip NaN and fill values — only average valid data
-            fk = field[:, k]
-            ok = np.isfinite(fk) & (overlap > 0)
-            coarsened[ok, layer] += fk[ok] * overlap[ok]
-            weight_sum[ok] += overlap[ok]
+        k_lo = max(k_lo, 0)
+        k_hi = min(k_hi, nlev)
 
-        # Normalize by total overlap of valid levels
-        valid = weight_sum > 0
-        coarsened[valid, layer] /= weight_sum[valid]
-        coarsened[~valid, layer] = np.nan
+        fslice = field[:, k_lo:k_hi]
+        dpslice = dp[:, k_lo:k_hi]
+
+        # Mask invalid values
+        ok = np.isfinite(fslice) & (np.abs(fslice) < 1e10) & (dpslice > 0)
+
+        numerator = np.where(ok, fslice * dpslice, 0.0).sum(axis=1)
+        denominator = np.where(ok, dpslice, 0.0).sum(axis=1)
+
+        valid = denominator > 0
+        coarsened[valid, layer] = numerator[valid] / denominator[valid]
 
     return coarsened
 
@@ -464,14 +470,18 @@ def _plot_on_ax(ax, data, lons, lats, cmap, vmin, vmax, is_cartopy):
         # Subsample if > 50k points to keep triangulation fast.
         # Mask triangles that cross the antimeridian (lon span > 180).
         from matplotlib.tri import Triangulation
-        lons_fix = _fix_lon(lons)
+        # Flatten in case caller passed 2D per-column coordinate arrays
+        lons_1d = np.asarray(lons).ravel()
+        lats_1d = np.asarray(lats).ravel()
+        data_1d = np.asarray(data).ravel()
+        lons_fix = _fix_lon(lons_1d)
         kw = dict(transform=ccrs.PlateCarree()) if is_cartopy else {}
         max_pts = 50000
-        if data.size > max_pts:
-            idx = np.random.default_rng(42).choice(data.size, max_pts, replace=False)
-            lons_sub, lats_sub, data_sub = lons_fix[idx], lats[idx], data[idx]
+        if data_1d.size > max_pts:
+            idx = np.random.default_rng(42).choice(data_1d.size, max_pts, replace=False)
+            lons_sub, lats_sub, data_sub = lons_fix[idx], lats_1d[idx], data_1d[idx]
         else:
-            lons_sub, lats_sub, data_sub = lons_fix, lats, data
+            lons_sub, lats_sub, data_sub = lons_fix, lats_1d, data_1d
         try:
             tri = Triangulation(lons_sub, lats_sub)
             # Mask triangles spanning the antimeridian
@@ -555,7 +565,7 @@ def latlon_map(ds, varname, title, cmap="RdBu_r", vmin=None, vmax=None,
 def layer_profiles(data3d, label, outdir, fname, ylabel="Level index", subdir=None):
     """Plot global-mean vertical profile from (nlev x ncells) array."""
     if not HAS_MPL:
-        return
+        return None
     means = []
     for lev in range(data3d.shape[0]):
         v = valid_data(data3d[lev])
@@ -567,13 +577,13 @@ def layer_profiles(data3d, label, outdir, fname, ylabel="Level index", subdir=No
     ax.set_ylabel(ylabel)
     ax.set_title(f"Global-mean vertical profile: {label}")
     ax.grid(True, alpha=0.4)
-    savefig(fig, outdir, fname, subdir=subdir)
+    return savefig(fig, outdir, fname, subdir=subdir)
 
 
 def time_series(values, times_label, title, ylabel, outdir, fname, subdir=None):
     """Plot a simple time series."""
     if not HAS_MPL:
-        return
+        return None
     fig, ax = plt.subplots(figsize=(8, 3))
     ax.plot(values, ".-")
     ax.set_xlabel(times_label)
@@ -581,7 +591,7 @@ def time_series(values, times_label, title, ylabel, outdir, fname, subdir=None):
     ax.set_title(title)
     ax.grid(True, alpha=0.4)
     plt.tight_layout()
-    savefig(fig, outdir, fname, subdir=subdir)
+    return savefig(fig, outdir, fname, subdir=subdir)
 
 
 def multi_panel_maps(panels, suptitle, outdir, fname, ncols=4,
@@ -1114,6 +1124,22 @@ def generate_comparison_figures(rundir, fig_root, all_plots_by_comp):
                                 comp_plots.append(p)
                                 print(f"  Wrote {os.path.basename(p)}")
 
+                        # Zonal mean of STW layers
+                        stw_profiles = []
+                        for k in range(N_ATM_LAYERS):
+                            zm = _compute_zonal_mean(get_var(ds3, f"STW_{k}"))
+                            if zm is not None:
+                                stw_profiles.append((zm, f"STW_{k}"))
+                        if stw_profiles:
+                            p = zonal_mean_plot(
+                                stw_profiles, lat_1d,
+                                "EAM Zonal Mean Specific Total Water (all layers)",
+                                comp_outdir, "eam_h0_STW_zonal_mean.png",
+                                ylabel="kg/kg")
+                            if p:
+                                comp_plots.append(p)
+                                print(f"  Wrote {os.path.basename(p)}")
+
         close_ds(ds3)
 
     # --- Topographic fill validation: PS vs vcoarsen fill mask ---
@@ -1452,8 +1478,10 @@ def cross_verify(fme_rundir, legacy_rundir, outdir, verbose=False):
                 # State
                 ("TS",       "RdBu_r",   220, 320, "K"),
                 ("PS",       "viridis",  50000, 105000, "Pa"),
+                ("PHIS",     "terrain",  -500, 55000, "m2/s2"),
                 ("ICEFRAC",  "Blues",     0,   1,   "fraction"),
                 ("LANDFRAC", "YlGn",     0,   1,   "fraction"),
+                ("OCNFRAC",  "Blues",     0,   1,   "fraction"),
                 # Surface radiation
                 ("FSDS",     "YlOrRd",   0,   500, "W/m2"),
                 ("FSUS",     "YlOrRd",   0,   300, "W/m2"),
@@ -1494,18 +1522,28 @@ def cross_verify(fme_rundir, legacy_rundir, outdir, verbose=False):
                     xv_plots.append(p)
                     print(f"  Wrote xv_native_vs_remap_{var}.png")
 
-            # Vcoarsen layers: T_7 and STW_7 (near-surface)
-            for base, cmap, vm, vx, units in [("T", "RdYlBu_r", 220, 310, "K"),
-                                                ("STW", "YlGnBu", 0, 0.025, "kg/kg")]:
-                vname = f"{base}_7"
-                fme_vc = get_var(ds_fme, vname)
-                if fme_vc is not None:
+            # Vcoarsen layers: native vs remapped for ALL layers
+            # The legacy run has raw T/U/V/Q at full resolution on native grid;
+            # the FME run has coarsened T_k/U_k/V_k/STW_k on remapped lat-lon.
+            # Show side-by-side comparison at every layer.
+            vc_layer_specs = [
+                ("T",   "RdYlBu_r",  180, 310,  "K"),
+                ("STW", "YlGnBu",    0,   0.025, "kg/kg"),
+                ("U",   "RdBu_r",   -40,  40,    "m/s"),
+                ("V",   "RdBu_r",   -20,  20,    "m/s"),
+            ]
+            for base, cmap, vm, vx, units in vc_layer_specs:
+                for k in range(N_VCOARSEN_LAYERS):
+                    vname = f"{base}_{k}"
+                    fme_vc = get_var(ds_fme, vname)
+                    if fme_vc is None:
+                        continue
                     fme_data = fme_vc[tidx] if fme_vc.ndim >= 2 else fme_vc
-                    # No native vcoarsen to compare, just show remapped
                     p = global_map(fme_data, rem_lons, rem_lats,
-                                   f"FME {vname} (remapped, near-surface)",
+                                   f"FME {vname} (remapped, layer {k})",
                                    cmap=cmap, vmin=vm, vmax=vx,
-                                   outdir=xv_outdir, fname=f"xv_fme_{vname}_remap.png",
+                                   outdir=xv_outdir,
+                                   fname=f"xv_fme_{vname}_remap.png",
                                    units=units)
                     if p:
                         xv_plots.append(p)
@@ -1696,13 +1734,18 @@ def cross_verify(fme_rundir, legacy_rundir, outdir, verbose=False):
                     lat_var = get_var(ds_fme, "lat")
                     lon_var = get_var(ds_fme, "lon")
                     if lat_var is not None and lon_var is not None:
-                        if lat_var.ndim == 1 and lon_var.ndim == 1:
+                        # Only build a meshgrid when lat/lon are true axis arrays
+                        # (different sizes => structured grid).  If sizes match
+                        # they are per-column coordinates for an unstructured grid.
+                        if (lat_var.ndim == 1 and lon_var.ndim == 1
+                                and lat_var.size != lon_var.size):
                             lons, lats = np.meshgrid(lon_var, lat_var)
                         else:
-                            lons, lats = lon_var, lat_var
+                            lons, lats = lon_var.ravel(), lat_var.ravel()
                         # Side-by-side: online vs offline
-                        vmin_f = float(np.nanpercentile(valid_data(fme_1t) or [0], 2))
-                        vmax_f = float(np.nanpercentile(valid_data(fme_1t) or [0], 98))
+                        _vd_f = valid_data(fme_1t)
+                        vmin_f = float(np.nanpercentile(_vd_f if len(_vd_f) > 0 else [0], 2))
+                        vmax_f = float(np.nanpercentile(_vd_f if len(_vd_f) > 0 else [0], 98))
                         p = side_by_side_comparison(
                             fme_1t, lons, lats, f"Online {vname}",
                             off_1t, lons, lats, f"Offline vcoarsen({'+'.join(legacy_sources)})",

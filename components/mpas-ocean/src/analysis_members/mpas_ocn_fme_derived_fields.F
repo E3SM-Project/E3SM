@@ -186,12 +186,8 @@ contains
       real(kind=RKIND), dimension(:), pointer :: ssh_ptr
       real(kind=RKIND), dimension(:), pointer :: windStressZonalPtr
       real(kind=RKIND), dimension(:), pointer :: windStressMeridionalPtr
-      real(kind=RKIND), dimension(:), pointer :: iceFractionPtr
-
-      ! Fill value for land/ice-masked cells
+      ! Fill value for land-masked cells
       real(kind=RKIND), parameter :: fillValue = real(SHR_FILL_VALUE, RKIND)
-      ! Threshold: mask coupler fluxes where ice covers > 99% of cell
-      real(kind=RKIND), parameter :: iceMaskThresh = 0.99_RKIND
       ! Workspace for masked copies of forcing fields
       real(kind=RKIND), allocatable :: fld_masked(:)
       ! Remap workspace
@@ -225,7 +221,6 @@ contains
          call mpas_pool_get_array(forcingPool, 'sensibleHeatFlux', sensibleHeatFlux)
          call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonalPtr)
          call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridionalPtr)
-         call mpas_pool_get_array(forcingPool, 'iceFraction', iceFractionPtr)
 
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
          do iCell = 1, nCellsSolve
@@ -245,21 +240,12 @@ contains
                 associated(longWaveHeatFluxDown) .and. &
                 associated(latentHeatFlux) .and. &
                 associated(sensibleHeatFlux)) then
-               ! Sum of coupler fluxes; undo ice-fraction weighting
-               ! to recover atmospheric total (same correction as
-               ! mask_and_remap applies to individual components).
+               ! Sum of coupler fluxes (raw, ice-fraction-weighted values
+               ! from the coupler, matching timeSeriesStatsCustom behavior).
                surfaceHeatFluxTotal(iCell) = shortWaveHeatFlux(iCell) &
                     + longWaveHeatFluxDown(iCell) &
                     + latentHeatFlux(iCell) &
                     + sensibleHeatFlux(iCell)
-               if (associated(iceFractionPtr)) then
-                  if (iceFractionPtr(iCell) >= iceMaskThresh) then
-                     surfaceHeatFluxTotal(iCell) = fillValue
-                  else if (iceFractionPtr(iCell) > 0.0_RKIND) then
-                     surfaceHeatFluxTotal(iCell) = surfaceHeatFluxTotal(iCell) &
-                          / (1.0_RKIND - iceFractionPtr(iCell))
-                  end if
-               end if
             else
                surfaceHeatFluxTotal(iCell) = fillValue
             end if
@@ -284,8 +270,8 @@ contains
             ! SSH: state variable, no ice-fraction correction needed
             if (associated(ssh_ptr)) call remap_1field(ssh_ptr, 4)
 
-            ! Coupler fluxes: undo ice-fraction weighting to recover
-            ! the coupler delivers near-zero flux to the ocean surface.
+            ! Coupler fluxes: land-mask and remap (raw coupler values,
+            ! matching timeSeriesStatsCustom behavior).
             if (associated(shortWaveHeatFlux)) &
                  call mask_and_remap(shortWaveHeatFlux, 5)
             if (associated(longWaveHeatFluxDown)) &
@@ -365,28 +351,18 @@ contains
       end subroutine remap_1field
 
       subroutine mask_and_remap(native_fld, idx)
-         ! Copy field, undo coupler ice-fraction weighting to recover the
-         ! atmospheric flux, then remap.  Coupler delivers:
-         !   flux_ocean = flux_atm * (1 - iceFraction)
-         ! We recover flux_atm = flux_ocean / (1 - iceFraction).
-         ! At nearly full ice coverage (>= iceMaskThresh), set fillValue
-         ! to avoid division by near-zero.
-         ! Land cells (maxLevelCell==0) also get fillValue.
+         ! Copy field with land masking, then remap.
+         ! Land cells (maxLevelCell==0) get fillValue so the remap
+         ! correctly excludes them from weighted averages.
+         ! No ice-fraction correction is applied — raw coupler values
+         ! are preserved, matching timeSeriesStatsCustom behavior.
          real(kind=RKIND), dimension(:), intent(in) :: native_fld
          integer, intent(in) :: idx
          integer :: ic
-         real(kind=RKIND) :: openFrac
          fld_masked(1:nCells) = native_fld(1:nCells)
          do ic = 1, nCells
             if (maxLevelCell(ic) == 0) then
                fld_masked(ic) = fillValue
-            else if (associated(iceFractionPtr)) then
-               if (iceFractionPtr(ic) >= iceMaskThresh) then
-                  fld_masked(ic) = fillValue
-               else if (iceFractionPtr(ic) > 0.0_RKIND) then
-                  openFrac = 1.0_RKIND - iceFractionPtr(ic)
-                  fld_masked(ic) = native_fld(ic) / openFrac
-               end if
             end if
          end do
          call remap_1field(fld_masked, idx)

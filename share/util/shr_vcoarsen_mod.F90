@@ -30,6 +30,9 @@ module shr_vcoarsen_mod
   public :: shr_vcoarsen_avg        ! single column
   public :: shr_vcoarsen_avg_cols   ! multi-column batch
 
+  ! Index-based dp-weighted vertical averaging
+  public :: shr_vcoarsen_avg_by_index_cols  ! multi-column, level-index ranges
+
   ! Level selection
   public :: shr_vcoarsen_select_index    ! extract at a specific level index
   public :: shr_vcoarsen_select_nearest  ! extract at nearest coordinate value
@@ -161,6 +164,69 @@ contains
     end do
 
   end subroutine shr_vcoarsen_avg_cols
+
+  !============================================================================
+  subroutine shr_vcoarsen_avg_by_index_cols(field, dp, ncol, nlev, &
+                                             level_bounds, n_out, fillval, field_out)
+    !--------------------------------------------------------------------------
+    ! dp-weighted averaging by level index ranges, multi-column batch.
+    !
+    ! For each output layer kout, averages field over the level index range
+    ! [level_bounds(kout), level_bounds(kout+1)) using dp (pressure thickness
+    ! or layer thickness) as weights:
+    !
+    !   field_out(i, kout) = sum(field(i,k) * dp(i,k)) / sum(dp(i,k))
+    !                        for k = level_bounds(kout)+1 .. level_bounds(kout+1)
+    !
+    ! level_bounds are 0-based boundary indices (Fortran levels are 1-based,
+    ! so level_bounds(kout)=0 means start at Fortran level 1).
+    !
+    ! For atmosphere: dp = pint(k+1) - pint(k), pressure thickness per level
+    ! For ocean: dp = restingThickness or layerThickness per level
+    !
+    ! If no valid levels exist in a range (e.g., topography), fillval is returned.
+    !--------------------------------------------------------------------------
+    integer,  intent(in)  :: ncol                   ! number of columns
+    integer,  intent(in)  :: nlev                   ! number of input levels
+    integer,  intent(in)  :: n_out                  ! number of output layers
+    real(r8), intent(in)  :: field(ncol, nlev)      ! input field values
+    real(r8), intent(in)  :: dp(ncol, nlev)         ! level thickness weights
+    integer,  intent(in)  :: level_bounds(n_out+1)  ! 0-based level boundaries
+    real(r8), intent(in)  :: fillval                ! fill value for empty layers
+    real(r8), intent(out) :: field_out(ncol, n_out) ! output coarsened values
+
+    real(r8) :: numerator(ncol), denominator(ncol)
+    integer  :: i, k, kout, k_lo, k_hi
+
+    do kout = 1, n_out
+      ! Convert 0-based boundaries to 1-based Fortran level range
+      k_lo = level_bounds(kout) + 1       ! first level in this output layer
+      k_hi = level_bounds(kout + 1)       ! last level in this output layer
+
+      numerator(:)   = 0.0_r8
+      denominator(:) = 0.0_r8
+
+      do k = k_lo, k_hi
+        if (k < 1 .or. k > nlev) cycle
+        do i = 1, ncol
+          ! Skip NaN values and fill values
+          if (field(i, k) /= field(i, k) .or. field(i, k) == fillval) cycle
+          if (dp(i, k) <= 0.0_r8) cycle
+          numerator(i)   = numerator(i)   + field(i, k) * dp(i, k)
+          denominator(i) = denominator(i) + dp(i, k)
+        end do
+      end do
+
+      do i = 1, ncol
+        if (denominator(i) > 0.0_r8) then
+          field_out(i, kout) = numerator(i) / denominator(i)
+        else
+          field_out(i, kout) = fillval
+        end if
+      end do
+    end do
+
+  end subroutine shr_vcoarsen_avg_by_index_cols
 
   !============================================================================
   subroutine shr_vcoarsen_select_index(field, ncol, nlev, k_sel, nlev_max, &

@@ -71,7 +71,7 @@ echo "  MPAS: interval=${FME_MPAS_INTERVAL}"
 # ---------------------------------------------------------------------------
 # Detect map files for this case's resolution
 # ---------------------------------------------------------------------------
-FME_MAPS_DIR=/pscratch/sd/m/mahf708/fme_maps
+FME_MAPS_DIR=/eagle/E3SMinput/mahf708/fme_maps
 
 # Read grid names from the case XML
 ATM_GRID=$(./xmlquery --value ATM_GRID)
@@ -98,11 +98,18 @@ cat >> user_nl_eam << EOF
 !
 ! Production configuration for ACE/Samudra training data generation.
 !
-! Vertical coarsening uses EAM L80 interface pressures matching the ACE
-! offline coarsening indices [0,25,38,46,52,56,61,69,80] (see:
-! github.com/ai2cm/ace/blob/exp/e3sm/scripts/data_process/configs/
-!   e3smv3-coupled-atm-1deg.yaml).
-! Derived from hyai/hybi in eami_mam4_Linoz_ne30np4_L80_c20231010.nc.
+! Vertical coarsening by level index ranges, dp-weighted within each range.
+! ACE L80 coarsening indices (0-based level boundaries, 8 output layers):
+!   layer 0: levels [0, 25)    -- upper stratosphere/mesosphere
+!   layer 1: levels [25, 38)   -- lower stratosphere
+!   layer 2: levels [38, 46)   -- tropopause region
+!   layer 3: levels [46, 52)   -- upper troposphere
+!   layer 4: levels [52, 56)   -- mid troposphere
+!   layer 5: levels [56, 61)   -- lower-mid troposphere
+!   layer 6: levels [61, 69)   -- lower troposphere
+!   layer 7: levels [69, 80)   -- boundary layer
+! (see: github.com/ai2cm/ace/blob/exp/e3sm/scripts/data_process/configs/
+!   e3smv3-coupled-atm-1deg.yaml)
 
 empty_htapes = .true.
 avgflag_pertape = '${FME_EAM_AVGFLAG}'
@@ -113,12 +120,9 @@ mfilt  = ${FME_EAM_MFILT}
 ! STW -> specific_total_water in ACE naming
 derived_fld_defs = 'STW=Q+CLDICE+CLDLIQ+RAINQM'
 
-! Vertical coarsening: 8 pressure layers matching ACE L80 coarsening.
-! Interface pressures (Pa) from L80 hyai/hybi at indices [0,25,38,46,52,56,61,69,80]:
-!   0: 10.0 Pa,  25: 4803.8 Pa,  38: 13913.1 Pa,  46: 26856.3 Pa,
-!  52: 43998.3 Pa, 56: 59659.7 Pa, 61: 76854.2 Pa, 69: 90711.8 Pa, 80: 101325.0 Pa
-vcoarsen_pbounds = 10.0, 4803.81, 13913.06, 26856.34,
-                   43998.31, 59659.67, 76854.15, 90711.83, 101325.0
+! Vertical coarsening: 8 dp-weighted layers by level index boundaries.
+! 9 boundaries define 8 layers (0-based EAM level indices, top to bottom).
+vcoarsen_level_bounds = 0, 25, 38, 46, 52, 56, 61, 69, 80
 vcoarsen_avg_flds = 'T','U','V','STW'
 
 ! Tape 1: ${FME_EAM_OUTPUT_HOURS}-hourly output.
@@ -200,6 +204,13 @@ config_AM_fmeDerivedFields_output_stream = 'none'
 config_AM_fmeDerivedFields_horiz_remap_file = '${OCN_MAP}'
 config_AM_fmeVerticalReduce_output_stream = 'none'
 config_AM_fmeVerticalReduce_horiz_remap_file = '${OCN_MAP}'
+! NOTE: The native MPAS FME streams still fire at their default output_interval
+! (see Registry_fme_*.xml).  Native output contains instantaneous forcing-pool
+! snapshots; the remapped output is the authoritative time-averaged product.
+! For comparison, use remapped FME output vs legacy timeSeriesStatsCustom.
+config_AM_fmeDepthCoarsening_write_on_startup = .false.
+config_AM_fmeDerivedFields_write_on_startup = .false.
+config_AM_fmeVerticalReduce_write_on_startup = .false.
 EOF
 fi
 
