@@ -3269,6 +3269,12 @@ CONTAINS
                cospstateIN%qv, cospIN%z_vol_cloudsat(1:nPoints,k,:),                 &
                cospIN%kr_vol_cloudsat(1:nPoints,k,:))
 
+          ! quickbeam_optics can return slightly negative attenuation values,
+          ! but COSP treats any negative kr_vol as fatal input.
+          where (cospIN%kr_vol_cloudsat(1:nPoints,k,:) < 0.0_wp)
+             cospIN%kr_vol_cloudsat(1:nPoints,k,:) = 0.0_wp
+          end where
+
         ! At each model level, what fraction of the precipitation is frozen?
           where(mr_hydro(:,k,:,I_LSRAIN) .gt. 0 .or. mr_hydro(:,k,:,I_LSSNOW) .gt. 0 .or. &
                 mr_hydro(:,k,:,I_CVRAIN) .gt. 0 .or. mr_hydro(:,k,:,I_CVSNOW) .gt. 0 .or. &
