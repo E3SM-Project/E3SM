@@ -2400,8 +2400,8 @@ contains
            ! capped ice is converted to liquid runoff downstream.
            apply_local_latent_cooling = .true.
            if (convert_ice_to_river_runoff_latband) then
-              t = col_pp%topounit(c)
-              lat_abs_deg = abs(top_pp%lat(t)) * 180._r8 / (4._r8 * atan(1._r8))
+              g = col_pp%gridcell(c)
+              lat_abs_deg = abs(grc_pp%lat(g)) * 180._r8 / (4._r8 * atan(1._r8))
               apply_local_latent_cooling = lat_abs_deg <= max(0._r8, convert_ice_to_river_runoff_latband_width_degrees)
            end if
 
