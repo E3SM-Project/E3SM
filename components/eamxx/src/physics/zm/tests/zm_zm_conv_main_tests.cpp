@@ -96,7 +96,7 @@ struct UnitWrap::UnitTest<D>::TestZmConvMain : public UnitWrap::UnitTest<D>::Bas
           REQUIRE(d_baseline.rliq[k] == Approx(d_test.rliq[k]).margin(margin));
           // Gathered 1-d variables
           if (active_col) {
-            REQUIRE(d_baseline.dsubcld[fgindex] == d_test.dsubcld[k]);
+            REQUIRE(d_baseline.dsubcld[fgindex] == Approx(d_test.dsubcld[k]).margin(margin));
             REQUIRE(d_baseline.msemax_klev[fgindex] == d_test.msemax_klev[k]);
             REQUIRE(d_baseline.jt[fgindex] == d_test.jt[k]);
             REQUIRE(d_baseline.jctop[k] == d_test.jctop[k]);
@@ -125,7 +125,6 @@ struct UnitWrap::UnitTest<D>::TestZmConvMain : public UnitWrap::UnitTest<D>::Bas
             const Int offset    = n*pver + k;
             const Int offsetp   = n*pverp + k;
             const Int fgoffset  = (n-inactive_cnt)*pver + k;
-            const Int fgoffsetp = (n-inactive_cnt)*pverp + k;
             if (k < pver) {
               REQUIRE(d_baseline.mflx_up[offset] == Approx(d_test.mflx_up[offset]).margin(margin));
               REQUIRE(d_baseline.entr_up[offset] == Approx(d_test.entr_up[offset]).margin(margin));

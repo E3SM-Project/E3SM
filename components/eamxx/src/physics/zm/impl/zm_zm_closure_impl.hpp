@@ -96,20 +96,15 @@ void Functions<S,D>::zm_closure(
   team.team_barrier();
 
   //----------------------------------------------------------------------------
-  // Calculate sub-cloud tendencies of virtual temperature and humidity
-  Kokkos::single(Kokkos::PerTeam(team), [&]() {
-    cld_base_mass_flux = 0;
-    Real eb   = p_mid(mx)*q_mid(mx) / (epsilo + q_mid(mx));
-    dtbdt     = (1/dsubcld)
-                * (mflx_up(mx)*(s_int(mx) - s_upd(mx))
-                   + mflx_dn(mx)*(s_int(mx) - s_dnd(mx)));
-    dqbdt     = (1/dsubcld)
-                * (mflx_up(mx)*(q_int(mx) - q_upd(mx))
-                   + mflx_dn(mx)*(q_int(mx) - q_dnd(mx)));
-    Real debdt = epsilo*p_mid(mx) / ((epsilo + q_mid(mx))*(epsilo + q_mid(mx))) * dqbdt;
-    Real log_arg = ZMC::lcl_coeff_b*std::log(t_mid(mx)) - std::log(eb) - ZMC::lcl_coeff_c;
-    dtldt     = -ZMC::lcl_coeff_a * (ZMC::lcl_coeff_b/t_mid(mx)*dtbdt - debdt/eb) / (log_arg*log_arg);
-  });
+  // Calculate sub-cloud tendencies of virtual temperature and humidity. All threads
+  // need to do this so that they have consistent values for local vars dtbdt etc
+  cld_base_mass_flux = 0;
+  Real eb   = p_mid(mx)*q_mid(mx) / (epsilo + q_mid(mx));
+  dtbdt     = (1/dsubcld) * (mflx_up(mx)*(s_int(mx) - s_upd(mx)) + mflx_dn(mx)*(s_int(mx) - s_dnd(mx)));
+  dqbdt     = (1/dsubcld) * (mflx_up(mx)*(q_int(mx) - q_upd(mx)) + mflx_dn(mx)*(q_int(mx) - q_dnd(mx)));
+  Real debdt = epsilo*p_mid(mx) / ((epsilo + q_mid(mx))*(epsilo + q_mid(mx))) * dqbdt;
+  Real log_arg = ZMC::lcl_coeff_b*std::log(t_mid(mx)) - std::log(eb) - ZMC::lcl_coeff_c;
+  dtldt     = -ZMC::lcl_coeff_a * (ZMC::lcl_coeff_b/t_mid(mx)*dtbdt - debdt/eb) / (log_arg*log_arg);
   team.team_barrier();
 
   //----------------------------------------------------------------------------
