@@ -4,7 +4,6 @@
 #include "share/field/field_utils.hpp"
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
-#include "share/util/eamxx_universal_constants.hpp"
 
 namespace scream {
 
@@ -29,10 +28,14 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
 
 TEST_CASE("horiz_avg") {
   using namespace ShortFieldTagsNames;
-  using namespace ekat::units;
+
+  constexpr auto nondim = ekat::units::Units::nondimensional();
 
   // A numerical tolerance
   auto tol = std::numeric_limits<Real>::epsilon() * 100;
+
+  // Random number generator seed
+  int seed = get_random_test_seed();
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -42,129 +45,161 @@ TEST_CASE("horiz_avg") {
 
   // Create a grids manager - single column for these tests
   constexpr int nlevs = 3;
-  constexpr int dim3  = 4;
-  const int ngcols    = 6 * comm.size();
+  constexpr int ncols = 6;
 
-  auto gm   = create_gm(comm, ngcols, nlevs);
+  auto gm   = create_gm(comm, ncols, nlevs);
   auto grid = gm->get_grid("physics");
 
-  // Input (randomized) qc
-  FieldLayout scalar1d_layout{{COL}, {ngcols}};
-  FieldLayout scalar2d_layout{{COL, LEV}, {ngcols, nlevs}};
-  FieldLayout scalar3d_layout{{COL, CMP, LEV}, {ngcols, dim3, nlevs}};
-
-  FieldIdentifier qc1_fid("qc", scalar1d_layout, kg / kg, grid->name());
-  FieldIdentifier qc2_fid("qc", scalar2d_layout, kg / kg, grid->name());
-  FieldIdentifier qc3_fid("qc", scalar3d_layout, kg / kg, grid->name());
-
-  Field qc1(qc1_fid);
-  Field qc2(qc2_fid);
-  Field qc3(qc3_fid);
-
-  qc1.allocate_view();
-  qc2.allocate_view();
-  qc3.allocate_view();
-
-  // Random number generator seed
-  int seed = get_random_test_seed();
-
-  // Construct the Diagnostics
-  std::map<std::string, std::shared_ptr<AtmosphereDiagnostic>> diags;
   auto &diag_factory = AtmosphereDiagnosticFactory::instance();
   register_diagnostics();
 
-  ekat::ParameterList params;
-  REQUIRE_THROWS(diag_factory.create("HorizAvgDiag", comm,
-                                     params));  // No 'field_name' parameter
+  // No 'field_name' parameter
+  REQUIRE_THROWS(diag_factory.create("HorizAvgDiag", comm, ekat::ParameterList()));
 
-  // Set time for qc and randomize its values
-  qc1.get_header().get_tracking().update_time_stamp(t0);
-  qc2.get_header().get_tracking().update_time_stamp(t0);
-  qc3.get_header().get_tracking().update_time_stamp(t0);
-  randomize_uniform(qc1, seed++, 0, 200);
-  randomize_uniform(qc2, seed++, 0, 200);
-  randomize_uniform(qc3, seed++, 0, 200);
+  // Get a hold to area, for easy cloning later
+  auto area = grid->get_geometry_data("area");
+  auto area_sum = field_sum(area,&comm).as<Real>();
 
-  // Create and set up the diagnostic
-  params.set("grid_name", grid->name());
-  params.set<std::string>("field_name", "qc");
-  auto diag1 = diag_factory.create("HorizAvgDiag", comm, params);
-  auto diag2 = diag_factory.create("HorizAvgDiag", comm, params);
-  auto diag3 = diag_factory.create("HorizAvgDiag", comm, params);
-  diag1->set_grids(gm);
-  diag2->set_grids(gm);
-  diag3->set_grids(gm);
+  SECTION ("scalar_x") {
+    ekat::ParameterList params;
+    params.set("grid_name", grid->name());
+    params.set<std::string>("field_name", "s_x");
 
-  // Clone the area field
-  auto area = grid->get_geometry_data("area").clone();
+    FieldLayout layout{{COL}, {ncols}};
+    FieldIdentifier scl_x_fid ("s_x" , layout, nondim, grid->name());
+    Field scl_x (scl_x_fid , true);
+    scl_x.get_header().get_tracking().update_time_stamp(t0);
+    randomize_uniform(scl_x,seed++);
 
-  // Test the horiz contraction of qc1
-  // Get the diagnostic field
-  diag1->set_required_field(qc1);
-  diag1->initialize(t0, RunType::Initial);
-  diag1->compute_diagnostic();
-  auto diag1_f = diag1->get_diagnostic();
+    auto diag = diag_factory.create("HorizAvgDiag", comm, params);
+    diag->set_grids(gm);
+    diag->set_required_field(scl_x);
+    diag->initialize(t0,RunType::Initial);
+    diag->compute_diagnostic();
+    auto diag_f = diag->get_diagnostic();
 
-  // Manual calculation
-  FieldIdentifier diag0_fid("qc_horiz_avg_manual",
-                            scalar1d_layout.clone().strip_dim(COL), kg / kg,
-                            grid->name());
-  Field diag0(diag0_fid);
-  diag0.allocate_view();
+    auto manual = diag_f.clone("manual");
+    auto area_scaled = area.clone();
+    area_scaled.scale(1/area_sum);
 
-  // calculate total area
-  Real atot = field_sum(area, &comm).as<Real>();
-  // scale the area field
-  area.scale(1 / atot);
+    horiz_contraction(manual,scl_x,area_scaled,comm);
 
-  // calculate weighted avg
-  horiz_contraction(diag0, qc1, area, true, &comm);
-  // Compare
-  REQUIRE(views_are_equal(diag1_f, diag0));
-
-  // Try other known cases
-  // Set qc1_v to 1.0 to get weighted average of 1.0
-  Real wavg = 1;
-  // Change input timestamp, to prevent early return and trigger diag recalculation
-  qc1.get_header().get_tracking().update_time_stamp(t0+1);
-  qc1.deep_copy(wavg);
-  // Change the input timestamp, to prevent early return and trigger diag recalculation
-  t0 += 1;
-  qc1.get_header().get_tracking().update_time_stamp(t0);
-  diag1->compute_diagnostic();
-  auto diag1_v2_host = diag1_f.get_view<Real, Host>();
-  REQUIRE_THAT(diag1_v2_host(),
-               Catch::Matchers::WithinRel(
-                   wavg, tol));  // Catch2's floating point comparison
-
-  // other diags
-  // Set qc2_v to 5.0 to get weighted average of 5.0
-  wavg = sp(5.0);
-  qc2.deep_copy(wavg);
-  diag2->set_required_field(qc2);
-  diag2->initialize(t0, RunType::Initial);
-  diag2->compute_diagnostic();
-  auto diag2_f = diag2->get_diagnostic();
-
-  auto diag2_v_host = diag2_f.get_view<Real *, Host>();
-
-  for(int i = 0; i < nlevs; ++i) {
-    REQUIRE_THAT(diag2_v_host(i), Catch::Matchers::WithinRel(wavg, tol));
+    // Compare
+    auto diff = diag_f.clone();
+    diff.update(manual,-1,1);
+    auto diff_norm = inf_norm(diff,&comm).as<Real>();
+    REQUIRE_THAT (diff_norm, Catch::WithinAbs(0,tol));
   }
 
-  // Try a random case with qc3
-  auto qc3_v = qc3.get_view<Real ***>();
-  FieldIdentifier diag3_manual_fid("qc_horiz_avg_manual",
-                                   scalar3d_layout.clone().strip_dim(COL),
-                                   kg / kg, grid->name());
-  Field diag3_manual(diag3_manual_fid);
-  diag3_manual.allocate_view();
-  horiz_contraction(diag3_manual, qc3, area, true, &comm);
-  diag3->set_required_field(qc3);
-  diag3->initialize(t0, RunType::Initial);
-  diag3->compute_diagnostic();
-  auto diag3_f = diag3->get_diagnostic();
-  REQUIRE(views_are_equal(diag3_f, diag3_manual));
+  SECTION ("vector_xz_masked") {
+    ekat::ParameterList params;
+    params.set("grid_name", grid->name());
+    params.set<std::string>("field_name", "vec_xz");
+
+    FieldLayout layout{{COL,CMP,LEV}, {ncols,2,nlevs}};
+    FieldIdentifier vec_xz_fid ("vec_xz" , layout, nondim, grid->name());
+    Field vec_xz (vec_xz_fid , true);
+    randomize_uniform(vec_xz,seed++);
+    vec_xz.get_header().get_tracking().update_time_stamp(t0);
+    auto& mask = vec_xz.create_valid_mask();
+    randomize_uniform(mask,seed++);
+
+    auto diag = diag_factory.create("HorizAvgDiag", comm, params);
+    diag->set_grids(gm);
+    diag->set_required_field(vec_xz);
+    diag->initialize(t0,RunType::Initial);
+    diag->compute_diagnostic();
+    auto diag_f = diag->get_diagnostic();
+    REQUIRE (diag_f.has_valid_mask());
+
+    auto& d_mask = diag_f.get_valid_mask();
+
+    // Manual calculation: numerator = sum_col(area*f*mask), denominator = sum_col(area*mask)
+    auto manual = diag_f.clone("manual");
+    horiz_contraction(manual,vec_xz,area,comm);
+
+    auto ones_xz = vec_xz.clone("ones");
+    ones_xz.deep_copy(1);
+    ones_xz.set_valid_mask(mask);
+    auto manual_den = diag_f.clone("manual_den");
+    horiz_contraction(manual_den,ones_xz,area,comm);
+
+    // Expected valid_mask: 1 where denominator > 0
+    auto tgt_mask = d_mask.clone("tgt_mask");
+    compute_mask(manual_den,0,Comparison::NE,tgt_mask);
+    REQUIRE (views_are_equal(tgt_mask,d_mask));
+
+    // Compute manual average: numerator / denominator (where valid)
+    manual.scale_inv(manual_den,tgt_mask);
+
+    // Compare where valid; zero out fill_value entries before norm
+    auto diff = diag_f.clone("diff");
+    diff.update(manual,-1,1,d_mask);
+    diff.deep_copy(0,d_mask,true);
+    auto diff_norm = inf_norm(diff,&comm).as<Real>();
+    REQUIRE_THAT (diff_norm, Catch::WithinAbs(0,tol));
+  }
+
+  SECTION ("vector_xz_fully_masked") {
+    ekat::ParameterList params;
+    params.set("grid_name", grid->name());
+    params.set<std::string>("field_name", "vec_xz");
+
+    FieldLayout layout{{COL,CMP,LEV}, {ncols,2,nlevs}};
+    FieldIdentifier vec_xz_fid ("vec_xz" , layout, nondim, grid->name());
+    Field vec_xz (vec_xz_fid , true);
+    randomize_uniform(vec_xz,seed++);
+    vec_xz.get_header().get_tracking().update_time_stamp(t0);
+    auto& mask = vec_xz.create_valid_mask();
+    mask.deep_copy(0);
+
+    auto diag = diag_factory.create("HorizAvgDiag", comm, params);
+    diag->set_grids(gm);
+    diag->set_required_field(vec_xz);
+    diag->initialize(t0,RunType::Initial);
+    diag->compute_diagnostic();
+    auto diag_f = diag->get_diagnostic();
+    REQUIRE (diag_f.has_valid_mask());
+
+    auto& d_mask = diag_f.get_valid_mask();
+
+    auto tgt_mask = d_mask.clone("tgt_mask");
+    mask.deep_copy(0);
+    diag->compute_diagnostic();
+    tgt_mask.deep_copy(0);
+    REQUIRE(views_are_equal(d_mask,tgt_mask));
+  }
+
+  SECTION ("constant_x") {
+    ekat::ParameterList params;
+    params.set("grid_name", grid->name());
+    params.set<std::string>("field_name", "s_xz");
+
+    FieldLayout layout{{COL,LEV}, {ncols,nlevs}};
+    FieldIdentifier scl_xz_fid ("s_xz" , layout, nondim, grid->name());
+    Field scl_xz (scl_xz_fid , true);
+    scl_xz.get_header().get_tracking().update_time_stamp(t0);
+
+    Real c = 1.2345;
+    scl_xz.deep_copy(c);
+
+    auto diag = diag_factory.create("HorizAvgDiag", comm, params);
+    diag->set_grids(gm);
+    diag->set_required_field(scl_xz);
+    diag->initialize(t0,RunType::Initial);
+    diag->compute_diagnostic();
+    auto diag_f = diag->get_diagnostic();
+
+    // Constant fields should have an avg equal to the constant(within rounding errors)
+    auto manual = diag_f.clone("manual");
+    manual.deep_copy(c);
+
+    // Compare
+    auto diff = diag_f.clone();
+    diff.update(manual,-1,1);
+    auto diff_norm = inf_norm(diff,&comm).as<Real>();
+    REQUIRE_THAT (diff_norm, Catch::WithinAbs(0,tol));
+  }
 }
 
 }  // namespace scream
