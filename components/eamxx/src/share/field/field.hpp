@@ -138,6 +138,7 @@ public:
   DataType data_type () const { return get_header().get_identifier().data_type(); }
   const std::string& name () const { return get_header().get_identifier().name(); }
   int rank () const { return get_header().get_identifier().get_layout().rank(); }
+  const ekat::units::Units& units() const { return get_header().get_identifier().get_units(); }
 
   // WARNING: this is a power-user method. Its implementation, including assumptions
   //          on pre/post conditions, may change in the future. Use at your own risk!
