@@ -49,10 +49,10 @@ void update_checks (const std::string& caller,
       " - rhs name: " + x.name() + "\n"
       " - rhs data type: " + e2str(x_dt) + "\n"
       " - lhs data type: " + e2str(y_dt) + "\n");
-  const bool unsupported_int_narrowing = y_dt==DataType::IntType &&
-                                         x_dt!=DataType::IntType &&
-                                         allow_narrowing_x;
-  EKAT_REQUIRE_MSG (not unsupported_int_narrowing,
+  const bool disallowed_non_int_to_int_narrowing = y_dt==DataType::IntType &&
+                                                    x_dt!=DataType::IntType &&
+                                                    allow_narrowing_x;
+  EKAT_REQUIRE_MSG (not disallowed_non_int_to_int_narrowing,
       "[" + caller + "] Error! Narrowing to IntType is not supported in field-to-field operations.\n"
       " - lhs name: " + y.name() + "\n"
       " - rhs name: " + x.name() + "\n"
