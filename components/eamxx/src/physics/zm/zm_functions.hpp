@@ -940,8 +940,6 @@ struct Functions {
     const Int& lel, // index of launch leve
     const Int& jt, // top of updraft
     const Int& mx, // base of updraft
-    const Int& kmin,
-    const Int& kmax,
     const Real& dsubcld, // thickness of subcloud layer
     const uview_1d<const Real>& z_mid, // altitude (m)
     const uview_1d<const Real>& z_int, // height of interface levels
