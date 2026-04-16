@@ -2683,7 +2683,6 @@ CONTAINS
   ! This subroutine allocates output fields based on input logical flag switches.
   ! ######################################################################################  
   subroutine construct_cosp_outputs(Npoints,Ncolumns,Nlevels,Nlvgrid,Nchan,x)
-    use cosp_kinds, only: wp
     ! Inputs
     integer,intent(in) :: &
          Npoints,         & ! Number of sampled points
@@ -2742,27 +2741,6 @@ CONTAINS
        allocate(x%modis_Optical_Thickness_vs_Cloud_Top_Pressure(nPoints,numModisTauBins,numMODISPresBins))
        allocate(x%modis_Optical_thickness_vs_ReffLIQ(nPoints,numMODISTauBins,numMODISReffLiqBins))   
        allocate(x%modis_Optical_Thickness_vs_ReffICE(nPoints,numMODISTauBins,numMODISReffIceBins))
-
-       x%modis_Cloud_Fraction_Total_Mean     = 0.0_wp
-       x%modis_Cloud_Fraction_Water_Mean     = 0.0_wp
-       x%modis_Cloud_Fraction_Ice_Mean       = 0.0_wp
-       x%modis_Cloud_Fraction_High_Mean      = 0.0_wp
-       x%modis_Cloud_Fraction_Mid_Mean       = 0.0_wp
-       x%modis_Cloud_Fraction_Low_Mean       = 0.0_wp
-       x%modis_Optical_Thickness_Total_Mean  = 0.0_wp
-       x%modis_Optical_Thickness_Water_Mean  = 0.0_wp
-       x%modis_Optical_Thickness_Ice_Mean    = 0.0_wp
-       x%modis_Optical_Thickness_Total_LogMean = 0.0_wp
-       x%modis_Optical_Thickness_Water_LogMean = 0.0_wp
-       x%modis_Optical_Thickness_Ice_LogMean   = 0.0_wp
-       x%modis_Cloud_Particle_Size_Water_Mean  = 0.0_wp
-       x%modis_Cloud_Particle_Size_Ice_Mean    = 0.0_wp
-       x%modis_Cloud_Top_Pressure_Total_Mean   = 0.0_wp
-       x%modis_Liquid_Water_Path_Mean          = 0.0_wp
-       x%modis_Ice_Water_Path_Mean             = 0.0_wp
-       x%modis_Optical_Thickness_vs_Cloud_Top_Pressure = 0.0_wp
-       x%modis_Optical_thickness_vs_ReffLIQ            = 0.0_wp
-       x%modis_Optical_Thickness_vs_ReffICE            = 0.0_wp
     end if
     
     ! CALIPSO simulator
@@ -2804,13 +2782,6 @@ CONTAINS
        allocate(x%radar_lidar_tcc(Npoints))
        allocate(x%cloudsat_precip_cover(Npoints,nCloudsatPrecipClass))
        allocate(x%cloudsat_pia(Npoints))
-
-       x%cloudsat_Ze_tot        = 0.0_wp
-       x%cloudsat_cfad_ze       = 0.0_wp
-       x%lidar_only_freq_cloud  = 0.0_wp
-       x%radar_lidar_tcc        = 0.0_wp
-       x%cloudsat_precip_cover  = 0.0_wp
-       x%cloudsat_pia           = 0.0_wp
     end if
 
   end subroutine construct_cosp_outputs
