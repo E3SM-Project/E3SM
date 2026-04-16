@@ -401,16 +401,29 @@ void HommeDynamics::compute_vertical_derivs ()
             const Real dz = dz_mid(ilev_pack)[s];
             const Real inv_dz = 1.0 / dz;
 
+            // NOTE: `Scalar` is a packed type when `VECTOR_SIZE>1` (typical CPU
+            // builds). To compute level-to-level derivatives, we must advance by
+            // one lane within the pack (and only cross into the next pack at the
+            // lane boundary), not by one whole pack.
+            const Real u_int_k = u_int(ilev_pack)[s];
+            const Real v_int_k = v_int(ilev_pack)[s];
+            const Real w_int_k = w_int(ilev_pack)[s];
+
+            const Real u_int_kp1 = (s < VLEN-1) ? u_int(ilev_pack)[s+1] : u_int(ilev_pack+1)[0];
+            const Real v_int_kp1 = (s < VLEN-1) ? v_int(ilev_pack)[s+1] : v_int(ilev_pack+1)[0];
+            const Real w_int_kp1 = (s < VLEN-1) ? w_int(ilev_pack)[s+1] : w_int(ilev_pack+1)[0];
+
             // Assuming top->bottom level indexing, so z decreases with ilev.
             // Hence the minus sign.
             grad_vertical(ie,0,igp,jgp,ilev) =
-              -(u_int(ilev_pack+1)[s] - u_int(ilev_pack)[s]) * inv_dz;
+              -(u_int_kp1 - u_int_k) * inv_dz;
 
             grad_vertical(ie,1,igp,jgp,ilev) =
-              -(v_int(ilev_pack+1)[s] - v_int(ilev_pack)[s]) * inv_dz;
+              -(v_int_kp1 - v_int_k) * inv_dz;
 
             grad_vertical(ie,2,igp,jgp,ilev) =
-              -(w_int(ilev_pack+1)[s] - w_int(ilev_pack)[s]) * inv_dz;
+              -(w_int_kp1 - w_int_k) * inv_dz;
+
           }
         }
       });
