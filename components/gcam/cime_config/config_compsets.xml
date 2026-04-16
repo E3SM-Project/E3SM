@@ -72,6 +72,7 @@
        <value compset="SSP245_ZB">year</value>
        <value compset="SSP245_ZB_BGC">year</value>
        <value compset="SSP245_ZBPHS_BGC">year</value>
+       <value compset="2000_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV_GCAM">year</value>
        <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM_BGC%LNDATM">year</value>
        <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM_BGC%LNDATM">year</value>
      </values>
