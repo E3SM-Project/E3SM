@@ -6,6 +6,8 @@
 #include "share/util/eamxx_timing.hpp"
 #include "share/field/field_utils.hpp"
 
+#include <cmath>
+
 namespace scream {
 
 constexpr int vec_dim = 3;
@@ -583,6 +585,175 @@ TEST_CASE ("vertical_remapper") {
   scorpio::finalize_subsystem();
 
   print ("Testing vertical remapper ... done!\n",comm);
+}
+
+TEST_CASE ("log_linear_vertical_remapper") {
+  using namespace ShortFieldTagsNames;
+
+  // -------------------------------------- //
+  //           Init MPI and PIO             //
+  // -------------------------------------- //
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  print ("Testing log-linear vertical remapper ...\n",comm);
+
+  scorpio::init_subsystem(comm);
+
+  // -------------------------------------- //
+  //           Set grid/map sizes           //
+  // -------------------------------------- //
+
+  // Idea: if src/tgt midpoint pressure coords are p_k = exp(q_k) for linearly
+  // spaced q_k, then log-linear interp with p_k coords gives the same result
+  // as linear interp directly using q_k coords, provided the data function
+  // is linear in q (= log(p)).
+
+  const int nlevs_src = 2*SCREAM_PACK_SIZE + 2;
+  const int nlevs_tgt = nlevs_src/2;
+  const int nldofs = 2;
+
+  // -------------------------------------- //
+  //             Build src/tgt grids        //
+  // -------------------------------------- //
+
+  auto src_grid = build_grid(comm, nldofs, nlevs_src);
+  auto tgt_grid = src_grid->clone("tgt",true);
+  tgt_grid->reset_vertical_configuration(nlevs_tgt, AbstractGrid::VKind::Pressure);
+
+  // -------------------------------------- //
+  //       Create pressure coordinates      //
+  // -------------------------------------- //
+
+  // q: uniformly spaced in [qtop, qbot] (log-space coordinates)
+  // tgt range is strictly inside src range, so no extrapolation is needed
+  const Real qtop_src = 2.0;
+  const Real qbot_src = 7.0;
+  const Real qtop_tgt = 3.0;
+  const Real qbot_tgt = 6.0;
+
+  // Helper to create a 1d midpoint pressure field
+  auto create_pmid = [](const auto& grid, const Real qtop, const Real qbot, const FieldTag vtag, bool use_exp) {
+    auto layout = grid->get_vertical_layout(vtag);  // midpoints (LEV tag)
+    FieldIdentifier fid("p_mid",layout,ekat::units::Pa,grid->name());
+    Field pmid(fid);
+    pmid.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+    pmid.allocate_view();
+
+    const int nlevs = grid->get_num_vertical_levels();
+    const Real dq = (qbot-qtop)/(nlevs-1);
+    auto v = pmid.get_view<Real*,Host>();
+    for (int k=0; k<nlevs; ++k) {
+      Real q = qtop + k*dq;
+      v(k) = use_exp ? std::exp(q) : q;
+    }
+    pmid.sync_to_dev();
+    return pmid;
+  };
+
+  // Pressure coords for log-linear remapper: p_k = exp(q_k)
+  // After internal log transformation: log(p_k) = q_k (same as linear coords)
+  auto pmid_exp_src = create_pmid(src_grid, qtop_src, qbot_src, LEV,  true);
+  auto pmid_exp_tgt = create_pmid(tgt_grid, qtop_tgt, qbot_tgt, LEVP, true);
+
+  // Pressure coords for linear remapper: p_k = q_k (uniform spacing in q)
+  auto pmid_lin_src = create_pmid(src_grid, qtop_src, qbot_src, LEV,  false);
+  auto pmid_lin_tgt = create_pmid(tgt_grid, qtop_tgt, qbot_tgt, LEVP, false);
+
+  // -------------------------------------- //
+  //           Create src/tgt fields        //
+  // -------------------------------------- //
+
+  // Data function linear in q_k. Since both interps operate in q-space
+  // (log-linear via log(exp(q_k))=q_k, linear directly via q_k), both produce
+  // exact results for a linear function of q.
+  // The source field values are the same in both cases.
+  auto fill_field = [&](Field& f, const Field& pmid, bool use_log) {
+    const auto& l = f.get_header().get_identifier().get_layout();
+    const int ncols = l.dims().front();
+    const int nlevs = l.dims().back();
+    auto fv = f.get_view<Real**,Host>();
+    auto pv = pmid.get_view<const Real*,Host>();
+    for (int i=0; i<ncols; ++i) {
+      for (int k=0; k<nlevs; ++k) {
+        Real q = use_log ? std::log(pv(k)) : pv(k);
+        fv(i,k) = (i+1)*q;
+      }
+    }
+    f.sync_to_dev();
+  };
+
+  // Create fields (scalar 3d midpoint)
+  auto src_loglin = create_field("s3d_m", src_grid, false, false, false, LEV,  1);
+  auto tgt_loglin = create_field("s3d_m", tgt_grid, false, false, false, LEVP, 1);
+  auto src_lin    = create_field("s3d_m", src_grid, false, false, false, LEV,  1);
+  auto tgt_lin    = create_field("s3d_m", tgt_grid, false, false, false, LEVP, 1);
+
+  // f(i,k) = (i+1) * q_k  (same values in both cases since log(exp(q_k)) = q_k)
+  fill_field(src_loglin, pmid_exp_src, true);   // use log(exp(q_k)) = q_k
+  fill_field(src_lin,    pmid_lin_src, false);  // use q_k directly
+
+  // -------------------------------------- //
+  //        Build and run log-linear remap  //
+  // -------------------------------------- //
+
+  // Test two orderings: set_interp_type before and after set_source_pressure
+  for (bool set_type_first : {true, false}) {
+    tgt_loglin.deep_copy(0.0);
+
+    auto remap_loglin = std::make_shared<VerticalRemapper>(src_grid, tgt_grid);
+    if (set_type_first) {
+      remap_loglin->set_interp_type(VerticalRemapper::LogLinear);
+      remap_loglin->set_source_pressure(pmid_exp_src, VerticalRemapper::Midpoints);
+      remap_loglin->set_target_pressure(pmid_exp_tgt, VerticalRemapper::Midpoints);
+    } else {
+      remap_loglin->set_source_pressure(pmid_exp_src, VerticalRemapper::Midpoints);
+      remap_loglin->set_target_pressure(pmid_exp_tgt, VerticalRemapper::Midpoints);
+      remap_loglin->set_interp_type(VerticalRemapper::LogLinear);
+    }
+    remap_loglin->register_field(src_loglin, tgt_loglin);
+    remap_loglin->registration_ends();
+    remap_loglin->remap_fwd();
+
+    // -------------------------------------- //
+    //         Build and run linear remap     //
+    // -------------------------------------- //
+
+    auto remap_lin = std::make_shared<VerticalRemapper>(src_grid, tgt_grid);
+    remap_lin->set_source_pressure(pmid_lin_src, VerticalRemapper::Midpoints);
+    remap_lin->set_target_pressure(pmid_lin_tgt, VerticalRemapper::Midpoints);
+    remap_lin->register_field(src_lin, tgt_lin);
+    remap_lin->registration_ends();
+    remap_lin->remap_fwd();
+
+    // -------------------------------------- //
+    //         Compare results                //
+    // -------------------------------------- //
+
+    using namespace Catch::Matchers;
+    const Real tol = 100*std::numeric_limits<Real>::epsilon();
+
+    tgt_loglin.sync_to_host();
+    tgt_lin.sync_to_host();
+    const auto& l = tgt_loglin.get_header().get_identifier().get_layout();
+    const int ncols_out = l.dims().front();
+    const int nlevs_out = l.dims().back();
+    auto vloglin = tgt_loglin.get_view<const Real**,Host>();
+    auto vlin    = tgt_lin.get_view<const Real**,Host>();
+
+    for (int i=0; i<ncols_out; ++i) {
+      for (int k=0; k<nlevs_out; ++k) {
+        REQUIRE (std::abs(vloglin(i,k)-vlin(i,k)) <= tol*std::abs(vlin(i,k)) + tol);
+      }
+    }
+    print (" -> log-linear matches linear with q coords (set_type_first=%s) ... done!\n",
+           comm, set_type_first ? "true" : "false");
+  } // for set_type_first
+
+  // Clean up scorpio stuff
+  scorpio::finalize_subsystem();
+
+  print ("Testing log-linear vertical remapper ... done!\n",comm);
 }
 
 } // namespace scream
