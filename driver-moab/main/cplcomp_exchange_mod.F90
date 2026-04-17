@@ -737,7 +737,7 @@ subroutine  copy_aream_from_area(mbappid)
 
   subroutine cplcomp_moab_init_ice(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
 
-      use iMOAB, only: iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, iMOAB_ComputeCommGraph
+      use iMOAB, only: iMOAB_WriteMesh, iMOAB_GetMeshInfo
       use seq_infodata_mod, only: seq_infodata_type, seq_infodata_GetData
 
       type(seq_infodata_type), intent(in) :: infodata
@@ -749,11 +749,9 @@ subroutine  copy_aream_from_area(mbappid)
       character(len=*), intent(in) :: subname
 
       integer :: mpigrp_cplid, mpigrp_old
-      integer :: ierr, context_id
+      integer :: ierr
       character*200 :: appname, outfile, wopts, ropts, infile
       character(CL) :: ice_domain
-      integer :: tagtype, numco, tagindex
-      character(CXX) :: tagname
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
 
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
@@ -812,51 +810,15 @@ subroutine  copy_aream_from_area(mbappid)
 
          if (MPSIID .ge. 0) then  ! we are on component sea ice pes
             if ( trim(ice_domain) == 'none' ) then
-               context_id = id_join
-               call moab_free_sender_buffers(MPSIID, context_id, subname)
+               call moab_free_sender_buffers(MPSIID, id_join, subname)
             endif
          endif
 
-         tagtype = 1  ! dense, double
-         numco = 1 !  one value per cell / entity
-         tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-         if ( ierr == 1 ) then
-            call shr_sys_abort( subname//' ERROR: cannot define tags for ice on coupler' )
-         end if
-         tagname = trim(seq_flds_x2i_fields)//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-         if ( ierr == 1 ) then
-            call shr_sys_abort( subname//' ERROR: cannot define tags for ice on coupler' )
-         end if
-
-         !add the normalization tag
-         tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on ice on coupler '
-            call shr_sys_abort(subname//' ERROR in defining tags ')
-         endif
-
-         ! add data that is interpolated to sea ice
-         tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
-         tagtype = 1 ! dense
-         numco = 1 !
-         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on ice cpl'
-            call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on ice cpl')
-         endif
-
-         ! add data that is interpolated to sea ice
-         tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
-         tagtype = 1 ! dense
-         numco = 1 !
-         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags for seq_flds_r2x_fields on ice cpl'
-            call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on ice cpl')
-         endif
+         call moab_define_double_tag(mbixid, trim(seq_flds_i2x_fields), subname)
+         call moab_define_double_tag(mbixid, trim(seq_flds_x2i_fields), subname)
+         call moab_define_double_tag(mbixid, trim(seq_flds_dom_fields)//":norm8wt", subname)
+         call moab_define_double_tag(mbixid, trim(seq_flds_a2x_fields), subname)
+         call moab_define_double_tag(mbixid, trim(seq_flds_r2x_fields), subname)
 
       endif
 
@@ -866,13 +828,7 @@ subroutine  copy_aream_from_area(mbappid)
          call cplcomp_moab_compute_comm_graph(MPSIID, mbixid, mpicom_join, mpigrp_old, mpigrp_cplid, &
             dead_comps, .true., id_old, id_join, subname, 'data ice model')
          ! also, frac, area,  masks has to come from ice MPSIID , not from domain file reader
-         ! this is hard to digest :(
-         tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-         call component_exch_moab(comp, MPSIID, mbixid, 'c2x', tagname, context_exch='domi')
-
-         if (mbixid > 0) then ! on coupler pes only
-            call copy_aream_from_area(mbixid)
-         endif
+         call moab_exchange_domain_tags(comp, MPSIID, mbixid, 'lat:lon:area:frac:mask', 'domi')
       endif
 #ifdef MOABDEBUG
 !      debug test
