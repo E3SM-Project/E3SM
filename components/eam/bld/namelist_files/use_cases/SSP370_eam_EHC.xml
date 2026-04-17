@@ -25,7 +25,7 @@
 <history_aero_optics>.true.</history_aero_optics>
 
 <!-- co2 conservation tolerance with human component -->
-<!-- <co2_conserv_error_tol_per_year>1.e-5</co2_conserv_error_tol_per_year> -->
+<co2_conserv_error_tol_per_year>1.e-5</co2_conserv_error_tol_per_year>
 
 <!-- more robust surface flux coupling: like v2 -->
 <cflx_cpl_opt>1</cflx_cpl_opt>

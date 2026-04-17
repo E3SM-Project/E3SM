@@ -193,7 +193,6 @@ user_nl() {
 ncd_string="${RUN_REFDIR}/${RUN_REFCASE}.eam.i.${RUN_REFDATE}-00000.nc"
 
 cat << EOF >> user_nl_eam
- co2_conserv_error_tol_per_year = 1.e-5
  co2_print_diags_timestep               = .true.
  co2_print_diags_monthly                = .true.
  co2_print_diags_total                  = .true.
@@ -653,7 +652,7 @@ copy_script() {
     local script_provenance_dir=${CASE_SCRIPTS_DIR}/run_script_provenance
     mkdir -p ${script_provenance_dir}
     local this_script_name=$(realpath "$0")
-    local script_provenance_name=${this_script_name}.`date +%Y%m%d-%H%M%S`
+    local script_provenance_name=$(basename ${this_script_name}).`date +%Y%m%d-%H%M%S`
     cp -vp ${this_script_name} ${script_provenance_dir}/${script_provenance_name}
 
 }
