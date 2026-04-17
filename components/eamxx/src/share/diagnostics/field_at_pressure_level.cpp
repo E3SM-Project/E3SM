@@ -33,6 +33,16 @@ FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   m_diag_name = m_field_name + "_at_" + p_value + units;
 
+  // Determine interpolation type (default: log-linear)
+  const auto vit = m_params.get<std::string>("vert_interpolation_type","log-linear");
+  EKAT_REQUIRE_MSG (vit=="linear" or vit=="log-linear",
+      "Error! Invalid value for 'vert_interpolation_type' in FieldAtPressureLevel.\n"
+      " - input value: " + vit + "\n"
+      " - valid values: linear, log-linear\n");
+  m_log_linear = (vit=="log-linear");
+  if (m_log_linear)
+    m_log_pressure_level = std::log(m_pressure_level);
+
   m_field_in_names.push_back(m_field_name);
 
   // We don't know yet which one we need
@@ -102,6 +112,8 @@ void FieldAtPressureLevel::compute_impl()
   const int nlevs = pl.dim(1);
 
   auto p_tgt = m_pressure_level;
+  auto log_p_tgt = m_log_pressure_level;
+  auto log_linear = m_log_linear;
   constexpr auto fval = constants::fill_value<Real>;
   bool masked = f.has_valid_mask();
   if (rank==2) {
@@ -141,8 +153,14 @@ void FieldAtPressureLevel::compute_impl()
         } else {
           if (not masked or
               (fmask(icol,k1)!=0 and fmask(icol,k1-1)!=0)) {
-            // General case: interpolate between k1 and k1-1
-            diag(icol) = y1(k1-1) + (y1(k1)-y1(k1-1))/(x1(k1) - x1(k1-1)) * (p_tgt-x1(k1-1));
+            if (log_linear) {
+              auto lx0 = Kokkos::log(x1(k1-1));
+              auto lx1 = Kokkos::log(x1(k1));
+              diag(icol) = y1(k1-1) + (y1(k1)-y1(k1-1))/(lx1 - lx0) * (log_p_tgt - lx0);
+            } else {
+              // General case: interpolate between k1 and k1-1
+              diag(icol) = y1(k1-1) + (y1(k1)-y1(k1-1))/(x1(k1) - x1(k1-1)) * (p_tgt-x1(k1-1));
+            }
             dmask(icol) = 1;
           } else {
             dmask(icol) = 0;
@@ -190,8 +208,15 @@ void FieldAtPressureLevel::compute_impl()
           } else {
             if (not masked or
                 (fmask(icol,idim,k1)!=0 and fmask(icol,idim,k1-1)!=0)) {
-              // General case: interpolate between k1 and k1-1
-              diag(icol,idim) = y1(k1-1) + (y1(k1)-y1(k1-1))/(x1(k1) - x1(k1-1)) * (p_tgt-x1(k1-1));
+              // General case: interpolate between k1-1 and k1
+              if (log_linear) {
+                auto lx0 = Kokkos::log(x1(k1-1));
+                auto lx1 = Kokkos::log(x1(k1));
+                diag(icol,idim) = y1(k1-1) + (y1(k1)-y1(k1-1))/(lx1 - lx0) * (log_p_tgt - lx0);
+              } else {
+                // General case: interpolate between k1 and k1-1
+                diag(icol,idim) = y1(k1-1) + (y1(k1)-y1(k1-1))/(x1(k1) - x1(k1-1)) * (p_tgt-x1(k1-1));
+              }
               dmask(icol,idim) = 1;
             } else {
               dmask(icol,idim) = 0;

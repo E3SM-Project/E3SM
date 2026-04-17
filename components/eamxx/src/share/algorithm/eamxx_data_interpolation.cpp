@@ -587,7 +587,13 @@ create_vert_remapper (const VertRemapData& data)
 
     // We need to build a vert remapper based on the input data.
     // Note: on src grid, we don't distinguish midpoints from interfaces, while on tgt we do.
-    auto vremap = std::make_shared<VerticalRemapper>(m_grid_after_hremap,m_model_grid);
+    EKAT_REQUIRE_MSG (data.interp_type=="linear" or data.interp_type=="log-linear",
+        "[DataInterpolation] Error! Invalid/unsupported vertical interpolation type.\n"
+        " - input value : " + data.interp_type + "\n"
+        " - valid values: linear, log-linear\n");
+
+    auto interp_type = data.interp_type=="log-linear" ? VerticalRemapper::LogLinear : VerticalRemapper::Linear;
+    auto vremap = std::make_shared<VerticalRemapper>(m_grid_after_hremap,m_model_grid,interp_type);
 
     vremap->set_extrapolation_type(s2et(data.extrap_top),VerticalRemapper::Top);
     vremap->set_extrapolation_type(s2et(data.extrap_bot),VerticalRemapper::Bot);

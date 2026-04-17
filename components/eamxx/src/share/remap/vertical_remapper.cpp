@@ -46,10 +46,11 @@ create_tgt_grid (const grid_ptr_type& src_grid,
 
 VerticalRemapper::
 VerticalRemapper (const grid_ptr_type& src_grid,
-                  const std::string& map_file)
- : VerticalRemapper(src_grid,create_tgt_grid(src_grid,map_file))
+                  const std::string& map_file,
+                  const InterpType itype)
+ : VerticalRemapper(src_grid,create_tgt_grid(src_grid,map_file),itype)
 {
-  set_target_pressure (m_tgt_grid->get_geometry_data("p_levs"));
+  set_target_pressure (m_tgt_grid->get_geometry_data("p_levs"),true);
   std::filesystem::path p(map_file);
 
   set_name("VRemap " + p.filename().string());
@@ -57,7 +58,8 @@ VerticalRemapper (const grid_ptr_type& src_grid,
 
 VerticalRemapper::
 VerticalRemapper (const grid_ptr_type& src_grid,
-                  const grid_ptr_type& tgt_grid)
+                  const grid_ptr_type& tgt_grid,
+                  const InterpType itype)
 {
   set_name("VRemap " + tgt_grid->name());
 
@@ -70,6 +72,10 @@ VerticalRemapper (const grid_ptr_type& src_grid,
       "Error! Source and target grid can only differ for their number of level.\n");
 
   this->set_grids (src_grid,tgt_grid);
+
+  EKAT_REQUIRE_MSG (itype==Linear or itype==LogLinear,
+      "[VerticalRemapper] Unrecognized interpolation type.\n");
+  m_interp_type = itype;
 }
 
 void VerticalRemapper::
@@ -84,19 +90,19 @@ set_extrapolation_type (const ExtrapType etype, const TopBot where)
 }
 
 void VerticalRemapper::
-set_source_pressure (const Field& p)
+set_source_pressure (const Field& p, const bool fixed)
 {
-  set_pressure (p, "source");
+  set_pressure (p, "source", fixed);
 }
 
 void VerticalRemapper::
-set_target_pressure (const Field& p)
+set_target_pressure (const Field& p, const bool fixed)
 {
-  set_pressure (p, "target");
+  set_pressure (p, "target", fixed);
 }
 
 void VerticalRemapper::
-set_pressure (const Field& p, const std::string& src_or_tgt)
+set_pressure (const Field& p, const std::string& src_or_tgt, const bool fixed)
 {
   using namespace ShortFieldTagsNames;
   using PackT = ekat::Pack<Real,SCREAM_PACK_SIZE>;
@@ -121,16 +127,58 @@ set_pressure (const Field& p, const std::string& src_or_tgt)
       " - pressure layout: " + p_layout.to_string() + "\n");
 
   const auto vtag = p_layout.tags().back();
-  if (src)
+
+  if (src) {
     m_src_pressure[vtag] = p;
-  else
+  } else {
     m_tgt_pressure[vtag] = p;
+  }
+
+  // Decide if the coord field is going to alias p or be a clone (to store log(p))
+  auto& coord = src ? m_src_coord[vtag] : m_tgt_coord[vtag];
+  if (m_interp_type==LogLinear) {
+    coord = p.clone(p.name()+"_log", false);
+    if (fixed) {
+      coord.deep_copy(p);
+      log_pressure(coord);
+    }
+    coord.get_header().set_extra_data("fixed",fixed);
+  } else {
+    coord = p;
+  }
 
   // If already in the map, do &=, otherwise set.
   // Equivalent to inserting 'true' (if missing) and doing &= after
   bool pack_compatible = p.get_header().get_alloc_properties().is_compatible<PackT>();
   auto res = m_packs_supported.emplace(vtag,true);
   res.first->second &= pack_compatible;
+}
+
+void VerticalRemapper::
+log_pressure (Field& f) const
+{
+  const auto& layout = f.get_header().get_identifier().get_layout();
+  const int nlevs = layout.dims().back();
+
+  if (f.rank()==1) {
+    auto v = f.get_view<Real*>();
+    Kokkos::parallel_for("VerticalRemapper::log_pressure",
+                         Kokkos::RangePolicy<>(0,nlevs),
+                         KOKKOS_LAMBDA(int k) {
+      v(k) = Kokkos::log(v(k));
+    });
+  } else {
+    const int ncols = layout.dims().front();
+    auto v = f.get_view<Real**>();
+    Kokkos::parallel_for("VerticalRemapper::log_pressure",
+                         Kokkos::RangePolicy<>(0,ncols*nlevs),
+                         KOKKOS_LAMBDA(int idx) {
+      const int i = idx / nlevs;
+      const int k = idx % nlevs;
+      v(i,k) = Kokkos::log(v(i,k));
+    });
+  }
+  Kokkos::fence();
 }
 
 void VerticalRemapper::
@@ -373,6 +421,27 @@ void VerticalRemapper::remap_fwd_impl ()
 {
   using namespace ShortFieldTagsNames;
 
+  // 0. For log-linear interpolation when the src/tgt pressures is NOT constant,
+  //    recompute the log. We must deep_copy from the stored pressure first so that
+  //    repeated calls to remap_fwd_impl don't accumulate log applications (log(log(p))).
+  //    We stored a bool flag (under key "fixed") in the coord header extra data.
+  if (m_interp_type == LogLinear) {
+    for (auto& [vtag, coord] : m_src_coord) {
+      const auto& p = m_src_pressure.at(vtag);
+      if (not coord.get_header().get_extra_data<bool>("fixed")) {
+        coord.deep_copy(p);
+        log_pressure(coord);
+      }
+    }
+    for (auto& [vtag, coord] : m_tgt_coord) {
+      const auto& p = m_tgt_pressure.at(vtag);
+      if (not coord.get_header().get_extra_data<bool>("fixed")) {
+        coord.deep_copy(p);
+        log_pressure(coord);
+      }
+    }
+  }
+
   // 1. Setup any interp object that was created (if nullptr, no fields need it)
   if (m_timers_enabled)
     start_timer(name() + " setup LI");
@@ -380,20 +449,20 @@ void VerticalRemapper::remap_fwd_impl ()
   bool src_grid_levp = m_src_grid->get_vkind()==AbstractGrid::VKind::Pressure;
   bool tgt_grid_levp = m_tgt_grid->get_vkind()==AbstractGrid::VKind::Pressure;
 
-  // For a Pressure grid, there is a single pressure (keyed LEVP) used for all fields.
-  // For a Model grid, the pressure key matches the field's vtag (LEV or ILEV).
-  auto src_pressure = [&](FieldTag vtag) -> const Field& {
-    return src_grid_levp ? m_src_pressure.at(LEVP) : m_src_pressure.at(vtag);
+  // For a Pressure grid, there is a single coord (keyed LEVP) used for all fields.
+  // For a Model grid, the coord key matches the field's vtag (LEV or ILEV).
+  auto src_coord = [&](FieldTag vtag) -> const Field& {
+    return src_grid_levp ? m_src_coord.at(LEVP) : m_src_coord.at(vtag);
   };
-  auto tgt_pressure = [&](FieldTag vtag) -> const Field& {
-    return tgt_grid_levp ? m_tgt_pressure.at(LEVP) : m_tgt_pressure.at(vtag);
+  auto tgt_coord = [&](FieldTag vtag) -> const Field& {
+    return tgt_grid_levp ? m_tgt_coord.at(LEVP) : m_tgt_coord.at(vtag);
   };
 
   for (auto& [vtag, li] : m_lin_interp_packed) {
-    setup_lin_interp(li, src_pressure(vtag), tgt_pressure(vtag));
+    setup_lin_interp(li, src_coord(vtag), tgt_coord(vtag));
   }
   for (auto& [vtag, li] : m_lin_interp_scalar) {
-    setup_lin_interp(li, src_pressure(vtag), tgt_pressure(vtag));
+    setup_lin_interp(li, src_coord(vtag), tgt_coord(vtag));
   }
   if (m_timers_enabled)
     stop_timer(name() + " setup LI");
@@ -409,8 +478,8 @@ void VerticalRemapper::remap_fwd_impl ()
           auto& f_tgt    = m_tgt_fields[i];
     const auto& type = m_field2type.at(f_src.name());
     if (type.li_vtag!=INV) {
-      const auto& x_src = src_pressure(type.src_vtag);
-      const auto& x_tgt = tgt_pressure(type.tgt_vtag);
+      const auto& x_src = src_coord(type.src_vtag);
+      const auto& x_tgt = tgt_coord(type.tgt_vtag);
       if (type.packs_supported) {
         apply_vertical_interpolation(m_lin_interp_packed.at(type.li_vtag),f_src,f_tgt,x_src,x_tgt);
       } else {

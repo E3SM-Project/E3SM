@@ -41,6 +41,7 @@ public:
     VRemapType vr_type = None;
     std::string extrap_top = "P0";
     std::string extrap_bot = "P0";
+    std::string interp_type = "linear"; // Valid values: "linear", "log-linear"
     std::string pname; // What we need to load from nc file
     Field pmid, pint;  // The model pmid/pint
     std::shared_ptr<AbstractRemapper> custom_remapper; // Use this custom remapper

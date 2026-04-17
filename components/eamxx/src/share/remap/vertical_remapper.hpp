@@ -26,18 +26,25 @@ public:
     TopAndBot = Top | Bot
   };
 
-  VerticalRemapper (const grid_ptr_type& src_grid,
-                    const std::string& map_file);
+  enum InterpType {
+    Linear,     // Standard linear interpolation
+    LogLinear   // Log-linear interpolation (pressure coordinates are log-transformed)
+  };
 
   VerticalRemapper (const grid_ptr_type& src_grid,
-                    const grid_ptr_type& tgt_grid);
+                    const std::string& map_file,
+                    const InterpType itype = Linear);
+
+  VerticalRemapper (const grid_ptr_type& src_grid,
+                    const grid_ptr_type& tgt_grid,
+                    const InterpType itype = Linear);
 
   ~VerticalRemapper () = default;
 
   void set_extrapolation_type (const ExtrapType etype, const TopBot where = TopAndBot);
 
-  void set_source_pressure (const Field& p);
-  void set_target_pressure (const Field& p);
+  void set_source_pressure (const Field& p, const bool is_fixed = false);
+  void set_target_pressure (const Field& p, const bool is_fixed = false);
 
   // This method simply creates the tgt grid from a map file
   static std::shared_ptr<AbstractGrid>
@@ -49,7 +56,7 @@ public:
   bool is_valid_src_layout (const FieldLayout& layout) const override;
 protected:
 
-  void set_pressure (const Field& p, const std::string& src_or_tgt);
+  void set_pressure (const Field& p, const std::string& src_or_tgt, const bool fixed);
 
   FieldLayout create_layout (const FieldLayout& from_layout,
                              const std::shared_ptr<const AbstractGrid>& to_grid) const override;
@@ -61,6 +68,8 @@ protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
+  // Apply log element-wise in-place to f (rank 1 or 2)
+  void log_pressure (Field& f) const;
 
   template<int N>
   void apply_vertical_interpolation (const ekat::LinInterp<Real,N>& lin_interp,
@@ -89,9 +98,21 @@ protected:
   // Tgt grid masks (in case extrap type at top or bot is Mask)
   std::map<std::string,Field>    m_masks;
 
-  // Vertical profile fields, both for source and target.
+  // NOTE: m_src/tgt_pressure ALWAYS hold the Fields that were passed to the remapper,
+  //       regardless of the interpolation type. Log transformation is handled
+  //       either during set_pressure or at remap time, depending on whether
+  //       the pressure field is fixed (e.g. from map file) or not (e.g., from model).
   std::map<FieldTag,Field> m_src_pressure;
   std::map<FieldTag,Field> m_tgt_pressure;
+
+  InterpType m_interp_type;
+
+  // The coordinate fields used during interpolation.
+  // If m_interp_type==Linear, these are just aliasing the corresponding pressure fields.
+  // For LogLinear interpolation these will be SEPARATE fields, storing the log of the
+  // corresponding pressure field.
+  std::map<FieldTag,Field> m_src_coord;
+  std::map<FieldTag,Field> m_tgt_coord;
 
   // If user provides pressure profiles that are NOT compatible with SCREAM_PACK_SIZE,
   // we will set these booleans to false, and use ONLY the "scalar" LinInterp structures
