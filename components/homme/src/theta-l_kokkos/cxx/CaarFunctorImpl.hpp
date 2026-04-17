@@ -1273,71 +1273,75 @@ struct CaarFunctorImpl {
                                        Homme::subview(m_buffers.v_tens,kv.team_idx));
     }
 
+    // Assemble vtens (both components)
+    // Note: right now, vtens already contains gradKE+v_vadv
+    //       (or just gradKE if rsplit>0)
     auto vtheta_dp = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.n0);
     auto dp        = Homme::subview(m_state.m_dp3d,kv.ie,m_data.n0);
-    auto vtheta = [&](const int igp, const int jgp,const int ilev)->Scalar {
+    auto vtheta_dp_over_dp = [&](const int igp, const int jgp,const int ilev)->Scalar {
         return vtheta_dp(igp,jgp,ilev)/dp(igp,jgp,ilev);
     };
+    auto cp_vtheta_dp_over_dp_grad_exner = [&](const int cmp, const int igp, const int jgp,const int ilev)->Scalar {
+      return (PhysicalConstants::cp*vtheta_dp_over_dp(igp,jgp,ilev))*grad_exner(cmp,igp,jgp,ilev);
+    };
 
-    // Reusing grad_temp for cp*vtheta*grad_exner
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
-                         [&](const int idx) {
-      const int igp = idx / NP;
-      const int jgp = idx % NP;
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                           [&](const int ilev) {
-        grad_tmp(0,igp,jgp,ilev) = PhysicalConstants::cp*vtheta(igp,jgp,ilev)*grad_exner(0,igp,jgp,ilev);
-        grad_tmp(1,igp,jgp,ilev) = PhysicalConstants::cp*vtheta(igp,jgp,ilev)*grad_exner(1,igp,jgp,ilev);
+    if (m_theta_advection_form != AdvectionForm::Split) {
+      // For Conservative and NonConservative advection, add cp*vtheta*grad(exner) to vtens.
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                           [&](const int idx) {
+        const int igp = idx / NP;
+        const int jgp = idx % NP;
+
+        auto u_tens = Homme::subview(m_buffers.v_tens,kv.team_idx,0,igp,jgp);
+        auto v_tens = Homme::subview(m_buffers.v_tens,kv.team_idx,1,igp,jgp);
+        Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                            [&](const int ilev) {
+          u_tens(ilev) += cp_vtheta_dp_over_dp_grad_exner(0,igp,jgp,ilev);
+          v_tens(ilev) += cp_vtheta_dp_over_dp_grad_exner(1,igp,jgp,ilev);
+        });
       });
-    });
-    kv.team_barrier();
-
-    if (m_theta_advection_form == AdvectionForm::Split) {
-      // Splitform: average of default and above
+    } else {
+      // For split form, we need to compute the average of cp*vtheta*grad(exner) and
+      // cp*(grad(vtheta*exner) - exner*grad(vtheta*exner))
       auto grad_tmp2 = Homme::subview(m_buffers.grad_tmp2,kv.team_idx);
       auto grad_tmp3 = Homme::subview(m_buffers.grad_tmp3,kv.team_idx);
       auto exner = Homme::subview(m_buffers.exner,kv.team_idx);
-      auto vtheta_exner = [&](const int igp, const int jgp,const int ilev)->Scalar {
-        return vtheta(igp,jgp,ilev)*exner(igp,jgp,ilev);
+      auto vtheta_dp_over_dp_exner = [&](const int igp, const int jgp,const int ilev)->Scalar {
+        return vtheta_dp_over_dp(igp,jgp,ilev)*exner(igp,jgp,ilev);
       };
-
-      m_sphere_ops.gradient_sphere(kv,vtheta,      grad_tmp2);
-      m_sphere_ops.gradient_sphere(kv,vtheta_exner,grad_tmp3);
+      m_sphere_ops.gradient_sphere(kv,vtheta_dp_over_dp,      grad_tmp2);
+      m_sphere_ops.gradient_sphere(kv,vtheta_dp_over_dp_exner,grad_tmp3);
+      kv.team_barrier();
 
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
-                         [&](const int idx) {
+                          [&](const int idx) {
         const int igp = idx / NP;
         const int jgp = idx % NP;
+
+        auto u_tens = Homme::subview(m_buffers.v_tens,kv.team_idx,0,igp,jgp);
+        auto v_tens = Homme::subview(m_buffers.v_tens,kv.team_idx,1,igp,jgp);
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                             [&](const int ilev) {
-          grad_tmp(0,igp,jgp,ilev) += PhysicalConstants::cp*(grad_tmp3(0,igp,jgp,ilev) - exner(igp,jgp,ilev)*grad_tmp2(0,igp,jgp,ilev));
-          grad_tmp(1,igp,jgp,ilev) += PhysicalConstants::cp*(grad_tmp3(1,igp,jgp,ilev) - exner(igp,jgp,ilev)*grad_tmp2(1,igp,jgp,ilev));
-
-          grad_tmp(0,igp,jgp,ilev) /= 2.0;
-          grad_tmp(1,igp,jgp,ilev) /= 2.0;
+          u_tens(ilev) += (cp_vtheta_dp_over_dp_grad_exner(0,igp,jgp,ilev) + PhysicalConstants::cp*(grad_tmp3(0,igp,jgp,ilev) - exner(igp,jgp,ilev)*grad_tmp2(0,igp,jgp,ilev)))/2.0;
+          v_tens(ilev) += (cp_vtheta_dp_over_dp_grad_exner(1,igp,jgp,ilev) + PhysicalConstants::cp*(grad_tmp3(1,igp,jgp,ilev) - exner(igp,jgp,ilev)*grad_tmp2(1,igp,jgp,ilev)))/2.0;
         });
       });
-      kv.team_barrier();
     }
+    kv.team_barrier();
 
+    // Add in remaining contributions to v_tens
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
       const int igp = idx / NP;
       const int jgp = idx % NP;
 
-      // Assemble vtens (both components)
-      // Note: right now, vtens already contains gradKE+v_vadv
-      //       (or just gradKE if rsplit>0)
       auto u_tens = Homme::subview(m_buffers.v_tens,kv.team_idx,0,igp,jgp);
       auto v_tens = Homme::subview(m_buffers.v_tens,kv.team_idx,1,igp,jgp);
       auto vort = Homme::subview(m_buffers.vort,kv.team_idx,igp,jgp);
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
-        // grad(exner)*vtheta*cp (or splitform avg)
-        u_tens(ilev) += grad_tmp(0,igp,jgp,ilev);
-        v_tens(ilev) += grad_tmp(1,igp,jgp,ilev);
-
+        // Add mgrad and wvor to vtens
         u_tens(ilev) += (mgrad(0,igp,jgp,ilev) + wvor(0,igp,jgp,ilev));
         v_tens(ilev) += (mgrad(1,igp,jgp,ilev) + wvor(1,igp,jgp,ilev));
 
