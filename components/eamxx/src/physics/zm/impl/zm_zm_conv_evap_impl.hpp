@@ -62,7 +62,7 @@ void Functions<S,D>::zm_conv_evap(
     prec = prec * 1000;
 
     // determine saturation vapor pressure
-    // (qs_k computed per level inside the loop via qsat_hPa)
+    // (qs_k computed per level inside the loop via qsat)
 
     // determine ice fraction in rain production
     // (fsnow_conv_k computed per level inside the loop via inlined cldfrc_fice logic)

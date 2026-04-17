@@ -489,10 +489,10 @@ struct Functions {
   static void qsat(
     // Inputs
     const Real& t,    // Temperature                  [K]
-    const Real& p,    // Pressure                     [hPa]
+    const Real& p,    // Pressure                     [Pa]
     const ZmRuntimeOpt& runtime_opt,
     // Outputs
-    Real& es,         // Saturation vapor pressure    [hPa]
+    Real& es,         // Saturation vapor pressure    [Pa]
     Real& qs)         // Saturation mass mixing ratio [kg/kg] (vapor mass over dry mass)
   {
     constexpr Real mmin = 0.0;

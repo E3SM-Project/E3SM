@@ -162,6 +162,7 @@ typename Functions<S,D>::view_1d<bool> Functions<S,D>::zm_conv_main(
       dcape(i)               = 0;
       msemax_klev(i)         = 0;
       pflx(i, pver)          = 0;
+      mcon(i, pver)          = 0;
     });
 
     // Initialize output arrays
@@ -533,7 +534,7 @@ typename Functions<S,D>::view_1d<bool> Functions<S,D>::zm_conv_main(
     Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, msg + 1, pver),
       [&](const Int k, Real& local_sum) {
         const Real local = p_del_in(i,k) * (q_mid(i,k) - q_mid_in(i,k))
-                         - p_del_in(i,k) * dlf(i,k) * time_step;
+                         + p_del_in(i,k) * dlf(i,k) * time_step;
         local_sum -= local;
       }, prec_sum);
     team.team_barrier();

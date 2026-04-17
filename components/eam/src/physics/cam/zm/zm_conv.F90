@@ -177,7 +177,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    integer,                         intent(in   ) :: ncol            ! actual number of columns
    integer,                         intent(in   ) :: pver            ! number of mid-point levels
    integer,                         intent(in   ) :: pverp           ! number of interface levels
-   logical(btype),                         intent(in   ) :: is_first_step   ! flag for first step of run
+   logical(btype),                  intent(in   ) :: is_first_step   ! flag for first step of run
    real(r8),                        intent(in   ) :: time_step       ! model time-step                         [s]
    real(r8), dimension(pcols,pver), intent(in   ) :: t_mid           ! temperature                             [K]
    real(r8), dimension(pcols,pver), intent(in   ) :: q_mid_in        ! specific humidity                       [kg/kg]
@@ -338,6 +338,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
       prec(i)        = 0._r8
       rliq(i)        = 0._r8
       pflx(i,pverp)  = 0._r8
+      mcon(i,pverp)  = 0._r8
       pflx_g(i,pverp)= 0._r8
       pbl_top(i)     = pver
       dsubcld(i)     = 0._r8

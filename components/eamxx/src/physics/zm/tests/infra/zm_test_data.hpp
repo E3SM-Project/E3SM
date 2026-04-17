@@ -464,7 +464,7 @@ struct ZmConvMainData : public PhysicsTestData {
       {p_int_in, {9000.0,  101000.0}}, // interface pressure [Pa]
       {p_del_in, {500.0,   5000.0}},   // pressure thickness [Pa]
       {geos,     {0.0,     1000.0}},   // surface geopotential [m2/s2]
-      {z_mid_in, {20000.0,     20000.0}},  // mid-point altitude [m]
+      {z_mid_in, {19000.0,     21000.0}},  // mid-point altitude [m]
       {z_int_in, {20000.0,     20500.0}},  // interface altitude [m]
       {pbl_hgt,  {100.0,   2000.0}},   // PBL height [m]
       {tpert,    {0.0,     2.0}},      // temperature perturbation [K]
