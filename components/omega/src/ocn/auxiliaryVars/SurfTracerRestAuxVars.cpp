@@ -29,6 +29,9 @@ void SurfTracerRestAuxVars::registerFields(
       DimSuffix = MeshName;
    }
 
+   DimNames[0] = "NTracers";
+   DimNames[1] = "NCells" + DimSuffix;
+
    auto TracersMonthlySurfClimoCellField =
        Field::create(TracersMonthlySurfClimoCell.label(),
                      "monthly surface tracer climatology", // long name/describe
