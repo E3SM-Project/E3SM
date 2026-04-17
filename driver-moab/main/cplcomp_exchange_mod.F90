@@ -404,7 +404,7 @@ subroutine  copy_aream_from_area(mbappid)
 
   subroutine cplcomp_moab_init_ocn(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
 
-      use iMOAB, only: iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, iMOAB_ComputeCommGraph
+      use iMOAB, only: iMOAB_WriteMesh, iMOAB_GetMeshInfo
       use seq_infodata_mod, only: seq_infodata_type, seq_infodata_GetData
       use shr_moab_mod, only: mbGetnCells, mbGetCellTagVals, mbSetCellTagVals
 
@@ -418,10 +418,9 @@ subroutine  copy_aream_from_area(mbappid)
       character(len=*), intent(in) :: subname
 
       integer :: mpigrp_cplid, mpigrp_old
-      integer :: ierr, context_id
+      integer :: ierr
       character*200 :: appname, outfile, wopts, ropts, infile
       character(CL) :: ocn_domain
-      integer :: tagtype, numco, tagindex
       character(CXX) :: tagname
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
       real(r8), allocatable :: tagValues(:)
@@ -487,30 +486,9 @@ subroutine  copy_aream_from_area(mbappid)
             call moab_define_global_id_tag(mboxid, subname)
          endif  ! end of defining couplers copy of ocean mesh
  !!!! Still on OCN ON CPL
-         tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
-         tagtype = 1  ! dense, double
-         numco = 1 !  one value per cell
-         ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags o2x on coupler'
-            call shr_sys_abort(subname//' ERROR in defining tags o2x on coupler ')
-         endif
-
-         ! need also to define seq_flds_x2o_fields on coupler instance, and on ocean comp instance
-         tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags x2o on coupler'
-            call shr_sys_abort(subname//' ERROR in defining tags x2o on coupler ')
-         endif
-
-         !add the normalization tag
-         tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on ocn on coupler '
-            call shr_sys_abort(subname//' ERROR in defining tags ')
-         endif
+         call moab_define_double_tag(mboxid, trim(seq_flds_o2x_fields), subname)
+         call moab_define_double_tag(mboxid, trim(seq_flds_x2o_fields), subname)
+         call moab_define_double_tag(mboxid, trim(seq_flds_dom_fields)//":norm8wt", subname)
 
 #ifdef MOABDEBUG
    !      debug test
@@ -527,8 +505,7 @@ subroutine  copy_aream_from_area(mbappid)
 !!!!!!  OCEAN COMPONENT
       if (mpoid .ge. 0) then  ! we are on component ocn pes
          if ( trim(ocn_domain) == 'none' ) then
-            context_id = id_join
-            call moab_free_sender_buffers(mpoid, context_id, subname)
+            call moab_free_sender_buffers(mpoid, id_join, subname)
          endif
       endif
       ! in case of domain read, we need to compute the comm graph
@@ -539,12 +516,7 @@ subroutine  copy_aream_from_area(mbappid)
          call cplcomp_moab_compute_comm_graph(mpoid, mboxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
             dead_comps, .true., id_old, id_join, subname, 'data ocn model')
          ! also, frac, area,  masks has to come from ocean mpoid, not from domain file reader
-         ! this is hard to digest :(
-         tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-         call component_exch_moab(comp, mpoid, mboxid, 'c2x', tagname, context_exch='domo')
-         if (mboxid > 0) then ! on coupler pes only
-            call copy_aream_from_area(mboxid)
-         endif
+         call moab_exchange_domain_tags(comp, mpoid, mboxid, 'lat:lon:area:frac:mask', 'domo')
       endif
 
 !!!!!!!!! OCEAN 2nd COPY
@@ -584,14 +556,7 @@ subroutine  copy_aream_from_area(mbappid)
          endif
 
   !! ON 2nd OCEAN ON COUPLER
-         tagtype = 1  ! dense, real
-         numco = 1
-         tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage(mbofxid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on ocn on coupler '
-            call shr_sys_abort(subname//' ERROR in defining tags ')
-         endif
+         call moab_define_double_tag(mbofxid, trim(seq_flds_dom_fields)//":norm8wt", subname)
 
          ! copy domain data to mbofxid
          tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
@@ -607,8 +572,7 @@ subroutine  copy_aream_from_area(mbappid)
 !!!!!!  ON OCN COMPONENT
       if (mpoid .ge. 0) then  ! we are on component ocn pes again, release buffers
           if ( trim(ocn_domain) == 'none' ) then
-            context_id = id_join
-                   call moab_free_sender_buffers(mpoid, context_id, subname)
+            call moab_free_sender_buffers(mpoid, id_join, subname)
           endif
       endif
       ! end copy
