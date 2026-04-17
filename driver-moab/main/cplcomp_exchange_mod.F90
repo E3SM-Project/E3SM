@@ -593,7 +593,7 @@ subroutine  copy_aream_from_area(mbappid)
 
   subroutine cplcomp_moab_init_lnd(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
 
-      use iMOAB, only: iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, iMOAB_ComputeCommGraph
+      use iMOAB, only: iMOAB_WriteMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage
       use seq_infodata_mod, only: seq_infodata_type, seq_infodata_GetData
 
       type(seq_infodata_type), intent(in) :: infodata
@@ -605,10 +605,9 @@ subroutine  copy_aream_from_area(mbappid)
       character(len=*), intent(in) :: subname
 
       integer :: mpigrp_cplid, mpigrp_old
-      integer :: ierr, context_id
+      integer :: ierr, nghlay
       character*200 :: appname, outfile, wopts, ropts
       character(CL) :: lnd_domain
-      integer :: tagtype, numco, tagindex, nghlay
       integer :: ent_type
       character(CXX) :: tagname, newlist
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
@@ -645,8 +644,7 @@ subroutine  copy_aream_from_area(mbappid)
             call moab_receive_mesh(mblxid, mpicom_join, mpigrp_old, id_old, subname)
          endif
          if (MPI_COMM_NULL /= mpicom_old) then  ! we are on component lnd pes again, release buffers
-            context_id = id_join
-            call moab_free_sender_buffers(mlnid, context_id, subname)
+            call moab_free_sender_buffers(mlnid, id_join, subname)
         endif
       else
          ! Coupler side only: read land mesh from domain file
@@ -670,23 +668,8 @@ subroutine  copy_aream_from_area(mbappid)
 
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
          call moab_define_global_id_tag(mblxid, subname)
-
-!  need to define tags on land too
-         tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
-         tagtype = 1  ! dense, double
-         numco = 1 !  one value per cell
-         ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco, tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags l2x on coupler land'
-            call shr_sys_abort(subname//' ERROR in defining tags l2x on coupler ')
-         endif
-         ! need also to define seq_flds_x2l_fields on coupler instance, and on land comp instance
-         tagname = trim(seq_flds_x2l_fields)//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco, tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags x2l on coupler land'
-            call shr_sys_abort(subname//' ERROR in defining tags x2l on coupler land')
-         endif
+         call moab_define_double_tag(mblxid, trim(seq_flds_l2x_fields), subname)
+         call moab_define_double_tag(mblxid, trim(seq_flds_x2l_fields), subname)
 
          if (.not.rof_present) then  ! need to zero out some Flrr fields
             call shr_string_listIntersect(seq_flds_x2l_fields,seq_flds_r2x_fluxes,newlist)
@@ -713,13 +696,7 @@ subroutine  copy_aream_from_area(mbappid)
             endif
          endif
 
-         !add the normalization tag
-         tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on lnd on coupler '
-            call shr_sys_abort(subname//' ERROR in defining tags ')
-         endif
+         call moab_define_double_tag(mblxid, trim(seq_flds_dom_fields)//":norm8wt", subname)
 
       endif ! end of coupler pes
 
@@ -743,11 +720,7 @@ subroutine  copy_aream_from_area(mbappid)
          call cplcomp_moab_compute_comm_graph(mlnid, mblxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
             dead_comps, .true., id_old, id_join, subname, 'lnd model')
       endif
-      tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-      call component_exch_moab(comp, mlnid, mblxid, 'c2x', tagname, context_exch='doml')
-      if (mblxid > 0) then ! on coupler pes only
-         call copy_aream_from_area(mblxid)
-      endif
+      call moab_exchange_domain_tags(comp, mlnid, mblxid, 'lat:lon:area:frac:mask', 'doml')
 
 #ifdef MOABDEBUG
          outfile = 'recMeshLand.h5m'//C_NULL_CHAR
