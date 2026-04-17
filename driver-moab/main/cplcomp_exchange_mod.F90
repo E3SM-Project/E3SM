@@ -20,7 +20,7 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs, seq_comm_iamin
   use seq_diag_mct
   use cplcomp_moab_helpers_mod, only: moab_register_app, moab_send_mesh, moab_receive_mesh, &
-     moab_load_mesh, moab_free_sender_buffers, moab_define_global_id_tag
+     moab_load_mesh, moab_free_sender_buffers, moab_define_global_id_tag, moab_define_double_tag
 
   use seq_comm_mct, only : mhid, mpoid, mbaxid, mboxid, mbofxid ! iMOAB app ids, for atm, ocean, ax mesh, ox mesh
   use seq_comm_mct, only : mhpgid         !    iMOAB app id for atm pgx grid, on atm pes
@@ -55,6 +55,7 @@ module cplcomp_exchange_mod
    ! Shared routines for helper dispatch, invariants, and comm-graph setup.
 
    private :: copy_aream_from_area
+   private :: moab_exchange_domain_tags
     private :: cplcomp_moab_init_atm
     private :: cplcomp_moab_init_ocn
     private :: cplcomp_moab_init_lnd
@@ -202,6 +203,16 @@ subroutine  copy_aream_from_area(mbappid)
       cplcomp_moab_atm_phys_cid = ATM_PHYS_ID_OFFSET + id_old
 
   end function cplcomp_moab_atm_phys_cid
+
+  subroutine moab_exchange_domain_tags(comp, comp_appid, cpl_appid, domain_fields, dom_context)
+      type(component_type), intent(inout) :: comp
+      integer,              intent(in)    :: comp_appid, cpl_appid
+      character(len=*),     intent(in)    :: domain_fields, dom_context
+      character(CXX) :: tagname
+      tagname = trim(domain_fields)//C_NULL_CHAR
+      call component_exch_moab(comp, comp_appid, cpl_appid, 'c2x', tagname, context_exch=dom_context)
+      call copy_aream_from_area(cpl_appid)
+  end subroutine moab_exchange_domain_tags
 
   subroutine cplcomp_moab_resolve_comm_types(src_has_cells, tgt_has_cells, typeA, typeB)
 
