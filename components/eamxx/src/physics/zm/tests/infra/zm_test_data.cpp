@@ -1405,6 +1405,8 @@ void zm_downdraft_properties(ZmDowndraftPropertiesData& d)
     const auto q_dnd_sat_c = ekat::subview(q_dnd_sat_d, i);
     const auto evp_c = ekat::subview(evp_d, i);
 
+    Real temp = totevp_d(i);
+
     ZMF::zm_downdraft_properties(
       team,
       init_cp,
@@ -1434,7 +1436,8 @@ void zm_downdraft_properties(ZmDowndraftPropertiesData& d)
       h_dnd_c,
       q_dnd_sat_c,
       evp_c,
-      totevp_d(i));
+      temp);
+    totevp_d(i) = temp;
   });
 
   // Now get arrays
