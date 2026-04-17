@@ -846,7 +846,7 @@ subroutine  copy_aream_from_area(mbappid)
 
   subroutine cplcomp_moab_init_rof(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
 
-      use iMOAB, only: iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, iMOAB_ComputeCommGraph
+      use iMOAB, only: iMOAB_WriteMesh, iMOAB_GetMeshInfo
       use seq_infodata_mod, only: seq_infodata_type, seq_infodata_GetData
 
       type(seq_infodata_type), intent(in) :: infodata
@@ -858,11 +858,9 @@ subroutine  copy_aream_from_area(mbappid)
       character(len=*), intent(in) :: subname
 
       integer :: mpigrp_cplid, mpigrp_old
-      integer :: ierr, context_id
+      integer :: ierr, nghlay
       character*200 :: appname, outfile, wopts, ropts
       character(CL) :: rtm_mesh, rof_domain
-      integer :: tagtype, numco, tagindex, nghlay
-      character(CXX) :: tagname
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
 
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
@@ -927,33 +925,15 @@ subroutine  copy_aream_from_area(mbappid)
 
          call moab_define_global_id_tag(mbrxid, subname)
 
-         tagtype = 1  ! dense, double
-         numco = 1 !  one value per cell / entity
-         tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco, tagindex )
-         if ( ierr == 1 ) then
-            call shr_sys_abort( subname//' ERROR: cannot define tags for rof on coupler' )
-         end if
-         tagname = trim(seq_flds_x2r_fields)//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco, tagindex )
-         if ( ierr == 1 ) then
-            call shr_sys_abort( subname//' ERROR: cannot define tags for rof on coupler' )
-         end if
-
-         !add the normalization tag
-         tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on rof on coupler '
-            call shr_sys_abort(subname//' ERROR in defining tags ')
-         endif
+         call moab_define_double_tag(mbrxid, trim(seq_flds_r2x_fields), subname)
+         call moab_define_double_tag(mbrxid, trim(seq_flds_x2r_fields), subname)
+         call moab_define_double_tag(mbrxid, trim(seq_flds_dom_fields)//":norm8wt", subname)
 
       endif  ! coupler pes
 
       ! Free buffers on component side after send completes
       if (mrofid >= 0 .and. dead_comps) then
-         context_id = id_join
-         call moab_free_sender_buffers(mrofid, context_id, subname)
+         call moab_free_sender_buffers(mrofid, id_join, subname)
       endif
 
       ! we are now on joint pes, compute comm graph between rof and coupler model
@@ -962,13 +942,8 @@ subroutine  copy_aream_from_area(mbappid)
       call cplcomp_moab_compute_comm_graph(mrofid, mbrxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
          dead_comps, .true., id_old, id_join, subname, 'rof model')
 
-      tagname = 'area:lon:lat:frac:mask'//C_NULL_CHAR
-      call component_exch_moab(comp, mrofid, mbrxid, 'c2x', tagname, context_exch='domr')
-      ! copy aream from area in all cases
       ! initialize aream from area; it may have different values in the end, or reset again
-      if (mbrxid > 0) then ! on coupler pes only
-         call copy_aream_from_area(mbrxid)
-      endif
+      call moab_exchange_domain_tags(comp, mrofid, mbrxid, 'area:lon:lat:frac:mask', 'domr')
 #ifdef MOABDEBUG
       if (mbrxid >= 0) then
          outfile = 'recMeshRof.h5m'//C_NULL_CHAR
