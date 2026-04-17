@@ -967,9 +967,6 @@ subroutine  copy_aream_from_area(mbappid)
 
       !-----------------------------------------------------
       !
-      use iMOAB, only: iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, &
-      iMOAB_SetDoubleTagStorage, iMOAB_ComputeCommGraph
-      !
       use seq_infodata_mod
       use shr_moab_mod
       !
