@@ -264,7 +264,7 @@ subroutine  copy_aream_from_area(mbappid)
 
   subroutine cplcomp_moab_init_atm(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
 
-      use iMOAB, only: iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, iMOAB_ComputeCommGraph
+      use iMOAB, only: iMOAB_WriteMesh, iMOAB_GetMeshInfo
       use seq_infodata_mod, only: seq_infodata_type, seq_infodata_GetData
 
       type(seq_infodata_type), intent(in)  :: infodata
@@ -276,12 +276,10 @@ subroutine  copy_aream_from_area(mbappid)
       character(len=*), intent(in) :: subname
 
       integer :: mpigrp_cplid, mpigrp_old
-      integer :: ierr, context_id
+      integer :: ierr
       character*200 :: appname, outfile, wopts, ropts, infile
       character(CL) :: atm_mesh
-      integer :: tagtype, numco, tagindex
       integer :: ATM_PHYS_CID
-      character(CXX) :: tagname
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
 
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
@@ -352,12 +350,11 @@ subroutine  copy_aream_from_area(mbappid)
       if (mphaid .ge. 0) then  ! we are on component atm pes
 !!!!! FULL ATM
          if ( trim(atm_mesh) == 'none' ) then  ! full atmosphere
-            context_id = id_join
             if (atm_pg_active) then! we send mesh from mhpgid app
-               call moab_free_sender_buffers(mhpgid, context_id, subname)
+               call moab_free_sender_buffers(mhpgid, id_join, subname)
             else
                ! we send mesh from point cloud data
-               call moab_free_sender_buffers(mphaid, context_id, subname)
+               call moab_free_sender_buffers(mphaid, id_join, subname)
             endif
          endif
       endif  ! component atm pes
@@ -378,46 +375,13 @@ subroutine  copy_aream_from_area(mbappid)
       ! we have to check that before we can define the tag
 !!!!!! On ATM ON CPL
       if (mbaxid .ge. 0 ) then   !  coupler pes
-         tagtype = 1  ! dense, double
-
-         tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
-         numco = 1 !  usually 1 value per cell
-
-         ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags on atm on coupler '
-            call shr_sys_abort(subname//' ERROR in defining tags ')
-         endif
-
-         tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
-         numco = 1 !  usually 1 value per cell
-
-         ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags seq_flds_x2a_fields on atm on coupler '
-            call shr_sys_abort(subname//' ERROR in defining tags ')
-         endif
-
-         !add the normalization tag
-
-         tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
-         numco = 1 !  usually 1 value per cell
-
-         ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on atm on coupler '
-            call shr_sys_abort(subname//' ERROR in defining tags ')
-         endif
+         call moab_define_double_tag(mbaxid, trim(seq_flds_a2x_fields), subname)
+         call moab_define_double_tag(mbaxid, trim(seq_flds_x2a_fields), subname)
+         call moab_define_double_tag(mbaxid, trim(seq_flds_dom_fields)//":norm8wt", subname)
       endif ! coupler pes
       ! also, frac, area,  masks has to come from atm mphaid, not from domain file reader
-      ! this is hard to digest :(
-      tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
       ! TODO:  this should be called on the joint procs, not coupler only.
-      call component_exch_moab(comp, mphaid, mbaxid, 'c2x', tagname, context_exch='doma')
-      if (mbaxid .ge. 0 ) then   !  coupler pes only
-         ! copy aream from area in case atm_mesh
-         call copy_aream_from_area(mbaxid)
-      endif ! coupler pes
+      call moab_exchange_domain_tags(comp, mphaid, mbaxid, 'lat:lon:area:frac:mask', 'doma')
 
 #ifdef MOABDEBUG
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
