@@ -125,6 +125,7 @@ design/IO
 design/IOStreams
 design/Reductions
 design/State
+design/StateValidation
 design/SubmesoscaleEddies
 design/Tendency
 design/Tendencies
