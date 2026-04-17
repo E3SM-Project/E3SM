@@ -111,13 +111,13 @@ static int fillValidState() {
    // Use deepCopy with individual tracer subviews
    if (Tracers::getNumTracers() > 0) {
       // Temperature = 10.0 (valid: -10 to 50)
-      if (Tracers::IndxTemp != Tracers::IndxInvalid) {
+      if (Tracers::IndxTemp != -1) {
          Array2DReal TempArr = Tracers::getByIndex(0, Tracers::IndxTemp);
          deepCopy(TempArr, static_cast<Real>(10.0));
       }
 
       // Salinity = 35.0 (valid: -2 to 60)
-      if (Tracers::IndxSalt != Tracers::IndxInvalid) {
+      if (Tracers::IndxSalt != -1) {
          Array2DReal SaltArr = Tracers::getByIndex(0, Tracers::IndxSalt);
          deepCopy(SaltArr, static_cast<Real>(35.0));
       }

@@ -164,7 +164,7 @@ void validateOceanState(const OceanState *State, const AuxiliaryState *AuxState,
    // -------------------------------------------------------------------------
    // Temperature tracer: valid range [-10, 50]
    // -------------------------------------------------------------------------
-   if (Tracers::IndxTemp != Tracers::IndxInvalid) {
+   if (Tracers::IndxTemp != -1) {
       Array3DReal AllTracers = Tracers::getAll(TimeLevel);
       auto [NaNs, OOB]       = checkTracerArray(
           AllTracers, Tracers::IndxTemp, State->NCellsOwned, State->NVertLayers,
@@ -186,7 +186,7 @@ void validateOceanState(const OceanState *State, const AuxiliaryState *AuxState,
    // -------------------------------------------------------------------------
    // Salinity tracer: valid range [-2, 60]
    // -------------------------------------------------------------------------
-   if (Tracers::IndxSalt != Tracers::IndxInvalid) {
+   if (Tracers::IndxSalt != -1) {
       Array3DReal AllTracers = Tracers::getAll(TimeLevel);
       auto [NaNs, OOB]       = checkTracerArray(
           AllTracers, Tracers::IndxSalt, State->NCellsOwned, State->NVertLayers,
