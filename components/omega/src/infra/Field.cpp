@@ -137,8 +137,18 @@ Field::create(const std::string &FieldName,   // [in] Name of variable/field
    // the dimensions are distributed.
    ThisField->Distributed = false;
    if (NumDims > 0) {
+      if (static_cast<int>(Dimensions.size()) != NumDims)
+         ABORT_ERROR("Attempt to create field {} failed. Expected {} "
+                     "dimension names but received {}.",
+                     FieldName, NumDims, Dimensions.size());
+
       ThisField->DimNames.resize(NumDims);
       for (int I = 0; I < NumDims; ++I) {
+         if (Dimensions[I].empty())
+            ABORT_ERROR("Attempt to create field {} failed. Dimension {} "
+                        "has an empty name.",
+                        FieldName, I);
+
          ThisField->DimNames[I] = Dimensions[I];
          if (Dimension::isDistributedDim(Dimensions[I]))
             ThisField->Distributed = true;
