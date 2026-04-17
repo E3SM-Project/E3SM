@@ -225,7 +225,8 @@ parse_cf_time_units (const std::string& units_str,
 
 std::shared_ptr<AtmosphereDiagnostic>
 create_diagnostic (const std::string& diag_field_name,
-                   const std::shared_ptr<const AbstractGrid>& grid)
+                   const std::shared_ptr<const AbstractGrid>& grid,
+                   const std::string& vert_interp_type)
 {
   // Note: use grouping (the (..) syntax), so you can later query the content
   //       of each group in the matches output var!
@@ -281,6 +282,7 @@ create_diagnostic (const std::string& diag_field_name,
     params.set("grid_name",grid->name());
     params.set("pressure_value",matches[2].str());
     params.set("pressure_units", matches[4].str());
+    params.set("vert_interpolation_type", vert_interp_type);
     diag_name = "FieldAtPressureLevel";
   } else if (std::regex_search(diag_field_name,matches,field_at_h)) {
     params.set("field_name",matches[1].str());

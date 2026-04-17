@@ -95,9 +95,13 @@ parse_cf_time_units (const std::string& units_str,
 
 // Create a diagnostic from a string representation of it.
 // E.g., create the diag to compute fieldX_at_500hPa.
+// vert_interp_type controls vertical interpolation for diagnostics that use
+// pressure-level interpolation (e.g., FieldAtPressureLevel).
+// Valid values: "linear", "log-linear". Default is "log-linear".
 std::shared_ptr<AtmosphereDiagnostic>
 create_diagnostic (const std::string& diag_name,
-                   const std::shared_ptr<const AbstractGrid>& grid);
+                   const std::shared_ptr<const AbstractGrid>& grid,
+                   const std::string& vert_interp_type = "log-linear");
 
 } // namespace scream
 

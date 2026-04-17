@@ -123,6 +123,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
   vremap_data.pname = "PS";
   vremap_data.pmid = pmid;
   vremap_data.pint = pint;
+  vremap_data.interp_type = m_params.get<std::string>("vert_interpolation_type","linear");
   m_data_interpolation->create_vert_remapper (vremap_data);
   m_data_interpolation->init_data_interval (start_of_step_ts());
 
