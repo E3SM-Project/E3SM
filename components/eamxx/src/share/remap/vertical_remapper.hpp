@@ -35,6 +35,11 @@ public:
     Both
   };
 
+  enum InterpType {
+    Linear,     // Standard linear interpolation
+    LogLinear   // Log-linear interpolation (pressure coordinates are log-transformed)
+  };
+
   VerticalRemapper (const grid_ptr_type& src_grid,
                     const std::string& map_file);
 
@@ -44,6 +49,11 @@ public:
   ~VerticalRemapper () = default;
 
   void set_extrapolation_type (const ExtrapType etype, const TopBot where = TopAndBot);
+
+  // Set the interpolation type. If pressure fields are already set, this method
+  // will re-transform them: Linear->LogLinear applies log to stored pressures,
+  // LogLinear->Linear applies exp to recover raw pressure values.
+  void set_interp_type (const InterpType itype);
 
   void set_source_pressure (const Field& p, const ProfileType ptype);
   void set_target_pressure (const Field& p, const ProfileType ptype);
@@ -75,6 +85,7 @@ public:
 protected:
 
   void set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType ptype);
+
   FieldLayout create_layout (const FieldLayout& from_layout,
                              const std::shared_ptr<const AbstractGrid>& to_grid) const override;
 
@@ -85,6 +96,11 @@ protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
+  // Clone p and return a field with log(p) values
+  Field log_pressure (const Field& p) const;
+  // Clone p and return a field with exp(p) values
+  Field exp_pressure (const Field& p) const;
+
   template<int N>
   void apply_vertical_interpolation (const ekat::LinInterp<Real,N>& lin_interp,
                                      const Field& f_src, const Field& f_tgt,
@@ -126,6 +142,9 @@ protected:
   // Extrapolation settings at top/bottom. Default to P0 extrapolation
   ExtrapType            m_etype_top = P0;
   ExtrapType            m_etype_bot = P0;
+
+  // Interpolation type: linear or log-linear
+  InterpType            m_interp_type = Linear;
 
   // We need to remap mid/int fields separately, and we want to use packs if possible,
   // so we need to divide input fields into 4 separate categories
