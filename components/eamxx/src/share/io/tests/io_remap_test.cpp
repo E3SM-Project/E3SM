@@ -237,6 +237,7 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   print ("    -> source data ... \n",io_comm);
   auto source_remap_control = set_output_params("remap_source",remap_filename,p_ref,false,false);
+  source_remap_control.set<std::string>("vert_interpolation_type","linear");
   om_source.initialize(io_comm,source_remap_control,t0,false);
   om_source.setup(field_manager,gm->get_grid_names());
   io_comm.barrier();
@@ -247,6 +248,7 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   print ("    -> vertical remap ... \n",io_comm);
   auto vert_remap_control = set_output_params("remap_vertical",remap_filename,p_ref,true,false);
+  vert_remap_control.set<std::string>("vert_interpolation_type","linear");
   om_vert.initialize(io_comm,vert_remap_control,t0,false);
   om_vert.setup(field_manager,gm->get_grid_names());
   io_comm.barrier();
@@ -257,6 +259,7 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   print ("    -> horizontal remap ... \n",io_comm);
   auto horiz_remap_control = set_output_params("remap_horizontal",remap_filename,p_ref,false,true);
+  horiz_remap_control.set<std::string>("vert_interpolation_type","linear");
   om_horiz.initialize(io_comm,horiz_remap_control,t0,false);
   om_horiz.setup(field_manager,gm->get_grid_names());
   io_comm.barrier();
@@ -267,6 +270,7 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   print ("    -> vertical-horizontal remap ... \n",io_comm);
   auto vert_horiz_remap_control = set_output_params("remap_vertical_horizontal",remap_filename,p_ref,true,true);
+  vert_horiz_remap_control.set<std::string>("vert_interpolation_type","linear");
   om_vert_horiz.initialize(io_comm,vert_horiz_remap_control,t0,false);
   om_vert_horiz.setup(field_manager,gm->get_grid_names());
   io_comm.barrier();
@@ -274,6 +278,100 @@ TEST_CASE("io_remap_test","io_remap_test")
   om_vert_horiz.run(t0+dt);
   om_vert_horiz.finalize();
   print ("    -> vertical-horizontal remap ... done\n",io_comm);
+
+  print ("    -> log-linear vertical remap ... \n",io_comm);
+  // Use q_scale = 1/p_bot to normalize q values to [0,1], so exp(q) stays in [1,e].
+  const Real q_scale = p_bot > 0 ? 1.0/p_bot : 1.0;
+  // Create a remap file with exp-transformed target levels to test log-linear interp.
+  // With log-linear remapping and source pressures exp(q_src), the remapper internally
+  // computes log(exp(q_src)) = q_src and interpolates linearly in q-space.
+  const std::string log_remap_filename = "log_remap_weights_np"+std::to_string(io_comm.size())+".nc";
+  std::vector<Real> p_tgt_exp;
+  for (int ii=0; ii<nlevs_tgt; ++ii) {
+    p_tgt_exp.push_back(std::exp(p_tgt[ii]*q_scale));
+  }
+  scorpio::register_file(log_remap_filename, scorpio::FileMode::Write);
+  scorpio::define_dim(log_remap_filename,"n_a",ncols_src);
+  scorpio::define_dim(log_remap_filename,"n_b",ncols_tgt);
+  scorpio::define_dim(log_remap_filename,"n_s",ncols_src);
+  scorpio::define_dim(log_remap_filename,"lev",nlevs_tgt);
+  scorpio::define_var(log_remap_filename,"col",   {"n_s"},"int");
+  scorpio::define_var(log_remap_filename,"row",   {"n_s"},"int");
+  scorpio::define_var(log_remap_filename,"S",     {"n_s"},"real");
+  scorpio::define_var(log_remap_filename,"p_levs",{"lev"},"real");
+  scorpio::set_dim_decomp(log_remap_filename,"n_s",io_comm.rank()*ncols_src_l,ncols_src_l);
+  scorpio::enddef(log_remap_filename);
+  scorpio::write_var(log_remap_filename,"row",   row.data());
+  scorpio::write_var(log_remap_filename,"col",   col.data());
+  scorpio::write_var(log_remap_filename,"S",     S.data());
+  scorpio::write_var(log_remap_filename,"p_levs",p_tgt_exp.data());
+  scorpio::release_file(log_remap_filename);
+
+  // Build a source field manager with exp-transformed pressures.
+  // Field values are set as linear in q = p*q_scale (= log of the exp-transformed pressure),
+  // so log-linear interp on exp(q) coords gives identical results to linear interp on q.
+  auto fm_log = get_test_fm(grid, false);
+  fm_log->init_fields_time_stamp(t0);
+
+  const auto& pm_log_f = fm_log->get_field("p_mid");
+  const auto& pi_log_f = fm_log->get_field("p_int");
+  const auto& ps_log_f = fm_log->get_field("p_surf");
+  const auto& pm_log_v = pm_log_f.get_view<Real**,Host>();
+  const auto& pi_log_v = pi_log_f.get_view<Real**,Host>();
+  const auto& ps_log_v = ps_log_f.get_view<Real*,Host>();
+  for (int ii=0; ii<ncols_src_l; ii++) {
+    ps_log_v(ii)   = std::exp(p_surf(ii)*q_scale);
+    pi_log_v(ii,0) = std::exp(pi_v(ii,0)*q_scale);
+    for (int jj=0; jj<nlevs_src; jj++) {
+      pi_log_v(ii,jj+1) = std::exp(pi_v(ii,jj+1)*q_scale);
+      pm_log_v(ii,jj)   = std::exp(pm_v(ii,jj)*q_scale);
+    }
+  }
+  pm_log_f.sync_to_dev();
+  pi_log_f.sync_to_dev();
+  ps_log_f.sync_to_dev();
+
+  const auto& Yf_log_f = fm_log->get_field("Y_flat");
+  const auto& Ym_log_f = fm_log->get_field("Y_mid");
+  const auto& Yi_log_f = fm_log->get_field("Y_int");
+  const auto& Vm_log_f = fm_log->get_field("V_mid");
+  const auto& Vi_log_f = fm_log->get_field("V_int");
+  const auto& Yf_log_v = Yf_log_f.get_view<Real*,Host>();
+  const auto& Ym_log_v = Ym_log_f.get_view<Real**,Host>();
+  const auto& Yi_log_v = Yi_log_f.get_view<Real**,Host>();
+  const auto& Vm_log_v = Vm_log_f.get_view<Real***,Host>();
+  const auto& Vi_log_v = Vi_log_f.get_view<Real***,Host>();
+  for (int ii=0; ii<ncols_src_l; ii++) {
+    Yf_log_v(ii)   = calculate_output(pm_v(ii,0)*q_scale,ii,0);
+    Yi_log_v(ii,0) = calculate_output(pi_v(ii,0)*q_scale,ii,0);
+    for (int cc=0; cc<2; cc++) {
+      Vi_log_v(ii,cc,0) = calculate_output(pi_v(ii,0)*q_scale,ii,cc+1);
+    }
+    for (int jj=0; jj<nlevs_src; jj++) {
+      Ym_log_v(ii,jj)   = calculate_output(pm_v(ii,jj)*q_scale,  ii,0);
+      Yi_log_v(ii,jj+1) = calculate_output(pi_v(ii,jj+1)*q_scale,ii,0);
+      for (int cc=0; cc<2; cc++) {
+        Vm_log_v(ii,cc,jj)   = calculate_output(pm_v(ii,jj)*q_scale,  ii,cc+1);
+        Vi_log_v(ii,cc,jj+1) = calculate_output(pi_v(ii,jj+1)*q_scale,ii,cc+1);
+      }
+    }
+  }
+  Yf_log_f.sync_to_dev();
+  Ym_log_f.sync_to_dev();
+  Yi_log_f.sync_to_dev();
+  Vm_log_f.sync_to_dev();
+  Vi_log_f.sync_to_dev();
+
+  OutputManager om_log_vert;
+  auto log_vert_params = set_output_params("remap_log_vertical",log_remap_filename,-1,true,false);
+  log_vert_params.set<std::string>("vert_interpolation_type","log-linear");
+  om_log_vert.initialize(io_comm,log_vert_params,t0,false);
+  om_log_vert.setup(fm_log,gm->get_grid_names());
+  io_comm.barrier();
+  om_log_vert.init_timestep(t0,dt);
+  om_log_vert.run(t0+dt);
+  om_log_vert.finalize();
+  print ("    -> log-linear vertical remap ... done\n",io_comm);
   print (" -> Create output ... done\n",io_comm);
 
 
@@ -546,6 +644,48 @@ TEST_CASE("io_remap_test","io_remap_test")
       REQUIRE(approx(Ys_v_vh(ii), Ys_exp));
     }
     print ("    -> vertical + horizontal remap ... done\n",io_comm);
+  }
+  // ------------------------------------------------------------------------------------------------------
+  //                           ---  Log-linear Vertical Remapping ---
+  {
+    // The log-linear remap with exp-transformed coordinates (exp(p*q_scale)) should yield
+    // the same result as linear remap on the q = p*q_scale coordinates directly, since
+    // the remapper internally computes log(exp(q)) = q before interpolating.
+    print ("    -> log-linear vertical remap ... \n",io_comm);
+    auto gm_log_vert   = get_test_gm(io_comm,ncols_src,nlevs_tgt);
+    auto grid_log_vert = gm_log_vert->get_grid("point_grid");
+    auto fm_log_vert   = get_test_fm(grid_log_vert,true,-1);
+    auto log_vert_in   = set_input_params("remap_log_vertical",io_comm,t0.to_string(),-1);
+    AtmosphereInput test_input(log_vert_in,fm_log_vert);
+    test_input.read_variables();
+    test_input.finalize();
+
+    const auto& Yf_f_lv = fm_log_vert->get_field("Y_flat");
+    const auto& Ym_f_lv = fm_log_vert->get_field("Y_mid");
+    const auto& Yi_f_lv = fm_log_vert->get_field("Y_int");
+    const auto& Vm_f_lv = fm_log_vert->get_field("V_mid");
+    const auto& Vi_f_lv = fm_log_vert->get_field("V_int");
+    const auto& Yf_v_lv = Yf_f_lv.get_view<Real*,Host>();
+    const auto& Ym_v_lv = Ym_f_lv.get_view<Real**,Host>();
+    const auto& Yi_v_lv = Yi_f_lv.get_view<Real**,Host>();
+    const auto& Vm_v_lv = Vm_f_lv.get_view<Real***,Host>();
+    const auto& Vi_v_lv = Vi_f_lv.get_view<Real***,Host>();
+
+    for (int ii=0; ii<ncols_src_l; ii++) {
+      REQUIRE(approx(Yf_v_lv(ii), Yf_log_v(ii)));
+      for (int jj=0; jj<nlevs_tgt; jj++) {
+        const Real q_jj = p_tgt[jj]*q_scale;
+        const bool mid_masked = (p_tgt[jj]>pm_v(ii,nlevs_src-1) || p_tgt[jj]<pm_v(ii,0));
+        const bool int_masked = (p_tgt[jj]>pi_v(ii,nlevs_src)   || p_tgt[jj]<pi_v(ii,0));
+        REQUIRE(approx(Ym_v_lv(ii,jj),(mid_masked ? fill_val : calculate_output(q_jj,ii,0))));
+        REQUIRE(approx(Yi_v_lv(ii,jj),(int_masked ? fill_val : calculate_output(q_jj,ii,0))));
+        for (int cc=0; cc<2; cc++) {
+          REQUIRE(approx(Vm_v_lv(ii,cc,jj), (mid_masked ? fill_val : calculate_output(q_jj,ii,cc+1))));
+          REQUIRE(approx(Vi_v_lv(ii,cc,jj), (int_masked ? fill_val : calculate_output(q_jj,ii,cc+1))));
+        }
+      }
+    }
+    print ("    -> log-linear vertical remap ... done\n",io_comm);
   }
   // ------------------------------------------------------------------------------------------------------
   // All Done

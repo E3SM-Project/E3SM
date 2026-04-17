@@ -198,6 +198,7 @@ get_test_diag(const std::map<std::string,Field>& fields,
   params.set("field_name",fname);
   params.set("pressure_value",std::to_string(plevel));
   params.set("pressure_units",std::string("Pa"));
+  params.set("vert_interpolation_type",std::string("linear")); // use linear for this test (field is linear in p)
   const auto& comm = grid->get_comm();
   auto diag = std::make_shared<FieldAtPressureLevel>(comm,params,grid);
   for (const auto& fname : diag->get_input_fields_names()) {

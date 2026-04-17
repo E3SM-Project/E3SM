@@ -2,6 +2,7 @@
 ---
 filename_prefix: homme_shoc_cld_p3_mam_optics_rrtmgp
 averaging_type: instant
+vert_interpolation_type: linear
 fields:
   physics_gll:
     field_names:

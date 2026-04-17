@@ -13,8 +13,6 @@ namespace scream
 class FieldAtPressureLevel : public AbstractDiagnostic
 {
 public:
-
-  // Constructors
   FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params,
                         const std::shared_ptr<const AbstractGrid>& grid);
 
@@ -34,6 +32,9 @@ protected:
   std::string         m_diag_name;
 
   Real                m_pressure_level;
+
+  Real                m_log_pressure_level; // log(m_pressure_level), for log-linear interp
+  bool                m_log_linear; // whether to use log-linear interpolation
 };
 
 } //namespace scream

@@ -254,6 +254,7 @@ protected:
       console_logger(ekat::logger::LogLevel::warn);
 
   std::string m_stream_name; // used in error msgs to help distinguish which stream this is
+  std::string m_vert_interp_type = "log-linear"; // vertical interpolation type for IO diagnostics
 };
 
 } // namespace scream
