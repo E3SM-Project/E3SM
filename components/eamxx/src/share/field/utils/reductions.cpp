@@ -123,6 +123,12 @@ ST inf_norm(const Field& f, const ekat::Comm* comm)
 
   ST norm = 0;
   switch (fl.rank()) {
+    case 0:
+      {
+        auto v = f.template get_strided_view<const ST,Host>();
+        norm = std::abs(v());
+      }
+      break;
     case 1:
       {
         auto v = f.template get_strided_view<const ST*,Host>();
