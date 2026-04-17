@@ -25,9 +25,9 @@ namespace {
 
 // Build one Cartesian velocity component from the local horizontal wind only.
 // vec_sph2cart layout is assumed to be:
-//   (ie, ihoriz, icart, igp, jgp)
-// where ihoriz=0,1 are the two local horizontal velocity components
-// and icart=0,1,2 are x,y,z Cartesian components.
+//   (ie, isph, icart, igp, jgp)
+// where isph=0,1,2 are the local spherical basis directions
+// (zonal, meridional, radial) and icart=0,1,2 are x,y,z Cartesian components.
 template <typename VDynViewType, typename VecSph2CartViewType>
 KOKKOS_INLINE_FUNCTION
 auto horiz_wind_to_cart_component(
@@ -196,18 +196,17 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
               const Real Uz_col_h = horiz_wind_to_cart_component(
                   state.m_v, vec_sph2cart, ie, n0, 2, kgp, jgp, ilev_pack)[s];
 
+              // convert vertical velocity to cartesian coordinates
               const Real w_row = w_mid_row(ilev_pack)[s];
               const Real w_col = w_mid_col(ilev_pack)[s];
 
-              // This is currently only correct for DPxx, need to add in correct
-              //  conversion for spherical coordinates later
-              const Real wx_row = 0.0;
-              const Real wy_row = 0.0;
-              const Real wz_row = w_row;
+              const Real wx_row = vec_sph2cart(ie,2,0,igp,kgp) * w_row;
+              const Real wy_row = vec_sph2cart(ie,2,1,igp,kgp) * w_row;
+              const Real wz_row = vec_sph2cart(ie,2,2,igp,kgp) * w_row;
 
-              const Real wx_col = 0.0;
-              const Real wy_col = 0.0;
-              const Real wz_col = w_col;
+              const Real wx_col = vec_sph2cart(ie,2,0,kgp,igp) * w_col;
+              const Real wy_col = vec_sph2cart(ie,2,1,kgp,igp) * w_col;
+              const Real wz_col = vec_sph2cart(ie,2,2,kgp,igp) * w_col;
 
               Ux_row[s] = Ux_row_h + wx_row;
               Ux_col[s] = Ux_col_h + wx_col;
@@ -504,10 +503,13 @@ void HommeDynamics::contract_to_local_strain2 ()
                 grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
                 vec_sph2cart, ie, 1, 1, igp, jgp, ilev);
 
-            // DP planar assumption:
-            // z is already Cartesian vertical, so these are direct derivatives.
-            const Real A20 = grad_Uz_dyn(ie,0,igp,jgp,ilev);  // dw/dx
-            const Real A21 = grad_Uz_dyn(ie,1,igp,jgp,ilev);  // dw/dy
+            const Real A20 = cart_grad_to_local_component(
+                grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
+                vec_sph2cart, ie, 2, 0, igp, jgp, ilev);
+
+            const Real A21 = cart_grad_to_local_component(
+                grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
+                vec_sph2cart, ie, 2, 1, igp, jgp, ilev);
 
             const Real A02 = grad_vertical(ie,0,igp,jgp,ilev); // du/dz
             const Real A12 = grad_vertical(ie,1,igp,jgp,ilev); // dv/dz

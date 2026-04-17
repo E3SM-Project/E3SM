@@ -174,7 +174,7 @@ contains
     real (kind=real_kind), target, dimension(np,np,2,2)     :: elem_D, elem_Dinv, elem_metinv, elem_tensorvisc
     real (kind=real_kind), target, dimension(np,np)         :: elem_fcor, elem_spheremp
     real (kind=real_kind), target, dimension(np,np)         :: elem_rspheremp, elem_metdet
-    real (kind=real_kind), target, dimension(np,np,3,2)     :: elem_vec_sph2cart
+    real (kind=real_kind), target, dimension(np,np,3,3)     :: elem_vec_sph2cart
 
     type (c_ptr) :: elem_D_ptr, elem_Dinv_ptr, elem_fcor_ptr
     type (c_ptr) :: elem_spheremp_ptr, elem_rspheremp_ptr

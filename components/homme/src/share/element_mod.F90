@@ -116,7 +116,7 @@ module element_mod
      ! The transpose of this operation is its pseudoinverse.
      ! This is just "identity" for plane
 
-     real (kind=real_kind)    :: vec_sphere2cart(np,np,3,2)
+     real (kind=real_kind)    :: vec_sphere2cart(np,np,3,3)
 
      ! Mass matrix terms for an element on a cube or reference face
      real (kind=real_kind)    :: mp(np,np)                            ! mass matrix on v and p grid

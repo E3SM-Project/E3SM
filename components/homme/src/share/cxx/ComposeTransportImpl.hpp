@@ -312,7 +312,7 @@ struct ComposeTransportImpl {
   KOKKOS_FUNCTION
   static void ugradv_sphere (
     const SphereOperators& sphere_ops, const KernelVariables& kv,
-    const typename ViewConst<ExecViewUnmanaged<Real[2][3][NP][NP]> >::type& vec_sphere2cart,
+    const typename ViewConst<ExecViewUnmanaged<Real[3][3][NP][NP]> >::type& vec_sphere2cart,
     // velocity, latlon
     const typename ViewConst<ExecViewUnmanaged<Scalar[2][NP][NP][NUM_LEV]> >::type& u,
     const typename ViewConst<ExecViewUnmanaged<Scalar[2][NP][NP][NUM_LEV]> >::type& v,

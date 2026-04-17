@@ -780,7 +780,7 @@ KOKKOS_FUNCTION void calc_eta_dot_ref (
 // velocity estimates at midpoint nodes.
 KOKKOS_FUNCTION void calc_vel_horiz_formula_node_ref_mid (
   const KernelVariables& kv, const SphereOperators& sphere_ops,
-  const CSNV<NUM_LEV>& hyetam, const ExecViewUnmanaged<Real[2][3][NP][NP]>& vec_sph2cart,
+  const CSNV<NUM_LEV>& hyetam, const ExecViewUnmanaged<Real[3][3][NP][NP]>& vec_sph2cart,
   // Velocities are at midpoints. Final eta_dot entry is ignored.
   const Real dtsub, const CS2elNlev vsph[2], const CSelNlevp eta_dot[2],
   const SelNlevp& wrk1, const S2elNlevp& vwrk1, const S2elNlevp& vwrk2,

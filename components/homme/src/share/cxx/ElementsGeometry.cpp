@@ -43,7 +43,7 @@ void ElementsGeometry::init(const int num_elems, const bool consthv, const bool 
   if(!consthv){
     m_tensorvisc   = ExecViewManaged<Real * [2][2][NP][NP]>("TENSORVISC",   m_num_elems);
   }
-  m_vec_sph2cart = ExecViewManaged<Real * [2][3][NP][NP]>("VEC_SPH2CART", m_num_elems);
+  m_vec_sph2cart = ExecViewManaged<Real * [3][3][NP][NP]>("VEC_SPH2CART", m_num_elems);
 
   m_phis     = ExecViewManaged<Real *    [NP][NP]>("PHIS",          m_num_elems);
 
@@ -76,11 +76,11 @@ set_elem_data (const int ie,
 
   using ScalarView   = ExecViewUnmanaged<Real [NP][NP]>;
   using TensorView   = ExecViewUnmanaged<Real [2][2][NP][NP]>;
-  using Tensor23View = ExecViewUnmanaged<Real [2][3][NP][NP]>;
+  using Tensor33View = ExecViewUnmanaged<Real [3][3][NP][NP]>;
 
   using ScalarViewF90   = HostViewUnmanaged<const Real [NP][NP]>;
   using TensorViewF90   = HostViewUnmanaged<const Real [2][2][NP][NP]>;
-  using Tensor23ViewF90 = HostViewUnmanaged<const Real [2][3][NP][NP]>;
+  using Tensor33ViewF90 = HostViewUnmanaged<const Real [3][3][NP][NP]>;
 
   ScalarView::HostMirror h_fcor      = Kokkos::create_mirror_view(Homme::subview(m_fcor,ie));
   ScalarView::HostMirror h_metdet    = Kokkos::create_mirror_view(Homme::subview(m_metdet,ie));
@@ -91,7 +91,7 @@ set_elem_data (const int ie,
   TensorView::HostMirror h_dinv      = Kokkos::create_mirror_view(Homme::subview(m_dinv,ie));
 
   TensorView::HostMirror h_tensorvisc;
-  Tensor23View::HostMirror h_vec_sph2cart;
+  Tensor33View::HostMirror h_vec_sph2cart;
   if( !consthv ){
     h_tensorvisc   = Kokkos::create_mirror_view(Homme::subview(m_tensorvisc,ie));
   }
@@ -105,7 +105,7 @@ set_elem_data (const int ie,
   TensorViewF90 h_d_f90            (D);
   TensorViewF90 h_dinv_f90         (Dinv);
   TensorViewF90 h_tensorvisc_f90   (tensorvisc);
-  Tensor23ViewF90 h_vec_sph2cart_f90 (vec_sph2cart);
+  Tensor33ViewF90 h_vec_sph2cart_f90 (vec_sph2cart);
   
   // 2d scalars
   for (int igp = 0; igp < NP; ++igp) {
@@ -141,7 +141,7 @@ set_elem_data (const int ie,
       }
     }
   }//end if consthv
-  for (int idim = 0; idim < 2; ++idim) {
+  for (int idim = 0; idim < 3; ++idim) {
     for (int jdim = 0; jdim < 3; ++jdim) {
       for (int igp = 0; igp < NP; ++igp) {
         for (int jgp = 0; jgp < NP; ++jgp) {

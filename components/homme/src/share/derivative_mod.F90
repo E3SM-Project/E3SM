@@ -704,7 +704,7 @@ contains
        ! (This is just a faster way of doing a dot product for each grid point,
        ! since reindexing the inputs to use the intrinsic effectively would be
        ! just asking for trouble.)
-       dum_cart(:,:,component)=sum( elem%vec_sphere2cart(:,:,component,:)*v(:,:,:) ,3)
+       dum_cart(:,:,component)=sum( elem%vec_sphere2cart(:,:,component,1:2)*v(:,:,:) ,3)
 !       dum_cart(:,:,component)= elem%vec_sphere2cart(:,:,component,1)*v(:,:,1) + &
 !                                elem%vec_sphere2cart(:,:,component,2)*v(:,:,2)
     end do
@@ -1165,7 +1165,7 @@ contains
 
     ! latlon -> cartesian
     do component=1,3
-!JMD       dum_cart(:,:,component)=sum( elem%vec_sphere2cart(:,:,component,:)*v(:,:,:) ,3)
+!JMD       dum_cart(:,:,component)=sum( elem%vec_sphere2cart(:,:,component,1:2)*v(:,:,:) ,3)
        dum_cart(:,:,component) = elem%vec_sphere2cart(:,:,component,1)*v(:,:,1) + &
                                 elem%vec_sphere2cart(:,:,component,2)*v(:,:,2)
     end do

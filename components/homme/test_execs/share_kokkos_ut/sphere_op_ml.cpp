@@ -252,7 +252,7 @@ class compute_sphere_operator_test_ml {
   ExecViewManaged<Scalar * [2][NP][NP][NUM_LEV]>
       vector_input_d;
   ExecViewManaged<Real * [2][2][NP][NP]> tensor_d;
-  ExecViewManaged<Real * [2][3][NP][NP]> vec_sph2cart_d;
+  ExecViewManaged<Real * [3][3][NP][NP]> vec_sph2cart_d;
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>
       scalar_output_d;
   ExecViewManaged<Scalar * [2][NP][NP][NUM_LEV]>
@@ -298,10 +298,10 @@ class compute_sphere_operator_test_ml {
       tensor_host;
   const int tensor_len = 2 * 2 * NP * NP;  // temp code
 
-  ExecViewManaged<Real * [2][3][NP][NP]>::HostMirror
+  ExecViewManaged<Real * [3][3][NP][NP]>::HostMirror
       vec_sph2cart_host;
   const int vec_sph2cart_len =
-      2 * 3 * NP * NP;  // temp code
+      3 * 3 * NP * NP;  // temp code
 
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>::HostMirror
       scalar_output_host;
@@ -1111,7 +1111,7 @@ TEST_CASE(
         Real dvvf[NP][NP];
         Real dinvf[2][2][NP][NP];
         Real tensorf[2][2][NP][NP];
-        Real vec_sph2cartf[2][3][NP][NP];
+        Real vec_sph2cartf[3][3][NP][NP];
         Real sphf[NP][NP];
 
         for(int _i = 0; _i < NP; _i++)
