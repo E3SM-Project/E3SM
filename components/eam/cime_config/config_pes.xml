@@ -1132,7 +1132,7 @@
     </mach>
     <mach name="bebop">
       <pes compset="any" pesize="any">
-        <comment>bebop: LR conus eamxx 6 nodes</comment>
+        <comment>bebop: LR conus eamxx 8 nodes</comment>
         <ntasks>
           <ntasks_atm>-8</ntasks_atm>
           <ntasks_cpl>-8</ntasks_cpl>
