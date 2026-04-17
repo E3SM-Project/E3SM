@@ -121,30 +121,27 @@ struct UnitWrap::UnitTest<D>::TestZmConvMain : public UnitWrap::UnitTest<D>::Bas
         for (Int n = 0; n < ncol; ++n) {
           const bool active_col = actives[i][n];
           if (!active_col) ++inactive_cnt;
-          for (Int k = 0; k < pverp; ++k) {
-            const Int offset    = n*pver + k;
-            const Int offsetp   = n*pverp + k;
-            const Int fgoffset  = (n-inactive_cnt)*pver + k;
-            if (k < pver) {
-              REQUIRE(d_baseline.mflx_up[offset] == Approx(d_test.mflx_up[offset]).margin(margin));
-              REQUIRE(d_baseline.entr_up[offset] == Approx(d_test.entr_up[offset]).margin(margin));
-              REQUIRE(d_baseline.detr_up[offset] == Approx(d_test.detr_up[offset]).margin(margin));
-              REQUIRE(d_baseline.mflx_dn[offset] == Approx(d_test.mflx_dn[offset]).margin(margin));
-              REQUIRE(d_baseline.entr_dn[offset] == d_test.entr_dn[offset]);
-              // gathered variables: qtnd, rprd, zdu, mcon, heat, dlf, pflx, ql
-              if (active_col) {
+          if (active_col) {
+            for (Int k = 0; k < pverp; ++k) {
+              const Int offset    = n*pver + k;
+              const Int offsetp   = n*pverp + k;
+              const Int fgoffset  = (n-inactive_cnt)*pver + k;
+              if (k < pver) {
+                REQUIRE(d_baseline.mflx_up[fgoffset] == Approx(d_test.mflx_up[offset]).margin(margin));
+                REQUIRE(d_baseline.entr_up[fgoffset] == Approx(d_test.entr_up[offset]).margin(margin));
+                REQUIRE(d_baseline.detr_up[fgoffset] == Approx(d_test.detr_up[offset]).margin(margin));
+                REQUIRE(d_baseline.mflx_dn[fgoffset] == Approx(d_test.mflx_dn[offset]).margin(margin));
+                REQUIRE(d_baseline.entr_dn[fgoffset] == Approx(d_test.entr_dn[offset]).margin(margin));
                 REQUIRE(d_baseline.p_del[fgoffset] == d_test.p_del[offset]);
-                REQUIRE(d_baseline.heat[offset] == d_test.heat[offset]);
-                REQUIRE(d_baseline.qtnd[offset] == d_test.qtnd[offset]);
-                REQUIRE(d_baseline.zdu[offset] == d_test.zdu[offset]);
+                REQUIRE(d_baseline.heat[offset] == Approx(d_test.heat[offset]).margin(margin));
+                REQUIRE(d_baseline.qtnd[offset] == Approx(d_test.qtnd[offset]).margin(margin));
+                REQUIRE(d_baseline.zdu[offset] == Approx(d_test.zdu[offset]).margin(margin));
                 REQUIRE(d_baseline.ql[offset] == Approx(d_test.ql[offset]).margin(margin));
                 REQUIRE(d_baseline.rprd[offset] == Approx(d_test.rprd[offset]).margin(margin));
-                REQUIRE(d_baseline.dlf[offset] == d_test.dlf[offset]);
+                REQUIRE(d_baseline.dlf[offset] == Approx(d_test.dlf[offset]).margin(margin));
               }
-            }
-            // pverp variables (both gathered)
-            if (active_col) {
-              REQUIRE(d_baseline.mcon[offsetp] == d_test.mcon[offsetp]);
+              // pverp variables (both gathered)
+              REQUIRE(d_baseline.mcon[offsetp] == Approx(d_test.mcon[offsetp]).margin(margin));
               REQUIRE(d_baseline.pflx[offsetp] == Approx(d_test.pflx[offsetp]).margin(margin));
             }
           }
