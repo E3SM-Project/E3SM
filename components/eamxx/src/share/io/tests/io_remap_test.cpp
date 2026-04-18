@@ -33,14 +33,6 @@ Real calculate_output(const Real pressure, const int col, const int cmp);
 ekat::ParameterList set_output_params(const std::string& name, const std::string& remap_filename, const int p_ref, const bool vert_remap, const bool horiz_remap);
 ekat::ParameterList set_input_params(const std::string& name, ekat::Comm& comm, const std::string& tstamp, const int p_ref);
 
-bool approx(const Real a, const Real b) {
-  const Real tol = std::numeric_limits<Real>::epsilon()*100000;
-  if (std::abs(a-b) >= tol) {
-    printf("Error::approx - difference of |%e - %e| = %e is greater than the max tolerance of %e\n",a,b,std::abs(a-b),tol);
-  }
-  return std::abs(a-b) < tol;
-}
-
 void print (const std::string& msg, const ekat::Comm& comm) {
   if (comm.am_i_root()) {
     printf("%s",msg.c_str());
@@ -57,6 +49,7 @@ TEST_CASE("io_remap_test","io_remap_test")
 
 
   print (" -> Test Setup ...\n",io_comm);
+  const Real rel_tol = Real(1e5) * std::numeric_limits<Real>::epsilon();
   scorpio::init_subsystem(io_comm);
   const int ncols_src = 64*io_comm.size();
   const int nlevs_src = 2*packsize + 1;
@@ -430,18 +423,18 @@ TEST_CASE("io_remap_test","io_remap_test")
     for (int ii=0; ii<ncols_src_l; ii++) {
       const bool ref_masked = (p_ref>pi_v(ii,nlevs_src) || p_ref<pi_v(ii,0));
       const Real test_val = ref_masked ? fill_val : calculate_output(p_ref,ii,0);
-      REQUIRE(approx(Ys_v_vert(ii),test_val));
+      REQUIRE_THAT(Ys_v_vert(ii), Catch::Matchers::WithinRel(test_val, rel_tol));
 
-      REQUIRE(approx(Yf_v_vert(ii), Yf_v(ii)));
+      REQUIRE_THAT(Yf_v_vert(ii), Catch::Matchers::WithinRel(Yf_v(ii), rel_tol));
       for (int jj=0; jj<nlevs_tgt; jj++) {
         auto p_jj = p_tgt[jj];
         const bool mid_masked = (p_jj>pm_v(ii,nlevs_src-1) || p_jj<pm_v(ii,0));
         const bool int_masked = (p_jj>pi_v(ii,nlevs_src)   || p_jj<pi_v(ii,0));
-        REQUIRE(approx(Ym_v_vert(ii,jj),(mid_masked ? fill_val : calculate_output(p_jj,ii,0))));
-        REQUIRE(approx(Yi_v_vert(ii,jj),(int_masked ? fill_val : calculate_output(p_jj,ii,0))));
+        REQUIRE_THAT(Ym_v_vert(ii,jj), Catch::Matchers::WithinRel((mid_masked ? fill_val : calculate_output(p_jj,ii,0)), rel_tol));
+        REQUIRE_THAT(Yi_v_vert(ii,jj), Catch::Matchers::WithinRel((int_masked ? fill_val : calculate_output(p_jj,ii,0)), rel_tol));
         for (int cc=0; cc<2; cc++) {
-          REQUIRE(approx(Vm_v_vert(ii,cc,jj), (mid_masked ? fill_val : calculate_output(p_jj,ii,cc+1))));
-          REQUIRE(approx(Vi_v_vert(ii,cc,jj), (int_masked ? fill_val : calculate_output(p_jj,ii,cc+1))));
+          REQUIRE_THAT(Vm_v_vert(ii,cc,jj), Catch::Matchers::WithinRel((mid_masked ? fill_val : calculate_output(p_jj,ii,cc+1)), rel_tol));
+          REQUIRE_THAT(Vi_v_vert(ii,cc,jj), Catch::Matchers::WithinRel((int_masked ? fill_val : calculate_output(p_jj,ii,cc+1)), rel_tol));
         }
       }
     }
@@ -496,17 +489,17 @@ TEST_CASE("io_remap_test","io_remap_test")
     for (int ii=0; ii<ncols_tgt_l; ii++) {
       const int col1 = 2*ii;
       const int col2 = 2*ii+1;
-      REQUIRE(approx(Yf_v_horiz(ii),Yf_v(col1)*wgt + Yf_v(col2)*(1.0-wgt)));
-      REQUIRE(approx(Yi_v_horiz(ii,0), Yi_v(col1,0)*wgt + Yi_v(col2,0)*(1.0-wgt)));
+      REQUIRE_THAT(Yf_v_horiz(ii), Catch::Matchers::WithinRel(Yf_v(col1)*wgt + Yf_v(col2)*(1.0-wgt), rel_tol));
+      REQUIRE_THAT(Yi_v_horiz(ii,0), Catch::Matchers::WithinRel(Yi_v(col1,0)*wgt + Yi_v(col2,0)*(1.0-wgt), rel_tol));
       for (int cc=0; cc<2; cc++) {
-        REQUIRE(approx(Vi_v_horiz(ii,cc,0), Vi_v(col1,cc,0)*wgt + Vi_v(col2,cc,0)*(1.0-wgt)));
+        REQUIRE_THAT(Vi_v_horiz(ii,cc,0), Catch::Matchers::WithinRel(Vi_v(col1,cc,0)*wgt + Vi_v(col2,cc,0)*(1.0-wgt), rel_tol));
       }
       for (int jj=0; jj<nlevs_src; jj++) {
-        REQUIRE(approx(Ym_v_horiz(ii,jj),   Ym_v(col1,jj)*wgt   + Ym_v(col2,jj)*(1.0-wgt)));
-        REQUIRE(approx(Yi_v_horiz(ii,jj+1), Yi_v(col1,jj+1)*wgt + Yi_v(col2,jj+1)*(1.0-wgt)));
+        REQUIRE_THAT(Ym_v_horiz(ii,jj), Catch::Matchers::WithinRel(Ym_v(col1,jj)*wgt   + Ym_v(col2,jj)*(1.0-wgt), rel_tol));
+        REQUIRE_THAT(Yi_v_horiz(ii,jj+1), Catch::Matchers::WithinRel(Yi_v(col1,jj+1)*wgt + Yi_v(col2,jj+1)*(1.0-wgt), rel_tol));
         for (int cc=0; cc<2; cc++) {
-          REQUIRE(approx(Vm_v_horiz(ii,cc,jj),   Vm_v(col1,cc,jj)*wgt   + Vm_v(col2,cc,jj)*(1.0-wgt)));
-          REQUIRE(approx(Vi_v_horiz(ii,cc,jj+1), Vi_v(col1,cc,jj+1)*wgt + Vi_v(col2,cc,jj+1)*(1.0-wgt)));
+          REQUIRE_THAT(Vm_v_horiz(ii,cc,jj), Catch::Matchers::WithinRel(Vm_v(col1,cc,jj)*wgt   + Vm_v(col2,cc,jj)*(1.0-wgt), rel_tol));
+          REQUIRE_THAT(Vi_v_horiz(ii,cc,jj+1), Catch::Matchers::WithinRel(Vi_v(col1,cc,jj+1)*wgt + Vi_v(col2,cc,jj+1)*(1.0-wgt), rel_tol));
         }
       }
       // For the pressured sliced variable we expect some masking which needs to be checked.
@@ -528,7 +521,7 @@ TEST_CASE("io_remap_test","io_remap_test")
       } else {
         Ys_exp = fill_val;
       }
-      REQUIRE(approx(Ys_v_horiz(ii), Ys_exp));
+      REQUIRE_THAT(Ys_v_horiz(ii), Catch::Matchers::WithinRel(Ys_exp, rel_tol));
     }
     print ("    -> horizontal remap ... done\n",io_comm);
   }
@@ -582,7 +575,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     for (int ii=0; ii<ncols_tgt_l; ii++) {
       const int col1 = 2*ii;
       const int col2 = 2*ii+1;
-      REQUIRE(approx(Yf_v_vh(ii),Yf_v(col1)*wgt + Yf_v(col2)*(1.0-wgt)));
+      REQUIRE_THAT(Yf_v_vh(ii), Catch::Matchers::WithinRel(Yf_v(col1)*wgt + Yf_v(col2)*(1.0-wgt), rel_tol));
       for (int jj=0; jj<nlevs_tgt; jj++) {
         auto p_jj = p_tgt[jj];
         const Real mid_mask_1 = (p_jj<=pm_v(col1,nlevs_src-1) && p_jj>=pm_v(col1,0));
@@ -603,8 +596,8 @@ TEST_CASE("io_remap_test","io_remap_test")
           // This point is completely masked out, assign masked value
           test_int = fill_val;
         }
-        REQUIRE(approx(Ym_v_vh(ii,jj), test_mid));
-        REQUIRE(approx(Yi_v_vh(ii,jj), test_int));
+        REQUIRE_THAT(Ym_v_vh(ii,jj), Catch::Matchers::WithinRel(test_mid, rel_tol));
+        REQUIRE_THAT(Yi_v_vh(ii,jj), Catch::Matchers::WithinRel(test_int, rel_tol));
         for (int cc=0; cc<2; cc++) {
           if (mid_mask_1 + mid_mask_2 > 0.0) {
             test_mid = (mid_mask_1*calculate_output(p_jj,col1,cc+1)*wgt + mid_mask_2*calculate_output(p_jj,col2,cc+1)*(1-wgt))/(mid_mask_1*wgt + mid_mask_2*(1-wgt));
@@ -618,8 +611,8 @@ TEST_CASE("io_remap_test","io_remap_test")
             // This point is completely masked out, assign masked value
             test_int = fill_val;
           }
-          REQUIRE(approx(Vm_v_vh(ii,cc,jj), test_mid));
-          REQUIRE(approx(Vi_v_vh(ii,cc,jj), test_int));
+          REQUIRE_THAT(Vm_v_vh(ii,cc,jj), Catch::Matchers::WithinRel(test_mid, rel_tol));
+          REQUIRE_THAT(Vi_v_vh(ii,cc,jj), Catch::Matchers::WithinRel(test_int, rel_tol));
         }
       }
       // For the pressured sliced variable we expect it to match the solution from horizontal mapping only so we use the same syntax.
@@ -641,7 +634,7 @@ TEST_CASE("io_remap_test","io_remap_test")
       } else {
         Ys_exp = fill_val;
       }
-      REQUIRE(approx(Ys_v_vh(ii), Ys_exp));
+      REQUIRE_THAT(Ys_v_vh(ii), Catch::Matchers::WithinRel(Ys_exp, rel_tol));
     }
     print ("    -> vertical + horizontal remap ... done\n",io_comm);
   }
@@ -672,16 +665,16 @@ TEST_CASE("io_remap_test","io_remap_test")
     const auto& Vi_v_lv = Vi_f_lv.get_view<Real***,Host>();
 
     for (int ii=0; ii<ncols_src_l; ii++) {
-      REQUIRE(approx(Yf_v_lv(ii), Yf_log_v(ii)));
+      REQUIRE_THAT(Yf_v_lv(ii), Catch::Matchers::WithinRel(Yf_log_v(ii), rel_tol));
       for (int jj=0; jj<nlevs_tgt; jj++) {
         const Real q_jj = p_tgt[jj]*q_scale;
         const bool mid_masked = (p_tgt[jj]>pm_v(ii,nlevs_src-1) || p_tgt[jj]<pm_v(ii,0));
         const bool int_masked = (p_tgt[jj]>pi_v(ii,nlevs_src)   || p_tgt[jj]<pi_v(ii,0));
-        REQUIRE(approx(Ym_v_lv(ii,jj),(mid_masked ? fill_val : calculate_output(q_jj,ii,0))));
-        REQUIRE(approx(Yi_v_lv(ii,jj),(int_masked ? fill_val : calculate_output(q_jj,ii,0))));
+        REQUIRE_THAT(Ym_v_lv(ii,jj), Catch::Matchers::WithinRel((mid_masked ? fill_val : calculate_output(q_jj,ii,0)), rel_tol));
+        REQUIRE_THAT(Yi_v_lv(ii,jj), Catch::Matchers::WithinRel((int_masked ? fill_val : calculate_output(q_jj,ii,0)), rel_tol));
         for (int cc=0; cc<2; cc++) {
-          REQUIRE(approx(Vm_v_lv(ii,cc,jj), (mid_masked ? fill_val : calculate_output(q_jj,ii,cc+1))));
-          REQUIRE(approx(Vi_v_lv(ii,cc,jj), (int_masked ? fill_val : calculate_output(q_jj,ii,cc+1))));
+          REQUIRE_THAT(Vm_v_lv(ii,cc,jj), Catch::Matchers::WithinRel((mid_masked ? fill_val : calculate_output(q_jj,ii,cc+1)), rel_tol));
+          REQUIRE_THAT(Vi_v_lv(ii,cc,jj), Catch::Matchers::WithinRel((int_masked ? fill_val : calculate_output(q_jj,ii,cc+1)), rel_tol));
         }
       }
     }
