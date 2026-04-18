@@ -18,7 +18,7 @@
 !       salt  flux    ~ (kg/s)/m^2
 !
 ! !REVISION HISTORY:
-!    2026-agr 12 - R. Jacob    - moab port
+!    2026-apr 12 - R. Jacob    - moab port
 !    2012-aug-20 - T. Craig    - add rof component
 !    2008-jul-10 - T. Craig    - updated budget implementation
 !    2007-may-07 - B. Kauffman - initial port to cpl7.
@@ -131,6 +131,7 @@ module seq_diag_moab
   !--- F for field ---
 
   integer(in),parameter :: f_area      = 1     ! area (wrt to unit sphere)
+
   integer(in),parameter :: f_hfrz      = 2     ! heat : latent, freezing
   integer(in),parameter :: f_hmelt     = 3     ! heat : latent, melting
   integer(in),parameter :: f_hswnet    = 4     ! heat : short wave, net
@@ -142,6 +143,7 @@ module seq_diag_moab
   integer(in),parameter :: f_hsen      =10     ! heat : sensible
   integer(in),parameter :: f_hpolar    =11     ! heat : AIS imbalance
   integer(in),parameter :: f_hh2ot     =12     ! heat : water temperature
+
   integer(in),parameter :: f_wfrz      =13     ! water: freezing
   integer(in),parameter :: f_wmelt     =14     ! water: melting
   integer(in),parameter :: f_wrain     =15     ! water: precip, liquid
@@ -151,6 +153,7 @@ module seq_diag_moab
   integer(in),parameter :: f_wroff     =19     ! water: runoff/flood
   integer(in),parameter :: f_wioff     =20     ! water: frozen runoff
   integer(in),parameter :: f_wirrig    =21     ! water: irrigation
+
   integer(in),parameter :: f_wfrz_16O  =22     ! water: freezing
   integer(in),parameter :: f_wmelt_16O =23     ! water: melting
   integer(in),parameter :: f_wrain_16O =24     ! water: precip, liquid
@@ -158,6 +161,7 @@ module seq_diag_moab
   integer(in),parameter :: f_wevap_16O =26     ! water: evaporation
   integer(in),parameter :: f_wroff_16O =27     ! water: runoff/flood
   integer(in),parameter :: f_wioff_16O =28     ! water: frozen runoff
+
   integer(in),parameter :: f_wfrz_18O  =29     ! water: freezing
   integer(in),parameter :: f_wmelt_18O =30     ! water: melting
   integer(in),parameter :: f_wrain_18O =31     ! water: precip, liquid
@@ -165,6 +169,7 @@ module seq_diag_moab
   integer(in),parameter :: f_wevap_18O =33     ! water: evaporation
   integer(in),parameter :: f_wroff_18O =34     ! water: runoff/flood
   integer(in),parameter :: f_wioff_18O =35     ! water: frozen runoff
+
   integer(in),parameter :: f_wfrz_HDO  =36     ! water: freezing
   integer(in),parameter :: f_wmelt_HDO =37     ! water: melting
   integer(in),parameter :: f_wrain_HDO =38     ! water: precip, liquid
@@ -481,6 +486,7 @@ contains
     real(r8), allocatable    :: fld_evap_16O(:)
     real(r8), allocatable    :: fld_evap_18O(:)
     real(r8), allocatable    :: fld_evap_HDO(:)
+    logical,save             :: atm_prognostic    ! .true. => atm comp expects input
     logical,save             :: first_time    = .true.
     logical,save             :: flds_wiso_atm = .false.
     logical,save             :: samegrid_al       ! samegrid atm and lnd
@@ -503,9 +509,10 @@ contains
     call mbGetCellTagVals(mbaxid, ifracname, ifrac_data, lSize)
 
     if (first_time) then
-       call seq_infodata_getData(infodata , &
+       call seq_infodata_getData(infodata   , &
             lnd_gnam=lnd_gnam             , &
-            atm_gnam=atm_gnam             )
+            atm_gnam=atm_gnam             , &
+            atm_prognostic=atm_prognostic )
        samegrid_al = .true.
        if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
 
@@ -630,17 +637,33 @@ contains
     if (present(do_x2a)) then
        allocate(fld_lwup(lSize), fld_lat(lSize), fld_sen(lSize), fld_evap(lSize), fld_h2otemp(lSize))
 
-       call mbGetCellTagVals(mbaxid, 'Faxx_lwup',    fld_lwup,    lSize)
-       call mbGetCellTagVals(mbaxid, 'Faxx_lat',     fld_lat,     lSize)
-       call mbGetCellTagVals(mbaxid, 'Faxx_sen',     fld_sen,     lSize)
-       call mbGetCellTagVals(mbaxid, 'Faxx_evap',    fld_evap,    lSize)
-       call mbGetCellTagVals(mbaxid, 'Faoo_h2otemp', fld_h2otemp, lSize)
+       ! if model is not prognostic, need to make sure these fields are zero
+       if (atm_prognostic) then
+          call mbGetCellTagVals(mbaxid, 'Faxx_lwup',    fld_lwup,    lSize)
+          call mbGetCellTagVals(mbaxid, 'Faxx_lat',     fld_lat,     lSize)
+          call mbGetCellTagVals(mbaxid, 'Faxx_sen',     fld_sen,     lSize)
+          call mbGetCellTagVals(mbaxid, 'Faxx_evap',    fld_evap,    lSize)
+          call mbGetCellTagVals(mbaxid, 'Faoo_h2otemp', fld_h2otemp, lSize)
+       else
+          fld_lwup(:)    = 0.0_r8
+          fld_lat(:)     = 0.0_r8
+          fld_sen(:)     = 0.0_r8
+          fld_evap(:)    = 0.0_r8
+          fld_h2otemp(:) = 0.0_r8
+       endif
 
        if (flds_wiso_atm) then
           allocate(fld_evap_16O(lSize), fld_evap_18O(lSize), fld_evap_HDO(lSize))
-          call mbGetCellTagVals(mbaxid, 'Faxx_evap_16O', fld_evap_16O, lSize)
-          call mbGetCellTagVals(mbaxid, 'Faxx_evap_18O', fld_evap_18O, lSize)
-          call mbGetCellTagVals(mbaxid, 'Faxx_evap_HDO', fld_evap_HDO, lSize)
+       ! if model is not prognostic, need to make sure these fields are zero
+          if (atm_prognostic) then
+            call mbGetCellTagVals(mbaxid, 'Faxx_evap_16O', fld_evap_16O, lSize)
+            call mbGetCellTagVals(mbaxid, 'Faxx_evap_18O', fld_evap_18O, lSize)
+            call mbGetCellTagVals(mbaxid, 'Faxx_evap_HDO', fld_evap_HDO, lSize)
+          else
+            fld_evap_16O(:) = 0.0_r8
+            fld_evap_18O(:) = 0.0_r8
+            fld_evap_HDO(:) = 0.0_r8
+          endif
        end if
 
        do n=1,lSize
@@ -768,6 +791,8 @@ contains
     real(r8), allocatable    :: fld_flood_16O(:)
     real(r8), allocatable    :: fld_flood_18O(:)
     real(r8), allocatable    :: fld_flood_HDO(:)
+    logical,save             :: lnd_prognostic
+    logical,save             :: rof_prognostic
     logical,save             :: first_time    = .true.
     logical,save             :: flds_wiso_lnd = .false.
 
@@ -789,6 +814,9 @@ contains
     call mbGetCellTagVals(mblxid, lfrinname, lfrin_data, lSize)
 
     if (first_time) then
+       call seq_infodata_getData(infodata   , &
+            rof_prognostic=rof_prognostic, &
+            lnd_prognostic=lnd_prognostic )
        av_tmp => component_get_c2x_cx(lnd)
        index_l2x_Fall_evap_16O = mct_aVect_indexRA(av_tmp,'Fall_evap_16O',perrWith='quiet')
        if (index_l2x_Fall_evap_16O /= 0) then
@@ -810,12 +838,21 @@ contains
        call mbGetCellTagVals(mblxid, 'Fall_lat',    fld_lat,    lSize)
        call mbGetCellTagVals(mblxid, 'Fall_sen',    fld_sen,    lSize)
        call mbGetCellTagVals(mblxid, 'Fall_evap',   fld_evap,   lSize)
-       call mbGetCellTagVals(mblxid, 'Flrl_rofsur', fld_rofsur, lSize)
-       call mbGetCellTagVals(mblxid, 'Flrl_rofgwl', fld_rofgwl, lSize)
-       call mbGetCellTagVals(mblxid, 'Flrl_rofsub', fld_rofsub, lSize)
-       call mbGetCellTagVals(mblxid, 'Flrl_rofdto', fld_rofdto, lSize)
-       call mbGetCellTagVals(mblxid, 'Flrl_wslake', fld_wslake, lSize)
        call mbGetCellTagVals(mblxid, 'Flrl_rofi',   fld_rofi,   lSize)
+       ! if model is not prognostic, need to make sure these fields are zero
+       if (lnd_prognostic) then
+          call mbGetCellTagVals(mblxid, 'Flrl_rofsur', fld_rofsur, lSize)
+          call mbGetCellTagVals(mblxid, 'Flrl_rofgwl', fld_rofgwl, lSize)
+          call mbGetCellTagVals(mblxid, 'Flrl_rofsub', fld_rofsub, lSize)
+          call mbGetCellTagVals(mblxid, 'Flrl_rofdto', fld_rofdto, lSize)
+          call mbGetCellTagVals(mblxid, 'Flrl_wslake', fld_wslake, lSize)
+       else
+          fld_rofsur(:) = 0.0_r8
+          fld_rofgwl(:) = 0.0_r8
+          fld_rofsub(:) = 0.0_r8
+          fld_rofdto(:) = 0.0_r8
+          fld_wslake(:) = 0.0_r8
+       endif
 
        if (index_l2x_Flrl_irrig /= 0) then
           allocate(fld_irrig(lSize))
@@ -901,8 +938,14 @@ contains
        call mbGetCellTagVals(mblxid, 'Faxa_rainl',  fld_rainl,  lSize)
        call mbGetCellTagVals(mblxid, 'Faxa_snowc',  fld_snowc,  lSize)
        call mbGetCellTagVals(mblxid, 'Faxa_snowl',  fld_snowl,  lSize)
-       call mbGetCellTagVals(mblxid, 'Flrr_flood',  fld_flood,  lSize)
-       call mbGetCellTagVals(mblxid, 'Flrr_supply', fld_supply, lSize)
+       ! if model is not prognostic, need to make sure these fields are zero
+       if(lnd_prognostic) then
+          call mbGetCellTagVals(mblxid, 'Flrr_flood',  fld_flood,  lSize)
+          call mbGetCellTagVals(mblxid, 'Flrr_supply', fld_supply, lSize)
+       else
+          fld_supply(:) = 0.0_r8
+          fld_flood(:) = 0.0_r8
+       endif
 
        if (flds_wiso_lnd) then
           allocate(fld_rainc_16O(lSize), fld_rainc_18O(lSize), fld_rainc_HDO(lSize))
@@ -1022,6 +1065,8 @@ contains
     real(r8), allocatable    :: fld_r2x_rofl_16O(:), fld_r2x_rofl_18O(:), fld_r2x_rofl_HDO(:)
     real(r8), allocatable    :: fld_r2x_rofi_16O(:), fld_r2x_rofi_18O(:), fld_r2x_rofi_HDO(:)
     real(r8), allocatable    :: fld_flood_16O(:),    fld_flood_18O(:),    fld_flood_HDO(:)
+    logical,save             :: lnd_prognostic
+    logical,save             :: rof_prognostic
     logical,save             :: first_time    = .true.
     logical,save             :: flds_wiso_rof = .false.
 
@@ -1050,16 +1095,29 @@ contains
           flds_wiso_rof = .true.
           flds_wiso     = .true.
        end if
+       call seq_infodata_getData(infodata   , &
+            rof_prognostic=rof_prognostic, &
+            lnd_prognostic=lnd_prognostic )
     end if
 
     ! x2r block (c_rof_rr)
     ic = c_rof_rr
     allocate(fld_rofsur(lSize), fld_rofgwl(lSize), fld_rofsub(lSize), fld_rofdto(lSize), fld_rofi(lSize))
-    call mbGetCellTagVals(mbrxid, 'Flrl_rofsur', fld_rofsur, lSize)
-    call mbGetCellTagVals(mbrxid, 'Flrl_rofgwl', fld_rofgwl, lSize)
-    call mbGetCellTagVals(mbrxid, 'Flrl_rofsub', fld_rofsub, lSize)
-    call mbGetCellTagVals(mbrxid, 'Flrl_rofdto', fld_rofdto, lSize)
-    call mbGetCellTagVals(mbrxid, 'Flrl_rofi',   fld_rofi,   lSize)
+    ! if model is not prognostic, need to make sure these fields are zero
+    if(rof_prognostic) then
+       call mbGetCellTagVals(mbrxid, 'Flrl_rofsur', fld_rofsur, lSize)
+       call mbGetCellTagVals(mbrxid, 'Flrl_rofgwl', fld_rofgwl, lSize)
+       call mbGetCellTagVals(mbrxid, 'Flrl_rofsub', fld_rofsub, lSize)
+       call mbGetCellTagVals(mbrxid, 'Flrl_rofdto', fld_rofdto, lSize)
+       call mbGetCellTagVals(mbrxid, 'Flrl_rofi',   fld_rofi,   lSize)
+    else
+       fld_rofsur(:) = 0.0_r8
+       fld_rofgwl(:) = 0.0_r8
+       fld_rofsub(:) = 0.0_r8
+       fld_rofdto(:) = 0.0_r8
+       fld_rofi(:) = 0.0_r8
+    endif
+
     if (index_x2r_Flrl_irrig /= 0) then
        allocate(fld_irrig(lSize))
        call mbGetCellTagVals(mbrxid, 'Flrl_irrig', fld_irrig, lSize)
@@ -1110,6 +1168,8 @@ contains
     call mbGetCellTagVals(mbrxid, 'Firr_rofi',   fld_firr_rofi, lSize)
     call mbGetCellTagVals(mbrxid, 'Flrr_flood',  fld_flood,    lSize)
     call mbGetCellTagVals(mbrxid, 'Flrr_supply', fld_supply,   lSize)
+    ! if model is not prognostic, need to make sure these fields are zero
+    if(.not.rof_prognostic) fld_supply(:) = 0.0_r8
     if ( flds_wiso_rof ) then
        allocate(fld_r2x_rofl_16O(lSize), fld_r2x_rofl_18O(lSize), fld_r2x_rofl_HDO(lSize))
        allocate(fld_r2x_rofi_16O(lSize), fld_r2x_rofi_18O(lSize), fld_r2x_rofi_HDO(lSize))
@@ -1258,6 +1318,7 @@ contains
     real(r8), allocatable    :: fld_rofl_16O(:),  fld_rofi_16O(:)
     real(r8), allocatable    :: fld_rofl_18O(:),  fld_rofi_18O(:)
     real(r8), allocatable    :: fld_rofl_HDO(:),  fld_rofi_HDO(:)
+    logical,save             :: ocn_prognostic
     logical,save             :: first_time    = .true.
     logical,save             :: flds_wiso_ocn = .false.
     logical,save             :: flds_polar    = .false.
@@ -1297,6 +1358,8 @@ contains
           flds_wiso_ocn = .true.
           flds_wiso     = .true.
        end if
+       call seq_infodata_getData(infodata   , &
+            ocn_prognostic=ocn_prognostic )
     end if
 
     if (present(do_o2x)) then
@@ -1394,16 +1457,29 @@ contains
        allocate(fld_melth(lSize), fld_meltw(lSize), fld_bergh(lSize), fld_bergw(lSize))
        allocate(fld_swnet(lSize), fld_lwdn(lSize), fld_rain(lSize), fld_snow(lSize))
        allocate(fld_rofl(lSize), fld_rofi(lSize))
-       call mbGetCellTagVals(mboxid, 'Fioi_melth',  fld_melth,  lSize)
-       call mbGetCellTagVals(mboxid, 'Fioi_meltw',  fld_meltw,  lSize)
-       call mbGetCellTagVals(mboxid, 'PFioi_bergh', fld_bergh,  lSize)
-       call mbGetCellTagVals(mboxid, 'PFioi_bergw', fld_bergw,  lSize)
-       call mbGetCellTagVals(mboxid, 'Foxx_swnet',  fld_swnet,  lSize)
+    ! if model is not prognostic, need to make sure these fields are zero
+       if(ocn_prognostic) then
+         call mbGetCellTagVals(mboxid, 'Fioi_melth',  fld_melth,  lSize)
+         call mbGetCellTagVals(mboxid, 'Fioi_meltw',  fld_meltw,  lSize)
+         call mbGetCellTagVals(mboxid, 'Foxx_swnet',  fld_swnet,  lSize)
+         call mbGetCellTagVals(mboxid, 'Faxa_snow',   fld_snow,   lSize)
+         call mbGetCellTagVals(mboxid, 'Faxa_rain',   fld_rain,   lSize)
+         call mbGetCellTagVals(mboxid, 'Foxx_rofi',   fld_rofi,   lSize)
+         call mbGetCellTagVals(mboxid, 'Foxx_rofl',   fld_rofl,   lSize)
+         call mbGetCellTagVals(mboxid, 'PFioi_bergh', fld_bergh,  lSize)
+         call mbGetCellTagVals(mboxid, 'PFioi_bergw', fld_bergw,  lSize)
+       else
+         fld_melth(:)=0.0_r8
+         fld_meltw(:)=0.0_r8
+         fld_swnet(:)=0.0_r8
+         fld_snow(:) = 0.0_r8
+         fld_rain(:) = 0.0_r8
+         fld_rofi(:) = 0.0_r8
+         fld_rofl(:) = 0.0_r8
+         fld_bergh(:) = 0.0_r8
+         fld_bergw(:) = 0.0_r8
+       endif
        call mbGetCellTagVals(mboxid, 'Faxa_lwdn',   fld_lwdn,   lSize)
-       call mbGetCellTagVals(mboxid, 'Faxa_rain',   fld_rain,   lSize)
-       call mbGetCellTagVals(mboxid, 'Faxa_snow',   fld_snow,   lSize)
-       call mbGetCellTagVals(mboxid, 'Foxx_rofl',   fld_rofl,   lSize)
-       call mbGetCellTagVals(mboxid, 'Foxx_rofi',   fld_rofi,   lSize)
        if ( flds_wiso_ocn ) then
           allocate(fld_meltw_16O(lSize), fld_meltw_18O(lSize), fld_meltw_HDO(lSize))
           allocate(fld_rain_16O(lSize),  fld_rain_18O(lSize),  fld_rain_HDO(lSize))
