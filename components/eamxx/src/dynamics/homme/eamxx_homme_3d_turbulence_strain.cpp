@@ -94,7 +94,7 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
 
   const auto w_int_dyn = state.m_w_i;
 
-  using MidColumn = decltype(Homme::subview(elems.m_derived.m_turb_strain2, 0, 0, 0));
+  using MidColumn = decltype(Homme::subview(elems.m_derived.m_turb_shear_strain3d, 0, 0, 0));
   using IntColumn = decltype(Homme::subview(state.m_w_i, 0, 0, 0, 0));
 
   auto grad_Ux_dyn = m_helper_fields.at("grad_Ux_dyn").template get_view<Real*****>();
@@ -299,7 +299,7 @@ void HommeDynamics::compute_vertical_derivs ()
   const auto dp3d_dyn     = state.m_dp3d;
   const auto vtheta_dp_dyn = state.m_vtheta_dp;
 
-  using MidColumn = decltype(Homme::subview(elems.m_derived.m_turb_strain2, 0, 0, 0));
+  using MidColumn = decltype(Homme::subview(elems.m_derived.m_turb_shear_strain3d, 0, 0, 0));
   using IntColumn = decltype(Homme::subview(state.m_w_i, 0, 0, 0, 0));
 
   auto grad_vertical = m_helper_fields.at("grad_dz_dyn").template get_view<Real*****>();
@@ -433,7 +433,7 @@ void HommeDynamics::compute_vertical_derivs ()
   Kokkos::fence();
 }
 
-void HommeDynamics::contract_to_local_strain2 ()
+void HommeDynamics::contract_to_local_strain3d ()
 {
   using namespace Homme;
 
@@ -452,19 +452,19 @@ void HommeDynamics::contract_to_local_strain2 ()
 
   auto grad_vertical = m_helper_fields.at("grad_dz_dyn").template get_view<Real*****>();
 
-  auto strain2_dyn = m_helper_fields.at("strain2_dyn").template get_view<Real****>();
+  auto shear_strain3d_dyn = m_helper_fields.at("shear_strain3d_dyn").template get_view<Real****>();
 
-  const auto turb_strain2 = elems.m_derived.m_turb_strain2;
+  const auto turb_shear_strain3d = elems.m_derived.m_turb_shear_strain3d;
   const auto vec_sph2cart = geom.m_vec_sph2cart;
 
   const int nlev_scalar = grad_Ux_dyn.extent_int(4);
-  const int nlev_pack   = turb_strain2.extent_int(3);
+  const int nlev_pack   = turb_shear_strain3d.extent_int(3);
 
   using TeamPolicy = Kokkos::TeamPolicy<KT::ExeSpace>;
   using MemberType = typename TeamPolicy::member_type;
 
   Kokkos::parallel_for(
-      "contract_to_local_strain2",
+      "contract_to_local_strain3d",
       TeamPolicy(nelem, Kokkos::AUTO()),
       KOKKOS_LAMBDA (const MemberType& team) {
 
@@ -481,7 +481,7 @@ void HommeDynamics::contract_to_local_strain2 ()
           Kokkos::ThreadVectorRange(team, nlev_pack),
           [&] (const int ilev_pack) {
 
-        Scalar strain2_pack(0.0);
+        Scalar shear_strain3d_pack(0.0);
 
         for (int s = 0; s < VLEN; ++s) {
           const int ilev = ilev_pack*VLEN + s;
@@ -523,20 +523,20 @@ void HommeDynamics::contract_to_local_strain2 ()
             const Real S02 = 0.5 * (A02 + A20);
             const Real S12 = 0.5 * (A12 + A21);
 
-            const Real strain2_val =
+            const Real shear_strain3d_val =
                 2.0 * (S00*S00 + S11*S11 + S22*S22
                      + 2.0*S01*S01
                      + 2.0*S02*S02
                      + 2.0*S12*S12);
 
-            strain2_pack[s] = strain2_val;
-            strain2_dyn(ie,igp,jgp,ilev) = strain2_val;
+            shear_strain3d_pack[s] = shear_strain3d_val;
+            shear_strain3d_dyn(ie,igp,jgp,ilev) = shear_strain3d_val;
           } else {
-            strain2_pack[s] = 0.0;
+            shear_strain3d_pack[s] = 0.0;
           }
         }
 
-        turb_strain2(ie,igp,jgp,ilev_pack) = strain2_pack;
+        turb_shear_strain3d(ie,igp,jgp,ilev_pack) = shear_strain3d_pack;
       });
     });
   });

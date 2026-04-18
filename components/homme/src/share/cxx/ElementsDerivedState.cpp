@@ -38,12 +38,12 @@ void ElementsDerivedState::init(const int num_elems) {
   // allocate SGS turbulence related fields
   m_turb_diff_mom  = ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>("turb_diff_mom",  m_num_elems);
   m_turb_diff_heat = ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>("turb_diff_heat", m_num_elems);
-  m_turb_strain2   = ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>("turb_strain2",   m_num_elems);
+  m_turb_shear_strain3d = ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>("turb_shear_strain3d", m_num_elems);
 
   // Initialize to zero
   Kokkos::deep_copy(m_turb_diff_mom,  Scalar(0));
   Kokkos::deep_copy(m_turb_diff_heat, Scalar(0));
-  Kokkos::deep_copy(m_turb_strain2,   Scalar(0));
+  Kokkos::deep_copy(m_turb_shear_strain3d, Scalar(0));
 
 }
 

@@ -81,7 +81,7 @@ protected:
 
   void compute_horizontal_derivs_of_car_velocity ();
   void compute_vertical_derivs ();
-  void contract_to_local_strain2 ();
+  void contract_to_local_strain3d ();
 
   // fv_phys refers to the horizontal finite volume (FV) grid for column
   // parameterizations nested inside the horizontal element grid. The grid names

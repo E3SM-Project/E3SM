@@ -74,7 +74,7 @@ void SHOCMacrophysics::create_requests()
   add_field<Required>("p_int",          scalar3d_int, Pa,    grid_name, ps);
   add_field<Required>("pseudo_density", scalar3d_mid, Pa,    grid_name, ps);
   add_field<Required>("phis",           scalar2d    , m2/s2, grid_name);
-  add_field<Required>("tke_shear_strain", scalar3d_mid,nondim/s2,   grid_name, ps);
+  add_field<Required>("tke_shear_strain3d", scalar3d_mid,nondim/s2, grid_name, ps);
 
   // Input/Output variables
   add_field<Updated>("horiz_winds",   vector3d_mid,   m/s,     grid_name, ps);
@@ -284,7 +284,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto& surf_sens_flux      = get_field_in("surf_sens_flux").get_view<const Real*>();
   const auto& surf_evap           = get_field_in("surf_evap").get_view<const Real*>();
   const auto& surf_mom_flux       = get_field_in("surf_mom_flux").get_view<const Real**>();
-  const auto& strain2             = get_field_in("tke_shear_strain").get_view<const Pack**>();
+  const auto& shear_strain3d      = get_field_in("tke_shear_strain3d").get_view<const Pack**>();
   const auto& qtracers            = get_group_out("turbulence_advected_tracers").m_monolithic_field->get_strided_view<Pack***>();
   const auto& qc                  = get_field_out("qc").get_view<Pack**>();
   const auto& qv                  = get_field_out("qv").get_view<Pack**>();
@@ -333,7 +333,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
 
   shoc_preprocess.set_variables(m_num_cols,m_num_levs,z_surf,
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_evap,
-                                surf_mom_flux,qtracers,qv,strain2,qc,qc_copy,tke,tke_copy,z_mid,z_int,
+                                surf_mom_flux,qtracers,qv,shear_strain3d,qc,qc_copy,tke,tke_copy,z_mid,z_int,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
                                 wtracer_sfc,wm_zt,inv_exner,thlm,qw, cldfrac_liq, cldfrac_liq_prev);
 
@@ -352,7 +352,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   input.wtracer_sfc = shoc_preprocess.wtracer_sfc;
   input.inv_exner   = shoc_preprocess.inv_exner;
   input.phis        = phis;
-  input.strain2     = strain2;
+  input.shear_strain3d = shear_strain3d;
 
   // Input/Output Variables
   input_output.host_dse     = shoc_preprocess.shoc_s;

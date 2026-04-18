@@ -108,7 +108,7 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<const Pack>& wtracer_sfc,
   const uview_1d<const Pack>& inv_exner,
   const Scalar&                phis,
-  const uview_1d<const Pack>& strain2,
+  const uview_1d<const Pack>& shear_strain3d,
   // Workspace/Local Variables
   const Workspace&             workspace,
   // Input/Output Variables
@@ -227,7 +227,7 @@ void Functions<S,D>::shoc_main_internal(
 	     lambda_low,lambda_high,lambda_slope, // Runtime options
 	     lambda_thresh,Ckh,Ckm,shoc_1p5tke,   // Runtime options
              do_3d_turb,                          // Runtime options
-	     wthv_sec,strain2,                    // Input
+	     wthv_sec,shear_strain3d,             // Input
              shoc_mix,dz_zi,dz_zt,pres,shoc_tabs, // Input
              u_wind,v_wind,brunt,zt_grid,         // Input
              zi_grid,pblh,                        // Input
@@ -373,7 +373,7 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<const Pack>& wtracer_sfc,
   const view_2d<const Pack>& inv_exner,
   const view_1d<const Scalar>& phis,
-  const view_2d<const Pack>& strain2,
+  const view_2d<const Pack>& shear_strain3d,
   // Workspace Manager
   WorkspaceMgr&      workspace_mgr,
   // Input/Output Variables
@@ -497,7 +497,7 @@ void Functions<S,D>::shoc_main_internal(
 	          lambda_low,lambda_high,lambda_slope,  // Runtime options
 		  lambda_thresh,Ckh,Ckm,shoc_1p5tke,    // Runtime options
                   do_3d_turb,                           // Runtime options
-                  wthv_sec,strain2,                     // Input
+                  wthv_sec,shear_strain3d,              // Input
                   shoc_mix,dz_zi,dz_zt,pres,shoc_tabs,  // Input
                   u_wind,v_wind,brunt,zt_grid,          // Input
                   zi_grid,pblh,                         // Input
@@ -666,7 +666,7 @@ Int Functions<S,D>::shoc_main(
     const auto w_field_s      = ekat::subview(shoc_input.w_field, i);
     const auto wtracer_sfc_s  = ekat::subview(shoc_input.wtracer_sfc, i);
     const auto inv_exner_s    = ekat::subview(shoc_input.inv_exner, i);
-    const auto strain2_s      = ekat::subview(shoc_input.strain2, i);
+    const auto shear_strain3d_s = ekat::subview(shoc_input.shear_strain3d, i);
     const auto host_dse_s     = ekat::subview(shoc_input_output.host_dse, i);
     const auto tke_s          = ekat::subview(shoc_input_output.tke, i);
     const auto thetal_s       = ekat::subview(shoc_input_output.thetal, i);
@@ -706,7 +706,7 @@ Int Functions<S,D>::shoc_main(
                        dx_s, dy_s, zt_grid_s, zi_grid_s,                      // Input
                        pres_s, presi_s, pdel_s, thv_s, w_field_s,             // Input
                        wthl_sfc_s, wqw_sfc_s, uw_sfc_s, vw_sfc_s,             // Input
-                       wtracer_sfc_s, inv_exner_s, phis_s, strain2_s,         // Input
+                       wtracer_sfc_s, inv_exner_s, phis_s, shear_strain3d_s,  // Input
                        workspace,                                             // Workspace
                        host_dse_s, tke_s, thetal_s, qw_s, u_wind_s, v_wind_s, // Input/Output
                        wthv_sec_s, qtracers_s, tk_s, shoc_cldfrac_s,          // Input/Output
@@ -733,7 +733,7 @@ Int Functions<S,D>::shoc_main(
     shoc_input.dx, shoc_input.dy, shoc_input.zt_grid, shoc_input.zi_grid, // Input
     shoc_input.pres, shoc_input.presi, shoc_input.pdel, shoc_input.thv, shoc_input.w_field, // Input
     shoc_input.wthl_sfc, shoc_input.wqw_sfc, shoc_input.uw_sfc, shoc_input.vw_sfc, // Input
-    shoc_input.wtracer_sfc, shoc_input.inv_exner, shoc_input.phis, shoc_input.strain2, // Input
+    shoc_input.wtracer_sfc, shoc_input.inv_exner, shoc_input.phis, shoc_input.shear_strain3d, // Input
     workspace_mgr, // Workspace Manager
     shoc_input_output.host_dse, shoc_input_output.tke, shoc_input_output.thetal, shoc_input_output.qw, u_wind_s, v_wind_s, // Input/Output
     shoc_input_output.wthv_sec, shoc_input_output.qtracers, shoc_input_output.tk, shoc_input_output.shoc_cldfrac, // Input/Output

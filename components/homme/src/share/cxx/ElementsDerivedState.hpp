@@ -32,7 +32,7 @@ public:
 
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>     m_turb_diff_mom;     // SGS eddy diffusivity for momentum
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>     m_turb_diff_heat;    // SGS eddy diffusivity for heat
-  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>     m_turb_strain2;      // SGS strain term for 3D shear
+  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>     m_turb_shear_strain3d; // SGS strain term for 3D shear
 
   ElementsDerivedState() : m_num_elems(0) {}
 

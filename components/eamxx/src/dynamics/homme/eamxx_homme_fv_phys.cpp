@@ -186,8 +186,8 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
   const auto omega = Homme::GllFvRemap::Phys2T(
     get_field_out("omega", gn).get_view<Real**>().data(),
     nelem, npg, nlev);
-  const auto strain = Homme::GllFvRemap::Phys2T(
-    get_field_out("tke_shear_strain", gn).get_view<Real**>().data(),
+  const auto strain3d = Homme::GllFvRemap::Phys2T(
+    get_field_out("tke_shear_strain3d", gn).get_view<Real**>().data(),
     nelem, npg, nlev);
   const auto uv = Homme::GllFvRemap::Phys3T(
     t ? t->horiz_winds.data() : get_field_out("horiz_winds", gn).get_view<Real***>().data(),
@@ -199,7 +199,7 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
     get_field_out("pseudo_density", gn).get_view<Real**>().data(),
     nelem, npg, nlev);
 
-  gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega, strain, uv, q, &dp);
+  gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega, strain3d, uv, q, &dp);
   Kokkos::fence();
 }
 

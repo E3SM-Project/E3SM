@@ -25,7 +25,7 @@ void Functions<S,D>
   const uview_1d<const Pack>& sterm_zt,
   const uview_1d<const Pack>& tk,
   const uview_1d<const Pack>& brunt,
-  const uview_1d<const Pack>& strain2,
+  const uview_1d<const Pack>& shear_strain3d,
   const uview_1d<Pack>&       tke,
   const uview_1d<Pack>&       a_diss)
 {
@@ -63,7 +63,7 @@ void Functions<S,D>
 
     // Shear production term, use diffusivity from previous timestep
     if (do_3d_turb){
-      a_prod_sh = Ck*tk(k)*strain2(k);
+      a_prod_sh = Ck*tk(k)*shear_strain3d(k);
     }
     else{
       a_prod_sh = tk(k)*sterm_zt(k);
