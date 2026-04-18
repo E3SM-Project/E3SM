@@ -144,6 +144,8 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
       }
 
       for (int kgp = 0; kgp < NGP; ++kgp) {
+        // Sweep the element stencil to build local horizontal derivatives of the
+        // full 3D Cartesian velocity field at each GLL point.
 
         // Full interface columns for w at the two stencil points.
         const auto w_int_row = Homme::subview(w_int_dyn, ie, n0, igp, kgp);
@@ -196,7 +198,8 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
               const Real Uz_col_h = horiz_wind_to_cart_component(
                   state.m_v, vec_sph2cart, ie, n0, 2, kgp, jgp, ilev_pack)[s];
 
-              // convert vertical velocity to cartesian coordinates
+              // Add the vertical motion to the horizontal wind so the gradients
+              // are taken on the full resolved 3D velocity, not just (u,v).
               const Real w_row = w_mid_row(ilev_pack)[s];
               const Real w_col = w_mid_col(ilev_pack)[s];
 
@@ -236,6 +239,8 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
           Kokkos::ThreadVectorRange(team, nlev_pack),
           [&] (const int ilev_pack) {
 
+        // Convert reference-element derivatives into physical horizontal
+        // gradients using the local metric tensor on the curved element.
         Scalar gx0 = (dinv(ie,0,0,igp,jgp) * dsdx_Ux[ilev_pack]
                     + dinv(ie,0,1,igp,jgp) * dsdy_Ux[ilev_pack]) * scale_factor_inv;
 
@@ -353,9 +358,8 @@ void HommeDynamics::compute_vertical_derivs ()
       // 2) Compute dz on midpoint levels
       // ------------------------------------------
       //
-      // Hydrostatic approximation:
-      //
-      // We reconstruct interface pressure by cumulative summation of dp from top.
+      // Use hydrostatic balance with virtual temperature to estimate layer
+      // thickness, which then sets the resolved vertical shear scale.
       //
       constexpr Real Rgas   = PhysicalConstants::Rgas;
       constexpr Real gravit = PhysicalConstants::g;
@@ -412,8 +416,8 @@ void HommeDynamics::compute_vertical_derivs ()
             const Real v_int_kp1 = (s < VLEN-1) ? v_int(ilev_pack)[s+1] : v_int(ilev_pack+1)[0];
             const Real w_int_kp1 = (s < VLEN-1) ? w_int(ilev_pack)[s+1] : w_int(ilev_pack+1)[0];
 
-            // Assuming top->bottom level indexing, so z decreases with ilev.
-            // Hence the minus sign.
+            // HOMME levels are indexed top to bottom, so the sign is flipped to
+            // recover physical derivatives with respect to increasing height.
             grad_vertical(ie,0,igp,jgp,ilev) =
               -(u_int_kp1 - u_int_k) * inv_dz;
 
@@ -487,6 +491,8 @@ void HommeDynamics::contract_to_local_strain3d ()
           const int ilev = ilev_pack*VLEN + s;
 
           if (ilev < nlev_scalar) {
+            // Project the Cartesian gradient tensor back into the local
+            // element basis so SHOC receives a physically meaningful shear rate.
             const Real A00 = cart_grad_to_local_component(
                 grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
                 vec_sph2cart, ie, 0, 0, igp, jgp, ilev);
@@ -523,6 +529,8 @@ void HommeDynamics::contract_to_local_strain3d ()
             const Real S02 = 0.5 * (A02 + A20);
             const Real S12 = 0.5 * (A12 + A21);
 
+            // Form 2*S_ij*S_ij, the shear-strain invariant that enters the
+            // turbulence production term passed from dynamics to physics.
             const Real shear_strain3d_val =
                 2.0 * (S00*S00 + S11*S11 + S22*S22
                      + 2.0*S01*S01
