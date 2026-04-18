@@ -106,6 +106,9 @@ public:
   // tms' surface drag coefficient.
   void setup_shoc_tms_links();
 
+  // Propagate HOMME's parsed 3D turbulence flag to SHOC's internal runtime option.
+  void setup_shoc_3d_turbulence_link();
+
   // Add column data to all pre/postcondition property checks
   // for use in output.
   void add_additional_column_data_to_property_checks ();

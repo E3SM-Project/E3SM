@@ -37,6 +37,10 @@
 
 namespace scream {
 
+extern "C" {
+bool get_homme_bool_param_f90(const char** name);
+}
+
 namespace control {
 
 /*
@@ -312,6 +316,10 @@ void AtmosphereDriver::create_grids()
     setup_shoc_tms_links();
   }
 
+  if (m_atm_process_group->has_process("shoc")) {
+    setup_shoc_3d_turbulence_link();
+  }
+
   // IOP object needs the grids_manager to have been created, but is then needed in set_grids()
   // implementation of some processes, so setup here.
   const bool enable_iop =
@@ -516,6 +524,19 @@ void AtmosphereDriver::setup_shoc_tms_links ()
 
   auto shoc_process = m_atm_process_group->get_process_nonconst("shoc");
   shoc_process->get_params().set<bool>("apply_tms", true);
+}
+
+void AtmosphereDriver::setup_shoc_3d_turbulence_link ()
+{
+  EKAT_REQUIRE_MSG(m_atm_process_group->has_process("shoc"),
+                   "Error! Attempting to setup 3D turbulence link for "
+                   "SHOC, but SHOC is not defined.\n");
+
+  const char* param_name = "do_3d_turbulence";
+  const bool do_3d_turbulence = get_homme_bool_param_f90(&param_name);
+
+  auto shoc_process = m_atm_process_group->get_process_nonconst("shoc");
+  shoc_process->get_params().set<bool>("do_3d_turbulence_shoc", do_3d_turbulence);
 }
 
 void AtmosphereDriver::add_additional_column_data_to_property_checks () {
