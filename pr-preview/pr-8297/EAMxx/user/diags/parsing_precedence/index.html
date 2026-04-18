@@ -4774,7 +4774,7 @@ still resolves as <code>FieldPrevDiag(X)</code> because <code>binary_ops</code> 
 
 <span class="w">      </span><span class="c1"># bt_osc_count = indicator that bt_prod is negative (tendency oscillating)</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bt_osc_count:=mask_where_bt_prod_lt_0</span>
-<span class="w">      </span><span class="c1"># ConditionalSampling: input=mask, condition_lhs=bt_prod, op=lt, value=0</span>
+<span class="w">      </span><span class="c1"># ConditionalSampling: input=mask, condition_lhs=bt_prod, condition_cmp=lt, condition_rhs=0</span>
 </code></pre></div>
 <p>The <code>aliases</code> section names intermediate sub-expressions that are needed
 as inputs to other diagnostics but should not appear in the output file.

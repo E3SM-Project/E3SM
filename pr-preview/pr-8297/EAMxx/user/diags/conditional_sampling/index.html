@@ -5017,7 +5017,7 @@ reductions to count occurrences of specific conditions.</p>
   (<code>&lt;condition_lhs&gt;_&lt;operator&gt;_&lt;condition_rhs&gt;</code>). We assume the user knows
   the standard unit of the lhs/rhs that are used internally
   in EAMxx field manager (there is no way to specify it).</li>
-<li>The RHS in the condition can be</li>
+<li>The RHS in the condition can be a scalar value or another field/diag name</li>
 </ul>
 <h2 id="example-configuration">Example configuration</h2>
 <div class="highlight"><pre><span></span><code><span class="nt">%YAML</span><span class="w"> </span><span class="m">1.1</span>
@@ -5035,7 +5035,7 @@ reductions to count occurrences of specific conditions.</p>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_where_lev_gt_5</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">p_mid_where_lev_eq_0</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">qv_where_lev_le_10</span>
-<span class="w">      </span><span class="c1"># Count-based conditional sampling</span>
+<span class="w">      </span><span class="c1"># Mask-based conditional sampling</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mask_where_qv_gt_0.01</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mask_where_T_mid_le_273.15</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mask_where_lev_gt_5</span>
