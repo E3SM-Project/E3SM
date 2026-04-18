@@ -1570,21 +1570,15 @@ contains
    !---------------------------------------------------------------------------------------
    ! Initialize coupler-component data
    !  if processor has cpl or model
-   !    init the extended gsMap that describes comp on mpijoin
    !    call call cplcomp_moab_Init and use infodata
-   !    MOAB: on component, send mesh (except lnd and rof).
+   !       on component, send mesh (except lnd and rof).
    !       on coupler, register coupler version
-   !       of app and receive mesh (except lnd and rof). The initial CommGraph is computed as part of
-   !       send/receive of the mesh. For atm compute an additional CommGraph between physgrid on comp atm side
-   !       and mesh on coupler side
-   !    MOAB: for lnd and rof, read the mesh on coupler side from file and
+   !         of app and receive mesh (except lnd and rof). The initial CommGraph is computed as part of
+   !         send/receive of the mesh.
+   !       for lnd and rof, read the mesh on coupler side from file and
    !         compute CommGraph between component (just a point cloud) and coupler version (full mesh)
-   !    MOAB: define c2x, x2c, domain tags
-   !    init the mappers that go between comp and coupler instances of mesh
-   !        these will be rearranger-type mappers since the meshss are the same
-   !    initialize extended Avs to match extended GsMaps
-   !    initialize extended domain
-   !    fill coupler domain with data using a map_exchange call (copy or rearrange only)
+   !       define c2x, x2c, domain tags
+   !       Fill domain info from component using component_exch_moab
    !---------------------------------------------------------------------------------------
     call t_startf('CPL:comp_init_cx_all')
     call t_adj_detailf(+2)

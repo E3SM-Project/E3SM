@@ -378,6 +378,8 @@ contains
              endif
 
              ! Create x2c_cx and c2x_cx
+             ! Using x2c_cc and c2x_cc
+             ! MOAB: the Avs are needed for the attribute lists but will be zero size
              allocate(comp(eci)%x2c_cx, comp(eci)%c2x_cx)
 
              call seq_mctext_avCreate(comp(eci)%x2c_cc, comp(eci)%compid, &
