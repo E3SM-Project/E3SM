@@ -354,6 +354,7 @@ void Functions<S,D>::shoc_main_internal(
   const Scalar&                Ckh,
   const Scalar&                Ckm,
   const bool&                  shoc_1p5tke,
+  const bool&                  do_3d_turb,
   const bool&                  extra_diags,
   // Input Variables
   const view_1d<const Scalar>& dx,
