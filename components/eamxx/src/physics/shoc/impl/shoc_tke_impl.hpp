@@ -61,7 +61,8 @@ void Functions<S,D>::shoc_tke(
   Scalar brunt_int(0);
   integ_column_stability(team,nlev,dz_zt,pres,brunt,brunt_int);
 
-  if (!not do_3d_turb){
+  // If not using 3d turbulence then use the default 1D calculation for shear production
+  if (!do_3d_turb){
     // Compute shear production term, which is on interface levels
     // This follows the methods of Bretheron and Park (2010)
     compute_shr_prod(team,nlevi,nlev,dz_zi,u_wind,v_wind,sterm);

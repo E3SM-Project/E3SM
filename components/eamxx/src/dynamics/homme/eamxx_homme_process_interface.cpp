@@ -359,6 +359,10 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   const auto& c       = Homme::Context::singleton();
   const auto& params  = c.get<Homme::SimulationParams>();
 
+  if (!params.do_3d_turbulence) {
+    get_field_out("tke_shear_strain").deep_copy(0.0);
+  }
+
   // Complete Homme prim_init1_xyz sequence
   prim_complete_init1_phase_f90 ();
 
@@ -538,6 +542,8 @@ void HommeDynamics::run_impl (const double dt)
       compute_horizontal_derivs_of_car_velocity();
       compute_vertical_derivs();
       contract_to_local_strain2();
+    } else {
+      m_helper_fields.at("strain2_dyn").deep_copy(0.0);
     }
 
     // Update nstep in the restart extra data, so it can be written to restart if needed.
