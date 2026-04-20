@@ -180,6 +180,7 @@
 <config_rotate_cartesian_grid>true</config_rotate_cartesian_grid>
 <config_include_metric_terms>true</config_include_metric_terms>
 <config_elastic_subcycle_number>120</config_elastic_subcycle_number>
+<config_elastic_subcycle_number ice_grid="SOwISC12to30E3r3">240</config_elastic_subcycle_number>
 <config_strain_scheme>'variational'</config_strain_scheme>
 <config_constitutive_relation_type>'evp'</config_constitutive_relation_type>
 <config_stress_divergence_scheme>'variational'</config_stress_divergence_scheme>
@@ -442,6 +443,7 @@
 <config_macro_drainage_timescale_topoponds>10.</config_macro_drainage_timescale_topoponds>
 <config_congelation_freezing_method>'two-step'</config_congelation_freezing_method>
 <config_congelation_freezing_method ice_grid="RRSwISC6to18E3r5">'one-step'</config_congelation_freezing_method>
+<config_congelation_freezing_method ice_grid="SOwISC12to30E3r3">'one-step'</config_congelation_freezing_method>
 <config_congelation_ice_porosity>0.85</config_congelation_ice_porosity>
 
 <!-- itd -->
