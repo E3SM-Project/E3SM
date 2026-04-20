@@ -84,7 +84,7 @@ void Functions<S,D>::invert_entropy(
       if (pbr > 0) qbr=-qbr;
 
       pbr=std::abs(pbr);
-      if (2*pbr < ekat::impl::min(3*xm*qbr-std::abs(tolerance*qbr), std::abs(ebr*qbr))) {
+      if (2*pbr < Kokkos::min(3*xm*qbr-std::abs(tolerance*qbr), std::abs(ebr*qbr))) {
         ebr = d;
         d = pbr/qbr;
       }

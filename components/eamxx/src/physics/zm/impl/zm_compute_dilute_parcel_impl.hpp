@@ -156,11 +156,11 @@ void Functions<S,D>::compute_dilute_parcel(
         // Iterate nit_lheat times for s,qt changes
         for (Int ii = 0; ii < ZMC::nit_lheat; ++ii) {
           // Rain (xsh2o) is excess condensate, bar lwmax (accumulated loss from qtmix)
-          xsh2o(k) = ekat::impl::max(0., qtmix(k) - qsmix(k) - ZMC::lwmax);
+          xsh2o(k) = Kokkos::max(0., qtmix(k) - qsmix(k) - ZMC::lwmax);
 
           // Contribution to ds from precip loss of condensate (accumulated change from smix)
           ds_xsh2o(k) = ds_xsh2o(k + 1) - PC::CpLiq.value * std::log(tmix(k) / PC::Tmelt.value) *
-            ekat::impl::max(0., xsh2o(k) - xsh2o(k + 1));
+            Kokkos::max(0., xsh2o(k) - xsh2o(k + 1));
 
           // Calculate entropy of freezing => ( latice x amount of water involved ) / T
 
@@ -168,13 +168,13 @@ void Functions<S,D>::compute_dilute_parcel(
           if (tmix(k) <= PC::Tmelt.value && ds_freeze(k + 1) == 0) {
             // entropy change from latent heat
             ds_freeze(k) = (PC::LatIce.value / tmix(k)) *
-              ekat::impl::max(0., qtmix(k) - qsmix(k) - xsh2o(k));
+              Kokkos::max(0., qtmix(k) - qsmix(k) - xsh2o(k));
           }
 
           if (tmix(k) <= PC::Tmelt.value && ds_freeze(k + 1) != 0) {
             // Continual freezing of additional condensate
             ds_freeze(k) = ds_freeze(k + 1) + (PC::LatIce.value / tmix(k)) *
-              ekat::impl::max(0., qsmix(k + 1) - qsmix(k));
+              Kokkos::max(0., qsmix(k + 1) - qsmix(k));
           }
 
           // Adjust entropy accordingly to sum of ds

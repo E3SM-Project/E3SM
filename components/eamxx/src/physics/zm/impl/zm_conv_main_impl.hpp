@@ -203,12 +203,12 @@ typename Functions<S,D>::view_1d<bool> Functions<S,D>::zm_conv_main(
     Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, msg + 1, pver - 1),
       [&](const Int k, Int& val) {
         if (std::abs(z_mid(i,k) - pbl_hgt(i)) < (z_int(i,k) - z_int(i,k+1)) * ZMC::half) {
-          val = ekat::impl::min(val, k);
+          val = Kokkos::min(val, k);
         }
       }, Kokkos::Min<Int>(pbl_top_result));
     team.team_barrier();
     Kokkos::single(Kokkos::PerTeam(team), [&]() {
-      pbl_top(i) = ekat::impl::min(pbl_top_result, pver - 1);
+      pbl_top(i) = Kokkos::min(pbl_top_result, pver - 1);
     });
     team.team_barrier();
 
@@ -314,7 +314,7 @@ typename Functions<S,D>::view_1d<bool> Functions<S,D>::zm_conv_main(
     team.team_barrier();
 
     // Sub-cloud layer pressure thickness
-    Int max_idx = ekat::impl::max(msg, msemax_klev(i));
+    Int max_idx = Kokkos::max(msg, msemax_klev(i));
     Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, max_idx, pver),
       [&](const Int k, Real& sum) { sum += p_del(i,k); }, dsubcld(i));
     team.team_barrier();
@@ -324,11 +324,11 @@ typename Functions<S,D>::view_1d<bool> Functions<S,D>::zm_conv_main(
       Real sdifr = 0, qdifr = 0;
       if (s_mid(i,k) > 0 || s_mid(i,k-1) > 0) {
         sdifr = std::abs((s_mid(i,k) - s_mid(i,k-1)) /
-                         ekat::impl::max(s_mid(i,k-1), s_mid(i,k)));
+                         Kokkos::max(s_mid(i,k-1), s_mid(i,k)));
       }
       if (q_mid(i,k) > 0 || q_mid(i,k-1) > 0) {
         qdifr = std::abs((q_mid(i,k) - q_mid(i,k-1)) /
-                         ekat::impl::max(q_mid(i,k-1), q_mid(i,k)));
+                         Kokkos::max(q_mid(i,k-1), q_mid(i,k)));
       }
       if (sdifr > ZMC::interp_diff_min) {
         s_int(i,k) = std::log(s_mid(i,k-1) / s_mid(i,k)) *
@@ -429,19 +429,19 @@ typename Functions<S,D>::view_1d<bool> Functions<S,D>::zm_conv_main(
     Real mflx_up_max_val = 0;
     Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, msg + 1, pver),
       [&](const Int k, Real& mx) {
-        mx = ekat::impl::max(mx, mflx_up(i,k) / p_del(i,k));
+        mx = Kokkos::max(mx, mflx_up(i,k) / p_del(i,k));
       }, Kokkos::Max<Real>(mflx_up_max_val));
     team.team_barrier();
 
     Kokkos::single(Kokkos::PerTeam(team), [&]() {
       if (mflx_up_max_val > 0) {
-        cld_base_mass_flux(i) = ekat::impl::min(cld_base_mass_flux(i),
+        cld_base_mass_flux(i) = Kokkos::min(cld_base_mass_flux(i),
                                                  1 / (time_step * mflx_up_max_val));
       } else {
         cld_base_mass_flux(i) = 0;
       }
       if (runtime_opt.clos_dyn_adj) {
-        cld_base_mass_flux(i) = ekat::impl::max(
+        cld_base_mass_flux(i) = Kokkos::max(
           cld_base_mass_flux(i) - omega(i, pbl_top(i)) * ZMC::pa_to_mb, Real(0));
       }
       if (runtime_opt.no_deep_pbl && z_mid_in(i, jt(i)) < pbl_hgt(i)) {
@@ -474,12 +474,12 @@ typename Functions<S,D>::view_1d<bool> Functions<S,D>::zm_conv_main(
   Kokkos::parallel_reduce("zm_conv_main_ktm",
     RangePolicy(0, ncol),
     KOKKOS_LAMBDA(const Int i, Int& mn) {
-      if (active(i)) mn = ekat::impl::min(mn, jt(i));
+      if (active(i)) mn = Kokkos::min(mn, jt(i));
     }, Kokkos::Min<Int>(ktm_val));
   Kokkos::parallel_reduce("zm_conv_main_ktb",
     RangePolicy(0, ncol),
     KOKKOS_LAMBDA(const Int i, Int& mn) {
-      if (active(i)) mn = ekat::impl::min(mn, msemax_klev(i));
+      if (active(i)) mn = Kokkos::min(mn, msemax_klev(i));
     }, Kokkos::Min<Int>(ktb_val));
   Kokkos::fence();
 
@@ -539,7 +539,7 @@ typename Functions<S,D>::view_1d<bool> Functions<S,D>::zm_conv_main(
       }, prec_sum);
     team.team_barrier();
     Kokkos::single(Kokkos::PerTeam(team), [&]() {
-      prec(i) = (1 / gravit) * ekat::impl::max(prec_sum, Real(0)) / time_step / 1000;
+      prec(i) = (1 / gravit) * Kokkos::max(prec_sum, Real(0)) / time_step / 1000;
     });
     team.team_barrier();
 

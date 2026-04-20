@@ -110,8 +110,8 @@ void Functions<S,D>::zm_conv_evap(
           if (t_mid(k) + dum <= PC::Tmelt.value) {
             dum = (t_mid(k) - PC::Tmelt.value) * PC::Cpair.value / PC::LatIce.value / time_step;
             dum = dum / (flxsnow(k) * PC::gravit.value / p_del(k));
-            dum = ekat::impl::max(Real(0), dum);
-            dum = ekat::impl::min(Real(1), dum);
+            dum = Kokkos::max(Real(0), dum);
+            dum = Kokkos::min(Real(1), dum);
           } else {
             dum = 1;
           }
@@ -125,31 +125,31 @@ void Functions<S,D>::zm_conv_evap(
       }
 
       // relative humidity depression must be > 0 for evaporation
-      Real evplimit = ekat::impl::max(1 - q_mid(k) / qs_k, Real(0));
+      Real evplimit = Kokkos::max(1 - q_mid(k) / qs_k, Real(0));
 
       // total evaporation depends on flux in the top of the layer
       Real evpprec = runtime_opt.ke * (1 - cldfrc(k)) * evplimit * std::sqrt(flxprec(k));
 
       // Don't let evaporation supersaturate layer (approx).
-      evplimit = ekat::impl::max(Real(0), (qs_k - q_mid(k)) / time_step);
+      evplimit = Kokkos::max(Real(0), (qs_k - q_mid(k)) / time_step);
 
       // Don't evaporate more than is falling into the layer from above.
-      evplimit = ekat::impl::min(evplimit, flxprec(k) * PC::gravit.value / p_del(k));
+      evplimit = Kokkos::min(evplimit, flxprec(k) * PC::gravit.value / p_del(k));
 
       // Total evaporation cannot exceed input precipitation
-      evplimit = ekat::impl::min(evplimit, (prec - evpvint) * PC::gravit.value / p_del(k));
+      evplimit = Kokkos::min(evplimit, (prec - evpvint) * PC::gravit.value / p_del(k));
 
-      evpprec = ekat::impl::min(evplimit, evpprec);
+      evpprec = Kokkos::min(evplimit, evpprec);
 
       if (!runtime_opt.old_snow) {
-        evpprec = ekat::impl::max(Real(0), evpprec);
+        evpprec = Kokkos::max(Real(0), evpprec);
         evpprec = evpprec * ZMC::omsm;
       }
 
       // evaporation of snow depends on snow fraction
       Real evpsnow;
       if (flxprec(k) > 0) {
-        Real work1 = ekat::impl::min(ekat::impl::max(Real(0), flxsntm / flxprec(k)), Real(1));
+        Real work1 = Kokkos::min(Kokkos::max(Real(0), flxsntm / flxprec(k)), Real(1));
         if (!runtime_opt.old_snow && prdsnow_k > prdprec(k)) work1 = 1;
         evpsnow = evpprec * work1;
       } else {
@@ -166,31 +166,31 @@ void Functions<S,D>::zm_conv_evap(
       if (runtime_opt.old_snow) {
         Real work1;
         if (pergro_active) {
-          work1 = ekat::impl::min(ekat::impl::max(Real(0), flxsnow(k) / (flxprec(k) + ZMC::pergro_perturbation)), Real(1));
+          work1 = Kokkos::min(Kokkos::max(Real(0), flxsnow(k) / (flxprec(k) + ZMC::pergro_perturbation)), Real(1));
         } else {
           if (flxprec(k) > 0) {
-            work1 = ekat::impl::min(ekat::impl::max(Real(0), flxsnow(k) / flxprec(k)), Real(1));
+            work1 = Kokkos::min(Kokkos::max(Real(0), flxsnow(k) / flxprec(k)), Real(1));
           } else {
             work1 = 0;
           }
         }
-        Real work2 = ekat::impl::max(fsnow_conv_k, work1);
+        Real work2 = Kokkos::max(fsnow_conv_k, work1);
         if (snowmlt > 0) work2 = 0;
         ntsnprd(k) = prdprec(k) * work2 - evpsnow - snowmlt;
         tend_s_snwprd  (k) = prdprec(k) * work2 * PC::LatIce.value;
         tend_s_snwevmlt(k) = -(evpsnow + snowmlt) * PC::LatIce.value;
       } else {
-        ntsnprd(k) = prdsnow_k - ekat::impl::min(flxsnow(k) * PC::gravit.value / p_del(k), evpsnow + snowmlt);
+        ntsnprd(k) = prdsnow_k - Kokkos::min(flxsnow(k) * PC::gravit.value / p_del(k), evpsnow + snowmlt);
         tend_s_snwprd  (k) = prdsnow_k * PC::LatIce.value;
-        tend_s_snwevmlt(k) = -ekat::impl::min(flxsnow(k) * PC::gravit.value / p_del(k), evpsnow + snowmlt) * PC::LatIce.value;
+        tend_s_snwevmlt(k) = -Kokkos::min(flxsnow(k) * PC::gravit.value / p_del(k), evpsnow + snowmlt) * PC::LatIce.value;
       }
 
       // precipitation fluxes
       flxprec(k+1) = flxprec(k) + ntprprd(k) * p_del(k) / PC::gravit.value;
       flxsnow(k+1) = flxsnow(k) + ntsnprd(k) * p_del(k) / PC::gravit.value;
 
-      flxprec(k+1) = ekat::impl::max(flxprec(k+1), Real(0));
-      flxsnow(k+1) = ekat::impl::max(flxsnow(k+1), Real(0));
+      flxprec(k+1) = Kokkos::max(flxprec(k+1), Real(0));
+      flxsnow(k+1) = Kokkos::max(flxsnow(k+1), Real(0));
 
       // heating and moistening due to evaporation
       if (runtime_opt.old_snow) {
