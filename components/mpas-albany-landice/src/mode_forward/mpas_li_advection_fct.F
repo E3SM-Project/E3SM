@@ -206,7 +206,7 @@ module li_tracer_advection_fct
          ! New layer thickness is after horizontal and vertical
          ! thickness flux
          do k = kmin, kmax
-            if (hProv(k, iCell) > 0.0_RKIND) then
+            if (hProv(k, iCell) > eps) then
                hProvInv(k, iCell) = 1.0_RKIND / hProv(k, iCell)
             else
                hProvInv(k, iCell) = 0.0_RKIND
