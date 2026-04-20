@@ -88,7 +88,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     col.push_back(1+src_col);
     col.push_back(1+src_col+1);
     S.push_back(wgt);
-    S.push_back(1.0-wgt);
+    S.push_back(1-wgt);
   }
   // For vertical remapping we will prokject onto a set of equally
   // spaced pressure levels from p_top to b_bot that is nearly half
@@ -274,7 +274,7 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   print ("    -> log-linear vertical remap ... \n",io_comm);
   // Use q_scale = 1/p_bot to normalize q values to [0,1], so exp(q) stays in [1,e].
-  const Real q_scale = p_bot > 0 ? 1.0/p_bot : 1.0;
+  const Real q_scale = p_bot > 0 ? 1/p_bot : Real(1);
   // Create a remap file with exp-transformed target levels to test log-linear interp.
   // With log-linear remapping and source pressures exp(q_src), the remapper internally
   // computes log(exp(q_src)) = q_src and interpolates linearly in q-space.
@@ -489,17 +489,17 @@ TEST_CASE("io_remap_test","io_remap_test")
     for (int ii=0; ii<ncols_tgt_l; ii++) {
       const int col1 = 2*ii;
       const int col2 = 2*ii+1;
-      REQUIRE_THAT(Yf_v_horiz(ii), Catch::Matchers::WithinRel(Yf_v(col1)*wgt + Yf_v(col2)*(1.0-wgt), rel_tol));
-      REQUIRE_THAT(Yi_v_horiz(ii,0), Catch::Matchers::WithinRel(Yi_v(col1,0)*wgt + Yi_v(col2,0)*(1.0-wgt), rel_tol));
+      REQUIRE_THAT(Yf_v_horiz(ii), Catch::Matchers::WithinRel(Yf_v(col1)*wgt + Yf_v(col2)*(1-wgt), rel_tol));
+      REQUIRE_THAT(Yi_v_horiz(ii,0), Catch::Matchers::WithinRel(Yi_v(col1,0)*wgt + Yi_v(col2,0)*(1-wgt), rel_tol));
       for (int cc=0; cc<2; cc++) {
-        REQUIRE_THAT(Vi_v_horiz(ii,cc,0), Catch::Matchers::WithinRel(Vi_v(col1,cc,0)*wgt + Vi_v(col2,cc,0)*(1.0-wgt), rel_tol));
+        REQUIRE_THAT(Vi_v_horiz(ii,cc,0), Catch::Matchers::WithinRel(Vi_v(col1,cc,0)*wgt + Vi_v(col2,cc,0)*(1-wgt), rel_tol));
       }
       for (int jj=0; jj<nlevs_src; jj++) {
-        REQUIRE_THAT(Ym_v_horiz(ii,jj), Catch::Matchers::WithinRel(Ym_v(col1,jj)*wgt   + Ym_v(col2,jj)*(1.0-wgt), rel_tol));
-        REQUIRE_THAT(Yi_v_horiz(ii,jj+1), Catch::Matchers::WithinRel(Yi_v(col1,jj+1)*wgt + Yi_v(col2,jj+1)*(1.0-wgt), rel_tol));
+        REQUIRE_THAT(Ym_v_horiz(ii,jj), Catch::Matchers::WithinRel(Ym_v(col1,jj)*wgt   + Ym_v(col2,jj)*(1-wgt), rel_tol));
+        REQUIRE_THAT(Yi_v_horiz(ii,jj+1), Catch::Matchers::WithinRel(Yi_v(col1,jj+1)*wgt + Yi_v(col2,jj+1)*(1-wgt), rel_tol));
         for (int cc=0; cc<2; cc++) {
-          REQUIRE_THAT(Vm_v_horiz(ii,cc,jj), Catch::Matchers::WithinRel(Vm_v(col1,cc,jj)*wgt   + Vm_v(col2,cc,jj)*(1.0-wgt), rel_tol));
-          REQUIRE_THAT(Vi_v_horiz(ii,cc,jj+1), Catch::Matchers::WithinRel(Vi_v(col1,cc,jj+1)*wgt + Vi_v(col2,cc,jj+1)*(1.0-wgt), rel_tol));
+          REQUIRE_THAT(Vm_v_horiz(ii,cc,jj), Catch::Matchers::WithinRel(Vm_v(col1,cc,jj)*wgt   + Vm_v(col2,cc,jj)*(1-wgt), rel_tol));
+          REQUIRE_THAT(Vi_v_horiz(ii,cc,jj+1), Catch::Matchers::WithinRel(Vi_v(col1,cc,jj+1)*wgt + Vi_v(col2,cc,jj+1)*(1-wgt), rel_tol));
         }
       }
       // For the pressured sliced variable we expect some masking which needs to be checked.
@@ -513,8 +513,8 @@ TEST_CASE("io_remap_test","io_remap_test")
       }
       if (p_ref<=pi_v(col2,nlevs_src) && p_ref>=pi_v(col2,0)) {
         found = true;
-        Ys_exp += calculate_output(p_ref,col2,0)*(1.0-wgt);
-        Ys_wgt += (1.0 - wgt);
+        Ys_exp += calculate_output(p_ref,col2,0)*(1-wgt);
+        Ys_wgt += (1 - wgt);
       }
       if (found) {
         Ys_exp /= Ys_wgt;
@@ -575,7 +575,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     for (int ii=0; ii<ncols_tgt_l; ii++) {
       const int col1 = 2*ii;
       const int col2 = 2*ii+1;
-      REQUIRE_THAT(Yf_v_vh(ii), Catch::Matchers::WithinRel(Yf_v(col1)*wgt + Yf_v(col2)*(1.0-wgt), rel_tol));
+      REQUIRE_THAT(Yf_v_vh(ii), Catch::Matchers::WithinRel(Yf_v(col1)*wgt + Yf_v(col2)*(1-wgt), rel_tol));
       for (int jj=0; jj<nlevs_tgt; jj++) {
         auto p_jj = p_tgt[jj];
         const Real mid_mask_1 = (p_jj<=pm_v(col1,nlevs_src-1) && p_jj>=pm_v(col1,0));
@@ -626,8 +626,8 @@ TEST_CASE("io_remap_test","io_remap_test")
       }
       if (p_ref<=pi_v(col2,nlevs_src) && p_ref>=pi_v(col2,0)) {
         found = true;
-        Ys_exp += calculate_output(p_ref,col2,0)*(1.0-wgt);
-        Ys_wgt += (1.0 - wgt);
+        Ys_exp += calculate_output(p_ref,col2,0)*(1-wgt);
+        Ys_wgt += (1 - wgt);
       }
       if (found) {
         Ys_exp /= Ys_wgt;
