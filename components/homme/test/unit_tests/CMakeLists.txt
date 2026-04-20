@@ -1,5 +1,6 @@
 SET(UNITTESTER_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
 
+include (EkatBuildCatch2)
 function(cxx_unit_test_add_test test_name target_name NUM_CPUS)
   SET(EXTRA_ARGS ${ARGN})
   set(TMP ${USE_MPI_OPTIONS})
@@ -64,7 +65,7 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
     TARGET_COMPILE_DEFINITIONS(${target_name} PUBLIC HOMME_WITHOUT_PIOLIBRARY)
   ENDIF()
 
-  set (CATCH_INCLUDE ${HOMME_SOURCE_DIR}/../../externals/ekat/extern/Catch2/single_include)
+  TARGET_LINK_LIBRARIES(${target_name} Catch2::Catch2)
   TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${CATCH_INCLUDE}")
   TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${include_dirs}")
   TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${SRC_SHARE};${SRC_BASE};${UNITTESTER_DIR}")
