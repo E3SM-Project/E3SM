@@ -54,7 +54,7 @@ class AuxiliaryState {
 
    // Create a non-default auxiliary state
    static AuxiliaryState *create(const std::string &Name, const HorzMesh *Mesh,
-                                 Halo *MeshHalo, const VertCoord *VCoord,
+                                 Halo *MeshHalo, VertCoord *VCoord,
                                  VertAdv *VAdv, int NTracers,
                                  TimeInterval TimeStep);
 
@@ -76,6 +76,11 @@ class AuxiliaryState {
    /// Exchange halo
    I4 exchangeHalo();
 
+   // Compute the diagnostic variables needed for time stepping
+   void computeMomDiagAux(const OceanState *State,
+                          const Array3DReal &TracerArray, int ThickTimeLevel,
+                          int VelTimeLevel) const;
+
    // Compute all auxiliary variables needed for momentum equation
    void computeMomAux(const OceanState *State, int ThickTimeLevel,
                       int VelTimeLevel) const;
@@ -89,7 +94,7 @@ class AuxiliaryState {
 
  private:
    AuxiliaryState(const std::string &Name, const HorzMesh *Mesh, Halo *MeshHalo,
-                  const VertCoord *VCoord, VertAdv *VAdv, int NTracers,
+                  VertCoord *VCoord, VertAdv *VAdv, int NTracers,
                   TimeInterval TimeStep);
 
    AuxiliaryState(const AuxiliaryState &) = delete;
@@ -97,7 +102,7 @@ class AuxiliaryState {
 
    const HorzMesh *Mesh;
    Halo *MeshHalo;
-   const VertCoord *VCoord;
+   VertCoord *VCoord;
    VertAdv *VAdv;
    TimeInterval TimeStep;
 

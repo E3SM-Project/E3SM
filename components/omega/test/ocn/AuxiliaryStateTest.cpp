@@ -3,6 +3,7 @@
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
+#include "Eos.h"
 #include "Field.h"
 #include "GlobalConstants.h"
 #include "Halo.h"
@@ -126,6 +127,8 @@ int initAuxStateTest(const std::string &mesh) {
 
    VertAdv::init();
 
+   Eos::init();
+
    return Err;
 }
 
@@ -146,10 +149,10 @@ int testAuxState() {
       return -1;
    }
 
-   const auto *Mesh   = HorzMesh::getDefault();
-   auto *MeshHalo     = Halo::getDefault();
-   const auto *VCoord = VertCoord::getDefault();
-   auto *VAdv         = VertAdv::getDefault();
+   const auto *Mesh = HorzMesh::getDefault();
+   auto *MeshHalo   = Halo::getDefault();
+   auto *VCoord     = VertCoord::getDefault();
+   auto *VAdv       = VertAdv::getDefault();
    TimeInterval TimeStep;
    // test creation of another auxiliary state
    AuxiliaryState::create("AnotherAuxState", Mesh, MeshHalo, VCoord, VAdv, 3,
