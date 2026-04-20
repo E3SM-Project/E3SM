@@ -34,10 +34,6 @@ add_library(mam
   eamxx_mam_srf_and_online_emissions_process_interface.cpp
   eamxx_mam_constituent_fluxes_interface.cpp)
 target_compile_definitions(mam PUBLIC EAMXX_HAS_MAM)
-target_include_directories(mam PUBLIC
-  ${mam4xx_SOURCE_DIR}/mam4xx/src
-  ${mam4xx_BINARY_DIR}/mam4xx/src
-)
 target_link_libraries(mam PUBLIC eamxx_physics_share csm_share scream_share mam4xx)
 
 #if (NOT SCREAM_LIB_ONLY)
