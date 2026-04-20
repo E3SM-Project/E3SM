@@ -1,4 +1,4 @@
-#include "impl/zm_zm_calc_output_tend_impl.hpp"
+#include "impl/zm_calc_output_tend_impl.hpp"
 
 namespace scream {
 namespace zm {

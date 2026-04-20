@@ -40,7 +40,7 @@ Real Functions<S,D>::entropy(
 
   // Use saturation mixing ratio to partition qtot into vapor part only
   qsat_hPa(tk, p, est, qst);
-  qv = ekat::impl::min(qtot,qst);
+  qv = Kokkos::min(qtot,qst);
   e = qv*p / (PC::ep_2.value + qv);
 
   // calculate entropy per unit mass of dry air - Eq. 1

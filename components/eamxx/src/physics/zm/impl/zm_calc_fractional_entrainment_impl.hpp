@@ -76,13 +76,13 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, msg, pver),
     [&](const Int& k, Real& lmin) {
       if (k >= j0 && k <= jb) {
-        lmin = ekat::impl::min(lmin, h_env(k));
+        lmin = Kokkos::min(lmin, h_env(k));
       }
     }, Kokkos::Min<Real>(h_env_min_new));
   team.team_barrier();
 
   Kokkos::single(Kokkos::PerTeam(team), [&] {
-    h_env_min = ekat::impl::min(h_env_min, h_env_min_new);
+    h_env_min = Kokkos::min(h_env_min, h_env_min_new);
   });
   team.team_barrier();
 
@@ -123,8 +123,8 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
           (2*i2(k)*i2(k) - k1(k)*i3(k))/(k1(k)*k1(k)) * tmp*tmp*tmp +
           (-5*k1(k)*i2(k)*i3(k) + 5*i2(k)*i2(k)*i2(k) + k1(k)*k1(k)*i4(k))/
           (k1(k)*k1(k)*k1(k)) * tmp*tmp*tmp*tmp;
-        lambda_tmp(k) = ekat::impl::max(lambda_tmp(k), lambda_limit_min);
-        lambda_tmp(k) = ekat::impl::min(lambda_tmp(k), lambda_limit_max);
+        lambda_tmp(k) = Kokkos::max(lambda_tmp(k), lambda_limit_min);
+        lambda_tmp(k) = Kokkos::min(lambda_tmp(k), lambda_limit_max);
       }
     }
   });
@@ -146,7 +146,7 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   Kokkos::single(Kokkos::PerTeam(team), [&] {
     for (Int k = msg+1; k < pver; ++k) {
       if (k >= jt && k <= j0) {
-        lambda_tmp(k) = ekat::impl::max(lambda_tmp(k), lambda_tmp(k-1));
+        lambda_tmp(k) = Kokkos::max(lambda_tmp(k), lambda_tmp(k-1));
       }
     }
   });

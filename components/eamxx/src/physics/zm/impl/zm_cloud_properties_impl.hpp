@@ -162,8 +162,8 @@ void Functions<S,D>::zm_cloud_properties(
   // =========================================================================
   // Initial cloud top estimate: at least one level below the convection limit
   Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    jt   = ekat::impl::max(lel, limcnv + 1);
-    jt   = ekat::impl::min(jt,  pver - 1);
+    jt   = Kokkos::max(lel, limcnv + 1);
+    jt   = Kokkos::min(jt,  pver - 1);
     jd   = pver - 1;
     jlcl = lel;
   });
@@ -171,7 +171,7 @@ void Functions<S,D>::zm_cloud_properties(
   // Find level of minimum h_env_sat between jt and jb (detrainment onset level)
   using ValLocType = Kokkos::ValLocScalar<Real, Int>;
   ValLocType j0_result;
-  const Int range_start = ekat::impl::max(msg, jt);
+  const Int range_start = Kokkos::max(msg, jt);
   Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, range_start, jb + 1),
     [&] (const Int& k, ValLocType& local) {
       if (h_env_sat(k) < local.val) {
@@ -187,9 +187,9 @@ void Functions<S,D>::zm_cloud_properties(
       j0 = j0_result.loc;
     }
     // Constrain j0 to a physically valid detrainment range
-    j0 = ekat::impl::min(j0, jb - 2);
-    j0 = ekat::impl::max(j0, jt + 2);
-    j0 = ekat::impl::min(j0, pver - 1);
+    j0 = Kokkos::min(j0, jb - 2);
+    j0 = Kokkos::max(j0, jt + 2);
+    j0 = Kokkos::min(j0, pver - 1);
   });
 
   if (j0_result.val < h_env_min) {
@@ -404,7 +404,7 @@ void Functions<S,D>::zm_cloud_properties(
                - (entr_up(k) - detr_up(k))*s_mid(k))
               / (latvap/cpair);
       if (k == jt) cu(k) = 0;                           // No condensation at cloud top
-      cu(k) = ekat::impl::max(Real(0), cu(k));           // Condensation must be non-negative
+      cu(k) = Kokkos::max(Real(0), cu(k));           // Condensation must be non-negative
     }
   });
   team.team_barrier();
@@ -453,13 +453,13 @@ void Functions<S,D>::zm_cloud_properties(
   // =========================================================================
   // 8. Scale downdraft by precipitation availability - see eq (4.106)
   // =========================================================================
-  totpcp = ekat::impl::max(Real(0), totpcp);
-  totevp = ekat::impl::max(Real(0), totevp);
+  totpcp = Kokkos::max(Real(0), totpcp);
+  totevp = Kokkos::max(Real(0), totevp);
 
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg + 1, pver), [&] (const Int& k) {
     if (totevp > 0 && totpcp > 0) {
       // Scale downdraft so total evaporation does not exceed available precipitation
-      const Real scale = ekat::impl::min(Real(1), totpcp / (totevp + totpcp));
+      const Real scale = Kokkos::min(Real(1), totpcp / (totevp + totpcp));
       mflx_dn(k) *= scale;
       entr_dn(k) *= scale;
       evp(k)     *= scale;

@@ -1,10 +1,10 @@
-#include "impl/zm_zm_downdraft_properties_impl.hpp"
+#include "impl/zm_conv_evap_impl.hpp"
 
 namespace scream {
 namespace zm {
 
 /*
- * Explicit instantiation for doing zm_downdraft_properties on Reals using the
+ * Explicit instantiation for doing zm_conv_evap on Reals using the
  * default device.
  */
 

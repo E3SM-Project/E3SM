@@ -480,7 +480,7 @@ struct Functions {
     }
 
     // Ensures returned es is consistent with limiters on qs.
-    es = ekat::impl::min(es, p*100);
+    es = Kokkos::min(es, p*100);
 
     es = es*0.01;
   }
@@ -1014,20 +1014,20 @@ struct Functions {
 # include "impl/zm_common_init_impl.hpp"
 # include "impl/zm_invert_entropy_impl.hpp"
 # include "impl/zm_entropy_impl.hpp"
-# include "impl/zm_zm_transport_tracer_impl.hpp"
-# include "impl/zm_zm_transport_momentum_impl.hpp"
+# include "impl/zm_transport_tracer_impl.hpp"
+# include "impl/zm_transport_momentum_impl.hpp"
 # include "impl/zm_compute_dilute_cape_impl.hpp"
 # include "impl/zm_find_mse_max_impl.hpp"
 # include "impl/zm_compute_dilute_parcel_impl.hpp"
 # include "impl/zm_compute_cape_from_parcel_impl.hpp"
-# include "impl/zm_zm_conv_mcsp_calculate_shear_impl.hpp"
-# include "impl/zm_zm_conv_mcsp_tend_impl.hpp"
-# include "impl/zm_zm_conv_main_impl.hpp"
-# include "impl/zm_zm_conv_evap_impl.hpp"
-# include "impl/zm_zm_calc_fractional_entrainment_impl.hpp"
-# include "impl/zm_zm_downdraft_properties_impl.hpp"
-# include "impl/zm_zm_cloud_properties_impl.hpp"
-# include "impl/zm_zm_closure_impl.hpp"
-# include "impl/zm_zm_calc_output_tend_impl.hpp"
+# include "impl/zm_conv_mcsp_calculate_shear_impl.hpp"
+# include "impl/zm_conv_mcsp_tend_impl.hpp"
+# include "impl/zm_conv_main_impl.hpp"
+# include "impl/zm_conv_evap_impl.hpp"
+# include "impl/zm_calc_fractional_entrainment_impl.hpp"
+# include "impl/zm_downdraft_properties_impl.hpp"
+# include "impl/zm_cloud_properties_impl.hpp"
+# include "impl/zm_closure_impl.hpp"
+# include "impl/zm_calc_output_tend_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP
