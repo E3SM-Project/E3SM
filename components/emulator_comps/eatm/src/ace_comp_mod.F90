@@ -355,6 +355,8 @@ CONTAINS
     integer(IN) :: klat
     integer     :: i, j, n
     real(R8)    :: e, avg_alb
+    real(R8), parameter :: ak_7 = 2328.4749
+    real(R8), parameter :: bk_7 = 0.8722759
     real(R8), parameter :: degtorad = SHR_CONST_PI/180.0_R8
 
     allocate(yc(lsize))
@@ -367,14 +369,14 @@ CONTAINS
       do i = 1, lsize_x
         n = n + 1
 
-        zbot(i, j) = 10.0_R8
+        pslv(i, j) = net_outputs(1,  1, i, j) ! PS (Surface pressure)
+        pbot(i, j) = (ak_7 + bk_7 * net_outputs(1, 1, i, j))
+        ! https://en.wikipedia.org/wiki/Pressure_altitude w/ Pa --> hPa
+        zbot(i, j) = 44307.694_R8 * ( 1.0_R8 - (pbot(i, j) / 1013250.0_R8)**0.190284_R8 )
         ubot(i, j) = net_outputs(1, 26, i, j) ! U_7
         vbot(i, j) = net_outputs(1, 34, i, j) ! V_7
         tbot(i, j) = net_outputs(1, 10, i, j) ! T_7
         ptem(i, j) = net_outputs(1, 10, i, j) ! T_7
-        ! do we want to make this correspond to level 0 by using ak_i and bk_i
-        pbot(i, j) = net_outputs(1,  1, i, j) ! PS (Surface pressure)
-        pslv(i, j) = net_outputs(1,  1, i, j) ! PS (Surface pressure)
         lwdn(i, j) = net_outputs(1, 40, i, j) ! FLDS (Downwelling longwave flux at surface)
 
         !--- saturation vapor pressure ---
