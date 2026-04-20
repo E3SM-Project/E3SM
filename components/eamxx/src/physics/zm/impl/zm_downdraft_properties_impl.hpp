@@ -61,9 +61,9 @@ void Functions<S,D>::zm_downdraft_properties(
   //----------------------------------------------------------------------------
   // calculate downdraft mass flux
   Kokkos::single(Kokkos::PerTeam(team), [&]() {
-    jt = ekat::impl::min(jt, jb-1);
-    jd = ekat::impl::max(j0, jt+1);
-    jd = ekat::impl::min(jd, jb);
+    jt = Kokkos::min(jt, jb-1);
+    jd = Kokkos::max(j0, jt+1);
+    jd = Kokkos::min(jd, jb);
     h_dnd(jd) = h_env(jd-1);
     if (jd < jb && lambda_max > 0) {
       // NOTE - this nonsensical lambda_max/lambda_max factor
@@ -82,7 +82,7 @@ void Functions<S,D>::zm_downdraft_properties(
   team.team_barrier();
 
   if (lambda_max > 0 && jd < jb) {
-    ratmjb = ekat::impl::min(std::abs(mflx_up(jb) / mflx_dn(jb)), Real(1));
+    ratmjb = Kokkos::min(std::abs(mflx_up(jb) / mflx_dn(jb)), Real(1));
   }
   team.team_barrier();
 
@@ -99,7 +99,7 @@ void Functions<S,D>::zm_downdraft_properties(
     for (Int k = msg; k < pver; ++k) {
       if (k >= jt && lambda_max > 0) {
         entr_dn(k-1) = (mflx_dn(k-1) - mflx_dn(k)) / dz(k-1);
-        const Real mdt = ekat::impl::min(mflx_dn(k), -ZMC::small);
+        const Real mdt = Kokkos::min(mflx_dn(k), -ZMC::small);
         h_dnd(k) = (mflx_dn(k-1)*h_dnd(k-1) - dz(k-1)*entr_dn(k-1)*h_env(k-1)) / mdt;
       }
     }
@@ -132,8 +132,8 @@ void Functions<S,D>::zm_downdraft_properties(
       if (k >= jd && k < jb && lambda_max > 0) {
         q_dnd(k+1) = q_dnd_sat(k+1);
         evp(k) = -entr_dn(k)*q_mid(k) + (mflx_dn(k)*q_dnd(k) - mflx_dn(k+1)*q_dnd(k+1)) / dz(k);
-        evp(k) = ekat::impl::max(evp(k), Real(0));
-        const Real mdt = ekat::impl::min(mflx_dn(k+1), -ZMC::small);
+        evp(k) = Kokkos::max(evp(k), Real(0));
+        const Real mdt = Kokkos::min(mflx_dn(k+1), -ZMC::small);
         s_dnd(k+1) = ((PC::LatVap.value/PC::Cpair.value*evp(k) - entr_dn(k)*s_mid(k))*dz(k) + mflx_dn(k)*s_dnd(k)) / mdt;
         return_val += dz(k)*entr_dn(k)*q_mid(k);
       }

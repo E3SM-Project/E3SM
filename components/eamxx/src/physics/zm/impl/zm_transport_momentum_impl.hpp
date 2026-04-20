@@ -100,7 +100,7 @@ void Functions<S,D>::zm_transport_momentum(
 
     // Interpolate winds to interfaces
     for (Int k = 0; k < pver; ++k) {
-      const Int km1 = ekat::impl::max(0, k-1);
+      const Int km1 = Kokkos::max(0, k-1);
       // use arithmetic mean
       wind_int(m,k) = ZMC::half * (wind_mid(m,k) + wind_mid(m,km1));
       // Provisional up and down draft values
@@ -177,7 +177,7 @@ void Functions<S,D>::zm_transport_momentum(
     // Calculate momentum tendency
 
     for (Int k = ktm; k < pver; ++k) {
-      const Int kp1 = ekat::impl::min(pver-1, k+1);
+      const Int kp1 = Kokkos::min(pver-1, k+1);
       wind_tend_tmp(m,k) = (mu(kp1)*(wind_int_u(m,kp1)-wind_int(m,kp1)) -
                             mu(k)  *(wind_int_u(m,k)  -wind_int(m,k)  ) +
                             md(kp1)*(wind_int_d(m,kp1)-wind_int(m,kp1)) -
@@ -222,8 +222,8 @@ void Functions<S,D>::zm_transport_momentum(
   // Need to add an energy fix to account for the dissipation of kinetic energy
   // Formulation follows from Boville and Bretherton (2003) - modified by Phil Rasch
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, ktm, pver), [&] (const Int& k) {
-    const Int km1 = ekat::impl::max(0, k-1);
-    const Int kp1 = ekat::impl::min(pver-1, k+1);
+    const Int km1 = Kokkos::max(0, k-1);
+    const Int kp1 = Kokkos::min(pver-1, k+1);
 
     // Calculate KE fluxes at top and bot of layer
     const Real utop = (wind0(0,k) + wind0(0,km1)) / 2;

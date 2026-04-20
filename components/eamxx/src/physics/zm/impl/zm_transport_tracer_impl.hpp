@@ -87,21 +87,21 @@ void Functions<S,D>::zm_transport_tracer(
 
     // Interpolate environment tracer values to interfaces
     for (Int k = 0; k < pver; ++k) {
-      const Int km1 = ekat::impl::max(0, k-1);
-      const Real minc = ekat::impl::min(const_arr(m, km1), const_arr(m, k));
-      const Real maxc = ekat::impl::max(const_arr(m, km1), const_arr(m, k));
+      const Int km1 = Kokkos::max(0, k-1);
+      const Real minc = Kokkos::min(const_arr(m, km1), const_arr(m, k));
+      const Real maxc = Kokkos::max(const_arr(m, km1), const_arr(m, k));
 
       Real cdifr;
       if (minc < 0) {
         cdifr = 0;
       } else {
-        cdifr = std::abs(const_arr(m, k) - const_arr(m, km1)) / ekat::impl::max(maxc, small);
+        cdifr = std::abs(const_arr(m, k) - const_arr(m, km1)) / Kokkos::max(maxc, small);
       }
 
       // If the two layers differ significantly use a geometric averaging
       if (cdifr > ZMC::cdifr_min) {
-        const Real cabv = ekat::impl::max(const_arr(m, km1), maxc*ZMC::maxc_factor);
-        const Real cbel = ekat::impl::max(const_arr(m, k), maxc*ZMC::maxc_factor);
+        const Real cabv = Kokkos::max(const_arr(m, km1), maxc*ZMC::maxc_factor);
+        const Real cbel = Kokkos::max(const_arr(m, k), maxc*ZMC::maxc_factor);
         chat(m, k) = std::log(cabv/cbel) / (cabv-cbel) * cabv * cbel;
       } else { // Small diff, so just arithmetic mean
         chat(m, k) = ZMC::half * (const_arr(m, k) + const_arr(m, km1));
@@ -126,7 +126,7 @@ void Functions<S,D>::zm_transport_tracer(
 
     // Updraft from bottom to top
     for (Int kk = pver-2; kk >= 0; --kk) {
-      const Int kkp1 = ekat::impl::min(pver-1, kk+1);
+      const Int kkp1 = Kokkos::min(pver-1, kk+1);
       const Real mupdudp_kk = mu(kk) + dutmp(m, kk) * dptmp(m, kk);
       if (mupdudp_kk > ZMC::mbsth) {
         conu(m, kk) = (mu(kkp1) * conu(m, kkp1) + eutmp(m, kk) * fisg(m, kk) * const_arr(m, kk) * dptmp(m, kk)) / mupdudp_kk;
@@ -135,7 +135,7 @@ void Functions<S,D>::zm_transport_tracer(
 
     // Downdraft from top to bottom
     for (Int k = 2; k < pver; ++k) {
-      const Int km1 = ekat::impl::max(0, k-1);
+      const Int km1 = Kokkos::max(0, k-1);
       if (md(k) < -ZMC::mbsth) {
         cond(m, k) = (md(km1) * cond(m, km1) - edtmp(m, km1) * fisg(m, km1) * const_arr(m, km1) * dptmp(m, km1)) / md(k);
       }
@@ -143,16 +143,16 @@ void Functions<S,D>::zm_transport_tracer(
 
     // Compute tendencies from cloud top to bottom
     for (Int k = ktm; k < pver; ++k) {
-      const Int km1 = ekat::impl::max(0, k-1);
-      const Int kp1 = ekat::impl::min(pver-1, k+1);
+      const Int km1 = Kokkos::max(0, k-1);
+      const Int kp1 = Kokkos::min(pver-1, k+1);
 
-      const Real fluxin = mu(kp1) * conu(m, kp1) + mu(k) * ekat::impl::min(chat(m, k), const_arr(m, km1))
-                        - (md(k) * cond(m, k) + md(kp1) * ekat::impl::min(chat(m, kp1), const_arr(m, kp1)));
-      const Real fluxout = mu(k) * conu(m, k) + mu(kp1) * ekat::impl::min(chat(m, kp1), const_arr(m, k))
-                         - (md(kp1) * cond(m, kp1) + md(k) * ekat::impl::min(chat(m, k), const_arr(m, k)));
+      const Real fluxin = mu(kp1) * conu(m, kp1) + mu(k) * Kokkos::min(chat(m, k), const_arr(m, km1))
+                        - (md(k) * cond(m, k) + md(kp1) * Kokkos::min(chat(m, kp1), const_arr(m, kp1)));
+      const Real fluxout = mu(k) * conu(m, k) + mu(kp1) * Kokkos::min(chat(m, kp1), const_arr(m, k))
+                         - (md(kp1) * cond(m, kp1) + md(k) * Kokkos::min(chat(m, k), const_arr(m, k)));
 
       Real netflux = fluxin - fluxout;
-      if (std::abs(netflux) < ekat::impl::max(fluxin, fluxout) * ZMC::flux_factor) {
+      if (std::abs(netflux) < Kokkos::max(fluxin, fluxout) * ZMC::flux_factor) {
         netflux = 0;
       }
       dcondt(m, k) = netflux / dptmp(m, k);
@@ -160,15 +160,15 @@ void Functions<S,D>::zm_transport_tracer(
 
     // Handle cloud base levels
     for (Int k = kbm; k < pver; ++k) {
-      const Int km1 = ekat::impl::max(0, k-1);
+      const Int km1 = Kokkos::max(0, k-1);
       if (k == mx) {
         // limit fluxes outside convection to mass in appropriate layer
         // these limiters are probably only safe for positive definite quantitities
         // it assumes that mu and md already satify a courant number limit of 1
-        const Real fluxin = mu(k) * ekat::impl::min(chat(m, k), const_arr(m, km1)) - md(k) * cond(m, k);
-        const Real fluxout = mu(k) * conu(m, k) - md(k) * ekat::impl::min(chat(m, k), const_arr(m, k));
+        const Real fluxin = mu(k) * Kokkos::min(chat(m, k), const_arr(m, km1)) - md(k) * cond(m, k);
+        const Real fluxout = mu(k) * conu(m, k) - md(k) * Kokkos::min(chat(m, k), const_arr(m, k));
         Real netflux = fluxin - fluxout;
-        if (std::abs(netflux) < ekat::impl::max(fluxin, fluxout) * ZMC::flux_factor) {
+        if (std::abs(netflux) < Kokkos::max(fluxin, fluxout) * ZMC::flux_factor) {
           netflux = 0;
         }
         dcondt(m, k) = netflux / dptmp(m, k);

@@ -1,10 +1,10 @@
-#include "impl/zm_zm_calc_fractional_entrainment_impl.hpp"
+#include "impl/zm_closure_impl.hpp"
 
 namespace scream {
 namespace zm {
 
 /*
- * Explicit instantiation for doing zm_calc_fractional_entrainment on Reals using the
+ * Explicit instantiation for doing zm_closure on Reals using the
  * default device.
  */
 

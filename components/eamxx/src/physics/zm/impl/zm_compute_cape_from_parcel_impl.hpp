@@ -80,7 +80,7 @@ void Functions<S,D>::compute_cape_from_parcel(
     for (Int k = num_msg + 1; k < pver; ++k) {
       if (k < lcl_klev && lcl_pmid >= ZMC::lcl_pressure_threshold) {
         if (buoyancy(k + 1) > 0 && buoyancy(k) <= 0) {
-          neg_buoyancy_cnt = ekat::impl::min(num_cin, neg_buoyancy_cnt + 1);
+          neg_buoyancy_cnt = Kokkos::min(num_cin, neg_buoyancy_cnt + 1);
           eql_klev_tmp(neg_buoyancy_cnt - 1) = k;
         }
       }
@@ -112,7 +112,7 @@ void Functions<S,D>::compute_cape_from_parcel(
     }
 
     // Apply limiter to ensure CAPE is positive
-    cape = ekat::impl::max(cape, 0.);
+    cape = Kokkos::max(cape, 0.);
   });
 
   workspace.template release_many_contiguous<3>(
