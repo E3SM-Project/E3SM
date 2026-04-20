@@ -7,9 +7,15 @@
 namespace scream {
 
 /*
- * This diagnostic will calculate the dp- or dz-weighted average of a field
- * across the LEV tag dimension, producing an N-1 dimensional field
- * that is a weighted average of the input field.
+ * This diagnostic will calculate the dp- or dz-weighted sum or average of a
+ * field across the LEV tag dimension, producing an N-1 dimensional field.
+ *
+ * For "sum":   out = sum_lev(weight * f * mask)
+ * For "avg":   out = sum_lev(weight * f * mask) / sum_lev(weight * mask)
+ *
+ * If the input field has a valid_mask, entries with mask==0 are excluded from
+ * both numerator and denominator.  Output entries where the denominator is zero
+ * are filled with fill_value and the output field's valid_mask is set to 0.
  */
 
 class VertContractDiag : public AtmosphereDiagnostic {
@@ -29,9 +35,6 @@ class VertContractDiag : public AtmosphereDiagnostic {
 #endif
   void compute_diagnostic_impl();
   void initialize_impl(const RunType /*run_type*/);
-  // Additional function to scale the weights
-  void scale_wts(Field &wts, const Field &wts_sum);
-
 
   // Name of each field (because the diagnostic impl is generic)
   std::string m_diag_name;
@@ -40,12 +43,14 @@ class VertContractDiag : public AtmosphereDiagnostic {
   // Name of weighting method (dp, dz, none)
   std::string m_weighting_method;
 
-  // Need some weighting, if unweighted, we will make it 1
-  Field m_weighting;
-  // Need a weighting field set to all ones
-  Field m_weighting_one;
-  // Need weighting summed vertically
-  Field m_weighting_sum;
+  // Weight field (dp/g, dz, or all-ones depending on weighting_method)
+  Field m_weight;
+
+  // For avg mode: denominator scratch field (same layout as m_diagnostic_output).
+  Field m_weight_sum;
+
+  // Ones field with the same layout as the weight field (for "avg" only)
+  Field m_ones;
 };
 
 }  // namespace scream

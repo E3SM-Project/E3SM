@@ -9,6 +9,11 @@ namespace scream {
  * This diagnostic will calculate the area-weighted average of a field
  * across the COL tag dimension, producing an N-1 dimensional field
  * that is area-weighted average of the input field.
+ *
+ * If the input field has a valid_mask, the average is computed only over
+ * valid (mask != 0) entries:  sum(area*f*mask) / sum(area*mask).
+ * Output entries where sum(area*mask)==0 are set to fill_value,
+ * and the output field's valid_mask is set to 0 at those locations.
  */
 
 class HorizAvgDiag : public AtmosphereDiagnostic {
@@ -31,14 +36,12 @@ class HorizAvgDiag : public AtmosphereDiagnostic {
  protected:
   void initialize_impl(const RunType /*run_type*/);
 
-  // Name of each field (because the diagnostic impl is generic)
-  std::string m_diag_name;
+  // Area field
+  Field m_area;
 
-  // Need area field, let's store it scaled by its norm
-  Field m_scaled_area;
-
-  // May need to allocate an extra field if masking
-  Field m_dummy_field;
+  // Utility fields to compute the (scalar) denominator
+  Field m_denom;
+  Field m_ones;
 };
 
 }  // namespace scream
