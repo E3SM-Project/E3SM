@@ -741,9 +741,9 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="improv|bebop">
+    <mach name="improv">
       <pes compset="any" pesize="any">
-        <comment>improv|bebop pelayout for any EAM compset on ne30np4.pg2 grid </comment>
+        <comment>improv pelayout for any EAM compset on ne30np4.pg2 grid </comment>
         <ntasks>
           <ntasks_atm>-6</ntasks_atm>
           <ntasks_cpl>-6</ntasks_cpl>
@@ -753,6 +753,21 @@
           <ntasks_ice>-6</ntasks_ice>
           <ntasks_glc>-6</ntasks_glc>
           <ntasks_wav>-6</ntasks_wav>
+        </ntasks>
+      </pes>
+    </mach>
+    <mach name="bebop">
+      <pes compset="any" pesize="any">
+        <comment>bebop pelayout for any EAM compset on ne30np4.pg2 grid: 8 nodes stacked </comment>
+        <ntasks>
+          <ntasks_atm>-8</ntasks_atm>
+          <ntasks_cpl>-8</ntasks_cpl>
+          <ntasks_lnd>-8</ntasks_lnd>
+          <ntasks_rof>-8</ntasks_rof>
+          <ntasks_ocn>-8</ntasks_ocn>
+          <ntasks_ice>-8</ntasks_ice>
+          <ntasks_glc>-8</ntasks_glc>
+          <ntasks_wav>-8</ntasks_wav>
         </ntasks>
       </pes>
     </mach>
@@ -1100,7 +1115,7 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="improv|bebop">
+    <mach name="improv">
       <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="M">
         <comment>--res conusx4v1_r05_oECv3 --compset F2010 </comment>
         <ntasks>
@@ -1112,6 +1127,19 @@
           <ntasks_ice>-4</ntasks_ice>
           <ntasks_glc>-4</ntasks_glc>
           <ntasks_wav>-4</ntasks_wav>
+        </ntasks>
+      </pes>
+    </mach>
+    <mach name="bebop">
+      <pes compset="any" pesize="any">
+        <comment>bebop: LR conus eamxx 8 nodes</comment>
+        <ntasks>
+          <ntasks_atm>-8</ntasks_atm>
+          <ntasks_cpl>-8</ntasks_cpl>
+          <ntasks_ice>-8</ntasks_ice>
+          <ntasks_lnd>-8</ntasks_lnd>
+          <ntasks_rof>-8</ntasks_rof>
+          <ntasks_ocn>-8</ntasks_ocn>
         </ntasks>
       </pes>
     </mach>

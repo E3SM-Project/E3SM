@@ -1054,19 +1054,6 @@
           <ntasks_wav>-8</ntasks_wav>
         </ntasks>
       </pes>
-      <pes compset=".*EAM.+ELM.+MPASSI.+SGLC.+SWAV.+BGC.*" pesize="any">
-        <comment>bebop: BGC compset on ne30np4 grid</comment>
-        <ntasks>
-          <ntasks_atm>-10</ntasks_atm>
-          <ntasks_lnd>-10</ntasks_lnd>
-          <ntasks_rof>-10</ntasks_rof>
-          <ntasks_ice>-10</ntasks_ice>
-          <ntasks_ocn>-10</ntasks_ocn>
-          <ntasks_cpl>-10</ntasks_cpl>
-          <ntasks_glc>-10</ntasks_glc>
-          <ntasks_wav>-10</ntasks_wav>
-        </ntasks>
-      </pes>
     </mach>
   </grid>
   <grid name="a%ne30np4.pg2_l%.+_oi%oEC60to30v3">
@@ -1221,7 +1208,7 @@
       </pes>
     </mach>
     <mach name="bebop">
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+_SESP$" pesize="any">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="any">
         <comment> --compset WCYCL* --res ne30pg2_r05_IcoswISC30E3r5 on 25 nodes pure-MPI</comment>
         <ntasks>
           <ntasks_atm>-19</ntasks_atm>
