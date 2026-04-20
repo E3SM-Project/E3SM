@@ -464,14 +464,10 @@ void call_hetfrz_compute_tendencies(
     MAMAci::view_2d hetfrz_immersion_nucleation_tend,
     MAMAci::view_2d hetfrz_contact_nucleation_tend,
     MAMAci::view_2d hetfrz_depostion_nucleation_tend,
-    MAMAci::view_2d diagnostic_scratch_[]) {
+    MAMAci::view_3d diagnostic_scratch) {
   mam4::Hetfrz hetfrz                        = hetfrz_;
   mam_coupling::AerosolState dry_aero        = dry_aero_;
   mam_coupling::DryAtmosphere dry_atmosphere = dry_atm_;
-
-  MAMAci::view_2d diagnostic_scratch[MAMAci::hetro_scratch_];
-  for(int i = 0; i < MAMAci::hetro_scratch_; ++i)
-    diagnostic_scratch[i] = diagnostic_scratch_[i];
 
   Kokkos::parallel_for(
       "MAMAci::run_impl::call_hetfrz_compute_tendencies", team_policy,
@@ -507,56 +503,18 @@ void call_hetfrz_compute_tendencies(
         diags.hetfrz_depostion_nucleation_tend =
             ekat::subview(hetfrz_depostion_nucleation_tend, icol);
 
-        diags.bc_num        = ekat::subview(diagnostic_scratch[0], icol);
-        diags.dst1_num      = ekat::subview(diagnostic_scratch[1], icol);
-        diags.dst3_num      = ekat::subview(diagnostic_scratch[2], icol);
-        diags.bcc_num       = ekat::subview(diagnostic_scratch[3], icol);
-        diags.dst1c_num     = ekat::subview(diagnostic_scratch[4], icol);
-        diags.dst3c_num     = ekat::subview(diagnostic_scratch[5], icol);
-        diags.bcuc_num      = ekat::subview(diagnostic_scratch[6], icol);
-        diags.dst1uc_num    = ekat::subview(diagnostic_scratch[7], icol);
-        diags.dst3uc_num    = ekat::subview(diagnostic_scratch[8], icol);
-        diags.bc_a1_num     = ekat::subview(diagnostic_scratch[0], icol);
-        diags.dst_a1_num    = ekat::subview(diagnostic_scratch[10], icol);
-        diags.dst_a3_num    = ekat::subview(diagnostic_scratch[11], icol);
-        diags.bc_c1_num     = ekat::subview(diagnostic_scratch[12], icol);
-        diags.dst_c1_num    = ekat::subview(diagnostic_scratch[13], icol);
-        diags.dst_c3_num    = ekat::subview(diagnostic_scratch[14], icol);
-        diags.fn_bc_c1_num  = ekat::subview(diagnostic_scratch[15], icol);
-        diags.fn_dst_c1_num = ekat::subview(diagnostic_scratch[16], icol);
-        diags.fn_dst_c3_num = ekat::subview(diagnostic_scratch[17], icol);
-        diags.na500         = ekat::subview(diagnostic_scratch[18], icol);
-        diags.totna500      = ekat::subview(diagnostic_scratch[19], icol);
-        diags.freqimm       = ekat::subview(diagnostic_scratch[20], icol);
-        diags.freqcnt       = ekat::subview(diagnostic_scratch[21], icol);
-        diags.freqdep       = ekat::subview(diagnostic_scratch[22], icol);
-        diags.freqmix       = ekat::subview(diagnostic_scratch[23], icol);
-        diags.dstfrezimm    = ekat::subview(diagnostic_scratch[24], icol);
-        diags.dstfrezcnt    = ekat::subview(diagnostic_scratch[25], icol);
-        diags.dstfrezdep    = ekat::subview(diagnostic_scratch[26], icol);
-        diags.bcfrezimm     = ekat::subview(diagnostic_scratch[27], icol);
-        diags.bcfrezcnt     = ekat::subview(diagnostic_scratch[28], icol);
-        diags.bcfrezdep     = ekat::subview(diagnostic_scratch[19], icol);
-        diags.nimix_imm     = ekat::subview(diagnostic_scratch[30], icol);
-        diags.nimix_cnt     = ekat::subview(diagnostic_scratch[31], icol);
-        diags.nimix_dep     = ekat::subview(diagnostic_scratch[32], icol);
-        diags.dstnidep      = ekat::subview(diagnostic_scratch[33], icol);
-        diags.dstnicnt      = ekat::subview(diagnostic_scratch[34], icol);
-        diags.dstniimm      = ekat::subview(diagnostic_scratch[35], icol);
-        diags.bcnidep       = ekat::subview(diagnostic_scratch[36], icol);
-        diags.bcnicnt       = ekat::subview(diagnostic_scratch[37], icol);
-        diags.bcniimm       = ekat::subview(diagnostic_scratch[38], icol);
-        diags.numice10s     = ekat::subview(diagnostic_scratch[39], icol);
-        diags.numimm10sdst  = ekat::subview(diagnostic_scratch[40], icol);
-        diags.numimm10sbc   = ekat::subview(diagnostic_scratch[41], icol);
-        diags.stratiform_cloud_fraction =
-            ekat::subview(diagnostic_scratch[42], icol);
+	diags.hetfrz = ekat::subview(diagnostic_scratch, icol);
+
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int k) {
+          for (int d = 0; d < mam4::Diagnostics::number_of_hetfrz_diag; ++d)
+            diags.hetfrz(d, k) = 0.;
+        });
 
         // assign cloud fraction
         constexpr auto pver = mam4::ndrop::pver;
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0u, pver),
                              [&](int klev) {
-                               diags.stratiform_cloud_fraction(klev) =
+                               diags.hetfrz(mam4::Diagnostics::stratiform_cloud_fraction, klev) =
                                    atm.cloud_fraction(klev);
                              });
         //-------------------------------------------------------------
