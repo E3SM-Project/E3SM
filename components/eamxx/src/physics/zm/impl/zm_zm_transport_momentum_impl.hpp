@@ -43,8 +43,6 @@ void Functions<S,D>::zm_transport_momentum(
   const uview_2d<Real>& icwd, // in-cloud winds in downdraft
   const uview_1d<Real>& seten) // dry energy tendency)
 {
-  constexpr Real momcu = 0.4; // pressure gradient term constant for updrafts
-  constexpr Real momcd = 0.4; // pressure gradient term constant for downdrafts
 
   // Allocate temporary arrays (2D: pver x nwind or pverp x nwind)
   uview_1d<Real> wind0_1d, windf_1d, wind_mid_1d, wind_int_1d, wind_int_d_1d, wind_int_u_1d;
@@ -73,19 +71,19 @@ void Functions<S,D>::zm_transport_momentum(
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver*nwind), [&] (const Int& idx) {
     const Int k = idx / nwind;
     const Int m = idx % nwind;
-    wind_tend(k,m) = 0.0;
-    pguall(k,m) = 0.0;
-    pgdall(k,m) = 0.0;
+    wind_tend(k,m) = 0;
+    pguall(k,m) = 0;
+    pgdall(k,m) = 0;
     icwu(k,m) = wind_in(k,m);
     icwd(k,m) = wind_in(k,m);
-    wind0(m,k) = 0.0;
-    windf(m,k) = 0.0;
-    mflux(m,k) = 0.0;
+    wind0(m,k) = 0;
+    windf(m,k) = 0;
+    mflux(m,k) = 0;
     if (k == pver-1) {
-      mflux(m, k+1) = 0.0;
+      mflux(m, k+1) = 0;
     }
     if (m == 0) {
-      seten(k) = 0.0;
+      seten(k) = 0;
     }
   });
 
@@ -109,15 +107,15 @@ void Functions<S,D>::zm_transport_momentum(
       wind_int_u(m,k) = wind_int(m,k);
       wind_int_d(m,k) = wind_int(m,k);
       // provisional tendency
-      wind_tend_tmp(m,k) = 0.0;
+      wind_tend_tmp(m,k) = 0;
     }
 
     // -------------------------------------------------------------------------
     // Calculate pressure perturbation terms
 
     // upper boundary
-    pgu(m,0) = 0.0;
-    pgd(m,0) = 0.0;
+    pgu(m,0) = 0;
+    pgd(m,0) = 0;
 
     // interior points
     for (Int k = 1; k < pver-1; ++k) {
@@ -127,8 +125,8 @@ void Functions<S,D>::zm_transport_momentum(
                      mu(kp1)*(wind_mid(m,kp1)-wind_mid(m,k)  )/dp(k));
       mddudp(m,k) = (md(k)  *(wind_mid(m,k)  -wind_mid(m,km1))/dp(km1) +
                      md(kp1)*(wind_mid(m,kp1)-wind_mid(m,k)  )/dp(k));
-      pgu(m,k) = -momcu * ZMC::half * mududp(m,k);
-      pgd(m,k) = -momcd * ZMC::half * mddudp(m,k);
+      pgu(m,k) = -ZMC::momcu * ZMC::half * mududp(m,k);
+      pgd(m,k) = -ZMC::momcd * ZMC::half * mddudp(m,k);
     }
 
     // bottom boundary
@@ -137,8 +135,8 @@ void Functions<S,D>::zm_transport_momentum(
       const Int km1 = k-1;
       mududp(m,k) = mu(k) * (wind_mid(m,k)-wind_mid(m,km1))/dp(km1);
       mddudp(m,k) = md(k) * (wind_mid(m,k)-wind_mid(m,km1))/dp(km1);
-      pgu(m,k) = -momcu * mududp(m,k);
-      pgd(m,k) = -momcd * mddudp(m,k);
+      pgu(m,k) = -ZMC::momcu * mududp(m,k);
+      pgd(m,k) = -ZMC::momcd * mddudp(m,k);
     }
 
     // -------------------------------------------------------------------------

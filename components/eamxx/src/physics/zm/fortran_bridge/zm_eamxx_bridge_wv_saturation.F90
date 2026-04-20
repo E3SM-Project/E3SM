@@ -49,7 +49,7 @@ public wv_sat_final
 ! Saturation vapor pressure calculations
 public svp_water
 public svp_ice
-  
+
 ! Mixed phase (water + ice) saturation vapor pressure table lookup
 public estblf
 
@@ -153,7 +153,7 @@ subroutine wv_sat_init
 
   ! Allocate SVP table.
   allocate(estbl(plenest), stat=status)
-  if (status /= 0) then 
+  if (status /= 0) then
      call endrun('wv_sat_init :: ERROR allocating saturation vapor pressure table')
      return
   end if
@@ -241,7 +241,7 @@ end function svp_trans
 ! in the table (estbl).
 elemental function estblf(t) result(es)
 
-  real(r8), intent(in) :: t ! Temperature 
+  real(r8), intent(in) :: t ! Temperature
   real(r8) :: es            ! SVP (Pa)
 
   integer  :: i         ! Index for t in the table
@@ -267,7 +267,7 @@ elemental function tq_enthalpy(t, q, hltalt) result(enthalpy)
   real(r8) :: enthalpy
 
   enthalpy = cpair * t + hltalt * q
-  
+
 end function tq_enthalpy
 
 !---------------------------------------------------------------------
@@ -578,27 +578,27 @@ subroutine findsp_vc(q, t, p, use_ice, tsp, qsp)
 end subroutine findsp_vc
 
 elemental subroutine findsp (q, t, p, use_ice, tsp, qsp, status)
-!----------------------------------------------------------------------- 
-! 
-! Purpose: 
+!-----------------------------------------------------------------------
+!
+! Purpose:
 !     find the wet bulb temperature for a given t and q
 !     in a longitude height section
-!     wet bulb temp is the temperature and spec humidity that is 
+!     wet bulb temp is the temperature and spec humidity that is
 !     just saturated and has the same enthalpy
 !     if q > qs(t) then tsp > t and qsp = qs(tsp) < q
 !     if q < qs(t) then tsp < t and qsp = qs(tsp) > q
 !
-! Method: 
+! Method:
 ! a Newton method is used
 ! first guess uses an algorithm provided by John Petch from the UKMO
 ! we exclude points where the physical situation is unrealistic
 ! e.g. where the temperature is outside the range of validity for the
 !      saturation vapor pressure, or where the water vapor pressure
-!      exceeds the ambient pressure, or the saturation specific humidity is 
+!      exceeds the ambient pressure, or the saturation specific humidity is
 !      unrealistic
-! 
+!
 ! Author: P. Rasch
-! 
+!
 !-----------------------------------------------------------------------
 !
 !     input arguments

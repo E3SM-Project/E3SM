@@ -65,23 +65,23 @@ void Functions<S,D>::zm_conv_mcsp_tend(
     {"mcsp_tend_s", "mcsp_tend_q", "mcsp_tend_u", "mcsp_tend_v"},
     {&mcsp_tend_s, &mcsp_tend_q, &mcsp_tend_u, &mcsp_tend_v});
 
-  Real zm_avg_tend_s = 0.0;     // mass weighted column average DSE tendency from ZM
-  Real zm_avg_tend_q = 0.0;     // mass weighted column average qv tendency from ZM
-  Real pdel_sum = 0.0;          // column integrated pressure thickness
-  Real mcsp_avg_tend_s = 0.0;   // mass weighted column average MCSP tendency of DSE
-  Real mcsp_avg_tend_q = 0.0;   // mass weighted column average MCSP tendency of qv
-  Real mcsp_avg_tend_k = 0.0;   // mass weighted column average MCSP tendency of kinetic energy
+  Real zm_avg_tend_s = 0;     // mass weighted column average DSE tendency from ZM
+  Real zm_avg_tend_q = 0;     // mass weighted column average qv tendency from ZM
+  Real pdel_sum = 0;          // column integrated pressure thickness
+  Real mcsp_avg_tend_s = 0;   // mass weighted column average MCSP tendency of DSE
+  Real mcsp_avg_tend_q = 0;   // mass weighted column average MCSP tendency of qv
+  Real mcsp_avg_tend_k = 0;   // mass weighted column average MCSP tendency of kinetic energy
 
   // Initialize arrays
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver), [&] (const Int& k) {
-    mcsp_tend_s(k) = 0.0;
-    mcsp_tend_q(k) = 0.0;
-    mcsp_tend_u(k) = 0.0;
-    mcsp_tend_v(k) = 0.0;
-    mcsp_dt_out(k) = 0.0;
-    mcsp_dq_out(k) = 0.0;
-    mcsp_du_out(k) = 0.0;
-    mcsp_dv_out(k) = 0.0;
+    mcsp_tend_s(k) = 0;
+    mcsp_tend_q(k) = 0;
+    mcsp_tend_u(k) = 0;
+    mcsp_tend_v(k) = 0;
+    mcsp_dt_out(k) = 0;
+    mcsp_dq_out(k) = 0;
+    mcsp_du_out(k) = 0;
+    mcsp_dv_out(k) = 0;
   });
   team.team_barrier();
 
@@ -93,7 +93,7 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   //----------------------------------------------------------------------------
   // calculate mass weighted column average tendencies from ZM
 
-  zm_depth = 0.0;
+  zm_depth = 0;
   if (jctop != pver - 1) {
     // integrate pressure and ZM tendencies over column using parallel reduction
     Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, jctop, pver),
@@ -128,7 +128,7 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   // check that ZM produced tendencies over a depth that exceeds the threshold
   if (zm_depth >= ZMC::MCSP_conv_depth_min) {
     // check that ZM provided a non-zero column total heating
-    if (zm_avg_tend_s > 0.0) {
+    if (zm_avg_tend_s > 0) {
       // check that there is sufficient wind shear to justify coherent organization
       if (std::abs(mcsp_shear) >= ZMC::MCSP_shear_min &&
           std::abs(mcsp_shear) < ZMC::MCSP_shear_max) {
@@ -170,7 +170,7 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   //----------------------------------------------------------------------------
   // calculate final output tendencies
 
-  mcsp_freq = 0.0;
+  mcsp_freq = 0;
   bool any_tend = false;
 
   // Calculate final tendencies and check frequency in a single parallel_reduce
@@ -198,15 +198,15 @@ void Functions<S,D>::zm_conv_mcsp_tend(
       if (do_mcsp_t) mcsp_dt_out(k) = mcsp_dt_out(k) / PC::Cpair.value;
 
       // update frequency if MCSP contributes any tendency in the column
-      if (std::abs(mcsp_tend_s(k)) > 0.0 || std::abs(mcsp_tend_q(k)) > 0.0 ||
-          std::abs(mcsp_tend_u(k)) > 0.0 || std::abs(mcsp_tend_v(k)) > 0.0) {
+      if (std::abs(mcsp_tend_s(k)) > 0 || std::abs(mcsp_tend_q(k)) > 0 ||
+          std::abs(mcsp_tend_u(k)) > 0 || std::abs(mcsp_tend_v(k)) > 0) {
         local_freq = true;
       }
     },
     Kokkos::LOr<bool>(any_tend));
   team.team_barrier();
 
-  if (any_tend) mcsp_freq = 1.0;
+  if (any_tend) mcsp_freq = 1;
 
   workspace.template release_many_contiguous<4>(
     {&mcsp_tend_s, &mcsp_tend_q, &mcsp_tend_u, &mcsp_tend_v});

@@ -49,36 +49,36 @@ void Functions<S,D>::compute_dilute_parcel(
   // it. In this situation, the temporary variable tpert_loc is reset to zero.
   Real tpert_loc = tpert;
   if (runtime_opt.tpert_fix && klaunch < pblt) {
-    tpert_loc = 0.0;
+    tpert_loc = 0;
   }
 
   // Initialize arrays
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver), [&] (const Int& k) {
-    tmix(k) = 0.0;
-    qtmix(k) = 0.0;
-    qsmix(k) = 0.0;
-    smix(k) = 0.0;
-    xsh2o(k) = 0.0;
-    ds_xsh2o(k) = 0.0;
-    ds_freeze(k) = 0.0;
+    tmix(k) = 0;
+    qtmix(k) = 0;
+    qsmix(k) = 0;
+    smix(k) = 0;
+    xsh2o(k) = 0;
+    ds_xsh2o(k) = 0;
+    ds_freeze(k) = 0;
   });
   team.team_barrier();
 
   // Due to sequential dependencies in both major loops, none of this can be parallelized
   Kokkos::single(Kokkos::PerTeam(team), [&] {
     // Scalar variables for parcel properties
-    Real mp = 0.0;
-    Real qtp = 0.0;
-    Real sp = 0.0;
-    Real sp0 = 0.0;
-    Real qtp0 = 0.0;
-    Real mp0 = 0.0;
+    Real mp = 0;
+    Real qtp = 0;
+    Real sp = 0;
+    Real sp0 = 0;
+    Real qtp0 = 0;
+    Real mp0 = 0;
 
     // Entrainment loop (from launch level upward)
     for (Int k = pver - 1; k >= num_msg; --k) {
       if (k == klaunch) {
         // Initialize values at launch level
-        mp0 = 1.0; // initial relative mass - value of 1.0 does not change for undilute (dmpdp=0)
+        mp0 = 1; // initial relative mass - value of 1 does not change for undilute (dmpdp=0)
         qtp0 = sp_humidity(k); // initial total water - assuming subsaturated
         sp0 = entropy(temperature(k), pmid(k), qtp0);
         smix(k) = sp0;
@@ -156,25 +156,25 @@ void Functions<S,D>::compute_dilute_parcel(
         // Iterate nit_lheat times for s,qt changes
         for (Int ii = 0; ii < ZMC::nit_lheat; ++ii) {
           // Rain (xsh2o) is excess condensate, bar lwmax (accumulated loss from qtmix)
-          xsh2o(k) = ekat::impl::max(0.0, qtmix(k) - qsmix(k) - ZMC::lwmax);
+          xsh2o(k) = ekat::impl::max(0., qtmix(k) - qsmix(k) - ZMC::lwmax);
 
           // Contribution to ds from precip loss of condensate (accumulated change from smix)
           ds_xsh2o(k) = ds_xsh2o(k + 1) - PC::CpLiq.value * std::log(tmix(k) / PC::Tmelt.value) *
-            ekat::impl::max(0.0, xsh2o(k) - xsh2o(k + 1));
+            ekat::impl::max(0., xsh2o(k) - xsh2o(k + 1));
 
           // Calculate entropy of freezing => ( latice x amount of water involved ) / T
 
           // One off freezing of condensate
-          if (tmix(k) <= PC::Tmelt.value && ds_freeze(k + 1) == 0.0) {
+          if (tmix(k) <= PC::Tmelt.value && ds_freeze(k + 1) == 0) {
             // entropy change from latent heat
             ds_freeze(k) = (PC::LatIce.value / tmix(k)) *
-              ekat::impl::max(0.0, qtmix(k) - qsmix(k) - xsh2o(k));
+              ekat::impl::max(0., qtmix(k) - qsmix(k) - xsh2o(k));
           }
 
-          if (tmix(k) <= PC::Tmelt.value && ds_freeze(k + 1) != 0.0) {
+          if (tmix(k) <= PC::Tmelt.value && ds_freeze(k + 1) != 0) {
             // Continual freezing of additional condensate
             ds_freeze(k) = ds_freeze(k + 1) + (PC::LatIce.value / tmix(k)) *
-              ekat::impl::max(0.0, qsmix(k + 1) - qsmix(k));
+              ekat::impl::max(0., qsmix(k + 1) - qsmix(k));
           }
 
           // Adjust entropy accordingly to sum of ds

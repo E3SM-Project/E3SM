@@ -204,4 +204,157 @@ subroutine zm_conv_mcsp_tend_bridge_f(pcols, ncol, pver, pverp, ztodt, jctop, st
   call zm_conv_mcsp_tend(pcols, ncol, pver, pverp, ztodt, jctop, zm_const, zm_param, state_pmid, state_pint, state_pdel, state_s, state_q, state_u, state_v, ptend_zm_s, ptend_zm_q, ptend_s, ptend_q, ptend_u, ptend_v, mcsp_dt_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, mcsp_freq, mcsp_shear, zm_depth)
 end subroutine zm_conv_mcsp_tend_bridge_f
 
+subroutine zm_conv_main_bridge_f(pcols, ncol, pver, pverp, is_first_step, time_step, t_mid, q_mid_in, omega, p_mid_in, p_int_in, p_del_in, geos, z_mid_in, z_int_in, pbl_hgt, tpert, landfrac, t_star, q_star, lengath, gather_index, msemax_klev_g, jctop, jcbot, jt, prec, heat, qtnd, cape, dcape, mcon, pflx, zdu, mflx_up, entr_up, detr_up, mflx_dn, entr_dn, p_del, dsubcld, ql, rliq, rprd, dlf) bind(C)
+  use zm_conv, only : zm_conv_main, zm_const, zm_param
+  use zm_conv_types,  only: zm_param_set_for_testing, zm_const_set_for_testing
+  use zm_aero_type,           only: zm_aero_t
+  use zm_microphysics_state,  only: zm_microp_st
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp
+  logical(kind=c_bool) , value, intent(in) :: is_first_step
+  real(kind=c_real) , value, intent(in) :: time_step
+  real(kind=c_real) , target, intent(in), dimension(pcols, pver) :: t_mid, q_mid_in, omega, p_mid_in, p_del_in, z_mid_in, t_star, q_star
+  real(kind=c_real) , intent(in), dimension(pcols, pverp) :: p_int_in, z_int_in
+  real(kind=c_real) , intent(in), dimension(pcols) :: geos, pbl_hgt, tpert, landfrac
+  integer(kind=c_int) , intent(out) :: lengath
+  integer(kind=c_int) , intent(out), dimension(pcols) :: gather_index, msemax_klev_g, jctop, jcbot, jt
+  real(kind=c_real) , intent(out), dimension(pcols) :: prec, cape, dcape, dsubcld, rliq
+  real(kind=c_real) , intent(out), dimension(pcols, pver) :: heat, qtnd, zdu, mflx_up, entr_up, detr_up, mflx_dn, entr_dn, p_del, ql, rprd, dlf
+  real(kind=c_real) , intent(out), dimension(pcols, pverp) :: mcon, pflx
+
+  type(zm_aero_t)    :: aero            ! aerosol object
+  type(zm_microp_st) :: microp_st
+
+  real(kind=c_real), pointer :: t_star_ptr(:,:), q_star_ptr(:,:)
+
+  t_star_ptr => t_star
+  q_star_ptr => q_star
+
+  call zm_param_set_for_testing(zm_param)
+  call zm_const_set_for_testing(zm_const)
+
+  call zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, t_mid, q_mid_in, omega, p_mid_in, p_int_in, p_del_in, geos, z_mid_in, z_int_in, pbl_hgt, tpert, landfrac, t_star_ptr, q_star_ptr, lengath, gather_index, msemax_klev_g, jctop, jcbot, jt, prec, heat, qtnd, cape, dcape, mcon, pflx, zdu, mflx_up, entr_up, detr_up, mflx_dn, entr_dn, p_del, dsubcld, ql, rliq, rprd, dlf, aero, microp_st)
+end subroutine zm_conv_main_bridge_f
+
+subroutine zm_conv_evap_bridge_f(pcols, ncol, pver, pverp, time_step, p_mid, p_del, t_mid, q_mid, prdprec, cldfrc, tend_s, tend_q, tend_s_snwprd, tend_s_snwevmlt, prec, snow, ntprprd, ntsnprd, flxprec, flxsnow) bind(C)
+  use zm_conv, only : zm_conv_evap, zm_const, zm_param
+  use zm_conv_types,  only: zm_param_set_for_testing, zm_const_set_for_testing
+  use zm_microphysics_state,  only: zm_microp_st
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp
+  real(kind=c_real) , value, intent(in) :: time_step
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: p_mid, p_del, t_mid, q_mid, prdprec, cldfrc
+  real(kind=c_real) , intent(inout), dimension(pcols, pver) :: tend_s, tend_q
+  real(kind=c_real) , intent(out), dimension(pcols, pver) :: tend_s_snwprd, tend_s_snwevmlt, ntprprd, ntsnprd
+  real(kind=c_real) , intent(inout), dimension(pcols) :: prec
+  real(kind=c_real) , intent(out), dimension(pcols) :: snow
+  real(kind=c_real) , intent(out), dimension(pcols, pverp) :: flxprec, flxsnow
+
+  type(zm_microp_st) :: microp_st
+
+  call zm_param_set_for_testing(zm_param)
+  call zm_const_set_for_testing(zm_const)
+
+  call zm_conv_evap(pcols, ncol, pver, pverp, time_step, p_mid, p_del, t_mid, q_mid, prdprec, cldfrc, tend_s, tend_q, tend_s_snwprd, tend_s_snwevmlt, prec, snow, ntprprd, ntsnprd, flxprec, flxsnow, microp_st)
+end subroutine zm_conv_evap_bridge_f
+
+subroutine zm_calc_fractional_entrainment_bridge_f(pcols, ncol, pver, pverp, msg, jb, jt, j0, z_mid, z_int, dz, h_env, h_env_sat, h_env_min, lambda, lambda_max) bind(C)
+  use zm_conv, only : zm_calc_fractional_entrainment, zm_const, zm_param
+  use zm_conv_types,  only: zm_param_set_for_testing, zm_const_set_for_testing
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp, msg
+  integer(kind=c_int) , intent(in), dimension(pcols) :: jb, jt
+  integer(kind=c_int) , intent(inout), dimension(pcols) :: j0
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: z_mid, dz, h_env, h_env_sat
+  real(kind=c_real) , intent(in), dimension(pcols, pverp) :: z_int
+  real(kind=c_real) , intent(inout), dimension(pcols) :: h_env_min
+  real(kind=c_real) , intent(out), dimension(pcols, pver) :: lambda
+  real(kind=c_real) , intent(out), dimension(pcols) :: lambda_max
+
+  call zm_param_set_for_testing(zm_param)
+  call zm_const_set_for_testing(zm_const)
+
+  call zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, jb, jt, j0, z_mid, z_int, dz, h_env, h_env_sat, h_env_min, lambda, lambda_max)
+end subroutine zm_calc_fractional_entrainment_bridge_f
+
+subroutine zm_downdraft_properties_bridge_f(pcols, ncol, pver, pverp, msg, jb, jt, j0, jd, z_int, dz, s_mid, q_mid, h_env, lambda, lambda_max, qsthat, hsthat, gamhat, rprd, mflx_up, mflx_dn, entr_dn, s_dnd, q_dnd, h_dnd, q_dnd_sat, evp, totevp) bind(C)
+  use zm_conv, only : zm_downdraft_properties, zm_const, zm_param
+  use zm_conv_types,  only: zm_param_set_for_testing, zm_const_set_for_testing
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp, msg
+  integer(kind=c_int) , intent(in), dimension(pcols) :: jb, j0
+  integer(kind=c_int) , intent(inout), dimension(pcols) :: jt, jd
+  real(kind=c_real) , intent(in), dimension(pcols, pverp) :: z_int
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: dz, s_mid, q_mid, h_env, lambda, qsthat, hsthat, gamhat, rprd, mflx_up
+  real(kind=c_real) , intent(in), dimension(pcols) :: lambda_max
+  real(kind=c_real) , intent(inout), dimension(pcols, pver) :: mflx_dn, entr_dn, s_dnd, q_dnd, h_dnd, q_dnd_sat, evp
+  real(kind=c_real) , intent(inout), dimension(pcols) :: totevp
+
+  call zm_param_set_for_testing(zm_param)
+  call zm_const_set_for_testing(zm_const)
+
+  call zm_downdraft_properties(pcols, ncol, pver, pverp, msg, jb, jt, j0, jd, z_int, dz, s_mid, q_mid, h_env, lambda, lambda_max, qsthat, hsthat, gamhat, rprd, mflx_up, mflx_dn, entr_dn, s_dnd, q_dnd, h_dnd, q_dnd_sat, evp, totevp)
+end subroutine zm_downdraft_properties_bridge_f
+
+subroutine zm_cloud_properties_bridge_f(pcols, ncol, pver, pverp, msg, limcnv, p_mid, z_mid, z_int, t_mid, s_mid, s_int, q_mid, landfrac, tpert_g, jb, lel, jt, jlcl, j0, jd, mflx_up, entr_up, detr_up, mflx_dn, entr_dn, mflx_net, s_upd, q_upd, ql, s_dnd, q_dnd, qst, cu, evp, pflx, rprd) bind(C)
+  use zm_conv, only : zm_cloud_properties, zm_const, zm_param
+  use zm_conv_types,  only: zm_param_set_for_testing, zm_const_set_for_testing
+  use zm_aero_type,           only: zm_aero_t
+  use zm_microphysics_state,  only: zm_microp_st
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp, msg, limcnv
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: p_mid, z_mid, t_mid, s_mid, s_int, q_mid
+  real(kind=c_real) , intent(in), dimension(pcols, pverp) :: z_int
+  real(kind=c_real) , intent(in), dimension(pcols) :: landfrac, tpert_g
+  integer(kind=c_int) , intent(in), dimension(pcols) :: jb, lel
+  integer(kind=c_int) , intent(out), dimension(pcols) :: jt, jlcl, j0, jd
+  real(kind=c_real) , intent(out), dimension(pcols, pver) :: mflx_up, entr_up, detr_up, mflx_dn, entr_dn, mflx_net, s_upd, q_upd, ql, s_dnd, q_dnd, qst, cu, evp, rprd
+  real(kind=c_real) , intent(out), dimension(pcols, pverp) :: pflx
+
+  type(zm_aero_t)    :: aero
+  type(zm_microp_st) :: microp_st
+
+  call zm_param_set_for_testing(zm_param)
+  call zm_const_set_for_testing(zm_const)
+
+  call zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, p_mid, z_mid, z_int, t_mid, s_mid, s_int, q_mid, landfrac, tpert_g, jb, lel, jt, jlcl, j0, jd, mflx_up, entr_up, detr_up, mflx_dn, entr_dn, mflx_net, s_upd, q_upd, ql, s_dnd, q_dnd, qst, cu, evp, pflx, rprd, aero, microp_st)
+end subroutine zm_cloud_properties_bridge_f
+
+subroutine zm_closure_bridge_f(pcols, ncol, pver, pverp, msg, cape_threshold_in, lcl, lel, jt, mx, dsubcld, z_mid, z_int, p_mid, p_del, t_mid, s_mid, q_mid, qs, ql, s_int, q_int, t_pcl_lcl, t_pcl, q_pcl_sat, s_upd, q_upd, mflx_net, detr_up, mflx_up, mflx_dn, q_dnd, s_dnd, cape, cld_base_mass_flux) bind(C)
+  use zm_conv, only : zm_closure, zm_const, zm_param
+  use zm_conv_types,  only: zm_param_set_for_testing, zm_const_set_for_testing
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp, msg
+  real(kind=c_real) , value, intent(in) :: cape_threshold_in
+  integer(kind=c_int) , intent(in), dimension(pcols) :: lcl, lel, jt, mx
+  real(kind=c_real) , intent(in), dimension(pcols) :: dsubcld, t_pcl_lcl, cape
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: z_mid, p_mid, p_del, t_mid, s_mid, q_mid, qs, ql, s_int, q_int, t_pcl, q_pcl_sat, s_upd, q_upd, mflx_net, detr_up, mflx_up, mflx_dn, q_dnd, s_dnd
+  real(kind=c_real) , intent(in), dimension(pcols, pverp) :: z_int
+  real(kind=c_real) , intent(out), dimension(pcols) :: cld_base_mass_flux
+
+  call zm_const_set_for_testing(zm_const)
+  call zm_param_set_for_testing(zm_param)
+
+  call zm_closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, lcl, lel, jt, mx, dsubcld, z_mid, z_int, p_mid, p_del, t_mid, s_mid, q_mid, qs, ql, s_int, q_int, t_pcl_lcl, t_pcl, q_pcl_sat, s_upd, q_upd, mflx_net, detr_up, mflx_up, mflx_dn, q_dnd, s_dnd, cape, cld_base_mass_flux)
+end subroutine zm_closure_bridge_f
+
+subroutine zm_calc_output_tend_bridge_f(pcols, ncol, pver, pverp, msg, jt, mx, dsubcld, p_del, s_int, q_int, s_upd, q_upd, mflx_up, detr_up, mflx_dn, s_dnd, q_dnd, ql, evp, cu, dsdt, dqdt, dl) bind(C)
+  use zm_conv, only : zm_calc_output_tend, zm_const, zm_param
+  use zm_conv_types,  only: zm_param_set_for_testing, zm_const_set_for_testing
+  use zm_microphysics_state,  only: zm_microp_st
+
+  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver, pverp, msg
+  integer(kind=c_int) , intent(in), dimension(pcols) :: jt, mx
+  real(kind=c_real) , intent(in), dimension(pcols) :: dsubcld
+  real(kind=c_real) , intent(in), dimension(pcols, pver) :: p_del, s_int, q_int, s_upd, q_upd, mflx_up, detr_up, mflx_dn, s_dnd, q_dnd, ql, evp, cu
+  real(kind=c_real) , intent(out), dimension(pcols, pver) :: dsdt, dqdt, dl
+
+  type(zm_microp_st) :: microp_st
+
+  call zm_param_set_for_testing(zm_param)
+  call zm_const_set_for_testing(zm_const)
+
+  call zm_calc_output_tend(pcols, ncol, pver, pverp, msg, jt, mx, dsubcld, p_del, s_int, q_int, s_upd, q_upd, mflx_up, detr_up, mflx_dn, s_dnd, q_dnd, ql, evp, cu, dsdt, dqdt, dl, microp_st)
+end subroutine zm_calc_output_tend_bridge_f
+
 end module zm_c2f_bridge

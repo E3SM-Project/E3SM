@@ -38,7 +38,6 @@ void Functions<S,D>::zm_transport_tracer(
   // Outputs
   const uview_2d<Real>& dqdt)             // output tendency array
 {
-  constexpr Real small = ZMC::small;
   // Allocate temporary arrays (2D: ncnst x pver)
   uview_1d<Real> chat1d, cond1d, const_arr1d, fisg1d, conu1d, dcondt1d, dutmp1d, eutmp1d, edtmp1d, dptmp1d;
   workspace.template take_many_contiguous_unsafe<10>(
@@ -56,6 +55,8 @@ void Functions<S,D>::zm_transport_tracer(
     eutmp(eutmp1d.data(), ncnst, pver),
     edtmp(edtmp1d.data(), ncnst, pver),
     dptmp(dptmp1d.data(), ncnst, pver);
+
+  constexpr Real small = ZMC::small;
 
   // Parallel loop over each constituent (skip water vapor at m=0)
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 1, ncnst), [&] (const Int& m) {
@@ -92,7 +93,7 @@ void Functions<S,D>::zm_transport_tracer(
 
       Real cdifr;
       if (minc < 0) {
-        cdifr = 0.0;
+        cdifr = 0;
       } else {
         cdifr = std::abs(const_arr(m, k) - const_arr(m, km1)) / ekat::impl::max(maxc, small);
       }
@@ -110,7 +111,7 @@ void Functions<S,D>::zm_transport_tracer(
       conu(m, k) = chat(m, k);
       cond(m, k) = chat(m, k);
       // provisional tendencies
-      dcondt(m, k) = 0.0;
+      dcondt(m, k) = 0;
     }
 
     // Do levels adjacent to top and bottom
@@ -152,7 +153,7 @@ void Functions<S,D>::zm_transport_tracer(
 
       Real netflux = fluxin - fluxout;
       if (std::abs(netflux) < ekat::impl::max(fluxin, fluxout) * ZMC::flux_factor) {
-        netflux = 0.0;
+        netflux = 0;
       }
       dcondt(m, k) = netflux / dptmp(m, k);
     }
@@ -168,28 +169,28 @@ void Functions<S,D>::zm_transport_tracer(
         const Real fluxout = mu(k) * conu(m, k) - md(k) * ekat::impl::min(chat(m, k), const_arr(m, k));
         Real netflux = fluxin - fluxout;
         if (std::abs(netflux) < ekat::impl::max(fluxin, fluxout) * ZMC::flux_factor) {
-          netflux = 0.0;
+          netflux = 0;
         }
         dcondt(m, k) = netflux / dptmp(m, k);
       } else if (k > mx) {
-        dcondt(m, k) = 0.0;
+        dcondt(m, k) = 0;
       }
     }
 
     // Conservation check for ZM microphysics
     if (runtime_opt.zm_microp) {
       for (Int k = jt; k <= mx; ++k) {
-        if (dcondt(m, k) * dt + const_arr(m, k) < 0.0) {
+        if (dcondt(m, k) * dt + const_arr(m, k) < 0) {
           Real negadt = dcondt(m, k) + const_arr(m, k) / dt;
           dcondt(m, k) = -const_arr(m, k) / dt;
 
           // Try to redistribute to levels above (k+1 to mx)
           for (Int kk = k+1; kk <= mx; ++kk) {
-            if (negadt < 0.0 && dcondt(m, kk) * dt + const_arr(m, kk) > 0.0) {
+            if (negadt < 0 && dcondt(m, kk) * dt + const_arr(m, kk) > 0) {
               const Real qtmp = dcondt(m, kk) + negadt * dptmp(m, k) / dptmp(m, kk);
-              if (qtmp * dt + const_arr(m, kk) > 0.0) {
+              if (qtmp * dt + const_arr(m, kk) > 0) {
                 dcondt(m, kk) = qtmp;
-                negadt = 0.0;
+                negadt = 0;
               } else {
                 negadt = negadt + (const_arr(m, kk) / dt + dcondt(m, kk)) * dptmp(m, kk) / dptmp(m, k);
                 dcondt(m, kk) = -const_arr(m, kk) / dt;
@@ -199,11 +200,11 @@ void Functions<S,D>::zm_transport_tracer(
 
           // Try to redistribute to levels below (k-1 down to jt)
           for (Int kk = k-1; kk >= jt; --kk) {
-            if (negadt < 0.0 && (dcondt(m, kk) * dt + const_arr(m, kk) > 0.0)) {
+            if (negadt < 0 && (dcondt(m, kk) * dt + const_arr(m, kk) > 0)) {
               const Real qtmp = dcondt(m, kk) + negadt * dptmp(m, k) / dptmp(m, kk);
-              if (qtmp * dt + const_arr(m, kk) > 0.0) {
+              if (qtmp * dt + const_arr(m, kk) > 0) {
                 dcondt(m, kk) = qtmp;
-                negadt = 0.0;
+                negadt = 0;
               } else {
                 negadt = negadt + (const_arr(m, kk) / dt + dcondt(m, kk)) * dptmp(m, kk) / dptmp(m, k);
                 dcondt(m, kk) = -const_arr(m, kk) / dt;
@@ -212,7 +213,7 @@ void Functions<S,D>::zm_transport_tracer(
           }
 
           // If still negative, add back to current level
-          if (negadt < 0.0) {
+          if (negadt < 0) {
             dcondt(m, k) = dcondt(m, k) - negadt;
           }
         }

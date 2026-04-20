@@ -48,16 +48,16 @@ void Functions<S,D>::compute_cape_from_parcel(
 
   // Initialize variables
   eql_klev = pver - 1;
-  cape = 0.0;
+  cape = 0;
 
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_cin), [&] (const Int& n) {
     eql_klev_tmp(n) = pver - 1;
-    cape_tmp(n) = 0.0;
+    cape_tmp(n) = 0;
   });
   team.team_barrier();
 
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver), [&] (const Int& k) {
-    buoyancy(k) = 0.0;
+    buoyancy(k) = 0;
   });
   team.team_barrier();
 
@@ -79,7 +79,7 @@ void Functions<S,D>::compute_cape_from_parcel(
     Int neg_buoyancy_cnt = 0;
     for (Int k = num_msg + 1; k < pver; ++k) {
       if (k < lcl_klev && lcl_pmid >= ZMC::lcl_pressure_threshold) {
-        if (buoyancy(k + 1) > 0.0 && buoyancy(k) <= 0.0) {
+        if (buoyancy(k + 1) > 0 && buoyancy(k) <= 0) {
           neg_buoyancy_cnt = ekat::impl::min(num_cin, neg_buoyancy_cnt + 1);
           eql_klev_tmp(neg_buoyancy_cnt - 1) = k;
         }
@@ -112,7 +112,7 @@ void Functions<S,D>::compute_cape_from_parcel(
     }
 
     // Apply limiter to ensure CAPE is positive
-    cape = ekat::impl::max(cape, 0.0);
+    cape = ekat::impl::max(cape, 0.);
   });
 
   workspace.template release_many_contiguous<3>(
