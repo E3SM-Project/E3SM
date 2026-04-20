@@ -34,6 +34,7 @@ void SurfaceCouplingExporter::create_requests()
   using namespace ShortFieldTagsNames;
 
   FieldLayout scalar2d_layout     { {COL   },      {m_num_cols                 } };
+  FieldLayout vector2d_layout     { {COL,CMP},     {m_num_cols, 2,             } };
   FieldLayout vector3d_layout     { {COL,CMP,LEV}, {m_num_cols, 2, m_num_levs  } };
   FieldLayout scalar3d_layout_mid { {COL,LEV},     {m_num_cols,    m_num_levs  } };
   FieldLayout scalar3d_layout_int { {COL,ILEV},    {m_num_cols,    m_num_levs+1} };
@@ -46,7 +47,7 @@ void SurfaceCouplingExporter::create_requests()
   add_field<Required>("phis",                 scalar2d_layout,      m2/s2,  grid_name);
   add_field<Required>("p_mid",                scalar3d_layout_mid,  Pa,     grid_name, ps);
   add_field<Required>("T_mid",                scalar3d_layout_mid,  K,      grid_name, ps);
-  add_tracer<Required>("qv", m_grid,  kg/kg, ps);
+  add_tracer<Required>("qv",                  m_grid,               kg/kg, ps);
   // TODO: Switch horiz_winds to using U and V, note right now there is an issue with when the subfields are created, so can't switch yet.
   add_field<Required>("horiz_winds",          vector3d_layout,      m/s,    grid_name);
   add_field<Required>("sfc_flux_dir_nir",     scalar2d_layout,      W/m2,   grid_name);
@@ -57,6 +58,13 @@ void SurfaceCouplingExporter::create_requests()
   add_field<Required>("sfc_flux_lw_dn"  ,     scalar2d_layout,      W/m2,   grid_name);
   add_field<Required>("precip_liq_surf_mass", scalar2d_layout,      kg/m2,  grid_name);
   add_field<Required>("precip_ice_surf_mass", scalar2d_layout,      kg/m2,  grid_name);
+  // Required for implicit flux coupling
+  add_field<Required>("um_pert_diff",         scalar3d_layout_mid,  m/s,    grid_name, "ACCUMULATED", ps);
+  add_field<Required>("vm_pert_diff",         scalar3d_layout_mid,  m/s,    grid_name, "ACCUMULATED", ps);
+  add_field<Required>("surf_mom_flux",        vector2d_layout,      N/m2,   grid_name);
+  add_field<Required>("tau_est",              scalar2d_layout,      Pa,     grid_name);
+  // Required for ugust
+  add_tracer<Updated>("tke",                  m_grid,               m2/s2, ps);
 
   create_helper_field("Sa_z",       scalar2d_layout, grid_name);
   create_helper_field("Sa_u",       scalar2d_layout, grid_name);
@@ -75,6 +83,9 @@ void SurfaceCouplingExporter::create_requests()
   create_helper_field("Faxa_swvdf", scalar2d_layout, grid_name);
   create_helper_field("Faxa_swnet", scalar2d_layout, grid_name);
   create_helper_field("Faxa_lwdn",  scalar2d_layout, grid_name);
+  create_helper_field("Sa_wsresp",  scalar2d_layout, grid_name);
+  create_helper_field("Sa_tau_est", scalar2d_layout, grid_name);
+  create_helper_field("Sa_ugust",   scalar2d_layout, grid_name);
 
 }
 // =========================================================================================
@@ -387,6 +398,12 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
   const auto& precip_liq_surf_mass = get_field_in("precip_liq_surf_mass").get_view<const Real*>();
   const auto& precip_ice_surf_mass = get_field_in("precip_ice_surf_mass").get_view<const Real*>();
 
+  const auto& um_pert_diff         = get_field_in("um_pert_diff").get_view<const Pack**>();
+  const auto& vm_pert_diff         = get_field_in("vm_pert_diff").get_view<const Pack**>();
+  const auto& surf_mom_flux        = get_field_in("surf_mom_flux").get_view<const Real**>();
+  const auto& tau_est              = get_field_in("tau_est").get_view<const Real*>();
+  const auto& tke                  = get_field_in("tke").get_view<const Pack**>();
+
   const auto Sa_z       = m_helper_fields.at("Sa_z").get_view<Real*>();
   const auto Sa_u       = m_helper_fields.at("Sa_u").get_view<Real*>();
   const auto Sa_v       = m_helper_fields.at("Sa_v").get_view<Real*>();
@@ -404,6 +421,9 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
   const auto Faxa_swvdf = m_helper_fields.at("Faxa_swvdf").get_view<Real*>();
   const auto Faxa_swnet = m_helper_fields.at("Faxa_swnet").get_view<Real*>();
   const auto Faxa_lwdn  = m_helper_fields.at("Faxa_lwdn" ).get_view<Real*>();
+  const auto Sa_wsresp  = m_helper_fields.at("Sa_wsresp").get_view<Real*>();
+  const auto Sa_tau_est = m_helper_fields.at("Sa_tau_est").get_view<Real*>();
+  const auto Sa_ugust   = m_helper_fields.at("Sa_ugust").get_view<Real*>();
 
   const auto dz    = m_buffer.dz;
   const auto z_int = m_buffer.z_int;
@@ -427,6 +447,9 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
   int idx_Faxa_swvdf = 14;
   int idx_Faxa_swnet = 15;
   int idx_Faxa_lwdn  = 16;
+  int idx_Sa_wsresp  = 17;
+  int idx_Sa_tau_est = 18;
+  int idx_Sa_ugust   = 19;
 
 
   // Local copies, to deal with CUDA's handling of *this.
@@ -472,9 +495,8 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
     // Set the values in the helper fields which correspond to the exported variables
 
     if (export_source(idx_Sa_z)==FROM_MODEL) {
-      // Assugb to Sa_z
       const auto s_z_mid_i = ekat::scalarize(z_mid_i);
-      Sa_z(i)    = s_z_mid_i(num_levs-1);
+      Sa_z(i) = s_z_mid_i(num_levs-1);
     }
 
     if (export_source(idx_Sa_u)==FROM_MODEL) {
@@ -531,6 +553,22 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
       if (export_source(idx_Faxa_rainl)==FROM_MODEL) { Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O.value); }
       if (export_source(idx_Faxa_snowl)==FROM_MODEL) { Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O.value); }
     }
+
+    if (export_source(idx_Sa_ugust)==FROM_MODEL) {
+      const auto tke_i = ekat::subview(tke, i);
+      const auto s_tke_i = ekat::scalarize(tke_i);
+      Sa_ugust(i) = PF::calculate_gustiness_speed(s_tke_i(num_levs-1));
+    }
+
+    if (export_source(idx_Sa_wsresp)==FROM_MODEL) {
+      const auto um_pert_diff_i = ekat::subview(um_pert_diff, i);
+      const auto s_um_pert_diff_i = ekat::scalarize(um_pert_diff_i);
+      const auto vm_pert_diff_i = ekat::subview(vm_pert_diff, i);
+      const auto s_vm_pert_diff_i = ekat::scalarize(vm_pert_diff_i);
+      const auto surf_mom_flux_i = ekat::subview(surf_mom_flux, i);
+      Sa_wsresp(i) = PF::calculate_wind_speed_sensitivity(surf_mom_flux_i(0), surf_mom_flux_i(1),
+                                                          s_um_pert_diff_i(num_levs-1), s_vm_pert_diff_i(num_levs-1));
+    }
   });
   // Variables that are already surface vars in the ATM can just be copied directly.
   if (m_export_source_h(idx_Faxa_swndr)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swndr, sfc_flux_dir_nir); }
@@ -539,6 +577,7 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
   if (m_export_source_h(idx_Faxa_swvdf)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swvdf, sfc_flux_dif_vis); }
   if (m_export_source_h(idx_Faxa_swnet)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swnet, sfc_flux_sw_net); }
   if (m_export_source_h(idx_Faxa_lwdn )==FROM_MODEL) { Kokkos::deep_copy(Faxa_lwdn,  sfc_flux_lw_dn); }
+  if (m_export_source_h(idx_Sa_tau_est)==FROM_MODEL) { Kokkos::deep_copy(Sa_tau_est, tau_est); }
 
 }
 // =========================================================================================
@@ -560,13 +599,15 @@ void SurfaceCouplingExporter::do_export_to_cpl(const bool called_during_initiali
     const auto& info = col_info(ifield);
     const auto offset = icol*info.col_stride + info.col_offset;
 
-    // if this is during initialization, check whether or not the field should be exported
+    // if this is during initialization, check whether or not the field should be exported.
+    // Also skip if cpl_indx == -1 (field not found in MCT attribute vector via perrWith='quiet').
+    // Note: indices are already converted from 1-based Fortran to 0-based C++, so valid indices are >= 0.
     bool do_export = (not called_during_initialization || info.transfer_during_initialization);
-    if (do_export) {
+    if (do_export && info.cpl_indx >= 0) {
 #ifdef HAVE_MOAB
       cpl_exports_view_d(info.cpl_indx, icol) = info.constant_multiple*info.data[offset];
 #else
-      cpl_exports_view_d(icol,info.cpl_indx) = info.constant_multiple*info.data[offset];
+      cpl_exports_view_d(icol, info.cpl_indx) = info.constant_multiple*info.data[offset];
 #endif
     }
   });

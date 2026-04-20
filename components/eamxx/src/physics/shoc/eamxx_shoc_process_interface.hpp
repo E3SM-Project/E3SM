@@ -120,6 +120,10 @@ public:
 
         rrho(i,k) = inv_ggr*(pseudo_density(i,k)/dz(i,k));
         wm_zt(i,k) = -1*omega(i,k)/(rrho(i,k)*ggr);
+
+        // Use previously saved differences.
+        um_pert(i,k) = um_pert_diff(i,k);
+        vm_pert(i,k) = vm_pert_diff(i,k);
       });
       team.team_barrier();
 
@@ -159,6 +163,21 @@ public:
       wprtp_sfc(i)  = surf_evap(i)/rrho_i(i,nlevi_v)[nlevi_p];
       upwp_sfc(i) = surf_mom_flux(i,0)/rrho_i(i,nlevi_v)[nlevi_p];
       vpwp_sfc(i) = surf_mom_flux(i,1)/rrho_i(i,nlevi_v)[nlevi_p];
+
+      const auto stress_is_small = (Kokkos::abs(surf_mom_flux(i,0)) < 1.e-12
+                                    && Kokkos::abs(surf_mom_flux(i,1)) < 1.e-12);
+      if (stress_is_small) {
+        // If stress is too small, don't trust direction information, and instead apply perturbation
+        // entirely in the u direction.
+        upwp_sfc_pert(i) = C::tau_pert_mag / rrho_i(i,nlevi_v)[nlevi_p];
+        vpwp_sfc_pert(i) = 0;
+      } else {
+        // Apply perturbation in direction of existing wind.
+        const auto pert_scale_fac = C::tau_pert_mag /
+          Kokkos::sqrt(surf_mom_flux(i,0)*surf_mom_flux(i,0) + surf_mom_flux(i,1)*surf_mom_flux(i,1));
+        upwp_sfc_pert(i) = upwp_sfc(i) * pert_scale_fac;
+        vpwp_sfc_pert(i) = vpwp_sfc(i) * pert_scale_fac;
+      }
     } // operator
 
     // Local variables
@@ -200,6 +219,10 @@ public:
     view_2d        cloud_frac;
     view_2d        cldfrac_liq;
     view_2d        cldfrac_liq_prev;
+    view_1d        upwp_sfc_pert;
+    view_1d        vpwp_sfc_pert;
+    view_2d        um_pert, vm_pert;
+    view_2d_const  um_pert_diff, vm_pert_diff;
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_,
@@ -216,7 +239,10 @@ public:
                        const view_2d& thv_, const view_2d& dz_,const view_2d& zt_grid_,const view_2d& zi_grid_, const view_1d& wpthlp_sfc_,
                        const view_1d& wprtp_sfc_,const view_1d& upwp_sfc_,const view_1d& vpwp_sfc_, const view_2d& wtracer_sfc_,
                        const view_2d& wm_zt_,const view_2d& inv_exner_,const view_2d& thlm_,const view_2d& qw_,
-                       const view_2d& cldfrac_liq_, const view_2d& cldfrac_liq_prev_)
+                       const view_2d& cldfrac_liq_, const view_2d& cldfrac_liq_prev_,
+                       const view_1d& upwp_sfc_pert_,const view_1d& vpwp_sfc_pert_,
+                       const view_2d& um_pert_, const view_2d& vm_pert_,
+                       const view_2d_const& um_pert_diff_, const view_2d_const& vm_pert_diff_)
     {
       ncol = ncol_;
       nlev = nlev_;
@@ -258,6 +284,12 @@ public:
       qw = qw_;
       cldfrac_liq=cldfrac_liq_;
       cldfrac_liq_prev=cldfrac_liq_prev_;
+      upwp_sfc_pert = upwp_sfc_pert_;
+      vpwp_sfc_pert = vpwp_sfc_pert_;
+      um_pert = um_pert_;
+      vm_pert = vm_pert_;
+      um_pert_diff = um_pert_diff_;
+      vm_pert_diff = vm_pert_diff_;
     } // set_variables
   }; // SHOCPreprocess
   /* --------------------------------------------------------------------------------------------*/
@@ -302,7 +334,17 @@ public:
         const Real  phis_i(phis(i));
         T_mid(i,k) = PF::calculate_temperature_from_dse(dse_ik,z_mid_ik,phis_i);
 
+        // Update perturbation with newly accumulated difference.
+        um_pert_diff(i,k) = um_pert(i,k);
+        vm_pert_diff(i,k) = vm_pert(i,k);
       });
+
+      // Estimate of rough "equilibrium" stress in balance with current winds. "wsresp" is
+      // assumed to be the derivative of equilibrium wind with respect to surface stress
+      // magnitude at this point.
+      // For now, just use the magnitude of the input momentum flux from the last time step.
+      tau_est(i) = Kokkos::sqrt(surf_mom_flux(i,0)*surf_mom_flux(i,0)
+                             + surf_mom_flux(i,1)*surf_mom_flux(i,1));
 
       // If necessary, set appropriate boundary fluxes for energy and mass conservation checks.
       // Any boundary fluxes not included in SHOC interface are set to 0.
@@ -326,6 +368,8 @@ public:
     view_2d T_mid;
     view_2d_const dse,z_mid;
     view_1d_const phis;
+    sview_2d_const surf_mom_flux;
+    view_1d tau_est;
     bool compute_mass_and_energy_fluxes = false;
     view_1d_const surf_evap;
     view_1d_const surf_sens_flux;
@@ -333,6 +377,8 @@ public:
     view_1d water_flux;
     view_1d ice_flux;
     view_1d heat_flux;
+    view_2d_const um_pert, vm_pert;
+    view_2d um_pert_diff, vm_pert_diff;
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_,
@@ -340,7 +386,10 @@ public:
                        const view_2d& qv_, const view_2d_const& qw_, const view_2d& qc_, const view_2d_const& qc_copy_,
                        const view_2d& tke_, const view_2d_const& tke_copy_, const view_3d_strided& qtracers_, const view_2d_const& qc2_,
                        const view_2d& cldfrac_liq_, const view_2d& inv_qc_relvar_,
-                       const view_2d& T_mid_, const view_2d_const& dse_, const view_2d_const& z_mid_, const view_1d_const phis_)
+                       const view_2d& T_mid_, const view_2d_const& dse_, const view_2d_const& z_mid_, const view_1d_const phis_,
+                       const sview_2d_const& surf_mom_flux_, const view_1d& tau_est_,
+                       const view_2d_const& um_pert_, const view_2d_const& vm_pert_,
+                       const view_2d& um_pert_diff_, const view_2d& vm_pert_diff_)
     {
       ncol = ncol_;
       nlev = nlev_;
@@ -359,6 +408,12 @@ public:
       dse = dse_;
       z_mid = z_mid_;
       phis = phis_;
+      surf_mom_flux = surf_mom_flux_;
+      tau_est = tau_est_;
+      um_pert = um_pert_;
+      vm_pert = vm_pert_;
+      um_pert_diff = um_pert_diff_;
+      vm_pert_diff = vm_pert_diff_;
     } // set_variables
 
     void set_mass_and_energy_fluxes (const view_1d_const& surf_evap_, const view_1d_const surf_sens_flux_,
@@ -379,16 +434,16 @@ public:
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
 #ifndef SCREAM_SHOC_SMALL_KERNELS
-    static constexpr int num_1d_scalar_ncol = 4;
+    static constexpr int num_1d_scalar_ncol = 6;
 #else
-    static constexpr int num_1d_scalar_ncol = 15;
+    static constexpr int num_1d_scalar_ncol = 17;
 #endif
     static constexpr int num_1d_scalar_nlev = 1;
 #ifndef SCREAM_SHOC_SMALL_KERNELS
-    static constexpr int num_2d_vector_mid  = 19;
+    static constexpr int num_2d_vector_mid  = 21;
     static constexpr int num_2d_vector_int  = 12;
 #else
-    static constexpr int num_2d_vector_mid  = 23;
+    static constexpr int num_2d_vector_mid  = 25;
     static constexpr int num_2d_vector_int  = 13;
 #endif
     static constexpr int num_2d_vector_tr   = 1;
@@ -397,6 +452,8 @@ public:
     uview_1d<Real> wprtp_sfc;
     uview_1d<Real> upwp_sfc;
     uview_1d<Real> vpwp_sfc;
+    uview_1d<Real> upwp_sfc_pert;
+    uview_1d<Real> vpwp_sfc_pert;
 #ifdef SCREAM_SHOC_SMALL_KERNELS
     uview_1d<Real> se_b;
     uview_1d<Real> ke_b;
@@ -445,6 +502,8 @@ public:
     uview_2d<Pack> w3;
     uview_2d<Pack> wqls_sec;
     uview_2d<Pack> brunt;
+    uview_2d<Pack> um_pert;
+    uview_2d<Pack> vm_pert;
 #ifdef SCREAM_SHOC_SMALL_KERNELS
     uview_2d<Pack> rho_zt;
     uview_2d<Pack> shoc_qv;

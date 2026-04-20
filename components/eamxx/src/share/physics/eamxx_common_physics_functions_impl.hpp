@@ -636,6 +636,30 @@ void PhysicsFunctions<DeviceT>::apply_rayleigh_friction (const MemberType& team,
   });
 }
 
+template<typename DeviceT>
+KOKKOS_INLINE_FUNCTION
+Real PhysicsFunctions<DeviceT>::calculate_gustiness_speed(const Real& tke)
+{
+  return Kokkos::sqrt((sp(2.)/sp(3.)) * tke);
+}
+
+template<typename DeviceT>
+KOKKOS_INLINE_FUNCTION
+Real PhysicsFunctions<DeviceT>::calculate_wind_speed_sensitivity(const Real& taux,
+                                                                 const Real& tauy,
+                                                                 const Real& um_pert_diff,
+                                                                 const Real& vm_pert_diff)
+{
+  using C = scream::physics::Constants<Real>;
+
+  if (Kokkos::abs(taux) < Real(1.e-12) && Kokkos::abs(tauy) < Real(1.e-12)) {
+    return ekat::impl::max(um_pert_diff / C::tau_pert_mag, Real(0));
+  } else {
+    const Real denominator = Kokkos::sqrt(taux*taux + tauy*tauy) * C::tau_pert_mag;
+    return ekat::impl::max((um_pert_diff * taux) + (vm_pert_diff * tauy), Real(0)) / denominator;
+  }
+}
+
 } // namespace scream
 
 #endif // SCREAM_COMMON_PHYSICS_IMPL_HPP
