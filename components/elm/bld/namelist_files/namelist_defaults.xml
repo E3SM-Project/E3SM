@@ -2246,6 +2246,7 @@ this mask will have smb calculated over the entire global land surface
 <fates_spitfire_mode            use_fates=".true.">0</fates_spitfire_mode>
 <fates_spitfire_mode            use_fates=".true." use_fates_managed_fire=".true." >1</fates_spitfire_mode>
 <fates_harvest_mode             use_fates=".true.">no_harvest</fates_harvest_mode>
+<fates_lu_transitions_logic     use_fates=".true.">4</fates_lu_transitions_logic>
 <fates_history_dimlevel         use_fates=".true.">2,2</fates_history_dimlevel>
 <fates_inventory_ctrl_filename  use_fates=".true."> "/dev/null" </fates_inventory_ctrl_filename>
 <fates_parteh_mode              use_fates=".true.">1</fates_parteh_mode>
@@ -2274,6 +2275,7 @@ this mask will have smb calculated over the entire global land surface
 <use_fates_luh                  use_fates=".true." use_fates_lupft=".true.">.true.</use_fates_luh>
 <use_fates_luh                  use_fates=".true." use_fates_potentialveg=".true.">.true.</use_fates_luh>
 <use_fates_luh                  use_fates=".true."                                  >.false.</use_fates_luh>
+<fates_lu_transitions_logic     use_fates=".true." use_fates_luh=".true." >4</fates_lu_transitions_logic>
 <use_fates_inventory_init       use_fates=".true.">.false.</use_fates_inventory_init>
 <use_fates_nocomp               use_fates=".true." use_fates_sp=".true.">.true.</use_fates_nocomp>
 <use_fates_nocomp               use_fates=".true." use_fates_lupft=".true.">.true.</use_fates_nocomp>

@@ -69,6 +69,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : fates_hydro_solver
    use elm_varctl        , only : fates_radiation_model
    use elm_varctl        , only : fates_electron_transport_model
+   use elm_varctl        , only : fates_lu_transition_logic
    use elm_varctl        , only : flandusepftdat
    use elm_varctl        , only : use_fates_tree_damage
    use elm_varctl        , only : nsrest, nsrBranch
@@ -585,6 +586,7 @@ contains
 
         call set_fates_ctrlparms('num_luh2_states',ival=pass_num_luh_states)
         call set_fates_ctrlparms('num_luh2_transitions',ival=pass_num_luh_transitions)
+        call set_fates_ctrlparms('fates_lu_transition_logic',ival=fates_lu_transition_logic)
 
         if ( use_fates_potentialveg ) then
            pass_use_potentialveg = 1
