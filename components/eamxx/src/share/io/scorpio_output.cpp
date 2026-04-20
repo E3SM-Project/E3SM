@@ -196,6 +196,15 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
     fm_model->add_field(*f_ptr);
   }
 
+  // Read the vertical interpolation type once; used for both vert remapping and diagnostics.
+  m_vert_interp_type = params.isParameter("vert_interpolation_type")
+      ? params.get<std::string>("vert_interpolation_type")
+      : std::string("log-linear");
+  EKAT_REQUIRE_MSG (m_vert_interp_type=="linear" or m_vert_interp_type=="log-linear",
+      "Error! Invalid value for 'vert_interpolation_type'.\n"
+      "  - input value: " + m_vert_interp_type + "\n"
+      "  - valid values: linear, log-linear\n");
+
   // Then we 1) create aliases, and b) create diagnostics, adding alias/diag fields to fm_model
   process_requested_fields ();
 
@@ -224,14 +233,6 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
 
   // Setup remappers - if needed
   auto grid_after_vr = fm_grid;
-  // Read the vertical interpolation type once; used for both vert remapping and diagnostics.
-  m_vert_interp_type = params.isParameter("vert_interpolation_type")
-      ? params.get<std::string>("vert_interpolation_type")
-      : std::string("log-linear");
-  EKAT_REQUIRE_MSG (m_vert_interp_type=="linear" or m_vert_interp_type=="log-linear",
-      "Error! Invalid value for 'vert_interpolation_type'.\n"
-      "  - input value: " + m_vert_interp_type + "\n"
-      "  - valid values: linear, log-linear\n");
   if (use_vertical_remap_from_file) {
     // We build a remapper, to remap fields from the fm grid to the io grid
     auto vert_remap_file   = params.get<std::string>("vertical_remap_file");
