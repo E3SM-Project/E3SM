@@ -23,8 +23,9 @@
 namespace OMEGA {
 
 enum class EosType {
-   LinearEos, /// Linear equation of state
-   Teos10Eos  /// Roquet et al. 2015 75 term expansion
+   LinearEos,  /// Linear equation of state
+   Teos10Eos,  /// Roquet et al. 2015 75 term expansion
+   ConstantEos /// Constant specific volume equation of state
 };
 
 /// TEOS10 75-term Polynomial Equation of State
@@ -270,6 +271,35 @@ class LinearEos {
          SpecVol(ICell, K) =
              1.0_Real / (RhoT0S0 + (DRhodT * ConservTemp(ICell, K) +
                                     DRhodS * AbsSalinity(ICell, K)));
+      }
+   }
+
+ private:
+   Array1DI4 MinLayerCell;
+   Array1DI4 MaxLayerCell;
+};
+
+/// Constant Equation of State
+class ConstantEos {
+ public:
+   /// constructor declaration
+   ConstantEos(const VertCoord *VCoord);
+
+   //   The functor takes the full arrays of specific volume (inout),
+   //   the indices ICell and KChunk, and returns a constant specific volume
+   //   value for all active layers.
+   KOKKOS_FUNCTION void operator()(Array2DReal SpecVol, I4 ICell, I4 KChunk,
+                                   const Array2DReal &ConservTemp,
+                                   const Array2DReal &AbsSalinity) const {
+
+      const I4 KStart = chunkStart(KChunk, MinLayerCell(ICell));
+      const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerCell(ICell));
+      (void)ConservTemp;
+      (void)AbsSalinity;
+
+      for (int KVec = 0; KVec < KLen; ++KVec) {
+         const I4 K        = KStart + KVec;
+         SpecVol(ICell, K) = 1.0_Real / RhoSw;
       }
    }
 
@@ -589,8 +619,9 @@ class Eos {
    const HorzMesh *Mesh;    ///< Horizontal mesh
    const VertCoord *VCoord; ///< Vertical coordinate
 
-   Teos10Eos ComputeSpecVolTeos10; ///< TEOS-10 specific volume calculator
-   LinearEos ComputeSpecVolLinear; ///< Linear specific volume calculator
+   Teos10Eos ComputeSpecVolTeos10;     ///< TEOS-10 specific volume calculator
+   LinearEos ComputeSpecVolLinear;     ///< Linear specific volume calculator
+   ConstantEos ComputeSpecVolConstant; ///< Constant specific volume calculator
    Teos10BruntVaisalaFreqSq
        ComputeBruntVaisalaFreqSqTeos10; ///< TEOS-10 squared Brunt-Vaisala
                                         ///< calculator

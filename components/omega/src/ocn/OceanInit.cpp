@@ -136,8 +136,8 @@ int initOmegaModules(MPI_Comm Comm) {
    Tracers::init();
    VertAdv::init();
    AuxiliaryState::init();
-   PressureGrad::init();
    Eos::init();
+   PressureGrad::init();
    Tendencies::init();
 
    // Validate SurfaceTracerRestoring configuration
