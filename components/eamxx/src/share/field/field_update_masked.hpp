@@ -49,45 +49,13 @@ struct CombineViewsMaskedHelper {
     }
   }
 
+  template<typename... Args>
   KOKKOS_INLINE_FUNCTION
-  void operator() (int i) const {
-    if constexpr (N==0) {
-      if (mask())
-        combine<CM>(rhs(),lhs(),alpha,beta);
-    } else {
-      if (mask(i))
-        combine<CM>(rhs(i),lhs(i),alpha,beta);
+  void operator() (Args... indices) const {
+    if (mask.access(indices...)) {
+      auto& lhs_val = lhs.access(indices...);
+      combine<CM>(rhs.access(indices...),lhs_val,alpha,beta);
     }
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (int i, int j) const {
-    if (mask(i,j))
-      combine<CM>(rhs(i,j),lhs(i,j),alpha,beta);
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (int i, int j, int k) const {
-    if (mask(i,j,k))
-      combine<CM>(rhs(i,j,k),lhs(i,j,k),alpha,beta);
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (int i, int j, int k, int l) const {
-    if (mask(i,j,k,l))
-      combine<CM>(rhs(i,j,k,l),lhs(i,j,k,l),alpha,beta);
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (int i, int j, int k, int l, int m) const {
-    if (mask(i,j,k,l,m))
-      combine<CM>(rhs(i,j,k,l,m),lhs(i,j,k,l,m),alpha,beta);
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (int i, int j, int k, int l, int m, int n) const {
-    if (mask(i,j,k,l,m,n))
-      combine<CM>(rhs(i,j,k,l,m,n),lhs(i,j,k,l,m,n),alpha,beta);
   }
 
   MaskView mask; 
@@ -155,45 +123,12 @@ struct SetValueMasked
     }
   }
 
+  template<typename... Args>
   KOKKOS_INLINE_FUNCTION
-  void operator() (int i) const {
-    if constexpr (N==0) {
-      if ((mask()!=0) != negate_mask)
-        lhs() = value;
-    } else {
-      if ((mask(i)!=0) != negate_mask)
-        lhs(i) = value;
-    }
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (int i, int j) const {
-    if ((mask(i,j)!=0) != negate_mask)
-      lhs(i,j) = value;
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (int i, int j, int k) const {
-    if ((mask(i,j,k)!=0) != negate_mask)
-      lhs(i,j,k) = value;
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (int i, int j, int k, int l) const {
-    if ((mask(i,j,k,l)!=0) != negate_mask)
-      lhs(i,j,k,l) = value;
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (int i, int j, int k, int l, int m) const {
-    if ((mask(i,j,k,l,m)!=0) != negate_mask)
-      lhs(i,j,k,l,m) = value;
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (int i, int j, int k, int l, int m, int n) const {
-    if ((mask(i,j,k,l,m,n)!=0) != negate_mask)
-      lhs(i,j,k,l,m,n) = value;
+  void operator() (Args... indices) const {
+    // Execute block if mask=0 and negate_mask=true or mask=1 and negate_mask=false
+    if ( (mask.access(indices...)!=0) != negate_mask )
+      lhs.access(indices...) = value;
   }
 
   ST value;

@@ -48,37 +48,11 @@ struct CombineViewsHelper {
     }
   }
 
+  template<typename... Args>
   KOKKOS_INLINE_FUNCTION
-  void operator() (int i) const {
-    if constexpr (N==0)
-      combine<CM>(rhs(),lhs(),alpha,beta);
-    else
-      combine<CM>(rhs(i),lhs(i),alpha,beta);
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (int i, int j) const {
-    combine<CM>(rhs(i,j),lhs(i,j),alpha,beta);
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (int i, int j, int k) const {
-    combine<CM>(rhs(i,j,k),lhs(i,j,k),alpha,beta);
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (int i, int j, int k, int l) const {
-    combine<CM>(rhs(i,j,k,l),lhs(i,j,k,l),alpha,beta);
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (int i, int j, int k, int l, int m) const {
-    combine<CM>(rhs(i,j,k,l,m),lhs(i,j,k,l,m),alpha,beta);
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (int i, int j, int k, int l, int m, int n) const {
-    combine<CM>(rhs(i,j,k,l,m,n),lhs(i,j,k,l,m,n),alpha,beta);
+  void operator() (Args... indices) const {
+    auto& lhs_val = lhs.access(indices...);
+    combine<CM>(rhs.access(indices...),lhs_val,alpha,beta);
   }
 
   ST alpha;
