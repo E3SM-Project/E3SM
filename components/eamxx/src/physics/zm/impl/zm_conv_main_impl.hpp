@@ -19,7 +19,7 @@ namespace zm {
  */
 
 template<typename S, typename D>
-typename Functions<S,D>::view_1d<bool> Functions<S,D>::zm_conv_main(
+typename Functions<S,D>::template view_1d<bool> Functions<S,D>::zm_conv_main(
   // Inputs
   const ZmRuntimeOpt& runtime_opt,
   const Int& ncol,
