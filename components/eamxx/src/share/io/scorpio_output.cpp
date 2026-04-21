@@ -29,12 +29,6 @@ transfer_extra_data(const scream::Field &src, scream::Field &tgt)
   for (const auto &[name, val] : src_atts) {
     dst_atts[name] = val;
   }
-
-  // Transfer whether or not this field MAY contain fill_value (to trigger usage of the
-  // proper implementation of Field update methods
-  if (src.get_header().may_be_filled()) {
-    tgt.get_header().set_may_be_filled(true);
-  }
 };
 
 // Helper function to get the name of a transposed helper field from a layout and data type
@@ -510,42 +504,21 @@ run (const std::string& filename,
   // Note, we assume that all fields that share a layout are also masked/filled in the same way.
   if (m_track_avg_cnt) {
     // Since 2+ fields may have same avg count, make sure we update the counts only ONCE.
-    for (auto& [fname, count] : m_field_to_avg_count) {
-      count.get_header().set_extra_data("updated",false);
-    }
+    std::set<std::string> updated;
 
     for (auto& [fname, count] : m_field_to_avg_count) {
-      if (count.get_header().get_extra_data<bool>("updated")) {
+      if (updated.count(count.name())>0) {
         continue;
       }
 
-      //////////////////////// TODO ////////////////////////
-      // 1. Make the diags/procs COMPUTE the mask for the field, and
-      //    set the mask as extra data. We DON'T want to compute it here
-      // 2. Create count with same layout as the mask
-      // 3. In avg=tally/count, count MAY have smaller layout, hence
-      //    be incompatible. E.g., mask came from FieldAtPressureLevel,
-      //    and was (ncol), but the field is (ncol,2). In this case, we
-      //    ASSUME same mask for all slices, so do scaling on all slices:
-      //      avg.component(i).scale_inv(count)
-      // 4. In FieldAtPressureLevel, make ALL instances at same Plev share
-      //    the same mask field. How? Two ideas:
-      //      - store a static map string->Field in class, and use a string
-      //        key that encodes grid and press level. Only compute mask if
-      //        timestamp of mask field is "old"
-      //      - make another diag that computes the mask, make F@plev depend
-      //        on that diag.
-      // 5. FieldAtPressureLevel (and vremap) should only fill the mask field
-      //    if we later need it. E.g, if no AvgCount AND no hremap, we don't need it.
-      //////////////////////////////////////////////////////
       auto field = fm_after_hr->get_field(fname);
-      auto mask  = count.get_valid_mask();
+      EKAT_REQUIRE_MSG (field.has_valid_mask(),
+          "Error! A field has avg count set, but does not store a valid mask. Something is wrong.\n"
+          " - field name: " + fname + "\n"
+          " - stream: " + m_stream_name + "\n");
 
-      // Find where the field is NOT equal to fill_value
-      compute_mask(field,constants::fill_value<Real>,Comparison::NE,mask);
-
-      // mask=1 for "good" entries, and mask=0 otherwise.
-      count.update(mask,1,1);
+      auto valid_field = field.get_valid_mask();
+      count.add_scalar(1,valid_field);
 
       // Handle writing the average count variables to file
       if (is_write_step) {
@@ -575,21 +548,17 @@ run (const std::string& filename,
         if (output_step and m_avg_type==OutputAvgType::Average) {
           int min_count = static_cast<int>(std::floor(m_avg_coeff_threshold*nsteps_since_last_output));
 
-          // Recycle mask to find where count<thresh
-          compute_mask(count,min_count,Comparison::LE,mask);
-
-          // Later, we divide fields by count. By setting count=1 where count<thresholt,
-          // we can later do
-          //   f.scale_inv(count); // Requires count!=0 anywhere
-          //   f.deep_copy(fill_val,mask)
-          count.deep_copy(1,mask);
+          auto& valid_count = count.get_valid_mask();
+          compute_mask(count,min_count,Comparison::GT,valid_count);
         }
       }
-      count.get_header().set_extra_data("updated",true);
+      updated.insert(count.name());
     }
   }
 
   // Take care of updating and possibly writing fields.
+  Field dummy_mask;
+  auto fv = constants::fill_value<Real>;
   for (size_t i = 0; i < m_fields_names.size(); ++i) {
     const auto& field_name = m_fields_names[i];
     
@@ -597,25 +566,57 @@ run (const std::string& filename,
     const auto& f_in  = fm_after_hr->get_field(field_name);
           auto& f_out = fm_scorpio->get_field(field_name);
 
-    // Safety check: if a field may contain fill values and we are computing an Average,
+    // Safety check: if a field has a valid mask and we are computing an Average,
     // we must have created an avg-count tracking field; otherwise division by the raw
-    // number of steps would bias the result wherever fill values occurred.
-    if (m_avg_type==OutputAvgType::Average && f_in.get_header().may_be_filled()) {
+    // number of steps would bias the result wherever invalid values occurred.
+    if (m_avg_type==OutputAvgType::Average && f_in.has_valid_mask()) {
       EKAT_REQUIRE_MSG(m_field_to_avg_count.count(field_name),
-        "[AtmosphereOutput::run] Error! Averaging a fill-aware field without avg-count tracking.\n"
+        "[AtmosphereOutput::run] Error! Averaging a possibly masked field without avg-count tracking.\n"
         " - field name : " + field_name + "\n"
-        "This indicates the field was marked may_be_filled after output initialization or tracking logic missed it." );
+        "This indicates the field valid mask was created after output initialization or tracking logic missed it." );
     }
 
+    const bool has_mask = f_in.has_valid_mask();
+    const auto& mask = has_mask ? f_in.get_valid_mask() : dummy_mask;
     switch (m_avg_type) {
       case OutputAvgType::Instant:
-        f_out.deep_copy(f_in);  break; // Note: if f_in aliases f_out, this is a no-op
+        if (has_mask) {
+          if (f_out.is_aliasing(f_in)) {
+            // f_out aliases f_in: writing fill_value into f_out would corrupt
+            // the model field.  Work through a temporary copy instead.
+            // TODO: is this worth it? Should IO be able to change f_in where mask=0?
+            //       A zero mask means the values are garbage anyways...
+            auto f_tmp = f_in.clone();
+            f_tmp.deep_copy(f_in, mask);
+            f_tmp.deep_copy(fv, mask, true);
+            f_out.deep_copy(f_tmp);
+          } else {
+            f_out.deep_copy(f_in, mask);     // Copy only where mask!=0
+            f_out.deep_copy(fv, mask, true); // Set to fv where mask=0
+          }
+        } else {
+          f_out.deep_copy(f_in);
+        }
+        break;
       case OutputAvgType::Max:
-        f_out.max(f_in);        break;
+        if (has_mask)
+          f_out.max(f_in,mask);
+        else
+          f_out.max(f_in);
+        break;
       case OutputAvgType::Min:
-        f_out.min(f_in);        break;
+        if (has_mask)
+          f_out.min(f_in,mask);
+        else
+          f_out.min(f_in);
+        break;
       case OutputAvgType::Average:
-        f_out.update(f_in,1,1); break;
+        if (has_mask)
+          f_out.update(f_in,1,1,mask);
+        else
+          f_out.update(f_in,1,1);
+        break;
+
       default:
         EKAT_ERROR_MSG ("Unexpected/unsupported averaging type.\n");
     }
@@ -625,12 +626,11 @@ run (const std::string& filename,
       if (output_step and m_avg_type==OutputAvgType::Average) {
         // Even if m_track_avg_cnt=true, this field may not need it
         if (m_track_avg_cnt) {
-          auto avg_count = m_field_to_avg_count.at(field_name);
+          const auto& avg_count = m_field_to_avg_count.at(field_name);
+          const auto& valid_count = avg_count.get_valid_mask();
 
-          f_out.scale_inv(avg_count);
-
-          const auto& mask = avg_count.get_valid_mask();
-          f_out.deep_copy(constants::fill_value<Real>,mask);
+          f_out.scale_inv(avg_count,valid_count);
+          f_out.deep_copy(fv,valid_count,true);
         } else {
           // Divide by steps count only when the summation is complete
           f_out.scale(Real(1.0) / nsteps_since_last_output);
@@ -1112,15 +1112,12 @@ process_requested_fields()
 
   // Helper lambda to check if this fm_model field should trigger avg count
   auto check_for_avg_cnt = [&](const Field& f) {
-    // We need avg-count tracking for any averaged (non-instant) field that:
-    //  - supplies explicit mask info ("mask_data" extra data, or mask field)
-    //  - is marked as potentially containing fill values (may_be_filled()).
-    // Without this, fill-aware updates skip fill_value during accumulation (good)
+    // We need avg-count tracking for any averaged (non-instant) field that
+    // supplies explicit mask field.
+    // Without this, avg tally updates skip invalid entries during accumulation (good)
     // but we would still divide by the raw nsteps, biasing the result low.
     if (m_avg_type!=OutputAvgType::Instant) {
-      const bool has_mask_data = f.get_header().has_extra_data("mask_data");
-      const bool may_be_filled = f.get_header().may_be_filled();
-      if (f.has_valid_mask() or has_mask_data or may_be_filled) {
+      if (f.has_valid_mask()) {
         m_track_avg_cnt = true;
         // Avoid duplicate insertion if already present (e.g., mask + filled both true)
         if (m_field_to_avg_cnt_suffix.count(f.name())==0) {
@@ -1170,7 +1167,7 @@ process_requested_fields()
       m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
       diag_avg_cnt_name = "_" + diag->name();
     }
-    else if (diag_field.get_header().has_extra_data("mask_data")) {
+    else if (diag_field.has_valid_mask()) {
       m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
       diag_avg_cnt_name = "_" + diag_field.name();
     }
