@@ -939,6 +939,7 @@ _TESTS = {
             "PEM_Vmoab_Ld3.T62_oQU240.DTESTM",
             "PEM_Vmoab_Ld3.r05_r05.RMOSGPCC",
             "PEM_Vmoab_Ld3.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "PEM_Vmoab_Ld3.f45_g37.X",
         )
     },
 
