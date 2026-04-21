@@ -307,7 +307,9 @@
 <config_use_cvmix>.true.</config_use_cvmix>
 <config_cvmix_prandtl_number>1.0</config_cvmix_prandtl_number>
 <config_cvmix_background_scheme>'constant'</config_cvmix_background_scheme>
+<config_cvmix_background_scheme ocn_grid="SOwISC12to30E3r3">'latitude-dependent'</config_cvmix_background_scheme>
 <config_cvmix_background_diffusion>0.0</config_cvmix_background_diffusion>
+<config_cvmix_background_diffusion ocn_grid="SOwISC12to30E3r3">3.0e-5</config_cvmix_background_diffusion>
 <config_cvmix_background_diffusion_max_latitude>-50.0</config_cvmix_background_diffusion_max_latitude>
 <config_cvmix_background_diffusion_passive>0.0</config_cvmix_background_diffusion_passive>
 <config_cvmix_background_diffusion_passive_enable>.false.</config_cvmix_background_diffusion_passive_enable>
@@ -349,10 +351,13 @@
 <config_cvmix_kpp_nonlocal_with_implicit_mix>.false.</config_cvmix_kpp_nonlocal_with_implicit_mix>
 <config_cvmix_kpp_use_theory_wave>.false.</config_cvmix_kpp_use_theory_wave>
 <config_cvmix_kpp_use_theory_wave ocn_grid="RRSwISC6to18E3r5">.true.</config_cvmix_kpp_use_theory_wave>
+<config_cvmix_kpp_use_theory_wave ocn_grid="SOwISC12to30E3r3">.true.</config_cvmix_kpp_use_theory_wave>
 <config_cvmix_kpp_langmuir_mixing_opt>'NONE'</config_cvmix_kpp_langmuir_mixing_opt>
 <config_cvmix_kpp_langmuir_mixing_opt ocn_grid="RRSwISC6to18E3r5">'LWF16'</config_cvmix_kpp_langmuir_mixing_opt>
+<config_cvmix_kpp_langmuir_mixing_opt ocn_grid="SOwISC12to30E3r3">'LWF16'</config_cvmix_kpp_langmuir_mixing_opt>
 <config_cvmix_kpp_langmuir_entrainment_opt>'NONE'</config_cvmix_kpp_langmuir_entrainment_opt>
 <config_cvmix_kpp_langmuir_entrainment_opt ocn_grid="RRSwISC6to18E3r5">'LWF16'</config_cvmix_kpp_langmuir_entrainment_opt>
+<config_cvmix_kpp_langmuir_entrainment_opt ocn_grid="SOwISC12to30E3r3">'LWF16'</config_cvmix_kpp_langmuir_entrainment_opt>
 <config_cvmix_kpp_use_active_wave>.false.</config_cvmix_kpp_use_active_wave>
 
 <!-- wave_coupling -->
