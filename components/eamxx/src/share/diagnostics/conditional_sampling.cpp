@@ -170,7 +170,7 @@ void ConditionalSampling::initialize_impl(const RunType /*run_type*/)
   }
 
   // If lhs is "lev" but diag is not "mask", we can still precompute the diag mask by
-  // broadcsting m_lev_mask
+  // broadcasting m_lev_mask
   if (m_lhs_is_lev and not m_diag_is_mask) {
     auto mask = m_diagnostic_output.get_valid_mask();
     const auto& dims = mask.get_header().get_identifier().get_layout().dims();
