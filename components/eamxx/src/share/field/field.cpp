@@ -10,6 +10,7 @@ void update_checks (const std::string& caller,
                     const Field& y, const Field& x,
                     const ScalarWrapper& alpha,
                     const ScalarWrapper& beta,
+                    const ScalarWrapper gamma = 0,
                     const Field* mask = nullptr)
 {
   // Check output field is writable
@@ -21,6 +22,7 @@ void update_checks (const std::string& caller,
   const auto& x_dt = x.data_type();
   const auto& a_dt = alpha.type;
   const auto& b_dt = beta.type;
+  const auto& g_dt = gamma.type;
 
   // Ensure data types are not somehow invalid
   EKAT_REQUIRE_MSG (y_dt!=DataType::Invalid,
@@ -34,6 +36,9 @@ void update_checks (const std::string& caller,
       " - lhs name: " + y.name() + "\n");
   EKAT_REQUIRE_MSG (b_dt!=DataType::Invalid,
       "[" + caller + "] Error! Beta coeff data type is invalid.\n"
+      " - lhs name: " + y.name() + "\n");
+  EKAT_REQUIRE_MSG (g_dt!=DataType::Invalid,
+      "[" + caller + "] Error! Gamma coeff data type is invalid.\n"
       " - lhs name: " + y.name() + "\n");
 
   // If user passes, say, double alpha/beta for an int field, we should error out, warning about
@@ -58,6 +63,11 @@ void update_checks (const std::string& caller,
       " - lhs name: " + y.name() + "\n"
       " - lhs data type  : " + e2str(y_dt) + "\n"
       " - beta data type: " + e2str(b_dt) + "\n");
+  EKAT_REQUIRE_MSG (not is_narrowing_conversion(g_dt,y_dt),
+      "[" + caller + "] Error! Coefficient gamma may be narrowed when converted to lhs data type.\n"
+      " - lhs name: " + y.name() + "\n"
+      " - lhs data type  : " + e2str(y_dt) + "\n"
+      " - gamma data type: " + e2str(g_dt) + "\n");
 
   // Check x/y are allocated
   EKAT_REQUIRE_MSG (y.is_allocated(),
@@ -450,7 +460,7 @@ void Field::deep_copy (const ScalarWrapper value)
 
 void Field::deep_copy (const ScalarWrapper value, const Field& mask, const bool negate_mask)
 {
-  update_checks("Field::deep_copy (scalar, masked)",*this,*this,value,value,&mask);
+  update_checks("Field::deep_copy (scalar, masked)",*this,*this,value,value,0,&mask);
 
   const auto my_data_type = data_type();
   switch (my_data_type) {
@@ -477,7 +487,7 @@ void Field::deep_copy (const Field& x)
     return;
 
   constexpr auto CM = CombineMode::Replace;
-  update_cm<CM>("Field::deep_copy",x,1,0);
+  update_cm<CM>("Field::deep_copy",x,1,0,0);
 }
 
 void Field::deep_copy (const Field& x, const Field& mask)
@@ -486,138 +496,151 @@ void Field::deep_copy (const Field& x, const Field& mask)
     return;
 
   constexpr auto CM = CombineMode::Replace;
-  update_cm<CM>("Field::deep_copy (masked)",x,1,0,mask);
+  update_cm<CM>("Field::deep_copy (masked)",x,1,0,0,mask);
 }
 
 void Field::scale (const ScalarWrapper beta)
 {
   constexpr auto CM = CombineMode::Update;
-  update_cm<CM>("Field::scale (scalar)",*this,0,beta);
+  update_cm<CM>("Field::scale (scalar)",*this,0,beta,0);
 }
 
 void Field::scale (const ScalarWrapper beta, const Field& mask)
 {
   constexpr auto CM = CombineMode::Update;
-  update_cm<CM>("Field::scale (scalar, masked)",*this,0,beta,mask);
+  update_cm<CM>("Field::scale (scalar, masked)",*this,0,beta,0,mask);
 }
 
 void Field::scale (const Field& x)
 {
   constexpr auto CM = CombineMode::Multiply;
-  update_cm<CM>("Field::scale",x,1,1);
+  update_cm<CM>("Field::scale",x,1,1,0);
 }
 
 void Field::scale (const Field& x, const Field& mask)
 {
   constexpr auto CM = CombineMode::Multiply;
-  update_cm<CM>("Field::scale (masked)",x,1,1,mask);
+  update_cm<CM>("Field::scale (masked)",x,1,1,0,mask);
 }
 
 void Field::scale_inv (const Field& x)
 {
   constexpr auto CM = CombineMode::Divide;
-  update_cm<CM>("Field::scale_inv",x,1,1);
+  update_cm<CM>("Field::scale_inv",x,1,1,0);
 }
 
 void Field::scale_inv (const Field& x, const Field& mask)
 {
   constexpr auto CM = CombineMode::Divide;
-  update_cm<CM>("Field::scale_inv (masked)",x,1,1,mask);
+  update_cm<CM>("Field::scale_inv (masked)",x,1,1,0,mask);
 }
 
 void Field::max (const Field& x)
 {
   constexpr auto CM = CombineMode::Max;
-  update_cm<CM>("Field::max",x,1,1);
+  update_cm<CM>("Field::max",x,1,1,0);
 }
 
 void Field::max (const Field& x, const Field& mask)
 {
   constexpr auto CM = CombineMode::Max;
-  update_cm<CM>("Field::max (masked)",x,1,1,mask);
+  update_cm<CM>("Field::max (masked)",x,1,1,0,mask);
 }
 
 void Field::min (const Field& x)
 {
   constexpr auto CM = CombineMode::Min;
-  update_cm<CM>("Field::min",x,1,1);
+  update_cm<CM>("Field::min",x,1,1,0);
 }
 
 void Field::min (const Field& x, const Field& mask)
 {
   constexpr auto CM = CombineMode::Min;
-  update_cm<CM>("Field::min (masked)",x,1,1,mask);
+  update_cm<CM>("Field::min (masked)",x,1,1,0,mask);
 }
 
 void Field::
-update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta)
+update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma)
 {
   constexpr auto CM = CombineMode::Update;
-  update_cm<CM>("Field::update",x,alpha,beta);
+  update_cm<CM>("Field::update",x,alpha,beta,gamma);
 }
 
 void Field::
 update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const Field& mask)
 {
   constexpr auto CM = CombineMode::Update;
-  update_cm<CM>("Field::update (masked)",x,alpha,beta,mask);
+  update_cm<CM>("Field::update (masked)",x,alpha,beta,0,mask);
+}
+
+void Field::
+update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta)
+{
+  constexpr auto CM = CombineMode::Update;
+  update_cm<CM>("Field::update",x,alpha,beta,0);
+}
+
+void Field::
+update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask)
+{
+  constexpr auto CM = CombineMode::Update;
+  update_cm<CM>("Field::update (masked)",x,alpha,beta,gamma,mask);
 }
 
 template<CombineMode CM>
 void Field::
-update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta)
+update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma)
 {
-  // Determine if the RHS can contain fill_value entries
   // Check consistency of inputs
-  update_checks(caller,*this,x,alpha,beta);
+  update_checks(caller,*this,x,alpha,beta,gamma);
 
+  // Determine if the RHS can contain fill_value entries
   bool fill_aware = x.get_header().may_be_filled();
 
   if (data_type()==DataType::IntType) {
-    return fill_aware ? update_fill_aware<CM,int,int>(x,alpha.as<int>(),beta.as<int>())
-                      : update_impl<CM,int,int>(x,alpha.as<int>(),beta.as<int>());
+    return fill_aware ? update_fill_aware<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),gamma.as<int>())
+                      : update_impl<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),gamma.as<int>());
   } else if (data_type()==DataType::FloatType) {
     if (x.data_type()==DataType::FloatType)
-      return fill_aware ? update_fill_aware<CM,float,float>(x,alpha.as<float>(),beta.as<float>())
-                        : update_impl<CM,float,float>(x,alpha.as<float>(),beta.as<float>());
+      return fill_aware ? update_fill_aware<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>())
+                        : update_impl<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>());
     else
-      return fill_aware ? update_fill_aware<CM,float,int>(x,alpha.as<float>(),beta.as<float>())
-                        : update_impl<CM,float,int>(x,alpha.as<float>(),beta.as<float>());
+      return fill_aware ? update_fill_aware<CM,float,int>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>())
+                        : update_impl<CM,float,int>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>());
   } else if (data_type()==DataType::DoubleType) {
     if (x.data_type()==DataType::DoubleType)
-      return fill_aware ? update_fill_aware<CM,double,double>(x,alpha.as<double>(),beta.as<double>())
-                        : update_impl<CM,double,double>(x,alpha.as<double>(),beta.as<double>());
+      return fill_aware ? update_fill_aware<CM,double,double>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>())
+                        : update_impl<CM,double,double>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
     else if (x.data_type()==DataType::FloatType)
-      return fill_aware ? update_fill_aware<CM,double,float>(x,alpha.as<double>(),beta.as<double>())
-                        : update_impl<CM,double,float>(x,alpha.as<double>(),beta.as<double>());
+      return fill_aware ? update_fill_aware<CM,double,float>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>())
+                        : update_impl<CM,double,float>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
     else
-      return fill_aware ? update_fill_aware<CM,double,int>(x,alpha.as<double>(),beta.as<double>())
-                        : update_impl<CM,double,int>(x,alpha.as<double>(),beta.as<double>());
+      return fill_aware ? update_fill_aware<CM,double,int>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>())
+                        : update_impl<CM,double,int>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
   }
 }
 
 template<CombineMode CM>
 void Field::
-update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const Field& mask)
+update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask)
 {
-  // Determine if the RHS can contain fill_value entries
   // Check consistency of inputs
-  update_checks(caller,*this,x,alpha,beta,&mask);
+  update_checks(caller,*this,x,alpha,beta,gamma,&mask);
 
   if (data_type()==DataType::IntType) {
-    return update_masked<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),mask);
+    return update_masked<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),gamma.as<int>(),mask);
   } else if (data_type()==DataType::FloatType) {
     if (x.data_type()==DataType::FloatType)
-      return update_masked<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),mask);
+      return update_masked<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>(),mask);
     else
-      return update_masked<CM,float,int>(x,alpha.as<float>(),beta.as<float>(),mask);
+      return update_masked<CM,float,int>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>(),mask);
   } else if (data_type()==DataType::DoubleType) {
     if (x.data_type()==DataType::DoubleType)
-      return update_masked<CM,double,double>(x,alpha.as<double>(),beta.as<double>(),mask);
+      return update_masked<CM,double,double>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>(),mask);
     else if (x.data_type()==DataType::FloatType)
-      return update_masked<CM,double,float>(x,alpha.as<double>(),beta.as<double>(),mask);
+      return update_masked<CM,double,float>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>(),mask);
     else
-      return update_masked<CM,double,int>(x,alpha.as<double>(),beta.as<double>(),mask);
+      return update_masked<CM,double,int>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>(),mask);
   }
 }
 
