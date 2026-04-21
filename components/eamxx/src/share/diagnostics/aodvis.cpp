@@ -1,7 +1,5 @@
 #include "aodvis.hpp"
 
-#include "share/util/eamxx_universal_constants.hpp"
-
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_reduction_utils.hpp>
 
@@ -36,7 +34,6 @@ create_requests()
   FieldIdentifier fid(name(), scalar2d, none, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
-
 }
 
 void AODVis::initialize_impl(const RunType /*run_type*/) {
@@ -48,8 +45,6 @@ void AODVis::compute_diagnostic_impl() {
   using MT  = typename KT::MemberType;
   using TPF = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
   using RU  = ekat::ReductionUtils<typename KT::ExeSpace>;
-
-  constexpr auto fill_value = constants::fill_value<Real>;
 
   const auto aod     = m_diagnostic_output.get_view<Real *>();
   const auto tau_vis = get_field_in("aero_tau_sw")
@@ -65,8 +60,6 @@ void AODVis::compute_diagnostic_impl() {
         if(sunlit(icol)) {
           auto tau_icol = ekat::subview(tau_vis, icol);
           aod(icol)     = RU::view_reduction(team, 0, num_levs, tau_icol);
-        } else {
-          aod(icol) = fill_value;
         }
       });
 }

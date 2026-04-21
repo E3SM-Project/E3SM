@@ -251,7 +251,6 @@ void BinaryOpsDiag::initialize_impl(const RunType /*run_type*/)
     m_arg2_has_mask = m_arg2_is_field and get_field_in(m_arg2_name).has_valid_mask();
     if (m_arg1_has_mask or m_arg2_has_mask) {
       m_diagnostic_output.create_valid_mask();
-      m_diagnostic_output.get_header().set_may_be_filled(true);
     }
   }
 }
@@ -285,12 +284,6 @@ void BinaryOpsDiag::compute_diagnostic_impl()
     const auto  c1 = dict.at(m_arg1_name).value;
     const auto  c2 = dict.at(m_arg2_name).value;
     apply_binary_op(m_diagnostic_output, c1, c2, m_binary_op_code);
-  }
-
-  // Until IO is ready to fully rely on valid_mask fields, we must set diag=fill_value where invalid
-  if (m_diagnostic_output.has_valid_mask()) {
-    constexpr auto fv = constants::fill_value<Real>;
-    m_diagnostic_output.deep_copy(fv,m_diagnostic_output.get_valid_mask(),true);
   }
 }
 

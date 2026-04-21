@@ -14,8 +14,8 @@ namespace scream {
  * For "avg":   out = sum_lev(weight * f * mask) / sum_lev(weight * mask)
  *
  * If the input field has a valid_mask, entries with mask==0 are excluded from
- * both numerator and denominator.  Output entries where the denominator is zero
- * are filled with fill_value and the output field's valid_mask is set to 0.
+ * both numerator and denominator, and for entries where the denominator is zero
+ * output field's valid_mask is set to 0.
  */
 
 class VertContractDiag : public AtmosphereDiagnostic {

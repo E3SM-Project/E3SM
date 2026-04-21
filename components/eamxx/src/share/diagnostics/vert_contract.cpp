@@ -3,15 +3,18 @@
 #include "share/physics/physics_constants.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"
-#include "share/util/eamxx_universal_constants.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 
-VertContractDiag::VertContractDiag(const ekat::Comm &comm,
-                                   const ekat::ParameterList &params)
-    : AtmosphereDiagnostic(comm, params) {}
+VertContractDiag::
+VertContractDiag(const ekat::Comm &comm,
+                 const ekat::ParameterList &params)
+ : AtmosphereDiagnostic(comm, params)
+{
+  // Nothing to do here
+}
 
 void VertContractDiag::create_requests() {
   using namespace ShortFieldTagsNames;
@@ -51,7 +54,6 @@ void VertContractDiag::create_requests() {
     add_field<Required>("qv", scalar3d, kg / kg, gn);
     add_field<Required>("p_mid", scalar3d, Pa, gn);
     add_field<Required>("T_mid", scalar3d, K, gn);
-
   }
 }
 
@@ -127,7 +129,6 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/)
       m_ones.set_valid_mask(f.get_valid_mask());
       // Output gets a valid_mask: 1 where at least one level was valid
       m_diagnostic_output.create_valid_mask(Field::MaskInit::None);
-      m_diagnostic_output.get_header().set_may_be_filled(true);
     }
   }
 }
@@ -177,12 +178,10 @@ void VertContractDiag::compute_diagnostic_impl()
     // Denominator: sum_lev(weight * 1 * mask); layout matches d
     vert_contraction(m_weight_sum, m_ones, m_weight);
     if (d.has_valid_mask()) {
-      // Mark where denominator is nonzero, then divide, then fill elsewhere
+      // Mark where denominator is nonzero, then divide
       auto& valid_out = d.get_valid_mask();
       compute_mask(m_weight_sum, 0, Comparison::NE, valid_out);
       d.scale_inv(m_weight_sum, valid_out);
-      // IO relies on fill_value for masked-out entries
-      d.deep_copy(constants::fill_value<Real>, valid_out, true);
     } else {
       d.scale_inv(m_weight_sum);
     }

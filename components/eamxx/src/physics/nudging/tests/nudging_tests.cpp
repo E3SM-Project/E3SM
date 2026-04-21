@@ -5,6 +5,7 @@
 #include "nudging_tests_helpers.hpp"
 
 #include "share/field/field_utils.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 
 using namespace scream;
 

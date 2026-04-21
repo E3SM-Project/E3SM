@@ -102,7 +102,6 @@ initialize_impl (const RunType /*run_type*/)
 
   if (f.has_valid_mask()) {
     m_diagnostic_output.create_valid_mask();
-    m_diagnostic_output.get_header().set_may_be_filled(true);
   }
 
   using stratts_t = std::map<std::string,std::string>;
@@ -238,12 +237,6 @@ void FieldAtHeight::compute_diagnostic_impl()
           }
         }
     });
-  }
-
-  // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-  if (masked) {
-    auto& mask = m_diagnostic_output.get_valid_mask();
-    m_diagnostic_output.deep_copy(constants::fill_value<Real>,mask,true);
   }
 }
 

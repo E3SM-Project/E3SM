@@ -4,7 +4,6 @@
 #include "share/field/field_utils.hpp"
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
-#include "share/util/eamxx_universal_constants.hpp"
 
 namespace scream {
 
@@ -106,8 +105,6 @@ TEST_CASE("aodvis") {
         for(int ilev = 0; ilev < nlevs; ++ilev) {
           aod_t(icol) += tau_h(icol, swvis, ilev);
         }
-      } else {
-        aod_t(icol) = constants::fill_value<Real>;
       }
     }
     aod_hf.sync_to_dev();

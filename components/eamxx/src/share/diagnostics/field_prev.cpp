@@ -1,7 +1,5 @@
 #include "field_prev.hpp"
 
-#include "share/util/eamxx_universal_constants.hpp"
-
 namespace scream {
 
 FieldPrevDiag::
@@ -46,11 +44,7 @@ void FieldPrevDiag::initialize_impl(const RunType /*run_type*/) {
   // NOTE: even if the input field is masked, we must use a different one, since
   // at the first timestep, the field may have not been computed yet (but it's not masked per se)
   auto mask = m_diagnostic_output.create_valid_mask();
-  m_diagnostic_output.get_header().set_may_be_filled(true);
   mask.deep_copy(0);
-
-  // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-  m_diagnostic_output.deep_copy(constants::fill_value<Real>);
 }
 
 void FieldPrevDiag::init_timestep(const util::TimeStamp &start_of_step)

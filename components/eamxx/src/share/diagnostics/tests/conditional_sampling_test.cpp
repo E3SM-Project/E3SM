@@ -4,7 +4,6 @@
 #include "share/field/field_utils.hpp"
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
-#include "share/util/eamxx_universal_constants.hpp"
 
 #include <string>
 
@@ -68,8 +67,6 @@ TEST_CASE("conditional_sampling") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
-  constexpr auto fv = constants::fill_value<Real>;
-
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
@@ -129,16 +126,11 @@ TEST_CASE("conditional_sampling") {
 
             auto cmp = cmp_s=="ne" ? Comparison::NE : Comparison::GT;
             compute_mask(y,val,cmp,mask);
-            if (not views_are_equal(d.get_valid_mask(),mask))
-            {
-              print_field_hyperslab(x);
-              print_field_hyperslab(y);
-              print_field_hyperslab(mask.alias("manual"));
-              print_field_hyperslab(d.get_valid_mask().alias("computed"));
-            }
             REQUIRE (views_are_equal(d.get_valid_mask(),mask));
 
-            x.deep_copy(fv,mask,true);
+            // Set both x and d to a common value where mask=0, then compare
+            x.deep_copy(-1,mask,true);
+            d.deep_copy(-1,mask,true);
             REQUIRE (views_are_equal(x,d));
           }
         }
@@ -178,7 +170,9 @@ TEST_CASE("conditional_sampling") {
             compute_mask(y,z,cmp,mask);
             REQUIRE (views_are_equal(d.get_valid_mask(),mask));
 
-            x.deep_copy(fv,mask,true);
+            // Set both x and d to a common value where mask=0, then compare
+            x.deep_copy(-1,mask,true);
+            d.deep_copy(-1,mask,true);
             REQUIRE (views_are_equal(x,d));
           }
         }
@@ -212,7 +206,9 @@ TEST_CASE("conditional_sampling") {
           compute_mask(lev,val,cmp,mask);
           REQUIRE (views_are_equal(d.get_valid_mask(),mask));
 
-          x.deep_copy(fv,mask,true);
+          // Set both x and d to a common value where mask=0, then compare
+          x.deep_copy(-1,mask,true);
+          d.deep_copy(-1,mask,true);
           REQUIRE (views_are_equal(x,d));
         }
       }

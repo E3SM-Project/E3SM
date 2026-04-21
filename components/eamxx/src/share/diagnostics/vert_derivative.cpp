@@ -67,7 +67,6 @@ void VertDerivativeDiag::initialize_impl(const RunType /*run_type*/) {
 
   if (f.has_valid_mask()) {
     m_diagnostic_output.create_valid_mask();
-    m_diagnostic_output.get_header().set_may_be_filled(true);
   }
 }
 
@@ -99,7 +98,6 @@ void VertDerivativeDiag::compute_diagnostic_impl() {
   auto d_mask = masked ? m_diagnostic_output.get_valid_mask().get_view<int**>() : mview_t{};
   auto f_mask = masked ? f.get_valid_mask().get_view<const int**>() : cmview_t{};
   int last_lev = nlevs-1;
-  constexpr auto fv = constants::fill_value<Real>;
   Kokkos::parallel_for("Compute df / denominator for " + m_diagnostic_output.name(),policy,
       KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
@@ -134,9 +132,6 @@ void VertDerivativeDiag::compute_diagnostic_impl() {
                     : f_icol(0);
 
             o_icol(ilev) = (f_int_kp1 - f_int_kp0) / d_icol(ilev);
-          } else {
-            // Remove this when IO solely relies on mask fields
-            o_icol(ilev) = fv;
           }
         });
       });

@@ -1,7 +1,6 @@
 #include "eamxx_cosp.hpp"
 #include "cosp_functions.hpp"
 #include "share/physics/physics_constants.hpp"
-#include "share/util/eamxx_universal_constants.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/field/field_utils.hpp"
@@ -134,7 +133,6 @@ void Cosp::initialize_impl (const RunType /* run_type */)
     auto& f = get_field_out(field_name);
 
     f.set_valid_mask(masks.at(field_name));
-    f.get_header().set_may_be_filled(true);
   }
 
   using namespace ekat::units;
@@ -301,23 +299,6 @@ void Cosp::run_impl (const double dt)
             cldfrac_h, reff_qc_h, reff_qi_h, dtau067_h, dtau105_h,
             isccp_cldtot_h, isccp_ctptau_h, modis_ctptau_h, misr_cthtau_h
     );
-    // Mask night values
-    constexpr auto fill_value = constants::fill_value<Real>;
-    for (int i = 0; i < m_num_cols; i++) {
-      if (sunlit_h(i) == 0) {
-        // if night, set to fill val
-        isccp_cldtot_h(i) = fill_value;
-        for (int j = 0; j < m_num_tau; j++) {
-          for (int k = 0; k < m_num_ctp; k++) {
-            isccp_ctptau_h(i,j,k) = fill_value;
-            modis_ctptau_h(i,j,k) = fill_value;
-          }
-          for (int k = 0; k < m_num_cth; k++) {
-            misr_cthtau_h (i,j,k) = fill_value;
-          }
-        }
-      }
-    }
 
     // Make sure dev data is up to date
     get_field_out("isccp_cldtot").sync_to_dev();

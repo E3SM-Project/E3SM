@@ -11,9 +11,8 @@ namespace scream {
  * that is area-weighted average of the input field.
  *
  * If the input field has a valid_mask, the average is computed only over
- * valid (mask != 0) entries:  sum(area*f*mask) / sum(area*mask).
- * Output entries where sum(area*mask)==0 are set to fill_value,
- * and the output field's valid_mask is set to 0 at those locations.
+ * valid (mask != 0) entries:  sum(area*f*mask) / sum(area*mask),
+ * and for entries where sum(area*mask)==0, the output field valid_mask is set to 0.
  */
 
 class HorizAvgDiag : public AtmosphereDiagnostic {

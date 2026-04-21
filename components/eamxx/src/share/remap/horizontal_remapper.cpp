@@ -493,14 +493,11 @@ rescale_masked_fields (const Field& x, const Field& real_mask) const
   using Mask        = ekat::Mask<PackSize>;
   using PackInfo    = ekat::PackInfo<PackSize>;
 
-  constexpr auto fill_val = constants::fill_value<Real>;
-
   const auto& layout = x.get_header().get_identifier().get_layout();
   const int rank = layout.rank();
   const int ncols = m_tgt_grid->get_num_local_dofs();
   const Real mask_threshold = std::numeric_limits<Real>::epsilon();  // TODO: Should we not hardcode the threshold for simply masking out the column.
 
-  Pack fv_pack(fill_val);
   auto& mask = x.get_valid_mask();
   switch (rank) {
     case 1:
@@ -516,8 +513,6 @@ rescale_masked_fields (const Field& x, const Field& real_mask) const
         m_view(icol) = mr_view(icol)>mask_threshold;
         if (m_view(icol)) {
           x_view(icol) /= mr_view(icol);
-        } else {
-          x_view(icol) = fill_val;
         }
       });
       break;
@@ -539,9 +534,7 @@ rescale_masked_fields (const Field& x, const Field& real_mask) const
                             [&](const int j){
           m_sub(j) = mr_sub(j) > mask_threshold;                  
           if (m_sub(j).any()) {
-            x_sub(j).set(m_sub(j),x_sub(j)/mr_sub(j),fv_pack);
-          } else {
-            x_sub(j) = fv_pack;
+            x_sub(j).set(m_sub(j),x_sub(j)/mr_sub(j));
           }
         });
       });
@@ -567,9 +560,7 @@ rescale_masked_fields (const Field& x, const Field& real_mask) const
           const int k = idx % dim2;
           m_sub(j,k) = mr_sub(j,k) > mask_threshold;                  
           if (m_sub(j,k).any()) {
-            x_sub(j,k).set(m_sub(j,k),x_sub(j,k)/mr_sub(j,k),fv_pack);
-          } else {
-            x_sub(j,k) = fv_pack;
+            x_sub(j,k).set(m_sub(j,k),x_sub(j,k)/mr_sub(j,k));
           }
         });
       });
@@ -597,9 +588,7 @@ rescale_masked_fields (const Field& x, const Field& real_mask) const
           const int l =  idx % dim3;
           m_sub(j,k,l) = mr_sub(j,k,l) > mask_threshold;                  
           if (m_sub(j,k,l).any()) {
-            x_sub(j,k,l).set(m_sub(j,k,l),x_sub(j,k,l)/mr_sub(j,k,l),fv_pack);
-          } else {
-            x_sub(j,k,l) = fv_pack;
+            x_sub(j,k,l).set(m_sub(j,k,l),x_sub(j,k,l)/mr_sub(j,k,l));
           }
         });
       });

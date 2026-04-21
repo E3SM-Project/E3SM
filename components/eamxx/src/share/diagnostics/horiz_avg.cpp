@@ -1,7 +1,6 @@
 #include "horiz_avg.hpp"
 
 #include "share/field/field_utils.hpp"
-#include "share/util/eamxx_universal_constants.hpp"
 
 namespace scream {
 
@@ -51,7 +50,6 @@ void HorizAvgDiag::initialize_impl(const RunType /*run_type*/)
   if (f.has_valid_mask()) {
     // Output valid_mask: 1 where den > 0 (i.e., at least one valid column)
     m_diagnostic_output.create_valid_mask(Field::MaskInit::None);
-    m_diagnostic_output.get_header().set_may_be_filled(true);
 
     // To use at runtime to compute sum(1*w) via horiz_avg (with f_in=1)
     m_ones = f.clone();
@@ -96,8 +94,6 @@ void HorizAvgDiag::compute_diagnostic_impl()
     compute_mask(m_denom,0,Comparison::NE,nonzero_denom);
 
     m_diagnostic_output.scale_inv(m_denom,nonzero_denom);
-    // IO relies on fill_value for masked-out entries
-    m_diagnostic_output.deep_copy(constants::fill_value<Real>,nonzero_denom,true);
   }
 }
 

@@ -5,7 +5,6 @@
 #include "share/field/field_tag.hpp"
 #include "share/field/field_identifier.hpp"
 #include "share/util/eamxx_timing.hpp"
-#include "share/util/eamxx_universal_constants.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include <ekat_units.hpp>
@@ -217,9 +216,6 @@ registration_ends_impl ()
             " - tgt field name: " + tgt.name() + "\n");
 
         tgt.set_valid_mask(mask);
-
-        // Since we do mask (at top and/or bot), the tgt field MAY be contain fill_value entries
-        tgt.get_header().set_may_be_filled(true);
       }
     } else {
       // If a field does not have any vertical tag (LEV, ILEV, or LEVP) it may still have
@@ -232,11 +228,6 @@ registration_ends_impl ()
             " - tgt field name: " + tgt.name() + "\n");
         auto src_mask = src.get_valid_mask();
         tgt.set_valid_mask(src_mask.alias(src_mask.name(),m_tgt_grid->name()));
-      }
-
-      // TODO: remove when we get rid of fill-aware Field manipulation methods
-      if (src.get_header().may_be_filled()) {
-        tgt.get_header().set_may_be_filled(true);
       }
     }
   }
@@ -617,8 +608,6 @@ extrapolate (const Field& f_src,
   using view2d = typename KokkosTypes<DefaultDevice>::view<const Real**>;
   using view1d = typename KokkosTypes<DefaultDevice>::view<const Real*>;
 
-  constexpr auto fill_val = constants::fill_value<Real>;
-
   auto src1d = p_src.rank()==1;
   auto tgt1d = p_tgt.rank()==1;
 
@@ -681,7 +670,6 @@ extrapolate (const Field& f_src,
               if (ebot==P0) {
                 y_tgt[ilev] = y_src[nlevs_src-1];
               } else {
-                y_tgt[ilev] = fill_val;
                 mask_v(icol,ilev) = 0;
               }
             }
@@ -691,7 +679,6 @@ extrapolate (const Field& f_src,
               if (etop==P0) {
                 y_tgt[ilev] = y_src[0];
               } else {
-                y_tgt[ilev] = fill_val;
                 mask_v(icol,ilev) = 0;
               }
             }
@@ -736,7 +723,6 @@ extrapolate (const Field& f_src,
               if (ebot==P0) {
                 y_tgt[ilev] = y_src[nlevs_src-1];
               } else {
-                y_tgt[ilev] = fill_val;
                 mask_v(icol,icmp,ilev) = 0;
               }
             }
@@ -746,7 +732,6 @@ extrapolate (const Field& f_src,
               if (etop==P0) {
                 y_tgt[ilev] = y_src[0];
               } else {
-                y_tgt[ilev] = fill_val;
                 mask_v(icol,icmp,ilev) = 0;
               }
             }
