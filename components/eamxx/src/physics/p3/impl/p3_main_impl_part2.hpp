@@ -156,6 +156,9 @@ void Functions<S,D>
       nc_selfcollect_tend   (0), // change in cloud droplet number from self-collection  (Not in paper?)
       nc2nr_autoconv_tend  (0), // change in cloud droplet number from autoconversion
       nr_selfcollect_tend   (0), // change in rain number from self-collection  (Not in paper?)
+//[shanyp 20260220
+      nr_breakup_tend (0), // change in rain number from breakup  (Not in paper?)
+//shanyp 20260220]
       nr_evap_tend   (0), // change in rain number from evaporation
       ncautr  (0), // change in rain number from autoconversion of cloud water
 
@@ -422,13 +425,19 @@ void Functions<S,D>
     // (breakup following modified Verlinde and Cotton scheme)
     rain_self_collection(
       rho(k), qr_incld(k), nr_incld(k),
-      nr_selfcollect_tend, runtime_options, not_skip_all);
+//[shanyp 20260220
+//      nr_selfcollect_tend, runtime_options, not_skip_all);
+      nr_selfcollect_tend, nr_breakup_tend, runtime_options, not_skip_all);
+//shanyp 20260220]
 
     // Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
     // cell-average quantities.
     back_to_cell_average(
       cld_frac_l(k), cld_frac_r(k), cld_frac_i(k), qc2qr_accret_tend, qr2qv_evap_tend, qc2qr_autoconv_tend,
-      nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr, qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend,
+//[shanyp 20260220
+//      nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr, qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend,
+      nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_breakup_tend, nr_evap_tend, ncautr, qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend,
+//shanyp 20260220]
       qr2qi_collect_tend, qc2qr_ice_shed_tend, qi2qr_melt_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, ni2nr_melt_tend, nc_collect_tend,
       ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend,
       qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend, 
@@ -471,7 +480,10 @@ void Functions<S,D>
     nc_conservation(nc(k), nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend,
                     nc_accret_tend, nc2nr_autoconv_tend, ncheti_cnt, nicnt, use_hetfrz_classnuc, not_skip_all);
     nr_conservation(nr(k),ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nmltratio,nr_collect_tend,
-                    nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend, not_skip_all);
+//[shanyp 20260401
+//		    nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend, not_skip_all);
+                  nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_breakup_tend,nr_evap_tend, not_skip_all);
+//shanyp 20260401]
     ni_conservation(ni(k),ni_nucleat_tend,nr2ni_immers_freeze_tend,nc2ni_immers_freeze_tend, ncheti_cnt, nicnt, ninuc_cnt, dt,ni2nr_melt_tend,
                     ni_sublim_tend,ni_selfcollect_tend, use_hetfrz_classnuc, not_skip_all);
 
@@ -497,7 +509,10 @@ void Functions<S,D>
 
     //-- warm-phase only processes:
     update_prognostic_liquid(
-      qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, nc_selfcollect_tend, qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend,
+//[shanyp 20260401
+//      qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, nc_selfcollect_tend, qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend,
+      qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, nc_selfcollect_tend, qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend, nr_breakup_tend,
+//shanyp 20260401]
       predictNc, do_prescribed_CCN, inv_rho(k), inv_exner(k), dt, th_atm(k), qv(k), qc(k), nc(k),
       qr(k), nr(k), not_skip_all);
 
