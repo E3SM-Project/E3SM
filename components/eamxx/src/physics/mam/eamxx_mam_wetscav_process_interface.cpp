@@ -437,7 +437,7 @@ void MAMWetscav::run_impl(const double dt) {
   const Real scav_fraction_below_cloud_strat  = scav_fraction_below_cloud_strat_;
   const Real activation_fraction_in_cloud_conv = activation_fraction_in_cloud_conv_;
   // Loop over atmosphere columns
-  Kokkos::parallel_for("aero_model_wetdep",
+  Kokkos::parallel_for("MAMWetscav::run_impl::aero_model_wetdep",
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int icol = team.league_rank();  // column index
 
