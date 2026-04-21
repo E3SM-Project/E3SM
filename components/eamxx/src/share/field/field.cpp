@@ -559,6 +559,16 @@ void Field::min (const Field& x, const Field& mask)
   update_cm<CM>("Field::min (masked)",x,1,1,0,mask);
 }
 
+void Field::add_scalar (const ScalarWrapper gamma)
+{
+  update(*this,0,1,gamma);
+}
+
+void Field::add_scalar (const ScalarWrapper gamma, const Field& mask)
+{
+  update(*this,0,1,gamma,mask);
+}
+
 void Field::
 update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma)
 {

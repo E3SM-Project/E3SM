@@ -243,6 +243,10 @@ public:
   void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma);
   void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask);
 
+  // Short-hand to update with alpha=0,beta=1
+  void add_scalar (const ScalarWrapper gamma);
+  void add_scalar (const ScalarWrapper gamma, const Field& mask);
+
   // Special case of update for particular choices of the combine mode
   void scale (const ScalarWrapper beta);
   void scale (const ScalarWrapper beta, const Field& mask);
