@@ -473,12 +473,18 @@ void Field::deep_copy (const ScalarWrapper value, const Field& mask, const bool 
 
 void Field::deep_copy (const Field& x)
 {
+  if (&x==this)
+    return;
+
   constexpr auto CM = CombineMode::Replace;
   update_cm<CM>("Field::deep_copy",x,1,0);
 }
 
 void Field::deep_copy (const Field& x, const Field& mask)
 {
+  if (&x==this)
+    return;
+
   constexpr auto CM = CombineMode::Replace;
   update_cm<CM>("Field::deep_copy (masked)",x,1,0,mask);
 }
