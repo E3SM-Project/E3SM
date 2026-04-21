@@ -207,9 +207,9 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
               const Real wy_row = vec_sph2cart(ie,2,1,igp,kgp) * w_row;
               const Real wz_row = vec_sph2cart(ie,2,2,igp,kgp) * w_row;
 
-              const Real wx_col = vec_sph2cart(ie,2,0,kgp,igp) * w_col;
-              const Real wy_col = vec_sph2cart(ie,2,1,kgp,igp) * w_col;
-              const Real wz_col = vec_sph2cart(ie,2,2,kgp,igp) * w_col;
+              const Real wx_col = vec_sph2cart(ie,2,0,kgp,jgp) * w_col;
+              const Real wy_col = vec_sph2cart(ie,2,1,kgp,jgp) * w_col;
+              const Real wz_col = vec_sph2cart(ie,2,2,kgp,jgp) * w_col;
 
               Ux_row[s] = Ux_row_h + wx_row;
               Ux_col[s] = Ux_col_h + wx_col;
