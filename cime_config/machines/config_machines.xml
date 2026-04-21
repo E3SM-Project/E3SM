@@ -3157,11 +3157,10 @@
       <arguments>
 	<arg name="debug"> --label-io --verbose --setopt=mpibind=verbose:1</arg>
 	<arg name="num_tasks"> -N{{ num_nodes }} -n{{ total_tasks }} --exclusive</arg>
-	<arg name="bind"> -g1</arg>
-	<arg name="kokkos_bind"> --env=MPI_LOCALRANKID={{task.localid}}</arg>
-	<arg name="amd"> --env-remove=ROCR_VISIBLE_DEVICES --env=ROCR_VISIBLE_DEVICES=0</arg>
-	<arg name="hip"> --env-remove=HIP_VISIBLE_DEVICES --env=HIP_VISIBLE_DEVICES=0</arg>
 	<arg name="log"> --output=output.{{task.rank}} --error=error.{{task.rank}}</arg>
+	<arg name="kokkos"> --env=PMI_LOCAL_RANK={{task.localid}} --env=PMI_LOCAL_SIZE=4</arg>
+	<arg name="rocr_bind"> --env-remove=ROCR_VISIBLE_DEVICES --env=ROCR_VISIBLE_DEVICES={{task.localid}}</arg>
+	<arg name="hip_bind"> --env-remove=HIP_VISIBLE_DEVICES --env=HIP_VISIBLE_DEVICES=0</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">

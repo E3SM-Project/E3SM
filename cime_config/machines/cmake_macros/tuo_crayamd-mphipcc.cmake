@@ -4,7 +4,7 @@ string(APPEND CPPDEFS " -DTHRUST_IGNORE_CUB_VERSION_CHECK")
 # use LLNL -magic wrappers; AMD C/C++ with Cray Fortran
 set(MPICC  "/usr/tce/packages/cray-mpich/cray-mpich-9.0.1-rocmcc-6.4.3-cce-20.0.0a-magic/bin/mpiamdclang")
 set(MPICXX "/usr/tce/packages/cray-mpich/cray-mpich-9.0.1-rocmcc-6.4.3-cce-20.0.0a-magic/bin/mpiamdclang++")
-set(MPIFC  "/usr/tce/packages/cray-mpich/cray-mpich-9.0.1-cce-20.0.0a-magic/bin/mpicrayftn")
+set(MPIFC  "/usr/tce/packages/cray-mpich/cray-mpich-9.0.1-rocmcc-6.4.3-cce-20.0.0a-magic/bin/mpicrayftn")
 
 set(SCC  "${MPICC}")
 set(SCXX "${MPICXX}")
