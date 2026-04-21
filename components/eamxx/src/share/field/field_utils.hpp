@@ -80,6 +80,7 @@ void print_field_hyperslab (const Field& f,
 // Compute where input field comparese correctly to given value
 void compute_mask (const Field& x, const ScalarWrapper value, Comparison CMP, Field& mask);
 Field compute_mask (const Field& x, const ScalarWrapper value, Comparison CMP);
+void compute_mask (const Field& lhs, const Field& rhs, Comparison CMP, Field& mask);
 
 // Transpose a field layout
 void transpose (const Field& src, Field& tgt);

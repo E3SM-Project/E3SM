@@ -28,41 +28,57 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
   return gm;
 }
 
+const util::TimeStamp t0() {
+  return util::TimeStamp({2024, 1, 1}, {0, 0, 0});
+}
+
+Field create_field (const std::string& name, int ncol, int ncmp, int nlev, const std::string& gn)
+{
+  using namespace ShortFieldTagsNames;
+  FieldLayout fl{};
+  if (ncol>0)
+    fl.append_dim(COL,ncol);
+  if (ncmp)
+    fl.append_dim(CMP,ncmp);
+  if (nlev)
+    fl.append_dim(LEV,nlev);
+  FieldIdentifier fid(name,fl,ekat::units::kg,gn);
+  Field f(fid,true);
+  f.get_header().get_tracking().update_time_stamp(t0());
+  return f;
+}
+
+template<typename ST>
+void iota_z (const Field& x) {
+  int n1 = x.get_header().get_identifier().get_layout().dim(0);
+  if (x.rank()>1) {
+    for (int i=0; i<n1; ++i) {
+      iota_z<ST>(x.subfield(0,i));
+    }
+  } else {
+    auto vh = x.get_view<ST*,Host>();
+    for (int i=0; i<n1; ++i) {
+      vh(i) = i;
+    }
+    x.sync_to_dev();
+  }
+}
+
 TEST_CASE("conditional_sampling") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
-  auto fill_value = constants::fill_value<Real>;
+  constexpr auto fv = constants::fill_value<Real>;
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  // A time stamp
-  util::TimeStamp t0({2024, 1, 1}, {0, 0, 0});
-
   // Create a grids manager - single column for these tests
-  constexpr int nlevs = 256;
-  const int ngcols    = 600 * comm.size();
+  constexpr int nlevs = 10;
+  constexpr int ncols = 8;
 
-  auto gm   = create_gm(comm, ngcols, nlevs);
+  auto gm   = create_gm(comm, ncols, nlevs);
   auto grid = gm->get_grid("physics");
-
-  // Input (randomized) qc
-  FieldLayout scalar1d_layout1{{COL}, {ngcols}};
-  FieldLayout scalar1d_layout2{{LEV}, {nlevs}};
-  FieldLayout scalar2d_layout1{{COL, LEV}, {ngcols, nlevs}};
-
-  FieldIdentifier qc11_fid("qc", scalar1d_layout1, kg / kg, grid->name());
-  FieldIdentifier qc12_fid("qc", scalar1d_layout2, kg / kg, grid->name());
-  FieldIdentifier qc21_fid("qc", scalar2d_layout1, kg / kg, grid->name());
-
-  Field qc11(qc11_fid);
-  Field qc12(qc12_fid);
-  Field qc21(qc21_fid);
-
-  qc11.allocate_view();
-  qc12.allocate_view();
-  qc21.allocate_view();
 
   // Random number generator seed
   int seed = get_random_test_seed();
@@ -75,261 +91,201 @@ TEST_CASE("conditional_sampling") {
   ekat::ParameterList params;
   params.set("grid_name", grid->name());
 
-  SECTION("field_v_field") {
-    const auto comp_val = 0.001;
-    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm,
-                                       params)); // No 'field_name' parameter
-    params.set<std::string>("input_field", "qc");
-    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm,
-                                       params)); // No 'condition_field' parameter
-    params.set<std::string>("condition_field", "qc");
-    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm,
+  SECTION("exceptions") {
+    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm, params)); // No 'field_name' parameter
+    params.set<std::string>("field_name", "x");
+    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm, params)); // No 'condition_lhs' parameter
+    params.set<std::string>("condition_lhs", "y");
+    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm, params)); // No 'condition_cmp' parameter
+    params.set<std::string>("condition_cmp", "z");
+    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm, params)); // No 'condition_rhs'
+  }
 
-                                       params)); // No 'condition_operator' parameter
-    params.set<std::string>("condition_operator", "gt");
-    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm,
-                                       params)); // No 'condition_value'
-    params.set<std::string>("condition_value", std::to_string(comp_val));
+  SECTION("field_where_field_cmp_val") {
+    const auto val = 0.5;
+    params.set<std::string>("field_name", "x");
+    params.set<std::string>("condition_lhs", "y");
+    params.set<std::string>("condition_rhs", std::to_string(val));
 
-    // Set time for qc and randomize its values
-    qc11.get_header().get_tracking().update_time_stamp(t0);
-    qc12.get_header().get_tracking().update_time_stamp(t0);
-    qc21.get_header().get_tracking().update_time_stamp(t0);
-    randomize_uniform(qc11, seed++, 0, 200);
-    randomize_uniform(qc12, seed++, 0, 200);
-    randomize_uniform(qc21, seed++, 0, 200);
+    for (std::string cmp_s : {"ne", "gt"}) {
+      for (int nx : {0,ncols}) {
+        for (int ncmp : {0,2}) {
+          for (int nz : {0,nlevs}) {
+            auto x = create_field("x",nx,ncmp,nz,grid->name());
+            auto y = create_field("y",nx,ncmp,nz,grid->name());
+            randomize_uniform(x,seed++);
+            randomize_uniform(y,seed++);
+            params.set<std::string>("condition_cmp", cmp_s);
+            auto diag = diag_factory.create("ConditionalSampling", comm, params);
+            diag->set_grids(gm);
+            diag->set_required_field(x);
+            diag->set_required_field(y);
+            diag->initialize(t0(),RunType::Initial);
+            diag->compute_diagnostic();
+            auto d = diag->get_diagnostic();
 
-    // Create and set up the diagnostic
-    auto diag11 = diag_factory.create("ConditionalSampling", comm, params);
-    auto diag12 = diag_factory.create("ConditionalSampling", comm, params);
-    auto diag21 = diag_factory.create("ConditionalSampling", comm, params);
-    diag11->set_grids(gm);
-    diag12->set_grids(gm);
-    diag21->set_grids(gm);
+            REQUIRE (d.has_valid_mask());
+            Field mask = d.get_valid_mask().clone();
 
-    // Set the fields for each diagnostic
-    diag11->set_required_field(qc11);
-    diag11->initialize(t0, RunType::Initial);
-    diag11->compute_diagnostic();
-    auto diag11_f = diag11->get_diagnostic();
-    diag11_f.sync_to_host();
-    auto diag11_v = diag11_f.get_view<const Real *, Host>();
+            auto cmp = cmp_s=="ne" ? Comparison::NE : Comparison::GT;
+            compute_mask(y,val,cmp,mask);
+            if (not views_are_equal(d.get_valid_mask(),mask))
+            {
+              print_field_hyperslab(x);
+              print_field_hyperslab(y);
+              print_field_hyperslab(mask.alias("manual"));
+              print_field_hyperslab(d.get_valid_mask().alias("computed"));
+            }
+            REQUIRE (views_are_equal(d.get_valid_mask(),mask));
 
-    diag12->set_required_field(qc12);
-    diag12->initialize(t0, RunType::Initial);
-    diag12->compute_diagnostic();
-    auto diag12_f = diag12->get_diagnostic();
-    diag12_f.sync_to_host();
-    auto diag12_v = diag12_f.get_view<const Real *, Host>();
-
-    diag21->set_required_field(qc21);
-    diag21->initialize(t0, RunType::Initial);
-    diag21->compute_diagnostic();
-    auto diag21_f = diag21->get_diagnostic();
-    diag21_f.sync_to_host();
-    auto diag21_v = diag21_f.get_view<const Real **, Host>();
-
-    auto qc11_v = qc11.get_view<const Real *, Host>();
-    auto qc12_v = qc12.get_view<const Real *, Host>();
-    auto qc21_v = qc21.get_view<const Real **, Host>();
-
-    // Check the results
-    for (int ilev = 0; ilev < nlevs; ++ilev) {
-      // check qc12
-      if (qc12_v(ilev) > comp_val) {
-        REQUIRE(diag12_v(ilev) == qc12_v(ilev));
-      } else {
-        REQUIRE(diag12_v(ilev) == fill_value);
-      }
-    }
-    for (int icol = 0; icol < ngcols; ++icol) {
-      // Check qc11
-      if (qc11_v(icol) > comp_val) {
-        REQUIRE(diag11_v(icol) == qc11_v(icol));
-      } else {
-        REQUIRE(diag11_v(icol) == fill_value);
-      }
-      for (int ilev = 0; ilev < nlevs; ++ilev) {
-        // check qc21
-        if (qc21_v(icol, ilev) > comp_val) {
-          REQUIRE(diag21_v(icol, ilev) == qc21_v(icol, ilev));
-        } else {
-          REQUIRE(diag21_v(icol, ilev) == fill_value);
-        }
-        // check qc21 again, but the negative
-        if (qc21_v(icol, ilev) <= comp_val) {
-          REQUIRE_FALSE(diag21_v(icol, ilev) == qc21_v(icol, ilev));
-        } else {
-          REQUIRE_FALSE(diag21_v(icol, ilev) == fill_value);
+            x.deep_copy(fv,mask,true);
+            REQUIRE (views_are_equal(x,d));
+          }
         }
       }
     }
   }
-  SECTION("field_vs_index") {
-    const auto comp_lev = static_cast<int>(nlevs / 3);
-    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm,
-                                       params)); // No 'field_name' parameter
-    params.set<std::string>("input_field", "qc");
-    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm,
-                                       params)); // No 'condition_field' parameter
-    params.set<std::string>("condition_field", "lev");
-    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm,
 
-                                       params)); // No 'condition_operator' parameter
-    params.set<std::string>("condition_operator", "lt");
-    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm,
-                                       params)); // No 'condition_value'
-    params.set<std::string>("condition_value", std::to_string(comp_lev));
+  SECTION("field_where_field_cmp_field") {
+    params.set<std::string>("field_name", "x");
+    params.set<std::string>("condition_lhs", "y");
+    params.set<std::string>("condition_rhs", "z");
 
-    // Set time for qc and randomize its values
-    qc11.get_header().get_tracking().update_time_stamp(t0);
-    qc12.get_header().get_tracking().update_time_stamp(t0);
-    qc21.get_header().get_tracking().update_time_stamp(t0);
-    randomize_uniform(qc11, seed++, 0, 200);
-    randomize_uniform(qc12, seed++, 0, 200);
-    randomize_uniform(qc21, seed++, 0, 200);
+    for (std::string cmp_s : {"eq", "le"}) {
+      for (int nx : {0,ncols}) {
+        for (int ncmp : {0,2}) {
+          for (int nz : {0,nlevs}) {
+            auto x = create_field("x",nx,ncmp,nz,grid->name());
+            auto y = create_field("y",nx,ncmp,nz,grid->name());
+            auto z = create_field("z",nx,ncmp,nz,grid->name());
+            randomize_uniform(x,seed++);
+            randomize_uniform(y,seed++);
+            randomize_uniform(z,seed++);
+            params.set<std::string>("condition_cmp", cmp_s);
+            auto diag = diag_factory.create("ConditionalSampling", comm, params);
+            diag->set_grids(gm);
+            diag->set_required_field(x);
+            diag->set_required_field(y);
+            diag->set_required_field(z);
+            diag->initialize(t0(),RunType::Initial);
+            diag->compute_diagnostic();
+            auto d = diag->get_diagnostic();
 
-    // Create and set up the diagnostic
-    auto diag11 = diag_factory.create("ConditionalSampling", comm, params);
-    auto diag12 = diag_factory.create("ConditionalSampling", comm, params);
-    auto diag21 = diag_factory.create("ConditionalSampling", comm, params);
-    diag11->set_grids(gm);
-    diag12->set_grids(gm);
-    diag21->set_grids(gm);
+            REQUIRE (d.has_valid_mask());
+            Field mask = d.get_valid_mask().clone();
 
-    // Set the fields for each diagnostic
-    diag11->set_required_field(qc11);
-    REQUIRE_THROWS(diag11->initialize(t0, RunType::Initial)); // bad dimensions (no lev in qc11)
+            auto cmp = cmp_s=="eq" ? Comparison::EQ : Comparison::LE;
+            compute_mask(y,z,cmp,mask);
+            REQUIRE (views_are_equal(d.get_valid_mask(),mask));
 
-    diag12->set_required_field(qc12);
-    
-    diag12->initialize(t0, RunType::Initial);
-    diag12->compute_diagnostic();
-    auto diag12_f = diag12->get_diagnostic();
-    diag12_f.sync_to_host();
-    auto diag12_v = diag12_f.get_view<const Real *, Host>();
-
-    diag21->set_required_field(qc21);
-    diag21->initialize(t0, RunType::Initial);
-    diag21->compute_diagnostic();
-    auto diag21_f = diag21->get_diagnostic();
-    diag21_f.sync_to_host();
-    auto diag21_v = diag21_f.get_view<const Real **, Host>();
-
-    auto qc12_v = qc12.get_view<const Real *, Host>();
-    auto qc21_v = qc21.get_view<const Real **, Host>();
-
-    // Check the results
-    for (int ilev = 0; ilev < nlevs; ++ilev) {
-      // check qc12
-      if (ilev < comp_lev) {
-        REQUIRE(diag12_v(ilev) == qc12_v(ilev));
-      } else {
-        REQUIRE(diag12_v(ilev) == fill_value);
-      }
-    }
-    for (int icol = 0; icol < ngcols; ++icol) {
-      for (int ilev = 0; ilev < nlevs; ++ilev) {
-        // check qc21
-        if (ilev < comp_lev) {
-          REQUIRE(diag21_v(icol, ilev) == qc21_v(icol, ilev));
-        } else {
-          REQUIRE(diag21_v(icol, ilev) == fill_value);
-        }
-        // check qc21 again, but the negative
-        if (ilev >= comp_lev) {
-          REQUIRE_FALSE(diag21_v(icol, ilev) == qc21_v(icol, ilev));
-        } else {
-          REQUIRE_FALSE(diag21_v(icol, ilev) == fill_value);
+            x.deep_copy(fv,mask,true);
+            REQUIRE (views_are_equal(x,d));
+          }
         }
       }
     }
   }
-  SECTION("count_conditional") {
-    const auto comp_val = 50.0;
-    
-    // Test count conditional sampling - count grid points where condition is met
-    params.set<std::string>("input_field", "count");
-    params.set<std::string>("condition_field", "qc");
-    params.set<std::string>("condition_operator", "gt");
-    params.set<std::string>("condition_value", std::to_string(comp_val));
 
-    // Set time for qc and randomize its values
-    qc11.get_header().get_tracking().update_time_stamp(t0);
-    qc12.get_header().get_tracking().update_time_stamp(t0);
-    qc21.get_header().get_tracking().update_time_stamp(t0);
-    randomize_uniform(qc11, seed++, 0, 200);
-    randomize_uniform(qc12, seed++, 0, 200);
-    randomize_uniform(qc21, seed++, 0, 200);
+  SECTION("field_where_lev_cmp_val") {
+    const auto val = nlevs / 2;
+    params.set<std::string>("field_name", "x");
+    params.set<std::string>("condition_lhs", "lev");
+    params.set<std::string>("condition_rhs", std::to_string(val));
 
-    // Create and set up the diagnostic for count
-    auto count_diag11 = diag_factory.create("ConditionalSampling", comm, params);
-    auto count_diag12 = diag_factory.create("ConditionalSampling", comm, params);
-    auto count_diag21 = diag_factory.create("ConditionalSampling", comm, params);
-    count_diag11->set_grids(gm);
-    count_diag12->set_grids(gm);
-    count_diag21->set_grids(gm);
+    for (std::string cmp_s : {"ge", "le"}) {
+      for (int nx : {0,ncols}) {
+        for (int ncmp : {0,2}) {
+          auto x = create_field("x",nx,ncmp,nlevs,grid->name());
+          randomize_uniform(x,seed++);
+          params.set<std::string>("condition_cmp", cmp_s);
+          auto diag = diag_factory.create("ConditionalSampling", comm, params);
+          diag->set_grids(gm);
+          diag->set_required_field(x);
+          diag->initialize(t0(),RunType::Initial);
+          diag->compute_diagnostic();
+          auto d = diag->get_diagnostic();
 
-    // Set the fields for each diagnostic
-    count_diag11->set_required_field(qc11);
-    count_diag11->initialize(t0, RunType::Initial);
-    count_diag11->compute_diagnostic();
-    auto count_diag11_f = count_diag11->get_diagnostic();
-    count_diag11_f.sync_to_host();
-    auto count_diag11_v = count_diag11_f.get_view<const Real *, Host>();
+          Field mask = x.create_valid_mask();
+          Field lev = mask.clone();
+          iota_z<int>(lev);
+          auto cmp = cmp_s=="ge" ? Comparison::GE : Comparison::LE;
+          compute_mask(lev,val,cmp,mask);
+          if (not views_are_equal(d.get_valid_mask(),mask))
+          {
+            print_field_hyperslab(lev.alias("lev"));
+            print_field_hyperslab(mask.alias("manual"));
+            print_field_hyperslab(d.get_valid_mask().alias("computed"));
+          }
+          REQUIRE (views_are_equal(d.get_valid_mask(),mask));
 
-    count_diag12->set_required_field(qc12);
-    count_diag12->initialize(t0, RunType::Initial);
-    count_diag12->compute_diagnostic();
-    auto count_diag12_f = count_diag12->get_diagnostic();
-    count_diag12_f.sync_to_host();
-    auto count_diag12_v = count_diag12_f.get_view<const Real *, Host>();
-
-    count_diag21->set_required_field(qc21);
-    count_diag21->initialize(t0, RunType::Initial);
-    count_diag21->compute_diagnostic();
-    auto count_diag21_f = count_diag21->get_diagnostic();
-    count_diag21_f.sync_to_host();
-    auto count_diag21_v = count_diag21_f.get_view<const Real **, Host>();
-
-    auto qc11_v = qc11.get_view<const Real *, Host>();
-    auto qc12_v = qc12.get_view<const Real *, Host>();
-    auto qc21_v = qc21.get_view<const Real **, Host>();
-
-    // Check the results - count should be 1.0 where condition is met, 0 otherwise
-    for (int ilev = 0; ilev < nlevs; ++ilev) {
-      // check count for qc12
-      if (qc12_v(ilev) > comp_val) {
-        REQUIRE(count_diag12_v(ilev) == 1.0);
-      } else {
-        REQUIRE(count_diag12_v(ilev) == 0.0);
-      }
-    }
-    
-    for (int icol = 0; icol < ngcols; ++icol) {
-      // Check count for qc11
-      if (qc11_v(icol) > comp_val) {
-        REQUIRE(count_diag11_v(icol) == 1.0);
-      } else {
-        REQUIRE(count_diag11_v(icol) == 0.0);
-      }
-      
-      for (int ilev = 0; ilev < nlevs; ++ilev) {
-        // check count for qc21
-        if (qc21_v(icol, ilev) > comp_val) {
-          REQUIRE(count_diag21_v(icol, ilev) == 1.0);
-        } else {
-          REQUIRE(count_diag21_v(icol, ilev) == 0.0);
-        }
-        // check count again, but the negative
-        if (qc21_v(icol, ilev) <= comp_val) {
-          REQUIRE_FALSE(count_diag21_v(icol, ilev) == 1.0);
-        } else {
-          REQUIRE_FALSE(count_diag21_v(icol, ilev) == 0.0);
+          x.deep_copy(fv,mask,true);
+          REQUIRE (views_are_equal(x,d));
         }
       }
     }
   }
+
+  SECTION("mask_where_lev_cmp_val") {
+    const auto val = nlevs / 2;
+    params.set<std::string>("field_name", "mask");
+    params.set<std::string>("condition_lhs", "lev");
+    params.set<std::string>("condition_rhs", std::to_string(val));
+
+    for (std::string cmp_s : {"ge", "le"}) {
+      params.set<std::string>("condition_cmp", cmp_s);
+      auto diag = diag_factory.create("ConditionalSampling", comm, params);
+      diag->set_grids(gm);
+      diag->initialize(t0(),RunType::Initial);
+      diag->compute_diagnostic();
+      auto d = diag->get_diagnostic();
+
+      REQUIRE (d.data_type()==DataType::IntType);
+      REQUIRE (d.rank()==1);
+
+      Field mask = d.clone();
+      Field lev = mask.clone();
+      iota_z<int>(lev);
+      auto cmp = cmp_s=="ge" ? Comparison::GE : Comparison::LE;
+      compute_mask(lev,val,cmp,mask);
+      REQUIRE (views_are_equal(d,mask));
+    }
+  }
+
+  SECTION("mask_where_field_cmp_field") {
+    params.set<std::string>("field_name", "mask");
+    params.set<std::string>("condition_lhs", "y");
+    params.set<std::string>("condition_rhs", "z");
+
+    for (std::string cmp_s : {"eq", "le"}) {
+      for (int nx : {0,ncols}) {
+        for (int ncmp : {0,2}) {
+          for (int nz : {0,nlevs}) {
+            auto y = create_field("y",nx,ncmp,nz,grid->name());
+            auto z = create_field("z",nx,ncmp,nz,grid->name());
+            randomize_uniform(y,seed++);
+            randomize_uniform(z,seed++);
+            params.set<std::string>("condition_cmp", cmp_s);
+            auto diag = diag_factory.create("ConditionalSampling", comm, params);
+            diag->set_grids(gm);
+            diag->set_required_field(y);
+            diag->set_required_field(z);
+            diag->initialize(t0(),RunType::Initial);
+            diag->compute_diagnostic();
+            auto d = diag->get_diagnostic();
+
+            REQUIRE (d.data_type()==DataType::IntType);
+            REQUIRE (d.rank()==y.rank());
+
+            Field mask = d.clone();
+            auto cmp = cmp_s=="eq" ? Comparison::EQ : Comparison::LE;
+            compute_mask(y,z,cmp,mask);
+            REQUIRE (views_are_equal(d,mask));
+          }
+        }
+      }
+    }
+  }
+
 }
 
 } // namespace scream

@@ -262,7 +262,7 @@ create_diagnostic (const std::string& diag_field_name,
   std::regex horiz_avg (generic_field + "_horiz_avg$");
   std::regex vert_contract (generic_field + "_vert_(avg|sum)(_((dp|dz)_weighted))?$");
   std::regex zonal_avg (R"()" + generic_field + R"(_zonal_avg_(\d+)_bins$)");
-  std::regex conditional_sampling (R"()" + generic_field + R"(_where_)" + generic_field + R"(_(gt|ge|eq|ne|le|lt)_([+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)$)");
+  std::regex conditional_sampling (R"()" + generic_field + R"(_where_)" + generic_field + R"(_(gt|ge|eq|ne|le|lt)_)" + generic_field + "$");
   std::regex binary_ops (generic_field + "_" "(plus|minus|times|over)" + "_" + generic_field + "$");
   std::regex histogram (R"()" + generic_field + R"(_histogram_(\d+(\.\d+)?(_\d+(\.\d+)?)+)$)");
   std::regex vert_derivative (generic_field + "_(p|z)vert_derivative$");
@@ -358,10 +358,10 @@ create_diagnostic (const std::string& diag_field_name,
   else if (std::regex_search(diag_field_name,matches,conditional_sampling)) {
     diag_name = "ConditionalSampling";
     params.set("grid_name", grid->name());
-    params.set<std::string>("input_field", matches[1].str());
-    params.set<std::string>("condition_field", matches[2].str());
-    params.set<std::string>("condition_operator", matches[3].str());
-    params.set<std::string>("condition_value", matches[4].str());
+    params.set<std::string>("field_name", matches[1].str());
+    params.set<std::string>("condition_lhs", matches[2].str());
+    params.set<std::string>("condition_cmp", matches[3].str());
+    params.set<std::string>("condition_rhs", matches[4].str());
   }
   else if (std::regex_search(diag_field_name,matches,binary_ops)) {
     diag_name = "BinaryOpsDiag";
