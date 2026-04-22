@@ -91,7 +91,8 @@ contains
                               dcmip16_mu, theta_advect_form, test_case,                &
                               MAX_STRING_LEN, dt_remap_factor, dt_tracer_factor,       &
                               pgrad_correction, dp3d_thresh, vtheta_thresh,            &
-                              internal_diagnostics_level, do_3d_turbulence
+                              internal_diagnostics_level, do_3d_turbulence, &
+                              tom_sponge_start
     !
     ! Input(s)
     !
@@ -141,7 +142,8 @@ contains
                                    nsplit,                                                        &
                                    pgrad_correction,                                              &
                                    dp3d_thresh, vtheta_thresh, internal_diagnostics_level,        &
-                                   do_3d_turbulence_int)
+                                   do_3d_turbulence_int, &
+                                   tom_sponge_start)
 
     ! Initialize time level structure in C++
     call init_time_level_c(tl%nm1, tl%n0, tl%np1, tl%nstep, tl%nstep0)

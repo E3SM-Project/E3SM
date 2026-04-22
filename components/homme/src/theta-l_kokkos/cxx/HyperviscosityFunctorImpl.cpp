@@ -78,6 +78,9 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
     m_nu_scale_top = ExecViewManaged<Scalar[NUM_LEV]>("nu_scale_top");
     ExecViewManaged<Scalar[NUM_LEV]>::HostMirror h_nu_scale_top;
     h_nu_scale_top = Kokkos::create_mirror_view(m_nu_scale_top);
+    
+    printf("params.tom_sponge_start = %f\n", params.tom_sponge_start);
+
 
     const auto etai_h = Kokkos::create_mirror_view(m_hvcoord.etai);
     const auto etam_h = Kokkos::create_mirror_view(m_hvcoord.etam);
@@ -103,9 +106,17 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
       }else{
           ptop_over_press = 0.0;
       }
-
-      auto val = 16.0*ptop_over_press*ptop_over_press / (ptop_over_press*ptop_over_press + 1);
+      Real val;
+      if (params.tom_sponge_start == 0.0) {
+        val = 16.0*ptop_over_press*ptop_over_press / (ptop_over_press*ptop_over_press + 1);
+      } else if (phys_lev < NUM_PHYSICAL_LEV) {
+        const Real r = (params.tom_sponge_start / 1000.0) / etam_h(ilev)[ivec];
+        val = 0.15 * r * r;
+      } else {
+        val = 0.0;
+      }
       if ( val < 0.15 ) val = 0.0;
+      if ( val > 8.0  ) val = 8.0;
       h_nu_scale_top(ilev)[ivec] = val;
 
       // This is the equivalent of nlev_tom in the F90 code.
