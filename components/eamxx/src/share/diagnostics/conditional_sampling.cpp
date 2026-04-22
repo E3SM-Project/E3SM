@@ -6,6 +6,7 @@
 #include <ekat_team_policy_utils.hpp>
 
 #include <charconv>
+#include <cstdlib>
 #include <string>
 
 namespace scream {
@@ -30,16 +31,22 @@ std::pair<int,bool> str2int (const std::string& s) {
   return std::make_pair(0,false);
 }
 
+// NOTE: the overload of from_chars for floating point was not immediately added
+//       by compilers supporting C++17. Some compilers (e.g., on compy) do not
+//       support it. Hence, stick with strtod.
 std::pair<double,bool> str2dbl (const std::string& s) {
-  // Check if rhs is a value
-  auto beg = s.data();
-  auto end = beg + s.size();
-  double d;
-  auto [ptr,ec] = std::from_chars(beg,end,d);
-  if (ec == std::errc{} && ptr == end) {
-    return std::make_pair(d,true);
+  if (s.empty()) return {0.0, false};
+
+  char* endptr;
+  const char* startptr = s.c_str();
+  double d = std::strtod(startptr, &endptr);
+
+  // Check if conversion happened and reached the end of the string
+  if (endptr != startptr && *endptr == '\0') {
+    return {d, true};
   }
-  return std::make_pair(0.0,false);
+
+  return {0.0, false};
 }
 
 // This is to avoid using original diag string in output field name,
