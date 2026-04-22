@@ -26,7 +26,6 @@ Omega:
     Coef3rdOrder: 0.25
     FluxThicknessType: Center
     HorzTracerFluxOrder: 2
-    FluxTracerType: Center
     VerticalTracerFluxLimiterEnable: true
     VerticalTracerFluxOrder: 3
   WindStress:
