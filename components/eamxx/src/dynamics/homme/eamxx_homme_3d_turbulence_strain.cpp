@@ -285,8 +285,6 @@ void HommeDynamics::compute_vertical_derivs ()
 
   constexpr int NGP  = HOMMEXX_NP;
   constexpr int VLEN = VECTOR_SIZE;
-  constexpr int NLEV_SCALAR = HOMMEXX_NUM_PHYSICAL_LEV;
-  constexpr int NLEV_SCALAR_P = HOMMEXX_NUM_INTERFACE_LEV;
 
   const auto& c      = Context::singleton();
   const auto& state  = c.get<ElementsState>();
@@ -301,8 +299,7 @@ void HommeDynamics::compute_vertical_derivs ()
 
   const auto v_dyn        = state.m_v;
   const auto w_int_dyn    = state.m_w_i;
-  const auto dp3d_dyn     = state.m_dp3d;
-  const auto vtheta_dp_dyn = state.m_vtheta_dp;
+  const auto phinh_i_dyn  = state.m_phinh_i;
 
   using MidColumn = decltype(Homme::subview(elems.m_derived.m_turb_shear_strain3d, 0, 0, 0));
   using IntColumn = decltype(Homme::subview(state.m_w_i, 0, 0, 0, 0));
@@ -332,8 +329,7 @@ void HommeDynamics::compute_vertical_derivs ()
       const auto u_mid = Homme::subview(v_dyn,     ie, n0, 0, igp, jgp);
       const auto v_mid = Homme::subview(v_dyn,     ie, n0, 1, igp, jgp);
       const auto w_int = Homme::subview(w_int_dyn, ie, n0,    igp, jgp);
-      const auto dp    = Homme::subview(dp3d_dyn,  ie, n0,    igp, jgp);
-      const auto vtheta_dp = Homme::subview(vtheta_dp_dyn, ie, n0, igp, jgp);
+      const auto phi_int = Homme::subview(phinh_i_dyn, ie, n0, igp, jgp);
 
       // Temporary interface columns for u,v
       Scalar u_int_buf[NUM_LEV_P];
@@ -358,34 +354,18 @@ void HommeDynamics::compute_vertical_derivs ()
       // 2) Compute dz on midpoint levels
       // ------------------------------------------
       //
-      // Use hydrostatic balance with virtual temperature to estimate layer
-      // thickness, which then sets the resolved vertical shear scale.
-      //
-      constexpr Real Rgas   = PhysicalConstants::Rgas;
+      // Use HOMME's interface geopotential directly for layer thickness. This
+      // keeps the vertical shear scale consistent with the dycore state.
       constexpr Real gravit = PhysicalConstants::g;
-      constexpr Real p0     = PhysicalConstants::p0;
-      constexpr Real kappa  = PhysicalConstants::kappa;
-
-      // Reconstruct interface pressure into a local scalar array.
-      Real p_int[NLEV_SCALAR_P];
-      p_int[0] = 0.0;
 
       for (int ilev = 0; ilev < nlev_scalar; ++ilev) {
-        const Real dpk = dp[ilev / VLEN][ilev % VLEN];
-        p_int[ilev+1] = p_int[ilev] + dpk;
-      }
+        const int ilev_pack = ilev / VLEN;
+        const int s = ilev % VLEN;
+        const Real phi_int_k = phi_int(ilev_pack)[s];
+        const Real phi_int_kp1 = (s < VLEN-1) ? phi_int(ilev_pack)[s+1] : phi_int(ilev_pack+1)[0];
+        const Real dz = (phi_int_k - phi_int_kp1) / gravit;
 
-      for (int ilev = 0; ilev < nlev_scalar; ++ilev) {
-        const Real dpk = dp[ilev / VLEN][ilev % VLEN];
-        const Real pmid = 0.5 * (p_int[ilev] + p_int[ilev+1]);
-
-        const Real theta_v = vtheta_dp[ilev / VLEN][ilev % VLEN] / dpk;
-        const Real exner   = std::pow(pmid / p0, kappa);
-        const Real Tv      = exner * theta_v;
-
-        Real dz = (Rgas * Tv / (pmid * gravit)) * dpk;
-
-        dz_mid[ilev / VLEN][ilev % VLEN] = dz;
+        dz_mid[ilev_pack][s] = dz;
       }
 
       team.team_barrier();
