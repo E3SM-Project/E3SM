@@ -11,6 +11,7 @@
 #include "share/property_checks/field_within_interval_check.hpp"
 #endif
 
+#include "share/field/field_utils.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/remap/inverse_remapper.hpp"
 #include "share/grid/se_grid.hpp"
@@ -225,9 +226,11 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   using namespace ekat::units;
   const auto layout2d = phys_grid->get_2d_scalar_layout();
 
+  auto degN = none.rename("degrees_north");
+  auto degE = none.rename("degrees_east");
   auto dofs = phys_grid->get_dofs_gids();
-  auto lat  = phys_grid->create_geometry_data("lat",layout2d,rad);
-  auto lon  = phys_grid->create_geometry_data("lon",layout2d,rad);
+  auto lat  = phys_grid->create_geometry_data("lat",layout2d,degN);
+  auto lon  = phys_grid->create_geometry_data("lon",layout2d,degE);
   auto area = phys_grid->create_geometry_data("area",layout2d,sr);
 
   using gid_type = AbstractGrid::gid_type;

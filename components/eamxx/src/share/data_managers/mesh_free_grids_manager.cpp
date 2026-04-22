@@ -150,9 +150,11 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
     auto layout_int = grid->get_vertical_layout(ILEV);
 
     auto mbar = (100*Pa).rename("mb");
+    auto degN = none.rename("degrees_north");
+    auto degE = none.rename("degrees_east");
 
-    auto lat  = grid->create_geometry_data("lat" ,  grid->get_2d_scalar_layout(), rad);
-    auto lon  = grid->create_geometry_data("lon" ,  grid->get_2d_scalar_layout(), rad);
+    auto lat  = grid->create_geometry_data("lat" ,  grid->get_2d_scalar_layout(), degN);
+    auto lon  = grid->create_geometry_data("lon" ,  grid->get_2d_scalar_layout(), degE);
     auto hyam = grid->create_geometry_data("hyam" , layout_mid, none);
     auto hybm = grid->create_geometry_data("hybm" , layout_mid, none);
     auto hyai = grid->create_geometry_data("hyai" , layout_int, none);
@@ -193,10 +195,12 @@ void MeshFreeGridsManager::
 load_lat_lon (const nonconstgrid_ptr_type& grid, const std::string& filename) const
 {
   using gid_type = AbstractGrid::gid_type;
-  const auto units = ekat::units::none;
 
-  auto lat = grid->create_geometry_data("lat" , grid->get_2d_scalar_layout(), units);
-  auto lon = grid->create_geometry_data("lon" , grid->get_2d_scalar_layout(), units);
+  auto degN = ekat::units::none.rename("degrees_north");
+  auto degE = ekat::units::none.rename("degrees_east");
+
+  auto lat = grid->create_geometry_data("lat" , grid->get_2d_scalar_layout(), degN);
+  auto lon = grid->create_geometry_data("lon" , grid->get_2d_scalar_layout(), degE);
 
   auto lat_v = lat.get_view<Real*,Host>();
   auto lon_v = lon.get_view<Real*,Host>();
