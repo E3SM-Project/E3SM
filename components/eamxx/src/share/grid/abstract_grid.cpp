@@ -729,15 +729,14 @@ get_remote_pids_and_lids (const gid_view_h& gids,
 void AbstractGrid::create_dof_fields (const int scalar2d_layout_rank)
 {
   using namespace ShortFieldTagsNames;
-  const auto units = ekat::units::Units::nondimensional();
 
   // The dof gids field is a 1d field, while lid2idx has rank 2.
   // For both, the 1st dim is the num of local dofs. The 2nd dime of
   // lid2idx is the rank of a 2d scalar layout.
   FieldLayout dof_layout({COL},{get_num_local_dofs()});
   FieldLayout lid2idx_layout({COL,CMP},{get_num_local_dofs(),scalar2d_layout_rank});
-  m_dofs_gids = Field(FieldIdentifier("gids",dof_layout,units,m_name,DataType::IntType));
-  m_lid_to_idx = Field(FieldIdentifier("lid2idx",lid2idx_layout,units,m_name,DataType::IntType));
+  m_dofs_gids = Field(FieldIdentifier("gids",dof_layout,ekat::units::none,m_name,DataType::IntType));
+  m_lid_to_idx = Field(FieldIdentifier("lid2idx",lid2idx_layout,ekat::units::none,m_name,DataType::IntType));
 
   m_dofs_gids.allocate_view();
   m_lid_to_idx.allocate_view();

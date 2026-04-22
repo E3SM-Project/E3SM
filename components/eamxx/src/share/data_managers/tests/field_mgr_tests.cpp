@@ -147,15 +147,13 @@ TEST_CASE("tracers_group", "") {
   std::vector<int> dims1 = {ncols1,nlevs};
   std::vector<int> dims2 = {ncols2,nlevs};
 
-  const auto nondim = Units::nondimensional();
-
   const std::string gn1 = "grid1";
   const std::string gn2 = "grid2";
 
-  FieldIdentifier qv_id("qv", {tags, dims1}, nondim, gn1);
-  FieldIdentifier a_id("a", {tags, dims1}, nondim, gn1);
-  FieldIdentifier b_id("b", {tags, dims2}, nondim, gn2);
-  FieldIdentifier c_id("c", {tags, dims1}, nondim, gn1);
+  FieldIdentifier qv_id("qv", {tags, dims1}, none, gn1);
+  FieldIdentifier a_id ("a",  {tags, dims1}, none, gn1);
+  FieldIdentifier b_id ("b",  {tags, dims2}, none, gn2);
+  FieldIdentifier c_id ("c",  {tags, dims1}, none, gn1);
 
   ekat::Comm comm(MPI_COMM_WORLD);
   auto g1 = create_point_grid(gn1,ncols1*comm.size(),nlevs,comm);

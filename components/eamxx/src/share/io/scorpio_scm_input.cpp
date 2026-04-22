@@ -104,9 +104,8 @@ void SCMInput::create_closest_col_info (double target_lat, double target_lon)
   // Read lat/lon fields
   const auto ncols = m_io_grid->get_num_local_dofs();
 
-  auto nondim = ekat::units::Units::nondimensional();
-  auto lat = m_io_grid->create_geometry_data("lat",m_io_grid->get_2d_scalar_layout(),nondim);
-  auto lon = m_io_grid->create_geometry_data("lon",m_io_grid->get_2d_scalar_layout(),nondim);
+  auto lat = m_io_grid->create_geometry_data("lat",m_io_grid->get_2d_scalar_layout(),ekat::units::none);
+  auto lon = m_io_grid->create_geometry_data("lon",m_io_grid->get_2d_scalar_layout(),ekat::units::none);
 
   std::vector<Field> latlon = {lat,lon};
 

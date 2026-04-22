@@ -64,7 +64,6 @@ void MAMDryDep::create_requests() {
       LEV, num_aero_modes, mam_coupling::num_modes_tag_name());
 
   using namespace ekat::units;
-  auto nondim = ekat::units::Units::nondimensional();
 
   auto m3 = m * m * m;  // meter cubed
 
@@ -88,7 +87,7 @@ void MAMDryDep::create_requests() {
   //----------- Variables from microphysics scheme -------------
 
   // Total cloud fraction [fraction] (Require only for building DS)
-  add_field<Required>("cldfrac_tot", scalar3d_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_tot", scalar3d_mid, none, grid_name);
 
   //----------- Variables from coupler (land component)---------
   // Obukhov length [m]
@@ -98,7 +97,7 @@ void MAMDryDep::create_requests() {
   add_field<Required>("ustar", scalar2d, m / s, grid_name);
 
   // Land fraction [fraction]
-  add_field<Required>("landfrac", scalar2d, nondim, grid_name);
+  add_field<Required>("landfrac", scalar2d, none, grid_name);
 
   // Friction velocity from land model [m/s]
   add_field<Required>("fv", scalar2d, m / s, grid_name);
@@ -109,11 +108,11 @@ void MAMDryDep::create_requests() {
   //----------- Variables from coupler (ice component)---------
 
   // Ice fraction [unitless]
-  add_field<Required>("icefrac", scalar2d, nondim, grid_name);
+  add_field<Required>("icefrac", scalar2d, none, grid_name);
 
   //----------- Variables from coupler (ocean component)---------
   // Ocean fraction [unitless]
-  add_field<Required>("ocnfrac", scalar2d, nondim, grid_name);
+  add_field<Required>("ocnfrac", scalar2d, none, grid_name);
 
   //----------- Variables from other mam4xx processes ------------
   // Geometric mean wet diameter for number distribution [m]
@@ -147,7 +146,7 @@ void MAMDryDep::create_requests() {
                       vector2d_pcnst, 1 / m2 / s, grid_name);
 
   // Fractional land use [fraction]
-  add_field<Computed>("fraction_landuse", vector2d_class, nondim, grid_name);
+  add_field<Computed>("fraction_landuse", vector2d_class, none, grid_name);
   // -------------------------------------------------------------
   // setup to enable reading fractional land use file
   // -------------------------------------------------------------

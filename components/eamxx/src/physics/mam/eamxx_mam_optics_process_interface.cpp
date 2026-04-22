@@ -39,7 +39,6 @@ void MAMOptics::create_requests() {
   // Define the different field layouts that will be used for this process
 
   // Define aerosol optics fields computed by this process.
-  auto nondim = Units::nondimensional();
   // 3D layout for short/longwave aerosol fields: columns, number of
   // short/longwave band, nlev
   FieldLayout scalar3d_swband =
@@ -65,18 +64,18 @@ void MAMOptics::create_requests() {
   add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
 
   // shortwave aerosol scattering asymmetry parameter [unitless]
-  add_field<Computed>("aero_g_sw", scalar3d_swband, nondim, grid_name);
+  add_field<Computed>("aero_g_sw", scalar3d_swband, none, grid_name);
 
   // shortwave aerosol single-scattering albedo [unitless]
-  add_field<Computed>("aero_ssa_sw", scalar3d_swband, nondim, grid_name);
+  add_field<Computed>("aero_ssa_sw", scalar3d_swband, none, grid_name);
 
   // shortwave aerosol extinction optical depth
-  add_field<Computed>("aero_tau_sw", scalar3d_swband, nondim, grid_name);
+  add_field<Computed>("aero_tau_sw", scalar3d_swband, none, grid_name);
 
   // longwave aerosol extinction optical depth [unitless]
-  add_field<Computed>("aero_tau_lw", scalar3d_lwband, nondim, grid_name);
+  add_field<Computed>("aero_tau_lw", scalar3d_lwband, none, grid_name);
 
-  add_field<Computed>("aodvis", scalar2d, nondim, grid_name);
+  add_field<Computed>("aodvis", scalar2d, none, grid_name);
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios

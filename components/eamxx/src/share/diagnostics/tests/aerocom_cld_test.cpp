@@ -37,7 +37,6 @@ TEST_CASE("aerocom_cld") {
   // A time stamp
   util::TimeStamp t0({2024, 1, 1}, {0, 0, 0});
 
-  const auto nondim = Units::nondimensional();
   const auto micron = m / 1000000;
 
   // Create a grids manager - single column for these tests
@@ -65,7 +64,7 @@ TEST_CASE("aerocom_cld") {
                          grid->name());
   FieldIdentifier ei_fid("eff_radius_qi", scalar2d_layout, micron,
                          grid->name());
-  FieldIdentifier cd_fid("cldfrac_tot", scalar2d_layout, nondim, grid->name());
+  FieldIdentifier cd_fid("cldfrac_tot", scalar2d_layout, none, grid->name());
   FieldIdentifier nc_fid("nc", scalar2d_layout, 1 / kg, grid->name());
   FieldIdentifier ni_fid("ni", scalar2d_layout, 1 / kg, grid->name());
 

@@ -52,12 +52,11 @@ public:
     using namespace ShortFieldTagsNames;
     const auto grid = m_grids_manager->get_grid("point_grid");
     const auto& grid_name = grid->name();
-    auto units = ekat::units::Units::nondimensional();
     auto layout = grid->get_3d_scalar_layout(LEV);
-    add_field<Required>("my_f",layout,units,grid_name);
+    add_field<Required>("my_f",layout,ekat::units::none,grid_name);
 
     // We have to initialize the m_diagnostic_output:
-    FieldIdentifier fid ("MyDiag", layout, units, grid_name);
+    FieldIdentifier fid ("MyDiag", layout, ekat::units::none, grid_name);
     m_diagnostic_output = Field(fid);
     m_diagnostic_output.allocate_view();
     m_one = m_diagnostic_output.clone("one");
@@ -135,7 +134,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
 
   auto fm = std::make_shared<FieldManager>(grid);
 
-  const auto units = ekat::units::Units::nondimensional();
+  const auto units = ekat::units::none;
   FL fl ({COL,LEV}, {nlcols,nlevs});
 
   FID fid("my_f",fl,units,grid->name());

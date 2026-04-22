@@ -185,12 +185,11 @@ build (const std::shared_ptr<const AbstractGrid>& grid,
 
   // Only read the lat/lon/area vars if they are present. If one is present, we assume they all are
   if (scorpio::has_var(map_file,"yc"+suffix)) {
-    const auto nondim = ekat::units::Units::nondimensional();
-    ekat::units::Units deg(nondim,"deg");
+    auto deg = ekat::units::none.rename("deg");
 
     gen_grid->create_geometry_data("lat", gen_grid->get_2d_scalar_layout(),deg);
     gen_grid->create_geometry_data("lon", gen_grid->get_2d_scalar_layout(),deg);
-    gen_grid->create_geometry_data("area",gen_grid->get_2d_scalar_layout(),nondim);
+    gen_grid->create_geometry_data("area",gen_grid->get_2d_scalar_layout(),ekat::units::sr);
     gen_grid->read_geometry_data(map_file,
                                  {"lat","lon","area"},
                                  {"yc"+suffix,"xc"+suffix,"area"+suffix},
@@ -386,7 +385,7 @@ setup_latlon_data(const std::shared_ptr<AbstractGrid>& grid,
   using namespace ShortFieldTagsNames;
 
   // Add lat/lon to the temp grid, and read from map file
-  auto nondim = ekat::units::Units::nondimensional();
+  auto nondim = ekat::units::none;
   ekat::units::Units deg(nondim,"degrees");
 
   // Declare lat/lon and read them from the map file.

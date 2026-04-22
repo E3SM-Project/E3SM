@@ -30,7 +30,6 @@ create_requests() {
   auto grid             = m_grids_manager->get_grid("physics");
   const auto &grid_name = grid->name();
 
-  const auto nondim = Units::nondimensional();
   const auto micron = m / 1000000;
 
   // Set the index map and units map
@@ -64,7 +63,7 @@ create_requests() {
   add_field<Required>("qi",             scalar3d, kg / kg, grid_name);
   add_field<Required>("eff_radius_qc",  scalar3d, micron,  grid_name);
   add_field<Required>("eff_radius_qi",  scalar3d, micron,  grid_name);
-  add_field<Required>("cldfrac_tot",    scalar3d, nondim,  grid_name);
+  add_field<Required>("cldfrac_tot",    scalar3d, none,    grid_name);
   add_field<Required>("nc",             scalar3d, 1 / kg,  grid_name);
   add_field<Required>("ni",             scalar3d, 1 / kg,  grid_name);
 
@@ -74,7 +73,7 @@ create_requests() {
   m_dz.allocate_view();
 
   // Construct and allocate the output field
-  FieldIdentifier fid(name() + m_topbot, vector2d, nondim, grid_name);
+  FieldIdentifier fid(name() + m_topbot, vector2d, none, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 

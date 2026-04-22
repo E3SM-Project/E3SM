@@ -44,10 +44,9 @@ void ZMDeepConvection::create_requests ()
   m_ncol = m_grid->get_num_local_dofs();
   m_nlev = m_grid->get_num_vertical_levels();
 
-  const auto nondim = Units::nondimensional();
-  const auto m2     = pow(m,2);
-  const auto s2     = pow(s,2);
-  const auto K2     = pow(K,2);
+  const auto m2 = pow(m,2);
+  const auto s2 = pow(s,2);
+  const auto K2 = pow(K,2);
 
   FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();        // 2D variables
   FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(LEV);    // 3D variables at mid-levels
@@ -55,16 +54,16 @@ void ZMDeepConvection::create_requests ()
   FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(LEV,2);  // horiz_wind field
 
   // Input variables
-  add_field<Required>("p_mid",                scalar3d_mid, Pa,     grid_name, pack_size);
-  add_field<Required>("p_int",                scalar3d_int, Pa,     grid_name, pack_size);
-  add_field<Required>("pseudo_density",       scalar3d_mid, Pa,     grid_name, pack_size);
-  add_field<Required>("phis",                 scalar2d    , m2/s2,  grid_name);
-  add_field<Required>("omega",                scalar3d_mid, Pa/s,   grid_name, pack_size);
-  add_field<Required>("cldfrac_tot",          scalar3d_mid, nondim, grid_name, pack_size);
-  add_field<Required>("pbl_height",           scalar2d    , m,      grid_name);
-  add_field<Required>("landfrac",             scalar2d    , nondim, grid_name);
-  add_field<Required>("thl_sec",              scalar3d_int, K2,     grid_name, pack_size); // thetal variance for PBL temperature perturbation
-  add_tracer<Required>("qc",                  m_grid,       kg/kg,             pack_size);
+  add_field<Required>("p_mid",                scalar3d_mid, Pa,    grid_name, pack_size);
+  add_field<Required>("p_int",                scalar3d_int, Pa,    grid_name, pack_size);
+  add_field<Required>("pseudo_density",       scalar3d_mid, Pa,    grid_name, pack_size);
+  add_field<Required>("phis",                 scalar2d    , m2/s2, grid_name);
+  add_field<Required>("omega",                scalar3d_mid, Pa/s,  grid_name, pack_size);
+  add_field<Required>("cldfrac_tot",          scalar3d_mid, none,  grid_name, pack_size);
+  add_field<Required>("pbl_height",           scalar2d    , m,     grid_name);
+  add_field<Required>("landfrac",             scalar2d    , none,  grid_name);
+  add_field<Required>("thl_sec",              scalar3d_int, K2,    grid_name, pack_size); // thetal variance for PBL temperature perturbation
+  add_tracer<Required>("qc",                  m_grid,       kg/kg,            pack_size);
 
   // Input/Output variables
   add_field <Updated>("T_mid",                scalar3d_mid, K,      grid_name, pack_size);
@@ -76,10 +75,10 @@ void ZMDeepConvection::create_requests ()
   add_field <Updated>("precip_ice_surf_mass", scalar2d,     kg/m2,  grid_name, "ACCUMULATED");
 
   // Diagnostic Outputs
-  add_field<Computed>("zm_prec",              scalar2d,     m/s,    grid_name);
-  add_field<Computed>("zm_snow",              scalar2d,     m/s,    grid_name);
-  add_field<Computed>("zm_cape",              scalar2d,     J/kg,   grid_name);
-  add_field<Computed>("zm_activity",          scalar2d,     nondim, grid_name);
+  add_field<Computed>("zm_prec",              scalar2d,     m/s,  grid_name);
+  add_field<Computed>("zm_snow",              scalar2d,     m/s,  grid_name);
+  add_field<Computed>("zm_cape",              scalar2d,     J/kg, grid_name);
+  add_field<Computed>("zm_activity",          scalar2d,     none, grid_name);
 
   add_field<Computed>("zm_T_mid_tend",        scalar3d_mid, K/s,    grid_name, pack_size);
   add_field<Computed>("zm_qv_tend",           scalar3d_mid, kg/kg/s,grid_name, pack_size);

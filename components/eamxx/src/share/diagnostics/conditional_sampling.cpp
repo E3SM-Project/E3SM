@@ -129,7 +129,7 @@ void ConditionalSampling::create_requests()
   // Special case: if lhs field is "lev", we don't need a lhs field.
   // We can actually precompute the output mask for a 1d col
   if (m_lhs_is_lev) {
-    FieldIdentifier lev_fid("lev_mask",g->get_vertical_layout(LEV),ekat::units::Units::nondimensional(),g->name(),DataType::IntType);
+    FieldIdentifier lev_fid("lev_mask",g->get_vertical_layout(LEV),ekat::units::none,g->name(),DataType::IntType);
     m_lev_mask = Field(lev_fid,true);
     auto lev_idx = m_lev_mask.clone("lev_idx");
     auto lev_idx_h = lev_idx.get_view<int*,Host>();
@@ -153,7 +153,7 @@ void ConditionalSampling::initialize_impl(const RunType /*run_type*/)
       m_diagnostic_output = m_lev_mask.clone(m_diag_name);
     } else {
       auto dfid = get_field_in(m_condition_lhs).get_header().get_identifier().clone(m_diag_name);
-      dfid.reset_dtype(DataType::IntType).reset_units(ekat::units::Units::nondimensional());
+      dfid.reset_dtype(DataType::IntType).reset_units(ekat::units::none);
       m_diagnostic_output = Field(dfid,true);
     }
   } else {

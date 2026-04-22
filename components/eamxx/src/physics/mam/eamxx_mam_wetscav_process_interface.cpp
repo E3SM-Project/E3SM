@@ -91,13 +91,10 @@ MAMWetscav::create_requests()
   // Stratiform rain production rate [kg/kg/s]
   add_field<Required>("precip_total_tend", scalar3d_mid, kg / kg / s, grid_name);
 
-  // For variables that are non dimensional (e.g., fractions etc.)
-  static constexpr auto nondim = Units::nondimensional();
-
   //----------- Variables from macrophysics scheme -------------
 
   // Total cloud fraction [fraction]
-  add_field<Required>("cldfrac_liq", scalar3d_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_liq", scalar3d_mid, none, grid_name);
 
   // ---------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
@@ -160,7 +157,7 @@ MAMWetscav::create_requests()
   add_field<Computed>("dgnumwet", scalar3d_mid_nmodes, m, grid_name);
 
   // Fraction of transported species that are insoluble [fraction]
-  add_field<Computed>("fracis", scalar3d_mid, nondim, grid_name);
+  add_field<Computed>("fracis", scalar3d_mid, none, grid_name);
 
   // Aerosol wet deposition (interstitial) [kg/m2/s]
   add_field<Computed>("aerdepwetis", scalar2d_pcnst, kg / m2 / s, grid_name);

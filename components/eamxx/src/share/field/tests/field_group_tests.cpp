@@ -18,7 +18,7 @@ TEST_CASE("field_group") {
   constexpr int ndims = 4;
   constexpr int nlevs = 8;
 
-  FID fid ("V",FL({COL,CMP,LEV},{ncols,ndims,nlevs}),Units::nondimensional(),"the_grid");
+  FID fid ("V",FL({COL,CMP,LEV},{ncols,ndims,nlevs}),none,"the_grid");
   Field f (fid);
   f.allocate_view();
 

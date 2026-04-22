@@ -64,9 +64,8 @@ TEST_CASE("property_checks", "") {
   // Create a point grid
   const auto grid = create_point_grid("some_grid",num_lcols*comm.size(),nlevs,comm);
   const auto layout = grid->get_2d_scalar_layout();
-  const auto units = ekat::units::Units::nondimensional();
-  const auto& lat = grid->create_geometry_data("lat",layout,units);
-  const auto& lon = grid->create_geometry_data("lon",layout,units);
+  const auto& lat = grid->create_geometry_data("lat",layout,rad);
+  const auto& lon = grid->create_geometry_data("lon",layout,rad);
   auto lat_h = lat.get_strided_view<Real*,Host>();
   auto lon_h = lon.get_strided_view<Real*,Host>();
   auto dofs = grid->get_dofs_gids();

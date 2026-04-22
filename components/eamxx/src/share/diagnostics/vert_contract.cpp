@@ -81,7 +81,7 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/)
 
   auto diag_units = fid.get_units();
 
-  auto w_units = Units::nondimensional();
+  auto w_units = none;
   // set up the weighting field
   if (m_weighting_method == "dp") {
     m_weight = get_field_in("pseudo_density").clone("vert_contract_wts");

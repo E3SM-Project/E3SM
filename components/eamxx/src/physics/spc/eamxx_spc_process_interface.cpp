@@ -23,7 +23,6 @@ void SPC::create_requests()
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  constexpr auto nondim = Units::nondimensional();
   constexpr int ps = SCREAM_PACK_SIZE;
 
   m_model_grid = m_grids_manager->get_grid("physics");
@@ -55,7 +54,7 @@ void SPC::initialize_impl (const RunType /* run_type */)
 
   auto pmid = get_field_in("p_mid");
   
-  util::TimeLine timeline;
+  auto timeline = util::TimeLine::Linear;
   util::TimeStamp ref_ts;
   if (time_interpolation_method=="yearly_periodic") {
     timeline = util::TimeLine::YearlyPeriodic;

@@ -52,8 +52,7 @@ void HistogramDiag::initialize_impl(const RunType /*run_type*/) {
   const int num_bins = m_bin_reals.size()-1;
   FieldLayout diagnostic_layout({CMP}, {num_bins}, {"bin"});
   FieldIdentifier diagnostic_id(m_diag_name, diagnostic_layout,
-                                FieldIdentifier::Units::nondimensional(),
-                                field_id.get_grid_name());
+                                ekat::units::none, field_id.get_grid_name());
   m_diagnostic_output = Field(diagnostic_id);
   m_diagnostic_output.allocate_view();
 

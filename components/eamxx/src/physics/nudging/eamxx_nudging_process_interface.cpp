@@ -539,10 +539,8 @@ Field Nudging::create_helper_field (const std::string& name,
                                              const std::string& grid_name,
                                              const int ps)
 {
-  using namespace ekat::units;
-
   // For helper fields we don't bother w/ units, so we set them to non-dimensional
-  FieldIdentifier id(name,layout,Units::nondimensional(),grid_name);
+  FieldIdentifier id(name,layout,ekat::units::none,grid_name);
 
   // Create the field. Init with NaN's, so we spot instances of uninited memory usage
   Field f(id);
