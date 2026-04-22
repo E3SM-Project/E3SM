@@ -190,10 +190,13 @@ TEST_CASE ("update") {
       f3.get_header().set_may_be_filled(true);
       f2.deep_copy(1.0);
       f2.update(f3,1,1);
-      if (not views_are_equal(f2,one)) {
-        print_field_hyperslab(f2);
-      }
       REQUIRE (views_are_equal(f2,one));
+
+      // Check handling of additive scalar
+      f3.deep_copy(-2);
+      f2.deep_copy(2);
+      f3.update(f2,0,0,1);
+      REQUIRE (views_are_equal(f3,one));
     }
 
     SECTION ("int") {
@@ -223,6 +226,12 @@ TEST_CASE ("update") {
       f2.deep_copy(1);
       f2.update(f3,1,1);
       REQUIRE (views_are_equal(f2,one));
+
+      // Check handling of additive scalar
+      f3.deep_copy(-2);
+      f2.deep_copy(2);
+      f3.update(f2,0,0,1);
+      REQUIRE (views_are_equal(f3,one));
     }
   }
 }
