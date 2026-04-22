@@ -8,8 +8,10 @@
 
 import multiprocessing as mp
 import importlib
+import sys
 from pathlib import Path
-import shared_data
+from . import shared_data
+from .shared_data import TopoData, TopoManager
 
 
 ########## define helper functions for land_type run() here
@@ -43,11 +45,10 @@ def run(active, out_fname, com_config_dict, out_grid_data, manager, grid_manager
             sys.exit(1)
 
     # set up the topography module shared data structure
-    TopoManager.register('TopoData', TopoData)
     topo_manager = TopoManager()
-	topo_manager.start()
-	topo_out_data = topo_manager.TopoData()
-	topo_out_data.allocate()
+    topo_manager.start()
+    topo_out_data = topo_manager.TopoData()
+    topo_out_data.allocate()
 
     print(f"Processing topography module with parameters:")
     # todo: print the parameters here

@@ -79,6 +79,25 @@ class GridData:
         self.lon_vtx  = np.zeros((n_cells, n_vertices), dtype=np.float64)
         self.lat_vtx  = np.zeros((n_cells, n_vertices), dtype=np.float64)
 
+    # --- getter methods (needed for proxy access via GridManager) ---
+    def get_cell_id(self):   return self.cell_id
+    def get_lon_xy(self):    return self.lon_xy
+    def get_lat_xy(self):    return self.lat_xy
+    def get_cell_area(self): return self.cell_area
+    def get_landfrac(self):  return self.landfrac
+    def get_lon_vtx(self):   return self.lon_vtx
+    def get_lat_vtx(self):   return self.lat_vtx
+    def get_num_cells(self): return self.num_cells
+
+    # --- setter methods (needed for proxy access via GridManager) ---
+    def set_cell_id(self, v):   self.cell_id   = v
+    def set_lon_xy(self, v):    self.lon_xy    = v
+    def set_lat_xy(self, v):    self.lat_xy    = v
+    def set_cell_area(self, v): self.cell_area = v
+    def set_landfrac(self, v):  self.landfrac  = v
+    def set_lon_vtx(self, v):   self.lon_vtx   = v
+    def set_lat_vtx(self, v):   self.lat_vtx   = v
+
 
 # ---------------------------------------------------------------------------
 # GridManager: custom BaseManager that can vend GridData proxy objects to
@@ -87,7 +106,7 @@ class GridData:
 class GridManager(BaseManager):
     pass
 
-
+GridManager.register('GridData', GridData)
 
 # ---------------------------------------------------------------------------
 # TopoData: custom data structure for topography data shared across
@@ -131,7 +150,7 @@ class TopoData:
 class TopoManager(BaseManager):
     pass
 
-
+TopoManager.register('TopoData', TopoData)
 
 
 ## todo: add some aggregate land cover arrays to ltData for the simple land cover data
@@ -256,9 +275,9 @@ class LtData:
         self.fract_urea         = np.zeros(n_cells, dtype=np.float64)
         self.soilph             = np.zeros(n_cells, dtype=np.float64)
         self.abm                = np.zeros(n_cells, dtype=np.float64)
-        self.pct_pft            = np.zeros((n_cells, n_pft),      dtype=np.float64)
-        self.nfert              = np.zeros((n_cells, n_pft),      dtype=np.float64)
-        self.pfert              = np.zeros((n_cells, n_pft),      dtype=np.float64)
+        self.pct_pft            = np.zeros((n_cells, n_pfts),      dtype=np.float64)
+        self.nfert              = np.zeros((n_cells, n_pfts),      dtype=np.float64)
+        self.pfert              = np.zeros((n_cells, n_pfts),      dtype=np.float64)
         self.harvest_frac       = np.zeros((n_cells, n_harvest),  dtype=np.float64)
         self.harvest_mass       = np.zeros((n_cells, n_harvest),  dtype=np.float64)
         self.grazing_frac       = np.zeros((n_cells, n_grazing),  dtype=np.float64)
@@ -267,15 +286,15 @@ class LtData:
         self.bin_centers        = np.zeros(n_elev,          dtype=np.float64)
         self.bin_edges          = np.zeros(n_elev_edges,    dtype=np.float64)
         self.pct_urban          = np.zeros((n_cells, n_density),  dtype=np.float64)
-        self.monthly_lai        = np.zeros((n_cells, n_pft,  n_month), dtype=np.float64)
-        self.monthly_sai        = np.zeros((n_cells, n_pft,  n_month), dtype=np.float64)
-        self.monthly_height_top = np.zeros((n_cells, n_pft,  n_month), dtype=np.float64)
-        self.monthly_height_bot = np.zeros((n_cells, n_pft,  n_month), dtype=np.float64)
-        self.veg_voc_emit       = np.zeros((n_cells, numvocveg),  dtype=np.float64)
-        self.alb_improad        = np.zeros((n_cells, numrad, numsolar), dtype=np.float64)
-        self.alb_perroad        = np.zeros((n_cells, numrad, numsolar), dtype=np.float64)
-        self.alb_roof           = np.zeros((n_cells, numrad, numsolar), dtype=np.float64)
-        self.alb_wall           = np.zeros((n_cells, numrad, numsolar), dtype=np.float64)
+        self.monthly_lai        = np.zeros((n_cells, n_pfts, n_month), dtype=np.float64)
+        self.monthly_sai        = np.zeros((n_cells, n_pfts, n_month), dtype=np.float64)
+        self.monthly_height_top = np.zeros((n_cells, n_pfts, n_month), dtype=np.float64)
+        self.monthly_height_bot = np.zeros((n_cells, n_pfts, n_month), dtype=np.float64)
+        self.veg_voc_emit       = np.zeros((n_cells, n_vocveg),   dtype=np.float64)
+        self.alb_improad        = np.zeros((n_cells, n_rad, n_solar), dtype=np.float64)
+        self.alb_perroad        = np.zeros((n_cells, n_rad, n_solar), dtype=np.float64)
+        self.alb_roof           = np.zeros((n_cells, n_rad, n_solar), dtype=np.float64)
+        self.alb_wall           = np.zeros((n_cells, n_rad, n_solar), dtype=np.float64)
         self.tk_roof            = np.zeros((n_cells, n_levurb),   dtype=np.float64)
         self.tk_wall            = np.zeros((n_cells, n_levurb),   dtype=np.float64)
         self.tk_improad         = np.zeros((n_cells, n_levurb),   dtype=np.float64)
@@ -291,7 +310,7 @@ class LtData:
 class LtManager(BaseManager):
     pass
 
-
+LtManager.register('LtData', LtData)
 
 
 

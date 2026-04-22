@@ -8,7 +8,8 @@ import importlib
 import json
 import sys
 from pathlib import Path
-import shared_data
+from . import shared_data
+from .shared_data import GridData, GridManager
 
 def load_config(config_path):
     with open(config_path, 'r') as f:
@@ -32,7 +33,6 @@ def main(config_path):
 	com_config_dict = manager.dict(temp_dict)
 
 	# create the shared landgen out grid shared data structure
-	GridManager.register('GridData', GridData)
 	grid_manager = GridManager()
 	grid_manager.start()
 	out_grid_data = grid_manager.GridData()
@@ -44,11 +44,11 @@ def main(config_path):
 		name = mod['name']
 		params = mod.get('params', {})
 		try:
-			module = importlib.import_module(name)
+			module = importlib.import_module(f'landgen.{name}')
 			if hasattr(module, 'run'):
 				print(f"Running module: {name}")
-				run_list = [**params, com_config_dict, out_grid_data, manager, grid_manager]
-				module.run(run_list)
+				run_list = [*params.values(), com_config_dict, out_grid_data, manager, grid_manager]
+				module.run(*run_list)
 			else:
 				print(f"Module {name} does not have a 'run' function.")
 		except ImportError as e:

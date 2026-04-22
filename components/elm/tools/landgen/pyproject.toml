@@ -10,14 +10,15 @@ readme = "README.md"
 license = {text = "????"}
 authors = [
     { name = "Alan Di Vittorio", email = "avdivittorio@lbl.gov" },
+    { name = "Eva Sinha", email = "eva.sinha@pnnl.gov" },
     { name = "add rest of folks", email = "your_email@example.com" },
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
-    "Intended Audience :: E3SM Developers",
-    "License :: OSI Approved :: ????",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
-    "Operating System :: HPC Unix",
+    "Operating System :: Unix",
 ]
 dependencies = [
     # List your project dependencies here (e.g., "numpy >= 1.20")

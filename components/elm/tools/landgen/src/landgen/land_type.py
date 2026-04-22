@@ -8,7 +8,9 @@
 import multiprocessing as mp
 import importlib
 from pathlib import Path
-import shared_data
+from . import shared_data
+from .shared_data import LtData, LtManager
+import numpy as np
 
 ########## define helper functions for land_type here
 
@@ -77,32 +79,43 @@ def _process_single_year(lt_year_data, year, prev_year, out_fname, lc_rs_path, l
     #  and the lat/lon and cell ids will be different for each chunk
     # this info will have to be passed to the run functions below
 
+    # ll_limits: the full list of (min_lat, max_lat, min_lon, max_lon) tuples for all chunks
+    ll_limits = chunk_ll_limits
+    # cell_ids: all land cell ids from the shared grid data structure
+    cell_ids = out_grid_data.get_cell_id()
+
 
 
     # Process landcover
-    ## todo: determine prev_fname from out_fname and prev_year
+    # derive prev_fname from out_fname and prev_year by inserting the year before the file extension
+    # e.g. landgen_land_type.nc -> landgen_land_type_2009.nc
+    if prev_year is not None:
+        stem, suffix = out_fname.rsplit('.', 1)
+        prev_fname = f"{stem}_{prev_year}.{suffix}"
+    else:
+        prev_fname = None
     # each module's run function calls the multiple processes because these modules need to be done sequentially
-    landcover = importlib.import_module('landcover')
+    landcover = importlib.import_module('landgen.landcover')
     lc_data = landcover.run(lt_year_data, year, prev_year, prev_fname, lc_rs_path, lc_rs_name,
                             com_config_dict, out_grid_data, ll_limits, cell_ids, manager, grid_manager, lt_manager)
 
     # Process crop data - adjust lc crop area
-    crop = importlib.import_module('crop')
+    crop = importlib.import_module('landgen.crop')
     lc_data = crop.run(lt_year_data, year, prev_year, crop_path, com_config_dict, out_grid_data, ll_limits, cell_ids,
                        manager, grid_manager, lt_manager)
 
     # Process urban data - adjust lc urban area
-    urban = importlib.import_module('urban')
+    urban = importlib.import_module('landgen.urban')
     lc_data = urban.run(lt_year_data, year, prev_year, urban_path, com_config_dict, out_grid_data, ll_limits, cell_ids,
                         manager, grid_manager, lt_manager)
 
     # Process lake data - adjust lc lake area
-    lake = importlib.import_module('lake')
+    lake = importlib.import_module('landgen.lake')
     lc_data = lake.run(lt_year_data, year, prev_year, lake_path, com_config_dict, out_grid_data, ll_limits, cell_ids,
                        manager, grid_manager, lt_manager)
 
     # Process ice data - adjust lc ice area
-    ice = importlib.import_module('ice')
+    ice = importlib.import_module('landgen.ice')
     lc_data = ice.run(lt_year_data, year, prev_year, ice_path, com_config_dict, out_grid_data, ll_limits, cell_ids,
                       manager, grid_manager, lt_manager)
 
@@ -113,22 +126,22 @@ def _process_single_year(lt_year_data, year, prev_year, out_fname, lc_rs_path, l
     #lc_data = wetland.run(lt_year_data, year, prev_year, wetland_path, com_config_dict, out_grid_data, ll_limits, cell_ids, manager, grid_manager, lt_manager)
 
     # Process harvest/grazing data - adjust harvest/grazing area
-    harvest = importlib.import_module('harvest')
+    harvest = importlib.import_module('landgen.harvest')
     lc_data = harvest.run(lt_year_data, year, prev_year, harvest_path, harvest_name, grazing_path, grazing_names,
                           com_config_dict, out_grid_data, manager, grid_manager, lt_manager)
 
     # Normalize cell
-    normalize_cell = importlib.import_module('normalize_cell')
+    normalize_cell = importlib.import_module('landgen.normalize_cell')
     lc_data = normalize_cell.fill_land(lt_year_data, out_grid_data, ll_limits, cell_ids, manager, grid_manager, lt_manager)       # fill_land
     lc_data = normalize_cell.reconcile_ocean(lt_year_data, out_grid_data, ll_limits, cell_ids, manager, grid_manager, lt_manager)  # reconcile_ocean
 
     # Process veg-associated data
-    veg_assoc = importlib.import_module('veg_assoc')
+    veg_assoc = importlib.import_module('landgen.veg_assoc')
     lc_data = veg_assoc.run(lt_year_data, year, prev_year, assoc_path, com_config_dict, out_grid_data, ll_limits, cell_ids,
                             manager, grid_manager, lt_manager)
 
     # Ensure consistency
-    consistency = importlib.import_module('consistency')
+    consistency = importlib.import_module('landgen.consistency')
     lc_data = consistency.run(lt_year_data, year, out_grid_data, ll_limits, cell_ids, manager, grid_manager, lt_manager)
 
     return
@@ -153,14 +166,18 @@ def run(active, out_fname, lc_rs_path, lc_rs_name, crop_path, urban_path, lake_p
 
     # set up the land_type module shared data structure
     # this holds only one year of data, so write it each year
-    LtManager.register('LtData', LtData)
     lt_manager = LtManager()
-	lt_manager.start()
-	lt_year_data = lt_manager.LtData()
-	lt_year_data.allocate()
+    lt_manager.start()
+    lt_year_data = lt_manager.LtData()
+    lt_year_data.allocate()
 
     print(f"Processing land_type module with parameters:")
     # todo: print the parameters here
+
+    # extract common parameters from shared config dict
+    start_year = com_config_dict['start_year']
+    end_year   = com_config_dict['end_year']
+    out_path   = com_config_dict['out_path']
 
     # processing code for land_type
     years = np.arange(start_year, end_year + 1)

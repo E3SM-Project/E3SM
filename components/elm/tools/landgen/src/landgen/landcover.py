@@ -8,10 +8,11 @@
 import multiprocessing as mp
 #import importlib
 from pathlib import Path
-import shared_data
+from . import shared_data
 import landcover_remote_sensing # not created yet
 import transitions # not created yet
 import normalize_cell # not created yet
+import pandas as pd
 import os
 
 ########## define helper functions for landcover run() here
@@ -134,8 +135,8 @@ def run(lt_year_data, year, prev_year, prev_fname, lc_rs_path, lc_rs_name,
         print("OMP_NUM_THREADS environment variable is not set.")
         # If not set, set to total cores on the node
         omp_threads_int = mp.cpu_count()
-        print(f"Using total cores: {omp_threads_int}, but this may fail if
-              SBATCH --cpus-per-task is set to a lower number or SBATCH --exclusive is not set")
+        print(f"Using total cores: {omp_threads_int}, but this may fail if "
+              "SBATCH --cpus-per-task is set to a lower number or SBATCH --exclusive is not set")
 
     # set up the pool and call the landcover_process() function for each chunk of data
     # chunks are defined by the lat-lon limits and corresponding landgen grid cell ids for the chunk;
@@ -144,10 +145,10 @@ def run(lt_year_data, year, prev_year, prev_fname, lc_rs_path, lc_rs_name,
     # the results will be stored directly in the lt_year_data shared structure
 
     # get the manager locks for the shared data structures
-    # should not need the managers in the worker process
-    man_lock = manager.Lock()
-    grid_lock = grid_manager.Lock()
-    lt_lock = lt_manager.Lock()
+    # all locks come from the main mp.Manager() (SyncManager); custom managers don't support Lock()
+    man_lock  = manager.Lock()
+    grid_lock = manager.Lock()
+    lt_lock   = manager.Lock()
 
 ## todo: figure out the data to pass here
 # each chunk is a tuple of the arguments for landcover_process, residing in a list
@@ -156,6 +157,32 @@ def run(lt_year_data, year, prev_year, prev_fname, lc_rs_path, lc_rs_name,
 #          com_config_dict, out_grid_data, ll_limits1, cell_ids1, man_lock, grid_lock, lt_lock),
 #          (lt_year_data, year, prev_year, prev_fname, lc_rs_path, lc_rs_name,
 #           com_config_dict, out_grid_data, ll_limits2, cell_ids2, man_lock, grid_lock, lt_lock), etc]
+
+    # load HEALPix mesh to map ll_limits chunks to cell ids
+    global_parquet_path = (
+        Path(com_config_dict['source_data_path'])
+        / Path(com_config_dict['landgen_grid_path']).parent
+        / 'merged_land_cells.parquet'
+    )
+    global_mesh_df = pd.read_parquet(global_parquet_path)
+
+    data_chunks = []
+    for ll in ll_limits:
+        min_lat, max_lat, min_lon, max_lon = ll
+        mask = (
+            (global_mesh_df['lat'] >= min_lat) & (global_mesh_df['lat'] < max_lat) &
+            (global_mesh_df['lon'] >= min_lon) & (global_mesh_df['lon'] < max_lon)
+        )
+        chunk_cell_ids = global_mesh_df.loc[mask, 'cellid'].values
+        if len(chunk_cell_ids) == 0:
+            continue  # skip ocean-only or empty chunks
+        data_chunks.append((
+            lt_year_data, year, prev_year, prev_fname, lc_rs_path, lc_rs_name,
+            com_config_dict, out_grid_data, ll, chunk_cell_ids,
+            man_lock, grid_lock, lt_lock,
+        ))
+
+    print(f"  Submitting {len(data_chunks)} landcover chunks to pool of {omp_threads_int} workers")
 
 
     with mp.Pool(processes=omp_threads_int) as pool:

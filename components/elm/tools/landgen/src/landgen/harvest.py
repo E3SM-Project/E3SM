@@ -7,9 +7,9 @@
 
 import multiprocessing as mp
 from pathlib import Path
-import shared_data
-import landgen_io
-import normalize_cell # not created yet
+from . import shared_data
+from . import landgen_io
+# import normalize_cell # not created yet
 import pandas as pd
 import os
 
@@ -114,8 +114,8 @@ def run(lt_year_data, year, prev_year, harvest_path, harvest_name, grazing_path,
         print("OMP_NUM_THREADS environment variable is not set.")
         # If not set, set to total cores on the node
         omp_threads_int = mp.cpu_count()
-        print(f"Using total cores: {omp_threads_int}, but this may fail if
-              SBATCH --cpus-per-task is set to a lower number or SBATCH --exclusive is not set")
+        print(f"Using total cores: {omp_threads_int}, but this may fail if "
+              "SBATCH --cpus-per-task is set to a lower number or SBATCH --exclusive is not set")
 
     # set up the pool and call the harvest_process() function for each chunk of data
     # chunks are defined by the lat-lon limits and corresponding landgen grid cell ids for the chunk;
@@ -124,14 +124,14 @@ def run(lt_year_data, year, prev_year, harvest_path, harvest_name, grazing_path,
     # the results will be stored directly in the lt_year_data shared structure
 
     # get the manager locks for the shared data structures
-    # should not need the managers in the worker process
-    man_lock = manager.Lock()
-    grid_lock = grid_manager.Lock()
-    lt_lock = lt_manager.Lock()
+    # all locks come from the main mp.Manager() (SyncManager); custom managers don't support Lock()
+    man_lock  = manager.Lock()
+    grid_lock = manager.Lock()
+    lt_lock   = manager.Lock()
 
     # Build data_chunks: one tuple per spatial chunk covering the globe in 10x10 degree boxes.
     # For each chunk, filter the global mesh to cells whose centroid lat/lon falls within the box.
-    import land_type as _lt
+    from . import land_type as _lt
     decomp_box_size_degrees = 10
     chunk_ll_limits = _lt.calc_ll_limits(decomp_box_size_degrees)
 

@@ -32,10 +32,19 @@ from pathlib import Path
 
 ## output
 
-def run(active, out_fname, start_year, end_year, source_data_path, landgen_grid_path, out_path, landfrac):
+def run(active, out_fname, com_config_dict, out_grid_data, manager, grid_manager):
     if active is False:
         print(f"Skipping soil module")
         return
+
+    # extract common parameters from shared config dict
+    start_year        = com_config_dict['start_year']
+    end_year          = com_config_dict['end_year']
+    source_data_path  = com_config_dict['source_data_path']
+    landgen_grid_path = com_config_dict['landgen_grid_path']
+    out_path          = com_config_dict['out_path']
+    # landfrac is stored in out_grid_data (set by topography module)
+    landfrac          = out_grid_data.get_landfrac()
 
     print(f"Processing soil module with parameters:")
     # todo: print the parameters here
