@@ -331,48 +331,80 @@ void HommeDynamics::compute_vertical_derivs ()
       const auto w_int = Homme::subview(w_int_dyn, ie, n0,    igp, jgp);
       const auto phi_int = Homme::subview(phinh_i_dyn, ie, n0, igp, jgp);
 
-      // Temporary interface columns for u,v
-      Scalar u_int_buf[NUM_LEV_P];
-      Scalar v_int_buf[NUM_LEV_P];
+      // Temporary midpoint and interface columns.
+      Scalar w_mid_buf[NUM_LEV];
+      Scalar grad_u_int_buf[NUM_LEV_P];
+      Scalar grad_v_int_buf[NUM_LEV_P];
+      Scalar grad_w_int_buf[NUM_LEV_P];
+      Scalar grad_u_mid_buf[NUM_LEV];
+      Scalar grad_v_mid_buf[NUM_LEV];
+      Scalar grad_w_mid_buf[NUM_LEV];
 
-      IntColumn u_int(u_int_buf);
-      IntColumn v_int(v_int_buf);
-
-      // Temporary midpoint dz column
-      Scalar dz_mid_buf[NUM_LEV];
-      MidColumn dz_mid(dz_mid_buf);
+      MidColumn w_mid(w_mid_buf);
+      IntColumn grad_u_int(grad_u_int_buf);
+      IntColumn grad_v_int(grad_v_int_buf);
+      IntColumn grad_w_int(grad_w_int_buf);
+      MidColumn grad_u_mid(grad_u_mid_buf);
+      MidColumn grad_v_mid(grad_v_mid_buf);
+      MidColumn grad_w_mid(grad_w_mid_buf);
 
       // ------------------------------------------
-      // 1) Put u and v on interface levels
+      // 1) Put w on midpoint levels
       // ------------------------------------------
-      ColumnOps::compute_interface_values(kv, u_mid, u_int);
-      ColumnOps::compute_interface_values(kv, v_mid, v_int);
+      ColumnOps::compute_midpoint_values(kv, w_int, w_mid);
 
       team.team_barrier();
 
       // ------------------------------------------
-      // 2) Compute dz on midpoint levels
+      // 2) Compute vertical gradients on interface levels
       // ------------------------------------------
       //
-      // Use HOMME's interface geopotential directly for layer thickness. This
-      // keeps the vertical shear scale consistent with the dycore state.
+      // Use HOMME's interface geopotential to define the distance between
+      // adjacent midpoint levels, matching SHOC's interface-gradient staggering.
       constexpr Real gravit = PhysicalConstants::g;
 
-      for (int ilev = 0; ilev < nlev_scalar; ++ilev) {
+      for (int ilev = 0; ilev <= nlev_scalar; ++ilev) {
         const int ilev_pack = ilev / VLEN;
         const int s = ilev % VLEN;
-        const Real phi_int_k = phi_int(ilev_pack)[s];
-        const Real phi_int_kp1 = (s < VLEN-1) ? phi_int(ilev_pack)[s+1] : phi_int(ilev_pack+1)[0];
-        const Real dz = (phi_int_k - phi_int_kp1) / gravit;
 
-        dz_mid[ilev_pack][s] = dz;
+        if (ilev == 0 || ilev == nlev_scalar) {
+          grad_u_int(ilev_pack)[s] = 0.0;
+          grad_v_int(ilev_pack)[s] = 0.0;
+          grad_w_int(ilev_pack)[s] = 0.0;
+        } else {
+          const int ilev_above = ilev - 1;
+          const int pack_above = ilev_above / VLEN;
+          const int s_above = ilev_above % VLEN;
+
+          const Real phi_int_above = phi_int(pack_above)[s_above];
+          const Real phi_int_below = (s < VLEN-1) ? phi_int(ilev_pack)[s+1] : phi_int(ilev_pack+1)[0];
+          const Real dz_int = (phi_int_above - phi_int_below) / (2.0*gravit);
+          const Real inv_dz_int = 1.0 / dz_int;
+
+          // HOMME levels are indexed top to bottom, so the numerator is
+          // above-minus-below for derivatives with respect to increasing height.
+          grad_u_int(ilev_pack)[s] =
+            (u_mid(pack_above)[s_above] - u_mid(ilev_pack)[s]) * inv_dz_int;
+
+          grad_v_int(ilev_pack)[s] =
+            (v_mid(pack_above)[s_above] - v_mid(ilev_pack)[s]) * inv_dz_int;
+
+          grad_w_int(ilev_pack)[s] =
+            (w_mid(pack_above)[s_above] - w_mid(ilev_pack)[s]) * inv_dz_int;
+        }
       }
 
       team.team_barrier();
 
       // ------------------------------------------
-      // 3) Compute du/dz, dv/dz, dw/dz on midpoints
+      // 3) Interpolate interface gradients back to midpoints
       // ------------------------------------------
+      ColumnOps::compute_midpoint_values(kv, grad_u_int, grad_u_mid);
+      ColumnOps::compute_midpoint_values(kv, grad_v_int, grad_v_mid);
+      ColumnOps::compute_midpoint_values(kv, grad_w_int, grad_w_mid);
+
+      team.team_barrier();
+
       Kokkos::parallel_for(
           Kokkos::ThreadVectorRange(team, nlev_pack),
           [&] (const int ilev_pack) {
@@ -381,32 +413,9 @@ void HommeDynamics::compute_vertical_derivs ()
           const int ilev = ilev_pack*VLEN + s;
 
           if (ilev < nlev_scalar) {
-            const Real dz = dz_mid(ilev_pack)[s];
-            const Real inv_dz = 1.0 / dz;
-
-            // NOTE: `Scalar` is a packed type when `VECTOR_SIZE>1` (typical CPU
-            // builds). To compute level-to-level derivatives, we must advance by
-            // one lane within the pack (and only cross into the next pack at the
-            // lane boundary), not by one whole pack.
-            const Real u_int_k = u_int(ilev_pack)[s];
-            const Real v_int_k = v_int(ilev_pack)[s];
-            const Real w_int_k = w_int(ilev_pack)[s];
-
-            const Real u_int_kp1 = (s < VLEN-1) ? u_int(ilev_pack)[s+1] : u_int(ilev_pack+1)[0];
-            const Real v_int_kp1 = (s < VLEN-1) ? v_int(ilev_pack)[s+1] : v_int(ilev_pack+1)[0];
-            const Real w_int_kp1 = (s < VLEN-1) ? w_int(ilev_pack)[s+1] : w_int(ilev_pack+1)[0];
-
-            // HOMME levels are indexed top to bottom, so the sign is flipped to
-            // recover physical derivatives with respect to increasing height.
-            grad_vertical(ie,0,igp,jgp,ilev) =
-              -(u_int_kp1 - u_int_k) * inv_dz;
-
-            grad_vertical(ie,1,igp,jgp,ilev) =
-              -(v_int_kp1 - v_int_k) * inv_dz;
-
-            grad_vertical(ie,2,igp,jgp,ilev) =
-              -(w_int_kp1 - w_int_k) * inv_dz;
-
+            grad_vertical(ie,0,igp,jgp,ilev) = grad_u_mid(ilev_pack)[s];
+            grad_vertical(ie,1,igp,jgp,ilev) = grad_v_mid(ilev_pack)[s];
+            grad_vertical(ie,2,igp,jgp,ilev) = grad_w_mid(ilev_pack)[s];
           }
         }
       });
