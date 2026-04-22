@@ -12,7 +12,7 @@ on:
       - ./tools/docs/**
       - components/*/mkdocs.yaml
       - components/*/docs/**
-      - components/eamxx/cime_config/namelist_defaults_scream.xml
+      - components/eamxx/cime_config/namelist_defaults_eamxx.xml
   # Runs every time a PR is open against master
   pull_request:
     branches: ["master"]
@@ -24,7 +24,7 @@ on:
       - ./tools/docs/**
       - components/*/mkdocs.yaml
       - components/*/docs/**
-      - components/eamxx/cime_config/namelist_defaults_scream.xml
+      - components/eamxx/cime_config/namelist_defaults_eamxx.xml
   workflow_dispatch:
 
 concurrency:
@@ -39,7 +39,7 @@ jobs:
         shell: bash -leo pipefail {0}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
           show-progress: false
@@ -52,7 +52,7 @@ jobs:
       - name: Show action trigger
         run: echo "= The job was automatically triggered by a ${{github.event_name}} event on repo ${{github.event.repository.name}}."
       - name: Install Python deps
-        uses: mamba-org/setup-micromamba@v2
+        uses: mamba-org/setup-micromamba@v3
         with:
           init-shell: bash
           environment-name: docs

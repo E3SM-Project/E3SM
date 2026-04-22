@@ -831,6 +831,7 @@ sub setup_cmdl_fates_mode {
                      "use_century_decomp",
                      "use_snicar_ad",
                      "use_vertsoilc",
+                     "use_fates_managed_fire",
                      "use_fates_daylength_factor",
                      "fates_photosynth_acclimation",
                      "fates_stomatal_model",
@@ -840,7 +841,7 @@ sub setup_cmdl_fates_mode {
                      "fates_regeneration_model",
                      "fates_hydro_solver",
                      "fates_radiation_model",
-	             "fates_electron_transport_model");
+                     "fates_electron_transport_model");
 
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
@@ -898,6 +899,10 @@ sub setup_cmdl_fates_mode {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "use_fates_inventory_init";
+       if ( defined($nl->get_value($var)) ) {
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
+       }
+       $var = "use_fates_managed_fire";
        if ( defined($nl->get_value($var)) ) {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
@@ -2792,11 +2797,9 @@ sub setup_logic_do_transient_crops {
   if (string_is_undef_or_empty($nl->get_value('flanduse_timeseries'))) {
     $cannot_be_true = "$var can only be set to true when running a transient case (flanduse_timeseries non-blank)";
   }
-  
-   elsif (!value_is_true($nl->get_value("irrigate"))) {
-    $cannot_be_true = "$var should be set to true when running with irrigate = true";
+  elsif (!value_is_true($nl_flags->{'use_crop'})) {
+    $cannot_be_true = "$var can only be set to true when running with active crops (use_crop = .true.)";
   }
-  
   elsif (value_is_true($nl->get_value('use_fates'))) {
     # In principle, use_fates should be compatible with
     # do_transient_crops. However, this hasn't been tested, so to be safe,
@@ -3431,7 +3434,6 @@ sub setup_logic_fates {
                    "fates_inventory_ctrl_filename",
                    "fates_parteh_mode",
                    "fates_seeddisp_cadence",
-                   "fates_spitfire_mode",
                    "use_fates_cohort_age_tracking",
                    "use_fates_ed_st3",
                    "use_fates_ed_prescribed_phys",
@@ -3442,6 +3444,7 @@ sub setup_logic_fates {
                    "use_fates_sp",
                    "use_fates_tree_damage",
                    "use_fates_daylength_factor",
+                   "use_fates_managed_fire",
                    "fates_photosynth_acclimation",
                    "fates_stomatal_model",
                    "fates_stomatal_assimilation",
@@ -3450,10 +3453,11 @@ sub setup_logic_fates {
                    "fates_regeneration_model",
                    "fates_hydro_solver",
                    "fates_radiation_model",
-	           "fates_electron_transport_model");
+	                 "fates_electron_transport_model");
 
     foreach my $var (@list) {
-       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,'use_fates'=>$nl_flags->{'use_fates'});
+       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,'use_fates'=>$nl_flags->{'use_fates'},
+	                                                                                       'use_fates_sp'=>$nl->get_value('use_fates_sp') );
     }
 
     # Add defaults for fates modes that depend on previously set fates modes.  See namelist defaults file for list.
@@ -3466,7 +3470,10 @@ sub setup_logic_fates {
 	                                                                              'use_fates_sp'=>$nl->get_value('use_fates_sp') );
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_fixed_biogeog', 'use_fates'=>$nl_flags->{'use_fates'},
                                                                                       'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
-	                                                                              'use_fates_sp'=>$nl->get_value('use_fates_sp') );
+                                                                                      'use_fates_sp'=>$nl->get_value('use_fates_sp') );
+	add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_spitfire_mode', 'use_fates'=>$nl_flags->{'use_fates'},
+                                                                                      'use_fates_managed_fire'=>$nl->get_value('use_fates_managed_fire'),
+                                                                                      'use_fates_sp'=>$nl->get_value('use_fates_sp') );
 
     # For FATES SP mode make sure no-competion, and fixed-biogeography are also set
     # And also check for other settings that can't be trigged on as well
@@ -3588,6 +3595,16 @@ sub setup_logic_fates {
           }
        }
     }
+
+     # Check use_fates_managed_fire mode is running with spitfire on
+     my $var = "use_fates_managed_fire";
+     if ( defined($nl->get_value($var))  ) {
+        if ( &value_is_true($nl->get_value($var)) ) {
+           if ( $nl->get_value('fates_spitfire_mode') == 0 ) {
+              fatal_error("fates_spitfire_mode must be non-zero when $var is true");
+	         }
+        }
+     }
   }
 }
 
@@ -3745,20 +3762,26 @@ sub add_default {
 
     # query the definition to find out if the variable is an input pathname
     my $is_input_pathname = $definition->is_input_pathname($var);
+    
 
-    # The default values for input pathnames are relative.  If the namelist
-    # variable is defined to be an absolute pathname, then prepend
-    # the E3SM inputdata root directory.
-    if (not defined $settings{'no_abspath'}) {
-      if (defined $settings{'set_abspath'}) {
-        $val = set_abs_filepath($val, $settings{'set_abspath'});
-      } else {
-        if ($is_input_pathname eq 'abs') {
-          $val = set_abs_filepath($val, $inputdata_rootdir);
-        }
-      }
+    if ($is_input_pathname eq 'landroot') {
+	my $landroot = abs_path("$ProgDir/..");
+	$val = set_abs_filepath($val,$landroot);
+    } else {
+	# The default values for input pathnames are relative.  If the namelist
+	# variable is defined to be an absolute pathname, then prepend
+	# the E3SM inputdata root directory.
+	if (not defined $settings{'no_abspath'}) {
+	    if (defined $settings{'set_abspath'}) {
+		$val = set_abs_filepath($val, $settings{'set_abspath'});
+	    } else {
+		if ($is_input_pathname eq 'abs') {
+		    $val = set_abs_filepath($val, $inputdata_rootdir);
+		}
+	    }
+	}
     }
-
+    
     # query the definition to find out if the variable takes a string value.
     # The returned string length will be >0 if $var is a string, and 0 if not.
     my $str_len = $definition->get_str_len($var);

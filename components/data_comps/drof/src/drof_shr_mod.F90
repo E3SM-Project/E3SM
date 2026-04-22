@@ -28,6 +28,10 @@ module drof_shr_mod
   character(CL) , public :: restfilm              ! model restart file namelist
   character(CL) , public :: restfils              ! stream restart file namelist
   logical       , public :: force_prognostic_true ! if true set prognostic true
+  logical       , public :: remove_ais_rofl       ! if true remove rofl around Antarctica
+  logical       , public :: remove_ais_rofi       ! if true remove rofi around Antarctica
+  logical       , public :: remove_gis_rofl       ! if true remove rofl around Greenland
+  logical       , public :: remove_gis_rofi       ! if true remove rofi around Greenland
 
   ! variables obtained from namelist read
   character(CL) , public :: rest_file             ! restart filename
@@ -76,7 +80,8 @@ CONTAINS
 
     !----- define namelist -----
     namelist / drof_nml / &
-        decomp, restfilm, restfils, force_prognostic_true
+        decomp, restfilm, restfils, force_prognostic_true, &
+        remove_ais_rofl, remove_ais_rofi, remove_gis_rofl, remove_gis_rofi
 
     !----------------------------------------------------------------------------
     ! Determine input filenamname
@@ -93,6 +98,10 @@ CONTAINS
     restfilm   = trim(nullstr)
     restfils   = trim(nullstr)
     force_prognostic_true = .false.
+    remove_ais_rofl = .false.
+    remove_ais_rofi = .false.
+    remove_gis_rofl = .false.
+    remove_gis_rofi = .false.
     if (my_task == master_task) then
        nunit = shr_file_getUnit() ! get unused unit number
        open (nunit,file=trim(filename),status="old",action="read")
@@ -107,11 +116,19 @@ CONTAINS
        write(logunit,F00)' restfilm   = ',trim(restfilm)
        write(logunit,F00)' restfils   = ',trim(restfils)
        write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
+       write(logunit,F0L)' remove_ais_rofl = ', remove_ais_rofl
+       write(logunit,F0L)' remove_ais_rofi = ', remove_ais_rofi
+       write(logunit,F0L)' remove_gis_rofl = ', remove_gis_rofl
+       write(logunit,F0L)' remove_gis_rofi = ', remove_gis_rofi
     endif
     call shr_mpi_bcast(decomp  ,mpicom,'decomp')
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
     call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
+    call shr_mpi_bcast(remove_ais_rofl,mpicom,'remove_ais_rofl')
+    call shr_mpi_bcast(remove_ais_rofi,mpicom,'remove_ais_rofi')
+    call shr_mpi_bcast(remove_gis_rofl,mpicom,'remove_gis_rofl')
+    call shr_mpi_bcast(remove_gis_rofi,mpicom,'remove_gis_rofi')
 
     rest_file = trim(restfilm)
     rest_file_strm = trim(restfils)

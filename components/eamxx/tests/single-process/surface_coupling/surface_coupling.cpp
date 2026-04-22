@@ -3,12 +3,13 @@
 #include "control/atmosphere_driver.hpp"
 #include "control/atmosphere_surface_coupling_importer.hpp"
 #include "control/atmosphere_surface_coupling_exporter.hpp"
-#include "diagnostics/register_diagnostics.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/field/field_manager.hpp"
+#include "share/diagnostics/register_diagnostics.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/eamxx_types.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_yaml.hpp>
 #include <ekat_view_utils.hpp>
@@ -368,11 +369,11 @@ void test_exports(const FieldManager& fm,
     // provide theta based on an exner function that evaluates to 1 at the bottom interface.
     // To accomplish this we calculate a theta that replaces the reference pressure (P0) for exner
     // with the pressure of the lowest interface level => p_int_i(nlevs)
-    Sa_ptem(i) = T_mid_i(nlevs-1) / pow( p_mid_i(nlevs-1)/p_int_i(nlevs), PC::RD*PC::INV_CP);
+    Sa_ptem(i) = T_mid_i(nlevs-1) / pow( p_mid_i(nlevs-1)/p_int_i(nlevs), PC::RD.value*PC::INV_CP.value);
 
     if (not called_directly_after_init) {
-      Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O);
-      Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O);
+      Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O.value);
+      Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O.value);
     }
   });
 

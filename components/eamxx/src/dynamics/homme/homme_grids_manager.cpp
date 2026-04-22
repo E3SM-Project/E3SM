@@ -1,40 +1,38 @@
 #include "dynamics/homme/homme_grids_manager.hpp"
+#include "dynamics/homme/homme_dynamics_helpers.hpp"
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
-#include "dynamics/homme/homme_dynamics_helpers.hpp"
 
-#include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
+#include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 
 #ifndef NDEBUG
-#include "share/property_checks/field_nan_check.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
+#include "share/property_checks/field_nan_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #endif
 
-#include "share/io/scorpio_input.hpp"
-#include "share/grid/se_grid.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/grid/remap/inverse_remapper.hpp"
+#include "share/remap/inverse_remapper.hpp"
+#include "share/grid/se_grid.hpp"
+#include "share/io/scorpio_input.hpp"
 
 // Get all Homme's compile-time dims and constants
-#include "homme_dimensions.hpp"
 #include "PhysicalConstants.hpp"
+#include "homme_dimensions.hpp"
 
 #include <ekat_std_utils.hpp>
 
 namespace scream
 {
 
-HommeGridsManager::
-HommeGridsManager (const ekat::Comm& comm,
-                   const ekat::ParameterList& p)
- : m_comm (comm)
- , m_params(p)
+HommeGridsManager::HommeGridsManager(const ekat::Comm &comm, const ekat::ParameterList &p)
+ : m_comm(comm),
+   m_params(p)
 {
   if (!is_parallel_inited_f90()) {
     // While we're here, we can init homme's parallel session
     auto fcomm = MPI_Comm_c2f(comm.mpi_comm());
-    init_parallel_f90 (fcomm);
+    init_parallel_f90(fcomm);
   }
 
   // This class needs Homme's context, so register as a user
@@ -43,25 +41,26 @@ HommeGridsManager (const ekat::Comm& comm,
   if (!is_params_inited_f90()) {
     // While we're here, we can init homme's parameters
     auto nlname = m_params.get<std::string>("dynamics_namelist_file_name").c_str();
-    init_params_f90 (nlname);
+    init_params_f90(nlname);
   }
 
   // Create the grid integer codes map (i.e., int->string
-  build_pg_codes ();
+  build_pg_codes();
 }
 
-HommeGridsManager::
-~HommeGridsManager () {
+HommeGridsManager::~HommeGridsManager()
+{
   // Cleanup the grids stuff
-  finalize_geometry_f90 ();
+  finalize_geometry_f90();
 
   // This class is done with Homme. Remove from its users list
   HommeContextUser::singleton().remove_user();
 }
 
 HommeGridsManager::remapper_ptr_type
-HommeGridsManager::do_create_remapper (const grid_ptr_type from_grid,
-                                       const grid_ptr_type to_grid) const {
+HommeGridsManager::do_create_remapper(const grid_ptr_type from_grid,
+                                      const grid_ptr_type to_grid) const
+{
   const auto from = from_grid->name();
   const auto to   = to_grid->name();
 
@@ -117,6 +116,13 @@ build_grids ()
 
   // Also the GLL grid with no rebalance is needed for sure
   build_physics_grid("gll","none");
+
+  // Set the physics_gll grid as io_aux_grid in the dyn grid
+  auto physics_gll_grid = get_grid_nonconst("physics_gll");
+  auto dyn_grid = get_grid_nonconst("dynamics");
+  dyn_grid->set_aux_grid("default",physics_gll_grid);
+  dyn_grid->set_aux_grid("cg",physics_gll_grid);
+  dyn_grid->set_aux_grid("dg",dyn_grid);
 
   // If (pg type,rebalance) is (gll,none), this will be a no op
   build_physics_grid(pg_type,pg_rebalance);
@@ -258,8 +264,8 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   // If one of the hybrid vcoord arrays is there, they all are
   // NOTE: we may have none in some unit tests that don't need them (e.g. pd remap)
   if (get_grid("dynamics")->has_geometry_data("hyam")) {
-    auto layout_mid = phys_grid->get_vertical_layout(true);
-    auto layout_int = phys_grid->get_vertical_layout(false);
+    auto layout_mid = phys_grid->get_vertical_layout(LEV);
+    auto layout_int = phys_grid->get_vertical_layout(ILEV);
     using namespace ekat::units;
     Units nondim = Units::nondimensional();
     Units mbar(bar/1000,"mb");
@@ -326,8 +332,8 @@ initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
   }
 
   // Create vcoords fields
-  auto layout_mid = dyn_grid->get_vertical_layout(true);
-  auto layout_int = dyn_grid->get_vertical_layout(false);
+  auto layout_mid = dyn_grid->get_vertical_layout(LEV);
+  auto layout_int = dyn_grid->get_vertical_layout(ILEV);
   constexpr auto nondim = ekat::units::Units::nondimensional();
 
   auto hyai = dyn_grid->create_geometry_data("hyai",layout_int,nondim);

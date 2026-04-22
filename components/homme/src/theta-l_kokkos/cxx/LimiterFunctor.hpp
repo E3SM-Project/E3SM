@@ -99,15 +99,11 @@ struct LimiterFunctor {
 
   void run (const int& tl)
   {
-    profiling_resume();
-
     GPTLstart("caar limiter");
     m_np1 = tl;
     Kokkos::parallel_for("caar loop dp3d limiter", m_policy_dp3d_lim, *this);
     Kokkos::fence();
     GPTLstop("caar limiter");
-
-    profiling_pause();
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -129,8 +125,6 @@ struct LimiterFunctor {
                            [&](const int ilev) {
         diff(ilev) = (dp(ilev) - m_dp3d_thresh*dp0(ilev))*spheremp;
       });
-
-      kv.team_barrier();
 
       Real min_diff = Kokkos::reduction_identity<Real>::min();
       auto diff_as_real = Homme::viewAsReal(diff);
@@ -168,8 +162,6 @@ struct LimiterFunctor {
           });
         }
 
-        kv.team_barrier();
-
         // This loop must be done over physical levels, unless we implement
         // masks, like it has been done in the E3SM/scream project
         Real mass_new = 0.0;
@@ -193,7 +185,7 @@ struct LimiterFunctor {
           dp(ilev) = diff(ilev)/spheremp + m_dp3d_thresh*dp0(ilev);
           vtheta_dp(ilev) *= dp(ilev);
         });
-      } //end of min_diff < 0
+      } // end of min_diff < 0
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {

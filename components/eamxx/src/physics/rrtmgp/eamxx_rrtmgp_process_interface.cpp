@@ -2,12 +2,12 @@
 #include "physics/rrtmgp/eamxx_rrtmgp_process_interface.hpp"
 #include "physics/rrtmgp/rrtmgp_utils.hpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
-#include "physics/share/eamxx_trcmix.hpp"
+#include "share/physics/eamxx_trcmix.hpp"
 
-#include "share/io/eamxx_scorpio_interface.hpp"
-#include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
+#include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
-#include "share/util/eamxx_common_physics_functions.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/util/eamxx_column_ops.hpp"
 
 #include <ekat_team_policy_utils.hpp>
@@ -83,17 +83,18 @@ RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_ngas = m_gas_names.size();
 }
 
-void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void RRTMGPRadiation::create_requests() {
 
   using namespace ekat::units;
   using namespace ekat::prefixes;
+  using namespace ShortFieldTagsNames;
 
   // Declare the set of fields used by rrtmgp
   Units m2(m*m,"m2");
   auto nondim = Units::nondimensional();
   auto micron = micro*m;
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_ncol = m_grid->get_num_local_dofs();
   m_nlay = m_grid->get_num_vertical_levels();
@@ -122,7 +123,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
     m_col_chunk_beg[i+1] = std::min(m_ncol,m_col_chunk_beg[i] + m_col_chunk_size);
   }
   this->log(LogLevel::debug,
-            "[RRTMGP::set_grids] Col chunking stats:\n"
+            "[RRTMGP::create_requests] Col chunking stats:\n"
             "  - Chunk size: " + std::to_string(m_col_chunk_size) + "\n"
             "  - Number of chunks: " + std::to_string(m_num_col_chunks) + "\n");
 
@@ -130,12 +131,12 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   m_nswgpts = m_params.get<int>("nswgpts",112);
   m_nlwgpts = m_params.get<int>("nlwgpts",128);
   FieldLayout scalar2d = m_grid->get_2d_scalar_layout();
-  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
-  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(false);
-  FieldLayout scalar3d_swband = m_grid->get_3d_vector_layout(true,m_nswbands,"swband");
-  FieldLayout scalar3d_lwband = m_grid->get_3d_vector_layout(true,m_nlwbands,"lwband");
-  FieldLayout scalar3d_swgpts = m_grid->get_3d_vector_layout(true,m_nswgpts,"swgpt");
-  FieldLayout scalar3d_lwgpts = m_grid->get_3d_vector_layout(true,m_nlwgpts,"lwgpt");
+  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(LEV);
+  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(ILEV);
+  FieldLayout scalar3d_swband = m_grid->get_3d_vector_layout(LEV,m_nswbands,"swband");
+  FieldLayout scalar3d_lwband = m_grid->get_3d_vector_layout(LEV,m_nlwbands,"lwband");
+  FieldLayout scalar3d_swgpts = m_grid->get_3d_vector_layout(LEV,m_nswgpts,"swgpt");
+  FieldLayout scalar3d_lwgpts = m_grid->get_3d_vector_layout(LEV,m_nlwgpts,"lwgpt");
 
   // Set required (input) fields here
   add_field<Required>("p_mid" , scalar3d_mid, Pa, grid_name);
@@ -209,7 +210,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // 0.67 micron and 10.5 micron optical depth (needed for COSP)
   add_field<Computed>("dtau067"       , scalar3d_mid, nondim, grid_name);
   add_field<Computed>("dtau105"       , scalar3d_mid, nondim, grid_name);
-  add_field<Computed>("sunlit"        , scalar2d    , nondim, grid_name);
+  add_field<Computed>(FieldIdentifier("sunlit_mask", scalar2d, nondim, grid_name, DataType::IntType));
   add_field<Computed>("cldfrac_rad"   , scalar3d_mid, nondim, grid_name);
   // Cloud-top diagnostics following AeroCom recommendation
   add_field<Computed>("T_mid_at_cldtop", scalar2d, K, grid_name);
@@ -288,7 +289,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
       m_grid->set_geometry_data(bands);
     }
   }
-}  // RRTMGPRadiation::set_grids
+}  // RRTMGPRadiation::create_requests
 
 size_t RRTMGPRadiation::requested_buffer_size_in_bytes() const
 {
@@ -612,7 +613,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   // Outputs for COSP
   auto d_dtau067 = get_field_out("dtau067").get_view<Real**>();
   auto d_dtau105 = get_field_out("dtau105").get_view<Real**>();
-  auto d_sunlit = get_field_out("sunlit").get_view<Real*>();
+  auto d_sunlit = get_field_out("sunlit_mask").get_view<int*>();
 
   Kokkos::deep_copy(d_dtau067,0.0);
   Kokkos::deep_copy(d_dtau105,0.0);
@@ -631,7 +632,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto d_eff_radius_qi_at_cldtop =
       get_field_out("eff_radius_qi_at_cldtop").get_view<Real *>();
 
-  constexpr auto stebol = PC::stebol;
+  constexpr auto stebol = PC::stebol.value;
   const auto nlay = m_nlay;
   const auto nlwbands = m_nlwbands;
   const auto nswbands = m_nswbands;
@@ -713,7 +714,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
           m_co2vmr, m_n2ovmr, m_ch4vmr, m_f11vmr, m_f12vmr
         );
         // Back out volume mixing ratios
-        const auto air_mol_weight = PC::MWdry;
+        const auto air_mol_weight = PC::MWdry.value;
         const auto policy = TPF::get_default_team_policy(m_ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int i = team.league_rank();
@@ -1154,11 +1155,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
           d_dtau067(icol,k) = cld_tau_sw_bnd_k(i,k,idx_067_k);
           d_dtau105(icol,k) = cld_tau_lw_bnd_k(i,k,idx_105_k);
         });
-        if (d_sw_clrsky_flux_dn(icol,0) > 0) {
-            d_sunlit(icol) = 1.0;
-        } else {
-            d_sunlit(icol) = 0.0;
-        }
+        d_sunlit(icol) = d_sw_clrsky_flux_dn(icol,0) > 0;
       });
                    );
     } // loop over chunk
@@ -1219,12 +1216,17 @@ void RRTMGPRadiation::run_impl (const double dt) {
 // =========================================================================================
 
 void RRTMGPRadiation::finalize_impl  () {
-  m_gas_concs_k.reset();
-  // Finalize the interface, passing a bool for rank 0
-  // to print info about memory stats on that rank
-  interface_t::rrtmgp_finalize(m_comm.am_i_root());
+  // Guard the finalization, since it would throw if initialize was not called.
+  // This can happen if an atm proc that is inited before RRTMGP throws during init,
+  // and the stack gets destroyed. The driver calls the 'finalize' method on all atm procs
+  if (is_initialized()) {
+    m_gas_concs_k.reset();
+    // Finalize the interface, passing a bool for rank 0
+    // to print info about memory stats on that rank
+    interface_t::rrtmgp_finalize(m_comm.am_i_root());
 
-  finalize_kls();
+    finalize_kls();
+  }
 }
 // =========================================================================================
 

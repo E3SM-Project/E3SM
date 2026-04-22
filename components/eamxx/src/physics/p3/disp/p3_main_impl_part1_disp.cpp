@@ -1,6 +1,6 @@
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
-#include "physics/share/physics_saturation_impl.hpp"
+#include "share/physics/physics_functions.hpp" // also for ETI not on GPUs
+#include "share/physics/physics_saturation_impl.hpp"
 
 #include <ekat_subview_utils.hpp>
 #include <ekat_team_policy_utils.hpp>
@@ -21,43 +21,43 @@ void Functions<Real,DefaultDevice>
   const bool& predictNc,
   const bool& prescribedCCN,
   const Scalar& dt,
-  const uview_2d<const Spack>& pres,
-  const uview_2d<const Spack>& dpres,
-  const uview_2d<const Spack>& dz,
-  const uview_2d<const Spack>& nc_nuceat_tend,
-  const uview_2d<const Spack>& nccn_prescribed,
-  const uview_2d<const Spack>& inv_exner,
-  const uview_2d<const Spack>& exner,
-  const uview_2d<const Spack>& inv_cld_frac_l,
-  const uview_2d<const Spack>& inv_cld_frac_i,
-  const uview_2d<const Spack>& inv_cld_frac_r,
-  const uview_2d<Spack>& T_atm,
-  const uview_2d<Spack>& rho,
-  const uview_2d<Spack>& inv_rho,
-  const uview_2d<Spack>& qv_sat_l,
-  const uview_2d<Spack>& qv_sat_i,
-  const uview_2d<Spack>& qv_supersat_i,
-  const uview_2d<Spack>& rhofacr,
-  const uview_2d<Spack>& rhofaci,
-  const uview_2d<Spack>& acn,
-  const uview_2d<Spack>& qv,
-  const uview_2d<Spack>& th_atm,
-  const uview_2d<Spack>& qc,
-  const uview_2d<Spack>& nc,
-  const uview_2d<Spack>& qr,
-  const uview_2d<Spack>& nr,
-  const uview_2d<Spack>& qi,
-  const uview_2d<Spack>& ni,
-  const uview_2d<Spack>& qm,
-  const uview_2d<Spack>& bm,
-  const uview_2d<Spack>& qc_incld,
-  const uview_2d<Spack>& qr_incld,
-  const uview_2d<Spack>& qi_incld,
-  const uview_2d<Spack>& qm_incld,
-  const uview_2d<Spack>& nc_incld,
-  const uview_2d<Spack>& nr_incld,
-  const uview_2d<Spack>& ni_incld,
-  const uview_2d<Spack>& bm_incld,
+  const uview_2d<const Pack>& pres,
+  const uview_2d<const Pack>& dpres,
+  const uview_2d<const Pack>& dz,
+  const uview_2d<const Pack>& nc_nuceat_tend,
+  const uview_2d<const Pack>& nccn_prescribed,
+  const uview_2d<const Pack>& inv_exner,
+  const uview_2d<const Pack>& exner,
+  const uview_2d<const Pack>& inv_cld_frac_l,
+  const uview_2d<const Pack>& inv_cld_frac_i,
+  const uview_2d<const Pack>& inv_cld_frac_r,
+  const uview_2d<Pack>& T_atm,
+  const uview_2d<Pack>& rho,
+  const uview_2d<Pack>& inv_rho,
+  const uview_2d<Pack>& qv_sat_l,
+  const uview_2d<Pack>& qv_sat_i,
+  const uview_2d<Pack>& qv_supersat_i,
+  const uview_2d<Pack>& rhofacr,
+  const uview_2d<Pack>& rhofaci,
+  const uview_2d<Pack>& acn,
+  const uview_2d<Pack>& qv,
+  const uview_2d<Pack>& th_atm,
+  const uview_2d<Pack>& qc,
+  const uview_2d<Pack>& nc,
+  const uview_2d<Pack>& qr,
+  const uview_2d<Pack>& nr,
+  const uview_2d<Pack>& qi,
+  const uview_2d<Pack>& ni,
+  const uview_2d<Pack>& qm,
+  const uview_2d<Pack>& bm,
+  const uview_2d<Pack>& qc_incld,
+  const uview_2d<Pack>& qr_incld,
+  const uview_2d<Pack>& qi_incld,
+  const uview_2d<Pack>& qm_incld,
+  const uview_2d<Pack>& nc_incld,
+  const uview_2d<Pack>& nr_incld,
+  const uview_2d<Pack>& ni_incld,
+  const uview_2d<Pack>& bm_incld,
   const uview_1d<bool>& nucleationPossible,
   const uview_1d<bool>& hydrometeorsPresent,
   const P3Runtime& runtime_options)
@@ -65,7 +65,7 @@ void Functions<Real,DefaultDevice>
   using ExeSpace = typename KT::ExeSpace;
   using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
 
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
   const auto policy = TPF::get_default_team_policy(nj, nk_pack);
   // p3_cloud_sedimentation loop
   Kokkos::parallel_for("p3_main_part1",

@@ -15,20 +15,20 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::diag_second_shoc_moments(const MemberType& team, const Int& nlev, const Int& nlevi,
        const Scalar& thl2tune, const Scalar& qw2tune, const Scalar& qwthl2tune, const Scalar& w2tune, const bool& shoc_1p5tke,
-       const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind,
-       const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
-       const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
-       const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& shoc_mix,
+       const uview_1d<const Pack>& thetal, const uview_1d<const Pack>& qw, const uview_1d<const Pack>& u_wind,
+       const uview_1d<const Pack>& v_wind, const uview_1d<const Pack>& tke, const uview_1d<const Pack>& isotropy,
+       const uview_1d<const Pack>& tkh, const uview_1d<const Pack>& tk, const uview_1d<const Pack>& dz_zi,
+       const uview_1d<const Pack>& zt_grid, const uview_1d<const Pack>& zi_grid, const uview_1d<const Pack>& shoc_mix,
        const Scalar& wthl_sfc, const Scalar& wqw_sfc, const Scalar& uw_sfc, const Scalar& vw_sfc, Scalar& ustar2, Scalar& wstar,
-       const Workspace& workspace, const uview_1d<Spack>& thl_sec,
-       const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& wthl_sec, const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& qwthl_sec,
-       const uview_1d<Spack>& uw_sec, const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& wtke_sec, const uview_1d<Spack>& w_sec)
+       const Workspace& workspace, const uview_1d<Pack>& thl_sec,
+       const uview_1d<Pack>& qw_sec, const uview_1d<Pack>& wthl_sec, const uview_1d<Pack>& wqw_sec, const uview_1d<Pack>& qwthl_sec,
+       const uview_1d<Pack>& uw_sec, const uview_1d<Pack>& vw_sec, const uview_1d<Pack>& wtke_sec, const uview_1d<Pack>& w_sec)
 {
   // This is the main routine to compute the second
   // order moments in SHOC.
 
   // Define temporary variables
-  uview_1d<Spack> isotropy_zi, tkh_zi, tk_zi;
+  uview_1d<Pack> isotropy_zi, tkh_zi, tk_zi;
   workspace.template take_many_contiguous_unsafe<3>(
     {"isotropy_zi", "tkh_zi", "tk_zi"},
     {&isotropy_zi, &tkh_zi, &tk_zi});

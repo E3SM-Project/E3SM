@@ -4,7 +4,7 @@
 #include "surface_coupling_utils.hpp"
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/atm_process/SCDataManager.hpp"
+#include "share/data_managers/SCDataManager.hpp"
 
 #include <ekat_parameter_list.hpp>
 
@@ -48,7 +48,7 @@ public:
   std::string name () const { return "SurfaceCouplingImporter"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void create_requests ();
 
   // Function which performes the import to scream fields.
   // If calling in initialize_impl(), set
@@ -78,19 +78,11 @@ protected:
   // Number of imports to SCREAM
   Int m_num_scream_imports;
 
-  // Views storing a 2d array with dims (num_cols,num_fields) for import data.
-  // The field idx strides faster, since that's what mct does (so we can "view" the
-  // pointer to the whole x2a array from Fortran)
+  // Views storing a 2d array for import data.
+  // MCT layout: (num_cols, num_fields) - field idx strides faster
+  // MOAB layout: (num_fields, num_cols) - column idx strides faster
   view_2d <DefaultDevice, Real> m_cpl_imports_view_d;
   uview_2d<HostDevice,    Real> m_cpl_imports_view_h;
-
-#ifdef HAVE_MOAB
-  // Views storing a 2d array with dims (num_fields,num_cols) for import data.
-  // The colums index strides faster, since that's what moab does (so we can "view" the
-  // pointer to the whole x2a_am(:,:) array from Fortran)
-  view_2d <DefaultDevice, Real> m_moab_cpl_imports_view_d;
-  uview_2d<HostDevice,    Real> m_moab_cpl_imports_view_h;
-#endif
 
   // Array storing the field names for imports
   name_t* m_import_field_names;

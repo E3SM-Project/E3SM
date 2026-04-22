@@ -4,7 +4,7 @@
 #include "p3_test_data.hpp"
 #include "p3_unit_tests_common.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -80,11 +80,11 @@ void run_bfb()
 
   // Run the lookup from a kernel and copy results back to host
   Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-    const Int offset = i * Spack::n;
+    const Int offset = i * Pack::n;
 
     // Init pack inputs
-    Spack rho, inv_rho, qc_incld, nc_incld, qr_incld, inv_qc_relvar;
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    Pack rho, inv_rho, qc_incld, nc_incld, qr_incld, inv_qc_relvar;
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       rho[s]            = device_data(vs).rho;
       inv_rho[s]        = device_data(vs).inv_rho;
       qc_incld[s]       = device_data(vs).qc_incld;
@@ -93,8 +93,8 @@ void run_bfb()
       inv_qc_relvar[s]  = device_data(vs).inv_qc_relvar;
     }
 
-    Spack qc2qr_accret_tend{0.0};
-    Spack nc_accret_tend{0.0};
+    Pack qc2qr_accret_tend{0.0};
+    Pack nc_accret_tend{0.0};
 
     Functions::cloud_rain_accretion(
         rho, inv_rho, qc_incld, nc_incld, qr_incld, inv_qc_relvar,
@@ -102,7 +102,7 @@ void run_bfb()
         p3::Functions<Real,DefaultDevice>::P3Runtime());
 
     // Copy results back into views
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       device_data(vs).qc2qr_accret_tend  = qc2qr_accret_tend[s];
       device_data(vs).nc_accret_tend     = nc_accret_tend[s];
     }

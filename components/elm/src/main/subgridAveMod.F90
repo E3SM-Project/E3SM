@@ -647,11 +647,12 @@ contains
     garr(bounds%begg : bounds%endg) = spval
     sumwt(bounds%begg : bounds%endg) = 0._r8
     do p = bounds%begp,bounds%endp
+       c = veg_pp%column(p)
+       l = veg_pp%landunit(p)
+       g = veg_pp%gridcell(p)
        if (veg_pp%active(p) .and. veg_pp%wtgcell(p) /= 0._r8) then
-          c = veg_pp%column(p)
-          l = veg_pp%landunit(p)
           if (parr(p) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
-             g = veg_pp%gridcell(p)
+             !g = veg_pp%gridcell(p)
              if (sumwt(g) == 0._r8) garr(g) = 0._r8
              garr(g) = garr(g) + parr(p) * scale_p2c(p) * scale_c2l(c) * scale_l2g(l) * veg_pp%wtgcell(p)
              sumwt(g) = sumwt(g) + veg_pp%wtgcell(p)
@@ -986,6 +987,8 @@ contains
     ! Perfrom subgrid-average from columns to gridcells.
     ! Averaging is only done for points that are not equal to "spval".
     !
+    use elm_varctl, only : iac_present
+
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds
     real(r8), intent(in)  :: carr( bounds%begc: )  ! input column array

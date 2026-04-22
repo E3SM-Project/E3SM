@@ -9,8 +9,8 @@
 #include "GllFvRemap.hpp"
 
 // Scream includes
-#include "share/field/field_manager.hpp"
-#include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
+#include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
+#include "share/data_managers/field_manager.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
 
 // Ekat includes
@@ -216,6 +216,10 @@ void HommeDynamics::remap_fv_phys_to_dyn () const {
   const auto uv_ndim = m_helper_fields.at("FM_phys").get_view<const Real***>().extent_int(1);
   assert(uv_ndim == 2);
 
+  // SGS Eddy diffusivities on FV phys grid
+  const auto Km_phys = get_field_in("eddy_diff_mom",gn).get_view<const Real**>();
+  const auto Kh_phys = get_field_in("eddy_diff_heat",gn).get_view<const Real**>();
+
   const auto T = Homme::GllFvRemap::CPhys2T(
     m_helper_fields.at("FT_phys").get_view<const Real**>().data(),
     nelem, npg, nlev);
@@ -226,7 +230,10 @@ void HommeDynamics::remap_fv_phys_to_dyn () const {
     get_group_in("tracers", gn).m_monolithic_field->get_view<const Real***>().data(),
     nelem, npg, nq, nlev);
 
-  gfr.run_fv_phys_to_dyn(time_idx, T, uv, q);
+  const auto Km = Homme::GllFvRemap::CPhys2T(Km_phys.data(), nelem, npg, nlev);
+  const auto Kh = Homme::GllFvRemap::CPhys2T(Kh_phys.data(), nelem, npg, nlev);
+
+  gfr.run_fv_phys_to_dyn(time_idx, T, uv, q, Km, Kh);
   Kokkos::fence();
   gfr.run_fv_phys_to_dyn_dss();
   Kokkos::fence();
@@ -247,7 +254,7 @@ void HommeDynamics
   const auto rnc = m_cgll_grid->get_num_local_dofs();
   const auto pnc = m_phys_grid->get_num_local_dofs();
   const auto nlev = m_cgll_grid->get_num_vertical_levels();
-  constexpr int ps = SCREAM_SMALL_PACK_SIZE;
+  constexpr int ps = SCREAM_PACK_SIZE;
   for (const auto& e : trace_gases_workaround.get_active_gases()) {
     add_field<Required>(e, FieldLayout({COL,LEV},{rnc,nlev}), mol/mol, rgn, ps);
     // 'Updated' rather than just 'Computed' so that it gets written to the

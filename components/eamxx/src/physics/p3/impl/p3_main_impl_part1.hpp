@@ -2,8 +2,8 @@
 #define P3_MAIN_IMPL_PART_1_HPP
 
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
-#include "physics/share/physics_saturation_impl.hpp"
+#include "share/physics/physics_functions.hpp" // also for ETI not on GPUs
+#include "share/physics/physics_saturation_impl.hpp"
 
 #include <ekat_subview_utils.hpp>
 
@@ -24,43 +24,43 @@ void Functions<S,D>
   const bool& predictNc,
   const bool& do_prescribed_CCN,
   const Scalar& dt,
-  const uview_1d<const Spack>& pres,
-  const uview_1d<const Spack>& dpres,
-  const uview_1d<const Spack>& dz,
-  const uview_1d<const Spack>& nc_nuceat_tend,
-  const uview_1d<const Spack>& nccn_prescribed,
-  const uview_1d<const Spack>& inv_exner,
-  const uview_1d<const Spack>& exner,
-  const uview_1d<const Spack>& inv_cld_frac_l,
-  const uview_1d<const Spack>& inv_cld_frac_i,
-  const uview_1d<const Spack>& inv_cld_frac_r,
-  const uview_1d<Spack>& T_atm,
-  const uview_1d<Spack>& rho,
-  const uview_1d<Spack>& inv_rho,
-  const uview_1d<Spack>& qv_sat_l,
-  const uview_1d<Spack>& qv_sat_i,
-  const uview_1d<Spack>& qv_supersat_i,
-  const uview_1d<Spack>& rhofacr,
-  const uview_1d<Spack>& rhofaci,
-  const uview_1d<Spack>& acn,
-  const uview_1d<Spack>& qv,
-  const uview_1d<Spack>& th_atm,
-  const uview_1d<Spack>& qc,
-  const uview_1d<Spack>& nc,
-  const uview_1d<Spack>& qr,
-  const uview_1d<Spack>& nr,
-  const uview_1d<Spack>& qi,
-  const uview_1d<Spack>& ni,
-  const uview_1d<Spack>& qm,
-  const uview_1d<Spack>& bm,
-  const uview_1d<Spack>& qc_incld,
-  const uview_1d<Spack>& qr_incld,
-  const uview_1d<Spack>& qi_incld,
-  const uview_1d<Spack>& qm_incld,
-  const uview_1d<Spack>& nc_incld,
-  const uview_1d<Spack>& nr_incld,
-  const uview_1d<Spack>& ni_incld,
-  const uview_1d<Spack>& bm_incld,
+  const uview_1d<const Pack>& pres,
+  const uview_1d<const Pack>& dpres,
+  const uview_1d<const Pack>& dz,
+  const uview_1d<const Pack>& nc_nuceat_tend,
+  const uview_1d<const Pack>& nccn_prescribed,
+  const uview_1d<const Pack>& inv_exner,
+  const uview_1d<const Pack>& exner,
+  const uview_1d<const Pack>& inv_cld_frac_l,
+  const uview_1d<const Pack>& inv_cld_frac_i,
+  const uview_1d<const Pack>& inv_cld_frac_r,
+  const uview_1d<Pack>& T_atm,
+  const uview_1d<Pack>& rho,
+  const uview_1d<Pack>& inv_rho,
+  const uview_1d<Pack>& qv_sat_l,
+  const uview_1d<Pack>& qv_sat_i,
+  const uview_1d<Pack>& qv_supersat_i,
+  const uview_1d<Pack>& rhofacr,
+  const uview_1d<Pack>& rhofaci,
+  const uview_1d<Pack>& acn,
+  const uview_1d<Pack>& qv,
+  const uview_1d<Pack>& th_atm,
+  const uview_1d<Pack>& qc,
+  const uview_1d<Pack>& nc,
+  const uview_1d<Pack>& qr,
+  const uview_1d<Pack>& nr,
+  const uview_1d<Pack>& qi,
+  const uview_1d<Pack>& ni,
+  const uview_1d<Pack>& qm,
+  const uview_1d<Pack>& bm,
+  const uview_1d<Pack>& qc_incld,
+  const uview_1d<Pack>& qr_incld,
+  const uview_1d<Pack>& qi_incld,
+  const uview_1d<Pack>& qm_incld,
+  const uview_1d<Pack>& nc_incld,
+  const uview_1d<Pack>& nr_incld,
+  const uview_1d<Pack>& ni_incld,
+  const uview_1d<Pack>& bm_incld,
   bool& nucleationPossible,
   bool& hydrometeorsPresent,
   const P3Runtime& runtime_options)
@@ -69,16 +69,16 @@ void Functions<S,D>
   using physics = scream::physics::Functions<Scalar, Device>;
 
   // load constants into local vars
-  constexpr Scalar g            = C::gravit;
-  constexpr Scalar rho_1000mb   = C::RHO_1000MB;
+  constexpr Scalar g            = C::gravit.value;
+  constexpr Scalar rho_1000mb   = C::RHO_1000MB.value;
   constexpr Scalar rho_600mb    = C::RHO_600MB;
-  constexpr Scalar rho_h2o      = C::RHO_H2O;
+  constexpr Scalar rho_h2o      = C::RHO_H2O.value;
   constexpr Scalar nccnst       = C::NCCNST;
-  constexpr Scalar T_zerodegc   = C::T_zerodegc;
+  constexpr Scalar T_zerodegc   = C::T_zerodegc.value;
   constexpr Scalar qsmall       = C::QSMALL;
-  constexpr Scalar inv_cp       = C::INV_CP;
-  constexpr Scalar latvap       = C::LatVap;
-  constexpr Scalar latice       = C::LatIce;
+  constexpr Scalar inv_cp       = C::INV_CP.value;
+  constexpr Scalar latvap       = C::LatVap.value;
+  constexpr Scalar latice       = C::LatIce.value;
 
   const Scalar spa_ccn_to_nc_factor = runtime_options.spa_ccn_to_nc_factor;
   const Scalar spa_ccn_to_nc_exponent = runtime_options.spa_ccn_to_nc_exponent;
@@ -87,7 +87,7 @@ void Functions<S,D>
   hydrometeorsPresent = false;
   team.team_barrier();
 
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 
   //
   // calculate some time-varying atmospheric variables
@@ -100,7 +100,7 @@ void Functions<S,D>
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
 
-    const auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
+    const auto range_pack = ekat::range<IntPack>(k*Pack::n);
     const auto range_mask = range_pack < nk;
 
     rho(k)          = dpres(k)/dz(k) / g;
@@ -112,7 +112,7 @@ void Functions<S,D>
 
     rhofacr(k) = pow(rho_1000mb * inv_rho(k), sp(.54));
     rhofaci(k) = pow(rho_600mb * inv_rho(k), sp(.54));
-    Spack dum  = sp(1.496e-6) * pow(T_atm(k), sp(1.5)) / (T_atm(k) + 120); // this is mu
+    Pack dum  = sp(1.496e-6) * pow(T_atm(k), sp(1.5)) / (T_atm(k) + 120); // this is mu
     acn(k)     = g * rho_h2o / (18 * dum); // 'a' parameter for droplet fallspeed (Stokes' law)
 
     if ( (T_atm(k) < T_zerodegc && qv_supersat_i(k) >= -0.05).any() ) {

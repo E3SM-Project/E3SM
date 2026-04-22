@@ -1,9 +1,9 @@
 #include "share/io/eamxx_io_utils.hpp"
 
-#include "share/io/eamxx_scorpio_interface.hpp"
-#include "share/grid/library_grids_manager.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
+#include "share/data_managers/library_grids_manager.hpp"
 #include "share/util/eamxx_utils.hpp"
-#include "share/eamxx_config.hpp"
+#include "share/core/eamxx_config.hpp"
 
 #include <ekat_string_utils.hpp>
 
@@ -121,6 +121,108 @@ util::TimeStamp read_timestamp (const std::string& filename,
   return ts;
 }
 
+std::pair<util::TimeStamp,int>
+parse_cf_time_units (const std::string& units_str,
+                     const std::string& filename)
+{
+  // Find the " since " separator
+  const std::string sep = " since ";
+  auto pos = units_str.find(sep);
+  EKAT_REQUIRE_MSG (pos!=std::string::npos,
+      "Error! Could not parse CF-compliant time units string.\n"
+      " - units string: '" + units_str + "'\n"
+      " - Expected format: '<unit> since <YYYY-MM-DD> [HH[:MM[:SS]]]'\n"
+      " - Filename: " + filename + "\n");
+
+  // Map unit name to seconds using exact matching
+  auto unit_str = units_str.substr(0,pos);
+  int time_mult;
+  if (unit_str == "second" || unit_str == "seconds") {
+    time_mult = 1;
+  } else if (unit_str == "minute" || unit_str == "minutes") {
+    time_mult = 60;
+  } else if (unit_str == "hour" || unit_str == "hours") {
+    time_mult = 3600;
+  } else if (unit_str == "day" || unit_str == "days") {
+    time_mult = 86400;
+  } else {
+    EKAT_ERROR_MSG (
+        "Error! Unsupported time unit in CF-compliant units string.\n"
+        " - units string: '" + units_str + "'\n"
+        " - unit: '" + unit_str + "'\n"
+        " - Supported units: second(s), minute(s), hour(s), day(s)\n"
+        " - Filename: " + filename + "\n");
+  }
+
+  // Extract and parse the reference date/time string
+  auto date_str = units_str.substr(pos + sep.size());
+
+  // First try EAMxx internal format: YYYY-MM-DD-SSSSS
+  auto ref_ts = util::str_to_time_stamp(date_str);
+  if (ref_ts.is_valid()) {
+    return {ref_ts, time_mult};
+  }
+
+  // Try CF format: YYYY-MM-DD [HH[:MM[:SS]]]
+  EKAT_REQUIRE_MSG (date_str.size()>=10 && date_str[4]=='-' && date_str[7]=='-',
+      "Error! Could not parse reference date in CF-compliant time units string.\n"
+      " - units string: '" + units_str + "'\n"
+      " - date/time part: '" + date_str + "'\n"
+      " - Filename: " + filename + "\n");
+
+  int yy = 0, mon = 0, dd = 0;
+  try {
+    yy  = std::stoi(date_str.substr(0,4));
+    mon = std::stoi(date_str.substr(5,2));
+    dd  = std::stoi(date_str.substr(8,2));
+  } catch (...) {
+    EKAT_ERROR_MSG (
+        "Error! Could not parse date components in CF-compliant time units string.\n"
+        " - units string: '" + units_str + "'\n"
+        " - date/time part: '" + date_str + "'\n"
+        " - Filename: " + filename + "\n");
+  }
+  int hh = 0, min = 0, sec = 0;
+
+  if (date_str.size() > 10) {
+    // Expect a space or 'T' separator, then HH[:MM[:SS]]
+    char sep_char = date_str[10];
+    EKAT_REQUIRE_MSG (sep_char==' ' || sep_char=='T',
+        "Error! Invalid separator between date and time in CF-compliant units string.\n"
+        " - units string: '" + units_str + "'\n"
+        " - date/time part: '" + date_str + "'\n"
+        " - Filename: " + filename + "\n");
+    auto time_part = date_str.substr(11);
+    EKAT_REQUIRE_MSG (time_part.size() >= 2,
+        "Error! Could not parse time in CF-compliant units string.\n"
+        " - units string: '" + units_str + "'\n"
+        " - Filename: " + filename + "\n");
+    try {
+      hh = std::stoi(time_part.substr(0,2));
+      if (time_part.size() >= 5 && time_part[2] == ':') {
+        min = std::stoi(time_part.substr(3,2));
+        if (time_part.size() >= 8 && time_part[5] == ':') {
+          sec = std::stoi(time_part.substr(6,2));
+        }
+      }
+    } catch (...) {
+      EKAT_ERROR_MSG (
+          "Error! Could not parse time components in CF-compliant time units string.\n"
+          " - units string: '" + units_str + "'\n"
+          " - time part: '" + time_part + "'\n"
+          " - Filename: " + filename + "\n");
+    }
+  }
+
+  ref_ts = util::TimeStamp({yy,mon,dd},{hh,min,sec});
+  EKAT_REQUIRE_MSG (ref_ts.is_valid(),
+      "Error! Could not create a valid TimeStamp from CF-compliant units string.\n"
+      " - units string: '" + units_str + "'\n"
+      " - Filename: " + filename + "\n");
+
+  return {ref_ts, time_mult};
+}
+
 std::shared_ptr<AtmosphereDiagnostic>
 create_diagnostic (const std::string& diag_field_name,
                    const std::shared_ptr<const AbstractGrid>& grid)
@@ -131,7 +233,20 @@ create_diagnostic (const std::string& diag_field_name,
   // Note: the number for field_at_p/h can match positive integer/floating-point numbers
   // Start with a generic for a field name allowing for all letters, all numbers, dash, dot, plus, minus, product, and division
   // Escaping all the special ones just in case
-  std::string generic_field = "([A-Za-z0-9_.+\\-\\*\\÷]+)"; 
+  std::string generic_field = "([A-Za-z0-9_.+\\-\\*\\÷]+)";
+
+  // ── Built-in aliases ──────────────────────────────────────────────────────
+  // Recognized shorthand patterns expand to canonical composable expressions.
+  // Checked before all other regexes; expansion recurses into create_diagnostic.
+  {
+    std::smatch alias_matches;
+    std::regex bt (generic_field + "_atm_backtend$");
+    if (std::regex_search(diag_field_name, alias_matches, bt)) {
+      const auto f = alias_matches[1].str();
+      return create_diagnostic(f + "_minus_" + f + "_prev_over_dt", grid);
+    }
+    // More built-in aliases may be added here.
+  }
   std::regex field_at_l (R"()" + generic_field + R"(_at_(lev_(\d+)|model_(top|bot))$)");
   std::regex field_at_p (R"()" + generic_field + R"(_at_(\d+(\.\d+)?)(hPa|mb|Pa)$)");
   std::regex field_at_h (R"()" + generic_field + R"(_at_(\d+(\.\d+)?)(m)_above_(sealevel|surface)$)");
@@ -140,14 +255,17 @@ create_diagnostic (const std::string& diag_field_name,
   std::regex number_path ("(Ice|Liq|Rain)NumberPath$");
   std::regex aerocom_cld ("AeroComCld(Top|Bot)$");
   std::regex vap_flux ("(Meridional|Zonal)VapFlux$");
-  std::regex backtend (generic_field + "_atm_backtend$");
+  std::regex field_prev (generic_field + "_prev$");
+  std::regex field_over_dt (generic_field + "_over_dt$");
   std::regex pot_temp ("(Liq)?PotentialTemperature$");
   std::regex vert_layer ("(z|geopotential|height)_(mid|int)$");
   std::regex horiz_avg (generic_field + "_horiz_avg$");
   std::regex vert_contract (generic_field + "_vert_(avg|sum)(_((dp|dz)_weighted))?$");
   std::regex zonal_avg (R"()" + generic_field + R"(_zonal_avg_(\d+)_bins$)");
-  std::regex conditional_sampling (R"()" + generic_field + R"(_where_)" + generic_field + R"(_(gt|ge|eq|ne|le|lt)_([+-]?\d+(?:\.\d+)?)$)");
+  std::regex conditional_sampling (R"()" + generic_field + R"(_where_)" + generic_field + R"(_(gt|ge|eq|ne|le|lt)_)" + generic_field + "$");
   std::regex binary_ops (generic_field + "_" "(plus|minus|times|over)" + "_" + generic_field + "$");
+  std::regex histogram (R"()" + generic_field + R"(_histogram_(\d+(\.\d+)?(_\d+(\.\d+)?)+)$)");
+  std::regex vert_derivative (generic_field + "_(p|z)vert_derivative$");
 
   std::string diag_name;
   std::smatch matches;
@@ -181,15 +299,22 @@ create_diagnostic (const std::string& diag_field_name,
     diag_name = "NumberPath";
     params.set<std::string>("number_kind",matches[1].str());
   } else if (std::regex_search(diag_field_name,matches,aerocom_cld)) {
+    EKAT_ERROR_MSG("Error! AeroComCld diags are disabled for now. Contact developers.\n"
+                    "      Some recent development made the code produce bad values,\n"
+                    "      even runtime aborts due to NaNs.\n"
+                    "      An alternative is to request variables like cdnc_at_cldtop,\n"
+                    "      which remain unaffected and scientifically valid.\n");
     diag_name = "AeroComCld";
     params.set<std::string>("aero_com_cld_kind",matches[1].str());
   } else if (std::regex_search(diag_field_name,matches,vap_flux)) {
     diag_name = "VaporFlux";
     params.set<std::string>("wind_component",matches[1].str());
-  } else if (std::regex_search(diag_field_name,matches,backtend)) {
-    diag_name = "AtmBackTendDiag";
+  } else if (std::regex_search(diag_field_name,matches,field_over_dt)) {
+    // NOTE: _over_dt must be checked before binary_ops to prevent "X_over_dt" from being
+    // misinterpreted as BinaryOpsDiag(X, over, dt).
+    diag_name = "FieldOverDtDiag";
     params.set("grid_name",grid->name());
-    params.set<std::string>("tendency_name",matches[1].str());
+    params.set<std::string>("field_name",matches[1].str());
   } else if (std::regex_search(diag_field_name,matches,pot_temp)) {
     diag_name = "PotentialTemperature";
     params.set<std::string>("temperature_kind", matches[1].str()!="" ? matches[1].str() : std::string("Tot"));
@@ -218,6 +343,12 @@ create_diagnostic (const std::string& diag_field_name,
       params.set<std::string>("weighting_method", matches[5].str());
     }
   }
+  else if (std::regex_search(diag_field_name,matches,vert_derivative)) {
+    diag_name = "VertDerivativeDiag";
+    params.set("grid_name", grid->name());
+    params.set<std::string>("field_name", matches[1].str());
+    params.set<std::string>("derivative_method", matches[2].str());
+  }
   else if (std::regex_search(diag_field_name,matches,zonal_avg)) {
     diag_name = "ZonalAvgDiag";
     params.set("grid_name", grid->name());
@@ -227,25 +358,30 @@ create_diagnostic (const std::string& diag_field_name,
   else if (std::regex_search(diag_field_name,matches,conditional_sampling)) {
     diag_name = "ConditionalSampling";
     params.set("grid_name", grid->name());
-    params.set<std::string>("input_field", matches[1].str());
-    params.set<std::string>("condition_field", matches[2].str());
-    params.set<std::string>("condition_operator", matches[3].str());
-    params.set<std::string>("condition_value", matches[4].str());
-  }
-  else if (std::regex_search(diag_field_name,matches,conditional_sampling)) {
-    diag_name = "ConditionalSampling";
-    params.set("grid_name", grid->name());
-    params.set<std::string>("input_field", matches[1].str());
-    params.set<std::string>("condition_field", matches[2].str());
-    params.set<std::string>("condition_operator", matches[3].str());
-    params.set<std::string>("condition_value", matches[4].str());
+    params.set<std::string>("field_name", matches[1].str());
+    params.set<std::string>("condition_lhs", matches[2].str());
+    params.set<std::string>("condition_cmp", matches[3].str());
+    params.set<std::string>("condition_rhs", matches[4].str());
   }
   else if (std::regex_search(diag_field_name,matches,binary_ops)) {
     diag_name = "BinaryOpsDiag";
     params.set("grid_name", grid->name());
-    params.set<std::string>("field_1", matches[1].str());
-    params.set<std::string>("field_2", matches[3].str());
+    params.set<std::string>("arg1", matches[1].str());
+    params.set<std::string>("arg2", matches[3].str());
     params.set<std::string>("binary_op", matches[2].str());
+  }
+  // NOTE: field_prev must be checked AFTER binary_ops so that "X_minus_X_prev"
+  // is parsed as BinaryOpsDiag(X, minus, X_prev) rather than FieldPrevDiag(X_minus_X).
+  else if (std::regex_search(diag_field_name,matches,field_prev)) {
+    diag_name = "FieldPrevDiag";
+    params.set("grid_name",grid->name());
+    params.set<std::string>("field_name",matches[1].str());
+  }
+  else if (std::regex_search(diag_field_name,matches,histogram)) {
+    diag_name = "HistogramDiag";
+    params.set("grid_name", grid->name());
+    params.set<std::string>("field_name", matches[1].str());
+    params.set<std::string>("bin_configuration", matches[2].str());
   }
   else
   {
@@ -259,54 +395,6 @@ create_diagnostic (const std::string& diag_field_name,
   diag->set_grids(gm);
 
   return diag;
-}
-
-std::pair<std::string, std::string>
-parse_field_alias (const std::string& field_spec)
-{
-  const std::string delimiter = ":=";
-  auto pos = field_spec.find(delimiter);
-  
-  if (pos == std::string::npos) {
-    // No alias found, return the field_spec as both alias and field name
-    std::string trimmed = ekat::trim(field_spec);
-    return {trimmed, trimmed};
-  }
-  
-  // Extract and trim alias and field name
-  std::string alias = ekat::trim(field_spec.substr(0, pos));
-  std::string field_name = ekat::trim(field_spec.substr(pos + delimiter.length()));
-  
-  EKAT_REQUIRE_MSG(!alias.empty() && !field_name.empty(),
-      "Error! Invalid field alias specification: '" + field_spec + "'\n"
-      "Expected format: 'alias:=field_name' where both alias and field_name are non-empty.\n");
-
-  auto another_pos = field_name.find(delimiter);
-  EKAT_REQUIRE_MSG(another_pos == std::string::npos,
-      "Error! Invalid field alias specification: '" + field_spec + "'\n"
-      "Multiple ':=' tokens found.\n");
-  return {alias, field_name};
-}
-
-std::pair<std::map<std::string, std::string>, std::vector<std::string>>
-process_field_aliases (const std::vector<std::string>& field_specs)
-{
-  std::map<std::string, std::string> alias_to_field_map;
-  std::vector<std::string> alias_names;
-  
-  for (const auto& spec : field_specs) {
-    auto [alias, field_name] = parse_field_alias(spec);
-    
-    // Check for duplicate aliases
-    EKAT_REQUIRE_MSG(alias_to_field_map.find(alias) == alias_to_field_map.end(),
-        "Error! Duplicate field alias found: '" + alias + "'\n"
-        "Each alias must be unique within the field list.\n");
-    
-    alias_to_field_map[alias] = field_name;
-    alias_names.push_back(alias);
-  }
-  
-  return {alias_to_field_map, alias_names};
 }
 
 } // namespace scream

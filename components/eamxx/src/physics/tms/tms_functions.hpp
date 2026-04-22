@@ -1,9 +1,9 @@
 #ifndef TMS_FUNCTIONS_HPP
 #define TMS_FUNCTIONS_HPP
 
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_subview_utils.hpp>
 #include <ekat_pack_kokkos.hpp>

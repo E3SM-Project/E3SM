@@ -4,7 +4,7 @@
 #include "p3_test_data.hpp"
 #include "p3_unit_tests_common.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 namespace scream {
 namespace p3 {
@@ -42,13 +42,13 @@ struct UnitWrap::UnitTest<D>::TestNcConservation : public UnitWrap::UnitTest<D>:
 
     // Get data from cxx. Run nc_conservation from a kernel and copy results back to host
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init pack inputs
-      Spack nc, nc2ni_immers_freeze_tend, nc2nr_autoconv_tend, nc_accret_tend, nc_collect_tend, nc_selfcollect_tend,
+      Pack nc, nc2ni_immers_freeze_tend, nc2nr_autoconv_tend, nc_accret_tend, nc_collect_tend, nc_selfcollect_tend,
         ncheti_cnt, nicnt;
-      Smask context;
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      Mask context;
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         nc[s] = cxx_device(vs).nc;
         nc2ni_immers_freeze_tend[s] = cxx_device(vs).nc2ni_immers_freeze_tend;
         nc2nr_autoconv_tend[s] = cxx_device(vs).nc2nr_autoconv_tend;
@@ -64,7 +64,7 @@ struct UnitWrap::UnitTest<D>::TestNcConservation : public UnitWrap::UnitTest<D>:
 	  ncheti_cnt, nicnt, use_hetfrz_classnuc, context);
 
       // Copy spacks back into cxx_device view
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         cxx_device(vs).nc2ni_immers_freeze_tend = nc2ni_immers_freeze_tend[s];
         cxx_device(vs).nc2nr_autoconv_tend = nc2nr_autoconv_tend[s];
         cxx_device(vs).nc_accret_tend = nc_accret_tend[s];

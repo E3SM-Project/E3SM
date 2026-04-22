@@ -4,7 +4,7 @@
 #include "p3_test_data.hpp"
 #include "p3_unit_tests_common.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -68,11 +68,11 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation : public UnitWrap::UnitTest<D>::
 
 	// Run the lookup from a kernel and copy results back to host
 	Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-	    const Int offset = i * Spack::n;
+	    const Int offset = i * Pack::n;
 
 	    // Init pack inputs
-	    Spack temp, inv_rho, ni, ni_activated, qv_supersat_i;
-	    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+	    Pack temp, inv_rho, ni, ni_activated, qv_supersat_i;
+	    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
 	      temp[s]            = self_device(vs).temp;
 	      inv_rho[s]         = self_device(vs).inv_rho;
 	      ni[s]              = self_device(vs).ni;
@@ -80,14 +80,14 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation : public UnitWrap::UnitTest<D>::
 	      qv_supersat_i[s]   = self_device(vs).qv_supersat_i;
 	    }
 	    // outputs
-	    Spack qv2qi_nucleat_tend{0.0};
-	    Spack ni_nucleat_tend{0.0};
+	    Pack qv2qi_nucleat_tend{0.0};
+	    Pack ni_nucleat_tend{0.0};
         Functions::ice_nucleation(
           temp, inv_rho, ni, ni_activated, qv_supersat_i, self_device(0).inv_dt,
           do_predict_nc, do_prescribed_CCN, qv2qi_nucleat_tend, ni_nucleat_tend,
           p3::Functions<Real,DefaultDevice>::P3Runtime());
 
-	    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+	    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
 	      self_device(vs).qv2qi_nucleat_tend = qv2qi_nucleat_tend[s];
 	      self_device(vs).ni_nucleat_tend = ni_nucleat_tend[s];
 	    }

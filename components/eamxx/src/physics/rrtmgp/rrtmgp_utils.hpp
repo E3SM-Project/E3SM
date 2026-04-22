@@ -1,7 +1,7 @@
 #ifndef RRTMGP_UTILS_HPP
 #define RRTMGP_UTILS_HPP
 
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "cpp/rrtmgp_const.h"
 #include "cpp/rrtmgp_conversion.h"
 
@@ -33,7 +33,7 @@ void compute_heating_rate (
     heating_rate(icol,ilay) = (
       flux_up(icol,ilay+1) - flux_up(icol,ilay) -
       flux_dn(icol,ilay+1) + flux_dn(icol,ilay)
-                               ) * physconst::gravit / (physconst::Cpair * pdel(icol,ilay));
+                               ) * physconst::gravit.value / (physconst::Cpair.value * pdel(icol,ilay));
                                   ));
 }
 

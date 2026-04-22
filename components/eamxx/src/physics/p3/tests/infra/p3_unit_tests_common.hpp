@@ -1,7 +1,7 @@
 #ifndef P3_UNIT_TESTS_COMMON_HPP
 #define P3_UNIT_TESTS_COMMON_HPP
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 #include "p3_functions.hpp"
 #include "p3_data.hpp"
 #include "p3_test_data.hpp"
@@ -51,17 +51,16 @@ struct UnitWrap {
     using view_2d_table      = typename Functions::view_2d_table;
     using view_dnu_table     = typename Functions::view_dnu_table;
     using Scalar             = typename Functions::Scalar;
-    using Spack              = typename Functions::Spack;
     using Pack               = typename Functions::Pack;
-    using IntSmallPack       = typename Functions::IntSmallPack;
-    using Smask              = typename Functions::Smask;
+    using IntPack       = typename Functions::IntPack;
+    using Mask               = typename Functions::Mask;
     using TableIce           = typename Functions::TableIce;
     using TableRain          = typename Functions::TableRain;
     using Table3             = typename Functions::Table3;
     using C                  = typename Functions::C;
 
     static constexpr Int max_pack_size = 16;
-    static constexpr Int num_test_itrs = max_pack_size / Spack::n;
+    static constexpr Int num_test_itrs = max_pack_size / Pack::n;
 
     struct Base : public UnitBase {
 
@@ -77,7 +76,7 @@ struct UnitWrap {
     // Put struct decls here
     struct TestTableIce;
     struct TestTable3;
-    struct TestBackToCellAverage;
+    struct TestP3BackToCellAverage;
     struct TestFind;
     struct TestUpwind;
     struct TestGenSed;

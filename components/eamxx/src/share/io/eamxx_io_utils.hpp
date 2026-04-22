@@ -11,6 +11,7 @@
 
 #include <string>
 #include <memory>
+#include <utility>
 
 namespace scream
 {
@@ -83,22 +84,21 @@ util::TimeStamp read_timestamp (const std::string& filename,
                                 const std::string& ts_name,
                                 const bool read_nsteps = false);
 
+// Parse a CF-compliant time units string of the form "<unit> since <date> [<time>]"
+// and return the reference TimeStamp and multiplier (in seconds) for the given unit.
+// Supported units: seconds, minutes, hours, days.
+// Supported date formats: YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, YYYY-MM-DD-SSSSS
+// NOTE: the filename is only used to give context if throwing an exception
+std::pair<util::TimeStamp,int>
+parse_cf_time_units (const std::string& units_str,
+                     const std::string& filename);
+
 // Create a diagnostic from a string representation of it.
 // E.g., create the diag to compute fieldX_at_500hPa.
 std::shared_ptr<AtmosphereDiagnostic>
 create_diagnostic (const std::string& diag_name,
                    const std::shared_ptr<const AbstractGrid>& grid);
 
-// Parse field alias from field specification string.
-// Format: "alias:=field_name" returns {alias, field_name}
-// For non-aliased fields, returns {field_name, field_name}
-std::pair<std::string, std::string>
-parse_field_alias (const std::string& field_spec);
-
-// Process a list of field specifications with potential aliases.
-// Returns a map from alias_name -> internal_field_name and a vector of alias names
-std::pair<std::map<std::string, std::string>, std::vector<std::string>>
-process_field_aliases (const std::vector<std::string>& field_specs);
-
 } // namespace scream
+
 #endif // SCREAM_IO_UTILS_HPP

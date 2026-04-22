@@ -75,14 +75,23 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     # ---------------------------------------------------
     if case.get_value('COMP_WAV') == 'ww3':
         config['WAVSPEC'] = case.get_value('WAV_SPEC')
+        if case.get_value('COMP_ATM') == 'eam':
+            config['WAV_ATM_COUP'] = 'twoway'
+        else:
+            config['WAV_ATM_COUP'] = 'oneway'
+
         if case.get_value('COMP_OCN') == 'mpaso':
             config['WAV_OCN_COUP'] = 'twoway'
+            config['ocn_surface_flux_scheme'] = 0
         elif case.get_value('COMP_OCN') == 'docn': 
             config['WAV_OCN_COUP'] = 'oneway'
+
+        if case.get_value('COMP_ICE') == 'mpassi': 
+            config['WAV_ICE_COUP'] = 'twoway' 
     elif case.get_value('COMP_WAV') == 'dwav':
-        config['WAVSPEC'] = 'sp36x36'
+         config['WAVSPEC'] = 'sp36x36'
     else:
-        config['WAVSPEC'] = 'none'
+         config['WAVSPEC'] = 'none'
 
     #----------------------------------------------------
     # Initialize namelist defaults
@@ -265,6 +274,10 @@ def write_seq_maps_file(case, nmlgen, confdir):
                         if "rof2ocn_" in name:
                             if case.get_value("COMP_OCN") == 'docn':
                                 logger.warning("   NOTE: ignoring setting of {}=idmap in seq_maps.rc".format(name))
+                        elif "ocn2lnd_" in name:
+                            logger.warning("   NOTE: ignoring setting of {}=idmap in seq_maps.rc".format(name))
+                        elif "lnd2ocn_" in name:
+                            logger.warning("   NOTE: ignoring setting of {}=idmap in seq_maps.rc".format(name))
                         else:
                             expect(gridvalue[component1] == gridvalue[component2],
                                    "Need to provide valid mapping file between {} and {} in xml variable {} ".\
@@ -418,9 +431,13 @@ def buildnml(case, caseroot, component):
         if "aquaplanet" in cam_config_opts:
             infile_text = "aqua_planet = .true. \n aqua_planet_sst = 1"
 
-    # add dust_emis_scheme 
+    # add dust_emis_scheme
     dust_emis_scheme = case.get_value('dust_emis_scheme')
     infile_text += " dust_emis_scheme = {}".format(dust_emis_scheme)
+
+    # add nlmaps_atm2srf_conserve flag
+    nlmaps_atm2srf_conserve = case.get_value('nlmaps_atm2srf_conserve')
+    infile_text += " nlmaps_atm2srf_conserve = {}".format(nlmaps_atm2srf_conserve)
 
     user_nl_file = os.path.join(caseroot, "user_nl_cpl")
     namelist_infile = os.path.join(confdir, "namelist_infile")

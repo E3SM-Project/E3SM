@@ -97,6 +97,16 @@ class Generic(Machine):
         cls.baselines_dir = os.path.join(os.path.dirname(__file__), '..', 'ctest-build', 'baselines')
 
 ###############################################################################
+class CopilotTesting(Machine):
+###############################################################################
+    concrete = True
+
+    @classmethod
+    def setup(cls):
+        super().setup_base("copilot-testing")
+        cls.baselines_dir = os.path.join(os.path.dirname(__file__), '..', 'ctest-build', 'baselines')
+
+###############################################################################
 class CrayMachine(Machine):
 ###############################################################################
     @classmethod

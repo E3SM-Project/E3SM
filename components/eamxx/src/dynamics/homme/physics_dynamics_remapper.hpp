@@ -1,9 +1,9 @@
 #ifndef SCREAM_PHYSICS_DYNAMICS_REMAPPER_HPP
 #define SCREAM_PHYSICS_DYNAMICS_REMAPPER_HPP
 
-#include "share/eamxx_config.hpp"
+#include "share/remap/abstract_remapper.hpp"
 
-#include "share/grid/remap/abstract_remapper.hpp"
+#include "share/core/eamxx_config.hpp"
 
 #include <ekat_pack.hpp>
 
@@ -29,7 +29,6 @@ public:
   using view_1d = view_Nd<T,1>;
 
   using pack_type = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-  using small_pack_type = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>;
 
   PhysicsDynamicsRemapper (const grid_ptr_type& phys_grid,
                            const grid_ptr_type& dyn_grid);
@@ -73,7 +72,6 @@ public:
 
   enum AllocPropType : int {
     PackAlloc      = 0,
-    SmallPackAlloc = 1,
     RealAlloc      = 2
   };
 

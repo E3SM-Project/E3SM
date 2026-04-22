@@ -4,8 +4,8 @@
 #include "gw_functions.hpp"
 #include "gw_test_data.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_types.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 
 #include <vector>
 #include <sstream>
@@ -19,18 +19,18 @@ namespace unit_test {
 template <typename Engine>
 inline auto get_common_init_data(Engine& engine)
 {
-  std::array<GwInit, 4> rv = {
+  std::array<GwCommonInit, 4> rv = {
     // gw_ediff::vd_lu_decomp breaks if kbot==pver
 
     // NOTE: All integer data is assumed to be 0-based (C style)! The
     // unit-test -> F90 GW layer needs to adjust these in d.transition if
     // it represents an index
 
-    //     pver, pgwv,   dc, orog_only, molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv
-    GwInit(  72,   20, 0.75,     false,      false,     false,         16,   8,     66,    .67, 6.28e-5),
-    GwInit(  72,   20, 0.75,     true ,      false,     true ,         16,   6,     68,    .67, 6.28e-5),
-    GwInit(  72,   20, 0.75,     false,      true ,     true ,         16,   3,     70,    .67, 6.28e-5),
-    GwInit(  72,   20, 0.75,     true ,      true ,     false,         16,   0,     70,    .67, 6.28e-5),
+    //           pver, pgwv,   dc, orog_only, molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv
+    GwCommonInit(  72,   20, 2.5,     false,      false,     false,         16,   8,     66,    .67, 6.28e-5),
+    GwCommonInit(  72,   20, 2.5,     true ,      false,     true ,         16,   6,     68,    .67, 6.28e-5),
+    GwCommonInit(  72,   20, 2.5,     false,      true ,     true ,         16,   3,     70,    .67, 6.28e-5),
+    GwCommonInit(  72,   20, 2.5,     true ,      true ,     false,         16,   0,     70,    .67, 6.28e-5),
   };
 
   for (auto& d : rv) {
@@ -78,17 +78,16 @@ struct UnitWrap {
     // using view_2d_table      = typename Functions::view_2d_table;
     // using view_dnu_table     = typename Functions::view_dnu_table;
     using Scalar             = typename Functions::Scalar;
-    using Spack              = typename Functions::Spack;
-    // using Pack               = typename Functions::Pack;
-    // using IntSmallPack       = typename Functions::IntSmallPack;
-    // using Smask              = typename Functions::Smask;
+    using Pack              = typename Functions::Pack;
+    // using IntPack       = typename Functions::IntPack;
+    // using Mask              = typename Functions::Mask;
     // using TableIce           = typename Functions::TableIce;
     // using TableRain          = typename Functions::TableRain;
     // using Table3             = typename Functions::Table3;
     // using C                  = typename Functions::C;
 
     static constexpr Int max_pack_size = 16;
-    static constexpr Int num_test_itrs = max_pack_size / Spack::n;
+    static constexpr Int num_test_itrs = max_pack_size / Pack::n;
 
     struct Base : public UnitBase {
 
@@ -120,6 +119,8 @@ struct UnitWrap {
     struct TestGwEdiff;
     struct TestGwDiffTend;
     struct TestGwOroSrc;
+    struct TestVdLuDecomp;
+    struct TestVdLuSolve;
   }; // UnitWrap
 };
 

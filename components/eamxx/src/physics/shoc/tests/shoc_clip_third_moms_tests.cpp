@@ -3,9 +3,9 @@
 #include "shoc_unit_tests_common.hpp"
 #include "shoc_functions.hpp"
 #include "shoc_test_data.hpp"
-#include "physics/share/physics_constants.hpp"
-#include "share/eamxx_types.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/physics/physics_constants.hpp"
+#include "share/core/eamxx_types.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 
 
 #include <algorithm>
@@ -70,7 +70,7 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms : public UnitWrap::UnitTest<D>::
         const auto offset = n + s * nlevi;
 
         REQUIRE(SDS.w_sec_zi[offset] <= 1);
-        if (abs(SDS.w3[offset]) > 1000){
+        if (std::abs(SDS.w3[offset]) > 1000){
           w3_large = true;
         }
         SDS.w_sec_zi[offset] = w_sec_zi[n];
@@ -88,8 +88,8 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms : public UnitWrap::UnitTest<D>::
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 
-        if (abs(w3_in[n]) > 1000){
-          REQUIRE(abs(SDS.w3[offset]) < abs(w3_in[n]));
+        if (std::abs(w3_in[n]) > 1000){
+          REQUIRE(std::abs(SDS.w3[offset]) < std::abs(w3_in[n]));
         }
 
       }

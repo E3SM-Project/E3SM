@@ -46,7 +46,6 @@ module seq_hist_mod
   use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_r2x_fields,seq_flds_dom_fields
   use seq_flds_mod, only: seq_flds_l2x_fields, seq_flds_x2a_fields, seq_flds_x2i_fields
   use seq_flds_mod, only: seq_flds_x2l_fields, seq_flds_x2r_fields
-  use iMOAB,            only: iMOAB_GetGlobalInfo
   use shr_moab_mod,      only: mbGetnCells,mbGetCellTagVals
 
   use component_type_mod
@@ -420,9 +419,9 @@ contains
 !             call seq_io_write(hist_file, gsmap, fractions_zx, 'fractions_zx',  &
 !                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='fracz')
 !             call seq_io_write(hist_file, iac, 'c2x', 'z2x_zx', &
-!                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='w2x')
+!                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='z2x')
 !             call seq_io_write(hist_file, iac, 'x2c', 'x2z_zx', &
-!                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='x2w')
+!                  nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, dims2din=latlonid, pre='x2z')
 !          endif
         enddo
        call seq_io_close(hist_file)
@@ -898,112 +897,112 @@ contains
              if (atm_present .and. histavg_atm) then
                 gsmap => component_get_gsmap_cx(atm(1))
                 dom   => component_get_dom_cx(atm(1))
-                call seq_io_write(hist_file, gsmap, dom%data, 'dom_ax',  &
-                     nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='doma')
+               !call seq_io_write(hist_file, gsmap, dom%data, 'dom_ax',  &
+               !     nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='doma')
 
-                call seq_io_write(hist_file, gsmap, x2a_ax_avg, 'x2a_ax',  &
-                     nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata,  &
-                     pre='x2aavg', tavg=.true.)
-                call seq_io_write(hist_file, gsmap, a2x_ax_avg, 'a2x_ax',  &
-                     nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata,  &
-                     pre='a2xavg', tavg=.true.)
+               !call seq_io_write(hist_file, gsmap, x2a_ax_avg, 'x2a_ax',  &
+               !     nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata,  &
+               !     pre='x2aavg', tavg=.true.)
+               !call seq_io_write(hist_file, gsmap, a2x_ax_avg, 'a2x_ax',  &
+               !     nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata,  &
+               !     pre='a2xavg', tavg=.true.)
              endif
              if (lnd_present .and. histavg_lnd) then
                 gsmap => component_get_gsmap_cx(lnd(1))
                 dom   => component_get_dom_cx(lnd(1))
-                call seq_io_write(hist_file, gsmap, dom%data, 'dom_lx',  &
-                     nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata, pre='doml')
-                call seq_io_write(hist_file, gsmap, l2x_lx_avg, 'l2x_lx',  &
-                     nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata,  &
-                     pre='l2xavg', tavg=.true.)
-                call seq_io_write(hist_file, gsmap, x2l_lx_avg, 'x2l_lx',  &
-                     nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata,  &
-                     pre='x2lavg', tavg=.true.)
+               !call seq_io_write(hist_file, gsmap, dom%data, 'dom_lx',  &
+               !     nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata, pre='doml')
+               !call seq_io_write(hist_file, gsmap, l2x_lx_avg, 'l2x_lx',  &
+               !     nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata,  &
+               !     pre='l2xavg', tavg=.true.)
+               !call seq_io_write(hist_file, gsmap, x2l_lx_avg, 'x2l_lx',  &
+               !     nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata,  &
+               !     pre='x2lavg', tavg=.true.)
              endif
 
              if (rof_present .and. histavg_rof) then
                 gsmap => component_get_gsmap_cx(rof(1))
                 dom   => component_get_dom_cx(rof(1))
-                call seq_io_write(hist_file, gsmap, dom%data, 'dom_rx',  &
-                     nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata, pre='domr')
-                call seq_io_write(hist_file, gsmap, r2x_rx_avg, 'r2x_rx',  &
-                     nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata,  &
-                     pre='r2xavg', tavg=.true.)
-                call seq_io_write(hist_file, gsmap, x2r_rx_avg, 'x2r_rx',  &
-                     nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata,  &
-                     pre='x2ravg', tavg=.true.)
+              ! call seq_io_write(hist_file, gsmap, dom%data, 'dom_rx',  &
+              !      nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata, pre='domr')
+              ! call seq_io_write(hist_file, gsmap, r2x_rx_avg, 'r2x_rx',  &
+              !      nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata,  &
+              !      pre='r2xavg', tavg=.true.)
+              ! call seq_io_write(hist_file, gsmap, x2r_rx_avg, 'x2r_rx',  &
+              !      nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata,  &
+              !      pre='x2ravg', tavg=.true.)
              endif
              if (ocn_present .and. histavg_ocn) then
                 gsmap => component_get_gsmap_cx(ocn(1))
                 dom   => component_get_dom_cx(ocn(1))
-                call seq_io_write(hist_file, gsmap, dom%data, 'dom_ox',  &
-                     nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='domo')
-                call seq_io_write(hist_file, gsmap, o2x_ox_avg, 'o2x_ox',  &
-                     nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata,  &
-                     pre='o2xavg', tavg=.true.)
-                call seq_io_write(hist_file, gsmap, x2o_ox_avg, 'x2o_ox',  &
-                     nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata,  &
-                     pre='x2oavg', tavg=.true.)
+             !  call seq_io_write(hist_file, gsmap, dom%data, 'dom_ox',  &
+             !       nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='domo')
+             !  call seq_io_write(hist_file, gsmap, o2x_ox_avg, 'o2x_ox',  &
+             !       nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata,  &
+             !       pre='o2xavg', tavg=.true.)
+             !  call seq_io_write(hist_file, gsmap, x2o_ox_avg, 'x2o_ox',  &
+             !       nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata,  &
+             !       pre='x2oavg', tavg=.true.)
              endif
              if (ice_present .and. histavg_ice) then
                 gsmap => component_get_gsmap_cx(ice(1))
                 dom   => component_get_dom_cx(ice(1))
-                call seq_io_write(hist_file, gsmap, dom%data, 'dom_ix',  &
-                     nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='domi')
-                call seq_io_write(hist_file, gsmap, i2x_ix_avg, 'i2x_ix',  &
-                     nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata,  &
-                     pre='i2xavg', tavg=.true.)
-                call seq_io_write(hist_file, gsmap, x2i_ix_avg, 'x2i_ix',  &
-                     nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata,  &
-                     pre='x2iavg', tavg=.true.)
+             !  call seq_io_write(hist_file, gsmap, dom%data, 'dom_ix',  &
+             !       nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='domi')
+             !  call seq_io_write(hist_file, gsmap, i2x_ix_avg, 'i2x_ix',  &
+             !       nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata,  &
+             !       pre='i2xavg', tavg=.true.)
+             !  call seq_io_write(hist_file, gsmap, x2i_ix_avg, 'x2i_ix',  &
+             !       nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata,  &
+             !       pre='x2iavg', tavg=.true.)
              endif
              if (glc_present .and. histavg_glc) then
                 gsmap => component_get_gsmap_cx(glc(1))
                 dom   => component_get_dom_cx(glc(1))
-                call seq_io_write(hist_file, gsmap, dom%data, 'dom_gx',  &
-                     nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata, pre='domg')
-                call seq_io_write(hist_file, gsmap, g2x_gx_avg, 'g2x_gx',  &
-                     nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata,  &
-                     pre='g2xavg', tavg=.true.)
-                call seq_io_write(hist_file, gsmap, x2g_gx_avg, 'x2g_gx',  &
-                     nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata,  &
-                     pre='x2gavg', tavg=.true.)
+             !  call seq_io_write(hist_file, gsmap, dom%data, 'dom_gx',  &
+             !       nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata, pre='domg')
+             !  call seq_io_write(hist_file, gsmap, g2x_gx_avg, 'g2x_gx',  &
+             !       nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata,  &
+             !       pre='g2xavg', tavg=.true.)
+             !  call seq_io_write(hist_file, gsmap, x2g_gx_avg, 'x2g_gx',  &
+             !       nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata,  &
+             !       pre='x2gavg', tavg=.true.)
              endif
              if (wav_present .and. histavg_wav) then
                 gsmap => component_get_gsmap_cx(wav(1))
                 dom   => component_get_dom_cx(wav(1))
-                call seq_io_write(hist_file, gsmap, dom%data, 'dom_wx',  &
-                     nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, pre='domw')
-                call seq_io_write(hist_file, gsmap, w2x_wx_avg, 'w2x_wx',  &
-                     nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata,  &
-                     pre='w2xavg', tavg=.true.)
-                call seq_io_write(hist_file, gsmap, x2w_wx_avg, 'x2w_wx',  &
-                     nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata,  &
-                     pre='x2wavg', tavg=.true.)
+             !  call seq_io_write(hist_file, gsmap, dom%data, 'dom_wx',  &
+             !       nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, pre='domw')
+             !  call seq_io_write(hist_file, gsmap, w2x_wx_avg, 'w2x_wx',  &
+             !       nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata,  &
+             !       pre='w2xavg', tavg=.true.)
+             !  call seq_io_write(hist_file, gsmap, x2w_wx_avg, 'x2w_wx',  &
+             !       nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata,  &
+             !       pre='x2wavg', tavg=.true.)
              endif
              if (iac_present .and. histavg_iac) then
                 gsmap => component_get_gsmap_cx(iac(1))
                 dom   => component_get_dom_cx(iac(1))
-                call seq_io_write(hist_file, gsmap, dom%data, 'dom_zx',  &
-                     nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, pre='domw')
-                call seq_io_write(hist_file, gsmap, z2x_zx_avg, 'z2x_zx',  &
-                     nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata,  &
-                     pre='z2xavg', tavg=.true.)
-                call seq_io_write(hist_file, gsmap, x2z_zx_avg, 'x2z_zx',  &
-                     nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata,  &
-                     pre='x2zavg', tavg=.true.)
+             !  call seq_io_write(hist_file, gsmap, dom%data, 'dom_zx',  &
+             !       nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, pre='domz')
+             !  call seq_io_write(hist_file, gsmap, z2x_zx_avg, 'z2x_zx',  &
+             !       nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata,  &
+             !       pre='z2xavg', tavg=.true.)
+             !  call seq_io_write(hist_file, gsmap, x2z_zx_avg, 'x2z_zx',  &
+             !       nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata,  &
+             !       pre='x2zavg', tavg=.true.)
              endif
              if (ocn_present .and. histavg_xao) then
                 gsmap => component_get_gsmap_cx(ocn(1))
-                call seq_io_write(hist_file, gsmap, xao_ox_avg, 'xao_ox',  &
-                     nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata,  &
-                     pre='xaooavg', tavg=.true.)
+             !  call seq_io_write(hist_file, gsmap, xao_ox_avg, 'xao_ox',  &
+             !       nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata,  &
+             !       pre='xaooavg', tavg=.true.)
              endif
              if (atm_present .and. histavg_xao) then
                 gsmap => component_get_gsmap_cx(atm(1))
-                call seq_io_write(hist_file, gsmap, xao_ax_avg, 'xao_ax',  &
-                     nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata,  &
-                     pre='xaoaavg', tavg=.true.)
+             !  call seq_io_write(hist_file, gsmap, xao_ax_avg, 'xao_ax',  &
+             !       nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata,  &
+             !       pre='xaoaavg', tavg=.true.)
              endif
           enddo
 
@@ -1326,32 +1325,32 @@ contains
              endif
 
              if (fwrite(found)) then
-                call seq_io_write(hist_file(found), gsmap, dom%data, trim(dname),  &
-                     nx=nx, ny=ny, whead=whead, wdata=wdata, fillval=c0, pre=trim(dname), file_ind=found)
+             !  call seq_io_write(hist_file(found), gsmap, dom%data, trim(dname),  &
+             !       nx=nx, ny=ny, whead=whead, wdata=wdata, fillval=c0, pre=trim(dname), file_ind=found)
              endif
 
              if (useavg) then
                 if (present(flds)) then
                    call mct_aVect_copy(aVin=avavg(found),  aVout=avflds)
-                   call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
-                        nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
-                        pre=trim(aname), tavg=.true., use_float=(.not. use_double), &
-                        file_ind=found)
+                !  call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
+                !       nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
+                !       pre=trim(aname), tavg=.true., use_float=(.not. use_double), &
+                !       file_ind=found)
                 else
-                   call seq_io_write(hist_file(found),  gsmap,  avavg(found),  trim(aname),  &
-                        nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
-                        pre=trim(aname), tavg=.true.,  use_float=(.not. use_double), &
-                        file_ind=found)
+                !  call seq_io_write(hist_file(found),  gsmap,  avavg(found),  trim(aname),  &
+                !       nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
+                !       pre=trim(aname), tavg=.true.,  use_float=(.not. use_double), &
+                !       file_ind=found)
                 end if
              else if (present(flds)) then
                 call mct_aVect_copy(aVin=av,  aVout=avflds)
-                call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
-                     nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
-                     use_float=(.not. use_double), file_ind=found)
+              ! call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
+              !      nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
+              !      use_float=(.not. use_double), file_ind=found)
              else
-                call seq_io_write(hist_file(found),  gsmap,  av,  trim(aname),  &
-                     nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
-                     use_float=(.not. use_double), file_ind=found)
+              ! call seq_io_write(hist_file(found),  gsmap,  av,  trim(aname),  &
+              !      nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
+              !      use_float=(.not. use_double), file_ind=found)
              endif
 
              if (present(flds)) then
@@ -1553,23 +1552,23 @@ contains
              if (useavg) then
                 if (present(flds)) then
                    call mct_aVect_copy(aVin=avavg(found),  aVout=avflds)
-                   call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
-                        nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
-                        pre=trim(aname), tavg=.true., use_float=.true.)
+               !   call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
+               !        nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
+               !        pre=trim(aname), tavg=.true., use_float=.true.)
                 else
-                   call seq_io_write(hist_file(found),  gsmap,  avavg(found),  trim(aname),  &
-                        nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
-                        pre=trim(aname), tavg=.true.,  use_float=.true.)
+               !   call seq_io_write(hist_file(found),  gsmap,  avavg(found),  trim(aname),  &
+               !        nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
+               !        pre=trim(aname), tavg=.true.,  use_float=.true.)
                 end if
              else if (present(flds)) then
                 call mct_aVect_copy(aVin=av,  aVout=avflds)
-                call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
-                     nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
-                     use_float=.true.)
+               !call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
+               !     nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
+               !     use_float=.true.)
              else
-                call seq_io_write(hist_file(found),  gsmap,  av,  trim(aname),  &
-                     nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
-                     use_float=.true.)
+               !call seq_io_write(hist_file(found),  gsmap,  av,  trim(aname),  &
+               !     nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
+               !     use_float=.true.)
              endif
 
              if (present(flds)) then

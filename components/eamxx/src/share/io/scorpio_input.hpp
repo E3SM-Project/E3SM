@@ -1,8 +1,9 @@
 #ifndef SCREAM_SCORPIO_INPUT_HPP
 #define SCREAM_SCORPIO_INPUT_HPP
 
-#include "share/field/field_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
+#include "share/util/eamxx_utils.hpp"
 
 #include <ekat_parameter_list.hpp>
 #include <ekat_logger.hpp>
@@ -42,11 +43,6 @@ class AtmosphereInput
 public:
   using fm_type       = FieldManager;
   using grid_type     = AbstractGrid;
-
-  using KT = KokkosTypes<DefaultDevice>;
-  template<int N>
-  using view_Nd_host = typename KT::template view_ND<Real,N>::HostMirror;
-  using view_1d_host = view_Nd_host<1>;
 
   // --- Constructor(s) & Destructor --- //
   // NOTE: non-trivial constructors simply call the corresponding init method
@@ -98,14 +94,10 @@ public:
   void reset_filename (const std::string& filename);
 
   // Option to add a logger
-  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
-      m_atm_logger = atm_logger;
-  }
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger);
 protected:
 
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
-  void set_views (const std::map<std::string,view_1d_host>& host_views_1d,
-                  const std::map<std::string,FieldLayout>&  layouts);
   void init_scorpio_structures ();
 
   void set_decompositions();
@@ -125,8 +117,7 @@ protected:
   bool m_fields_inited  = false;
   bool m_scorpio_inited = false;
 
-  // The logger to be used throughout the ATM to log message
-  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
+  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger = console_logger(ekat::logger::LogLevel::warn);
 }; // Class AtmosphereInput
 
 } //namespace scream

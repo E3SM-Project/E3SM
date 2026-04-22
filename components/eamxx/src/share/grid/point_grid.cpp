@@ -1,5 +1,4 @@
 #include "share/grid/point_grid.hpp"
-#include "physics/share/physics_constants.hpp"
 
 #include <numeric>
 
@@ -81,32 +80,32 @@ PointGrid::get_2d_tensor_layout (const std::vector<int>& cmp_dims,
 }
 
 FieldLayout
-PointGrid::get_3d_scalar_layout (const bool midpoints) const
+PointGrid::get_3d_scalar_layout (const FieldTag vtag) const
 {
   using namespace ShortFieldTagsNames;
 
-  int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
-  auto VL = midpoints ? LEV : ILEV;
+  check_tag_vkind_compatibility(vtag);
+  int nvl = this->get_num_vertical_levels() + (vtag==ILEV ? 1 : 0);
 
-  return FieldLayout({COL,VL},{get_num_local_dofs(),nvl}).rename_dims(m_special_tag_names);
+  return FieldLayout({COL,vtag},{get_num_local_dofs(),nvl}).rename_dims(m_special_tag_names);
 }
 
 FieldLayout
-PointGrid::get_3d_vector_layout (const bool midpoints, const int vector_dim,
+PointGrid::get_3d_vector_layout (const FieldTag vtag, const int vector_dim,
                                  const std::string& vec_dim_name) const
 {
   using namespace ShortFieldTagsNames;
 
-  int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
-  auto VL = midpoints ? LEV : ILEV;
+  check_tag_vkind_compatibility(vtag);
+  int nvl = this->get_num_vertical_levels() + (vtag==ILEV ? 1 : 0);
 
-  FieldLayout fl({COL,CMP,VL},{get_num_local_dofs(),vector_dim,nvl});
+  FieldLayout fl({COL,CMP,vtag},{get_num_local_dofs(),vector_dim,nvl});
   fl.rename_dim(1,vec_dim_name);
   return fl.rename_dims(m_special_tag_names);
 }
 
 FieldLayout
-PointGrid::get_3d_tensor_layout (const bool midpoints,
+PointGrid::get_3d_tensor_layout (const FieldTag vtag,
                                  const std::vector<int>& cmp_dims,
                                  const std::vector<std::string>& cmp_names) const
 {
@@ -117,8 +116,8 @@ PointGrid::get_3d_tensor_layout (const bool midpoints,
       "  - cmp_dims : " + ekat::join(cmp_dims,",") + "\n");
   using namespace ShortFieldTagsNames;
 
-  int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
-  auto VL = midpoints ? LEV : ILEV;
+  check_tag_vkind_compatibility(vtag);
+  int nvl = this->get_num_vertical_levels() + (vtag==ILEV ? 1 : 0);
 
   FieldLayout fl;
 
@@ -126,7 +125,7 @@ PointGrid::get_3d_tensor_layout (const bool midpoints,
   for (size_t i=0; i<cmp_dims.size(); ++i) {
     fl.append_dim(CMP,cmp_dims[i],cmp_names[i]);
   }
-  fl.append_dim(VL,nvl);
+  fl.append_dim(vtag,nvl);
 
   return fl.rename_dims(m_special_tag_names);
 }
@@ -144,14 +143,15 @@ std::shared_ptr<PointGrid>
 create_point_grid (const std::string& grid_name,
                    const int num_global_cols,
                    const int num_vertical_lev,
-                   const ekat::Comm& comm)
+                   const ekat::Comm& comm,
+                   const int gid_base)
 {
   // Compute how many columns are owned by this rank
   const int num_procs = comm.size();
 
   auto num_my_cols = num_global_cols / num_procs;
   int remainder   = num_global_cols % num_procs;
-  int dof_offset  = num_my_cols*comm.rank();
+  int dof_offset  = num_my_cols*comm.rank() + gid_base;
   if (comm.rank() < remainder) {
     ++num_my_cols;
     dof_offset += comm.rank();

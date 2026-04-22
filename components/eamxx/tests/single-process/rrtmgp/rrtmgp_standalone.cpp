@@ -1,9 +1,9 @@
 #include <catch2/catch.hpp>
 
 #include "control/atmosphere_driver.hpp"
-#include "diagnostics/register_diagnostics.hpp"
 #include "physics/register_physics.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/diagnostics/register_diagnostics.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "share/field/field_utils.hpp"
 
 #include <ekat_yaml.hpp>

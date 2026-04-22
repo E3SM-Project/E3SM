@@ -1,4 +1,4 @@
-# Conditional sampling
+# Conditional sampling diagnostics
 
 The conditional sampling diagnostic allows you to extract field values
 where a specified condition is met, filling other locations with a
@@ -50,36 +50,42 @@ Use the special condition field name `lev`.
 - `T_mid_where_lev_gt_5`
 - `p_mid_where_lev_eq_0`
 - `qv_where_lev_le_10`
+- `T_mid_where_qv_at_lev_125_lt_qv_at_lev_128`
 
-## Count-based conditional sampling
+## Mask-only calculation
 
-Count the number of grid points where a condition is met.
-Use the special input field name `count`. The output will be `1.0`
-where the condition is satisfied and the fill value elsewhere.
+Compute a mask stating where the condition is met.
+Use the special input field name `mask`. The output will be `1`
+where the condition is satisfied and `0` elsewhere.
 This is particularly useful when combined with horizontal or vertical
 reductions to count occurrences of specific conditions.
 
 **Examples**:
 
-- `count_where_qv_gt_0.01`
-- `count_where_T_mid_le_273.15`
-- `count_where_p_mid_lt_50000`
-- `count_where_lev_gt_5`
+- `mask_where_qv_gt_0.01`
+- `mask_where_T_mid_le_273.15`
+- `mask_where_p_mid_lt_50000`
+- `mask_where_lev_gt_5`
+
+To count the percentage of earth where the surface pressure is > 1e5Pa:
+
+- `mask_where_ps_gt_100000_horiz_avg`
 
 ## Caveats
 
-- For now, we only support 1D or 2D fields.
-  These include most fields of interest with the following layouts
-  (ncol,), (nlev,), (ncol,nlev).  
+- For now, we only support 1D, 2D, and 3D fields.
+  These include most fields of interest with any possible sub-layout
+  of (ncol,ncmp,nlev)
   Adding support for higher-dimensioned fields is straightforward,
   but we will add it when requested.
 - The condition and input fields must have the same layout
   (except for level-based sampling). In level-based sampling,
   the level index must be present in the field.
 - The condition is provided as a triplet of information string
-  (`<condition>_<operator>_<value>`). We assume the user knows
-  the standard unit of the condition that is used internally
+  (`<condition_lhs>_<operator>_<condition_rhs>`). We assume the user knows
+  the standard unit of the lhs/rhs that are used internally
   in EAMxx field manager (there is no way to specify it).
+- The RHS in the condition can be a scalar value or another field/diag name
 
 ## Example configuration
 
@@ -99,10 +105,10 @@ fields:
       - T_mid_where_lev_gt_5
       - p_mid_where_lev_eq_0
       - qv_where_lev_le_10
-      # Count-based conditional sampling
-      - count_where_qv_gt_0.01
-      - count_where_T_mid_le_273.15
-      - count_where_lev_gt_5
+      # Mask-based conditional sampling
+      - mask_where_qv_gt_0.01
+      - mask_where_T_mid_le_273.15
+      - mask_where_lev_gt_5
 output_control:
   frequency: 6
   frequency_units: nhours

@@ -5,7 +5,7 @@ Used by buildnml. See buildnml for documetation.
 """
 
 import os, sys, re, pwd, grp, stat, getpass
-from collections import OrderedDict
+from pathlib import Path
 
 import xml.etree.ElementTree as ET
 import xml.dom.minidom as md
@@ -14,14 +14,13 @@ import xml.dom.minidom as md
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 
 # SCREAM imports
-from eamxx_buildnml_impl import get_valid_selectors, get_child, refine_type, \
+from eamxx_buildnml_impl import get_valid_selectors, get_child, has_child, refine_type, \
         resolve_all_inheritances, gen_atm_proc_group, check_all_values, find_node
 from atm_manip import apply_atm_procs_list_changes_from_buffer, apply_non_atm_procs_list_changes_from_buffer
 
 from utils import ensure_yaml # pylint: disable=no-name-in-module
 ensure_yaml()
 import yaml
-from yaml_utils import Bools,Ints,Floats,Strings,array_representer,array_constructor
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
 sys.path.append(os.path.join(_CIMEROOT, "CIME", "Tools"))
@@ -234,13 +233,7 @@ def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
         return dumper.represent_mapping(
             yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
             data.items())
-    OrderedDumper.add_representer(OrderedDict, _dict_representer)
-
-    # These allow to dump arrays with a tag specifying the type
-    OrderedDumper.add_representer(Bools,    array_representer)
-    OrderedDumper.add_representer(Ints,     array_representer)
-    OrderedDumper.add_representer(Floats,   array_representer)
-    OrderedDumper.add_representer(Strings,  array_representer)
+    OrderedDumper.add_representer(dict, _dict_representer)
 
     if isinstance(item, str) and item.endswith(".yaml"):
         # Item is a filepath
@@ -602,11 +595,11 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
-    OrderedDict([   ('atm_procs_list', 'P1,P2'),
-                    ('prop2', 'one'),
-                    ('prop1', 'zero'),
-                    ('P1', OrderedDict([('prop1', 'two')])),
-                    ('P2', OrderedDict([('prop1', 'zero')]))])
+    {   'P1': {'prop1': 'two'},
+        'P2': {'prop1': 'zero'},
+        'atm_procs_list': 'P1,P2',
+        'prop1': 'zero',
+        'prop2': 'one'}
     >>> ############## INHERIT+CHILD SELECTOR #####################
     >>> case = MockCase({'ATM_GRID':'ne4ne4'})
     >>> xml = '''
@@ -642,11 +635,11 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
-    OrderedDict([   ('atm_procs_list', 'P1,P2'),
-                    ('prop2', 'one'),
-                    ('prop1', 'zero'),
-                    ('P1', OrderedDict([('prop1', 'two_selected')])),
-                    ('P2', OrderedDict([('prop1', 'zero')]))])
+    {   'P1': {'prop1': 'two_selected'},
+        'P2': {'prop1': 'zero'},
+        'atm_procs_list': 'P1,P2',
+        'prop1': 'zero',
+        'prop2': 'one'}
     >>> ############## INHERIT+PARENT SELECTOR #####################
     >>> case = MockCase({'ATM_GRID':'ne4ne4'})
     >>> xml = '''
@@ -688,23 +681,20 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
-    OrderedDict([   ('atm_procs_list', 'P1,P2'),
-                    ('prop2', 'one'),
-                    ('number_of_subcycles', 1),
-                    ('enable_precondition_checks', True),
-                    ('enable_postcondition_checks', True),
-                    (   'P1',
-                        OrderedDict([   ('prop1', 'hi'),
-                                        ('Grid', 'physics_pg2'),
-                                        ('number_of_subcycles', 1),
-                                        ('enable_precondition_checks', True),
-                                        ('enable_postcondition_checks', True)])),
-                    (   'P2',
-                        OrderedDict([   ('prop1', 'there'),
-                                        ('number_of_subcycles', 1),
-                                        ('enable_precondition_checks', True),
-                                        ('enable_postcondition_checks', True)]))])
-
+    {   'P1': {   'Grid': 'physics_pg2',
+                  'enable_postcondition_checks': True,
+                  'enable_precondition_checks': True,
+                  'number_of_subcycles': 1,
+                  'prop1': 'hi'},
+        'P2': {   'enable_postcondition_checks': True,
+                  'enable_precondition_checks': True,
+                  'number_of_subcycles': 1,
+                  'prop1': 'there'},
+        'atm_procs_list': 'P1,P2',
+        'enable_postcondition_checks': True,
+        'enable_precondition_checks': True,
+        'number_of_subcycles': 1,
+        'prop2': 'one'}
     """
 
     # 0. Remove internal sections, that are not to appear in the
@@ -713,35 +703,43 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     get_child(xml,"generated_files",remove=True)
     selectors = get_valid_selectors(xml)
 
-    # 1. Evaluate all selectors
     try:
+        # In the WHOLE xml, resolve inheritance, evaluate selectors, and expand CIME vars
         evaluate_selectors(xml, case, selectors)
-
-        # 2. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that may alter
-        #    which atm processes are used
-        apply_atm_procs_list_changes_from_buffer (case,xml)
-
-        # 3. Resolve all inheritances
         resolve_all_inheritances(xml)
-
-        # 4. Expand any CIME var that appears inside XML nodes text
         expand_cime_vars(xml,case)
 
-        # 5. Grab the atmosphere_processes_defaults node, with all the procs defaults
+        # Generate default atm process list for this COMPSET (i.e., NO atmchanges considered yet)
         atm_procs_defaults = get_child(xml,"atmosphere_processes_defaults",remove=True)
+        eamxx_procs_list = get_child(get_child(atm_procs_defaults,"eamxx"),"atm_procs_list")
+        eamxx_group = gen_atm_proc_group(eamxx_procs_list.text, atm_procs_defaults)
+        eamxx_group.tag = "eamxx"
 
-        # 6. Get eamxx atm procs list
-        eamxx_group = get_child(atm_procs_defaults,"eamxx",remove=True)
-        atm_procs_list = get_child(eamxx_group,"atm_procs_list",remove=True)
+        # Apply atm changes that modify the list of processes
+        any_change = apply_atm_procs_list_changes_from_buffer (case,eamxx_group)
 
-        # 7. Form the nested list of atm procs needed, append to atmosphere_driver section
-        atm_procs = gen_atm_proc_group(atm_procs_list.text, atm_procs_defaults)
-        atm_procs.tag = "eamxx"
-        xml.append(atm_procs)
+        if any_change:
+            # Re-generate the process group. To avoid regenerating the same atm proc group,
+            # we MUST replace matching nodes in atm_procs_defaults with what is in the
+            # current atm_procs tree (as some atm procs lists have changed)
+            for default in atm_procs_defaults:
+                actual = find_node(eamxx_group,default.tag)
+                if actual is not None and has_child(actual,'atm_procs_list'):
+                    # Update the atm_procs_list of the default with the one from actual
+                    default_apl = get_child(default,'atm_procs_list')
+                    actual_apl = get_child(actual,'atm_procs_list')
+                    default_apl.text = actual_apl.text
 
-        # 8. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that do not alter
-        #    which atm processes are used
+            eamxx_procs_list = get_child(eamxx_group,"atm_procs_list")
+            eamxx_group = gen_atm_proc_group(eamxx_procs_list.text, atm_procs_defaults)
+            eamxx_group.tag = "eamxx"
+
+        # Add atm procs node to xml
+        xml.append(eamxx_group)
+
+        # Apply remaining atm changes
         apply_non_atm_procs_list_changes_from_buffer (case,xml)
+
     except BaseException as e:
         if filepath is not None:
             dbg_xml_path = filepath.replace(".xml", ".dbg.xml")
@@ -805,12 +803,9 @@ def convert_to_dict(element):
     >>> root = ET.fromstring(xml)
     >>> d = convert_to_dict(root)
     >>> pp.pprint(d)
-    OrderedDict([   ('my int', 1),
-                    (   'my list',
-                        OrderedDict([   ('my_ints', [2, 3]),
-                                        ('my_strings', ['two', 'three'])]))])
+    {'my int': 1, 'my list': {'my_ints': [2, 3], 'my_strings': ['two', 'three']}}
     """
-    result = OrderedDict()
+    result = {}
     for child in element:
         child_name = child.tag.replace("__", " ")
 
@@ -995,7 +990,7 @@ def get_file_parameters(caseroot):
         result.extend(refine_type(item.text, force_type="array(file)"))
 
     # Remove duplicates. Not sure if an error would be warranted if dupes exist
-    return list(OrderedDict.fromkeys(result))
+    return list(dict.fromkeys(result))
 
 ###############################################################################
 def create_input_data_list_file(case,caseroot):
@@ -1005,13 +1000,6 @@ def create_input_data_list_file(case,caseroot):
     what to download.
     """
     files_to_download = get_file_parameters(caseroot)
-
-    # Add array parsing knowledge to yaml loader
-    loader = yaml.SafeLoader
-    loader.add_constructor("!bools",array_constructor)
-    loader.add_constructor("!ints",array_constructor)
-    loader.add_constructor("!floats",array_constructor)
-    loader.add_constructor("!strings",array_constructor)
 
     # Grab all the output yaml files, open them, and check if horiz_remap_file or vertical_remap_file is used
     rundir   = case.get_value("RUNDIR")
@@ -1030,7 +1018,7 @@ def create_input_data_list_file(case,caseroot):
                 dst_yaml = os.path.expanduser(os.path.join(rundir,'data',os.path.basename(src_yaml)))
 
                 # Load file, and look for the remap file entries
-                content = yaml.load(open(dst_yaml,"r"),Loader=loader)
+                content = yaml.load(open(dst_yaml,"r"),Loader=yaml.SafeLoader)
                 if 'horiz_remap_file' in content.keys():
                     files_to_download += [content['horiz_remap_file']]
                 if 'vertical_remap_file' in content.keys():
@@ -1092,18 +1080,12 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
     out_files_xml = get_child(scorpio,"output_yaml_files",must_exist=False)
     out_files = out_files_xml.text.split(",") if (out_files_xml is not None and out_files_xml.text is not None) else []
 
-    # Add array parsing knowledge to yaml loader
-    loader = yaml.SafeLoader
-    loader.add_constructor("!bools",array_constructor)
-    loader.add_constructor("!ints",array_constructor)
-    loader.add_constructor("!floats",array_constructor)
-    loader.add_constructor("!strings",array_constructor)
-
     # We will also change the 'output_yaml_files' entry in scream_input.yaml,
     # to point to the copied files in $rundir/data
     output_yaml_files = []
+    file_signatures = []
     scream_input_file = os.path.join(rundir,'data','scream_input.yaml')
-    scream_input = yaml.load(open(scream_input_file,"r"),Loader=loader)
+    scream_input = yaml.load(open(scream_input_file,"r"),Loader=yaml.SafeLoader)
 
     # Determine the physics grid type for use in CIME-var substitution.
     pgt = 'gll'
@@ -1123,7 +1105,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
             safe_copy(src_yaml,dst_yaml)
 
         # Now load dst file, and process any CIME var present (if any)
-        content = yaml.load(open(dst_yaml,"r"),Loader=loader)
+        content = yaml.load(open(dst_yaml,"r"),Loader=yaml.SafeLoader)
         do_cime_vars(content,case,refine=True,
                      extra={'PHYSICS_GRID_TYPE': pgt})
 
@@ -1157,6 +1139,26 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
                    f"   frequency_units: {units}\n"
                    f"   ATM_NCPL: {case.get_value('ATM_NCPL')}\n"
                    f" This yields dt_atm={dt_atm} > dt_output={dt_out}. Please, adjust 'frequency' and/or 'frequency_units'\n")
+        
+        # Check for duplicate output file signatures
+        prefix = content['filename_prefix']
+        avg_type = content['averaging_type'].upper()
+        freq = content['output_control']['frequency']
+        units = content['output_control']['frequency_units']
+        signature = (prefix, avg_type, freq, units)
+        for prev_fn, prev_sig in file_signatures:
+            expect(signature != prev_sig,
+                f"Duplicate output file configuration detected!\n"
+                f"  File 1: {prev_fn}\n"
+                f"  File 2: {fn}\n"
+                f"  Both would generate files with:\n"
+                f"    - averaging_type: {avg_type}\n"
+                f"    - frequency: {freq}\n"
+                f"    - frequency_units: {units}\n"
+                f"    - filename_prefix: {prefix}\n"
+                f"  This would cause both outputs to write to the same NetCDF file.\n"
+                f"  Please modify one of the YAML files to use a different prefix or output frequency.")            
+        file_signatures.append((fn, signature))
 
         ordered_dump(content, open(dst_yaml, "w"))
 
@@ -1174,3 +1176,36 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
 ################################################################
 """)
         ordered_dump(scream_input, fd)
+
+###############################################################################
+def archive_case_docs(caseroot):
+###############################################################################
+    # Copy ALL eamxx input yaml/nml files to CaseDocs, for provenance
+    with SharedArea():
+        # We for sure have scream_input.yaml and namelist.nl
+        files = ['scream_input.yaml', 'namelist.nl']
+
+        caseroot = Path(caseroot)
+
+        # Get the XML configs, and find all output yaml files
+        eamxx_xml_file = caseroot / "namelist_scream.xml"
+
+        with open(eamxx_xml_file, "r") as fd:
+            eamxx_xml = ET.parse(fd).getroot()
+
+        scorpio = get_child(eamxx_xml,'scorpio')
+        out_files_xml = get_child(scorpio,"output_yaml_files",must_exist=False)
+        out_files = out_files_xml.text.split(",") if (out_files_xml is not None and out_files_xml.text is not None) else []
+
+        for fn in out_files:
+            # Get full name
+            src_yaml = Path(fn.strip())
+            files.append(src_yaml.name)
+
+        casedocs = caseroot / 'CaseDocs'
+        if casedocs.exists():
+            for f in files:
+                src = caseroot / 'run/data' / f
+                if src.exists():
+                    dst = caseroot / 'CaseDocs' / f
+                    safe_copy(src,dst)

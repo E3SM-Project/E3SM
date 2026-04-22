@@ -3,8 +3,8 @@
 #include "shoc_unit_tests_common.hpp"
 #include "shoc_functions.hpp"
 #include "shoc_test_data.hpp"
-#include "physics/share/physics_constants.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/physics/physics_constants.hpp"
+#include "share/core/eamxx_types.hpp"
 
 
 #include <algorithm>

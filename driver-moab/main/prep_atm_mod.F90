@@ -34,11 +34,9 @@ module prep_atm_mod
   use seq_comm_mct, only : mbintxla ! iMOAB id for intx mesh between land and atmosphere
   use seq_comm_mct, only : seq_comm_getinfo => seq_comm_setptrs
   use seq_comm_mct, only : num_moab_exports
+  use seq_comm_mct, only : mb_dead_comps
 
   !use dimensions_mod, only : np     ! for atmosphere
-#ifdef MOABCOMP
-  use component_type_mod, only:  compare_mct_av_moab_tag
-#endif
 
   use iso_c_binding
 
@@ -52,7 +50,6 @@ module prep_atm_mod
   !--------------------------------------------------------------------------
 
   public :: prep_atm_init
-  public :: prep_atm_mrg
   public :: prep_atm_mrg_moab
 
   public :: prep_atm_get_l2x_ax
@@ -79,8 +76,6 @@ module prep_atm_mod
   !--------------------------------------------------------------------------
   ! Private interfaces
   !--------------------------------------------------------------------------
-
-  private :: prep_atm_merge
 
   !--------------------------------------------------------------------------
   ! Private data
@@ -149,6 +144,7 @@ contains
    logical                          :: ice_present    ! .true.  => ice is present
    logical                          :: lnd_present    ! .true.  => lnd is prsent
    logical                          :: cpl_compute_maps_online    ! .true.  => maps are computed online
+   logical                          :: dead_comps    ! .true. => all comps are dead, so we need to be careful in map init and moab intx
    character(CL)                    :: ocn_gnam       ! ocn grid
    character(CL)                    :: atm_gnam       ! atm grid
    character(CL)                    :: lnd_gnam       ! lnd grid
@@ -184,7 +180,8 @@ contains
       ocn_gnam=ocn_gnam,             &
       lnd_gnam=lnd_gnam,             &
       cpl_compute_maps_online=cpl_compute_maps_online, &
-      esmf_map_flag=esmf_map_flag)
+      esmf_map_flag=esmf_map_flag, &
+      dead_comps=dead_comps)
 
    allocate(mapper_So2a)
    allocate(mapper_Sof2a)
@@ -242,17 +239,21 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_So2a'
          endif
-         call seq_map_init_rcfile(mapper_So2a, ocn(1), atm(1), &
-            'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
-            'mapper_So2a initialization',esmf_map_flag, no_match)
+         call seq_map_mapinit(mapper_So2a, mpicom_CPLID)
+         if (samegrid_ao) then
+            mapper_So2a%rearrange_only = .true.
+            mapper_So2a%strategy = "rearrange"
+         endif
 
          if (iamroot_CPLID) then
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Sof2a'
          endif
-         call seq_map_init_rcfile(mapper_Sof2a, ocn(1), atm(1), &
-            'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
-            'mapper_Sof2a initialization',esmf_map_flag, no_match)
+         call seq_map_mapinit(mapper_Sof2a, mpicom_CPLID)
+         if (samegrid_ao) then
+            mapper_Sof2a%rearrange_only = .true.
+            mapper_Sof2a%strategy = "rearrange"
+         endif
 
          ! Call moab intx only if atm and ocn are init in moab
          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
@@ -281,19 +282,15 @@ contains
 
             ! Since we are projecting fields from OCN to ATM-PHY grid, we need to define
             ! OCN o2x fields to ATM-PHY grid (or ATM-DYN (spectral) ) on coupler side
-            if (atm_pg_active) then
-               tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
-               tagtype = 1 ! dense
-               numco = 1 !
-               ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in defining tags for seq_flds_o2x_fields'
-                  call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_o2x_fields')
-               endif
-            else ! spectral case, fix later TODO
-               !numco = np*np !
-               numco = 16
-            endif !
+            tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
+            tagtype = 1 ! dense
+            numco = 1 !
+            ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags for seq_flds_o2x_fields'
+               call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_o2x_fields')
+            endif
+
 
             if (.not. samegrid_ao) then ! most cases
 
@@ -324,7 +321,7 @@ contains
                   endif
 ! endif for MOABDEBUG
 #endif
-                  if (atm_pg_active) then
+                  if (atm_pg_active .or. mb_dead_comps) then
                      dm2 = "fv"//C_NULL_CHAR
                      dofnameT="GLOBAL_ID"//C_NULL_CHAR
                      orderT = 1 !  fv-fv
@@ -394,10 +391,10 @@ contains
                ! permutation operator, we will compute a communication graph between ATM and OCN DoFs on the
                ! coupler.
                type1 = 3;  ! FV mesh on coupler OCN
-               if (atm_pg_active) then
+               if (atm_pg_active .or. mb_dead_comps) then
                   type2 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
                else
-                  type2 = 1 ! This projection works (CGLL to FV), but reverse does not (FV - CGLL)
+                  type2 = 2 ! from now on, spectral is on PC on coupler side, too; no mapping allowed, just reorder?
                endif
                ierr = iMOAB_ComputeCommGraph( mboxid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                       ocn(1)%cplcompid, atm(1)%cplcompid )
@@ -419,17 +416,21 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Fo2a'
          endif
-         call seq_map_init_rcfile(mapper_Fo2a, ocn(1), atm(1), &
-            'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
-            'mapper_Fo2a initialization',esmf_map_flag, no_match)
+         call seq_map_mapinit(mapper_Fo2a, mpicom_CPLID)
+         if (samegrid_ao) then
+            mapper_Fo2a%rearrange_only = .true.
+            mapper_Fo2a%strategy = "rearrange"
+         endif
 
          if (iamroot_CPLID) then
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Fof2a'
          endif
-         call seq_map_init_rcfile(mapper_Fof2a, ocn(1), atm(1), &
-            'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
-            'mapper_Fof2a initialization',esmf_map_flag, no_match)
+         call seq_map_mapinit(mapper_Fof2a, mpicom_CPLID)
+         if (samegrid_ao) then
+            mapper_Fof2a%rearrange_only = .true.
+            mapper_Fof2a%strategy = "rearrange"
+         endif
 
          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
             if (iamroot_CPLID) then
@@ -475,6 +476,8 @@ contains
             mapper_Fo2a%intx_context = mapper_So2a%intx_context ! it could be different, based on samegrid_ao
             mapper_Fo2a%weight_identifier = wgtIdFo2a
             mapper_Fo2a%mbname = 'mapper_Fo2a'
+            ! we do not need to call compute comm graph for samegrid_ao, it was already called
+            ! it was called earlier, around line 403, for mapper_So2a
          endif
 
          ! FLUX make the app and mapper for the a2o flux mappings
@@ -487,11 +490,6 @@ contains
             ! We also need to compute the comm graph for the second hop, from the OCN on the coupler to the
             ! OCN for the intersection of OCN-ATM context (coverage)
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
-
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in computing comm graph for second hop, ocnf -atm'
-               call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocnf-atm')
-            endif
 
             ! we identified the app mbofxid with !id_join = id_join + 1000! kind of random
             ! line 1267 in cplcomp_exchange_mod.F90
@@ -517,14 +515,30 @@ contains
             mapper_Fof2a%weight_identifier = wgtIdFo2a
             mapper_Fof2a%mbname = 'mapper_Fof2a'
 
-            type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
-            type2 = 3;
-            if (.not. samegrid_ao) then ! data-OCN case
-               ! we use the same intx, because the mesh will be the same, between mbofxid and mboxid
-               ierr = iMOAB_ComputeCommGraph( mbofxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+            type1 = 3; !  fv for ocean and atm;
+            if (.not. samegrid_ao) then
+               ! Coverage/intersection mesh always has FV cells with GLOBAL_IDs,
+               ! so type2 must be 3 (element-based matching), regardless of
+               ! atm_pg_active. Using type2=2 (vertex matching) here would cause
+               ! MOAB to match against vertex GLOBAL_IDs of mbintxoa instead of
+               ! element GLOBAL_IDs, leading to an incorrect comm graph and
+               ! heap corruption in iMOAB_ReceiveElementTag.
+               ierr = iMOAB_ComputeCommGraph( mbofxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, 3, &
                                           context_id, idintx)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing comm graph for Sof2a, mbofxid-mbintxoa'
+                  call shr_sys_abort(subname//' ERROR in computing comm graph for Sof2a, mbofxid-mbintxoa')
+               endif
             else
+               ! samegrid: comm graph to ATM mesh directly
+               ! type2 depends on ATM discretization (PC for spectral, FV for PG2)
+               if (atm_pg_active .or. dead_comps) then
+                  type2 = 3
+               else
+                  type2 = 2 ! PC cloud
+               endif
                ! this is a case appearing in the data ocean case --res ne4pg2_ne4pg2 --compset FAQP
+               ! also in spectral case, monogrid --res ne4_ne4 --compset F2010-SCREAMv1 ( type2 is 2, point cloud )
                ierr = iMOAB_ComputeCommGraph( mbofxid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                       context_id, atm(1)%cplcompid )
                if (ierr .ne. 0) then
@@ -539,17 +553,13 @@ contains
 
 ! because we will project fields from ocean to atm phys grid, we need to define
       ! ice i2x fields to atm phys grid (or atm spectral ext ) on coupler side
-      if (atm_pg_active) then
-         tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
-         tagtype = 1 ! dense
-         numco = 1 !
-         ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags for seq_flds_i2x_fields'
-            call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_i2x_fields')
-         endif
-      else ! spectral case, TODO
-         tagtype = 1 ! dense
+      tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+      tagtype = 1 ! dense
+      numco = 1 !
+      ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+      if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in defining tags for seq_flds_i2x_fields'
+         call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_i2x_fields')
       endif
 
       if (ice_c2_atm) then
@@ -558,9 +568,11 @@ contains
             write(logunit,F00) 'Initializing mapper_Si2a'
          endif
          ! otherwise it may find ocean map, and this will not work on ice vars
-         call seq_map_init_rcfile(mapper_Si2a, ice(1), atm(1), &
-            'seq_maps.rc','ice2atm_smapname:','ice2atm_smaptype:',samegrid_ao, &
-            'mapper_Si2a initialization',esmf_map_flag, no_match)
+         call seq_map_mapinit(mapper_Si2a, mpicom_CPLID)
+         if (samegrid_ao) then
+            mapper_Si2a%rearrange_only = .true.
+            mapper_Si2a%strategy = "rearrange"
+         endif
        endif
 
       if (ice_present) then
@@ -635,7 +647,7 @@ contains
 
             if (compute_maps_online_i2a) then
                volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
-               if (atm_pg_active) then
+               if (atm_pg_active .or. mb_dead_comps) then
                   dm2 = "fv"//C_NULL_CHAR
                   dofnameT="GLOBAL_ID"//C_NULL_CHAR
                   orderT = 1 !  fv-fv
@@ -678,15 +690,18 @@ contains
                   write(logunit,*) ' '
                   write(logunit,F00) 'Initializing mapper_Si2a'
                endif
-               type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
-               arearead = 0 ! do not read area, we do not need it
-               call moab_map_init_rcfile(mbixid, mbaxid, mbintxia, type1, &
-                     'seq_maps.rc', 'ice2atm_smapname:', 'ice2atm_smaptype:', samegrid_ao, &
-                     arearead, wgtIdSi2a, 'mapper_Si2a MOAB init', esmf_map_flag)
+               if (.not. samegrid_ao) then
+                  type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
+                  arearead = 0 ! do not read area, we do not need it
+                  call moab_map_init_rcfile(mbixid, mbaxid, mbintxia, type1, &
+                        'seq_maps.rc', 'ice2atm_smapname:', 'ice2atm_smaptype:', samegrid_ao, &
+                        arearead, wgtIdSi2a, 'mapper_Si2a MOAB init', esmf_map_flag)
+               endif
               endif
             endif
-
-
+            if (samegrid_ao) then
+               mapper_Si2a%intx_context = atm(1)%cplcompid
+            endif
          endif ! if ((mbaxid .ge. 0) .and.  (mbixid .ge. 0)) then
 
       endif ! if (ice_present) for mapper_Si2a
@@ -697,64 +712,88 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Fi2a'
          endif
-         call seq_map_init_rcfile(mapper_Fi2a, ice(1), atm(1), &
-            'seq_maps.rc','ice2atm_fmapname:','ice2atm_fmaptype:',samegrid_ao, &
-            'mapper_Fi2a initialization',esmf_map_flag, no_match)
+         call seq_map_mapinit(mapper_Fi2a, mpicom_CPLID)
+         if (samegrid_ao) then
+            mapper_Fi2a%rearrange_only = .true.
+            mapper_Fi2a%strategy = "rearrange"
+         endif
 
          ! now take care of the mapper for MOAB.  Need to always do if ice_present
          if (iamroot_CPLID) then
-              write(logunit,*) ' '
-              write(logunit,F00) 'Initializing MOAB mapper_Fi2a'
+            write(logunit,*) ' '
+            write(logunit,F00) 'Initializing MOAB mapper_Fi2a'
+         endif
+
+         if (.not. compute_maps_online_i2a  .and.  .not. samegrid_ao ) then
+         !!!!!!!!!!!!!!!!!!!!!!!
+         !  read  Fi2a map
+         !!!!!!!!!!!!!!!!!!!!!!!
+            type1 = 3 ! this is type of grid
+            arearead = 0 ! no need for areas
+            call moab_map_init_rcfile( mbixid, mbaxid, mbintxia, type1, &
+                  'seq_maps.rc', 'ice2atm_fmapname:', 'ice2atm_fmaptype:', samegrid_ao, &
+                  arearead, wgtIdFi2a, 'mapper_Fi2a MOAB init', esmf_map_flag )
+
+            ! need to call migrate map mesh, which will compute the right covering mesh
+            context_id = idintx ! intx id
+            ierr = iMOAB_MigrateMapMesh( mbixid, mbintxia, mpicom_CPLID, mpigrp_CPLID, &
+                                       mpigrp_CPLID, type1, ice(1)%cplcompid, context_id)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
+               call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
             endif
 
-            !!!!!!!!!!!!!!!!!!!!!!!
-            !  read  Fi2a map
-            !!!!!!!!!!!!!!!!!!!!!!!
-            if (.not. compute_maps_online_i2a) then
-               type1 = 3 ! this is type of grid
-               arearead = 0 ! no need for areas
-               call moab_map_init_rcfile( mbixid, mbaxid, mbintxia, type1, &
-                     'seq_maps.rc', 'ice2atm_fmapname:', 'ice2atm_fmaptype:', samegrid_ao, &
-                     arearead, wgtIdFi2a, 'mapper_Fi2a MOAB init', esmf_map_flag )
+            ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
+            ! seaice for the intx seaice-atm context (coverage)
+            type1 = 3; !  fv for ice and atm; fv-cgll does not work anyway
+            type2 = 3;
+            ierr = iMOAB_ComputeCommGraph( mbixid, mbintxia, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                       ice(1)%cplcompid, idintx)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing comm graph for second hop, ice-atm'
+               call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ice-atm')
+            endif
+         !!!!!!!!!!!!!!!!!!!!!!!
+         !  compute  Fi2a map
+         !!!!!!!!!!!!!!!!!!!!!!!
+         else
+            wgtIdFi2a = wgtIdSi2a ! we use the same weights as for Si2a
+         end if
 
-               ! need to call migrate map mesh, which will compute the right covering mesh
-               context_id = idintx ! intx id
-               ierr = iMOAB_MigrateMapMesh( mbixid, mbintxia, mpicom_CPLID, mpigrp_CPLID, &
-                                          mpigrp_CPLID, type1, ice(1)%cplcompid, context_id)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
-                  call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
-               endif
-            !!!!!!!!!!!!!!!!!!!!!!!
-            !  compute  Fi2a map
-            !!!!!!!!!!!!!!!!!!!!!!!
+         mapper_Fi2a%src_mbid = mbixid
+         mapper_Fi2a%tgt_mbid = mbaxid
+         mapper_Fi2a%intx_mbid = mbintxia
+         mapper_Fi2a%src_context = ice(1)%cplcompid
+         mapper_Fi2a%intx_context = idintx
+         mapper_Fi2a%weight_identifier = wgtIdFi2a
+         mapper_Fi2a%mbname = 'mapper_Fi2a'
+         if ( samegrid_ao ) then ! this case can appear in cice case
+            type1 = 3 !  fv for ice
+            if (atm_pg_active .or. mb_dead_comps) then
+               type2 = 3
             else
-               wgtIdFi2a = wgtIdSi2a ! we use the same weights as for Si2a
-            end if
-
-            mapper_Fi2a%src_mbid = mbixid
-            mapper_Fi2a%tgt_mbid = mbaxid
-            mapper_Fi2a%intx_mbid = mbintxia
-            mapper_Fi2a%src_context = ice(1)%cplcompid
-            mapper_Fi2a%intx_context = idintx
-            mapper_Fi2a%weight_identifier = wgtIdFi2a
-            mapper_Fi2a%mbname = 'mapper_Fi2a'
+               type2 = 2 ! this is spectral case , PC cloud for atm
+            endif
+            ierr = iMOAB_ComputeCommGraph( mbixid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                       ice(1)%cplcompid, atm(1)%cplcompid )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing comm graph for ice-atm'
+               call shr_sys_abort(subname//' ERROR in computing comm graph for ice-atm')
+            endif
+            mapper_Fi2a%intx_context = atm(1)%cplcompid
+         endif
       endif !  if (ice_present) then
       call shr_sys_flush(logunit)
 
       if (mbaxid > 0) then
           ! we still need to define seq_flds_l2x_fields on atm cpl mesh
-         if (atm_pg_active) then
-            tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
-            tagtype = 1 ! dense
-            numco = 1 !
-            ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in defining tags for seq_flds_l2x_fields'
-               call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_l2x_fields')
-            endif
-         else ! spectral case, TODO
-            tagtype = 1 ! dense
+         tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
+         tagtype = 1 ! dense
+         numco = 1 !
+         ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags for seq_flds_l2x_fields'
+            call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_l2x_fields')
          endif
       endif
 
@@ -765,9 +804,11 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Fl2a'
          endif
-         call seq_map_init_rcfile(mapper_Fl2a, lnd(1), atm(1), &
-            'seq_maps.rc','lnd2atm_fmapname:','lnd2atm_fmaptype:',samegrid_al, &
-            'mapper_Fl2a initialization', esmf_map_flag, no_match)
+         call seq_map_mapinit(mapper_Fl2a, mpicom_CPLID)
+         if (samegrid_al) then
+            mapper_Fl2a%rearrange_only = .true.
+            mapper_Fl2a%strategy = "rearrange"
+         endif
 
          ! important change: do not compute intx at all between atm and land when we have samegrid_al
          ! we will use just a comm graph to send data from phys grid to land on coupler
@@ -831,7 +872,7 @@ contains
 #endif
                   ! need to compute weigths
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
-                  if (atm_pg_active) then
+                  if (atm_pg_active .or. mb_dead_comps) then
                      dm2 = "fv"//C_NULL_CHAR
                      dofnameT="GLOBAL_ID"//C_NULL_CHAR
                      orderT = 1 !  fv-fv
@@ -890,8 +931,8 @@ contains
 
                endif
 
-               type1 = 3; !  fv for lnd and atm; fv-cgll does not work anyway
-               type2 = 3;
+               type1 = 3 !  fv for lnd and atm; fv-cgll does not work anyway
+               type2 = 3
                ierr = iMOAB_ComputeCommGraph( mblxid, mbintxla, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                           lnd(1)%cplcompid, idintx)
                if (ierr .ne. 0) then
@@ -904,8 +945,12 @@ contains
                ! so we compute just a comm graph, between lnd and atm dofs, on the coupler; target is atm
                ! land is point cloud in this case, type1 = 2
                call seq_comm_getinfo(CPLID, mpigrp=mpigrp_CPLID) ! make sure we have the right MPI group
-               type1 = 3; !  full mesh for land now
-               type2 = 3;  ! fv for target atm
+               type1 = 3 !  full mesh for land now
+               if (atm_pg_active .or. mb_dead_comps) then
+                  type2 = 3  ! fv for target atm
+               else
+                  type2 = 2  ! point cloud for spectral
+               endif
                ierr = iMOAB_ComputeCommGraph( mblxid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                         lnd(1)%cplcompid, atm(1)%cplcompid)
                if (ierr .ne. 0) then
@@ -926,9 +971,11 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Sl2a'
          endif
-         call seq_map_init_rcfile(mapper_Sl2a, lnd(1), atm(1), &
-            'seq_maps.rc','lnd2atm_smapname:','lnd2atm_smaptype:',samegrid_al, &
-            'mapper_Sl2a initialization', esmf_map_flag, no_match )
+         call seq_map_mapinit(mapper_Sl2a, mpicom_CPLID)
+         if (samegrid_al) then
+            mapper_Sl2a%rearrange_only = .true.
+            mapper_Sl2a%strategy = "rearrange"
+         endif
          if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
             if (iamroot_CPLID) then
               write(logunit,*) ' '
@@ -951,44 +998,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_atm_mrg(infodata, fractions_ax, xao_ax, timer_mrg)
-
-    !---------------------------------------------------------------
-    ! Description
-    ! Prepare run phase, including running the merge
-    !
-    ! Arguments
-    type(seq_infodata_type) , intent(in)    :: infodata
-    type(mct_aVect)         , intent(in)    :: fractions_ax(:)
-    type(mct_aVect)         , intent(in)    :: xao_ax(:)
-    character(len=*)        , intent(in)    :: timer_mrg
-    !
-    ! Local Variables
-    integer                  :: eli, eoi, eii, exi, efi, eai, emi
-    type(mct_avect), pointer :: x2a_ax
-    character(*), parameter  :: subname = '(prep_atm_mrg)'
-    character(*), parameter  :: F00 = "('"//subname//" : ', 4A )"
-    !---------------------------------------------------------------
-
-    call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
-    do eai = 1,num_inst_atm
-       ! Use fortran mod to address ensembles in merge
-       eli = mod((eai-1),num_inst_lnd) + 1
-       eoi = mod((eai-1),num_inst_ocn) + 1
-       eii = mod((eai-1),num_inst_ice) + 1
-       exi = mod((eai-1),num_inst_xao) + 1
-       efi = mod((eai-1),num_inst_frc) + 1
-       emi = mod((eai-1),num_inst_max) + 1
-
-       x2a_ax => component_get_x2c_cx(atm(eai)) ! This is actually modifying x2a_ax
-       call prep_atm_merge(l2x_ax(eli), o2x_ax(emi), xao_ax(exi), i2x_ax(eii), &
-            fractions_ax(efi), x2a_ax)
-    enddo
-    call t_drvstopf  (trim(timer_mrg))
-
-  end subroutine prep_atm_mrg
-
-  subroutine prep_atm_mrg_moab(infodata, xao_ax)
+  subroutine prep_atm_mrg_moab(infodata, xao_ax, timer_mrg)
     use iMOAB , only : iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
      iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
    ! use seq_comm_mct , only : mbaxid, mbofxid ! ocean and atm-ocean flux instances
@@ -999,6 +1009,7 @@ contains
     ! Arguments
     type(seq_infodata_type) , intent(in)    :: infodata
     type(mct_aVect)        , pointer , intent(in)    :: xao_ax(:) ! Atm-ocn fluxes, atm grid, cpl pes; used here just for indexing
+    character(len=*)        , intent(in)    :: timer_mrg
 
     ! Arguments
     type(mct_aVect), pointer    :: l2x_a !   needed just for indexing
@@ -1018,6 +1029,7 @@ contains
     integer  :: n,ka,ki,kl,ko,kx,kof,kif,klf,klf_st,i,i1,o1
     integer, save :: lsize
     integer, save  :: index_x2a_Sf_lfrac, index_x2a_Sf_ifrac, index_x2a_Sf_ofrac
+    integer, save  :: index_x2a_Si_snowh
     character(CL) :: atm_gnam, lnd_gnam
     character(CL) :: fracstr, fracstr_st
 
@@ -1048,20 +1060,17 @@ contains
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
     character(CXX) ::tagname, mct_field
     integer :: ent_type, ierr, arrsize
+    logical :: single_column,lnd_present
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
-#endif
-#ifdef MOABCOMP
-    real(r8)                 :: difference
-    type(mct_list) :: temp_list
-    integer :: size_list, index_list
-    type(mct_string)    :: mctOStr  !
 #endif
 
     character(*), parameter   :: subname = '(prep_atm_mrg_moab) '
     !-----------------------------------------------------------------------
     !
+    call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
     call seq_comm_getdata(CPLID, iamroot=iamroot)
+    call seq_infodata_getdata(infodata,single_column=single_column,lnd_present=lnd_present)
 
     if (first_time) then
 
@@ -1073,7 +1082,11 @@ contains
                write(logunit,*) subname,' error in getting info '
                call shr_sys_abort(subname//' error in getting info ')
        endif
-       lsize = nvise(1) ! number of active cells
+       if (atm_pg_active .or. mb_dead_comps) then
+          lsize = nvise(1) ! number of active cells
+       else
+          lsize = nvert(1) ! for the spectral case, everything is pc from now on
+       endif
        ! mct avs are used just for their fields metadata, not the actual reals
        ! (name of the fields)
        ! need these always, not only the first time
@@ -1090,6 +1103,7 @@ contains
        index_x2a_Sf_lfrac = mct_aVect_indexRA(x2a_a,'Sf_lfrac')
        index_x2a_Sf_ifrac = mct_aVect_indexRA(x2a_a,'Sf_ifrac')
        index_x2a_Sf_ofrac = mct_aVect_indexRA(x2a_a,'Sf_ofrac')
+       index_x2a_Si_snowh = mct_aVect_indexRA(x2a_a,'Si_snowh')
 
        !ngflds = mct_aVect_nRattr(g2x_o)
        allocate(fractions_am(lsize,5)) ! there are 5 fractions 'afrac:ifrac:ofrac:lfrac:lfrin'
@@ -1281,7 +1295,11 @@ contains
     endif  ! end first-time
 
     !  Get data from MOAB
-    ent_type = 1 ! cells
+    if (atm_pg_active .or. mb_dead_comps) then
+       ent_type = 1 ! cells (PG atmosphere or dead comps FV mesh)
+    else
+       ent_type = 0 ! vertices, spectral point cloud
+    endif
     tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
     arrsize = naflds * lsize
     ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, x2a_am)
@@ -1319,32 +1337,48 @@ contains
          call shr_sys_abort(subname//' error in getting fractions_am from atm instance ')
     endif
 
-    tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
-    arrsize = noflds * lsize !        allocate (o2x_am (lsize, noflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, o2x_am)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in getting o2x_am array ')
+    if (mboxid > 0) then ! retrieve projection only when ox is active ?
+       tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
+       arrsize = noflds * lsize !        allocate (o2x_am (lsize, noflds))
+       ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, o2x_am)
+       if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting o2x_am array ')
+       endif
+    else ! o2x_am will still be used in merge so make sure its 0 when no ocean
+       o2x_am(:,:)=0.0_r8
     endif
 
-    tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
-    arrsize = niflds * lsize !        allocate (i2x_am (lsize, niflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, i2x_am)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in getting i2x_am array ')
+    if (mbixid > 0) then
+       tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+       arrsize = niflds * lsize !        allocate (i2x_am (lsize, niflds))
+       ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, i2x_am)
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' error in getting i2x_am array ')
+       endif
+    else ! i2x_am will still be used in merge so make sure its 0 when no sea ice
+       i2x_am(:,:)=0.0_r8
     endif
 
-    tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
-    arrsize = nlflds * lsize !        allocate (l2x_am (lsize, nlflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, l2x_am)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in getting l2x_am array ')
+    if (mblxid > 0) then !
+       tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
+       arrsize = nlflds * lsize !        allocate (l2x_am (lsize, nlflds))
+       ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, l2x_am)
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' error in getting l2x_am array ')
+       endif
+    else ! l2x_am will still be used in merge so make sure its 0 when no land
+       l2x_am(:,:)=0.0_r8
     endif
 
-    tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
-    arrsize = nxflds * lsize !        allocate (xao_am (lsize, nxflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, xao_am)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in getting xao_om array ')
+    if (mboxid > 0) then
+       tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
+       arrsize = nxflds * lsize !        allocate (xao_am (lsize, nxflds))
+       ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, xao_am)
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' error in getting xao_om array ')
+       endif
+    else ! xao_am will still be used in merge so make sure its 0 when no ocean
+       xao_am(:,:)=0.0_r8
     endif
 
 
@@ -1352,6 +1386,8 @@ contains
        x2a_am(n, index_x2a_Sf_lfrac) = fractions_am(n, klf) ! x2a_a%rAttr(index_x2a_Sf_lfrac,n) = fractions_a%Rattr(klf,n)
        x2a_am(n, index_x2a_Sf_ifrac) = fractions_am(n, kif) ! x2a_a%rAttr(index_x2a_Sf_ifrac,n) = fractions_a%Rattr(kif,n)
        x2a_am(n, index_x2a_Sf_ofrac) = fractions_am(n, kof) ! x2a_a%rAttr(index_x2a_Sf_ofrac,n) = fractions_a%Rattr(kof,n)
+       ! zero out Si_snowh for single column to match MCT
+       if(single_column) x2a_am(n, index_x2a_Si_snowh) = 0.0_r8
     end do
 
     !--- document fraction operations ---
@@ -1405,12 +1441,6 @@ contains
 #endif
        enddo
     endif  ! first time
-
-    ! we need to do something equivalent, to copy in a2x_am the tags from those shared indices
-    ! call mct_aVect_copy(aVin=l2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=l2x_SharedIndices)
-    !call mct_aVect_copy(aVin=o2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=o2x_SharedIndices)
-    !call mct_aVect_copy(aVin=i2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=i2x_SharedIndices)
-    !call mct_aVect_copy(aVin=xao_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=xao_SharedIndices)
 
     ! If flux to atm is coming only from the ocean (based on field being in o2x_a) -
     ! -- then scale by both ocean and ice fraction
@@ -1479,6 +1509,13 @@ contains
                 end if
              end if
           endif
+          ! if no land, make sure any 'Fall' fluxes that are not merged are 0.
+          ! e.g. dust fluxes
+          if(.not.lnd_present) then
+            if((lindx(ka)>0) .and. .not.lstate(ka) .and. .not.lmerge(ka)) then
+               x2a_am(n,ka) = 0.0_r8
+            endif
+          endif
           if (iindx(ka) > 0 .and. fraci > 0._r8) then
              if (imerge(ka)) then
                 x2a_am(n, ka) = x2a_am(n, ka) + i2x_am(n, iindx(ka)) * fraci
@@ -1514,36 +1551,6 @@ contains
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting x2a_am array in atm merging ')
     endif
-#ifdef MOABCOMP
-  !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
-    x2a_a => component_get_x2c_cx(atm(1))
-
-    ! loop over all fields in seq_flds_x2a_fields
-    call mct_list_init(temp_list ,seq_flds_x2a_fields)
-    size_list=mct_list_nitem (temp_list)
-    ent_type = 1 ! cell for atm, atm_pg_active
-    if (iamroot) print *, subname, num_moab_exports, trim(seq_flds_x2a_fields)
-    do index_list = 1, size_list
-      call mct_list_get(mctOStr,index_list,temp_list)
-      mct_field = mct_string_toChar(mctOStr)
-      tagname= trim(mct_field)//C_NULL_CHAR
-      call compare_mct_av_moab_tag(atm(1), x2a_a, mct_field,  mbaxid, tagname, ent_type, difference, first_time)
-    enddo
-    call mct_list_clean(temp_list)
-
-    ! loop over all fields in seq_flds_o2x_fields
-    call mct_list_init(temp_list ,seq_flds_o2x_fields)
-    size_list=mct_list_nitem (temp_list)
-    ent_type = 1 ! cell for atm, atm_pg_active
-    if (iamroot) print *, subname, num_moab_exports, trim(seq_flds_o2x_fields)
-    do index_list = 1, size_list
-      call mct_list_get(mctOStr,index_list,temp_list)
-      mct_field = mct_string_toChar(mctOStr)
-      tagname= trim(mct_field)//C_NULL_CHAR
-      call compare_mct_av_moab_tag(atm(1), o2x_a, mct_field,  mbaxid, tagname, ent_type, difference, first_time)
-    enddo
-    call mct_list_clean(temp_list)
-#endif
 
 #ifdef MOABDEBUG
     if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
@@ -1571,408 +1578,8 @@ contains
 
     first_time = .false.
     ! end copy from prep_atm_merge
+    call t_drvstopf  (trim(timer_mrg))
   end subroutine prep_atm_mrg_moab
-  !================================================================================================
-
-  subroutine prep_atm_merge( l2x_a, o2x_a, xao_a, i2x_a, fractions_a, x2a_a )
-
-    !-----------------------------------------------------------------------
-    !
-    ! Arguments
-    type(mct_aVect), intent(in)    :: l2x_a
-    type(mct_aVect), intent(in)    :: o2x_a
-    type(mct_aVect), intent(in)    :: xao_a
-    type(mct_aVect), intent(in)    :: i2x_a
-    type(mct_aVect), intent(in)    :: fractions_a
-    type(mct_aVect), intent(inout) :: x2a_a
-    !
-    ! Local workspace
-    real(r8) :: fracl, fraci, fraco, fracl_st
-    integer  :: n,ka,ki,kl,ko,kx,kof,kif,klf,i,i1,o1, klf_st
-    integer  :: lsize
-    integer  :: index_x2a_Sf_lfrac
-    integer  :: index_x2a_Sf_ifrac
-    integer  :: index_x2a_Sf_ofrac
-    character(CL),allocatable :: field_atm(:)   ! string converted to char
-    character(CL),allocatable :: field_lnd(:)   ! string converted to char
-    character(CL),allocatable :: field_ice(:)   ! string converted to char
-    character(CL),allocatable :: field_xao(:)   ! string converted to char
-    character(CL),allocatable :: field_ocn(:)   ! string converted to char
-    character(CL),allocatable :: itemc_atm(:)   ! string converted to char
-    character(CL),allocatable :: itemc_lnd(:)   ! string converted to char
-    character(CL),allocatable :: itemc_ice(:)   ! string converted to char
-    character(CL),allocatable :: itemc_xao(:)   ! string converted to char
-    character(CL),allocatable :: itemc_ocn(:)   ! string converted to char
-    logical :: iamroot
-    character(CL),allocatable :: mrgstr(:)   ! temporary string
-    character(CL) :: fracstr, fracstr_st
-    logical, save :: first_time = .true.
-    type(mct_aVect_sharedindices),save :: l2x_sharedindices
-    type(mct_aVect_sharedindices),save :: o2x_sharedindices
-    type(mct_aVect_sharedindices),save :: i2x_sharedindices
-    type(mct_aVect_sharedindices),save :: xao_sharedindices
-    logical, pointer, save :: lmerge(:),imerge(:),xmerge(:),omerge(:),lstate(:)
-    integer, pointer, save :: lindx(:), iindx(:), oindx(:),xindx(:)
-    integer, save          :: naflds, nlflds,niflds,noflds,nxflds
-    character(*), parameter   :: subname = '(prep_atm_merge) '
-    !-----------------------------------------------------------------------
-    !
-    call seq_comm_getdata(CPLID, iamroot=iamroot)
-
-    if (first_time) then
-
-       naflds = mct_aVect_nRattr(x2a_a)
-       nlflds = mct_aVect_nRattr(l2x_a)
-       niflds = mct_aVect_nRattr(i2x_a)
-       noflds = mct_aVect_nRattr(o2x_a)
-       nxflds = mct_aVect_nRattr(xao_a)
-
-       allocate(lindx(naflds), lmerge(naflds))
-       allocate(iindx(naflds), imerge(naflds))
-       allocate(xindx(naflds), xmerge(naflds))
-       allocate(oindx(naflds), omerge(naflds))
-       allocate(lstate(naflds))
-       allocate(field_atm(naflds), itemc_atm(naflds))
-       allocate(field_lnd(nlflds), itemc_lnd(nlflds))
-       allocate(field_ice(niflds), itemc_ice(niflds))
-       allocate(field_ocn(noflds), itemc_ocn(noflds))
-       allocate(field_xao(nxflds), itemc_xao(nxflds))
-       allocate(mrgstr(naflds))
-
-       lindx(:) = 0
-       iindx(:) = 0
-       xindx(:) = 0
-       oindx(:) = 0
-       lmerge(:)  = .true.
-       imerge(:)  = .true.
-       xmerge(:)  = .true.
-       omerge(:)  = .true.
-       lstate(:)  = .false.
-
-       do ka = 1,naflds
-          field_atm(ka) = mct_aVect_getRList2c(ka, x2a_a)
-          itemc_atm(ka) = trim(field_atm(ka)(scan(field_atm(ka),'_'):))
-       enddo
-       do kl = 1,nlflds
-          field_lnd(kl) = mct_aVect_getRList2c(kl, l2x_a)
-          itemc_lnd(kl) = trim(field_lnd(kl)(scan(field_lnd(kl),'_'):))
-       enddo
-       do ki = 1,niflds
-          field_ice(ki) = mct_aVect_getRList2c(ki, i2x_a)
-          itemc_ice(ki) = trim(field_ice(ki)(scan(field_ice(ki),'_'):))
-       enddo
-       do ko = 1,noflds
-          field_ocn(ko) = mct_aVect_getRList2c(ko, o2x_a)
-          itemc_ocn(ko) = trim(field_ocn(ko)(scan(field_ocn(ko),'_'):))
-       enddo
-       do kx = 1,nxflds
-          field_xao(kx) = mct_aVect_getRList2c(kx, xao_a)
-          itemc_xao(kx) = trim(field_xao(kx)(scan(field_xao(kx),'_'):))
-       enddo
-
-       call mct_aVect_setSharedIndices(l2x_a, x2a_a, l2x_SharedIndices)
-       call mct_aVect_setSharedIndices(o2x_a, x2a_a, o2x_SharedIndices)
-       call mct_aVect_setSharedIndices(i2x_a, x2a_a, i2x_SharedIndices)
-       call mct_aVect_setSharedIndices(xao_a, x2a_a, xao_SharedIndices)
-
-       ! Field naming rules
-       ! Only atm states that are Sx_... will be merged
-       ! Only fluxes that are F??x_... will be merged
-       ! All fluxes will be multiplied by corresponding component fraction
-
-       do ka = 1,naflds
-          !--- document merge ---
-          mrgstr(ka) = subname//'x2a%'//trim(field_atm(ka))//' ='
-          if (field_atm(ka)(1:2) == 'PF') then
-             cycle ! if flux has first character as P, pass straight through
-          endif
-          if (field_atm(ka)(1:1) == 'S' .and. field_atm(ka)(2:2) /= 'x') then
-             cycle ! any state fields that are not Sx_ will just be copied
-          endif
-          if (field_atm(ka)(1:1) == 'S') then
-             lstate(ka) = .true.
-          end if
-
-          do kl = 1,nlflds
-             if (trim(itemc_atm(ka)) == trim(itemc_lnd(kl))) then
-                if ((trim(field_atm(ka)) == trim(field_lnd(kl)))) then
-                   if (field_lnd(kl)(1:1) == 'F') lmerge(ka) = .false.
-                endif
-                ! --- make sure only one field matches ---
-                if (lindx(ka) /= 0) then
-                   write(logunit,*) subname,' ERROR: found multiple kl field matches for ',trim(itemc_lnd(kl))
-                   call shr_sys_abort(subname//' ERROR multiple kl field matches')
-                endif
-                lindx(ka) = kl
-             endif
-          end do
-          do ki = 1,niflds
-             if (field_ice(ki)(1:1) == 'F' .and. field_ice(ki)(2:4) == 'ioi') then
-                cycle ! ignore all fluxes that are ice/ocn fluxes
-             endif
-             if (trim(itemc_atm(ka)) == trim(itemc_ice(ki))) then
-                if ((trim(field_atm(ka)) == trim(field_ice(ki)))) then
-                   if (field_ice(ki)(1:1) == 'F') imerge(ka) = .false.
-                endif
-                ! --- make sure only one field matches ---
-                if (iindx(ka) /= 0) then
-                   write(logunit,*) subname,' ERROR: found multiple ki field matches for ',trim(itemc_ice(ki))
-                   call shr_sys_abort(subname//' ERROR multiple ki field matches')
-                endif
-                iindx(ka) = ki
-             endif
-          end do
-          do kx = 1,nxflds
-             if (trim(itemc_atm(ka)) == trim(itemc_xao(kx))) then
-                if ((trim(field_atm(ka)) == trim(field_xao(kx)))) then
-                   if (field_xao(kx)(1:1) == 'F') xmerge(ka) = .false.
-                endif
-                ! --- make sure only one field matches ---
-                if (xindx(ka) /= 0) then
-                   write(logunit,*) subname,' ERROR: found multiple kx field matches for ',trim(itemc_xao(kx))
-                   call shr_sys_abort(subname//' ERROR multiple kx field matches')
-                endif
-                xindx(ka) = kx
-             endif
-          end do
-          do ko = 1,noflds
-             if (trim(itemc_atm(ka)) == trim(itemc_ocn(ko))) then
-                if ((trim(field_atm(ka)) == trim(field_ocn(ko)))) then
-                   if (field_ocn(ko)(1:1) == 'F') omerge(ka) = .false.
-                endif
-                ! --- make sure only one field matches ---
-                if (oindx(ka) /= 0) then
-                   write(logunit,*) subname,' ERROR: found multiple ko field matches for ',trim(itemc_ocn(ko))
-                   call shr_sys_abort(subname//' ERROR multiple ko field matches')
-                endif
-                oindx(ka) = ko
-             endif
-          end do
-
-          ! --- add some checks ---
-
-          ! --- make sure all terms agree on merge or non-merge aspect ---
-          if (oindx(ka) > 0 .and. xindx(ka) > 0) then
-             write(logunit,*) subname,' ERROR: oindx and xindx both non-zero, not allowed ',trim(itemc_atm(ka))
-             call shr_sys_abort(subname//' ERROR oindx and xindx both non-zero')
-          endif
-
-          ! --- make sure all terms agree on merge or non-merge aspect ---
-          if (lindx(ka) > 0 .and. iindx(ka) > 0 .and. (lmerge(ka) .neqv. imerge(ka))) then
-             write(logunit,*) subname,' ERROR: lindx and iindx merge logic error ',trim(itemc_atm(ka))
-             call shr_sys_abort(subname//' ERROR lindx and iindx merge logic error')
-          endif
-          if (lindx(ka) > 0 .and. xindx(ka) > 0 .and. (lmerge(ka) .neqv. xmerge(ka))) then
-             write(logunit,*) subname,' ERROR: lindx and xindx merge logic error ',trim(itemc_atm(ka))
-             call shr_sys_abort(subname//' ERROR lindx and xindx merge logic error')
-          endif
-          if (lindx(ka) > 0 .and. oindx(ka) > 0 .and. (lmerge(ka) .neqv. omerge(ka))) then
-             write(logunit,*) subname,' ERROR: lindx and oindx merge logic error ',trim(itemc_atm(ka))
-             call shr_sys_abort(subname//' ERROR lindx and oindx merge logic error')
-          endif
-          if (xindx(ka) > 0 .and. iindx(ka) > 0 .and. (xmerge(ka) .neqv. imerge(ka))) then
-             write(logunit,*) subname,' ERROR: xindx and iindx merge logic error ',trim(itemc_atm(ka))
-             call shr_sys_abort(subname//' ERROR xindx and iindx merge logic error')
-          endif
-          if (xindx(ka) > 0 .and. oindx(ka) > 0 .and. (xmerge(ka) .neqv. omerge(ka))) then
-             write(logunit,*) subname,' ERROR: xindx and oindx merge logic error ',trim(itemc_atm(ka))
-             call shr_sys_abort(subname//' ERROR xindx and oindx merge logic error')
-          endif
-          if (iindx(ka) > 0 .and. oindx(ka) > 0 .and. (imerge(ka) .neqv. omerge(ka))) then
-             write(logunit,*) subname,' ERROR: iindx and oindx merge logic error ',trim(itemc_atm(ka))
-             call shr_sys_abort(subname//' ERROR iindx and oindx merge logic error')
-          endif
-
-       end do
-    endif
-
-    ! Zero attribute vector
-
-    call mct_avect_zero(x2a_a)
-
-    ! Update surface fractions
-
-    kif=mct_aVect_indexRA(fractions_a,"ifrac")
-    kof=mct_aVect_indexRA(fractions_a,"ofrac")
-    klf_st=mct_aVect_indexRA(fractions_a,"lfrac")
-    fracstr_st = 'lfrac'
-    if (samegrid_al) then
-       klf = mct_aVect_indexRA(fractions_a,"lfrac")
-       fracstr = 'lfrac'
-    else
-       klf = mct_aVect_indexRA(fractions_a,"lfrin")
-       fracstr = 'lfrin'
-    endif
-
-    lsize = mct_avect_lsize(x2a_a)
-
-    index_x2a_Sf_lfrac = mct_aVect_indexRA(x2a_a,'Sf_lfrac')
-    index_x2a_Sf_ifrac = mct_aVect_indexRA(x2a_a,'Sf_ifrac')
-    index_x2a_Sf_ofrac = mct_aVect_indexRA(x2a_a,'Sf_ofrac')
-    do n = 1,lsize
-       x2a_a%rAttr(index_x2a_Sf_lfrac,n) = fractions_a%Rattr(klf,n)
-       x2a_a%rAttr(index_x2a_Sf_ifrac,n) = fractions_a%Rattr(kif,n)
-       x2a_a%rAttr(index_x2a_Sf_ofrac,n) = fractions_a%Rattr(kof,n)
-    end do
-
-    !--- document fraction operations ---
-    if (first_time) then
-       mrgstr(index_x2a_sf_lfrac) = trim(mrgstr(index_x2a_sf_lfrac))//' = fractions_a%'//trim(fracstr)
-       mrgstr(index_x2a_sf_ifrac) = trim(mrgstr(index_x2a_sf_ifrac))//' = fractions_a%ifrac'
-       mrgstr(index_x2a_sf_ofrac) = trim(mrgstr(index_x2a_sf_ofrac))//' = fractions_a%ofrac'
-    endif
-
-    ! Copy attributes that do not need to be merged
-    ! These are assumed to have the same name in
-    ! (o2x_a and x2a_a) and in (l2x_a and x2a_a), etc.
-
-    !--- document copy operations ---
-    if (first_time) then
-       !--- document merge ---
-       do i=1,l2x_SharedIndices%shared_real%num_indices
-          i1=l2x_SharedIndices%shared_real%aVindices1(i)
-          o1=l2x_SharedIndices%shared_real%aVindices2(i)
-          mrgstr(o1) = trim(mrgstr(o1))//' = l2x%'//trim(field_lnd(i1))
-       enddo
-       do i=1,o2x_SharedIndices%shared_real%num_indices
-          i1=o2x_SharedIndices%shared_real%aVindices1(i)
-          o1=o2x_SharedIndices%shared_real%aVindices2(i)
-          mrgstr(o1) = trim(mrgstr(o1))//' = o2x%'//trim(field_ocn(i1))
-       enddo
-       do i=1,i2x_SharedIndices%shared_real%num_indices
-          i1=i2x_SharedIndices%shared_real%aVindices1(i)
-          o1=i2x_SharedIndices%shared_real%aVindices2(i)
-          mrgstr(o1) = trim(mrgstr(o1))//' = i2x%'//trim(field_ice(i1))
-       enddo
-       do i=1,xao_SharedIndices%shared_real%num_indices
-          i1=xao_SharedIndices%shared_real%aVindices1(i)
-          o1=xao_SharedIndices%shared_real%aVindices2(i)
-          mrgstr(o1) = trim(mrgstr(o1))//' = xao%'//trim(field_xao(i1))
-       enddo
-    endif
-
-    !    call mct_aVect_copy(aVin=l2x_a, aVout=x2a_a, vector=mct_usevector)
-    !    call mct_aVect_copy(aVin=o2x_a, aVout=x2a_a, vector=mct_usevector)
-    !    call mct_aVect_copy(aVin=i2x_a, aVout=x2a_a, vector=mct_usevector)
-    !    call mct_aVect_copy(aVin=xao_a, aVout=x2a_a, vector=mct_usevector)
-    call mct_aVect_copy(aVin=l2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=l2x_SharedIndices)
-    call mct_aVect_copy(aVin=o2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=o2x_SharedIndices)
-    call mct_aVect_copy(aVin=i2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=i2x_SharedIndices)
-    call mct_aVect_copy(aVin=xao_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=xao_SharedIndices)
-
-    ! If flux to atm is coming only from the ocean (based on field being in o2x_a) -
-    ! -- then scale by both ocean and ice fraction
-    ! If flux to atm is coming only from the land or ice or coupler
-    ! -- then do scale by fraction above
-
-    do ka = 1,naflds
-       !--- document merge ---
-       if (first_time) then
-          if (lindx(ka) > 0) then
-             if (lstate(ka)) then
-                if (lmerge(ka)) then
-                   mrgstr(ka) = trim(mrgstr(ka))//' + '//trim(fracstr_st)//'*l2x%'//trim(field_lnd(lindx(ka)))
-                else
-                   mrgstr(ka) = trim(mrgstr(ka))//' = '//trim(fracstr_st)//'*l2x%'//trim(field_lnd(lindx(ka)))
-                end if
-             else
-                if (lmerge(ka)) then
-                   mrgstr(ka) = trim(mrgstr(ka))//' + '//trim(fracstr)//'*l2x%'//trim(field_lnd(lindx(ka)))
-                else
-                   mrgstr(ka) = trim(mrgstr(ka))//' = '//trim(fracstr)//'*l2x%'//trim(field_lnd(lindx(ka)))
-                end if
-             end if
-          endif
-          if (iindx(ka) > 0) then
-             if (imerge(ka)) then
-                mrgstr(ka) = trim(mrgstr(ka))//' + ifrac*i2x%'//trim(field_ice(iindx(ka)))
-             else
-                mrgstr(ka) = trim(mrgstr(ka))//' = ifrac*i2x%'//trim(field_ice(iindx(ka)))
-             endif
-          endif
-          if (xindx(ka) > 0) then
-             if (xmerge(ka)) then
-                mrgstr(ka) = trim(mrgstr(ka))//' + ofrac*xao%'//trim(field_xao(xindx(ka)))
-             else
-                mrgstr(ka) = trim(mrgstr(ka))//' = ofrac*xao%'//trim(field_xao(xindx(ka)))
-             endif
-          endif
-          if (oindx(ka) > 0) then
-             if (omerge(ka)) then
-                mrgstr(ka) = trim(mrgstr(ka))//' + ofrac*o2x%'//trim(field_ocn(oindx(ka)))
-             endif
-             if (.not. omerge(ka)) then
-                mrgstr(ka) = trim(mrgstr(ka))//' + (ifrac+ofrac)*o2x%'//trim(field_ocn(oindx(ka)))
-             endif
-          endif
-       endif
-
-       do n = 1,lsize
-          fracl = fractions_a%Rattr(klf,n)
-          fracl_st = fractions_a%Rattr(klf_st,n)
-          fraci = fractions_a%Rattr(kif,n)
-          fraco = fractions_a%Rattr(kof,n)
-          if (lindx(ka) > 0 .and. fracl > 0._r8) then
-             if (lstate(ka)) then
-                if (lmerge(ka)) then
-                   x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + l2x_a%rAttr(lindx(ka),n) * fracl_st
-                else
-                   x2a_a%rAttr(ka,n) = l2x_a%rAttr(lindx(ka),n) * fracl_st
-                end if
-             else
-                if (lmerge(ka)) then
-                   x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + l2x_a%rAttr(lindx(ka),n) * fracl
-                else
-                   x2a_a%rAttr(ka,n) = l2x_a%rAttr(lindx(ka),n) * fracl
-                end if
-             end if
-          endif
-          if (iindx(ka) > 0 .and. fraci > 0._r8) then
-             if (imerge(ka)) then
-                x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + i2x_a%rAttr(iindx(ka),n) * fraci
-             else
-                x2a_a%rAttr(ka,n) = i2x_a%rAttr(iindx(ka),n) * fraci
-             endif
-          endif
-          if (xindx(ka) > 0 .and. fraco > 0._r8) then
-             if (xmerge(ka)) then
-                x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + xao_a%rAttr(xindx(ka),n) * fraco
-             else
-                x2a_a%rAttr(ka,n) = xao_a%rAttr(xindx(ka),n) * fraco
-             endif
-          endif
-          if (oindx(ka) > 0) then
-             if (omerge(ka) .and. fraco > 0._r8) then
-                x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + o2x_a%rAttr(oindx(ka),n) * fraco
-             endif
-             if (.not. omerge(ka)) then
-                !--- NOTE: This IS using the ocean fields and ice fraction !! ---
-                x2a_a%rAttr(ka,n) = o2x_a%rAttr(oindx(ka),n) * fraci
-                x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + o2x_a%rAttr(oindx(ka),n) * fraco
-             endif
-          endif
-       end do
-    end do
-
-    if (first_time) then
-       if (iamroot) then
-          write(logunit,'(A)') subname//' Summary:'
-          do ka = 1,naflds
-             write(logunit,'(A)') trim(mrgstr(ka))
-          enddo
-       endif
-       deallocate(mrgstr)
-       deallocate(field_atm,itemc_atm)
-       deallocate(field_lnd,itemc_lnd)
-       deallocate(field_ice,itemc_ice)
-       deallocate(field_ocn,itemc_ocn)
-       deallocate(field_xao,itemc_xao)
-    endif
-
-    first_time = .false.
-
-  end subroutine prep_atm_merge
-
   !================================================================================================
 
   subroutine prep_atm_calc_o2x_ax(fractions_ox, timer)

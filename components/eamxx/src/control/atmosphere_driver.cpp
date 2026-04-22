@@ -2,9 +2,8 @@
 #include "control/atmosphere_surface_coupling_importer.hpp"
 #include "control/atmosphere_surface_coupling_exporter.hpp"
 
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
-#include "share/eamxx_config.hpp"
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/field/field_utils.hpp"
@@ -13,6 +12,7 @@
 #include "share/util/eamxx_utils.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/property_checks/mass_and_energy_conservation_check.hpp"
+#include "share/core/eamxx_config.hpp"
 #include "eamxx_version.h"
 
 #include <ekat_assert.hpp>
@@ -26,7 +26,7 @@
 // find blocks that eventually should be removed in favor of a design that
 // accounts for pg2. Some blocks may turn out to be unnecessary, and I simply
 // didn't realize I could do without the workaround.
-#include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
+#include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 
 #ifndef SCREAM_CIME_BUILD
 #include <unistd.h>
@@ -59,7 +59,7 @@ namespace control {
  *     Note: at this stage, atm procs that act on non-ref grid(s) should be able to create their
  *           remappers. The AD will *not* take care of remapping inputs/outputs of the process.
  *  4) Register all fields and all groups from all atm procs inside the field managers, and proceed
- *     to allocate fields. For more details, see the documentation in the share/field/field_request.hpp header.
+ *     to allocate fields. For more details, see the documentation in the share/data_managers/field_request.hpp header.
  *  5) Set all the fields into the atm procs. Before this point, all the atm procs had were the
  *     FieldIdentifiers for their input/output fields and FieldGroupInfo for their input/output
  *     field groups. Now, we pass actual Field and FieldGroup objects to them, where both the
@@ -82,11 +82,11 @@ namespace control {
  *
  * For more info see header comments in the proper files:
  *  - for field                -> src/share/field/field.hpp
- *  - for field manager        -> src/share/field/field_manager.hpp
+ *  - for field manager        -> src/share/data_managers/field_manager.hpp
  *  - for field groups         -> src/share/field/field_group.hpp
- *  - for field/group requests -> src/share/field/field_request.hpp
+ *  - for field/group requests -> src/share/data_managers/field_request.hpp
  *  - for grid                 -> src/share/grid/abstract_grid.hpp
- *  - for grid manager         -> src/share/grid/grids_manager.hpp
+ *  - for grid manager         -> src/share/data_managers/grids_manager.hpp
  *  - for atm proc             -> src/share/atm_process/atmosphere_process.hpp
  *  - for atm proc group       -> src/share/atm_process/atmosphere_process_group.hpp
  *  - for scorpio input/output -> src/share/io/scorpio_[input|output].hpp
@@ -181,6 +181,20 @@ init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
       m_run_type = case_t0==run_t0 ? RunType::Initial : RunType::Restart; break;
     default:
       EKAT_ERROR_MSG ("Unsupported/unrecognized run_type: " + std::to_string(run_type) + "\n");
+  }
+
+  // If it is a restarted run, make sure we have the correct num steps.
+  // If num_steps is left at default (0), it messes up output managers logic
+  if (m_run_type==RunType::Restart) {
+    // Figure out the name of the netcdf file containing the restart data
+    const auto& provenance = m_atm_params.sublist("provenance");
+    const auto& casename = provenance.get<std::string>("rest_caseid");
+    auto filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
+
+    // Restart the num steps counter in the atm time stamp
+    int nsteps = scorpio::get_attribute<int>(filename,"GLOBAL","nsteps");
+    m_run_t0.set_num_steps(nsteps);
+    m_current_ts.set_num_steps(nsteps);
   }
 }
 
@@ -310,10 +324,6 @@ void AtmosphereDriver::create_grids()
   // Each process will grab what they need
   m_atm_process_group->set_grids(m_grids_manager);
 
-
-  // Also make each atm proc build requests for tendency fields, if needed
-  m_atm_process_group->setup_tendencies_requests();
-
   m_ad_status |= s_grids_created;
 
   stop_timer("EAMxx::create_grids");
@@ -325,9 +335,6 @@ void AtmosphereDriver::create_grids()
 void AtmosphereDriver::setup_surface_coupling_data_manager(SurfaceCouplingTransferType transfer_type,
                                                            const int num_cpl_fields, const int num_scream_fields,
                                                            const int field_size, Real* data_ptr,
-#ifdef HAVE_MOAB
-                                                           Real* data_ptr_moab,
-#endif
                                                            char* names_ptr, int* cpl_indices_ptr, int* vec_comps_ptr,
                                                            Real* constant_multiple_ptr, bool* do_transfer_during_init_ptr)
 {
@@ -346,9 +353,6 @@ void AtmosphereDriver::setup_surface_coupling_data_manager(SurfaceCouplingTransf
   } else EKAT_ERROR_MSG("Error! Unexpected SurfaceCouplingTransferType.");
 
   sc_data_mgr->setup_internals(num_cpl_fields, num_scream_fields, field_size, data_ptr,
-#ifdef HAVE_MOAB
-                               data_ptr_moab,
-#endif
                                names_ptr, cpl_indices_ptr, vec_comps_ptr,
                                constant_multiple_ptr, do_transfer_during_init_ptr);
 }
@@ -428,7 +432,7 @@ void AtmosphereDriver::setup_column_conservation_checks ()
   auto phys_grid = m_grids_manager->get_grid("physics");
   const auto phys_grid_name = phys_grid->name();
   // Get fields needed to run the mass and energy conservation checks. Require that
-  // all fields exist.
+  // all fields exist (except h2otemp which is optional).
   EKAT_REQUIRE_MSG (
     m_field_mgr->has_field("pseudo_density", phys_grid_name) and
     m_field_mgr->has_field("ps",             phys_grid_name) and
@@ -465,6 +469,12 @@ void AtmosphereDriver::setup_column_conservation_checks ()
   const auto water_flux     = m_field_mgr->get_field("water_flux",     phys_grid_name);
   const auto ice_flux       = m_field_mgr->get_field("ice_flux",       phys_grid_name);
   const auto heat_flux      = m_field_mgr->get_field("heat_flux",      phys_grid_name);
+  
+  // h2otemp is optional - only available when SurfaceCouplingImporter is active
+  Field h2otemp;
+  if (m_field_mgr->has_field("h2otemp", phys_grid_name)) {
+    h2otemp = m_field_mgr->get_field("h2otemp", phys_grid_name);
+  }
 
   auto conservation_check =
     std::make_shared<MassAndEnergyConservationCheck>(m_atm_comm,phys_grid,
@@ -473,7 +483,8 @@ void AtmosphereDriver::setup_column_conservation_checks ()
                                                            horiz_winds, T_mid, qv,
                                                            qc, qr, qi,
                                                            vapor_flux, water_flux,
-                                                           ice_flux, heat_flux);
+                                                           ice_flux, heat_flux,
+                                                           h2otemp);
 
   //Get fail handling type from driver_option parameters.
   const std::string fail_handling_type_str =
@@ -510,10 +521,9 @@ void AtmosphereDriver::setup_shoc_tms_links ()
 void AtmosphereDriver::add_additional_column_data_to_property_checks () {
   // Get list of additional data fields from driver_options parameters.
   // If no fields given, return.
-  using vos_t = std::vector<std::string>;
-  auto additional_data_fields = m_atm_params.sublist("driver_options").get<vos_t>("property_check_data_fields",
+  auto additional_data_fields = m_atm_params.sublist("driver_options").get<strvec_t>("property_check_data_fields",
                                                                                   {"NONE"});
-  if (additional_data_fields == vos_t{"NONE"}) return;
+  if (additional_data_fields == strvec_t{"NONE"}) return;
 
   // Add requested fields to property checks
   const auto& grid_name = m_grids_manager->get_grid("physics")->name();
@@ -544,16 +554,10 @@ void AtmosphereDriver::create_fields()
 
   // Register required/computed fields. By now, the processes should have
   // fully built the ids of their required/computed fields and groups
-  for (const auto& req : m_atm_process_group->get_required_field_requests()) {
+  for (const auto& req : m_atm_process_group->get_field_requests()) {
     m_field_mgr->register_field(req);
   }
-  for (const auto& req : m_atm_process_group->get_computed_field_requests()) {
-    m_field_mgr->register_field(req);
-  }
-  for (const auto& greq : m_atm_process_group->get_required_group_requests()) {
-    m_field_mgr->register_group(greq);
-  }
-  for (const auto& greq : m_atm_process_group->get_computed_group_requests()) {
+  for (const auto& greq : m_atm_process_group->get_group_requests()) {
     m_field_mgr->register_group(greq);
   }
 
@@ -563,27 +567,24 @@ void AtmosphereDriver::create_fields()
   // Set all the fields/groups in the processes. Input fields/groups will be handed
   // to the processes with const scalar type (const Real), to prevent them from
   // overwriting them (though, they can always cast away const...).
-  // IMPORTANT: set all computed fields/groups first, since the AtmProcGroup class
-  // needs to inspect those before deciding whether a required group is indeed
-  // required or not. E.g., in AtmProcGroup [A, B], if A computes group "blah" (or all
-  // the fields contained in group "blah"), then group "blah" is not a required
-  // group for the AtmProcGroup, even if it is a required group for B.
-  for (const auto& req : m_atm_process_group->get_computed_field_requests()) {
+  for (const auto& req : m_atm_process_group->get_field_requests()) {
     const auto& fid = req.fid;
-    m_atm_process_group->set_computed_field(m_field_mgr->get_field(fid));
+    const auto& f = m_field_mgr->get_field(fid);
+    if (req.usage & Required)
+      m_atm_process_group->set_required_field(f.get_const());
+    if (req.usage & Computed)
+      m_atm_process_group->set_computed_field(f);
   }
-  for (const auto& it : m_atm_process_group->get_computed_group_requests()) {
-    auto group = m_field_mgr->get_field_group(it.name, it.grid);
-    m_atm_process_group->set_computed_group(group);
+  for (const auto& req : m_atm_process_group->get_group_requests()) {
+    auto group = m_field_mgr->get_field_group(req.name, req.grid);
+    if (req.usage & Required)
+      m_atm_process_group->set_required_group(group.get_const());
+    if (req.usage & Computed)
+      m_atm_process_group->set_computed_group(group);
   }
-  for (const auto& it : m_atm_process_group->get_required_group_requests()) {
-    auto group = m_field_mgr->get_field_group(it.name, it.grid).get_const();
-    m_atm_process_group->set_required_group(group);
-  }
-  for (const auto& req : m_atm_process_group->get_required_field_requests()) {
-    const auto& fid = req.fid;
-    m_atm_process_group->set_required_field(m_field_mgr->get_field(fid).get_const());
-  }
+
+  // Make atm procs create the proc-level tendency fields (if requested)
+  m_atm_process_group->setup_step_tendencies(m_grids_manager->get_grid("physics")->name());
 
   // Now that all processes have all the required/computed fields/groups, they
   // have also created any possible internal field (if needed). Notice that some
@@ -597,26 +598,44 @@ void AtmosphereDriver::create_fields()
   m_atm_process_group->gather_internal_fields();
   for (const auto& f : m_atm_process_group->get_internal_fields()) {
     m_field_mgr->add_field(f);
+
+    // Internal fields have their group names set by the processes that create them.
+    // Hence, simply add them to all the groups they are marked as part of
+    const auto& ftrack = f.get_header().get_tracking();
+    const auto& fid    = f.get_header().get_identifier();
+    for (const auto& gn : ftrack.get_groups_names()) {
+      m_field_mgr->add_to_group(fid, gn);
+    }
   }
 
-  // Now go through the input fields/groups to the atm proc group, as well as
-  // the internal fields/groups, and mark them as part of the RESTART group.
+  // Now go through the input fields/groups to the atm proc group,
+  // and mark them as part of the RESTART group.
+  // Skip fields in the ACCUMULATED group, since those are reset to 0
+  // at the beginning of each atm step, so there is no need to read
+  // them from the IC or restart file.
   for (const auto& f : m_atm_process_group->get_fields_in()) {
     const auto& fid = f.get_header().get_identifier();
-    m_field_mgr->add_to_group(fid, "RESTART");
+    const auto& fgroups = f.get_header().get_tracking().get_groups_names();
+    if (not ekat::contains(fgroups, "ACCUMULATED")) {
+      m_field_mgr->add_to_group(fid, "RESTART");
+    }
   }
   for (const auto& g : m_atm_process_group->get_groups_in()) {
     if (g.m_monolithic_field) {
-      m_field_mgr->add_to_group(g.m_monolithic_field->get_header().get_identifier(), "RESTART");
+      const auto& mf = *g.m_monolithic_field;
+      const auto& mfgroups = mf.get_header().get_tracking().get_groups_names();
+      if (not ekat::contains(mfgroups, "ACCUMULATED")) {
+        m_field_mgr->add_to_group(mf.get_header().get_identifier(), "RESTART");
+      }
     } else {
       for (const auto& fn : g.m_info->m_fields_names) {
-        m_field_mgr->add_to_group(fn, g.grid_name(), "RESTART");
+        auto field = m_field_mgr->get_field(fn, g.grid_name());
+        const auto& fgroups = field.get_header().get_tracking().get_groups_names();
+        if (not ekat::contains(fgroups, "ACCUMULATED")) {
+          m_field_mgr->add_to_group(fn, g.grid_name(), "RESTART");
+        }
       }
     }
-  }
-  for (const auto& f : m_atm_process_group->get_internal_fields()) {
-    const auto& fid = f.get_header().get_identifier();
-    m_field_mgr->add_to_group(fid, "RESTART");
   }
 
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
@@ -666,16 +685,11 @@ void AtmosphereDriver::create_fields()
       pl.set("units",fid.get_units().to_string());
       pl.set("layout",fid.get_layout().names());
       pl.set("standard_name",std_names.get_standardname(fid.name()));
-      std::vector<std::string> providers,customers;
       const auto& track = it.second->get_header().get_tracking();
-      for (auto ap : track.get_providers()) {
-        providers.push_back(ap.lock()->name());
-      }
-      for (auto ap : track.get_customers()) {
-        customers.push_back(ap.lock()->name());
-      }
-      pl.set("providers",providers);
-      pl.set("customers",customers);
+      const auto& p = track.get_providers();
+      const auto& c = track.get_customers();
+      pl.set("providers",strvec_t(p.begin(),p.end()));
+      pl.set("customers",strvec_t(c.begin(),c.end()));
     }
 
     ekat::write_yaml_file("eamxx_field_manager_content.yaml",pl_out);
@@ -725,8 +739,7 @@ void AtmosphereDriver::create_output_managers () {
   }
 
   // Create one output manager per output yaml file
-  using vos_t = std::vector<std::string>;
-  const auto& output_yaml_files = io_params.get<vos_t>("output_yaml_files",vos_t{});
+  const auto& output_yaml_files = io_params.get<strvec_t>("output_yaml_files",strvec_t{});
   for (const auto& fname : output_yaml_files) {
     ekat::ParameterList params;
     ekat::parse_yaml_file(fname,params);
@@ -741,6 +754,10 @@ void AtmosphereDriver::create_output_managers () {
     }
     params.sublist("provenance") = m_atm_params.sublist("provenance");
     params.sublist("restart").set("branch_run",m_branch_run);
+
+    if (not params.isParameter("enable_fine_grain_timers")) {
+      params.set("enable_fine_grain_timers",io_params.get("enable_fine_grain_timers",false));
+    }
 
     auto& om = m_output_managers.emplace_back();
     om.initialize(m_atm_comm,
@@ -775,8 +792,8 @@ void AtmosphereDriver::initialize_output_managers () {
       output_grids.erase("physics_gll");
     }
 
-    m_restart_output_manager->setup(m_field_mgr, output_grids);
     m_restart_output_manager->set_logger(m_atm_logger);
+    m_restart_output_manager->setup(m_field_mgr, output_grids);
     for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
       m_restart_output_manager->add_global(it.first,it.second);
     }
@@ -937,9 +954,16 @@ void AtmosphereDriver::restart_model ()
       // No field needs to be restarted on this grid.
       continue;
     }
-    const auto& restart_group = m_field_mgr->get_group_info("RESTART", gn);
+    const auto& restart_fnames = m_field_mgr->get_group_info("RESTART", gn).m_fields_names;
     std::vector<Field> fields;
-    for (const auto& fn : restart_group.m_fields_names) {
+    for (const auto& fn : restart_fnames) {
+      // If the field has a parent, and the parent is also in the RESTART group,
+      // then skip it, since restarting the parent will restart the child too
+      auto f = m_field_mgr->get_field(fn,gn);
+      auto p = f.get_header().get_parent();
+      if (p and ekat::contains(p->get_tracking().get_groups_names(),"RESTART")) {
+        continue;
+      }
       fields.push_back(m_field_mgr->get_field(fn,gn));
     }
     read_fields_from_file (fields,m_grids_manager->get_grid(gn),filename);
@@ -947,11 +971,6 @@ void AtmosphereDriver::restart_model ()
       f.get_header().get_tracking().update_time_stamp(m_current_ts);
     }
   }
-
-  // Restart the num steps counter in the atm time stamp
-  int nsteps = scorpio::get_attribute<int>(filename,"GLOBAL","nsteps");
-  m_current_ts.set_num_steps(nsteps);
-  m_run_t0.set_num_steps(nsteps);
 
   for (auto& it : m_atm_process_group->get_restart_extra_data()) {
     const auto& name = it.first;
@@ -1042,12 +1061,12 @@ void AtmosphereDriver::set_initial_conditions ()
   auto& ic_pl = m_atm_params.sublist("initial_conditions");
 
   // Check which fields need to have an initial condition.
-  std::map<std::string,std::vector<std::string>> ic_fields_names;
+  strmap_t<strvec_t> ic_fields_names;
   std::vector<FieldIdentifier> ic_fields_to_copy;
 
   // Check which fields should be loaded from the topography file
-  std::map<std::string,std::vector<std::string>> topography_file_fields_names;
-  std::map<std::string,std::vector<std::string>> topography_eamxx_fields_names;
+  strmap_t<strvec_t> topography_file_fields_names;
+  strmap_t<strvec_t> topography_eamxx_fields_names;
 
   // Helper lambda, to reduce code duplication
   auto process_ic_field = [&](const Field& f) {
@@ -1058,7 +1077,8 @@ void AtmosphereDriver::set_initial_conditions ()
     if (ic_pl.isParameter(fname)) {
       // This is the case that the user provided an initialization
       // for this field in the parameter file.
-      if (ic_pl.isType<double>(fname) or ic_pl.isType<std::vector<double>>(fname)) {
+      if (ic_pl.isType<int>(fname) or ic_pl.isType<double>(fname) or
+          ic_pl.isType<std::vector<double>>(fname)) {
         // Initial condition is a constant
         initialize_constant_field(fid, ic_pl);
 
@@ -1138,7 +1158,12 @@ void AtmosphereDriver::set_initial_conditions ()
   // First the individual input fields...
   m_atm_logger->debug("    [EAMxx] Processing input fields ...");
   for (const auto& f : m_atm_process_group->get_fields_in()) {
-    process_ic_field (f);
+    // Skip ACCUMULATED fields: those are reset to 0 at the beginning of
+    // each atm step, so there is no need to read them from the IC file.
+    const auto& fgroups = f.get_header().get_tracking().get_groups_names();
+    if (not ekat::contains(fgroups, "ACCUMULATED")) {
+      process_ic_field (f);
+    }
   }
   m_atm_logger->debug("    [EAMxx] Processing input fields ... done!");
 
@@ -1146,10 +1171,18 @@ void AtmosphereDriver::set_initial_conditions ()
   m_atm_logger->debug("    [EAMxx] Processing input groups ...");
   for (const auto& g : m_atm_process_group->get_groups_in()) {
     if (g.m_monolithic_field) {
-      process_ic_field(*g.m_monolithic_field);
+      const auto& mf = *g.m_monolithic_field;
+      const auto& mfgroups = mf.get_header().get_tracking().get_groups_names();
+      if (not ekat::contains(mfgroups, "ACCUMULATED")) {
+        process_ic_field(mf);
+      }
     }
     for (auto it : g.m_individual_fields) {
-      process_ic_field(*it.second);
+      const auto& f = *it.second;
+      const auto& fgroups = f.get_header().get_tracking().get_groups_names();
+      if (not ekat::contains(fgroups, "ACCUMULATED")) {
+        process_ic_field(f);
+      }
     }
   }
   m_atm_logger->debug("    [EAMxx] Processing input groups ... done!");
@@ -1360,8 +1393,7 @@ void AtmosphereDriver::set_initial_conditions ()
   }
 
   // Compute IC perturbations of GLL fields (if requested)
-  using vos = std::vector<std::string>;
-  const auto perturbed_fields = ic_pl.get<vos>("perturbed_fields", {});
+  const auto perturbed_fields = ic_pl.get<strvec_t>("perturbed_fields", {});
   const auto num_perturb_fields = perturbed_fields.size();
   if (num_perturb_fields > 0) {
     m_atm_logger->info("    [EAMxx] Adding random perturbation to ICs ...");
@@ -1390,28 +1422,35 @@ void AtmosphereDriver::set_initial_conditions ()
       seed = ic_pl.get<int>("perturbation_random_seed", 0);
     }
     m_atm_logger->info("      For IC perturbation, random seed: "+std::to_string(seed));
-    std::mt19937_64 engine(seed);
 
     // Get perturbation limit. Defines a range [1-perturbation_limit, 1+perturbation_limit]
     // for which the perturbation value will be randomly generated from. Create a uniform
     // distribution for this range.
     const auto perturbation_limit = ic_pl.get<Real>("perturbation_limit", 0.001);
-    std::uniform_real_distribution<Real> pdf(1-perturbation_limit, 1+perturbation_limit);
 
     // Define a level mask using reference pressure and the perturbation_minimum_pressure parameter.
     // This mask dictates which levels we apply a perturbation.
     const auto gll_grid = m_grids_manager->get_grid("physics_gll");
     const auto hyam_h = gll_grid->get_geometry_data("hyam").get_view<const Real*, Host>();
     const auto hybm_h = gll_grid->get_geometry_data("hybm").get_view<const Real*, Host>();
-    constexpr auto ps0 = physics::Constants<Real>::P0;
+    constexpr auto ps0 = physics::Constants<Real>::P0.value;
     const auto min_pressure = ic_pl.get<Real>("perturbation_minimum_pressure", 1050.0);
-    auto pressure_mask = [&] (const int ilev) {
+
+    using namespace ShortFieldTagsNames;
+    const auto& pmask_lt = gll_grid->get_vertical_layout(LEV);
+    const auto nondim = ekat::units::Units::nondimensional();
+    FieldIdentifier pmask_fid("lev_mask",pmask_lt,nondim,gll_grid->name(),DataType::IntType);
+    Field pressure_mask(pmask_fid,true);
+    auto pmask_h = pressure_mask.get_view<int*,Host>();
+    for (int ilev=0; ilev<pmask_lt.dim(0); ++ilev) {
       const auto pref = (hyam_h(ilev)*ps0 + hybm_h(ilev)*ps0)/100; // Reference pressure ps0 is in Pa, convert to millibar
-      return pref > min_pressure;
-    };
+      pmask_h(ilev) = static_cast<int>(pref > min_pressure);
+    }
+    pressure_mask.sync_to_dev();
 
     // Loop through fields and apply perturbation.
     const std::string gll_grid_name = gll_grid->name();
+    auto dofs_gids = gll_grid->get_dofs_gids();
     for (size_t f=0; f<perturbed_fields.size(); ++f) {
       const auto fname = perturbed_fields[f];
       EKAT_REQUIRE_MSG(ekat::contains(m_fields_inited[gll_grid_name], fname),
@@ -1420,7 +1459,7 @@ void AtmosphereDriver::set_initial_conditions ()
                        "  - Grid:  "+gll_grid_name+"\n");
 
       auto field = m_field_mgr->get_field(fname, gll_grid_name);
-      perturb(field, engine, pdf, seed, pressure_mask, gll_grid->get_dofs_gids());
+      perturb(field, perturbation_limit, seed, pressure_mask, dofs_gids);
     }
 
     m_atm_logger->info("    [EAMxx] Adding random perturbation to ICs ... done!");
@@ -1497,8 +1536,13 @@ initialize_constant_field(const FieldIdentifier& fid,
       }
     }
   } else {
-    const auto& value = ic_pl.get<double>(name);
-    f.deep_copy(value);
+    if (ic_pl.isType<int>(name)) {
+      const auto& value = ic_pl.get<int>(name);
+      f.deep_copy(value);
+    } else {
+      const auto& value = ic_pl.get<double>(name);
+      f.deep_copy(value);
+    }
   }
 }
 

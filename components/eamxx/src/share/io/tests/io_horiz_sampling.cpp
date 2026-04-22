@@ -1,13 +1,13 @@
 #include <catch2/catch.hpp>
 #include <memory>
 
-#include "diagnostics/register_diagnostics.hpp"
+#include "share/diagnostics/register_diagnostics.hpp"
 
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 
 #include "share/grid/point_grid.hpp"
 
@@ -49,6 +49,7 @@ void print (const std::string& msg, const ekat::Comm& comm) {
 
 TEST_CASE("io_remap_test","io_remap_test")
 {
+  using namespace ShortFieldTagsNames;
   using gid_type = AbstractGrid::gid_type;
 
   // Init scorpio
@@ -57,10 +58,8 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
 
-  // Random number generation
-  using RPDF  = std::uniform_real_distribution<Real>;
-  auto engine = setup_random_test(&comm);
-  RPDF pdf(0, 1);
+  // Random number generator seed
+  auto seed = get_random_test_seed(&comm);
 
   // Create src grid
   const std::string& gname = "point_grid";
@@ -78,7 +77,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   std::vector<int> col(nlcols_tgt), row(nlcols_tgt);
   std::vector<Real> S(nlcols_tgt,1.0);
   for (int i=0; i<nlcols_tgt; ++i) {
-    row[i] = i + nlcols_tgt*comm.rank();
+    row[i] = 1+i + nlcols_tgt*comm.rank();
     col[i] = gids_src_h[2*i] + 1;
   }
 
@@ -110,9 +109,9 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   // Create the fields and randomize
   auto s2d_src = create_f("s2d",src_grid->get_2d_scalar_layout(),gname);
-  auto s3d_src = create_f("s3d",src_grid->get_3d_scalar_layout(true),gname);
-  randomize(s2d_src,engine,pdf);
-  randomize(s3d_src,engine,pdf);
+  auto s3d_src = create_f("s3d",src_grid->get_3d_scalar_layout(LEV),gname);
+  randomize_uniform(s2d_src,seed++);
+  randomize_uniform(s3d_src,seed++);
 
   // Stuff fields in a FieldManager, since that's what OuputManager wants
   auto fm = std::make_shared<FieldManager> (src_grid,RepoState::Closed);
@@ -140,7 +139,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   auto tgt_grid = create_point_grid(gname + "_tgt",ngcols_tgt,nlevs,comm);
 
   auto s2d_tgt = create_f("s2d",tgt_grid->get_2d_scalar_layout(),gname+"_tgt");
-  auto s3d_tgt = create_f("s3d",tgt_grid->get_3d_scalar_layout(true),gname+"_tgt");
+  auto s3d_tgt = create_f("s3d",tgt_grid->get_3d_scalar_layout(LEV),gname+"_tgt");
 
   std::vector<Field> fields = {s2d_tgt,s3d_tgt};
 

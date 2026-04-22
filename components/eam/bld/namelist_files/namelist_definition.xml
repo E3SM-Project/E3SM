@@ -1072,6 +1072,18 @@ Whether or not to enable gravity waves produced by convection.
 Default: set by build-namelist.
 </entry>
 
+<entry id="use_fgf_pgrad_correction" type="logical" category="gw_drag"
+       group="phys_ctl_nl" valid_values="" >
+Flag to enable frontogenesis pressure gradient correction for frontal GWD
+Default: set by build-namelist.
+</entry>
+
+<entry id="use_fgf_zgrad_correction" type="logical" category="gw_drag"
+       group="phys_ctl_nl" valid_values="" >
+Flag to enable frontogenesis geopotential gradient correction for frontal GWD
+Default: set by build-namelist.
+</entry>
+
 <entry id="use_gw_energy_fix" type="logical" category="gw_drag"
        group="phys_ctl_nl" valid_values="" >
 Whether or not to enable GWD brute-force energy fix.
@@ -4201,6 +4213,18 @@ number of so4(+nh4) monolayers needed to "age" a carbon particle
 Default: Set by namelist
 </entry>
 
+<entry id="dp_cut_accum_rename" type="real"  category="scavenging"
+       group="phys_ctl_nl" valid_values="" >
+cutoff diameter for larger accum mode particles renamed to the strat coarse mode
+Default: Set by namelist
+</entry>
+
+<entry id="dp_xferall_thresh_accum_rename" type="real"  category="scavenging"
+       group="phys_ctl_nl" valid_values="" >
+threshold diameter for all accum mode particles transferred to the strat coarse mode
+Default: Set by namelist
+</entry>
+
 
 <!-- Diagnostics -->
 
@@ -4499,7 +4523,7 @@ group="radiation_nl" valid_values="" >
 Split surface insolation asymmetrically between VIS/NIR. 
 Coefficient determines fraction of VIS flux (i.e., less than 0.7 um) 
 in RRTMG overlap band that spans 0.625–0.778 um
-Default: FALSE
+Default: TRUE
 </entry>
 
 <entry id="use_rad_dt_cosz" type="logical"  category="radiation"

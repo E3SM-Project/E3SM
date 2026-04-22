@@ -2,10 +2,10 @@
 #define MAM_AEROSOL_OPTICS_READ_TABLES_HPP
 
 #include "mam_coupling.hpp"
-#include "share/field/field_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
-#include "share/grid/grids_manager.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/data_managers/grids_manager.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
 
 #include <ekat_parameter_list.hpp>
@@ -29,10 +29,10 @@ using view_2d_host    = typename KT::view_2d<Real>::HostMirror;
 using view_5d_host    = typename KT::view_ND<Real, 5>::HostMirror;
 using complex_view_1d = typename KT::view_1d<Kokkos::complex<Real>>;
 
-constexpr int nlwbands = mam4::modal_aer_opt::nlwbands;
-constexpr int nswbands = mam4::modal_aer_opt::nswbands;
+constexpr int nlwbands = mam4::modal_aero_opt::nlwbands;
+constexpr int nswbands = mam4::modal_aero_opt::nswbands;
 
-using AerosolOpticsDeviceData = mam4::modal_aer_opt::AerosolOpticsDeviceData;
+using AerosolOpticsDeviceData = mam4::modal_aero_opt::AerosolOpticsDeviceData;
 
 inline std::map<std::string,Field>
 create_optics_fields(const std::shared_ptr<const AbstractGrid> &grid)
@@ -40,9 +40,9 @@ create_optics_fields(const std::shared_ptr<const AbstractGrid> &grid)
   // Set up input structure to read data from file.
   using namespace ShortFieldTagsNames;
 
-  constexpr int refindex_real = mam4::modal_aer_opt::refindex_real;
-  constexpr int refindex_im   = mam4::modal_aer_opt::refindex_im;
-  constexpr int coef_number   = mam4::modal_aer_opt::coef_number;
+  constexpr int refindex_real = mam4::modal_aero_opt::refindex_real;
+  constexpr int refindex_im   = mam4::modal_aero_opt::refindex_im;
+  constexpr int coef_number   = mam4::modal_aero_opt::coef_number;
 
   auto make_layout = [](const std::vector<int> &extents,
                         const std::vector<std::string> &names) {
@@ -85,9 +85,9 @@ inline void read_rrtmg_table(
     const std::shared_ptr<const AbstractGrid> &grid,
     const std::map<std::string,Field> &aerosol_optics_fields,
     const AerosolOpticsDeviceData &aerosol_optics_device_data) {
-  constexpr int refindex_real = mam4::modal_aer_opt::refindex_real;
-  constexpr int refindex_im   = mam4::modal_aer_opt::refindex_im;
-  constexpr int coef_number   = mam4::modal_aer_opt::coef_number;
+  constexpr int refindex_real = mam4::modal_aero_opt::refindex_real;
+  constexpr int refindex_im   = mam4::modal_aero_opt::refindex_im;
+  constexpr int coef_number   = mam4::modal_aero_opt::coef_number;
 
   using view_3d_host = typename KT::view_3d<Real>::HostMirror;
 
@@ -238,14 +238,14 @@ inline void read_water_refindex(const std::string &table_filename,
   for(int i = 0; i < nlwbands; ++i) {
     // Kokkos::complex<Real> temp;
     crefwlw_host(i).real() = refindex_real_water_lw_host(i);
-    crefwlw_host(i).imag() = haero::abs(refindex_im_water_lw_host(i));
+    crefwlw_host(i).imag() = mam4::abs(refindex_im_water_lw_host(i));
   }
   Kokkos::deep_copy(crefwlw, crefwlw_host);
   // set complex representation of refractive indices as module data
   for(int i = 0; i < nswbands; ++i) {
     // Kokkos::complex<Real> temp;
     crefwsw_host(i).real() = refindex_real_water_sw_host(i);
-    crefwsw_host(i).imag() = haero::abs(refindex_im_water_sw_host(i));
+    crefwsw_host(i).imag() = mam4::abs(refindex_im_water_sw_host(i));
   }
   Kokkos::deep_copy(crefwsw, crefwsw_host);
 }
@@ -290,13 +290,13 @@ inline void set_refindex_aerosol(
     auto sw_real_h = fields[sw_real_name].get_view<const Real*,Host>();
     auto sw_im_h   = fields[sw_im_name].get_view<const Real*,Host>();
     specrefndxsw_host(i, species_id).real() = sw_real_h(i);
-    specrefndxsw_host(i, species_id).imag() = haero::abs(sw_im_h(i));
+    specrefndxsw_host(i, species_id).imag() = mam4::abs(sw_im_h(i));
   }
   for(int i = 0; i < nlwbands; i++) {
     auto lw_real_h = fields[lw_real_name].get_view<const Real*,Host>();
     auto lw_im_h   = fields[lw_im_name].get_view<const Real*,Host>();
     specrefndxlw_host(i, species_id).real() = lw_real_h(i);
-    specrefndxlw_host(i, species_id).imag() = haero::abs(lw_im_h(i));
+    specrefndxlw_host(i, species_id).imag() = mam4::abs(lw_im_h(i));
   }
 
 }  // copy_refindex_to_device

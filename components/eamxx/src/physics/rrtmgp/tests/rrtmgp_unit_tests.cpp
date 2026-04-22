@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 #include "physics/rrtmgp/rrtmgp_utils.hpp"
 #include "physics/rrtmgp/eamxx_rrtmgp_interface.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 #include "mo_load_coefficients.h"
 
@@ -60,8 +60,8 @@ TEST_CASE("rrtmgp_test_heating_k") {
     flux_dn(0, 1) = 0.5;
   });
   using physconst = scream::physics::Constants<double>;
-  auto g = physconst::gravit; //9.81;
-  auto cp_air = physconst::Cpair; //1005.0;
+  auto g = physconst::gravit.value; //9.81;
+  auto cp_air = physconst::Cpair.value; //1005.0;
   auto pdel = chc(dp)(0,0);
   auto heating_ref = 1.0 * g / (cp_air * pdel);
   scream::rrtmgp::compute_heating_rate(flux_up, flux_dn, dp, heating);
@@ -103,7 +103,7 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass_k") {
     mixing_ratio(0,0) = 0.0001;
     cloud_fraction(0,0) = 1.0;
   });
-  auto cloud_mass_ref = chc(mixing_ratio)(0,0) / chc(cloud_fraction)(0,0) * chc(dp)(0,0) / physconst::gravit;
+  auto cloud_mass_ref = chc(mixing_ratio)(0,0) / chc(cloud_fraction)(0,0) * chc(dp)(0,0) / physconst::gravit.value;
   interface_t::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
   REQUIRE(chc(cloud_mass)(0,0) == cloud_mass_ref);
 
@@ -135,7 +135,7 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass_k") {
     mixing_ratio(0,0) = 0.0001;
     cloud_fraction(0,0) = 0.5;
   });
-  cloud_mass_ref = chc(mixing_ratio)(0,0) / chc(cloud_fraction)(0,0) * chc(dp)(0,0) / physconst::gravit;
+  cloud_mass_ref = chc(mixing_ratio)(0,0) / chc(cloud_fraction)(0,0) * chc(dp)(0,0) / physconst::gravit.value;
   interface_t::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
   REQUIRE(chc(cloud_mass)(0,0) == cloud_mass_ref);
 

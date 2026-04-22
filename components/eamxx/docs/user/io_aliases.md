@@ -1,4 +1,4 @@
-# EAMxx Field Aliasing Feature
+# Field Aliasing
 
 This document demonstrates the field aliasing feature for EAMxx I/O operations.
 
@@ -27,10 +27,10 @@ alias_name:=internal_field_name
 
 ```yaml
 field_names:
-  - "LWP:=LiqWaterPath"      # Alias LWP for LiqWaterPath
-  - "SWP:=SolidWaterPath"    # Alias SWP for SolidWaterPath  
-  - "T:=T_mid"               # Alias T for T_mid
-  - "qv"                     # Regular field name (no alias)
+  - "LWP:=LiqWaterPath"          # Alias LWP for LiqWaterPath
+  - "SWP:=SolidWaterPath"        # Alias SWP for SolidWaterPath  
+  - "T:=T_mid"                   # Alias T for T_mid
+  - "qv"                         # Regular field name (no alias)
 ```
 
 ### Mixed Usage
@@ -42,7 +42,8 @@ field_names:
   - "T_mid"                        # Regular field name
   - "LWP:=LiqWaterPath"            # Aliased field
   - "p_mid"                        # Regular field name  
-  - "RH:=RelativeHumidity"         # Aliased field
+  - "temp:=T_mid"                  # Aliased field
+  - "surf_temp:=temp_at_model_bot" # Alias of diagnostic of an alias
 ```
 
 ## Output Behavior
@@ -52,32 +53,58 @@ When using aliases:
 1. **NetCDF Variables**: The netcdf file will contain variables
 named according to the aliases
 
-   - `LWP` instead of `LiqWaterPath`
-   - `T` instead of `T_mid`
-   - `RH` instead of `RelativeHumidity`
+    - `LWP` instead of `LiqWaterPath`
+    - `T` instead of `T_mid`
+    - `RH` instead of `RelativeHumidity`
 
-2. **Internal Processing**: All internal model operations use the
-original field names
-
-   - Field validation uses `LiqWaterPath`, `T_mid`, etc.
-   - Diagnostic calculations use original names
-   - Memory management uses original field structures
+2. **Internal Processing**: The FieldManager used by IO stores
+both the original and the alias fields, with the latter being an
+alias of the former.
 
 3. **Metadata**: Variable attributes (units, long_name, etc.)
-are preserved from the original fields, and `eamxx_name`
+are preserved from the original fields, and `alias_of`
 is added to the netcdf files to document aliasing
+
+## Intermediate-only fields (`aliases` section)
+
+Sometimes a diagnostic is only needed as a building block for another
+diagnostic, and you do not want it written to the NetCDF output file.
+Declare such fields in an `aliases` subsection of the per-grid block:
+
+```yaml
+fields:
+  physics_pg2:
+    aliases:
+      - "MyDiag:=T_mid_times_p_mid"       # computed but NOT written to NC
+    field_names:
+      - "MyDiagSqrd:=MyDiag_times_MyDiag" # uses MyDiag; IS written to NC
+```
+
+`MyDiag` is created and registered in the internal field manager so that
+`MyDiagSqrd` can depend on it, but it does not appear in the output file.
+Only `MyDiagSqrd` is written.
+
+The `aliases` section uses the same `alias:=original` syntax as
+`field_names` entries, and the expression on the right-hand side is
+resolved with the same composable-diagnostic parser.
+
+Rules:
+
+- A name declared in `aliases` must not also appear in `field_names`.
+- The same alias name cannot appear in both `aliases` and `field_names`.
 
 ## Caveats
 
 Currently, a field can be requested only once in a single stream,
-and either the original name or the alias name counts.
+but we do allow requesting the same field again but with an alias
 
 ```yaml
 field_names:
-  - "LWP:="                   # Error: empty field name
-  - ":=LiqWaterPath"          # Error: empty alias name  
-  - "LWP:=Field1"             # OK
-  - "LWP:=Field2"             # Error: duplicate alias LWP
-  - "LWP1:=LiqWaterPath"      # OK
-  - "LWP2:=LiqWaterPath"      # Error: duplicate field LiqWaterPath
+  - "LiqWaterPath"          # OK: a known diag field
+  - "LWP:="                 # Error: empty field name
+  - ":=LiqWaterPath"        # Error: empty alias name  
+  - "LWP:=LiqWaterPath"     # OK: an alias
+  - "liq_w_path:=Field2"    # OK: another alias, but different name
+  - "LWP:=LiqWaterPath"     # Error: duplicate field LWP (even if the same as before)
+  - "LWP:=T_mid"            # Error: duplicate field LWP
 ```

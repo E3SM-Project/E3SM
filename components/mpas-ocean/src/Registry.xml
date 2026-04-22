@@ -454,6 +454,20 @@
 					possible_values="Any positive real value."
 		/>
 	</nml_record>
+	<nml_record name="eddy_kinetic_energy_correction" mode="forward">
+		<nml_option name="config_eke_correction_enable" type="logical" default_value=".false."
+		  description="flag to enable the eddy kinetic energy corrections.  This parameterization is based on the work of Renault et al 2019 - https://doi.org/10.1029/2019MS001715 -- NOTE: this should only be used at for RRS6to18 resolution or finer"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_eke_alpha" type="real" default_value="-2.9e-3"
+					description="'alpha' coefficent for computations of St in equation (10) of Renault et al (2019)"
+					possible_values="small negative values not too far from the default"
+		/>
+		<nml_option name="config_eke_beta" type="real" default_value="0.008"
+					description="'beta' coefficent for computation of St in equation (10) of Renault et al (2019)"
+					possible_values="small positive numbers not far from the default"
+		/>
+	</nml_record>
 	<nml_record name="eddy_parameterization" mode="forward">
 		<nml_option name="config_eddyMLD_dens_threshold" type="real" default_value="0.03" units="kg m^-3"
 					description="potential density change relative to surface for mixed layer depth threshold method.  This calculation is used for the Redi tapering, GM N2_dependent bolus kappa, and the submesoscale eddy parameterization"
@@ -482,12 +496,16 @@
 					possible_values="Any non-negative real value."
 		/>
 		<nml_option name="config_cvmix_background_scheme" type="character" default_value="constant"
-					description="Scheme for background diffusivity, 'constant' for constant with depth and space, 'BryanLewis' for vertically variable, 'none' for no background diffusivity"
+					description="Scheme for background diffusivity, 'constant' for constant with depth and space, 'latitude-dependent' for latitude dependence and constant in depth, 'BryanLewis' for vertically variable, 'none' for no background diffusivity"
 					possible_values="'constant', 'BryanLewis', and 'none'"
 		/>
 		<nml_option name="config_cvmix_background_diffusion" type="real" default_value="1.0e-5" units="m^2 s^-1"
-					description="Background vertical diffusion applied to tracer quantities"
+					description="Background vertical diffusion applied to tracer quantities. For 'latitude-dependent' this is the maximum value"
 					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_cvmix_background_diffusion_max_latitude" type="real" default_value="-50" units="degrees"
+					description="For 'latitude-dependent' this is the maximum latitude at which background diffusivity is non-zero"
+					possible_values="Any real value between -90 and 90."
 		/>
 		<nml_option name="config_cvmix_background_diffusion_passive" type="real" default_value="1.0e-5" units="m^2 s^-1"
 					description="Background vertical diffusion applied to passive tracer quantities"
@@ -661,6 +679,10 @@
 	<nml_record name="wave_coupling" mode="forward">
 		<nml_option name="config_use_active_wave" type="logical" default_value=".false."
 					description="Flag for using prognostic waves. Controls the allocation of wave arrays and computation of Stokes drift profiles."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_momentum_use_active_wave" type="logical" default_value=".false."
+					description="Flag for correcting momentum coupling in ocean due to waves. Requires config_use_active_wave = .true."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_n_stokes_drift_wavenumber_partitions" type="integer" default_value="6"
@@ -1079,7 +1101,7 @@
 	<nml_record name="land_ice" mode="init;forward">
 		<nml_option name="config_land_ice_draft_mode" type="character" default_value="pressure-dependent"
 					description="Selects the mode in which land-ice draft is computed."
-					possible_values="'data,'pressure-dependent'"
+					possible_values="'data', 'pressure-dependent'"
 		/>
 		<nml_option name="config_land_ice_rho_ocean" type="real" default_value="1028.0" units="kg m^-3"
 					description="ocean density used to calculate landIceDraft at floatation (assumed constant and uniform). Should be consistent with MALI's config_ocean_density when used to determine grounding line location. This is an alternative to the coupler variable effectiveDensityInLandIce which is not currently used."
@@ -4016,8 +4038,11 @@
 		<var name="windSpeed10m" type="real" dimensions="nCells Time" units="m s^-1"
 			 description="Wind speed at 10 meter."
 		/>
+	    <var name="ekeCorrection" type="real" dimensions="nEdges Time" units="m s^-2"
+			 description="Correction for high res FOSI runs"
+		/>
 
-		<!-- Waves coupling fields -->
+        <!-- Waves coupling fields -->
 		<var name="stokesDriftZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="Zonal component of the wave-induced Stokes drift current."
 			 packages="activeWavePKG"
@@ -4045,6 +4070,42 @@
 		<var name="peakWaveDirection" type="real" dimensions="nCells Time" units="degree"
 			 description="Direction of peak of wave spectrum"
 			 packages="activeWavePKG"
+	        />
+		 <var name="charnockSeaState" type="real" dimensions="nCells Time" units=""
+                         description="Charnock coeff accounting for the wave stress (Janssen 1989, 1991)"
+                         packages="activeWavePKG"
+                />
+		 <var name="z0wav" type="real" dimensions="nCells Time" units="m"
+                         description="surface Roughness length accounting for the wave state"
+                         packages="activeWavePKG"
+                />
+		 <var name="ustarwav" type="real" dimensions="nCells Time" units=""
+                         description="Friction Velocity from Wave model "
+                         packages="activeWavePKG"
+                />
+                <var name="waveSupportedZonalWindStress" type="real" dimensions="nCells Time" units="N m^{-2}"
+                         description="Zonal Wave supported stress (Stress from atmosphere to waves)"
+                         packages="activeWavePKG"
+                />
+                <var name="waveSupportedMeridionalWindStress" type="real" dimensions="nCells Time" units="N m^{-2}"
+                         description="Meridional Wave supported stress (Stress from atmosphere to waves)"
+                         packages="activeWavePKG"
+                />
+                <var name="waveToOceanZonalWindStress" type="real" dimensions="nCells Time" units="N m^{-2}"
+                         description="Zonal Wave to ocean stress"
+                         packages="activeWavePKG"
+                />
+                <var name="waveToOceanMeridionalWindStress" type="real" dimensions="nCells Time" units="N m^{-2}"
+                         description="Meridional Wave to ocean stress"
+                         packages="activeWavePKG"
+                />
+                <var name="waveNetOceanZonalWindStress" type="real" dimensions="nCells Time" units="N m^{-2}"
+                         description="Zonal Net ocean wind stress by wave model"
+                         packages="activeWavePKG"
+                />
+                <var name="waveNetOceanMeridionalWindStress" type="real" dimensions="nCells Time" units="N m^{-2}"
+                         description="Meridional Net ocean wind stress by wave model"
+                         packages="activeWavePKG"
 		/>
 		<var name="langmuirNumber" type="real" dimensions="nCells Time" units="m"
 			 description="Projected surface layer averaged Langmuir number from Van Roekel et al. 2012."
@@ -4203,7 +4264,7 @@
 		/>
 		<var name="areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux"  type="real" dimensions="Time" units="kg s^-1"
 			description="The area integrated, annually averaged freshwater flux into the ocean from both data icebergs and ice-shelf melting."
-			packages="scaledDISMFPKG"
+			packages="scaledDISMFPKG;dataLandIceFluxesPKG"
 		/>
 
 		<!-- Input fields for forcing due to tides -->

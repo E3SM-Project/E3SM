@@ -1,4 +1,5 @@
 #include "atmosphere_surface_coupling_exporter.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_assert.hpp>
@@ -17,11 +18,11 @@ SurfaceCouplingExporter::SurfaceCouplingExporter (const ekat::Comm& comm, const 
 
 }
 // =========================================================================================
-void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void SurfaceCouplingExporter::create_requests()
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs();       // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
@@ -37,7 +38,7 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
   FieldLayout scalar3d_layout_mid { {COL,LEV},     {m_num_cols,    m_num_levs  } };
   FieldLayout scalar3d_layout_int { {COL,ILEV},    {m_num_cols,    m_num_levs+1} };
 
-  constexpr int ps = Spack::n;
+  constexpr int ps = Pack::n;
 
   // These fields are required for computation/exports
   add_field<Required>("p_int",                scalar3d_layout_int,  Pa,     grid_name);
@@ -96,21 +97,21 @@ void SurfaceCouplingExporter::create_helper_field (const std::string& name,
 size_t SurfaceCouplingExporter::requested_buffer_size_in_bytes() const
 {
   // Number of Reals needed by local views in the interface
-  return Buffer::num_2d_vector_mid*m_num_cols*ekat::npack<Spack>(m_num_levs)*sizeof(Spack) +
-         Buffer::num_2d_vector_int*m_num_cols*ekat::npack<Spack>(m_num_levs+1)*sizeof(Spack);
+  return Buffer::num_2d_vector_mid*m_num_cols*ekat::npack<Pack>(m_num_levs)*sizeof(Pack) +
+         Buffer::num_2d_vector_int*m_num_cols*ekat::npack<Pack>(m_num_levs+1)*sizeof(Pack);
 }
 // =========================================================================================
 void SurfaceCouplingExporter::init_buffers(const ATMBufferManager &buffer_manager)
 {
-  const int nlev_packs       = ekat::npack<Spack>(m_num_levs);
-  const int nlevi_packs      = ekat::npack<Spack>(m_num_levs+1);
+  const int nlev_packs       = ekat::npack<Pack>(m_num_levs);
+  const int nlevi_packs      = ekat::npack<Pack>(m_num_levs+1);
 
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(), "Error! Buffers size not sufficient.\n");
 
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
 
   // 2d views packed views
-  Spack* s_mem = reinterpret_cast<Spack*>(mem);
+  Pack* s_mem = reinterpret_cast<Pack*>(mem);
 
   m_buffer.dz = decltype(m_buffer.dz)(s_mem, m_num_cols, nlev_packs);
   s_mem += m_buffer.dz.size();
@@ -133,17 +134,16 @@ void SurfaceCouplingExporter::setup_surface_coupling_data(const SCDataManager &s
                   "Error! More SCREAM exports than actual cpl exports.\n");
   EKAT_ASSERT_MSG(m_num_cols == sc_data_manager.get_field_size(), "Error! Surface Coupling exports need to have size ncols.");
 
-  // The export data is of size ncols,num_cpl_exports. All other data is of size num_scream_exports
+#ifdef HAVE_MOAB
+  // MOAB layout: (num_cpl_exports, ncols) - column idx strides faster
+  m_cpl_exports_view_h = decltype(m_cpl_exports_view_h) (sc_data_manager.get_field_data_ptr(),
+                                                         m_num_cpl_exports, m_num_cols);
+#else
+  // MCT layout: (ncols, num_cpl_exports) - field idx strides faster
   m_cpl_exports_view_h = decltype(m_cpl_exports_view_h) (sc_data_manager.get_field_data_ptr(),
                                                          m_num_cols, m_num_cpl_exports);
-  m_cpl_exports_view_d = Kokkos::create_mirror_view(DefaultDevice(), m_cpl_exports_view_h);
-
-#ifdef HAVE_MOAB
-  // The export data is of size num_cpl_exports,ncols. All other data is of size num_scream_exports
-  m_moab_cpl_exports_view_h = decltype(m_moab_cpl_exports_view_h) (sc_data_manager.get_field_data_moab_ptr(),
-                                                         m_num_cpl_exports, m_num_cols);
-  m_moab_cpl_exports_view_d = Kokkos::create_mirror_view(DefaultDevice(), m_moab_cpl_exports_view_h);
 #endif
+  m_cpl_exports_view_d = Kokkos::create_mirror_view(DefaultDevice(), m_cpl_exports_view_h);
 
   m_export_field_names = new name_t[m_num_scream_exports];
   std::memcpy(m_export_field_names, sc_data_manager.get_field_name_ptr(), m_num_scream_exports*32*sizeof(char));
@@ -365,16 +365,17 @@ void SurfaceCouplingExporter::set_from_file_exports()
 // index query in the below.
 void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool called_during_initialization)
 {
+  using PF  = scream::PhysicsFunctions<DefaultDevice>;
   using PC  = physics::Constants<Real>;
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   const auto& p_int                = get_field_in("p_int").get_view<const Real**>();
-  const auto& pseudo_density       = get_field_in("pseudo_density").get_view<const Spack**>();
-  const auto& qv                   = get_field_in("qv").get_view<const Spack**>();
-  const auto& T_mid                = get_field_in("T_mid").get_view<const Spack**>();
+  const auto& pseudo_density       = get_field_in("pseudo_density").get_view<const Pack**>();
+  const auto& qv                   = get_field_in("qv").get_view<const Pack**>();
+  const auto& T_mid                = get_field_in("T_mid").get_view<const Pack**>();
   // TODO: This will need to change if we ever switch from horiz_winds to U and V
   const auto& horiz_winds          = get_field_in("horiz_winds").get_view<const Real***>();
-  const auto& p_mid                = get_field_in("p_mid").get_view<const Spack**>();
+  const auto& p_mid                = get_field_in("p_mid").get_view<const Pack**>();
   const auto& phis                 = get_field_in("phis").get_view<const Real*>();
   const auto& sfc_flux_dir_nir     = get_field_in("sfc_flux_dir_nir").get_view<const Real*>();
   const auto& sfc_flux_dir_vis     = get_field_in("sfc_flux_dir_vis").get_view<const Real*>();
@@ -496,7 +497,7 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
       // provide theta based on an exner function that evaluates to 1 at the bottom interface.
       // To accomplish this we calculate a theta that replaces the reference pressure (P0) for exner
       // with the pressure of the lowest interface level => s_p_int_i(num_levs)
-      Sa_ptem(i) = s_T_mid_i(num_levs-1) / pow( s_p_mid_i(num_levs-1)/s_p_int_i(num_levs), PC::RD*PC::INV_CP);
+      Sa_ptem(i) = s_T_mid_i(num_levs-1) / pow( s_p_mid_i(num_levs-1)/s_p_int_i(num_levs), PC::RD.value*PC::INV_CP.value);
     }
 
     if (export_source(idx_Sa_pbot)==FROM_MODEL) {
@@ -527,8 +528,8 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
       // Precipitation has units of kg/m2, and Faxa_rainl/snowl
       // need units mm/s. Here, 1000 converts m->mm, dt has units s, and
       // rho_h2o has units kg/m3.
-      if (export_source(idx_Faxa_rainl)==FROM_MODEL) { Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O); }
-      if (export_source(idx_Faxa_snowl)==FROM_MODEL) { Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O); }
+      if (export_source(idx_Faxa_rainl)==FROM_MODEL) { Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O.value); }
+      if (export_source(idx_Faxa_snowl)==FROM_MODEL) { Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O.value); }
     }
   });
   // Variables that are already surface vars in the ATM can just be copied directly.
@@ -547,12 +548,6 @@ void SurfaceCouplingExporter::do_export_to_cpl(const bool called_during_initiali
   // Any field not exported by scream, or not exported
   // during initialization, is set to 0.0
   Kokkos::deep_copy(m_cpl_exports_view_d, 0.0);
-#ifdef HAVE_MOAB
-  // Any field not exported by scream, or not exported
-  // during initialization, is set to 0.0
-  Kokkos::deep_copy(m_moab_cpl_exports_view_d, 0.0);
-  const auto moab_cpl_exports_view_d = m_moab_cpl_exports_view_d;
-#endif
   const auto cpl_exports_view_d = m_cpl_exports_view_d;
   const int  num_exports        = m_num_scream_exports;
   const int  num_cols           = m_num_cols;
@@ -568,29 +563,15 @@ void SurfaceCouplingExporter::do_export_to_cpl(const bool called_during_initiali
     // if this is during initialization, check whether or not the field should be exported
     bool do_export = (not called_during_initialization || info.transfer_during_initialization);
     if (do_export) {
-      cpl_exports_view_d(icol,info.cpl_indx) = info.constant_multiple*info.data[offset];
-    }
-  });
 #ifdef HAVE_MOAB
-  Kokkos::parallel_for(export_policy, KOKKOS_LAMBDA(const int& i) {
-    const int ifield = i / num_cols;
-    const int icol   = i % num_cols;
-    const auto& info = col_info(ifield);
-    const auto offset = icol*info.col_stride + info.col_offset;
-
-    // if this is during initialization, check whether or not the field should be exported
-    bool do_export = (not called_during_initialization || info.transfer_during_initialization);
-    if (do_export) {
-      moab_cpl_exports_view_d(info.cpl_indx, icol) = info.constant_multiple*info.data[offset];
+      cpl_exports_view_d(info.cpl_indx, icol) = info.constant_multiple*info.data[offset];
+#else
+      cpl_exports_view_d(icol,info.cpl_indx) = info.constant_multiple*info.data[offset];
+#endif
     }
   });
-#endif
   // Deep copy fields from device to cpl host array
   Kokkos::deep_copy(m_cpl_exports_view_h,m_cpl_exports_view_d);
-#ifdef HAVE_MOAB
-  // Deep copy fields from device to cpl host array
-  Kokkos::deep_copy(m_moab_cpl_exports_view_h,m_moab_cpl_exports_view_d);
-#endif
 
 }
 // =========================================================================================

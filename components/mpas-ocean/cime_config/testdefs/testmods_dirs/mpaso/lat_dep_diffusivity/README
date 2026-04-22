@@ -1,0 +1,5 @@
+This testdef is used to test the latitude dependent background diffusivity
+feature, which was introduced as a stealth feature in #8078.
+This test turns on the feature by setting:
+
+    config_cvmix_background_scheme = 'latitude-dependent'

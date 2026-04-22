@@ -68,6 +68,7 @@ module physpkg
   integer ::  cldiceini_idx      = 0 
   integer ::  static_ener_ac_idx = 0
   integer ::  water_vap_ac_idx   = 0
+  integer ::  total_water_ac_idx = 0
 
   integer ::  prec_str_idx       = 0
   integer ::  snow_str_idx       = 0
@@ -168,6 +169,7 @@ subroutine phys_register
     use sslt_rebin,         only: sslt_rebin_register
     use aoa_tracers,        only: aoa_tracers_register
     use aircraft_emit,      only: aircraft_emit_register
+    use iac_coupled_fields, only: iac_coupled_fields_register
     use cam_diagnostics,    only: diag_register
     use cloud_diagnostics,  only: cloud_diagnostics_register
     use cospsimulator_intr, only: cospsimulator_intr_register
@@ -227,6 +229,7 @@ subroutine phys_register
     call pbuf_add_field('CLDICEINI', 'physpkg', dtype_r8, (/pcols,pver/), cldiceini_idx)
     call pbuf_add_field('static_ener_ac', 'global', dtype_r8, (/pcols/), static_ener_ac_idx)
     call pbuf_add_field('water_vap_ac',   'global', dtype_r8, (/pcols/), water_vap_ac_idx)
+    call pbuf_add_field('total_water_ac', 'global', dtype_r8, (/pcols/), total_water_ac_idx)
 
 
     ! check energy package
@@ -346,6 +349,9 @@ subroutine phys_register
        endif
 
        call aircraft_emit_register()
+
+       ! Coupling co2 from iac
+       call iac_coupled_fields_register()
 
        ! deep convection
        call convect_deep_register
@@ -739,6 +745,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use seasalt_model,      only: init_ocean_data, has_mam_mom
     use aerodep_flx,        only: aerodep_flx_init
     use aircraft_emit,      only: aircraft_emit_init
+    use iac_coupled_fields, only: iac_coupled_fields_init
     use prescribed_volcaero,only: prescribed_volcaero_init
     use cloud_fraction,     only: cldfrc_init
     use cldfrc2m,           only: cldfrc2m_init
@@ -885,6 +892,9 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call read_spa_data_init()
     call aerodep_flx_init()
     call aircraft_emit_init(phys_state,pbuf2d)
+
+    call iac_coupled_fields_init(phys_state)
+
     !when is_cmip6_volc is true ,cmip6 style volcanic file is read
     !Initialized to .false. here but it gets its values from prescribed_volcaero_init
     is_cmip6_volc = .false. 
@@ -968,7 +978,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     ! initiate CLUBB within CAM
     if (do_clubb_sgs) call clubb_ini_cam(pbuf2d,dp1)
-    
+
     ! initiate SHOC within E3SM
     if (do_shoc_sgs) call shoc_init_e3sm(pbuf2d,dp1)
 
@@ -1015,7 +1025,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! Initialize Transformed Eularian Mean (TEM) diagnostics
     call phys_grid_ctem_init()
 
-    
+
    !BSINGH -  addfld and adddefault calls for perturb growth testing    
     if(pergro_test_active)call add_fld_default_calls()
 
@@ -1193,7 +1203,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out, phy
           call t_startf ('chk_en_gmean_additional')
           call check_energy_gmean_additional_diagn(phys_state, pbuf2d, ztodt, nstep)
           call t_stopf ('chk_en_gmean_additional')
-       endif
+    end if
 
     end if !not adiabatic or ideal
 
@@ -1323,7 +1333,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 
 
     use cam_diagnostics,only: diag_deallocate, diag_surf
-    use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds
+    use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds 
     use physconst,      only: stebol, latvap
 #if ( defined OFFLINE_DYN )
     use metdata,        only: get_met_srf2
@@ -1595,8 +1605,10 @@ subroutine tphysac (ztodt,   cam_in,  &
     use flux_avg,           only: flux_avg_run
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
-    use co2_cycle,          only: co2_cycle_set_ptend, co2_transport
+    use co2_cycle,          only: co2_cycle_set_ptend, co2_cycle_iac_ptend
     use co2_diagnostics,    only: get_carbon_sfc_fluxes, get_carbon_air_fluxes
+    use iac_coupled_fields, only: iac_co2_name, iac_coupled_fields_adv
+    use phys_control,       only: iac_present
 
     implicit none
 
@@ -1643,6 +1655,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     real(r8) :: ftem      (pcols,pver) ! tmp space
     real(r8), pointer, dimension(:) :: static_ener_ac_2d ! Vertically integrated static energy
     real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
+    real(r8), pointer, dimension(:) :: total_water_ac_2d ! Vertically integrated total water
+    integer :: ixcldliq_ac, ixcldice_ac, ixrainqm_ac     ! constituent indices for total water
 
     ! physics buffer fields for total energy and mass adjustment
     integer itim_old, ifld
@@ -1776,7 +1790,7 @@ end if ! l_tracer_aero
 
     if(print_additional_diagn) then
        call additional_diagn_before_step_part2(state, cam_in)
-    endif
+    end if 
 
     !just output
     call check_qflx(state, tend, "PHYAC02", nstep, ztodt, cam_in%cflx(:,1))
@@ -1803,10 +1817,42 @@ if (l_tracer_aero) then
     call check_tracers_chng(state, tracerint, "aoa_tracers_timestep_tend", nstep, ztodt,   &
          cam_in%cflx)
     
-    ! add tendency from aircraft emissions
-    call co2_cycle_set_ptend(state, pbuf, ptend)
-    call physics_update(state, ptend, ztodt, tend)
-    call get_carbon_air_fluxes(state, pbuf, ztodt)
+    if(iac_present) then
+
+          !------------------------------------------------------------------------------------------
+          ! Have moved iac_coupled_fields_adv from phys_timestep_init to
+          !    tphysac immediately before co2_cycle_iac_ptend
+          ! This aligns the setting of aircraft emissions to pbuf with the
+          !    surface emissions during atm_run for the current time step,
+          !    after the x2a vars have been set
+          ! This works for co2 because it isn't set until tphysac, but if
+          !    other constituents are added they may need to be advanced in
+          !    phys_timestep_init
+          !    Note that phys_timestep_init is called via atm_init for the
+          !       current time step during start and restart,
+          !       and also at the end of atm_run for the next time step
+          ! Note that any EHC co2 values set during init are not used, as they
+          !    reset during the run step
+          !------------------------------------------------------------------------------------------
+      
+      ! Set ehc aircraft emissions in pbuf
+      call iac_coupled_fields_adv(state, pbuf)
+
+      ! Compute tendency from iac model component
+      call co2_cycle_iac_ptend(state, pbuf, ptend)
+
+      ! Apply iac tendency
+      call physics_update(state, ptend, ztodt, tend)
+
+      ! Compute diagnostics (supply optional iac_co2_name to get_carbon_air_fluxes for iac)
+      call get_carbon_air_fluxes(state, pbuf, ztodt, iac_co2_name)
+
+    else
+      ! add tendency from aircraft emissions
+      call co2_cycle_set_ptend(state, pbuf, ptend)
+      call physics_update(state, ptend, ztodt, tend)
+      call get_carbon_air_fluxes(state, pbuf, ztodt)
+    endif
 
     ! Chemistry calculation
     if (chem_is_active()) then
@@ -1837,7 +1883,7 @@ end if ! l_tracer_aero
        ! If CLUBB is called, do not call vertical diffusion, but still
        ! calculate surface friction velocity (ustar) and Obukhov length
        call clubb_surface ( state, cam_in, pbuf, surfric, obklen)
-
+       
        ! Diagnose tracer mixing ratio tendencies from surface fluxes, 
        ! then update the mixing ratios. (If cflx_cpl_opt==2, these are done in 
        ! tphysbc after deep convection before the cloud mac-mic subcycles
@@ -1848,7 +1894,7 @@ end if ! l_tracer_aero
 
        if (cflx_cpl_opt==1) then
           call cflx_tend( state, cam_in, ztodt, ptend)       
-          call physics_update(state, ptend, ztodt, tend)
+       call physics_update(state, ptend, ztodt, tend)
        end if
 
        call cnd_diag_checkpoint( diag, 'CFLXAPP', state, pbuf, cam_in, cam_out )
@@ -2037,6 +2083,8 @@ end if ! l_ac_energy_chk
     call pbuf_get_field(pbuf, static_ener_ac_idx, static_ener_ac_2d )
     water_vap_ac_idx   = pbuf_get_index('water_vap_ac')
     call pbuf_get_field(pbuf, water_vap_ac_idx, water_vap_ac_2d )
+    total_water_ac_idx = pbuf_get_index('total_water_ac')
+    call pbuf_get_field(pbuf, total_water_ac_idx, total_water_ac_2d )
 
     !Integrate column static energy
     ftem(:ncol,:) = (state%s(:ncol,:) + latvap*state%q(:ncol,:,1)) * state%pdel(:ncol,:)*rga
@@ -2051,6 +2099,20 @@ end if ! l_ac_energy_chk
        ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
     end do
     water_vap_ac_2d(:ncol) = ftem(:ncol,1)
+
+    !Integrate total water (Q + CLDLIQ + CLDICE + RAINQM)
+    call cnst_get_ind('CLDLIQ', ixcldliq_ac)
+    call cnst_get_ind('CLDICE', ixcldice_ac)
+    call cnst_get_ind('RAINQM', ixrainqm_ac, abrtf=.false.)
+    ftem(:ncol,:) = (state%q(:ncol,:,1) + state%q(:ncol,:,ixcldliq_ac) &
+                   + state%q(:ncol,:,ixcldice_ac)) * state%pdel(:ncol,:)*rga
+    if (ixrainqm_ac > 0) then
+       ftem(:ncol,:) = ftem(:ncol,:) + state%q(:ncol,:,ixrainqm_ac)*state%pdel(:ncol,:)*rga
+    end if
+    do k=2,pver
+       ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+    end do
+    total_water_ac_2d(:ncol) = ftem(:ncol,1)
 
     call check_tracers_fini(tracerint)
     call cnd_diag_checkpoint( diag, 'PACEND', state, pbuf, cam_in, cam_out )
@@ -2345,12 +2407,12 @@ subroutine tphysbc (ztodt,               &
     !BSINGH - Following variables are from zm_conv_intr, which are moved here as they are now used
     ! by aero_model_wetdep subroutine. 
 
-    real(r8):: mu(pcols,pver) 
-    real(r8):: eu(pcols,pver)
-    real(r8):: du(pcols,pver)
-    real(r8):: md(pcols,pver)
-    real(r8):: ed(pcols,pver)
-    real(r8):: dp(pcols,pver)
+    real(r8):: mu(pcols,pver) ! ZM deep convection gathered updraft mass flux
+    real(r8):: eu(pcols,pver) ! ZM deep convection gathered updraft entrainment
+    real(r8):: du(pcols,pver) ! ZM deep convection gathered updraft detrainment
+    real(r8):: md(pcols,pver) ! ZM deep convection gathered downdraft mass flux
+    real(r8):: ed(pcols,pver) ! ZM deep convection gathered downdraft entrainment
+    real(r8):: dp(pcols,pver) ! ZM deep convection gathered pressure thickness [mb]
     
     ! wg layer thickness in mbs (between upper/lower interface).
     real(r8):: dsubcld(pcols)
@@ -2372,7 +2434,9 @@ subroutine tphysbc (ztodt,               &
     real(r8) :: ftem(pcols,pver)         ! tmp space
     real(r8), pointer, dimension(:) :: static_ener_ac_2d ! Vertically integrated static energy
     real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
+    real(r8), pointer, dimension(:) :: total_water_ac_2d  ! Vertically integrated total water
     real(r8) :: CIDiff(pcols)            ! Difference in vertically integrated static energy
+    integer :: ixcldliq_bc, ixcldice_bc, ixrainqm_bc  ! constituent indices for total water
 
     !HuiWan (2014/15): added for a short-term time step convergence test ++ 
     logical :: l_bc_energy_fix
@@ -2438,6 +2502,8 @@ subroutine tphysbc (ztodt,               &
     call pbuf_get_field(pbuf, static_ener_ac_idx, static_ener_ac_2d )
     water_vap_ac_idx   = pbuf_get_index('water_vap_ac')
     call pbuf_get_field(pbuf, water_vap_ac_idx, water_vap_ac_2d )
+    total_water_ac_idx = pbuf_get_index('total_water_ac')
+    call pbuf_get_field(pbuf, total_water_ac_idx, total_water_ac_2d )
 
     ! Integrate and compute the difference
     ! CIDiff = difference of column integrated values
@@ -2445,6 +2511,7 @@ subroutine tphysbc (ztodt,               &
        CIDiff(:ncol) = 0.0_r8
        call outfld('DTENDTH', CIDiff, pcols, lchnk )
        call outfld('DTENDTQ', CIDiff, pcols, lchnk )
+       call outfld('DTENDTTW',CIDiff, pcols, lchnk )
     else
        ! MSE first
        ftem(:ncol,:) = (state%s(:ncol,:) + latvap*state%q(:ncol,:,1)) * state%pdel(:ncol,:)*rga
@@ -2462,6 +2529,22 @@ subroutine tphysbc (ztodt,               &
        CIDiff(:ncol) = (ftem(:ncol,1) - water_vap_ac_2d(:ncol))*rtdt
 
        call outfld('DTENDTQ', CIDiff, pcols, lchnk )
+
+       ! Total water (Q + CLDLIQ + CLDICE + RAINQM) tendency
+       call cnst_get_ind('CLDLIQ', ixcldliq_bc)
+       call cnst_get_ind('CLDICE', ixcldice_bc)
+       call cnst_get_ind('RAINQM', ixrainqm_bc, abrtf=.false.)
+       ftem(:ncol,:) = (state%q(:ncol,:,1) + state%q(:ncol,:,ixcldliq_bc) &
+                      + state%q(:ncol,:,ixcldice_bc)) * state%pdel(:ncol,:)*rga
+       if (ixrainqm_bc > 0) then
+          ftem(:ncol,:) = ftem(:ncol,:) + state%q(:ncol,:,ixrainqm_bc)*state%pdel(:ncol,:)*rga
+       end if
+       do k=2,pver
+          ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+       end do
+       CIDiff(:ncol) = (ftem(:ncol,1) - total_water_ac_2d(:ncol))*rtdt
+
+       call outfld('DTENDTTW', CIDiff, pcols, lchnk )
     end if
 
     ! Associate pointers with physics buffer fields
@@ -2874,7 +2957,7 @@ end if
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
                      cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
                      det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
-
+ 
 
  
           endif
@@ -3007,7 +3090,7 @@ end if
          call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state,  & ! inputs
                 sh_e_ed_ratio, mu, md, du, eu, ed, dp, dsubcld,    &
                 jt, maxg, ideep, lengath, species_class,           &
-                cam_out, pbuf, ptend)                      ! outputs
+                cam_out, pbuf, ptend )                               ! outputs
          call physics_update(state, ptend, ztodt, tend)
 
          ! deep convective aerosol transport
@@ -3183,6 +3266,11 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   call read_spa_data_adv(phys_state, pbuf2d)
   call aircraft_emit_adv(phys_state, pbuf2d)
 
+  ! NOTE: The aircraft co2 emissions from EHC are not advanced here
+  ! they are advanced in tphysac to ensure correct values
+  ! they are not needed before tphysac
+  ! other constuents that may come from EHC may need to be advanced here
+
   call t_startf('prescribed_volcaero_adv')
   call prescribed_volcaero_adv(phys_state, pbuf2d)
   call t_stopf('prescribed_volcaero_adv')
@@ -3249,7 +3337,7 @@ subroutine add_fld_default_calls()
 
   !Add all existing ptend names for the addfld calls
   character(len=21), parameter :: vlist(28) = (/       'topphysbc            '                       ,&
-       'chkenergyfix         ','dadadj               ','zm_convr             ','zm_conv_evap         ',&
+       'chkenergyfix         ','dadadj               ','zm_conv_main         ','zm_conv_evap         ',&
        'zm_transport_momentum','zm_conv_tend         ','UWSHCU               ','convect_shallow      ',&
        'pcwdetrain_mac       ','macro_park           ','macrop               ','micro_mg             ',&
        'cldwat_mic           ','aero_model_wetdep_ma ','zm_transport_tracer_2','cam_radheat          ',&

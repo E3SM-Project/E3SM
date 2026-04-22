@@ -28,6 +28,7 @@ list(APPEND RAW_SOURCES
   core_seaice/icepack/columnphysics/icepack_mechred.F90
   core_seaice/icepack/columnphysics/icepack_meltpond_lvl.F90
   core_seaice/icepack/columnphysics/icepack_meltpond_topo.F90
+  core_seaice/icepack/columnphysics/icepack_meltpond_sealvl.F90
   core_seaice/icepack/columnphysics/icepack_mushy_physics.F90
   core_seaice/icepack/columnphysics/icepack_ocean.F90
   core_seaice/icepack/columnphysics/icepack_orbital.F90
@@ -104,6 +105,7 @@ list(APPEND RAW_SOURCES
 # model_forward (DISABLE qsmp for these)
 set(SEAICE_MODEL_FORWARD
   core_seaice/model_forward/mpas_seaice_core.F
+  core_seaice/model_forward/mpas_seaice_core_interface_structs.F
   core_seaice/model_forward/mpas_seaice_core_interface.F
 )
 list(APPEND RAW_SOURCES ${SEAICE_MODEL_FORWARD})

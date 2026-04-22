@@ -282,9 +282,17 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_nFloeCategories" type="integer"
 	category="dimensions" group="dimensions">
-The number of floe size categories to use.
+The number of ice floe size categories to use.
 
-Valid values: Any positive integer.
+Valid values: 0(default), 1, 12, 16, 24.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_nFrequencies" type="integer"
+	category="dimensions" group="dimensions">
+The number of frequency bins used to define the wave spectrum.
+
+Valid values: 0(default),25,36,50. Defined by WW3 component. Do not edit.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -567,6 +575,22 @@ Default: Defined in namelist_defaults.xml
 
 <!-- velocity_solver -->
 
+<entry id="config_dynamics_area_minimum" type="real"
+	category="velocity_solver" group="velocity_solver">
+Minimum sea-ice area for dynamics calculation.
+
+Valid values: Any nonnegative number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_dynamics_mass_minimum" type="real"
+	category="velocity_solver" group="velocity_solver">
+Minimum sea-ice and snow mass for dynamics calculation.
+
+Valid values: Any nonnegative number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_dynamics_subcycle_number" type="integer"
 	category="velocity_solver" group="velocity_solver">
 The number of dynamics subcycles to perform per thermodynamic time step (config_dt)
@@ -829,6 +853,14 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_column_waves" type="logical"
+	category="column_package" group="column_package">
+Allow wavebreaking of ice floes. Requires coupling to WW3.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- column_tracers -->
 
@@ -859,6 +891,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_use_level_meltponds" type="logical"
 	category="column_tracers" group="column_tracers">
 If true use the level ice meltponds tracers.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_sealevel_meltponds" type="logical"
+	category="column_tracers" group="column_tracers">
+If true use the sea-level meltponds tracers.
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -909,6 +949,41 @@ Default: Defined in namelist_defaults.xml
 Use floe size distribution. Requires Icepack column package.
 
 Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- wave_config -->
+
+<entry id="config_xfreq" type="real"
+	category="wave_config" group="wave_config">
+Frequency multiplication factor used by wave model.
+
+Valid values: Defined by WW3 component. Do not modify.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_freq1" type="real"
+	category="wave_config" group="wave_config">
+The first frequency used by wave model.
+
+Valid values: Defined by WW3 component. Do not modify.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_wave_spec_type" type="char*1024"
+	category="wave_config" group="wave_config">
+The type of wave spectra input.
+
+Valid values: none, constant, random.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_wave_height_type" type="char*1024"
+	category="wave_config" group="wave_config">
+The type of wave height input.
+
+Valid values: none, coupled, internal.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2340,7 +2415,7 @@ Valid values:
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_min_meltwater_retained_fraction" type="real"
+<entry id="config_min_meltwater_retained_fraction_lvlponds" type="real"
 	category="meltponds" group="meltponds">
 Minimum retained fraction of meltwater.
 
@@ -2348,7 +2423,39 @@ Valid values: Any real number between 0 and 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_max_meltwater_retained_fraction" type="real"
+<entry id="config_max_meltwater_retained_fraction_lvlponds" type="real"
+	category="meltponds" group="meltponds">
+Maximum retained fraction of meltwater.
+
+Valid values: Any real number between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_min_meltwater_retained_fraction_sealvlponds" type="real"
+	category="meltponds" group="meltponds">
+Minimum retained fraction of meltwater.
+
+Valid values: Any real number between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_max_meltwater_retained_fraction_sealvlponds" type="real"
+	category="meltponds" group="meltponds">
+Maximum retained fraction of meltwater.
+
+Valid values: Any real number between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_min_meltwater_retained_fraction_topoponds" type="real"
+	category="meltponds" group="meltponds">
+Minimum retained fraction of meltwater.
+
+Valid values: Any real number between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_max_meltwater_retained_fraction_topoponds" type="real"
 	category="meltponds" group="meltponds">
 Maximum retained fraction of meltwater.
 
@@ -2377,6 +2484,14 @@ Default: Defined in namelist_defaults.xml
 Critical parameter for pond ice thickness.
 
 Valid values:
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sealevel_pond_equilibrium_fraction" type="real"
+	category="meltponds" group="meltponds">
+Equilibrium pond fraction for sea level parameterization.
+
+Valid values: A real number between 0.0 and 1.0 inclusive.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2439,7 +2554,23 @@ Valid values: Any real number between 0 and 1.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_macro_drainage_timescale" type="real"
+<entry id="config_macro_drainage_timescale_lvlponds" type="real"
+	category="thermodynamics" group="thermodynamics">
+Timescale for macroscopic drainage.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_macro_drainage_timescale_sealvlponds" type="real"
+	category="thermodynamics" group="thermodynamics">
+Timescale for macroscopic drainage.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_macro_drainage_timescale_topoponds" type="real"
 	category="thermodynamics" group="thermodynamics">
 Timescale for macroscopic drainage.
 

@@ -6,43 +6,26 @@ else()
   set(EXTERNALS_SOURCE_DIR "${PROJECT_SOURCE_DIR}/../../externals")
 endif()
 
-# Haero (Kokkos-based aerosol interface library)
-set(HAERO_ENABLE_GPU ${EAMXX_ENABLE_GPU})
-set(HAERO_ENABLE_MPI ON)
-set(HAERO_ENABLE_TESTS OFF)
+# configure and build mam4xx (C++ port of MAM4)
 if (SCREAM_DOUBLE_PRECISION)
-  set(HAERO_PRECISION "double")
+  set(MAM4XX_PRECISION "double" CACHE BOOL "Enable double precision for mam4xx")
 else()
-  set(HAERO_PRECISION "single")
+  set(MAM4XX_PRECISION "single" CACHE BOOL "Enable single precision for mam4xx")
 endif()
-list(APPEND CMAKE_MODULE_PATH
-  ${EXTERNALS_SOURCE_DIR}/haero/cmake
-)
-add_subdirectory(${EXTERNALS_SOURCE_DIR}/haero ${CMAKE_BINARY_DIR}/externals/haero)
+set(MAM4XX_ENABLE_GPU ${EAMXX_ENABLE_GPU} CACHE BOOL "Enable mam4xx GPU configuration" FORCE)
+set(MAM4XX_ENABLE_TESTS OFF CACHE BOOL "Disable mam4xx tests within E3SM" FORCE)
+set(MAM4XX_ENABLE_SKYWALKER OFF CACHE BOOL "Disable mam4xx validation tests" FORCE)
+set(MAM4XX_NUM_VERTICAL_LEVELS ${SCREAM_NUM_VERTICAL_LEV})
 
-# mam4xx (C++ port of MAM4)
-set(ENABLE_TESTS OFF)
-set(ENABLE_SKYWALKER OFF)
-set(NUM_VERTICAL_LEVELS ${SCREAM_NUM_VERTICAL_LEV})
-set(HAERO_C_STANDARD ${CMAKE_C_STANDARD})
-set(HAERO_C_COMPILER ${CMAKE_C_COMPILER})
-set(HAERO_CXX_STANDARD ${CMAKE_CXX_STANDARD})
-set(HAERO_CXX_COMPILER ${CMAKE_CXX_COMPILER})
-list(APPEND CMAKE_MODULE_PATH
-  ${EXTERNALS_SOURCE_DIR}/mam4xx/cmake
-)
-#include_directories(
-  #  ${EXTERNALS_SOURCE_DIR}/ekat/src
-  #  ${EXTERNALS_SOURCE_DIR}/haero
-  #  ${CMAKE_BINARY_DIR}/externals/ekat/src
-  #  ${CMAKE_BINARY_DIR}/externals/haero
-  #)
 add_subdirectory(${EXTERNALS_SOURCE_DIR}/mam4xx ${CMAKE_BINARY_DIR}/externals/mam4xx)
 
 # EAMxx mam4xx-based atmospheric processes
 add_library(mam
+  readfiles/vertical_remapper_mam4.cpp
+  readfiles/vertical_remapper_exo_coldens.cpp
   eamxx_mam_generic_process_interface.cpp
   eamxx_mam_microphysics_process_interface.cpp
+  eamxx_mam_microphysics_process_functions.cpp
   ${SCREAM_BASE_DIR}/src/physics/rrtmgp/shr_orb_mod_c2f.F90
   eamxx_mam_optics_process_interface.cpp
   eamxx_mam_dry_deposition_process_interface.cpp
@@ -51,12 +34,7 @@ add_library(mam
   eamxx_mam_srf_and_online_emissions_process_interface.cpp
   eamxx_mam_constituent_fluxes_interface.cpp)
 target_compile_definitions(mam PUBLIC EAMXX_HAS_MAM)
-add_dependencies(mam mam4xx)
-target_include_directories(mam PUBLIC
-  ${EXTERNALS_SOURCE_DIR}/haero
-  ${EXTERNALS_SOURCE_DIR}/mam4xx/src
-)
-target_link_libraries(mam PUBLIC physics_share csm_share scream_share mam4xx haero)
+target_link_libraries(mam PUBLIC eamxx_physics_share csm_share scream_share mam4xx)
 
 #if (NOT SCREAM_LIB_ONLY)
 #  add_subdirectory(tests)

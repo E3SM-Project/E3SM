@@ -2,7 +2,7 @@
 Retrieve nodes from EAMxx XML config file.
 """
 
-import sys, os, re
+import sys, os, re, pathlib
 
 # Used for doctests
 import xml.etree.ElementTree as ET # pylint: disable=unused-import
@@ -10,7 +10,6 @@ import xml.etree.ElementTree as ET # pylint: disable=unused-import
 # Add path to cime_config folder
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "cime_config"))
 from eamxx_buildnml_impl import check_value, is_array_type, get_child, find_node
-from eamxx_buildnml_impl import gen_atm_proc_group
 from utils import expect, run_cmd_no_fail
 
 ATMCHANGE_SEP = "-ATMCHANGE_SEP-"
@@ -20,12 +19,15 @@ ATMCHANGE_BUFF_XML_NAME = "SCREAM_ATMCHANGE_BUFFER"
 def apply_atm_procs_list_changes_from_buffer(case, xml):
 ###############################################################################
     atmchg_buffer = case.get_value(ATMCHANGE_BUFF_XML_NAME)
+    any_change = False
     if atmchg_buffer:
         atmchgs = unbuffer_changes(case)
 
         for chg in atmchgs:
             if "atm_procs_list" in chg:
                 atm_config_chg_impl(xml, chg)
+                any_change = True
+    return any_change
 
 ###############################################################################
 def apply_non_atm_procs_list_changes_from_buffer(case, xml):
@@ -68,6 +70,96 @@ def unbuffer_changes(case):
 def reset_buffer():
 ###############################################################################
     run_cmd_no_fail(f"./xmlchange {ATMCHANGE_BUFF_XML_NAME}=''")
+
+###############################################################################
+def get_changes_for_node(xml_root, node_name, changes):
+###############################################################################
+    """
+    Return the subset of changes from `changes` that do NOT target the given
+    XML node or any of its descendants.  This is the filtering kernel used by
+    reset_node_changes and can be called directly for testing.
+
+    NOTE: `changes` is a list of already-unescaped change strings
+          (commas are NOT escaped with backslash).
+
+    >>> xml = '''
+    ... <root>
+    ...     <foo type="integer">0</foo>
+    ...     <bar type="integer">10</bar>
+    ...     <sub>
+    ...         <child1 type="integer">1</child1>
+    ...         <child2 type="integer">2</child2>
+    ...     </sub>
+    ... </root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> tree = ET.fromstring(xml)
+    >>> ################ ERROR: node not found #######################
+    >>> get_changes_for_node(tree, 'nonexistent', ['foo=5'])
+    Traceback (most recent call last):
+    SystemExit: ERROR: 'nonexistent' did not match any node in the XML file
+    >>> ################ Reset leaf node (foo), keep bar change #####
+    >>> get_changes_for_node(tree, 'foo', ['foo=5', 'bar=2'])
+    ['bar=2']
+    >>> ################ Reset leaf node (foo), no matching change ##
+    >>> get_changes_for_node(tree, 'foo', ['bar=2', 'sub::child1=99'])
+    ['bar=2', 'sub::child1=99']
+    >>> ################ Reset non-leaf node (sub), removes children
+    >>> get_changes_for_node(tree, 'sub', ['sub::child1=99', 'bar=3'])
+    ['bar=3']
+    >>> ################ Reset child only, keep sibling change #######
+    >>> get_changes_for_node(tree, 'sub::child1', ['sub::child1=99', 'sub::child2=5', 'bar=3'])
+    ['sub::child2=5', 'bar=3']
+    >>> ################ Empty changes list ##########################
+    >>> get_changes_for_node(tree, 'foo', [])
+    []
+    """
+    reset_targets = get_xml_nodes(xml_root, node_name)
+    expect(len(reset_targets) > 0,
+           f"'{node_name}' did not match any node in the XML file")
+
+    if not changes:
+        return []
+
+    parent_map = create_parent_map(xml_root)
+
+    filtered_changes = []
+    for chg in changes:
+        chg_node_name, _, _, _ = parse_change(chg)
+        chg_nodes = get_xml_nodes(xml_root, chg_node_name)
+        # is_anchestor_of(A, B, ...) returns True when A == B too, so
+        # this covers both direct matches and descendant matches.
+        affects_reset = any(
+            is_anchestor_of(reset_target, chg_node, parent_map)
+            for chg_node in chg_nodes
+            for reset_target in reset_targets
+        )
+        if not affects_reset:
+            filtered_changes.append(chg)
+
+    return filtered_changes
+
+###############################################################################
+def reset_node_changes(xml_root, node_name):
+###############################################################################
+    """
+    Remove from the SCREAM_ATMCHANGE_BUFFER all changes that target
+    the given node or any of its descendants.
+    """
+    # Get current buffered changes
+    buff_str = run_cmd_no_fail(f"./xmlquery {ATMCHANGE_BUFF_XML_NAME} --value")
+    changes = []
+    for item in buff_str.split(ATMCHANGE_SEP):
+        if item.strip():
+            changes.append(item.replace(r"\,", ",").strip())
+
+    # Filter changes (also validates node_name exists in xml_root)
+    filtered_changes = get_changes_for_node(xml_root, node_name, changes)
+
+    # Reset buffer and write back the filtered changes
+    run_cmd_no_fail(f"./xmlchange {ATMCHANGE_BUFF_XML_NAME}=''")
+    if filtered_changes:
+        buffer_changes(filtered_changes)
 
 ###############################################################################
 def get_xml_nodes(xml_root, name):
@@ -165,14 +257,16 @@ def get_xml_nodes(xml_root, name):
     return result
 
 ###############################################################################
-def modify_ap_list(xml_root, group, ap_list_str, append_this):
+def modify_ap_list(group, ap_list_str, append_this, remove_this=False, defaults_xml=None):
 ###############################################################################
     """
     Modify the atm_procs_list entry of this XML node (which is an atm proc group).
     This routine can only be used to add an atm proc group OR to remove some
     atm procs.
+    NOTE: defaults_xml is not None only in doctest tests. In regular use cases,
+    we load the defaults from the defaults xml file in eamxx/cime_config
     >>> xml = '''
-    ... <root>
+    ... <dummy_defaults>
     ...     <atmosphere_processes_defaults>
     ...         <atm_proc_group>
     ...             <atm_procs_list type="array(string)"/>
@@ -184,69 +278,75 @@ def modify_ap_list(xml_root, group, ap_list_str, append_this):
     ...             <my_param>2</my_param>
     ...         </p2>
     ...     </atmosphere_processes_defaults>
-    ... </root>
+    ... </dummy_defaults>
     ... '''
     >>> from eamxx_buildnml_impl import has_child
     >>> import xml.etree.ElementTree as ET
-    >>> tree = ET.fromstring(xml)
+    >>> defaults = ET.fromstring(xml)
     >>> node = ET.Element("my_group")
     >>> node.append(ET.Element("atm_procs_list"))
     >>> get_child(node,"atm_procs_list").text = ""
-    >>> modify_ap_list(tree,node,"p1,p2",False)
+    >>> modify_ap_list(node,"p1,p2",False,False,defaults)
     True
     >>> get_child(node,"atm_procs_list").text
     'p1,p2'
-    >>> modify_ap_list(tree,node,"p1",True)
+    >>> modify_ap_list(node,"p1",True,False,defaults)
     True
     >>> get_child(node,"atm_procs_list").text
     'p1,p2,p1'
-    >>> modify_ap_list(tree,node,"p1,p3",False)
-    Traceback (most recent call last):
-    SystemExit: ERROR: Unrecognized atm proc name 'p3'. To declare a new group, prepend and append '_' to the name.
-    >>> modify_ap_list(tree,node,"p1,_my_group_",False)
+    >>> modify_ap_list(node,"p1",False,True,defaults)
     True
     >>> get_child(node,"atm_procs_list").text
-    'p1,_my_group_'
-    >>> defaults = get_child(tree,'atmosphere_processes_defaults')
-    >>> has_child(defaults,'_my_group_')
-    True
+    'p2,p1'
+    >>> modify_ap_list(node,"p1,p3",False,False,defaults)
+    Traceback (most recent call last):
+    SystemExit: ERROR: Cannot modify ap list for group 'my_group'
+    Process 'p3' not found in XML tree 'dummy_defaults'
+    >>> modify_ap_list(node,"p3",False,True,defaults)
+    Traceback (most recent call last):
+    SystemExit: ERROR: Cannot remove 'p3' from atm_procs_list of group 'my_group': not found in current list 'p2,p1'
     """
     curr_apl = get_child(group,"atm_procs_list")
+
+    ap_list = ap_list_str.split(",")
+
+    if remove_this:
+        curr_list = curr_apl.text.split(",") if curr_apl.text else []
+        for ap in ap_list:
+            expect(ap in curr_list,
+                   f"Cannot remove '{ap}' from atm_procs_list of group '{group.tag}': "
+                   f"not found in current list '{curr_apl.text}'")
+            curr_list.remove(ap)
+        new_text = ','.join(curr_list)
+        if curr_apl.text == new_text:
+            return False
+        curr_apl.text = new_text
+        return True
+
     if curr_apl.text==ap_list_str:
         return False
 
-    ap_list = ap_list_str.split(",")
     expect (len(ap_list)==len(set(ap_list)),
             "Input list of atm procs contains repetitions")
 
-    # If we're here b/c of a manual call of atmchange from command line, this will be None,
-    # since we don't have this node in the genereated XML file. But in that case, we don't
-    # have to actually add the new nodes, we can simply just modify the atm_procs_list entry
-    # If, however, we're calling this from buildnml, then what we are passed in is the XML
-    # tree from namelists_defaults_scream.xml, so this section *will* be present. And we
-    # need to add the new atm procs group as children, so that buildnml knows how to build
-    # them
-    ap_defaults = find_node(xml_root,"atmosphere_processes_defaults")
-    if ap_defaults is not None:
-
-        # Figure out which aps in the list are new groups and which ones already
-        # exist in the defaults
-        add_aps = [n for n in ap_list if n not in curr_apl.text.split(',')]
-        new_aps = [n for n in add_aps if find_node(ap_defaults,n) is None]
-
-        for ap in new_aps:
-            expect (ap[0]=="_" and ap[-1]=="_" and len(ap)>2,
-                    f"Unrecognized atm proc name '{ap}'. To declare a new group, prepend and append '_' to the name.")
-            group = gen_atm_proc_group("", ap_defaults)
-            group.tag = ap
-
-            ap_defaults.append(group)
+    # To avoid buffering a change that has an invalid atm proc name,
+    # we load the defaults here, and check that the added procs exist
+    if defaults_xml is None:
+        defaults_xml_file = pathlib.Path(__file__).parent.parent.resolve() / "cime_config/namelist_defaults_eamxx.xml"
+        with open(defaults_xml_file, "r") as fd:
+            defaults_xml = ET.parse(fd).getroot()
+    procs_defaults = get_child(defaults_xml,"atmosphere_processes_defaults")
+    for ap in ap_list:
+        expect (find_node(procs_defaults,ap) is not None,
+                f"Cannot modify ap list for group '{group.tag}'\n"
+                f"Process '{ap}' not found in XML tree '{defaults_xml.tag}'")
 
     # Update the 'atm_procs_list' in this node
     if append_this:
         curr_apl.text = ','.join(curr_apl.text.split(",")+ap_list)
     else:
         curr_apl.text = ','.join(ap_list)
+
     return True
 
 ###############################################################################
@@ -269,7 +369,7 @@ def is_locked(xml_root, node):
     return False
 
 ###############################################################################
-def apply_change(xml_root, node, new_value, append_this):
+def apply_change(xml_root, node, new_value, append_this, remove_this=False):
 ###############################################################################
     any_change = False
 
@@ -278,7 +378,7 @@ def apply_change(xml_root, node, new_value, append_this):
     if node.tag=="atm_procs_list":
         parent_map = create_parent_map(xml_root)
         group = get_parents(node,parent_map)[-1]
-        return modify_ap_list (xml_root,group,new_value,append_this)
+        return modify_ap_list(group, new_value, append_this, remove_this)
 
     if append_this:
 
@@ -301,6 +401,27 @@ def apply_change(xml_root, node, new_value, append_this):
 
         any_change = True
 
+    elif remove_this:
+
+        expect (not is_locked(xml_root, node), f"Cannot change {node.tag}, it is locked")
+        expect ("type" in node.attrib.keys(),
+                f"Error! Missing type information for {node.tag}")
+        type_ = node.attrib["type"]
+        expect (is_array_type(type_),
+                "Error! Can only remove with array types.\n"
+                f"    - name: {node.tag}\n"
+                f"    - type: {type_}")
+
+        curr_list = [v.strip() for v in node.text.split(",")] if node.text else []
+        remove_list = [v.strip() for v in new_value.split(",")]
+        for v in remove_list:
+            expect (v in curr_list,
+                    f"Error! Value '{v}' not found in {node.tag}. "
+                    f"Current value: {node.text}")
+            curr_list.remove(v)
+        node.text = ",".join(curr_list)
+        any_change = True
+
     elif node.text != new_value:
         expect (not is_locked(xml_root, node), f"Cannot change {node.tag}, it is locked")
         check_value(node,new_value)
@@ -314,25 +435,34 @@ def parse_change(change):
 ###############################################################################
     """
     >>> parse_change("a+=2")
-    ('a', '2', True)
+    ('a', '2', True, False)
+    >>> parse_change("a-=2")
+    ('a', '2', False, True)
     >>> parse_change("a=hello")
-    ('a', 'hello', False)
+    ('a', 'hello', False, False)
     """
     tokens = change.split('+=')
     if len(tokens)==2:
         append_this = True
+        remove_this = False
     else:
         append_this = False
-        tokens = change.split('=')
+        tokens = change.split('-=')
+        if len(tokens)==2:
+            remove_this = True
+        else:
+            remove_this = False
+            tokens = change.split('=')
 
     expect (len(tokens)==2,
         f"Invalid change request '{change}'. Valid formats are:\n"
         f"  - A[::B[...]=value\n"
-        f"  - A[::B[...]+=value  (implies append for this change)")
+        f"  - A[::B[...]+=value  (implies append for this change)\n"
+        f"  - A[::B[...]-=value  (implies removal for this change, arrays only)")
     node_name = tokens[0]
     new_value = tokens[1]
 
-    return node_name,new_value,append_this
+    return node_name,new_value,append_this,remove_this
 
 ###############################################################################
 def atm_config_chg_impl(xml_root, change):
@@ -381,6 +511,7 @@ def atm_config_chg_impl(xml_root, change):
     SystemExit: ERROR: Invalid change request 'prop1->2'. Valid formats are:
       - A[::B[...]=value
       - A[::B[...]+=value  (implies append for this change)
+      - A[::B[...]-=value  (implies removal for this change, arrays only)
     >>> ################ INVALID TYPE #######################
     >>> atm_config_chg_impl(tree,'prop2=two')
     Traceback (most recent call last):
@@ -429,6 +560,25 @@ def atm_config_chg_impl(xml_root, change):
     True
     >>> get_xml_nodes(tree,'e')[0].text
     'one, two'
+    >>> ################ TEST REMOVE -= #################
+    >>> atm_config_chg_impl(tree,'a-=2')
+    True
+    >>> get_xml_nodes(tree,'a')[0].text
+    '1,3,4'
+    >>> atm_config_chg_impl(tree,'a-=1,3')
+    True
+    >>> get_xml_nodes(tree,'a')[0].text
+    '4'
+    >>> ################ ERROR, remove from non-array
+    >>> atm_config_chg_impl(tree,'c-=1')
+    Traceback (most recent call last):
+    SystemExit: ERROR: Error! Can only remove with array types.
+        - name: c
+        - type: int
+    >>> ################ ERROR, remove value not in list
+    >>> atm_config_chg_impl(tree,'b-=9')
+    Traceback (most recent call last):
+    SystemExit: ERROR: Error! Value '9' not found in b. Current value: 1
     >>> ################ Test locked ##################
     >>> atm_config_chg_impl(tree, 'lprop2=yo')
     Traceback (most recent call last):
@@ -440,14 +590,14 @@ def atm_config_chg_impl(xml_root, change):
     Traceback (most recent call last):
     SystemExit: ERROR: Cannot change lprop4, it is locked
     """
-    node_name, new_value, append_this = parse_change(change)
+    node_name, new_value, append_this, remove_this = parse_change(change)
     matches = get_xml_nodes(xml_root, node_name)
 
     expect(len(matches) > 0, f"{node_name} did not match any items")
 
     any_change = False
     for node in matches:
-        any_change |= apply_change(xml_root, node, new_value, append_this)
+        any_change |= apply_change(xml_root, node, new_value, append_this, remove_this)
 
     return any_change
 

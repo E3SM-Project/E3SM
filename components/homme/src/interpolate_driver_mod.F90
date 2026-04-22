@@ -176,7 +176,7 @@ contains
     type(io_desc_t), pointer :: iodesc
     character(len=80), allocatable :: varnames_list(:)
     
-    integer :: ndims, nvars,  varcnt
+    integer :: ndims, nvars,  varcnt, iotype
     integer :: ret, i, ncid, n
     integer :: varid, ncols, lev
     integer :: ne_file, np_file, nlev_file
@@ -188,13 +188,9 @@ contains
 
     if (par%masterproc) print *,'initializing input file: ',trim(infilename)
 
-!    call pio_setdebuglevel(1)
-    if(output_type.eq.'netcdf') then
-       ret = PIO_OpenFile(PIOFS, InFile%FileID, iotype_netcdf, infilename)
-    else
-       ret = PIO_OpenFile(PIOFS, InFile%FileID, iotype_pnetcdf, infilename)
-    end if
-
+    !    call pio_setdebuglevel(1)
+    iotype = get_iotype()
+    ret = PIO_OpenFile(PIOFS, InFile%FileID, iotype, infilename)
     ret = PIO_inquire(InFile%FileID, nDimensions=ndims, nVariables=nvars, &
          nAttributes=infile%natts, unlimitedDimId=InFile%unlimid)
 
@@ -1562,12 +1558,22 @@ contains
 
 #ifndef HOMME_WITHOUT_PIOLIBRARY
   function get_iotype() result(iotype)
-    use pio, only: iotype_netcdf, iotype_pnetcdf
+  ! used when opening a file
+  ! need to pick between netcdf and pnetcdf options
+  ! netcdf4 can read all formats
+  ! pnetcdf cant read the newest netcdf4/hdf formats
+  
+    use pio, only: iotype_netcdf, iotype_pnetcdf, pio_iotype_netcdf4p,&
+    pio_iotype_netcdf4p_nczarr, pio_iotype_netcdf4c,pio_iotype_pnetcdf,pio_iotype_netcdf
 
     integer :: iotype
 
     if (output_type == 'netcdf') then
+       iotype = iotype_netcdf   ! default
+    else if (output_type == 'netcdf4p') then
        iotype = iotype_netcdf
+    else if (output_type == 'netcdf64') then
+       iotype = iotype_pnetcdf
     else
        iotype = iotype_pnetcdf
     end if

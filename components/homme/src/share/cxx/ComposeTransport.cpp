@@ -55,6 +55,11 @@ void ComposeTransport::init_boundary_exchanges () {
   m_compose_impl->init_boundary_exchanges();
 }
 
+void ComposeTransport::observe_velocity (const TimeLevel& tl, const int step) {
+  assert(is_setup);
+  m_compose_impl->observe_velocity(tl, step);
+}
+
 void ComposeTransport::run (const TimeLevel& tl, const Real dt) {
   assert(is_setup);
   m_compose_impl->run(tl, dt);
@@ -69,13 +74,11 @@ std::vector<std::pair<std::string, int> >
 ComposeTransport::run_unit_tests () {
   assert(is_setup);
   std::vector<std::pair<std::string, int> > fails;
-  int ne, nerr = 0;
+  int ne;
   ne = m_compose_impl->run_trajectory_unit_tests();
-  if (ne) fails.push_back(std::make_pair("run_trajectory_unit_tests", nerr));
-  nerr += ne;
+  if (ne) fails.push_back(std::make_pair("run_trajectory_unit_tests", ne));
   ne = m_compose_impl->run_enhanced_trajectory_unit_tests();
-  if (ne) fails.push_back(std::make_pair("run_enhanced_trajectory_unit_tests", nerr));
-  nerr += ne;
+  if (ne) fails.push_back(std::make_pair("run_enhanced_trajectory_unit_tests", ne));
   return fails;
 }
 

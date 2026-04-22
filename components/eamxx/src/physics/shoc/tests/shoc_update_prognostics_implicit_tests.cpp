@@ -1,9 +1,9 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 #include "shoc_functions.hpp"
 #include "shoc_test_data.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 
 #include "shoc_unit_tests_common.hpp"
 
@@ -277,8 +277,8 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit : public UnitWrap::U
         REQUIRE( (SDS.qw[offset] > qw_lbound && SDS.qw[offset] < qw_ubound) );
         REQUIRE( (SDS.tke[offset] > tke_lbound && SDS.tke[offset] < tke_ubound) );
         // Increase wind bounds by 2 m/s to allow for surface flux effects
-        REQUIRE(std::abs(SDS.u_wind[offset] < wind_bounds+2));
-        REQUIRE(std::abs(SDS.v_wind[offset] < wind_bounds+2));
+        REQUIRE(std::abs(SDS.u_wind[offset]) < wind_bounds+2);
+        REQUIRE(std::abs(SDS.v_wind[offset]) < wind_bounds+2);
 
         // Compute integrals of end result
         // Output total water integral

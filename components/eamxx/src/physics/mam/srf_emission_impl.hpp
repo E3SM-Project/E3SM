@@ -1,9 +1,9 @@
 #ifndef SRF_EMISSION_IMPL_HPP
 #define SRF_EMISSION_IMPL_HPP
 
-#include "share/grid/remap/identity_remapper.hpp"
-#include "share/grid/remap/refining_remapper_p2p.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/remap/identity_remapper.hpp"
+#include "share/remap/horizontal_remapper.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 
@@ -47,7 +47,7 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
         "list.");
 
     remapper =
-        std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid, map_file);
+        std::make_shared<HorizontalRemapper>(horiz_interp_tgt_grid, map_file);
   }
 
   const auto tgt_grid = remapper->get_tgt_grid();
@@ -175,6 +175,7 @@ template <typename S, typename D>
 void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
     std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
     const int time_index,  // zero-based
+    const Real scale_factor,
     AbstractRemapper &srfEmiss_horiz_interp, srfEmissInput &srfEmiss_input) {
   using namespace ShortFieldTagsNames;
 
@@ -197,13 +198,16 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
   // Recall, the fields are registered in the order: ps, ccn3, g_sw, ssa_sw,
   // tau_sw, tau_lw
 
-  // Read fields from the file
+  // Read fields from the file, applying scale factors
   for(int i = 0; i < srfEmiss_horiz_interp.get_num_fields(); ++i) {
     auto sector =
         srfEmiss_horiz_interp.get_tgt_field(i).get_view<const Real *>();
     const auto emiss =
         Kokkos::subview(srfEmiss_input.data.emiss_sectors, i, Kokkos::ALL());
-    Kokkos::deep_copy(emiss, sector);
+    Kokkos::parallel_for("update surface emissions", srfEmiss_input.data.ncols,
+        KOKKOS_LAMBDA(const int icol) {
+      emiss(icol) = scale_factor * sector(icol);
+    });
   }
 
   Kokkos::fence();
@@ -216,8 +220,8 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
 template <typename S, typename D>
 void srfEmissFunctions<S, D>::update_srfEmiss_timestate(
     std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
-    AbstractRemapper &srfEmiss_horiz_interp, srfEmissTimeState &time_state,
-    srfEmissInput &srfEmiss_beg, srfEmissInput &srfEmiss_end) {
+    AbstractRemapper &srfEmiss_horiz_interp, const Real scale_factor,
+    srfEmissTimeState &time_state, srfEmissInput &srfEmiss_beg, srfEmissInput &srfEmiss_end) {
   // Now we check if we have to update the data that changes monthly
   // NOTE:  This means that srfEmiss assumes monthly data to update.  Not
   //        any other frequency.
@@ -239,7 +243,7 @@ void srfEmissFunctions<S, D>::update_srfEmiss_timestate(
     //       to be assigned.  A timestep greater than a month is very unlikely
     //       so we will proceed.
     int next_month = (time_state.current_month + 1) % 12;
-    update_srfEmiss_data_from_file(scorpio_reader, ts, next_month,
+    update_srfEmiss_data_from_file(scorpio_reader, ts, next_month, scale_factor,
                                    srfEmiss_horiz_interp, srfEmiss_end);
   }
 

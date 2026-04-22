@@ -10,8 +10,8 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::impose_max_total_ni(
-  Spack& ni_local, const Scalar& max_total_ni, const Spack& inv_rho_local,
-  const Smask& context)
+  Pack& ni_local, const Scalar& max_total_ni, const Pack& inv_rho_local,
+  const Mask& context)
 {
   //--------------------------------------------------------------------------------
   // Impose maximum total ice number concentration (total of all ice categories).

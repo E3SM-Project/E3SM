@@ -188,14 +188,13 @@ module compose_mod
        type(cartesian3D_t), intent(in) :: sphere_cart_coord
      end subroutine slmm_check_ref2sphere
 
-     subroutine slmm_set_hvcoord(etai_beg, etai_end, etam) bind(c)
+     subroutine slmm_set_hvcoord(etai, etam) bind(c)
        use iso_c_binding, only: c_double
-       use dimensions_mod, only : nlev
-       real(kind=c_double), value, intent(in) :: etai_beg, etai_end
-       real(kind=c_double), intent(in) :: etam(nlev)
+       use dimensions_mod, only : nlevp, nlev
+       real(kind=c_double), intent(in) :: etai(nlevp), etam(nlev)
      end subroutine slmm_set_hvcoord
 
-     subroutine slmm_calc_v_departure(nets, nete, step, dtsub, dep_points, &
+     subroutine slmm_interp_v_update(nets, nete, step, dtsub, dep_points, &
           dep_points_ndim, vnode, vdep, info) bind(c)
        use iso_c_binding, only: c_int, c_double
        use dimensions_mod, only : np, nlev, nelemd, qsize
@@ -206,7 +205,7 @@ module compose_mod
        real(kind=c_double), intent(in) :: vnode(dep_points_ndim,np,np,nlev,nelemd)
        real(kind=c_double), intent(out) :: vdep(dep_points_ndim,np,np,nlev,nelemd)
        integer(kind=c_int), intent(out) :: info
-     end subroutine slmm_calc_v_departure
+     end subroutine slmm_interp_v_update
 
      subroutine slmm_csl_set_elem_data(ie, metdet, qdp, n0_qdp, dp, q, nelem_in_patch, &
           h2d, d2h) bind(c)
@@ -278,7 +277,7 @@ contains
          ! These are for non-scalable grid initialization, still used for RRM.
          sc2gci(:), sc2rank(:)        ! space curve index -> (GID, rank)
     integer :: lid2gid(nelemd), lid2facenum(nelemd)
-    integer :: i, j, k, sfc, gid, igv, sc, geometry_type, sl_traj_3d
+    integer :: i, j, k, sfc, gid, igv, sc, geometry_type, sl_traj_3d, nsub
     ! To map SFC index to IDs and ranks
     logical(kind=c_bool) :: use_sgi, owned, independent_time_steps, hard_zero
     integer, allocatable :: owned_ids(:)
@@ -305,7 +304,9 @@ contains
        ! related to the dynamics' tstep, dt_tracer_factor is meaningful,
        ! implying:
        semi_lagrange_halo = (dt_tracer_factor + 2) / 3
-       if (semi_lagrange_halo < 1) semi_lagrange_halo = 1
+       ! Set the lower bound to 2. 1 is also reasonable, but 2 is a conservative
+       ! choice with no performance impact.
+       if (semi_lagrange_halo < 2) semi_lagrange_halo = 2
     end if
 
     geometry_type = 0 ! sphere
@@ -396,10 +397,11 @@ contains
        nirptr(nelemd+1) = k - 1
        sl_traj_3d = 0
        if (independent_time_steps) sl_traj_3d = 1
+       nsub = semi_lagrange_trajectory_nsubstep
        call slmm_init_impl(par%comm, transport_alg, np, nlev, qsize, qsize_d, &
             nelem, nelemd, cubed_sphere_map, geometry_type, lid2gid, lid2facenum, &
             nbr_id_rank, nirptr, semi_lagrange_halo, sl_traj_3d, &
-            semi_lagrange_trajectory_nsubstep, semi_lagrange_nearest_point_lev, &
+            nsub, semi_lagrange_nearest_point_lev, &
             size(lid2gid), size(lid2facenum), size(nbr_id_rank), size(nirptr))
        if (geometry_type == 1) call slmm_init_plane(Sx, Sy, Lx, Ly)
        deallocate(nbr_id_rank, nirptr)

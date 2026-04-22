@@ -35,7 +35,7 @@ template <typename ViewT, typename ArrayT> struct host_view_mappable {
 #else
   static constexpr bool value = Kokkos::Impl::ViewMapping<
     typename ViewT::traits,
-    typename Kokkos::View<ArrayT, Kokkos::LayoutRight, Kokkos::HostSpace,
+    typename Kokkos::View<ArrayT, Kokkos::LayoutRight, HostMemSpace,
                           Kokkos::MemoryTraits<Kokkos::Unmanaged | Kokkos::Restrict> >::traits,
     void>::is_assignable;  
 #endif

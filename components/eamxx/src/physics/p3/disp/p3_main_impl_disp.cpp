@@ -1,6 +1,6 @@
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
-#include "physics/share/physics_saturation_impl.hpp"
+#include "share/physics/physics_functions.hpp" // also for ETI not on GPUs
+#include "share/physics/physics_saturation_impl.hpp"
 
 #include <ekat_subview_utils.hpp>
 #include <ekat_team_policy_utils.hpp>
@@ -16,23 +16,23 @@ namespace p3 {
 template <>
 void Functions<Real,DefaultDevice>
 ::p3_main_init_disp(
-  const Int& nj, const Int& nk_pack, const uview_2d<const Spack>& cld_frac_i, const uview_2d<const Spack>& cld_frac_l,
-  const uview_2d<const Spack>& cld_frac_r, const uview_2d<const Spack>& inv_exner, const uview_2d<const Spack>& th_atm,
-  const uview_2d<const Spack>& dz, const uview_2d<Spack>& diag_equiv_reflectivity, const uview_2d<Spack>& ze_ice,
-  const uview_2d<Spack>& ze_rain, const uview_2d<Spack>& diag_eff_radius_qc, const uview_2d<Spack>& diag_eff_radius_qi,
-  const uview_2d<Spack>& diag_eff_radius_qr,
-  const uview_2d<Spack>& inv_cld_frac_i, const uview_2d<Spack>& inv_cld_frac_l, const uview_2d<Spack>& inv_cld_frac_r,
-  const uview_2d<Spack>& exner, const uview_2d<Spack>& T_atm, const uview_2d<Spack>& qv, const uview_2d<Spack>& inv_dz,
+  const Int& nj, const Int& nk_pack, const uview_2d<const Pack>& cld_frac_i, const uview_2d<const Pack>& cld_frac_l,
+  const uview_2d<const Pack>& cld_frac_r, const uview_2d<const Pack>& inv_exner, const uview_2d<const Pack>& th_atm,
+  const uview_2d<const Pack>& dz, const uview_2d<Pack>& diag_equiv_reflectivity, const uview_2d<Pack>& ze_ice,
+  const uview_2d<Pack>& ze_rain, const uview_2d<Pack>& diag_eff_radius_qc, const uview_2d<Pack>& diag_eff_radius_qi,
+  const uview_2d<Pack>& diag_eff_radius_qr,
+  const uview_2d<Pack>& inv_cld_frac_i, const uview_2d<Pack>& inv_cld_frac_l, const uview_2d<Pack>& inv_cld_frac_r,
+  const uview_2d<Pack>& exner, const uview_2d<Pack>& T_atm, const uview_2d<Pack>& qv, const uview_2d<Pack>& inv_dz,
   const uview_1d<Scalar>& precip_liq_surf, const uview_1d<Scalar>& precip_ice_surf,
-  const uview_2d<Spack>& mu_r, const uview_2d<Spack>& lamr, const uview_2d<Spack>& logn0r, const uview_2d<Spack>& nu,
-  const uview_2d<Spack>& cdist, const uview_2d<Spack>& cdist1, const uview_2d<Spack>& cdistr,
-  const uview_2d<Spack>& qc_incld, const uview_2d<Spack>& qr_incld, const uview_2d<Spack>& qi_incld,
-  const uview_2d<Spack>& qm_incld, const uview_2d<Spack>& nc_incld, const uview_2d<Spack>& nr_incld, const uview_2d<Spack>& ni_incld,
-  const uview_2d<Spack>& bm_incld, const uview_2d<Spack>& inv_rho, const uview_2d<Spack>& prec, const  uview_2d<Spack>& rho, const uview_2d<Spack>& rhofacr,
-  const uview_2d<Spack>& rhofaci, const uview_2d<Spack>& acn, const uview_2d<Spack>& qv_sat_l, const uview_2d<Spack>& qv_sat_i, const uview_2d<Spack>& sup,
-  const uview_2d<Spack>& qv_supersat_i, const uview_2d<Spack>& qtend_ignore, const uview_2d<Spack>& ntend_ignore, const uview_2d<Spack>& mu_c,
-  const uview_2d<Spack>& lamc, const uview_2d<Spack>& rho_qi, const uview_2d<Spack>& qv2qi_depos_tend, const uview_2d<Spack>& precip_total_tend,
-  const uview_2d<Spack>& nevapr, const uview_2d<Spack>& precip_liq_flux, const uview_2d<Spack>& precip_ice_flux)
+  const uview_2d<Pack>& mu_r, const uview_2d<Pack>& lamr, const uview_2d<Pack>& logn0r, const uview_2d<Pack>& nu,
+  const uview_2d<Pack>& cdist, const uview_2d<Pack>& cdist1, const uview_2d<Pack>& cdistr,
+  const uview_2d<Pack>& qc_incld, const uview_2d<Pack>& qr_incld, const uview_2d<Pack>& qi_incld,
+  const uview_2d<Pack>& qm_incld, const uview_2d<Pack>& nc_incld, const uview_2d<Pack>& nr_incld, const uview_2d<Pack>& ni_incld,
+  const uview_2d<Pack>& bm_incld, const uview_2d<Pack>& inv_rho, const uview_2d<Pack>& prec, const  uview_2d<Pack>& rho, const uview_2d<Pack>& rhofacr,
+  const uview_2d<Pack>& rhofaci, const uview_2d<Pack>& acn, const uview_2d<Pack>& qv_sat_l, const uview_2d<Pack>& qv_sat_i, const uview_2d<Pack>& sup,
+  const uview_2d<Pack>& qv_supersat_i, const uview_2d<Pack>& qtend_ignore, const uview_2d<Pack>& ntend_ignore, const uview_2d<Pack>& mu_c,
+  const uview_2d<Pack>& lamc, const uview_2d<Pack>& rho_qi, const uview_2d<Pack>& qv2qi_depos_tend, const uview_2d<Pack>& precip_total_tend,
+  const uview_2d<Pack>& nevapr, const uview_2d<Pack>& precip_liq_flux, const uview_2d<Pack>& precip_ice_flux)
 {
   using ExeSpace = typename KT::ExeSpace;
   using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
@@ -117,7 +117,7 @@ Int Functions<Real,DefaultDevice>
 {
   using ExeSpace = typename KT::ExeSpace;
 
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
 
   // load constants into local vars
   const     Scalar inv_dt          = 1 / infrastructure.dt;

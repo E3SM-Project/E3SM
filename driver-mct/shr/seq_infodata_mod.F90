@@ -156,6 +156,7 @@ MODULE seq_infodata_mod
      logical                 :: histaux_l2x1yrg ! cpl writes aux hist files: l2x annual glc forcings
      logical                 :: histaux_l2x     ! cpl writes aux hist files: l2x every c2l comm
      logical                 :: histaux_r2x     ! cpl writes aux hist files: r2x every c2o comm
+     logical                 :: histaux_z2x     ! cpl writes aux hist files: z2x every c2z comm
      logical                 :: histaux_double_precision ! if true, use double-precision for cpl aux hist files
      logical                 :: histavg_atm     ! cpl writes atm fields in average history file
      logical                 :: histavg_lnd     ! cpl writes lnd fields in average history file
@@ -199,6 +200,7 @@ MODULE seq_infodata_mod
      logical                 :: rofice_present  ! does rof have iceberg coupling on
      logical                 :: rof_prognostic  ! does rof component need input data
      logical                 :: rofocn_prognostic ! does component need ocn data
+     logical                 :: lndocn_prognostic ! does component need ocn data
      logical                 :: flood_present   ! does rof have flooding on
      logical                 :: ocn_present     ! does component model exist
      logical                 :: ocn_prognostic  ! does component model need input data from driver
@@ -414,6 +416,7 @@ CONTAINS
     logical                :: histaux_l2x1yrg    ! cpl writes aux hist files: l2x annual glc forcings
     logical                :: histaux_l2x        ! cpl writes aux hist files: l2x every c2l comm
     logical                :: histaux_r2x        ! cpl writes aux hist files: r2x every c2o comm
+    logical                :: histaux_z2x        ! cpl writes aux hist files: z2x every c2z comm
     logical                :: histaux_double_precision ! if true, use double-precision for cpl aux hist files
     logical                :: histavg_atm        ! cpl writes atm fields in average history file
     logical                :: histavg_lnd        ! cpl writes lnd fields in average history file
@@ -473,7 +476,7 @@ CONTAINS
          histaux_a2x,histaux_a2x1hri,histaux_a2x1hr,       &
          histaux_a2x3hr,histaux_a2x3hrp,                   &
          histaux_a2x24hr,histaux_l2x   ,histaux_r2x,       &
-         histaux_double_precision,                         &
+         histaux_z2x, histaux_double_precision,            &
          histavg_atm, histavg_lnd, histavg_ocn, histavg_ice, &
          histavg_rof, histavg_glc, histavg_wav, histavg_xao, &
          histavg_iac, &
@@ -579,6 +582,7 @@ CONTAINS
        histaux_l2x1yrg       = .false.
        histaux_l2x           = .false.
        histaux_r2x           = .false.
+       histaux_z2x           = .false.
        histaux_double_precision = .false.
        histavg_atm           = .true.
        histavg_lnd           = .true.
@@ -718,6 +722,7 @@ CONTAINS
        infodata%histaux_l2x1yrg       = histaux_l2x1yrg
        infodata%histaux_l2x           = histaux_l2x
        infodata%histaux_r2x           = histaux_r2x
+       infodata%histaux_z2x           = histaux_z2x
        infodata%histaux_double_precision = histaux_double_precision
        infodata%histavg_atm           = histavg_atm
        infodata%histavg_lnd           = histavg_lnd
@@ -769,6 +774,7 @@ CONTAINS
        infodata%lnd_prognostic = .false.
        infodata%rof_prognostic = .false.
        infodata%rofocn_prognostic = .false.
+       infodata%lndocn_prognostic = .false.
        infodata%ocn_prognostic = .false.
        infodata%ocnrof_prognostic = .false.
        infodata%ocn_c2_glcshelf = .false.
@@ -1014,7 +1020,7 @@ CONTAINS
        single_column, scmlat,scmlon,logFilePostFix, outPathRoot,&
        scm_multcols, scm_nx, scm_ny,                                      &
        atm_present, atm_prognostic,                                       &
-       lnd_present, lnd_prognostic,                                       &
+       lnd_present, lnd_prognostic, lndocn_prognostic,                    &
        rof_present, rof_prognostic, rofocn_prognostic,                    &
        ocn_present, ocn_prognostic, ocnrof_prognostic,                    &
        ocn_c2_glcshelf, ocn_c2_glctf,                                     &
@@ -1039,7 +1045,7 @@ CONTAINS
        budget_ann, budget_ltann, budget_ltend , force_stop_at,            &
        histaux_a2x    , histaux_a2x1hri, histaux_a2x1hr,                  &
        histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yrg,                 &
-       histaux_a2x24hr, histaux_l2x   , histaux_r2x     , histaux_double_precision, &
+       histaux_a2x24hr, histaux_l2x   , histaux_r2x     , histaux_z2x , histaux_double_precision, &
        orb_obliq, histavg_atm, histavg_lnd, histavg_ocn, histavg_ice,     &
        histavg_rof, histavg_glc, histavg_wav, histavg_xao, histavg_iac,   &
        orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
@@ -1148,6 +1154,7 @@ CONTAINS
     logical,                optional, intent(OUT) :: histaux_l2x1yrg
     logical,                optional, intent(OUT) :: histaux_l2x
     logical,                optional, intent(OUT) :: histaux_r2x
+    logical,                optional, intent(OUT) :: histaux_z2x
     logical,                optional, intent(OUT) :: histaux_double_precision
     logical,                optional, intent(OUT) :: histavg_atm
     logical,                optional, intent(OUT) :: histavg_lnd
@@ -1185,6 +1192,7 @@ CONTAINS
     logical,                optional, intent(OUT) :: atm_prognostic          ! need data
     logical,                optional, intent(OUT) :: lnd_present
     logical,                optional, intent(OUT) :: lnd_prognostic
+    logical,                optional, intent(OUT) :: lndocn_prognostic
     logical,                optional, intent(OUT) :: rof_present
     logical,                optional, intent(OUT) :: rofice_present
     logical,                optional, intent(OUT) :: rof_prognostic
@@ -1338,6 +1346,7 @@ CONTAINS
     if ( present(histaux_l2x1yrg)) histaux_l2x1yrg= infodata%histaux_l2x1yrg
     if ( present(histaux_l2x)    ) histaux_l2x    = infodata%histaux_l2x
     if ( present(histaux_r2x)    ) histaux_r2x    = infodata%histaux_r2x
+    if ( present(histaux_z2x)    ) histaux_z2x    = infodata%histaux_z2x
     if ( present(histaux_double_precision)) histaux_double_precision = infodata%histaux_double_precision
     if ( present(histavg_atm)    ) histavg_atm    = infodata%histavg_atm
     if ( present(histavg_lnd)    ) histavg_lnd    = infodata%histavg_lnd
@@ -1375,6 +1384,7 @@ CONTAINS
     if ( present(atm_prognostic) ) atm_prognostic = infodata%atm_prognostic
     if ( present(lnd_present)    ) lnd_present    = infodata%lnd_present
     if ( present(lnd_prognostic) ) lnd_prognostic = infodata%lnd_prognostic
+    if ( present(lndocn_prognostic) ) lndocn_prognostic = infodata%lndocn_prognostic
     if ( present(rof_present)    ) rof_present    = infodata%rof_present
     if ( present(rofice_present) ) rofice_present = infodata%rofice_present
     if ( present(rof_prognostic) ) rof_prognostic = infodata%rof_prognostic
@@ -1577,7 +1587,7 @@ CONTAINS
        single_column, scmlat,scmlon,logFilePostFix, outPathRoot,          &
        scm_multcols, scm_nx, scm_ny,                                      &
        atm_present, atm_prognostic,                                       &
-       lnd_present, lnd_prognostic,                                       &
+       lnd_present, lnd_prognostic, lndocn_prognostic,                    &
        rof_present, rof_prognostic, rofocn_prognostic,                    &
        ocn_present, ocn_prognostic, ocnrof_prognostic,                    &
        ocn_c2_glcshelf, ocn_c2_glctf,                                     &
@@ -1603,7 +1613,7 @@ CONTAINS
        budget_ann, budget_ltann, budget_ltend ,                           &
        histaux_a2x    , histaux_a2x1hri, histaux_a2x1hr,                  &
        histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yrg,                 &
-       histaux_a2x24hr, histaux_l2x   , histaux_r2x     , histaux_double_precision,  &
+       histaux_a2x24hr, histaux_l2x   , histaux_r2x     , histaux_z2x    , histaux_double_precision,  &
        orb_obliq, histavg_atm, histavg_lnd, histavg_ocn, histavg_ice,     &
        histavg_rof, histavg_glc, histavg_wav, histavg_xao, histavg_iac,   &
        orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
@@ -1712,6 +1722,7 @@ CONTAINS
     logical,                optional, intent(IN)    :: histaux_double_precision
     logical,                optional, intent(IN)    :: histaux_l2x
     logical,                optional, intent(IN)    :: histaux_r2x
+    logical,                optional, intent(IN)    :: histaux_z2x
     logical,                optional, intent(IN)    :: histavg_atm
     logical,                optional, intent(IN)    :: histavg_lnd
     logical,                optional, intent(IN)    :: histavg_ocn
@@ -1748,6 +1759,7 @@ CONTAINS
     logical,                optional, intent(IN)    :: atm_prognostic     ! need data
     logical,                optional, intent(IN)    :: lnd_present
     logical,                optional, intent(IN)    :: lnd_prognostic
+    logical,                optional, intent(IN)    :: lndocn_prognostic
     logical,                optional, intent(IN)    :: rof_present
     logical,                optional, intent(IN)    :: rofice_present
     logical,                optional, intent(IN)    :: rof_prognostic
@@ -1900,6 +1912,7 @@ CONTAINS
     if ( present(histaux_l2x1yrg)) infodata%histaux_l2x1yrg= histaux_l2x1yrg
     if ( present(histaux_l2x)    ) infodata%histaux_l2x    = histaux_l2x
     if ( present(histaux_r2x)    ) infodata%histaux_r2x    = histaux_r2x
+    if ( present(histaux_z2x)    ) infodata%histaux_z2x    = histaux_z2x
     if ( present(histaux_double_precision)) infodata%histaux_double_precision = histaux_double_precision
     if ( present(histavg_atm)    ) infodata%histavg_atm    = histavg_atm
     if ( present(histavg_lnd)    ) infodata%histavg_lnd    = histavg_lnd
@@ -1937,6 +1950,7 @@ CONTAINS
     if ( present(atm_prognostic) ) infodata%atm_prognostic = atm_prognostic
     if ( present(lnd_present)    ) infodata%lnd_present    = lnd_present
     if ( present(lnd_prognostic) ) infodata%lnd_prognostic = lnd_prognostic
+    if ( present(lndocn_prognostic) ) infodata%lndocn_prognostic = lndocn_prognostic
     if ( present(rof_present)    ) infodata%rof_present    = rof_present
     if ( present(rofice_present) ) infodata%rofice_present = rofice_present
     if ( present(rof_prognostic) ) infodata%rof_prognostic = rof_prognostic
@@ -2214,6 +2228,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%histaux_l2x1yrg       ,  mpicom)
     call shr_mpi_bcast(infodata%histaux_l2x           ,  mpicom)
     call shr_mpi_bcast(infodata%histaux_r2x           ,  mpicom)
+    call shr_mpi_bcast(infodata%histaux_z2x           ,  mpicom)
     call shr_mpi_bcast(infodata%histaux_double_precision,mpicom)
     call shr_mpi_bcast(infodata%histavg_atm           ,  mpicom)
     call shr_mpi_bcast(infodata%histavg_lnd           ,  mpicom)
@@ -2253,6 +2268,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%atm_prognostic,          mpicom)
     call shr_mpi_bcast(infodata%lnd_present,             mpicom)
     call shr_mpi_bcast(infodata%lnd_prognostic,          mpicom)
+    call shr_mpi_bcast(infodata%lndocn_prognostic,       mpicom)
     call shr_mpi_bcast(infodata%rof_present,             mpicom)
     call shr_mpi_bcast(infodata%rofice_present,          mpicom)
     call shr_mpi_bcast(infodata%rof_prognostic,          mpicom)
@@ -2524,6 +2540,7 @@ CONTAINS
     if (lnd2cpli) then
        call shr_mpi_bcast(infodata%lnd_present,        mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%lnd_prognostic,     mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%lndocn_prognostic,  mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%lnd_nx,             mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%lnd_ny,             mpicom, pebcast=cmppe)
        ! dead_comps is true if it's ever set to true
@@ -2620,6 +2637,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%atm_prognostic,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%lnd_present,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%lnd_prognostic,     mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%lndocn_prognostic,  mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%rof_present,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%rofice_present,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%rof_prognostic,     mpicom, pebcast=cplpe)
@@ -2934,6 +2952,7 @@ CONTAINS
     write(logunit,F0L) subname,'histaux_l2x1yrg          = ', infodata%histaux_l2x1yrg
     write(logunit,F0L) subname,'histaux_l2x              = ', infodata%histaux_l2x
     write(logunit,F0L) subname,'histaux_r2x              = ', infodata%histaux_r2x
+    write(logunit,F0L) subname,'histaux_z2x              = ', infodata%histaux_z2x
     write(logunit,F0L) subname,'histaux_double_precision = ', infodata%histaux_double_precision
     write(logunit,F0L) subname,'histavg_atm              = ', infodata%histavg_atm
     write(logunit,F0L) subname,'histavg_lnd              = ', infodata%histavg_lnd
@@ -2982,6 +3001,7 @@ CONTAINS
     write(logunit,F0L) subname,'atm_prognostic           = ', infodata%atm_prognostic
     write(logunit,F0L) subname,'lnd_present              = ', infodata%lnd_present
     write(logunit,F0L) subname,'lnd_prognostic           = ', infodata%lnd_prognostic
+    write(logunit,F0L) subname,'lndocn_prognostic        = ', infodata%lndocn_prognostic
     write(logunit,F0L) subname,'rof_present              = ', infodata%rof_present
     write(logunit,F0L) subname,'rofice_present           = ', infodata%rofice_present
     write(logunit,F0L) subname,'rof_prognostic           = ', infodata%rof_prognostic

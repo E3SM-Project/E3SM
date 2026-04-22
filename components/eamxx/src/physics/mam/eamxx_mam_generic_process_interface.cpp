@@ -97,12 +97,13 @@ const std::pair<Real, Real> MAMGenericInterface::get_ranges(
 // ================================================================
 void MAMGenericInterface::add_fields_cloudborne_aerosol() {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
   auto q_unit           = kg / kg;  // units of mass mixing ratios of tracers
   auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
   const auto &grid_name = grid_->name();
 
   //Layout for 3D scalar fields at midpoints(col, level))
-  FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
+  FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(LEV);
 
   // ---------------------------------------------------------------------
   // These variables are "Updated" or inputs/outputs for the process
@@ -135,10 +136,11 @@ void MAMGenericInterface::add_fields_cloudborne_aerosol() {
 
 void MAMGenericInterface::add_tracers_interstitial_aerosol() {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
   auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
   auto n_unit = 1 / kg;   // units of number mixing ratios of tracers
 
-  FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
+  FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(LEV);
 
   // ---------------------------------------------------------------------
   // These variables are "Updated" or inputs/outputs for the process
@@ -170,14 +172,15 @@ void MAMGenericInterface::add_tracers_interstitial_aerosol() {
 // ================================================================
 
 void MAMGenericInterface::add_tracers_gases() {
-  //Note that the gas list in MAM4 is: 
+  //Note that the gas list in MAM4 is:
   //{"O3",  "H2O2", "H2SO4", "SO2", "DMS",  "SOAG"}
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
   constexpr auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
   const auto &grid_name = grid_->name();
 
   //Layout for 3D scalar fields at midpoints(col, level))
-  const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
+  const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(LEV);
 
   //O3 can be prescribed or prognostic depending upon the user input
   //Index of Ozone in the gas list (currently order of species is fixed)
@@ -356,7 +359,7 @@ void MAMGenericInterface::populate_dry_atm(mam_coupling::DryAtmosphere &dry_atm,
   dry_atm.dz = buffer.dz;
 
   // geopotential height above surface at interface levels (m)
-  dry_atm.z_iface = buffer.z_iface;
+  dry_atm.z_iface = get_field_out("z_mam4_int").get_view< Real **>();
 
   // geopotential height above surface at mid levels (m)
   dry_atm.z_mid = buffer.z_mid;
@@ -399,8 +402,8 @@ void MAMGenericInterface::add_fields_dry_atm() {
   const auto &grid_name = grid_->name();
   const int ncol =
       grid_->get_num_local_dofs();  // Number of columns on this rank
-  const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
-  const FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
+  const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(LEV);
+  const FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(ILEV);
   // layout for 2D (1d horiz X 1d vertical) variable
   FieldLayout scalar2d_layout_col{{COL}, {ncol}};
   using namespace ekat::units;
@@ -426,6 +429,9 @@ void MAMGenericInterface::add_fields_dry_atm() {
 
   // cloud fraction [nondimensional] computed by eamxx_cld_fraction_process
   add_field<Required>("cldfrac_tot", scalar3d_mid, nondim, grid_name);
+
+  // geopotential height above surface at interface levels (m)
+  add_field<Updated>("z_mam4_int", scalar3d_int, m, grid_name);
 }
 
 // ================================================================

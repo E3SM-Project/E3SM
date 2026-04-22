@@ -1,16 +1,12 @@
 #include "eamxx_cld_fraction_process_interface.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
-
-#include <ekat_assert.hpp>
-#include <ekat_units.hpp>
-
-#include <array>
+#include "physics/cld_fraction/cld_fraction_functions.hpp"
 
 #ifdef EAMXX_HAS_PYTHON
-#include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
-namespace py = pybind11;
+#include "share/atm_process/atmosphere_process_pyhelpers.hpp"
 #endif
+
+#include <array>
 
 namespace scream
 {
@@ -23,16 +19,18 @@ CldFraction::CldFraction (const ekat::Comm& comm, const ekat::ParameterList& par
 }
 
 // =========================================================================================
-void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void CldFraction::create_requests()
 {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
+  using CldFractionFunc = cld_fraction::CldFractionFunctions<Real, DefaultDevice>;
+  using Pack           = CldFractionFunc::Pack;
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto nondim = Units::nondimensional();
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
@@ -40,7 +38,7 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
   // Define the different field layouts that will be used for this process
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
+  auto scalar3d_layout_mid = m_grid->get_3d_scalar_layout(LEV);
 
   // Set of fields used strictly as input
   constexpr int ps = Pack::n;
@@ -77,6 +75,11 @@ void CldFraction::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<Interval>(get_field_out("cldfrac_tot"),m_grid,0.0,1.0,false);
   add_postcondition_check<Interval>(get_field_out("cldfrac_ice_for_analysis"),m_grid,0.0,1.0,false);
   add_postcondition_check<Interval>(get_field_out("cldfrac_tot_for_analysis"),m_grid,0.0,1.0,false);
+#ifdef EAMXX_HAS_PYTHON
+  if (has_py_module()) {
+    py_module_call("init");
+  }
+#endif
 }
 
 // =========================================================================================
@@ -90,46 +93,65 @@ void CldFraction::run_impl (const double /* dt */)
   auto tot_cld_frac = get_field_out("cldfrac_tot");
   auto ice_cld_frac_4out = get_field_out("cldfrac_ice_for_analysis");
   auto tot_cld_frac_4out = get_field_out("cldfrac_tot_for_analysis");
+
 #ifdef EAMXX_HAS_PYTHON
-  if (m_py_module.has_value()) {
-    // For now, we run Python code only on CPU
-    const auto& py_fields = m_py_fields_host.at(m_grid->name());
+  if (has_py_module()) {
+    pybind11::array py_qi,
+                    py_liq_cld_frac,
+                    py_ice_cld_frac,
+                    py_tot_cld_frac,
+                    py_ice_cld_frac_4out,
+                    py_tot_cld_frac_4out;
 
-    const auto& py_qi                = std::any_cast<const py::array&>(py_fields.at("qi"));
-    const auto& py_liq_cld_frac      = std::any_cast<const py::array&>(py_fields.at("cldfrac_liq"));
-    const auto& py_ice_cld_frac      = std::any_cast<const py::array&>(py_fields.at("cldfrac_ice"));
-    const auto& py_tot_cld_frac      = std::any_cast<const py::array&>(py_fields.at("cldfrac_tot"));
-    const auto& py_ice_cld_frac_4out = std::any_cast<const py::array&>(py_fields.at("cldfrac_ice_for_analysis"));
-    const auto& py_tot_cld_frac_4out = std::any_cast<const py::array&>(py_fields.at("cldfrac_tot_for_analysis"));
+    if (m_params.get<std::string>("py_backend")=="device") {
+      py_qi                = get_py_field_dev("qi");
+      py_liq_cld_frac      = get_py_field_dev("cldfrac_liq");
+      py_ice_cld_frac      = get_py_field_dev("cldfrac_ice");
+      py_tot_cld_frac      = get_py_field_dev("cldfrac_tot");
+      py_ice_cld_frac_4out = get_py_field_dev("cldfrac_ice_for_analysis");
+      py_tot_cld_frac_4out = get_py_field_dev("cldfrac_tot_for_analysis");
+    } else {
+      qi.sync_to_host();
+      liq_cld_frac.sync_to_host();
+      py_qi                = get_py_field_host("qi");
+      py_liq_cld_frac      = get_py_field_host("cldfrac_liq");
+      py_ice_cld_frac      = get_py_field_host("cldfrac_ice");
+      py_tot_cld_frac      = get_py_field_host("cldfrac_tot");
+      py_ice_cld_frac_4out = get_py_field_host("cldfrac_ice_for_analysis");
+      py_tot_cld_frac_4out = get_py_field_host("cldfrac_tot_for_analysis");
+    }
 
-    // Sync input to host
-    liq_cld_frac.sync_to_host();
-
-    const auto& py_module = std::any_cast<const py::module&>(m_py_module);
     double ice_threshold      = m_params.get<double>("ice_cloud_threshold");
     double ice_4out_threshold = m_params.get<double>("ice_cloud_for_analysis_threshold");
-    py_module.attr("main")(ice_threshold,ice_4out_threshold,py_qi,py_liq_cld_frac,py_ice_cld_frac,py_tot_cld_frac,py_ice_cld_frac_4out,py_tot_cld_frac_4out);
 
-    // Sync outputs to dev
-    qi.sync_to_dev();
-    liq_cld_frac.sync_to_dev();
-    ice_cld_frac.sync_to_dev();
-    tot_cld_frac.sync_to_dev();
-    ice_cld_frac_4out.sync_to_dev();
-    tot_cld_frac_4out.sync_to_dev();
-  } else
-#endif
-  {
-    auto qi_v                = qi.get_view<const Pack**>();
-    auto liq_cld_frac_v      = liq_cld_frac.get_view<const Pack**>();
-    auto ice_cld_frac_v      = ice_cld_frac.get_view<Pack**>();
-    auto tot_cld_frac_v      = tot_cld_frac.get_view<Pack**>();
-    auto ice_cld_frac_4out_v = ice_cld_frac_4out.get_view<Pack**>();
-    auto tot_cld_frac_4out_v = tot_cld_frac_4out.get_view<Pack**>();
+    py_module_call("main",
+                   ice_threshold,ice_4out_threshold,
+                   py_qi,py_liq_cld_frac,
+                   py_ice_cld_frac,py_tot_cld_frac,
+                   py_ice_cld_frac_4out,py_tot_cld_frac_4out);
 
-    CldFractionFunc::main(m_num_cols,m_num_levs,m_icecloud_threshold,m_icecloud_for_analysis_threshold,
-      qi_v,liq_cld_frac_v,ice_cld_frac_v,tot_cld_frac_v,ice_cld_frac_4out_v,tot_cld_frac_4out_v);
+    if (m_params.get<std::string>("py_backend")=="host") {
+      ice_cld_frac.sync_to_dev();
+      tot_cld_frac.sync_to_dev();
+      ice_cld_frac_4out.sync_to_dev();
+      tot_cld_frac_4out.sync_to_dev();
+    }
+    return;
   }
+#endif
+
+  using CldFractionFunc = cld_fraction::CldFractionFunctions<Real, DefaultDevice>;
+  using Pack = CldFractionFunc::Pack;
+
+  auto qi_v                = qi.get_view<const Pack**>();
+  auto liq_cld_frac_v      = liq_cld_frac.get_view<const Pack**>();
+  auto ice_cld_frac_v      = ice_cld_frac.get_view<Pack**>();
+  auto tot_cld_frac_v      = tot_cld_frac.get_view<Pack**>();
+  auto ice_cld_frac_4out_v = ice_cld_frac_4out.get_view<Pack**>();
+  auto tot_cld_frac_4out_v = tot_cld_frac_4out.get_view<Pack**>();
+
+  CldFractionFunc::main(m_num_cols,m_num_levs,m_icecloud_threshold,m_icecloud_for_analysis_threshold,
+    qi_v,liq_cld_frac_v,ice_cld_frac_v,tot_cld_frac_v,ice_cld_frac_4out_v,tot_cld_frac_4out_v);
 }
 
 // =========================================================================================

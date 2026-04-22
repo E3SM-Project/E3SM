@@ -19,7 +19,9 @@ module cosp_c2f
                                  modis_histTauCenters,tau_binCenters,ntauV1p4,            &
                                  tau_binBoundsV1p4,tau_binEdgesV1p4, tau_binCentersV1p4,  &
                                  grLidar532_histBsct,atlid_histBsct,vgrid_zu,vgrid_zl,    &
-                                 Nlvgrid, vgrid_z,cloudsat_preclvl
+                                 Nlvgrid, vgrid_z,cloudsat_preclvl,                       &
+                                 npres,pres_binCenters,pres_binEdges,                     &
+                                 nhgt,hgt_binCenters,hgt_binEdges
   use cosp_phys_constants, only: amw,amd,amO3,amCO2,amCH4,amN2O,amCO
   use mod_quickbeam_optics,only: size_distribution,hydro_class_init,quickbeam_optics,     &
                                  quickbeam_optics_init,gases
@@ -365,6 +367,25 @@ contains
     misr_cthtau(:npoints,:,:) = cospOUT%misr_fq(:npoints,:,:)
 
   end subroutine cosp_c2f_run
+
+  subroutine cosp_c2f_get_bins(tau_centers, tau_edges, prs_centers, prs_edges, &
+       cth_centers, cth_edges) bind(C, name='cosp_c2f_get_bins')
+    ! Returns COSP histogram bin centers and edges (from mod_cosp_config) to C++.
+    ! Array shapes follow Fortran column-major convention (first index varies fastest
+    ! in memory), so tau_edges(1,i) = lower and tau_edges(2,i) = upper for bin i.
+    real(kind=c_double), intent(out), dimension(ntau)      :: tau_centers
+    real(kind=c_double), intent(out), dimension(2,ntau)    :: tau_edges
+    real(kind=c_double), intent(out), dimension(npres)     :: prs_centers
+    real(kind=c_double), intent(out), dimension(2,npres)   :: prs_edges
+    real(kind=c_double), intent(out), dimension(nhgt)      :: cth_centers
+    real(kind=c_double), intent(out), dimension(2,nhgt)    :: cth_edges
+    tau_centers = real(tau_binCenters,  c_double)
+    tau_edges   = real(tau_binEdges,    c_double)
+    prs_centers = real(pres_binCenters, c_double)
+    prs_edges   = real(pres_binEdges,   c_double)
+    cth_centers = real(hgt_binCenters,  c_double)
+    cth_edges   = real(hgt_binEdges,    c_double)
+  end subroutine cosp_c2f_get_bins
 
   subroutine cosp_c2f_final() bind(C, name='cosp_c2f_final')
     call destroy_cospIN(cospIN)

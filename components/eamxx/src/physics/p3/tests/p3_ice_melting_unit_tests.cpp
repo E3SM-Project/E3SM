@@ -4,7 +4,7 @@
 #include "p3_test_data.hpp"
 #include "p3_unit_tests_common.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -21,8 +21,8 @@ struct UnitWrap::UnitTest<D>::TestP3IceMelting : public UnitWrap::UnitTest<D>::B
 {
 
 void ice_melting_bfb() {
-  constexpr Scalar latvap = C::LatVap;
-  constexpr Scalar latice = C::LatIce;
+  constexpr Scalar latvap = C::LatVap.value;
+  constexpr Scalar latice = C::LatIce.value;
 
   // make array of input data (why not pass actual variables?). Copied 1st 4 rows 4x to fill pack size.
   IceMeltingData IceMelt[max_pack_size] = {
@@ -64,11 +64,11 @@ void ice_melting_bfb() {
 
   // Run the lookup from a kernel and copy results back to host
   Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-    const Int offset = i * Spack::n;
+    const Int offset = i * Pack::n;
 
     // Init pack inputs
-    Spack rho,T_atm,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,dv,sc,mu,kap,qv,qi_incld,ni_incld,qi2qr_melt_tend,ni2nr_melt_tend;
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    Pack rho,T_atm,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,dv,sc,mu,kap,qv,qi_incld,ni_incld,qi2qr_melt_tend,ni2nr_melt_tend;
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       rho[s]                       = IceMelt_device(vs).rho;
       T_atm[s]                     = IceMelt_device(vs).T_atm;
       pres[s]                      = IceMelt_device(vs).pres;
@@ -88,7 +88,7 @@ void ice_melting_bfb() {
 
     Functions::ice_melting(rho,T_atm,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,dv,sc,mu,kap,qv,qi_incld,ni_incld,qi2qr_melt_tend,ni2nr_melt_tend);
     // Copy results back into views
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       IceMelt_device(vs).qi2qr_melt_tend = qi2qr_melt_tend[s];
       IceMelt_device(vs).ni2nr_melt_tend = ni2nr_melt_tend[s];
     }

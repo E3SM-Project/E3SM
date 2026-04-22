@@ -14,7 +14,21 @@ namespace {
 using ExeSpace = KokkosTypes<DefaultDevice>::ExeSpace;
 using bfbhash::HashType;
 
-void hash (const Field::view_dev_t<const Real*>& v,
+template<typename T>
+void hash (const Field::view_dev_t<const T>& v,
+           HashType& accum_out) {
+  HashType accum = 0;
+  Kokkos::parallel_reduce(
+    Kokkos::RangePolicy<ExeSpace>(0, 1),
+    KOKKOS_LAMBDA(const int, HashType& accum) {
+      bfbhash::hash(v(), accum);
+    }, bfbhash::HashReducer<>(accum));
+  Kokkos::fence();
+  bfbhash::hash(accum, accum_out);
+}
+
+template<typename T>
+void hash (const Field::view_dev_t<const T*>& v,
            const FieldLayout& lo, HashType& accum_out) {
   HashType accum = 0;
   Kokkos::parallel_reduce(
@@ -26,7 +40,8 @@ void hash (const Field::view_dev_t<const Real*>& v,
   bfbhash::hash(accum, accum_out);
 }
 
-void hash (const Field::view_dev_t<const Real**>& v,
+template<typename T>
+void hash (const Field::view_dev_t<const T**>& v,
            const FieldLayout& lo, HashType& accum_out) {
   HashType accum = 0;
   const auto& dims = lo.extents();
@@ -41,7 +56,8 @@ void hash (const Field::view_dev_t<const Real**>& v,
   bfbhash::hash(accum, accum_out);
 }
 
-void hash (const Field::view_dev_t<const Real***>& v,
+template<typename T>
+void hash (const Field::view_dev_t<const T***>& v,
            const FieldLayout& lo, HashType& accum_out) {
   HashType accum = 0;
   const auto& dims = lo.extents();
@@ -56,7 +72,8 @@ void hash (const Field::view_dev_t<const Real***>& v,
   bfbhash::hash(accum, accum_out);
 }
 
-void hash (const Field::view_dev_t<const Real****>& v,
+template<typename T>
+void hash (const Field::view_dev_t<const T****>& v,
            const FieldLayout& lo, HashType& accum_out) {
   HashType accum = 0;
   const auto& dims = lo.extents();
@@ -71,7 +88,8 @@ void hash (const Field::view_dev_t<const Real****>& v,
   bfbhash::hash(accum, accum_out);
 }
 
-void hash (const Field::view_dev_t<const Real*****>& v,
+template<typename T>
+void hash (const Field::view_dev_t<const T*****>& v,
            const FieldLayout& lo, HashType& accum_out) {
   HashType accum = 0;
   const auto& dims = lo.extents();
@@ -91,19 +109,45 @@ void hash (const Field& f, HashType& accum) {
   const auto& id = hd.get_identifier();
   const auto& lo = id.get_layout();
   const auto rank = lo.rank();
-  switch (rank) {
-  case 1: hash(f.get_view<const Real*    >(), lo, accum); break;
-  case 2: hash(f.get_view<const Real**   >(), lo, accum); break;
-  case 3: hash(f.get_view<const Real***  >(), lo, accum); break;
-  case 4: hash(f.get_view<const Real**** >(), lo, accum); break;
-  case 5: hash(f.get_view<const Real*****>(), lo, accum); break;
-  default: break;
+  if (f.data_type()==DataType::RealType) {
+    switch (rank) {
+      case 0: hash(f.get_view<const Real     >(),     accum); break;
+      case 1: hash(f.get_view<const Real*    >(), lo, accum); break;
+      case 2: hash(f.get_view<const Real**   >(), lo, accum); break;
+      case 3: hash(f.get_view<const Real***  >(), lo, accum); break;
+      case 4: hash(f.get_view<const Real**** >(), lo, accum); break;
+      case 5: hash(f.get_view<const Real*****>(), lo, accum); break;
+      default: break;
+    }
+  } else if (f.data_type()==DataType::IntType) {
+    switch (rank) {
+      case 0: hash(f.get_view<const int     >(),     accum); break;
+      case 1: hash(f.get_view<const int*    >(), lo, accum); break;
+      case 2: hash(f.get_view<const int**   >(), lo, accum); break;
+      case 3: hash(f.get_view<const int***  >(), lo, accum); break;
+      case 4: hash(f.get_view<const int**** >(), lo, accum); break;
+      case 5: hash(f.get_view<const int*****>(), lo, accum); break;
+      default: break;
+    }
+  } else {
+    EKAT_ERROR_MSG (
+        "Error! Cannot hash field, unsupported data type.\n"
+        " - name: " + f.name() + "\n"
+        " - type: " + e2str(f.data_type()) + "\n");
   }
 }
 
 void hash (const std::list<Field>& fs, HashType& accum) {
   for (const auto& f : fs)
     hash(f, accum);
+}
+
+template<typename Lambda>
+void hash_if (const std::list<Field>& fs, HashType& accum, const Lambda& condition) {
+  for (const auto& f : fs) {
+    if (condition(f))
+      hash(f, accum);
+  }
 }
 
 void hash (const std::list<FieldGroup>& fgs, HashType& accum) {
@@ -116,36 +160,37 @@ void hash (const std::list<FieldGroup>& fgs, HashType& accum) {
 
 void AtmosphereProcess
 ::print_global_state_hash (const std::string& label, const TimeStamp& t,
-                           const bool in, const bool out, const bool internal,
+                           const bool pre_run,
                            const Real* mem, const int nmem) const
 {
-  const bool compute[4] = {in, out, internal, mem!=nullptr};
-
   std::vector<std::string> hash_names;
   std::vector<HashType> laccum;
 
   // When calling printf later, how much space does the hash name take (we'll update later)
   int slen = 0;
+
+  auto process_internal_field = [&](const Field& f) {
+    return not pre_run or ekat::contains(f.get_header().get_tracking().get_groups_names(),"RESTART");
+  };
+
   // Compute local hashes
   if (m_internal_diagnostics_level==1) {
     // Lump fields together (but keep in/out/internal separated)
-    if (compute[0]) {
+    if (pre_run) {
       laccum.emplace_back();
       hash(m_fields_in, laccum.back());
       hash(m_groups_in, laccum.back());
       hash_names.push_back("inputs");
-    }
-    if (compute[1]) {
+    } else {
       laccum.emplace_back();
       hash(m_fields_out, laccum.back());
       hash(m_groups_out, laccum.back());
       hash_names.push_back("outputs");
     }
-    if (compute[2]) {
-      laccum.emplace_back();
-      hash(m_internal_fields, laccum.back());
-      hash_names.push_back("internals");
-    }
+
+    laccum.emplace_back();
+    hash_if(m_internal_fields, laccum.back(),process_internal_field);
+    hash_names.push_back("internals");
 
     slen = 10;
   } else if (m_internal_diagnostics_level==2) {
@@ -156,7 +201,7 @@ void AtmosphereProcess
       const auto& fl = fid.get_layout();
       return f.name() + " (" + ekat::join(fl.names(),",") + ") <" + fid.get_grid_name() + ">";
     };
-    if (compute[0]) {
+    if (pre_run) {
       for (const auto& f : m_fields_in) {
         laccum.emplace_back();
         hash_names.push_back(make_hash_name(f));
@@ -169,8 +214,7 @@ void AtmosphereProcess
           hash(*f,laccum.back());
         }
       }
-    }
-    if (compute[1]) {
+    } else {
       for (const auto& f : m_fields_out) {
         laccum.emplace_back();
         hash_names.push_back(make_hash_name(f));
@@ -184,16 +228,17 @@ void AtmosphereProcess
         }
       }
     }
-    if (compute[2]) {
-      for (const auto& f : m_internal_fields) {
-        laccum.emplace_back();
-        hash_names.push_back(make_hash_name(f));
+
+    for (const auto& f : m_internal_fields) {
+      laccum.emplace_back();
+      hash_names.push_back(make_hash_name(f));
+      if (process_internal_field(f))
         hash(f,laccum.back());
-      }
     }
   }
 
-  if (compute[3]) {
+  // If provided, also hash the raw memory content
+  if (mem!=nullptr) {
     laccum.emplace_back();
 
     Kokkos::parallel_reduce(

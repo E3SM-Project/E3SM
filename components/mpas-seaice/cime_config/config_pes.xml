@@ -17,7 +17,7 @@
       </pes>
     </mach>
     <!-- machine-specific generic defaults -->
-    <mach name="anvil|compy">
+    <mach name="anvil|compy|bebop">
       <pes compset="any" pesize="any">
         <comment>seaice: default, 4 nodes x MAX_MPITASKS_PER_NODE mpi x 1 omp @ root 0</comment>
         <ntasks>
@@ -113,21 +113,6 @@
           <ntasks_glc>-1</ntasks_glc>
           <ntasks_wav>-1</ntasks_wav>
           <ntasks_cpl>-1</ntasks_cpl>
-        </ntasks>
-      </pes>
-    </mach>
-    <mach name="gcp12">
-      <pes compset="any" pesize="any">
-        <comment>seaice+gcp12: default 1 node</comment>
-        <ntasks>
-          <ntasks_atm>56</ntasks_atm>
-          <ntasks_lnd>56</ntasks_lnd>
-          <ntasks_rof>56</ntasks_rof>
-          <ntasks_ice>56</ntasks_ice>
-          <ntasks_ocn>56</ntasks_ocn>
-          <ntasks_glc>16</ntasks_glc>
-          <ntasks_wav>16</ntasks_wav>
-          <ntasks_cpl>56</ntasks_cpl>
         </ntasks>
       </pes>
     </mach>

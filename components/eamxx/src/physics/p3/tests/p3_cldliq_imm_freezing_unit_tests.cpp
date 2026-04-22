@@ -4,7 +4,7 @@
 #include "p3_test_data.hpp"
 #include "p3_unit_tests_common.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -29,8 +29,8 @@ void run_bfb()
   // large enough to affect the warm-phase process rates qc2qr_accret_tend and nc_accret_tend.
   constexpr Scalar qsmall = C::QSMALL;
 
-  constexpr Scalar t_freezing = 0.9 * C::T_rainfrz,
-                   t_not_freezing = 2.0 * C::T_rainfrz;
+  constexpr Scalar t_freezing = 0.9 * C::T_rainfrz.value,
+                   t_not_freezing = 2.0 * C::T_rainfrz.value;
   constexpr Scalar qc_incld_small = 0.9 * qsmall;
   constexpr Scalar qc_incld_not_small = 2.0 * qsmall;
   constexpr Scalar lamc1 = 0.1, lamc2 = 0.2, lamc3 = 0.3, lamc4 = 0.4;
@@ -77,11 +77,11 @@ void run_bfb()
 
   // Run the lookup from a kernel and copy results back to host
   Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-    const Int offset = i * Spack::n;
+    const Int offset = i * Pack::n;
 
     // Init pack inputs
-    Spack T_atm, lamc, mu_c, cdist1, qc_incld,inv_qc_relvar;
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    Pack T_atm, lamc, mu_c, cdist1, qc_incld,inv_qc_relvar;
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       T_atm[s]        = device_data(vs).T_atm;
       lamc[s]         = device_data(vs).lamc;
       mu_c[s]         = device_data(vs).mu_c;
@@ -90,8 +90,8 @@ void run_bfb()
       inv_qc_relvar[s]= device_data(vs).inv_qc_relvar;
     }
 
-    Spack qc2qi_hetero_freeze_tend{0.0};
-    Spack nc2ni_immers_freeze_tend{0.0};
+    Pack qc2qi_hetero_freeze_tend{0.0};
+    Pack nc2ni_immers_freeze_tend{0.0};
 
     Functions::cldliq_immersion_freezing(
         T_atm, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar,
@@ -99,7 +99,7 @@ void run_bfb()
         p3::Functions<Real,DefaultDevice>::P3Runtime());
 
     // Copy results back into views
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       device_data(vs).qc2qi_hetero_freeze_tend  = qc2qi_hetero_freeze_tend[s];
       device_data(vs).nc2ni_immers_freeze_tend  = nc2ni_immers_freeze_tend[s];
     }

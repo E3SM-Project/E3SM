@@ -43,10 +43,10 @@ public:
   std::string name () const { return m_group_name; }
 
   // Grab the proper grid from the grids manager
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void create_requests ();
 
   // Setup the tendencies requests for this group, as well as for all procs in the group
-  void setup_tendencies_requests ();
+  void setup_step_tendencies (const std::string& default_grid);
 
   // --- Methods specific to AtmosphereProcessGroup --- //
   int get_num_processes () const { return m_atm_processes.size(); }
@@ -119,15 +119,10 @@ public:
 
 protected:
 
-  // Adds fid to the list of required/computed fields of the group (as a whole).
-  void process_required_field (const FieldRequest& req);
-  void process_required_group (const GroupRequest& req);
-
   // The initialization, run, and finalization methods
   void initialize_impl(const RunType run_type);
-  void initialize_impl ();
-  void run_impl        (const double dt);
-  void finalize_impl   (/* what inputs? */);
+  void run_impl       (const double dt);
+  void finalize_impl  (/* what inputs? */);
 
   void run_sequential (const double dt);
   void run_parallel   (const double dt);
@@ -147,9 +142,6 @@ protected:
 
   // The schedule type: Parallel vs Sequential
   ScheduleType   m_group_schedule_type;
-
-  // This is only needed to be able to access grids objects later on
-  std::shared_ptr<const GridsManager>   m_grids_mgr;
 };
 
 } // namespace scream

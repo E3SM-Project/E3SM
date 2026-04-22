@@ -450,7 +450,7 @@ contains
           this%leafcmax_patch(p) = 0._r8
 
           l = veg_pp%landunit(p)
-          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+          if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
 
              if (veg_pp%itype(p) == noveg) then
                 this%leafc_patch(p)         = 0._r8
@@ -569,7 +569,7 @@ contains
     ! initialize column-level variables
     do c = bounds%begc, bounds%endc
        l = col_pp%landunit(c)
-       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+       if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
 
 
           this%cwdc_col(c)       = 0._r8
@@ -921,10 +921,11 @@ contains
     call p2c(bounds, num_soilc, filter_soilc, &
          this%totvegc_abg_patch(bounds%begp:bounds%endp), &
          this%totvegc_abg_col(bounds%begc:bounds%endc))
-
-    call p2c(bounds, num_soilc, filter_soilc, &
-         this%cropseedc_deficit_patch(bounds%begp:bounds%endp), &
-         cropseedc_deficit_col(bounds%begc:bounds%endc))
+    if ( crop_prog )then
+      call p2c(bounds, num_soilc, filter_soilc, &
+            this%cropseedc_deficit_patch(bounds%begp:bounds%endp), &
+            cropseedc_deficit_col(bounds%begc:bounds%endc))
+    end if
 
     ! column level summary
 
@@ -1102,8 +1103,11 @@ contains
             this%totlitc_col(c)  + &
             this%totsomc_col(c)  + &
             this%prod1c_col(c)   + &
-            this%ctrunc_col(c)   + &
-            cropseedc_deficit_col(c)
+            this%ctrunc_col(c)
+
+       if (crop_prog )then
+         this%totcolc_col(c) = this%totcolc_col(c) + cropseedc_deficit_col(c)
+       end if
             
        this%totabgc_col(c) = &
             this%totpftc_col(c)  + &

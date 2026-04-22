@@ -5,8 +5,8 @@ module prep_lnd_mod
   use shr_kind_mod    , only: cl => SHR_KIND_CL
   use shr_kind_mod    , only: cxx => SHR_KIND_CXX
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
-  use seq_comm_mct    , only: num_inst_atm, num_inst_rof, num_inst_glc
-  use seq_comm_mct    , only: num_inst_lnd, num_inst_frc
+  use seq_comm_mct    , only: num_inst_atm, num_inst_rof, num_inst_glc, num_inst_iac
+  use seq_comm_mct    , only: num_inst_lnd, num_inst_frc, num_inst_ocn
   use seq_comm_mct    , only: CPLID, LNDID, logunit
   use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
@@ -17,7 +17,7 @@ module prep_lnd_mod
   use mct_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
-  use component_type_mod, only: lnd, atm, rof, glc
+  use component_type_mod, only: lnd, atm, rof, glc, iac, ocn
   use map_glc2lnd_mod   , only: map_glc2lnd_ec
 
   implicit none
@@ -31,10 +31,14 @@ module prep_lnd_mod
   public :: prep_lnd_init
   public :: prep_lnd_mrg
 
+  public :: prep_lnd_accum_ocn
+  public :: prep_lnd_accum_avg
+
   public :: prep_lnd_calc_a2x_lx
   public :: prep_lnd_calc_r2x_lx
   public :: prep_lnd_calc_g2x_lx
   public :: prep_lnd_calc_z2x_lx
+  public :: prep_lnd_calc_o2x_lx
 
   public :: prep_lnd_get_a2x_lx
   public :: prep_lnd_get_r2x_lx
@@ -46,6 +50,7 @@ module prep_lnd_mod
   public :: prep_lnd_get_mapper_Fr2l
   public :: prep_lnd_get_mapper_Sg2l
   public :: prep_lnd_get_mapper_Fg2l
+  public :: prep_lnd_get_mapper_Sz2l
 
   !--------------------------------------------------------------------------
   ! Private interfaces
@@ -64,12 +69,21 @@ module prep_lnd_mod
   type(seq_map), pointer :: mapper_Fr2l           ! needed in seq_frac_mct.F90
   type(seq_map), pointer :: mapper_Sg2l           ! currently unused (all g2l mappings use the flux mapper)
   type(seq_map), pointer :: mapper_Fg2l
+  type(seq_map), pointer :: mapper_Sz2l
+  type(seq_map), pointer :: mapper_So2l
+  type(seq_map), pointer :: mapper_Fo2l
+
 
   ! attribute vectors
   type(mct_aVect), pointer :: a2x_lx(:) ! Atm export, lnd grid, cpl pes - allocated in driver
   type(mct_aVect), pointer :: r2x_lx(:) ! Rof export, lnd grid, lnd pes - allocated in lnd gc
   type(mct_aVect), pointer :: g2x_lx(:) ! Glc export, lnd grid, cpl pes - allocated in driver
   type(mct_aVect), pointer :: z2x_lx(:) ! Iac export, lnd grid, cpl pes - allocated in driver
+  type(mct_aVect), pointer :: o2x_lx(:) ! Ocn export, lnd grid, cpl pes - allocated in 
+
+  ! accumulation variables
+  type(mct_aVect), pointer :: o2lacc_ox(:)  ! Ocn export, ocn grid, cpl pes
+  integer        , target  :: o2lacc_ox_cnt ! o2lacc_ox: number of time samples accumulated
 
   ! seq_comm_getData variables
   integer :: mpicom_CPLID                         ! MPI cpl communicator
@@ -89,7 +103,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd, iac_c2_lnd)
+  subroutine prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd, iac_c2_lnd, ocn_c2_lnd)
 
     !---------------------------------------------------------------
     ! Description
@@ -102,21 +116,30 @@ contains
     logical                 , intent(in)    :: rof_c2_lnd ! .true.  => rof to lnd coupling on
     logical                 , intent(in)    :: glc_c2_lnd ! .true.  => glc to lnd coupling on
     logical                 , intent(in)    :: iac_c2_lnd ! .true.  => iac to lnd coupling on
+    logical                 , intent(in)    :: ocn_c2_lnd ! .true.  => ocn to lnd coupling on
     !
     ! Local Variables
-    integer                  :: lsize_l
-    integer                  :: eai, eri, egi
+    integer                  :: lsize_l, lsize_o
+    integer                  :: eai, eri, egi, ezi, eoi
     logical                  :: samegrid_al   ! samegrid atm and land
     logical                  :: samegrid_lr   ! samegrid land and rof
     logical                  :: samegrid_lg   ! samegrid land and glc
+    logical                  :: samegrid_lz   ! samegrid land and iac
+    logical                  :: samegrid_ol   ! samegrid ocn and land
     logical                  :: esmf_map_flag ! .true. => use esmf for mapping
     logical                  :: lnd_present   ! .true. => land is present
+    logical                  :: iac_present   ! .true. => iac is present
+    logical                  :: ocn_present   ! .true. => ocean is present
     logical                  :: iamroot_CPLID ! .true. => CPLID masterproc
     character(CL)            :: atm_gnam      ! atm grid
     character(CL)            :: lnd_gnam      ! lnd grid
     character(CL)            :: rof_gnam      ! rof grid
     character(CL)            :: glc_gnam      ! glc grid
+    character(CL)            :: iac_gnam      ! iac grid
+    character(CL)            :: ocn_gnam      ! ocn grid 
     type(mct_avect), pointer :: l2x_lx
+    type(mct_avect), pointer :: o2x_ox 
+    type(mct_avect), pointer :: x2l_lx
     character(*), parameter  :: subname = '(prep_lnd_init)'
     character(*), parameter  :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
@@ -124,16 +147,23 @@ contains
     call seq_infodata_getData(infodata, &
          esmf_map_flag=esmf_map_flag,   &
          lnd_present=lnd_present,       &
+         iac_present=iac_present,       &
          atm_gnam=atm_gnam,             &
          lnd_gnam=lnd_gnam,             &
+         ocn_present=ocn_present,       &
+         ocn_gnam=ocn_gnam,             &
          rof_gnam=rof_gnam,             &
-         glc_gnam=glc_gnam)
+         glc_gnam=glc_gnam,             &
+         iac_gnam=iac_gnam)
 
     allocate(mapper_Sa2l)
     allocate(mapper_Fa2l)
     allocate(mapper_Fr2l)
     allocate(mapper_Sg2l)
     allocate(mapper_Fg2l)
+    allocate(mapper_Sz2l)
+    allocate(mapper_So2l)
+    allocate(mapper_Fo2l)
 
     if (lnd_present) then
 
@@ -159,12 +189,62 @@ contains
           call mct_aVect_zero(g2x_lx(egi))
        end do
 
+! KVC: If we keep this if statement, then land only runs don't work
+!       if (iac_present) then
+          allocate(z2x_lx(num_inst_iac))
+          do ezi = 1,num_inst_iac
+             call mct_avect_init(z2x_lx(ezi), rList=seq_flds_z2x_fields, lsize=lsize_l)
+             call mct_avect_zero(z2x_lx(ezi))
+          end do
+!       end if
+
+       allocate(o2x_lx(num_inst_ocn))
+       do eoi = 1,num_inst_ocn
+          call mct_aVect_init(o2x_lx(eoi), rlist=seq_flds_o2x_fields_to_lnd, lsize=lsize_l)
+          call mct_aVect_zero(o2x_lx(eoi))
+       end do
+       
+       if (ocn_present) then
+          o2x_ox => component_get_c2x_cx(ocn(1))
+          x2l_lx => component_get_x2c_cx(lnd(1))
+          lsize_o = mct_aVect_lsize(o2x_ox)
+          allocate(o2lacc_ox(num_inst_ocn))
+          do eoi = 1,num_inst_ocn
+             call mct_aVect_initSharedFields(o2x_ox, x2l_lx, o2lacc_ox(eoi), lsize=lsize_o)
+             call mct_aVect_zero(o2lacc_ox(eoi))
+          end do
+          o2lacc_ox_cnt = 0
+
+          samegrid_ol = .true. 
+          if (trim(ocn_gnam) /= trim(lnd_gnam)) samegrid_ol = .false.
+
+          if (ocn_c2_lnd) then
+             if (iamroot_CPLID) then
+                write(logunit,*) ' '
+                write(logunit,F00) 'Initializing mapper_So2l'
+             end if
+             call seq_map_init_rcfile(mapper_So2l, ocn(1), lnd(1), &
+                  'seq_maps.rc','ocn2lnd_smapname:','ocn2lnd_smaptype:',samegrid_ol, &
+                  string='mapper_So2l initialization', esmf_map=esmf_map_flag)
+
+             call seq_map_init_rcfile(mapper_Fo2l, ocn(1), lnd(1), &
+                  'seq_maps.rc','ocn2lnd_fmapname:','ocn2lnd_fmaptype:',samegrid_ol, &
+                  string='mapper_Fo2l initialization', esmf_map=esmf_map_flag)
+
+          endif
+
+          call shr_sys_flush(logunit)
+
+       endif
+
        samegrid_al = .true.
        samegrid_lr = .true.
        samegrid_lg = .true.
+       samegrid_lz = .true.
        if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
        if (trim(lnd_gnam) /= trim(rof_gnam)) samegrid_lr = .false.
        if (trim(lnd_gnam) /= trim(glc_gnam)) samegrid_lg = .false.
+       if (trim(lnd_gnam) /= trim(iac_gnam)) samegrid_lz = .false.
 
        if (rof_c2_lnd) then
           if (iamroot_CPLID) then
@@ -174,6 +254,17 @@ contains
           call seq_map_init_rcfile(mapper_Fr2l, rof(1), lnd(1), &
                'seq_maps.rc','rof2lnd_fmapname:','rof2lnd_fmaptype:',samegrid_lr, &
                string='mapper_Fr2l initialization',esmf_map=esmf_map_flag)
+       end if
+       call shr_sys_flush(logunit)
+
+       if (iac_c2_lnd) then
+          if (iamroot_CPLID) then
+             write(logunit,*) ' '
+             write(logunit,F00) 'Initializing mapper_Sz2l'
+          end if
+          call seq_map_init_rcfile(mapper_Sz2l, iac(1), lnd(1), &
+               'seq_maps.rc','iac2lnd_smapname:','iac2lnd_smaptype:',samegrid_lz, &
+               string='mapper_Sz2l initialization',esmf_map=esmf_map_flag)
        end if
        call shr_sys_flush(logunit)
 
@@ -275,7 +366,7 @@ contains
     character(len=*)     , intent(in)    :: timer_mrg
     !
     ! Local Variables
-    integer                  :: eai, eri, egi, eli
+    integer                  :: eai, eri, egi, eli, ezi, eoi
     type(mct_aVect), pointer :: x2l_lx
     character(*), parameter  :: subname = '(prep_lnd_mrg)'
     !---------------------------------------------------------------
@@ -286,9 +377,11 @@ contains
        eai = mod((eli-1),num_inst_atm) + 1
        eri = mod((eli-1),num_inst_rof) + 1
        egi = mod((eli-1),num_inst_glc) + 1
+       ezi = mod((eli-1),num_inst_iac) + 1
+       eoi = mod((eli-1),num_inst_ocn) + 1
 
        x2l_lx => component_get_x2c_cx(lnd(eli))  ! This is actually modifying x2l_lx
-       call prep_lnd_merge( a2x_lx(eai), r2x_lx(eri), g2x_lx(egi), x2l_lx )
+       call prep_lnd_merge( a2x_lx(eai), r2x_lx(eri), g2x_lx(egi), z2x_lx(ezi), o2x_lx(eoi), x2l_lx )
     enddo
     call t_drvstopf (trim(timer_mrg))
 
@@ -296,7 +389,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_lnd_merge( a2x_l, r2x_l, g2x_l, x2l_l )
+  subroutine prep_lnd_merge( a2x_l, r2x_l, g2x_l, z2x_l, o2x_l, x2l_l )
     !---------------------------------------------------------------
     ! Description
     ! Create input land state directly from atm, runoff and glc outputs
@@ -305,6 +398,8 @@ contains
     type(mct_aVect), intent(in)     :: a2x_l
     type(mct_aVect), intent(in)     :: r2x_l
     type(mct_aVect), intent(in)     :: g2x_l
+    type(mct_aVect), intent(in)     :: z2x_l
+    type(mct_aVect), intent(in)     :: o2x_l
     type(mct_aVect), intent(inout)  :: x2l_l
     !-----------------------------------------------------------------------
     integer       :: nflds,i,i1,o1
@@ -315,6 +410,8 @@ contains
     type(mct_aVect_sharedindices),save :: a2x_sharedindices
     type(mct_aVect_sharedindices),save :: r2x_sharedindices
     type(mct_aVect_sharedindices),save :: g2x_sharedindices
+    type(mct_aVect_sharedindices),save :: z2x_sharedindices
+    type(mct_aVect_sharedindices),save :: o2x_sharedindices
     character(*), parameter   :: subname = '(prep_lnd_merge) '
 
     !-----------------------------------------------------------------------
@@ -333,6 +430,8 @@ contains
        call mct_aVect_setSharedIndices(a2x_l, x2l_l, a2x_SharedIndices)
        call mct_aVect_setSharedIndices(r2x_l, x2l_l, r2x_SharedIndices)
        call mct_aVect_setSharedIndices(g2x_l, x2l_l, g2x_SharedIndices)
+       call mct_aVect_setSharedIndices(z2x_l, x2l_l, z2x_SharedIndices)
+       call mct_aVect_setSharedIndices(o2x_l, x2l_l, o2x_SharedIndices)
 
        !--- document copy operations ---
        do i=1,a2x_SharedIndices%shared_real%num_indices
@@ -353,11 +452,40 @@ contains
           field = mct_aVect_getRList2c(i1, g2x_l)
           mrgstr(o1) = trim(mrgstr(o1))//' = g2x%'//trim(field)
        enddo
+
+       do i=1,z2x_SharedIndices%shared_real%num_indices
+          i1=z2x_SharedIndices%shared_real%aVindices1(i)
+          o1=z2x_SharedIndices%shared_real%aVindices2(i)
+          field = mct_aVect_getRList2c(i1, z2x_l)
+          mrgstr(o1) = trim(mrgstr(o1))//' = z2x%'//trim(field)
+      enddo
+
+       do i=1,o2x_SharedIndices%shared_real%num_indices
+          i1=o2x_SharedIndices%shared_real%aVindices1(i)
+          o1=o2x_SharedIndices%shared_real%aVindices2(i)
+          field = mct_aVect_getRList2c(i1, o2x_l)
+          mrgstr(o1) = trim(mrgstr(o1))//' = o2x%'//trim(field)
+       enddo
+       
+       if (ocn_lnd_one_way) then
+          call mct_aVect_setSharedIndices(o2x_l, x2l_l, o2x_SharedIndices)
+          do i=1,o2x_SharedIndices%shared_real%num_indices
+             i1=o2x_SharedIndices%shared_real%aVindices1(i)
+             o1=o2x_SharedIndices%shared_real%aVindices2(i)
+             field = mct_aVect_getRList2c(i1, o2x_l)
+             mrgstr(o1) = trim(mrgstr(o1))//' = o2x%'//trim(field)
+          enddo
+       endif
+
     endif
 
     call mct_aVect_copy(aVin=a2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=a2x_SharedIndices)
     call mct_aVect_copy(aVin=r2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=r2x_SharedIndices)
     call mct_aVect_copy(aVin=g2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
+    call mct_aVect_copy(aVin=z2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=z2x_SharedIndices)
+    if (ocn_lnd_one_way) then
+       call mct_aVect_copy(aVin=o2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=o2x_SharedIndices)
+    endif
 
     if (first_time) then
        if (iamroot) then
@@ -490,17 +618,106 @@ contains
     character(len=*)     , intent(in) :: timer
     !
     ! Local Variables
-    integer :: egi
-    type(mct_aVect), pointer :: z2x_gx
+    integer :: ezi
+    type(mct_aVect), pointer :: z2x_zx
     character(*), parameter :: subname = '(prep_lnd_calc_z2x_lx)'
     !---------------------------------------------------------------
 
-    ! Stub
-
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+    do ezi = 1,num_inst_iac
+       z2x_zx => component_get_c2x_cx(iac(ezi))
+       call seq_map_map(mapper_Sz2l, z2x_zx, z2x_lx(ezi), norm=.true.)
+    enddo
+    call t_drvstopf  (trim(timer))
   end subroutine prep_lnd_calc_z2x_lx
 
   !================================================================================================
 
+  subroutine prep_lnd_calc_o2x_lx(timer)
+    !---------------------------------------------------------------
+    ! Description
+    ! Create o2x_lx (note that 2x_lx is a local module variable)
+    !
+    ! Arguments
+    character(len=*), intent(in) :: timer
+    !
+    ! Local Variables
+    integer :: eli, eoi
+    type(mct_avect), pointer :: l2x_lx
+    character(*), parameter :: subname = '(prep_lnd_calc_o2x_lx)'
+    !---------------------------------------------------------------
+
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+    do eli = 1,num_inst_lnd
+       eoi = mod((eli-1),num_inst_ocn) + 1
+       l2x_lx => component_get_c2x_cx(lnd(eli))
+       call seq_map_map(mapper_So2l, o2lacc_ox(eoi), o2x_lx(eli), fldlist=seq_flds_o2x_states_to_lnd, norm=.true.)
+    end do
+    call t_drvstopf  (trim(timer))
+
+  end subroutine prep_lnd_calc_o2x_lx
+
+  !================================================================================================
+
+  subroutine prep_lnd_accum_ocn(timer)
+    !---------------------------------------------------------------
+    ! Description
+    ! Accumulate ocean input to land component
+    !
+    ! Arguments
+    character(len=*), intent(in) :: timer
+    !
+    ! Local Variables
+    integer :: eoi
+    type(mct_aVect), pointer :: o2x_ox
+    character(*), parameter  :: subname = '(prep_lnd_accum_ocn)'
+    !---------------------------------------------------------------
+
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+
+    do eoi = 1,num_inst_ocn
+       o2x_ox => component_get_c2x_cx(ocn(eoi))
+       if (o2lacc_ox_cnt == 0) then
+          call mct_avect_copy(o2x_ox, o2lacc_ox(eoi))
+       else
+          call mct_avect_accum(o2x_ox, o2lacc_ox(eoi))
+       endif
+    end do
+    o2lacc_ox_cnt = o2lacc_ox_cnt + 1
+
+    call t_drvstopf (trim(timer))
+  end subroutine prep_lnd_accum_ocn
+
+  !================================================================================================
+
+  subroutine prep_lnd_accum_avg(timer)
+    !---------------------------------------------------------------
+    ! Description
+    ! Finalize accumulation of ocean input to land component
+    !
+    ! Arguments
+    character(len=*), intent(in) :: timer
+    !
+    ! Local Variables
+    integer :: eli, eoi
+    character(*), parameter :: subname = '(prep_lnd_accum_avg)'
+    !---------------------------------------------------------------
+
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+    if(o2lacc_ox_cnt > 1) then
+       do eli = 1,num_inst_lnd
+          eoi = mod((eli-1),num_inst_ocn) + 1
+          call mct_avect_avg(o2lacc_ox(eoi),o2lacc_ox_cnt)
+       enddo
+    endif
+    o2lacc_ox_cnt = 0
+
+    call t_drvstopf (trim(timer))
+
+  end subroutine prep_lnd_accum_avg
+
+  !================================================================================================
+  
   function prep_lnd_get_a2x_lx()
     type(mct_aVect), pointer :: prep_lnd_get_a2x_lx(:)
     prep_lnd_get_a2x_lx => a2x_lx(:)
@@ -545,5 +762,10 @@ contains
     type(seq_map), pointer :: prep_lnd_get_mapper_Fg2l
     prep_lnd_get_mapper_Fg2l => mapper_Fg2l
   end function prep_lnd_get_mapper_Fg2l
+
+  function prep_lnd_get_mapper_Sz2l()
+    type(seq_map), pointer :: prep_lnd_get_mapper_Sz2l
+    prep_lnd_get_mapper_Sz2l => mapper_Sz2l
+  end function prep_lnd_get_mapper_Sz2l
 
 end module prep_lnd_mod

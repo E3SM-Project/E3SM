@@ -46,7 +46,7 @@ contains
     use kinds,       only : real_kind
     use hybrid_mod,  only : hybrid_t
     use element_mod, only : element_t
-    use dimensions_mod, only : np, nelemd
+    use dimensions_mod, only : np
     use physical_constants, only : dd_pi, domain_size
     use parallel_mod, only: global_shared_buf, global_shared_sum
 
@@ -57,7 +57,6 @@ contains
 
     real (kind=real_kind) :: I_sphere
 
-    real (kind=real_kind) :: I_priv
     real (kind=real_kind) :: I_shared
     common /gblintcom/I_shared
 
@@ -109,7 +108,7 @@ contains
     use kinds,       only : real_kind
     use hybrid_mod,  only : hybrid_t
     use element_mod, only : element_t
-    use dimensions_mod, only : np,ne, nelem, nelemd
+    use dimensions_mod, only : np,ne, nelem
     use mesh_mod,     only : MeshUseMeshFile          
 
     use reduction_mod, only : ParallelMin,ParallelMax
@@ -133,7 +132,7 @@ contains
     real (kind=real_kind) :: min_min_dx, max_min_dx, avg_min_dx
     real (kind=real_kind) :: min_normDinv, max_normDinv
     real (kind=real_kind) :: min_len
-    integer :: ie,corner, i, j,nlon
+    integer :: ie
 
 
     h(:,:,nets:nete)=1.0D0
@@ -196,7 +195,6 @@ contains
     min_area = min_area*scale_factor*scale_factor/1000000_real_kind
     max_area = max_area*scale_factor*scale_factor/1000000_real_kind
     avg_area = avg_area*scale_factor*scale_factor/1000000_real_kind
-
 
     ! for an equation du/dt = i c u, leapfrog is stable for |c u dt| < 1
     ! Consider a gravity wave at the equator, c=340m/s  
@@ -265,7 +263,7 @@ contains
     type (hybrid_t)      , intent(in) :: hybrid
 
     ! Element statisics
-    real (kind=real_kind) :: min_max_dx,max_unif_dx   ! used for normalizing scalar HV
+    real (kind=real_kind) :: min_max_dx ! used for normalizing scalar HV
     real (kind=real_kind) :: max_normDinv  ! used for CFL
     real (kind=real_kind) :: normDinv_hypervis
     real (kind=real_kind) :: lambda_max, lambda_vis, min_gw, lambda, nu_div_actual, nu_top_actual

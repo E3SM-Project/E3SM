@@ -1,5 +1,22 @@
 include (ScreamUtils)
 
+set (EAMXX_AD_TEST_CPP ${CMAKE_CURRENT_LIST_DIR}/eamxx_ad_test.cpp)
+
+# Shortcut utils to create a unit test that uses the atm driver
+# These functions call the equivalent ones in ScreamUtils with some hardcoded
+# libs/sources, like IO, diags, and control
+function(CreateADUnitTestExec exec_name)
+  CreateUnitTestExec("${exec_name}" "${EAMXX_AD_TEST_CPP}"
+    LIBS scream_control eamxx_io eamxx_diagnostics ${ARGN})
+endfunction(CreateADUnitTestExec)
+
+function(CreateADUnitTest test_name)
+  CreateUnitTest("${test_name}" "${EAMXX_AD_TEST_CPP}"
+    LABELS driver LIBS scream_control eamxx_io eamxx_diagnostics ${ARGN})
+endfunction(CreateADUnitTest)
+
+###############################################################################
+
 # This function compares an output file created by an AD-driven test with its
 # corresponding one in the baselines dir. The inputs (all REQUIRED) are
 #
@@ -49,9 +66,6 @@ function (CreateBaselineTest TEST_BASE_NAME GEN_TEST_NRANKS OUT_FILE FIXTURES_BA
   )
 
 endfunction()
-
-# Some tests for checking that certain testing infrastructures work
-add_subdirectory(generic)
 
 if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
   # memcheck builds (and also coverage ones) can just run the max ranks, since they

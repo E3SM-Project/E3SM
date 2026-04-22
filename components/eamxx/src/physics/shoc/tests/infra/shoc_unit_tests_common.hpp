@@ -2,9 +2,9 @@
 #define SHOC_UNIT_TESTS_COMMON_HPP
 
 #include "shoc_functions.hpp"
-#include "share/eamxx_types.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
-#include "physics/share/physics_test_data.hpp"
+#include "share/core/eamxx_types.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
+#include "share/physics/physics_test_data.hpp"
 
 namespace scream {
 namespace shoc {
@@ -43,10 +43,9 @@ struct UnitWrap {
 
     using Functions          = scream::shoc::Functions<Real, Device>;
     using Scalar             = typename Functions::Scalar;
-    using Spack              = typename Functions::Spack;
     using Pack               = typename Functions::Pack;
-    using IntSmallPack       = typename Functions::IntSmallPack;
-    using Smask              = typename Functions::Smask;
+    using IntPack       = typename Functions::IntPack;
+    using Mask               = typename Functions::Mask;
     using C                  = typename Functions::C;
 
     struct Base : public UnitBase {

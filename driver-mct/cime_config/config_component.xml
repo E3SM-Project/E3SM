@@ -556,7 +556,7 @@
   <entry id="BATCH_SYSTEM">
      <type>char</type>
      <default_value>none</default_value>
-     <valid_values>miller_slurm,nersc_slurm,lc_slurm,moab,pbs,pbspro,lsf,slurm,cobalt,cobalt_theta,slurm_single_node,none</valid_values>
+     <valid_values>frontier_slurm,miller_slurm,nersc_slurm,lc_slurm,moab,pbs,pbspro,lsf,slurm,cobalt,cobalt_theta,slurm_single_node,none</valid_values>
      <group>config_batch</group>
      <file>env_batch.xml</file>
      <desc>The batch system type to use for this machine.</desc>
@@ -1085,8 +1085,8 @@
 
   <entry id="GLC_GRID">
     <type>char</type>
-    <valid_values>mpas.aisgis20km,mpas.ais20km,mpas.ais8to30km,mpas.ais4to20km,mpas.gis20km,mpas.gis4to40km,mpas.gis1to10km,mpas.gis1to10kmR2,null</valid_values>
-    <default_value>mpas.gis20km</default_value>
+    <valid_values>mpas.aisgis20km,mpas.ais20km,mpas.ais8to30km,mpas.ais4to20km,mpas.gis4to40km,mpas.gis1to10km,mpas.gis1to10kmR2,null</valid_values>
+    <default_value>mpas.gis4to40km</default_value>
     <group>build_grid</group>
     <file>env_build.xml</file>
     <desc>glacier (glc) grid - DO NOT EDIT (for experts only)</desc>
@@ -1501,6 +1501,23 @@
     <desc>atm2rof state mapping file decomp type</desc>
   </entry>
 
+  <entry id="ATM2IAC_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2iac state mapping file</desc>
+  </entry>
+
+  <entry id="ATM2IAC_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>X</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2iac state mapping file decomp type</desc>
+  </entry>
+
   <entry id="ATM2WAV_SMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
@@ -1516,6 +1533,23 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>atm2wav state mapping file decomp type</desc>
+  </entry>
+
+  <entry id="WAV2ATM_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>wav2atm state mapping file</desc>
+  </entry>
+
+  <entry id="WAV2ATM_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>wav2atm state mapping file decomp type</desc>
   </entry>
 
   <entry id="OCN2ATM_FMAPNAME">
@@ -1667,6 +1701,23 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>lnd2rof flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="LND2IAC_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>lnd2iac state mapping file</desc>
+  </entry>
+  
+  <entry id="LND2IAC_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>X</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>lnd2iac state mapping file decomp type</desc>
   </entry>
 
   <entry id="ROF2LND_FMAPNAME">
@@ -2003,6 +2054,23 @@
     <desc>ice2wav state mapping file decomp type</desc>
   </entry>
 
+   <entry id="WAV2ICE_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>wav2ice state mapping file</desc>
+  </entry>
+
+  <entry id="WAV2ICE_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>wav2ice state mapping file decomp type</desc>
+  </entry>
+
   <entry id="WAV2OCN_SMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
@@ -2018,6 +2086,23 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>wav2ocn state mapping file decomp type</desc>
+  </entry>
+
+  <entry id="WAV2OCN_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>wav2ocn flux mapping file</desc>
+  </entry>
+
+  <entry id="WAV2OCN_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>X</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>wav2ocn flux mapping file decomp type</desc>
   </entry>
 
   <entry id="IAC2ATM_FMAPNAME">
@@ -2088,6 +2173,74 @@
     <desc>iac2lnd state mapping file decomp type</desc>
   </entry>
 
+  <entry id="OCN2LND_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2lnd state mapping file</desc>
+  </entry>
+
+  <entry id="OCN2LND_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2lnd state mapping file decomp type</desc>
+  </entry>
+
+  <entry id="OCN2LND_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2lnd flux mapping file</desc>
+  </entry>
+
+  <entry id="OCN2LND_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2lnd flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="LND2OCN_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>lnd2ocn state mapping file</desc>
+  </entry>
+
+  <entry id="LND2OCN_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>lnd2ocn state mapping file decomp type</desc>
+  </entry>
+
+  <entry id="LND2OCN_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>lnd2ocn flux mapping file</desc>
+  </entry>
+
+  <entry id="LND2OCN_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>lnd2ocn flux mapping file decomp type</desc>
+  </entry>
+  
   <entry id="VECT_MAP">
     <type>char</type>
     <valid_values>none,npfix,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag</valid_values>
@@ -2646,7 +2799,7 @@
 
   <entry id="PIO_TYPENAME">
     <type>char</type>
-    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,netcdf4z,adios,adiosc,hdf5,default</valid_values>
+    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,netcdf4z,adios,adiosc,hdf5,hdf5c,default</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>

@@ -34,6 +34,15 @@ void ElementsDerivedState::init(const int num_elems) {
   m_divdp_proj        = ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>("derived_divdp_proj", m_num_elems);
   m_dpdiss_biharmonic = ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>("derived_dpdiss_biharmonic", m_num_elems);
   m_dpdiss_ave        = ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>("derived_dpdiss_ave", m_num_elems);
+
+  // allocate SGS diffusivity fields
+  m_turb_diff_mom  = ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>("turb_diff_mom",  m_num_elems);
+  m_turb_diff_heat = ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>("turb_diff_heat", m_num_elems);
+
+  // Initialize to zero
+  Kokkos::deep_copy(m_turb_diff_mom,  Scalar(0));
+  Kokkos::deep_copy(m_turb_diff_heat, Scalar(0));
+
 }
 
 void ElementsDerivedState::randomize(const int seed, const Real dp3d_min) {

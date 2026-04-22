@@ -1,8 +1,8 @@
 #ifndef SCREAM_TMS_FUNCTIONS_F90_HPP
 #define SCREAM_TMS_FUNCTIONS_F90_HPP
 
-#include "share/eamxx_types.hpp"
-#include "physics/share/physics_test_data.hpp"
+#include "share/core/eamxx_types.hpp"
+#include "share/physics/physics_test_data.hpp"
 
 #include "tms_functions.hpp"
 #include "physics_constants.hpp"

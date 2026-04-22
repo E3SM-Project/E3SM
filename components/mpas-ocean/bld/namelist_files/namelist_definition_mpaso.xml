@@ -678,6 +678,33 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- eddy_kinetic_energy_correction -->
+
+<entry id="config_eke_correction_enable" type="logical"
+	category="eddy_kinetic_energy_correction" group="eddy_kinetic_energy_correction">
+flag to enable the eddy kinetic energy corrections.  This parameterization is based on the work of Renault et al 2019 - https://doi.org/10.1029/2019MS001715 -- NOTE: this should only be used at for RRS6to18 resolution or finer
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eke_alpha" type="real"
+	category="eddy_kinetic_energy_correction" group="eddy_kinetic_energy_correction">
+'alpha' coefficent for computations of St in equation (10) of Renault et al (2019)
+
+Valid values: small negative values not too far from the default
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eke_beta" type="real"
+	category="eddy_kinetic_energy_correction" group="eddy_kinetic_energy_correction">
+'beta' coefficent for computation of St in equation (10) of Renault et al (2019)
+
+Valid values: small positive numbers not far from the default
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- eddy_parameterization -->
 
 <entry id="config_eddyMLD_dens_threshold" type="real"
@@ -733,7 +760,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_cvmix_background_scheme" type="char*1024"
 	category="cvmix" group="cvmix">
-Scheme for background diffusivity, 'constant' for constant with depth and space, 'BryanLewis' for vertically variable, 'none' for no background diffusivity
+Scheme for background diffusivity, 'constant' for constant with depth and space, 'latitude-dependent' for latitude dependence and constant in depth, 'BryanLewis' for vertically variable, 'none' for no background diffusivity
 
 Valid values: 'constant', 'BryanLewis', and 'none'
 Default: Defined in namelist_defaults.xml
@@ -741,9 +768,17 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_cvmix_background_diffusion" type="real"
 	category="cvmix" group="cvmix">
-Background vertical diffusion applied to tracer quantities
+Background vertical diffusion applied to tracer quantities. For 'latitude-dependent' this is the maximum value
 
 Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_background_diffusion_max_latitude" type="real"
+	category="cvmix" group="cvmix">
+For 'latitude-dependent' this is the maximum latitude at which background diffusivity is non-zero
+
+Valid values: Any real value between -90 and 90.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1094,6 +1129,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_momentum_use_active_wave" type="logical"
+	category="wave_coupling" group="wave_coupling">
+Flag for correcting momentum coupling in ocean due to waves. Requires config_use_active_wave = .true.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_n_stokes_drift_wavenumber_partitions" type="integer"
 	category="wave_coupling" group="wave_coupling">
 Number of wavenumber partitions to be used in reconstructing wave-induced Stokes drift profile
@@ -1283,7 +1326,7 @@ Default: Defined in namelist_defaults.xml
 	category="precip_scaling" group="precip_scaling">
 Initial guess scaling factor on precipitation fluxes in FOSI runs when config_precip_scaling_mode = 'time-dependent'.
 
-Valid values: Non-negative number between 0 and 1.0. Default value of 1.0 means no scaling.
+Valid values: Non-negative number. A default value of 1.0 indicates no scaling, but values greater than 1.0 can be used to scale up precipitation fluxes in order to achieve freshwater balance in FOSI runs.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1291,7 +1334,7 @@ Default: Defined in namelist_defaults.xml
 	category="precip_scaling" group="precip_scaling">
 Prescribed constant scaling factor on precipitation fluxes in FOSI runs when config_precip_scaling_mode = 'constant'.
 
-Valid values: Non-negative number between 0 and 1.0. Default value of 1.0 means no scaling.
+Valid values: Non-negative number between 0 and 1.0. Default value of 1.0 means no scaling, but values greater than 1.0 can be used to scale up precipitation fluxes in order to achieve freshwater balance in FOSI runs.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1697,11 +1740,11 @@ Default: Defined in namelist_defaults.xml
 
 <!-- land_ice -->
 
-<entry id="config_land_ice_draft_mode" type="character"
+<entry id="config_land_ice_draft_mode" type="char*1024"
 	category="land_ice" group="land_ice">
 Selects the mode in which land-ice draft is computed.
 
-Valid values= 'data,'pressure-dependent'
+Valid values: 'data', 'pressure-dependent'
 Default: Defined in namelist_defaults.xml
 </entry>
 

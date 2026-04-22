@@ -7,6 +7,7 @@ module seaice_core_interface
    use seaice_core
    use seaice_analysis_driver
    use mpas_log, only: mpas_log_write
+   use seaice_core_interface_structs
 
    implicit none
    public
@@ -240,6 +241,7 @@ module seaice_core_interface
           config_use_level_ice, &
           config_use_level_meltponds, &
           config_use_topo_meltponds, &
+          config_use_sealevel_meltponds, &
           config_use_aerosols, &
           config_use_brine, &
           config_use_vertical_biochemistry, &
@@ -366,6 +368,7 @@ module seaice_core_interface
      call MPAS_pool_get_config(configPool, "config_use_level_ice", config_use_level_ice)
      call MPAS_pool_get_config(configPool, "config_use_level_meltponds", config_use_level_meltponds)
      call MPAS_pool_get_config(configPool, "config_use_topo_meltponds", config_use_topo_meltponds)
+     call MPAS_pool_get_config(configPool, "config_use_sealevel_meltponds", config_use_sealevel_meltponds)
      call MPAS_pool_get_config(configPool, "config_use_aerosols", config_use_aerosols)
      call MPAS_pool_get_config(configPool, "config_use_brine", config_use_brine)
      call MPAS_pool_get_config(configPool, "config_use_vertical_tracers", config_use_vertical_tracers)
@@ -416,13 +419,15 @@ module seaice_core_interface
      call MPAS_pool_get_package(packagePool, "pkgColumnTracerEffectiveSnowDensityActive", pkgColumnTracerEffectiveSnowDensityActive)
      call MPAS_pool_get_package(packagePool, "pkgColumnTracerSnowGrainRadiusActive", pkgColumnTracerSnowGrainRadiusActive)
 
-     use_meltponds = (config_use_level_meltponds .or. config_use_topo_meltponds)
+     use_meltponds = (config_use_level_meltponds .or. &
+                      config_use_topo_meltponds .or. &
+                      config_use_sealevel_meltponds)
 
      pkgColumnTracerIceAgeActive       = config_use_ice_age
      pkgColumnTracerFirstYearIceActive = config_use_first_year_ice
      pkgColumnTracerLevelIceActive     = config_use_level_ice
      pkgColumnTracerPondsActive        = use_meltponds
-     pkgColumnTracerLidThicknessActive = (config_use_level_meltponds .or. config_use_topo_meltponds)
+     pkgColumnTracerLidThicknessActive = use_meltponds
      pkgColumnTracerAerosolsActive     = config_use_aerosols
 
      pkgTracerBrineActive                = config_use_brine
@@ -874,11 +879,5 @@ module seaice_core_interface
 #include "../inc/block_dimension_routines.inc"
 
 #include "../inc/define_packages.inc"
-
-#include "../inc/structs_and_variables.inc"
-
-#include "../inc/namelist_call.inc"
-
-#include "../inc/namelist_defines.inc"
 
 end module seaice_core_interface

@@ -1,0 +1,54 @@
+title: "[Brief Title for Feature] "
+labels: ["Feature Request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This template will help you fill out the New Feature Overview Document. You do not have to fill
+        out everything and will be able to edit the resulting page later.  NOTE. E3SM is not accepting new
+        feature requests for EAM or MPAS-Ocean.
+  - type: textarea
+    id: high-level-description
+    attributes:
+      label: High Level Description
+      description: "Include: High-level description of code changes and/or new code, an overview of the design, infrastructure changes if needed.  You can also attach figures or papers."
+      placeholder: "add text, figures, papers"
+    validations:
+      required: false
+  - type: textarea
+    id: improvements
+    attributes:
+      label: Expected Improvements
+      description: "Expected improvements and how these will be demonstrated"
+      placeholder: "add text"
+    validations:
+      required: false
+  - type: dropdown
+    id: performance
+    attributes:
+      label: Expected impact on performance
+      description: "Choose an option.  Use box below for future explanation"
+      options:
+        - Significant improvement
+        - Slight improvement
+        - No significant change
+        - Slight decline
+        - Significant decline
+    validations:
+      required: true
+  - type: textarea
+    id: perf-explanation
+    attributes:
+      label: Performance explanation
+      description: "Add more details on performance changes"
+      placeholder: "add text"
+    validations:
+      required: false
+  - type: textarea
+    id: publications
+    attributes:
+      label: Planned Publications
+      description: "If relevant and known, describe papers that will be published"
+      placeholder: "add text"
+    validations:
+      required: false

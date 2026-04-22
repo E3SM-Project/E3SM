@@ -31,25 +31,25 @@ MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
 // ================================================================
 //  SET_GRIDS
 // ================================================================
-void MAMSrfOnlineEmiss::set_grids(
-    const std::shared_ptr<const GridsManager> grids_manager) {
-  grid_                 = grids_manager->get_grid("physics");
+void MAMSrfOnlineEmiss::create_requests() {
+  grid_                 = m_grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
   nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
 
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
   constexpr auto m2     = pow(m, 2);
   constexpr auto s2     = pow(s, 2);
   constexpr auto nondim = ekat::units::Units::nondimensional();
 
   const FieldLayout scalar2d   = grid_->get_2d_scalar_layout();
-  const FieldLayout scalar3d_m = grid_->get_3d_scalar_layout(true);   // mid
-  const FieldLayout scalar3d_i = grid_->get_3d_scalar_layout(false);  // int
+  const FieldLayout scalar3d_m = grid_->get_3d_scalar_layout(LEV);   // mid
+  const FieldLayout scalar3d_i = grid_->get_3d_scalar_layout(ILEV);  // int
 
   // For U and V components of wind
-  const FieldLayout vector3d = grid_->get_3d_vector_layout(true, 2);
+  const FieldLayout vector3d = grid_->get_3d_vector_layout(LEV, 2);
 
   // For components of dust flux
   const FieldLayout vector4d = grid_->get_2d_vector_layout(4);
@@ -115,6 +115,7 @@ void MAMSrfOnlineEmiss::set_grids(
   dms.data_file    = m_params.get<std::string>("srf_emis_specifier_for_dms");
   dms.species_name = "dms";
   dms.sectors      = {"DMS"};
+  dms.scale_factor = m_params.get<Real>("srf_emis_scale_factor_for_dms", 1.0);
   srf_emiss_species_.push_back(dms);  // add to the vector
 
   //--------------------------------------------------------------------
@@ -328,7 +329,8 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //--------------------------------------------------------------------
   for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
     srfEmissFunc::update_srfEmiss_data_from_file(
-        ispec_srf.dataReader_, start_of_step_ts(), curr_month, *ispec_srf.horizInterp_,
+        ispec_srf.dataReader_, start_of_step_ts(), curr_month,
+        ispec_srf.scale_factor, *ispec_srf.horizInterp_,
         ispec_srf.data_end_);  // output
   }
 
@@ -441,7 +443,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
 
     // Update time state and if the month has changed, update the data.
     srfEmissFunc::update_srfEmiss_timestate(
-        ispec_srf.dataReader_, ts, *ispec_srf.horizInterp_,
+        ispec_srf.dataReader_, ts, *ispec_srf.horizInterp_, ispec_srf.scale_factor,
         // output
         ispec_srf.timeState_, ispec_srf.data_start_, ispec_srf.data_end_);
 

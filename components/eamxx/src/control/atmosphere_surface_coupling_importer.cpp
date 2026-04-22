@@ -1,7 +1,7 @@
 #include "atmosphere_surface_coupling_importer.hpp"
 
 #include "share/property_checks/field_within_interval_check.hpp"
-#include "physics/share/physics_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
 #include <ekat_assert.hpp>
 #include <ekat_units.hpp>
@@ -17,11 +17,11 @@ SurfaceCouplingImporter::SurfaceCouplingImporter (const ekat::Comm& comm, const 
 
 }
 // =========================================================================================
-void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void SurfaceCouplingImporter::create_requests()
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
 
   m_num_cols = m_grid->get_num_local_dofs();      // Number of columns on this rank
@@ -62,6 +62,8 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Computed>("sst",              scalar2d, K,       grid_name);
   //dust fluxes [kg/m^2/s]: Four flux values for eacch column
   add_field<Computed>("dstflx",           vector4d, kg/m2/s, grid_name);
+  // the correction term for air sea surface water thermo fixer
+  add_field<Computed>("h2otemp",          scalar2d, W/m2,    grid_name);
 
 }
 // =========================================================================================
@@ -75,18 +77,17 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
   EKAT_ASSERT_MSG(m_num_cols == sc_data_manager.get_field_size(),
                   "Error! Surface Coupling imports need to have size ncols.\n");
 
-  // The import data is of size ncols,num_cpl_imports. All other data is of size num_scream_imports
+#ifdef HAVE_MOAB
+  // MOAB layout: (num_cpl_imports, ncols) - column idx strides faster
+  m_cpl_imports_view_h = decltype(m_cpl_imports_view_h) (sc_data_manager.get_field_data_ptr(),
+                                                         m_num_cpl_imports, m_num_cols);
+#else
+  // MCT layout: (ncols, num_cpl_imports) - field idx strides faster
   m_cpl_imports_view_h = decltype(m_cpl_imports_view_h) (sc_data_manager.get_field_data_ptr(),
                                                          m_num_cols, m_num_cpl_imports);
+#endif
   m_cpl_imports_view_d = Kokkos::create_mirror_view_and_copy(DefaultDevice(),
                                                              m_cpl_imports_view_h);
-#ifdef HAVE_MOAB
-  // The import data is of size num_cpl_imports, ncol. All other data is of size num_scream_imports
-  m_moab_cpl_imports_view_h = decltype(m_moab_cpl_imports_view_h) (sc_data_manager.get_field_data_moab_ptr(),
-                                                         m_num_cpl_imports, m_num_cols);
-  m_moab_cpl_imports_view_d = Kokkos::create_mirror_view_and_copy(DefaultDevice(),
-                                                             m_moab_cpl_imports_view_h);
-#endif
   m_import_field_names = new name_t[m_num_scream_imports];
   std::memcpy(m_import_field_names, sc_data_manager.get_field_name_ptr(), m_num_scream_imports*32*sizeof(char));
 
@@ -164,14 +165,8 @@ void SurfaceCouplingImporter::do_import(const bool called_during_initialization)
   const int  num_cols           = m_num_cols;
   const int  num_imports        = m_num_scream_imports;
 
-  // Deep copy cpl host array to devic
-  Kokkos::deep_copy(m_cpl_imports_view_d,m_cpl_imports_view_h);
-#ifdef HAVE_MOAB
   // Deep copy cpl host array to device
-  const auto moab_cpl_imports_view_d = m_moab_cpl_imports_view_d;
-  Kokkos::deep_copy(m_moab_cpl_imports_view_d,m_moab_cpl_imports_view_h);
-#endif
-
+  Kokkos::deep_copy(m_cpl_imports_view_d,m_cpl_imports_view_h);
 
   // Unpack the fields
   auto unpack_policy = policy_type(0,num_imports*num_cols);
@@ -186,27 +181,13 @@ void SurfaceCouplingImporter::do_import(const bool called_during_initialization)
     // if this is during initialization, check whether or not the field should be imported
     bool do_import = (not called_during_initialization || info.transfer_during_initialization);
     if (do_import) {
-      info.data[offset] = cpl_imports_view_d(icol,info.cpl_indx)*info.constant_multiple;
-    }
-  });
-
 #ifdef HAVE_MOAB
-  Kokkos::parallel_for(unpack_policy, KOKKOS_LAMBDA(const int& i) {
-
-    const int icol   = i / num_imports;
-    const int ifield = i % num_imports;
-
-    const auto& info = col_info(ifield);
-
-    auto offset = icol*info.col_stride + info.col_offset;
-
-    // if this is during initialization, check whether or not the field should be imported
-    bool do_import = (not called_during_initialization || info.transfer_during_initialization);
-    if (do_import) {
-      info.data[offset] = moab_cpl_imports_view_d(info.cpl_indx, icol)*info.constant_multiple;
+      info.data[offset] = cpl_imports_view_d(info.cpl_indx, icol)*info.constant_multiple;
+#else
+      info.data[offset] = cpl_imports_view_d(icol,info.cpl_indx)*info.constant_multiple;
+#endif
     }
   });
-#endif
 
   if (m_iop_data_manager) {
     if (m_iop_data_manager->get_params().get<bool>("iop_srf_prop")) {
@@ -229,8 +210,8 @@ void SurfaceCouplingImporter::overwrite_iop_imports (const bool called_during_in
   // TODO: this is using the TS from the beg of the step. Should it use end_of_step_ts() instead?
   m_iop_data_manager->read_iop_file_data(start_of_step_ts());
 
-  static constexpr Real latvap = C::LatVap;
-  static constexpr Real stebol = C::stebol;
+  static constexpr Real latvap = C::LatVap.value;
+  static constexpr Real stebol = C::stebol.value;
 
   const auto& col_info_h = m_column_info_h;
   const auto& col_info_d = m_column_info_d;
@@ -273,9 +254,6 @@ void SurfaceCouplingImporter::overwrite_iop_imports (const bool called_during_in
       const auto& info_d = col_info_d(ifield);
       const auto offset = icol*info_d.col_stride + info_d.col_offset;
       info_d.data[offset] = col_val;
-#ifdef HAVE_MOAB
-   //  TODO
-#endif
     });
   }
 }

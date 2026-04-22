@@ -1,9 +1,9 @@
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/data_managers/field_manager.hpp"
 #include "share/field/field.hpp"
-#include "share/field/field_manager.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 namespace scream
 {
@@ -13,7 +13,6 @@ constexpr int nlevs_data   = 20;
 constexpr int nsteps_data  = 5;
 constexpr int dt_data      = 100;
 constexpr int nlevs_filled = 2;
-constexpr double fill_val  = 1e30;
 
 util::TimeStamp get_t0 () {
   return  util::TimeStamp ({2000,1,1},{12,0,0});
@@ -30,6 +29,7 @@ create_gm (const ekat::Comm& comm, const int ngcols, const int nlevs) {
   pl.set("aliases",vos_t{"physics"});
   pl.set<int>("number_of_global_columns", ngcols);
   pl.set<int>("number_of_vertical_levels", nlevs);
+  pl.set<int>("gid_base", 1);
 
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
   gm->build_grids();
@@ -48,8 +48,8 @@ create_fm (const std::shared_ptr<const AbstractGrid>& grid)
 
   const std::string& gn = grid->name();
 
-  auto scalar3d = grid->get_3d_scalar_layout(true);
-  auto vector3d = grid->get_3d_vector_layout(true,2);
+  auto scalar3d = grid->get_3d_scalar_layout(LEV);
+  auto vector3d = grid->get_3d_vector_layout(LEV,2);
 
   FieldIdentifier fid1("p_mid",scalar3d,Pa,gn);
   FieldIdentifier fid2("horiz_winds",vector3d,m/s,gn);
@@ -89,27 +89,27 @@ void compute_field (Field f,
     const auto f_h = f.get_view<Real**, Host>();
     for (int icol=0;icol<ncols;++icol) {
       for (int ilev=0; ilev<lev_beg; ++ilev) {
-        f_h(icol,ilev) = fill_val;
+        f_h(icol,ilev) = constants::fill_value<Real>;
       }
       for (int ilev=lev_beg;ilev<lev_end;++ilev) {
         f_h(icol,ilev) = step + (offset+icol)*nlevs + ilev + 1;
       }
       for (int ilev=lev_end; ilev<nlevs; ++ilev) {
-        f_h(icol,ilev) = fill_val;
+        f_h(icol,ilev) = constants::fill_value<Real>;
       }
     }
   } else {
     const auto f_h = f.get_view<Real***, Host>();
     for (int icol=0;icol<ncols;++icol) {
       for (int ilev=0; ilev<lev_beg; ++ilev) {
-        f_h(icol,0,ilev) = f_h(icol,1,ilev) = fill_val;
+        f_h(icol,0,ilev) = f_h(icol,1,ilev) = constants::fill_value<Real>;
       }
       for (int ilev=lev_beg;ilev<lev_end;++ilev) {
         f_h(icol,0,ilev) = step + (offset+icol)*2*nlevs + ilev + 1;
         f_h(icol,1,ilev) = step + (offset+icol)*2*nlevs + ilev + 1;
       }
       for (int ilev=lev_end; ilev<nlevs; ++ilev) {
-        f_h(icol,0,ilev) = f_h(icol,1,ilev) = fill_val;
+        f_h(icol,0,ilev) = f_h(icol,1,ilev) = constants::fill_value<Real>;
       }
     }
   }
@@ -150,7 +150,6 @@ create_om (const std::string& filename_prefix,
   params.set<std::string>("filename_prefix",filename_prefix);
   params.set<std::string>("floating_point_precision","real");
   params.set("field_names",strvec_t{"p_mid","U","V"});
-  params.set("fill_value",fill_val);
 
   auto& ctrl_pl = params.sublist("output_control");
   ctrl_pl.set<std::string>("frequency_units","nsteps");

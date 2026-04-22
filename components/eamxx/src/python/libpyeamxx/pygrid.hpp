@@ -1,7 +1,7 @@
 #ifndef PYGRID_HPP
 #define PYGRID_HPP
 
-#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/data_managers/mesh_free_grids_manager.hpp"
 
 #include "pyeamxx_ext.hpp"
 

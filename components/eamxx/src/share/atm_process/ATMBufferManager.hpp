@@ -1,7 +1,7 @@
 #ifndef SCREAM_ATM_BUFFERS_MANAGER_HPP
 #define SCREAM_ATM_BUFFERS_MANAGER_HPP
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_assert.hpp>
 

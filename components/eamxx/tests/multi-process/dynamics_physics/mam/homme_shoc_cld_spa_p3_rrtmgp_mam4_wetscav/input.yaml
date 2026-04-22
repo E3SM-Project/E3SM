@@ -13,6 +13,7 @@ initial_conditions:
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   pbl_height: 25.0
   phis : 0.1
+  eddy_diff_heat: 0.0
   surf_evap: 0.0
   surf_sens_flux: 0.0
   precip_liq_surf_mass: 0.0
@@ -20,6 +21,7 @@ initial_conditions:
   hetfrz_immersion_nucleation_tend: 0.1
   hetfrz_contact_nucleation_tend: 0.1
   hetfrz_deposition_nucleation_tend: 0.1
+  z_mam4_int : 0.0
 
   #variables needed by mam4_wetscav
   #--surface fluxes

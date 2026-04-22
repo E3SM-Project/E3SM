@@ -3,8 +3,8 @@
 #include "shoc_unit_tests_common.hpp"
 #include "shoc_functions.hpp"
 #include "shoc_test_data.hpp"
-#include "physics/share/physics_constants.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/physics/physics_constants.hpp"
+#include "share/core/eamxx_types.hpp"
 
 
 #include <algorithm>
@@ -90,7 +90,7 @@ struct UnitWrap::UnitTest<D>::TestShocVVParameters {
 
     // Verify that first gaussian absolute value is larger
     //  than second gaussian
-    REQUIRE(abs(SDS.w1_1) > abs(SDS.w1_2));
+    REQUIRE(std::abs(SDS.w1_1) > std::abs(SDS.w1_2));
 
     // TEST THREE
     // Given highly negative skewed distribution, verify that the gaussian
@@ -123,7 +123,7 @@ struct UnitWrap::UnitTest<D>::TestShocVVParameters {
 
     // Verify that second gaussian absolute value is larger
     //  than first gaussian
-    REQUIRE(abs(SDS.w1_1) < abs(SDS.w1_2));
+    REQUIRE(std::abs(SDS.w1_1) < std::abs(SDS.w1_2));
   }
 
   static void run_bfb()

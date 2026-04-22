@@ -1,9 +1,9 @@
 #include "eamxx_nudging_process_interface.hpp"
 
 #include "share/util/eamxx_universal_constants.hpp"
-#include "share/grid/remap/refining_remapper_p2p.hpp"
+#include "share/remap/horizontal_remapper.hpp"
 #include "share/util/eamxx_utils.hpp"
-#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include <ekat_lin_interp.hpp>
 #include <ekat_math_utils.hpp>
@@ -55,17 +55,18 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
 }
 
 // =========================================================================================
-void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void Nudging::create_requests()
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
-  m_grid = grids_manager->get_grid("physics");
+  m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
 
-  FieldLayout scalar3d_layout_mid = m_grid->get_3d_scalar_layout(true);
-  FieldLayout horiz_wind_layout = m_grid->get_3d_vector_layout(true,2);
+  FieldLayout scalar3d_layout_mid = m_grid->get_3d_scalar_layout(LEV);
+  FieldLayout horiz_wind_layout = m_grid->get_3d_vector_layout(LEV,2);
 
   constexpr int ps = 1;
   add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name, ps);
@@ -114,7 +115,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   if (num_cols_src != num_cols_global) {
     // If differing cols, check if remap file is provided
     EKAT_REQUIRE_MSG(m_refine_remap_file != "no-file-given",
-                     "Error! Nudging::set_grids - the number of columns in the nudging data file "
+                     "Error! Nudging::create_requests - the number of columns in the nudging data file "
                      << std::to_string(num_cols_src) << " does not match the number of columns in the "
                      << "model grid " << std::to_string(num_cols_global) << ".  Please check the "
                      << "nudging data file and/or the model grid.");
@@ -124,17 +125,17 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     int num_cols_remap_b = scorpio::get_dimlen(m_refine_remap_file,"n_b");
     // Then, check if n_a (source) and n_b (target) are consistent
     EKAT_REQUIRE_MSG(num_cols_remap_a == num_cols_src,
-                     "Error! Nudging::set_grids - the number of columns in the nudging data file "
+                     "Error! Nudging::create_requests - the number of columns in the nudging data file "
                      << std::to_string(num_cols_src) << " does not match the number of columns in the "
                      << "mapfile " << std::to_string(num_cols_remap_a) << ".  Please check the "
                      << "nudging data file and/or the mapfile.");
     EKAT_REQUIRE_MSG(num_cols_remap_b == num_cols_global,
-                     "Error! Nudging::set_grids - the number of columns in the model grid "
+                     "Error! Nudging::create_requests - the number of columns in the model grid "
                      << std::to_string(num_cols_global) << " does not match the number of columns in the "
                      << "mapfile " << std::to_string(num_cols_remap_b) << ".  Please check the "
                      << "model grid and/or the mapfile.");
     EKAT_REQUIRE_MSG(m_use_weights == false,
-                     "Error! Nudging::set_grids - it seems that the user intends to use both nuding "
+                     "Error! Nudging::create_requests - it seems that the user intends to use both nuding "
                      << "from coarse data as well as weighted nudging simultaneously. This is not supported. "
                      << "If the user wants to use both at their own risk, the user should edit the source code "
                      << "by deleting this error message.");
@@ -145,7 +146,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     // but print a warning if the user provided a mapfile
     if (m_refine_remap_file != "no-file-given") {
       m_atm_logger->warn(
-           "[Nudging::set_grids] Warning! Map file provided, but it is not needed.\n"
+           "[Nudging::create_requests] Warning! Map file provided, but it is not needed.\n"
            "  - num cols in nudging data file: " + std::to_string(num_cols_src) + "\n"
            "  - num cols in model grid       : " + std::to_string(num_cols_global) + "\n"
            " Please, make sure the nudging data file and/or model grid are correct.\n"
@@ -154,7 +155,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     // If the user gives us the vertical cutoff, warn them
     if (m_refine_remap_vert_cutoff > 0.0) {
       m_atm_logger->warn(
-          "[Nudging::set_grids] Warning! Non-zero vertical cutoff provided, but it is not needed\n"
+          "[Nudging::create_requests] Warning! Non-zero vertical cutoff provided, but it is not needed\n"
           " - vertical cutoff: " + std::to_string(m_refine_remap_vert_cutoff) + "\n"
           " Please, check your settings. This parameter is only needed if we are remapping.");
     }
@@ -212,11 +213,10 @@ void Nudging::initialize_impl (const RunType /* run_type */)
 
   // The "intermediate" grid, is the grid after horiz remap, and before vert remap
   auto grid_tmp = m_grid->clone("after_horiz_before_vert",true);
-  grid_tmp->reset_num_vertical_lev(m_num_src_levs);
+  grid_tmp->reset_vertical_configuration(m_num_src_levs, AbstractGrid::VKind::Pressure);
 
   if (m_refine_remap) {
-    // P2P remapper
-    m_horiz_remapper = std::make_shared<RefiningRemapperP2P>(grid_tmp, m_refine_remap_file);
+    m_horiz_remapper = std::make_shared<HorizontalRemapper>(grid_tmp, m_refine_remap_file);
   } else {
     // We set up an IdentityRemapper, specifying that tgt is an alias
     // of src, so that the remap method will do nothing
@@ -233,9 +233,9 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   m_time_interp.set_logger(m_atm_logger,"[EAMxx::Nudging] Reading nudging data");
 
   // NOTE: we are ASSUMING all fields are 3d and scalar!
-  const auto layout_ext = grid_ext->get_3d_scalar_layout(true);
-  const auto layout_tmp = grid_tmp->get_3d_scalar_layout(true);
-  const auto layout_atm = m_grid->get_3d_scalar_layout(true);
+  const auto layout_ext = grid_ext->get_3d_scalar_layout(LEVP);
+  const auto layout_tmp = grid_tmp->get_3d_scalar_layout(LEVP);
+  const auto layout_atm = m_grid->get_3d_scalar_layout(LEV);
   for (auto name : m_fields_nudge) {
     std::string name_ext = name + "_ext";
     std::string name_tmp = name + "_tmp";
@@ -290,7 +290,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     create_helper_field("padded_p_mid_tmp",layout_padded,"");
   } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
     // For static 1D profile, we can read p_mid now
-    auto pmid_ext = create_helper_field("p_mid_ext", grid_ext->get_vertical_layout(true), grid_ext->name());
+    auto pmid_ext = create_helper_field("p_mid_ext", grid_ext->get_vertical_layout(LEVP), grid_ext->name());
     AtmosphereInput src_input(m_static_vertical_pressure_file,grid_ext,{pmid_ext.alias("p_levs")},true);
     src_input.read_variables(-1);
 
@@ -344,21 +344,17 @@ void Nudging::run_impl (const double dt)
     const auto fl = f.get_header().get_identifier().get_layout();
     const auto v  = f.get_view<Real**>();
 
-    Real var_fill_value = constants::fill_value<Real>;
-    // Query the helper field for the fill value, if not present use default
-    if (f.get_header().has_extra_data("mask_value")) {
-      var_fill_value = f.get_header().get_extra_data<Real>("mask_value");
-    }
+    constexpr Real fill_value = constants::fill_value<Real>;
 
     const int ncols = fl.dim(0);
     const int nlevs = fl.dim(1);
-    const auto thresh = std::abs(var_fill_value)*0.0001;
+    const auto thresh = std::abs(fill_value)*0.0001;
     auto lambda = KOKKOS_LAMBDA(const int icol) {
       int first_good = nlevs;
       int last_good = -1;
       for (int k=0; k<nlevs; ++k) {
-        if (std::abs(v(icol,k)-var_fill_value)>thresh) {
-          // This entry is substantially different from var_fill_value, so it's good
+        if (std::abs(v(icol,k)-fill_value)>thresh) {
+          // This entry is substantially different from fill_value, so it's good
           first_good = ekat::impl::min(first_good,k);
           last_good  = ekat::impl::max(last_good,k);
         }

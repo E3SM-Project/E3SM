@@ -4,7 +4,7 @@
 #include "p3_test_data.hpp"
 #include "p3_unit_tests_common.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 namespace scream {
 namespace p3 {
@@ -18,15 +18,15 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
     //TEST WEIGHTING TIMESCALE
     //========================
     //dt/tau ~ 0 => weight => 1. A value of exactly 0 would cause div by 0 though.
-    Spack wt;
-    Functions::rain_evap_tscale_weight(Spack(1e-8),wt);
+    Pack wt;
+    Functions::rain_evap_tscale_weight(Pack(1e-8),wt);
 
     REQUIRE( wt[0] >= 0 ); //always true
     REQUIRE( wt[0] <= 1 ); //always true
     REQUIRE( 1-wt[0] < 1e-8 );
 
     //dt/tau->inf => weight => 0.
-    Functions::rain_evap_tscale_weight(Spack(1e15),wt);
+    Functions::rain_evap_tscale_weight(Pack(1e15),wt);
     REQUIRE( wt[0] >= 0 ); //always true
     REQUIRE( wt[0] <= 1 ); //always true
     REQUIRE( wt[0] < 1e-8 );
@@ -34,53 +34,53 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
     //TEST EQUILIB EVAP RATE:
     //=======================
     //if A_c=0, equilibrium evap rate should be zero
-    Spack tend;
-    Functions::rain_evap_equilib_tend(Spack(0),Spack(1),Spack(1),Spack(1),tend);
+    Pack tend;
+    Functions::rain_evap_equilib_tend(Pack(0),Pack(1),Pack(1),Pack(1),tend);
     REQUIRE( std::abs(tend[0])<1e-8 );
 
     //if tau_eff==tau_r, equilibrium should be -A_c/ab
-    Spack A_c(2);
-    Spack ab(1.2);
-    Functions::rain_evap_equilib_tend(A_c,ab,Spack(1),Spack(1),tend);
+    Pack A_c(2);
+    Pack ab(1.2);
+    Functions::rain_evap_equilib_tend(A_c,ab,Pack(1),Pack(1),tend);
     REQUIRE( std::abs(tend[0] + A_c[0]/ab[0]) < 1e-8 );
 
     //TEST INSTANTANEOUS EVAP RATE:
     //=============================
     //when ssat_r=0, tend should be zero.
-    Functions::rain_evap_instant_tend(Spack(0),ab,Spack(1),tend);
+    Functions::rain_evap_instant_tend(Pack(0),ab,Pack(1),tend);
     REQUIRE( tend[0] == 0 );
 
     //when tau_r=>inf, tend should approach 0.
-    Functions::rain_evap_instant_tend(Spack(-1e-3),ab,Spack(1e12),tend);
+    Functions::rain_evap_instant_tend(Pack(-1e-3),ab,Pack(1e12),tend);
     REQUIRE( tend[0] > 0 ); //always true for ssat_r<0.
     REQUIRE( tend[0] < 1e-8 );
 
     //TEST ACTUAL EVAP FUNCTION:
     //==========================
     //first, establish reasonable values to use as default:
-    Spack qr_incld(1e-4);
-    Spack qc_incld(1e-4);
-    Spack nr_incld(1e7);
-    Spack qi_incld(1e-4);
-    Spack cld_frac_l(0.1);
-    Spack cld_frac_r(0.9);
-    Spack qv(5e-4);
-    Spack qv_prev(1e-3);
-    Spack qv_sat_l(1e-3); //must be > qv for subsat
-    Spack qv_sat_i(6e-4); //making slightly higher than qv
-    Spack abi(1.2);
-    Spack epsr(1./20.);
-    Spack epsi_tot(1./60.);
-    Spack t(287);
-    Spack t_prev(285);
-    Spack dqsdt(1e-3);
+    Pack qr_incld(1e-4);
+    Pack qc_incld(1e-4);
+    Pack nr_incld(1e7);
+    Pack qi_incld(1e-4);
+    Pack cld_frac_l(0.1);
+    Pack cld_frac_r(0.9);
+    Pack qv(5e-4);
+    Pack qv_prev(1e-3);
+    Pack qv_sat_l(1e-3); //must be > qv for subsat
+    Pack qv_sat_i(6e-4); //making slightly higher than qv
+    Pack abi(1.2);
+    Pack epsr(1./20.);
+    Pack epsi_tot(1./60.);
+    Pack t(287);
+    Pack t_prev(285);
+    Pack dqsdt(1e-3);
     Scalar dt=60;
-    Spack qrtend;
-    Spack nrtend;
+    Pack qrtend;
+    Pack nrtend;
 
     //if qr_incld is too small, evap rate should be zero.
     constexpr Scalar QSMALL   = C::QSMALL;
-    Functions::evaporate_rain(Spack(QSMALL/2),qc_incld,nr_incld,qi_incld, //qr_incld->QSMALL/2
+    Functions::evaporate_rain(Pack(QSMALL/2),qc_incld,nr_incld,qi_incld, //qr_incld->QSMALL/2
 			      cld_frac_l,cld_frac_r,qv,qv_prev,qv_sat_l,qv_sat_i,
 			      ab,abi,epsr,epsi_tot,t,t_prev,dqsdt,dt,
 			      qrtend,nrtend);
@@ -88,7 +88,7 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
     REQUIRE( std::abs(nrtend[0])<1e-8 );
 
     //if qr_incld is small enough but not too small, evap rate should be qr_incld/dt.
-    Spack qr_tiny=Spack(5e-13);
+    Pack qr_tiny=Pack(5e-13);
     Functions::evaporate_rain(qr_tiny,qc_incld,nr_incld,qi_incld, //qr_incld->_tiny
 				cld_frac_l,cld_frac_r,qv,qv_prev,qv_sat_l,qv_sat_i,
 				ab,abi,epsr,epsi_tot,t,t_prev,dqsdt,dt,
@@ -118,7 +118,7 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
     //for case with lots of evap, make sure doesn't overdeplete qr_incld
     Functions::evaporate_rain(qr_incld,qc_incld,nr_incld,qi_incld,
 			      //qv -> qv*0.1 to encourage lots of rain evap
-			      cld_frac_l,cld_frac_r,qv*0.1,qv_prev,qv_sat_l,qv_sat_i,
+			      cld_frac_l,cld_frac_r,qv*sp(0.1),qv_prev,qv_sat_l,qv_sat_i,
 			      ab,abi,epsr,epsi_tot,t,t_prev,dqsdt,dt,
 			      qrtend,nrtend);
     REQUIRE( qrtend[0] <= qr_incld[0]/dt);
@@ -127,8 +127,8 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
   } //end run_property
 
   void run_bfb() {
-    constexpr Scalar latvap = C::LatVap;
-    constexpr Scalar latice = C::LatIce;
+    constexpr Scalar latvap = C::LatVap.value;
+    constexpr Scalar latice = C::LatIce.value;
 
     //baseline generated data is input to the following
     //This subroutine has 20 args, only 18 are supplied here for invoking it as last 2 are intent-outs
@@ -180,19 +180,19 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
 
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init pack inputs
-      Spack qr_incld,qc_incld,nr_incld,qi_incld,
+      Pack qr_incld,qc_incld,nr_incld,qi_incld,
 	cld_frac_l,cld_frac_r,qv,qv_prev,qv_sat_l,qv_sat_i,
 	ab,abi,epsr,epsi_tot,t,t_prev,dqsdt;
 
       Scalar dt;
 
       // Init pack outputs
-      Spack qr2qv_evap_tend, nr_evap_tend;
+      Pack qr2qv_evap_tend, nr_evap_tend;
 
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         qr_incld[s]    = espd_device(vs).qr_incld;
         qc_incld[s]    = espd_device(vs).qc_incld;
         nr_incld[s]    = espd_device(vs).nr_incld;
@@ -221,7 +221,7 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
 				qr2qv_evap_tend,nr_evap_tend);
 
       // Copy results back into views
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         espd_device(vs).qr_incld    = qr_incld[s];
         espd_device(vs).qc_incld    = qc_incld[s];
         espd_device(vs).nr_incld    = nr_incld[s];

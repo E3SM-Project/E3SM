@@ -738,12 +738,12 @@ albedo and the contribution of solar absorption to the heating of each snow laye
 ### Parameterization for Sub-Grid Effect of Topographic on Solar radiation
 
 The surface abedos given by equation \eqref{eqn_g_dir} -
-\eqn{eqn_g_dif} neglect topography by assuming a
+\eqref{eqn_g_dif} neglect topography by assuming a
 plane-parallel Earth. Hao et al. (2021)[@hao2021parameterization]
 developed a parameterization for sub-grid topographic
 effects on solar radiation that essentially modify the
 surface albedo by equation \eqref{eqn_g_dir} -
-\eqn{eqn_g_dif}. The section on [TOP
+\eqref{eqn_g_dif}. The section on [TOP
 Parameterization](top_solar_parameterization.md) presents a
 detailed description of the parameterization.
 

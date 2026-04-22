@@ -29,6 +29,10 @@ KOKKOS_INLINE_FUNCTION void hash (const float v, HashType& accum) {
   hash(double(v), accum);
 }
 
+KOKKOS_INLINE_FUNCTION void hash (const int v, HashType& accum) {
+  hash(double(v), accum);
+}
+
 // For Kokkos::parallel_reduce.
 template <typename ExecSpace = Kokkos::HostSpace>
 struct HashReducer {

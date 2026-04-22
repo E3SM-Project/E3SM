@@ -4,9 +4,9 @@
 
 #include "shoc_functions.hpp"
 #include "shoc_test_data.hpp"
-#include "physics/share/physics_constants.hpp"
-#include "share/eamxx_types.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/physics/physics_constants.hpp"
+#include "share/core/eamxx_types.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 
 
 #include <algorithm>
@@ -96,8 +96,8 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt : public UnitWrap::UnitTest<D>::
         if (s == 0){
           const auto offsets = n + (s+1) * nlev;
 
-          REQUIRE(abs(SDS.u_wind[offsets]) > abs(SDS.u_wind[offset]));
-          REQUIRE(abs(SDS.v_wind[offsets]) > abs(SDS.v_wind[offset]));
+          REQUIRE(std::abs(SDS.u_wind[offsets]) > std::abs(SDS.u_wind[offset]));
+          REQUIRE(std::abs(SDS.v_wind[offsets]) > std::abs(SDS.v_wind[offset]));
           REQUIRE(SDS.rcm[offset] == 0);
           REQUIRE(SDS.rcm[offsets] > SDS.rcm[offset]);
         }

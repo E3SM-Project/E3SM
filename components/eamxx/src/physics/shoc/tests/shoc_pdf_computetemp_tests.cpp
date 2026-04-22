@@ -3,8 +3,8 @@
 #include "shoc_unit_tests_common.hpp"
 #include "shoc_functions.hpp"
 #include "shoc_test_data.hpp"
-#include "physics/share/physics_constants.hpp"
-#include "share/eamxx_types.hpp"
+#include "share/physics/physics_constants.hpp"
+#include "share/core/eamxx_types.hpp"
 
 
 #include <algorithm>
@@ -34,7 +34,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeTemp {
     // Input liquid water potential temperature [K]
     static constexpr Real thl1 = 305;
     // Input basepressure [Pa]
-    static constexpr Real basepres = C::P0;
+    static constexpr Real basepres = C::P0.value;
     // Input value of pval [Pa]
     Real pval = 110000;
 
@@ -54,7 +54,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeTemp {
     SDS.thl1 = thl1;
     SDS.pval = pval;
 
-    Int num_tests = SDS.pval/abs(presincr);
+    Int num_tests = SDS.pval/std::abs(presincr);
 
     REQUIRE(num_tests > 1);
     REQUIRE(presincr < 0);

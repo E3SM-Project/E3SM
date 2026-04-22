@@ -17,6 +17,13 @@ module atm_comp_mct
   use seq_flds_mod    , only: seq_flds_a2x_fields, seq_flds_x2a_fields
   use seq_timemgr_mod , only: seq_timemgr_EClockGetData
 
+#ifdef HAVE_MOAB
+  use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
+  use iso_c_binding
+  use iMOAB          , only: iMOAB_RegisterApplication
+  use dead_mct_mod   , only: dead_init_moab
+#endif
+
   ! !PUBLIC TYPES:
   implicit none
   save
@@ -70,6 +77,11 @@ CONTAINS
     integer(IN)                      :: ierr           ! error code
     logical                          :: atm_present    ! if true, component is present
     logical                          :: atm_prognostic ! if true, component is prognostic
+
+#ifdef HAVE_MOAB
+    integer(IN)       :: ATM_PHYS_CID  ! used to create a new comp id for phys atm; 200+ compid
+#endif
+      character(*), parameter :: subName = "(atm_init_mct) "
     !-------------------------------------------------------------------------------
 
     ! Set cdata pointers to derived types (in coupler)
@@ -114,6 +126,15 @@ CONTAINS
     ! Initialize xatm
     !----------------------------------------------------------------------------
 
+#ifdef HAVE_MOAB
+    ATM_PHYS_CID = 200 + compid
+    ierr = iMOAB_RegisterApplication(trim("XATM")//C_NULL_CHAR, mpicom, ATM_PHYS_CID, mphaid)
+    if (ierr .ne. 0) then
+      write(logunit,*) subname,' error in registering XATM comp'
+      call shr_sys_abort(subname//' ERROR in registering XATM comp')
+    endif
+#endif
+
     call dead_init_mct('atm', Eclock, x2d, d2x, &
          seq_flds_x2a_fields, seq_flds_a2x_fields, &
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
@@ -126,6 +147,12 @@ CONTAINS
        atm_present = .true.
        atm_prognostic = .true.
     end if
+
+#ifdef HAVE_MOAB
+    if (atm_present) then
+      call dead_init_moab( mphaid, 'atm', gsMap, gbuf, x2d, d2x, mpicom, compid, logunit, nxg, nyg )
+    end if
+#endif
 
     call seq_infodata_PutData( infodata, dead_comps=.true., &
          atm_present=atm_present, &
@@ -174,8 +201,17 @@ CONTAINS
          dom=ggrid, &
          infodata=infodata)
 
+#ifdef HAVE_MOAB
+
+    call dead_run_mct( 'atm', EClock, x2d, d2x, &
+       gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, logunit, mphaid )
+
+#else
+
     call dead_run_mct('atm', EClock, x2d, d2x, &
        gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, logunit)
+
+#endif
 
     ! Set time of next radiadtion computation
     call seq_timemgr_EClockGetData (EClock, next_cday=nextsw_cday)

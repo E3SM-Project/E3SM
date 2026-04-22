@@ -7,13 +7,12 @@ macro(sweqx_setup)
 SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/sweqx)
 SET(SRC_BASE          ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE         ${HOMME_SOURCE_DIR}/src/share)
-SET(UTILS_TIMING_DIR  ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
 
 # Find F90 files in target directory
 FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90)
 
 # Make INCLUDE_DIRS global so the tests can access it
-SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS} ${UTILS_TIMING_DIR} )
+SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS})
 
 SET(SWEQX_SRCS
   ${TARGET_F90}
@@ -26,18 +25,18 @@ SET(SWEQX_SRCS
   ${SRC_BASE}/repro_sum_mod.F90
   ${SRC_BASE}/restart_io_mod.F90
   ${SRC_SHARE}/zoltan_mod.F90
-  ${SRC_SHARE}/bndry_mod_base.F90
+  ${SRC_SHARE}/bndry_mod.F90
   ${SRC_SHARE}/cg_mod.F90
   ${SRC_SHARE}/control_mod.F90
   ${SRC_SHARE}/coordinate_systems_mod.F90
   ${SRC_SHARE}/geometry_mod.F90
   ${SRC_SHARE}/cube_mod.F90
   ${SRC_SHARE}/planar_mod.F90
-  ${SRC_SHARE}/derivative_mod_base.F90
+  ${SRC_SHARE}/derivative_mod.F90
   ${SRC_SHARE}/dimensions_mod.F90
   ${SRC_SHARE}/dof_mod.F90
   ${SRC_SHARE}/domain_mod.F90
-  ${SRC_SHARE}/edge_mod_base.F90
+  ${SRC_SHARE}/edge_mod.F90
   ${SRC_SHARE}/element_mod.F90
   ${SRC_SHARE}/global_norms_mod.F90
   ${SRC_SHARE}/gridgraph_mod.F90

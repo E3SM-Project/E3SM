@@ -2,7 +2,7 @@
 #define EAMXX_PY_FIELD_HPP
 
 #include "share/field/field.hpp"
-#include "share/eamxx_pysession.hpp"
+#include "share/core/eamxx_pysession.hpp"
 
 #include <ekat_assert.hpp>
 

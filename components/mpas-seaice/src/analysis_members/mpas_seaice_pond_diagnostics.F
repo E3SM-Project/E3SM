@@ -284,6 +284,7 @@ contains
 
       logical, pointer :: &
            config_use_level_meltponds, &
+           config_use_sealevel_meltponds, &
            config_use_topo_meltponds
 
       integer, pointer :: &
@@ -322,10 +323,11 @@ contains
          call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
 
          call MPAS_pool_get_config(block % configs, "config_use_level_meltponds", config_use_level_meltponds)
+         call MPAS_pool_get_config(block % configs, "config_use_sealevel_meltponds", config_use_sealevel_meltponds)
          call MPAS_pool_get_config(block % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
 
-         if (config_use_level_meltponds) then
-            ! level melt ponds
+         if (config_use_level_meltponds .or. config_use_sealevel_meltponds) then
+            ! level-ice melt ponds or sea-level melt ponds
 
             ! meltPondArea - apond
             if (meltPondArea % isActive) then

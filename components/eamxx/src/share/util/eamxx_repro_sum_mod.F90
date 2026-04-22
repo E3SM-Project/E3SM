@@ -17,6 +17,3 @@ contains
   end subroutine eamxx_repro_sum
 
 end module eamxx_repro_sum_mod
-
-
-

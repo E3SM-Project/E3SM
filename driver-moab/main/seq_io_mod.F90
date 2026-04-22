@@ -33,6 +33,7 @@ module seq_io_mod
   use shr_sys_mod,  only: shr_sys_abort
   use seq_comm_mct, only: logunit, CPLID, seq_comm_setptrs
   use seq_comm_mct, only: seq_comm_namelen, seq_comm_name
+  use seq_comm_mct, only: mbaxid, atm_pg_active,mblxid,mb_scm_land,mb_dead_comps
   use seq_flds_mod, only : seq_flds_lookup
   use mct_mod           ! mct wrappers
   use pio
@@ -65,9 +66,6 @@ module seq_io_mod
   !EOP
 
   interface seq_io_read
-     module procedure seq_io_read_av
-     module procedure seq_io_read_avs
-     module procedure seq_io_read_avscomp
      module procedure seq_io_read_int
      module procedure seq_io_read_int1d
      module procedure seq_io_read_r8
@@ -76,9 +74,6 @@ module seq_io_mod
      module procedure seq_io_read_moab_tags
   end interface seq_io_read
   interface seq_io_write
-     module procedure seq_io_write_av
-     module procedure seq_io_write_avs
-     module procedure seq_io_write_avscomp
      module procedure seq_io_write_int
      module procedure seq_io_write_int1d
      module procedure seq_io_write_r8
@@ -380,725 +375,6 @@ contains
 80  format(i2.2,':',i2.2,':',i2.2)
 
   end function seq_io_sec2hms
-
-  !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: seq_io_write_av - write AV to netcdf file
-  !
-  ! !DESCRIPTION:
-  !    Write AV to netcdf file
-  !
-  ! !REVISION HISTORY:
-  !    2007-Oct-26 - T. Craig - initial version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
-  subroutine seq_io_write_av(filename,gsmap,AV,dname,whead,wdata,nx,ny,nt,fillval,dims2din,&
-       dims2do,pre,tavg,use_float, file_ind, mask, scolumn)
-
-    ! !INPUT/OUTPUT PARAMETERS:
-    implicit none
-    character(len=*),intent(in) :: filename ! file
-    type(mct_gsMap), intent(in) :: gsmap
-    type(mct_aVect) ,intent(in) :: AV       ! data to be written
-    character(len=*),intent(in) :: dname    ! name of data
-    logical,optional,intent(in) :: whead    ! write header
-    logical,optional,intent(in) :: wdata    ! write data
-    integer(in),optional,intent(in) :: nx   ! 2d grid size if available
-    integer(in),optional,intent(in) :: ny   ! 2d grid size if available
-    integer(in),optional,intent(in) :: nt   ! time sample
-    real(r8),optional,intent(in) :: fillval ! fill value
-    integer(in),optional,intent(out) :: dims2do(2)   ! dim ids to output
-    integer(in),optional,intent(in) :: dims2din(2)   ! dim ids to output
-    character(len=*),optional,intent(in) :: pre      ! prefix to variable name
-    logical,optional,intent(in) :: tavg     ! is this a tavg
-    logical,optional,intent(in) :: use_float ! write output as float rather than double
-    integer,optional,intent(in) :: file_ind
-    logical,optional,intent(in) :: scolumn ! single column model flag
-    real(r8),optional,intent(in) :: mask(:)
-    !EOP
-
-    integer(in) :: rcode
-    integer(in) :: iam
-    integer(in) :: nf,ns,ng
-    integer(in) :: k
-    integer(in),target  :: dimid2(2)
-    integer(in),target  :: dimid3(3)
-    integer(in),pointer :: dimid(:)
-    type(var_desc_t) :: varid
-    type(io_desc_t) :: iodesc
-    integer(kind=Pio_Offset_Kind) :: frame
-    type(mct_string) :: mstring     ! mct char type
-    character(CL)    :: itemc       ! string converted to char
-    character(CL)    :: name1       ! var name
-    character(CL)    :: cunit       ! var units
-    character(CL)    :: lname       ! long name
-    character(CL)    :: sname       ! standard name
-    character(CL)    :: lpre        ! local prefix
-    logical :: lwhead, lwdata
-    logical :: luse_float
-    integer(in) :: lnx,lny
-    real(r8) :: lfillvalue
-    character(*),parameter :: subName = '(seq_io_write_av) '
-    integer, pointer :: Dof(:)
-    integer :: lfile_ind
-    logical :: lcolumn
-
-    real(r8), allocatable :: tmpdata(:)
-    real(r4), allocatable :: tmpr4data(:)
-
-    !-------------------------------------------------------------------------------
-    !
-    !-------------------------------------------------------------------------------
-
-    lfillvalue = fillvalue
-    if (present(fillval)) then
-       lfillvalue = fillval
-    endif
-
-    lpre = trim(dname)
-    if (present(pre)) then
-       lpre = trim(pre)
-    endif
-
-    lwhead = .true.
-    lwdata = .true.
-    lcolumn = .false.
-    if (present(whead)) lwhead = whead
-    if (present(wdata)) lwdata = wdata
-    if (present(scolumn)) lcolumn = scolumn
-
-    if (.not.lwhead .and. .not.lwdata) then
-       ! should we write a warning?
-       return
-    endif
-
-    luse_float = .false.
-    if (present(use_float)) luse_float = use_float
-
-    lfile_ind = 0
-    if (present(file_ind)) lfile_ind=file_ind
-
-    call seq_comm_setptrs(CPLID,iam=iam)
-
-    ng = mct_gsmap_gsize(gsmap)
-    lnx = ng
-    lny = 1
-
-    nf = mct_aVect_nRattr(AV)
-    if (nf < 1) then
-       write(logunit,*) subname,' ERROR: nf = ',nf,trim(dname)
-       call shr_sys_abort(subname//'nf error')
-    endif
-    frame = -1
-    if (present(nt)) then
-       frame = nt
-    endif
-    if (present(nx)) then
-       if (nx /= 0) lnx = nx
-    endif
-    if (present(ny)) then
-       if (ny /= 0) lny = ny
-    endif
-    if (lnx*lny /= ng .and. .not. lcolumn) then
-       if(iam==0) write(logunit,*) subname,' ERROR: grid2d size not consistent ',ng,lnx,lny,trim(dname)
-       call shr_sys_abort(subname//'ERROR: grid2d size not consistent ')
-    endif
-
-    if (lwhead) then
-       if (present(dims2din)) then
-          dimid2(1)=dims2din(1)
-          dimid2(2)=dims2din(2)
-       else
-          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
-          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
-       endif
-       if (present(dims2do)) then
-          dims2do(1)=dimid2(1)
-          dims2do(2)=dimid2(2)
-       endif
-
-       if (present(nt)) then
-          dimid3(1:2) = dimid2
-          rcode = pio_inq_dimid(cpl_io_file(lfile_ind),'time',dimid3(3))
-          dimid => dimid3
-       else
-          dimid => dimid2
-       endif
-
-       do k = 1,nf
-          call mct_aVect_getRList(mstring,k,AV)
-          itemc = mct_string_toChar(mstring)
-          call mct_string_clean(mstring)
-          !-------tcraig, this is a temporary mod to NOT write hgt
-          if (trim(itemc) /= "hgt") then
-             name1 = trim(lpre)//'_'//trim(itemc)
-             call seq_flds_lookup(itemc,longname=lname,stdname=sname,units=cunit)
-             if (luse_float) then
-                rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_REAL,dimid,varid)
-                rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",real(lfillvalue,r4))
-             else
-                rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_DOUBLE,dimid,varid)
-                rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",lfillvalue)
-             end if
-             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
-             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
-             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
-             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"internal_dname",trim(dname))
-             if (present(tavg)) then
-                if (tavg) then
-                   rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"cell_methods","time: mean")
-                endif
-             endif
-             !-------tcraig
-          endif
-       enddo
-       if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
-    end if
-
-    if (lwdata) then
-       call mct_gsmap_OrderedPoints(gsmap, iam, Dof)
-       ns = size(dof)
-       if(luse_float) then
-          allocate(tmpr4data(ns))
-          call pio_initdecomp(cpl_io_subsystem, pio_real, (/lnx,lny/), dof, iodesc)
-       else
-          allocate(tmpdata(ns))
-          call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
-       endif
-       deallocate(dof)
-
-       do k = 1,nf
-          call mct_aVect_getRList(mstring,k,AV)
-          itemc = mct_string_toChar(mstring)
-          call mct_string_clean(mstring)
-          !-------tcraig, this is a temporary mod to NOT write hgt
-          if (trim(itemc) /= "hgt") then
-             name1 = trim(lpre)//'_'//trim(itemc)
-             rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(name1),varid)
-             call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
-             if(luse_float) then
-                if(present(mask)) then
-                   where(mask .ne. 0)
-                      tmpr4data = real(av%rattr(k,:), kind=r4)
-                   elsewhere
-                      tmpr4data = real(lfillvalue, kind=r4)
-                   end where
-                else
-                   tmpr4data = real(av%rattr(k,:), kind=r4)
-                endif
-                call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, tmpr4data, rcode, fillval=real(lfillvalue, kind=r4))
-             else
-                if(present(mask)) then
-                   where(mask .ne. 0)
-                      tmpdata = av%rattr(k,:)
-                   elsewhere
-                      tmpdata = lfillvalue
-                   end where
-                else
-                   tmpdata = av%rattr(k,:)
-                endif
-                call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, tmpdata, rcode, fillval=lfillvalue)
-             endif
-             !-------tcraig
-          endif
-       enddo
-       if(allocated(tmpdata)) deallocate(tmpdata)
-       if(allocated(tmpr4data)) deallocate(tmpr4data)
-       call pio_freedecomp(cpl_io_file(lfile_ind), iodesc)
-
-    end if
-  end subroutine seq_io_write_av
-
-  !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: seq_io_write_avs - write AVS to netcdf file
-  !
-  ! !DESCRIPTION:
-  !    Write AV to netcdf file
-  !
-  ! !REVISION HISTORY:
-  !    2007-Oct-26 - T. Craig - initial version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
-  subroutine seq_io_write_avs(filename,gsmap,AVS,dname,whead,wdata,nx,ny,nt,fillval,dims2din,&
-       dims2do,pre,tavg,use_float,file_ind,scolumn)
-
-    ! !INPUT/OUTPUT PARAMETERS:
-    implicit none
-    character(len=*),intent(in) :: filename ! file
-    type(mct_gsMap), intent(in) :: gsmap
-    type(mct_aVect) ,intent(in) :: AVS(:)   ! data to be written
-    character(len=*),intent(in) :: dname    ! name of data
-    logical,optional,intent(in) :: whead    ! write header
-    logical,optional,intent(in) :: wdata    ! write data
-    integer(in),optional,intent(in) :: nx   ! 2d grid size if available
-    integer(in),optional,intent(in) :: ny   ! 2d grid size if available
-    integer(in),optional,intent(in) :: nt   ! time sample
-    real(r8),optional,intent(in) :: fillval ! fill value
-    integer(in),optional,intent(in) :: dims2din(2)   ! dim ids to output
-    integer(in),optional,intent(out) :: dims2do(2)   ! dim ids for output
-    character(len=*),optional,intent(in) :: pre      ! prefix to variable name
-    logical,optional,intent(in) :: tavg     ! is this a tavg
-    logical,optional,intent(in) :: use_float ! write output as float rather than double
-    integer,optional,intent(in) :: file_ind
-    logical,optional,intent(in) :: scolumn ! single column model flag
-
-    !EOP
-
-    integer(in) :: rcode
-    integer(in) :: iam
-    integer(in) :: nf,ns,ng,ni
-    integer(in) :: k,n,k1
-    integer(in),target  :: dimid2(2)
-    integer(in),target  :: dimid3(3)
-    integer(in),target  :: dimid4(4)
-    integer(in),pointer :: dimid(:)
-    type(var_desc_t) :: varid
-    type(io_desc_t) :: iodesc
-    integer(kind=Pio_Offset_Kind) :: frame
-    type(mct_string) :: mstring     ! mct char type
-    character(CL)    :: itemc       ! string converted to char
-    character(CL)    :: name1       ! var name
-    character(CL)    :: cunit       ! var units
-    character(CL)    :: lname       ! long name
-    character(CL)    :: sname       ! standard name
-    character(CL)    :: lpre        ! local prefix
-    logical :: lwhead, lwdata
-    logical :: luse_float
-    integer(in) :: lnx,lny
-    real(r8) :: lfillvalue
-    real(r8), allocatable :: data(:)
-    character(*),parameter :: subName = '(seq_io_write_avs) '
-    integer, pointer :: Dof(:)
-    integer, pointer :: Dofn(:)
-    integer :: lfile_ind
-    logical :: lcolumn
-
-    !-------------------------------------------------------------------------------
-    !
-    !-------------------------------------------------------------------------------
-
-    lfillvalue = fillvalue
-    if (present(fillval)) then
-       lfillvalue = fillval
-    endif
-
-    lpre = trim(dname)
-    if (present(pre)) then
-       lpre = trim(pre)
-    endif
-
-    lwhead = .true.
-    lwdata = .true.
-    lcolumn = .false.
-    if (present(whead)) lwhead = whead
-    if (present(wdata)) lwdata = wdata
-    if (present(scolumn)) lcolumn = scolumn
-
-    if (.not.lwhead .and. .not.lwdata) then
-       ! should we write a warning?
-       return
-    endif
-
-    luse_float = .false.
-    if (present(use_float)) luse_float = use_float
-
-    lfile_ind = 0
-    if (present(file_ind)) lfile_ind=file_ind
-
-    call seq_comm_setptrs(CPLID,iam=iam)
-
-    ni = size(AVS)
-
-    ns = mct_aVect_lsize(AVS(1))
-    ng = mct_gsmap_gsize(gsmap)
-    lnx = ng
-    lny = 1
-
-    nf = mct_aVect_nRattr(AVS(1))
-    if (nf < 1) then
-       write(logunit,*) subname,' ERROR: nf = ',nf,trim(dname)
-       call shr_sys_abort(subname//'nf error')
-    endif
-    frame = -1
-    if (present(nt)) then
-       frame = nt
-    endif
-
-    if (present(nx)) then
-       if (nx /= 0) lnx = nx
-    endif
-    if (present(ny)) then
-       if (ny /= 0) lny = ny
-    endif
-    if (lnx*lny /= ng .and. .not. lcolumn) then
-       if(iam==0) write(logunit,*) subname,' ERROR: grid2d size not consistent ',ng,lnx,lny,trim(dname)
-       call shr_sys_abort(subname//' ERROR: grid2d size not consistent ')
-    endif
-
-    if (lwhead) then
-       if (present(dims2din)) then
-          dimid2(1)=dims2din(1)
-          dimid2(2)=dims2din(2)
-       else
-          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
-          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
-       endif
-       if (present(dims2do)) then
-          dims2do(1)=dimid2(1)
-          dims2do(2)=dimid2(2)
-       endif
-
-       if (ni > 1) then
-          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ni',ni,dimid3(3))
-          if (present(nt)) then
-             dimid4(1:2) = dimid2
-             dimid4(3) = dimid3(3)
-             rcode = pio_inq_dimid(cpl_io_file(lfile_ind),'time',dimid4(4))
-             dimid => dimid4
-          else
-             dimid3(1:2) = dimid2
-             dimid => dimid3
-          endif
-       else
-          if (present(nt)) then
-             dimid3(1:2) = dimid2
-             rcode = pio_inq_dimid(cpl_io_file(lfile_ind),'time',dimid3(3))
-             dimid => dimid3
-          else
-             dimid => dimid2
-          endif
-       endif
-
-       do k = 1,nf
-          call mct_aVect_getRList(mstring,k,AVS(1))
-          itemc = mct_string_toChar(mstring)
-          call mct_string_clean(mstring)
-          !-------tcraig, this is a temporary mod to NOT write hgt
-          if (trim(itemc) /= "hgt") then
-             name1 = trim(lpre)//'_'//trim(itemc)
-             call seq_flds_lookup(itemc,longname=lname,stdname=sname,units=cunit)
-             if (luse_float) then
-                rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_REAL,dimid,varid)
-                rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",real(lfillvalue,r4))
-             else
-                rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_DOUBLE,dimid,varid)
-                rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",lfillvalue)
-             end if
-             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
-             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
-             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
-             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"internal_dname",trim(dname))
-             if (present(tavg)) then
-                if (tavg) then
-                   rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"cell_methods","time: mean")
-                endif
-             endif
-             !-------tcraig
-          endif
-       enddo
-       if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
-    end if
-
-    if (lwdata) then
-       allocate(data(ns*ni))
-       ! note: size of dof is ns
-       call mct_gsmap_OrderedPoints(gsmap, iam, Dof)
-       if (ni > 1) then
-          allocate(dofn(ns*ni))
-          n = 0
-          do k1 = 1,ni
-             dofn(n+1:n+ns) = (k1-1)*ng + dof(:)
-             n = n + ns
-          enddo
-          call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny,ni/), dofn, iodesc)
-          deallocate(dofn)
-       else
-          call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
-       endif
-       deallocate(dof)
-
-       do k = 1,nf
-          call mct_aVect_getRList(mstring,k,AVS(1))
-          itemc = mct_string_toChar(mstring)
-          call mct_string_clean(mstring)
-          !------- this is a temporary mod to NOT write hgt
-          if (trim(itemc) /= "hgt") then
-             name1 = trim(lpre)//'_'//trim(itemc)
-             rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(name1),varid)
-             call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
-             n = 0
-             do k1 = 1,ni
-                data(n+1:n+ns) = AVS(k1)%rAttr(k,:)
-                n = n + ns
-             enddo
-             call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data, rcode, fillval=lfillvalue)
-          endif
-       enddo
-       call pio_freedecomp(cpl_io_file(lfile_ind), iodesc)
-       deallocate(data)
-
-    end if
-  end subroutine seq_io_write_avs
-
-  !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: seq_io_write_avs - write AVS to netcdf file
-  !
-  ! !DESCRIPTION:
-  !    Write AV to netcdf file
-  !
-  ! !REVISION HISTORY:
-  !    2007-Oct-26 - T. Craig - initial version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
-  subroutine seq_io_write_avscomp(filename, comp, flow, dname, &
-       whead, wdata, nx, ny, nt, fillval, dims2din, pre, tavg, use_float, file_ind, scolumn, mask)
-
-    ! !INPUT/OUTPUT PARAMETERS:
-    implicit none
-    character(len=*) ,intent(in)          :: filename  ! file
-    type(component_type)  ,intent(in)     :: comp(:)   ! data to be written
-    character(len=3) ,intent(in)          :: flow      ! 'c2x' or 'x2c'
-    character(len=*) ,intent(in)          :: dname     ! name of data
-    logical          ,optional,intent(in) :: whead     ! write header
-    logical          ,optional,intent(in) :: wdata     ! write data
-    integer(in)      ,optional,intent(in) :: nx        ! 2d grid size if available
-    integer(in)      ,optional,intent(in) :: ny        ! 2d grid size if available
-    integer(in)      ,optional,intent(in) :: nt        ! time sample
-    real(r8)         ,optional,intent(in) :: fillval   ! fill value
-    integer(in) ,optional,intent(in) :: dims2din(2) ! use previously made 2d dims
-    character(len=*) ,optional,intent(in) :: pre       ! prefix to variable name
-    logical          ,optional,intent(in) :: tavg      ! is this a tavg
-    logical          ,optional,intent(in) :: use_float ! write output as float rather than double
-    integer          ,optional,intent(in) :: file_ind
-    logical          ,optional,intent(in) :: scolumn    ! single column model flag
-    real(r8)         ,optional,intent(in) :: mask(:)
-    !EOP
-
-    type(mct_gsMap), pointer :: gsmap     ! global seg map on coupler processes
-    type(mct_avect), pointer :: avcomp1
-    type(mct_avect), pointer :: avcomp
-    integer(in)              :: rcode
-    integer(in)              :: iam
-    integer(in)              :: nf,ns,ng,ni
-    integer(in)              :: k,n,k1,k2
-    integer(in),target       :: dimid2(2)
-    integer(in),target       :: dimid3(3)
-    integer(in),target       :: dimid4(4)
-    integer(in),pointer      :: dimid(:)
-    type(var_desc_t)         :: varid
-    type(io_desc_t)          :: iodesc
-    integer(kind=Pio_Offset_Kind) :: frame
-    type(mct_string)         :: mstring     ! mct char type
-    character(CL)            :: itemc       ! string converted to char
-    character(CL)            :: name1       ! var name
-    character(CL)            :: cunit       ! var units
-    character(CL)            :: lname       ! long name
-    character(CL)            :: sname       ! standard name
-    character(CL)            :: lpre        ! local prefix
-    logical                  :: lwhead, lwdata
-    logical                  :: luse_float
-    integer(in)              :: lnx,lny
-    real(r8)                 :: lfillvalue
-    real(r8), allocatable    :: data(:)
-    character(*),parameter   :: subName = '(seq_io_write_avs) '
-    integer, pointer         :: Dof(:)
-    integer, pointer         :: Dofn(:)
-    integer                  :: lfile_ind
-    logical                  :: lcolumn
-
-    !-------------------------------------------------------------------------------
-    !
-    !-------------------------------------------------------------------------------
-
-    lfillvalue = fillvalue
-    if (present(fillval)) then
-       lfillvalue = fillval
-    endif
-
-    lpre = trim(dname)
-    if (present(pre)) then
-       lpre = trim(pre)
-    endif
-
-    lwhead = .true.
-    lwdata = .true.
-    lcolumn = .false.
-    if (present(whead)) lwhead = whead
-    if (present(wdata)) lwdata = wdata
-    if (present(scolumn)) lcolumn = scolumn
-    frame = -1
-    if (present(nt)) then
-       frame = nt
-    endif
-
-    if (.not.lwhead .and. .not.lwdata) then
-       ! should we write a warning?
-       return
-    endif
-
-    luse_float = .false.
-    if (present(use_float)) luse_float = use_float
-
-    lfile_ind = 0
-    if (present(file_ind)) lfile_ind=file_ind
-
-    call seq_comm_setptrs(CPLID,iam=iam)
-
-    ni = size(comp)
-    if (trim(flow) == 'x2c') avcomp1 => component_get_x2c_cx(comp(1))
-    if (trim(flow) == 'c2x') avcomp1 => component_get_c2x_cx(comp(1))
-    gsmap => component_get_gsmap_cx(comp(1))
-    ns = mct_aVect_lsize(avcomp1)
-    ng = mct_gsmap_gsize(gsmap)
-    lnx = ng
-    lny = 1
-
-    nf = mct_aVect_nRattr(avcomp1)
-    if (nf < 1) then
-       write(logunit,*) subname,' ERROR: nf = ',nf,trim(dname)
-       call shr_sys_abort(subname//'nf error')
-    endif
-
-    if (present(nx)) then
-       if (nx /= 0) lnx = nx
-    endif
-    if (present(ny)) then
-       if (ny /= 0) lny = ny
-    endif
-    if (lnx*lny /= ng .and. .not. lcolumn) then
-       if(iam==0) then
-          write(logunit,*) subname,' ERROR: grid2d size not consistent ',&
-               ng,lnx,lny,trim(dname)
-       end if
-       call shr_sys_abort(subname//'ERROR: grid2d size not consistent ')
-    endif
-
-    if (lwhead) then
-       if (present(dims2din)) then
-          dimid2(1)=dims2din(1)
-          dimid2(2)=dims2din(2)
-       else
-          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
-          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
-       endif
-
-       if (ni > 1) then
-          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ni',ni,dimid3(3))
-          if (present(nt)) then
-             dimid4(1:2) = dimid2
-             dimid4(3) = dimid3(3)
-             rcode = pio_inq_dimid(cpl_io_file(lfile_ind),'time',dimid4(4))
-             dimid => dimid4
-          else
-             dimid3(1:2) = dimid2
-             dimid => dimid3
-          endif
-       else
-          if (present(nt)) then
-             dimid3(1:2) = dimid2
-             rcode = pio_inq_dimid(cpl_io_file(lfile_ind),'time',dimid3(3))
-             dimid => dimid3
-          else
-             dimid => dimid2
-          endif
-       endif
-
-       do k = 1,nf
-          call mct_aVect_getRList(mstring,k,avcomp1)
-          itemc = mct_string_toChar(mstring)
-          call mct_string_clean(mstring)
-          !-------tcraig, this is a temporary mod to NOT write hgt
-          if (trim(itemc) /= "hgt") then
-             name1 = trim(lpre)//'_'//trim(itemc)
-             call seq_flds_lookup(itemc,longname=lname,stdname=sname,units=cunit)
-             if (luse_float) then
-                rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_REAL,dimid,varid)
-                rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",real(lfillvalue,r4))
-             else
-                rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_DOUBLE,dimid,varid)
-                rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",lfillvalue)
-             end if
-             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
-             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
-             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
-             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"internal_dname",trim(dname))
-             if (present(tavg)) then
-                if (tavg) then
-                   rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"cell_methods","time: mean")
-                endif
-             endif
-             !-------tcraig
-          endif
-       enddo
-       if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
-    end if
-
-    if (lwdata) then
-       allocate(data(ns*ni))
-       ! note: size of dof is ns
-       call mct_gsmap_OrderedPoints(gsmap, iam, Dof)
-       if (ni > 1) then
-          allocate(dofn(ns*ni))
-          n = 0
-          do k1 = 1,ni
-             do k2 = 1,ns
-                n = n + 1
-                dofn(n) = (k1-1)*ng + dof(k2)
-             enddo
-          enddo
-          call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny,ni/), dofn, iodesc)
-          deallocate(dofn)
-       else
-          call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
-       endif
-       deallocate(dof)
-
-       do k = 1,nf
-          call mct_aVect_getRList(mstring,k,avcomp1)
-          itemc = mct_string_toChar(mstring)
-          call mct_string_clean(mstring)
-          !-------tcraig, this is a temporary mod to NOT write hgt
-          if (trim(itemc) /= "hgt") then
-             name1 = trim(lpre)//'_'//trim(itemc)
-             rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(name1),varid)
-             call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
-             n = 0
-             do k1 = 1,ni
-                if (trim(flow) == 'x2c') avcomp => component_get_x2c_cx(comp(k1))
-                if (trim(flow) == 'c2x') avcomp => component_get_c2x_cx(comp(k1))
-                if (present(mask)) then
-                   do k2=1,ns
-                      n = n + 1
-                      if(mask(k2) /= 0) then
-                         data(n) = avcomp%rattr(k,k2)
-                      else
-                         data(n) = lfillvalue
-                      end if
-                   end do
-                else
-                  do k2 = 1,ns
-                      n = n + 1
-                      data(n) = avcomp%rAttr(k,k2)
-                   enddo
-                endif
-             enddo
-             call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data, rcode, fillval=lfillvalue)
-          endif
-       enddo
-
-       call pio_freedecomp(cpl_io_file(lfile_ind), iodesc)
-       deallocate(data)
-
-    end if
-  end subroutine seq_io_write_avscomp
 
   !===============================================================================
   !BOP ===========================================================================
@@ -1616,6 +892,7 @@ contains
   !
   ! !NOTES:
   !    - Only cell-type entities are supported (ent_type=1).
+  !            - not anymore: spectral case, atm needs vertices ent_type=0
   !    - Handles reordering of local/global cell IDs for correct output.
   !    - If matrix is not present, data is read from MOAB tags; if present, matrix is written directly.
   !    - Skips writing the field "hgt" as a temporary exclusion.
@@ -1623,6 +900,7 @@ contains
   !
   ! !REVISION HISTORY:
   !    2025-07-20 - Cursor - initial documentation
+  !    2025-09-24   allow vertex type for entity, for spectral case for atmosphere
   !
   ! !INTERFACE: ------------------------------------------------------------------
   subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, matrix, nx, ny, nt, file_ind, dims2din, dims2do, mask )
@@ -1635,8 +913,8 @@ contains
      ! !INPUT/OUTPUT PARAMETERS:
     implicit none
     character(len=*),intent(in) :: filename      ! file
-    integer(in), intent(in)     :: mbxid         ! imoab app id, on coupler 
-    character(len=*),intent(in) :: dname         ! name of data (prefix) 
+    integer(in), intent(in)     :: mbxid         ! imoab app id, on coupler
+    character(len=*),intent(in) :: dname         ! name of data (prefix)
     character(len=*),intent(in) :: tag_list      ! fields, separated by colon
     logical,optional,intent(in) :: whead         ! write header
     logical,optional,intent(in) :: wdata         ! write data
@@ -1670,12 +948,13 @@ contains
     integer(in),target  :: dimid2(2)
     integer(in),target  :: dimid3(3)
     integer(in),pointer :: dimid(:)
-    integer(in)              :: dummy, ent_type, ierr
+    integer(in)              :: ngv, ent_type, ierr
     real(r8)                 :: lfillvalue
     integer, allocatable         :: indx(:) !  this will be ordered
     integer, allocatable         :: Dof(:)  ! will be filled with global ids from cells
     integer, allocatable         :: Dof_reorder(:)  !
     real(r8), allocatable        :: data1(:), data_reorder(:)
+    logical                    :: dead_comps = .false.
 
     !-------------------------------------------------------------------------------
     !
@@ -1683,7 +962,7 @@ contains
 
     lwhead = .true.
     lwdata = .true.
-    lfillvalue = fillvalue 
+    lfillvalue = fillvalue
     if (present(whead)) lwhead = whead
     if (present(wdata)) lwdata = wdata
     frame = -1
@@ -1691,7 +970,6 @@ contains
        ! should we write a warning?
        return
     endif
-    ent_type = 1 ! cells type
 
     lfile_ind = 0
     if (present(file_ind)) lfile_ind=file_ind
@@ -1700,7 +978,6 @@ contains
 
     call mct_list_init(temp_list ,trim(tag_list))
     size_list=mct_list_nitem (temp_list)  ! role of nf, number fields
-    ent_type = 1 ! cell for atm, atm_pg_active
 
     if (size_list < 1) then
        write(logunit,*) subname,' ERROR: size_list = ',size_list,trim(dname)
@@ -1709,10 +986,25 @@ contains
 
     lpre = trim(dname)
     ! find out the number of global cells, needed for defining the variables length
-    ierr = iMOAB_GetGlobalInfo( mbxid, dummy, ng)
-    lnx = ng
+    ierr = iMOAB_GetGlobalInfo( mbxid, ngv, ng)
     lny = 1
 
+    ! Use global dead_comps flag from seq_comm_mct (set during cplcomp_moab_Init)
+    dead_comps = mb_dead_comps
+
+    ! get the local size ns
+    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
+    if (((.not. atm_pg_active .and. (mbaxid .eq. mbxid)) &
+       .or. (mb_scm_land .and. (mblxid .eq. mbxid)) .or. nvise(1) .eq. 0) &
+       .and. .not. dead_comps) then
+      ent_type = 0
+      ns = nvert(1) ! local vertices
+      lnx = ngv ! number of global vertices
+    else
+      ent_type = 1
+      ns = nvise(1) ! local cells
+      lnx = ng
+    endif
     ! it is needed to overwrite that for land, ng is too small
     !  ( for ne4pg2 it is 201 instead of 384)
     if (present(nx)) then
@@ -1724,11 +1016,6 @@ contains
     if (present(nt)) then
        frame = nt
     endif
-
-    ! get the local size ns
-    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
-    ns = nvise(1) ! local cells 
-
     if (lwhead) then
        if (present(dims2din)) then
           dimid2(1)=dims2din(1)
@@ -1794,14 +1081,14 @@ contains
           call IndexSort(ns, indx, dof, descend=.false.)
           !      after sort, dof( indx(i)) < dof( indx(i+1) )
           do ix=1,ns
-             dof_reorder(ix) = dof(indx(ix)) ! 
+             dof_reorder(ix) = dof(indx(ix)) !
           enddo
           ! so we know that dof_reorder(ix) < dof_reorder(ix+1)
        endif
        call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof_reorder, iodesc)
 
        deallocate(dof)
-       deallocate(dof_reorder) 
+       deallocate(dof_reorder)
        do index_list = 1, size_list
           call mct_list_get(mctOStr,index_list,temp_list)
           field = mct_string_toChar(mctOStr)
@@ -1812,12 +1099,12 @@ contains
              call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
              if (present(matrix)) then
                do ix = 1, ns
-                 data1(ix) = matrix(ix, index_list) ! 
+                 data1(ix) = matrix(ix, index_list) !
                enddo
              else
                tagname = trim(field)//C_NULL_CHAR
                if (ns > 0 ) then
-                  ierr = iMOAB_GetDoubleTagStorage (mbxid, tagname, ns , ent_type, data1)
+                  ierr = iMOAB_GetDoubleTagStorage (mbxid, tagname, ns, ent_type, data1)
                   if (ierr .ne. 0) then
                      write(logunit,*) subname,' ERROR: cannot get tag data ', trim(tagname)
                      call shr_sys_abort(subname//'cannot get tag data ')
@@ -1826,12 +1113,15 @@ contains
              endif
 
              ! remove MOAB default values
+             ! This is needed to match MCT coupler history fields where data
+             ! is always initialized to zero.  It is safe because no physical
+             ! value will ever be near -1e10.
+             ! This can be removed after driver-moab is accepted.
              do ix = 1, ns
                if (data1(ix) < -9.99999E+9_r8) then
                   data1(ix) = 0.0_r8
                endif
              enddo
-
 
              ! rearrange data for writing and handle mask
              if(present(mask)) then
@@ -1847,7 +1137,7 @@ contains
                   data_reorder(ix) = data1(indx(ix))
                enddo
              endif
-             
+
              call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data_reorder, rcode, fillval=lfillvalue)
           endif
        enddo
@@ -1861,477 +1151,6 @@ contains
 
 
   end subroutine seq_io_write_moab_tags
-
-  !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: seq_io_read_av - read AV from netcdf file
-  !
-  ! !DESCRIPTION:
-  !    Read AV from netcdf file
-  !
-  ! !REVISION HISTORY:
-  !    2007-Oct-26 - T. Craig - initial version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
-  subroutine seq_io_read_av(filename,gsmap,AV,dname,pre)
-
-    ! !INPUT/OUTPUT PARAMETERS:
-    implicit none
-    character(len=*),intent(in) :: filename ! file
-    type(mct_gsMap), intent(in) :: gsmap
-    type(mct_aVect) ,intent(inout):: AV     ! data to be read
-    character(len=*),intent(in) :: dname    ! name of data
-    character(len=*),intent(in),optional :: pre      ! prefix name
-
-    !EOP
-
-    integer(in) :: rcode
-    integer(in) :: iam,mpicom
-    integer(in) :: nf,ns,ng
-    integer(in) :: k,n, ndims
-    logical :: exists
-    type(file_desc_t) :: pioid
-    integer(in) :: dimid(2)
-    type(var_desc_t) :: varid
-    integer(in) :: lnx,lny
-    type(mct_string) :: mstring     ! mct char type
-    character(CL)    :: itemc       ! string converted to char
-    type(io_desc_t) :: iodesc
-    integer(in), pointer :: dof(:)
-    character(CL)  :: lversion
-    character(CL)  :: name1
-    character(CL)  :: lpre
-    character(*),parameter :: subName = '(seq_io_read_av) '
-    !-------------------------------------------------------------------------------
-    !
-    !-------------------------------------------------------------------------------
-
-    lversion = trim(version0)
-
-    lpre = trim(dname)
-    if (present(pre)) then
-       lpre = trim(pre)
-    endif
-
-    call seq_comm_setptrs(CPLID,iam=iam,mpicom=mpicom)
-    call mct_gsmap_OrderedPoints(gsmap, iam, Dof)
-
-    ns = mct_aVect_lsize(AV)
-    nf = mct_aVect_nRattr(AV)
-
-    if (iam==0) inquire(file=trim(filename),exist=exists)
-    call shr_mpi_bcast(exists,mpicom,'seq_io_read_av exists')
-    if (exists) then
-       rcode = pio_openfile(cpl_io_subsystem, pioid, cpl_pio_iotype, trim(filename),pio_nowrite)
-       if(iam==0) write(logunit,*) subname,' open file ',trim(filename)
-       call pio_seterrorhandling(pioid,PIO_BCAST_ERROR)
-       rcode = pio_get_att(pioid,pio_global,"file_version",lversion)
-       call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
-    else
-       if(iam==0) write(logunit,*) subname,' ERROR: file invalid ',trim(filename),' ',trim(dname)
-       call shr_sys_abort(subname//'ERROR: file invalid '//trim(filename)//' '//trim(dname))
-    endif
-
-    do k = 1,nf
-       call mct_aVect_getRList(mstring,k,AV)
-       itemc = mct_string_toChar(mstring)
-       call mct_string_clean(mstring)
-       if (trim(lversion) == trim(version)) then
-          name1 = trim(lpre)//'_'//trim(itemc)
-       else
-          name1 = trim(prefix)//trim(dname)//'_'//trim(itemc)
-       endif
-       call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
-       rcode = pio_inq_varid(pioid,trim(name1),varid)
-       if (rcode == pio_noerr) then
-          if (k==1) then
-             rcode = pio_inq_varndims(pioid, varid, ndims)
-             rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
-             rcode = pio_inq_dimlen(pioid, dimid(1), lnx)
-             if (ndims>=2) then
-                rcode = pio_inq_dimlen(pioid, dimid(2), lny)
-             else
-                lny = 1
-             end if
-             ng = lnx * lny
-             if (ng /= mct_gsmap_gsize(gsmap)) then
-                if (iam==0) write(logunit,*) subname,' ERROR: dimensions do not match',&
-                     lnx,lny,mct_gsmap_gsize(gsmap)
-                call shr_sys_abort(subname//'ERROR: dimensions do not match')
-             end if
-             call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
-             deallocate(dof)
-          end if
-          call pio_read_darray(pioid,varid,iodesc, av%rattr(k,:), rcode)
-       else
-          write(logunit,*)'seq_io_readav warning: field ',trim(itemc),' is not on restart file'
-          write(logunit,*)'for backwards compatibility will set it to 0'
-          av%rattr(k,:) = 0.0_r8
-       end if
-       call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
-
-    enddo
-
-    !--- zero out fill value, this is somewhat arbitrary
-    do n = 1,ns
-       do k = 1,nf
-          if (AV%rAttr(k,n) == fillvalue) then
-             AV%rAttr(k,n) = 0.0_r8
-          endif
-       enddo
-    enddo
-
-    call pio_freedecomp(pioid, iodesc)
-    call pio_closefile(pioid)
-
-  end subroutine seq_io_read_av
-
-  !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: seq_io_read_avs - read AV from netcdf file
-  !
-  ! !DESCRIPTION:
-  !    Read AV from netcdf file
-  !
-  ! !REVISION HISTORY:
-  !    2007-Oct-26 - T. Craig - initial version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
-  subroutine seq_io_read_avs(filename,gsmap,AVS,dname,pre)
-
-    ! !INPUT/OUTPUT PARAMETERS:
-    implicit none
-    character(len=*),intent(in) :: filename ! file
-    type(mct_gsMap), intent(in) :: gsmap
-    type(mct_aVect) ,intent(inout):: AVS(:) ! data to be read
-    character(len=*),intent(in) :: dname    ! name of data
-    character(len=*),intent(in),optional :: pre      ! prefix name
-
-    !EOP
-
-    integer(in) :: rcode
-    integer(in) :: iam,mpicom
-    integer(in) :: nf,ns,ng,ni
-    integer(in) :: k,n,n1,n2,ndims
-    type(file_desc_t) :: pioid
-    integer(in) :: dimid(4)
-    type(var_desc_t) :: varid
-    integer(in) :: lnx,lny,lni
-    type(mct_string) :: mstring     ! mct char type
-    character(CL)    :: itemc       ! string converted to char
-    logical :: exists
-    type(io_desc_t) :: iodesc
-    integer(in), pointer :: dof(:)
-    integer(in), pointer :: dofn(:)
-    real(r8), allocatable :: data(:)
-    character(CL)  :: lversion
-    character(CL)  :: name1
-    character(CL)  :: lpre
-    character(*),parameter :: subName = '(seq_io_read_avs) '
-    !-------------------------------------------------------------------------------
-    !
-    !-------------------------------------------------------------------------------
-
-    lversion = trim(version0)
-
-    lpre = trim(dname)
-    if (present(pre)) then
-       lpre = trim(pre)
-    endif
-
-    call seq_comm_setptrs(CPLID,iam=iam,mpicom=mpicom)
-    call mct_gsmap_OrderedPoints(gsmap, iam, Dof)
-
-    ni = size(AVS)
-    ns = mct_aVect_lsize(AVS(1))
-    nf = mct_aVect_nRattr(AVS(1))
-    ng = mct_gsmap_gsize(gsmap)
-
-    if (iam==0) inquire(file=trim(filename),exist=exists)
-    call shr_mpi_bcast(exists,mpicom,'seq_io_read_avs exists')
-    if (exists) then
-       rcode = pio_openfile(cpl_io_subsystem, pioid, cpl_pio_iotype, trim(filename),pio_nowrite)
-       if(iam==0) write(logunit,*) subname,' open file ',trim(filename),' for ',trim(dname)
-       call pio_seterrorhandling(pioid,PIO_BCAST_ERROR)
-       rcode = pio_get_att(pioid,pio_global,"file_version",lversion)
-       call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
-    else
-       if(iam==0) write(logunit,*) subname,' ERROR: file invalid ',trim(filename),' ',trim(dname)
-       call shr_sys_abort(subname//'ERROR: file invalid '//trim(filename)//' '//trim(dname))
-    endif
-
-    allocate(data(ni*ns))
-
-    do k = 1,nf
-       call mct_aVect_getRList(mstring,k,AVS(1))
-       itemc = mct_string_toChar(mstring)
-       call mct_string_clean(mstring)
-       if (trim(lversion) == trim(version)) then
-          name1 = trim(lpre)//'_'//trim(itemc)
-       else
-          name1 = trim(prefix)//trim(dname)//'_'//trim(itemc)
-       endif
-       call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
-       rcode = pio_inq_varid(pioid,trim(name1),varid)
-       if (rcode == pio_noerr) then
-          if (k==1) then
-             rcode = pio_inq_varndims(pioid, varid, ndims)
-             rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
-             rcode = pio_inq_dimlen(pioid, dimid(1), lnx)
-             if (ndims>=2) then
-                rcode = pio_inq_dimlen(pioid, dimid(2), lny)
-             else
-                lny = 1
-             end if
-             if (lnx*lny /= ng) then
-                write(logunit,*) subname,' ERROR: dimensions do not match',&
-                     lnx,lny,mct_gsmap_gsize(gsmap)
-                call shr_sys_abort(subname//'ERROR: dimensions do not match')
-             end if
-             if (ndims>=3) then
-                rcode = pio_inq_dimlen(pioid, dimid(3), lni)
-             else
-                lni = 1
-             end if
-             if (ni /= lni) then
-                write(logunit,*) subname,' ERROR: ni dimensions do not match',ni,lni
-                call shr_sys_abort(subname//'ERROR: ni dimensions do not match')
-             end if
-             if (ni > 1) then
-                allocate(dofn(ns*ni))
-                n = 0
-                do n1 = 1,ni
-                   do n2 = 1,ns
-                      n = n + 1
-                      dofn(n) = (n1-1)*ng + dof(n2)
-                   enddo
-                enddo
-                call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny,lni/), dofn, iodesc)
-                deallocate(dofn)
-             else
-                call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
-             endif
-             deallocate(dof)
-          end if
-
-          call pio_read_darray(pioid,varid,iodesc, data, rcode)
-          n = 0
-          do n1 = 1,ni
-             do n2 = 1,ns
-                n = n + 1
-                avs(n1)%rAttr(k,n2) = data(n)
-             enddo
-          enddo
-       else
-          write(logunit,*)'seq_io_readav warning: field ',trim(itemc),' is not on restart file'
-          write(logunit,*)'for backwards compatibility will set it to 0'
-          do n1 = 1,ni
-             avs(n1)%rattr(k,:) = 0.0_r8
-          enddo
-       end if
-       call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
-    enddo
-
-    deallocate(data)
-
-    !--- zero out fill value, this is somewhat arbitrary
-    do n1 = 1,ni
-       do n2 = 1,ns
-          do k = 1,nf
-             if (AVS(n1)%rAttr(k,n2) == fillvalue) then
-                AVS(n1)%rAttr(k,n2) = 0.0_r8
-             endif
-          enddo
-       enddo
-    enddo
-
-    call pio_freedecomp(pioid, iodesc)
-    call pio_closefile(pioid)
-
-  end subroutine seq_io_read_avs
-
-  !===============================================================================
-  !BOP ===========================================================================
-  !
-  ! !IROUTINE: seq_io_read_avscomp - read AV from netcdf file
-  !
-  ! !DESCRIPTION:
-  !    Read AV from netcdf file
-  !
-  ! !REVISION HISTORY:
-  !    2007-Oct-26 - T. Craig - initial version
-  !
-  ! !INTERFACE: ------------------------------------------------------------------
-
-  subroutine seq_io_read_avscomp(filename, comp, flow, dname, pre)
-
-    ! !INPUT/OUTPUT PARAMETERS:
-    implicit none
-    character(len=*), intent(in)          :: filename ! file
-    type(component_type),  intent(inout)       :: comp(:)
-    character(len=3), intent(in)          :: flow     ! 'c2x' or 'x2c'
-    character(len=*), intent(in)          :: dname    ! name of data
-    character(len=*), intent(in),optional :: pre      ! prefix name
-
-    !EOP
-
-    type(mct_gsMap), pointer :: gsmap
-    type(mct_aVect), pointer :: avcomp
-    type(mct_aVect), pointer :: avcomp1
-    integer(in)              :: rcode
-    integer(in)              :: iam,mpicom
-    integer(in)              :: nf,ns,ng,ni
-    integer(in)              :: k,n,n1,n2,ndims
-    type(file_desc_t)        :: pioid
-    integer(in)              :: dimid(4)
-    type(var_desc_t)         :: varid
-    integer(in)              :: lnx,lny,lni
-    type(mct_string)         :: mstring ! mct char type
-    character(CL)            :: itemc   ! string converted to char
-    logical                  :: exists
-    type(io_desc_t)          :: iodesc
-    integer(in), pointer     :: dof(:)
-    integer(in), pointer     :: dofn(:)
-    real(r8), allocatable    :: data(:)
-    character(CL)            :: lversion
-    character(CL)            :: name1
-    character(CL)            :: lpre
-    character(*),parameter   :: subName = '(seq_io_read_avscomp) '
-    !-------------------------------------------------------------------------------
-    !
-    !-------------------------------------------------------------------------------
-
-    lversion = trim(version0)
-
-    lpre = trim(dname)
-    if (present(pre)) then
-       lpre = trim(pre)
-    endif
-
-    gsmap => component_get_gsmap_cx(comp(1))
-    if (trim(flow) == 'x2c') avcomp1 => component_get_x2c_cx(comp(1))
-    if (trim(flow) == 'c2x') avcomp1 => component_get_c2x_cx(comp(1))
-
-    call seq_comm_setptrs(CPLID,iam=iam,mpicom=mpicom)
-    call mct_gsmap_OrderedPoints(gsmap, iam, Dof)
-
-    ni = size(comp)
-    ns = mct_aVect_lsize(avcomp1)
-    nf = mct_aVect_nRattr(avcomp1)
-    ng = mct_gsmap_gsize(gsmap)
-
-    if (iam==0) inquire(file=trim(filename),exist=exists)
-    call shr_mpi_bcast(exists,mpicom,'seq_io_read_avscomp exists')
-    if (exists) then
-       rcode = pio_openfile(cpl_io_subsystem, pioid, cpl_pio_iotype, trim(filename),pio_nowrite)
-       if(iam==0) write(logunit,*) subname,' open file ',trim(filename),' for ',trim(dname)
-       call pio_seterrorhandling(pioid,PIO_BCAST_ERROR)
-       rcode = pio_get_att(pioid,pio_global,"file_version",lversion)
-       call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
-    else
-       if(iam==0) write(logunit,*) subname,' ERROR: file invalid ',trim(filename),' ',trim(dname)
-       call shr_sys_abort(subname//'ERROR: file invalid '//trim(filename)//' '//trim(dname))
-    endif
-
-    allocate(data(ni*ns))
-
-    do k = 1,nf
-       call mct_aVect_getRList(mstring,k,avcomp1)
-       itemc = mct_string_toChar(mstring)
-       call mct_string_clean(mstring)
-       if (trim(lversion) == trim(version)) then
-          name1 = trim(lpre)//'_'//trim(itemc)
-       else
-          name1 = trim(prefix)//trim(dname)//'_'//trim(itemc)
-       endif
-       call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
-       rcode = pio_inq_varid(pioid,trim(name1),varid)
-       if (rcode == pio_noerr) then
-          if (k==1) then
-             rcode = pio_inq_varndims(pioid, varid, ndims)
-             rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
-             rcode = pio_inq_dimlen(pioid, dimid(1), lnx)
-             if (ndims>=2) then
-                rcode = pio_inq_dimlen(pioid, dimid(2), lny)
-             else
-                lny = 1
-             end if
-             if (lnx*lny /= ng) then
-                write(logunit,*) subname,' ERROR: dimensions do not match',&
-                     lnx,lny,mct_gsmap_gsize(gsmap)
-                call shr_sys_abort(subname//'ERROR: dimensions do not match')
-             end if
-             if (ndims>=3) then
-                rcode = pio_inq_dimlen(pioid, dimid(3), lni)
-             else
-                lni = 1
-             end if
-             if (ni /= lni) then
-                write(logunit,*) subname,' ERROR: ni dimensions do not match',ni,lni
-                call shr_sys_abort(subname//'ERROR: ni dimensions do not match')
-             end if
-             if (ni > 1) then
-                allocate(dofn(ns*ni))
-                n = 0
-                do n1 = 1,ni
-                   do n2 = 1,ns
-                      n = n + 1
-                      dofn(n) = (n1-1)*ng + dof(n2)
-                   enddo
-                enddo
-                call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny,lni/), dofn, iodesc)
-                deallocate(dofn)
-             else
-                call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
-             endif
-             deallocate(dof)
-          end if
-
-          call pio_read_darray(pioid,varid,iodesc, data, rcode)
-          n = 0
-          do n1 = 1,ni
-             if (trim(flow) == 'x2c') avcomp => component_get_x2c_cx(comp(n1))
-             if (trim(flow) == 'c2x') avcomp => component_get_c2x_cx(comp(n1))
-             do n2 = 1,ns
-                n = n + 1
-                avcomp%rAttr(k,n2) = data(n)
-             enddo
-          enddo
-       else
-          write(logunit,*)'seq_io_readav warning: field ',trim(itemc),' is not on restart file'
-          write(logunit,*)'for backwards compatibility will set it to 0'
-          do n1 = 1,ni
-             if (trim(flow) == 'x2c') avcomp => component_get_x2c_cx(comp(n1))
-             if (trim(flow) == 'c2x') avcomp => component_get_c2x_cx(comp(n1))
-             avcomp%rattr(k,:) = 0.0_r8
-          enddo
-       end if
-       call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
-    enddo
-
-    deallocate(data)
-
-    !--- zero out fill value, this is somewhat arbitrary
-    do n1 = 1,ni
-       if (trim(flow) == 'x2c') avcomp => component_get_x2c_cx(comp(n1))
-       if (trim(flow) == 'c2x') avcomp => component_get_c2x_cx(comp(n1))
-       do n2 = 1,ns
-          do k = 1,nf
-             if (avcomp%rAttr(k,n2) == fillvalue) then
-                avcomp%rAttr(k,n2) = 0.0_r8
-             endif
-          enddo
-       enddo
-    enddo
-
-    call pio_freedecomp(pioid, iodesc)
-    call pio_closefile(pioid)
-
-  end subroutine seq_io_read_avscomp
 
   !===============================================================================
   !BOP ===========================================================================
@@ -2623,6 +1442,7 @@ contains
   !
   ! !NOTES:
   !    - Only cell-type entities are supported (ent_type=1).
+  !         - not anymore: spectral case, atm, uses vertices, ent_type = 0
   !    - Handles reordering of local/global cell IDs for correct mapping.
   !    - If matrix is present, data is stored in the matrix; otherwise, data is set as MOAB tags.
   !    - Skips reading the field "hgt" as a temporary exclusion.
@@ -2630,6 +1450,7 @@ contains
   !
   ! !REVISION HISTORY:
   !    2025-07-20 - Cursor - initial documentation
+  !    2025-09-24  spectral case atm
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
@@ -2642,8 +1463,8 @@ contains
      ! !INPUT/OUTPUT PARAMETERS:
     implicit none
     character(len=*),intent(in) :: filename      ! file
-    integer(in), intent(in)     :: mbxid         ! imoab app id, on coupler 
-    character(len=*),intent(in) :: dname         ! name of data (prefix) 
+    integer(in), intent(in)     :: mbxid         ! imoab app id, on coupler
+    character(len=*),intent(in) :: dname         ! name of data (prefix)
     character(len=*),intent(in) :: tag_list      ! fields, separated by colon
     real(r8), dimension(:,:), pointer, optional :: matrix  ! this may or may not be passed
     integer, optional,intent(in):: nx
@@ -2677,17 +1498,16 @@ contains
     type(mct_string)    :: mctOStr  !
     character(CXX) ::tagname, field
 
-    integer(in)              :: dummy, ent_type, ierr
+    integer(in)              :: ngv, ent_type, ierr
     character(*),parameter :: subName = '(seq_io_read_moab_tags) '
 
-    
+
     lpre = trim(dname)
 
     call seq_comm_setptrs(CPLID,iam=iam,mpicom=mpicom)
 
     call mct_list_init(temp_list ,trim(tag_list))
     size_list=mct_list_nitem (temp_list)  ! role of nf, number fields
-    ent_type = 1 ! cell for atm, atm_pg_active
 
     if (size_list < 1) then
        write(logunit,*) subname,' ERROR: size_list = ',size_list,trim(dname)
@@ -2711,56 +1531,53 @@ contains
     endif
 
         ! find out the number of global cells, needed for defining the variables length
-    ierr = iMOAB_GetGlobalInfo( mbxid, dummy, ng)
-    lnx = ng
+    ierr = iMOAB_GetGlobalInfo( mbxid, ngv, ng)
+    lny = 1 ! do we need 2 var, or just 1
+    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
+    if (((.not. atm_pg_active .and. (mbaxid .eq. mbxid)) .or. &
+       (mb_scm_land .and. (mblxid .eq. mbxid)) .or. nvise(1) .eq. 0) &
+       .and. .not. mb_dead_comps) then
+      ent_type = 0
+      ns = nvert(1) ! local vertices
+      lnx = ngv ! number of global vertices
+    else
+      ent_type = 1
+      ns = nvise(1) ! local cells
+      lnx = ng
+    endif
     ! it is needed to overwrite that for land, ng is too small
     !  ( for ne4pg2 it is 201 instead of 384)
     if (present(nx)) then
-#ifdef MOABCOMP
-       if (iam==0) write(logunit,*) subname, ' nx present: ', nx  
-#endif
        lnx = nx 
     endif
-    lny = 1 ! do we need 2 var, or just 1 
-    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
-    ns = nvise(1) ! local cells 
     allocate(data1(ns))
     allocate(data_reorder(ns))
     allocate(dof(ns))
     allocate(dof_reorder(ns))
-#ifdef MOABCOMP
-    if (iam==0) write(logunit,*) subname, ' ns, lnx ', ns, lnx, ' dname ', trim(dname)  
-#endif
 
    ! note: size of dof is ns
     tagname = 'GLOBAL_ID'//C_NULL_CHAR
-    if (ns > 0 ) then 
+    if (ns > 0 ) then
        ierr = iMOAB_GetIntTagStorage ( mbxid, tagname, ns , ent_type, dof)
        if (ierr .ne. 0) then
           write(logunit,*) subname,' ERROR: cannot get dofs '
           call shr_sys_abort(subname//'cannot get dofs ')
        endif
     endif
-#ifdef MOABCOMP
-   if (iam==0) write(logunit,*) subname, ' dofs on iam=0: ', dof  
-#endif
    allocate(indx(ns))
    call IndexSet(ns, indx)
    call IndexSort(ns, indx, dof, descend=.false.)
    !      after sort, dof( indx(i)) < dof( indx(i+1) )
    do ix=1,ns
-      dof_reorder(ix) = dof(indx(ix)) ! 
+      dof_reorder(ix) = dof(indx(ix)) !
    enddo
-#ifdef MOABCOMP
-   if (iam==0) write(logunit,*) subname, ' dof_reorder on iam=0: ', dof_reorder
-#endif
    deallocate(dof)
 
    do index_list = 1, size_list
        call mct_list_get(mctOStr,index_list,temp_list)
        field = mct_string_toChar(mctOStr)
        name1 = trim(lpre)//'_'//trim(field)
-      
+
        call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
        rcode = pio_inq_varid(pioid,trim(name1),varid)
        if (rcode == pio_noerr) then
@@ -2778,7 +1595,7 @@ contains
 !                     lnx,lny, ng
 !                call shr_sys_abort(subname//'ERROR: dimensions do not match')
 !             end if
-             
+
              call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof_reorder, iodesc)
 
              deallocate(dof_reorder)
@@ -2786,16 +1603,10 @@ contains
 
           call pio_read_darray(pioid,varid,iodesc, data1, rcode)
           do ix=1,ns
-             data_reorder(indx(ix)) = data1(ix) ! or is it data_reorder(ix) = data1(indx(ix)) ? 
+             data_reorder(indx(ix)) = data1(ix) ! or is it data_reorder(ix) = data1(indx(ix)) ?
           enddo
-#ifdef MOABCOMP
-          if (iam==0 .and. index_list==1) then
-             write(logunit,*) subname, 'data1   ',  data1
-             write(logunit,*) subname, 'data_reorder   ',  data_reorder
-          endif
-#endif
           if (present(matrix)) then
-            !matrix(:, index_list)  = data_reorder(:) ! 
+            !matrix(:, index_list)  = data_reorder(:) !
             do ix = 1,ns
                matrix(ix, index_list)  = data_reorder(ix) !
             enddo
@@ -2824,7 +1635,7 @@ contains
          !  enddo
          data_reorder = 0.
          if (present(matrix)) then
-            ! matrix(:, index_list)  = data_reorder(:) ! 
+            ! matrix(:, index_list)  = data_reorder(:) !
             do ix = 1,ns
                matrix(ix, index_list)  = data_reorder(ix) !
             enddo

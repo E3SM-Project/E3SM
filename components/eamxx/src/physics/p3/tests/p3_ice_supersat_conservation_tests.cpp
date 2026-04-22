@@ -4,7 +4,7 @@
 #include "p3_test_data.hpp"
 #include "p3_unit_tests_common.hpp"
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 namespace scream {
 namespace p3 {
@@ -15,8 +15,8 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::Uni
 
   void run_bfb()
   {
-    constexpr Scalar latvap       = C::LatVap;
-    constexpr Scalar latice       = C::LatIce;
+    constexpr Scalar latvap       = C::LatVap.value;
+    constexpr Scalar latice       = C::LatIce.value;
 
     auto engine = Base::get_engine();
 
@@ -48,12 +48,12 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::Uni
 
     // Get data from cxx. Run ice_supersat_conservation from a kernel and copy results back to host
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init pack inputs
-      Spack cld_frac_i, qidep, qinuc, qinuc_cnt, qv, qv_sat_i, t_atm, qi2qv_sublim_tend, qr2qv_evap_tend;
-      Smask context;
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      Pack cld_frac_i, qidep, qinuc, qinuc_cnt, qv, qv_sat_i, t_atm, qi2qv_sublim_tend, qr2qv_evap_tend;
+      Mask context;
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         cld_frac_i[s]        = cxx_device(vs).cld_frac_i;
         qidep[s]             = cxx_device(vs).qidep;
         qinuc[s]             = cxx_device(vs).qinuc;
@@ -69,7 +69,7 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::Uni
       Functions::ice_supersat_conservation(qidep, qinuc, qinuc_cnt, cld_frac_i, qv, qv_sat_i, t_atm, cxx_device(offset).dt, qi2qv_sublim_tend, qr2qv_evap_tend, use_hetfrz_classnuc, context);
 
       // Copy spacks back into cxx_device view
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         cxx_device(vs).qidep = qidep[s];
         cxx_device(vs).qinuc = qinuc[s];
       }

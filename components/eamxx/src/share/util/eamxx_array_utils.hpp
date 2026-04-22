@@ -1,7 +1,7 @@
 #ifndef SCREAM_ARRAY_UTILS_HPP
 #define SCREAM_ARRAY_UTILS_HPP
 
-#include "share/eamxx_types.hpp"
+#include "share/core/eamxx_types.hpp"
 
 #include <ekat_assert.hpp>
 #include <ekat_kernel_assert.hpp>

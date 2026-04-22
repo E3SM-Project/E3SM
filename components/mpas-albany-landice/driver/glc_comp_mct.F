@@ -324,6 +324,7 @@ contains
     ! Setup function pointers for MALI core and domain types
     call li_setup_core(corelist)
     call li_setup_domain(domain)
+    domain % domainID = 0
 
     ! ===========
     ! Initialize log manager
@@ -475,6 +476,10 @@ contains
        mesh_iotype = MPAS_IO_NETCDF
     else if (trim(iotype) == 'netcdf4') then
        mesh_iotype = MPAS_IO_NETCDF4
+    else if (trim(iotype) == 'adios') then
+       mesh_iotype = MPAS_IO_ADIOS
+    else if (trim(iotype) == 'adiosc') then
+       mesh_iotype = MPAS_IO_ADIOSC
     else
        mesh_iotype = MPAS_IO_PNETCDF
     end if

@@ -1,8 +1,8 @@
 #ifndef ZM_UNIT_TESTS_COMMON_HPP
 #define ZM_UNIT_TESTS_COMMON_HPP
 
-#include "share/eamxx_types.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/core/eamxx_types.hpp"
+#include "share/core/eamxx_setup_random_test.hpp"
 #include "zm_functions.hpp"
 #include "zm_test_data.hpp"
 
@@ -48,10 +48,10 @@ struct UnitWrap {
 
     using Functions          = scream::zm::Functions<Real, Device>;
     using Scalar             = typename Functions::Scalar;
-    using Spack              = typename Functions::Spack;
+    using Pack              = typename Functions::Pack;
 
     static constexpr Int max_pack_size = 16;
-    static constexpr Int num_test_itrs = max_pack_size / Spack::n;
+    static constexpr Int num_test_itrs = max_pack_size / Pack::n;
 
     struct Base : public UnitBase {
 
@@ -65,8 +65,23 @@ struct UnitWrap {
     };
 
     // Put struct decls here
-    struct Test_zm_find_mse_max;
-    
+    struct TestIentropy;
+    struct TestEntropy;
+    struct TestZmTransportTracer;
+    struct TestZmTransportMomentum;
+    struct TestComputeDiluteCape;
+    struct TestFindMseMax;
+    struct TestComputeDiluteParcel;
+    struct TestComputeCapeFromParcel;
+    struct TestZmConvMcspCalculateShear;
+    struct TestZmConvMcspTend;
+    struct TestZmConvMain;
+    struct TestZmConvEvap;
+    struct TestZmCalcFractionalEntrainment;
+    struct TestZmDowndraftProperties;
+    struct TestZmCloudProperties;
+    struct TestZmClosure;
+    struct TestZmCalcOutputTend;
   }; // UnitWrap
 };
 
