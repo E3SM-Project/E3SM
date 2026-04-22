@@ -285,6 +285,8 @@ my $LND_GRID        = $xmlvars{'LND_GRID'};
 my $ROF_NCPL        = $xmlvars{'ROF_NCPL'};
 my $NCPL_BASE_PERIOD = $xmlvars{'NCPL_BASE_PERIOD'};
 
+my $wave_comp        = "$xmlvars{'COMP_WAV'}";
+
 (-d $DIN_LOC_ROOT)  or  mkdir $DIN_LOC_ROOT;
 if ($print>=2) { 
     print "model inputdata root directory: $DIN_LOC_ROOT \n"; 
@@ -330,7 +332,11 @@ else {
     add_default($nl, 'RoutingMethod');
     add_default($nl, 'DLevelH2R');
     add_default($nl, 'DLevelR');
-    add_default($nl, 'redirect_negative_qgwl');
+    if ($wave_comp eq 'ww3') {
+       add_default($nl, 'redirect_negative_qgwl', 'val'=>".true.");
+    } else {
+       add_default($nl, 'redirect_negative_qgwl');
+    }
 #    add_default($nl, 'finidat_rtm' , 'rof_grid'=>$ROF_GRID, 'simyr'=>$opts{'simyr'}, 'nofail'=>1 );
     my $val = 0;
     if ($NCPL_BASE_PERIOD eq "year") {

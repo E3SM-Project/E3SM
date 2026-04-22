@@ -609,7 +609,11 @@ add_default($nl, 'config_dynamics_mass_minimum');
 add_default($nl, 'config_dynamics_subcycle_number');
 add_default($nl, 'config_rotate_cartesian_grid');
 add_default($nl, 'config_include_metric_terms');
-add_default($nl, 'config_elastic_subcycle_number');
+if ($wave_comp eq 'ww3') {
+   add_default($nl, 'config_elastic_subcycle_number',  'val'=>"240");
+} else {
+   add_default($nl, 'config_elastic_subcycle_number');
+}
 add_default($nl, 'config_strain_scheme');
 add_default($nl, 'config_constitutive_relation_type');
 add_default($nl, 'config_stress_divergence_scheme');
@@ -943,7 +947,11 @@ add_default($nl, 'config_slow_mode_critical_porosity');
 add_default($nl, 'config_macro_drainage_timescale_lvlponds');
 add_default($nl, 'config_macro_drainage_timescale_sealvlponds');
 add_default($nl, 'config_macro_drainage_timescale_topoponds');
-add_default($nl, 'config_congelation_freezing_method');
+if ($wave_comp eq 'ww3') {
+   add_default($nl, 'config_congelation_freezing_method', 'val'=>"one-step");
+} else {
+   add_default($nl, 'config_congelation_freezing_method');
+}
 add_default($nl, 'config_congelation_ice_porosity');
 
 #######################
