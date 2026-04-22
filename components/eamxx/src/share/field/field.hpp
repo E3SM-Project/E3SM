@@ -240,6 +240,14 @@ public:
   void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta);
   void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const Field& mask);
 
+  // Same as the above, but adds the scalar value gamma as well (i.e., does an affine transformation)
+  void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma);
+  void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask);
+
+  // Short-hand to update with alpha=0,beta=1
+  void add_scalar (const ScalarWrapper gamma);
+  void add_scalar (const ScalarWrapper gamma, const Field& mask);
+
   // Special case of update for particular choices of the combine mode
   void scale (const ScalarWrapper beta);
   void scale (const ScalarWrapper beta, const Field& mask);
@@ -351,18 +359,18 @@ protected:
   void deep_copy_masked (const ST value, const Field& mask);
 
   template<CombineMode CM>
-  void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta);
+  void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma);
   template<CombineMode CM>
-  void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const Field& mask);
+  void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask);
 
   template<CombineMode CM, typename ST, typename STX>
-  void update_impl (const Field& x, const ST alpha, const ST beta);
+  void update_impl (const Field& x, const ST alpha, const ST beta, const ST gamma);
 
   template<CombineMode CM, typename ST, typename STX>
-  void update_fill_aware (const Field& x, const ST alpha, const ST beta);
+  void update_fill_aware (const Field& x, const ST alpha, const ST beta, const ST gamma);
 
   template<CombineMode CM, typename ST, typename STX>
-  void update_masked (const Field& x, const ST alpha, const ST beta, const Field& mask);
+  void update_masked (const Field& x, const ST alpha, const ST beta, const ST gamma, const Field& mask);
 
   template<HostOrDevice HD>
   const get_view_type<char*,HD>&
