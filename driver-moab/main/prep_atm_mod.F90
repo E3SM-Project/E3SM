@@ -832,7 +832,7 @@ contains
             mapper_Fl2a%intx_mbid = mbintxla
             mapper_Fl2a%src_context = lnd(1)%cplcompid
             mapper_Fl2a%intx_context = idintx
-            mapper_Fl2a%weight_identifier = wgtIdSl2a
+            mapper_Fl2a%weight_identifier = wgtIdFl2a
             mapper_Fl2a%mbname = 'mapper_Fl2a'
 
             if (.not. samegrid_al) then ! tri grid case
