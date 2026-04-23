@@ -253,9 +253,8 @@ module elm_varctl
   character(len=256), public :: fluh_timeseries = ''                    ! filename for land use harmonization data
   character(len=256), public :: flandusepftdat = ''                     ! filename for fates landuse x pft data
   character(len=256), public :: fates_inventory_ctrl_filename = ''      ! filename for inventory control
-  integer, public            :: fates_parteh_mode = -9                  ! 1 => carbon only
-                                                                        ! 2 => C+N+P (not enabled yet)
-                                                                        ! no others enabled
+  character(len=256), public :: fates_parteh_mode = ''                  ! carbon_onoly => carbon only
+                                                                        ! cnp => Carbon+Nitrogen+Phosphorus
   integer, public            :: fates_seeddisp_cadence = iundef         ! 0 => no seed dispersal across gridcells
                                                                         ! 1, 2, 3  => daily, monthly, or yearly seed dispersal
 

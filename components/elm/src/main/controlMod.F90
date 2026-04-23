@@ -43,7 +43,8 @@ module controlMod
   use AllocationMod           , only: nu_com_phosphatase,nu_com_nfix
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
   use EcosystemBalanceCheckMod, only: bgc_balance_check_tolerance => balance_check_tolerance
-
+  use elm_varpar              , only: elmfates_carbon_only
+  use elm_varpar              , only: elmfates_cnp
   use elm_varctl, only: nu_com, use_dynroot, use_fan, fan_mode, fan_to_bgc_veg, &
                         use_var_soil_thick, use_lake_wat_storage, &
                         forest_fert_exp, ECA_Pconst_RGspin, NFIX_PTASE_plant, &
@@ -527,14 +528,15 @@ contains
                     errMsg(__FILE__, __LINE__))
           end if
 
-          ! If parteh mode > 1, then NP are turned on, potentially
-          if(fates_parteh_mode > 1 ) then
+          ! If FATES is cycling N & P, it is incompatible with
+          ! prescribed physics mode, ST3 mode (and SP..)
+          if(trim(fates_parteh_mode) == trim(elmfates_cnp) ) then
              if(use_fates_ed_prescribed_phys) then
-                call endrun(msg=' ERROR:: fates_parteh_mode > 1 not compatible with prescribed physiology'//&
+                call endrun(msg=' ERROR:: fates_parteh_mode = CNP not compatible with prescribed physiology'//&
                      errMsg(__FILE__, __LINE__))
              end if
              if(use_fates_ed_st3) then
-                call endrun(msg=' ERROR:: fates_parteh_mode > 1 not compatible with FATES ST3 model'//&
+                call endrun(msg=' ERROR:: fates_parteh_mode = CNP not compatible with FATES ST3 model'//&
                      errMsg(__FILE__, __LINE__))
              end if
           end if
@@ -904,7 +906,7 @@ contains
     call mpi_bcast (fates_electron_transport_model, len(fates_electron_transport_model) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fates_inventory_ctrl_filename, len(fates_inventory_ctrl_filename), &
           MPI_CHARACTER, 0, mpicom, ier)
-    call mpi_bcast (fates_parteh_mode, 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (fates_parteh_mode, len(fates_parteh_mode), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fates_seeddisp_cadence, 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (use_fates_tree_damage, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (fates_history_dimlevel, 2, MPI_INTEGER, 0, mpicom, ier)
@@ -1339,7 +1341,7 @@ contains
        write(iulog, *) '    use_fates_planthydro = ', use_fates_planthydro
        write(iulog, *) '    use_fates_tree_damage = ', use_fates_tree_damage
        write(iulog, *) '    use_fates_cohort_age_tracking = ',use_fates_cohort_age_tracking
-       write(iulog, *) '    fates_parteh_mode = ', fates_parteh_mode
+       write(iulog, *) '    fates_parteh_mode = ', trim(fates_parteh_mode)
        write(iulog, *) '    use_fates_ed_st3 = ',use_fates_ed_st3
        write(iulog, *) '    use_fates_ed_prescribed_phys = ',use_fates_ed_prescribed_phys
        write(iulog, *) '    use_fates_inventory_init = ',use_fates_inventory_init

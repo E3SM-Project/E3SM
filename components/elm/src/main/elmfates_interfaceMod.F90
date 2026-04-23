@@ -93,6 +93,7 @@ module ELMFatesInterfaceMod
    use elm_varpar        , only : surfpft_lb, surfpft_ub
    use elm_varpar        , only : natpft_size, max_patch_per_col, maxpatch_urb
    use elm_varpar        , only : numcft, maxpatch_urb
+   use elm_varpar        , only : elmfates_carbon_only, elmfates_cnp
    use PhotosynthesisType , only : photosyns_type
    Use TopounitDataType  , only : topounit_atmospheric_flux, topounit_atmospheric_state
    use atm2lndType       , only : atm2lnd_type
@@ -156,6 +157,7 @@ module ELMFatesInterfaceMod
    use FatesInterfaceTypesMod,   only : hlm_num_luh2_states
    use FatesIOVariableKindMod, only : group_dyna_simple, group_dyna_complx
    use PRTGenericMod         , only : num_elements
+   use PRTGenericMod         , only : carbon_only,carbon_nitrogen_phosphorus
    use FatesPatchMod         , only : fates_patch_type
    use FatesDispersalMod     , only : lneighbors, dispersal_type, IsItDispersalTime
    use FatesInterfaceTypesMod, only : hlm_stepsize, hlm_current_day
@@ -328,6 +330,7 @@ contains
     integer                                        :: pass_use_sp
     integer                                        :: pass_use_luh2
     integer                                        :: pass_masterproc
+    integer                                        :: pass_parteh_mode
     logical                                        :: verbose_output
 
 
@@ -376,7 +379,24 @@ contains
        end if
        call set_fates_ctrlparms('masterproc',ival=pass_masterproc)
 
-       call set_fates_ctrlparms('parteh_mode',ival=fates_parteh_mode)
+       if(trim(fates_parteh_mode)==trim(elmfates_carbon_only))then
+           pass_parteh_mode = carbon_only
+        elseif(trim(fates_parteh_mode)==trim(elmfates_cnp))then
+           ! FATES has NO carbon_nitrogen mode. It cycles
+           ! either carbon alone, or carbon with both nutrients
+           ! If we want to couple nitrogen, we tell FATES
+           ! to use synthetic uptake conditions for phosphorus, which
+           ! most likely will be ample so that P stores in plants
+           ! are saturated and non-limiting
+           pass_parteh_mode = carbon_nitrogen_phosphorus
+        else
+           write(iulog,*) 'FATES coupling mode must be either'
+           write(iulog,*) trim(elmfates_carbon_only),' or '
+           write(iulog,*) trim(elmfates_cnp)
+           write(iulog,*) 'you specified: ',trim(fates_parteh_mode)
+           call endrun(msg=errMsg(sourcefile, __LINE__))
+        end if
+        call set_fates_ctrlparms('parteh_mode',ival=pass_parteh_mode)
        
     end if
 
@@ -1463,8 +1483,7 @@ contains
          ! side we have prepped these arrays, which may be zero fluxes in the case of
          ! prescribed FATES nutrient mode, we can send the fluxes into the source pools
 
-         select case(fates_parteh_mode)
-         case (prt_cnp_flex_allom_hyp )
+         if (trim(fates_parteh_mode)==trim(elmfates_cnp)) then
 
             col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
                  col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_met_lit) + &
@@ -1503,7 +1522,7 @@ contains
                  sum(this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
                  sum(this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
 
-         end select
+         end if
 
       end do
 

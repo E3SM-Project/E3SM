@@ -339,8 +339,8 @@ Note that the landuse_timeseries option is not the same as the FATES fluh_timese
 This option is older than the luhdata options and may be depricated at some point in the future.
 </entry>
 
-<entry id="fates_parteh_mode" type="integer" category="physics"
-       group="elm_inparm" valid_values="1,2">
+<entry id="fates_parteh_mode" type="char*80" category="physics"
+       group="elm_inparm" valid_values="carbon_only,cnp">
 Switch deciding which nutrient model to use in FATES.
 </entry>
 

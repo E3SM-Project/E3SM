@@ -2248,7 +2248,7 @@ this mask will have smb calculated over the entire global land surface
 <fates_harvest_mode             use_fates=".true.">no_harvest</fates_harvest_mode>
 <fates_history_dimlevel         use_fates=".true.">2,2</fates_history_dimlevel>
 <fates_inventory_ctrl_filename  use_fates=".true."> "/dev/null" </fates_inventory_ctrl_filename>
-<fates_parteh_mode              use_fates=".true.">1</fates_parteh_mode>
+<fates_parteh_mode              use_fates=".true.">carbon_only</fates_parteh_mode>
 <fates_seeddisp_cadence         use_fates=".true.">0</fates_seeddisp_cadence>
 <use_fates_planthydro           use_fates=".true.">.false.</use_fates_planthydro>
 <use_fates_tree_damage          use_fates=".true.">.false.</use_fates_tree_damage>
