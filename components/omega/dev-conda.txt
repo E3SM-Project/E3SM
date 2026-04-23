@@ -15,6 +15,9 @@ cpplint
 lizard
 include-what-you-use
 
+# fortran linting
+fprettify
+
 # python linting
 isort
 flynt

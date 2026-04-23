@@ -56,3 +56,11 @@ repos:
     hooks:
       - id: fortitude
         args: ["--config-file=components/omega/.fortitude.toml", "--fix", "--preview"]
+
+  # Can run individually with `pre-commit run fprettify --all-files`
+  - repo: https://github.com/fortran-lang/fprettify
+    rev: v0.3.7
+    hooks:
+      - id: fprettify
+        files: \.[fF](90|95|03|08)$
+        args: ["--indent", "4"]
