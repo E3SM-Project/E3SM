@@ -108,7 +108,8 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<const Pack>& wtracer_sfc,
   const uview_1d<const Pack>& inv_exner,
   const Scalar&                phis,
-  const uview_1d<const Pack>& shear_strain3d,
+  const uview_2d<const Pack>& shear_strain3d_components,
+  const uview_1d<Pack>&       shear_strain3d,
   // Workspace/Local Variables
   const Workspace&             workspace,
   // Input/Output Variables
@@ -223,6 +224,15 @@ void Functions<S,D>::shoc_main_internal(
                 brunt,shoc_mix);       // Output
 
     // Advance the SGS TKE equation
+    if (do_3d_turb) {
+      compute_shear_strain3d(team,nlev,nlevi,                   // Input
+                             shear_strain3d_components,dz_zi,   // Input
+                             u_wind,v_wind,w_field,             // Input
+                             zt_grid,zi_grid,workspace,         // Input/Workspace
+                             shear_strain3d);                   // Output
+      team.team_barrier();
+    }
+
     shoc_tke(team,nlev,nlevi,dtime,               // Input
 	     lambda_low,lambda_high,lambda_slope, // Runtime options
 	     lambda_thresh,Ckh,Ckm,shoc_1p5tke,   // Runtime options
@@ -373,7 +383,8 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<const Pack>& wtracer_sfc,
   const view_2d<const Pack>& inv_exner,
   const view_1d<const Scalar>& phis,
-  const view_2d<const Pack>& shear_strain3d,
+  const view_3d<const Pack>& shear_strain3d_components,
+  const view_2d<Pack>& shear_strain3d,
   // Workspace Manager
   WorkspaceMgr&      workspace_mgr,
   // Input/Output Variables
@@ -493,6 +504,14 @@ void Functions<S,D>::shoc_main_internal(
                      brunt,shoc_mix);       // Output
 
     // Advance the SGS TKE equation
+    if (do_3d_turb) {
+      compute_shear_strain3d_disp(shcol,nlev,nlevi,               // Input
+                                  shear_strain3d_components,dz_zi,// Input
+                                  u_wind,v_wind,w_field,          // Input
+                                  zt_grid,zi_grid,workspace_mgr,  // Input/Workspace
+                                  shear_strain3d);                // Output
+    }
+
     shoc_tke_disp(shcol,nlev,nlevi,dtime,               // Input
 	          lambda_low,lambda_high,lambda_slope,  // Runtime options
 		  lambda_thresh,Ckh,Ckm,shoc_1p5tke,    // Runtime options
@@ -666,6 +685,7 @@ Int Functions<S,D>::shoc_main(
     const auto w_field_s      = ekat::subview(shoc_input.w_field, i);
     const auto wtracer_sfc_s  = ekat::subview(shoc_input.wtracer_sfc, i);
     const auto inv_exner_s    = ekat::subview(shoc_input.inv_exner, i);
+    const auto shear_strain3d_components_s = Kokkos::subview(shoc_input.shear_strain3d_components, i, Kokkos::ALL(), Kokkos::ALL());
     const auto shear_strain3d_s = ekat::subview(shoc_input.shear_strain3d, i);
     const auto host_dse_s     = ekat::subview(shoc_input_output.host_dse, i);
     const auto tke_s          = ekat::subview(shoc_input_output.tke, i);
@@ -706,7 +726,8 @@ Int Functions<S,D>::shoc_main(
                        dx_s, dy_s, zt_grid_s, zi_grid_s,                      // Input
                        pres_s, presi_s, pdel_s, thv_s, w_field_s,             // Input
                        wthl_sfc_s, wqw_sfc_s, uw_sfc_s, vw_sfc_s,             // Input
-                       wtracer_sfc_s, inv_exner_s, phis_s, shear_strain3d_s,  // Input
+                       wtracer_sfc_s, inv_exner_s, phis_s,                    // Input
+                       shear_strain3d_components_s, shear_strain3d_s,         // Input/Output
                        workspace,                                             // Workspace
                        host_dse_s, tke_s, thetal_s, qw_s, u_wind_s, v_wind_s, // Input/Output
                        wthv_sec_s, qtracers_s, tk_s, shoc_cldfrac_s,          // Input/Output
@@ -733,7 +754,8 @@ Int Functions<S,D>::shoc_main(
     shoc_input.dx, shoc_input.dy, shoc_input.zt_grid, shoc_input.zi_grid, // Input
     shoc_input.pres, shoc_input.presi, shoc_input.pdel, shoc_input.thv, shoc_input.w_field, // Input
     shoc_input.wthl_sfc, shoc_input.wqw_sfc, shoc_input.uw_sfc, shoc_input.vw_sfc, // Input
-    shoc_input.wtracer_sfc, shoc_input.inv_exner, shoc_input.phis, shoc_input.shear_strain3d, // Input
+    shoc_input.wtracer_sfc, shoc_input.inv_exner, shoc_input.phis,
+    shoc_input.shear_strain3d_components, shoc_input.shear_strain3d, // Input/Output
     workspace_mgr, // Workspace Manager
     shoc_input_output.host_dse, shoc_input_output.tke, shoc_input_output.thetal, shoc_input_output.qw, u_wind_s, v_wind_s, // Input/Output
     shoc_input_output.wthv_sec, shoc_input_output.qtracers, shoc_input_output.tk, shoc_input_output.shoc_cldfrac, // Input/Output

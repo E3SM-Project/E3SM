@@ -70,6 +70,16 @@ void Functions<S,D>::shoc_tke(
     // Interpolate shear term from interface to thermo grid
     team.team_barrier();
     linear_interp(team,zi_grid,zt_grid,sterm,sterm_zt,nlevi,nlev,0);
+  } else {
+    // eddy_diffusivities still needs a midpoint shear magnitude for the
+    // cold-surface fallback path. In 3D mode, use the SHOC-grid strain term
+    // instead of leaving the old 1D shear workspace uninitialized.
+    static constexpr Scalar Ck_sh = 0.1;
+    const Int nlev_pack = ekat::npack<Pack>(nlev);
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
+      sterm_zt(k) = Ck_sh*ekat::max(Pack(0),shear_strain3d(k));
+    });
+    team.team_barrier();
   }
 
   // Advance sgs TKE

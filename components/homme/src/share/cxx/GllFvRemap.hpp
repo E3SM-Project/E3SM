@@ -52,7 +52,7 @@ public:
                           const Phys1T& ps, const Phys1T& phis,
                           // T,omega(ie,col,lev)
                           const Phys2T& T, const Phys2T& omega,
-                          const Phys2T& strain3d,
+                          const Phys3T& strain3d_components,
                           // uv(ie, col, 0 or 1, lev)
                           const Phys3T& uv, 
                           // q(ie,col,idx,lev)

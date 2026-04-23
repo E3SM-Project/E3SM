@@ -117,8 +117,10 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     view_2d<const Pack> inv_exner;
     // Host model surface geopotential height
     view_1d<const Scalar> phis;
+    // Dycore-computed local tensor components: A00,A01,A10,A11,A20,A21 [/s]
+    view_3d<const Pack> shear_strain3d_components;
     // 3D strain term for shear production of TKE [/s2]
-    view_2d<const Pack> shear_strain3d;
+    view_2d<Pack> shear_strain3d;
   };
 
   // This struct stores input/outputs views for shoc_main.
@@ -540,6 +542,32 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                           const uview_1d<Pack> &tke, const uview_1d<Pack> &a_diss);
 
   KOKKOS_FUNCTION
+  static void compute_shear_strain3d(
+      const MemberType &team, const Int &nlev, const Int &nlevi,
+      const uview_2d<const Pack> &shear_strain3d_components,
+      const uview_1d<const Pack> &dz_zi,
+      const uview_1d<const Pack> &u_wind,
+      const uview_1d<const Pack> &v_wind,
+      const uview_1d<const Pack> &w_field,
+      const uview_1d<const Pack> &zt_grid,
+      const uview_1d<const Pack> &zi_grid,
+      const Workspace &workspace,
+      const uview_1d<Pack> &shear_strain3d);
+#ifdef SCREAM_SHOC_SMALL_KERNELS
+  static void compute_shear_strain3d_disp(
+      const Int &shcol, const Int &nlev, const Int &nlevi,
+      const view_3d<const Pack> &shear_strain3d_components,
+      const view_2d<const Pack> &dz_zi,
+      const view_2d<const Pack> &u_wind,
+      const view_2d<const Pack> &v_wind,
+      const view_2d<const Pack> &w_field,
+      const view_2d<const Pack> &zt_grid,
+      const view_2d<const Pack> &zi_grid,
+      const WorkspaceMgr &workspace_mgr,
+      const view_2d<Pack> &shear_strain3d);
+#endif
+
+  KOKKOS_FUNCTION
   static void
   shoc_assumed_pdf(const MemberType &team, const Int &nlev, const Int &nlevi,
                    const uview_1d<const Pack> &thetal, const uview_1d<const Pack> &qw,
@@ -696,7 +724,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Scalar &wthl_sfc, const Scalar &wqw_sfc, const Scalar &uw_sfc, const Scalar &vw_sfc,
       const uview_1d<const Pack> &wtracer_sfc, const uview_1d<const Pack> &inv_exner,
       const Scalar &phis,
-      const uview_1d<const Pack> &shear_strain3d,
+      const uview_2d<const Pack> &shear_strain3d_components,
+      const uview_1d<Pack> &shear_strain3d,
       // Local Workspace
       const Workspace &workspace,
       // Input/Output Variables
@@ -740,7 +769,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const view_1d<const Scalar> &wqw_sfc, const view_1d<const Scalar> &uw_sfc,
       const view_1d<const Scalar> &vw_sfc, const view_2d<const Pack> &wtracer_sfc,
       const view_2d<const Pack> &inv_exner, const view_1d<const Scalar> &phis,
-      const view_2d<const Pack> &shear_strain3d,
+      const view_3d<const Pack> &shear_strain3d_components,
+      const view_2d<Pack> &shear_strain3d,
       // Workspace Manager
       WorkspaceMgr &workspace_mgr,
       // Input/Output Variables
@@ -931,6 +961,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
 #include "shoc_isotropic_ts_impl.hpp"
 #include "shoc_length_impl.hpp"
 #include "shoc_linear_interp_impl.hpp"
+#include "shoc_compute_shear_strain3d_impl.hpp"
 #include "shoc_main_impl.hpp"
 #include "shoc_pblintd_check_pblh_impl.hpp"
 #include "shoc_pblintd_cldcheck_impl.hpp"

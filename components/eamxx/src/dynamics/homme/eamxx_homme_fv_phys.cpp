@@ -135,7 +135,7 @@ void HommeDynamics::fv_phys_dyn_to_fv_phys (const util::TimeStamp& ts, const boo
     // To avoid any problem, we simply set the timestamp of FV state fields here.
     // NOTE: even if the init sequence *ever* changed, and the AD *did* read
     // IC for FV fields, this step remains safe (we're setting the same t0)
-    for (auto n : {"T_mid","horiz_winds","ps","phis","omega","pseudo_density"}) {
+    for (auto n : {"T_mid","horiz_winds","ps","phis","omega","pseudo_density","tke_shear_strain3d_components"}) {
       auto f = get_field_out(n,pgn);
       f.get_header().get_tracking().update_time_stamp(ts);
     }
@@ -186,9 +186,9 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
   const auto omega = Homme::GllFvRemap::Phys2T(
     get_field_out("omega", gn).get_view<Real**>().data(),
     nelem, npg, nlev);
-  const auto strain3d = Homme::GllFvRemap::Phys2T(
-    get_field_out("tke_shear_strain3d", gn).get_view<Real**>().data(),
-    nelem, npg, nlev);
+  const auto strain3d_components = Homme::GllFvRemap::Phys3T(
+    get_field_out("tke_shear_strain3d_components", gn).get_view<Real***>().data(),
+    nelem, npg, 6, nlev);
   const auto uv = Homme::GllFvRemap::Phys3T(
     t ? t->horiz_winds.data() : get_field_out("horiz_winds", gn).get_view<Real***>().data(),
     nelem, npg, 2, nlev);
@@ -199,7 +199,7 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
     get_field_out("pseudo_density", gn).get_view<Real**>().data(),
     nelem, npg, nlev);
 
-  gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega, strain3d, uv, q, &dp);
+  gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega, strain3d_components, uv, q, &dp);
   Kokkos::fence();
 }
 
