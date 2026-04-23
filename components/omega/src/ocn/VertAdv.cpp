@@ -375,11 +375,10 @@ void VertAdv::computeVerticalVelocity(
    OMEGA_SCOPE(LocEOnC, Mesh->EdgesOnCell);
    OMEGA_SCOPE(LocDvE, Mesh->DvEdge);
    OMEGA_SCOPE(LocESOnC, Mesh->EdgeSignOnCell);
-   OMEGA_SCOPE(LocNCellsHalo0, NCellsHalo0);
 
    // Loop over all cells owned by the task
    parallelForOuter(
-       "computeVerticalVelocity", {LocNCellsHalo0},
+       "computeVerticalVelocity", {NCellsHalo0},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
           RealScratchArray DivHU(Team.team_scratch(0), LocNVertLayers);
 
