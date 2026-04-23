@@ -74,6 +74,14 @@ void HyperviscosityFunctor::init_boundary_exchanges () {
   m_hvf_impl->init_boundary_exchanges();
 }
 
+void HyperviscosityFunctor::init_nu_scale_top_from_f90 (
+    HostViewUnmanaged<const Real[NUM_PHYSICAL_LEV]> nu_scale_top_h,
+    const int nlev_tom)
+{
+  assert (m_hvf_impl);
+  m_hvf_impl->init_nu_scale_top_from_f90(nu_scale_top_h, nlev_tom);
+}
+
 void HyperviscosityFunctor::run (const int np1, const Real dt, const Real eta_ave_w)
 {
   // Sanity check (this should NEVER happen by design)

@@ -551,6 +551,13 @@ void init_reference_states_c (CF90Ptr& elem_theta_ref_ptr,
   sync_to_device(phi_ref,   ref_states.phi_i_ref);
 }
 
+void init_nu_scale_top_c (CF90Ptr& nu_scale_top_ptr, const int& nlev_tom)
+{
+  HostViewUnmanaged<const Real[NUM_PHYSICAL_LEV]> nu_scale_top_h(nu_scale_top_ptr);
+  auto& hvf = Context::singleton().get<HyperviscosityFunctor>();
+  hvf.init_nu_scale_top_from_f90(nu_scale_top_h, nlev_tom);
+}
+
 void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr,  F90Ptr& elem_accum_qmass_ptr,
                          F90Ptr& elem_accum_q1mass_ptr, F90Ptr& elem_accum_iener_ptr,
                          F90Ptr& elem_accum_kener_ptr, F90Ptr& elem_accum_pener_ptr)

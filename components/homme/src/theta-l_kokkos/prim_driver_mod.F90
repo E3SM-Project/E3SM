@@ -25,6 +25,7 @@ module prim_driver_mod
   public :: prim_init_geopotential_views
   public :: prim_init_state_views
   public :: prim_init_ref_states_views
+  public :: prim_init_nu_scale_top_views
   public :: prim_init_diags_views
 
   type, private :: PrescribedWind_t
@@ -313,6 +314,19 @@ contains
     call init_reference_states_c (elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr)
   end subroutine prim_init_ref_states_views
 
+  subroutine prim_init_nu_scale_top_views ()
+    use iso_c_binding,  only : c_ptr, c_loc, c_int
+    use element_state,  only : nu_scale_top, nlev_tom
+    use theta_f2c_mod,  only : init_nu_scale_top_c
+    !
+    ! Local(s)
+    !
+    type (c_ptr) :: nu_scale_top_ptr
+
+    nu_scale_top_ptr = c_loc(nu_scale_top)
+    call init_nu_scale_top_c (nu_scale_top_ptr, int(nlev_tom, c_int))
+  end subroutine prim_init_nu_scale_top_views
+
   subroutine prim_init_diags_views (elem)
     use iso_c_binding, only : c_ptr, c_loc
     use element_mod,   only : element_t
@@ -383,6 +397,11 @@ contains
        if (.not. allocate_buffer) ab = 0
     end if
     call init_functors_c (ab)
+
+    ! Initialize nu_scale_top sponge layer scaling in C++ (must be after init_functors_c
+    ! which creates HyperviscosityFunctorImpl, and before init_boundary_exchanges_c
+    ! which uses m_nu_scale_top_ilev_pack_lim)
+    call prim_init_nu_scale_top_views ()
 
     ! Initialize boundary exchange structure in C++
     call init_boundary_exchanges_c ()

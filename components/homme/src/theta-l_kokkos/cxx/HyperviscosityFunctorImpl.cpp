@@ -74,48 +74,9 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
   assert(params.params_set);
 
   if (m_data.nu_top>0) {
-
-    m_nu_scale_top = ExecViewManaged<Scalar[NUM_LEV]>("nu_scale_top");
-    ExecViewManaged<Scalar[NUM_LEV]>::HostMirror h_nu_scale_top;
-    h_nu_scale_top = Kokkos::create_mirror_view(m_nu_scale_top);
-
-    const auto etai_h = Kokkos::create_mirror_view(m_hvcoord.etai);
-    const auto etam_h = Kokkos::create_mirror_view(m_hvcoord.etam);
-    Kokkos::deep_copy(etai_h, m_hvcoord.etai);
-    Kokkos::deep_copy(etam_h, m_hvcoord.etam);
-
-    for (int phys_lev=0; phys_lev < NUM_LEV*VECTOR_SIZE; ++phys_lev) {
-      const int ilev = phys_lev / VECTOR_SIZE;
-      const int ivec = phys_lev % VECTOR_SIZE;
-
-      Real ptop_over_press;
-
-      //prevent padding of nu_scale to get nans to avoid last interface levels
-      //of w, phi to be nans, too
-      if( phys_lev < NUM_PHYSICAL_LEV ){
-        //etai is num_interface_lev, that is, 129 or 73
-        //etam is num_lev, so packs
-        if ( etai_h(0) == 0.0) {
-          ptop_over_press = etam_h(0)[0] / etam_h(ilev)[ivec];
-        }else{
-          ptop_over_press = etai_h(0) / etam_h(ilev)[ivec];
-        }
-      }else{
-          ptop_over_press = 0.0;
-      }
-
-      auto val = 16.0*ptop_over_press*ptop_over_press / (ptop_over_press*ptop_over_press + 1);
-      if ( val < 0.15 ) val = 0.0;
-      h_nu_scale_top(ilev)[ivec] = val;
-
-      // This is the equivalent of nlev_tom in the F90 code.
-      if (val != 0) m_nu_scale_top_ilev_pack_lim = phys_lev + 1;
-    }
-    Kokkos::deep_copy(m_nu_scale_top, h_nu_scale_top);
-
-    // Convert to pack index.
-    m_nu_scale_top_ilev_pack_lim = ((m_nu_scale_top_ilev_pack_lim + VECTOR_SIZE - 1) /
-                                    VECTOR_SIZE);
+    // nu_scale_top is initialized from Fortran via init_nu_scale_top_from_f90(),
+    // called after model_init2() computes it (covering both tom_sponge_start==0
+    // and tom_sponge_start!=0 branches). Nothing to do here.
   }
 
   // Init ElementOps
@@ -129,6 +90,25 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
 #else
   m_process_nh_vars = not params.theta_hydrostatic_mode;
 #endif
+}
+
+void HyperviscosityFunctorImpl::init_nu_scale_top_from_f90 (
+    HostViewUnmanaged<const Real[NUM_PHYSICAL_LEV]> nu_scale_top_h,
+    const int nlev_tom)
+{
+  m_nu_scale_top = ExecViewManaged<Scalar[NUM_LEV]>("nu_scale_top");
+  auto h = Kokkos::create_mirror_view(m_nu_scale_top);
+
+  for (int phys_lev = 0; phys_lev < NUM_LEV*VECTOR_SIZE; ++phys_lev) {
+    const int ilev = phys_lev / VECTOR_SIZE;
+    const int ivec = phys_lev % VECTOR_SIZE;
+    // Zero out padding levels beyond NUM_PHYSICAL_LEV to avoid NaNs
+    h(ilev)[ivec] = (phys_lev < NUM_PHYSICAL_LEV) ? nu_scale_top_h(phys_lev) : 0.0;
+  }
+  Kokkos::deep_copy(m_nu_scale_top, h);
+
+  // nlev_tom is 1-based physical level index; convert to pack index
+  m_nu_scale_top_ilev_pack_lim = ((nlev_tom + VECTOR_SIZE - 1) / VECTOR_SIZE);
 }
 
 void HyperviscosityFunctorImpl::setup(const ElementsGeometry&     geometry,
@@ -471,7 +451,6 @@ void HyperviscosityFunctorImpl::operator() (const TagNutopLaplace&, const TeamMe
       Kokkos::parallel_for(
         Kokkos::ThreadVectorRange(kv.team, m_nu_scale_top_ilev_pack_lim),
         [&] (const int ilev) {
-          
           const auto xf = m_data.dt_hvs_tom  * m_nu_scale_top(ilev) * m_data.nu_top;
           utens(ilev)  *= xf;
           vtens(ilev)  *= xf;

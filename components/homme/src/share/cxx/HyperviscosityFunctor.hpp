@@ -42,6 +42,10 @@ public:
 
   void init_boundary_exchanges();
 
+  // Forward nu_scale_top from Fortran to the impl
+  void init_nu_scale_top_from_f90 (HostViewUnmanaged<const Real[NUM_PHYSICAL_LEV]> nu_scale_top_h,
+                                   const int nlev_tom);
+
   void run (const int np1, const Real dt, const Real eta_ave_w);
 
 private:

@@ -127,6 +127,16 @@ interface
     type (c_ptr) :: elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr
   end subroutine init_reference_states_c
 
+  ! Copies nu_scale_top and nlev_tom from f90 into C++ HyperviscosityFunctorImpl
+  subroutine init_nu_scale_top_c (nu_scale_top_ptr, nlev_tom_in) bind(c)
+    use iso_c_binding, only: c_ptr, c_int
+    !
+    ! Inputs
+    !
+    type (c_ptr),         intent(in) :: nu_scale_top_ptr
+    integer(kind=c_int),  intent(in) :: nlev_tom_in
+  end subroutine init_nu_scale_top_c
+
   ! Initialize SEM reference element structures (mass and pseudo-spectral deriv matrices)
   subroutine init_reference_element_c (deriv_ptr, mass_ptr) bind(c)
     use iso_c_binding, only: c_ptr

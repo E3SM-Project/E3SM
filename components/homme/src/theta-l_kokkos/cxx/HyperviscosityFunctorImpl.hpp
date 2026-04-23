@@ -111,6 +111,10 @@ public:
   void init_buffers (const FunctorsBuffersManager& fbm);
   void init_boundary_exchanges();
 
+  // Initialize nu_scale_top from Fortran-computed values (covers tom_sponge_start!=0 too)
+  void init_nu_scale_top_from_f90 (HostViewUnmanaged<const Real[NUM_PHYSICAL_LEV]> nu_scale_top_h,
+                                   const int nlev_tom);
+
   void run (const int np1, const Real dt, const Real eta_ave_w);
 
   void biharmonic_wk_theta () const;
