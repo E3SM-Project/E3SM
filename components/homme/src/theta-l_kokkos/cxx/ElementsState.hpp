@@ -20,6 +20,8 @@ struct RefStates {
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV_P]> phi_i_ref;
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV  ]> theta_ref;
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV  ]> dp_ref;
+  ExecViewManaged<Scalar     [NUM_LEV         ]> nu_scale_top;
+  int                                            nu_scale_top_ilev_pack_lim;
 
   RefStates () :
     m_num_elems(0)

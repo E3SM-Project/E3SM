@@ -119,12 +119,14 @@ interface
   end subroutine init_elements_states_c
 
   ! Copies reference states from f90 arrays into C++ views
-  subroutine init_reference_states_c (elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr) bind(c)
+  subroutine init_reference_states_c (elem_theta_ref_ptr, elem_dp_ref_ptr, &
+                                      elem_phi_ref_ptr, nu_scale_top_ptr) bind(c)
     use iso_c_binding, only: c_ptr
     !
     ! Inputs
     !
     type (c_ptr) :: elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr
+    type (c_ptr) :: nu_scale_top_ptr
   end subroutine init_reference_states_c
 
   ! Initialize SEM reference element structures (mass and pseudo-spectral deriv matrices)
