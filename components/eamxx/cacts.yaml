@@ -140,9 +140,6 @@ machines:
     gpu_arch: "cuda"
     num_run_res: "$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)"
 
-  ghci-oci:
-    env_setup: ["eval $(${project.root_dir}/../../cime/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-oci_gnu)"]
-
   lassen:
     baselines_dir: "/projects/e3sm/baselines/scream/master-baselines"
     env_setup:
