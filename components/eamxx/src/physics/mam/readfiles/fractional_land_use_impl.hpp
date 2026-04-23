@@ -55,10 +55,9 @@ fracLandUseFunctions<S, D>::create_horiz_remapper(
   const auto tgt_grid = remapper->get_tgt_grid();
 
   const auto layout_2d = tgt_grid->get_2d_vector_layout(nclass_data, "class");
-  const auto nondim    = ekat::units::Units::nondimensional();
 
   Field fractional_land_use(
-      FieldIdentifier(field_name, layout_2d, nondim, tgt_grid->name()));
+      FieldIdentifier(field_name, layout_2d, ekat::units::none, tgt_grid->name()));
   fractional_land_use.allocate_view();
 
   remapper->register_field_from_tgt(fractional_land_use);

@@ -18,8 +18,7 @@ make_field (const std::string& name,
             const FieldLayout& layout,
             const std::shared_ptr<const AbstractGrid>& grid)
 {
-  const auto units = ekat::units::Units::nondimensional();
-  FieldIdentifier fid(name,layout,units,grid->name());
+  FieldIdentifier fid(name,layout,ekat::units::none,grid->name());
   Field f(fid);
   f.allocate_view();
   return f;

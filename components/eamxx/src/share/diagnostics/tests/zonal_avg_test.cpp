@@ -50,9 +50,9 @@ TEST_CASE("zonal_avg") {
   Field area       = grid->get_geometry_data("area");
   auto area_view_h = area.get_view<const Real *, Host>();
 
+
   // Set latitude values
-  Field lat = gm->get_grid_nonconst("Physics")->create_geometry_data(
-      "lat", grid->get_2d_scalar_layout(), Units::nondimensional());
+  Field lat = grid->create_geometry_data("lat", grid->get_2d_scalar_layout(), none);
   auto lat_view_h      = lat.get_view<Real *, Host>();
   const Real lat_delta = sp(180.0) / nlats;
   std::vector<Real> zonal_areas(nlats, 0.0);
@@ -66,15 +66,15 @@ TEST_CASE("zonal_avg") {
   lat.sync_to_dev();
 
   // Input (randomized) qc
-  FieldLayout scalar1d_layout{{COL}, {ncols}};
-  FieldLayout scalar2d_layout{{COL, LEV}, {ncols, nlevs}};
-  FieldLayout scalar3d_layout{{COL, CMP, LEV}, {ncols, dim3, nlevs}};
+  auto scalar1d_layout = grid->get_2d_scalar_layout();
+  auto scalar2d_layout = grid->get_3d_scalar_layout(LEV);
+  auto scalar3d_layout = grid->get_3d_vector_layout(LEV,dim3);
 
-  FieldIdentifier qc1_id("qc", scalar1d_layout, kg / kg, grid->name());
+  FieldIdentifier qc1_fid("qc", scalar1d_layout, kg / kg, grid->name());
   FieldIdentifier qc2_fid("qc", scalar2d_layout, kg / kg, grid->name());
   FieldIdentifier qc3_fid("qc", scalar3d_layout, kg / kg, grid->name());
 
-  Field qc1(qc1_id);
+  Field qc1(qc1_fid);
   Field qc2(qc2_fid);
   Field qc3(qc3_fid);
 

@@ -37,8 +37,7 @@ void Cosp::create_requests()
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  Units nondim = Units::nondimensional();
-  Units percent (nondim,"%");
+  auto percent = none.rename("%");
   auto micron = micro*m;
   auto m2 = pow(m, 2);
   auto s2 = pow(s, 2);
@@ -66,7 +65,7 @@ void Cosp::create_requests()
   add_field<Required>("surf_radiative_T", scalar2d    , K,      grid_name);
   //add_field<Required>("surfelev",    scalar2d    , m,      grid_name);
   //add_field<Required>("landmask",    scalar2d    , nondim, grid_name);
-  add_field<Required>(FieldIdentifier("sunlit_mask", scalar2d, nondim, grid_name, DataType::IntType));
+  add_field<Required>(FieldIdentifier("sunlit_mask", scalar2d, none, grid_name, DataType::IntType));
   add_field<Required>("p_mid",             scalar3d_mid, Pa,     grid_name);
   add_field<Required>("p_int",             scalar3d_int, Pa,     grid_name);
   //add_field<Required>("height_mid",  scalar3d_mid, m,      grid_name);
@@ -74,13 +73,13 @@ void Cosp::create_requests()
   add_field<Required>("T_mid",            scalar3d_mid, K,      grid_name);
   add_field<Required>("phis",             scalar2d    , m2/s2,  grid_name);
   add_field<Required>("pseudo_density",   scalar3d_mid, Pa,     grid_name);
-  add_field<Required>("cldfrac_rad",      scalar3d_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_rad",      scalar3d_mid, none,   grid_name);
   add_tracer<Required>("qv", m_grid, kg/kg);
   add_tracer<Required>("qc", m_grid, kg/kg);
   add_tracer<Required>("qi", m_grid, kg/kg);
   // Optical properties, should be computed in radiation interface
-  add_field<Required>("dtau067",     scalar3d_mid, nondim, grid_name); // 0.67 micron optical depth
-  add_field<Required>("dtau105",     scalar3d_mid, nondim, grid_name); // 10.5 micron optical depth
+  add_field<Required>("dtau067",     scalar3d_mid, none, grid_name); // 0.67 micron optical depth
+  add_field<Required>("dtau105",     scalar3d_mid, none, grid_name); // 10.5 micron optical depth
   // Effective radii, should be computed in either microphysics or radiation interface
   // TODO: should these be meters or microns? Was meters before, but using "m" instead
   // of "micron" seemed to cause prim_model_finalize to throw error with the following:
@@ -98,7 +97,7 @@ void Cosp::create_requests()
   // We can allocate these now
   m_z_mid = Field(FieldIdentifier("z_mid",scalar3d_mid,m,grid_name),true);
   m_z_int = Field(FieldIdentifier("z_int",scalar3d_int,m,grid_name),true);
-  m_sunlit_real = Field(FieldIdentifier("sunlit_mask_real",scalar2d,nondim,grid_name),true);
+  m_sunlit_real = Field(FieldIdentifier("sunlit_mask_real",scalar2d,none,grid_name),true);
 }
 
 // =========================================================================================
@@ -108,6 +107,7 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   CospFunc::initialize(m_num_cols, m_num_subcols, m_num_levs);
 
   using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
 
   // Create the masks for the 4d fields
   FieldLayout scalar4d_ctptau ( {COL,CMP,CMP},
@@ -117,9 +117,8 @@ void Cosp::initialize_impl (const RunType /* run_type */)
                                 {m_num_cols,m_num_tau,m_num_cth},
                                 {e2str(COL), "cosp_tau", "cosp_cth"});
 
-  const auto nondim = ekat::units::Units::nondimensional();
-  FieldIdentifier mctp_fid ("sunlit_mask_ctptau", scalar4d_ctptau, nondim, m_grid->name(), DataType::IntType);
-  FieldIdentifier mcth_fid ("sunlit_mask_cthtau", scalar4d_cthtau, nondim, m_grid->name(), DataType::IntType);
+  FieldIdentifier mctp_fid ("sunlit_mask_ctptau", scalar4d_ctptau, none, m_grid->name(), DataType::IntType);
+  FieldIdentifier mcth_fid ("sunlit_mask_cthtau", scalar4d_cthtau, none, m_grid->name(), DataType::IntType);
   Field mctp(mctp_fid,true);
   Field mcth(mcth_fid,true);
   std::map<std::string,Field> masks = {
@@ -152,10 +151,10 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   FieldLayout cosp_prs_bnds_layout ({CMP,CMP}, {m_num_ctp,2}, {"cosp_prs","nbnd"});
   FieldLayout cosp_cth_bnds_layout ({CMP,CMP}, {m_num_cth,2}, {"cosp_cth","nbnd"});
 
-  auto cosp_tau_f      = m_grid->create_geometry_data("cosp_tau",      cosp_tau_layout,     nondim);
+  auto cosp_tau_f      = m_grid->create_geometry_data("cosp_tau",      cosp_tau_layout,     none);
   auto cosp_prs_f      = m_grid->create_geometry_data("cosp_prs",      cosp_prs_layout,     Pa);
   auto cosp_cth_f      = m_grid->create_geometry_data("cosp_cth",      cosp_cth_layout,     m);
-  auto cosp_tau_bnds_f = m_grid->create_geometry_data("cosp_tau_bnds", cosp_tau_bnds_layout, nondim);
+  auto cosp_tau_bnds_f = m_grid->create_geometry_data("cosp_tau_bnds", cosp_tau_bnds_layout, none);
   auto cosp_prs_bnds_f = m_grid->create_geometry_data("cosp_prs_bnds", cosp_prs_bnds_layout, Pa);
   auto cosp_cth_bnds_f = m_grid->create_geometry_data("cosp_cth_bnds", cosp_cth_bnds_layout, m);
 

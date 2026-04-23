@@ -170,8 +170,7 @@ TEST_CASE("vert_contract") {
     // Manual reference: ref(col) = sum_lev( f(col,lev) )
     // Use a 1D all-ones weight (same as the diagnostic)
     FieldLayout ones_lev_layout{{LEV}, {nlevs}};
-    Field ones_lev(FieldIdentifier("ones_lev", ones_lev_layout,
-                                   Units::nondimensional(), grid->name()), true);
+    Field ones_lev(FieldIdentifier("ones_lev", ones_lev_layout, none, grid->name()), true);
     ones_lev.deep_copy(1);
     auto ref = diag_f.clone("ref");
     vert_contraction(ref, fin, ones_lev);
@@ -206,7 +205,7 @@ TEST_CASE("vert_contract") {
     // Use a 1D all-ones weight (same as the diagnostic)
     FieldLayout ones_lev_layout{{LEV}, {nlevs}};
     Field ones_lev(FieldIdentifier("ones_lev", ones_lev_layout,
-                                   Units::nondimensional(), grid->name()), true);
+                                   none, grid->name()), true);
     ones_lev.deep_copy(1);
     auto fin_ones = fin.clone("fin_ones");
     fin_ones.deep_copy(1);

@@ -53,7 +53,6 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
   const auto tgt_grid = remapper->get_tgt_grid();
 
   const auto layout_2d = tgt_grid->get_2d_scalar_layout();
-  const auto nondim    = ekat::units::Units::nondimensional();
 
   std::vector<Field> field_emiss_sectors;
 
@@ -61,7 +60,7 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
   for(int icomp = 0; icomp < sector_size; ++icomp) {
     auto comp_name = sector_names[icomp];
     // set and allocate fields
-    Field f(FieldIdentifier(comp_name, layout_2d, nondim, tgt_grid->name()));
+    Field f(FieldIdentifier(comp_name, layout_2d, ekat::units::none, tgt_grid->name()));
     f.allocate_view();
     field_emiss_sectors.push_back(f);
     remapper->register_field_from_tgt(f);

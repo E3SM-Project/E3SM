@@ -434,7 +434,7 @@ void compute_mask (const Field& lhs, const Field& rhs, Comparison CMP, Field& ma
 Field compute_mask (const Field& x, const ScalarWrapper value, Comparison CMP) {
   const auto& fid_x = x.get_header().get_identifier();
   auto fid = fid_x.clone(x.name()+"_mask")
-                  .reset_units(ekat::units::Units::nondimensional())
+                  .reset_units(ekat::units::none)
                   .reset_dtype(DataType::IntType);
   Field mask(fid,true);
 

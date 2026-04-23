@@ -28,12 +28,11 @@ namespace scream {
 Field col_iota (const std::shared_ptr<const AbstractGrid> &grid)
 {
   using namespace ShortFieldTagsNames;
-  const auto nondim = ekat::units::Units::nondimensional();
   const auto layout = grid->get_vertical_layout(LEV);
   const int nlevs = grid->get_num_vertical_levels();
 
   // A helper field to set values depending on lev
-  FieldIdentifier fid1("col", layout, nondim, grid->name());
+  FieldIdentifier fid1("col", layout, ekat::units::none, grid->name());
   Field col(fid1);
   col.allocate_view();
   auto col_h = col.get_view<Real*,Host>();

@@ -95,11 +95,10 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
 
   auto fm = std::make_shared<FieldManager>(grid);
 
-  const auto units = ekat::units::Units::nondimensional();
   int count=0;
   using stratts_t = std::map<std::string,std::string>;
   for (const auto& fl : layouts) {
-    FID fid("f_"+std::to_string(count),fl,units,grid->name());
+    FID fid("f_"+std::to_string(count),fl,ekat::units::none,grid->name());
     Field f(fid);
     f.allocate_view();
     auto& str_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
