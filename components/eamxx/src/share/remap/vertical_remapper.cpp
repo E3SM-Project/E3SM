@@ -203,10 +203,9 @@ registration_ends_impl ()
         const auto mask_name = m_tgt_grid->name() + "_" + ekat::join(tagdim_names,"_") + "_mask";
         auto& mask = m_masks[mask_name];
         if (not mask.is_allocated()) {
-          auto nondim = ekat::units::Units::nondimensional();
           // Create this src/tgt mask fields, and assign them to these src/tgt fields extra data
 
-          FieldIdentifier mask_fid (mask_name, tgt_layout, nondim, m_tgt_grid->name(), DataType::IntType );
+          FieldIdentifier mask_fid (mask_name, tgt_layout, ekat::units::none, m_tgt_grid->name(), DataType::IntType );
           mask  = Field (mask_fid);
           if (ft.packed)
             mask.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);

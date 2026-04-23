@@ -83,8 +83,6 @@ void MAMAci::create_requests() {
   using namespace ekat::units;
   constexpr auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
 
-  constexpr auto nondim = ekat::units::Units::nondimensional();
-
   add_tracers_wet_atm();
   add_fields_dry_atm();
 
@@ -109,10 +107,10 @@ void MAMAci::create_requests() {
   // "shoc_cldfrac" and in the F90 code it is called "cloud_frac"
 
   // Liquid stratiform cloud fraction at midpoints
-  add_field<Required>("cldfrac_liq", scalar3d_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_liq", scalar3d_mid, none, grid_name);
 
   // Previous value of liquid stratiform cloud fraction at midpoints
-  add_field<Required>("cldfrac_liq_prev", scalar3d_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_liq_prev", scalar3d_mid, none, grid_name);
 
   // Eddy diffusivity for heat
   add_field<Required>("eddy_diff_heat", scalar3d_mid, m2 / s, grid_name);

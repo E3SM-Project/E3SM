@@ -411,9 +411,8 @@ Field& Field::create_valid_mask (const std::string& mask_name, const MaskInit in
 
   const auto& fid = m_header->get_identifier();
   const auto& props = m_header->get_alloc_properties();
-  const auto nondim = ekat::units::Units::nondimensional();
 
-  auto mfid = fid.clone(mask_name).reset_units(nondim).reset_dtype(DataType::IntType);
+  auto mfid = fid.clone(mask_name).reset_units(ekat::units::none).reset_dtype(DataType::IntType);
   Field mask(mfid);
   mask.get_header().get_alloc_properties().request_allocation(props.get_largest_pack_size());
   mask.allocate_view();

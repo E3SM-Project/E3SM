@@ -734,8 +734,7 @@ void AtmosphereOutput::set_avg_cnt_tracking(const FieldIdentifier& fid)
   // We have not created this avg count field yet.
   m_vars_dims[avg_cnt_name] = get_var_dimnames(m_transpose ? layout.transpose() : layout);
 
-  auto nondim = ekat::units::Units::nondimensional();
-  auto count_id = fid.clone(avg_cnt_name).reset_units(nondim).reset_dtype(DataType::IntType);
+  auto count_id = fid.clone(avg_cnt_name).reset_units(ekat::units::none).reset_dtype(DataType::IntType);
   Field count(count_id);
   count.allocate_view();
 

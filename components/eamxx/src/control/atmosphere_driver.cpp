@@ -1438,7 +1438,7 @@ void AtmosphereDriver::set_initial_conditions ()
 
     using namespace ShortFieldTagsNames;
     const auto& pmask_lt = gll_grid->get_vertical_layout(LEV);
-    const auto nondim = ekat::units::Units::nondimensional();
+    const auto nondim = ekat::units::none;
     FieldIdentifier pmask_fid("lev_mask",pmask_lt,nondim,gll_grid->name(),DataType::IntType);
     Field pressure_mask(pmask_fid,true);
     auto pmask_h = pressure_mask.get_view<int*,Host>();

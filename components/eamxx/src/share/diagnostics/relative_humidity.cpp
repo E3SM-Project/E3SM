@@ -19,8 +19,6 @@ void RelativeHumidityDiagnostic::create_requests()
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  auto nondim = Units::nondimensional();
-
   auto grid  = m_grids_manager->get_grid("physics");
   const auto& grid_name = grid->name();
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
@@ -36,7 +34,7 @@ void RelativeHumidityDiagnostic::create_requests()
   add_field<Required>("pseudo_density_dry", scalar3d, Pa,    grid_name, SCREAM_PACK_SIZE);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar3d, nondim, grid_name);
+  FieldIdentifier fid (name(), scalar3d, none, grid_name);
   m_diagnostic_output = Field(fid);
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
   C_ap.request_allocation(SCREAM_PACK_SIZE);

@@ -66,7 +66,7 @@ void perturb (Field& f, const ST perturb_level,
     // Create a field to store perturbation values with layout
     // the same as f, but stripped of column and level dimension.
     auto perturb_fl = fl.clone().strip_dims({COL,LEV});
-    FieldIdentifier perturb_fid("perturb_field", perturb_fl, ekat::units::Units::nondimensional(), "");
+    FieldIdentifier perturb_fid("perturb_field", perturb_fl, ekat::units::none, "");
     Field perturb_f(perturb_fid);
     perturb_f.allocate_view();
 
@@ -94,7 +94,7 @@ void perturb (Field& f, const ST perturb_level,
     // Create a field to store perturbation values with layout
     // the same as f, but stripped of level dimension.
     auto perturb_fl = fl.clone().strip_dim(LEV);
-    FieldIdentifier perturb_fid("perturb_field", perturb_fl, ekat::units::Units::nondimensional(), "");
+    FieldIdentifier perturb_fid("perturb_field", perturb_fl, ekat::units::none, "");
     Field perturb_f(perturb_fid);
     perturb_f.allocate_view();
 

@@ -153,7 +153,7 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
   // allocate column counter
   FieldLayout ncols_per_bin_layout({CMP}, {m_num_zonal_bins}, {"bin"});
   FieldIdentifier ncols_per_bin_id("number of columns per bin",
-    ncols_per_bin_layout, FieldIdentifier::Units::nondimensional(),
+    ncols_per_bin_layout, ekat::units::none,
     field_id.get_grid_name(), DataType::IntType);
   Field ncols_per_bin(ncols_per_bin_id);
   ncols_per_bin.allocate_view();
@@ -194,7 +194,7 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
       Kokkos::Max<Int>(max_ncols_per_bin));
   FieldLayout bin_to_cols_layout = ncols_per_bin_layout.append_dim(COL, 1+max_ncols_per_bin);
   FieldIdentifier bin_to_cols_id("columns in each zonal bin",
-    bin_to_cols_layout, FieldIdentifier::Units::nondimensional(),
+    bin_to_cols_layout, ekat::units::none,
     field_id.get_grid_name(), DataType::IntType);
   m_bin_to_cols = Field(bin_to_cols_id);
   m_bin_to_cols.allocate_view();

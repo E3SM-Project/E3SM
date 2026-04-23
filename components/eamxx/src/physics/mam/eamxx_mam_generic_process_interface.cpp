@@ -407,7 +407,6 @@ void MAMGenericInterface::add_fields_dry_atm() {
   // layout for 2D (1d horiz X 1d vertical) variable
   FieldLayout scalar2d_layout_col{{COL}, {ncol}};
   using namespace ekat::units;
-  constexpr auto nondim = Units::nondimensional();
 
   // Temperature[K] at midpoints
   add_field<Required>("T_mid", scalar3d_mid, K, grid_name);
@@ -428,7 +427,7 @@ void MAMGenericInterface::add_fields_dry_atm() {
   add_field<Required>("pbl_height", scalar2d_layout_col, m, grid_name);
 
   // cloud fraction [nondimensional] computed by eamxx_cld_fraction_process
-  add_field<Required>("cldfrac_tot", scalar3d_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_tot", scalar3d_mid, none, grid_name);
 
   // geopotential height above surface at interface levels (m)
   add_field<Updated>("z_mam4_int", scalar3d_int, m, grid_name);

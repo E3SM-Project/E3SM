@@ -32,18 +32,17 @@ void CldFracNet::create_requests()
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  const auto nondim = Units::nondimensional();
   const auto grid = m_grids_manager->get_grid("physics");
   const auto grid_name = grid->name();
   const auto layout = grid->get_3d_scalar_layout(LEV);
 
   // Input fields
   add_tracer<Required>("qi", grid, kg/kg);
-  add_field<Required>("cldfrac_liq", layout, nondim, grid_name);
+  add_field<Required>("cldfrac_liq", layout, none, grid_name);
 
   // Output fields
-  add_field<Computed>("cldfrac_tot", layout, nondim, grid_name);
-  add_field<Computed>("cldfrac_ice", layout, nondim, grid_name);
+  add_field<Computed>("cldfrac_tot", layout, none, grid_name);
+  add_field<Computed>("cldfrac_ice", layout, none, grid_name);
 }
 
 void CldFracNet::initialize_impl (const RunType /* run_type */)

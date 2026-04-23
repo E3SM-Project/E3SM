@@ -53,13 +53,12 @@ create_field(const std::string& name,
 {
   using namespace ShortFieldTagsNames;
   constexpr int vec_dim = 3;
-  constexpr auto units = ekat::units::Units::nondimensional();
   auto fl = twod
           ? (vec ? grid->get_2d_vector_layout (vec_dim)
                  : grid->get_2d_scalar_layout ())
           : (vec ? grid->get_3d_vector_layout (vtag,vec_dim)
                  : grid->get_3d_scalar_layout (vtag));
-  FieldIdentifier fid(name,fl,units,grid->name());
+  FieldIdentifier fid(name,fl,ekat::units::none,grid->name());
   Field f(fid);
   f.get_header().get_alloc_properties().request_allocation(ps);
   f.allocate_view();

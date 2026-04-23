@@ -128,9 +128,8 @@ initialize_impl (const RunType /*run_type*/)
 
   // Initialize temporary views based on need. Can alias the diag if a temp is not needed
   auto create_temp = [&](const std::string& name, int levs) {
-    auto u = Units::nondimensional();
     FieldLayout fl({COL,LEV},{m_num_cols,levs});
-    FieldIdentifier fid (name,fl,u,grid_name);
+    FieldIdentifier fid (name,fl,none,grid_name);
     Field f = Field(fid);
     f.get_header().get_alloc_properties().request_allocation(ps);
     f.allocate_view();

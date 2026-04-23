@@ -29,8 +29,6 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
 TEST_CASE("horiz_avg") {
   using namespace ShortFieldTagsNames;
 
-  constexpr auto nondim = ekat::units::Units::nondimensional();
-
   // A numerical tolerance
   auto tol = std::numeric_limits<Real>::epsilon() * 100;
 
@@ -66,7 +64,7 @@ TEST_CASE("horiz_avg") {
     params.set<std::string>("field_name", "s_x");
 
     FieldLayout layout{{COL}, {ncols}};
-    FieldIdentifier scl_x_fid ("s_x" , layout, nondim, grid->name());
+    FieldIdentifier scl_x_fid ("s_x" , layout, ekat::units::none, grid->name());
     Field scl_x (scl_x_fid , true);
     scl_x.get_header().get_tracking().update_time_stamp(t0);
     randomize_uniform(scl_x,seed++);
@@ -97,7 +95,7 @@ TEST_CASE("horiz_avg") {
     params.set<std::string>("field_name", "vec_xz");
 
     FieldLayout layout{{COL,CMP,LEV}, {ncols,2,nlevs}};
-    FieldIdentifier vec_xz_fid ("vec_xz" , layout, nondim, grid->name());
+    FieldIdentifier vec_xz_fid ("vec_xz" , layout, ekat::units::none, grid->name());
     Field vec_xz (vec_xz_fid , true);
     randomize_uniform(vec_xz,seed++);
     vec_xz.get_header().get_tracking().update_time_stamp(t0);
@@ -146,7 +144,7 @@ TEST_CASE("horiz_avg") {
     params.set<std::string>("field_name", "vec_xz");
 
     FieldLayout layout{{COL,CMP,LEV}, {ncols,2,nlevs}};
-    FieldIdentifier vec_xz_fid ("vec_xz" , layout, nondim, grid->name());
+    FieldIdentifier vec_xz_fid ("vec_xz" , layout, ekat::units::none, grid->name());
     Field vec_xz (vec_xz_fid , true);
     randomize_uniform(vec_xz,seed++);
     vec_xz.get_header().get_tracking().update_time_stamp(t0);
@@ -176,7 +174,7 @@ TEST_CASE("horiz_avg") {
     params.set<std::string>("field_name", "s_xz");
 
     FieldLayout layout{{COL,LEV}, {ncols,nlevs}};
-    FieldIdentifier scl_xz_fid ("s_xz" , layout, nondim, grid->name());
+    FieldIdentifier scl_xz_fid ("s_xz" , layout, ekat::units::none, grid->name());
     Field scl_xz (scl_xz_fid , true);
     scl_xz.get_header().get_tracking().update_time_stamp(t0);
 

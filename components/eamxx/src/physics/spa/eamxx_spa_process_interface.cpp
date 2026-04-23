@@ -23,7 +23,6 @@ void SPA::create_requests()
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  constexpr auto nondim = Units::nondimensional();
   constexpr int ps = SCREAM_PACK_SIZE;
 
   m_model_grid = m_grids_manager->get_grid("physics");
@@ -49,11 +48,11 @@ void SPA::create_requests()
   add_field<Required>("p_mid"      , scalar3d_mid, Pa,     grid_name, ps);
 
   // Set of fields used strictly as output
-  add_field<Computed>("nccn",        scalar3d_mid,    1/kg,   grid_name, ps);
-  add_field<Computed>("aero_g_sw",   scalar3d_swband, nondim, grid_name, ps);
-  add_field<Computed>("aero_ssa_sw", scalar3d_swband, nondim, grid_name, ps);
-  add_field<Computed>("aero_tau_sw", scalar3d_swband, nondim, grid_name, ps);
-  add_field<Computed>("aero_tau_lw", scalar3d_lwband, nondim, grid_name, ps);
+  add_field<Computed>("nccn",        scalar3d_mid,    1/kg, grid_name, ps);
+  add_field<Computed>("aero_g_sw",   scalar3d_swband, none, grid_name, ps);
+  add_field<Computed>("aero_ssa_sw", scalar3d_swband, none, grid_name, ps);
+  add_field<Computed>("aero_tau_sw", scalar3d_swband, none, grid_name, ps);
+  add_field<Computed>("aero_tau_lw", scalar3d_lwband, none, grid_name, ps);
 }
 
 // =========================================================================================
