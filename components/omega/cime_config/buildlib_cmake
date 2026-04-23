@@ -22,9 +22,14 @@ def buildlib(bldroot, installpath, case):
     """
     print("building omega")
 
-    cmake_args = ""
+    metis_root = os.environ['METIS_ROOT']
+    parmetis_root = os.environ['PARMETIS_ROOT']
 
-    cmake_args += " -DOMEGA_BUILD_MODE=E3SM"
+    cmake_args = (
+        f' -DOMEGA_BUILD_MODE=E3SM'
+        f' -DOMEGA_METIS_ROOT="{metis_root}"'
+        f' -DOMEGA_PARMETIS_ROOT="{parmetis_root}"'
+    )
 
     print(f"omega cmake options: '{cmake_args}'")
 
