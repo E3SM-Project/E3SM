@@ -399,6 +399,30 @@ struct Functions
     // Inputs/Outputs
     const uview_2d<Real>& tau);
 
+  // Serial version of gwd_compute_stress_profiles_and_diffusivities that
+  // follows the original Fortran loop structure exactly (serial outer k-loop,
+  // parallel inner l-loops). Avoids the two-pass precomputation used by the
+  // parallel version, which can diverge from the original algorithm.
+  KOKKOS_FUNCTION
+  static void gwd_compute_stress_profiles_and_diffusivities_serial(
+    // Inputs
+    const MemberType& team,
+    const Workspace& workspace,
+    const GwCommonInit& init,
+    const Int& pver,
+    const Int& pgwv,
+    const Int& src_level,
+    const uview_1d<const Real>& ubi,
+    const uview_1d<const Real>& c,
+    const uview_1d<const Real>& rhoi,
+    const uview_1d<const Real>& ni,
+    const uview_1d<const Real>& kvtt,
+    const uview_1d<const Real>& t,
+    const uview_1d<const Real>& ti,
+    const uview_1d<const Real>& piln,
+    // Inputs/Outputs
+    const uview_2d<Real>& tau);
+
   KOKKOS_FUNCTION
   static void gwd_project_tau(
     // Inputs
