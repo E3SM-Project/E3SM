@@ -905,6 +905,24 @@ _TESTS = {
             "ERS_Vmoab_Ld3.T62_oQU240.DTESTM",
             "ERS_Vmoab_Ld3.r05_r05.RMOSGPCC",
             "ERS_Vmoab_Ld3.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "ERS_Vmoab_Ld3.f45_g37.X",
+        )
+    },
+
+    "e3sm_moab_ersonline" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "ERS_Vmoab_Ld3.ne4pg2_r05_oQU480.WCYCL1850NS.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.ne4pg2_oQU480.WCYCL1850NS.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.ne4pg2_oQU480.F1850.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.T62_oQU240wLI.GMPAS-IAF.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.T62_oQU120.CMPASO-NYF.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.T62_oQU240.DTESTM.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.r05_r05.RMOSGPCC.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.ne4pg2_ne4pg2.F2010-SCREAMv1.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.f45_g37.X.allactive-onlinemaps",
         )
     },
 
@@ -921,6 +939,7 @@ _TESTS = {
             "PEM_Vmoab_Ld3.T62_oQU240.DTESTM",
             "PEM_Vmoab_Ld3.r05_r05.RMOSGPCC",
             "PEM_Vmoab_Ld3.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "PEM_Vmoab_Ld3.f45_g37.X",
         )
     },
 
@@ -937,6 +956,7 @@ _TESTS = {
             "SMS_Vmoab_Ld1.r05_r05.RMOSGPCC",
             "SMS_Vmoab_Ld1.ne4pg2_ne4pg2.F2010-SCREAMv1",
             "SMS_Vmoab_Ld1.T62_oQU240.DTESTM",
+            "SMS_Vmoab_Ld1.f45_g37.X",
             "SMS_Ld1.ne4pg2_r05_oQU480.WCYCL1850NS",
             "SMS_Ld1.ne4pg2_oQU480.WCYCL1850NS",
             "SMS_Ld1.ne4pg2_oQU480.F1850",
@@ -947,9 +967,26 @@ _TESTS = {
             "SMS_Ld1.r05_r05.RMOSGPCC",
             "SMS_Ld1.ne4pg2_ne4pg2.F2010-SCREAMv1",
             "SMS_Ld1.T62_oQU240.DTESTM",
+            "SMS_Ld1.f45_g37.X",
         )
     },
 
+    "e3sm_moab_dbg" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "SMS_Vmoab_D_Ld1.ne4pg2_r05_oQU480.WCYCL1850NS",
+            "SMS_Vmoab_D_Ld1.ne4pg2_oQU480.WCYCL1850NS",
+            "SMS_Vmoab_D_Ld1.ne4pg2_oQU480.F1850",
+            "SMS_Vmoab_D_Ld1.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI",
+            "SMS_Vmoab_D_Ld1.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP",
+            "SMS_Vmoab_D_Ld1.T62_oQU240wLI.GMPAS-IAF",
+            "SMS_Vmoab_D_Ld1.T62_oQU120.CMPASO-NYF",
+            "SMS_Vmoab_D_Ld1.r05_r05.RMOSGPCC",
+            "SMS_Vmoab_D_Ld1.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "SMS_Vmoab_D_Ld1.T62_oQU240.DTESTM",
+            "SMS_Vmoab_D_Ld1.f45_g37.X",
+        )
+    },
 
     "e3sm_gpuacc" : {
         "tests"    : (

@@ -26,6 +26,7 @@ module prep_ocn_mod
   use seq_comm_mct,     only : CPLALLICEID
   use seq_comm_mct,     only : seq_comm_iamin
   use seq_comm_mct,     only : num_moab_exports
+  use seq_comm_mct,     only : mb_dead_comps
 
   use seq_comm_mct,     only : seq_comm_getinfo => seq_comm_setptrs
 
@@ -473,7 +474,7 @@ contains
                   if (iamroot_CPLID) then
                      write(logunit,*) 'iMOAB mesh intersection completed between ATM and OCN with id:', idintx
                   end if
-                  if (atm_pg_active) then
+                  if (atm_pg_active .or. mb_dead_comps) then
                      type1 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
                   else
                      type1 = 1 ! This projection works (CGLL to FV), but reverse does not (FV - CGLL)
@@ -504,7 +505,7 @@ contains
 
                if (compute_maps_online_a2o) then
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
-                  if (atm_pg_active) then
+                  if (atm_pg_active .or. mb_dead_comps) then
                      dm1 = "fv"//C_NULL_CHAR
                      dofnameS="GLOBAL_ID"//C_NULL_CHAR
                      orderS = 1 !  fv-fv
@@ -576,7 +577,7 @@ contains
                ! and viceversa, based on element GLOBAL_ID matching. In order to seamless produce the
                ! permutation operator, we will compute a communication graph between ATM and OCN DoFs on the
                ! coupler.
-              if (atm_pg_active) then
+              if (atm_pg_active .or. mb_dead_comps) then
                   type1 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
               else
                   type1 = 2 ! in the spectral case, the type on coupler will be point cloud

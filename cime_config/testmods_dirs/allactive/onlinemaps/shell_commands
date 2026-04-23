@@ -1,0 +1,2 @@
+#!/bin/bash
+./xmlchange CPL_COMPUTE_MAPS_ONLINE=TRUE
