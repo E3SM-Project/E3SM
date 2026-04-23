@@ -22,6 +22,8 @@ void Functions<S,D>::compute_shear_strain3d(
   const Workspace&               workspace,
   const uview_1d<Pack>&          shear_strain3d)
 {
+  // Allocate local scratch for vertical shear components on the interface and
+  // midpoint grids. These are combined with the dycore-provided horizontal pieces below.
   uview_1d<Pack> du_dz_i, dv_dz_i, dw_dz_i, du_dz_m, dv_dz_m, dw_dz_m;
   workspace.template take_many_contiguous_unsafe<6>(
     {"du_dz_i", "dv_dz_i", "dw_dz_i", "du_dz_m", "dv_dz_m", "dw_dz_m"},
@@ -44,6 +46,8 @@ void Functions<S,D>::compute_shear_strain3d(
   const auto s_v_wind  = scalarize(v_wind);
   const auto s_w_field = scalarize(w_field);
 
+  // Form the vertical gradients on the interface grid first so they are
+  // consistent with SHOC's native staggered-grid treatment of shear production.
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     auto range_pack = ekat::range<IntPack>(k*Pack::n);
     const auto active_range = range_pack > 0 && range_pack < nlev;
@@ -77,11 +81,15 @@ void Functions<S,D>::compute_shear_strain3d(
   s_dv_dz_i(nlevi-1) = 0;
   s_dw_dz_i(nlevi-1) = 0;
 
+  // Interpolate the interface-grid vertical gradients back to midpoint levels,
+  // where SHOC carries thermodynamic variables and TKE.
   team.team_barrier();
   linear_interp(team, zi_grid, zt_grid, du_dz_i, du_dz_m, nlevi, nlev, 0);
   linear_interp(team, zi_grid, zt_grid, dv_dz_i, dv_dz_m, nlevi, nlev, 0);
   linear_interp(team, zi_grid, zt_grid, dw_dz_i, dw_dz_m, nlevi, nlev, 0);
 
+  // Assemble the full local velocity-gradient tensor from dycore horizontal
+  // components and SHOC-computed vertical components, then form the symmetric strain invariant.
   team.team_barrier();
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     const Pack A00 = shear_strain3d_components(0,k);
@@ -136,6 +144,7 @@ void Functions<S,D>::compute_shear_strain3d_disp(
     const Int i = team.league_rank();
     auto workspace = workspace_mgr.get_workspace(team);
 
+    // Dispatch the column routine over SHOC columns for the small-kernel path.
     compute_shear_strain3d(team, nlev, nlevi,
                            Kokkos::subview(shear_strain3d_components, i, Kokkos::ALL(), Kokkos::ALL()),
                            Kokkos::subview(dz_zi, i, Kokkos::ALL()),
