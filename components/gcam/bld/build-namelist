@@ -366,7 +366,7 @@ add_default($nl, 'write_scalars');
 add_default($nl, 'write_co2');
 add_default($nl, 'elm_ehc_agyield_scaling');
 add_default($nl, 'elm_ehc_carbon_scaling');
-add_default($nl, 'elm_ehc_deg_days');
+add_default($nl, 'elm_ehc_hdd_cdd');
 add_default($nl, 'ehc_eam_co2_emissions');
 add_default($nl, 'gcam_spinup');
 add_default($nl, 'run_gcam');

@@ -2815,13 +2815,21 @@ contains
        attname  = 'Sl_pftwgt_pft' //pftstr
        call metadata_set(attname, longname, stdname, units)
 
-       ! Temperature and humidity fields for EHC
-       if(add_iac_to_cplstate)call seq_flds_add(l2x_states,'Sl_t_ref2m_topo' // pftstr)
-       call seq_flds_add(x2z_states,'Sl_t_ref2m_topo' // pftstr)
-       longname = '2m reference temperature for pft ' // pftstr
-       stdname  = 'lnd_t_ref2m_topo' // pftstr
-       units    = 'K'
-       attname  = 'Sl_t_ref2m_topo' // pftstr
+       ! Cumulative heating and cooling degree days for EHC (K-days, accumulated since model start)
+       if(add_iac_to_cplstate)call seq_flds_add(l2x_states,'Sl_HDD_accum_pft' // pftstr)
+       call seq_flds_add(x2z_states,'Sl_HDD_accum_pft' // pftstr)
+       longname = 'Cumulative heating degree days for pft ' // pftstr
+       stdname  = 'lnd_HDD_accum_pft' // pftstr
+       units    = 'K-days'
+       attname  = 'Sl_HDD_accum_pft' // pftstr
+       call metadata_set(attname, longname, stdname, units)
+
+       if(add_iac_to_cplstate)call seq_flds_add(l2x_states,'Sl_CDD_accum_pft' // pftstr)
+       call seq_flds_add(x2z_states,'Sl_CDD_accum_pft' // pftstr)
+       longname = 'Cumulative cooling degree days for pft ' // pftstr
+       stdname  = 'lnd_CDD_accum_pft' // pftstr
+       units    = 'K-days'
+       attname  = 'Sl_CDD_accum_pft' // pftstr
        call metadata_set(attname, longname, stdname, units)
 
        ! iac->lnd 

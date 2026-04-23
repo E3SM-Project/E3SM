@@ -1546,10 +1546,11 @@ contains
 
        if (iac_present) then
           do p = 0,numpft
-             l2x(index_l2x_Sl_hr(p),i) = lnd2iac_vars%hr(g,p)
-             l2x(index_l2x_Sl_npp(p),i) = lnd2iac_vars%npp(g,p)
-             l2x(index_l2x_Sl_pftwgt(p),i) = lnd2iac_vars%pftwgt(g,p)
-             l2x(index_l2x_Sl_t_ref2m(p),i) = lnd2iac_vars%t_ref2m(g,p)
+             l2x(index_l2x_Sl_hr(p),i)        = lnd2iac_vars%hr(g,p)
+             l2x(index_l2x_Sl_npp(p),i)       = lnd2iac_vars%npp(g,p)
+             l2x(index_l2x_Sl_pftwgt(p),i)    = lnd2iac_vars%pftwgt(g,p)
+             l2x(index_l2x_Sl_HDD_accum(p),i) = lnd2iac_vars%HDD_accum(g,p)
+             l2x(index_l2x_Sl_CDD_accum(p),i) = lnd2iac_vars%CDD_accum(g,p)
           end do
           ! Scalar per-gridcell fields
           ! forc_hdm is time-interpolated from stream file (FireMod in non-CPL_BYPASS,
