@@ -111,7 +111,8 @@ void Functions<S,D>::gw_ediff(
   // in vd_lu_decomp they are expected as midpoints.
   vd_lu_decomp(team, pver,
                zero, egwdffi, tmpi2, rdpm, dt, zero, ktop+1, kbot+1, decomp_ca, decomp_cc, decomp_dnom, decomp_ze);
-
+  team.team_barrier();
+  
   workspace.template release_many_contiguous<2>(
     {&egwdffm, &tmpi2});
 }
