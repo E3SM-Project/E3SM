@@ -6,7 +6,7 @@ module SoilStateType
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use decompMod       , only : bounds_type
   use abortutils      , only : endrun
-  use spmdMod         , only : mpicom, MPI_INTEGER, masterproc
+  use spmdMod         , only : mpicom, MPI_INTEGER, masterproc, iam
   use ncdio_pio       , only : file_desc_t, ncd_defvar, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
   use ncdio_pio       , only : ncd_pio_openfile, ncd_inqfdims, ncd_pio_closefile, ncd_inqdid, ncd_inqdlen
   use elm_varpar      , only : more_vertlayers, numpft, numrad
@@ -117,6 +117,10 @@ contains
     call this%InitHistory(bounds)
     call this%InitCold(bounds)
 
+#ifdef HAVE_MOAB
+    call this%InitColdGhost(bounds)
+#endif
+
   end subroutine Init
 
   !------------------------------------------------------------------------
@@ -163,7 +167,7 @@ contains
     allocate(this%watopt_col           (begc:endc,nlevgrnd))            ; this%watopt_col           (:,:) = spval
     allocate(this%watfc_col            (begc:endc,nlevgrnd))            ; this%watfc_col            (:,:) = spval
     allocate(this%watmin_col           (begc:endc,nlevgrnd))            ; this%watmin_col           (:,:) = spval
-    allocate(this%sucsat_col           (begc:endc,nlevgrnd))            ; this%sucsat_col           (:,:) = spval
+    allocate(this%sucsat_col           (begc_all:endc_all,nlevgrnd))    ; this%sucsat_col           (:,:) = spval
     allocate(this%sucmin_col           (begc:endc,nlevgrnd))            ; this%sucmin_col           (:,:) = spval
     allocate(this%soilbeta_col         (begc:endc))                     ; this%soilbeta_col         (:)   = spval
     allocate(this%soilalpha_col        (begc:endc))                     ; this%soilalpha_col        (:)   = spval
@@ -1082,6 +1086,112 @@ contains
 
 #else
 
+#ifdef HAVE_MOAB
+
+  !------------------------------------------------------------------------
+  subroutine PackOwnedGridLevelDataForMOAB(bounds_proc, col_itype, data_c_in, data_g_out)
+    !
+    implicit none
+    !
+    type(bounds_type) , intent(in)    :: bounds_proc
+    integer           , intent(in)    :: col_itype
+    real(r8), pointer          , intent(in)    :: data_c_in(:,:)
+    real(r8), pointer , intent(inout) :: data_g_out(:,:)
+    !
+    integer :: c, g, j
+
+    data_g_out(:,:) = 0._r8
+
+    do c = bounds_proc%begc, bounds_proc%endc
+       if (col_pp%itype(c) == col_itype) then
+          g = col_pp%gridcell(c)
+          do j = 1, nlevgrnd
+             data_g_out(g, j) = data_c_in(c, j)
+          end do
+       end if
+    end do
+
+  end subroutine PackOwnedGridLevelDataForMOAB
+
+  !------------------------------------------------------------------------
+  subroutine UnpackGhostGridLevelDataFromMOAB(bounds_proc, col_itype, data_g_in, data_c_out)
+    !
+    implicit none
+    !
+    type(bounds_type) , intent(in)             :: bounds_proc
+    integer           , intent(in)             :: col_itype
+    real(r8)          , pointer, intent(in)    :: data_g_in(:,:)
+    real(r8)          , pointer, intent(inout) :: data_c_out(:,:)
+    !
+    integer :: c, g, j
+
+    do c = bounds_proc%endc + 1, bounds_proc%endc_all
+       if (col_pp%itype(c) == col_itype) then
+          g = col_pp%gridcell(c)
+          do j = 1, nlevgrnd
+             data_c_out(c, j) = data_g_in(g, j)
+          end do
+       end if
+    end do
+
+  end subroutine UnpackGhostGridLevelDataFromMOAB
+
+  !------------------------------------------------------------------------
+  subroutine ExchangeAFieldUsingMOAB(bounds_proc, col_itype, field_col)
+    !
+    use domainLateralMod , only : ldomain_lateral, GridLevelSoilLayerDataHaloExchange
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    type(bounds_type) , intent(in)    :: bounds_proc
+    integer           , intent(in)    :: col_itype
+    real(r8), pointer          , intent(inout) :: field_col(:,:)
+    !
+    real(r8), pointer                :: data(:,:)
+
+    ! allocate memory for owned+ghost cells
+    allocate(data(bounds_proc%begg:bounds_proc%endg_all, nlevgrnd))
+
+    ! pack data
+    call PackOwnedGridLevelDataForMOAB(bounds_proc, col_itype, field_col, data)
+
+    ! do the halo exchange
+    call GridLevelSoilLayerDataHaloExchange(ldomain_lateral, bounds_proc%begg, bounds_proc%endg, bounds_proc%endg_all, data)
+
+    ! unpack data
+    call UnpackGhostGridLevelDataFromMOAB(bounds_proc, col_itype, data, field_col)
+
+    ! free memory
+    deallocate(data)
+
+  end subroutine ExchangeAFieldUsingMOAB
+
+  !------------------------------------------------------------------------
+  subroutine InitColdGhost(this, bounds_proc)
+    !
+    ! !DESCRIPTION:
+    ! Assign soil properties for ghost/halo columns
+    !
+    ! !USES:
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    class(soilstate_type)            :: this
+    type(bounds_type), intent(in)    :: bounds_proc
+    !
+    integer, parameter               :: nat_veg_col_itype = 1
+
+    call ExchangeAFieldUsingMOAB(bounds_proc, nat_veg_col_itype, this%watsat_col)
+    call ExchangeAFieldUsingMOAB(bounds_proc, nat_veg_col_itype, this%hksat_col )
+    call ExchangeAFieldUsingMOAB(bounds_proc, nat_veg_col_itype, this%bsw_col   )
+    call ExchangeAFieldUsingMOAB(bounds_proc, nat_veg_col_itype, this%sucsat_col)
+
+  end subroutine InitColdGhost
+
+#else
+
   !------------------------------------------------------------------------
   subroutine InitColdGhost(this, bounds_proc)
     !
@@ -1102,6 +1212,7 @@ contains
 
   end subroutine InitColdGhost
 
+#endif
 #endif
   !------------------------------------------------------------------------
 
