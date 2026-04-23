@@ -512,7 +512,15 @@ contains
           index_x2a_Faoo_fco2_ocn = mct_aVect_indexRA(av_tmp,'Faoo_fco2_ocn',perrWith='quiet')
        end if
 
-       ! area accumulation loop
+       if (index_x2a_Fall_fco2_lnd /= 0) then
+          allocate(fld_fco2_lnd(lSize))
+          call mbGetCellTagVals(mbaxid, 'Fall_fco2_lnd', fld_fco2_lnd, lSize)
+       endif
+       if (index_x2a_Faoo_fco2_ocn /= 0) then
+          allocate(fld_fco2_ocn(lSize))
+          call mbGetCellTagVals(mbaxid, 'Faoo_fco2_ocn', fld_fco2_ocn, lSize)
+       endif
+       ! area and fco2 accumulation loop
        do n=1,lSize
           do k=1,4
              if (k == 1) then
@@ -532,51 +540,26 @@ contains
                 endif
                 ca_a = area_data(n) * ifrac_data(n)
              endif
+
              nf = f_area  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_a
+
+             if (index_x2a_Fall_fco2_lnd /= 0) then
+                nf = f_csurf ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) &
+                                                  + ca_a*fld_fco2_lnd(n)*CO2toC
+             endif
+             if (index_x2a_Faoo_fco2_ocn /= 0) then
+                nf = f_csurf ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) &
+                                                     + ca_a*fld_fco2_ocn(n)*CO2toC
+             endif
+
           enddo
        enddo
 
        if (index_x2a_Fall_fco2_lnd /= 0) then
-          allocate(fld_fco2_lnd(lSize))
-          call mbGetCellTagVals(mbaxid, 'Fall_fco2_lnd', fld_fco2_lnd, lSize)
-          do n=1,lSize
-             do k=1,4
-                if (k == 1) then
-                   ic = c_atm_as; ca_a = -area_data(n) * afrac_data(n)
-                elseif (k == 2) then
-                   ic = c_lnd_as; ca_a =  area_data(n) * lfrac_data(n)
-                elseif (k == 3) then
-                   ic = c_ocn_as; ca_a =  area_data(n) * ofrac_data(n)
-                elseif (k == 4) then
-                   if (lat_data(n) > 0.0_r8) then; ic = c_inh_as; else; ic = c_ish_as; endif
-                   ca_a = area_data(n) * ifrac_data(n)
-                endif
-                nf = f_csurf ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) &
-                                                     + ca_a*fld_fco2_lnd(n)*CO2toC
-             enddo
-          enddo
           deallocate(fld_fco2_lnd)
        end if
 
        if (index_x2a_Faoo_fco2_ocn /= 0) then
-          allocate(fld_fco2_ocn(lSize))
-          call mbGetCellTagVals(mbaxid, 'Faoo_fco2_ocn', fld_fco2_ocn, lSize)
-          do n=1,lSize
-             do k=1,4
-                if (k == 1) then
-                   ic = c_atm_as; ca_a = -area_data(n) * afrac_data(n)
-                elseif (k == 2) then
-                   ic = c_lnd_as; ca_a =  area_data(n) * lfrac_data(n)
-                elseif (k == 3) then
-                   ic = c_ocn_as; ca_a =  area_data(n) * ofrac_data(n)
-                elseif (k == 4) then
-                   if (lat_data(n) > 0.0_r8) then; ic = c_inh_as; else; ic = c_ish_as; endif
-                   ca_a = area_data(n) * ifrac_data(n)
-                endif
-                nf = f_csurf ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) &
-                                                     + ca_a*fld_fco2_ocn(n)*CO2toC
-             enddo
-          enddo
           deallocate(fld_fco2_ocn)
        end if
 
@@ -646,20 +629,22 @@ contains
           index_l2x_Fall_fco2_lnd = mct_aVect_indexRA(av_tmp,'Fall_fco2_lnd',perrWith='quiet')
        end if
 
+       if (index_l2x_Fall_fco2_lnd /= 0) then
+          allocate(fld_fco2_lnd(lSize))
+          call mbGetCellTagVals(mblxid, 'Fall_fco2_lnd', fld_fco2_lnd, lSize)
+       endif
+
        ic = c_lnd_lr
        do n=1,lSize
           ca_l = area_data(n) * lfrac_data(n)
           nf = f_area  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_l
+          if (index_l2x_Fall_fco2_lnd /= 0) then
+             nf = f_csurf ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) &
+                                                  + ca_l*fld_fco2_lnd(n)*CO2toC
+          endif
        end do
 
        if (index_l2x_Fall_fco2_lnd /= 0) then
-          allocate(fld_fco2_lnd(lSize))
-          call mbGetCellTagVals(mblxid, 'Fall_fco2_lnd', fld_fco2_lnd, lSize)
-          do n=1,lSize
-             ca_l = area_data(n) * lfrac_data(n)
-             nf = f_csurf ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) &
-                                                  + ca_l*fld_fco2_lnd(n)*CO2toC
-          end do
           deallocate(fld_fco2_lnd)
        end if
     end if
@@ -852,22 +837,23 @@ contains
           index_o2x_Faoo_fco2_ocn = mct_aVect_indexRA(av_tmp,'Faoo_fco2_ocn',perrWith='quiet')
        end if
 
+       if (index_o2x_Faoo_fco2_ocn /= 0) then
+          allocate(fld_fco2_ocn(lSize))
+          call mbGetCellTagVals(mboxid, 'Faoo_fco2_ocn', fld_fco2_ocn, lSize)
+       endif
+
        ic = c_ocn_or
        do n=1,lSize
           ca_o = area_data(n) * ofrac_data(n)
           ca_i = area_data(n) * ifrac_data(n)
           nf = f_area ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_o
+          if (index_o2x_Faoo_fco2_ocn /= 0) then
+             nf = f_csurf; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) &
+                                                + (ca_o+ca_i)*fld_fco2_ocn(n)*CO2toC
+          endif
        end do
 
        if (index_o2x_Faoo_fco2_ocn /= 0) then
-          allocate(fld_fco2_ocn(lSize))
-          call mbGetCellTagVals(mboxid, 'Faoo_fco2_ocn', fld_fco2_ocn, lSize)
-          do n=1,lSize
-             ca_o = area_data(n) * ofrac_data(n)
-             ca_i = area_data(n) * ifrac_data(n)
-             nf = f_csurf; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) &
-                                                + (ca_o+ca_i)*fld_fco2_ocn(n)*CO2toC
-          end do
           deallocate(fld_fco2_ocn)
        end if
     end if
@@ -1029,27 +1015,7 @@ contains
           av_tmp => component_get_c2x_cx(ice)
           index_i2x_Fioi_algae1 = mct_aVect_indexRA(av_tmp,'Fioi_algae1',perrWith='quiet')
           if ( index_i2x_Fioi_algae1 /= 0 ) flds_c_oi = .true.
-          if ( flds_c_oi ) then
-             index_i2x_Fioi_algae2 = mct_aVect_indexRA(av_tmp,'Fioi_algae2')
-             index_i2x_Fioi_algae3 = mct_aVect_indexRA(av_tmp,'Fioi_algae3')
-             index_i2x_Fioi_dic1   = mct_aVect_indexRA(av_tmp,'Fioi_dic1')
-             index_i2x_Fioi_docr   = mct_aVect_indexRA(av_tmp,'Fioi_docr')
-             index_i2x_Fioi_doc1   = mct_aVect_indexRA(av_tmp,'Fioi_doc1')
-             index_i2x_Fioi_doc2   = mct_aVect_indexRA(av_tmp,'Fioi_doc2')
-             index_i2x_Fioi_doc3   = mct_aVect_indexRA(av_tmp,'Fioi_doc3')
-          end if
        endif
-
-       ! area accumulation loop
-       do n=1,lSize
-          if (lat_data(n) > 0.0_r8) then
-             ic = c_inh_ir
-          else
-             ic = c_ish_ir
-          endif
-          ca_i = area_data(n) * ifrac_data(n)
-          nf = f_area  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i
-       end do
 
        if ( flds_c_oi ) then
           allocate(fld_dic1(lSize))
@@ -1064,14 +1030,18 @@ contains
           call mbGetCellTagVals(mbixid, 'Fioi_doc1',   fld_doc1,   lSize)
           call mbGetCellTagVals(mbixid, 'Fioi_doc2',   fld_doc2,   lSize)
           call mbGetCellTagVals(mbixid, 'Fioi_doc3',   fld_doc3,   lSize)
+       endif
 
-          do n=1,lSize
-             if (lat_data(n) > 0.0_r8) then
-                ic = c_inh_ir
-             else
-                ic = c_ish_ir
-             endif
-             ca_i = area_data(n) * ifrac_data(n)
+       ! accumulation loop
+       do n=1,lSize
+          if (lat_data(n) > 0.0_r8) then
+             ic = c_inh_ir
+          else
+             ic = c_ish_ir
+          endif
+          ca_i = area_data(n) * ifrac_data(n)
+          nf = f_area  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i
+          if ( flds_c_oi ) then
              nf = f_ioinor;
              budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*fld_dic1(n) &
                                                           * shr_const_mwc * 1.0e-06_r8
@@ -1084,8 +1054,10 @@ contains
                                                           +  ca_i*fld_doc2(n)   &
                                                           +  ca_i*fld_doc3(n))  &
                                                           *  shr_const_mwc * 1.0e-06_r8
-          end do
+          endif
+       end do
 
+       if ( flds_c_oi ) then
           deallocate(fld_dic1)
           deallocate(fld_algae1, fld_algae2, fld_algae3)
           deallocate(fld_docr, fld_doc1, fld_doc2, fld_doc3)
