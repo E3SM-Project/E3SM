@@ -1931,18 +1931,18 @@ end if ! l_tracer_aero
             cam_in%ocnfrac  , cam_in%landfrac ,        &
             sgh30    ,pbuf )
 
-    !------------------------------------------
-    ! Call major diffusion for extended model
-    !------------------------------------------
-    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then
-       call mspd_intr (ztodt    ,state    ,ptend)
-    endif
+      !------------------------------------------
+      ! Call major diffusion for extended model
+      !------------------------------------------
+      if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then
+         call mspd_intr (ztodt    ,state    ,ptend)
+      endif
 
        call physics_update(state, ptend, ztodt, tend)
        call t_stopf ('vertical_diffusion_tend')
        call cnd_diag_checkpoint( diag, 'VDIFF', state, pbuf, cam_in, cam_out )
     
-      !!! todo: delete !!!
+      ! for examining surface cflx update timing - aldivi
        if (masterproc) write(iulog,*) 'cflx-log: surface fluxes applied via vertical diffusion tendencies in tphysac'
 
     end if ! l_vdiff
@@ -2871,7 +2871,7 @@ end if
           call cflx_tend( state, cam_in, ztodt, ptend)
           call physics_update(state, ptend, ztodt, tend)
           call get_carbon_sfc_fluxes(state, cam_in, ztodt)
-         !!! todo: delete !!!
+         ! for examining surface cflx update timing - aldivi
          if (masterproc) write(iulog,*) 'cflx-log: surface flux tendencies applied in tphysbc.'
        end if
 

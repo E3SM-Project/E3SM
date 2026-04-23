@@ -11,6 +11,23 @@
 
 <clm_start_type>arb_ic</clm_start_type>
 
+<!-- no crop model yet -->
+<use_crop>.false.</use_crop>
+
+<!-- v3 with the EHC includes toprad and plant hydraulics tuning -->
+<!-- current config has cn=true and crop=false so the correct paramfile is set -->
+<!-- the compset sets use_top_solar_rad but not the correct fsurdat -->
+<!-- toprad needs correct surfdata file -->
+<use_top_solar_rad>.true.</use_top_solar_rad>
+<fsurdat hgrid="0.9x1.25">lnd/clm2/surfdata_map/surfdata_0.9x1.25_SSP3_RCP70_simyr2015_c260223_with_TOP.nc</fsurdat>
+<!-- these are the most recently created files for these resolutions (none currently for f19) -->
+<!-- r0125 is an 1850 year; different year files differ at the precision level for vegetated land unit and pfts -->
+<!-- ssp-rcp (or hist) labels are simply labels and do not alter the data values, as the source year data are the same -->
+<fsurdat hgrid="r0125">lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c250910_TOP.nc</fsurdat>
+<fsurdat hgrid="r025">lnd/clm2/surfdata_map/surfdata_0.25x0.25_simyr2010_c240206_TOP.nc</fsurdat>
+<fsurdat hgrid="r05">lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr2010_c230922_with_TOP.nc</fsurdat>
+<fsurdat hgrid="1.9x2.5">surfdata_1.9x2.5_SSP2_RCP45_simyr2015_c260422_with_TOP_ncremap_0.9x1.25.nc</fsurdat>
+
 <!-- *** NOT USED FOR SATELLITE PHENOLOGY ***-->
 <stream_year_first_ndep phys="elm" use_cn=".true."   >2015</stream_year_first_ndep>
 <stream_year_last_ndep  phys="elm" use_cn=".true."   >2100</stream_year_last_ndep>
@@ -25,9 +42,6 @@
 <stream_year_last_popdens  phys="elm" use_cn=".true."   >2100</stream_year_last_popdens>
 <model_year_align_popdens  phys="elm" use_cn=".true."   >2015</model_year_align_popdens>
 <stream_fldfilename_popdens>lnd/clm2/firedata/elmforc.ssp3_hdm_0.5x0.5_simyr1850-2101_c20200624.nc</stream_fldfilename_popdens>
-
-<!-- CMIP6 DECK compsets -->
-<fsurdat>lnd/clm2/surfdata_map/surfdata_0.9x1.25_SSP3_RCP70_simyr2015_c260223_with_TOP.nc</fsurdat>
 
 <!-- Add following for hybrid run of SSP370 continuing from a historical simulation -->
 

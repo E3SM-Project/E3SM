@@ -507,9 +507,9 @@ CONTAINS
 #endif
 
 
-!!!! todo: delete this !!!!!
-   if (masterproc) write(iulog,*)'cflx-log: atm_import and cam_run1 for StepNo=0 in atm_init_mct'
-   if (masterproc) write(iulog,*)'sync ymd=',CurrentYMD
+         ! for examining surface cflx update timing - aldivi
+         if (masterproc) write(iulog,*)'cflx-log: atm_import and cam_run1 for StepNo=0 in atm_init_mct'
+         if (masterproc) write(iulog,*)'sync ymd=',CurrentYMD
 
 
           call t_startf('CAM_run1')
@@ -564,9 +564,9 @@ CONTAINS
           call cam_run1 ( cam_in, cam_out )
           call t_stopf('cam_run1')
 
-!!!! todo: delete this !!!!!
-   if (masterproc) write(iulog,*)'cflx-log: atm_import and cam_run1 for restart in atm_init_mct'
-   if (masterproc) write(iulog,*)'sync ymd=',CurrentYMD
+         ! for examining surface cflx update timing - aldivi
+         if (masterproc) write(iulog,*)'cflx-log: atm_import and cam_run1 for restart in atm_init_mct'
+         if (masterproc) write(iulog,*)'sync ymd=',CurrentYMD
 
        end if
 
@@ -684,19 +684,6 @@ CONTAINS
     call seq_timemgr_EClockGetData(EClock,curr_ymd=ymd_sync,curr_tod=tod_sync, &
        curr_yr=yr_sync,curr_mon=mon_sync,curr_day=day_sync)
 
-!!!! todo: delete this !!!!!
-   if (masterproc) write(iulog,*)'cflx-log: at beginning of atm_run_mct'
-   if (masterproc) write(iulog,*)' cam ymd=',ymd     ,'  cam tod= ',tod
-   if (masterproc) write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
-
-    if ( .not. seq_timemgr_EClockDateInSync( EClock, ymd, tod ) )then
-       call seq_timemgr_EClockGetData(EClock, curr_ymd=ymd_sync, curr_tod=tod_sync )
-       write(iulog,*)' cam ymd=',ymd     ,'  cam tod= ',tod
-       write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
-       call shr_sys_abort( subname//': CAM clock is not in sync with master Sync Clock' )
-    end if
-
-
     !load orbital parameters
 
     call seq_infodata_GetData( infodata,                                           &
@@ -737,7 +724,7 @@ CONTAINS
        tod = tod
        dosend = (seq_timemgr_EClockDateInSync( EClock, ymd, tod))
 
-       !!!! todo: delete this !!!!!
+       ! for examining surface cflx update timing - aldivi
        if (masterproc) write(iulog,*)'cflx-log: at beginning of while(!dosend) loop in atm_run_mct, calling cam_run 2-4'
        if (masterproc) write(iulog,*)' cam ymd=',ymd     ,'  cam tod= ',tod
        if (masterproc) write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
@@ -778,7 +765,7 @@ CONTAINS
        call t_stopf  ('CAM_adv_timestep')
 
 
-       !!!! todo: delete this !!!!!
+       ! for examining surface cflx update timing - aldivi
        if (masterproc) write(iulog,*)'cflx-log: after cam time advance in while(!dosend) loop in atm_run_mct, calling cam_run1 and atm_export'
        if (masterproc) write(iulog,*)'adding the advance manually: cam ymd=',ymd,'  cam tod= ',tod + get_step_size()
        if (masterproc) write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
@@ -858,7 +845,7 @@ CONTAINS
     end if
 
 
-   !!!! todo: delete this !!!!!
+   ! for examining surface cflx update timing - aldivi
    if (masterproc) write(iulog,*)'cflx-log: after writing srfc rstrt, at end of atm_run_mct'
    if (masterproc) write(iulog,*)'including -dtime offset: cam ymd=',ymd     ,'  cam tod= ',tod
    if (masterproc) write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync

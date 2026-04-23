@@ -56,8 +56,8 @@ Note: The precedence for setting the values of namelist variables is (highest to
       0. namelist values set by specific command-line options
       1. values set on the command-line using the -namelist option,
       2. values read from the file specified by -infile,
-      3. values from the namelist defaults file.
-      4. values specified by the -use_case option,
+      3. values specified by the -use_case option,
+      4. values from the namelist defaults file.
 
 EOF
 }
@@ -354,6 +354,28 @@ if (defined $opts{'namelist'}) {
     $nl->merge_nl($nl_arg_valid);
 }
 
+#-----------------------------------------------------------------------------------------------
+# Process the -infile arg.
+if (defined $opts{'infile'}) {
+   foreach my $infile ( split( /,/, $opts{'infile'} ) ) {
+      # Parse namelist input from a file
+      my $nl_infile = Build::Namelist->new($infile);
+
+      # Validate input namelist -- trap exceptions
+      my $nl_infile_valid;
+      eval { $nl_infile_valid = $definition->validate($nl_infile); };
+      if ($@) {
+         die "$ProgName - ERROR: Invalid namelist variable in '-infile' $infile.\n $@";
+      }
+
+      # Merge input values into namelist.  Previously specified values have higher precedence
+      # and are not overwritten.
+      $nl->merge_nl($nl_infile_valid);
+   }
+}
+
+#-----------------------------------------------------------------------------------------------
+
 # Process the -use_case arg.
 # Declare global symbol $uc_defaults even if it's not defined, because we check whether it's
 # defined before using it in the get_default_value method below.
@@ -386,32 +408,12 @@ if (defined $use_case_file) {
     }
 }
 
-#-----------------------------------------------------------------------------------------------
-# Process the -infile arg.
-if (defined $opts{'infile'}) {
-   foreach my $infile ( split( /,/, $opts{'infile'} ) ) {
-      # Parse namelist input from a file
-      my $nl_infile = Build::Namelist->new($infile);
-
-      # Validate input namelist -- trap exceptions
-      my $nl_infile_valid;
-      eval { $nl_infile_valid = $definition->validate($nl_infile); };
-      if ($@) {
-         die "$ProgName - ERROR: Invalid namelist variable in '-infile' $infile.\n $@";
-      }
-
-      # Merge input values into namelist.  Previously specified values have higher precedence
-      # and are not overwritten.
-      $nl->merge_nl($nl_infile_valid);
-   }
-}
-
-#-----------------------------------------------------------------------------------------------
 
 ####################################
 # namelist group: gcam_inparm       #
 ####################################
 
+# now add defaults values for those that have not bee set above
 # order these to match the default files
 
 # gcam case name

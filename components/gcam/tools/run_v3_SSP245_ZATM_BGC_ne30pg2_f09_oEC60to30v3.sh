@@ -48,7 +48,7 @@ readonly MYDATE=$(date '+%Y%m%d%H') # use current date if MYDATE is not set to a
 # export COMPSET=SSP245_EAM%CMIP6_ELM%TOPCNPRDCTCBCPHS_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM_BGC%LNDATM
 readonly COMPSET="SSP245_ZATM_BGC" # see long name above
 readonly RESOLUTION="ne30pg2_f09_oEC60to30v3" 
-readonly CASE_NAME="${COMPSET}_${RESOLUTION}_${MYDATE}_v3_prerebase_compile_test"
+readonly CASE_NAME="${COMPSET}_${RESOLUTION}_${MYDATE}_v3_submodule_compile_test"
 # readonly CASE_GROUP="E3SM_GCAM"
 
 # Code and compilation
@@ -140,7 +140,7 @@ else
   readonly REST_N="1"
   readonly RESUBMIT="0"
   readonly DO_SHORT_TERM_ARCHIVING=false
-  readonly IFDEBUG="compute"
+  readonly IFDEBUG="regular"
 fi
 
 # Coupler history 
@@ -213,7 +213,7 @@ EOF
 
 cat << EOF >> user_nl_gcam
 !read_scalars = .true.
-!scalar_source_dir = '/lcrc/group/e3sm/ac.eva.sinha/20240730_SSP245_ZATM_BGC_ne30pg2_f09_oEC60to30v3/run'
+!scalar_source_dir = ''
 EOF
 
 cat << EOF >> user_nl_cpl
