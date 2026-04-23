@@ -49,6 +49,7 @@ repos:
         args: ["--config=components/omega/python_lint.cfg", "--show-error-codes"]
         verbose: true
         additional_dependencies: ['types-requests']
+        exclude: ^components/omega/cime_config/build.*
 
   # Can run individually with `pre-commit run fortitude --all-files`
   - repo: https://github.com/PlasmaFAIR/fortitude-pre-commit

@@ -194,6 +194,7 @@
       <value component="socn"                         >$SRCROOT/components/stub_comps/socn</value>
       <value component="xocn"                         >$SRCROOT/components/xcpl_comps/xocn</value>
       <value component="mpaso"                        >$SRCROOT/components/mpas-ocean</value>
+      <value component="omega"                        >$SRCROOT/components/omega</value>
     </values>
     <group>case_comps</group>
     <file>env_case.xml</file>
@@ -270,6 +271,7 @@
       <value component="elm"      >$COMP_ROOT_DIR_LND/cime_config/config_compsets.xml</value>
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/config_compsets.xml</value>
       <value component="mpaso"    >$COMP_ROOT_DIR_OCN/cime_config/config_compsets.xml</value>
+      <value component="omega"    >$COMP_ROOT_DIR_OCN/cime_config/config_compsets.xml</value>
       <value component="mali"     >$COMP_ROOT_DIR_GLC/cime_config/config_compsets.xml</value>
       <value component="mpassi"   >$COMP_ROOT_DIR_ICE/cime_config/config_compsets.xml</value>
       <value component="mosart"   >$COMP_ROOT_DIR_ROF/cime_config/config_compsets.xml</value>

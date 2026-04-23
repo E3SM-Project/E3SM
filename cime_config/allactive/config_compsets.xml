@@ -17,7 +17,7 @@
     ATM  = [EAM, EAMXX, SATM, SCREAM]
     LND  = [ELM,  SLND]
     ICE  = [MPASSI, CICE, DICE, SICE]
-    OCN  = [MPASO, DOCN, SOCN]
+    OCN  = [OMEGA, MPASO, DOCN, SOCN]
     ROF  = [MOSART, SROF]
     GLC  = [MALI, SGLC]
     WAV  = [WW3, DWAV, XWAV, SWAV]
