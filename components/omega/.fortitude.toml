@@ -1,4 +1,15 @@
 [check]
+# consitent with C++ line length
+line-length = 80
+
 # Ignored Rules and justification:
 #   C003: 'implicit none' missing 'external' - Fortran 2013 feature and we support older standards
 ignore = ["C003"]
+
+# config option below is available in the latest version of fortitude, but has
+# not yet released. The snippet below should be uncommented after the next
+# release of fortitude (probably v0.9.0)
+#
+# [check.line-too-long]
+# # LLVM clang sytle enforces line length for comments, follow suit for fortran
+# ignore-comments = false
