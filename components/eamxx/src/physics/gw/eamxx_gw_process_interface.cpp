@@ -182,7 +182,6 @@ void GWDrag::run_impl (const double dt) {
     });
   });
   //----------------------------------------------------------------------------
-
   auto loc_z_mid       = m_buffer.z_mid;
   auto loc_z_del       = m_buffer.z_del;
   auto loc_z_int       = m_buffer.z_int;
@@ -357,9 +356,6 @@ void GWDrag::run_impl (const double dt) {
     // });
 
   });
-
-  
-
 
   //----------------------------------------------------------------------------
   // Calculate local molecular diffusivity
@@ -617,6 +613,7 @@ void GWDrag::run_impl (const double dt) {
       // Kokkos::fence();
       // std::cout << "WHDEBUG 2" << std::endl;
       // std::cout.flush();
+
       GWF::gw_drag_prof(team, wsm.get_workspace(team), GWF::s_common_init,
                         m_nlev, GWF::s_common_init.pgwv, src_lev, max_lev, tnd_lev,
                         GWF::s_common_init.do_taper, dt, m_lat_v(i),
@@ -627,6 +624,7 @@ void GWDrag::run_impl (const double dt) {
                         c_i, kvtt_i, q_2d, dse_i, tau_i,
                         utgw_i, vtgw_i, ttgw_i, qtgw_i,
                         taucd_i, egwdffi_i, gwut_i, dttdf_i, dttke_i);
+
       // Kokkos::fence();
       // std::cout << "WHDEBUG 3" << std::endl;
       // std::cout.flush();

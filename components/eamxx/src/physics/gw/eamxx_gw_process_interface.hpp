@@ -94,6 +94,7 @@ class GWDrag : public AtmosphereProcess
       uview_3d gwut;        // gravity wave wind tendency for each wave
       uview_2d dttdf;       // temperature tendencies from diffusion
       uview_2d dttke;       // temperature tendencies from kinetic energy
+
     };
 
 #ifndef KOKKOS_ENABLE_CUDA
