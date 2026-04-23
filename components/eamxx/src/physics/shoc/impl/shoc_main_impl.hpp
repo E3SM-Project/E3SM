@@ -223,7 +223,7 @@ void Functions<S,D>::shoc_main_internal(
                 workspace,             // Workspace
                 brunt,shoc_mix);       // Output
 
-    // Advance the SGS TKE equation
+    // If 3d turbulence then assemble the strain tensor term
     if (do_3d_turb) {
       compute_shear_strain3d(team,nlev,nlevi,                   // Input
                              shear_strain3d_components,dz_zi,   // Input
@@ -233,6 +233,7 @@ void Functions<S,D>::shoc_main_internal(
       team.team_barrier();
     }
 
+    // Advance the SGS TKE equation
     shoc_tke(team,nlev,nlevi,dtime,               // Input
 	     lambda_low,lambda_high,lambda_slope, // Runtime options
 	     lambda_thresh,Ckh,Ckm,shoc_1p5tke,   // Runtime options
