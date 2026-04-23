@@ -41,6 +41,13 @@ void Functions<S,D>::gwd_precalc_rhoi(
   const uview_1d<Real>& dttke,
   const uview_1d<Real>& ttgw)
 {
+
+
+  int nan_count = 0, inf_count = 0;
+  int m_npgw = pgwv * 2 + 1;
+
+
+  
   // rhoi_kludge: Recalculated rhoi to preserve answers.
   uview_1d<Real> rhoi_kludge, decomp_ca, decomp_cc, decomp_dnom, decomp_ze, q_nostride, qtgw_nostride;
   workspace.template take_many_contiguous_unsafe<7>(
@@ -54,11 +61,38 @@ void Functions<S,D>::gwd_precalc_rhoi(
     });
   rhoi_kludge(pver) = pint(pver) / (C::Rair.value * t(pver-1));
 
+
+  nan_count = 0; inf_count = 0;
+  for (int k = 0; k < pver; k++) {
+    for (int pg = 0; pg < m_npgw; pg++) {
+      if (Kokkos::isnan(gwut(k,pg))) nan_count++;
+      if (Kokkos::isinf(gwut(k,pg))) inf_count++;
+    }
+  }
+  if (nan_count > 0 || inf_count > 0) {
+    printf("[gwd_precalc_rhoi] gwut before gw_ediff NaN=%d Inf=%d\n", nan_count, inf_count);
+  }
+
+
+
   // Calculate effective diffusivity and LU decomposition for the
   // vertical diffusion solver.
   gw_ediff (team, workspace, pver, pgwv, init.kbotbg, init.ktop, tend_level, dt,
             gwut, ubm, nm, rhoi_kludge, pmid, rdpm, c,
             egwdffi, decomp_ca, decomp_cc, decomp_dnom, decomp_ze);
+
+
+  nan_count = 0; inf_count = 0;
+  for (int k = 0; k < pver; k++) {
+    for (int pg = 0; pg < m_npgw; pg++) {
+      if (Kokkos::isnan(gwut(k,pg))) nan_count++;
+      if (Kokkos::isinf(gwut(k,pg))) inf_count++;
+    }
+  }
+  if (nan_count > 0 || inf_count > 0) {
+    printf("[gwd_precalc_rhoi] gwut after gw_ediff NaN=%d Inf=%d\n", nan_count, inf_count);
+  }
+
 
   // Calculate tendency on each constituent.
   const int pcnst = q.extent(1);
@@ -69,8 +103,10 @@ void Functions<S,D>::gwd_precalc_rhoi(
       Kokkos::TeamVectorRange(team, pver), [&] (const int k) {
         q_nostride(k) = q_stride(k);
       });
+    team.team_barrier();
     gw_diff_tend(team, workspace, pver, init.kbotbg, init.ktop, q_nostride, dt,
                  decomp_ca, decomp_cc, decomp_dnom, decomp_ze, qtgw_nostride);
+    team.team_barrier();
     Kokkos::parallel_for(
       Kokkos::TeamVectorRange(team, pver), [&] (const int k) {
         qtgw_stride(k) = qtgw_nostride(k);
@@ -79,6 +115,44 @@ void Functions<S,D>::gwd_precalc_rhoi(
 
   // Calculate tendency from diffusing dry static energy (dttdf).
   gw_diff_tend(team, workspace, pver, init.kbotbg, init.ktop, dse, dt, decomp_ca, decomp_cc, decomp_dnom, decomp_ze, dttdf);
+
+
+
+
+
+
+
+  nan_count = 0; inf_count = 0;
+  for (int k = 0; k < pver; k++) {
+    if (Kokkos::isnan(decomp_ze(k))) nan_count++;
+    if (Kokkos::isinf(decomp_ze(k))) inf_count++;
+  }
+  if (nan_count > 0 || inf_count > 0) {
+    printf("[gwd_precalc_rhoi] decomp_ze NaN=%d Inf=%d\n", nan_count, inf_count);
+  }
+
+  nan_count = 0; inf_count = 0;
+  for (int k = 0; k < pver; k++) {
+    if (Kokkos::isnan(rhoi_kludge(k))) nan_count++;
+    if (Kokkos::isinf(rhoi_kludge(k))) inf_count++;
+  }
+  if (nan_count > 0 || inf_count > 0) {
+    printf("[gwd_precalc_rhoi] rhoi_kludge NaN=%d Inf=%d\n", nan_count, inf_count);
+  }
+
+  nan_count = 0; inf_count = 0;
+  for (int k = 0; k < pver; k++) {
+    if (Kokkos::isnan(dttdf(k))) nan_count++;
+    if (Kokkos::isinf(dttdf(k))) inf_count++;
+  }
+  if (nan_count > 0 || inf_count > 0) {
+    printf("[gwd_precalc_rhoi] dttdf NaN=%d Inf=%d\n", nan_count, inf_count);
+  }
+
+
+
+
+
 
   // Evaluate second temperature tendency term: Conversion of kinetic
   // energy into thermal.
