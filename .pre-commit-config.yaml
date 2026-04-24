@@ -63,4 +63,4 @@ repos:
     hooks:
       - id: fprettify
         files: \.[fF](90|95|03|08)$
-        args: ["--indent", "4"]
+        args: ["--indent", "3"]

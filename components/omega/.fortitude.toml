@@ -6,6 +6,9 @@ line-length = 80
 #   C003: 'implicit none' missing 'external' - Fortran 2013 feature and we support older standards
 ignore = ["C003"]
 
+[check.invalid-tab]
+indent-width = 3
+
 # config option below is available in the latest version of fortitude, but has
 # not yet released. The snippet below should be uncommented after the next
 # release of fortitude (probably v0.9.0)
