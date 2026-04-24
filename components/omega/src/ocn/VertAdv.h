@@ -125,10 +125,11 @@ class VertAdv {
    /// Determine transport due to vertical advection from divergence of
    /// horizontal advection and movement of vertical interfaces.
    void computeVerticalVelocity(
-       const Array2DReal &NormalVelocity,     ///< [in] horizontal velocity
-       const Array2DReal &FluxLayerThickEdge, ///< [in] layer thickness at edges
-       const Array2DReal &LayerThickness, ///< [in] pseudo thickness of layer
-       const Real Dt                      ///< [in] time interval
+       const Array2DReal &NormalVelocity, ///< [in] horizontal velocity
+       const Array2DReal
+           &FluxPseudoThickEdge,           ///< [in] pseudo-thickness at edges
+       const Array2DReal &PseudoThickness, ///< [in] pseudo-thickness of layer
+       const Real Dt                       ///< [in] time interval
    );
 
    /// Compute pseudo thickness tendency due to vertical advection
@@ -139,26 +140,27 @@ class VertAdv {
    /// Compute velocity tendency due to vertical advection
    void computeVelocityVAdvTend(
        const Array2DReal &VelTend, ///< [inout] horizontal velocity tendency
-       const Array2DReal &NormalVelocity,    ///< [in] horizontal velocity
-       const Array2DReal &FluxLayerThickEdge ///< [in] layer thickness at edges
+       const Array2DReal &NormalVelocity, ///< [in] horizontal velocity
+       const Array2DReal
+           &FluxPseudoThickEdge ///< [in] pseudo-thickness at edges
    );
 
-   /// Compute tracer tendency due to vertical advection, The LayerThickness at
+   /// Compute tracer tendency due to vertical advection, The PseudoThickness at
    /// the beginning of the time step is passed for standard advection, while
    /// the provisional thickness including horizontal thickness flux is passed
    /// for flux-corrected transport. The TimeStep is only needed as an argument
    /// for flux-corrected transport
    void computeTracerVAdvTend(
-       const Array3DReal &TracerTend,     ///< [inout] tracer tendencies
-       const Array3DReal &Tracers,        ///< [in] tracer array
-       const Array2DReal &LayerThickness, ///< [in] layer thickness
-       const TimeInterval TimeStep        ///< [in] time step
+       const Array3DReal &TracerTend,      ///< [inout] tracer tendencies
+       const Array3DReal &Tracers,         ///< [in] tracer array
+       const Array2DReal &PseudoThickness, ///< [in] pseudo-thickness
+       const TimeInterval TimeStep         ///< [in] time step
    );
 
    /// Compute tracer fluxes due to vertical advection
    void computeVerticalFluxes(
-       const Array3DReal &Tracers,       ///< [in] tracer array
-       const Array2DReal &LayerThickness ///< [in] layer thickness
+       const Array3DReal &Tracers,        ///< [in] tracer array
+       const Array2DReal &PseudoThickness ///< [in] pseudo-thickness
    );
 
    /// Compute tracer tendencies due to vertical advection using standard
@@ -170,10 +172,11 @@ class VertAdv {
    /// Compute tracer tendencies due to vertical advection using flux-corrected
    /// transport scheme
    void computeFCTVAdvTend(
-       const Array3DReal &TracerTend,    ///< [inout] tracer tendencies
-       const Array3DReal &Tracers,       ///< [in] tracer array
-       const Array2DReal &ProvThickness, ///< [in] provisional layer thickness
-       const Real Dt                     ///< [in] time step
+       const Array3DReal &TracerTend, ///< [inout] tracer tendencies
+       const Array3DReal &Tracers,    ///< [in] tracer array
+       const Array2DReal
+           &ProvPseudoThickness, ///< [in] provisional pseudo-thickness
+       const Real Dt             ///< [in] time step
    );
 
  private:

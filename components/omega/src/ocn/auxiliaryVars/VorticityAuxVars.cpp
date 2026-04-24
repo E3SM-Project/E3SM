@@ -63,9 +63,9 @@ void VorticityAuxVars::registerFields(const std::string &AuxGroupName,
 
    // Normalized relative vorticity on vertices
    auto NormRelVortVertexField = Field::create(
-       NormRelVortVertex.label(),                                // field name
-       "curl of horizontal velocity divided by layer thickness", // long Name
-       "m^-1 s^-1",                                              // units
+       NormRelVortVertex.label(),                                 // field name
+       "curl of horizontal velocity divided by pseudo-thickness", // long Name
+       "m^-1 s^-1",                                               // units
        "",                               // CF standard Name
        std::numeric_limits<Real>::min(), // min valid value
        std::numeric_limits<Real>::max(), // max valid value
@@ -92,7 +92,7 @@ void VorticityAuxVars::registerFields(const std::string &AuxGroupName,
    DimNames[0]               = "NEdges" + DimSuffix; // for last two fields
    auto NormRelVortEdgeField = Field::create(
        NormRelVortEdge.label(), // field name
-       "curl of horizontal velocity divided by layer thickness, averaged from "
+       "curl of horizontal velocity divided by pseudo-thickness, averaged from "
        "vertices to edges",              // long Name or description
        "m^-1 s^-1",                      // units
        "",                               // CF standard Name

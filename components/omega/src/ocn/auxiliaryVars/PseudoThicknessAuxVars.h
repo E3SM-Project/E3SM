@@ -12,19 +12,19 @@ namespace OMEGA {
 
 enum class FluxThickEdgeOption { Center, Upwind };
 
-class LayerThicknessAuxVars {
+class PseudoThicknessAuxVars {
  public:
-   Array2DReal FluxLayerThickEdge;
-   Array2DReal MeanLayerThickEdge;
-   Array2DReal ProvThickness;
+   Array2DReal FluxPseudoThickEdge;
+   Array2DReal MeanPseudoThickEdge;
+   Array2DReal ProvPseudoThickness;
 
    FluxThickEdgeOption FluxThickEdgeChoice;
 
-   LayerThicknessAuxVars(const std::string &AuxStateSuffix,
-                         const HorzMesh *Mesh, const VertCoord *VCoord);
+   PseudoThicknessAuxVars(const std::string &AuxStateSuffix,
+                          const HorzMesh *Mesh, const VertCoord *VCoord);
 
    KOKKOS_FUNCTION void
-   computeVarsOnEdge(int IEdge, int KChunk, const Array2DReal &LayerThickCell,
+   computeVarsOnEdge(int IEdge, int KChunk, const Array2DReal &PseudoThickCell,
                      const Array2DReal &NormalVelEdge) const {
       const int KStart = chunkStart(KChunk, MinLayerEdgeBot(IEdge));
       const int KLen   = chunkLength(KChunk, KStart, MaxLayerEdgeTop(IEdge));
@@ -34,29 +34,30 @@ class LayerThicknessAuxVars {
 
       for (int KVec = 0; KVec < KLen; ++KVec) {
          const int K = KStart + KVec;
-         MeanLayerThickEdge(IEdge, K) =
-             0.5_Real * (LayerThickCell(JCell0, K) + LayerThickCell(JCell1, K));
+         MeanPseudoThickEdge(IEdge, K) =
+             0.5_Real *
+             (PseudoThickCell(JCell0, K) + PseudoThickCell(JCell1, K));
       }
 
       switch (FluxThickEdgeChoice) {
       case FluxThickEdgeOption::Center:
          for (int KVec = 0; KVec < KLen; ++KVec) {
             const int K = KStart + KVec;
-            FluxLayerThickEdge(IEdge, K) =
+            FluxPseudoThickEdge(IEdge, K) =
                 0.5_Real *
-                (LayerThickCell(JCell0, K) + LayerThickCell(JCell1, K));
+                (PseudoThickCell(JCell0, K) + PseudoThickCell(JCell1, K));
          }
          break;
       case FluxThickEdgeOption::Upwind:
          for (int KVec = 0; KVec < KLen; ++KVec) {
             const int K = KStart + KVec;
             if (NormalVelEdge(IEdge, K) > 0) {
-               FluxLayerThickEdge(IEdge, K) = LayerThickCell(JCell0, K);
+               FluxPseudoThickEdge(IEdge, K) = PseudoThickCell(JCell0, K);
             } else if (NormalVelEdge(IEdge, K) < 0) {
-               FluxLayerThickEdge(IEdge, K) = LayerThickCell(JCell1, K);
+               FluxPseudoThickEdge(IEdge, K) = PseudoThickCell(JCell1, K);
             } else {
-               FluxLayerThickEdge(IEdge, K) = Kokkos::max(
-                   LayerThickCell(JCell0, K), LayerThickCell(JCell1, K));
+               FluxPseudoThickEdge(IEdge, K) = Kokkos::max(
+                   PseudoThickCell(JCell0, K), PseudoThickCell(JCell1, K));
             }
          }
          break;
@@ -64,7 +65,7 @@ class LayerThicknessAuxVars {
    }
 
    KOKKOS_FUNCTION void computeVarsOnCells(int ICell, int KChunk,
-                                           const Array2DReal &LayerThickCell,
+                                           const Array2DReal &PseudoThickCell,
                                            const Array2DReal &NormalVelEdge,
                                            const Real Dt) const {
 
@@ -81,14 +82,15 @@ class LayerThicknessAuxVars {
              DtInvAreaCell * DvEdge(JEdge) * EdgeSignOnCell(ICell, J);
          for (int KVec = 0; KVec < KLen; ++KVec) {
             const int K = KStart + KVec;
-            TmpProv[KVec] +=
-                Factor * FluxLayerThickEdge(JEdge, K) * NormalVelEdge(JEdge, K);
+            TmpProv[KVec] += Factor * FluxPseudoThickEdge(JEdge, K) *
+                             NormalVelEdge(JEdge, K);
          }
       }
 
       for (int KVec = 0; KVec < KLen; ++KVec) {
-         const int K             = KStart + KVec;
-         ProvThickness(ICell, K) = LayerThickCell(ICell, K) + TmpProv[KVec];
+         const int K = KStart + KVec;
+         ProvPseudoThickness(ICell, K) =
+             PseudoThickCell(ICell, K) + TmpProv[KVec];
       }
    }
 

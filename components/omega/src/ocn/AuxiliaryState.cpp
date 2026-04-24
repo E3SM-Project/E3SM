@@ -24,7 +24,7 @@ AuxiliaryState::AuxiliaryState(const std::string &Name, const HorzMesh *Mesh,
                                int NTracers, TimeInterval TimeStep)
     : Mesh(Mesh), MeshHalo(MeshHalo), VCoord(VCoord), VAdv(VAdv),
       Name(stripDefault(Name)), KineticAux(stripDefault(Name), Mesh, VCoord),
-      LayerThicknessAux(stripDefault(Name), Mesh, VCoord),
+      PseudoThicknessAux(stripDefault(Name), Mesh, VCoord),
       VorticityAux(stripDefault(Name), Mesh, VCoord),
       VelocityDel2Aux(stripDefault(Name), Mesh, VCoord),
       WindForcingAux(stripDefault(Name), Mesh),
@@ -40,7 +40,7 @@ AuxiliaryState::AuxiliaryState(const std::string &Name, const HorzMesh *Mesh,
    auto AuxGroup = FieldGroup::create(GroupName);
 
    KineticAux.registerFields(GroupName, AuxMeshName);
-   LayerThicknessAux.registerFields(GroupName, AuxMeshName);
+   PseudoThicknessAux.registerFields(GroupName, AuxMeshName);
    VorticityAux.registerFields(GroupName, AuxMeshName);
    VelocityDel2Aux.registerFields(GroupName, AuxMeshName);
    WindForcingAux.registerFields(GroupName, AuxMeshName);
@@ -52,7 +52,7 @@ AuxiliaryState::AuxiliaryState(const std::string &Name, const HorzMesh *Mesh,
 // state field group.
 AuxiliaryState::~AuxiliaryState() {
    KineticAux.unregisterFields();
-   LayerThicknessAux.unregisterFields();
+   PseudoThicknessAux.unregisterFields();
    VorticityAux.unregisterFields();
    VelocityDel2Aux.unregisterFields();
    WindForcingAux.unregisterFields();
@@ -72,8 +72,8 @@ void AuxiliaryState::computeMomVertAux(const OceanState *State,
 
    Eos *EosInstance = Eos::getInstance();
 
-   // get layer thickness
-   Array2DReal LayerThickCell = State->getLayerThickness(ThickTimeLevel);
+   // get pseudo-thickness
+   Array2DReal PseudoThickCell = State->getPseudoThickness(ThickTimeLevel);
    // get normal velocity
    Array2DReal NormalVelEdge = State->getNormalVelocity(VelTimeLevel);
 
@@ -90,14 +90,14 @@ void AuxiliaryState::computeMomVertAux(const OceanState *State,
 
    // compute pressure
    const auto &SurfacePressure = VCoord->SurfacePressure;
-   VCoord->computePressure(LayerThickCell, SurfacePressure);
+   VCoord->computePressure(PseudoThickCell, SurfacePressure);
 
    // compute specific volume
    const auto &PressureMid = VCoord->PressureMid;
    EosInstance->computeSpecVol(ConservTemp, AbsSalinity, PressureMid);
 
    // compute geometric height
-   VCoord->computeZHeight(LayerThickCell, EosInstance->SpecVol);
+   VCoord->computeZHeight(PseudoThickCell, EosInstance->SpecVol);
 
    // compute target thickness
    VCoord->computeTargetThickness();
@@ -110,11 +110,11 @@ void AuxiliaryState::computeMomAux(const OceanState *State,
                                    const Array3DReal &TracerArray,
                                    int ThickTimeLevel, int VelTimeLevel,
                                    const TimeInterval ProjDt) const {
-   Array2DReal LayerThickCell = State->getLayerThickness(ThickTimeLevel);
-   Array2DReal NormalVelEdge  = State->getNormalVelocity(VelTimeLevel);
+   Array2DReal PseudoThickCell = State->getPseudoThickness(ThickTimeLevel);
+   Array2DReal NormalVelEdge   = State->getNormalVelocity(VelTimeLevel);
 
    OMEGA_SCOPE(LocKineticAux, KineticAux);
-   OMEGA_SCOPE(LocLayerThicknessAux, LayerThicknessAux);
+   OMEGA_SCOPE(LocPseudoThicknessAux, PseudoThicknessAux);
    OMEGA_SCOPE(LocVorticityAux, VorticityAux);
    OMEGA_SCOPE(LocVelocityDel2Aux, VelocityDel2Aux);
    OMEGA_SCOPE(LocWindForcingAux, WindForcingAux);
@@ -150,7 +150,7 @@ void AuxiliaryState::computeMomAux(const OceanState *State,
           parallelForInner(
               Team, KRange, INNER_LAMBDA(int KChunk) {
                  LocVorticityAux.computeVarsOnVertex(
-                     IVertex, KChunk, LayerThickCell, NormalVelEdge);
+                     IVertex, KChunk, PseudoThickCell, NormalVelEdge);
               });
        });
    Pacer::stop("AuxState:vertexAuxState1", 2);
@@ -190,8 +190,8 @@ void AuxiliaryState::computeMomAux(const OceanState *State,
 
           parallelForInner(
               Team, KRange, INNER_LAMBDA(int KChunk) {
-                 LocLayerThicknessAux.computeVarsOnEdge(
-                     IEdge, KChunk, LayerThickCell, NormalVelEdge);
+                 LocPseudoThicknessAux.computeVarsOnEdge(
+                     IEdge, KChunk, PseudoThickCell, NormalVelEdge);
                  LocVelocityDel2Aux.computeVarsOnEdge(
                      IEdge, KChunk, VelocityDivCell, RelVortVertex);
               });
@@ -243,8 +243,8 @@ void AuxiliaryState::computeMomAux(const OceanState *State,
 
    Pacer::start("AuxState:computeVerticalVelocity", 2);
 
-   const auto &FluxLayerThickEdge = LayerThicknessAux.FluxLayerThickEdge;
-   VAdv->computeVerticalVelocity(NormalVelEdge, FluxLayerThickEdge,
+   const auto &FluxPseudoThickEdge = PseudoThicknessAux.FluxLayerThickEdge;
+   VAdv->computeVerticalVelocity(NormalVelEdge, FluxPseudoThickEdge,
                                  LayerThickCell, ProjDtSeconds);
 
    Pacer::stop("AuxState:computeVerticalVelocity", 2);
@@ -257,12 +257,12 @@ void AuxiliaryState::computeAll(const OceanState *State,
                                 const Array3DReal &TracerArray,
                                 int ThickTimeLevel, int VelTimeLevel,
                                 const TimeInterval ProjDt) const {
-   Array2DReal LayerThickCell = State->getLayerThickness(ThickTimeLevel);
-   Array2DReal NormalVelEdge  = State->getNormalVelocity(VelTimeLevel);
+   Array2DReal PseudoThickCell = State->getPseudoThickness(ThickTimeLevel);
+   Array2DReal NormalVelEdge   = State->getNormalVelocity(VelTimeLevel);
 
    const int NTracers = TracerArray.extent_int(0);
 
-   OMEGA_SCOPE(LocLayerThicknessAux, LayerThicknessAux);
+   OMEGA_SCOPE(LocPseudoThicknessAux, PseudoThicknessAux);
    OMEGA_SCOPE(LocTracerAux, TracerAux);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
@@ -286,14 +286,14 @@ void AuxiliaryState::computeAll(const OceanState *State,
 
           parallelForInner(
               Team, KRange, INNER_LAMBDA(int KChunk) {
-                 LocLayerThicknessAux.computeVarsOnCells(
-                     ICell, KChunk, LayerThickCell, NormalVelEdge,
+                 LocPseudoThicknessAux.computeVarsOnCells(
+                     ICell, KChunk, PseudoThickCell, NormalVelEdge,
                      TimeStepSeconds);
               });
        });
    Pacer::stop("AuxState:cellAuxState3", 2);
 
-   const auto &MeanLayerThickEdge = LayerThicknessAux.MeanLayerThickEdge;
+   const auto &MeanPseudoThickEdge = PseudoThicknessAux.MeanPseudoThickEdge;
 
    Pacer::start("AuxState:cellAuxState4", 2);
    parallelForOuter(
@@ -306,7 +306,7 @@ void AuxiliaryState::computeAll(const OceanState *State,
           parallelForInner(
               Team, KRange, INNER_LAMBDA(int KChunk) {
                  LocTracerAux.computeVarsOnCells(
-                     LTracer, ICell, KChunk, MeanLayerThickEdge, TracerArray);
+                     LTracer, ICell, KChunk, MeanPseudoThickEdge, TracerArray);
               });
        });
    Pacer::stop("AuxState:cellAuxState4", 2);
@@ -408,9 +408,11 @@ void AuxiliaryState::readConfigOptions(Config *OmegaConfig) {
        Err, "AuxiliaryState: FluxThicknessType not found in AdvectConfig");
 
    if (FluxThickTypeStr == "Center") {
-      this->LayerThicknessAux.FluxThickEdgeChoice = FluxThickEdgeOption::Center;
+      this->PseudoThicknessAux.FluxThickEdgeChoice =
+          FluxThickEdgeOption::Center;
    } else if (FluxThickTypeStr == "Upwind") {
-      this->LayerThicknessAux.FluxThickEdgeChoice = FluxThickEdgeOption::Upwind;
+      this->PseudoThicknessAux.FluxThickEdgeChoice =
+          FluxThickEdgeOption::Upwind;
    } else {
       ABORT_ERROR("AuxiliaryState: Unknown FluxThicknessType requested");
    }

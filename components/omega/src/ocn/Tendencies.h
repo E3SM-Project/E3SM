@@ -55,12 +55,12 @@ class Tendencies {
        std::function<void(Array2DReal, const OceanState *,
                           const AuxiliaryState *, int, int, TimeInstant)>;
    // Arrays for accumulating tendencies
-   Array2DReal LayerThicknessTend;
+   Array2DReal PseudoThicknessTend;
    Array2DReal NormalVelocityTend;
    Array3DReal TracerTend;
 
    // Instances of tendency terms
-   ThicknessFluxDivOnCell ThicknessFluxDiv;
+   PseudoThicknessFluxDivOnCell PseudoThicknessFluxDiv;
    PotentialVortHAdvOnEdge PotentialVortHAdv;
    KEGradOnEdge KEGrad;
    SSHGradOnEdge SSHGrad;

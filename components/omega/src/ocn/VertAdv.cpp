@@ -356,12 +356,12 @@ void VertAdv::readConfigOptions(Config *OmegaConfig) {
 //------------------------------------------------------------------------------
 // Compute VerticalVelocity and TotalVerticalVelocity from the horizontal
 // velocity (NormalVelocity), the layer thickness used for fluxes through
-// edges (FluxLayerThickEdge), and the cell-based LayerThickness.
+// edges (FluxLayerThickEdge), and the cell-based PseudoThickness.
 void VertAdv::computeVerticalVelocity(
-    const Array2DReal &NormalVelocity,     //< [in] horizontal velocity
-    const Array2DReal &FluxLayerThickEdge, //< [in] layer thickness at edges
-    const Array2DReal &LayerThickness,     //< [in] pseudo thickness of layer
-    const Real Dt                          //< [in] time interval
+    const Array2DReal &NormalVelocity,      //< [in] horizontal velocity
+    const Array2DReal &FluxPseudoThickEdge, //< [in] pseudo-thickness at edges
+    const Array2DReal &PseudoThickness,     //< [in] pseudo-thickness of layer
+    const Real Dt                           //< [in] time interval
 ) {
 
    // Return if mesh only has a single vertical layer
@@ -370,7 +370,7 @@ void VertAdv::computeVerticalVelocity(
 
    OMEGA_SCOPE(LocVertVel, VerticalVelocity);
    OMEGA_SCOPE(LocTotVertVel, TotalVerticalVelocity);
-   OMEGA_SCOPE(LocThickTarget, VCoord->LayerThicknessTarget);
+   OMEGA_SCOPE(LocPseudoThickTarget, VCoord->PseudoThicknessTarget);
    OMEGA_SCOPE(LocNVertLayers, NVertLayers);
    OMEGA_SCOPE(LocAreaCell, Mesh->AreaCell);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
@@ -406,7 +406,7 @@ void VertAdv::computeVerticalVelocity(
                     for (int KVec = 0; KVec < KLen; ++KVec) {
                        const I4 K = KStart + KVec;
                        DivHUTmp[KVec] -= LocDvE(JEdge) * LocESOnC(ICell, J) *
-                                         FluxLayerThickEdge(JEdge, K) *
+                                         FluxPseudoThickEdge(JEdge, K) *
                                          NormalVelocity(JEdge, K) * InvAreaCell;
                     }
                  }
@@ -445,8 +445,8 @@ void VertAdv::computeVerticalVelocity(
           parallelScanInner(
               Team, KRange, INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
                  const I4 KRev      = KMax - K;
-                 const Real AleTerm = (LocThickTarget(ICell, KRev) -
-                                       LayerThickness(ICell, KRev)) /
+                 const Real AleTerm = (LocPseudoThickTarget(ICell, KRev) -
+                                       PseudoThickness(ICell, KRev)) /
                                       Dt;
 
                  Accum -= DivHU(KRev) + AleTerm;
@@ -506,7 +506,7 @@ void VertAdv::computeThicknessVAdvTend(
 void VertAdv::computeVelocityVAdvTend(
     const Array2DReal &VelTend,        //< [inout] horizontal velocity tendency
     const Array2DReal &NormalVelocity, //< [in] horizontal velocity
-    const Array2DReal &FluxLayerThickEdge //< [in] layer thickness at edges
+    const Array2DReal &FluxPseudoThickEdge //< [in] pseudo-thickness at edges
 ) {
 
    // Return if vertical advection velocity tendency not enabled
@@ -562,8 +562,8 @@ void VertAdv::computeVelocityVAdvTend(
                         WAvg *
                         (NormalVelocity(IEdge, K - 1) -
                          NormalVelocity(IEdge, K)) /
-                        (0.5_Real * (FluxLayerThickEdge(IEdge, K - 1) +
-                                     FluxLayerThickEdge(IEdge, K)));
+                        (0.5_Real * (FluxPseudoThickEdge(IEdge, K - 1) +
+                                     FluxPseudoThickEdge(IEdge, K)));
                  }
               });
 
@@ -590,10 +590,10 @@ void VertAdv::computeVelocityVAdvTend(
 // Compute tracer tendency due to vertical advection, TimeStep is only needed
 // as an argument for flux-corrected transport
 void VertAdv::computeTracerVAdvTend(
-    const Array3DReal &TracerTend,     //< [inout] tracer tendencies
-    const Array3DReal &Tracers,        //< [in] tracer array
-    const Array2DReal &LayerThickness, //< [in] layer thickness
-    const TimeInterval TimeStep        //< [in] time step
+    const Array3DReal &TracerTend,      //< [inout] tracer tendencies
+    const Array3DReal &Tracers,         //< [in] tracer array
+    const Array2DReal &PseudoThickness, //< [in] pseudo-thickness
+    const TimeInterval TimeStep         //< [in] time step
 ) {
 
    // Return if vertical advection tracer tendency not enabled
@@ -605,7 +605,7 @@ void VertAdv::computeTracerVAdvTend(
       return;
 
    // Compute tracer fluxes at the interfaces
-   computeVerticalFluxes(Tracers, LayerThickness);
+   computeVerticalFluxes(Tracers, PseudoThickness);
 
    // Dispatch to appropriate algorithm based on configuration settings
    switch (VertAdvChoice) {
@@ -615,7 +615,7 @@ void VertAdv::computeTracerVAdvTend(
    case VertAdvOption::FCT:
       R8 Dt;
       TimeStep.get(Dt, TimeUnits::Seconds);
-      computeFCTVAdvTend(TracerTend, Tracers, LayerThickness, Dt);
+      computeFCTVAdvTend(TracerTend, Tracers, PseudoThickness, Dt);
       break;
    }
 
@@ -625,8 +625,8 @@ void VertAdv::computeTracerVAdvTend(
 // Compute tracer fluxes due to vertical advection, the particular scheme used
 // is chosen via configuration settings
 void VertAdv::computeVerticalFluxes(
-    const Array3DReal &Tracers,       //< [in] tracer array
-    const Array2DReal &LayerThickness //< [in] layer thickness
+    const Array3DReal &Tracers,        //< [in] tracer array
+    const Array2DReal &PseudoThickness //< [in] pseudo-thickness
 ) {
 
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
@@ -653,13 +653,13 @@ void VertAdv::computeVerticalFluxes(
                     const I4 KLen   = chunkLength(KChunk, KStart, KMax - 1);
                     for (int KVec = 0; KVec < KLen; ++KVec) {
                        const I4 K = KStart + KVec;
-                       const Real InvLayerThickSum =
-                           1._Real / (LayerThickness(ICell, K - 1) +
-                                      LayerThickness(ICell, K));
+                       const Real InvPseudoThickSum =
+                           1._Real / (PseudoThickness(ICell, K - 1) +
+                                      PseudoThickness(ICell, K));
                        const Real VerticalWeightK =
-                           LayerThickness(ICell, K - 1) * InvLayerThickSum;
+                           PseudoThickness(ICell, K - 1) * InvPseudoThickSum;
                        const Real VerticalWeightKm1 =
-                           LayerThickness(ICell, K) * InvLayerThickSum;
+                           PseudoThickness(ICell, K) * InvPseudoThickSum;
                        LocVertFlux(L, ICell, K) =
                            LocTotVertVel(ICell, K) *
                            (VerticalWeightK * Tracers(L, ICell, K) +
@@ -738,13 +738,13 @@ void VertAdv::computeVerticalFluxes(
              LocVertFlux(L, ICell, K) = 0._Real;
           }
           for (int K : {KMin + 1, KMax}) {
-             const Real InvLayerThickSum =
+             const Real InvPseudoThickSum =
                  1._Real /
-                 (LayerThickness(ICell, K - 1) + LayerThickness(ICell, K));
+                 (PseudoThickness(ICell, K - 1) + PseudoThickness(ICell, K));
              const Real VerticalWeightK =
-                 LayerThickness(ICell, K - 1) * InvLayerThickSum;
+                 PseudoThickness(ICell, K - 1) * InvPseudoThickSum;
              const Real VerticalWeightKm1 =
-                 LayerThickness(ICell, K) * InvLayerThickSum;
+                 PseudoThickness(ICell, K) * InvPseudoThickSum;
              LocVertFlux(L, ICell, K) =
                  LocTotVertVel(ICell, K) *
                  (VerticalWeightK * Tracers(L, ICell, K) +
@@ -821,13 +821,14 @@ void VertAdv::computeStdVAdvTend(
 
 //------------------------------------------------------------------------------
 // Compute tracer tendencies due to vertical advection using flux-corrected
-// transport scheme. ProvThickness input is provisional layer thickness after
-// horizontal thickness flux
+// transport scheme. ProvPseudoThickness input is provisional pseudo-thickness
+// after horizontal thickness flux
 void VertAdv::computeFCTVAdvTend(
-    const Array3DReal &TracerTend,    //< [inout] tracer tendencies
-    const Array3DReal &Tracers,       //< [in] tracer array
-    const Array2DReal &ProvThickness, //< [in] provisional layer thickness
-    const Real Dt                     //< [in] time step
+    const Array3DReal &TracerTend, //< [inout] tracer tendencies
+    const Array3DReal &Tracers,    //< [in] tracer array
+    const Array2DReal
+        &ProvPseudoThickness, //< [in] provisional pseudo-thickness
+    const Real Dt             //< [in] time step
 ) {
 
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
@@ -862,7 +863,7 @@ void VertAdv::computeFCTVAdvTend(
                  for (int KVec = 0; KVec < KLen; ++KVec) {
                     const I4 K = KStart + KVec;
                     InvNewProvThick(K) =
-                        1._Real / (ProvThickness(ICell, K) +
+                        1._Real / (ProvPseudoThickness(ICell, K) +
                                    Dt * (LocTotVertVel(ICell, K + 1) -
                                          LocTotVertVel(ICell, K)));
                     Real TracerMax;
@@ -906,15 +907,15 @@ void VertAdv::computeFCTVAdvTend(
                     // values. Factors are stored in FlxIn and FlxOut
                     // scratch space.
                     Real TracerMinNew =
-                        (Tracers(L, ICell, K) * ProvThickness(ICell, K) +
+                        (Tracers(L, ICell, K) * ProvPseudoThickness(ICell, K) +
                          Dt * (WorkTend(K) + FlxOut(K))) *
                         InvNewProvThick(K);
                     Real TracerMaxNew =
-                        (Tracers(L, ICell, K) * ProvThickness(ICell, K) +
+                        (Tracers(L, ICell, K) * ProvPseudoThickness(ICell, K) +
                          Dt * (WorkTend(K) + FlxIn(K))) *
                         InvNewProvThick(K);
                     Real TracerUpwindNew =
-                        (Tracers(L, ICell, K) * ProvThickness(ICell, K) +
+                        (Tracers(L, ICell, K) * ProvPseudoThickness(ICell, K) +
                          Dt * WorkTend(K)) *
                         InvNewProvThick(K);
                     Real ScaleFactor =

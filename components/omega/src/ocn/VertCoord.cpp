@@ -144,14 +144,13 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    BottomDepth  = Array1DReal("BottomDepth", NCellsSize);
    PressureInterface =
        Array2DReal("PressureInterface", NCellsSize, NVertLayersP1);
-   PressureMid = Array2DReal("PressureMid", NCellsSize, NVertLayers);
-   ZInterface  = Array2DReal("ZInterface", NCellsSize, NVertLayersP1);
-   ZMid        = Array2DReal("ZMid", NCellsSize, NVertLayers);
-   SshCell     = Array1DReal("SshCell", NCellsSize);
-
+   PressureMid     = Array2DReal("PressureMid", NCellsSize, NVertLayers);
+   GeomZInterface  = Array2DReal("GeomZInterface", NCellsSize, NVertLayersP1);
+   GeomZMid        = Array2DReal("GeomZMid", NCellsSize, NVertLayers);
+   SshCell         = Array1DReal("SshCell", NCellsSize);
    GeopotentialMid = Array2DReal("GeopotentialMid", NCellsSize, NVertLayers);
-   LayerThicknessTarget =
-       Array2DReal("LayerThicknessTarget", NCellsSize, NVertLayers);
+   PseudoThicknessTarget =
+       Array2DReal("PseudoThicknessTarget", NCellsSize, NVertLayers);
    RefPseudoThickness =
        Array2DReal("RefPseudoThickness", NCellsSize, NVertLayers);
    VertCoordMovementWeights =
@@ -162,14 +161,13 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    deepCopy(SurfacePressure, 0);
 
    // Make host copies for device arrays not being read from file
-   PressureInterfaceH = createHostMirrorCopy(PressureInterface);
-   PressureMidH       = createHostMirrorCopy(PressureMid);
-   ZInterfaceH        = createHostMirrorCopy(ZInterface);
-   ZMidH              = createHostMirrorCopy(ZMid);
-   SshCellH           = createHostMirrorCopy(SshCellH);
-
-   GeopotentialMidH      = createHostMirrorCopy(GeopotentialMid);
-   LayerThicknessTargetH = createHostMirrorCopy(LayerThicknessTarget);
+   PressureInterfaceH     = createHostMirrorCopy(PressureInterface);
+   PressureMidH           = createHostMirrorCopy(PressureMid);
+   SshCellH               = createHostMirrorCopy(SshCellH);
+   GeomZInterfaceH        = createHostMirrorCopy(GeomZInterface);
+   GeomZMidH              = createHostMirrorCopy(GeomZMid);
+   GeopotentialMidH       = createHostMirrorCopy(GeopotentialMid);
+   PseudoThicknessTargetH = createHostMirrorCopy(PseudoThicknessTarget);
 
    // Define field metadata
    defineFields();
@@ -219,19 +217,18 @@ VertCoord *VertCoord::create(
 void VertCoord::defineFields() {
 
    // Set field names (append Name if not default)
-   MinLayerCellFldName   = "MinLayerCell";
-   MaxLayerCellFldName   = "MaxLayerCell";
-   BottomDepthFldName    = "BottomDepth";
-   RefPseudoThickFldName = "RefPseudoThickness";
-   VCoordMvmtWgtsFldName = "VertCoordMovementWeights";
-   PressInterfFldName    = "PressureInterface";
-   PressMidFldName       = "PressureMid";
-   ZInterfFldName        = "ZInterface";
-   ZMidFldName           = "ZMid";
-   SshFldName            = "SshCell";
-
-   GeopotFldName         = "GeopotentialMid";
-   LyrThickTargetFldName = "LayerThicknessTarget";
+   MinLayerCellFldName          = "MinLayerCell";
+   MaxLayerCellFldName          = "MaxLayerCell";
+   BottomDepthFldName           = "BottomDepth";
+   RefPseudoThickFldName        = "RefPseudoThickness";
+   VCoordMvmtWgtsFldName        = "VertCoordMovementWeights";
+   PressInterfFldName           = "PressureInterface";
+   PressMidFldName              = "PressureMid";
+   GeomZInterfFldName           = "GeomZInterface";
+   GeomZMidFldName              = "GeomZMid";
+   SshFldName                   = "SshCell";
+   GeopotFldName                = "GeopotentialMid";
+   PseudoThicknessTargetFldName = "PseudoThicknessTarget";
 
    if (Name != "Default") {
       MinLayerCellFldName.append(Name);
@@ -241,10 +238,10 @@ void VertCoord::defineFields() {
       VCoordMvmtWgtsFldName.append(Name);
       PressInterfFldName.append(Name);
       PressMidFldName.append(Name);
-      ZInterfFldName.append(Name);
-      ZMidFldName.append(Name);
+      GeomZInterfFldName.append(Name);
+      GeomZMidFldName.append(Name);
       GeopotFldName.append(Name);
-      LyrThickTargetFldName.append(Name);
+      PseudoThicknessTargetFldName.append(Name);
       SshFldName.append(Name);
    }
 
@@ -355,8 +352,8 @@ void VertCoord::defineFields() {
        DimNames                                 // dimension names
    );
 
-   auto ZInterfaceField = Field::create(
-       ZInterfFldName,                         // field name
+   auto GeomZInterfaceField = Field::create(
+       GeomZInterfFldName,                     // field name
        "Geometric height at layer interfaces", // long name or description
        "m",                                    // units
        "height",                               // CF standard Name
@@ -381,8 +378,8 @@ void VertCoord::defineFields() {
        DimNames                                // dimension names
    );
 
-   auto ZMidField = Field::create(
-       ZMidFldName,                           // field name
+   auto GeomZMidField = Field::create(
+       GeomZMidFldName,                       // field name
        "Geometric height at layer midpoints", // long name or description
        "m",                                   // units
        "height",                              // CF standard Name
@@ -405,18 +402,18 @@ void VertCoord::defineFields() {
        DimNames                           // dimension names
    );
 
-   auto LayerThicknessTargetField =
-       Field::create(LyrThickTargetFldName, // field name
-                     "desired layer thickness based on total perturbation from "
-                     "the reference thickness", // long name or description
-                     "m",                       // units
-                     "",                        // CF standard Name
-                     0.0,                       // min valid value
-                     std::numeric_limits<Real>::max(), // max valid value
-                     FillValueReal, // scalar for undefined entries
-                     NDims,         // number of dimensions
-                     DimNames       // dimension names
-       );
+   auto PseudoThicknessTargetField = Field::create(
+       PseudoThicknessTargetFldName, // field name
+       "desired pseudo-thickness based on total perturbation "
+       "from the reference pseudo-thickness", // long name or description
+       "m",                                   // units
+       "",                                    // CF standard Name
+       0.0,                                   // min valid value
+       std::numeric_limits<Real>::max(),      // max valid value
+       FillValueReal,                         // scalar for undefined entries
+       NDims,                                 // number of dimensions
+       DimNames                               // dimension names
+   );
 
    // Create a field group for initial VertCoord fields
    InitGroupName = "InitVertCoord";
@@ -446,19 +443,19 @@ void VertCoord::defineFields() {
 
    VCoordGroup->addField(PressInterfFldName);
    VCoordGroup->addField(PressMidFldName);
-   VCoordGroup->addField(ZInterfFldName);
-   VCoordGroup->addField(ZMidFldName);
+   VCoordGroup->addField(GeomZInterfFldName);
+   VCoordGroup->addField(GeomZMidFldName);
    VCoordGroup->addField(GeopotFldName);
-   VCoordGroup->addField(LyrThickTargetFldName);
+   VCoordGroup->addField(PseudoThicknessTargetFldName);
    VCoordGroup->addField(SshFldName);
 
    // Associate Field with data
    PressureInterfaceField->attachData<Array2DReal>(PressureInterface);
    PressureMidField->attachData<Array2DReal>(PressureMid);
-   ZInterfaceField->attachData<Array2DReal>(ZInterface);
-   ZMidField->attachData<Array2DReal>(ZMid);
+   GeomZInterfaceField->attachData<Array2DReal>(GeomZInterface);
+   GeomZMidField->attachData<Array2DReal>(GeomZMid);
    GeopotentialMidField->attachData<Array2DReal>(GeopotentialMid);
-   LayerThicknessTargetField->attachData<Array2DReal>(LayerThicknessTarget);
+   PseudoThicknessTargetField->attachData<Array2DReal>(PseudoThicknessTarget);
    SshField->attachData<Array1DReal>(SshCell);
 
 } // end defineFields
@@ -479,10 +476,10 @@ VertCoord::~VertCoord() {
    if (FieldGroup::exists(GroupName)) {
       Field::destroy(PressInterfFldName);
       Field::destroy(PressMidFldName);
-      Field::destroy(ZInterfFldName);
-      Field::destroy(ZMidFldName);
+      Field::destroy(GeomZInterfFldName);
+      Field::destroy(GeomZMidFldName);
       Field::destroy(GeopotFldName);
-      Field::destroy(LyrThickTargetFldName);
+      Field::destroy(PseudoThicknessTargetFldName);
       Field::destroy(SshFldName);
       FieldGroup::destroy(GroupName);
    }
@@ -917,13 +914,13 @@ void VertCoord::setMasks() {
 
 //------------------------------------------------------------------------------
 // Compute the pressure at each layer interface and midpoint given the
-// LayerThickness and SurfacePressure. Hierarchical parallelism is used with a
+// PseudoThickness and SurfacePressure. Hierarchical parallelism is used with a
 // parallel_for loop over all cells and a parallel_scan performing a prefix sum
 // in each column to compute pressure from the top-most active layer to the
 // bottom-most active layer.
 void VertCoord::computePressure(
-    const Array2DReal &LayerThickness, // [in] pseudo thickness
-    const Array1DReal &SurfacePressure // [in] surface pressure
+    const Array2DReal &PseudoThickness, // [in] pseudo thickness
+    const Array1DReal &SurfacePressure  // [in] surface pressure
 ) {
 
    OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
@@ -940,7 +937,7 @@ void VertCoord::computePressure(
           parallelScanInner(
               Team, Range{KMin, KMax},
               INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
-                 Real Increment = Gravity * RhoSw * LayerThickness(ICell, K);
+                 Real Increment = Gravity * RhoSw * PseudoThickness(ICell, K);
                  Accum += Increment;
 
                  if (IsFinal) {
@@ -955,19 +952,19 @@ void VertCoord::computePressure(
 
 //------------------------------------------------------------------------------
 // Compute geometric height z at layer interfaces and midpoints given the
-// LayerThickness, SpecVol, and BottomDepth. Hierarchical parallelism is used
+// PseudoThickness, SpecVol, and BottomDepth. Hierarchical parallelism is used
 // with a parallel_for loop over cells and a parallel_scan performing a prefix
 // sum in each column to compute z from the bottom-most active layer to the
 // top-most active layer
 void VertCoord::computeZHeight(
-    const Array2DReal &LayerThickness, // [in] pseudo thickness
-    const Array2DReal &SpecVol         // [in] specific volume
+    const Array2DReal &PseudoThickness, // [in] pseudo thickness
+    const Array2DReal &SpecVol          // [in] specific volume
 ) {
 
    OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
    OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
-   OMEGA_SCOPE(LocZInterf, ZInterface);
-   OMEGA_SCOPE(LocZMid, ZMid);
+   OMEGA_SCOPE(LocZInterf, GeomZInterface);
+   OMEGA_SCOPE(LocZMid, GeomZMid);
    OMEGA_SCOPE(LocBotDepth, BottomDepth);
    OMEGA_SCOPE(LocSshCell, SshCell);
 
@@ -982,8 +979,8 @@ void VertCoord::computeZHeight(
           parallelScanInner(
               Team, KRange, INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
                  const I4 KLyr = KMax - K;
-                 Real DZ =
-                     RhoSw * SpecVol(ICell, KLyr) * LayerThickness(ICell, KLyr);
+                 Real DZ       = RhoSw * SpecVol(ICell, KLyr) *
+                           PseudoThickness(ICell, KLyr);
                  Accum += DZ;
                  if (IsFinal) {
                     LocZInterf(ICell, KLyr) = -LocBotDepth(ICell) + Accum;
@@ -998,7 +995,8 @@ void VertCoord::computeZHeight(
 } // end computeZHeight
 
 //------------------------------------------------------------------------------
-// Compute geopotential given Zmid, TidalPotential, and SelfAttractionLoading.
+// Compute geopotential given GeomZMid, TidalPotential, and
+// SelfAttractionLoading.
 // Nested parallel_fors loop over all cells and all active layers in a column to
 // compute the geopotential at the midpoint of each layer. The tidal potential
 // and SAL are configurable, default-off features. When off these arrays will
@@ -1011,7 +1009,7 @@ void VertCoord::computeGeopotential(
    OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
    OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
    OMEGA_SCOPE(LocGeopotMid, GeopotentialMid);
-   OMEGA_SCOPE(LocZMid, ZMid);
+   OMEGA_SCOPE(LocZMid, GeomZMid);
 
    parallelForOuter(
        "computeGeopotential", {NCellsAll},
@@ -1042,7 +1040,7 @@ void VertCoord::computeTargetThickness() {
 
    OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
    OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
-   OMEGA_SCOPE(LocLayerThickTarget, LayerThicknessTarget);
+   OMEGA_SCOPE(LocPseudoThickTarget, PseudoThicknessTarget);
    OMEGA_SCOPE(LocPressInterf, PressureInterface);
    OMEGA_SCOPE(LocRefPseudoThick, RefPseudoThickness);
    OMEGA_SCOPE(LocVertCoordMvmtWgts, VertCoordMovementWeights);
@@ -1076,7 +1074,7 @@ void VertCoord::computeTargetThickness() {
                  const I4 KLen   = chunkLength(KChunk, KStart, KMax);
                  for (int KVec = 0; KVec < KLen; ++KVec) {
                     const I4 K = KStart + KVec;
-                    LocLayerThickTarget(ICell, K) =
+                    LocPseudoThickTarget(ICell, K) =
                         LocRefPseudoThick(ICell, K) *
                         (1._Real + Coeff * LocVertCoordMvmtWgts(K) / SumWh);
                  }
@@ -1090,12 +1088,11 @@ void VertCoord::copyToHost() {
 
    deepCopy(PressureInterfaceH, PressureInterface);
    deepCopy(PressureMidH, PressureMid);
-   deepCopy(ZInterfaceH, ZInterface);
-   deepCopy(ZMidH, ZMid);
+   deepCopy(GeomZInterfaceH, GeomZInterface);
+   deepCopy(GeomZMidH, GeomZMid);
    deepCopy(SshCellH, SshCell);
-
    deepCopy(GeopotentialMidH, GeopotentialMid);
-   deepCopy(LayerThicknessTargetH, LayerThicknessTarget);
+   deepCopy(PseudoThicknessTargetH, PseudoThicknessTarget);
    deepCopy(RefPseudoThicknessH, RefPseudoThickness);
 }
 
@@ -1105,12 +1102,11 @@ void VertCoord::copyToDevice() {
 
    deepCopy(PressureInterface, PressureInterfaceH);
    deepCopy(PressureMid, PressureMidH);
-   deepCopy(ZInterface, ZInterfaceH);
-   deepCopy(ZMid, ZMidH);
+   deepCopy(GeomZInterface, GeomZInterfaceH);
+   deepCopy(GeomZMid, GeomZMidH);
    deepCopy(SshCell, SshCellH);
-
    deepCopy(GeopotentialMid, GeopotentialMidH);
-   deepCopy(LayerThicknessTarget, LayerThicknessTargetH);
+   deepCopy(PseudoThicknessTarget, PseudoThicknessTargetH);
    deepCopy(RefPseudoThickness, RefPseudoThicknessH);
 }
 

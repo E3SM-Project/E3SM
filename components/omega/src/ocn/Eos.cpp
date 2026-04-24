@@ -32,7 +32,7 @@ Teos10BruntVaisalaFreqSq::Teos10BruntVaisalaFreqSq(const VertCoord *VCoord)
 /// Constructor for Linear squared Brunt-Vaisala frequency
 LinearBruntVaisalaFreqSq::LinearBruntVaisalaFreqSq(const VertCoord *VCoord)
     : MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell),
-      ZMid(VCoord->ZMid) {}
+      GeomZMid(VCoord->GeomZMid) {}
 
 /// Constructor for Eos
 Eos::Eos(const std::string &Name, ///< [in] Name for eos object

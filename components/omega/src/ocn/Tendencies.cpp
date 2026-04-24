@@ -147,7 +147,7 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
    CHECK_ERROR_ABORT(Err, "Tendencies: Tendencies group not found in Config");
 
    Err += TendConfig.get("ThicknessFluxTendencyEnable",
-                         this->ThicknessFluxDiv.Enabled);
+                         this->PseudoThicknessFluxDiv.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: ThicknessFluxTendencyEnable not found in TendConfig");
 
@@ -311,11 +311,11 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
 //------------------------------------------------------------------------------
 // Define fields associated with tendencies
 void Tendencies::defineFields() {
-   std::string LayerThicknessTendFieldName = "LayerThicknessTend";
-   std::string NormalVelocityTendFieldName = "NormalVelocityTend";
-   std::string TracerTendFieldName         = "TracerTend";
+   std::string PseudoThicknessTendFieldName = "PseudoThicknessTend";
+   std::string NormalVelocityTendFieldName  = "NormalVelocityTend";
+   std::string TracerTendFieldName          = "TracerTend";
    if (Name != "Default") {
-      LayerThicknessTendFieldName.append(Name);
+      PseudoThicknessTendFieldName.append(Name);
       NormalVelocityTendFieldName.append(Name);
       TracerTendFieldName.append(Name);
    }
@@ -324,8 +324,8 @@ void Tendencies::defineFields() {
    std::vector<std::string> DimNamesThickness(NDims);
    DimNamesThickness[0] = "NCells";
    DimNamesThickness[1] = "NVertLayers";
-   auto LayerThicknessTendField =
-       Field::create(LayerThicknessTendFieldName, "Layer thickness tendency",
+   auto PseudoThicknessTendField =
+       Field::create(PseudoThicknessTendFieldName, "Pseudo-thickness tendency",
                      "m/s", "cell_thickness_tendency", -9.99E+10, 9.99E+10,
                      -9.99E+30, NDims, DimNamesThickness);
    NDims = 3;
@@ -351,11 +351,11 @@ void Tendencies::defineFields() {
    }
    auto TendGroup = FieldGroup::create(TendGroupName);
 
-   TendGroup->addField(LayerThicknessTendFieldName);
+   TendGroup->addField(PseudoThicknessTendFieldName);
    TendGroup->addField(NormalVelocityTendFieldName);
    TendGroup->addField(TracerTendFieldName);
 
-   LayerThicknessTendField->attachData<Array2DReal>(LayerThicknessTend);
+   PseudoThicknessTendField->attachData<Array2DReal>(PseudoThicknessTend);
    NormalVelocityTendField->attachData<Array2DReal>(NormalVelocityTend);
    TracerTendField->attachData<Array3DReal>(TracerTend);
 
@@ -374,18 +374,19 @@ Tendencies::Tendencies(const std::string &Name_, ///< [in] Name for tendencies
                        Config *Options,          ///< [in] Configuration options
                        CustomTendencyType InCustomThicknessTend,
                        CustomTendencyType InCustomVelocityTend)
-    : Mesh(Mesh), VCoord(VCoord), VAdv(VAdv), ThicknessFluxDiv(Mesh, VCoord),
-      PotentialVortHAdv(Mesh, VCoord), KEGrad(Mesh, VCoord),
-      SSHGrad(Mesh, VCoord), VelocityDiffusion(Mesh, VCoord),
-      VelocityHyperDiff(Mesh, VCoord), WindForcing(Mesh, VCoord),
-      BottomDrag(Mesh, VCoord), TracerDiffusion(Mesh, VCoord),
-      TracerHyperDiff(Mesh, VCoord), TracerHorzAdv(Mesh, VCoord),
-      SurfaceTracerRestoring(Mesh), CustomThicknessTend(InCustomThicknessTend),
+    : Mesh(Mesh), VCoord(VCoord), VAdv(VAdv),
+      PseudoThicknessFluxDiv(Mesh, VCoord), PotentialVortHAdv(Mesh, VCoord),
+      KEGrad(Mesh, VCoord), SSHGrad(Mesh, VCoord),
+      VelocityDiffusion(Mesh, VCoord), VelocityHyperDiff(Mesh, VCoord),
+      WindForcing(Mesh, VCoord), BottomDrag(Mesh, VCoord),
+      TracerDiffusion(Mesh, VCoord), TracerHyperDiff(Mesh, VCoord),
+      TracerHorzAdv(Mesh, VCoord), SurfaceTracerRestoring(Mesh),
+      CustomThicknessTend(InCustomThicknessTend),
       CustomVelocityTend(InCustomVelocityTend), EqState(EqState), PGrad(PGrad) {
 
    // Tendency arrays
-   LayerThicknessTend =
-       Array2DReal("LayerThicknessTend", Mesh->NCellsSize, VCoord->NVertLayers);
+   PseudoThicknessTend = Array2DReal("PseudoThicknessTend", Mesh->NCellsSize,
+                                     VCoord->NVertLayers);
    NormalVelocityTend =
        Array2DReal("NormalVelocityTend", Mesh->NEdgesSize, VCoord->NVertLayers);
    TracerTend = Array3DReal("TracerTend", NTracersIn, Mesh->NCellsSize,
@@ -414,7 +415,7 @@ Tendencies::Tendencies(const std::string &Name_, ///< [in] Name for tendencies
                  CustomTendencyType{}) {}
 
 //------------------------------------------------------------------------------
-// Compute tendencies for layer thickness equation
+// Compute tendencies for the pseudo-thickness equation
 void Tendencies::computeThicknessTendenciesOnly(
     const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
@@ -423,8 +424,8 @@ void Tendencies::computeThicknessTendenciesOnly(
     TimeInstant Time                ///< [in] Time
 ) {
 
-   OMEGA_SCOPE(LocLayerThicknessTend, LayerThicknessTend);
-   OMEGA_SCOPE(LocThicknessFluxDiv, ThicknessFluxDiv);
+   OMEGA_SCOPE(LocPseudoThicknessTend, PseudoThicknessTend);
+   OMEGA_SCOPE(LocThicknessFluxDiv, PseudoThicknessFluxDiv);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
 
@@ -439,12 +440,12 @@ void Tendencies::computeThicknessTendenciesOnly(
 
           parallelForInner(
               Team, Range{KMin, KMax},
-              INNER_LAMBDA(int K) { LocLayerThicknessTend(ICell, K) = 0; });
+              INNER_LAMBDA(int K) { LocPseudoThicknessTend(ICell, K) = 0; });
        });
 
    // Compute thickness flux divergence
    const Array2DReal &ThickFluxEdge =
-       AuxState->LayerThicknessAux.FluxLayerThickEdge;
+       AuxState->PseudoThicknessAux.FluxPseudoThickEdge;
 
    if (LocThicknessFluxDiv.Enabled) {
       Pacer::start("Tend:thicknessFluxDiv", 2);
@@ -456,7 +457,7 @@ void Tendencies::computeThicknessTendenciesOnly(
 
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
-                    LocThicknessFluxDiv(LocLayerThicknessTend, ICell, KChunk,
+                    LocThicknessFluxDiv(LocPseudoThicknessTend, ICell, KChunk,
                                         ThickFluxEdge, NormalVelEdge);
                  });
           });
@@ -465,12 +466,12 @@ void Tendencies::computeThicknessTendenciesOnly(
 
    Pacer::start("Tend:computeThicknessVAdvTend", 2);
    // Compute thickness tendency from vertical advection
-   VAdv->computeThicknessVAdvTend(LayerThicknessTend);
+   VAdv->computeThicknessVAdvTend(PseudoThicknessTend);
    Pacer::stop("Tend:computeThicknessVAdvTend", 2);
 
    if (CustomThicknessTend) {
       Pacer::start("Tend:customThicknessTend", 2);
-      CustomThicknessTend(LocLayerThicknessTend, State, AuxState,
+      CustomThicknessTend(LocPseudoThicknessTend, State, AuxState,
                           ThickTimeLevel, VelTimeLevel, Time);
       Pacer::stop("Tend:customThicknessTend", 2);
    }
@@ -516,8 +517,8 @@ void Tendencies::computeVelocityTendenciesOnly(
        });
 
    // Compute potential vorticity horizontal advection
-   const Array2DReal &FluxLayerThickEdge =
-       AuxState->LayerThicknessAux.FluxLayerThickEdge;
+   const Array2DReal &FluxPseudoThickEdge =
+       AuxState->PseudoThicknessAux.FluxPseudoThickEdge;
    const Array2DReal &NormRVortEdge = AuxState->VorticityAux.NormRelVortEdge;
    const Array2DReal &NormFEdge     = AuxState->VorticityAux.NormPlanetVortEdge;
    Array2DReal NormVelEdge          = State->getNormalVelocity(VelTimeLevel);
@@ -533,7 +534,7 @@ void Tendencies::computeVelocityTendenciesOnly(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
                     LocPotentialVortHAdv(LocNormalVelocityTend, IEdge, KChunk,
                                          NormRVortEdge, NormFEdge,
-                                         FluxLayerThickEdge, NormVelEdge);
+                                         FluxPseudoThickEdge, NormVelEdge);
                  });
           });
       Pacer::stop("Tend:PotentialVortHAdv", 2);
@@ -615,13 +616,13 @@ void Tendencies::computeVelocityTendenciesOnly(
    Pacer::start("Tend:computeVelocityVAdvTend", 2);
    // Compute velocity tendency from vertical advection
    VAdv->computeVelocityVAdvTend(NormalVelocityTend, NormVelEdge,
-                                 FluxLayerThickEdge);
+                                 FluxPseudoThickEdge);
    Pacer::stop("Tend:computeVelocityVAdvTend", 2);
 
    // Compute wind forcing
    const auto &NormalStressEdge = AuxState->WindForcingAux.NormalStressEdge;
-   const auto &MeanLayerThickEdge =
-       AuxState->LayerThicknessAux.MeanLayerThickEdge;
+   const auto &MeanPseudoThickEdge =
+       AuxState->PseudoThicknessAux.MeanPseudoThickEdge;
    if (LocWindForcing.Enabled) {
       Pacer::start("Tend:windForcing", 2);
       parallelForOuter(
@@ -632,7 +633,7 @@ void Tendencies::computeVelocityTendenciesOnly(
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
                     LocWindForcing(LocNormalVelocityTend, IEdge, KChunk,
-                                   NormalStressEdge, MeanLayerThickEdge);
+                                   NormalStressEdge, MeanPseudoThickEdge);
                  });
           });
       Pacer::stop("Tend:windForcing", 2);
@@ -644,7 +645,7 @@ void Tendencies::computeVelocityTendenciesOnly(
       parallelFor(
           {Mesh->NEdgesAll}, KOKKOS_LAMBDA(int IEdge) {
              LocBottomDrag(LocNormalVelocityTend, IEdge, NormVelEdge, KECell,
-                           MeanLayerThickEdge);
+                           MeanPseudoThickEdge);
           });
       Pacer::stop("Tend:bottomDrag", 2);
    }
@@ -660,14 +661,14 @@ void Tendencies::computeVelocityTendenciesOnly(
    if (PGrad->Enabled) {
 
       Pacer::start("Tend:pressureGradTerm", 2);
-      Array2DReal LayerThick        = State->getLayerThickness(ThickTimeLevel);
+      Array2DReal PseudoThick       = State->getPseudoThickness(ThickTimeLevel);
       const auto &PressureMid       = VCoord->PressureMid;
       const auto &PressureInterface = VCoord->PressureInterface;
       const auto &SpecVol           = EqState->SpecVol;
-      const auto &ZInterface        = VCoord->ZInterface;
+      const auto &GeomZInterface    = VCoord->GeomZInterface;
       PGrad->computePressureGrad(LocNormalVelocityTend, PressureMid,
-                                 PressureInterface, SpecVol, ZInterface,
-                                 LayerThick);
+                                 PressureInterface, SpecVol, GeomZInterface,
+                                 PseudoThick);
       Pacer::stop("Tend:pressureGradTerm", 2);
    }
 
@@ -707,8 +708,8 @@ void Tendencies::computeTracerTendenciesOnly(
 
    // compute tracer horizotal advection
    Array2DReal NormalVelEdge = State->getNormalVelocity(VelTimeLevel);
-   const Array2DReal &FluxLayerThickEdge =
-       AuxState->LayerThicknessAux.FluxLayerThickEdge;
+   const Array2DReal &FluxPseudoThickEdge =
+       AuxState->PseudoThicknessAux.FluxPseudoThickEdge;
    if (LocTracerHorzAdv.Enabled) {
       Pacer::start("Tend:tracerHorzAdv", 2);
       parallelForOuter(
@@ -720,7 +721,7 @@ void Tendencies::computeTracerTendenciesOnly(
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
                     LocTracerHorzAdv(L, IEdge, KChunk, TracerArray,
-                                     FluxLayerThickEdge, NormalVelEdge);
+                                     FluxPseudoThickEdge, NormalVelEdge);
                  });
           });
       parallelForOuter(
@@ -738,8 +739,8 @@ void Tendencies::computeTracerTendenciesOnly(
    }
 
    // compute tracer diffusion
-   const Array2DReal &MeanLayerThickEdge =
-       AuxState->LayerThicknessAux.MeanLayerThickEdge;
+   const Array2DReal &MeanPseudoThickEdge =
+       AuxState->PseudoThicknessAux.MeanPseudoThickEdge;
    if (LocTracerDiffusion.Enabled) {
       Pacer::start("Tend:tracerDiffusion", 2);
       parallelForOuter(
@@ -752,7 +753,7 @@ void Tendencies::computeTracerTendenciesOnly(
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
                     LocTracerDiffusion(LocTracerTend, L, ICell, KChunk,
-                                       TracerArray, MeanLayerThickEdge);
+                                       TracerArray, MeanPseudoThickEdge);
                  });
           });
       Pacer::stop("Tend:tracerDiffusion", 2);
@@ -782,9 +783,9 @@ void Tendencies::computeTracerTendenciesOnly(
    Pacer::start("Tend:computeTracerVAdvTend", 2);
    Array2DReal ThicknessForVAdv;
    if (VAdv->VertAdvChoice == VertAdvOption::Standard) {
-      ThicknessForVAdv = State->getLayerThickness(ThickTimeLevel);
+      ThicknessForVAdv = State->getPseudoThickness(ThickTimeLevel);
    } else if (VAdv->VertAdvChoice == VertAdvOption::FCT) {
-      ThicknessForVAdv = AuxState->LayerThicknessAux.ProvThickness;
+      ThicknessForVAdv = AuxState->PseudoThicknessAux.ProvPseudoThickness;
    }
    VAdv->computeTracerVAdvTend(LocTracerTend, TracerArray, ThicknessForVAdv,
                                TimeStep);
@@ -819,20 +820,20 @@ void Tendencies::computeThicknessTendencies(
     int VelTimeLevel,               ///< [in] Time level
     TimeInstant Time                ///< [in] Time
 ) {
-   // only need LayerThicknessAux on edge
-   Array2DReal LayerThick = State->getLayerThickness(ThickTimeLevel);
-   Array2DReal NormVel    = State->getNormalVelocity(VelTimeLevel);
-   OMEGA_SCOPE(LayerThicknessAux, AuxState->LayerThicknessAux);
-   OMEGA_SCOPE(LayerThickCell, LayerThick);
+   // only need PseudoThicknessAux on edge
+   Array2DReal PseudoThick = State->getPseudoThickness(ThickTimeLevel);
+   Array2DReal NormVel     = State->getNormalVelocity(VelTimeLevel);
+   OMEGA_SCOPE(PseudoThicknessAux, AuxState->PseudoThicknessAux);
+   OMEGA_SCOPE(PseudoThickCell, PseudoThick);
    OMEGA_SCOPE(NormalVelEdge, NormVel);
    OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
    OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
 
    Pacer::start("Tend:computeThicknessTendencies", 1);
 
-   Pacer::start("Tend:computeLayerThickAux", 2);
+   Pacer::start("Tend:computePseudoThickAux", 2);
    parallelForOuter(
-       "computeLayerThickAux", {Mesh->NEdgesAll},
+       "computePseudoThickAux", {Mesh->NEdgesAll},
        KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
           const int KMin   = MinLayerEdgeBot(IEdge);
           const int KMax   = MaxLayerEdgeTop(IEdge);
@@ -840,11 +841,11 @@ void Tendencies::computeThicknessTendencies(
 
           parallelForInner(
               Team, KRange, INNER_LAMBDA(int KChunk) {
-                 LayerThicknessAux.computeVarsOnEdge(
-                     IEdge, KChunk, LayerThickCell, NormalVelEdge);
+                 PseudoThicknessAux.computeVarsOnEdge(
+                     IEdge, KChunk, PseudoThickCell, NormalVelEdge);
               });
        });
-   Pacer::stop("Tend:computeLayerThickAux", 2);
+   Pacer::stop("Tend:computePseudoThickAux", 2);
 
    computeThicknessTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
                                   Time);
@@ -881,8 +882,8 @@ void Tendencies::computeTracerTendencies(
     int VelTimeLevel,               ///< [in] Time level
     TimeInstant Time                ///< [in] Time
 ) {
-   Array2DReal LayerThickCell = State->getLayerThickness(ThickTimeLevel);
-   Array2DReal NormalVelEdge  = State->getNormalVelocity(VelTimeLevel);
+   Array2DReal PseudoThickCell = State->getPseudoThickness(ThickTimeLevel);
+   Array2DReal NormalVelEdge   = State->getNormalVelocity(VelTimeLevel);
    OMEGA_SCOPE(TracerAux, AuxState->TracerAux);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
@@ -891,8 +892,8 @@ void Tendencies::computeTracerTendencies(
 
    Pacer::start("Tend:computeTracerTendencies", 1);
 
-   const auto &MeanLayerThickEdge =
-       AuxState->LayerThicknessAux.MeanLayerThickEdge;
+   const auto &MeanPseudoThickEdge =
+       AuxState->PseudoThicknessAux.MeanPseudoThickEdge;
    Pacer::start("Tend:computeTracerAuxCell", 2);
    parallelForOuter(
        "computeTracerAuxCell", {NTracers, Mesh->NCellsAll},
@@ -904,7 +905,7 @@ void Tendencies::computeTracerTendencies(
           parallelForInner(
               Team, KRange, INNER_LAMBDA(int KChunk) {
                  TracerAux.computeVarsOnCells(LTracer, ICell, KChunk,
-                                              MeanLayerThickEdge, TracerArray);
+                                              MeanPseudoThickEdge, TracerArray);
               });
        });
    Pacer::stop("Tend:computeTracerAuxCell", 2);
@@ -916,7 +917,7 @@ void Tendencies::computeTracerTendencies(
 }
 
 //------------------------------------------------------------------------------
-// Compute both layer thickness and normal velocity tendencies
+// Compute both pseudo-thickness and normal velocity tendencies
 void Tendencies::computeAllTendencies(
     const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables

@@ -527,8 +527,8 @@ class LinearBruntVaisalaFreqSq {
    LinearBruntVaisalaFreqSq(const VertCoord *VCoord);
 
    //   The functor takes the full arrays of squared Brunt-Vaisala frequency
-   //   (inout), the index ICell, and the specific volume and layer thickness as
-   //   inputs, and outputs the squared Brunt-Vaisala frequency.
+   //   (inout), the index ICell, and the specific volume and pseudo-thickness
+   //   as inputs, and outputs the squared Brunt-Vaisala frequency.
    KOKKOS_FUNCTION void operator()(Array2DReal BruntVaisalaFreqSq, I4 ICell,
                                    I4 KChunk,
                                    const Array2DReal &SpecVol) const {
@@ -549,13 +549,13 @@ class LinearBruntVaisalaFreqSq {
                 -(Gravity / RhoT0S0) *
                 ((1.0_Real / SpecVol(ICell, K - 1)) -
                  (1.0_Real / SpecVol(ICell, K))) /
-                (ZMid(ICell, K - 1) - ZMid(ICell, K));
+                (GeomZMid(ICell, K - 1) - GeomZMid(ICell, K));
          }
       }
    }
 
  private:
-   Array2DReal ZMid;
+   Array2DReal GeomZMid;
    Array1DI4 MinLayerCell;
    Array1DI4 MaxLayerCell;
 };
