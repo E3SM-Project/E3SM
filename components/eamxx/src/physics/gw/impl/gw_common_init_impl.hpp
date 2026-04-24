@@ -82,7 +82,7 @@ void Functions<S,D>::gw_common_init(
     s_common_init_constructed = true;
   }
 
-  EKAT_REQUIRE_MSG(pref_int.size()==pver_in+1, "Error! pref_int size is incorrect.\n");
+  EKAT_REQUIRE_MSG(static_cast<int>(pref_int.size())==pver_in+1, "Error! pref_int size is incorrect.\n");
 
   s_common_init.initialized = true;
   s_common_init.pver = pver_in;
@@ -99,13 +99,6 @@ void Functions<S,D>::gw_common_init(
   // Set phase speeds
   const int num_pgwv = s_common_init.pgwv * 2 + 1;
   s_common_init.cref = view_1d<Real>("cref", num_pgwv);
-  auto cref_h = Kokkos::create_mirror_view(Kokkos::HostSpace(), s_common_init.cref);
-  for (int l = -s_common_init.pgwv; l <= s_common_init.pgwv; ++l) {
-    cref_h[l + s_common_init.pgwv] = s_common_init.dc * l;
-  }
-  Kokkos::deep_copy(s_common_init.cref, cref_h);
-
-  // cref is a device view; initialize via a HostSpace mirror, then deep_copy.
   auto cref_h = Kokkos::create_mirror_view(Kokkos::HostSpace(), s_common_init.cref);
   for (int l = -s_common_init.pgwv; l <= s_common_init.pgwv; ++l) {
     cref_h[l + s_common_init.pgwv] = s_common_init.dc * l;
@@ -143,7 +136,7 @@ void Functions<S,D>::gw_common_init(
 
   // set bottom index for background spectrum
   int kbotbg_tmp = -1;
-  for (int i = 0; i < pref_int.size(); ++i) {
+  for (int i = 0; i < static_cast<int>(pref_int.size()); ++i) {
     if (pref_int[i] < GWC::kbotbg_pref_max) {
       kbotbg_tmp = i;
     }
