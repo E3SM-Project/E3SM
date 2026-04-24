@@ -223,9 +223,16 @@ public:
         Field& get_valid_mask ();
 
   // --------- Field manipulation methods ------------- //
-  // NOTE: the versions with a mask field only perform the manip where mask!=0, except
-  //       for deep_copy(value,mask,true), which performs the deep copy where mask==0.
-  //       The mask field MUST have data type IntType
+  // Notes:
+  //  - the versions with a mask field only perform the manip where mask!=0, except
+  //    for deep_copy(value,mask,true), which performs the deep copy where mask==0.
+  //  - the mask fields MUST have data type IntType.
+  //  - the overloads without a mask will:
+  //    - check if the RHS has a mask field. If so, update this field's mask with
+  //      the AND of the two (if this field has no mask, it will simply clone the rhs's mask)
+  //    - if after the above step this field has no mask, simply do the un-masked update
+  //    - if after the above step this field DOES have a mask, call the corresponding masked version
+  //      to perform the update only where this->get_valid_mask() is nonzero
 
   // Set the field to a constant value (on device view ONLY)
   void deep_copy (const ScalarWrapper value);
