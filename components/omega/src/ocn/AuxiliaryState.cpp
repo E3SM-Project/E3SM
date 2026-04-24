@@ -104,7 +104,8 @@ void AuxiliaryState::computeMomVertAux(const OceanState *State,
 }
 
 // Compute the auxiliary variables needed for momentum equation
-void AuxiliaryState::computeMomAux(const OceanState *State, const Array3DReal &TracerArray,
+void AuxiliaryState::computeMomAux(const OceanState *State,
+                                   const Array3DReal &TracerArray,
                                    int ThickTimeLevel, int VelTimeLevel) const {
    Array2DReal LayerThickCell = State->getLayerThickness(ThickTimeLevel);
    Array2DReal NormalVelEdge  = State->getNormalVelocity(VelTimeLevel);
