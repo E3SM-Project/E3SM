@@ -32,26 +32,27 @@ set (SCREAM_LIBS
      scream_share
      scream_control
      ${dynLibName}
-     p3
-     shoc
-     scream_rrtmgp
-     eamxx_cosp
-     cld_fraction
-     spa
-     spc
-     iop_forcing
-     nudging
-     tms
 )
 
-# ZM is not always on yet
-if (TARGET zm)
-  list(APPEND SCREAM_LIBS zm)
-endif()
-
-if (SCREAM_ENABLE_MAM)
-  list (APPEND SCREAM_LIBS mam)
-endif()
+# Physics libs are conditionally built; only link those whose targets exist
+foreach (_phys_lib IN ITEMS
+    p3
+    shoc
+    scream_rrtmgp
+    eamxx_cosp
+    cld_fraction
+    spa
+    spc
+    iop_forcing
+    nudging
+    tms
+    zm
+    mam
+    gw)
+  if (TARGET ${_phys_lib})
+    list(APPEND SCREAM_LIBS ${_phys_lib})
+  endif()
+endforeach()
 
 # Create atm lib
 add_library(atm ${ATM_SRC})
