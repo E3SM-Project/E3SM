@@ -64,12 +64,12 @@ AuxiliaryState::~AuxiliaryState() {
 
 // Compute the diagnostic variables required for momentum equation
 // time stepping
-void AuxiliaryState::computeMomDiagAux(const OceanState *State,
+void AuxiliaryState::computeMomVertAux(const OceanState *State,
                                        const Array3DReal &TracerArray,
                                        int ThickTimeLevel,
                                        int VelTimeLevel) const {
 
-   Pacer::start("AuxState:computeMomDiagAux", 1);
+   Pacer::start("AuxState:computeMomVertAux", 2);
 
    Eos *EosInstance = Eos::getInstance();
 
@@ -100,12 +100,12 @@ void AuxiliaryState::computeMomDiagAux(const OceanState *State,
    // compute geometric height
    VCoord->computeZHeight(LayerThickCell, EosInstance->SpecVol);
 
-   Pacer::stop("AuxState:computeMomDiagAux", 1);
+   Pacer::stop("AuxState:computeMomVertAux", 2);
 }
 
 // Compute the auxiliary variables needed for momentum equation
-void AuxiliaryState::computeMomAux(const OceanState *State, int ThickTimeLevel,
-                                   int VelTimeLevel) const {
+void AuxiliaryState::computeMomAux(const OceanState *State, const Array3DReal &TracerArray,
+                                   int ThickTimeLevel, int VelTimeLevel) const {
    Array2DReal LayerThickCell = State->getLayerThickness(ThickTimeLevel);
    Array2DReal NormalVelEdge  = State->getNormalVelocity(VelTimeLevel);
 
@@ -130,6 +130,8 @@ void AuxiliaryState::computeMomAux(const OceanState *State, int ThickTimeLevel,
    TimeStep.get(TimeStepSeconds, TimeUnits::Seconds);
 
    Pacer::start("AuxState:computeMomAux", 1);
+
+   computeMomVertAux(State, TracerArray, ThickTimeLevel, VelTimeLevel);
 
    Pacer::start("AuxState:vertexAuxState1", 2);
    parallelForOuter(
@@ -281,8 +283,7 @@ void AuxiliaryState::computeAll(const OceanState *State,
 
    Pacer::start("AuxState:computeAll", 1);
 
-   computeMomDiagAux(State, TracerArray, ThickTimeLevel, VelTimeLevel);
-   computeMomAux(State, ThickTimeLevel, VelTimeLevel);
+   computeMomAux(State, TracerArray, ThickTimeLevel, VelTimeLevel);
 
    Pacer::start("AuxState:cellAuxState3", 2);
    parallelForOuter(
