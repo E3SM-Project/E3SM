@@ -78,11 +78,11 @@ int initState() {
    auto *State             = OceanState::get("TestState");
    Array3DReal TracerArray = Tracers::getAll(0);
 
-   Array2DReal LayerThickCell = State->getLayerThickness(0);
-   Array2DReal NormalVelEdge  = State->getNormalVelocity(0);
+   Array2DReal PseudoThickCell = State->getPseudoThickness(0);
+   Array2DReal NormalVelEdge   = State->getNormalVelocity(0);
 
    // Initially set thickness and velocity and tracers to 1
-   deepCopy(LayerThickCell, 1);
+   deepCopy(PseudoThickCell, 1);
    deepCopy(NormalVelEdge, 1);
    deepCopy(TracerArray, 1);
 
@@ -99,12 +99,12 @@ int createExactSolution(Real TimeEnd) {
    auto *ExactState =
        OceanState::create("Exact", DefMesh, DefHalo, NVertLayers, 1);
 
-   Array2DReal LayerThickCell = ExactState->getLayerThickness(0);
-   Array2DReal NormalVelEdge  = ExactState->getNormalVelocity(0);
+   Array2DReal PseudoThickCell = ExactState->getPseudoThickness(0);
+   Array2DReal NormalVelEdge   = ExactState->getNormalVelocity(0);
 
    // There are no thickness tendencies in this test, so exact thickness ==
    // initial thickness
-   deepCopy(LayerThickCell, 1);
+   deepCopy(PseudoThickCell, 1);
    // Normal velocity decays exponentially
    deepCopy(NormalVelEdge, DecayVelocityTendency{}.exactSolution(TimeEnd));
    // No tracer tendenciesk, final tracers == initial tracers
@@ -231,7 +231,7 @@ int initTimeStepperTest(const std::string &mesh) {
    }
 
    // Disable all other tendencies
-   TestTendencies->ThicknessFluxDiv.Enabled       = false;
+   TestTendencies->PseudoThicknessFluxDiv.Enabled = false;
    TestTendencies->PotentialVortHAdv.Enabled      = false;
    TestTendencies->KEGrad.Enabled                 = false;
    TestTendencies->SSHGrad.Enabled                = false;

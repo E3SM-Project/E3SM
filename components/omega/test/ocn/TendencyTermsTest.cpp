@@ -103,7 +103,7 @@ struct TestSetupPlane {
              std::cos(TwoPi * X / Lx) * std::sin(TwoPi * Y / Ly);
    }
 
-   KOKKOS_FUNCTION Real layerThick(Real X, Real Y) const {
+   KOKKOS_FUNCTION Real pseudoThick(Real X, Real Y) const {
       return 2. + std::sin(TwoPi * X / Lx) * std::cos(TwoPi * Y / Ly);
    }
 
@@ -112,11 +112,11 @@ struct TestSetupPlane {
    }
 
    KOKKOS_FUNCTION Real normRelVort(Real X, Real Y) const {
-      return curl(X, Y) / layerThick(X, Y);
+      return curl(X, Y) / pseudoThick(X, Y);
    }
 
    KOKKOS_FUNCTION Real normPlanetVort(Real X, Real Y) const {
-      return planetaryVort(X, Y) / layerThick(X, Y);
+      return planetaryVort(X, Y) / pseudoThick(X, Y);
    }
 
    KOKKOS_FUNCTION Real tracerFluxDiv(Real X, Real Y) const {
@@ -248,7 +248,7 @@ struct TestSetupSphere {
              (96 * std::pow(std::cos(Lat), 2) - 22) / Radius;
    }
 
-   KOKKOS_FUNCTION Real layerThick(Real Lon, Real Lat) const {
+   KOKKOS_FUNCTION Real pseudoThick(Real Lon, Real Lat) const {
       return (2 + std::cos(Lon) * std::pow(std::cos(Lat), 4));
    }
 
@@ -257,11 +257,11 @@ struct TestSetupSphere {
    }
 
    KOKKOS_FUNCTION Real normRelVort(Real Lon, Real Lat) const {
-      return curl(Lon, Lat) / layerThick(Lon, Lat);
+      return curl(Lon, Lat) / pseudoThick(Lon, Lat);
    }
 
    KOKKOS_FUNCTION Real normPlanetVort(Real Lon, Real Lat) const {
-      return planetaryVort(Lon, Lat) / layerThick(Lon, Lat);
+      return planetaryVort(Lon, Lat) / pseudoThick(Lon, Lat);
    }
 
    KOKKOS_FUNCTION Real tracerFluxDiv(Real Lon, Real Lat) const {
@@ -365,7 +365,7 @@ int testThickFluxDiv(int NVertLayers, Real RTol) {
    // Compute numerical result
    Array2DReal NumThickFluxDiv("NumThickFluxDiv", Mesh->NCellsOwned,
                                NVertLayers);
-   ThicknessFluxDivOnCell ThickFluxDivOnC(Mesh, VCoord);
+   PseudoThicknessFluxDivOnCell ThickFluxDivOnC(Mesh, VCoord);
    parallelFor(
        {Mesh->NCellsOwned, NVertLayers}, KOKKOS_LAMBDA(int ICell, int KLayer) {
           ThickFluxDivOnC(NumThickFluxDiv, ICell, KLayer, OnesEdge,
@@ -403,9 +403,9 @@ int testPotVortHAdv(int NVertLayers, Real RTol) {
    Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
           VecField[0] = (Setup.normRelVort(X, Y) + Setup.normPlanetVort(X, Y)) *
-                        Setup.layerThick(X, Y) * Setup.vectorX(X, Y);
+                        Setup.pseudoThick(X, Y) * Setup.vectorX(X, Y);
           VecField[1] = (Setup.normRelVort(X, Y) + Setup.normPlanetVort(X, Y)) *
-                        Setup.layerThick(X, Y) * Setup.vectorY(X, Y);
+                        Setup.pseudoThick(X, Y) * Setup.vectorY(X, Y);
        },
        ExactPotVortHAdv, EdgeComponent::Tangential, Geom, Mesh,
        ExchangeHalos::No);
@@ -424,11 +424,12 @@ int testPotVortHAdv(int NVertLayers, Real RTol) {
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.normPlanetVort(X, Y); },
        NormPlanetVortEdge, Geom, Mesh, OnEdge);
 
-   Array2DReal LayerThickEdge("LayerThickEdge", Mesh->NEdgesSize, NVertLayers);
+   Array2DReal PseudoThickEdge("PseudoThickEdge", Mesh->NEdgesSize,
+                               NVertLayers);
 
    Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.layerThick(X, Y); },
-       LayerThickEdge, Geom, Mesh, OnEdge);
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.pseudoThick(X, Y); },
+       PseudoThickEdge, Geom, Mesh, OnEdge);
 
    Array2DReal NormVelEdge("NormVelEdge", Mesh->NEdgesSize, NVertLayers);
 
@@ -446,7 +447,7 @@ int testPotVortHAdv(int NVertLayers, Real RTol) {
    parallelFor(
        {Mesh->NEdgesOwned, NVertLayers}, KOKKOS_LAMBDA(int IEdge, int KLayer) {
           PotVortHAdvOnE(NumPotVortHAdv, IEdge, KLayer, NormRelVortEdge,
-                         NormPlanetVortEdge, LayerThickEdge, NormVelEdge);
+                         NormPlanetVortEdge, PseudoThickEdge, NormVelEdge);
        });
 
    // Compute errors
@@ -731,11 +732,12 @@ int testWindForcing(int NVertLayers) {
        },
        NormalStressEdge, EdgeComponent::Normal, Geom, Mesh);
 
-   Array2DReal LayerThickEdge("LayerThickEdge", Mesh->NEdgesSize, NVertLayers);
+   Array2DReal PseudoThickEdge("PseudoThickEdge", Mesh->NEdgesSize,
+                               NVertLayers);
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarB(X, Y); },
-       LayerThickEdge, Geom, Mesh, OnEdge);
+       PseudoThickEdge, Geom, Mesh, OnEdge);
 
    // Compute numerical result
    Array2DReal NumWindForcing("NumWindForcing", Mesh->NEdgesOwned, NVertLayers);
@@ -745,7 +747,7 @@ int testWindForcing(int NVertLayers) {
    parallelFor(
        {Mesh->NEdgesOwned, NVertLayers}, KOKKOS_LAMBDA(int IEdge, int KLayer) {
           WindForcingOnE(NumWindForcing, IEdge, KLayer, NormalStressEdge,
-                         LayerThickEdge);
+                         PseudoThickEdge);
        });
 
    // Compute errors
@@ -807,11 +809,12 @@ int testBottomDrag(int NVertLayers, Real RTol) {
        },
        KECell, Geom, Mesh, OnCell);
 
-   Array2DReal LayerThickEdge("LayerThickEdge", Mesh->NEdgesSize, NVertLayers);
+   Array2DReal PseudoThickEdge("PseudoThickEdge", Mesh->NEdgesSize,
+                               NVertLayers);
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarB(X, Y); },
-       LayerThickEdge, Geom, Mesh, OnEdge);
+       PseudoThickEdge, Geom, Mesh, OnEdge);
 
    // Compute numerical result
    Array2DReal NumBottomDrag("NumBottomDrag", Mesh->NEdgesOwned, NVertLayers);
@@ -822,7 +825,7 @@ int testBottomDrag(int NVertLayers, Real RTol) {
    parallelFor(
        {Mesh->NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
           BottomDragOnE(NumBottomDrag, IEdge, NormalVelEdge, KECell,
-                        LayerThickEdge);
+                        PseudoThickEdge);
        });
 
    // Compute errors
@@ -867,7 +870,7 @@ int testTracerHorzAdvOnCell(int NVertLayers, int NTracers, Real RTol) {
    Array2DReal ThickEdge("ThickEdh", Mesh->NEdgesSize, NVertLayers);
 
    Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return -Setup.layerThick(X, Y); },
+       KOKKOS_LAMBDA(Real X, Real Y) { return -Setup.pseudoThick(X, Y); },
        TrCell, Geom, Mesh, OnCell);
 
    Err += setScalar(
@@ -931,11 +934,12 @@ int testTracerDiffOnCell(int NVertLayers, int NTracers, Real RTol) {
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarA(X, Y); },
        TracerCell, Geom, Mesh, OnCell);
 
-   Array2DReal LayerThickEdge("LayerThickEdge", Mesh->NEdgesSize, NVertLayers);
+   Array2DReal PseudoThickEdge("PseudoThickEdge", Mesh->NEdgesSize,
+                               NVertLayers);
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarB(X, Y); },
-       LayerThickEdge, Geom, Mesh, OnEdge);
+       PseudoThickEdge, Geom, Mesh, OnEdge);
 
    // Compute numerical result
    Array3DReal NumTracerDiff("NumTracerDiff", NTracers, Mesh->NCellsOwned,
@@ -947,7 +951,7 @@ int testTracerDiffOnCell(int NVertLayers, int NTracers, Real RTol) {
        {NTracers, Mesh->NCellsOwned, NVertLayers},
        KOKKOS_LAMBDA(int L, int ICell, int KLayer) {
           TrDiffOnC(NumTracerDiff, L, ICell, KLayer, TracerCell,
-                    LayerThickEdge);
+                    PseudoThickEdge);
        });
 
    ErrorMeasures TrDiffErrors;

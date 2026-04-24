@@ -126,19 +126,20 @@ void initStateTest() {
    return;
 }
 
-// Check for differences between layer thickness and normal velocity host arrays
+// Check for differences between pseudo-thickness and normal velocity host
+// arrays
 int checkHost(OceanState *RefState, OceanState *TstState, int RefTimeLevel,
               int TstTimeLevel) {
 
    int count = 0;
-   HostArray2DReal LayerThicknessHRef =
-       RefState->getLayerThicknessH(RefTimeLevel);
-   HostArray2DReal LayerThicknessHTst =
-       TstState->getLayerThicknessH(TstTimeLevel);
+   HostArray2DReal PseudoThicknessHRef =
+       RefState->getPseudoThicknessH(RefTimeLevel);
+   HostArray2DReal PseudoThicknessHTst =
+       TstState->getPseudoThicknessH(TstTimeLevel);
    for (int Cell = 0; Cell < RefState->NCellsAll; Cell++) {
       for (int Layer = 0; Layer < RefState->NVertLayers; Layer++) {
-         if (LayerThicknessHRef(Cell, Layer) !=
-             LayerThicknessHTst(Cell, Layer)) {
+         if (PseudoThicknessHRef(Cell, Layer) !=
+             PseudoThicknessHTst(Cell, Layer)) {
             count++;
          }
       }
@@ -160,19 +161,19 @@ int checkHost(OceanState *RefState, OceanState *TstState, int RefTimeLevel,
    return count;
 }
 
-// Check for differences between layer thickness and normal velocity device
+// Check for differences between pseudo-thickness and normal velocity device
 // arrays
 int checkDevice(OceanState *RefState, OceanState *TstState, int RefTimeLevel,
                 int TstTimeLevel) {
 
    int count1;
-   Array2DReal LayerThicknessRef = RefState->getLayerThickness(RefTimeLevel);
-   Array2DReal LayerThicknessTst = TstState->getLayerThickness(TstTimeLevel);
+   Array2DReal PseudoThicknessRef = RefState->getPseudoThickness(RefTimeLevel);
+   Array2DReal PseudoThicknessTst = TstState->getPseudoThickness(TstTimeLevel);
    parallelReduce(
        "reduce", {RefState->NCellsAll, RefState->NVertLayers},
        KOKKOS_LAMBDA(int Cell, int Layer, int &Accum) {
-          if (LayerThicknessRef(Cell, Layer) !=
-              LayerThicknessTst(Cell, Layer)) {
+          if (PseudoThicknessRef(Cell, Layer) !=
+              PseudoThicknessTst(Cell, Layer)) {
              Accum++;
           }
        },
@@ -235,10 +236,10 @@ int main(int argc, char *argv[]) {
       }
 
       // Get default state arrays and check for reasonable values
-      HostArray2DReal LayerThickHDef = DefState->getLayerThicknessH(CurTime);
+      HostArray2DReal LayerThickHDef = DefState->getPseudoThicknessH(CurTime);
       HostArray2DReal NormalVelocityHDef =
           DefState->getNormalVelocityH(CurTime);
-      Array2DReal LayerThickDef     = DefState->getLayerThickness(CurTime);
+      Array2DReal LayerThickDef     = DefState->getPseudoThickness(CurTime);
       Array2DReal NormalVelocityDef = DefState->getNormalVelocity(CurTime);
 
       int Count1 = 0;
@@ -282,8 +283,10 @@ int main(int argc, char *argv[]) {
 
          // Create test arrays and fill reference and test states at current
          // time with Default state
-         HostArray2DReal LayerThickHRef = RefState->getLayerThicknessH(CurTime);
-         HostArray2DReal LayerThickHTst = TstState->getLayerThicknessH(CurTime);
+         HostArray2DReal LayerThickHRef =
+             RefState->getPseudoThicknessH(CurTime);
+         HostArray2DReal LayerThickHTst =
+             TstState->getPseudoThicknessH(CurTime);
          HostArray2DReal NormalVelocityHRef =
              RefState->getNormalVelocityH(CurTime);
          HostArray2DReal NormalVelocityHTst =
@@ -308,8 +311,8 @@ int main(int argc, char *argv[]) {
 
          // Fill reference and test states at next time levels with the
          // Default state + 1
-         LayerThickHRef     = RefState->getLayerThicknessH(NewTime);
-         LayerThickHTst     = TstState->getLayerThicknessH(NewTime);
+         LayerThickHRef     = RefState->getPseudoThicknessH(NewTime);
+         LayerThickHTst     = TstState->getPseudoThicknessH(NewTime);
          NormalVelocityHRef = RefState->getNormalVelocityH(NewTime);
          NormalVelocityHTst = TstState->getNormalVelocityH(NewTime);
          for (int Cell = 0; Cell < NCellsAll; Cell++) {

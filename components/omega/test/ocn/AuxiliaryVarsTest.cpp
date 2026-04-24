@@ -14,7 +14,7 @@
 #include "Pacer.h"
 #include "VertCoord.h"
 #include "auxiliaryVars/KineticAuxVars.h"
-#include "auxiliaryVars/LayerThicknessAuxVars.h"
+#include "auxiliaryVars/PseudoThicknessAuxVars.h"
 #include "auxiliaryVars/TracerAuxVars.h"
 #include "auxiliaryVars/VelocityDel2AuxVars.h"
 #include "auxiliaryVars/VorticityAuxVars.h"
@@ -68,7 +68,7 @@ struct TestSetupPlane {
    ErrorMeasures ExpectedNormalStressErrors = {0.0033910709836867704,
                                                0.0039954090464502795};
 
-   KOKKOS_FUNCTION Real layerThickness(Real X, Real Y) const {
+   KOKKOS_FUNCTION Real pseudoThickness(Real X, Real Y) const {
       return 2 + std::cos(TwoPi * X / Lx) * std::cos(TwoPi * Y / Ly);
    }
 
@@ -121,11 +121,11 @@ struct TestSetupPlane {
    }
 
    KOKKOS_FUNCTION Real normalizedRelativeVorticity(Real X, Real Y) const {
-      return relativeVorticity(X, Y) / layerThickness(X, Y);
+      return relativeVorticity(X, Y) / pseudoThickness(X, Y);
    }
 
    KOKKOS_FUNCTION Real normalizedPlanetaryVorticity(Real X, Real Y) const {
-      return planetaryVorticity(X, Y) / layerThickness(X, Y);
+      return planetaryVorticity(X, Y) / pseudoThickness(X, Y);
    }
 
    KOKKOS_FUNCTION Real kineticEnergy(Real X, Real Y) const {
@@ -196,7 +196,7 @@ struct TestSetupSphere {
    ErrorMeasures ExpectedNormalStressErrors = {0.0038588958862868362,
                                                0.003813760171030077};
 
-   KOKKOS_FUNCTION Real layerThickness(Real Lon, Real Lat) const {
+   KOKKOS_FUNCTION Real pseudoThickness(Real Lon, Real Lat) const {
       return (2 + std::cos(Lon) * std::pow(std::cos(Lat), 4));
    }
 
@@ -270,11 +270,11 @@ struct TestSetupSphere {
    }
 
    KOKKOS_FUNCTION Real normalizedRelativeVorticity(Real Lon, Real Lat) const {
-      return relativeVorticity(Lon, Lat) / layerThickness(Lon, Lat);
+      return relativeVorticity(Lon, Lat) / pseudoThickness(Lon, Lat);
    }
 
    KOKKOS_FUNCTION Real normalizedPlanetaryVorticity(Real Lon, Real Lat) const {
-      return planetaryVorticity(Lon, Lat) / layerThickness(Lon, Lat);
+      return planetaryVorticity(Lon, Lat) / pseudoThickness(Lon, Lat);
    }
 
    KOKKOS_FUNCTION Real kineticEnergy(Real Lon, Real Lat) const {
@@ -314,15 +314,15 @@ using TestSetup                  = TestSetupSphere;
 constexpr int NVertLayers = 16;
 constexpr int NTracers    = 3;
 
-int initState(const Array2DReal &LayerThickCell,
+int initState(const Array2DReal &PseudoThickCell,
               const Array2DReal &NormalVelEdge, HorzMesh *Mesh) {
    int Err = 0;
 
    TestSetup Setup;
 
    Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.layerThickness(X, Y); },
-       LayerThickCell, Geom, Mesh, OnCell);
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.pseudoThickness(X, Y); },
+       PseudoThickCell, Geom, Mesh, OnCell);
 
    Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
@@ -341,7 +341,7 @@ int initState(const Array2DReal &LayerThickCell,
    return Err;
 }
 
-int testKineticAuxVars(const Array2DReal &LayerThicknessCell,
+int testKineticAuxVars(const Array2DReal &PseudoThicknessCell,
                        const Array2DReal &NormalVelocityEdge, Real RTol) {
    int Err = 0;
    TestSetup Setup;
@@ -446,8 +446,8 @@ int testWindForcingAuxVars(Real RTol) {
    return Err;
 }
 
-int testLayerThicknessAuxVars(const Array2DReal &LayerThickCell,
-                              const Array2DReal &NormalVelEdge, Real RTol) {
+int testPseudoThicknessAuxVars(const Array2DReal &PseudoThickCell,
+                               const Array2DReal &NormalVelEdge, Real RTol) {
    int Err = 0;
    TestSetup Setup;
 
@@ -458,44 +458,44 @@ int testLayerThicknessAuxVars(const Array2DReal &LayerThickCell,
 
    Array2DReal ExactThickEdge("ExactThickEdge", Mesh->NEdgesOwned, NVertLayers);
    Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.layerThickness(X, Y); },
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.pseudoThickness(X, Y); },
        ExactThickEdge, Geom, Mesh, OnEdge, ExchangeHalos::No);
 
    // Compute numerical result
 
-   LayerThicknessAuxVars LayerThicknessAux("", Mesh, VCoord);
-   LayerThicknessAux.FluxThickEdgeChoice = FluxThickEdgeOption::Upwind;
+   PseudoThicknessAuxVars PseudoThicknessAux("", Mesh, VCoord);
+   PseudoThicknessAux.FluxThickEdgeChoice = FluxThickEdgeOption::Upwind;
    parallelFor(
        {Mesh->NEdgesOwned, NVertLayers}, KOKKOS_LAMBDA(int IEdge, int KLayer) {
-          LayerThicknessAux.computeVarsOnEdge(IEdge, KLayer, LayerThickCell,
-                                              NormalVelEdge);
+          PseudoThicknessAux.computeVarsOnEdge(IEdge, KLayer, PseudoThickCell,
+                                               NormalVelEdge);
        });
 
-   const auto &NumFluxLayerThickEdge = LayerThicknessAux.FluxLayerThickEdge;
-   const auto &NumMeanLayerThickEdge = LayerThicknessAux.MeanLayerThickEdge;
+   const auto &NumFluxPseudoThickEdge = PseudoThicknessAux.FluxPseudoThickEdge;
+   const auto &NumMeanPseudoThickEdge = PseudoThicknessAux.MeanPseudoThickEdge;
 
    // Compute error measures and check error values
 
    ErrorMeasures FluxThickErrors;
-   Err += computeErrors(FluxThickErrors, NumFluxLayerThickEdge, ExactThickEdge,
+   Err += computeErrors(FluxThickErrors, NumFluxPseudoThickEdge, ExactThickEdge,
                         Mesh, OnEdge);
    Err += checkErrors("AuxVarsTest", "FluxThick", FluxThickErrors,
                       Setup.ExpectedFluxThickErrors, RTol);
 
    ErrorMeasures MeanThickErrors;
-   Err += computeErrors(MeanThickErrors, NumMeanLayerThickEdge, ExactThickEdge,
+   Err += computeErrors(MeanThickErrors, NumMeanPseudoThickEdge, ExactThickEdge,
                         Mesh, OnEdge);
    Err += checkErrors("AuxVarsTest", "MeanThick", MeanThickErrors,
                       Setup.ExpectedMeanThickErrors, RTol);
 
    if (Err == 0) {
-      LOG_INFO("AuxVarsTest: ThickAuxVars PASS");
+      LOG_INFO("AuxVarsTest: PseudoThicknessAuxVars PASS");
    }
 
    return Err;
 }
 
-int testVorticityAuxVars(const Array2DReal &LayerThickCell,
+int testVorticityAuxVars(const Array2DReal &PseudoThickCell,
                          const Array2DReal &NormalVelEdge, Real RTol) {
    TestSetup Setup;
    int Err = 0;
@@ -534,7 +534,7 @@ int testVorticityAuxVars(const Array2DReal &LayerThickCell,
    parallelFor(
        {Decomp->NVerticesHaloH(0), NVertLayers},
        KOKKOS_LAMBDA(int IVertex, int KLayer) {
-          VorticityAux.computeVarsOnVertex(IVertex, KLayer, LayerThickCell,
+          VorticityAux.computeVarsOnVertex(IVertex, KLayer, PseudoThickCell,
                                            NormalVelEdge);
        });
 
@@ -720,7 +720,7 @@ int testVelocityDel2AuxVars(Real RTol) {
    return Err;
 }
 
-int testTracerAuxVars(const Array2DReal &LayerThickCell,
+int testTracerAuxVars(const Array2DReal &PseudoThickCell,
                       const Array2DReal &NormalVelEdge, Real RTol) {
 
    TestSetup Setup;
@@ -739,10 +739,11 @@ int testTracerAuxVars(const Array2DReal &LayerThickCell,
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.tracer(X, Y); },
        TracersOnCell, Geom, Mesh, OnCell);
 
-   Array2DReal LayerThickEdge("LayerThickEdge", Mesh->NEdgesSize, NVertLayers);
+   Array2DReal PseudoThickEdge("PseudoThickEdge", Mesh->NEdgesSize,
+                               NVertLayers);
    Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.layerThickness(X, Y); },
-       LayerThickEdge, Geom, Mesh, OnEdge);
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.pseudoThickness(X, Y); },
+       PseudoThickEdge, Geom, Mesh, OnEdge);
 
    // Compute exact Del2TracerCell
 
@@ -757,7 +758,7 @@ int testTracerAuxVars(const Array2DReal &LayerThickCell,
    parallelFor(
        {NTracers, Mesh->NCellsOwned, NVertLayers},
        KOKKOS_LAMBDA(int L, int ICell, int KLayer) {
-          TracerAux.computeVarsOnCells(L, ICell, KLayer, LayerThickEdge,
+          TracerAux.computeVarsOnCells(L, ICell, KLayer, PseudoThickEdge,
                                        TracersOnCell);
        });
 
@@ -829,21 +830,22 @@ int auxVarsTest(const std::string &mesh = DefaultMeshFile) {
 
    const auto &Mesh = HorzMesh::getDefault();
 
-   Array2DReal LayerThickCell("LayerThickCell", Mesh->NCellsSize, NVertLayers);
+   Array2DReal PseudoThickCell("PseudoThickCell", Mesh->NCellsSize,
+                               NVertLayers);
    Array2DReal NormalVelEdge("NormalVelEdge", Mesh->NEdgesSize, NVertLayers);
-   Err += initState(LayerThickCell, NormalVelEdge, Mesh);
+   Err += initState(PseudoThickCell, NormalVelEdge, Mesh);
 
    const Real RTol = sizeof(Real) == 4 ? 1e-2 : 2e-4;
 
-   Err += testKineticAuxVars(LayerThickCell, NormalVelEdge, RTol);
+   Err += testKineticAuxVars(PseudoThickCell, NormalVelEdge, RTol);
 
-   Err += testLayerThicknessAuxVars(LayerThickCell, NormalVelEdge, RTol);
+   Err += testPseudoThicknessAuxVars(PseudoThickCell, NormalVelEdge, RTol);
 
-   Err += testVorticityAuxVars(LayerThickCell, NormalVelEdge, RTol);
+   Err += testVorticityAuxVars(PseudoThickCell, NormalVelEdge, RTol);
 
    Err += testVelocityDel2AuxVars(RTol);
 
-   Err += testTracerAuxVars(LayerThickCell, NormalVelEdge, RTol);
+   Err += testTracerAuxVars(PseudoThickCell, NormalVelEdge, RTol);
 
    Err += testWindForcingAuxVars(RTol);
 

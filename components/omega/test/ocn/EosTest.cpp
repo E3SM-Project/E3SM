@@ -338,30 +338,30 @@ void testBruntVaisalaFreqSqLinear() {
 
    // fill remaining entries with sample values that should lead to ref result
    // for K = 1.
-   OMEGA_SCOPE(ZMid, VCoord->ZMid);
+   OMEGA_SCOPE(GeomZMid, VCoord->GeomZMid);
    parallelFor(
        "populateArrays", {Mesh->NCellsAll, NVertLayers},
        KOKKOS_LAMBDA(I4 ICell, I4 K) {
           if (K == 0) {
-             ZMid(ICell, 0)   = -992.1173890198451_Real;
-             SArray(ICell, 0) = Sa - 1.0_Real;
-             TArray(ICell, 0) = Ct + 15.0_Real;
-             PArray(ICell, 0) = P;
+             GeomZMid(ICell, 0) = -992.1173890198451_Real;
+             SArray(ICell, 0)   = Sa - 1.0_Real;
+             TArray(ICell, 0)   = Ct + 15.0_Real;
+             PArray(ICell, 0)   = P;
           } else if (K == 1) {
-             ZMid(ICell, 1)   = -993.1071379053125_Real;
-             SArray(ICell, 1) = Sa;
-             TArray(ICell, 1) = Ct + 10.0_Real;
-             PArray(ICell, 1) = P + 1.0_Real;
+             GeomZMid(ICell, 1) = -993.1071379053125_Real;
+             SArray(ICell, 1)   = Sa;
+             TArray(ICell, 1)   = Ct + 10.0_Real;
+             PArray(ICell, 1)   = P + 1.0_Real;
           } else if (K == 2) {
-             ZMid(ICell, 2)   = -994.0968821072275_Real;
-             SArray(ICell, 2) = Sa + 1.0_Real;
-             TArray(ICell, 2) = Ct + 5.0_Real;
-             PArray(ICell, K) = P + 2.0_Real;
+             GeomZMid(ICell, 2) = -994.0968821072275_Real;
+             SArray(ICell, 2)   = Sa + 1.0_Real;
+             TArray(ICell, 2)   = Ct + 5.0_Real;
+             PArray(ICell, K)   = P + 2.0_Real;
           } else { // fill rest to valid junk to avoid NaNs or Inf
-             ZMid(ICell, K)   = -994.0968821072275_Real - 0.1_Real * K;
-             SArray(ICell, K) = Sa + 1.0_Real + 0.1_Real * K;
-             TArray(ICell, K) = Ct + 5.0_Real - 0.01_Real * K;
-             PArray(ICell, K) = P + 2.0_Real + 0.1_Real * K;
+             GeomZMid(ICell, K) = -994.0968821072275_Real - 0.1_Real * K;
+             SArray(ICell, K)   = Sa + 1.0_Real + 0.1_Real * K;
+             TArray(ICell, K)   = Ct + 5.0_Real - 0.01_Real * K;
+             PArray(ICell, K)   = P + 2.0_Real + 0.1_Real * K;
           }
        });
 
@@ -602,30 +602,30 @@ void testBruntVaisalaFreqSqTeos10() {
    deepCopy(TestEos->SpecVol, 0.0);
 
    /// Fill inputs with values that should lead to ref result for K=1
-   OMEGA_SCOPE(ZMid, VCoord->ZMid);
+   OMEGA_SCOPE(GeomZMid, VCoord->GeomZMid);
    parallelFor(
        "populateArrays", {Mesh->NCellsAll, NVertLayers},
        KOKKOS_LAMBDA(I4 ICell, I4 K) {
           if (K == 0) {
-             ZMid(ICell, 0)   = -992.1173890198451_Real;
-             SArray(ICell, 0) = Sa - 1.0_Real;
-             TArray(ICell, 0) = Ct + 15.0_Real;
-             PArray(ICell, 0) = P;
+             GeomZMid(ICell, 0) = -992.1173890198451_Real;
+             SArray(ICell, 0)   = Sa - 1.0_Real;
+             TArray(ICell, 0)   = Ct + 15.0_Real;
+             PArray(ICell, 0)   = P;
           } else if (K == 1) {
-             ZMid(ICell, 1)   = -993.1071379053125_Real;
-             SArray(ICell, 1) = Sa;
-             TArray(ICell, 1) = Ct + 10.0_Real;
-             PArray(ICell, 1) = (P * Pa2Db + 1.0_Real) * Db2Pa;
+             GeomZMid(ICell, 1) = -993.1071379053125_Real;
+             SArray(ICell, 1)   = Sa;
+             TArray(ICell, 1)   = Ct + 10.0_Real;
+             PArray(ICell, 1)   = (P * Pa2Db + 1.0_Real) * Db2Pa;
           } else if (K == 2) {
-             ZMid(ICell, 2)   = -994.0968821072275_Real;
-             SArray(ICell, 2) = Sa + 1.0_Real;
-             TArray(ICell, 2) = Ct + 5.0_Real;
-             PArray(ICell, K) = (P * Pa2Db + 2.0_Real) * Db2Pa;
+             GeomZMid(ICell, 2) = -994.0968821072275_Real;
+             SArray(ICell, 2)   = Sa + 1.0_Real;
+             TArray(ICell, 2)   = Ct + 5.0_Real;
+             PArray(ICell, K)   = (P * Pa2Db + 2.0_Real) * Db2Pa;
           } else { // fill rest with valid junk to avoid Nans and Inf
-             ZMid(ICell, K)   = -994.0968821072275_Real - 0.1_Real * K;
-             SArray(ICell, K) = Sa + 1.0_Real + 0.1_Real * K;
-             TArray(ICell, K) = Ct + 5.0_Real - 0.01_Real * K;
-             PArray(ICell, K) = (P * Pa2Db + 2.0_Real + 0.1_Real * K) * Db2Pa;
+             GeomZMid(ICell, K) = -994.0968821072275_Real - 0.1_Real * K;
+             SArray(ICell, K)   = Sa + 1.0_Real + 0.1_Real * K;
+             TArray(ICell, K)   = Ct + 5.0_Real - 0.01_Real * K;
+             PArray(ICell, K)   = (P * Pa2Db + 2.0_Real + 0.1_Real * K) * Db2Pa;
           }
        });
 

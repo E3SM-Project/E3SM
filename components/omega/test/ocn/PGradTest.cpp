@@ -156,31 +156,32 @@ int main(int argc, char *argv[]) {
          I4 TimeLevel = 0;
 
          // get state and tracer arrays
-         Array2DReal LayerThick = DefState->getLayerThickness(TimeLevel);
-         Array2DReal Temp       = Tracers::getByName(TimeLevel, "Temperature");
-         Array2DReal Salinity   = Tracers::getByName(TimeLevel, "Salinity");
+         Array2DReal PseudoThick = DefState->getPseudoThickness(TimeLevel);
+         Array2DReal Temp        = Tracers::getByName(TimeLevel, "Temperature");
+         Array2DReal Salinity    = Tracers::getByName(TimeLevel, "Salinity");
 
          // set Z interface and mid-point locations
-         Real ZBottom      = -1000.0_Real;
-         Real DZ           = 2.0_Real * (-ZBottom / NVertLayers);
-         auto &BottomDepth = VCoord->BottomDepth;
-         auto &ZInterface  = VCoord->ZInterface;
-         auto &ZMid        = VCoord->ZMid;
-         Real TiltFactor   = 0.495_Real;
+         Real ZBottom         = -1000.0_Real;
+         Real DZ              = 2.0_Real * (-ZBottom / NVertLayers);
+         auto &BottomDepth    = VCoord->BottomDepth;
+         auto &GeomZInterface = VCoord->GeomZInterface;
+         auto &GeomZMid       = VCoord->GeomZMid;
+         Real TiltFactor      = 0.495_Real;
          parallelFor(
              {NCellsAll}, KOKKOS_LAMBDA(int i) {
-                ZInterface(i, NVertLayers) = ZBottom;
-                SurfacePressure(i)         = 0.0_Real;
-                BottomDepth(i)             = 0.0_Real;
+                GeomZInterface(i, NVertLayers) = ZBottom;
+                SurfacePressure(i)             = 0.0_Real;
+                BottomDepth(i)                 = 0.0_Real;
                 for (int k = NVertLayers - 1; k >= 0; --k) {
                    Real X  = (k + i) % 2;
                    Real Dz = (2.0_Real * TiltFactor - 1.0_Real) * X * DZ +
                              (1.0_Real - TiltFactor) *
-                                 DZ; // staggered layer thickness
-                   ZInterface(i, k) = ZInterface(i, k + 1) + Dz;
-                   LayerThick(i, k) = ZInterface(i, k) - ZInterface(i, k + 1);
-                   ZMid(i, k) =
-                       0.5_Real * (ZInterface(i, k) + ZInterface(i, k + 1));
+                                 DZ; // staggered pseudo-thickness
+                   GeomZInterface(i, k) = GeomZInterface(i, k + 1) + Dz;
+                   PseudoThick(i, k) =
+                       GeomZInterface(i, k) - GeomZInterface(i, k + 1);
+                   GeomZMid(i, k) = 0.5_Real * (GeomZInterface(i, k) +
+                                                GeomZInterface(i, k + 1));
                    BottomDepth(i) += Dz;
                 }
              });
@@ -188,10 +189,11 @@ int main(int argc, char *argv[]) {
          LOG_INFO("NVertLayers = {}", NVertLayers);
          LOG_INFO("dC = {}", DC);
          DefState->copyToHost(0);
-         HostArray2DReal LayerThickH = DefState->getLayerThicknessH(TimeLevel);
+         HostArray2DReal PseudoThickH =
+             DefState->getPseudoThicknessH(TimeLevel);
          for (int i = 0; i < 2; ++i) {
             for (int k = 0; k < 2; ++k) {
-               LOG_INFO("LayerThick({}, {}) = {}", i, k, LayerThickH(i, k));
+               LOG_INFO("PseudoThick({}, {}) = {}", i, k, PseudoThickH(i, k));
             }
          }
 
@@ -204,7 +206,7 @@ int main(int argc, char *argv[]) {
                 Real S0 = 30.0;
                 Real SB = 40.0;
 
-                Real Phi0 = (ZMid(i, k) - ZBottom) / (-ZBottom);
+                Real Phi0 = (GeomZMid(i, k) - ZBottom) / (-ZBottom);
                 Real PhiB = 1.0_Real - Phi0;
 
                 Temp(i, k)       = T0 * Phi0 + TB * PhiB;
@@ -213,21 +215,22 @@ int main(int argc, char *argv[]) {
                 SpecVolOld(i, k) = SpecVol(i, k);
              });
 
-         // Iterate to converge LayerThick, SpecVol, PressureMid
+         // Iterate to converge PseudoThick, SpecVol, PressureMid
          auto &PressureMid = VCoord->PressureMid;
-         VCoord->computePressure(LayerThick, SurfacePressure);
+         VCoord->computePressure(PseudoThick, SurfacePressure);
          deepCopy(PressureMidOld, PressureMid);
          for (int Iteration = 0; Iteration < 15; ++Iteration) {
 
             // compute specific volume from EOS
-            VCoord->computePressure(LayerThick, SurfacePressure);
+            VCoord->computePressure(PseudoThick, SurfacePressure);
             DefEos->computeSpecVol(Temp, Salinity, PressureMid);
 
             // compute psuedo thickness from specific volume
             parallelFor(
                 {NCellsAll, NVertLayers}, KOKKOS_LAMBDA(int i, int k) {
-                   LayerThick(i, k) = 1.0_Real / (SpecVol(i, k) * Density0) *
-                                      (ZInterface(i, k) - ZInterface(i, k + 1));
+                   PseudoThick(i, k) =
+                       1.0_Real / (SpecVol(i, k) * Density0) *
+                       (GeomZInterface(i, k) - GeomZInterface(i, k + 1));
                 });
 
             // compute difference from previous iteration
@@ -253,11 +256,11 @@ int main(int argc, char *argv[]) {
             }
          }
 
-         // compute pressure once more with converged LayerThick
-         VCoord->computePressure(LayerThick, SurfacePressure);
+         // compute pressure once more with converged PseudoThick
+         VCoord->computePressure(PseudoThick, SurfacePressure);
 
          // compute z levels
-         VCoord->computeZHeight(LayerThick, SpecVol);
+         VCoord->computeZHeight(PseudoThick, SpecVol);
 
          // get PressureGrad instance
          PressureGrad *DefPGrad = PressureGrad::getDefault();
@@ -270,7 +273,7 @@ int main(int argc, char *argv[]) {
 
          const auto &PressureInterface = VCoord->PressureInterface;
          DefPGrad->computePressureGrad(Tend, PressureMid, PressureInterface,
-                                       SpecVol, ZInterface, LayerThick);
+                                       SpecVol, GeomZInterface, PseudoThick);
 
          // compute errors
          Real MaxValue = 0.0_Real;

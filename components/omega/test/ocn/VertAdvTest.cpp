@@ -56,7 +56,7 @@ Real tendTest(const int NLayers, VertAdv *VAdv) {
    VAdv->VertFlux = Array3DReal("VertFlux", 1, 1, NLayers + 1);
    Array1DReal XLayer("XLayer", NLayers);
    OMEGA_SCOPE(LocTotVertVel, VAdv->TotalVerticalVelocity);
-   Array2DReal LayerThick("LayerThickness", 1, NLayers);
+   Array2DReal PseudoThick("PseudoThickness", 1, NLayers);
    Array3DReal TracerArray("TracerArray", 1, 1, NLayers);
    Array3DReal Tend("TracerArray", 1, 1, NLayers);
    TimeInterval ZeroTimeStep;
@@ -69,16 +69,16 @@ Real tendTest(const int NLayers, VertAdv *VAdv) {
           LocTotVertVel(0, 0)       = 0._Real;
           LocTotVertVel(0, NLayers) = 0._Real;
        });
-   // Set X values, LayerThickness, and Tracer values throughout domain
+   // Set X values, PseudoThickness, and Tracer values throughout domain
    parallelFor(
        {NLayers}, KOKKOS_LAMBDA(int K) {
           XLayer(K)            = Delta * (K + 0.5_Real);
-          LayerThick(0, K)     = Delta;
+          PseudoThick(0, K)    = Delta;
           TracerArray(0, 0, K) = testFunc(XLayer(K));
        });
 
    // Compute tracer tendencies
-   VAdv->computeTracerVAdvTend(Tend, TracerArray, LayerThick, ZeroTimeStep);
+   VAdv->computeTracerVAdvTend(Tend, TracerArray, PseudoThick, ZeroTimeStep);
 
    HostArray3DReal TendH   = createHostMirrorCopy(Tend);
    HostArray1DReal XLayerH = createHostMirrorCopy(XLayer);
@@ -189,12 +189,12 @@ int main(int argc, char *argv[]) {
       I4 NVertLayers   = DefVertAdv->NVertLayers;
       I4 NVertLayersP1 = DefVertAdv->NVertLayersP1;
 
-      Array2DReal FluxLayerThickEdge("FluxLayerThickEdge",
-                                     DefDecomp->NEdgesSize, NVertLayers);
+      Array2DReal FluxPseudoThickEdge("FluxPseudoThickEdge",
+                                      DefDecomp->NEdgesSize, NVertLayers);
       Array2DReal NormalVelEdge("NormalVelEdge", DefDecomp->NEdgesSize,
                                 NVertLayers);
-      Array2DReal LayerThickCell("LayerThickCell", DefDecomp->NCellsSize,
-                                 NVertLayers);
+      Array2DReal PseudoThickCell("PseudoThickCell", DefDecomp->NCellsSize,
+                                  NVertLayers);
 
       const I4 ICell0        = 0;
       const I4 NEdgesOnCell0 = DefDecomp->NEdgesOnCellH(ICell0);
@@ -204,24 +204,24 @@ int main(int argc, char *argv[]) {
 
       OMEGA_SCOPE(LocEOnC, DefDecomp->EdgesOnCell);
       OMEGA_SCOPE(LocESOnC, DefMesh->EdgeSignOnCell);
-      OMEGA_SCOPE(LocTargetThick, DefVCoord->LayerThicknessTarget);
+      OMEGA_SCOPE(LocTargetPseudoThick, DefVCoord->PseudoThicknessTarget);
 
-      // Set uniform values for layer thickness and velocity on edges of column
+      // Set uniform values for pseudo-thickness and velocity on edges of column
       parallelFor(
           {NVertLayers}, KOKKOS_LAMBDA(int K) {
              for (int J = 0; J < NEdgesOnCell0; ++J) {
-                const I4 JEdge               = LocEOnC(ICell0, J);
-                FluxLayerThickEdge(JEdge, K) = 1._Real;
-                NormalVelEdge(JEdge, K)      = 1._Real * LocESOnC(ICell0, J);
-                LayerThickCell(ICell0, K)    = 1._Real;
-                LocTargetThick(ICell0, K)    = 1._Real;
+                const I4 JEdge                  = LocEOnC(ICell0, J);
+                FluxPseudoThickEdge(JEdge, K)   = 1._Real;
+                NormalVelEdge(JEdge, K)         = 1._Real * LocESOnC(ICell0, J);
+                PseudoThickCell(ICell0, K)      = 1._Real;
+                LocTargetPseudoThick(ICell0, K) = 1._Real;
              }
           });
 
       Real ProjDt = 1._Real;
       // Compute vertical velocity
-      DefVertAdv->computeVerticalVelocity(NormalVelEdge, FluxLayerThickEdge,
-                                          LayerThickCell, ProjDt);
+      DefVertAdv->computeVerticalVelocity(NormalVelEdge, FluxPseudoThickEdge,
+                                          PseudoThickCell, ProjDt);
 
       HostArray2DReal VertVelH =
           createHostMirrorCopy(DefVertAdv->VerticalVelocity);
@@ -278,7 +278,7 @@ int main(int argc, char *argv[]) {
       Err = 0;
 
       // Set uniform vertical velocity in each column along the edge and
-      // uniform layer thickness at the edge. Horizontal velocity is set
+      // uniform pseudo-thickness at the edge. Horizontal velocity is set
       // to a periodic function
       Array2DReal TendEdge2D("TendEdge2D", DefMesh->NEdgesSize, NVertLayers);
       const I4 IEdge0 = 0;
@@ -286,17 +286,17 @@ int main(int argc, char *argv[]) {
       OMEGA_SCOPE(LocVertVel, DefVertAdv->TotalVerticalVelocity);
       parallelFor(
           {NVertLayers}, KOKKOS_LAMBDA(int K) {
-             NormalVelEdge(IEdge0, K)      = sin(Pi * K / NVertLayers);
-             FluxLayerThickEdge(IEdge0, K) = 1._Real;
-             const I4 Cell1                = LocCOnE(IEdge0, 0);
-             const I4 Cell2                = LocCOnE(IEdge0, 1);
-             LocVertVel(Cell1, K)          = 1._Real;
-             LocVertVel(Cell2, K)          = 1._Real;
+             NormalVelEdge(IEdge0, K)       = sin(Pi * K / NVertLayers);
+             FluxPseudoThickEdge(IEdge0, K) = 1._Real;
+             const I4 Cell1                 = LocCOnE(IEdge0, 0);
+             const I4 Cell2                 = LocCOnE(IEdge0, 1);
+             LocVertVel(Cell1, K)           = 1._Real;
+             LocVertVel(Cell2, K)           = 1._Real;
           });
 
       // Compute velocity tendencies for each layer
       DefVertAdv->computeVelocityVAdvTend(TendEdge2D, NormalVelEdge,
-                                          FluxLayerThickEdge);
+                                          FluxPseudoThickEdge);
 
       Tol = 1._Real / (NVertLayers * NVertLayers);
 
@@ -391,9 +391,9 @@ int main(int argc, char *argv[]) {
       for (int IMono = 0; IMono < 2; ++IMono) {
          Err = 0;
          Array3DReal TracerArray("TracerArray", 1, 1, NVertLayers);
-         Array2DReal LayerThick("LayerThick", 1, NVertLayers);
+         Array2DReal PseudoThick("PseudoThick", 1, NVertLayers);
          Array3DReal TendCell3D("TendCell3D", 1, 1, NVertLayers);
-         deepCopy(LayerThick, 1._Real);
+         deepCopy(PseudoThick, 1._Real);
          DefVertAdv->NVertLayers = NVertLayers;
          LocVertVel = Array2DReal("TotalVerticaVelocity", 1, NVertLayers + 1);
          deepCopy(LocVertVel, TestVel[IMono]);
@@ -418,7 +418,7 @@ int main(int argc, char *argv[]) {
          for (int N = 0; N < NTSteps; ++N) {
             deepCopy(TendCell3D, 0._Real);
             DefVertAdv->computeTracerVAdvTend(TendCell3D, TracerArray,
-                                              LayerThick, TimeStep);
+                                              PseudoThick, TimeStep);
             parallelFor(
                 {NVertLayers}, KOKKOS_LAMBDA(const int K) {
                    TracerArray(0, 0, K) += Dt * TendCell3D(0, 0, K);

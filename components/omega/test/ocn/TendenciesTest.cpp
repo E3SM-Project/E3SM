@@ -31,7 +31,7 @@ using namespace OMEGA;
 struct TestSetup {
    Real Radius = REarth;
 
-   KOKKOS_FUNCTION Real layerThickness(Real Lon, Real Lat) const {
+   KOKKOS_FUNCTION Real pseudoThickness(Real Lon, Real Lat) const {
       return (2 + std::cos(Lon) * std::pow(std::cos(Lat), 4));
    }
 
@@ -65,21 +65,21 @@ int initState() {
    std::vector<std::string> DimNamesThickness(NDims);
    DimNamesThickness[0] = "NCells";
 
-   Array2DReal LayerThickCell = State->getLayerThickness(0);
-   Array2DReal NormalVelEdge  = State->getNormalVelocity(0);
+   Array2DReal PseudoThickCell = State->getPseudoThickness(0);
+   Array2DReal NormalVelEdge   = State->getNormalVelocity(0);
 
    Array3DReal TracersArray = Tracers::getAll(0);
    const auto &TracersCell  = TracersArray;
 
    int NTracers = Tracers::getNumTracers();
 
-   deepCopy(LayerThickCell, NAN);
+   deepCopy(PseudoThickCell, NAN);
    deepCopy(NormalVelEdge, NAN);
    deepCopy(TracersCell, NAN);
 
    Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.layerThickness(X, Y); },
-       LayerThickCell, Geom, Mesh, OnCell, VCoord->MinLayerCell,
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.pseudoThickness(X, Y); },
+       PseudoThickCell, Geom, Mesh, OnCell, VCoord->MinLayerCell,
        VCoord->MaxLayerCell, ExchangeHalos::Yes, SetBoundary::Yes);
 
    Err += setScalar(
@@ -203,7 +203,7 @@ int testTendencies() {
    VCoord->NVertLayers = NVertLayers;
 
    // put NANs in every tendency variables
-   deepCopy(DefTendencies->LayerThicknessTend, NAN);
+   deepCopy(DefTendencies->PseudoThicknessTend, NAN);
    deepCopy(DefTendencies->NormalVelocityTend, NAN);
    deepCopy(DefTendencies->TracerTend, NAN);
 
@@ -226,11 +226,11 @@ int testTendencies() {
    int NTracers    = Tracers::getNumTracers();
 
    const Real LayerThickTendSum =
-       sum(DefTendencies->LayerThicknessTend, NCellsOwned, VCoord->MinLayerCell,
-           VCoord->MaxLayerCell);
+       sum(DefTendencies->PseudoThicknessTend, NCellsOwned,
+           VCoord->MinLayerCell, VCoord->MaxLayerCell);
    if (!Kokkos::isfinite(LayerThickTendSum) || LayerThickTendSum == 0) {
       Err++;
-      LOG_ERROR("TendenciesTest: LayerThickTend FAIL");
+      LOG_ERROR("TendenciesTest: PseudoThickTend FAIL");
    }
 
    const Real NormVelTendSum =

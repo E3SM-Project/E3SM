@@ -126,23 +126,23 @@ int main(int argc, char *argv[]) {
 
       // Tests for computePressure
 
-      Array2DReal LayerThickness("LayerThickness", NCellsSize, NVertLayers);
+      Array2DReal PseudoThickness("PseudoThickness", NCellsSize, NVertLayers);
       Array1DReal SurfacePressure("SurfacePressure", NCellsSize);
 
-      /// Initialize layer thickness and surface pressure so that resulting
+      /// Initialize pseudo-thickness and surface pressure so that resulting
       /// interface pressure is the number of layers above plus one
       Real Rho0 = RhoSw;
       parallelFor(
           {NCellsAll}, KOKKOS_LAMBDA(int ICell) {
              SurfacePressure(ICell) = 1.0_Real;
              for (int K = 0; K < NVertLayers; K++) {
-                LayerThickness(ICell, K) = 1.0_Real / (Gravity * Rho0);
+                PseudoThickness(ICell, K) = 1.0_Real / (Gravity * Rho0);
              }
           });
       Kokkos::fence();
 
       /// Call function and get host copies of outputs
-      DefVertCoord->computePressure(LayerThickness, SurfacePressure);
+      DefVertCoord->computePressure(PseudoThickness, SurfacePressure);
       auto PressInterfH = createHostMirrorCopy(DefVertCoord->PressureInterface);
       auto PressMidH    = createHostMirrorCopy(DefVertCoord->PressureMid);
 
@@ -168,27 +168,26 @@ int main(int argc, char *argv[]) {
 
       /// Determine test pass/fail
       if (Err == 0) {
-         LOG_INFO(
-             "VertCoordTest: computePressure with uniform LayerThickness PASS");
+         LOG_INFO("VertCoordTest: computePressure with uniform PseudoThickness "
+                  "PASS");
       } else {
-         ErrAll += Error(
-             ErrorCode::Fail,
-             "VertCoordTest: computePressure with uniform LayerThickness FAIL");
+         ErrAll += Error(ErrorCode::Fail, "VertCoordTest: computePressure with "
+                                          "uniform PseudoThickness FAIL");
       }
 
-      /// Initialize layer thickness and surface pressure so that the resulting
+      /// Initialize pseudo-thickness and surface pressure so that the resulting
       /// interface pressure is (K+1)*K/2 + the cell number
       parallelFor(
           {NCellsAll}, KOKKOS_LAMBDA(int ICell) {
              SurfacePressure(ICell) = 1.0_Real * ICell;
              for (int K = 0; K < NVertLayers; K++) {
-                LayerThickness(ICell, K) = (K + 1.0_Real) / (Gravity * Rho0);
+                PseudoThickness(ICell, K) = (K + 1.0_Real) / (Gravity * Rho0);
              }
           });
       Kokkos::fence();
 
       /// Call functions and get host copy of output
-      DefVertCoord->computePressure(LayerThickness, SurfacePressure);
+      DefVertCoord->computePressure(PseudoThickness, SurfacePressure);
       auto PressInterfH2 =
           createHostMirrorCopy(DefVertCoord->PressureInterface);
 
@@ -209,11 +208,11 @@ int main(int argc, char *argv[]) {
       /// Determine test pass/fail
       if (Err == 0) {
          LOG_INFO("VertCoordTest: computePressure with non-uniform "
-                  "LayerThickness PASS");
+                  "PseudoThickness PASS");
       } else {
          ErrAll += Error(
              ErrorCode::Fail,
-             "VertCoordTest: computePressure with non-uniform LayerThickness "
+             "VertCoordTest: computePressure with non-uniform PseudoThickness "
              "FAIL");
       }
 
@@ -226,22 +225,22 @@ int main(int argc, char *argv[]) {
 
       auto &BotDepth = DefVertCoord->BottomDepth;
 
-      /// Initialize bottom depth, layer thickness and specific volume so that
+      /// Initialize bottom depth, pseudo-thickness and specific volume so that
       /// the resulting interface z value is the negative layer number
       parallelFor(
           {NCellsAll}, KOKKOS_LAMBDA(int ICell) {
              BotDepth(ICell) = MaxLyrCellReal(ICell) + 1.0_Real;
              for (int K = 0; K < NVertLayers; K++) {
-                LayerThickness(ICell, K) = (ICell + 1.0_Real) / Rho0;
-                SpecVol(ICell, K)        = 1.0_Real / (ICell + 1.0_Real);
+                PseudoThickness(ICell, K) = (ICell + 1.0_Real) / Rho0;
+                SpecVol(ICell, K)         = 1.0_Real / (ICell + 1.0_Real);
              }
           });
       Kokkos::fence();
 
       /// Call functions and get host copy of output
-      DefVertCoord->computeZHeight(LayerThickness, SpecVol);
-      auto ZInterfH = createHostMirrorCopy(DefVertCoord->ZInterface);
-      auto ZMidH    = createHostMirrorCopy(DefVertCoord->ZMid);
+      DefVertCoord->computeZHeight(PseudoThickness, SpecVol);
+      auto GeomZInterfH = createHostMirrorCopy(DefVertCoord->GeomZInterface);
+      auto GeomZMidH    = createHostMirrorCopy(DefVertCoord->GeomZMid);
 
       /// Check results
       Err = 0;
@@ -250,13 +249,13 @@ int main(int argc, char *argv[]) {
               K < DefVertCoord->MaxLayerCellH(ICell) + 1; K++) {
             /// Z value at interface K should be -K
             Real Expected = -K;
-            Real Diff     = std::abs(ZInterfH(ICell, K) - Expected);
+            Real Diff     = std::abs(GeomZInterfH(ICell, K) - Expected);
             if (Diff > 1e-10) {
                Err += 1;
             }
             /// Z value at mid point of layer K should be -(K + .5)
             Expected = -K - 0.5;
-            Diff     = std::abs(ZMidH(ICell, K) - Expected);
+            Diff     = std::abs(GeomZMidH(ICell, K) - Expected);
             if (Diff > 1e-10) {
                Err += 1;
             }
@@ -266,29 +265,29 @@ int main(int argc, char *argv[]) {
       /// Determine test pass/fail
       if (Err == 0) {
          LOG_INFO(
-             "VertCoordTest: computeZHeight with uniform LayerThickness PASS");
+             "VertCoordTest: computeZHeight with uniform PseudoThickness PASS");
       } else {
          ErrAll += Error(
              ErrorCode::Fail,
-             "VertCoordTest: computeZHeight with uniform LayerThickness FAIL");
+             "VertCoordTest: computeZHeight with uniform PseudoThickness FAIL");
       }
 
-      /// Initialize bottom depth, layer thickness and specific volume so that
+      /// Initialize bottom depth, pseudo-thickness and specific volume so that
       /// the resulting interface z value is -(K+1)*K/2
       parallelFor(
           {NCellsAll}, KOKKOS_LAMBDA(int ICell) {
              BotDepth(ICell) = (MaxLyrCellReal(ICell) + 2) *
                                (MaxLyrCellReal(ICell) + 1) / 2.0_Real;
              for (int K = 0; K < NVertLayers; K++) {
-                LayerThickness(ICell, K) = (K + 1) / Rho0;
-                SpecVol(ICell, K)        = 1.0_Real;
+                PseudoThickness(ICell, K) = (K + 1) / Rho0;
+                SpecVol(ICell, K)         = 1.0_Real;
              }
           });
       Kokkos::fence();
 
       /// Call functions and get host copy of output
-      DefVertCoord->computeZHeight(LayerThickness, SpecVol);
-      auto ZInterfH2 = createHostMirrorCopy(DefVertCoord->ZInterface);
+      DefVertCoord->computeZHeight(PseudoThickness, SpecVol);
+      auto ZInterfH2 = createHostMirrorCopy(DefVertCoord->GeomZInterface);
 
       /// Check results
       Err = 0;
@@ -307,11 +306,11 @@ int main(int argc, char *argv[]) {
       /// Determine test pass/fail
       if (Err == 0) {
          LOG_INFO("VertCoordTest: computeZHeight with non-uniform "
-                  "LayerThickness PASS");
+                  "PseudoThickness PASS");
       } else {
          ErrAll += Error(
              ErrorCode::Fail,
-             "VertCoordTest: computeZHeight with non-uniform LayerThickness "
+             "VertCoordTest: computeZHeight with non-uniform PseudoThickness "
              "FAIL");
       }
 
@@ -319,7 +318,7 @@ int main(int argc, char *argv[]) {
       Array1DReal TidalPotential("TidalPotential", NCellsSize);
       Array1DReal SelfAttractionLoading("SelfAttractionLoading", NCellsSize);
 
-      auto &ZMid = DefVertCoord->ZMid;
+      auto &GeomZMid = DefVertCoord->GeomZMid;
 
       /// Initialize z mid, tidal potential and SAL so that the resulting
       /// geopotential is the cell number + layer number
@@ -328,7 +327,7 @@ int main(int argc, char *argv[]) {
              TidalPotential(ICell)        = ICell;
              SelfAttractionLoading(ICell) = -ICell;
              for (int K = 0; K < NVertLayers; K++) {
-                ZMid(ICell, K) = (ICell + K) / Gravity;
+                GeomZMid(ICell, K) = (ICell + K) / Gravity;
              }
           });
       Kokkos::fence();
@@ -364,23 +363,23 @@ int main(int argc, char *argv[]) {
       auto &RefPseudoThick = DefVertCoord->RefPseudoThickness;
 
       /// Initialize surface pressure, vertical coord weights, ref layer
-      /// thickness, and layer thickness so that the resulting target thickness
+      /// thickness, and pseudo-thickness so that the resulting target thickness
       /// is 2 (perturbation is evenly distributed amoung layers)
       parallelFor(
           {NCellsAll}, KOKKOS_LAMBDA(int ICell) {
              SurfacePressure(ICell) = 0.0;
              for (int K = 0; K < NVertLayers; K++) {
-                RefPseudoThick(ICell, K) = 1.0;
-                LayerThickness(ICell, K) = 2.0;
+                RefPseudoThick(ICell, K)  = 1.0;
+                PseudoThickness(ICell, K) = 2.0;
              }
           });
       Kokkos::fence();
 
       /// Call functions and get host copy of output
-      DefVertCoord->computePressure(LayerThickness, SurfacePressure);
+      DefVertCoord->computePressure(PseudoThickness, SurfacePressure);
       DefVertCoord->computeTargetThickness();
-      auto LayerThicknessTargetH =
-          createHostMirrorCopy(DefVertCoord->LayerThicknessTarget);
+      auto PseudoThicknessTargetH =
+          createHostMirrorCopy(DefVertCoord->PseudoThicknessTarget);
 
       /// Check results
       Err = 0;
@@ -389,7 +388,7 @@ int main(int argc, char *argv[]) {
               K < DefVertCoord->MaxLayerCellH(ICell) + 1; K++) {
             /// target thickness should be 2
             Real Expected = 2.0;
-            Real Diff = std::abs(LayerThicknessTargetH(ICell, K) - Expected);
+            Real Diff = std::abs(PseudoThicknessTargetH(ICell, K) - Expected);
             if (Diff > 1e-10) {
                Err += 1;
             }
@@ -408,15 +407,15 @@ int main(int argc, char *argv[]) {
       }
 
       /// Intialize surface pressure, vertical coord weights, ref layer
-      /// thickness, and layer thickness so that the resulting target thickness
+      /// thickness, and pseudo-thickness so that the resulting target thickness
       /// is the max number of layers + 2 in the top layer and 1 elsewhere
       /// (perturbation is distributed to top layer only)
       parallelFor(
           {NCellsAll}, KOKKOS_LAMBDA(int ICell) {
              SurfacePressure(ICell) = 0.0;
              for (int K = 0; K < NVertLayers; K++) {
-                RefPseudoThick(ICell, K) = 1.0;
-                LayerThickness(ICell, K) = 2.0;
+                RefPseudoThick(ICell, K)  = 1.0;
+                PseudoThickness(ICell, K) = 2.0;
              }
           });
 
@@ -427,10 +426,10 @@ int main(int argc, char *argv[]) {
       Kokkos::fence();
 
       /// Call functions and get host copy of output
-      DefVertCoord->computePressure(LayerThickness, SurfacePressure);
+      DefVertCoord->computePressure(PseudoThickness, SurfacePressure);
       DefVertCoord->computeTargetThickness();
-      auto LayerThicknessTargetH2 =
-          createHostMirrorCopy(DefVertCoord->LayerThicknessTarget);
+      auto PseudoThicknessTargetH2 =
+          createHostMirrorCopy(DefVertCoord->PseudoThicknessTarget);
       Err = 0;
 
       /// Check results
@@ -445,10 +444,10 @@ int main(int argc, char *argv[]) {
                /// target thickness is 1 in all other layer
                Expected = 1.0;
             }
-            Real Diff = std::abs(LayerThicknessTargetH2(ICell, K) - Expected);
+            Real Diff = std::abs(PseudoThicknessTargetH2(ICell, K) - Expected);
             if (Diff > 1e-10) {
-               LOG_INFO("LayerThicknessTargetH({},{}) = {}, {}", ICell, K,
-                        LayerThicknessTargetH2(ICell, K), Expected);
+               LOG_INFO("PseudoThicknessTargetH({},{}) = {}, {}", ICell, K,
+                        PseudoThicknessTargetH2(ICell, K), Expected);
                Err += 1;
             }
          }
