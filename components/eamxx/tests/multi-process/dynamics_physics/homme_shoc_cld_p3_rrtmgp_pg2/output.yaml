@@ -2,6 +2,7 @@
 ---
 filename_prefix: homme_shoc_cld_p3_rrtmgp_pg2_output
 averaging_type: instant
+vert_interpolation_type: linear
 fields:
   physics_pg2:
     field_names:

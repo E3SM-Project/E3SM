@@ -223,6 +223,7 @@ get_test_diag(const ekat::Comm& comm, std::shared_ptr<const FieldManager> fm, st
     params.set("grid_name",fm->get_grid()->name());
     params.set("pressure_value",std::to_string(plevel));
     params.set("pressure_units",std::string("Pa"));
+    params.set("vert_interpolation_type",std::string("linear")); // use linear for this test (field is linear in p)
     auto diag = std::make_shared<FieldAtPressureLevel>(comm,params);
     diag->set_grids(gm);
     for (const auto& req : diag->get_field_requests()) {

@@ -3,6 +3,7 @@
 filename_prefix: shoc_p3_${POSTFIX}_nudged_remapped
 averaging_type: instant
 vertical_remap_file: vertical_remap.nc
+vert_interpolation_type: linear
 field_names:
   - T_mid
   - qv

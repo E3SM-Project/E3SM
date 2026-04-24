@@ -33,14 +33,6 @@ Real calculate_output(const Real pressure, const int col, const int cmp);
 ekat::ParameterList set_output_params(const std::string& name, const std::string& remap_filename, const int p_ref, const bool vert_remap, const bool horiz_remap);
 ekat::ParameterList set_input_params(const std::string& name, ekat::Comm& comm, const std::string& tstamp, const int p_ref);
 
-bool approx(const Real a, const Real b) {
-  const Real tol = std::numeric_limits<Real>::epsilon()*100000;
-  if (std::abs(a-b) >= tol) {
-    printf("Error::approx - difference of |%e - %e| = %e is greater than the max tolerance of %e\n",a,b,std::abs(a-b),tol);
-  }
-  return std::abs(a-b) < tol;
-}
-
 void print (const std::string& msg, const ekat::Comm& comm) {
   if (comm.am_i_root()) {
     printf("%s",msg.c_str());
@@ -57,6 +49,7 @@ TEST_CASE("io_remap_test","io_remap_test")
 
 
   print (" -> Test Setup ...\n",io_comm);
+  const Real rel_tol = Real(1e5) * std::numeric_limits<Real>::epsilon();
   scorpio::init_subsystem(io_comm);
   const int ncols_src = 64*io_comm.size();
   const int nlevs_src = 2*packsize + 1;
@@ -95,7 +88,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     col.push_back(1+src_col);
     col.push_back(1+src_col+1);
     S.push_back(wgt);
-    S.push_back(1.0-wgt);
+    S.push_back(1-wgt);
   }
   // For vertical remapping we will prokject onto a set of equally
   // spaced pressure levels from p_top to b_bot that is nearly half
@@ -237,6 +230,7 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   print ("    -> source data ... \n",io_comm);
   auto source_remap_control = set_output_params("remap_source",remap_filename,p_ref,false,false);
+  source_remap_control.set<std::string>("vert_interpolation_type","linear");
   om_source.initialize(io_comm,source_remap_control,t0,false);
   om_source.setup(field_manager,gm->get_grid_names());
   io_comm.barrier();
@@ -247,6 +241,7 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   print ("    -> vertical remap ... \n",io_comm);
   auto vert_remap_control = set_output_params("remap_vertical",remap_filename,p_ref,true,false);
+  vert_remap_control.set<std::string>("vert_interpolation_type","linear");
   om_vert.initialize(io_comm,vert_remap_control,t0,false);
   om_vert.setup(field_manager,gm->get_grid_names());
   io_comm.barrier();
@@ -257,6 +252,7 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   print ("    -> horizontal remap ... \n",io_comm);
   auto horiz_remap_control = set_output_params("remap_horizontal",remap_filename,p_ref,false,true);
+  horiz_remap_control.set<std::string>("vert_interpolation_type","linear");
   om_horiz.initialize(io_comm,horiz_remap_control,t0,false);
   om_horiz.setup(field_manager,gm->get_grid_names());
   io_comm.barrier();
@@ -267,6 +263,7 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   print ("    -> vertical-horizontal remap ... \n",io_comm);
   auto vert_horiz_remap_control = set_output_params("remap_vertical_horizontal",remap_filename,p_ref,true,true);
+  vert_horiz_remap_control.set<std::string>("vert_interpolation_type","linear");
   om_vert_horiz.initialize(io_comm,vert_horiz_remap_control,t0,false);
   om_vert_horiz.setup(field_manager,gm->get_grid_names());
   io_comm.barrier();
@@ -274,6 +271,100 @@ TEST_CASE("io_remap_test","io_remap_test")
   om_vert_horiz.run(t0+dt);
   om_vert_horiz.finalize();
   print ("    -> vertical-horizontal remap ... done\n",io_comm);
+
+  print ("    -> log-linear vertical remap ... \n",io_comm);
+  // Use q_scale = 1/p_bot to normalize q values to [0,1], so exp(q) stays in [1,e].
+  const Real q_scale = p_bot > 0 ? 1/p_bot : Real(1);
+  // Create a remap file with exp-transformed target levels to test log-linear interp.
+  // With log-linear remapping and source pressures exp(q_src), the remapper internally
+  // computes log(exp(q_src)) = q_src and interpolates linearly in q-space.
+  const std::string log_remap_filename = "log_remap_weights_np"+std::to_string(io_comm.size())+".nc";
+  std::vector<Real> p_tgt_exp;
+  for (int ii=0; ii<nlevs_tgt; ++ii) {
+    p_tgt_exp.push_back(std::exp(p_tgt[ii]*q_scale));
+  }
+  scorpio::register_file(log_remap_filename, scorpio::FileMode::Write);
+  scorpio::define_dim(log_remap_filename,"n_a",ncols_src);
+  scorpio::define_dim(log_remap_filename,"n_b",ncols_tgt);
+  scorpio::define_dim(log_remap_filename,"n_s",ncols_src);
+  scorpio::define_dim(log_remap_filename,"lev",nlevs_tgt);
+  scorpio::define_var(log_remap_filename,"col",   {"n_s"},"int");
+  scorpio::define_var(log_remap_filename,"row",   {"n_s"},"int");
+  scorpio::define_var(log_remap_filename,"S",     {"n_s"},"real");
+  scorpio::define_var(log_remap_filename,"p_levs",{"lev"},"real");
+  scorpio::set_dim_decomp(log_remap_filename,"n_s",io_comm.rank()*ncols_src_l,ncols_src_l);
+  scorpio::enddef(log_remap_filename);
+  scorpio::write_var(log_remap_filename,"row",   row.data());
+  scorpio::write_var(log_remap_filename,"col",   col.data());
+  scorpio::write_var(log_remap_filename,"S",     S.data());
+  scorpio::write_var(log_remap_filename,"p_levs",p_tgt_exp.data());
+  scorpio::release_file(log_remap_filename);
+
+  // Build a source field manager with exp-transformed pressures.
+  // Field values are set as linear in q = p*q_scale (= log of the exp-transformed pressure),
+  // so log-linear interp on exp(q) coords gives identical results to linear interp on q.
+  auto fm_log = get_test_fm(grid, false);
+  fm_log->init_fields_time_stamp(t0);
+
+  const auto& pm_log_f = fm_log->get_field("p_mid");
+  const auto& pi_log_f = fm_log->get_field("p_int");
+  const auto& ps_log_f = fm_log->get_field("p_surf");
+  const auto& pm_log_v = pm_log_f.get_view<Real**,Host>();
+  const auto& pi_log_v = pi_log_f.get_view<Real**,Host>();
+  const auto& ps_log_v = ps_log_f.get_view<Real*,Host>();
+  for (int ii=0; ii<ncols_src_l; ii++) {
+    ps_log_v(ii)   = std::exp(p_surf(ii)*q_scale);
+    pi_log_v(ii,0) = std::exp(pi_v(ii,0)*q_scale);
+    for (int jj=0; jj<nlevs_src; jj++) {
+      pi_log_v(ii,jj+1) = std::exp(pi_v(ii,jj+1)*q_scale);
+      pm_log_v(ii,jj)   = std::exp(pm_v(ii,jj)*q_scale);
+    }
+  }
+  pm_log_f.sync_to_dev();
+  pi_log_f.sync_to_dev();
+  ps_log_f.sync_to_dev();
+
+  const auto& Yf_log_f = fm_log->get_field("Y_flat");
+  const auto& Ym_log_f = fm_log->get_field("Y_mid");
+  const auto& Yi_log_f = fm_log->get_field("Y_int");
+  const auto& Vm_log_f = fm_log->get_field("V_mid");
+  const auto& Vi_log_f = fm_log->get_field("V_int");
+  const auto& Yf_log_v = Yf_log_f.get_view<Real*,Host>();
+  const auto& Ym_log_v = Ym_log_f.get_view<Real**,Host>();
+  const auto& Yi_log_v = Yi_log_f.get_view<Real**,Host>();
+  const auto& Vm_log_v = Vm_log_f.get_view<Real***,Host>();
+  const auto& Vi_log_v = Vi_log_f.get_view<Real***,Host>();
+  for (int ii=0; ii<ncols_src_l; ii++) {
+    Yf_log_v(ii)   = calculate_output(pm_v(ii,0)*q_scale,ii,0);
+    Yi_log_v(ii,0) = calculate_output(pi_v(ii,0)*q_scale,ii,0);
+    for (int cc=0; cc<2; cc++) {
+      Vi_log_v(ii,cc,0) = calculate_output(pi_v(ii,0)*q_scale,ii,cc+1);
+    }
+    for (int jj=0; jj<nlevs_src; jj++) {
+      Ym_log_v(ii,jj)   = calculate_output(pm_v(ii,jj)*q_scale,  ii,0);
+      Yi_log_v(ii,jj+1) = calculate_output(pi_v(ii,jj+1)*q_scale,ii,0);
+      for (int cc=0; cc<2; cc++) {
+        Vm_log_v(ii,cc,jj)   = calculate_output(pm_v(ii,jj)*q_scale,  ii,cc+1);
+        Vi_log_v(ii,cc,jj+1) = calculate_output(pi_v(ii,jj+1)*q_scale,ii,cc+1);
+      }
+    }
+  }
+  Yf_log_f.sync_to_dev();
+  Ym_log_f.sync_to_dev();
+  Yi_log_f.sync_to_dev();
+  Vm_log_f.sync_to_dev();
+  Vi_log_f.sync_to_dev();
+
+  OutputManager om_log_vert;
+  auto log_vert_params = set_output_params("remap_log_vertical",log_remap_filename,-1,true,false);
+  log_vert_params.set<std::string>("vert_interpolation_type","log-linear");
+  om_log_vert.initialize(io_comm,log_vert_params,t0,false);
+  om_log_vert.setup(fm_log,gm->get_grid_names());
+  io_comm.barrier();
+  om_log_vert.init_timestep(t0,dt);
+  om_log_vert.run(t0+dt);
+  om_log_vert.finalize();
+  print ("    -> log-linear vertical remap ... done\n",io_comm);
   print (" -> Create output ... done\n",io_comm);
 
 
@@ -332,18 +423,18 @@ TEST_CASE("io_remap_test","io_remap_test")
     for (int ii=0; ii<ncols_src_l; ii++) {
       const bool ref_masked = (p_ref>pi_v(ii,nlevs_src) || p_ref<pi_v(ii,0));
       const Real test_val = ref_masked ? fill_val : calculate_output(p_ref,ii,0);
-      REQUIRE(approx(Ys_v_vert(ii),test_val));
+      REQUIRE_THAT(Ys_v_vert(ii), Catch::Matchers::WithinRel(test_val, rel_tol));
 
-      REQUIRE(approx(Yf_v_vert(ii), Yf_v(ii)));
+      REQUIRE_THAT(Yf_v_vert(ii), Catch::Matchers::WithinRel(Yf_v(ii), rel_tol));
       for (int jj=0; jj<nlevs_tgt; jj++) {
         auto p_jj = p_tgt[jj];
         const bool mid_masked = (p_jj>pm_v(ii,nlevs_src-1) || p_jj<pm_v(ii,0));
         const bool int_masked = (p_jj>pi_v(ii,nlevs_src)   || p_jj<pi_v(ii,0));
-        REQUIRE(approx(Ym_v_vert(ii,jj),(mid_masked ? fill_val : calculate_output(p_jj,ii,0))));
-        REQUIRE(approx(Yi_v_vert(ii,jj),(int_masked ? fill_val : calculate_output(p_jj,ii,0))));
+        REQUIRE_THAT(Ym_v_vert(ii,jj), Catch::Matchers::WithinRel((mid_masked ? fill_val : calculate_output(p_jj,ii,0)), rel_tol));
+        REQUIRE_THAT(Yi_v_vert(ii,jj), Catch::Matchers::WithinRel((int_masked ? fill_val : calculate_output(p_jj,ii,0)), rel_tol));
         for (int cc=0; cc<2; cc++) {
-          REQUIRE(approx(Vm_v_vert(ii,cc,jj), (mid_masked ? fill_val : calculate_output(p_jj,ii,cc+1))));
-          REQUIRE(approx(Vi_v_vert(ii,cc,jj), (int_masked ? fill_val : calculate_output(p_jj,ii,cc+1))));
+          REQUIRE_THAT(Vm_v_vert(ii,cc,jj), Catch::Matchers::WithinRel((mid_masked ? fill_val : calculate_output(p_jj,ii,cc+1)), rel_tol));
+          REQUIRE_THAT(Vi_v_vert(ii,cc,jj), Catch::Matchers::WithinRel((int_masked ? fill_val : calculate_output(p_jj,ii,cc+1)), rel_tol));
         }
       }
     }
@@ -398,17 +489,17 @@ TEST_CASE("io_remap_test","io_remap_test")
     for (int ii=0; ii<ncols_tgt_l; ii++) {
       const int col1 = 2*ii;
       const int col2 = 2*ii+1;
-      REQUIRE(approx(Yf_v_horiz(ii),Yf_v(col1)*wgt + Yf_v(col2)*(1.0-wgt)));
-      REQUIRE(approx(Yi_v_horiz(ii,0), Yi_v(col1,0)*wgt + Yi_v(col2,0)*(1.0-wgt)));
+      REQUIRE_THAT(Yf_v_horiz(ii), Catch::Matchers::WithinRel(Yf_v(col1)*wgt + Yf_v(col2)*(1-wgt), rel_tol));
+      REQUIRE_THAT(Yi_v_horiz(ii,0), Catch::Matchers::WithinRel(Yi_v(col1,0)*wgt + Yi_v(col2,0)*(1-wgt), rel_tol));
       for (int cc=0; cc<2; cc++) {
-        REQUIRE(approx(Vi_v_horiz(ii,cc,0), Vi_v(col1,cc,0)*wgt + Vi_v(col2,cc,0)*(1.0-wgt)));
+        REQUIRE_THAT(Vi_v_horiz(ii,cc,0), Catch::Matchers::WithinRel(Vi_v(col1,cc,0)*wgt + Vi_v(col2,cc,0)*(1-wgt), rel_tol));
       }
       for (int jj=0; jj<nlevs_src; jj++) {
-        REQUIRE(approx(Ym_v_horiz(ii,jj),   Ym_v(col1,jj)*wgt   + Ym_v(col2,jj)*(1.0-wgt)));
-        REQUIRE(approx(Yi_v_horiz(ii,jj+1), Yi_v(col1,jj+1)*wgt + Yi_v(col2,jj+1)*(1.0-wgt)));
+        REQUIRE_THAT(Ym_v_horiz(ii,jj), Catch::Matchers::WithinRel(Ym_v(col1,jj)*wgt   + Ym_v(col2,jj)*(1-wgt), rel_tol));
+        REQUIRE_THAT(Yi_v_horiz(ii,jj+1), Catch::Matchers::WithinRel(Yi_v(col1,jj+1)*wgt + Yi_v(col2,jj+1)*(1-wgt), rel_tol));
         for (int cc=0; cc<2; cc++) {
-          REQUIRE(approx(Vm_v_horiz(ii,cc,jj),   Vm_v(col1,cc,jj)*wgt   + Vm_v(col2,cc,jj)*(1.0-wgt)));
-          REQUIRE(approx(Vi_v_horiz(ii,cc,jj+1), Vi_v(col1,cc,jj+1)*wgt + Vi_v(col2,cc,jj+1)*(1.0-wgt)));
+          REQUIRE_THAT(Vm_v_horiz(ii,cc,jj), Catch::Matchers::WithinRel(Vm_v(col1,cc,jj)*wgt   + Vm_v(col2,cc,jj)*(1-wgt), rel_tol));
+          REQUIRE_THAT(Vi_v_horiz(ii,cc,jj+1), Catch::Matchers::WithinRel(Vi_v(col1,cc,jj+1)*wgt + Vi_v(col2,cc,jj+1)*(1-wgt), rel_tol));
         }
       }
       // For the pressured sliced variable we expect some masking which needs to be checked.
@@ -422,15 +513,15 @@ TEST_CASE("io_remap_test","io_remap_test")
       }
       if (p_ref<=pi_v(col2,nlevs_src) && p_ref>=pi_v(col2,0)) {
         found = true;
-        Ys_exp += calculate_output(p_ref,col2,0)*(1.0-wgt);
-        Ys_wgt += (1.0 - wgt);
+        Ys_exp += calculate_output(p_ref,col2,0)*(1-wgt);
+        Ys_wgt += (1 - wgt);
       }
       if (found) {
         Ys_exp /= Ys_wgt;
       } else {
         Ys_exp = fill_val;
       }
-      REQUIRE(approx(Ys_v_horiz(ii), Ys_exp));
+      REQUIRE_THAT(Ys_v_horiz(ii), Catch::Matchers::WithinRel(Ys_exp, rel_tol));
     }
     print ("    -> horizontal remap ... done\n",io_comm);
   }
@@ -484,7 +575,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     for (int ii=0; ii<ncols_tgt_l; ii++) {
       const int col1 = 2*ii;
       const int col2 = 2*ii+1;
-      REQUIRE(approx(Yf_v_vh(ii),Yf_v(col1)*wgt + Yf_v(col2)*(1.0-wgt)));
+      REQUIRE_THAT(Yf_v_vh(ii), Catch::Matchers::WithinRel(Yf_v(col1)*wgt + Yf_v(col2)*(1-wgt), rel_tol));
       for (int jj=0; jj<nlevs_tgt; jj++) {
         auto p_jj = p_tgt[jj];
         const Real mid_mask_1 = (p_jj<=pm_v(col1,nlevs_src-1) && p_jj>=pm_v(col1,0));
@@ -505,8 +596,8 @@ TEST_CASE("io_remap_test","io_remap_test")
           // This point is completely masked out, assign masked value
           test_int = fill_val;
         }
-        REQUIRE(approx(Ym_v_vh(ii,jj), test_mid));
-        REQUIRE(approx(Yi_v_vh(ii,jj), test_int));
+        REQUIRE_THAT(Ym_v_vh(ii,jj), Catch::Matchers::WithinRel(test_mid, rel_tol));
+        REQUIRE_THAT(Yi_v_vh(ii,jj), Catch::Matchers::WithinRel(test_int, rel_tol));
         for (int cc=0; cc<2; cc++) {
           if (mid_mask_1 + mid_mask_2 > 0.0) {
             test_mid = (mid_mask_1*calculate_output(p_jj,col1,cc+1)*wgt + mid_mask_2*calculate_output(p_jj,col2,cc+1)*(1-wgt))/(mid_mask_1*wgt + mid_mask_2*(1-wgt));
@@ -520,8 +611,8 @@ TEST_CASE("io_remap_test","io_remap_test")
             // This point is completely masked out, assign masked value
             test_int = fill_val;
           }
-          REQUIRE(approx(Vm_v_vh(ii,cc,jj), test_mid));
-          REQUIRE(approx(Vi_v_vh(ii,cc,jj), test_int));
+          REQUIRE_THAT(Vm_v_vh(ii,cc,jj), Catch::Matchers::WithinRel(test_mid, rel_tol));
+          REQUIRE_THAT(Vi_v_vh(ii,cc,jj), Catch::Matchers::WithinRel(test_int, rel_tol));
         }
       }
       // For the pressured sliced variable we expect it to match the solution from horizontal mapping only so we use the same syntax.
@@ -535,17 +626,59 @@ TEST_CASE("io_remap_test","io_remap_test")
       }
       if (p_ref<=pi_v(col2,nlevs_src) && p_ref>=pi_v(col2,0)) {
         found = true;
-        Ys_exp += calculate_output(p_ref,col2,0)*(1.0-wgt);
-        Ys_wgt += (1.0 - wgt);
+        Ys_exp += calculate_output(p_ref,col2,0)*(1-wgt);
+        Ys_wgt += (1 - wgt);
       }
       if (found) {
         Ys_exp /= Ys_wgt;
       } else {
         Ys_exp = fill_val;
       }
-      REQUIRE(approx(Ys_v_vh(ii), Ys_exp));
+      REQUIRE_THAT(Ys_v_vh(ii), Catch::Matchers::WithinRel(Ys_exp, rel_tol));
     }
     print ("    -> vertical + horizontal remap ... done\n",io_comm);
+  }
+  // ------------------------------------------------------------------------------------------------------
+  //                           ---  Log-linear Vertical Remapping ---
+  {
+    // The log-linear remap with exp-transformed coordinates (exp(p*q_scale)) should yield
+    // the same result as linear remap on the q = p*q_scale coordinates directly, since
+    // the remapper internally computes log(exp(q)) = q before interpolating.
+    print ("    -> log-linear vertical remap ... \n",io_comm);
+    auto gm_log_vert   = get_test_gm(io_comm,ncols_src,nlevs_tgt);
+    auto grid_log_vert = gm_log_vert->get_grid("point_grid");
+    auto fm_log_vert   = get_test_fm(grid_log_vert,true,-1);
+    auto log_vert_in   = set_input_params("remap_log_vertical",io_comm,t0.to_string(),-1);
+    AtmosphereInput test_input(log_vert_in,fm_log_vert);
+    test_input.read_variables();
+    test_input.finalize();
+
+    const auto& Yf_f_lv = fm_log_vert->get_field("Y_flat");
+    const auto& Ym_f_lv = fm_log_vert->get_field("Y_mid");
+    const auto& Yi_f_lv = fm_log_vert->get_field("Y_int");
+    const auto& Vm_f_lv = fm_log_vert->get_field("V_mid");
+    const auto& Vi_f_lv = fm_log_vert->get_field("V_int");
+    const auto& Yf_v_lv = Yf_f_lv.get_view<Real*,Host>();
+    const auto& Ym_v_lv = Ym_f_lv.get_view<Real**,Host>();
+    const auto& Yi_v_lv = Yi_f_lv.get_view<Real**,Host>();
+    const auto& Vm_v_lv = Vm_f_lv.get_view<Real***,Host>();
+    const auto& Vi_v_lv = Vi_f_lv.get_view<Real***,Host>();
+
+    for (int ii=0; ii<ncols_src_l; ii++) {
+      REQUIRE_THAT(Yf_v_lv(ii), Catch::Matchers::WithinRel(Yf_log_v(ii), rel_tol));
+      for (int jj=0; jj<nlevs_tgt; jj++) {
+        const Real q_jj = p_tgt[jj]*q_scale;
+        const bool mid_masked = (p_tgt[jj]>pm_v(ii,nlevs_src-1) || p_tgt[jj]<pm_v(ii,0));
+        const bool int_masked = (p_tgt[jj]>pi_v(ii,nlevs_src)   || p_tgt[jj]<pi_v(ii,0));
+        REQUIRE_THAT(Ym_v_lv(ii,jj), Catch::Matchers::WithinRel((mid_masked ? fill_val : calculate_output(q_jj,ii,0)), rel_tol));
+        REQUIRE_THAT(Yi_v_lv(ii,jj), Catch::Matchers::WithinRel((int_masked ? fill_val : calculate_output(q_jj,ii,0)), rel_tol));
+        for (int cc=0; cc<2; cc++) {
+          REQUIRE_THAT(Vm_v_lv(ii,cc,jj), Catch::Matchers::WithinRel((mid_masked ? fill_val : calculate_output(q_jj,ii,cc+1)), rel_tol));
+          REQUIRE_THAT(Vi_v_lv(ii,cc,jj), Catch::Matchers::WithinRel((int_masked ? fill_val : calculate_output(q_jj,ii,cc+1)), rel_tol));
+        }
+      }
+    }
+    print ("    -> log-linear vertical remap ... done\n",io_comm);
   }
   // ------------------------------------------------------------------------------------------------------
   // All Done

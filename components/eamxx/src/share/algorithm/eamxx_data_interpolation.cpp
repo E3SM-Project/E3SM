@@ -592,6 +592,16 @@ create_vert_remapper (const VertRemapData& data)
     vremap->set_extrapolation_type(s2et(data.extrap_top),VerticalRemapper::Top);
     vremap->set_extrapolation_type(s2et(data.extrap_bot),VerticalRemapper::Bot);
 
+    // Set interpolation type (linear or log-linear)
+    if (data.interp_type=="log-linear") {
+      vremap->set_interp_type(VerticalRemapper::LogLinear);
+    } else {
+      EKAT_REQUIRE_MSG (data.interp_type=="linear",
+          "[DataInterpolation] Error! Invalid/unsupported vertical interpolation type.\n"
+          " - input value : " + data.interp_type + "\n"
+          " - valid values: linear, log-linear\n");
+    }
+
     m_vert_remapper = vremap;
   }
 
