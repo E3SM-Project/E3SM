@@ -14,7 +14,7 @@ flow through the continuity equation and is necessary for accurately
 representing vertical transport in three-dimensional ocean simulations.
 
 The `VertAdv` class contains variables and functions for computing the vertical
-velocity and the tendencies of `LayerThickness`, `NormalVelocity`, and
+velocity and the tendencies of `PseudoThickness`, `NormalVelocity`, and
 `Tracers`. The algorithms used are determined by options specified in the
 configuration file.
 

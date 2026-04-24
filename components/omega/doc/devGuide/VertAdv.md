@@ -57,10 +57,10 @@ configuration options.
 The `VerticalVelocity` and `TotalVerticalVelocity` arrays are computed by
 calling the `computeVerticalVelocity` method:
 ```
-VertAdv::computeVerticalVelocity(NormalVelocity, FluxLayerThickEdge);
+VertAdv::computeVerticalVelocity(NormalVelocity, FluxPseudoThickEdge);
 ```
 This method takes as input the `NormalVelocity` field from the `OceanState`
-object, and the `FluxLayerThickEdge` field from the `AuxiliaryState`. At
+object, and the `FluxPseudoThickEdge` field from the `AuxiliaryState`. At
 present, `TotalVerticalVelocity` is equivalent to `VerticalVelocity`;
 additional corrections will be added in subsequent updates. The
 `TotalVerticalVelocity` array is used by each of the tendency methods,
@@ -80,9 +80,9 @@ VertAdv::computeThicknessVAdvTend(ThickTend);
 ```
 
 The `computeVelocityVAdvTend` method requires the `NormalVelocity` and
-`FluxLayerThickEdge` fields, in addition to the velocity tendency array:
+`FluxPseudoThickEdge` fields, in addition to the velocity tendency array:
 ```
-VertAdv::computeVelocityVAdvTend(VelTend, NormalVelocity, FluxLayerThickEdge);
+VertAdv::computeVelocityVAdvTend(VelTend, NormalVelocity, FluxPseudoThickEdge);
 ```
 
 The tracer vertical advection tendency depends on the configured settings.
@@ -93,8 +93,8 @@ tracer tendency array:
 ```
 VertAdv::computeTracerVAdvTend(TracerTend, TracerArray, Thickness, TimeStep);
 ```
-For the standard advection algorithm, `LayerThickness` from the `OceanState` is
-passed as the thickness argument; for the FCT algorithm, the `ProvThickness`
+For the standard advection algorithm, `PseudoThickness` from the `OceanState` is
+passed as the thickness argument; for the FCT algorithm, the `ProvPseudoThickness`
 from the `AuxiliaryState` is used instead.
 
 This method first calls `computeVerticalFluxes` to compute the tracer fluxes at

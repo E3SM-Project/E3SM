@@ -20,7 +20,7 @@ OceanState::create(const std::string &Name, ///< [in] Name for mesh
                    const int NTimeLevels_   ///< [in] Number of time levels
 );
 ```
-allocates the `NormalVelocity` and `LayerThickness` arrays for a given number of time levels.
+allocates the `NormalVelocity` and `PseudoThickness` arrays for a given number of time levels.
 The current time level is then registered with the IO infrastructure.
 
 After initialization, the default state object can be retrieved via:
@@ -60,12 +60,12 @@ to the current time level.
 
 The arrays associated with a given time level can be accessed with the functions:
 ```c++
-Array2DReal LayerThick = State->getLayerThickness(TimeLevel);
+Array2DReal PseudoThick = State->getPseudoThickness(TimeLevel);
 Array2DReal NormVel = State->getNormalVelocity(TimeLevel);
 ```
 for the device arrays and
 ```c++
-HostArray2DReal LayerThickH = State->getLayerThicknessH(TimeLevel);
+HostArray2DReal PseudoThickH = State->getPseudoThicknessH(TimeLevel);
 HostArray2DReal NormVelH = State->getNormalVelocityH(TimeLevel);
 ```
 for the host arrays. These functions return the arrays directly and will abort

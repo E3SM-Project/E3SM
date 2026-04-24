@@ -76,7 +76,7 @@ their results directly to the member arrays. There might be more than one
 compute function, if variables located on different mesh elements are grouped
 together. For example, the `VorticityAuxVars` class provides both
 ```c++
-void computeVarsOnVertex(int IVertex, int KChunk, const Array2DReal &LayerThickCell, const Array2DReal &NormalVelEdge);
+void computeVarsOnVertex(int IVertex, int KChunk, const Array2DReal &PseudoThickCell, const Array2DReal &NormalVelEdge);
 void computeVarsOnEdge(int IEdge, int KChunk);
 ```
 because the vorticity variables are first computed on vertices and then
@@ -89,8 +89,8 @@ The following auxiliary variable groups are currently implemented:
 | ----- | ------------------- | ------- |
 | KineticAuxVars | KineticEnergyCell ||
 || VelocityDiv ||
-| LayerThicknessAuxVars | FluxLayerThickEdge | Center or Upwind|
-|| MeanLayerThickEdge ||
+| PseudoThicknessAuxVars | FluxPseudoThickEdge | Center or Upwind|
+|| MeanPseudoThickEdge ||
 | VorticityAuxVars |  RelVortVertex ||
 ||  NormRelVortVertex ||
 ||  NormPlanetVortVertex ||

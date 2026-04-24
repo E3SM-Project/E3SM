@@ -52,10 +52,10 @@ A list of member variables along with their types and dimension sizes is below:
 | ------------- | ---- | ---------- |
 | PressureInterface | Real | NCellsSize, NVertLayersP1 |
 | PressureMid | Real | NCellsSize, NVertLayers |
-| ZInterface | Real | NCellsSize, NVertLayersP1|
-| ZMid | Real | NCellsSize, NVertLayers |
+| GeomZInterface | Real | NCellsSize, NVertLayersP1|
+| GeomZMid | Real | NCellsSize, NVertLayers |
 | GeopotentialMid | Real | NCellsSize, NVertLayers |
-| LayerThicknessTarget | Real | NCellsSize, NVertLayers|
+| PseudoThicknessTarget | Real | NCellsSize, NVertLayers|
 | MinLayerCell | Integer | NCellsSize |
 | MaxLayerCell | Integer | NCellsSize |
 | MinLayerEdgeTop | Integer| NEdgesSize |
@@ -106,14 +106,14 @@ Kokkos::parallel_scan(
 }
 ```
 where `KMax` and `KMin` are the maximum and minimum active vertical layer indices.
-In `computeTargetThickness` an outer loop divides the horizontal cells over teams of threads as above, however, there is a nested `parallel_reduce` that computes the column sum of the reference layer thicknesses times the vertical coordinate movement weights among threads in a team:
+In `computeTargetThickness` an outer loop divides the horizontal cells over teams of threads as above, however, there is a nested `parallel_reduce` that computes the column sum of the reference pseudo-thicknesses times the vertical coordinate movement weights among threads in a team:
 ```c++
 Real SumWh 0= 0;
 Kokkos::parallel_reduce(
     Kokkos::TeamThreadRange(Member, KMin, KMax + 1),
     [=](const int K, Real &LocalWh) {
        LocalWh += VertCoordMovementWeights(ICell, K) *
-                  RefLayerThickness(ICell, K);
+                  RefPseudoThickness(ICell, K);
     },
     SumWh);
 ```

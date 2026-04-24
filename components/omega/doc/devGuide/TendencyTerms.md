@@ -10,7 +10,7 @@ the constructor:
 ```c++
    auto Mesh = OMEGA::HorzMesh::getDefault();
    auto Options = OMEGA::Config::getOmegaConfig();
-   OMEGA::ThicknessFluxDivOnCell ThickFluxDivOnC(Mesh, Options));
+   OMEGA::PseudoThicknessFluxDivOnCell ThickFluxDivOnC(Mesh, Options));
 ```
 
 Each functor is called like a function to compute tendency values for a range
@@ -29,7 +29,7 @@ used inside a Kokkos parallel loop:
 
 The following tendency terms for the shallow water equations are currently
 implemented:
-- `ThicknessFluxDivOnCell`
+- `PseudoThicknessFluxDivOnCell`
 - `PotentialVortHAdvOnEdge`
 - `KEGradOnEdge`
 - `SSHGradOnEdge`

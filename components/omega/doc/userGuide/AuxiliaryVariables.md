@@ -17,13 +17,13 @@ The following auxiliary variables are currently available:
 | ------------------- | ------- |
 | KineticEnergyCell | kinetic energy of horizontal velocity on cells
 | VelocityDivCell | divergence of horizontal velocity
-| FluxLayerThickEdge | layer thickness used for fluxes through edges. May be centered, upwinded, or a combination of the two
-| MeanLayerThickEdge | layer thickness averaged from cell center to edges
+| FluxPseudoThickEdge | pseudo-thickness used for fluxes through edges. May be centered, upwinded, or a combination of the two
+| MeanPseudoThickEdge | pseudo-thickness averaged from cell center to edges
 | RelVortVertex | curl of horizontal velocity, defined at vertices
-| NormRelVortVertex | curl of horizontal velocity divided by layer thickness
-| NormPlanetVortVertex | earth's rotational rate (Coriolis parameter, f) divided by layer thickness
-| NormRelVortEdge | curl of horizontal velocity divided by layer thickness, averaged from vertices to edges
-| NormPlanetVortEdge | earth's rotational rate (Coriolis parameter, f) divided by layer thickness, averaged from vertices to edges
+| NormRelVortVertex | curl of horizontal velocity divided by pseudo-thickness
+| NormPlanetVortVertex | earth's rotational rate (Coriolis parameter, f) divided by pseudo-thickness
+| NormRelVortEdge | curl of horizontal velocity divided by pseudo-thickness, averaged from vertices to edges
+| NormPlanetVortEdge | earth's rotational rate (Coriolis parameter, f) divided by pseudo-thickness, averaged from vertices to edges
 | VelDel2Edge | laplacian of horizontal velocity on edges
 | VelDel2DivCell | divergence of laplacian of horizontal velocity on cells
 | VelDel2RelVortVertex | curl of laplacian of horizontal velocity on cells

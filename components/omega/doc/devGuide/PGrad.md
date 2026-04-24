@@ -72,7 +72,7 @@ PGrad->computePressureGrad(Tend, State, VCoord, EqState, TimeLevel);
 where:
 - `Tend` is a 2D array `(NEdgesAll × NVertLayers)` that the pressure gradient
   tendency is accumulated into
-- `State` is the current `OceanState`, from which layer thickness is extracted
+- `State` is the current `OceanState`, from which pseudo-thickness is extracted
   at the given `TimeLevel`
 - `VCoord` provides pressure, interface height, and geopotential fields
 - `EqState` provides the specific volume field
@@ -124,7 +124,7 @@ signature is:
 KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
                                 const Array2DReal &PressureMid,
                                 const Array2DReal &PressureInterface,
-                                const Array2DReal &ZInterface,
+                                const Array2DReal &GeomZInterface,
                                 const Array1DReal &TidalPotential,
                                 const Array1DReal &SelfAttractionLoading,
                                 const Array2DReal &SpecVol) const;

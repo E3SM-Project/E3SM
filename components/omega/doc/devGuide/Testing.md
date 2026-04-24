@@ -321,7 +321,7 @@ Omega:
       Filename: init.nc
       Contents:
       - NormalVelocity
-      - LayerThickness
+      - PseudoThickness
     RestartRead: {}
     History:
       Filename: output.nc
@@ -333,7 +333,7 @@ Omega:
       FileFreqUnits: years
       Contents:
       - NormalVelocity
-      - LayerThickness
+      - PseudoThickness
       - SshCell
 ```
 For more details on updating either the map or the YAML files for individual

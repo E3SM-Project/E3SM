@@ -62,7 +62,7 @@ omega:
          OutputInterval: 0001_00:00:00
          Contents:
          - tracers
-         - layerThickness
+         - pseudoThickness
          - ssh
          - kineticEnergyCell
          - relativeVorticityCell
