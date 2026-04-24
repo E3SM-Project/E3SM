@@ -450,6 +450,9 @@
       <value compset=".+" grid="a%ne0np4_sooberingoa_x4x8v1" >144</value>
       <value compset=".+" grid="a%ne0np4_enax4v1" >96</value>
       <value compset=".+" grid="a%ne0np4_twpx4v1">96</value>
+      <value compset=".+" grid="a%ne0np4_conus1024x2v1" >5760</value> <!-- 15.00 sec -->
+      <value compset=".+" grid="a%ne0np4_conus1024x3v1">11520</value> <!--  7.50 sec -->
+      <value compset=".+" grid="a%ne0np4_conus1024x4v1">23040</value> <!--  3.75 sec -->
       <value compset=".+" grid="a%T42">72</value>
       <value compset=".+" grid="a%T85">144</value>
       <value compset=".+" grid="a%T341">288</value>
