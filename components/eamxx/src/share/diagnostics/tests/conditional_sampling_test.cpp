@@ -117,10 +117,10 @@ TEST_CASE("conditional_sampling") {
             randomize_uniform(y,seed++);
             params.set<std::string>("condition_cmp", cmp_s);
             auto diag = diag_factory.create("ConditionalSampling", comm, params);
-            diag->set_grids(gm);
+            diag->set_grid(grid);
             diag->set_required_field(x);
             diag->set_required_field(y);
-            diag->initialize(t0(),RunType::Initial);
+            diag->initialize();
             diag->compute_diagnostic();
             auto d = diag->get_diagnostic();
 
@@ -163,11 +163,11 @@ TEST_CASE("conditional_sampling") {
             randomize_uniform(z,seed++);
             params.set<std::string>("condition_cmp", cmp_s);
             auto diag = diag_factory.create("ConditionalSampling", comm, params);
-            diag->set_grids(gm);
+            diag->set_grid(grid);
             diag->set_required_field(x);
             diag->set_required_field(y);
             diag->set_required_field(z);
-            diag->initialize(t0(),RunType::Initial);
+            diag->initialize();
             diag->compute_diagnostic();
             auto d = diag->get_diagnostic();
 
@@ -199,9 +199,9 @@ TEST_CASE("conditional_sampling") {
           randomize_uniform(x,seed++);
           params.set<std::string>("condition_cmp", cmp_s);
           auto diag = diag_factory.create("ConditionalSampling", comm, params);
-          diag->set_grids(gm);
+          diag->set_grid(grid);
           diag->set_required_field(x);
-          diag->initialize(t0(),RunType::Initial);
+          diag->initialize();
           diag->compute_diagnostic();
           auto d = diag->get_diagnostic();
 
@@ -234,8 +234,8 @@ TEST_CASE("conditional_sampling") {
     for (std::string cmp_s : {"ge", "le"}) {
       params.set<std::string>("condition_cmp", cmp_s);
       auto diag = diag_factory.create("ConditionalSampling", comm, params);
-      diag->set_grids(gm);
-      diag->initialize(t0(),RunType::Initial);
+      diag->set_grid(grid);
+      diag->initialize();
       diag->compute_diagnostic();
       auto d = diag->get_diagnostic();
 
@@ -266,10 +266,10 @@ TEST_CASE("conditional_sampling") {
             randomize_uniform(z,seed++);
             params.set<std::string>("condition_cmp", cmp_s);
             auto diag = diag_factory.create("ConditionalSampling", comm, params);
-            diag->set_grids(gm);
+            diag->set_grid(grid);
             diag->set_required_field(y);
             diag->set_required_field(z);
-            diag->initialize(t0(),RunType::Initial);
+            diag->initialize();
             diag->compute_diagnostic();
             auto d = diag->get_diagnostic();
 

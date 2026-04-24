@@ -64,9 +64,9 @@ TEST_CASE("field_over_dt") {
   params.set("grid_name", grid->name());
   params.set<std::string>("field_name", "qc");
   auto diag = diag_factory.create("FieldOverDtDiag", comm, params);
-  diag->set_grids(gm);
+  diag->set_grid(grid);
   diag->set_required_field(qc);
-  diag->initialize(t0, RunType::Initial);
+  diag->initialize();
 
   // Run diag before any init_timestep call: should return fill_value
   diag->compute_diagnostic();

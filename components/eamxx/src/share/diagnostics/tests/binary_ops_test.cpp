@@ -96,17 +96,17 @@ TEST_CASE("binary_ops") {
   params_scl_scl.set<std::string>("binary_op", "times");
   auto prod_scl_scl = diag_factory.create("BinaryOpsDiag", comm, params_scl_scl);
 
-  plus_diag->set_grids(gm);
+  plus_diag->set_grid(grid);
   plus_diag->set_required_field(qc);
   plus_diag->set_required_field(qv);
-  plus_diag->initialize(t0, RunType::Initial);
+  plus_diag->initialize();
 
-  prod_diag->set_grids(gm);
+  prod_diag->set_grid(grid);
   prod_diag->set_required_field(m);
-  prod_diag->initialize(t0, RunType::Initial);
+  prod_diag->initialize();
 
-  prod_scl_scl->set_grids(gm);
-  prod_scl_scl->initialize(t0, RunType::Initial);
+  prod_scl_scl->set_grid(grid);
+  prod_scl_scl->initialize();
 
   // Run diag
   plus_diag->compute_diagnostic();

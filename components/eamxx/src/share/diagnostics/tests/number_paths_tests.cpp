@@ -28,6 +28,7 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
 
   auto gm = create_mesh_free_grids_manager(comm, gm_params);
   gm->build_grids();
+  auto grid = gm->get_grid("physics");
 
   return gm;
 }
@@ -77,17 +78,17 @@ void run(std::mt19937_64 &engine) {
   // Liquid
   params.set<std::string>("number_kind", "Liq");
   auto diag_liq = diag_factory.create("NumberPath", comm, params);
-  diag_liq->set_grids(gm);
+  diag_liq->set_grid(grid);
   diags.emplace("lnp", diag_liq);
   // Ice
   params.set<std::string>("number_kind", "Ice");
   auto diag_ice = diag_factory.create("NumberPath", comm, params);
-  diag_ice->set_grids(gm);
+  diag_ice->set_grid(grid);
   diags.emplace("inp", diag_ice);
   // Rain
   params.set<std::string>("number_kind", "Rain");
   auto diag_rain = diag_factory.create("NumberPath", comm, params);
-  diag_rain->set_grids(gm);
+  diag_rain->set_grid(grid);
   diags.emplace("rnp", diag_rain);
 
   // Set the required fields for the diagnostic.
@@ -103,10 +104,9 @@ void run(std::mt19937_64 &engine) {
       }
       const auto &f = input_fields.at(req.fid.name());
       diag->set_required_field(f.get_const());
-      REQUIRE_THROWS(diag->set_computed_field(f));
     }
     // Initialize the diagnostic
-    diag->initialize(t0, RunType::Initial);
+    diag->initialize();
   }
 
   // Run tests

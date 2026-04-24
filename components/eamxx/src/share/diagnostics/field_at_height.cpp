@@ -69,7 +69,7 @@ create_requests ()
 }
 
 void FieldAtHeight::
-initialize_impl (const RunType /*run_type*/)
+initialize_impl ()
 {
   const auto& f = get_field_in(m_field_name);
   const auto& fid = f.get_header().get_identifier();

@@ -1,7 +1,7 @@
 #ifndef EAMXX_FIELD_OVER_DT_DIAG_HPP
 #define EAMXX_FIELD_OVER_DT_DIAG_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/atmosphere_diagnostic.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 
 namespace scream {
@@ -28,7 +28,7 @@ class FieldOverDtDiag : public AtmosphereDiagnostic {
 
   void init_timestep(const util::TimeStamp &start_of_step) override;
 
-  void initialize_impl(const RunType /*run_type*/) override;
+  void initialize_impl() override;
 
   std::string      m_name;
   util::TimeStamp  m_start_ts;  // saved at beginning of each timestep

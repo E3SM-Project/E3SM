@@ -22,6 +22,7 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
   gm->build_grids();
+  auto grid = gm->get_grid("physics");
 
   return gm;
 }
@@ -54,7 +55,7 @@ void run (const std::string& diag_name, const std::string& location)
   params.set<std::string>("diag_name", diag_name);
   params.set<std::string>("vert_location",location);
   auto diag = diag_factory.create("VerticalLayer",comm,params);
-  diag->set_grids(gm);
+  diag->set_grid(grid);
 
   const bool needs_phis = diag_name=="z" or diag_name=="geopotential";
 
@@ -72,7 +73,6 @@ void run (const std::string& diag_name, const std::string& location)
   }
 
   // Can't set computed fields in the diag
-  REQUIRE_THROWS(diag->set_computed_field(input_fields.begin()->second));
 
   // Note: we are not testing the calculate_dz utility. We are testing
   //       the diag class, so use some inputs that make checking results easier
@@ -96,7 +96,7 @@ void run (const std::string& diag_name, const std::string& location)
   }
 
   // Initialize and run the diagnostic
-  diag->initialize(t0,RunType::Initial);
+  diag->initialize();
   diag->compute_diagnostic();
   const auto& diag_out = diag->get_diagnostic();
   diag_out.sync_to_host();

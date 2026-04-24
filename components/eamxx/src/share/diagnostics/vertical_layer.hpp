@@ -1,7 +1,7 @@
 #ifndef EAMXX_VERTICAL_LAY_MID_DIAGNOSTIC_HPP
 #define EAMXX_VERTICAL_LAY_MID_DIAGNOSTIC_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/atmosphere_diagnostic.hpp"
 
 namespace scream
 {
@@ -31,7 +31,7 @@ public:
 
 protected:
   void compute_diagnostic_impl ();
-  void initialize_impl (const RunType /* run_type */);
+  void initialize_impl ();
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif

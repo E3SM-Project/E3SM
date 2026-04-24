@@ -126,7 +126,7 @@ void ConditionalSampling::create_requests()
 {
   using namespace ShortFieldTagsNames;
   const auto &gn = m_params.get<std::string>("grid_name");
-  const auto g   = m_grids_manager->get_grid("physics");
+  const auto g   = m_grid;
 
   // Special case: if the input field is "mask", we're just computing the mask where the condition holds
   if (not m_diag_is_mask) {
@@ -153,7 +153,7 @@ void ConditionalSampling::create_requests()
   }
 }
 
-void ConditionalSampling::initialize_impl(const RunType /*run_type*/)
+void ConditionalSampling::initialize_impl()
 {
   if (m_diag_is_mask) {
     if (m_lhs_is_lev) {

@@ -33,7 +33,7 @@ void HistogramDiag::create_requests() {
   add_field<Required>(field_name, grid_name);
 }
 
-void HistogramDiag::initialize_impl(const RunType /*run_type*/) {
+void HistogramDiag::initialize_impl() {
   using FieldIdentifier = FieldHeader::identifier_type;
   using FieldLayout     = FieldIdentifier::layout_type;
   using ShortFieldTagsNames::CMP;

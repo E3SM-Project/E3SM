@@ -25,11 +25,11 @@ add_subdirectory(remap)
 # Data managers structures
 add_subdirectory(data_managers)
 
+# Diagnostic classes (built before atm_process since it no longer depends on it)
+add_subdirectory(diagnostics)
+
 # Atm process
 add_subdirectory(atm_process)
-
-# Diagnostic classes
-add_subdirectory(diagnostics)
 
 # IO library
 add_subdirectory(io)

@@ -1,7 +1,7 @@
 #ifndef EAMXX_POTENTIAL_TEMP_DIAGNOSTIC_HPP
 #define EAMXX_POTENTIAL_TEMP_DIAGNOSTIC_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/atmosphere_diagnostic.hpp"
 
 namespace scream
 {

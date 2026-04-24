@@ -1,7 +1,7 @@
 #ifndef EAMXX_HORIZ_AVERAGE_HPP
 #define EAMXX_HORIZ_AVERAGE_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/atmosphere_diagnostic.hpp"
 
 namespace scream {
 
@@ -34,7 +34,7 @@ class HorizAvgDiag : public AtmosphereDiagnostic {
   void compute_diagnostic_impl();
 
  protected:
-  void initialize_impl(const RunType /*run_type*/);
+  void initialize_impl();
 
   // Area field
   Field m_area;

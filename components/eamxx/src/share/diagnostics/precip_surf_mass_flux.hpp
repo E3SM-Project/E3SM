@@ -1,7 +1,7 @@
 #ifndef EAMXX_PRECIP_SURF_MASS_FLUX_HPP
 #define EAMXX_PRECIP_SURF_MASS_FLUX_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/atmosphere_diagnostic.hpp"
 
 namespace scream
 {

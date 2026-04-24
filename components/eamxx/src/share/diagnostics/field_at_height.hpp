@@ -1,7 +1,7 @@
 #ifndef EAMXX_FIELD_AT_HEIGHT_HPP
 #define EAMXX_FIELD_AT_HEIGHT_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/atmosphere_diagnostic.hpp"
 
 namespace scream
 {
@@ -29,7 +29,7 @@ public:
 #endif
   void compute_diagnostic_impl ();
 protected:
-  void initialize_impl (const RunType /*run_type*/);
+  void initialize_impl ();
 
   std::string         m_diag_name;
   std::string         m_z_name;

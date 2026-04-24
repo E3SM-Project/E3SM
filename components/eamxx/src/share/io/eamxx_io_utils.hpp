@@ -3,7 +3,7 @@
 
 #include "eamxx_io_control.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/atmosphere_diagnostic.hpp"
 #include "share/grid/abstract_grid.hpp"
 
 #include <ekat_string_utils.hpp>

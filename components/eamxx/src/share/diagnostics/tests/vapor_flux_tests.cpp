@@ -32,6 +32,7 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
   gm->build_grids();
+  auto grid = gm->get_grid("physics");
 
   return gm;
 }
@@ -86,7 +87,7 @@ void run(std::mt19937_64& engine)
     // Construct the Diagnostic
     params.set<std::string>("wind_component",which_comp);
     auto diag = diag_factory.create("VaporFlux",comm,params);
-    diag->set_grids(gm);
+    diag->set_grid(grid);
 
     // Set the required fields for the diagnostic.
     std::map<std::string,Field> input_fields;
@@ -99,7 +100,7 @@ void run(std::mt19937_64& engine)
     }
 
     // Initialize the diagnostic
-    diag->initialize(t0,RunType::Initial);
+    diag->initialize();
 
     // Run tests
     {

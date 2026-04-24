@@ -1,7 +1,7 @@
 #ifndef EAMXX_ZONAL_AVERAGE_HPP
 #define EAMXX_ZONAL_AVERAGE_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/atmosphere_diagnostic.hpp"
 
 namespace scream {
 /*
@@ -30,7 +30,7 @@ protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  void initialize_impl(const RunType /*run_type*/);
+  void initialize_impl();
   void compute_diagnostic_impl();
 
 protected:

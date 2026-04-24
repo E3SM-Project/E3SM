@@ -1,8 +1,7 @@
 #include <catch2/catch.hpp>
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/atmosphere_diagnostic.hpp"
 
-#include "share/data_managers/library_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
@@ -28,7 +27,7 @@ public:
   void create_requests () {
     using namespace ekat::units;
 
-    const auto grid = m_grids_manager->get_grid(m_grid_name);
+    const auto grid = m_grid;
     const auto lt = grid->get_2d_scalar_layout ();
 
     add_field<Required>("Field A",lt,K,m_grid_name);
@@ -42,13 +41,11 @@ public:
 
 protected:
 
-  void initialize_impl (const RunType /* run_type */ ) {}
-
-  void finalize_impl () {}
+  void initialize_impl () {}
 
   void compute_diagnostic_impl () {
-    auto f_A = get_field_in("Field A", m_grid_name);
-    auto f_B = get_field_in("Field B", m_grid_name);
+    auto f_A = get_field_in("Field A");
+    auto f_B = get_field_in("Field B");
     m_diagnostic_output.deep_copy(f_A);
     m_diagnostic_output.update(f_B,1,1);
   }
@@ -69,17 +66,16 @@ TEST_CASE ("diagnostics") {
   // A time stamp
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
-  // Create a grids manager
+  // Create a grid
   const int nlcols = 3;
   const int nlevs = 10;
   auto grid = create_point_grid ("point_grid",nlcols*comm.size(),nlevs,comm);
-  auto gm = std::make_shared<LibraryGridsManager>(grid);
 
   // Create the sum diagnostic
   ekat::ParameterList params_sum("DiagSum");
   params_sum.set<std::string>("grid_name", "point_grid");
   auto diag_sum = std::make_shared<DiagSum>(comm,params_sum);
-  diag_sum->set_grids(gm);
+  diag_sum->set_grid(grid);
 
   std::map<std::string,Field> input_fields;
   for (const auto& req : diag_sum->get_field_requests()) {
@@ -95,10 +91,8 @@ TEST_CASE ("diagnostics") {
 
   diag_sum->set_required_field(f_A.get_const());
   diag_sum->set_required_field(f_B.get_const());
-  // diag fields are created INSIDE diags, not set from outside
-  REQUIRE_THROWS(diag_sum->set_computed_field(f_A));
 
-  diag_sum->initialize(t0,RunType::Initial);
+  diag_sum->initialize();
 
   // Run the diagnostic
   diag_sum->compute_diagnostic();

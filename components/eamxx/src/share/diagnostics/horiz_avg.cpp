@@ -18,14 +18,14 @@ void HorizAvgDiag::create_requests()
 {
   const auto &fn = m_params.get<std::string>("field_name");
   const auto &gn = m_params.get<std::string>("grid_name");
-  const auto g   = m_grids_manager->get_grid("physics");
+  const auto g   = m_grid;
 
   add_field<Required>(fn, gn);
 
   m_area = g->get_geometry_data("area");
 }
 
-void HorizAvgDiag::initialize_impl(const RunType /*run_type*/)
+void HorizAvgDiag::initialize_impl()
 {
   using namespace ShortFieldTagsNames;
 

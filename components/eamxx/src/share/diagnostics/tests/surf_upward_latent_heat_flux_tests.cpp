@@ -29,6 +29,7 @@ create_gm (const ekat::Comm& comm, const int ncols) {
 
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
   gm->build_grids();
+  auto grid = gm->get_grid("physics");
 
   return gm;
 }
@@ -57,7 +58,7 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, LoggerType& logger)
 
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
   auto diag_latent_heat = diag_factory.create("surface_upward_latent_heat_flux", comm, params);
-  diag_latent_heat->set_grids(gm);
+  diag_latent_heat->set_grid(grid);
 
   // Set the required fields for the diagnostic.
   std::map<std::string,Field> input_fields;
@@ -72,7 +73,7 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, LoggerType& logger)
   }
 
   // Initialize the diagnostic
-  diag_latent_heat->initialize(t0,RunType::Initial);
+  diag_latent_heat->initialize();
   const auto& surf_evap_f = input_fields["surf_evap"];
   const auto& surf_evap_v = surf_evap_f.get_view<Real*>();
   for (int icol=0; icol<ncols; ++icol) {

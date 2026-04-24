@@ -1,7 +1,7 @@
 #ifndef SCREAM_SCORPIO_OUTPUT_HPP
 #define SCREAM_SCORPIO_OUTPUT_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/atmosphere_diagnostic.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "share/data_managers/grids_manager.hpp"
 #include "share/grid/abstract_grid.hpp"

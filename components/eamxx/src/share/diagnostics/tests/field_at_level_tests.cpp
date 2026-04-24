@@ -92,14 +92,14 @@ TEST_CASE("field_at_level")
     auto diag_mid = std::make_shared<FieldAtLevel>(comm,params_mid);
     auto diag_int = std::make_shared<FieldAtLevel>(comm,params_int);
 
-    diag_mid->set_grids(gm);
-    diag_int->set_grids(gm);
+    diag_mid->set_grid(grid);
+    diag_int->set_grid(grid);
 
     diag_mid->set_required_field(f_mid_1);
     diag_int->set_required_field(f_int);
 
-    diag_mid->initialize(t0,RunType::Initial);
-    diag_int->initialize(t0,RunType::Initial);
+    diag_mid->initialize();
+    diag_int->initialize();
 
     // Run diagnostics
     diag_mid->compute_diagnostic();

@@ -1141,7 +1141,7 @@ process_requested_fields()
     }
 
     // Initialize the diag
-    diag->initialize(util::TimeStamp(),RunType::Initial);
+    diag->initialize();
   };
 
   auto check_diag_avg_cnt = [&](const std::shared_ptr<AtmosphereDiagnostic>& diag) {

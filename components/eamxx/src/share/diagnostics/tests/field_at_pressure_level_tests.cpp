@@ -82,7 +82,7 @@ TEST_CASE("field_at_pressure_level_p2")
     for (int test_itr=0;test_itr<num_checks;test_itr++) {
       Real plevel = std::round(pdf_pmid(engine));
       auto diag = get_test_diag(comm, fm, gm, "mid", plevel);
-      diag->initialize(t0,RunType::Initial);
+      diag->initialize();
       diag->compute_diagnostic();
       auto diag_f = diag->get_diagnostic();
       diag_f.sync_to_host();
@@ -97,7 +97,7 @@ TEST_CASE("field_at_pressure_level_p2")
     for (int test_itr=0;test_itr<num_checks;test_itr++) {
       Real plevel = std::round(pdf_pint(engine));
       auto diag = get_test_diag(comm, fm, gm, "int", plevel);
-      diag->initialize(t0,RunType::Initial);
+      diag->initialize();
       diag->compute_diagnostic();
       auto diag_f = diag->get_diagnostic();
       diag_f.sync_to_host();
@@ -118,7 +118,7 @@ TEST_CASE("field_at_pressure_level_p2")
     for (int test_itr=0;test_itr<num_checks;test_itr++) {
       Real plevel = pressure_bounds.p_surf*2;
       auto diag = get_test_diag(comm, fm, gm, "int", plevel);
-      diag->initialize(t0,RunType::Initial);
+      diag->initialize();
       diag->compute_diagnostic();
       auto diag_f = diag->get_diagnostic();
       diag_f.sync_to_host();
@@ -224,7 +224,7 @@ get_test_diag(const ekat::Comm& comm, std::shared_ptr<const FieldManager> fm, st
     params.set("pressure_value",std::to_string(plevel));
     params.set("pressure_units",std::string("Pa"));
     auto diag = std::make_shared<FieldAtPressureLevel>(comm,params);
-    diag->set_grids(gm);
+    diag->set_grid(gm->get_grid(fm->get_grid()->name()));
     for (const auto& req : diag->get_field_requests()) {
       auto req_field = fm->get_field(req.fid);
       diag->set_required_field(req_field);

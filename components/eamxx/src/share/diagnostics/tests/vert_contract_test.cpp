@@ -57,16 +57,16 @@ TEST_CASE("vert_contract") {
   SECTION("bad_input") {
     ekat::ParameterList params;
     // No field_name -> throws in create_requests
-    REQUIRE_THROWS(diag_factory.create("VertContractDiag", comm, params)->set_grids(gm));
+    REQUIRE_THROWS(diag_factory.create("VertContractDiag", comm, params)->set_grid(grid));
 
     params.set<std::string>("field_name", "qc");
     params.set("grid_name", grid->name());
     // No contract_method -> throws in create_requests
-    REQUIRE_THROWS(diag_factory.create("VertContractDiag", comm, params)->set_grids(gm));
+    REQUIRE_THROWS(diag_factory.create("VertContractDiag", comm, params)->set_grid(grid));
 
     params.set<std::string>("contract_method", "xyz");
     // Invalid contract_method -> throws in create_requests
-    REQUIRE_THROWS(diag_factory.create("VertContractDiag", comm, params)->set_grids(gm));
+    REQUIRE_THROWS(diag_factory.create("VertContractDiag", comm, params)->set_grid(grid));
   }
 
   SECTION("dp_weighted_sum") {
@@ -88,10 +88,10 @@ TEST_CASE("vert_contract") {
     params.set<std::string>("contract_method", "sum");
     params.set<std::string>("weighting_method", "dp");
     auto diag = diag_factory.create("VertContractDiag", comm, params);
-    diag->set_grids(gm);
+    diag->set_grid(grid);
     diag->set_required_field(fin);
     diag->set_required_field(dp);
-    diag->initialize(t0, RunType::Initial);
+    diag->initialize();
     diag->compute_diagnostic();
     auto diag_f = diag->get_diagnostic();
 
@@ -123,10 +123,10 @@ TEST_CASE("vert_contract") {
     params.set<std::string>("contract_method", "avg");
     params.set<std::string>("weighting_method", "dp");
     auto diag = diag_factory.create("VertContractDiag", comm, params);
-    diag->set_grids(gm);
+    diag->set_grid(grid);
     diag->set_required_field(fin);
     diag->set_required_field(dp);
-    diag->initialize(t0, RunType::Initial);
+    diag->initialize();
     diag->compute_diagnostic();
     auto diag_f = diag->get_diagnostic();
 
@@ -161,9 +161,9 @@ TEST_CASE("vert_contract") {
     params.set<std::string>("contract_method", "sum");
     params.set<std::string>("weighting_method", "none");
     auto diag = diag_factory.create("VertContractDiag", comm, params);
-    diag->set_grids(gm);
+    diag->set_grid(grid);
     diag->set_required_field(fin);
-    diag->initialize(t0, RunType::Initial);
+    diag->initialize();
     diag->compute_diagnostic();
     auto diag_f = diag->get_diagnostic();
 
@@ -192,9 +192,9 @@ TEST_CASE("vert_contract") {
     params.set<std::string>("contract_method", "avg");
     params.set<std::string>("weighting_method", "none");
     auto diag = diag_factory.create("VertContractDiag", comm, params);
-    diag->set_grids(gm);
+    diag->set_grid(grid);
     diag->set_required_field(fin);
-    diag->initialize(t0, RunType::Initial);
+    diag->initialize();
     diag->compute_diagnostic();
     auto diag_f = diag->get_diagnostic();
 

@@ -114,13 +114,13 @@ void ZonalAvgDiag::create_requests() {
   const auto &grid_name  = m_params.get<std::string>("grid_name");
 
   add_field<Required>(field_name, grid_name);
-  const GridsManager::grid_ptr_type grid = m_grids_manager->get_grid(grid_name);
+  const auto& grid = m_grid;
   m_lat                                  = grid->get_geometry_data("lat");
   // area will be scaled in initialize_impl
   m_scaled_area = grid->get_geometry_data("area").clone();
 }
 
-void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
+void ZonalAvgDiag::initialize_impl() {
   using FieldIdentifier = FieldHeader::identifier_type;
   using FieldLayout     = FieldIdentifier::layout_type;
   using ShortFieldTagsNames::COL, ShortFieldTagsNames::CMP, ShortFieldTagsNames::LEV;

@@ -1,7 +1,7 @@
 #ifndef EAMXX_BINARY_OPS_DIAG_HPP
 #define EAMXX_BINARY_OPS_DIAG_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/atmosphere_diagnostic.hpp"
 
 namespace scream {
 
@@ -24,7 +24,7 @@ class BinaryOpsDiag : public AtmosphereDiagnostic {
  protected:
   void compute_diagnostic_impl() override;
 
-  void initialize_impl(const RunType /*run_type*/) override;
+  void initialize_impl() override;
 
   std::string m_arg1_name;
   std::string m_arg2_name;

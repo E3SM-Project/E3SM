@@ -72,7 +72,7 @@ TEST_CASE("vert_derivative") {
   auto bad_diag = diag_factory.create("VertDerivativeDiag", comm, params);
   SECTION("bad_diag") {
     // this will throw because no field_name was provided
-    REQUIRE_THROWS(bad_diag->set_grids(gm));
+    REQUIRE_THROWS(bad_diag->set_grid(grid));
   }
 
   fin2.get_header().get_tracking().update_time_stamp(t0);
@@ -94,21 +94,21 @@ TEST_CASE("vert_derivative") {
   SECTION("bad_diag_2") {
     // this will throw because no derivative_method was provided
     auto bad_diag_2 = diag_factory.create("VertDerivativeDiag", comm, params);
-    REQUIRE_THROWS(bad_diag_2->set_grids(gm));
+    REQUIRE_THROWS(bad_diag_2->set_grid(grid));
   }
 
   SECTION("bad_diag_3") {
     // this will throw because bad derivative_method was provided
     params.set<std::string>("derivative_method", "xyz");
     auto bad_diag_3 = diag_factory.create("VertDerivativeDiag", comm, params);
-    REQUIRE_THROWS(bad_diag_3->set_grids(gm));
+    REQUIRE_THROWS(bad_diag_3->set_grid(grid));
   }
 
   // dp_vert_derivative
   params.set<std::string>("derivative_method", "p");
   auto dp_vert_derivative = diag_factory.create("VertDerivativeDiag", comm, params);
 
-  dp_vert_derivative->set_grids(gm);
+  dp_vert_derivative->set_grid(grid);
 
   // Fields for manual calculation
   FieldIdentifier diag1_fid("qc_vert_derivative_manual", scalar2d_layout, kg / kg, grid->name());
@@ -141,7 +141,7 @@ TEST_CASE("vert_derivative") {
     // Calculate weighted avg through diagnostics
     dp_vert_derivative->set_required_field(fin2);
     dp_vert_derivative->set_required_field(dp);
-    dp_vert_derivative->initialize(t0, RunType::Initial);
+    dp_vert_derivative->initialize();
     dp_vert_derivative->compute_diagnostic();
     auto dp_vert_derivative_f = dp_vert_derivative->get_diagnostic();
 

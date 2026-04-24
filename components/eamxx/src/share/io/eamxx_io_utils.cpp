@@ -1,7 +1,6 @@
 #include "share/io/eamxx_io_utils.hpp"
 
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/data_managers/library_grids_manager.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/core/eamxx_config.hpp"
 
@@ -391,8 +390,7 @@ create_diagnostic (const std::string& diag_field_name,
 
   auto comm = grid->get_comm();
   auto diag = AtmosphereDiagnosticFactory::instance().create(diag_name,comm,params);
-  auto gm = std::make_shared<LibraryGridsManager>(grid);
-  diag->set_grids(gm);
+  diag->set_grid(grid);
 
   return diag;
 }

@@ -21,7 +21,7 @@ void SeaLevelPressureDiagnostic::create_requests()
   const auto m2 = pow(m,2);
   const auto s2 = pow(s,2);
 
-  auto grid  = m_grids_manager->get_grid("physics");
+  auto grid  = m_grid;
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 

@@ -33,6 +33,7 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
   gm->build_grids();
+  auto grid = gm->get_grid("physics");
 
   return gm;
 }
@@ -94,27 +95,27 @@ void run(std::mt19937_64& engine)
   // Vapor
   params.set<std::string>("water_kind","Vap");
   auto diag_vap = diag_factory.create("WaterPath",comm,params);
-  diag_vap->set_grids(gm);
+  diag_vap->set_grid(grid);
   diags.emplace("vwp",diag_vap);
   // Liquid
   params.set<std::string>("water_kind","Liq");
   auto diag_liq = diag_factory.create("WaterPath",comm,params);
-  diag_liq->set_grids(gm);
+  diag_liq->set_grid(grid);
   diags.emplace("lwp",diag_liq);
   // Ice
   params.set<std::string>("water_kind","Ice");
   auto diag_ice = diag_factory.create("WaterPath",comm,params);
-  diag_ice->set_grids(gm);
+  diag_ice->set_grid(grid);
   diags.emplace("iwp",diag_ice);
   // Rime
   params.set<std::string>("water_kind","Rime");
   auto diag_rime = diag_factory.create("WaterPath",comm,params);
-  diag_rime->set_grids(gm);
+  diag_rime->set_grid(grid);
   diags.emplace("mwp",diag_rime);
   // Rain
   params.set<std::string>("water_kind","Rain");
   auto diag_rain = diag_factory.create("WaterPath",comm,params);
-  diag_rain->set_grids(gm);
+  diag_rain->set_grid(grid);
   diags.emplace("rwp",diag_rain);
 
   // Set the required fields for the diagnostic.
@@ -130,10 +131,9 @@ void run(std::mt19937_64& engine)
       }
       const auto& f = input_fields.at(req.fid.name());
       diag->set_required_field(f.get_const());
-      REQUIRE_THROWS(diag->set_computed_field(f));
     }
     // Initialize the diagnostic
-    diag->initialize(t0,RunType::Initial);
+    diag->initialize();
   }
 
 

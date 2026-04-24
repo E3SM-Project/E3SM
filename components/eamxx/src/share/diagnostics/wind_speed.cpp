@@ -16,7 +16,7 @@ create_requests()
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  auto grid  = m_grids_manager->get_grid("physics");
+  auto grid  = m_grid;
   const auto& grid_name = grid->name();
 
   m_ncols = grid->get_num_local_dofs();

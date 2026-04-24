@@ -70,9 +70,9 @@ TEST_CASE("horiz_avg") {
     randomize_uniform(scl_x,seed++);
 
     auto diag = diag_factory.create("HorizAvgDiag", comm, params);
-    diag->set_grids(gm);
+    diag->set_grid(grid);
     diag->set_required_field(scl_x);
-    diag->initialize(t0,RunType::Initial);
+    diag->initialize();
     diag->compute_diagnostic();
     auto diag_f = diag->get_diagnostic();
 
@@ -103,9 +103,9 @@ TEST_CASE("horiz_avg") {
     randomize_uniform(mask,seed++);
 
     auto diag = diag_factory.create("HorizAvgDiag", comm, params);
-    diag->set_grids(gm);
+    diag->set_grid(grid);
     diag->set_required_field(vec_xz);
-    diag->initialize(t0,RunType::Initial);
+    diag->initialize();
     diag->compute_diagnostic();
     auto diag_f = diag->get_diagnostic();
     REQUIRE (diag_f.has_valid_mask());
@@ -152,9 +152,9 @@ TEST_CASE("horiz_avg") {
     mask.deep_copy(0);
 
     auto diag = diag_factory.create("HorizAvgDiag", comm, params);
-    diag->set_grids(gm);
+    diag->set_grid(grid);
     diag->set_required_field(vec_xz);
-    diag->initialize(t0,RunType::Initial);
+    diag->initialize();
     diag->compute_diagnostic();
     auto diag_f = diag->get_diagnostic();
     REQUIRE (diag_f.has_valid_mask());
@@ -182,9 +182,9 @@ TEST_CASE("horiz_avg") {
     scl_xz.deep_copy(c);
 
     auto diag = diag_factory.create("HorizAvgDiag", comm, params);
-    diag->set_grids(gm);
+    diag->set_grid(grid);
     diag->set_required_field(scl_xz);
-    diag->initialize(t0,RunType::Initial);
+    diag->initialize();
     diag->compute_diagnostic();
     auto diag_f = diag->get_diagnostic();
 

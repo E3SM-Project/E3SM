@@ -1,7 +1,7 @@
 #ifndef EAMXX_SEA_LEVEL_PRESSURE_DIAGNOSTIC_HPP
 #define EAMXX_SEA_LEVEL_PRESSURE_DIAGNOSTIC_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/atmosphere_diagnostic.hpp"
 
 namespace scream
 {

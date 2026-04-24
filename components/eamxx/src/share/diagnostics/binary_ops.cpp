@@ -147,7 +147,7 @@ create_requests()
     add_field<Required>(m_arg2_name, gname);
 }
 
-void BinaryOpsDiag::initialize_impl(const RunType /*run_type*/)
+void BinaryOpsDiag::initialize_impl()
 {
   // get the inputs specs
   
@@ -193,9 +193,12 @@ void BinaryOpsDiag::initialize_impl(const RunType /*run_type*/)
   m_diagnostic_output = Field(d_fid,true);
 
   if (not m_arg1_is_field and not m_arg2_is_field) {
-    // We can pre-compute the diag now
+    // We can pre-compute the diag now (it's constant)
     compute_diagnostic_impl();
-    m_diagnostic_output.get_header().get_tracking().update_time_stamp(start_of_step_ts());
+    // Update m_last_eval_ts to a sentinel so that subsequent compute_diagnostic()
+    // calls return early (no-op) for this constant diagnostic
+    m_last_eval_ts = util::TimeStamp({1,1,1},{0,0,0});
+    m_diagnostic_output.get_header().get_tracking().update_time_stamp(m_last_eval_ts);
   }
 }
 

@@ -25,7 +25,7 @@ create_requests ()
 
   const auto surf_evap_units = ekat::units::kg / m2 / ekat::units::s;
 
-  auto grid  = m_grids_manager->get_grid("physics");
+  auto grid  = m_grid;
   const auto& grid_name = grid->name();
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
 

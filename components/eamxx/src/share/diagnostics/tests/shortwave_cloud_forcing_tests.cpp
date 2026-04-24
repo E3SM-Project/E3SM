@@ -33,6 +33,7 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
   gm->build_grids();
+  auto grid = gm->get_grid("physics");
 
   return gm;
 }
@@ -86,7 +87,7 @@ void run(std::mt19937_64& engine)
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
   auto diag = diag_factory.create("ShortwaveCloudForcing",comm,params);
-  diag->set_grids(gm);
+  diag->set_grid(grid);
 
 
   // Set the required fields for the diagnostic.
@@ -103,7 +104,7 @@ void run(std::mt19937_64& engine)
   }
 
   // Initialize the diagnostic
-  diag->initialize(t0,RunType::Initial);
+  diag->initialize();
 
   // Run tests
   {

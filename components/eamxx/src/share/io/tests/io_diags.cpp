@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/atmosphere_diagnostic.hpp"
 
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
@@ -50,7 +50,7 @@ public:
 
   void create_requests () override {
     using namespace ShortFieldTagsNames;
-    const auto grid = m_grids_manager->get_grid("point_grid");
+    const auto grid = m_grid;
     const auto& grid_name = grid->name();
     auto layout = grid->get_3d_scalar_layout(LEV);
     add_field<Required>("my_f",layout,ekat::units::none,grid_name);
@@ -82,12 +82,11 @@ protected:
     ++m_num_evaluations;
   }
 
-  void initialize_impl (const RunType /* run_type */ ) override {
-    m_diagnostic_output.get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  void initialize_impl () override {
+    m_diagnostic_output.get_header().get_tracking().update_time_stamp(util::TimeStamp());
   }
 
-  // Clean up
-  void finalize_impl ( /* inputs */ ) override {}
+  // No finalize_impl in AtmosphereDiagnostic
 
   util::TimeStamp m_t_beg;
   Field m_one;

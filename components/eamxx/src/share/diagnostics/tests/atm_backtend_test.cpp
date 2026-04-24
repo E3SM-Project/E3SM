@@ -70,9 +70,9 @@ TEST_CASE("atm_backtend") {
   prev_params.set("grid_name", grid->name());
   prev_params.set<std::string>("field_name", "qc");
   auto prev_diag = diag_factory.create("FieldPrevDiag", comm, prev_params);
-  prev_diag->set_grids(gm);
+  prev_diag->set_grid(grid);
   prev_diag->set_required_field(qc);
-  prev_diag->initialize(t0, RunType::Initial);
+  prev_diag->initialize();
 
   // The output of FieldPrevDiag is "qc_prev"
   auto qc_prev_field = prev_diag->get_diagnostic();
@@ -84,10 +84,10 @@ TEST_CASE("atm_backtend") {
   minus_params.set<std::string>("arg2", "qc_prev");
   minus_params.set<std::string>("binary_op", "minus");
   auto minus_diag = diag_factory.create("BinaryOpsDiag", comm, minus_params);
-  minus_diag->set_grids(gm);
+  minus_diag->set_grid(grid);
   minus_diag->set_required_field(qc);
   minus_diag->set_required_field(qc_prev_field);
-  minus_diag->initialize(t0, RunType::Initial);
+  minus_diag->initialize();
 
   auto qc_minus_qc_prev_field = minus_diag->get_diagnostic();
 
@@ -96,9 +96,9 @@ TEST_CASE("atm_backtend") {
   over_dt_params.set("grid_name", grid->name());
   over_dt_params.set<std::string>("field_name", "qc_minus_qc_prev");
   auto over_dt_diag = diag_factory.create("FieldOverDtDiag", comm, over_dt_params);
-  over_dt_diag->set_grids(gm);
+  over_dt_diag->set_grid(grid);
   over_dt_diag->set_required_field(qc_minus_qc_prev_field);
-  over_dt_diag->initialize(t0, RunType::Initial);
+  over_dt_diag->initialize();
 
   // First evaluation (before any init_timestep): result should be fill_value
   prev_diag->compute_diagnostic();

@@ -1,7 +1,7 @@
 #ifndef EAMXX_FIELD_PREV_DIAG_HPP
 #define EAMXX_FIELD_PREV_DIAG_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/atmosphere_diagnostic.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 
 namespace scream {
@@ -33,7 +33,7 @@ class FieldPrevDiag : public AtmosphereDiagnostic {
   void init_timestep(const util::TimeStamp &start_of_step) override;
 
   // Set up the output field
-  void initialize_impl(const RunType /*run_type*/) override;
+  void initialize_impl() override;
 
   // The name of the field to track
   std::string m_name;

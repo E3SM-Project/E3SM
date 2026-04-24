@@ -1,7 +1,7 @@
 #ifndef EAMXX_DRY_STATIC_ENERGY_DIAGNOSTIC_HPP
 #define EAMXX_DRY_STATIC_ENERGY_DIAGNOSTIC_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/atmosphere_diagnostic.hpp"
 
 #include "share/core/eamxx_types.hpp"
 

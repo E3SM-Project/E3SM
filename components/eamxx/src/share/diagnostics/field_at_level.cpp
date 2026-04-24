@@ -23,7 +23,7 @@ create_requests ()
 }
 
 void FieldAtLevel::
-initialize_impl (const RunType /*run_type*/)
+initialize_impl ()
 {
   const auto& f   = get_fields_in().front();
   // Sanity checks

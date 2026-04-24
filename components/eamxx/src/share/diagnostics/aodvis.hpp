@@ -1,7 +1,7 @@
 #ifndef EAMXX_AODVIS_DIAG
 #define EAMXX_AODVIS_DIAG
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/atmosphere_diagnostic.hpp"
 #include "share/util/eamxx_utils.hpp"
 
 namespace scream {
@@ -21,8 +21,7 @@ class AODVis : public AtmosphereDiagnostic {
   // Set the grid
   void create_requests() override;
 
-  void initialize_impl(
-      const RunType /*run_type*/) override;
+  void initialize_impl() override;
 
  protected:
 #ifdef KOKKOS_ENABLE_CUDA

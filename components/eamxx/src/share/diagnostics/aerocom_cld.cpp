@@ -27,7 +27,7 @@ create_requests() {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  auto grid             = m_grids_manager->get_grid("physics");
+  auto grid             = m_grid;
   const auto &grid_name = grid->name();
 
   const auto micron = m / 1000000;

@@ -137,7 +137,7 @@ TEST_CASE("aerocom_cld") {
     params.set<std::string>("aero_com_cld_kind", "Top");
     auto diag = diag_factory.create("AeroComCld", comm, params);
 
-    diag->set_grids(gm);
+    diag->set_grid(grid);
 
     diag->set_required_field(tm);
     diag->set_required_field(pd);
@@ -151,7 +151,7 @@ TEST_CASE("aerocom_cld") {
     diag->set_required_field(nc);
     diag->set_required_field(ni);
 
-    diag->initialize(t0, RunType::Initial);
+    diag->initialize();
 
     // Case 1: if the cloud fraction is zero, everything is zero
     cd.deep_copy(0.0);

@@ -28,6 +28,7 @@ create_gm (const ekat::Comm& comm, const int ncols) {
 
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
   gm->build_grids();
+  auto grid = gm->get_grid("physics");
 
   return gm;
 }
@@ -66,9 +67,9 @@ void run(std::mt19937_64& engine)
   auto diag_ice   = diag_factory.create("precip_surf_mass_flux"  , comm, params);
   params.set<std::string>("precip_type","liq");
   auto diag_liq   = diag_factory.create("precip_surf_mass_flux"  , comm, params);
-  diag_total->set_grids(gm);
-  diag_ice->set_grids(gm);
-  diag_liq->set_grids(gm);
+  diag_total->set_grid(grid);
+  diag_ice->set_grid(grid);
+  diag_liq->set_grid(grid);
 
   // Set the required fields for the diagnostic.
   std::map<std::string,Field> input_fields;
@@ -80,22 +81,19 @@ void run(std::mt19937_64& engine)
     f.get_header().get_tracking().update_time_stamp(t0);
     f.get_header().get_tracking().set_accum_start_time(t0);
     diag_total->set_required_field(f.get_const());
-    REQUIRE_THROWS(diag_total->set_computed_field(f));
     if (name=="precip_ice_surf_mass") {
       diag_ice->set_required_field(f.get_const());
-      REQUIRE_THROWS(diag_ice->set_computed_field(f));
     }
     if (name=="precip_liq_surf_mass") {
       diag_liq->set_required_field(f.get_const());
-      REQUIRE_THROWS(diag_liq->set_computed_field(f));
     }
     input_fields.emplace(name,f);
   }
 
   // Initialize the diagnostic
-  diag_total->initialize(t0,RunType::Initial);
-  diag_ice->initialize(t0,RunType::Initial);
-  diag_liq->initialize(t0,RunType::Initial);
+  diag_total->initialize();
+  diag_ice->initialize();
+  diag_liq->initialize();
 
   // Run tests
   util::TimeStamp t = t0 + dt;

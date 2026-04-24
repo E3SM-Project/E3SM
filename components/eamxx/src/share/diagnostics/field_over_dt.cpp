@@ -23,7 +23,7 @@ create_requests()
   add_field<Required>(m_name, gname);
 }
 
-void FieldOverDtDiag::initialize_impl(const RunType /*run_type*/) {
+void FieldOverDtDiag::initialize_impl() {
   const auto &f   = get_field_in(m_name);
   const auto &fid = f.get_header().get_identifier();
   const auto &gn  = fid.get_grid_name();

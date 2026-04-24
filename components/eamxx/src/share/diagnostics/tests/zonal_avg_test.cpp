@@ -116,13 +116,13 @@ TEST_CASE("zonal_avg") {
   auto diag1 = diag_factory.create("ZonalAvgDiag", comm, params);
   auto diag2 = diag_factory.create("ZonalAvgDiag", comm, params);
   auto diag3 = diag_factory.create("ZonalAvgDiag", comm, params);
-  diag1->set_grids(gm);
-  diag2->set_grids(gm);
-  diag3->set_grids(gm);
+  diag1->set_grid(grid);
+  diag2->set_grid(grid);
+  diag3->set_grid(grid);
 
   // Test the zonal average of qc1
   diag1->set_required_field(qc1);
-  diag1->initialize(t0, RunType::Initial);
+  diag1->initialize();
   diag1->compute_diagnostic();
   auto diag1_field = diag1->get_diagnostic();
 
@@ -165,7 +165,7 @@ TEST_CASE("zonal_avg") {
   const Real zavg2 = sp(5.0);
   qc2.deep_copy(zavg2);
   diag2->set_required_field(qc2);
-  diag2->initialize(t0, RunType::Initial);
+  diag2->initialize();
   diag2->compute_diagnostic();
   auto diag2_field = diag2->get_diagnostic();
 
@@ -196,7 +196,7 @@ TEST_CASE("zonal_avg") {
     diag3m_layout.size(), MPI_SUM);
   diag3m_field.sync_to_dev();
   diag3->set_required_field(qc3);
-  diag3->initialize(t0, RunType::Initial);
+  diag3->initialize();
   diag3->compute_diagnostic();
   auto diag3_field = diag3->get_diagnostic();
   REQUIRE(views_are_equal(diag3_field, diag3m_field));

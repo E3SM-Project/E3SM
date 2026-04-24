@@ -72,9 +72,9 @@ TEST_CASE("field_prev") {
   // Create and set up the diagnostic
   params.set<std::string>("field_name", "qc");
   auto diag = diag_factory.create("FieldPrevDiag", comm, params);
-  diag->set_grids(gm);
+  diag->set_grid(grid);
   diag->set_required_field(qc);
-  diag->initialize(t0, RunType::Initial);
+  diag->initialize();
 
   // Run diag before any init_timestep call: qc already has a valid t0
   // timestamp, so the fallback path returns X(t=0) = qc rather than fill_value.
@@ -97,9 +97,9 @@ TEST_CASE("field_prev") {
     p2.set("grid_name", grid->name());
     p2.set<std::string>("field_name", "qc_uninit");
     auto diag2 = diag_factory.create("FieldPrevDiag", comm, p2);
-    diag2->set_grids(gm);
+    diag2->set_grid(grid);
     diag2->set_required_field(qc_uninit);
-    diag2->initialize(t0, RunType::Initial);
+    diag2->initialize();
 
     // init_timestep: source has no valid timestamp → no capture
     diag2->init_timestep(t0);
