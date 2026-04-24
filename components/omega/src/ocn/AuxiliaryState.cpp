@@ -62,8 +62,7 @@ AuxiliaryState::~AuxiliaryState() {
    FieldGroup::destroy(GroupName);
 }
 
-// Compute the diagnostic variables required for momentum equation
-// time stepping
+// Compute auxiliary variables for vertical dynamics
 void AuxiliaryState::computeMomVertAux(const OceanState *State,
                                        const Array3DReal &TracerArray,
                                        int ThickTimeLevel,

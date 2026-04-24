@@ -76,7 +76,7 @@ class AuxiliaryState {
    /// Exchange halo
    I4 exchangeHalo();
 
-   // Compute the diagnostic variables needed for time stepping
+   // Compute auxiliary variables for vertical dynamics
    void computeMomVertAux(const OceanState *State,
                           const Array3DReal &TracerArray, int ThickTimeLevel,
                           int VelTimeLevel) const;
