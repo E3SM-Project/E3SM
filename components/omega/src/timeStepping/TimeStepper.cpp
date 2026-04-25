@@ -594,7 +594,7 @@ void TimeStepper::prescribeVelocity(OceanState *State1, int TimeLevel1,
 
       const Clock *ModelClock = StepClock.get();
       R8 ElapsedTimeSec;
-      TimeInterval ElapsedTimeInterval = SimTime - ModelClock->getCurrentTime();
+      TimeInterval ElapsedTimeInterval = SimTime - ModelClock->getStartTime();
       ElapsedTimeInterval.get(ElapsedTimeSec, TimeUnits::Seconds);
 
       const R8 Tau     = 12. * Day2Sec; // 12 days in seconds
@@ -637,7 +637,7 @@ void TimeStepper::prescribeVelocity(OceanState *State1, int TimeLevel1,
 
       const Clock *ModelClock = StepClock.get();
       R8 ElapsedTimeSec;
-      TimeInterval ElapsedTimeInterval = SimTime - ModelClock->getCurrentTime();
+      TimeInterval ElapsedTimeInterval = SimTime - ModelClock->getStartTime();
       ElapsedTimeInterval.get(ElapsedTimeSec, TimeUnits::Seconds);
 
       const R8 Tau     = 12. * Day2Sec; // 14 days in seconds
