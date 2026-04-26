@@ -248,8 +248,14 @@ contains
                         call mpas_set_timeInterval(avg_output_interval, &
                              timeString=trim(config_stream_output_interval), &
                              ierr=ierr)
+                        ! MPAS_NOW (not MPAS_START_TIME) so warm restart uses
+                        ! the restart-time as the averaging baseline; otherwise
+                        ! the trigger would fire every timestep until catching up.
+                        ! Partial pre-restart samples are not persisted (the
+                        ! accumulators live in remap-space and aren't in the
+                        ! Registry); the post-restart window starts fresh.
                         avg_last_output_time = mpas_get_clock_time( &
-                             domain % clock, MPAS_START_TIME, ierr)
+                             domain % clock, MPAS_NOW, ierr)
                         if (.not. allocated(remap_accum)) then
                            allocate(remap_accum(remap_nb_local, N_AVG_FIELDS))
                         end if
@@ -424,22 +430,18 @@ contains
             allocate(fld_remap(remap_nb_local, 1))
             allocate(field_1lev(1, nCells))
 
-            ! Remap each field to lat-lon
-            call remap_1field(oceanHeatContent, 1)
-            call remap_1field(freshwaterContent, 2)
-            call remap_1field(kineticEnergy, 3)
-
-            ! Remap generic reduction slots
-            do iGeneric = 1, min(nReduceFields, 5)
-               write(slotName, '(A,I2.2)') 'vertReduceField', iGeneric
-               call mpas_pool_get_array(amPool, trim(slotName), genSlot)
-               if (associated(genSlot)) then
-                  call remap_1field(genSlot, 3 + iGeneric)
-               end if
-            end do
-
             if (time_avg_enabled) then
-               ! Accumulate (remapped fields already added in remap_1field)
+               ! Accumulate path: each remap adds to remap_accum.
+               call remap_1field(oceanHeatContent, 1)
+               call remap_1field(freshwaterContent, 2)
+               call remap_1field(kineticEnergy, 3)
+               do iGeneric = 1, min(nReduceFields, 5)
+                  write(slotName, '(A,I2.2)') 'vertReduceField', iGeneric
+                  call mpas_pool_get_array(amPool, trim(slotName), genSlot)
+                  if (associated(genSlot)) then
+                     call remap_1field(genSlot, 3 + iGeneric)
+                  end if
+               end do
                nAccum = nAccum + 1
 
                ! Check if output interval elapsed
@@ -459,22 +461,27 @@ contains
                   end if
                   remap_accum = 0.0_r8
                   nAccum = 0
-                  avg_last_output_time = currTime
+                  ! Advance by exact interval to avoid drift.
+                  avg_last_output_time = avg_last_output_time + avg_output_interval
                end if
             else
-               ! Instantaneous: write immediately
+               ! Instantaneous: remap and write each field one at a time so
+               ! fld_remap holds the correct field at every write call.
                call remap_outfile%check_rotate(domain, ierr)
                if (remap_outfile%file_is_open) then
                   currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
                   call mpas_get_time(currTime, dateTimeString=timeStr)
                   call remap_outfile%write_time(trim(timeStr), ierr)
 
-                  call write_inst_field('oceanHeatContent')
-                  call write_inst_field('freshwaterContent')
-                  call write_inst_field('kineticEnergy')
+                  call inst_remap_and_write(oceanHeatContent, 'oceanHeatContent')
+                  call inst_remap_and_write(freshwaterContent, 'freshwaterContent')
+                  call inst_remap_and_write(kineticEnergy, 'kineticEnergy')
                   do iGeneric = 1, min(nReduceFields, 5)
                      write(slotName, '(A,I2.2)') 'vertReduceField', iGeneric
-                     call write_inst_field(trim(slotName))
+                     call mpas_pool_get_array(amPool, trim(slotName), genSlot)
+                     if (associated(genSlot)) then
+                        call inst_remap_and_write(genSlot, trim(slotName))
+                     end if
                   end do
                end if
             end if
@@ -501,14 +508,26 @@ contains
       subroutine write_avg_field(varname, idx)
          character(len=*), intent(in) :: varname
          integer, intent(in) :: idx
-         fld_remap(:, 1) = remap_accum(:, idx) / real(nAccum, r8)
+         if (nAccum > 0) then
+            fld_remap(:, 1) = remap_accum(:, idx) / real(nAccum, r8)
+         else
+            fld_remap(:, 1) = real(SHR_FILL_VALUE, r8)
+         end if
          call remap_outfile%write_var(varname, fld_remap, 1, ierr)
       end subroutine write_avg_field
 
-      subroutine write_inst_field(varname)
+      subroutine inst_remap_and_write(native_fld, varname)
+         ! Remap one field into fld_remap, then write under varname.
+         ! Used in instantaneous mode to ensure each varname gets the
+         ! correct field's data (the previous bulk-remap-then-bulk-write
+         ! pattern wrote the last remapped field under every name).
+         real(kind=RKIND), dimension(:), intent(in) :: native_fld
          character(len=*), intent(in) :: varname
+         field_1lev(1, 1:nCells) = native_fld(1:nCells)
+         call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
+              mask=maxLevelCell)
          call remap_outfile%write_var(varname, fld_remap, 1, ierr)
-      end subroutine write_inst_field
+      end subroutine inst_remap_and_write
 
    end subroutine ocn_compute_fme_vertical_reduce!}}}
 
