@@ -116,15 +116,18 @@ module eam_derived
   real(r8), allocatable :: derived_cache(:,:,:,:)   ! (pcols, pver, n_derived, begchunk:endchunk)
 
   ! Tendency tracking (allocated during register)
+  ! Per-chunk validity flags eliminate the OMP race that the scalar
+  ! flags had: physpkg.F90's chunk loop is OMP-PARALLEL, so threads
+  ! must read/write disjoint slots only.
   real(r8), allocatable :: tend_prev(:,:,:,:)        ! (pcols, pver, n_tend, begchunk:endchunk)
-  logical :: tend_initialized = .false.
+  logical, allocatable :: tend_initialized(:)        ! (begchunk:endchunk)
 
   ! Stage-aware tendency tracking
   integer :: n_stages = 0
   logical :: do_stage_phys = .false.   ! output d{NAME}_dt_phys
   logical :: do_stage_dyn  = .false.   ! output d{NAME}_dt_dyn
   real(r8), allocatable :: phys_snap(:,:,:,:)  ! (pcols, pver, n_tend, begchunk:endchunk)
-  logical :: phys_snap_valid = .false.
+  logical, allocatable :: phys_snap_valid(:)   ! (begchunk:endchunk)
 
   ! Flags
   logical :: has_derived = .false.
@@ -329,13 +332,15 @@ contains
     if (has_tend) then
       allocate(tend_prev(pcols, pver, n_tend, begchunk:endchunk))
       tend_prev(:,:,:,:) = 0.0_r8
-      tend_initialized = .false.
+      allocate(tend_initialized(begchunk:endchunk))
+      tend_initialized(:) = .false.
 
       ! Allocate physics stage snapshot cache
       if (do_stage_phys .or. do_stage_dyn) then
         allocate(phys_snap(pcols, pver, n_tend, begchunk:endchunk))
         phys_snap(:,:,:,:) = 0.0_r8
-        phys_snap_valid = .false.
+        allocate(phys_snap_valid(begchunk:endchunk))
+        phys_snap_valid(:) = .false.
       end if
     end if
 
@@ -395,7 +400,7 @@ contains
       phys_snap(1:ncol, 1:nlev, i, lchnk) = curr_field(1:ncol, 1:nlev)
     end do
 
-    phys_snap_valid = .true.
+    phys_snap_valid(lchnk) = .true.
 
   end subroutine eam_derived_stage
 
@@ -469,7 +474,7 @@ contains
              curr_field, ncol, lchnk, nlev)
 
         ! --- Total tendency: d{NAME}_dt ---
-        if (tend_initialized) then
+        if (tend_initialized(lchnk)) then
           call shr_derived_tend(curr_field, tend_prev(:,:,i,lchnk), &
                ncol, nlev, pcols, dt, tend_field)
         else
@@ -480,7 +485,7 @@ contains
         call outfld(trim(fname), tend_field, pcols, lchnk)
 
         ! --- Physics tendency: d{NAME}_dt_phys ---
-        if (do_stage_phys .and. phys_snap_valid) then
+        if (do_stage_phys .and. phys_snap_valid(lchnk)) then
           call shr_derived_tend(curr_field, phys_snap(:,:,i,lchnk), &
                ncol, nlev, pcols, dt, phys_tend_field)
 
@@ -489,7 +494,7 @@ contains
         end if
 
         ! --- Dynamics tendency: d{NAME}_dt_dyn = total - phys ---
-        if (do_stage_dyn .and. tend_initialized .and. phys_snap_valid) then
+        if (do_stage_dyn .and. tend_initialized(lchnk) .and. phys_snap_valid(lchnk)) then
           ! dyn = total - phys
           ! total = (curr - prev_timestep) / dt
           ! phys  = (curr - before_phys) / dt
@@ -505,7 +510,8 @@ contains
         tend_prev(1:ncol, 1:nlev, i, lchnk) = curr_field(1:ncol, 1:nlev)
       end do
 
-      if (.not. tend_initialized) tend_initialized = .true.
+      ! Per-chunk flag: each thread writes only its own slot, no race.
+      tend_initialized(lchnk) = .true.
     end if
 
   end subroutine eam_derived_write
