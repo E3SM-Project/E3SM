@@ -7,11 +7,12 @@ module eam_vcoarsen
   ! the shared shr_vcoarsen_mod routines. All vertical coarsening math is
   ! delegated to the shared module.
   !
-  ! Supports four modes of vertical coarsening:
+  ! Supports five modes of vertical coarsening:
   !   1. Overlap-weighted averaging onto coarser pressure layers (pdel-weighted)
   !   2. Level selection by index (e.g., U_at_L5)
   !   3. Level selection by nearest pressure value (e.g., U_at_P850)
   !   4. Column integration: sum(field * pdel / g) producing a 2D field (e.g., TOTAL_WATER_INT)
+  !   5. Linear interpolation to height above surface (e.g., U_at_z10 for 10 m wind)
   !
   ! Configuration via namelist (eam_vcoarsen_nl):
   !   vcoarsen_pbounds         - pressure boundaries (Pa), top to surface
@@ -20,6 +21,8 @@ module eam_vcoarsen
   !   vcoarsen_select_lev_flds - fields for level index selection
   !   vcoarsen_select_pres     - pressure values in hPa for nearest-level selection
   !   vcoarsen_select_pres_flds - fields for pressure value selection
+  !   vcoarsen_select_heights   - heights (m) above surface for linear interpolation
+  !   vcoarsen_select_height_flds - fields for height interpolation
   !   vcoarsen_int_flds        - fields to column-integrate (sum field*pdel/g)
   !
   ! Use 'all' as the sole entry in any field list to apply to all known 3D fields.
@@ -73,6 +76,8 @@ module eam_vcoarsen
   character(len=max_name_len) :: vcoarsen_select_lev_flds(max_flds)
   real(r8) :: vcoarsen_select_pres(max_select_vals)
   character(len=max_name_len) :: vcoarsen_select_pres_flds(max_flds)
+  real(r8) :: vcoarsen_select_heights(max_select_vals)
+  character(len=max_name_len) :: vcoarsen_select_height_flds(max_flds)
   character(len=max_name_len) :: vcoarsen_int_flds(max_flds)
 
   ! Parsed counts
@@ -83,13 +88,16 @@ module eam_vcoarsen
   integer :: n_sel_lev_flds  = 0   ! number of fields for level selection
   integer :: n_sel_pres      = 0   ! number of pressure values for selection
   integer :: n_sel_pres_flds = 0   ! number of fields for pressure selection
+  integer :: n_sel_heights     = 0 ! number of heights for selection
+  integer :: n_sel_height_flds = 0 ! number of fields for height selection
   integer :: n_int_flds      = 0   ! number of fields for column integration
 
   ! Flags
-  logical :: has_avg      = .false.
-  logical :: has_sel_lev  = .false.
-  logical :: has_sel_pres = .false.
-  logical :: has_int      = .false.
+  logical :: has_avg        = .false.
+  logical :: has_sel_lev    = .false.
+  logical :: has_sel_pres   = .false.
+  logical :: has_sel_height = .false.
+  logical :: has_int        = .false.
 
   ! Column integration tendency: previous timestep values (pcols, max_flds, begchunk:endchunk)
   real(r8), allocatable :: int_prev(:,:,:)
@@ -111,6 +119,7 @@ contains
          vcoarsen_avg_flds, &
          vcoarsen_select_levs, vcoarsen_select_lev_flds, &
          vcoarsen_select_pres, vcoarsen_select_pres_flds, &
+         vcoarsen_select_heights, vcoarsen_select_height_flds, &
          vcoarsen_int_flds
 
     ! Initialize defaults
@@ -121,6 +130,8 @@ contains
     vcoarsen_select_lev_flds(:) = ''
     vcoarsen_select_pres(:)     = -1.0_r8
     vcoarsen_select_pres_flds(:) = ''
+    vcoarsen_select_heights(:)     = -1.0_r8
+    vcoarsen_select_height_flds(:) = ''
     vcoarsen_int_flds(:)        = ''
 
     if (masterproc) then
@@ -145,6 +156,8 @@ contains
     call mpi_bcast(vcoarsen_select_lev_flds, max_name_len*max_flds, mpi_character, masterprocid, mpicom, ierr)
     call mpi_bcast(vcoarsen_select_pres, max_select_vals, mpi_real8, masterprocid, mpicom, ierr)
     call mpi_bcast(vcoarsen_select_pres_flds, max_name_len*max_flds, mpi_character, masterprocid, mpicom, ierr)
+    call mpi_bcast(vcoarsen_select_heights, max_select_vals, mpi_real8, masterprocid, mpicom, ierr)
+    call mpi_bcast(vcoarsen_select_height_flds, max_name_len*max_flds, mpi_character, masterprocid, mpicom, ierr)
 
     ! Determine averaging mode: level-index bounds take precedence over pressure bounds
     ! Parse level-index bounds first
@@ -212,6 +225,17 @@ contains
     ! Count pressure selection fields; expand 'all'
     call count_and_expand_flds(vcoarsen_select_pres_flds, n_sel_pres_flds)
 
+    ! Count height selection values (heights >= 0 m above surface)
+    n_sel_heights = 0
+    do i = 1, max_select_vals
+      if (vcoarsen_select_heights(i) < 0.0_r8) exit
+      n_sel_heights = n_sel_heights + 1
+    end do
+    has_sel_height = (n_sel_heights > 0)
+
+    ! Count height selection fields; expand 'all'
+    call count_and_expand_flds(vcoarsen_select_height_flds, n_sel_height_flds)
+
     ! Column integration fields
     call mpi_bcast(vcoarsen_int_flds, max_name_len*max_flds, mpi_character, masterprocid, mpicom, ierr)
     call count_and_expand_flds(vcoarsen_int_flds, n_int_flds)
@@ -235,6 +259,10 @@ contains
         write(iulog,*) 'eam_vcoarsen_readnl: pressure selection enabled, ', n_sel_pres, &
              ' pressures, ', n_sel_pres_flds, ' fields'
       end if
+      if (has_sel_height) then
+        write(iulog,*) 'eam_vcoarsen_readnl: height selection enabled, ', n_sel_heights, &
+             ' heights, ', n_sel_height_flds, ' fields'
+      end if
       if (has_int) then
         write(iulog,*) 'eam_vcoarsen_readnl: column integration enabled, ', n_int_flds, ' fields'
       end if
@@ -253,7 +281,8 @@ contains
     character(len=256) :: lname
     logical :: found
 
-    if (.not. has_avg .and. .not. has_sel_lev .and. .not. has_sel_pres .and. .not. has_int) return
+    if (.not. has_avg .and. .not. has_sel_lev .and. .not. has_sel_pres &
+        .and. .not. has_sel_height .and. .not. has_int) return
 
     ! Validate and register averaged fields
     if (has_avg) then
@@ -300,6 +329,22 @@ contains
           call make_sel_pres_name(vcoarsen_select_pres_flds(i), vcoarsen_select_pres(k), fname)
           write(lname, '(A,A,F0.1,A)') trim(vcoarsen_select_pres_flds(i)), &
                ' at nearest level to ', vcoarsen_select_pres(k), ' hPa'
+          call addfld(trim(fname), horiz_only, 'A', 'varies', trim(lname), &
+               flag_xyfill=.true.)
+        end do
+      end do
+    end if
+
+    ! Validate and register height-interpolated fields
+    if (has_sel_height) then
+      do i = 1, n_sel_height_flds
+        call validate_field_name(vcoarsen_select_height_flds(i))
+        do k = 1, n_sel_heights
+          call make_sel_height_name(vcoarsen_select_height_flds(i), &
+               vcoarsen_select_heights(k), fname)
+          write(lname, '(A,A,F0.1,A)') trim(vcoarsen_select_height_flds(i)), &
+               ' linearly interpolated to ', vcoarsen_select_heights(k), &
+               ' m above surface'
           call addfld(trim(fname), horiz_only, 'A', 'varies', trim(lname), &
                flag_xyfill=.true.)
         end do
@@ -356,7 +401,8 @@ contains
     integer  :: i, k, ncol, lchnk
     character(len=max_fname_len) :: fname
 
-    if (.not. has_avg .and. .not. has_sel_lev .and. .not. has_sel_pres .and. .not. has_int) return
+    if (.not. has_avg .and. .not. has_sel_lev .and. .not. has_sel_pres &
+        .and. .not. has_sel_height .and. .not. has_int) return
 
     ncol  = state%ncol
     lchnk = state%lchnk
@@ -432,6 +478,31 @@ contains
           selected(ncol+1:pcols) = fillvalue
 
           call make_sel_pres_name(vcoarsen_select_pres_flds(i), vcoarsen_select_pres(k), fname)
+          call outfld(trim(fname), selected, pcols, lchnk)
+        end do
+      end do
+    end if
+
+    ! --- Height-above-surface linear interpolation ---
+    ! state%zm is geopotential height above surface at midpoints (m); it is
+    ! monotonically decreasing with level index (level 1 is the model top).
+    ! shr_vcoarsen_select_nearest handles either coordinate orientation.
+    if (has_sel_height) then
+      coord_mid(1:ncol, 1:pver) = state%zm(1:ncol, 1:pver)
+
+      do i = 1, n_sel_height_flds
+        call get_state_field(state, pbuf_chunk, vcoarsen_select_height_flds(i), &
+             src_field, ncol)
+
+        do k = 1, n_sel_heights
+          call shr_vcoarsen_select_nearest(src_field, coord_mid, ncol, pver, &
+               vcoarsen_select_heights(k), nlev_max, fillvalue, selected)
+
+          ! Fill inactive columns
+          selected(ncol+1:pcols) = fillvalue
+
+          call make_sel_height_name(vcoarsen_select_height_flds(i), &
+               vcoarsen_select_heights(k), fname)
           call outfld(trim(fname), selected, pcols, lchnk)
         end do
       end do
@@ -670,5 +741,26 @@ contains
     out_name = trim(base_name) // '_at_P' // trim(pstr)
 
   end subroutine make_sel_pres_name
+
+  !============================================================================
+  subroutine make_sel_height_name(base_name, height_m, out_name)
+    ! E.g., base_name="U", height_m=10.0 => out_name="U_at_z10"
+    ! For integer-like values, omit decimal. For fractional, include one decimal.
+    character(len=*), intent(in)  :: base_name
+    real(r8),         intent(in)  :: height_m
+    character(len=*), intent(out) :: out_name
+
+    character(len=16) :: hstr
+    integer :: int_h
+
+    int_h = nint(height_m)
+    if (abs(height_m - real(int_h, r8)) < 0.01_r8) then
+      write(hstr, '(I0)') int_h
+    else
+      write(hstr, '(F0.1)') height_m
+    end if
+    out_name = trim(base_name) // '_at_z' // trim(hstr)
+
+  end subroutine make_sel_height_name
 
 end module eam_vcoarsen

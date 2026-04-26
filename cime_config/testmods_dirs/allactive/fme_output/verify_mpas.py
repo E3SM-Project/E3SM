@@ -427,15 +427,22 @@ def _extract_field(arr, mode):
     """Extract a 1D (nCells) field from a multi-dimensional array.
 
     mode: 'last2d' = last timestep of (Time, nCells)
-          'surface' = last timestep, level 0 of (Time, nVertLevels, nCells)
+          'surface' = last timestep, surface level of 3D variable.
+              Detects dimension ordering by size: nCells >> nVertLevels.
     """
     if arr is None:
         return None
     if mode == "surface":
-        if arr.ndim == 3:      # (Time, nVertLevels, nCells)
-            return arr[-1, 0, :]
-        elif arr.ndim == 2:    # (nVertLevels, nCells) -- no time
-            return arr[0, :]
+        if arr.ndim == 3:
+            if arr.shape[1] < arr.shape[2]:
+                return arr[-1, 0, :]   # (Time, nLevels, nCells)
+            else:
+                return arr[-1, :, 0]   # (Time, nCells, nLevels)
+        elif arr.ndim == 2:
+            if arr.shape[0] < arr.shape[1]:
+                return arr[0, :]       # (nLevels, nCells)
+            else:
+                return arr[:, 0]       # (nCells, nLevels)
     else:  # last2d
         if arr.ndim == 2:      # (Time, nCells)
             return arr[-1, :]
@@ -475,6 +482,386 @@ def _diff_stats(leg, fme, fill_thresh=1e10):
     else:
         s["correlation"] = float("nan")
     return s
+
+
+# -----------------------------------------------------------------------------
+# Offline depth coarsening (mirrors Fortran shr_vcoarsen_avg + accumulate_thickness)
+# -----------------------------------------------------------------------------
+
+def offline_depth_coarsen_avg(field, coord_iface, nlev_active, depth_bounds,
+                              fillval=1e34):
+    """Overlap-weighted depth coarsening for a single column.
+
+    Exact Python translation of shr_vcoarsen_avg (shr_vcoarsen_mod.F90).
+
+    Parameters
+    ----------
+    field : array, shape (nlev,)
+        Full-resolution field values for one column.
+    coord_iface : array, shape (nlev+1,)
+        Depth interfaces (metres), built from restingThickness.
+    nlev_active : int
+        Number of active levels (maxLevelCell).
+    depth_bounds : array, shape (n_out+1,)
+        Target coarsened layer boundaries (metres).
+    fillval : float
+        Fill value for empty layers.
+
+    Returns
+    -------
+    field_out : array, shape (n_out,)
+    """
+    n_out = len(depth_bounds) - 1
+    field_out = np.full(n_out, fillval)
+
+    for kout in range(n_out):
+        b_lo = depth_bounds[kout]
+        b_hi = depth_bounds[kout + 1]
+        numerator = 0.0
+        denominator = 0.0
+
+        for k in range(nlev_active):
+            c_lo = coord_iface[k]
+            c_hi = coord_iface[k + 1]
+            overlap = max(0.0, min(c_hi, b_hi) - max(c_lo, b_lo))
+            if overlap > 0.0:
+                fval = float(field[k])
+                if not np.isfinite(fval) or fval == fillval:
+                    continue
+                numerator += fval * overlap
+                denominator += overlap
+
+        if denominator > 0.0:
+            field_out[kout] = numerator / denominator
+
+    return field_out
+
+
+def offline_depth_coarsen_thickness(resting_thick, nlev_active, depth_bounds):
+    """Compute coarsened layer thickness from restingThickness.
+
+    Exact Python translation of accumulate_thickness in
+    mpas_ocn_fme_depth_coarsening.F.
+
+    Parameters
+    ----------
+    resting_thick : array, shape (nlev,)
+        Resting layer thicknesses for one column.
+    nlev_active : int
+        Number of active levels (maxLevelCell).
+    depth_bounds : array, shape (n_out+1,)
+        Target coarsened layer boundaries (metres).
+
+    Returns
+    -------
+    thick_out : array, shape (n_out,)
+        Coarsened thickness (sum of overlaps). Zero where no overlap.
+    """
+    n_out = len(depth_bounds) - 1
+    thick_out = np.zeros(n_out)
+    depth_top = 0.0
+
+    for k in range(nlev_active):
+        thickness = float(resting_thick[k])
+        depth_bot = depth_top + thickness
+        for kout in range(n_out):
+            overlap_top = max(depth_top, depth_bounds[kout])
+            overlap_bot = min(depth_bot, depth_bounds[kout + 1])
+            overlap = max(0.0, overlap_bot - overlap_top)
+            thick_out[kout] += overlap
+        depth_top = depth_bot
+
+    return thick_out
+
+
+def offline_depth_coarsen_column(field_2d, resting_thick_2d, max_level_cell,
+                                 depth_bounds, fillval=1e34):
+    """Offline depth coarsening for all columns (vectorized outer loop).
+
+    Parameters
+    ----------
+    field_2d : array, shape (nCells, nVertLevels)
+        Full-resolution field.
+    resting_thick_2d : array, shape (nCells, nVertLevels)
+        Resting layer thicknesses.
+    max_level_cell : array, shape (nCells,), int
+        Number of active levels per cell.
+    depth_bounds : array, shape (n_out+1,)
+        Target layer boundaries (metres).
+
+    Returns
+    -------
+    coarsened : array, shape (nCells, n_out)
+        Coarsened field values.
+    thick_coarsened : array, shape (nCells, n_out)
+        Coarsened layer thickness.
+    """
+    nCells = field_2d.shape[0]
+    nlev = field_2d.shape[1]
+    n_out = len(depth_bounds) - 1
+    coarsened = np.full((nCells, n_out), fillval)
+    thick_coarsened = np.full((nCells, n_out), fillval)
+
+    depth_bounds_f = np.asarray(depth_bounds, dtype=float)
+
+    for iCell in range(nCells):
+        ml = int(max_level_cell[iCell])
+        if ml <= 0:
+            continue
+
+        # Build coord_iface from restingThickness
+        coord_iface = np.zeros(nlev + 1)
+        for k in range(ml):
+            coord_iface[k + 1] = coord_iface[k] + resting_thick_2d[iCell, k]
+
+        coarsened[iCell, :] = offline_depth_coarsen_avg(
+            field_2d[iCell, :], coord_iface, ml, depth_bounds_f, fillval)
+
+        tc = offline_depth_coarsen_thickness(
+            resting_thick_2d[iCell, :], ml, depth_bounds_f)
+        for kout in range(n_out):
+            thick_coarsened[iCell, kout] = tc[kout] if tc[kout] > 0 else fillval
+
+    return coarsened, thick_coarsened
+
+
+def check_offline_depth_coarsening(rundir, outdir, verbose, legacy_rundir=None):
+    """Cross-verify online FME depth coarsening against offline Python recomputation.
+
+    Reads full-resolution temperature + restingThickness from available native
+    files, recomputes depth-overlap-weighted coarsening in Python, and compares
+    against the online FME temperatureCoarsened output.
+
+    Returns (issues, plots, fill_reports).
+    """
+    print("\n=== Offline Depth Coarsening Cross-Check ===")
+    issues = []
+    plots = []
+    fill_reports = []
+    fillval = 1e34
+
+    # --- 1. Find online FME depth-coarsened output (native) ---
+    fme_files = find_files(rundir,
+                           "*.mpaso.hist.am.fmeDepthCoarsening.*.nc",
+                           exclude=".remapped.")
+    if not fme_files:
+        print("  SKIP: no native fmeDepthCoarsening files")
+        return issues, plots, fill_reports
+
+    ds_fme = safe_open(fme_files[-1])
+    if has_time_zero(ds_fme):
+        close_ds(ds_fme)
+        print("  SKIP: time dimension empty")
+        return issues, plots, fill_reports
+
+    temp_coarsened = get_var(ds_fme, "temperatureCoarsened")
+    if temp_coarsened is None:
+        close_ds(ds_fme)
+        print("  SKIP: no temperatureCoarsened in FME output")
+        return issues, plots, fill_reports
+
+    # Auto-detect depth_bounds from the FME file's coarsened dimension
+    dims_fme = get_dims(ds_fme)
+    n_coarsen = None
+    for dname in ["nFmeDepthLevels", "nFmeCoarsenLevels"]:
+        if dname in dims_fme:
+            n_coarsen = dims_fme[dname]
+            break
+    if n_coarsen is None:
+        # Infer from variable shape
+        if temp_coarsened.ndim == 3:
+            s1, s2 = temp_coarsened.shape[1], temp_coarsened.shape[2]
+            n_coarsen = min(s1, s2)
+        elif temp_coarsened.ndim == 2:
+            n_coarsen = min(temp_coarsened.shape)
+
+    # Use DEPTH_BOUNDS if it has the right number of levels, else skip
+    depth_bounds = np.array(DEPTH_BOUNDS, dtype=float)
+    if len(depth_bounds) != n_coarsen + 1:
+        print(f"  SKIP: DEPTH_BOUNDS has {len(depth_bounds)} entries "
+              f"but file has {n_coarsen} coarsened levels")
+        close_ds(ds_fme)
+        return issues, plots, fill_reports
+
+    # Get restingThickness + maxLevelCell from FME file or shared mesh
+    resting = get_var(ds_fme, "restingThickness")
+    max_lev = get_var(ds_fme, "maxLevelCell")
+    close_ds(ds_fme)
+
+    # --- 2. Find full-resolution temperature ---
+    # Try: FME rundir native output, legacy rundir, restart files
+    raw_temp = None
+    raw_resting = resting
+    raw_maxlev = max_lev
+    raw_source = None
+
+    search_dirs = [rundir]
+    if legacy_rundir:
+        search_dirs.append(legacy_rundir)
+
+    for sdir in search_dirs:
+        # Try timeSeriesStatsCustom (time-averaged, (Time, nCells, nVertLevels))
+        for pat in ["*.mpaso.hist.am.timeSeriesStatsCustom.*.nc",
+                    "*.mpaso.hist.am.timeSeriesStatsDaily.*.nc"]:
+            for fpath in find_files(sdir, pat, exclude=".remapped."):
+                ds = safe_open(fpath)
+                # Try multiple variable names
+                for tname in ["timeCustom_avg_activeTracers_temperature",
+                              "timeDaily_avg_activeTracers_temperature",
+                              "temperature"]:
+                    arr = get_var(ds, tname)
+                    if arr is not None and arr.ndim >= 2:
+                        raw_temp = arr
+                        raw_source = os.path.basename(fpath)
+                        # Also grab mesh vars if not yet found
+                        if raw_resting is None:
+                            raw_resting = get_var(ds, "restingThickness")
+                        if raw_maxlev is None:
+                            raw_maxlev = get_var(ds, "maxLevelCell")
+                        break
+                if raw_temp is not None:
+                    close_ds(ds)
+                    break
+                close_ds(ds)
+            if raw_temp is not None:
+                break
+        if raw_temp is not None:
+            break
+
+    if raw_temp is None:
+        print("  SKIP: no full-resolution temperature found "
+              "(need legacy or restart files)")
+        return issues, plots, fill_reports
+    if raw_resting is None or raw_maxlev is None:
+        print("  SKIP: missing restingThickness or maxLevelCell")
+        return issues, plots, fill_reports
+
+    print(f"  Raw temperature source: {raw_source}")
+
+    # --- 3. Extract last timestep and orient dimensions ---
+    # raw_temp could be (Time, nCells, nVertLevels) or (Time, nVertLevels, nCells)
+    if raw_temp.ndim == 3:
+        raw_temp = raw_temp[-1]  # last timestep -> (dim1, dim2)
+    # Detect: nCells >> nVertLevels
+    if raw_temp.ndim == 2:
+        if raw_temp.shape[0] < raw_temp.shape[1]:
+            raw_temp = raw_temp.T  # -> (nCells, nVertLevels)
+    nCells_raw, nVert_raw = raw_temp.shape
+
+    # Same for restingThickness
+    if raw_resting.ndim == 3:
+        raw_resting = raw_resting[-1]
+    if raw_resting.ndim == 2:
+        if raw_resting.shape[0] < raw_resting.shape[1]:
+            raw_resting = raw_resting.T
+    nCells_rt = raw_resting.shape[0]
+
+    # FME online output: last timestep
+    ds_fme2 = safe_open(fme_files[-1])
+    temp_coarsened = get_var(ds_fme2, "temperatureCoarsened")
+    thick_coarsened_online = get_var(ds_fme2, "layerThicknessCoarsened")
+    close_ds(ds_fme2)
+
+    if temp_coarsened.ndim == 3:
+        temp_coarsened = temp_coarsened[-1]
+    if temp_coarsened.ndim == 2:
+        if temp_coarsened.shape[0] < temp_coarsened.shape[1]:
+            temp_coarsened = temp_coarsened.T  # -> (nCells, nCoarsen)
+
+    if thick_coarsened_online is not None:
+        if thick_coarsened_online.ndim == 3:
+            thick_coarsened_online = thick_coarsened_online[-1]
+        if thick_coarsened_online.ndim == 2:
+            if thick_coarsened_online.shape[0] < thick_coarsened_online.shape[1]:
+                thick_coarsened_online = thick_coarsened_online.T
+
+    # Check dimension compatibility
+    nCells_fme = temp_coarsened.shape[0]
+    if nCells_raw != nCells_fme:
+        print(f"  SKIP: nCells mismatch: raw={nCells_raw} vs FME={nCells_fme}")
+        return issues, plots, fill_reports
+
+    # --- 4. Subsample for speed (full recomputation on 465K cells is slow) ---
+    max_cells = 10000
+    rng = np.random.default_rng(42)
+    if nCells_raw > max_cells:
+        sample_idx = rng.choice(nCells_raw, max_cells, replace=False)
+        print(f"  Subsampling {max_cells} of {nCells_raw} cells for speed")
+    else:
+        sample_idx = np.arange(nCells_raw)
+
+    # --- 5. Recompute offline ---
+    print(f"  Recomputing depth coarsening for {len(sample_idx)} cells...")
+    offline_temp, offline_thick = offline_depth_coarsen_column(
+        raw_temp[sample_idx],
+        raw_resting[sample_idx],
+        raw_maxlev[sample_idx],
+        depth_bounds,
+        fillval=fillval)
+
+    online_temp = temp_coarsened[sample_idx]
+    if thick_coarsened_online is not None:
+        online_thick = thick_coarsened_online[sample_idx]
+    else:
+        online_thick = None
+
+    # --- 6. Compare temperature coarsening ---
+    print("\n  Temperature coarsening (offline vs online):")
+    temp_issues = 0
+    for kout in range(n_coarsen):
+        off = offline_temp[:, kout]
+        on = online_temp[:, kout]
+        # Mask fill values
+        ok = ((np.abs(off) < 1e10) & np.isfinite(off) &
+              (np.abs(on) < 1e10) & np.isfinite(on))
+        if ok.sum() == 0:
+            continue
+        diff = off[ok].astype(np.float64) - on[ok].astype(np.float64)
+        rms = float(np.sqrt((diff ** 2).mean()))
+        max_abs = float(np.abs(diff).max())
+        mean_d = float(diff.mean())
+        # Tolerance: should be near-BFB if same input data, but allow for
+        # time-averaging differences (legacy is time-avg, FME may be instant)
+        status = "OK" if max_abs < 1.0 else "MISMATCH"
+        if status == "MISMATCH":
+            temp_issues += 1
+            issues.append(f"  temperatureCoarsened layer {kout}: "
+                          f"max_diff={max_abs:.4g} degC, rms={rms:.4g}")
+        if verbose or status == "MISMATCH":
+            print(f"    layer {kout:2d}: mean_diff={mean_d:+.4e}  "
+                  f"rms={rms:.4e}  max={max_abs:.4e}  "
+                  f"n={ok.sum()}  {status}")
+    if temp_issues == 0:
+        print("    All layers OK (max_diff < 1.0 degC)")
+
+    # --- 7. Compare thickness coarsening ---
+    if online_thick is not None:
+        print("\n  Thickness coarsening (offline vs online):")
+        thick_issues = 0
+        for kout in range(n_coarsen):
+            off = offline_thick[:, kout]
+            on = online_thick[:, kout]
+            ok = ((np.abs(off) < 1e10) & np.isfinite(off) &
+                  (np.abs(on) < 1e10) & np.isfinite(on))
+            if ok.sum() == 0:
+                continue
+            diff = off[ok].astype(np.float64) - on[ok].astype(np.float64)
+            rms = float(np.sqrt((diff ** 2).mean()))
+            max_abs = float(np.abs(diff).max())
+            # Thickness should be BFB (both use restingThickness, no averaging)
+            status = "OK" if max_abs < 0.01 else "MISMATCH"
+            if status == "MISMATCH":
+                thick_issues += 1
+                issues.append(f"  layerThicknessCoarsened layer {kout}: "
+                              f"max_diff={max_abs:.4g} m, rms={rms:.4g}")
+            if verbose or status == "MISMATCH":
+                print(f"    layer {kout:2d}: rms={rms:.4e}  max={max_abs:.4e}  "
+                      f"n={ok.sum()}  {status}")
+        if thick_issues == 0:
+            print("    All layers OK (BFB within 0.01 m)")
+
+    _report("Offline depth coarsening", issues)
+    return issues, plots, fill_reports
 
 
 # -----------------------------------------------------------------------------
@@ -825,10 +1212,19 @@ def side_by_side_comparison(data1, lons1, lats1, title1,
 
 def trio_comparison(d_nat, lon_nat, lat_nat, d_rem, lon_rem, lat_rem,
                     title, outdir, fname, cmap="RdBu_r",
-                    vmin=None, vmax=None, units=""):
+                    vmin=None, vmax=None, units="",
+                    area_nat=None, ocean_mask=None):
     """Three-panel diagnostic: native tripcolor | remapped pcolormesh | zonal mean overlay.
 
     Produces a single figure with the most informative comparison layout.
+
+    Parameters
+    ----------
+    area_nat : array, optional
+        Cell areas (areaCell) for area-weighted native zonal mean.
+    ocean_mask : array of bool, optional
+        True for valid ocean cells (e.g. maxLevelCell > 0). Cells where
+        mask is False are excluded from the native zonal mean and tripcolor.
     """
     if not HAS_MPL:
         return None
@@ -846,10 +1242,14 @@ def trio_comparison(d_nat, lon_nat, lat_nat, d_rem, lon_rem, lat_rem,
     lon_fix = _fix_lon(lon_nat)
     max_pts = 50000
     rng = np.random.default_rng(42)
-    if d_nat.size > max_pts:
-        idx = rng.choice(d_nat.size, max_pts, replace=False)
+    if ocean_mask is not None:
+        valid_idx = np.where(ocean_mask)[0]
     else:
-        idx = np.arange(d_nat.size)
+        valid_idx = np.arange(d_nat.size)
+    if valid_idx.size > max_pts:
+        idx = rng.choice(valid_idx, max_pts, replace=False)
+    else:
+        idx = valid_idx
     # Mask fill for tripcolor data
     d_sub = np.where((np.abs(d_nat[idx]) < 1e10) & np.isfinite(d_nat[idx]),
                      d_nat[idx].astype(float), np.nan)
@@ -892,15 +1292,21 @@ def trio_comparison(d_nat, lon_nat, lat_nat, d_rem, lon_rem, lat_rem,
     lat_1d = lat_rem if lat_rem.ndim == 1 else lat_rem[:, 0]
     if zm_rem is not None:
         ax3.plot(lat_1d, zm_rem, "b-", linewidth=1.5, label="Remapped")
-    # Native zonal mean (bin into latitude bands)
+    # Native zonal mean (bin into latitude bands, area-weighted if available)
     lat_edges = np.linspace(-90, 90, 181)
     lat_centers = 0.5 * (lat_edges[:-1] + lat_edges[1:])
     ok_nat = (np.abs(d_nat) < 1e10) & np.isfinite(d_nat)
+    if ocean_mask is not None:
+        ok_nat = ok_nat & ocean_mask
     zm_nat = np.full(180, np.nan)
     for b in range(180):
         mask = ok_nat & (lat_nat >= lat_edges[b]) & (lat_nat < lat_edges[b + 1])
         if mask.sum() > 0:
-            zm_nat[b] = d_nat[mask].mean()
+            if area_nat is not None:
+                w = area_nat[mask]
+                zm_nat[b] = np.average(d_nat[mask], weights=w)
+            else:
+                zm_nat[b] = d_nat[mask].mean()
     ax3.plot(lat_centers, zm_nat, "r--", linewidth=1.2, alpha=0.8, label="Native")
     ax3.set_xlabel("Latitude")
     ax3.set_ylabel(units)
@@ -1010,15 +1416,18 @@ def generate_trio_comparisons(rundir, fig_root, all_plots_by_comp,
     os.makedirs(trio_outdir, exist_ok=True)
     trio_plots = []
 
-    # Get shared MPAS mesh coords for files that lack their own.
+    # Get shared MPAS mesh coords and masks for files that lack their own.
     # Search FME rundir first, then legacy rundir.
     shared_lon = shared_lat = None
+    shared_area = None       # areaCell for area-weighted zonal means
+    shared_ocean_mask = None  # True where maxLevelCell > 0 (valid ocean)
     search_dirs = [rundir]
     if legacy_rundir:
         search_dirs.append(legacy_rundir)
     for sdir in search_dirs:
         for pat in ["*.mpassi.hist.am.fmeSeaiceDerivedFields.*.nc",
                     "*.mpaso.hist.am.fmeDerivedFields.*.nc",
+                    "*.mpaso.hist.am.timeSeriesStatsCustom.*.nc",
                     "*.mpaso.hist.am.timeSeriesStatsDaily.*.nc",
                     "*.mpassi.hist.am.timeSeriesStatsDaily.*.nc"]:
             for f in find_files(sdir, pat, exclude=".remapped."):
@@ -1028,6 +1437,12 @@ def generate_trio_comparisons(rundir, fig_root, all_plots_by_comp,
                 if lo is not None and la is not None:
                     shared_lon = np.degrees(lo)
                     shared_lat = np.degrees(la)
+                    ac = get_var(ds_tmp, "areaCell")
+                    if ac is not None:
+                        shared_area = ac
+                    ml = get_var(ds_tmp, "maxLevelCell")
+                    if ml is not None:
+                        shared_ocean_mask = ml > 0
                     close_ds(ds_tmp)
                     break
                 close_ds(ds_tmp)
@@ -1050,14 +1465,22 @@ def generate_trio_comparisons(rundir, fig_root, all_plots_by_comp,
             close_ds(ds_rem)
             return
 
-        # Native coords: try file first, fall back to shared mesh
+        # Native coords + mesh metadata: try file first, fall back to shared
         lon_nat_deg = lat_nat_deg = None
+        area_nat = shared_area
+        ocean_mask = shared_ocean_mask
         if ds_nat is not None:
             lon_nat = get_var(ds_nat, "lonCell")
             lat_nat = get_var(ds_nat, "latCell")
             if lon_nat is not None and lat_nat is not None:
                 lon_nat_deg = np.degrees(lon_nat)
                 lat_nat_deg = np.degrees(lat_nat)
+                ac = get_var(ds_nat, "areaCell")
+                if ac is not None:
+                    area_nat = ac
+                ml = get_var(ds_nat, "maxLevelCell")
+                if ml is not None:
+                    ocean_mask = ml > 0
             elif shared_lon is not None:
                 lon_nat_deg = shared_lon
                 lat_nat_deg = shared_lat
@@ -1098,13 +1521,32 @@ def generate_trio_comparisons(rundir, fig_root, all_plots_by_comp,
                         arr_nat = get_var(ds_nat, alt)
                         if arr_nat is not None:
                             break
+                # Depth-coarsened fallback: base_N -> extract layer N
+                # Native files store e.g. temperatureCoarsened(Time, nCells, nLayers)
+                # while remapped files split into temperatureCoarsened_0, _1, etc.
+                # Detect layer axis by size: nCells >> nLayers.
+                if arr_nat is None:
+                    parts = vname.rsplit('_', 1)
+                    if len(parts) == 2 and parts[1].isdigit():
+                        arr_base = get_var(ds_nat, parts[0])
+                        if arr_base is not None and arr_base.ndim == 3:
+                            k = int(parts[1])
+                            s1, s2 = arr_base.shape[1], arr_base.shape[2]
+                            if s1 < s2:
+                                # (Time, nLayers, nCells)
+                                if k < s1:
+                                    arr_nat = arr_base[:, k, :]
+                            else:
+                                # (Time, nCells, nLayers)
+                                if k < s2:
+                                    arr_nat = arr_base[:, :, k]
                 if arr_nat is not None:
                     d_nat = arr_nat[-1] if arr_nat.ndim > 1 else arr_nat
                     # SST/SSS from legacy tracers may need extraction:
-                    # activeTracers_temperature is (Time, nVertLevels, nCells)
-                    # — take surface level (index 0)
+                    # activeTracers_temperature is (Time, nCells, nVertLevels)
+                    # — take surface level (vertical index 0)
                     if d_nat.ndim == 2 and vname in ("sst", "sss"):
-                        d_nat = d_nat[0, :]  # surface level
+                        d_nat = d_nat[:, 0]  # surface level
 
             fname = f"trio_{component.lower().replace('-','')}_{vname}.png"
             if d_nat is not None and lon_nat_deg is not None:
@@ -1114,7 +1556,8 @@ def generate_trio_comparisons(rundir, fig_root, all_plots_by_comp,
                     d_rem, lon_rem, lat_rem,
                     f"{component} {vname}",
                     trio_outdir, fname,
-                    cmap=cmap, vmin=vm, vmax=vx, units=units)
+                    cmap=cmap, vmin=vm, vmax=vx, units=units,
+                    area_nat=area_nat, ocean_mask=ocean_mask)
             else:
                 # Remapped-only: map + zonal mean (2 panels)
                 p = _remapped_with_zonal(
@@ -1134,8 +1577,12 @@ def generate_trio_comparisons(rundir, fig_root, all_plots_by_comp,
     # (the FME native stream writes instantaneous forcing-pool snapshots
     # that aren't comparable to the time-averaged remapped output).
     if legacy_rundir:
+        # Prefer timeSeriesStatsCustom (standard legacy), fall back to Daily
+        nat_pat = "*.mpaso.hist.am.timeSeriesStatsCustom.*.nc"
+        if not find_files(legacy_rundir, nat_pat, exclude=".remapped."):
+            nat_pat = "*.mpaso.hist.am.timeSeriesStatsDaily.*.nc"
         _process_component(
-            "*.mpaso.hist.am.timeSeriesStatsDaily.*.nc",
+            nat_pat,
             "*.mpaso.hist.am.fmeDerivedFields.*.remapped.nc",
             ALL_DERIVED_FIELD_PARAMS, "MPAS-O",
             nat_rundir=legacy_rundir)
@@ -1309,7 +1756,11 @@ def check_mpaso_depth_coarsening(rundir, outdir, verbose):
                 arr = get_var(ds, var)
                 if arr is None or arr.ndim < 3:
                     continue
-                data = arr[-1, 0, :]  # last time, surface layer, all cells
+                # Detect layer axis: nCells >> nLayers
+                if arr.shape[1] < arr.shape[2]:
+                    data = arr[-1, 0, :]  # (Time, nLayers, nCells)
+                else:
+                    data = arr[-1, :, 0]  # (Time, nCells, nLayers)
                 p = global_map(data, lon_deg, lat_deg,
                                f"MPAS-O {var} layer 0 (native, last t)",
                                cmap=cmap, vmin=vm, vmax=vx,
@@ -3492,6 +3943,361 @@ def write_html_index(outdir, all_plots_by_comp, all_issues, file_inventory_data,
 
 
 # -----------------------------------------------------------------------------
+# ACE Training Readiness Certification
+# -----------------------------------------------------------------------------
+
+def check_training_readiness(rundir, outdir, verbose):
+    """Certify remapped MPAS output for ACE training ingestion.
+
+    Validates the remapped lat-lon files that ACE would directly consume.
+    Returns (issues, plots, fill_reports) for run_check() compatibility.
+
+    Checks:
+      1. All ACE-required MPAS variables present in remapped files
+      2. Grid coordinates match shifted Gaussian 180x360 spec
+      3. Temporal completeness: monotonic time axis, consistent record counts
+      4. Consistent land mask across variables and timesteps
+      5. Zero NaN/fill contamination in ocean cells (all timesteps)
+      6. Physical range bounds per variable (all timesteps)
+      7. Heat flux closure on the remapped grid
+    """
+    print("\n=== ACE Training Readiness Certification ===")
+    issues = []
+    plots = []
+    fill_reports = []
+
+    # -- Collect all remapped files by stream --
+    streams = {
+        "fmeDerivedFields":        "*.mpaso.hist.am.fmeDerivedFields.*.remapped.nc",
+        "fmeDepthCoarsening":      "*.mpaso.hist.am.fmeDepthCoarsening.*.remapped.nc",
+        "fmeVerticalReduce":       "*.mpaso.hist.am.fmeVerticalReduce.*.remapped.nc",
+        "fmeSeaiceDerivedFields":  "*.mpassi.hist.am.fmeSeaiceDerivedFields.*.remapped.nc",
+    }
+    stream_files = {}
+    for stream, pat in streams.items():
+        stream_files[stream] = find_files(rundir, pat)
+        if not stream_files[stream]:
+            issues.append(f"  MISSING stream: no {stream} remapped files found")
+
+    if not any(stream_files.values()):
+        issues.append("  FATAL: no remapped files found in rundir")
+        _report("Training readiness", issues)
+        return issues, plots, fill_reports
+
+    # -- Build expected variable map: fme_name -> stream --
+    expected_vars = {}
+    for v in REMAPPED_DERIVED_VARS:
+        expected_vars[v] = "fmeDerivedFields"
+    for v in REMAPPED_SEAICE_VARS:
+        expected_vars[v] = "fmeSeaiceDerivedFields"
+    for v in REMAPPED_VERTREDUCE_VARS:
+        expected_vars[v] = "fmeVerticalReduce"
+    # Depth-coarsened: auto-detect layer count from first file
+    n_depth = 19  # default ACE expectation
+    if stream_files.get("fmeDepthCoarsening"):
+        ds_tmp = safe_open(stream_files["fmeDepthCoarsening"][0])
+        for base in REMAPPED_DEPTH_COARSENED_BASES:
+            for k in range(100):
+                if get_var(ds_tmp, f"{base}_{k}") is None:
+                    n_depth = k
+                    break
+            if n_depth > 0:
+                break
+        close_ds(ds_tmp)
+    print(f"  Depth-coarsened layers detected: {n_depth}")
+    for base in REMAPPED_DEPTH_COARSENED_BASES:
+        for k in range(n_depth):
+            expected_vars[f"{base}_{k}"] = "fmeDepthCoarsening"
+
+    # ---- CHECK 1: Variable presence ----
+    print("\n  [1/7] Variable presence")
+    n_present = 0
+    missing_vars = []
+    for vname, stream in expected_vars.items():
+        files = stream_files.get(stream, [])
+        if not files:
+            missing_vars.append(vname)
+            continue
+        ds = safe_open(files[-1])
+        arr = get_var(ds, vname)
+        close_ds(ds)
+        if arr is None:
+            missing_vars.append(vname)
+        else:
+            n_present += 1
+    n_total_vars = len(expected_vars)
+    if missing_vars:
+        issues.append(f"  Missing {len(missing_vars)}/{n_total_vars} variables: "
+                      f"{', '.join(missing_vars[:10])}"
+                      + (f" ... (+{len(missing_vars)-10} more)" if len(missing_vars) > 10 else ""))
+    print(f"    {n_present}/{n_total_vars} variables present"
+          + (f"  ({len(missing_vars)} missing)" if missing_vars else "  OK"))
+
+    # ---- CHECK 2: Coordinate validation ----
+    print("  [2/7] Coordinate validation")
+    for stream, files in stream_files.items():
+        if not files:
+            continue
+        ds = safe_open(files[0])
+        lon = get_var(ds, "lon")
+        lat = get_var(ds, "lat")
+        dims = get_dims(ds)
+        close_ds(ds)
+        if lon is None or lat is None:
+            issues.append(f"  {stream}: missing lon/lat coordinate variables")
+            continue
+        # Check dimensions
+        nlon = dims.get("lon", 0)
+        nlat = dims.get("lat", 0)
+        if nlon != EXPECTED_NLON or nlat != EXPECTED_NLAT:
+            issues.append(f"  {stream}: grid {nlon}x{nlat}, expected "
+                          f"{EXPECTED_NLON}x{EXPECTED_NLAT}")
+        # Check coordinate values: shifted Gaussian should be ~0.5 to ~359.5
+        if lon is not None and lon.size == EXPECTED_NLON:
+            dlon = np.diff(lon)
+            if not np.all(dlon > 0):
+                issues.append(f"  {stream}: lon not monotonically increasing")
+            # Expect ~1-degree spacing
+            if np.abs(np.mean(dlon) - 1.0) > 0.1:
+                issues.append(f"  {stream}: lon spacing={np.mean(dlon):.3f}, "
+                              f"expected ~1.0 deg")
+        if lat is not None and lat.size == EXPECTED_NLAT:
+            # Gaussian latitudes: not equally spaced, but monotonic
+            dlat = np.diff(lat)
+            if not (np.all(dlat > 0) or np.all(dlat < 0)):
+                issues.append(f"  {stream}: lat not monotonic")
+        break  # Only need to check one stream (all share the same target grid)
+    print("    Grid and coordinate check done")
+
+    # ---- CHECK 3: Temporal completeness ----
+    print("  [3/7] Temporal completeness")
+    stream_ntimes = {}
+    for stream, files in stream_files.items():
+        if not files:
+            continue
+        all_times = []
+        for f in files:
+            ds = safe_open(f)
+            t = get_var(ds, "Time")
+            if t is None:
+                t = get_var(ds, "time")
+            if t is not None:
+                all_times.extend(t.tolist())
+            else:
+                dims = get_dims(ds)
+                nt = dims.get("Time", dims.get("time", 0))
+                all_times.extend(range(len(all_times), len(all_times) + nt))
+            close_ds(ds)
+        stream_ntimes[stream] = len(all_times)
+        if len(all_times) == 0:
+            issues.append(f"  {stream}: 0 timesteps")
+        elif len(all_times) > 1:
+            t_arr = np.array(all_times, dtype=float)
+            dt = np.diff(t_arr)
+            if not np.all(dt > 0):
+                issues.append(f"  {stream}: time axis not monotonically increasing")
+            # Check for gaps: dt should be roughly uniform
+            if dt.size > 1:
+                median_dt = np.median(dt)
+                if median_dt > 0:
+                    gaps = np.where(dt > 2.5 * median_dt)[0]
+                    if len(gaps) > 0:
+                        issues.append(f"  {stream}: {len(gaps)} time gap(s) detected "
+                                      f"(>{2.5*median_dt:.1f} time units)")
+    # Cross-stream consistency
+    unique_counts = set(stream_ntimes.values())
+    if len(unique_counts) > 1:
+        counts_str = ", ".join(f"{s}={n}" for s, n in stream_ntimes.items())
+        issues.append(f"  Mismatched timestep counts across streams: {counts_str}")
+    for s, n in stream_ntimes.items():
+        print(f"    {s}: {n} timesteps")
+
+    # ---- CHECK 4 & 5: Land mask consistency + ocean NaN contamination ----
+    # Strategy: derive land mask from SST (NaN cells = land), then verify
+    # all other variables have the same mask and no NaN in ocean cells.
+    print("  [4/7] Land mask consistency")
+    print("  [5/7] Ocean cell NaN/fill contamination")
+    land_mask = None  # (nlat, nlon) bool: True = land
+    mask_issues = 0
+    nan_issues = 0
+    fill_thresh = 1e10
+
+    for stream, files in stream_files.items():
+        if not files:
+            continue
+        for fpath in files:
+            ds = safe_open(fpath)
+            dims = get_dims(ds)
+            nt = dims.get("Time", dims.get("time", 1))
+            varnames = get_varnames(ds)
+
+            for vname in sorted(expected_vars.keys()):
+                if expected_vars[vname] != stream:
+                    continue
+                arr = get_var(ds, vname)
+                if arr is None:
+                    continue
+
+                for ti in range(min(nt, arr.shape[0]) if arr.ndim >= 3 else 1):
+                    if arr.ndim == 3:
+                        slab = arr[ti]
+                    elif arr.ndim == 2:
+                        slab = arr
+                    else:
+                        continue
+                    slab_f = slab.astype(float)
+                    bad = (~np.isfinite(slab_f)) | (np.abs(slab_f) >= fill_thresh)
+
+                    if land_mask is None and vname == "sst":
+                        # Bootstrap land mask from first SST timestep
+                        land_mask = bad.copy()
+                        print(f"    Land mask: {int(land_mask.sum())} of "
+                              f"{land_mask.size} cells "
+                              f"({100*land_mask.sum()/land_mask.size:.1f}%)")
+                    elif land_mask is not None:
+                        # Check 4: mask consistency —
+                        # ocean cells (land_mask=False) must not be NaN
+                        ocean_bad = bad & ~land_mask
+                        n_ocean_bad = int(ocean_bad.sum())
+                        if n_ocean_bad > 0:
+                            nan_issues += 1
+                            if nan_issues <= 5:
+                                issues.append(
+                                    f"  NaN/fill in ocean cells: {vname} "
+                                    f"t={ti} in {os.path.basename(fpath)}: "
+                                    f"{n_ocean_bad} cells")
+                        # Check for land cells that are valid in this var but
+                        # NaN in SST — indicates inconsistent masking
+                        valid_on_land = (~bad) & land_mask
+                        n_valid_land = int(valid_on_land.sum())
+                        if n_valid_land > 0 and vname not in (
+                                "iceAreaTotal", "iceVolumeTotal",
+                                "snowVolumeTotal", "iceThicknessMean",
+                                "surfaceTemperatureMean",
+                                "airStressZonal", "airStressMeridional"):
+                            mask_issues += 1
+                            if mask_issues <= 3:
+                                issues.append(
+                                    f"  Mask mismatch: {vname} t={ti} has "
+                                    f"{n_valid_land} valid cells on SST-land")
+            close_ds(ds)
+
+    if nan_issues > 5:
+        issues.append(f"  ... and {nan_issues - 5} more ocean NaN/fill issues")
+    if mask_issues > 3:
+        issues.append(f"  ... and {mask_issues - 3} more mask mismatch issues")
+    if nan_issues == 0 and land_mask is not None:
+        print("    No NaN/fill contamination in ocean cells  OK")
+    if mask_issues == 0 and land_mask is not None:
+        print("    Land mask consistent across ocean variables  OK")
+    if land_mask is None:
+        issues.append("  Could not derive land mask (SST not found)")
+
+    # ---- CHECK 6: Physical range bounds (all timesteps) ----
+    print("  [6/7] Physical range bounds (all timesteps)")
+    range_fails = 0
+    for vname, stream in expected_vars.items():
+        # Use base name for range lookup (temperatureCoarsened_3 -> temperatureCoarsened)
+        parts = vname.rsplit('_', 1)
+        base = parts[0] if len(parts) == 2 and parts[1].isdigit() else vname
+        vmin, vmax = RANGE_CHECKS.get(base, (None, None))
+        if vmin is None and vmax is None:
+            continue
+        files = stream_files.get(stream, [])
+        if not files:
+            continue
+        for fpath in files:
+            ds = safe_open(fpath)
+            arr = get_var(ds, vname)
+            close_ds(ds)
+            if arr is None:
+                continue
+            v = valid_data(arr)
+            if v is None or v.size == 0:
+                continue
+            if vmin is not None and v.min() < vmin:
+                range_fails += 1
+                if range_fails <= 5:
+                    issues.append(f"  Range: {vname} min={v.min():.4g} < {vmin} "
+                                  f"in {os.path.basename(fpath)}")
+            if vmax is not None and v.max() > vmax:
+                range_fails += 1
+                if range_fails <= 5:
+                    issues.append(f"  Range: {vname} max={v.max():.4g} > {vmax} "
+                                  f"in {os.path.basename(fpath)}")
+    if range_fails > 5:
+        issues.append(f"  ... and {range_fails - 5} more range violations")
+    if range_fails == 0:
+        print("    All variables within physical bounds  OK")
+    else:
+        print(f"    {range_fails} range violation(s)")
+
+    # ---- CHECK 7: Heat flux closure on remapped grid ----
+    print("  [7/7] Heat flux closure (remapped grid)")
+    derived_files = stream_files.get("fmeDerivedFields", [])
+    if derived_files:
+        flux_ok = True
+        for fpath in derived_files:
+            ds = safe_open(fpath)
+            total = get_var(ds, "surfaceHeatFluxTotal")
+            sw    = get_var(ds, "shortWaveHeatFlux")
+            lw    = get_var(ds, "longWaveHeatFluxDown")
+            lh    = get_var(ds, "latentHeatFlux")
+            sh    = get_var(ds, "sensibleHeatFlux")
+            close_ds(ds)
+            if any(v is None for v in [total, sw, lw, lh, sh]):
+                continue
+            # Check every timestep
+            nt = total.shape[0] if total.ndim >= 3 else 1
+            for ti in range(nt):
+                if total.ndim >= 3:
+                    t_s = total[ti].astype(float)
+                    c_s = (sw[ti].astype(float) + lw[ti].astype(float) +
+                           lh[ti].astype(float) + sh[ti].astype(float))
+                else:
+                    t_s = total.astype(float)
+                    c_s = (sw.astype(float) + lw.astype(float) +
+                           lh.astype(float) + sh.astype(float))
+                ok = (np.abs(t_s) < fill_thresh) & np.isfinite(t_s)
+                ok &= (np.abs(c_s) < fill_thresh) & np.isfinite(c_s)
+                if ok.sum() == 0:
+                    continue
+                residual = t_s[ok] - c_s[ok]
+                max_abs = float(np.abs(residual).max())
+                # Remapped data loses BFB; allow small tolerance from interpolation
+                if max_abs > 5.0:  # W/m2
+                    flux_ok = False
+                    issues.append(
+                        f"  Heat flux residual: max={max_abs:.2f} W/m2 "
+                        f"t={ti} in {os.path.basename(fpath)}")
+                    break
+            if not flux_ok:
+                break
+        if flux_ok:
+            print("    Heat flux closure within 5 W/m2  OK")
+    else:
+        print("    SKIP: no remapped fmeDerivedFields files")
+
+    # ---- VERDICT ----
+    n_issues = len(issues)
+    if n_issues == 0:
+        verdict = "PASS"
+        print(f"\n  *** TRAINING READINESS: {verdict} ***")
+        print(f"  {n_present} variables, {list(stream_ntimes.values())[0] if stream_ntimes else 0} timesteps, "
+              f"all checks passed.")
+    else:
+        verdict = "FAIL"
+        print(f"\n  *** TRAINING READINESS: {verdict} ({n_issues} issue(s)) ***")
+        for iss in issues[:10]:
+            print(f"  {iss.strip()}")
+        if n_issues > 10:
+            print(f"  ... and {n_issues - 10} more")
+
+    _report("Training readiness", issues)
+    return issues, plots, fill_reports
+
+
+# -----------------------------------------------------------------------------
 # Main
 # -----------------------------------------------------------------------------
 
@@ -3568,6 +4374,14 @@ def main():
               args.rundir, args.verbose)
     run_check("Temporal Consistency", check_temporal_consistency, "self_checks",
               args.rundir, args.verbose)
+
+    # ACE training readiness certification (operates on remapped files only)
+    run_check("Training Readiness", check_training_readiness, "self_checks",
+              args.rundir, args.verbose)
+
+    # Offline depth coarsening cross-check (algorithm verification)
+    run_check("Offline Depth Coarsening", check_offline_depth_coarsening,
+              "self_checks", args.rundir, args.verbose, args.legacy_rundir)
 
     # Cross-component comparison figures (native vs remapped side-by-side,
     # zonal means)

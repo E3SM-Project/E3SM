@@ -57,6 +57,12 @@
 		<var name="airStressMeridional" type="real" dimensions="nCells Time" units="N m^-2"
 			description="Meridional component of air stress on ice in geographical coordinates"
 		/>
+		<var name="uVelocityGeo" type="real" dimensions="nCells Time" units="m s^-1"
+			description="True eastwards sea-ice velocity at cell centers (vertex velocities interpolated to cells, then rotated from native MPAS frame to geographic frame)"
+		/>
+		<var name="vVelocityGeo" type="real" dimensions="nCells Time" units="m s^-1"
+			description="True northwards sea-ice velocity at cell centers (vertex velocities interpolated to cells, then rotated from native MPAS frame to geographic frame)"
+		/>
 	</var_struct>
 	<streams>
 		<!-- output_interval default is daily; override via SourceMods/streams.ocean_forward -->
@@ -83,5 +89,7 @@
 			<var name="snowVolumeCell"/>
 			<var name="uVelocity"/>
 			<var name="vVelocity"/>
+			<var name="uVelocityGeo"/>
+			<var name="vVelocityGeo"/>
 		</stream>
 	</streams>

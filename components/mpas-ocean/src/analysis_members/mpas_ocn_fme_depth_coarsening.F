@@ -73,6 +73,13 @@ module ocn_fme_depth_coarsening
    integer :: n_avg_fields = 0       ! nCoarsenLevels * nCoarsenFields + nCoarsenLevels
    real(r8), allocatable :: remap_accum(:,:)  ! (remap_nb_local, n_avg_fields)
 
+   !> Instantaneous companion: when time_averaging AND write_instantaneous_companion
+   !> are both true, mirror the latest remapped value of each (field, level) into
+   !> remap_latest_inst so it can be written alongside the averaged value at each
+   !> output trigger.
+   logical :: write_inst_companion = .false.
+   real(r8), allocatable :: remap_latest_inst(:,:)  ! (remap_nb_local, n_avg_fields)
+
 !***********************************************************************
 
 contains
@@ -88,6 +95,7 @@ contains
       character(len=StrKIND), pointer :: config_AM_fmeDepthCoarsening_fields
       character(len=StrKIND), pointer :: config_AM_fmeDepthCoarsening_horiz_remap_file
       logical, pointer :: config_time_averaging
+      logical, pointer :: config_write_inst_companion
       character(len=StrKIND), pointer :: config_stream_output_interval
       character(len=StrKIND) :: tempStr
       character(len=128) :: varName, longName
@@ -265,6 +273,45 @@ contains
                      time_avg_enabled = .true.
                      call mpas_log_write( &
                           'fmeDepthCoarsening: time averaging enabled')
+
+                     ! Optional instantaneous companion alongside avg
+                     call mpas_pool_get_config(domain % configs, &
+                          'config_AM_fmeDepthCoarsening_write_instantaneous_companion', &
+                          config_write_inst_companion)
+                     if (associated(config_write_inst_companion)) then
+                        if (config_write_inst_companion) then
+                           write_inst_companion = .true.
+                           if (.not. allocated(remap_latest_inst)) then
+                              allocate(remap_latest_inst(remap_nb_local, n_avg_fields))
+                           end if
+                           remap_latest_inst = 0.0_r8
+                           do iField = 1, nCoarsenFields
+                              do kOut = 0, nCoarsenLevels - 1
+                                 write(varName, '(A,A,I0,A)') &
+                                      trim(coarsenFieldNames(iField)), &
+                                      'Coarsened_', kOut, '_inst'
+                                 write(longName, '(A,I0,A)') &
+                                      'Instantaneous companion: depth-coarsened ' &
+                                      // trim(coarsenFieldNames(iField)) // &
+                                      ' level ', kOut, ' (snapshot at output trigger)'
+                                 call remap_outfile%register_var(trim(varName), &
+                                      '', trim(longName), ierr)
+                              end do
+                           end do
+                           do kOut = 0, nCoarsenLevels - 1
+                              write(varName, '(A,I0,A)') &
+                                   'layerThicknessCoarsened_', kOut, '_inst'
+                              write(longName, '(A,I0,A)') &
+                                   'Instantaneous companion: layer thickness level ', &
+                                   kOut, ' (snapshot at output trigger)'
+                              call remap_outfile%register_var(trim(varName), 'm', &
+                                   trim(longName), ierr)
+                           end do
+                           call mpas_log_write( &
+                                'fmeDepthCoarsening: instantaneous _inst companion ' // &
+                                'variables enabled alongside time-averaged output')
+                        end if
+                     end if
                   end if
                end if
             end if
@@ -530,6 +577,25 @@ contains
                         call write_avg_field(trim(varName), &
                              nCoarsenFields * nCoarsenLevels + kOut + 1)
                      end do
+
+                     ! Instantaneous companions at the same trigger moment
+                     if (write_inst_companion) then
+                        do ifld = 1, nCoarsenFields
+                           do kOut = 0, nCoarsenLevels - 1
+                              write(varName, '(A,A,I0,A)') &
+                                   trim(coarsenFieldNames(ifld)), &
+                                   'Coarsened_', kOut, '_inst'
+                              call write_inst_companion_field(trim(varName), &
+                                   (ifld - 1) * nCoarsenLevels + kOut + 1)
+                           end do
+                        end do
+                        do kOut = 0, nCoarsenLevels - 1
+                           write(varName, '(A,I0,A)') &
+                                'layerThicknessCoarsened_', kOut, '_inst'
+                           call write_inst_companion_field(trim(varName), &
+                                nCoarsenFields * nCoarsenLevels + kOut + 1)
+                        end do
+                     end if
                   end if
                   remap_accum = 0.0_r8
                   nAccum = 0
@@ -583,6 +649,9 @@ contains
               fld_remap, ierr, mask=levelMask)
          if (time_avg_enabled) then
             remap_accum(:, idx) = remap_accum(:, idx) + fld_remap(:, 1)
+            if (write_inst_companion) then
+               remap_latest_inst(:, idx) = fld_remap(:, 1)
+            end if
          end if
       end subroutine remap_1level
 
@@ -597,6 +666,15 @@ contains
          character(len=*), intent(in) :: vname
          call remap_outfile%write_var(vname, fld_remap, 1, ierr)
       end subroutine write_inst_field
+
+      subroutine write_inst_companion_field(vname, idx)
+         ! Snapshot of the latest instantaneous remapped value for slot idx.
+         ! Reuses fld_remap as the write buffer so we don't allocate per-call.
+         character(len=*), intent(in) :: vname
+         integer, intent(in) :: idx
+         fld_remap(:, 1) = remap_latest_inst(:, idx)
+         call remap_outfile%write_var(vname, fld_remap, 1, ierr)
+      end subroutine write_inst_companion_field
 
    end subroutine ocn_compute_fme_depth_coarsening!}}}
 
@@ -646,6 +724,7 @@ contains
       if (allocated(depthBounds)) deallocate(depthBounds)
       if (allocated(coarsenFieldNames)) deallocate(coarsenFieldNames)
       if (allocated(remap_accum)) deallocate(remap_accum)
+      if (allocated(remap_latest_inst)) deallocate(remap_latest_inst)
 
    end subroutine ocn_finalize_fme_depth_coarsening!}}}
 

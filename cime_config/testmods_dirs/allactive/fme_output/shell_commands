@@ -71,7 +71,7 @@ echo "  MPAS: interval=${FME_MPAS_INTERVAL}"
 # ---------------------------------------------------------------------------
 # Detect map files for this case's resolution
 # ---------------------------------------------------------------------------
-FME_MAPS_DIR=/eagle/E3SMinput/mahf708/fme_maps
+FME_MAPS_DIR=/pscratch/sd/m/mahf708/fme_maps
 
 # Read grid names from the case XML
 ATM_GRID=$(./xmlquery --value ATM_GRID)
@@ -125,8 +125,15 @@ derived_fld_defs = 'STW=Q+CLDICE+CLDLIQ+RAINQM'
 vcoarsen_level_bounds = 0, 25, 38, 46, 52, 56, 61, 69, 80
 vcoarsen_avg_flds = 'T','U','V','STW'
 
+! Height-above-surface linear interpolation (m AGL) for ACE 2 m / 10 m fields.
+! state%zm is height-above-surface at level midpoints; targets below the
+! lowest midpoint collapse to the lowest level (no extrapolation).
+vcoarsen_select_heights = 2.0, 10.0
+vcoarsen_select_height_flds = 'T','U','V','STW'
+
 ! Tape 1: ${FME_EAM_OUTPUT_HOURS}-hourly output.
 ! State variables are instantaneous; fluxes/tendencies use :A (time-averaged).
+! 10 m wind speed and direction are derived offline from U_at_z10 and V_at_z10.
 fincl1 = 'SOLIN:A', 'PHIS',
           'LANDFRAC', 'OCNFRAC', 'ICEFRAC',
           'PS', 'TS',
@@ -134,12 +141,14 @@ fincl1 = 'SOLIN:A', 'PHIS',
           'STW_0', 'STW_1','STW_2','STW_3','STW_4','STW_5','STW_6','STW_7',
           'U_0','U_1','U_2','U_3','U_4','U_5','U_6','U_7',
           'V_0','V_1','V_2','V_3','V_4','V_5','V_6','V_7',
+          'T_at_z2', 'STW_at_z2',
+          'U_at_z10', 'V_at_z10',
           'FLUT:A', 'FLNT:A', 'FSNTOA:A', 'FSUTOA:A',
           'FLDS:A', 'FLUS:A', 'FSDS:A', 'FSUS:A', 'FSNS:A', 'FLNS:A',
           'LHFLX:A','SHFLX:A',
           'TAUX:A', 'TAUY:A',
           'PRECT:A',
-          'DTENDTTW'
+          'DTENDTTW:A'
 
 EOF
 
@@ -179,6 +188,10 @@ cat >> user_nl_mpaso << EOF
 config_AM_fmeDepthCoarsening_enable = .true.
 config_AM_fmeDepthCoarsening_compute_interval = 'dt'
 config_AM_fmeDepthCoarsening_time_averaging = .true.
+! Samudra training data needs both 1D-avg and 1D-instant at the same cadence;
+! when both flags are true, instantaneous _inst companions are written into
+! the same remapped output file as the time-averaged variables.
+config_AM_fmeDepthCoarsening_write_instantaneous_companion = .true.
 config_AM_fmeDepthCoarsening_stream_output_interval = '${FME_MPAS_INTERVAL}'
 ! 19 depth layers matching ACE ocean interface levels
 config_AM_fmeDepthCoarsening_depth_bounds = '0,20,30,40,50,80,110,140,170,230,410,530,1020,1080,1720,1980,2820,3380,4620,6380'

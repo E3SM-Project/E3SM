@@ -8074,6 +8074,24 @@ Use 'all' to apply to T, U, V, OMEGA, Z3, Q.
 Default: none
 </entry>
 
+<entry id="vcoarsen_select_heights" type="real(50)" category="physics"
+       group="eam_vcoarsen_nl" valid_values="" >
+Heights above surface (m) for linear interpolation in geometric height (e.g.,
+2.0, 10.0 for 2 m and 10 m diagnostics). Uses state%zm (height-above-surface
+at midpoints). Output fields named BASE_at_z{value}. Targets outside the
+column z-range collapse to the nearest level (no extrapolation).
+Unused entries should be -1.
+Default: -1.0 (inactive)
+</entry>
+
+<entry id="vcoarsen_select_height_flds" type="char*34(100)" category="physics"
+       group="eam_vcoarsen_nl" valid_values="" >
+Field names for height-above-surface interpolation.
+Use 'all' to apply to T, U, V, OMEGA, Z3, Q. Constituent and derived field
+names (from derived_fld_defs) are also accepted.
+Default: none
+</entry>
+
 <entry id="vcoarsen_int_flds" type="char*34(100)" category="physics"
        group="eam_vcoarsen_nl" valid_values="" >
 Field names for column integration (vertical reduction).

@@ -2977,6 +2977,287 @@ def write_html_index(outdir, all_plots_by_comp, all_issues, file_inventory_data,
 
 
 # -----------------------------------------------------------------------------
+# ACE Training Readiness Certification
+# -----------------------------------------------------------------------------
+
+def check_training_readiness(rundir, outdir, verbose):
+    """Certify EAM remapped output for ACE training ingestion.
+
+    Validates the h0 lat-lon files that ACE would directly consume.
+    Returns (issues, plots, fill_reports) for run_check() compatibility.
+
+    Checks:
+      1. All ACE-required EAM variables present
+      2. Grid coordinates match shifted Gaussian lat-lon spec
+      3. Temporal completeness: monotonic time axis, no gaps
+      4. Zero NaN/fill contamination across all timesteps
+      5. Physical range bounds per variable (all timesteps)
+      6. Radiation budget closure on the output grid
+      7. Vcoarsen layer completeness and consistency
+    """
+    print("\n=== ACE Training Readiness Certification (EAM) ===")
+    issues = []
+    plots = []
+    fill_reports = []
+    fill_thresh = 1e10
+
+    # -- Collect h0 files --
+    h0_files = find_files(rundir, "*.eam.h0.*.nc")
+    if not h0_files:
+        issues.append("  FATAL: no *.eam.h0.*.nc files found")
+        _report("Training readiness", issues)
+        return issues, plots, fill_reports
+
+    # -- Build expected variable list: ACE name -> EAM name --
+    expected_vars = {}
+    for ace_name in ACE_IN_NAMES + ACE_OUT_NAMES:
+        eam_name = ace_to_eam(ace_name)
+        expected_vars[eam_name] = ace_name  # eam_name -> ace_name
+    # Remove duplicates (some vars appear in both IN and OUT)
+    # Add radiation diagnostic fields not in ACE lists but needed for closure
+    for extra in ["FSNTOA", "FLNT", "FSNS", "FLNS"]:
+        if extra not in expected_vars:
+            expected_vars[extra] = extra
+
+    # ---- CHECK 1: Variable presence ----
+    print("\n  [1/7] Variable presence")
+    ds_check = safe_open(h0_files[-1])
+    n_present = 0
+    missing_vars = []
+    for eam_name in sorted(expected_vars.keys()):
+        arr = get_var(ds_check, eam_name)
+        if arr is None:
+            missing_vars.append(eam_name)
+        else:
+            n_present += 1
+    close_ds(ds_check)
+    n_total_vars = len(expected_vars)
+    if missing_vars:
+        issues.append(f"  Missing {len(missing_vars)}/{n_total_vars} variables: "
+                      f"{', '.join(missing_vars[:10])}"
+                      + (f" ... (+{len(missing_vars)-10} more)"
+                         if len(missing_vars) > 10 else ""))
+    print(f"    {n_present}/{n_total_vars} variables present"
+          + (f"  ({len(missing_vars)} missing)" if missing_vars else "  OK"))
+
+    # ---- CHECK 2: Coordinate validation ----
+    print("  [2/7] Coordinate validation")
+    ds_grid = safe_open(h0_files[0])
+    dims = get_dims(ds_grid)
+    lon = get_var(ds_grid, "lon")
+    lat = get_var(ds_grid, "lat")
+    is_latlon = "lon" in dims and "lat" in dims
+    if not is_latlon:
+        issues.append("  Grid is not lat-lon (found dims: "
+                      f"{list(dims.keys())}). Expected remapped output.")
+        print("    WARNING: not a lat-lon grid — may be native spectral element")
+    else:
+        nlon = dims.get("lon", 0)
+        nlat = dims.get("lat", 0)
+        print(f"    Grid: {nlon} x {nlat}")
+        if nlon != 360:
+            issues.append(f"  lon dimension={nlon}, expected 360")
+        if nlat != 180:
+            issues.append(f"  lat dimension={nlat}, expected 180")
+        if lon is not None and lon.size > 1:
+            dlon = np.diff(lon)
+            if not np.all(dlon > 0):
+                issues.append("  lon not monotonically increasing")
+            if np.abs(np.mean(dlon) - 1.0) > 0.1:
+                issues.append(f"  lon spacing={np.mean(dlon):.3f}, expected ~1.0 deg")
+        if lat is not None and lat.size > 1:
+            dlat = np.diff(lat)
+            if not (np.all(dlat > 0) or np.all(dlat < 0)):
+                issues.append("  lat not monotonic")
+        if not issues:
+            print("    Coordinates OK")
+    close_ds(ds_grid)
+
+    # ---- CHECK 3: Temporal completeness ----
+    print("  [3/7] Temporal completeness")
+    all_times = []
+    for fpath in h0_files:
+        ds = safe_open(fpath)
+        t = get_var(ds, "time")
+        if t is None:
+            t = get_var(ds, "Time")
+        if t is not None:
+            all_times.extend(t.tolist())
+        else:
+            d = get_dims(ds)
+            nt = d.get("time", d.get("Time", 0))
+            all_times.extend(range(len(all_times), len(all_times) + nt))
+        close_ds(ds)
+    n_timesteps = len(all_times)
+    if n_timesteps == 0:
+        issues.append("  0 timesteps found")
+    else:
+        t_arr = np.array(all_times, dtype=float)
+        if t_arr.size > 1:
+            dt = np.diff(t_arr)
+            if not np.all(dt > 0):
+                issues.append("  Time axis not monotonically increasing")
+            if dt.size > 1:
+                median_dt = np.median(dt)
+                if median_dt > 0:
+                    gaps = np.where(dt > 2.5 * median_dt)[0]
+                    if len(gaps) > 0:
+                        issues.append(f"  {len(gaps)} time gap(s) detected")
+    print(f"    {n_timesteps} timesteps across {len(h0_files)} file(s)")
+
+    # ---- CHECK 4: NaN/fill contamination (all timesteps) ----
+    print("  [4/7] NaN/fill contamination (all timesteps)")
+    nan_issues = 0
+    # For EAM on a lat-lon grid, atmospheric fields should have no NaN
+    # anywhere (atmosphere covers the whole globe, unlike ocean).
+    for fpath in h0_files:
+        ds = safe_open(fpath)
+        d = get_dims(ds)
+        nt = d.get("time", d.get("Time", 1))
+        for eam_name in sorted(expected_vars.keys()):
+            if eam_name in missing_vars:
+                continue
+            arr = get_var(ds, eam_name)
+            if arr is None:
+                continue
+            # Check every timestep
+            n_check = min(nt, arr.shape[0]) if arr.ndim >= 3 else 1
+            for ti in range(n_check):
+                if arr.ndim >= 3:
+                    slab = arr[ti]
+                elif arr.ndim == 2:
+                    slab = arr
+                else:
+                    continue
+                slab_f = slab.astype(float)
+                n_bad = int((~np.isfinite(slab_f) |
+                             (np.abs(slab_f) >= fill_thresh)).sum())
+                if n_bad > 0:
+                    nan_issues += 1
+                    if nan_issues <= 5:
+                        issues.append(
+                            f"  NaN/fill: {eam_name} t={ti} "
+                            f"in {os.path.basename(fpath)}: "
+                            f"{n_bad} bad cells")
+        close_ds(ds)
+    if nan_issues > 5:
+        issues.append(f"  ... and {nan_issues - 5} more NaN/fill issues")
+    if nan_issues == 0:
+        print("    No NaN/fill contamination  OK")
+    else:
+        print(f"    {nan_issues} NaN/fill issue(s)")
+
+    # ---- CHECK 5: Physical range bounds (all timesteps) ----
+    print("  [5/7] Physical range bounds (all timesteps)")
+    range_fails = 0
+    for fpath in h0_files:
+        ds = safe_open(fpath)
+        for eam_name in sorted(expected_vars.keys()):
+            if eam_name in missing_vars:
+                continue
+            # Use base name for range lookup (T_3 -> T)
+            parts = eam_name.rsplit('_', 1)
+            base = parts[0] if len(parts) == 2 and parts[1].isdigit() else eam_name
+            vmin, vmax = RANGE_CHECKS.get(base, (None, None))
+            if vmin is None and vmax is None:
+                continue
+            arr = get_var(ds, eam_name)
+            if arr is None:
+                continue
+            v = valid_data(arr)
+            if v is None or v.size == 0:
+                continue
+            if vmin is not None and v.min() < vmin:
+                range_fails += 1
+                if range_fails <= 5:
+                    issues.append(f"  Range: {eam_name} min={v.min():.4g} < {vmin} "
+                                  f"in {os.path.basename(fpath)}")
+            if vmax is not None and v.max() > vmax:
+                range_fails += 1
+                if range_fails <= 5:
+                    issues.append(f"  Range: {eam_name} max={v.max():.4g} > {vmax} "
+                                  f"in {os.path.basename(fpath)}")
+        close_ds(ds)
+    if range_fails > 5:
+        issues.append(f"  ... and {range_fails - 5} more range violations")
+    if range_fails == 0:
+        print("    All variables within physical bounds  OK")
+    else:
+        print(f"    {range_fails} range violation(s)")
+
+    # ---- CHECK 6: Radiation budget closure ----
+    print("  [6/7] Radiation budget closure")
+    ds_rad = safe_open(h0_files[-1])
+    rad_vars = {v: get_var(ds_rad, v) for v in
+                ["SOLIN", "FSUTOA", "FLUT", "FSDS", "FSUS",
+                 "FLDS", "FLUS", "LHFLX", "SHFLX"]}
+    close_ds(ds_rad)
+    if all(v is not None for v in rad_vars.values()):
+        # Extract last timestep global means
+        gmeans = {}
+        for vn, arr in rad_vars.items():
+            data = arr[-1] if arr.ndim >= 2 and arr.shape[0] > 0 else arr
+            v = valid_data(data)
+            if v is not None and v.size > 0:
+                gmeans[vn] = float(v.mean())
+        if len(gmeans) == len(rad_vars):
+            toa_net = gmeans["SOLIN"] - gmeans["FSUTOA"] - gmeans["FLUT"]
+            sfc_net = (gmeans["FSDS"] - gmeans["FSUS"] +
+                       gmeans["FLDS"] - gmeans["FLUS"] -
+                       gmeans["LHFLX"] - gmeans["SHFLX"])
+            # TOA imbalance should be small (< ~10 W/m2 in equilibrium,
+            # larger during spinup). Flag extreme values only.
+            if abs(toa_net) > 50:
+                issues.append(f"  TOA imbalance: {toa_net:.1f} W/m2 (>50 W/m2)")
+            if abs(sfc_net) > 50:
+                issues.append(f"  SFC imbalance: {sfc_net:.1f} W/m2 (>50 W/m2)")
+            print(f"    TOA net: {toa_net:.1f} W/m2, SFC net: {sfc_net:.1f} W/m2"
+                  + ("  OK" if abs(toa_net) <= 50 and abs(sfc_net) <= 50 else ""))
+        else:
+            print("    SKIP: could not compute global means")
+    else:
+        missing_rad = [v for v, a in rad_vars.items() if a is None]
+        print(f"    SKIP: missing {missing_rad}")
+
+    # ---- CHECK 7: Vcoarsen layer completeness ----
+    print("  [7/7] Vcoarsen layer completeness")
+    ds_vc = safe_open(h0_files[-1])
+    vc_ok = True
+    for base in ACE_ATM_3D_COARSENED:
+        found = 0
+        for k in range(N_ATM_LAYERS):
+            if get_var(ds_vc, f"{base}_{k}") is not None:
+                found += 1
+        if found != N_ATM_LAYERS:
+            vc_ok = False
+            issues.append(f"  Vcoarsen: {base} has {found}/{N_ATM_LAYERS} layers")
+    close_ds(ds_vc)
+    if vc_ok:
+        print(f"    All {len(ACE_ATM_3D_COARSENED)} base fields x "
+              f"{N_ATM_LAYERS} layers present  OK")
+    else:
+        print("    Incomplete vcoarsen layers")
+
+    # ---- VERDICT ----
+    n_issues = len(issues)
+    if n_issues == 0:
+        verdict = "PASS"
+        print(f"\n  *** TRAINING READINESS: {verdict} ***")
+        print(f"  {n_present} variables, {n_timesteps} timesteps, "
+              f"all checks passed.")
+    else:
+        verdict = "FAIL"
+        print(f"\n  *** TRAINING READINESS: {verdict} ({n_issues} issue(s)) ***")
+        for iss in issues[:10]:
+            print(f"  {iss.strip()}")
+        if n_issues > 10:
+            print(f"  ... and {n_issues - 10} more")
+
+    _report("Training readiness", issues)
+    return issues, plots, fill_reports
+
+
+# -----------------------------------------------------------------------------
 # Main
 # -----------------------------------------------------------------------------
 
@@ -3032,6 +3313,10 @@ def main():
         all_fill_reports[name] = fill_reports
 
     run_check("EAM", check_eam, "eam",
+              args.rundir, args.verbose)
+
+    # ACE training readiness certification
+    run_check("Training Readiness", check_training_readiness, "eam",
               args.rundir, args.verbose)
 
     # EAM comparison figures (multi-panel layer views, zonal means)
