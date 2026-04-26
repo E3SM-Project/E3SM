@@ -42,6 +42,11 @@ module shr_derived_mod
   integer, parameter, public :: shr_derived_max_namelen  = 34
   integer, parameter, public :: shr_derived_max_deflen   = 256
 
+  ! Fill value emitted on divide-by-zero in shr_derived_eval.  Matches
+  ! shr_horiz_remap_mod's SHR_FILL_VALUE so downstream tooling can
+  ! detect with one threshold (abs(val) > 0.1 * SHR_FILL_VALUE).
+  real(r8), parameter, public :: SHR_DERIVED_FILL_VALUE = 1.0e20_r8
+
   ! Public types
   public :: shr_derived_operand_t
   public :: shr_derived_expr_t
@@ -261,10 +266,14 @@ contains
         if (n == 1) then
           result(1:ncol, 1:nlev) = src(1:ncol, 1:nlev)
         else
+          ! Divide-by-zero produces SHR_DERIVED_FILL_VALUE (matches the
+          ! horiz remap fill convention) rather than 0.0_r8 — silent
+          ! zeros mask buggy ratio expressions and mislead downstream
+          ! analysis.  Callers can detect with abs(val) > 0.1*FILL.
           where (src(1:ncol, 1:nlev) /= 0.0_r8)
             result(1:ncol, 1:nlev) = result(1:ncol, 1:nlev) / src(1:ncol, 1:nlev)
           elsewhere
-            result(1:ncol, 1:nlev) = 0.0_r8
+            result(1:ncol, 1:nlev) = SHR_DERIVED_FILL_VALUE
           end where
         end if
       end select

@@ -42,6 +42,12 @@ module shr_horiz_remap_mod
   ! (cam_history_support) and is representable in both real(4) and real(8).
   real(r8), parameter :: SHR_FILL_VALUE = 1.0e20_r8
 
+  ! Coverage threshold below which a target cell is considered un-covered
+  ! and gets SHR_FILL_VALUE.  Used uniformly by apply (frac_b) and
+  ! apply_masked (valid_frac) so coastlines fill at the same threshold
+  ! regardless of which path the caller takes.
+  real(r8), parameter :: SHR_COVERAGE_EPS = 1.0e-6_r8
+
   type shr_horiz_remap_t
     logical  :: initialized = .false.
     integer  :: n_a = 0          ! source grid size (global)
@@ -499,7 +505,7 @@ CONTAINS
     ! the weight sum < 1 (land source cells contribute zero).
     if (allocated(rd%frac_b_local)) then
       do i = 1, rd%n_b_local
-        if (rd%frac_b_local(i) > 1.0e-6_r8) then
+        if (rd%frac_b_local(i) > SHR_COVERAGE_EPS) then
           do k = 1, numlev
             fld_out(i, k) = fld_out(i, k) / rd%frac_b_local(i)
           end do
@@ -543,7 +549,9 @@ CONTAINS
     integer :: send_counts_lev(0:nprocs-1), send_displs_lev(0:nprocs-1)
     integer :: recv_counts_lev(0:nprocs-1), recv_displs_lev(0:nprocs-1)
     real(r8) :: valid_frac
-    real(r8), parameter :: vfrac_eps = 1.0e-10_r8
+    ! Same threshold as the apply path so coastlines fill consistently
+    ! whether the caller goes through apply or apply_masked.
+    real(r8), parameter :: vfrac_eps = SHR_COVERAGE_EPS
 
     ierr = 0
     nlev_packed = numlev + 1
