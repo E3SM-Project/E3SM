@@ -24,7 +24,10 @@ MPAS-Ocean (in `components/mpas-ocean/src/`):
 - `shared/mpas_ocn_fme_horiz_remap.F` -- direct PIO writes to lat-lon files
 
 MPAS-Sea-Ice (in `components/mpas-seaice/src/`):
-- `analysis_members/mpas_seaice_fme_derived_fields.F` -- 7 derived fields
+- `analysis_members/mpas_seaice_fme_derived_fields.F` -- 9 derived fields
+  (iceAreaTotal, iceVolumeTotal, snowVolumeTotal, iceThicknessMean,
+  surfaceTemperatureMean, airStressZonal, airStressMeridional,
+  uVelocityGeo, vVelocityGeo)
 - `shared/mpas_seaice_fme_horiz_remap.F` -- singleton horiz remap module
 
 Testmod (this directory):
@@ -51,7 +54,8 @@ micromamba run -n xgns python \
     --rundir $RUNDIR --outdir /path/to/output_figs
 ```
 
-Map files (NERSC): `/pscratch/sd/m/mahf708/fme_maps/`
+Map files default to `/pscratch/sd/m/mahf708/fme_maps/` (NERSC); override
+with the `FME_MAPS_DIR` environment variable on other systems.
 - `map_ne30pg2_to_gaussian_180by360_shifted.nc` (EAM, n_a=21600)
 - `map_IcoswISC30E3r5_to_gaussian_180by360_shifted.nc` (MPAS, n_a=465044)
 
@@ -105,7 +109,15 @@ These are hard-won lessons. Read before modifying FME code.
     module-scope arrays of size `n_b_local` (target grid points on this rank).
     Each compute call remaps fields and adds to accumulators. When the output
     interval elapses, values are normalized by `nAccum` and written. Native
-    stream output remains instantaneous (last snapshot).
+    stream output remains instantaneous (last snapshot). The trigger advances
+    `avg_last_output_time` by exactly one `avg_output_interval` (not by
+    `currTime`) so the schedule does not drift across many windows. On
+    restart the baseline is `MPAS_NOW`, not `MPAS_START_TIME`, so the
+    trigger doesn't fire every step until catching up; the partial pre-
+    restart sample is dropped (the accumulators are remap-space and not
+    in the Registry, so MPAS restart streams cannot persist them).
+    `write_avg_field` guards against `nAccum == 0` and writes
+    `SHR_FILL_VALUE` instead of dividing by zero.
 
 12. **Remapped output files include xtime.** The `xtime(StrLen, Time)` character
     variable records the MPAS date-time string for each output record. CF
@@ -114,16 +126,19 @@ These are hard-won lessons. Read before modifying FME code.
     character array (`character(len=64) :: buf(1)`), not a scalar — PIO's
     `put_vara_1d_text` interface demands `character(len=*) :: val(:)`.
 
-13. **MPAS coupler fluxes are ice-fraction-corrected.** The forcing pool fields
-    (`shortWaveHeatFlux`, `longWaveHeatFluxDown`, `latentHeatFlux`,
-    `sensibleHeatFlux`, `windStressZonal`, `windStressMeridional`) are
-    delivered by the coupler as `flux_atm * (1 - iceFraction)`. The FME
-    derived fields AM recovers the atmospheric flux by dividing by
-    `(1 - iceFraction)` via the `mask_and_remap` subroutine. At nearly
-    full ice coverage (iceFraction >= 0.99), division would amplify noise,
-    so those cells get `fillValue` instead. `surfaceHeatFluxTotal` (sum of
-    coupler fluxes) gets the same correction in the cell loop. SST, SSS,
-    and SSH are state variables and are NOT corrected.
+13. **MPAS coupler fluxes are passed through raw (no ice-fraction recovery).**
+    The forcing-pool fields (`shortWaveHeatFlux`, `longWaveHeatFluxDown`,
+    `latentHeatFlux`, `sensibleHeatFlux`, `windStressZonal`,
+    `windStressMeridional`) are delivered by the coupler as
+    `flux_atm * (1 - iceFraction)`. `mask_and_remap` does *land* masking
+    only -- it does NOT divide by `(1 - iceFraction)`. This matches
+    `timeSeriesStatsCustom` semantics (raw ocean-side fluxes). If
+    SamudrACE training needs the atmospheric-side flux, take it from
+    EAM (TAUX, TAUY, FLDS, FSDS, ...); the MPAS-O versions are the
+    ocean-side ice-weighted values. An earlier revision did the
+    recovery via `iceFraction` and cell-fill for `iceFraction>=0.99`;
+    that path was reverted to keep parity with the legacy pipeline.
+    SST, SSS, and SSH are state variables and were never corrected.
 
 14. **EAM averaging convention.** State variables (T, U, V, STW, PS, TS)
     are instantaneous snapshots (`avgflag_pertape='I'`). Fluxes and
@@ -132,6 +147,32 @@ These are hard-won lessons. Read before modifying FME code.
     averaging over the output interval. EAM shortwave radiation fields
     (FSUTOA, FSUS) show sharp gradients at ice edges — this is real
     surface albedo contrast (ice ~55% vs ocean ~3%), not an artifact.
+
+15. **MPAS instantaneous output remaps and writes per variable, not in two
+    passes.** The earlier pattern was `loop { remap_to_fld_remap }` then
+    `loop { write_inst(name) }` which silently wrote the *last* remapped
+    field under every variable name. Each AM now interleaves remap+write
+    in instantaneous mode (`inst_remap_and_write` / `remap_and_write_inst`).
+    Time-averaged mode is unaffected because it indexes accumulators
+    correctly. The production testmod sets `time_averaging=.true.`.
+
+16. **eam_derived tendency flags are per-chunk arrays.** `tend_initialized`
+    and `phys_snap_valid` are dimensioned `(begchunk:endchunk)`, not
+    scalar; otherwise the OMP-PARALLEL chunk loop in `physpkg.F90:1429`
+    races and produces chunk-dependent tendencies on the first timestep
+    after init or restart. Each thread now reads/writes only its own
+    chunk's slot.
+
+17. **shr_horiz_remap coverage threshold is unified.** Both `apply` (frac_b
+    normalization) and `apply_masked` (valid_frac normalization) use the
+    same `SHR_COVERAGE_EPS=1e-6` cutoff so the same coastline cells fill
+    regardless of which path the caller uses.
+
+18. **shr_derived divide-by-zero produces SHR_FILL_VALUE, not 0.** A `RATIO=A/B`
+    expression with `B==0` writes `1e20` (matching the remap fill
+    convention) so silent zeros don't mask buggy ratio definitions. The
+    only configured expression is `STW=Q+CLDICE+CLDLIQ+RAINQM`, which
+    has no division.
 
 ## Runtime Configuration
 
@@ -142,6 +183,7 @@ FME_EAM_OUTPUT_HOURS=6          # EAM output frequency in hours (default: 6)
 FME_EAM_AVGFLAG=I               # 'I' = instantaneous (default); fluxes use per-field :A
 FME_EAM_MFILT=4                 # samples per output file (default: 4)
 FME_MPAS_INTERVAL=00-00-01_00:00:00  # MPAS output/averaging interval (default: daily)
+FME_MAPS_DIR=/path/to/fme_maps  # SCRIP map directory (default: NERSC mahf708 scratch)
 ```
 
 Example: `FME_EAM_OUTPUT_HOURS=24 FME_MPAS_INTERVAL=00-00-05_00:00:00 ./create_test ...`
