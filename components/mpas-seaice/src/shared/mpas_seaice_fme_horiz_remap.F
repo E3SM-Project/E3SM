@@ -324,33 +324,50 @@ contains
       ierr = pio_createfile(pio_sys, pio_file, PIO_IOTYPE_PNETCDF, trim(filename), PIO_CLOBBER)
       if (ierr /= PIO_NOERR) then; err = ierr; return; end if
 
-      ierr = pio_def_dim(pio_file, 'lon', remap_data%nlon, dim_lon_id)
-      ierr = pio_def_dim(pio_file, 'lat', remap_data%nlat, dim_lat_id)
-      ierr = pio_def_dim(pio_file, 'Time', PIO_UNLIMITED, dim_time_id)
-      ierr = pio_def_dim(pio_file, 'StrLen', 64, dim_strlen_id)
+      call check_pio_si('def_dim lon', pio_def_dim(pio_file, 'lon', remap_data%nlon, dim_lon_id), err)
+      call check_pio_si('def_dim lat', pio_def_dim(pio_file, 'lat', remap_data%nlat, dim_lat_id), err)
+      call check_pio_si('def_dim Time', pio_def_dim(pio_file, 'Time', PIO_UNLIMITED, dim_time_id), err)
+      call check_pio_si('def_dim StrLen', pio_def_dim(pio_file, 'StrLen', 64, dim_strlen_id), err)
 
       ! Define coordinate variables; descriptors saved at module scope for write_time
-      ierr = pio_def_var(pio_file, 'lon', PIO_DOUBLE, (/dim_lon_id/), pio_lon_var)
+      call check_pio_si('def_var lon', pio_def_var(pio_file, 'lon', PIO_DOUBLE, (/dim_lon_id/), pio_lon_var), err)
       ierr = pio_put_att(pio_file, pio_lon_var, 'units', 'degrees_east')
       ierr = pio_put_att(pio_file, pio_lon_var, 'long_name', 'longitude')
       ierr = pio_put_att(pio_file, pio_lon_var, 'axis', 'X')
-      ierr = pio_def_var(pio_file, 'lat', PIO_DOUBLE, (/dim_lat_id/), pio_lat_var)
+      call check_pio_si('def_var lat', pio_def_var(pio_file, 'lat', PIO_DOUBLE, (/dim_lat_id/), pio_lat_var), err)
       ierr = pio_put_att(pio_file, pio_lat_var, 'units', 'degrees_north')
       ierr = pio_put_att(pio_file, pio_lat_var, 'long_name', 'latitude')
       ierr = pio_put_att(pio_file, pio_lat_var, 'axis', 'Y')
 
-      ierr = pio_def_var(pio_file, 'xtime', PIO_CHAR, &
-           (/dim_strlen_id, dim_time_id/), pio_xtime_var)
+      call check_pio_si('def_var xtime', pio_def_var(pio_file, 'xtime', PIO_CHAR, &
+           (/dim_strlen_id, dim_time_id/), pio_xtime_var), err)
       ierr = pio_put_att(pio_file, pio_xtime_var, 'long_name', 'model time')
 
       ierr = pio_put_att(pio_file, PIO_GLOBAL, 'source', 'E3SM FME online remapping')
       ierr = pio_put_att(pio_file, PIO_GLOBAL, 'Conventions', 'CF-1.8')
       ierr = pio_put_att(pio_file, PIO_GLOBAL, 'calendar', 'noleap')
 
+      if (err /= 0) then
+         call mpas_log_write('seaice_fme_horiz_remap: define-mode error opening ' &
+              // trim(filename), messageType=MPAS_LOG_ERR)
+         return
+      end if
+
       n_pio_vars = 0
       time_record = 0
       file_is_open = .true.
    end subroutine seaice_fme_horiz_remap_open_file!}}}
+
+   subroutine check_pio_si(label, ierr, accumulated_err)
+      character(len=*), intent(in) :: label
+      integer, intent(in) :: ierr
+      integer, intent(inout) :: accumulated_err
+      if (ierr /= PIO_NOERR) then
+         call mpas_log_write('seaice_fme_horiz_remap: PIO error in ' // trim(label) // ' (code $i)', &
+              messageType=MPAS_LOG_ERR, intArgs=(/ierr/))
+         if (accumulated_err == 0) accumulated_err = ierr
+      end if
+   end subroutine check_pio_si
 
    subroutine seaice_fme_horiz_remap_def_var(varname, units, long_name, numlev, err)!{{{
       character(len=*), intent(in) :: varname, units, long_name
@@ -372,6 +389,12 @@ contains
       pio_var_names(n_pio_vars) = varname
       ierr = pio_def_var(pio_file, trim(varname), PIO_REAL, &
            (/dim_lon_id, dim_lat_id, dim_time_id/), pio_var_descs(n_pio_vars))
+      if (ierr /= PIO_NOERR) then
+         call mpas_log_write('seaice_fme_horiz_remap: pio_def_var failed for ' &
+              // trim(varname) // ' (code $i)', messageType=MPAS_LOG_ERR, &
+              intArgs=(/ierr/))
+         err = ierr; return
+      end if
       ierr = pio_put_att(pio_file, pio_var_descs(n_pio_vars), 'units', trim(units))
       ierr = pio_put_att(pio_file, pio_var_descs(n_pio_vars), 'long_name', trim(long_name))
       fill_val = real(SHR_FILL_VALUE, 4)

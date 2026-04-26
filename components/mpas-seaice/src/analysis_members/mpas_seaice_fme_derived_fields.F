@@ -233,8 +233,14 @@ contains
                         call mpas_set_timeInterval(avg_output_interval, &
                              timeString=trim(config_stream_output_interval), &
                              ierr=ierr)
+                        ! MPAS_NOW (not MPAS_START_TIME) so warm restart uses
+                        ! the restart-time as the averaging baseline; otherwise
+                        ! the trigger would fire every timestep until catching up.
+                        ! Partial pre-restart samples are not persisted (the
+                        ! accumulators live in remap-space and aren't in the
+                        ! Registry); the post-restart window starts fresh.
                         avg_last_output_time = mpas_get_clock_time( &
-                             domain % clock, MPAS_START_TIME, ierr)
+                             domain % clock, MPAS_NOW, ierr)
                         if (.not. allocated(remap_accum)) then
                            allocate(remap_accum(remap_nb_local, N_AVG_FIELDS))
                         end if
@@ -543,19 +549,17 @@ contains
          if (do_horiz_remap) then
             allocate(fld_remap(remap_nb_local))
 
-            ! Remap each field to lat-lon
-            call remap_1field(iceAreaTotal, 1)
-            call remap_1field(iceVolumeTotal, 2)
-            call remap_1field(snowVolumeTotal, 3)
-            call remap_1field(iceThicknessMean, 4)
-            call remap_1field(surfaceTemperatureMean, 5)
-            call remap_1field(airStressZonal, 6)
-            call remap_1field(airStressMeridional, 7)
-            call remap_1field(uVelocityGeo, 8)
-            call remap_1field(vVelocityGeo, 9)
-
             if (time_avg_enabled) then
-               ! Accumulate (remapped fields already added in remap_1field)
+               ! Accumulate path: each remap adds to remap_accum.
+               call remap_1field(iceAreaTotal, 1)
+               call remap_1field(iceVolumeTotal, 2)
+               call remap_1field(snowVolumeTotal, 3)
+               call remap_1field(iceThicknessMean, 4)
+               call remap_1field(surfaceTemperatureMean, 5)
+               call remap_1field(airStressZonal, 6)
+               call remap_1field(airStressMeridional, 7)
+               call remap_1field(uVelocityGeo, 8)
+               call remap_1field(vVelocityGeo, 9)
                nAccum = nAccum + 1
 
                ! Check if output interval elapsed
@@ -577,24 +581,26 @@ contains
                   end if
                   remap_accum = 0.0_r8
                   nAccum = 0
-                  avg_last_output_time = currTime
+                  ! Advance by exact interval to avoid drift.
+                  avg_last_output_time = avg_last_output_time + avg_output_interval
                end if
             else
-               ! Instantaneous: write immediately
+               ! Instantaneous path: remap and write each field one at a time
+               ! so fld_remap holds the correct field at each write.
                currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr_remap)
                call mpas_get_time(currTime, dateTimeString=timeStr)
                call seaice_fme_horiz_remap_check_rotate(domain, ierr_remap)
                if (file_is_open) then
                   call seaice_fme_horiz_remap_write_time(trim(timeStr), ierr_remap)
-                  call write_inst_field('iceAreaTotal')
-                  call write_inst_field('iceVolumeTotal')
-                  call write_inst_field('snowVolumeTotal')
-                  call write_inst_field('iceThicknessMean')
-                  call write_inst_field('surfaceTemperatureMean')
-                  call write_inst_field('airStressZonal')
-                  call write_inst_field('airStressMeridional')
-                  call write_inst_field('uVelocityGeo')
-                  call write_inst_field('vVelocityGeo')
+                  call remap_and_write_inst('iceAreaTotal', iceAreaTotal)
+                  call remap_and_write_inst('iceVolumeTotal', iceVolumeTotal)
+                  call remap_and_write_inst('snowVolumeTotal', snowVolumeTotal)
+                  call remap_and_write_inst('iceThicknessMean', iceThicknessMean)
+                  call remap_and_write_inst('surfaceTemperatureMean', surfaceTemperatureMean)
+                  call remap_and_write_inst('airStressZonal', airStressZonal)
+                  call remap_and_write_inst('airStressMeridional', airStressMeridional)
+                  call remap_and_write_inst('uVelocityGeo', uVelocityGeo)
+                  call remap_and_write_inst('vVelocityGeo', vVelocityGeo)
                end if
             end if
 
@@ -619,14 +625,25 @@ contains
       subroutine write_avg_field(varname, idx)
          character(len=*), intent(in) :: varname
          integer, intent(in) :: idx
-         fld_remap(:) = remap_accum(:, idx) / real(nAccum, r8)
+         if (nAccum > 0) then
+            fld_remap(:) = remap_accum(:, idx) / real(nAccum, r8)
+         else
+            fld_remap(:) = real(SHR_FILL_VALUE, r8)
+         end if
          call seaice_fme_horiz_remap_write_var(varname, fld_remap, 1, ierr_remap)
       end subroutine write_avg_field
 
-      subroutine write_inst_field(varname)
+      subroutine remap_and_write_inst(varname, native_fld)
+         ! Remap one field to fld_remap, then write under varname.
+         ! Used in instantaneous mode to ensure each varname gets the
+         ! correct field's data (the previous bulk-remap-then-bulk-write
+         ! pattern silently wrote the last remapped field under every name).
          character(len=*), intent(in) :: varname
+         real(kind=RKIND), dimension(:), intent(in) :: native_fld
+         call seaice_fme_horiz_remap_field(domain, native_fld, &
+              nCellsSolve, fld_remap, ierr_remap)
          call seaice_fme_horiz_remap_write_var(varname, fld_remap, 1, ierr_remap)
-      end subroutine write_inst_field
+      end subroutine remap_and_write_inst
 
    end subroutine seaice_compute_fme_derived_fields!}}}
 
