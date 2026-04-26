@@ -261,8 +261,14 @@ contains
                      call mpas_set_timeInterval(avg_output_interval, &
                           timeString=trim(config_stream_output_interval), &
                           ierr=ierr)
+                     ! MPAS_NOW (not MPAS_START_TIME) so warm restart uses
+                     ! the restart-time as the averaging baseline; otherwise
+                     ! the trigger would fire every timestep until catching up.
+                     ! Partial pre-restart samples are not persisted (the
+                     ! accumulators live in remap-space and aren't in the
+                     ! Registry); the post-restart window starts fresh.
                      avg_last_output_time = mpas_get_clock_time( &
-                          domain % clock, MPAS_START_TIME, ierr)
+                          domain % clock, MPAS_NOW, ierr)
                      n_avg_fields = nCoarsenLevels * nCoarsenFields &
                           + nCoarsenLevels
                      if (.not. allocated(remap_accum)) then
@@ -523,35 +529,31 @@ contains
             ! Per-level validity mask: 1=valid ocean cell at this depth, 0=fill
             allocate(levelMask(nCells))
 
-            ! Remap each coarsened field, one depth level at a time
-            do ifld = 1, nCoarsenFields
-               select case (trim(coarsenFieldNames(ifld)))
-               case ('temperature')
-                  coarsenedPtr => temperatureCoarsened
-               case ('salinity')
-                  coarsenedPtr => salinityCoarsened
-               case ('velocityZonal')
-                  coarsenedPtr => velocityZonalCoarsened
-               case ('velocityMeridional')
-                  coarsenedPtr => velocityMeridionalCoarsened
-               case default
-                  cycle
-               end select
-
-               do kOut = 0, nCoarsenLevels - 1
-                  call remap_1level(coarsenedPtr, kOut, &
-                       (ifld - 1) * nCoarsenLevels + kOut + 1)
-               end do
-            end do
-
-            ! Remap layerThicknessCoarsened split levels
-            do kOut = 0, nCoarsenLevels - 1
-               call remap_1level(layerThicknessCoarsened, kOut, &
-                    nCoarsenFields * nCoarsenLevels + kOut + 1)
-            end do
-
             if (time_avg_enabled) then
-               ! Accumulate (remapped fields already added in remap_1level)
+               ! Accumulate path: remap into accumulators (no immediate write).
+               do ifld = 1, nCoarsenFields
+                  select case (trim(coarsenFieldNames(ifld)))
+                  case ('temperature')
+                     coarsenedPtr => temperatureCoarsened
+                  case ('salinity')
+                     coarsenedPtr => salinityCoarsened
+                  case ('velocityZonal')
+                     coarsenedPtr => velocityZonalCoarsened
+                  case ('velocityMeridional')
+                     coarsenedPtr => velocityMeridionalCoarsened
+                  case default
+                     cycle
+                  end select
+
+                  do kOut = 0, nCoarsenLevels - 1
+                     call remap_1level(coarsenedPtr, kOut, &
+                          (ifld - 1) * nCoarsenLevels + kOut + 1)
+                  end do
+               end do
+               do kOut = 0, nCoarsenLevels - 1
+                  call remap_1level(layerThicknessCoarsened, kOut, &
+                       nCoarsenFields * nCoarsenLevels + kOut + 1)
+               end do
                nAccum = nAccum + 1
 
                ! Check if output interval elapsed
@@ -599,10 +601,13 @@ contains
                   end if
                   remap_accum = 0.0_r8
                   nAccum = 0
-                  avg_last_output_time = currTime
+                  ! Advance by exact interval to avoid drift.
+                  avg_last_output_time = avg_last_output_time + avg_output_interval
                end if
             else
-               ! Instantaneous: write immediately
+               ! Instantaneous: remap each field/level and write under its
+               ! own name in the same iteration so fld_remap holds the
+               ! correct field at every write call.
                call remap_outfile%check_rotate(domain, ierr)
                if (remap_outfile%file_is_open) then
                   currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
@@ -610,17 +615,31 @@ contains
                   call remap_outfile%write_time(trim(timeStr), ierr)
 
                   do ifld = 1, nCoarsenFields
+                     select case (trim(coarsenFieldNames(ifld)))
+                     case ('temperature')
+                        coarsenedPtr => temperatureCoarsened
+                     case ('salinity')
+                        coarsenedPtr => salinityCoarsened
+                     case ('velocityZonal')
+                        coarsenedPtr => velocityZonalCoarsened
+                     case ('velocityMeridional')
+                        coarsenedPtr => velocityMeridionalCoarsened
+                     case default
+                        cycle
+                     end select
+
                      do kOut = 0, nCoarsenLevels - 1
                         write(varName, '(A,A,I0)') &
                              trim(coarsenFieldNames(ifld)), &
                              'Coarsened_', kOut
-                        call write_inst_field(trim(varName))
+                        call remap_and_write_inst(coarsenedPtr, kOut, trim(varName))
                      end do
                   end do
                   do kOut = 0, nCoarsenLevels - 1
                      write(varName, '(A,I0)') &
                           'layerThicknessCoarsened_', kOut
-                     call write_inst_field(trim(varName))
+                     call remap_and_write_inst(layerThicknessCoarsened, kOut, &
+                          trim(varName))
                   end do
                end if
             end if
@@ -658,14 +677,35 @@ contains
       subroutine write_avg_field(vname, idx)
          character(len=*), intent(in) :: vname
          integer, intent(in) :: idx
-         fld_remap(:, 1) = remap_accum(:, idx) / real(nAccum, r8)
+         if (nAccum > 0) then
+            fld_remap(:, 1) = remap_accum(:, idx) / real(nAccum, r8)
+         else
+            fld_remap(:, 1) = real(SHR_FILL_VALUE, r8)
+         end if
          call remap_outfile%write_var(vname, fld_remap, 1, ierr)
       end subroutine write_avg_field
 
-      subroutine write_inst_field(vname)
+      subroutine remap_and_write_inst(srcArray, kLevel, vname)
+         ! Remap one (level of one) field into fld_remap, then write under
+         ! vname. Used in instantaneous mode to ensure each write gets the
+         ! correct field's data (the previous bulk-remap-then-bulk-write
+         ! pattern wrote the last remapped field under every name).
+         real(kind=RKIND), dimension(:,:), intent(in) :: srcArray
+         integer, intent(in) :: kLevel
          character(len=*), intent(in) :: vname
+         do iCell = 1, nCells
+            if (layerThicknessCoarsened(kLevel + 1, iCell) < fillValue * 0.5_RKIND) then
+               levelMask(iCell) = 1
+               field_1lev(1, iCell) = srcArray(kLevel + 1, iCell)
+            else
+               levelMask(iCell) = 0
+               field_1lev(1, iCell) = 0.0_RKIND
+            end if
+         end do
+         call ocn_fme_horiz_remap_field(domain, field_1lev, 1, &
+              fld_remap, ierr, mask=levelMask)
          call remap_outfile%write_var(vname, fld_remap, 1, ierr)
-      end subroutine write_inst_field
+      end subroutine remap_and_write_inst
 
       subroutine write_inst_companion_field(vname, idx)
          ! Snapshot of the latest instantaneous remapped value for slot idx.

@@ -466,36 +466,57 @@ contains
          err = ierr; return
       end if
 
-      ierr = pio_def_dim(self%pio_file, 'lon', nlon, self%dim_lon_id)
-      ierr = pio_def_dim(self%pio_file, 'lat', nlat, self%dim_lat_id)
-      ierr = pio_def_dim(self%pio_file, 'Time', PIO_UNLIMITED, self%dim_time_id)
-      ierr = pio_def_dim(self%pio_file, 'StrLen', 64, self%dim_strlen_id)
+      err = 0
+      call check_pio('def_dim lon', pio_def_dim(self%pio_file, 'lon', nlon, self%dim_lon_id), err)
+      call check_pio('def_dim lat', pio_def_dim(self%pio_file, 'lat', nlat, self%dim_lat_id), err)
+      call check_pio('def_dim Time', pio_def_dim(self%pio_file, 'Time', PIO_UNLIMITED, self%dim_time_id), err)
+      call check_pio('def_dim StrLen', pio_def_dim(self%pio_file, 'StrLen', 64, self%dim_strlen_id), err)
 
-      ierr = pio_def_var(self%pio_file, 'lon', PIO_DOUBLE, &
-           (/self%dim_lon_id/), self%pio_lon_var)
+      call check_pio('def_var lon', pio_def_var(self%pio_file, 'lon', PIO_DOUBLE, &
+           (/self%dim_lon_id/), self%pio_lon_var), err)
       ierr = pio_put_att(self%pio_file, self%pio_lon_var, 'units', 'degrees_east')
       ierr = pio_put_att(self%pio_file, self%pio_lon_var, 'long_name', 'longitude')
       ierr = pio_put_att(self%pio_file, self%pio_lon_var, 'axis', 'X')
 
-      ierr = pio_def_var(self%pio_file, 'lat', PIO_DOUBLE, &
-           (/self%dim_lat_id/), self%pio_lat_var)
+      call check_pio('def_var lat', pio_def_var(self%pio_file, 'lat', PIO_DOUBLE, &
+           (/self%dim_lat_id/), self%pio_lat_var), err)
       ierr = pio_put_att(self%pio_file, self%pio_lat_var, 'units', 'degrees_north')
       ierr = pio_put_att(self%pio_file, self%pio_lat_var, 'long_name', 'latitude')
       ierr = pio_put_att(self%pio_file, self%pio_lat_var, 'axis', 'Y')
 
-      ierr = pio_def_var(self%pio_file, 'xtime', PIO_CHAR, &
-           (/self%dim_strlen_id, self%dim_time_id/), self%pio_xtime_var)
+      call check_pio('def_var xtime', pio_def_var(self%pio_file, 'xtime', PIO_CHAR, &
+           (/self%dim_strlen_id, self%dim_time_id/), self%pio_xtime_var), err)
       ierr = pio_put_att(self%pio_file, self%pio_xtime_var, 'long_name', 'model time')
 
       ierr = pio_put_att(self%pio_file, PIO_GLOBAL, 'source', 'E3SM FME online remapping')
       ierr = pio_put_att(self%pio_file, PIO_GLOBAL, 'Conventions', 'CF-1.8')
       ierr = pio_put_att(self%pio_file, PIO_GLOBAL, 'calendar', 'noleap')
 
+      if (err /= 0) then
+         call mpas_log_write('ocn_fme_remap_file: define-mode error opening ' &
+              // trim(filename), messageType=MPAS_LOG_ERR)
+         return
+      end if
+
       self%n_pio_vars = 0
       self%time_record = 0
       self%file_is_open = .true.
 
    end subroutine remap_file_open!}}}
+
+   subroutine check_pio(label, ierr, accumulated_err)
+      ! Aggregate first non-zero PIO error.  Lets us issue every dim/var
+      ! definition without aborting on the first failure but still
+      ! propagate the failure to the caller.
+      character(len=*), intent(in) :: label
+      integer, intent(in) :: ierr
+      integer, intent(inout) :: accumulated_err
+      if (ierr /= PIO_NOERR) then
+         call mpas_log_write('ocn_fme_remap_file: PIO error in ' // trim(label) // ' (code $i)', &
+              messageType=MPAS_LOG_ERR, intArgs=(/ierr/))
+         if (accumulated_err == 0) accumulated_err = ierr
+      end if
+   end subroutine check_pio
 
    subroutine remap_file_def_var(self, varname, units, long_name, numlev, err)!{{{
       class(ocn_fme_remap_file_t), intent(inout) :: self
@@ -521,6 +542,12 @@ contains
       ierr = pio_def_var(self%pio_file, trim(varname), PIO_REAL, &
            (/self%dim_lon_id, self%dim_lat_id, self%dim_time_id/), &
            self%pio_var_descs(self%n_pio_vars))
+      if (ierr /= PIO_NOERR) then
+         call mpas_log_write('ocn_fme_remap_file: pio_def_var failed for ' &
+              // trim(varname) // ' (code $i)', messageType=MPAS_LOG_ERR, &
+              intArgs=(/ierr/))
+         err = ierr; return
+      end if
       ierr = pio_put_att(self%pio_file, self%pio_var_descs(self%n_pio_vars), &
            'units', trim(units))
       ierr = pio_put_att(self%pio_file, self%pio_var_descs(self%n_pio_vars), &

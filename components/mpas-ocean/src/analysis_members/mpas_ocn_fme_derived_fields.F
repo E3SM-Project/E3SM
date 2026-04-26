@@ -182,8 +182,14 @@ contains
                              config_stream_output_interval)
                         call mpas_set_timeInterval(avg_output_interval, &
                              timeString=trim(config_stream_output_interval), ierr=ierr)
+                        ! MPAS_NOW (not MPAS_START_TIME) so warm restart uses
+                        ! the restart-time as the averaging baseline; otherwise
+                        ! the trigger would fire every timestep until catching up.
+                        ! Partial pre-restart samples are not persisted (the
+                        ! accumulators live in remap-space and aren't in the
+                        ! Registry); the post-restart window starts fresh.
                         avg_last_output_time = mpas_get_clock_time( &
-                             domain % clock, MPAS_START_TIME, ierr)
+                             domain % clock, MPAS_NOW, ierr)
                         if (.not. allocated(remap_accum)) then
                            allocate(remap_accum(remap_nb_local, N_AVG_FIELDS))
                         end if
@@ -359,57 +365,56 @@ contains
             ! (from state) to avoid extreme values under ice shelves.
             call mpas_pool_get_array(diagnosticsPool, 'pressureAdjustedSSH', ssh_ptr)
 
-            call remap_1field(sst, 1)
-            call remap_1field(sss, 2)
-            call remap_1field(surfaceHeatFluxTotal, 3)
-
-            ! SSH: use pressure-adjusted version for physically meaningful values
-            if (associated(ssh_ptr)) call remap_1field(ssh_ptr, 4)
-
-            ! Coupler fluxes: land-mask and remap (raw coupler values,
-            ! matching timeSeriesStatsCustom behavior).
-            if (associated(shortWaveHeatFlux)) &
-                 call mask_and_remap(shortWaveHeatFlux, 5)
-            if (associated(longWaveHeatFluxDown)) &
-                 call mask_and_remap(longWaveHeatFluxDown, 6)
-            if (associated(latentHeatFlux)) &
-                 call mask_and_remap(latentHeatFlux, 7)
-            if (associated(sensibleHeatFlux)) &
-                 call mask_and_remap(sensibleHeatFlux, 8)
-            if (associated(windStressZonalPtr)) &
-                 call mask_and_remap(windStressZonalPtr, 9)
-            if (associated(windStressMeridionalPtr)) &
-                 call mask_and_remap(windStressMeridionalPtr, 10)
-            if (associated(longWaveHeatFluxUp)) &
-                 call mask_and_remap(longWaveHeatFluxUp, 11)
-            if (associated(totalFreshWaterTemperatureFluxPtr)) &
-                 call mask_and_remap(totalFreshWaterTemperatureFluxPtr, 12)
-            if (associated(rainFluxPtr)) &
-                 call mask_and_remap(rainFluxPtr, 13)
-            if (associated(snowFluxPtr)) &
-                 call mask_and_remap(snowFluxPtr, 14)
-            if (associated(evaporationFluxPtr)) &
-                 call mask_and_remap(evaporationFluxPtr, 15)
-            if (associated(seaIceHeatFluxPtr)) &
-                 call mask_and_remap(seaIceHeatFluxPtr, 16)
-            if (associated(icebergHeatFluxPtr)) &
-                 call mask_and_remap(icebergHeatFluxPtr, 17)
-            if (associated(seaIceFreshWaterFluxPtr)) &
-                 call mask_and_remap(seaIceFreshWaterFluxPtr, 18)
-            if (associated(seaIceSalinityFluxPtr)) &
-                 call mask_and_remap(seaIceSalinityFluxPtr, 19)
-            if (associated(riverRunoffFluxPtr)) &
-                 call mask_and_remap(riverRunoffFluxPtr, 20)
-            if (associated(iceRunoffFluxPtr)) &
-                 call mask_and_remap(iceRunoffFluxPtr, 21)
-            ! Derived AM products are already land-masked in the cell loop,
-            ! so use remap_1field directly (no second masking pass).
-            call remap_1field(snowFluxLf, 22)
-            call remap_1field(iceRunoffFluxLf, 23)
-            call remap_1field(riverRunoffFluxTemperature, 24)
-
             if (time_avg_enabled) then
-               ! Accumulate (remapped fields already added in remap_1field)
+               ! Accumulate path: each remap adds to remap_accum; write when interval elapses.
+               call remap_1field(sst, 1)
+               call remap_1field(sss, 2)
+               call remap_1field(surfaceHeatFluxTotal, 3)
+
+               ! SSH: use pressure-adjusted version for physically meaningful values
+               if (associated(ssh_ptr)) call remap_1field(ssh_ptr, 4)
+
+               ! Coupler fluxes: land-mask and remap (raw coupler values,
+               ! matching timeSeriesStatsCustom behavior).
+               if (associated(shortWaveHeatFlux)) &
+                    call mask_and_remap(shortWaveHeatFlux, 5)
+               if (associated(longWaveHeatFluxDown)) &
+                    call mask_and_remap(longWaveHeatFluxDown, 6)
+               if (associated(latentHeatFlux)) &
+                    call mask_and_remap(latentHeatFlux, 7)
+               if (associated(sensibleHeatFlux)) &
+                    call mask_and_remap(sensibleHeatFlux, 8)
+               if (associated(windStressZonalPtr)) &
+                    call mask_and_remap(windStressZonalPtr, 9)
+               if (associated(windStressMeridionalPtr)) &
+                    call mask_and_remap(windStressMeridionalPtr, 10)
+               if (associated(longWaveHeatFluxUp)) &
+                    call mask_and_remap(longWaveHeatFluxUp, 11)
+               if (associated(totalFreshWaterTemperatureFluxPtr)) &
+                    call mask_and_remap(totalFreshWaterTemperatureFluxPtr, 12)
+               if (associated(rainFluxPtr)) &
+                    call mask_and_remap(rainFluxPtr, 13)
+               if (associated(snowFluxPtr)) &
+                    call mask_and_remap(snowFluxPtr, 14)
+               if (associated(evaporationFluxPtr)) &
+                    call mask_and_remap(evaporationFluxPtr, 15)
+               if (associated(seaIceHeatFluxPtr)) &
+                    call mask_and_remap(seaIceHeatFluxPtr, 16)
+               if (associated(icebergHeatFluxPtr)) &
+                    call mask_and_remap(icebergHeatFluxPtr, 17)
+               if (associated(seaIceFreshWaterFluxPtr)) &
+                    call mask_and_remap(seaIceFreshWaterFluxPtr, 18)
+               if (associated(seaIceSalinityFluxPtr)) &
+                    call mask_and_remap(seaIceSalinityFluxPtr, 19)
+               if (associated(riverRunoffFluxPtr)) &
+                    call mask_and_remap(riverRunoffFluxPtr, 20)
+               if (associated(iceRunoffFluxPtr)) &
+                    call mask_and_remap(iceRunoffFluxPtr, 21)
+               ! Derived AM products are already land-masked in the cell loop,
+               ! so use remap_1field directly (no second masking pass).
+               call remap_1field(snowFluxLf, 22)
+               call remap_1field(iceRunoffFluxLf, 23)
+               call remap_1field(riverRunoffFluxTemperature, 24)
                nAccum = nAccum + 1
 
                ! Check if output interval elapsed
@@ -446,42 +451,63 @@ contains
                   end if
                   remap_accum = 0.0_r8
                   nAccum = 0
-                  avg_last_output_time = currTime
+                  ! Advance by exact interval to avoid drift.
+                  avg_last_output_time = avg_last_output_time + avg_output_interval
                end if
             else
-               ! Instantaneous: write immediately
+               ! Instantaneous: remap and write each field one at a time so
+               ! fld_remap holds the correct field at every write call.
                currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
                call mpas_get_time(currTime, dateTimeString=timeStr)
                call remap_outfile%check_rotate(domain, ierr)
                if (remap_outfile%file_is_open) then
                   call remap_outfile%write_time(trim(timeStr), ierr)
-                  call write_inst_field('sst', 1)
-                  call write_inst_field('sss', 2)
-                  call write_inst_field('surfaceHeatFluxTotal', 3)
-                  if (associated(ssh_ptr)) call write_inst_field('ssh', 4)
-                  if (associated(shortWaveHeatFlux)) call write_inst_field('shortWaveHeatFlux', 5)
-                  if (associated(longWaveHeatFluxDown)) call write_inst_field('longWaveHeatFluxDown', 6)
-                  if (associated(latentHeatFlux)) call write_inst_field('latentHeatFlux', 7)
-                  if (associated(sensibleHeatFlux)) call write_inst_field('sensibleHeatFlux', 8)
-                  if (associated(windStressZonalPtr)) call write_inst_field('windStressZonal', 9)
-                  if (associated(windStressMeridionalPtr)) call write_inst_field('windStressMeridional', 10)
-                  if (associated(longWaveHeatFluxUp)) call write_inst_field('longWaveHeatFluxUp', 11)
+                  call inst_remap_and_write(sst, 'sst', .false.)
+                  call inst_remap_and_write(sss, 'sss', .false.)
+                  call inst_remap_and_write(surfaceHeatFluxTotal, 'surfaceHeatFluxTotal', .false.)
+                  if (associated(ssh_ptr)) &
+                       call inst_remap_and_write(ssh_ptr, 'ssh', .false.)
+                  if (associated(shortWaveHeatFlux)) &
+                       call inst_remap_and_write(shortWaveHeatFlux, 'shortWaveHeatFlux', .true.)
+                  if (associated(longWaveHeatFluxDown)) &
+                       call inst_remap_and_write(longWaveHeatFluxDown, 'longWaveHeatFluxDown', .true.)
+                  if (associated(latentHeatFlux)) &
+                       call inst_remap_and_write(latentHeatFlux, 'latentHeatFlux', .true.)
+                  if (associated(sensibleHeatFlux)) &
+                       call inst_remap_and_write(sensibleHeatFlux, 'sensibleHeatFlux', .true.)
+                  if (associated(windStressZonalPtr)) &
+                       call inst_remap_and_write(windStressZonalPtr, 'windStressZonal', .true.)
+                  if (associated(windStressMeridionalPtr)) &
+                       call inst_remap_and_write(windStressMeridionalPtr, 'windStressMeridional', .true.)
+                  if (associated(longWaveHeatFluxUp)) &
+                       call inst_remap_and_write(longWaveHeatFluxUp, 'longWaveHeatFluxUp', .true.)
                   if (associated(totalFreshWaterTemperatureFluxPtr)) &
-                       call write_inst_field('totalFreshWaterTemperatureFlux', 12)
-                  if (associated(rainFluxPtr)) call write_inst_field('rainFlux', 13)
-                  if (associated(snowFluxPtr)) call write_inst_field('snowFlux', 14)
-                  if (associated(evaporationFluxPtr)) call write_inst_field('evaporationFlux', 15)
-                  if (associated(seaIceHeatFluxPtr)) call write_inst_field('seaIceHeatFlux', 16)
-                  if (associated(icebergHeatFluxPtr)) call write_inst_field('icebergHeatFlux', 17)
+                       call inst_remap_and_write(totalFreshWaterTemperatureFluxPtr, &
+                            'totalFreshWaterTemperatureFlux', .true.)
+                  if (associated(rainFluxPtr)) &
+                       call inst_remap_and_write(rainFluxPtr, 'rainFlux', .true.)
+                  if (associated(snowFluxPtr)) &
+                       call inst_remap_and_write(snowFluxPtr, 'snowFlux', .true.)
+                  if (associated(evaporationFluxPtr)) &
+                       call inst_remap_and_write(evaporationFluxPtr, 'evaporationFlux', .true.)
+                  if (associated(seaIceHeatFluxPtr)) &
+                       call inst_remap_and_write(seaIceHeatFluxPtr, 'seaIceHeatFlux', .true.)
+                  if (associated(icebergHeatFluxPtr)) &
+                       call inst_remap_and_write(icebergHeatFluxPtr, 'icebergHeatFlux', .true.)
                   if (associated(seaIceFreshWaterFluxPtr)) &
-                       call write_inst_field('seaIceFreshWaterFlux', 18)
+                       call inst_remap_and_write(seaIceFreshWaterFluxPtr, &
+                            'seaIceFreshWaterFlux', .true.)
                   if (associated(seaIceSalinityFluxPtr)) &
-                       call write_inst_field('seaIceSalinityFlux', 19)
-                  if (associated(riverRunoffFluxPtr)) call write_inst_field('riverRunoffFlux', 20)
-                  if (associated(iceRunoffFluxPtr)) call write_inst_field('iceRunoffFlux', 21)
-                  call write_inst_field('snowFluxLf', 22)
-                  call write_inst_field('iceRunoffFluxLf', 23)
-                  call write_inst_field('riverRunoffFluxTemperature', 24)
+                       call inst_remap_and_write(seaIceSalinityFluxPtr, &
+                            'seaIceSalinityFlux', .true.)
+                  if (associated(riverRunoffFluxPtr)) &
+                       call inst_remap_and_write(riverRunoffFluxPtr, 'riverRunoffFlux', .true.)
+                  if (associated(iceRunoffFluxPtr)) &
+                       call inst_remap_and_write(iceRunoffFluxPtr, 'iceRunoffFlux', .true.)
+                  call inst_remap_and_write(snowFluxLf, 'snowFluxLf', .false.)
+                  call inst_remap_and_write(iceRunoffFluxLf, 'iceRunoffFluxLf', .false.)
+                  call inst_remap_and_write(riverRunoffFluxTemperature, &
+                       'riverRunoffFluxTemperature', .false.)
                end if
             end if
 
@@ -525,15 +551,37 @@ contains
       subroutine write_avg_field(varname, idx)
          character(len=*), intent(in) :: varname
          integer, intent(in) :: idx
-         fld_remap(:, 1) = remap_accum(:, idx) / real(nAccum, r8)
+         if (nAccum > 0) then
+            fld_remap(:, 1) = remap_accum(:, idx) / real(nAccum, r8)
+         else
+            fld_remap(:, 1) = real(SHR_FILL_VALUE, r8)
+         end if
          call remap_outfile%write_var(varname, fld_remap, 1, ierr)
       end subroutine write_avg_field
 
-      subroutine write_inst_field(varname, idx)
+      subroutine inst_remap_and_write(native_fld, varname, do_mask)
+         ! Remap one field into fld_remap, then write under varname.
+         ! Used in instantaneous mode to ensure each varname gets the
+         ! correct field's data (the previous bulk-remap-then-bulk-write
+         ! pattern wrote the last remapped field under every name).
+         real(kind=RKIND), dimension(:), intent(in) :: native_fld
          character(len=*), intent(in) :: varname
-         integer, intent(in) :: idx
+         logical, intent(in) :: do_mask
+         if (do_mask) then
+            fld_masked(1:nCells) = native_fld(1:nCells)
+            do iCell = 1, nCells
+               if (maxLevelCell(iCell) == 0) then
+                  fld_masked(iCell) = fillValue
+               end if
+            end do
+            field_1lev(1, 1:nCells) = fld_masked(1:nCells)
+         else
+            field_1lev(1, 1:nCells) = native_fld(1:nCells)
+         end if
+         call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
+              mask=maxLevelCell)
          call remap_outfile%write_var(varname, fld_remap, 1, ierr)
-      end subroutine write_inst_field
+      end subroutine inst_remap_and_write
 
    end subroutine ocn_compute_fme_derived_fields!}}}
 
