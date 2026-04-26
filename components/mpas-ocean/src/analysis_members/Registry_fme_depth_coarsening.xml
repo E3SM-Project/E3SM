@@ -44,6 +44,10 @@
 			description="If true, remapped output fields are time-averaged over the output interval instead of instantaneous. Set compute_interval to a frequent value (e.g. dt) when enabling."
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_AM_fmeDepthCoarsening_write_instantaneous_companion" type="logical" default_value=".false."
+			description="If true (and time_averaging is also true), the remapped output stream also includes instantaneous companion variables suffixed _inst. Each averaged variable BASE has an instantaneous twin BASE_inst sampled at the output trigger. No effect when time_averaging is false."
+			possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<packages>
 		<package name="fmeDepthCoarseningAMPKG" description="This package includes variables required for the fmeDepthCoarsening analysis member."/>

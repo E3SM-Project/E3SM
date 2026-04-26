@@ -45,6 +45,15 @@
 		<var name="surfaceHeatFluxTotal" type="real" dimensions="nCells Time" units="W m^-2"
 			description="Total surface downward heat flux (shortwave + longwave down + latent + sensible)"
 		/>
+		<var name="snowFluxLf" type="real" dimensions="nCells Time" units="W m^-2"
+			description="snowFlux multiplied by latent heat of fusion (kg m^-2 s^-1 * J kg^-1). Sign convention follows snowFlux."
+		/>
+		<var name="iceRunoffFluxLf" type="real" dimensions="nCells Time" units="W m^-2"
+			description="iceRunoffFlux multiplied by latent heat of fusion. Sign convention follows iceRunoffFlux."
+		/>
+		<var name="riverRunoffFluxTemperature" type="real" dimensions="nCells Time" units="kg degC m^-2 s^-1"
+			description="riverRunoffFlux multiplied by top-layer temperature. Native mass-flux units; divide by reference fresh-water density to convert to m degC s^-1."
+		/>
 	</var_struct>
 	<streams>
 		<!-- output_interval default is daily; override via SourceMods/streams.ocean_forward -->
@@ -77,5 +86,14 @@
 			<var name="totalFreshWaterTemperatureFlux"/>
 			<var name="frazilIceFreshwaterFlux"/>
 			<var name="surfaceFrictionVelocity"/>
+			<var name="seaIceHeatFlux"/>
+			<var name="icebergHeatFlux"/>
+			<var name="seaIceFreshWaterFlux"/>
+			<var name="seaIceSalinityFlux"/>
+			<var name="riverRunoffFlux"/>
+			<var name="iceRunoffFlux"/>
+			<var name="snowFluxLf"/>
+			<var name="iceRunoffFluxLf"/>
+			<var name="riverRunoffFluxTemperature"/>
 		</stream>
 	</streams>

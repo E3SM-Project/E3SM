@@ -44,7 +44,13 @@ module seaice_fme_derived_fields
    integer :: nAccum = 0
    type(MPAS_TimeInterval_type) :: avg_output_interval
    type(MPAS_Time_type) :: avg_last_output_time
-   integer, parameter :: N_AVG_FIELDS = 7
+   ! Slot assignments for remap_accum (must stay in sync with init/compute):
+   !   1 iceAreaTotal             6 airStressZonal
+   !   2 iceVolumeTotal           7 airStressMeridional
+   !   3 snowVolumeTotal          8 uVelocityGeo
+   !   4 iceThicknessMean         9 vVelocityGeo
+   !   5 surfaceTemperatureMean
+   integer, parameter :: N_AVG_FIELDS = 9
    real(r8), allocatable :: remap_accum(:,:)  ! (remap_nb_local, N_AVG_FIELDS)
 
    !--------------------------------------------------------------------
@@ -210,6 +216,10 @@ contains
                        'N m^-2', 'Zonal air stress on ice', ierr)
                   call seaice_fme_horiz_remap_register_var('airStressMeridional', &
                        'N m^-2', 'Meridional air stress on ice', ierr)
+                  call seaice_fme_horiz_remap_register_var('uVelocityGeo', &
+                       'm s^-1', 'True eastwards ice velocity at cell centers', ierr)
+                  call seaice_fme_horiz_remap_register_var('vVelocityGeo', &
+                       'm s^-1', 'True northwards ice velocity at cell centers', ierr)
 
                   ! Time-averaging setup
                   call mpas_pool_get_config(domain % configs, &
@@ -377,6 +387,13 @@ contains
            yCell, &
            zCell
 
+      ! ice velocity (cell-centered) and geographic-frame outputs
+      real(kind=RKIND), dimension(:), pointer :: &
+           uVelocityCell, &
+           vVelocityCell, &
+           uVelocityGeo, &
+           vVelocityGeo
+
       real(kind=RKIND), pointer :: &
            sphereRadius
 
@@ -442,9 +459,13 @@ contains
 
          call MPAS_pool_get_array(velocitySolverPool, 'airStressCellU', airStressCellU)
          call MPAS_pool_get_array(velocitySolverPool, 'airStressCellV', airStressCellV)
+         call MPAS_pool_get_array(velocitySolverPool, 'uVelocityCell', uVelocityCell)
+         call MPAS_pool_get_array(velocitySolverPool, 'vVelocityCell', vVelocityCell)
 
          call MPAS_pool_get_array(amPool, 'airStressZonal', airStressZonal)
          call MPAS_pool_get_array(amPool, 'airStressMeridional', airStressMeridional)
+         call MPAS_pool_get_array(amPool, 'uVelocityGeo', uVelocityGeo)
+         call MPAS_pool_get_array(amPool, 'vVelocityGeo', vVelocityGeo)
 
          do iCell = 1, nCellsSolve
 
@@ -496,6 +517,26 @@ contains
                airStressMeridional(iCell) = fillValue
             end if
 
+            ! Rotate cell-centered ice velocity to geographic frame.
+            ! Velocity on ice-free cells is undefined -> fillValue.
+            if (areaSum > 0.0_RKIND) then
+               call seaice_latlon_vector_rotation_backward(&
+                    uVelocityGeo(iCell), &
+                    vVelocityGeo(iCell), &
+                    uVelocityCell(iCell), &
+                    vVelocityCell(iCell), &
+                    latCell(iCell), &
+                    lonCell(iCell), &
+                    xCell(iCell), &
+                    yCell(iCell), &
+                    zCell(iCell), &
+                    sphereRadius, &
+                    rotateCartesianGrid)
+            else
+               uVelocityGeo(iCell) = fillValue
+               vVelocityGeo(iCell) = fillValue
+            end if
+
          end do ! iCell
 
          ! --- Horizontal remapping to lat-lon grid ---
@@ -510,6 +551,8 @@ contains
             call remap_1field(surfaceTemperatureMean, 5)
             call remap_1field(airStressZonal, 6)
             call remap_1field(airStressMeridional, 7)
+            call remap_1field(uVelocityGeo, 8)
+            call remap_1field(vVelocityGeo, 9)
 
             if (time_avg_enabled) then
                ! Accumulate (remapped fields already added in remap_1field)
@@ -529,6 +572,8 @@ contains
                      call write_avg_field('surfaceTemperatureMean', 5)
                      call write_avg_field('airStressZonal', 6)
                      call write_avg_field('airStressMeridional', 7)
+                     call write_avg_field('uVelocityGeo', 8)
+                     call write_avg_field('vVelocityGeo', 9)
                   end if
                   remap_accum = 0.0_r8
                   nAccum = 0
@@ -548,6 +593,8 @@ contains
                   call write_inst_field('surfaceTemperatureMean')
                   call write_inst_field('airStressZonal')
                   call write_inst_field('airStressMeridional')
+                  call write_inst_field('uVelocityGeo')
+                  call write_inst_field('vVelocityGeo')
                end if
             end if
 

@@ -63,7 +63,20 @@ module ocn_fme_derived_fields
    integer :: nAccum = 0
    type(MPAS_TimeInterval_type) :: avg_output_interval
    type(MPAS_Time_type) :: avg_last_output_time
-   integer, parameter :: N_AVG_FIELDS = 10
+   ! Slot assignments for remap_accum (must stay in sync with init/compute):
+   !   1  sst                          13  rainFlux
+   !   2  sss                          14  snowFlux
+   !   3  surfaceHeatFluxTotal         15  evaporationFlux
+   !   4  ssh                          16  seaIceHeatFlux
+   !   5  shortWaveHeatFlux            17  icebergHeatFlux
+   !   6  longWaveHeatFluxDown         18  seaIceFreshWaterFlux
+   !   7  latentHeatFlux               19  seaIceSalinityFlux
+   !   8  sensibleHeatFlux             20  riverRunoffFlux
+   !   9  windStressZonal              21  iceRunoffFlux
+   !  10  windStressMeridional         22  snowFluxLf
+   !  11  longWaveHeatFluxUp           23  iceRunoffFluxLf
+   !  12  totalFreshWaterTemperatureFlux  24  riverRunoffFluxTemperature
+   integer, parameter :: N_AVG_FIELDS = 24
    real(r8), allocatable :: remap_accum(:,:)  ! (n_b_local, N_AVG_FIELDS)
 
 !***********************************************************************
@@ -128,6 +141,36 @@ contains
                        'Zonal wind stress on ocean', ierr)
                   call remap_outfile%register_var('windStressMeridional', 'N m^-2', &
                        'Meridional wind stress on ocean', ierr)
+                  call remap_outfile%register_var('longWaveHeatFluxUp', 'W m^-2', &
+                       'Upward longwave heat flux from ocean', ierr)
+                  call remap_outfile%register_var('totalFreshWaterTemperatureFlux', &
+                       'kg degC m^-2 s^-1', &
+                       'Total fresh water temperature flux into ocean', ierr)
+                  call remap_outfile%register_var('rainFlux', 'kg m^-2 s^-1', &
+                       'Rain mass flux into ocean', ierr)
+                  call remap_outfile%register_var('snowFlux', 'kg m^-2 s^-1', &
+                       'Snow mass flux into ocean', ierr)
+                  call remap_outfile%register_var('evaporationFlux', 'kg m^-2 s^-1', &
+                       'Evaporation mass flux from ocean', ierr)
+                  call remap_outfile%register_var('seaIceHeatFlux', 'W m^-2', &
+                       'Sea-ice heat flux into ocean', ierr)
+                  call remap_outfile%register_var('icebergHeatFlux', 'W m^-2', &
+                       'Iceberg heat flux into ocean', ierr)
+                  call remap_outfile%register_var('seaIceFreshWaterFlux', 'kg m^-2 s^-1', &
+                       'Sea-ice fresh water mass flux into ocean', ierr)
+                  call remap_outfile%register_var('seaIceSalinityFlux', 'kg m^-2 s^-1', &
+                       'Sea-ice salt flux into ocean', ierr)
+                  call remap_outfile%register_var('riverRunoffFlux', 'kg m^-2 s^-1', &
+                       'River runoff mass flux into ocean', ierr)
+                  call remap_outfile%register_var('iceRunoffFlux', 'kg m^-2 s^-1', &
+                       'Land-ice runoff mass flux into ocean', ierr)
+                  call remap_outfile%register_var('snowFluxLf', 'W m^-2', &
+                       'snowFlux times latent heat of fusion', ierr)
+                  call remap_outfile%register_var('iceRunoffFluxLf', 'W m^-2', &
+                       'iceRunoffFlux times latent heat of fusion', ierr)
+                  call remap_outfile%register_var('riverRunoffFluxTemperature', &
+                       'kg degC m^-2 s^-1', &
+                       'riverRunoffFlux times top-layer temperature', ierr)
 
                   ! Time-averaging setup
                   call mpas_pool_get_config(domain % configs, &
@@ -180,10 +223,20 @@ contains
 
       real(kind=RKIND), dimension(:, :, :), pointer :: tracers
       real(kind=RKIND), dimension(:), pointer :: sst, sss, surfaceHeatFluxTotal
+      real(kind=RKIND), dimension(:), pointer :: snowFluxLf, iceRunoffFluxLf
+      real(kind=RKIND), dimension(:), pointer :: riverRunoffFluxTemperature
       real(kind=RKIND), dimension(:), pointer :: shortWaveHeatFlux
       real(kind=RKIND), dimension(:), pointer :: longWaveHeatFluxDown
+      real(kind=RKIND), dimension(:), pointer :: longWaveHeatFluxUp
       real(kind=RKIND), dimension(:), pointer :: latentHeatFlux
       real(kind=RKIND), dimension(:), pointer :: sensibleHeatFlux
+      real(kind=RKIND), dimension(:), pointer :: rainFluxPtr, snowFluxPtr
+      real(kind=RKIND), dimension(:), pointer :: evaporationFluxPtr
+      real(kind=RKIND), dimension(:), pointer :: totalFreshWaterTemperatureFluxPtr
+      real(kind=RKIND), dimension(:), pointer :: seaIceHeatFluxPtr, icebergHeatFluxPtr
+      real(kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFluxPtr
+      real(kind=RKIND), dimension(:), pointer :: seaIceSalinityFluxPtr
+      real(kind=RKIND), dimension(:), pointer :: riverRunoffFluxPtr, iceRunoffFluxPtr
       real(kind=RKIND), dimension(:), pointer :: ssh_ptr
       real(kind=RKIND), dimension(:), pointer :: windStressZonalPtr
       real(kind=RKIND), dimension(:), pointer :: windStressMeridionalPtr
@@ -216,13 +269,30 @@ contains
          call mpas_pool_get_array(amPool, 'sst', sst)
          call mpas_pool_get_array(amPool, 'sss', sss)
          call mpas_pool_get_array(amPool, 'surfaceHeatFluxTotal', surfaceHeatFluxTotal)
+         call mpas_pool_get_array(amPool, 'snowFluxLf', snowFluxLf)
+         call mpas_pool_get_array(amPool, 'iceRunoffFluxLf', iceRunoffFluxLf)
+         call mpas_pool_get_array(amPool, 'riverRunoffFluxTemperature', &
+              riverRunoffFluxTemperature)
 
          call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
          call mpas_pool_get_array(forcingPool, 'longWaveHeatFluxDown', longWaveHeatFluxDown)
+         call mpas_pool_get_array(forcingPool, 'longWaveHeatFluxUp', longWaveHeatFluxUp)
          call mpas_pool_get_array(forcingPool, 'latentHeatFlux', latentHeatFlux)
          call mpas_pool_get_array(forcingPool, 'sensibleHeatFlux', sensibleHeatFlux)
          call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonalPtr)
          call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridionalPtr)
+         call mpas_pool_get_array(forcingPool, 'rainFlux', rainFluxPtr)
+         call mpas_pool_get_array(forcingPool, 'snowFlux', snowFluxPtr)
+         call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFluxPtr)
+         call mpas_pool_get_array(forcingPool, 'totalFreshWaterTemperatureFlux', &
+              totalFreshWaterTemperatureFluxPtr)
+         call mpas_pool_get_array(forcingPool, 'seaIceHeatFlux', seaIceHeatFluxPtr)
+         call mpas_pool_get_array(forcingPool, 'icebergHeatFlux', icebergHeatFluxPtr)
+         call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', &
+              seaIceFreshWaterFluxPtr)
+         call mpas_pool_get_array(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFluxPtr)
+         call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFluxPtr)
+         call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFluxPtr)
 
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
          do iCell = 1, nCellsSolve
@@ -232,6 +302,9 @@ contains
                sst(iCell) = fillValue
                sss(iCell) = fillValue
                surfaceHeatFluxTotal(iCell) = fillValue
+               snowFluxLf(iCell) = fillValue
+               iceRunoffFluxLf(iCell) = fillValue
+               riverRunoffFluxTemperature(iCell) = fillValue
                cycle
             end if
 
@@ -250,6 +323,25 @@ contains
                     + sensibleHeatFlux(iCell)
             else
                surfaceHeatFluxTotal(iCell) = fillValue
+            end if
+
+            ! Derived heat-equivalent and temperature-flux products.
+            ! latent_heat_fusion_mks is J/kg; mass-flux * J/kg = W/m^2.
+            if (associated(snowFluxPtr)) then
+               snowFluxLf(iCell) = snowFluxPtr(iCell) * latent_heat_fusion_mks
+            else
+               snowFluxLf(iCell) = fillValue
+            end if
+            if (associated(iceRunoffFluxPtr)) then
+               iceRunoffFluxLf(iCell) = iceRunoffFluxPtr(iCell) * latent_heat_fusion_mks
+            else
+               iceRunoffFluxLf(iCell) = fillValue
+            end if
+            if (associated(riverRunoffFluxPtr)) then
+               riverRunoffFluxTemperature(iCell) = riverRunoffFluxPtr(iCell) &
+                    * tracers(index_temperature, 1, iCell)
+            else
+               riverRunoffFluxTemperature(iCell) = fillValue
             end if
          end do
 
@@ -288,6 +380,33 @@ contains
                  call mask_and_remap(windStressZonalPtr, 9)
             if (associated(windStressMeridionalPtr)) &
                  call mask_and_remap(windStressMeridionalPtr, 10)
+            if (associated(longWaveHeatFluxUp)) &
+                 call mask_and_remap(longWaveHeatFluxUp, 11)
+            if (associated(totalFreshWaterTemperatureFluxPtr)) &
+                 call mask_and_remap(totalFreshWaterTemperatureFluxPtr, 12)
+            if (associated(rainFluxPtr)) &
+                 call mask_and_remap(rainFluxPtr, 13)
+            if (associated(snowFluxPtr)) &
+                 call mask_and_remap(snowFluxPtr, 14)
+            if (associated(evaporationFluxPtr)) &
+                 call mask_and_remap(evaporationFluxPtr, 15)
+            if (associated(seaIceHeatFluxPtr)) &
+                 call mask_and_remap(seaIceHeatFluxPtr, 16)
+            if (associated(icebergHeatFluxPtr)) &
+                 call mask_and_remap(icebergHeatFluxPtr, 17)
+            if (associated(seaIceFreshWaterFluxPtr)) &
+                 call mask_and_remap(seaIceFreshWaterFluxPtr, 18)
+            if (associated(seaIceSalinityFluxPtr)) &
+                 call mask_and_remap(seaIceSalinityFluxPtr, 19)
+            if (associated(riverRunoffFluxPtr)) &
+                 call mask_and_remap(riverRunoffFluxPtr, 20)
+            if (associated(iceRunoffFluxPtr)) &
+                 call mask_and_remap(iceRunoffFluxPtr, 21)
+            ! Derived AM products are already land-masked in the cell loop,
+            ! so use remap_1field directly (no second masking pass).
+            call remap_1field(snowFluxLf, 22)
+            call remap_1field(iceRunoffFluxLf, 23)
+            call remap_1field(riverRunoffFluxTemperature, 24)
 
             if (time_avg_enabled) then
                ! Accumulate (remapped fields already added in remap_1field)
@@ -310,6 +429,20 @@ contains
                      call write_avg_field('sensibleHeatFlux', 8)
                      call write_avg_field('windStressZonal', 9)
                      call write_avg_field('windStressMeridional', 10)
+                     call write_avg_field('longWaveHeatFluxUp', 11)
+                     call write_avg_field('totalFreshWaterTemperatureFlux', 12)
+                     call write_avg_field('rainFlux', 13)
+                     call write_avg_field('snowFlux', 14)
+                     call write_avg_field('evaporationFlux', 15)
+                     call write_avg_field('seaIceHeatFlux', 16)
+                     call write_avg_field('icebergHeatFlux', 17)
+                     call write_avg_field('seaIceFreshWaterFlux', 18)
+                     call write_avg_field('seaIceSalinityFlux', 19)
+                     call write_avg_field('riverRunoffFlux', 20)
+                     call write_avg_field('iceRunoffFlux', 21)
+                     call write_avg_field('snowFluxLf', 22)
+                     call write_avg_field('iceRunoffFluxLf', 23)
+                     call write_avg_field('riverRunoffFluxTemperature', 24)
                   end if
                   remap_accum = 0.0_r8
                   nAccum = 0
@@ -332,6 +465,23 @@ contains
                   if (associated(sensibleHeatFlux)) call write_inst_field('sensibleHeatFlux', 8)
                   if (associated(windStressZonalPtr)) call write_inst_field('windStressZonal', 9)
                   if (associated(windStressMeridionalPtr)) call write_inst_field('windStressMeridional', 10)
+                  if (associated(longWaveHeatFluxUp)) call write_inst_field('longWaveHeatFluxUp', 11)
+                  if (associated(totalFreshWaterTemperatureFluxPtr)) &
+                       call write_inst_field('totalFreshWaterTemperatureFlux', 12)
+                  if (associated(rainFluxPtr)) call write_inst_field('rainFlux', 13)
+                  if (associated(snowFluxPtr)) call write_inst_field('snowFlux', 14)
+                  if (associated(evaporationFluxPtr)) call write_inst_field('evaporationFlux', 15)
+                  if (associated(seaIceHeatFluxPtr)) call write_inst_field('seaIceHeatFlux', 16)
+                  if (associated(icebergHeatFluxPtr)) call write_inst_field('icebergHeatFlux', 17)
+                  if (associated(seaIceFreshWaterFluxPtr)) &
+                       call write_inst_field('seaIceFreshWaterFlux', 18)
+                  if (associated(seaIceSalinityFluxPtr)) &
+                       call write_inst_field('seaIceSalinityFlux', 19)
+                  if (associated(riverRunoffFluxPtr)) call write_inst_field('riverRunoffFlux', 20)
+                  if (associated(iceRunoffFluxPtr)) call write_inst_field('iceRunoffFlux', 21)
+                  call write_inst_field('snowFluxLf', 22)
+                  call write_inst_field('iceRunoffFluxLf', 23)
+                  call write_inst_field('riverRunoffFluxTemperature', 24)
                end if
             end if
 
