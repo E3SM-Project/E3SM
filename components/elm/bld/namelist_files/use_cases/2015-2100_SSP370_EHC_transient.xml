@@ -14,8 +14,9 @@
 <!-- no crop model yet -->
 <use_crop>.false.</use_crop>
 
-<!-- v3 with the EHC includes toprad and plant hydraulics tuning -->
-<!-- current config has cn=true and crop=false so the correct paramfile is set -->
+<!-- v3 with the EHC includes toprad and plant hydraulics tuning with bgc-->
+<!-- valid compset with TOPCNPRDCTCBCPHS should include these two options -->
+<paramfile use_crop=".false." use_cn=".true." >lnd/clm2/paramdata/clm_params_c211124_tuned.nc</paramfile>
 <!-- the compset sets use_top_solar_rad but not the correct fsurdat -->
 <!-- toprad needs correct surfdata file -->
 <use_top_solar_rad>.true.</use_top_solar_rad>

@@ -655,7 +655,7 @@
 
   <entry id="IAC_NCPL">
     <type>integer</type>
-    <default_value>1</default_value>
+    <default_value>$ATM_NCPL</default_value>
     <values>
       <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM">1</value>
       <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM">1</value>

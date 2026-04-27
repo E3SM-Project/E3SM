@@ -18,7 +18,7 @@ do_create_newcase=true
 do_modify_pe_layout=true
 do_case_setup=true
 do_case_build=true
-do_case_submit=false
+do_case_submit=true
 
 # --- Configuration flags ----
 
@@ -48,7 +48,7 @@ readonly MYDATE=$(date '+%Y%m%d%H') # use current date if MYDATE is not set to a
 # export COMPSET=SSP245_EAM%CMIP6_ELM%TOPCNPRDCTCBCPHS_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM_BGC%LNDATM
 readonly COMPSET="SSP245_ZATM_BGC" # see long name above
 readonly RESOLUTION="ne30pg2_f09_oEC60to30v3" 
-readonly CASE_NAME="${COMPSET}_${RESOLUTION}_${MYDATE}_v3_submodule_compile_test"
+readonly CASE_NAME="${COMPSET}_${RESOLUTION}_${MYDATE}_v3_pr_test"
 # readonly CASE_GROUP="E3SM_GCAM"
 
 # Code and compilation
