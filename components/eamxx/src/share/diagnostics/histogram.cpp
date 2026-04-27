@@ -53,8 +53,7 @@ void HistogramDiag::initialize_impl(const RunType /*run_type*/) {
   FieldLayout diagnostic_layout({CMP}, {num_bins}, {"bin"});
   FieldIdentifier diagnostic_id(m_diag_name, diagnostic_layout,
                                 ekat::units::none, field_id.get_grid_name());
-  m_diagnostic_output = Field(diagnostic_id);
-  m_diagnostic_output.allocate_view();
+  m_diagnostic_output = Field(diagnostic_id,true);
 
   // allocate field for bin values
   FieldLayout bin_values_layout({CMP}, {num_bins+1}, {"bin"});
@@ -82,12 +81,18 @@ void HistogramDiag::compute_diagnostic_impl() {
   using TeamPolicy = Kokkos::TeamPolicy<Field::device_t::execution_space>;
   using TeamMember = typename TeamPolicy::member_type;
   using TPF        = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
+  using cmask1d_t = Field::view_dev_t<const int*>;
+  using cmask2d_t = Field::view_dev_t<const int**>;
+  using cmask3d_t = Field::view_dev_t<const int***>;
+
+  bool masked = field.has_valid_mask();
   switch (field_layout.rank())
   {
     case 1: {
       const int d1 = field_layout.dim(0);
       auto field_view = field.get_view<const Real *>();
       TeamPolicy team_policy = TPF::get_default_team_policy(num_bins, d1);
+      auto mask_view = masked ? field.get_valid_mask().get_view<const int*>() : cmask1d_t{};
       Kokkos::parallel_for("compute_histogram_" + field.name(), team_policy,
           KOKKOS_LAMBDA(const TeamMember &tm) {
             const int bin_i = tm.league_rank();
@@ -95,7 +100,8 @@ void HistogramDiag::compute_diagnostic_impl() {
             const Real bin_upper = bin_values_view(bin_i+1);
             Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, d1),
                 [&](int i, Real &val) {
-                  if ((bin_lower <= field_view(i)) && (field_view(i) < bin_upper))
+                  if ((not masked or mask_view(i)!=0) and
+                      (bin_lower <= field_view(i)) && (field_view(i) < bin_upper))
                     val += sp(1.0);
                 },
                 histogram_view(bin_i));
@@ -106,6 +112,7 @@ void HistogramDiag::compute_diagnostic_impl() {
       const int d2 = field_layout.dim(1);
       auto field_view = field.get_view<const Real **>();
       TeamPolicy team_policy = TPF::get_default_team_policy(num_bins, d1*d2);
+      auto mask_view = masked ? field.get_valid_mask().get_view<const int**>() : cmask2d_t{};
       Kokkos::parallel_for("compute_histogram_" + field.name(), team_policy,
           KOKKOS_LAMBDA(const TeamMember &tm) {
             const int bin_i = tm.league_rank();
@@ -115,7 +122,8 @@ void HistogramDiag::compute_diagnostic_impl() {
                 [&](int ind, Real &val) {
                   const int i1 = ind / d2;
                   const int i2 = ind % d2;
-                  if ((bin_lower <= field_view(i1,i2)) && (field_view(i1,i2) < bin_upper))
+                  if ((not masked or mask_view(i1,i2)!=0) and
+                      (bin_lower <= field_view(i1,i2)) && (field_view(i1,i2) < bin_upper))
                     val += sp(1.0);
                 },
                 histogram_view(bin_i));
@@ -127,6 +135,7 @@ void HistogramDiag::compute_diagnostic_impl() {
       const int d3 = field_layout.dim(2);
       auto field_view = field.get_view<const Real ***>();
       TeamPolicy team_policy = TPF::get_default_team_policy(num_bins, d1*d2*d3);
+      auto mask_view = masked ? field.get_valid_mask().get_view<const int***>() : cmask3d_t{};
       Kokkos::parallel_for("compute_histogram_" + field.name(), team_policy,
           KOKKOS_LAMBDA(const TeamMember &tm) {
             const int bin_i = tm.league_rank();
@@ -138,7 +147,8 @@ void HistogramDiag::compute_diagnostic_impl() {
                   const int ind2 = ind % (d2*d3);
                   const int i2 = ind2 / d3;
                   const int i3 = ind2 % d3;
-                  if ((bin_lower <= field_view(i1,i2,i3)) && (field_view(i1,i2,i3) < bin_upper))
+                  if ((not masked or mask_view(i1,i2,i3)!=0) and
+                      (bin_lower <= field_view(i1,i2,i3)) && (field_view(i1,i2,i3) < bin_upper))
                     val += sp(1.0);
                 },
                 histogram_view(bin_i));

@@ -158,6 +158,62 @@ TEST_CASE("vert_derivative") {
     }
   }
 
+  SECTION("dp_vert_derivative_masked") {
+    // calculate dp_vert_div manually
+    fin2.create_valid_mask();
+    randomize_uniform(fin2.get_valid_mask(),seed++);
+    dp.sync_to_host();
+    fin2.sync_to_host();
+    diag1_m.sync_to_host();
+
+    auto dp_v      = dp.get_view<const Real **, Host>();
+    auto fin2_v    = fin2.get_view<const Real **, Host>();
+    auto fin2_m    = fin2.get_valid_mask().get_view<const int**, Host>();
+    auto diag1_m_v = diag1_m.get_view<Real **, Host>();
+    auto diag1_m_mask = diag1_m.create_valid_mask();
+    auto diag1_m_mask_v = diag1_m.get_valid_mask().get_view<int**,Host>();
+    int last_lev = nlevs-1;
+    for (int icol = 0; icol < ngcols; ++icol) {
+      for (int ilev = 0; ilev < nlevs; ++ilev) {
+        if (fin2_m(icol,ilev)==0 or
+            (ilev>0 and fin2_m(icol,ilev-1)==0) or
+            (ilev<last_lev and fin2_m(icol,ilev+1)==0)) {
+          diag1_m_mask_v(icol,ilev)=0;
+          continue;
+        }
+        diag1_m_mask_v(icol,ilev)=1;
+        auto fa1 = (ilev < nlevs - 1) ? (fin2_v(icol, ilev + 1) * dp_v(icol, ilev) +
+                    fin2_v(icol, ilev) * dp_v(icol, ilev + 1)) /
+                   (dp_v(icol, ilev) + dp_v(icol, ilev + 1)) : fin2_v(icol, nlevs-1);
+        auto fa0 = (ilev > 0 ) ? (fin2_v(icol, ilev) * dp_v(icol, ilev - 1) +
+                    fin2_v(icol, ilev - 1) * dp_v(icol, ilev)) /
+                   (dp_v(icol, ilev - 1) + dp_v(icol, ilev)) : fin2_v(icol, 0);
+        diag1_m_v(icol, ilev) = (fa1 - fa0) / dp_v(icol, ilev);
+      }
+    }
+    diag1_m.sync_to_dev();
+    diag1_m.get_valid_mask().sync_to_dev();
+
+    // Calculate weighted avg through diagnostics
+    dp_vert_derivative->set_required_field(fin2);
+    dp_vert_derivative->set_required_field(dp);
+    dp_vert_derivative->initialize(t0, RunType::Initial);
+    dp_vert_derivative->compute_diagnostic();
+    auto dp_vert_derivative_f = dp_vert_derivative->get_diagnostic();
+
+    // Check diag mask field
+    REQUIRE (dp_vert_derivative_f.has_valid_mask());
+    REQUIRE (views_are_equal(dp_vert_derivative_f.get_valid_mask(),diag1_m_mask));
+
+    // Set diag and manual diag to 0 where mask=0, then compute diff norm
+    dp_vert_derivative_f.deep_copy(0,diag1_m_mask,true);
+    diag1_m.deep_copy(0,diag1_m_mask,true);
+    diag1_m.update(dp_vert_derivative_f,1,-1,diag1_m_mask);
+
+    constexpr auto tol = std::numeric_limits<Real>::epsilon()*1000;
+    REQUIRE_THAT (inf_norm(diag1_m).as<Real>(),Catch::WithinAbs(0,tol));
+  }
+
   // TODO: add SECTION("dz_vert_derivative")
 }
 
