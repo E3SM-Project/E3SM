@@ -174,7 +174,7 @@ contains
   end subroutine seq_map_init_rcfile
 
 
-  subroutine moab_map_init_rcfile( mbsrc, mbtgt, mbintx, discretization_type, &
+  subroutine moab_map_init_rcfile( mapper, discretization_type, &
                    maprcfile, maprcname, maprctype, samegrid, arearead, map_identifier, &
                    description_string, esmf_map, fallback_map_identifier )
 
@@ -184,9 +184,7 @@ contains
     !
     ! Arguments
     !
-    type(integer)        ,intent(in)            :: mbsrc  ! moab source app id
-    type(integer)        ,intent(in)            :: mbtgt  ! moab target app id
-    type(integer)        ,intent(in)            :: mbintx  ! moab intersection app id, identifing the map from source to target
+    type(seq_map)        ,intent(inout)         :: mapper  ! mapper being initialized (src_mbid, tgt_mbid, intx_mbid must be set)
     type(integer)        ,intent(in)            :: discretization_type ! 1 for SE, 2 for PC, 3 for FV; should be a member data
     ! type(component_type) ,intent(inout)         :: comp_s
     ! type(component_type) ,intent(inout)         :: comp_d
@@ -237,7 +235,7 @@ contains
          write(logunit,*) subname,' reading map file with iMOAB: ', trim(mapfile_term)
       endif
 
-      ierr = iMOAB_LoadMapFile( mbsrc, mbtgt, mbintx, discretization_type, &
+      ierr = iMOAB_LoadMapFile( mapper%src_mbid, mapper%tgt_mbid, mapper%intx_mbid, discretization_type, &
                                  discretization_type, arearead, map_identifier, mapfile_term)
       if (ierr .ne. 0) then
          write(logunit,*) subname,' error in loading map file - ' // mapfile
@@ -245,7 +243,7 @@ contains
       endif
       if (seq_comm_iamroot(CPLID)) then
          write(logunit,'(2A,I10,6A)') subname, ': iMOAB appID: ', &
-            mbintx, ', maptype: ', trim(maptype), ', mapfile: ', &
+            mapper%intx_mbid, ', maptype: ', trim(maptype), ', mapfile: ', &
             trim(mapfile), ', identifier: ', trim(map_identifier)
          call shr_sys_flush(logunit)
       endif
