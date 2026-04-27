@@ -23,6 +23,15 @@ SET (PIO_INTERP TRUE)
 
 HommeConfigFile (${THIS_CONFIG_IN} ${THIS_CONFIG_HC} ${THIS_CONFIG_H} )
 
+# All unit tests here use ne=2, giving 6*ne*ne=24 elements max.
+# Cap the number of MPI tasks to avoid "too many MPI tasks" aborts.
+# THETAL_UT_NE is only used in the MATH() expression below; it is defined as a
+# named variable (rather than inlining the literal 2) to document which ne value
+# the unit tests are configured for and to make it easy to find if it ever needs
+# to change.  It is not referenced anywhere else in the build.
+SET (THETAL_UT_NE 2)
+MATH (EXPR MPI_MAX_PROCS "6 * ${THETAL_UT_NE} * ${THETAL_UT_NE}")
+
 ADD_LIBRARY(thetal_kokkos_ut_lib
   ${THETAL_DEPS}
   ${TEST_SRC_F90}
@@ -90,11 +99,7 @@ IF (HOMMEXX_BFB_TESTING)
     ${CMAKE_BINARY_DIR}/src/share/cxx
     )
 
-  IF (USE_NUM_PROCS)
-    SET (NUM_CPUS ${USE_NUM_PROCS})
-  ELSE()
-    SET (NUM_CPUS 1)
-  ENDIF()
+  set_mpi_num_cpus()
   cxx_unit_test (eos_ut "${EOS_UT_F90_SRCS}" "${EOS_UT_CXX_SRCS}" "${EOS_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
   TARGET_LINK_LIBRARIES(eos_ut thetal_kokkos_ut_lib)
 
@@ -120,11 +125,7 @@ IF (HOMMEXX_BFB_TESTING)
     ${CMAKE_BINARY_DIR}/src/share/cxx
     )
 
-  IF (USE_NUM_PROCS)
-    SET (NUM_CPUS ${USE_NUM_PROCS})
-  ELSE()
-    SET (NUM_CPUS 1)
-  ENDIF()
+  set_mpi_num_cpus()
   cxx_unit_test (elem_ops_ut "${ELEM_OPS_UT_F90_SRCS}" "${ELEM_OPS_UT_CXX_SRCS}" "${ELEM_OPS_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
   TARGET_LINK_LIBRARIES(elem_ops_ut thetal_kokkos_ut_lib)
 
@@ -152,11 +153,7 @@ IF (HOMMEXX_BFB_TESTING)
     ${CMAKE_BINARY_DIR}/src/share/cxx
     )
 
-  IF (USE_NUM_PROCS)
-    SET (NUM_CPUS ${USE_NUM_PROCS})
-  ELSE()
-    SET (NUM_CPUS 1)
-  ENDIF()
+  set_mpi_num_cpus()
   cxx_unit_test (hv_ut "${HYPERVISCOSITY_UT_F90_SRCS}" "${HYPERVISCOSITY_UT_CXX_SRCS}" "${HYPERVISCOSITY_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
   TARGET_LINK_LIBRARIES(hv_ut thetal_kokkos_ut_lib)
 
@@ -188,11 +185,7 @@ IF (HOMMEXX_BFB_TESTING)
   # We already set all the config options by hand, so we can simply touch an empty config.h
   EXECUTE_PROCESS (COMMAND touch config.h WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-  IF (USE_NUM_PROCS)
-    SET (NUM_CPUS ${USE_NUM_PROCS})
-  ELSE()
-    SET (NUM_CPUS 1)
-  ENDIF()
+  set_mpi_num_cpus()
   cxx_unit_test (forcing_ut "${FORCING_UT_F90_SRCS}" "${FORCING_UT_CXX_SRCS}" "${FORCING_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
   TARGET_LINK_LIBRARIES(forcing_ut thetal_kokkos_ut_lib)
 
@@ -220,11 +213,7 @@ IF (HOMMEXX_BFB_TESTING)
     ${CMAKE_BINARY_DIR}/src/share/cxx
     )
 
-  IF (USE_NUM_PROCS)
-    SET (NUM_CPUS ${USE_NUM_PROCS})
-  ELSE()
-    SET (NUM_CPUS 1)
-  ENDIF()
+  set_mpi_num_cpus()
   cxx_unit_test (caar_ut "${CAAR_UT_F90_SRCS}" "${CAAR_UT_CXX_SRCS}" "${CAAR_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
   TARGET_LINK_LIBRARIES(caar_ut thetal_kokkos_ut_lib)
 
@@ -252,11 +241,7 @@ IF (HOMMEXX_BFB_TESTING)
     ${CMAKE_BINARY_DIR}/src/share/cxx
     )
 
-  IF (USE_NUM_PROCS)
-    SET (NUM_CPUS ${USE_NUM_PROCS})
-  ELSE()
-    SET (NUM_CPUS 1)
-  ENDIF()
+  set_mpi_num_cpus()
   cxx_unit_test (remap_theta_ut "${REMAP_THETA_UT_F90_SRCS}" "${REMAP_THETA_UT_CXX_SRCS}" "${REMAP_THETA_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
   TARGET_LINK_LIBRARIES(remap_theta_ut thetal_kokkos_ut_lib)
 ENDIF ()
@@ -285,11 +270,7 @@ SET (DIRK_UT_INCLUDE_DIRS
   ${CMAKE_BINARY_DIR}/src/share/cxx
 )
 
-IF (USE_NUM_PROCS)
-  SET (NUM_CPUS ${USE_NUM_PROCS})
-ELSE()
-  SET (NUM_CPUS 1)
-ENDIF()
+set_mpi_num_cpus()
 cxx_unit_test (dirk_ut "${DIRK_UT_F90_SRCS}" "${DIRK_UT_CXX_SRCS}" "${DIRK_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
 TARGET_LINK_LIBRARIES(dirk_ut thetal_kokkos_ut_lib)
 
@@ -347,11 +328,7 @@ SET (GLLFVREMAP_UT_INCLUDE_DIRS
   ${CMAKE_BINARY_DIR}/src/share/cxx
 )
 
-IF (USE_NUM_PROCS)
-  SET (NUM_CPUS ${USE_NUM_PROCS})
-ELSE()
-  SET (NUM_CPUS 1)
-ENDIF()
+set_mpi_num_cpus()
 cxx_unit_test (gllfvremap_ut "${GLLFVREMAP_UT_F90_SRCS}" "${GLLFVREMAP_UT_CXX_SRCS}" "${GLLFVREMAP_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
 TARGET_LINK_LIBRARIES(gllfvremap_ut thetal_kokkos_ut_lib)
 cxx_unit_test_add_test(gllfvremap_planar_ut gllfvremap_ut ${NUM_CPUS} "hommexx -planar")

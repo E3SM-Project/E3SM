@@ -1,4 +1,4 @@
-# CMake initial cache file for pm-cpu
+# CMake initial cache file for pm-gpu
 #
 # This machine file works with either Intel or gnu
 # (selected by which modules are loaded)
@@ -57,18 +57,23 @@ IF(DEFINED ENV{MKLROOT})
     MESSAGE(STATUS "MKLROOT set but does not appear to be an Intel MKL path (${_mkl_root}); not enabling HOMME_USE_MKL")
   ENDIF()
   UNSET(_mkl_root)
-  # Assuming this is Intel compiler, this flag turns off annoying compiler warning
-  SET (ADD_CXX_FLAGS "-Wno-overriding-option" CACHE STRING "")
 ENDIF()
+
+SET(HOMMEXX_EXEC_SPACE CUDA CACHE STRING "")
+#SET(HOMMEXX_MPI_ON_DEVICE FALSE CACHE BOOL "")
+#SET(HOMMEXX_CUDA_MAX_WARP_PER_TEAM "16" CACHE STRING  "")
 
 SET(BUILD_HOMME_WITHOUT_PIOLIBRARY FALSE CACHE BOOL "")
 
 SET(USE_TRILINOS OFF CACHE BOOL "")
 
 SET(Kokkos_ENABLE_OPENMP OFF CACHE BOOL "")
-SET(Kokkos_ENABLE_CUDA OFF CACHE BOOL "")
-SET(Kokkos_ENABLE_CUDA_LAMBDA OFF CACHE BOOL "")
-SET(Kokkos_ARCH_AMPERE80 OFF CACHE BOOL "")
+SET(Kokkos_ENABLE_CUDA ON CACHE BOOL "")
+SET(Kokkos_ENABLE_CUDA_LAMBDA ON CACHE BOOL "")
+SET(Kokkos_ARCH_AMPERE80 ON CACHE BOOL "")
+SET(Kokkos_ENABLE_IMPL_CUDA_MALLOC_ASYNC OFF CACHE BOOL "")
+#SET(Kokkos_ARCH_ZEN3 ON CACHE BOOL "") # works, and perf same if both AMPERE80 and ZEN3 are on
+#SET(Kokkos_ENABLE_CUDA_UVM ON CACHE BOOL "")
 SET(Kokkos_ENABLE_EXPLICIT_INSTANTIATION OFF CACHE BOOL "")
 #SET(Kokkos_ENABLE_CUDA_ARCH_LINKING OFF CACHE BOOL "")
 
@@ -80,7 +85,7 @@ SET(ENABLE_HORIZ_OPENMP OFF CACHE BOOL "")
 
 SET(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL "")
 
-SET(USE_NUM_PROCS 24 CACHE STRING "") # only default
+SET(USE_NUM_PROCS 4 CACHE STRING "") # only default
 
 SET(USE_MPIEXEC "srun" CACHE STRING "")
 SET(USE_MPI_OPTIONS "-K --cpu-bind=cores" CACHE STRING "")

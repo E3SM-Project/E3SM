@@ -1,4 +1,4 @@
-# CMake initial cache file for pm-cpu using BFB settings
+# CMake initial cache file for pm-gpu for BFB testing
 #
 # This machine file works with either Intel or gnu
 # (selected by which modules are loaded)
@@ -26,7 +26,7 @@ execute_process(
 # Extract the first line for parsing
 string(REGEX MATCH "^[^\n]*" FTN_VERSION_SUMMARY "${FTN_VERSION_RAW}")
 
-# 1. Detection Logic for the "Big Three" on NERSC
+# 1. Detection Logic
 if(FTN_VERSION_SUMMARY MATCHES "ifx|ifort|Intel")
     set(MY_COMPILER_TYPE "Intel" CACHE STRING "Manual Compiler Identification")
     message(STATUS "Detected Intel Compiler (oneAPI/Classic)")
@@ -83,10 +83,7 @@ SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
 
 IF (MY_COMPILER_TYPE MATCHES "Intel")
     # Works for both 'Intel' (ifort) and 'IntelLLVM' (ifx)
-    SET (ADD_Fortran_FLAGS "-traceback -fp-model strict -O1" CACHE STRING "")
-    SET (ADD_C_FLAGS       "-fp-model strict -O1" CACHE STRING "")
-    SET (ADD_CXX_FLAGS     "-fp-model strict -O1 -Wno-overriding-option" CACHE STRING "")
-
+    # Note Intel compilers not yet working for pm-gpu, they may one day be.
     # Enable MKL only when MKLROOT points to an Intel MKL installation.
     # MKLROOT may be set in GNU environments too, so we verify the path.
     IF(DEFINED ENV{MKLROOT})
@@ -100,20 +97,22 @@ IF (MY_COMPILER_TYPE MATCHES "Intel")
     ENDIF()
 
 ELSEIF (MY_COMPILER_TYPE STREQUAL "GNU")
-    # GNU uses -fbacktrace instead of -traceback
-    SET(ADD_Fortran_FLAGS "-fbacktrace -g -O0" CACHE STRING "")
-    SET(ADD_C_FLAGS       "-g -O0" CACHE STRING "")
-    SET(ADD_CXX_FLAGS     "-g -O0" CACHE STRING "")
+    SET(ADD_Fortran_FLAGS "-fbacktrace -ffp-contract=off -g -O0" CACHE STRING "")
+    SET(ADD_CXX_FLAGS "-ffp-contract=off -g -O0" CACHE STRING "")
+    SET(ADD_C_FLAGS "-ffp-contract=off -g -O0" CACHE STRING "")
 
 ELSEIF (MY_COMPILER_TYPE MATCHES "NVHPC")
-    # NVIDIA/PGI compilers
-    SET(ADD_Fortran_FLAGS "-traceback -O1" CACHE STRING "")
-    SET(ADD_C_FLAGS       "-traceback -O1" CACHE STRING "")
-    SET(ADD_CXX_FLAGS     "-traceback -O1" CACHE STRING "")
-
+    SET(ADD_Fortran_FLAGS "-traceback -g -O0" CACHE STRING "")
+    SET(ADD_C_FLAGS       "-g -O0" CACHE STRING "")
+    SET(ADD_CXX_FLAGS     "-g -O0" CACHE STRING "")
 ELSE()
     MESSAGE(STATUS "Unknown compiler ID: ${MY_COMPILER_TYPE}. No specific flags set.")
 ENDIF()
+
+#SET(HOMMEXX_EXEC_SPACE CUDA CACHE STRING "")
+SET(HOMMEXX_EXEC_SPACE SERIAL CACHE STRING "")
+#SET(HOMMEXX_MPI_ON_DEVICE FALSE CACHE BOOL "")
+#SET(HOMMEXX_CUDA_MAX_WARP_PER_TEAM "16" CACHE STRING  "")
 
 SET(BUILD_HOMME_WITHOUT_PIOLIBRARY FALSE CACHE BOOL "")
 
@@ -122,7 +121,10 @@ SET(USE_TRILINOS OFF CACHE BOOL "")
 SET(Kokkos_ENABLE_OPENMP OFF CACHE BOOL "")
 SET(Kokkos_ENABLE_CUDA OFF CACHE BOOL "")
 SET(Kokkos_ENABLE_CUDA_LAMBDA OFF CACHE BOOL "")
-SET(Kokkos_ARCH_AMPERE80 OFF CACHE BOOL "")
+SET(Kokkos_ARCH_AMPERE80 ON CACHE BOOL "")
+SET(Kokkos_ENABLE_IMPL_CUDA_MALLOC_ASYNC OFF CACHE BOOL "")
+#SET(Kokkos_ARCH_ZEN3 ON CACHE BOOL "") # works, and perf same if both AMPERE80 and ZEN3 are on
+#SET(Kokkos_ENABLE_CUDA_UVM ON CACHE BOOL "")
 SET(Kokkos_ENABLE_EXPLICIT_INSTANTIATION OFF CACHE BOOL "")
 #SET(Kokkos_ENABLE_CUDA_ARCH_LINKING OFF CACHE BOOL "")
 
@@ -134,7 +136,7 @@ SET(ENABLE_HORIZ_OPENMP OFF CACHE BOOL "")
 
 SET(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL "")
 
-SET(USE_NUM_PROCS 24 CACHE STRING "") # only default
+SET(USE_NUM_PROCS 4 CACHE STRING "") # only default
 
 SET(USE_MPIEXEC "srun" CACHE STRING "")
 SET(USE_MPI_OPTIONS "-K --cpu-bind=cores" CACHE STRING "")
