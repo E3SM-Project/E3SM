@@ -51,7 +51,7 @@ module elm_driver
   use LakeHydrologyMod       , only : LakeHydrology
   !
   use AerosolMod             , only : AerosolMasses
-   use SnowHydrologyMod       , only : SnowCappingDiagReset, SnowCappingDiagLog
+   use SnowHydrologyMod       , only : SnowCappingDiagReset, SnowCappingDiagLog, SnowCapLatentCoolingAndDiag
   use SnowSnicarMod          , only : SnowAge_grain
   use SurfaceAlbedoMod       , only : SurfaceAlbedo
   use UrbanAlbedoMod         , only : UrbanAlbedo
@@ -1258,6 +1258,10 @@ contains
        end if
 
        call t_stopf('hydro2 drainage')
+
+       ! Extract latent heat of fusion from snowpack for columns where
+       ! snowcapped ice will be converted to liquid runoff downstream.
+       call SnowCapLatentCoolingAndDiag(bounds_clump)
 
        if (use_betr) then
           call t_startf('betr drainage')
