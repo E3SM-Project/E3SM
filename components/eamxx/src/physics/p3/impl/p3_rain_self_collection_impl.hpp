@@ -11,9 +11,7 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 ::rain_self_collection(
 //  const Pack& rho, const Pack& qr_incld, const Pack& nr_incld, Pack& nr_selfcollect_tend,
-//[shanyp 20260220
   const Pack& rho, const Pack& qr_incld, const Pack& nr_incld, Pack& nr_selfcollect_tend, Pack& nr_breakup_tend,
-//shanyp 20260220]
   const P3Runtime& runtime_options,
   const Mask& context)
 {
@@ -54,14 +52,12 @@ void Functions<S,D>
     nr_selfcollect_tend.set(
         qr_incld_not_small,
         dum * rain_selfcollection_prefactor * nr_incld * qr_incld * rho);
-//[shanyp 20260220
-   auto selfcoll = nr_selfcollect_tend >= 0.;
-   nr_breakup_tend.set(selfcoll, 0.);
+   auto selfcoll = nr_selfcollect_tend >= 0;
+   nr_breakup_tend.set(selfcoll, 0);
 
-   auto breakup = nr_selfcollect_tend < 0.;
-   nr_breakup_tend.set(breakup, nr_selfcollect_tend*(-1.));
-   nr_selfcollect_tend.set(breakup, 0.);
-//shanyp 20260220]
+   auto breakup = nr_selfcollect_tend < 0;
+   nr_breakup_tend.set(breakup, -nr_selfcollect_tend);
+   nr_selfcollect_tend.set(breakup, 0);
   }
 }
 

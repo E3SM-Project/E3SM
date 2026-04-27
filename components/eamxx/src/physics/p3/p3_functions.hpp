@@ -408,10 +408,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Pack &cld_frac_l, const Pack &cld_frac_r, const Pack &cld_frac_i,
       Pack &qc2qr_accret_tend, Pack &qr2qv_evap_tend, Pack &qc2qr_autoconv_tend,
       Pack &nc_accret_tend, Pack &nc_selfcollect_tend, Pack &nc2nr_autoconv_tend,
-//[shanyp 20260220
-//      Pack &nr_selfcollect_tend, Pack &nr_evap_tend, Pack &ncautr, Pack &qi2qv_sublim_tend,
       Pack &nr_selfcollect_tend, Pack &nr_breakup_tend, Pack &nr_evap_tend, Pack &ncautr, Pack &qi2qv_sublim_tend,
-//shanyp 20260220]
       Pack &nr_ice_shed_tend, Pack &qc2qi_hetero_freeze_tend, Pack &qr2qi_collect_tend,
       Pack &qc2qr_ice_shed_tend, Pack &qi2qr_melt_tend, Pack &qc2qi_collect_tend,
       Pack &qr2qi_immers_freeze_tend, Pack &ni2nr_melt_tend, Pack &nc_collect_tend,
@@ -733,10 +730,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
   // Computes rain self collection process rate
   KOKKOS_FUNCTION
   static void rain_self_collection(const Pack &rho, const Pack &qr_incld, const Pack &nr_incld,
-//[shanyp 20260220
-//		  Pack &nr_selfcollect_tend, const P3Runtime &runtime_options,
 		Pack &nr_selfcollect_tend, Pack &nr_breakup_tend, const P3Runtime &runtime_options,
-//shanyp 20260220]
                                    const Mask &context = Mask(true));
 
   // Impose maximum ice number
@@ -859,10 +853,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
   static void update_prognostic_liquid(
       const Pack &qc2qr_accret_tend, const Pack &nc_accret_tend, const Pack &qc2qr_autoconv_tend,
       const Pack &nc2nr_autoconv_tend, const Pack &ncautr, const Pack &nc_selfcollect_tend,
-//[shanyp 20260220
-//      const Pack &qr2qv_evap_tend, const Pack &nr_evap_tend, const Pack &nr_selfcollect_tend,
       const Pack &qr2qv_evap_tend, const Pack &nr_evap_tend, const Pack &nr_selfcollect_tend, const Pack &nr_breakup_tend,
-//shanyp 20260220]
       const bool do_predict_nc, const bool do_prescribed_CCN, const Pack &inv_rho,
       const Pack &inv_exner, const Scalar dt, Pack &th_atm, Pack &qv, Pack &qc, Pack &nc,
       Pack &qr, Pack &nr, const Mask &context = Mask(true));
@@ -1210,10 +1201,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                               const Pack &nr_ice_shed_tend, const Pack &ncshdc,
                               const Pack &nc2nr_autoconv_tend, const Real &dt,
                               const Real &nmltratio, Pack &nr_collect_tend,
-//[shanyp 20260220
-//			      Pack &nr2ni_immers_freeze_tend, Pack &nr_selfcollect_tend,
                               Pack &nr2ni_immers_freeze_tend, Pack &nr_selfcollect_tend, Pack &nr_breakup_tend,
-//shanyp 20260220]
                               Pack &nr_evap_tend, const Mask &context = Mask(true));
 
   KOKKOS_FUNCTION
