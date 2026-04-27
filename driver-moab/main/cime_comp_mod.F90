@@ -149,12 +149,12 @@ module cime_comp_mod
   use cplcomp_exchange_mod, only: seq_mctext_decomp
 
   ! diagnostic routines
-  use seq_diag_mct, only : seq_diag_zero_mct , seq_diag_avect_mct, seq_diag_lnd_mct
-  use seq_diag_mct, only : seq_diag_rof_mct  , seq_diag_ocn_mct  , seq_diag_atm_mct
-  use seq_diag_mct, only : seq_diag_ice_mct  , seq_diag_accum_mct, seq_diag_print_mct
-  use seq_diagBGC_mct, only : seq_diagBGC_zero_mct , seq_diagBGC_avect_mct, seq_diagBGC_lnd_mct
-  use seq_diagBGC_mct, only : seq_diagBGC_rof_mct  , seq_diagBGC_ocn_mct  , seq_diagBGC_atm_mct
-  use seq_diagBGC_mct, only : seq_diagBGC_ice_mct  , seq_diagBGC_accum_mct
+  use seq_diag_moab, only : seq_diag_zero_moab, seq_diag_lnd_moab
+  use seq_diag_moab, only : seq_diag_rof_moab , seq_diag_ocn_moab, seq_diag_atm_moab
+  use seq_diag_moab, only : seq_diag_ice_moab , seq_diag_accum_moab, seq_diag_print_moab
+  use seq_diagBGC_moab, only : seq_diagBGC_zero_moab, seq_diagBGC_lnd_moab
+  use seq_diagBGC_moab, only : seq_diagBGC_rof_moab  , seq_diagBGC_ocn_moab, seq_diagBGC_atm_moab
+  use seq_diagBGC_moab, only : seq_diagBGC_ice_moab  , seq_diagBGC_accum_moab
 
   ! list of fields transferred between components
   use seq_flds_mod, only : seq_flds_a2x_fluxes, seq_flds_x2a_fluxes
@@ -1570,21 +1570,15 @@ contains
    !---------------------------------------------------------------------------------------
    ! Initialize coupler-component data
    !  if processor has cpl or model
-   !    init the extended gsMap that describes comp on mpijoin
    !    call call cplcomp_moab_Init and use infodata
-   !    MOAB: on component, send mesh (except lnd and rof).
+   !       on component, send mesh (except lnd and rof).
    !       on coupler, register coupler version
-   !       of app and receive mesh (except lnd and rof). The initial CommGraph is computed as part of
-   !       send/receive of the mesh. For atm compute an additional CommGraph between physgrid on comp atm side
-   !       and mesh on coupler side
-   !    MOAB: for lnd and rof, read the mesh on coupler side from file and
+   !         of app and receive mesh (except lnd and rof). The initial CommGraph is computed as part of
+   !         send/receive of the mesh.
+   !       for lnd and rof, read the mesh on coupler side from file and
    !         compute CommGraph between component (just a point cloud) and coupler version (full mesh)
-   !    MOAB: define c2x, x2c, domain tags
-   !    init the mappers that go between comp and coupler instances of mesh
-   !        these will be rearranger-type mappers since the meshss are the same
-   !    initialize extended Avs to match extended GsMaps
-   !    initialize extended domain
-   !    fill coupler domain with data using a map_exchange call (copy or rearrange only)
+   !       define c2x, x2c, domain tags
+   !       Fill domain info from component using component_exch_moab
    !---------------------------------------------------------------------------------------
     call t_startf('CPL:comp_init_cx_all')
     call t_adj_detailf(+2)
@@ -2519,8 +2513,8 @@ contains
     call t_startf('CPL:init_readrestart')
     call t_adj_detailf(+2)
 
-    call seq_diag_zero_mct(mode='all')
-    call seq_diagBGC_zero_mct(mode='all')
+    call seq_diag_zero_moab(mode='all')
+    call seq_diagBGC_zero_moab(mode='all')
     if (read_restart .and. iamin_CPLID) then
 
        if (iamroot_CPLID) then
@@ -4925,17 +4919,17 @@ contains
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET1_BARRIER')
        call t_drvstartf ('CPL:BUDGET1',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        if (lnd_present) then
-          call seq_diag_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, do_l2x=.true., do_x2l=.true.)
+          call seq_diag_lnd_moab(lnd(ens1), infodata, do_l2x=.true., do_x2l=.true.)
        endif
        if (rof_present) then
-          call seq_diag_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
+          call seq_diag_rof_moab(rof(ens1), infodata)
        endif
        if (ice_present) then
-          call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_x2i=.true.)
+          call seq_diag_ice_moab(ice(ens1), infodata, do_x2i=.true.)
        endif
        if (do_bgc_budgets) then
           if (rof_present) then
-             call seq_diagBGC_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
+             call seq_diagBGC_rof_moab(rof(ens1), infodata)
           endif
        endif
        call t_drvstopf  ('CPL:BUDGET1',cplrun=lcplrun,budget=.true.)
@@ -4967,44 +4961,43 @@ contains
 
        call t_drvstartf ('CPL:BUDGET2',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        if (atm_present) then
-          call seq_diag_atm_mct(atm(ens1), fractions_ax(ens1), infodata, do_a2x=.true., do_x2a=.true.)
+          call seq_diag_atm_moab(atm(ens1), infodata, do_a2x=.true., do_x2a=.true.)
        endif
        if (ice_present) then
-          call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true.)
+          call seq_diag_ice_moab(ice(ens1), infodata, do_i2x=.true.)
        endif
        if (do_bgc_budgets) then
           if (atm_present) then
-             call seq_diagBGC_atm_mct(atm(ens1), fractions_ax(ens1), infodata, do_a2x=.true., do_x2a=.true.)
+             call seq_diagBGC_atm_moab(atm(ens1), infodata, do_a2x=.true., do_x2a=.true.)
           endif
           if (ice_present) then
-             call seq_diagBGC_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true., do_x2i=.true.)
+             call seq_diagBGC_ice_moab(ice(ens1), infodata, do_i2x=.true., do_x2i=.true.)
           endif
           if (lnd_present) then
-             call seq_diagBGC_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, do_l2x=.true., do_x2l=.true.)
+             call seq_diagBGC_lnd_moab(lnd(ens1), infodata, do_l2x=.true., do_x2l=.true.)
           endif
           if (ocn_present) then
-             call seq_diagBGC_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
-                  do_o2x=.true., do_x2o=.true., do_xao=.true.)
+             call seq_diagBGC_ocn_moab(ocn(ens1), infodata, do_o2x=.true., do_x2o=.true.)
           endif
        endif
        call t_drvstopf  ('CPL:BUDGET2',cplrun=lcplrun,budget=.true.)
 
        call t_drvstartf ('CPL:BUDGET3',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
-       call seq_diag_accum_mct()
+       call seq_diag_accum_moab()
        if (do_bgc_budgets) then
-          call seq_diagBGC_accum_mct()
+          call seq_diagBGC_accum_moab()
        endif
        call t_drvstopf  ('CPL:BUDGET3',cplrun=lcplrun,budget=.true.)
 
        call t_drvstartf ('CPL:BUDGETF',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        if (.not. dead_comps) then
-          call seq_diag_print_mct(EClock_d,stop_alarm,do_bgc_budgets, budget_inst, &
+          call seq_diag_print_moab(EClock_d,stop_alarm,do_bgc_budgets, budget_inst, &
                budget_daily, budget_month, budget_ann, budget_ltann, &
                budget_ltend, infodata)
        endif
-       call seq_diag_zero_mct(EClock=EClock_d)
+       call seq_diag_zero_moab(EClock=EClock_d)
        if (do_bgc_budgets) then
-          call seq_diagBGC_zero_mct(EClock=EClock_d)
+          call seq_diagBGC_zero_moab(EClock=EClock_d)
        endif
 
        call t_drvstopf  ('CPL:BUDGETF',cplrun=lcplrun,budget=.true.)
@@ -5035,8 +5028,7 @@ contains
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
        call t_drvstartf ('CPL:BUDGET0',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
-       call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
-            do_o2x=.true., do_x2o=.true., do_xao=.true.)
+       call seq_diag_ocn_moab(ocn(ens1), infodata, do_o2x=.true., do_x2o=.true., do_xao=.true.)
        call t_drvstopf ('CPL:BUDGET0',cplrun=lcplrun,budget=.true.)
     end if
   end subroutine cime_run_calc_budgets3
