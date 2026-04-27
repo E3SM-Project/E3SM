@@ -158,7 +158,8 @@ module ELMFatesInterfaceMod
    use FatesInterfaceTypesMod,   only : hlm_num_luh2_states
    use FatesIOVariableKindMod, only : group_dyna_simple, group_dyna_complx
    use PRTGenericMod         , only : num_elements
-   use PRTGenericMod         , only : carbon_only,carbon_nitrogen_phosphorus
+   use PRTGenericMod         , only : fates_carbon_only => carbon_only
+   use PRTGenericMod         , only : fates_carbon_nitrogen_phosphorus => carbon_nitrogen_phosphorus
    use FatesPatchMod         , only : fates_patch_type
    use FatesDispersalMod     , only : lneighbors, dispersal_type, IsItDispersalTime
    use FatesInterfaceTypesMod, only : hlm_stepsize, hlm_current_day
@@ -179,7 +180,6 @@ module ELMFatesInterfaceMod
    use EDAccumulateFluxesMod , only : AccumulateFluxes_ED
    use FatesSoilBGCFluxMod   , only : UnPackNutrientAquisitionBCs
    use FatesSoilBGCFluxMod   , only : FluxIntoLitterPools
-   use PRTGenericMod, only : prt_cnp_flex_allom_hyp
    use FatesPlantHydraulicsMod, only : hydraulics_drive
    use FatesPlantHydraulicsMod, only : HydrSiteColdStart
    use FatesPlantHydraulicsMod, only : InitHydrSites
@@ -381,7 +381,7 @@ contains
        call set_fates_ctrlparms('masterproc',ival=pass_masterproc)
 
        if(trim(fates_parteh_mode)==trim(elmfates_carbon_only))then
-           pass_parteh_mode = carbon_only
+           pass_parteh_mode = fates_carbon_only
         elseif(trim(fates_parteh_mode)==trim(elmfates_cnp))then
            ! FATES has NO carbon_nitrogen mode. It cycles
            ! either carbon alone, or carbon with both nutrients
@@ -389,7 +389,7 @@ contains
            ! to use synthetic uptake conditions for phosphorus, which
            ! most likely will be ample so that P stores in plants
            ! are saturated and non-limiting
-           pass_parteh_mode = carbon_nitrogen_phosphorus
+           pass_parteh_mode = fates_carbon_nitrogen_phosphorus
         else
            write(iulog,*) 'FATES coupling mode must be either'
            write(iulog,*) trim(elmfates_carbon_only),' or '
@@ -1887,7 +1887,8 @@ contains
          do nc = 1, nclumps
             if (this%fates(nc)%nsites>0) then
                call this%fates_restart%set_restart_vectors(nc,this%fates(nc)%nsites, &
-                                                           this%fates(nc)%sites)
+                    this%fates(nc)%sites, &
+                    this%fates(nc)%bc_in)
             end if
          end do
          !$OMP END PARALLEL DO
@@ -1978,7 +1979,7 @@ contains
                     this%fates(nc)%bc_out)
 
                call this%fates_restart%get_restart_vectors(nc, this%fates(nc)%nsites, &
-                    this%fates(nc)%sites )
+                    this%fates(nc)%sites, this%fates(nc)%bc_in )
 
 
 
