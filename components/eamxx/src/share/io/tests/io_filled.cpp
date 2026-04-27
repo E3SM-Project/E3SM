@@ -10,7 +10,6 @@
 #include "share/field/field.hpp"
 #include "share/data_managers/field_manager.hpp"
 
-#include "share/util/eamxx_universal_constants.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/core/eamxx_types.hpp"
@@ -26,7 +25,7 @@
 namespace scream {
 
 constexpr int num_output_steps = 5;
-constexpr Real fill_value = constants::fill_value<Real>;
+constexpr Real fill_value = fill_value<Real>;
 constexpr Real fill_threshold = 0.5;
 
 int get_dt (const std::string& freq_units) {
@@ -245,7 +244,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   for (const auto& fn: fnames) {
     // NOTE: use float, since default fp_precision for I/O is 'single'
     auto att_fill = scorpio::get_attribute<float>(filename,fn,"_FillValue");
-    REQUIRE(att_fill==constants::fill_value<Real>);
+    REQUIRE(att_fill==fill_value<Real>);
   }
 }
 

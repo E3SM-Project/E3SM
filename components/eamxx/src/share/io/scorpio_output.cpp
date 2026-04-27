@@ -558,7 +558,7 @@ run (const std::string& filename,
 
   // Take care of updating and possibly writing fields.
   Field dummy_mask;
-  auto fv = constants::fill_value<Real>;
+  auto fv = fill_value<Real>;
   for (size_t i = 0; i < m_fields_names.size(); ++i) {
     const auto& field_name = m_fields_names[i];
     
@@ -826,9 +826,9 @@ register_variables(const std::string& filename,
       // FillValue is a protected metadata, do not add it if it already existed
       if (fp_precision=="double" or
           (fp_precision=="real" and std::is_same<Real,double>::value)) {
-        scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<double>);
+        scorpio::set_attribute(filename, field_name, "_FillValue",fill_value<double>);
       } else {
-        scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<float>);
+        scorpio::set_attribute(filename, field_name, "_FillValue",fill_value<float>);
       }
       if (m_alias_to_orig.count(field_name)==1) {
         // Store what this field is the alias of
@@ -1032,7 +1032,7 @@ compute_diagnostics(const bool allow_invalid_fields)
       // The diag was either not computable or it may have failed to compute
       // (e.g., t=0 output with a flux-like diag).
       // If we're allowing invalid fields, then we should simply set diag=fill_value
-      d.deep_copy(constants::fill_value<float>);
+      d.deep_copy(fill_value<float>);
     }
   }
 }

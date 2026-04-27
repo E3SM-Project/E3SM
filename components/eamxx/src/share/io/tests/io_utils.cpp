@@ -6,8 +6,17 @@
 
 #include <fstream>
 
+namespace scream {
+
+TEST_CASE("fill_value") {
+  // Ensure we have the SAME numerical value for both float and double
+  auto fv_d = fill_value<double>;
+  auto fv_f = fill_value<float>;
+
+  REQUIRE (fv_d==fv_f);
+}
+
 TEST_CASE ("find_filename_in_rpointer") {
-  using namespace scream;
 
   constexpr auto AVG = OutputAvgType::Average;
   constexpr auto INST = OutputAvgType::Instant;
@@ -53,8 +62,6 @@ TEST_CASE ("find_filename_in_rpointer") {
 }
 
 TEST_CASE ("io_control") {
-  using namespace scream;
-
   util::TimeStamp t0({2023,9,7},{12,0,0});
 
   IOControl control;
@@ -147,8 +154,6 @@ TEST_CASE ("io_control") {
 }
 
 TEST_CASE ("parse_cf_time_units") {
-  using namespace scream;
-
   // Reference timestamp to use in comparisons
   util::TimeStamp ts_date_only ({2010,1,1},{0,0,0});
   util::TimeStamp ts_with_hms  ({2010,1,1},{12,30,45});
@@ -224,3 +229,5 @@ TEST_CASE ("parse_cf_time_units") {
     REQUIRE_THROWS (parse_cf_time_units("days since not-a-date",filename));
   }
 }
+
+} // namespace scream

@@ -1,6 +1,6 @@
 #include "eamxx_nudging_process_interface.hpp"
 
-#include "share/util/eamxx_universal_constants.hpp"
+#include "share/io/eamxx_io_utils.hpp"
 #include "share/remap/horizontal_remapper.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
@@ -344,7 +344,7 @@ void Nudging::run_impl (const double dt)
     const auto fl = f.get_header().get_identifier().get_layout();
     const auto v  = f.get_view<Real**>();
 
-    constexpr Real fill_value = constants::fill_value<Real>;
+    constexpr Real fill_value = fill_value<Real>;
 
     const int ncols = fl.dim(0);
     const int nlevs = fl.dim(1);
