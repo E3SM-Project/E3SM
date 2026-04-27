@@ -1,6 +1,5 @@
 #include "share/util/eamxx_time_stamp.hpp"
 
-#include "share/util/eamxx_universal_constants.hpp"
 #include "share/core/eamxx_config.hpp"
 
 #include <ekat_assert.hpp>
