@@ -3131,10 +3131,10 @@
   </machine>
 
   <machine MACH="tuo">
-    <DESC>LLNL Linux Cluster, AMD Instinct MI300A processors (96 cores/node, 4 accelerators/node), 512 GB memory, 1144 compute nodes</DESC>
+    <DESC>LLNL Linux Cluster, AMD Instinct MI300A processors 84 cores/node (12 reserved), 4 accelerators/node, 512 GB memory, 1144 compute nodes</DESC>
     <NODENAME_REGEX>tuolumne.*</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>crayamd-mphipcc</COMPILERS>
+    <COMPILERS>crayamd-mphipcc,crayamd</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3smtest</PROJECT>
     <CIME_OUTPUT_ROOT>/p/lustre5/$USER/e3sm_scratch/tuo</CIME_OUTPUT_ROOT>
@@ -3149,9 +3149,9 @@
     <BATCH_SYSTEM>flux</BATCH_SYSTEM>
     <SUPPORTED_BY>boutte3 -at- llnl.gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="crayamd-mphipcc">84</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>84</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="crayamd-mphipcc">4</MAX_MPITASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="crayamd">84</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="crayamd">84</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>flux run</executable>
       <arguments>
@@ -3175,15 +3175,17 @@
       <modules>
 	<command name="purge"/>
 	<command name="load">PrgEnv-cray/8.7.0</command>
-	<command name="load">rocmcc/6.4.3-cce-20.0.0a-magic</command>
 	<command name="load">cray-mpich/9.0.1</command>
-	<command name="load">cray-libsci/24.11.0</command>
 	<command name="load">craype-x86-trento</command>
-	<command name="load">craype-accel-amd-gfx942</command>
 	<command name="load">cmake/3.24.2</command>
 	<command name="load">cray-hdf5-parallel/1.14.3.7</command>
 	<command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
 	<command name="load">cray-parallel-netcdf/1.12.3.19</command> 
+      </modules>
+      <modules compiler="crayamd-mphipcc">
+	<command name="load">cray-libsci/24.11.0</command>
+	<command name="load">rocmcc/6.4.3-cce-20.0.0a-magic</command>
+	<command name="load">craype-accel-amd-gfx942</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -3193,26 +3195,24 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
-      <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
       <env name="FI_CXI_RX_MATCH_MODE">hybrid</env>
       <env name="HDF5_ROOT">$ENV{HDF5_ROOT}</env>
       <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
-      <env name="FC">/usr/tce/packages/cray-mpich/cray-mpich-9.0.1-cce-20.0.0a-magic/bin/mpicrayftn</env>
-      <env name="ROCM_PATH">/opt/rocm-6.4.3</env>
     </environment_variables>
     <environment_variables compiler="crayamd-mphipcc">
-      <env name="OMP_NUM_THREADS">21</env>
+      <env name="FC">/usr/tce/packages/cray-mpich/cray-mpich-9.0.1-cce-20.0.0a-magic/bin/mpicrayftn</env>
+      <env name="ROCM_PATH">/opt/rocm-6.4.3</env>
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
       <env name="HSA_XNACK">1</env>
       <env name="MPICH_SMP_SINGLE_COPY_MODE">XPMEM</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
-      <env name="OMP_PROC_BIND">spread</env>
-      <env name="OMP_PLACES">threads</env>
+      <env name="OMP_PLACES">cores</env>
+      <env name="OMP_PROC_BIND">close</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
