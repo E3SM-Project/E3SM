@@ -96,7 +96,9 @@ specific points in the run (e.g. after restart reads).
 ## 3 Algorithmic Formulation
 
 No complex numerical algorithms are required. Each field is checked with two
-independent `parallelReduce` passes over the domain:
+independent `parallelReduce` passes over the domain, restricted to active
+cells where `CellMask(i, k) > 0` (inactive cells, such as land cells, are
+skipped):
 
 1. **NaN pass** – counts elements for which `Kokkos::isnan(val)` is `true`.
 2. **Bounds pass** – counts elements that are finite yet lie outside
@@ -109,13 +111,16 @@ For a 2-D field $f_{i,k}$ with $i \in [0,\, N_\text{cells})$ and
 $k \in [0,\, N_\text{vert})$ the two counts are:
 
 $$
-N_\text{NaN}    = \sum_{i,k} \mathbf{1}[\,\text{isnan}(f_{i,k})\,]
+N_\text{NaN}    = \sum_{i,k} M_{i,k}\,\mathbf{1}[\,\text{isnan}(f_{i,k})\,]
 $$
 
 $$
-N_\text{OOB}    = \sum_{i,k} \mathbf{1}[\,\lnot\,\text{isnan}(f_{i,k})
+N_\text{OOB}    = \sum_{i,k} M_{i,k}\,\mathbf{1}[\,\lnot\,\text{isnan}(f_{i,k})
                    \land (f_{i,k} < f_\text{min} \lor f_{i,k} > f_\text{max})\,]
 $$
+
+where $M_{i,k}$ is `CellMask(i, k)` (1 for active cell-layer, 0 for
+inactive).
 
 For a 3-D tracer array $T_{n,i,k}$ the same expressions are applied at a
 fixed tracer index $n$.
@@ -145,8 +150,8 @@ implementation:
 #### 4.1.2 Class/structs/data types
 
 No new classes or data types are introduced. The module uses the existing
-`OceanState`, `AuxiliaryState`, and `Tracers` types from the OMEGA ocean
-component.
+`OceanState`, `AuxiliaryState`, `VertCoord`, and `Tracers` types from the
+OMEGA ocean component.
 
 ### 4.2 Methods
 
@@ -157,13 +162,15 @@ The sole public interface of the module:
 ```c++
 void validateOceanState(const OceanState *State,
                         const AuxiliaryState *AuxState,
+                        const VertCoord *VCoord,
                         I4 TimeLevel);
 ```
 
-Validates all fields described in Section 2. Logs critical errors for each
-failed check and aborts the run if any check fails. `TimeLevel` specifies
-the time-level index within the state arrays to validate (0 = current
-timestep).
+Validates all fields described in Section 2, skipping inactive cells
+(`CellMask == 0`). Logs critical errors for each failed check and aborts the
+run if any check fails. `VCoord` supplies the `CellMask` array. `TimeLevel`
+specifies the time-level index within the state arrays to validate (0 =
+current timestep).
 
 #### 4.2.2 `checkArray2D` (file-local helper)
 
@@ -171,11 +178,13 @@ timestep).
 static std::pair<I4, I4> checkArray2D(const Array2DReal &Arr,
                                       I4 NRows, I4 NCols,
                                       Real MinVal, Real MaxVal,
-                                      bool CheckMin);
+                                      bool CheckMin,
+                                      const Array2DReal &CellMask);
 ```
 
 Performs the NaN and bounds counts for a 2-D device array over the first
-`NRows` rows and `NCols` columns. When `CheckMin` is `false` only the upper
+`NRows` rows and `NCols` columns, restricted to active cells
+(`CellMask(Row, Col) > 0`). When `CheckMin` is `false` only the upper
 bound is enforced (not needed for any current field but useful for future
 extension). Returns `{NaNCount, OutOfRangeCount}`.
 
@@ -185,11 +194,13 @@ extension). Returns `{NaNCount, OutOfRangeCount}`.
 static std::pair<I4, I4> checkTracerArray(const Array3DReal &Tracers3D,
                                           I4 TracerIdx,
                                           I4 NCells, I4 NVert,
-                                          Real MinVal, Real MaxVal);
+                                          Real MinVal, Real MaxVal,
+                                          const Array2DReal &CellMask);
 ```
 
 Performs the NaN and bounds counts for a single tracer slice (identified by
-`TracerIdx`) of the 3-D tracer array. Returns `{NaNCount, OutOfRangeCount}`.
+`TracerIdx`) of the 3-D tracer array, restricted to active cells
+(`CellMask(Cell, K) > 0`). Returns `{NaNCount, OutOfRangeCount}`.
 
 #### 4.2.4 `abortWithMessage` (file-local helper)
 

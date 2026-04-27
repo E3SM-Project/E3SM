@@ -160,7 +160,7 @@ int testStateValidation() {
 
    // Test: validation should pass on valid state (no abort expected)
    LOG_INFO("StateValidationTest: Testing validation on valid state");
-   validateOceanState(DefState, DefAuxState, 0);
+   validateOceanState(DefState, DefAuxState, VertCoord::getDefault(), 0);
    LOG_INFO("StateValidationTest: Valid state validation PASS");
 
    AuxiliaryState::clear();

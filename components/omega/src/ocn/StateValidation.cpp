@@ -16,6 +16,7 @@
 #include "OceanState.h"
 #include "OmegaKokkos.h"
 #include "Tracers.h"
+#include "VertCoord.h"
 #include "mpi.h"
 
 #include <cmath>
@@ -36,17 +37,22 @@ static void abortWithMessage(const std::string &Msg) {
 
 //------------------------------------------------------------------------------
 // Helper: count NaN entries and out-of-range entries in a 2-D Real device
-// array over the first NCells/NEdges rows and NVert columns.
+// array over the first NCells/NEdges rows and NVert columns, restricted to
+// active cells (CellMask > 0).
 // Returns {NaNCount, OutOfRangeCount}.
 static std::pair<I4, I4> checkArray2D(const Array2DReal &Arr, I4 NRows,
                                       I4 NCols, Real MinVal, Real MaxVal,
-                                      bool CheckMin) {
+                                      bool CheckMin,
+                                      const Array2DReal &CellMask) {
    I4 NaNCount        = 0;
    I4 OutOfRangeCount = 0;
 
    parallelReduce(
        "CheckNaN", {NRows, NCols},
        KOKKOS_LAMBDA(int Row, int Col, int &Accum) {
+          if (CellMask(Row, Col) == 0) {
+             return;
+          }
           Real Val = Arr(Row, Col);
           if (Kokkos::isnan(Val)) {
              ++Accum;
@@ -57,6 +63,9 @@ static std::pair<I4, I4> checkArray2D(const Array2DReal &Arr, I4 NRows,
    parallelReduce(
        "CheckBounds", {NRows, NCols},
        KOKKOS_LAMBDA(int Row, int Col, int &Accum) {
+          if (CellMask(Row, Col) == 0) {
+             return;
+          }
           Real Val = Arr(Row, Col);
           if (!Kokkos::isnan(Val)) {
              if (Val > MaxVal) {
@@ -73,16 +82,21 @@ static std::pair<I4, I4> checkArray2D(const Array2DReal &Arr, I4 NRows,
 
 //------------------------------------------------------------------------------
 // Helper: count NaN and out-of-range entries for a single tracer (row = cell,
-// col = vert) extracted from the 3-D tracer array at the given tracer index.
+// col = vert) extracted from the 3-D tracer array at the given tracer index,
+// restricted to active cells (CellMask > 0).
 static std::pair<I4, I4> checkTracerArray(const Array3DReal &Tracers3D,
                                           I4 TracerIdx, I4 NCells, I4 NVert,
-                                          Real MinVal, Real MaxVal) {
+                                          Real MinVal, Real MaxVal,
+                                          const Array2DReal &CellMask) {
    I4 NaNCount        = 0;
    I4 OutOfRangeCount = 0;
 
    parallelReduce(
        "CheckTracerNaN", {NCells, NVert},
        KOKKOS_LAMBDA(int Cell, int K, int &Accum) {
+          if (CellMask(Cell, K) == 0) {
+             return;
+          }
           Real Val = Tracers3D(TracerIdx, Cell, K);
           if (Kokkos::isnan(Val)) {
              ++Accum;
@@ -93,6 +107,9 @@ static std::pair<I4, I4> checkTracerArray(const Array3DReal &Tracers3D,
    parallelReduce(
        "CheckTracerBounds", {NCells, NVert},
        KOKKOS_LAMBDA(int Cell, int K, int &Accum) {
+          if (CellMask(Cell, K) == 0) {
+             return;
+          }
           Real Val = Tracers3D(TracerIdx, Cell, K);
           if (!Kokkos::isnan(Val)) {
              if (Val < MinVal || Val > MaxVal) {
@@ -107,11 +124,14 @@ static std::pair<I4, I4> checkTracerArray(const Array3DReal &Tracers3D,
 
 //------------------------------------------------------------------------------
 /// Validate ocean state fields for NaN and out-of-bounds conditions.
+/// Only active cells (where CellMask > 0) are checked.
 /// Aborts via MPI_Abort on failure.
 void validateOceanState(const OceanState *State, const AuxiliaryState *AuxState,
-                        I4 TimeLevel) {
+                        const VertCoord *VCoord, I4 TimeLevel) {
 
    bool AnyFailure = false;
+
+   const Array2DReal &CellMask = VCoord->CellMask;
 
    // -------------------------------------------------------------------------
    // LayerThickness: valid range [1e-10, 1000]
@@ -121,7 +141,7 @@ void validateOceanState(const OceanState *State, const AuxiliaryState *AuxState,
       auto [NaNs, OOB] =
           checkArray2D(LayerThick, State->NCellsOwned, State->NVertLayers,
                        static_cast<Real>(1e-10), static_cast<Real>(1000.0),
-                       /*CheckMin=*/true);
+                       /*CheckMin=*/true, CellMask);
 
       if (NaNs > 0) {
          LOG_CRITICAL(
@@ -144,7 +164,7 @@ void validateOceanState(const OceanState *State, const AuxiliaryState *AuxState,
       auto [NaNs, OOB] =
           checkArray2D(KE, State->NCellsOwned, State->NVertLayers,
                        static_cast<Real>(0.0), static_cast<Real>(10.0),
-                       /*CheckMin=*/true);
+                       /*CheckMin=*/true, CellMask);
 
       if (NaNs > 0) {
          LOG_CRITICAL(
@@ -168,7 +188,7 @@ void validateOceanState(const OceanState *State, const AuxiliaryState *AuxState,
       Array3DReal AllTracers = Tracers::getAll(TimeLevel);
       auto [NaNs, OOB]       = checkTracerArray(
           AllTracers, Tracers::IndxTemp, State->NCellsOwned, State->NVertLayers,
-          static_cast<Real>(-10.0), static_cast<Real>(50.0));
+          static_cast<Real>(-10.0), static_cast<Real>(50.0), CellMask);
 
       if (NaNs > 0) {
          LOG_CRITICAL("StateValidation: Temperature contains {} NaN value(s)",
@@ -190,7 +210,7 @@ void validateOceanState(const OceanState *State, const AuxiliaryState *AuxState,
       Array3DReal AllTracers = Tracers::getAll(TimeLevel);
       auto [NaNs, OOB]       = checkTracerArray(
           AllTracers, Tracers::IndxSalt, State->NCellsOwned, State->NVertLayers,
-          static_cast<Real>(-2.0), static_cast<Real>(60.0));
+          static_cast<Real>(-2.0), static_cast<Real>(60.0), CellMask);
 
       if (NaNs > 0) {
          LOG_CRITICAL("StateValidation: Salinity contains {} NaN value(s)",

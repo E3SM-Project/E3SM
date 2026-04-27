@@ -15,10 +15,13 @@
 #include "AuxiliaryState.h"
 #include "OceanState.h"
 #include "Tracers.h"
+#include "VertCoord.h"
 
 namespace OMEGA {
 
 /// Check ocean state fields for NaN values and out-of-bounds conditions.
+///
+/// Only active ocean cells (where CellMask > 0) are checked.
 ///
 /// The following fields are validated:
 ///   - LayerThickness      : [1e-10, 1000]  (from OceanState)
@@ -33,9 +36,10 @@ namespace OMEGA {
 ///
 /// \param[in] State       Ocean state to validate
 /// \param[in] AuxState    Auxiliary state containing KineticEnergyCell
+/// \param[in] VCoord      Vertical coordinate containing the CellMask
 /// \param[in] TimeLevel   Time level index to validate (typically 0 = current)
 void validateOceanState(const OceanState *State, const AuxiliaryState *AuxState,
-                        I4 TimeLevel);
+                        const VertCoord *VCoord, I4 TimeLevel);
 
 } // namespace OMEGA
 
