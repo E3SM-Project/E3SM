@@ -58,6 +58,11 @@ void Functions<S,D>::gw_drag_prof(
   const uview_1d<Real>& dttdf,
   const uview_1d<Real>& dttke)
 {
+
+  int nan_count = 0, inf_count = 0;
+  int m_npgw = pgwv * 2 + 1;
+
+
   //------------------------------------------------------------------------
   // Initialize gravity wave drag tendencies to zero.
   //------------------------------------------------------------------------
@@ -104,9 +109,49 @@ void Functions<S,D>::gw_drag_prof(
   // Compute the tendencies from the stress divergence.
   //------------------------------------------------------------------------
 
+  nan_count = 0; inf_count = 0;
+  for (int k = 0; k < pver; k++) {
+    if (Kokkos::isnan(ubm(k))) nan_count++;
+    if (Kokkos::isinf(ubm(k))) inf_count++;
+  }
+  if (nan_count > 0 || inf_count > 0) {
+    printf("[gw_drag_prof] before compute ubm NaN=%d Inf=%d\n", nan_count, inf_count);
+  }
+
+  nan_count = 0; inf_count = 0;
+  for (int k = 0; k < pver; k++) {
+    for (int pg = 0; pg < m_npgw; pg++) {
+      if (Kokkos::isnan(gwut(k,pg))) nan_count++;
+      if (Kokkos::isinf(gwut(k,pg))) inf_count++;
+    }
+  }
+  if (nan_count > 0 || inf_count > 0) {
+    printf("[gw_drag_prof] before compute gwut NaN=%d Inf=%d\n", nan_count, inf_count);
+  }
+
   gwd_compute_tendencies_from_stress_divergence(
     team, workspace, init, pver, pgwv, do_taper, dt, effgw, tend_level, max_level,
     lat, dpm, rdpm, c, ubm, t, nm, xv, yv, tau, gwut, utgw, vtgw);
+
+  nan_count = 0; inf_count = 0;
+  for (int k = 0; k < pver; k++) {
+    if (Kokkos::isnan(ubm(k))) nan_count++;
+    if (Kokkos::isinf(ubm(k))) inf_count++;
+  }
+  if (nan_count > 0 || inf_count > 0) {
+    printf("[gw_drag_prof] after compute ubm NaN=%d Inf=%d\n", nan_count, inf_count);
+  }
+
+  nan_count = 0; inf_count = 0;
+  for (int k = 0; k < pver; k++) {
+    for (int pg = 0; pg < m_npgw; pg++) {
+      if (Kokkos::isnan(gwut(k,pg))) nan_count++;
+      if (Kokkos::isinf(gwut(k,pg))) inf_count++;
+    }
+  }
+  if (nan_count > 0 || inf_count > 0) {
+    printf("[gw_drag_prof] after compute gwut NaN=%d Inf=%d\n", nan_count, inf_count);
+  }
 
   if (pgwv > 0) {
      // Precalculate rhoi for the following routines. We have rhoi, but
@@ -114,6 +159,62 @@ void Functions<S,D>::gw_drag_prof(
     gwd_precalc_rhoi(
       team, workspace, init, pver, pgwv, dt, tend_level, pmid, pint, t, gwut, ubm, nm, rdpm, c, q, dse,
       egwdffi, qtgw, dttdf, dttke, ttgw);
+
+
+
+
+    
+
+    nan_count = 0; inf_count = 0;
+    for (int k = 0; k < pver; k++) {
+      if (Kokkos::isnan(egwdffi(k))) nan_count++;
+      if (Kokkos::isinf(egwdffi(k))) inf_count++;
+    }
+    if (nan_count > 0 || inf_count > 0) {
+      printf("[gw_drag_prof] egwdffi NaN=%d Inf=%d\n", nan_count, inf_count);
+    }
+
+    nan_count = 0; inf_count = 0;
+    for (int k = 0; k < pver; k++) {
+      if (Kokkos::isnan(qtgw(k,0))) nan_count++;
+      if (Kokkos::isinf(qtgw(k,0))) inf_count++;
+    }
+    if (nan_count > 0 || inf_count > 0) {
+      printf("[gw_drag_prof] qtgw NaN=%d Inf=%d\n", nan_count, inf_count);
+    }
+
+    nan_count = 0; inf_count = 0;
+    for (int k = 0; k < pver; k++) {
+      if (Kokkos::isnan(dttdf(k))) nan_count++;
+      if (Kokkos::isinf(dttdf(k))) inf_count++;
+    }
+    if (nan_count > 0 || inf_count > 0) {
+      printf("[gw_drag_prof] dttdf NaN=%d Inf=%d\n", nan_count, inf_count);
+    }
+
+    nan_count = 0; inf_count = 0;
+    for (int k = 0; k < pver; k++) {
+      if (Kokkos::isnan(dttke(k))) nan_count++;
+      if (Kokkos::isinf(dttke(k))) inf_count++;
+    }
+    if (nan_count > 0 || inf_count > 0) {
+      printf("[gw_drag_prof] dttke NaN=%d Inf=%d\n", nan_count, inf_count);
+    }
+
+    nan_count = 0; inf_count = 0;
+    for (int k = 0; k < pver; k++) {
+      if (Kokkos::isnan(ttgw(k))) nan_count++;
+      if (Kokkos::isinf(ttgw(k))) inf_count++;
+    }
+    if (nan_count > 0 || inf_count > 0) {
+      printf("[gw_drag_prof] ttgw NaN=%d Inf=%d\n", nan_count, inf_count);
+    }
+
+    
+    
+    
+    
+
   }
   else {
     const int pcnst = q.extent(1);

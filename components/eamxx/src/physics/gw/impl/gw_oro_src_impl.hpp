@@ -143,6 +143,7 @@ void Functions<S,D>::gw_oro_src(
   Kokkos::single(Kokkos::PerTeam(team), [&] {
     --src_level;
   });
+  team.team_barrier();
 
   // No spectrum; phase speed is just 0.
   Kokkos::parallel_for(
