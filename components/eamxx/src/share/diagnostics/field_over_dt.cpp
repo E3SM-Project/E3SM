@@ -1,7 +1,5 @@
 #include "field_over_dt.hpp"
 
-#include "share/util/eamxx_universal_constants.hpp"
-
 namespace scream {
 
 FieldOverDtDiag::
@@ -40,25 +38,30 @@ void FieldOverDtDiag::initialize_impl(const RunType /*run_type*/) {
   auto diag_units = fid.get_units() / s;
 
   FieldIdentifier d_fid(m_name + "_over_dt", layout.clone(), diag_units, gn);
-  m_diagnostic_output = Field(d_fid);
-  m_diagnostic_output.allocate_view();
+  m_diagnostic_output = Field(d_fid,true);
+  if (f.has_valid_mask()) {
+    m_diagnostic_output.set_valid_mask(f.get_valid_mask());
+    m_diagnostic_output.get_header().set_may_be_filled(true);
+  }
 }
 
 void FieldOverDtDiag::init_timestep(const util::TimeStamp &start_of_step) {
   m_start_ts = start_of_step;
+  EKAT_REQUIRE_MSG (m_start_ts.is_valid(),
+      "Error! Initializing FieldOverDtDiag timestep with an invalid time stamp.\n"
+      " - diag field name: " + m_diagnostic_output.name() + "\n");
 }
 
-void FieldOverDtDiag::compute_diagnostic_impl() {
+void FieldOverDtDiag::compute_diagnostic_impl()
+{
   const auto &f = get_field_in(m_name);
 
-  if (!m_start_ts.is_valid()) {
-    // init_timestep has not been called yet; fill with invalid sentinel
-    m_diagnostic_output.deep_copy(constants::fill_value<Real>);
-    return;
-  }
-
   const auto &curr_ts = f.get_header().get_tracking().get_time_stamp();
-  const std::int64_t dt = curr_ts - m_start_ts;
+  EKAT_REQUIRE_MSG (curr_ts.is_valid() and m_start_ts.is_valid(),
+      "Error! FieldOverDtDiag does not work if you don't call init_timestep first.\n"
+      " - diag field name: " + m_diagnostic_output.name() + "\n");
+
+  const std::int64_t dt = curr_ts.seconds_from(m_start_ts);
 
   EKAT_REQUIRE_MSG(dt > 0,
       "Error! FieldOverDtDiag: dt must be positive.\n"
@@ -66,8 +69,15 @@ void FieldOverDtDiag::compute_diagnostic_impl() {
       " - start timestamp: " + m_start_ts.to_string() + "\n"
       " - curr timestamp:  " + curr_ts.to_string() + "\n");
 
-  m_diagnostic_output.deep_copy(f);
-  m_diagnostic_output.scale(1.0 / dt);
+  // diag = 0*diag + 1/dt*f
+  const auto dt_inv = 1 / static_cast<Real>(dt);
+  if (f.has_valid_mask()) {
+    m_diagnostic_output.update(f,dt_inv,0,f.get_valid_mask());
+    // TODO: remove when IO handles fill value internally
+    m_diagnostic_output.deep_copy(constants::fill_value<Real>,f.get_valid_mask(),true);
+  } else {
+    m_diagnostic_output.update(f,dt_inv,0);
+  }
 }
 
 }  // namespace scream

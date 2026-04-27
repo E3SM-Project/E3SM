@@ -1,4 +1,7 @@
 #include "zonal_avg.hpp"
+
+#include "share/field/field_utils.hpp"
+
 #include <ekat_math_utils.hpp>
 #include <ekat_team_policy_utils.hpp>
 
@@ -13,7 +16,8 @@ namespace scream {
 // - the first dimension for result and bin_to_cols is for the zonal bins (CMP,"bin")
 // - field and result must be the same dimension, up to 3
 void compute_zonal_sum(const Field &result, const Field &field, const Field &weight,
-                        const Field &bin_to_cols, const ekat::Comm *comm) {
+                       const Field &bin_to_cols, const ekat::Comm *comm)
+{
   auto result_layout = result.get_header().get_identifier().get_layout();
   auto bin_to_cols_layout = bin_to_cols.get_header().get_identifier().get_layout();
   const int num_zonal_bins = bin_to_cols_layout.dim(0);
@@ -25,11 +29,17 @@ void compute_zonal_sum(const Field &result, const Field &field, const Field &wei
   using TeamPolicy = Kokkos::TeamPolicy<Field::device_t::execution_space>;
   using TeamMember = typename TeamPolicy::member_type;
   using TPF        = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
+  using cmask1d_t = Field::view_dev_t<const int*>;
+  using cmask2d_t = Field::view_dev_t<const int**>;
+  using cmask3d_t = Field::view_dev_t<const int***>;
+
+  bool masked = field.has_valid_mask();
   switch (result_layout.rank()) {
   case 1: {
     auto field_view        = field.get_view<const Real *>();
     auto result_view       = result.get_view<Real *>();
     TeamPolicy team_policy = TPF::get_default_team_policy(num_zonal_bins, max_ncols_per_bin);
+    auto mask_view = masked ? field.get_valid_mask().get_view<const int*>() : cmask1d_t{};
     Kokkos::parallel_for(
         "compute_zonal_sum_" + field.name(), team_policy,
         KOKKOS_LAMBDA(const TeamMember &tm) {
@@ -38,7 +48,8 @@ void compute_zonal_sum(const Field &result, const Field &field, const Field &wei
               Kokkos::TeamVectorRange(tm, 1, 1+bin_to_cols_view(bin_i,0)),
               [&](int lcol_j, Real &val) {
                 const int col_i = bin_to_cols_view(bin_i, lcol_j);
-                val += weight_view(col_i) * field_view(col_i);
+                if (not masked or mask_view(col_i)!=0)
+                  val += weight_view(col_i) * field_view(col_i);
               },
               result_view(bin_i));
         });
@@ -48,6 +59,7 @@ void compute_zonal_sum(const Field &result, const Field &field, const Field &wei
     auto field_view        = field.get_view<const Real **>();
     auto result_view       = result.get_view<Real **>();
     TeamPolicy team_policy = TPF::get_default_team_policy(num_zonal_bins * d1, max_ncols_per_bin);
+    auto mask_view = masked ? field.get_valid_mask().get_view<const int**>() : cmask2d_t{};
     Kokkos::parallel_for(
         "compute_zonal_sum_" + field.name(), team_policy,
         KOKKOS_LAMBDA(const TeamMember &tm) {
@@ -58,7 +70,8 @@ void compute_zonal_sum(const Field &result, const Field &field, const Field &wei
               Kokkos::TeamVectorRange(tm, 1, 1+bin_to_cols_view(bin_i,0)),
               [&](int lcol_j, Real &val) {
                 const int col_i = bin_to_cols_view(bin_i, lcol_j);
-                val += weight_view(col_i) * field_view(col_i, d1_i);
+                if (not masked or mask_view(col_i,d1_i)!=0)
+                  val += weight_view(col_i) * field_view(col_i, d1_i);
               },
               result_view(bin_i, d1_i));
         });
@@ -69,6 +82,7 @@ void compute_zonal_sum(const Field &result, const Field &field, const Field &wei
     auto field_view        = field.get_view<const Real ***>();
     auto result_view       = result.get_view<Real ***>();
     TeamPolicy team_policy = TPF::get_default_team_policy(num_zonal_bins * d1 * d2, max_ncols_per_bin);
+    auto mask_view = masked ? field.get_valid_mask().get_view<const int***>() : cmask3d_t{};
     Kokkos::parallel_for(
         "compute_zonal_sum_" + field.name(), team_policy, KOKKOS_LAMBDA(const TeamMember &tm) {
           const int idx        = tm.league_rank();
@@ -80,7 +94,8 @@ void compute_zonal_sum(const Field &result, const Field &field, const Field &wei
               Kokkos::TeamVectorRange(tm, 1, 1+bin_to_cols_view(bin_i,0)),
               [&](int lcol_j, Real &val) {
                 const int col_i = bin_to_cols_view(bin_i, lcol_j);
-                val += weight_view(col_i) * field_view(col_i, d1_i, d2_i);
+                if (not masked or mask_view(col_i,d1_i, d2_i)!=0)
+                  val += weight_view(col_i) * field_view(col_i, d1_i, d2_i);
               },
               result_view(bin_i, d1_i, d2_i));
         });
@@ -116,17 +131,20 @@ void ZonalAvgDiag::create_requests() {
   add_field<Required>(field_name, grid_name);
   const GridsManager::grid_ptr_type grid = m_grids_manager->get_grid(grid_name);
   m_lat                                  = grid->get_geometry_data("lat");
-  // area will be scaled in initialize_impl
-  m_scaled_area = grid->get_geometry_data("area").clone();
+
+  // Area will be used as weight in the zonal sum
+  m_area = grid->get_geometry_data("area");
 }
 
-void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
+void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/)
+{
   using FieldIdentifier = FieldHeader::identifier_type;
   using FieldLayout     = FieldIdentifier::layout_type;
   using ShortFieldTagsNames::COL, ShortFieldTagsNames::CMP, ShortFieldTagsNames::LEV;
   const Field &field              = get_fields_in().front();
   const FieldIdentifier &field_id = field.get_header().get_identifier();
   const FieldLayout &field_layout = field_id.get_layout();
+  const auto grid_name = field_id.get_grid_name();
 
   EKAT_REQUIRE_MSG(field_layout.rank() >= 1 && field_layout.rank() <= 3,
                    "Error! Field rank not supported by ZonalAvgDiag.\n"
@@ -144,17 +162,11 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
                        " - field layout: " +
                        field_layout.to_string() + "\n");
 
-  FieldLayout diagnostic_layout =
-      field_layout.clone().strip_dim(COL).prepend_dim(CMP, m_num_zonal_bins, "bin");
-  auto diagnostic_id = field_id.clone(m_diag_name).reset_layout(diagnostic_layout);
-  m_diagnostic_output = Field(diagnostic_id);
-  m_diagnostic_output.allocate_view();
+  FieldLayout bins_layout({CMP}, {m_num_zonal_bins}, {"bin"});
 
   // allocate column counter
-  FieldLayout ncols_per_bin_layout({CMP}, {m_num_zonal_bins}, {"bin"});
   FieldIdentifier ncols_per_bin_id("number of columns per bin",
-    ncols_per_bin_layout, ekat::units::none,
-    field_id.get_grid_name(), DataType::IntType);
+      bins_layout, ekat::units::none, grid_name, DataType::IntType);
   Field ncols_per_bin(ncols_per_bin_id);
   ncols_per_bin.allocate_view();
   ncols_per_bin.deep_copy(0);
@@ -192,10 +204,9 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
         val = ncols_per_bin_view(bin_i) > val ? ncols_per_bin_view(bin_i) : val;
       },
       Kokkos::Max<Int>(max_ncols_per_bin));
-  FieldLayout bin_to_cols_layout = ncols_per_bin_layout.append_dim(COL, 1+max_ncols_per_bin);
+  FieldLayout bin_to_cols_layout = bins_layout.clone().append_dim(COL, 1+max_ncols_per_bin);
   FieldIdentifier bin_to_cols_id("columns in each zonal bin",
-    bin_to_cols_layout, ekat::units::none,
-    field_id.get_grid_name(), DataType::IntType);
+    bin_to_cols_layout, ekat::units::none, grid_name , DataType::IntType);
   m_bin_to_cols = Field(bin_to_cols_id);
   m_bin_to_cols.allocate_view();
 
@@ -219,36 +230,62 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
         }
       });
 
-  // allocate zonal area
-  const FieldIdentifier &area_id = m_scaled_area.get_header().get_identifier();
-  FieldLayout zonal_area_layout({CMP}, {m_num_zonal_bins}, {"bin"});
-  auto zonal_area_id = area_id.clone("zonal area").reset_layout(zonal_area_layout);
-  Field zonal_area(zonal_area_id);
-  zonal_area.allocate_view();
+  // Create the diagnostic
+  auto diagnostic_layout = field_layout.clone().strip_dim(COL).prepend_dim(CMP, m_num_zonal_bins, "bin");
+  auto diagnostic_id = field_id.clone(m_diag_name).reset_layout(diagnostic_layout);
+  m_diagnostic_output = Field(diagnostic_id,true);
 
-  // compute zonal area
-  auto ones = m_scaled_area.clone("ones");
-  ones.deep_copy(1.0);
-  compute_zonal_sum(zonal_area, m_scaled_area, ones, m_bin_to_cols, &m_comm);
+  if (not field.has_valid_mask()) {
+    m_ones = m_area.clone("ones");
+    m_ones.deep_copy(1);
+    // It's not nondimensional, but we're just using it as a scaling factor field
+    FieldIdentifier zonal_area_fid ("zonal area",bins_layout,ekat::units::none,grid_name);
+    m_zonal_area = Field(zonal_area_fid,true);
+    compute_zonal_sum(m_zonal_area,m_ones,m_area,m_bin_to_cols,&m_comm);
 
-  // scale area by 1 / zonal area
-  auto zonal_area_view  = zonal_area.get_view<const Real *>();
-  auto scaled_area_view = m_scaled_area.get_view<Real *>();
-  Kokkos::parallel_for("scale_area_by_zonal_area_" + field.name(),
-      team_policy, KOKKOS_LAMBDA(const TeamMember &tm) {
-        const int bin_i = tm.league_rank();
-        Kokkos::parallel_for(
-          Kokkos::TeamVectorRange(tm, 1, 1+bin_to_cols_view(bin_i,0)),
-            [&](int lcol_j) {
-              const int col_i = bin_to_cols_view(bin_i, lcol_j);
-              scaled_area_view(col_i) /= zonal_area_view(bin_i);
-            });
-      });
+    // Create a copy of area which is scaled by 1 / zonal area
+    m_scaled_area = m_area.clone("scaled_area");
+    auto zonal_area_view  = m_zonal_area.get_view<const Real *>();
+    auto scaled_area_view = m_scaled_area.get_view<Real *>();
+    Kokkos::parallel_for("scale_area_by_zonal_area_" + field.name(),
+        team_policy, KOKKOS_LAMBDA(const TeamMember &tm) {
+          const int bin_i = tm.league_rank();
+          Kokkos::parallel_for(
+            Kokkos::TeamVectorRange(tm, 1, 1+bin_to_cols_view(bin_i,0)),
+              [&](int lcol_j) {
+                const int col_i = bin_to_cols_view(bin_i, lcol_j);
+                scaled_area_view(col_i) /= zonal_area_view(bin_i);
+              });
+        });
+  } else {
+    m_ones = field.clone("ones");
+    m_ones.deep_copy(1);
+    m_ones.set_valid_mask(field.get_valid_mask());
+    m_zonal_area = m_diagnostic_output.clone("zonal_area");
+    m_diagnostic_output.create_valid_mask();
+    m_diagnostic_output.get_header().set_may_be_filled(true);
+  }
 }
 
-void ZonalAvgDiag::compute_diagnostic_impl() {
+void ZonalAvgDiag::compute_diagnostic_impl()
+{
   const auto &field = get_fields_in().front();
-  compute_zonal_sum(m_diagnostic_output, field, m_scaled_area, m_bin_to_cols, &m_comm);
+
+  if (field.has_valid_mask()) {
+    // Compute masked field zonal sum, masked area zonal sum, and divide
+    compute_zonal_sum(m_diagnostic_output, field, m_area, m_bin_to_cols, &m_comm);
+    compute_zonal_sum(m_zonal_area,m_ones,m_area,m_bin_to_cols,&m_comm);
+
+    auto& dmask = m_diagnostic_output.get_valid_mask();
+    compute_mask(m_zonal_area,0,Comparison::NE,dmask);
+    m_diagnostic_output.scale_inv(m_zonal_area,dmask);
+
+    // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
+    m_diagnostic_output.deep_copy(constants::fill_value<Real>,dmask,true);
+  } else {
+    // Compute field zonal sum using scaled area as weight
+    compute_zonal_sum(m_diagnostic_output, field, m_scaled_area, m_bin_to_cols, &m_comm);
+  }
 }
 
 } // namespace scream
