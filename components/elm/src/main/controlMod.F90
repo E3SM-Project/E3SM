@@ -95,7 +95,7 @@ module controlMod
                         fates_leafresp_model, fates_cstarvation_model, &
                         fates_regeneration_model, fates_hydro_solver, &
                         fates_radiation_model, fates_electron_transport_model, &
-                        fates_history_dimlevel, elm_varctl_set, &
+                        fates_history_dimlevel, fates_lu_transition_logic, elm_varctl_set, &
                         use_nofire, use_lch4, use_vertsoilc, use_extralakelayers, &
                         use_vichydro, use_century_decomp, use_cn, use_crop, &
                         use_snicar_frc, use_snicar_ad, use_firn_percolation_and_compaction, &
@@ -329,6 +329,7 @@ contains
           fates_hydro_solver,                           &
           fates_radiation_model,                        &
           fates_electron_transport_model,               &
+          fates_lu_transition_logic,                    &
           fates_history_dimlevel
 
     namelist /elm_inparm / use_betr
@@ -910,6 +911,7 @@ contains
     call mpi_bcast (fates_seeddisp_cadence, 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (use_fates_tree_damage, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (fates_history_dimlevel, 2, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (fates_lu_transition_logic, 1, MPI_INTEGER, 0, mpicom, ier)
     
     call mpi_bcast (use_betr, 1, MPI_LOGICAL, 0, mpicom, ier)
 
@@ -1364,6 +1366,7 @@ contains
        write(iulog, *) '    fates_inventory_ctrl_filename = ',fates_inventory_ctrl_filename
        write(iulog, *) '    fates_seeddisp_cadence = ', fates_seeddisp_cadence
        write(iulog, *) '    fates_seeddisp_cadence: 0, 1, 2, 3 => off, daily, monthly, or yearly dispersal'
+       write(iulog, *) '    fates_lu_transition_logic = ', fates_lu_transition_logic
     end if
 
     ! VSFM
