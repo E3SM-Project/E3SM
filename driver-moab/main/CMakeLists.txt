@@ -1,4 +1,5 @@
 list(APPEND drv_sources
+  cplcomp_moab_helpers_mod.F90
   component_type_mod.F90
   map_glc2lnd_mod.F90
   map_lnd2rof_irrig_mod.F90
