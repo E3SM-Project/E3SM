@@ -4,56 +4,40 @@
 namespace scream
 {
 
-// =========================================================================================
-SeaLevelPressureDiagnostic::
-SeaLevelPressureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
- : AtmosphereDiagnostic(comm,params)
-{
-  // Nothing to do here
-}
-
-// =========================================================================================
-void SeaLevelPressureDiagnostic::create_requests()
+SeaLevelPressure::
+SeaLevelPressure (const ekat::Comm& comm, const ekat::ParameterList& params,
+                             const std::shared_ptr<const AbstractGrid>& grid)
+ : AbstractDiagnostic(comm,params,grid)
 {
   using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
 
-  const auto m2 = pow(m,2);
-  const auto s2 = pow(s,2);
+  m_field_in_names.push_back("T_mid");
+  m_field_in_names.push_back("p_mid");
+  m_field_in_names.push_back("phis");
 
-  auto grid  = m_grids_manager->get_grid("physics");
-  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
-  m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
-
-  auto scalar2d = grid->get_2d_scalar_layout();
-  auto scalar3d = grid->get_3d_scalar_layout(LEV);
-
-  // The fields required for this diagnostic to be computed
-  add_field<Required>("T_mid", scalar3d, K,     grid->name());
-  add_field<Required>("p_mid", scalar3d, Pa,    grid->name());
-  add_field<Required>("phis",  scalar2d, m2/s2, grid->name());
-
-  // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar2d, Pa, grid->name());
+  auto diag_layout = m_grid->get_2d_scalar_layout();
+  FieldIdentifier fid (name(), diag_layout, Pa, m_grid->name());
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }
 
-void SeaLevelPressureDiagnostic::compute_diagnostic_impl()
+void SeaLevelPressure::compute_diagnostic_impl()
 {
-  const auto& psl   = m_diagnostic_output.get_view<Real*>();
-  const auto& T_mid = get_field_in("T_mid").get_view<const Real**>();
-  const auto& p_mid = get_field_in("p_mid").get_view<const Real**>();
-  const auto& phis  = get_field_in("phis").get_view<const Real*>();
-
-  int surf_lev = m_num_levs - 1;
   using RP = typename KokkosTypes<DefaultDevice>::RangePolicy;
   using PF = scream::PhysicsFunctions<DefaultDevice>;
+
+  const auto& psl   = m_diagnostic_output.get_view<Real*>();
+  const auto& T_mid = m_fields_in.at("T_mid").get_view<const Real**>();
+  const auto& p_mid = m_fields_in.at("p_mid").get_view<const Real**>();
+  const auto& phis  = m_fields_in.at("phis").get_view<const Real*>();
+
+  const int ncols = m_grid->get_num_local_dofs();
+  const int surf_lev = m_grid->get_num_vertical_levels() - 1;
 
   auto lambda = KOKKOS_LAMBDA(const int& icol) {
     psl(icol) = PF::calculate_psl(T_mid(icol,surf_lev),p_mid(icol,surf_lev),phis(icol));
   };
-  Kokkos::parallel_for("SeaLevelPressure", RP(0,m_num_cols), lambda);
+  Kokkos::parallel_for("SeaLevelPressure", RP(0,ncols), lambda);
 }
 
 } //namespace scream

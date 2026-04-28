@@ -6,12 +6,16 @@
 
 namespace scream {
 
-NumberPathDiagnostic::NumberPathDiagnostic(const ekat::Comm &comm,
-                                           const ekat::ParameterList &params)
-    : AtmosphereDiagnostic(comm, params) {
+NumberPath::
+NumberPath(const ekat::Comm &comm,
+           const ekat::ParameterList &params,
+           const std::shared_ptr<const AbstractGrid>& grid)
+ : AbstractDiagnostic(comm, params, grid)
+{
+  using namespace ekat::units;
+
   EKAT_REQUIRE_MSG(params.isParameter("number_kind"),
-                   "Error! NumberPathDiagnostic requires 'number_kind' in its "
-                   "input parameters.\n");
+      "Error! NumberPath requires 'number_kind' in its input parameters.\n");
 
   m_kind = m_params.get<std::string>("number_kind");
   if(m_kind == "Liq") {
@@ -25,40 +29,28 @@ NumberPathDiagnostic::NumberPathDiagnostic(const ekat::Comm &comm,
     m_nname = "nr";
   } else {
     EKAT_ERROR_MSG(
-        "Error! Invalid choice for 'NumberKind' in NumberPathDiagnostic.\n"
+        "Error! Invalid choice for 'NumberKind' in NumberPath.\n"
         "  - input value: " +
         m_kind +
         "\n"
         "  - valid values: Liq, Ice, Rain\n");
   }
-}
-
-void NumberPathDiagnostic::create_requests() {
-  using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
-
-  auto m2 = pow(m,2);
-
-  auto grid             = m_grids_manager->get_grid("physics");
-  const auto &grid_name = grid->name();
-  m_num_cols = grid->get_num_local_dofs();  // Number of columns on this rank
-  m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
-
-  auto scalar2d = grid->get_2d_scalar_layout();
-  auto scalar3d = grid->get_3d_scalar_layout(LEV);
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("pseudo_density", scalar3d, Pa, grid_name);
-  add_field<Required>(m_qname, scalar3d, kg / kg, grid_name);
-  add_field<Required>(m_nname, scalar3d, 1 / kg, grid_name);
+  m_field_in_names.push_back("pseudo_density");
+  m_field_in_names.push_back(m_qname);
+  m_field_in_names.push_back(m_nname);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid(m_kind + name(), scalar2d, kg/(kg*m2), grid_name);
+  auto m2 = pow(m,2);
+  auto diag_layout = m_grid->get_2d_scalar_layout();
+  FieldIdentifier fid(m_kind + name(), diag_layout, kg/(kg*m2), m_grid->name());
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }
 
-void NumberPathDiagnostic::compute_diagnostic_impl() {
+void NumberPath::compute_diagnostic_impl()
+{
   using PC  = scream::physics::Constants<Real>;
   using KT  = KokkosTypes<DefaultDevice>;
   using MT  = typename KT::MemberType;
@@ -67,26 +59,27 @@ void NumberPathDiagnostic::compute_diagnostic_impl() {
   constexpr Real g = PC::gravit.value;
 
   const auto np  = m_diagnostic_output.get_view<Real *>();
-  const auto q   = get_field_in(m_qname).get_view<const Real **>();
-  const auto n   = get_field_in(m_nname).get_view<const Real **>();
-  const auto rho = get_field_in("pseudo_density").get_view<const Real **>();
+  const auto q   = m_fields_in.at(m_qname).get_view<const Real **>();
+  const auto n   = m_fields_in.at(m_nname).get_view<const Real **>();
+  const auto rho = m_fields_in.at("pseudo_density").get_view<const Real **>();
 
-  const auto num_levs = m_num_levs;
-  const auto policy   = TPF::get_default_team_policy(m_num_cols, m_num_levs);
-  Kokkos::parallel_for(
-      "Compute " + m_kind + name(), policy, KOKKOS_LAMBDA(const MT &team) {
-        const int icol = team.league_rank();
-        auto q_icol    = ekat::subview(q, icol);
-        auto n_icol    = ekat::subview(n, icol);
-        auto rho_icol  = ekat::subview(rho, icol);
-        Kokkos::parallel_reduce(
-            Kokkos::TeamVectorRange(team, num_levs),
-            [&](const int &ilev, Real &lsum) {
-              lsum += q_icol(ilev) * n_icol(ilev) * rho_icol(ilev) / g;
-            },
-            np(icol));
-        team.team_barrier();
-      });
+  const auto nlevs  = m_grid->get_num_vertical_levels();
+  const auto ncols  = m_grid->get_num_local_dofs();
+  const auto policy = TPF::get_default_team_policy(ncols, nlevs);
+
+  auto lambda = KOKKOS_LAMBDA(const MT &team) {
+    const int icol = team.league_rank();
+    auto q_icol    = ekat::subview(q, icol);
+    auto n_icol    = ekat::subview(n, icol);
+    auto rho_icol  = ekat::subview(rho, icol);
+    Kokkos::parallel_reduce(
+        Kokkos::TeamVectorRange(team, nlevs),
+        [&](const int &ilev, Real &lsum) {
+          lsum += q_icol(ilev) * n_icol(ilev) * rho_icol(ilev) / g;
+        },
+        np(icol));
+  };
+  Kokkos::parallel_for("Compute " + m_kind + name(), policy, lambda);
 }
 
 }  // namespace scream

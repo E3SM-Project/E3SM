@@ -10,30 +10,21 @@ namespace scream
  * This diagnostic will produce the surface latent heat flux.
  */
 
-class SurfaceUpwardLatentHeatFlux : public AtmosphereDiagnostic
+class SurfaceUpwardLatentHeatFlux : public AbstractDiagnostic
 {
 public:
   // Constructors
-  SurfaceUpwardLatentHeatFlux (const ekat::Comm& comm, const ekat::ParameterList& params);
+  SurfaceUpwardLatentHeatFlux (const ekat::Comm& comm, const ekat::ParameterList& params,
+                                const std::shared_ptr<const AbstractGrid>& grid);
 
   // The name of the diagnostic CLASS (not the computed field)
   std::string name () const { return "SurfaceUpwardLatentHeatFlux"; }
-
-  // Set the grid
-  void create_requests ();
 
 protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
   void compute_diagnostic_impl ();
-protected:
-
-  Int m_num_cols;
-
-  int m_type;
-  std::string m_name;
-  std::string cf_long_name;
 };
 
 } // namespace scream

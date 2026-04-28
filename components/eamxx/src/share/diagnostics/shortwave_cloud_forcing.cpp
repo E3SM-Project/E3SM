@@ -1,65 +1,46 @@
 #include "shortwave_cloud_forcing.hpp"
 
-#include <ekat_team_policy_utils.hpp>
-
 namespace scream
 {
 
-ShortwaveCloudForcingDiagnostic::
-ShortwaveCloudForcingDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
- : AtmosphereDiagnostic(comm,params)
-{
-  // Nothing to do here
-}
-
-void ShortwaveCloudForcingDiagnostic::create_requests()
+ShortwaveCloudForcing::
+ShortwaveCloudForcing (const ekat::Comm& comm, const ekat::ParameterList& params,
+                                  const std::shared_ptr<const AbstractGrid>& grid)
+ : AbstractDiagnostic(comm,params,grid)
 {
   using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
 
-  Units m2 (m*m,"m2");
+  m_field_in_names.push_back("SW_flux_dn");
+  m_field_in_names.push_back("SW_flux_up");
+  m_field_in_names.push_back("SW_clrsky_flux_dn");
+  m_field_in_names.push_back("SW_clrsky_flux_up");
 
-  auto grid  = m_grids_manager->get_grid("physics");
-  const auto& grid_name = grid->name();
-  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
-  m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
+  auto m2 = (m*m).rename("m2");
 
-  auto scalar2d = grid->get_2d_scalar_layout();
-  auto scalar3d = grid->get_3d_scalar_layout(LEV);
+  auto diag_layout = m_grid->get_2d_scalar_layout();
+  FieldIdentifier diag_fid (name(),diag_layout,W/m2,m_grid->name());
 
-  // The fields required for this diagnostic to be computed
-  add_field<Required>("SW_flux_dn",        scalar3d, W/m2, grid_name);
-  add_field<Required>("SW_flux_up",        scalar3d, W/m2, grid_name);
-  add_field<Required>("SW_clrsky_flux_dn", scalar3d, W/m2, grid_name);
-  add_field<Required>("SW_clrsky_flux_up", scalar3d, W/m2, grid_name);
-
-  // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar2d, W/m2, grid_name);
-  m_diagnostic_output = Field(fid);
+  m_diagnostic_output = Field(diag_fid);
   m_diagnostic_output.allocate_view();
 }
 
-void ShortwaveCloudForcingDiagnostic::compute_diagnostic_impl()
+void ShortwaveCloudForcing::compute_diagnostic_impl()
 {
-  using KT         = KokkosTypes<DefaultDevice>;
-  using TPF        = ekat::TeamPolicyFactory<KT::ExeSpace>;
-  using MemberType = typename KT::MemberType;
+  using KT = KokkosTypes<DefaultDevice>;
 
-  const auto default_policy = TPF::get_default_team_policy(m_num_cols,1);
+  const int ncols = m_grid->get_num_local_dofs();
 
   const auto& SWCF              = m_diagnostic_output.get_view<Real*>();
-  const auto& SW_flux_dn        = get_field_in("SW_flux_dn").get_view<const Real**>();
-  const auto& SW_flux_up        = get_field_in("SW_flux_up").get_view<const Real**>();
-  const auto& SW_clrsky_flux_dn = get_field_in("SW_clrsky_flux_dn").get_view<const Real**>();
-  const auto& SW_clrsky_flux_up = get_field_in("SW_clrsky_flux_up").get_view<const Real**>();
+  const auto& SW_flux_dn        = m_fields_in.at("SW_flux_dn").get_view<const Real**>();
+  const auto& SW_flux_up        = m_fields_in.at("SW_flux_up").get_view<const Real**>();
+  const auto& SW_clrsky_flux_dn = m_fields_in.at("SW_clrsky_flux_dn").get_view<const Real**>();
+  const auto& SW_clrsky_flux_up = m_fields_in.at("SW_clrsky_flux_up").get_view<const Real**>();
 
-  Kokkos::parallel_for("ShortwaveCloudForcingDiagnostic",
-                       default_policy,
-                       KOKKOS_LAMBDA(const MemberType& team) {
-    const int icol = team.league_rank();
+  typename KT::RangePolicy policy (0,ncols);
+  auto lambda = KOKKOS_LAMBDA(const int icol) {
     SWCF(icol) = (SW_flux_dn(icol,0) - SW_flux_up(icol,0)) - (SW_clrsky_flux_dn(icol,0) - SW_clrsky_flux_up(icol,0));
-  });
-  Kokkos::fence();
+  };
+  Kokkos::parallel_for("ShortwaveCloudForcing",policy,lambda);
 }
 
 } //namespace scream

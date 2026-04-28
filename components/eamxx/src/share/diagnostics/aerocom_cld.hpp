@@ -9,26 +9,21 @@ namespace scream {
  * This diagnostic will compute the AeroCom diagnostics.
  */
 
-class AeroComCld : public AtmosphereDiagnostic {
+class AeroComCld : public AbstractDiagnostic {
  public:
   // Constructors
-  AeroComCld(const ekat::Comm &comm, const ekat::ParameterList &params);
+  AeroComCld(const ekat::Comm &comm,
+             const ekat::ParameterList &params,
+             const std::shared_ptr<const AbstractGrid>& grid);
 
   // The name of the diagnostic CLASS (not the computed field)
   std::string name() const override { return "AeroComCld"; }
-
-  // Set the grid
-  void create_requests() override;
 
  protected:
 #ifdef KOKKOS_ENABLE_CUDA
  public:
 #endif
   void compute_diagnostic_impl() override;
-
-  // Grid info
-  int m_ncols;
-  int m_nlevs;
 
   // How many diags we have
   int m_ndiag;

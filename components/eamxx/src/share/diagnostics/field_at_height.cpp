@@ -34,8 +34,9 @@ namespace scream
 {
 
 FieldAtHeight::
-FieldAtHeight (const ekat::Comm& comm, const ekat::ParameterList& params)
- : AtmosphereDiagnostic(comm,params)
+FieldAtHeight (const ekat::Comm& comm, const ekat::ParameterList& params,
+               const std::shared_ptr<const AbstractGrid>& grid)
+ : AbstractDiagnostic(comm,params,grid)
 {
   m_field_name = m_params.get<std::string>("field_name");
   auto surf_ref = m_params.get<std::string>("surface_reference");
@@ -55,23 +56,16 @@ FieldAtHeight (const ekat::Comm& comm, const ekat::ParameterList& params)
   auto z_val = m_params.get<std::string>("height_value");
   m_z = std::stod(z_val);
   m_diag_name = m_field_name + "_at_" + z_val + units + "_above_" + surf_ref;
+
+  m_field_in_names.push_back(m_field_name);
+  m_field_in_names.push_back(m_z_name+"_mid");
+  m_field_in_names.push_back(m_z_name+"_int");
 }
 
 void FieldAtHeight::
-create_requests ()
+initialize_impl ()
 {
-  const auto& gname = m_params.get<std::string>("grid_name");
-  add_field<Required>(m_field_name,gname);
-
-  // We don't know yet which one we need
-  add_field<Required>(m_z_name+"_mid",gname);
-  add_field<Required>(m_z_name+"_int",gname);
-}
-
-void FieldAtHeight::
-initialize_impl (const RunType /*run_type*/)
-{
-  const auto& f = get_field_in(m_field_name);
+  const auto& f = m_fields_in.at(m_field_name);
   const auto& fid = f.get_header().get_identifier();
 
   // Sanity checks
@@ -108,7 +102,7 @@ initialize_impl (const RunType /*run_type*/)
   using stratts_t = std::map<std::string,std::string>;
 
   // Propagate any io string attribute from input field to diag field
-  const auto& src = get_fields_in().front();
+  const auto& src = m_fields_in.begin()->second;
   const auto& src_atts = src.get_header().get_extra_data<stratts_t>("io: string attributes");
         auto& dst_atts = m_diagnostic_output.get_header().get_extra_data<stratts_t>("io: string attributes");
   for (const auto& [name, val] : src_atts) {
@@ -119,8 +113,8 @@ initialize_impl (const RunType /*run_type*/)
 // =========================================================================================
 void FieldAtHeight::compute_diagnostic_impl()
 {
-  const auto z_view = get_field_in(m_z_name + m_z_suffix).get_view<const Real**>();
-  const Field& f = get_field_in(m_field_name);
+  const auto z_view = m_fields_in.at(m_z_name + m_z_suffix).get_view<const Real**>();
+  const Field& f = m_fields_in.at(m_field_name);
   const auto& fl = f.get_header().get_identifier().get_layout();
 
   using RangePolicy = typename KokkosTypes<DefaultDevice>::RangePolicy;

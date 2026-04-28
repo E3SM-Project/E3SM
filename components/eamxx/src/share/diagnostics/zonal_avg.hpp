@@ -14,27 +14,26 @@ namespace scream {
  * any column that is centered at the northern pole (lat_lower <= lat <= 90).
  */
 
-class ZonalAvgDiag : public AtmosphereDiagnostic {
+class ZonalAvg : public AbstractDiagnostic {
 
 public:
   // Constructors
-  ZonalAvgDiag(const ekat::Comm &comm, const ekat::ParameterList &params);
+  ZonalAvg(const ekat::Comm &comm, const ekat::ParameterList &params,
+           const std::shared_ptr<const AbstractGrid> &grid);
 
   // The name of the diagnostic
-  std::string name() const { return m_diag_name; }
-
-  // Set the grid
-  void create_requests ();
+  std::string name() const { return "ZonalAvg"; }
 
 protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  void initialize_impl(const RunType /*run_type*/);
+  void initialize_impl();
   void compute_diagnostic_impl();
 
 protected:
-  std::string m_diag_name;
+
+  std::string m_field_name;
   int m_num_zonal_bins;
 
   Field m_lat;

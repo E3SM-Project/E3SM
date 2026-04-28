@@ -1,5 +1,5 @@
-#ifndef EAMXX_BINARY_OPS_DIAG_HPP
-#define EAMXX_BINARY_OPS_DIAG_HPP
+#ifndef EAMXX_BINARY_OP_DIAG_HPP
+#define EAMXX_BINARY_OP_DIAG_HPP
 
 #include "share/diagnostics/abstract_diagnostic.hpp"
 
@@ -10,21 +10,18 @@ namespace scream {
  * like +, -, *, ÷ on two input fields or on an input field and a known physical constant.
  */
 
-class BinaryOpsDiag : public AtmosphereDiagnostic {
+class BinaryOp : public AbstractDiagnostic {
  public:
-  // Constructors
-  BinaryOpsDiag(const ekat::Comm &comm, const ekat::ParameterList &params);
+  BinaryOp(const ekat::Comm &comm, const ekat::ParameterList &params,
+                const std::shared_ptr<const AbstractGrid>& grid);
 
   // The name of the diagnostic CLASS (not the computed field)
-  std::string name() const  override{ return "BinaryOpsDiag"; }
-
-  // Set the grid
-  void create_requests() override;
+  std::string name() const  override{ return "BinaryOp"; }
 
  protected:
   void compute_diagnostic_impl() override;
 
-  void initialize_impl(const RunType /*run_type*/) override;
+  void initialize_impl() override;
 
   std::string m_arg1_name;
   std::string m_arg2_name;
@@ -33,10 +30,11 @@ class BinaryOpsDiag : public AtmosphereDiagnostic {
 
   bool m_arg1_is_field;
   bool m_arg2_is_field;
+
   bool m_arg1_has_mask = false;
   bool m_arg2_has_mask = false;
-};  // class BinaryOpsDiag
+};
 
 }  // namespace scream
 
-#endif  // EAMXX_BINARY_OPS_DIAG_HPP
+#endif  // EAMXX_BINARY_OP_DIAG_HPP

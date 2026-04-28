@@ -4,12 +4,13 @@
 namespace scream
 {
 
-// =========================================================================================
-PotentialTemperatureDiagnostic::PotentialTemperatureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
-  : AtmosphereDiagnostic(comm,params)
+PotentialTemperature::
+PotentialTemperature (const ekat::Comm& comm, const ekat::ParameterList& params,
+                      const std::shared_ptr<const AbstractGrid>& grid)
+ : AbstractDiagnostic(comm,params,grid)
 {
   EKAT_REQUIRE_MSG(params.isParameter("temperature_kind"),
-      "Error! PotentialTemperatureDiagnostic requires 'temperature_kind' in its input parameters.\n");
+      "Error! PotentialTemperature requires 'temperature_kind' in its input parameters.\n");
   
   auto pt_type = params.get<std::string>("temperature_kind");
 
@@ -19,68 +20,56 @@ PotentialTemperatureDiagnostic::PotentialTemperatureDiagnostic (const ekat::Comm
     m_ptype = "LiqPotentialTemperature";
   } else {
     EKAT_ERROR_MSG (
-        "Error! Invalid choice for 'TemperatureKind' in PotentialTemperatureDiagnostic.\n"
+        "Error! Invalid choice for 'TemperatureKind' in PotentialTemperature.\n"
         "  - input value: " + pt_type + "\n"
         "  - valid values: Tot, Liq\n");
   }
-}
 
-// =========================================================================================
-void PotentialTemperatureDiagnostic::create_requests()
-{
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  auto grid  = m_grids_manager->get_grid("physics");
-  const auto& grid_name = grid->name();
-  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
-  m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
-
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
-
   // The fields required for this diagnostic to be computed
-  add_field<Required>("T_mid", scalar3d_layout_mid, K,  grid_name);
-  add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name);
+  m_field_in_names.push_back("T_mid");
+  m_field_in_names.push_back("p_mid");
   if (m_ptype=="LiqPotentialTemperature") {
-    add_field<Required>("qc",    scalar3d_layout_mid, kg/kg,  grid_name);
+    m_field_in_names.push_back("qc");
   }
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (m_ptype, scalar3d_layout_mid, K, grid_name);
+  auto diag_layout = m_grid->get_3d_scalar_layout(LEV);
+  FieldIdentifier fid (m_ptype, diag_layout, K, m_grid->name());
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }
-// =========================================================================================
-void PotentialTemperatureDiagnostic::compute_diagnostic_impl()
+
+void PotentialTemperature::compute_diagnostic_impl()
 {
-  using PF = scream::PhysicsFunctions<DefaultDevice>;
+  using KT      = KokkosTypes<DefaultDevice>;
+  using PF      = PhysicsFunctions<DefaultDevice>;
+  using MDRange = Kokkos::MDRangePolicy<typename KT::ExeSpace,Kokkos::Rank<2>>;
 
   bool is_liq = (m_ptype=="LiqPotentialTemperature");
 
   auto theta = m_diagnostic_output.get_view<Real**>();
-  auto T_mid = get_field_in("T_mid").get_view<const Real**>();
-  auto p_mid = get_field_in("p_mid").get_view<const Real**>();
-  decltype(p_mid) q_mid;
-  if (is_liq)
-   q_mid = get_field_in("qc").get_view<const Real**>();
+  auto T_mid = m_fields_in.at("T_mid").get_view<const Real**>();
+  auto p_mid = m_fields_in.at("p_mid").get_view<const Real**>();
+  auto q_mid = is_liq ? m_fields_in.at("qc").get_view<const Real**>() : decltype(p_mid){};
 
-  int nlevs = m_num_levs;
-  Kokkos::parallel_for("PotentialTemperatureDiagnostic",
-                       Kokkos::RangePolicy<>(0,m_num_cols*m_num_levs),
-                       KOKKOS_LAMBDA (const int& idx) {
-      const int icol = idx / nlevs;
-      const int ilev = idx % nlevs;
-      auto temp = PF::calculate_theta_from_T(T_mid(icol,ilev),p_mid(icol,ilev));
-      if (is_liq) {
-        // Liquid potential temperature (consistent with how it is calculated in SHOC)
-        theta(icol,ilev) = PF::calculate_thetal_from_theta(temp,T_mid(icol,ilev),q_mid(icol,ilev));
-      } else {
-        // The total potential temperature
-        theta(icol,ilev) = temp;
-      }
-  });
-  Kokkos::fence();
+  int ncols = m_grid->get_num_local_dofs();
+  int nlevs = m_grid->get_num_vertical_levels();
+  MDRange policy({0,0},{ncols,nlevs});
+  auto lambda = KOKKOS_LAMBDA (const int icol, const int ilev) {
+    auto temp = PF::calculate_theta_from_T(T_mid(icol,ilev),p_mid(icol,ilev));
+    if (is_liq) {
+      // Liquid potential temperature (consistent with how it is calculated in SHOC)
+      theta(icol,ilev) = PF::calculate_thetal_from_theta(temp,T_mid(icol,ilev),q_mid(icol,ilev));
+    } else {
+      // The total potential temperature
+      theta(icol,ilev) = temp;
+    }
+  };
+
+  Kokkos::parallel_for("PotentialTemperature", policy, lambda);
 }
-// =========================================================================================
 
 } //namespace scream

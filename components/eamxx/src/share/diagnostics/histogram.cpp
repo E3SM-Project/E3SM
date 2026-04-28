@@ -6,11 +6,12 @@
 
 namespace scream {
 
-HistogramDiag::HistogramDiag(const ekat::Comm &comm, const ekat::ParameterList &params)
-    : AtmosphereDiagnostic(comm, params) {
-  const auto &field_name       = m_params.get<std::string>("field_name");
+Histogram::Histogram(const ekat::Comm &comm, const ekat::ParameterList &params,
+                     const std::shared_ptr<const AbstractGrid>& grid)
+ : AbstractDiagnostic(comm, params, grid)
+{
+  m_field_name = m_params.get<std::string>("field_name");
   const std::string bin_config = m_params.get<std::string>("bin_configuration");
-  m_diag_name                  = field_name + "_histogram_" + bin_config;
 
   // extract bin values from configuration, append end values, and check
   const std::vector<std::string> bin_strings = ekat::split(bin_config, "_");
@@ -20,44 +21,39 @@ HistogramDiag::HistogramDiag(const ekat::Comm &comm, const ekat::ParameterList &
   {
     m_bin_reals[i] = std::stod(bin_strings[i-1]);
     EKAT_REQUIRE_MSG(m_bin_reals[i] > m_bin_reals[i-1],
-                     "Error! HistogramDiag bin values must be monotonically "
+                     "Error! Histogram bin values must be monotonically "
                      "increasing.\n"
                      " - bin configuration: " + bin_config + "\n");
   }
   m_bin_reals.back() = std::numeric_limits<Real>::max();
+
+  m_field_in_names.push_back(m_field_name);
 }
 
-void HistogramDiag::create_requests() {
-  const auto &field_name = m_params.get<std::string>("field_name");
-  const auto &grid_name  = m_params.get<std::string>("grid_name");
-  add_field<Required>(field_name, grid_name);
-}
-
-void HistogramDiag::initialize_impl(const RunType /*run_type*/) {
-  using FieldIdentifier = FieldHeader::identifier_type;
-  using FieldLayout     = FieldIdentifier::layout_type;
+void Histogram::initialize_impl()
+{
   using ShortFieldTagsNames::CMP;
-  const Field &field              = get_fields_in().front();
-  const FieldIdentifier &field_id = field.get_header().get_identifier();
-  const FieldLayout &field_layout = field_id.get_layout();
+
+  const auto& field    = m_fields_in.at(m_field_in_names.front());
+  const auto& field_id = field.get_header().get_identifier();
+  const auto& field_layout = field_id.get_layout();
   EKAT_REQUIRE_MSG(field_layout.rank() >= 1 && field_layout.rank() <= 3,
-                   "Error! Field rank not supported by HistogramDiag.\n"
-                   " - field name: " +
-                       field_id.name() +
-                       "\n"
-                       " - field layout: " +
-                       field_layout.to_string() + "\n");
+      "Error! Field rank not supported by Histogram.\n"
+      " - field name: " + field_id.name() + "\n"
+      " - field layout: " + field_layout.to_string() + "\n");
 
   // allocate histogram field
   const int num_bins = m_bin_reals.size()-1;
+  const auto& bin_config = m_params.get<std::string>("bin_configuration");
+  auto diag_name = m_field_name + "_histogram_" + bin_config;
   FieldLayout diagnostic_layout({CMP}, {num_bins}, {"bin"});
-  FieldIdentifier diagnostic_id(m_diag_name, diagnostic_layout,
+  FieldIdentifier diagnostic_id(diag_name, diagnostic_layout,
                                 ekat::units::none, field_id.get_grid_name());
   m_diagnostic_output = Field(diagnostic_id,true);
 
   // allocate field for bin values
   FieldLayout bin_values_layout({CMP}, {num_bins+1}, {"bin"});
-  auto bin_values_id = field_id.clone(m_diag_name + "_bin_values").reset_layout(bin_values_layout);
+  auto bin_values_id = field_id.clone(diag_name + "_bin_values").reset_layout(bin_values_layout);
   m_bin_values = Field(bin_values_id);
   m_bin_values.allocate_view();
 
@@ -69,8 +65,9 @@ void HistogramDiag::initialize_impl(const RunType /*run_type*/) {
   Kokkos::deep_copy(bin_values_view,bin_values_view_host);
 }
 
-void HistogramDiag::compute_diagnostic_impl() {
-  const auto &field = get_fields_in().front();
+void Histogram::compute_diagnostic_impl()
+{
+  const auto& field = m_fields_in.at(m_field_name);
   auto field_layout = field.get_header().get_identifier().get_layout();
   auto histogram_layout = m_diagnostic_output.get_header().get_identifier().get_layout();
   const int num_bins = histogram_layout.dim(0);
@@ -153,10 +150,10 @@ void HistogramDiag::compute_diagnostic_impl() {
                 },
                 histogram_view(bin_i));
           });
-  } break;
+    } break;
 
-  default:
-    EKAT_ERROR_MSG("Error! Unsupported field rank for histogram.\n");
+    default:
+      EKAT_ERROR_MSG("Error! Unsupported field rank for histogram.\n");
   }
 
   // TODO: use device-side MPI calls

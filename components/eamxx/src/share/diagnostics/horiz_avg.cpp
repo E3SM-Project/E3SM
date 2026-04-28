@@ -5,40 +5,35 @@
 
 namespace scream {
 
-HorizAvgDiag::
-HorizAvgDiag(const ekat::Comm &comm,
-             const ekat::ParameterList &params)
- : AtmosphereDiagnostic(comm, params)
+HorizAvg::
+HorizAvg(const ekat::Comm &comm,
+             const ekat::ParameterList &params,
+             const std::shared_ptr<const AbstractGrid>& grid)
+ : AbstractDiagnostic(comm, params, grid)
 {
   EKAT_REQUIRE_MSG (m_params.isParameter("field_name"),
-      "[HorizAvgDiag] Error! Missing required param 'field_name'\n");
-}
+      "[HorizAvg] Error! Missing required param 'field_name'\n");
 
-void HorizAvgDiag::create_requests()
-{
   const auto &fn = m_params.get<std::string>("field_name");
-  const auto &gn = m_params.get<std::string>("grid_name");
-  const auto g   = m_grids_manager->get_grid("physics");
+  m_field_in_names.push_back(fn);
 
-  add_field<Required>(fn, gn);
-
-  m_area = g->get_geometry_data("area");
+  m_area = m_grid->get_geometry_data("area");
 }
 
-void HorizAvgDiag::initialize_impl(const RunType /*run_type*/)
+void HorizAvg::initialize_impl()
 {
   using namespace ShortFieldTagsNames;
 
-  const auto &f      = get_fields_in().front();
+  const auto &f      = m_fields_in.at(m_field_in_names.front());
   const auto &fid    = f.get_header().get_identifier();
   const auto &layout = fid.get_layout();
 
   EKAT_REQUIRE_MSG(layout.rank() >= 1 && layout.rank() <= 3,
-      "Error! Field rank not supported by HorizAvgDiag.\n"
+      "Error! Field rank not supported by HorizAvg.\n"
       " - field name: " + fid.name() + "\n"
       " - field layout: " + layout.to_string() + "\n");
   EKAT_REQUIRE_MSG(layout.tags()[0] == COL,
-      "Error! HorizAvgDiag diagnostic expects a layout starting with the 'COL' tag.\n"
+      "Error! HorizAvg diagnostic expects a layout starting with the 'COL' tag.\n"
       " - field name  : " + fid.name() + "\n"
       " - field layout: " + layout.to_string() + "\n");
 
@@ -81,9 +76,9 @@ void HorizAvgDiag::initialize_impl(const RunType /*run_type*/)
   }
 }
 
-void HorizAvgDiag::compute_diagnostic_impl()
+void HorizAvg::compute_diagnostic_impl()
 {
-  const auto &f = get_fields_in().front();
+  const auto &f = m_fields_in.at(m_field_in_names.front());
 
   // sum(w * f) possibly masked
   horiz_contraction(m_diagnostic_output, f, m_area, m_comm);

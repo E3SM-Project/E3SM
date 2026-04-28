@@ -4,33 +4,28 @@
 
 namespace scream {
 
-FieldPrevDiag::
-FieldPrevDiag(const ekat::Comm &comm,
-              const ekat::ParameterList &params)
- : AtmosphereDiagnostic(comm, params)
+FieldPrev::
+FieldPrev(const ekat::Comm &comm,
+              const ekat::ParameterList &params,
+              const std::shared_ptr<const AbstractGrid>& grid)
+ : AbstractDiagnostic(comm, params, grid)
 {
   EKAT_REQUIRE_MSG(params.isParameter("field_name"),
-                   "Error! FieldPrevDiag requires 'field_name' in its "
+                   "Error! FieldPrev requires 'field_name' in its "
                    "input parameters.\n");
 
   m_name = m_params.get<std::string>("field_name");
+  m_field_in_names.push_back(m_name);
 }
 
-void FieldPrevDiag::
-create_requests()
-{
-  const auto &gname = m_params.get<std::string>("grid_name");
-  add_field<Required>(m_name, gname);
-}
-
-void FieldPrevDiag::initialize_impl(const RunType /*run_type*/) {
-  const auto &f   = get_field_in(m_name);
+void FieldPrev::initialize_impl() {
+  const auto &f   = m_fields_in.at(m_name);
   const auto &fid = f.get_header().get_identifier();
   const auto &gn  = fid.get_grid_name();
 
   EKAT_REQUIRE_MSG(
       f.data_type() == DataType::RealType,
-      "Error! FieldPrevDiag only supports Real data type fields.\n"
+      "Error! FieldPrev only supports Real data type fields.\n"
       " - field name: " +
           fid.name() +
           "\n"
@@ -53,10 +48,10 @@ void FieldPrevDiag::initialize_impl(const RunType /*run_type*/) {
   m_diagnostic_output.deep_copy(constants::fill_value<Real>);
 }
 
-void FieldPrevDiag::init_timestep(const util::TimeStamp &start_of_step)
+void FieldPrev::init_timestep(const util::TimeStamp &start_of_step)
 {
   // At the timestep begin, the field is at the "prev" timestep.
-  const auto& f_prev = get_field_in(m_name);
+  const auto& f_prev = m_fields_in.at(m_name);
   const auto& prev_ts = f_prev.get_header().get_tracking().get_time_stamp();
 
   if (prev_ts.is_valid()) {
@@ -73,7 +68,7 @@ void FieldPrevDiag::init_timestep(const util::TimeStamp &start_of_step)
   }
 }
 
-void FieldPrevDiag::compute_diagnostic_impl() {
+void FieldPrev::compute_diagnostic_impl() {
   // Nothing to do here
 }
 

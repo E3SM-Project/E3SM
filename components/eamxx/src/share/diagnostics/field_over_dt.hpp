@@ -12,28 +12,26 @@ namespace scream {
  * Users can request X_over_dt for any field X.
  */
 
-class FieldOverDtDiag : public AtmosphereDiagnostic {
+class FieldOverDt : public AbstractDiagnostic {
  public:
-  FieldOverDtDiag(const ekat::Comm &comm, const ekat::ParameterList &params);
+  FieldOverDt(const ekat::Comm &comm, const ekat::ParameterList &params,
+              const std::shared_ptr<const AbstractGrid>& grid);
 
-  std::string name() const { return "FieldOverDtDiag"; }
-
-  void create_requests();
+  std::string name() const override { return "FieldOverDt"; }
 
  protected:
 #ifdef KOKKOS_ENABLE_CUDA
  public:
 #endif
-  void compute_diagnostic_impl();
+  void compute_diagnostic_impl() override;
 
   void init_timestep(const util::TimeStamp &start_of_step) override;
 
-  void initialize_impl(const RunType /*run_type*/) override;
+  void initialize_impl() override;
 
   std::string      m_name;
   util::TimeStamp  m_start_ts;  // saved at beginning of each timestep
-
-};  // class FieldOverDtDiag
+};
 
 }  // namespace scream
 

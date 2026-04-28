@@ -9,58 +9,45 @@
 
 namespace scream {
 
-VertContractDiag::VertContractDiag(const ekat::Comm &comm,
-                                   const ekat::ParameterList &params)
-    : AtmosphereDiagnostic(comm, params) {}
+VertContract::
+VertContract(const ekat::Comm &comm,
+             const ekat::ParameterList &params,
+             const std::shared_ptr<const AbstractGrid> &grid)
+ : AbstractDiagnostic(comm, params, grid)
+{
+  m_field_name = m_params.get<std::string>("field_name");
 
-void VertContractDiag::create_requests() {
-  using namespace ShortFieldTagsNames;
-  using namespace ekat::units;
-
-  const auto &fn = m_params.get<std::string>("field_name");
-  const auto &gn = m_params.get<std::string>("grid_name");
-  const auto g   = m_grids_manager->get_grid(gn);
-
-  add_field<Required>(fn, gn);
+  m_field_in_names.push_back(m_field_name);
 
   // we support either sum or avg
   m_contract_method = m_params.get<std::string>("contract_method");
   EKAT_REQUIRE_MSG(
       m_contract_method == "avg" || m_contract_method == "sum",
-      "Error! VertContractDiag only supports 'avg' or 'sum' as contract_method.\n"
+      "Error! VertContract only supports 'avg' or 'sum' as contract_method.\n"
       " - contract_method: " + m_contract_method + "\n");
   // we support either dp or dz weighting, or no weighting at all (none)
   m_weighting_method = m_params.get<std::string>("weighting_method", "none");
   EKAT_REQUIRE_MSG(
       m_weighting_method == "dp" || m_weighting_method == "dz" || m_weighting_method == "none",
-      "Error! VertContractDiag only supports 'dp' or 'dz' or 'none' as weighting_method.\n"
+      "Error! VertContract only supports 'dp' or 'dz' or 'none' as weighting_method.\n"
       " - weighting_method: " + m_weighting_method + "\n");
-  
-  m_diag_name = fn + "_vert_" + m_contract_method;
-  // append weighting_method to name if needed
-  m_diag_name = (m_weighting_method == "none") ? m_diag_name : m_diag_name + "_" + m_weighting_method + "_weighted";
 
-  auto scalar3d = g->get_3d_scalar_layout(LEV);
   if (m_weighting_method == "dp") {
-    add_field<Required>("pseudo_density", scalar3d, Pa, gn);
+    m_field_in_names.push_back("pseudo_density");
   } else if (m_weighting_method == "dz") {
-    // TODO: for some reason the dz field keeps getting set to 0
-    // TODO: as a workaround, just calculate dz here (sigh...)
-    // add_field<Required>("dz", scalar3d, m, gn);
-    add_field<Required>("pseudo_density", scalar3d, Pa, gn);
-    add_field<Required>("qv", scalar3d, kg / kg, gn);
-    add_field<Required>("p_mid", scalar3d, Pa, gn);
-    add_field<Required>("T_mid", scalar3d, K, gn);
-
+    m_field_in_names.push_back("pseudo_density");
+    m_field_in_names.push_back("qv");
+    m_field_in_names.push_back("p_mid");
+    m_field_in_names.push_back("T_mid");
   }
 }
 
-void VertContractDiag::initialize_impl(const RunType /*run_type*/)
+void VertContract::initialize_impl()
 {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
-  const auto &f      = get_fields_in().front();
+  const auto &f      = m_fields_in.at(m_field_name);
   const auto &fid    = f.get_header().get_identifier();
   const auto &layout = fid.get_layout();
   const auto vtag    = layout.tags().back();
@@ -69,12 +56,12 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/)
   // else, can give us just nlev
   auto min_rank = (m_weighting_method == "none") ? 1 : 2;
   EKAT_REQUIRE_MSG(layout.rank() >= min_rank && layout.rank() <= 3,
-                   "Error! Field rank not supported by VertContractDiag.\n"
+                   "Error! Field rank not supported by VertContract.\n"
                    "For dp- and dz-weighted contractions, need at rank-2 fields.\n"
                    " - field name: " + fid.name() + "\n"
                    " - field layout: " + layout.to_string() + "\n");
   EKAT_REQUIRE_MSG(layout.tags().back() == LEV,
-                   "Error! VertContractDiag diagnostic expects a layout ending "
+                   "Error! VertContract diagnostic expects a layout ending "
                    "with the 'LEV' tag.\n"
                    " - field name  : " + fid.name() + "\n"
                    " - field layout: " + layout.to_string() + "\n");
@@ -84,14 +71,14 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/)
   auto w_units = none;
   // set up the weighting field
   if (m_weighting_method == "dp") {
-    m_weight = get_field_in("pseudo_density").clone("vert_contract_wts");
+    m_weight = m_fields_in.at("pseudo_density").clone("vert_contract_wts");
     constexpr auto g_units = physics::Constants<Real>::gravit.units;
     w_units = m_weight.get_header().get_identifier().get_units() / g_units;
   } else if (m_weighting_method == "dz") {
     // TODO: for some reason the dz field keeps getting set to 0
     // TODO: as a workaround, just calculate dz here (sigh...)
     // m_weight = get_field_in("dz").clone("vert_contract_wts");
-    m_weight = get_field_in("pseudo_density").clone("vert_contract_wts");
+    m_weight = m_fields_in.at("pseudo_density").clone("vert_contract_wts");
     w_units = m;
   } else {
     // no weighting needed, so we set it to 1 with layout of (lev)
@@ -106,7 +93,11 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/)
     diag_units = diag_units / w_units;
   }
 
-  auto d_fid = fid.clone(m_diag_name).reset_layout(layout.clone().strip_dim(LEV)).reset_units(diag_units);
+  auto diag_name = m_field_name + "_vert_" + m_contract_method;
+  if (m_weighting_method != "none")
+    diag_name += "_" + m_weighting_method + "_weighted";
+
+  auto d_fid = fid.clone(diag_name).reset_layout(layout.clone().strip_dim(LEV)).reset_units(diag_units);
   m_diagnostic_output = Field(d_fid,true);
 
   if (m_contract_method == "avg") {
@@ -132,15 +123,15 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/)
   }
 }
 
-void VertContractDiag::compute_diagnostic_impl()
+void VertContract::compute_diagnostic_impl()
 {
-  const auto &f = get_fields_in().front();
-  auto &d = m_diagnostic_output;
+  const auto &f = m_fields_in.at(m_field_name);
+  auto& d = m_diagnostic_output;
 
   // Update the weights; if weighting by dp, we need to scale by 1/g
   if (m_weighting_method == "dp") {
     auto g = scream::physics::Constants<Real>::gravit.value;
-    m_weight.update(get_field_in("pseudo_density"), 1 / g, sp(0.0));
+    m_weight.update(m_fields_in.at("pseudo_density"), 1 / g, sp(0.0));
   } else if (m_weighting_method == "dz") {
     // TODO: for some reason the dz field keeps getting set to 0
     // TODO: as a workaround, just calculate dz here (sigh...)
@@ -154,10 +145,10 @@ void VertContractDiag::compute_diagnostic_impl()
     const auto policy = TPF::get_default_team_policy(ncols, nlevs);
 
     auto dz_v = m_weight.get_view<Real **>();
-    auto dp_v = get_field_in("pseudo_density").get_view<const Real **>();
-    auto pm_v = get_field_in("p_mid").get_view<const Real **>();
-    auto tm_v = get_field_in("T_mid").get_view<const Real **>();
-    auto qv_v = get_field_in("qv").get_view<const Real **>();
+    auto dp_v = m_fields_in.at("pseudo_density").get_view<const Real **>();
+    auto pm_v = m_fields_in.at("p_mid").get_view<const Real **>();
+    auto tm_v = m_fields_in.at("T_mid").get_view<const Real **>();
+    auto qv_v = m_fields_in.at("qv").get_view<const Real **>();
     Kokkos::parallel_for(
         "Compute dz for " + m_diagnostic_output.name(), policy, KOKKOS_LAMBDA(const MT &team) {
           const int icol = team.league_rank();

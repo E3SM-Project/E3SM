@@ -1,5 +1,5 @@
-#ifndef EAMXX_VERTICAL_LAY_MID_DIAGNOSTIC_HPP
-#define EAMXX_VERTICAL_LAY_MID_DIAGNOSTIC_HPP
+#ifndef EAMXX_VERTICAL_LAY_MID_HPP
+#define EAMXX_VERTICAL_LAY_MID_HPP
 
 #include "share/diagnostics/abstract_diagnostic.hpp"
 
@@ -17,31 +17,22 @@ namespace scream
  *   - diag_name = "z_mid"/"geopotential_mid": Same as z_int/geopotential_int but at midpoint levels.
  */
 
-class VerticalLayerDiagnostic : public AtmosphereDiagnostic
+class VerticalLayer : public AbstractDiagnostic
 {
 public:
   // Constructors
-  VerticalLayerDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
+  VerticalLayer (const ekat::Comm& comm, const ekat::ParameterList& params,
+                 const std::shared_ptr<const AbstractGrid>& grid);
 
   // The name of the diagnostic CLASS (not the computed field)
   std::string name () const { return "VerticalLayer"; }
 
-  // Set the grid
-  void create_requests ();
-
-protected:
-  void compute_diagnostic_impl ();
-  void initialize_impl (const RunType /* run_type */);
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  template<int PackSize>
-  void do_compute_diagnostic_impl ();
+  void compute_diagnostic_impl ();
 protected:
-
-  // Keep track of field dimensions
-  Int m_num_cols;
-  Int m_num_levs;
+  void initialize_impl ();
 
   // Temporaries to use for calculation of dz, z_int, and z_mid
   Field m_tmp_interface;
@@ -62,4 +53,4 @@ protected:
 
 } //namespace scream
 
-#endif // EAMXX_VERTICAL_LAY_MID_DIAGNOSTIC_HPP
+#endif // EAMXX_VERTICAL_LAY_MID_HPP

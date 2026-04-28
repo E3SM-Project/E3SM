@@ -1,5 +1,5 @@
-#ifndef EAMXX_NUMBER_PATH_DIAGNOSTIC_HPP
-#define EAMXX_NUMBER_PATH_DIAGNOSTIC_HPP
+#ifndef EAMXX_NUMBER_PATH_HPP
+#define EAMXX_NUMBER_PATH_HPP
 
 #include "share/diagnostics/abstract_diagnostic.hpp"
 
@@ -9,34 +9,28 @@ namespace scream {
  * This diagnostic will produce the "number" path.
  */
 
-class NumberPathDiagnostic : public AtmosphereDiagnostic {
+class NumberPath : public AbstractDiagnostic {
  public:
   // Constructors
-  NumberPathDiagnostic(const ekat::Comm &comm,
-                       const ekat::ParameterList &params);
+  NumberPath(const ekat::Comm &comm,
+             const ekat::ParameterList &params,
+             const std::shared_ptr<const AbstractGrid>& grid);
 
   // The name of the diagnostic CLASS (not the computed field)
   std::string name() const override { return "NumberPath"; }
-
-  // Set the grid
-  void create_requests ();
 
  protected:
 #ifdef KOKKOS_ENABLE_CUDA
  public:
 #endif
-  void compute_diagnostic_impl();
+  void compute_diagnostic_impl() override;
 
  protected:
-  // Keep track of field dimensions
-  int m_num_cols;
-  int m_num_levs;
-
   std::string m_qname;
   std::string m_nname;
   std::string m_kind;
-};  // class NumberPathDiagnostic
+};
 
 }  // namespace scream
 
-#endif  // EAMXX_NUMBER_PATH_DIAGNOSTIC_HPP
+#endif  // EAMXX_NUMBER_PATH_HPP

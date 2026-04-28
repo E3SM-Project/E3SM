@@ -116,57 +116,41 @@ void compute_zonal_sum(const Field &result, const Field &field, const Field &wei
   }
 }
 
-ZonalAvgDiag::ZonalAvgDiag(const ekat::Comm &comm, const ekat::ParameterList &params)
-    : AtmosphereDiagnostic(comm, params) {
-  const auto &field_name     = m_params.get<std::string>("field_name");
-  const auto &num_bins_value = params.get<std::string>("number_of_zonal_bins");
-  m_diag_name                = field_name + "_zonal_avg_" + num_bins_value + "_bins";
-  m_num_zonal_bins           = std::stoi(num_bins_value);
-}
+ZonalAvg::ZonalAvg(const ekat::Comm &comm, const ekat::ParameterList &params,
+                   const std::shared_ptr<const AbstractGrid> &grid)
+  : AbstractDiagnostic(comm, params, grid)
+{
+  m_field_name = m_params.get<std::string>("field_name");
+  m_num_zonal_bins = std::stoi(params.get<std::string>("number_of_zonal_bins"));
 
-void ZonalAvgDiag::create_requests() {
-  const auto &field_name = m_params.get<std::string>("field_name");
-  const auto &grid_name  = m_params.get<std::string>("grid_name");
-
-  add_field<Required>(field_name, grid_name);
-  const GridsManager::grid_ptr_type grid = m_grids_manager->get_grid(grid_name);
-  m_lat                                  = grid->get_geometry_data("lat");
+  m_field_in_names.push_back(m_field_name);
+  m_lat       = m_grid->get_geometry_data("lat");
 
   // Area will be used as weight in the zonal sum
   m_area = grid->get_geometry_data("area");
 }
 
-void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/)
+void ZonalAvg::initialize_impl()
 {
-  using FieldIdentifier = FieldHeader::identifier_type;
-  using FieldLayout     = FieldIdentifier::layout_type;
-  using ShortFieldTagsNames::COL, ShortFieldTagsNames::CMP, ShortFieldTagsNames::LEV;
-  const Field &field              = get_fields_in().front();
-  const FieldIdentifier &field_id = field.get_header().get_identifier();
-  const FieldLayout &field_layout = field_id.get_layout();
-  const auto grid_name = field_id.get_grid_name();
+  using namespace ShortFieldTagsNames;
+  const auto& field    = m_fields_in.at(m_field_name);
+  const auto& field_id = field.get_header().get_identifier();
+  const auto& field_layout = field_id.get_layout();
 
   EKAT_REQUIRE_MSG(field_layout.rank() >= 1 && field_layout.rank() <= 3,
-                   "Error! Field rank not supported by ZonalAvgDiag.\n"
-                   " - field name: " +
-                       field_id.name() +
-                       "\n"
-                       " - field layout: " +
-                       field_layout.to_string() + "\n");
+      "Error! Field rank not supported by ZonalAvg.\n"
+      " - field name: " + field_id.name() + "\n"
+      " - field layout: " + field_layout.to_string() + "\n");
   EKAT_REQUIRE_MSG(field_layout.tags()[0] == COL,
-                   "Error! ZonalAvgDiag diagnostic expects a layout starting "
-                   "with the 'COL' tag.\n"
-                   " - field name  : " +
-                       field_id.name() +
-                       "\n"
-                       " - field layout: " +
-                       field_layout.to_string() + "\n");
+      "Error! ZonalAvg diagnostic expects a layout starting with the 'COL' tag.\n"
+      " - field name  : " + field_id.name() + "\n"
+      " - field layout: " + field_layout.to_string() + "\n");
 
   FieldLayout bins_layout({CMP}, {m_num_zonal_bins}, {"bin"});
 
   // allocate column counter
   FieldIdentifier ncols_per_bin_id("number of columns per bin",
-      bins_layout, ekat::units::none, grid_name, DataType::IntType);
+      bins_layout, ekat::units::none, m_grid->name(), DataType::IntType);
   Field ncols_per_bin(ncols_per_bin_id);
   ncols_per_bin.allocate_view();
   ncols_per_bin.deep_copy(0);
@@ -206,7 +190,7 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/)
       Kokkos::Max<Int>(max_ncols_per_bin));
   FieldLayout bin_to_cols_layout = bins_layout.clone().append_dim(COL, 1+max_ncols_per_bin);
   FieldIdentifier bin_to_cols_id("columns in each zonal bin",
-    bin_to_cols_layout, ekat::units::none, grid_name , DataType::IntType);
+    bin_to_cols_layout, ekat::units::none, m_grid->name() , DataType::IntType);
   m_bin_to_cols = Field(bin_to_cols_id);
   m_bin_to_cols.allocate_view();
 
@@ -231,15 +215,16 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/)
       });
 
   // Create the diagnostic
+  auto diag_name = m_field_name + "_zonal_avg_" + std::to_string(m_num_zonal_bins) + "_bins";
   auto diagnostic_layout = field_layout.clone().strip_dim(COL).prepend_dim(CMP, m_num_zonal_bins, "bin");
-  auto diagnostic_id = field_id.clone(m_diag_name).reset_layout(diagnostic_layout);
+  auto diagnostic_id = field_id.clone(diag_name).reset_layout(diagnostic_layout);
   m_diagnostic_output = Field(diagnostic_id,true);
 
   if (not field.has_valid_mask()) {
     m_ones = m_area.clone("ones");
     m_ones.deep_copy(1);
     // It's not nondimensional, but we're just using it as a scaling factor field
-    FieldIdentifier zonal_area_fid ("zonal area",bins_layout,ekat::units::none,grid_name);
+    FieldIdentifier zonal_area_fid ("zonal area",bins_layout,ekat::units::none,m_grid->name());
     m_zonal_area = Field(zonal_area_fid,true);
     compute_zonal_sum(m_zonal_area,m_ones,m_area,m_bin_to_cols,&m_comm);
 
@@ -267,9 +252,9 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/)
   }
 }
 
-void ZonalAvgDiag::compute_diagnostic_impl()
+void ZonalAvg::compute_diagnostic_impl()
 {
-  const auto &field = get_fields_in().front();
+  const auto &field = m_fields_in.begin()->second;
 
   if (field.has_valid_mask()) {
     // Compute masked field zonal sum, masked area zonal sum, and divide

@@ -1,5 +1,5 @@
-#ifndef EAMXX_LONGWAVE_CLOUD_FORCING_DIAGNOSTIC_HPP
-#define EAMXX_LONGWAVE_CLOUD_FORCING_DIAGNOSTIC_HPP
+#ifndef EAMXX_LONGWAVE_CLOUD_FORCING_HPP
+#define EAMXX_LONGWAVE_CLOUD_FORCING_HPP
 
 #include "share/diagnostics/abstract_diagnostic.hpp"
 
@@ -10,31 +10,23 @@ namespace scream
  * This diagnostic will produce longwave cloud forcing.
  */
 
-class LongwaveCloudForcingDiagnostic : public AtmosphereDiagnostic
+class LongwaveCloudForcing : public AbstractDiagnostic
 {
 public:
   // Constructors
-  LongwaveCloudForcingDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
+  LongwaveCloudForcing (const ekat::Comm& comm, const ekat::ParameterList& params,
+                        const std::shared_ptr<const AbstractGrid>& grid);
 
   // The name of the diagnostic CLASS (not the computed field)
   std::string name () const { return "LongwaveCloudForcing"; }
-
-  // Set the grid
-  void create_requests ();
 
 protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
   void compute_diagnostic_impl ();
-protected:
-
-  // Keep track of field dimensions
-  Int m_num_cols;
-  Int m_num_levs;
-
-}; // class LongwaveCloudForcingDiagnostic
+};
 
 } //namespace scream
 
-#endif // EAMXX_LONGWAVE_CLOUD_FORCING_DIAGNOSTIC_HPP
+#endif // EAMXX_LONGWAVE_CLOUD_FORCING_HPP

@@ -10,8 +10,9 @@ namespace scream
 
 // =========================================================================================
 FieldAtPressureLevel::
-FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
- : AtmosphereDiagnostic(comm,params)
+FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params,
+                      const std::shared_ptr<const AbstractGrid>& grid)
+ : AbstractDiagnostic(comm,params,grid)
 {
   m_field_name = m_params.get<std::string>("field_name");
 
@@ -31,23 +32,18 @@ FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
   }
 
   m_diag_name = m_field_name + "_at_" + p_value + units;
-}
 
-void FieldAtPressureLevel::
-create_requests ()
-{
-  const auto& gname = m_params.get<std::string>("grid_name");
-  add_field<Required>(m_field_name,gname);
+  m_field_in_names.push_back(m_field_name);
 
   // We don't know yet which one we need
-  add_field<Required>("p_mid",gname);
-  add_field<Required>("p_int",gname);
+  m_field_in_names.push_back("p_mid");
+  m_field_in_names.push_back("p_int");
 }
 
 void FieldAtPressureLevel::
-initialize_impl (const RunType /*run_type*/)
+initialize_impl ()
 {
-  const auto& f = get_field_in(m_field_name);
+  const auto& f = m_fields_in.at(m_field_name);
   const auto& fid = f.get_header().get_identifier();
 
   // Sanity checks
@@ -78,7 +74,7 @@ initialize_impl (const RunType /*run_type*/)
   using stratts_t = std::map<std::string,std::string>;
 
   // Propagate any io string attribute from input field to diag field
-  const auto& src = get_fields_in().front();
+  const auto& src = m_fields_in.at(m_field_name);
   const auto& src_atts = src.get_header().get_extra_data<stratts_t>("io: string attributes");
         auto& dst_atts = m_diagnostic_output.get_header().get_extra_data<stratts_t>("io: string attributes");
   for (const auto& [name, val] : src_atts) {
@@ -86,7 +82,6 @@ initialize_impl (const RunType /*run_type*/)
   }
 }
 
-// =========================================================================================
 void FieldAtPressureLevel::compute_diagnostic_impl()
 {
   using KT = KokkosTypes<DefaultDevice>;
@@ -95,9 +90,9 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
   using cmask3d_t = Field::view_dev_t<const int***>;
 
   //This is 2D source pressure
-  const Field& p_src = get_field_in(m_pressure_name);
+  const Field& p_src = m_fields_in.at(m_pressure_name);
   const auto p_src_v = p_src.get_view<const Real**>();
-  const Field& f = get_field_in(m_field_name);
+  const Field& f = m_fields_in.at(m_field_name);
 
   // The setup for interpolation varies depending on the rank of the input field:
   const int rank = f.rank();
