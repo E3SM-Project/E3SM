@@ -2,7 +2,7 @@
 
 #include "share/diagnostics/register_diagnostics.hpp"
 
-#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/grid/point_grid.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 
@@ -22,18 +22,15 @@ TEST_CASE("field_at_height")
   ekat::Comm comm(MPI_COMM_WORLD);
 
   constexpr int nruns = 100;
+  constexpr Real tol  = std::numeric_limits<Real>::epsilon()*1e5;
 
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
-  // Create a grids manager w/ a point grid
-  constexpr Real tol            = std::numeric_limits<Real>::epsilon()*1e5;
+  // Create a pont grid
   int ncols = 3;
   int ndims = 4;
   int nlevs = 10;
-  int num_global_cols = ncols*comm.size();
-  auto gm = create_mesh_free_grids_manager(comm,0,0,nlevs,num_global_cols);
-  gm->build_grids();
-  auto grid = gm->get_grid("point_grid");
+  auto grid = create_point_grid("physics",ncols,nlevs,comm);
 
   const auto m = ekat::units::m;
   // Create input data test fields
@@ -105,19 +102,18 @@ TEST_CASE("field_at_height")
   auto run_diag = [&](const Field& f, const Field& z,
                       const double h, const std::string& surf_ref) {
     util::TimeStamp t0 ({2022,1,1},{0,0,0});
-    auto& factory = AtmosphereDiagnosticFactory::instance();
+    auto& factory = DiagnosticFactory::instance();
     ekat::ParameterList pl;
     pl.set("surface_reference",surf_ref);
     pl.set("height_value",std::to_string(h));
     pl.set("height_units",std::string("m"));
     pl.set("field_name",f.name());
     pl.set("grid_name",grid->name());
-    auto diag = factory.create("FieldAtheight",comm,pl);
-    diag->set_grids(gm);
-    diag->set_required_field(f);
-    diag->set_required_field(z);
-    diag->initialize(t0,RunType::Initial);
-    diag->compute_diagnostic();
+    auto diag = factory.create("FieldAtheight",comm,pl, grid);
+    diag->set_input_field(f);
+    diag->set_input_field(z);
+    diag->initialize();
+    diag->compute_diagnostic(t0);
     diag->get_diagnostic().sync_to_host();
     return diag->get_diagnostic();
   };

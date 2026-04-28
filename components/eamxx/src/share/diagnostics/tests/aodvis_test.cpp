@@ -2,30 +2,11 @@
 
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/grid/point_grid.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 
 namespace scream {
-
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
-                                        const int nlevs) {
-  const int num_global_cols = ncols * comm.size();
-
-  using vos_t = std::vector<std::string>;
-  ekat::ParameterList gm_params;
-  gm_params.set("grids_names", vos_t{"point_grid"});
-  auto &pl = gm_params.sublist("point_grid");
-  pl.set<std::string>("type", "point_grid");
-  pl.set("aliases", vos_t{"physics"});
-  pl.set<int>("number_of_global_columns", num_global_cols);
-  pl.set<int>("number_of_vertical_levels", nlevs);
-
-  auto gm = create_mesh_free_grids_manager(comm, gm_params);
-  gm->build_grids();
-
-  return gm;
-}
 
 TEST_CASE("aodvis") {
   using namespace ShortFieldTagsNames;
@@ -38,14 +19,13 @@ TEST_CASE("aodvis") {
   util::TimeStamp t0({2022, 1, 1}, {0, 0, 0});
 
   // Create a grids manager - single column for these tests
-  constexpr int nlevs = 33;
-  const int ngcols    = 10 * comm.size();
+  const int nlevs = 33;
+  const int ncols = 10;
 
   int nbnds = eamxx_swbands();
   int swvis = eamxx_vis_swband_idx();
 
-  auto gm   = create_gm(comm, ngcols, nlevs);
-  auto grid = gm->get_grid("physics");
+  auto grid = create_point_grid("physics",ncols*comm.size(),nlevs,comm);
 
   // Input (randomized) tau
   FieldLayout scalar3d_swband_layout =
@@ -65,8 +45,7 @@ TEST_CASE("aodvis") {
   int seed = get_random_test_seed(&comm);
 
   // Construct the Diagnostics
-  std::map<std::string, std::shared_ptr<AtmosphereDiagnostic>> diags;
-  auto &diag_factory = AtmosphereDiagnosticFactory::instance();
+  auto &diag_factory = DiagnosticFactory::instance();
   register_diagnostics();
 
   constexpr int ntests = 5;
@@ -79,14 +58,13 @@ TEST_CASE("aodvis") {
 
     // Create and set up the diagnostic
     ekat::ParameterList params;
-    auto diag = diag_factory.create("AerosolOpticalDepth550nm", comm, params);
-    diag->set_grids(gm);
-    diag->set_required_field(tau);
-    diag->set_required_field(sunlit);
-    diag->initialize(t0, RunType::Initial);
+    auto diag = diag_factory.create("AerosolOpticalDepth550nm", comm, params, grid);
+    diag->set_input_field(tau);
+    diag->set_input_field(sunlit);
+    diag->initialize();
 
     // Run diag
-    diag->compute_diagnostic();
+    diag->compute_diagnostic(t0);
 
     // Check result
     tau.sync_to_host();

@@ -2,29 +2,10 @@
 
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/grid/point_grid.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 
 namespace scream {
-
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
-                                        const int nlevs) {
-  const int num_global_cols = ncols * comm.size();
-
-  using vos_t = std::vector<std::string>;
-  ekat::ParameterList gm_params;
-  gm_params.set("grids_names", vos_t{"point_grid"});
-  auto &pl = gm_params.sublist("point_grid");
-  pl.set<std::string>("type", "point_grid");
-  pl.set("aliases", vos_t{"physics"});
-  pl.set<int>("number_of_global_columns", num_global_cols);
-  pl.set<int>("number_of_vertical_levels", nlevs);
-
-  auto gm = create_mesh_free_grids_manager(comm, gm_params);
-  gm->build_grids();
-
-  return gm;
-}
 
 TEST_CASE("field_prev") {
   using namespace ShortFieldTagsNames;
@@ -37,15 +18,14 @@ TEST_CASE("field_prev") {
   util::TimeStamp ts({2024, 1, 1}, {0, 0, 0});
 
   // Create a grids manager
-  constexpr int nlevs = 7;
-  const int ngcols    = 2 * comm.size();
+  const int nlevs = 7;
+  const int ncols = 2;
 
-  auto gm   = create_gm(comm, ngcols, nlevs);
-  auto grid = gm->get_grid("physics");
+  auto grid = create_point_grid("physics",ncols*comm.size(),nlevs,comm);
 
   // Input (randomized) qc
-  FieldLayout scalar2d_layout{{COL, LEV}, {ngcols, nlevs}};
-  FieldIdentifier qc_fid("qc", scalar2d_layout, kg / kg, grid->name());
+  FieldLayout layout = grid->get_3d_scalar_layout(LEV);
+  FieldIdentifier qc_fid("qc", layout, kg / kg, grid->name());
 
   Field qc(qc_fid);
   qc.allocate_view();
@@ -54,25 +34,24 @@ TEST_CASE("field_prev") {
   int seed = get_random_test_seed(&comm);
 
   // Construct the Diagnostics
-  auto &diag_factory = AtmosphereDiagnosticFactory::instance();
+  auto &diag_factory = DiagnosticFactory::instance();
   register_diagnostics();
 
   // Create and set up the diagnostic
   ekat::ParameterList params;
-  REQUIRE_THROWS(diag_factory.create("FieldPrevDiag", comm, params)); // Bad construction
+  REQUIRE_THROWS(diag_factory.create("FieldPrev", comm, params, grid)); // Bad construction
 
   params.set("grid_name", grid->name());
-  REQUIRE_THROWS(diag_factory.create("FieldPrevDiag", comm, params)); // Still no field_name
+  REQUIRE_THROWS(diag_factory.create("FieldPrev", comm, params, grid)); // Still no field_name
 
   // Set time for qc and randomize its values
   randomize_uniform(qc, seed++, 0, 200);
 
   // Create and set up the diagnostic
   params.set<std::string>("field_name", "qc");
-  auto diag = diag_factory.create("FieldPrevDiag", comm, params);
-  diag->set_grids(gm);
-  diag->set_required_field(qc);
-  diag->initialize(ts, RunType::Initial);
+  auto diag = diag_factory.create("FieldPrev", comm, params, grid);
+  diag->set_input_field(qc);
+  diag->initialize();
 
   REQUIRE (diag->get_diagnostic().has_valid_mask());
 
@@ -83,7 +62,7 @@ TEST_CASE("field_prev") {
   // Source is now "computed" (gets a valid timestamp and random values), but it's too late...
   qc.get_header().get_tracking().update_time_stamp(ts);
   randomize_uniform(qc, seed++, 0, 200);
-  diag->compute_diagnostic();
+  diag->compute_diagnostic(ts);
   auto diag_mask = diag->get_diagnostic().get_valid_mask();
 
   auto tgt_mask = diag_mask.clone();
@@ -107,7 +86,7 @@ TEST_CASE("field_prev") {
     randomize_uniform(qc, seed++, 0, 200);
 
     // Diagnostic should return the value stored at init_timestep (qc_prev)
-    diag->compute_diagnostic();
+    diag->compute_diagnostic(ts);
     auto diag_f = diag->get_diagnostic();
     REQUIRE(views_are_equal(diag_f, qc_prev));
 

@@ -1,30 +1,11 @@
 #include "catch2/catch.hpp"
 
 #include "share/diagnostics/register_diagnostics.hpp"
-#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/grid/point_grid.hpp"
 #include "share/physics/physics_constants.hpp"
 
 namespace scream {
 
-std::shared_ptr<GridsManager>
-create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
-
-  const int num_global_cols = ncols*comm.size();
-
-  using vos_t = std::vector<std::string>;
-  ekat::ParameterList gm_params;
-  gm_params.set("grids_names",vos_t{"point_grid"});
-  auto& pl = gm_params.sublist("point_grid");
-  pl.set<std::string>("type","point_grid");
-  pl.set("aliases",vos_t{"physics"});
-  pl.set<int>("number_of_global_columns", num_global_cols);
-  pl.set<int>("number_of_vertical_levels", nlevs);
-
-  auto gm = create_mesh_free_grids_manager(comm,gm_params);
-  gm->build_grids();
-
-  return gm;
-}
 
 //-----------------------------------------------------------------------------------------------//
 template<typename DeviceT, int N>
@@ -32,47 +13,47 @@ void run (const std::string& diag_name, const std::string& location)
 {
   using PC = scream::physics::Constants<Real>;
 
-  const     int packsize = N;
-  constexpr int num_levs = packsize*2 + 1; // Number of levels to use for tests, make sure the last pack can also have some empty slots (packsize>1).
+  const int packsize = N;
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
   // Create a grids manager - single column for these tests
   const int ncols = 1;
-  auto gm = create_gm(comm,ncols,num_levs);
+  const int nlevs = packsize*2 + 1; // Number of levels to use for tests, make sure the last pack can also have some empty slots (packsize>1).
+  auto grid = create_point_grid("physics",ncols,nlevs,comm);
 
   // A time stamp
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
   register_diagnostics();
-  auto& diag_factory = AtmosphereDiagnosticFactory::instance();
+  auto& diag_factory = DiagnosticFactory::instance();
   
   // Construct the Diagnostic
   ekat::ParameterList params;
 
   params.set<std::string>("diag_name", diag_name);
   params.set<std::string>("vert_location",location);
-  auto diag = diag_factory.create("VerticalLayer",comm,params);
-  diag->set_grids(gm);
-
+  auto diag = diag_factory.create("VerticalLayer",comm,params, grid);
   const bool needs_phis = diag_name=="z" or diag_name=="geopotential";
 
   // Set the required fields for the diagnostic.
   std::map<std::string,Field> input_fields;
-  for (const auto& req : diag->get_field_requests()) {
-    Field f(req.fid);
-    auto & f_ap = f.get_header().get_alloc_properties();
-    f_ap.request_allocation(packsize);
-    f.allocate_view();
-    const auto name = f.name();
-    f.get_header().get_tracking().update_time_stamp(t0);
-    diag->set_required_field(f.get_const());
-    input_fields.emplace(name,f);
+  {
+    using namespace ShortFieldTagsNames;
+    using namespace ekat::units;
+    auto scalar3d = grid->get_3d_scalar_layout(LEV);
+    auto scalar2d = grid->get_2d_scalar_layout();
+    for (const auto& fname : diag->get_input_fields_names()) {
+      auto layout = (fname == "phis") ? scalar2d : scalar3d;
+      FieldIdentifier fid(fname, layout, Pa, grid->name());
+      Field f(fid);
+      f.allocate_view();
+      f.get_header().get_tracking().update_time_stamp(t0);
+      diag->set_input_field(f);
+      input_fields.emplace(fname, f);
+    }
   }
-
-  // Can't set computed fields in the diag
-  REQUIRE_THROWS(diag->set_computed_field(input_fields.begin()->second));
 
   // Note: we are not testing the calculate_dz utility. We are testing
   //       the diag class, so use some inputs that make checking results easier
@@ -96,14 +77,14 @@ void run (const std::string& diag_name, const std::string& location)
   }
 
   // Initialize and run the diagnostic
-  diag->initialize(t0,RunType::Initial);
-  diag->compute_diagnostic();
+  diag->initialize();
+  diag->compute_diagnostic(t0);
   const auto& diag_out = diag->get_diagnostic();
   diag_out.sync_to_host();
   auto d_h = diag_out.get_view<Real**,Host>();
 
   // Compare against expected value
-  const auto last_int = num_levs;
+  const auto last_int = nlevs;
   const auto last_mid = last_int-1;
 
   // Precompute surface value and increment depending on the diag type
@@ -124,7 +105,7 @@ void run (const std::string& diag_name, const std::string& location)
 
     if (location=="interfaces") {
       // Check surface value
-      REQUIRE (d_h(icol,num_levs)==prev_int_val);
+      REQUIRE (d_h(icol,nlevs)==prev_int_val);
     }
 
     for (int ilev=last_mid; ilev>=0; --ilev) {
@@ -143,9 +124,6 @@ void run (const std::string& diag_name, const std::string& location)
       }
     }
   }
-
-  // Finalize the diagnostic
-  diag->finalize();
 
 } // run()
 

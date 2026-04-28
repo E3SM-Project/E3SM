@@ -2,7 +2,7 @@
 
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/grid/point_grid.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 
@@ -10,23 +10,6 @@
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
-  const int num_global_cols = ncols * comm.size();
-
-  using vos_t = std::vector<std::string>;
-  ekat::ParameterList gm_params;
-  gm_params.set("grids_names", vos_t{"point_grid"});
-  auto &pl = gm_params.sublist("point_grid");
-  pl.set<std::string>("type", "point_grid");
-  pl.set("aliases", vos_t{"physics"});
-  pl.set<int>("number_of_global_columns", num_global_cols);
-  pl.set<int>("number_of_vertical_levels", nlevs);
-
-  auto gm = create_mesh_free_grids_manager(comm, gm_params);
-  gm->build_grids();
-
-  return gm;
-}
 
 const util::TimeStamp t0() {
   return util::TimeStamp({2024, 1, 1}, {0, 0, 0});
@@ -74,31 +57,29 @@ TEST_CASE("conditional_sampling") {
   ekat::Comm comm(MPI_COMM_WORLD);
 
   // Create a grids manager - single column for these tests
-  constexpr int nlevs = 10;
+  const int nlevs = 10;
   constexpr int ncols = 8;
 
-  auto gm   = create_gm(comm, ncols, nlevs);
-  auto grid = gm->get_grid("physics");
+  auto grid = create_point_grid("physics",ncols,nlevs,comm);
 
   // Random number generator seed
   int seed = get_random_test_seed();
 
   // Construct the Diagnostics
-  std::map<std::string, std::shared_ptr<AtmosphereDiagnostic>> diags;
-  auto &diag_factory = AtmosphereDiagnosticFactory::instance();
+  auto &diag_factory = DiagnosticFactory::instance();
   register_diagnostics();
 
   ekat::ParameterList params;
   params.set("grid_name", grid->name());
 
   SECTION("exceptions") {
-    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm, params)); // No 'field_name' parameter
+    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm, params, grid)); // No 'field_name' parameter
     params.set<std::string>("field_name", "x");
-    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm, params)); // No 'condition_lhs' parameter
+    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm, params, grid)); // No 'condition_lhs' parameter
     params.set<std::string>("condition_lhs", "y");
-    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm, params)); // No 'condition_cmp' parameter
+    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm, params, grid)); // No 'condition_cmp' parameter
     params.set<std::string>("condition_cmp", "z");
-    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm, params)); // No 'condition_rhs'
+    REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm, params, grid)); // No 'condition_rhs'
   }
 
   SECTION("field_where_field_cmp_val") {
@@ -116,12 +97,11 @@ TEST_CASE("conditional_sampling") {
             randomize_uniform(x,seed++);
             randomize_uniform(y,seed++);
             params.set<std::string>("condition_cmp", cmp_s);
-            auto diag = diag_factory.create("ConditionalSampling", comm, params);
-            diag->set_grids(gm);
-            diag->set_required_field(x);
-            diag->set_required_field(y);
-            diag->initialize(t0(),RunType::Initial);
-            diag->compute_diagnostic();
+            auto diag = diag_factory.create("ConditionalSampling", comm, params, grid);
+            diag->set_input_field(x);
+            diag->set_input_field(y);
+            diag->initialize();
+            diag->compute_diagnostic(t0());
             auto d = diag->get_diagnostic();
 
             REQUIRE (d.has_valid_mask());
@@ -162,13 +142,12 @@ TEST_CASE("conditional_sampling") {
             randomize_uniform(y,seed++);
             randomize_uniform(z,seed++);
             params.set<std::string>("condition_cmp", cmp_s);
-            auto diag = diag_factory.create("ConditionalSampling", comm, params);
-            diag->set_grids(gm);
-            diag->set_required_field(x);
-            diag->set_required_field(y);
-            diag->set_required_field(z);
-            diag->initialize(t0(),RunType::Initial);
-            diag->compute_diagnostic();
+            auto diag = diag_factory.create("ConditionalSampling", comm, params, grid);
+            diag->set_input_field(x);
+            diag->set_input_field(y);
+            diag->set_input_field(z);
+            diag->initialize();
+            diag->compute_diagnostic(t0());
             auto d = diag->get_diagnostic();
 
             REQUIRE (d.has_valid_mask());
@@ -198,11 +177,10 @@ TEST_CASE("conditional_sampling") {
           auto x = create_field("x",nx,ncmp,nlevs,grid->name());
           randomize_uniform(x,seed++);
           params.set<std::string>("condition_cmp", cmp_s);
-          auto diag = diag_factory.create("ConditionalSampling", comm, params);
-          diag->set_grids(gm);
-          diag->set_required_field(x);
-          diag->initialize(t0(),RunType::Initial);
-          diag->compute_diagnostic();
+          auto diag = diag_factory.create("ConditionalSampling", comm, params, grid);
+          diag->set_input_field(x);
+          diag->initialize();
+          diag->compute_diagnostic(t0());
           auto d = diag->get_diagnostic();
 
           Field mask = x.create_valid_mask();
@@ -227,10 +205,9 @@ TEST_CASE("conditional_sampling") {
 
     for (std::string cmp_s : {"ge", "le"}) {
       params.set<std::string>("condition_cmp", cmp_s);
-      auto diag = diag_factory.create("ConditionalSampling", comm, params);
-      diag->set_grids(gm);
-      diag->initialize(t0(),RunType::Initial);
-      diag->compute_diagnostic();
+      auto diag = diag_factory.create("ConditionalSampling", comm, params, grid);
+      diag->initialize();
+      diag->compute_diagnostic(t0());
       auto d = diag->get_diagnostic();
 
       REQUIRE (d.data_type()==DataType::IntType);
@@ -259,12 +236,11 @@ TEST_CASE("conditional_sampling") {
             randomize_uniform(y,seed++);
             randomize_uniform(z,seed++);
             params.set<std::string>("condition_cmp", cmp_s);
-            auto diag = diag_factory.create("ConditionalSampling", comm, params);
-            diag->set_grids(gm);
-            diag->set_required_field(y);
-            diag->set_required_field(z);
-            diag->initialize(t0(),RunType::Initial);
-            diag->compute_diagnostic();
+            auto diag = diag_factory.create("ConditionalSampling", comm, params, grid);
+            diag->set_input_field(y);
+            diag->set_input_field(z);
+            diag->initialize();
+            diag->compute_diagnostic(t0());
             auto d = diag->get_diagnostic();
 
             REQUIRE (d.data_type()==DataType::IntType);
@@ -279,7 +255,6 @@ TEST_CASE("conditional_sampling") {
       }
     }
   }
-
 }
 
 } // namespace scream
