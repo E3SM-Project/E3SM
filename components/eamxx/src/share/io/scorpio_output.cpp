@@ -453,7 +453,7 @@ init_timestep (const util::TimeStamp& start_of_step)
 }
 
 void AtmosphereOutput::
-run (const std::string& filename,
+run (const std::string& filename, const util::TimeStamp& ts,
      const bool output_step, const bool checkpoint_step,
      const int nsteps_since_last_output,
      const bool allow_invalid_fields)
@@ -472,7 +472,7 @@ run (const std::string& filename,
 
   // Update all diagnostics, we need to do this before applying the remapper
   // to make sure that the remapped fields are the most up to date.
-  compute_diagnostics(allow_invalid_fields);
+  compute_diagnostics(ts,allow_invalid_fields);
 
   auto apply_remap = [&](AbstractRemapper& remapper)
   {
@@ -1002,12 +1002,11 @@ setup_output_file(const std::string& filename,
 }
 
 void AtmosphereOutput::
-compute_diagnostics(const bool allow_invalid_fields)
+compute_diagnostics(const util::TimeStamp& ts, const bool allow_invalid_fields)
 {
   for (auto diag : m_diagnostics) {
     // Check if all inputs are valid
     bool computable = true;
-    util::TimeStamp ts;
     for (const auto& fn : diag->get_input_fields_names()) {
       const auto& f = m_field_mgrs[FromModel]->get_field(fn);
       const auto& fts = f.get_header().get_tracking().get_time_stamp();
@@ -1018,10 +1017,6 @@ compute_diagnostics(const bool allow_invalid_fields)
         " - stream name: " + m_stream_name + "\n"
         " - diag name: " + diag->get_diagnostic().name() + "\n"
         " - dep  name: " + f.name() + "\n");
-
-      if (fts.is_valid() and (not ts.is_valid() or ts < fts)) {
-        ts = fts;
-      }
     }
 
     auto d = diag->get_diagnostic();

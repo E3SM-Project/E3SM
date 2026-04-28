@@ -329,16 +329,17 @@ TEST_CASE ("diags_sharing_check") {
   out1.init_timestep(time);
   out2.init_timestep(time);
 
-  out1.run("UNUSED", false, false, 0, false);
-  out2.run("UNUSED", false, false, 0, false);
+  time += 3600;
+  out1.run("UNUSED", time, false, false, 0, false);
+  out2.run("UNUSED", time, false, false, 0, false);
 
   REQUIRE (d->get_num_evaluations()==1);
 
   // Update diag input, then run again, and verify the diag was evaluated one more time
-  time += 1.0;
+  time += 3600;
   fm->get_field("my_f").get_header().get_tracking().update_time_stamp(time);
-  out1.run("UNUSED", false, false, 0, false);
-  out2.run("UNUSED", false, false, 0, false);
+  out1.run("UNUSED", time, false, false, 0, false);
+  out2.run("UNUSED", time, false, false, 0, false);
 
   REQUIRE (d->get_num_evaluations()==2);
 }

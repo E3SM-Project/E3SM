@@ -145,7 +145,7 @@ public:
                          const scorpio::FileMode mode);
 
   void init_timestep(const util::TimeStamp &start_of_step);
-  void run(const std::string &filename, const bool output_step, const bool checkpoint_step,
+  void run(const std::string &filename, const util::TimeStamp& ts, const bool output_step, const bool checkpoint_step,
            const int nsteps_since_last_output, const bool allow_invalid_fields = false);
 
   long long res_dep_memory_footprint() const;
@@ -173,7 +173,7 @@ protected:
   void register_variables(const std::string &filename, const std::string &fp_precision,
                           const scorpio::FileMode mode);
   void set_decompositions(const std::string &filename);
-  void compute_diagnostics(const bool allow_invalid_fields);
+  void compute_diagnostics(const util::TimeStamp& ts, const bool allow_invalid_fields);
   void process_requested_fields();
   strvec_t get_var_dimnames(const FieldLayout &layout) const;
 
