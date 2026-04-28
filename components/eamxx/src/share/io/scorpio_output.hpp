@@ -1,7 +1,7 @@
 #ifndef SCREAM_SCORPIO_OUTPUT_HPP
 #define SCREAM_SCORPIO_OUTPUT_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "share/data_managers/grids_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
@@ -125,7 +125,7 @@ public:
   using grid_type     = AbstractGrid;
   using gm_type       = GridsManager;
   using remapper_type = AbstractRemapper;
-  using diag_ptr_type = std::shared_ptr<AtmosphereDiagnostic>;
+  using diag_ptr_type = std::shared_ptr<AbstractDiagnostic>;
 
   ~AtmosphereOutput();
 
