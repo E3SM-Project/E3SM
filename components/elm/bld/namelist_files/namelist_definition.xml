@@ -339,8 +339,8 @@ Note that the landuse_timeseries option is not the same as the FATES fluh_timese
 This option is older than the luhdata options and may be depricated at some point in the future.
 </entry>
 
-<entry id="fates_parteh_mode" type="integer" category="physics"
-       group="elm_inparm" valid_values="1,2">
+<entry id="fates_parteh_mode" type="char*80" category="physics"
+       group="elm_inparm" valid_values="carbon_only,cnp">
 Switch deciding which nutrient model to use in FATES.
 </entry>
 
@@ -517,6 +517,14 @@ is provided as a namelist option to engage all necessary options).  The file is 
 by the FATES land use data tool (https://github.com/NGEET/tools-fates-landusedata)
 which processes the raw land use data from the THEMIS tool data sets
 (https://doi.org/10.5065/29s7-7b41)
+</entry>
+
+<entry id="fates_lu_transition_logic" type="integer" category="physics"
+        group="elm_inparm" valid_values="1,2,3,4,5,6,7,8,9">
+Select the logic for land use class transitions.
+Allowed values are 1-9. See the Land Use subsection of the Namelist Options section
+of the FATES user guide for an explanation of the options.
+(Only relevant if FATES with land use is on)
 </entry>
 
 <entry id="use_hydrstress" type="logical" category="physics"
