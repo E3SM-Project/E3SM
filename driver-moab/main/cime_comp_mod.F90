@@ -1583,11 +1583,25 @@ contains
     call t_startf('CPL:comp_init_cx_all')
     call t_adj_detailf(+2)
     call component_init_cx(iac, infodata)
+    call t_startf('CPL:comp_init_cx_atm')
     call component_init_cx(atm, infodata)
+    call t_stopf('CPL:comp_init_cx_atm')
+
+    call t_startf('CPL:comp_init_cx_lnd')
     call component_init_cx(lnd, infodata)
+    call t_stopf('CPL:comp_init_cx_lnd')
+
+    call t_startf('CPL:comp_init_cx_rof')
     call component_init_cx(rof, infodata)
+    call t_stopf('CPL:comp_init_cx_rof')
+
+    call t_startf('CPL:comp_init_cx_ocn')
     call component_init_cx(ocn, infodata)
+    call t_stopf('CPL:comp_init_cx_ocn')
+
+    call t_startf('CPL:comp_init_cx_ice')
     call component_init_cx(ice, infodata)
+    call t_stopf('CPL:comp_init_cx_ice')
     call component_init_cx(glc, infodata)
     call component_init_cx(wav, infodata)
     call t_adj_detailf(-2)
