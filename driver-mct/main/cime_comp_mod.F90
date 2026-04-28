@@ -1521,11 +1521,11 @@ contains
 
     ! we need to initialize iac first so atm and lnd know it's
     ! there, via gcam_active -> iac_present
-    call t_startf('comp_init_cc_iac')
+    call t_startf('CPL:comp_init_cc_iac')
     call t_adj_detailf(+2)
     call component_init_cc(Eclock_z, iac, iac_init, infodata, NLFilename)
     call t_adj_detailf(-2)
-    call t_stopf('comp_init_cc_iac')
+    call t_stopf('CPL:comp_init_cc_iac')
 
     call t_startf('CPL:comp_init_cc_atm')
     call t_adj_detailf(+2)
