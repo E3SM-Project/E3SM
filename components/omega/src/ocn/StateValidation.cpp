@@ -123,13 +123,13 @@ static std::pair<I4, I4> checkTracerArray(const Array3DReal &Tracers3D,
 }
 
 //------------------------------------------------------------------------------
-/// Validate ocean state fields for NaN and out-of-bounds conditions.
+/// Check ocean state fields for NaN and out-of-bounds conditions.
 /// Only active cells (where CellMask > 0) are checked.
-/// Aborts via MPI_Abort on failure.
-void validateOceanState(const OceanState *State, const AuxiliaryState *AuxState,
-                        const VertCoord *VCoord, I4 TimeLevel) {
+/// Returns the total count of errors found; does not abort.
+I4 checkOceanState(const OceanState *State, const AuxiliaryState *AuxState,
+                   const VertCoord *VCoord, I4 TimeLevel) {
 
-   bool AnyFailure = false;
+   I4 TotalErrors = 0;
 
    const Array2DReal &CellMask = VCoord->CellMask;
 
@@ -146,13 +146,13 @@ void validateOceanState(const OceanState *State, const AuxiliaryState *AuxState,
       if (NaNs > 0) {
          LOG_CRITICAL(
              "StateValidation: LayerThickness contains {} NaN value(s)", NaNs);
-         AnyFailure = true;
+         TotalErrors += NaNs;
       }
       if (OOB > 0) {
          LOG_CRITICAL("StateValidation: LayerThickness has {} value(s) outside "
                       "valid range [1e-10, 1000]",
                       OOB);
-         AnyFailure = true;
+         TotalErrors += OOB;
       }
    }
 
@@ -170,14 +170,14 @@ void validateOceanState(const OceanState *State, const AuxiliaryState *AuxState,
          LOG_CRITICAL(
              "StateValidation: KineticEnergyCell contains {} NaN value(s)",
              NaNs);
-         AnyFailure = true;
+         TotalErrors += NaNs;
       }
       if (OOB > 0) {
          LOG_CRITICAL(
              "StateValidation: KineticEnergyCell has {} value(s) outside "
              "valid range [0, 10]",
              OOB);
-         AnyFailure = true;
+         TotalErrors += OOB;
       }
    }
 
@@ -193,13 +193,13 @@ void validateOceanState(const OceanState *State, const AuxiliaryState *AuxState,
       if (NaNs > 0) {
          LOG_CRITICAL("StateValidation: Temperature contains {} NaN value(s)",
                       NaNs);
-         AnyFailure = true;
+         TotalErrors += NaNs;
       }
       if (OOB > 0) {
          LOG_CRITICAL("StateValidation: Temperature has {} value(s) outside "
                       "valid range [-10, 50]",
                       OOB);
-         AnyFailure = true;
+         TotalErrors += OOB;
       }
    }
 
@@ -215,20 +215,27 @@ void validateOceanState(const OceanState *State, const AuxiliaryState *AuxState,
       if (NaNs > 0) {
          LOG_CRITICAL("StateValidation: Salinity contains {} NaN value(s)",
                       NaNs);
-         AnyFailure = true;
+         TotalErrors += NaNs;
       }
       if (OOB > 0) {
          LOG_CRITICAL("StateValidation: Salinity has {} value(s) outside "
                       "valid range [-2, 60]",
                       OOB);
-         AnyFailure = true;
+         TotalErrors += OOB;
       }
    }
 
-   // -------------------------------------------------------------------------
-   // Abort if any check failed
-   // -------------------------------------------------------------------------
-   if (AnyFailure) {
+   return TotalErrors;
+}
+
+//------------------------------------------------------------------------------
+/// Validate ocean state fields for NaN and out-of-bounds conditions.
+/// Only active cells (where CellMask > 0) are checked.
+/// Aborts via MPI_Abort on failure.
+void validateOceanState(const OceanState *State, const AuxiliaryState *AuxState,
+                        const VertCoord *VCoord, I4 TimeLevel) {
+
+   if (checkOceanState(State, AuxState, VCoord, TimeLevel) > 0) {
       abortWithMessage("StateValidation: Ocean state validation failed. "
                        "See critical messages above for details.");
    }

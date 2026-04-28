@@ -4,9 +4,10 @@
 /// \file
 /// \brief Test driver for ocean state validation
 ///
-/// Tests the validateOceanState function by verifying that it passes on valid
-/// state data. Checks cover LayerThickness, KineticEnergyCell, Temperature,
-/// and Salinity fields.
+/// Tests both the positive path (valid state passes) and the negative paths
+/// (NaN and out-of-bounds values in each checked field are detected) of
+/// validateOceanState / checkOceanState. Checked fields are:
+///   - LayerThickness, KineticEnergyCell, Temperature, Salinity.
 //
 //===-----------------------------------------------------------------------===/
 
@@ -34,6 +35,7 @@
 #include "mpi.h"
 
 #include <cmath>
+#include <limits>
 
 using namespace OMEGA;
 
@@ -127,7 +129,180 @@ static int fillValidState() {
 }
 
 //------------------------------------------------------------------------------
-// Run state validation tests
+// Restore the default state to valid values and recompute the auxiliary state
+
+static void restoreValidState(OceanState *State, AuxiliaryState *AuxState) {
+   fillValidState();
+   Array3DReal AllTracers = Tracers::getAll(0);
+   AuxState->computeAll(State, AllTracers, 0);
+}
+
+//------------------------------------------------------------------------------
+// Positive test: validate a clean, valid state — expects 0 errors
+
+static int testValidState(OceanState *State, AuxiliaryState *AuxState,
+                          VertCoord *VCoord) {
+   LOG_INFO("StateValidationTest: Testing validation on valid state");
+   validateOceanState(State, AuxState, VCoord, 0);
+   LOG_INFO("StateValidationTest: Valid state validation PASS");
+   return 0;
+}
+
+//------------------------------------------------------------------------------
+// Negative tests: inject an invalid value, verify checkOceanState returns > 0,
+// then restore valid state.
+//
+// Returns 0 on success (i.e. the error was caught), 1 otherwise.
+
+static int expectErrors(const char *TestName, OceanState *State,
+                        AuxiliaryState *AuxState, VertCoord *VCoord) {
+   I4 Errs = checkOceanState(State, AuxState, VCoord, 0);
+   if (Errs == 0) {
+      LOG_ERROR("StateValidationTest: {} - expected errors but got none",
+                TestName);
+      return 1;
+   }
+   LOG_INFO("StateValidationTest: {} PASS (caught {} error(s))", TestName,
+            Errs);
+   return 0;
+}
+
+// --- LayerThickness ---
+
+static int testNaNLayerThickness(OceanState *State, AuxiliaryState *AuxState,
+                                 VertCoord *VCoord) {
+   restoreValidState(State, AuxState);
+   const Real NaN   = std::numeric_limits<Real>::quiet_NaN();
+   Array2DReal LT   = State->getLayerThickness(0);
+   const int NCells = State->NCellsAll;
+   const int NVert  = State->NVertLayers;
+   parallelFor(
+       "InjectNaNLayerThick", {NCells, NVert},
+       KOKKOS_LAMBDA(int I, int K) { LT(I, K) = NaN; });
+   return expectErrors("NaN in LayerThickness", State, AuxState, VCoord);
+}
+
+static int testOOBHighLayerThickness(OceanState *State,
+                                     AuxiliaryState *AuxState,
+                                     VertCoord *VCoord) {
+   restoreValidState(State, AuxState);
+   Array2DReal LT   = State->getLayerThickness(0);
+   const int NCells = State->NCellsAll;
+   const int NVert  = State->NVertLayers;
+   // 2000 m is above the valid max of 1000 m
+   parallelFor(
+       "InjectOOBHighLayerThick", {NCells, NVert},
+       KOKKOS_LAMBDA(int I, int K) { LT(I, K) = 2000.0; });
+   return expectErrors("OOB-high in LayerThickness", State, AuxState, VCoord);
+}
+
+static int testOOBLowLayerThickness(OceanState *State, AuxiliaryState *AuxState,
+                                    VertCoord *VCoord) {
+   restoreValidState(State, AuxState);
+   Array2DReal LT   = State->getLayerThickness(0);
+   const int NCells = State->NCellsAll;
+   const int NVert  = State->NVertLayers;
+   // -1.0 m is below the valid min of 1e-10 m
+   parallelFor(
+       "InjectOOBLowLayerThick", {NCells, NVert},
+       KOKKOS_LAMBDA(int I, int K) { LT(I, K) = -1.0; });
+   return expectErrors("OOB-low in LayerThickness", State, AuxState, VCoord);
+}
+
+// --- KineticEnergyCell ---
+
+static int testNaNKineticEnergy(OceanState *State, AuxiliaryState *AuxState,
+                                VertCoord *VCoord) {
+   restoreValidState(State, AuxState);
+   const Real NaN   = std::numeric_limits<Real>::quiet_NaN();
+   Array2DReal KE   = AuxState->KineticAux.KineticEnergyCell;
+   const int NCells = State->NCellsAll;
+   const int NVert  = State->NVertLayers;
+   parallelFor(
+       "InjectNaNKE", {NCells, NVert},
+       KOKKOS_LAMBDA(int I, int K) { KE(I, K) = NaN; });
+   return expectErrors("NaN in KineticEnergyCell", State, AuxState, VCoord);
+}
+
+static int testOOBKineticEnergy(OceanState *State, AuxiliaryState *AuxState,
+                                VertCoord *VCoord) {
+   restoreValidState(State, AuxState);
+   Array2DReal KE   = AuxState->KineticAux.KineticEnergyCell;
+   const int NCells = State->NCellsAll;
+   const int NVert  = State->NVertLayers;
+   // 9999 J/kg is above the valid max of 10 J/kg
+   parallelFor(
+       "InjectOOBKE", {NCells, NVert},
+       KOKKOS_LAMBDA(int I, int K) { KE(I, K) = 9999.0; });
+   return expectErrors("OOB in KineticEnergyCell", State, AuxState, VCoord);
+}
+
+// --- Temperature tracer ---
+
+static int testNaNTemperature(OceanState *State, AuxiliaryState *AuxState,
+                              VertCoord *VCoord) {
+   if (Tracers::IndxTemp == -1)
+      return 0; // tracer not active; skip
+   restoreValidState(State, AuxState);
+   const Real NaN      = std::numeric_limits<Real>::quiet_NaN();
+   Array2DReal TempArr = Tracers::getByIndex(0, Tracers::IndxTemp);
+   const int NCells    = State->NCellsAll;
+   const int NVert     = State->NVertLayers;
+   parallelFor(
+       "InjectNaNTemp", {NCells, NVert},
+       KOKKOS_LAMBDA(int I, int K) { TempArr(I, K) = NaN; });
+   return expectErrors("NaN in Temperature", State, AuxState, VCoord);
+}
+
+static int testOOBTemperature(OceanState *State, AuxiliaryState *AuxState,
+                              VertCoord *VCoord) {
+   if (Tracers::IndxTemp == -1)
+      return 0; // tracer not active; skip
+   restoreValidState(State, AuxState);
+   Array2DReal TempArr = Tracers::getByIndex(0, Tracers::IndxTemp);
+   const int NCells    = State->NCellsAll;
+   const int NVert     = State->NVertLayers;
+   // 9999 C is above the valid max of 50 C
+   parallelFor(
+       "InjectOOBTemp", {NCells, NVert},
+       KOKKOS_LAMBDA(int I, int K) { TempArr(I, K) = 9999.0; });
+   return expectErrors("OOB in Temperature", State, AuxState, VCoord);
+}
+
+// --- Salinity tracer ---
+
+static int testNaNSalinity(OceanState *State, AuxiliaryState *AuxState,
+                           VertCoord *VCoord) {
+   if (Tracers::IndxSalt == -1)
+      return 0; // tracer not active; skip
+   restoreValidState(State, AuxState);
+   const Real NaN      = std::numeric_limits<Real>::quiet_NaN();
+   Array2DReal SaltArr = Tracers::getByIndex(0, Tracers::IndxSalt);
+   const int NCells    = State->NCellsAll;
+   const int NVert     = State->NVertLayers;
+   parallelFor(
+       "InjectNaNSalt", {NCells, NVert},
+       KOKKOS_LAMBDA(int I, int K) { SaltArr(I, K) = NaN; });
+   return expectErrors("NaN in Salinity", State, AuxState, VCoord);
+}
+
+static int testOOBSalinity(OceanState *State, AuxiliaryState *AuxState,
+                           VertCoord *VCoord) {
+   if (Tracers::IndxSalt == -1)
+      return 0; // tracer not active; skip
+   restoreValidState(State, AuxState);
+   Array2DReal SaltArr = Tracers::getByIndex(0, Tracers::IndxSalt);
+   const int NCells    = State->NCellsAll;
+   const int NVert     = State->NVertLayers;
+   // 9999 g/kg is above the valid max of 60 g/kg
+   parallelFor(
+       "InjectOOBSalt", {NCells, NVert},
+       KOKKOS_LAMBDA(int I, int K) { SaltArr(I, K) = 9999.0; });
+   return expectErrors("OOB in Salinity", State, AuxState, VCoord);
+}
+
+//------------------------------------------------------------------------------
+// Run all state validation tests
 
 int testStateValidation() {
    int Err = 0;
@@ -149,19 +324,36 @@ int testStateValidation() {
       return Err;
    }
 
-   // Fill state arrays with valid values
-   Err += fillValidState();
+   VertCoord *VCoord = VertCoord::getDefault();
 
-   // Compute auxiliary variables so KineticEnergyCell is populated
+   // Fill state arrays with valid values and compute auxiliary state
+   fillValidState();
    {
       Array3DReal AllTracers = Tracers::getAll(0);
       DefAuxState->computeAll(DefState, AllTracers, 0);
    }
 
-   // Test: validation should pass on valid state (no abort expected)
-   LOG_INFO("StateValidationTest: Testing validation on valid state");
-   validateOceanState(DefState, DefAuxState, VertCoord::getDefault(), 0);
-   LOG_INFO("StateValidationTest: Valid state validation PASS");
+   // ---- Positive test ----
+   Err += testValidState(DefState, DefAuxState, VCoord);
+
+   // ---- Negative tests: each injects a bad value and verifies detection ----
+
+   // LayerThickness
+   Err += testNaNLayerThickness(DefState, DefAuxState, VCoord);
+   Err += testOOBHighLayerThickness(DefState, DefAuxState, VCoord);
+   Err += testOOBLowLayerThickness(DefState, DefAuxState, VCoord);
+
+   // KineticEnergyCell
+   Err += testNaNKineticEnergy(DefState, DefAuxState, VCoord);
+   Err += testOOBKineticEnergy(DefState, DefAuxState, VCoord);
+
+   // Temperature tracer
+   Err += testNaNTemperature(DefState, DefAuxState, VCoord);
+   Err += testOOBTemperature(DefState, DefAuxState, VCoord);
+
+   // Salinity tracer
+   Err += testNaNSalinity(DefState, DefAuxState, VCoord);
+   Err += testOOBSalinity(DefState, DefAuxState, VCoord);
 
    AuxiliaryState::clear();
    return Err;

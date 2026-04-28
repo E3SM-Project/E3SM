@@ -3,12 +3,13 @@
 //===-- ocn/StateValidation.h - ocean state validation ----------*- C++ -*-===//
 //
 /// \file
-/// \brief Declares the validateOceanState function for ocean state validation
+/// \brief Declares state validation functions for ocean state validation
 ///
-/// Provides a function that validates the ocean prognostic state and selected
-/// auxiliary/tracer fields by checking for NaN values and out-of-bounds
-/// conditions. If any check fails the function logs a critical error with a
-/// backtrace and aborts via MPI_Abort on the local MPI communicator.
+/// Provides two functions:
+///   - checkOceanState: checks for NaN and out-of-bounds conditions and
+///     returns the total error count without aborting. Suitable for testing.
+///   - validateOceanState: calls checkOceanState and aborts via MPI_Abort if
+///     any errors are found.
 //
 //===----------------------------------------------------------------------===//
 
@@ -19,8 +20,30 @@
 
 namespace OMEGA {
 
+/// Check ocean state fields for NaN values and out-of-bounds conditions
+/// without aborting, returning the total count of errors found.
+///
+/// Only active ocean cells (where CellMask > 0) are checked. Critical log
+/// messages are emitted for each type of error found.
+///
+/// The following fields are validated:
+///   - LayerThickness      : [1e-10, 1000]  (from OceanState)
+///   - KineticEnergyCell   : [0, 10]
+///                           (from AuxiliaryState::KineticAux)
+///   - Temperature tracer  : [-10, 50]      (from Tracers)
+///   - Salinity tracer     : [-2, 60]       (from Tracers)
+///
+/// \param[in] State       Ocean state to validate
+/// \param[in] AuxState    Auxiliary state containing KineticEnergyCell
+/// \param[in] VCoord      Vertical coordinate containing the CellMask
+/// \param[in] TimeLevel   Time level index to validate (typically 0 = current)
+/// \return I4 total count of errors found across all checked fields (0 = valid)
+I4 checkOceanState(const OceanState *State, const AuxiliaryState *AuxState,
+                   const VertCoord *VCoord, I4 TimeLevel);
+
 /// Check ocean state fields for NaN values and out-of-bounds conditions.
 ///
+/// Calls checkOceanState and aborts via MPI_Abort if any errors are found.
 /// Only active ocean cells (where CellMask > 0) are checked.
 ///
 /// The following fields are validated:

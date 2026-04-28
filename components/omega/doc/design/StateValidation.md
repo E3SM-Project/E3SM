@@ -155,9 +155,25 @@ OMEGA ocean component.
 
 ### 4.2 Methods
 
-#### 4.2.1 `validateOceanState` (public)
+#### 4.2.1 `checkOceanState` (public)
 
-The sole public interface of the module:
+Performs all field checks and returns the total count of errors found:
+
+```c++
+I4 checkOceanState(const OceanState *State,
+                   const AuxiliaryState *AuxState,
+                   const VertCoord *VCoord,
+                   I4 TimeLevel);
+```
+
+Checks all fields described in Section 2, skipping inactive cells
+(`CellMask == 0`). Logs critical messages for each type of error. Returns
+the total number of errors as an `I4`; returns 0 if all checks pass. Does
+**not** abort. Suitable for calling from tests.
+
+#### 4.2.2 `validateOceanState` (public)
+
+Production entry-point that aborts on failure:
 
 ```c++
 void validateOceanState(const OceanState *State,
@@ -166,13 +182,10 @@ void validateOceanState(const OceanState *State,
                         I4 TimeLevel);
 ```
 
-Validates all fields described in Section 2, skipping inactive cells
-(`CellMask == 0`). Logs critical errors for each failed check and aborts the
-run if any check fails. `VCoord` supplies the `CellMask` array. `TimeLevel`
-specifies the time-level index within the state arrays to validate (0 =
-current timestep).
+Calls `checkOceanState` and aborts via `MPI_Abort` if the return value is
+greater than zero.
 
-#### 4.2.2 `checkArray2D` (file-local helper)
+#### 4.2.3 `checkArray2D` (file-local helper)
 
 ```c++
 static std::pair<I4, I4> checkArray2D(const Array2DReal &Arr,
@@ -188,7 +201,7 @@ Performs the NaN and bounds counts for a 2-D device array over the first
 bound is enforced (not needed for any current field but useful for future
 extension). Returns `{NaNCount, OutOfRangeCount}`.
 
-#### 4.2.3 `checkTracerArray` (file-local helper)
+#### 4.2.4 `checkTracerArray` (file-local helper)
 
 ```c++
 static std::pair<I4, I4> checkTracerArray(const Array3DReal &Tracers3D,
@@ -202,7 +215,7 @@ Performs the NaN and bounds counts for a single tracer slice (identified by
 `TracerIdx`) of the 3-D tracer array, restricted to active cells
 (`CellMask(Cell, K) > 0`). Returns `{NaNCount, OutOfRangeCount}`.
 
-#### 4.2.4 `abortWithMessage` (file-local helper)
+#### 4.2.5 `abortWithMessage` (file-local helper)
 
 ```c++
 static void abortWithMessage(const std::string &Msg);
@@ -234,27 +247,27 @@ The test passes if `validateOceanState` returns without calling `MPI_Abort`.
 
 Tests requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.9.
 
-### 5.2 Test: NaN in LayerThickness triggers abort
+### 5.2 Negative tests: invalid values are detected
 
-A future test should set a subset of `LayerThickness` entries to `NaN` and
-verify that `validateOceanState` detects and logs the error and calls
-`MPI_Abort`. Because `MPI_Abort` terminates the process this test would
-need to be run in a separate executable or with a death-test framework.
+The public `checkOceanState` function is used for negative tests so that
+errors can be detected without triggering `MPI_Abort`. Each sub-test:
+1. Resets the state to valid values via `restoreValidState`.
+2. Injects a single type of invalid value (NaN or OOB) into one field using
+   a `parallelFor` kernel that overwrites all owned cell-layer entries.
+3. Calls `checkOceanState` and verifies a non-zero error count is returned.
 
-Tests requirement: 2.1, 2.3, 2.8.
+The following sub-tests are implemented:
 
-### 5.3 Test: Out-of-bounds value in Temperature triggers abort
+| Sub-test                      | Injected value         | Field              |
+|-------------------------------|------------------------|--------------------|
+| `testNaNLayerThickness`       | NaN                    | LayerThickness     |
+| `testOOBHighLayerThickness`   | 2000 m (> max 1000 m)  | LayerThickness     |
+| `testOOBLowLayerThickness`    | −1 m (< min 1×10⁻¹⁰)  | LayerThickness     |
+| `testNaNKineticEnergy`        | NaN                    | KineticEnergyCell  |
+| `testOOBKineticEnergy`        | 9999 J kg⁻¹ (> max 10) | KineticEnergyCell  |
+| `testNaNTemperature`          | NaN                    | Temperature        |
+| `testOOBTemperature`          | 9999 °C (> max 50)     | Temperature        |
+| `testNaNSalinity`             | NaN                    | Salinity           |
+| `testOOBSalinity`             | 9999 g kg⁻¹ (> max 60) | Salinity           |
 
-A future test should set a subset of `Temperature` entries to a value
-outside [−10, 50] (e.g. 999 °C) and verify that `validateOceanState`
-detects and logs the error.
-
-Tests requirement: 2.2, 2.5, 2.8.
-
-### 5.4 Test: Missing tracer is skipped gracefully
-
-A future test should invoke `validateOceanState` in a configuration where
-neither Temperature nor Salinity tracers are registered and verify that the
-function completes without error.
-
-Tests requirement: 2.9.
+Tests requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8.
