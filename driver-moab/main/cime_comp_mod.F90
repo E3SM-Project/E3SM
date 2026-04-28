@@ -2085,29 +2085,45 @@ contains
 
        ! init maps for So2a, Sl2a, Si2a, Fo2a, Fl2a, Fi2a
        ! MOAB: calculate o2a intx, l2a intx for tri-grid
+       call t_startf('CPL:prep_atm_init')
        call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_lnd)
+       call t_stopf('CPL:prep_atm_init')
 
        ! init maps for Sa2l, Fa2l, Fr2l, Sg2l, Fg2l
-       ! MOABTODO:  a2l intx for tri-grid  r2l intx for bi-grid intx
+       ! MOAB:  a2l intx for tri-grid  r2l intx for bi-grid intx
+       call t_startf('CPL:prep_lnd_init')
        call prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd, iac_c2_lnd)
+       call t_stopf('CPL:prep_lnd_init')
 
        ! init maps for Sa2o, Va2o, Fa2o, Fr2o, Rr2o_liq, Rr2o_ice, SFi2o, Rg2o_liq, Rg2o_ice, Sg2o, Fg2o, Sw2o
-       ! MOAB: calc a2o intx, read file for r2o,
+       ! MOAB: calc a2o intx
+       call t_startf('CPL:prep_ocn_init')
        call prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn)
+       call t_stopf('CPL:prep_ocn_init')
 
        ! init maps for SFo2i, Rg2i, Sg2i, Fg2i, Rr2i
        ! MOABTODO:  ocn 2 ice intx, r2i intx ?
+       call t_startf('CPL:prep_ice_init')
        call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice, wav_c2_ice)
+       call t_stopf('CPL:prep_ice_init')
 
        ! init maps for Sa2r, Fa2r, Fl2r
        ! MOABTODO:  l2r intx, a2r intx
+       call t_startf('CPL:prep_rof_init')
        call prep_rof_init(infodata, lnd_c2_rof, atm_c2_rof, ocn_c2_rof)
+       call t_stopf('CPL:prep_rof_init')
 
+       call t_startf('CPL:prep_glc_init')
        call prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glcshelf)
+       call t_stopf('CPL:prep_glc_init')
 
+       call t_startf('CPL:prep_wav_init')
        call prep_wav_init(infodata, atm_c2_wav, ocn_c2_wav, ice_c2_wav)
+       call t_stopf('CPL:prep_wav_init')
 
+       call t_startf('CPL:prep_iac_init')
        call prep_iac_init(infodata, lnd_c2_iac)
+       call t_stopf('CPL:prep_iac_init')
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        call t_adj_detailf(-2)

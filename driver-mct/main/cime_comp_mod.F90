@@ -2093,21 +2093,37 @@ contains
        call t_adj_detailf(+2)
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
+       call t_startf('CPL:prep_atm_init')
        call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_atm, wav_c2_atm)
+       call t_stopf('CPL:prep_atm_init')
 
+       call t_startf('CPL:prep_lnd_init')
        call prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd, iac_c2_lnd, ocn_c2_lnd)
+       call t_stopf('CPL:prep_lnd_init')
 
+       call t_startf('CPL:prep_ocn_init')
        call prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn)
+       call t_stopf('CPL:prep_ocn_init')
 
+       call t_startf('CPL:prep_ice_init')
        call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice, wav_c2_ice)
+       call t_stopf('CPL:prep_ice_init')
 
+       call t_startf('CPL:prep_rof_init')
        call prep_rof_init(infodata, lnd_c2_rof, atm_c2_rof, ocn_c2_rof)
+       call t_stopf('CPL:prep_rof_init')
 
+       call t_startf('CPL:prep_glc_init')
        call prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glctf, ocn_c2_glcshelf)
+       call t_stopf('CPL:prep_glc_init')
 
+       call t_startf('CPL:prep_wav_init')
        call prep_wav_init(infodata, atm_c2_wav, ocn_c2_wav, ice_c2_wav)
+       call t_stopf('CPL:prep_wav_init')
 
+       call t_startf('CPL:prep_iac_init')
        call prep_iac_init(infodata, lnd_c2_iac)
+       call t_stopf('CPL:prep_iac_init')
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        call t_adj_detailf(-2)
