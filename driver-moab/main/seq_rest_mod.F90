@@ -33,8 +33,8 @@ module seq_rest_mod
   use component_type_mod
 
   ! diagnostic routines
-  use seq_diag_mct,    only: budg_dataG, budg_ns
-  use seq_diagBGC_mct, only: budg_dataGBGC, budg_nsBGC
+  use seq_diag_moab,    only: budg_dataG, budg_ns
+  use seq_diagBGC_moab, only: budg_dataGBGC, budg_nsBGC
 
   ! Sets mpi communicators, logunit and loglevel
   use seq_comm_mct, only: seq_comm_getdata=>seq_comm_setptrs, seq_comm_setnthreads, &

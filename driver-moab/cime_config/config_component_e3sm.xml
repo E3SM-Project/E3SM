@@ -737,8 +737,8 @@
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <values match="last">
-      <value compset="EAM.*_MPASO"     >FALSE</value>
-      <value compset="EAM.*_DOCN%SOM">FALSE</value>
+      <value compset="EAM.*_MPASO"     >TRUE</value>
+      <value compset="EAM.*_DOCN%SOM">TRUE</value>
     </values>
     <group>run_budgets</group>
     <file>env_run.xml</file>
