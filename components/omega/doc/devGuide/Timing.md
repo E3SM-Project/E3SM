@@ -5,7 +5,7 @@
 The timing infrastructure builds upon the E3SM Pacer library for wall clock timing.
 Pacer integrates, whenever possible, platform-specific marker APIs.
 
-# Initialization
+## Initialization
 
 To initialize the Pacer library call
 ```c++
@@ -13,7 +13,7 @@ Pacer::initialize(Comm);
 ```
 where `Comm` is an MPI communicator.
 
-# Writing-out timing data
+## Writing-out timing data
 
 To write out timing data call
 ```c++
@@ -22,14 +22,14 @@ Pacer::print(FilePrefix, PrintAllRanks);
 where `FilePrefix` is the prefix for all output files and an optional argument `PrintAllRanks` determines
 if all MPI ranks should print their data.
 
-# Finalization
+## Finalization
 
 To finalize the Pacer library call
 ```c++
 Pacer::finalize();
 ```
 
-# Basic timer use
+## Basic timer use
 
 To time a region of code enclose it with calls to `Pacer::start` and `Pacer::stop` functions, like so
 ```c++
@@ -40,9 +40,9 @@ Pacer::stop(Name, Level);
 These functions take a string `Name` and a non-negative integer `Level`.
 The added timer will be active only if the timing level set in the config file is greater or equal to `Level`.
 
-# Advanced timing functions
+## Advanced timing functions
 
-## Conditional MPI barriers
+### Conditional MPI barriers
 
 Properly timing MPI communication might require inserting MPI barriers. It might be desirable
 to remove those barriers in production runs. Pacer provides a function
@@ -56,7 +56,7 @@ Whether barriers added by this function are actually called can be controlled by
   Pacer::disableTimingBarriers();
 ```
 
-## Adding parent prefixes
+### Adding parent prefixes
 
 It might be desirable to add a prefix to a group of timers based on their parent timer.
 To enable this Pacer provides the `addParentPrefix()` and `removeParentPrefix()` functions.
@@ -75,7 +75,7 @@ results in output where the "Child" timer shows up as "Parent:Child" in the outp
 This is useful when timers are added inside general purpose routines, that are called
 from many places in the code, such as halo exchange.
 
-## Disabling timers
+### Disabling timers
 
 It might be desirable programmatically disable or enable timing. To allow that, Pacer provides
 the `disableTimers()` and `enableTimers()` functions. In the following call sequence
