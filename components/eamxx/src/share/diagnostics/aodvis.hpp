@@ -1,7 +1,7 @@
 #ifndef EAMXX_AODVIS_DIAG
 #define EAMXX_AODVIS_DIAG
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 #include "share/util/eamxx_utils.hpp"
 
 namespace scream {

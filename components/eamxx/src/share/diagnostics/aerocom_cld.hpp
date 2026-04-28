@@ -1,7 +1,7 @@
 #ifndef EAMXX_AEROCOMCLD_DIAG
 #define EAMXX_AEROCOMCLD_DIAG
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 
 namespace scream {
 

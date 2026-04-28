@@ -2,7 +2,7 @@
 #ifndef EAMXX_VERT_CONTRACT_HPP
 #define EAMXX_VERT_CONTRACT_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 
 namespace scream {
 

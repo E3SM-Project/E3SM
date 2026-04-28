@@ -1,7 +1,7 @@
 #ifndef EAMXX_SURF_LATENT_HEAT_FLUX_HPP
 #define EAMXX_SURF_LATENT_HEAT_FLUX_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 
 namespace scream
 {

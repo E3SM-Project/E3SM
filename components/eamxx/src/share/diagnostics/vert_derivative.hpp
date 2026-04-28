@@ -2,7 +2,7 @@
 #ifndef EAMXX_VERT_DERIVATIVE_HPP
 #define EAMXX_VERT_DERIVATIVE_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 
 namespace scream {
 

@@ -1,7 +1,7 @@
 #ifndef EAMXX_SHORTWAVE_CLOUD_FORCING_DIAGNOSTIC_HPP
 #define EAMXX_SHORTWAVE_CLOUD_FORCING_DIAGNOSTIC_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 
 namespace scream
 {

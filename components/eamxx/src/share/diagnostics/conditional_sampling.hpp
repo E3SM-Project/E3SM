@@ -1,7 +1,7 @@
 #ifndef EAMXX_CONDITIONAL_SAMPLING_HPP
 #define EAMXX_CONDITIONAL_SAMPLING_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 
 namespace scream {
 

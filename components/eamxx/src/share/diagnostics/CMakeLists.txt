@@ -1,4 +1,5 @@
 add_library (eamxx_diagnostics
+  abstract_diagnostic.cpp
   aerocom_cld.cpp
   aodvis.cpp
   field_prev.cpp
@@ -31,7 +32,7 @@ add_library (eamxx_diagnostics
   conditional_sampling.cpp
 )
 
-target_link_libraries(eamxx_diagnostics PUBLIC eamxx_atm_process)
+target_link_libraries(eamxx_diagnostics PUBLIC eamxx_core eamxx_utils eamxx_field eamxx_grid)
 
 if (NOT SCREAM_LIB_ONLY AND NOT SCREAM_ONLY_GENERATE_BASELINES)
   add_subdirectory(tests)

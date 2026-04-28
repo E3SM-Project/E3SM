@@ -1,7 +1,7 @@
 #ifndef EAMXX_FIELD_OVER_DT_DIAG_HPP
 #define EAMXX_FIELD_OVER_DT_DIAG_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 
 namespace scream {

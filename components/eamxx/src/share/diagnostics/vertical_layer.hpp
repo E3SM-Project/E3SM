@@ -1,7 +1,7 @@
 #ifndef EAMXX_VERTICAL_LAY_MID_DIAGNOSTIC_HPP
 #define EAMXX_VERTICAL_LAY_MID_DIAGNOSTIC_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 
 namespace scream
 {

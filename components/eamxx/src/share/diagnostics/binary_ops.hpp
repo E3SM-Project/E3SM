@@ -1,7 +1,7 @@
 #ifndef EAMXX_BINARY_OPS_DIAG_HPP
 #define EAMXX_BINARY_OPS_DIAG_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 
 namespace scream {
 

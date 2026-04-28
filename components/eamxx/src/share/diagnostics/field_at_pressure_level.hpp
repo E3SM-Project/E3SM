@@ -1,7 +1,7 @@
 #ifndef EAMXX_FIELD_AT_PRESSURE_LEVEL_HPP
 #define EAMXX_FIELD_AT_PRESSURE_LEVEL_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 
 namespace scream
 {
