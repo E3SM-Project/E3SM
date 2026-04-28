@@ -48,8 +48,22 @@ void AbstractDiagnostic::compute_diagnostic (const util::TimeStamp& ts)
     return;
   }
 
-  m_last_eval_ts = ts;
+  bfbhash::HashType tsh = 0;
+  for (auto it : m_fields_in) {
+    const auto& fts = it.second.get_header().get_tracking().get_time_stamp();
+    util::hash(fts,tsh);
+  }
+
+  // If the diag was already evaluated, check if the input fields timestamps
+  // have changed since the last compute_diagnostic call.
+  if (m_last_eval_ts.is_valid() and m_fields_in.size()>0) {
+    if (tsh==m_last_eval_ts_hash) {
+      // Nothing has changed in the inputs since last evaluation, so we can return
+      return;
+    }
+  }
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
+  m_last_eval_ts = ts;
 
   // Note: call the impl method *after* setting the diag time stamp.
   // Some derived classes may "refuse" to compute the diag, due to some
@@ -57,6 +71,9 @@ void AbstractDiagnostic::compute_diagnostic (const util::TimeStamp& ts)
   // to something invalid, which can be used by downstream classes to determine
   // if the diag has been successfully computed or not.
   compute_diagnostic_impl ();
+
+  // Update the inputs ts hash of last evaluation
+  m_last_eval_ts_hash = tsh;
 }
 
 } // namespace scream

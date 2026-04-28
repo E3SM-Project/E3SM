@@ -4,6 +4,7 @@
 #include "share/field/field.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
+#include "share/util/eamxx_bfbhash.hpp"
 
 #include <ekat_comm.hpp>
 #include <ekat_parameter_list.hpp>
@@ -89,6 +90,8 @@ protected:
   // Input fields
   std::list<std::string>        m_field_in_names;
   std::map<std::string,Field>   m_fields_in;
+
+  bfbhash::HashType             m_last_eval_ts_hash = 0;
 
   bool m_is_initialized = false;
 };
