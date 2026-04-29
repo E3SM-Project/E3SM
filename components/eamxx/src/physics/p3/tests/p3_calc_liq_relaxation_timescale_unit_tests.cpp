@@ -140,7 +140,7 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
 
   void run_phys()
   {
-    auto revap_table_vals = Functions::p3_init().revap_table_vals;
+    const auto& revap_table_vals = this->lookup_tables.revap_table_vals;
 
     // Algebraic identities should hold to roundoff. kAbsoluteTol protects
     // exact-zero checks in near-zero regimes, while identity_tol scales with
@@ -523,8 +523,7 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
     // production outputs remain identical to the stored baseline.
     auto engine = Base::get_engine();
 
-    // Read in tables
-    auto revap_table_vals = Functions::p3_init().revap_table_vals;
+    const auto& revap_table_vals = this->lookup_tables.revap_table_vals;
 
     using KTH = KokkosTypes<HostDevice>;
 
