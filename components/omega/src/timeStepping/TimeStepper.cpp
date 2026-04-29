@@ -8,9 +8,9 @@
 #include "Config.h"
 #include "Error.h"
 #include "ForwardBackwardStepper.h"
+#include "Logging.h"
 #include "RungeKutta2Stepper.h"
 #include "RungeKutta4Stepper.h"
-#include "Logging.h"
 
 namespace OMEGA {
 //------------------------------------------------------------------------------
@@ -21,9 +21,9 @@ TimeStepper *TimeStepper::DefaultTimeStepper = nullptr;
 std::map<std::string, std::unique_ptr<TimeStepper>>
     TimeStepper::AllTimeSteppers;
 PrescribeStateType TimeStepper::DefaultPrescribeThicknessMode =
-   PrescribeStateType::None;
+    PrescribeStateType::None;
 PrescribeStateType TimeStepper::DefaultPrescribeVelocityMode =
-   PrescribeStateType::None;
+    PrescribeStateType::None;
 
 //------------------------------------------------------------------------------
 // utility functions
@@ -48,7 +48,8 @@ TimeStepperType getTimeStepperFromStr(const std::string &InString) {
    return TimeStepperChoice;
 }
 
-PrescribeStateType getPrescribeThicknessTypeFromStr(const std::string &InString) {
+PrescribeStateType
+getPrescribeThicknessTypeFromStr(const std::string &InString) {
 
    if (InString == "None") {
       return PrescribeStateType::None;
@@ -57,23 +58,26 @@ PrescribeStateType getPrescribeThicknessTypeFromStr(const std::string &InString)
       return PrescribeStateType::Init;
    }
 
-   ABORT_ERROR("PrescribeStateType should be 'None' or 'Init' for thickness but got {}",
-               InString);
+   ABORT_ERROR(
+       "PrescribeStateType should be 'None' or 'Init' for thickness but got {}",
+       InString);
    return PrescribeStateType::Invalid;
 }
-PrescribeStateType getPrescribeVelocityTypeFromStr(const std::string &InString) {
+PrescribeStateType
+getPrescribeVelocityTypeFromStr(const std::string &InString) {
 
    if (InString == "None") {
       return PrescribeStateType::None;
-   }else if (InString == "Init") {
+   } else if (InString == "Init") {
       return PrescribeStateType::Init;
-   }else if (InString == "NonDivergent") {
+   } else if (InString == "NonDivergent") {
       return PrescribeStateType::NonDivergent;
-   }else if (InString == "Divergent") {
+   } else if (InString == "Divergent") {
       return PrescribeStateType::Divergent;
    }
 
-   ABORT_ERROR("PrescribeStateType should be 'None', 'Init', 'NonDivergent' or 'Divergent' for velocity but got {}",
+   ABORT_ERROR("PrescribeStateType should be 'None', 'Init', 'NonDivergent' or "
+               "'Divergent' for velocity but got {}",
                InString);
    return PrescribeStateType::Invalid;
 }
@@ -153,10 +157,8 @@ TimeStepper *TimeStepper::create(
       ABORT_ERROR("Unknown time stepping method");
    }
 
-   NewTimeStepper->PrescribeThicknessMode =
-      DefaultPrescribeThicknessMode;
-   NewTimeStepper->PrescribeVelocityMode =
-      DefaultPrescribeVelocityMode;
+   NewTimeStepper->PrescribeThicknessMode = DefaultPrescribeThicknessMode;
+   NewTimeStepper->PrescribeVelocityMode  = DefaultPrescribeVelocityMode;
 
    // Attach data pointers
    NewTimeStepper->attachData(InTend, InAuxState, InMesh, InVCoord, InMeshHalo);
@@ -209,10 +211,8 @@ TimeStepper *TimeStepper::create(
       ABORT_ERROR("Unknown time stepping method");
    }
 
-   NewTimeStepper->PrescribeThicknessMode =
-      DefaultPrescribeThicknessMode;
-   NewTimeStepper->PrescribeVelocityMode =
-      DefaultPrescribeVelocityMode;
+   NewTimeStepper->PrescribeThicknessMode = DefaultPrescribeThicknessMode;
+   NewTimeStepper->PrescribeVelocityMode  = DefaultPrescribeVelocityMode;
 
    // Store instance
    AllTimeSteppers.emplace(InName, NewTimeStepper);
@@ -346,7 +346,8 @@ void TimeStepper::init1() {
    Error StateErr = OmegaConfig->get(StateConfig);
    if (StateErr.isSuccess()) {
       std::string ThicknessMode;
-      if (StateConfig.get("PrescribeThicknessType", ThicknessMode).isSuccess()) {
+      if (StateConfig.get("PrescribeThicknessType", ThicknessMode)
+              .isSuccess()) {
          TimeStepper::DefaultPrescribeThicknessMode =
              getPrescribeThicknessTypeFromStr(ThicknessMode);
       }
@@ -545,7 +546,7 @@ void TimeStepper::prescribeThickness(OceanState *State1, int TimeLevel1,
 
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
-                    const int K = KMin + KChunk;
+                    const int K           = KMin + KChunk;
                     LayerThick1(ICell, K) = LayerThick2(ICell, K);
                  });
           });
@@ -555,8 +556,8 @@ void TimeStepper::prescribeThickness(OceanState *State1, int TimeLevel1,
 
 //------------------------------------------------------------------------------
 void TimeStepper::prescribeVelocity(OceanState *State1, int TimeLevel1,
-                           OceanState *State2, int TimeLevel2,
-                           const TimeInstant &SimTime) const {
+                                    OceanState *State2, int TimeLevel2,
+                                    const TimeInstant &SimTime) const {
 
    if (PrescribeVelocityMode == PrescribeStateType::None) {
       return;
@@ -578,7 +579,7 @@ void TimeStepper::prescribeVelocity(OceanState *State1, int TimeLevel1,
 
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
-                    const int K = KMin + KChunk;
+                    const int K          = KMin + KChunk;
                     NormalVel2(IEdge, K) = NormalVel1(IEdge, K);
                  });
           });
@@ -597,8 +598,8 @@ void TimeStepper::prescribeVelocity(OceanState *State1, int TimeLevel1,
       TimeInterval ElapsedTimeInterval = SimTime - ModelClock->getStartTime();
       ElapsedTimeInterval.get(ElapsedTimeSec, TimeUnits::Seconds);
 
-      const R8 Tau     = 12. * Day2Sec; // 12 days in seconds
-      const R8 TSim    = ElapsedTimeSec;
+      const R8 Tau  = 12. * Day2Sec; // 12 days in seconds
+      const R8 TSim = ElapsedTimeSec;
 
       parallelForOuter(
           "prescribeVelocityNonDivergent", {Mesh->NEdgesAll},
@@ -607,21 +608,19 @@ void TimeStepper::prescribeVelocity(OceanState *State1, int TimeLevel1,
              const int KMax   = MaxLayerEdgeTop(IEdge);
              const int KRange = vertRange(KMin, KMax);
 
-             const R8 lon_p =
-                 LonEdge(IEdge) - 2.0 * Pi * TSim / Tau;
-             const R8 u = (1 / Tau) *
-                          (10.0 * Kokkos::pow(sin(lon_p), 2) *
-                           sin(2.0 * LatEdge(IEdge)) *
-                           cos(Pi * TSim / Tau) +
-                           2.0 * Pi * cos(LatEdge(IEdge)));
-             const R8 v = (10.0 / Tau) * sin(2.0 * lon_p) *
+             const R8 lon_p = LonEdge(IEdge) - 2.0 * Pi * TSim / Tau;
+             const R8 u     = (1 / Tau) * (10.0 * Kokkos::pow(sin(lon_p), 2) *
+                                           sin(2.0 * LatEdge(IEdge)) *
+                                           cos(Pi * TSim / Tau) +
+                                       2.0 * Pi * cos(LatEdge(IEdge)));
+             const R8 v     = (10.0 / Tau) * sin(2.0 * lon_p) *
                           cos(LatEdge(IEdge)) * cos(Pi * TSim / Tau);
-             const R8 normalVel = REarth * (
-                 u * cos(AngleEdge(IEdge)) + v * sin(AngleEdge(IEdge)));
+             const R8 normalVel = REarth * (u * cos(AngleEdge(IEdge)) +
+                                            v * sin(AngleEdge(IEdge)));
 
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
-                    const int K = KMin + KChunk;
+                    const int K          = KMin + KChunk;
                     NormalVel2(IEdge, K) = normalVel;
                  });
           });
@@ -640,8 +639,8 @@ void TimeStepper::prescribeVelocity(OceanState *State1, int TimeLevel1,
       TimeInterval ElapsedTimeInterval = SimTime - ModelClock->getStartTime();
       ElapsedTimeInterval.get(ElapsedTimeSec, TimeUnits::Seconds);
 
-      const R8 Tau     = 12. * Day2Sec; // 14 days in seconds
-      const R8 TSim    = ElapsedTimeSec;
+      const R8 Tau  = 12. * Day2Sec; // 14 days in seconds
+      const R8 TSim = ElapsedTimeSec;
 
       parallelForOuter(
           "prescribeVelocityDivergent", {Mesh->NEdgesAll},
@@ -650,24 +649,22 @@ void TimeStepper::prescribeVelocity(OceanState *State1, int TimeLevel1,
              const int KMax   = MaxLayerEdgeTop(IEdge);
              const int KRange = vertRange(KMin, KMax);
 
-             const R8 lon_p =
-                 LonEdge(IEdge) - 2.0 * Pi * TSim / Tau;
-             const R8 u = (1.0 / Tau) *
-                          (-5.0 * Kokkos::pow(sin(lon_p / 2), 2) *
-                          sin(2.0 * LatEdge(IEdge)) *
-                          Kokkos::pow(cos(LatEdge(IEdge)), 2) *
-                          cos(Pi * TSim / Tau) +
-                          2.0 * Pi * cos(LatEdge(IEdge)));
-             const R8 v = ((2.5 / Tau) *
-                           sin(lon_p) *
-                           Kokkos::pow(cos(LatEdge(IEdge)), 3) *
-                           cos(Pi * TSim / Tau));
-             const R8 normalVel = REarth * (
-                 u * cos(AngleEdge(IEdge)) + v * sin(AngleEdge(IEdge)));
+             const R8 lon_p = LonEdge(IEdge) - 2.0 * Pi * TSim / Tau;
+             const R8 u =
+                 (1.0 / Tau) * (-5.0 * Kokkos::pow(sin(lon_p / 2), 2) *
+                                    sin(2.0 * LatEdge(IEdge)) *
+                                    Kokkos::pow(cos(LatEdge(IEdge)), 2) *
+                                    cos(Pi * TSim / Tau) +
+                                2.0 * Pi * cos(LatEdge(IEdge)));
+             const R8 v =
+                 ((2.5 / Tau) * sin(lon_p) *
+                  Kokkos::pow(cos(LatEdge(IEdge)), 3) * cos(Pi * TSim / Tau));
+             const R8 normalVel = REarth * (u * cos(AngleEdge(IEdge)) +
+                                            v * sin(AngleEdge(IEdge)));
 
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
-                    const int K = KMin + KChunk;
+                    const int K          = KMin + KChunk;
                     NormalVel2(IEdge, K) = normalVel;
                  });
           });

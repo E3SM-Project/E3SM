@@ -45,7 +45,7 @@ void ForwardBackwardStepper::doStep(
    if (AuxState == nullptr)
       LOG_CRITICAL("Invalid AuxState");
 
-   prescribeVelocity(State, CurLevel, State, CurLevel,SimTime);
+   prescribeVelocity(State, CurLevel, State, CurLevel, SimTime);
 
    // R_u^{n} = RHS_u(u^{n}, h^{n}, t^{n})
    Tend->computeVelocityTendencies(State, AuxState, CurTracerArray,
