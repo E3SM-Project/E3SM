@@ -15,27 +15,27 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   # This serves as a base case for the following fail checks, since it verifies that
   #  - a REQUIRE clause that fails makes the test fail
   #  - Our Create unit test logic does work for  catching failures
-  CreateUnitTest (fail "fail.cpp"
+  CreateUnitTest (eamxx_fail "eamxx_fail.cpp"
     WILL_FAIL LABELS "fail")
 
   if (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK)
     # Ensure that Kokkos OOB are caught
-    CreateUnitTest (kokkos_fail "kokkos_fail.cpp"
+    CreateUnitTest (eamxx_kokkos_fail "eamxx_kokkos_fail.cpp"
       WILL_FAIL LABELS "fail")
   endif()
 
   if (EKAT_ENABLE_VALGRIND)
     # Ensure that valgrind errors are caught
-    EkatCreateUnitTest (valg_fail "valg_fail.cpp"
+    EkatCreateUnitTest (eamxx_valg_fail "eamxx_valg_fail.cpp"
       WILL_FAIL LABELS "fail")
   endif()
 
   # Ensure that FPE *do* throw when we expect them to
   if (SCREAM_FPE)
-    CreateUnitTest (fpe_check "fpe_check.cpp"
+    CreateUnitTest (eamxx_fpe_check "eamxx_fpe_check.cpp"
       WILL_FAIL LABELS "check")
   else()
-    CreateUnitTest (fpe_check "fpe_check.cpp"
+    CreateUnitTest (eamxx_fpe_check "eamxx_fpe_check.cpp"
       LABELS "check")
   endif()
 endif()
