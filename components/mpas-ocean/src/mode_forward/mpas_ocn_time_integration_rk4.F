@@ -1355,7 +1355,7 @@ module ocn_time_integration_rk4
          !$acc enter data copyin(landIceDraft)
       endif
 #endif
-      call ocn_diagnostic_solve(dt, provisStatePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool, 1)
+      call ocn_diagnostic_solve(dt, provisStatePool, forcingPool, meshPool, verticalMeshPool, scratchPool, provisTracersPool, 1)
 #ifdef MPAS_OPENACC
       !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
       !$acc update host(relativeVorticity, circulation)
