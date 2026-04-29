@@ -552,7 +552,7 @@ contains
       ! two dimensional pointers
       !
       real (kind=RKIND), dimension(:), pointer :: &
-         dust_FLUX_IN, PAR_surface, shortWaveHeatFlux
+         dust_FLUX_IN, PAR_surface, shortWaveHeatFlux, iceFluxDust, iceFraction
 
       ! two dimensional arrays
       real (kind=RKIND), dimension(:,:), pointer :: &
@@ -588,6 +588,7 @@ contains
                                         ecosysDiagFieldsLevel4,  &
                                         ecosysDiagFieldsLevel5
 
+      type (mpas_pool_type), pointer :: ecosysSeaIceCoupling
       !
       ! level 1 diagnostics
       !
@@ -950,10 +951,19 @@ contains
          call mpas_pool_get_array(ecosysDiagFieldsLevel5, 'ecosys_diag_SiO3_RESTORE', ecosys_diag_SiO3_RESTORE)
       endif
 
+      if (config_use_ecosystracers_sea_ice_coupling) then
+         call mpas_pool_get_subpool(forcingPool, 'ecosysSeaIceCoupling', ecosysSeaIceCoupling)
+         call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxDust', iceFluxDust)
+      endif
+
       numColumns = 1
       column = 1
       !DWJ 08/05/2016: This loop needs OpenMP added to it.
       do iCell=1,nCellsSolve
+         if(config_use_ecosystracers_sea_ice_coupling) &
+            dust_FLUX_IN(iCell) = (1.0_RKIND - iceFraction(iCell))*dust_FLUX_IN(iCell)  &
+                                + max(0.0_RKIND,iceFluxDust(iCell))
 
          marbl_instances(1)%domain%kmt = maxLevelCell(iCell)
          marbl_instances(1)%interior_tendency_forcings(dustFlux_indexInMARBL)%field_0d(1)  = dust_FLUX_IN(iCell)
@@ -1698,13 +1708,19 @@ contains
          iceFraction,          &
          landIceFraction
 
+
 ! input flux components in ecosysAuxiliary
       real (kind=RKIND), dimension(:), pointer :: &
          windSpeedSquared10m,  &
          depositionFluxNO3,    &
          depositionFluxNH4,    &
          IRON_FLUX_IN,         &
+         IRON_Solubility_wet,  &
+         IRON_Solubility_dry,  &
+         IRON_in_dust_fraction,&
          dust_FLUX_IN,         &
+         dust_FLUX_WET,        &
+         dust_FLUX_DRY,        &
          riverFluxNO3,         &
          riverFluxPO4,         &
          riverFluxDON,         &
@@ -1725,6 +1741,7 @@ contains
          iceFluxSiO3,          &
          iceFluxNH4,           &
          iceFluxDOCr,          &
+         iceFluxDust,          &
          iceFluxFeDissolved
 
    real (kind=RKIND), dimension(:,:), pointer :: iceFluxPhytoC, &
@@ -1812,8 +1829,16 @@ contains
          call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxDOCr', iceFluxDOCr)
          call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxDOC', iceFluxDOC)
          call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxDON', iceFluxDON)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxDust', iceFluxDust)
          call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxFeDissolved', iceFluxFeDissolved)
 
+      endif
+      if (config_use_ecosysTracers_iron_solubility_file) then
+        call mpas_pool_get_array(ecosysAuxiliary, 'IRON_Solubility_wet', IRON_Solubility_wet)
+        call mpas_pool_get_array(ecosysAuxiliary, 'IRON_Solubility_dry', IRON_Solubility_dry)
+        call mpas_pool_get_array(ecosysAuxiliary, 'IRON_in_dust_fraction', IRON_in_dust_fraction)
+        call mpas_pool_get_array(ecosysAuxiliary, 'dust_FLUX_WET', dust_FLUX_WET)
+        call mpas_pool_get_array(ecosysAuxiliary, 'dust_FLUX_DRY', dust_FLUX_DRY)
       endif
 
       if (config_ecosysTracers_diagnostic_fields_level2) then
@@ -1866,14 +1891,22 @@ contains
             activeTracers(indexTemperature,iLevelSurface,iCell)
          marbl_instances(1)%surface_flux_forcings(sss_indexInMARBL)%field_0d(iCell) = &
             activeTracers(indexSalinity,iLevelSurface,iCell)
-! NOTE pass in total Fe and mult by parm_Fe_bioavail inside the flux routine
-!  divide river Fe by bioavail since it is already the available to make it total
-         marbl_instances(1)%surface_flux_forcings(ironFlux_indexInMARBL)%field_0d(iCell) = &
-            IRON_FLUX_IN(iCell)
          marbl_instances(1)%surface_flux_forcings(noxFlux_indexInMARBL)%field_0d(iCell) = &
             depositionFluxNO3(iCell)
          marbl_instances(1)%surface_flux_forcings(nhyFlux_indexInMARBL)%field_0d(iCell) = &
             depositionFluxNH4(iCell)
+
+         if (config_use_ecosysTracers_iron_solubility_file) &
+            IRON_FLUX_IN(iCell) = ( dust_FLUX_WET(iCell)*IRON_Solubility_wet(iCell)    &
+                                    + dust_FLUX_DRY(iCell)*IRON_Solubility_dry(iCell) )  &
+                                    * IRON_in_dust_fraction(iCell)*1.e6_RKIND/molecular_weight_Fe
+         if (config_use_ecosystracers_sea_ice_coupling) &
+            IRON_FLUX_IN(iCell) = (1.0_RKIND - iceFraction(iCell))*IRON_FLUX_IN(iCell)  &
+                                + iceFluxFeDissolved(iCell)
+
+! NOTE pass in total Fe and mult by parm_Fe_bioavail inside the flux routine
+         marbl_instances(1)%surface_flux_forcings(ironFlux_indexInMARBL)%field_0d(iCell) = &
+            IRON_FLUX_IN(iCell)
          marbl_instances(1)%surface_flux_forcings(dustFluxSurface_indexInMARBL)%field_0d(iCell) = &
             dust_FLUX_IN(iCell)
 
@@ -1951,6 +1984,7 @@ contains
          ecosysSurfaceFlux(sio3_ind_MPAS,iCell) =  &
             ecosysSurfaceFlux(sio3_ind_MPAS,iCell) + riverFluxSiO3(iCell)
          ecosysSurfaceFlux(fe_ind_MPAS,iCell) =  &
+!  divide river Fe by bioavail since it is already the available to make it total
             ecosysSurfaceFlux(fe_ind_MPAS,iCell) + riverFluxFe(iCell) / parm_Fe_bioavail
          ecosysSurfaceFlux(dic_ind_MPAS,iCell) =  &
             ecosysSurfaceFlux(dic_ind_MPAS,iCell) + riverFluxDIC(iCell)
@@ -2132,7 +2166,12 @@ contains
          depositionFluxNO3,    &
          depositionFluxNH4,    &
          IRON_FLUX_IN,         &
+         IRON_Solubility_wet,  &
+         IRON_Solubility_dry,  &
+         IRON_in_dust_fraction,&
          dust_FLUX_IN,         &
+         dust_FLUX_WET,        &
+         dust_FLUX_DRY,        &
          riverFluxNO3,         &
          riverFluxPO4,         &
          riverFluxDON,         &
@@ -2148,7 +2187,12 @@ contains
          depositionFluzNO3,    &
          depositionFluzNH4,    &
          IRON_FLUZ_IN,         &
+         IRON_Zolubility_wet,  &
+         IRON_Zolubility_dry,  &
+         IRON_in_duzt_fraction,&
          dust_FLUZ_IN,         &
+         dust_FLUZ_WET,        &
+         dust_FLUZ_DRY,        &
          riverFluzNO3,         &
          riverFluzPO4,         &
          riverFluzDON,         &
@@ -2422,10 +2466,27 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'forcing', forcingPool)
       call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
 
+! make sure that if config_use_ecosysTracers_atm_dust_from_coupler is true, then 
+!  config_use_ecosysTracers_iron_solubility_file is also true
+
+      if (config_use_ecosysTracers_atm_dust_from_coupler .and.  &
+          .not. config_use_ecosysTracers_iron_solubility_file) then
+        call mpas_log_write('Abort: In ocn_tracer_ecosys_init' // &
+            ' must have config_use_ecosysTracers_iron_solubility_file true if ' // &
+            'config_use_ecosysTracers_atm_dust_from_coupler is true', MPAS_LOG_CRIT)
+      endif
+
       call mpas_pool_get_array(ecosysAuxiliary, 'depositionFluxNO3', depositionFluxNO3)
       call mpas_pool_get_array(ecosysAuxiliary, 'depositionFluxNH4', depositionFluxNH4)
       call mpas_pool_get_array(ecosysAuxiliary, 'IRON_FLUX_IN', IRON_FLUX_IN)
       call mpas_pool_get_array(ecosysAuxiliary, 'dust_FLUX_IN', dust_FLUX_IN)
+      if (config_use_ecosysTracers_iron_solubility_file) then
+        call mpas_pool_get_array(ecosysAuxiliary, 'IRON_Solubility_wet', IRON_Solubility_wet)
+        call mpas_pool_get_array(ecosysAuxiliary, 'IRON_Solubility_dry', IRON_Solubility_dry)
+        call mpas_pool_get_array(ecosysAuxiliary, 'IRON_in_dust_fraction', IRON_in_dust_fraction)
+        call mpas_pool_get_array(ecosysAuxiliary, 'dust_FLUX_WET', dust_FLUX_WET)
+        call mpas_pool_get_array(ecosysAuxiliary, 'dust_FLUX_DRY', dust_FLUX_DRY)
+      endif
       if (.not. config_use_ecosysTracers_river_inputs_from_coupler) then
         call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxNO3', riverFluxNO3)
         call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxPO4', riverFluxPO4)
@@ -2444,6 +2505,13 @@ contains
       call mpas_pool_get_array(ecosysMonthlyForcing, 'depositionFluzNH4', depositionFluzNH4)
       call mpas_pool_get_array(ecosysMonthlyForcing, 'IRON_FLUZ_IN', IRON_FLUZ_IN)
       call mpas_pool_get_array(ecosysMonthlyForcing, 'dust_FLUZ_IN', dust_FLUZ_IN)
+      if (config_use_ecosysTracers_iron_solubility_file) then
+        call mpas_pool_get_array(ecosysMonthlyForcing, 'IRON_Zolubility_wet', IRON_Zolubility_wet)
+        call mpas_pool_get_array(ecosysMonthlyForcing, 'IRON_Zolubility_dry', IRON_Zolubility_dry)
+        call mpas_pool_get_array(ecosysMonthlyForcing, 'IRON_in_duzt_fraction', IRON_in_duzt_fraction)
+        call mpas_pool_get_array(ecosysMonthlyForcing, 'dust_FLUZ_WET', dust_FLUZ_WET)
+        call mpas_pool_get_array(ecosysMonthlyForcing, 'dust_FLUZ_DRY', dust_FLUZ_DRY)
+      endif
       if (.not. config_use_ecosysTracers_river_inputs_from_coupler) then
         call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzNO3', riverFluzNO3)
         call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzPO4', riverFluzPO4)
@@ -2478,27 +2546,62 @@ contains
                 forcingReferenceTimeMonthly,  &
                 forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
-                forcingGroupHead, &
-                'ecosysMonthlyClimatology', &
-                'IRON_FLUZ_IN', &
-                'ecosys_monthly_flux', &
-                'ecosysMonthlyForcing',  &
-                'IRON_FLUZ_IN',  &
-                'linear',  &
-                forcingReferenceTimeMonthly,  &
-                forcingIntervalMonthly)
+      if (.not. config_use_ecosysTracers_iron_solubility_file) then
+        call MPAS_forcing_init_field( domain % streamManager, &
+                  forcingGroupHead, &
+                  'ecosysMonthlyClimatology', &
+                  'IRON_FLUZ_IN', &
+                  'ecosys_monthly_flux', &
+                  'ecosysMonthlyForcing',  &
+                  'IRON_FLUZ_IN',  &
+                  'linear',  &
+                  forcingReferenceTimeMonthly,  &
+                  forcingIntervalMonthly)
 
-      call MPAS_forcing_init_field( domain % streamManager, &
-                forcingGroupHead, &
-                'ecosysMonthlyClimatology', &
-                'dust_FLUZ_IN', &
-                'ecosys_monthly_flux', &
-                'ecosysMonthlyForcing',  &
-                'dust_FLUZ_IN',  &
-                'linear',  &
-                forcingReferenceTimeMonthly,  &
-                forcingIntervalMonthly)
+        call MPAS_forcing_init_field( domain % streamManager, &
+                  forcingGroupHead, &
+                  'ecosysMonthlyClimatology', &
+                  'dust_FLUZ_IN', &
+                  'ecosys_monthly_flux', &
+                  'ecosysMonthlyForcing',  &
+                  'dust_FLUZ_IN',  &
+                  'linear',  &
+                  forcingReferenceTimeMonthly,  &
+                  forcingIntervalMonthly)
+      else
+        call MPAS_forcing_init_field( domain % streamManager, &
+                  forcingGroupHead, &
+                  'ecosysMonthlyClimatology', &
+                  'IRON_Zolubility_wet', &
+                  'ecosys_monthly_flux', &
+                  'ecosysMonthlyForcing',  &
+                  'IRON_Zolubility_wet',  &
+                  'linear',  &
+                  forcingReferenceTimeMonthly,  &
+                  forcingIntervalMonthly)
+
+        call MPAS_forcing_init_field( domain % streamManager, &
+                  forcingGroupHead, &
+                  'ecosysMonthlyClimatology', &
+                  'IRON_Zolubility_dry', &
+                  'ecosys_monthly_flux', &
+                  'ecosysMonthlyForcing',  &
+                  'IRON_Zolubility_dry',  &
+                  'linear',  &
+                  forcingReferenceTimeMonthly,  &
+                  forcingIntervalMonthly)
+
+        call MPAS_forcing_init_field( domain % streamManager, &
+                  forcingGroupHead, &
+                  'ecosysMonthlyClimatology', &
+                  'IRON_in_duzt_fraction', &
+                  'ecosys_monthly_flux', &
+                  'ecosysMonthlyForcing',  &
+                  'IRON_in_duzt_fraction',  &
+                  'linear',  &
+                  forcingReferenceTimeMonthly,  &
+                  forcingIntervalMonthly)
+      endif
 
 ! only read in river fluxes if not getting them from coupler
       if (.not. config_use_ecosysTracers_river_inputs_from_coupler) then
@@ -2655,6 +2758,11 @@ contains
          depositionFluxNH4,    &
          IRON_FLUX_IN,         &
          dust_FLUX_IN,         &
+         dust_FLUX_WET,        &
+         dust_FLUX_DRY,        &
+         IRON_Solubility_wet,  &
+         IRON_Solubility_dry,  &
+         IRON_in_dust_fraction,&
          riverFluxNO3,         &
          riverFluxPO4,         &
          riverFluxDON,         &
@@ -2671,6 +2779,11 @@ contains
          depositionFluzNH4,    &
          IRON_FLUZ_IN,         &
          dust_FLUZ_IN,         &
+         dust_FLUZ_WET,        &
+         dust_FLUZ_DRY,        &
+         IRON_Zolubility_wet,  &
+         IRON_Zolubility_dry,  &
+         IRON_in_duzt_fraction,&
          riverFluzNO3,         &
          riverFluzPO4,         &
          riverFluzDON,         &
@@ -2706,6 +2819,13 @@ contains
         call mpas_pool_get_array(ecosysAuxiliary, 'depositionFluxNH4', depositionFluxNH4)
         call mpas_pool_get_array(ecosysAuxiliary, 'IRON_FLUX_IN', IRON_FLUX_IN)
         call mpas_pool_get_array(ecosysAuxiliary, 'dust_FLUX_IN', dust_FLUX_IN)
+        if (config_use_ecosysTracers_iron_solubility_file) then
+          call mpas_pool_get_array(ecosysAuxiliary, 'IRON_Solubility_wet', IRON_Solubility_wet)
+          call mpas_pool_get_array(ecosysAuxiliary, 'IRON_Solubility_dry', IRON_Solubility_dry)
+          call mpas_pool_get_array(ecosysAuxiliary, 'IRON_in_dust_fraction', IRON_in_dust_fraction)
+          call mpas_pool_get_array(ecosysAuxiliary, 'dust_FLUX_WET', dust_FLUX_WET)
+          call mpas_pool_get_array(ecosysAuxiliary, 'dust_FLUX_DRY', dust_FLUX_DRY)
+        endif
         if (.not. config_use_ecosysTracers_river_inputs_from_coupler) then
           call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxNO3', riverFluxNO3)
           call mpas_pool_get_array(ecosysAuxiliary, 'riverFluxPO4', riverFluxPO4)
@@ -2722,6 +2842,13 @@ contains
         call mpas_pool_get_array(ecosysMonthlyForcing, 'depositionFluzNH4', depositionFluzNH4)
         call mpas_pool_get_array(ecosysMonthlyForcing, 'IRON_FLUZ_IN', IRON_FLUZ_IN)
         call mpas_pool_get_array(ecosysMonthlyForcing, 'dust_FLUZ_IN', dust_FLUZ_IN)
+        if (config_use_ecosysTracers_iron_solubility_file) then
+          call mpas_pool_get_array(ecosysMonthlyForcing, 'IRON_Zolubility_wet', IRON_Zolubility_wet)
+          call mpas_pool_get_array(ecosysMonthlyForcing, 'IRON_Zolubility_dry', IRON_Zolubility_dry)
+          call mpas_pool_get_array(ecosysMonthlyForcing, 'IRON_in_duzt_fraction', IRON_in_duzt_fraction)
+          call mpas_pool_get_array(ecosysMonthlyForcing, 'dust_FLUZ_WET', dust_FLUZ_WET)
+          call mpas_pool_get_array(ecosysMonthlyForcing, 'dust_FLUZ_DRY', dust_FLUZ_DRY)
+        endif
         if (.not. config_use_ecosysTracers_river_inputs_from_coupler) then
           call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzNO3', riverFluzNO3)
           call mpas_pool_get_array(ecosysMonthlyForcing, 'riverFluzPO4', riverFluzPO4)
@@ -2737,8 +2864,25 @@ contains
         do iCell = 1, nCells
            depositionFluxNO3(iCell) = depositionFluzNO3(iCell)
            depositionFluxNH4(iCell) = depositionFluzNH4(iCell)
-           IRON_FLUX_IN(iCell)      = IRON_FLUZ_IN(iCell)
-           dust_FLUX_IN(iCell)      = dust_FLUZ_IN(iCell)
+           if (config_use_ecosysTracers_iron_solubility_file) then
+! calculate Fe flux from dust, solubility, fraction
+! Fe flux units are mmol/m2/s, dust is kg/m2/s
+! use same value for atomic weight of Fe as mpas-seaice and MarBL
+             IRON_Solubility_wet(iCell)   = IRON_Zolubility_wet(iCell)
+             IRON_Solubility_dry(iCell)   = IRON_Zolubility_dry(iCell)
+             IRON_in_dust_fraction(iCell) = IRON_in_duzt_fraction(iCell)
+
+! only use dust fluxes from file if not coming from the coupler
+             if (.not. config_use_ecosysTracers_atm_dust_from_coupler) then
+               dust_FLUX_WET(iCell) = dust_FLUZ_WET(iCell)
+               dust_FLUX_DRY(iCell) = dust_FLUZ_DRY(iCell)
+               dust_FLUX_IN(iCell)  = dust_FLUX_WET(iCell) + dust_FLUX_DRY(iCell)
+             endif
+
+           else
+             IRON_FLUX_IN(iCell)   = IRON_FLUZ_IN(iCell)
+             dust_FLUX_IN(iCell)   = dust_FLUZ_IN(iCell)
+           endif
         enddo
 
         if (.not. config_use_ecosysTracers_river_inputs_from_coupler) then
