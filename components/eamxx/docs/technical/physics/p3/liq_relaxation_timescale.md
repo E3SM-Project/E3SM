@@ -13,7 +13,7 @@ The routine computes two liquid-phase relaxation-rate coefficients used by P3:
 - `epsr`, the rain relaxation-rate coefficient
 - `epsc`, the cloud-liquid relaxation-rate coefficient
 
-The rain expression combines an analytic collection term with a
+The rain expression combines an analytic gamma-distribution term with a
 ventilation-enhanced lookup-table term. The cloud-liquid expression is a direct
 closed-form product.
 
@@ -89,12 +89,13 @@ overwriting active rain lanes.
 - $\mu$: dynamic viscosity used in the ventilation term
 - $Sc$: Schmidt number, `sc`
 - $\mu_r$: rain size-distribution shape parameter
-- $\lambda_r$: rain size-distribution slope parameter
+- $\lambda_r$: rain size-distribution slope parameter, `lamr`
 - $C_r$: rain prefactor, `cdistr`
 - $C_c$: cloud-liquid prefactor, `cdist`
 - $f_{1r}$: analytic rain coefficient
 - $f_{2r}$: ventilation rain coefficient
-- $Q_{\mathrm{small}}$: hydrometeor activity threshold
+- $Q_{\mathrm{small}}$: hydrometeor activity threshold used separately for
+  `qr_incld` and `qc_incld`
 - $T(\mu_r,\lambda_r)$: rain evaporation lookup-table value
 
 ## Implementation Details
@@ -130,7 +131,7 @@ unchanged.
 ## Mathematical Properties
 
 For active rain lanes, the implementation can be decomposed into an analytic
-collection term and a ventilation-enhanced table term:
+gamma-distribution term and a ventilation-enhanced table term:
 
 $$
 \epsilon_r =
@@ -221,8 +222,8 @@ The suite explicitly documents the asymmetric output behavior:
 The suite avoids asserting lookup-sensitive identities that would vary with the
 interpolated table value. In particular:
 
-- `mu_r` and `lamr` are held fixed for additivity and ventilation-only scaling
-  checks
+- all non-coefficient inputs are held fixed for the rain-additivity check
+- `mu_r` and `lamr` are held fixed for ventilation-only scaling checks
 - the exact `lamr^{-1}` scaling is tested only in the analytic-only regime
 
 ### BFB Coverage
