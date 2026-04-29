@@ -12,7 +12,6 @@
 #include "KernelVariables.hpp"
 #include "Types.hpp"
 #include "ExecSpaceDefs.hpp"
-#include "utilities/LoopsUtils.hpp"
 #include "utilities/MathUtils.hpp"
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/SyncUtils.hpp"
