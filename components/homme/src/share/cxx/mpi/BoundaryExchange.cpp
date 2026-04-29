@@ -10,7 +10,7 @@
 #include "KernelVariables.hpp"
 #include "profiling.hpp"
 
-#include "utilities/VectorUtils.hpp"
+#include <ekat_pack_math.hpp>
 
 #ifndef HOMME_BE_NO_HASHER
 // It's convenient and clean to use boundary exchanges as the place to hash

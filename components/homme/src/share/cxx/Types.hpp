@@ -9,12 +9,11 @@
 
 #include <Kokkos_Core.hpp>
 
-#include "PackTraits.hpp"
 #include "Config.hpp"
 #include "ExecSpaceDefs.hpp"
 #include "Dimensions.hpp"
 
-#include <vector/KokkosKernels_Vector.hpp>
+#include <ekat_pack.hpp>
 
 #define __MACRO_STRING(MacroVal) #MacroVal
 #define MACRO_STRING(MacroVal) __MACRO_STRING(MacroVal)
@@ -30,22 +29,11 @@ using F90Ptr = Real *const; // Using this in a function signature emphasizes
 using CF90Ptr = const Real *const; // Using this in a function signature
                                    // emphasizes that the ordering is Fortran
 
-using VectorTagType = KokkosKernels::Batched::Experimental::SIMD<Real, ExecSpace>;
+using Scalar = ekat::Pack<Real, VECTOR_SIZE>;
 
-using VectorType = KokkosKernels::Batched::Experimental::VectorTag<VectorTagType, VECTOR_SIZE>;
-
-using Scalar = KokkosKernels::Batched::Experimental::Vector<VectorType>;
-
-// Specialize PackTraits for Scalar
-template<>
-struct PackTraits<Scalar> {
-  static constexpr int pack_length = Scalar::vector_length;
-  using value_type = Real;
-};
-
-static_assert(sizeof(Scalar) > 0, "Vector type has 0 size");
-static_assert(sizeof(Scalar) == sizeof(Real[VECTOR_SIZE]), "Vector type is not correctly defined");
-static_assert(Scalar::vector_length>0, "Vector type is not correctly defined (vector_length=0)");
+static_assert(sizeof(Scalar) > 0, "Pack type has 0 size");
+static_assert(sizeof(Scalar) == sizeof(Real[VECTOR_SIZE]), "Pack type is not correctly defined");
+static_assert(Scalar::n > 0, "Pack type is not correctly defined (n=0)");
 
 using MemoryManaged   = Kokkos::MemoryTraits<Kokkos::Restrict>;
 using MemoryUnmanaged = Kokkos::MemoryTraits<Kokkos::Unmanaged | Kokkos::Restrict>;
@@ -194,13 +182,8 @@ struct Real2 {
   }
 };
 
-template<>
-struct reduction_identity<Homme::Scalar> {
-  KOKKOS_FORCEINLINE_FUNCTION
-  static Homme::Scalar sum()  {return Homme::Scalar(reduction_identity<Homme::Real>::sum());}
-};
-
 // Specialization of a Kokkos structure, needed in the initialization of reduction operations.
+// Note: reduction_identity<Homme::Scalar> is provided by ekat::Pack's own specialization.
 template<> struct reduction_identity<Real2> {
   KOKKOS_FORCEINLINE_FUNCTION
   static Real2 sum() { return Real2(); }

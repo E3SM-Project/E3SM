@@ -7,7 +7,7 @@
 #include "KernelVariables.hpp"
 #include "PhysicalConstants.hpp"
 
-#include "utilities/VectorUtils.hpp"
+#include <ekat_pack_math.hpp>
 #include "utilities/ViewUtils.hpp"
 #include "utilities/BfbUtils.hpp"
 

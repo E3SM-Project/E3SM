@@ -224,9 +224,9 @@ calc_extrema (const KernelVariables& kv, const int n, const int nlev,
       qmink = qmaxk = q(0,k);
       for (int i = 1; i < n; ++i) {
         const auto qik = q(i,k);
-        VECTOR_SIMD_LOOP for (int s = 0; s < packn; ++s)
+        vector_simd for (int s = 0; s < packn; ++s)
           qmink[s] = min(qmink[s], qik[s]);
-        VECTOR_SIMD_LOOP for (int s = 0; s < packn; ++s)
+        vector_simd for (int s = 0; s < packn; ++s)
           qmaxk[s] = max(qmaxk[s], qik[s]);
       }
     });  
@@ -261,9 +261,9 @@ augment_extrema (const KernelVariables& kv, const int n, const int nlev,
       auto& qmaxk = qmax(k);
       for (int i = 0; i < n; ++i) {
         const auto qik = q(i,k);
-        VECTOR_SIMD_LOOP for (int s = 0; s < packn; ++s)
+        vector_simd for (int s = 0; s < packn; ++s)
           qmink[s] = min(qmink[s], qik[s]);
-        VECTOR_SIMD_LOOP for (int s = 0; s < packn; ++s)
+        vector_simd for (int s = 0; s < packn; ++s)
           qmaxk[s] = max(qmaxk[s], qik[s]);
       }
     });  

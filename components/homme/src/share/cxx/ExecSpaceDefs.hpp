@@ -16,7 +16,7 @@
 
 #include "Config.hpp"
 #include "Dimensions.hpp"
-#include "vector/vector_pragmas.hpp"
+#include <ekat_pack_macros.hpp>
 
 namespace Homme
 {
@@ -290,7 +290,7 @@ struct Dispatch {
     const typename Kokkos::TeamPolicy<ExeSpace>::member_type& team,
     const Lambda& lambda)
   {
-VECTOR_SIMD_LOOP
+vector_simd
     for (int k = 0; k < NP*NP; ++k)
       lambda(k);
   }

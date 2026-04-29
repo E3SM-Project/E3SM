@@ -476,13 +476,24 @@ IF (HOMME_USE_KOKKOS)
     ${EKAT_CMAKE_PATH}/tpls
   )
 
-  # We first try to use find_package. If that doesn't work, build from EKAT's submodule
-  include (EkatFindKokkos)
-  if (NOT Kokkos_FOUND)
-    # The following script checks if Kokkos is already available as a target, and if so does nothing.
-    # For instance, if HOMME is built inside EAMxx, Kokkos will already be available
-    include (EkatBuildKokkos)
-  endif()
+  # Homme requires ekat::Pack. In standalone builds, build it from the submodule.
+  # In embedded builds (e.g., inside EAMxx), the host project must have already
+  # configured ekat with the Pack package enabled.
+  if (HOMME_STANDALONE)
+    option (EKAT_DISABLE_TPL_WARNINGS "Whether we should suppress warnings when compiling TPLs." ON)
+    option (EKAT_ENABLE_TESTS "Whether ekat tests should be built." OFF)
+    option (EKAT_ENABLE_ALL_PACKAGES "Enable ALL EKAT sub-packages" OFF)
+    option (EKAT_ENABLE_PACK "Enable EKAT packs utilities" ON)
+    option (EKAT_ENABLE_KOKKOS "Enable EKAT packs utilities" ON)
+    include (EkatBuildEkat)
+    BuildEkat()
+  elseif (NOT TARGET ekat::Pack OR NOT TARGET Kokkos::kokkos)
+    message (FATAL_ERROR
+      "Homme requires the ekat::Pack target, but it is not defined.\n"
+      "When building Homme as part of a larger project (HOMME_STANDALONE=FALSE),\n"
+      "the host project must configure EKAT with EKAT_ENABLE_PACK=ON before\n"
+      "entering the Homme directory.\n")
+  endif ()
 ENDIF ()
 
 # This folder contains the CMake macro used to build cxx unit tests

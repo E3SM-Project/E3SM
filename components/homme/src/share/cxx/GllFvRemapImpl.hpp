@@ -260,7 +260,7 @@ struct GllFvRemapImpl {
     assert(dp .extent_int(0) >= n && dp .extent_int(1) >= nlev);
     assert(wrk.extent_int(0) >= n && wrk.extent_int(1) >= nlev);
     assert(q  .extent_int(0) >= n && q  .extent_int(1) >= nlev);
-    static_assert(Scalar::vector_length == packn, "vector_length == packn");
+    static_assert(Scalar::n == packn, "Pack::n == packn");
     const auto f = [&] (const int k) {
       auto& c = wrk;
       { // In the case of an infeasible problem, prefer to conserve mass and
@@ -271,10 +271,10 @@ struct GllFvRemapImpl {
           mass  += c(i,k);
           qmass += c(i,k)*q(i,k);
         }
-        VECTOR_SIMD_LOOP for (int s = 0; s < packn; ++s)
+        vector_simd for (int s = 0; s < packn; ++s)
           if (qmass[s] < qmin(k)[s]*mass[s])
             qmin(k)[s] = qmass[s]/mass[s];
-        VECTOR_SIMD_LOOP for (int s = 0; s < packn; ++s)
+        vector_simd for (int s = 0; s < packn; ++s)
           if (qmass[s] > qmax(k)[s]*mass[s])
             qmax(k)[s] = qmass[s]/mass[s];
       }
@@ -283,7 +283,7 @@ struct GllFvRemapImpl {
       bool modified[packn] = {0};
       // Clip.
       for (int i = 0; i < n; ++i)
-        VECTOR_SIMD_LOOP for (int s = 0; s < packn; ++s) {
+        vector_simd for (int s = 0; s < packn; ++s) {
           auto& x = q(i,k)[s];
           const auto xmin = qmin(k)[s];
           const auto xmax = qmax(k)[s];
@@ -302,7 +302,7 @@ struct GllFvRemapImpl {
         // Compute weights normalization.
         Scalar den(0);
         for (int i = 0; i < n; ++i)
-          VECTOR_SIMD_LOOP for (int s = 0; s < packn; ++s)
+          vector_simd for (int s = 0; s < packn; ++s)
             if (modified[s]) {
               if (addmass[s] > 0)
                 den[s] += (qmax(k)[s] - q(i,k)[s])*c(i,k)[s];
@@ -311,7 +311,7 @@ struct GllFvRemapImpl {
             }
         // Redistribute mass.
         for (int i = 0; i < n; ++i)
-          VECTOR_SIMD_LOOP for (int s = 0; s < packn; ++s)
+          vector_simd for (int s = 0; s < packn; ++s)
             if (modified[s] && den[s] > 0) {
               auto& x = q(i,k)[s];
               const auto v = addmass[s] > 0 ? qmax(k)[s] - x : x - qmin(k)[s];

@@ -47,4 +47,4 @@ add_library (${COMPOSE_LIBRARY}
   cedr_qlt.cpp
   cedr_test_randomized.cpp)
 
-target_link_libraries(${COMPOSE_LIBRARY} Kokkos::kokkos)
+target_link_libraries(${COMPOSE_LIBRARY} Kokkos::kokkos ekat::Pack)

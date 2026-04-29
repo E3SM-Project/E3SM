@@ -18,7 +18,7 @@
 #include "SimulationParams.hpp"
 #include "SphereOperators.hpp"
 
-#include "utilities/VectorUtils.hpp"
+#include <ekat_pack_math.hpp>
 
 #include <memory>
 

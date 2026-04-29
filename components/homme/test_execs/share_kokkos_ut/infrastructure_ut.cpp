@@ -9,7 +9,7 @@
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/TestUtils.hpp"
 #include "utilities/BfbUtils.hpp"
-#include "utilities/VectorUtils.hpp"
+#include <ekat_pack_math.hpp>
 #include "utilities/Hash.hpp"
 
 #include "HybridVCoord.hpp"

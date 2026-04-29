@@ -607,13 +607,12 @@ struct CaarFunctorImpl {
       constexpr int last_vec_end = (NUM_PHYSICAL_LEV - 1) % VECTOR_SIZE;
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
                            [&](const int &ilev) {
-        Scalar tmp = m_buffers.eta_dot_dpdn(kv.team_idx, igp, jgp, ilev);
-        tmp.shift_left(1);
         const int vec_end = ilev==(NUM_LEV-1) ? last_vec_end : VECTOR_SIZE - 1;
-        tmp[vec_end] = (ilev + 1 < NUM_LEV)
-                                   ? m_buffers.eta_dot_dpdn(
-                                         kv.team_idx, igp, jgp, ilev + 1)[0]
-                                   : 0;
+        const Real fill = (ilev + 1 < NUM_LEV)
+                                     ? m_buffers.eta_dot_dpdn(
+                                           kv.team_idx, igp, jgp, ilev + 1)[0]
+                                     : Real(0);
+        Scalar tmp = ekat::shift_left(fill, m_buffers.eta_dot_dpdn(kv.team_idx, igp, jgp, ilev));
         // Add div_vdp before subtracting the previous value to eta_dot_dpdn
         // This will hopefully reduce numeric error
         tmp += m_buffers.div_vdp(kv.team_idx, igp, jgp, ilev);

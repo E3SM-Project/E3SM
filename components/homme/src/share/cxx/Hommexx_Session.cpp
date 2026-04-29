@@ -12,8 +12,6 @@
 
 #include "Context.hpp"
 
-#include "vector/vector_pragmas.hpp"
-
 #include <iostream>
 
 namespace Homme
