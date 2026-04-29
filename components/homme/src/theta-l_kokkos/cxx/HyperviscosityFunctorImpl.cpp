@@ -25,9 +25,9 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
                            const ElementsDerivedState& derived)
  : m_num_elems(state.num_elems())
  , m_data (params.hypervis_subcycle,params.hypervis_subcycle_tom,
-		       params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
-		       params.nu_p,params.nu_s,params.hypervis_scaling,
-                       params.do_3d_turbulence)
+           params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
+           params.nu_p,params.nu_s,params.hypervis_scaling,
+           params.do_3d_turbulence, params.tom_sponge_start)
  , m_state   (state)
  , m_derived (derived)
  , m_geometry (geometry)
@@ -52,9 +52,9 @@ HyperviscosityFunctorImpl::
 HyperviscosityFunctorImpl (const int num_elems, const SimulationParams &params)
   : m_num_elems(num_elems)
   , m_data (params.hypervis_subcycle,params.hypervis_subcycle_tom,
-		        params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
-		        params.nu_p,params.nu_s,params.hypervis_scaling,
-                        params.do_3d_turbulence)
+            params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
+            params.nu_p,params.nu_s,params.hypervis_scaling,
+            params.do_3d_turbulence, params.tom_sponge_start)
   , m_hvcoord (Context::singleton().get<HybridVCoord>())
   , m_policy_update_states (Homme::get_default_team_policy<ExecSpace,TagUpdateStates>(m_num_elems))
   , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(m_num_elems))
@@ -72,6 +72,62 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
 {
   // Sanity check
   assert(params.params_set);
+  // tom_sponge_start is now stored in m_data
+  //NOTE: we are missing the part of the block that computes m_nu_scale_top using tom_sponge_start.
+  // As of 04/29/2026 we decided not to move this missing computation from
+  // components/homme/src/theta-l/share/model_init_mod.F90
+  // instead we will get m_nu_scale_top and m_nu_scale_top_ilev_pack_lim from the
+  //  Fortran-initialized ref states, which will have the correct values if tom_sponge_start > 0.0.
+  //  If tom_sponge_start = 0.0, then we will compute m_nu_scale_top using the existing logic in HyperviscosityFunctorImpl::init_params, 
+  // which is equivalent to the old logic when tom_sponge_start was not a parameter.
+  // In addition, we will not delete the following block of code because using the 
+  // Fortran-initialization produces non-BFB results for case when tom_sponge_start == 0.0.
+  const bool compute_nu_scale_top = m_data.tom_sponge_start > 0.0; 
+  if (m_data.nu_top>0 && !compute_nu_scale_top ) {
+    m_nu_scale_top = ExecViewManaged<Scalar[NUM_LEV]>("nu_scale_top");
+    ExecViewManaged<Scalar[NUM_LEV]>::HostMirror h_nu_scale_top;
+    h_nu_scale_top = Kokkos::create_mirror_view(m_nu_scale_top);
+
+    const auto etai_h = Kokkos::create_mirror_view(m_hvcoord.etai);
+    const auto etam_h = Kokkos::create_mirror_view(m_hvcoord.etam);
+    Kokkos::deep_copy(etai_h, m_hvcoord.etai);
+    Kokkos::deep_copy(etam_h, m_hvcoord.etam);
+
+    for (int phys_lev=0; phys_lev < NUM_LEV*VECTOR_SIZE; ++phys_lev) {
+      const int ilev = phys_lev / VECTOR_SIZE;
+      const int ivec = phys_lev % VECTOR_SIZE;
+
+      Real ptop_over_press;
+
+      //prevent padding of nu_scale to get nans to avoid last interface levels
+      //of w, phi to be nans, too
+      if( phys_lev < NUM_PHYSICAL_LEV ){
+        //etai is num_interface_lev, that is, 129 or 73
+        //etam is num_lev, so packs
+        if ( etai_h(0) == 0.0) {
+          ptop_over_press = etam_h(0)[0] / etam_h(ilev)[ivec];
+        }else{
+          ptop_over_press = etai_h(0) / etam_h(ilev)[ivec];
+        }
+      }else{
+          ptop_over_press = 0.0;
+      }
+
+      auto val = 16.0*ptop_over_press*ptop_over_press / (ptop_over_press*ptop_over_press + 1);
+      if ( val < 0.15 ) val = 0.0;
+      h_nu_scale_top(ilev)[ivec] = val;
+
+      // This is the equivalent of nlev_tom in the F90 code.
+      if (val != 0) m_nu_scale_top_ilev_pack_lim = phys_lev + 1;
+    }
+    Kokkos::deep_copy(m_nu_scale_top, h_nu_scale_top);
+
+    // Convert to pack index.
+    m_nu_scale_top_ilev_pack_lim = ((m_nu_scale_top_ilev_pack_lim + VECTOR_SIZE - 1) /
+                                    VECTOR_SIZE);
+  }
+
+
   
   // Init ElementOps
   m_elem_ops.init(m_hvcoord);
@@ -100,7 +156,7 @@ void HyperviscosityFunctorImpl::setup(const ElementsGeometry&     geometry,
   // This handles the case where the functor was created via the (num_elems, params)
   // constructor (before init_reference_states_c ran) and is later setup() with
   // the fully-initialized state.
-  if (m_data.nu_top > 0 && m_state.m_ref_states.nu_scale_top.data() != nullptr) {
+  if (m_data.nu_top > 0 && m_state.m_ref_states.nu_scale_top.data() != nullptr && m_data.tom_sponge_start > 0.0) {
     m_nu_scale_top = m_state.m_ref_states.nu_scale_top;
     m_nu_scale_top_ilev_pack_lim = m_state.m_ref_states.nu_scale_top_ilev_pack_lim;
   }

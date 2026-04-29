@@ -40,13 +40,15 @@ public:
                        const int hypervis_subcycle_tom_in, 
                        const Real nu_ratio1_in, const Real nu_ratio2_in, const Real nu_top_in,
                        const Real nu_in, const Real nu_p_in, const Real nu_s_in,
-                       const Real hypervis_scaling_in, bool do_3d_turbulence_in)
+                       const Real hypervis_scaling_in, bool do_3d_turbulence_in,
+                       const double tom_sponge_start_in)
                       : hypervis_subcycle(hypervis_subcycle_in) 
                       , hypervis_subcycle_tom(hypervis_subcycle_tom_in)
                       , nu_ratio1(nu_ratio1_in), nu_ratio2(nu_ratio2_in)
                       , nu_top(nu_top_in), nu(nu_in), nu_p(nu_p_in), nu_s(nu_s_in)
                       , consthv(hypervis_scaling_in == 0)
-                      , do_3d_turbulence(do_3d_turbulence_in){}
+                      , do_3d_turbulence(do_3d_turbulence_in)
+                      , tom_sponge_start(tom_sponge_start_in) {}
 
     const int   hypervis_subcycle;
     const int   hypervis_subcycle_tom;
@@ -69,7 +71,10 @@ public:
     Real        eta_ave_w;
 
     bool consthv;
+    double tom_sponge_start;
   };//hyperviscosityData
+
+  // tom_sponge_start is now in HyperviscosityData
 
   struct Buffers {
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    dptens;
