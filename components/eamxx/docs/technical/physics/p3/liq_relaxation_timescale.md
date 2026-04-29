@@ -171,6 +171,21 @@ $$
 2\sqrt{2}\,\epsilon_r(\rho).
 $$
 
+### Connection to Bulk Microphysics
+
+The cloud-liquid expression has the form of a diffusion-limited vapor exchange
+coefficient. It is linear in vapor diffusivity, air density, and the cloud
+geometric distribution factor. The rain expression adds a ventilation-enhanced
+term. The factor $(\rho/\mu)^{1/2}Sc^{1/3}$ represents the expected
+Reynolds/Schmidt-number dependence of ventilation corrections in bulk
+microphysics.
+
+This structure implies that increasing diffusivity, air density, or the
+distribution prefactors increases the relaxation-rate coefficients. Increasing
+viscosity damps the ventilation contribution, while increasing Schmidt number
+enhances it. The tests encode these expectations as exact scaling identities
+when the lookup-table term is held fixed.
+
 ## Property Tests
 
 The unit tests live in
@@ -192,7 +207,9 @@ Inside `properties`, the nested sections cover:
 - full rain prefactor scaling with `dv` and `cdistr`
 - analytic-only rain identities
 - ventilation-only rain power-law identities
+- mixed microphysical scaling with `rho`, `mu`, and `sc`
 - mixed-term density bound
+- separation of cloud-liquid and rain-only factors
 - zero-coefficient and coefficient-locality behavior
 - non-negativity and finite-output checks
 

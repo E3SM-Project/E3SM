@@ -294,6 +294,33 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
       }
     }
 
+    SECTION("cloud_independence_from_rain_parameters") {
+      // The cloud-liquid formula depends only on rho, dv, and cdist when the
+      // cloud mask is active. Rain-shape and rain-prefactor changes should not
+      // affect epsc.
+      auto base = make_active_lanes();
+      auto rain_params_changed = base;
+
+      for (auto& lane : base) {
+        lane.qc_incld = 5 * C::QSMALL;
+      }
+
+      for (auto& lane : rain_params_changed) {
+        lane.qc_incld = 5 * C::QSMALL;
+        lane.mu_r *= 1.2;
+        lane.lamr *= 1.3;
+        lane.cdistr *= 1.4;
+        lane.qr_incld = 20 * C::QSMALL;
+      }
+
+      run_kernel(revap_table_vals, C::f1r, C::f2r, base);
+      run_kernel(revap_table_vals, 2 * C::f1r, 3 * C::f2r, rain_params_changed);
+
+      for (Int s = 0; s < Pack::n; ++s) {
+        require_near(rain_params_changed[s].epsc_out, base[s].epsc_out);
+      }
+    }
+
     SECTION("rain_additivity") {
       // The rain formula is a sum of two independent terms:
       //
@@ -317,6 +344,8 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
       for (Int s = 0; s < Pack::n; ++s) {
         require_near(full[s].epsr_out,
                      analytic_only[s].epsr_out + vent_only[s].epsr_out);
+        require_ge(full[s].epsr_out, analytic_only[s].epsr_out);
+        require_ge(full[s].epsr_out, vent_only[s].epsr_out);
         require_near(full[s].epsc_out, analytic_only[s].epsc_out);
         require_near(full[s].epsc_out, vent_only[s].epsc_out);
       }
@@ -413,6 +442,47 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
         require_near(mu_scaled[s].epsr_out, 0.5 * base[s].epsr_out);
         require_near(sc_scaled[s].epsr_out, 2 * base[s].epsr_out);
         require_near(f2_scaled[s].epsr_out, 2 * base[s].epsr_out);
+      }
+    }
+
+    SECTION("mixed_microphysical_scaling") {
+      // With both rain terms active, changing mu, sc, or rho affects only the
+      // ventilation piece or changes the analytic and ventilation pieces with
+      // their respective bulk-microphysics scalings.
+      auto full = make_active_lanes();
+      auto analytic_only = full;
+      auto vent_only = full;
+      auto mu_scaled = full;
+      auto sc_scaled = full;
+      auto rho2_scaled = full;
+      auto rho4_scaled = full;
+
+      for (auto& lane : mu_scaled) lane.mu *= 4;
+      for (auto& lane : sc_scaled) lane.sc *= 8;
+      for (auto& lane : rho2_scaled) lane.rho *= 2;
+      for (auto& lane : rho4_scaled) lane.rho *= 4;
+
+      run_kernel(revap_table_vals, C::f1r, C::f2r, full);
+      run_kernel(revap_table_vals, C::f1r, 0, analytic_only);
+      run_kernel(revap_table_vals, 0, C::f2r, vent_only);
+      run_kernel(revap_table_vals, C::f1r, C::f2r, mu_scaled);
+      run_kernel(revap_table_vals, C::f1r, C::f2r, sc_scaled);
+      run_kernel(revap_table_vals, C::f1r, C::f2r, rho2_scaled);
+      run_kernel(revap_table_vals, C::f1r, C::f2r, rho4_scaled);
+
+      for (Int s = 0; s < Pack::n; ++s) {
+        require_near(full[s].epsr_out,
+                     analytic_only[s].epsr_out + vent_only[s].epsr_out);
+        require_near(mu_scaled[s].epsr_out,
+                     analytic_only[s].epsr_out + 0.5 * vent_only[s].epsr_out);
+        require_near(sc_scaled[s].epsr_out,
+                     analytic_only[s].epsr_out + 2.0 * vent_only[s].epsr_out);
+        require_near(rho2_scaled[s].epsr_out,
+                     2.0 * analytic_only[s].epsr_out
+                     + 2.0 * std::sqrt(2.0) * vent_only[s].epsr_out);
+        require_near(rho4_scaled[s].epsr_out,
+                     4.0 * analytic_only[s].epsr_out
+                     + 8.0 * vent_only[s].epsr_out);
       }
     }
 
