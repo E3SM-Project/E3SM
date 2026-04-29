@@ -217,6 +217,17 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- lateral walls -->
+
+<entry id="config_wall_slip_factor" type="real"
+	category="lateral_walls" group="lateral_walls">
+Lateral wall slip boundary condition: no-slip=0.0, free-slip=1.0, with partial-slip lying in-between. This factor multiplies relative vorticity computed at vertices positioned on lateral boundaries.
+
+Valid values: Any real number between 0.0 and 1.0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- hmix -->
 
 <entry id="config_hmix_scaleWithMesh" type="logical"
