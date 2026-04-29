@@ -3449,6 +3449,7 @@
         <command name="load">oneapi/release/2025.3.1</command>
         <command name="load">netcdf-c/4.9.3</command>
         <command name="load">netcdf-fortran/4.6.2</command>
+        <command name="load">moab/5.6.0</command>
       </modules>
       <modules mpilib="mpich1024">
         <command name="load">mpich-config/collective-tuning/1024</command>
