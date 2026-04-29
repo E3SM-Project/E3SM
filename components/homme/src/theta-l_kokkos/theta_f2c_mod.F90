@@ -16,7 +16,7 @@ interface
                                        theta_hydrostatic_mode, test_case_name, dt_remap_factor,      &
                                        dt_tracer_factor, scale_factor, laplacian_rigid_factor,       &
                                        nsplit, pgrad_correction, dp3d_thresh, vtheta_thresh,         &
-                                       internal_diagnostics_level, do_3d_turbulence) bind(c)
+                                       internal_diagnostics_level, do_3d_turbulence, tom_sponge_start) bind(c)
 
     use iso_c_binding, only: c_int, c_double, c_ptr
     !
@@ -26,12 +26,13 @@ interface
     integer(kind=c_int),  intent(in) :: dt_remap_factor, dt_tracer_factor, transport_alg
     integer(kind=c_int),  intent(in) :: state_frequency, qsize, internal_diagnostics_level
     real(kind=c_double),  intent(in) :: nu, nu_p, nu_q, nu_s, nu_div, nu_top, hypervis_scaling, dcmip16_mu, &
-                                        scale_factor, laplacian_rigid_factor, dp3d_thresh, vtheta_thresh
+                      scale_factor, laplacian_rigid_factor, dp3d_thresh, vtheta_thresh
     integer(kind=c_int),  intent(in) :: hypervis_order, hypervis_subcycle, hypervis_subcycle_tom
     integer(kind=c_int),  intent(in) :: ftype, theta_adv_form
     integer(kind=c_int),  intent(in) :: prescribed_wind, use_moisture, disable_diagnostics, use_cpstar
     integer(kind=c_int),  intent(in) :: theta_hydrostatic_mode, pgrad_correction, do_3d_turbulence
     type(c_ptr), intent(in) :: test_case_name
+    real(kind=c_double), intent(in) :: tom_sponge_start
   end subroutine init_simulation_params_c
 
   ! Creates element structures in C++
