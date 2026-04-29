@@ -27,8 +27,8 @@ module element_state
   real (kind=real_kind), public :: max_reserr=0
 
   ! pressure based TOM sponge layer
-  real (kind=real_kind),public :: nu_scale_top(nlev)
-  integer, public              :: nlev_tom
+  real (kind=real_kind), target, public :: nu_scale_top(nlev)
+  integer, public                       :: nlev_tom
 
   ! flattened arrays for all state, derived, and accum quantities that need to be passed back and forth to CXX
 
