@@ -1409,6 +1409,37 @@ contains
         KE(:,:,k) = ( elem(ie)%state%v(:,:,1,k,n0)**2 + elem(ie)%state%v(:,:,2,k,n0)**2)/2
         gradKE(:,:,:,k) = gradient_sphere(KE(:,:,k),deriv,elem(ie)%Dinv)
         gradexner(:,:,:,k) = gradient_sphere(exner(:,:,k),deriv,elem(ie)%Dinv)
+
+! Some experimental calculations for gradexner, leaving here to document.
+! TODO: Clean up and remove from codebase if not used.
+#if 0
+        ! another form: (good results in dcmip2012 test2.0)  max=0.195
+        ! but bad results with HS topo
+        !  grad(exner) =( grad(theta*exner) - exner*grad(theta))/theta
+        vtemp(:,:,:,k) = gradient_sphere(vtheta(:,:,k)*exner(:,:,k),deriv,elem(ie)%Dinv)
+        v_theta(:,:,:,k) = gradient_sphere(vtheta(:,:,k),deriv,elem(ie)%Dinv)
+        gradexner(:,:,1,k) = (vtemp(:,:,1,k)-exner(:,:,k)*v_theta(:,:,1,k))/&
+             vtheta(:,:,k)
+        gradexner(:,:,2,k) = (vtemp(:,:,2,k)-exner(:,:,k)*v_theta(:,:,2,k))/&
+             vtheta(:,:,k)
+#endif
+#if 0
+        ! entropy form: dcmip2012 test2.0 best: max=0.130  (0.124 with conservation form theta)
+        vtemp(:,:,:,k) = gradient_sphere(vtheta(:,:,k)*exner(:,:,k),deriv,elem(ie)%Dinv)
+        v_theta(:,:,:,k) = gradient_sphere(log(vtheta(:,:,k)),deriv,elem(ie)%Dinv)
+        gradexner(:,:,1,k) = (vtemp(:,:,1,k)-exner(:,:,k)*vtheta(:,:,k)*v_theta(:,:,1,k))/&
+             vtheta(:,:,k)
+        gradexner(:,:,2,k) = (vtemp(:,:,2,k)-exner(:,:,k)*vtheta(:,:,k)*v_theta(:,:,2,k))/&
+             vtheta(:,:,k)
+#endif
+#if 0
+        ! another form:  terrible results in dcmip2012 test2.0
+        ! grad(exner) = grad(p) * kappa * exner / p
+        gradexner(:,:,:,k) = gradient_sphere(pnh(:,:,k),deriv,elem(ie)%Dinv)
+        gradexner(:,:,1,k) = gradexner(:,:,1,k)*(Rgas/Cp)*exner(:,:,k)/pnh(:,:,k)
+        gradexner(:,:,2,k) = gradexner(:,:,2,k)*(Rgas/Cp)*exner(:,:,k)/pnh(:,:,k)
+#endif
+
         gradpterm(:,:,1,k) = Cp*vtheta(:,:,k)*gradexner(:,:,1,k)
         gradpterm(:,:,2,k) = Cp*vtheta(:,:,k)*gradexner(:,:,2,k)
 
