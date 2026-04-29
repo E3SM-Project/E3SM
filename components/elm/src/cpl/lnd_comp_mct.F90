@@ -91,11 +91,11 @@ contains
                                   seq_infodata_start_type_brnch
     use seq_comm_mct     , only : seq_comm_suffix, seq_comm_inst, seq_comm_name
     use seq_flds_mod     , only : seq_flds_x2l_fields, seq_flds_l2x_fields
-    use seq_flds_mod     , only : lnd_rof_two_way, ocn_lnd_one_way
+    use seq_flds_mod     , only : lnd_rof_two_way, dyn_lake, ocn_lnd_one_way
     use spmdMod          , only : masterproc, npes, spmd_init
     use elm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
     use elm_varctl       , only:  elm_varctl_set_iac_flag
-    use elm_varctl       , only : use_lnd_rof_two_way, use_ocn_lnd_one_way
+    use elm_varctl       , only : use_lnd_rof_two_way, use_dyn_lake, use_ocn_lnd_one_way
     use elm_cpl_indices  , only : elm_cpl_indices_set
     use perf_mod         , only : t_startf, t_stopf
     use mct_mod
@@ -292,6 +292,7 @@ contains
                         hostname_in=hostname, username_in=username)
 
     use_lnd_rof_two_way = lnd_rof_two_way
+    use_dyn_lake = dyn_lake
 
     use_ocn_lnd_one_way = ocn_lnd_one_way
     

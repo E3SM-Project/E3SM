@@ -569,6 +569,7 @@ module elm_varctl
    ! land river two way coupling
    !----------------------------------------------------------
    logical, public :: use_lnd_rof_two_way = .false.
+   logical, public :: use_dyn_lake = .false.
    integer, public :: lnd_rof_coupling_nstep = 0
 
    !----------------------------------------------------------

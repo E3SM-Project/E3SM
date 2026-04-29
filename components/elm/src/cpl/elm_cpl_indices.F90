@@ -128,6 +128,10 @@ module elm_cpl_indices
   integer, public ::index_x2l_Flrr_deficit    ! rtm->lnd supply deficit
   integer, public ::index_x2l_Sr_h2orof       ! rtm->lnd floodplain inundation volume
   integer, public ::index_x2l_Sr_frac_h2orof  ! rtm->lnd floodplain inundation fraction
+  integer, public ::index_x2l_Sr_lake_r_Asur  = 0 ! rtm->lnd main-channel lake surface area
+  integer, public ::index_x2l_Sr_lake_r_Vtot  = 0 ! rtm->lnd main-channel lake total volume
+  integer, public ::index_x2l_Sr_lake_t_Asur  = 0 ! rtm->lnd sub-network lake surface area
+  integer, public ::index_x2l_Sr_lake_t_Vtot  = 0 ! rtm->lnd sub-network lake total volume
   integer, public ::index_x2l_So_ssh          ! ocn->lnd sea surface height
   integer, public ::index_x2l_So_frac_h2oocn  ! ocn->lnd coastal inundation fraction
 
@@ -159,7 +163,7 @@ contains
     !
     ! !USES:
     use seq_flds_mod   , only: seq_flds_x2l_fields, seq_flds_l2x_fields,       &
-                               lnd_rof_two_way, ocn_lnd_one_way, rof_sed
+                               lnd_rof_two_way, dyn_lake, ocn_lnd_one_way, rof_sed
     use mct_mod        , only: mct_aVect, mct_aVect_init, mct_avect_indexra
     use mct_mod        , only: mct_aVect_clean, mct_avect_nRattr
     use seq_drydep_mod , only: drydep_fields_token, lnd_drydep
@@ -316,6 +320,12 @@ contains
     if (lnd_rof_two_way) then
        index_x2l_Sr_h2orof     = mct_avect_indexra(x2l,'Sr_h2orof')
        index_x2l_Sr_frac_h2orof= mct_avect_indexra(x2l,'Sr_frac_h2orof')
+    endif
+    if (dyn_lake) then
+       index_x2l_Sr_lake_r_Asur = mct_avect_indexra(x2l,'Sr_lake_r_Asur')
+       index_x2l_Sr_lake_r_Vtot = mct_avect_indexra(x2l,'Sr_lake_r_Vtot')
+       index_x2l_Sr_lake_t_Asur = mct_avect_indexra(x2l,'Sr_lake_t_Asur')
+       index_x2l_Sr_lake_t_Vtot = mct_avect_indexra(x2l,'Sr_lake_t_Vtot')
     endif
     if (ocn_lnd_one_way) then
        index_x2l_So_ssh        = mct_avect_indexra(x2l,'So_ssh')

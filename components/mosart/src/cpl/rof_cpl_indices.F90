@@ -82,6 +82,10 @@ module rof_cpl_indices
   integer, public :: index_r2x_Flrr_deficit = 0 ! rof->lnd supply deficit
   integer, public :: index_r2x_Sr_h2orof      = 0  ! rof->lnd floodplain inundation volume
   integer, public :: index_r2x_Sr_frac_h2orof = 0  ! rof->lnd floodplain inundation fraction
+  integer, public :: index_r2x_Sr_lake_r_Asur = 0  ! rof->lnd main-channel lake surface area
+  integer, public :: index_r2x_Sr_lake_r_Vtot = 0  ! rof->lnd main-channel lake total volume
+  integer, public :: index_r2x_Sr_lake_t_Asur = 0  ! rof->lnd sub-network lake surface area
+  integer, public :: index_r2x_Sr_lake_t_Vtot = 0  ! rof->lnd sub-network lake total volume
   integer, public :: nflds_r2x = 0
 
 !=======================================================================
@@ -100,8 +104,8 @@ contains
     !
     ! !USES:
     use seq_flds_mod  , only: seq_flds_r2x_fields, seq_flds_x2r_fields, rof_heat, &
-                              rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, &
-                              rof_sed
+                              rof2ocn_nutrients, lnd_rof_two_way, dyn_lake, &
+                              ocn_rof_two_way, rof_sed
     use mct_mod       , only: mct_aVect, mct_aVect_init, mct_avect_indexra, &
                               mct_aVect_clean, mct_avect_nRattr
     !
@@ -184,6 +188,12 @@ contains
     if (lnd_rof_two_way) then
       index_r2x_Sr_h2orof       = mct_avect_indexra(avtmp,'Sr_h2orof')
       index_r2x_Sr_frac_h2orof  = mct_avect_indexra(avtmp,'Sr_frac_h2orof')
+    endif
+    if (dyn_lake) then
+      index_r2x_Sr_lake_r_Asur = mct_avect_indexra(avtmp,'Sr_lake_r_Asur')
+      index_r2x_Sr_lake_r_Vtot = mct_avect_indexra(avtmp,'Sr_lake_r_Vtot')
+      index_r2x_Sr_lake_t_Asur = mct_avect_indexra(avtmp,'Sr_lake_t_Asur')
+      index_r2x_Sr_lake_t_Vtot = mct_avect_indexra(avtmp,'Sr_lake_t_Vtot')
     endif
     
     nflds_r2x = mct_avect_nRattr(avtmp)

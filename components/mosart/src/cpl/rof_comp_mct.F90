@@ -27,7 +27,7 @@ module rof_comp_mct
                                 inst_index, inst_suffix, inst_name, RtmVarSet, &
                                 wrmflag, heatflag, data_bgc_fluxes_to_ocean_flag, &
                                 inundflag, use_lnd_rof_two_way, use_ocn_rof_two_way, &
-                                sediflag, redirect_negative_qgwl
+                                sediflag, redirect_negative_qgwl, lakeflag, spval
   use RtmSpmd          , only : masterproc, mpicom_rof, npes, iam, RtmSpmdInit, ROFID
   use RtmMod           , only : Rtmini, Rtmrun
   use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size
@@ -60,7 +60,9 @@ module rof_comp_mct
                                 index_x2r_coszen_str, &
                                 index_r2x_Flrr_supply, index_r2x_Flrr_deficit, &
                                 index_r2x_Sr_h2orof, index_r2x_Sr_frac_h2orof, &
-                                index_x2r_Flrl_inundinf
+                                index_x2r_Flrl_inundinf, &
+                                index_r2x_Sr_lake_r_Asur, index_r2x_Sr_lake_r_Vtot, &
+                                index_r2x_Sr_lake_t_Asur, index_r2x_Sr_lake_t_Vtot
 
   use mct_mod
   use ESMF
@@ -286,6 +288,10 @@ contains
 
     ! Read namelist, grid and surface data
     call Rtmini(rtm_active=rof_prognostic,flood_active=flood_present,rtm_mesh=rtm_mesh)
+
+    if (dyn_lake .and. .not. lakeflag) then
+       call shr_sys_abort('rof_init_mct: dyn_lake requires lakeflag=.true. in MOSART namelist')
+    endif
 
     if (rof_prognostic) then
        ! Initialize memory for input state
@@ -960,6 +966,33 @@ contains
         ni = ni + 1
         r2x_r%rattr(index_r2x_Sr_h2orof,ni)      = rtmCTL%inundwf(n) / (rtmCTL%area(n)*0.001_r8) ! m^3 to mm
         r2x_r%rattr(index_r2x_Sr_frac_h2orof,ni) = rtmCTL%inundff(n)
+      enddo
+    endif
+
+    if ( index_r2x_Sr_lake_r_Asur > 0 ) then
+      ni = 0
+      do n = rtmCTL%begr, rtmCTL%endr
+        ni = ni + 1
+        if (rtmCTL%lake_r_Asur_nt1(n) < spval) then
+          r2x_r%rattr(index_r2x_Sr_lake_r_Asur,ni) = rtmCTL%lake_r_Asur_nt1(n)
+        else
+          r2x_r%rattr(index_r2x_Sr_lake_r_Asur,ni) = 0._r8
+        endif
+        if (rtmCTL%lake_r_Vtot_nt1(n) < spval) then
+          r2x_r%rattr(index_r2x_Sr_lake_r_Vtot,ni) = rtmCTL%lake_r_Vtot_nt1(n)
+        else
+          r2x_r%rattr(index_r2x_Sr_lake_r_Vtot,ni) = 0._r8
+        endif
+        if (rtmCTL%lake_t_Asur_nt1(n) < spval) then
+          r2x_r%rattr(index_r2x_Sr_lake_t_Asur,ni) = rtmCTL%lake_t_Asur_nt1(n)
+        else
+          r2x_r%rattr(index_r2x_Sr_lake_t_Asur,ni) = 0._r8
+        endif
+        if (rtmCTL%lake_t_Vtot_nt1(n) < spval) then
+          r2x_r%rattr(index_r2x_Sr_lake_t_Vtot,ni) = rtmCTL%lake_t_Vtot_nt1(n)
+        else
+          r2x_r%rattr(index_r2x_Sr_lake_t_Vtot,ni) = 0._r8
+        endif
       enddo
     endif
 

@@ -120,6 +120,10 @@ module atm2lndType
      real(r8), pointer :: deficit_grc                   (:)   => null() ! rof volr deficit (mm/s)
      real(r8), pointer :: h2orof_grc                    (:)   => null() ! rof floodplain inundation volume [m3]
      real(r8), pointer :: frac_h2orof_grc               (:)   => null() ! rof floodplain inundation fraction [-]
+     real(r8), pointer :: lake_r_Asur_grc               (:)   => null() ! rof main-channel lake surface area [m2]
+     real(r8), pointer :: lake_r_Vtot_grc               (:)   => null() ! rof main-channel lake total volume [m3]
+     real(r8), pointer :: lake_t_Asur_grc               (:)   => null() ! rof sub-network lake surface area [m2]
+     real(r8), pointer :: lake_t_Vtot_grc               (:)   => null() ! rof sub-network lake total volume [m3]
  
      ! anomaly forcing
      real(r8), pointer :: af_precip_grc                 (:)   => null() ! anomaly forcing 
@@ -281,6 +285,10 @@ contains
     allocate(this%deficit_grc                   (begg:endg))        ; this%deficit_grc                   (:)   = ival
     allocate(this%h2orof_grc                    (begg:endg))        ; this%h2orof_grc                    (:)   = ival
     allocate(this%frac_h2orof_grc               (begg:endg))        ; this%frac_h2orof_grc               (:)   = ival
+    allocate(this%lake_r_Asur_grc               (begg:endg))        ; this%lake_r_Asur_grc               (:)   = ival
+    allocate(this%lake_r_Vtot_grc               (begg:endg))        ; this%lake_r_Vtot_grc               (:)   = ival
+    allocate(this%lake_t_Asur_grc               (begg:endg))        ; this%lake_t_Asur_grc               (:)   = ival
+    allocate(this%lake_t_Vtot_grc               (begg:endg))        ; this%lake_t_Vtot_grc               (:)   = ival
 
     ! anomaly forcing
     allocate(this%bc_precip_grc                 (begg:endg))        ; this%bc_precip_grc                 (:)   = ival
@@ -323,6 +331,7 @@ contains
     !
     ! !USES:
     use histFileMod, only : hist_addfld1d
+    use elm_varctl,  only : use_dyn_lake
     !
     ! !ARGUMENTS:
     class(atm2lnd_type) :: this
@@ -371,6 +380,27 @@ contains
          avgflag='A', long_name='floodplain inundation fraction', &
          ptr_lnd=this%frac_h2orof_grc, default='inactive')
 
+    if (use_dyn_lake) then
+       this%lake_r_Asur_grc(begg:endg) = spval
+       call hist_addfld1d(fname='LAKE_R_ASUR',  units='m2',           &
+            avgflag='A', long_name='main-channel lake surface area', &
+            ptr_lnd=this%lake_r_Asur_grc)
+
+       this%lake_r_Vtot_grc(begg:endg) = spval
+       call hist_addfld1d(fname='LAKE_R_VTOT',  units='m3',           &
+            avgflag='A', long_name='main-channel lake total volume', &
+            ptr_lnd=this%lake_r_Vtot_grc)
+
+       this%lake_t_Asur_grc(begg:endg) = spval
+       call hist_addfld1d(fname='LAKE_T_ASUR',  units='m2',           &
+            avgflag='A', long_name='sub-network lake surface area', &
+            ptr_lnd=this%lake_t_Asur_grc)
+
+       this%lake_t_Vtot_grc(begg:endg) = spval
+       call hist_addfld1d(fname='LAKE_T_VTOT',  units='m3',           &
+            avgflag='A', long_name='sub-network lake total volume', &
+            ptr_lnd=this%lake_t_Vtot_grc)
+    endif
 
 !    this%forc_wind_grc(begg:endg) = spval
 !    call hist_addfld1d (fname='WIND', units='m/s',  &

@@ -160,6 +160,7 @@ module seq_flds_mod
   logical            :: atm_gustiness       ! .true. if the atmosphere model produces gustiness
   logical            :: rof2ocn_nutrients   ! .true. if the runoff model passes nutrient fields to the ocn
   logical            :: lnd_rof_two_way     ! .true. if land-river two-way coupling turned on
+  logical            :: dyn_lake            ! .true. if dynamic lake coupling turned on
   logical            :: ocn_rof_two_way     ! .true. if river-ocean two-way coupling turned on
   logical            :: ocn_lnd_one_way     ! .true. if ocean to land one-way coupling turned on
   logical            :: rof_sed             ! .true. if river model includes sediment
@@ -416,7 +417,7 @@ contains
          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, flds_polar, flds_tf, &
          glc_nec, glc_nzoc, ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
          nan_check_component_fields, rof_heat, atm_flux_method, atm_gustiness, &
-         rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, ocn_lnd_one_way, rof_sed, &
+         rof2ocn_nutrients, lnd_rof_two_way, dyn_lake, ocn_rof_two_way, ocn_lnd_one_way, rof_sed, &
          wav_ocn_coup, wav_atm_coup, wav_ice_coup, add_iac_to_cplstate
 
     ! user specified new fields
@@ -460,6 +461,7 @@ contains
        atm_gustiness = .false.
        rof2ocn_nutrients = .false.
        lnd_rof_two_way   = .false.
+       dyn_lake          = .false.
        ocn_rof_two_way   = .false.
        ocn_lnd_one_way   = .false.
        rof_sed   = .false.
@@ -501,6 +503,7 @@ contains
     call shr_mpi_bcast(atm_gustiness, mpicom)
     call shr_mpi_bcast(rof2ocn_nutrients, mpicom)
     call shr_mpi_bcast(lnd_rof_two_way,   mpicom)
+    call shr_mpi_bcast(dyn_lake,          mpicom)
     call shr_mpi_bcast(ocn_rof_two_way,   mpicom)
     call shr_mpi_bcast(ocn_lnd_one_way,   mpicom)
     call shr_mpi_bcast(rof_sed,   mpicom)
@@ -2445,6 +2448,41 @@ contains
       stdname  = 'floodplain_inundation_infiltration'
       units    = 'mm/s'
       attname  = 'inundinf'
+      call metadata_set(attname, longname, stdname, units)
+    endif
+
+    ! dynamic lake coupling
+    if (dyn_lake) then
+      call seq_flds_add(r2x_fluxes, 'Sr_lake_r_Asur')
+      call seq_flds_add(x2l_fluxes, 'Sr_lake_r_Asur')
+      longname = 'Main-channel lake surface area'
+      stdname  = 'lake_r_Asur'
+      units    = 'm2'
+      attname  = 'lake_r_Asur'
+      call metadata_set(attname, longname, stdname, units)
+
+      call seq_flds_add(r2x_fluxes, 'Sr_lake_r_Vtot')
+      call seq_flds_add(x2l_fluxes, 'Sr_lake_r_Vtot')
+      longname = 'Main-channel lake total volume'
+      stdname  = 'lake_r_Vtot'
+      units    = 'm3'
+      attname  = 'lake_r_Vtot'
+      call metadata_set(attname, longname, stdname, units)
+
+      call seq_flds_add(r2x_fluxes, 'Sr_lake_t_Asur')
+      call seq_flds_add(x2l_fluxes, 'Sr_lake_t_Asur')
+      longname = 'Sub-network lake surface area'
+      stdname  = 'lake_t_Asur'
+      units    = 'm2'
+      attname  = 'lake_t_Asur'
+      call metadata_set(attname, longname, stdname, units)
+
+      call seq_flds_add(r2x_fluxes, 'Sr_lake_t_Vtot')
+      call seq_flds_add(x2l_fluxes, 'Sr_lake_t_Vtot')
+      longname = 'Sub-network lake total volume'
+      stdname  = 'lake_t_Vtot'
+      units    = 'm3'
+      attname  = 'lake_t_Vtot'
       call metadata_set(attname, longname, stdname, units)
     endif
 

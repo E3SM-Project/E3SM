@@ -206,6 +206,13 @@ contains
          atm2lnd_vars%frac_h2orof_grc(g) = x2l(index_x2l_Sr_frac_h2orof,i)
        endif
 
+       if (index_x2l_Sr_lake_r_Asur /= 0) then
+         atm2lnd_vars%lake_r_Asur_grc(g) = x2l(index_x2l_Sr_lake_r_Asur,i)
+         atm2lnd_vars%lake_r_Vtot_grc(g) = x2l(index_x2l_Sr_lake_r_Vtot,i)
+         atm2lnd_vars%lake_t_Asur_grc(g) = x2l(index_x2l_Sr_lake_t_Asur,i)
+         atm2lnd_vars%lake_t_Vtot_grc(g) = x2l(index_x2l_Sr_lake_t_Vtot,i)
+       endif
+
        if (index_x2l_So_ssh /= 0) then
          ocn2lnd_vars%ssh_grc(g) = x2l(index_x2l_So_ssh,i)
        endif
