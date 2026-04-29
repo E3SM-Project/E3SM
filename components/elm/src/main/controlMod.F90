@@ -331,6 +331,8 @@ contains
           fates_lu_transition_logic,                    &
           fates_history_dimlevel
 
+    namelist /elm_inparm / use_gcam_landuse
+    
     namelist /elm_inparm / use_lai_streams
 
     namelist /elm_inparm/  &
@@ -834,6 +836,7 @@ contains
     call mpi_bcast (fates_paramfile, len(fates_paramfile) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fluh_timeseries, len(fluh_timeseries) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (flandusepftdat, len(flandusepftdat) , MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (use_gcam_landuse, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_planthydro, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_cohort_age_tracking, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_ed_st3, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -1278,6 +1281,7 @@ contains
        write(iulog, *) '    fates_paramfile = ', fates_paramfile
        write(iulog, *) '    fluh_timeseries = ', trim(fluh_timeseries)
        write(iulog, *) '    flandusepftdat = ', trim(flandusepftdat)
+       write(iulog, *) '    use_gcam_landuse = ', use_gcam_landuse
        write(iulog, *) '    use_fates_planthydro = ', use_fates_planthydro
        write(iulog, *) '    use_fates_tree_damage = ', use_fates_tree_damage
        write(iulog, *) '    use_fates_cohort_age_tracking = ',use_fates_cohort_age_tracking

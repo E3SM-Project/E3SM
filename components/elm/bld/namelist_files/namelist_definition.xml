@@ -495,6 +495,11 @@ Full pathname of unified land use harmonization data file. This causes the land-
 types to vary over time.
 </entry>
 
+<entry id="use_gcam_landuse" type="logical" category="physics"
+        group="elm_inparm" valid_values="" value=".true.">
+Default is true; true enables use the dynamic landuse from GCAM; false uses land use data specified by users
+</entry>
+
 <entry id="fates_history_dimlevel" type="integer(2)" category="physics"
        group="elm_inparm" valid_values="0,1,2" >
 Setting for what types of FATES history to be allocate and
