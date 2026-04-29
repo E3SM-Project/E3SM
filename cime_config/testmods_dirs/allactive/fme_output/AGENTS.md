@@ -135,10 +135,22 @@ These are hard-won lessons. Read before modifying FME code.
     `timeSeriesStatsCustom` semantics (raw ocean-side fluxes). If
     SamudrACE training needs the atmospheric-side flux, take it from
     EAM (TAUX, TAUY, FLDS, FSDS, ...); the MPAS-O versions are the
-    ocean-side ice-weighted values. An earlier revision did the
-    recovery via `iceFraction` and cell-fill for `iceFraction>=0.99`;
-    that path was reverted to keep parity with the legacy pipeline.
-    SST, SSS, and SSH are state variables and were never corrected.
+    ocean-side ice-weighted values. SST, SSS, and SSH are state
+    variables and were never corrected.
+
+    *History (revisit if needed):* an earlier revision of this branch
+    did recover the atmospheric-side flux by dividing by
+    `(1 - iceFraction)` in both `mask_and_remap` and the
+    `surfaceHeatFluxTotal` cell loop (MPAS-O and MPAS-SI), with cells
+    at `iceFraction >= 0.99` falling back to `fillValue` to avoid
+    amplifying noise. That path was deliberately reverted on
+    2026-04-29 to keep parity with `timeSeriesStatsCustom` and the
+    legacy offline pipeline (decision applied while adopting fixes
+    from `claude/review-fme-reconciled-E56bM`). To revisit: see the
+    `mask_and_remap` body and the `surfaceHeatFluxTotal` cell loop in
+    `mpas_ocn_fme_derived_fields.F` and `mpas_seaice_fme_derived_fields.F`
+    in branch `claude/fme-reconciled.bak-pre-rebase-maint30` (commit
+    `707a185 "Recover atmospheric fluxes from coupler ice-weighting"`).
 
 14. **EAM averaging convention.** State variables (T, U, V, STW, PS, TS)
     are instantaneous snapshots (`avgflag_pertape='I'`). Fluxes and
