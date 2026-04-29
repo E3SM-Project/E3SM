@@ -34,6 +34,8 @@ void RungeKutta2Stepper::doStep(OceanState *State,   // model state
    Array3DReal CurTracerArray  = Tracers::getAll(CurLevel);
    Array3DReal NextTracerArray = Tracers::getAll(NextLevel);
 
+   prescribeState(State, CurLevel, State, CurLevel, SimTime);
+
    // q = (h,u,phi)
    // R_q^{n} = RHS_q(u^{n}, h^{n}, phi^{n}, t^{n})
    Tend->computeAllTendencies(State, AuxState, CurTracerArray, CurLevel,
@@ -47,6 +49,8 @@ void RungeKutta2Stepper::doStep(OceanState *State,   // model state
    State->exchangeHalo(NextLevel);
    MeshHalo->exchangeFullArrayHalo(NextTracerArray, OnCell);
 
+   prescribeState(State, NextLevel, State, CurLevel, SimTime + 0.5 * TimeStep);
+
    // R_q^{n+0.5} = RHS_q(u^{n+0.5}, h^{n+0.5}, phi^{n+0.5}, t^{n+0.5})
    Tend->computeAllTendencies(State, AuxState, NextTracerArray, NextLevel,
                               NextLevel, NextLevel, SimTime + 0.5 * TimeStep);
@@ -55,8 +59,6 @@ void RungeKutta2Stepper::doStep(OceanState *State,   // model state
    updateStateByTend(State, NextLevel, State, CurLevel, TimeStep);
    updateTracersByTend(NextTracerArray, CurTracerArray, State, NextLevel, State,
                        CurLevel, TimeStep);
-
-   prescribeState(State, NextLevel, State, CurLevel, SimTime + TimeStep);
 
    // Update time levels (New -> Old) of prognostic variables with halo
    // exchanges
