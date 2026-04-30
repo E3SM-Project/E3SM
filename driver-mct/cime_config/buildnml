@@ -454,6 +454,64 @@ def buildnml(case, caseroot, component):
     rundir = case.get_value("RUNDIR")
 
     safe_copy(os.path.join(confdir,"drv_in"), rundir)
+
+    # Check for GCAM activation and set add_iac_to_cplstate in drv_in if needed
+    gcam_in_path = os.path.join(rundir, "gcam_in")
+    drv_in_path = os.path.join(rundir, "drv_in")
+    
+    if os.path.exists(gcam_in_path) and os.path.exists(drv_in_path):
+        try:
+            # if gcam_in exists, then the ehc is active
+            gcam_active = True
+            
+            if gcam_active:
+                # Read drv_in file
+                with open(drv_in_path, 'r') as f:
+                    drv_lines = f.readlines()
+                
+                # Look for add_iac_to_cplstate setting
+                iac_found = False
+                iac_updated = False
+                
+                for i, line in enumerate(drv_lines):
+                    if re.search(r'^\s*add_iac_to_cplstate\s*=', line, re.IGNORECASE):
+                        iac_found = True
+                        # Check if it's already .true.
+                        if re.search(r'add_iac_to_cplstate\s*=\s*\.true\.', line, re.IGNORECASE):
+                            logger.info("add_iac_to_cplstate already set to .true. in drv_in")
+                        else:
+                            # Replace with .true. setting
+                            drv_lines[i] = re.sub(r'(add_iac_to_cplstate\s*=\s*)[^,\s]+', 
+                                                  r'\1.true.', line)
+                            iac_updated = True
+                            logger.info("Updated add_iac_to_cplstate to .true. in drv_in due to GCAM activation")
+                        break
+                
+                # If add_iac_to_cplstate not found, add it to seq_cplflds_inparm namelist
+                if not iac_found:
+                    in_seq_cplflds = False
+                    namelist_added = False
+                    
+                    for i, line in enumerate(drv_lines):
+                        if re.search(r'&seq_cplflds_inparm', line, re.IGNORECASE):
+                            in_seq_cplflds = True
+                        elif in_seq_cplflds and re.search(r'^\s*/', line):
+                            # Found end of namelist, insert before the /
+                            drv_lines.insert(i, ' add_iac_to_cplstate = .true.\n')
+                            namelist_added = True
+                            logger.info("Added add_iac_to_cplstate = .true. to seq_cplflds_inparm in drv_in due to GCAM activation")
+                            break
+                    
+                    if namelist_added:
+                        iac_updated = True
+                
+                # Write back the modified drv_in file
+                if iac_updated:
+                    with open(drv_in_path, 'w') as f:
+                        f.writelines(drv_lines)
+                        
+        except Exception as e:
+            logger.warning("Failed to update add_iac_to_cplstate in drv_in: {}".format(e))
     drv_flds_in = os.path.join(caseroot, "CaseDocs", "drv_flds_in")
     if os.path.isfile(drv_flds_in):
         safe_copy(drv_flds_in, rundir)

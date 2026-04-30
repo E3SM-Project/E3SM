@@ -152,7 +152,7 @@ contains
           ! transient
           ! Patches combined with create_crop_landunit anyway, so it's a moot
           ! point.)
-          if (lun_pp%itype(l) == istsoil) then
+          if (col_pp%is_soil(c)) then
              ! interpolate between the yearly data; from dynvartimeinterp
              ! Note that the following assignment assumes that all Patches share a
              ! single column
@@ -199,7 +199,7 @@ contains
        harvest_rates(:,begg:endg) = 0._r8
        do g = begg,endg
          do c = bounds%begc, bounds%endc
-            if (col_pp%itype(c) .eq. 1 .and. col_pp%gridcell(c) .eq. g) then
+            if (col_pp%is_soil(c) .and. col_pp%gridcell(c) .eq. g) then
                 ! sum the harvest data into one field 
                 do h=0,(numharvest-1)
                    if (.not.(col_pp%wtgcell(c) .eq. 0._r8)) then

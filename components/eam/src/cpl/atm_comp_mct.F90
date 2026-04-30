@@ -223,6 +223,10 @@ CONTAINS
 
        ! Determine attribute vector indices
 
+       ! Get iac_present from infodata BEFORE cam_cpl_indices_set
+       ! so that IAC coupling indices are properly initialized
+       call seq_infodata_GetData( infodata, iac_present=iac_present)
+
        call cam_cpl_indices_set()
 
        ! Initialize MPI for CAM
@@ -358,7 +362,7 @@ CONTAINS
        ! First phase of cam initialization
        ! Initialize mpicom_atm, allocate cam_in and cam_out and determine
        ! atm decomposition (needed to initialize gsmap)
-       ! for an initial run, cam_in and cam_out are allocated in cam_initial
+       ! for an initial run, cam_in and cam_out are allocated in is called the second time in atm_initial
        ! for a restart/branch run, cam_in and cam_out are allocated in restart
        ! Set defaults then override with user-specified input and initialize time manager
        ! Note that the following arguments are needed to cam_init for timemgr_restart only
@@ -502,6 +506,12 @@ CONTAINS
           call atm_import( x2a_a%rattr, cam_in )
 #endif
 
+
+         ! for examining surface cflx update timing - aldivi
+         if (masterproc) write(iulog,*)'cflx-log: atm_import and cam_run1 for StepNo=0 in atm_init_mct'
+         if (masterproc) write(iulog,*)'sync ymd=',CurrentYMD
+
+
           call t_startf('CAM_run1')
           call cam_run1 ( cam_in, cam_out )
           call t_stopf('CAM_run1')
@@ -553,6 +563,11 @@ CONTAINS
           call t_startf('cam_run1')
           call cam_run1 ( cam_in, cam_out )
           call t_stopf('cam_run1')
+
+         ! for examining surface cflx update timing - aldivi
+         if (masterproc) write(iulog,*)'cflx-log: atm_import and cam_run1 for restart in atm_init_mct'
+         if (masterproc) write(iulog,*)'sync ymd=',CurrentYMD
+
        end if
 
        ! Compute time of next radiation computation, like in run method for exact restart
@@ -709,6 +724,12 @@ CONTAINS
        tod = tod
        dosend = (seq_timemgr_EClockDateInSync( EClock, ymd, tod))
 
+       ! for examining surface cflx update timing - aldivi
+       if (masterproc) write(iulog,*)'cflx-log: at beginning of while(!dosend) loop in atm_run_mct, calling cam_run 2-4'
+       if (masterproc) write(iulog,*)' cam ymd=',ymd     ,'  cam tod= ',tod
+       if (masterproc) write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
+
+
        ! Determine if time to write cam restart and stop
 
        rstwr = .false.
@@ -742,6 +763,13 @@ CONTAINS
        call t_startf ('CAM_adv_timestep')
        call advance_timestep()
        call t_stopf  ('CAM_adv_timestep')
+
+
+       ! for examining surface cflx update timing - aldivi
+       if (masterproc) write(iulog,*)'cflx-log: after cam time advance in while(!dosend) loop in atm_run_mct, calling cam_run1 and atm_export'
+       if (masterproc) write(iulog,*)'adding the advance manually: cam ymd=',ymd,'  cam tod= ',tod + get_step_size()
+       if (masterproc) write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
+
 
        ! Run cam radiation/clouds (run1)
 
@@ -815,6 +843,13 @@ CONTAINS
        write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
        call shr_sys_abort( subname//': CAM clock is not in sync with master Sync Clock' )
     end if
+
+
+   ! for examining surface cflx update timing - aldivi
+   if (masterproc) write(iulog,*)'cflx-log: after writing srfc rstrt, at end of atm_run_mct'
+   if (masterproc) write(iulog,*)'including -dtime offset: cam ymd=',ymd     ,'  cam tod= ',tod
+   if (masterproc) write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
+
 
     ! End redirection of share output to cam log
 
