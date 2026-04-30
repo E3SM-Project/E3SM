@@ -107,6 +107,7 @@ contains
       integer, dimension(:,:), pointer :: validOceanMask, validOceanMaskOrig, availOceanMask !masks to pass to flood-fill routine
       integer, dimension(:), pointer :: seedOceanMaskHoriz, growOceanMaskHoriz
       real (kind=RKIND), dimension(:,:), pointer :: oceanSalinity, oceanTemperature
+      real (kind=RKIND), dimension(:,:), pointer :: oceanSalinityApplied, oceanTemperatureApplied
       integer, dimension(:), allocatable :: seedOceanMaskHorizOld
       integer, pointer :: nCells, nCellsSolve, nISMIP6OceanLayers, nCellsExtra
       integer, dimension(:), pointer :: cellMask, nEdgesOnCell
@@ -162,6 +163,8 @@ contains
          if (config_calculate_thermal_forcing) then
             call mpas_pool_get_array(extrapOceanDataPool, 'oceanTemperature', oceanTemperature)
             call mpas_pool_get_array(extrapOceanDataPool, 'oceanSalinity', oceanSalinity)
+            call mpas_pool_get_array(extrapOceanDataPool, 'oceanSalinityApplied', oceanSalinityApplied)
+            call mpas_pool_get_array(extrapOceanDataPool, 'oceanTemperatureApplied', oceanTemperatureApplied)
          endif
 
          ! check parameterization compatibility. TF_vertical_calc = '200-500'
@@ -243,7 +246,7 @@ contains
          enddo
         
          ! now create mask of all marine locations connected to open ocean - to be used below to screen out lakes
-         call li_flood_fill(seedMask, growMask, domain)
+         call li_flood_fill(domain)
          
          connectedMarineMask(:) = seedMask(:)
          
@@ -277,7 +280,7 @@ contains
         
          ! now create mask of all marine locations connected to open ocean
          ! through ice-free cells - to be used below to screen out lakes
-         call li_flood_fill(seedMask, growMask, domain)
+         call li_flood_fill(domain)
          
          altConnectedMarineMask(:) = seedMask(:)
          
@@ -523,9 +526,16 @@ contains
                   enddo
                endif
             enddo
+            
+            ! Assign 'applied' ocean t/s, otherwise original fields will be
+            ! clobbered by input file each time step
+
+            oceanSalinityApplied = oceanSalinity
+            oceanTemperatureApplied = oceanTemperature
+
             call mpas_timer_start("halo_updates")
-            call mpas_dmpar_field_halo_exch(domain,'oceanSalinity')
-            call mpas_dmpar_field_halo_exch(domain,'oceanTemperature')
+            call mpas_dmpar_field_halo_exch(domain,'oceanSalinityApplied')
+            call mpas_dmpar_field_halo_exch(domain,'oceanTemperatureApplied')
             call mpas_dmpar_field_halo_exch(domain,'ismip6shelfMelt_3dThermalForcing')
             call mpas_dmpar_field_halo_exch(domain,'growMask')
             call mpas_timer_stop("halo_updates")
@@ -941,7 +951,7 @@ contains
       
       ! Main difference between TF parameterization is how we collapse into 2d, which happens in mpas_li_ice_shelt_melt.F
       do iCell = 1, nCells
-         if (config_TF_iceberg_melt == 'off') then
+         if ( (config_TF_iceberg_melt == 'off') .or. ( (config_TF_iceberg_melt == 'mask') .and. (icebergFjordMask(iCell) == 0) ) ) then
 
             ! From Jenkins 2011 and Slater 2020
             do iLayer = 1, nISMIP6OceanLayers
