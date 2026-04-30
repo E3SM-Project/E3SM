@@ -272,7 +272,7 @@ void TimeStepper::clear() {
 // Initialize the default time stepper in two phases
 
 // Begin initialization of the default time stepper (phase 1)
-// This is primarily the time information.
+// This is primarily the time information read directly from the config file
 void TimeStepper::init1() {
 
    Error Err; // error code - default to success
@@ -283,23 +283,11 @@ void TimeStepper::init1() {
    Err = OmegaConfig->get(TimeIntConfig);
    CHECK_ERROR_ABORT(Err, "TimeIntegration group not found in Config");
 
-   // Must initialize the calendar first
+   // Must initialize the calendar first, before any TimeInstant objects
    std::string CalendarStr;
    Err += TimeIntConfig.get("CalendarType", CalendarStr);
    CHECK_ERROR_ABORT(Err, "CalendarType not found in TimeIntegration Config");
    Calendar::init(CalendarStr);
-
-   // Initialize choice of time stepper
-   std::string TimeStepperStr;
-   Err += TimeIntConfig.get("TimeStepper", TimeStepperStr);
-   CHECK_ERROR_ABORT(Err, "TimeStepper not found in TimeIntegration Config");
-   TimeStepperType TimeStepperChoice = getTimeStepperFromStr(TimeStepperStr);
-
-   // Initialize time step
-   std::string TimeStepStr;
-   Err += TimeIntConfig.get("TimeStep", TimeStepStr);
-   CHECK_ERROR_ABORT(Err, "TimeStep not found in TimeIntegration Config");
-   TimeInterval TimeStep(TimeStepStr);
 
    // Initialize start time
    std::string StartTimeStr;
@@ -360,12 +348,48 @@ void TimeStepper::init1() {
              getPrescribeVelocityTypeFromStr(VelocityMode);
       }
    }
+   
+   TimeInitParams TimeParams{StartTime, StopTime};
+
+   init1(TimeParams);
+}
+
+void TimeStepper::init1(const TimeInitParams &TimeParams) {
+
+   // Calendar must be initialized before this is called — the no-arg init1()
+   // does this internally. In coupled mode, the caller (ocnInit) is responsible
+   // for calling Calendar::init() before constructing TimeInitParams.
+   OMEGA_REQUIRE(Calendar::isDefined(),
+                 "Calendar must be initialized before TimeStepper::init1");
+
+   Error Err; // error code - default to success
+
+   // TimeStepper and TimeStep are always read from the Config
+   Config *OmegaConfig = Config::getOmegaConfig();
+   Config TimeIntConfig("TimeIntegration");
+   Err = OmegaConfig->get(TimeIntConfig);
+   CHECK_ERROR_ABORT(Err, "TimeIntegration group not found in Config");
+
+   // Initialize choice of time stepper
+   std::string TimeStepperStr;
+   Err += TimeIntConfig.get("TimeStepper", TimeStepperStr);
+   CHECK_ERROR_ABORT(Err, "TimeStepper not found in TimeIntegration Config");
+   TimeStepperType TimeStepperChoice = getTimeStepperFromStr(TimeStepperStr);
+
+   // Initialize time step
+   std::string TimeStepStr;
+   Err += TimeIntConfig.get("TimeStep", TimeStepStr);
+   CHECK_ERROR_ABORT(Err, "TimeStep not found in TimeIntegration Config");
+   TimeInterval TimeStep(TimeStepStr);
+
+   // Local non-const copies required by the 2-phase create() signature
+   TimeInstant StartTime = TimeParams.StartTime;
 
    // Now that all the inputs are defined, create the default time stepper
    // Use the partial creation function for only the time info. Data
    // pointers will be attached in phase 2 initialization
-   TimeStepper::DefaultTimeStepper =
-       create("Default", TimeStepperChoice, TimeStep, StartTime, StopTime);
+   TimeStepper::DefaultTimeStepper = create(
+       "Default", TimeStepperChoice, TimeStep, StartTime, TimeParams.StopTime);
 }
 
 //------------------------------------------------------------------------------

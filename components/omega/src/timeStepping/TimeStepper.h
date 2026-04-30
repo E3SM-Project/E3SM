@@ -67,6 +67,16 @@ enum class TimeStepperType {
 /// reference time level
 enum class PrescribeStateType { None, Init, NonDivergent, Divergent, Invalid };
 
+/// Parameters required by TimeStepper::init1 for time setup.
+/// In standalone mode all fields are populated from config.
+/// In coupled mode, StartTime comes from the coupler and StopTime is absent
+/// (the coupler controls run length externally).
+/// Calendar::init() must be called before constructing this struct.
+struct TimeInitParams {
+   TimeInstant StartTime;               ///< Simulation start time
+   std::optional<TimeInstant> StopTime; ///< Absent in coupled mode
+};
+
 //------------------------------------------------------------------------------
 // Utility routine
 /// Translate string for time stepper type into enum
@@ -96,6 +106,7 @@ class TimeStepper {
 
    /// 1st phase of Initialization for the default time stepper
    static void init1();
+   static void init1(const TimeInitParams &TimeParams);
 
    /// 2nd phase of Initialization for the default time stepper
    static void init2();
