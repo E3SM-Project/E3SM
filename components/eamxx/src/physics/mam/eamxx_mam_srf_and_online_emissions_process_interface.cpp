@@ -296,6 +296,9 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   set_ranges_process(ranges_emissions);
   add_interval_checks();
 
+  // Get dust emission scheme from namelist
+  auto dust_emis_scheme = m_params.get<int>("dust_emis_scheme", 1);
+
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
@@ -341,6 +344,13 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   soilErodibilityFunc::update_soil_erodibility_data_from_file(
       serod_dataReader_, *serod_horizInterp_,
       soil_erodibility_);  // output
+
+  // For dust emission scheme 2, override soil erodibility to 1
+  if (dust_emis_scheme == 2) {
+    auto soil_erod_ones = view_1d("soil_erod_ones", ncol_);
+    Kokkos::deep_copy(soil_erod_ones, 1.0);
+    soil_erodibility_ = soil_erod_ones;
+  }
 
   //--------------------------------------------------------------------
   // Update marine orgaincs from file
