@@ -156,6 +156,9 @@ vtrmi1 = 0,
 \rho_{qm,\mathrm{cloud}} = 400.
 $$
 
+When `context` is false, the routine does not modify either output lane. The
+incoming values of `vtrmi1` and `rho_qm_cloud` are preserved.
+
 The default value is therefore `rho_qm_cloud = 400 kg m^-3`, and the wet-growth
 upper endpoint of the fit is `rho_qm_cloud = 900 kg m^-3` at `Ri = 12`.
 

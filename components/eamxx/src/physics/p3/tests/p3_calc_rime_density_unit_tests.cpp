@@ -67,21 +67,19 @@ struct UnitWrap::UnitTest<D>::TestCalcRimeDensity : public UnitWrap::UnitTest<D>
   {
     std::array<RimeLane, max_pack_size> lanes;
     for (Int s = 0; s < max_pack_size; ++s) {
-      lanes[s] = {
-        C::T_zerodegc.value - (5.0 + 0.5 * s),
-        0.65 + 0.03 * s,
-        0.8 + 0.08 * s,
-        0.35 + 0.04 * s,
-        2.8 + 0.15 * s,
-        1.1 + 0.08 * s,
-        5.0 * C::QSMALL,
-        4.0 * C::QSMALL,
-        true,
-        0.0,
-        400.0,
-        0.0,
-        0.0
-      };
+      lanes[s].T_atm                = C::T_zerodegc.value - (5.0 + 0.5 * s);
+      lanes[s].rhofaci              = 0.65 + 0.03 * s;
+      lanes[s].table_val_qi_fallspd = 0.8 + 0.08 * s;
+      lanes[s].acn                  = 0.35 + 0.04 * s;
+      lanes[s].lamc                 = 2.8 + 0.15 * s;
+      lanes[s].mu_c                 = 1.1 + 0.08 * s;
+      lanes[s].qc_incld             = 5.0 * C::QSMALL;
+      lanes[s].qc2qi_collect_tend   = 4.0 * C::QSMALL;
+      lanes[s].context              = true;
+      lanes[s].vtrmi1_in            = 0.0;
+      lanes[s].rho_qm_cloud_in      = 400.0;
+      lanes[s].vtrmi1_out           = 0.0;
+      lanes[s].rho_qm_cloud_out     = 0.0;
     }
     return lanes;
   }
