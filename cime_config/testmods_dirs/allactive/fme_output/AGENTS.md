@@ -188,6 +188,34 @@ These are hard-won lessons. Read before modifying FME code.
     only configured expression is `STW=Q+CLDICE+CLDLIQ+RAINQM`, which
     has no division.
 
+19. **Verify dashboard uses per-layer bathymetry masks for depth-coarsened
+    fields.** A naive surface-SST land mask flags every deep
+    layer-below-seafloor cell as a false-positive "ocean NaN". The dashboard
+    now bootstraps both a surface mask (from SST) and a per-layer mask (from
+    `layerThicknessCoarsened_{k}`) in a dedicated first pass before the main
+    check loop, then chooses the appropriate mask per variable. The first
+    pass also fixes a quiet ordering bug where flux variables sorted before
+    `sst` lexicographically were never mask-checked.
+
+20. **Verify cross-compare uses abs_diff for sign-changing / near-zero
+    fields.** Global-mean TAUX/TAUY oscillate around zero, so any small
+    discrepancy blows up `rel_diff` (e.g. 0.003 N/m^2 of remap noise becomes
+    37%). Same for ICEFRAC, FSUS, FLUS over partial-ice cells when the FME
+    averaged tape is compared against the legacy daily tape. EAM
+    cross-verify defines `GMEAN_ABS_TOL = {TAUX, TAUY, ICEFRAC, FSUS, FLUS}`
+    and passes if `abs_diff < tol` even when `rel_diff` is large. MPAS-O
+    `check_remap_conservation` uses `ssh_abs_tol = 3 m` because SSH global
+    mean depends on the volume-conservation reference choice
+    (pressureAdjustedSSH vs raw) and can offset by O(1 m) even when the
+    spatial pattern matches.
+
+21. **`surfaceTemperatureMean` is Celsius, not Kelvin.** The MPAS-SI
+    `mpas_seaice_fme_derived_fields.F` averages Icepack `surfaceTemperature`
+    which is in Celsius. The Registry XML now declares `units="degC"` to
+    match. All verify plot vmin/vmax use `(-45, 5)` degC; RANGE_CHECKS
+    uses `(-50, 5)`. Do NOT change the Fortran to convert to Kelvin
+    without auditing all four sites in `verify_mpas.py`.
+
 ## Runtime Configuration
 
 Both `fme_output` and `fme_legacy_output` testmods accept environment variables:
@@ -220,12 +248,72 @@ python verify_mpas.py --rundir $RUNDIR --outdir /path/to/figs \
     --legacy-rundir $LEGACY_RUNDIR
 ```
 
+## Verification Dashboard
+
+`verify_eam.py` and `verify_mpas.py` produce HTML+figure dashboards. Each
+runs three classes of check:
+
+1. **Per-stream sanity:** file inventory, variable presence, range bounds,
+   global stats. Generates summary tables and last-timestep maps.
+2. **Cross-stream physics:** radiation budget closure (EAM), heat-flux
+   sum closure (MPAS-O), per-layer bathymetry consistency
+   (depth-coarsening), temporal monotonicity.
+3. **Cross-testmod comparison:** FME (online remap) vs legacy
+   (timeSeriesStatsCustom + offline pipeline) global means, side-by-side
+   maps, vcoarsen linearity. Requires both `--rundir` and `--legacy-rundir`.
+
+Each script ends with an "ACE Training Readiness Certification" section
+that gates production. The certification passes when:
+- All expected ACE variables are present
+- No NaN/fill in cells expected to be ocean (per-layer bathymetry-aware
+  for depth-coarsened fields; surface SST mask for surface fields;
+  ice-only fields exempt)
+- Physical ranges respected
+- Radiation/heat-flux budgets close to within ~5 W/m^2
+
+### Production-readiness assessment (as of 2026-04-30)
+
+EAM dashboard PASSes 7/7. Two open questions to investigate before the
+SamudrACE 100-yr training run:
+- **Topographic fill validation** for vcoarsen layers 5-7 (lower
+  troposphere) shows 0% actual fill where 0.22-13.4% expected. Either
+  the script's expected-fill lookup is stale relative to ne30pg2 hybrid
+  coordinates, or `eam_vcoarsen.F90` is not masking sub-terrain cells.
+  Resolve before production.
+- **STW vcoarsen linearity** shows max relative error of 25%
+  (`STW_k != Q_k + CLDLIQ_k + CLDICE_k + RAINQM_k` at the layer-decomposed
+  level). STW is the SamudrACE training prognostic; this should be tight.
+
+MPAS dashboard PASSes after the 2026-04-30 verify-script edits described
+in gotchas #19-#21. Open question:
+- Latent/sensible heat flux extremes at Gulf Stream / Kuroshio winter
+  outbreaks reach -1000 W/m^2. Range bounds were loosened from
+  ±500 W/m^2 to (-1200, 500) W/m^2 for LHFLX and (-800, 500) W/m^2 for
+  SHFLX based on reanalysis observations. Cross-check FME vs legacy
+  values cell-by-cell at the extreme locations to confirm physical (not
+  remap artifact) before declaring done.
+
 ## Remaining Work
 
 ### Near-term
 - Add CI test variant (SMS_Ld2, ne4pg2_oQU480 for fast builds)
 - Add ERS restart test and PEM MPI reproducibility test
-- Parameterize map file paths via env variables in shell_commands
+
+### Verify-script hardening (open from 2026-04-30 punch list)
+- Restart-boundary continuity check (look for `dt < median_dt` indicating
+  a half-window dropped at the restart boundary; `MPAS_NOW` baseline
+  intentionally drops partial pre-restart samples).
+- Time-axis-on-grid check (assert `time mod nominal_interval ≈ 0` now
+  that `avg_last_output_time + avg_output_interval` advances exactly).
+- `_inst` companion variable presence/range check (production sets
+  `config_AM_fmeDepthCoarsening_write_instantaneous_companion=.true.`
+  but verify never reads `*_inst` fields).
+- Coverage-eps coastline parity: compare fill mask of
+  `temperatureCoarsened_0` (apply_masked path) vs `sst` (apply path);
+  both should now agree to within ~one cell after the unified
+  `SHR_COVERAGE_EPS=1e-6` (gotcha #17).
+- Suppress `RuntimeWarning: Mean of empty slice` via `np.errstate`
+  around `np.nanmean` calls (cosmetic).
 
 ### Code quality
 - 3D PIO decomposition for depth-coarsened fields (single 3D var instead of

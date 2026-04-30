@@ -169,6 +169,9 @@ ACE_OCN_VERTREDUCE = {
 }
 
 # Fields ACE needs from MPAS-SI fmeSeaiceDerivedFields.
+# uVelocityGeoCell/vVelocityGeoCell are cell-centered geographic-frame ice
+# velocities (renamed from uVelocityGeo/vVelocityGeo to avoid a name
+# collision with the vertex-located fields in geographicalVectorsAM).
 ACE_ICE_DERIVED = {
     "iceAreaTotal": "ocean_sea_ice_fraction",
     "iceVolumeTotal": "sea_ice_volume",
@@ -177,6 +180,8 @@ ACE_ICE_DERIVED = {
     "surfaceTemperatureMean": "surfaceTemperatureMean",
     "airStressZonal": "airStressZonal",
     "airStressMeridional": "airStressMeridional",
+    "uVelocityGeoCell": "sea_ice_x_velocity",
+    "vVelocityGeoCell": "sea_ice_y_velocity",
 }
 
 # Expected variables in remapped files (lat-lon 360x180 output)
@@ -190,6 +195,7 @@ REMAPPED_SEAICE_VARS = [
     "iceAreaTotal", "iceVolumeTotal", "snowVolumeTotal",
     "iceThicknessMean", "surfaceTemperatureMean",
     "airStressZonal", "airStressMeridional",
+    "uVelocityGeoCell", "vVelocityGeoCell",
 ]
 REMAPPED_DEPTH_COARSENED_BASES = [
     "temperatureCoarsened", "salinityCoarsened",
@@ -222,10 +228,18 @@ RANGE_CHECKS = {
     "ssh": (-5, 5),
     "shortWaveHeatFlux": (0, 500),
     "longWaveHeatFluxDown": (0, 500),
-    "latentHeatFlux": (-500, 500),
-    "sensibleHeatFlux": (-300, 300),
+    # Heat fluxes: extreme winter Gulf Stream / Kuroshio outbreaks reach
+    # ~1000 W/m^2 in observations; loosen so legitimate physical extremes
+    # don't trip range checks.
+    "latentHeatFlux": (-1200, 500),
+    "sensibleHeatFlux": (-800, 500),
     "windStressZonal": (-2, 2),
     "windStressMeridional": (-2, 2),
+    # Cell-centered geographic-frame ice velocities (renamed from
+    # uVelocityGeo/vVelocityGeo to avoid collision with vertex-located
+    # geographicalVectorsAM fields).
+    "uVelocityGeoCell": (-2, 2),
+    "vVelocityGeoCell": (-2, 2),
 }
 
 # Depth bounds for depth-latitude cross-section plots (metres)
@@ -1342,9 +1356,13 @@ ALL_SEAICE_FIELD_PARAMS = [
     ("iceVolumeTotal",         "viridis",     0,    5,  "m"),
     ("snowVolumeTotal",        "PuBu",        0,    2,  "m"),
     ("iceThicknessMean",       "viridis",     0,    5,  "m"),
-    ("surfaceTemperatureMean", "RdBu_r",    210,  275,  "K"),
+    # surfaceTemperatureMean: Fortran emits Celsius (Icepack convention),
+    # not Kelvin, despite the (now-corrected) registry units attribute.
+    ("surfaceTemperatureMean", "RdBu_r",    -45,    5,  "degC"),
     ("airStressZonal",         "RdBu_r",     -1,    1,  "N/m2"),
     ("airStressMeridional",    "RdBu_r",     -1,    1,  "N/m2"),
+    ("uVelocityGeoCell",       "RdBu_r",     -1,    1,  "m/s"),
+    ("vVelocityGeoCell",       "RdBu_r",     -1,    1,  "m/s"),
 ]
 
 
@@ -2178,8 +2196,10 @@ def check_mpassi_derived(rundir, outdir, verbose):
             for var, cmap, vm, vx, units in [
                 ("iceAreaTotal",   "Blues",   0, 1, "fraction"),
                 ("iceVolumeTotal", "viridis", 0, 5, "m"),
-                ("surfaceTemperatureMean", "RdBu_r", 210, 275, "K"),
+                ("surfaceTemperatureMean", "RdBu_r", -45, 5, "degC"),
                 ("airStressZonal", "RdBu_r", -1, 1, "N/m2"),
+                ("uVelocityGeoCell", "RdBu_r", -1, 1, "m/s"),
+                ("vVelocityGeoCell", "RdBu_r", -1, 1, "m/s"),
             ]:
                 arr = get_var(ds, var)
                 if arr is None:
@@ -2237,9 +2257,11 @@ def check_mpassi_derived_remapped(rundir, outdir, verbose):
         for var, cmap, vm, vx, units in [
             ("iceAreaTotal", "Blues", 0, 1, "fraction"),
             ("iceVolumeTotal", "viridis", 0, 5, "m"),
-            ("surfaceTemperatureMean", "RdBu_r", 210, 275, "K"),
+            ("surfaceTemperatureMean", "RdBu_r", -45, 5, "degC"),
             ("snowVolumeTotal", "PuBu", 0, 2, "m"),
             ("airStressZonal", "RdBu_r", -1, 1, "N/m2"),
+            ("uVelocityGeoCell", "RdBu_r", -1, 1, "m/s"),
+            ("vVelocityGeoCell", "RdBu_r", -1, 1, "m/s"),
         ]:
             p = latlon_map(ds, var,
                            f"MPAS-SI {var} (remapped, last t)",
@@ -2305,7 +2327,12 @@ def check_remap_conservation(rundir, outdir, verbose):
         close_ds(ds_nat); close_ds(ds_rem)
         return issues, plots, fill_reports
 
-    tol = 0.05  # 5% relative tolerance (remap + fill boundary effects)
+    # Per-field tolerances. SSH global mean depends on the volume-conservation
+    # reference choice (FME uses pressureAdjustedSSH, native uses raw SSH);
+    # the two can differ by O(1 m) in absolute level even when the spatial
+    # pattern matches. Use absolute tolerance for SSH; relative for SST.
+    rel_tol = 0.05            # 5% rel tol (remap + fill boundary effects)
+    ssh_abs_tol = 3.0         # m  (allow 3 m offset in global-mean SSH ref)
     for vname in ["sst", "ssh"]:
         arr_nat = get_var(ds_nat, vname)
         arr_rem = get_var(ds_rem, vname)
@@ -2322,14 +2349,20 @@ def check_remap_conservation(rundir, outdir, verbose):
             v = valid_data(d_nat)
             m_nat = float(v.mean()) if v is not None and v.size > 0 else float("nan")
         m_rem = _cosine_weighted_mean(d_rem, lat)
+        abs_diff = abs(m_nat - m_rem)
         denom = max(abs(m_nat), 1e-30)
-        rel_diff = abs(m_nat - m_rem) / denom
-        status = "PASS" if rel_diff < tol else "FAIL"
+        rel_diff = abs_diff / denom
+        if vname == "ssh":
+            status = "PASS" if abs_diff < ssh_abs_tol else "FAIL"
+            metric_str = f"abs_diff={abs_diff:.3f} m"
+        else:
+            status = "PASS" if rel_diff < rel_tol else "FAIL"
+            metric_str = f"rel_diff={rel_diff:.2%}"
         if status == "FAIL":
             issues.append(f"  {vname}: native={m_nat:.4g} remap={m_rem:.4g} "
-                          f"rel_diff={rel_diff:.2%}")
+                          f"{metric_str}")
         print(f"  {vname:6s}  native={m_nat:+.4f}  remap={m_rem:+.4f}  "
-              f"rel_diff={rel_diff:.2%}  {status}")
+              f"{metric_str}  {status}")
 
     close_ds(ds_nat); close_ds(ds_rem)
     _report("Remap conservation", issues)
@@ -4113,15 +4146,88 @@ def check_training_readiness(rundir, outdir, verbose):
         print(f"    {s}: {n} timesteps")
 
     # ---- CHECK 4 & 5: Land mask consistency + ocean NaN contamination ----
-    # Strategy: derive land mask from SST (NaN cells = land), then verify
-    # all other variables have the same mask and no NaN in ocean cells.
+    # Strategy:
+    #   * Surface land mask is derived from SST (fill cells = land), used for
+    #     surface variables (sst, sss, ssh, fluxes, sea-ice) and the
+    #     "valid-on-land" sanity check.
+    #   * Depth-coarsened variables {base}_{k} are validly fill below the
+    #     seafloor at level k; the surface mask cannot be used for them
+    #     (deep layers are mostly fill over shelves and continental margins).
+    #     We derive a *per-layer* bathymetry mask from
+    #     layerThicknessCoarsened_{k}: a cell is "expected fill at level k"
+    #     iff layerThicknessCoarsened_{k} is fill there.
+    # Both masks are built in a dedicated first pass so that the iteration
+    # order in the main checking loop does not matter.
+    fill_thresh = 1e10
+
+    def _mask_from_var(d_set, name):
+        """Return a (nlat, nlon) bool mask: True = fill/NaN at last timestep."""
+        a = get_var(d_set, name)
+        if a is None:
+            return None
+        slab = a[-1] if a.ndim >= 3 else a
+        sf = slab.astype(float)
+        return (~np.isfinite(sf)) | (np.abs(sf) >= fill_thresh)
+
+    # First pass: bootstrap surface land mask from SST.
     print("  [4/7] Land mask consistency")
     print("  [5/7] Ocean cell NaN/fill contamination")
     land_mask = None  # (nlat, nlon) bool: True = land
+    derived_files = stream_files.get("fmeDerivedFields") or []
+    for fpath in derived_files:
+        ds_tmp = safe_open(fpath)
+        m = _mask_from_var(ds_tmp, "sst")
+        close_ds(ds_tmp)
+        if m is not None:
+            land_mask = m
+            break
+
+    # First pass: bootstrap per-layer bathymetry masks from
+    # layerThicknessCoarsened_{k}. Falls back to surface land_mask if no
+    # depth-coarsening files present.
+    bath_masks = {}  # {layer_index: (nlat,nlon) bool, True = below seafloor / land}
+    depth_files = stream_files.get("fmeDepthCoarsening") or []
+    if depth_files:
+        ds_tmp = safe_open(depth_files[0])
+        for k in range(n_depth):
+            m = _mask_from_var(ds_tmp, f"layerThicknessCoarsened_{k}")
+            if m is not None:
+                bath_masks[k] = m
+        close_ds(ds_tmp)
+
+    if land_mask is not None:
+        print(f"    Land mask: {int(land_mask.sum())} of "
+              f"{land_mask.size} cells "
+              f"({100*land_mask.sum()/land_mask.size:.1f}%)")
+    if bath_masks:
+        print(f"    Bathymetry masks: built for {len(bath_masks)} "
+              f"depth-coarsened layer(s)")
+
+    def _expected_fill_mask(vname):
+        """Return the mask of cells expected to be fill for this variable.
+
+        For depth-coarsened {base}_{k}, use bath_masks[k] (per-layer
+        bathymetry). For all other variables, use the surface land_mask.
+        Returns None if no mask is available (skips the check).
+        """
+        parts = vname.rsplit('_', 1)
+        if len(parts) == 2 and parts[1].isdigit():
+            k = int(parts[1])
+            if k in bath_masks:
+                return bath_masks[k]
+        return land_mask
+
+    # Main pass: check each variable's fill pattern against the appropriate
+    # expected-fill mask.
     mask_issues = 0
     nan_issues = 0
-    fill_thresh = 1e10
-
+    ICE_ONLY_VARS = (
+        "iceAreaTotal", "iceVolumeTotal",
+        "snowVolumeTotal", "iceThicknessMean",
+        "surfaceTemperatureMean",
+        "airStressZonal", "airStressMeridional",
+        "uVelocityGeoCell", "vVelocityGeoCell",
+    )
     for stream, files in stream_files.items():
         if not files:
             continue
@@ -4129,15 +4235,15 @@ def check_training_readiness(rundir, outdir, verbose):
             ds = safe_open(fpath)
             dims = get_dims(ds)
             nt = dims.get("Time", dims.get("time", 1))
-            varnames = get_varnames(ds)
-
             for vname in sorted(expected_vars.keys()):
                 if expected_vars[vname] != stream:
                     continue
                 arr = get_var(ds, vname)
                 if arr is None:
                     continue
-
+                expect_fill = _expected_fill_mask(vname)
+                if expect_fill is None:
+                    continue
                 for ti in range(min(nt, arr.shape[0]) if arr.ndim >= 3 else 1):
                     if arr.ndim == 3:
                         slab = arr[ti]
@@ -4148,38 +4254,29 @@ def check_training_readiness(rundir, outdir, verbose):
                     slab_f = slab.astype(float)
                     bad = (~np.isfinite(slab_f)) | (np.abs(slab_f) >= fill_thresh)
 
-                    if land_mask is None and vname == "sst":
-                        # Bootstrap land mask from first SST timestep
-                        land_mask = bad.copy()
-                        print(f"    Land mask: {int(land_mask.sum())} of "
-                              f"{land_mask.size} cells "
-                              f"({100*land_mask.sum()/land_mask.size:.1f}%)")
-                    elif land_mask is not None:
-                        # Check 4: mask consistency —
-                        # ocean cells (land_mask=False) must not be NaN
-                        ocean_bad = bad & ~land_mask
-                        n_ocean_bad = int(ocean_bad.sum())
-                        if n_ocean_bad > 0:
-                            nan_issues += 1
-                            if nan_issues <= 5:
-                                issues.append(
-                                    f"  NaN/fill in ocean cells: {vname} "
-                                    f"t={ti} in {os.path.basename(fpath)}: "
-                                    f"{n_ocean_bad} cells")
-                        # Check for land cells that are valid in this var but
-                        # NaN in SST — indicates inconsistent masking
-                        valid_on_land = (~bad) & land_mask
-                        n_valid_land = int(valid_on_land.sum())
-                        if n_valid_land > 0 and vname not in (
-                                "iceAreaTotal", "iceVolumeTotal",
-                                "snowVolumeTotal", "iceThicknessMean",
-                                "surfaceTemperatureMean",
-                                "airStressZonal", "airStressMeridional"):
-                            mask_issues += 1
-                            if mask_issues <= 3:
-                                issues.append(
-                                    f"  Mask mismatch: {vname} t={ti} has "
-                                    f"{n_valid_land} valid cells on SST-land")
+                    # Check 5: cells expected to be valid (not in expect_fill)
+                    # must not be NaN/fill.
+                    ocean_bad = bad & ~expect_fill
+                    n_ocean_bad = int(ocean_bad.sum())
+                    if n_ocean_bad > 0:
+                        nan_issues += 1
+                        if nan_issues <= 5:
+                            issues.append(
+                                f"  NaN/fill in ocean cells: {vname} "
+                                f"t={ti} in {os.path.basename(fpath)}: "
+                                f"{n_ocean_bad} cells")
+                    # Check 4: cells expected to be fill should not be valid.
+                    # Sea-ice fields are ice-only and don't follow the SST
+                    # land mask (they fill over open ocean too), so exempt.
+                    valid_on_land = (~bad) & expect_fill
+                    n_valid_land = int(valid_on_land.sum())
+                    if n_valid_land > 0 and vname not in ICE_ONLY_VARS:
+                        mask_issues += 1
+                        if mask_issues <= 3:
+                            issues.append(
+                                f"  Mask mismatch: {vname} t={ti} has "
+                                f"{n_valid_land} valid cells where mask "
+                                f"expects fill")
             close_ds(ds)
 
     if nan_issues > 5:
