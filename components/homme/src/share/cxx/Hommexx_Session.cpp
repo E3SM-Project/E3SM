@@ -42,7 +42,6 @@ void print_homme_config_settings () {
   std::cout << "HOMMEXX SHA1: " << HOMMEXX_SHA1 << "\n";
 #endif
     std::cout << "HOMMEXX VECTOR_SIZE: " << VECTOR_SIZE << "\n";
-    std::cout << "HOMMEXX vector tag: " << Scalar::label() << "\n";
     std::cout << "HOMMEXX active AVX set:" << active_avx_string() << "\n";
     std::cout << "HOMMEXX MPI_ON_DEVICE: " << HOMMEXX_MPI_ON_DEVICE << "\n";
 #ifdef HOMMEXX_CUDA_SHARE_BUFFER

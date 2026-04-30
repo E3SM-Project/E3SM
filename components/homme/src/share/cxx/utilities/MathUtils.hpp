@@ -14,30 +14,17 @@
 namespace Homme
 {
 
-template <typename FPType>
-KOKKOS_INLINE_FUNCTION constexpr FPType min(const FPType val_1,
-                                            const FPType val_2) {
-  return val_1 < val_2 ? val_1 : val_2;
+template <typename... Ts>
+KOKKOS_INLINE_FUNCTION constexpr auto min(Ts... vals) {
+  return Kokkos::min({vals...});
 }
 
-template <typename FPType, typename... FPPack>
-KOKKOS_INLINE_FUNCTION constexpr FPType min(const FPType val, FPPack... pack) {
-  return val < min(pack...) ? val : min(pack...);
+template <typename... Ts>
+KOKKOS_INLINE_FUNCTION constexpr auto max(const Ts... vals) {
+  return Kokkos::max({vals...});
 }
 
-template <typename FPType>
-KOKKOS_INLINE_FUNCTION constexpr FPType max(const FPType val_1,
-                                            const FPType val_2) {
-  return val_1 > val_2 ? val_1 : val_2;
-}
-
-template <typename FPType, typename... FPPack>
-KOKKOS_INLINE_FUNCTION constexpr FPType max(const FPType val, FPPack... pack) {
-  return val > max(pack...) ? val : max(pack...);
-}
-
-template <typename FPType>
-KOKKOS_INLINE_FUNCTION constexpr FPType square(const FPType& x) {
+KOKKOS_INLINE_FUNCTION constexpr Real square(const Real x) {
   return x*x;
 }
 
