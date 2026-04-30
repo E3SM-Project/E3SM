@@ -2479,7 +2479,7 @@ subroutine tphysbc (ztodt,               &
     real(r8) :: CIDiff(pcols)            ! Difference in vertically integrated static energy
     integer :: ixcldliq_bc, ixcldice_bc, ixrainqm_bc  ! constituent indices for total water
 
-    !HuiWan (2014/15): added for a short-term time step convergence test ++ 
+    !HuiWan (2014/15): added for a short-term time step convergence test ++
     logical :: l_bc_energy_fix
     logical :: l_dry_adj
     logical :: l_tracer_aero
