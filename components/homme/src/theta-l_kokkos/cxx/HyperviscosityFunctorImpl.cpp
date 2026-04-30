@@ -550,6 +550,34 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
   using MidColumn = decltype(Homme::subview(m_buffers.wtens,0,0,0));
   using IntColumn = decltype(Homme::subview(m_state.m_w_i,0,0,0,0));
 
+  if (m_process_nh_vars) {
+    // Diffuse only the perturbational geopotential, not the terrain-following
+    // reference profile tied to phis.
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                         [&](const int idx) {
+      const int igp = idx / NP;
+      const int jgp = idx % NP;
+
+      auto phi_i = Homme::subview(m_state.m_phinh_i,kv.ie,m_data.np1,igp,jgp);
+      auto phi_i_ref = Homme::subview(m_state.m_ref_states.phi_i_ref,kv.ie,igp,jgp);
+
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                           [&](const int ilev) {
+        phi_i(ilev) -= phi_i_ref(ilev);
+      });
+
+#ifndef XX_NONBFB_COMING
+      if (NUM_LEV!=NUM_LEV_P) {
+        Kokkos::single(Kokkos::PerThread(kv.team),[&](){
+          phi_i(NUM_LEV_P-1) -= phi_i_ref(NUM_LEV_P-1);
+        });
+      }
+#endif
+    });
+
+    kv.team_barrier();
+  }
+
   // Laplacian of layer thickness
   m_sphere_ops.laplace_simple(kv,
                               Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1),
@@ -576,6 +604,32 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
                                          Homme::subview(m_buffers.vtens,kv.ie));
 
   kv.team_barrier();
+
+  if (m_process_nh_vars) {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                         [&](const int idx) {
+      const int igp = idx / NP;
+      const int jgp = idx % NP;
+
+      auto phi_i = Homme::subview(m_state.m_phinh_i,kv.ie,m_data.np1,igp,jgp);
+      auto phi_i_ref = Homme::subview(m_state.m_ref_states.phi_i_ref,kv.ie,igp,jgp);
+
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                           [&](const int ilev) {
+        phi_i(ilev) += phi_i_ref(ilev);
+      });
+
+#ifndef XX_NONBFB_COMING
+      if (NUM_LEV!=NUM_LEV_P) {
+        Kokkos::single(Kokkos::PerThread(kv.team),[&](){
+          phi_i(NUM_LEV_P-1) += phi_i_ref(NUM_LEV_P-1);
+        });
+      }
+#endif
+    });
+
+    kv.team_barrier();
+  }
 
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(kv.team,NP*NP),
@@ -681,6 +735,7 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbUpdateStates&, const
         w(k)     += wtens(k);
         phi_i(k) += phitens(k);
       }
+
     }); // threadvectorrange
   }); // threadteamrange
 } // tagSGSTurbUpdateStates
