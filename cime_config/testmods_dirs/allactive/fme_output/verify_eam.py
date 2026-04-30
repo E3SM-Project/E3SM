@@ -1809,24 +1809,42 @@ def cross_verify(fme_rundir, legacy_rundir, outdir, verbose=False):
             )  # (ncol, 8)
             max_lin_err = 0.0
             max_lin_rel = 0.0
+            # FME output is on a regular lat-lon grid: polar cells must be
+            # cos-lat weighted before computing global means. Legacy native
+            # (ne30pg2) is quasi-equal-area, so an unweighted mean is fine.
+            # Without this, polar cells are over-represented in the FME mean
+            # and STW (which has a strong equator-to-pole moisture gradient)
+            # is biased low by 10-25%, producing a spurious "linearity" fail.
+            fme_lat = get_var(ds_fme, "lat")
 
             for k in range(N_VCOARSEN_LAYERS):
                 stw_k = get_var(ds_fme, f"STW_{k}")
                 if stw_k is None:
                     continue
-                stw_1t = stw_k[tidx].astype(np.float64).ravel()
+                stw_2d = stw_k[tidx].astype(np.float64)  # keep 2D shape
                 sum_1t = sum_vc[:, k]
 
-                # Different grids: compare global means
-                if stw_1t.size != sum_1t.size:
-                    sv = valid_data(stw_1t)
+                # Different grids: compare area-weighted global means
+                if stw_2d.size != sum_1t.size:
+                    if fme_lat is not None and stw_2d.ndim == 2:
+                        coslat = np.cos(np.deg2rad(fme_lat))
+                        wt = (coslat[:, np.newaxis]
+                              * np.ones(stw_2d.shape[1])[np.newaxis, :])
+                        m = (np.abs(stw_2d) < 1e10) & np.isfinite(stw_2d)
+                        sv_mean = (float(np.average(stw_2d[m], weights=wt[m]))
+                                   if m.any() else float('nan'))
+                    else:
+                        sv = valid_data(stw_2d.ravel())
+                        sv_mean = float(sv.mean()) if sv is not None else float('nan')
                     ov = valid_data(sum_1t)
-                    if sv is not None and ov is not None:
-                        rel = abs(sv.mean() - ov.mean()) / max(abs(ov.mean()), 1e-30)
+                    ov_mean = float(ov.mean()) if ov is not None else float('nan')
+                    if not np.isnan(sv_mean) and not np.isnan(ov_mean):
+                        rel = abs(sv_mean - ov_mean) / max(abs(ov_mean), 1e-30)
                         max_lin_rel = max(max_lin_rel, rel)
-                        max_lin_err = max(max_lin_err, abs(sv.mean() - ov.mean()))
+                        max_lin_err = max(max_lin_err, abs(sv_mean - ov_mean))
                     continue
 
+                stw_1t = stw_2d.ravel()
                 valid = (np.abs(stw_1t) < 1e10) & np.isfinite(stw_1t)
                 if not valid.any():
                     continue
@@ -1836,7 +1854,12 @@ def cross_verify(fme_rundir, legacy_rundir, outdir, verbose=False):
                 max_lin_err = max(max_lin_err, float(diff.max()))
                 max_lin_rel = max(max_lin_rel, float((diff / scale).max()))
 
-            if max_lin_rel < 1e-5:
+            # Cross-grid threshold: same 2% used by Test 2 (remap interpolation
+            # error scale). Tighter (1e-5) is only meaningful for same-grid BFB.
+            same_grid = (sum_vc.shape[0] != 0
+                         and sum_vc.shape[0] == int(stw_2d.size / max(N_VCOARSEN_LAYERS, 1)))
+            lin_thresh = 1e-5 if same_grid else 0.02
+            if max_lin_rel < lin_thresh:
                 status = "PASS"
             else:
                 status = "FAIL"

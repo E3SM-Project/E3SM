@@ -14,6 +14,7 @@ import sys
 import glob
 import textwrap
 import time as _time
+import warnings
 from datetime import datetime
 from pathlib import Path
 
@@ -184,6 +185,11 @@ ACE_ICE_DERIVED = {
     "vVelocityGeoCell": "sea_ice_y_velocity",
 }
 
+# FME-only sea-ice fields: computed inside fmeSeaiceDerivedFields AM and
+# present only in the remapped FME tape, NOT in the native legacy
+# timeSeriesStatsCustom tape. The native presence check skips these.
+ICE_FME_ONLY = {"uVelocityGeoCell", "vVelocityGeoCell"}
+
 # Expected variables in remapped files (lat-lon 360x180 output)
 REMAPPED_DERIVED_VARS = [
     "sst", "sss", "surfaceHeatFluxTotal",
@@ -242,7 +248,11 @@ RANGE_CHECKS = {
     "vVelocityGeoCell": (-2, 2),
 }
 
-# Depth bounds for depth-latitude cross-section plots (metres)
+# Depth bounds (m) for depth-latitude cross-section plots and the offline
+# depth-coarsening cross-check. MUST match the production testmod's
+# config_AM_fmeDepthCoarsening_depth_bounds in
+# cime_config/testmods_dirs/allactive/fme_output/shell_commands. Length is
+# (n_active_layers + 1).
 DEPTH_BOUNDS = [0, 20, 30, 40, 50, 80, 110, 140, 170, 230, 410, 530,
                 1020, 1080, 1720, 1980, 2820, 3380, 4620, 6380]
 
@@ -364,12 +374,17 @@ def close_ds(ds):
         ds.close()
 
 
-def valid_data(arr, fill=1e10):
+def valid_data(arr, fill=1e18):
     """Return non-fill, finite values.
 
-    The threshold is 1e10 because remapped output can contain interpolated
-    fill artifacts from neighboring land/ocean cells that can reach ~1e14
-    scale while _FillValue is 1e34.  No geophysical quantity exceeds 1e10.
+    The threshold is 1e18 -- well below SHR_FILL_VALUE (1e20) used by the
+    FME apply_masked path (gotcha #3, #5, #17 in AGENTS.md), and well above
+    every geophysical magnitude we output. Notably oceanHeatContent
+    legitimately reaches ~6e11 J/m^2 in deep equatorial Pacific
+    (T*h*rho*cp = 30*5000*1025*4000); a tighter threshold mis-classifies
+    physical OHC as fill. The post-overhaul apply_masked normalizes by
+    valid_frac and emits exactly SHR_FILL_VALUE (no intermediate
+    interpolated artifacts), so 1e18 is safe.
     """
     if arr is None:
         return None
@@ -384,7 +399,7 @@ def fill_nan_report(arr, name):
         return {"name": name, "total": 0, "valid": 0, "fill_nan": 0, "pct": 100.0}
     flat = arr.ravel().astype(float)
     total = flat.size
-    fill_mask = np.abs(flat) >= 1e10
+    fill_mask = np.abs(flat) >= 1e18
     nan_mask = ~np.isfinite(flat)
     bad = fill_mask | nan_mask
     n_bad = int(bad.sum())
@@ -465,7 +480,7 @@ def _extract_field(arr, mode):
     return None
 
 
-def _diff_stats(leg, fme, fill_thresh=1e10):
+def _diff_stats(leg, fme, fill_thresh=1e18):
     """Compute difference statistics between two 1D fields on the same grid.
 
     Returns dict with n_valid, legacy_mean, fme_mean, diff_mean, diff_rms,
@@ -674,26 +689,42 @@ def check_offline_depth_coarsening(rundir, outdir, verbose, legacy_rundir=None):
         print("  SKIP: no temperatureCoarsened in FME output")
         return issues, plots, fill_reports
 
-    # Auto-detect depth_bounds from the FME file's coarsened dimension
-    dims_fme = get_dims(ds_fme)
-    n_coarsen = None
-    for dname in ["nFmeDepthLevels", "nFmeCoarsenLevels"]:
-        if dname in dims_fme:
-            n_coarsen = dims_fme[dname]
-            break
-    if n_coarsen is None:
-        # Infer from variable shape
-        if temp_coarsened.ndim == 3:
-            s1, s2 = temp_coarsened.shape[1], temp_coarsened.shape[2]
-            n_coarsen = min(s1, s2)
-        elif temp_coarsened.ndim == 2:
-            n_coarsen = min(temp_coarsened.shape)
+    # Detect ACTIVE coarsened layer count by inspecting the data, not the
+    # Registry dimension. The XML allocates nFmeDepthLevels=25 (max) but the
+    # namelist `config_AM_fmeDepthCoarsening_depth_bounds` selects fewer
+    # layers (production ships 19); the unused trailing slots are fill.
+    # We count non-fill slabs in temperatureCoarsened to recover the active
+    # count, then match DEPTH_BOUNDS against active+1.
+    if temp_coarsened.ndim == 3:
+        # Shape is (Time, nCells, nLevels) or (Time, nLevels, nCells); the
+        # depth axis is the smaller of the two non-time axes.
+        s1, s2 = temp_coarsened.shape[1], temp_coarsened.shape[2]
+        depth_axis_len = min(s1, s2)
+        depth_axis = 1 if temp_coarsened.shape[1] < temp_coarsened.shape[2] else 2
+    elif temp_coarsened.ndim == 2:
+        depth_axis_len = min(temp_coarsened.shape)
+        depth_axis = 0 if temp_coarsened.shape[0] < temp_coarsened.shape[1] else 1
+    else:
+        close_ds(ds_fme)
+        print("  SKIP: temperatureCoarsened has unexpected ndim")
+        return issues, plots, fill_reports
 
-    # Use DEPTH_BOUNDS if it has the right number of levels, else skip
+    # An active layer is one that has at least one finite, non-fill cell.
+    active_layers = 0
+    for k in range(depth_axis_len):
+        sl = np.take(temp_coarsened, k, axis=depth_axis).astype(float)
+        if (np.isfinite(sl) & (np.abs(sl) < 1e18)).any():
+            active_layers += 1
+        else:
+            break  # active layers are contiguous from k=0
+    n_coarsen = active_layers
+
     depth_bounds = np.array(DEPTH_BOUNDS, dtype=float)
     if len(depth_bounds) != n_coarsen + 1:
         print(f"  SKIP: DEPTH_BOUNDS has {len(depth_bounds)} entries "
-              f"but file has {n_coarsen} coarsened levels")
+              f"but file has {n_coarsen} active coarsened layer(s) "
+              f"(allocated dim: {depth_axis_len}). Update DEPTH_BOUNDS in "
+              f"verify_mpas.py to match config_AM_fmeDepthCoarsening_depth_bounds.")
         close_ds(ds_fme)
         return issues, plots, fill_reports
 
@@ -826,8 +857,8 @@ def check_offline_depth_coarsening(rundir, outdir, verbose, legacy_rundir=None):
         off = offline_temp[:, kout]
         on = online_temp[:, kout]
         # Mask fill values
-        ok = ((np.abs(off) < 1e10) & np.isfinite(off) &
-              (np.abs(on) < 1e10) & np.isfinite(on))
+        ok = ((np.abs(off) < 1e18) & np.isfinite(off) &
+              (np.abs(on) < 1e18) & np.isfinite(on))
         if ok.sum() == 0:
             continue
         diff = off[ok].astype(np.float64) - on[ok].astype(np.float64)
@@ -855,8 +886,8 @@ def check_offline_depth_coarsening(rundir, outdir, verbose, legacy_rundir=None):
         for kout in range(n_coarsen):
             off = offline_thick[:, kout]
             on = online_thick[:, kout]
-            ok = ((np.abs(off) < 1e10) & np.isfinite(off) &
-                  (np.abs(on) < 1e10) & np.isfinite(on))
+            ok = ((np.abs(off) < 1e18) & np.isfinite(off) &
+                  (np.abs(on) < 1e18) & np.isfinite(on))
             if ok.sum() == 0:
                 continue
             diff = off[ok].astype(np.float64) - on[ok].astype(np.float64)
@@ -903,7 +934,7 @@ def _fix_lon(lons):
 def _plot_on_ax(ax, data, lons, lats, cmap, vmin, vmax, is_cartopy):
     """Plot data on an axis -- tripcolor for 1D, pcolormesh for 2D."""
     # Mask fill values so they render as transparent (not clipped to vmax)
-    data = np.where((np.abs(data) < 1e10) & np.isfinite(data),
+    data = np.where((np.abs(data) < 1e18) & np.isfinite(data),
                     data.astype(float), np.nan)
     transform = ccrs.PlateCarree() if is_cartopy else None
     if data.ndim == 2:
@@ -1119,8 +1150,14 @@ def zonal_mean_plot(profiles, lat, title, outdir, fname, ylabel=""):
     return path
 
 
-def _compute_zonal_mean(arr, fill_thresh=1e10):
-    """Compute zonal mean from (lat, lon) array, masking fill values."""
+def _compute_zonal_mean(arr, fill_thresh=1e18):
+    """Compute zonal mean from (lat, lon) array, masking fill values.
+
+    Latitudes that are all-fill (e.g. polar bands fully covered by ice or
+    land at depth) produce a "Mean of empty slice" RuntimeWarning from
+    np.nanmean. That's the correct behavior (return NaN), so silence the
+    warning rather than the result.
+    """
     if arr is None:
         return None
     if arr.ndim == 3:
@@ -1130,7 +1167,9 @@ def _compute_zonal_mean(arr, fill_thresh=1e10):
     else:
         return None
     masked = np.where(np.abs(data) < fill_thresh, data, np.nan)
-    return np.nanmean(masked, axis=1)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        return np.nanmean(masked, axis=1)
 
 
 def depth_latitude_section(ds, base_varname, n_levels, title, outdir, fname,
@@ -1181,12 +1220,12 @@ def depth_latitude_section(ds, base_varname, n_levels, title, outdir, fname,
 def fill_mask_map(data, lons, lats, title, outdir, fname):
     """Plot a binary valid/fill mask map.
 
-    1 = valid (|data| < 1e10 and finite), 0 = fill/NaN.
+    1 = valid (|data| < 1e18 and finite), 0 = fill/NaN.
     """
     if not HAS_MPL:
         return None
 
-    mask = np.where((np.abs(data) < 1e10) & np.isfinite(data), 1.0, 0.0)
+    mask = np.where((np.abs(data) < 1e18) & np.isfinite(data), 1.0, 0.0)
     cmap = mcolors.ListedColormap(["#d4e6f1", "#1b4f72"])
     return global_map(mask, lons, lats, title, cmap=cmap, vmin=0, vmax=1,
                       outdir=outdir, fname=fname, units="valid=1")
@@ -1265,7 +1304,7 @@ def trio_comparison(d_nat, lon_nat, lat_nat, d_rem, lon_rem, lat_rem,
     else:
         idx = valid_idx
     # Mask fill for tripcolor data
-    d_sub = np.where((np.abs(d_nat[idx]) < 1e10) & np.isfinite(d_nat[idx]),
+    d_sub = np.where((np.abs(d_nat[idx]) < 1e18) & np.isfinite(d_nat[idx]),
                      d_nat[idx].astype(float), np.nan)
     try:
         tri = Triangulation(lon_fix[idx], lat_nat[idx])
@@ -1286,7 +1325,7 @@ def trio_comparison(d_nat, lon_nat, lat_nat, d_rem, lon_rem, lat_rem,
     if is_cart:
         ax2.add_feature(cfeature.COASTLINE, linewidth=0.3)
         ax2.set_global()
-    d_rem_masked = np.where((np.abs(d_rem) < 1e10) & np.isfinite(d_rem),
+    d_rem_masked = np.where((np.abs(d_rem) < 1e18) & np.isfinite(d_rem),
                             d_rem.astype(float), np.nan)
     if lon_rem.ndim == 1:
         lons_g, lats_g = np.meshgrid(lon_rem, lat_rem)
@@ -1309,7 +1348,7 @@ def trio_comparison(d_nat, lon_nat, lat_nat, d_rem, lon_rem, lat_rem,
     # Native zonal mean (bin into latitude bands, area-weighted if available)
     lat_edges = np.linspace(-90, 90, 181)
     lat_centers = 0.5 * (lat_edges[:-1] + lat_edges[1:])
-    ok_nat = (np.abs(d_nat) < 1e10) & np.isfinite(d_nat)
+    ok_nat = (np.abs(d_nat) < 1e18) & np.isfinite(d_nat)
     if ocean_mask is not None:
         ok_nat = ok_nat & ocean_mask
     zm_nat = np.full(180, np.nan)
@@ -1378,7 +1417,7 @@ def _remapped_with_zonal(d_rem, lon_rem, lat_rem, title, outdir, fname,
     fig = plt.figure(figsize=(14, 4.5))
     is_cart = HAS_CARTOPY
 
-    d_masked = np.where((np.abs(d_rem) < 1e10) & np.isfinite(d_rem),
+    d_masked = np.where((np.abs(d_rem) < 1e18) & np.isfinite(d_rem),
                         d_rem.astype(float), np.nan)
     lat_1d = lat_rem if lat_rem.ndim == 1 else lat_rem[:, 0]
     if lon_rem.ndim == 1:
@@ -2176,6 +2215,8 @@ def check_mpassi_derived(rundir, outdir, verbose):
         return issues, plots, fill_reports
 
     for var, ace_name in ACE_ICE_DERIVED.items():
+        if var in ICE_FME_ONLY:
+            continue  # FME-AM only; not in native timeSeriesStatsCustom tape
         arr = get_var(ds, var)
         if arr is None:
             issues.append(f"  native missing: {var} (ACE: {ace_name})")
@@ -2277,7 +2318,7 @@ def check_mpassi_derived_remapped(rundir, outdir, verbose):
     return issues, plots, fill_reports
 
 
-def _area_weighted_mean(data_1d, area_1d, fill_thresh=1e10):
+def _area_weighted_mean(data_1d, area_1d, fill_thresh=1e18):
     """Area-weighted mean of a 1D field, excluding fill values."""
     ok = (np.abs(data_1d) < fill_thresh) & np.isfinite(data_1d) & np.isfinite(area_1d)
     if ok.sum() == 0:
@@ -2285,7 +2326,7 @@ def _area_weighted_mean(data_1d, area_1d, fill_thresh=1e10):
     return float(np.sum(data_1d[ok] * area_1d[ok]) / np.sum(area_1d[ok]))
 
 
-def _cosine_weighted_mean(data_2d, lat_1d, fill_thresh=1e10):
+def _cosine_weighted_mean(data_2d, lat_1d, fill_thresh=1e18):
     """Cosine-of-latitude-weighted mean of a (lat, lon) field."""
     w = np.cos(np.deg2rad(lat_1d))
     w2d = np.broadcast_to(w[:, None], data_2d.shape)
@@ -2405,8 +2446,8 @@ def check_heat_flux_closure(rundir, outdir, verbose):
                (lat_hf[-1] if lat_hf.ndim > 1 else lat_hf) + \
                (sens[-1] if sens.ndim > 1 else sens)
 
-    ok = ((np.abs(t) < 1e10) & np.isfinite(t) &
-          (np.abs(computed) < 1e10) & np.isfinite(computed))
+    ok = ((np.abs(t) < 1e18) & np.isfinite(t) &
+          (np.abs(computed) < 1e18) & np.isfinite(computed))
     if ok.sum() == 0:
         print("  SKIP: no valid overlapping cells")
         close_ds(ds)
@@ -4158,7 +4199,7 @@ def check_training_readiness(rundir, outdir, verbose):
     #     iff layerThicknessCoarsened_{k} is fill there.
     # Both masks are built in a dedicated first pass so that the iteration
     # order in the main checking loop does not matter.
-    fill_thresh = 1e10
+    fill_thresh = 1e18
 
     def _mask_from_var(d_set, name):
         """Return a (nlat, nlon) bool mask: True = fill/NaN at last timestep."""
@@ -4195,6 +4236,26 @@ def check_training_readiness(rundir, outdir, verbose):
                 bath_masks[k] = m
         close_ds(ds_tmp)
 
+    # First pass: bootstrap ice-presence mask from iceAreaTotal. Sea-ice
+    # derived fields (iceVolume, iceThickness, surfaceTemperature, airStress,
+    # u/vVelocityGeoCell) are validly fill where there is no ice -- i.e. on
+    # land AND on open-ocean cells without ice. iceAreaTotal itself is fill
+    # on land and 0 on open ocean. The "no-ice-presence" mask is therefore
+    # `iceAreaTotal is fill OR exactly zero`.
+    ice_mask = None
+    ice_files = stream_files.get("fmeSeaiceDerivedFields") or []
+    for fpath in ice_files:
+        ds_tmp = safe_open(fpath)
+        a = get_var(ds_tmp, "iceAreaTotal")
+        close_ds(ds_tmp)
+        if a is None:
+            continue
+        slab = a[-1] if a.ndim >= 3 else a
+        sf = slab.astype(float)
+        is_fill = (~np.isfinite(sf)) | (np.abs(sf) >= fill_thresh)
+        ice_mask = is_fill | (sf == 0.0)
+        break
+
     if land_mask is not None:
         print(f"    Land mask: {int(land_mask.sum())} of "
               f"{land_mask.size} cells "
@@ -4202,25 +4263,12 @@ def check_training_readiness(rundir, outdir, verbose):
     if bath_masks:
         print(f"    Bathymetry masks: built for {len(bath_masks)} "
               f"depth-coarsened layer(s)")
+    if ice_mask is not None:
+        n_ice = int((~ice_mask).sum())
+        print(f"    Ice-presence mask: {n_ice} of "
+              f"{ice_mask.size} cells with ice "
+              f"({100*n_ice/ice_mask.size:.1f}%)")
 
-    def _expected_fill_mask(vname):
-        """Return the mask of cells expected to be fill for this variable.
-
-        For depth-coarsened {base}_{k}, use bath_masks[k] (per-layer
-        bathymetry). For all other variables, use the surface land_mask.
-        Returns None if no mask is available (skips the check).
-        """
-        parts = vname.rsplit('_', 1)
-        if len(parts) == 2 and parts[1].isdigit():
-            k = int(parts[1])
-            if k in bath_masks:
-                return bath_masks[k]
-        return land_mask
-
-    # Main pass: check each variable's fill pattern against the appropriate
-    # expected-fill mask.
-    mask_issues = 0
-    nan_issues = 0
     ICE_ONLY_VARS = (
         "iceAreaTotal", "iceVolumeTotal",
         "snowVolumeTotal", "iceThicknessMean",
@@ -4228,6 +4276,28 @@ def check_training_readiness(rundir, outdir, verbose):
         "airStressZonal", "airStressMeridional",
         "uVelocityGeoCell", "vVelocityGeoCell",
     )
+
+    def _expected_fill_mask(vname):
+        """Return the mask of cells expected to be fill for this variable.
+
+        For depth-coarsened {base}_{k}, use bath_masks[k] (per-layer
+        bathymetry). For sea-ice derived fields (ICE_ONLY_VARS), use the
+        ice-presence mask (fill where no ice). For all other variables, use
+        the surface land_mask. Returns None if no mask is available (skips).
+        """
+        parts = vname.rsplit('_', 1)
+        if len(parts) == 2 and parts[1].isdigit():
+            k = int(parts[1])
+            if k in bath_masks:
+                return bath_masks[k]
+        if vname in ICE_ONLY_VARS and ice_mask is not None:
+            return ice_mask
+        return land_mask
+
+    # Main pass: check each variable's fill pattern against the appropriate
+    # expected-fill mask.
+    mask_issues = 0
+    nan_issues = 0
     for stream, files in stream_files.items():
         if not files:
             continue

@@ -216,6 +216,56 @@ These are hard-won lessons. Read before modifying FME code.
     uses `(-50, 5)`. Do NOT change the Fortran to convert to Kelvin
     without auditing all four sites in `verify_mpas.py`.
 
+22. **Verify fill threshold is `1e18`, not `1e10`.** `oceanHeatContent`
+    reaches `~6e11 J/m^2` in deep equatorial Pacific
+    (`T_C * h * rho_sw * cp_sw = 30*5000*1025*4000`), so the older
+    `fill_thresh = 1e10` clipped genuine physical values and reported
+    them as "ocean NaN/fill" (~31000 cells per timestep). All 22 sites
+    in `verify_mpas.py` now use `1e18` -- well above any geophysical
+    magnitude, well below `SHR_FILL_VALUE = 1e20`. Safe because
+    apply_masked produces no intermediate fill artifacts (see #3, #5,
+    #17). EAM `verify_eam.py` keeps `1e10` since no EAM field
+    approaches that magnitude.
+
+23. **`uVelocityGeoCell`/`vVelocityGeoCell` are FME-AM only.** The
+    cell-centered geographic-frame ice velocities live in
+    `Registry_seaice_fme_derived_fields.xml` and are computed inside
+    `mpas_seaice_fme_derived_fields.F`. They appear in the remapped FME
+    output but NOT in the native `timeSeriesStatsCustom` tape. Verify
+    has an `ICE_FME_ONLY` set that exempts them from the native
+    presence check while still requiring them in the remapped check.
+
+24. **`DEPTH_BOUNDS` matches the production namelist.** The 25-level
+    Registry max for `nFmeDepthLevels` is the *allocated* dimension;
+    the *active* layer count comes from
+    `config_AM_fmeDepthCoarsening_depth_bounds` (production: 19
+    layers, 20 boundaries -- matching `verify_mpas.py:DEPTH_BOUNDS`).
+    The offline depth-coarsening cross-check now detects the active
+    layer count by counting non-fill slabs in `temperatureCoarsened`
+    rather than using the dimension. If the namelist changes, update
+    both `shell_commands` and `DEPTH_BOUNDS` in lockstep.
+
+25. **Verify ice-presence mask is bootstrapped from `iceAreaTotal`.**
+    Sea-ice derived fields (`iceVolumeTotal`, `iceThicknessMean`,
+    `surfaceTemperatureMean`, `airStress*`, `u/vVelocityGeoCell`) are
+    validly fill where there is no ice -- *both* on land *and* on
+    open-ocean cells without ice. The surface SST land mask says
+    "valid in all ocean", which false-positives ~31000 open-ocean
+    cells per file. The ice mask is `iceAreaTotal is fill OR exactly
+    zero`. `iceAreaTotal` itself is fill on land and 0 on open ocean
+    (so the ice mask correctly flags it as "valid only with ice
+    presence" while CHECK 4 exempts it from "valid-on-land" anyway).
+
+26. **EAM STW vcoarsen linearity uses cos-lat weighting for FME mean.**
+    FME output is on a regular lat-lon grid; legacy native (ne30pg2)
+    is quasi-equal-area. For fields with a strong meridional gradient
+    (STW = Q+CLDLIQ+CLDICE+RAINQM, which drops by orders of magnitude
+    from equator to pole), an unweighted FME mean over-represents
+    polar cells and biases low by 10-25% vs the area-weighted legacy
+    mean -- producing a spurious "STW linearity FAIL" even though
+    vcoarsen IS exactly linear. The Test 3 fallback now mirrors Test
+    2's cos-lat weighting and uses the same 2% cross-grid threshold.
+
 ## Runtime Configuration
 
 Both `fme_output` and `fme_legacy_output` testmods accept environment variables:
