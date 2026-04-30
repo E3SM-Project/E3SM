@@ -58,6 +58,7 @@ nav:
       - 'P3':
         - 'Autoconversion': 'technical/physics/p3/autoconversion.md'
         - 'Back to Cell Average': 'technical/physics/p3/back_to_cell_average.md'
+        - 'Rime Density': 'technical/physics/p3/rime_density.md'
     - 'AeroCom cloud top': 'technical/aerocom_cldtop.md'
 
 edit_uri: ""
