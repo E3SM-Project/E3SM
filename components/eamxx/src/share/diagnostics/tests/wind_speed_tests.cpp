@@ -1,31 +1,12 @@
 #include "catch2/catch.hpp"
 
 #include "share/diagnostics/register_diagnostics.hpp"
-#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/grid/point_grid.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/field/field_utils.hpp"
 
 namespace scream {
 
-std::shared_ptr<GridsManager>
-create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
-
-  const int num_global_cols = ncols*comm.size();
-
-  using vos_t = std::vector<std::string>;
-  ekat::ParameterList gm_params;
-  gm_params.set("grids_names",vos_t{"point_grid"});
-  auto& pl = gm_params.sublist("point_grid");
-  pl.set<std::string>("type","point_grid");
-  pl.set("aliases",vos_t{"physics"});
-  pl.set<int>("number_of_global_columns", num_global_cols);
-  pl.set<int>("number_of_vertical_levels", nlevs);
-
-  auto gm = create_mesh_free_grids_manager(comm,gm_params);
-  gm->build_grids();
-
-  return gm;
-}
 
 TEST_CASE("wind_speed")
 {
@@ -39,13 +20,12 @@ TEST_CASE("wind_speed")
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
   // Create a grids manager - single column for these tests
-  constexpr int nlevs = 33;
-  const int ngcols = 2*comm.size();;
-  auto gm = create_gm(comm,ngcols,nlevs);
-  auto grid = gm->get_grid("physics");
+  const int nlevs = 33;
+  const int ncols = 2;;
+  auto grid = create_point_grid("physics",ncols*comm.size(),nlevs,comm);
 
   // Input (randomized) velocity
-  auto vector3d = grid->get_3d_vector_layout(LEV,2);
+  auto vector3d = grid->get_3d_vector_layout(LEV,2,"dim");
   FieldIdentifier uv_fid ("horiz_winds",vector3d,m/s,grid->name());
   Field uv(uv_fid);
   uv.allocate_view();
@@ -55,8 +35,7 @@ TEST_CASE("wind_speed")
   int seed = get_random_test_seed(&comm);
 
   // Construct the Diagnostics
-  std::map<std::string,std::shared_ptr<AtmosphereDiagnostic>> diags;
-  auto& diag_factory = AtmosphereDiagnosticFactory::instance();
+  auto& diag_factory = DiagnosticFactory::instance();
   register_diagnostics();
 
   constexpr int ntests = 5;
@@ -71,20 +50,19 @@ TEST_CASE("wind_speed")
 
     // Create and set up the diagnostic
     ekat::ParameterList params;
-    auto diag = diag_factory.create("wind_speed",comm,params);
-    diag->set_grids(gm);
-    diag->set_required_field(uv);
-    diag->initialize(t0,RunType::Initial);
+    auto diag = diag_factory.create("wind_speed",comm,params, grid);
+    diag->set_input_field(uv);
+    diag->initialize();
 
     // Run diag
-    diag->compute_diagnostic();
+    diag->compute(t0);
 
     // Check result
     uv.sync_to_host();
-    diag->get_diagnostic().sync_to_host();
+    diag->get().sync_to_host();
 
     auto uv_h = uv.get_view<const Real***,Host>();
-    auto ws_h = diag->get_diagnostic().get_view<const Real**,Host>();
+    auto ws_h = diag->get().get_view<const Real**,Host>();
 
     for (int icol=0; icol<grid->get_num_local_dofs(); ++icol) {
       for (int ilev=0; ilev<nlevs; ++ilev) {

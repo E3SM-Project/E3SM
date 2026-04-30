@@ -1,7 +1,7 @@
 #ifndef EAMXX_HORIZ_AVERAGE_HPP
 #define EAMXX_HORIZ_AVERAGE_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 
 namespace scream {
 
@@ -16,25 +16,23 @@ namespace scream {
  * and the output field's valid_mask is set to 0 at those locations.
  */
 
-class HorizAvgDiag : public AtmosphereDiagnostic {
+class HorizAvg : public AbstractDiagnostic {
  public:
   // Constructors
-  HorizAvgDiag(const ekat::Comm &comm, const ekat::ParameterList &params);
+  HorizAvg(const ekat::Comm &comm, const ekat::ParameterList &params,
+               const std::shared_ptr<const AbstractGrid>& grid);
 
   // The name of the diagnostic CLASS (not the computed field)
   std::string name() const { return "HorizAvg"; }
-
-  // Set the grid
-  void create_requests ();
 
  protected:
 #ifdef KOKKOS_ENABLE_CUDA
  public:
 #endif
-  void compute_diagnostic_impl();
+  void compute_impl();
 
  protected:
-  void initialize_impl(const RunType /*run_type*/);
+  void initialize_impl();
 
   // Area field
   Field m_area;

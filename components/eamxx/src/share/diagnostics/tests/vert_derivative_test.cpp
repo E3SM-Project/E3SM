@@ -2,29 +2,12 @@
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "share/physics/physics_constants.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/grid/point_grid.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
-  const int num_global_cols = ncols * comm.size();
-
-  using vos_t = std::vector<std::string>;
-  ekat::ParameterList gm_params;
-  gm_params.set("grids_names", vos_t{"Point Grid"});
-  auto &pl = gm_params.sublist("Point Grid");
-  pl.set<std::string>("type", "point_grid");
-  pl.set("aliases", vos_t{"Physics"});
-  pl.set<int>("number_of_global_columns", num_global_cols);
-  pl.set<int>("number_of_vertical_levels", nlevs);
-
-  auto gm = create_mesh_free_grids_manager(comm, gm_params);
-  gm->build_grids();
-
-  return gm;
-}
 
 TEST_CASE("vert_derivative") {
   using namespace ShortFieldTagsNames;
@@ -40,15 +23,14 @@ TEST_CASE("vert_derivative") {
   util::TimeStamp t0({2024, 1, 1}, {0, 0, 0});
 
   // Create a grids manager - single column for these tests
-  constexpr int nlevs = 150;
-  const int ngcols    = 195 * comm.size();
+  const int nlevs = 150;
+  const int ncols = 195;
 
-  auto gm   = create_gm(comm, ngcols, nlevs);
-  auto grid = gm->get_grid("Physics");
+  auto grid = create_point_grid("physics",ncols,nlevs,comm);
 
   // Input (randomized) qc
-  FieldLayout scalar1d_layout{{LEV}, {nlevs}};
-  FieldLayout scalar2d_layout{{COL, LEV}, {ngcols, nlevs}};
+  FieldLayout scalar1d_layout = grid->get_vertical_layout(LEV);
+  FieldLayout scalar2d_layout = grid->get_3d_scalar_layout(LEV);
 
   FieldIdentifier fin2_fid("qc", scalar2d_layout, kg / kg, grid->name());
   FieldIdentifier dp_fid("pseudo_density", scalar2d_layout, Pa, grid->name());
@@ -63,16 +45,13 @@ TEST_CASE("vert_derivative") {
   int seed = get_random_test_seed();
 
   // Construct the diagnostics factory
-  std::map<std::string, std::shared_ptr<AtmosphereDiagnostic>> diags;
-  auto &diag_factory = AtmosphereDiagnosticFactory::instance();
+  auto &diag_factory = DiagnosticFactory::instance();
   register_diagnostics();
 
   ekat::ParameterList params;
-  // instantiation works because we don't do anything in the constructor
-  auto bad_diag = diag_factory.create("VertDerivativeDiag", comm, params);
   SECTION("bad_diag") {
     // this will throw because no field_name was provided
-    REQUIRE_THROWS(bad_diag->set_grids(gm));
+    REQUIRE_THROWS(diag_factory.create("VertDerivative", comm, params, grid));
   }
 
   fin2.get_header().get_tracking().update_time_stamp(t0);
@@ -80,7 +59,7 @@ TEST_CASE("vert_derivative") {
   // instead of random fin2, let's just a predictable one:
   fin2.sync_to_host();
   auto fin2_v_host_assign = fin2.get_view<Real **, Host>();
-  for (int icol = 0; icol < ngcols; ++icol) {
+  for (int icol = 0; icol < ncols; ++icol) {
     for (int ilev = 0; ilev < nlevs; ++ilev) {
       fin2_v_host_assign(icol, ilev) = 1.0 + icol + ilev;
     }
@@ -93,22 +72,18 @@ TEST_CASE("vert_derivative") {
   params.set<std::string>("field_name", "qc");
   SECTION("bad_diag_2") {
     // this will throw because no derivative_method was provided
-    auto bad_diag_2 = diag_factory.create("VertDerivativeDiag", comm, params);
-    REQUIRE_THROWS(bad_diag_2->set_grids(gm));
+    REQUIRE_THROWS(diag_factory.create("VertDerivative", comm, params, grid));
   }
 
   SECTION("bad_diag_3") {
     // this will throw because bad derivative_method was provided
     params.set<std::string>("derivative_method", "xyz");
-    auto bad_diag_3 = diag_factory.create("VertDerivativeDiag", comm, params);
-    REQUIRE_THROWS(bad_diag_3->set_grids(gm));
+    REQUIRE_THROWS(diag_factory.create("VertDerivative", comm, params, grid));
   }
 
   // dp_vert_derivative
   params.set<std::string>("derivative_method", "p");
-  auto dp_vert_derivative = diag_factory.create("VertDerivativeDiag", comm, params);
-
-  dp_vert_derivative->set_grids(gm);
+  auto dp_vert_derivative = diag_factory.create("VertDerivative", comm, params, grid);
 
   // Fields for manual calculation
   FieldIdentifier diag1_fid("qc_vert_derivative_manual", scalar2d_layout, kg / kg, grid->name());
@@ -125,7 +100,7 @@ TEST_CASE("vert_derivative") {
     auto fin2_v    = fin2.get_view<const Real **, Host>();
     auto diag1_m_v = diag1_m.get_view<Real **, Host>();
 
-    for (int icol = 0; icol < ngcols; ++icol) {
+    for (int icol = 0; icol < ncols; ++icol) {
       for (int ilev = 0; ilev < nlevs; ++ilev) {
         auto fa1 = (ilev < nlevs - 1) ? (fin2_v(icol, ilev + 1) * dp_v(icol, ilev) +
                     fin2_v(icol, ilev) * dp_v(icol, ilev + 1)) /
@@ -139,17 +114,17 @@ TEST_CASE("vert_derivative") {
     diag1_m.sync_to_dev();
 
     // Calculate weighted avg through diagnostics
-    dp_vert_derivative->set_required_field(fin2);
-    dp_vert_derivative->set_required_field(dp);
-    dp_vert_derivative->initialize(t0, RunType::Initial);
-    dp_vert_derivative->compute_diagnostic();
-    auto dp_vert_derivative_f = dp_vert_derivative->get_diagnostic();
+    dp_vert_derivative->set_input_field(fin2);
+    dp_vert_derivative->set_input_field(dp);
+    dp_vert_derivative->initialize();
+    dp_vert_derivative->compute(t0);
+    auto dp_vert_derivative_f = dp_vert_derivative->get();
 
     // Check that the two are the same manually using the tolerance
     dp_vert_derivative_f.sync_to_host();
     auto view_deriv_f_d = dp_vert_derivative_f.get_view<Real **, Host>();
     auto view_deriv_f_m = diag1_m.get_view<Real **, Host>();
-    for (int icol = 0; icol < ngcols; ++icol) {
+    for (int icol = 0; icol < ncols; ++icol) {
       for (int ilev = 0; ilev < nlevs; ++ilev) {
         // TODO: the calculations are sometimes diverging because of fp issues in the test on h100 gcc13
         // TODO: so a cop-out, just test if the abs diff is within 1e-5
@@ -173,7 +148,7 @@ TEST_CASE("vert_derivative") {
     auto diag1_m_mask = diag1_m.create_valid_mask();
     auto diag1_m_mask_v = diag1_m.get_valid_mask().get_view<int**,Host>();
     int last_lev = nlevs-1;
-    for (int icol = 0; icol < ngcols; ++icol) {
+    for (int icol = 0; icol < ncols; ++icol) {
       for (int ilev = 0; ilev < nlevs; ++ilev) {
         if (fin2_m(icol,ilev)==0 or
             (ilev>0 and fin2_m(icol,ilev-1)==0) or
@@ -195,11 +170,11 @@ TEST_CASE("vert_derivative") {
     diag1_m.get_valid_mask().sync_to_dev();
 
     // Calculate weighted avg through diagnostics
-    dp_vert_derivative->set_required_field(fin2);
-    dp_vert_derivative->set_required_field(dp);
-    dp_vert_derivative->initialize(t0, RunType::Initial);
-    dp_vert_derivative->compute_diagnostic();
-    auto dp_vert_derivative_f = dp_vert_derivative->get_diagnostic();
+    dp_vert_derivative->set_input_field(fin2);
+    dp_vert_derivative->set_input_field(dp);
+    dp_vert_derivative->initialize();
+    dp_vert_derivative->compute(t0);
+    auto dp_vert_derivative_f = dp_vert_derivative->get();
 
     // Check diag mask field
     REQUIRE (dp_vert_derivative_f.has_valid_mask());

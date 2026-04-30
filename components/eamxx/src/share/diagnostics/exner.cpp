@@ -4,52 +4,40 @@
 namespace scream
 {
 
-// =========================================================================================
-ExnerDiagnostic::
-ExnerDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
- : AtmosphereDiagnostic(comm,params)
+Exner::Exner (const ekat::Comm& comm, const ekat::ParameterList& params,
+              const std::shared_ptr<const AbstractGrid>& grid)
+ : AbstractDiagnostic(comm,params,grid)
 {
-  // Nothing to do here
+  // The fields required for this diagnostic to be computed
+  m_field_in_names.push_back("p_mid");
 }
 
-// =========================================================================================
-void ExnerDiagnostic::create_requests()
+void Exner::initialize_impl()
 {
-  using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
-
-  auto grid  = m_grids_manager->get_grid("physics");
-  const auto& grid_name = grid->name();
-  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
-  m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
-
-  auto scalar3d = grid->get_3d_scalar_layout(LEV);
-
-  // The fields required for this diagnostic to be computed
-  add_field<Required>("p_mid", scalar3d, Pa, grid_name);
+  const auto&p = m_fields_in.at("p_mid");
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar3d, none, grid_name);
+  auto fid = p.get_header().get_identifier().clone(name()).reset_units(ekat::units::none);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }
-// =========================================================================================
-void ExnerDiagnostic::compute_diagnostic_impl()
+
+void Exner::compute_impl()
 {
   using PF = PhysicsFunctions<DefaultDevice>;
 
   const auto& exner = m_diagnostic_output.get_view<Real**>();
-  const auto& p_mid = get_field_in("p_mid").get_view<const Real**>();
+  const auto& p_mid = m_fields_in.at("p_mid").get_view<const Real**>();
 
-  int nlevs = m_num_levs;
-  Kokkos::parallel_for("ExnerDiagnostic",
-                       Kokkos::RangePolicy<>(0,m_num_cols*nlevs),
+  int nlevs = m_grid->get_num_vertical_levels();
+  int ncols = m_grid->get_num_local_dofs();
+  Kokkos::parallel_for("Exner",
+                       Kokkos::RangePolicy<>(0,ncols*nlevs),
                        KOKKOS_LAMBDA(const int& idx) {
       const int icol = idx / nlevs;
       const int ilev = idx % nlevs;
       exner(icol,ilev) = PF::exner_function(p_mid(icol,ilev));
   });
-  Kokkos::fence();
 }
-// =========================================================================================
+
 } //namespace scream

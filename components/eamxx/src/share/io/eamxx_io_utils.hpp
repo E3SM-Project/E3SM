@@ -3,7 +3,7 @@
 
 #include "eamxx_io_control.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 #include "share/grid/abstract_grid.hpp"
 
 #include <ekat_string_utils.hpp>
@@ -95,7 +95,7 @@ parse_cf_time_units (const std::string& units_str,
 
 // Create a diagnostic from a string representation of it.
 // E.g., create the diag to compute fieldX_at_500hPa.
-std::shared_ptr<AtmosphereDiagnostic>
+std::shared_ptr<AbstractDiagnostic>
 create_diagnostic (const std::string& diag_name,
                    const std::shared_ptr<const AbstractGrid>& grid);
 

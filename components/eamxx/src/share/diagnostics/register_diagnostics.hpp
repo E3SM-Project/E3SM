@@ -30,43 +30,43 @@
 #include "vert_derivative.hpp"
 #include "zonal_avg.hpp"
 #include "conditional_sampling.hpp"
-#include "binary_ops.hpp"
+#include "binary_op.hpp"
 #include "histogram.hpp"
 
 namespace scream {
 
 inline void register_diagnostics () {
-  auto& diag_factory = AtmosphereDiagnosticFactory::instance();
-  diag_factory.register_product("PotentialTemperature",&create_atmosphere_diagnostic<PotentialTemperatureDiagnostic>);
-  diag_factory.register_product("FieldAtLevel",&create_atmosphere_diagnostic<FieldAtLevel>);
-  diag_factory.register_product("FieldAtHeight",&create_atmosphere_diagnostic<FieldAtHeight>);
-  diag_factory.register_product("FieldAtPressureLevel",&create_atmosphere_diagnostic<FieldAtPressureLevel>);
-  diag_factory.register_product("AtmosphereDensity",&create_atmosphere_diagnostic<AtmDensityDiagnostic>);
-  diag_factory.register_product("Exner",&create_atmosphere_diagnostic<ExnerDiagnostic>);
-  diag_factory.register_product("VirtualTemperature",&create_atmosphere_diagnostic<VirtualTemperatureDiagnostic>);
-  diag_factory.register_product("DryStaticEnergy",&create_atmosphere_diagnostic<DryStaticEnergyDiagnostic>);
-  diag_factory.register_product("SeaLevelPressure",&create_atmosphere_diagnostic<SeaLevelPressureDiagnostic>);
-  diag_factory.register_product("WaterPath",&create_atmosphere_diagnostic<WaterPathDiagnostic>);
-  diag_factory.register_product("ShortwaveCloudForcing",&create_atmosphere_diagnostic<ShortwaveCloudForcingDiagnostic>);
-  diag_factory.register_product("LongwaveCloudForcing",&create_atmosphere_diagnostic<LongwaveCloudForcingDiagnostic>);
-  diag_factory.register_product("RelativeHumidity",&create_atmosphere_diagnostic<RelativeHumidityDiagnostic>);
-  diag_factory.register_product("VaporFlux",&create_atmosphere_diagnostic<VaporFluxDiagnostic>);
-  diag_factory.register_product("VerticalLayer",&create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
-  diag_factory.register_product("precip_surf_mass_flux",&create_atmosphere_diagnostic<PrecipSurfMassFlux>);
-  diag_factory.register_product("surface_upward_latent_heat_flux",&create_atmosphere_diagnostic<SurfaceUpwardLatentHeatFlux>);
-  diag_factory.register_product("wind_speed",&create_atmosphere_diagnostic<WindSpeed>);
-  diag_factory.register_product("AerosolOpticalDepth550nm",&create_atmosphere_diagnostic<AODVis>);
-  diag_factory.register_product("NumberPath",&create_atmosphere_diagnostic<NumberPathDiagnostic>);
-  diag_factory.register_product("AeroComCld",&create_atmosphere_diagnostic<AeroComCld>);
-  diag_factory.register_product("FieldPrevDiag",&create_atmosphere_diagnostic<FieldPrevDiag>);
-  diag_factory.register_product("FieldOverDtDiag",&create_atmosphere_diagnostic<FieldOverDtDiag>);
-  diag_factory.register_product("HorizAvgDiag",&create_atmosphere_diagnostic<HorizAvgDiag>);
-  diag_factory.register_product("VertContractDiag",&create_atmosphere_diagnostic<VertContractDiag>);
-  diag_factory.register_product("VertDerivativeDiag",&create_atmosphere_diagnostic<VertDerivativeDiag>);
-  diag_factory.register_product("ZonalAvgDiag",&create_atmosphere_diagnostic<ZonalAvgDiag>);
-  diag_factory.register_product("ConditionalSampling",&create_atmosphere_diagnostic<ConditionalSampling>);
-  diag_factory.register_product("BinaryOpsDiag", &create_atmosphere_diagnostic<BinaryOpsDiag>);
-  diag_factory.register_product("HistogramDiag",&create_atmosphere_diagnostic<HistogramDiag>);
+  auto& diag_factory = DiagnosticFactory::instance();
+  diag_factory.register_product("PotentialTemperature",&create_diagnostic<PotentialTemperature>);
+  diag_factory.register_product("FieldAtLevel",&create_diagnostic<FieldAtLevel>);
+  diag_factory.register_product("FieldAtHeight",&create_diagnostic<FieldAtHeight>);
+  diag_factory.register_product("FieldAtPressureLevel",&create_diagnostic<FieldAtPressureLevel>);
+  diag_factory.register_product("AtmosphereDensity",&create_diagnostic<AtmDensity>);
+  diag_factory.register_product("Exner",&create_diagnostic<Exner>);
+  diag_factory.register_product("VirtualTemperature",&create_diagnostic<VirtualTemperature>);
+  diag_factory.register_product("DryStaticEnergy",&create_diagnostic<DryStaticEnergy>);
+  diag_factory.register_product("SeaLevelPressure",&create_diagnostic<SeaLevelPressure>);
+  diag_factory.register_product("WaterPath",&create_diagnostic<WaterPath>);
+  diag_factory.register_product("ShortwaveCloudForcing",&create_diagnostic<ShortwaveCloudForcing>);
+  diag_factory.register_product("LongwaveCloudForcing",&create_diagnostic<LongwaveCloudForcing>);
+  diag_factory.register_product("RelativeHumidity",&create_diagnostic<RelativeHumidity>);
+  diag_factory.register_product("VaporFlux",&create_diagnostic<VaporFlux>);
+  diag_factory.register_product("VerticalLayer",&create_diagnostic<VerticalLayer>);
+  diag_factory.register_product("precip_surf_mass_flux",&create_diagnostic<PrecipSurfMassFlux>);
+  diag_factory.register_product("surface_upward_latent_heat_flux",&create_diagnostic<SurfaceUpwardLatentHeatFlux>);
+  diag_factory.register_product("wind_speed",&create_diagnostic<WindSpeed>);
+  diag_factory.register_product("AerosolOpticalDepth550nm",&create_diagnostic<AODVis>);
+  diag_factory.register_product("NumberPath",&create_diagnostic<NumberPath>);
+  diag_factory.register_product("AeroComCld",&create_diagnostic<AeroComCld>);
+  diag_factory.register_product("FieldPrev",&create_diagnostic<FieldPrev>);
+  diag_factory.register_product("FieldOverDt",&create_diagnostic<FieldOverDt>);
+  diag_factory.register_product("HorizAvg",&create_diagnostic<HorizAvg>);
+  diag_factory.register_product("VertContract",&create_diagnostic<VertContract>);
+  diag_factory.register_product("VertDerivative",&create_diagnostic<VertDerivative>);
+  diag_factory.register_product("ZonalAvg",&create_diagnostic<ZonalAvg>);
+  diag_factory.register_product("ConditionalSampling",&create_diagnostic<ConditionalSampling>);
+  diag_factory.register_product("BinaryOp", &create_diagnostic<BinaryOp>);
+  diag_factory.register_product("Histogram",&create_diagnostic<Histogram>);
 }
 
 } // namespace scream

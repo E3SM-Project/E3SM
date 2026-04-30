@@ -1,45 +1,28 @@
-#ifndef EAMXX_DRY_STATIC_ENERGY_DIAGNOSTIC_HPP
-#define EAMXX_DRY_STATIC_ENERGY_DIAGNOSTIC_HPP
+#ifndef EAMXX_DRY_STATIC_ENERGY_HPP
+#define EAMXX_DRY_STATIC_ENERGY_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
-
-#include "share/core/eamxx_types.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 
 namespace scream
 {
 
-class DryStaticEnergyDiagnostic : public AtmosphereDiagnostic
+class DryStaticEnergy : public AbstractDiagnostic
 {
 public:
-  using KT            = KokkosTypes<DefaultDevice>;
-  using view_2d       = typename KT::template view_2d<Real>;
-
   // Constructors
-  DryStaticEnergyDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
+  DryStaticEnergy (const ekat::Comm& comm, const ekat::ParameterList& params,
+                    const std::shared_ptr<const AbstractGrid>& grid);
 
   // The name of the diagnostic CLASS (not the computed field)
   std::string name () const { return "DryStaticEnergy"; }
-
-  // Set the grid
-  void create_requests ();
 
 protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  void compute_diagnostic_impl ();
-protected:
-
-  // Keep track of field dimensions
-  Int m_num_cols;
-  Int m_num_levs;
-
-  // Temporary view to set dz in compute diagnostic
-  view_2d m_tmp_mid;
-  view_2d m_tmp_int;
-
-}; // class DryStaticEnergyDiagnostic
+  void compute_impl ();
+};
 
 } //namespace scream
 
-#endif // EAMXX_DRY_STATIC_ENERGY_DIAGNOSTIC_HPP
+#endif // EAMXX_DRY_STATIC_ENERGY_HPP

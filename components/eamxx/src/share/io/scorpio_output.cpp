@@ -299,7 +299,7 @@ AtmosphereOutput::
   //       to prevent two output streams creating the same diag. So when this
   //       destructor runs, it's fine to clean up this static var
   for (auto d : m_diagnostics) {
-    const auto& name = d->get_diagnostic().name();
+    const auto& name = d->get().name();
     m_diag_repo.erase(name);
   }
 }
@@ -453,7 +453,7 @@ init_timestep (const util::TimeStamp& start_of_step)
 }
 
 void AtmosphereOutput::
-run (const std::string& filename,
+run (const std::string& filename, const util::TimeStamp& ts,
      const bool output_step, const bool checkpoint_step,
      const int nsteps_since_last_output,
      const bool allow_invalid_fields)
@@ -472,7 +472,7 @@ run (const std::string& filename,
 
   // Update all diagnostics, we need to do this before applying the remapper
   // to make sure that the remapped fields are the most up to date.
-  compute_diagnostics(allow_invalid_fields);
+  computes(ts,allow_invalid_fields);
 
   auto apply_remap = [&](AbstractRemapper& remapper)
   {
@@ -592,7 +592,7 @@ run (const std::string& filename,
   // Take care of updating and possibly writing fields.
   for (size_t i = 0; i < m_fields_names.size(); ++i) {
     const auto& field_name = m_fields_names[i];
-    
+
     // Get all the info for this field.
     const auto& f_in  = fm_after_hr->get_field(field_name);
           auto& f_out = fm_scorpio->get_field(field_name);
@@ -876,7 +876,7 @@ register_variables(const std::string& filename,
         auto standardname = m_default_metadata.get_standardname(field_name);
         scorpio::set_attribute(filename, field_name, "standard_name", standardname);
       }
-      
+
       // If output represents an statistic over a time range add a "cell methods"
       // attribute.
       switch (m_avg_type) {
@@ -1002,31 +1002,33 @@ setup_output_file(const std::string& filename,
 }
 
 void AtmosphereOutput::
-compute_diagnostics(const bool allow_invalid_fields)
+computes(const util::TimeStamp& ts, const bool allow_invalid_fields)
 {
   for (auto diag : m_diagnostics) {
     // Check if all inputs are valid
     bool computable = true;
-    for (const auto& f : diag->get_fields_in()) {
-      computable &= f.get_header().get_tracking().get_time_stamp().is_valid();
+    for (const auto& fn : diag->get_input_fields_names()) {
+      const auto& f = m_field_mgrs[FromModel]->get_field(fn);
+      const auto& fts = f.get_header().get_tracking().get_time_stamp();
+      computable &= fts.is_valid();
 
       EKAT_REQUIRE_MSG (computable or allow_invalid_fields,
         "Error! Cannot compute a diagnostic. One dependency has an invalid timestamp.\n"
         " - stream name: " + m_stream_name + "\n"
-        " - diag name: " + diag->get_diagnostic().name() + "\n"
+        " - diag name: " + diag->get().name() + "\n"
         " - dep  name: " + f.name() + "\n");
     }
 
-    auto d = diag->get_diagnostic();
+    auto d = diag->get();
     if (computable) {
-      diag->compute_diagnostic();
+      diag->compute(ts);
     }
 
     bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
 
     EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
       "Error! Failed to compute diagnostic.\n"
-      " - diag name: " + diag->get_diagnostic().name() + "\n");
+      " - diag name: " + diag->get().name() + "\n");
 
     if (not computed) {
       // The diag was either not computable or it may have failed to compute
@@ -1131,22 +1133,20 @@ process_requested_fields()
   };
 
   // Helper lambda that initializes a diagnostic
-  auto init_diag = [&](const std::shared_ptr<AtmosphereDiagnostic>& diag) {
+  auto init_diag = [&](const std::shared_ptr<AbstractDiagnostic>& diag) {
     // Set inputs in the diag
-    for (const auto& freq : diag->get_field_requests()) {
-      const auto& dep_name = freq.fid.name();
-
+    for (const auto& dep_name : diag->get_input_fields_names()) {
       auto dep = fm_model->get_field(dep_name);
-      diag->set_required_field(dep);
+      diag->set_input_field(dep);
     }
 
     // Initialize the diag
-    diag->initialize(util::TimeStamp(),RunType::Initial);
+    diag->initialize();
   };
 
-  auto check_diag_avg_cnt = [&](const std::shared_ptr<AtmosphereDiagnostic>& diag) {
+  auto check_diag_avg_cnt = [&](const std::shared_ptr<AbstractDiagnostic>& diag) {
     // Set the diag field in the FM
-    auto diag_field = diag->get_diagnostic();
+    auto diag_field = diag->get();
 
     // Add the field to the diag group
     diag_field.get_header().get_tracking().add_group("diagnostic");
@@ -1180,7 +1180,7 @@ process_requested_fields()
       m_field_to_avg_cnt_suffix.emplace(diag_field.name(),diag_avg_cnt_name);
     }
   };
-  
+
   // Now process each requested field, if possible. We can process a field if either:
   //  - it is already in the model FM
   //  - it is an alias of a field added to the FM
@@ -1234,10 +1234,10 @@ process_requested_fields()
         }
         // Add its deps to the list of fields to process (if not already in fm_model)
         bool deps_met = true;
-        for (const auto& req : diag->get_field_requests()) {
-          if (not fm_model->has_field(req.fid.name())) {
+        for (const auto& dep_name : diag->get_input_fields_names()) {
+          if (not fm_model->has_field(dep_name)) {
             deps_met = false;
-            add_these.insert(req.fid.name());
+            add_these.insert(dep_name);
           }
         }
 
@@ -1250,7 +1250,7 @@ process_requested_fields()
           }
           check_diag_avg_cnt (diag);
           remove_these.insert(name);
-          fm_model->add_field(diag->get_diagnostic());
+          fm_model->add_field(diag->get());
           m_diagnostics.push_back(diag);
         }
       }

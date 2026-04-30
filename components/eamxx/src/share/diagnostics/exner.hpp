@@ -1,7 +1,7 @@
 #ifndef EAMXX_EXNER_DIAGNOSTIC_HPP
 #define EAMXX_EXNER_DIAGNOSTIC_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 
 namespace scream
 {
@@ -10,30 +10,23 @@ namespace scream
  * This diagnostic will produce the exner function.
  */
 
-class ExnerDiagnostic : public AtmosphereDiagnostic
+class Exner : public AbstractDiagnostic
 {
 public:
   // Constructors
-  ExnerDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
+  Exner (const ekat::Comm& comm, const ekat::ParameterList& params,
+         const std::shared_ptr<const AbstractGrid>& grid);
 
   // The name of the diagnostic CLASS (not the computed field)
   std::string name () const { return "Exner"; }
-
-  // Set the grid
-  void create_requests ();
 
 protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  void compute_diagnostic_impl ();
-protected:
-
-  // Keep track of field dimensions
-  Int m_num_cols;
-  Int m_num_levs;
-
-}; // class ExnerDiagnostic
+  void initialize_impl ();
+  void compute_impl ();
+};
 
 } //namespace scream
 

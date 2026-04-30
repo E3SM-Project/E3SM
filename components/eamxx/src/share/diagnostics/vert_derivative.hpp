@@ -1,8 +1,7 @@
-
 #ifndef EAMXX_VERT_DERIVATIVE_HPP
 #define EAMXX_VERT_DERIVATIVE_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 
 namespace scream {
 
@@ -11,26 +10,24 @@ namespace scream {
  * the vertical direction such that dX/dp or dX/dz
  */
 
-class VertDerivativeDiag : public AtmosphereDiagnostic {
+class VertDerivative : public AbstractDiagnostic {
 public:
   // Constructors
-  VertDerivativeDiag(const ekat::Comm &comm, const ekat::ParameterList &params);
+  VertDerivative(const ekat::Comm &comm, const ekat::ParameterList &params,
+                 const std::shared_ptr<const AbstractGrid> &grid);
 
   // The name of the diagnostic CLASS (not the computed field)
-  std::string name() const { return "VertDerivativeDiag"; }
-
-  // Set the grid
-  void create_requests ();
+  std::string name() const { return "VertDerivative"; }
 
 protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  void compute_diagnostic_impl();
-  void initialize_impl(const RunType /*run_type*/);
+  void compute_impl();
+  void initialize_impl();
 
-  // Name of each field (because the diagnostic impl is generic)
-  std::string m_diag_name;
+  std::string m_field_name; // Input field name
+
   // Name of derivative method (differential dp or dz)
   std::string m_derivative_method;
 };

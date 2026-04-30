@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
@@ -37,31 +37,26 @@ public:
   std::list<diag_ptr_type> get_diags () const { return m_diagnostics; }
 };
 
-class MyDiag : public AtmosphereDiagnostic
+class MyDiag : public AbstractDiagnostic
 {
 public:
-  MyDiag (const ekat::Comm& comm, const ekat::ParameterList&params)
-    : AtmosphereDiagnostic(comm,params)
+  MyDiag (const ekat::Comm& comm,
+          const ekat::ParameterList&params,
+          const std::shared_ptr<const AbstractGrid>& grid)
+    : AbstractDiagnostic(comm,params,grid)
   {
-    //Do nothing
-  }
-
-  std::string name() const override { return "MyDiag"; }
-
-  void create_requests () override {
     using namespace ShortFieldTagsNames;
-    const auto grid = m_grids_manager->get_grid("point_grid");
-    const auto& grid_name = grid->name();
-    auto layout = grid->get_3d_scalar_layout(LEV);
-    add_field<Required>("my_f",layout,ekat::units::none,grid_name);
+    m_field_in_names = {"my_f"};
+
+    auto layout = m_grid->get_3d_scalar_layout(LEV);
 
     // We have to initialize the m_diagnostic_output:
-    FieldIdentifier fid ("MyDiag", layout, ekat::units::none, grid_name);
-    m_diagnostic_output = Field(fid);
-    m_diagnostic_output.allocate_view();
+    FieldIdentifier fid ("MyDiag", layout, ekat::units::none, m_grid->name());
+    m_diagnostic_output = Field(fid,true);
     m_one = m_diagnostic_output.clone("one");
     m_one.deep_copy(1.0);
   }
+  std::string name() const override { return "MyDiag"; }
 
   void init_timestep (const util::TimeStamp& start_of_step) override {
     m_t_beg = start_of_step;
@@ -70,11 +65,10 @@ public:
   int get_num_evaluations () const { return m_num_evaluations; }
 protected:
 
-  void compute_diagnostic_impl () override {
-    const auto& f_in  = get_field_in("my_f");
-
-    const auto& t = f_in.get_header().get_tracking().get_time_stamp();
-    const double dt = t - m_t_beg;
+  void compute_impl () override {
+    const auto& f_in  = m_fields_in.at("my_f");
+    const auto& ts = f_in.get_header().get_tracking().get_time_stamp();
+    const double dt = ts - m_t_beg;
 
     m_diagnostic_output.deep_copy(f_in);
     m_diagnostic_output.update(m_one,dt,2.0);
@@ -82,12 +76,11 @@ protected:
     ++m_num_evaluations;
   }
 
-  void initialize_impl (const RunType /* run_type */ ) override {
-    m_diagnostic_output.get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  void initialize_impl () override {
+    m_diagnostic_output.get_header().get_tracking().update_time_stamp(util::TimeStamp());
   }
 
-  // Clean up
-  void finalize_impl ( /* inputs */ ) override {}
+  // No finalize_impl in AbstractDiagnostic
 
   util::TimeStamp m_t_beg;
   Field m_one;
@@ -272,8 +265,8 @@ TEST_CASE ("io_diags") {
   scorpio::init_subsystem(comm);
 
   // Make MyDiag available via diag factory
-  auto& diag_factory = AtmosphereDiagnosticFactory::instance();
-  diag_factory.register_product("MyDiag",&create_atmosphere_diagnostic<MyDiag>);
+  auto& diag_factory = DiagnosticFactory::instance();
+  diag_factory.register_product("MyDiag",&create_diagnostic<MyDiag>);
 
   auto seed = get_random_test_seed(&comm);
 
@@ -303,8 +296,8 @@ TEST_CASE ("diags_sharing_check") {
   ekat::Comm comm(MPI_COMM_WORLD);
 
   // Make MyDiag available via diag factory
-  auto& diag_factory = AtmosphereDiagnosticFactory::instance();
-  diag_factory.register_product("MyDiag",&create_atmosphere_diagnostic<MyDiag>);
+  auto& diag_factory = DiagnosticFactory::instance();
+  diag_factory.register_product("MyDiag",&create_diagnostic<MyDiag>);
 
   // Time stamp
   auto time = get_t0();
@@ -336,16 +329,17 @@ TEST_CASE ("diags_sharing_check") {
   out1.init_timestep(time);
   out2.init_timestep(time);
 
-  out1.run("UNUSED", false, false, 0, false);
-  out2.run("UNUSED", false, false, 0, false);
+  time += 3600;
+  out1.run("UNUSED", time, false, false, 0, false);
+  out2.run("UNUSED", time, false, false, 0, false);
 
   REQUIRE (d->get_num_evaluations()==1);
 
   // Update diag input, then run again, and verify the diag was evaluated one more time
-  time += 1.0;
+  time += 3600;
   fm->get_field("my_f").get_header().get_tracking().update_time_stamp(time);
-  out1.run("UNUSED", false, false, 0, false);
-  out2.run("UNUSED", false, false, 0, false);
+  out1.run("UNUSED", time, false, false, 0, false);
+  out2.run("UNUSED", time, false, false, 0, false);
 
   REQUIRE (d->get_num_evaluations()==2);
 }
