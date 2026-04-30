@@ -27,7 +27,9 @@ MPAS-Sea-Ice (in `components/mpas-seaice/src/`):
 - `analysis_members/mpas_seaice_fme_derived_fields.F` -- 9 derived fields
   (iceAreaTotal, iceVolumeTotal, snowVolumeTotal, iceThicknessMean,
   surfaceTemperatureMean, airStressZonal, airStressMeridional,
-  uVelocityGeo, vVelocityGeo)
+  uVelocityGeoCell, vVelocityGeoCell — renamed from uVelocityGeo /
+  vVelocityGeo to avoid a name collision with the vertex-located
+  geographicalVectors AM in maint-3.0)
 - `shared/mpas_seaice_fme_horiz_remap.F` -- singleton horiz remap module
 
 Testmod (this directory):
