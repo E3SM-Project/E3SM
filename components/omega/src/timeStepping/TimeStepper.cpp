@@ -85,29 +85,31 @@ getPrescribeVelocityTypeFromStr(const std::string &InString) {
 //------------------------------------------------------------------------------
 // Constructors and creation methods.
 
-// Constructor creates a new instance and fills in the time
-// related data. attachData function is used to add the data pointers
+/// Constructor creates a new instance and fills in the time
+/// related data. attachData function is used to add the data pointers
 TimeStepper::TimeStepper(
-    const std::string &InName,      // [in] name of time stepper
-    TimeStepperType InType,         // [in] type (time stepping method)
-    I4 InNTimeLevels,               // [in] num time levels needed by method
-    const TimeInstant &InStartTime, // [in] start time for time stepping
-    const TimeInstant &InStopTime,  // [in] stop  time for time stepping
-    const TimeInterval &InTimeStep  // [in] time step
-    )
+    const std::string &InName,      ///< [in] name of time stepper
+    TimeStepperType InType,         ///< [in] type (time stepping method)
+    I4 InNTimeLevels,               ///< [in] num time levels for method
+    const TimeInterval &InTimeStep, ///< [in] time step
+    const TimeInstant &InStartTime, ///< [in] start time for time stepping
+    ///< [in] stop time for time stepping, missing in coupled mode
+    std::optional<TimeInstant> InStopTime)
     : Name(InName), Type(InType), NTimeLevels(InNTimeLevels),
-      StartTime(InStartTime), StopTime(InStopTime), TimeStep(InTimeStep) {
+      TimeStep(InTimeStep), StartTime(InStartTime), StopTime(InStopTime) {
    // Most variables initialized via initializer list
 
    // Set up clock associated with this time stepper
    StepClock = std::make_unique<Clock>(Clock(InStartTime, InTimeStep));
 
-   // Create an EndAlarm associated with the StopTime
-   std::string AlarmName = "EndAlarm";
-   if (InName != "Default")
-      AlarmName += InName;
-   EndAlarm = std::make_unique<Alarm>(Alarm(AlarmName, InStopTime));
-   StepClock->attachAlarm(EndAlarm.get());
+   if (InStopTime.has_value()) {
+      // Create an EndAlarm associated with the StopTime
+      std::string AlarmName = "EndAlarm";
+      if (InName != "Default")
+         AlarmName += InName;
+      EndAlarm = std::make_unique<Alarm>(Alarm(AlarmName, *InStopTime));
+      StepClock->attachAlarm(EndAlarm.get());
+   }
 }
 
 //------------------------------------------------------------------------------
@@ -115,9 +117,9 @@ TimeStepper::TimeStepper(
 TimeStepper *TimeStepper::create(
     const std::string &InName,      ///< [in] name of time stepper
     TimeStepperType InType,         ///< [in] type (time stepping method)
+    const TimeInterval &InTimeStep, ///< [in] time step
     const TimeInstant &InStartTime, ///< [in] start time for time stepping
     const TimeInstant &InStopTime,  ///< [in] stop  time for time stepping
-    const TimeInterval &InTimeStep, ///< [in] time step
     Tendencies *InTend,             ///< [in] ptr to tendencies
     AuxiliaryState *InAuxState,     ///< [in] ptr to aux state variables
     HorzMesh *InMesh,               ///< [in] ptr to mesh information
@@ -140,16 +142,16 @@ TimeStepper *TimeStepper::create(
    // additional info (NTimeLevels)
    switch (InType) {
    case TimeStepperType::ForwardBackward:
-      NewTimeStepper = new ForwardBackwardStepper(InName, InStartTime,
-                                                  InStopTime, InTimeStep);
+      NewTimeStepper = new ForwardBackwardStepper(InName, InTimeStep,
+                                                  InStartTime, InStopTime);
       break;
    case TimeStepperType::RungeKutta4:
       NewTimeStepper =
-          new RungeKutta4Stepper(InName, InStartTime, InStopTime, InTimeStep);
+          new RungeKutta4Stepper(InName, InTimeStep, InStartTime, InStopTime);
       break;
    case TimeStepperType::RungeKutta2:
       NewTimeStepper =
-          new RungeKutta2Stepper(InName, InStartTime, InStopTime, InTimeStep);
+          new RungeKutta2Stepper(InName, InTimeStep, InStartTime, InStopTime);
       break;
    case TimeStepperType::Invalid:
       ABORT_ERROR("Invalid time stepping method");
@@ -176,10 +178,10 @@ TimeStepper *TimeStepper::create(
 TimeStepper *TimeStepper::create(
     const std::string &InName, // [in] name of time stepper
     TimeStepperType InType,    // [in] type (time stepping method)
+    TimeInterval &InTimeStep,  // [in] time step
     TimeInstant &InStartTime,  // [in] start time for time stepping
-    TimeInstant &InStopTime,   // [in] stop  time for time stepping
-    TimeInterval &InTimeStep   // [in] time step
-) {
+    ///< [in] stop time for time stepping, missing in coupled mode
+    std::optional<TimeInstant> InStopTime) {
 
    // Check for duplicates
    if (AllTimeSteppers.find(InName) != AllTimeSteppers.end()) {
@@ -194,16 +196,16 @@ TimeStepper *TimeStepper::create(
    // Call specific constructor with time info
    switch (InType) {
    case TimeStepperType::ForwardBackward:
-      NewTimeStepper = new ForwardBackwardStepper(InName, InStartTime,
-                                                  InStopTime, InTimeStep);
+      NewTimeStepper = new ForwardBackwardStepper(InName, InTimeStep,
+                                                  InStartTime, InStopTime);
       break;
    case TimeStepperType::RungeKutta4:
       NewTimeStepper =
-          new RungeKutta4Stepper(InName, InStartTime, InStopTime, InTimeStep);
+          new RungeKutta4Stepper(InName, InTimeStep, InStartTime, InStopTime);
       break;
    case TimeStepperType::RungeKutta2:
       NewTimeStepper =
-          new RungeKutta2Stepper(InName, InStartTime, InStopTime, InTimeStep);
+          new RungeKutta2Stepper(InName, InTimeStep, InStartTime, InStopTime);
       break;
    case TimeStepperType::Invalid:
       ABORT_ERROR("Invalid time stepping method");
@@ -363,7 +365,7 @@ void TimeStepper::init1() {
    // Use the partial creation function for only the time info. Data
    // pointers will be attached in phase 2 initialization
    TimeStepper::DefaultTimeStepper =
-       create("Default", TimeStepperChoice, StartTime, StopTime, TimeStep);
+       create("Default", TimeStepperChoice, TimeStep, StartTime, StopTime);
 }
 
 //------------------------------------------------------------------------------
@@ -431,10 +433,13 @@ TimeInterval TimeStepper::getTimeStep() const { return TimeStep; }
 TimeInstant TimeStepper::getStartTime() const { return StartTime; }
 
 // Get stop time from instance
-TimeInstant TimeStepper::getStopTime() const { return StopTime; }
+std::optional<TimeInstant> TimeStepper::getStopTime() const { return StopTime; }
 
 // Get clock (ptr) from instance
 Clock *TimeStepper::getClock() { return StepClock.get(); }
+
+// Check if time stepper has an end alarm (i.e. if stop time is defined)
+bool TimeStepper::hasEndAlarm() const { return EndAlarm != nullptr; }
 
 // Get end alarm (ptr) from instance
 Alarm *TimeStepper::getEndAlarm() { return EndAlarm.get(); }

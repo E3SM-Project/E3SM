@@ -15,12 +15,12 @@ namespace OMEGA {
 // Uses the base constructor and adds some coefficients.
 RungeKutta4Stepper::RungeKutta4Stepper(
     const std::string &InName,      ///< [in] name of time stepper
+    const TimeInterval &InTimeStep, ///< [in] time step
     const TimeInstant &InStartTime, ///< [in] start time for time stepping
-    const TimeInstant &InStopTime,  ///< [in] stop  time for time stepping
-    const TimeInterval &InTimeStep  ///< [in] time step
-    )
-    : TimeStepper(InName, TimeStepperType::RungeKutta4, 2, InStartTime,
-                  InStopTime, InTimeStep) {
+    ///< [in] stop time for time stepping, missing in coupled mode
+    std::optional<TimeInstant> InStopTime)
+    : TimeStepper(InName, TimeStepperType::RungeKutta4, 2, InTimeStep,
+                  InStartTime, InStopTime) {
 
    RKA[0] = 0;
    RKA[1] = 1. / 2;

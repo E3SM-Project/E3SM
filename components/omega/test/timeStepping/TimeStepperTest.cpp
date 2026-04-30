@@ -319,7 +319,7 @@ int testTimeStepper(const std::string &Name, TimeStepperType Type,
    TimeInterval TimeStepTI(BaseTimeStepSeconds, TimeUnits::Seconds);
 
    auto *TestTimeStepper = TimeStepper::create(
-       "TestTimeStepper", Type, TimeStart, TimeEndTI, TimeStepTI,
+       "TestTimeStepper", Type, TimeStepTI, TimeStart, TimeEndTI,
        TestTendencies, TestAuxState, DefMesh, DefVCoord, DefHalo);
 
    if (!TestTimeStepper) {
@@ -370,6 +370,57 @@ int testTimeStepper(const std::string &Name, TimeStepperType Type,
    return Err;
 }
 
+int testOptionalStopTime(const std::string &Name, TimeStepperType Type) {
+   int Err = 0;
+
+   auto *DefMesh        = HorzMesh::getDefault();
+   auto *DefVCoord      = VertCoord::getDefault();
+   auto *DefHalo        = Halo::getDefault();
+   auto *TestAuxState   = AuxiliaryState::get("TestAuxState");
+   auto *TestTendencies = Tendencies::get("TestTendencies");
+
+   TimeInstant TimeStart(0, 0, 0, 0, 0, 0);
+   TimeInterval TimeStep(0.2, TimeUnits::Seconds);
+
+   // 2-phase create without StopTime — used by the coupled driver
+   auto *Stepper =
+       TimeStepper::create("CoupledTestStepper", Type, TimeStep, TimeStart);
+
+   if (!Stepper) {
+      Err++;
+      LOG_ERROR("TimeStepperTest: error creating test stepper StopTime {}",
+                Name);
+      return Err;
+   }
+
+   if (Stepper->hasEndAlarm()) {
+      Err++;
+      LOG_ERROR("TimeStepperTest: {}: hasEndAlarm() should be false without "
+                "StopTime",
+                Name);
+   }
+
+   if (Stepper->getStopTime().has_value()) {
+      Err++;
+      LOG_ERROR("TimeStepperTest: {}: getStopTime() should return nullopt "
+                "without StopTime",
+                Name);
+   }
+
+   // Verify doStep works without an EndAlarm (coupled run loop never uses it)
+   Stepper->attachData(TestTendencies, TestAuxState, DefMesh, DefVCoord,
+                       DefHalo);
+   auto *State = OceanState::get("TestState");
+   initState();
+   TimeInstant CurTime = TimeStart;
+   Stepper->doStep(State, CurTime);
+   Stepper->doStep(State, CurTime);
+
+   TimeStepper::erase("CoupledTestStepper");
+
+   return Err;
+}
+
 int timeStepperTest(const std::string &MeshFile = "OmegaMesh.nc") {
 
    int Err = initTimeStepperTest(MeshFile);
@@ -394,6 +445,11 @@ int timeStepperTest(const std::string &MeshFile = "OmegaMesh.nc") {
    ATol          = 0.1;
    Err += testTimeStepper("RungeKutta2", TimeStepperType::RungeKutta2,
                           ExpectedOrder, ATol);
+
+   // Verify stepper operates correctly without StopTime/EndAlarm
+
+   Err += testOptionalStopTime("ForwardBackward",
+                               TimeStepperType::ForwardBackward);
 
    if (Err == 0) {
       LOG_INFO("TimeStepperTest: Successful completion");
