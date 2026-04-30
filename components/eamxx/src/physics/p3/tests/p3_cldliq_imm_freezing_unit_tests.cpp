@@ -328,6 +328,31 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
     }
   }
 
+  SECTION("frozen_droplet_size_bias") {
+    constexpr std::array<Scalar, 3> mus = {0.0, 2.0, 5.0};
+    constexpr std::array<Scalar, 3> lams = {2.0, 5.0, 10.0};
+    const Scalar T_atm = C::T_rainfrz.value - 5.0;
+    const Scalar cdist1 = 0.75;
+    const Scalar qc_incld = 2.0 * C::QSMALL;
+    const Scalar inv_qc_relvar = 2.0;
+    const Scalar exponent = 0.65;
+
+    for (const auto mu : mus) {
+      for (const auto lam : lams) {
+        const auto result = run_case(T_atm, lam, mu, cdist1, qc_incld,
+                                     inv_qc_relvar, exponent, true);
+        const Scalar d_eff_cubed =
+          (result.mass / result.number) / (C::CONS6 / C::CONS5);
+        const Scalar d_mean = (mu + 4) / lam;
+        const Scalar expected_ratio =
+          ((mu + 5) * (mu + 6)) / ((mu + 4) * (mu + 4));
+
+        REQUIRE(d_eff_cubed > cube_host(d_mean));
+        require_rel_close(d_eff_cubed / cube_host(d_mean), expected_ratio);
+      }
+    }
+  }
+
   SECTION("distribution_prefactor_scaling") {
     const Scalar T_atm = C::T_rainfrz.value - 5.0;
     const Scalar lamc = 5.0;
@@ -345,6 +370,23 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
 
     require_rel_close(r2.mass / r1.mass, c2 / c1);
     require_rel_close(r2.number / r1.number, c2 / c1);
+  }
+
+  SECTION("zero_distribution_prefactor_gives_zero") {
+    const Scalar T_atm = C::T_rainfrz.value - 5.0;
+    const Scalar lamc = 5.0;
+    const Scalar mu_c = 2.0;
+    const Scalar cdist1 = 0.0;
+    const Scalar qc_incld = 2.0 * C::QSMALL;
+    const Scalar inv_qc_relvar = 2.0;
+    const Scalar exponent = 0.65;
+
+    const auto result = run_case(T_atm, lamc, mu_c, cdist1, qc_incld,
+                                 inv_qc_relvar, exponent, true,
+                                 -123.0, -456.0);
+
+    REQUIRE(result.mass == 0);
+    REQUIRE(result.number == 0);
   }
 
   SECTION("scalar_multiplier_cancellation_in_mass_number_ratio") {

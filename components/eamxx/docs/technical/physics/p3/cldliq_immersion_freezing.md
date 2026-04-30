@@ -119,6 +119,24 @@ ratio. Temperature, the runtime exponent, and the distribution prefactor
 `cdist1` cancel out because they multiply the mass and number moments
 identically.
 
+The same identity implies a size-bias interpretation. If
+
+$$
+D_{\mathrm{mean}} = \frac{\mu_c + 4}{\lambda_c}
+$$
+
+is the mean diameter of the freezing-weighted droplet population, then
+
+$$
+\frac{D_{\mathrm{eff}}^3}{D_{\mathrm{mean}}^3}
+= \frac{(\mu_c + 5)(\mu_c + 6)}{(\mu_c + 4)^2} > 1
+\qquad \text{for } \mu_c \ge 0.
+$$
+
+So the implied mean mass per newly frozen droplet corresponds to a
+larger-than-mean droplet, consistent with larger droplets being preferentially
+represented in the freezing-weighted moments.
+
 ## Implementation Notes
 
 `qc_incld` is currently a gate only. Above threshold it does not enter the
@@ -174,6 +192,8 @@ These identities encode the key physics:
   effect on frozen mass than on frozen number because mass samples a higher
   moment of the droplet distribution
 - `cdist1` scales both tendencies linearly
+- `cdist1 = 0` gives zero mass and number freezing tendencies for otherwise
+  active lanes
 
 ## Physical-Property Tests
 
@@ -187,7 +207,9 @@ The `run_phys()` implementation uses separate Catch2 sections for:
 - `runtime_exponent_sensitivity`
 - `lambda_power_law_scaling`
 - `mass_number_moment_identity`
+- `frozen_droplet_size_bias`
 - `distribution_prefactor_scaling`
+- `zero_distribution_prefactor_gives_zero`
 - `scalar_multiplier_cancellation_in_mass_number_ratio`
 - `qc_gate_only_behavior`
 - `inv_qc_relvar_currently_inactive`
