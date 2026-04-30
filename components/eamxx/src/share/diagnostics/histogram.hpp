@@ -8,6 +8,14 @@ namespace scream {
  * This diagnostic will calculate a histogram of a field across all dimensions
  * producing a one dimensional field, with CMP tag dimension named "bin", that
  * indicates how many times a field value in the specified range occurred.
+ *
+ * Examples:
+ *  - If the input field is T_mid(ncol,nlev) and the bin configuration string is 100_200_300_400_500,
+ *    the diag will have layout (cmp), with extent 5 (5 bins). diag(1) will count
+ *    the number of (icol,ilev) entries where 200<T_mid<300.
+ * Notes:
+ *  - we do add a bin (-inf,100) and (500,inf)  before/after the provided ones, to catch the tails.
+ *  - the bins endpoints MUST be listed in strictly increasing order (we error out if they are not).
  */
 
 class Histogram : public AbstractDiagnostic {

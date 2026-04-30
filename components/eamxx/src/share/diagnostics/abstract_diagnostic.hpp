@@ -20,11 +20,32 @@ namespace scream
 {
 
 /*
- * A class representing a diagnostic.
+ * The base class for all diagnostic quantities.
  *
- * A diagnostic takes zero or more fields as input and produces a single
- * output field. It is similar to AtmosphereProcess, but  does not participate
- * in the atmosphere time-stepping loop; it is only used for output/IO.
+ * A diagnostic quantity is a Field that is not part of the model state,
+ * nor it can impact it in any way. It is derived from the state, and usually
+ * only computed for the sake of IO to reduce the footprint of what must
+ * be written to file (as well as taking advantage of runtime compute capabilities,
+ * which may make the calculation faster than in post-processing tools).
+ *
+ * The lifetime of a diagnostic is as follows:
+ *  - constructor: create the diag following *exactly* the signature of the base class.
+ *                 This is b/c diags are constructed at run time via a factory, which
+ *                 requires a uniform signature for all constructors
+ *  - set inputs: the diag provides the name of the input fields, which customers must
+ *                retrieve and set in the diag before any attempt at computing it.
+ *  - initialize: by the time this function is called, ALL input fields (if any) MUST
+ *                have been set in the class (via the above method), while by the time
+ *                it returns, the stored diagnostic field MUST be allocated. It calls the
+ *                protected 'initialize_impl', which derived classes MUST implement.
+ *  - init_timestep: this is optional (the base class has an empty impl), but provides
+ *                   the diag the possibility of doing some start-of-step calculations.
+ *                   E.g., the FieldPrev diag, which computes the field at the previous
+ *                   timestep, can use this call to copy the field before the timestep begins.
+ *  - compute: this is where the calculation is (usually) performed. It calls the private
+ *             method 'compute_impl', which derived classes MUST implement.
+ *  - get: this can be used to retrieve the diagnostic field (can be called once, as the
+ *         stored field is allocated once at initialization and reused at every step).
  */
 
 class AbstractDiagnostic

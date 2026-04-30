@@ -9,6 +9,15 @@ namespace scream {
  * This diagnostic implements conditional sampling by applying a condition
  * to a field and outputting the input field values where the condition is met,
  * and fill values where the condition is not met.
+ *
+ * The general diag name is X_where_Y_cmp_Z, where:
+ *  - cmp is a string among "eq", "ne", "lt", "le", "gt", "ge"
+ *  - X, Y, and Z are one of the following combinations:
+ *    - X,Y,Z are fields with the same layout (e.g., T_mid_where_qc_gt_qr)
+ *    - X,Y are fields with same layout and Z is a number (e.g., T_mid_where_qc_gt_1e-6)
+ *    - X is a field, and Y is the string "lev" and Z is an integer (e.g., T_mid_where_lev_gt_10)
+ *    - any of the above, with X="mask": compute the mask field of where the condition holds
+ *      E.g., mask_where_T_mid_gt_273 gives diag=1 where T_mid>273 and 0 elsewhere
  */
 
 class ConditionalSampling : public AbstractDiagnostic {
@@ -30,12 +39,6 @@ public:
 
 protected:
 
-  // General syntax is X_where_Y_comp_Z
-  // where either:
-  //  - X,Y,Z are fields with the same layout
-  //  - X,Y are fields with same layout and Z is a number
-  //  - X is a field, and Y is the string "lev" and Z is an integer
-  //  - all of the above, but with X="mask", which computes the mask field of where the condition holds
   std::string m_diag_name;      // X_where_Y_comp_Z
   std::string m_input_f;        // X
   std::string m_condition_lhs;  // Y

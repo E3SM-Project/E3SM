@@ -15,17 +15,16 @@ Histogram::Histogram(const ekat::Comm &comm, const ekat::ParameterList &params,
 
   // extract bin values from configuration, append end values, and check
   const std::vector<std::string> bin_strings = ekat::split(bin_config, "_");
-  m_bin_reals.resize(bin_strings.size()+2);
-  m_bin_reals[0] = std::numeric_limits<Real>::lowest();
-  for (long unsigned int i=1; i < m_bin_reals.size()-1; i++)
-  {
-    m_bin_reals[i] = std::stod(bin_strings[i-1]);
-    EKAT_REQUIRE_MSG(m_bin_reals[i] > m_bin_reals[i-1],
-                     "Error! Histogram bin values must be monotonically "
-                     "increasing.\n"
-                     " - bin configuration: " + bin_config + "\n");
+  m_bin_reals.reserve(bin_strings.size()+2);
+  m_bin_reals.push_back(std::numeric_limits<Real>::lowest());
+  for (const auto& s : bin_strings) {
+    auto val = std::stod(s);
+    EKAT_REQUIRE_MSG(val > m_bin_reals.back(),
+        "Error! Histogram bin values must be monotonically increasing.\n"
+        " - bin configuration: " + bin_config + "\n");
+    m_bin_reals.push_back(val);
   }
-  m_bin_reals.back() = std::numeric_limits<Real>::max();
+  m_bin_reals.push_back(std::numeric_limits<Real>::max());
 
   m_field_in_names.push_back(m_field_name);
 }
