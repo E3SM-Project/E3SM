@@ -22,7 +22,7 @@ void Exner::initialize_impl()
   m_diagnostic_output.allocate_view();
 }
 
-void Exner::compute_diagnostic_impl()
+void Exner::compute_impl()
 {
   using PF = PhysicsFunctions<DefaultDevice>;
 

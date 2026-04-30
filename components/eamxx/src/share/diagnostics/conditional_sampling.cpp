@@ -201,7 +201,7 @@ void ConditionalSampling::initialize_impl()
   }
 }
 
-void ConditionalSampling::compute_diagnostic_impl()
+void ConditionalSampling::compute_impl()
 {
   // Compute the mask (unless lhs is "lev", in which case we already did)
   auto& mask = m_diag_is_mask ? m_diagnostic_output : m_diagnostic_output.get_valid_mask();

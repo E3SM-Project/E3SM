@@ -33,7 +33,7 @@ void AODVis::initialize_impl() {
   m_diagnostic_output.set_valid_mask(m_fields_in.at("sunlit_mask"));
 }
 
-void AODVis::compute_diagnostic_impl()
+void AODVis::compute_impl()
 {
   using KT  = KokkosTypes<DefaultDevice>;
   using MT  = typename KT::MemberType;

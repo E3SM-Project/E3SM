@@ -65,7 +65,7 @@ void Histogram::initialize_impl()
   Kokkos::deep_copy(bin_values_view,bin_values_view_host);
 }
 
-void Histogram::compute_diagnostic_impl()
+void Histogram::compute_impl()
 {
   const auto& field = m_fields_in.at(m_field_name);
   auto field_layout = field.get_header().get_identifier().get_layout();

@@ -55,7 +55,7 @@ TEST_CASE("atm_backtend") {
   prev_diag->initialize();
 
   // The output of FieldPrev is "qc_prev"
-  auto qc_prev_field = prev_diag->get_diagnostic();
+  auto qc_prev_field = prev_diag->get();
 
   // Layer 2: BinaryOp(qc, minus, qc_prev) → output field "qc_minus_qc_prev"
   ekat::ParameterList minus_params;
@@ -68,7 +68,7 @@ TEST_CASE("atm_backtend") {
   minus_diag->set_input_field(qc_prev_field);
   minus_diag->initialize();
 
-  auto qc_minus_qc_prev_field = minus_diag->get_diagnostic();
+  auto qc_minus_qc_prev_field = minus_diag->get();
 
   // Layer 3: FieldOverDt(qc_minus_qc_prev) → output field "qc_minus_qc_prev_over_dt"
   ekat::ParameterList over_dt_params;
@@ -79,9 +79,9 @@ TEST_CASE("atm_backtend") {
   over_dt_diag->initialize();
 
   // First evaluation (before any init_timestep): should throw
-  REQUIRE_THROWS(over_dt_diag->compute_diagnostic(ts));
+  REQUIRE_THROWS(over_dt_diag->compute(ts));
 
-  auto result = over_dt_diag->get_diagnostic();
+  auto result = over_dt_diag->get();
 
   const Real a_day = 24.0 * 60.0 * 60.0;  // seconds
 
@@ -106,9 +106,9 @@ TEST_CASE("atm_backtend") {
     qc.sync_to_dev();
 
     // Evaluate chain in dependency order
-    prev_diag->compute_diagnostic(ts);
-    minus_diag->compute_diagnostic(ts);
-    over_dt_diag->compute_diagnostic(ts);
+    prev_diag->compute(ts);
+    minus_diag->compute(ts);
+    over_dt_diag->compute(ts);
     result.sync_to_host();
 
     // Expected: (qc_new - qc_old) / a_day

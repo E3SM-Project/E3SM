@@ -299,7 +299,7 @@ AtmosphereOutput::
   //       to prevent two output streams creating the same diag. So when this
   //       destructor runs, it's fine to clean up this static var
   for (auto d : m_diagnostics) {
-    const auto& name = d->get_diagnostic().name();
+    const auto& name = d->get().name();
     m_diag_repo.erase(name);
   }
 }
@@ -472,7 +472,7 @@ run (const std::string& filename, const util::TimeStamp& ts,
 
   // Update all diagnostics, we need to do this before applying the remapper
   // to make sure that the remapped fields are the most up to date.
-  compute_diagnostics(ts,allow_invalid_fields);
+  computes(ts,allow_invalid_fields);
 
   auto apply_remap = [&](AbstractRemapper& remapper)
   {
@@ -1002,7 +1002,7 @@ setup_output_file(const std::string& filename,
 }
 
 void AtmosphereOutput::
-compute_diagnostics(const util::TimeStamp& ts, const bool allow_invalid_fields)
+computes(const util::TimeStamp& ts, const bool allow_invalid_fields)
 {
   for (auto diag : m_diagnostics) {
     // Check if all inputs are valid
@@ -1015,20 +1015,20 @@ compute_diagnostics(const util::TimeStamp& ts, const bool allow_invalid_fields)
       EKAT_REQUIRE_MSG (computable or allow_invalid_fields,
         "Error! Cannot compute a diagnostic. One dependency has an invalid timestamp.\n"
         " - stream name: " + m_stream_name + "\n"
-        " - diag name: " + diag->get_diagnostic().name() + "\n"
+        " - diag name: " + diag->get().name() + "\n"
         " - dep  name: " + f.name() + "\n");
     }
 
-    auto d = diag->get_diagnostic();
+    auto d = diag->get();
     if (computable) {
-      diag->compute_diagnostic(ts);
+      diag->compute(ts);
     }
 
     bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
 
     EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
       "Error! Failed to compute diagnostic.\n"
-      " - diag name: " + diag->get_diagnostic().name() + "\n");
+      " - diag name: " + diag->get().name() + "\n");
 
     if (not computed) {
       // The diag was either not computable or it may have failed to compute
@@ -1146,7 +1146,7 @@ process_requested_fields()
 
   auto check_diag_avg_cnt = [&](const std::shared_ptr<AbstractDiagnostic>& diag) {
     // Set the diag field in the FM
-    auto diag_field = diag->get_diagnostic();
+    auto diag_field = diag->get();
 
     // Add the field to the diag group
     diag_field.get_header().get_tracking().add_group("diagnostic");
@@ -1250,7 +1250,7 @@ process_requested_fields()
           }
           check_diag_avg_cnt (diag);
           remove_these.insert(name);
-          fm_model->add_field(diag->get_diagnostic());
+          fm_model->add_field(diag->get());
           m_diagnostics.push_back(diag);
         }
       }

@@ -68,7 +68,7 @@ void FieldPrev::init_timestep(const util::TimeStamp &start_of_step)
   }
 }
 
-void FieldPrev::compute_diagnostic_impl() {
+void FieldPrev::compute_impl() {
   // Nothing to do here
 }
 

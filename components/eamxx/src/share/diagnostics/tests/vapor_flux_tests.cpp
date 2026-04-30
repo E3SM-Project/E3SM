@@ -88,8 +88,8 @@ void run(std::mt19937_64& engine)
       randomize_uniform (uv_f,seed++,0,200);
 
       // Run diagnostic and compare with manual calculation
-      diag->compute_diagnostic(t0);
-      const auto& diag_out = diag->get_diagnostic();
+      diag->compute(t0);
+      const auto& diag_out = diag->get();
       Field qv_vert_integrated_flux_u_f = diag_out.clone();
       qv_vert_integrated_flux_u_f.deep_copy(0);
       const auto& qv_vert_integrated_flux_u_v = qv_vert_integrated_flux_u_f.get_view<Real*>();

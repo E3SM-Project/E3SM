@@ -72,8 +72,8 @@ void run(std::mt19937_64& engine, int int_ptype)
       randomize_uniform(q_mid_f,seed++,0,1e-2);
 
     // Run diagnostic and compare with manual calculation
-    diag->compute_diagnostic(t0);
-    const auto& diag_out = diag->get_diagnostic();
+    diag->compute(t0);
+    const auto& diag_out = diag->get();
     Field theta_f = diag_out.clone();
     theta_f.deep_copy(0);
     const auto& theta_v = theta_f.get_view<Real**>();

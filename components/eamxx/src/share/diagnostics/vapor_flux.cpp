@@ -39,7 +39,7 @@ VaporFlux (const ekat::Comm& comm, const ekat::ParameterList& params,
   m_diagnostic_output.allocate_view();
 }
 
-void VaporFlux::compute_diagnostic_impl()
+void VaporFlux::compute_impl()
 {
   using PC  = scream::physics::Constants<Real>;
   using KT  = KokkosTypes<DefaultDevice>;

@@ -88,13 +88,13 @@ void run(std::mt19937_64& engine)
   precip_liq_surf_mass_f.get_header().get_tracking().update_time_stamp(t);
   
   // Run diagnostics and compare with manual calculation
-  diag_total->compute_diagnostic(t0);
-  diag_liq->compute_diagnostic(t0);
-  diag_ice->compute_diagnostic(t0);
+  diag_total->compute(t0);
+  diag_liq->compute(t0);
+  diag_ice->compute(t0);
 
-  Field precip_total_f = diag_total->get_diagnostic().clone();
-  Field precip_liq_f   = diag_liq->get_diagnostic().clone();
-  Field precip_ice_f   = diag_ice->get_diagnostic().clone();
+  Field precip_total_f = diag_total->get().clone();
+  Field precip_liq_f   = diag_liq->get().clone();
+  Field precip_ice_f   = diag_ice->get().clone();
   precip_total_f.deep_copy(0);
   precip_liq_f.deep_copy(0);
   precip_ice_f.deep_copy(0);
@@ -114,9 +114,9 @@ void run(std::mt19937_64& engine)
   });
   Kokkos::fence();
 
-  REQUIRE(views_are_equal(diag_total->get_diagnostic(),precip_total_f));
-  REQUIRE(views_are_equal(diag_liq->get_diagnostic(),precip_liq_f));
-  REQUIRE(views_are_equal(diag_ice->get_diagnostic(),precip_ice_f));
+  REQUIRE(views_are_equal(diag_total->get(),precip_total_f));
+  REQUIRE(views_are_equal(diag_liq->get(),precip_liq_f));
+  REQUIRE(views_are_equal(diag_ice->get(),precip_ice_f));
 
 } // run()
 

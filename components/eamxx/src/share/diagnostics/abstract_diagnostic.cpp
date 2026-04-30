@@ -32,7 +32,7 @@ void AbstractDiagnostic::set_input_field (const Field& f)
   m_fields_in[f.name()] = f;
 }
 
-Field AbstractDiagnostic::get_diagnostic () const
+Field AbstractDiagnostic::get () const
 {
   EKAT_REQUIRE_MSG (m_diagnostic_output.is_allocated(),
       "Error! Getting a diagnostic field before it is allocated is suspicious at best.\n"
@@ -41,7 +41,7 @@ Field AbstractDiagnostic::get_diagnostic () const
   return m_diagnostic_output;
 }
 
-void AbstractDiagnostic::compute_diagnostic (const util::TimeStamp& ts)
+void AbstractDiagnostic::compute (const util::TimeStamp& ts)
 {
   if (m_last_eval_ts.is_valid() and ts==m_last_eval_ts) {
     // No need to compute the diag again
@@ -55,7 +55,7 @@ void AbstractDiagnostic::compute_diagnostic (const util::TimeStamp& ts)
   }
 
   // If the diag was already evaluated, check if the input fields timestamps
-  // have changed since the last compute_diagnostic call.
+  // have changed since the last compute call.
   if (m_last_eval_ts.is_valid() and m_fields_in.size()>0) {
     if (tsh==m_last_eval_ts_hash) {
       // Nothing has changed in the inputs since last evaluation, so we can return
@@ -70,7 +70,7 @@ void AbstractDiagnostic::compute_diagnostic (const util::TimeStamp& ts)
   // inconsistency of data. In that case, they can reset the diag time stamp
   // to something invalid, which can be used by downstream classes to determine
   // if the diag has been successfully computed or not.
-  compute_diagnostic_impl ();
+  compute_impl ();
 
   // Update the inputs ts hash of last evaluation
   m_last_eval_ts_hash = tsh;

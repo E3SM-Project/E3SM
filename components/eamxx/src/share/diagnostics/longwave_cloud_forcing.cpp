@@ -22,7 +22,7 @@ LongwaveCloudForcing (const ekat::Comm& comm, const ekat::ParameterList& params,
   m_diagnostic_output.allocate_view();
 }
 
-void LongwaveCloudForcing::compute_diagnostic_impl()
+void LongwaveCloudForcing::compute_impl()
 {
   using KT = KokkosTypes<DefaultDevice>;
 

@@ -59,10 +59,10 @@ public:
   virtual void init_timestep (const util::TimeStamp& /* start_of_step */) {}
 
   // Returns the diagnostic output field
-  Field get_diagnostic () const;
+  Field get () const;
 
   // Compute the diagnostic (skips if inputs have not changed since last call)
-  void compute_diagnostic (const util::TimeStamp& ts);
+  void compute (const util::TimeStamp& ts);
 
 protected:
 
@@ -70,7 +70,7 @@ protected:
   virtual void initialize_impl () { /* Nothing to do */ }
 
   // Derived classes implement this to compute the output from the inputs.
-  virtual void compute_diagnostic_impl () = 0;
+  virtual void compute_impl () = 0;
 
   // MPI communicator
   ekat::Comm              m_comm;

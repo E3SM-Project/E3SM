@@ -65,7 +65,7 @@ public:
   int get_num_evaluations () const { return m_num_evaluations; }
 protected:
 
-  void compute_diagnostic_impl () override {
+  void compute_impl () override {
     const auto& f_in  = m_fields_in.at("my_f");
     const auto& ts = f_in.get_header().get_tracking().get_time_stamp();
     const double dt = ts - m_t_beg;

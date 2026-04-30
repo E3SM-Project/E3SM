@@ -98,17 +98,17 @@ void run()
     randomize_uniform(dp_f,seed++,1,100);
 
     // Grab views for each of the number path diagnostics
-    const auto &lnp   = diags["lnp"]->get_diagnostic();
-    const auto &inp   = diags["inp"]->get_diagnostic();
-    const auto &rnp   = diags["rnp"]->get_diagnostic();
+    const auto &lnp   = diags["lnp"]->get();
+    const auto &inp   = diags["inp"]->get();
+    const auto &rnp   = diags["rnp"]->get();
     const auto &lnp_h = lnp.get_view<const Real *, Host>();
     const auto &inp_h = inp.get_view<const Real *, Host>();
     const auto &rnp_h = rnp.get_view<const Real *, Host>();
 
     // Compute & sync
     for(const auto &dd : diags) {
-      dd.second->compute_diagnostic(t0);
-      dd.second->get_diagnostic().sync_to_host();
+      dd.second->compute(t0);
+      dd.second->get().sync_to_host();
     }
 
     // Test manual calculation vs one provided by diags

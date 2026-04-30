@@ -69,7 +69,7 @@ void VertDerivative::initialize_impl()
   }
 }
 
-void VertDerivative::compute_diagnostic_impl()
+void VertDerivative::compute_impl()
 {
   // f: input field; o: output field; d: denominator field
   const auto& f  = m_fields_in.at(m_field_name);

@@ -52,8 +52,8 @@ void run(std::mt19937_64& engine)
   randomize_uniform(surf_evap_f,seed++,0,1);
 
   // Run diagnostic and compare with manual calculation
-  diag_latent_heat->compute_diagnostic(t0);
-  const auto diag_latent_heat_out = diag_latent_heat->get_diagnostic();
+  diag_latent_heat->compute(t0);
+  const auto diag_latent_heat_out = diag_latent_heat->get();
   Field surf_lhf = diag_latent_heat_out.clone();
   surf_lhf.deep_copy(0);
   const auto& surf_lhf_v = surf_lhf.get_view<Real*>();

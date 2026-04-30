@@ -25,7 +25,7 @@ class FieldPrev : public AbstractDiagnostic {
 #ifdef KOKKOS_ENABLE_CUDA
  public:
 #endif
-  void compute_diagnostic_impl() override;
+  void compute_impl() override;
 
   // Store the field at the start of each timestep
   void init_timestep(const util::TimeStamp &start_of_step) override;

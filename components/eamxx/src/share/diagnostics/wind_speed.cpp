@@ -22,7 +22,7 @@ WindSpeed (const ekat::Comm& comm, const ekat::ParameterList& params,
   m_diagnostic_output.allocate_view();
 }
 
-void WindSpeed::compute_diagnostic_impl()
+void WindSpeed::compute_impl()
 {
   using KT      = KokkosTypes<DefaultDevice>;
   using MDRange = Kokkos::MDRangePolicy<typename KT::ExeSpace,Kokkos::Rank<2>>;

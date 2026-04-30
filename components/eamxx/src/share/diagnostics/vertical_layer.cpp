@@ -97,7 +97,7 @@ void VerticalLayer::initialize_impl ()
   }
 }
 
-void VerticalLayer::compute_diagnostic_impl()
+void VerticalLayer::compute_impl()
 {
   using column_ops = ColumnOps<DefaultDevice,Real>;
   using KT         = KokkosTypes<DefaultDevice>;

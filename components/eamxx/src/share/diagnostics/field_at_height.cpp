@@ -110,8 +110,7 @@ initialize_impl ()
   }
 }
 
-// =========================================================================================
-void FieldAtHeight::compute_diagnostic_impl()
+void FieldAtHeight::compute_impl()
 {
   const auto z_view = m_fields_in.at(m_z_name + m_z_suffix).get_view<const Real**>();
   const Field& f = m_fields_in.at(m_field_name);

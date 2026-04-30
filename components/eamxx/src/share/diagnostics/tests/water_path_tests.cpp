@@ -120,11 +120,11 @@ void run(std::mt19937_64& engine)
     randomize_uniform(qr_f,seed++,0,1e-3);
 
     // Grab views for each of the water path diagnostics
-    const auto& vwp = diags["vwp"]->get_diagnostic();
-    const auto& lwp = diags["lwp"]->get_diagnostic();
-    const auto& iwp = diags["iwp"]->get_diagnostic();
-    const auto& mwp = diags["mwp"]->get_diagnostic();
-    const auto& rwp = diags["rwp"]->get_diagnostic();
+    const auto& vwp = diags["vwp"]->get();
+    const auto& lwp = diags["lwp"]->get();
+    const auto& iwp = diags["iwp"]->get();
+    const auto& mwp = diags["mwp"]->get();
+    const auto& rwp = diags["rwp"]->get();
     const auto& vwp_v = vwp.get_view<const Real*>();
     const auto& lwp_v = lwp.get_view<const Real*>();
     const auto& iwp_v = iwp.get_view<const Real*>();
@@ -145,7 +145,7 @@ void run(std::mt19937_64& engine)
 
 
     for (const auto& dd : diags) {
-      dd.second->compute_diagnostic(t0);
+      dd.second->compute(t0);
     }
     // Test 1: The water path should be >= the maximum cell level mass per column
     {
@@ -214,11 +214,11 @@ void run(std::mt19937_64& engine)
     // Test 2: If the cell-wise mass is scaled by constant alpha then the water
     //         path should also be scaled by alpha.
     {
-      Field vwp_copy_f = diags["vwp"]->get_diagnostic().clone();
-      Field lwp_copy_f = diags["lwp"]->get_diagnostic().clone();
-      Field iwp_copy_f = diags["iwp"]->get_diagnostic().clone();
-      Field mwp_copy_f = diags["mwp"]->get_diagnostic().clone();
-      Field rwp_copy_f = diags["rwp"]->get_diagnostic().clone();
+      Field vwp_copy_f = diags["vwp"]->get().clone();
+      Field lwp_copy_f = diags["lwp"]->get().clone();
+      Field iwp_copy_f = diags["iwp"]->get().clone();
+      Field mwp_copy_f = diags["mwp"]->get().clone();
+      Field rwp_copy_f = diags["rwp"]->get().clone();
       const auto& vwp_copy_v = vwp_copy_f.get_view<Real*>();
       const auto& lwp_copy_v = lwp_copy_f.get_view<Real*>();
       const auto& iwp_copy_v = iwp_copy_f.get_view<Real*>();
@@ -249,7 +249,7 @@ void run(std::mt19937_64& engine)
         f.get_header().get_tracking().update_time_stamp(t0+1);
       }
       for (const auto& dd : diags) {
-        dd.second->compute_diagnostic(t0+1);
+        dd.second->compute(t0+1);
       }
       vwp_copy_f.sync_to_host();
       lwp_copy_f.sync_to_host();
@@ -277,7 +277,7 @@ void run(std::mt19937_64& engine)
     // Test 3: If mass moves from one phase to another than the total water path
     //         should remain unchanged.
     {
-      auto total_mass_f = diags["vwp"]->get_diagnostic().clone();
+      auto total_mass_f = diags["vwp"]->get().clone();
       auto total_mass_v = total_mass_f.get_view<Real*>();
       const auto alpha_qv_to_qc = pdf_alpha(engine);
       const auto alpha_qc_to_qi = pdf_alpha(engine);
@@ -311,7 +311,7 @@ void run(std::mt19937_64& engine)
         f.get_header().get_tracking().update_time_stamp(t0+2);
       }
       for (const auto& dd : diags) {
-        dd.second->compute_diagnostic(t0+2);
+        dd.second->compute(t0+2);
       }
       total_mass_f.sync_to_host();
       auto total_mass_h = total_mass_f.get_view<Real*,Host>();
@@ -330,8 +330,8 @@ void run(std::mt19937_64& engine)
       const auto alpha_qi_precip = pdf_alpha(engine);
       const auto alpha_qr_precip = pdf_alpha(engine);
       const int surf_lev = nlevs-1;
-      auto total_mass_f = diags["vwp"]->get_diagnostic().clone();
-      auto delta_mass_f = diags["vwp"]->get_diagnostic().clone();
+      auto total_mass_f = diags["vwp"]->get().clone();
+      auto delta_mass_f = diags["vwp"]->get().clone();
       auto total_mass_v = total_mass_f.get_view<Real*>();
       auto delta_mass_v = delta_mass_f.get_view<Real*>();
       Kokkos::parallel_for("",ncols,KOKKOS_LAMBDA(const int& icol) {
@@ -361,7 +361,7 @@ void run(std::mt19937_64& engine)
         f.get_header().get_tracking().update_time_stamp(t0+3);
       }
       for (const auto& dd : diags) {
-        dd.second->compute_diagnostic(t0+3);
+        dd.second->compute(t0+3);
       }
       total_mass_f.sync_to_host();
       delta_mass_f.sync_to_host();
@@ -398,7 +398,7 @@ void run(std::mt19937_64& engine)
         f.get_header().get_tracking().update_time_stamp(t0+4);
       }
       for (const auto& dd : diags) {
-        dd.second->compute_diagnostic(t0+4);
+        dd.second->compute(t0+4);
       }
       vwp.sync_to_host();
       lwp.sync_to_host();

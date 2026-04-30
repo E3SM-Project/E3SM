@@ -22,7 +22,7 @@ SurfaceUpwardLatentHeatFlux(const ekat::Comm& comm, const ekat::ParameterList& p
   m_diagnostic_output.allocate_view();
 }
 
-void SurfaceUpwardLatentHeatFlux::compute_diagnostic_impl()
+void SurfaceUpwardLatentHeatFlux::compute_impl()
 {
   using KT = ekat::KokkosTypes<DefaultDevice>;
   using PC = scream::physics::Constants<Real>;

@@ -82,8 +82,8 @@ void run(std::mt19937_64& engine)
     }
 
     // Run diagnostic and compare with manual calculation
-    diag->compute_diagnostic(t0);
-    const auto& diag_out = diag->get_diagnostic();
+    diag->compute(t0);
+    const auto& diag_out = diag->get();
     Field exner_f = diag_out.clone();
     exner_f.deep_copy(0);
     const auto& exner_v = exner_f.get_view<Real**>();

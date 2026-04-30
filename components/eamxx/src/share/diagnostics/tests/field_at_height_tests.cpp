@@ -113,9 +113,9 @@ TEST_CASE("field_at_height")
     diag->set_input_field(f);
     diag->set_input_field(z);
     diag->initialize();
-    diag->compute_diagnostic(t0);
-    diag->get_diagnostic().sync_to_host();
-    return diag->get_diagnostic();
+    diag->compute(t0);
+    diag->get().sync_to_host();
+    return diag->get();
   };
 
   // Set up vertical structure for the tests.  Note,

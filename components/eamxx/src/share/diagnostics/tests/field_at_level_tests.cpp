@@ -87,12 +87,12 @@ TEST_CASE("field_at_level")
     diag_int->initialize();
 
     // Run diagnostics
-    diag_mid->compute_diagnostic(t0);
-    diag_int->compute_diagnostic(t0);
+    diag_mid->compute(t0);
+    diag_int->compute(t0);
 
     // Check output
-    auto d_mid = diag_mid->get_diagnostic();
-    auto d_int = diag_int->get_diagnostic();
+    auto d_mid = diag_mid->get();
+    auto d_int = diag_int->get();
     d_mid.sync_to_host();
     d_int.sync_to_host();
 

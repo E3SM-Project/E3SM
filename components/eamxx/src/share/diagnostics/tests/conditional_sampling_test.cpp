@@ -101,8 +101,8 @@ TEST_CASE("conditional_sampling") {
             diag->set_input_field(x);
             diag->set_input_field(y);
             diag->initialize();
-            diag->compute_diagnostic(t0());
-            auto d = diag->get_diagnostic();
+            diag->compute(t0());
+            auto d = diag->get();
 
             REQUIRE (d.has_valid_mask());
             Field mask = d.get_valid_mask().clone();
@@ -147,8 +147,8 @@ TEST_CASE("conditional_sampling") {
             diag->set_input_field(y);
             diag->set_input_field(z);
             diag->initialize();
-            diag->compute_diagnostic(t0());
-            auto d = diag->get_diagnostic();
+            diag->compute(t0());
+            auto d = diag->get();
 
             REQUIRE (d.has_valid_mask());
             Field mask = d.get_valid_mask().clone();
@@ -180,8 +180,8 @@ TEST_CASE("conditional_sampling") {
           auto diag = diag_factory.create("ConditionalSampling", comm, params, grid);
           diag->set_input_field(x);
           diag->initialize();
-          diag->compute_diagnostic(t0());
-          auto d = diag->get_diagnostic();
+          diag->compute(t0());
+          auto d = diag->get();
 
           Field mask = x.create_valid_mask();
           Field lev = mask.clone();
@@ -207,8 +207,8 @@ TEST_CASE("conditional_sampling") {
       params.set<std::string>("condition_cmp", cmp_s);
       auto diag = diag_factory.create("ConditionalSampling", comm, params, grid);
       diag->initialize();
-      diag->compute_diagnostic(t0());
-      auto d = diag->get_diagnostic();
+      diag->compute(t0());
+      auto d = diag->get();
 
       REQUIRE (d.data_type()==DataType::IntType);
       REQUIRE (d.rank()==1);
@@ -240,8 +240,8 @@ TEST_CASE("conditional_sampling") {
             diag->set_input_field(y);
             diag->set_input_field(z);
             diag->initialize();
-            diag->compute_diagnostic(t0());
-            auto d = diag->get_diagnostic();
+            diag->compute(t0());
+            auto d = diag->get();
 
             REQUIRE (d.data_type()==DataType::IntType);
             REQUIRE (d.rank()==y.rank());

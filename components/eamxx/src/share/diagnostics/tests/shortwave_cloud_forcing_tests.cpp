@@ -66,8 +66,8 @@ void run(std::mt19937_64& engine)
     randomize_uniform(SW_clrsky_flux_dn_f,seed++,0,400);
 
     // Run diagnostic and compare with manual calculation
-    diag->compute_diagnostic(t0);
-    const auto& diag_out = diag->get_diagnostic();
+    diag->compute(t0);
+    const auto& diag_out = diag->get();
     auto SWCF_f = diag_out.clone();
     SWCF_f.deep_copy(0);
 

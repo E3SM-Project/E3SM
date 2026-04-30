@@ -25,7 +25,7 @@ protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  void compute_diagnostic_impl ();
+  void compute_impl ();
 protected:
   void initialize_impl ();
 

@@ -44,7 +44,7 @@ WaterPath (const ekat::Comm& comm, const ekat::ParameterList& params,
   m_diagnostic_output.allocate_view();
 }
 
-void WaterPath::compute_diagnostic_impl()
+void WaterPath::compute_impl()
 {
   using PC  = scream::physics::Constants<Real>;
   using KT  = KokkosTypes<DefaultDevice>;

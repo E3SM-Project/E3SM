@@ -71,8 +71,8 @@ void run()
     randomize_uniform(phis, seed++,0,400);
 
     // Run diagnostic and compare with manual calculation
-    diag->compute_diagnostic(t0);
-    const auto& diag_out = diag->get_diagnostic();
+    diag->compute(t0);
+    const auto& diag_out = diag->get();
     Field dse_f = diag_out.clone();
     dse_f.deep_copy(0);
     const auto& dse_v = dse_f.get_view<Real**>();

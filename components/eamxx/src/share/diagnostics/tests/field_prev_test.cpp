@@ -53,7 +53,7 @@ TEST_CASE("field_prev") {
   diag->set_input_field(qc);
   diag->initialize();
 
-  REQUIRE (diag->get_diagnostic().has_valid_mask());
+  REQUIRE (diag->get().has_valid_mask());
 
   // Simulate a derived diagnostic whose source has no valid timestamp at
   // init_timestep time (i.e. it hasn't been computed yet on step 1).
@@ -62,8 +62,8 @@ TEST_CASE("field_prev") {
   // Source is now "computed" (gets a valid timestamp and random values), but it's too late...
   qc.get_header().get_tracking().update_time_stamp(ts);
   randomize_uniform(qc, seed++, 0, 200);
-  diag->compute_diagnostic(ts);
-  auto diag_mask = diag->get_diagnostic().get_valid_mask();
+  diag->compute(ts);
+  auto diag_mask = diag->get().get_valid_mask();
 
   auto tgt_mask = diag_mask.clone();
   tgt_mask.deep_copy(0);
@@ -86,8 +86,8 @@ TEST_CASE("field_prev") {
     randomize_uniform(qc, seed++, 0, 200);
 
     // Diagnostic should return the value stored at init_timestep (qc_prev)
-    diag->compute_diagnostic(ts);
-    auto diag_f = diag->get_diagnostic();
+    diag->compute(ts);
+    auto diag_f = diag->get();
     REQUIRE(views_are_equal(diag_f, qc_prev));
 
     REQUIRE(views_are_equal(diag_mask,tgt_mask));

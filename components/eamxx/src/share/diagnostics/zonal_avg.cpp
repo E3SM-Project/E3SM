@@ -252,7 +252,7 @@ void ZonalAvg::initialize_impl()
   }
 }
 
-void ZonalAvg::compute_diagnostic_impl()
+void ZonalAvg::compute_impl()
 {
   const auto &field = m_fields_in.begin()->second;
 

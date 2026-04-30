@@ -25,7 +25,7 @@ protected:
 public:
 #endif
   void initialize_impl ();
-  void compute_diagnostic_impl ();
+  void compute_impl ();
 };
 
 } //namespace scream

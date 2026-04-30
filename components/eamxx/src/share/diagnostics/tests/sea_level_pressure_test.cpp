@@ -76,8 +76,8 @@ void run(std::mt19937_64& engine)
     const auto& phis_v        = phis_f.get_view<Real*>();
 
     // Run diagnostic and compare with manual calculation
-    diag->compute_diagnostic(t0);
-    const auto& diag_out = diag->get_diagnostic();
+    diag->compute(t0);
+    const auto& diag_out = diag->get();
     Field p_sealevel_f = diag_out.clone();
     p_sealevel_f.deep_copy(0);
 

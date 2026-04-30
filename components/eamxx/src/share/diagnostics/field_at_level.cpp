@@ -7,7 +7,6 @@
 namespace scream
 {
 
-// =========================================================================================
 FieldAtLevel::FieldAtLevel (const ekat::Comm& comm, const ekat::ParameterList& params,
                             const std::shared_ptr<const AbstractGrid>& grid)
   : AbstractDiagnostic(comm,params,grid)
@@ -85,8 +84,7 @@ initialize_impl ()
   }
 }
 
-// =========================================================================================
-void FieldAtLevel::compute_diagnostic_impl()
+void FieldAtLevel::compute_impl()
 {
   const auto& f = m_fields_in.at(m_field_name);
 

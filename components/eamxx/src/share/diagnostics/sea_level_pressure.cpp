@@ -21,7 +21,7 @@ SeaLevelPressure (const ekat::Comm& comm, const ekat::ParameterList& params,
   m_diagnostic_output.allocate_view();
 }
 
-void SeaLevelPressure::compute_diagnostic_impl()
+void SeaLevelPressure::compute_impl()
 {
   using RP = typename KokkosTypes<DefaultDevice>::RangePolicy;
   using PF = scream::PhysicsFunctions<DefaultDevice>;

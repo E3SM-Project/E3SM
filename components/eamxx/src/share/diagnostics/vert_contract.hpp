@@ -30,7 +30,7 @@ class VertContract : public AbstractDiagnostic {
 #ifdef KOKKOS_ENABLE_CUDA
  public:
 #endif
-  void compute_diagnostic_impl();
+  void compute_impl();
   void initialize_impl();
 
   std::string m_field_name; // Input field name

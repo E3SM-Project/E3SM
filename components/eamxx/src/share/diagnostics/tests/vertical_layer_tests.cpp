@@ -78,8 +78,8 @@ void run (const std::string& diag_name, const std::string& location)
 
   // Initialize and run the diagnostic
   diag->initialize();
-  diag->compute_diagnostic(t0);
-  const auto& diag_out = diag->get_diagnostic();
+  diag->compute(t0);
+  const auto& diag_out = diag->get();
   diag_out.sync_to_host();
   auto d_h = diag_out.get_view<Real**,Host>();
 

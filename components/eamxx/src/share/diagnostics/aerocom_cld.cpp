@@ -80,7 +80,7 @@ AeroComCld(const ekat::Comm &comm,
   }
 }
 
-void AeroComCld::compute_diagnostic_impl()
+void AeroComCld::compute_impl()
 {
   /* The goal of this routine/impl is to calculate properties at cloud top
    * based on the AeroCom recommendation. See reference for routine

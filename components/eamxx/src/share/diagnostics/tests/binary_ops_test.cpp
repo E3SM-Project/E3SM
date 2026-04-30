@@ -92,13 +92,13 @@ TEST_CASE("binary_ops") {
   prod_scl_scl->initialize();
 
   // Run diag
-  plus_diag->compute_diagnostic(t0);
-  prod_diag->compute_diagnostic(t0);
-  prod_scl_scl->compute_diagnostic(t0);
+  plus_diag->compute(t0);
+  prod_diag->compute(t0);
+  prod_scl_scl->compute(t0);
 
-  auto plus_diag_f = plus_diag->get_diagnostic(); plus_diag_f.sync_to_host();
-  auto prod_diag_f = prod_diag->get_diagnostic(); prod_diag_f.sync_to_host();
-  auto rgas_diag_f = prod_scl_scl->get_diagnostic(); rgas_diag_f.sync_to_host();
+  auto plus_diag_f = plus_diag->get(); plus_diag_f.sync_to_host();
+  auto prod_diag_f = prod_diag->get(); prod_diag_f.sync_to_host();
+  auto rgas_diag_f = prod_scl_scl->get(); rgas_diag_f.sync_to_host();
 
   // Check that the output fields have the right values
   const auto g = physics::Constants<Real>::gravit.value;

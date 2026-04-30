@@ -104,8 +104,8 @@ TEST_CASE("zonal_avg") {
   // Test the zonal average of qc1
   diag1->set_input_field(qc1);
   diag1->initialize();
-  diag1->compute_diagnostic(t0);
-  auto diag1_field = diag1->get_diagnostic();
+  diag1->compute(t0);
+  auto diag1_field = diag1->get();
 
   // Manual calculation
   const std::string bin_dim_name = diag1_field.get_header().get_identifier().get_layout().name(0);
@@ -135,7 +135,7 @@ TEST_CASE("zonal_avg") {
   // Change the input timestamp, to prevent early return and trigger diag recalculation
   t0 += 1;
   qc1.get_header().get_tracking().update_time_stamp(t0);
-  diag1->compute_diagnostic(t0);
+  diag1->compute(t0);
   auto diag1_view_host = diag1_field.get_view<const Real *, Host>();
   for (int nlat = 0; nlat < nlats; nlat++) {
     REQUIRE_THAT(diag1_view_host(nlat), Catch::Matchers::WithinRel(zavg1, tol));
@@ -147,8 +147,8 @@ TEST_CASE("zonal_avg") {
   qc2.deep_copy(zavg2);
   diag2->set_input_field(qc2);
   diag2->initialize();
-  diag2->compute_diagnostic(t0);
-  auto diag2_field = diag2->get_diagnostic();
+  diag2->compute(t0);
+  auto diag2_field = diag2->get();
 
   auto diag2_view_host = diag2_field.get_view<const Real **, Host>();
   for (int i = 0; i < nlevs; ++i) {
@@ -178,8 +178,8 @@ TEST_CASE("zonal_avg") {
   diag3m_field.sync_to_dev();
   diag3->set_input_field(qc3);
   diag3->initialize();
-  diag3->compute_diagnostic(t0);
-  auto diag3_field = diag3->get_diagnostic();
+  diag3->compute(t0);
+  auto diag3_field = diag3->get();
   REQUIRE(views_are_equal(diag3_field, diag3m_field));
 }
 

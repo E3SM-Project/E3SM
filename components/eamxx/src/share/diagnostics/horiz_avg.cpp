@@ -76,7 +76,7 @@ void HorizAvg::initialize_impl()
   }
 }
 
-void HorizAvg::compute_diagnostic_impl()
+void HorizAvg::compute_impl()
 {
   const auto &f = m_fields_in.at(m_field_in_names.front());
 

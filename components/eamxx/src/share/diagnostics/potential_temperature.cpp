@@ -42,7 +42,7 @@ PotentialTemperature (const ekat::Comm& comm, const ekat::ParameterList& params,
   m_diagnostic_output.allocate_view();
 }
 
-void PotentialTemperature::compute_diagnostic_impl()
+void PotentialTemperature::compute_impl()
 {
   using KT      = KokkosTypes<DefaultDevice>;
   using PF      = PhysicsFunctions<DefaultDevice>;

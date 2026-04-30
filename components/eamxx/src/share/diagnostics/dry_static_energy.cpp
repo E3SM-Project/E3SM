@@ -6,7 +6,6 @@
 namespace scream
 {
 
-// =========================================================================================
 DryStaticEnergy::
 DryStaticEnergy (const ekat::Comm& comm, const ekat::ParameterList& params,
                  const std::shared_ptr<const AbstractGrid>& grid)
@@ -33,8 +32,8 @@ DryStaticEnergy (const ekat::Comm& comm, const ekat::ParameterList& params,
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }
-// =========================================================================================
-void DryStaticEnergy::compute_diagnostic_impl()
+
+void DryStaticEnergy::compute_impl()
 {
   using KT      = KokkosTypes<DefaultDevice>;
   using PF      = PhysicsFunctions<DefaultDevice>;

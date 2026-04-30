@@ -238,7 +238,7 @@ void BinaryOp::initialize_impl()
 
   if (not m_arg1_is_field and not m_arg2_is_field) {
     // We can pre-compute the diag now
-    compute_diagnostic_impl();
+    compute_impl();
   } else {
     m_arg1_has_mask = m_arg1_is_field and m_fields_in.at(m_arg1_name).has_valid_mask();
     m_arg2_has_mask = m_arg2_is_field and m_fields_in.at(m_arg2_name).has_valid_mask();
@@ -249,7 +249,7 @@ void BinaryOp::initialize_impl()
   }
 }
 
-void BinaryOp::compute_diagnostic_impl()
+void BinaryOp::compute_impl()
 {
   // First, if one (or both) the args are masked, compute the diag mask
   if (m_arg1_has_mask) {

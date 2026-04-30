@@ -19,7 +19,7 @@ class BinaryOp : public AbstractDiagnostic {
   std::string name() const  override{ return "BinaryOp"; }
 
  protected:
-  void compute_diagnostic_impl() override;
+  void compute_impl() override;
 
   void initialize_impl() override;
 

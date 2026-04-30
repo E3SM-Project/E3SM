@@ -173,7 +173,7 @@ protected:
   void register_variables(const std::string &filename, const std::string &fp_precision,
                           const scorpio::FileMode mode);
   void set_decompositions(const std::string &filename);
-  void compute_diagnostics(const util::TimeStamp& ts, const bool allow_invalid_fields);
+  void computes(const util::TimeStamp& ts, const bool allow_invalid_fields);
   void process_requested_fields();
   strvec_t get_var_dimnames(const FieldLayout &layout) const;
 

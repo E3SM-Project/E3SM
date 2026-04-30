@@ -29,7 +29,7 @@ void AtmDensity::initialize_impl()
   m_diagnostic_output.allocate_view();
 }
 
-void AtmDensity::compute_diagnostic_impl()
+void AtmDensity::compute_impl()
 {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
 

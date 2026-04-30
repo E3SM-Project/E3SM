@@ -117,8 +117,8 @@ TEST_CASE("vert_derivative") {
     dp_vert_derivative->set_input_field(fin2);
     dp_vert_derivative->set_input_field(dp);
     dp_vert_derivative->initialize();
-    dp_vert_derivative->compute_diagnostic(t0);
-    auto dp_vert_derivative_f = dp_vert_derivative->get_diagnostic();
+    dp_vert_derivative->compute(t0);
+    auto dp_vert_derivative_f = dp_vert_derivative->get();
 
     // Check that the two are the same manually using the tolerance
     dp_vert_derivative_f.sync_to_host();
@@ -173,8 +173,8 @@ TEST_CASE("vert_derivative") {
     dp_vert_derivative->set_input_field(fin2);
     dp_vert_derivative->set_input_field(dp);
     dp_vert_derivative->initialize();
-    dp_vert_derivative->compute_diagnostic(t0);
-    auto dp_vert_derivative_f = dp_vert_derivative->get_diagnostic();
+    dp_vert_derivative->compute(t0);
+    auto dp_vert_derivative_f = dp_vert_derivative->get();
 
     // Check diag mask field
     REQUIRE (dp_vert_derivative_f.has_valid_mask());

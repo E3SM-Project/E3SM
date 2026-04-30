@@ -47,7 +47,7 @@ void FieldOverDt::init_timestep(const util::TimeStamp &start_of_step) {
       " - diag field name: " + m_diagnostic_output.name() + "\n");
 }
 
-void FieldOverDt::compute_diagnostic_impl()
+void FieldOverDt::compute_impl()
 {
   const auto &f = m_fields_in.at(m_name);
 

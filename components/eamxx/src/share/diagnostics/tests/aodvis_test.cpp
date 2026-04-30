@@ -64,18 +64,18 @@ TEST_CASE("aodvis") {
     diag->initialize();
 
     // Run diag
-    diag->compute_diagnostic(t0);
+    diag->compute(t0);
 
     // Check result
     tau.sync_to_host();
-    diag->get_diagnostic().sync_to_host();
+    diag->get().sync_to_host();
 
     const auto sun_h  = sunlit.get_view<const int *, Host>();
     const auto tau_h  = tau.get_view<const Real ***, Host>();
-    const auto aod_hf = diag->get_diagnostic();
+    const auto aod_hf = diag->get();
     const auto aod_mask = aod_hf.get_valid_mask();
 
-    Field aod_tf = diag->get_diagnostic().clone();
+    Field aod_tf = diag->get().clone();
     auto aod_t = aod_tf.get_view<Real *, Host>();
 
     for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {

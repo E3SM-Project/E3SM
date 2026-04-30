@@ -23,7 +23,7 @@ class AeroComCld : public AbstractDiagnostic {
 #ifdef KOKKOS_ENABLE_CUDA
  public:
 #endif
-  void compute_diagnostic_impl() override;
+  void compute_impl() override;
 
   // How many diags we have
   int m_ndiag;

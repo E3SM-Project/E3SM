@@ -72,8 +72,8 @@ TEST_CASE("vert_contract") {
     diag->set_input_field(fin);
     diag->set_input_field(dp);
     diag->initialize();
-    diag->compute_diagnostic(t0);
-    auto diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    auto diag_f = diag->get();
 
     // Manual reference: ref(col,cmp) = sum_lev( (dp/g)(col,lev) * f(col,cmp,lev) )
     auto dp_scaled = dp.clone("dp_scaled");
@@ -106,8 +106,8 @@ TEST_CASE("vert_contract") {
     diag->set_input_field(fin);
     diag->set_input_field(dp);
     diag->initialize();
-    diag->compute_diagnostic(t0);
-    auto diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    auto diag_f = diag->get();
 
     // Manual reference:
     //   num(col) = sum_lev( (dp/g)(col,lev) * f(col,lev) )
@@ -142,8 +142,8 @@ TEST_CASE("vert_contract") {
     auto diag = diag_factory.create("VertContract", comm, params, grid);
     diag->set_input_field(fin);
     diag->initialize();
-    diag->compute_diagnostic(t0);
-    auto diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    auto diag_f = diag->get();
 
     // Manual reference: ref(col) = sum_lev( f(col,lev) )
     // Use a 1D all-ones weight (same as the diagnostic)
@@ -172,8 +172,8 @@ TEST_CASE("vert_contract") {
     auto diag = diag_factory.create("VertContract", comm, params, grid);
     diag->set_input_field(fin);
     diag->initialize();
-    diag->compute_diagnostic(t0);
-    auto diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    auto diag_f = diag->get();
 
     // Manual reference:
     //   num(col,cmp) = sum_lev( f(col,cmp,lev) )

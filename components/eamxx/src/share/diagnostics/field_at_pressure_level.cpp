@@ -82,7 +82,7 @@ initialize_impl ()
   }
 }
 
-void FieldAtPressureLevel::compute_diagnostic_impl()
+void FieldAtPressureLevel::compute_impl()
 {
   using KT = KokkosTypes<DefaultDevice>;
   using MemberType = typename KT::MemberType;

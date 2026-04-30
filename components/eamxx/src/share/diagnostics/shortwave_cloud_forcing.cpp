@@ -24,7 +24,7 @@ ShortwaveCloudForcing (const ekat::Comm& comm, const ekat::ParameterList& params
   m_diagnostic_output.allocate_view();
 }
 
-void ShortwaveCloudForcing::compute_diagnostic_impl()
+void ShortwaveCloudForcing::compute_impl()
 {
   using KT = KokkosTypes<DefaultDevice>;
 

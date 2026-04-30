@@ -93,8 +93,8 @@ TEST_CASE("histogram") {
   // Test the zonal average of qc1
   diag1->set_input_field(qc1);
   diag1->initialize();
-  diag1->compute_diagnostic(t0);
-  auto diag1_field = diag1->get_diagnostic();
+  diag1->compute(t0);
+  auto diag1_field = diag1->get();
 
   // Manual calculation
   const int num_bins = bin_values.size()-1;
@@ -127,7 +127,7 @@ TEST_CASE("histogram") {
   qc1.deep_copy(zavg1);
   // Change the evaluation timestamp to trigger diag recalculation
   qc1.get_header().get_tracking().update_time_stamp(t0+1);
-  diag1->compute_diagnostic(t0+1);
+  diag1->compute(t0+1);
   auto diag1_view_host = diag1_field.get_view<const Real *, Host>();
   REQUIRE_THAT(diag1_view_host(0), Catch::Matchers::WithinRel(ngcols, tol));
   for (int bin_i = 1; bin_i < num_bins; bin_i++) {
@@ -140,8 +140,8 @@ TEST_CASE("histogram") {
   qc2.deep_copy(zavg2);
   diag2->set_input_field(qc2);
   diag2->initialize();
-  diag2->compute_diagnostic(t0);
-  auto diag2_field = diag2->get_diagnostic();
+  diag2->compute(t0);
+  auto diag2_field = diag2->get();
   auto diag2_view_host = diag2_field.get_view<const Real *, Host>();
   REQUIRE_THAT(diag2_view_host(num_bins-1), Catch::Matchers::WithinRel(ngcols*nlevs, tol));
   for (int bin_i = num_bins-2; bin_i >=0; bin_i--) {
@@ -170,8 +170,8 @@ TEST_CASE("histogram") {
   diag3m_field.sync_to_dev();
   diag3->set_input_field(qc3);
   diag3->initialize();
-  diag3->compute_diagnostic(t0);
-  auto diag3_field = diag3->get_diagnostic();
+  diag3->compute(t0);
+  auto diag3_field = diag3->get();
   REQUIRE(views_are_equal(diag3_field, diag3m_field));
 }
 

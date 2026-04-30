@@ -56,8 +56,8 @@ TEST_CASE("horiz_avg") {
     auto diag = diag_factory.create("HorizAvg", comm, params, grid);
     diag->set_input_field(scl_x);
     diag->initialize();
-    diag->compute_diagnostic(t0);
-    auto diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    auto diag_f = diag->get();
 
     auto manual = diag_f.clone("manual");
     auto area_scaled = area.clone();
@@ -88,8 +88,8 @@ TEST_CASE("horiz_avg") {
     auto diag = diag_factory.create("HorizAvg", comm, params, grid);
     diag->set_input_field(vec_xz);
     diag->initialize();
-    diag->compute_diagnostic(t0);
-    auto diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    auto diag_f = diag->get();
     REQUIRE (diag_f.has_valid_mask());
 
     auto& d_mask = diag_f.get_valid_mask();
@@ -136,15 +136,15 @@ TEST_CASE("horiz_avg") {
     auto diag = diag_factory.create("HorizAvg", comm, params, grid);
     diag->set_input_field(vec_xz);
     diag->initialize();
-    diag->compute_diagnostic(t0);
-    auto diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    auto diag_f = diag->get();
     REQUIRE (diag_f.has_valid_mask());
 
     auto& d_mask = diag_f.get_valid_mask();
 
     auto tgt_mask = d_mask.clone("tgt_mask");
     mask.deep_copy(0);
-    diag->compute_diagnostic(t0);
+    diag->compute(t0);
     tgt_mask.deep_copy(0);
     REQUIRE(views_are_equal(d_mask,tgt_mask));
   }
@@ -165,8 +165,8 @@ TEST_CASE("horiz_avg") {
     auto diag = diag_factory.create("HorizAvg", comm, params, grid);
     diag->set_input_field(scl_xz);
     diag->initialize();
-    diag->compute_diagnostic(t0);
-    auto diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    auto diag_f = diag->get();
 
     // Constant fields should have an avg equal to the constant(within rounding errors)
     auto manual = diag_f.clone("manual");

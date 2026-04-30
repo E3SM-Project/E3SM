@@ -23,7 +23,7 @@ class AODVis : public AbstractDiagnostic {
  public:
 #endif
   void initialize_impl() override;
-  void compute_diagnostic_impl() override;
+  void compute_impl() override;
 
   int m_swbands;
   int m_vis_bnd;

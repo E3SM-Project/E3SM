@@ -24,7 +24,7 @@ protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  void compute_diagnostic_impl () override;
+  void compute_impl () override;
 protected:
 
   // What type of potential temperature to compute

@@ -101,8 +101,8 @@ void run()
     Kokkos::fence();
 
     // Run diagnostic and compare with manual calculation
-    diag->compute_diagnostic(t0);
-    const auto& diag_out = diag->get_diagnostic();
+    diag->compute(t0);
+    const auto& diag_out = diag->get();
 
     REQUIRE(views_are_equal(diag_out,rh_f));
   }

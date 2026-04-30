@@ -123,7 +123,7 @@ void VertContract::initialize_impl()
   }
 }
 
-void VertContract::compute_diagnostic_impl()
+void VertContract::compute_impl()
 {
   const auto &f = m_fields_in.at(m_field_name);
   auto& d = m_diagnostic_output;

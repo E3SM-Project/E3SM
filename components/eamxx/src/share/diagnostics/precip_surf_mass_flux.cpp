@@ -38,7 +38,7 @@ PrecipSurfMassFlux (const ekat::Comm& comm, const ekat::ParameterList& params,
   m_diagnostic_output.allocate_view();
 }
 
-void PrecipSurfMassFlux::compute_diagnostic_impl()
+void PrecipSurfMassFlux::compute_impl()
 {
   using KT = ekat::KokkosTypes<DefaultDevice>;
   using PC = scream::physics::Constants<Real>;

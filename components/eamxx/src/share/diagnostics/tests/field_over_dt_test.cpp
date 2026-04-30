@@ -50,7 +50,7 @@ TEST_CASE("field_over_dt") {
   constexpr int ntests = 10;
   const Real a_day = 24.0 * 60.0 * 60.0;  // seconds
 
-  auto diag_f = diag->get_diagnostic();
+  auto diag_f = diag->get();
   for (int itest = 2; itest < ntests; itest++) {
     // Save qc before advancing
     auto qc_prev = qc.clone();
@@ -66,7 +66,7 @@ TEST_CASE("field_over_dt") {
     qc.sync_to_dev();
 
     // Diagnostic should be qc(ts) / dt
-    diag->compute_diagnostic(ts);
+    diag->compute(ts);
     diag_f.sync_to_host();
 
     auto qc_v    = qc.get_view<Real**, Host>();

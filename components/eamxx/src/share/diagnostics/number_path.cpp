@@ -49,7 +49,7 @@ NumberPath(const ekat::Comm &comm,
   m_diagnostic_output.allocate_view();
 }
 
-void NumberPath::compute_diagnostic_impl()
+void NumberPath::compute_impl()
 {
   using PC  = scream::physics::Constants<Real>;
   using KT  = KokkosTypes<DefaultDevice>;

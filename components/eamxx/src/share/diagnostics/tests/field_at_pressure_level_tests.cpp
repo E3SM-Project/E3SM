@@ -74,8 +74,8 @@ TEST_CASE("field_at_pressure_level_p2")
       Real plevel = std::round(pdf_pmid(engine));
       auto diag = get_test_diag(fmap, grid, "mid", plevel);
       diag->initialize();
-      diag->compute_diagnostic(t0);
-      auto diag_f = diag->get_diagnostic();
+      diag->compute(t0);
+      auto diag_f = diag->get();
       diag_f.sync_to_host();
       auto test1_diag_v = diag_f.get_view<const Real*, Host>();
       for (int icol=0;icol<ncols;icol++) {
@@ -89,8 +89,8 @@ TEST_CASE("field_at_pressure_level_p2")
       Real plevel = std::round(pdf_pint(engine));
       auto diag = get_test_diag(fmap, grid, "int", plevel);
       diag->initialize();
-      diag->compute_diagnostic(t0);
-      auto diag_f = diag->get_diagnostic();
+      diag->compute(t0);
+      auto diag_f = diag->get();
       diag_f.sync_to_host();
       auto test2_diag_v = diag_f.get_view<const Real*, Host>();
       // Check the mask field inside the diag_f
@@ -110,8 +110,8 @@ TEST_CASE("field_at_pressure_level_p2")
       Real plevel = pressure_bounds.p_surf*2;
       auto diag = get_test_diag(fmap, grid, "int", plevel);
       diag->initialize();
-      diag->compute_diagnostic(t0);
-      auto diag_f = diag->get_diagnostic();
+      diag->compute(t0);
+      auto diag_f = diag->get();
       diag_f.sync_to_host();
       auto test2_diag_v = diag_f.get_view<const Real*, Host>();
       // Check the mask field inside the diag_f

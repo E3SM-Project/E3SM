@@ -132,8 +132,8 @@ TEST_CASE("aerocom_cld") {
 
     // Case 1: if the cloud fraction is zero, everything is zero
     cd.deep_copy(0.0);
-    diag->compute_diagnostic(t0);
-    Field diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    Field diag_f = diag->get();
     diag_f.sync_to_host();
     auto diag_v = diag_f.get_view<Real **, Host>();
     for(int idiag = 0; idiag < ndiags; ++idiag) {
@@ -156,9 +156,9 @@ TEST_CASE("aerocom_cld") {
     // Change one input timestamp, to prevent early return and trigger diag recalculation
     t0 += 1;
     cd.get_header().get_tracking().update_time_stamp(t0);
-    diag->compute_diagnostic(t0);
-    diag->get_diagnostic().sync_to_host();
-    diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    diag->get().sync_to_host();
+    diag_f = diag->get();
     diag_v = diag_f.get_view<Real **, Host>();
     for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
       REQUIRE(diag_v(icol, 0) == Real(300.0));
@@ -182,8 +182,8 @@ TEST_CASE("aerocom_cld") {
     // Change one input timestamp, to prevent early return and trigger diag recalculation
     t0 += 1;
     cd.get_header().get_tracking().update_time_stamp(t0);
-    diag->compute_diagnostic(t0);
-    diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    diag_f = diag->get();
     diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) == Real(0.7));
@@ -198,8 +198,8 @@ TEST_CASE("aerocom_cld") {
     // Change one input timestamp, to prevent early return and trigger diag recalculation
     t0 += 1;
     cd.get_header().get_tracking().update_time_stamp(t0);
-    diag->compute_diagnostic(t0);
-    diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    diag_f = diag->get();
     diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) > Real(0.7));
@@ -212,8 +212,8 @@ TEST_CASE("aerocom_cld") {
     // Change one input timestamp, to prevent early return and trigger diag recalculation
     t0 += 1;
     cd.get_header().get_tracking().update_time_stamp(t0);
-    diag->compute_diagnostic(t0);
-    diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    diag_f = diag->get();
     diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) > Real(0.7));  // must be larger than the max!
@@ -228,8 +228,8 @@ TEST_CASE("aerocom_cld") {
     // Change one input timestamp, to prevent early return and trigger diag recalculation
     t0 += 1;
     cd.get_header().get_tracking().update_time_stamp(t0);
-    diag->compute_diagnostic(t0);
-    diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    diag_f = diag->get();
     diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) == Real(1.0));
@@ -242,8 +242,8 @@ TEST_CASE("aerocom_cld") {
     // Change one input timestamp, to prevent early return and trigger diag recalculation
     t0 += 1;
     cd.get_header().get_tracking().update_time_stamp(t0);
-    diag->compute_diagnostic(t0);
-    diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    diag_f = diag->get();
     diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) == Real(1.0));
@@ -282,8 +282,8 @@ TEST_CASE("aerocom_cld") {
     // Change one input timestamp, to prevent early return and trigger diag recalculation
     t0 += 1;
     cd.get_header().get_tracking().update_time_stamp(t0);
-    diag->compute_diagnostic(t0);
-    diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    diag_f = diag->get();
     diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) > Real(0.7));   // unaffected (see test case 4)
