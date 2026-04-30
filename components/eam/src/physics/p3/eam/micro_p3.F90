@@ -598,7 +598,8 @@ end function bfb_expm1
     real(rtype) :: nc_accret_tend   ! change in cloud droplet number from accretion by rain
     real(rtype) :: nc2nr_autoconv_tend  ! change in cloud droplet number from autoconversion
     real(rtype) :: nc_selfcollect_tend   ! change in cloud droplet number from self-collection  (Not in paper?)
-    real(rtype) :: nr_selfcollect_tend   ! change in rain number from self-collection  (Not in paper?)
+    real(rtype) :: nr_selfcollect_tend   ! change in rain number from self-collection (negative part of self collection + breakup)
+    real(rtype) :: nr_breakup_tend   ! change in rain number from breakup (positive part of self collection + breakup)
     real(rtype) :: qr2qv_evap_tend   ! rain evaporation
     real(rtype) :: nr_evap_tend   ! change in rain number from evaporation
     real(rtype) :: ncautr  ! change in rain number from autoconversion of cloud water
@@ -676,7 +677,7 @@ end function bfb_expm1
       ! initialize warm-phase process rates
       qc2qr_accret_tend   = 0._rtype;     qr2qv_evap_tend   = 0._rtype;     qc2qr_autoconv_tend   = 0._rtype;
       nc_accret_tend   = 0._rtype;     nc_selfcollect_tend   = 0._rtype;
-      nc2nr_autoconv_tend  = 0._rtype;     nr_selfcollect_tend   = 0._rtype;
+      nc2nr_autoconv_tend  = 0._rtype;     nr_selfcollect_tend   = 0._rtype;     nr_breakup_tend   = 0._rtype;
       nr_evap_tend   = 0._rtype;     ncautr  = 0._rtype
 
       ! initialize ice-phase  process rates
@@ -893,12 +894,12 @@ end function bfb_expm1
       ! self-collection and breakup of rain
       ! (breakup following modified Verlinde and Cotton scheme)
       call rain_self_collection(rho(k),qr_incld(k),nr_incld(k),&
-           nr_selfcollect_tend)
+           nr_selfcollect_tend,nr_breakup_tend)
 
       ! Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
       ! cell-average quantities.
       call back_to_cell_average(cld_frac_l(k),cld_frac_r(k),cld_frac_i(k), qc2qr_accret_tend, qr2qv_evap_tend, qc2qr_autoconv_tend, &
-           nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr,                     &
+           nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_breakup_tend, nr_evap_tend, ncautr,    &
            qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend,                                                           &
            qrcol, qc2qr_ice_shed_tend, qi2qr_melt_tend, qccol, qr2qi_immers_freeze_tend, ni2nr_melt_tend, nc_collect_tend,          &
            ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend,                                                  &
@@ -949,7 +950,7 @@ end function bfb_expm1
 
       ! rain number     
       call nr_conservation(nr(k),ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nr_collect_tend,nmltratio, &
-           nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend)
+           nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_breakup_tend,nr_evap_tend)
       
       ! ice number     
       call ni_conservation(ni(k),ni_nucleat_tend,nr2ni_immers_freeze_tend,nc2ni_immers_freeze_tend,ncheti_cnt,nicnt,ninuc_cnt,dt,ni2nr_melt_tend,&
@@ -977,7 +978,7 @@ end function bfb_expm1
 
       !-- warm-phase only processes:
       call update_prognostic_liquid(qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, &
-           nc_selfcollect_tend, qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend,           &
+           nc_selfcollect_tend, qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend, nr_breakup_tend,     &
            do_predict_nc, nccnst, do_prescribed_CCN, inv_rho(k), exner(k), latent_heat_vapor(k), dt,                     &
            th_atm(k), qv(k), qc(k), nc(k), qr(k), nr(k))
 
@@ -1038,7 +1039,7 @@ end function bfb_expm1
       p3_tend_out(k, 4) = nc_accret_tend              ! change in cloud droplet number from accretion by rain
       p3_tend_out(k, 5) = nc2nr_autoconv_tend         ! change in cloud droplet number from autoconversion
       p3_tend_out(k, 6) = nc_selfcollect_tend         ! change in cloud droplet number from self-collection  (Not in paper?)
-      p3_tend_out(k, 7) = nr_selfcollect_tend         ! change in rain number from self-collection  (Not in paper?)
+      p3_tend_out(k, 7) = nr_selfcollect_tend+nr_breakup_tend  ! change in rain number from self-collection  (Not in paper?)
       !p3_tend_out(k, 8) = nc_nuceat_tend             ! [in 'part1'] change in cld droplet number concentration from macrophysics
       p3_tend_out(k,11) = qr2qv_evap_tend             ! rain evaporation
       p3_tend_out(k,13) = nr_evap_tend                ! change in rain number from evaporation
@@ -2844,9 +2845,11 @@ subroutine droplet_self_collection(rho,inv_rho,qc_incld,mu_c,nu,nc2nr_autoconv_t
          !Seifert and Beheng (2001)
          nc_selfcollect_tend = -kc*(1.e-3_rtype*rho*qc_incld)**2*(nu+2._rtype)/(nu+1._rtype)*         &
               1.e+6_rtype*inv_rho+nc2nr_autoconv_tend
+         nc_selfcollect_tend = -nc_selfcollect_tend ! make sure > 0
       elseif (iparam.eq.2) then
          !Beheng (994)
          nc_selfcollect_tend = -5.5e+16_rtype*inv_rho*mu_c**(-0.63_rtype)*(1.e-3_rtype*rho*qc_incld)**2
+         nc_selfcollect_tend = -nc_selfcollect_tend ! make sure > 0
       elseif (iparam.eq.3) then
          !Khroutdinov and Kogan (2000)
          nc_selfcollect_tend = 0._rtype
@@ -2909,7 +2912,7 @@ subroutine cloud_rain_accretion(rho,inv_rho,qc_incld,nc_incld,qr_incld,inv_qc_re
 end subroutine cloud_rain_accretion
 
 subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
-   nr_selfcollect_tend)
+    nr_selfcollect_tend,nr_breakup_tend)
 
    !.....................................
    ! self-collection and breakup of rain
@@ -2920,8 +2923,7 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
    real(rtype), intent(in) :: rho
    real(rtype), intent(in) :: qr_incld
    real(rtype), intent(in) :: nr_incld
-   real(rtype), intent(out) :: nr_selfcollect_tend
-
+   real(rtype), intent(out) :: nr_selfcollect_tend,nr_breakup_tend
    real(rtype) :: dum, dum1, dum2
 
    if (qr_incld.ge.qsmall) then
@@ -2947,7 +2949,12 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
       elseif (iparam.eq.2 .or. iparam.eq.3) then
          nr_selfcollect_tend = dum*5.78_rtype*nr_incld*qr_incld*rho
       endif
-
+      if (nr_selfcollect_tend .ge. 0._rtype) then
+       nr_breakup_tend = 0._rtype ! net of nr_selfsollect_tend and nr_breakup_tend is decrease of nr, no change needed to nr_sel     fcollect_tend
+      else
+       nr_breakup_tend = -nr_selfcollect_tend ! net of nr_selfcollect_tend    and nr_breakup_tend is increase of nr
+       nr_selfcollect_tend = 0._rtype
+      endif
    endif
 
 end subroutine rain_self_collection
@@ -2998,7 +3005,8 @@ end subroutine cloud_water_autoconversion
 
 subroutine back_to_cell_average(cld_frac_l,cld_frac_r,cld_frac_i,                                                       &
    qc2qr_accret_tend,qr2qv_evap_tend,qc2qr_autoconv_tend,                                                               &
-   nc_accret_tend,nc_selfcollect_tend,nc2nr_autoconv_tend,nr_selfcollect_tend,nr_evap_tend,ncautr,qi2qv_sublim_tend,    &
+   nc_accret_tend,nc_selfcollect_tend,nc2nr_autoconv_tend,nr_selfcollect_tend,nr_breakup_tend,                          &
+   nr_evap_tend,ncautr,qi2qv_sublim_tend,    &
    nr_ice_shed_tend,qc2qi_hetero_freeze_tend, qrcol,qc2qr_ice_shed_tend,qi2qr_melt_tend,qccol,qr2qi_immers_freeze_tend, &
    ni2nr_melt_tend,nc_collect_tend,ncshdc,nc2ni_immers_freeze_tend,nr_collect_tend,ni_selfcollect_tend,                 &
    qidep,nr2ni_immers_freeze_tend,ni_sublim_tend,qinuc,ni_nucleat_tend,qiberg,                                          &
@@ -3015,7 +3023,7 @@ subroutine back_to_cell_average(cld_frac_l,cld_frac_r,cld_frac_i,               
    real(rtype), intent(in) :: cld_frac_i
 
    real(rtype), intent(inout) :: qc2qr_accret_tend, qr2qv_evap_tend, qc2qr_autoconv_tend, nc_accret_tend, &
-        nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr
+        nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_breakup_tend, nr_evap_tend, ncautr
    real(rtype), intent(inout) :: qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend, qrcol, qc2qr_ice_shed_tend, &
         qi2qr_melt_tend, qccol, qr2qi_immers_freeze_tend, ni2nr_melt_tend, &
         nc_collect_tend, ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend, qidep
@@ -3040,6 +3048,7 @@ subroutine back_to_cell_average(cld_frac_l,cld_frac_r,cld_frac_i,               
    nc_selfcollect_tend   = nc_selfcollect_tend*cld_frac_l       ! Self collection occurs locally in liq. cloud
    nc2nr_autoconv_tend  = nc2nr_autoconv_tend*cld_frac_l      ! Impact of autoconversion on number
    nr_selfcollect_tend   = nr_selfcollect_tend*cld_frac_r       ! Self collection occurs locally in rain cloud
+   nr_breakup_tend   = nr_breakup_tend*cld_frac_r       ! Rain drop breakup occurs locally in rain cloud
    nr_evap_tend   = nr_evap_tend*cld_frac_r       ! Change in rain number due to evaporation
    ncautr  = ncautr*lr_cldm    ! Autoconversion of rain drops within rain/liq cloud
 
@@ -3196,24 +3205,23 @@ subroutine nc_conservation(nc, nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_i
   !Make sure sinks of nc don't force end-of-step nc below 0. Rescale them if they do.
 
   implicit none
-
-  real(rtype), intent(in) :: nc,nc_selfcollect_tend,dt
-  real(rtype), intent(inout) :: nc_collect_tend,nc2ni_immers_freeze_tend,&
+  real(rtype), intent(in) :: nc,dt
+  real(rtype), intent(inout) :: nc_collect_tend,nc2ni_immers_freeze_tend,nc_selfcollect_tend, &
                                 nc_accret_tend,nc2nr_autoconv_tend,ncheti_cnt,nicnt
   real(rtype) :: sink_nc, source_nc, ratio
 
   if(use_hetfrz_classnuc)then
-      sink_nc = (nc_collect_tend + ncheti_cnt + nc_accret_tend + nc2nr_autoconv_tend + nicnt)*dt
+      sink_nc = (nc_collect_tend + ncheti_cnt + nc_accret_tend + nc2nr_autoconv_tend + nicnt + nc_selfcollect_tend)*dt
   else
-      sink_nc = (nc_collect_tend + nc2ni_immers_freeze_tend + nc_accret_tend + nc2nr_autoconv_tend)*dt
+      sink_nc = (nc_collect_tend + nc2ni_immers_freeze_tend + nc_accret_tend + nc2nr_autoconv_tend + nc_selfcollect_tend)*dt
   endif 
-  
-  source_nc = nc + nc_selfcollect_tend*dt
+  source_nc = nc
   if(sink_nc > source_nc) then
      ratio = source_nc/sink_nc
      nc_collect_tend  = nc_collect_tend*ratio
      nc_accret_tend  = nc_accret_tend*ratio
      nc2nr_autoconv_tend = nc2nr_autoconv_tend*ratio
+     nc_selfcollect_tend = nc_selfcollect_tend*ratio
      if(use_hetfrz_classnuc)then
       ncheti_cnt = ncheti_cnt*ratio
       nicnt = nicnt*ratio
@@ -3226,17 +3234,16 @@ subroutine nc_conservation(nc, nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_i
 end subroutine nc_conservation
 
 subroutine nr_conservation(nr,ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nr_collect_tend,nmltratio,&
-     nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend)
+     nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_breakup_tend,nr_evap_tend)
   !Make sure sinks of nr don't force end-of-step nr below 0. Rescale them if they do.
 
   implicit none
-
-  real(rtype), intent(in) :: nr,ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nmltratio
+  real(rtype), intent(in) :: nr,ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nmltratio,nr_breakup_tend
   real(rtype), intent(inout) :: nr_collect_tend,nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend
   real(rtype) :: sink_nr, source_nr, ratio
 
   sink_nr = (nr_collect_tend + nr2ni_immers_freeze_tend + nr_selfcollect_tend + nr_evap_tend)*dt
-  source_nr = nr + (ni2nr_melt_tend*nmltratio + nr_ice_shed_tend + ncshdc + nc2nr_autoconv_tend)*dt
+  source_nr = nr + (ni2nr_melt_tend*nmltratio + nr_ice_shed_tend + ncshdc + nc2nr_autoconv_tend + nr_breakup_tend)*dt
   if(sink_nr > source_nr) then
      ratio = source_nr/sink_nr
      nr_collect_tend  = nr_collect_tend*ratio
@@ -3509,7 +3516,7 @@ subroutine update_prognostic_ice(qc2qi_hetero_freeze_tend,qccol,qc2qr_ice_shed_t
 end subroutine update_prognostic_ice
 
 subroutine update_prognostic_liquid(qc2qr_accret_tend,nc_accret_tend,qc2qr_autoconv_tend,nc2nr_autoconv_tend, &
-     ncautr,nc_selfcollect_tend, qr2qv_evap_tend,nr_evap_tend,nr_selfcollect_tend,         &
+     ncautr,nc_selfcollect_tend, qr2qv_evap_tend,nr_evap_tend,nr_selfcollect_tend,nr_breakup_tend,         &
     do_predict_nc, nccnst, do_prescribed_CCN, inv_rho,exner,latent_heat_vapor,dt,          &
     th_atm,qv,qc,nc,qr,nr)
 
@@ -3525,7 +3532,7 @@ subroutine update_prognostic_liquid(qc2qr_accret_tend,nc_accret_tend,qc2qr_autoc
    real(rtype), intent(in) :: qr2qv_evap_tend
    real(rtype), intent(in) :: nr_evap_tend
    real(rtype), intent(in) :: nr_selfcollect_tend
-
+   real(rtype), intent(in) :: nr_breakup_tend
 
    logical(btype), intent(in) :: do_predict_nc, do_prescribed_CCN
    real(rtype), intent(in) :: nccnst
@@ -3545,14 +3552,14 @@ subroutine update_prognostic_liquid(qc2qr_accret_tend,nc_accret_tend,qc2qr_autoc
    qr = qr + (qc2qr_accret_tend+qc2qr_autoconv_tend-qr2qv_evap_tend)*dt
 
    if (do_predict_nc .or. do_prescribed_CCN) then
-      nc = nc + (-nc_accret_tend-nc2nr_autoconv_tend+nc_selfcollect_tend)*dt
+      nc = nc + (-nc_accret_tend-nc2nr_autoconv_tend-nc_selfcollect_tend)*dt
    else
       nc = nccnst*inv_rho
    endif
    if (iparam.eq.1 .or. iparam.eq.2) then
-      nr = nr + (0.5_rtype*nc2nr_autoconv_tend-nr_selfcollect_tend-nr_evap_tend)*dt
+      nr = nr + (0.5_rtype*nc2nr_autoconv_tend-nr_selfcollect_tend+nr_breakup_tend-nr_evap_tend)*dt
    else
-      nr = nr + (ncautr-nr_selfcollect_tend-nr_evap_tend)*dt
+      nr = nr + (ncautr-nr_selfcollect_tend+nr_breakup_tend-nr_evap_tend)*dt
    endif
 
    qv = qv + qr2qv_evap_tend*dt
