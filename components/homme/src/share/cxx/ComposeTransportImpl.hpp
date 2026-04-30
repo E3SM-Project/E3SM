@@ -28,6 +28,7 @@
 #include "mpi/BoundaryExchange.hpp"
 #include "mpi/MpiBuffersManager.hpp"
 #include "mpi/Connectivity.hpp"
+#include "utilities/MathUtils.hpp"
 
 #include <cassert>
 

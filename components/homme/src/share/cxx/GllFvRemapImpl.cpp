@@ -11,6 +11,7 @@
 // eam-hommexx test.
 # include "EquationOfState.hpp"
 # include "ElementOps.hpp"
+# include "utilities/MathUtils.hpp"
 #endif
 
 namespace Homme {

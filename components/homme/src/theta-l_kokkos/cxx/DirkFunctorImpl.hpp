@@ -18,6 +18,7 @@
 #include "profiling.hpp"
 #include "ErrorDefs.hpp"
 #include "utilities/scream_tridiag.hpp"
+#include "utilities/MathUtils.hpp"
 
 #include <cassert>
 
