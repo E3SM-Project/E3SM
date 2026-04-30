@@ -1798,7 +1798,15 @@ def cross_verify(fme_rundir, legacy_rundir, outdir, verbose=False):
             components_vc[comp] = offline_vcoarsen_avg(comp_1t, pint)
 
         if all_found:
-            sum_vc = sum(components_vc.values())  # (ncol, 8)
+            # Treat NaN components as zero so the linearity check matches the
+            # online Fortran semantics: STW = Q + CLDICE + CLDLIQ + RAINQM
+            # uses RAINQM=0 where missing (e.g. upper-tropospheric layers).
+            # Plain Python `sum(...)` propagates NaN and would make global-mean
+            # comparisons exclude upper layers entirely, producing a spurious
+            # ~25% mismatch concentrated where RAINQM is sparse.
+            sum_vc = np.nansum(
+                np.stack(list(components_vc.values())), axis=0
+            )  # (ncol, 8)
             max_lin_err = 0.0
             max_lin_rel = 0.0
 
