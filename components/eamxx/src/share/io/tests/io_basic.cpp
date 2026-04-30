@@ -9,7 +9,6 @@
 #include "share/field/field.hpp"
 #include "share/data_managers/field_manager.hpp"
 
-#include "share/util/eamxx_universal_constants.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/physics/physics_constants.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
@@ -267,7 +266,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   // Check that the expected metadata was appropriately set for each variable
   for (const auto& fn: fnames) {
     auto att_fill = scorpio::get_attribute<float>(filename,fn,"_FillValue");
-    REQUIRE(att_fill==constants::fill_value<Real>);
+    REQUIRE(att_fill==fill_value<Real>);
 
     auto att_str = scorpio::get_attribute<std::string>(filename,fn,"test");
     REQUIRE (att_str==fn);

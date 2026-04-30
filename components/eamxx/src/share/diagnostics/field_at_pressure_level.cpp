@@ -1,5 +1,4 @@
 #include "field_at_pressure_level.hpp"
-#include "share/util/eamxx_universal_constants.hpp"
 
 #include <ekat_std_utils.hpp>
 #include <ekat_upper_bound.hpp>
@@ -73,7 +72,6 @@ initialize_impl (const RunType /*run_type*/)
 
   // Add a field representing the mask as extra data to the diagnostic field.
   m_diagnostic_output.create_valid_mask();
-  m_diagnostic_output.get_header().set_may_be_filled(true);
 
   using stratts_t = std::map<std::string,std::string>;
 
@@ -107,7 +105,6 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
   const int nlevs = pl.dim(1);
 
   auto p_tgt = m_pressure_level;
-  constexpr auto fval = constants::fill_value<Real>;
   bool masked = f.has_valid_mask();
   if (rank==2) {
     auto policy = KT::RangePolicy(0,ncols);
@@ -122,7 +119,6 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
       auto end = beg + nlevs;
       auto last = beg + (nlevs-1);
       if (p_tgt<*beg or p_tgt>*last) {
-        diag(icol) = fval;
         dmask(icol) = 0;
       } else {
         auto ub = ekat::upper_bound(beg,end,p_tgt);     
@@ -170,7 +166,6 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
       auto last = beg + (nlevs-1);
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team,ndims),[&](const int idim) {
         if (p_tgt<*beg or p_tgt>*last) {
-          diag(icol,idim) = fval; // TODO: don't bother setting an arbitrary value
           dmask(icol,idim) = 0;
         } else {
           auto y1 = ekat::subview(f_v,icol,idim);
@@ -208,11 +203,6 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
   } else {
     EKAT_ERROR_MSG("Error! field at pressure level only supports fields ranks 2 and 3 \n");
   }
-
-  // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-  auto& mask = m_diagnostic_output.get_valid_mask();
-  m_diagnostic_output.deep_copy(constants::fill_value<Real>,mask,true);
-
 }
 
 } //namespace scream

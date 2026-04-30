@@ -13,7 +13,6 @@ constexpr auto P0 = VerticalRemapper::P0;
 constexpr auto Mask = VerticalRemapper::Mask;
 constexpr auto Top = VerticalRemapper::Top;
 constexpr auto Bot = VerticalRemapper::Bot;
-constexpr Real fill_val = constants::fill_value<Real>;
 
 template<typename... Args>
 void print (const std::string& fmt, const ekat::Comm& comm, Args&&... args) {
@@ -182,14 +181,12 @@ void extrapolate (const Field& p_src, const Field& p_tgt, const Field& f,
           auto p = pval(p1d_tgt,p2d_tgt,i,j,p_tgt.rank());
           if (p>pmax) {
             if (etype_bot==Mask) {
-              v(i,j) = fill_val;
               m(i,j) = 0;
             } else {
               v(i,j) = data_func(i,0,pmax);
             }
           } else if (p<pmin) {
             if (etype_top==Mask) {
-              v(i,j) = fill_val;
               m(i,j) = 0;
             } else {
               v(i,j) = data_func(i,0,pmin);
@@ -210,14 +207,12 @@ void extrapolate (const Field& p_src, const Field& p_tgt, const Field& f,
             auto p = pval(p1d_tgt,p2d_tgt,i,k,p_tgt.rank());
             if (p>pmax) {
               if (etype_bot==Mask) {
-                v(i,j,k) = fill_val;
                 m(i,j,k) = 1;
               } else {
                 v(i,j,k) = data_func(i,j,pmax);
               }
             } else if (p<pmin) {
               if (etype_top==Mask) {
-                v(i,j,k) = fill_val;
                 m(i,j,k) = 1;
               } else {
                 v(i,j,k) = data_func(i,j,pmin);

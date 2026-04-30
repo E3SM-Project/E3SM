@@ -16,7 +16,7 @@ namespace {
 using namespace scream;
 
 constexpr int packsize = SCREAM_PACK_SIZE;
-constexpr Real fill_val = constants::fill_value<Real>;
+constexpr Real fill_val = fill_value<Real>;
 using         Pack     = ekat::Pack<Real,packsize>;
 using stratts_t = std::map<std::string,std::string>;
 

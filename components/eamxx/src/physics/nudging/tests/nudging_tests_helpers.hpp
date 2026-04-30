@@ -89,27 +89,27 @@ void compute_field (Field f,
     const auto f_h = f.get_view<Real**, Host>();
     for (int icol=0;icol<ncols;++icol) {
       for (int ilev=0; ilev<lev_beg; ++ilev) {
-        f_h(icol,ilev) = constants::fill_value<Real>;
+        f_h(icol,ilev) = fill_value<Real>;
       }
       for (int ilev=lev_beg;ilev<lev_end;++ilev) {
         f_h(icol,ilev) = step + (offset+icol)*nlevs + ilev + 1;
       }
       for (int ilev=lev_end; ilev<nlevs; ++ilev) {
-        f_h(icol,ilev) = constants::fill_value<Real>;
+        f_h(icol,ilev) = fill_value<Real>;
       }
     }
   } else {
     const auto f_h = f.get_view<Real***, Host>();
     for (int icol=0;icol<ncols;++icol) {
       for (int ilev=0; ilev<lev_beg; ++ilev) {
-        f_h(icol,0,ilev) = f_h(icol,1,ilev) = constants::fill_value<Real>;
+        f_h(icol,0,ilev) = f_h(icol,1,ilev) = fill_value<Real>;
       }
       for (int ilev=lev_beg;ilev<lev_end;++ilev) {
         f_h(icol,0,ilev) = step + (offset+icol)*2*nlevs + ilev + 1;
         f_h(icol,1,ilev) = step + (offset+icol)*2*nlevs + ilev + 1;
       }
       for (int ilev=lev_end; ilev<nlevs; ++ilev) {
-        f_h(icol,0,ilev) = f_h(icol,1,ilev) = constants::fill_value<Real>;
+        f_h(icol,0,ilev) = f_h(icol,1,ilev) = fill_value<Real>;
       }
     }
   }

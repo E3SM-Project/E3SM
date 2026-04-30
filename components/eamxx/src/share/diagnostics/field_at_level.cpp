@@ -1,7 +1,5 @@
 #include "field_at_level.hpp"
 
-#include "share/util/eamxx_universal_constants.hpp"
-
 #include <ekat_std_utils.hpp>
 
 namespace scream
@@ -78,7 +76,6 @@ initialize_impl (const RunType /*run_type*/)
   m_diagnostic_output = Field(d_fid,true);
   if (f.has_valid_mask()) {
     m_diagnostic_output.create_valid_mask();
-    m_diagnostic_output.get_header().set_may_be_filled(true);
   }
 
   using stratts_t = std::map<std::string,std::string>;
@@ -213,13 +210,6 @@ void FieldAtLevel::compute_diagnostic_impl()
           "[FieldAtLevel] Unexpected field rank. You should have gotten an error before though.\n"
           " - field name: " + f.name() + "\n"
           " - field rank: " + std::to_string(f.rank()) + "\n");
-  }
-
-  // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-  if (masked) {
-    const auto fv = f.data_type()==DataType::RealType ? constants::fill_value<Real>
-                                                      : constants::fill_value<int>;
-    m_diagnostic_output.deep_copy(fv,m_diagnostic_output.get_valid_mask(),true);
   }
 }
 

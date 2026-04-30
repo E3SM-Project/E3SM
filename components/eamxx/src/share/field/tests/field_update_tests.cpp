@@ -105,13 +105,6 @@ TEST_CASE ("update") {
       Field f4 = two.clone();
       f4.min(f3);
       REQUIRE (views_are_equal(f3, f4));
-
-      // Check that updating with rhs==fill_value ignores the rhs
-      f3.deep_copy(constants::fill_value<Real>);
-      f3.get_header().set_may_be_filled(true);
-      f2.deep_copy(1.0);
-      f2.max(f3);
-      REQUIRE (views_are_equal(f2,one));
     }
 
     SECTION ("int") {
@@ -129,13 +122,6 @@ TEST_CASE ("update") {
       Field f4 = two.clone();
       f4.min(f3);
       REQUIRE (views_are_equal(f3, f4));
-
-      // Check that updating with rhs==fill_value ignores the rhs
-      f3.deep_copy(constants::fill_value<int>);
-      f3.get_header().set_may_be_filled(true);
-      f2.deep_copy(1);
-      f2.max(f3);
-      REQUIRE (views_are_equal(f2,one));
     }
   }
 
@@ -182,17 +168,9 @@ TEST_CASE ("update") {
       f3.update(f_real,2,0);
       REQUIRE (views_are_equal(f3,f2));
 
-      // Check that updating with rhs==fill_value ignores the rhs
+      // Check handling of additive scalar
       Field one = f_real.clone();
       one.deep_copy(1.0);
-
-      f3.deep_copy(constants::fill_value<Real>);
-      f3.get_header().set_may_be_filled(true);
-      f2.deep_copy(1.0);
-      f2.update(f3,1,1);
-      REQUIRE (views_are_equal(f2,one));
-
-      // Check handling of additive scalar
       f3.deep_copy(-2);
       f2.deep_copy(2);
       f3.update(f2,0,0,1);
@@ -217,17 +195,9 @@ TEST_CASE ("update") {
       f3.update(f_int,2,0);
       REQUIRE (views_are_equal(f3,f2));
 
-      // Check that updating with rhs==fill_value ignores the rhs
+      // Check handling of additive scalar
       Field one = f_int.clone();
       one.deep_copy(1);
-
-      f3.deep_copy(constants::fill_value<int>);
-      f3.get_header().set_may_be_filled(true);
-      f2.deep_copy(1);
-      f2.update(f3,1,1);
-      REQUIRE (views_are_equal(f2,one));
-
-      // Check handling of additive scalar
       f3.deep_copy(-2);
       f2.deep_copy(2);
       f3.update(f2,0,0,1);

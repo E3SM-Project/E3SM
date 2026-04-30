@@ -209,7 +209,7 @@ void read_var (const std::string &filename, const std::string &varname, T* buf, 
 // Write data from user provided buffer into the requested variable
 // NOTE: ETI in the cpp file for int, float, double.
 template<typename T>
-void write_var (const std::string &filename, const std::string &varname, const T* buf, const T* fillValue = nullptr);
+void write_var (const std::string &filename, const std::string &varname, const T* buf);
 
 // =============== Attributes operations ================== //
 

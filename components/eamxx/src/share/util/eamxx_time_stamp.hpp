@@ -9,6 +9,8 @@
 namespace scream {
 namespace util {
 
+constexpr int seconds_per_day = 86400;
+
 // Micro-struct, to hold a simulation time stamp
 class TimeStamp {
 public:

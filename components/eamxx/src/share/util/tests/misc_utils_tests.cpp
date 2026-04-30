@@ -1,7 +1,6 @@
 #include <catch2/catch.hpp>
 
 #include "share/util/eamxx_family_tracking.hpp"
-#include "share/util/eamxx_universal_constants.hpp"
 #include "share/util/eamxx_scalar_wrapper.hpp"
 #include "share/util/eamxx_utils.hpp"
 
@@ -17,16 +16,6 @@ TEST_CASE("scalar_wrapper") {
   auto z1 = ScalarWrapper::zero();
   ScalarWrapper z2(0.0);
   REQUIRE (z2.as<Real>()==z1.as<Real>());
-}
-
-TEST_CASE("fill_value") {
-  using namespace scream::constants;
-
-  // Ensure we have the SAME numerical value for both float and double
-  auto fv_d = fill_value<double>;
-  auto fv_f = fill_value<float>;
-
-  REQUIRE (fv_d==fv_f);
 }
 
 TEST_CASE("contiguous_superset") {

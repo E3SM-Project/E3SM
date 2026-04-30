@@ -370,9 +370,6 @@ protected:
   void update_impl (const Field& x, const ST alpha, const ST beta, const ST gamma);
 
   template<CombineMode CM, typename ST, typename STX>
-  void update_fill_aware (const Field& x, const ST alpha, const ST beta, const ST gamma);
-
-  template<CombineMode CM, typename ST, typename STX>
   void update_masked (const Field& x, const ST alpha, const ST beta, const ST gamma, const Field& mask);
 
   template<HostOrDevice HD>

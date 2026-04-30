@@ -25,12 +25,6 @@ add_library(eamxx_field
   eti/field_update_impl_float_float.cpp
   eti/field_update_impl_float_int.cpp
   eti/field_update_impl_int_int.cpp
-  eti/field_update_fill_aware_double_double.cpp
-  eti/field_update_fill_aware_double_float.cpp
-  eti/field_update_fill_aware_double_int.cpp
-  eti/field_update_fill_aware_float_float.cpp
-  eti/field_update_fill_aware_float_int.cpp
-  eti/field_update_fill_aware_int_int.cpp
   eti/field_update_masked_double_double.cpp
   eti/field_update_masked_double_float.cpp
   eti/field_update_masked_double_int.cpp

@@ -3,7 +3,6 @@
 
 #include "share/grid/abstract_grid.hpp"
 #include "share/field/field.hpp"
-#include "share/util/eamxx_universal_constants.hpp"
 
 #include <vector>
 
@@ -11,7 +10,7 @@ namespace scream
 {
 
 constexpr int ncmps = 2;
-constexpr auto spd = constants::seconds_per_day;
+constexpr auto spd = 86400;
 constexpr int data_ngcols = 12;
 constexpr int fine_ngcols = 2*data_ngcols-1; // stick one dof between each data dofs
 constexpr int data_nlevs = 32;

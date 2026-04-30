@@ -10,7 +10,6 @@
 #include "share/field/field.hpp"
 #include "share/data_managers/field_manager.hpp"
 
-#include "share/util/eamxx_universal_constants.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/core/eamxx_types.hpp"
@@ -26,20 +25,11 @@
 namespace scream {
 
 constexpr int num_output_steps = 5;
-constexpr Real fill_value = constants::fill_value<Real>;
+constexpr Real fill_value = fill_value<Real>;
 constexpr Real fill_threshold = 0.5;
 
-void set (const Field& f, const double v) {
-  auto data = f.get_internal_view_data<Real,Host>();
-  auto nscalars = f.get_header().get_alloc_properties().get_num_scalars();
-  for (int i=0; i<nscalars; ++i) {
-    data[i] = v;
-  }
-  f.sync_to_dev();
-}
-
 int get_dt (const std::string& freq_units) {
-  int dt;
+  int dt = -1;
   if (freq_units=="nsteps") {
     dt = 1;
   } else if (freq_units=="nsecs") {
@@ -97,9 +87,9 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
     FID fid("f_"+std::to_string(fl.size()),fl,ekat::units::none,grid->name());
     Field f(fid);
     f.allocate_view();
-    f.deep_copy(0.0); // For the "filled" field we start with a filled value.
+    f.deep_copy(0.0);
     f.get_header().get_tracking().update_time_stamp(t0);
-    f.get_header().set_may_be_filled(true);
+    f.create_valid_mask("mask",Field::MaskInit::Valid);
     fm->add_field(f);
   }
 
@@ -142,6 +132,9 @@ void write (const std::string& avg_type, const std::string& freq_units,
   om.initialize(comm,om_pl,t0,false);
   om.setup(fm,gm->get_grid_names());
 
+  std::uniform_real_distribution<Real> pdf(-99999,99999);
+  std::mt19937_64 engine(seed);
+
   // Time loop: ensure we always hit 3 output steps
   const int nsteps = num_output_steps*freq;
   auto t = t0;
@@ -150,13 +143,17 @@ void write (const std::string& avg_type, const std::string& freq_units,
     // Update time
     t += dt;
 
-    // Set fields to n+1 or the fill_value, depending on step:
-    //  - n+1 if n+1 is odd
-    //  - fill_value if n+1 is even
-    Real setval = ((n+1) % 2 == 0) ? 1.0*(n+1) : fill_value;
+    // Set fields to n+1 or a large value, depending on step:
+    //  - n+1 if n+1 is even (valid = true)
+    //  - some random value if n+1 is odd (valid = false)
+    bool valid = (n+1) % 2 == 0;
+    int mask_val = valid ? 1 : 0;
+    Real field_val = valid ? 1.0*(n+1) : pdf(engine);
     for (const auto& n : fnames) {
       auto f = fm->get_field(n);
-      set(f,setval);
+      auto& mask = f.get_valid_mask(); 
+      mask.deep_copy(mask_val);
+      f.deep_copy(field_val);
     }
 
     // Run output manager
@@ -204,7 +201,8 @@ void read (const std::string& avg_type, const std::string& freq_units,
   reader_pl.set("field_names",fnames);
   AtmosphereInput reader(reader_pl,fm);
 
-  // We set the value n to each input field for each odd valued timestep and fill_value for each even valued timestep
+  // We set the value n to each input field for each odd valued timestep,
+  // and random value for each even valued timestep
   // Hence, at output step N = snap*freq, we should get
   //  avg=INSTANT: output = N if (N%2=0), else Fillvalue
   //  avg=MAX:     output = N if (N%2=0), else N-1
@@ -221,30 +219,24 @@ void read (const std::string& avg_type, const std::string& freq_units,
     for (const auto& fn : fnames) {
       auto f0 = fm0->get_field(fn).clone();
       auto f  = fm->get_field(fn);
+      Real test_val;
       if (avg_type=="MIN") {
-        Real test_val = ((n+1)*freq%2==0) ? n*freq+1 : n*freq+2;
-        set(f0,test_val);
-        REQUIRE (views_are_equal(f,f0));
+        test_val = ((n+1)*freq%2==0) ? n*freq+1 : n*freq+2;
       } else if (avg_type=="MAX") {
-        Real test_val = ((n+1)*freq%2==0) ? (n+1)*freq : (n+1)*freq-1;
-        set(f0,test_val);
-        REQUIRE (views_are_equal(f,f0));
+        test_val = ((n+1)*freq%2==0) ? (n+1)*freq : (n+1)*freq-1;
       } else if (avg_type=="INSTANT") {
-        Real test_val = (n*freq%2==0) ? n*freq : fill_value;
-        set(f0,test_val);
-        REQUIRE (views_are_equal(f,f0));
+        test_val = (n*freq%2==0) ? n*freq : fill_value;
       } else { // Is avg_type = AVERAGE
         // Note, for AVERAGE type output with filling we need to check that the
         // number of contributing fill steps surpasses the fill_threshold, if not
         // then we know that the snap will reflect the fill value.
 
-        Real test_val;
         Real M = freq/2 + (n%2==0 ? 0.0 :  1.0);
         Real a = n*freq + (n%2==0 ? 0.0 : -1.0);
         test_val = (M/freq > fill_threshold) ? a + (M+1.0) : fill_value;
-        set(f0,test_val);
-        REQUIRE (views_are_equal(f,f0));
       }
+      f0.deep_copy(test_val);
+      REQUIRE (views_are_equal(f,f0));
     }
   }
 
@@ -252,7 +244,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   for (const auto& fn: fnames) {
     // NOTE: use float, since default fp_precision for I/O is 'single'
     auto att_fill = scorpio::get_attribute<float>(filename,fn,"_FillValue");
-    REQUIRE(att_fill==constants::fill_value<Real>);
+    REQUIRE(att_fill==fill_value<Real>);
   }
 }
 

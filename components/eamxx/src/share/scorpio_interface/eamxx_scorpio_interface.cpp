@@ -1421,7 +1421,7 @@ void read_var (const std::string &filename, const std::string &varname, T* buf, 
 
 // Write data from user provided buffer into the requested variable
 template<typename T>
-void write_var (const std::string &filename, const std::string &varname, const T* buf, const T* fillValue)
+void write_var (const std::string &filename, const std::string &varname, const T* buf)
 {
   EKAT_REQUIRE_MSG (buf!=nullptr,
       "Error! Cannot write in provided pointer. Invalid buffer pointer.\n"
@@ -1451,7 +1451,7 @@ void write_var (const std::string &filename, const std::string &varname, const T
   std::string pioc_func;
   if (var.decomp) {
     // A decomposed variable, requires write_darray
-    err = PIOc_write_darray(f.ncid,var.ncid,var.decomp->ncid,var.decomp->offsets.size(),buf,fillValue);
+    err = PIOc_write_darray(f.ncid,var.ncid,var.decomp->ncid,var.decomp->offsets.size(),buf,nullptr);
     pioc_func = "write_darray";
   } else {
     // A non-decomposed variable, use PIOc_put_var(a)

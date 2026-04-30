@@ -1,14 +1,15 @@
 #include <catch2/catch.hpp>
 
-#include "share/util/eamxx_universal_constants.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/core/eamxx_config.hpp"
 
+namespace scream
+{
+
 TEST_CASE ("time_stamp") {
-  using namespace scream;
   using TS = util::TimeStamp;
 
-  constexpr auto spd = constants::seconds_per_day;
+  constexpr auto spd = util::seconds_per_day;
 
   TS ts1 (2021,10,12,17,8,30);
 
@@ -156,3 +157,5 @@ TEST_CASE ("time_stamp") {
     }
   }
 }
+
+} // namespace scream

@@ -1,7 +1,6 @@
 #include "conditional_sampling.hpp"
 
 #include "share/field/field_utils.hpp"
-#include "share/util/eamxx_universal_constants.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 
@@ -226,8 +225,6 @@ void ConditionalSampling::compute_diagnostic_impl()
   if (not m_diag_is_mask) {
     const auto& f = get_field_in(m_input_f);
     m_diagnostic_output.deep_copy(f,mask);
-    constexpr auto fv = constants::fill_value<Real>;
-    m_diagnostic_output.deep_copy(fv,mask,true);
   }
 }
 

@@ -130,7 +130,7 @@ TEST_CASE("horiz_avg") {
     // Compute manual average: numerator / denominator (where valid)
     manual.scale_inv(manual_den,tgt_mask);
 
-    // Compare where valid; zero out fill_value entries before norm
+    // Compare where valid; zero out masked out entries before norm
     auto diff = diag_f.clone("diff");
     diff.update(manual,-1,1,d_mask);
     diff.deep_copy(0,d_mask,true);
