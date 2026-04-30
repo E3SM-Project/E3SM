@@ -30,11 +30,11 @@ IOType str2iotype(const std::string &str)
     return IOType::PnetCDF;
   } else if(str == "netcdf") {
     return IOType::NetCDF;
-  } else if(str == "netcdf4" || str == "netcdf4c") {
-    return IOType::NetCDF4C;
-  } else if(str == "pnetcdf4" || str == "netcdf4p") {
+  } else if(str == "netcdf4" || str == "netcdf4p") {
     return IOType::NetCDF4P;
-  } else if(str == "pnetcdf4_zarr" || str == "netcdf4z") {
+  } else if(str == "netcdf4c") {
+    return IOType::NetCDF4C;
+  } else if(str == "netcdf4_zarr" || str == "netcdf4z") {
     return IOType::NetCDF4P_NCZARR;
   } else if(str == "adios") {
     return IOType::Adios;
