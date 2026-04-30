@@ -51,6 +51,10 @@ KOKKOS_INLINE_FUNCTION T max3(const T& a, const T& b, const T& c) {
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestCalcRimeDensity : public UnitWrap::UnitTest<D>::Base {
 
+  static_assert(max_pack_size >= 8,
+                "calc_rime_density property tests use lanes[0..7] to cover "
+                "targeted Ri regimes, clamp endpoints, and inactive defaults.");
+
   struct RimeLane {
     Real T_atm, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c;
     Real qc_incld, qc2qi_collect_tend;
