@@ -238,7 +238,9 @@ void BinaryOp::initialize_impl()
 
   if (not m_arg1_is_field and not m_arg2_is_field) {
     // We can pre-compute the diag now
-    compute_impl();
+    const auto  c1 = dict.at(m_arg1_name).value;
+    const auto  c2 = dict.at(m_arg2_name).value;
+    apply_binary_op(m_diagnostic_output, c1, c2, m_binary_op_code);
   } else {
     m_arg1_has_mask = m_arg1_is_field and m_fields_in.at(m_arg1_name).has_valid_mask();
     m_arg2_has_mask = m_arg2_is_field and m_fields_in.at(m_arg2_name).has_valid_mask();
@@ -260,6 +262,7 @@ void BinaryOp::compute_impl()
     m_diagnostic_output.get_valid_mask().deep_copy(m_fields_in.at(m_arg2_name).get_valid_mask());
   }
 
+  // Note the case where m_arg1_is_field=m_arg2_is_field=false was handled in the initialize method
   const auto& dict = physics::Constants<Real>::dictionary();
   if (m_arg1_is_field and m_arg2_is_field) {
     const auto& f1 = m_fields_in.at(m_arg1_name);
@@ -274,10 +277,6 @@ void BinaryOp::compute_impl()
     const auto  c1 = physics::Constants<Real>::dictionary().at(m_arg1_name).value;
     const auto& f2 = m_fields_in.at(m_arg2_name);
     apply_binary_op(m_diagnostic_output, c1, f2, m_binary_op_code);
-  } else {
-    const auto  c1 = dict.at(m_arg1_name).value;
-    const auto  c2 = dict.at(m_arg2_name).value;
-    apply_binary_op(m_diagnostic_output, c1, c2, m_binary_op_code);
   }
 
   // Until IO is ready to fully rely on valid_mask fields, we must set diag=fill_value where invalid
