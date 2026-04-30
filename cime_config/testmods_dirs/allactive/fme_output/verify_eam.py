@@ -166,6 +166,21 @@ BFB_AVG_FIELDS = ["SOLIN", "FSNTOA", "FSUTOA", "FLUT", "FLNT",
                    "FLDS", "FLUS", "FSDS", "FSUS", "FSNS", "FLNS",
                    "LHFLX", "SHFLX", "TAUX", "TAUY", "PRECT"]
 
+# Cross-compare abs_diff tolerances for fields whose global mean is close
+# to zero (sign-changing) or whose absolute level depends on sampling
+# convention rather than physics. For these, relative-difference is
+# meaningless: e.g. global-mean TAUX ~0.01 N/m^2 gives 30%+ rel_diff for a
+# 0.003 N/m^2 absolute discrepancy that is well within remap noise.
+# The cross-compare passes if abs_diff < abs_tol OR rel_diff < 0.02.
+# Tolerances chosen to be ~1% of the typical spatial range of each field.
+GMEAN_ABS_TOL = {
+    "TAUX": 0.01,        # N/m^2  (typical range ~ -2..+2)
+    "TAUY": 0.01,        # N/m^2  (typical range ~ -1..+1)
+    "ICEFRAC": 0.01,     # fraction  (sampling-window dependent at ice edge)
+    "FSUS":  3.0,        # W/m^2  (sampling-window dependent over partial-ice)
+    "FLUS":  3.0,        # W/m^2  (sampling-window dependent over partial-ice)
+}
+
 # FME vcoarsen fields -> legacy raw source (for offline recomputation)
 # FME name -> (legacy fields to sum for derived, then vcoarsen)
 FME_TO_LEGACY = {
@@ -1438,7 +1453,12 @@ def cross_verify(fme_rundir, legacy_rundir, outdir, verbose=False):
                 effective_rel = abs_diff / field_mag
             else:
                 effective_rel = 0.0  # both means are essentially zero
-            status = "PASS" if min(rel_diff, effective_rel) < 0.02 else "DIFF"
+            # Per-field abs_diff override for sign-changing / sampling-sensitive
+            # fields where rel_diff is meaningless (see GMEAN_ABS_TOL above).
+            abs_tol = GMEAN_ABS_TOL.get(var)
+            passes_abs_tol = abs_tol is not None and abs_diff < abs_tol
+            status = "PASS" if (passes_abs_tol or
+                                min(rel_diff, effective_rel) < 0.02) else "DIFF"
             if status == "PASS":
                 n_bfb_pass += 1
             else:

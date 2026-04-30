@@ -48,8 +48,8 @@
 		<var name="iceThicknessMean" type="real" dimensions="nCells Time" units="m"
 			description="Area-weighted mean ice thickness"
 		/>
-		<var name="surfaceTemperatureMean" type="real" dimensions="nCells Time" units="K"
-			description="Area-weighted mean surface temperature"
+		<var name="surfaceTemperatureMean" type="real" dimensions="nCells Time" units="degC"
+			description="Area-weighted mean surface temperature (Celsius, Icepack convention)"
 		/>
 		<var name="airStressZonal" type="real" dimensions="nCells Time" units="N m^-2"
 			description="Zonal component of air stress on ice in geographical coordinates"
