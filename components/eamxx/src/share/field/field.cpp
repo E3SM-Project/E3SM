@@ -157,6 +157,20 @@ Field::alias (const std::string& name,const std::string& grid_name) const {
 }
 
 Field
+Field::alias (const std::string& name, const std::map<FieldTag,std::string>& tag_names) const {
+  return alias(name, get_header().get_identifier().get_grid_name(), tag_names);
+}
+
+Field
+Field::alias (const std::string& name, const std::string& grid_name, const std::map<FieldTag,std::string>& tag_names) const {
+  Field f;
+  f.m_header = get_header().alias(name, grid_name, tag_names);
+  f.m_data = m_data;
+  f.m_is_read_only = m_is_read_only;
+  return f;
+}
+
+Field
 Field::clone(const std::string& name) const {
   return clone(name, get_header().get_identifier().get_grid_name());
 }

@@ -210,12 +210,6 @@ TEST_CASE("conditional_sampling") {
           iota_z<int>(lev);
           auto cmp = cmp_s=="ge" ? Comparison::GE : Comparison::LE;
           compute_mask(lev,val,cmp,mask);
-          if (not views_are_equal(d.get_valid_mask(),mask))
-          {
-            print_field_hyperslab(lev.alias("lev"));
-            print_field_hyperslab(mask.alias("manual"));
-            print_field_hyperslab(d.get_valid_mask().alias("computed"));
-          }
           REQUIRE (views_are_equal(d.get_valid_mask(),mask));
 
           x.deep_copy(fv,mask,true);

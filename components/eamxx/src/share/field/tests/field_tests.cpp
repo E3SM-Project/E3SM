@@ -126,6 +126,25 @@ TEST_CASE("field", "") {
     // Check extra data is also shared
     f1.get_header().set_extra_data("foo",1);
     REQUIRE (f2.get_header().has_extra_data("foo"));
+
+    // alias with tag renaming: COL -> "ncol_d", LEV -> "lev_d"
+    std::map<FieldTag,std::string> tag_names = {{COL,"ncol_d"},{LEV,"lev_d"}};
+    Field f3 = f1.alias("renamed_alias", tag_names);
+
+    REQUIRE(f3.is_allocated());
+    REQUIRE(&f1.get_header().get_tracking()==&f3.get_header().get_tracking());
+    REQUIRE(&f1.get_header().get_alloc_properties()==&f3.get_header().get_alloc_properties());
+    REQUIRE(f1.get_internal_view_data<Real>()==f3.get_internal_view_data<Real>());
+    // Tags (FieldTag enum values) are unchanged
+    REQUIRE(f1.get_header().get_identifier().get_layout().tags()==f3.get_header().get_identifier().get_layout().tags());
+    // Dims (extents) are unchanged
+    REQUIRE(f1.get_header().get_identifier().get_layout().dims()==f3.get_header().get_identifier().get_layout().dims());
+    // Names are renamed
+    REQUIRE(f3.get_header().get_identifier().get_layout().name(0)=="ncol_d");
+    REQUIRE(f3.get_header().get_identifier().get_layout().name(1)=="lev_d");
+    // Original field's names are unchanged
+    REQUIRE(f1.get_header().get_identifier().get_layout().name(0)=="ncol");
+    REQUIRE(f1.get_header().get_identifier().get_layout().name(1)=="lev");
   }
 
   SECTION ("is_aliasing") {

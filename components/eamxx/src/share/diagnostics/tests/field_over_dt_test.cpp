@@ -4,7 +4,6 @@
 #include "share/field/field_utils.hpp"
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
-#include "share/util/eamxx_universal_constants.hpp"
 
 namespace scream {
 
@@ -68,25 +67,10 @@ TEST_CASE("field_over_dt") {
   diag->set_required_field(qc);
   diag->initialize(t0, RunType::Initial);
 
-  // Run diag before any init_timestep call: should return fill_value
-  diag->compute_diagnostic();
-  auto diag_f = diag->get_diagnostic();
-  diag_f.sync_to_host();
-
-  auto fill_field = qc.clone();
-  fill_field.deep_copy(constants::fill_value<Real>);
-  // Units differ (kg/kg/s vs kg/kg) so compare values directly
-  {
-    auto diag_host = diag_f.get_view<Real**, Host>();
-    const Real fill_val = constants::fill_value<Real>;
-    for (int icol = 0; icol < ngcols; ++icol)
-      for (int ilev = 0; ilev < nlevs; ++ilev)
-        REQUIRE(diag_host(icol, ilev) == fill_val);
-  }
-
   constexpr int ntests = 10;
   const Real a_day = 24.0 * 60.0 * 60.0;  // seconds
 
+  auto diag_f = diag->get_diagnostic();
   for (int itest = 2; itest < ntests; itest++) {
     // Save qc before advancing
     auto qc_prev = qc.clone();

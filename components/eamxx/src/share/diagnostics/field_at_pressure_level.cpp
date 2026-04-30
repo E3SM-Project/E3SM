@@ -67,8 +67,7 @@ initialize_impl (const RunType /*run_type*/)
 
   // All good, create the diag output
   auto d_fid = fid.clone(m_diag_name).reset_layout(layout.clone().strip_dim(tag));
-  m_diagnostic_output = Field(d_fid);
-  m_diagnostic_output.allocate_view();
+  m_diagnostic_output = Field(d_fid,true);
 
   m_pressure_name = tag==LEV ? "p_mid" : "p_int";
 
@@ -92,6 +91,8 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
 {
   using KT = KokkosTypes<DefaultDevice>;
   using MemberType = typename KT::MemberType;
+  using cmask2d_t = Field::view_dev_t<const int**>;
+  using cmask3d_t = Field::view_dev_t<const int***>;
 
   //This is 2D source pressure
   const Field& p_src = get_field_in(m_pressure_name);
@@ -107,10 +108,12 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
 
   auto p_tgt = m_pressure_level;
   constexpr auto fval = constants::fill_value<Real>;
+  bool masked = f.has_valid_mask();
   if (rank==2) {
     auto policy = KT::RangePolicy(0,ncols);
     auto diag = m_diagnostic_output.get_view<Real*>();
-    auto mask = m_diagnostic_output.get_valid_mask().get_view<int*>();
+    auto dmask = m_diagnostic_output.get_valid_mask().get_view<int*>();
+    auto fmask = masked ? f.get_valid_mask().get_view<const int**>() : cmask2d_t{};
     auto f_v  = f.get_view<const Real**>();
     Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int icol) {
       auto x1 = ekat::subview(p_src_v,icol);
@@ -120,28 +123,44 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
       auto last = beg + (nlevs-1);
       if (p_tgt<*beg or p_tgt>*last) {
         diag(icol) = fval;
-        mask(icol) = 0;
+        dmask(icol) = 0;
       } else {
         auto ub = ekat::upper_bound(beg,end,p_tgt);     
         auto k1 = ub - beg;
         if (k1==0) {
-          // Corner case: p_tgt==y1(0)
-          diag(icol) = y1(0);
+          if (not masked or fmask(icol,0)!=0) {
+            // Corner case: p_tgt==y1(0)
+            diag(icol) = y1(0);
+            dmask(icol) = 1;
+          } else {
+            dmask(icol) = 0;
+          }
         } else if (k1==nlevs) {
-          // Corner case: p_tgt==y1(nlevs-1)
-          diag(icol) = y1(nlevs-1);
+          if (not masked or fmask(icol,nlevs-1)!=0) {
+            // Corner case: p_tgt==y1(nlevs-1)
+            diag(icol) = y1(nlevs-1);
+            dmask(icol) = 1;
+          } else {
+            dmask(icol) = 0;
+          }
         } else {
-          // General case: interpolate between k1 and k1-1
-          diag(icol) = y1(k1-1) + (y1(k1)-y1(k1-1))/(x1(k1) - x1(k1-1)) * (p_tgt-x1(k1-1));
+          if (not masked or
+              (fmask(icol,k1)!=0 and fmask(icol,k1-1)!=0)) {
+            // General case: interpolate between k1 and k1-1
+            diag(icol) = y1(k1-1) + (y1(k1)-y1(k1-1))/(x1(k1) - x1(k1-1)) * (p_tgt-x1(k1-1));
+            dmask(icol) = 1;
+          } else {
+            dmask(icol) = 0;
+          }
         }
-        mask(icol) = 1;
       }
     });
   } else if (rank==3) {
     const int ndims = f.get_header().get_identifier().get_layout().get_vector_dim();
     auto policy = KT::TeamPolicy(ncols,ndims);
     auto diag = m_diagnostic_output.get_view<Real**>();
-    auto mask = m_diagnostic_output.get_valid_mask().get_view<int**>();
+    auto dmask = m_diagnostic_output.get_valid_mask().get_view<int**>();
+    auto fmask = masked ? f.get_valid_mask().get_view<const int***>() : cmask3d_t{};
     auto f_v  = f.get_view<const Real***>();
     Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const MemberType& team) {
       int icol = team.league_rank();
@@ -152,28 +171,47 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team,ndims),[&](const int idim) {
         if (p_tgt<*beg or p_tgt>*last) {
           diag(icol,idim) = fval; // TODO: don't bother setting an arbitrary value
-          mask(icol,idim) = 0;
+          dmask(icol,idim) = 0;
         } else {
           auto y1 = ekat::subview(f_v,icol,idim);
           auto ub = ekat::upper_bound(beg,end,p_tgt);     
           auto k1 = ub - beg;
           if (k1==0) {
-            // Corner case: p_tgt==y1(0)
-            diag(icol,idim) = y1(0);
+            if (not masked or fmask(icol,idim,0)!=0) {
+              // Corner case: p_tgt==y1(0)
+              diag(icol,idim) = y1(0);
+              dmask(icol,idim) = 1;
+            } else {
+              dmask(icol,idim) = 0;
+            }
           } else if (k1==nlevs) {
-            // Corner case: p_tgt==y1(nlevs-1)
-            diag(icol,idim) = y1(nlevs-1);
+            if (not masked or fmask(icol,idim,nlevs-1)!=0) {
+              // Corner case: p_tgt==y1(nlevs-1)
+              diag(icol,idim) = y1(nlevs-1);
+              dmask(icol,idim) = 1;
+            } else {
+              dmask(icol,idim) = 0;
+            }
           } else {
-            // General case: interpolate between k1 and k1-1
-            diag(icol,idim) = y1(k1-1) + (y1(k1)-y1(k1-1))/(x1(k1) - x1(k1-1)) * (p_tgt-x1(k1-1));
+            if (not masked or
+                (fmask(icol,idim,k1)!=0 and fmask(icol,idim,k1-1)!=0)) {
+              // General case: interpolate between k1 and k1-1
+              diag(icol,idim) = y1(k1-1) + (y1(k1)-y1(k1-1))/(x1(k1) - x1(k1-1)) * (p_tgt-x1(k1-1));
+              dmask(icol,idim) = 1;
+            } else {
+              dmask(icol,idim) = 0;
+            }
           }
-          mask(icol,idim) = 1;
         }
       });
     });
   } else {
     EKAT_ERROR_MSG("Error! field at pressure level only supports fields ranks 2 and 3 \n");
   }
+
+  // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
+  auto& mask = m_diagnostic_output.get_valid_mask();
+  m_diagnostic_output.deep_copy(constants::fill_value<Real>,mask,true);
 
 }
 

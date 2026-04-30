@@ -223,16 +223,18 @@ registration_ends_impl ()
       }
     } else {
       // If a field does not have any vertical tag (LEV, ILEV, or LEVP) it may still have
-      // fill_value tracking assigned from somewhere else.
+      // a mask assigned from somewhere else.
       // For instance, this could be a 2d field computed by FieldAtPressureLevel diagnostic.
-      // In those cases we want to copy that fill_value tracking to the target field.
+      // In those cases we want to copy that mask to the target field.
       if (src.has_valid_mask()) {
         EKAT_REQUIRE_MSG(not tgt.has_valid_mask(),
             "[VerticalRemapper::registration_ends_impl] Error! Target field already has mask data assigned.\n"
             " - tgt field name: " + tgt.name() + "\n");
         auto src_mask = src.get_valid_mask();
-        tgt.set_valid_mask(src_mask);
+        tgt.set_valid_mask(src_mask.alias(src_mask.name(),m_tgt_grid->name()));
       }
+
+      // TODO: remove when we get rid of fill-aware Field manipulation methods
       if (src.get_header().may_be_filled()) {
         tgt.get_header().set_may_be_filled(true);
       }

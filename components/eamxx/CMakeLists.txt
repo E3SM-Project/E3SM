@@ -446,88 +446,42 @@ endif()
 #               Configure all tpls and subfolders                  #
 ####################################################################
 
-set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
+# We will use the sharedlib one in CIME builds
+if (NOT SCREAM_CIME_BUILD)
+  set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
 
-if (DEFINED ENV{SCREAM_FAKE_ONLY})
-  # We don't really need to build ekat, but we do need to configure the test-launcher
+  # We need to build ekat, so set some options first.
+  # NOTE: user can override via -D EKAT_XYZ=VALUE
+  option (EKAT_DISABLE_TPL_WARNINGS "Whether we should suppress warnings when compiling TPLs." ON)
+  option (EKAT_ENABLE_TESTS "Whether tests should be built." OFF)
 
-  # Declare some vars that Ekat would have declared, and may be used later
-  option (EKAT_ENABLE_MPI "Whether EKAT requires MPI." ON)
-  option (EKAT_TEST_LAUNCHER_MANAGE_RESOURCES "Whether test-launcher should try to manage thread distribution. Requires a ctest resource file to be effective." OFF)
-  option (EKAT_ENABLE_VALGRIND "Whether to run tests with valgrind" OFF)
-  set(EKAT_VALGRIND_SUPPRESSION_FILE "" CACHE FILEPATH "Use this valgrind suppression file if valgrind is enabled.")
-  set (EKAT_ENABLE_GPU False)
-  if (Kokkos_ENABLE_CUDA OR Kokkos_ENABLE_HIP OR Kokkos_ENABLE_SYCL)
-    set (EKAT_ENABLE_GPU True)
-  endif ()
-
-  if (EKAT_TEST_LAUNCHER_MANAGE_RESOURCES)
-    set (TEST_LAUNCHER_MANAGE_RESOURCES True)
+  if (DEFINED ENV{SCREAM_FAKE_ONLY})
+    # We only need the Catch2 tpl, and the test support lib (which needs ekat_core)
+    option(EKAT_ENABLE_ALL_PACKAGES "Enable ALL EKAT sub-packages" OFF)
   else()
-    set (TEST_LAUNCHER_MANAGE_RESOURCES False)
-  endif()
-  if (EKAT_ENABLE_GPU)
-    set (TEST_LAUNCHER_ON_GPU True)
-  else()
-    set (TEST_LAUNCHER_ON_GPU False)
-  endif()
+    # Enable all EKAT packages
+    option(EKAT_ENABLE_ALL_PACKAGES "Enable ALL EKAT sub-packages" ON)
 
-  if (EKAT_ENABLE_MPI)
-    find_package(MPI REQUIRED COMPONENTS C)
+    # If user overrides and wants to test ekat too, use eamxx's testing settings for ekat as well
+    if (EKAT_ENABLE_TESTS)
+      # Ensure testing options are consistent with EAMxx settings (threads, ranks, packs, etc)
+      set (EKAT_TEST_MAX_THREADS ${SCREAM_TEST_MAX_THREADS} CACHE STRING "Max number of threads for tests")
+      set (EKAT_TEST_THREAD_INC ${SCREAM_TEST_THREAD_INC} CACHE STRING "Thread count increment for threaded tests")
+      set (EKAT_TEST_MAX_RANKS ${SCREAM_TEST_MAX_RANKS} CACHE STRING "Max number of ranks for tests")
+      set (EKAT_TEST_PACK_SIZE ${SCREAM_PACK_SIZE} CACHE STRING
+        " The number of scalars in a pack::Pack and Mask. Larger packs have good performance on conditional-free loops due to improved caching.")
 
-    # NOTE: may be an overkill, but depending on which FindMPI module is called,
-    #       if _FIND_REQUIRED is not checked, we may not get a fatal error
-    #       if the required components are not found. So check the _FOUND var.
-    if (NOT MPI_C_FOUND)
-      message (FATAL_ERROR "EKAT *requires* the C component of MPI to be found")
+      if (SCREAM_DOUBLE_PRECISION)
+        set (EKAT_TEST_SINGLE_PRECISION OFF)
+        set (EKAT_TEST_DOUBLE_PRECISION ON)
+      else()
+        set (EKAT_TEST_SINGLE_PRECISION ON)
+        set (EKAT_TEST_DOUBLE_PRECISION OFF)
+      endif()
     endif()
-
-    # We should avoid cxx bindings in mpi; they are already deprecated,
-    # and can cause headaches at link time, cause they require -lmpi_cxx
-    # (openpmi) or -lmpicxx (mpich) flags.
-    include(EkatMpiUtils)
-    DisableMpiCxxBindings()
-    SetMpiRuntimeEnvVars()
   endif()
 
-  # Configure/install test-launcher to build/install folder
-  configure_file(${EKAT_SOURCE_DIR}/bin/test-launcher
-                 ${CMAKE_BINARY_DIR}/bin/test-launcher)
-
-  if (EKAT_ENABLE_VALGRIND)
-    # We need to add the whole ekat, since ekat::CatchMain depends on ekat::Core
-    # But don't worry, by default, all ekat's optional packages are DISABLED
-    add_subdirectory(${EKAT_SOURCE_DIR}
-                     ${CMAKE_BINARY_DIR}/externals/ekat)
-  endif()
-
-else()
-  # Enable all EKAT packages
-  set(EKAT_ENABLE_ALL_PACKAGES ON)
-  set(EKAT_DISABLE_TPL_WARNINGS ON)
-
-  # Disable tests by default (user can override via -D EKAT_ENABLE_TESTS=ON)
-  set (EKAT_ENABLE_TESTS OFF)
-
-  # Ensure testing options are consistent with EAMxx settings (threads, ranks, packs, etc)
-  set (EKAT_TEST_MAX_THREADS ${SCREAM_TEST_MAX_THREADS} CACHE STRING "Max number of threads for tests")
-  set (EKAT_TEST_THREAD_INC ${SCREAM_TEST_THREAD_INC} CACHE STRING "Thread count increment for threaded tests")
-  set (EKAT_TEST_MAX_RANKS ${SCREAM_TEST_MAX_RANKS} CACHE STRING "Max number of ranks for tests")
-  set (EKAT_TEST_PACK_SIZE ${SCREAM_PACK_SIZE} CACHE STRING
-    " The number of scalars in a pack::Pack and Mask. Larger packs have good performance on conditional-free loops due to improved caching.")
-
-  if (SCREAM_DOUBLE_PRECISION)
-    set (EKAT_TEST_SINGLE_PRECISION OFF)
-    set (EKAT_TEST_DOUBLE_PRECISION ON)
-  else()
-    set (EKAT_TEST_SINGLE_PRECISION ON)
-    set (EKAT_TEST_DOUBLE_PRECISION OFF)
-  endif()
-
-  # We will use the sharedlib one if CIME
-  if (NOT SCREAM_CIME_BUILD)
-    add_subdirectory(${EKAT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/externals/ekat)
-  endif()
+  add_subdirectory(${EKAT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/externals/ekat)
 endif()
 
 # Set compiler-specific flags
