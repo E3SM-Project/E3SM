@@ -826,7 +826,7 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<stream name="fmeSeaiceDerivedFieldsOutput"')
             lines.append('        type="output"')
-            lines.append('        io_type="{}"'.format(io_type_str))
+            lines.append('        io_type="{}"'.format(ice_pio_typename))
             lines.append('        precision="single"')
             lines.append('        filename_template="{}.mpassi{}.hist.am.fmeSeaiceDerivedFields.$Y-$M-$D.nc"'.format(casename, inst_string))
             lines.append('        filename_interval="01-00-00_00:00:00"')
