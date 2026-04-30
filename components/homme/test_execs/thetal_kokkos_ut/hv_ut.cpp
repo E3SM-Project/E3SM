@@ -369,11 +369,11 @@ TEST_CASE("hvf", "biharmonic") {
         Kokkos::deep_copy(h_phitens,hvf.get_phitens());
         Kokkos::deep_copy(h_vtens,hvf.get_vtens());
         for (int ie=0; ie<num_elems; ++ie) {
-          auto dptens_cxx = viewAsReal(Homme::subview(h_dptens,ie));
-          auto ttens_cxx = viewAsReal(Homme::subview(h_ttens,ie));
-          auto wtens_cxx = viewAsReal(Homme::subview(h_wtens,ie));
-          auto phitens_cxx = viewAsReal(Homme::subview(h_phitens,ie));
-          auto vtens_cxx = viewAsReal(Homme::subview(h_vtens,ie));
+          auto dptens_cxx = ekat::scalarize(Homme::subview(h_dptens,ie));
+          auto ttens_cxx = ekat::scalarize(Homme::subview(h_ttens,ie));
+          auto wtens_cxx = ekat::scalarize(Homme::subview(h_wtens,ie));
+          auto phitens_cxx = ekat::scalarize(Homme::subview(h_phitens,ie));
+          auto vtens_cxx = ekat::scalarize(Homme::subview(h_vtens,ie));
           for (int igp=0; igp<NP; ++igp) {
             for (int jgp=0; jgp<NP; ++jgp) {
               for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {

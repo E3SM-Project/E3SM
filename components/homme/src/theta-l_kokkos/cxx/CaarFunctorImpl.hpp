@@ -476,7 +476,7 @@ struct CaarFunctorImpl {
              ie,igp,jgp,w,(u*phis_x+v*phis_y)/g,fabs( (u*phis_x+v*phis_y)/g - w ));
     }
 
-    auto phi = Homme::viewAsReal(Homme::subview(m_state.m_phinh_i,ie,m_data.np1,igp,jgp));
+    auto phi = ekat::scalarize(Homme::subview(m_state.m_phinh_i,ie,m_data.np1,igp,jgp));
     for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
       if ( (phi(k)-phi(k+1)) < g ) {
         printf("[CAAR] WARNING! delta z < 1m, at (ie,igp,jgp,k) = (%d,%d,%d,%d):\n"
@@ -701,8 +701,8 @@ struct CaarFunctorImpl {
 
   KOKKOS_INLINE_FUNCTION
   void compute_eta_dot_dpn (KernelVariables& kv, const int& igp, const int& jgp) const {
-    auto div_vdp = viewAsReal(Homme::subview(m_buffers.div_vdp,kv.team_idx,igp,jgp));
-    auto eta_dot_dpdn = viewAsReal(Homme::subview(m_buffers.eta_dot_dpdn,kv.team_idx,igp,jgp));
+    auto div_vdp = ekat::scalarize(Homme::subview(m_buffers.div_vdp,kv.team_idx,igp,jgp));
+    auto eta_dot_dpdn = ekat::scalarize(Homme::subview(m_buffers.eta_dot_dpdn,kv.team_idx,igp,jgp));
 
     // Integrate -vdp
     Dispatch<ExecSpace>::parallel_scan(kv.team,NUM_PHYSICAL_LEV,
@@ -731,12 +731,12 @@ struct CaarFunctorImpl {
   void compute_v_vadv (KernelVariables& kv, const int& igp, const int& jgp) const {
     // Note: save v_vadv temp by stuffing directly in vtens
 
-    auto u  = viewAsReal(Homme::subview(m_state.m_v,kv.ie,m_data.n0,0,igp,jgp));
-    auto v  = viewAsReal(Homme::subview(m_state.m_v,kv.ie,m_data.n0,1,igp,jgp));
-    auto dp = viewAsReal(Homme::subview(m_state.m_dp3d,kv.ie,m_data.n0,igp,jgp));
-    auto eta_dot_dpdn = viewAsReal(Homme::subview(m_buffers.eta_dot_dpdn,kv.team_idx,igp,jgp));
-    auto u_vadv = viewAsReal(Homme::subview(m_buffers.v_tens,kv.team_idx,0,igp,jgp));
-    auto v_vadv = viewAsReal(Homme::subview(m_buffers.v_tens,kv.team_idx,1,igp,jgp));
+    auto u  = ekat::scalarize(Homme::subview(m_state.m_v,kv.ie,m_data.n0,0,igp,jgp));
+    auto v  = ekat::scalarize(Homme::subview(m_state.m_v,kv.ie,m_data.n0,1,igp,jgp));
+    auto dp = ekat::scalarize(Homme::subview(m_state.m_dp3d,kv.ie,m_data.n0,igp,jgp));
+    auto eta_dot_dpdn = ekat::scalarize(Homme::subview(m_buffers.eta_dot_dpdn,kv.team_idx,igp,jgp));
+    auto u_vadv = ekat::scalarize(Homme::subview(m_buffers.v_tens,kv.team_idx,0,igp,jgp));
+    auto v_vadv = ekat::scalarize(Homme::subview(m_buffers.v_tens,kv.team_idx,1,igp,jgp));
 
     // TODO: vectorize this code.
     const auto facp_1 = 0.5*eta_dot_dpdn(1)/dp(0);

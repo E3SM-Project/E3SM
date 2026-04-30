@@ -330,15 +330,15 @@ TEST_CASE("caar", "caar_testing") {
             Kokkos::deep_copy(h_omega_p     , elems.m_derived.m_omega_p);
 
             for (int ie=0; ie<num_elems; ++ie) {
-              auto dp3d_cxx      = viewAsReal(Homme::subview(h_dp3d,ie,np1));
-              auto vtheta_dp_cxx = viewAsReal(Homme::subview(h_vtheta_dp,ie,np1));
-              auto w_i_cxx       = viewAsReal(Homme::subview(h_w_i,ie,np1));
-              auto phinh_i_cxx   = viewAsReal(Homme::subview(h_phinh_i,ie,np1));
-              auto v_cxx         = viewAsReal(Homme::subview(h_v,ie,np1));
+              auto dp3d_cxx      = ekat::scalarize(Homme::subview(h_dp3d,ie,np1));
+              auto vtheta_dp_cxx = ekat::scalarize(Homme::subview(h_vtheta_dp,ie,np1));
+              auto w_i_cxx       = ekat::scalarize(Homme::subview(h_w_i,ie,np1));
+              auto phinh_i_cxx   = ekat::scalarize(Homme::subview(h_phinh_i,ie,np1));
+              auto v_cxx         = ekat::scalarize(Homme::subview(h_v,ie,np1));
 
-              auto vn0_cxx          = viewAsReal(Homme::subview(h_vn0,ie));
-              auto eta_dot_dpdn_cxx = viewAsReal(Homme::subview(h_eta_dot_dpdn,ie));
-              auto omega_p_cxx      = viewAsReal(Homme::subview(h_omega_p,ie));
+              auto vn0_cxx          = ekat::scalarize(Homme::subview(h_vn0,ie));
+              auto eta_dot_dpdn_cxx = ekat::scalarize(Homme::subview(h_eta_dot_dpdn,ie));
+              auto omega_p_cxx      = ekat::scalarize(Homme::subview(h_omega_p,ie));
 
               for (int igp=0; igp<NP; ++igp) {
                 for (int jgp=0; jgp<NP; ++jgp) {
@@ -488,8 +488,8 @@ TEST_CASE("caar", "caar_testing") {
     Kokkos::deep_copy(h_dp3d     , elems.m_state.m_dp3d);
     Kokkos::deep_copy(h_vtheta_dp, elems.m_state.m_vtheta_dp);
     for (int ie=0; ie<num_elems; ++ie) {
-      auto dp3d_cxx      = viewAsReal(Homme::subview(h_dp3d,ie,np1));
-      auto vtheta_dp_cxx = viewAsReal(Homme::subview(h_vtheta_dp,ie,np1));
+      auto dp3d_cxx      = ekat::scalarize(Homme::subview(h_dp3d,ie,np1));
+      auto vtheta_dp_cxx = ekat::scalarize(Homme::subview(h_vtheta_dp,ie,np1));
 
       for (int igp=0; igp<NP; ++igp) {
         for (int jgp=0; jgp<NP; ++jgp) {

@@ -109,8 +109,8 @@ public:
       const int igp = point_idx / NP;
       const int jgp = point_idx % NP;
 
-      const auto Q   = viewAsReal(Homme::subview(m_tracers.Q,   kv.ie,         kv.iq, igp, jgp));
-      const auto qdp = viewAsReal(Homme::subview(m_tracers.qdp, kv.ie, t2_qdp, kv.iq, igp, jgp));
+      const auto Q   = ekat::scalarize(Homme::subview(m_tracers.Q,   kv.ie,         kv.iq, igp, jgp));
+      const auto qdp = ekat::scalarize(Homme::subview(m_tracers.qdp, kv.ie, t2_qdp, kv.iq, igp, jgp));
 
       auto& Qvar =   d_Qvar  (kv.ie,m_ivar,kv.iq,igp,jgp);
       auto& Qmass =  d_Qmass (kv.ie,m_ivar,kv.iq,igp,jgp);
@@ -168,14 +168,14 @@ public:
 
       // Reinterpret everything as Real* instead of Scalar*.
       // Give up some vectorization on CPU, but diagnostics are not a performance sensitive part
-      auto u              = viewAsReal(Homme::subview(m_state.m_v,kv.ie,t1,0,igp,jgp));
-      auto v              = viewAsReal(Homme::subview(m_state.m_v,kv.ie,t1,1,igp,jgp));
-      auto pnh_real       = viewAsReal(Homme::subview(pnh,igp,jgp));
-      auto phi_real       = viewAsReal(Homme::subview(phi,igp,jgp));
-      auto dpt1_real      = viewAsReal(Homme::subview(dpt1,igp,jgp));
-      auto phi_i_real     = viewAsReal(Homme::subview(phi_i,igp,jgp));
-      auto vtheta_dp_real = viewAsReal(Homme::subview(vtheta_dp,igp,jgp));
-      auto exner_real     = viewAsReal(Homme::subview(exner,igp,jgp));
+      auto u              = ekat::scalarize(Homme::subview(m_state.m_v,kv.ie,t1,0,igp,jgp));
+      auto v              = ekat::scalarize(Homme::subview(m_state.m_v,kv.ie,t1,1,igp,jgp));
+      auto pnh_real       = ekat::scalarize(Homme::subview(pnh,igp,jgp));
+      auto phi_real       = ekat::scalarize(Homme::subview(phi,igp,jgp));
+      auto dpt1_real      = ekat::scalarize(Homme::subview(dpt1,igp,jgp));
+      auto phi_i_real     = ekat::scalarize(Homme::subview(phi_i,igp,jgp));
+      auto vtheta_dp_real = ekat::scalarize(Homme::subview(vtheta_dp,igp,jgp));
+      auto exner_real     = ekat::scalarize(Homme::subview(exner,igp,jgp));
 
       // Compute exner and pnh
       if (m_theta_hydrostatic_mode) {
@@ -215,7 +215,7 @@ public:
 
       if (!m_theta_hydrostatic_mode) {
         Real sum = 0.0;
-        auto w_i = viewAsReal(Homme::subview(m_state.m_w_i,kv.ie,t1,igp,jgp));
+        auto w_i = ekat::scalarize(Homme::subview(m_state.m_w_i,kv.ie,t1,igp,jgp));
         Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
                                     [&](const int ilev, Real& accumulator){
           accumulator += (w_i(ilev)*w_i(ilev) + w_i(ilev+1)*w_i(ilev+1))/4.0 *dpt1_real(ilev);

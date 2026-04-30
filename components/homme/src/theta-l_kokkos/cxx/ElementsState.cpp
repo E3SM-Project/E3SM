@@ -93,7 +93,7 @@ void ElementsState::randomize(const int seed,
         std::uniform_real_distribution<Real> random_dist(1.001*phis_ij,100.0*phis_ij);
         for (int itl=0; itl<NUM_TIME_LEVELS; ++itl) {
           // Get column
-          auto phi_col = Homme::viewAsReal(Homme::subview(m_phinh_i,ie,itl,igp,jgp));
+          auto phi_col = ekat::scalarize(Homme::subview(m_phinh_i,ie,itl,igp,jgp));
 
           // Stuff phis at the bottom
           Kokkos::deep_copy(Kokkos::subview(phi_col,NUM_PHYSICAL_LEV),phis_ij);

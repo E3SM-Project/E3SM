@@ -127,9 +127,9 @@ struct LimiterFunctor {
       });
 
       Real min_diff = Kokkos::reduction_identity<Real>::min();
-      auto diff_as_real = Homme::viewAsReal(diff);
-      auto dp_as_real   = Homme::viewAsReal(dp);
-      auto dp0_as_real  = Homme::viewAsReal(dp0);
+      auto diff_as_real = ekat::scalarize(diff);
+      auto dp_as_real   = ekat::scalarize(dp);
+      auto dp0_as_real  = ekat::scalarize(dp0);
       Kokkos::Min<Real,ExecSpace> reducer(min_diff);
       Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
                               [&](const int k,Real& result) {
