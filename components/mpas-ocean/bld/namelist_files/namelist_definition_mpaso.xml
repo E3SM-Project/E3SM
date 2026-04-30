@@ -6587,6 +6587,17 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_AM_fmeDepthCoarsening_write_instantaneous_companion" type="logical"
+	category="AM_fmeDepthCoarsening" group="AM_fmeDepthCoarsening">
+If true (and time_averaging is also true), the remapped output stream also
+includes instantaneous companion variables suffixed _inst. Each averaged
+variable BASE has an instantaneous twin BASE_inst sampled at the output
+trigger. No effect when time_averaging is false.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <!-- AM_fmeDerivedFields -->
 
 <entry id="config_AM_fmeDerivedFields_enable" type="logical"
