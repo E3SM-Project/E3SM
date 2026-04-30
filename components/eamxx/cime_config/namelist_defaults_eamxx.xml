@@ -412,6 +412,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <!-- scale factors (applied to data read from file) -->
       <srf_emis_scale_factor_for_dms type="real" doc="Surface emissions scale factor for DMS">1.0</srf_emis_scale_factor_for_dms>
 
+      <dust_emis_scheme type="integer" doc="Dust emission scheme, 1: Zender et al. (2003), 2: Kok et al. (2014)">1</dust_emis_scheme>
       <soil_erodibility_file type="file" doc="File containing soil erodibility">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/dst_ne30pg2_c20241028.nc</soil_erodibility_file>
       <soil_erodibility_file hgrid="ne4np4.pg2" type="file" doc="File containing soil erodibility">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/dst_ne4pg2_c20241028.nc</soil_erodibility_file>
 
