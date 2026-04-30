@@ -224,11 +224,20 @@ void run_phys()
     auto lanes = make_active_lanes();
 
     lanes[0].qc2qi_collect_tend = 0.9 * C::QSMALL;
+    lanes[0].vtrmi1_in = -999.0;
+    lanes[0].rho_qm_cloud_in = -777.0;
     lanes[1].qc2qi_collect_tend = C::QSMALL;
     lanes[2].qc_incld = 0.9 * C::QSMALL;
+    lanes[2].vtrmi1_in = -999.0;
+    lanes[2].rho_qm_cloud_in = -777.0;
     lanes[3].qc_incld = C::QSMALL;
     lanes[4].T_atm = C::T_zerodegc.value;
+    lanes[4].vtrmi1_in = -999.0;
+    lanes[4].rho_qm_cloud_in = -777.0;
     lanes[5].T_atm = C::T_zerodegc.value - 1.0;
+    lanes[6].T_atm = C::T_zerodegc.value + 1.0;
+    lanes[6].vtrmi1_in = -999.0;
+    lanes[6].rho_qm_cloud_in = -777.0;
 
     run_kernel(lanes);
 
@@ -249,6 +258,9 @@ void run_phys()
 
     require_near(lanes[5].vtrmi1_out, lanes[5].table_val_qi_fallspd * lanes[5].rhofaci);
     require_near(lanes[5].rho_qm_cloud_out, active_density_expected(lanes[5]));
+
+    require_zero(lanes[6].vtrmi1_out);
+    require_near(lanes[6].rho_qm_cloud_out, 400.0);
   }
 
   SECTION("velocity_identity") {
@@ -411,6 +423,8 @@ void run_phys()
       lanes[i].table_val_qi_fallspd = table_val_for_target_ri(ri_raw[i], T_atm, rhofaci, acn, lamc, mu_c);
     }
     lanes[7].qc2qi_collect_tend = 0.9 * C::QSMALL;
+    lanes[7].vtrmi1_in = -999.0;
+    lanes[7].rho_qm_cloud_in = -777.0;
 
     run_kernel(lanes);
 
@@ -437,7 +451,11 @@ void run_phys()
     lanes[0].T_atm = C::T_zerodegc.value - 0.001;
     lanes[1].T_atm = C::T_zerodegc.value - 0.0001;
     lanes[2].T_atm = C::T_zerodegc.value;
+    lanes[2].vtrmi1_in = -999.0;
+    lanes[2].rho_qm_cloud_in = -777.0;
     lanes[3].T_atm = C::T_zerodegc.value + 1.0;
+    lanes[3].vtrmi1_in = -999.0;
+    lanes[3].rho_qm_cloud_in = -777.0;
     for (Int i = 0; i < 4; ++i) {
       lanes[i].rhofaci = rhofaci;
       lanes[i].acn = acn;
