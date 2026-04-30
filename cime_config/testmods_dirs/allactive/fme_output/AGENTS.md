@@ -323,25 +323,37 @@ that gates production. The certification passes when:
 
 ### Production-readiness assessment (as of 2026-04-30)
 
-EAM dashboard PASSes 7/7. Two open questions to investigate before the
-SamudrACE 100-yr training run:
-- **Topographic fill validation** for vcoarsen layers 5-7 (lower
-  troposphere) shows 0% actual fill where 0.22-13.4% expected. Either
-  the script's expected-fill lookup is stale relative to ne30pg2 hybrid
-  coordinates, or `eam_vcoarsen.F90` is not masking sub-terrain cells.
-  Resolve before production.
-- **STW vcoarsen linearity** shows max relative error of 25%
-  (`STW_k != Q_k + CLDLIQ_k + CLDICE_k + RAINQM_k` at the layer-decomposed
-  level). STW is the SamudrACE training prognostic; this should be tight.
+After the 2026-04-30 verify-script edits (gotchas #19-#26), both
+dashboards converge cleanly. EAM PASSes 7/7 with all 22 cross-compare
+checks green. STW linearity (Test 3) was the last remaining EAM
+"failure" and resolved when the FME global-mean was switched to
+cos-lat weighting (#26). MPAS PASSes after the ice-presence mask
+(#25), bumped fill threshold (#22), and ICE_FME_ONLY exemption (#23).
 
-MPAS dashboard PASSes after the 2026-04-30 verify-script edits described
-in gotchas #19-#21. Open question:
+**One open EAM question (design decision, not a bug):**
+- **Topographic fill validation** for vcoarsen layers 5-7 (lower
+  troposphere) shows 0% actual fill where the script expects
+  0.22-13.4% (cells where the entire layer's pressure range is below
+  PS). `eam_vcoarsen.F90` produces physical values everywhere -- it
+  averages the atmospheric mass that exists, even when the requested
+  pressure range is partially or fully below terrain. SamudrACE
+  preprocessing convention determines which is right:
+    * If ACE wants NaN/fill below terrain (standard ML practice; the
+      network learns to ignore those cells): fix the Fortran to mark
+      fully-sub-terrain cells as `SHR_FILL_VALUE` and the verify
+      check is correct as-is.
+    * If ACE wants filled-with-something values (no NaN handling in
+      the network input tensor): the Fortran is correct and the
+      verify's `Expected` lookup should be set to 0%.
+  Email SamudrACE team before the 100-yr run.
+
+**One open MPAS question (likely physical):**
 - Latent/sensible heat flux extremes at Gulf Stream / Kuroshio winter
   outbreaks reach -1000 W/m^2. Range bounds were loosened from
   ±500 W/m^2 to (-1200, 500) W/m^2 for LHFLX and (-800, 500) W/m^2 for
-  SHFLX based on reanalysis observations. Cross-check FME vs legacy
-  values cell-by-cell at the extreme locations to confirm physical (not
-  remap artifact) before declaring done.
+  SHFLX based on reanalysis observations. Spot-check FME vs legacy
+  values cell-by-cell at the extreme locations to confirm physical
+  (not remap artifact) before declaring done.
 
 ## Remaining Work
 
@@ -349,21 +361,23 @@ in gotchas #19-#21. Open question:
 - Add CI test variant (SMS_Ld2, ne4pg2_oQU480 for fast builds)
 - Add ERS restart test and PEM MPI reproducibility test
 
-### Verify-script hardening (open from 2026-04-30 punch list)
+### Verify-script hardening (open after 2026-04-30 punch list pass)
+These are robustness improvements that don't block production but
+would catch latent issues during the 100-yr run:
 - Restart-boundary continuity check (look for `dt < median_dt` indicating
   a half-window dropped at the restart boundary; `MPAS_NOW` baseline
-  intentionally drops partial pre-restart samples).
+  intentionally drops partial pre-restart samples per gotcha #5).
 - Time-axis-on-grid check (assert `time mod nominal_interval ≈ 0` now
-  that `avg_last_output_time + avg_output_interval` advances exactly).
+  that `avg_last_output_time + avg_output_interval` advances exactly,
+  per gotcha #11).
 - `_inst` companion variable presence/range check (production sets
   `config_AM_fmeDepthCoarsening_write_instantaneous_companion=.true.`
-  but verify never reads `*_inst` fields).
+  but verify never reads `*_inst` fields). Suggested: at minimum, a
+  one-file presence/range check in the depth-coarsening readiness path.
 - Coverage-eps coastline parity: compare fill mask of
   `temperatureCoarsened_0` (apply_masked path) vs `sst` (apply path);
   both should now agree to within ~one cell after the unified
-  `SHR_COVERAGE_EPS=1e-6` (gotcha #17).
-- Suppress `RuntimeWarning: Mean of empty slice` via `np.errstate`
-  around `np.nanmean` calls (cosmetic).
+  `SHR_COVERAGE_EPS=1e-6` (gotcha #17). Currently no test asserts this.
 
 ### Code quality
 - 3D PIO decomposition for depth-coarsened fields (single 3D var instead of
