@@ -2408,13 +2408,6 @@ contains
             call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDust', iceFluxDustField)
             call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDOC', iceFluxDOCField)
             call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDON', iceFluxDONField)
-
-            if (config_use_ecosysTracers_atm_dust_from_coupler) then
-              call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_WET' , dust_FLUX_WETField)
-              call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_DRY' , dust_FLUX_DRYField)
-              call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_IN'  , dust_FLUX_INField)
-            endif
-
             iceFluxPhytoC => iceFluxPhytoCField % array
             iceFluxDIC => iceFluxDICField % array
             iceFluxNO3 => iceFluxNO3Field % array
@@ -2428,6 +2421,9 @@ contains
             iceFluxDON => iceFluxDONField % array
 
             if (config_use_ecosysTracers_atm_dust_from_coupler) then
+              call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_WET' , dust_FLUX_WETField)
+              call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_DRY' , dust_FLUX_DRYField)
+              call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_IN'  , dust_FLUX_INField)
               dust_FLUX_WET => dust_FLUX_WETField % array
               dust_FLUX_DRY => dust_FLUX_DRYField % array
               dust_FLUX_IN  => dust_FLUX_INField % array
@@ -2865,11 +2861,11 @@ contains
          call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDOC', iceFluxDOCField)
          call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDON', iceFluxDONField)
 
-            if (config_use_ecosysTracers_atm_dust_from_coupler) then
-              call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_WET'  , dust_FLUX_WETField)
-              call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_DRY'  , dust_FLUX_DRYField)
-              call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_IN'  , dust_FLUX_INField)
-            endif
+         if (config_use_ecosysTracers_atm_dust_from_coupler) then
+            call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_WET'  , dust_FLUX_WETField)
+            call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_DRY'  , dust_FLUX_DRYField)
+            call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_IN'  , dust_FLUX_INField)
+         endif
       endif
    endif
    if (config_use_DMSTracers .and. config_use_DMSTracers_sea_ice_coupling) then
@@ -3079,14 +3075,16 @@ contains
          if ( iceFluxDustField % isActive ) then
             call mpas_dmpar_exch_halo_field(iceFluxDustField)
          endif
-         if ( config_use_ecosysTracers_atm_dust_from_coupler .and. dust_FLUX_WETField % isActive ) then
-            call mpas_dmpar_exch_halo_field(dust_FLUX_WETField)
-         endif
-         if ( config_use_ecosysTracers_atm_dust_from_coupler .and. dust_FLUX_DRYField % isActive ) then
-            call mpas_dmpar_exch_halo_field(dust_FLUX_DRYField)
-         endif
-         if ( config_use_ecosysTracers_atm_dust_from_coupler .and. dust_FLUX_INField % isActive ) then
-            call mpas_dmpar_exch_halo_field(dust_FLUX_INField)
+         if ( config_use_ecosysTracers_atm_dust_from_coupler ) then
+            if ( dust_FLUX_WETField % isActive ) then
+               call mpas_dmpar_exch_halo_field(dust_FLUX_WETField)
+            endif
+            if ( dust_FLUX_DRYField % isActive ) then
+               call mpas_dmpar_exch_halo_field(dust_FLUX_DRYField)
+            endif
+            if ( dust_FLUX_INField % isActive ) then
+               call mpas_dmpar_exch_halo_field(dust_FLUX_INField)
+            endif
          endif
          if ( iceFluxDOCField % isActive ) then
             call mpas_dmpar_exch_halo_field(iceFluxDOCField)
