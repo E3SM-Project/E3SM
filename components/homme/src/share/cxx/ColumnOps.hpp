@@ -72,7 +72,6 @@ public:
       });
     } else {
       constexpr int LAST_MID_PACK     = MIDPOINTS::LastPack;
-      constexpr int LAST_MID_PACK_END = MIDPOINTS::LastPackEnd;
       constexpr int LAST_INT_PACK     = INTERFACES::LastPack;
       constexpr int LAST_INT_PACK_END = INTERFACES::LastPackEnd;
 
@@ -207,7 +206,6 @@ public:
       });
     } else {
       constexpr int LAST_MID_PACK     = MIDPOINTS::LastPack;
-      constexpr int LAST_MID_PACK_END = MIDPOINTS::LastPackEnd;
       constexpr int LAST_INT_PACK     = INTERFACES::LastPack;
       constexpr int LAST_INT_PACK_END = INTERFACES::LastPackEnd;
 

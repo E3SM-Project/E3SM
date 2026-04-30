@@ -51,8 +51,6 @@ public:
     const int   hypervis_subcycle;
     const int   hypervis_subcycle_tom;
 
-    bool do_3d_turbulence;
-
     Real  nu_ratio1;
     Real  nu_ratio2;
 
@@ -69,6 +67,8 @@ public:
     Real        eta_ave_w;
 
     bool consthv;
+
+    bool do_3d_turbulence;
   };//hyperviscosityData
 
   struct Buffers {
