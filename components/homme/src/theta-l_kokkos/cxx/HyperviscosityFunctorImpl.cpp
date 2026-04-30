@@ -550,6 +550,25 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
   using MidColumn = decltype(Homme::subview(m_buffers.wtens,0,0,0));
   using IntColumn = decltype(Homme::subview(m_state.m_w_i,0,0,0,0));
 
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                       [&](const int idx) {
+    const int igp = idx / NP;
+    const int jgp = idx % NP;
+
+    auto vtheta = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1,igp,jgp);
+    auto dp = Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1,igp,jgp);
+    auto theta_ref = Homme::subview(m_state.m_ref_states.theta_ref,kv.ie,igp,jgp);
+    auto dp_ref = Homme::subview(m_state.m_ref_states.dp_ref,kv.ie,igp,jgp);
+
+    Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                         [&](const int ilev) {
+      vtheta(ilev) -= theta_ref(ilev);
+      dp(ilev) -= dp_ref(ilev);
+    });
+  });
+
+  kv.team_barrier();
+
   if (m_process_nh_vars) {
     // Diffuse only the perturbational geopotential, not the terrain-following
     // reference profile tied to phis.
@@ -630,6 +649,25 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
 
     kv.team_barrier();
   }
+
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                       [&](const int idx) {
+    const int igp = idx / NP;
+    const int jgp = idx % NP;
+
+    auto vtheta = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1,igp,jgp);
+    auto dp = Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1,igp,jgp);
+    auto theta_ref = Homme::subview(m_state.m_ref_states.theta_ref,kv.ie,igp,jgp);
+    auto dp_ref = Homme::subview(m_state.m_ref_states.dp_ref,kv.ie,igp,jgp);
+
+    Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                         [&](const int ilev) {
+      vtheta(ilev) += theta_ref(ilev);
+      dp(ilev) += dp_ref(ilev);
+    });
+  });
+
+  kv.team_barrier();
 
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(kv.team,NP*NP),
