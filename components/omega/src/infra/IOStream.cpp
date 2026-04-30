@@ -2366,41 +2366,51 @@ Error IOStream::readStream(
       Error ErrRead;
       if (MetaTmp.type() == typeid(I8)) {
          ErrRead = IO::readMeta(MetaName, MetaValI8, InFileID, IO::GlobalID);
-         ReqMetadata[MetaName] = MetaValI8;
+         if (ErrRead.isSuccess())
+            ReqMetadata[MetaName] = MetaValI8;
       } else if (MetaTmp.type() == typeid(I4)) {
          ErrRead = IO::readMeta(MetaName, MetaValI4, InFileID, IO::GlobalID);
-         ReqMetadata[MetaName] = MetaValI4;
+         if (ErrRead.isSuccess())
+            ReqMetadata[MetaName] = MetaValI4;
       } else if (MetaTmp.type() == typeid(R8)) {
          ErrRead = IO::readMeta(MetaName, MetaValR8, InFileID, IO::GlobalID);
-         ReqMetadata[MetaName] = MetaValR8;
+         if (ErrRead.isSuccess())
+            ReqMetadata[MetaName] = MetaValR8;
       } else if (MetaTmp.type() == typeid(R4)) {
          ErrRead = IO::readMeta(MetaName, MetaValR4, InFileID, IO::GlobalID);
-         ReqMetadata[MetaName] = MetaValR4;
+         if (ErrRead.isSuccess())
+            ReqMetadata[MetaName] = MetaValR4;
       } else if (MetaTmp.type() == typeid(bool)) {
          // bool must be read as int
          ErrRead = IO::readMeta(MetaName, MetaValI4, InFileID, IO::GlobalID);
-         if (MetaValI4 == 0) {
-            MetaValBool = false;
-         } else {
-            MetaValBool = true;
+         if (ErrRead.isSuccess()) {
+            if (MetaValI4 == 0) {
+               MetaValBool = false;
+            } else {
+               MetaValBool = true;
+            }
+            ReqMetadata[MetaName] = MetaValBool;
          }
-         ReqMetadata[MetaName] = MetaValBool;
       } else if (MetaTmp.type() == typeid(std::string)) {
          ErrRead = IO::readMeta(MetaName, MetaValStr, InFileID, IO::GlobalID);
-         ReqMetadata[MetaName] = MetaValStr;
+         LOG_ERROR("IOStream: reading MetaVal string {}", MetaValStr);
+         if (ErrRead.isSuccess())
+            ReqMetadata[MetaName] = MetaValStr;
          // If ReqMetadata was initialized with a string literal, we detect
          // the type but replace it with a std::string
       } else if (MetaTmp.type() == typeid(const char *)) {
          ErrRead = IO::readMeta(MetaName, MetaValStr, InFileID, IO::GlobalID);
-         ReqMetadata[MetaName] = MetaValStr;
+         LOG_ERROR("IOStream: reading MetaVal char {}", MetaValStr);
+         if (ErrRead.isSuccess())
+            ReqMetadata[MetaName] = MetaValStr;
       } else {
          ABORT_ERROR(
              "Metadata read failed: unknown data type for {} in file {}",
              MetaName, InFileName);
       }
 
-      CHECK_ERROR_ABORT(ErrRead, "Error reading metadata {} from file {}",
-                        MetaName, InFileName);
+      // Let the calling routine check for missing metadata. If the metadata
+      // is missing, the metadata entry is left unchanged
 
    } // end loop over requested metadata
 

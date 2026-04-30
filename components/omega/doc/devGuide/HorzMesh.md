@@ -16,7 +16,7 @@ routines that read the HorzMesh variables from the input stream
 The constructor replicates the subdomain mesh cell/edge/vertex counts and
 connectivity information from Decomp so this information can be passed among the
 computational routines, alongside the other local mesh information.  It then
-creates reads most of the remaining mesh variables (coordinates, lengths, areas)
+reads most of the remaining mesh variables (coordinates, lengths, areas)
 from the input HorzMeshIn IOStream. A few variables, like masks and operator
 scaling are computed internally. After reading, the init routine fills all
 halos and synchronizes the host and device copies of the mesh variables.

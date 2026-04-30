@@ -55,6 +55,13 @@ variables:
 | MeshDensity | Value of density function used to generate a particular mesh at cell centers | - |
 | WeightsOnEdge | Reconstruction weights associated with each of the edgesOnEdge | - |
 
+In addition, some mesh metadata are read from the file and stored as mesh
+variables. These include ``OnSphere`` (or ``on_a_sphere`` for backcompatibility),
+``IsPeriodic`` (``is_periodic``), ``SphereRadius`` (``sphere_radius``),
+``XPeriod`` (``x_period``), and ``YPeriod`` (``y_period``). The two flags
+OnSphere and IsPeriodic are stored as YES/NO strings in the metadata but as
+boolean flags in the code.
+
 In the future, the Mesh class will optionally compute the mesh variables that
 are dependent on the Cartesian mesh coordinates internally.
 This includes the various areas, lengths, angles, and weights needed for the

@@ -28,12 +28,12 @@ InterpCellToEdge::InterpCellToEdge(const HorzMesh *Mesh)
       VertexDegree(Mesh->VertexDegree) {}
 
 SecondDerivativeOnCell::SecondDerivativeOnCell(HorzMesh const *Mesh)
-    : OnSphere(true), NCellsAll(Mesh->NCellsAll), MaxEdges(1 + Mesh->MaxEdges),
-      NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
-      CellsOnCell(Mesh->CellsOnCell), CellsOnEdge(Mesh->CellsOnEdge),
-      VerticesOnEdge(Mesh->VerticesOnEdge), XCell(Mesh->XCell),
-      YCell(Mesh->YCell), ZCell(Mesh->ZCell), DvEdge(Mesh->DvEdge),
-      DcEdge(Mesh->DcEdge), AngleEdge(Mesh->AngleEdge),
+    : OnSphere(Mesh->OnSphere), NCellsAll(Mesh->NCellsAll),
+      MaxEdges(1 + Mesh->MaxEdges), NEdgesOnCell(Mesh->NEdgesOnCell),
+      EdgesOnCell(Mesh->EdgesOnCell), CellsOnCell(Mesh->CellsOnCell),
+      CellsOnEdge(Mesh->CellsOnEdge), VerticesOnEdge(Mesh->VerticesOnEdge),
+      XCell(Mesh->XCell), YCell(Mesh->YCell), ZCell(Mesh->ZCell),
+      DvEdge(Mesh->DvEdge), DcEdge(Mesh->DcEdge), AngleEdge(Mesh->AngleEdge),
       AreaCell(Mesh->AreaCell), EdgeSignOnCell(Mesh->EdgeSignOnCell),
       XVertex(Mesh->XVertex), YVertex(Mesh->YVertex), ZVertex(Mesh->ZVertex),
       ThetaAbs("SphereAngle", NCellsAll), XPCell("XP", NCellsAll, MaxEdges),

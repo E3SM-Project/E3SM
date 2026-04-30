@@ -113,9 +113,84 @@ HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
    defineMeshFields();
 
    // Read the input mesh stream to fill most of the fields
-   Metadata ReqMetaData; // empty - we do not require any global metadata
+   // Some global mesh attributes are needed - we define both current
+   // and older MPAS names for back compatibility
+   std::string UnknownStr = "unknown";
+   Metadata ReqMetaData{{"OnSphere", UnknownStr},   {"on_a_sphere", UnknownStr},
+                        {"IsPeriodic", UnknownStr}, {"is_periodic", UnknownStr},
+                        {"SphereRadius", 0.0},      {"sphere_radius", 0.0},
+                        {"XPeriod", 0.0},           {"YPeriod", 0.0},
+                        {"x_period", 0.0},          {"y_period", 0.0}};
+
    Error Err = IOStream::read("HorzMeshIn", ModelClock, ReqMetaData);
    CHECK_ERROR_ABORT(Err, "HorzMesh: error reading input mesh stream");
+
+   // Extract global attributes into mesh variables
+   // Change strings to lower case for easier comparison
+
+   std::string OnSphereStr =
+       std::any_cast<std::string>(ReqMetaData["OnSphere"]);
+   std::string OnSphereOld =
+       std::any_cast<std::string>(ReqMetaData["on_a_sphere"]);
+   std::transform(OnSphereStr.begin(), OnSphereStr.end(), OnSphereStr.begin(),
+                  [](unsigned char c) { return std::tolower(c); });
+   std::transform(OnSphereOld.begin(), OnSphereOld.end(), OnSphereOld.begin(),
+                  [](unsigned char c) { return std::tolower(c); });
+
+   std::string IsPeriodStr =
+       std::any_cast<std::string>(ReqMetaData["IsPeriodic"]);
+   std::string IsPeriodOld =
+       std::any_cast<std::string>(ReqMetaData["is_periodic"]);
+   std::transform(IsPeriodStr.begin(), IsPeriodStr.end(), IsPeriodStr.begin(),
+                  [](unsigned char c) { return std::tolower(c); });
+   std::transform(IsPeriodOld.begin(), IsPeriodOld.end(), IsPeriodOld.begin(),
+                  [](unsigned char c) { return std::tolower(c); });
+
+   R8 NewRadius = std::any_cast<R8>(ReqMetaData["SphereRadius"]);
+   R8 OldRadius = std::any_cast<R8>(ReqMetaData["sphere_radius"]);
+   R8 TmpRadius = std::max(NewRadius, OldRadius);
+
+   R8 NewXPeriod = std::any_cast<R8>(ReqMetaData["XPeriod"]);
+   R8 OldXPeriod = std::any_cast<R8>(ReqMetaData["x_period"]);
+   R8 TmpXPeriod = std::max(NewXPeriod, OldXPeriod);
+
+   R8 NewYPeriod = std::any_cast<R8>(ReqMetaData["YPeriod"]);
+   R8 OldYPeriod = std::any_cast<R8>(ReqMetaData["y_period"]);
+   R8 TmpYPeriod = std::max(NewYPeriod, OldYPeriod);
+
+   if (OnSphereStr == "yes" or OnSphereOld == "yes") { // mesh on sphere
+      OnSphere = true;
+      OnPlane  = false;
+      if (TmpRadius > 0.0) {
+         SphereRadius = static_cast<Real>(TmpRadius);
+      } else {
+         ABORT_ERROR("Mesh is on sphere but sphere radius either missing or 0");
+      }
+      IsPeriodic = false;
+      XPeriod    = 0.0;
+      YPeriod    = 0.0;
+   } else if (OnSphereStr == "no" or OnSphereOld == "no") { // planar mesh
+      OnSphere     = false;
+      OnPlane      = true;
+      SphereRadius = 0.0;
+      if (IsPeriodStr == "yes" or IsPeriodOld == "yes") { // periodic mesh
+         IsPeriodic = true;
+         if (TmpXPeriod > 0.0 or TmpYPeriod > 0.0) {
+            XPeriod = static_cast<Real>(TmpXPeriod);
+            YPeriod = static_cast<Real>(TmpYPeriod);
+         } else {
+            ABORT_ERROR(
+                "Mesh is periodic but periodicity lengths missing or invalid");
+         }
+
+      } else { // non-periodic (also assumed if no is periodic in mesh file)
+         IsPeriodic = false;
+         XPeriod    = 0.0;
+         YPeriod    = 0.0;
+      }
+   } else {
+      ABORT_ERROR("OnSphere or on_a_sphere missing from mesh file");
+   }
 
    // Complete read arrays (fill halos and duplicate on host)
    completeReadArrays();
