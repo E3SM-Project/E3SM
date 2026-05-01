@@ -443,81 +443,13 @@ These are hard-won lessons. Read before modifying FME code.
     `coord_iface(1:ncol, :)`). Fix: all three select paths (sel_lev at
     line 452, sel_pres at line 475, sel_height at line 501) now pass
     `src_field(1:ncol, :)`, `coord_mid(1:ncol, :)`, `nlev_max(1:ncol)`,
-    and `selected(1:ncol)` -- mirrors the avg pattern exactly. Needs
-    rebuild + ERS rerun to verify; if the test still fails, the
-    convergence-across-records pattern (986→71 zeros) hints at a
-    secondary cam_history accumulator issue worth checking next.
-
-    *Original investigation log (kept for reference):* Discovered via
-    ERS_Ld4 on 2026-04-30
-    (case `ERS_Ld4_P1024.../202135_kzt5k8`). Test fails `COMPARE_base_rest`
-    with 20 differing fields out of 1478 compared. The other 1458 fields
-    (including all 8-layer `vcoarsen_avg_flds` outputs T_0..T_7, U_0..U_7,
-    V_0..V_7, STW_0..STW_7, Q_0..Q_7) are bit-identical. `cpl.hi` is also
-    bit-identical, so the model state itself IS reproducible -- the bug is
-    isolated to the EAM history output path for the height-interp
-    diagnostics.
-
-    **Symptom characterization** (from cprnc on day-3.25 to day-4.0 records):
-    - Differing fields: T_at_z2, Q_at_z2, STW_at_z2, U_at_z10, V_at_z10
-      (5 fields × 4 post-restart records = 20 diffs).
-    - 22000-28000 cells differ out of 64800 lat-lon cells (~35-44%).
-    - Both .base (phase 1) and current (phase 2) files contain spurious
-      ZERO values in the field arrays -- but at *different cells* in the
-      two phases. Real T at 2 m can't be 0 K, so these are invalid.
-    - Zero-count *converges* across post-restart records: phase 2 has
-      986 zeros at t=3.25 → 71 zeros at t=4.0. Looks like a stale buffer
-      that gradually fills in as more outfld calls overwrite it.
-
-    **Hypotheses** (none confirmed):
-    1. cam_history's outfld accumulator buffer for height-interp fields
-       is not properly reset on the first post-restart timestep, so cells
-       that don't get touched on a given timestep retain stale (zero-init)
-       values until later timesteps overwrite them. The 8-layer avg fields
-       work because every column gets a value every step (dp-weighted
-       average always produces a number); height-interp may skip cells
-       where the fill-value masking applies, leaving stale data behind.
-    2. Sibling-of-gotcha-#16 (per-chunk state not actually per-chunk): some
-       module-scope variable in `eam_vcoarsen.F90`'s height-interp path or
-       in `shr_vcoarsen_select_nearest` is shared across OMP-PARALLEL
-       chunks. The convergence-over-time pattern is consistent with a race
-       that gradually self-resolves as threads catch up.
-    3. `state%zm` (height at midpoints) computed differently on first
-       post-restart step vs continuous run. Computed by `geopotential_t`
-       in `dp_coupling.F90` each timestep; if some upstream input has
-       transient init issue this could propagate. Less likely since cpl.hi
-       is bit-identical.
-
-    **Investigation pointers for the next agent:**
-    - Code under suspicion: `components/eam/src/control/eam_vcoarsen.F90`
-      lines 486-509 (the `has_sel_height` block), and the sibling avg
-      block lines 414-443 for comparison (the avg block is BFB).
-    - `components/eam/src/share/util/shr_vcoarsen_mod.F90` lines 268-364
-      (`shr_vcoarsen_select_nearest`).
-    - cprnc output: `run/*.eam.h0.0001-01.nc.base.cprnc.out` in the case
-      dir has the full diff list and per-cell magnitudes.
-    - The avg path passes `coarsened(pcols, max(n_avg_levs,1))` and fills
-      `coarsened(ncol+1:pcols, k) = fillvalue` after compute. The height
-      path passes `selected(pcols)` and does the same fill. Both look
-      structurally identical, so the bug is probably NOT in vcoarsen
-      itself but in cam_history's buffer for these specific field names.
-    - Try: add `selected(:) = fillvalue` BEFORE the call to
-      `shr_vcoarsen_select_nearest` (clean-slate the buffer every call)
-      and rerun ERS. If PASS, root cause is uninitialized stack variable.
-      If still FAIL, look at cam_history outfld accumulator path.
-    - The avg fields use unique per-level names (T_0, T_1, ..., T_7), the
-      height fields share names across timesteps (T_at_z2 has one slot
-      that gets overwritten). Maybe the cam_history accumulator differs
-      between these two patterns. Check `outfld` and `dump_field` paths
-      in `cam_history.F90` for any code path that branches on field
-      registration history.
+    and `selected(1:ncol)` -- mirrors the avg pattern exactly.
 
     **Workaround if fix regresses**: drop T_at_z2, Q_at_z2, STW_at_z2,
     U_at_z10, V_at_z10 from `fincl1` in `shell_commands`. SamudrACE
-    doesn't strictly need them -- it has TREFHT/QREFHT (standard CAM
-    2 m diagnostics, BFB) covering temperature/humidity, and ACE
-    training pipelines often derive 10 m wind from level-7 coarsened
-    U/V (boundary layer) anyway.
+    doesn't strictly need them -- TREFHT/QREFHT cover 2 m temperature
+    and humidity, and ACE training pipelines often derive 10 m wind
+    from level-7 coarsened U/V (boundary layer) anyway.
 
 32. **MPAS native FME files are disabled in production.** As of 2026-04-30,
     the four FME stream blocks in `cime_config/buildnml` are emitted with
@@ -543,7 +475,7 @@ These are hard-won lessons. Read before modifying FME code.
     `temperatureCoarsened_*` + `layerThicknessCoarsened_*` in the
     `fmeDepthCoarsening` tape.
 
-35. **MPAS FME `.remapped.nc` files now compared in CIME tests (ERS etc).**
+34. **MPAS FME `.remapped.nc` files now compared in CIME tests (ERS etc).**
     `cime_config/config_archive.xml` previously had `exclude_testing="true"`
     on `mpaso` and `mpassi`, which caused `hist_utils.py:79` to skip both
     components entirely whenever `TEST=TRUE`. As of 2026-04-30 that
@@ -574,7 +506,7 @@ These are hard-won lessons. Read before modifying FME code.
     in its CASEROOT to pick up the new spec; pre-existing case dirs
     will still skip MPAS comparison.
 
-36. **`_inst` companion writes for fmeDepthCoarsening are SPEC-MANDATED,
+35. **`_inst` companion writes for fmeDepthCoarsening are SPEC-MANDATED,
     not optional.** The Samudra training spec
     (Confluence p3ai/6154289880, "case run options for v3 LR piControl
     SamudrACE") explicitly lists "1D avg & 1D instant" for all four 3D
@@ -589,7 +521,7 @@ These are hard-won lessons. Read before modifying FME code.
     The `_inst` channel is otherwise unused by `verify_mpas.py` (open
     hardening item: add presence/range check for `*_inst` companions).
 
-34. **`totalFreshWaterTemperatureFlux` removed from `fmeDerivedFields`.**
+36. **`totalFreshWaterTemperatureFlux` removed from `fmeDerivedFields`.**
     The SamudrACE Confluence spec strikes through this field. Removed
     2026-04-30 from `mpas_ocn_fme_derived_fields.F` (register_var,
     pointer declaration, mpas_pool_get_array, mask_and_remap call,
