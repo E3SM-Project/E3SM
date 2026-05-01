@@ -29,6 +29,7 @@ module seaice_fme_derived_fields
         seaice_fme_horiz_remap_write_var, seaice_fme_horiz_remap_write_time, &
         seaice_fme_horiz_remap_close_file, seaice_fme_horiz_remap_get_dims, &
         seaice_fme_horiz_remap_register_var, seaice_fme_horiz_remap_check_rotate, &
+        seaice_fme_horiz_remap_write_accum, seaice_fme_horiz_remap_read_accum, &
         remap_stream_name, file_is_open
 
    implicit none
@@ -70,7 +71,8 @@ module seaice_fme_derived_fields
              seaice_precompute_fme_derived_fields, &
              seaice_compute_fme_derived_fields, &
              seaice_restart_fme_derived_fields, &
-             seaice_finalize_fme_derived_fields
+             seaice_finalize_fme_derived_fields, &
+             seaice_fme_derived_fields_write_restart
 
    !--------------------------------------------------------------------
    !
@@ -233,12 +235,8 @@ contains
                         call mpas_set_timeInterval(avg_output_interval, &
                              timeString=trim(config_stream_output_interval), &
                              ierr=ierr)
-                        ! MPAS_NOW (not MPAS_START_TIME) so warm restart uses
-                        ! the restart-time as the averaging baseline; otherwise
-                        ! the trigger would fire every timestep until catching up.
-                        ! Partial pre-restart samples are not persisted (the
-                        ! accumulators live in remap-space and aren't in the
-                        ! Registry); the post-restart window starts fresh.
+                        ! Default baseline is MPAS_NOW; persisted state
+                        ! below overrides on warm restart with sidecar.
                         avg_last_output_time = mpas_get_clock_time( &
                              domain % clock, MPAS_NOW, ierr)
                         if (.not. allocated(remap_accum)) then
@@ -249,6 +247,7 @@ contains
                         time_avg_enabled = .true.
                         call mpas_log_write( &
                              'fmeSeaiceDerivedFields: time averaging enabled')
+                        call seaice_fme_derived_fields_read_restart(domain, ierr)
                      end if
                   end if
                end if
@@ -257,6 +256,63 @@ contains
       end if
 
    end subroutine seaice_init_fme_derived_fields!}}}
+
+!***********************************************************************
+
+   subroutine seaice_fme_derived_fields_read_restart(domain, err)!{{{
+      type(domain_type), intent(inout) :: domain
+      integer, intent(out) :: err
+
+      logical, pointer :: config_do_restart
+      logical          :: ok
+      integer          :: ierr_local
+      character(len=StrKIND) :: ts_str
+
+      err = 0
+      if (.not. time_avg_enabled) return
+
+      call mpas_pool_get_config(domain % configs, 'config_do_restart', &
+           config_do_restart)
+      if (.not. associated(config_do_restart)) return
+      if (.not. config_do_restart) return
+
+      call seaice_fme_horiz_remap_read_accum('fmeSeaiceDerivedFields', &
+           remap_accum, N_AVG_FIELDS, nAccum, ts_str, success=ok)
+
+      if (ok .and. len_trim(ts_str) > 0) then
+         call mpas_set_time(avg_last_output_time, &
+              dateTimeString=trim(ts_str), ierr=ierr_local)
+         if (ierr_local /= 0) then
+            call mpas_log_write('fmeSeaiceDerivedFields: failed to parse ' // &
+                 'persisted avg_last_output_time="' // trim(ts_str) // &
+                 '"; falling back to MPAS_NOW baseline.', &
+                 messageType=MPAS_LOG_WARN)
+            avg_last_output_time = mpas_get_clock_time( &
+                 domain % clock, MPAS_NOW, ierr_local)
+         end if
+      end if
+
+   end subroutine seaice_fme_derived_fields_read_restart!}}}
+
+!***********************************************************************
+
+   subroutine seaice_fme_derived_fields_write_restart(domain, err)!{{{
+      type(domain_type), intent(inout) :: domain
+      integer, intent(out) :: err
+
+      character(len=StrKIND) :: ts_str
+      integer :: ierr_local
+
+      err = 0
+      if (.not. time_avg_enabled) return
+      if (.not. allocated(remap_accum)) return
+
+      call mpas_get_time(avg_last_output_time, &
+           dateTimeString=ts_str, ierr=ierr_local)
+      call seaice_fme_horiz_remap_write_accum('fmeSeaiceDerivedFields', &
+           remap_accum, N_AVG_FIELDS, nAccum, trim(ts_str), err=err)
+
+   end subroutine seaice_fme_derived_fields_write_restart!}}}
 
 !***********************************************************************
 !

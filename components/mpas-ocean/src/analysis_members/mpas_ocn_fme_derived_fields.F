@@ -42,7 +42,8 @@ module ocn_fme_derived_fields
    use ocn_fme_horiz_remap, only: ocn_fme_horiz_remap_init, &
         ocn_fme_horiz_remap_field, ocn_fme_horiz_remap_active, &
         ocn_fme_horiz_remap_get_dims, ocn_fme_remap_file_t, &
-        ocn_fme_remap_build_filename
+        ocn_fme_remap_build_filename, &
+        ocn_fme_horiz_remap_write_accum, ocn_fme_horiz_remap_read_accum
 
    implicit none
    private
@@ -51,7 +52,8 @@ module ocn_fme_derived_fields
    public :: ocn_init_fme_derived_fields, &
              ocn_compute_fme_derived_fields, &
              ocn_restart_fme_derived_fields, &
-             ocn_finalize_fme_derived_fields
+             ocn_finalize_fme_derived_fields, &
+             ocn_fme_derived_fields_write_restart
 
    ! Remapped output workspace
    logical :: do_horiz_remap = .false.
@@ -181,12 +183,10 @@ contains
                              config_stream_output_interval)
                         call mpas_set_timeInterval(avg_output_interval, &
                              timeString=trim(config_stream_output_interval), ierr=ierr)
-                        ! MPAS_NOW (not MPAS_START_TIME) so warm restart uses
-                        ! the restart-time as the averaging baseline; otherwise
-                        ! the trigger would fire every timestep until catching up.
-                        ! Partial pre-restart samples are not persisted (the
-                        ! accumulators live in remap-space and aren't in the
-                        ! Registry); the post-restart window starts fresh.
+                        ! Default baseline is MPAS_NOW so a warm restart
+                        ! without a sidecar uses the restart-time as the
+                        ! averaging baseline. Persisted state below
+                        ! overrides this when a sidecar is found.
                         avg_last_output_time = mpas_get_clock_time( &
                              domain % clock, MPAS_NOW, ierr)
                         if (.not. allocated(remap_accum)) then
@@ -196,6 +196,7 @@ contains
                         nAccum = 0
                         time_avg_enabled = .true.
                         call mpas_log_write('fmeDerivedFields: time averaging enabled')
+                        call ocn_fme_derived_fields_read_restart(domain, ierr)
                      end if
                   end if
                end if
@@ -204,6 +205,66 @@ contains
       end if
 
    end subroutine ocn_init_fme_derived_fields!}}}
+
+!***********************************************************************
+
+   subroutine ocn_fme_derived_fields_read_restart(domain, err)!{{{
+   !> Restore accumulator state on warm restart (silent no-op otherwise).
+      type(domain_type), intent(inout) :: domain
+      integer, intent(out) :: err
+
+      logical, pointer :: config_do_restart
+      logical          :: ok
+      integer          :: ierr_local
+      character(len=StrKIND) :: ts_str
+
+      err = 0
+      if (.not. time_avg_enabled) return
+
+      call mpas_pool_get_config(domain % configs, 'config_do_restart', &
+           config_do_restart)
+      if (.not. associated(config_do_restart)) return
+      if (.not. config_do_restart) return
+
+      call ocn_fme_horiz_remap_read_accum('fmeDerivedFields', remap_accum, &
+           N_AVG_FIELDS, nAccum, ts_str, success=ok)
+
+      if (ok .and. len_trim(ts_str) > 0) then
+         call mpas_set_time(avg_last_output_time, &
+              dateTimeString=trim(ts_str), ierr=ierr_local)
+         if (ierr_local /= 0) then
+            call mpas_log_write('fmeDerivedFields: failed to parse ' // &
+                 'persisted avg_last_output_time="' // trim(ts_str) // &
+                 '"; falling back to MPAS_NOW baseline.', &
+                 messageType=MPAS_LOG_WARN)
+            avg_last_output_time = mpas_get_clock_time( &
+                 domain % clock, MPAS_NOW, ierr_local)
+         end if
+      end if
+
+   end subroutine ocn_fme_derived_fields_read_restart!}}}
+
+!***********************************************************************
+
+   subroutine ocn_fme_derived_fields_write_restart(domain, err)!{{{
+   !> Persist accumulator state to the AM's sidecar file.
+      type(domain_type), intent(inout) :: domain
+      integer, intent(out) :: err
+
+      character(len=StrKIND) :: ts_str
+      integer :: ierr_local
+
+      err = 0
+      if (.not. time_avg_enabled) return
+      if (.not. allocated(remap_accum)) return
+
+      call mpas_get_time(avg_last_output_time, &
+           dateTimeString=ts_str, ierr=ierr_local)
+
+      call ocn_fme_horiz_remap_write_accum('fmeDerivedFields', remap_accum, &
+           N_AVG_FIELDS, nAccum, trim(ts_str), err=err)
+
+   end subroutine ocn_fme_derived_fields_write_restart!}}}
 
 !***********************************************************************
 

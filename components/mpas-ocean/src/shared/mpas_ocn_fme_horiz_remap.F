@@ -48,10 +48,12 @@ module ocn_fme_horiz_remap
    use pio, only: file_desc_t, var_desc_t, io_desc_t, iosystem_desc_t, &
                   pio_openfile, pio_closefile, pio_createfile, &
                   pio_def_dim, pio_def_var, pio_enddef, &
-                  pio_put_att, pio_put_var, pio_write_darray, &
+                  pio_put_att, pio_put_var, pio_write_darray, pio_read_darray, &
+                  pio_get_att, pio_get_var, &
+                  pio_inq_dimid, pio_inq_varid, pio_inq_dimlen, &
                   pio_initdecomp, pio_freedecomp, pio_setframe, &
                   PIO_IOTYPE_PNETCDF, PIO_IOTYPE_NETCDF4P, &
-                  PIO_CLOBBER, PIO_REAL, PIO_DOUBLE, PIO_CHAR, &
+                  PIO_CLOBBER, PIO_WRITE, PIO_REAL, PIO_DOUBLE, PIO_CHAR, &
                   PIO_OFFSET_KIND, PIO_GLOBAL, PIO_NOERR, &
                   PIO_UNLIMITED
 
@@ -65,6 +67,8 @@ module ocn_fme_horiz_remap
    public :: ocn_fme_horiz_remap_get_dims
    public :: ocn_fme_remap_file_t
    public :: ocn_fme_remap_build_filename
+   public :: ocn_fme_horiz_remap_write_accum
+   public :: ocn_fme_horiz_remap_read_accum
 
    type(shr_horiz_remap_t) :: remap_data
 
@@ -73,9 +77,17 @@ module ocn_fme_horiz_remap
    real(r8), allocatable :: ws_send_buf(:)
    logical :: is_initialized = .false.
 
+   ! Cached at init from config_do_restart. Append-mode reopen of the
+   ! `.remapped.nc` files (and accumulator-sidecar reads) only fire on
+   ! warm restart. On a cold start we always clobber-create, even if an
+   ! older `.remapped.nc` is still in the run dir from a prior CIME
+   ! compare-copy that didn't get cleared.
+   logical :: is_restart_run = .false.
+
    ! PIO decomposition cache (shared across all file instances)
    type(iosystem_desc_t), pointer :: pio_sys => null()
-   type(io_desc_t) :: iodesc_2d
+   type(io_desc_t) :: iodesc_2d        ! PIO_REAL  (output records)
+   type(io_desc_t) :: iodesc_2d_dbl    ! PIO_DOUBLE (accumulator restart sidecars)
    logical :: iodesc_2d_valid = .false.
 
    ! MPAS-O fill value for input field detection (matches def_var _FillValue)
@@ -101,6 +113,11 @@ module ocn_fme_horiz_remap
       ! Current open filename and stream name for rotation
       character(len=512) :: current_filename = ''
       character(len=128) :: stream_name = ''
+      ! True when the file was reopened from disk (append mode, e.g. after
+      ! restart) rather than freshly created. In this state lon/lat are
+      ! already populated and var_descs are looked up via pio_inq_varid
+      ! instead of being defined.
+      logical :: existing_file_reopened = .false.
    contains
       procedure :: open_file    => remap_file_open
       procedure :: def_var      => remap_file_def_var
@@ -315,6 +332,19 @@ contains
       ! Build 2D PIO decomposition for lat-lon output
       call build_iodesc_2d()
 
+      ! Cache config_do_restart so append-mode logic doesn't need to
+      ! re-query the config pool on every check_rotate call.
+      block
+         logical, pointer :: config_do_restart
+         call mpas_pool_get_config(domain % configs, 'config_do_restart', &
+              config_do_restart)
+         if (associated(config_do_restart)) then
+            is_restart_run = config_do_restart
+         else
+            is_restart_run = .false.
+         end if
+      end block
+
       is_initialized = .true.
 
       if (myrank == 0) then
@@ -344,7 +374,8 @@ contains
               int(nlon, PIO_OFFSET_KIND) * int(ilat - 1, PIO_OFFSET_KIND)
       end do
 
-      call pio_initdecomp(pio_sys, PIO_REAL, (/nlon, nlat/), idof, iodesc_2d)
+      call pio_initdecomp(pio_sys, PIO_REAL,   (/nlon, nlat/), idof, iodesc_2d)
+      call pio_initdecomp(pio_sys, PIO_DOUBLE, (/nlon, nlat/), idof, iodesc_2d_dbl)
       deallocate(idof)
       iodesc_2d_valid = .true.
 
@@ -445,12 +476,31 @@ contains
    ! Type-bound methods for per-file PIO output
    !-----------------------------------------------------------------
 
-   subroutine remap_file_open(self, filename, err)!{{{
+   subroutine remap_file_open(self, filename, domain, err)!{{{
+   !> Open the remapped output file. If a file with this name already
+   !> exists on disk (warm restart reopening leg-1's monthly file),
+   !> open it in append mode:
+   !>   - skip dim/var define; look up existing IDs via pio_inq_*
+   !>   - read existing xtime values and seed time_record to the count
+   !>     of frames whose xtime <= MPAS_NOW. This means leg-2's next
+   !>     write OVERWRITES the first frame whose xtime > restart-time
+   !>     (rather than appending after it), which is the correct
+   !>     semantics for ERS-style tests where leg-1 already wrote
+   !>     records past the restart point: leg-2 stomps on those
+   !>     stale-from-leg-2's-perspective records with its own values.
+   !>     For BFB the overwritten value matches what was there.
+   !> Otherwise create-new in PIO_CLOBBER mode (the cold-start path).
       class(ocn_fme_remap_file_t), intent(inout) :: self
       character(len=*), intent(in) :: filename
+      type(domain_type), intent(inout) :: domain
       integer, intent(out) :: err
 
-      integer :: nlat, nlon, ierr
+      integer :: nlat, nlon, ierr, i, count_le_now
+      integer(PIO_OFFSET_KIND) :: time_len
+      logical :: file_exists
+      type(MPAS_Time_Type) :: now_time
+      character(len=64) :: now_str
+      character(len=64), allocatable :: existing_xtime(:)
 
       err = 0
       if (.not. is_initialized) then; err = 1; return; end if
@@ -458,6 +508,92 @@ contains
       nlat = remap_data%nlat
       nlon = remap_data%nlon
 
+      inquire(file=trim(filename), exist=file_exists)
+
+      ! Append-mode reopen ONLY on warm restart. On cold start always
+      ! clobber-create — protects against stale `.remapped.nc` files
+      ! left behind in the run dir by a prior CIME compare-copy or
+      ! aborted run.
+      if (file_exists .and. is_restart_run) then
+         ! --- Append mode: reopen existing file and continue writing -------
+         ierr = pio_openfile(pio_sys, self%pio_file, PIO_IOTYPE_PNETCDF, &
+              trim(filename), PIO_WRITE)
+         if (ierr /= PIO_NOERR) then
+            call mpas_log_write('ocn_fme_remap_file: failed to reopen ' &
+                 // trim(filename), messageType=MPAS_LOG_ERR)
+            err = ierr; return
+         end if
+
+         err = 0
+         call check_pio('inq_dimid lon', &
+              pio_inq_dimid(self%pio_file, 'lon', self%dim_lon_id), err)
+         call check_pio('inq_dimid lat', &
+              pio_inq_dimid(self%pio_file, 'lat', self%dim_lat_id), err)
+         call check_pio('inq_dimid Time', &
+              pio_inq_dimid(self%pio_file, 'Time', self%dim_time_id), err)
+         call check_pio('inq_dimid StrLen', &
+              pio_inq_dimid(self%pio_file, 'StrLen', self%dim_strlen_id), err)
+
+         call check_pio('inq_varid lon',   pio_inq_varid(self%pio_file, &
+              'lon',   self%pio_lon_var),   err)
+         call check_pio('inq_varid lat',   pio_inq_varid(self%pio_file, &
+              'lat',   self%pio_lat_var),   err)
+         call check_pio('inq_varid xtime', pio_inq_varid(self%pio_file, &
+              'xtime', self%pio_xtime_var), err)
+
+         call check_pio('inq_dimlen Time', &
+              pio_inq_dimlen(self%pio_file, self%dim_time_id, time_len), err)
+
+         ! Read existing xtimes and seed time_record at the largest
+         ! frame index whose xtime <= MPAS_NOW. This makes leg-2's
+         ! next write_time/write_var land on the FIRST frame whose
+         ! xtime > restart time — i.e., it overwrites stale records
+         ! that leg-1 wrote past the restart point.
+         now_time = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
+         call mpas_get_time(now_time, dateTimeString=now_str, ierr=ierr)
+
+         allocate(existing_xtime(int(time_len)))
+         ierr = pio_get_var(self%pio_file, self%pio_xtime_var, existing_xtime)
+         if (ierr /= PIO_NOERR) then
+            call mpas_log_write('ocn_fme_remap_file: failed to read xtime ' // &
+                 'from ' // trim(filename) // '; falling back to N_existing', &
+                 messageType=MPAS_LOG_WARN)
+            self%time_record = int(time_len)
+         else
+            ! Count frames whose xtime is STRICTLY less than MPAS_NOW.
+            ! check_rotate is called from inside the trigger-fire branch
+            ! (i.e. when we are about to write a new record at xtime
+            ! exactly equal to MPAS_NOW), so a frame whose xtime
+            ! ALREADY equals MPAS_NOW is the leg-1 leftover that
+            ! leg-2 should overwrite — exclude it from the count so
+            ! the next write_time lands on it (frame = count + 1).
+            count_le_now = 0
+            do i = 1, int(time_len)
+               if (trim(existing_xtime(i)) < trim(now_str)) then
+                  count_le_now = count_le_now + 1
+               end if
+            end do
+            self%time_record = count_le_now
+         end if
+         deallocate(existing_xtime)
+
+         self%n_pio_vars = 0
+         self%file_is_open = .true.
+         self%existing_file_reopened = .true.
+
+         if (err /= 0) then
+            call mpas_log_write('ocn_fme_remap_file: append-mode setup ' // &
+                 'failed for ' // trim(filename), messageType=MPAS_LOG_ERR)
+         else
+            call mpas_log_write('ocn_fme_remap_file: reopened ' // &
+                 trim(filename) // ' in append mode; existing Time=$i, ' // &
+                 'next write at frame=$i+1 (MPAS_NOW=' // trim(now_str) // ')', &
+                 intArgs=(/int(time_len), self%time_record/))
+         end if
+         return
+      end if
+
+      ! --- Fresh create -------------------------------------------------
       ierr = pio_createfile(pio_sys, self%pio_file, PIO_IOTYPE_PNETCDF, &
            trim(filename), PIO_CLOBBER)
       if (ierr /= PIO_NOERR) then
@@ -501,6 +637,7 @@ contains
       self%n_pio_vars = 0
       self%time_record = 0
       self%file_is_open = .true.
+      self%existing_file_reopened = .false.
 
    end subroutine remap_file_open!}}}
 
@@ -519,6 +656,10 @@ contains
    end subroutine check_pio
 
    subroutine remap_file_def_var(self, varname, units, long_name, numlev, err)!{{{
+   !> Register an output variable. On a freshly created file, defines the
+   !> variable + attributes. On a reopened (append-mode) file, looks up
+   !> the existing var_desc — definitions and attributes are already
+   !> persisted on disk from the first create.
       class(ocn_fme_remap_file_t), intent(inout) :: self
       character(len=*), intent(in) :: varname, units, long_name
       integer, intent(in) :: numlev
@@ -539,6 +680,19 @@ contains
       end if
 
       self%pio_var_names(self%n_pio_vars) = varname
+
+      if (self%existing_file_reopened) then
+         ierr = pio_inq_varid(self%pio_file, trim(varname), &
+              self%pio_var_descs(self%n_pio_vars))
+         if (ierr /= PIO_NOERR) then
+            call mpas_log_write('ocn_fme_remap_file: pio_inq_varid failed for ' &
+                 // trim(varname) // ' (code $i)', messageType=MPAS_LOG_ERR, &
+                 intArgs=(/ierr/))
+            err = ierr; return
+         end if
+         return
+      end if
+
       ierr = pio_def_var(self%pio_file, trim(varname), PIO_REAL, &
            (/self%dim_lon_id, self%dim_lat_id, self%dim_time_id/), &
            self%pio_var_descs(self%n_pio_vars))
@@ -599,7 +753,10 @@ contains
       character(len=64) :: xtime_buf(1)
 
       err = 0
-      if (self%time_record == 0) then
+      ! Fresh-create files: leave define-mode and seed lon/lat once.
+      ! Reopened (append-mode) files are already in data mode and lon/lat
+      ! are already populated, so this whole block is skipped.
+      if (self%time_record == 0 .and. .not. self%existing_file_reopened) then
          ierr = pio_enddef(self%pio_file)
          ierr = pio_put_var(self%pio_file, self%pio_lon_var, &
               remap_data%lon(1:remap_data%nlon))
@@ -627,6 +784,7 @@ contains
          self%n_pio_vars = 0
          self%time_record = 0
          self%current_filename = ''
+         self%existing_file_reopened = .false.
       end if
    end subroutine remap_file_close!}}}
 
@@ -688,7 +846,7 @@ contains
             call self%close_file(ierr)
          end if
 
-         call self%open_file(trim(new_filename), ierr)
+         call self%open_file(trim(new_filename), domain, ierr)
          if (ierr /= 0) then; err = ierr; return; end if
          self%current_filename = new_filename
 
@@ -789,6 +947,221 @@ contains
          str = tmp
       end if
    end subroutine replace_token!}}}
+
+!***********************************************************************
+
+   subroutine fme_accum_filename(amName, filename)!{{{
+   !> Sidecar restart-state file for an FME analysis member's remap-space
+   !> accumulators. Fixed name in the run dir; one file per AM, overwritten
+   !> on every restart-write event. No date stamp because there is only
+   !> ever one valid snapshot at a time (the most recent restart point).
+      character(len=*), intent(in)  :: amName
+      character(len=*), intent(out) :: filename
+      filename = trim(amName) // '.fme_accum_restart.nc'
+   end subroutine fme_accum_filename!}}}
+
+!***********************************************************************
+
+   subroutine ocn_fme_horiz_remap_write_accum(amName, accum_arr, &
+        n_avg_fields, nAccum, avg_last_output_time_str, latest_inst_arr, err)!{{{
+   !> Persist the remap-space accumulator state for one AM to its sidecar
+   !> file. Called from the MPAS-O driver at the moment the coupler has
+   !> requested a restart write (see `seq_timemgr_RestartAlarmIsOn` branch
+   !> in ocn_comp_mct.F). Each call overwrites the previous sidecar.
+   !>
+   !> accum_arr has shape (n_b_local, n_avg_fields). latest_inst_arr is
+   !> optional and matches accum_arr; pass it for AMs that maintain
+   !> instantaneous companions (depth-coarsening) and omit otherwise.
+      character(len=*), intent(in) :: amName
+      integer,          intent(in) :: n_avg_fields
+      real(r8),         intent(in) :: accum_arr(:,:)
+      integer,          intent(in) :: nAccum
+      character(len=*), intent(in) :: avg_last_output_time_str
+      real(r8), optional, intent(in) :: latest_inst_arr(:,:)
+      integer,          intent(out) :: err
+
+      type(file_desc_t)        :: pio_acc_file
+      type(var_desc_t)         :: var_accum, var_inst
+      integer                  :: dim_lon, dim_lat, dim_field
+      integer                  :: ierr, idx
+      character(len=512)       :: filename
+      real(r8), allocatable    :: slab(:)
+
+      err = 0
+      if (.not. is_initialized) return
+
+      call fme_accum_filename(trim(amName), filename)
+
+      ierr = pio_createfile(pio_sys, pio_acc_file, PIO_IOTYPE_PNETCDF, &
+           trim(filename), PIO_CLOBBER)
+      if (ierr /= PIO_NOERR) then
+         call mpas_log_write('ocn_fme_write_accum: failed to create ' &
+              // trim(filename), messageType=MPAS_LOG_WARN)
+         err = ierr; return
+      end if
+
+      call check_pio('accum def_dim lon', &
+           pio_def_dim(pio_acc_file, 'lon', remap_data%nlon, dim_lon), err)
+      call check_pio('accum def_dim lat', &
+           pio_def_dim(pio_acc_file, 'lat', remap_data%nlat, dim_lat), err)
+      ! n_avg_fields is the record dimension — must be UNLIMITED so that
+      ! pio_setframe + pio_write_darray walks across slots.
+      call check_pio('accum def_dim n_avg_fields', &
+           pio_def_dim(pio_acc_file, 'n_avg_fields', PIO_UNLIMITED, dim_field), err)
+
+      call check_pio('accum def_var remap_accum', &
+           pio_def_var(pio_acc_file, 'remap_accum', PIO_DOUBLE, &
+                       (/dim_lon, dim_lat, dim_field/), var_accum), err)
+      if (present(latest_inst_arr)) then
+         call check_pio('accum def_var remap_latest_inst', &
+              pio_def_var(pio_acc_file, 'remap_latest_inst', PIO_DOUBLE, &
+                          (/dim_lon, dim_lat, dim_field/), var_inst), err)
+      end if
+
+      ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, 'nAccum', nAccum)
+      ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, 'n_avg_fields', n_avg_fields)
+      ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, &
+           'avg_last_output_time', trim(avg_last_output_time_str))
+      ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, 'source', &
+           'E3SM FME accumulator restart sidecar')
+
+      ierr = pio_enddef(pio_acc_file)
+      if (err /= 0) then
+         call pio_closefile(pio_acc_file); return
+      end if
+
+      allocate(slab(remap_data%n_b_local))
+      do idx = 1, n_avg_fields
+         call pio_setframe(pio_acc_file, var_accum, &
+              int(idx, PIO_OFFSET_KIND))
+         slab(:) = accum_arr(:, idx)
+         call pio_write_darray(pio_acc_file, var_accum, iodesc_2d_dbl, &
+              slab, ierr)
+         if (ierr /= PIO_NOERR) err = ierr
+         if (present(latest_inst_arr)) then
+            call pio_setframe(pio_acc_file, var_inst, &
+                 int(idx, PIO_OFFSET_KIND))
+            slab(:) = latest_inst_arr(:, idx)
+            call pio_write_darray(pio_acc_file, var_inst, iodesc_2d_dbl, &
+                 slab, ierr)
+            if (ierr /= PIO_NOERR) err = ierr
+         end if
+      end do
+      deallocate(slab)
+
+      call pio_closefile(pio_acc_file)
+
+   end subroutine ocn_fme_horiz_remap_write_accum!}}}
+
+!***********************************************************************
+
+   subroutine ocn_fme_horiz_remap_read_accum(amName, accum_arr, &
+        n_avg_fields, nAccum, avg_last_output_time_str, latest_inst_arr, &
+        success)!{{{
+   !> Restore an AM's remap-space accumulator state from its sidecar file.
+   !> Called from the AM's *_init_* when config_do_restart=.true.
+   !>
+   !> Returns success=.true. only if the file exists, has matching
+   !> n_avg_fields, and all reads succeed. On any failure (no file,
+   !> dim mismatch, PIO error) returns success=.false. and leaves the
+   !> caller's arrays untouched — the AM should treat this as a normal
+   !> fresh-init (zero accumulators, MPAS_NOW baseline).
+      character(len=*),   intent(in)    :: amName
+      integer,            intent(in)    :: n_avg_fields
+      real(r8),           intent(inout) :: accum_arr(:,:)
+      integer,            intent(out)   :: nAccum
+      character(len=*),   intent(out)   :: avg_last_output_time_str
+      real(r8), optional, intent(inout) :: latest_inst_arr(:,:)
+      logical,            intent(out)   :: success
+
+      type(file_desc_t)     :: pio_acc_file
+      type(var_desc_t)      :: var_accum, var_inst
+      integer               :: ierr, idx, n_avg_on_disk
+      character(len=512)    :: filename
+      logical               :: file_exists
+      real(r8), allocatable :: slab(:)
+      real(r8), allocatable :: tmp_accum(:,:), tmp_inst(:,:)
+
+      success = .false.
+      nAccum = 0
+      avg_last_output_time_str = ''
+      if (.not. is_initialized) return
+
+      call fme_accum_filename(trim(amName), filename)
+      inquire(file=trim(filename), exist=file_exists)
+      if (.not. file_exists) return
+
+      ierr = pio_openfile(pio_sys, pio_acc_file, PIO_IOTYPE_PNETCDF, &
+           trim(filename), PIO_WRITE)
+      if (ierr /= PIO_NOERR) then
+         call mpas_log_write('ocn_fme_read_accum: pio_openfile failed for ' &
+              // trim(filename), messageType=MPAS_LOG_WARN)
+         return
+      end if
+
+      ierr = pio_get_att(pio_acc_file, PIO_GLOBAL, 'n_avg_fields', n_avg_on_disk)
+      if (ierr /= PIO_NOERR .or. n_avg_on_disk /= n_avg_fields) then
+         call mpas_log_write('ocn_fme_read_accum: n_avg_fields mismatch ' &
+              // 'in ' // trim(filename) // ' (on-disk=$i, expected=$i)', &
+              messageType=MPAS_LOG_WARN, &
+              intArgs=(/n_avg_on_disk, n_avg_fields/))
+         call pio_closefile(pio_acc_file); return
+      end if
+
+      ierr = pio_get_att(pio_acc_file, PIO_GLOBAL, 'nAccum', nAccum)
+      if (ierr /= PIO_NOERR) nAccum = 0
+      ierr = pio_get_att(pio_acc_file, PIO_GLOBAL, 'avg_last_output_time', &
+           avg_last_output_time_str)
+      if (ierr /= PIO_NOERR) avg_last_output_time_str = ''
+
+      ierr = pio_inq_varid(pio_acc_file, 'remap_accum', var_accum)
+      if (ierr /= PIO_NOERR) then
+         call pio_closefile(pio_acc_file); return
+      end if
+
+      allocate(tmp_accum(remap_data%n_b_local, n_avg_fields))
+      allocate(slab(remap_data%n_b_local))
+      do idx = 1, n_avg_fields
+         call pio_setframe(pio_acc_file, var_accum, &
+              int(idx, PIO_OFFSET_KIND))
+         call pio_read_darray(pio_acc_file, var_accum, iodesc_2d_dbl, &
+              slab, ierr)
+         if (ierr /= PIO_NOERR) then
+            deallocate(tmp_accum, slab)
+            call pio_closefile(pio_acc_file); return
+         end if
+         tmp_accum(:, idx) = slab(:)
+      end do
+
+      if (present(latest_inst_arr)) then
+         ierr = pio_inq_varid(pio_acc_file, 'remap_latest_inst', var_inst)
+         if (ierr == PIO_NOERR) then
+            allocate(tmp_inst(remap_data%n_b_local, n_avg_fields))
+            do idx = 1, n_avg_fields
+               call pio_setframe(pio_acc_file, var_inst, &
+                    int(idx, PIO_OFFSET_KIND))
+               call pio_read_darray(pio_acc_file, var_inst, iodesc_2d_dbl, &
+                    slab, ierr)
+               if (ierr /= PIO_NOERR) then
+                  deallocate(tmp_accum, tmp_inst, slab)
+                  call pio_closefile(pio_acc_file); return
+               end if
+               tmp_inst(:, idx) = slab(:)
+            end do
+            latest_inst_arr(:,:) = tmp_inst(:,:)
+            deallocate(tmp_inst)
+         end if
+      end if
+
+      accum_arr(:,:) = tmp_accum(:,:)
+      deallocate(tmp_accum, slab)
+      call pio_closefile(pio_acc_file)
+
+      success = .true.
+      call mpas_log_write('ocn_fme_read_accum: restored accumulators from ' &
+           // trim(filename) // ' (nAccum=$i)', intArgs=(/nAccum/))
+
+   end subroutine ocn_fme_horiz_remap_read_accum!}}}
 
 end module ocn_fme_horiz_remap
 

@@ -63,7 +63,8 @@ module seaice_analysis_driver
              seaice_analysis_compute, &
              seaice_analysis_write, &
              seaice_analysis_restart, &
-             seaice_analysis_finalize
+             seaice_analysis_finalize, &
+             seaice_analysis_fme_write_restart
 
    !--------------------------------------------------------------------
    !
@@ -855,6 +856,36 @@ contains
       call mpas_timer_stop('analysis_restart')
 
    end subroutine seaice_analysis_restart!}}}
+
+!***********************************************************************
+!
+!  routine seaice_analysis_fme_write_restart
+!
+!> \brief Persist FME analysis-member accumulator state on a coupler-driven
+!>        restart write. Mirror of `ocn_analysis_fme_write_restart` for the
+!>        single sea-ice FME AM (`fmeSeaiceDerivedFields`).
+!
+!-----------------------------------------------------------------------
+
+   subroutine seaice_analysis_fme_write_restart(domain, err)!{{{
+      type(domain_type), intent(inout) :: domain
+      integer, intent(out) :: err
+      integer :: err_tmp
+      logical, pointer :: enable_si
+
+      err = 0
+      err_tmp = 0
+
+      call mpas_pool_get_config(domain % configs, &
+           'config_AM_fmeSeaiceDerivedFields_enable', enable_si)
+      if (associated(enable_si)) then
+         if (enable_si) then
+            call seaice_fme_derived_fields_write_restart(domain, err_tmp)
+            err = ior(err, err_tmp)
+         end if
+      end if
+
+   end subroutine seaice_analysis_fme_write_restart!}}}
 
 !***********************************************************************
 !
