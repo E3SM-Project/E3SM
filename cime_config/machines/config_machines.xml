@@ -3403,7 +3403,7 @@
     <NODENAME_REGEX>aurora-uan-.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>oneapi-ifxgpu,oneapi-ifx</COMPILERS>
-    <MPILIBS>mpich,mpich1024</MPILIBS>
+    <MPILIBS>mpich</MPILIBS>
     <PROJECT>E3SM_Dec</PROJECT>
     <SAVE_TIMING_DIR>/lus/flare/projects/E3SMinput/baselines</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
@@ -3450,8 +3450,6 @@
         <command name="load">netcdf-c/4.9.3</command>
         <command name="load">netcdf-fortran/4.6.2</command>
         <command name="load">moab/5.6.0</command>
-      </modules>
-      <modules mpilib="mpich1024">
         <command name="load">mpich-config/collective-tuning/1024</command>
       </modules>
     </module_system>
