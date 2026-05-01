@@ -141,7 +141,6 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
     using stratts_t = std::map<std::string,std::string>;
     bool use_suffix = grids.size()>1;
     for (const auto& [gname,grid] : grids) {
-      std::vector<Field> fields;
       for (const auto& fn : grid->get_geometry_data_names()) {
         const auto& f = grid->get_geometry_data(fn);
 
@@ -158,28 +157,10 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
           // This field is NOT to be saved as geo data
           continue;
         }
-        if (use_suffix) {
-          fields.push_back(f.clone(f.name() + grid->m_disambiguation_suffix, gname, CloneFlags::All));
 
-          // Adjust long/std name, as the default metadata does not recognize the names with suffix
-          auto& str_atts = fields.back().get_header().get_extra_data<stratts_t>("io: string attributes");
-          str_atts["long_name"] = meta.get_longname(f.name());
-          str_atts["standard_name"] = meta.get_standardname(f.name());
-        } else {
-          fields.push_back(f.clone(f.name(), gname, CloneFlags::All));
-        }
-
-        // Transfer io: string attributes from original field (e.g., "bounds" attribute).
-        // Use insert so that we don't override entries already set above (e.g., long_name).
-        if (f.get_header().has_extra_data("io: string attributes")) {
-          const auto& src_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
-          auto& dst_atts = fields.back().get_header().get_extra_data<stratts_t>("io: string attributes");
-          dst_atts.insert(src_atts.begin(), src_atts.end());
-        }
+        auto alias_name = f.name() + (use_suffix ? grid->m_disambiguation_suffix : "");
+        m_grid_to_geo_data_fields[grid].push_back(f.alias(alias_name,gname));
       }
-
-      auto output = std::make_shared<output_type>(m_io_comm,fields,grid);
-      m_geo_data_streams.push_back(output);
     }
   }
 
@@ -891,6 +872,34 @@ setup_file (      IOFileSpecs& filespecs,
   // If grid data is needed,  also register geo data fields. Skip if file is resumed,
   // since grid data was written in the previous run
   if (m_save_grid_data and not filespecs.is_restart_file() and not m_resume_output_file) {
+    // By this point all regular output streams have already defined their dims.
+    // So if a field is conditional to a certain dim being in the output file,
+    // we can immediately check whether we should output it or not.
+    // Note: m_grid_to_geo_data_field is reset to empty after this loop, so the loop runs ONCE,
+    //       which means geo streams are lazy-inited on the first setup_file call
+    for (auto& [grid, fields] : m_grid_to_geo_data_fields) {
+      for (auto it=fields.begin(); it!=fields.end(); ) {
+        if (it->get_header().has_extra_data("io_output_if_dim_exists")) {
+          // If the required dim is not in the output file, this field is not needed
+          auto req_dim = it->get_header().get_extra_data<std::string>("io_output_if_dim_exists");
+          if (not scorpio::has_dim(filename, req_dim)) {
+            it = fields.erase(it);
+            continue;
+          }
+        }
+        ++it;
+      }
+
+      if (fields.size()==0)
+        continue; // No grid data to save here (unlikely, but we may as well)
+
+      auto output = std::make_shared<output_type>(m_io_comm, fields, grid);
+      m_geo_data_streams.push_back(output);
+    }
+
+    // Ensure that the above block runs only once (the 1st time we run this function)
+    m_grid_to_geo_data_fields = {};
+
     for (auto& it : m_geo_data_streams) {
       it->setup_output_file(filename,fp_precision,mode);
     }
