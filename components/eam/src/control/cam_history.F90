@@ -127,6 +127,13 @@ module cam_history
   integer :: nhtfrq(ptapes) = (/0, (-24, i=2,ptapes)/)  ! history write frequency (0 = monthly)
   integer :: mfilt(ptapes) = 30       ! number of time samples per tape
   integer :: nfils(ptapes)            ! Array of no. of files on current h-file
+
+  ! EAMxx-style calendar-based file rotation. When set to 'one_month' or
+  ! 'one_year', the file is closed and rotated at the calendar boundary
+  ! regardless of mfilt. Default 'num_snapshots' preserves legacy behavior.
+  character(len=16) :: hist_file_storage_type(ptapes) = (/('num_snapshots',i=1,ptapes)/)
+  ! Calendar idx (month or year) of the currently-open file. -1 = empty/unknown.
+  integer :: hist_storage_curr_idx(ptapes) = (/(-1,i=1,ptapes)/)
   integer :: ndens(ptapes) = 2        ! packing density (double (1) or real (2))
   integer :: ncprec(ptapes) = -999    ! netcdf packing parameter based on ndens
   real(r8) :: beg_time(ptapes)        ! time at beginning of an averaging interval
@@ -568,7 +575,7 @@ CONTAINS
          fwrtpr11,fwrtpr12,fwrtpr13,fwrtpr14,fwrtpr15,                         &
          interpolate_nlat, interpolate_nlon,                                   &
          interpolate_gridtype, interpolate_type, interpolate_output,           &
-         horiz_remap_file
+         horiz_remap_file, hist_file_storage_type
 
     ! Set namelist defaults (these should match initial values if given)
     fincl(:,:)               = ' '
@@ -594,6 +601,7 @@ CONTAINS
     interpolate_type(:)      = 1
     interpolate_output(:)    = .false.
     horiz_remap_file(:)      = ' '
+    hist_file_storage_type(:) = 'num_snapshots'
 
     ! Initialize namelist 'temporary variables'
     do f = 1, pflds
@@ -769,10 +777,24 @@ CONTAINS
       ! See the filenames module for more information
       !
       do t = 1, ptapes
+        ! Validate hist_file_storage_type
+        select case (trim(hist_file_storage_type(t)))
+        case ('num_snapshots','one_month','one_year')
+          ! ok
+        case default
+          call endrun('history_readnl: hist_file_storage_type must be ' &
+               // 'num_snapshots, one_month, or one_year, got: ' &
+               // trim(hist_file_storage_type(t)))
+        end select
+
         if ( len_trim(hfilename_spec(t)) == 0 )then
           if ( nhtfrq(t) == 0 )then
-            ! Monthly files
+            ! Monthly average files (one record each)
             hfilename_spec(t) = '%c.eam' // trim(inst_suffix) // '.h%t.%y-%m.nc'
+          else if ( trim(hist_file_storage_type(t)) == 'one_month' ) then
+            hfilename_spec(t) = '%c.eam' // trim(inst_suffix) // '.h%t.%y-%m.nc'
+          else if ( trim(hist_file_storage_type(t)) == 'one_year' ) then
+            hfilename_spec(t) = '%c.eam' // trim(inst_suffix) // '.h%t.%y.nc'
           else
             hfilename_spec(t) = '%c.eam' // trim(inst_suffix) // '.h%t.%y-%m-%d-%s.nc'
           end if
@@ -857,6 +879,7 @@ CONTAINS
     call mpi_bcast(empty_htapes,1, mpi_logical, masterprocid, mpicom, ierr)
     call mpi_bcast(avgflag_pertape, ptapes, mpi_character, masterprocid, mpicom, ierr)
     call mpi_bcast(hfilename_spec, len(hfilename_spec(1))*ptapes, mpi_character, masterprocid, mpicom, ierr)
+    call mpi_bcast(hist_file_storage_type, len(hist_file_storage_type(1))*ptapes, mpi_character, masterprocid, mpicom, ierr)
     call mpi_bcast(fincl, len(fincl (1,1))*pflds*ptapes, mpi_character, masterprocid, mpicom, ierr)
     call mpi_bcast(fexcl, len(fexcl (1,1))*pflds*ptapes, mpi_character, masterprocid, mpicom, ierr)
 
@@ -2129,6 +2152,14 @@ CONTAINS
           end do
           call cam_pio_closefile(tape(t)%File)
           nfils(t) = 0
+        else if (nfils(t) > 0 .and. &
+                 trim(hist_file_storage_type(t)) /= 'num_snapshots') then
+          ! Calendar-based storage: parse YYYY-MM (or YYYY) out of the open
+          ! file's name and stash in hist_storage_curr_idx so the rotation
+          ! logic in wshist knows whether the next record belongs in the
+          ! current file or a new one. Parse-failure falls back to lazy-init.
+          call parse_calendar_idx_from_filename(nhfil(t), &
+               hist_file_storage_type(t), hist_storage_curr_idx(t))
         end if
       end if
     end do
@@ -2142,6 +2173,45 @@ CONTAINS
 
     return
   end subroutine read_restart_history
+
+  !#######################################################################
+
+  subroutine parse_calendar_idx_from_filename(filename, storage_type, idx)
+    !
+    !-----------------------------------------------------------------------
+    ! Extract the year (one_year) or month (one_month) idx from a history
+    ! filename. Expects names ending in ".YYYY-MM.nc" or ".YYYY.nc".
+    ! Sets idx = -1 on parse failure (caller falls back to lazy-init).
+    !-----------------------------------------------------------------------
+    character(len=*), intent(in)  :: filename
+    character(len=*), intent(in)  :: storage_type
+    integer,          intent(out) :: idx
+
+    integer :: n, ios
+
+    idx = -1
+    n = len_trim(filename)
+    if (n < 8) return
+    if (filename(n-2:n) /= '.nc') return
+
+    select case (trim(storage_type))
+    case ('one_month')
+      ! Pattern: ".YYYY-MM.nc"  (last 11 chars)
+      if (n < 11) return
+      if (filename(n-10:n-10) /= '.') return
+      if (filename(n-5:n-5)   /= '-') return
+      read(filename(n-4:n-3), *, iostat=ios) idx
+      if (ios /= 0) idx = -1
+    case ('one_year')
+      ! Pattern: ".YYYY.nc"  (last 8 chars)
+      if (filename(n-7:n-7) /= '.') return
+      read(filename(n-6:n-3), *, iostat=ios) idx
+      if (ios /= 0) idx = -1
+    case default
+      ! num_snapshots: nothing to parse
+      idx = -1
+    end select
+  end subroutine parse_calendar_idx_from_filename
 
   !#######################################################################
 
@@ -4695,6 +4765,7 @@ end subroutine print_active_fldlst
 #endif
 
     integer :: yr, mon, day      ! year, month, and day components of a date
+    integer :: cal_rot_idx       ! calendar rotation idx (month or year)
     integer :: nstep             ! current timestep number
     integer :: ncdate            ! current date in integer format [yyyymmdd]
     integer :: ncsec             ! current time of day [seconds]
@@ -4754,6 +4825,39 @@ end subroutine print_active_fldlst
         end if
       end if
       if (hstwr(t) .or. (restart .and. rgnht(t))) then
+        ! ===== EAMxx-style calendar-based file rotation =====
+        ! Close the current file when its stored month/year doesn't match
+        ! this record's month/year. Lazy-init handles the case where the
+        ! curr_idx hasn't been set (e.g. after restart with parse failure).
+        if (.not. is_initfile(file_index=t) .and. .not. restart .and. &
+             nfils(t) > 0 .and. &
+             trim(hist_file_storage_type(t)) /= 'num_snapshots') then
+          if (trim(hist_file_storage_type(t)) == 'one_month') then
+            cal_rot_idx = mon
+          else
+            cal_rot_idx = yr
+          end if
+          if (hist_storage_curr_idx(t) == -1) then
+            hist_storage_curr_idx(t) = cal_rot_idx
+          else if (cal_rot_idx /= hist_storage_curr_idx(t)) then
+            if (masterproc) then
+              write(iulog,'(A,I2,A,A,A,I0,A,I0)') &
+                   'WSHIST: rotating tape ',t,' at calendar boundary (', &
+                   trim(hist_file_storage_type(t)),'), old idx=', &
+                   hist_storage_curr_idx(t),' new idx=',cal_rot_idx
+            end if
+            do f=1,nflds(t)
+              if (associated(tape(t)%hlist(f)%varid)) then
+                deallocate(tape(t)%hlist(f)%varid)
+                nullify(tape(t)%hlist(f)%varid)
+              end if
+            end do
+            call cam_pio_closefile(tape(t)%File)
+            nfils(t) = 0
+            hist_storage_curr_idx(t) = -1
+          end if
+        end if
+        ! ===== end calendar rotation =====
         if(masterproc) then
           if(is_initfile(file_index=t)) then
             write(iulog,100) yr,mon,day,ncsec
@@ -4819,6 +4923,15 @@ end subroutine print_active_fldlst
           else
             nfils(t) = nfils(t) + 1
             start = nfils(t)
+            ! Stamp the calendar idx of this newly-written record
+            if (.not. is_initfile(file_index=t) .and. &
+                 trim(hist_file_storage_type(t)) /= 'num_snapshots') then
+              if (trim(hist_file_storage_type(t)) == 'one_month') then
+                hist_storage_curr_idx(t) = mon
+              else
+                hist_storage_curr_idx(t) = yr
+              end if
+            end if
           end if
           count1 = 1
           ! Setup interpolation data if history file is interpolated
