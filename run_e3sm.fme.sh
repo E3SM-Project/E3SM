@@ -40,7 +40,7 @@ readonly CASE_NAME="samudrace.v3.LR.piControl.001"
 # Code and compilation
 # BEFORE RUNNING: set CHECKOUT to a date string like 20260430
 readonly CHECKOUT="latest"
-readonly BRANCH="claude/fme-reconciled"
+readonly BRANCH="mahf708/fme/aigo"
 readonly CHERRY=( )
 readonly DEBUG_COMPILE=false
 
@@ -50,7 +50,7 @@ readonly DEBUG_COMPILE=false
 # (cold start would discard ~50 yr of ocean spinup). 'branch' = exact restart,
 # bit-identical model evolution, just with FME diagnostics added on top.
 # Use 'hybrid' instead if the source case had different physics/forcing.
-readonly MODEL_START_TYPE="branch"   # 'initial', 'continue', 'branch', 'hybrid'
+readonly MODEL_START_TYPE="initial"   # 'initial', 'continue', 'branch', 'hybrid'
 
 # BEFORE RUNNING: fill in the three RUN_REF* values below to match the
 # spun-up piControl restart you're branching from. START_DATE should
