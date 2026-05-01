@@ -449,8 +449,9 @@ contains
         call get_state_field(state, pbuf_chunk, vcoarsen_select_lev_flds(i), src_field, ncol)
 
         do k = 1, n_sel_levs
-          call shr_vcoarsen_select_index(src_field, ncol, pver, &
-               vcoarsen_select_levs(k), nlev_max, fillvalue, selected)
+          call shr_vcoarsen_select_index(src_field(1:ncol, :), ncol, pver, &
+               vcoarsen_select_levs(k), nlev_max(1:ncol), fillvalue, &
+               selected(1:ncol))
 
           ! Fill inactive columns
           selected(ncol+1:pcols) = fillvalue
@@ -471,8 +472,10 @@ contains
 
         do k = 1, n_sel_pres
           ! Convert hPa to Pa for comparison with pmid
-          call shr_vcoarsen_select_nearest(src_field, coord_mid, ncol, pver, &
-               vcoarsen_select_pres(k) * 100.0_r8, nlev_max, fillvalue, selected)
+          call shr_vcoarsen_select_nearest(src_field(1:ncol, :), &
+               coord_mid(1:ncol, :), ncol, pver, &
+               vcoarsen_select_pres(k) * 100.0_r8, nlev_max(1:ncol), &
+               fillvalue, selected(1:ncol))
 
           ! Fill inactive columns
           selected(ncol+1:pcols) = fillvalue
@@ -495,8 +498,10 @@ contains
              src_field, ncol)
 
         do k = 1, n_sel_heights
-          call shr_vcoarsen_select_nearest(src_field, coord_mid, ncol, pver, &
-               vcoarsen_select_heights(k), nlev_max, fillvalue, selected)
+          call shr_vcoarsen_select_nearest(src_field(1:ncol, :), &
+               coord_mid(1:ncol, :), ncol, pver, &
+               vcoarsen_select_heights(k), nlev_max(1:ncol), fillvalue, &
+               selected(1:ncol))
 
           ! Fill inactive columns
           selected(ncol+1:pcols) = fillvalue
