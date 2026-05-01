@@ -211,9 +211,12 @@ cat >> user_nl_mpaso << EOF
 config_AM_fmeDepthCoarsening_enable = .true.
 config_AM_fmeDepthCoarsening_compute_interval = 'dt'
 config_AM_fmeDepthCoarsening_time_averaging = .true.
-! Samudra training data needs both 1D-avg and 1D-instant at the same cadence;
-! when both flags are true, instantaneous _inst companions are written into
-! the same remapped output file as the time-averaged variables.
+! Samudra training spec (Confluence p3ai/6154289880, "case run options for
+! v3 LR piControl SamudrACE") requires BOTH 1D-avg AND 1D-instant for the
+! four 3D ocean state vars (temperature, salinity, velocityZonal,
+! velocityMeridional). DO NOT turn this off without re-checking the spec
+! with the SamudrACE team -- ~900 GB savings over a 100-yr run is real but
+! the cost of regenerating a non-conforming tape is much higher.
 config_AM_fmeDepthCoarsening_write_instantaneous_companion = .true.
 config_AM_fmeDepthCoarsening_stream_output_interval = '${FME_MPAS_INTERVAL}'
 ! 19 depth layers matching ACE ocean interface levels

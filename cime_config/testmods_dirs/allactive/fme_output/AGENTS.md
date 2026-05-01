@@ -372,8 +372,28 @@ These are hard-won lessons. Read before modifying FME code.
     only appears in `addfld`/`outfld`, you cannot reach it via
     eam_derived; write the sum in physics dispatch instead.
 
-31. **🔴 OPEN BUG: `*_at_z2` / `*_at_z10` height-interp fields are NOT
-    bit-reproducible across restart.** Discovered via ERS_Ld4 on 2026-04-30
+31. **`*_at_z2` / `*_at_z10` height-interp fields restart bug — FIXED
+    and verified 2026-04-30 (ERS_Ld4 PASSes COMPARE_base_rest, all 1478
+    EAM fields IDENTICAL incl. T_at_z2, Q_at_z2, STW_at_z2, U_at_z10,
+    V_at_z10).** Root cause was gotcha #2 (Fortran sequence association
+    stride): `eam_vcoarsen.F90` passed `src_field` and `coord_mid`
+    (declared `(pcols, pver)`) to `shr_vcoarsen_select_nearest` /
+    `shr_vcoarsen_select_index` whose dummies are `(ncol, nlev)`. With
+    `ncol < pcols`, levels k>1 read shifted memory; for `i ≤ pcols-ncol`
+    at `k=2` the shifted slot lands in the zeroed tail
+    `field_out(ncol+1:pcols, 1)` set by `get_state_field` (line 577),
+    producing the spurious zeros cprnc reported. The avg path was BFB
+    because it already passed explicit slices (`src_field(1:ncol, :)`,
+    `coord_iface(1:ncol, :)`). Fix: all three select paths (sel_lev at
+    line 452, sel_pres at line 475, sel_height at line 501) now pass
+    `src_field(1:ncol, :)`, `coord_mid(1:ncol, :)`, `nlev_max(1:ncol)`,
+    and `selected(1:ncol)` -- mirrors the avg pattern exactly. Needs
+    rebuild + ERS rerun to verify; if the test still fails, the
+    convergence-across-records pattern (986→71 zeros) hints at a
+    secondary cam_history accumulator issue worth checking next.
+
+    *Original investigation log (kept for reference):* Discovered via
+    ERS_Ld4 on 2026-04-30
     (case `ERS_Ld4_P1024.../202135_kzt5k8`). Test fails `COMPARE_base_rest`
     with 20 differing fields out of 1478 compared. The other 1458 fields
     (including all 8-layer `vcoarsen_avg_flds` outputs T_0..T_7, U_0..U_7,
@@ -436,13 +456,12 @@ These are hard-won lessons. Read before modifying FME code.
       in `cam_history.F90` for any code path that branches on field
       registration history.
 
-    **Workaround for production until fixed**: drop T_at_z2, Q_at_z2,
-    STW_at_z2, U_at_z10, V_at_z10 from `fincl1` in `shell_commands`.
-    SamudrACE doesn't strictly need them -- it has TREFHT/QREFHT
-    (standard CAM 2 m diagnostics, BFB) covering temperature/humidity,
-    and ACE training pipelines often derive 10 m wind from level-7
-    coarsened U/V (boundary layer) anyway. Loss is one less convenient
-    near-surface diagnostic, but the production tape is still complete.
+    **Workaround if fix regresses**: drop T_at_z2, Q_at_z2, STW_at_z2,
+    U_at_z10, V_at_z10 from `fincl1` in `shell_commands`. SamudrACE
+    doesn't strictly need them -- it has TREFHT/QREFHT (standard CAM
+    2 m diagnostics, BFB) covering temperature/humidity, and ACE
+    training pipelines often derive 10 m wind from level-7 coarsened
+    U/V (boundary layer) anyway.
 
 32. **MPAS native FME files are disabled in production.** As of 2026-04-30,
     the four FME stream blocks in `cime_config/buildnml` are emitted with
@@ -467,6 +486,43 @@ These are hard-won lessons. Read before modifying FME code.
     sanity checks. OHC can also be derived post-hoc from
     `temperatureCoarsened_*` + `layerThicknessCoarsened_*` in the
     `fmeDepthCoarsening` tape.
+
+35. **MPAS FME `.remapped.nc` files now compared in CIME tests (ERS etc).**
+    `cime_config/config_archive.xml` previously had `exclude_testing="true"`
+    on `mpaso` and `mpassi`, which caused `hist_utils.py:79` to skip both
+    components entirely whenever `TEST=TRUE`. As of 2026-04-30 that
+    attribute is removed. `<hist_file_extension>` stays broad (`hist`)
+    because the same regex drives BOTH cprnc comparison AND the
+    short-term archiver (`case_st_archive.py:328`); narrowing it broke
+    archiving of `globalStats`/`highFrequencyOutput`/etc. and tripped
+    `_check_disposition` in `test_env_archive`. Per-stream
+    `<hist_file_ext_regex>` entries are added for the FME streams
+    (`hist\.am\.fmeDepthCoarsening`, `hist\.am\.fmeDerivedFields`,
+    `hist\.am\.fmeVerticalReduce`, `hist\.am\.fmeSeaiceDerivedFields`)
+    so each FME stream gets its own ext-bucket and all of them survive
+    the `archive_base.py:111-118` `latest_files[ext]=hist` collapse.
+    Native non-FME streams still collapse into the default `\w+` →
+    `"hist"` bucket, so only one (alphabetically last) gets compared --
+    deemed acceptable because (a) those streams are upstream MPAS, not
+    FME-specific, and (b) ALL of them get archived correctly.
+    A case must be re-created after this edit for the env_archive.xml
+    in its CASEROOT to pick up the new spec; pre-existing case dirs
+    will still skip MPAS comparison.
+
+36. **`_inst` companion writes for fmeDepthCoarsening are SPEC-MANDATED,
+    not optional.** The Samudra training spec
+    (Confluence p3ai/6154289880, "case run options for v3 LR piControl
+    SamudrACE") explicitly lists "1D avg & 1D instant" for all four 3D
+    ocean state vars (temperature, salinity, velocityZonal,
+    velocityMeridional). `config_AM_fmeDepthCoarsening_write_instantaneous_companion=.true.`
+    in `shell_commands:217` is the production setting; the Registry
+    default is `.false.` (off for non-FME consumers, on for this
+    testmod). Storage cost: ~900 GB extra over a 100-yr run for the
+    fmeDepthCoarsening stream (~50% of that stream's volume). Do not
+    turn this off without re-checking with the SamudrACE team --
+    investigated 2026-04-30 and confirmed the spec demands both modes.
+    The `_inst` channel is otherwise unused by `verify_mpas.py` (open
+    hardening item: add presence/range check for `*_inst` companions).
 
 34. **`totalFreshWaterTemperatureFlux` removed from `fmeDerivedFields`.**
     The SamudrACE Confluence spec strikes through this field. Removed
