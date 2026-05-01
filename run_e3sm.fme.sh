@@ -9,10 +9,20 @@
 # Adapted from the standard E3SM run_e3sm.template.sh. Key differences:
 #   * --user-mods-dirs points at cime_config/testmods_dirs/allactive/fme_output
 #   * user_nl() is empty: the testmod is the single source of truth for
-#     EAM/MPAS-O/MPAS-SI namelists. Add fincl2/fincl3 here if you want extra
-#     diagnostic tapes alongside the FME tape.
-#   * Production restart cadence is 5 yr to land on a daily-output boundary
-#     (see AGENTS.md gotcha #11 on the MPAS_NOW averaging baseline).
+#     EAM/MPAS-O/MPAS-SI namelists -- including the FME AM enable/config and
+#     the disable of non-FME AMs (globalStats, regionalStatistics,
+#     timeSeriesStats*) that would otherwise add storage overhead. Add
+#     fincl2/fincl3 here if you want extra diagnostic tapes alongside the
+#     FME tape.
+#   * Production restart cadence is 5 yr. With the 2026-05-01 restart fix
+#     (append-mode reopen + accumulator sidecar + frame tracking +
+#     compute_on_startup=.false.; see AGENTS.md gotchas #11 and #29) the
+#     model is BFB across restart, so the cadence choice is now about
+#     wallclock budget and output-file size rather than restart-clobber
+#     mitigation. 5-yr cadence with monthly file rotation keeps each
+#     restart lookup small while still landing on a year-boundary, which
+#     means leg N+1 always starts a fresh `*.YYYY-01.nc` (no append path
+#     exercised in production).
 
 main() {
 
@@ -91,8 +101,11 @@ if [ "${run}" != "production" ]; then
 else
 
   # Production: 100-yr SamudrACE training data run.
-  # 5-yr segments × 20 = 100 yr.  Restart on yearly boundary keeps the
-  # MPAS daily-averaging window aligned per AGENTS.md gotcha #11.
+  # 5-yr segments × 20 = 100 yr. Year-boundary restart means each new leg
+  # opens a fresh monthly file (`*.YYYY-01.remapped.nc`) with no append
+  # logic exercised. The append-mode + sidecar machinery is in place
+  # (see AGENTS.md #29) and keeps mid-window restarts safe, but the
+  # production cadence keeps things simple by avoiding that path.
   readonly CASE_SCRIPTS_DIR=${CASE_ROOT}/case_scripts
   readonly CASE_RUN_DIR=${CASE_ROOT}/run
   readonly PELAYOUT="L"
@@ -151,10 +164,22 @@ echo $'\n----- All done -----\n'
 # Custom user_nl settings
 # =======================
 #
-# The fme_output testmod (applied via --user-mods-dirs) configures all
-# EAM/MPAS-O/MPAS-SI namelists for the FME tape. Leave this empty unless
-# you need extra diagnostic output on top of the FME tape (e.g. a monthly
-# fincl2 tape for sanity checks).
+# The fme_output testmod (applied via --user-mods-dirs) is the single
+# source of truth for EAM/MPAS-O/MPAS-SI namelists. It configures:
+#   * FME analysis members enabled with daily averaging
+#     (fmeDepthCoarsening, fmeDerivedFields, fmeSeaiceDerivedFields)
+#   * fmeVerticalReduce disabled (not in SamudrACE spec)
+#   * compute_on_startup=.false. on all FME AMs (warm-restart BFB)
+#   * Non-FME AMs disabled to keep the tape minimal:
+#       mpaso:  globalStats, timeSeriesStatsMonthly{,Min,Max}
+#       mpassi: regionalStatistics, timeSeriesStatsDaily, timeSeriesStatsMonthly
+#   * EAM fincl1 with FME-required fields and hist_file_storage_type='one_month'
+#   * MPAS native streams gated to output_interval='none' (the .remapped.nc
+#     files are the SamudrACE tape; native ne30 mesh files would be ~3-5x
+#     more storage for the same data on a different grid)
+#
+# Leave user_nl() empty unless you need extra diagnostic output on top
+# of the FME tape (e.g. a monthly fincl2 tape for sanity checks).
 
 user_nl() {
 

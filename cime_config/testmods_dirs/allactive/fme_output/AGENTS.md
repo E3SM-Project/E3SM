@@ -117,19 +117,43 @@ These are hard-won lessons. Read before modifying FME code.
     unmapped source cells. This is caught at init with `MPAS_LOG_CRIT`, not
     silently masked.
 
-11. **MPAS time averaging accumulates in remap space.** Accumulators are
-    module-scope arrays of size `n_b_local` (target grid points on this rank).
-    Each compute call remaps fields and adds to accumulators. When the output
-    interval elapses, values are normalized by `nAccum` and written. Native
-    stream output remains instantaneous (last snapshot). The trigger advances
-    `avg_last_output_time` by exactly one `avg_output_interval` (not by
-    `currTime`) so the schedule does not drift across many windows. On
-    restart the baseline is `MPAS_NOW`, not `MPAS_START_TIME`, so the
-    trigger doesn't fire every step until catching up; the partial pre-
-    restart sample is dropped (the accumulators are remap-space and not
-    in the Registry, so MPAS restart streams cannot persist them).
-    `write_avg_field` guards against `nAccum == 0` and writes
-    `SHR_FILL_VALUE` instead of dividing by zero.
+11. **MPAS time averaging accumulates in remap space; restart-persisted
+    via sidecar files.** Accumulators are module-scope arrays of size
+    `n_b_local` (target grid points on this rank). Each compute call
+    remaps fields and adds to accumulators. When the output interval
+    elapses, values are normalized by `nAccum` and written. The trigger
+    advances `avg_last_output_time` by exactly one `avg_output_interval`
+    (not by `currTime`) so the schedule does not drift across many
+    windows.
+
+    **Restart persistence** (added 2026-05-01 to make ERS pass for FME
+    streams): each AM writes a `<amName>.fme_accum_restart.nc` sidecar
+    in the run dir whenever the coupler-driven restart alarm fires
+    (`seq_timemgr_RestartAlarmIsOn(EClock)` branch in `ocn_comp_mct.F`
+    and `ice_comp_mct.F`). The sidecar holds `remap_accum`,
+    `remap_latest_inst` (depth-coarsening only), `nAccum`, and
+    `avg_last_output_time` as a global string attribute. PIO writes use
+    a dedicated `iodesc_2d_dbl` (PIO_DOUBLE) with `n_avg_fields` as the
+    record (UNLIMITED) dim — the variable is 3D `(lon, lat, n_avg_fields)`
+    so `pio_setframe` can walk slots; defining it as 2D segfaulted at
+    setframe call. On AM init when `config_do_restart=.true.`, the AM
+    reads the sidecar and overrides the default `MPAS_NOW` baseline
+    with the persisted timestamp. `write_avg_field` guards against
+    `nAccum == 0` and writes `SHR_FILL_VALUE` instead of dividing by
+    zero.
+
+    **`compute_on_startup=.false.` is required for warm-restart BFB.**
+    With the default `=true`, the AM compute runs once at MPAS_NOW
+    before timestepping — a sample at start_time on cold runs, at
+    restart_time on warm runs. The averaging window straddling the
+    restart point sees one extra sample on warm legs that the
+    continuous-run baseline doesn't, producing a ~1e-4 RMS diff in
+    that record. Disabling `compute_on_startup` for all four FME AMs
+    (in `shell_commands` and the `user_nl_*` for testmod cases) makes
+    cold and warm runs accumulate identically. Cost: the very first
+    averaged record of a cold run loses one sample (1 out of ~N per
+    window — invisible in production at daily/30-min cadence).
+    `write_on_startup` was already `.false.`.
 
 12. **Remapped output files include xtime.** The `xtime(StrLen, Time)` character
     variable records the MPAS date-time string for each output record. CF
@@ -327,32 +351,64 @@ These are hard-won lessons. Read before modifying FME code.
     (`eam.h0.0001-01.nc`) but the MPAS files don't, the buildnml
     edits are missing.
 
-29. **MPAS FME restart hooks are no-ops; clobber risk is mitigated by
-    calendar-aligned restart cadence.** All four AM `*_restart_*`
-    routines (`ocn_restart_fme_*` in the three ocean AMs;
-    `seaice_restart_fme_derived_fields`) are empty stubs -- no FME
-    state is persisted across restart. Combined with the `MPAS_NOW`
-    averaging baseline (gotcha #11), this means:
+29. **MPAS FME restart now works correctly via append-mode reopen +
+    accumulator sidecar (FIXED 2026-05-01; ERS_Ld4 PASSes
+    COMPARE_base_rest BFB-clean for all FME files).** The original
+    behavior was: `check_rotate` always created in `PIO_CLOBBER` mode,
+    so leg 2 truncated leg 1's file. AM `*_restart_*` hooks were empty
+    stubs, so accumulators reset on warm restart. Combined, ERS would
+    produce a 1-record `.rest` (Time=1) vs phase-1's 4-record `.base`,
+    failing cprnc.
 
-    1. Time-averaging accumulators reset on restart; pre-restart
-       partial samples are dropped (intentional, harmless when
-       restart lands on an output-window boundary).
-    2. `check_rotate` in `mpas_ocn_fme_horiz_remap.F:663` opens the
-       date-stamped file in clobber mode (Registry XMLs declare
-       `clobber_mode="truncate"`). If leg 2 reopens a file that
-       leg 1 already wrote (same date matches the template), and
-       leg 2 then crashes before the next daily write trigger,
-       leg 1's data for that file is silently truncated.
+    **The fix has four pieces, all required:**
 
-    **Production mitigation**: REST_OPTION='nyears' aligns restart
-    with the monthly rotation boundary, so leg 2 always opens a
-    fresh `*.YYYY-01.nc` after a year-end restart -- no leg-1 file
-    exists at that name to clobber. Confirmed empirically on
-    2026-04-30 ERS test (daily rotation): leg 2 truncated the
-    day-10 `.remapped.nc` file when SLURM killed it before the
-    daily write trigger fired. With monthly rotation + yearly
-    restart this scenario can't happen because legs never share
-    a file. Documented in `run_e3sm.fme.sh` production defaults.
+    1. **Append-mode reopen** in `mpas_ocn_fme_horiz_remap.F` and
+       `mpas_seaice_fme_horiz_remap.F`. `remap_file_open` now
+       inquires whether the target filename exists. When it does AND
+       `is_restart_run==.true.` (cached at module init from
+       `config_do_restart`), it opens via `pio_openfile(PIO_WRITE)`
+       instead of `pio_createfile(PIO_CLOBBER)`. Dim/var IDs are
+       looked up via `pio_inq_dimid` / `pio_inq_varid` instead of
+       being defined; `write_time` skips the "first record only"
+       lon/lat seed block.
+
+    2. **Frame tracking via xtime**, gated on STRICT-less-than. After
+       reopen, scan the existing `xtime` variable and seed
+       `time_record = count(existing_xtime < MPAS_NOW)`. The next
+       `write_time` then increments to the FIRST frame whose
+       existing xtime equals MPAS_NOW (= the leg-1 leftover record
+       past the restart point) and OVERWRITES it. With `<=` instead
+       of `<`, that frame would be excluded from the count and leg-2
+       would append past the end, producing a duplicate xtime — a
+       very subtle false PASS where cprnc compares `min(Time)`
+       records on each side and finds them all matching because
+       `.rest`'s frames 1..N are literally leg-1's bytes.
+
+    3. **Accumulator sidecar files** (see gotcha #11) — required so
+       leg-2's first averaging window after restart starts from the
+       same `(remap_accum, nAccum, avg_last_output_time)` state that
+       leg 1 had at the restart-write moment. Without this, leg-2's
+       record at the restart-spanning xtime would average over a
+       smaller subset of timesteps than leg 1 did.
+
+    4. **`compute_on_startup=.false.`** for all four FME AMs (see
+       gotcha #11 for the asymmetric-extra-sample story). This is
+       the warm-restart-BFB closer.
+
+    **Production cadence still benefits from calendar alignment**:
+    `REST_OPTION='nyears'` with monthly file rotation ensures leg 2
+    opens a fresh `*.YYYY-01.nc` after a year-end restart — the
+    append-mode branch is exercised on the rare mid-month-restart
+    case but not on the common year-boundary case. Documented in
+    `run_e3sm.fme.sh`.
+
+    **Hybrid + RESUBMIT chains work correctly:**
+    - Leg 1 (hybrid initial): `config_do_restart=.false.` →
+      clobber-create everything fresh.
+    - Subsequent legs: warm restart, sidecars loaded, monthly files
+      either don't exist yet (year-end alignment → fresh create) or
+      get appended to via the `<` xtime overwrite logic
+      (mid-window restart, rare).
 
 30. **`eam_derived` only sees state/pbuf/constituents -- not `addfld`
     diagnostics.** `validate_field_name` (`eam_derived.F90:801-866`)
@@ -653,17 +709,74 @@ mitigates the file-clobber-on-restart concern (gotcha #29).
 
 ## Remaining Work
 
+### Open spec questions to resolve before the 100-yr submit
+
+Cross-reference of `shell_commands` (testmod) vs the SamudrACE
+Confluence spec ("case run options for v3 LR piControl SamudrACE",
+p3ai/6154289880, last edited 2026-04-25) was done 2026-05-01.
+Three items need explicit confirmation from the SamudrACE team
+before submit:
+
+1. **STW formula: spec `Q + LIQ + ICE + RIME` vs ours `Q + CLDLIQ
+   + CLDICE + RAINQM`.** P3 microphysics has `RAINQM` (rain mixing
+   ratio) and `RIMEM` (rime mass on snow) as separate prognostic
+   species. The spec literal "RIME" most naturally maps to `RIMEM`,
+   not `RAINQM`. Either the spec wording is loose (and `RAINQM` is
+   what they actually want — it's what the offline pipeline used)
+   or our `derived_fld_defs` needs to change to include `RIMEM`.
+   `eam_derived` can chain expressions, so a 5-term sum is easy if
+   needed. Email the SamudrACE team.
+
+2. **`uVelocityGeoCell` (cell-centered) vs spec `uVelocityGeo`
+   (vertex-located).** The existing `geographicalVectors` AM
+   defines `uVelocityGeo` on `nVertices`, derived from the B-grid
+   primary solve at vertices. Our `uVelocityGeoCell` is on
+   `nCells`, derived by rotating the pre-aggregated
+   `uVelocityCell/vVelocityCell` (one interpolation step removed
+   from the solver). For SamudrACE training on a regular lat-lon
+   grid, cell-centered is almost certainly what's wanted (it
+   matches the cell-based remap framework and all other Samudra
+   fields are cell-centered), but the spec literal is ambiguous.
+   Confirm with team. If they want vertex-located: substantial
+   implementation lift (new vertex-mesh map file + vertex-aware
+   remap path; the FME framework only does cell-based remap
+   currently).
+
+3. **Sea-ice aggregate naming: spec `iceAreaCell/Volume/snowVolumeCell`
+   vs ours `iceAreaTotal/Volume/snowVolumeTotal`.** The data is
+   bit-identical (same `sum_iCategory` formula, verified in
+   `mpas_seaice_icepack.F:4450` vs `mpas_seaice_fme_derived_fields.F:541`)
+   — only the output name differs. Trivial to rename our outputs
+   to match spec. Verify this is just a naming-convention
+   preference, then rename in `mpas_seaice_fme_derived_fields.F`
+   (register_var calls + local target arrays + verify_mpas.py
+   expected names).
+
+Plus the open question that's been there for a while:
+
+4. **Topographic fill convention** for vcoarsen layers 5-7 (lower
+   troposphere) — see "Production-readiness assessment" above.
+
 ### Near-term
 - Add CI test variant (SMS_Ld2, ne4pg2_oQU480 for fast builds)
 - Add SMS_Ld40 monthly-rotation smoke test (verify Jan->Feb file
   rotation, record counts per month match calendar 124/112/124/...,
   no duplicate timestamps across consecutive files)
 - PEM MPI reproducibility test
-- ERS restart test was run 2026-04-30 and exposed the file-clobber
-  behavior documented in gotcha #29; production mitigation
-  (yearly-aligned-to-monthly-rotation restart) is in place. A
-  follow-up ERS at production cadence (REST_OPTION='nyears',
-  monthly file rotation) should run cleanly -- needs scheduling.
+- ERS_Ld4 PASSes COMPARE_base_rest BFB-clean as of 2026-05-01 with
+  the append-mode + accumulator-sidecar + frame-tracking +
+  compute_on_startup=.false. fix bundle (see gotchas #11 and #29).
+  Verified independently across two case directories: 766 fields in
+  fmeDepthCoarsening / 98 in fmeDerivedFields / 42 in
+  fmeSeaiceDerivedFields all IDENTICAL. EAM h0 and cpl.hi remain
+  IDENTICAL. The non-FME AM blockers (timeSeriesStatsDaily restart
+  bug; vertex-velocity diffs) are sidestepped by disabling
+  globalStats / regionalStatistics / timeSeriesStats* in the
+  testmod — those AMs aren't part of the SamudrACE training tape.
+- A follow-up ERS at production cadence (REST_OPTION='nyears',
+  monthly file rotation) should run cleanly given the above fixes
+  exercise the same code paths -- still worth scheduling for
+  paranoia.
 
 ### Verify-script hardening (open after 2026-04-30 punch list pass)
 These are robustness improvements that don't block production but

@@ -210,6 +210,35 @@ cat >> user_nl_mpaso << EOF
 
 config_AM_fmeDepthCoarsening_enable = .true.
 config_AM_fmeDepthCoarsening_compute_interval = 'dt'
+! compute_on_startup=.false. is REQUIRED for warm-restart BFB.
+!
+! compute_on_startup runs the AM compute exactly once at MPAS_NOW
+! before timestepping. For a cold start MPAS_NOW = start_time;
+! for a warm restart MPAS_NOW = restart_time. With time_averaging
+! enabled, the startup compute pushes one sample into the
+! accumulator at that wall-clock instant — sample(start_time) on
+! cold runs, sample(restart_time) on warm runs.
+!
+! Phase-1 of an ERS test does cold + write-restart-mid-run + keep-running.
+! Phase-2 reads the restart and continues. The daily-average window
+! that straddles the restart point is computed once in phase-1 from
+! pure timestep samples (the startup sample lives in the *first*
+! window of phase-1, far away) and once in phase-2 with an extra
+! sample(restart_time) injected on top of the same timestep samples.
+! Result: phase-2's record for that window differs from phase-1's
+! by ~1/N (e.g. ~2% with daily output and 30-min coupling).
+! That's the source of the ~1e-4 RMS difference seen in the ERS
+! cprnc summary before this flag was set.
+!
+! Disabling compute_on_startup makes both phases skip that initial
+! sample. Cost: the very first averaged record of a cold run loses
+! one sample out of ~N (e.g. day-1 has 48 samples instead of 49 for
+! daily/30-min). All subsequent records are unaffected. For a
+! 100-yr SamudrACE tape that's 1 mildly-biased record out of
+! ~36500. The startup sample carries no special information
+! anyway (it's just the model's IC, which already lives in the
+! restart files).
+config_AM_fmeDepthCoarsening_compute_on_startup = .false.
 config_AM_fmeDepthCoarsening_time_averaging = .true.
 ! Samudra training spec (Confluence p3ai/6154289880, "case run options for
 ! v3 LR piControl SamudrACE") requires BOTH 1D-avg AND 1D-instant for the
@@ -225,6 +254,7 @@ config_AM_fmeDepthCoarsening_fields = 'temperature,salinity,velocityZonal,veloci
 
 config_AM_fmeDerivedFields_enable = .true.
 config_AM_fmeDerivedFields_compute_interval = 'dt'
+config_AM_fmeDerivedFields_compute_on_startup = .false.
 config_AM_fmeDerivedFields_time_averaging = .true.
 config_AM_fmeDerivedFields_stream_output_interval = '${FME_MPAS_INTERVAL}'
 
@@ -269,6 +299,7 @@ cat >> user_nl_mpassi << EOF
 
 config_AM_fmeSeaiceDerivedFields_enable = .true.
 config_AM_fmeSeaiceDerivedFields_compute_interval = 'dt'
+config_AM_fmeSeaiceDerivedFields_compute_on_startup = .false.
 config_AM_fmeSeaiceDerivedFields_time_averaging = .true.
 config_AM_fmeSeaiceDerivedFields_stream_output_interval = '${FME_MPAS_INTERVAL}'
 
