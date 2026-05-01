@@ -3470,13 +3470,6 @@
         <env name="RLIMITS"> </env>
      </environment_variables>
      <environment_variables compiler="oneapi-ifxgpu">
-        <env name="UR_L0_USE_DRIVER_INORDER_LISTS">1</env>
-        <env name="UR_L0_USE_RELAXED_ALLOCATION_LIMITS">1</env>
-        <env name="UR_L0_USE_COPY_ENGINE">1</env>
-        <env name="SYCL_PI_LEVEL_ZERO_SINGLE_THREAD_MODE">1</env>
-        <env name="SYCL_PI_LEVEL_ZERO_DISABLE_USM_ALLOCATOR">1</env>
-        <env name="SYCL_PI_LEVEL_ZERO_USM_RESIDENT">0x001</env>
-
         <env name="MPIR_CVAR_ENABLE_GPU">1</env>
         <env name="romio_cb_read">disable</env>
         <env name="romio_cb_write">disable</env>
