@@ -499,7 +499,7 @@ contains
       integer(PIO_OFFSET_KIND) :: time_len
       logical :: file_exists
       type(MPAS_Time_Type) :: now_time
-      character(len=64) :: now_str
+      character(len=StrKIND) :: now_str
       character(len=64), allocatable :: existing_xtime(:)
 
       err = 0
