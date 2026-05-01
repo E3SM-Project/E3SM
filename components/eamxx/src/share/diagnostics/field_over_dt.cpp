@@ -2,33 +2,28 @@
 
 namespace scream {
 
-FieldOverDtDiag::
-FieldOverDtDiag(const ekat::Comm &comm,
-                const ekat::ParameterList &params)
- : AtmosphereDiagnostic(comm, params)
+FieldOverDt::
+FieldOverDt(const ekat::Comm &comm,
+                const ekat::ParameterList &params,
+                const std::shared_ptr<const AbstractGrid>& grid)
+ : AbstractDiagnostic(comm, params, grid)
 {
   EKAT_REQUIRE_MSG(params.isParameter("field_name"),
-                   "Error! FieldOverDtDiag requires 'field_name' in its "
+                   "Error! FieldOverDt requires 'field_name' in its "
                    "input parameters.\n");
 
   m_name = m_params.get<std::string>("field_name");
+  m_field_in_names.push_back(m_name);
 }
 
-void FieldOverDtDiag::
-create_requests()
-{
-  const auto &gname = m_params.get<std::string>("grid_name");
-  add_field<Required>(m_name, gname);
-}
-
-void FieldOverDtDiag::initialize_impl(const RunType /*run_type*/) {
-  const auto &f   = get_field_in(m_name);
+void FieldOverDt::initialize_impl() {
+  const auto &f   = m_fields_in.at(m_name);
   const auto &fid = f.get_header().get_identifier();
   const auto &gn  = fid.get_grid_name();
 
   EKAT_REQUIRE_MSG(
       f.data_type() == DataType::RealType,
-      "Error! FieldOverDtDiag only supports Real data type fields.\n"
+      "Error! FieldOverDt only supports Real data type fields.\n"
       " - field name: " + fid.name() + "\n"
       " - field data type: " + e2str(f.data_type()) + "\n");
 
@@ -45,16 +40,16 @@ void FieldOverDtDiag::initialize_impl(const RunType /*run_type*/) {
   }
 }
 
-void FieldOverDtDiag::init_timestep(const util::TimeStamp &start_of_step) {
+void FieldOverDt::init_timestep(const util::TimeStamp &start_of_step) {
   m_start_ts = start_of_step;
   EKAT_REQUIRE_MSG (m_start_ts.is_valid(),
       "Error! Initializing FieldOverDtDiag timestep with an invalid time stamp.\n"
       " - diag field name: " + m_diagnostic_output.name() + "\n");
 }
 
-void FieldOverDtDiag::compute_diagnostic_impl()
+void FieldOverDt::compute_impl()
 {
-  const auto &f = get_field_in(m_name);
+  const auto &f = m_fields_in.at(m_name);
 
   const auto &curr_ts = f.get_header().get_tracking().get_time_stamp();
   EKAT_REQUIRE_MSG (curr_ts.is_valid() and m_start_ts.is_valid(),
@@ -64,7 +59,7 @@ void FieldOverDtDiag::compute_diagnostic_impl()
   const std::int64_t dt = curr_ts.seconds_from(m_start_ts);
 
   EKAT_REQUIRE_MSG(dt > 0,
-      "Error! FieldOverDtDiag: dt must be positive.\n"
+      "Error! FieldOverDt: dt must be positive.\n"
       " - field name: " + m_name + "\n"
       " - start timestamp: " + m_start_ts.to_string() + "\n"
       " - curr timestamp:  " + curr_ts.to_string() + "\n");

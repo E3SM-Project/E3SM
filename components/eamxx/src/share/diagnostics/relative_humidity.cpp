@@ -7,69 +7,57 @@
 namespace scream
 {
 
-RelativeHumidityDiagnostic::
-RelativeHumidityDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
- : AtmosphereDiagnostic(comm,params)
+RelativeHumidity::
+RelativeHumidity (const ekat::Comm& comm, const ekat::ParameterList& params,
+                             const std::shared_ptr<const AbstractGrid>& grid)
+ : AbstractDiagnostic(comm,params,grid)
 {
-  // Nothing to do here
-}
-
-void RelativeHumidityDiagnostic::create_requests()
-{
-  using namespace ekat::units;
   using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
 
-  auto grid  = m_grids_manager->get_grid("physics");
-  const auto& grid_name = grid->name();
-  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
-  m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
+  auto scalar3d = m_grid->get_3d_scalar_layout(LEV);
 
-  auto scalar3d = grid->get_3d_scalar_layout(LEV);
+  m_field_in_names.push_back("T_mid");
+  m_field_in_names.push_back("p_dry_mid");
+  m_field_in_names.push_back("qv");
+  m_field_in_names.push_back("pseudo_density");
+  m_field_in_names.push_back("pseudo_density_dry");
 
-  // The fields required for this diagnostic to be computed
-  add_field<Required>("T_mid",              scalar3d, K,     grid_name, SCREAM_PACK_SIZE);
-  add_field<Required>("p_dry_mid",          scalar3d, Pa,    grid_name, SCREAM_PACK_SIZE);
-  add_field<Required>("qv",                 scalar3d, kg/kg, grid_name, SCREAM_PACK_SIZE);
-  add_field<Required>("pseudo_density",     scalar3d, Pa,    grid_name, SCREAM_PACK_SIZE);
-  add_field<Required>("pseudo_density_dry", scalar3d, Pa,    grid_name, SCREAM_PACK_SIZE);
-
-  // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar3d, none, grid_name);
+  auto diag_layout = m_grid->get_3d_scalar_layout(LEV);
+  FieldIdentifier fid (name(), diag_layout, none, m_grid->name());
   m_diagnostic_output = Field(fid);
-  auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
-  C_ap.request_allocation(SCREAM_PACK_SIZE);
+  m_diagnostic_output.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
   m_diagnostic_output.allocate_view();
 }
 
-void RelativeHumidityDiagnostic::compute_diagnostic_impl()
+void RelativeHumidity::compute_impl()
 {
-  using Pack          = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-
-  const auto npacks  = ekat::npack<Pack>(m_num_levs);
-  auto theta     = m_diagnostic_output.get_view<Pack**>();
-  auto T_mid     = get_field_in("T_mid").get_view<const Pack**>();
-  auto p_dry_mid = get_field_in("p_dry_mid").get_view<const Pack**>();
-  auto dp_wet    = get_field_in("pseudo_density").get_view<const Pack**>();
-  auto dp_dry    = get_field_in("pseudo_density_dry").get_view<const Pack**>();
-  auto qv_mid    = get_field_in("qv").get_view<const Pack**>();
-  const auto& RH = m_diagnostic_output.get_view<Pack**>();
-
+  using KT      = KokkosTypes<DefaultDevice>;
+  using MDRange = Kokkos::MDRangePolicy<typename KT::ExeSpace,Kokkos::Rank<2>>;
   using physics = scream::physics::Functions<Real, DefaultDevice>;
+  using Pack    = ekat::Pack<Real,SCREAM_PACK_SIZE>;
 
-  Int num_levs = m_num_levs;
-  Kokkos::parallel_for("RelativeHumidityDiagnostic",
-                       Kokkos::RangePolicy<>(0,m_num_cols*npacks),
-                       KOKKOS_LAMBDA (const int& idx) {
-      const int icol  = idx / npacks;
-      const int jpack = idx % npacks;
-      const auto range_pack = ekat::range<Pack>(jpack*Pack::n);
-      const auto range_mask = range_pack < num_levs;
-      auto qv_sat_l = physics::qv_sat_wet(T_mid(icol,jpack),  p_dry_mid(icol,jpack), true, range_mask, dp_wet(icol,jpack), dp_dry(icol,jpack),
-                                           physics::MurphyKoop, "RelativeHumidityDiagnostic::compute_diagnostic_impl"); 
-      RH(icol,jpack) = qv_mid(icol,jpack)/qv_sat_l;
+  auto theta     = m_diagnostic_output.get_view<Pack**>();
+  auto T_mid     = m_fields_in.at("T_mid").get_view<const Pack**>();
+  auto p_dry_mid = m_fields_in.at("p_dry_mid").get_view<const Pack**>();
+  auto dp_wet    = m_fields_in.at("pseudo_density").get_view<const Pack**>();
+  auto dp_dry    = m_fields_in.at("pseudo_density_dry").get_view<const Pack**>();
+  auto qv_mid    = m_fields_in.at("qv").get_view<const Pack**>();
+  auto RH        = m_diagnostic_output.get_view<Pack**>();
 
-  });
-  Kokkos::fence();
+  const int nlevs = m_grid->get_num_vertical_levels();
+  const int ncols = m_grid->get_num_local_dofs();
+
+  MDRange policy({0,0},{ncols,ekat::PackInfo<SCREAM_PACK_SIZE>::num_packs(nlevs)});
+
+  auto lambda = KOKKOS_LAMBDA (const int& icol, const int& ipack) {
+    const auto range_pack = ekat::range<Pack>(ipack*Pack::n);
+    const auto range_mask = range_pack < nlevs;
+    auto qv_sat_l = physics::qv_sat_wet(T_mid(icol,ipack),  p_dry_mid(icol,ipack), true, range_mask, dp_wet(icol,ipack), dp_dry(icol,ipack),
+                                         physics::MurphyKoop, "RelativeHumidity::compute_impl");
+    RH(icol,ipack) = qv_mid(icol,ipack)/qv_sat_l;
+  };
+  Kokkos::parallel_for("RelativeHumidity", policy, lambda);
 }
 
 } //namespace scream

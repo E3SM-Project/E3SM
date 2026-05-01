@@ -66,102 +66,102 @@ TEST_CASE("create_diag")
 
   SECTION ("water_and_number_path") {
     auto d1 = create_diagnostic("LiqWaterPath",grid);
-    REQUIRE (std::dynamic_pointer_cast<WaterPathDiagnostic>(d1)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<WaterPath>(d1)!=nullptr);
     REQUIRE (d1->get_params().get<std::string>("water_kind")=="Liq");
 
     auto d2 = create_diagnostic("IceWaterPath",grid);
-    REQUIRE (std::dynamic_pointer_cast<WaterPathDiagnostic>(d2)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<WaterPath>(d2)!=nullptr);
     REQUIRE (d2->get_params().get<std::string>("water_kind")=="Ice");
 
     auto d3 = create_diagnostic("RainWaterPath",grid);
-    REQUIRE (std::dynamic_pointer_cast<WaterPathDiagnostic>(d3)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<WaterPath>(d3)!=nullptr);
     REQUIRE (d3->get_params().get<std::string>("water_kind")=="Rain");
 
     auto d4 = create_diagnostic("RimeWaterPath",grid);
-    REQUIRE (std::dynamic_pointer_cast<WaterPathDiagnostic>(d4)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<WaterPath>(d4)!=nullptr);
     REQUIRE (d4->get_params().get<std::string>("water_kind")=="Rime");
 
     auto d5 = create_diagnostic("VapWaterPath",grid);
-    REQUIRE (std::dynamic_pointer_cast<WaterPathDiagnostic>(d5)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<WaterPath>(d5)!=nullptr);
     REQUIRE (d5->get_params().get<std::string>("water_kind")=="Vap");
 
     auto d6 = create_diagnostic("LiqNumberPath",grid);
-    REQUIRE (std::dynamic_pointer_cast<NumberPathDiagnostic>(d6)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<NumberPath>(d6)!=nullptr);
     REQUIRE (d6->get_params().get<std::string>("number_kind")=="Liq");
 
     auto d7 = create_diagnostic("IceNumberPath",grid);
-    REQUIRE (std::dynamic_pointer_cast<NumberPathDiagnostic>(d7)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<NumberPath>(d7)!=nullptr);
     REQUIRE (d7->get_params().get<std::string>("number_kind")=="Ice");
 
     auto d8 = create_diagnostic("RainNumberPath",grid);
-    REQUIRE (std::dynamic_pointer_cast<NumberPathDiagnostic>(d8)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<NumberPath>(d8)!=nullptr);
     REQUIRE (d8->get_params().get<std::string>("number_kind")=="Rain");
   }
 
   SECTION ("vapor_flux") {
     auto d1 = create_diagnostic("MeridionalVapFlux",grid);
-    REQUIRE (std::dynamic_pointer_cast<VaporFluxDiagnostic>(d1)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<VaporFlux>(d1)!=nullptr);
     REQUIRE (d1->get_params().get<std::string>("wind_component")=="Meridional");
 
     auto d2 = create_diagnostic("ZonalVapFlux",grid);
-    REQUIRE (std::dynamic_pointer_cast<VaporFluxDiagnostic>(d2)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<VaporFlux>(d2)!=nullptr);
     REQUIRE (d2->get_params().get<std::string>("wind_component")=="Zonal");
   }
 
   SECTION ("atm_backtend") {
     // _atm_backtend is a built-in alias: X_atm_backtend → X_minus_X_prev_over_dt
-    // The returned diagnostic is FieldOverDtDiag with field_name = "BlaH_123_minus_BlaH_123_prev"
+    // The returned diagnostic is FieldOverDt with field_name = "BlaH_123_minus_BlaH_123_prev"
     auto d1 = create_diagnostic("BlaH_123_atm_backtend",grid);
-    REQUIRE (std::dynamic_pointer_cast<FieldOverDtDiag>(d1)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<FieldOverDt>(d1)!=nullptr);
     REQUIRE (d1->get_params().get<std::string>("field_name")=="BlaH_123_minus_BlaH_123_prev");
   }
 
   SECTION ("field_prev") {
     auto d1 = create_diagnostic("BlaH_123_prev",grid);
-    REQUIRE (std::dynamic_pointer_cast<FieldPrevDiag>(d1)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<FieldPrev>(d1)!=nullptr);
     REQUIRE (d1->get_params().get<std::string>("field_name")=="BlaH_123");
   }
 
   SECTION ("field_over_dt") {
     auto d1 = create_diagnostic("BlaH_123_over_dt",grid);
-    REQUIRE (std::dynamic_pointer_cast<FieldOverDtDiag>(d1)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<FieldOverDt>(d1)!=nullptr);
     REQUIRE (d1->get_params().get<std::string>("field_name")=="BlaH_123");
   }
 
   SECTION ("pot_temp") {
     auto d1 = create_diagnostic("LiqPotentialTemperature",grid);
-    REQUIRE (std::dynamic_pointer_cast<PotentialTemperatureDiagnostic>(d1)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<PotentialTemperature>(d1)!=nullptr);
     REQUIRE (d1->get_params().get<std::string>("temperature_kind")=="Liq");
 
     auto d2 = create_diagnostic("PotentialTemperature",grid);
-    REQUIRE (std::dynamic_pointer_cast<PotentialTemperatureDiagnostic>(d2)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<PotentialTemperature>(d2)!=nullptr);
     REQUIRE (d2->get_params().get<std::string>("temperature_kind")=="Tot");
   }
 
   SECTION ("vert_layer") {
     auto d1 = create_diagnostic("z_mid",grid);
-    REQUIRE (std::dynamic_pointer_cast<VerticalLayerDiagnostic>(d1)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<VerticalLayer>(d1)!=nullptr);
     REQUIRE (d1->get_params().get<std::string>("vert_location")=="mid");
     auto d2 = create_diagnostic("z_int",grid);
-    REQUIRE (std::dynamic_pointer_cast<VerticalLayerDiagnostic>(d2)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<VerticalLayer>(d2)!=nullptr);
     REQUIRE (d2->get_params().get<std::string>("vert_location")=="int");
 
     auto d3 = create_diagnostic("height_mid",grid);
-    REQUIRE (std::dynamic_pointer_cast<VerticalLayerDiagnostic>(d3)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<VerticalLayer>(d3)!=nullptr);
     REQUIRE (d3->get_params().get<std::string>("vert_location")=="mid");
     auto d4 = create_diagnostic("height_int",grid);
-    REQUIRE (std::dynamic_pointer_cast<VerticalLayerDiagnostic>(d4)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<VerticalLayer>(d4)!=nullptr);
     REQUIRE (d4->get_params().get<std::string>("vert_location")=="int");
 
     auto d5 = create_diagnostic("geopotential_mid",grid);
-    REQUIRE (std::dynamic_pointer_cast<VerticalLayerDiagnostic>(d5)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<VerticalLayer>(d5)!=nullptr);
     REQUIRE (d5->get_params().get<std::string>("vert_location")=="mid");
     auto d6 = create_diagnostic("geopotential_int",grid);
-    REQUIRE (std::dynamic_pointer_cast<VerticalLayerDiagnostic>(d6)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<VerticalLayer>(d6)!=nullptr);
     REQUIRE (d6->get_params().get<std::string>("vert_location")=="int");
 
     auto d7 = create_diagnostic("dz",grid);
-    REQUIRE (std::dynamic_pointer_cast<VerticalLayerDiagnostic>(d7)!=nullptr);
+    REQUIRE (std::dynamic_pointer_cast<VerticalLayer>(d7)!=nullptr);
     REQUIRE (d7->get_params().get<std::string>("vert_location")=="mid");
   }
 

@@ -8,9 +8,12 @@
 
 namespace scream {
 
-AeroComCld::AeroComCld(const ekat::Comm &comm,
-                       const ekat::ParameterList &params)
-    : AtmosphereDiagnostic(comm, params) {
+AeroComCld::
+AeroComCld(const ekat::Comm &comm,
+           const ekat::ParameterList &params,
+           const std::shared_ptr<const AbstractGrid>& grid)
+ : AbstractDiagnostic(comm, params, grid)
+{
   EKAT_REQUIRE_MSG(params.isParameter("aero_com_cld_kind"),
                    "Error! AeroComCld requires 'aero_com_cld_kind' in its "
                    "input parameters.\n");
@@ -20,17 +23,9 @@ AeroComCld::AeroComCld(const ekat::Comm &comm,
   EKAT_REQUIRE_MSG(m_topbot == "Bot" || m_topbot == "Top",
                    "Error! AeroComCld requires 'aero_com_cld_kind' "
                    "to be 'Bot' or 'Top' in its input parameters.\n");
-}
 
-void AeroComCld::
-create_requests() {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
-
-  auto grid             = m_grids_manager->get_grid("physics");
-  const auto &grid_name = grid->name();
-
-  const auto micron = m / 1000000;
 
   // Set the index map and units map
   AeroComCldDiagUtil aercom_util;
@@ -47,48 +42,46 @@ create_requests() {
                    "Error! Some inconsistency in AeroComCld: index and units "
                    "maps do not match!\n");
 
-  m_ncols = grid->get_num_local_dofs();
-  m_nlevs = grid->get_num_vertical_levels();
-
   // Define layouts we need (both inputs and outputs)
-  auto scalar3d = grid->get_3d_scalar_layout(LEV);
-  auto vector2d = grid->get_2d_vector_layout(m_ndiag);
+  auto scalar3d = m_grid->get_3d_scalar_layout(LEV);
+  auto vector2d = m_grid->get_2d_vector_layout(m_ndiag);
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("T_mid",          scalar3d, K,       grid_name);
-  add_field<Required>("pseudo_density", scalar3d, Pa,      grid_name);
-  add_field<Required>("p_mid",          scalar3d, Pa,      grid_name);
-  add_field<Required>("qv",             scalar3d, kg / kg, grid_name);
-  add_field<Required>("qc",             scalar3d, kg / kg, grid_name);
-  add_field<Required>("qi",             scalar3d, kg / kg, grid_name);
-  add_field<Required>("eff_radius_qc",  scalar3d, micron,  grid_name);
-  add_field<Required>("eff_radius_qi",  scalar3d, micron,  grid_name);
-  add_field<Required>("cldfrac_tot",    scalar3d, none,    grid_name);
-  add_field<Required>("nc",             scalar3d, 1 / kg,  grid_name);
-  add_field<Required>("ni",             scalar3d, 1 / kg,  grid_name);
+  m_field_in_names = {
+   "T_mid"          ,
+   "pseudo_density" ,
+   "p_mid"          ,
+   "qv"             ,
+   "qc"             ,
+   "qi"             ,
+   "eff_radius_qc"  ,
+   "eff_radius_qi"  ,
+   "cldfrac_tot"    ,
+   "nc"             ,
+   "ni"             ,
+  };
 
   // A field to store dz
-  FieldIdentifier m_dz_fid("dz", scalar3d, m, grid_name);
-  m_dz = Field(m_dz_fid);
-  m_dz.allocate_view();
+  FieldIdentifier m_dz_fid("dz", m_grid->get_3d_scalar_layout(LEV), m, m_grid->name());
+  m_dz = Field(m_dz_fid,true);
 
   // Construct and allocate the output field
-  FieldIdentifier fid(name() + m_topbot, vector2d, none, grid_name);
+  FieldIdentifier fid(name() + m_topbot, vector2d, none, m_grid->name());
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 
   // Self-document the outputs to parse in post-processing
   using stratt_t = std::map<std::string, std::string>;
-  auto d         = get_diagnostic();
   auto &metadata =
-      d.get_header().get_extra_data<stratt_t>("io: string attributes");
+      m_diagnostic_output.get_header().get_extra_data<stratt_t>("io: string attributes");
   for(const auto &it : m_index_map) {
     metadata[it.first] =
         std::to_string(it.second) + " (" + m_units_map[it.first] + ")";
   }
 }
 
-void AeroComCld::compute_diagnostic_impl() {
+void AeroComCld::compute_impl()
+{
   /* The goal of this routine/impl is to calculate properties at cloud top
    * based on the AeroCom recommendation. See reference for routine
    * get_subcolumn_mask in rrtmpg, where equation 14 is used for the
@@ -103,17 +96,17 @@ void AeroComCld::compute_diagnostic_impl() {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
 
   // Get the input fields
-  const auto tmid = get_field_in("T_mid").get_view<const Real **>();
-  const auto pden = get_field_in("pseudo_density").get_view<const Real **>();
-  const auto pmid = get_field_in("p_mid").get_view<const Real **>();
-  const auto qv   = get_field_in("qv").get_view<const Real **>();
-  const auto qc   = get_field_in("qc").get_view<const Real **>();
-  const auto qi   = get_field_in("qi").get_view<const Real **>();
-  const auto rel  = get_field_in("eff_radius_qc").get_view<const Real **>();
-  const auto rei  = get_field_in("eff_radius_qi").get_view<const Real **>();
-  const auto cld  = get_field_in("cldfrac_tot").get_view<const Real **>();
-  const auto nc   = get_field_in("nc").get_view<const Real **>();
-  const auto ni   = get_field_in("ni").get_view<const Real **>();
+  const auto tmid = m_fields_in.at("T_mid").get_view<const Real **>();
+  const auto pden = m_fields_in.at("pseudo_density").get_view<const Real **>();
+  const auto pmid = m_fields_in.at("p_mid").get_view<const Real **>();
+  const auto qv   = m_fields_in.at("qv").get_view<const Real **>();
+  const auto qc   = m_fields_in.at("qc").get_view<const Real **>();
+  const auto qi   = m_fields_in.at("qi").get_view<const Real **>();
+  const auto rel  = m_fields_in.at("eff_radius_qc").get_view<const Real **>();
+  const auto rei  = m_fields_in.at("eff_radius_qi").get_view<const Real **>();
+  const auto cld  = m_fields_in.at("cldfrac_tot").get_view<const Real **>();
+  const auto nc   = m_fields_in.at("nc").get_view<const Real **>();
+  const auto ni   = m_fields_in.at("ni").get_view<const Real **>();
 
   auto dz = m_dz.get_view<Real **>();
 
@@ -124,14 +117,15 @@ void AeroComCld::compute_diagnostic_impl() {
   auto q_threshold           = q_thresh_set();
   auto cldfrac_tot_threshold = cldfrac_tot_thresh_set();
 
-  const auto policy = TPF::get_default_team_policy(m_ncols, m_nlevs);
+  const int ncols = m_grid->get_num_local_dofs();
+  const int nlevs = m_grid->get_num_vertical_levels();
+  const auto policy = TPF::get_default_team_policy(ncols, nlevs);
 
   const auto out = m_diagnostic_output.get_view<Real **>();
 
   // zero out the outputs
   Kokkos::deep_copy(out, 0.0);
 
-  const int nlevs = m_nlevs;
   bool is_top     = (m_topbot == "Top");
 
   // subview the out field for each variable

@@ -1,6 +1,8 @@
 #ifndef SCREAM_TIME_STAMP_HPP
 #define SCREAM_TIME_STAMP_HPP
 
+#include "eamxx_bfbhash.hpp"
+
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -90,6 +92,10 @@ TimeStamp operator- (const TimeStamp& ts, const int dt);
 
 // If input string is not of the format YYYY-MM-DD-XXXXX, returns an invalid time stamp
 TimeStamp str_to_time_stamp (const std::string& s);
+
+// Accumulate a ts into a hash
+void hash (const TimeStamp& ts,
+           bfbhash::HashType& accum_out);
 
 // An enum describing two ways to look at timestamps:
 //  - Linear: treat them as part of a 1d line

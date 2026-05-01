@@ -1,7 +1,6 @@
 #include "share/io/eamxx_io_utils.hpp"
 
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/data_managers/library_grids_manager.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/core/eamxx_config.hpp"
 
@@ -223,7 +222,7 @@ parse_cf_time_units (const std::string& units_str,
   return {ref_ts, time_mult};
 }
 
-std::shared_ptr<AtmosphereDiagnostic>
+std::shared_ptr<AbstractDiagnostic>
 create_diagnostic (const std::string& diag_field_name,
                    const std::shared_ptr<const AbstractGrid>& grid)
 {
@@ -311,8 +310,8 @@ create_diagnostic (const std::string& diag_field_name,
     params.set<std::string>("wind_component",matches[1].str());
   } else if (std::regex_search(diag_field_name,matches,field_over_dt)) {
     // NOTE: _over_dt must be checked before binary_ops to prevent "X_over_dt" from being
-    // misinterpreted as BinaryOpsDiag(X, over, dt).
-    diag_name = "FieldOverDtDiag";
+    // misinterpreted as BinaryOp(X, over, dt).
+    diag_name = "FieldOverDt";
     params.set("grid_name",grid->name());
     params.set<std::string>("field_name",matches[1].str());
   } else if (std::regex_search(diag_field_name,matches,pot_temp)) {
@@ -328,12 +327,12 @@ create_diagnostic (const std::string& diag_field_name,
     params.set<std::string>("vert_location","mid");
   }
   else if (std::regex_search(diag_field_name,matches,horiz_avg)) {
-    diag_name = "HorizAvgDiag";
+    diag_name = "HorizAvg";
     params.set("grid_name",grid->name());
     params.set<std::string>("field_name",matches[1].str());
   }
   else if (std::regex_search(diag_field_name,matches,vert_contract)) {
-    diag_name = "VertContractDiag";
+    diag_name = "VertContract";
     params.set("grid_name", grid->name());
     params.set<std::string>("field_name", matches[1].str());
     params.set<std::string>("contract_method", matches[2].str());
@@ -344,13 +343,13 @@ create_diagnostic (const std::string& diag_field_name,
     }
   }
   else if (std::regex_search(diag_field_name,matches,vert_derivative)) {
-    diag_name = "VertDerivativeDiag";
+    diag_name = "VertDerivative";
     params.set("grid_name", grid->name());
     params.set<std::string>("field_name", matches[1].str());
     params.set<std::string>("derivative_method", matches[2].str());
   }
   else if (std::regex_search(diag_field_name,matches,zonal_avg)) {
-    diag_name = "ZonalAvgDiag";
+    diag_name = "ZonalAvg";
     params.set("grid_name", grid->name());
     params.set<std::string>("field_name", matches[1].str());
     params.set<std::string>("number_of_zonal_bins", matches[2].str());
@@ -364,21 +363,21 @@ create_diagnostic (const std::string& diag_field_name,
     params.set<std::string>("condition_rhs", matches[4].str());
   }
   else if (std::regex_search(diag_field_name,matches,binary_ops)) {
-    diag_name = "BinaryOpsDiag";
+    diag_name = "BinaryOp";
     params.set("grid_name", grid->name());
     params.set<std::string>("arg1", matches[1].str());
     params.set<std::string>("arg2", matches[3].str());
     params.set<std::string>("binary_op", matches[2].str());
   }
   // NOTE: field_prev must be checked AFTER binary_ops so that "X_minus_X_prev"
-  // is parsed as BinaryOpsDiag(X, minus, X_prev) rather than FieldPrevDiag(X_minus_X).
+  // is parsed as BinaryOp(X, minus, X_prev) rather than FieldPrev(X_minus_X).
   else if (std::regex_search(diag_field_name,matches,field_prev)) {
-    diag_name = "FieldPrevDiag";
+    diag_name = "FieldPrev";
     params.set("grid_name",grid->name());
     params.set<std::string>("field_name",matches[1].str());
   }
   else if (std::regex_search(diag_field_name,matches,histogram)) {
-    diag_name = "HistogramDiag";
+    diag_name = "Histogram";
     params.set("grid_name", grid->name());
     params.set<std::string>("field_name", matches[1].str());
     params.set<std::string>("bin_configuration", matches[2].str());
@@ -390,9 +389,7 @@ create_diagnostic (const std::string& diag_field_name,
   }
 
   auto comm = grid->get_comm();
-  auto diag = AtmosphereDiagnosticFactory::instance().create(diag_name,comm,params);
-  auto gm = std::make_shared<LibraryGridsManager>(grid);
-  diag->set_grids(gm);
+  auto diag = DiagnosticFactory::instance().create(diag_name,comm,params,grid);
 
   return diag;
 }
