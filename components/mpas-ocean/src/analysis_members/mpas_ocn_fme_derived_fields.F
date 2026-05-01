@@ -75,7 +75,9 @@ module ocn_fme_derived_fields
    !   9  windStressZonal              21  iceRunoffFlux
    !  10  windStressMeridional         22  snowFluxLf
    !  11  longWaveHeatFluxUp           23  iceRunoffFluxLf
-   !  12  totalFreshWaterTemperatureFlux  24  riverRunoffFluxTemperature
+   !  12  (unused, was totalFreshWaterTemperatureFlux until 2026-04-30,
+   !       removed per SamudrACE spec p3ai/6154289880 -- struck through)
+   !                                   24  riverRunoffFluxTemperature
    integer, parameter :: N_AVG_FIELDS = 24
    real(r8), allocatable :: remap_accum(:,:)  ! (n_b_local, N_AVG_FIELDS)
 
@@ -143,9 +145,6 @@ contains
                        'Meridional wind stress on ocean', ierr)
                   call remap_outfile%register_var('longWaveHeatFluxUp', 'W m^-2', &
                        'Upward longwave heat flux from ocean', ierr)
-                  call remap_outfile%register_var('totalFreshWaterTemperatureFlux', &
-                       'kg degC m^-2 s^-1', &
-                       'Total fresh water temperature flux into ocean', ierr)
                   call remap_outfile%register_var('rainFlux', 'kg m^-2 s^-1', &
                        'Rain mass flux into ocean', ierr)
                   call remap_outfile%register_var('snowFlux', 'kg m^-2 s^-1', &
@@ -238,7 +237,6 @@ contains
       real(kind=RKIND), dimension(:), pointer :: sensibleHeatFlux
       real(kind=RKIND), dimension(:), pointer :: rainFluxPtr, snowFluxPtr
       real(kind=RKIND), dimension(:), pointer :: evaporationFluxPtr
-      real(kind=RKIND), dimension(:), pointer :: totalFreshWaterTemperatureFluxPtr
       real(kind=RKIND), dimension(:), pointer :: seaIceHeatFluxPtr, icebergHeatFluxPtr
       real(kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFluxPtr
       real(kind=RKIND), dimension(:), pointer :: seaIceSalinityFluxPtr
@@ -290,8 +288,6 @@ contains
          call mpas_pool_get_array(forcingPool, 'rainFlux', rainFluxPtr)
          call mpas_pool_get_array(forcingPool, 'snowFlux', snowFluxPtr)
          call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFluxPtr)
-         call mpas_pool_get_array(forcingPool, 'totalFreshWaterTemperatureFlux', &
-              totalFreshWaterTemperatureFluxPtr)
          call mpas_pool_get_array(forcingPool, 'seaIceHeatFlux', seaIceHeatFluxPtr)
          call mpas_pool_get_array(forcingPool, 'icebergHeatFlux', icebergHeatFluxPtr)
          call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', &
@@ -390,8 +386,7 @@ contains
                     call mask_and_remap(windStressMeridionalPtr, 10)
                if (associated(longWaveHeatFluxUp)) &
                     call mask_and_remap(longWaveHeatFluxUp, 11)
-               if (associated(totalFreshWaterTemperatureFluxPtr)) &
-                    call mask_and_remap(totalFreshWaterTemperatureFluxPtr, 12)
+               ! idx=12 unused (was totalFreshWaterTemperatureFlux, removed 2026-04-30)
                if (associated(rainFluxPtr)) &
                     call mask_and_remap(rainFluxPtr, 13)
                if (associated(snowFluxPtr)) &
@@ -435,7 +430,7 @@ contains
                      call write_avg_field('windStressZonal', 9)
                      call write_avg_field('windStressMeridional', 10)
                      call write_avg_field('longWaveHeatFluxUp', 11)
-                     call write_avg_field('totalFreshWaterTemperatureFlux', 12)
+                     ! idx=12 unused (was totalFreshWaterTemperatureFlux)
                      call write_avg_field('rainFlux', 13)
                      call write_avg_field('snowFlux', 14)
                      call write_avg_field('evaporationFlux', 15)
@@ -481,9 +476,6 @@ contains
                        call inst_remap_and_write(windStressMeridionalPtr, 'windStressMeridional', .true.)
                   if (associated(longWaveHeatFluxUp)) &
                        call inst_remap_and_write(longWaveHeatFluxUp, 'longWaveHeatFluxUp', .true.)
-                  if (associated(totalFreshWaterTemperatureFluxPtr)) &
-                       call inst_remap_and_write(totalFreshWaterTemperatureFluxPtr, &
-                            'totalFreshWaterTemperatureFlux', .true.)
                   if (associated(rainFluxPtr)) &
                        call inst_remap_and_write(rainFluxPtr, 'rainFlux', .true.)
                   if (associated(snowFluxPtr)) &

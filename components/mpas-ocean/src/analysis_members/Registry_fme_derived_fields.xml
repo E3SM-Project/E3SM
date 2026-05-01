@@ -60,8 +60,8 @@
 		<stream name="fmeDerivedFieldsOutput" type="output"
 				mode="forward;analysis"
 				precision="single"
-				filename_template="analysis_members/fmeDerivedFields.$Y-$M-$D.nc"
-				filename_interval="01-00-00_00:00:00"
+				filename_template="analysis_members/fmeDerivedFields.$Y-$M.nc"
+				filename_interval="00-01-00_00:00:00"
 				output_interval="00-00-01_00:00:00"
 				reference_time="0001-01-01_00:00:00"
 				packages="fmeDerivedFieldsAMPKG"
@@ -83,7 +83,6 @@
 			<var name="rainFlux"/>
 			<var name="snowFlux"/>
 			<var name="evaporationFlux"/>
-			<var name="totalFreshWaterTemperatureFlux"/>
 			<var name="frazilIceFreshwaterFlux"/>
 			<var name="surfaceFrictionVelocity"/>
 			<var name="seaIceHeatFlux"/>

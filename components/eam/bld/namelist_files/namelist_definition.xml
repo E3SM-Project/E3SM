@@ -1994,6 +1994,16 @@ through sixth to the auxillary history files.
 Default: 1,30,30,30,30,30,30,30,30,30,30,30,30,30,30
 </entry>
 
+<entry id="hist_file_storage_type" type="char*16(15)"  category="history"
+       group="cam_history_nl" valid_values="num_snapshots,one_month,one_year" >
+Per-tape file rotation policy. 'num_snapshots' (default) uses the legacy
+mfilt-based rotation. 'one_month' rotates at calendar-month boundaries
+(file named %y-%m.nc). 'one_year' rotates at calendar-year boundaries
+(file named %y.nc). Calendar rotation overrides mfilt for that tape.
+Inspired by EAMxx's StorageType pattern (scream_io_file_specs.hpp).
+Default: num_snapshots for all tapes
+</entry>
+
 <entry id="lcltod_start" type="integer(15)"  category="history"
        group="cam_history_nl" valid_values="" >
 Array containing the starting time of day for local time history averaging.

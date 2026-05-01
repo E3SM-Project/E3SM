@@ -12,8 +12,15 @@
 FME_EAM_OUTPUT_HOURS=${FME_EAM_OUTPUT_HOURS:-6}
 # EAM averaging flag: 'I' = instantaneous (default), fluxes use per-field :A
 FME_EAM_AVGFLAG=${FME_EAM_AVGFLAG:-I}
-# Number of EAM time samples per output file
-FME_EAM_MFILT=${FME_EAM_MFILT:-4}
+# EAM file rotation policy. With 'one_month', files are rotated exactly at
+# calendar-month boundaries (28-31 days x 4 records/file, depending on month)
+# regardless of mfilt. Names are %y-%m.nc. Set FME_EAM_STORAGE=num_snapshots
+# (and FME_EAM_MFILT to a finite value) for legacy mfilt-based rotation.
+# Other valid values: 'one_year' (one file per calendar year, ~22 GB each).
+FME_EAM_STORAGE=${FME_EAM_STORAGE:-one_month}
+# mfilt is overridden by calendar rotation when FME_EAM_STORAGE != num_snapshots,
+# so it just acts as an upper safety bound. 1500 > any month-record-count (124 max).
+FME_EAM_MFILT=${FME_EAM_MFILT:-1500}
 # MPAS compute/output interval (MPAS time interval string)
 FME_MPAS_INTERVAL=${FME_MPAS_INTERVAL:-00-00-01_00:00:00}
 # Directory containing the gaussian-180x360 SCRIP map files.  Override
@@ -21,7 +28,7 @@ FME_MPAS_INTERVAL=${FME_MPAS_INTERVAL:-00-00-01_00:00:00}
 FME_MAPS_DIR=${FME_MAPS_DIR:-/pscratch/sd/m/mahf708/fme_maps}
 
 echo "FME output configuration:"
-echo "  EAM: ${FME_EAM_OUTPUT_HOURS}-hourly, avgflag=${FME_EAM_AVGFLAG}, mfilt=${FME_EAM_MFILT}"
+echo "  EAM: ${FME_EAM_OUTPUT_HOURS}-hourly, avgflag=${FME_EAM_AVGFLAG}, mfilt=${FME_EAM_MFILT}, storage=${FME_EAM_STORAGE}"
 echo "  MPAS: interval=${FME_MPAS_INTERVAL}"
 #
 # ---------------------------------------------------------------------------
@@ -117,25 +124,37 @@ empty_htapes = .true.
 avgflag_pertape = '${FME_EAM_AVGFLAG}'
 nhtfrq = -${FME_EAM_OUTPUT_HOURS}
 mfilt  = ${FME_EAM_MFILT}
+! Calendar-aligned file rotation (EAMxx-style; one_month = files named %y-%m.nc).
+hist_file_storage_type = '${FME_EAM_STORAGE}'
 
-! Derived fields (computed at full resolution before vcoarsen)
-! STW -> specific_total_water in ACE naming
+! Derived fields (computed at full resolution before vcoarsen).
+! STW -> specific_total_water in ACE naming.
+!
+! NOTE: eam_derived's validator only accepts state vars / constituents /
+! pbuf fields / earlier derived fields (validate_field_name in
+! eam_derived.F90:801). PRECSC/PRECSL are addfld-only diagnostics with
+! no state/pbuf backing, so PRECST = PRECSC+PRECSL was added directly
+! via addfld/outfld in cam_diagnostics.F90 instead -- 'PRECST:A' in
+! fincl1 below references that native field, NOT a derived expression.
 derived_fld_defs = 'STW=Q+CLDICE+CLDLIQ+RAINQM'
 
 ! Vertical coarsening: 8 dp-weighted layers by level index boundaries.
 ! 9 boundaries define 8 layers (0-based EAM level indices, top to bottom).
 vcoarsen_level_bounds = 0, 25, 38, 46, 52, 56, 61, 69, 80
-vcoarsen_avg_flds = 'T','U','V','STW'
+vcoarsen_avg_flds = 'T','U','V','STW','Q'
 
 ! Height-above-surface linear interpolation (m AGL) for ACE 2 m / 10 m fields.
 ! state%zm is height-above-surface at level midpoints; targets below the
 ! lowest midpoint collapse to the lowest level (no extrapolation).
 vcoarsen_select_heights = 2.0, 10.0
-vcoarsen_select_height_flds = 'T','U','V','STW'
+vcoarsen_select_height_flds = 'T','U','V','STW','Q'
 
 ! Tape 1: ${FME_EAM_OUTPUT_HOURS}-hourly output.
 ! State variables are instantaneous; fluxes/tendencies use :A (time-averaged).
 ! 10 m wind speed and direction are derived offline from U_at_z10 and V_at_z10.
+! Q is vcoarsened to 8 layers (Q_0..Q_7) like the other state fields, plus
+! Q_at_z2 from the height-interp path; QREFHT is the standard CAM 2 m
+! specific humidity diagnostic (kept for cross-comparison with Q_at_z2).
 fincl1 = 'SOLIN:A', 'PHIS',
           'LANDFRAC', 'OCNFRAC', 'ICEFRAC',
           'PS', 'TS',
@@ -143,13 +162,15 @@ fincl1 = 'SOLIN:A', 'PHIS',
           'STW_0', 'STW_1','STW_2','STW_3','STW_4','STW_5','STW_6','STW_7',
           'U_0','U_1','U_2','U_3','U_4','U_5','U_6','U_7',
           'V_0','V_1','V_2','V_3','V_4','V_5','V_6','V_7',
-          'T_at_z2', 'STW_at_z2',
+          'Q_0','Q_1','Q_2','Q_3','Q_4','Q_5','Q_6','Q_7',
+          'T_at_z2', 'STW_at_z2','Q_at_z2',
           'U_at_z10', 'V_at_z10',
+          'TREFHT', 'QREFHT',
           'FLUT:A', 'FLNT:A', 'FSNTOA:A', 'FSUTOA:A',
           'FLDS:A', 'FLUS:A', 'FSDS:A', 'FSUS:A', 'FSNS:A', 'FLNS:A',
           'LHFLX:A','SHFLX:A',
           'TAUX:A', 'TAUY:A',
-          'PRECT:A',
+          'PRECT:A', 'PRECST:A',
           'DTENDTTW:A'
 
 EOF
@@ -204,11 +225,9 @@ config_AM_fmeDerivedFields_compute_interval = 'dt'
 config_AM_fmeDerivedFields_time_averaging = .true.
 config_AM_fmeDerivedFields_stream_output_interval = '${FME_MPAS_INTERVAL}'
 
-config_AM_fmeVerticalReduce_enable = .true.
-config_AM_fmeVerticalReduce_compute_interval = 'dt'
-config_AM_fmeVerticalReduce_time_averaging = .true.
-config_AM_fmeVerticalReduce_stream_output_interval = '${FME_MPAS_INTERVAL}'
-config_AM_fmeVerticalReduce_fields = 'oceanHeatContent,freshwaterContent,kineticEnergy'
+! fmeVerticalReduce disabled: oceanHeatContent / freshwaterContent /
+! kineticEnergy are not requested by SamudrACE (Confluence p3ai/6154289880).
+config_AM_fmeVerticalReduce_enable = .false.
 EOF
 
 if [ -f "${OCN_MAP}" ]; then
@@ -217,15 +236,10 @@ config_AM_fmeDepthCoarsening_output_stream = 'none'
 config_AM_fmeDepthCoarsening_horiz_remap_file = '${OCN_MAP}'
 config_AM_fmeDerivedFields_output_stream = 'none'
 config_AM_fmeDerivedFields_horiz_remap_file = '${OCN_MAP}'
-config_AM_fmeVerticalReduce_output_stream = 'none'
-config_AM_fmeVerticalReduce_horiz_remap_file = '${OCN_MAP}'
-! NOTE: The native MPAS FME streams still fire at their default output_interval
-! (see Registry_fme_*.xml).  Native output contains instantaneous forcing-pool
-! snapshots; the remapped output is the authoritative time-averaged product.
-! For comparison, use remapped FME output vs legacy timeSeriesStatsCustom.
+! Native streams are gated to output_interval="none" in buildnml so only
+! the .remapped.nc files are produced for the SamudrACE training tape.
 config_AM_fmeDepthCoarsening_write_on_startup = .false.
 config_AM_fmeDerivedFields_write_on_startup = .false.
-config_AM_fmeVerticalReduce_write_on_startup = .false.
 EOF
 fi
 

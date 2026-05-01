@@ -68,8 +68,8 @@
 		<!-- output_interval default is daily; override via SourceMods/streams.ocean_forward -->
 		<stream name="fmeSeaiceDerivedFieldsOutput" type="output"
 				mode="forward;analysis"
-				filename_template="analysis_members/seaice_fmeSeaiceDerivedFields.$Y-$M-$D.nc"
-				filename_interval="01-00-00_00:00:00"
+				filename_template="analysis_members/seaice_fmeSeaiceDerivedFields.$Y-$M.nc"
+				filename_interval="00-01-00_00:00:00"
 				output_interval="00-00-01_00:00:00"
 				reference_time="0000-01-01_00:00:00"
 				packages="fmeSeaiceDerivedFieldsAMPKG"
