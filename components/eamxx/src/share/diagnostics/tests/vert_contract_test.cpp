@@ -3,29 +3,11 @@
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "share/physics/physics_constants.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/grid/point_grid.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
-                                        const int nlevs) {
-  const int num_global_cols = ncols * comm.size();
-
-  using vos_t = std::vector<std::string>;
-  ekat::ParameterList gm_params;
-  gm_params.set("grids_names", vos_t{"point_grid"});
-  auto &pl = gm_params.sublist("point_grid");
-  pl.set<std::string>("type", "point_grid");
-  pl.set("aliases", vos_t{"physics"});
-  pl.set<int>("number_of_global_columns", num_global_cols);
-  pl.set<int>("number_of_vertical_levels", nlevs);
-
-  auto gm = create_mesh_free_grids_manager(comm, gm_params);
-  gm->build_grids();
-
-  return gm;
-}
 
 TEST_CASE("vert_contract") {
   using namespace ShortFieldTagsNames;
@@ -38,35 +20,34 @@ TEST_CASE("vert_contract") {
   util::TimeStamp t0({2024, 1, 1}, {0, 0, 0});
 
   // Create a grids manager
-  constexpr int nlevs = 30;
-  constexpr int dim3  = 5;
-  const int ngcols    = 95 * comm.size();
+  const int nlevs = 30;
+  const int dim5  = 5;
+  const int ncols = 95;
 
-  auto gm   = create_gm(comm, ngcols, nlevs);
-  auto grid = gm->get_grid("physics");
+  auto grid = create_point_grid("physics",ncols*comm.size(),nlevs,comm);
 
-  auto &diag_factory = AtmosphereDiagnosticFactory::instance();
+  auto &diag_factory = DiagnosticFactory::instance();
   register_diagnostics();
 
   int seed = get_random_test_seed();
 
   // Shared field layouts
-  FieldLayout scalar2d_layout{{COL, LEV}, {ngcols, nlevs}};
-  FieldLayout scalar3d_layout{{COL, CMP, LEV}, {ngcols, dim3, nlevs}};
+  FieldLayout scalar2d_layout = grid->get_3d_scalar_layout(LEV);
+  FieldLayout scalar3d_layout = grid->get_3d_vector_layout(LEV,dim5,"dim5");
 
   SECTION("bad_input") {
     ekat::ParameterList params;
-    // No field_name -> throws in create_requests
-    REQUIRE_THROWS(diag_factory.create("VertContractDiag", comm, params)->set_grids(gm));
+    // No field_name -> throws in constructor
+    REQUIRE_THROWS(diag_factory.create("VertContract", comm, params, grid));
 
     params.set<std::string>("field_name", "qc");
     params.set("grid_name", grid->name());
-    // No contract_method -> throws in create_requests
-    REQUIRE_THROWS(diag_factory.create("VertContractDiag", comm, params)->set_grids(gm));
+    // No contract_method -> throws in constructor
+    REQUIRE_THROWS(diag_factory.create("VertContract", comm, params, grid));
 
     params.set<std::string>("contract_method", "xyz");
-    // Invalid contract_method -> throws in create_requests
-    REQUIRE_THROWS(diag_factory.create("VertContractDiag", comm, params)->set_grids(gm));
+    // Invalid contract_method -> throws in constructor
+    REQUIRE_THROWS(diag_factory.create("VertContract", comm, params, grid));
   }
 
   SECTION("dp_weighted_sum") {
@@ -87,13 +68,12 @@ TEST_CASE("vert_contract") {
     params.set<std::string>("field_name", "qc");
     params.set<std::string>("contract_method", "sum");
     params.set<std::string>("weighting_method", "dp");
-    auto diag = diag_factory.create("VertContractDiag", comm, params);
-    diag->set_grids(gm);
-    diag->set_required_field(fin);
-    diag->set_required_field(dp);
-    diag->initialize(t0, RunType::Initial);
-    diag->compute_diagnostic();
-    auto diag_f = diag->get_diagnostic();
+    auto diag = diag_factory.create("VertContract", comm, params, grid);
+    diag->set_input_field(fin);
+    diag->set_input_field(dp);
+    diag->initialize();
+    diag->compute(t0);
+    auto diag_f = diag->get();
 
     // Manual reference: ref(col,cmp) = sum_lev( (dp/g)(col,lev) * f(col,cmp,lev) )
     auto dp_scaled = dp.clone("dp_scaled");
@@ -122,13 +102,12 @@ TEST_CASE("vert_contract") {
     params.set<std::string>("field_name", "qc");
     params.set<std::string>("contract_method", "avg");
     params.set<std::string>("weighting_method", "dp");
-    auto diag = diag_factory.create("VertContractDiag", comm, params);
-    diag->set_grids(gm);
-    diag->set_required_field(fin);
-    diag->set_required_field(dp);
-    diag->initialize(t0, RunType::Initial);
-    diag->compute_diagnostic();
-    auto diag_f = diag->get_diagnostic();
+    auto diag = diag_factory.create("VertContract", comm, params, grid);
+    diag->set_input_field(fin);
+    diag->set_input_field(dp);
+    diag->initialize();
+    diag->compute(t0);
+    auto diag_f = diag->get();
 
     // Manual reference:
     //   num(col) = sum_lev( (dp/g)(col,lev) * f(col,lev) )
@@ -160,12 +139,11 @@ TEST_CASE("vert_contract") {
     params.set<std::string>("field_name", "qc");
     params.set<std::string>("contract_method", "sum");
     params.set<std::string>("weighting_method", "none");
-    auto diag = diag_factory.create("VertContractDiag", comm, params);
-    diag->set_grids(gm);
-    diag->set_required_field(fin);
-    diag->initialize(t0, RunType::Initial);
-    diag->compute_diagnostic();
-    auto diag_f = diag->get_diagnostic();
+    auto diag = diag_factory.create("VertContract", comm, params, grid);
+    diag->set_input_field(fin);
+    diag->initialize();
+    diag->compute(t0);
+    auto diag_f = diag->get();
 
     // Manual reference: ref(col) = sum_lev( f(col,lev) )
     // Use a 1D all-ones weight (same as the diagnostic)
@@ -191,12 +169,11 @@ TEST_CASE("vert_contract") {
     params.set<std::string>("field_name", "qc");
     params.set<std::string>("contract_method", "avg");
     params.set<std::string>("weighting_method", "none");
-    auto diag = diag_factory.create("VertContractDiag", comm, params);
-    diag->set_grids(gm);
-    diag->set_required_field(fin);
-    diag->initialize(t0, RunType::Initial);
-    diag->compute_diagnostic();
-    auto diag_f = diag->get_diagnostic();
+    auto diag = diag_factory.create("VertContract", comm, params, grid);
+    diag->set_input_field(fin);
+    diag->initialize();
+    diag->compute(t0);
+    auto diag_f = diag->get();
 
     // Manual reference:
     //   num(col,cmp) = sum_lev( f(col,cmp,lev) )

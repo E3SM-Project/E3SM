@@ -7,34 +7,26 @@
 namespace scream
 {
 
-// =========================================================================================
-FieldAtLevel::FieldAtLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
-  : AtmosphereDiagnostic(comm,params)
+FieldAtLevel::FieldAtLevel (const ekat::Comm& comm, const ekat::ParameterList& params,
+                            const std::shared_ptr<const AbstractGrid>& grid)
+  : AbstractDiagnostic(comm,params,grid)
 {
-  const auto& fname = m_params.get<std::string>("field_name");
-  const auto& location = m_params.get<std::string>("vertical_location");
-  m_diag_name = fname + "_at_" + location;
+  m_field_name = m_params.get<std::string>("field_name");
+  m_field_in_names.push_back(m_field_name);
 }
 
 void FieldAtLevel::
-create_requests ()
+initialize_impl ()
 {
-  const auto& fname = m_params.get<std::string>("field_name");
-  const auto& gname = m_params.get<std::string>("grid_name");
-  add_field<Required>(fname,gname);
-}
+  const auto& f = m_fields_in.at(m_field_in_names.front());
 
-void FieldAtLevel::
-initialize_impl (const RunType /*run_type*/)
-{
-  const auto& f   = get_fields_in().front();
+  // Sanity checks
+  using namespace ShortFieldTagsNames;
   EKAT_REQUIRE_MSG (f.data_type()==DataType::IntType or f.data_type()==DataType::RealType,
       "[FieldAtLevel] Error! Unsupported field data type.\n"
       " - field name: " + f.name() + "\n"
       " - data type : " + e2str(f.data_type()) + "\n");
 
-  // Sanity checks
-  using namespace ShortFieldTagsNames;
   const auto& fid    = f.get_header().get_identifier();
   const auto& layout = fid.get_layout();
   EKAT_REQUIRE_MSG (layout.rank()>=2 && layout.rank()<=6,
@@ -74,7 +66,8 @@ initialize_impl (const RunType /*run_type*/)
   }
 
   // All good, create the diag output
-  auto d_fid = fid.clone(m_diag_name).reset_layout(layout.clone().strip_dim(tag));
+  auto diag_name = m_field_name + "_at_" + location;
+  auto d_fid = fid.clone(diag_name).reset_layout(layout.clone().strip_dim(tag));
   m_diagnostic_output = Field(d_fid,true);
   if (f.has_valid_mask()) {
     m_diagnostic_output.create_valid_mask();
@@ -84,18 +77,16 @@ initialize_impl (const RunType /*run_type*/)
   using stratts_t = std::map<std::string,std::string>;
 
   // Propagate any io string attribute from input field to diag field
-  const auto& src = get_fields_in().front();
-  const auto& src_atts = src.get_header().get_extra_data<stratts_t>("io: string attributes");
+  const auto& src_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
         auto& dst_atts = m_diagnostic_output.get_header().get_extra_data<stratts_t>("io: string attributes");
   for (const auto& [name, val] : src_atts) {
     dst_atts[name] = val;
   }
 }
 
-// =========================================================================================
-void FieldAtLevel::compute_diagnostic_impl()
+void FieldAtLevel::compute_impl()
 {
-  const auto& f = get_fields_in().front();
+  const auto& f = m_fields_in.at(m_field_name);
 
   auto ALL = Kokkos::ALL;
   bool masked = m_diagnostic_output.has_valid_mask();

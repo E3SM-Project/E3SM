@@ -2,27 +2,12 @@
 
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/grid/point_grid.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ngcols, const int nlevs) {
-  using vos_t = std::vector<std::string>;
-  ekat::ParameterList gm_params;
-  gm_params.set("grids_names", vos_t{"Point Grid"});
-  auto &pl = gm_params.sublist("Point Grid");
-  pl.set<std::string>("type", "point_grid");
-  pl.set("aliases", vos_t{"Physics"});
-  pl.set<int>("number_of_global_columns", ngcols);
-  pl.set<int>("number_of_vertical_levels", nlevs);
-
-  auto gm = create_mesh_free_grids_manager(comm, gm_params);
-  gm->build_grids();
-
-  return gm;
-}
 
 TEST_CASE("histogram") {
   using namespace ShortFieldTagsNames;
@@ -38,22 +23,21 @@ TEST_CASE("histogram") {
   util::TimeStamp t0({2024, 1, 1}, {0, 0, 0});
 
   // Create a grids manager - single column for these tests
-  constexpr int nlevs = 3;
-  constexpr int dim3  = 4;
-  const int ncols     = 6;
+  const int nlevs = 3;
+  const int dim3  = 4;
+  const int ncols = 6;
+  const int ngcols = ncols * comm.size();
 
-  const int ngcols    = ncols * comm.size();
-  auto gm             = create_gm(comm, ngcols, nlevs);
-  auto grid           = gm->get_grid("Physics");
+  auto grid = create_point_grid("physics",ngcols,nlevs,comm);
 
   // Specify histogram bins
   const std::string bin_configuration = "50_100_150";
   const std::vector<Real> bin_values = {-100.0, 50.0, 100.0, 150.0, 1000.0};
 
   // Input (randomized) qc
-  FieldLayout scalar1d_layout{{COL}, {ncols}};
-  FieldLayout scalar2d_layout{{COL, LEV}, {ncols, nlevs}};
-  FieldLayout scalar3d_layout{{COL, CMP, LEV}, {ncols, dim3, nlevs}};
+  FieldLayout scalar1d_layout = grid->get_2d_scalar_layout();
+  FieldLayout scalar2d_layout = grid->get_3d_scalar_layout(LEV);
+  FieldLayout scalar3d_layout = grid->get_3d_vector_layout(LEV,dim3,"dim3");
 
   FieldIdentifier qc1_id("qc", scalar1d_layout, kg / kg, grid->name());
   FieldIdentifier qc2_fid("qc", scalar2d_layout, kg / kg, grid->name());
@@ -80,42 +64,37 @@ TEST_CASE("histogram") {
   randomize_uniform(qc3, seed++, 0, 200);
 
   // Construct the Diagnostics
-  std::map<std::string, std::shared_ptr<AtmosphereDiagnostic>> diags;
-  auto &diag_factory = AtmosphereDiagnosticFactory::instance();
+  auto &diag_factory = DiagnosticFactory::instance();
   register_diagnostics();
 
   // Create and set up the diagnostic
   ekat::ParameterList params;
-  REQUIRE_THROWS(diag_factory.create("HistogramDiag", comm,
-                                     params)); // Bad construction
+  REQUIRE_THROWS(diag_factory.create("Histogram", comm,
+                                     params, grid)); // Bad construction
 
   params.set("grid_name", grid->name());
-  REQUIRE_THROWS(diag_factory.create("HistogramDiag", comm,
-                                     params)); // Still no field_name
+  REQUIRE_THROWS(diag_factory.create("Histogram", comm,
+                                     params, grid)); // Still no field_name
 
   params.set<std::string>("field_name", "qc");
-  REQUIRE_THROWS(diag_factory.create("HistogramDiag", comm,
-                                     params)); // Still no bin configuration
+  REQUIRE_THROWS(diag_factory.create("Histogram", comm,
+                                     params, grid)); // Still no bin configuration
 
   params.set<std::string>("bin_configuration", "100_25");
-  REQUIRE_THROWS(diag_factory.create("HistogramDiag", comm,
-                                     params)); // Non-monotonic bin configuation
+  REQUIRE_THROWS(diag_factory.create("Histogram", comm,
+                                     params, grid)); // Non-monotonic bin configuation
 
   params.set<std::string>("bin_configuration", bin_configuration);
 
   // Now we should be good to go...
-  auto diag1 = diag_factory.create("HistogramDiag", comm, params);
-  auto diag2 = diag_factory.create("HistogramDiag", comm, params);
-  auto diag3 = diag_factory.create("HistogramDiag", comm, params);
-  diag1->set_grids(gm);
-  diag2->set_grids(gm);
-  diag3->set_grids(gm);
-
+  auto diag1 = diag_factory.create("Histogram", comm, params, grid);
+  auto diag2 = diag_factory.create("Histogram", comm, params, grid);
+  auto diag3 = diag_factory.create("Histogram", comm, params, grid);
   // Test the zonal average of qc1
-  diag1->set_required_field(qc1);
-  diag1->initialize(t0, RunType::Initial);
-  diag1->compute_diagnostic();
-  auto diag1_field = diag1->get_diagnostic();
+  diag1->set_input_field(qc1);
+  diag1->initialize();
+  diag1->compute(t0);
+  auto diag1_field = diag1->get();
 
   // Manual calculation
   const int num_bins = bin_values.size()-1;
@@ -146,9 +125,9 @@ TEST_CASE("histogram") {
   // Set qc1_v to so histogram is all entries in first bin
   const Real zavg1 = sp(0.5*(bin_values[0]+bin_values[1]));
   qc1.deep_copy(zavg1);
-  // Change input timestamp, to prevent early return and trigger diag recalculation
+  // Change the evaluation timestamp to trigger diag recalculation
   qc1.get_header().get_tracking().update_time_stamp(t0+1);
-  diag1->compute_diagnostic();
+  diag1->compute(t0+1);
   auto diag1_view_host = diag1_field.get_view<const Real *, Host>();
   REQUIRE_THAT(diag1_view_host(0), Catch::Matchers::WithinRel(ngcols, tol));
   for (int bin_i = 1; bin_i < num_bins; bin_i++) {
@@ -159,10 +138,10 @@ TEST_CASE("histogram") {
   // Set qc2_v so histogram is all entries in last bin
   const Real zavg2 = sp(0.5*(bin_values[num_bins-1]+bin_values[num_bins]));
   qc2.deep_copy(zavg2);
-  diag2->set_required_field(qc2);
-  diag2->initialize(t0, RunType::Initial);
-  diag2->compute_diagnostic();
-  auto diag2_field = diag2->get_diagnostic();
+  diag2->set_input_field(qc2);
+  diag2->initialize();
+  diag2->compute(t0);
+  auto diag2_field = diag2->get();
   auto diag2_view_host = diag2_field.get_view<const Real *, Host>();
   REQUIRE_THAT(diag2_view_host(num_bins-1), Catch::Matchers::WithinRel(ngcols*nlevs, tol));
   for (int bin_i = num_bins-2; bin_i >=0; bin_i--) {
@@ -189,10 +168,10 @@ TEST_CASE("histogram") {
   comm.all_reduce(diag3m_field.template get_internal_view_data<Real, Host>(),
     diag3m_layout.size(), MPI_SUM);
   diag3m_field.sync_to_dev();
-  diag3->set_required_field(qc3);
-  diag3->initialize(t0, RunType::Initial);
-  diag3->compute_diagnostic();
-  auto diag3_field = diag3->get_diagnostic();
+  diag3->set_input_field(qc3);
+  diag3->initialize();
+  diag3->compute(t0);
+  auto diag3_field = diag3->get();
   REQUIRE(views_are_equal(diag3_field, diag3m_field));
 }
 
