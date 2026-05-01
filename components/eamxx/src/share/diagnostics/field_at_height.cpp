@@ -98,8 +98,12 @@ initialize_impl (const RunType /*run_type*/)
 
   // All good, create the diag output
   auto d_fid = fid.clone(m_diag_name).reset_layout(layout.clone().strip_dim(tag));
-  m_diagnostic_output = Field(d_fid);
-  m_diagnostic_output.allocate_view();
+  m_diagnostic_output = Field(d_fid,true);
+
+  if (f.has_valid_mask()) {
+    m_diagnostic_output.create_valid_mask();
+    m_diagnostic_output.get_header().set_may_be_filled(true);
+  }
 
   using stratts_t = std::map<std::string,std::string>;
 
@@ -120,12 +124,20 @@ void FieldAtHeight::compute_diagnostic_impl()
   const auto& fl = f.get_header().get_identifier().get_layout();
 
   using RangePolicy = typename KokkosTypes<DefaultDevice>::RangePolicy;
+  using mask1d_t = Field::view_dev_t<int*>;
+  using mask2d_t = Field::view_dev_t<int**>;
+  using cmask2d_t = Field::view_dev_t<const int**>;
+  using cmask3d_t = Field::view_dev_t<const int***>;
 
   auto z_tgt = m_z;
   auto nlevs = fl.dims().back();
+  bool masked = m_diagnostic_output.has_valid_mask();
   if (fl.rank()==2) {
     const auto f_view = f.get_view<const Real**>();
     const auto d_view = m_diagnostic_output.get_view<Real*>();
+
+    const auto f_mask = masked ? f.get_valid_mask().get_view<const int**>() : cmask2d_t{};
+    const auto d_mask = masked ? m_diagnostic_output.get_valid_mask().get_view<int*>() : mask1d_t{};
 
     RangePolicy policy (0,fl.dims()[0]);
     Kokkos::parallel_for(policy,
@@ -137,24 +149,46 @@ void FieldAtHeight::compute_diagnostic_impl()
         auto end = beg+nlevs;
         auto it = find_first_smaller_z(beg,end,z_tgt);
         if (it==beg) {
-          // We just extapolate with first entry
-          d_view(i) = f_i(0);
+          if (not masked or f_mask(i,0)!=0) {
+            // We just extapolate with first entry
+            d_view(i) = f_i(0);
+            if (masked)
+              d_mask(i) = 1;
+          } else {
+            d_mask(i) = 0;
+          }
         } else if (it==end) {
-          // We just extapolate with last entry
-          d_view(i) = f_i(nlevs-1);
+          if (not masked or f_mask(i,nlevs-1)!=0) {
+            // We just extapolate with last entry
+            d_view(i) = f_i(nlevs-1);
+            if (masked)
+              d_mask(i) = 1;
+          } else {
+            d_mask(i) = 0;
+          }
         } else {
           auto pos = it-beg;
-          auto z0 = z_i(pos-1);
-          auto z1 = z_i(pos);
-          auto f0 = f_i(pos-1);
-          auto f1 = f_i(pos);
+          if (not masked or 
+              (f_mask(i,pos)!=0 and f_mask(i,pos-1)!=0)) {
+            auto z0 = z_i(pos-1);
+            auto z1 = z_i(pos);
+            auto f0 = f_i(pos-1);
+            auto f1 = f_i(pos);
 
-          d_view(i) = ( (z_tgt-z0)*f1 + (z1-z_tgt)*f0 ) / (z1-z0);
+            d_view(i) = ( (z_tgt-z0)*f1 + (z1-z_tgt)*f0 ) / (z1-z0);
+            if (masked)
+              d_mask(i) = 1;
+          } else {
+            d_mask(i) = 0;
+          }
         }
     });
   } else {
     const auto f_view = f.get_view<const Real***>();
     const auto d_view = m_diagnostic_output.get_view<Real**>();
+
+    const auto f_mask = masked ? f.get_valid_mask().get_view<const int***>() : cmask3d_t{};
+    const auto d_mask = masked ? m_diagnostic_output.get_valid_mask().get_view<int**>() : mask2d_t{};
 
     const auto dim0 = fl.dims()[0];
     const auto dim1 = fl.dims()[1];
@@ -170,21 +204,46 @@ void FieldAtHeight::compute_diagnostic_impl()
         auto end = beg+nlevs;
         auto it = find_first_smaller_z(beg,end,z_tgt);
         if (it==beg) {
-          // We just extapolate with first entry
-          d_view(i,j) = f_ij(0);
+          if (not masked or f_mask(i,j,0)!=0) {
+            // We just extapolate with first entry
+            d_view(i,j) = f_ij(0);
+            if (masked)
+              d_mask(i,j) = 1;
+          } else {
+            d_mask(i,j) = 0;
+          }
         } else if (it==end) {
-          // We just extapolate with last entry
-          d_view(i,j) = f_ij(nlevs-1);
+          if (not masked or f_mask(i,j,nlevs-1)!=0) {
+            // We just extapolate with last entry
+            d_view(i,j) = f_ij(nlevs-1);
+            if (masked)
+              d_mask(i,j) = 1;
+          } else {
+            d_mask(i,j) = 0;
+          }
         } else {
           auto pos = it-beg;
-          auto z0 = z_i(pos-1);
-          auto z1 = z_i(pos);
-          auto f0 = f_ij(pos-1);
-          auto f1 = f_ij(pos);
+          if (not masked or 
+              (f_mask(i,j,pos)!=0 and f_mask(i,j,pos-1)!=0)) {
+            auto z0 = z_i(pos-1);
+            auto z1 = z_i(pos);
+            auto f0 = f_ij(pos-1);
+            auto f1 = f_ij(pos);
 
-          d_view(i,j) = ( (z_tgt-z0)*f1 + (z1-z_tgt)*f0 ) / (z1-z0);
+            d_view(i,j) = ( (z_tgt-z0)*f1 + (z1-z_tgt)*f0 ) / (z1-z0);
+            if (masked)
+              d_mask(i,j) = 1;
+          } else {
+            d_mask(i,j) = 0;
+          }
         }
     });
+  }
+
+  // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
+  if (masked) {
+    auto& mask = m_diagnostic_output.get_valid_mask();
+    m_diagnostic_output.deep_copy(constants::fill_value<Real>,mask,true);
   }
 }
 

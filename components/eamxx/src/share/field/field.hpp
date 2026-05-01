@@ -9,6 +9,7 @@
 #include <ekat_std_type_traits.hpp>
 #include <ekat_subview_utils.hpp>
 
+#include <map>
 #include <memory>   // For std::shared_ptr
 #include <string>
 
@@ -116,6 +117,8 @@ public:
 
   Field alias (const std::string& name) const;
   Field alias (const std::string& name, const std::string& grid_name) const;
+  Field alias (const std::string& name, const std::map<FieldTag,std::string>& tag_names) const;
+  Field alias (const std::string& name, const std::string& grid_name, const std::map<FieldTag,std::string>& tag_names) const;
 
   // Allows to get the underlying view, reshaped for a different data type.
   // The class will check that the requested data type is compatible with the
@@ -138,6 +141,7 @@ public:
   DataType data_type () const { return get_header().get_identifier().data_type(); }
   const std::string& name () const { return get_header().get_identifier().name(); }
   int rank () const { return get_header().get_identifier().get_layout().rank(); }
+  const ekat::units::Units& units() const { return get_header().get_identifier().get_units(); }
 
   // WARNING: this is a power-user method. Its implementation, including assumptions
   //          on pre/post conditions, may change in the future. Use at your own risk!
@@ -203,6 +207,24 @@ public:
   void sync_to_host (const bool fence = true) const;
   void sync_to_dev (const bool fence = true) const;
 
+  // Querying the valid_mask field is common enough that we provide shortcuts.
+  // NOTE: the user can manually set other "mask" fields in the field header
+  //       via FieldHeader's extra data API.
+  // These methods are for a predefined mask that signals where the data is
+  // valid (mask!=0) or invalid/garbage (mask==0).
+  // When this mask is present, certain users of this field may decide to
+  // perform masked manipulations.
+
+  enum class MaskInit { Valid, Invalid, None };
+
+  bool has_valid_mask () const;
+  Field& create_valid_mask (const std::string& mask_name, const MaskInit init = MaskInit::None);
+  Field& create_valid_mask (const MaskInit init = MaskInit::None) { return create_valid_mask(name()+"_valid_mask", init); }
+
+  void set_valid_mask (const Field& mask);
+  const Field& get_valid_mask () const;
+        Field& get_valid_mask ();
+
   // --------- Field manipulation methods ------------- //
   // NOTE: the versions with a mask field only perform the manip where mask!=0, except
   //       for deep_copy(value,mask,true), which performs the deep copy where mask==0.
@@ -220,6 +242,14 @@ public:
   // See share/util/eamxx_combine_ops.hpp for more details on CombineMode options
   void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta);
   void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const Field& mask);
+
+  // Same as the above, but adds the scalar value gamma as well (i.e., does an affine transformation)
+  void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma);
+  void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask);
+
+  // Short-hand to update with alpha=0,beta=1
+  void add_scalar (const ScalarWrapper gamma);
+  void add_scalar (const ScalarWrapper gamma, const Field& mask);
 
   // Special case of update for particular choices of the combine mode
   void scale (const ScalarWrapper beta);
@@ -332,18 +362,18 @@ protected:
   void deep_copy_masked (const ST value, const Field& mask);
 
   template<CombineMode CM>
-  void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta);
+  void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma);
   template<CombineMode CM>
-  void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const Field& mask);
+  void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask);
 
   template<CombineMode CM, typename ST, typename STX>
-  void update_impl (const Field& x, const ST alpha, const ST beta);
+  void update_impl (const Field& x, const ST alpha, const ST beta, const ST gamma);
 
   template<CombineMode CM, typename ST, typename STX>
-  void update_fill_aware (const Field& x, const ST alpha, const ST beta);
+  void update_fill_aware (const Field& x, const ST alpha, const ST beta, const ST gamma);
 
   template<CombineMode CM, typename ST, typename STX>
-  void update_masked (const Field& x, const ST alpha, const ST beta, const Field& mask);
+  void update_masked (const Field& x, const ST alpha, const ST beta, const ST gamma, const Field& mask);
 
   template<HostOrDevice HD>
   const get_view_type<char*,HD>&

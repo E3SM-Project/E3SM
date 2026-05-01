@@ -17,8 +17,7 @@ Field create_f (const std::string& name,
                 const FieldLayout layout,
                 const std::string& grid_name)
 {
-  const auto nondim = ekat::units::Units::nondimensional();
-  FieldIdentifier fid(name,layout,nondim,grid_name);
+  FieldIdentifier fid(name,layout,ekat::units::none,grid_name);
   Field f(fid);
   f.allocate_view();
   return f;

@@ -93,9 +93,8 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
 
   auto fm = std::make_shared<FieldManager>(grid);
 
-  const auto units = ekat::units::Units::nondimensional();
   for (const auto& fl : layouts) {
-    FID fid("f_"+std::to_string(fl.size()),fl,units,grid->name());
+    FID fid("f_"+std::to_string(fl.size()),fl,ekat::units::none,grid->name());
     Field f(fid);
     f.allocate_view();
     f.deep_copy(0.0); // For the "filled" field we start with a filled value.

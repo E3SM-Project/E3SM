@@ -2,14 +2,14 @@
 #define EAMXX_FIELD_PREV_DIAG_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
-#include "share/util/eamxx_time_stamp.hpp"
 
 namespace scream {
 
 /*
  * This diagnostic stores the value of a given field at the beginning
- * of the previous timestep. Users can request X_prev for any field X
- * to capture the prior start-of-timestep value before model updates occur.
+ * of the current timestep (i.e., at the end of the previous timestep).
+ * Users can request X_prev for any field X to capture the start-of-timestep
+ * value before model updates occur.
  */
 
 class FieldPrevDiag : public AtmosphereDiagnostic {
@@ -18,16 +18,16 @@ class FieldPrevDiag : public AtmosphereDiagnostic {
   FieldPrevDiag(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // The name of the diagnostic CLASS (not the computed field)
-  std::string name() const { return "FieldPrevDiag"; }
+  std::string name() const override { return "FieldPrevDiag"; }
 
   // Set the grid
-  void create_requests();
+  void create_requests() override;
 
  protected:
 #ifdef KOKKOS_ENABLE_CUDA
  public:
 #endif
-  void compute_diagnostic_impl();
+  void compute_diagnostic_impl() override;
 
   // Store the field at the start of each timestep
   void init_timestep(const util::TimeStamp &start_of_step) override;
@@ -37,9 +37,6 @@ class FieldPrevDiag : public AtmosphereDiagnostic {
 
   // The name of the field to track
   std::string m_name;
-
-  // Store the field value from the beginning of the timestep
-  Field m_f_prev;
 
 };  // class FieldPrevDiag
 

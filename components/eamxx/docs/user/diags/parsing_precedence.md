@@ -27,7 +27,7 @@ control — how composite names are parsed.
 
 5. **Specific named patterns** — `_at_<level>`, `_at_<pressure>`, `_at_<height>`,
    `_horiz_avg`, `_vert_avg`, `_vert_sum`, `_zonal_avg`, `_pvert_derivative`,
-   `_zvert_derivative`, `_where_..._op_val` (conditional sampling), etc.
+   `_zvert_derivative`, `_where_..._op_<val|field>` (conditional sampling), etc.
 
 6. **Binary ops** — `A_(plus|minus|times|over)_B`.
    The first capture group is *greedy*, so the left operand extends as far as
@@ -93,8 +93,8 @@ fields:
       - bt_prod:=bt1_times_bt2
 
       # bt_osc_count = indicator that bt_prod is negative (tendency oscillating)
-      - bt_osc_count:=count_where_bt_prod_lt_0
-      # ConditionalSampling: input=count, condition_field=bt_prod, op=lt, value=0
+      - bt_osc_count:=mask_where_bt_prod_lt_0
+      # ConditionalSampling: input=mask, condition_lhs=bt_prod, condition_cmp=lt, condition_rhs=0
 ```
 
 The `aliases` section names intermediate sub-expressions that are needed

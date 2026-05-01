@@ -21,8 +21,6 @@ create_requests()
   auto grid             = m_grids_manager->get_grid("physics");
   const auto &grid_name = grid->name();
 
-  const auto nondim = Units::nondimensional();
-
   m_ncols = grid->get_num_local_dofs();
   m_nlevs = grid->get_num_vertical_levels();
 
@@ -31,18 +29,18 @@ create_requests()
   auto scalar2d = grid->get_2d_scalar_layout();
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("aero_tau_sw", vector3d, nondim, grid_name);
-  add_field<Required>(FieldIdentifier("sunlit_mask", scalar2d, nondim, grid_name, DataType::IntType));
+  add_field<Required>("aero_tau_sw", vector3d, none, grid_name);
+  add_field<Required>(FieldIdentifier("sunlit_mask", scalar2d, none, grid_name, DataType::IntType));
 
   // Construct and allocate the aodvis field
-  FieldIdentifier fid(name(), scalar2d, nondim, grid_name);
+  FieldIdentifier fid(name(), scalar2d, none, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 
 }
 
 void AODVis::initialize_impl(const RunType /*run_type*/) {
-  m_diagnostic_output.get_header().set_extra_data("valid_mask", get_field_in("sunlit_mask"));
+  m_diagnostic_output.set_valid_mask(get_field_in("sunlit_mask"));
 }
 
 void AODVis::compute_diagnostic_impl() {

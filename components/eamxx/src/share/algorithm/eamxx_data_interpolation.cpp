@@ -282,7 +282,7 @@ setup_time_database (const strvec_t& input_files,
 
     auto time_name  = scorpio::get_time_name(fname);
     auto time_units = scorpio::get_attribute<std::string>(fname,time_name,"units");
-    auto [parsed_ref, time_mult] = parse_cf_time_units(time_units);
+    auto [parsed_ref, time_mult] = parse_cf_time_units(time_units,fname);
     auto t_ref = ref_ts.is_valid() ? ref_ts : parsed_ref;
 
     times.emplace_back();
@@ -626,11 +626,10 @@ create_vert_remapper (const VertRemapData& data)
       // We need to reconstruct the 3d pressure from ps, hybm, and hyam.
       // We read and store hyam/hybm in the vremap src grid
       auto layout = m_grid_after_hremap->get_vertical_layout(LEVP);
-      auto nondim = ekat::units::Units::nondimensional();
       DataType real_t = DataType::RealType;
       std::vector<Field> fields = {
-        m_grid_after_hremap->create_geometry_data("hyam",layout,nondim,real_t,SCREAM_PACK_SIZE),
-        m_grid_after_hremap->create_geometry_data("hybm",layout,nondim,real_t,SCREAM_PACK_SIZE)
+        m_grid_after_hremap->create_geometry_data("hyam",layout,ekat::units::none,real_t,SCREAM_PACK_SIZE),
+        m_grid_after_hremap->create_geometry_data("hybm",layout,ekat::units::none,real_t,SCREAM_PACK_SIZE)
       };
       AtmosphereInput hvcoord_reader (m_time_database.files.front(),m_grid_after_hremap,fields,true);
       hvcoord_reader.read_variables();

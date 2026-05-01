@@ -42,7 +42,6 @@ void MAMSrfOnlineEmiss::create_requests() {
   using namespace ShortFieldTagsNames;
   constexpr auto m2     = pow(m, 2);
   constexpr auto s2     = pow(s, 2);
-  constexpr auto nondim = ekat::units::Units::nondimensional();
 
   const FieldLayout scalar2d   = grid_->get_2d_scalar_layout();
   const FieldLayout scalar3d_m = grid_->get_3d_scalar_layout(LEV);   // mid
@@ -81,7 +80,7 @@ void MAMSrfOnlineEmiss::create_requests() {
 
   //----------- Variables from coupler (ocean component)---------
   // Ocean fraction [unitless]
-  add_field<Required>("ocnfrac", scalar2d, nondim, grid_name);
+  add_field<Required>("ocnfrac", scalar2d, none, grid_name);
 
   // Sea surface temperature [K]
   add_field<Required>("sst", scalar2d, K, grid_name);

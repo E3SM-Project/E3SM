@@ -37,8 +37,6 @@ TEST_CASE("aodvis") {
   // A time stamp
   util::TimeStamp t0({2022, 1, 1}, {0, 0, 0});
 
-  const auto nondim = Units::nondimensional();
-
   // Create a grids manager - single column for these tests
   constexpr int nlevs = 33;
   const int ngcols    = 10 * comm.size();
@@ -52,14 +50,13 @@ TEST_CASE("aodvis") {
   // Input (randomized) tau
   FieldLayout scalar3d_swband_layout =
       grid->get_3d_vector_layout(LEV, nbnds, "swband");
-  FieldIdentifier tau_fid("aero_tau_sw", scalar3d_swband_layout, nondim,
-                          grid->name());
+  FieldIdentifier tau_fid("aero_tau_sw", scalar3d_swband_layout, none, grid->name());
   Field tau(tau_fid);
   tau.allocate_view();
   tau.get_header().get_tracking().update_time_stamp(t0);
   // Input (randomized) sunlit
   FieldLayout scalar2d_layout = grid->get_2d_scalar_layout();
-  FieldIdentifier sunlit_fid("sunlit_mask", scalar2d_layout, nondim, grid->name(), DataType::IntType);
+  FieldIdentifier sunlit_fid("sunlit_mask", scalar2d_layout, none, grid->name(), DataType::IntType);
   Field sunlit(sunlit_fid);
   sunlit.allocate_view();
   sunlit.get_header().get_tracking().update_time_stamp(t0);
@@ -98,7 +95,7 @@ TEST_CASE("aodvis") {
     const auto sun_h  = sunlit.get_view<const int *, Host>();
     const auto tau_h  = tau.get_view<const Real ***, Host>();
     const auto aod_hf = diag->get_diagnostic();
-    const auto aod_mask = aod_hf.get_header().get_extra_data<Field>("valid_mask");
+    const auto aod_mask = aod_hf.get_valid_mask();
 
     Field aod_tf = diag->get_diagnostic().clone();
     auto aod_t = aod_tf.get_view<Real *, Host>();

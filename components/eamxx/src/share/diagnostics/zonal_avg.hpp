@@ -38,9 +38,17 @@ protected:
   int m_num_zonal_bins;
 
   Field m_lat;
-  Field m_scaled_area;
   Field m_bin_to_cols;
 
+  // Weight field if input is NOT masked
+  Field m_scaled_area;
+
+  // Weight field if input IS masked
+  Field m_area;
+
+  // Fields used to compute masked area zonal sum at runtime if field is masked
+  Field m_zonal_area;
+  Field m_ones;
 };
 
 } // namespace scream

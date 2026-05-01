@@ -103,7 +103,7 @@ TEST_CASE("field_at_pressure_level_p2")
       diag_f.sync_to_host();
       auto test2_diag_v = diag_f.get_view<const Real*, Host>();
       // Check the mask field inside the diag_f
-      auto mask_f = diag_f.get_header().get_extra_data<Field>("valid_mask");
+      auto mask_f = diag_f.get_valid_mask();
       mask_f.sync_to_host();
       auto test2_mask_v = mask_f.get_view<const int*, Host>();
       //
@@ -124,7 +124,7 @@ TEST_CASE("field_at_pressure_level_p2")
       diag_f.sync_to_host();
       auto test2_diag_v = diag_f.get_view<const Real*, Host>();
       // Check the mask field inside the diag_f
-      auto mask_f = diag_f.get_header().get_extra_data<Field>("valid_mask");
+      auto mask_f = diag_f.get_valid_mask();
       mask_f.sync_to_host();
       auto test2_mask_v = mask_f.get_view<const int*, Host>();
 

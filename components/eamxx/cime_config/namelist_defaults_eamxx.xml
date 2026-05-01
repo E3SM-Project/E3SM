@@ -489,6 +489,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <spa_data_file hgrid="ne.*np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30pg2_20240111.nc</spa_data_file>
       <spa_data_file hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_20220428.nc</spa_data_file>
       <spa_data_file hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4pg2_20231222.nc</spa_data_file>
+
+      <time_interpolation_method type="string" doc="Method for interpolating SPA data in time">yearly_periodic</time_interpolation_method>
     </spa>
 
     <!-- Simple Prescribed Chemistry (SPC) -->
@@ -505,6 +507,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <spc_data_file type="file" doc="File containing chemistry data. Must be on same grid as the atm, or a coarser one">none</spc_data_file>
       <spc_data_file hgrid="ne.*np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spc_from_v3LRamip_2010_clim_ne30pg2_c20260206.nc</spc_data_file>
       <spc_data_file hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spc_from_v3LRamip_2010_clim_ne4pg2_c20260211.nc</spc_data_file>
+
+      <time_interpolation_method type="string" doc="Method for interpolating SPC data in time">yearly_periodic</time_interpolation_method>
     </spc>
 
     <!-- Radiation -->

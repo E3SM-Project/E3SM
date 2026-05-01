@@ -329,5 +329,18 @@
         </nthrds>
       </pes>
     </mach>
+    <mach name="bebop">
+      <pes compset="any" pesize="any">
+        <comment>bebop: LR conus eamxx 8 nodes</comment>
+        <ntasks>
+          <ntasks_atm>-8</ntasks_atm>
+          <ntasks_cpl>-8</ntasks_cpl>
+          <ntasks_ice>-8</ntasks_ice>
+          <ntasks_lnd>-8</ntasks_lnd>
+          <ntasks_rof>-8</ntasks_rof>
+          <ntasks_ocn>-8</ntasks_ocn>
+        </ntasks>
+      </pes>
+    </mach>
   </grid>
 </config_pes>

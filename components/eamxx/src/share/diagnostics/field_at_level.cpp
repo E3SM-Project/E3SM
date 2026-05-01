@@ -1,5 +1,7 @@
 #include "field_at_level.hpp"
 
+#include "share/util/eamxx_universal_constants.hpp"
+
 #include <ekat_std_utils.hpp>
 
 namespace scream
@@ -26,6 +28,11 @@ void FieldAtLevel::
 initialize_impl (const RunType /*run_type*/)
 {
   const auto& f   = get_fields_in().front();
+  EKAT_REQUIRE_MSG (f.data_type()==DataType::IntType or f.data_type()==DataType::RealType,
+      "[FieldAtLevel] Error! Unsupported field data type.\n"
+      " - field name: " + f.name() + "\n"
+      " - data type : " + e2str(f.data_type()) + "\n");
+
   // Sanity checks
   using namespace ShortFieldTagsNames;
   const auto& fid    = f.get_header().get_identifier();
@@ -68,8 +75,11 @@ initialize_impl (const RunType /*run_type*/)
 
   // All good, create the diag output
   auto d_fid = fid.clone(m_diag_name).reset_layout(layout.clone().strip_dim(tag));
-  m_diagnostic_output = Field(d_fid);
-  m_diagnostic_output.allocate_view();
+  m_diagnostic_output = Field(d_fid,true);
+  if (f.has_valid_mask()) {
+    m_diagnostic_output.create_valid_mask();
+    m_diagnostic_output.get_header().set_may_be_filled(true);
+  }
 
   using stratts_t = std::map<std::string,std::string>;
 
@@ -86,82 +96,131 @@ initialize_impl (const RunType /*run_type*/)
 void FieldAtLevel::compute_diagnostic_impl()
 {
   const auto& f = get_fields_in().front();
-  const auto& diag_layout = m_diagnostic_output.get_header().get_identifier().get_layout();
-  using RangePolicy = Kokkos::RangePolicy<Field::device_t::execution_space>;
-  RangePolicy policy(0,diag_layout.size());
-  auto level  = m_field_level;
-  switch (diag_layout.rank()) {
+
+  auto ALL = Kokkos::ALL;
+  bool masked = m_diagnostic_output.has_valid_mask();
+  switch (f.rank()) {
     case 1:
       {
-        auto f_view = f.get_view<const Real**>();
-        auto d_view = m_diagnostic_output.get_view<      Real*>();
-        Kokkos::parallel_for(m_diagnostic_output.name(),policy,KOKKOS_LAMBDA(const int idx) {
-            d_view(idx) = f_view(idx,level);
-        });
-      }
-      break;
+        if (f.data_type()==DataType::IntType) {
+          auto fv = f.get_view<const int*>();
+          auto dv = m_diagnostic_output.get_view<int>();
+          Kokkos::deep_copy(dv,Kokkos::subview(fv,m_field_level));
+        } else if (f.data_type()==DataType::RealType) {
+          auto fv = f.get_view<const Real*>();
+          auto dv = m_diagnostic_output.get_view<Real>();
+          Kokkos::deep_copy(dv,Kokkos::subview(fv,m_field_level));
+        }
+
+        if (masked) {
+          auto fmv = f.get_valid_mask().get_view<const int*>();
+          auto dmv = m_diagnostic_output.get_valid_mask().get_view<int>();
+          Kokkos::deep_copy(dmv,Kokkos::subview(fmv,m_field_level));
+        }
+      } break;
     case 2:
       {
-        auto f_view = f.get_view<const Real***>();
-        auto d_view = m_diagnostic_output.get_view<      Real**>();
-        const int dim1 = diag_layout.dims()[1];
-        Kokkos::parallel_for(m_diagnostic_output.name(),policy,KOKKOS_LAMBDA(const int idx) {
-            const int i = idx / dim1;
-            const int j = idx % dim1;
-            d_view(i,j) = f_view(i,j,level);
-        });
-      }
-      break;
+        if (f.data_type()==DataType::IntType) {
+          auto fv = f.get_view<const int**>();
+          auto dv = m_diagnostic_output.get_view<int*>();
+          Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,m_field_level));
+        } else if (f.data_type()==DataType::RealType) {
+          auto fv = f.get_view<const Real**>();
+          auto dv = m_diagnostic_output.get_view<Real*>();
+          Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,m_field_level));
+        }
+
+        if (masked) {
+          auto fmv = f.get_valid_mask().get_view<const int**>();
+          auto dmv = m_diagnostic_output.get_valid_mask().get_view<int*>();
+          Kokkos::deep_copy(dmv,Kokkos::subview(fmv,ALL,m_field_level));
+        }
+      } break;
     case 3:
       {
-        auto f_view = f.get_view<const Real****>();
-        auto d_view = m_diagnostic_output.get_view<      Real***>();
-        const int dim1 = diag_layout.dims()[1];
-        const int dim2 = diag_layout.dims()[2];
-        Kokkos::parallel_for(m_diagnostic_output.name(),policy,KOKKOS_LAMBDA(const int idx) {
-            const int i = (idx / dim2) / dim1;
-            const int j = (idx / dim2) % dim1;
-            const int k =  idx % dim2;
-            d_view(i,j,k) = f_view(i,j,k,level);
-        });
-      }
-      break;
+        if (f.data_type()==DataType::IntType) {
+          auto fv = f.get_view<const int***>();
+          auto dv = m_diagnostic_output.get_view<int**>();
+          Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,ALL,m_field_level));
+        } else if (f.data_type()==DataType::RealType) {
+          auto fv = f.get_view<const Real***>();
+          auto dv = m_diagnostic_output.get_view<Real**>();
+          Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,ALL,m_field_level));
+        }
+
+        if (masked) {
+          auto fmv = f.get_valid_mask().get_view<const int***>();
+          auto dmv = m_diagnostic_output.get_valid_mask().get_view<int**>();
+          Kokkos::deep_copy(dmv,Kokkos::subview(fmv,ALL,ALL,m_field_level));
+        }
+      } break;
     case 4:
       {
-        auto f_view = f.get_view<const Real*****>();
-        auto d_view = m_diagnostic_output.get_view<      Real****>();
-        const int dim1 = diag_layout.dims()[1];
-        const int dim2 = diag_layout.dims()[2];
-        const int dim3 = diag_layout.dims()[3];
-        Kokkos::parallel_for(m_diagnostic_output.name(),policy,KOKKOS_LAMBDA(const int idx) {
-            const int i = ((idx / dim3) / dim2) / dim1;
-            const int j = ((idx / dim3) / dim2) % dim1;
-            const int k =  (idx / dim3) % dim2;
-            const int l =   idx % dim3;
-            d_view(i,j,k,l) = f_view(i,j,k,l,level);
-        });
-      }
-      break;
+        if (f.data_type()==DataType::IntType) {
+          auto fv = f.get_view<const int****>();
+          auto dv = m_diagnostic_output.get_view<int***>();
+          Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,ALL,ALL,m_field_level));
+        } else if (f.data_type()==DataType::RealType) {
+          auto fv = f.get_view<const Real****>();
+          auto dv = m_diagnostic_output.get_view<Real***>();
+          Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,ALL,ALL,m_field_level));
+        }
+
+        if (masked) {
+          auto fmv = f.get_valid_mask().get_view<const int****>();
+          auto dmv = m_diagnostic_output.get_valid_mask().get_view<int***>();
+          Kokkos::deep_copy(dmv,Kokkos::subview(fmv,ALL,ALL,ALL,m_field_level));
+        }
+      } break;
     case 5:
       {
-        auto f_view = f.get_view<const Real******>();
-        auto d_view = m_diagnostic_output.get_view<      Real*****>();
-        const int dim1 = diag_layout.dims()[1];
-        const int dim2 = diag_layout.dims()[2];
-        const int dim3 = diag_layout.dims()[3];
-        const int dim4 = diag_layout.dims()[4];
-        Kokkos::parallel_for(m_diagnostic_output.name(),policy,KOKKOS_LAMBDA(const int idx) {
-            const int i = (((idx / dim4) / dim3) / dim2) / dim1;
-            const int j = (((idx / dim4) / dim3) / dim2) % dim1;
-            const int k =  ((idx / dim4) / dim3) % dim2;
-            const int l =   (idx / dim4) % dim3;
-            const int m =    idx / dim4;
-            d_view(i,j,k,l,m) = f_view(i,j,k,l,m,level);
-        });
-      }
-      break;
+        if (f.data_type()==DataType::IntType) {
+          auto fv = f.get_view<const int*****>();
+          auto dv = m_diagnostic_output.get_view<int****>();
+          Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,ALL,ALL,ALL,m_field_level));
+        } else if (f.data_type()==DataType::RealType) {
+          auto fv = f.get_view<const Real*****>();
+          auto dv = m_diagnostic_output.get_view<Real****>();
+          Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,ALL,ALL,ALL,m_field_level));
+        }
+
+        if (masked) {
+          auto fmv = f.get_valid_mask().get_view<const int*****>();
+          auto dmv = m_diagnostic_output.get_valid_mask().get_view<int****>();
+          Kokkos::deep_copy(dmv,Kokkos::subview(fmv,ALL,ALL,ALL,ALL,m_field_level));
+        }
+      } break;
+    case 6:
+      {
+        if (f.data_type()==DataType::IntType) {
+          auto fv = f.get_view<const int******>();
+          auto dv = m_diagnostic_output.get_view<int*****>();
+          Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,ALL,ALL,ALL,ALL,m_field_level));
+        } else if (f.data_type()==DataType::RealType) {
+          auto fv = f.get_view<const Real******>();
+          auto dv = m_diagnostic_output.get_view<Real*****>();
+          Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,ALL,ALL,ALL,ALL,m_field_level));
+        }
+
+        if (masked) {
+          auto fmv = f.get_valid_mask().get_view<const int******>();
+          auto dmv = m_diagnostic_output.get_valid_mask().get_view<int*****>();
+          Kokkos::deep_copy(dmv,Kokkos::subview(fmv,ALL,ALL,ALL,ALL,ALL,m_field_level));
+        }
+      } break;
+    default:
+      EKAT_ERROR_MSG (
+          "[FieldAtLevel] Unexpected field rank. You should have gotten an error before though.\n"
+          " - field name: " + f.name() + "\n"
+          " - field rank: " + std::to_string(f.rank()) + "\n");
   }
-  Kokkos::fence();
+
+  // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
+  if (masked) {
+    const auto fv = f.data_type()==DataType::RealType ? constants::fill_value<Real>
+                                                      : constants::fill_value<int>;
+    m_diagnostic_output.deep_copy(fv,m_diagnostic_output.get_valid_mask(),true);
+  }
 }
 
 } //namespace scream

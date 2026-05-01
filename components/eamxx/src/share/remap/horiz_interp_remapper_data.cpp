@@ -5,6 +5,7 @@
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_timing.hpp"
 
+#include <algorithm>
 #include <numeric>
 
 namespace scream {
@@ -20,6 +21,36 @@ struct RealsClose {
     return std::round(a * 10000) < std::round(b * 10000);
   }
 };
+
+// Check whether two grids store the same GID values on every rank.
+// Fast path: if the dofs_gids fields alias each other (same allocation), return true immediately.
+// Fallback: compare global dof counts, then compare local GID arrays element-by-element.
+bool grids_have_same_gids (const std::shared_ptr<const AbstractGrid>& g1,
+                           const std::shared_ptr<const AbstractGrid>& g2)
+{
+  using gid_type = AbstractGrid::gid_type;
+
+  const auto gids1 = g1->get_dofs_gids();
+  const auto gids2 = g2->get_dofs_gids();
+
+  // Fast path: identical backing allocation
+  if (gids1.is_aliasing(gids2)) {
+    return true;
+  }
+
+  // Different allocations: verify sizes then compare values
+  if (g1->get_num_global_dofs() != g2->get_num_global_dofs()) {
+    return false;
+  }
+  if (g1->get_num_local_dofs() != g2->get_num_local_dofs()) {
+    return false;
+  }
+
+  const auto h1 = gids1.get_view<const gid_type*, Host>();
+  const auto h2 = gids2.get_view<const gid_type*, Host>();
+  const int n = g1->get_num_local_dofs();
+  return std::equal(h1.data(), h1.data()+n, h2.data());
+}
 
 // Helper fcn to gather the union of sets across MPI ranks
 std::vector<Real> allgatherv_vec (const std::vector<Real>& my_vals, const ekat::Comm& comm)
@@ -154,12 +185,11 @@ build (const std::shared_ptr<const AbstractGrid>& grid,
 
   // Only read the lat/lon/area vars if they are present. If one is present, we assume they all are
   if (scorpio::has_var(map_file,"yc"+suffix)) {
-    const auto nondim = ekat::units::Units::nondimensional();
-    ekat::units::Units deg(nondim,"deg");
+    auto deg = ekat::units::none.rename("deg");
 
     gen_grid->create_geometry_data("lat", gen_grid->get_2d_scalar_layout(),deg);
     gen_grid->create_geometry_data("lon", gen_grid->get_2d_scalar_layout(),deg);
-    gen_grid->create_geometry_data("area",gen_grid->get_2d_scalar_layout(),nondim);
+    gen_grid->create_geometry_data("area",gen_grid->get_2d_scalar_layout(),ekat::units::sr);
     gen_grid->read_geometry_data(map_file,
                                  {"lat","lon","area"},
                                  {"yc"+suffix,"xc"+suffix,"area"+suffix},
@@ -355,7 +385,7 @@ setup_latlon_data(const std::shared_ptr<AbstractGrid>& grid,
   using namespace ShortFieldTagsNames;
 
   // Add lat/lon to the temp grid, and read from map file
-  auto nondim = ekat::units::Units::nondimensional();
+  auto nondim = ekat::units::none;
   ekat::units::Units deg(nondim,"degrees");
 
   // Declare lat/lon and read them from the map file.
@@ -458,14 +488,12 @@ get_data (const std::shared_ptr<const AbstractGrid>& src_grid,
 {
   auto& data = m_repo[map_file];
   if (auto shared_data = data.lock()) {
-    // To prevent hard-to-find errors, we must guarantee that the passed grid
-    // matches either the src or tgt grid of shared_data. We can do this by checking that
-    // the gids fields of the two grids are aliasing each other.
-    const auto& src_gids = src_grid->get_dofs_gids();
-    const auto& tgt_gids = tgt_grid->get_dofs_gids();
-    const auto& data_src_gids = shared_data->m_src_grid->get_dofs_gids();
-    const auto& data_tgt_gids = shared_data->m_tgt_grid->get_dofs_gids();
-    EKAT_REQUIRE_MSG (src_gids.is_aliasing(data_src_gids) and tgt_gids.is_aliasing(data_tgt_gids),
+    // To prevent hard-to-find errors, we must guarantee that the passed grids
+    // are compatible with the src/tgt grids of shared_data. Two grids are
+    // considered compatible if they store the same GID values on every rank
+    // (they may or may not share the same backing allocation).
+    EKAT_REQUIRE_MSG (grids_have_same_gids(src_grid, shared_data->m_src_grid) and
+                      grids_have_same_gids(tgt_grid, shared_data->m_tgt_grid),
         "Error! Trying to retrieve remap data using a grid that is unrelated to the one(s) used before.\n"
         " - map file: " + map_file + "\n"
         " - src grid name: " + src_grid->name() + "\n"
@@ -492,12 +520,11 @@ get_data (const std::shared_ptr<const AbstractGrid>& grid,
   auto& data = m_repo[map_file];
   if (auto shared_data = data.lock()) {
     // To prevent hard-to-find errors, we must guarantee that the passed grid
-    // matches either the src or tgt grid of shared_data. We can do this by checking that
-    // the gids fields of the two grids are aliasing each other.
-    const auto& grid_gids = grid->get_dofs_gids();
-    const auto& src_gids = shared_data->m_src_grid->get_dofs_gids();
-    const auto& tgt_gids = shared_data->m_tgt_grid->get_dofs_gids();
-    EKAT_REQUIRE_MSG (grid_gids.is_aliasing(src_gids) or grid_gids.is_aliasing(tgt_gids),
+    // is compatible with the src or tgt grid of shared_data. Two grids are
+    // considered compatible if they store the same GID values on every rank
+    // (they may or may not share the same backing allocation).
+    EKAT_REQUIRE_MSG (grids_have_same_gids(grid, shared_data->m_src_grid) or
+                      grids_have_same_gids(grid, shared_data->m_tgt_grid),
         "Error! Trying to retrieve remap data using a grid that is unrelated to the one(s) used before.\n"
         " - map file: " + map_file + "\n"
         " - grid name: " + grid->name() + "\n");

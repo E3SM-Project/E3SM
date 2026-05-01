@@ -121,8 +121,7 @@ TEST_CASE("histogram") {
   const int num_bins = bin_values.size()-1;
   const std::string bin_dim_name = diag1_field.get_header().get_identifier().get_layout().name(0);
   FieldLayout diag0_layout({CMP}, {num_bins}, {bin_dim_name});
-  FieldIdentifier diag0_id("qc_histogram_manual", diag0_layout,
-    FieldIdentifier::Units::nondimensional(), grid->name());
+  FieldIdentifier diag0_id("qc_histogram_manual", diag0_layout, ekat::units::none, grid->name());
   Field diag0_field(diag0_id);
   diag0_field.allocate_view();
 
@@ -172,8 +171,7 @@ TEST_CASE("histogram") {
 
   // Try a random case with qc3
   FieldLayout diag3m_layout({CMP}, {num_bins}, {bin_dim_name});
-  FieldIdentifier diag3m_id("qc_zonal_avg_manual", diag3m_layout,
-    FieldIdentifier::Units::nondimensional(), grid->name());
+  FieldIdentifier diag3m_id("qc_zonal_avg_manual", diag3m_layout, ekat::units::none, grid->name());
   Field diag3m_field(diag3m_id);
   diag3m_field.allocate_view();
   auto qc3_view_h    = qc3.get_view<const Real ***, Host>();

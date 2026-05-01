@@ -40,7 +40,7 @@ TEST_CASE("atm_backtend") {
 
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  util::TimeStamp t0({2024, 1, 1}, {0, 0, 0});
+  util::TimeStamp ts({2024, 1, 1}, {0, 0, 0});
 
   constexpr int nlevs = 7;
   const int ngcols    = 2 * comm.size();
@@ -60,7 +60,7 @@ TEST_CASE("atm_backtend") {
   register_diagnostics();
 
   // Set time for qc and randomize its values
-  qc.get_header().get_tracking().update_time_stamp(t0);
+  qc.get_header().get_tracking().update_time_stamp(ts);
   randomize_uniform(qc, seed++, 0, 200);
   qc.sync_to_dev();
 
@@ -72,7 +72,7 @@ TEST_CASE("atm_backtend") {
   auto prev_diag = diag_factory.create("FieldPrevDiag", comm, prev_params);
   prev_diag->set_grids(gm);
   prev_diag->set_required_field(qc);
-  prev_diag->initialize(t0, RunType::Initial);
+  prev_diag->initialize(ts, RunType::Initial);
 
   // The output of FieldPrevDiag is "qc_prev"
   auto qc_prev_field = prev_diag->get_diagnostic();
@@ -87,7 +87,7 @@ TEST_CASE("atm_backtend") {
   minus_diag->set_grids(gm);
   minus_diag->set_required_field(qc);
   minus_diag->set_required_field(qc_prev_field);
-  minus_diag->initialize(t0, RunType::Initial);
+  minus_diag->initialize(ts, RunType::Initial);
 
   auto qc_minus_qc_prev_field = minus_diag->get_diagnostic();
 
@@ -98,27 +98,19 @@ TEST_CASE("atm_backtend") {
   auto over_dt_diag = diag_factory.create("FieldOverDtDiag", comm, over_dt_params);
   over_dt_diag->set_grids(gm);
   over_dt_diag->set_required_field(qc_minus_qc_prev_field);
-  over_dt_diag->initialize(t0, RunType::Initial);
+  over_dt_diag->initialize(ts, RunType::Initial);
 
-  // First evaluation (before any init_timestep): result should be fill_value
-  prev_diag->compute_diagnostic();
-  minus_diag->compute_diagnostic();
-  over_dt_diag->compute_diagnostic();
+  // First evaluation (before any init_timestep): should throw
+  REQUIRE_THROWS(over_dt_diag->compute_diagnostic());
 
   auto result = over_dt_diag->get_diagnostic();
-  result.sync_to_host();
-  {
-    auto v = result.get_view<Real**, Host>();
-    const Real fill_val = constants::fill_value<Real>;
-    for (int icol = 0; icol < ngcols; ++icol)
-      for (int ilev = 0; ilev < nlevs; ++ilev)
-        REQUIRE(v(icol, ilev) == fill_val);
-  }
 
   const Real a_day = 24.0 * 60.0 * 60.0;  // seconds
 
   constexpr int ntests = 10;
+  constexpr auto tol = std::numeric_limits<Real>::epsilon()*100;
 
+  qc.get_header().get_tracking().update_time_stamp(ts);
   for (int itest = 2; itest < ntests; itest++) {
     // Save current qc before advancing
     auto qc_old = qc.clone();
@@ -126,12 +118,12 @@ TEST_CASE("atm_backtend") {
     qc_old.sync_to_host();
 
     // init_timestep: FieldPrevDiag stores current qc; FieldOverDtDiag saves start ts
-    prev_diag->init_timestep(t0);
-    over_dt_diag->init_timestep(t0);
+    prev_diag->init_timestep(ts);
+    over_dt_diag->init_timestep(ts);
 
     // Advance time by one day and update qc
-    util::TimeStamp t1({2024, 1, itest}, {0, 0, 0});
-    qc.get_header().get_tracking().update_time_stamp(t1);
+    ts += 86400;
+    qc.get_header().get_tracking().update_time_stamp(ts);
     randomize_uniform(qc, seed++, 0, 200);
     qc.sync_to_dev();
 
@@ -146,12 +138,13 @@ TEST_CASE("atm_backtend") {
     auto qc_old_v = qc_old.get_view<Real**, Host>();
     auto res_v    = result.get_view<Real**, Host>();
 
-    for (int icol = 0; icol < ngcols; ++icol)
-      for (int ilev = 0; ilev < nlevs; ++ilev)
-        REQUIRE(res_v(icol, ilev) ==
-                Approx((qc_new_v(icol, ilev) - qc_old_v(icol, ilev)) / a_day));
+    auto manual = qc.clone();
+    manual.update(qc_old,-1,1);
+    manual.scale(1/a_day);
 
-    t0 = t1;
+    auto diff = result.clone();
+    diff.update(manual,-1,1);
+    REQUIRE_THAT (inf_norm(diff).as<Real>(), Catch::WithinAbs(0,tol));
   }
 }
 

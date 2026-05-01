@@ -75,6 +75,12 @@ TEST_CASE("binary_ops") {
   randomize_uniform(qv, seed++, 0, 200);
   randomize_uniform(m,  seed++, 0, 200);
 
+  // Create random mask fields for qc/qv
+  qc.create_valid_mask();
+  qv.create_valid_mask();
+  randomize_uniform(qc.get_valid_mask(),seed++);
+  randomize_uniform(qv.get_valid_mask(),seed++);
+
   // Create and set up the diagnostic
   params_plus.set("grid_name", grid->name());
   params_plus.set<std::string>("arg1", "qc");
@@ -118,23 +124,26 @@ TEST_CASE("binary_ops") {
   auto rgas_diag_f = prod_scl_scl->get_diagnostic(); rgas_diag_f.sync_to_host();
 
   // Check that the output fields have the right values
-  const auto &plus_v = plus_diag_f.get_view<Real**, Host>();
-  const auto &prod_v = prod_diag_f.get_view<Real**, Host>();
-  const auto &rgas_v = rgas_diag_f.get_view<Real, Host>();
-  const auto &qc_v   = qc.get_view<Real**, Host>();
-  const auto &qv_v   = qv.get_view<Real**, Host>();
-  const auto &m_v    = m.get_view<Real**, Host>();
   const auto g = physics::Constants<Real>::gravit.value;
-  for (int icol = 0; icol < ngcols; ++icol) {
-    for (int ilev = 0; ilev < nlevs; ++ilev) {
-      // Check plus
-      REQUIRE(plus_v(icol, ilev) == qc_v(icol, ilev) + qv_v(icol, ilev));
-      // Check product
-      REQUIRE(prod_v(icol, ilev) == (m_v(icol,ilev)*g));
-    }
-  }
-  // The diag_scl_scl shoould compute the prod of avogadro's number and boltzman's constant, which is Rgas
-  REQUIRE (rgas_v()==physics::Constants<Real>::dictionary().at("Rgas").value);
+
+  // field*constant diag
+  m.scale(g);
+  REQUIRE (not prod_diag_f.has_valid_mask());
+  REQUIRE (views_are_equal(prod_diag_f,m));
+
+  // field+field diag
+  REQUIRE (plus_diag_f.has_valid_mask());
+  auto tgt_mask = qc.get_valid_mask().clone();
+  tgt_mask.scale(qv.get_valid_mask());
+  REQUIRE (views_are_equal(tgt_mask,plus_diag_f.get_valid_mask()));
+
+  qv.update(qc,1,1,tgt_mask);
+  qv.deep_copy(0,tgt_mask,true);
+  plus_diag_f.deep_copy(0,tgt_mask,true);
+  REQUIRE (views_are_equal(plus_diag_f,qv));
+
+  // constant*constant diag
+  REQUIRE (rgas_diag_f.get_view<Real,Host>()()==physics::Constants<Real>::dictionary().at("Rgas").value);
 
   // redundant, why not
   qc.update(qv, 1, 1);

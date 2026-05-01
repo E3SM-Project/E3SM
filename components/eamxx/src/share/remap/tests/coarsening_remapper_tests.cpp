@@ -52,28 +52,27 @@ constexpr int tens_dim2 = 4;
 Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, const FieldTag vtag)
 {
   using namespace ShortFieldTagsNames;
-  const auto u = ekat::units::Units::nondimensional();
   const auto& gn = grid.name();
   Field f;
   switch (lt) {
     case LayoutType::Scalar1D:
-      f = Field(FieldIdentifier(name,grid.get_vertical_layout(vtag),u,gn)); break;
+      f = Field(FieldIdentifier(name,grid.get_vertical_layout(vtag),ekat::units::none,gn)); break;
     case LayoutType::Scalar2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),ekat::units::none,gn));  break;
     case LayoutType::Vector2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(vec_dim),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(vec_dim),ekat::units::none,gn));  break;
     case LayoutType::Tensor2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_tensor_layout({tens_dim1,tens_dim2}),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_tensor_layout({tens_dim1,tens_dim2}),ekat::units::none,gn));  break;
     case LayoutType::Scalar3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(vtag),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(vtag),ekat::units::none,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     case LayoutType::Vector3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(vtag,vec_dim),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(vtag,vec_dim),ekat::units::none,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     case LayoutType::Tensor3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_tensor_layout(vtag,{tens_dim1,tens_dim2}),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_tensor_layout(vtag,{tens_dim1,tens_dim2}),ekat::units::none,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     default:

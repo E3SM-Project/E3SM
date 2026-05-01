@@ -136,7 +136,7 @@ CONTAINS
     call dead_init_mct('rof', Eclock, x2d, d2x, &
          seq_flds_x2r_fields, seq_flds_r2x_fields, &
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, logunit, nxg, nyg)
+         inst_index, inst_suffix, inst_name, logunit, nxg, nyg,flood_present)
 
     if (nxg == 0 .and. nyg == 0) then
        rof_present = .false.
@@ -147,7 +147,6 @@ CONTAINS
        rof_present = .true.
        rof_prognostic = .true.
        rofice_present = .false.
-       flood_present = .true.
     end if
 
 #ifdef HAVE_MOAB

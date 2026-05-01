@@ -784,9 +784,9 @@ void HommeDynamics::
 create_helper_field (const std::string& name,
                      const std::vector<FieldTag>& tags,
                      const std::vector<int>& dims,
-                     const std::string& grid) {
-  using namespace ekat::units;
-  FieldIdentifier id(name,FieldLayout{tags,dims},Units::nondimensional(),grid);
+                     const std::string& grid)
+{
+  FieldIdentifier id(name,FieldLayout{tags,dims},ekat::units::none,grid);
 
   const auto lt = id.get_layout().type();
 

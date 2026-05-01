@@ -53,10 +53,9 @@ soilErodibilityFunctions<S, D>::create_horiz_remapper(
   const auto tgt_grid = remapper->get_tgt_grid();
 
   const auto layout_2d = tgt_grid->get_2d_scalar_layout();
-  const auto nondim    = ekat::units::Units::nondimensional();
 
   Field soil_erodibility(
-      FieldIdentifier(field_name, layout_2d, nondim, tgt_grid->name()));
+      FieldIdentifier(field_name, layout_2d, ekat::units::none, tgt_grid->name()));
   soil_erodibility.allocate_view();
 
   remapper->register_field_from_tgt(soil_erodibility);

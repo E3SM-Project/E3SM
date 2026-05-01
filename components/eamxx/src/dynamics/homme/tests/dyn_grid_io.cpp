@@ -79,7 +79,7 @@ TEST_CASE("dyn_grid_io")
   auto phys_vector3d_mid = phys_grid->get_3d_vector_layout(LEV,2);
   auto phys_scalar2d     = phys_grid->get_2d_scalar_layout();
 
-  auto nondim = ekat::units::Units::nondimensional();
+  auto nondim = ekat::units::none;
   FieldIdentifier fid_dyn_1 ("field_1",dyn_scalar3d_mid,nondim,dyn_grid->name());
   FieldIdentifier fid_dyn_2 ("field_2",dyn_vector3d_mid,nondim,dyn_grid->name());
   FieldIdentifier fid_dyn_3 ("field_3",dyn_scalar2d    ,nondim,dyn_grid->name());

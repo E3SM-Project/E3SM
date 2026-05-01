@@ -50,6 +50,14 @@ module zm_conv
    public zm_conv_main_init        ! ZM scheme initialization
    public zm_conv_main             ! ZM scheme calculations
    public zm_conv_evap             ! ZM scheme evaporation of precip
+#ifdef SCREAM_CONFIG_IS_CMAKE ! Public for testing only
+   public zm_calc_fractional_entrainment
+   public zm_downdraft_properties
+   public zm_cloud_properties
+   public zm_closure
+   public zm_calc_output_tend
+#endif
+
    !----------------------------------------------------------------------------
    ! public variables
    type(zm_const_t), public :: zm_const ! derived type to hold ZM constants
@@ -169,7 +177,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    integer,                         intent(in   ) :: ncol            ! actual number of columns
    integer,                         intent(in   ) :: pver            ! number of mid-point levels
    integer,                         intent(in   ) :: pverp           ! number of interface levels
-   logical(btype),                         intent(in   ) :: is_first_step   ! flag for first step of run
+   logical(btype),                  intent(in   ) :: is_first_step   ! flag for first step of run
    real(r8),                        intent(in   ) :: time_step       ! model time-step                         [s]
    real(r8), dimension(pcols,pver), intent(in   ) :: t_mid           ! temperature                             [K]
    real(r8), dimension(pcols,pver), intent(in   ) :: q_mid_in        ! specific humidity                       [kg/kg]
@@ -320,15 +328,25 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
          ql_g(i,k)  = 0._r8
          dlf(i,k)   = 0._r8
          dl_g(i,k)  = 0._r8
+         p_del(i,k) = 0._r8
+         mflx_up(i,k) = 0._r8
+         entr_up(i,k) = 0._r8
+         detr_up(i,k) = 0._r8
+         mflx_dn(i,k) = 0._r8
+         entr_dn(i,k) = 0._r8
       end do
       prec(i)        = 0._r8
       rliq(i)        = 0._r8
       pflx(i,pverp)  = 0._r8
+      mcon(i,pverp)  = 0._r8
       pflx_g(i,pverp)= 0._r8
       pbl_top(i)     = pver
       dsubcld(i)     = 0._r8
       jctop(i)       = pver
       jcbot(i)       = 1
+      cape(i)       = 0._r8;
+      dcape(i)      = 0._r8;
+      msemax_klev_g   = 1
    end do
 
    !----------------------------------------------------------------------------
@@ -424,7 +442,6 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    ! determine whether active columns for gathering
    call zm_get_gather_index(pcols, ncol, pver, pverp, is_first_step, cape, dcape, &
                             cape_threshold_loc, gather_index, lengath)
-
    if (lengath.eq.0) then
       ! Deallocate local microphysics arrays before returning
       if (zm_param%zm_microp) call zm_microp_st_dealloc(loc_microp_st)
@@ -785,7 +802,11 @@ subroutine zm_conv_evap(pcols, ncol, pver, pverp, time_step, &
    call qsat( t_mid(1:ncol,1:pver), p_mid(1:ncol,1:pver), es(1:ncol,1:pver), qs(1:ncol,1:pver))
 
    ! determine ice fraction in rain production (use cloud water parameterization fraction at present)
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   call cldfrc_fice(ncol, pver, 1, t_mid, fice, fsnow_conv)
+#else
    call cldfrc_fice(ncol, t_mid, fice, fsnow_conv)
+#endif
 
    ! zero the flux integrals on the top boundary
    flxprec(:ncol,1) = 0._r8
@@ -979,9 +1000,9 @@ subroutine zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
    real(r8), dimension(pcols,pver) :: i2           ! term for Taylor series
    real(r8), dimension(pcols,pver) :: i3           ! term for Taylor series
    real(r8), dimension(pcols,pver) :: i4           ! term for Taylor series
-   real(r8), dimension(pcols,pver) :: ihat         ! term for Taylor series
-   real(r8), dimension(pcols,pver) :: idag         ! term for Taylor series
-   real(r8), dimension(pcols,pver) :: iprm         ! term for Taylor series
+   real(r8) :: ihat         ! term for Taylor series
+   real(r8) :: idag         ! term for Taylor series
+   real(r8) :: iprm         ! term for Taylor series
    real(r8) :: tmp          ! term for Taylor series
    real(r8) :: expnum       ! term for Taylor series
 
@@ -1007,12 +1028,12 @@ subroutine zm_calc_fractional_entrainment(pcols, ncol, pver, pverp, msg, &
       do i = 1,ncol
          if (k < jb(i) .and. k >= jt(i)) then
             k1(i,k) = k1(i,k+1) + (h_env(i,jb(i))-h_env(i,k))*dz(i,k)
-            ihat(i,k) = 0.5_r8* (k1(i,k+1)+k1(i,k))
-            i2(i,k) = i2(i,k+1) + ihat(i,k)*dz(i,k)
-            idag(i,k) = 0.5_r8* (i2(i,k+1)+i2(i,k))
-            i3(i,k) = i3(i,k+1) + idag(i,k)*dz(i,k)
-            iprm(i,k) = 0.5_r8* (i3(i,k+1)+i3(i,k))
-            i4(i,k) = i4(i,k+1) + iprm(i,k)*dz(i,k)
+            ihat = 0.5_r8* (k1(i,k+1)+k1(i,k))
+            i2(i,k) = i2(i,k+1) + ihat*dz(i,k)
+            idag = 0.5_r8* (i2(i,k+1)+i2(i,k))
+            i3(i,k) = i3(i,k+1) + idag*dz(i,k)
+            iprm = 0.5_r8* (i3(i,k+1)+i3(i,k))
+            i4(i,k) = i4(i,k+1) + iprm*dz(i,k)
          end if
       end do ! i
    end do ! k

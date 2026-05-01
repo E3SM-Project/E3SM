@@ -163,7 +163,7 @@ cd cime/scripts
 # Monitor test progress by going to the test directory and tailing the TestStatus.log file
 
 # Test naming format: TEST_TYPE.RESOLUTION.COMPSET[.MACHINE][.TESTMOD]
-# Example: SMS_D_Ln5_P4.ne4pg2_oQU480.F2010.ghci-oci_gnu
+# Example: SMS_D_Ln5_P4.ne4pg2_oQU480.F2010.pm-cpu_gnu
 ```
 
 Test types for various properties of the model:
@@ -267,9 +267,13 @@ Build types tested: sp (single precision), dbg (debug), fpe (floating point exce
 5. Feature branch names should use this pattern: ```<github username>/<source code area or component>/<feature-description>```
 6. New features should be coordinated via E3SM management and science plan
 
+## Testing EAMxx Modifications (for AI Agents)
+
+When modifying files under `components/eamxx/**`, see `components/eamxx/AGENTS.md`
+for standalone testing instructions.
+
 ## Rules for pull request (PR) description
 1. PR description should have two parts.  The fist should be a brief description in plain
  text with no markdown or other formatting. Add a line.  The second part should be the full
 description with markdown formatting.
 2. PR description should use imperative tense and start with a verb like 'Fix' or 'Add'
-

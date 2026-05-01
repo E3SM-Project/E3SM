@@ -626,10 +626,7 @@ void FieldManager::registration_ends ()
 
         // The units for the monolithic field are nondimensional, cause checking whether
         // all fields in the group have the same units so we can use those is too long and pointless.
-        auto nondim = ekat::units::Units::nondimensional();
-
-        // Allocate cluster field
-        FieldIdentifier c_fid(cluster_name,c_layout,nondim,cluster_grid->name());
+        FieldIdentifier c_fid(cluster_name,c_layout,ekat::units::none,cluster_grid->name());
         register_field(c_fid);
         const auto& C = m_fields.at(cluster_grid_name).at(c_fid.name());
 

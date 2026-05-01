@@ -10,8 +10,6 @@
 #include <ekat_assert.hpp>
 #include <ekat_units.hpp>
 
-#include <array>
-
 namespace scream
 {
 // =========================================================================================
@@ -39,8 +37,7 @@ void Cosp::create_requests()
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  Units nondim = Units::nondimensional();
-  Units percent (nondim,"%");
+  auto percent = none.rename("%");
   auto micron = micro*m;
   auto m2 = pow(m, 2);
   auto s2 = pow(s, 2);
@@ -68,7 +65,7 @@ void Cosp::create_requests()
   add_field<Required>("surf_radiative_T", scalar2d    , K,      grid_name);
   //add_field<Required>("surfelev",    scalar2d    , m,      grid_name);
   //add_field<Required>("landmask",    scalar2d    , nondim, grid_name);
-  add_field<Required>(FieldIdentifier("sunlit_mask", scalar2d, nondim, grid_name, DataType::IntType));
+  add_field<Required>(FieldIdentifier("sunlit_mask", scalar2d, none, grid_name, DataType::IntType));
   add_field<Required>("p_mid",             scalar3d_mid, Pa,     grid_name);
   add_field<Required>("p_int",             scalar3d_int, Pa,     grid_name);
   //add_field<Required>("height_mid",  scalar3d_mid, m,      grid_name);
@@ -76,13 +73,13 @@ void Cosp::create_requests()
   add_field<Required>("T_mid",            scalar3d_mid, K,      grid_name);
   add_field<Required>("phis",             scalar2d    , m2/s2,  grid_name);
   add_field<Required>("pseudo_density",   scalar3d_mid, Pa,     grid_name);
-  add_field<Required>("cldfrac_rad",      scalar3d_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_rad",      scalar3d_mid, none,   grid_name);
   add_tracer<Required>("qv", m_grid, kg/kg);
   add_tracer<Required>("qc", m_grid, kg/kg);
   add_tracer<Required>("qi", m_grid, kg/kg);
   // Optical properties, should be computed in radiation interface
-  add_field<Required>("dtau067",     scalar3d_mid, nondim, grid_name); // 0.67 micron optical depth
-  add_field<Required>("dtau105",     scalar3d_mid, nondim, grid_name); // 10.5 micron optical depth
+  add_field<Required>("dtau067",     scalar3d_mid, none, grid_name); // 0.67 micron optical depth
+  add_field<Required>("dtau105",     scalar3d_mid, none, grid_name); // 10.5 micron optical depth
   // Effective radii, should be computed in either microphysics or radiation interface
   // TODO: should these be meters or microns? Was meters before, but using "m" instead
   // of "micron" seemed to cause prim_model_finalize to throw error with the following:
@@ -100,7 +97,7 @@ void Cosp::create_requests()
   // We can allocate these now
   m_z_mid = Field(FieldIdentifier("z_mid",scalar3d_mid,m,grid_name),true);
   m_z_int = Field(FieldIdentifier("z_int",scalar3d_int,m,grid_name),true);
-  m_sunlit_real = Field(FieldIdentifier("sunlit_mask_real",scalar2d,nondim,grid_name),true);
+  m_sunlit_real = Field(FieldIdentifier("sunlit_mask_real",scalar2d,none,grid_name),true);
 }
 
 // =========================================================================================
@@ -110,6 +107,7 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   CospFunc::initialize(m_num_cols, m_num_subcols, m_num_levs);
 
   using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
 
   // Create the masks for the 4d fields
   FieldLayout scalar4d_ctptau ( {COL,CMP,CMP},
@@ -119,9 +117,8 @@ void Cosp::initialize_impl (const RunType /* run_type */)
                                 {m_num_cols,m_num_tau,m_num_cth},
                                 {e2str(COL), "cosp_tau", "cosp_cth"});
 
-  const auto nondim = ekat::units::Units::nondimensional();
-  FieldIdentifier mctp_fid ("sunlit_mask_ctptau", scalar4d_ctptau, nondim, m_grid->name(), DataType::IntType);
-  FieldIdentifier mcth_fid ("sunlit_mask_cthtau", scalar4d_cthtau, nondim, m_grid->name(), DataType::IntType);
+  FieldIdentifier mctp_fid ("sunlit_mask_ctptau", scalar4d_ctptau, none, m_grid->name(), DataType::IntType);
+  FieldIdentifier mcth_fid ("sunlit_mask_cthtau", scalar4d_cthtau, none, m_grid->name(), DataType::IntType);
   Field mctp(mctp_fid,true);
   Field mcth(mcth_fid,true);
   std::map<std::string,Field> masks = {
@@ -136,9 +133,58 @@ void Cosp::initialize_impl (const RunType /* run_type */)
     // the mask here is just the sunlit mask, so set it
     auto& f = get_field_out(field_name);
 
-    f.get_header().set_extra_data("valid_mask", masks.at(field_name));
+    f.set_valid_mask(masks.at(field_name));
     f.get_header().set_may_be_filled(true);
   }
+
+  using namespace ekat::units;
+
+  // Add COSP dimension coordinate variables and their bounds as geometry data.
+  // Values come directly from the COSP simulator (mod_cosp_config) via the F90 interface.
+
+  // Layouts for 1D coordinate variables
+  FieldLayout cosp_tau_layout ({CMP}, {m_num_tau}, {"cosp_tau"});
+  FieldLayout cosp_prs_layout ({CMP}, {m_num_ctp}, {"cosp_prs"});
+  FieldLayout cosp_cth_layout ({CMP}, {m_num_cth}, {"cosp_cth"});
+  // Layouts for 2D bounds variables (dim x 2)
+  FieldLayout cosp_tau_bnds_layout ({CMP,CMP}, {m_num_tau,2}, {"cosp_tau","nbnd"});
+  FieldLayout cosp_prs_bnds_layout ({CMP,CMP}, {m_num_ctp,2}, {"cosp_prs","nbnd"});
+  FieldLayout cosp_cth_bnds_layout ({CMP,CMP}, {m_num_cth,2}, {"cosp_cth","nbnd"});
+
+  auto cosp_tau_f      = m_grid->create_geometry_data("cosp_tau",      cosp_tau_layout,     none);
+  auto cosp_prs_f      = m_grid->create_geometry_data("cosp_prs",      cosp_prs_layout,     Pa);
+  auto cosp_cth_f      = m_grid->create_geometry_data("cosp_cth",      cosp_cth_layout,     m);
+  auto cosp_tau_bnds_f = m_grid->create_geometry_data("cosp_tau_bnds", cosp_tau_bnds_layout, none);
+  auto cosp_prs_bnds_f = m_grid->create_geometry_data("cosp_prs_bnds", cosp_prs_bnds_layout, Pa);
+  auto cosp_cth_bnds_f = m_grid->create_geometry_data("cosp_cth_bnds", cosp_cth_bnds_layout, m);
+
+  // Retrieve bin centers and edges from the Fortran COSP interface (mod_cosp_config).
+  // The F90 arrays for edges have shape (2, nbins) in Fortran column-major order, so the
+  // flat memory layout is [lower_0, upper_0, lower_1, upper_1, ...], which maps directly
+  // onto the (nbins, 2) host views below.
+  auto tau_h      = cosp_tau_f.get_view<Real*,Host>();
+  auto tau_bnds_h = cosp_tau_bnds_f.get_view<Real**,Host>();
+  auto prs_h      = cosp_prs_f.get_view<Real*,Host>();
+  auto prs_bnds_h = cosp_prs_bnds_f.get_view<Real**,Host>();
+  auto cth_h      = cosp_cth_f.get_view<Real*,Host>();
+  auto cth_bnds_h = cosp_cth_bnds_f.get_view<Real**,Host>();
+
+  cosp_c2f_get_bins(tau_h.data(), tau_bnds_h.data(),
+                    prs_h.data(), prs_bnds_h.data(),
+                    cth_h.data(), cth_bnds_h.data());
+
+  cosp_tau_f.sync_to_dev();
+  cosp_tau_bnds_f.sync_to_dev();
+  cosp_prs_f.sync_to_dev();
+  cosp_prs_bnds_f.sync_to_dev();
+  cosp_cth_f.sync_to_dev();
+  cosp_cth_bnds_f.sync_to_dev();
+
+  // Set "bounds" CF attribute on each coordinate variable to link to its bounds variable
+  using stratts_t = std::map<std::string,std::string>;
+  cosp_tau_f.get_header().get_extra_data<stratts_t>("io: string attributes")["bounds"] = "cosp_tau_bnds";
+  cosp_prs_f.get_header().get_extra_data<stratts_t>("io: string attributes")["bounds"] = "cosp_prs_bnds";
+  cosp_cth_f.get_header().get_extra_data<stratts_t>("io: string attributes")["bounds"] = "cosp_cth_bnds";
 }
 
 // =========================================================================================
@@ -281,8 +327,8 @@ void Cosp::run_impl (const double dt)
 
     // Update the ctptau and cthtau masks by broadcasting sunlit mask
     const auto& sunlit = get_field_in("sunlit_mask");
-    auto& ctptau = get_field_out("isccp_ctptau").get_header().get_extra_data<Field>("valid_mask");
-    auto& cthtau = get_field_out("misr_cthtau").get_header().get_extra_data<Field>("valid_mask");
+    auto& ctptau = get_field_out("isccp_ctptau").get_valid_mask();
+    auto& cthtau = get_field_out("misr_cthtau").get_valid_mask();
 
     auto sunlit_v = sunlit.get_view<const int*>();
     auto ctptau_v = ctptau.get_view<int***>();

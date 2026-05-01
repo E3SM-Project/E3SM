@@ -27,7 +27,7 @@ if (SCREAM_TEST_MAX_TOTAL_THREADS GREATER_EQUAL 16)
   # So we must add openmp to the compiler/linker flags manually
   # NOTE: scripts-tests is already checking that this is an "OpenMP machine", so this is safe
   find_package(OpenMP REQUIRED COMPONENTS CXX)
-  target_link_libraries(resource_spread OpenMP::OpenMP_CXX MPI::MPI_C)
+  target_link_libraries(resource_spread PUBLIC OpenMP::OpenMP_CXX MPI::MPI_C)
 
   EkatCreateUnitTestFromExec(resource_spread_thread resource_spread
     PRINT_OMP_AFFINITY

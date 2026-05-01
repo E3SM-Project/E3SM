@@ -1126,9 +1126,8 @@ contains
 
 
       ! Import state from coupler
-      call ocn_import_mct(x2o_o % rAttr, ierr)
-      ! Import state from moab coupler
 #ifdef HAVE_MOAB
+      ! Import state from moab coupler
       tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
       ent_type = 1 ! cells
       ierr = iMOAB_GetDoubleTagStorage(MPOID, tagname, totalmbls_r, ent_type, x2o_om)
@@ -1138,6 +1137,7 @@ contains
       x2o_om2 = transpose(x2o_om)
       call ocn_import_mct(x2o_om2, errorCode)
 #else
+      ! Import state from mct coupler
       call ocn_import_mct(x2o_o % rAttr, errorCode)
 #endif
       if (errorCode /= 0) then

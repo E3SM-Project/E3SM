@@ -127,9 +127,8 @@ MAMMicrophysics::create_requests()
   add_field<Required>("horiz_winds", vector3d, m / s, grid_name);
 
   //----------- Variables from microphysics scheme -------------
-  constexpr auto nondim = ekat::units::Units::nondimensional();
   // Total cloud fraction [fraction]
-  add_field<Required>("cldfrac_liq", scalar3d_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_liq", scalar3d_mid, none, grid_name);
 
   // Evaporation from stratiform rain [kg/kg/s]
   add_field<Required>("nevapr", scalar3d_mid, kg / kg / s, grid_name);
@@ -165,11 +164,11 @@ MAMMicrophysics::create_requests()
       grid_->get_2d_vector_layout(mam4::mo_drydep::n_land_type, "class");
 
   // Fractional land use [fraction]
-  add_field<Required>("fraction_landuse", vector2d_class, nondim, grid_name);
+  add_field<Required>("fraction_landuse", vector2d_class, none, grid_name);
 
   //----------- Variables from the coupler ---------
   // surface albedo shortwave, direct
-  add_field<Required>("sfc_alb_dir_vis", scalar2d, nondim, grid_name);
+  add_field<Required>("sfc_alb_dir_vis", scalar2d, none, grid_name);
 
   // Surface temperature[K]
   add_field<Required>("surf_radiative_T", scalar2d, K, grid_name);
@@ -225,17 +224,17 @@ MAMMicrophysics::create_requests()
 
     // Diagnostics: tendencies due to gas phase chemistry [mixed units: kg/kg/s or #/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_gas_phase_chemistry",
-                        vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+                        vector3d_num_gas_aerosol_constituents, none, grid_name);
 
     // Diagnostics: tendencies due to aqueous chemistry [mixed units: kg/kg/s or #/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_aqueous_chemistry",
-                        vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+                        vector3d_num_gas_aerosol_constituents, none, grid_name);
 
     // Diagnostics: SO4 in-cloud tendencies [mixed units: kg/kg/s or #/kg/s]
-    add_field<Computed>("mam4_microphysics_tendency_aqso4", vector3d_mid_nmodes, nondim, grid_name);
+    add_field<Computed>("mam4_microphysics_tendency_aqso4", vector3d_mid_nmodes, none, grid_name);
 
     // Diagnostics: H2SO4 in-cloud tendencies [mixed units: kg/kg/s or #/kg/s]
-    add_field<Computed>("mam4_microphysics_tendency_aqh2so4", vector3d_mid_nmodes, nondim,
+    add_field<Computed>("mam4_microphysics_tendency_aqh2so4", vector3d_mid_nmodes, none,
                         grid_name);
 
     // Register computed diagnostic fields
@@ -249,15 +248,15 @@ MAMMicrophysics::create_requests()
     // Diagnostics: tendencies due to aerosol microphysics (gas aerosol exchange) [mixed units:
     // mol/mol/s or #/mol/s]
     add_field<Computed>("mam4_microphysics_tendency_condensation",
-                        vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+                        vector3d_num_gas_aerosol_constituents, none, grid_name);
     add_field<Computed>("mam4_microphysics_tendency_renaming",
-                        vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+                        vector3d_num_gas_aerosol_constituents, none, grid_name);
     add_field<Computed>("mam4_microphysics_tendency_nucleation",
-                        vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+                        vector3d_num_gas_aerosol_constituents, none, grid_name);
     add_field<Computed>("mam4_microphysics_tendency_coagulation",
-                        vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+                        vector3d_num_gas_aerosol_constituents, none, grid_name);
     add_field<Computed>("mam4_microphysics_tendency_renaming_cloud_borne",
-                        vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+                        vector3d_num_gas_aerosol_constituents, none, grid_name);
     constexpr auto cm2 = m * m / 10000;
     add_field<Computed>("mam4_gas_dry_deposition_flux", vector2d_gas_pcnst, 1 / cm2 / s, grid_name);
   }
@@ -277,12 +276,12 @@ MAMMicrophysics::create_requests()
   if (config_.linoz.compute) {
     // The DataInterpolation class uses Field. We save these fields in FM.
     for(const auto &field_name : var_names_linoz_) {
-      add_field<Computed>(field_name, scalar3d_mid, nondim, grid_name);
+      add_field<Computed>(field_name, scalar3d_mid, none, grid_name);
     }
   }
   for(const auto &field_name : var_names_oxi_) {
     // Adding oxid_ to avoid conflicts with gases treated as tracers.
-    add_field<Computed>("oxid_"+field_name, scalar3d_mid, nondim, grid_name);
+    add_field<Computed>("oxid_"+field_name, scalar3d_mid, none, grid_name);
   }
 
   // list of species for elevated emissiones.
@@ -311,7 +310,7 @@ MAMMicrophysics::create_requests()
   for(const auto &pair : elevated_emis_var_names_) {
     const auto &var_name =pair.first;
     for(const auto &field_name : pair.second) {
-      add_field<Computed>(field_name+"_"+var_name, scalar3d_mid, nondim, grid_name);
+      add_field<Computed>(field_name+"_"+var_name, scalar3d_mid, none, grid_name);
     }
   }
 
@@ -545,7 +544,7 @@ void MAMMicrophysics::set_exo_coldens_reader()
   grid_exo_coldens->reset_vertical_configuration(1, AbstractGrid::VKind::Model);
   auto layout = grid_exo_coldens->get_3d_scalar_layout(LEV);
 
-  auto molec = Units::nondimensional();// example;
+  auto molec = none;// example;
   auto cm2 = pow(m / 100,2);
   auto molec_cm2 = Units(molec/cm2,"molecules/cm2");
   const std::string exo_coldens_name = "O3_column_density";
