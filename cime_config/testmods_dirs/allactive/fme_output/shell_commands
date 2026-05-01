@@ -99,8 +99,8 @@ OCN_MAP="${FME_MAPS_DIR}/map_${OCN_GRID}_to_gaussian_180by360_shifted.nc"
 echo "FME map detection:"
 echo "  ATM_GRID=${ATM_GRID} -> normalized: ${ATM_GRID_NORM}"
 echo "  OCN_GRID=${OCN_GRID}"
-echo "  EAM map : ${EAM_MAP} $([ -f "${EAM_MAP}" ] && echo '[found]' || echo '[NOT FOUND - remap disabled]')"
-echo "  OCN map : ${OCN_MAP} $([ -f "${OCN_MAP}" ] && echo '[found]' || echo '[NOT FOUND - remap disabled]')"
+echo "  EAM map : ${EAM_MAP} $([ -f "${EAM_MAP}" ] && echo '[cached]' || echo '[will be staged by check_input_data]')"
+echo "  OCN map : ${OCN_MAP} $([ -f "${OCN_MAP}" ] && echo '[cached]' || echo '[will be staged by check_input_data]')"
 
 # ---------------------------------------------------------------------------
 # Register maps with CIME's inputdata machinery
@@ -192,12 +192,12 @@ fincl1 = 'SOLIN:A', 'PHIS',
 
 EOF
 
-if [ -f "${EAM_MAP}" ]; then
-    cat >> user_nl_eam << EOF
-! Horizontal remapping to shifted Gaussian 180x360
+cat >> user_nl_eam << EOF
+! Horizontal remapping to shifted Gaussian 180x360.
+! Staging is the responsibility of CIME's check_input_data via
+! Buildconf/fme.input_data_list (registered earlier in this script).
 horiz_remap_file(1) = '${EAM_MAP}'
 EOF
-fi
 
 # ---------------------------------------------------------------------------
 # ELM namelist: stub for now
@@ -291,8 +291,7 @@ config_AM_timeSeriesStatsMonthlyMin_enable = .false.
 config_AM_timeSeriesStatsMonthlyMax_enable = .false.
 EOF
 
-if [ -f "${OCN_MAP}" ]; then
-    cat >> user_nl_mpaso << EOF
+cat >> user_nl_mpaso << EOF
 config_AM_fmeDepthCoarsening_output_stream = 'none'
 config_AM_fmeDepthCoarsening_horiz_remap_file = '${OCN_MAP}'
 config_AM_fmeDerivedFields_output_stream = 'none'
@@ -302,7 +301,6 @@ config_AM_fmeDerivedFields_horiz_remap_file = '${OCN_MAP}'
 config_AM_fmeDepthCoarsening_write_on_startup = .false.
 config_AM_fmeDerivedFields_write_on_startup = .false.
 EOF
-fi
 
 # ---------------------------------------------------------------------------
 # MPAS-SeaIce namelist
@@ -327,9 +325,7 @@ config_AM_timeSeriesStatsDaily_enable   = .false.
 config_AM_timeSeriesStatsMonthly_enable = .false.
 EOF
 
-if [ -f "${OCN_MAP}" ]; then
-    cat >> user_nl_mpassi << EOF
+cat >> user_nl_mpassi << EOF
 config_AM_fmeSeaiceDerivedFields_output_stream = 'none'
 config_AM_fmeSeaiceDerivedFields_horiz_remap_file = '${OCN_MAP}'
 EOF
-fi

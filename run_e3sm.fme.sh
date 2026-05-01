@@ -27,14 +27,27 @@
 main() {
 
 # --- Configuration flags ----
+#
+# Site-specific knobs (MACHINE, PROJECT, PELAYOUT, WALLTIME, RUN_REF*, and
+# the scratch root via $PSCRATCH) are env-overridable. Defaults below are
+# the pm-cpu/SamudrACE production combo. To run elsewhere, export e.g.
+#   MACHINE=chrysalis PSCRATCH=/lcrc/group/e3sm/$USER/scratch ./run_e3sm.fme.sh
+# COMPILER is intentionally omitted from create_newcase so each machine's
+# default compiler is used; pin it explicitly here if you need a non-default.
 
-readonly MACHINE=pm-cpu
-readonly PROJECT="$(sacctmgr show user $USER format=DefaultAccount | tail -n1 | tr -d ' ')"
+readonly MACHINE=${MACHINE:-pm-cpu}
+readonly PROJECT="${PROJECT:-$(sacctmgr show user $USER format=DefaultAccount | tail -n1 | tr -d ' ')}"
 
 readonly COMPSET="WCYCL1850"
 readonly RESOLUTION="ne30pg2_r05_IcoswISC30E3r5"
-# BEFORE RUNNING: set CASE_NAME to a descriptive identifier
-readonly CASE_NAME="v3.LR.piControl.aigo"
+# BEFORE RUNNING: set CASE_BASE to a descriptive identifier. CASE_TAG is
+# an optional dotted suffix (env-overridable) for launching several
+# variants side-by-side without name collisions, e.g.
+#   CASE_TAG=intel ./run_e3sm.fme.sh   -> v3.LR.piControl.aigo.intel
+#   CASE_TAG=test1 ./run_e3sm.fme.sh   -> v3.LR.piControl.aigo.test1
+readonly CASE_BASE="${CASE_BASE:-v3.LR.piControl.aigo}"
+readonly CASE_TAG="${CASE_TAG:-}"
+readonly CASE_NAME="${CASE_BASE}${CASE_TAG:+.${CASE_TAG}}"
 # readonly CASE_GROUP="samudrace_v3"
 
 # Code and compilation
@@ -50,15 +63,16 @@ readonly DEBUG_COMPILE=false
 # (cold start would discard ~50 yr of ocean spinup). 'branch' = exact restart,
 # bit-identical model evolution, just with FME diagnostics added on top.
 # Use 'hybrid' instead if the source case had different physics/forcing.
-readonly MODEL_START_TYPE="initial"   # 'initial', 'continue', 'branch', 'hybrid'
+readonly MODEL_START_TYPE="hybrid"   # 'initial', 'continue', 'branch', 'hybrid'
 
-# BEFORE RUNNING: fill in the three RUN_REF* values below to match the
-# spun-up piControl restart you're branching from. START_DATE should
-# match RUN_REFDATE for a 'branch' run.
-readonly RUN_REFDIR="/PLACEHOLDER/path/to/refcase/restarts"
-readonly RUN_REFCASE="PLACEHOLDER_v3.LR.piControl.refcase"
-readonly RUN_REFDATE="0051-01-01"    # PLACEHOLDER -- set to actual refcase restart date
-readonly START_DATE="${RUN_REFDATE}"
+# BEFORE RUNNING (branch/hybrid only): fill in the three RUN_REF* values
+# below to match the spun-up piControl restart you're branching from.
+# START_DATE should match RUN_REFDATE for a 'branch' run. All three are
+# env-overridable; the PLACEHOLDER defaults trip the guard further down.
+readonly RUN_REFDIR="${RUN_REFDIR:-/pscratch/sd/m/mahf708/v3.LR.piControl/archive/rest/0401-01-01-00000}"
+readonly RUN_REFCASE="${RUN_REFCASE:-v3.LR.piControl}"
+readonly RUN_REFDATE="${RUN_REFDATE:-0401-01-01}"
+readonly START_DATE="${START_DATE:-${RUN_REFDATE}}"
 
 # GET_REFCASE=TRUE asks CIME to copy refcase restart files from RUN_REFDIR.
 # Set to FALSE if you've pre-staged the files into CASE_RUN_DIR yourself.
@@ -66,7 +80,13 @@ readonly GET_REFCASE=TRUE
 
 # Set paths
 readonly CASE_ROOT="${PSCRATCH}/E3SMv3/${CASE_NAME}"
-readonly CODE_ROOT="${HOME}/E3SMv3/code/${CHECKOUT}"
+# CODE_ROOT defaults to a self-contained checkout under CASE_ROOT so each
+# case is self-describing (source + build + run + archive co-located, no
+# ambiguity about which sha was actually compiled). Override by exporting
+# CODE_ROOT=/path/to/shared/checkout to point several cases at one tree
+# (saves ~5 GB of git history + submodules per case, at the cost of
+# losing per-case provenance).
+readonly CODE_ROOT="${CODE_ROOT:-${CASE_ROOT}/code/${CHECKOUT}}"
 
 readonly CASE_BUILD_DIR=${CASE_ROOT}/build
 readonly CASE_ARCHIVE_DIR=${CASE_ROOT}/archive
@@ -77,7 +97,8 @@ readonly FME_TESTMOD="${CODE_ROOT}/cime_config/testmods_dirs/allactive/fme_outpu
 # Define type of run
 #  short tests: 'XS_2x5_ndays', 'S_1x10_ndays', etc. (same scheme as upstream)
 #  or 'production' for the SamudrACE 100-yr piControl tape
-readonly run='production'
+# Override via RUN_LAYOUT env var (e.g. RUN_LAYOUT='XS_1x2_ndays').
+readonly run="${RUN_LAYOUT:-production}"
 
 if [ "${run}" != "production" ]; then
   echo "setting up Short test simulations: ${run}"
@@ -89,8 +110,8 @@ if [ "${run}" != "production" ]; then
 
   readonly CASE_SCRIPTS_DIR=${CASE_ROOT}/tests/${run}/case_scripts
   readonly CASE_RUN_DIR=${CASE_ROOT}/tests/${run}/run
-  readonly PELAYOUT=${layout}
-  readonly WALLTIME="2:00:00"
+  readonly PELAYOUT=${PELAYOUT:-${layout}}
+  readonly WALLTIME=${WALLTIME:-2:00:00}
   readonly STOP_OPTION=${units}
   readonly STOP_N=${length}
   readonly REST_OPTION=${STOP_OPTION}
@@ -108,8 +129,10 @@ else
   # production cadence keeps things simple by avoiding that path.
   readonly CASE_SCRIPTS_DIR=${CASE_ROOT}/case_scripts
   readonly CASE_RUN_DIR=${CASE_ROOT}/run
-  readonly PELAYOUT="L"
-  readonly WALLTIME="34:00:00"
+  # PELAYOUT and WALLTIME defaults are pm-cpu-tuned. On sites with
+  # shorter max walltime (e.g. 24h on chrysalis), export WALLTIME=24:00:00.
+  readonly PELAYOUT=${PELAYOUT:-L}
+  readonly WALLTIME=${WALLTIME:-34:00:00}
   readonly STOP_OPTION="nyears"
   readonly STOP_N="5"
   readonly REST_OPTION="nyears"
