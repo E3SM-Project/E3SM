@@ -29,12 +29,13 @@ main() {
 # --- Configuration flags ----
 
 readonly MACHINE=pm-cpu
+readonly COMPILER=intel
 readonly PROJECT="$(sacctmgr show user $USER format=DefaultAccount | tail -n1 | tr -d ' ')"
 
 readonly COMPSET="WCYCL1850"
 readonly RESOLUTION="ne30pg2_r05_IcoswISC30E3r5"
 # BEFORE RUNNING: set CASE_NAME to a descriptive identifier
-readonly CASE_NAME="samudrace.v3.LR.piControl.001"
+readonly CASE_NAME="samudrace.v3.LR.piControl.001_${COMPILER}"
 # readonly CASE_GROUP="samudrace_v3"
 
 # Code and compilation
@@ -277,6 +278,7 @@ create_newcase() {
             --compset ${COMPSET} \
             --res ${RESOLUTION} \
             --machine ${MACHINE} \
+            --compiler ${COMPILER} \
             --project ${PROJECT} \
             --walltime ${WALLTIME} \
             --pecount ${layout} \
@@ -291,6 +293,7 @@ create_newcase() {
             --compset ${COMPSET} \
             --res ${RESOLUTION} \
             --machine ${MACHINE} \
+            --compiler ${COMPILER} \
             --project ${PROJECT} \
             --walltime ${WALLTIME} \
             --pecount ${layout} \
