@@ -84,7 +84,8 @@ module ocn_analysis_driver
              ocn_analysis_compute, &
              ocn_analysis_write, &
              ocn_analysis_restart, &
-             ocn_analysis_finalize
+             ocn_analysis_finalize, &
+             ocn_analysis_fme_write_restart
 
    !--------------------------------------------------------------------
    !
@@ -920,6 +921,60 @@ contains
       call mpas_timer_stop('analysis_restart')
 
    end subroutine ocn_analysis_restart!}}}
+
+!***********************************************************************
+!
+!  routine ocn_analysis_fme_write_restart
+!
+!> \brief Persist FME analysis-member accumulator state on a coupler-driven
+!>        restart write.
+!> \details
+!>  Called from `ocn_comp_mct.F` inside the `seq_timemgr_RestartAlarmIsOn`
+!>  branch — i.e. only on the timesteps where MPAS is actually writing
+!>  its native restart files. Each FME AM writes its own remap-space
+!>  sidecar (`fme<AmName>.fme_accum_restart.nc`) so accumulator state
+!>  survives across legs even when restart doesn't land on an output
+!>  trigger boundary.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_analysis_fme_write_restart(domain, err)!{{{
+      type(domain_type), intent(inout) :: domain
+      integer, intent(out) :: err
+      integer :: err_tmp
+      logical, pointer :: enable_dc, enable_df, enable_vr
+
+      err = 0
+      err_tmp = 0
+
+      call mpas_pool_get_config(domain % configs, &
+           'config_AM_fmeDepthCoarsening_enable', enable_dc)
+      if (associated(enable_dc)) then
+         if (enable_dc) then
+            call ocn_fme_depth_coarsening_write_restart(domain, err_tmp)
+            err = ior(err, err_tmp)
+         end if
+      end if
+
+      call mpas_pool_get_config(domain % configs, &
+           'config_AM_fmeDerivedFields_enable', enable_df)
+      if (associated(enable_df)) then
+         if (enable_df) then
+            call ocn_fme_derived_fields_write_restart(domain, err_tmp)
+            err = ior(err, err_tmp)
+         end if
+      end if
+
+      call mpas_pool_get_config(domain % configs, &
+           'config_AM_fmeVerticalReduce_enable', enable_vr)
+      if (associated(enable_vr)) then
+         if (enable_vr) then
+            call ocn_fme_vertical_reduce_write_restart(domain, err_tmp)
+            err = ior(err, err_tmp)
+         end if
+      end if
+
+   end subroutine ocn_analysis_fme_write_restart!}}}
 
 !***********************************************************************
 !

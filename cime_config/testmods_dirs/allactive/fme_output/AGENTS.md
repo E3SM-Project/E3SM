@@ -491,12 +491,21 @@ These are hard-won lessons. Read before modifying FME code.
     `cime_config/config_archive.xml` previously had `exclude_testing="true"`
     on `mpaso` and `mpassi`, which caused `hist_utils.py:79` to skip both
     components entirely whenever `TEST=TRUE`. As of 2026-04-30 that
-    attribute is removed. `<hist_file_extension>` stays broad (`hist`)
-    because the same regex drives BOTH cprnc comparison AND the
-    short-term archiver (`case_st_archive.py:328`); narrowing it broke
-    archiving of `globalStats`/`highFrequencyOutput`/etc. and tripped
-    `_check_disposition` in `test_env_archive`. Per-stream
-    `<hist_file_ext_regex>` entries are added for the FME streams
+    attribute is removed. `<hist_file_extension>` is now
+    `hist\..*\.nc$` -- *not* the bare `hist` -- because of a subtle CIME
+    regex-construction bug: when `_component_compare_copy` invokes
+    `copy_histfiles(case, "base", match_suffix="nc")`,
+    `archive_base.py:142-148` builds a literal `\.nc$` suffix onto the
+    regex *unless* `nc` already appears in it OR the ext ends in `$`.
+    Bare `hist` triggered the suffix append, producing
+    `mpaso\d?_?(\d{4})?\.hist\.nc$` -- which matches NO real MPAS file
+    (FME files end `.remapped.nc`, native streams end
+    `.YYYY-MM-DD.nc`). The narrow regex (`hist\.am\.fme\w+\.\S+\.remapped\.nc$`)
+    worked by luck because it ended in `$`; the broad regex must too,
+    or contain `nc`. Pattern `hist\..*\.nc$` matches everything we want
+    (FME remapped + native streams), excludes `.rst`/`.rest`/`.base`/`.cprnc.out`,
+    and produces the same regex regardless of `match_suffix`.
+    Per-stream `<hist_file_ext_regex>` entries are added for the FME streams
     (`hist\.am\.fmeDepthCoarsening`, `hist\.am\.fmeDerivedFields`,
     `hist\.am\.fmeVerticalReduce`, `hist\.am\.fmeSeaiceDerivedFields`)
     so each FME stream gets its own ext-bucket and all of them survive

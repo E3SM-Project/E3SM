@@ -1329,6 +1329,8 @@ contains
          ! Write a restart file, because the coupler asked for it.
          if (debugOn) call mpas_log_write('Writing restart streams', masterOnly=.true.)
          call seaice_forcing_write_restart_times(domain)
+         ! FME accumulator sidecar
+         call seaice_analysis_fme_write_restart(domain, ierr)
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
          do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID=streamName, &
                     directionProperty=streamDirection, activeProperty=streamActive) )

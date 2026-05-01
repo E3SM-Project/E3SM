@@ -231,6 +231,17 @@ config_AM_fmeDerivedFields_stream_output_interval = '${FME_MPAS_INTERVAL}'
 ! fmeVerticalReduce disabled: oceanHeatContent / freshwaterContent /
 ! kineticEnergy are not requested by SamudrACE (Confluence p3ai/6154289880).
 config_AM_fmeVerticalReduce_enable = .false.
+
+! Disable non-FME analysis members. The SamudrACE training tape only
+! consumes the fmeDepthCoarsening + fmeDerivedFields remapped files;
+! globalStats and the timeSeriesStats* AMs are pure storage overhead
+! for this configuration. Disabling them also keeps the ERS restart
+! comparison clean (timeSeriesStatsDaily isn't BFB across restart in
+! this branch — separate issue, not blocking FME).
+config_AM_globalStats_enable               = .false.
+config_AM_timeSeriesStatsMonthly_enable    = .false.
+config_AM_timeSeriesStatsMonthlyMin_enable = .false.
+config_AM_timeSeriesStatsMonthlyMax_enable = .false.
 EOF
 
 if [ -f "${OCN_MAP}" ]; then
@@ -260,6 +271,12 @@ config_AM_fmeSeaiceDerivedFields_enable = .true.
 config_AM_fmeSeaiceDerivedFields_compute_interval = 'dt'
 config_AM_fmeSeaiceDerivedFields_time_averaging = .true.
 config_AM_fmeSeaiceDerivedFields_stream_output_interval = '${FME_MPAS_INTERVAL}'
+
+! Disable non-FME sea-ice analysis members (storage overhead only;
+! see comment in user_nl_mpaso block above).
+config_AM_regionalStatistics_enable     = .false.
+config_AM_timeSeriesStatsDaily_enable   = .false.
+config_AM_timeSeriesStatsMonthly_enable = .false.
 EOF
 
 if [ -f "${OCN_MAP}" ]; then

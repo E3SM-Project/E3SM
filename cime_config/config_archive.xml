@@ -84,7 +84,7 @@
   <comp_archive_spec compname="mpassi" compclass="ice">
     <rest_file_extension>rst</rest_file_extension>
     <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
-    <hist_file_extension>hist</hist_file_extension>
+    <hist_file_extension>hist\..*\.nc$</hist_file_extension>
     <hist_file_ext_regex>hist\.am\.fmeSeaiceDerivedFields</hist_file_ext_regex>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
@@ -103,7 +103,7 @@
   <comp_archive_spec compname="mpaso" compclass="ocn">
     <rest_file_extension>rst</rest_file_extension>
     <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
-    <hist_file_extension>hist</hist_file_extension>
+    <hist_file_extension>hist\..*\.nc$</hist_file_extension>
     <hist_file_ext_regex>hist\.am\.fmeDepthCoarsening</hist_file_ext_regex>
     <hist_file_ext_regex>hist\.am\.fmeDerivedFields</hist_file_ext_regex>
     <hist_file_ext_regex>hist\.am\.fmeVerticalReduce</hist_file_ext_regex>

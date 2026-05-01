@@ -31,11 +31,14 @@ module seaice_fme_horiz_remap
    use shr_kind_mod, only: r8 => shr_kind_r8
    use shr_horiz_remap_mod, only: shr_horiz_remap_t, SHR_FILL_VALUE
    use pio, only: file_desc_t, var_desc_t, io_desc_t, iosystem_desc_t, &
-                  pio_createfile, pio_closefile, &
+                  pio_openfile, pio_createfile, pio_closefile, &
                   pio_def_dim, pio_def_var, pio_enddef, &
-                  pio_put_att, pio_put_var, pio_write_darray, &
+                  pio_put_att, pio_put_var, pio_write_darray, pio_read_darray, &
+                  pio_get_att, pio_get_var, &
+                  pio_inq_dimid, pio_inq_varid, pio_inq_dimlen, &
                   pio_initdecomp, pio_setframe, &
-                  PIO_IOTYPE_PNETCDF, PIO_CLOBBER, PIO_REAL, PIO_DOUBLE, &
+                  PIO_IOTYPE_PNETCDF, PIO_CLOBBER, PIO_WRITE, &
+                  PIO_REAL, PIO_DOUBLE, &
                   PIO_CHAR, PIO_OFFSET_KIND, PIO_GLOBAL, PIO_NOERR, &
                   PIO_UNLIMITED
 
@@ -55,12 +58,19 @@ module seaice_fme_horiz_remap
    public :: seaice_fme_remap_build_filename
    public :: seaice_fme_horiz_remap_register_var
    public :: seaice_fme_horiz_remap_check_rotate
+   public :: seaice_fme_horiz_remap_write_accum
+   public :: seaice_fme_horiz_remap_read_accum
    public :: remap_stream_name, file_is_open
 
    type(shr_horiz_remap_t) :: remap_data
    integer, allocatable :: send_local_cell(:)
    real(r8), allocatable :: ws_send_buf(:)
    logical :: is_initialized = .false.
+
+   ! Cached at init from config_do_restart. Append-mode only fires on
+   ! warm restart; cold start always clobber-creates, defending against
+   ! stale `.remapped.nc` left behind by a prior CIME compare-copy.
+   logical :: is_restart_run = .false.
 
    ! MPAS-SI fill value for input field detection (matches def_var _FillValue)
    real(r8), parameter :: MPAS_SI_FILL = SHR_FILL_VALUE
@@ -71,8 +81,12 @@ module seaice_fme_horiz_remap
    logical :: file_is_open = .false.
    integer :: dim_lon_id, dim_lat_id, dim_time_id
    integer :: time_record = 0
-   type(io_desc_t) :: iodesc_2d
+   type(io_desc_t) :: iodesc_2d        ! PIO_REAL  (output records)
+   type(io_desc_t) :: iodesc_2d_dbl    ! PIO_DOUBLE (accumulator restart)
    logical :: iodesc_2d_valid = .false.
+   ! True when the open file was reopened from disk (append after restart)
+   ! rather than freshly created. Mirrors the ocean module's flag.
+   logical :: existing_file_reopened = .false.
 
    integer, parameter :: max_pio_vars = 512
    integer :: n_pio_vars = 0
@@ -260,8 +274,23 @@ contains
       end do
       call pio_initdecomp(pio_sys, PIO_REAL, &
            (/remap_data%nlon, remap_data%nlat/), idof, iodesc_2d)
+      call pio_initdecomp(pio_sys, PIO_DOUBLE, &
+           (/remap_data%nlon, remap_data%nlat/), idof, iodesc_2d_dbl)
       deallocate(idof)
       iodesc_2d_valid = .true.
+
+      ! Cache config_do_restart so append-mode logic doesn't need to
+      ! re-query the config pool on every check_rotate call.
+      block
+         logical, pointer :: config_do_restart
+         call mpas_pool_get_config(domain % configs, 'config_do_restart', &
+              config_do_restart)
+         if (associated(config_do_restart)) then
+            is_restart_run = config_do_restart
+         else
+            is_restart_run = .false.
+         end if
+      end block
 
       is_initialized = .true.
    end subroutine seaice_fme_horiz_remap_init!}}}
@@ -315,12 +344,91 @@ contains
    end subroutine seaice_fme_horiz_remap_field!}}}
 
    subroutine seaice_fme_horiz_remap_open_file(domain, filename, err)!{{{
+   !> Open the remapped output file. If a file with this name already
+   !> exists on disk (append-mode after warm restart), reopen it via
+   !> pio_openfile and seed time_record from the existing Time dim
+   !> length. Otherwise create-new.
       type(domain_type), intent(inout) :: domain
       character(len=*), intent(in) :: filename
       integer, intent(out) :: err
-      integer :: ierr
+      integer :: ierr, i, count_le_now
+      integer(PIO_OFFSET_KIND) :: time_len
+      logical :: file_exists
+      type(MPAS_Time_Type) :: now_time
+      character(len=64) :: now_str
+      character(len=64), allocatable :: existing_xtime(:)
 
       err = 0
+
+      inquire(file=trim(filename), exist=file_exists)
+      ! Append-mode reopen ONLY on warm restart. Cold start always
+      ! clobber-creates, defending against stale leftover files.
+      if (file_exists .and. is_restart_run) then
+         ierr = pio_openfile(pio_sys, pio_file, PIO_IOTYPE_PNETCDF, &
+              trim(filename), PIO_WRITE)
+         if (ierr /= PIO_NOERR) then
+            call mpas_log_write('seaice_fme_horiz_remap: failed to reopen ' &
+                 // trim(filename), messageType=MPAS_LOG_ERR)
+            err = ierr; return
+         end if
+
+         call check_pio_si('inq_dimid lon', &
+              pio_inq_dimid(pio_file, 'lon', dim_lon_id), err)
+         call check_pio_si('inq_dimid lat', &
+              pio_inq_dimid(pio_file, 'lat', dim_lat_id), err)
+         call check_pio_si('inq_dimid Time', &
+              pio_inq_dimid(pio_file, 'Time', dim_time_id), err)
+         call check_pio_si('inq_dimid StrLen', &
+              pio_inq_dimid(pio_file, 'StrLen', dim_strlen_id), err)
+         call check_pio_si('inq_varid lon',   pio_inq_varid(pio_file, &
+              'lon', pio_lon_var), err)
+         call check_pio_si('inq_varid lat',   pio_inq_varid(pio_file, &
+              'lat', pio_lat_var), err)
+         call check_pio_si('inq_varid xtime', pio_inq_varid(pio_file, &
+              'xtime', pio_xtime_var), err)
+         call check_pio_si('inq_dimlen Time', &
+              pio_inq_dimlen(pio_file, dim_time_id, time_len), err)
+
+         ! Mirror of ocean: seed time_record at largest frame whose
+         ! xtime <= MPAS_NOW so leg-2's next write overwrites the
+         ! first frame whose xtime > restart time.
+         now_time = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
+         call mpas_get_time(now_time, dateTimeString=now_str, ierr=ierr)
+
+         allocate(existing_xtime(int(time_len)))
+         ierr = pio_get_var(pio_file, pio_xtime_var, existing_xtime)
+         if (ierr /= PIO_NOERR) then
+            call mpas_log_write('seaice_fme_horiz_remap: failed to read ' // &
+                 'xtime; falling back to N_existing', &
+                 messageType=MPAS_LOG_WARN)
+            time_record = int(time_len)
+         else
+            ! Strict <: check_rotate is called from the trigger-fire
+            ! branch, so a frame with xtime == MPAS_NOW is leg-1's
+            ! leftover that we want to overwrite. Excluding it makes
+            ! next write_time land on it.
+            count_le_now = 0
+            do i = 1, int(time_len)
+               if (trim(existing_xtime(i)) < trim(now_str)) then
+                  count_le_now = count_le_now + 1
+               end if
+            end do
+            time_record = count_le_now
+         end if
+         deallocate(existing_xtime)
+
+         n_pio_vars = 0
+         file_is_open = .true.
+         existing_file_reopened = .true.
+         if (err == 0) then
+            call mpas_log_write('seaice_fme_horiz_remap: reopened ' // &
+                 trim(filename) // ' in append mode; existing Time=$i, ' // &
+                 'next write at frame=$i+1 (MPAS_NOW=' // trim(now_str) // ')', &
+                 intArgs=(/int(time_len), time_record/))
+         end if
+         return
+      end if
+
       ierr = pio_createfile(pio_sys, pio_file, PIO_IOTYPE_PNETCDF, trim(filename), PIO_CLOBBER)
       if (ierr /= PIO_NOERR) then; err = ierr; return; end if
 
@@ -356,6 +464,7 @@ contains
       n_pio_vars = 0
       time_record = 0
       file_is_open = .true.
+      existing_file_reopened = .false.
    end subroutine seaice_fme_horiz_remap_open_file!}}}
 
    subroutine check_pio_si(label, ierr, accumulated_err)
@@ -387,6 +496,18 @@ contains
       end if
 
       pio_var_names(n_pio_vars) = varname
+
+      if (existing_file_reopened) then
+         ierr = pio_inq_varid(pio_file, trim(varname), pio_var_descs(n_pio_vars))
+         if (ierr /= PIO_NOERR) then
+            call mpas_log_write('seaice_fme_horiz_remap: pio_inq_varid failed for ' &
+                 // trim(varname) // ' (code $i)', messageType=MPAS_LOG_ERR, &
+                 intArgs=(/ierr/))
+            err = ierr; return
+         end if
+         return
+      end if
+
       ierr = pio_def_var(pio_file, trim(varname), PIO_REAL, &
            (/dim_lon_id, dim_lat_id, dim_time_id/), pio_var_descs(n_pio_vars))
       if (ierr /= PIO_NOERR) then
@@ -435,7 +556,10 @@ contains
       character(len=64) :: xtime_buf(1)
 
       err = 0
-      if (time_record == 0) then
+      ! Fresh-create files: leave define-mode and seed lon/lat once.
+      ! Reopened (append) files are already in data mode and lon/lat are
+      ! already populated, so this whole block is skipped.
+      if (time_record == 0 .and. .not. existing_file_reopened) then
          ierr = pio_enddef(pio_file)
          ierr = pio_put_var(pio_file, pio_lon_var, remap_data%lon(1:remap_data%nlon))
          ierr = pio_put_var(pio_file, pio_lat_var, remap_data%lat(1:remap_data%nlat))
@@ -457,6 +581,7 @@ contains
          call pio_closefile(pio_file)
          file_is_open = .false.
          current_filename = ''
+         existing_file_reopened = .false.
       end if
    end subroutine seaice_fme_horiz_remap_close_file!}}}
 
@@ -579,5 +704,163 @@ contains
       if (idx > 0) then; tmp = filename(1:idx-1) // dy_str // filename(idx+2:); filename = tmp; end if
 
    end subroutine seaice_fme_remap_build_filename!}}}
+
+!***********************************************************************
+
+   subroutine seaice_fme_accum_filename(amName, filename)!{{{
+      character(len=*), intent(in)  :: amName
+      character(len=*), intent(out) :: filename
+      filename = trim(amName) // '.fme_accum_restart.nc'
+   end subroutine seaice_fme_accum_filename!}}}
+
+!***********************************************************************
+
+   subroutine seaice_fme_horiz_remap_write_accum(amName, accum_arr, &
+        n_avg_fields, nAccum, avg_last_output_time_str, err)!{{{
+   !> Persist remap-space accumulator state to a sidecar file. Mirror of
+   !> ocn_fme_horiz_remap_write_accum; sea-ice has no instantaneous-companion
+   !> arrays, so the optional latest_inst slot is omitted here.
+      character(len=*), intent(in) :: amName
+      integer,          intent(in) :: n_avg_fields
+      real(r8),         intent(in) :: accum_arr(:,:)
+      integer,          intent(in) :: nAccum
+      character(len=*), intent(in) :: avg_last_output_time_str
+      integer,          intent(out) :: err
+
+      type(file_desc_t)        :: pio_acc_file
+      type(var_desc_t)         :: var_accum
+      integer                  :: dim_lon, dim_lat, dim_field
+      integer                  :: ierr, idx
+      character(len=512)       :: filename
+      real(r8), allocatable    :: slab(:)
+
+      err = 0
+      if (.not. is_initialized) return
+
+      call seaice_fme_accum_filename(trim(amName), filename)
+
+      ierr = pio_createfile(pio_sys, pio_acc_file, PIO_IOTYPE_PNETCDF, &
+           trim(filename), PIO_CLOBBER)
+      if (ierr /= PIO_NOERR) then
+         call mpas_log_write('seaice_fme_write_accum: failed to create ' &
+              // trim(filename), messageType=MPAS_LOG_WARN)
+         err = ierr; return
+      end if
+
+      call check_pio_si('accum def_dim lon', &
+           pio_def_dim(pio_acc_file, 'lon', remap_data%nlon, dim_lon), err)
+      call check_pio_si('accum def_dim lat', &
+           pio_def_dim(pio_acc_file, 'lat', remap_data%nlat, dim_lat), err)
+      ! Record dim — must be UNLIMITED so pio_setframe is valid.
+      call check_pio_si('accum def_dim n_avg_fields', &
+           pio_def_dim(pio_acc_file, 'n_avg_fields', PIO_UNLIMITED, dim_field), err)
+      call check_pio_si('accum def_var remap_accum', &
+           pio_def_var(pio_acc_file, 'remap_accum', PIO_DOUBLE, &
+                       (/dim_lon, dim_lat, dim_field/), var_accum), err)
+
+      ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, 'nAccum', nAccum)
+      ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, 'n_avg_fields', n_avg_fields)
+      ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, &
+           'avg_last_output_time', trim(avg_last_output_time_str))
+      ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, 'source', &
+           'E3SM FME accumulator restart sidecar')
+
+      ierr = pio_enddef(pio_acc_file)
+      if (err /= 0) then
+         call pio_closefile(pio_acc_file); return
+      end if
+
+      allocate(slab(remap_data%n_b_local))
+      do idx = 1, n_avg_fields
+         call pio_setframe(pio_acc_file, var_accum, &
+              int(idx, PIO_OFFSET_KIND))
+         slab(:) = accum_arr(:, idx)
+         call pio_write_darray(pio_acc_file, var_accum, iodesc_2d_dbl, &
+              slab, ierr)
+         if (ierr /= PIO_NOERR) err = ierr
+      end do
+      deallocate(slab)
+      call pio_closefile(pio_acc_file)
+   end subroutine seaice_fme_horiz_remap_write_accum!}}}
+
+!***********************************************************************
+
+   subroutine seaice_fme_horiz_remap_read_accum(amName, accum_arr, &
+        n_avg_fields, nAccum, avg_last_output_time_str, success)!{{{
+      character(len=*),   intent(in)    :: amName
+      integer,            intent(in)    :: n_avg_fields
+      real(r8),           intent(inout) :: accum_arr(:,:)
+      integer,            intent(out)   :: nAccum
+      character(len=*),   intent(out)   :: avg_last_output_time_str
+      logical,            intent(out)   :: success
+
+      type(file_desc_t)     :: pio_acc_file
+      type(var_desc_t)      :: var_accum
+      integer               :: ierr, idx, n_avg_on_disk
+      character(len=512)    :: filename
+      logical               :: file_exists
+      real(r8), allocatable :: slab(:)
+      real(r8), allocatable :: tmp_accum(:,:)
+
+      success = .false.
+      nAccum = 0
+      avg_last_output_time_str = ''
+      if (.not. is_initialized) return
+
+      call seaice_fme_accum_filename(trim(amName), filename)
+      inquire(file=trim(filename), exist=file_exists)
+      if (.not. file_exists) return
+
+      ierr = pio_openfile(pio_sys, pio_acc_file, PIO_IOTYPE_PNETCDF, &
+           trim(filename), PIO_WRITE)
+      if (ierr /= PIO_NOERR) then
+         call mpas_log_write('seaice_fme_read_accum: pio_openfile failed for ' &
+              // trim(filename), messageType=MPAS_LOG_WARN)
+         return
+      end if
+
+      ierr = pio_get_att(pio_acc_file, PIO_GLOBAL, 'n_avg_fields', n_avg_on_disk)
+      if (ierr /= PIO_NOERR .or. n_avg_on_disk /= n_avg_fields) then
+         call mpas_log_write('seaice_fme_read_accum: n_avg_fields mismatch ' &
+              // 'in ' // trim(filename) // ' (on-disk=$i, expected=$i)', &
+              messageType=MPAS_LOG_WARN, &
+              intArgs=(/n_avg_on_disk, n_avg_fields/))
+         call pio_closefile(pio_acc_file); return
+      end if
+
+      ierr = pio_get_att(pio_acc_file, PIO_GLOBAL, 'nAccum', nAccum)
+      if (ierr /= PIO_NOERR) nAccum = 0
+      ierr = pio_get_att(pio_acc_file, PIO_GLOBAL, 'avg_last_output_time', &
+           avg_last_output_time_str)
+      if (ierr /= PIO_NOERR) avg_last_output_time_str = ''
+
+      ierr = pio_inq_varid(pio_acc_file, 'remap_accum', var_accum)
+      if (ierr /= PIO_NOERR) then
+         call pio_closefile(pio_acc_file); return
+      end if
+
+      allocate(tmp_accum(remap_data%n_b_local, n_avg_fields))
+      allocate(slab(remap_data%n_b_local))
+      do idx = 1, n_avg_fields
+         call pio_setframe(pio_acc_file, var_accum, &
+              int(idx, PIO_OFFSET_KIND))
+         call pio_read_darray(pio_acc_file, var_accum, iodesc_2d_dbl, &
+              slab, ierr)
+         if (ierr /= PIO_NOERR) then
+            deallocate(tmp_accum, slab)
+            call pio_closefile(pio_acc_file); return
+         end if
+         tmp_accum(:, idx) = slab(:)
+      end do
+
+      accum_arr(:,:) = tmp_accum(:,:)
+      deallocate(tmp_accum, slab)
+      call pio_closefile(pio_acc_file)
+
+      success = .true.
+      call mpas_log_write('seaice_fme_read_accum: restored accumulators from ' &
+           // trim(filename) // ' (nAccum=$i)', intArgs=(/nAccum/))
+
+   end subroutine seaice_fme_horiz_remap_read_accum!}}}
 
 end module seaice_fme_horiz_remap

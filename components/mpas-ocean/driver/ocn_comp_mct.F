@@ -1262,6 +1262,11 @@ contains
 
          if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring)  &
              call ocn_salinity_restoring_forcing_write_restart(domain_ptr)
+
+         ! FME analysis-member sidecars: persist remap-space accumulators
+         ! so warm-restart legs can resume mid-window. Only the AMs whose
+         ! enable=.true. actually write.
+         call ocn_analysis_fme_write_restart(domain_ptr, ierr)
          ! Write a restart file, because the coupler asked for it.
          if (debugOn) call mpas_log_write('Writing restart streams')
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
