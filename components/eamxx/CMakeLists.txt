@@ -109,7 +109,7 @@ endif ()
 
 # Determine if this is a HIP build.
 if (Kokkos_ENABLE_HIP)
-  # Add CUDA as a language for CUDA builds
+  # Add HIP as a language for HIP builds
   enable_language(HIP)
   set (EAMXX_ENABLE_GPU TRUE CACHE BOOL "" FORCE)
 endif ()
@@ -205,9 +205,9 @@ set(SCREAM_MACHINE ${DEFAULT_SCREAM_MACHINE} CACHE STRING "The CIME/SCREAM name 
 option(SCREAM_MPI_ON_DEVICE "Whether to use device pointers for MPI calls" ON)
 option(SCREAM_ENABLE_MAM "Whether to enable MAM aerosol support" ON)
 
-set(SCREAM_SMALL_KERNELS ${DEFAULT_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels for ALL components that support them")
-set(SCREAM_P3_SMALL_KERNELS ${SCREAM_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels for P3 only")
-set(SCREAM_SHOC_SMALL_KERNELS ${SCREAM_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels for SHOC only")
+set(SCREAM_SMALL_KERNELS ${DEFAULT_SMALL_KERNELS} CACHE STRING "Use small, non-monolithic kokkos kernels for ALL components that support them")
+set(SCREAM_P3_SMALL_KERNELS ${SCREAM_SMALL_KERNELS} CACHE STRING "Use small, non-monolithic kokkos kernels for P3 only")
+set(SCREAM_SHOC_SMALL_KERNELS ${SCREAM_SMALL_KERNELS} CACHE STRING "Use small, non-monolithic kokkos kernels for SHOC only")
 
 # Add RRTMGP settings. Note, we might consider also adding RRTMGP_EXPENSIVE_CHECKS
 # to turn on the RRTMGP internal checks here as well, via
@@ -316,7 +316,7 @@ if (NOT SCREAM_INPUT_ROOT)
   message (FATAL_ERROR "ERROR! Aborting...")
 elseif(NOT IS_DIRECTORY ${SCREAM_INPUT_ROOT})
   string (CONCAT msg
-    "  -> SCREAM_INPUT_ROOT=${SCREAM_INPUT_ROOT} is not a directory."
+    "  -> SCREAM_INPUT_ROOT=${SCREAM_INPUT_ROOT} is not a directory.\n"
     "     You have three ways for setting this folder. In order of precedence:\n"
     "      - define an env var SCREAM_MACHINE (must be a CIME-supported machine)\n"
     "      - define a cmake cache entry SCREAM_MACHINE (must be a CIME-supported machine)\n"
@@ -374,7 +374,7 @@ if (NOT SCREAM_LIB_ONLY)
   endif()
 
   # All baselines tests will add a line to the baseline_list file,
-  # specifyiing the full name of the baseline they generated.
+  # specifying the full name of the baseline they generated.
   # When test-all-eamxx has to generate new baselines, it will run
   # ctest -L baseline_gen, and then read this file to find out all the
   # baseline files to copy into the baseline directory
