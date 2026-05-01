@@ -23,9 +23,12 @@ FME_EAM_STORAGE=${FME_EAM_STORAGE:-one_month}
 FME_EAM_MFILT=${FME_EAM_MFILT:-1500}
 # MPAS compute/output interval (MPAS time interval string)
 FME_MPAS_INTERVAL=${FME_MPAS_INTERVAL:-00-00-01_00:00:00}
-# Directory containing the gaussian-180x360 SCRIP map files.  Override
-# in non-Perlmutter runs (e.g. FME_MAPS_DIR=/path/to/maps).
-FME_MAPS_DIR=${FME_MAPS_DIR:-/pscratch/sd/m/mahf708/fme_maps}
+# Directory containing the gaussian-180x360 SCRIP map files. Defaults to
+# $DIN_LOC_ROOT/fme so the maps are managed by CIME's inputdata machinery
+# (auto-fetched from the E3SM inputdata server at
+# https://web.lcrc.anl.gov/public/e3sm/inputdata/fme/ on cache miss).
+# Override only if you keep maps in a non-DIN_LOC_ROOT location.
+FME_MAPS_DIR=${FME_MAPS_DIR:-$(./xmlquery --value DIN_LOC_ROOT)/fme}
 
 echo "FME output configuration:"
 echo "  EAM: ${FME_EAM_OUTPUT_HOURS}-hourly, avgflag=${FME_EAM_AVGFLAG}, mfilt=${FME_EAM_MFILT}, storage=${FME_EAM_STORAGE}"
@@ -98,6 +101,20 @@ echo "  ATM_GRID=${ATM_GRID} -> normalized: ${ATM_GRID_NORM}"
 echo "  OCN_GRID=${OCN_GRID}"
 echo "  EAM map : ${EAM_MAP} $([ -f "${EAM_MAP}" ] && echo '[found]' || echo '[NOT FOUND - remap disabled]')"
 echo "  OCN map : ${OCN_MAP} $([ -f "${OCN_MAP}" ] && echo '[found]' || echo '[NOT FOUND - remap disabled]')"
+
+# ---------------------------------------------------------------------------
+# Register maps with CIME's inputdata machinery
+# ---------------------------------------------------------------------------
+# A dedicated Buildconf/fme.input_data_list file (rather than appending to
+# cpl.input_data_list) avoids being clobbered by component buildnmls. CIME's
+# check_input_data globs Buildconf/*.input_data_list, so this file is read by
+# `./check_input_data --download`, which is invoked implicitly by case.submit
+# and pulls any missing entries from the configured inputdata server.
+mkdir -p Buildconf
+cat > Buildconf/fme.input_data_list << EOF
+fme_map_eam = ${EAM_MAP}
+fme_map_ocn = ${OCN_MAP}
+EOF
 
 # ---------------------------------------------------------------------------
 # EAM namelist
