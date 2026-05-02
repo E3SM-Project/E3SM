@@ -2845,11 +2845,9 @@ subroutine droplet_self_collection(rho,inv_rho,qc_incld,mu_c,nu,nc2nr_autoconv_t
          !Seifert and Beheng (2001)
          nc_selfcollect_tend = -kc*(1.e-3_rtype*rho*qc_incld)**2*(nu+2._rtype)/(nu+1._rtype)*         &
               1.e+6_rtype*inv_rho+nc2nr_autoconv_tend
-         nc_selfcollect_tend = -nc_selfcollect_tend ! make sure > 0
       elseif (iparam.eq.2) then
          !Beheng (994)
          nc_selfcollect_tend = -5.5e+16_rtype*inv_rho*mu_c**(-0.63_rtype)*(1.e-3_rtype*rho*qc_incld)**2
-         nc_selfcollect_tend = -nc_selfcollect_tend ! make sure > 0
       elseif (iparam.eq.3) then
          !Khroutdinov and Kogan (2000)
          nc_selfcollect_tend = 0._rtype
@@ -3205,23 +3203,22 @@ subroutine nc_conservation(nc, nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_i
   !Make sure sinks of nc don't force end-of-step nc below 0. Rescale them if they do.
 
   implicit none
-  real(rtype), intent(in) :: nc,dt
-  real(rtype), intent(inout) :: nc_collect_tend,nc2ni_immers_freeze_tend,nc_selfcollect_tend, &
+  real(rtype), intent(in) :: nc,nc_selfcollect_tend,dt
+  real(rtype), intent(inout) :: nc_collect_tend,nc2ni_immers_freeze_tend, &
                                 nc_accret_tend,nc2nr_autoconv_tend,ncheti_cnt,nicnt
   real(rtype) :: sink_nc, source_nc, ratio
 
   if(use_hetfrz_classnuc)then
-      sink_nc = (nc_collect_tend + ncheti_cnt + nc_accret_tend + nc2nr_autoconv_tend + nicnt + nc_selfcollect_tend)*dt
+      sink_nc = (nc_collect_tend + ncheti_cnt + nc_accret_tend + nc2nr_autoconv_tend + nicnt)*dt
   else
-      sink_nc = (nc_collect_tend + nc2ni_immers_freeze_tend + nc_accret_tend + nc2nr_autoconv_tend + nc_selfcollect_tend)*dt
+      sink_nc = (nc_collect_tend + nc2ni_immers_freeze_tend + nc_accret_tend + nc2nr_autoconv_tend)*dt
   endif 
-  source_nc = nc
+  source_nc = nc + nc_selfcollect_tend*dt
   if(sink_nc > source_nc) then
      ratio = source_nc/sink_nc
      nc_collect_tend  = nc_collect_tend*ratio
      nc_accret_tend  = nc_accret_tend*ratio
      nc2nr_autoconv_tend = nc2nr_autoconv_tend*ratio
-     nc_selfcollect_tend = nc_selfcollect_tend*ratio
      if(use_hetfrz_classnuc)then
       ncheti_cnt = ncheti_cnt*ratio
       nicnt = nicnt*ratio
@@ -3552,7 +3549,7 @@ subroutine update_prognostic_liquid(qc2qr_accret_tend,nc_accret_tend,qc2qr_autoc
    qr = qr + (qc2qr_accret_tend+qc2qr_autoconv_tend-qr2qv_evap_tend)*dt
 
    if (do_predict_nc .or. do_prescribed_CCN) then
-      nc = nc + (-nc_accret_tend-nc2nr_autoconv_tend-nc_selfcollect_tend)*dt
+      nc = nc + (-nc_accret_tend-nc2nr_autoconv_tend+nc_selfcollect_tend)*dt
    else
       nc = nccnst*inv_rho
    endif
