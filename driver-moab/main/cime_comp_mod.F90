@@ -3105,21 +3105,23 @@ contains
        if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
            trim(cpl_seq_option) == 'CESM1_MOD_TIGHT') then
        if (iamin_CPLID .and. (atm_c2_ocn .or. atm_c2_ice)) then
-          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE1_BARRIER')
-          call t_drvstartf ('CPL:OCNPRE1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
+          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE2_BARRIER')
+          call t_drvstartf ('CPL:OCNPRE2',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-          call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre1_atm2ocn')
+          call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre2_atm2ocn')
           ! move the proj of atm to ice right after calc of a2x_ox
           if (atm_c2_ice .and. ice_prognostic ) then
+             call t_drvstartf ('CPL:ICEPREP',cplrun=.true.,barrier=mpicom_CPLID)
             ! This is special to avoid remapping atm to ocn
             ! Note it is constrained that different prep modules cannot  use or call each other
             a2x_ox => prep_ocn_get_a2x_ox() ! array
             call prep_ice_calc_a2x_ix(a2x_ox, timer='CPL:iceprep_atm2ice')
+            call t_drvstopf  ('CPL:ICEPREP',cplrun=.true.)
           endif
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-          call t_drvstopf  ('CPL:OCNPRE1',cplrun=.true.,hashint=hashint(3))
+          call t_drvstopf  ('CPL:OCNPRE2',cplrun=.true.,hashint=hashint(3))
        endif
        endif
 
@@ -4763,6 +4765,10 @@ contains
       !  if (atm_c2_ice) then
       !     ! This is special to avoid remapping atm to ocn
       !     ! Note it is constrained that different prep modules cannot  use or call each other
+      !     ! MOAB:  This was moved to the main time step loop right after a2o is formed.
+      !     ! From some cpl sequencing choices, it needs to be removed from the sea ice coupler app
+      !     ! and then redone.  This preserves the timesequencing compared to mct in driver-moab which doesn't
+      !     ! relay on the merge method to form the coupler-to-component final state.
       !     a2x_ox => prep_ocn_get_a2x_ox() ! array
       !     call prep_ice_calc_a2x_ix(a2x_ox, timer='CPL:iceprep_atm2ice')
       !  endif
