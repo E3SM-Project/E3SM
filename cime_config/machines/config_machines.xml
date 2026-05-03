@@ -3403,8 +3403,9 @@
     <NODENAME_REGEX>aurora-uan-.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>oneapi-ifxgpu,oneapi-ifx</COMPILERS>
-    <MPILIBS>mpich,mpich1024</MPILIBS>
+    <MPILIBS>mpich</MPILIBS>
     <PROJECT>E3SM_Dec</PROJECT>
+    <CHARGE_ACCOUNT>gpu_hack</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR>/lus/flare/projects/E3SMinput/baselines</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/lus/flare/projects/$PROJECT/$USER/scratch</CIME_OUTPUT_ROOT>
@@ -3450,8 +3451,6 @@
         <command name="load">netcdf-c/4.9.3</command>
         <command name="load">netcdf-fortran/4.6.2</command>
         <command name="load">moab/5.6.0</command>
-      </modules>
-      <modules mpilib="mpich1024">
         <command name="load">mpich-config/collective-tuning/1024</command>
       </modules>
     </module_system>
@@ -3467,18 +3466,13 @@
         <env name="FI_MR_CACHE_MONITOR">disabled</env>
         <env name="FI_LOG_PROV">cxi</env>
         <env name="FI_LOG_LEVEL">warn</env>
+        <!--env name="FI_CXI_DEFAULT_TX_SIZE">4096</env>
+	<env name="FI_CXI_DEFAULT_RX_SIZE">4096</env-->
         <env name="PALS_PING_PERIOD">240</env>
         <env name="PALS_RPC_TIMEOUT">240</env>
         <env name="RLIMITS"> </env>
      </environment_variables>
      <environment_variables compiler="oneapi-ifxgpu">
-        <env name="UR_L0_USE_DRIVER_INORDER_LISTS">1</env>
-        <env name="UR_L0_USE_RELAXED_ALLOCATION_LIMITS">1</env>
-        <env name="UR_L0_USE_COPY_ENGINE">1</env>
-        <env name="SYCL_PI_LEVEL_ZERO_SINGLE_THREAD_MODE">1</env>
-        <env name="SYCL_PI_LEVEL_ZERO_DISABLE_USM_ALLOCATOR">1</env>
-        <env name="SYCL_PI_LEVEL_ZERO_USM_RESIDENT">0x001</env>
-
         <env name="MPIR_CVAR_ENABLE_GPU">1</env>
         <env name="romio_cb_read">disable</env>
         <env name="romio_cb_write">disable</env>
