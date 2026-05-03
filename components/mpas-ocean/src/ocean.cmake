@@ -154,7 +154,7 @@ set(BGC_FILES
 )
 
 # Add MARBL
-if (NOT EXISTS core_ocean/MARBL/.git)
+if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/core_ocean/MARBL/.git)
   message(FATAL "Missing core_ocean/MARBL/.git, did you forget to 'git submodule update --init --recursive' ?")
 endif()
 set(MARBL_FILES
