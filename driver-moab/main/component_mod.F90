@@ -854,7 +854,7 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
                       cktime = time_erun - time_brun
                       cktime_acc(comp_num) = cktime_acc(comp_num) + cktime
                       cktime_cnt(comp_num) = cktime_cnt(comp_num) + 1
-                      if (present(ymd) .and. present(tod)) then
+                      if (present(ymd) .and. present(tod) .and. iamroot_CPLID) then
                          write(logunit,107) ' rstamp ',trim(comp(eci)%name),          &
                               '_run_time: model date = ',ymd,tod,                     &
                               ' avg dt = ',cktime_acc(comp_num)/cktime_cnt(comp_num), &
@@ -869,7 +869,7 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
 
     enddo   ! phase
 
-107 format( 3A, 2i8, A, f12.4, A, f12.4 )
+107 format( 3A, 2i8, A, f12.4, A, f12.4, A, i6 )
 
   end subroutine component_run
 
