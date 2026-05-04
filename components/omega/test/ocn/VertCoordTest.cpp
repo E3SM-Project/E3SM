@@ -370,7 +370,7 @@ int main(int argc, char *argv[]) {
           {NCellsAll}, KOKKOS_LAMBDA(int ICell) {
              SurfacePressure(ICell) = 0.0;
              for (int K = 0; K < NVertLayers; K++) {
-                RefPseudoThick(ICell, K)  = 1.0;
+                RefPseudoThick(ICell, K) = 1.0;
                 LayerThickness(ICell, K) = 2.0;
              }
           });
@@ -415,7 +415,7 @@ int main(int argc, char *argv[]) {
           {NCellsAll}, KOKKOS_LAMBDA(int ICell) {
              SurfacePressure(ICell) = 0.0;
              for (int K = 0; K < NVertLayers; K++) {
-                RefPseudoThick(ICell, K)  = 1.0;
+                RefPseudoThick(ICell, K) = 1.0;
                 LayerThickness(ICell, K) = 2.0;
              }
           });

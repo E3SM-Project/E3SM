@@ -1633,6 +1633,11 @@ Error IOStream::readFieldData(
    if (pos != std::string::npos) {
       OldFieldName.replace(pos, OmegaSubStr.length(), MPASSubStr);
    }
+   // Analog of RefPseudoThickness in MPAS is restingThickness
+   std::string OmegaStr = "RefPseudoThickness";
+   if (FieldName == OmegaStr) {
+      OldFieldName = "restingThickness";
+   }
    bool OnHost          = FieldPtr->isOnHost();
    bool IsDistributed   = FieldPtr->isDistributed();
    bool IsTimeDependent = FieldPtr->isTimeDependent();

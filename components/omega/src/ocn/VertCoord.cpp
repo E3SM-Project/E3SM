@@ -182,7 +182,7 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    ZMidH                 = createHostMirrorCopy(ZMid);
    GeopotentialMidH      = createHostMirrorCopy(GeopotentialMid);
    LayerThicknessTargetH = createHostMirrorCopy(LayerThicknessTarget);
-   RefPseudoThicknessH    = createHostMirrorCopy(RefPseudoThickness);
+   RefPseudoThicknessH   = createHostMirrorCopy(RefPseudoThickness);
 
    // Define field metadata
    defineFields();
@@ -238,6 +238,7 @@ void VertCoord::defineFields() {
    MinLayerCellFldName   = "MinLayerCell";
    MaxLayerCellFldName   = "MaxLayerCell";
    BottomDepthFldName    = "BottomDepth";
+   RefPseudoThickFldName = "RefPseudoThickness";
    PressInterfFldName    = "PressureInterface";
    PressMidFldName       = "PressureMid";
    ZInterfFldName        = "ZInterface";
@@ -249,6 +250,7 @@ void VertCoord::defineFields() {
       MinLayerCellFldName.append(Name);
       MaxLayerCellFldName.append(Name);
       BottomDepthFldName.append(Name);
+      RefPseudoThickFldName.append(Name);
       PressInterfFldName.append(Name);
       PressMidFldName.append(Name);
       ZInterfFldName.append(Name);
@@ -303,6 +305,21 @@ void VertCoord::defineFields() {
 
    NDims = 2;
    DimNames.resize(NDims);
+   DimNames[1] = "NVertLayers";
+
+   auto RefPseudoThickField = Field::create(
+       RefPseudoThickFldName, // field name
+       "Reference pseudo thickness of ocean layers without SSH or internal "
+       "perturbation",                   // long name or description
+       "m",                              // units
+       "",                               // CF standard Name
+       0.0,                              // min valid value
+       std::numeric_limits<Real>::max(), // max valid value
+       FillValueReal,                    // scalar for undefined entries
+       NDims,                            // number of dimensions
+       DimNames                          // dimension names
+   );
+
    DimNames[1] = "NVertLayersP1";
 
    auto PressureInterfaceField = Field::create(
@@ -390,10 +407,12 @@ void VertCoord::defineFields() {
    InitVCoordGroup->addField(MinLayerCellFldName);
    InitVCoordGroup->addField(MaxLayerCellFldName);
    InitVCoordGroup->addField(BottomDepthFldName);
+   InitVCoordGroup->addField(RefPseudoThickFldName);
 
    MinLayerCellField->attachData<Array1DI4>(MinLayerCell);
    MaxLayerCellField->attachData<Array1DI4>(MaxLayerCell);
    BottomDepthField->attachData<Array1DReal>(BottomDepth);
+   RefPseudoThickField->attachData<Array2DReal>(RefPseudoThickness);
 
    // Create a field group for VertCoord fields
    GroupName = "VertCoord";
@@ -427,6 +446,7 @@ VertCoord::~VertCoord() {
       Field::destroy(MinLayerCellFldName);
       Field::destroy(MaxLayerCellFldName);
       Field::destroy(BottomDepthFldName);
+      Field::destroy(RefPseudoThickFldName);
       FieldGroup::destroy(InitGroupName);
    }
 
@@ -469,6 +489,7 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
    OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
    OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
    OMEGA_SCOPE(LocBottomDepth, BottomDepth);
+   OMEGA_SCOPE(LocPseudoThick, RefPseudoThickness);
 
    // If ReadStream is true (default) attempt to read values for MinLayerCell,
    // MaxLayerCell, and BottomDepth from the InitialVertCoord stream. Otherwise,
@@ -483,6 +504,7 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
       deepCopy(MinLayerCell, FillValueI4);
       deepCopy(MaxLayerCell, FillValueI4);
       deepCopy(BottomDepth, FillValueReal);
+      deepCopy(RefPseudoThickness, FillValueReal);
 
       // Fetch input stream and validate
       std::string StreamName = "InitialVertCoord";
@@ -539,6 +561,19 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
                 Sum3);
             if (Sum3 < 0.) {
                ABORT_ERROR("VertCoord: Error reading bottomDepth from {}",
+                           StreamName);
+            }
+            Real Sum4 = 0.;
+            parallelReduce(
+                {RefPseudoThickness.extent_int(0),
+                 RefPseudoThickness.extent_int(1)},
+                KOKKOS_LAMBDA(int I, int J, Real &Accum) {
+                   Accum += LocPseudoThick(I, J);
+                },
+                Sum4);
+            if (Sum4 < 0.) {
+               ABORT_ERROR("VertCoord: Error reading RefPseudoThickness "
+                           "from {}",
                            StreamName);
             }
          }
@@ -1004,7 +1039,7 @@ void VertCoord::computeTargetThickness() {
           parallelReduceInner(
               Team, KRange,
               INNER_LAMBDA(const int K, Real &LocalWh, Real &LocalSum) {
-                 const I4 KLyr            = K + KMin;
+                 const I4 KLyr             = K + KMin;
                  const Real RefPseudoThick = LocRefPseudoThick(ICell, KLyr);
                  LocalWh += LocVertCoordMvmtWgts(KLyr) * RefPseudoThick;
                  LocalSum += RefPseudoThick;
