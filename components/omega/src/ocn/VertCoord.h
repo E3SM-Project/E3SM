@@ -139,10 +139,10 @@ class VertCoord {
 
    // p star coordinate variables
    Array1DReal VertCoordMovementWeights;
-   Array2DReal RefLayerThickness;
+   Array2DReal RefPseudoThickness;
 
    HostArray1DReal VertCoordMovementWeightsH;
-   HostArray2DReal RefLayerThicknessH;
+   HostArray2DReal RefPseudoThicknessH;
 
    // Masks
    Array2DReal EdgeMask;        ///< Mask to determine if computations should be

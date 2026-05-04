@@ -168,8 +168,8 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    GeopotentialMid = Array2DReal("GeopotentialMid", NCellsSize, NVertLayers);
    LayerThicknessTarget =
        Array2DReal("LayerThicknessTarget", NCellsSize, NVertLayers);
-   RefLayerThickness =
-       Array2DReal("RefLayerThickness", NCellsSize, NVertLayers);
+   RefPseudoThickness =
+       Array2DReal("RefPseudoThickness", NCellsSize, NVertLayers);
 
    // TODO: Temporary handling of SurfacePressure
    SurfacePressure = Array1DReal("SurfacePressure", NCellsSize);
@@ -182,7 +182,7 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    ZMidH                 = createHostMirrorCopy(ZMid);
    GeopotentialMidH      = createHostMirrorCopy(GeopotentialMid);
    LayerThicknessTargetH = createHostMirrorCopy(LayerThicknessTarget);
-   RefLayerThicknessH    = createHostMirrorCopy(RefLayerThickness);
+   RefPseudoThicknessH    = createHostMirrorCopy(RefPseudoThickness);
 
    // Define field metadata
    defineFields();
@@ -976,7 +976,7 @@ void VertCoord::computeGeopotential(
 
 //------------------------------------------------------------------------------
 // Compute the desired target thickness, given PressureInterface,
-// RefLayerThickness, and VertCoordMovementWeights. Hierarchical parallelsim is
+// RefPseudoThickness, and VertCoordMovementWeights. Hierarchical parallelsim is
 // used with an outer parallel_for loop over cells, and 2 paralel_reduce
 // reductions and a parallel_for over the active layers within a column.
 void VertCoord::computeTargetThickness() {
@@ -985,7 +985,7 @@ void VertCoord::computeTargetThickness() {
    OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
    OMEGA_SCOPE(LocLayerThickTarget, LayerThicknessTarget);
    OMEGA_SCOPE(LocPressInterf, PressureInterface);
-   OMEGA_SCOPE(LocRefLayerThick, RefLayerThickness);
+   OMEGA_SCOPE(LocRefPseudoThick, RefPseudoThickness);
    OMEGA_SCOPE(LocVertCoordMvmtWgts, VertCoordMovementWeights);
 
    parallelForOuter(
@@ -1005,9 +1005,9 @@ void VertCoord::computeTargetThickness() {
               Team, KRange,
               INNER_LAMBDA(const int K, Real &LocalWh, Real &LocalSum) {
                  const I4 KLyr            = K + KMin;
-                 const Real RefLayerThick = LocRefLayerThick(ICell, KLyr);
-                 LocalWh += LocVertCoordMvmtWgts(KLyr) * RefLayerThick;
-                 LocalSum += RefLayerThick;
+                 const Real RefPseudoThick = LocRefPseudoThick(ICell, KLyr);
+                 LocalWh += LocVertCoordMvmtWgts(KLyr) * RefPseudoThick;
+                 LocalSum += RefPseudoThick;
               },
               SumWh, SumRefH);
           Coeff -= SumRefH;
@@ -1021,7 +1021,7 @@ void VertCoord::computeTargetThickness() {
                  for (int KVec = 0; KVec < KLen; ++KVec) {
                     const I4 K = KStart + KVec;
                     LocLayerThickTarget(ICell, K) =
-                        LocRefLayerThick(ICell, K) *
+                        LocRefPseudoThick(ICell, K) *
                         (1._Real + Coeff * LocVertCoordMvmtWgts(K) / SumWh);
                  }
               });
@@ -1038,7 +1038,7 @@ void VertCoord::copyToHost() {
    deepCopy(ZMidH, ZMid);
    deepCopy(GeopotentialMidH, GeopotentialMid);
    deepCopy(LayerThicknessTargetH, LayerThicknessTarget);
-   deepCopy(RefLayerThicknessH, RefLayerThickness);
+   deepCopy(RefPseudoThicknessH, RefPseudoThickness);
 }
 
 //------------------------------------------------------------------------------
@@ -1051,7 +1051,7 @@ void VertCoord::copyToDevice() {
    deepCopy(ZMid, ZMidH);
    deepCopy(GeopotentialMid, GeopotentialMidH);
    deepCopy(LayerThicknessTarget, LayerThicknessTargetH);
-   deepCopy(RefLayerThickness, RefLayerThicknessH);
+   deepCopy(RefPseudoThickness, RefPseudoThicknessH);
 }
 
 //------------------------------------------------------------------------------

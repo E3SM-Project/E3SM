@@ -361,7 +361,7 @@ int main(int argc, char *argv[]) {
       }
 
       // Tests for computeTargetThickness
-      auto &RefLayerThick = DefVertCoord->RefLayerThickness;
+      auto &RefPseudoThick = DefVertCoord->RefPseudoThickness;
 
       /// Initialize surface pressure, vertical coord weights, ref layer
       /// thickness, and layer thickness so that the resulting target thickness
@@ -370,7 +370,7 @@ int main(int argc, char *argv[]) {
           {NCellsAll}, KOKKOS_LAMBDA(int ICell) {
              SurfacePressure(ICell) = 0.0;
              for (int K = 0; K < NVertLayers; K++) {
-                RefLayerThick(ICell, K)  = 1.0;
+                RefPseudoThick(ICell, K)  = 1.0;
                 LayerThickness(ICell, K) = 2.0;
              }
           });
@@ -415,7 +415,7 @@ int main(int argc, char *argv[]) {
           {NCellsAll}, KOKKOS_LAMBDA(int ICell) {
              SurfacePressure(ICell) = 0.0;
              for (int K = 0; K < NVertLayers; K++) {
-                RefLayerThick(ICell, K)  = 1.0;
+                RefPseudoThick(ICell, K)  = 1.0;
                 LayerThickness(ICell, K) = 2.0;
              }
           });
