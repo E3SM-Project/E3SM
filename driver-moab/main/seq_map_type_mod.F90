@@ -57,6 +57,10 @@ module seq_map_type_mod
      real(R8), pointer       :: slat_d_moab(:)
      real(R8), pointer       :: clat_d_moab(:)
      !
+     !---- optional nonlinear map; see seq_nlmap_mod.F90
+     logical                 :: nl_available, nl_conservative
+     character(CX)           :: nl_mapfile
+     real(R8), allocatable   :: frac_s(:), frac_d(:)
 
   end type seq_map
   public seq_map

@@ -118,6 +118,10 @@ module cime_comp_mod
   use seq_infodata_mod, only: seq_infodata_init, seq_infodata_exchange
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_orb_variable_year
   use seq_infodata_mod, only: seq_infodata_print, seq_infodata_init2
+  use seq_infodata_mod, only: nlmaps_exclude_max_number, nlmaps_exclude_nchar
+
+  ! nonlinear maps
+  use seq_nlmap_mod, only : seq_nlmap_setopts, seq_nlmap_init_a2oi_cons, seq_nlmap_init_a2l_cons
 
   ! domain related routines
   use seq_domain_mct, only : seq_domain_check_moab
@@ -166,6 +170,9 @@ module cime_comp_mod
   use seq_flds_mod, only : seq_flds_r2x_fluxes, seq_flds_x2r_fluxes
   use seq_flds_mod, only : seq_flds_set
   use seq_flds_mod, only : seq_flds_z2x_fluxes, seq_flds_x2z_fluxes
+
+  ! nonlinear maps
+  use seq_nlmap_mod, only : seq_nlmap_setopts, seq_nlmap_init_a2oi_cons, seq_nlmap_init_a2l_cons
 
   ! component type and accessor functions
   use component_type_mod, only: component_get_iamin_compid, component_get_suffix
@@ -1064,6 +1071,10 @@ contains
     integer(i8) :: beg_count          ! start time
     integer(i8) :: end_count          ! end time
     integer(i8) :: irtc_rate          ! factor to convert time to seconds
+    integer :: nlmaps_verbosity
+    logical :: nlmaps_atm2srf_conserve
+    character(nlmaps_exclude_nchar) :: nlmaps_exclude_fields(nlmaps_exclude_max_number)
+    type(seq_map), pointer :: mapper_lcl
 
     !----------------------------------------------------------
     !| Timer initialization (has to be after mpi init)
@@ -1216,7 +1227,10 @@ contains
          reprosum_allow_infnan=reprosum_allow_infnan, &
          reprosum_diffmax=reprosum_diffmax         , &
          reprosum_recompute=reprosum_recompute     , &
-         max_cplstep_time=max_cplstep_time)
+         max_cplstep_time=max_cplstep_time         , &
+         nlmaps_verbosity=nlmaps_verbosity         , &
+         nlmaps_atm2srf_conserve=nlmaps_atm2srf_conserve, &
+         nlmaps_exclude_fields=nlmaps_exclude_fields)
 
     ! above - cpl_decomp is set to pass the cpl_decomp value to seq_mctext_decomp
     ! (via a use statement)
@@ -1228,6 +1242,10 @@ contains
          repro_sum_allow_infnan_in = reprosum_allow_infnan, &
          repro_sum_rel_diff_max_in = reprosum_diffmax, &
          repro_sum_recompute_in    = reprosum_recompute)
+
+    call seq_nlmap_setopts(nlmaps_verbosity_in = nlmaps_verbosity, &
+         nlmaps_exclude_fields_in = nlmaps_exclude_fields, &
+         nlmaps_atm2srf_conserve_in = nlmaps_atm2srf_conserve)
 
     ! Check cpl_seq_option
 
@@ -1456,6 +1474,7 @@ contains
 
     integer :: nfields, numpts
     type(mct_list) :: temp_list
+    type(seq_map), pointer :: mapper_lcl
 
 103 format( 5A )
 104 format( A, i10.8, i8)
@@ -2398,6 +2417,20 @@ contains
           call t_stopf ('CPL:init_aoflux')
        endif
     endif
+
+    !----------------------------------------------------------
+    !| Initialize atm/srf exact mass conservation if requested
+    !----------------------------------------------------------
+
+    if (iamin_CPLID) then
+       if (atm_present .and. ocn_present .and. lnd_present .and. ice_present) then
+          ! Returns immediately if atm2srf_conserve is .false.
+          mapper_lcl => prep_lnd_get_mapper_Fa2l()
+          call seq_nlmap_init_a2l_cons(mapper_lcl, fractions_ax)
+          mapper_lcl => prep_ocn_get_mapper_Fa2o()
+          call seq_nlmap_init_a2oi_cons(mapper_lcl, fractions_ax)
+       end if
+    end if
 
     !----------------------------------------------------------
     !| ATM PREP for recalculation of initial solar
