@@ -136,6 +136,15 @@ IOStream::get(const std::string &StreamName ///< [in] name of stream to retrieve
 } // End get stream
 
 //------------------------------------------------------------------------------
+// Retrieves a string with the filename for the stream with the input name
+std::string
+IOStream::getFilename(const std::string &StreamName ///< [in] name of stream
+) {
+   auto StreamPtr = get(StreamName);
+   return StreamPtr->Filename;
+} // End getFilename
+
+//------------------------------------------------------------------------------
 // Adds a field to the contents of a stream. Because streams may be created
 // before all Fields have been defined, we only store the name. Validity
 // is either checked during read/write or can be checked using the validate
