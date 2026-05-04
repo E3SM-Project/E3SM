@@ -166,6 +166,11 @@ class VertCoord {
 
    HostArray1DReal BottomDepthH;
 
+   // TODO: Temporary handling of SurfacePressure
+   Array1DReal SurfacePressure;
+
+   HostArray1DReal SurfacePressureH;
+
    // VertCoord instance name and FieldGroup names
    std::string Name;
    std::string InitGroupName;

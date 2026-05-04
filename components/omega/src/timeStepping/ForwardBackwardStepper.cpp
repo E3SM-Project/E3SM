@@ -29,38 +29,44 @@ void ForwardBackwardStepper::doStep(
     TimeInstant &SimTime // current simulation time
 ) const {
 
-   const int CurLevel  = 0;
-   const int NextLevel = 1;
+   const int VelCurLevel    = 0;
+   const int ThickCurLevel  = 0;
+   const int TracerCurLevel = 0;
 
-   Array3DReal CurTracerArray  = Tracers::getAll(CurLevel);
-   Array3DReal NextTracerArray = Tracers::getAll(NextLevel);
+   const int VelNextLevel    = 1;
+   const int ThickNextLevel  = 1;
+   const int TracerNextLevel = 1;
+
+   Array3DReal CurTracerArray  = Tracers::getAll(TracerCurLevel);
+   Array3DReal NextTracerArray = Tracers::getAll(TracerNextLevel);
 
    if (State == nullptr)
       LOG_CRITICAL("Invalid State");
    if (AuxState == nullptr)
       LOG_CRITICAL("Invalid AuxState");
 
-   // R_h^{n} = RHS_h(u^{n}, h^{n}, t^{n})
-   Tend->computeThicknessTendencies(State, AuxState, CurLevel, CurLevel,
-                                    SimTime);
+   // R_u^{n} = RHS_u(u^{n}, h^{n}, t^{n})
+   Tend->computeVelocityTendencies(State, AuxState, CurTracerArray,
+                                   ThickCurLevel, VelCurLevel, TracerCurLevel,
+                                   SimTime + TimeStep);
+
+   // u^{n+1} = u^{n} + R_u^{n}
+   updateVelocityByTend(State, VelNextLevel, State, VelCurLevel, TimeStep);
+
+   // R_h^{n} = RHS_h(u^{n+1}, h^{n}, t^{n})
+   Tend->computeThicknessTendencies(State, AuxState, ThickCurLevel,
+                                    VelNextLevel, SimTime);
 
    // h^{n+1} = h^{n} + R_h^{n}
-   updateThicknessByTend(State, NextLevel, State, CurLevel, TimeStep);
+   updateThicknessByTend(State, ThickNextLevel, State, ThickCurLevel, TimeStep);
 
-   // R_phi^{n} = RHS_phi(u^{n}, h^{n}, phi^{n}, t^{n})
-   Tend->computeTracerTendencies(State, AuxState, CurTracerArray, CurLevel,
-                                 CurLevel, SimTime);
+   // R_phi^{n} = RHS_phi(u^{n+1}, h^{n+1}, phi^{n}, t^{n})
+   Tend->computeTracerTendencies(State, AuxState, CurTracerArray,
+                                 ThickNextLevel, VelNextLevel, SimTime);
 
    // phi^{n+1} = (phi^{n} * h^{n} + R_phi^{n}) / h^{n+1}
-   updateTracersByTend(NextTracerArray, CurTracerArray, State, NextLevel, State,
-                       CurLevel, TimeStep);
-
-   // R_u^{n+1} = RHS_u(u^{n}, h^{n+1}, t^{n+1})
-   Tend->computeVelocityTendencies(State, AuxState, NextTracerArray, NextLevel,
-                                   CurLevel, NextLevel, SimTime + TimeStep);
-
-   // u^{n+1} = u^{n} + R_u^{n+1}
-   updateVelocityByTend(State, NextLevel, State, CurLevel, TimeStep);
+   updateTracersByTend(NextTracerArray, CurTracerArray, State, ThickNextLevel,
+                       State, ThickCurLevel, TimeStep);
 
    // Update time levels (New -> Old) of prognostic variables with halo
    // exchanges

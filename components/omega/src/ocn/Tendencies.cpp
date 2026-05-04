@@ -664,28 +664,12 @@ void Tendencies::computeVelocityTendenciesOnly(
    // Compute pressure gradient
    if (PGrad->Enabled) {
 
-      // Temporary handling of surface pressure
-      Array1DReal SurfacePressure("SurfacePressure", Mesh->NCellsSize);
-      deepCopy(SurfacePressure, 0.0_Real);
-
       Pacer::start("Tend:pressureGradTerm", 2);
-      Array2DReal LayerThick = State->getLayerThickness(ThickTimeLevel);
-      VCoord->computePressure(LayerThick, SurfacePressure);
-
+      Array2DReal LayerThick        = State->getLayerThickness(ThickTimeLevel);
       const auto &PressureMid       = VCoord->PressureMid;
       const auto &PressureInterface = VCoord->PressureInterface;
-      Array2DReal Temp     = Kokkos::subview(TracerArray, Tracers::IndxTemp,
-                                             Kokkos::ALL, Kokkos::ALL);
-      Array2DReal Salinity = Kokkos::subview(TracerArray, Tracers::IndxSalt,
-                                             Kokkos::ALL, Kokkos::ALL);
-      EqState->computeSpecVol(Temp, Salinity, PressureMid);
-
-      // Temporary: ensure vertical geometric/geopotential fields are updated
-      // for pressure-gradient tendency calculations.
-      const auto &SpecVol = EqState->SpecVol;
-      VCoord->computeZHeight(LayerThick, SpecVol);
-
-      const auto &ZInterface = VCoord->ZInterface;
+      const auto &SpecVol           = EqState->SpecVol;
+      const auto &ZInterface        = VCoord->ZInterface;
       PGrad->computePressureGrad(LocNormalVelocityTend, PressureMid,
                                  PressureInterface, SpecVol, ZInterface,
                                  LayerThick);
@@ -887,7 +871,7 @@ void Tendencies::computeVelocityTendencies(
 ) {
    Pacer::start("Tend:computeVelocityTendencies", 1);
 
-   AuxState->computeMomAux(State, ThickTimeLevel, VelTimeLevel);
+   AuxState->computeMomAux(State, TracerArray, ThickTimeLevel, VelTimeLevel);
    computeVelocityTendenciesOnly(State, AuxState, TracerArray, ThickTimeLevel,
                                  VelTimeLevel, TracerTimeLevel, Time);
 
