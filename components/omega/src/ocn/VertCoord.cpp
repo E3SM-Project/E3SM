@@ -86,27 +86,29 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    // Store name suffix
    Name = Name_;
 
-   // Retrieve mesh filename from Decomp
-   MeshFileName = Decomp->MeshFileName;
-
    // If InNVertlayers is 0 (default), attempt to read the dimension from the
    // mesh file. If the mesh file does not define a vertical dimension, use
    // NVertLayers = 1. If a value for InNVertLayers is explicitly provided,
    // use that value is instead.
    if (InNVertLayers == 0) {
 
+      // Retrieve filename from stream
+      std::string Filename = IOStream::getFilename("InitialVertCoord");
+      int FileID;
+
       std::string OmegaDimName = "NVertLayers";
       std::string MPASDimName  = "nVertLevels";
 
-      // Open the mesh file for reading (assume IO has already been initialized)
-      IO::openFileRead(MeshFileID, MeshFileName);
+      // Open the file for reading (assume IO has already been initialized)
+      IO::openFileRead(FileID, Filename);
 
       // Set NVertLayers
       I4 NVertLayersID;
-      Err = IO::getDimFromFile(MeshFileID, OmegaDimName, NVertLayersID,
-                               NVertLayers);
+      Err =
+          IO::getDimFromFile(FileID, OmegaDimName, NVertLayersID, NVertLayers);
+
       if (Err.isFail()) { // dim not found, try again with older MPAS name
-         Err = IO::getDimFromFile(MeshFileID, MPASDimName, NVertLayersID,
+         Err = IO::getDimFromFile(FileID, MPASDimName, NVertLayersID,
                                   NVertLayers);
          if (Err.isFail()) {
             LOG_INFO("VertCoord: vertical dimension not found in mesh file, "
@@ -114,6 +116,9 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
             NVertLayers = 1;
          }
       }
+
+      IO::closeFile(FileID);
+
    } else {
       NVertLayers = InNVertLayers;
    }

@@ -73,9 +73,6 @@ class VertCoord {
    // Choice of VertCoorMovementWeight type
    MovementWeightType MvmtWgtChoice;
 
-   std::string MeshFileName;
-   int MeshFileID;
-
    static VertCoord *DefaultVertCoord;
    static std::map<std::string, std::unique_ptr<VertCoord>> AllVertCoords;
 
