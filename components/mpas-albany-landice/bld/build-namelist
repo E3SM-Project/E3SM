@@ -447,16 +447,11 @@ if ($MALI_USE_ALBANY eq 'TRUE') {
 
 if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
     add_default($nl, 'config_velocity_solver', 'mali_use_albany'=>"$MALI_USE_ALBANY");
-    if ($GLC_GRID eq 'mpas.gis4to40km' || $GLC_GRID eq 'mpas.gis1to10kmR2') {
-         add_default($nl, 'config_flowparama_calculation', 'val'=>"PB1982");
-    } else {
-         add_default($nl, 'config_flowParamA_calculation');
-    }
 } else {
     add_default($nl, 'config_velocity_solver', 'val'=>"none");
-    add_default($nl, 'config_flowParamA_calculation');
 }
 add_default($nl, 'config_sia_tangent_slope_calculation');
+add_default($nl, 'config_flowParamA_calculation');
 add_default($nl, 'config_do_velocity_reconstruction_for_external_dycore');
 add_default($nl, 'config_simple_velocity_type');
 add_default($nl, 'config_use_glp');
@@ -502,8 +497,6 @@ add_default($nl, 'config_SLM_to_MALI_weights_file');
 if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
     if ($GLC_GRID eq 'mpas.gis4to40km' || $GLC_GRID eq 'mpas.gis1to10kmR2') {
          add_default($nl, 'config_calving', 'val'=>"crevasse_depth");
-         add_default($nl, 'config_calving_strainrate_scaling', 'val'=>"5.0");
-         add_default($nl, 'config_crevasse_water_depth', 'val'=>"25.0");
     } else {
          add_default($nl, 'config_calving');
     }
