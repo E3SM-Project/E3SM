@@ -4247,7 +4247,7 @@ contains
        call component_exch_moab(ocn(1), mpoid, mboxid, 'c2x', seq_flds_o2x_fields, &
             infodata=infodata, infodata_string='ocn2cpl_run', &
             mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
-            timer_barrier='CPL:O2CT_BARRIER', timer_comp_exch='CPL:O2CT', &
+            timer_barrier='CPL:O2C_BARRIER', timer_comp_exch='CPL:O2C', &
             timer_map_exch='CPL:o2c_ocno2ocnx', timer_infodata_exch='CPL:o2c_infoexch')
     endif
 
@@ -4255,8 +4255,8 @@ contains
     ! ocn post
     !----------------------------------------------------------
     if (iamin_CPLID) then
-       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPOSTT_BARRIER')
-       call t_drvstartf  ('CPL:OCNPOSTT',cplrun=.true.,barrier=mpicom_CPLID)
+       call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPOST_BARRIER')
+       call t_drvstartf  ('CPL:OCNPOST',cplrun=.true.,barrier=mpicom_CPLID)
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        call component_diag(infodata, ocn, flow='c2x', comment= 'recv ocn', &
@@ -4267,7 +4267,7 @@ contains
        call cime_run_ocnglc_coupling()
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-       call t_drvstopf  ('CPL:OCNPOSTT',cplrun=.true.)
+       call t_drvstopf  ('CPL:OCNPOST',cplrun=.true.)
     endif
 
   end subroutine cime_run_ocn_recv_post
