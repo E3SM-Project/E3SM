@@ -102,58 +102,8 @@ int ocnInit(MPI_Comm Comm ///< [in] ocean MPI communicator
    if (Err != 0)
       ABORT_ERROR("ocnInit: Error initializing Omega modules");
 
-   return Err;
-
-} // end ocnInit
-
-// Call init routines for remaining Omega modules
-int initOmegaModules(MPI_Comm Comm) {
-
-   // error and return codes
-   int Err = 0;
-
-   // Initialize the default time stepper (phase 1) that includes the
-   // calendar, model clock and start/stop times and alarms
-   TimeStepper::init1();
    TimeStepper *DefStepper = TimeStepper::getDefault();
    Clock *ModelClock       = DefStepper->getClock();
-
-   // Initialize IOStreams - this does not yet validate the contents
-   // of each file, only creates streams from Config
-   IOStream::init(ModelClock);
-
-   IO::init(Comm);
-   Field::init(ModelClock);
-   Decomp::init();
-
-   Err = Halo::init();
-   if (Err != 0) {
-      ABORT_ERROR("ocnInit: Error initializing default halo");
-   }
-
-   HorzMesh::init();
-   VertCoord::init();
-   Tracers::init();
-   VertAdv::init();
-   AuxiliaryState::init();
-   Eos::init();
-   PressureGrad::init();
-   Tendencies::init();
-
-   // Validate SurfaceTracerRestoring configuration
-   Tendencies *DefTend = Tendencies::getDefault();
-   if (DefTend->SurfaceTracerRestoring.Enabled &&
-       DefTend->SurfaceTracerRestoring.NTracersToRestore == 0) {
-      ABORT_ERROR("OceanInit: SurfaceTracerRestoring is enabled but "
-                  "TracersToRestore is empty");
-   }
-
-   TimeStepper::init2();
-
-   Err = OceanState::init();
-   if (Err != 0) {
-      ABORT_ERROR("ocnInit: Error initializing default state");
-   }
 
    // Now that all fields have been defined, validate all the streams
    // contents
@@ -212,7 +162,74 @@ int initOmegaModules(MPI_Comm Comm) {
 
    return Err;
 
-} // end initOmegaModules
+} // end ocnInit
+
+// Call init routines for remaining Omega modules
+// Internal helper — all module init after TimeStepper::init1 is called.
+// Called by both initOmegaModules overloads.
+static int initOmegaModulesImpl(MPI_Comm Comm) {
+
+   // error and return codes
+   int Err = 0;
+
+   TimeStepper *DefStepper = TimeStepper::getDefault();
+   Clock *ModelClock       = DefStepper->getClock();
+
+   // Initialize IOStreams - this does not yet validate the contents
+   // of each file, only creates streams from Config
+   IOStream::init(ModelClock);
+
+   IO::init(Comm);
+   Field::init(ModelClock);
+   Decomp::init();
+
+   Err = Halo::init();
+   if (Err != 0) {
+      ABORT_ERROR("ocnInit: Error initializing default halo");
+   }
+
+   HorzMesh::init();
+   VertCoord::init();
+   Tracers::init();
+   VertAdv::init();
+   AuxiliaryState::init();
+   Eos::init();
+   PressureGrad::init();
+   Tendencies::init();
+
+   // Validate SurfaceTracerRestoring configuration
+   Tendencies *DefTend = Tendencies::getDefault();
+   if (DefTend->SurfaceTracerRestoring.Enabled &&
+       DefTend->SurfaceTracerRestoring.NTracersToRestore == 0) {
+      ABORT_ERROR("OceanInit: SurfaceTracerRestoring is enabled but "
+                  "TracersToRestore is empty");
+   }
+
+   TimeStepper::init2();
+
+   Err = OceanState::init();
+   if (Err != 0) {
+      ABORT_ERROR("ocnInit: Error initializing default state");
+   }
+
+   return Err;
+
+} // end initOmegaModulesImpl
+
+int initOmegaModules(MPI_Comm Comm) {
+   // Initialize the default time stepper (phase 1) that includes the
+   // calendar, model clock and start/stop times and alarms with all options
+   // read from the config file
+   TimeStepper::init1();
+   return initOmegaModulesImpl(Comm);
+}
+
+int initOmegaModules(MPI_Comm Comm, const TimeInitParams &TParams) {
+   // Initialize time stepper (phase 1) using coupler provided time parameters
+   // Calendar should have already been initalized
+   TimeStepper::init1(TParams);
+   return initOmegaModulesImpl(Comm);
+}
 
 } // end namespace OMEGA
 //===----------------------------------------------------------------------===//
