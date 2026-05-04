@@ -15,6 +15,7 @@
 #include "Decomp.h"
 #include "Dimension.h"
 #include "IO.h"
+#include "IOStream.h"
 #include "Logging.h"
 #include "MachEnv.h"
 #include "OceanTestCommon.h"
@@ -81,6 +82,9 @@ void initEosTest(const std::string &mesh) {
 
    /// Initialize parallel IO
    IO::init(DefComm);
+
+   /// Initialize streams
+   IOStream::init();
 
    /// Initialize decomposition
    Decomp::init(mesh);

@@ -17,6 +17,7 @@
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
+#include "IOStream.h"
 #include "Logging.h"
 #include "MachEnv.h"
 #include "OmegaKokkos.h"
@@ -61,6 +62,9 @@ I4 initTracersTest() {
 
    // Create the default decomposition (initializes the decomposition)
    Decomp::init();
+
+   // Initialize streams
+   IOStream::init();
 
    // Initialize the default halo
    Err = Halo::init();
