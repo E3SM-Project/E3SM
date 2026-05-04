@@ -209,7 +209,7 @@ CONTAINS
     ! Initialize SDOCN
     !----------------------------------------------------------------------------
 
-    call t_startf('docn_strdata_init')
+    call t_startf('docn_comp_init')
 
     call seq_timemgr_EClockGetData( EClock, calendar=calendar )
 
@@ -240,12 +240,13 @@ CONTAINS
        call shr_strdata_print(SDOCN,'SDOCN data')
     endif
 
-    call t_stopf('docn_strdata_init')
+    call t_stopf('docn_comp_init')
 
     !----------------------------------------------------------------------------
     ! Initialize data model MCT global seg map, 1d decomp
     !----------------------------------------------------------------------------
 
+    call t_startf('docn_cpl_init')
     call t_startf('docn_initgsmaps')
     if (my_task == master_task) write(logunit,F00) ' initialize gsmaps'
     call shr_sys_flush(logunit)
@@ -341,6 +342,7 @@ CONTAINS
 
 #ifdef HAVE_MOAB
 
+   call t_startf('docn_initmoab')
    allocate(moab_vert_coords(lsize*3))
    do iv = 1, lsize
       lonv = xc(iv) * SHR_CONST_PI/180.
@@ -351,9 +353,11 @@ CONTAINS
    enddo
 
    ! create the vertices with coordinates from MCT domain
+   call t_startf('docn_initmb_creatvert')
    ierr = iMOAB_CreateVertices(mpoid, lsize*3, 3, moab_vert_coords)
    if (ierr .ne. 0)  &
       call shr_sys_abort('Error: fail to create MOAB vertices in land model')
+   call t_stopf('docn_initmb_creatvert')
 
    tagname='GLOBAL_ID'//C_NULL_CHAR
    ierr = iMOAB_DefineTagStorage(mpoid, tagname, &
@@ -463,12 +467,14 @@ CONTAINS
                                      tagindex )
    if (ierr > 0 )  &
       call errorout(ierr, 'Error: fail to create flds_strm tags ')
+   call t_stopf('docn_initmoab')
 #endif
     !----------------------------------------------------------------------------
     ! Read restart
     !----------------------------------------------------------------------------
 
     if (read_restart) then
+    call t_startf('docn_restart_init')
        exists = .false.
        exists1 = .false.
        if (trim(rest_file)      == trim(nullstr) .and. &
@@ -522,12 +528,14 @@ CONTAINS
           if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file_strm)
        endif
        call shr_sys_flush(logunit)
+       call t_stopf('docn_restart_init')
     endif
 
     !----------------------------------------------------------------------------
     ! Set initial ocn state
     !----------------------------------------------------------------------------
 
+    call t_startf('docn_state_init')
     call t_adj_detailf(+2)
 
     call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
@@ -548,6 +556,8 @@ CONTAINS
        end do
     end if
 
+    call t_stopf('docn_state_init')
+    call t_stopf('docn_cpl_init')
     call t_stopf('DOCN_INIT')
 
   end subroutine docn_comp_init
@@ -655,6 +665,7 @@ CONTAINS
     call t_startf('docn')
 
 #ifdef HAVE_MOAB
+    call t_startf('docn_mbimport')
     if (.not. firstcall) then
        ! Copy x2o data from MOAB mesh at the beginning of the run method
        lsize = mct_avect_lsize(x2o)
@@ -681,6 +692,7 @@ CONTAINS
 
        deallocate(data)
     end if
+    call t_stopf('docn_mbimport')
 #endif
 
     !--- defaults, copy all fields from streams to o2x ---
@@ -978,6 +990,7 @@ CONTAINS
     call t_stopf('docn_datamode')
 
 #ifdef HAVE_MOAB
+    call t_startf('docn_mbexport')
     ! Copy o2x data to MOAB mesh
     lsize = mct_avect_lsize(o2x)
     allocate(data(lsize))
@@ -1002,6 +1015,7 @@ CONTAINS
        write(logunit,*) 'Failed to write ocean component state '
     endif
 #endif
+    call t_stopf('docn_mbexport')
 
 #endif
 
