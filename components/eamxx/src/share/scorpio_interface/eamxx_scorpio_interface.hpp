@@ -159,26 +159,13 @@ void clear_unused_decomps ();
 // Define var on output file (cannot call on Read/Append files)
 void define_var (const std::string& filename, const std::string& varname,
                  const std::string& units, const std::vector<std::string>& dimensions,
-                 const std::string& dtype, const std::string& nc_dtype,
-                 const bool time_dependent = false);
+                 const std::string& dtype, const bool time_dependent = false);
 
-// Shortcut when units are not used, and dtype==nc_dtype
+// Shortcut when units are not used
 void define_var (const std::string& filename, const std::string& varname,
                  const std::vector<std::string>& dimensions,
                  const std::string& dtype,
                  const bool time_dependent = false);
-
-// This is useful when reading data sets. E.g., if the pio file is storing
-// a var as float, but we need to read it as double, we need to call this.
-// NOTE: read_var/write_var automatically change the dtype if the input
-//       pointer type does not match the var dtype. However, changing dtype
-//       forces a rebuild of the var decomp (if any). Hence, if you know
-//       the var WILL be read/written as decomposed, you should call this method
-//       BEFORE calling set_dim_decomp, so that the decomp is built directly
-//       with the correct data type (PIO decomps depend on var dtype).
-void change_var_dtype (const std::string& filename,
-                       const std::string& varname,
-                       const std::string& dtype);
 
 // Check that the given variable is in the file.
 bool has_var (const std::string& filename, const std::string& varname);
