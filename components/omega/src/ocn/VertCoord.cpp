@@ -596,6 +596,7 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
    MeshHalo->exchangeFullArrayHalo(MinLayerCell, OnCell);
    MeshHalo->exchangeFullArrayHalo(MaxLayerCell, OnCell);
    MeshHalo->exchangeFullArrayHalo(BottomDepth, OnCell);
+   MeshHalo->exchangeFullArrayHalo(RefPseudoThickness, OnCell);
 
    // The index ICell = NCellsAll represents an inactive cell
    OMEGA_SCOPE(LocNCellsAll, NCellsAll);
