@@ -138,7 +138,6 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
 
     // If 2+ grids are present, we mandate suffix on all geo_data fields,
     // to avoid clashes of names.
-    using stratts_t = std::map<std::string,std::string>;
     bool use_suffix = grids.size()>1;
     for (const auto& [gname,grid] : grids) {
       for (const auto& fn : grid->get_geometry_data_names()) {
