@@ -176,6 +176,7 @@ protected:
   void computes(const util::TimeStamp& ts, const bool allow_invalid_fields);
   void process_requested_fields();
   strvec_t get_var_dimnames(const FieldLayout &layout) const;
+  void reset_scorpio_field_manager(const std::string& fp_precision);
 
   // Tracking the averaging of any filled values:
   void set_avg_cnt_tracking(const FieldIdentifier& fid);
@@ -191,11 +192,12 @@ protected:
   //  - compute diags (if any)
   //  - vert remap (if any)
   //  - horiz remap (if any)
+  //  - change precision (if needed)
   //  - call scorpio
   // and the field mgrs are connected by the following ops
-  //         VERT_REMAP        HORIZ_REMAP       TALLY_UPDATE
-  //  FromModel -> AfterVertRemap -> AfterHorizRemap -> Scorpio
-  // The last 2 field mgrs contain DIFFERENT fields if 1+ of the following happens:
+  //         VERT_REMAP        HORIZ_REMAP       TALLY_UPDATE   PRECISION_CHANGE
+  //  FromModel -> AfterVertRemap -> AfterHorizRemap -> AfterTally -> Scorpio
+  // The last 3 field mgrs contain DIFFERENT fields if 1+ of the following happens:
   //  - fields are padded: we have PackSize>1 during remaps, but Scorpio needs CONTIGUOUS memory
   //  - there's no remap (so the first 3 FM are the same), but the field is a subfield: again NOT
   //  CONTIGUOUS
@@ -204,14 +206,14 @@ protected:
   // of the AD field mgr but restricted to the grid that this object is handling, AND we stuff all
   // diags in this field mgr (so that we do not pollute the AD field mgr with output-only fields).
   // NOTE: if avg_type!=Instant, then ALL fields in the last two field mgrs are different, otherwise
-  // SOME field
-  //       MAY be the same. E.g., field that are NOT subfields and are NOT padded can be "soft
+  //       SOME field MAY be the same. E.g., field that are NOT subfields and are NOT padded can be "soft
   //       copies", to reduce memory footprint and runtime costs.
   enum Phase {
     FromModel,       // Output fields as from the model (or diags computed from model fields)
     AfterVertRemap,  // Output fields after vertical remap
     AfterHorizRemap, // Output fields after horiz remap
-    Scorpio // Output fields to pass to scorpio (may differ from the above in case of packing)
+    AfterTally,      // Output fields after tally update (full model precision)
+    Scorpio          // Output fields to pass to scorpio (may differ from the above in case of packing)
   };
   std::map<Phase, std::shared_ptr<fm_type>> m_field_mgrs;
   std::map<std::string, Field> m_helper_fields;

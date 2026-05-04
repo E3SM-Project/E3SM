@@ -68,8 +68,13 @@ SCMInput (const std::string& filename,
 
     m_fields.push_back(f.subfield(0,0));
     FieldIdentifier fid_io(f.name(),fl.clone().reset_dim(0,ncols),fid.get_units(),m_io_grid->name());
-    auto& f_io = m_io_fields.emplace_back(fid_io);
-    f_io.allocate_view();
+
+    // Ensure the field we create has the correct data type for IO (must match the one in the file)
+    auto& pio_var = scorpio::get_var(m_filename,f.name());
+    auto dt = str2dtype(pio_var.dtype);
+    fid_io.reset_dtype(dt);
+
+    m_io_fields.emplace_back(fid_io,true);
   }
 
   // Init scorpio internal structures
@@ -225,9 +230,6 @@ void SCMInput::init_scorpio_structures()
         " - expected extent : " + std::to_string(eamxx_len) + "\n"
         " - extent from file: " + std::to_string(file_len) + "\n");
     }
-
-    // Ensure that we can read the var using Real data type
-    scorpio::change_var_dtype (m_filename,f.name(),"real");
   }
 
   // Set decompositions for the variables

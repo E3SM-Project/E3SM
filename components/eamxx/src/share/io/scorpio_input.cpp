@@ -123,24 +123,41 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr)
   // Store grid and fm
   set_grid(field_mgr->get_grid());
 
+  // This is to open the file once for all those has_var/get_var calls
+  if (m_filename!="")
+    scorpio::register_file(m_filename,scorpio::Read);
+
   // Init fm_for_scorpio
   m_fm_for_scorpio = std::make_shared<FieldManager>(m_io_grid,RepoState::Closed);
   for (auto const& name : m_fields_names) {
     auto f = m_fm_from_user->get_field(name);
     const auto& fh  = f.get_header();
+    const auto& fid = fh.get_identifier();
     const auto& fap = fh.get_alloc_properties();
+    auto io_dtype = fid.data_type();
+    if (m_filename!="" && scorpio::has_var(m_filename,name)) {
+      const auto& var = scorpio::get_var(m_filename,name);
+      io_dtype = str2dtype(scorpio::refine_dtype(var.dtype));
+      EKAT_REQUIRE_MSG (io_dtype!=DataType::Invalid,
+          "Error! Unsupported dtype in file variable.\n"
+          " - filename: " + m_filename + "\n"
+          " - varname : " + name + "\n"
+          " - var dtype: " + var.dtype + "\n");
+    }
 
     // If we can alias the field's host view, do it.
     // Otherwise, create a clone.
-    bool can_alias = fh.get_parent()==nullptr && fap.get_padding()==0;
+    bool can_alias = fh.get_parent()==nullptr && fap.get_padding()==0 && io_dtype==fid.data_type();
     if (can_alias) {
       m_fm_for_scorpio->add_field(f);
     } else {
-      // We have padding, or the field is a subfield (or both).
-      // Either way, we need a temporary.
-      m_fm_for_scorpio->add_field(f.clone());
+      // NOTE: Field::clone does not allow to reset the data_type, so we must create the copy manually
+      Field copy (fid.clone().reset_dtype(io_dtype),true);
+      m_fm_for_scorpio->add_field(copy);
     }
   }
+  if (m_filename!="")
+    scorpio::release_file(m_filename);
 
   m_fields_inited = true;
 }
@@ -164,6 +181,9 @@ reset_filename (const std::string& filename)
   }
   m_params.set("filename",filename);
   m_filename = filename;
+  if (m_fm_from_user) {
+    set_field_manager(m_fm_from_user);
+  }
   init_scorpio_structures();
 }
 
@@ -232,9 +252,7 @@ void AtmosphereInput::read_variables (const int time_index)
     }
 
     f_scorpio.sync_to_dev();
-    if (not f_scorpio.is_aliasing(f_user)) {
-      f_user.deep_copy(f_scorpio);
-    }
+    f_user.deep_copy(f_scorpio);
   }
   if (m_atm_logger) {
     auto func_finish = std::chrono::steady_clock::now();
@@ -313,8 +331,25 @@ void AtmosphereInput::init_scorpio_structures()
         " - extent from file: " + std::to_string(file_len) + "\n");
     }
 
-    // Ensure that we can read the var using Real data type
-    scorpio::change_var_dtype (m_filename,name,"real");
+    const auto file_dtype = str2dtype(scorpio::refine_dtype(var.dtype));
+    const auto io_dtype   = f->data_type();
+    EKAT_REQUIRE_MSG (file_dtype!=DataType::Invalid,
+        "Error! Unsupported dtype in file variable.\n"
+        " - filename: " + m_filename + "\n"
+        " - varname : " + name + "\n"
+        " - var dtype: " + var.dtype + "\n");
+    EKAT_REQUIRE_MSG (file_dtype==io_dtype,
+        "Error! Internal IO field dtype mismatch.\n"
+        " - filename: " + m_filename + "\n"
+        " - varname : " + name + "\n"
+        " - var dtype      : " + var.dtype + "\n"
+        " - internal dtype : " + e2str(io_dtype) + "\n");
+    EKAT_REQUIRE_MSG (!is_unsafe_conversion(file_dtype,m_fm_from_user->get_field(name).data_type()),
+        "Error! Input file variable dtype conversion to destination field data type seems unsafe.\n"
+        " - filename: " + m_filename + "\n"
+        " - varname : " + name + "\n"
+        " - var dtype      : " + var.dtype + "\n"
+        " - destination dtype : " + e2str(m_fm_from_user->get_field(name).data_type()) + "\n");
   }
 
   // Set decompositions for the variables
