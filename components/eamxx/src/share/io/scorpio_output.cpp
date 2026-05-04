@@ -634,7 +634,7 @@ run (const std::string& filename, const util::TimeStamp& ts,
           f_out.deep_copy(constants::fill_value<Real>,mask);
         } else {
           // Divide by steps count only when the summation is complete
-          f_out.scale(Real(1.0) / nsteps_since_last_output);
+          f_out.scale(1.0 / nsteps_since_last_output);
         }
       }
 

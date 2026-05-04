@@ -648,7 +648,10 @@ update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha,
     return fill_aware ? update_fill_aware<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),gamma.as<int>())
                       : update_impl<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),gamma.as<int>());
   } else if (data_type()==DataType::FloatType) {
-    if (x.data_type()==DataType::FloatType)
+    if (x.data_type()==DataType::DoubleType)
+      return fill_aware ? update_fill_aware<CM,float,double>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>())
+                        : update_impl<CM,float,double>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>());
+    else if (x.data_type()==DataType::FloatType)
       return fill_aware ? update_fill_aware<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>())
                         : update_impl<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>());
     else
@@ -679,6 +682,8 @@ update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha,
   } else if (data_type()==DataType::FloatType) {
     if (x.data_type()==DataType::FloatType)
       return update_masked<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>(),mask);
+    else if (x.data_type()==DataType::DoubleType)
+      return update_masked<CM,float,double>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>(),mask);
     else
       return update_masked<CM,float,int>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>(),mask);
   } else if (data_type()==DataType::DoubleType) {
