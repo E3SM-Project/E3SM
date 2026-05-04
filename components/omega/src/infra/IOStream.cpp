@@ -73,6 +73,11 @@ void IOStream::init(Clock *&ModelClock //< [inout] Omega model clock
 /// Initialize with no clock. Convenience overload for testing.
 void IOStream::init(void) {
 
+   // Create a calendar if one is not already defined
+   if (!Calendar::isDefined()) {
+      Calendar::init("No Leap");
+   }
+
    // Create an empty dummy clock on the stack (no heap alloc)
    Clock ModelClockObj;
    Clock *ModelClock = &ModelClockObj;
