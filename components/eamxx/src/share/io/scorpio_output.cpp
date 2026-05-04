@@ -37,13 +37,6 @@ transfer_extra_data(const scream::Field &src, scream::Field &tgt)
   }
 };
 
-// Helper function to get the name of a transposed helper field from a layout and data type
-std::string
-get_transposed_helper_name(const scream::FieldLayout& layout, const scream::DataType data_type)
-{
-  return "transposed_" + layout.transpose().to_string() + "_" + e2str(data_type);
-}
-
 // Note: this is also declared in eamxx_scorpio_interface.cpp. Move it somewhere else?
 template <typename T>
 std::string
@@ -371,21 +364,7 @@ void AtmosphereOutput::init()
     // Initialize a helper_field for each unique layout.  This can be used for operations
     // such as writing transposed output.
     if (m_transpose) {
-      const auto helper_layout = layout.transpose();
-      const auto data_type = fid.data_type();
-      // Note: helper name is based on the ORIGINAL layout (not transposed) and data type, so that
-      // when we look up the helper during write, we use the field's original layout and data type
-      const std::string helper_name = get_transposed_helper_name(layout, data_type);
-      if (m_helper_fields.find(helper_name) == m_helper_fields.end()) {
-        // We can add a new helper field for this layout and data type
-        // Use Units::invalid() since this helper is reused for fields with same layout but different units
-        using namespace ekat::units;
-        FieldIdentifier fid_helper(helper_name,helper_layout,Units::invalid(),fid.get_grid_name(),data_type);
-        Field helper(fid_helper);
-        helper.get_header().get_alloc_properties().request_allocation();
-        helper.allocate_view();
-        m_helper_fields[helper_name] = helper;
-      }
+      create_transpose_helper(f);
     }
 
     // Now check that all the dims of this field are already set to be registered.
@@ -555,11 +534,7 @@ run (const std::string& filename, const util::TimeStamp& ts,
 
         auto func_start = std::chrono::steady_clock::now();
         if (m_transpose) {
-          const auto& id = count.get_header().get_identifier();
-          const auto& layout = id.get_layout();
-          const auto data_type = id.data_type();
-          const std::string helper_name = get_transposed_helper_name(layout, data_type);
-          auto& temp = m_helper_fields.at(helper_name);
+          auto& temp = m_helper_fields.at(count.name());
           transpose(count,temp);
           temp.sync_to_host();
           scorpio::write_var(filename,count.name(),temp.get_internal_view_data<int,Host>());
@@ -640,19 +615,25 @@ run (const std::string& filename, const util::TimeStamp& ts,
 
       // Write to file
       auto func_start = std::chrono::steady_clock::now();
+      auto& f_write = m_transpose ? m_helper_fields.at(f_out.name()) : f_out;
       if (m_transpose) {
-        const auto& id = f_out.get_header().get_identifier();
-        const auto& layout = id.get_layout();
-        const auto data_type = id.data_type();
-        const std::string helper_name = get_transposed_helper_name(layout, data_type);
-        auto& temp = m_helper_fields.at(helper_name);
-        transpose(f_out,temp);
-        temp.sync_to_host();
-        scorpio::write_var(filename,field_name,temp.get_internal_view_data<Real,Host>());
-      } else {
-        // Bring data to host (only needed for non-transposed output)
-        f_out.sync_to_host();
-        scorpio::write_var(filename,field_name,f_out.get_internal_view_data<Real,Host>());
+        transpose(f_out,f_write);
+      }
+
+      // Bring data to host and write
+      f_write.sync_to_host();
+      switch (f_write.data_type()) {
+        case DataType::FloatType:
+          scorpio::write_var(filename,field_name,f_write.get_internal_view_data<float,Host>());
+          break;
+        case DataType::DoubleType:
+          scorpio::write_var(filename,field_name,f_write.get_internal_view_data<double,Host>());
+          break;
+        case DataType::IntType:
+          scorpio::write_var(filename,field_name,f_write.get_internal_view_data<int,Host>());
+          break;
+        default:
+          EKAT_ERROR_MSG ("Unexpected field dtype while writing output.\n");
       }
       auto func_finish = std::chrono::steady_clock::now();
       auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
@@ -1296,6 +1277,28 @@ get_var_dimnames (const FieldLayout& layout) const
     }
   }
   return dims;
+}
+
+// Helper function to create/get a helper field to use as a tmp for transpose operations
+void AtmosphereOutput::create_transpose_helper(const Field& f)
+{
+  // We create ft (the transpose of f) with a name that encodes the layout and data type ONLY.
+  // Hence, if we already create one with such name for another field, we can recycle it.
+  const auto& fid    = f.get_header().get_identifier();
+  auto ft_name = "transpose_of_" + fid.get_layout().to_string() + "_" + e2str(f.data_type());
+  for (auto& [key, ft] : m_helper_fields) {
+    if (ft.name()==ft_name) {
+      m_helper_fields[f.name()] = ft;
+      return;
+    }
+  }
+
+  // No luck: it's the first time we run into this layout/dtype combo. Create the helper field
+  FieldIdentifier ft_id = fid.clone(ft_name);
+  ft_id.reset_layout(fid.get_layout().transpose());
+  ft_id.reset_units(ekat::units::Units::invalid());
+
+  m_helper_fields.try_emplace(f.name(),ft_id,true);
 }
 
 // Instantiate the static member var

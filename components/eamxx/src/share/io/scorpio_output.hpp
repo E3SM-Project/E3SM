@@ -180,6 +180,8 @@ protected:
   // Tracking the averaging of any filled values:
   void set_avg_cnt_tracking(const FieldIdentifier& fid);
 
+  void create_transpose_helper(const Field& f);
+
   // --- Internal variables --- //
   ekat::Comm m_comm;
   bool m_transpose = false;
