@@ -1,14 +1,13 @@
 module phys_grid_mod
 
   use iso_c_binding, only: c_int, c_double
-  use parallel_mod,  only: abortmp, MPIinteger_t
+  use parallel_mod,  only: abortmp
   use kinds,         only: iulog
-  use mpi
 
   implicit none
   private
 
-  public :: phys_grids_init, cleanup_grid_init_data
+  public :: phys_grids_init
   public :: finalize_phys_grid
   public :: get_my_phys_data
   public :: get_num_local_columns, get_num_global_columns
@@ -21,29 +20,15 @@ module phys_grid_mod
   integer, public, parameter :: pgN_min = 0
   integer, public, parameter :: pgN_max = 4
 
-  ! Global grid info
-  ! Arrays of size nprocs
-  integer (kind=c_int), pointer :: g_elem_per_rank(:)     ! Number of elems on each rank
-  integer (kind=c_int), pointer :: g_elem_offsets(:)      ! Offset of each rank in global nelem-sized arrays
-  ! Arrays of size nelem
-  integer (kind=c_int), pointer :: g_elem_gids(:)         ! List of elem gids, spliced by rank
-
   ! This struct holds the info of a physics grid.
-  ! NOTE: there is one struct for each pg type,
+  ! NOTE: there is one struct for each pg type.
   type :: pg_specs_t
-    ! Arrays of size nprocs
-    integer (kind=c_int), pointer :: g_dofs_per_rank(:)     ! Number of cols on each rank
-    integer (kind=c_int), pointer :: g_dofs_offsets(:)      ! Per-rank column offset; retained for potential future rebalancing support
-
     ! Local arrays (size = number of columns on this rank only).
-    ! Each rank stores only its own columns, avoiding the large global allocation.
+    ! Each rank stores only its own columns, derived entirely from local element data.
     real (kind=c_double), pointer :: l_lat(:)     ! Latitude coordinates
     real (kind=c_double), pointer :: l_lon(:)     ! Longitude coordinates
     real (kind=c_double), pointer :: l_area(:)    ! Column area
     integer (kind=c_int), pointer :: l_dofs(:)    ! Column global index
-
-    ! Arrays of size nelem
-    integer (kind=c_int), pointer :: g_dofs_per_elem(:)     ! List of num dofs on each elem, spliced by rank
 
     integer :: pgN
     logical :: inited = .false.
@@ -74,9 +59,6 @@ contains
   end subroutine check_phys_grid_inited
 
   subroutine phys_grids_init (pg_types)
-    use gllfvremap_mod,    only: gfr_init
-    use homme_context_mod, only: elem, par
-    use dimensions_mod,    only: nelem, nelemd
     !
     ! Input(s)
     !
@@ -84,7 +66,7 @@ contains
     !
     ! Local(s)
     !
-    integer :: ie, ierr, proc, i, load_bal, pgN, fvN
+    integer :: i, load_bal, pgN, fvN
     logical :: do_gll
     character(2) :: str
 
@@ -114,29 +96,6 @@ contains
       endif
     enddo
     
-    ! Compute elem-related quantities, which are common to all phys grids
-
-    ! Gather num elems on each rank
-    allocate(g_elem_per_rank(par%nprocs))
-    call MPI_Allgather(nelemd, 1, MPIinteger_t, g_elem_per_rank, 1, MPIinteger_t, par%comm, ierr)
-
-    ! Compute offset of each rank in the g_elem_per_rank array
-    ! This allows each rank to know where to fill arrays of size num_global_elements
-    allocate(g_elem_offsets(par%nprocs))
-    g_elem_offsets = 0
-    do proc=2,par%nprocs
-      g_elem_offsets(proc) = g_elem_offsets(proc-1) + g_elem_per_rank(proc-1)
-    enddo
-
-    ! Gather elem GIDs on each rank
-    allocate(g_elem_gids(nelem))
-    do ie=1,nelemd
-      g_elem_gids(g_elem_offsets(par%rank+1)+ie) = elem(ie)%globalID
-    enddo
-    call MPI_Allgatherv( MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, &
-                         g_elem_gids, g_elem_per_rank, g_elem_offsets, MPIinteger_t, par%comm, ierr)
-
-    ! Now init grid-specific quantities for the requested pg types
     if (do_gll) then
       call phys_grid_init (0)
     endif
@@ -144,29 +103,6 @@ contains
       call phys_grid_init (fvN)
     endif
   end subroutine phys_grids_init
-
-  subroutine cleanup_grid_init_data ()
-    !
-    ! Local(s)
-    !
-    integer :: pgN
-
-    ! Cleanup data no longer needed in each pg_specs_t struct
-    do pgN = pgN_min,pgN_max
-      if (pg_specs(pgN)%inited) then
-        ! nprocs-sized arrays
-        deallocate(pg_specs(pgN)%g_dofs_per_rank)
-
-        ! nelem-sized arrays
-        deallocate(pg_specs(pgN)%g_dofs_per_elem)
-      endif
-    enddo
-
-    ! Cleanup global elem-related arrays
-    deallocate(g_elem_per_rank)
-    deallocate(g_elem_offsets)
-    deallocate(g_elem_gids)
-  end subroutine cleanup_grid_init_data
 
   subroutine finalize_phys_grid ()
     use gllfvremap_mod, only: gfr_finish
@@ -181,8 +117,6 @@ contains
         deallocate(pg_specs(pgN)%l_lat)
         deallocate(pg_specs(pgN)%l_lon)
         deallocate(pg_specs(pgN)%l_dofs)
-
-        deallocate(pg_specs(pgN)%g_dofs_offsets)
 
         if (pgN>0) then
           call gfr_finish()
@@ -296,8 +230,8 @@ contains
   end subroutine get_my_phys_data
 
   subroutine compute_local_dofs (pg)
-    use dimensions_mod,    only: nelem
-    use homme_context_mod, only: par
+    use dimensions_mod,    only: nelemd
+    use homme_context_mod, only: elem
     !
     ! Input(s)
     !
@@ -305,37 +239,29 @@ contains
     !
     ! Local(s)
     !
-    integer :: ie, icol, idof, proc, elem_gid, elem_offset
-    integer, allocatable :: exclusive_scan_dofs_per_elem(:)
+    integer :: ie, icol, idof
 
-    ! Compute the prefix sum of dofs per element (indexed by global elem ID).
-    ! This gives globally-unique column IDs even though we only store local data.
-    allocate(exclusive_scan_dofs_per_elem(nelem))
-    exclusive_scan_dofs_per_elem(1) = 0
-    do ie=2,nelem
-      exclusive_scan_dofs_per_elem(ie) = exclusive_scan_dofs_per_elem(ie-1) + pg%g_dofs_per_elem(ie-1)
-    enddo
-
-    ! Build the per-rank column offset array. Not used for local-only data access,
-    ! but retained for potential future rebalancing support (e.g., twin columns).
-    allocate (pg%g_dofs_offsets(par%nprocs))
-    pg%g_dofs_offsets(1)=0
-    do proc=2,par%nprocs
-      pg%g_dofs_offsets(proc) = pg%g_dofs_offsets(proc-1) + pg%g_dofs_per_rank(proc-1)
-    enddo
-
-    ! Allocate local-only dofs array and fill with globally-unique column IDs
-    ! for elements owned by this rank.
+    ! Compute globally-unique column IDs entirely from local element data.
+    ! For FV grids: element with globalID gid owns columns (gid-1)*pgN^2+1 .. gid*pgN^2.
+    ! For GLL grids: elem(ie)%idxP%UniquePtOffset already carries the global starting
+    !   offset, set once during homme init via SetElemOffset (dof_mod.F90).
     allocate(pg%l_dofs(get_num_local_columns(pg%pgN)))
     idof = 1
-    elem_offset = g_elem_offsets(par%rank+1)
-    do ie=1,g_elem_per_rank(par%rank+1)
-      elem_gid = g_elem_gids(elem_offset+ie)
-      do icol=1,pg%g_dofs_per_elem(elem_gid)
-        pg%l_dofs(idof) = exclusive_scan_dofs_per_elem(elem_gid)+icol
-        idof = idof+1
+    if (pg%pgN > 0) then
+      do ie=1,nelemd
+        do icol=1,pg%pgN*pg%pgN
+          pg%l_dofs(idof) = (elem(ie)%globalID - 1)*pg%pgN*pg%pgN + icol
+          idof = idof+1
+        enddo
       enddo
-    enddo
+    else
+      do ie=1,nelemd
+        do icol=1,elem(ie)%idxP%NumUniquePts
+          pg%l_dofs(idof) = elem(ie)%idxP%UniquePtOffset + icol - 1
+          idof = idof+1
+        enddo
+      enddo
+    endif
   end subroutine compute_local_dofs
 
   subroutine compute_local_area(pg)
@@ -422,7 +348,6 @@ contains
   subroutine phys_grid_init (pgN)
     use gllfvremap_mod,    only: gfr_init
     use homme_context_mod, only: elem, par
-    use dimensions_mod,    only: nelem, nelemd
 #ifdef HAVE_MOAB
     use seq_comm_mct,      only: MHID, MHFID  ! id of homme moab coarse and fine applications
     use seq_comm_mct,      only: ATMID
@@ -438,13 +363,11 @@ contains
     !
     ! Local(s)
     !
-    integer, allocatable :: dofs_per_elem (:)
-    integer :: ierr, proc, ie, offset
     character(2) :: str
     type(pg_specs_t), pointer :: pg
 
 #ifdef HAVE_MOAB
-    integer :: ATM_ID1
+    integer :: ierr, ATM_ID1
     character*32  appname
 #endif
     pg => pg_specs(pgN)
@@ -459,40 +382,6 @@ contains
     pg%pgN = pgN
 
     if (pgN>0) call gfr_init(par, elem, pgN)
-
-    ! Gather the number of unique cols on each rank
-    allocate(pg%g_dofs_per_rank(par%nprocs))
-    call MPI_Allgather(get_num_local_columns(pg%pgN), 1, MPIinteger_t, &
-                       pg%g_dofs_per_rank, 1, MPIinteger_t, par%comm, ierr)
-
-    ! Gather the number of unique cols on each element
-    ! NOTE: we use a temp (dofs_per_elem) rather than g_dofs, since in g_dofs we order by
-    !       elem GID. But elem GIDs may not be distributed linearly across ranks
-    !       (e.g., proc0 may own [1-20,41-60],and proc1 may owns [21-40]), while in order
-    !       to use Allgatherv, we need the send buffer to be contiguous. So in dofs_per_elem
-    !       we order the data *by rank*. Once the gather is complete, we copy the data from
-    !       dofs_per_elem into g_dofs_per_elem, ordering by elem GID instead.
-    !
-    allocate(dofs_per_elem(nelem))
-    if (pgN>0) then
-       do ie=1,nelem
-          dofs_per_elem(ie) = pgN*pgN
-       end do
-    else
-       do ie=1,nelemd
-          dofs_per_elem(g_elem_offsets(par%rank+1)+ie) = elem(ie)%idxP%NumUniquePts
-       enddo
-       call MPI_Allgatherv( MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, &
-            dofs_per_elem, g_elem_per_rank, g_elem_offsets, MPIinteger_t, par%comm, ierr)
-    end if
-
-    allocate(pg%g_dofs_per_elem(nelem))
-    do proc=1,par%nprocs
-      offset = g_elem_offsets(proc)
-      do ie=1,g_elem_per_rank(proc)
-        pg%g_dofs_per_elem(g_elem_gids(offset+ie)) = dofs_per_elem(offset+ie)
-      enddo
-    enddo
 
     ! Compute local arrays of coords, area, and globally-unique dof IDs
     call compute_local_dofs (pg)
