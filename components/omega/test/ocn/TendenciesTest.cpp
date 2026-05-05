@@ -215,9 +215,10 @@ int testTendencies() {
    int VelTimeLevel        = 0;
    int TracerTimeLevel     = 0;
    TimeInstant Time;
+   TimeInterval Interval(1., TimeUnits::Seconds);
    DefTendencies->computeAllTendencies(State, AuxState, TracerArray,
                                        ThickTimeLevel, VelTimeLevel,
-                                       TracerTimeLevel, Time);
+                                       TracerTimeLevel, Time, Interval);
 
    // check that everything got computed correctly
    int NCellsOwned = Mesh->NCellsOwned;

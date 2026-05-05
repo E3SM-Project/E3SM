@@ -198,7 +198,8 @@ int testAuxState() {
    // compute auxiliary variables
    const auto *State       = OceanState::getDefault();
    Array3DReal TracerArray = Tracers::getAll(0);
-   DefAuxState->computeAll(State, TracerArray, 0);
+   TimeInterval Interval(1., TimeUnits::Seconds);
+   DefAuxState->computeAll(State, TracerArray, 0, Interval);
 
    // check that everything got computed correctly
    int NCellsOwned    = Mesh->NCellsOwned;
