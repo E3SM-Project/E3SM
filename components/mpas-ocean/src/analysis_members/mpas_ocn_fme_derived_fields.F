@@ -40,7 +40,7 @@ module ocn_fme_derived_fields
    use shr_kind_mod, only: r8 => shr_kind_r8
    use shr_horiz_remap_mod, only: SHR_FILL_VALUE
    use ocn_fme_horiz_remap, only: ocn_fme_horiz_remap_init, &
-        ocn_fme_horiz_remap_set_time_epoch, &
+        ocn_fme_horiz_remap_init_time_epoch, &
         ocn_fme_horiz_remap_field, ocn_fme_horiz_remap_active, &
         ocn_fme_horiz_remap_get_dims, ocn_fme_remap_file_t, &
         ocn_fme_remap_build_filename, &
@@ -117,7 +117,6 @@ contains
       integer, intent(out) :: err
 
       character(len=StrKIND), pointer :: config_AM_fmeDerivedFields_horiz_remap_file
-      character(len=StrKIND), pointer :: config_AM_fmeDerivedFields_time_reference_date
       character(len=StrKIND), pointer :: config_stream_output_interval
       logical, pointer :: config_time_averaging
       integer :: ierr
@@ -141,14 +140,10 @@ contains
                     messageType=MPAS_LOG_WARN)
                do_horiz_remap = .false.
             else
-               ! Plumb the CF time epoch from this AM's namelist option
-               ! to the shared horiz_remap module. See parallel comment
-               ! in fmeDepthCoarsening for the design.
-               call mpas_pool_get_config(domain % configs, &
-                    'config_AM_fmeDerivedFields_time_reference_date', &
-                    config_AM_fmeDerivedFields_time_reference_date)
-               call ocn_fme_horiz_remap_set_time_epoch( &
-                    trim(config_AM_fmeDerivedFields_time_reference_date), ierr)
+               ! Auto-discover the CF time epoch -- see fmeDepthCoarsening
+               ! for the design. Idempotent across all four FME AMs.
+               call ocn_fme_horiz_remap_init_time_epoch(domain, &
+                    'fmeDerivedFields', ierr)
                if (ierr /= 0) then
                   call mpas_log_write('fmeDerivedFields: time epoch ' // &
                        'setup failed, disabling horiz remap', &

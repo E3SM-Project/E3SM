@@ -47,7 +47,7 @@ module seaice_fme_horiz_remap
    save
 
    public :: seaice_fme_horiz_remap_init
-   public :: seaice_fme_horiz_remap_set_time_epoch
+   public :: seaice_fme_horiz_remap_init_time_epoch
    public :: seaice_fme_horiz_remap_field
    public :: seaice_fme_horiz_remap_active
    public :: seaice_fme_horiz_remap_open_file
@@ -76,10 +76,10 @@ module seaice_fme_horiz_remap
    ! MPAS-SI fill value for input field detection (matches def_var _FillValue)
    real(r8), parameter :: MPAS_SI_FILL = SHR_FILL_VALUE
 
-   ! CF time-coordinate epoch shared across all output files. See the
-   ! parallel block in the ocean horiz_remap module for the design;
-   ! this is the seaice mirror, set independently from the seaice AM's
-   ! config_AM_fmeSeaiceDerivedFields_time_reference_date.
+   ! CF time-coordinate epoch shared across all FME output files for
+   ! this component. Auto-discovered at AM init via init_time_epoch
+   ! (sidecar lookup -> MPAS_START_TIME fallback). See the parallel
+   ! block in the ocean horiz_remap module for the full design rationale.
    type(MPAS_Time_Type) :: time_epoch
    character(len=64)    :: time_epoch_str = ''
    character(len=64)    :: time_epoch_cf  = ''
@@ -356,34 +356,114 @@ contains
       fld_out(1:remap_data%n_b_local) = fld_out_2d(1:remap_data%n_b_local, 1)
    end subroutine seaice_fme_horiz_remap_field!}}}
 
-   subroutine seaice_fme_horiz_remap_set_time_epoch(epoch_str, err)!{{{
-   !> Mirror of ocn_fme_horiz_remap_set_time_epoch for the seaice side.
-   !> The seaice AM calls this once at init from
-   !> config_AM_fmeSeaiceDerivedFields_time_reference_date. The value
-   !> must match the ocean side (both come from CIME RUN_STARTDATE in
-   !> shell_commands) so EAM/MPAS-O/MPAS-SI all share one epoch.
+   subroutine seaice_fme_horiz_remap_init_time_epoch(domain, amName, err)!{{{
+   !> Mirror of ocn_fme_horiz_remap_init_time_epoch for the seaice side.
+   !> Sidecar lookup -> MPAS_START_TIME fallback. See the ocean
+   !> module's docstring for the design rationale.
+      type(domain_type),    intent(inout) :: domain
+      character(len=*),     intent(in)    :: amName
+      integer,              intent(out)   :: err
+      character(len=64)    :: epoch_str
+      character(len=StrKIND) :: epoch_str_buf  ! mpas_get_time requires StrKIND
+      logical              :: from_sidecar
+      type(MPAS_Time_Type) :: start_time
+      integer              :: ierr
+
+      err = 0
+      if (time_epoch_set) return
+
+      epoch_str = ''
+      from_sidecar = .false.
+      call try_read_epoch_from_sidecar_si(amName, epoch_str, from_sidecar)
+
+      if (.not. from_sidecar) then
+         start_time = mpas_get_clock_time(domain % clock, MPAS_START_TIME, ierr)
+         call mpas_get_time(start_time, dateTimeString=epoch_str_buf, ierr=ierr)
+         epoch_str = trim(epoch_str_buf)
+         if (ierr /= 0) then
+            call mpas_log_write('seaice_fme_horiz_remap_init_time_epoch: ' // &
+                 'failed to read MPAS_START_TIME from clock', &
+                 messageType=MPAS_LOG_CRIT)
+            err = ierr
+            return
+         end if
+         if (is_restart_run) then
+            call mpas_log_write('seaice_fme_horiz_remap_init_time_epoch: ' // &
+                 'warm restart but no sidecar epoch found; falling back ' // &
+                 'to MPAS_START_TIME = "' // trim(epoch_str) // '". Likely ' // &
+                 'the wrong epoch -- investigate sidecar.', &
+                 messageType=MPAS_LOG_WARN)
+         end if
+      end if
+
+      call set_time_epoch_si(epoch_str, err)
+
+      if (err == 0) then
+         if (from_sidecar) then
+            call mpas_log_write('seaice_fme_horiz_remap_init_time_epoch: ' // &
+                 'epoch restored from sidecar = "' // trim(time_epoch_cf) // '"')
+         else
+            call mpas_log_write('seaice_fme_horiz_remap_init_time_epoch: ' // &
+                 'epoch captured from MPAS_START_TIME = "' // &
+                 trim(time_epoch_cf) // '"')
+         end if
+      end if
+
+   end subroutine seaice_fme_horiz_remap_init_time_epoch!}}}
+
+   subroutine try_read_epoch_from_sidecar_si(amName, epoch_str, success)!{{{
+   !> Read time_reference_date global attribute from an existing
+   !> sidecar file (if any). success=.false. on missing file or attr.
+      character(len=*), intent(in)  :: amName
+      character(len=*), intent(out) :: epoch_str
+      logical,          intent(out) :: success
+      character(len=512)            :: filename
+      type(file_desc_t)             :: pio_acc_file
+      logical                       :: file_exists
+      integer                       :: ierr
+
+      success = .false.
+      epoch_str = ''
+      if (.not. is_initialized) return
+
+      call seaice_fme_accum_filename(trim(amName), filename)
+      inquire(file=trim(filename), exist=file_exists)
+      if (.not. file_exists) return
+
+      ierr = pio_openfile(pio_sys, pio_acc_file, PIO_IOTYPE_PNETCDF, &
+           trim(filename), PIO_WRITE)
+      if (ierr /= PIO_NOERR) return
+
+      ierr = pio_get_att(pio_acc_file, PIO_GLOBAL, 'time_reference_date', &
+           epoch_str)
+      call pio_closefile(pio_acc_file)
+      if (ierr == PIO_NOERR .and. len_trim(epoch_str) > 0) then
+         success = .true.
+      end if
+
+   end subroutine try_read_epoch_from_sidecar_si!}}}
+
+   subroutine set_time_epoch_si(epoch_str, err)!{{{
+   !> Internal helper. Stores the epoch in module state. Validates
+   !> against any previously-set value.
       character(len=*), intent(in) :: epoch_str
-      integer, intent(out) :: err
+      integer,          intent(out) :: err
       integer :: ierr, idx
       character(len=64) :: cf_str
 
       err = 0
 
-      if (len_trim(epoch_str) == 0 .or. trim(epoch_str) == 'none') then
-         call mpas_log_write('seaice_fme_horiz_remap_set_time_epoch: ' // &
-              'time_reference_date must be set in shell_commands ' // &
-              '(got "' // trim(epoch_str) // '"). The FME testmod plumbs ' // &
-              'CIME RUN_STARTDATE for this.', messageType=MPAS_LOG_CRIT)
-         err = 1
-         return
+      if (len_trim(epoch_str) == 0) then
+         call mpas_log_write('set_time_epoch_si: empty epoch string', &
+              messageType=MPAS_LOG_CRIT)
+         err = 1; return
       end if
 
       if (time_epoch_set) then
          if (trim(epoch_str) /= trim(time_epoch_str)) then
-            call mpas_log_write('seaice_fme_horiz_remap_set_time_epoch: ' // &
-                 'epoch already set to "' // trim(time_epoch_str) // &
-                 '"; subsequent caller passed "' // trim(epoch_str) // '"', &
-                 messageType=MPAS_LOG_CRIT)
+            call mpas_log_write('set_time_epoch_si: epoch already set to "' &
+                 // trim(time_epoch_str) // '"; rejecting reset to "' // &
+                 trim(epoch_str) // '"', messageType=MPAS_LOG_CRIT)
             err = 2
          end if
          return
@@ -391,11 +471,10 @@ contains
 
       call mpas_set_time(time_epoch, dateTimeString=trim(epoch_str), ierr=ierr)
       if (ierr /= 0) then
-         call mpas_log_write('seaice_fme_horiz_remap_set_time_epoch: failed ' // &
-              'to parse "' // trim(epoch_str) // '" as YYYY-MM-DD_HH:MM:SS', &
+         call mpas_log_write('set_time_epoch_si: failed to parse "' // &
+              trim(epoch_str) // '" as YYYY-MM-DD_HH:MM:SS', &
               messageType=MPAS_LOG_CRIT)
-         err = ierr
-         return
+         err = ierr; return
       end if
 
       cf_str = trim(epoch_str)
@@ -405,11 +484,7 @@ contains
       time_epoch_str = trim(epoch_str)
       time_epoch_cf  = trim(cf_str)
       time_epoch_set = .true.
-
-      call mpas_log_write('seaice_fme_horiz_remap_set_time_epoch: epoch = "' &
-           // trim(time_epoch_cf) // '" (CF form)')
-
-   end subroutine seaice_fme_horiz_remap_set_time_epoch!}}}
+   end subroutine set_time_epoch_si!}}}
 
    subroutine si_time_to_days_since_epoch(t, days, err)!{{{
    !> Convert an MPAS_Time_Type to days since the configured seaice epoch.
@@ -920,6 +995,13 @@ contains
       ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, 'n_avg_fields', n_avg_fields)
       ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, &
            'avg_last_output_time', trim(avg_last_output_time_str))
+      ! Persist the CF time epoch -- mirror of ocean module. Lets
+      ! init_time_epoch recover the case-start time on warm restart
+      ! (MPAS_START_TIME from the clock would return leg-start instead).
+      if (time_epoch_set) then
+         ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, &
+              'time_reference_date', trim(time_epoch_str))
+      end if
       ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, 'source', &
            'E3SM FME accumulator restart sidecar')
 

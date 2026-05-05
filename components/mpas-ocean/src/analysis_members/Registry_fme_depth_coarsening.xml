@@ -48,10 +48,6 @@
 			description="If true (and time_averaging is also true), the remapped output stream also includes instantaneous companion variables suffixed _inst. Each averaged variable BASE has an instantaneous twin BASE_inst sampled at the output trigger. No effect when time_averaging is false."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_fmeDepthCoarsening_time_reference_date" type="character" default_value="none"
-			description="Reference epoch for the CF numeric time coordinate in remapped output files. Format: YYYY-MM-DD_HH:MM:SS. Plumbed from CIME RUN_STARTDATE by the FME testmod's shell_commands so MPAS time:units matches EAM exactly. Setting 'none' aborts FME init at file open."
-			possible_values="A YYYY-MM-DD_HH:MM:SS string or 'none'"
-		/>
 	</nml_record>
 	<packages>
 		<package name="fmeDepthCoarseningAMPKG" description="This package includes variables required for the fmeDepthCoarsening analysis member."/>
