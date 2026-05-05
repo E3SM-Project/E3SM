@@ -16,12 +16,12 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 ::calc_liq_relaxation_timescale(
   const view_2d_table& revap_table_vals,
-  const Spack& rho, const Scalar& f1r, const Scalar& f2r,
-  const Spack& dv, const Spack& mu, const Spack& sc,
-  const Spack& mu_r, const Spack& lamr, const Spack& cdistr,
-  const Spack& cdist, const Spack& qr_incld, const Spack& qc_incld,
-  Spack& epsr, Spack& epsc,
-  const Smask& context)
+  const Pack& rho, const Scalar& f1r, const Scalar& f2r,
+  const Pack& dv, const Pack& mu, const Pack& sc,
+  const Pack& mu_r, const Pack& lamr, const Pack& cdistr,
+  const Pack& cdist, const Pack& qr_incld, const Pack& qc_incld,
+  Pack& epsr, Pack& epsc,
+  const Mask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar pi = C::Pi;

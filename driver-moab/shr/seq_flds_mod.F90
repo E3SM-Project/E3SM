@@ -179,6 +179,7 @@ module seq_flds_mod
   character(len=CS)  :: wav_ocn_coup     ! 'twoway' if wave-ocean two-way coupling turned on
   character(len=CS)  :: wav_atm_coup     ! 'twoway' if wave-atm two-way coupling turned on
   character(len=CS)  :: wav_ice_coup     ! 'twoway' if wave-ice two-way coupling turned on
+  integer            :: wav_nfreq           ! number of wave frequencies
 
   !----------------------------------------------------------------------------
   ! metadata
@@ -303,8 +304,6 @@ module seq_flds_mod
 
   ! namelist variables
   logical :: nan_check_component_fields
-
-  public moab_set_tag_from_av  ! will be caled usually from data models, to set moab tags from data fields in AVs
 
   !----------------------------------------------------------------------------
 contains
@@ -434,7 +433,7 @@ contains
          glc_nec, glc_nzoc, ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
          nan_check_component_fields, rof_heat, atm_flux_method, atm_gustiness, &
          rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, ocn_lnd_one_way, rof_sed, &
-         wav_ocn_coup, wav_atm_coup, wav_ice_coup, add_iac_to_cplstate
+         wav_ocn_coup, wav_atm_coup, wav_ice_coup, wav_nfreq, add_iac_to_cplstate
 
     ! user specified new fields
     integer,  parameter :: nfldmax = 200
@@ -483,6 +482,7 @@ contains
        wav_ocn_coup = 'none'
        wav_atm_coup = 'none'
        wav_ice_coup = 'none'
+       wav_nfreq = 0
        add_iac_to_cplstate = .false.
 
        unitn = shr_file_getUnit()
@@ -524,6 +524,7 @@ contains
     call shr_mpi_bcast(wav_ocn_coup, mpicom)
     call shr_mpi_bcast(wav_atm_coup, mpicom)
     call shr_mpi_bcast(wav_ice_coup, mpicom)
+    call shr_mpi_bcast(wav_nfreq , mpicom)
     call shr_mpi_bcast(add_iac_to_cplstate, mpicom)
 
     call glc_elevclass_init(glc_nec)
@@ -2249,7 +2250,7 @@ contains
     endif
 
     !------------------------------
-    ! ice<->wav only exchange 
+    ! ice<->wav exchange
     !------------------------------
 
     ! Sea ice thickness
@@ -2261,6 +2262,43 @@ contains
     attname  = 'Si_ithick'
     call metadata_set(attname, longname, stdname, units)
 
+    ! Sea ice floe Size
+    if (wav_ice_coup .eq. 'twoway') then
+       call seq_flds_add(i2x_states,"Si_ifloe")
+       call seq_flds_add(x2w_states,"Si_ifloe")
+       longname = 'Sea ice floe size'
+       stdname  = 'sea_ice_floe_size'
+       units    = 'm'
+       attname  = 'Si_ifloe'
+       call metadata_set(attname, longname, stdname, units)
+    endif
+
+    ! Significant Wave Height
+    if (wav_ocn_coup .eq. 'twoway' .or. wav_ice_coup .eq. 'twoway') then
+       call seq_flds_add(w2x_states,'Sw_Hs')
+       if (wav_ice_coup .eq. 'twoway') call seq_flds_add(x2i_states,'Sw_Hs')
+       if (wav_ocn_coup .eq. 'twoway') call seq_flds_add(x2o_states,'Sw_Hs')
+       longname = 'Significant wave height'
+       stdname  = 'significant_wave_height'
+       units    = 'm'
+       attname  = 'Sw_Hs'
+       call metadata_set(attname, longname, stdname, units)
+    endif
+
+    ! Wave spectra
+    if (wav_ice_coup .eq. 'twoway') then
+       do num = 1, wav_nfreq
+          write(cnum,'(i2.2)') num
+          name = 'Sw_wavespec' // cnum
+          call seq_flds_add(w2x_states,trim(name))
+          call seq_flds_add(x2i_states,trim(name))
+          longname = 'wave power spectra for wave frequency category number' // cnum
+          stdname  = 'wave_spectra'
+          units    = 'm2/Hz'
+          attname  = name
+          call metadata_set(attname, longname, stdname, units)
+       enddo
+    endif
 
     !-----------------------------
     ! lnd->rof exchange
@@ -2590,14 +2628,6 @@ contains
     ! wav->ocn and ocn->wav
     !-----------------------------
     if (wav_ocn_coup == 'twoway') then
-       call seq_flds_add(w2x_states,'Sw_Hs')
-       call seq_flds_add(x2o_states,'Sw_Hs')
-       longname = 'Significant wave height'
-       stdname  = 'significant_wave_height'
-       units    = 'm'
-       attname  = 'Sw_Hs'
-       call metadata_set(attname, longname, stdname, units)
-
        call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_1')
        call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_1')
        longname = 'Partitioned Stokes drift u component, wavenumber 1'
@@ -4750,31 +4780,5 @@ contains
     endif
 
   end subroutine seq_flds_esmf_metadata_get
-
-  !===============================================================================
-
-  subroutine moab_set_tag_from_av(tagname, avx, index, mbapid, dataarr, lsize)
-
-    ! !DESCRIPTION:  set field method for data atm model
-    use iMOAB,        only: iMOAB_SetDoubleTagStorage
-    use shr_kind_mod    , only: r8 => SHR_KIND_R8
-    implicit none
-
-    integer :: ierr, lsize 
-    character(len=*), intent(in) :: tagname
-    type(mct_aVect), intent(in) :: avx
-    integer, intent(in) :: index
-    integer, intent(in) :: mbapid !  moab app id
-    real(R8), intent(inout) :: dataarr(:)
-
-   !write(*,* ) "Setting data for tag: ", tagname, " with size = ", lsize
-   dataarr(:) = avx%rAttr(index, :)
-   ierr = iMOAB_SetDoubleTagStorage ( mbapid, tagname, lsize, &
-                                       0, & ! data on vertices
-                                       dataarr )
-   if (ierr > 0 )  &
-       call shr_sys_abort('Error: fail to set tag values for '//tagname)
-
-  end subroutine moab_set_tag_from_av
 
 end module seq_flds_mod

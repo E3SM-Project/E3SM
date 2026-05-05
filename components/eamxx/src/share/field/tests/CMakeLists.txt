@@ -11,6 +11,9 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   # Test field update methods
   CreateUnitTest(field_update "field_update_tests.cpp" LIBS eamxx_field)
 
+  # Test masked field operations
+  CreateUnitTest(field_masked_ops "field_masked_ops_tests.cpp" LIBS eamxx_field)
+
   # Test field groups
   CreateUnitTest(field_group "field_group_tests.cpp" LIBS eamxx_field)
 

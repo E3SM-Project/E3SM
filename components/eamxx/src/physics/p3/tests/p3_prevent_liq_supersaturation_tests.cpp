@@ -27,29 +27,29 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation : public UnitWrap::U
 
     //Start with reasonable values
     //============================
-    Spack pres(100000);
-    Spack t_atm(270);
-    Spack qv(1.7e-3);
+    Pack pres(100000);
+    Pack t_atm(270);
+    Pack qv(1.7e-3);
     Scalar dt=60;
-    Spack qidep(0);
-    Spack qinuc(0); //dep and nuc only used together, so only fiddle with one
+    Pack qidep(0);
+    Pack qinuc(0); //dep and nuc only used together, so only fiddle with one
     //Note that inout variables are initialized for each test to avoid using unintended vals
     auto context= qinuc == 0; //want a pack-sized array which is all true.
 
     //Test that large initial endstep supersat is removed.
     //=============================
     //First, make copies of output variables and make them big
-    Spack qi2qv_sublim_tend_tmp(1e-5);
-    Spack qr2qv_evap_tend_tmp(1e-5);
+    Pack qi2qv_sublim_tend_tmp(1e-5);
+    Pack qr2qv_evap_tend_tmp(1e-5);
 
     //Next, confirm that initial data is subsaturated at beginning of step and supersaturated at end
     //(using code copied from prevent_liq_supersaturation_impl.hpp)
-    Spack qv_sinks=qidep + qinuc;
-    Spack qv_sources=qi2qv_sublim_tend_tmp + qr2qv_evap_tend_tmp;
-    Spack qv_endstep=qv - qv_sinks*dt + qv_sources*dt;
-    Spack T_endstep=t_atm + ( (qv_sinks-qi2qv_sublim_tend_tmp)*(latvap+latice)*inv_cp
+    Pack qv_sinks=qidep + qinuc;
+    Pack qv_sources=qi2qv_sublim_tend_tmp + qr2qv_evap_tend_tmp;
+    Pack qv_endstep=qv - qv_sinks*dt + qv_sources*dt;
+    Pack T_endstep=t_atm + ( (qv_sinks-qi2qv_sublim_tend_tmp)*(latvap+latice)*inv_cp
 			- qr2qv_evap_tend_tmp*latvap*inv_cp )*dt;
-    Spack qsl = physics::qv_sat_dry(T_endstep,pres,false,context); //"false" means NOT sat w/ respect to ice
+    Pack qsl = physics::qv_sat_dry(T_endstep,pres,false,context); //"false" means NOT sat w/ respect to ice
     //just require index 0 since all entries are identical
 
     REQUIRE(        qv[0]<qsl[0]); //not a test of prevent_liq_supersat, just a sanity check that
@@ -73,9 +73,9 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation : public UnitWrap::U
 
     //If qv is supersaturated by itself, evap and sublim should be 0:
     //============================
-    Spack qv_tmp(1e-2);
-    Spack qi2qv_sublim_tend_tmp2(1e-4);
-    Spack qr2qv_evap_tend_tmp2(1e-4);
+    Pack qv_tmp(1e-2);
+    Pack qi2qv_sublim_tend_tmp2(1e-4);
+    Pack qr2qv_evap_tend_tmp2(1e-4);
 
     Functions::prevent_liq_supersaturation(pres, t_atm, qv_tmp,
 					   dt, qidep, qinuc, qi2qv_sublim_tend_tmp2, qr2qv_evap_tend_tmp2);
@@ -129,12 +129,12 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation : public UnitWrap::U
 
     // Get data from cxx. Run prevent_liq_supersaturation from a kernel and copy results back to host
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init pack inputs
       Scalar dt;
-      Spack pres, qi2qv_sublim_tend, qidep, qinuc, qr2qv_evap_tend, qv, t_atm;
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      Pack pres, qi2qv_sublim_tend, qidep, qinuc, qr2qv_evap_tend, qv, t_atm;
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
 	dt = cxx_device(vs).dt; //dt is scalar but PreventLiqSupersaturationData has diff val for each row.
         pres[s] = cxx_device(vs).pres;
         qi2qv_sublim_tend[s] = cxx_device(vs).qi2qv_sublim_tend;
@@ -148,7 +148,7 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation : public UnitWrap::U
       Functions::prevent_liq_supersaturation(pres, t_atm, qv, dt, qidep, qinuc, qi2qv_sublim_tend, qr2qv_evap_tend);
 
       // Copy spacks back into cxx_device view
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         cxx_device(vs).qi2qv_sublim_tend = qi2qv_sublim_tend[s];
         cxx_device(vs).qr2qv_evap_tend = qr2qv_evap_tend[s];
       }

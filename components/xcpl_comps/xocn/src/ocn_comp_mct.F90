@@ -16,6 +16,13 @@ module ocn_comp_mct
   use dead_mct_mod    , only: dead_init_mct, dead_run_mct, dead_final_mct
   use seq_flds_mod    , only: seq_flds_o2x_fields, seq_flds_x2o_fields
 
+#ifdef HAVE_MOAB
+  use seq_comm_mct,     only: mpoid  ! iMOAB pid for ocean mesh on component pes
+  use iso_c_binding
+  use iMOAB           , only: iMOAB_RegisterApplication
+  use dead_mct_mod   , only: dead_init_moab
+#endif
+
   ! !PUBLIC TYPES:
   implicit none
   save
@@ -70,6 +77,7 @@ CONTAINS
     logical                          :: ocn_present    ! if true, component is present
     logical                          :: ocn_prognostic ! if true, component is prognostic
     logical                          :: ocnrof_prognostic
+    character(*), parameter :: subName = "(ocn_init_mct) "
     !-------------------------------------------------------------------------------
 
     ! Set cdata pointers to derived types (in coupler)
@@ -113,6 +121,14 @@ CONTAINS
     ! Initialize xocn
     !----------------------------------------------------------------------------
 
+#ifdef HAVE_MOAB
+  ierr = iMOAB_RegisterApplication(trim("XOCN")//C_NULL_CHAR, mpicom, compid, mpoid)
+  if (ierr .ne. 0) then
+    write(logunit,*) subName,' error in registering XOCN comp'
+    call shr_sys_abort(subName//' ERROR in registering XOCN comp')
+  endif
+#endif
+
     call dead_init_mct('ocn', Eclock, x2d, d2x, &
          seq_flds_x2o_fields, seq_flds_o2x_fields, &
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
@@ -127,6 +143,12 @@ CONTAINS
        ocn_prognostic = .true.
        ocnrof_prognostic = .true.
     end if
+
+#ifdef HAVE_MOAB
+    if (ocn_present) then
+       call dead_init_moab( mpoid, 'ocn', gsMap, gbuf, x2d, d2x, mpicom, compid, logunit, nxg, nyg )
+    end if
+#endif
 
     call seq_infodata_PutData( infodata, dead_comps=.true., &
          ocn_present=ocn_present, &
@@ -174,8 +196,17 @@ CONTAINS
          dom=ggrid, &
          infodata=infodata)
 
+#ifdef HAVE_MOAB
+
+    call dead_run_mct('ocn', EClock, x2d, d2x, &
+       gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, logunit, mpoid )
+
+#else
+
     call dead_run_mct('ocn', EClock, x2d, d2x, &
        gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, logunit)
+
+#endif
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)

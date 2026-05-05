@@ -10,9 +10,9 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::rain_self_collection(
-  const Spack& rho, const Spack& qr_incld, const Spack& nr_incld, Spack& nr_selfcollect_tend,
+  const Pack& rho, const Pack& qr_incld, const Pack& nr_incld, Pack& nr_selfcollect_tend,
   const P3Runtime& runtime_options,
-  const Smask& context)
+  const Mask& context)
 {
   // ------------------------------------------------------
   // self-collection and breakup of rain
@@ -37,7 +37,7 @@ void Functions<S,D>
     // is expressed in terms of lambda rather than mass-mean D
     const auto dum2 = cbrt((qr_incld) / (pi * rho_h2o * nr_incld));
 
-    Spack dum;
+    Pack dum;
     const auto dum2_lt_dum1 =
         dum2 < rain_selfcollection_breakup_diameter && qr_incld_not_small;
     const auto dum2_gt_dum1 =

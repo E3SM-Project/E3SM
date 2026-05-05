@@ -16,12 +16,12 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::cldliq_immersion_freezing(
-  const Spack& T_atm, const Spack& lamc,
-  const Spack& mu_c, const Spack& cdist1,
-  const Spack& qc_incld, const Spack& inv_qc_relvar,
-  Spack& qc2qi_hetero_freeze_tend, Spack& nc2ni_immers_freeze_tend,
+  const Pack& T_atm, const Pack& lamc,
+  const Pack& mu_c, const Pack& cdist1,
+  const Pack& qc_incld, const Pack& inv_qc_relvar,
+  Pack& qc2qi_hetero_freeze_tend, Pack& nc2ni_immers_freeze_tend,
   const P3Runtime& runtime_options,
-  const Smask& context)
+  const Mask& context)
 {
   constexpr Scalar qsmall     = C::QSMALL;
   constexpr Scalar T_rainfrz  = C::T_rainfrz.value;
@@ -34,12 +34,12 @@ void Functions<S,D>
   const auto qc_not_small_and_t_freezing = (qc_incld >= qsmall) &&
                                            (T_atm <= T_rainfrz) && context;
   if (qc_not_small_and_t_freezing.any()) {
-    Spack expAimmDt, inv_lamc3;
+    Pack expAimmDt, inv_lamc3;
     expAimmDt.set(qc_not_small_and_t_freezing,
                   exp(immersion_freezing_exponent * (T_zerodegc - T_atm)));
     inv_lamc3.set(qc_not_small_and_t_freezing, cube(1/lamc));
 
-    Spack sgs_var_coef;
+    Pack sgs_var_coef;
     // sgs_var_coef = subgrid_variance_scaling(inv_qc_relvar, 2);
     sgs_var_coef = 1;
 

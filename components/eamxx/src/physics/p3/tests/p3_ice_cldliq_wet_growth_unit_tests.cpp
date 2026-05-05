@@ -64,17 +64,17 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth : public UnitWrap::UnitTest
 
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init pack inputs
-      Spack rho,temp, pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,dv,kap,mu,sc,
+      Pack rho,temp, pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,dv,kap,mu,sc,
         qv,qc_incld,qi_incld,ni_incld,qr_incld;
 
-      Smask log_wetgrowth;
+      Mask log_wetgrowth;
 
-      Spack qr2qi_collect_tend,qc2qi_collect_tend,qc_growth_rate,nr_ice_shed_tend,qc2qr_ice_shed_tend;
+      Pack qr2qi_collect_tend,qc2qi_collect_tend,qc_growth_rate,nr_ice_shed_tend,qc2qr_ice_shed_tend;
 
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         rho[s]                        = self_device(vs).rho;
         temp[s]                       = self_device(vs).temp;
         pres[s]                       = self_device(vs).pres;
@@ -102,7 +102,7 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth : public UnitWrap::UnitTest
                                        qv, qc_incld, qi_incld, ni_incld, qr_incld,
                                        log_wetgrowth, qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate, nr_ice_shed_tend, qc2qr_ice_shed_tend);
 
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         self_device(vs).log_wetgrowth       = log_wetgrowth[s];
         self_device(vs).qr2qi_collect_tend  = qr2qi_collect_tend[s];
         self_device(vs).qc2qi_collect_tend  = qc2qi_collect_tend[s];

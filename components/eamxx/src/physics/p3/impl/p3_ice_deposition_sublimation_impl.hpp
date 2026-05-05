@@ -11,15 +11,15 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_deposition_sublimation(
-  const Spack& qi_incld, const Spack& ni_incld, const Spack& T_atm,   const Spack& qv_sat_l,
-  const Spack& qv_sat_i,         const Spack& epsi,        const Spack& abi, const Spack& qv, const Scalar& inv_dt,
-  Spack& qv2qi_vapdep_tend, Spack& qi2qv_sublim_tend, Spack& ni_sublim_tend, Spack& qc2qi_berg_tend,
-  const Smask& context)
+  const Pack& qi_incld, const Pack& ni_incld, const Pack& T_atm,   const Pack& qv_sat_l,
+  const Pack& qv_sat_i,         const Pack& epsi,        const Pack& abi, const Pack& qv, const Scalar& inv_dt,
+  Pack& qv2qi_vapdep_tend, Pack& qi2qv_sublim_tend, Pack& ni_sublim_tend, Pack& qc2qi_berg_tend,
+  const Mask& context)
 {
   constexpr Scalar QSMALL   = C::QSMALL;
   constexpr Scalar T_zerodegc = C::T_zerodegc.value;
 
-  Spack qi_tend;   //temporary var for mass tend before splitting into sublim or depos
+  Pack qi_tend;   //temporary var for mass tend before splitting into sublim or depos
 
   //INITIALIZE EVERYTHING TO 0:
   qc2qi_berg_tend=0;

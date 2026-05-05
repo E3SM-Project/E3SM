@@ -1,4 +1,11 @@
+#include "bfb_math.inc"
+
 module wv_sat_methods
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use zm_eamxx_bridge_params, only: r8
+  use physics_share_f2c, only: scream_log10, scream_pow
+#endif
 
 ! This portable module contains all CAM methods for estimating
 ! the saturation vapor pressure of water.
@@ -31,7 +38,9 @@ implicit none
 private
 save
 
+#ifndef SCREAM_CONFIG_IS_CMAKE
 integer, parameter :: r8 = selected_real_kind(12) ! 8 byte real
+#endif
 
 real(r8) :: tmelt   ! Melting point of water at 1 atm (K)
 real(r8) :: h2otrip ! Triple point temperature of water (K)
@@ -117,7 +126,7 @@ end subroutine wv_sat_methods_init
 pure function wv_sat_get_scheme_idx(name) result(idx)
   character(len=*), intent(in) :: name
   integer :: idx
-  
+
   select case (name)
   case("GoffGratch")
      idx = GoffGratch_idx
@@ -370,12 +379,16 @@ elemental function GoffGratch_svp_water(t) result(es)
   real(r8), intent(in) :: t  ! Temperature in Kelvin
   real(r8) :: es             ! SVP in Pa
 
+  real(r8) :: tmp1, tmp2, tmp3, tmp4, tmp5
+
+  tmp1 = -7.90298_r8*(tboil/t - 1._r8)
+  tmp2 = 5.02808_r8*bfb_log10(tboil/t)
+  tmp3 = 1.3816e-7_r8*(bfb_pow(10._r8, 11.344_r8*(1._r8-t/tboil)) - 1._r8)
+  tmp4 = 8.1328e-3_r8*(bfb_pow(10._r8, -3.49149_r8*(tboil/t-1._r8)) - 1._r8)
+  tmp5 = bfb_log10(1013.246_r8)
+
   ! uncertain below -70 C
-  es = 10._r8**(-7.90298_r8*(tboil/t-1._r8)+ &
-       5.02808_r8*log10(tboil/t)- &
-       1.3816e-7_r8*(10._r8**(11.344_r8*(1._r8-t/tboil))-1._r8)+ &
-       8.1328e-3_r8*(10._r8**(-3.49149_r8*(tboil/t-1._r8))-1._r8)+ &
-       log10(1013.246_r8))*100._r8
+  es = bfb_pow(10._r8, tmp1 + tmp2 - tmp3 + tmp4 + tmp5) * 100._r8
 
 end function GoffGratch_svp_water
 
@@ -444,7 +457,7 @@ elemental function OldGoffGratch_svp_water(t) result(es)
   f  = f1 + f2 + f3 + f4 + f5
 
   es = (10.0_r8**f)*100.0_r8
-  
+
 end function OldGoffGratch_svp_water
 
 elemental function OldGoffGratch_svp_ice(t) result(es)
@@ -457,7 +470,7 @@ elemental function OldGoffGratch_svp_ice(t) result(es)
   term3 = 20.947031_r8*(tmelt/t)
 
   es = 575.185606e10_r8*exp(-(term1 + term2 + term3))
-  
+
 end function OldGoffGratch_svp_ice
 
 ! Bolton (1980)

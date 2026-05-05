@@ -6,7 +6,7 @@ set (HOMME_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/homme CACHE INTERNAL "Homme bi
 
 # If using Intel, we need to tell Homme to link against mkl rather than lapack
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+if (CMAKE_CXX_COMPILER_ID MATCHES "^(Intel|IntelLLVM)$")
   option (HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" ON)
   option (HOMME_FIND_BLASLAPACK "Whether to use system blas/lapack" OFF)
 else ()

@@ -1,7 +1,7 @@
 #ifndef SCREAM_SCORPIO_OUTPUT_HPP
 #define SCREAM_SCORPIO_OUTPUT_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "share/data_managers/grids_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
@@ -30,6 +30,7 @@
  *  ------
  *  filename_prefix:                    STRING
  *  averaging_type:                     STRING
+ *  transpose:                          BOOL                  (default: false)
  *  max_snapshots_per_file:             INT                   (default: 1)
  *  fields:
  *     GRID_NAME_1:
@@ -57,8 +58,11 @@
  *    Here, 'time interval' is described by ${Output frequency} and ${Output frequency_units}.
  *    E.g., with 'Output frequency'=10 and 'Output frequency_units'="Days", the time interval is 10
  days.
+ *  - transpose: optional boolean flag to enable transposed output (default: false).
+ *      When set to true, all field dimensions will be reversed in the output file.
+ *      For example, a field with layout (ncol, nlev) will be written as (nlev, ncol).
  *  - fields: parameters specifying fields to output
- *     - GRID_NAME: parameters specifyign fields to output from grid $GRID_NAME
+ *     - GRID_NAME: parameters specifying fields to output from grid $GRID_NAME
  *        - field_names: names of fields defined on grid $grid_name that need to be outputed
  *        - output_data_layout: attempt to 'remap' fields to this data layout first.
  *          This option is mostly used to enable dyn->phys_gll remap (to save storage),
@@ -121,7 +125,7 @@ public:
   using grid_type     = AbstractGrid;
   using gm_type       = GridsManager;
   using remapper_type = AbstractRemapper;
-  using diag_ptr_type = std::shared_ptr<AtmosphereDiagnostic>;
+  using diag_ptr_type = std::shared_ptr<AbstractDiagnostic>;
 
   ~AtmosphereOutput();
 
@@ -141,7 +145,7 @@ public:
                          const scorpio::FileMode mode);
 
   void init_timestep(const util::TimeStamp &start_of_step);
-  void run(const std::string &filename, const bool output_step, const bool checkpoint_step,
+  void run(const std::string &filename, const util::TimeStamp& ts, const bool output_step, const bool checkpoint_step,
            const int nsteps_since_last_output, const bool allow_invalid_fields = false);
 
   long long res_dep_memory_footprint() const;
@@ -150,6 +154,12 @@ public:
   get_io_grid() const
   {
     return m_io_grid;
+  }
+
+  const std::vector<std::string>&
+  get_intermediate_aliases() const
+  {
+    return m_intermediate_aliases;
   }
 
   void set_logger(const std::shared_ptr<ekat::logger::LoggerBase> &atm_logger);
@@ -163,15 +173,16 @@ protected:
   void register_variables(const std::string &filename, const std::string &fp_precision,
                           const scorpio::FileMode mode);
   void set_decompositions(const std::string &filename);
-  void compute_diagnostics(const bool allow_invalid_fields);
+  void computes(const util::TimeStamp& ts, const bool allow_invalid_fields);
   void process_requested_fields();
   strvec_t get_var_dimnames(const FieldLayout &layout) const;
 
   // Tracking the averaging of any filled values:
-  void set_avg_cnt_tracking(const std::string &name, const FieldLayout &layout);
+  void set_avg_cnt_tracking(const FieldIdentifier& fid);
 
   // --- Internal variables --- //
   ekat::Comm m_comm;
+  bool m_transpose = false;
 
   // We store separate shared pointers for field mgrs at different stages of IO:
   // More specifically, the order of operations is as follows:
@@ -201,6 +212,7 @@ protected:
     Scorpio // Output fields to pass to scorpio (may differ from the above in case of packing)
   };
   std::map<Phase, std::shared_ptr<fm_type>> m_field_mgrs;
+  std::map<std::string, Field> m_helper_fields;
 
   std::shared_ptr<const grid_type> m_io_grid;
   std::shared_ptr<remapper_type> m_horiz_remapper;
@@ -214,6 +226,11 @@ protected:
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and
   // the global ids.
   strvec_t m_fields_names;
+  // Intermediate-only aliases declared in the 'aliases' YAML section.
+  // Each entry has the form "alias:=original". These fields are created and
+  // registered in the field manager so that other diagnostics can depend on
+  // them, but they are NOT written to the NC output file.
+  strvec_t m_intermediate_aliases;
   strmap_t<Field> m_field_to_avg_count;
   std::vector<Field> m_avg_counts;
   strmap_t<std::string> m_field_to_avg_cnt_suffix;
@@ -229,7 +246,7 @@ protected:
   DefaultMetadata m_default_metadata;
 
   bool m_add_time_dim;
-  bool m_track_avg_cnt = false;
+  bool m_track_avg_cnt         = false;
   bool m_latlon_output = false;
   std::string m_decomp_dimname = "";
 

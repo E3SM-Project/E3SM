@@ -12,8 +12,6 @@ import logging
 import shutil
 import xml.etree.ElementTree as ET
 
-from distutils import dir_util
-
 import numpy as np
 import netCDF4 as nc
 
@@ -124,7 +122,6 @@ def modify_stream(
     if input_file is not None or var_elements is not None:
         # Only re-write the stream if changes were made
         streams.write(stream_file)
-
 
 class MVKO(SystemTestsCommon):
     """MVK-Ocean SystemTest class."""
@@ -373,10 +370,11 @@ class MVKO(SystemTestsCommon):
             urlroot = CIME.utils.get_urlroot(mach_obj)
             if htmlroot is not None:
                 with CIME.utils.SharedArea():
-                    dir_util.copy_tree(
+                    shutil.copytree(
                         evv_out_dir,
                         os.path.join(htmlroot, "evv", case_name),
-                        preserve_mode=False,
+                        copy_function=shutil.copy,
+                        dirs_exist_ok=True,
                     )
                 if urlroot is None:
                     urlroot = f"[{mach_name.capitalize()}_URL]"

@@ -846,7 +846,7 @@ PTD_STD_DEF(DataSubName, 18, gag1, gag2, foo1, foo2, bit1, bit2, gal1, gal2, bar
 {
   d.transition<ekat::TransposeDirection::c2f>();
   shoc_init_f(d.nlev, true);
-  fake_sub_f(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
+  fake_sub_bridge_f(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
@@ -1409,7 +1409,7 @@ void fake_sub_f(FakeSubData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
   shoc_init_f(d.nlev, true);
-  fake_sub_f(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
+  fake_sub_bridge_f(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
@@ -1437,7 +1437,7 @@ void fake_sub_f(FakeSubData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
   shoc_init_f(d.nlev, true);
-  fake_sub_f(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
+  fake_sub_bridge_f(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
   d.transition<ekat::TransposeDirection::f2c>();
 }
 

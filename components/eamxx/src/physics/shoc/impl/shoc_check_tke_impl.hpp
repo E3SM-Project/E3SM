@@ -12,12 +12,12 @@ void Functions<S,D>
 ::check_tke(
   const MemberType& team,
   const Int& nlev,
-  const uview_1d<Spack>& tke)
+  const uview_1d<Pack>& tke)
 {
   //obtain minimum TKE allowed
   static constexpr auto mintke   = SC::mintke; // units:m2/s2
 
-  const Int nlev_pack = ekat::npack<Spack>(nlev);
+  const Int nlev_pack = ekat::npack<Pack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
 
       //take max(mintke,tke(k))

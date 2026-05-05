@@ -163,6 +163,7 @@ add_default($nl, 'config_use_cvmix');
 add_default($nl, 'config_cvmix_prandtl_number');
 add_default($nl, 'config_cvmix_background_scheme');
 add_default($nl, 'config_cvmix_background_diffusion');
+add_default($nl, 'config_cvmix_background_diffusion_max_latitude');
 add_default($nl, 'config_cvmix_background_diffusion_passive');
 add_default($nl, 'config_cvmix_background_diffusion_passive_enable');
 add_default($nl, 'config_cvmix_background_viscosity');
@@ -630,11 +631,13 @@ add_default($nl, 'config_use_ecosysTracers_surface_value');
 add_default($nl, 'config_use_ecosysTracers_river_inputs_from_coupler');
 add_default($nl, 'config_use_ecosys_frazil_tendencies');
 add_default($nl, 'config_use_ecosysTracers_sea_ice_coupling');
+add_default($nl, 'config_use_ecosysTracers_atm_dust_from_coupler');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level1');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level2');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level3');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level4');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level5');
+add_default($nl, 'config_use_ecosysTracers_iron_solubility_file');
 
 ####################################################
 # Namelist group: tracer_forcing_freshwaterTracers #

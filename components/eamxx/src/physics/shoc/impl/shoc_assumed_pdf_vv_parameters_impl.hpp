@@ -18,16 +18,16 @@ namespace shoc {
 template<typename S, typename D>
 KOKKOS_INLINE_FUNCTION
 void Functions<S,D>::shoc_assumed_pdf_vv_parameters(
-  const Spack& w_first,
-  const Spack& w_sec,
-  const Spack& w3var,
+  const Pack& w_first,
+  const Pack& w_sec,
+  const Pack& w3var,
   const Scalar w_tol_sqd,
-  Spack&       Skew_w,
-  Spack&       w1_1,
-  Spack&       w1_2,
-  Spack&       w2_1,
-  Spack&       w2_2,
-  Spack&       a)
+  Pack&       Skew_w,
+  Pack&       w1_1,
+  Pack&       w1_2,
+  Pack&       w2_1,
+  Pack&       w2_2,
+  Pack&       a)
 {
   Skew_w = 0;
   w1_1 = w_first;
@@ -36,7 +36,7 @@ void Functions<S,D>::shoc_assumed_pdf_vv_parameters(
   w2_2 = 0;
   a = 0.5;
 
-  const Smask condition = w_sec > w_tol_sqd;
+  const Mask condition = w_sec > w_tol_sqd;
 
   const Scalar tmp_val(0.4);
   const Scalar one_m_tmp_val(1 - tmp_val);

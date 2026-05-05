@@ -1,70 +1,12 @@
 #include <catch2/catch.hpp>
 
-#include "share/remap/coarsening_remapper.hpp"
+#include "share/remap/horizontal_remapper.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/field/field_utils.hpp"
 
 namespace scream {
-
-class CoarseningRemapperTester : public CoarseningRemapper {
-public:
-  using gid_type = AbstractGrid::gid_type;
-
-  CoarseningRemapperTester (const grid_ptr_type& src_grid,
-                            const std::string& map_file)
-   : CoarseningRemapper(src_grid,map_file)
-  {
-    // Nothing to do
-  }
-
-  // Note: we use this instead of get_tgt_grid, b/c the nonconst grid
-  //       will give use a not read-only gids field, so we can pass
-  //       pointers to MPI_Bcast (which needs pointer to nonconst)
-  std::shared_ptr<AbstractGrid> get_coarse_grid () const {
-    return m_coarse_grid;
-  }
-
-  view_1d<int> get_row_offsets () const {
-    return m_row_offsets;
-  }
-  view_1d<int> get_col_lids () const {
-    return m_col_lids;
-  }
-  view_1d<Real> get_weights () const {
-    return m_weights;
-  }
-
-  grid_ptr_type get_ov_tgt_grid () const {
-    return m_ov_coarse_grid;
-  }
-
-  view_2d<int>::HostMirror get_send_f_pid_offsets () const {
-    return cmvdc(m_send_f_pid_offsets);
-  }
-  view_2d<int>::HostMirror get_recv_f_pid_offsets () const {
-    return cmvdc(m_recv_f_pid_offsets);
-  }
-
-  view_1d<int>::HostMirror get_recv_lids_beg () const {
-    return cmvdc(m_recv_lids_beg);
-  }
-  view_1d<int>::HostMirror get_recv_lids_end () const {
-    return cmvdc(m_recv_lids_end);
-  }
-
-  view_2d<int>::HostMirror get_send_lids_pids () const {
-    return cmvdc(m_send_lids_pids );
-  }
-  view_2d<int>::HostMirror get_recv_lids_pidpos () const {
-    return cmvdc(m_recv_lids_pidpos);
-  }
-
-  view_1d<int>::HostMirror get_send_pid_lids_start () const {
-    return cmvdc(m_send_pid_lids_start);
-  }
-};
 
 void root_print (const std::string& msg, const ekat::Comm& comm) {
   if (comm.am_i_root()) {
@@ -83,7 +25,7 @@ build_src_grid(const ekat::Comm& comm, const int ngdofs, int seed)
   std::vector<gid_type> all_dofs (ngdofs);
   std::mt19937_64 engine(seed);
   if (comm.am_i_root()) {
-    std::iota(all_dofs.data(),all_dofs.data()+all_dofs.size(),0);
+    std::iota(all_dofs.data(),all_dofs.data()+all_dofs.size(),1);
     std::shuffle(all_dofs.data(),all_dofs.data()+ngdofs,engine);
   }
   comm.broadcast(all_dofs.data(),ngdofs,comm.root_rank());
@@ -107,30 +49,30 @@ build_src_grid(const ekat::Comm& comm, const int ngdofs, int seed)
 constexpr int vec_dim = 2;
 constexpr int tens_dim1 = 3;
 constexpr int tens_dim2 = 4;
-Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, const bool midpoints)
+Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, const FieldTag vtag)
 {
-  const auto u = ekat::units::Units::nondimensional();
+  using namespace ShortFieldTagsNames;
   const auto& gn = grid.name();
   Field f;
   switch (lt) {
     case LayoutType::Scalar1D:
-      f = Field(FieldIdentifier(name,grid.get_vertical_layout(midpoints),u,gn)); break;
+      f = Field(FieldIdentifier(name,grid.get_vertical_layout(vtag),ekat::units::none,gn)); break;
     case LayoutType::Scalar2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),ekat::units::none,gn));  break;
     case LayoutType::Vector2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(vec_dim),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(vec_dim),ekat::units::none,gn));  break;
     case LayoutType::Tensor2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_tensor_layout({tens_dim1,tens_dim2}),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_tensor_layout({tens_dim1,tens_dim2}),ekat::units::none,gn));  break;
     case LayoutType::Scalar3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(midpoints),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(vtag),ekat::units::none,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     case LayoutType::Vector3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(midpoints,vec_dim),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(vtag,vec_dim),ekat::units::none,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     case LayoutType::Tensor3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_tensor_layout(midpoints,{tens_dim1,tens_dim2}),u,gn));
+      f = Field(FieldIdentifier(name,grid.get_3d_tensor_layout(vtag,{tens_dim1,tens_dim2}),ekat::units::none,gn));
       f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       break;
     default:
@@ -141,8 +83,8 @@ Field create_field (const std::string& name, const LayoutType lt, const Abstract
   return f;
 }
 
-Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, const bool midpoints, int seed) {
-  auto f = create_field(name,lt,grid,midpoints);
+Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, const FieldTag vtag, int seed) {
+  auto f = create_field(name,lt,grid,vtag);
 
   // Use discrete_distribution to get an integer, then use that as exponent for 2^-n.
   // This guarantees numbers that are exactly represented as FP numbers, which ensures
@@ -217,6 +159,7 @@ Field all_gather_field_impl (const Field& f, const ekat::Comm& comm) {
       std::copy(data,data+col_size,gdata);
     }
   }
+  gf.sync_to_dev();
   return gf;
 }
 
@@ -249,11 +192,12 @@ void create_remap_file(const std::string& filename, const int ngdofs_tgt)
 
   std::vector<int> col(nnz), row(nnz);
   std::vector<double> S(nnz,0.5);
+  const int gid_base = 1;
   for (int i=0; i<ngdofs_tgt; ++i) {
-    row[2*i] = i;
-    row[2*i+1] = i;
-    col[2*i] = i;
-    col[2*i+1] = i+1;
+    row[2*i]   = gid_base + i;
+    row[2*i+1] = gid_base + i;
+    col[2*i]   = gid_base + i;
+    col[2*i+1] = gid_base + i+1;
   }
 
   scorpio::write_var(filename,"row",row.data());
@@ -265,6 +209,7 @@ void create_remap_file(const std::string& filename, const int ngdofs_tgt)
 
 TEST_CASE("coarsening_remap")
 {
+  using namespace ShortFieldTagsNames;
   auto& catch_capture = Catch::getResultCapture();
 
   // This is a simple test to just make sure the coarsening remapper works
@@ -291,7 +236,7 @@ TEST_CASE("coarsening_remap")
 
   std::string filename = "cr_tests_map." + std::to_string(comm.size()) + ".nc";
 
-  const int nldofs_tgt = 2;
+  const int nldofs_tgt = 3;
   const int ngdofs_tgt = nldofs_tgt*comm.size();
   create_remap_file(filename, ngdofs_tgt);
 
@@ -301,7 +246,7 @@ TEST_CASE("coarsening_remap")
 
   const int ngdofs_src = ngdofs_tgt+1;
   auto src_grid = build_src_grid(comm, ngdofs_src, seed);
-  auto remap = std::make_shared<CoarseningRemapperTester>(src_grid,filename);
+  auto remap = std::make_shared<HorizontalRemapper>(src_grid,filename);
 
   // -------------------------------------- //
   //      Create src/tgt grid fields        //
@@ -309,29 +254,29 @@ TEST_CASE("coarsening_remap")
 
   // The other test checks remapping for fields of multiple dimensions.
   // Here we will simplify and just remap a simple 2D horizontal field.
-  auto tgt_grid = remap->get_coarse_grid();
+  auto tgt_grid = remap->get_tgt_grid();
 
-  auto src_s1d   = create_field("s1d",  LayoutType::Scalar1D, *src_grid, true,  seed+1);
-  auto src_s2d   = create_field("s2d",  LayoutType::Scalar2D, *src_grid, false, seed+2);
-  auto src_v2d   = create_field("v2d",  LayoutType::Vector2D, *src_grid, false, seed+3);
-  auto src_t2d   = create_field("t2d",  LayoutType::Tensor2D, *src_grid, false, seed+4);
-  auto src_s3d_m = create_field("s3d_m",LayoutType::Scalar3D, *src_grid, true,  seed+5);
-  auto src_s3d_i = create_field("s3d_i",LayoutType::Scalar3D, *src_grid, false, seed+6);
-  auto src_v3d_m = create_field("v3d_m",LayoutType::Vector3D, *src_grid, true,  seed+7);
-  auto src_v3d_i = create_field("v3d_i",LayoutType::Vector3D, *src_grid, false, seed+8);
-  auto src_t3d_m = create_field("t3d_m",LayoutType::Tensor3D, *src_grid, true,  seed+9);
-  auto src_t3d_i = create_field("t3d_i",LayoutType::Tensor3D, *src_grid, false, seed+10);
+  auto src_s1d   = create_field("s1d",  LayoutType::Scalar1D, *src_grid, LEV,  seed+1);
+  auto src_s2d   = create_field("s2d",  LayoutType::Scalar2D, *src_grid, ILEV, seed+2);
+  auto src_v2d   = create_field("v2d",  LayoutType::Vector2D, *src_grid, ILEV, seed+3);
+  auto src_t2d   = create_field("t2d",  LayoutType::Tensor2D, *src_grid, ILEV, seed+4);
+  auto src_s3d_m = create_field("s3d_m",LayoutType::Scalar3D, *src_grid, LEV,  seed+5);
+  auto src_s3d_i = create_field("s3d_i",LayoutType::Scalar3D, *src_grid, ILEV, seed+6);
+  auto src_v3d_m = create_field("v3d_m",LayoutType::Vector3D, *src_grid, LEV,  seed+7);
+  auto src_v3d_i = create_field("v3d_i",LayoutType::Vector3D, *src_grid, ILEV, seed+8);
+  auto src_t3d_m = create_field("t3d_m",LayoutType::Tensor3D, *src_grid, LEV,  seed+9);
+  auto src_t3d_i = create_field("t3d_i",LayoutType::Tensor3D, *src_grid, ILEV, seed+10);
 
-  auto tgt_s1d   = create_field("s1d",  LayoutType::Scalar1D, *tgt_grid, true);
-  auto tgt_s2d   = create_field("s2d",  LayoutType::Scalar2D, *tgt_grid, false);
-  auto tgt_v2d   = create_field("v2d",  LayoutType::Vector2D, *tgt_grid, false);
-  auto tgt_t2d   = create_field("t2d",  LayoutType::Tensor2D, *tgt_grid, false);
-  auto tgt_s3d_m = create_field("s3d_m",LayoutType::Scalar3D, *tgt_grid, true );
-  auto tgt_s3d_i = create_field("s3d_i",LayoutType::Scalar3D, *tgt_grid, false);
-  auto tgt_v3d_m = create_field("v3d_m",LayoutType::Vector3D, *tgt_grid, true );
-  auto tgt_v3d_i = create_field("v3d_i",LayoutType::Vector3D, *tgt_grid, false);
-  auto tgt_t3d_m = create_field("t3d_m",LayoutType::Tensor3D, *tgt_grid, true );
-  auto tgt_t3d_i = create_field("t3d_i",LayoutType::Tensor3D, *tgt_grid, false);
+  auto tgt_s1d   = create_field("s1d",  LayoutType::Scalar1D, *tgt_grid, LEV);
+  auto tgt_s2d   = create_field("s2d",  LayoutType::Scalar2D, *tgt_grid, ILEV);
+  auto tgt_v2d   = create_field("v2d",  LayoutType::Vector2D, *tgt_grid, ILEV);
+  auto tgt_t2d   = create_field("t2d",  LayoutType::Tensor2D, *tgt_grid, ILEV);
+  auto tgt_s3d_m = create_field("s3d_m",LayoutType::Scalar3D, *tgt_grid, LEV );
+  auto tgt_s3d_i = create_field("s3d_i",LayoutType::Scalar3D, *tgt_grid, ILEV);
+  auto tgt_v3d_m = create_field("v3d_m",LayoutType::Vector3D, *tgt_grid, LEV );
+  auto tgt_v3d_i = create_field("v3d_i",LayoutType::Vector3D, *tgt_grid, ILEV);
+  auto tgt_t3d_m = create_field("t3d_m",LayoutType::Tensor3D, *tgt_grid, LEV );
+  auto tgt_t3d_i = create_field("t3d_i",LayoutType::Tensor3D, *tgt_grid, ILEV);
 
   std::vector<Field> src_f = {src_s1d,src_s2d,src_v2d,src_t2d,src_s3d_m,src_s3d_i,src_v3d_m,src_v3d_i,src_t3d_m,src_t3d_i};
   std::vector<Field> tgt_f = {tgt_s1d,tgt_s2d,tgt_v2d,tgt_t2d,tgt_s3d_m,tgt_s3d_i,tgt_v3d_m,tgt_v3d_i,tgt_t3d_m,tgt_t3d_i};
@@ -350,8 +295,8 @@ TEST_CASE("coarsening_remap")
   // -------------------------------------- //
 
   Real w = 0.5;
-  auto gids_tgt = all_gather_field(tgt_grid->get_dofs_gids(),comm);
-  auto gids_src = all_gather_field(src_grid->get_dofs_gids(),comm);
+  auto gids_tgt = all_gather_field(tgt_grid->get_dofs_gids().clone(),comm); // Need clone to be able to extract writable
+  auto gids_src = all_gather_field(src_grid->get_dofs_gids().clone(),comm); // pointers to pass to MPI's broadcast
   auto gids_src_v = gids_src.get_view<const AbstractGrid::gid_type*,Host>();
   auto gids_tgt_v = gids_tgt.get_view<const AbstractGrid::gid_type*,Host>();
 
@@ -360,7 +305,8 @@ TEST_CASE("coarsening_remap")
     auto it = std::find(data,data+gids_v.size(),gid);
     return std::distance(data,it);
   };
-  for (int irun=0; irun<5; ++irun) {
+  constexpr int nruns = 5;
+  for (int irun=0; irun<nruns; ++irun) {
     root_print (" -> Run " + std::to_string(irun) + "\n",comm);
     remap->remap_fwd();
 

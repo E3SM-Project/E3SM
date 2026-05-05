@@ -163,11 +163,11 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid)
   // Create a fm
   auto fm = std::make_shared<FieldManager>(grid);
 
-  auto scalar_1d = grid->get_vertical_layout(true);
+  auto scalar_1d = grid->get_vertical_layout(LEV);
   auto scalar_2d = grid->get_2d_scalar_layout();
-  auto scalar_3d = grid->get_3d_scalar_layout(true);
-  auto vector_3d = grid->get_3d_vector_layout(true,2);
-  auto rad_vector_3d = grid->get_3d_vector_layout(true,3,"SWBND");
+  auto scalar_3d = grid->get_3d_scalar_layout(LEV);
+  auto vector_3d = grid->get_3d_vector_layout(LEV,2);
+  auto rad_vector_3d = grid->get_3d_vector_layout(LEV,3,"SWBND");
 
   const std::string& gn = grid->name();
 

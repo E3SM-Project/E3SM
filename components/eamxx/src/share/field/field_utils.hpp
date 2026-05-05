@@ -46,14 +46,24 @@ void perturb (Field& f,
               const Field& level_mask,
               const Field& dof_gids = Field());
 
-// Vertical/horizontal contractions of field (possibly averaging)
-void vert_contraction (const Field& f_out, const Field& f_in, const Field& weight, bool AVG = false);
-void horiz_contraction(const Field& f_out, const Field& f_in, const Field& weight, bool AVG = true,
-                       const ekat::Comm* comm = nullptr, const Field& f_tmp = Field());
+// Vertical/horizontal contractions of field.
+// Computes a weighted sum of f_in along the contracted dimension:
+//   f_out[j] = sum_i( weight[i] * f_in[i,j])
+// or
+//   f_out[j] = sum_i( weight[i] * f_in[i,j] * mask[i,j] )
+// where mask = f_in.get_valid_mask() (IntType, 0=invalid) if present.
+// Here, the weight is ASSUMED to be:
+//  - a 1d (ncol) field for horiz_contraction
+//  - either a 1d (nlev) or 2d (ncol,nlev) field for vert_contraction
+// For horiz, the overload with comm also performs an all_reduce across ranks
+void vert_contraction (const Field& f_out, const Field& f_in, const Field& weight);
+void horiz_contraction(const Field& f_out, const Field& f_in, const Field& weight);
+void horiz_contraction(const Field& f_out, const Field& f_in, const Field& weight, const ekat::Comm& comm);
 
 // Reduce field to a single scalar, and return an opaque type, to allow hiding impl in cpp file.
 // NOTE: all calculations are done serially HOST
 ScalarWrapper frobenius_norm(const Field& f, const ekat::Comm* comm = nullptr);
+ScalarWrapper inf_norm(const Field& f, const ekat::Comm* comm = nullptr);
 ScalarWrapper field_sum(const Field& f, const ekat::Comm* comm = nullptr);
 ScalarWrapper field_max(const Field& f, const ekat::Comm* comm = nullptr);
 ScalarWrapper field_min(const Field& f, const ekat::Comm* comm = nullptr);
@@ -70,6 +80,7 @@ void print_field_hyperslab (const Field& f,
 // Compute where input field comparese correctly to given value
 void compute_mask (const Field& x, const ScalarWrapper value, Comparison CMP, Field& mask);
 Field compute_mask (const Field& x, const ScalarWrapper value, Comparison CMP);
+void compute_mask (const Field& lhs, const Field& rhs, Comparison CMP, Field& mask);
 
 // Transpose a field layout
 void transpose (const Field& src, Field& tgt);

@@ -16,10 +16,10 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 ::compute_rain_fall_velocity(
   const view_2d_table& vn_table_vals, const view_2d_table& vm_table_vals,
-  const Spack& qr_incld, const Spack& rhofacr,
-  Spack& nr_incld, Spack& mu_r, Spack& lamr, Spack& V_qr, Spack& V_nr,
+  const Pack& qr_incld, const Pack& rhofacr,
+  Pack& nr_incld, Pack& mu_r, Pack& lamr, Pack& V_qr, Pack& V_nr,
   const P3Runtime& runtime_options,
-  const Smask& context)
+  const Mask& context)
 {
   Table3 table;
   get_rain_dsd2(qr_incld, nr_incld, mu_r, lamr, runtime_options, context);
@@ -37,34 +37,34 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::rain_sedimentation(
-  const uview_1d<const Spack>& rho,
-  const uview_1d<const Spack>& inv_rho,
-  const uview_1d<const Spack>& rhofacr,
-  const uview_1d<const Spack>& cld_frac_r,
-  const uview_1d<const Spack>& inv_dz,
-  const uview_1d<Spack>& qr_incld,
+  const uview_1d<const Pack>& rho,
+  const uview_1d<const Pack>& inv_rho,
+  const uview_1d<const Pack>& rhofacr,
+  const uview_1d<const Pack>& cld_frac_r,
+  const uview_1d<const Pack>& inv_dz,
+  const uview_1d<Pack>& qr_incld,
   const MemberType& team,
   const Workspace& workspace,
   const view_2d_table& vn_table_vals, const view_2d_table& vm_table_vals,
   const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& inv_dt,
-  const uview_1d<Spack>& qr,
-  const uview_1d<Spack>& nr,
-  const uview_1d<Spack>& nr_incld,
-  const uview_1d<Spack>& mu_r,
-  const uview_1d<Spack>& lamr,
-  const uview_1d<Spack>& precip_liq_flux,
-  const uview_1d<Spack>& qr_tend,
-  const uview_1d<Spack>& nr_tend,
+  const uview_1d<Pack>& qr,
+  const uview_1d<Pack>& nr,
+  const uview_1d<Pack>& nr_incld,
+  const uview_1d<Pack>& mu_r,
+  const uview_1d<Pack>& lamr,
+  const uview_1d<Pack>& precip_liq_flux,
+  const uview_1d<Pack>& qr_tend,
+  const uview_1d<Pack>& nr_tend,
   Scalar& precip_liq_surf,
   const P3Runtime& runtime_options)
 {
   // Get temporary workspaces needed for the ice-sed calculation
-  uview_1d<Spack> V_qr, V_nr, flux_qx, flux_nx;
+  uview_1d<Pack> V_qr, V_nr, flux_qx, flux_nx;
   workspace.template take_many_contiguous_unsafe<4>(
     {"V_qr", "V_nr", "flux_qx", "flux_nx"},
     {&V_qr, &V_nr, &flux_qx, &flux_nx});
 
-  const view_1d_ptr_array<Spack, 2>
+  const view_1d_ptr_array<Pack, 2>
     fluxes_ptr = {&flux_qx, &flux_nx},
     vs_ptr     = {&V_qr, &V_nr},
     qnr_ptr    = {&qr, &nr};
@@ -98,14 +98,14 @@ void Functions<S,D>
       team.team_barrier();
 
       // Convert top/bot to pack indices
-      ekat::impl::set_min_max(k_qxbot, k_qxtop, kmin, kmax, Spack::n);
+      ekat::impl::set_min_max(k_qxbot, k_qxtop, kmin, kmax, Pack::n);
 
       // compute Vq, Vn (get values from lookup table)
       Kokkos::parallel_reduce(
        Kokkos::TeamVectorRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
 
         const int pk = kmin + pk_;
-        const auto range_pack = ekat::range<IntSmallPack>(pk*Spack::n);
+        const auto range_pack = ekat::range<IntPack>(pk*Pack::n);
         const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
         const auto qr_gt_small = range_mask && qr_incld(pk) > qsmall;
         if (qr_gt_small.any()) {
@@ -139,11 +139,11 @@ void Functions<S,D>
       // AaronDonahue, precip_liq_flux output
       kmin_scalar = ( kdir == 1 ? k_qxbot+1 : k_qxtop+1);
       kmax_scalar = ( kdir == 1 ? k_qxtop+1 : k_qxbot+1);
-      ekat::impl::set_min_max(kmin_scalar, kmax_scalar, kmin, kmax, Spack::n);
+      ekat::impl::set_min_max(kmin_scalar, kmax_scalar, kmin, kmax, Pack::n);
       Kokkos::parallel_for(
        Kokkos::TeamVectorRange(team, kmax-kmin+1), [&] (int pk_) {
         const int pk = kmin + pk_;
-        const auto range_pack = ekat::range<IntSmallPack>(pk*Spack::n);
+        const auto range_pack = ekat::range<IntPack>(pk*Pack::n);
         const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
         auto index_pack = range_pack-1;
         const auto lt_zero = index_pack < 0;
@@ -158,7 +158,7 @@ void Functions<S,D>
       });
   }
 
-  const Int nk_pack = ekat::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Pack>(nk);
   Kokkos::parallel_for(
    Kokkos::TeamVectorRange(team, nk_pack), [&] (int pk) {
     qr_tend(pk) = (qr(pk) - qr_tend(pk)) * inv_dt; // Rain sedimentation tendency, measure

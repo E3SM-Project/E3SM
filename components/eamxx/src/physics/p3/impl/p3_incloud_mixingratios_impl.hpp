@@ -10,12 +10,12 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::calculate_incloud_mixingratios(
-  const Spack& qc, const Spack& qr, const Spack& qi, const Spack& qm, const Spack& nc,
-  const Spack& nr, const Spack& ni, const Spack& bm, const Spack& inv_cld_frac_l,
-  const Spack& inv_cld_frac_i, const Spack& inv_cld_frac_r,
-  Spack& qc_incld, Spack& qr_incld, Spack& qi_incld, Spack& qm_incld,
-  Spack& nc_incld, Spack& nr_incld, Spack& ni_incld, Spack& bm_incld,
-  const Smask& context)
+  const Pack& qc, const Pack& qr, const Pack& qi, const Pack& qm, const Pack& nc,
+  const Pack& nr, const Pack& ni, const Pack& bm, const Pack& inv_cld_frac_l,
+  const Pack& inv_cld_frac_i, const Pack& inv_cld_frac_r,
+  Pack& qc_incld, Pack& qr_incld, Pack& qi_incld, Pack& qm_incld,
+  Pack& nc_incld, Pack& nr_incld, Pack& ni_incld, Pack& bm_incld,
+  const Mask& context)
 {
    constexpr Scalar qsmall = C::QSMALL;
    constexpr Scalar incloud_limit = C::incloud_limit;

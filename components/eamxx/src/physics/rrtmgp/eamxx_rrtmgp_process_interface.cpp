@@ -87,10 +87,10 @@ void RRTMGPRadiation::create_requests() {
 
   using namespace ekat::units;
   using namespace ekat::prefixes;
+  using namespace ShortFieldTagsNames;
 
   // Declare the set of fields used by rrtmgp
-  Units m2(m*m,"m2");
-  auto nondim = Units::nondimensional();
+  auto m2 = (m*m).rename("m2");
   auto micron = micro*m;
 
   m_grid = m_grids_manager->get_grid("physics");
@@ -130,25 +130,25 @@ void RRTMGPRadiation::create_requests() {
   m_nswgpts = m_params.get<int>("nswgpts",112);
   m_nlwgpts = m_params.get<int>("nlwgpts",128);
   FieldLayout scalar2d = m_grid->get_2d_scalar_layout();
-  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
-  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(false);
-  FieldLayout scalar3d_swband = m_grid->get_3d_vector_layout(true,m_nswbands,"swband");
-  FieldLayout scalar3d_lwband = m_grid->get_3d_vector_layout(true,m_nlwbands,"lwband");
-  FieldLayout scalar3d_swgpts = m_grid->get_3d_vector_layout(true,m_nswgpts,"swgpt");
-  FieldLayout scalar3d_lwgpts = m_grid->get_3d_vector_layout(true,m_nlwgpts,"lwgpt");
+  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(LEV);
+  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(ILEV);
+  FieldLayout scalar3d_swband = m_grid->get_3d_vector_layout(LEV,m_nswbands,"swband");
+  FieldLayout scalar3d_lwband = m_grid->get_3d_vector_layout(LEV,m_nlwbands,"lwband");
+  FieldLayout scalar3d_swgpts = m_grid->get_3d_vector_layout(LEV,m_nswgpts,"swgpt");
+  FieldLayout scalar3d_lwgpts = m_grid->get_3d_vector_layout(LEV,m_nlwgpts,"lwgpt");
 
   // Set required (input) fields here
   add_field<Required>("p_mid" , scalar3d_mid, Pa, grid_name);
   add_field<Required>("p_int", scalar3d_int, Pa, grid_name);
   add_field<Required>("pseudo_density", scalar3d_mid, Pa, grid_name);
-  add_field<Required>("sfc_alb_dir_vis", scalar2d, nondim, grid_name);
-  add_field<Required>("sfc_alb_dir_nir", scalar2d, nondim, grid_name);
-  add_field<Required>("sfc_alb_dif_vis", scalar2d, nondim, grid_name);
-  add_field<Required>("sfc_alb_dif_nir", scalar2d, nondim, grid_name);
+  add_field<Required>("sfc_alb_dir_vis", scalar2d, none, grid_name);
+  add_field<Required>("sfc_alb_dir_nir", scalar2d, none, grid_name);
+  add_field<Required>("sfc_alb_dif_vis", scalar2d, none, grid_name);
+  add_field<Required>("sfc_alb_dif_nir", scalar2d, none, grid_name);
   add_field<Required>("qc", scalar3d_mid, kg/kg, grid_name);
   add_field<Required>("nc", scalar3d_mid, 1/kg, grid_name);
   add_field<Required>("qi", scalar3d_mid, kg/kg, grid_name);
-  add_field<Required>("cldfrac_tot", scalar3d_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_tot", scalar3d_mid, none, grid_name);
   add_field<Required>("eff_radius_qc", scalar3d_mid, micron, grid_name);
   add_field<Required>("eff_radius_qi", scalar3d_mid, micron, grid_name);
   add_field<Required>("qv",scalar3d_mid,kg/kg,grid_name);
@@ -168,10 +168,10 @@ void RRTMGPRadiation::create_requests() {
   // Required aerosol optical properties from SPA
   m_do_aerosol_rad = m_params.get<bool>("do_aerosol_rad",true);
   if (m_do_aerosol_rad) {
-    add_field<Required>("aero_tau_sw", scalar3d_swband, nondim, grid_name);
-    add_field<Required>("aero_ssa_sw", scalar3d_swband, nondim, grid_name);
-    add_field<Required>("aero_g_sw"  , scalar3d_swband, nondim, grid_name);
-    add_field<Required>("aero_tau_lw", scalar3d_lwband, nondim, grid_name);
+    add_field<Required>("aero_tau_sw", scalar3d_swband, none, grid_name);
+    add_field<Required>("aero_ssa_sw", scalar3d_swband, none, grid_name);
+    add_field<Required>("aero_g_sw"  , scalar3d_swband, none, grid_name);
+    add_field<Required>("aero_tau_lw", scalar3d_lwband, none, grid_name);
   }
 
   // Whether we do extra clean/clear sky calculations
@@ -202,21 +202,21 @@ void RRTMGPRadiation::create_requests() {
   add_field<Computed>("LW_clnsky_flux_dn", scalar3d_int, W/m2, grid_name);
   add_field<Computed>("rad_heating_pdel", scalar3d_mid, Pa*K/s, grid_name);
   // Cloud properties added as computed fields for diagnostic purposes
-  add_field<Computed>("cldlow"        , scalar2d, nondim, grid_name);
-  add_field<Computed>("cldmed"        , scalar2d, nondim, grid_name);
-  add_field<Computed>("cldhgh"        , scalar2d, nondim, grid_name);
-  add_field<Computed>("cldtot"        , scalar2d, nondim, grid_name);
+  add_field<Computed>("cldlow"        , scalar2d, none, grid_name);
+  add_field<Computed>("cldmed"        , scalar2d, none, grid_name);
+  add_field<Computed>("cldhgh"        , scalar2d, none, grid_name);
+  add_field<Computed>("cldtot"        , scalar2d, none, grid_name);
   // 0.67 micron and 10.5 micron optical depth (needed for COSP)
-  add_field<Computed>("dtau067"       , scalar3d_mid, nondim, grid_name);
-  add_field<Computed>("dtau105"       , scalar3d_mid, nondim, grid_name);
-  add_field<Computed>("sunlit_mask"   , scalar2d    , nondim, grid_name);
-  add_field<Computed>("cldfrac_rad"   , scalar3d_mid, nondim, grid_name);
+  add_field<Computed>("dtau067"       , scalar3d_mid, none, grid_name);
+  add_field<Computed>("dtau105"       , scalar3d_mid, none, grid_name);
+  add_field<Computed>(FieldIdentifier("sunlit_mask", scalar2d, none, grid_name, DataType::IntType));
+  add_field<Computed>("cldfrac_rad"   , scalar3d_mid, none, grid_name);
   // Cloud-top diagnostics following AeroCom recommendation
   add_field<Computed>("T_mid_at_cldtop", scalar2d, K, grid_name);
   add_field<Computed>("p_mid_at_cldtop", scalar2d, Pa, grid_name);
-  add_field<Computed>("cldfrac_ice_at_cldtop", scalar2d, nondim, grid_name);
-  add_field<Computed>("cldfrac_liq_at_cldtop", scalar2d, nondim, grid_name);
-  add_field<Computed>("cldfrac_tot_at_cldtop", scalar2d, nondim, grid_name);
+  add_field<Computed>("cldfrac_ice_at_cldtop", scalar2d, none, grid_name);
+  add_field<Computed>("cldfrac_liq_at_cldtop", scalar2d, none, grid_name);
+  add_field<Computed>("cldfrac_tot_at_cldtop", scalar2d, none, grid_name);
   add_field<Computed>("cdnc_at_cldtop", scalar2d, 1 / (m * m * m), grid_name);
   add_field<Computed>("eff_radius_qc_at_cldtop", scalar2d, micron, grid_name);
   add_field<Computed>("eff_radius_qi_at_cldtop", scalar2d, micron, grid_name);
@@ -248,7 +248,7 @@ void RRTMGPRadiation::create_requests() {
   }
 
   // Working fields that we also want for diagnostic output
-  add_field<Computed>("cosine_solar_zenith_angle", scalar2d, nondim, grid_name);
+  add_field<Computed>("cosine_solar_zenith_angle", scalar2d, none, grid_name);
 
   // Load bands bounds from coefficients files and compute the band centerpoint.
   // Store both in the grid (if not already present)
@@ -612,7 +612,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   // Outputs for COSP
   auto d_dtau067 = get_field_out("dtau067").get_view<Real**>();
   auto d_dtau105 = get_field_out("dtau105").get_view<Real**>();
-  auto d_sunlit = get_field_out("sunlit_mask").get_view<Real*>();
+  auto d_sunlit = get_field_out("sunlit_mask").get_view<int*>();
 
   Kokkos::deep_copy(d_dtau067,0.0);
   Kokkos::deep_copy(d_dtau105,0.0);
@@ -1154,11 +1154,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
           d_dtau067(icol,k) = cld_tau_sw_bnd_k(i,k,idx_067_k);
           d_dtau105(icol,k) = cld_tau_lw_bnd_k(i,k,idx_105_k);
         });
-        if (d_sw_clrsky_flux_dn(icol,0) > 0) {
-            d_sunlit(icol) = 1.0;
-        } else {
-            d_sunlit(icol) = 0.0;
-        }
+        d_sunlit(icol) = d_sw_clrsky_flux_dn(icol,0) > 0;
       });
                    );
     } // loop over chunk

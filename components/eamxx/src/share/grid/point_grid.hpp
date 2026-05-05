@@ -49,10 +49,10 @@ public:
                                     const std::string& vec_dim_name) const override;
   FieldLayout get_2d_tensor_layout (const std::vector<int>& cmp_dims,
                                     const std::vector<std::string>& cmp_names) const override;
-  FieldLayout get_3d_scalar_layout (const bool midpoints) const override;
-  FieldLayout get_3d_vector_layout (const bool midpoints, const int vector_dim,
+  FieldLayout get_3d_scalar_layout (const FieldTag vtag) const override;
+  FieldLayout get_3d_vector_layout (const FieldTag vtag, const int vector_dim,
                                     const std::string& vec_dim_name) const override;
-  FieldLayout get_3d_tensor_layout (const bool midpoints,
+  FieldLayout get_3d_tensor_layout (const FieldTag vtag,
                                     const std::vector<int>& cmp_dims,
                                     const std::vector<std::string>& cmp_names) const override;
 

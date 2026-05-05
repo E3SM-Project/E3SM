@@ -107,7 +107,10 @@ protected:
   std::shared_ptr<AtmosphereInput> m_reader;
 
   std::shared_ptr<const AbstractGrid> m_model_grid;
-  std::shared_ptr<AbstractGrid>       m_grid_after_hremap; // nonconst b/c we may need to set some geo data
+
+  // The following are nonconst, since we may need to modify a few things
+  std::shared_ptr<AbstractGrid>       m_data_grid;
+  std::shared_ptr<AbstractGrid>       m_grid_after_hremap;
 
   std::vector<Field>                  m_fields;
 

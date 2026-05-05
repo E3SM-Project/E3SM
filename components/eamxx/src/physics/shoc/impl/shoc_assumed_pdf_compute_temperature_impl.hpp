@@ -16,9 +16,9 @@ namespace shoc {
 template<typename S, typename D>
 KOKKOS_INLINE_FUNCTION
 void Functions<S,D>::shoc_assumed_pdf_compute_temperature(
-  const Spack& thl1,
-  const Spack& pval,
-  Spack&       Tl1)
+  const Pack& thl1,
+  const Pack& pval,
+  Pack&       Tl1)
 {
   constexpr Scalar basepres = C::P0.value;
   constexpr Scalar rair     = C::Rair.value;

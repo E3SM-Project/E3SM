@@ -33,7 +33,32 @@ set_extra_data (const std::string& key,
 }
 
 std::shared_ptr<FieldHeader> FieldHeader::alias(const std::string& name) const {
-  auto fh = std::make_shared<FieldHeader>(get_identifier().alias(name));
+  return alias(name,m_identifier.get_grid_name());
+}
+std::shared_ptr<FieldHeader> FieldHeader::alias(const std::string& name, const std::string& grid_name) const {
+  auto fid = get_identifier().clone(name).reset_grid(grid_name);
+  auto fh = std::make_shared<FieldHeader>(fid);
+  if (get_parent() != nullptr) {
+    // If we're aliasing, we MUST keep track of the parent
+    fh->create_parent_child_link(get_parent());
+  }
+  fh->m_tracking = m_tracking;
+  fh->m_alloc_prop = m_alloc_prop;
+  fh->m_extra_data = m_extra_data;
+  return fh;
+}
+
+std::shared_ptr<FieldHeader> FieldHeader::alias(const std::string& name, const std::map<FieldTag,std::string>& tag_names) const {
+  return alias(name, m_identifier.get_grid_name(), tag_names);
+}
+
+std::shared_ptr<FieldHeader> FieldHeader::alias(const std::string& name, const std::string& grid_name, const std::map<FieldTag,std::string>& tag_names) const {
+  auto layout = get_identifier().get_layout().clone();
+  layout.rename_dims(tag_names);
+  auto fid = get_identifier().clone(name);
+  fid.reset_grid(grid_name);
+  fid.reset_layout(layout);
+  auto fh = std::make_shared<FieldHeader>(fid);
   if (get_parent() != nullptr) {
     // If we're aliasing, we MUST keep track of the parent
     fh->create_parent_child_link(get_parent());

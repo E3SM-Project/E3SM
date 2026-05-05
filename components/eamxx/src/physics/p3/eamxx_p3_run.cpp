@@ -12,7 +12,7 @@ void P3Microphysics::run_impl (const double dt)
   p3_postproc.m_dt = dt;
 
   // Create policy for pre and post process pfor
-  const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);
+  const auto nlev_packs  = ekat::npack<Pack>(m_num_levs);
   const auto policy = TPF::get_default_team_policy(m_num_cols, nlev_packs);
 
   // Assign values to local arrays used by P3, these are now stored in p3_loc.

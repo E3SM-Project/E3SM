@@ -21,8 +21,8 @@ class ZMDeepConvection : public AtmosphereProcess
   using PC  = scream::physics::Constants<Real>;
 
   using Scalar               = typename ZMF::Scalar;
-  using Spack                = typename ZMF::Spack;
-  using SPackInt             = typename ZMF::SPackInt;
+  using Pack                = typename ZMF::Pack;
+  using IntPack             = typename ZMF::IntPack;
 
   public:
 

@@ -22,8 +22,8 @@ namespace scream
 class TurbulentMountainStress : public AtmosphereProcess
 {
   using TMSFunctions = tms::Functions<Real, DefaultDevice>;
-  using Spack        = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-  using view_2d      = TMSFunctions::view_2d<Spack>;
+  using Pack         = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+  using view_2d      = TMSFunctions::view_2d<Pack>;
   using uview_2d     = ekat::Unmanaged<view_2d>;
 
 public:

@@ -333,14 +333,13 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid, const util::TimeStamp& 
 
   auto fm = std::make_shared<FieldManager>(grid,RepoState::Closed);
 
-  const auto units = ekat::units::Units::nondimensional();
   std::vector<Real> values;
   for (int i=1; i<=100; ++i)
     values.push_back(static_cast<Real>(i));
   for (const auto& fl : layouts) {
     int gl_size = fl.size();
     grid->get_comm().all_reduce(&gl_size,1,MPI_SUM);
-    FID fid("f_"+std::to_string(gl_size),fl,units,grid->name());
+    FID fid("f_"+std::to_string(gl_size),fl,ekat::units::none,grid->name());
     Field f(fid);
     f.allocate_view();
     randomize_discrete (f,seed++,values);

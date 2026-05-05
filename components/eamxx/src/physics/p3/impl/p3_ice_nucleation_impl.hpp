@@ -10,11 +10,11 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_nucleation(
-  const Spack& temp, const Spack& inv_rho, const Spack& ni, const Spack& ni_activated,
-  const Spack& qv_supersat_i, const Scalar& inv_dt, const bool& do_predict_nc, const bool& do_prescribed_CCN,
-  Spack& qv2qi_nucleat_tend, Spack& ni_nucleat_tend,
+  const Pack& temp, const Pack& inv_rho, const Pack& ni, const Pack& ni_activated,
+  const Pack& qv_supersat_i, const Scalar& inv_dt, const bool& do_predict_nc, const bool& do_prescribed_CCN,
+  Pack& qv2qi_nucleat_tend, Pack& ni_nucleat_tend,
   const P3Runtime& runtime_options, 
-  const Smask& context)
+  const Mask& context)
 {
    constexpr Scalar nsmall   = C::NSMALL;
    constexpr Scalar tmelt    = C::Tmelt.value;
@@ -34,7 +34,7 @@ void Functions<S,D>
    const auto any_if_log     = t_lt_T_icenuc && qv_supersat_i_ge_005 && (!do_log) && context;
    const auto any_if_not_log = t_lt_T_icenuc && qv_supersat_i_ge_005 && do_log && context;
 
-   Spack dum{0.0}, N_nuc{0.0}, Q_nuc{0.0};
+   Pack dum{0.0}, N_nuc{0.0}, Q_nuc{0.0};
 
    if (any_if_not_log.any()) {
      dum = sp(0.005)*exp(sp(deposition_nucleation_exponent)*(tmelt-temp))*sp(1.0e3)*inv_rho;

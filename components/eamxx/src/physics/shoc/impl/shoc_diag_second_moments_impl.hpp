@@ -16,14 +16,14 @@ KOKKOS_FUNCTION
 void Functions<S,D>::diag_second_moments(
   const MemberType& team, const Int& nlev, const Int& nlevi,
   const Real& thl2tune, const Real& qw2tune, const Real& qwthl2tune, const Real& w2tune, const bool& shoc_1p5tke,
-  const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind,
-  const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
-  const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
-  const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& shoc_mix,
-  const uview_1d<Spack>& isotropy_zi, const uview_1d<Spack>& tkh_zi, const uview_1d<Spack>& tk_zi,
-  const uview_1d<Spack>& thl_sec, const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& wthl_sec, const uview_1d<Spack>& wqw_sec,
-  const uview_1d<Spack>& qwthl_sec, const uview_1d<Spack>& uw_sec, const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& wtke_sec,
-  const uview_1d<Spack>& w_sec)
+  const uview_1d<const Pack>& thetal, const uview_1d<const Pack>& qw, const uview_1d<const Pack>& u_wind,
+  const uview_1d<const Pack>& v_wind, const uview_1d<const Pack>& tke, const uview_1d<const Pack>& isotropy,
+  const uview_1d<const Pack>& tkh, const uview_1d<const Pack>& tk, const uview_1d<const Pack>& dz_zi,
+  const uview_1d<const Pack>& zt_grid, const uview_1d<const Pack>& zi_grid, const uview_1d<const Pack>& shoc_mix,
+  const uview_1d<Pack>& isotropy_zi, const uview_1d<Pack>& tkh_zi, const uview_1d<Pack>& tk_zi,
+  const uview_1d<Pack>& thl_sec, const uview_1d<Pack>& qw_sec, const uview_1d<Pack>& wthl_sec, const uview_1d<Pack>& wqw_sec,
+  const uview_1d<Pack>& qwthl_sec, const uview_1d<Pack>& uw_sec, const uview_1d<Pack>& vw_sec, const uview_1d<Pack>& wtke_sec,
+  const uview_1d<Pack>& w_sec)
 {
   // Purpose of this subroutine is to diagnose the second
   //  order moments needed for the SHOC parameterization.
@@ -40,7 +40,7 @@ void Functions<S,D>::diag_second_moments(
 
   // Vertical velocity variance is assumed to be propotional to the TKE.
   //  If 1.5 TKE closure is activated then set to zero.
-  const Int nlev_pack = ekat::npack<Spack>(nlev);
+  const Int nlev_pack = ekat::npack<Pack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     w_sec(k) = shoc_1p5tke ? 0 : w2tune*(sp(2.)/sp(3.))*tke(k);
   });
@@ -49,7 +49,7 @@ void Functions<S,D>::diag_second_moments(
   //  set these to zero.  Doing so, in conjuction with setting w3 and w2 (above) to zero
   //  will ensure that SHOC condensation reduces to an all-or-nothing scheme.
   if (shoc_1p5tke){
-    const Int nlevi_pack = ekat::npack<Spack>(nlevi);
+    const Int nlevi_pack = ekat::npack<Pack>(nlevi);
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevi_pack), [&] (const Int& k) {
       thl_sec(k) = 0;
       qw_sec(k) = 0;

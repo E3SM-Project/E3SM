@@ -59,7 +59,8 @@ module ocn_constants
       ocn_ref_salinity      ,&! ocean reference salinity (psu)
       atm_ref_pressure      ,&! standard sea level pressure (Pa)
       molecular_weight_C    ,&! molecular weight carbon
-      molecular_weight_O2     ! molecular weight oxygen
+      molecular_weight_O2   ,&! molecular weight oxygen
+      molecular_weight_Fe     ! molecular weight iron
 
    !  conversion factors
 
@@ -137,6 +138,7 @@ contains
        atm_ref_pressure   = 101325.0_RKIND    ! (Pa)
        molecular_weight_C = 12.0107_RKIND     ! molecular weight carbon
        molecular_weight_O2 = 15.9994_RKIND    ! molecular weight oxygen
+       molecular_weight_Fe = 55.845_RKIND     ! molecular weight iron
 
 
        !-----------------------------------------------------------------------
@@ -176,6 +178,7 @@ contains
        sea_ice_salinity       = SHR_CONST_ICE_REF_SAL   ! psu
        molecular_weight_C     = SHR_CONST_MWC           ! molecular weight carbon
        molecular_weight_O2    = SHR_CONST_MWO           ! molecular weight oxygen
+       molecular_weight_Fe    = SHR_CONST_MWFE          ! molecular weight iron
 #endif
 
 !#ifdef ZERO_SEA_ICE_REF_SAL

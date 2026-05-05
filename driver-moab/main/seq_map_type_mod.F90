@@ -56,7 +56,6 @@ module seq_map_type_mod
      real(R8), pointer       :: clon_d_moab(:)
      real(R8), pointer       :: slat_d_moab(:)
      real(R8), pointer       :: clat_d_moab(:)
-     character(CL)           :: cart3d_init_moab
      !
 
   end type seq_map
@@ -125,7 +124,7 @@ contains
           mapid = m
           if (seq_comm_iamroot(CPLID)) then
              write(logunit,'(A,i6)') subname//' found match ',mapid
-#ifdef MOABCOMP
+#ifdef MOABDEBUG
              write(logunit,'(A,i6)') subname//' strategy '//trim(seq_maps(mapid)%strategy)//&
              ' mapfile '//trim(seq_maps(mapid)%mapfile)
 #endif
@@ -179,13 +178,7 @@ contains
     nullify(mapper%clon_d_moab)
     nullify(mapper%slat_d_moab)
     nullify(mapper%clat_d_moab)
-    mapper%cart3d_init_moab = "undefined"
-#ifdef MOABCOMP
-    if (seq_comm_iamroot(CPLID)) then
-      write(logunit,'(A,i6)') subname//' call init map for mapper with id ',mapper%counter
-      call shr_sys_flush(logunit)
-    endif
-#endif
+    mapper%cart3d_init = "undefined"
 
   end subroutine seq_map_mapinit
 

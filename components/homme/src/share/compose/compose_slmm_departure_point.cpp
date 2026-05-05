@@ -199,7 +199,11 @@ Int unittest (LocalMesh<ko::MachineTraits::HES>& m, const Int tgt_elem,
     nerr += ne;
   }
   {
-    ne = siqk::sqr::test::test_sphere_to_ref(m.p, m.e, m.is_sphere());
+    // Wrap in ConstVec3s/ConstIdxs HostMirror type to avoid HIPSpace/HostSpace
+    // mismatch on APU where HostMirror of HIPSpace stays in HIPSpace.
+    siqk::ConstVec3s::HostMirror p_hm(m.p.data(), m.p.extent(0));
+    siqk::ConstIdxs::HostMirror e_hm(m.e.data(), m.e.extent(0), m.e.extent(1));
+    ne = siqk::sqr::test::test_sphere_to_ref(p_hm, e_hm, m.is_sphere());
     if (ne) pr("slmm::unittest: siqk::sqr::test::test_sphere_to_ref failed");
     nerr += ne;
   }

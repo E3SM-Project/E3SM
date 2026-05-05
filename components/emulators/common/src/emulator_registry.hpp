@@ -6,8 +6,8 @@
  * for creating and retrieving emulator instances by name.
  */
 
-#ifndef EMULATOR_REGISTRY_HPP
-#define EMULATOR_REGISTRY_HPP
+#ifndef E3SM_EMULATOR_REGISTRY_HPP
+#define E3SM_EMULATOR_REGISTRY_HPP
 
 #include <any>
 #include <memory>
@@ -131,6 +131,19 @@ public:
   }
 
   /**
+   * @brief Remove a single named object from the registry.
+   *
+   * Erases the entry, which drops the shared_ptr reference count.
+   * If no other shared_ptrs exist the object is destroyed immediately.
+   *
+   * @param name Name of the instance to remove.
+   * @return true if the entry was found and removed, false otherwise.
+   */
+  bool remove_by_name(const std::string &name) {
+    return m_objects.erase(name) > 0;
+  }
+
+  /**
    * @brief Remove all objects from the registry.
    *
    * Should be called during shutdown to release resources.
@@ -154,4 +167,4 @@ inline void cleanup_emulator_registry() {
 
 } // namespace emulator
 
-#endif // EMULATOR_REGISTRY_HPP
+#endif // E3SM_EMULATOR_REGISTRY_HPP

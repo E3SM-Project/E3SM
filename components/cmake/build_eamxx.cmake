@@ -27,11 +27,17 @@ function(build_eamxx)
     add_compile_definitions ("${CPPDEFS}")
 
     # Include machine file here. Prefer a compiler-specific file.
+    # Machine files in this directory are optional for CIME builds; if none
+    # is found, fall back to common.cmake which sets SCREAM_MACHINE and
+    # includes the EKAT machine file if available.
     set(SCREAM_MACH_FILE_ROOT ${CMAKE_SOURCE_DIR}/eamxx/cmake/machine-files)
     if (EXISTS ${SCREAM_MACH_FILE_ROOT}/${MACH}-${COMPILER}.cmake)
       include(${SCREAM_MACH_FILE_ROOT}/${MACH}-${COMPILER}.cmake)
-    else()
+    elseif (EXISTS ${SCREAM_MACH_FILE_ROOT}/${MACH}.cmake)
       include(${SCREAM_MACH_FILE_ROOT}/${MACH}.cmake)
+    else()
+      include(${SCREAM_MACH_FILE_ROOT}/common.cmake)
+      common_setup()
     endif()
 
     # The machine files may enable kokkos stuff we don't want

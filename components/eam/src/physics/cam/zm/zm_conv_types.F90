@@ -139,9 +139,9 @@ subroutine zm_const_set_for_testing(zm_const)
    zm_const%pi       = 3.14159265358979323846_R8
    zm_const%grav     = 9.80616_r8
    zm_const%rgrav    = 1.0_r8/9.80616_r8
-   zm_const%rdair    = rgas/mwdair
-   zm_const%rh2o     = rgas/mwwv
-   zm_const%zvir     = zm_const%rh2o/zm_const%rdair - 1.0_r8
+   zm_const%rdair    = 287.042_r8 ! Needs to match eamxx const Rair, otherwise rgas/mwdair
+   zm_const%rh2o     = 461.505_r8 ! Needs to match eamxx, otherwise rgas/mwwv
+   zm_const%zvir     = (rgas/mwwv)/zm_const%rdair - 1.0_r8
    zm_const%cpair    = 1.00464e3_r8
    zm_const%cpwv     = 1.810e3_r8
    zm_const%cpliq    = 4.188e3_r8
@@ -207,7 +207,7 @@ subroutine zm_param_set_for_testing(zm_param)
    zm_param%clos_dyn_adj    = .true.
    zm_param%no_deep_pbl     = .false.
    ! ZM micro parameters
-   zm_param%zm_microp       = .true.
+   zm_param%zm_microp       = .false.
    zm_param%old_snow        = .false.
    zm_param%auto_fac        = 7.0D0
    zm_param%accr_fac        = 1.5D0

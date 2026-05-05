@@ -60,7 +60,7 @@ public:
                           const Phys2T* dp = nullptr);
   //   Remap physics state and tendencies to dynamics state and tendencies.
   void run_fv_phys_to_dyn(const int time_idx, const CPhys2T& T, const CPhys3T& uv,
-                          const CPhys3T& q);
+                          const CPhys3T& q, const CPhys2T& Km, const CPhys2T& Kh);
   //   DSS the remapped dynamics tendencies and state. Call this after
   //   run_fv_phys_to_dyn if the dynamics-physics coupler does not already
   //   provide it.

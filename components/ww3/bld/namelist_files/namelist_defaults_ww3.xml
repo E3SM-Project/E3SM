@@ -18,8 +18,8 @@ attributes to express the dependency.
 -->
 <pnt_out_freq>0</pnt_out_freq>
 <grd_out_freq>0</grd_out_freq>
-<fldout>"WND HS FP DP USS"</fldout>
-<fldcou>"USS USP HS FP DP CHA Z0 USTAR2"</fldcou>
+<fldout>"WND HS FP DP USS EF"</fldout>
+<fldcou>"USS USP HS FP DP CHA Z0 USTAR2 EF"</fldcou>
 
 
 </namelist_defaults>

@@ -49,6 +49,7 @@ static Scalar wrap_name(Scalar input) {                                       \
   cuda_wrap_single_arg(expm1, std::expm1)
   cuda_wrap_single_arg(tanh, std::tanh)
   cuda_wrap_single_arg(cos, std::cos)
+  cuda_wrap_single_arg(sin, std::sin)
   cuda_wrap_single_arg(erf, std::erf)
 
 #undef cuda_wrap_single_arg
@@ -143,6 +144,15 @@ Real scream_cos(Real input)
   return CudaWrap<Real, DefaultDevice>::cos(input);
 #else
   return std::cos(input);
+#endif
+}
+
+Real scream_sin(Real input)
+{
+#ifdef EAMXX_ENABLE_GPU
+  return CudaWrap<Real, DefaultDevice>::sin(input);
+#else
+  return std::sin(input);
 #endif
 }
 

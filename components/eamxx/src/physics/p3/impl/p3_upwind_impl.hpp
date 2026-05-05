@@ -16,26 +16,26 @@ template <Int kdir, int nfield>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::calc_first_order_upwind_step (
-  const uview_1d<const Spack>& rho,
-  const uview_1d<const Spack>& inv_rho,
-  const uview_1d<const Spack>& inv_dz,
+  const uview_1d<const Pack>& rho,
+  const uview_1d<const Pack>& inv_rho,
+  const uview_1d<const Pack>& inv_dz,
   const MemberType& team,
   const Int& nk, const Int& k_bot, const Int& k_top, const Scalar& dt_sub,
-  const view_1d_ptr_array<Spack, nfield>& flux,
-  const view_1d_ptr_array<Spack, nfield>& V,
-  const view_1d_ptr_array<Spack, nfield>& r)
+  const view_1d_ptr_array<Pack, nfield>& flux,
+  const view_1d_ptr_array<Pack, nfield>& V,
+  const view_1d_ptr_array<Pack, nfield>& r)
 {
   const Int kmin_scalar = ( kdir == 1 ? k_bot : k_top);
   const Int kmax_scalar = ( kdir == 1 ? k_top : k_bot);
   Int
-    kmin = kmin_scalar / Spack::n,
-    // Add 1 to make [kmin, kmax). But then the extra term (Spack::n -
+    kmin = kmin_scalar / Pack::n,
+    // Add 1 to make [kmin, kmax). But then the extra term (Pack::n -
     // 1) to determine pack index cancels the +1.
-    kmax = (kmax_scalar + Spack::n) / Spack::n;
+    kmax = (kmax_scalar + Pack::n) / Pack::n;
 
   // The following is morally a const var, but there are issues with
   // gnu and std=c++14. The macro ConstExceptGnu is defined in ekat_kokkos_types.hpp.
-  ConstExceptGnu Int k_top_pack = k_top / Spack::n;
+  ConstExceptGnu Int k_top_pack = k_top / Pack::n;
 
   // calculate fluxes
   Kokkos::parallel_for(
@@ -50,7 +50,7 @@ void Functions<S,D>
     Kokkos::PerTeam(team), [&] () {
       const Int k = k_top_pack;
       {
-        const auto range_pack = ekat::range<IntSmallPack>(k_top_pack*Spack::n);
+        const auto range_pack = ekat::range<IntPack>(k_top_pack*Pack::n);
         const auto mask = range_pack > kmax_scalar || range_pack < kmin_scalar;
         if (mask.any()) {
           for (int f = 0; f < nfield; ++f) {
@@ -95,14 +95,14 @@ template <int nfield>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::generalized_sedimentation (
-  const uview_1d<const Spack>& rho,
-  const uview_1d<const Spack>& inv_rho,
-  const uview_1d<const Spack>& inv_dz,
+  const uview_1d<const Pack>& rho,
+  const uview_1d<const Pack>& inv_rho,
+  const uview_1d<const Pack>& inv_dz,
   const MemberType& team,
   const Int& nk, const Int& k_qxtop, Int& k_qxbot, const Int& kbot, const Int& kdir, const Scalar& Co_max, Scalar& dt_left, Scalar& prt_accum,
-  const view_1d_ptr_array<Spack, nfield>& fluxes,
-  const view_1d_ptr_array<Spack, nfield>& Vs, // (behaviorally const)
-  const view_1d_ptr_array<Spack, nfield>& rs)
+  const view_1d_ptr_array<Pack, nfield>& fluxes,
+  const view_1d_ptr_array<Pack, nfield>& Vs, // (behaviorally const)
+  const view_1d_ptr_array<Pack, nfield>& rs)
 {
   // compute dt_sub
   EKAT_KERNEL_ASSERT(Co_max >= 0);
@@ -133,14 +133,14 @@ template <int nfield>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::calc_first_order_upwind_step (
-  const uview_1d<const Spack>& rho,
-  const uview_1d<const Spack>& inv_rho,
-  const uview_1d<const Spack>& inv_dz,
+  const uview_1d<const Pack>& rho,
+  const uview_1d<const Pack>& inv_rho,
+  const uview_1d<const Pack>& inv_dz,
   const MemberType& team,
   const Int& nk, const Int& k_bot, const Int& k_top, const Int& kdir, const Scalar& dt_sub,
-  const view_1d_ptr_array<Spack, nfield>& flux,
-  const view_1d_ptr_array<Spack, nfield>& V,
-  const view_1d_ptr_array<Spack, nfield>& r)
+  const view_1d_ptr_array<Pack, nfield>& flux,
+  const view_1d_ptr_array<Pack, nfield>& V,
+  const view_1d_ptr_array<Pack, nfield>& r)
 {
   if (kdir == 1)
     calc_first_order_upwind_step< 1, nfield>(
@@ -154,14 +154,14 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::calc_first_order_upwind_step (
-  const uview_1d<const Spack>& rho,
-  const uview_1d<const Spack>& inv_rho,
-  const uview_1d<const Spack>& inv_dz,
+  const uview_1d<const Pack>& rho,
+  const uview_1d<const Pack>& inv_rho,
+  const uview_1d<const Pack>& inv_dz,
   const MemberType& team,
   const Int& nk, const Int& k_bot, const Int& k_top, const Int& kdir, const Scalar& dt_sub,
-  const uview_1d<Spack>& flux,
-  const uview_1d<const Spack>& V,
-  const uview_1d<Spack>& r)
+  const uview_1d<Pack>& flux,
+  const uview_1d<const Pack>& V,
+  const uview_1d<Pack>& r)
 {
   // B/c automatic casting to const does not work in the nested data
   // view_1d_ptr_array (C++ does not provide all legal const casts automatically
@@ -169,7 +169,7 @@ void Functions<S,D>
   // versions of this function, as doing so would be a burden to the caller. But
   // in this version, we can. Thus, to call through to the impl, we explicitly
   // cast here.
-  const auto V_nonconst = uview_1d<Spack>(const_cast<Spack*>(V.data()),
+  const auto V_nonconst = uview_1d<Pack>(const_cast<Pack*>(V.data()),
                                           V.extent_int(0));
   if (kdir == 1)
     calc_first_order_upwind_step< 1, 1>(

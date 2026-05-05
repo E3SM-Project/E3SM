@@ -25,7 +25,7 @@ namespace p3 {
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::check_values(const uview_1d<const Spack>& qv, const uview_1d<const Spack>& temp, const Int& ktop, const Int& kbot,
+::check_values(const uview_1d<const Pack>& qv, const uview_1d<const Pack>& temp, const Int& ktop, const Int& kbot,
                const Int& timestepcount, const bool& force_abort, const Int& source_ind, const MemberType& team,
                const uview_1d<const Scalar>& col_loc)
 {
@@ -35,7 +35,7 @@ void Functions<S,D>
   constexpr Scalar Q_low  = 0.;
 
   Int kmin, kmax;
-  ekat::impl::set_min_max(ktop, kbot, kmin, kmax, Spack::n);
+  ekat::impl::set_min_max(ktop, kbot, kmin, kmax, Pack::n);
 
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, kmax-kmin+1), [&] (int pk_) {
@@ -54,7 +54,7 @@ void Functions<S,D>
     const auto qv_out_bounds = !(qv_gt_low_bound && qv_lt_high_bound);
 
     if (t_out_bounds.any()) {
-      for (int s=0; s<Spack::n; ++s) {
+      for (int s=0; s<Pack::n; ++s) {
         trap = true;
         //printf ("** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, T: %d, %d, %13.6f, %13.6f, %d, %d, %13.6f\n"
         //,source_ind,static_cast<int>(col_loc(0)),col_loc(1),col_loc(2),pk,timestepcount,temp(pk)[s]);
@@ -62,7 +62,7 @@ void Functions<S,D>
     }
 
     if (qv_out_bounds.any()) {
-      for (int s=0; s<Spack::n; ++s) {
+      for (int s=0; s<Pack::n; ++s) {
         // trap = .true.  !note, tentatively no trap, since Qv could be negative passed in to mp
         //printf ("** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, Qv: %d, %d, %13.6f, %13.6f, %d, %d, %13.6f\n"
         //        ,source_ind,static_cast<int>(col_loc(0)),col_loc(1),col_loc(2),pk,timestepcount,qv(pk)[s]);

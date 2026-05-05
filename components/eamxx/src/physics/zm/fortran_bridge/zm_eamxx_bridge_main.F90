@@ -124,7 +124,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   ! Local variables
   integer :: i,k
 
-  logical :: loc_is_first_step
+  logical(kind=c_bool) :: loc_is_first_step
 
   ! arguments for zm_conv_main - order somewhat consistent with current interface
   integer,  dimension(ncol)      :: jctop          ! output top-of-deep-convection indices

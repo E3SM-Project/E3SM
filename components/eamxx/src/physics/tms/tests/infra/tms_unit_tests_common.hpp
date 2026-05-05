@@ -42,7 +42,7 @@ struct UnitWrap {
 
     using Functions          = scream::tms::Functions<Real, Device>;
     using Scalar             = typename Functions::Scalar;
-    using Spack              = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
+    using Pack               = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
 
     struct Base : public UnitBase {
 

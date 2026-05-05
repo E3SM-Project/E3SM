@@ -14,7 +14,7 @@ namespace p3 {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::prevent_liq_supersaturation(const Spack& pres, const Spack& t_atm, const Spack& qv, const Scalar& dt, const Spack& qv2qi_vapdep_tend, const Spack& qinuc, Spack& qi2qv_sublim_tend, Spack& qr2qv_evap_tend, const Smask& context)
+void Functions<S,D>::prevent_liq_supersaturation(const Pack& pres, const Pack& t_atm, const Pack& qv, const Scalar& dt, const Pack& qv2qi_vapdep_tend, const Pack& qinuc, Pack& qi2qv_sublim_tend, Pack& qr2qv_evap_tend, const Mask& context)
 // Note: context masks cells which are just padding for packs or which don't have any condensate worth
 // performing calculations on.
 {
@@ -26,7 +26,7 @@ void Functions<S,D>::prevent_liq_supersaturation(const Spack& pres, const Spack&
   constexpr Scalar latvap       = C::LatVap.value;
   constexpr Scalar latice       = C::LatIce.value;
 
-  Spack qv_sinks, qv_sources, qv_endstep, T_endstep, A, frac;
+  Pack qv_sinks, qv_sources, qv_endstep, T_endstep, A, frac;
 
   qv_sources.set(context, qi2qv_sublim_tend + qr2qv_evap_tend);
   const auto has_sources = (qv_sources>=qsmall && context); //if nothing to rescale, no point in calculations.

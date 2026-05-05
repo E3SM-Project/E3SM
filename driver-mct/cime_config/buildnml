@@ -87,7 +87,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
             config['WAV_OCN_COUP'] = 'oneway'
 
         if case.get_value('COMP_ICE') == 'mpassi': 
-            config['WAV_ICE_COUP'] = 'oneway' 
+            config['WAV_ICE_COUP'] = 'twoway' 
     elif case.get_value('COMP_WAV') == 'dwav':
          config['WAVSPEC'] = 'sp36x36'
     else:

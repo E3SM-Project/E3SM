@@ -5,6 +5,8 @@
 
 #include "emulator.hpp"
 #include <stdexcept>
+#include <iostream>
+
 
 namespace emulator {
 
@@ -34,6 +36,39 @@ void Emulator::finalize() {
   }
   final_impl();
   m_initialized = false;
+}
+
+
+static std::string to_string(EmulatorType t) {
+  switch (t) {
+  case EmulatorType::ATM_COMP: return "ATM_COMP";
+  case EmulatorType::OCN_COMP: return "OCN_COMP";
+  case EmulatorType::ICE_COMP: return "ICE_COMP";
+  case EmulatorType::LND_COMP: return "LND_COMP";
+  default:                     return "UNKNOWN";
+  }
+}
+
+void Emulator::print_info(std::ostream& os) const {
+  os << "Emulator '" << m_name << "'\n";
+  os << "  type          : " << to_string(m_type) << "\n";
+  os << "  id            : " << m_id << "\n";
+  os << "  initialized   : " << std::boolalpha << m_initialized << "\n";
+  os << "  step_count    : " << m_step_count << "\n";
+
+  // Grid summary via virtual getters
+  int nx    = get_nx();
+  int ny    = get_ny();
+  int nloc  = get_num_local_cols();
+  int nglob = get_num_global_cols();
+
+  os << "  grid          : nx=" << nx
+     << " ny=" << ny
+     << " num_local_cols=" << nloc
+     << " num_global_cols=" << nglob << "\n";
+
+  // Hook for derived classes to print config / component-specific info
+  print_extra_info(os);
 }
 
 } // namespace emulator

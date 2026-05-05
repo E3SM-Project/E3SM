@@ -19,6 +19,7 @@ initial_conditions:
   phis : 1.0
 
   #variables required for shoc
+  eddy_diff_heat: 0.0
   surf_sens_flux: 0.0
   surf_evap: 0.0
 

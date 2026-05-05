@@ -68,14 +68,14 @@ runs:
           echo "Unsupported Linux distribution"
           exit 1
         fi
-      shell: sh
+      shell: bash --login {0}
     - name: Check repo presence
       run: |
         if [ ! -d ".git" ]; then
           echo "Repository is not checked out. Please ensure the repository is checked out before running this action."
           exit 1
         fi
-      shell: sh
+      shell: bash --login {0}
     - name: Print build specs
       run: |
         echo "Testing EAMxx standalone, for the following configuration:"
@@ -85,7 +85,7 @@ runs:
         echo "  submit       : ${{ inputs.submit }}"
         echo "  cmake-configs: ${{ inputs.cmake-configs }}"
         echo "  kokkos dev   : ${{ inputs.kokkos_develop }}"
-      shell: sh
+      shell: bash --login {0}
     - name: Checkout Kokkos develop branch
       if: ${{ inputs.kokkos_develop == 'true' }}
       working-directory: externals/ekat/extern/kokkos
@@ -96,7 +96,7 @@ runs:
         fi
         git fetch upstream
         git checkout upstream/develop
-      shell: sh
+      shell: bash --login {0}
     - name: Run test-all-eamxx
       working-directory: components/eamxx
       run: |
@@ -128,7 +128,7 @@ runs:
         # Print the full command, then run it
         echo "test-all-eamxx call: $cmd"
         $cmd
-      shell: sh
+      shell: bash --login {0}
     - name: Upload ctest logs
       if: always()
       uses: actions/upload-artifact@v4

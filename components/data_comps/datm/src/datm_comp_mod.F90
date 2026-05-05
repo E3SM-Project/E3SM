@@ -743,8 +743,8 @@ CONTAINS
     ! !DESCRIPTION: run method for datm model
 #ifdef HAVE_MOAB
     use seq_flds_mod    , only: seq_flds_a2x_fields ! this should not be an argument in datm_comp_init
-    use seq_comm_mct, only : mphaid ! 
-    use seq_flds_mod, only: moab_set_tag_from_av
+    use seq_comm_mct, only : mphaid !
+    use shr_moab_mod, only: moab_set_tag_from_av, moab_set_av_from_tag
 #ifdef MOABDEBUG   
     use iMOAB, only: iMOAB_WriteMesh
 #endif
@@ -815,6 +815,22 @@ CONTAINS
     call t_startf('DATM_RUN')
 
     call t_startf('datm_run1')
+
+#ifdef HAVE_MOAB
+    !--- copy albedo fields from MOAB to x2a ---
+    !--- equiv to an import
+    lsize = mct_avect_lsize(x2a)
+    allocate(datam(lsize))
+    tagname = 'Sx_anidr'//C_NULL_CHAR
+    call moab_set_av_from_tag(tagname, x2a, kanidr, mphaid, datam, lsize)
+    tagname = 'Sx_anidf'//C_NULL_CHAR
+    call moab_set_av_from_tag(tagname, x2a, kanidf, mphaid, datam, lsize)
+    tagname = 'Sx_avsdr'//C_NULL_CHAR
+    call moab_set_av_from_tag(tagname, x2a, kavsdr, mphaid, datam, lsize)
+    tagname = 'Sx_avsdf'//C_NULL_CHAR
+    call moab_set_av_from_tag(tagname, x2a, kavsdf, mphaid, datam, lsize)
+    deallocate(datam)
+#endif
 
     call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
     call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
@@ -1336,6 +1352,7 @@ CONTAINS
       tagname= trim(mct_field)//C_NULL_CHAR
       call moab_set_tag_from_av(tagname, a2x, index_list, mphaid, datam, lsize) ! loop over all a2x fields, not just a few
     enddo
+    call mct_string_clean(mctOStr)
     call mct_list_clean(temp_list)
     deallocate(datam) ! maybe we should keep it around, deallocate at the final only?
 

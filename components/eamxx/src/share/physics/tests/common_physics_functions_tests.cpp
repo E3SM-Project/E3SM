@@ -303,7 +303,7 @@ void run(std::mt19937_64& engine)
   p = pdf_pres(engine);
   const auto exner1 = PF::exner_function(p);
   const auto exner2 = PF::exner_function(p/2);
-  const auto factor = pow(2.0,Rd*inv_cp);
+  const auto factor = std::pow(sp(2.0),Rd*inv_cp);
   REQUIRE( Check::approx_equal(exner1,factor*exner2,test_tol) );
 
   // Potential temperature property tests:
@@ -540,19 +540,11 @@ TEST_CASE("common_physics_functions_test", "[common_physics_functions_test]"){
   }
   printf("ok!\n");
 
-  printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_SMALL_PACK_SIZE);
+  printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_PACK_SIZE);
   for (int irun=0; irun<num_runs; ++irun) {
-    run<ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>,Device>(engine);
+    run<ekat::Pack<Real,SCREAM_PACK_SIZE>,Device>(engine);
   }
   printf("ok!\n");
-
-  if (SCREAM_PACK_SIZE!=SCREAM_SMALL_PACK_SIZE) {
-    printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_PACK_SIZE);
-    for (int irun=0; irun<num_runs; ++irun) {
-      run<ekat::Pack<Real,SCREAM_PACK_SIZE>,Device>(engine);
-    }
-    printf("ok!\n");
-  }
 
   printf("\n");
 

@@ -42,13 +42,13 @@ struct UnitWrap::UnitTest<D>::TestNiConservation : public UnitWrap::UnitTest<D>:
 
     // Get data from cxx. Run ni_conservation from a kernel and copy results back to host
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+      const Int offset = i * Pack::n;
 
       // Init pack inputs
-      Spack nc2ni_immers_freeze_tend, ni, ni2nr_melt_tend, ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend, nr2ni_immers_freeze_tend,
+      Pack nc2ni_immers_freeze_tend, ni, ni2nr_melt_tend, ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend, nr2ni_immers_freeze_tend,
         ncheti_cnt, nicnt, ninuc_cnt;
-      Smask context;
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      Mask context;
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         nc2ni_immers_freeze_tend[s] = cxx_device(vs).nc2ni_immers_freeze_tend;
         ni[s]                       = cxx_device(vs).ni;
         ni2nr_melt_tend[s]          = cxx_device(vs).ni2nr_melt_tend;
@@ -66,7 +66,7 @@ struct UnitWrap::UnitTest<D>::TestNiConservation : public UnitWrap::UnitTest<D>:
 	ni_selfcollect_tend, use_hetfrz_classnuc, context);
 
       // Copy spacks back into cxx_device view
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
         cxx_device(vs).ni2nr_melt_tend = ni2nr_melt_tend[s];
         cxx_device(vs).ni_selfcollect_tend = ni_selfcollect_tend[s];
         cxx_device(vs).ni_sublim_tend = ni_sublim_tend[s];

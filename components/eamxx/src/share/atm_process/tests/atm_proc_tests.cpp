@@ -91,9 +91,10 @@ public:
 
   void create_requests () {
     using namespace ekat::units;
+    using namespace ShortFieldTagsNames;
 
     const auto grid = m_grids_manager->get_grid(m_grid_name);
-    const auto lt = grid->get_3d_scalar_layout(true);
+    const auto lt = grid->get_3d_scalar_layout(LEV);
 
     add_field<Required>("Temperature tendency",lt,K/s,m_grid_name);
     add_field<Computed>("Temperature",lt,K,m_grid_name);
@@ -114,9 +115,10 @@ public:
 
   void create_requests () {
     using namespace ekat::units;
+    using namespace ShortFieldTagsNames;
 
     const auto grid = m_grids_manager->get_grid(m_grid_name);
-    const auto lt = grid->get_3d_scalar_layout (true);
+    const auto lt = grid->get_3d_scalar_layout (LEV);
 
     add_field<Required>("Temperature",lt,K,m_grid_name);
     add_field<Computed>("Concentration A",lt,kg/pow(m,3),m_grid_name);
@@ -137,9 +139,10 @@ public:
 
   void create_requests () {
     using namespace ekat::units;
+    using namespace ShortFieldTagsNames;
 
     const auto grid = m_grids_manager->get_grid(m_grid_name);
-    const auto phys_lt = grid->get_3d_scalar_layout (true);
+    const auto phys_lt = grid->get_3d_scalar_layout (LEV);
 
     add_field<Required>("Temperature",phys_lt,K,m_grid_name);
     add_field<Required>("Concentration A",phys_lt,kg/pow(m,3),m_grid_name);
@@ -222,8 +225,7 @@ TEST_CASE("process_factory", "") {
 TEST_CASE("field_checks", "") {
   using namespace scream;
   using namespace ekat::units;
-
-  // A world comm
+  using namespace ShortFieldTagsNames;
   ekat::Comm comm(MPI_COMM_WORLD);
 
   // Create a grids manager
@@ -236,7 +238,7 @@ TEST_CASE("field_checks", "") {
   ekat::ParameterList params ("Atmosphere Processes");
   params.set<std::string>("grid_name", "point_grid");
 
-  const auto lt = grid->get_3d_scalar_layout(true);
+  const auto lt = grid->get_3d_scalar_layout(LEV);
   FieldIdentifier fid_T_tend("Temperature tendency",lt,K/s,"point_grid");
   FieldIdentifier fid_T("Temperature",lt,K,"point_grid");
   Field T(fid_T), T_tend(fid_T_tend);

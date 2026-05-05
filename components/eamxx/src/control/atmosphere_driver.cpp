@@ -335,9 +335,6 @@ void AtmosphereDriver::create_grids()
 void AtmosphereDriver::setup_surface_coupling_data_manager(SurfaceCouplingTransferType transfer_type,
                                                            const int num_cpl_fields, const int num_scream_fields,
                                                            const int field_size, Real* data_ptr,
-#ifdef HAVE_MOAB
-                                                           Real* data_ptr_moab,
-#endif
                                                            char* names_ptr, int* cpl_indices_ptr, int* vec_comps_ptr,
                                                            Real* constant_multiple_ptr, bool* do_transfer_during_init_ptr)
 {
@@ -356,9 +353,6 @@ void AtmosphereDriver::setup_surface_coupling_data_manager(SurfaceCouplingTransf
   } else EKAT_ERROR_MSG("Error! Unexpected SurfaceCouplingTransferType.");
 
   sc_data_mgr->setup_internals(num_cpl_fields, num_scream_fields, field_size, data_ptr,
-#ifdef HAVE_MOAB
-                               data_ptr_moab,
-#endif
                                names_ptr, cpl_indices_ptr, vec_comps_ptr,
                                constant_multiple_ptr, do_transfer_during_init_ptr);
 }
@@ -616,16 +610,30 @@ void AtmosphereDriver::create_fields()
 
   // Now go through the input fields/groups to the atm proc group,
   // and mark them as part of the RESTART group.
+  // Skip fields in the ACCUMULATED group, since those are reset to 0
+  // at the beginning of each atm step, so there is no need to read
+  // them from the IC or restart file.
   for (const auto& f : m_atm_process_group->get_fields_in()) {
     const auto& fid = f.get_header().get_identifier();
-    m_field_mgr->add_to_group(fid, "RESTART");
+    const auto& fgroups = f.get_header().get_tracking().get_groups_names();
+    if (not ekat::contains(fgroups, "ACCUMULATED")) {
+      m_field_mgr->add_to_group(fid, "RESTART");
+    }
   }
   for (const auto& g : m_atm_process_group->get_groups_in()) {
     if (g.m_monolithic_field) {
-      m_field_mgr->add_to_group(g.m_monolithic_field->get_header().get_identifier(), "RESTART");
+      const auto& mf = *g.m_monolithic_field;
+      const auto& mfgroups = mf.get_header().get_tracking().get_groups_names();
+      if (not ekat::contains(mfgroups, "ACCUMULATED")) {
+        m_field_mgr->add_to_group(mf.get_header().get_identifier(), "RESTART");
+      }
     } else {
       for (const auto& fn : g.m_info->m_fields_names) {
-        m_field_mgr->add_to_group(fn, g.grid_name(), "RESTART");
+        auto field = m_field_mgr->get_field(fn, g.grid_name());
+        const auto& fgroups = field.get_header().get_tracking().get_groups_names();
+        if (not ekat::contains(fgroups, "ACCUMULATED")) {
+          m_field_mgr->add_to_group(fn, g.grid_name(), "RESTART");
+        }
       }
     }
   }
@@ -1069,7 +1077,8 @@ void AtmosphereDriver::set_initial_conditions ()
     if (ic_pl.isParameter(fname)) {
       // This is the case that the user provided an initialization
       // for this field in the parameter file.
-      if (ic_pl.isType<double>(fname) or ic_pl.isType<std::vector<double>>(fname)) {
+      if (ic_pl.isType<int>(fname) or ic_pl.isType<double>(fname) or
+          ic_pl.isType<std::vector<double>>(fname)) {
         // Initial condition is a constant
         initialize_constant_field(fid, ic_pl);
 
@@ -1149,7 +1158,12 @@ void AtmosphereDriver::set_initial_conditions ()
   // First the individual input fields...
   m_atm_logger->debug("    [EAMxx] Processing input fields ...");
   for (const auto& f : m_atm_process_group->get_fields_in()) {
-    process_ic_field (f);
+    // Skip ACCUMULATED fields: those are reset to 0 at the beginning of
+    // each atm step, so there is no need to read them from the IC file.
+    const auto& fgroups = f.get_header().get_tracking().get_groups_names();
+    if (not ekat::contains(fgroups, "ACCUMULATED")) {
+      process_ic_field (f);
+    }
   }
   m_atm_logger->debug("    [EAMxx] Processing input fields ... done!");
 
@@ -1157,10 +1171,18 @@ void AtmosphereDriver::set_initial_conditions ()
   m_atm_logger->debug("    [EAMxx] Processing input groups ...");
   for (const auto& g : m_atm_process_group->get_groups_in()) {
     if (g.m_monolithic_field) {
-      process_ic_field(*g.m_monolithic_field);
+      const auto& mf = *g.m_monolithic_field;
+      const auto& mfgroups = mf.get_header().get_tracking().get_groups_names();
+      if (not ekat::contains(mfgroups, "ACCUMULATED")) {
+        process_ic_field(mf);
+      }
     }
     for (auto it : g.m_individual_fields) {
-      process_ic_field(*it.second);
+      const auto& f = *it.second;
+      const auto& fgroups = f.get_header().get_tracking().get_groups_names();
+      if (not ekat::contains(fgroups, "ACCUMULATED")) {
+        process_ic_field(f);
+      }
     }
   }
   m_atm_logger->debug("    [EAMxx] Processing input groups ... done!");
@@ -1414,8 +1436,9 @@ void AtmosphereDriver::set_initial_conditions ()
     constexpr auto ps0 = physics::Constants<Real>::P0.value;
     const auto min_pressure = ic_pl.get<Real>("perturbation_minimum_pressure", 1050.0);
 
-    const auto& pmask_lt = gll_grid->get_vertical_layout(true);
-    const auto nondim = ekat::units::Units::nondimensional();
+    using namespace ShortFieldTagsNames;
+    const auto& pmask_lt = gll_grid->get_vertical_layout(LEV);
+    const auto nondim = ekat::units::none;
     FieldIdentifier pmask_fid("lev_mask",pmask_lt,nondim,gll_grid->name(),DataType::IntType);
     Field pressure_mask(pmask_fid,true);
     auto pmask_h = pressure_mask.get_view<int*,Host>();
@@ -1513,8 +1536,13 @@ initialize_constant_field(const FieldIdentifier& fid,
       }
     }
   } else {
-    const auto& value = ic_pl.get<double>(name);
-    f.deep_copy(value);
+    if (ic_pl.isType<int>(name)) {
+      const auto& value = ic_pl.get<int>(name);
+      f.deep_copy(value);
+    } else {
+      const auto& value = ic_pl.get<double>(name);
+      f.deep_copy(value);
+    }
   }
 }
 

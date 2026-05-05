@@ -5,8 +5,8 @@ namespace scream::impl {
 // number of photolysis reactions
 using mam4::mo_photo::phtcnt;
 
-using HostView1D    = haero::DeviceType::view_1d<Real>::HostMirror;
-using HostViewInt1D = haero::DeviceType::view_1d<int>::HostMirror;
+using HostView1D    = mam4::DeviceType::view_1d<Real>::HostMirror;
+using HostViewInt1D = mam4::DeviceType::view_1d<int>::HostMirror;
 
 //-------------------------------------------------------------------------
 //                    Reading the photolysis table
@@ -126,7 +126,7 @@ mam4::mo_photo::PhotoTableData read_photo_table(
   // compute gradients (on device)
   Kokkos::parallel_for(
       "del_p", nump - 1, KOKKOS_LAMBDA(int i) {
-        table.del_p(i) = 1.0 / haero::abs(table.press(i) - table.press(i + 1));
+        table.del_p(i) = 1.0 / mam4::abs(table.press(i) - table.press(i + 1));
       });
   Kokkos::parallel_for(
       "del_sza", numsza - 1, KOKKOS_LAMBDA(int i) {

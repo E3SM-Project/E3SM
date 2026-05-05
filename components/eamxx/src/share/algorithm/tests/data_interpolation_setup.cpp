@@ -25,7 +25,9 @@ TEST_CASE ("data_interpolation_setup")
       "Error! You should run the data_interpolation_setup test with ONE rank.\n");
 
   // Create grid
-  std::shared_ptr<const AbstractGrid> grid = create_point_grid("pg",ngcols,nlevs,comm);
+  std::shared_ptr<const AbstractGrid> grid = create_point_grid("pg",ngcols,nlevs,comm,1);
+  auto p_grid = grid->clone("pressure_grid",true);
+  p_grid->reset_vertical_configuration(nlevs, AbstractGrid::VKind::Pressure);
 
   // Create and setup two files, so we can test both YearlyPeriodic and LinearHistory
   std::vector<std::string> files = {
@@ -33,8 +35,8 @@ TEST_CASE ("data_interpolation_setup")
     "data_interpolation_1"
   };
 
-  for (auto int_same_as_mid : {true, false}) {
-    auto suffix = int_same_as_mid ? "_no_ilev.nc" : ".nc";
+  for (auto use_p_grid : {true, false}) {
+    auto suffix = use_p_grid ? "_no_ilev.nc" : ".nc";
     for (const std::string& fname : files) {
       scorpio::register_file(fname+suffix,scorpio::Write);
 
@@ -42,11 +44,11 @@ TEST_CASE ("data_interpolation_setup")
       scorpio::define_dim (fname+suffix,"lev",nlevs);
       scorpio::define_dim (fname+suffix,"dim2",ncmps);
       scorpio::define_time(fname+suffix,"days since " + t_ref.to_string());
-      if (not int_same_as_mid) {
+      if (not use_p_grid) {
         scorpio::define_dim (fname+suffix,"ilev",nlevs+1);
       }
 
-      std::string ilev = int_same_as_mid ? "lev" : "ilev";
+      std::string ilev = use_p_grid ? "lev" : "ilev";
 
       scorpio::define_var(fname+suffix,"s2d",  {"ncol"},             "real", true);
       scorpio::define_var(fname+suffix,"s2d",  {"ncol"},             "real", true);
@@ -67,12 +69,11 @@ TEST_CASE ("data_interpolation_setup")
     }
 
     // Fields and some helper fields (for later)
-    // NOTE: if we save a pressure field, there is not distinction
-    //       between interfaces and midpoints in the file
     // NOTE: do not pad, so that we can grab pointers and pass them to scorpio
-    auto base_fields = create_fields(grid,true, int_same_as_mid,false);
-    auto fields      = create_fields(grid,false,int_same_as_mid,false);
-    auto ones        = create_fields(grid,false,int_same_as_mid,false);
+    auto field_grid = use_p_grid ? p_grid : grid;
+    auto base_fields = create_fields(field_grid,true, false);
+    auto fields      = create_fields(field_grid,false,false);
+    auto ones        = create_fields(field_grid,false,false);
     for (auto& f : ones) {
       f.deep_copy(1);
     }
@@ -120,7 +121,6 @@ TEST_CASE ("data_interpolation_setup")
     }
 
     for (const std::string& fname : files) {
-      write_timestamp(fname+suffix,"reference_time_stamp",t_ref);
       scorpio::release_file(fname+suffix);
     }
   }
@@ -147,23 +147,24 @@ TEST_CASE ("data_interpolation_setup")
 
   std::vector<int> col(nnz), row(nnz);
   std::vector<double> S(nnz);
+  int gid_base = 1;
   for (int i=0,nnz=0; i<ngdofs_tgt; ++i) {
     if (i % 2 == 0) {
       // Fine grid point also in the src grid: only diag entry
-      col[nnz] = i / 2;
-      row[nnz] = i;
+      col[nnz] = gid_base + i / 2;
+      row[nnz] = gid_base + i;
         S[nnz] = 1.0;
 
       ++nnz;
     } else {
       // Add 0.5 times the left src dof and 0.5 times the right src dof
-      col[nnz] = i / 2;
-      row[nnz] = i;
+      col[nnz] = gid_base + i / 2;
+      row[nnz] = gid_base + i;
         S[nnz] = 0.5;
       ++nnz;
 
-      col[nnz] = (i / 2) + 1;
-      row[nnz] = i;
+      col[nnz] = gid_base + (i / 2) + 1;
+      row[nnz] = gid_base + i;
         S[nnz] = 0.5;
       ++nnz;
     }

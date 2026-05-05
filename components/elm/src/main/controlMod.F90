@@ -10,7 +10,6 @@ module controlMod
   !       Display the file in a browser to see it neatly formatted in html.
   !
   ! !USES:
-  use elm_varctl
   use shr_kind_mod            , only: r8 => shr_kind_r8, SHR_KIND_CL
   use shr_nl_mod              , only: shr_nl_find_group_name
   use shr_const_mod           , only: SHR_CONST_CDAY
@@ -25,38 +24,82 @@ module controlMod
   use histFileMod             , only: hist_fincl4, hist_fincl5, hist_fincl6, hist_fexcl1, hist_fexcl2, hist_fexcl3
   use histFileMod             , only: hist_fexcl4, hist_fexcl5, hist_fexcl6
   use LakeCon                 , only: deepmixing_depthcrit, deepmixing_mixfact
-  use AllocationMod         , only: suplnitro
-  use AllocationMod         , only: suplphos
+  use AllocationMod           , only: suplnitro
+  use AllocationMod           , only: suplphos
   use ColumnDataType          , only: nfix_timeconst
-  use NitrifDenitrifMod     , only: no_frozen_nitrif_denitrif
-  use C14DecayMod           , only: use_c14_bombspike, atm_c14_filename
-  use SoilLittVertTranspMod , only: som_adv_flux, max_depth_cryoturb
-  use VerticalProfileMod    , only: exponential_rooting_profile, rootprof_exp
-  use VerticalProfileMod    , only: surfprof_exp, pftspecific_rootingprofile
-  use SharedParamsMod       , only: anoxia_wtsat
-  use CanopyStateType       , only: perchroot, perchroot_alt
+  use NitrifDenitrifMod       , only: no_frozen_nitrif_denitrif
+  use C14DecayMod             , only: use_c14_bombspike, atm_c14_filename
+  use SoilLittVertTranspMod   , only: som_adv_flux, max_depth_cryoturb
+  use VerticalProfileMod      , only: exponential_rooting_profile, rootprof_exp
+  use VerticalProfileMod      , only: surfprof_exp, pftspecific_rootingprofile
+  use SharedParamsMod         , only: anoxia_wtsat
+  use CanopyStateType         , only: perchroot, perchroot_alt
   use CanopyHydrologyMod      , only: CanopyHydrology_readnl
-  use SurfaceAlbedoType        , only: albice, lake_melt_icealb
+  use SurfaceAlbedoType       , only: albice, lake_melt_icealb
   use UrbanParamsType         , only: urban_hac, urban_traffic
   use FrictionVelocityMod     , only: implicit_stress, atm_gustiness, force_land_gustiness
   use elm_varcon              , only: h2osno_max
-  use elm_varctl              , only: use_dynroot, use_fan, fan_mode, fan_to_bgc_veg
   use FanMod                  , only: nh4_ads_coef
-  use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix
-  use elm_varctl              , only: nu_com, use_var_soil_thick
-  use elm_varctl              , only: use_lake_wat_storage
+  use AllocationMod           , only: nu_com_phosphatase,nu_com_nfix
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
-  use elm_varctl              , only: forest_fert_exp
-  use elm_varctl              , only: ECA_Pconst_RGspin
-  use elm_varctl              , only: NFIX_PTASE_plant
-  use elm_varctl              , only : use_pheno_flux_limiter
-  use elm_varctl              , only: startdate_add_temperature, startdate_add_co2
-  use elm_varctl              , only: add_temperature, add_co2
-  use elm_varctl              , only: const_climate_hist
-  use elm_varctl              , only: use_top_solar_rad, use_finetop_rad
-  use elm_varctl              , only: snow_shape, snicar_atm_type, use_dust_snow_internal_mixing
   use EcosystemBalanceCheckMod, only: bgc_balance_check_tolerance => balance_check_tolerance
 
+  use elm_varctl, only: nu_com, use_dynroot, use_fan, fan_mode, fan_to_bgc_veg, &
+                        use_var_soil_thick, use_lake_wat_storage, &
+                        forest_fert_exp, ECA_Pconst_RGspin, NFIX_PTASE_plant, &
+                        use_pheno_flux_limiter, startdate_add_temperature, &
+                        startdate_add_co2, add_temperature, add_co2, &
+                        const_climate_hist, use_top_solar_rad, snow_shape, &
+                        snicar_atm_type, use_dust_snow_internal_mixing, &
+                        fatmlndfrc, finidat, nrevsn, fsurdat, fatmtopo, &
+                        flndtopo, paramfile, fsnowoptics, fsnowaging, &
+                        fsoilordercon, hist_wrtch4diag, spinup_state, &
+                        override_bgc_restart_mismatch_dump, co2_type, &
+                        nyears_ad_carbon_only, spinup_mortality_factor, &
+                        glc_smb, glc_do_dynglacier, glc_grid, fglcmask, &
+                        glcmec_downscale_rain_snow_convert, &
+                        glcmec_downscale_longwave, glc_snow_persistence_max_days, &
+                        wrtdia, create_crop_landunit, nsegspc, co2_ppmv, &
+                        subgridflag, irrigate, tw_irr, extra_gw_irr, &
+                        firrig_data, all_active, mpi_sync_nstep_freq, &
+                        use_c13, use_c14, fates_paramfile, use_fates, &
+                        use_betr, use_lai_streams, metdata_type, metdata_bypass, &
+                        metdata_biases, co2_file, aero_file, &
+                        use_elm_interface, use_elm_bgc, use_pflotran, &
+                        use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch, &
+                        vsfm_lateral_model_type, vsfm_include_seepage_bc, &
+                        use_hydrstress, lateral_connectivity, domain_decomp_type, &
+                        use_IM2_hillslope_hydrology, use_petsc_thermal_model, &
+                        do_budgets, budget_inst, budget_daily, budget_month, &
+                        budget_ann, budget_ltann, budget_ltend, &
+                        use_lnd_rof_two_way, use_ocn_lnd_one_way, &
+                        use_modified_infil, use_polygonal_tundra, use_arctic_init, &
+                        iundef, nsrest, rundef, scmlat, scmlon, single_column, &
+                        source, version, rpntdir, rpntfil, nlfilename_in, &
+                        finidat_interp_source, finidat_interp_dest, caseid, ctitle, &
+                        hostname, username, use_voc, anoxia, iulog, nsrstartup, &
+                        nsrcontinue, nsrbranch, use_erosion, ero_ccycle, &
+                        lnd_rof_coupling_nstep, create_glacier_mec_landunit, &
+                        use_atm_downscaling_to_topunit, precip_downscaling_method, &
+                        fates_spitfire_mode, fates_harvest_mode, &
+                        use_fates_planthydro, use_fates_ed_st3, use_fates_cohort_age_tracking, &
+                        use_fates_ed_prescribed_phys, use_fates_inventory_init, &
+                        fates_inventory_ctrl_filename, use_fates_fixed_biogeog, &
+                        use_fates_nocomp, use_fates_sp, use_fates_luh, &
+                        use_fates_lupft, use_fates_potentialveg, use_fates_managed_fire, &
+                        fluh_timeseries, flandusepftdat, fates_parteh_mode, &
+                        fates_seeddisp_cadence, use_fates_tree_damage, &
+                        use_fates_daylength_factor, fates_photosynth_acclimation, &
+                        fates_stomatal_model, fates_stomatal_assimilation, &
+                        fates_leafresp_model, fates_cstarvation_model, &
+                        fates_regeneration_model, fates_hydro_solver, &
+                        fates_radiation_model, fates_electron_transport_model, &
+                        fates_history_dimlevel, elm_varctl_set, &
+                        use_nofire, use_lch4, use_vertsoilc, use_extralakelayers, &
+                        use_vichydro, use_century_decomp, use_cn, use_crop, &
+                        use_snicar_frc, use_snicar_ad, use_firn_percolation_and_compaction, &
+                        use_extrasnowlayers, use_T_rho_dependent_snowthk, &
+                        use_vancouver, use_mexicocity, use_noio, use_finetop_rad
   !
   ! !PUBLIC TYPES:
   implicit none

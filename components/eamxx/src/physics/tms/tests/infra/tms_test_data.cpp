@@ -19,11 +19,11 @@ void compute_tms_f(int ncols, int nlevs,
   using TMSFunc  = Functions<Real, DefaultDevice>;
 
   using Scalar     = typename TMSFunc::Scalar;
-  using Spack      = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
+  using Pack       = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
   using view_1d    = typename TMSFunc::view_1d<Scalar>;
-  using view_2d    = typename TMSFunc::view_2d<Spack>;
+  using view_2d    = typename TMSFunc::view_2d<Pack>;
   using view_2d_s  = typename TMSFunc::view_2d<Scalar>;
-  using view_3d    = typename TMSFunc::view_3d<Spack>;
+  using view_3d    = typename TMSFunc::view_3d<Pack>;
   using ExeSpace   = typename TMSFunc::KT::ExeSpace;
   using MemberType = typename TMSFunc::KT::MemberType;
   using TPF        = ekat::TeamPolicyFactory<ExeSpace>;
@@ -51,7 +51,7 @@ void compute_tms_f(int ncols, int nlevs,
     z_mid_d (temp_d_2d[5]);
 
   // calculate_tms treats u/v_wind and taux/y as multiple component arrays.
-  const auto nlev_packs = ekat::npack<Spack>(nlevs);
+  const auto nlev_packs = ekat::npack<Pack>(nlevs);
   view_3d   horiz_wind_d("horiz_wind_d", ncols, 2, nlev_packs);
   view_2d_s tau_d("tau_d", ncols, 2);
   const auto policy = TPF::get_default_team_policy(ncols, nlev_packs);

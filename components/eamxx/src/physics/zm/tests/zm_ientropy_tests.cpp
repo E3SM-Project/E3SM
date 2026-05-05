@@ -6,9 +6,6 @@
 
 #include "zm_unit_tests_common.hpp"
 
-#include <ekat_pack.hpp>
-#include <ekat_team_policy_utils.hpp>
-
 namespace scream {
 namespace zm {
 namespace unit_test {

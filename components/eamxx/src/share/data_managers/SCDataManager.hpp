@@ -24,9 +24,6 @@ struct SCDataManager {
 
   void setup_internals (const int num_cpl_fields, const int num_scream_fields, const int field_size,
                         Real* field_data_ptr,
-#ifdef HAVE_MOAB
-                        Real* field_data_moab_ptr,
-#endif
                         char* field_names, int* field_cpl_indices_ptr,
                         int* field_vector_components_ptr, Real* field_constant_multiple_ptr,
                         bool* transfer_during_init_ptr)
@@ -42,9 +39,12 @@ struct SCDataManager {
     EKAT_ASSERT_MSG(field_vector_components_ptr !=nullptr, "Error! Ptr for field vector components is null.");
     EKAT_ASSERT_MSG(field_constant_multiple_ptr !=nullptr, "Error! Ptr for constant multiple is null.");
     EKAT_ASSERT_MSG(transfer_during_init_ptr    !=nullptr, "Error! Ptr for initial transfer boolean is null.");
-    m_field_data                 = decltype(m_field_data)                (field_data_ptr,              m_field_size, m_num_cpl_fields);
 #ifdef HAVE_MOAB
-    m_field_data_moab            = decltype(m_field_data_moab)           (field_data_moab_ptr,         m_num_cpl_fields, m_field_size);
+    // MOAB data layout: (num_cpl_fields, field_size) - column index strides fastest
+    m_field_data                 = decltype(m_field_data)                (field_data_ptr,              m_num_cpl_fields, m_field_size);
+#else
+    // MCT data layout: (field_size, num_cpl_fields) - field index strides fastest
+    m_field_data                 = decltype(m_field_data)                (field_data_ptr,              m_field_size, m_num_cpl_fields);
 #endif
     m_field_cpl_indices          = decltype(m_field_cpl_indices)         (field_cpl_indices_ptr,       m_num_scream_fields);
     m_field_vector_components    = decltype(m_field_vector_components)   (field_vector_components_ptr, m_num_scream_fields);
@@ -73,11 +73,7 @@ struct SCDataManager {
   Real* get_field_data_ptr () const {
     return m_field_data.data();
   }
-#ifdef HAVE_MOAB
-  Real* get_field_data_moab_ptr () const {
-    return m_field_data_moab.data();
-  }
-#endif
+
   Real get_field_data_view_entry(const int i, const int f) {
     return m_field_data(i, f);
   }
@@ -117,9 +113,6 @@ protected:
   int m_num_scream_fields;
 
   view_2d<HostDevice, Real> m_field_data;
-#ifdef HAVE_MOAB
-  view_2d<HostDevice, Real> m_field_data_moab;
-#endif
   name_t*                   m_field_names;
   view_1d<HostDevice, int>  m_field_cpl_indices;
   view_1d<HostDevice, int>  m_field_vector_components;

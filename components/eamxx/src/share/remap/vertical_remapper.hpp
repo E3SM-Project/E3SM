@@ -36,13 +36,10 @@ public:
   };
 
   VerticalRemapper (const grid_ptr_type& src_grid,
-                    const std::string& map_file,
-                    const bool src_int_same_as_mid = false);
+                    const std::string& map_file);
 
   VerticalRemapper (const grid_ptr_type& src_grid,
-                    const grid_ptr_type& tgt_grid,
-                    const bool src_int_same_as_mid = false,
-                    const bool tgt_int_same_as_mid = false);
+                    const grid_ptr_type& tgt_grid);
 
   ~VerticalRemapper () = default;
 
@@ -121,11 +118,8 @@ protected:
   Field                 m_tgt_pmid;
   Field                 m_tgt_pint;
 
-  bool m_src_int_same_as_mid = false;
-  bool m_tgt_int_same_as_mid = false;
-
   // If user provides pressure profiles that are NOT compatible with SCREAM_PACK_SIZE,
-  // we will set these boolean to false, and use ONLY the "scalar" LinInterp structures
+  // we will set these booleans to false, and use ONLY the "scalar" LinInterp structures
   bool m_int_packs_supported = true;
   bool m_mid_packs_supported = true;
 

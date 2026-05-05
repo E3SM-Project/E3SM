@@ -3,6 +3,9 @@ module atm_import_export
   use shr_kind_mod  , only: r8 => shr_kind_r8, cl=>shr_kind_cl
   use cam_logfile      , only: iulog
   implicit none
+#ifdef MOABDEBUG
+  integer                           :: cur_atm_stepno  ! current atm stepno
+#endif
 
 contains
 
@@ -23,6 +26,7 @@ contains
     use physconst     , only: mwco2
     use time_manager  , only: is_first_step, get_curr_date
     use constituents  , only: pcnst
+    use cam_abortutils, only: endrun
     !
     ! Arguments
     !
@@ -41,6 +45,7 @@ contains
     integer, pointer   :: dst_a1_ndx, dst_a3_ndx
     integer :: icnst, mon_idx
     logical :: overwrite_flds
+    integer :: idx_megan_end, idx_ddvel_end  ! end indices for array slices
     !-----------------------------------------------------------------------
     overwrite_flds = .true.
     ! don't overwrite fields if invoked during the initialization phase
@@ -51,7 +56,7 @@ contains
       mon_idx = get_month_index()
     endif
 
-    ! ccsm sign convention is that fluxes are positive downward
+    ! E3SM sign convention is that fluxes are positive downward
 
     ig=1
     do c=begchunk,endchunk
@@ -124,14 +129,16 @@ contains
              cam_in(c)%dstflx(i,4) = x2a(index_x2a_Fall_flxdst4, ig)
           endif
           if ( associated(cam_in(c)%meganflx) ) then
+             idx_megan_end = index_x2a_Fall_flxvoc+shr_megan_mechcomps_n-1
              cam_in(c)%meganflx(i,1:shr_megan_mechcomps_n) = &
-                  x2a(index_x2a_Fall_flxvoc:index_x2a_Fall_flxvoc+shr_megan_mechcomps_n-1, ig)
+                  x2a(index_x2a_Fall_flxvoc:idx_megan_end, ig)
           endif
 
           ! dry dep velocities
           if ( index_x2a_Sl_ddvel/=0 .and. n_drydep>0 ) then
+             idx_ddvel_end = index_x2a_Sl_ddvel+n_drydep-1
              cam_in(c)%depvel(i,:n_drydep) = &
-                  x2a(index_x2a_Sl_ddvel:index_x2a_Sl_ddvel+n_drydep-1, ig)
+                  x2a(index_x2a_Sl_ddvel:idx_ddvel_end, ig)
           endif
           !
           ! fields needed to calculate water isotopes to ocean evaporation processes
@@ -337,6 +344,17 @@ contains
     use cam_cpl_indices
     use phys_control, only: phys_getopts
     use lnd_infodata, only: precip_downscaling_method
+    use cam_abortutils, only: endrun
+
+#ifdef MOABDEBUG
+    use seq_comm_mct,  only: mphaid
+    use iMOAB,         only: iMOAB_WriteMesh
+    use iso_c_binding, only: C_NULL_CHAR
+    character*100 outfile, wopts, lnum
+    integer, save :: local_count = 0
+    integer       :: ierr
+    character*100 lnum2
+#endif
     !
     ! Arguments
     !
@@ -355,7 +373,6 @@ contains
     ! Copy from component arrays into chunk array data structure
     ! Rearrange data from chunk structure into lat-lon buffer and subsequently
     ! create attribute vector
-
     ig=1
     do c=begchunk, endchunk
        ncols = get_ncols_p(c)
@@ -420,7 +437,16 @@ contains
           ig=ig+1
        end do
     end do
-
+#ifdef MOABDEBUG
+    write(lnum,"(I0.2)")cur_atm_stepno
+    local_count = local_count + 1
+    write(lnum2,"(I0.2)")local_count
+    outfile = 'atm_export_'//trim(lnum)//'_'//trim(lnum2)//'.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+    ierr = iMOAB_WriteMesh(mphaid, outfile, wopts)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to write the atm phys mesh file with data')
+#endif
   end subroutine atm_export
 
 end module atm_import_export

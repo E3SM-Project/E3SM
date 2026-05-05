@@ -94,11 +94,11 @@ void run_bfb()
 
   // Run the lookup from a kernel and copy results back to host
   Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-    const Int offset = i * Spack::n;
+    const Int offset = i * Pack::n;
 
     // Init pack inputs
-    Spack T_atm, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c, qc_incld, qc2qi_collect_tend;
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    Pack T_atm, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c, qc_incld, qc2qi_collect_tend;
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       T_atm[s]                = device_data(vs).T_atm;
       rhofaci[s]              = device_data(vs).rhofaci;
       table_val_qi_fallspd[s] = device_data(vs).table_val_qi_fallspd;
@@ -109,14 +109,14 @@ void run_bfb()
       qc2qi_collect_tend[s]   = device_data(vs).qc2qi_collect_tend;
     }
 
-    Spack vtrmi1{0.0};
-    Spack rho_qm_cloud{0.0};
+    Pack vtrmi1{0.0};
+    Pack rho_qm_cloud{0.0};
 
     Functions::calc_rime_density(T_atm, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c,
                                  qc_incld, qc2qi_collect_tend, vtrmi1, rho_qm_cloud);
 
     // Copy results back into views
-    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+    for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       device_data(vs).vtrmi1  = vtrmi1[s];
       device_data(vs).rho_qm_cloud  = rho_qm_cloud[s];
     }

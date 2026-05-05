@@ -26,7 +26,6 @@ void P3Microphysics::create_requests()
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto nondim = Units::nondimensional();
   auto micron = micro*m;
   auto m2 = pow(m,2);
 
@@ -64,10 +63,10 @@ void P3Microphysics::create_requests()
   constexpr int ps = Pack::n;
 
   // These variables are needed by the interface, but not actually passed to p3_main.
-  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name, ps);
+  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, none, grid_name, ps);
   if (runtime_options.use_separate_ice_liq_frac) {
-    add_field<Required>("cldfrac_liq", scalar3d_layout_mid, nondim, grid_name, ps);
-    add_field<Required>("cldfrac_ice", scalar3d_layout_mid, nondim, grid_name, ps);
+    add_field<Required>("cldfrac_liq", scalar3d_layout_mid, none, grid_name, ps);
+    add_field<Required>("cldfrac_ice", scalar3d_layout_mid, none, grid_name, ps);
   }
 
   // should we use one pressure only, wet/full?
@@ -125,23 +124,23 @@ void P3Microphysics::create_requests()
   add_field<Computed>("eff_radius_qr",           scalar3d_layout_mid, micron,    grid_name, ps);
   add_field<Computed>("precip_total_tend",       scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
   add_field<Computed>("nevapr",                  scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
-  add_field<Computed>("diag_equiv_reflectivity", scalar3d_layout_mid, nondim,    grid_name, ps);
+  add_field<Computed>("diag_equiv_reflectivity", scalar3d_layout_mid, none,      grid_name, ps);
   if (runtime_options.extra_p3_diags) {
-    add_field<Computed>("qr2qv_evap", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qi2qv_sublim", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qc2qr_accret", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qc2qr_autoconv", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qv2qi_vapdep", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qc2qi_berg", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qc2qr_ice_shed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qc2qi_collect", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qr2qi_collect", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qr2qv_evap",          scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qi2qv_sublim",        scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc2qr_accret",        scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc2qr_autoconv",      scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qv2qi_vapdep",        scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc2qi_berg",          scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc2qr_ice_shed",      scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc2qi_collect",       scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qr2qi_collect",       scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("qc2qi_hetero_freeze", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("qr2qi_immers_freeze", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qi2qr_melt", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qr_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qc_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qi_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qi2qr_melt",          scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qr_sed",              scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc_sed",              scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qi_sed",              scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
   }
 
   // History Only: (all fields are just outputs and are really only meant for I/O purposes)
@@ -151,7 +150,7 @@ void P3Microphysics::create_requests()
   add_field<Computed>("micro_liq_ice_exchange", scalar3d_layout_mid, kg/kg,  grid_name, ps);
   add_field<Computed>("micro_vap_liq_exchange", scalar3d_layout_mid, kg/kg,  grid_name, ps);
   add_field<Computed>("micro_vap_ice_exchange", scalar3d_layout_mid, kg/kg,  grid_name, ps);
-  add_field<Computed>("rainfrac",               scalar3d_layout_mid, nondim, grid_name, ps);
+  add_field<Computed>("rainfrac",               scalar3d_layout_mid, none,   grid_name, ps);
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
@@ -167,16 +166,16 @@ size_t P3Microphysics::requested_buffer_size_in_bytes() const
 {
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
-  const Int nk_pack    = ekat::npack<Spack>(m_num_levs);
-  const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
+  const Int nk_pack    = ekat::npack<Pack>(m_num_levs);
+  const Int nk_pack_p1 = ekat::npack<Pack>(m_num_levs+1);
 
   // Number of Reals needed by local views in the interface
   const size_t interface_request =
       // 1d view scalar, size (ncol)
       Buffer::num_1d_scalar*m_num_cols*sizeof(Real) +
       // 2d view packed, size (ncol, nlev_packs)
-      Buffer::num_2d_vector*m_num_cols*nk_pack*sizeof(Spack) +
-      Buffer::num_2dp1_vector*m_num_cols*nk_pack_p1*sizeof(Spack) +
+      Buffer::num_2d_vector*m_num_cols*nk_pack*sizeof(Pack) +
+      Buffer::num_2dp1_vector*m_num_cols*nk_pack_p1*sizeof(Pack) +
       // 2d view scalar, size (ncol, 3)
       m_num_cols*3*sizeof(Real);
 
@@ -210,11 +209,11 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   m_buffer.col_location = decltype(m_buffer.col_location)(mem, m_num_cols, 3);
   mem += m_buffer.col_location.size();
 
-  Spack* s_mem = reinterpret_cast<Spack*>(mem);
+  Pack* s_mem = reinterpret_cast<Pack*>(mem);
 
   // 2d packed views
-  const Int nk_pack    = ekat::npack<Spack>(m_num_levs);
-  const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
+  const Int nk_pack    = ekat::npack<Pack>(m_num_levs);
+  const Int nk_pack_p1 = ekat::npack<Pack>(m_num_levs+1);
 
   using spack_2d_view_t = decltype(m_buffer.inv_exner);
   spack_2d_view_t* _2d_spack_mid_view_ptrs[Buffer::num_2d_vector] = {
@@ -255,7 +254,7 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   // Compute workspace manager size to check used memory
   // vs. requested memory
   const auto policy  = TPF::get_default_team_policy(m_num_cols, nk_pack);
-  const int wsm_size = WSM::get_total_bytes_needed(nk_pack_p1, 52, policy)/sizeof(Spack);
+  const int wsm_size = WSM::get_total_bytes_needed(nk_pack_p1, 52, policy)/sizeof(Pack);
   s_mem += wsm_size;
 
   size_t used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
@@ -294,8 +293,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   // Initialize all of the structures that are passed to p3_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
-  const Int nk_pack = ekat::npack<Spack>(m_num_levs);
-  const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
+  const Int nk_pack = ekat::npack<Pack>(m_num_levs);
+  const Int nk_pack_p1 = ekat::npack<Pack>(m_num_levs+1);
   const  auto& pmid           = get_field_in("p_mid").get_view<const Pack**>();
   const  auto& pmid_dry       = get_field_in("p_dry_mid").get_view<const Pack**>();
   const  auto& pseudo_density = get_field_in("pseudo_density").get_view<const Pack**>();

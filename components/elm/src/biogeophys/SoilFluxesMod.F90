@@ -9,7 +9,7 @@ module SoilFluxesMod
   use decompMod		, only : bounds_type
   use abortutils	, only : endrun
   use elm_varctl	, only : iulog, use_firn_percolation_and_compaction, use_finetop_rad
-  use perfMod_GPU
+  use perf_mod, only: t_startf, t_stopf
   use elm_varpar	, only : nlevsno, nlevgrnd, nlevurb, max_patch_per_col
   use atm2lndType	, only : atm2lnd_type
   use CanopyStateType   , only : canopystate_type
@@ -84,7 +84,6 @@ contains
     real(r8) :: fsno_eff
     real(r8) :: temp
 
-    character(len=256) :: event
     !-----------------------------------------------------------------------
 
     associate(                                                                &
@@ -169,8 +168,7 @@ contains
       deg2rad = SHR_CONST_PI/180._r8
 
          dtime = dtime_mod
-      event = 'bgp2_loop_1'
-      call t_start_lnd(event)
+      call t_startf('bgp2_loop_1')
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          j = col_pp%snl(c)+1
@@ -247,9 +245,8 @@ contains
          end do
       end do
 
-      call t_stop_lnd(event)
-      event = 'bgp2_loop_2'
-      call t_start_lnd(event)
+      call t_stopf('bgp2_loop_1')
+      call t_startf('bgp2_loop_2')
       ! Calculate ratio for rescaling pft-level fluxes to meet availability
 
       do fc = 1,num_nolakec
@@ -375,10 +372,9 @@ contains
          eflx_lh_grnd(p)   = qflx_evap_soi(p) * htvp(c)
 
       end do
-      call t_stop_lnd(event)
+      call t_stopf('bgp2_loop_2')
 
-      event = 'bgp2_loop_3'
-      call t_start_lnd(event)
+      call t_startf('bgp2_loop_3')
       ! Soil Energy balance check
 
       do fp = 1,num_nolakep
@@ -416,10 +412,9 @@ contains
             end if
          end do
       end do
-      call t_stop_lnd(event)
+      call t_stopf('bgp2_loop_3')
 
-      event = 'bgp2_loop_4'
-      call t_start_lnd(event)
+      call t_startf('bgp2_loop_4')
       ! Outgoing long-wave radiation from vegetation + ground
       ! For conservation we put the increase of ground longwave to outgoing
       ! For urban patches, ulrad=0 and (1-fracveg_nosno)=1, and eflx_lwrad_out and eflx_lwrad_net
@@ -471,7 +466,7 @@ contains
       call p2c(bounds, num_nolakec, filter_nolakec, &
            errsoi_patch(bounds%begp:bounds%endp), &
            errsoi_col(bounds%begc:bounds%endc))
-      call t_stop_lnd(event)
+      call t_stopf('bgp2_loop_4')
 
     end associate
 

@@ -298,14 +298,14 @@ subroutine mct_aVect_info(flag,aVect,comm,pe,fld,istr)
       endif
 
       if (flag >= 2) then
-         allocate(minl(nflds), maxl(nflds))
+         allocate(minl(ks:ke), maxl(ks:ke))
          do k=ks,ke
             minl(k) = minval(aVect%rAttr(k,:))
             maxl(k) = maxval(aVect%rAttr(k,:))
          enddo
 
          if (flag >= 4 .and. commOK) then
-            allocate(ming(nflds), maxg(nflds))
+            allocate(ming(ks:ke), maxg(ks:ke))
             ming = 0._R8
             maxg = 0._R8
             call shr_mpi_min(minl,ming,comm,subName)

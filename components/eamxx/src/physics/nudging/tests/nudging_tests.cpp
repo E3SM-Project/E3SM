@@ -30,6 +30,7 @@ create_nudging (const ekat::Comm& comm,
 }
 
 TEST_CASE("nudging_tests") {
+  using namespace ShortFieldTagsNames;
   auto& catch_capture = Catch::getResultCapture();
 
   using strvec_t = std::vector<std::string>;
@@ -210,7 +211,7 @@ TEST_CASE("nudging_tests") {
       auto nudging = create_nudging(comm,params,fm,gm_fine_v,get_t0());
 
       // Compute pmid on data grid
-      auto layout_data = grid_data->get_3d_scalar_layout(true);
+      auto layout_data = grid_data->get_3d_scalar_layout(LEV);
       Field p_mid_data(FieldIdentifier("p_mid",layout_data,Pa,grid_data->name()));
       p_mid_data.allocate_view();
       compute_field(p_mid_data,get_t0(),comm,0);
@@ -250,7 +251,7 @@ TEST_CASE("nudging_tests") {
       auto nudging = create_nudging(comm,params,fm,gm_fine_v,get_t0());
 
       // Compute pmid on data grid
-      auto layout_data = grid_data->get_3d_scalar_layout(true);
+      auto layout_data = grid_data->get_3d_scalar_layout(LEV);
       Field p_mid_data(FieldIdentifier("p_mid",layout_data,Pa,grid_data->name()));
       p_mid_data.allocate_view();
       compute_field(p_mid_data,get_t0(),comm,0);
@@ -379,7 +380,7 @@ TEST_CASE("nudging_tests") {
     auto nudging = create_nudging(comm,params,fm,gm_fine_h,get_t0());
 
     // Compute pmid on data grid
-    auto layout_data = grid_data->get_3d_scalar_layout(true);
+    auto layout_data = grid_data->get_3d_scalar_layout(LEV);
     Field p_mid_data(FieldIdentifier("p_mid",layout_data,Pa,grid_data->name()));
     p_mid_data.allocate_view();
     compute_field(p_mid_data,get_t0(),comm,0);

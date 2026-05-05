@@ -43,7 +43,7 @@ jobs:
         files: 'components/eamxx/**/*.{cpp,hpp}'
         separator: " "
     - name: setup micromamba env
-      uses: mamba-org/setup-micromamba@v2
+      uses: mamba-org/setup-micromamba@v3
       with:
         init-shell: bash
         environment-name: clang-format
@@ -138,7 +138,7 @@ jobs:
         fi
     - name: upload diff patch
       if: ${{ env.status_fail == 'true' }}
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ env.fname }}
         path: "components/eamxx/${{ env.fname }}"

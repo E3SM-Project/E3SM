@@ -2,7 +2,7 @@
 #define SOIL_ERODIBILITY_IMPL_HPP
 
 #include "share/remap/identity_remapper.hpp"
-#include "share/remap/refining_remapper_p2p.hpp"
+#include "share/remap/horizontal_remapper.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_timing.hpp"
 
@@ -47,16 +47,15 @@ soilErodibilityFunctions<S, D>::create_horiz_remapper(
                      "parameter list.");
 
     remapper =
-        std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid, map_file);
+        std::make_shared<HorizontalRemapper>(horiz_interp_tgt_grid, map_file);
   }
 
   const auto tgt_grid = remapper->get_tgt_grid();
 
   const auto layout_2d = tgt_grid->get_2d_scalar_layout();
-  const auto nondim    = ekat::units::Units::nondimensional();
 
   Field soil_erodibility(
-      FieldIdentifier(field_name, layout_2d, nondim, tgt_grid->name()));
+      FieldIdentifier(field_name, layout_2d, ekat::units::none, tgt_grid->name()));
   soil_erodibility.allocate_view();
 
   remapper->register_field_from_tgt(soil_erodibility);
