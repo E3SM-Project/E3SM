@@ -177,6 +177,36 @@ int ocnInit(MPI_Comm Comm ///< [in] ocean MPI communicator
 
 } // end ocnInit
 
+int ocnInit(MPI_Comm Comm,                 ///< [in] ocean MPI communicator
+            const int OcnId,               ///< [in] mct comp id for ocean
+            const std::string &ConfigFile, ///< [in] path to yaml config file
+            const std::string &LogFile,    ///< [in] path to log file
+            const TimeInstant &StartTime   ///< [in] simulation start time
+) {
+
+   I4 Err = 0; // return error code
+
+   MachEnv *DefEnv = MachEnv::getDefault();
+
+   // Read config file into Config object
+   Config("Omega");
+   Config::readAll(ConfigFile);
+   Config *OmegaConfig = Config::getOmegaConfig();
+
+   readTimingConfig();
+
+   // coupler decides the stop time
+   TimeInitParams TimeParams{StartTime, std::nullopt};
+
+   // initialize remaining Omega modules
+   Err = initOmegaModules(Comm, TimeParams);
+   if (Err != 0)
+      ABORT_ERROR("ocnInit: Error initializing Omega modules");
+
+   return Err;
+
+} // end ocnInit
+
 // Call init routines for remaining Omega modules
 // Internal helper — all module init after TimeStepper::init1 is called.
 // Called by both initOmegaModules overloads.

@@ -112,6 +112,8 @@ if(DEFINED E3SM_SOURCE_DIR)
 
     set(OCN_SRC
       drivers/coupled/ocn_comp_mct.F90
+      drivers/coupled/omega_cxx2f_interface.cpp
+      drivers/coupled/omega_f2cxx_interface.F90
     )
 
     # create ocn lib

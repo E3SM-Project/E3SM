@@ -39,6 +39,7 @@ module ocn_comp_mct
 
 contains
    subroutine ocn_init_mct(EClock, cdata, x2o, o2x, NLFilename)
+      use omega_f2cxx_mod, only: omega_ocn_init
       use, intrinsic :: iso_c_binding, only: c_null_char
       use, intrinsic :: iso_c_binding, only: c_ptr, c_loc, c_int, c_char
 
@@ -151,15 +152,26 @@ contains
          start_tod=case_start_tod &
          )
 
-      ! convert CIME calendar string to a C string with a CF-compliant name
+      ! convert CIME calendar to a C string using Omega naming conventions
       if (trim(calendar) == trim(shr_cal_noleap)) then
-         calendar_c = "no_leap"//c_null_char
+         calendar_c = "No Leap"//c_null_char
       else if (trim(calendar) == trim(shr_cal_gregorian)) then
-         calendar_c = "gregorian"//c_null_char
+         calendar_c = "Gregorian"//c_null_char
       else
          print *, "[omega] ERROR! Unsupported calendar: "//trim(calendar)
          call mpi_abort(mpicom_ocn, ierr, mpi_ierr)
       end if
+
+      call omega_ocn_init( &
+         mpicom_ocn, &
+         OCN_ID, &
+         "omega.yml"//c_null_char, &
+         trim(ocn_log_fname)//c_null_char, &
+         calendar_c, &
+         case_start_ymd, &
+         case_start_tod &
+         )
+
    end subroutine ocn_init_mct
 
    subroutine ocn_run_mct(EClock, cdata, x2o, o2x)
