@@ -679,7 +679,7 @@ subroutine  copy_aream_from_area(mbappid)
               ierr  = iMOAB_GetMeshInfo ( mblxid, nvert, nvise, nbl, nsurf, nvisBC )
               if (mb_scm_land) then
                  arrsize = nvert(1)*nfields
-                 ent_type = 0 ! cell
+                 ent_type = 0 ! vertex
               else
                  arrsize = nvise(1)*nfields
                  ent_type = 1 ! cell
@@ -808,18 +808,16 @@ subroutine  copy_aream_from_area(mbappid)
             call moab_define_global_id_tag(mbixid, subname)
          endif ! end data ice
 
-         if (MPSIID .ge. 0) then  ! we are on component sea ice pes
-            if ( trim(ice_domain) == 'none' ) then
-               call moab_free_sender_buffers(MPSIID, id_join, subname)
-            endif
-         endif
-
          call moab_define_double_tag(mbixid, trim(seq_flds_i2x_fields), subname)
          call moab_define_double_tag(mbixid, trim(seq_flds_x2i_fields), subname)
          call moab_define_double_tag(mbixid, trim(seq_flds_dom_fields)//":norm8wt", subname)
          call moab_define_double_tag(mbixid, trim(seq_flds_a2x_fields), subname)
          call moab_define_double_tag(mbixid, trim(seq_flds_r2x_fields), subname)
 
+      endif
+
+      if (MPSIID .ge. 0 .and. trim(ice_domain) == 'none') then  ! we are on component sea ice pes
+          call moab_free_sender_buffers(MPSIID, id_join, subname)
       endif
 
      ! in case of ice domain read, we need to compute the comm graph
@@ -976,7 +974,6 @@ subroutine  copy_aream_from_area(mbappid)
       !
       ! Local Variables
       !
-      integer                  :: mpicom_cplid
       integer                  :: mpicom_old
       integer                  :: mpicom_new
       integer                  :: mpicom_join
@@ -986,48 +983,17 @@ subroutine  copy_aream_from_area(mbappid)
 
       character(len=*),parameter :: subname = "(cplcomp_moab_Init) "
 
-      integer                  :: mpigrp_cplid ! coupler pes
-      integer                  :: mpigrp_old   !  component group pes
-      integer                  :: ierr, context_id
-      character*200            :: appname, outfile, wopts, ropts, infile
-      character(CL)            :: rtm_mesh, rof_domain
-      character(CL)            :: lnd_domain
-      character(CL)            :: ocn_domain
-      character(CL)            :: ice_domain   ! used for data ice only?
-      character(CL)            :: atm_mesh
-      integer                  :: maxMH, maxMPO, maxMLID, maxMSID, maxMRID ! max pids for moab apps atm, ocn, lnd, sea-ice, rof
-      integer                  :: tagtype, numco,  tagindex, partMethod, nghlay
-      integer                  :: rank, ent_type
-      integer                  :: typeA, typeB, ATM_PHYS_CID ! used to compute par graph between atm phys
-                                                            ! and atm spectral on coupler
-      character(CXX)           :: tagname
-      character(CXX)           :: newlist
-      integer                  nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
-      logical                  :: rof_present, lnd_prognostic, single_column, scm_multcols
-      real(r8),    allocatable    :: tagValues(:) ! used for setting aream tags for atm domain read case
-      integer                     :: arrsize ! for the size of tagValues
-      type(mct_list)             :: temp_list
-      integer                    :: nfields,nloc
-      logical                    :: dead_comps
-      ! real(R8), allocatable, target :: values(:)
-
+      integer                  :: maxMH, maxMPO, maxMLID, maxMSID, maxMRID
+      integer                  :: partMethod
+      logical                  :: dead_comps
 
    !-----------------------------------------------------
-
-      call seq_comm_getinfo(CPLID, mpicom=mpicom_CPLID, iam=rank)
 
       id_new  = CPLID
       id_old  = comp%compid
       id_join = comp%cplcompid
 
-      mpicom_new  = mpicom_CPLID
-      mpicom_old  = comp%mpicom_compid
-      mpicom_join = comp%mpicom_cplcompid
-
-      ! partMethod = 0 ! trivial partitioning
-      partMethod = 2 ! it is better to use RCB for atmosphere and ocean (needs MOAB_HAVE_ZOLTAN)
-      context_id = -1 ! original sends/receives, so the context is -1
-                     ! needed only to free send buffers
+      partMethod = 2 ! RCB partitioning (requires MOAB_HAVE_ZOLTAN)
 
       call seq_comm_getinfo(ID_old ,mpicom=mpicom_old)
       call seq_comm_getinfo(ID_new ,mpicom=mpicom_new)
