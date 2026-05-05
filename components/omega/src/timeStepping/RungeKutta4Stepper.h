@@ -46,10 +46,7 @@ class RungeKutta4Stepper : public TimeStepper {
    Real RKB[NStages];
    Real RKC[NStages];
 
-   // Projection factors for each RK stage. These are the RKC coefficients
-   // shifted by one RK stage and represent the fraction of the timestep over
-   // which fields are projected from the old state to the state at the end of a
-   // RK stage.
+   // Projection factors
    Real RKProj[NStages];
 };
 
