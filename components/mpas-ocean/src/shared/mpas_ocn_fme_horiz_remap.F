@@ -144,6 +144,10 @@ module ocn_fme_horiz_remap
       ! for vars defined with shape (lon, lat) only — no time dim, written
       ! once per file. Used by write_var to skip pio_setframe.
       logical            :: pio_var_is_static(max_pio_vars) = .false.
+      ! Per-active-def is_scalar flag, parallel to pio_var_descs. True
+      ! for static vars defined with NO dims (scalar netCDF var) — used
+      ! for per-layer-interface metadata like idepth_k.
+      logical            :: pio_var_is_scalar(max_pio_vars) = .false.
       type(var_desc_t)   :: pio_lon_var, pio_lat_var
       ! CF time variables (replace legacy MPAS xtime). See module-scope
       ! comment on time_epoch for epoch handling.
@@ -158,6 +162,16 @@ module ocn_fme_horiz_remap
       ! Per-registered-var is_static flag, replayed by check_rotate so
       ! every fresh file's def_var calls reproduce the original shape.
       logical            :: stored_is_static(max_pio_vars) = .false.
+      ! Per-registered-var is_scalar flag + value, replayed on rotation.
+      ! `stored_scalar_value` carries the constant (e.g. layer-interface
+      ! depth in m) that gets written once per fresh file.
+      logical            :: stored_is_scalar(max_pio_vars) = .false.
+      real(r8)           :: stored_scalar_value(max_pio_vars) = 0.0_r8
+      ! Optional CF positive direction for scalar vars (e.g. 'down' for
+      ! depths, 'up' for heights). Empty => attribute not written.
+      character(len=8)   :: stored_positive(max_pio_vars) = ''
+      ! Optional CF standard_name for scalar vars (e.g. 'depth').
+      character(len=64)  :: stored_standard_name(max_pio_vars) = ''
       integer :: n_registered_vars = 0
       ! Current open filename and stream name for rotation
       character(len=512) :: current_filename = ''
@@ -939,34 +953,49 @@ contains
    end subroutine check_pio
 
    subroutine remap_file_def_var(self, varname, units, long_name, numlev, err, &
-        is_static, cell_methods)!{{{
+        is_static, cell_methods, is_scalar, scalar_value, &
+        positive, standard_name)!{{{
    !> Register an output variable. On a freshly created file, defines the
    !> variable + attributes. On a reopened (append-mode) file, looks up
    !> the existing var_desc — definitions and attributes are already
    !> persisted on disk from the first create.
    !>
-   !> When is_static=.true., the var is defined with (lon, lat) only (no
-   !> Time dim) and gets no _FillValue attribute. Static vars are written
-   !> once per file via write_var, which skips pio_setframe for these.
+   !> Shape selection:
+   !>   default       => (lon, lat, time)  — time-varying field
+   !>   is_static     => (lon, lat)        — written once per file
+   !>   is_scalar     => ()                — netCDF scalar, written once;
+   !>                                       requires scalar_value=
    !>
-   !> cell_methods, when present and non-empty, is written as the CF
-   !> `cell_methods` attribute (e.g. 'time: mean' for averaged records,
-   !> 'time: point' for instantaneous).
+   !> cell_methods, when present and non-empty, writes the CF
+   !> `cell_methods` attribute. positive / standard_name are optional CF
+   !> attrs typically used with scalar coord vars (e.g. depth: positive=
+   !> 'down', standard_name='depth').
       class(ocn_fme_remap_file_t), intent(inout) :: self
       character(len=*), intent(in) :: varname, units, long_name
       integer, intent(in) :: numlev
       integer, intent(out) :: err
       logical, optional, intent(in) :: is_static
       character(len=*), optional, intent(in) :: cell_methods
+      logical, optional, intent(in) :: is_scalar
+      real(r8), optional, intent(in) :: scalar_value
+      character(len=*), optional, intent(in) :: positive, standard_name
       integer :: ierr
+      integer :: empty_dims(0)
       real(kind=4) :: fill_val
-      logical :: is_static_local
+      real(r8) :: scalar_buf
+      logical :: is_static_local, is_scalar_local
 
       err = 0
       if (.not. self%file_is_open) then; err = 1; return; end if
 
       is_static_local = .false.
       if (present(is_static)) is_static_local = is_static
+      is_scalar_local = .false.
+      if (present(is_scalar)) is_scalar_local = is_scalar
+      ! Scalar vars are themselves a kind of static. Mutually exclusive
+      ! with the lon/lat is_static path; if a caller passes both, treat
+      ! as scalar (the more specific shape).
+      if (is_scalar_local) is_static_local = .true.
 
       self%n_pio_vars = self%n_pio_vars + 1
       if (self%n_pio_vars > max_pio_vars) then
@@ -979,6 +1008,7 @@ contains
 
       self%pio_var_names(self%n_pio_vars) = varname
       self%pio_var_is_static(self%n_pio_vars) = is_static_local
+      self%pio_var_is_scalar(self%n_pio_vars) = is_scalar_local
 
       if (self%existing_file_reopened) then
          ierr = pio_inq_varid(self%pio_file, trim(varname), &
@@ -992,7 +1022,12 @@ contains
          return
       end if
 
-      if (is_static_local) then
+      if (is_scalar_local) then
+         ! Scalar netCDF variable — empty dim list. PIO_DOUBLE so the
+         ! value round-trips exactly through r8 storage.
+         ierr = pio_def_var(self%pio_file, trim(varname), PIO_DOUBLE, &
+              empty_dims, self%pio_var_descs(self%n_pio_vars))
+      else if (is_static_local) then
          ierr = pio_def_var(self%pio_file, trim(varname), PIO_REAL, &
               (/self%dim_lon_id, self%dim_lat_id/), &
               self%pio_var_descs(self%n_pio_vars))
@@ -1011,20 +1046,49 @@ contains
            'units', trim(units))
       ierr = pio_put_att(self%pio_file, self%pio_var_descs(self%n_pio_vars), &
            'long_name', trim(long_name))
-      if (present(cell_methods)) then
+      if (present(cell_methods) .and. .not. is_scalar_local) then
          if (len_trim(cell_methods) > 0) then
             ierr = pio_put_att(self%pio_file, self%pio_var_descs(self%n_pio_vars), &
                  'cell_methods', trim(cell_methods))
          end if
       end if
+      ! CF positive/standard_name only meaningful on coord-like vars
+      ! (used by scalar interface metadata such as idepth_*).
+      if (present(positive)) then
+         if (len_trim(positive) > 0) then
+            ierr = pio_put_att(self%pio_file, self%pio_var_descs(self%n_pio_vars), &
+                 'positive', trim(positive))
+         end if
+      end if
+      if (present(standard_name)) then
+         if (len_trim(standard_name) > 0) then
+            ierr = pio_put_att(self%pio_file, self%pio_var_descs(self%n_pio_vars), &
+                 'standard_name', trim(standard_name))
+         end if
+      end if
       ! Fill-value attributes only on time-varying vars; masks contain
-      ! literal 0.0/1.0 with no missing data semantics.
+      ! literal 0.0/1.0 with no missing data semantics, and scalar
+      ! metadata vars carry an exact constant value.
       if (.not. is_static_local) then
          fill_val = real(SHR_FILL_VALUE, 4)
          ierr = pio_put_att(self%pio_file, self%pio_var_descs(self%n_pio_vars), &
               '_FillValue', fill_val)
          ierr = pio_put_att(self%pio_file, self%pio_var_descs(self%n_pio_vars), &
               'missing_value', fill_val)
+      end if
+
+      ! Scalars carry their constant inline: write once at define-time.
+      ! PIO transitions to data mode automatically on the first put.
+      if (is_scalar_local .and. present(scalar_value)) then
+         scalar_buf = scalar_value
+         ierr = pio_put_var(self%pio_file, &
+              self%pio_var_descs(self%n_pio_vars), scalar_buf)
+         if (ierr /= PIO_NOERR) then
+            call mpas_log_write('ocn_fme_remap_file: pio_put_var (scalar) ' &
+                 // 'failed for ' // trim(varname) // ' (code $i)', &
+                 messageType=MPAS_LOG_ERR, intArgs=(/ierr/))
+            err = ierr; return
+         end if
       end if
 
    end subroutine remap_file_def_var!}}}
@@ -1046,6 +1110,16 @@ contains
 
       do iv = 1, self%n_pio_vars
          if (trim(self%pio_var_names(iv)) == trim(varname)) then
+            ! Scalars carry their value inline at def-time; calling
+            ! write_var on one is a programmer error.
+            if (self%pio_var_is_scalar(iv)) then
+               call mpas_log_write('ocn_fme_remap_file: write_var called ' &
+                    // 'on scalar var ' // trim(varname) // ' (no-op; ' &
+                    // 'value already set at define-time)', &
+                    messageType=MPAS_LOG_WARN)
+               err = 0
+               return
+            end if
             ! Static (no Time dim) vars: skip setframe — there's no
             ! UNLIMITED dim to advance, and pio_setframe on a 2D var
             ! errors on some PIO versions.
@@ -1135,20 +1209,26 @@ contains
    end subroutine remap_file_close!}}}
 
    subroutine remap_file_register_var(self, varname, units, long_name, err, &
-        is_static, cell_methods)!{{{
+        is_static, cell_methods, is_scalar, scalar_value, &
+        positive, standard_name)!{{{
    !> Register a variable for output. Stores metadata so that def_var can
    !> be replayed automatically when a file is opened or rotated.
    !> Silently skips if the variable is already registered (MPAS framework
    !> may call init twice: once for setup, once for compute_on_startup).
-   !> When is_static=.true., the variable is defined with shape (lon, lat)
-   !> only (no Time dim) and written once per file (used for masks).
-   !> cell_methods is stored verbatim and replayed verbatim into the
-   !> CF `cell_methods` attribute by def_var.
+   !>
+   !> Shape options (in order of decreasing specificity):
+   !>   is_scalar  => netCDF scalar var, written once with `scalar_value=`.
+   !>                 Carries optional CF `positive` / `standard_name`.
+   !>   is_static  => (lon, lat) only, written once via write_var.
+   !>   default    => (lon, lat, time), time-varying, with cell_methods.
       class(ocn_fme_remap_file_t), intent(inout) :: self
       character(len=*), intent(in) :: varname, units, long_name
       integer, intent(out) :: err
       logical, optional, intent(in) :: is_static
       character(len=*), optional, intent(in) :: cell_methods
+      logical, optional, intent(in) :: is_scalar
+      real(r8), optional, intent(in) :: scalar_value
+      character(len=*), optional, intent(in) :: positive, standard_name
       integer :: iv
 
       err = 0
@@ -1170,12 +1250,28 @@ contains
       self%stored_units(self%n_registered_vars) = units
       self%stored_long_names(self%n_registered_vars) = long_name
       self%stored_is_static(self%n_registered_vars) = .false.
+      self%stored_is_scalar(self%n_registered_vars) = .false.
+      self%stored_scalar_value(self%n_registered_vars) = 0.0_r8
       self%stored_cell_methods(self%n_registered_vars) = ''
+      self%stored_positive(self%n_registered_vars) = ''
+      self%stored_standard_name(self%n_registered_vars) = ''
       if (present(is_static)) then
          self%stored_is_static(self%n_registered_vars) = is_static
       end if
+      if (present(is_scalar)) then
+         self%stored_is_scalar(self%n_registered_vars) = is_scalar
+      end if
+      if (present(scalar_value)) then
+         self%stored_scalar_value(self%n_registered_vars) = scalar_value
+      end if
       if (present(cell_methods)) then
          self%stored_cell_methods(self%n_registered_vars) = cell_methods
+      end if
+      if (present(positive)) then
+         self%stored_positive(self%n_registered_vars) = positive
+      end if
+      if (present(standard_name)) then
+         self%stored_standard_name(self%n_registered_vars) = standard_name
       end if
    end subroutine remap_file_register_var!}}}
 
@@ -1212,13 +1308,18 @@ contains
          self%current_filename = new_filename
 
          ! Replay all registered variable definitions, preserving
-         ! static-var shape and cell_methods across rotation.
+         ! static-var shape, scalar-var values, and cell_methods across
+         ! rotation.
          do iv = 1, self%n_registered_vars
             call self%def_var(trim(self%pio_var_names(iv)), &
                  trim(self%stored_units(iv)), &
                  trim(self%stored_long_names(iv)), 1, ierr, &
                  is_static=self%stored_is_static(iv), &
-                 cell_methods=trim(self%stored_cell_methods(iv)))
+                 cell_methods=trim(self%stored_cell_methods(iv)), &
+                 is_scalar=self%stored_is_scalar(iv), &
+                 scalar_value=self%stored_scalar_value(iv), &
+                 positive=trim(self%stored_positive(iv)), &
+                 standard_name=trim(self%stored_standard_name(iv)))
          end do
       end if
 

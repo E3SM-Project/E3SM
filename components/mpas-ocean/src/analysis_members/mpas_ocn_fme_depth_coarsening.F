@@ -312,6 +312,20 @@ contains
                   call remap_outfile%register_var(trim(varName), '1', &
                        trim(longName), ierr, is_static=.true.)
                end do
+               ! Per-layer-interface depth scalars idepth_0..idepth_N
+               ! (N = nCoarsenLevels; one more than the number of layers).
+               ! Layer k spans idepth_k -> idepth_{k+1}; thickness =
+               ! idepth_{k+1} - idepth_k matches layerThicknessCoarsened_k.
+               do kOut = 0, nCoarsenLevels
+                  write(varName, '(A,I0)') 'idepth_', kOut
+                  write(longName, '(A,I0,A)') &
+                       'Depth at coarsened layer interface ', kOut, &
+                       ' (m below sea surface)'
+                  call remap_outfile%register_var(trim(varName), 'm', &
+                       trim(longName), ierr, is_scalar=.true., &
+                       scalar_value=depthBounds(kOut+1), &
+                       positive='down', standard_name='depth')
+               end do
 
                ! Time-averaging setup
                call mpas_pool_get_config(domain % configs, &
