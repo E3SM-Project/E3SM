@@ -48,7 +48,7 @@ void ForwardBackwardStepper::doStep(
    // R_u^{n} = RHS_u(u^{n}, h^{n}, t^{n})
    Tend->computeVelocityTendencies(State, AuxState, CurTracerArray,
                                    ThickCurLevel, VelCurLevel, TracerCurLevel,
-                                   SimTime + TimeStep);
+                                   SimTime + TimeStep, TimeStep);
 
    // u^{n+1} = u^{n} + R_u^{n}
    updateVelocityByTend(State, VelNextLevel, State, VelCurLevel, TimeStep);

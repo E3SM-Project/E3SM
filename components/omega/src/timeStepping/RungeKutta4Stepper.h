@@ -45,6 +45,9 @@ class RungeKutta4Stepper : public TimeStepper {
    Real RKA[NStages];
    Real RKB[NStages];
    Real RKC[NStages];
+
+   // Projection factors
+   Real RKProj[NStages];
 };
 
 } // namespace OMEGA
