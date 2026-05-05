@@ -358,10 +358,10 @@ void VertAdv::readConfigOptions(Config *OmegaConfig) {
 // velocity (NormalVelocity), the layer thickness used for fluxes through
 // edges (FluxLayerThickEdge), and the cell-based LayerThickness.
 void VertAdv::computeVerticalVelocity(
-    const Array2DReal &NormalVelocity,     ///< [in] horizontal velocity
-    const Array2DReal &FluxLayerThickEdge, ///< [in] layer thickness at edges
-    const Array2DReal &LayerThickness,     ///< [in] pseudo thickness of layer
-    const Real Dt                          ///< [in] time interval
+    const Array2DReal &NormalVelocity,     //< [in] horizontal velocity
+    const Array2DReal &FluxLayerThickEdge, //< [in] layer thickness at edges
+    const Array2DReal &LayerThickness,     //< [in] pseudo thickness of layer
+    const Real Dt                          //< [in] time interval
 ) {
 
    // Return if mesh only has a single vertical layer
