@@ -5124,12 +5124,16 @@ at exactly <code>T_zerodegc</code> because the active mask uses <code>T_atm &lt;
 <h2 id="property-test-strategy">Property-Test Strategy</h2>
 <p>The unit tests live in
 <code>components/eamxx/src/physics/p3/tests/p3_calc_rime_density_unit_tests.cpp</code>.</p>
+<p>The droplet-size test holds impact speed and temperature fixed while varying
+<code>D_c = (4 + mu_c) / lamc</code>, verifying that larger cloud droplets do not decrease
+the diagnosed rime density.</p>
 <p>The <code>run_phys()</code> implementation uses separate Catch2 sections for:</p>
 <ul>
 <li><code>activation_and_defaults</code></li>
 <li><code>velocity_identity</code></li>
 <li><code>targeted_ri_density_regimes</code></li>
 <li><code>rime_density_increases_with_impact_speed</code></li>
+<li><code>rime_density_increases_with_droplet_size</code></li>
 <li><code>rime_density_increases_toward_freezing</code></li>
 <li><code>impact_speed_symmetry</code></li>
 <li><code>rime_density_bounds</code></li>
