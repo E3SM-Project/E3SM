@@ -439,21 +439,19 @@ void VertAdv::computeVerticalVelocity(
                  }
               });
 
-          KRange = vertRangeChunked(KMin + 1, KMax);
           // Add contribution to transport velocity from movement of layer
           // interfaces, store in TotalVerticalVelocity.
-          parallelForInner(
-              Team, KRange, INNER_LAMBDA(int KChunk) {
-                 Real TotVertVelTmp[VecLength] = {0};
+          parallelScanInner(
+              Team, KRange, INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
+                 const I4 KRev      = KMax - K;
+                 const Real AleTerm = (LocThickTarget(ICell, KRev) -
+                                       LayerThickness(ICell, KRev)) /
+                                      Dt;
 
-                 const I4 KStart = chunkStart(KChunk, KMin + 1);
-                 const I4 KLen   = chunkLength(KChunk, KStart, KMax);
-                 for (int KVec = 0; KVec < KLen; ++KVec) {
-                    const I4 K = KStart + KVec;
-                    LocTotVertVel(ICell, K) =
-                        LocVertVel(ICell, K) -
-                        (LocThickTarget(ICell, K) - LayerThickness(ICell, K)) /
-                            Dt;
+                 Accum -= DivHU(KRev) + AleTerm;
+
+                 if (IsFinal) {
+                    LocTotVertVel(ICell, KRev) = Accum;
                  }
               });
        },
