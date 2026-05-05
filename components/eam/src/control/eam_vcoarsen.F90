@@ -279,15 +279,18 @@ contains
     integer :: i, k, idx
     character(len=max_fname_len) :: fname
     character(len=256) :: lname
+    character(len=32) :: src_units, int_units, dint_units
     logical :: found
 
     if (.not. has_avg .and. .not. has_sel_lev .and. .not. has_sel_pres &
         .and. .not. has_sel_height .and. .not. has_int) return
 
-    ! Validate and register averaged fields
+    ! Validate and register averaged fields. The vcoarsen mass-weighted
+    ! mean is unit-preserving, so output units match the source field.
     if (has_avg) then
       do i = 1, n_avg_flds
         call validate_field_name(vcoarsen_avg_flds(i))
+        src_units = lookup_field_units(vcoarsen_avg_flds(i))
         do k = 1, n_avg_levs
           call make_avg_name(vcoarsen_avg_flds(i), k-1, fname)  ! 0-indexed for ACE
           if (use_level_bounds) then
@@ -301,71 +304,78 @@ contains
                  ' (', vcoarsen_pbounds(k)/100.0_r8, '-', &
                  vcoarsen_pbounds(k+1)/100.0_r8, ' hPa)'
           end if
-          call addfld(trim(fname), horiz_only, 'A', 'varies', trim(lname), &
+          call addfld(trim(fname), horiz_only, 'A', trim(src_units), trim(lname), &
                flag_xyfill=.true.)
         end do
       end do
     end if
 
-    ! Validate and register level-selected fields
+    ! Validate and register level-selected fields (unit-preserving)
     if (has_sel_lev) then
       do i = 1, n_sel_lev_flds
         call validate_field_name(vcoarsen_select_lev_flds(i))
+        src_units = lookup_field_units(vcoarsen_select_lev_flds(i))
         do k = 1, n_sel_levs
           call make_sel_lev_name(vcoarsen_select_lev_flds(i), vcoarsen_select_levs(k), fname)
           write(lname, '(A,A,I0)') trim(vcoarsen_select_lev_flds(i)), &
                ' at model level ', vcoarsen_select_levs(k)
-          call addfld(trim(fname), horiz_only, 'A', 'varies', trim(lname), &
+          call addfld(trim(fname), horiz_only, 'A', trim(src_units), trim(lname), &
                flag_xyfill=.true.)
         end do
       end do
     end if
 
-    ! Validate and register pressure-selected fields
+    ! Validate and register pressure-selected fields (unit-preserving)
     if (has_sel_pres) then
       do i = 1, n_sel_pres_flds
         call validate_field_name(vcoarsen_select_pres_flds(i))
+        src_units = lookup_field_units(vcoarsen_select_pres_flds(i))
         do k = 1, n_sel_pres
           call make_sel_pres_name(vcoarsen_select_pres_flds(i), vcoarsen_select_pres(k), fname)
           write(lname, '(A,A,F0.1,A)') trim(vcoarsen_select_pres_flds(i)), &
                ' at nearest level to ', vcoarsen_select_pres(k), ' hPa'
-          call addfld(trim(fname), horiz_only, 'A', 'varies', trim(lname), &
+          call addfld(trim(fname), horiz_only, 'A', trim(src_units), trim(lname), &
                flag_xyfill=.true.)
         end do
       end do
     end if
 
-    ! Validate and register height-interpolated fields
+    ! Validate and register height-interpolated fields (unit-preserving)
     if (has_sel_height) then
       do i = 1, n_sel_height_flds
         call validate_field_name(vcoarsen_select_height_flds(i))
+        src_units = lookup_field_units(vcoarsen_select_height_flds(i))
         do k = 1, n_sel_heights
           call make_sel_height_name(vcoarsen_select_height_flds(i), &
                vcoarsen_select_heights(k), fname)
           write(lname, '(A,A,F0.1,A)') trim(vcoarsen_select_height_flds(i)), &
                ' linearly interpolated to ', vcoarsen_select_heights(k), &
                ' m above surface'
-          call addfld(trim(fname), horiz_only, 'A', 'varies', trim(lname), &
+          call addfld(trim(fname), horiz_only, 'A', trim(src_units), trim(lname), &
                flag_xyfill=.true.)
         end do
       end do
     end if
 
-    ! Validate and register column-integrated fields + their tendencies
+    ! Validate and register column-integrated fields + their tendencies.
+    ! Column integration in pressure (eam_vcoarsen integrates dp/g) gives
+    ! units of [source] * kg/m^2; the tendency divides by seconds.
     if (has_int) then
       ! Allocate previous-timestep storage for tendency computation
       allocate(int_prev(pcols, n_int_flds, begchunk:endchunk))
       int_prev(:,:,:) = 0.0_r8
       do i = 1, n_int_flds
         call validate_field_name(vcoarsen_int_flds(i))
+        src_units = lookup_field_units(vcoarsen_int_flds(i))
+        call compose_int_units(src_units, int_units, dint_units)
         fname = trim(vcoarsen_int_flds(i)) // '_INT'
         write(lname, '(A,A)') 'Column-integrated ', trim(vcoarsen_int_flds(i))
-        call addfld(trim(fname), horiz_only, 'A', 'varies', trim(lname), &
+        call addfld(trim(fname), horiz_only, 'A', trim(int_units), trim(lname), &
              flag_xyfill=.true.)
         ! Also register the tendency d{FIELD}_INT_dt
         fname = 'd' // trim(vcoarsen_int_flds(i)) // '_INT_dt'
         write(lname, '(A,A)') 'Tendency of column-integrated ', trim(vcoarsen_int_flds(i))
-        call addfld(trim(fname), horiz_only, 'A', 'varies', trim(lname), &
+        call addfld(trim(fname), horiz_only, 'A', trim(dint_units), trim(lname), &
              flag_xyfill=.true.)
       end do
     end if
@@ -666,6 +676,65 @@ contains
     end if
 
   end subroutine validate_field_name
+
+  !============================================================================
+  function lookup_field_units(fname) result(units_out)
+    !--------------------------------------------------------------------------
+    ! Return the unit string for a source field used as input to vcoarsen
+    ! avg / sel_lev / sel_pres / sel_height paths. These paths are
+    ! mathematically unit-preserving, so the output unit equals the source.
+    ! Covers the production-supported field set; falls back to 'unknown'
+    ! for anything else (and logs a one-line WARN at masterproc).
+    !--------------------------------------------------------------------------
+    character(len=*), intent(in) :: fname
+    character(len=32)            :: units_out
+    character(len=max_name_len)  :: uname
+
+    uname = adjustl(fname)
+    select case (trim(uname))
+    case ('T')
+       units_out = 'K'
+    case ('U', 'V')
+       units_out = 'm/s'
+    case ('OMEGA')
+       units_out = 'Pa/s'
+    case ('Z3')
+       units_out = 'm'
+    case ('Q', 'CLDLIQ', 'CLDICE', 'RAINQM', 'SNOWQM', 'STW')
+       units_out = 'kg/kg'
+    case ('NUMLIQ', 'NUMICE', 'NUMRAI', 'NUMSNO')
+       units_out = '1/kg'
+    case default
+       units_out = 'unknown'
+       if (masterproc) then
+          write(iulog,*) 'eam_vcoarsen: WARN no units mapping for source field "', &
+               trim(uname), '"; output will be tagged units="unknown"'
+       end if
+    end select
+  end function lookup_field_units
+
+  !============================================================================
+  subroutine compose_int_units(src, int_u, dint_u)
+    !--------------------------------------------------------------------------
+    ! Build unit strings for column-integrated diagnostics. eam_vcoarsen
+    ! integrates dp/g so a [src] field becomes [src]*kg/m^2; the tendency
+    ! divides by seconds. Pass through 'unknown' if the source is unknown.
+    !--------------------------------------------------------------------------
+    character(len=*), intent(in)  :: src
+    character(len=*), intent(out) :: int_u, dint_u
+
+    if (trim(src) == 'unknown') then
+       int_u  = 'unknown'
+       dint_u = 'unknown'
+    else if (trim(src) == 'kg/kg') then
+       ! Common case: water-mass mixing ratios -> column-integrated water (kg/m^2)
+       int_u  = 'kg/m^2'
+       dint_u = 'kg/m^2/s'
+    else
+       int_u  = '(' // trim(src) // ')*kg/m^2'
+       dint_u = '(' // trim(src) // ')*kg/m^2/s'
+    end if
+  end subroutine compose_int_units
 
   !============================================================================
   subroutine count_and_expand_flds(fld_list, n_flds)

@@ -48,6 +48,7 @@ module seaice_fme_horiz_remap
 
    public :: seaice_fme_horiz_remap_init
    public :: seaice_fme_horiz_remap_init_time_epoch
+   public :: seaice_fme_horiz_remap_set_provenance
    public :: seaice_fme_horiz_remap_field
    public :: seaice_fme_horiz_remap_active
    public :: seaice_fme_horiz_remap_open_file
@@ -112,8 +113,20 @@ module seaice_fme_horiz_remap
    integer :: n_registered_vars = 0
    character(len=64)  :: stored_units(max_pio_vars)
    character(len=128) :: stored_long_names(max_pio_vars)
+   ! Optional CF cell_methods (e.g. 'time: mean' / 'time: point').
+   ! Empty string => attribute is not written.
+   character(len=64)  :: stored_cell_methods(max_pio_vars) = ''
    character(len=512) :: current_filename = ''
    character(len=128) :: remap_stream_name = ''
+
+   ! CIME-side provenance, captured once via seaice_fme_horiz_remap_set_provenance
+   ! and stamped as global attrs onto every fresh `.remapped.nc` file.
+   character(len=StrKIND) :: prov_case          = ''
+   character(len=StrKIND) :: prov_username      = ''
+   character(len=StrKIND) :: prov_hostname      = ''
+   character(len=StrKIND) :: prov_model_version = ''
+   character(len=StrKIND) :: prov_history       = ''
+   logical                :: provenance_set     = .false.
 
 contains
 
@@ -658,6 +671,22 @@ contains
       ierr = pio_put_att(pio_file, PIO_GLOBAL, 'Conventions', 'CF-1.8')
       ierr = pio_put_att(pio_file, PIO_GLOBAL, 'calendar', 'noleap')
       ierr = pio_put_att(pio_file, PIO_GLOBAL, 'time_reference_date', trim(time_epoch_cf))
+      ierr = pio_put_att(pio_file, PIO_GLOBAL, 'realm', 'seaIce')
+      ierr = pio_put_att(pio_file, PIO_GLOBAL, 'product', 'model-output')
+      ierr = pio_put_att(pio_file, PIO_GLOBAL, 'institution_id', 'E3SM-Project')
+      ierr = pio_put_att(pio_file, PIO_GLOBAL, 'contact', 'e3sm-data-support@llnl.gov')
+      if (provenance_set) then
+         if (len_trim(prov_case)          > 0) ierr = pio_put_att(pio_file, PIO_GLOBAL, &
+              'case',          trim(prov_case))
+         if (len_trim(prov_username)      > 0) ierr = pio_put_att(pio_file, PIO_GLOBAL, &
+              'username',      trim(prov_username))
+         if (len_trim(prov_hostname)      > 0) ierr = pio_put_att(pio_file, PIO_GLOBAL, &
+              'hostname',      trim(prov_hostname))
+         if (len_trim(prov_model_version) > 0) ierr = pio_put_att(pio_file, PIO_GLOBAL, &
+              'git_version',   trim(prov_model_version))
+         if (len_trim(prov_history)       > 0) ierr = pio_put_att(pio_file, PIO_GLOBAL, &
+              'history',       trim(prov_history))
+      end if
 
       if (err /= 0) then
          call mpas_log_write('seaice_fme_horiz_remap: define-mode error opening ' &
@@ -682,10 +711,12 @@ contains
       end if
    end subroutine check_pio_si
 
-   subroutine seaice_fme_horiz_remap_def_var(varname, units, long_name, numlev, err)!{{{
+   subroutine seaice_fme_horiz_remap_def_var(varname, units, long_name, numlev, err, &
+        cell_methods)!{{{
       character(len=*), intent(in) :: varname, units, long_name
       integer, intent(in) :: numlev
       integer, intent(out) :: err
+      character(len=*), optional, intent(in) :: cell_methods
       integer :: ierr
       real(kind=4) :: fill_val
 
@@ -722,6 +753,12 @@ contains
       end if
       ierr = pio_put_att(pio_file, pio_var_descs(n_pio_vars), 'units', trim(units))
       ierr = pio_put_att(pio_file, pio_var_descs(n_pio_vars), 'long_name', trim(long_name))
+      if (present(cell_methods)) then
+         if (len_trim(cell_methods) > 0) then
+            ierr = pio_put_att(pio_file, pio_var_descs(n_pio_vars), &
+                 'cell_methods', trim(cell_methods))
+         end if
+      end if
       fill_val = real(SHR_FILL_VALUE, 4)
       ierr = pio_put_att(pio_file, pio_var_descs(n_pio_vars), '_FillValue', fill_val)
       ierr = pio_put_att(pio_file, pio_var_descs(n_pio_vars), 'missing_value', fill_val)
@@ -810,10 +847,14 @@ contains
       end if
    end subroutine seaice_fme_horiz_remap_close_file!}}}
 
-   subroutine seaice_fme_horiz_remap_register_var(varname, units, long_name, err)!{{{
+   subroutine seaice_fme_horiz_remap_register_var(varname, units, long_name, err, &
+        cell_methods)!{{{
    !> Silently skips if already registered (MPAS may call init twice).
+   !> cell_methods is stored verbatim and replayed by check_rotate into
+   !> def_var, which writes the CF `cell_methods` attribute.
       character(len=*), intent(in) :: varname, units, long_name
       integer, intent(out) :: err
+      character(len=*), optional, intent(in) :: cell_methods
       integer :: iv
 
       err = 0
@@ -834,6 +875,8 @@ contains
       pio_var_names(n_registered_vars) = varname
       stored_units(n_registered_vars) = units
       stored_long_names(n_registered_vars) = long_name
+      stored_cell_methods(n_registered_vars) = ''
+      if (present(cell_methods)) stored_cell_methods(n_registered_vars) = cell_methods
    end subroutine seaice_fme_horiz_remap_register_var!}}}
 
    subroutine seaice_fme_horiz_remap_check_rotate(domain, err)!{{{
@@ -864,7 +907,8 @@ contains
 
          do iv = 1, n_registered_vars
             call seaice_fme_horiz_remap_def_var(trim(pio_var_names(iv)), &
-                 trim(stored_units(iv)), trim(stored_long_names(iv)), 1, ierr)
+                 trim(stored_units(iv)), trim(stored_long_names(iv)), 1, ierr, &
+                 cell_methods=trim(stored_cell_methods(iv)))
          end do
       end if
 
@@ -1131,5 +1175,25 @@ contains
            // trim(filename) // ' (nAccum=$i)', intArgs=(/nAccum/))
 
    end subroutine seaice_fme_horiz_remap_read_accum!}}}
+
+!***********************************************************************
+
+   subroutine seaice_fme_horiz_remap_set_provenance(case_name, username, hostname, &
+        model_version, history_str)!{{{
+   !> Capture CIME-side provenance once during ice_comp_mct init. The
+   !> strings are written verbatim as global attributes onto every
+   !> freshly-created `.remapped.nc` file (see seaice_fme_horiz_remap_open_file).
+   !> No-op on subsequent calls so the FIRST values win.
+      character(len=*), intent(in) :: case_name, username, hostname
+      character(len=*), intent(in) :: model_version, history_str
+
+      if (provenance_set) return
+      prov_case          = case_name
+      prov_username      = username
+      prov_hostname      = hostname
+      prov_model_version = model_version
+      prov_history       = history_str
+      provenance_set     = .true.
+   end subroutine seaice_fme_horiz_remap_set_provenance!}}}
 
 end module seaice_fme_horiz_remap
