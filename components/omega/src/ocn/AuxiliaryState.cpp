@@ -99,6 +99,9 @@ void AuxiliaryState::computeMomVertAux(const OceanState *State,
    // compute geometric height
    VCoord->computeZHeight(LayerThickCell, EosInstance->SpecVol);
 
+   // compute target thickness
+   VCoord->computeTargetThickness();
+
    Pacer::stop("AuxState:computeMomVertAux", 2);
 }
 
