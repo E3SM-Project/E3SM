@@ -805,12 +805,16 @@ contains
 
          if (iamroot_CPLID) then
             write(logunit,*) ' '
-            write(logunit,F00) 'Initializing mapper_Fl2a'
+            write(logunit,F00) 'Initializing l2a mappers'
          endif
          call seq_map_mapinit(mapper_Fl2a, mpicom_CPLID)
+         call seq_map_mapinit(mapper_Sl2a, mpicom_CPLID)
+
          if (samegrid_al) then
             mapper_Fl2a%rearrange_only = .true.
             mapper_Fl2a%strategy = "rearrange"
+            mapper_Sl2a%rearrange_only = .true.
+            mapper_Sl2a%strategy = "rearrange"
          endif
 
          ! important change: do not compute intx at all between atm and land when we have samegrid_al
@@ -977,7 +981,6 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Sl2a'
          endif
-         call seq_map_mapinit(mapper_Sl2a, mpicom_CPLID)
          if (samegrid_al) then
             mapper_Sl2a%rearrange_only = .true.
             mapper_Sl2a%strategy = "rearrange"
