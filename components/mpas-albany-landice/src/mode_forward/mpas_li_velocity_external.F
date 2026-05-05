@@ -471,6 +471,7 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: heatDissipation  ! on cells
       integer :: iEdge
       integer :: iCell
+      integer :: albanyVelocityErrorTmp
       real(kind=RKIND), parameter :: secondsInYear = 365.0_RKIND * 24.0_RKIND * 3600.0_RKIND
          !< The value of seconds in a year assumed by external dycores
       integer, pointer :: albanyVelocityError
@@ -521,7 +522,6 @@ contains
       call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel = 1)
       call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor)
       call mpas_pool_get_array(velocityPool, 'albanyVelocityError', albanyVelocityError)
-      albanyVelocityError = 0
 
       ! Hydro variables
       call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
@@ -595,19 +595,24 @@ contains
 
 
           call mpas_timer_start("velocity_solver_solve_FO")
+          albanyVelocityErrorTmp = 0
           call velocity_solver_solve_FO(bedTopography, lowerSurface, thickness, &
                 betaSolve, sfcMassBal, temperature, stiffnessFactor, &
                 effectivePressureLimited, muFriction, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, drivingStressVert, dissipationVertexField % array, uReconstructX, uReconstructY, &  ! return values
-                deltat, albanyVelocityError)  ! return values
+                deltat, albanyVelocityErrorTmp)  ! return values
           call mpas_timer_stop("velocity_solver_solve_FO")
 
-          if (albanyVelocityError == 1) then
+          ! this error code is accumulated here because the velocity solver will be called multiple times per time step
+          ! when using the RK time-stepper.
+          albanyVelocityError = albanyVelocityError + albanyVelocityErrorTmp
+
+          if (albanyVelocityErrorTmp >= 1) then
              if (config_nonconvergence_error) then
                 call mpas_log_write("Albany velocity solve failed to converge!  " // &
                    "Check log.albany.0000.out for more information.", MPAS_LOG_ERR)
-                err = ior(err, albanyVelocityError)
+                err = ior(err, albanyVelocityErrorTmp)
              else
                 call mpas_log_write("Albany velocity solve failed to converge!  " // &
                    "Check log.albany.0000.out for more information.", MPAS_LOG_WARN)
@@ -616,7 +621,7 @@ contains
 
 
           ! Now interpolate from vertices to cell centers
-          if (albanyVelocityError == 0) then
+          if (albanyVelocityErrorTmp == 0) then
              ! the dissipationVertexField can have garbage if the solver didn't converge,
              ! so keep previous timestep's field if nonconvergence
              call li_interpolate_vertex_to_cell_2d(meshPool, dissipationVertexField % array, heatDissipation)
