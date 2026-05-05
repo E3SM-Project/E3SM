@@ -1087,4 +1087,12 @@ _TESTS = {
                      "e3sm_superbfb_lnd", "e3sm_superbfb_rof",
                      "e3sm_superbfb_atm", "e3sm_superbfb_wcycl"),
     },
+
+    "e3sm_gcam_developer" : {
+        "time"  : "1:00:00",
+        "tests" : (
+            "SMS.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
+            "ERS.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
+            )
+        },
 }
