@@ -190,6 +190,7 @@ contains
       character(len=StrKIND), pointer :: config_horiz_remap_file
       logical, pointer :: config_time_averaging
       character(len=StrKIND), pointer :: config_stream_output_interval
+      character(len=16) :: cm   ! CF cell_methods choice
       integer :: ierr
 
       err = 0
@@ -224,24 +225,45 @@ contains
                        'fmeSeaiceDerivedFields: horiz remap active, target $i x $i', &
                        intArgs=(/remap_nlon, remap_nlat/))
                   remap_stream_name = 'fmeSeaiceDerivedFieldsOutput'
+                  ! Pick CF cell_methods up-front based on runtime mode.
+                  ! Production: time_averaging=.true. ('time: mean'); inst-mode
+                  ! tags 'time: point'. surfaceTemperatureMean is Celsius
+                  ! (gotcha #21) — matching the Registry XML (which declares
+                  ! degC); the prior 'K' here was stale.
+                  call mpas_pool_get_config(domain % configs, &
+                       'config_AM_fmeSeaiceDerivedFields_time_averaging', &
+                       config_time_averaging)
+                  cm = 'time: point'
+                  if (associated(config_time_averaging)) then
+                     if (config_time_averaging) cm = 'time: mean'
+                  end if
                   call seaice_fme_horiz_remap_register_var('iceAreaTotal', &
-                       'unitless', 'Total ice area fraction', ierr)
+                       '1', 'Total ice area fraction', ierr, &
+                       cell_methods=trim(cm))
                   call seaice_fme_horiz_remap_register_var('iceVolumeTotal', &
-                       'm', 'Total ice volume per unit area', ierr)
+                       'm', 'Total ice volume per unit area', ierr, &
+                       cell_methods=trim(cm))
                   call seaice_fme_horiz_remap_register_var('snowVolumeTotal', &
-                       'm', 'Total snow volume per unit area', ierr)
+                       'm', 'Total snow volume per unit area', ierr, &
+                       cell_methods=trim(cm))
                   call seaice_fme_horiz_remap_register_var('iceThicknessMean', &
-                       'm', 'Area-weighted mean ice thickness', ierr)
+                       'm', 'Area-weighted mean ice thickness', ierr, &
+                       cell_methods=trim(cm))
                   call seaice_fme_horiz_remap_register_var('surfaceTemperatureMean', &
-                       'K', 'Area-weighted mean surface temperature', ierr)
+                       'degC', 'Area-weighted mean surface temperature', ierr, &
+                       cell_methods=trim(cm))
                   call seaice_fme_horiz_remap_register_var('airStressZonal', &
-                       'N m^-2', 'Zonal air stress on ice', ierr)
+                       'N m^-2', 'Zonal air stress on ice', ierr, &
+                       cell_methods=trim(cm))
                   call seaice_fme_horiz_remap_register_var('airStressMeridional', &
-                       'N m^-2', 'Meridional air stress on ice', ierr)
+                       'N m^-2', 'Meridional air stress on ice', ierr, &
+                       cell_methods=trim(cm))
                   call seaice_fme_horiz_remap_register_var('uVelocityGeoCell', &
-                       'm s^-1', 'True eastwards ice velocity at cell centers', ierr)
+                       'm s^-1', 'True eastwards ice velocity at cell centers', ierr, &
+                       cell_methods=trim(cm))
                   call seaice_fme_horiz_remap_register_var('vVelocityGeoCell', &
-                       'm s^-1', 'True northwards ice velocity at cell centers', ierr)
+                       'm s^-1', 'True northwards ice velocity at cell centers', ierr, &
+                       cell_methods=trim(cm))
 
                   ! Time-averaging setup
                   call mpas_pool_get_config(domain % configs, &

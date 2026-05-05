@@ -124,6 +124,7 @@ contains
       character(len=StrKIND), pointer :: config_stream_output_interval
       character(len=StrKIND) :: tempStr
       character(len=128) :: varName, longName
+      character(len=16)  :: cm   ! CF cell_methods choice
       integer :: nBounds, i, iStart, iEnd, strLen, ierr, iField, kOut
 
       err = 0
@@ -269,15 +270,27 @@ contains
                     // 'target grid $i x $i', &
                     intArgs=(/remap_nlon, remap_nlat/))
                remap_outfile%stream_name = 'fmeDepthCoarseningOutput'
-               ! Register split-level 2D vars for each field and depth level
+               ! Pick CF cell_methods up-front based on runtime mode.
+               ! Production: time_averaging=.true. ('time: mean'); inst-only
+               ! tags 'time: point'. Depth-coarsening is a thickness-weighted
+               ! mean and unit-preserving, so output units match the source
+               ! field's MPAS-O Registry units.
+               call mpas_pool_get_config(domain % configs, &
+                    'config_AM_fmeDepthCoarsening_time_averaging', &
+                    config_time_averaging)
+               cm = 'time: point'
+               if (associated(config_time_averaging)) then
+                  if (config_time_averaging) cm = 'time: mean'
+               end if
                do iField = 1, nCoarsenFields
                   do kOut = 0, nCoarsenLevels - 1
                      write(varName, '(A,A,I0)') &
                           trim(coarsenFieldNames(iField)), 'Coarsened_', kOut
                      write(longName, '(A,I0)') 'Depth-coarsened ' &
                           // trim(coarsenFieldNames(iField)) // ' level ', kOut
-                     call remap_outfile%register_var(trim(varName), '', &
-                          trim(longName), ierr)
+                     call remap_outfile%register_var(trim(varName), &
+                          trim(coarsen_field_units(coarsenFieldNames(iField))), &
+                          trim(longName), ierr, cell_methods=trim(cm))
                   end do
                end do
                do kOut = 0, nCoarsenLevels - 1
@@ -285,7 +298,7 @@ contains
                   write(longName, '(A,I0)') &
                        'Depth-coarsened layer thickness level ', kOut
                   call remap_outfile%register_var(trim(varName), 'm', &
-                       trim(longName), ierr)
+                       trim(longName), ierr, cell_methods=trim(cm))
                end do
                ! Static per-level wet masks: shape (lon, lat) only, 1=valid
                ! ocean cell at this depth, 0=below seafloor or land. Written
@@ -356,7 +369,8 @@ contains
                                       // trim(coarsenFieldNames(iField)) // &
                                       ' level ', kOut, ' (snapshot at output trigger)'
                                  call remap_outfile%register_var(trim(varName), &
-                                      '', trim(longName), ierr)
+                                      trim(coarsen_field_units(coarsenFieldNames(iField))), &
+                                      trim(longName), ierr, cell_methods='time: point')
                               end do
                            end do
                            do kOut = 0, nCoarsenLevels - 1
@@ -366,7 +380,7 @@ contains
                                    'Instantaneous companion: layer thickness level ', &
                                    kOut, ' (snapshot at output trigger)'
                               call remap_outfile%register_var(trim(varName), 'm', &
-                                   trim(longName), ierr)
+                                   trim(longName), ierr, cell_methods='time: point')
                            end do
                            call mpas_log_write( &
                                 'fmeDepthCoarsening: instantaneous _inst companion ' // &
@@ -985,6 +999,34 @@ contains
       if (allocated(mask_write_buf)) deallocate(mask_write_buf)
 
    end subroutine ocn_finalize_fme_depth_coarsening!}}}
+
+!***********************************************************************
+
+   function coarsen_field_units(fieldName) result(units_out)
+   !> Map a depth-coarsen source field name to the unit string from the
+   !> MPAS-O Registry. Depth coarsening is a thickness-weighted mean and
+   !> therefore unit-preserving, so the output unit equals the source.
+   !> Falls back to '1' (CF "dimensionless") with a one-line WARN if the
+   !> field name isn't recognised — keeps the file CF-loadable rather
+   !> than emitting empty unit strings.
+      character(len=*), intent(in) :: fieldName
+      character(len=32) :: units_out
+
+      select case (trim(fieldName))
+      case ('temperature')
+         units_out = 'degC'
+      case ('salinity')
+         units_out = 'PSU'
+      case ('velocityZonal', 'velocityMeridional')
+         units_out = 'm s-1'
+      case default
+         units_out = '1'
+         call mpas_log_write( &
+              'fmeDepthCoarsening: WARN no units mapping for source ' // &
+              'field "' // trim(fieldName) // '"; tagging units="1"', &
+              messageType=MPAS_LOG_WARN)
+      end select
+   end function coarsen_field_units
 
 end module ocn_fme_depth_coarsening
 

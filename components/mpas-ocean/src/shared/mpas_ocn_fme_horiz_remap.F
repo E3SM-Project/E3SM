@@ -64,6 +64,7 @@ module ocn_fme_horiz_remap
 
    public :: ocn_fme_horiz_remap_init
    public :: ocn_fme_horiz_remap_init_time_epoch
+   public :: ocn_fme_horiz_remap_set_provenance
    public :: ocn_fme_horiz_remap_field
    public :: ocn_fme_horiz_remap_active
    public :: ocn_fme_horiz_remap_get_dims
@@ -106,6 +107,18 @@ module ocn_fme_horiz_remap
    character(len=64)    :: time_epoch_cf  = ''   ! `YYYY-MM-DD HH:MM:SS` (CF form, space)
    logical              :: time_epoch_set = .false.
 
+   ! CIME-side provenance, captured once during ocn_comp_mct init via
+   ! ocn_fme_horiz_remap_set_provenance and stamped into every fresh
+   ! `.remapped.nc` file as global attributes alongside source/Conventions.
+   ! The plumbing is shared with the seaice horiz_remap module so both
+   ! ocean and seaice FME files carry identical provenance fields.
+   character(len=StrKIND) :: prov_case          = ''
+   character(len=StrKIND) :: prov_username      = ''
+   character(len=StrKIND) :: prov_hostname      = ''
+   character(len=StrKIND) :: prov_model_version = ''
+   character(len=StrKIND) :: prov_history       = ''
+   logical                :: provenance_set     = .false.
+
    ! PIO decomposition cache (shared across all file instances)
    type(iosystem_desc_t), pointer :: pio_sys => null()
    type(io_desc_t) :: iodesc_2d        ! PIO_REAL  (output records)
@@ -139,6 +152,9 @@ module ocn_fme_horiz_remap
       ! Stored metadata for replaying var definitions after rotation
       character(len=64)  :: stored_units(max_pio_vars)
       character(len=128) :: stored_long_names(max_pio_vars)
+      ! Optional CF cell_methods (e.g. 'time: mean' / 'time: point').
+      ! Empty string => attribute is not written.
+      character(len=64)  :: stored_cell_methods(max_pio_vars) = ''
       ! Per-registered-var is_static flag, replayed by check_rotate so
       ! every fresh file's def_var calls reproduce the original shape.
       logical            :: stored_is_static(max_pio_vars) = .false.
@@ -876,6 +892,22 @@ contains
       ierr = pio_put_att(self%pio_file, PIO_GLOBAL, 'calendar', 'noleap')
       ierr = pio_put_att(self%pio_file, PIO_GLOBAL, 'time_reference_date', &
            trim(time_epoch_cf))
+      ierr = pio_put_att(self%pio_file, PIO_GLOBAL, 'realm', 'ocean')
+      ierr = pio_put_att(self%pio_file, PIO_GLOBAL, 'product', 'model-output')
+      ierr = pio_put_att(self%pio_file, PIO_GLOBAL, 'institution_id', 'E3SM-Project')
+      ierr = pio_put_att(self%pio_file, PIO_GLOBAL, 'contact', 'e3sm-data-support@llnl.gov')
+      if (provenance_set) then
+         if (len_trim(prov_case)          > 0) ierr = pio_put_att(self%pio_file, PIO_GLOBAL, &
+              'case',          trim(prov_case))
+         if (len_trim(prov_username)      > 0) ierr = pio_put_att(self%pio_file, PIO_GLOBAL, &
+              'username',      trim(prov_username))
+         if (len_trim(prov_hostname)      > 0) ierr = pio_put_att(self%pio_file, PIO_GLOBAL, &
+              'hostname',      trim(prov_hostname))
+         if (len_trim(prov_model_version) > 0) ierr = pio_put_att(self%pio_file, PIO_GLOBAL, &
+              'git_version',   trim(prov_model_version))
+         if (len_trim(prov_history)       > 0) ierr = pio_put_att(self%pio_file, PIO_GLOBAL, &
+              'history',       trim(prov_history))
+      end if
 
       if (err /= 0) then
          call mpas_log_write('ocn_fme_remap_file: define-mode error opening ' &
@@ -905,7 +937,7 @@ contains
    end subroutine check_pio
 
    subroutine remap_file_def_var(self, varname, units, long_name, numlev, err, &
-        is_static)!{{{
+        is_static, cell_methods)!{{{
    !> Register an output variable. On a freshly created file, defines the
    !> variable + attributes. On a reopened (append-mode) file, looks up
    !> the existing var_desc — definitions and attributes are already
@@ -914,11 +946,16 @@ contains
    !> When is_static=.true., the var is defined with (lon, lat) only (no
    !> Time dim) and gets no _FillValue attribute. Static vars are written
    !> once per file via write_var, which skips pio_setframe for these.
+   !>
+   !> cell_methods, when present and non-empty, is written as the CF
+   !> `cell_methods` attribute (e.g. 'time: mean' for averaged records,
+   !> 'time: point' for instantaneous).
       class(ocn_fme_remap_file_t), intent(inout) :: self
       character(len=*), intent(in) :: varname, units, long_name
       integer, intent(in) :: numlev
       integer, intent(out) :: err
       logical, optional, intent(in) :: is_static
+      character(len=*), optional, intent(in) :: cell_methods
       integer :: ierr
       real(kind=4) :: fill_val
       logical :: is_static_local
@@ -972,6 +1009,12 @@ contains
            'units', trim(units))
       ierr = pio_put_att(self%pio_file, self%pio_var_descs(self%n_pio_vars), &
            'long_name', trim(long_name))
+      if (present(cell_methods)) then
+         if (len_trim(cell_methods) > 0) then
+            ierr = pio_put_att(self%pio_file, self%pio_var_descs(self%n_pio_vars), &
+                 'cell_methods', trim(cell_methods))
+         end if
+      end if
       ! Fill-value attributes only on time-varying vars; masks contain
       ! literal 0.0/1.0 with no missing data semantics.
       if (.not. is_static_local) then
@@ -1090,17 +1133,20 @@ contains
    end subroutine remap_file_close!}}}
 
    subroutine remap_file_register_var(self, varname, units, long_name, err, &
-        is_static)!{{{
+        is_static, cell_methods)!{{{
    !> Register a variable for output. Stores metadata so that def_var can
    !> be replayed automatically when a file is opened or rotated.
    !> Silently skips if the variable is already registered (MPAS framework
    !> may call init twice: once for setup, once for compute_on_startup).
    !> When is_static=.true., the variable is defined with shape (lon, lat)
    !> only (no Time dim) and written once per file (used for masks).
+   !> cell_methods is stored verbatim and replayed verbatim into the
+   !> CF `cell_methods` attribute by def_var.
       class(ocn_fme_remap_file_t), intent(inout) :: self
       character(len=*), intent(in) :: varname, units, long_name
       integer, intent(out) :: err
       logical, optional, intent(in) :: is_static
+      character(len=*), optional, intent(in) :: cell_methods
       integer :: iv
 
       err = 0
@@ -1122,8 +1168,12 @@ contains
       self%stored_units(self%n_registered_vars) = units
       self%stored_long_names(self%n_registered_vars) = long_name
       self%stored_is_static(self%n_registered_vars) = .false.
+      self%stored_cell_methods(self%n_registered_vars) = ''
       if (present(is_static)) then
          self%stored_is_static(self%n_registered_vars) = is_static
+      end if
+      if (present(cell_methods)) then
+         self%stored_cell_methods(self%n_registered_vars) = cell_methods
       end if
    end subroutine remap_file_register_var!}}}
 
@@ -1160,12 +1210,13 @@ contains
          self%current_filename = new_filename
 
          ! Replay all registered variable definitions, preserving
-         ! static-var shape across rotation.
+         ! static-var shape and cell_methods across rotation.
          do iv = 1, self%n_registered_vars
             call self%def_var(trim(self%pio_var_names(iv)), &
                  trim(self%stored_units(iv)), &
                  trim(self%stored_long_names(iv)), 1, ierr, &
-                 is_static=self%stored_is_static(iv))
+                 is_static=self%stored_is_static(iv), &
+                 cell_methods=trim(self%stored_cell_methods(iv)))
          end do
       end if
 
@@ -1521,6 +1572,27 @@ contains
            // trim(filename) // ' (nAccum=$i)', intArgs=(/nAccum/))
 
    end subroutine ocn_fme_horiz_remap_read_accum!}}}
+
+!***********************************************************************
+
+   subroutine ocn_fme_horiz_remap_set_provenance(case_name, username, hostname, &
+        model_version, history_str)!{{{
+   !> Capture CIME-side provenance once during ocn_comp_mct init. The
+   !> strings are written verbatim as global attributes onto every
+   !> freshly-created `.remapped.nc` file (see remap_file_open). No-op
+   !> on subsequent calls so the FIRST values win — guards against MPAS
+   !> framework double-init shenanigans.
+      character(len=*), intent(in) :: case_name, username, hostname
+      character(len=*), intent(in) :: model_version, history_str
+
+      if (provenance_set) return
+      prov_case          = case_name
+      prov_username      = username
+      prov_hostname      = hostname
+      prov_model_version = model_version
+      prov_history       = history_str
+      provenance_set     = .true.
+   end subroutine ocn_fme_horiz_remap_set_provenance!}}}
 
 end module ocn_fme_horiz_remap
 

@@ -103,6 +103,7 @@ contains
       character(len=StrKIND), pointer :: config_stream_output_interval
       character(len=StrKIND) :: tempStr, methodStr
       character(len=32) :: slotName
+      character(len=16) :: cm   ! CF cell_methods choice
       integer :: nFields, nMethods, i, iStart, iEnd, strLen
       integer :: ierr, iGeneric
 
@@ -241,16 +242,36 @@ contains
                        // 'target grid $i x $i', &
                        intArgs=(/remap_nlon, remap_nlat/))
                   remap_outfile%stream_name = 'fmeVerticalReduceOutput'
+                  ! Pick CF cell_methods up-front based on the runtime
+                  ! averaging mode. Inactive in production
+                  ! (config_AM_fmeVerticalReduce_enable=.false. per
+                  ! gotcha #33), kept correct for re-enable.
+                  call mpas_pool_get_config(domain % configs, &
+                       'config_AM_fmeVerticalReduce_time_averaging', &
+                       config_time_averaging)
+                  cm = 'time: point'
+                  if (associated(config_time_averaging)) then
+                     if (config_time_averaging) cm = 'time: mean'
+                  end if
                   call remap_outfile%register_var('oceanHeatContent', 'J m^-2', &
-                       'Column-integrated ocean heat content', ierr)
+                       'Column-integrated ocean heat content', ierr, &
+                       cell_methods=trim(cm))
                   call remap_outfile%register_var('freshwaterContent', 'm', &
-                       'Column-integrated freshwater content', ierr)
+                       'Column-integrated freshwater content', ierr, &
+                       cell_methods=trim(cm))
                   call remap_outfile%register_var('kineticEnergy', 'J m^-2', &
-                       'Column-integrated kinetic energy', ierr)
+                       'Column-integrated kinetic energy', ierr, &
+                       cell_methods=trim(cm))
+                  ! Generic user-supplied reduction slots: units cannot be
+                  ! resolved at register time (depend on the field+operation
+                  ! the user picks), so tag '1' (CF dimensionless). Real
+                  ! production runs use the named fields above; these are
+                  ! placeholders for ad-hoc diagnostic builds.
                   do iGeneric = 1, min(nReduceFields, 5)
                      write(slotName, '(A,I2.2)') 'vertReduceField', iGeneric
-                     call remap_outfile%register_var(trim(slotName), 'varies', &
-                          'User-configured vertical reduction field', ierr)
+                     call remap_outfile%register_var(trim(slotName), '1', &
+                          'User-configured vertical reduction field', ierr, &
+                          cell_methods=trim(cm))
                   end do
 
                   ! Time-averaging setup

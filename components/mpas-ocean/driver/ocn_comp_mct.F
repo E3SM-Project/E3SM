@@ -52,6 +52,7 @@ module ocn_comp_mct
    use ocn_forcing
    use ocn_constants
    use ocn_analysis_driver
+   use ocn_fme_horiz_remap, only: ocn_fme_horiz_remap_set_provenance
    use ocn_time_integration
    use ocn_time_average_coupled
    use ocn_frazil_forcing
@@ -3647,6 +3648,12 @@ contains
       call MPAS_stream_mgr_add_att(domain % streamManager, 'sphere_radius', domain % sphere_radius)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'model_name', domain % core % modelName)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'core_name', domain % core % coreName)
+
+      ! Forward the same provenance to the FME direct-PIO writer (its
+      ! `.remapped.nc` files don't go through the stream manager so the
+      ! add_att calls above never reach them).
+      call ocn_fme_horiz_remap_set_provenance(trim(caseid), trim(username), &
+           trim(hostname), trim(model_version), trim(timeString))
       ! DWJ 10/01/2014: Eventually add the real history attribute, for now (due to length restrictions)
       ! add a shortened version.
       call MPAS_stream_mgr_add_att(domain % streamManager, 'parent_id', domain % parent_id)

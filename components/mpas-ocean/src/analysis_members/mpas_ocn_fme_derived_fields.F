@@ -119,6 +119,7 @@ contains
       character(len=StrKIND), pointer :: config_AM_fmeDerivedFields_horiz_remap_file
       character(len=StrKIND), pointer :: config_stream_output_interval
       logical, pointer :: config_time_averaging
+      character(len=16) :: cm   ! CF cell_methods choice -- 'time: mean' / 'time: point'
       integer :: ierr
 
       err = 0
@@ -159,53 +160,64 @@ contains
                        // 'target grid $i x $i', &
                        intArgs=(/remap_nlon, remap_nlat/))
                   remap_outfile%stream_name = 'fmeDerivedFieldsOutput'
+                  ! Pick CF cell_methods up-front based on the runtime
+                  ! averaging mode. Production: time_averaging=.true.
+                  ! ('time: mean'); inst-mode pathway tags 'time: point'.
+                  call mpas_pool_get_config(domain % configs, &
+                       'config_AM_fmeDerivedFields_time_averaging', &
+                       config_time_averaging)
+                  cm = 'time: point'
+                  if (associated(config_time_averaging)) then
+                     if (config_time_averaging) cm = 'time: mean'
+                  end if
                   call remap_outfile%register_var('sst', 'degC', &
-                       'Sea surface temperature', ierr)
+                       'Sea surface temperature', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('sss', 'PSU', &
-                       'Sea surface salinity', ierr)
+                       'Sea surface salinity', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('surfaceHeatFluxTotal', 'W m^-2', &
-                       'Total surface heat flux', ierr)
+                       'Total surface heat flux', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('ssh', 'm', &
-                       'Sea surface height', ierr)
+                       'Sea surface height', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('shortWaveHeatFlux', 'W m^-2', &
-                       'Shortwave heat flux into ocean', ierr)
+                       'Shortwave heat flux into ocean', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('longWaveHeatFluxDown', 'W m^-2', &
-                       'Downward longwave heat flux', ierr)
+                       'Downward longwave heat flux', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('latentHeatFlux', 'W m^-2', &
-                       'Latent heat flux into ocean', ierr)
+                       'Latent heat flux into ocean', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('sensibleHeatFlux', 'W m^-2', &
-                       'Sensible heat flux into ocean', ierr)
+                       'Sensible heat flux into ocean', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('windStressZonal', 'N m^-2', &
-                       'Zonal wind stress on ocean', ierr)
+                       'Zonal wind stress on ocean', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('windStressMeridional', 'N m^-2', &
-                       'Meridional wind stress on ocean', ierr)
+                       'Meridional wind stress on ocean', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('longWaveHeatFluxUp', 'W m^-2', &
-                       'Upward longwave heat flux from ocean', ierr)
+                       'Upward longwave heat flux from ocean', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('rainFlux', 'kg m^-2 s^-1', &
-                       'Rain mass flux into ocean', ierr)
+                       'Rain mass flux into ocean', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('snowFlux', 'kg m^-2 s^-1', &
-                       'Snow mass flux into ocean', ierr)
+                       'Snow mass flux into ocean', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('evaporationFlux', 'kg m^-2 s^-1', &
-                       'Evaporation mass flux from ocean', ierr)
+                       'Evaporation mass flux from ocean', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('seaIceHeatFlux', 'W m^-2', &
-                       'Sea-ice heat flux into ocean', ierr)
+                       'Sea-ice heat flux into ocean', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('icebergHeatFlux', 'W m^-2', &
-                       'Iceberg heat flux into ocean', ierr)
+                       'Iceberg heat flux into ocean', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('seaIceFreshWaterFlux', 'kg m^-2 s^-1', &
-                       'Sea-ice fresh water mass flux into ocean', ierr)
+                       'Sea-ice fresh water mass flux into ocean', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('seaIceSalinityFlux', 'kg m^-2 s^-1', &
-                       'Sea-ice salt flux into ocean', ierr)
+                       'Sea-ice salt flux into ocean', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('riverRunoffFlux', 'kg m^-2 s^-1', &
-                       'River runoff mass flux into ocean', ierr)
+                       'River runoff mass flux into ocean', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('iceRunoffFlux', 'kg m^-2 s^-1', &
-                       'Land-ice runoff mass flux into ocean', ierr)
+                       'Land-ice runoff mass flux into ocean', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('snowFluxLf', 'W m^-2', &
-                       'snowFlux times latent heat of fusion', ierr)
+                       'snowFlux times latent heat of fusion', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('iceRunoffFluxLf', 'W m^-2', &
-                       'iceRunoffFlux times latent heat of fusion', ierr)
+                       'iceRunoffFlux times latent heat of fusion', ierr, cell_methods=trim(cm))
                   call remap_outfile%register_var('riverRunoffFluxTemperature', &
                        'kg degC m^-2 s^-1', &
-                       'riverRunoffFlux times top-layer temperature', ierr)
+                       'riverRunoffFlux times top-layer temperature', ierr, &
+                       cell_methods=trim(cm))
                   ! Static surface ocean mask: shape (lon, lat), 1=ocean,
                   ! 0=land. Written once per file. Matches the SamudrACE
                   ! convention (compute_ocean_dataset_e3sm.py:53).
