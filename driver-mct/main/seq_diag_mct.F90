@@ -2214,10 +2214,6 @@ contains
                         -dataGpr(nf,icar,ip)+dataGpr(nf,icxs,ip)+ &
                         dataGpr(nf,icxr,ip)-dataGpr(nf,icas,ip)
                 enddo
-                write(logunit,FA1)    '   *SUM*',-sum(dataGpr(f_s:f_s_end,icar,ip)),sum(dataGpr(f_s:f_s_end,icxs,ip)), &
-                     sum(dataGpr(f_s:f_s_end,icxr,ip)),-sum(dataGpr(f_s:f_s_end,icas,ip)), &
-                     -sum(dataGpr(f_s:f_s_end,icar,ip))+sum(dataGpr(f_s:f_s_end,icxs,ip))+ &
-                     sum(dataGpr(f_s:f_s_end,icxr,ip))-sum(dataGpr(f_s:f_s_end,icas,ip))
                 write(logunit,*) ' '
              enddo
           endif   ! plev
@@ -2386,21 +2382,7 @@ contains
                      dataGpr(nf,c_ish_ir,ip)+dataGpr(nf,c_ish_is,ip)+ &
                      dataGpr(nf,c_glc_gr,ip)+dataGpr(nf,c_glc_gs,ip)
              enddo
-             write(logunit,FA1r)'   *SUM*',sum(dataGpr(f_s:f_s_end,c_atm_ar,ip))+sum(dataGpr(f_s:f_s_end,c_atm_as,ip)), &
-                  sum(dataGpr(f_s:f_s_end,c_lnd_lr,ip))+sum(dataGpr(f_s:f_s_end,c_lnd_ls,ip)), &
-                  sum(dataGpr(f_s:f_s_end,c_rof_rr,ip))+sum(dataGpr(f_s:f_s_end,c_rof_rs,ip)), &
-                  sum(dataGpr(f_s:f_s_end,c_ocn_or,ip))+sum(dataGpr(f_s:f_s_end,c_ocn_os,ip)), &
-                  sum(dataGpr(f_s:f_s_end,c_inh_ir,ip))+sum(dataGpr(f_s:f_s_end,c_inh_is,ip)), &
-                  sum(dataGpr(f_s:f_s_end,c_ish_ir,ip))+sum(dataGpr(f_s:f_s_end,c_ish_is,ip)), &
-                  sum(dataGpr(f_s:f_s_end,c_glc_gr,ip))+sum(dataGpr(f_s:f_s_end,c_glc_gs,ip)), &
-                  sum(dataGpr(f_s:f_s_end,c_atm_ar,ip))+sum(dataGpr(f_s:f_s_end,c_atm_as,ip))+ &
-                  sum(dataGpr(f_s:f_s_end,c_lnd_lr,ip))+sum(dataGpr(f_s:f_s_end,c_lnd_ls,ip))+ &
-                  sum(dataGpr(f_s:f_s_end,c_rof_rr,ip))+sum(dataGpr(f_s:f_s_end,c_rof_rs,ip))+ &
-                  sum(dataGpr(f_s:f_s_end,c_ocn_or,ip))+sum(dataGpr(f_s:f_s_end,c_ocn_os,ip))+ &
-                  sum(dataGpr(f_s:f_s_end,c_inh_ir,ip))+sum(dataGpr(f_s:f_s_end,c_inh_is,ip))+ &
-                  sum(dataGpr(f_s:f_s_end,c_ish_ir,ip))+sum(dataGpr(f_s:f_s_end,c_ish_is,ip))+ &
-                  sum(dataGpr(f_s:f_s_end,c_glc_gr,ip))+sum(dataGpr(f_s:f_s_end,c_glc_gs,ip))
-              write(logunit,*) ' '
+             write(logunit,*) ' '
 
           endif
 
