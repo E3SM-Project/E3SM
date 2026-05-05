@@ -71,15 +71,6 @@ module eam_vcoarsen
   ! Namelist variables
   real(r8) :: vcoarsen_pbounds(max_pbounds)
   integer  :: vcoarsen_level_bounds(max_pbounds)
-
-  ! Per-vcoarsen-interface hybrid sigma-pressure coefficients, written to
-  ! the h0 file as scalar metadata (`ak_0..ak_N`, `bk_0..bk_N`) so a
-  ! reader can reconstruct pressure at each layer interface via
-  ! `p = ak * P0 + bk * PS`. `add_hist_coord` keeps a pointer into
-  ! these arrays for the lifetime of the run, so they MUST be
-  ! module-scope `target` storage.
-  real(r8), save, target :: vcoarsen_ak_arr(max_pbounds) = 0.0_r8
-  real(r8), save, target :: vcoarsen_bk_arr(max_pbounds) = 0.0_r8
   character(len=max_name_len) :: vcoarsen_avg_flds(max_flds)
   integer  :: vcoarsen_select_levs(max_select_vals)
   character(len=max_name_len) :: vcoarsen_select_lev_flds(max_flds)
@@ -282,7 +273,7 @@ contains
   !============================================================================
   subroutine eam_vcoarsen_register()
     use cam_history,         only: addfld, horiz_only
-    use cam_history_support, only: add_hist_coord
+    use cam_history_support, only: add_hist_scalar
     use constituents,        only: cnst_get_ind
     use hycoef,              only: hyai, hybi
     use ppgrid,              only: begchunk, endchunk
@@ -292,7 +283,7 @@ contains
     character(len=max_fname_len) :: scalar_name
     character(len=256) :: lname
     character(len=32) :: src_units, int_units, dint_units
-    real(r8) :: lo_frac, hi_frac, p_target
+    real(r8) :: lo_frac, hi_frac, p_target, ak_val, bk_val
     integer :: native_lo, native_hi
     logical :: found
 
@@ -324,9 +315,9 @@ contains
       end do
 
       ! Register per-vcoarsen-interface hybrid coefficients ak_k / bk_k as
-      ! scalar metadata. There are n_avg_levs+1 interfaces (one more than
-      ! layers). A reader reconstructs pressure at interface k via
-      !   p = ak_k * P0 + bk_k * PS.
+      ! true 0-dim scalar metadata vars. There are n_avg_levs+1 interfaces
+      ! (one more than layers). A reader reconstructs pressure at interface
+      ! k via   p = ak_k * P0 + bk_k * PS.
       ! Index-based mode: pull straight from native interface arrays.
       ! Pressure-based mode: linearly interpolate against
       ! interface_pressure(k) = hyai(k)*P0 + hybi(k)*PS_ref using a
@@ -336,8 +327,8 @@ contains
             ! 0-based level index stored in vcoarsen_level_bounds; hyai/hybi
             ! are dimensioned 1:plev+1 in Fortran 1-based convention.
             lvl_idx = vcoarsen_level_bounds(k+1) + 1
-            vcoarsen_ak_arr(k+1) = hyai(lvl_idx)
-            vcoarsen_bk_arr(k+1) = hybi(lvl_idx)
+            ak_val = hyai(lvl_idx)
+            bk_val = hybi(lvl_idx)
          else
             ! Pressure-bounded mode: locate vcoarsen_pbounds(k+1) (Pa)
             ! between two native interfaces (using P0=100000 Pa as the
@@ -347,25 +338,21 @@ contains
             p_target = vcoarsen_pbounds(k+1)
             call interp_native_interface(p_target, native_lo, native_hi, &
                  lo_frac, hi_frac)
-            vcoarsen_ak_arr(k+1) = lo_frac * hyai(native_lo) &
-                                 + hi_frac * hyai(native_hi)
-            vcoarsen_bk_arr(k+1) = lo_frac * hybi(native_lo) &
-                                 + hi_frac * hybi(native_hi)
+            ak_val = lo_frac * hyai(native_lo) + hi_frac * hyai(native_hi)
+            bk_val = lo_frac * hybi(native_lo) + hi_frac * hybi(native_hi)
          end if
 
          write(scalar_name, '(A,I0)') 'ak_', k
          write(lname, '(A,I0,A)') &
               'Hybrid sigma-pressure A coefficient at vcoarsen interface ', k, &
               ' (dimensionless; pressure = ak*P0 + bk*PS)'
-         call add_hist_coord(trim(scalar_name), 1, trim(lname), '1', &
-              vcoarsen_ak_arr(k+1:k+1))
+         call add_hist_scalar(trim(scalar_name), ak_val, '1', trim(lname))
 
          write(scalar_name, '(A,I0)') 'bk_', k
          write(lname, '(A,I0,A)') &
               'Hybrid sigma-pressure B coefficient at vcoarsen interface ', k, &
               ' (dimensionless; pressure = ak*P0 + bk*PS)'
-         call add_hist_coord(trim(scalar_name), 1, trim(lname), '1', &
-              vcoarsen_bk_arr(k+1:k+1))
+         call add_hist_scalar(trim(scalar_name), bk_val, '1', trim(lname))
       end do
     end if
 

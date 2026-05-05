@@ -863,7 +863,7 @@ These are hard-won lessons. Read before modifying FME code.
     plus this AGENTS.md gotcha. Verified end-to-end with ERS_Ld4
     test 52484623 (RUN + COMPARE_base_rest BFB-clean).
 
-41. **Per-layer-interface vertical coordinate scalars (ADDED 2026-05-05).**
+do 41. **Per-layer-interface vertical coordinate scalars (ADDED 2026-05-05).**
     The flat `Q_k`/`T_k`/`temperatureCoarsened_k` data fields have no
     per-layer hint about *which pressure or depth they correspond to*.
     Added scalar metadata fields so downstream consumers can reconstruct
@@ -871,32 +871,53 @@ These are hard-won lessons. Read before modifying FME code.
 
     **EAM h0**: `ak_0..ak_N` and `bk_0..bk_N` (N = `n_avg_levs`).
     Production: 9 of each (interfaces of the 8 vcoarsen layers).
+    True 0-dim netCDF scalars in `ds.data_vars` (no dim, like `P0`).
     Dimensionless `units='1'`. Pressure at vcoarsen interface k:
     `p = ak_k * P0 + bk_k * PS`. In level-index mode (the production
     setting), values come straight from `hyai`/`hybi` at the native
     interface index `vcoarsen_level_bounds(k)`. In pressure-bounded
     mode, an `interp_native_interface` helper does linear interpolation
     against `p_iface(k) = hyai(k)*P0 + hybi(k)*PS_ref` so the
-    coefficients are still PS-independent. Stored in module-scope
-    `vcoarsen_ak_arr`/`vcoarsen_bk_arr` (target arrays — `add_hist_coord`
-    keeps a pointer for the run lifetime).
+    coefficients are still PS-independent.
+
+    **EAM plumbing — `add_hist_scalar` API** (NEW in
+    `cam_history_support.F90`). Registers a true 0-dim netCDF scalar
+    variable that lands in `ds.data_vars` (xarray) — modeled on the
+    P0 path (lines 1627-1638 / 1771-1779) but available to any
+    caller. Public signature:
+    `call add_hist_scalar(name, value, units, long_name)`. A parallel
+    `hist_scalars(maxhistscalars=64)` array stores the registered set;
+    `define_hist_scalars(File)` and `write_hist_scalars(File)` are
+    called from inside the existing `write_hist_coord_attrs` and
+    `write_hist_coord_vars` so `cam_history.F90` needs no changes.
+
+    **Why not `add_hist_coord(..., vlen=1)`?** That works (creates a
+    1D var of length 1) but consumes one slot per scalar in the 25-cap
+    `hist_coords` table. With 18 new scalars (9 ak + 9 bk) atop the
+    baseline ~7-9 entries, Crux/ALCF blew the cap with
+    `'Too many dimensions in add_hist_coord.'`; Perlmutter was just
+    under by luck. The 0-dim scalar path eliminates the cap concern
+    entirely AND classifies as `data_vars` (matching `Q_k`, `T_k`)
+    rather than `coords`. The previous `add_hist_coord` approach was
+    abandoned 2026-05-05 in favor of `add_hist_scalar`.
 
     **MPAS-O fmeDepthCoarsening**: `idepth_0..idepth_N`
     (N = `nCoarsenLevels`). Production: 20 (interfaces of the 19
-    coarsened layers). `units='m'`, `positive='down'`,
-    `standard_name='depth'`. Layer k spans `idepth_k → idepth_{k+1}`;
-    thickness equals `layerThicknessCoarsened_k` (sanity invariant).
+    coarsened layers). True 0-dim PIO_DOUBLE scalars in `ds.data_vars`.
+    `units='m'`, `positive='down'`, `standard_name='depth'`. Layer k
+    spans `idepth_k → idepth_{k+1}`; thickness equals
+    `layerThicknessCoarsened_k` (sanity invariant).
 
-    **Plumbing**: `ocn_fme_remap_file_t` gained an `is_scalar` shape
-    option in `register_var` / `def_var`, parallel to the existing
-    `is_static`. Scalars are netCDF-scalar (no dim) PIO_DOUBLE vars
-    written via `pio_put_var(file, desc, value)` at define-time;
-    PIO transitions from def-mode to data-mode automatically. The
-    `stored_scalar_value` array carries the constant across rotation
-    so `check_rotate` re-emits each scalar in every fresh file.
-    `write_var` errors gracefully if accidentally invoked on a scalar.
-    Sea-ice horiz_remap module has no `is_scalar` plumbing (no scalar
-    metadata required there).
+    **MPAS plumbing — `is_scalar` shape on `register_var` / `def_var`**.
+    `ocn_fme_remap_file_t` gained an `is_scalar=.true.` flag with a
+    `scalar_value=` kwarg, parallel to the existing `is_static`.
+    Scalars are defined with an empty dim list and written via
+    `pio_put_var(file, desc, value)` at define-time; PIO transitions
+    from def-mode to data-mode automatically. The `stored_scalar_value`
+    array carries the constant across rotation so `check_rotate`
+    re-emits each scalar in every fresh file. `write_var` errors
+    gracefully if accidentally invoked on a scalar. Sea-ice horiz_remap
+    module has no `is_scalar` plumbing (no scalar metadata needed).
 
     **Why interfaces, not midpoints**: interfaces are what vcoarsen /
     depth-coarsen actually integrate over. With N+1 interface values
