@@ -789,6 +789,80 @@ These are hard-won lessons. Read before modifying FME code.
     arguments. AM call sites at all 8 locations (avg path + inst
     path × 4 AMs) updated.
 
+40. **Per-variable units / cell_methods + global provenance attrs filled
+    in (ADDED 2026-05-05).** A full audit found three CF-attribute
+    classes of bug across all four FME streams; all fixed in one pass:
+
+    1. **EAM `eam_vcoarsen.F90` hardcoded `'varies'`** at all 6
+       `addfld` register sites — placeholder that was never filled in.
+       The vcoarsen avg / sel_lev / sel_pres / sel_height paths are
+       mathematically unit-preserving, so the output unit equals the
+       source. Replaced with a `lookup_field_units(name)` helper that
+       maps each known source field (T→K, U/V→m/s, OMEGA→Pa/s, Z3→m,
+       Q/CLDLIQ/CLDICE/RAINQM/SNOWQM/STW→kg/kg, NUM*→1/kg) and warns
+       at masterproc with `units="unknown"` for unrecognised inputs.
+       The column-integrated `*_INT` and `d*_INT_dt` paths use a
+       `compose_int_units` helper that multiplies through by `kg/m^2`
+       (and `/s` for the tendency) since vcoarsen integrates dp/g.
+       Production: Q_k, T_k, U_k, V_k, STW_k, *_at_z2/z10 all carry
+       the right unit string in eam.h0.YYYY-MM.nc.
+
+    2. **MPAS `mpas_ocn_fme_depth_coarsening.F` empty units** (`''`)
+       on the four 3D state vars and their `_inst` companions.
+       Replaced with a `coarsen_field_units(name)` helper at the
+       module bottom mapping `temperature→degC`, `salinity→PSU`,
+       `velocityZonal/velocityMeridional→m s-1`. Falls back to
+       `'1'` (CF dimensionless) with a WARN if a future field is
+       added without a units mapping.
+
+    3. **No `cell_methods` on any data var.** Added optional
+       `cell_methods=` keyword to `register_var` and `def_var` in
+       both `mpas_ocn_fme_horiz_remap.F` and
+       `mpas_seaice_fme_horiz_remap.F`. The four AMs read their
+       `config_AM_*_time_averaging` flag once at register time and
+       pass `'time: mean'` (averaged-mode) or `'time: point'`
+       (instantaneous-mode); depth-coarsen `_inst` companions
+       always get `'time: point'`. Static masks (`mask_2d`,
+       `mask_*`) intentionally get no `cell_methods` (no time dim).
+
+    Also fixed in this pass:
+    - **`surfaceTemperatureMean` was `'K'` in the seaice AM** while
+      the Registry XML and the actual field are degC (gotcha #21).
+      Fixed to `'degC'`. Verify dashboards already used the correct
+      Celsius range; this was only a metadata mismatch.
+    - **`iceAreaTotal` was `'unitless'`** — replaced with `'1'` for
+      CF compliance.
+
+    **MPAS global attrs enriched** to match EAM's set. Previously
+    only `source / Conventions / calendar / time_reference_date`;
+    now also `title / realm / product / institution_id / contact /
+    case / username / hostname / git_version / history`. Plumbing:
+
+    - Added `prov_*` module-scope strings + `*_set_provenance(case,
+      username, hostname, model_version, history)` setter in both
+      `mpas_ocn_fme_horiz_remap.F` and `mpas_seaice_fme_horiz_remap.F`.
+    - `ocn_comp_mct.F` and `ice_comp_mct.F` call the setter once
+      during init, right after `seq_infodata_GetData(...)` populates
+      caseid/model_version/username/hostname. Idempotent — first
+      caller wins, subsequent calls no-op (guards against MPAS
+      framework double-init).
+    - `remap_file_open` writes the prov_* strings via
+      `pio_put_att(PIO_GLOBAL)` on every fresh-create. Append-mode
+      reopen skips them (already on disk from leg 1).
+
+    **Why this matters**: downstream tools (xarray, ncview, ESMValTool)
+    use these attrs for axis labels, plot titles, and provenance
+    tracking. CF-aware ML pipelines like SamudrACE will use
+    `cell_methods` to distinguish averaged-vs-instantaneous records
+    when concatenating tapes.
+
+    **Files touched (10)**: `eam_vcoarsen.F90`, `mpas_ocn_fme_horiz_remap.F`,
+    `mpas_seaice_fme_horiz_remap.F`, `ocn_comp_mct.F`, `ice_comp_mct.F`,
+    `mpas_ocn_fme_depth_coarsening.F`, `mpas_ocn_fme_derived_fields.F`,
+    `mpas_ocn_fme_vertical_reduce.F`, `mpas_seaice_fme_derived_fields.F`,
+    plus this AGENTS.md gotcha. Verified end-to-end with ERS_Ld4
+    test 52484623 (RUN + COMPARE_base_rest BFB-clean).
+
 ## Runtime Configuration
 
 Both `fme_output` and `fme_legacy_output` testmods accept environment variables:
