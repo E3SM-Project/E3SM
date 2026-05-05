@@ -31,6 +31,10 @@
 			description="If true, remapped output fields are time-averaged over the output interval instead of instantaneous. Set compute_interval to a frequent value (e.g. dt) when enabling."
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_AM_fmeDerivedFields_time_reference_date" type="character" default_value="none"
+			description="Reference epoch for the CF numeric time coordinate in remapped output files. Format: YYYY-MM-DD_HH:MM:SS. Plumbed from CIME RUN_STARTDATE by the FME testmod's shell_commands so MPAS time:units matches EAM exactly. Setting 'none' aborts FME init at file open."
+			possible_values="A YYYY-MM-DD_HH:MM:SS string or 'none'"
+		/>
 	</nml_record>
 	<packages>
 		<package name="fmeDerivedFieldsAMPKG" description="This package includes variables required for the fmeDerivedFields analysis member."/>

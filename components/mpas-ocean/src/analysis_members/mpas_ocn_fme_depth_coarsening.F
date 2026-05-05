@@ -36,6 +36,7 @@ module ocn_fme_depth_coarsening
    use shr_horiz_remap_mod, only: SHR_FILL_VALUE
    use mpas_log, only: mpas_log_write
    use ocn_fme_horiz_remap, only: ocn_fme_horiz_remap_init, &
+        ocn_fme_horiz_remap_set_time_epoch, &
         ocn_fme_horiz_remap_field, ocn_fme_horiz_remap_active, &
         ocn_fme_horiz_remap_get_dims, ocn_fme_remap_file_t, &
         ocn_fme_remap_build_filename, &
@@ -118,6 +119,7 @@ contains
       character(len=StrKIND), pointer :: config_AM_fmeDepthCoarsening_depth_bounds
       character(len=StrKIND), pointer :: config_AM_fmeDepthCoarsening_fields
       character(len=StrKIND), pointer :: config_AM_fmeDepthCoarsening_horiz_remap_file
+      character(len=StrKIND), pointer :: config_AM_fmeDepthCoarsening_time_reference_date
       logical, pointer :: config_time_averaging
       logical, pointer :: config_write_inst_companion
       character(len=StrKIND), pointer :: config_stream_output_interval
@@ -247,6 +249,23 @@ contains
                  messageType=MPAS_LOG_WARN)
             do_horiz_remap = .false.
          else
+            ! Plumb the CF time epoch from this AM's namelist option to
+            ! the shared horiz_remap module. Plumbing is per-AM so each
+            ! AM is self-contained, but the values must agree across
+            ! AMs (validated inside set_time_epoch).
+            call mpas_pool_get_config(domain % configs, &
+                 'config_AM_fmeDepthCoarsening_time_reference_date', &
+                 config_AM_fmeDepthCoarsening_time_reference_date)
+            call ocn_fme_horiz_remap_set_time_epoch( &
+                 trim(config_AM_fmeDepthCoarsening_time_reference_date), ierr)
+            if (ierr /= 0) then
+               call mpas_log_write('fmeDepthCoarsening: time epoch setup ' // &
+                    'failed, disabling horiz remap', &
+                    messageType=MPAS_LOG_WARN)
+               do_horiz_remap = .false.
+               err = ierr
+               return
+            end if
             do_horiz_remap = ocn_fme_horiz_remap_active()
             if (do_horiz_remap) then
                call ocn_fme_horiz_remap_get_dims(remap_nlat, remap_nlon, remap_nb_local)
@@ -495,8 +514,7 @@ contains
       real(r8), allocatable :: fld_remap(:,:)
       real(kind=RKIND), allocatable :: field_1lev(:,:)
       integer, allocatable :: levelMask(:)
-      character(len=StrKIND) :: timeStr
-      character(len=128) :: varName, longName
+      character(len=128) :: varName
       type(MPAS_Time_Type) :: currTime
       ! Pointers to coarsened arrays for generic field loop
       real(kind=RKIND), dimension(:,:), pointer :: coarsenedPtr
@@ -693,10 +711,11 @@ contains
                ! Check if output interval elapsed
                currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
                if (currTime - avg_last_output_time >= avg_output_interval) then
-                  call mpas_get_time(currTime, dateTimeString=timeStr)
                   call remap_outfile%check_rotate(domain, ierr)
                   if (remap_outfile%file_is_open) then
-                     call remap_outfile%write_time(trim(timeStr), ierr)
+                     ! time_bnds = [avg window start, avg window end]
+                     call remap_outfile%write_time(avg_last_output_time, &
+                          currTime, ierr)
                      call write_static_masks_if_needed()
 
                      do ifld = 1, nCoarsenFields
@@ -747,8 +766,8 @@ contains
                call remap_outfile%check_rotate(domain, ierr)
                if (remap_outfile%file_is_open) then
                   currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
-                  call mpas_get_time(currTime, dateTimeString=timeStr)
-                  call remap_outfile%write_time(trim(timeStr), ierr)
+                  ! Instantaneous: time_bnds collapses to [t, t]
+                  call remap_outfile%write_time(currTime, currTime, ierr)
                   call write_static_masks_if_needed()
 
                   do ifld = 1, nCoarsenFields

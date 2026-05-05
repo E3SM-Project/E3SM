@@ -40,6 +40,7 @@ module ocn_fme_derived_fields
    use shr_kind_mod, only: r8 => shr_kind_r8
    use shr_horiz_remap_mod, only: SHR_FILL_VALUE
    use ocn_fme_horiz_remap, only: ocn_fme_horiz_remap_init, &
+        ocn_fme_horiz_remap_set_time_epoch, &
         ocn_fme_horiz_remap_field, ocn_fme_horiz_remap_active, &
         ocn_fme_horiz_remap_get_dims, ocn_fme_remap_file_t, &
         ocn_fme_remap_build_filename, &
@@ -116,6 +117,7 @@ contains
       integer, intent(out) :: err
 
       character(len=StrKIND), pointer :: config_AM_fmeDerivedFields_horiz_remap_file
+      character(len=StrKIND), pointer :: config_AM_fmeDerivedFields_time_reference_date
       character(len=StrKIND), pointer :: config_stream_output_interval
       logical, pointer :: config_time_averaging
       integer :: ierr
@@ -139,6 +141,22 @@ contains
                     messageType=MPAS_LOG_WARN)
                do_horiz_remap = .false.
             else
+               ! Plumb the CF time epoch from this AM's namelist option
+               ! to the shared horiz_remap module. See parallel comment
+               ! in fmeDepthCoarsening for the design.
+               call mpas_pool_get_config(domain % configs, &
+                    'config_AM_fmeDerivedFields_time_reference_date', &
+                    config_AM_fmeDerivedFields_time_reference_date)
+               call ocn_fme_horiz_remap_set_time_epoch( &
+                    trim(config_AM_fmeDerivedFields_time_reference_date), ierr)
+               if (ierr /= 0) then
+                  call mpas_log_write('fmeDerivedFields: time epoch ' // &
+                       'setup failed, disabling horiz remap', &
+                       messageType=MPAS_LOG_WARN)
+                  do_horiz_remap = .false.
+                  err = ierr
+                  return
+               end if
                do_horiz_remap = ocn_fme_horiz_remap_active()
                if (do_horiz_remap) then
                   call ocn_fme_horiz_remap_get_dims(remap_nlat, remap_nlon, remap_nb_local)
@@ -345,7 +363,6 @@ contains
       ! Remap workspace
       real(r8), allocatable :: fld_remap(:,:)
       real(kind=RKIND), allocatable :: field_1lev(:,:)
-      character(len=StrKIND) :: timeStr
       type(MPAS_Time_Type) :: currTime
 
       err = 0
@@ -516,10 +533,11 @@ contains
                ! Check if output interval elapsed
                currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
                if (currTime - avg_last_output_time >= avg_output_interval) then
-                  call mpas_get_time(currTime, dateTimeString=timeStr)
                   call remap_outfile%check_rotate(domain, ierr)
                   if (remap_outfile%file_is_open) then
-                     call remap_outfile%write_time(trim(timeStr), ierr)
+                     ! time_bnds = [avg window start, avg window end]
+                     call remap_outfile%write_time(avg_last_output_time, &
+                          currTime, ierr)
                      call write_static_masks_if_needed()
                      call write_avg_field('sst', 1)
                      call write_avg_field('sss', 2)
@@ -556,10 +574,10 @@ contains
                ! Instantaneous: remap and write each field one at a time so
                ! fld_remap holds the correct field at every write call.
                currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
-               call mpas_get_time(currTime, dateTimeString=timeStr)
                call remap_outfile%check_rotate(domain, ierr)
                if (remap_outfile%file_is_open) then
-                  call remap_outfile%write_time(trim(timeStr), ierr)
+                  ! Instantaneous: time_bnds collapses to [t, t]
+                  call remap_outfile%write_time(currTime, currTime, ierr)
                   call write_static_masks_if_needed()
                   call inst_remap_and_write(sst, 'sst', .false.)
                   call inst_remap_and_write(sss, 'sss', .false.)

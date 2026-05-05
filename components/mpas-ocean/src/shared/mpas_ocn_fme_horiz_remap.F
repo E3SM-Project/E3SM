@@ -23,11 +23,12 @@
 !>
 !>  Usage:
 !>    call ocn_fme_horiz_remap_init(domain, mapfile, err)
+!>    call ocn_fme_horiz_remap_set_time_epoch(epoch_str, err)
 !>    call ocn_fme_horiz_remap_field(domain, field2d, numlev, fld_out, err)
 !>    call ocn_fme_horiz_remap_open_file(domain, filename, err)
 !>    call ocn_fme_horiz_remap_def_var(varname, units, long_name, numlev, err)
 !>    call ocn_fme_horiz_remap_write_var(varname, fld_out, numlev, err)
-!>    call ocn_fme_horiz_remap_write_time(time_str, err)
+!>    call ocn_fme_horiz_remap_write_time(time_lo, time_hi, err)
 !>    call ocn_fme_horiz_remap_close_file(err)
 !>    logical = ocn_fme_horiz_remap_active()
 !>
@@ -53,7 +54,7 @@ module ocn_fme_horiz_remap
                   pio_inq_dimid, pio_inq_varid, pio_inq_dimlen, &
                   pio_initdecomp, pio_freedecomp, pio_setframe, &
                   PIO_IOTYPE_PNETCDF, PIO_IOTYPE_NETCDF4P, &
-                  PIO_CLOBBER, PIO_WRITE, PIO_REAL, PIO_DOUBLE, PIO_CHAR, &
+                  PIO_CLOBBER, PIO_WRITE, PIO_REAL, PIO_DOUBLE, PIO_INT, &
                   PIO_OFFSET_KIND, PIO_GLOBAL, PIO_NOERR, &
                   PIO_UNLIMITED
 
@@ -62,6 +63,7 @@ module ocn_fme_horiz_remap
    save
 
    public :: ocn_fme_horiz_remap_init
+   public :: ocn_fme_horiz_remap_set_time_epoch
    public :: ocn_fme_horiz_remap_field
    public :: ocn_fme_horiz_remap_active
    public :: ocn_fme_horiz_remap_get_dims
@@ -84,6 +86,19 @@ module ocn_fme_horiz_remap
    ! compare-copy that didn't get cleared.
    logical :: is_restart_run = .false.
 
+   ! CF time-coordinate epoch shared across all output files. Set once
+   ! by an AM at init from config_AM_*_time_reference_date (plumbed from
+   ! CIME RUN_STARTDATE in the FME testmod's shell_commands so MPAS
+   ! `time:units` matches EAM exactly). All FME output files write
+   ! `time(time)` numeric values as days since this epoch and stamp
+   ! `time:units = "days since {time_epoch_cf} 00:00:00"`. The four
+   ! FME AMs each call set_time_epoch with the same value; second and
+   ! later callers validate they match the first.
+   type(MPAS_Time_Type) :: time_epoch
+   character(len=64)    :: time_epoch_str = ''   ! `YYYY-MM-DD_HH:MM:SS` (MPAS form)
+   character(len=64)    :: time_epoch_cf  = ''   ! `YYYY-MM-DD HH:MM:SS` (CF form, space)
+   logical              :: time_epoch_set = .false.
+
    ! PIO decomposition cache (shared across all file instances)
    type(iosystem_desc_t), pointer :: pio_sys => null()
    type(io_desc_t) :: iodesc_2d        ! PIO_REAL  (output records)
@@ -100,16 +115,20 @@ module ocn_fme_horiz_remap
       type(file_desc_t) :: pio_file
       logical :: file_is_open = .false.
       integer :: dim_lon_id = 0, dim_lat_id = 0, dim_time_id = 0
+      integer :: dim_nbnd_id = 0
       integer :: time_record = 0
       integer :: n_pio_vars = 0
       character(len=64)  :: pio_var_names(max_pio_vars)
       type(var_desc_t)   :: pio_var_descs(max_pio_vars)
       ! Per-active-def is_static flag, parallel to pio_var_descs. True
-      ! for vars defined with shape (lon, lat) only — no Time dim, written
+      ! for vars defined with shape (lon, lat) only — no time dim, written
       ! once per file. Used by write_var to skip pio_setframe.
       logical            :: pio_var_is_static(max_pio_vars) = .false.
-      type(var_desc_t)   :: pio_lon_var, pio_lat_var, pio_xtime_var
-      integer :: dim_strlen_id = 0
+      type(var_desc_t)   :: pio_lon_var, pio_lat_var
+      ! CF time variables (replace legacy MPAS xtime). See module-scope
+      ! comment on time_epoch for epoch handling.
+      type(var_desc_t)   :: pio_time_var, pio_time_bnds_var
+      type(var_desc_t)   :: pio_date_var, pio_datesec_var
       ! Stored metadata for replaying var definitions after rotation
       character(len=64)  :: stored_units(max_pio_vars)
       character(len=128) :: stored_long_names(max_pio_vars)
@@ -480,6 +499,103 @@ contains
 !***********************************************************************
 
    !-----------------------------------------------------------------
+   ! CF time-coordinate epoch
+   !-----------------------------------------------------------------
+
+   subroutine ocn_fme_horiz_remap_set_time_epoch(epoch_str, err)!{{{
+   !> Set the CF time-coordinate epoch shared by all FME output files.
+   !> Each FME AM calls this once at init from its
+   !> config_AM_*_time_reference_date namelist value (plumbed from
+   !> CIME RUN_STARTDATE in shell_commands). All four AMs should pass
+   !> the same value -- the second and later callers validate that
+   !> their value matches the first; mismatch is a hard error.
+   !>
+   !> epoch_str format: "YYYY-MM-DD_HH:MM:SS" (MPAS xtime form). The
+   !> CF "days since" units string uses a SPACE separator instead of
+   !> the underscore, which we substitute on the fly.
+      character(len=*), intent(in) :: epoch_str
+      integer, intent(out) :: err
+      integer :: ierr, idx
+      character(len=64) :: cf_str
+
+      err = 0
+
+      if (len_trim(epoch_str) == 0 .or. trim(epoch_str) == 'none') then
+         call mpas_log_write('ocn_fme_horiz_remap_set_time_epoch: ' // &
+              'time_reference_date must be set in shell_commands ' // &
+              '(got "' // trim(epoch_str) // '"). The FME testmod plumbs ' // &
+              'CIME RUN_STARTDATE for this.', messageType=MPAS_LOG_CRIT)
+         err = 1
+         return
+      end if
+
+      if (time_epoch_set) then
+         if (trim(epoch_str) /= trim(time_epoch_str)) then
+            call mpas_log_write('ocn_fme_horiz_remap_set_time_epoch: epoch ' // &
+                 'already set to "' // trim(time_epoch_str) // &
+                 '"; subsequent caller passed "' // trim(epoch_str) // &
+                 '". All FME AMs must use the same value.', &
+                 messageType=MPAS_LOG_CRIT)
+            err = 2
+         end if
+         return
+      end if
+
+      call mpas_set_time(time_epoch, dateTimeString=trim(epoch_str), ierr=ierr)
+      if (ierr /= 0) then
+         call mpas_log_write('ocn_fme_horiz_remap_set_time_epoch: failed to ' // &
+              'parse "' // trim(epoch_str) // '" as YYYY-MM-DD_HH:MM:SS', &
+              messageType=MPAS_LOG_CRIT)
+         err = ierr
+         return
+      end if
+
+      ! CF requires `days since YYYY-MM-DD HH:MM:SS` with a space, not '_'.
+      cf_str = trim(epoch_str)
+      idx = index(cf_str, '_')
+      if (idx > 0) cf_str(idx:idx) = ' '
+
+      time_epoch_str = trim(epoch_str)
+      time_epoch_cf  = trim(cf_str)
+      time_epoch_set = .true.
+
+      call mpas_log_write('ocn_fme_horiz_remap_set_time_epoch: epoch = "' // &
+           trim(time_epoch_cf) // '" (CF form)')
+
+   end subroutine ocn_fme_horiz_remap_set_time_epoch!}}}
+
+   subroutine time_to_days_since_epoch(t, days, err)!{{{
+   !> Convert an MPAS_Time_Type to days since the configured epoch.
+   !> Uses ESMF time-interval arithmetic via mpas_get_timeInterval so
+   !> the calendar (noleap) is respected exactly.
+      type(MPAS_Time_Type), intent(in) :: t
+      real(r8), intent(out) :: days
+      integer, intent(out) :: err
+      type(MPAS_TimeInterval_Type) :: dt_interval
+      real(kind=RKIND) :: dt_seconds
+      integer :: ierr
+
+      days = 0.0_r8
+      err  = 0
+      if (.not. time_epoch_set) then
+         call mpas_log_write('time_to_days_since_epoch: epoch not set', &
+              messageType=MPAS_LOG_ERR)
+         err = 1
+         return
+      end if
+
+      dt_interval = t - time_epoch
+      call mpas_get_timeInterval(dt_interval, StartTimeIn=time_epoch, &
+           dt=dt_seconds, ierr=ierr)
+      if (ierr /= 0) then
+         err = ierr
+         return
+      end if
+      days = real(dt_seconds, r8) / 86400.0_r8
+
+   end subroutine time_to_days_since_epoch!}}}
+
+   !-----------------------------------------------------------------
    ! Type-bound methods for per-file PIO output
    !-----------------------------------------------------------------
 
@@ -488,10 +604,10 @@ contains
    !> exists on disk (warm restart reopening leg-1's monthly file),
    !> open it in append mode:
    !>   - skip dim/var define; look up existing IDs via pio_inq_*
-   !>   - read existing xtime values and seed time_record to the count
-   !>     of frames whose xtime <= MPAS_NOW. This means leg-2's next
-   !>     write OVERWRITES the first frame whose xtime > restart-time
-   !>     (rather than appending after it), which is the correct
+   !>   - read existing numeric `time` values and seed time_record to
+   !>     the count of frames whose `time < MPAS_NOW (in days)`. The
+   !>     next write OVERWRITES the first frame whose time >= restart
+   !>     time (rather than appending after it), which is the correct
    !>     semantics for ERS-style tests where leg-1 already wrote
    !>     records past the restart point: leg-2 stomps on those
    !>     stale-from-leg-2's-perspective records with its own values.
@@ -507,10 +623,17 @@ contains
       logical :: file_exists
       type(MPAS_Time_Type) :: now_time
       character(len=StrKIND) :: now_str
-      character(len=64), allocatable :: existing_xtime(:)
+      real(r8) :: now_days
+      real(r8), allocatable :: existing_time(:)
 
       err = 0
       if (.not. is_initialized) then; err = 1; return; end if
+      if (.not. time_epoch_set) then
+         call mpas_log_write('ocn_fme_remap_file: time epoch not set; ' // &
+              'AM init must call ocn_fme_horiz_remap_set_time_epoch first', &
+              messageType=MPAS_LOG_CRIT)
+         err = 1; return
+      end if
 
       nlat = remap_data%nlat
       nlon = remap_data%nlon
@@ -536,53 +659,53 @@ contains
               pio_inq_dimid(self%pio_file, 'lon', self%dim_lon_id), err)
          call check_pio('inq_dimid lat', &
               pio_inq_dimid(self%pio_file, 'lat', self%dim_lat_id), err)
-         call check_pio('inq_dimid Time', &
-              pio_inq_dimid(self%pio_file, 'Time', self%dim_time_id), err)
-         call check_pio('inq_dimid StrLen', &
-              pio_inq_dimid(self%pio_file, 'StrLen', self%dim_strlen_id), err)
+         call check_pio('inq_dimid time', &
+              pio_inq_dimid(self%pio_file, 'time', self%dim_time_id), err)
+         call check_pio('inq_dimid nbnd', &
+              pio_inq_dimid(self%pio_file, 'nbnd', self%dim_nbnd_id), err)
 
-         call check_pio('inq_varid lon',   pio_inq_varid(self%pio_file, &
-              'lon',   self%pio_lon_var),   err)
-         call check_pio('inq_varid lat',   pio_inq_varid(self%pio_file, &
-              'lat',   self%pio_lat_var),   err)
-         call check_pio('inq_varid xtime', pio_inq_varid(self%pio_file, &
-              'xtime', self%pio_xtime_var), err)
+         call check_pio('inq_varid lon',       pio_inq_varid(self%pio_file, &
+              'lon',       self%pio_lon_var),       err)
+         call check_pio('inq_varid lat',       pio_inq_varid(self%pio_file, &
+              'lat',       self%pio_lat_var),       err)
+         call check_pio('inq_varid time',      pio_inq_varid(self%pio_file, &
+              'time',      self%pio_time_var),      err)
+         call check_pio('inq_varid time_bnds', pio_inq_varid(self%pio_file, &
+              'time_bnds', self%pio_time_bnds_var), err)
+         call check_pio('inq_varid date',      pio_inq_varid(self%pio_file, &
+              'date',      self%pio_date_var),      err)
+         call check_pio('inq_varid datesec',   pio_inq_varid(self%pio_file, &
+              'datesec',   self%pio_datesec_var),   err)
 
-         call check_pio('inq_dimlen Time', &
+         call check_pio('inq_dimlen time', &
               pio_inq_dimlen(self%pio_file, self%dim_time_id, time_len), err)
 
-         ! Read existing xtimes and seed time_record at the largest
-         ! frame index whose xtime <= MPAS_NOW. This makes leg-2's
-         ! next write_time/write_var land on the FIRST frame whose
-         ! xtime > restart time — i.e., it overwrites stale records
-         ! that leg-1 wrote past the restart point.
+         ! Read existing numeric times and seed time_record at the largest
+         ! frame index whose time is STRICTLY less than the current model
+         ! time (in days since epoch). This makes leg-2's next write_time
+         ! land on the FIRST frame whose time >= restart point — i.e., it
+         ! overwrites stale records that leg-1 wrote past the restart.
          now_time = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
          call mpas_get_time(now_time, dateTimeString=now_str, ierr=ierr)
+         call time_to_days_since_epoch(now_time, now_days, ierr)
 
-         allocate(existing_xtime(int(time_len)))
-         ierr = pio_get_var(self%pio_file, self%pio_xtime_var, existing_xtime)
+         allocate(existing_time(int(time_len)))
+         ierr = pio_get_var(self%pio_file, self%pio_time_var, existing_time)
          if (ierr /= PIO_NOERR) then
-            call mpas_log_write('ocn_fme_remap_file: failed to read xtime ' // &
+            call mpas_log_write('ocn_fme_remap_file: failed to read time ' // &
                  'from ' // trim(filename) // '; falling back to N_existing', &
                  messageType=MPAS_LOG_WARN)
             self%time_record = int(time_len)
          else
-            ! Count frames whose xtime is STRICTLY less than MPAS_NOW.
-            ! check_rotate is called from inside the trigger-fire branch
-            ! (i.e. when we are about to write a new record at xtime
-            ! exactly equal to MPAS_NOW), so a frame whose xtime
-            ! ALREADY equals MPAS_NOW is the leg-1 leftover that
-            ! leg-2 should overwrite — exclude it from the count so
-            ! the next write_time lands on it (frame = count + 1).
             count_le_now = 0
             do i = 1, int(time_len)
-               if (trim(existing_xtime(i)) < trim(now_str)) then
+               if (existing_time(i) < now_days) then
                   count_le_now = count_le_now + 1
                end if
             end do
             self%time_record = count_le_now
          end if
-         deallocate(existing_xtime)
+         deallocate(existing_time)
 
          self%n_pio_vars = 0
          self%file_is_open = .true.
@@ -593,7 +716,7 @@ contains
                  'failed for ' // trim(filename), messageType=MPAS_LOG_ERR)
          else
             call mpas_log_write('ocn_fme_remap_file: reopened ' // &
-                 trim(filename) // ' in append mode; existing Time=$i, ' // &
+                 trim(filename) // ' in append mode; existing time=$i, ' // &
                  'next write at frame=$i+1 (MPAS_NOW=' // trim(now_str) // ')', &
                  intArgs=(/int(time_len), self%time_record/))
          end if
@@ -610,10 +733,10 @@ contains
       end if
 
       err = 0
-      call check_pio('def_dim lon', pio_def_dim(self%pio_file, 'lon', nlon, self%dim_lon_id), err)
-      call check_pio('def_dim lat', pio_def_dim(self%pio_file, 'lat', nlat, self%dim_lat_id), err)
-      call check_pio('def_dim Time', pio_def_dim(self%pio_file, 'Time', PIO_UNLIMITED, self%dim_time_id), err)
-      call check_pio('def_dim StrLen', pio_def_dim(self%pio_file, 'StrLen', 64, self%dim_strlen_id), err)
+      call check_pio('def_dim lon',  pio_def_dim(self%pio_file, 'lon',  nlon, self%dim_lon_id), err)
+      call check_pio('def_dim lat',  pio_def_dim(self%pio_file, 'lat',  nlat, self%dim_lat_id), err)
+      call check_pio('def_dim time', pio_def_dim(self%pio_file, 'time', PIO_UNLIMITED, self%dim_time_id), err)
+      call check_pio('def_dim nbnd', pio_def_dim(self%pio_file, 'nbnd', 2,    self%dim_nbnd_id), err)
 
       call check_pio('def_var lon', pio_def_var(self%pio_file, 'lon', PIO_DOUBLE, &
            (/self%dim_lon_id/), self%pio_lon_var), err)
@@ -627,13 +750,41 @@ contains
       ierr = pio_put_att(self%pio_file, self%pio_lat_var, 'long_name', 'latitude')
       ierr = pio_put_att(self%pio_file, self%pio_lat_var, 'axis', 'Y')
 
-      call check_pio('def_var xtime', pio_def_var(self%pio_file, 'xtime', PIO_CHAR, &
-           (/self%dim_strlen_id, self%dim_time_id/), self%pio_xtime_var), err)
-      ierr = pio_put_att(self%pio_file, self%pio_xtime_var, 'long_name', 'model time')
+      ! CF time coordinate. Numeric `time` is the END of the averaging
+      ! window for averaged records and the sample time for instantaneous
+      ! records (matches EAM convention). `time_bnds` carries the window
+      ! endpoints unambiguously. `date` (YYYYMMDD) and `datesec` (seconds
+      ! of day) mirror EAM's parallel integer pair for ncdump-grade
+      ! human readability.
+      call check_pio('def_var time', pio_def_var(self%pio_file, 'time', PIO_DOUBLE, &
+           (/self%dim_time_id/), self%pio_time_var), err)
+      ierr = pio_put_att(self%pio_file, self%pio_time_var, 'long_name', 'time')
+      ierr = pio_put_att(self%pio_file, self%pio_time_var, 'units', &
+           'days since ' // trim(time_epoch_cf))
+      ierr = pio_put_att(self%pio_file, self%pio_time_var, 'calendar', 'noleap')
+      ierr = pio_put_att(self%pio_file, self%pio_time_var, 'bounds', 'time_bnds')
+      ierr = pio_put_att(self%pio_file, self%pio_time_var, 'axis', 'T')
+
+      call check_pio('def_var time_bnds', pio_def_var(self%pio_file, 'time_bnds', PIO_DOUBLE, &
+           (/self%dim_nbnd_id, self%dim_time_id/), self%pio_time_bnds_var), err)
+      ierr = pio_put_att(self%pio_file, self%pio_time_bnds_var, 'long_name', &
+           'time interval endpoints')
+
+      call check_pio('def_var date', pio_def_var(self%pio_file, 'date', PIO_INT, &
+           (/self%dim_time_id/), self%pio_date_var), err)
+      ierr = pio_put_att(self%pio_file, self%pio_date_var, 'long_name', &
+           'current date (YYYYMMDD)')
+
+      call check_pio('def_var datesec', pio_def_var(self%pio_file, 'datesec', PIO_INT, &
+           (/self%dim_time_id/), self%pio_datesec_var), err)
+      ierr = pio_put_att(self%pio_file, self%pio_datesec_var, 'long_name', &
+           'current seconds of current date')
 
       ierr = pio_put_att(self%pio_file, PIO_GLOBAL, 'source', 'E3SM FME online remapping')
       ierr = pio_put_att(self%pio_file, PIO_GLOBAL, 'Conventions', 'CF-1.8')
       ierr = pio_put_att(self%pio_file, PIO_GLOBAL, 'calendar', 'noleap')
+      ierr = pio_put_att(self%pio_file, PIO_GLOBAL, 'time_reference_date', &
+           trim(time_epoch_cf))
 
       if (err /= 0) then
          call mpas_log_write('ocn_fme_remap_file: define-mode error opening ' &
@@ -778,14 +929,26 @@ contains
 
    end subroutine remap_file_write_var!}}}
 
-   subroutine remap_file_write_time(self, time_str, err)!{{{
+   subroutine remap_file_write_time(self, time_lo, time_hi, err)!{{{
+   !> Write the per-record CF time variables (time, time_bnds, date,
+   !> datesec) for the next record and advance time_record.
+   !>
+   !> time_lo / time_hi are the start and end of the averaging window
+   !> for averaged records (set time_lo == time_hi for instantaneous).
+   !> Numeric `time` is stamped at time_hi (end of window) to match
+   !> EAM convention; time_bnds carries [lo, hi] explicitly.
       class(ocn_fme_remap_file_t), intent(inout) :: self
-      character(len=*), intent(in) :: time_str
+      type(MPAS_Time_Type), intent(in) :: time_lo, time_hi
       integer, intent(out) :: err
-      integer :: ierr
-      character(len=64) :: xtime_buf(1)
+      integer :: ierr, yr, mo, dy, hr, mn, sc
+      real(r8) :: t_lo_days, t_hi_days
+      real(r8) :: time_buf(1)
+      real(r8) :: bnds_buf(2, 1)
+      integer  :: date_buf(1), datesec_buf(1)
 
       err = 0
+      if (.not. self%file_is_open) then; err = 1; return; end if
+
       ! Fresh-create files: leave define-mode and seed lon/lat once.
       ! Reopened (append-mode) files are already in data mode and lon/lat
       ! are already populated, so this whole block is skipped.
@@ -798,12 +961,26 @@ contains
       end if
       self%time_record = self%time_record + 1
 
-      ! Write xtime string for this record
-      xtime_buf(1) = ' '
-      xtime_buf(1)(1:min(len_trim(time_str), 64)) = &
-           time_str(1:min(len_trim(time_str), 64))
-      ierr = pio_put_var(self%pio_file, self%pio_xtime_var, &
-           (/1, self%time_record/), (/64, 1/), xtime_buf)
+      call time_to_days_since_epoch(time_lo, t_lo_days, ierr)
+      call time_to_days_since_epoch(time_hi, t_hi_days, ierr)
+
+      time_buf(1) = t_hi_days
+      bnds_buf(1, 1) = t_lo_days
+      bnds_buf(2, 1) = t_hi_days
+
+      call mpas_get_time(time_hi, YYYY=yr, MM=mo, DD=dy, &
+           H=hr, M=mn, S=sc, ierr=ierr)
+      date_buf(1)    = yr * 10000 + mo * 100 + dy
+      datesec_buf(1) = hr * 3600  + mn * 60  + sc
+
+      ierr = pio_put_var(self%pio_file, self%pio_time_var, &
+           (/self%time_record/), (/1/), time_buf)
+      ierr = pio_put_var(self%pio_file, self%pio_time_bnds_var, &
+           (/1, self%time_record/), (/2, 1/), bnds_buf)
+      ierr = pio_put_var(self%pio_file, self%pio_date_var, &
+           (/self%time_record/), (/1/), date_buf)
+      ierr = pio_put_var(self%pio_file, self%pio_datesec_var, &
+           (/self%time_record/), (/1/), datesec_buf)
 
    end subroutine remap_file_write_time!}}}
 
