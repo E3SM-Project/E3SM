@@ -46,6 +46,7 @@ add_library(eamxx_field
   utils/transpose.cpp
   utils/vert_contraction.cpp
   utils/views_are_equal.cpp
+  utils/read_fields.cpp
 )
 
 if (EAMXX_ENABLE_GPU)
@@ -66,7 +67,8 @@ endif()
 
 target_link_libraries (eamxx_field PUBLIC
   eamxx_core
-  eamxx_utils)
+  eamxx_utils
+  eamxx_scorpio_interface)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

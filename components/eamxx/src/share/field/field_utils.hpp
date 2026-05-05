@@ -4,6 +4,8 @@
 #include "share/util/eamxx_scalar_wrapper.hpp"
 #include "share/field/field.hpp"
 
+#include <ekat_comm.hpp>
+
 namespace scream {
 
 // Check that two fields store the same entries.
@@ -85,6 +87,26 @@ void compute_mask (const Field& lhs, const Field& rhs, Comparison CMP, const Fie
 // Transpose a field layout
 void transpose (const Field& src, const Field& tgt);
 Field transpose (const Field& src);
+
+// Read a list of (pre-allocated) fields from a file via scorpio interfaces
+// Notes:
+//  - first overloads assumes NO data decomposition across ranks OR
+//    that the file is already open and the decompositions are already set
+//  - field layout tags names MUST match the dim names on file.
+//    The only exception is tag name "dim", for which this util
+//    will automatically append the extent (e.g., "dim" -> "dim3")
+//  - decomp_dim_gids: used to create scorpio decomposition for || reads
+//  - time_index: which time slice to read. -1 means "last available".
+// WARNING: gids are accessed from Host WITHOUT syncing. Make sure host view is valid
+void read_fields (const std::string& filename,
+                  const std::vector<Field>& fields,
+                  const int time_index = -1);
+
+void read_fields (const std::string& filename,
+                  const std::vector<Field>& fields,
+                  const Field& decomp_dim_gids,
+                  const ekat::Comm& comm,
+                  const int time_index = -1);
 
 } // namespace scream
 

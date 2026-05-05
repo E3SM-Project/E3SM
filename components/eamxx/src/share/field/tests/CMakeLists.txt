@@ -34,6 +34,10 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   CreateUnitTest(field_utils "field_utils.cpp" LIBS eamxx_field
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
+  # Test read_fields free functions
+  CreateUnitTest(read_fields "read_fields_tests.cpp" LIBS eamxx_field
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+
   if (EAMXX_ENABLE_PYTHON)
     CreateUnitTest(pyfield "pyfield.cpp" LIBS eamxx_field)
   endif()
