@@ -1,5 +1,6 @@
 #include "vertical_remapper_mam4.hpp"
-#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
+#include "share/field/field_utils.hpp"
+
 #include <mam4xx/mam4.hpp>
 
 namespace scream
@@ -40,13 +41,10 @@ set_source_pressure (const std::string& file_name )
     using namespace ShortFieldTagsNames;
     auto layout = m_src_grid->get_vertical_layout(ILEV);
     auto mbar = ekat::units::Units(100*ekat::units::Pa,"mbar");
-    Field altitude_int_src(FieldIdentifier("altitude_int_field",layout,mbar,m_src_grid->name()));
+    Field altitude_int_src(FieldIdentifier("altitude_int",layout,mbar,m_src_grid->name()));
     altitude_int_src.allocate_view();
-    scorpio::register_file(file_name,scorpio::FileMode::Read);
-    scorpio::read_var(file_name,"altitude_int",altitude_int_src.get_view<Real*,Host>().data());
-    altitude_int_src.sync_to_dev();
-    scorpio::release_file(file_name);
-    m_src_pmid=altitude_int_src;
+    read_fields(file_name,{altitude_int_src});
+    m_src_pmid = altitude_int_src;
   }
 }
 /* Invokes MAM4XX routines for vertical interpolation.*/

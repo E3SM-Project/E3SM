@@ -8,6 +8,7 @@
 #include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"
+#include "share/field/field_utils.hpp"
 #include "share/util/eamxx_column_ops.hpp"
 
 #include <ekat_team_policy_utils.hpp>
@@ -262,16 +263,9 @@ void RRTMGPRadiation::create_requests() {
       // NOTE: use append, so we get builtin name for (CMP,2) dim, without hard-coding it here
       FieldLayout layout({CMP},{nbands},{prefix+"band"});
       layout.append_dim(CMP,2);
-      Field bounds (FieldIdentifier(prefix + "band_bounds", layout, 1/cm, grid_name));
-      bounds.allocate_view();
-
+      auto bounds = m_grid->create_geometry_data(prefix + "band_bounds", layout, 1/cm);
       std::string fname = m_params.get<std::string>("rrtmgp_coefficients_file_" + prefix);
-      scorpio::register_file(fname,scorpio::FileMode::Read);
-      scorpio::read_var(fname,"bnd_limits_wavenumber",bounds.get_view<Real**,Host>().data());
-      scorpio::release_file(fname);
-
-      bounds.sync_to_dev();
-      m_grid->set_geometry_data(bounds);
+      read_fields(fname,{bounds.alias("bnd_limits_wavenumber")});
     }
 
     // If no bounds were in the grid, the bands centerpoint likely wouldn't either. Still, let's check...

@@ -182,10 +182,6 @@ protected:
   void set_initial_conditions ();
   void restart_model ();
 
-  // Read fields from a file
-  void read_fields_from_file (const std::vector<Field>& fields,
-                              const std::shared_ptr<const AbstractGrid>& grid,
-                              const std::string& file_name);
   void register_groups ();
 
   template<typename T>

@@ -4,6 +4,7 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/field/field_tag.hpp"
 #include "share/field/field_identifier.hpp"
+#include "share/field/field_utils.hpp"
 #include "share/util/eamxx_timing.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
@@ -37,7 +38,7 @@ create_tgt_grid (const grid_ptr_type& src_grid,
   Field p_tgt(FieldIdentifier("p_levs",layout,ekat::units::Pa,tgt_grid->name()));
   p_tgt.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
   p_tgt.allocate_view();
-  scorpio::read_var(map_file,"p_levs",p_tgt.get_view<Real*,Host>().data());
+  read_fields(map_file,{p_tgt});
   p_tgt.sync_to_dev();
 
   // Add tgt pressure levels to the tgt grid

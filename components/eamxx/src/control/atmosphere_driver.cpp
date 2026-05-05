@@ -966,7 +966,8 @@ void AtmosphereDriver::restart_model ()
       }
       fields.push_back(m_field_mgr->get_field(fn,gn));
     }
-    read_fields_from_file (fields,m_grids_manager->get_grid(gn),filename);
+    auto grid = m_grids_manager->get_grid(gn);
+    read_fields(filename,fields,grid->get_partitioned_dim_gids(),m_atm_comm);
     for (auto& f : fields) {
       f.get_header().get_tracking().update_time_stamp(m_current_ts);
     }
@@ -1257,7 +1258,7 @@ void AtmosphereDriver::set_initial_conditions ()
         ic_fields.push_back(m_field_mgr->get_field(fn,grid_name));
       }
       if (not m_iop_data_manager) {
-        read_fields_from_file (ic_fields,grid,file_name);
+        read_fields(file_name,ic_fields,grid->get_partitioned_dim_gids(),m_atm_comm);
       } else {
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
@@ -1352,8 +1353,11 @@ void AtmosphereDriver::set_initial_conditions ()
           auto tmp_grid = io_grid->clone(io_grid->name(),true);
           tmp_grid->reset_field_tag_name(COL,"ncol_d");
           io_grid = tmp_grid;
+
+          for (auto& f : topo_fields)
+            f = f.alias(f.name(),{{COL,"ncol_d"}});
         }
-        read_fields_from_file (topo_fields,io_grid,file_name);
+        read_fields(file_name,topo_fields,io_grid->get_partitioned_dim_gids(),m_atm_comm);
       } else {
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
@@ -1467,20 +1471,6 @@ void AtmosphereDriver::set_initial_conditions ()
 
   m_atm_logger->info("  [EAMxx] set_initial_conditions ... done!");
   m_atm_logger->flush(); // During init, flush often (to help debug crashes)
-}
-
-void AtmosphereDriver::
-read_fields_from_file (const std::vector<Field>& fields,
-                       const std::shared_ptr<const AbstractGrid>& grid,
-                       const std::string& file_name)
-{
-  if (fields.size()==0) {
-    return;
-  }
-
-  AtmosphereInput ic_reader(file_name,grid,fields);
-  ic_reader.set_logger(m_atm_logger);
-  ic_reader.read_variables();
 }
 
 void AtmosphereDriver::
