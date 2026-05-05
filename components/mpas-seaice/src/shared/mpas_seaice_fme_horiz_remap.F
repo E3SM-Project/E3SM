@@ -667,6 +667,8 @@ contains
       ierr = pio_put_att(pio_file, pio_datesec_var, 'long_name', &
            'current seconds of current date')
 
+      ierr = pio_put_att(pio_file, PIO_GLOBAL, 'title', &
+           'MPAS-Seaice FME training tape')
       ierr = pio_put_att(pio_file, PIO_GLOBAL, 'source', 'E3SM FME online remapping')
       ierr = pio_put_att(pio_file, PIO_GLOBAL, 'Conventions', 'CF-1.8')
       ierr = pio_put_att(pio_file, PIO_GLOBAL, 'calendar', 'noleap')
