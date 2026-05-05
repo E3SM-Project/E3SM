@@ -162,7 +162,7 @@ svm (LhsView lhs,
 
 template<CombineMode CM, typename ST, typename XST>
 void Field::
-update_masked (const Field& x, const ST alpha, const ST beta, const ST gamma, const Field& mask)
+update_masked (const Field& x, const ST alpha, const ST beta, const ST gamma, const Field& mask) const
 {
   const auto& layout = x.get_header().get_identifier().get_layout();
   const auto& dims = layout.dims();
@@ -336,7 +336,7 @@ update_masked (const Field& x, const ST alpha, const ST beta, const ST gamma, co
 }
 
 template<bool negate_mask, typename ST>
-void Field::deep_copy_masked (const ST value, const Field& mask)
+void Field::deep_copy_masked (const ST value, const Field& mask) const
 {
   const auto& layout = get_header().get_identifier().get_layout();
   const auto  rank   = layout.rank();

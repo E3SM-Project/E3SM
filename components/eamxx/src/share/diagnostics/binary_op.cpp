@@ -36,7 +36,7 @@ ekat::units::Units apply_binary_op(const ekat::units::Units& a, const ekat::unit
   return ekat::units::Units::invalid();
 }
 // apply binary operation on two input fields
-void apply_binary_op(Field& d, const Field& a, const Real b, const int op_code){
+void apply_binary_op(const Field& d, const Field& a, const Real b, const int op_code){
   bool masked = d.has_valid_mask();
   switch (op_code) {
     case OP_PLUS:
@@ -72,7 +72,7 @@ void apply_binary_op(Field& d, const Field& a, const Real b, const int op_code){
   }
 }
 
-void apply_binary_op(Field& d, const Real a, const Field& b, const int op_code)
+void apply_binary_op(const Field& d, const Real a, const Field& b, const int op_code)
 {
   bool masked = d.has_valid_mask();
   switch (op_code) {
@@ -112,7 +112,7 @@ void apply_binary_op(Field& d, const Real a, const Field& b, const int op_code)
   }
 }
 
-void apply_binary_op(Field& d, const Field& a, const Field& b, const int op_code)
+void apply_binary_op(const Field& d, const Field& a, const Field& b, const int op_code)
 {
   bool masked = d.has_valid_mask();
   if (masked)
@@ -149,7 +149,7 @@ void apply_binary_op(Field& d, const Field& a, const Field& b, const int op_code
       EKAT_ERROR_MSG("Error! Unrecognized/unsupported binary op code (" + std::to_string(op_code) + ")\n");
   }
 }
-void apply_binary_op(Field& d, const Real& a, const Real& b, const int op_code){
+void apply_binary_op(const Field& d, const Real& a, const Real& b, const int op_code){
   switch (op_code) {
     case OP_PLUS:
       d.deep_copy(a+b);
