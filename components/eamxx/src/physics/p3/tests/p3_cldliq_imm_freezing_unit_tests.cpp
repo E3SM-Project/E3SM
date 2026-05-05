@@ -23,7 +23,9 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
   static constexpr Scalar zero_tol = 1e-30;
 
   static_assert(max_pack_size >= 8,
-                "This test assumes at least 8 pack lanes.");
+                "This test assumes at least 8 scenario slots.");
+  static_assert(max_pack_size % Pack::n == 0,
+                "max_pack_size must be divisible by Pack::n.");
 
   struct ImmFreezeResult {
     Scalar mass;
@@ -167,354 +169,355 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
   //         * (mu_c + 4)(mu_c + 5)(mu_c + 6) / lamc^3.
   void run_phys()
   {
-  const auto require_rel_close = [&](const Scalar got, const Scalar expected,
-                                     const Scalar rtol = identity_tol,
-                                     const Scalar atol = zero_tol) {
-    INFO("got=" << got << " expected=" << expected
-         << " rtol=" << rtol << " atol=" << atol);
-    REQUIRE(rel_close(got, expected, rtol, atol));
-  };
+    const auto require_rel_close = [&](const Scalar got, const Scalar expected,
+                                       const Scalar rtol = identity_tol,
+                                       const Scalar atol = zero_tol) {
+      INFO("got=" << got << " expected=" << expected
+           << " rtol=" << rtol << " atol=" << atol);
+      REQUIRE(rel_close(got, expected, rtol, atol));
+    };
 
-  const auto require_preserved = [&](const Scalar got, const Scalar expected) {
-    INFO("got=" << got << " expected=" << expected);
-    REQUIRE(got == expected);
-  };
+    const auto require_preserved = [&](const Scalar got, const Scalar expected) {
+      INFO("got=" << got << " expected=" << expected);
+      REQUIRE(got == expected);
+    };
 
-  const auto require_positive_finite = [&](const ImmFreezeResult& result) {
-    INFO("mass=" << result.mass << " number=" << result.number);
-    REQUIRE(std::isfinite(result.mass));
-    REQUIRE(std::isfinite(result.number));
-    REQUIRE(result.mass > 0);
-    REQUIRE(result.number > 0);
-  };
-
-  SECTION("activation_and_thresholds") {
-    const Scalar lamc = 5.0;
-    const Scalar mu_c = 2.0;
-    const Scalar cdist1 = 0.75;
-    const Scalar inv_qc_relvar = 2.0;
-    const Scalar exponent = 0.65;
-    const Scalar seed_mass = -123.0;
-    const Scalar seed_number = -456.0;
-    const Scalar t_cold = C::T_rainfrz.value - 5.0;
-    const Scalar t_threshold = C::T_rainfrz.value;
-    const Scalar t_warm = C::T_rainfrz.value + 1.0;
-    const Scalar qc_small = 0.9 * C::QSMALL;
-    const Scalar qc_edge = C::QSMALL;
-    const Scalar qc_active = 2.0 * C::QSMALL;
-
-    const auto below_qsmall = run_case(t_cold, lamc, mu_c, cdist1, qc_small,
-                                       inv_qc_relvar, exponent, true,
-                                       seed_mass, seed_number);
-    require_preserved(below_qsmall.mass, seed_mass);
-    require_preserved(below_qsmall.number, seed_number);
-
-    const auto at_qsmall = run_case(t_cold, lamc, mu_c, cdist1, qc_edge,
-                                    inv_qc_relvar, exponent, true,
-                                    seed_mass, seed_number);
-    require_positive_finite(at_qsmall);
-
-    const auto active = run_case(t_cold, lamc, mu_c, cdist1, qc_active,
-                                 inv_qc_relvar, exponent, true,
-                                 seed_mass, seed_number);
-    require_positive_finite(active);
-
-    const auto at_freezing = run_case(t_threshold, lamc, mu_c, cdist1, qc_active,
-                                      inv_qc_relvar, exponent, true,
-                                      seed_mass, seed_number);
-    require_positive_finite(at_freezing);
-
-    const auto warm = run_case(t_warm, lamc, mu_c, cdist1, qc_active,
-                               inv_qc_relvar, exponent, true,
-                               seed_mass, seed_number);
-    require_preserved(warm.mass, seed_mass);
-    require_preserved(warm.number, seed_number);
-
-    const auto masked = run_case(t_cold, lamc, mu_c, cdist1, qc_active,
-                                 inv_qc_relvar, exponent, false,
-                                 seed_mass, seed_number);
-    require_preserved(masked.mass, seed_mass);
-    require_preserved(masked.number, seed_number);
-  }
-
-  SECTION("temperature_supercooling_scaling") {
-    const Scalar lamc = 5.0;
-    const Scalar mu_c = 2.0;
-    const Scalar cdist1 = 0.75;
-    const Scalar qc_incld = 2.0 * C::QSMALL;
-    const Scalar inv_qc_relvar = 2.0;
-    const Scalar exponent = 0.65;
-    const Scalar t_warm = C::T_rainfrz.value;
-    const Scalar t_cold = C::T_rainfrz.value - 10.0;
-
-    const auto warm = run_case(t_warm, lamc, mu_c, cdist1, qc_incld,
-                               inv_qc_relvar, exponent, true);
-    const auto cold = run_case(t_cold, lamc, mu_c, cdist1, qc_incld,
-                               inv_qc_relvar, exponent, true);
-    const auto expected_ratio = std::exp(exponent * (t_warm - t_cold));
-
-    REQUIRE(cold.mass > warm.mass);
-    REQUIRE(cold.number > warm.number);
-    require_rel_close(cold.mass / warm.mass, expected_ratio);
-    require_rel_close(cold.number / warm.number, expected_ratio);
-  }
-
-  SECTION("runtime_exponent_sensitivity") {
-    const Scalar T_atm = C::T_rainfrz.value - 5.0;
-    const Scalar lamc = 5.0;
-    const Scalar mu_c = 2.0;
-    const Scalar cdist1 = 0.75;
-    const Scalar qc_incld = 2.0 * C::QSMALL;
-    const Scalar inv_qc_relvar = 2.0;
-    const Scalar a1 = 0.2;
-    const Scalar a2 = 1.1;
-
-    const auto r1 = run_case(T_atm, lamc, mu_c, cdist1, qc_incld,
-                             inv_qc_relvar, a1, true);
-    const auto r2 = run_case(T_atm, lamc, mu_c, cdist1, qc_incld,
-                             inv_qc_relvar, a2, true);
-    const auto theta = C::T_zerodegc.value - T_atm;
-    const auto expected_ratio = std::exp((a2 - a1) * theta);
-
-    REQUIRE(r2.mass > r1.mass);
-    REQUIRE(r2.number > r1.number);
-    require_rel_close(r2.mass / r1.mass, expected_ratio);
-    require_rel_close(r2.number / r1.number, expected_ratio);
-
-    const auto z1 = run_case(C::T_rainfrz.value, lamc, mu_c, cdist1, qc_incld,
-                             inv_qc_relvar, 0.0, true);
-    const auto z2 = run_case(C::T_rainfrz.value - 10.0, lamc, mu_c, cdist1,
-                             qc_incld, inv_qc_relvar, 0.0, true);
-    REQUIRE(z1.mass == z2.mass);
-    REQUIRE(z1.number == z2.number);
-  }
-
-  SECTION("lambda_power_law_scaling") {
-    const Scalar T_atm = C::T_rainfrz.value - 5.0;
-    const Scalar mu_c = 2.0;
-    const Scalar cdist1 = 0.75;
-    const Scalar qc_incld = 2.0 * C::QSMALL;
-    const Scalar inv_qc_relvar = 2.0;
-    const Scalar exponent = 0.65;
-    const Scalar lam1 = 2.5;
-    const Scalar lam2 = 5.0;
-
-    const auto r1 = run_case(T_atm, lam1, mu_c, cdist1, qc_incld,
-                             inv_qc_relvar, exponent, true);
-    const auto r2 = run_case(T_atm, lam2, mu_c, cdist1, qc_incld,
-                             inv_qc_relvar, exponent, true);
-
-    require_rel_close(r2.mass / r1.mass, std::pow(lam1 / lam2, 6));
-    require_rel_close(r2.number / r1.number, std::pow(lam1 / lam2, 3));
-  }
-
-  SECTION("mass_number_moment_identity") {
-    constexpr std::array<Scalar, 3> mus = {0.0, 2.0, 5.0};
-    constexpr std::array<Scalar, 3> lams = {2.0, 5.0, 10.0};
-    const Scalar T_atm = C::T_rainfrz.value - 5.0;
-    const Scalar cdist1 = 0.75;
-    const Scalar qc_incld = 2.0 * C::QSMALL;
-    const Scalar inv_qc_relvar = 2.0;
-    const Scalar exponent = 0.65;
-
-    for (const auto mu : mus) {
-      for (const auto lam : lams) {
-        const auto result = run_case(T_atm, lam, mu, cdist1, qc_incld,
-                                     inv_qc_relvar, exponent, true);
-        require_positive_finite(result);
-        require_rel_close(result.mass / result.number,
-                          expected_mass_number_ratio(mu, lam));
-      }
-    }
-  }
-
-  SECTION("frozen_droplet_size_bias") {
-    constexpr std::array<Scalar, 3> mus = {0.0, 2.0, 5.0};
-    constexpr std::array<Scalar, 3> lams = {2.0, 5.0, 10.0};
-    const Scalar T_atm = C::T_rainfrz.value - 5.0;
-    const Scalar cdist1 = 0.75;
-    const Scalar qc_incld = 2.0 * C::QSMALL;
-    const Scalar inv_qc_relvar = 2.0;
-    const Scalar exponent = 0.65;
-
-    for (const auto mu : mus) {
-      for (const auto lam : lams) {
-        const auto result = run_case(T_atm, lam, mu, cdist1, qc_incld,
-                                     inv_qc_relvar, exponent, true);
-        const Scalar d_eff_cubed =
-          (result.mass / result.number) / (C::CONS6 / C::CONS5);
-        const Scalar d_mean = (mu + 4) / lam;
-        const Scalar expected_ratio =
-          ((mu + 5) * (mu + 6)) / ((mu + 4) * (mu + 4));
-
-        REQUIRE(d_eff_cubed > cube_host(d_mean));
-        require_rel_close(d_eff_cubed / cube_host(d_mean), expected_ratio);
-      }
-    }
-  }
-
-  SECTION("distribution_prefactor_scaling") {
-    const Scalar T_atm = C::T_rainfrz.value - 5.0;
-    const Scalar lamc = 5.0;
-    const Scalar mu_c = 2.0;
-    const Scalar qc_incld = 2.0 * C::QSMALL;
-    const Scalar inv_qc_relvar = 2.0;
-    const Scalar exponent = 0.65;
-    const Scalar c1 = 0.25;
-    const Scalar c2 = 1.25;
-
-    const auto r1 = run_case(T_atm, lamc, mu_c, c1, qc_incld,
-                             inv_qc_relvar, exponent, true);
-    const auto r2 = run_case(T_atm, lamc, mu_c, c2, qc_incld,
-                             inv_qc_relvar, exponent, true);
-
-    require_rel_close(r2.mass / r1.mass, c2 / c1);
-    require_rel_close(r2.number / r1.number, c2 / c1);
-  }
-
-  SECTION("zero_distribution_prefactor_gives_zero") {
-    const Scalar T_atm = C::T_rainfrz.value - 5.0;
-    const Scalar lamc = 5.0;
-    const Scalar mu_c = 2.0;
-    const Scalar cdist1 = 0.0;
-    const Scalar qc_incld = 2.0 * C::QSMALL;
-    const Scalar inv_qc_relvar = 2.0;
-    const Scalar exponent = 0.65;
-
-    const auto result = run_case(T_atm, lamc, mu_c, cdist1, qc_incld,
-                                 inv_qc_relvar, exponent, true,
-                                 -123.0, -456.0);
-
-    REQUIRE(result.mass == 0);
-    REQUIRE(result.number == 0);
-  }
-
-  SECTION("scalar_multiplier_cancellation_in_mass_number_ratio") {
-    const Scalar T_base = C::T_rainfrz.value - 5.0;
-    const Scalar T_cold = C::T_rainfrz.value - 10.0;
-    const Scalar lamc = 5.0;
-    const Scalar mu_c = 2.0;
-    const Scalar qc_incld = 2.0 * C::QSMALL;
-    const Scalar inv_qc_relvar = 2.0;
-    const Scalar c_base = 0.5;
-    const Scalar c_bigger = 1.4;
-    const Scalar a_base = 0.65;
-    const Scalar a_bigger = 1.1;
-
-    const auto base = run_case(T_base, lamc, mu_c, c_base, qc_incld,
-                               inv_qc_relvar, a_base, true);
-    const auto colder = run_case(T_cold, lamc, mu_c, c_base, qc_incld,
-                                 inv_qc_relvar, a_base, true);
-    const auto bigger_a = run_case(T_base, lamc, mu_c, c_base, qc_incld,
-                                   inv_qc_relvar, a_bigger, true);
-    const auto bigger_c = run_case(T_base, lamc, mu_c, c_bigger, qc_incld,
-                                   inv_qc_relvar, a_base, true);
-    const auto base_ratio = base.mass / base.number;
-
-    require_rel_close(colder.mass / colder.number, base_ratio);
-    require_rel_close(bigger_a.mass / bigger_a.number, base_ratio);
-    require_rel_close(bigger_c.mass / bigger_c.number, base_ratio);
-  }
-
-  SECTION("qc_gate_only_behavior") {
-    const Scalar T_atm = C::T_rainfrz.value - 5.0;
-    const Scalar lamc = 5.0;
-    const Scalar mu_c = 2.0;
-    const Scalar cdist1 = 0.75;
-    const Scalar inv_qc_relvar = 2.0;
-    const Scalar exponent = 0.65;
-    const Scalar qc1 = C::QSMALL;
-    const Scalar qc2 = 10.0 * C::QSMALL;
-
-    const auto r1 = run_case(T_atm, lamc, mu_c, cdist1, qc1,
-                             inv_qc_relvar, exponent, true);
-    const auto r2 = run_case(T_atm, lamc, mu_c, cdist1, qc2,
-                             inv_qc_relvar, exponent, true);
-
-    REQUIRE(r1.mass == r2.mass);
-    REQUIRE(r1.number == r2.number);
-  }
-
-  SECTION("inv_qc_relvar_currently_inactive") {
-    const Scalar T_atm = C::T_rainfrz.value - 5.0;
-    const Scalar lamc = 5.0;
-    const Scalar mu_c = 2.0;
-    const Scalar cdist1 = 0.75;
-    const Scalar qc_incld = 2.0 * C::QSMALL;
-    const Scalar exponent = 0.65;
-
-    const auto low_r = run_case(T_atm, lamc, mu_c, cdist1, qc_incld,
-                                0.5, exponent, true);
-    const auto high_r = run_case(T_atm, lamc, mu_c, cdist1, qc_incld,
-                                 10.0, exponent, true);
-
-    REQUIRE(low_r.mass == high_r.mass);
-    REQUIRE(low_r.number == high_r.number);
-  }
-
-  SECTION("context_mask_preserves_inactive_lanes") {
-    auto lanes = make_lanes();
-    const Scalar exponent = 0.65;
-    for (Int s = 0; s < max_pack_size; ++s) {
-      lanes[s].context = false;
-      lanes[s].mass_in = -1000.0 - s;
-      lanes[s].number_in = -2000.0 - s;
-    }
-
-    lanes[0].context = true;
-    lanes[1].context = true;
-    lanes[2].context = true;
-    lanes[2].T_atm = C::T_rainfrz.value + 1.0;
-    lanes[3].context = true;
-    lanes[3].qc_incld = 0.9 * C::QSMALL;
-    lanes[4].T_atm = C::T_rainfrz.value - 5.0;
-    lanes[4].qc_incld = 5.0 * C::QSMALL;
-    lanes[5].context = true;
-    lanes[7].context = true;
-    lanes[7].T_atm = C::T_rainfrz.value;
-
-    run_kernel(lanes, exponent);
-
-    for (Int s = 0; s < max_pack_size; ++s) {
-      const bool active = lanes[s].context
-        && lanes[s].qc_incld >= C::QSMALL
-        && lanes[s].T_atm <= C::T_rainfrz.value;
-      INFO("lane=" << s << " active=" << active
-           << " mass_out=" << lanes[s].mass_out
-           << " number_out=" << lanes[s].number_out);
-      if (active) {
-        REQUIRE(std::isfinite(lanes[s].mass_out));
-        REQUIRE(std::isfinite(lanes[s].number_out));
-        REQUIRE(lanes[s].mass_out > 0);
-        REQUIRE(lanes[s].number_out > 0);
-      } else {
-        REQUIRE(lanes[s].mass_out == lanes[s].mass_in);
-        REQUIRE(lanes[s].number_out == lanes[s].number_in);
-      }
-    }
-  }
-
-  SECTION("finite_nonnegative_outputs") {
-    constexpr std::array<Scalar, 3> mus = {0.0, 2.0, 5.0};
-    constexpr std::array<Scalar, 3> lams = {2.0, 5.0, 10.0};
-    const Scalar exponent = 0.65;
-    const Scalar cdist1 = 0.75;
-    const Scalar qc_incld = 2.0 * C::QSMALL;
-    const Scalar inv_qc_relvar = 2.0;
-    const Scalar T_atm = C::T_rainfrz.value - 5.0;
-
-    for (Int i = 0; i < static_cast<Int>(mus.size()); ++i) {
-      const auto result = run_case(T_atm, lams[i], mus[i], cdist1, qc_incld,
-                                   inv_qc_relvar, exponent, true);
+    const auto require_positive_finite = [&](const ImmFreezeResult& result) {
       INFO("mass=" << result.mass << " number=" << result.number);
       REQUIRE(std::isfinite(result.mass));
       REQUIRE(std::isfinite(result.number));
-      REQUIRE(result.mass >= 0);
-      REQUIRE(result.number >= 0);
       REQUIRE(result.mass > 0);
       REQUIRE(result.number > 0);
+    };
+
+    SECTION("activation_and_thresholds") {
+      const Scalar lamc = 5.0;
+      const Scalar mu_c = 2.0;
+      const Scalar cdist1 = 0.75;
+      const Scalar inv_qc_relvar = 2.0;
+      const Scalar exponent = 0.65;
+      const Scalar seed_mass = -123.0;
+      const Scalar seed_number = -456.0;
+      const Scalar t_cold = C::T_rainfrz.value - 5.0;
+      const Scalar t_threshold = C::T_rainfrz.value;
+      const Scalar t_warm = C::T_rainfrz.value + 1.0;
+      const Scalar qc_small = 0.9 * C::QSMALL;
+      const Scalar qc_edge = C::QSMALL;
+      const Scalar qc_active = 2.0 * C::QSMALL;
+
+      const auto below_qsmall = run_case(t_cold, lamc, mu_c, cdist1, qc_small,
+                                         inv_qc_relvar, exponent, true,
+                                         seed_mass, seed_number);
+      require_preserved(below_qsmall.mass, seed_mass);
+      require_preserved(below_qsmall.number, seed_number);
+
+      const auto at_qsmall = run_case(t_cold, lamc, mu_c, cdist1, qc_edge,
+                                      inv_qc_relvar, exponent, true,
+                                      seed_mass, seed_number);
+      require_positive_finite(at_qsmall);
+
+      const auto active = run_case(t_cold, lamc, mu_c, cdist1, qc_active,
+                                   inv_qc_relvar, exponent, true,
+                                   seed_mass, seed_number);
+      require_positive_finite(active);
+
+      const auto at_freezing = run_case(t_threshold, lamc, mu_c, cdist1, qc_active,
+                                        inv_qc_relvar, exponent, true,
+                                        seed_mass, seed_number);
+      require_positive_finite(at_freezing);
+
+      const auto warm = run_case(t_warm, lamc, mu_c, cdist1, qc_active,
+                                 inv_qc_relvar, exponent, true,
+                                 seed_mass, seed_number);
+      require_preserved(warm.mass, seed_mass);
+      require_preserved(warm.number, seed_number);
+
+      const auto masked = run_case(t_cold, lamc, mu_c, cdist1, qc_active,
+                                   inv_qc_relvar, exponent, false,
+                                   seed_mass, seed_number);
+      require_preserved(masked.mass, seed_mass);
+      require_preserved(masked.number, seed_number);
     }
-  }
+
+    SECTION("temperature_supercooling_scaling") {
+      const Scalar lamc = 5.0;
+      const Scalar mu_c = 2.0;
+      const Scalar cdist1 = 0.75;
+      const Scalar qc_incld = 2.0 * C::QSMALL;
+      const Scalar inv_qc_relvar = 2.0;
+      const Scalar exponent = 0.65;
+      const Scalar t_warm = C::T_rainfrz.value;
+      const Scalar t_cold = C::T_rainfrz.value - 10.0;
+
+      const auto warm = run_case(t_warm, lamc, mu_c, cdist1, qc_incld,
+                                 inv_qc_relvar, exponent, true);
+      const auto cold = run_case(t_cold, lamc, mu_c, cdist1, qc_incld,
+                                 inv_qc_relvar, exponent, true);
+      const auto expected_ratio = std::exp(exponent * (t_warm - t_cold));
+
+      REQUIRE(cold.mass > warm.mass);
+      REQUIRE(cold.number > warm.number);
+      require_rel_close(cold.mass / warm.mass, expected_ratio);
+      require_rel_close(cold.number / warm.number, expected_ratio);
+    }
+
+    SECTION("runtime_exponent_sensitivity") {
+      const Scalar T_atm = C::T_rainfrz.value - 5.0;
+      const Scalar lamc = 5.0;
+      const Scalar mu_c = 2.0;
+      const Scalar cdist1 = 0.75;
+      const Scalar qc_incld = 2.0 * C::QSMALL;
+      const Scalar inv_qc_relvar = 2.0;
+      const Scalar a1 = 0.2;
+      const Scalar a2 = 1.1;
+
+      const auto r1 = run_case(T_atm, lamc, mu_c, cdist1, qc_incld,
+                               inv_qc_relvar, a1, true);
+      const auto r2 = run_case(T_atm, lamc, mu_c, cdist1, qc_incld,
+                               inv_qc_relvar, a2, true);
+      const auto theta = C::T_zerodegc.value - T_atm;
+      const auto expected_ratio = std::exp((a2 - a1) * theta);
+
+      REQUIRE(r2.mass > r1.mass);
+      REQUIRE(r2.number > r1.number);
+      require_rel_close(r2.mass / r1.mass, expected_ratio);
+      require_rel_close(r2.number / r1.number, expected_ratio);
+
+      const auto z1 = run_case(C::T_rainfrz.value, lamc, mu_c, cdist1, qc_incld,
+                               inv_qc_relvar, 0.0, true);
+      const auto z2 = run_case(C::T_rainfrz.value - 10.0, lamc, mu_c, cdist1,
+                               qc_incld, inv_qc_relvar, 0.0, true);
+      REQUIRE(z1.mass == z2.mass);
+      REQUIRE(z1.number == z2.number);
+    }
+
+    SECTION("lambda_power_law_scaling") {
+      const Scalar T_atm = C::T_rainfrz.value - 5.0;
+      const Scalar mu_c = 2.0;
+      const Scalar cdist1 = 0.75;
+      const Scalar qc_incld = 2.0 * C::QSMALL;
+      const Scalar inv_qc_relvar = 2.0;
+      const Scalar exponent = 0.65;
+      const Scalar lam1 = 2.5;
+      const Scalar lam2 = 5.0;
+
+      const auto r1 = run_case(T_atm, lam1, mu_c, cdist1, qc_incld,
+                               inv_qc_relvar, exponent, true);
+      const auto r2 = run_case(T_atm, lam2, mu_c, cdist1, qc_incld,
+                               inv_qc_relvar, exponent, true);
+
+      require_rel_close(r2.mass / r1.mass, std::pow(lam1 / lam2, 6));
+      require_rel_close(r2.number / r1.number, std::pow(lam1 / lam2, 3));
+    }
+
+    SECTION("mass_number_moment_identity") {
+      constexpr std::array<Scalar, 3> mus = {0.0, 2.0, 5.0};
+      constexpr std::array<Scalar, 3> lams = {2.0, 5.0, 10.0};
+      const Scalar T_atm = C::T_rainfrz.value - 5.0;
+      const Scalar cdist1 = 0.75;
+      const Scalar qc_incld = 2.0 * C::QSMALL;
+      const Scalar inv_qc_relvar = 2.0;
+      const Scalar exponent = 0.65;
+
+      for (const auto mu : mus) {
+        for (const auto lam : lams) {
+          const auto result = run_case(T_atm, lam, mu, cdist1, qc_incld,
+                                       inv_qc_relvar, exponent, true);
+          require_positive_finite(result);
+          require_rel_close(result.mass / result.number,
+                            expected_mass_number_ratio(mu, lam));
+        }
+      }
+    }
+
+    SECTION("frozen_droplet_size_bias") {
+      constexpr std::array<Scalar, 3> mus = {0.0, 2.0, 5.0};
+      constexpr std::array<Scalar, 3> lams = {2.0, 5.0, 10.0};
+      const Scalar T_atm = C::T_rainfrz.value - 5.0;
+      const Scalar cdist1 = 0.75;
+      const Scalar qc_incld = 2.0 * C::QSMALL;
+      const Scalar inv_qc_relvar = 2.0;
+      const Scalar exponent = 0.65;
+
+      for (const auto mu : mus) {
+        for (const auto lam : lams) {
+          const auto result = run_case(T_atm, lam, mu, cdist1, qc_incld,
+                                       inv_qc_relvar, exponent, true);
+          require_positive_finite(result);
+          const Scalar d_eff_cubed =
+            (result.mass / result.number) / (C::CONS6 / C::CONS5);
+          const Scalar d_mean = (mu + 4) / lam;
+          const Scalar expected_ratio =
+            ((mu + 5) * (mu + 6)) / ((mu + 4) * (mu + 4));
+
+          REQUIRE(d_eff_cubed > cube_host(d_mean));
+          require_rel_close(d_eff_cubed / cube_host(d_mean), expected_ratio);
+        }
+      }
+    }
+
+    SECTION("distribution_prefactor_scaling") {
+      const Scalar T_atm = C::T_rainfrz.value - 5.0;
+      const Scalar lamc = 5.0;
+      const Scalar mu_c = 2.0;
+      const Scalar qc_incld = 2.0 * C::QSMALL;
+      const Scalar inv_qc_relvar = 2.0;
+      const Scalar exponent = 0.65;
+      const Scalar c1 = 0.25;
+      const Scalar c2 = 1.25;
+
+      const auto r1 = run_case(T_atm, lamc, mu_c, c1, qc_incld,
+                               inv_qc_relvar, exponent, true);
+      const auto r2 = run_case(T_atm, lamc, mu_c, c2, qc_incld,
+                               inv_qc_relvar, exponent, true);
+
+      require_rel_close(r2.mass / r1.mass, c2 / c1);
+      require_rel_close(r2.number / r1.number, c2 / c1);
+    }
+
+    SECTION("zero_distribution_prefactor_gives_zero") {
+      const Scalar T_atm = C::T_rainfrz.value - 5.0;
+      const Scalar lamc = 5.0;
+      const Scalar mu_c = 2.0;
+      const Scalar cdist1 = 0.0;
+      const Scalar qc_incld = 2.0 * C::QSMALL;
+      const Scalar inv_qc_relvar = 2.0;
+      const Scalar exponent = 0.65;
+
+      const auto result = run_case(T_atm, lamc, mu_c, cdist1, qc_incld,
+                                   inv_qc_relvar, exponent, true,
+                                   -123.0, -456.0);
+
+      REQUIRE(result.mass == 0);
+      REQUIRE(result.number == 0);
+    }
+
+    SECTION("scalar_multiplier_cancellation_in_mass_number_ratio") {
+      const Scalar T_base = C::T_rainfrz.value - 5.0;
+      const Scalar T_cold = C::T_rainfrz.value - 10.0;
+      const Scalar lamc = 5.0;
+      const Scalar mu_c = 2.0;
+      const Scalar qc_incld = 2.0 * C::QSMALL;
+      const Scalar inv_qc_relvar = 2.0;
+      const Scalar c_base = 0.5;
+      const Scalar c_bigger = 1.4;
+      const Scalar a_base = 0.65;
+      const Scalar a_bigger = 1.1;
+
+      const auto base = run_case(T_base, lamc, mu_c, c_base, qc_incld,
+                                 inv_qc_relvar, a_base, true);
+      const auto colder = run_case(T_cold, lamc, mu_c, c_base, qc_incld,
+                                   inv_qc_relvar, a_base, true);
+      const auto bigger_a = run_case(T_base, lamc, mu_c, c_base, qc_incld,
+                                     inv_qc_relvar, a_bigger, true);
+      const auto bigger_c = run_case(T_base, lamc, mu_c, c_bigger, qc_incld,
+                                     inv_qc_relvar, a_base, true);
+      const auto base_ratio = base.mass / base.number;
+
+      require_rel_close(colder.mass / colder.number, base_ratio);
+      require_rel_close(bigger_a.mass / bigger_a.number, base_ratio);
+      require_rel_close(bigger_c.mass / bigger_c.number, base_ratio);
+    }
+
+    SECTION("qc_gate_only_behavior") {
+      const Scalar T_atm = C::T_rainfrz.value - 5.0;
+      const Scalar lamc = 5.0;
+      const Scalar mu_c = 2.0;
+      const Scalar cdist1 = 0.75;
+      const Scalar inv_qc_relvar = 2.0;
+      const Scalar exponent = 0.65;
+      const Scalar qc1 = C::QSMALL;
+      const Scalar qc2 = 10.0 * C::QSMALL;
+
+      const auto r1 = run_case(T_atm, lamc, mu_c, cdist1, qc1,
+                               inv_qc_relvar, exponent, true);
+      const auto r2 = run_case(T_atm, lamc, mu_c, cdist1, qc2,
+                               inv_qc_relvar, exponent, true);
+
+      REQUIRE(r1.mass == r2.mass);
+      REQUIRE(r1.number == r2.number);
+    }
+
+    SECTION("inv_qc_relvar_currently_inactive") {
+      const Scalar T_atm = C::T_rainfrz.value - 5.0;
+      const Scalar lamc = 5.0;
+      const Scalar mu_c = 2.0;
+      const Scalar cdist1 = 0.75;
+      const Scalar qc_incld = 2.0 * C::QSMALL;
+      const Scalar exponent = 0.65;
+
+      const auto low_r = run_case(T_atm, lamc, mu_c, cdist1, qc_incld,
+                                  0.5, exponent, true);
+      const auto high_r = run_case(T_atm, lamc, mu_c, cdist1, qc_incld,
+                                   10.0, exponent, true);
+
+      REQUIRE(low_r.mass == high_r.mass);
+      REQUIRE(low_r.number == high_r.number);
+    }
+
+    SECTION("context_mask_preserves_inactive_lanes") {
+      auto lanes = make_lanes();
+      const Scalar exponent = 0.65;
+      for (Int s = 0; s < max_pack_size; ++s) {
+        lanes[s].context = false;
+        lanes[s].mass_in = -1000.0 - s;
+        lanes[s].number_in = -2000.0 - s;
+      }
+
+      lanes[0].context = true;
+      lanes[1].context = true;
+      lanes[2].context = true;
+      lanes[2].T_atm = C::T_rainfrz.value + 1.0;
+      lanes[3].context = true;
+      lanes[3].qc_incld = 0.9 * C::QSMALL;
+      lanes[4].T_atm = C::T_rainfrz.value - 5.0;
+      lanes[4].qc_incld = 5.0 * C::QSMALL;
+      lanes[5].context = true;
+      lanes[7].context = true;
+      lanes[7].T_atm = C::T_rainfrz.value;
+
+      run_kernel(lanes, exponent);
+
+      for (Int s = 0; s < max_pack_size; ++s) {
+        const bool active = lanes[s].context
+          && lanes[s].qc_incld >= C::QSMALL
+          && lanes[s].T_atm <= C::T_rainfrz.value;
+        INFO("lane=" << s << " active=" << active
+             << " mass_out=" << lanes[s].mass_out
+             << " number_out=" << lanes[s].number_out);
+        if (active) {
+          REQUIRE(std::isfinite(lanes[s].mass_out));
+          REQUIRE(std::isfinite(lanes[s].number_out));
+          REQUIRE(lanes[s].mass_out > 0);
+          REQUIRE(lanes[s].number_out > 0);
+        } else {
+          REQUIRE(lanes[s].mass_out == lanes[s].mass_in);
+          REQUIRE(lanes[s].number_out == lanes[s].number_in);
+        }
+      }
+    }
+
+    SECTION("finite_nonnegative_outputs") {
+      constexpr std::array<Scalar, 3> mus = {0.0, 2.0, 5.0};
+      constexpr std::array<Scalar, 3> lams = {2.0, 5.0, 10.0};
+      const Scalar exponent = 0.65;
+      const Scalar cdist1 = 0.75;
+      const Scalar qc_incld = 2.0 * C::QSMALL;
+      const Scalar inv_qc_relvar = 2.0;
+      const Scalar T_atm = C::T_rainfrz.value - 5.0;
+
+      for (Int i = 0; i < static_cast<Int>(mus.size()); ++i) {
+        const auto result = run_case(T_atm, lams[i], mus[i], cdist1, qc_incld,
+                                     inv_qc_relvar, exponent, true);
+        INFO("mass=" << result.mass << " number=" << result.number);
+        REQUIRE(std::isfinite(result.mass));
+        REQUIRE(std::isfinite(result.number));
+        REQUIRE(result.mass >= 0);
+        REQUIRE(result.number >= 0);
+        REQUIRE(result.mass > 0);
+        REQUIRE(result.number > 0);
+      }
+    }
 }
 
 void run_bfb()
