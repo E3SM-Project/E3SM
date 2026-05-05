@@ -530,12 +530,16 @@ contains
             ! Assign 'applied' ocean t/s, otherwise original fields will be
             ! clobbered by input file each time step
 
-            oceanSalinityApplied = oceanSalinity
-            oceanTemperatureApplied = oceanTemperature
+            if (config_calculate_thermal_forcing) then
+               oceanSalinityApplied = oceanSalinity
+               oceanTemperatureApplied = oceanTemperature
+            endif
 
             call mpas_timer_start("halo_updates")
-            call mpas_dmpar_field_halo_exch(domain,'oceanSalinityApplied')
-            call mpas_dmpar_field_halo_exch(domain,'oceanTemperatureApplied')
+            if (config_calculate_thermal_forcing) then
+               call mpas_dmpar_field_halo_exch(domain,'oceanSalinityApplied')
+               call mpas_dmpar_field_halo_exch(domain,'oceanTemperatureApplied')
+            endif
             call mpas_dmpar_field_halo_exch(domain,'ismip6shelfMelt_3dThermalForcing')
             call mpas_dmpar_field_halo_exch(domain,'growMask')
             call mpas_timer_stop("halo_updates")
