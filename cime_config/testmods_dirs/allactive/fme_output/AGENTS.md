@@ -159,12 +159,13 @@ These are hard-won lessons. Read before modifying FME code.
     window — invisible in production at daily/30-min cadence).
     `write_on_startup` was already `.false.`.
 
-12. **Remapped output files include xtime.** The `xtime(StrLen, Time)` character
-    variable records the MPAS date-time string for each output record. CF
-    attributes include `axis='X'`/`'Y'` on lon/lat and `calendar='noleap'`
-    as a global attribute. PIO `pio_put_var` for xtime requires a 1-element
-    character array (`character(len=64) :: buf(1)`), not a scalar — PIO's
-    `put_vara_1d_text` interface demands `character(len=*) :: val(:)`.
+12. **OBSOLETE 2026-05-04: xtime is no longer written.** Remapped output
+    files used to include `xtime(StrLen, Time)` (legacy MPAS character
+    timestamp), which required a `(1)`-element character buffer trick to
+    work around the PIO `put_vara_1d_text` interface. With the CF-time
+    rewrite (gotcha #39), xtime, the StrLen dim, and the PIO_CHAR
+    dependency are all gone. Kept the entry as a breadcrumb for anyone
+    reading older branches.
 
 13. **MPAS coupler fluxes are passed through raw (no ice-fraction recovery).**
     The forcing-pool fields (`shortWaveHeatFlux`, `longWaveHeatFluxDown`,
@@ -376,17 +377,19 @@ These are hard-won lessons. Read before modifying FME code.
        being defined; `write_time` skips the "first record only"
        lon/lat seed block.
 
-    2. **Frame tracking via xtime**, gated on STRICT-less-than. After
-       reopen, scan the existing `xtime` variable and seed
-       `time_record = count(existing_xtime < MPAS_NOW)`. The next
-       `write_time` then increments to the FIRST frame whose
-       existing xtime equals MPAS_NOW (= the leg-1 leftover record
-       past the restart point) and OVERWRITES it. With `<=` instead
-       of `<`, that frame would be excluded from the count and leg-2
-       would append past the end, producing a duplicate xtime — a
-       very subtle false PASS where cprnc compares `min(Time)`
-       records on each side and finds them all matching because
-       `.rest`'s frames 1..N are literally leg-1's bytes.
+    2. **Frame tracking via numeric `time`**, gated on STRICT-less-than.
+       After reopen, scan the existing CF `time(time)` variable and seed
+       `time_record = count(existing_time < MPAS_NOW_in_days)`. The next
+       `write_time` then increments to the FIRST frame whose existing
+       time equals MPAS_NOW (= the leg-1 leftover record past the
+       restart point) and OVERWRITES it. With `<=` instead of `<`, that
+       frame would be excluded from the count and leg-2 would append
+       past the end, producing a duplicate time — a very subtle false
+       PASS where cprnc compares `min(time)` records on each side and
+       finds them all matching because `.rest`'s frames 1..N are
+       literally leg-1's bytes. (Pre-2026-05-04 this used the legacy
+       MPAS `xtime` character var with a string lex-compare; switched
+       to numeric `time` when xtime was removed in gotcha #39.)
 
     3. **Accumulator sidecar files** (see gotcha #11) — required so
        leg-2's first averaging window after restart starts from the
@@ -677,6 +680,103 @@ These are hard-won lessons. Read before modifying FME code.
     unused for now (renumbering the 24 indices was deemed not worth
     the churn risk). Reusable for any future field at index 12.
 
+39. **MPAS FME files use CF time variables matching EAM (ADDED 2026-05-04).**
+    The legacy `xtime(StrLen, Time)` character timestamp was replaced
+    with the EAM-style trio:
+
+    ```
+    dimensions:
+        time = UNLIMITED ;   nbnd = 2 ;   lon = 360 ;   lat = 180 ;
+    variables:
+        double time(time) ;
+            time:units    = "days since {RUN_STARTDATE} 00:00:00" ;
+            time:calendar = "noleap" ;
+            time:bounds   = "time_bnds" ;
+            time:axis     = "T" ;
+        double time_bnds(time, nbnd) ;
+        int    date(time) ;       // YYYYMMDD
+        int    datesec(time) ;    // seconds of day
+    ```
+
+    **Why**: bytewise time alignment with EAM for online ACE coupling.
+    `xtime` was redundant given `time + time_bnds` (CF-canonical) and
+    a footgun: legacy MPAS `timeSeriesStatsCustom` stamps xtime at the
+    START of an averaging window while our FME code stamps at the END,
+    so anyone applying MPAS muscle memory to our files got it wrong by
+    one window. Dropping xtime eliminates that trap. See the design
+    discussion archived in the 2026-05-04 conversation.
+
+    **Time stamp convention**: numeric `time` is the END of the
+    averaging window (matches EAM); `time_bnds = [t_lo, t_hi]` carries
+    both endpoints. For instantaneous records (`*_inst` companion
+    fields and inst-mode AMs), `time_bnds = [t, t]`.
+
+    **Epoch plumbing**: each FME AM reads its
+    `config_AM_*_time_reference_date` namelist option (added to all
+    four AM Registries) and calls
+    `ocn_fme_horiz_remap_set_time_epoch` /
+    `seaice_fme_horiz_remap_set_time_epoch` once at init. The four
+    AMs each pass the same value -- the second and later callers
+    validate they match the first; mismatch is `MPAS_LOG_CRIT`.
+    The testmod's `shell_commands` reads `RUN_STARTDATE` via
+    xmlquery and writes the four namelist values. If the option is
+    `'none'` or missing, AM init aborts at the first file open with
+    a critical error (fail-fast, not silent).
+
+    **Numeric conversion**: `MPAS_Time_Type` to days-since-epoch goes
+    through `mpas_get_timeInterval(t - epoch, StartTimeIn=epoch,
+    dt=seconds)` then `seconds / 86400`. ESMF respects the noleap
+    calendar exactly. Helpers are
+    `time_to_days_since_epoch` (ocean) and
+    `si_time_to_days_since_epoch` (seaice). Both modules also store
+    the epoch as a CF-form string (`YYYY-MM-DD HH:MM:SS` with a
+    SPACE, not the MPAS underscore) for the `time:units` attribute.
+
+    **CF units underscore-vs-space**: MPAS xtime form is
+    `YYYY-MM-DD_HH:MM:SS`; CF "days since" requires
+    `YYYY-MM-DD HH:MM:SS`. `set_time_epoch` substitutes the underscore
+    on the fly into the `time_epoch_cf` string used in attributes.
+
+    **Append-mode reopen**: see gotcha #29 point 2 for the parallel
+    update -- frame tracking now uses numeric `time` instead of
+    string `xtime`.
+
+    **`write_time` signature**: changed from
+    `write_time(time_str)` (string-based, end-of-window only) to
+    `write_time(time_lo, time_hi)` taking two `MPAS_Time_Type`
+    arguments. AM call sites at all 8 locations (avg path + inst
+    path × 4 AMs) updated.
+
+    **Known shortcoming -- 4 namelist options for one shared value.**
+    Each FME AM has its own `config_AM_*_time_reference_date`
+    namelist option (one per AM × 4 AMs = 4 options), all set to the
+    same value by `shell_commands` and validated to agree at runtime
+    inside `set_time_epoch`. This is silly -- four knobs to turn and
+    keep in sync for a value that should be a single source-of-truth.
+    Cleaner alternatives considered but deferred:
+    - **Single shared option per component** (`config_FME_time_reference_date`
+      in `namelist_definition_mpaso.xml` and `namelist_definition_mpassi.xml`):
+      drops from 4 to 2. Mechanical refactor, no behavior change.
+    - **Auto-capture from MPAS_START_TIME on cold init + persist via
+      sidecar**: zero namelist options. On cold start, `MPAS_START_TIME`
+      from `domain%clock` equals `RUN_STARTDATE` (verified at
+      `ocn_comp_mct.F:611-614` -- driver sets it from
+      `seq_timemgr_EClockGetData(EClock, ECurrTime=...)` for
+      `runtype=='initial'`). Capture once, persist as a global attribute
+      in the existing accumulator sidecar files (gotcha #11), read on
+      warm restart. Eliminates the need for shell_commands plumbing
+      entirely. Failure mode: if a user nukes the sidecars between
+      cold and warm legs, the warm leg falls back to MPAS_START_TIME
+      = leg-start-time = wrong epoch (would need a loud WARN).
+    - **Plumb case-start through MPAS driver from EClock**: cleanest
+      semantically (single source of truth at the coupler-clock level)
+      but touches the shared MPAS driver layer (`ocn_comp_mct.F`,
+      `ice_comp_mct.F`), more upstream-review friction.
+    Current 4-option implementation works and is explicit about what's
+    being set; the validation in `set_time_epoch` (CRIT on mismatch)
+    catches the most likely user error. Refactor is a follow-up nice-
+    to-have, not blocking production.
+
 ## Runtime Configuration
 
 Both `fme_output` and `fme_legacy_output` testmods accept environment variables:
@@ -885,8 +985,6 @@ would catch latent issues during the 100-yr run:
   grid diagnostic plots
 
 ### Extensions
-- Numeric `time` coordinate + `time_bnds` for CF-compliant time axis
 - Online spherical harmonics roundtrip (replaces ACE offline SH smoothing)
-- 2D/3D wetmask computation
 - ELM / MOSART FME integration (deferred -- needs reimplementation)
 - Performance: persistent work arrays, O(n) send_local_cell lookup, OpenMP

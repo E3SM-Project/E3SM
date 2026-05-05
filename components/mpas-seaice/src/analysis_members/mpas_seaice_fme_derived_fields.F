@@ -25,6 +25,7 @@ module seaice_fme_derived_fields
    use shr_kind_mod, only: r8 => shr_kind_r8
    use shr_horiz_remap_mod, only: SHR_FILL_VALUE
    use seaice_fme_horiz_remap, only: seaice_fme_horiz_remap_init, &
+        seaice_fme_horiz_remap_set_time_epoch, &
         seaice_fme_horiz_remap_field, seaice_fme_horiz_remap_active, &
         seaice_fme_horiz_remap_write_var, seaice_fme_horiz_remap_write_time, &
         seaice_fme_horiz_remap_close_file, seaice_fme_horiz_remap_get_dims, &
@@ -187,6 +188,7 @@ contains
       !-----------------------------------------------------------------
 
       character(len=StrKIND), pointer :: config_horiz_remap_file
+      character(len=StrKIND), pointer :: config_time_reference_date
       logical, pointer :: config_time_averaging
       character(len=StrKIND), pointer :: config_stream_output_interval
       integer :: ierr
@@ -204,6 +206,20 @@ contains
             call seaice_fme_horiz_remap_init(domain, &
                  trim(config_horiz_remap_file), ierr)
             if (ierr == 0) then
+               ! Plumb the CF time epoch from this AM's namelist option.
+               call mpas_pool_get_config(domain % configs, &
+                    'config_AM_fmeSeaiceDerivedFields_time_reference_date', &
+                    config_time_reference_date)
+               call seaice_fme_horiz_remap_set_time_epoch( &
+                    trim(config_time_reference_date), ierr)
+               if (ierr /= 0) then
+                  call mpas_log_write('fmeSeaiceDerivedFields: time epoch ' // &
+                       'setup failed, disabling horiz remap', &
+                       messageType=MPAS_LOG_WARN)
+                  do_horiz_remap = .false.
+                  err = ierr
+                  return
+               end if
                do_horiz_remap = seaice_fme_horiz_remap_active()
                if (do_horiz_remap) then
                   call seaice_fme_horiz_remap_get_dims( &
@@ -488,7 +504,6 @@ contains
       real(r8), allocatable :: fld_remap(:)
       integer :: ierr_remap
       type(MPAS_Time_Type) :: currTime
-      character(len=StrKIND) :: timeStr
 
       real(kind=RKIND) :: &
            areaSum, &
@@ -635,10 +650,11 @@ contains
                ! Check if output interval elapsed
                currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr_remap)
                if (currTime - avg_last_output_time >= avg_output_interval) then
-                  call mpas_get_time(currTime, dateTimeString=timeStr)
                   call seaice_fme_horiz_remap_check_rotate(domain, ierr_remap)
                   if (file_is_open) then
-                     call seaice_fme_horiz_remap_write_time(trim(timeStr), ierr_remap)
+                     ! time_bnds = [avg window start, avg window end]
+                     call seaice_fme_horiz_remap_write_time( &
+                          avg_last_output_time, currTime, ierr_remap)
                      call write_avg_field('iceAreaTotal', 1)
                      call write_avg_field('iceVolumeTotal', 2)
                      call write_avg_field('snowVolumeTotal', 3)
@@ -659,10 +675,11 @@ contains
                ! Instantaneous path: remap and write each field one at a time
                ! so fld_remap holds the correct field at each write.
                currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr_remap)
-               call mpas_get_time(currTime, dateTimeString=timeStr)
                call seaice_fme_horiz_remap_check_rotate(domain, ierr_remap)
                if (file_is_open) then
-                  call seaice_fme_horiz_remap_write_time(trim(timeStr), ierr_remap)
+                  ! Instantaneous: time_bnds collapses to [t, t]
+                  call seaice_fme_horiz_remap_write_time(currTime, currTime, &
+                       ierr_remap)
                   call remap_and_write_inst('iceAreaTotal', iceAreaTotal)
                   call remap_and_write_inst('iceVolumeTotal', iceVolumeTotal)
                   call remap_and_write_inst('snowVolumeTotal', snowVolumeTotal)

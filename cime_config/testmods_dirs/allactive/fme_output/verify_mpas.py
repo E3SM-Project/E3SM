@@ -1713,10 +1713,21 @@ def check_remapped_grid(ds, label):
     if has_lat and dims["lat"] != EXPECTED_NLAT:
         issues.append(f"  {label}: lat={dims['lat']}, expected {EXPECTED_NLAT}")
 
-    # Check for Time dimension
+    # Check for time dimension (canonical: lowercase 'time'; legacy
+    # capital-T 'Time' accepted for back-compat)
     has_time = "Time" in dims or "time" in dims
     if not has_time:
-        issues.append(f"  {label}: missing 'Time' dimension")
+        issues.append(f"  {label}: missing 'time' dimension")
+
+    # CF time-coordinate vars added 2026-05-04 (replace legacy xtime).
+    # All four FME streams should now ship time + time_bnds + date +
+    # datesec mirroring EAM. Warn (don't fail) if any are missing in
+    # case we're inspecting a pre-rewrite file.
+    varnames = get_varnames(ds)
+    cf_time_vars = ("time", "time_bnds", "date", "datesec")
+    missing_cf = [v for v in cf_time_vars if v not in varnames]
+    if missing_cf:
+        print(f"  {label}: WARN missing CF time vars: {missing_cf}")
 
     if not issues:
         nlon = dims.get("lon", "?")

@@ -38,8 +38,8 @@ module seaice_fme_horiz_remap
                   pio_inq_dimid, pio_inq_varid, pio_inq_dimlen, &
                   pio_initdecomp, pio_setframe, &
                   PIO_IOTYPE_PNETCDF, PIO_CLOBBER, PIO_WRITE, &
-                  PIO_REAL, PIO_DOUBLE, &
-                  PIO_CHAR, PIO_OFFSET_KIND, PIO_GLOBAL, PIO_NOERR, &
+                  PIO_REAL, PIO_DOUBLE, PIO_INT, &
+                  PIO_OFFSET_KIND, PIO_GLOBAL, PIO_NOERR, &
                   PIO_UNLIMITED
 
    implicit none
@@ -47,6 +47,7 @@ module seaice_fme_horiz_remap
    save
 
    public :: seaice_fme_horiz_remap_init
+   public :: seaice_fme_horiz_remap_set_time_epoch
    public :: seaice_fme_horiz_remap_field
    public :: seaice_fme_horiz_remap_active
    public :: seaice_fme_horiz_remap_open_file
@@ -75,11 +76,21 @@ module seaice_fme_horiz_remap
    ! MPAS-SI fill value for input field detection (matches def_var _FillValue)
    real(r8), parameter :: MPAS_SI_FILL = SHR_FILL_VALUE
 
+   ! CF time-coordinate epoch shared across all output files. See the
+   ! parallel block in the ocean horiz_remap module for the design;
+   ! this is the seaice mirror, set independently from the seaice AM's
+   ! config_AM_fmeSeaiceDerivedFields_time_reference_date.
+   type(MPAS_Time_Type) :: time_epoch
+   character(len=64)    :: time_epoch_str = ''
+   character(len=64)    :: time_epoch_cf  = ''
+   logical              :: time_epoch_set = .false.
+
    ! PIO output
    type(file_desc_t) :: pio_file
    type(iosystem_desc_t), pointer :: pio_sys => null()
    logical :: file_is_open = .false.
    integer :: dim_lon_id, dim_lat_id, dim_time_id
+   integer :: dim_nbnd_id = 0
    integer :: time_record = 0
    type(io_desc_t) :: iodesc_2d        ! PIO_REAL  (output records)
    type(io_desc_t) :: iodesc_2d_dbl    ! PIO_DOUBLE (accumulator restart)
@@ -92,8 +103,10 @@ module seaice_fme_horiz_remap
    integer :: n_pio_vars = 0
    character(len=64) :: pio_var_names(max_pio_vars)
    type(var_desc_t) :: pio_var_descs(max_pio_vars)
-   type(var_desc_t) :: pio_lon_var, pio_lat_var, pio_xtime_var
-   integer :: dim_strlen_id = 0
+   type(var_desc_t) :: pio_lon_var, pio_lat_var
+   ! CF time variables (replace legacy MPAS xtime).
+   type(var_desc_t) :: pio_time_var, pio_time_bnds_var
+   type(var_desc_t) :: pio_date_var, pio_datesec_var
 
    ! Stored var metadata for replay on rotation
    integer :: n_registered_vars = 0
@@ -343,10 +356,96 @@ contains
       fld_out(1:remap_data%n_b_local) = fld_out_2d(1:remap_data%n_b_local, 1)
    end subroutine seaice_fme_horiz_remap_field!}}}
 
+   subroutine seaice_fme_horiz_remap_set_time_epoch(epoch_str, err)!{{{
+   !> Mirror of ocn_fme_horiz_remap_set_time_epoch for the seaice side.
+   !> The seaice AM calls this once at init from
+   !> config_AM_fmeSeaiceDerivedFields_time_reference_date. The value
+   !> must match the ocean side (both come from CIME RUN_STARTDATE in
+   !> shell_commands) so EAM/MPAS-O/MPAS-SI all share one epoch.
+      character(len=*), intent(in) :: epoch_str
+      integer, intent(out) :: err
+      integer :: ierr, idx
+      character(len=64) :: cf_str
+
+      err = 0
+
+      if (len_trim(epoch_str) == 0 .or. trim(epoch_str) == 'none') then
+         call mpas_log_write('seaice_fme_horiz_remap_set_time_epoch: ' // &
+              'time_reference_date must be set in shell_commands ' // &
+              '(got "' // trim(epoch_str) // '"). The FME testmod plumbs ' // &
+              'CIME RUN_STARTDATE for this.', messageType=MPAS_LOG_CRIT)
+         err = 1
+         return
+      end if
+
+      if (time_epoch_set) then
+         if (trim(epoch_str) /= trim(time_epoch_str)) then
+            call mpas_log_write('seaice_fme_horiz_remap_set_time_epoch: ' // &
+                 'epoch already set to "' // trim(time_epoch_str) // &
+                 '"; subsequent caller passed "' // trim(epoch_str) // '"', &
+                 messageType=MPAS_LOG_CRIT)
+            err = 2
+         end if
+         return
+      end if
+
+      call mpas_set_time(time_epoch, dateTimeString=trim(epoch_str), ierr=ierr)
+      if (ierr /= 0) then
+         call mpas_log_write('seaice_fme_horiz_remap_set_time_epoch: failed ' // &
+              'to parse "' // trim(epoch_str) // '" as YYYY-MM-DD_HH:MM:SS', &
+              messageType=MPAS_LOG_CRIT)
+         err = ierr
+         return
+      end if
+
+      cf_str = trim(epoch_str)
+      idx = index(cf_str, '_')
+      if (idx > 0) cf_str(idx:idx) = ' '
+
+      time_epoch_str = trim(epoch_str)
+      time_epoch_cf  = trim(cf_str)
+      time_epoch_set = .true.
+
+      call mpas_log_write('seaice_fme_horiz_remap_set_time_epoch: epoch = "' &
+           // trim(time_epoch_cf) // '" (CF form)')
+
+   end subroutine seaice_fme_horiz_remap_set_time_epoch!}}}
+
+   subroutine si_time_to_days_since_epoch(t, days, err)!{{{
+   !> Convert an MPAS_Time_Type to days since the configured seaice epoch.
+   !> Uses ESMF time-interval arithmetic via mpas_get_timeInterval so the
+   !> calendar (noleap) is respected exactly.
+      type(MPAS_Time_Type), intent(in) :: t
+      real(r8), intent(out) :: days
+      integer, intent(out) :: err
+      type(MPAS_TimeInterval_Type) :: dt_interval
+      real(kind=RKIND) :: dt_seconds
+      integer :: ierr
+
+      days = 0.0_r8
+      err  = 0
+      if (.not. time_epoch_set) then
+         call mpas_log_write('si_time_to_days_since_epoch: epoch not set', &
+              messageType=MPAS_LOG_ERR)
+         err = 1
+         return
+      end if
+
+      dt_interval = t - time_epoch
+      call mpas_get_timeInterval(dt_interval, StartTimeIn=time_epoch, &
+           dt=dt_seconds, ierr=ierr)
+      if (ierr /= 0) then
+         err = ierr
+         return
+      end if
+      days = real(dt_seconds, r8) / 86400.0_r8
+
+   end subroutine si_time_to_days_since_epoch!}}}
+
    subroutine seaice_fme_horiz_remap_open_file(domain, filename, err)!{{{
    !> Open the remapped output file. If a file with this name already
    !> exists on disk (append-mode after warm restart), reopen it via
-   !> pio_openfile and seed time_record from the existing Time dim
+   !> pio_openfile and seed time_record from the existing time dim
    !> length. Otherwise create-new.
       type(domain_type), intent(inout) :: domain
       character(len=*), intent(in) :: filename
@@ -356,9 +455,16 @@ contains
       logical :: file_exists
       type(MPAS_Time_Type) :: now_time
       character(len=StrKIND) :: now_str
-      character(len=64), allocatable :: existing_xtime(:)
+      real(r8) :: now_days
+      real(r8), allocatable :: existing_time(:)
 
       err = 0
+      if (.not. time_epoch_set) then
+         call mpas_log_write('seaice_fme_horiz_remap: time epoch not set; ' // &
+              'AM init must call seaice_fme_horiz_remap_set_time_epoch first', &
+              messageType=MPAS_LOG_CRIT)
+         err = 1; return
+      end if
 
       inquire(file=trim(filename), exist=file_exists)
       ! Append-mode reopen ONLY on warm restart. Cold start always
@@ -376,53 +482,56 @@ contains
               pio_inq_dimid(pio_file, 'lon', dim_lon_id), err)
          call check_pio_si('inq_dimid lat', &
               pio_inq_dimid(pio_file, 'lat', dim_lat_id), err)
-         call check_pio_si('inq_dimid Time', &
-              pio_inq_dimid(pio_file, 'Time', dim_time_id), err)
-         call check_pio_si('inq_dimid StrLen', &
-              pio_inq_dimid(pio_file, 'StrLen', dim_strlen_id), err)
-         call check_pio_si('inq_varid lon',   pio_inq_varid(pio_file, &
-              'lon', pio_lon_var), err)
-         call check_pio_si('inq_varid lat',   pio_inq_varid(pio_file, &
-              'lat', pio_lat_var), err)
-         call check_pio_si('inq_varid xtime', pio_inq_varid(pio_file, &
-              'xtime', pio_xtime_var), err)
-         call check_pio_si('inq_dimlen Time', &
+         call check_pio_si('inq_dimid time', &
+              pio_inq_dimid(pio_file, 'time', dim_time_id), err)
+         call check_pio_si('inq_dimid nbnd', &
+              pio_inq_dimid(pio_file, 'nbnd', dim_nbnd_id), err)
+         call check_pio_si('inq_varid lon',       pio_inq_varid(pio_file, &
+              'lon',       pio_lon_var),       err)
+         call check_pio_si('inq_varid lat',       pio_inq_varid(pio_file, &
+              'lat',       pio_lat_var),       err)
+         call check_pio_si('inq_varid time',      pio_inq_varid(pio_file, &
+              'time',      pio_time_var),      err)
+         call check_pio_si('inq_varid time_bnds', pio_inq_varid(pio_file, &
+              'time_bnds', pio_time_bnds_var), err)
+         call check_pio_si('inq_varid date',      pio_inq_varid(pio_file, &
+              'date',      pio_date_var),      err)
+         call check_pio_si('inq_varid datesec',   pio_inq_varid(pio_file, &
+              'datesec',   pio_datesec_var),   err)
+         call check_pio_si('inq_dimlen time', &
               pio_inq_dimlen(pio_file, dim_time_id, time_len), err)
 
-         ! Mirror of ocean: seed time_record at largest frame whose
-         ! xtime <= MPAS_NOW so leg-2's next write overwrites the
-         ! first frame whose xtime > restart time.
+         ! Seed time_record at largest frame whose `time < MPAS_NOW (in days)`
+         ! so leg-2's next write overwrites the first frame whose time
+         ! >= restart time.
          now_time = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
          call mpas_get_time(now_time, dateTimeString=now_str, ierr=ierr)
+         call si_time_to_days_since_epoch(now_time, now_days, ierr)
 
-         allocate(existing_xtime(int(time_len)))
-         ierr = pio_get_var(pio_file, pio_xtime_var, existing_xtime)
+         allocate(existing_time(int(time_len)))
+         ierr = pio_get_var(pio_file, pio_time_var, existing_time)
          if (ierr /= PIO_NOERR) then
             call mpas_log_write('seaice_fme_horiz_remap: failed to read ' // &
-                 'xtime; falling back to N_existing', &
+                 'time; falling back to N_existing', &
                  messageType=MPAS_LOG_WARN)
             time_record = int(time_len)
          else
-            ! Strict <: check_rotate is called from the trigger-fire
-            ! branch, so a frame with xtime == MPAS_NOW is leg-1's
-            ! leftover that we want to overwrite. Excluding it makes
-            ! next write_time land on it.
             count_le_now = 0
             do i = 1, int(time_len)
-               if (trim(existing_xtime(i)) < trim(now_str)) then
+               if (existing_time(i) < now_days) then
                   count_le_now = count_le_now + 1
                end if
             end do
             time_record = count_le_now
          end if
-         deallocate(existing_xtime)
+         deallocate(existing_time)
 
          n_pio_vars = 0
          file_is_open = .true.
          existing_file_reopened = .true.
          if (err == 0) then
             call mpas_log_write('seaice_fme_horiz_remap: reopened ' // &
-                 trim(filename) // ' in append mode; existing Time=$i, ' // &
+                 trim(filename) // ' in append mode; existing time=$i, ' // &
                  'next write at frame=$i+1 (MPAS_NOW=' // trim(now_str) // ')', &
                  intArgs=(/int(time_len), time_record/))
          end if
@@ -432,12 +541,12 @@ contains
       ierr = pio_createfile(pio_sys, pio_file, PIO_IOTYPE_PNETCDF, trim(filename), PIO_CLOBBER)
       if (ierr /= PIO_NOERR) then; err = ierr; return; end if
 
-      call check_pio_si('def_dim lon', pio_def_dim(pio_file, 'lon', remap_data%nlon, dim_lon_id), err)
-      call check_pio_si('def_dim lat', pio_def_dim(pio_file, 'lat', remap_data%nlat, dim_lat_id), err)
-      call check_pio_si('def_dim Time', pio_def_dim(pio_file, 'Time', PIO_UNLIMITED, dim_time_id), err)
-      call check_pio_si('def_dim StrLen', pio_def_dim(pio_file, 'StrLen', 64, dim_strlen_id), err)
+      call check_pio_si('def_dim lon',  pio_def_dim(pio_file, 'lon',  remap_data%nlon, dim_lon_id), err)
+      call check_pio_si('def_dim lat',  pio_def_dim(pio_file, 'lat',  remap_data%nlat, dim_lat_id), err)
+      call check_pio_si('def_dim time', pio_def_dim(pio_file, 'time', PIO_UNLIMITED, dim_time_id), err)
+      call check_pio_si('def_dim nbnd', pio_def_dim(pio_file, 'nbnd', 2,    dim_nbnd_id), err)
 
-      ! Define coordinate variables; descriptors saved at module scope for write_time
+      ! Coordinate variables; descriptors saved at module scope for write_time.
       call check_pio_si('def_var lon', pio_def_var(pio_file, 'lon', PIO_DOUBLE, (/dim_lon_id/), pio_lon_var), err)
       ierr = pio_put_att(pio_file, pio_lon_var, 'units', 'degrees_east')
       ierr = pio_put_att(pio_file, pio_lon_var, 'long_name', 'longitude')
@@ -447,13 +556,33 @@ contains
       ierr = pio_put_att(pio_file, pio_lat_var, 'long_name', 'latitude')
       ierr = pio_put_att(pio_file, pio_lat_var, 'axis', 'Y')
 
-      call check_pio_si('def_var xtime', pio_def_var(pio_file, 'xtime', PIO_CHAR, &
-           (/dim_strlen_id, dim_time_id/), pio_xtime_var), err)
-      ierr = pio_put_att(pio_file, pio_xtime_var, 'long_name', 'model time')
+      ! CF time / time_bnds / date / datesec -- mirror of ocean module.
+      call check_pio_si('def_var time', pio_def_var(pio_file, 'time', PIO_DOUBLE, &
+           (/dim_time_id/), pio_time_var), err)
+      ierr = pio_put_att(pio_file, pio_time_var, 'long_name', 'time')
+      ierr = pio_put_att(pio_file, pio_time_var, 'units', &
+           'days since ' // trim(time_epoch_cf))
+      ierr = pio_put_att(pio_file, pio_time_var, 'calendar', 'noleap')
+      ierr = pio_put_att(pio_file, pio_time_var, 'bounds', 'time_bnds')
+      ierr = pio_put_att(pio_file, pio_time_var, 'axis', 'T')
+
+      call check_pio_si('def_var time_bnds', pio_def_var(pio_file, 'time_bnds', PIO_DOUBLE, &
+           (/dim_nbnd_id, dim_time_id/), pio_time_bnds_var), err)
+      ierr = pio_put_att(pio_file, pio_time_bnds_var, 'long_name', 'time interval endpoints')
+
+      call check_pio_si('def_var date', pio_def_var(pio_file, 'date', PIO_INT, &
+           (/dim_time_id/), pio_date_var), err)
+      ierr = pio_put_att(pio_file, pio_date_var, 'long_name', 'current date (YYYYMMDD)')
+
+      call check_pio_si('def_var datesec', pio_def_var(pio_file, 'datesec', PIO_INT, &
+           (/dim_time_id/), pio_datesec_var), err)
+      ierr = pio_put_att(pio_file, pio_datesec_var, 'long_name', &
+           'current seconds of current date')
 
       ierr = pio_put_att(pio_file, PIO_GLOBAL, 'source', 'E3SM FME online remapping')
       ierr = pio_put_att(pio_file, PIO_GLOBAL, 'Conventions', 'CF-1.8')
       ierr = pio_put_att(pio_file, PIO_GLOBAL, 'calendar', 'noleap')
+      ierr = pio_put_att(pio_file, PIO_GLOBAL, 'time_reference_date', trim(time_epoch_cf))
 
       if (err /= 0) then
          call mpas_log_write('seaice_fme_horiz_remap: define-mode error opening ' &
@@ -549,13 +678,20 @@ contains
       err = 3
    end subroutine seaice_fme_horiz_remap_write_var!}}}
 
-   subroutine seaice_fme_horiz_remap_write_time(time_str, err)!{{{
-      character(len=*), intent(in) :: time_str
+   subroutine seaice_fme_horiz_remap_write_time(time_lo, time_hi, err)!{{{
+   !> Mirror of the ocean module's remap_file_write_time.
+   !> See that subroutine's comment for the CF-time scheme.
+      type(MPAS_Time_Type), intent(in) :: time_lo, time_hi
       integer, intent(out) :: err
-      integer :: ierr
-      character(len=64) :: xtime_buf(1)
+      integer :: ierr, yr, mo, dy, hr, mn, sc
+      real(r8) :: t_lo_days, t_hi_days
+      real(r8) :: time_buf(1)
+      real(r8) :: bnds_buf(2, 1)
+      integer  :: date_buf(1), datesec_buf(1)
 
       err = 0
+      if (.not. file_is_open) then; err = 1; return; end if
+
       ! Fresh-create files: leave define-mode and seed lon/lat once.
       ! Reopened (append) files are already in data mode and lon/lat are
       ! already populated, so this whole block is skipped.
@@ -566,12 +702,26 @@ contains
       end if
       time_record = time_record + 1
 
-      ! Write xtime string for this record
-      xtime_buf(1) = ' '
-      xtime_buf(1)(1:min(len_trim(time_str), 64)) = &
-           time_str(1:min(len_trim(time_str), 64))
-      ierr = pio_put_var(pio_file, pio_xtime_var, &
-           (/1, time_record/), (/64, 1/), xtime_buf)
+      call si_time_to_days_since_epoch(time_lo, t_lo_days, ierr)
+      call si_time_to_days_since_epoch(time_hi, t_hi_days, ierr)
+
+      time_buf(1) = t_hi_days
+      bnds_buf(1, 1) = t_lo_days
+      bnds_buf(2, 1) = t_hi_days
+
+      call mpas_get_time(time_hi, YYYY=yr, MM=mo, DD=dy, &
+           H=hr, M=mn, S=sc, ierr=ierr)
+      date_buf(1)    = yr * 10000 + mo * 100 + dy
+      datesec_buf(1) = hr * 3600  + mn * 60  + sc
+
+      ierr = pio_put_var(pio_file, pio_time_var, &
+           (/time_record/), (/1/), time_buf)
+      ierr = pio_put_var(pio_file, pio_time_bnds_var, &
+           (/1, time_record/), (/2, 1/), bnds_buf)
+      ierr = pio_put_var(pio_file, pio_date_var, &
+           (/time_record/), (/1/), date_buf)
+      ierr = pio_put_var(pio_file, pio_datesec_var, &
+           (/time_record/), (/1/), datesec_buf)
    end subroutine seaice_fme_horiz_remap_write_time!}}}
 
    subroutine seaice_fme_horiz_remap_close_file(err)!{{{
