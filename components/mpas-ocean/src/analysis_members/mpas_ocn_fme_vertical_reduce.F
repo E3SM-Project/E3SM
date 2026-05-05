@@ -68,7 +68,10 @@ module ocn_fme_vertical_reduce
    type(MPAS_TimeInterval_type) :: avg_output_interval
    type(MPAS_Time_type) :: avg_last_output_time
    integer, parameter :: N_AVG_FIELDS = 8  ! 3 built-in + up to 5 generic
-   real(r8), allocatable :: remap_accum(:,:)  ! (remap_nb_local, N_AVG_FIELDS)
+   real(r8), allocatable :: remap_accum(:,:)        ! (remap_nb_local, N_AVG_FIELDS)
+   ! Per-cell, per-field valid-sample counter parallel to remap_accum.
+   ! Defensive — see AGENTS.md gotcha on time-averaging fill pollution.
+   real(r8), allocatable :: remap_accum_count(:,:)  ! (remap_nb_local, N_AVG_FIELDS)
 
    !> Number of user-configured generic reduction fields (parsed from config)
    integer :: nReduceFields = 0
@@ -257,7 +260,11 @@ contains
                         if (.not. allocated(remap_accum)) then
                            allocate(remap_accum(remap_nb_local, N_AVG_FIELDS))
                         end if
+                        if (.not. allocated(remap_accum_count)) then
+                           allocate(remap_accum_count(remap_nb_local, N_AVG_FIELDS))
+                        end if
                         remap_accum = 0.0_r8
+                        remap_accum_count = 0.0_r8
                         nAccum = 0
                         time_avg_enabled = .true.
                         call mpas_log_write( &
@@ -292,7 +299,8 @@ contains
       if (.not. config_do_restart) return
 
       call ocn_fme_horiz_remap_read_accum('fmeVerticalReduce', remap_accum, &
-           N_AVG_FIELDS, nAccum, ts_str, success=ok)
+           N_AVG_FIELDS, nAccum, ts_str, &
+           count_arr=remap_accum_count, success=ok)
 
       if (ok .and. len_trim(ts_str) > 0) then
          call mpas_set_time(avg_last_output_time, &
@@ -325,7 +333,8 @@ contains
       call mpas_get_time(avg_last_output_time, &
            dateTimeString=ts_str, ierr=ierr_local)
       call ocn_fme_horiz_remap_write_accum('fmeVerticalReduce', remap_accum, &
-           N_AVG_FIELDS, nAccum, trim(ts_str), err=err)
+           N_AVG_FIELDS, nAccum, trim(ts_str), &
+           count_arr=remap_accum_count, err=err)
 
    end subroutine ocn_fme_vertical_reduce_write_restart!}}}
 
@@ -516,6 +525,7 @@ contains
                      end do
                   end if
                   remap_accum = 0.0_r8
+                  remap_accum_count = 0.0_r8
                   nAccum = 0
                   ! Advance by exact interval to avoid drift.
                   avg_last_output_time = avg_last_output_time + avg_output_interval
@@ -551,24 +561,36 @@ contains
    contains
 
       subroutine remap_1field(native_fld, idx)
+         ! Per-cell accumulation excluding fill samples; see AGENTS.md
+         ! gotcha on time-averaging fill pollution.
          real(kind=RKIND), dimension(:), intent(in) :: native_fld
          integer, intent(in) :: idx
+         integer :: ib
+         real(r8), parameter :: fill_thresh = real(SHR_FILL_VALUE, r8) * 0.1_r8
          field_1lev(1, 1:nCells) = native_fld(1:nCells)
          call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
               mask=maxLevelCell)
          if (time_avg_enabled) then
-            remap_accum(:, idx) = remap_accum(:, idx) + fld_remap(:, 1)
+            do ib = 1, remap_nb_local
+               if (abs(fld_remap(ib, 1)) < fill_thresh) then
+                  remap_accum(ib, idx)       = remap_accum(ib, idx)       + fld_remap(ib, 1)
+                  remap_accum_count(ib, idx) = remap_accum_count(ib, idx) + 1.0_r8
+               end if
+            end do
          end if
       end subroutine remap_1field
 
       subroutine write_avg_field(varname, idx)
          character(len=*), intent(in) :: varname
          integer, intent(in) :: idx
-         if (nAccum > 0) then
-            fld_remap(:, 1) = remap_accum(:, idx) / real(nAccum, r8)
-         else
-            fld_remap(:, 1) = real(SHR_FILL_VALUE, r8)
-         end if
+         integer :: ib
+         do ib = 1, remap_nb_local
+            if (remap_accum_count(ib, idx) > 0.0_r8) then
+               fld_remap(ib, 1) = remap_accum(ib, idx) / remap_accum_count(ib, idx)
+            else
+               fld_remap(ib, 1) = real(SHR_FILL_VALUE, r8)
+            end if
+         end do
          call remap_outfile%write_var(varname, fld_remap, 1, ierr)
       end subroutine write_avg_field
 
@@ -613,6 +635,7 @@ contains
       if (allocated(reduceFieldNames)) deallocate(reduceFieldNames)
       if (allocated(reduceFieldMethods)) deallocate(reduceFieldMethods)
       if (allocated(remap_accum)) deallocate(remap_accum)
+      if (allocated(remap_accum_count)) deallocate(remap_accum_count)
 
    end subroutine ocn_finalize_fme_vertical_reduce!}}}
 

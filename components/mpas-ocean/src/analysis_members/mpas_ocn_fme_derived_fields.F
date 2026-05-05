@@ -81,7 +81,28 @@ module ocn_fme_derived_fields
    !       removed per SamudrACE spec p3ai/6154289880 -- struck through)
    !                                   24  riverRunoffFluxTemperature
    integer, parameter :: N_AVG_FIELDS = 24
-   real(r8), allocatable :: remap_accum(:,:)  ! (n_b_local, N_AVG_FIELDS)
+   real(r8), allocatable :: remap_accum(:,:)        ! (n_b_local, N_AVG_FIELDS)
+   ! Static surface ocean mask in remap space, written as `mask_2d` in
+   ! every output file. 1.0 on ocean cells, 0.0 elsewhere. Computed once
+   ! lazily in compute by remapping a constant-1 native field through
+   ! apply_masked with the static maxLevelCell mask. The result is the
+   ! canonical mask the SamudrACE pipeline expects (see compute_ocean
+   ! _dataset_e3sm.py:53). Shape (n_b_local, 1) so the existing
+   ! write_var(:, :) interface accepts it without reshape.
+   real(r8), allocatable :: mask_2d_remap(:,:)
+   ! Threshold for detecting fill in remapped output (10% of SHR_FILL_VALUE,
+   ! same convention as ocn_fme_horiz_remap_field's fill_detect).
+   real(r8), parameter :: MASK_FILL_THRESH = real(SHR_FILL_VALUE, r8) * 0.1_r8
+
+   ! Per-cell, per-field valid-sample counter parallel to remap_accum.
+   ! Ocean's land mask is static (maxLevelCell does not change at run
+   ! time), so any given target cell is fill on every timestep or on
+   ! none, and the legacy global-nAccum division would have averaged
+   ! correctly here. The per-cell count is added defensively so that any
+   ! future field whose validity flips in time (e.g., ice-shelf cavities,
+   ! seasonal sea-ice influence) is handled the same way as MPAS-SI. See
+   ! AGENTS.md gotcha on time-averaging fill pollution.
+   real(r8), allocatable :: remap_accum_count(:,:)  ! (n_b_local, N_AVG_FIELDS)
 
 !***********************************************************************
 
@@ -172,6 +193,12 @@ contains
                   call remap_outfile%register_var('riverRunoffFluxTemperature', &
                        'kg degC m^-2 s^-1', &
                        'riverRunoffFlux times top-layer temperature', ierr)
+                  ! Static surface ocean mask: shape (lon, lat), 1=ocean,
+                  ! 0=land. Written once per file. Matches the SamudrACE
+                  ! convention (compute_ocean_dataset_e3sm.py:53).
+                  call remap_outfile%register_var('mask_2d', '1', &
+                       'Surface ocean wet mask (1=ocean, 0=land/invalid)', ierr, &
+                       is_static=.true.)
 
                   ! Time-averaging setup
                   call mpas_pool_get_config(domain % configs, &
@@ -192,7 +219,11 @@ contains
                         if (.not. allocated(remap_accum)) then
                            allocate(remap_accum(remap_nb_local, N_AVG_FIELDS))
                         end if
+                        if (.not. allocated(remap_accum_count)) then
+                           allocate(remap_accum_count(remap_nb_local, N_AVG_FIELDS))
+                        end if
                         remap_accum = 0.0_r8
+                        remap_accum_count = 0.0_r8
                         nAccum = 0
                         time_avg_enabled = .true.
                         call mpas_log_write('fmeDerivedFields: time averaging enabled')
@@ -227,7 +258,8 @@ contains
       if (.not. config_do_restart) return
 
       call ocn_fme_horiz_remap_read_accum('fmeDerivedFields', remap_accum, &
-           N_AVG_FIELDS, nAccum, ts_str, success=ok)
+           N_AVG_FIELDS, nAccum, ts_str, &
+           count_arr=remap_accum_count, success=ok)
 
       if (ok .and. len_trim(ts_str) > 0) then
          call mpas_set_time(avg_last_output_time, &
@@ -262,7 +294,8 @@ contains
            dateTimeString=ts_str, ierr=ierr_local)
 
       call ocn_fme_horiz_remap_write_accum('fmeDerivedFields', remap_accum, &
-           N_AVG_FIELDS, nAccum, trim(ts_str), err=err)
+           N_AVG_FIELDS, nAccum, trim(ts_str), &
+           count_arr=remap_accum_count, err=err)
 
    end subroutine ocn_fme_derived_fields_write_restart!}}}
 
@@ -417,6 +450,13 @@ contains
             allocate(field_1lev(1, nCells))
             allocate(fld_masked(nCells))
 
+            ! Lazy-compute the static surface ocean mask in remap space.
+            ! Done once per AM lifetime — the source-side mask
+            ! (maxLevelCell > 0) is static, so the remapped result is too.
+            if (.not. allocated(mask_2d_remap)) then
+               call compute_mask_2d_remap()
+            end if
+
             ! Remap each field to lat-lon
             ! Use pressureAdjustedSSH (from diagnostics) instead of raw ssh
             ! (from state) to avoid extreme values under ice shelves.
@@ -480,6 +520,7 @@ contains
                   call remap_outfile%check_rotate(domain, ierr)
                   if (remap_outfile%file_is_open) then
                      call remap_outfile%write_time(trim(timeStr), ierr)
+                     call write_static_masks_if_needed()
                      call write_avg_field('sst', 1)
                      call write_avg_field('sss', 2)
                      call write_avg_field('surfaceHeatFluxTotal', 3)
@@ -506,6 +547,7 @@ contains
                      call write_avg_field('riverRunoffFluxTemperature', 24)
                   end if
                   remap_accum = 0.0_r8
+                  remap_accum_count = 0.0_r8
                   nAccum = 0
                   ! Advance by exact interval to avoid drift.
                   avg_last_output_time = avg_last_output_time + avg_output_interval
@@ -518,6 +560,7 @@ contains
                call remap_outfile%check_rotate(domain, ierr)
                if (remap_outfile%file_is_open) then
                   call remap_outfile%write_time(trim(timeStr), ierr)
+                  call write_static_masks_if_needed()
                   call inst_remap_and_write(sst, 'sst', .false.)
                   call inst_remap_and_write(sss, 'sss', .false.)
                   call inst_remap_and_write(surfaceHeatFluxTotal, 'surfaceHeatFluxTotal', .false.)
@@ -573,13 +616,25 @@ contains
    contains
 
       subroutine remap_1field(native_fld, idx)
+         ! Per-cell accumulation that excludes fill values from the running
+         ! sum. Defensive: ocean's land mask is static, but any field whose
+         ! validity flips in time would otherwise pollute the average with
+         ! fractional-of-fill values. See AGENTS.md gotcha on time-averaging
+         ! fill pollution.
          real(kind=RKIND), dimension(:), intent(in) :: native_fld
          integer, intent(in) :: idx
+         integer :: ib
+         real(r8), parameter :: fill_thresh = real(SHR_FILL_VALUE, r8) * 0.1_r8
          field_1lev(1, 1:nCells) = native_fld(1:nCells)
          call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
               mask=maxLevelCell)
          if (time_avg_enabled) then
-            remap_accum(:, idx) = remap_accum(:, idx) + fld_remap(:, 1)
+            do ib = 1, remap_nb_local
+               if (abs(fld_remap(ib, 1)) < fill_thresh) then
+                  remap_accum(ib, idx)       = remap_accum(ib, idx)       + fld_remap(ib, 1)
+                  remap_accum_count(ib, idx) = remap_accum_count(ib, idx) + 1.0_r8
+               end if
+            end do
          end if
       end subroutine remap_1field
 
@@ -602,15 +657,58 @@ contains
       end subroutine mask_and_remap
 
       subroutine write_avg_field(varname, idx)
+         ! Divide by per-cell count rather than the global nAccum so cells
+         ! that flip between valid and fill within the window are averaged
+         ! over their valid samples only. Cells with count == 0 emit fill.
          character(len=*), intent(in) :: varname
          integer, intent(in) :: idx
-         if (nAccum > 0) then
-            fld_remap(:, 1) = remap_accum(:, idx) / real(nAccum, r8)
-         else
-            fld_remap(:, 1) = real(SHR_FILL_VALUE, r8)
-         end if
+         integer :: ib
+         do ib = 1, remap_nb_local
+            if (remap_accum_count(ib, idx) > 0.0_r8) then
+               fld_remap(ib, 1) = remap_accum(ib, idx) / remap_accum_count(ib, idx)
+            else
+               fld_remap(ib, 1) = real(SHR_FILL_VALUE, r8)
+            end if
+         end do
          call remap_outfile%write_var(varname, fld_remap, 1, ierr)
       end subroutine write_avg_field
+
+      subroutine compute_mask_2d_remap()
+         ! Build the static surface ocean mask in remap space by remapping
+         ! a constant-1 ocean field through apply_masked. Land cells
+         ! (maxLevelCell == 0) have mask=0 in the remap, so target cells
+         ! whose source-side coverage is entirely land come out as
+         ! SHR_FILL_VALUE; everything else comes out as 1.0 (a weighted
+         ! average of constant 1s = 1). Threshold to a hard 0.0/1.0.
+         integer :: ic, ib
+         allocate(mask_2d_remap(remap_nb_local, 1))
+         do ic = 1, nCells
+            if (maxLevelCell(ic) > 0) then
+               field_1lev(1, ic) = 1.0_RKIND
+            else
+               field_1lev(1, ic) = 0.0_RKIND
+            end if
+         end do
+         call ocn_fme_horiz_remap_field(domain, field_1lev, 1, fld_remap, ierr, &
+              mask=maxLevelCell)
+         do ib = 1, remap_nb_local
+            if (abs(fld_remap(ib, 1)) < MASK_FILL_THRESH) then
+               mask_2d_remap(ib, 1) = 1.0_r8
+            else
+               mask_2d_remap(ib, 1) = 0.0_r8
+            end if
+         end do
+      end subroutine compute_mask_2d_remap
+
+      subroutine write_static_masks_if_needed()
+         ! Static masks are written once per file at the first record on
+         ! a freshly created file. Append-mode reopens (warm restart) skip
+         ! this — the masks are already in the file from leg 1.
+         if (remap_outfile%existing_file_reopened) return
+         if (remap_outfile%time_record /= 1) return
+         if (.not. allocated(mask_2d_remap)) return
+         call remap_outfile%write_var('mask_2d', mask_2d_remap, 1, ierr)
+      end subroutine write_static_masks_if_needed
 
       subroutine inst_remap_and_write(native_fld, varname, do_mask)
          ! Remap one field into fld_remap, then write under varname.
@@ -660,6 +758,7 @@ contains
       err = 0
 
       call remap_outfile%close_file(ierr)
+      if (allocated(mask_2d_remap)) deallocate(mask_2d_remap)
 
    end subroutine ocn_finalize_fme_derived_fields!}}}
 

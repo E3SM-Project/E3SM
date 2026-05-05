@@ -52,7 +52,15 @@ module seaice_fme_derived_fields
    !   4 iceThicknessMean         9 vVelocityGeoCell
    !   5 surfaceTemperatureMean
    integer, parameter :: N_AVG_FIELDS = 9
-   real(r8), allocatable :: remap_accum(:,:)  ! (remap_nb_local, N_AVG_FIELDS)
+   real(r8), allocatable :: remap_accum(:,:)        ! (remap_nb_local, N_AVG_FIELDS)
+   ! Per-cell, per-field valid-sample counter parallel to remap_accum.
+   ! Used so that ice-edge cells (where source-side ice presence flips
+   ! between samples) average only over the timesteps where the remapped
+   ! value was non-fill — without this, SHR_FILL_VALUE samples are summed
+   ! into remap_accum and surface as fractional-of-fill pollution
+   ! (k * 1e20 / nAccum) at the ice edge. See AGENTS.md gotcha on
+   ! time-averaging fill pollution.
+   real(r8), allocatable :: remap_accum_count(:,:)  ! (remap_nb_local, N_AVG_FIELDS)
 
    !--------------------------------------------------------------------
    !
@@ -242,7 +250,11 @@ contains
                         if (.not. allocated(remap_accum)) then
                            allocate(remap_accum(remap_nb_local, N_AVG_FIELDS))
                         end if
+                        if (.not. allocated(remap_accum_count)) then
+                           allocate(remap_accum_count(remap_nb_local, N_AVG_FIELDS))
+                        end if
                         remap_accum = 0.0_r8
+                        remap_accum_count = 0.0_r8
                         nAccum = 0
                         time_avg_enabled = .true.
                         call mpas_log_write( &
@@ -277,7 +289,8 @@ contains
       if (.not. config_do_restart) return
 
       call seaice_fme_horiz_remap_read_accum('fmeSeaiceDerivedFields', &
-           remap_accum, N_AVG_FIELDS, nAccum, ts_str, success=ok)
+           remap_accum, N_AVG_FIELDS, nAccum, ts_str, &
+           count_arr=remap_accum_count, success=ok)
 
       if (ok .and. len_trim(ts_str) > 0) then
          call mpas_set_time(avg_last_output_time, &
@@ -310,7 +323,8 @@ contains
       call mpas_get_time(avg_last_output_time, &
            dateTimeString=ts_str, ierr=ierr_local)
       call seaice_fme_horiz_remap_write_accum('fmeSeaiceDerivedFields', &
-           remap_accum, N_AVG_FIELDS, nAccum, trim(ts_str), err=err)
+           remap_accum, N_AVG_FIELDS, nAccum, trim(ts_str), &
+           count_arr=remap_accum_count, err=err)
 
    end subroutine seaice_fme_derived_fields_write_restart!}}}
 
@@ -636,6 +650,7 @@ contains
                      call write_avg_field('vVelocityGeoCell', 9)
                   end if
                   remap_accum = 0.0_r8
+                  remap_accum_count = 0.0_r8
                   nAccum = 0
                   ! Advance by exact interval to avoid drift.
                   avg_last_output_time = avg_last_output_time + avg_output_interval
@@ -669,23 +684,45 @@ contains
    contains
 
       subroutine remap_1field(native_fld, idx)
+         ! Per-cell accumulation that excludes fill values from the running
+         ! sum. Intensive sea-ice fields (iceThicknessMean, surface temp,
+         ! airStress*, u/vVelocityGeoCell) are SHR_FILL_VALUE on ice-free
+         ! cells, and ice presence flips at the ice edge across the
+         ! averaging window. Without per-cell masking, fill samples sum
+         ! into remap_accum and surface as fractional-of-fill pollution
+         ! after dividing by nAccum. See AGENTS.md gotcha on time-averaging
+         ! fill pollution.
          real(kind=RKIND), dimension(:), intent(in) :: native_fld
          integer, intent(in) :: idx
+         integer :: ib
+         real(r8), parameter :: fill_thresh = real(SHR_FILL_VALUE, r8) * 0.1_r8
          call seaice_fme_horiz_remap_field(domain, native_fld, &
               nCellsSolve, fld_remap, ierr_remap)
          if (time_avg_enabled) then
-            remap_accum(:, idx) = remap_accum(:, idx) + fld_remap(:)
+            do ib = 1, remap_nb_local
+               if (abs(fld_remap(ib)) < fill_thresh) then
+                  remap_accum(ib, idx)       = remap_accum(ib, idx)       + fld_remap(ib)
+                  remap_accum_count(ib, idx) = remap_accum_count(ib, idx) + 1.0_r8
+               end if
+            end do
          end if
       end subroutine remap_1field
 
       subroutine write_avg_field(varname, idx)
+         ! Divide by per-cell count rather than the global nAccum so cells
+         ! that were sometimes valid and sometimes fill within the window
+         ! get the unbiased average over their valid samples. Cells that
+         ! were fill on every sample (count == 0) emit SHR_FILL_VALUE.
          character(len=*), intent(in) :: varname
          integer, intent(in) :: idx
-         if (nAccum > 0) then
-            fld_remap(:) = remap_accum(:, idx) / real(nAccum, r8)
-         else
-            fld_remap(:) = real(SHR_FILL_VALUE, r8)
-         end if
+         integer :: ib
+         do ib = 1, remap_nb_local
+            if (remap_accum_count(ib, idx) > 0.0_r8) then
+               fld_remap(ib) = remap_accum(ib, idx) / remap_accum_count(ib, idx)
+            else
+               fld_remap(ib) = real(SHR_FILL_VALUE, r8)
+            end if
+         end do
          call seaice_fme_horiz_remap_write_var(varname, fld_remap, 1, ierr_remap)
       end subroutine write_avg_field
 
@@ -803,6 +840,7 @@ contains
 
       call seaice_fme_horiz_remap_close_file(ierr)
       if (allocated(remap_accum)) deallocate(remap_accum)
+      if (allocated(remap_accum_count)) deallocate(remap_accum_count)
 
    end subroutine seaice_finalize_fme_derived_fields!}}}
 

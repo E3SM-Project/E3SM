@@ -73,7 +73,15 @@ module ocn_fme_depth_coarsening
    type(MPAS_TimeInterval_type) :: avg_output_interval
    type(MPAS_Time_type) :: avg_last_output_time
    integer :: n_avg_fields = 0       ! nCoarsenLevels * nCoarsenFields + nCoarsenLevels
-   real(r8), allocatable :: remap_accum(:,:)  ! (remap_nb_local, n_avg_fields)
+   real(r8), allocatable :: remap_accum(:,:)        ! (remap_nb_local, n_avg_fields)
+   ! Per-cell, per-(field,level) valid-sample counter parallel to
+   ! remap_accum. Defensive: depth-coarsened fields use a per-layer
+   ! bathymetry mask that is static, so under current usage every
+   ! target cell is fill on every sample or on none. The per-cell
+   ! count keeps the averaging path correct if that ever changes
+   ! (e.g., layer thickness becoming time-varying via free-surface
+   ! coupling). See AGENTS.md gotcha on time-averaging fill pollution.
+   real(r8), allocatable :: remap_accum_count(:,:)  ! (remap_nb_local, n_avg_fields)
 
    !> Instantaneous companion: when time_averaging AND write_instantaneous_companion
    !> are both true, mirror the latest remapped value of each (field, level) into
@@ -81,6 +89,20 @@ module ocn_fme_depth_coarsening
    !> output trigger.
    logical :: write_inst_companion = .false.
    real(r8), allocatable :: remap_latest_inst(:,:)  ! (remap_nb_local, n_avg_fields)
+
+   ! Static per-level bathymetry masks in remap space, written as
+   ! `mask_0` ... `mask_{nCoarsenLevels-1}` in every output file. 1.0 on
+   ! cells where the depth-coarsened layer is between surface and seafloor,
+   ! 0.0 elsewhere. Computed once lazily after layerThicknessCoarsened is
+   ! filled. Matches the SamudrACE convention (compute_ocean_dataset_e3sm.py:
+   ! mask_<level_index> for any *_<level_index> 3D variable).
+   real(r8), allocatable :: mask_levels_remap(:,:)  ! (remap_nb_local, nCoarsenLevels)
+   ! Single-slot reusable buffer for write_var calls; copied from
+   ! mask_levels_remap(:, k) per level.
+   real(r8), allocatable :: mask_write_buf(:,:)    ! (remap_nb_local, 1)
+
+   ! Threshold for detecting fill in remapped output (10% of SHR_FILL_VALUE).
+   real(r8), parameter :: MASK_FILL_THRESH = real(SHR_FILL_VALUE, r8) * 0.1_r8
 
 !***********************************************************************
 
@@ -250,6 +272,18 @@ contains
                   call remap_outfile%register_var(trim(varName), 'm', &
                        trim(longName), ierr)
                end do
+               ! Static per-level wet masks: shape (lon, lat) only, 1=valid
+               ! ocean cell at this depth, 0=below seafloor or land. Written
+               ! once per file. Names match the SamudrACE convention used
+               ! by compute_ocean_dataset_e3sm.py for any var ending `_<k>`.
+               do kOut = 0, nCoarsenLevels - 1
+                  write(varName, '(A,I0)') 'mask_', kOut
+                  write(longName, '(A,I0,A)') &
+                       'Wet mask for depth level ', kOut, &
+                       ' (1=valid ocean, 0=below seafloor or land)'
+                  call remap_outfile%register_var(trim(varName), '1', &
+                       trim(longName), ierr, is_static=.true.)
+               end do
 
                ! Time-averaging setup
                call mpas_pool_get_config(domain % configs, &
@@ -276,7 +310,11 @@ contains
                      if (.not. allocated(remap_accum)) then
                         allocate(remap_accum(remap_nb_local, n_avg_fields))
                      end if
+                     if (.not. allocated(remap_accum_count)) then
+                        allocate(remap_accum_count(remap_nb_local, n_avg_fields))
+                     end if
                      remap_accum = 0.0_r8
+                     remap_accum_count = 0.0_r8
                      nAccum = 0
                      time_avg_enabled = .true.
                      call mpas_log_write( &
@@ -358,10 +396,12 @@ contains
       if (write_inst_companion) then
          call ocn_fme_horiz_remap_read_accum('fmeDepthCoarsening', &
               remap_accum, n_avg_fields, nAccum, ts_str, &
-              latest_inst_arr=remap_latest_inst, success=ok)
+              latest_inst_arr=remap_latest_inst, &
+              count_arr=remap_accum_count, success=ok)
       else
          call ocn_fme_horiz_remap_read_accum('fmeDepthCoarsening', &
-              remap_accum, n_avg_fields, nAccum, ts_str, success=ok)
+              remap_accum, n_avg_fields, nAccum, ts_str, &
+              count_arr=remap_accum_count, success=ok)
       end if
 
       if (ok .and. len_trim(ts_str) > 0) then
@@ -401,10 +441,12 @@ contains
       if (write_inst_companion .and. allocated(remap_latest_inst)) then
          call ocn_fme_horiz_remap_write_accum('fmeDepthCoarsening', &
               remap_accum, n_avg_fields, nAccum, trim(ts_str), &
-              latest_inst_arr=remap_latest_inst, err=err)
+              latest_inst_arr=remap_latest_inst, &
+              count_arr=remap_accum_count, err=err)
       else
          call ocn_fme_horiz_remap_write_accum('fmeDepthCoarsening', &
-              remap_accum, n_avg_fields, nAccum, trim(ts_str), err=err)
+              remap_accum, n_avg_fields, nAccum, trim(ts_str), &
+              count_arr=remap_accum_count, err=err)
       end if
 
    end subroutine ocn_fme_depth_coarsening_write_restart!}}}
@@ -612,6 +654,15 @@ contains
             ! Per-level validity mask: 1=valid ocean cell at this depth, 0=fill
             allocate(levelMask(nCells))
 
+            ! Lazy-compute static per-level wet masks in remap space.
+            ! layerThicknessCoarsened was just filled above, so it's
+            ! safe to derive each level's source-side mask from it.
+            ! The result depends only on bathymetry (static), so one
+            ! pass per AM lifetime suffices.
+            if (.not. allocated(mask_levels_remap)) then
+               call compute_mask_levels_remap()
+            end if
+
             if (time_avg_enabled) then
                ! Accumulate path: remap into accumulators (no immediate write).
                do ifld = 1, nCoarsenFields
@@ -646,6 +697,7 @@ contains
                   call remap_outfile%check_rotate(domain, ierr)
                   if (remap_outfile%file_is_open) then
                      call remap_outfile%write_time(trim(timeStr), ierr)
+                     call write_static_masks_if_needed()
 
                      do ifld = 1, nCoarsenFields
                         do kOut = 0, nCoarsenLevels - 1
@@ -683,6 +735,7 @@ contains
                      end if
                   end if
                   remap_accum = 0.0_r8
+                  remap_accum_count = 0.0_r8
                   nAccum = 0
                   ! Advance by exact interval to avoid drift.
                   avg_last_output_time = avg_last_output_time + avg_output_interval
@@ -696,6 +749,7 @@ contains
                   currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
                   call mpas_get_time(currTime, dateTimeString=timeStr)
                   call remap_outfile%write_time(trim(timeStr), ierr)
+                  call write_static_masks_if_needed()
 
                   do ifld = 1, nCoarsenFields
                      select case (trim(coarsenFieldNames(ifld)))
@@ -736,8 +790,15 @@ contains
    contains
 
       subroutine remap_1level(srcArray, kLevel, idx)
+         ! Per-cell accumulation that excludes fill values from the running
+         ! sum; see AGENTS.md gotcha on time-averaging fill pollution. The
+         ! latest_inst snapshot is unmodified (it is overwritten in place
+         ! at every call regardless of validity, matching the existing
+         ! convention used by the verify dashboard).
          real(kind=RKIND), dimension(:,:), intent(in) :: srcArray
          integer, intent(in) :: kLevel, idx
+         integer :: ib
+         real(r8), parameter :: fill_thresh = real(SHR_FILL_VALUE, r8) * 0.1_r8
          do iCell = 1, nCells
             if (layerThicknessCoarsened(kLevel + 1, iCell) < fillValue * 0.5_RKIND) then
                levelMask(iCell) = 1
@@ -750,7 +811,12 @@ contains
          call ocn_fme_horiz_remap_field(domain, field_1lev, 1, &
               fld_remap, ierr, mask=levelMask)
          if (time_avg_enabled) then
-            remap_accum(:, idx) = remap_accum(:, idx) + fld_remap(:, 1)
+            do ib = 1, remap_nb_local
+               if (abs(fld_remap(ib, 1)) < fill_thresh) then
+                  remap_accum(ib, idx)       = remap_accum(ib, idx)       + fld_remap(ib, 1)
+                  remap_accum_count(ib, idx) = remap_accum_count(ib, idx) + 1.0_r8
+               end if
+            end do
             if (write_inst_companion) then
                remap_latest_inst(:, idx) = fld_remap(:, 1)
             end if
@@ -760,13 +826,64 @@ contains
       subroutine write_avg_field(vname, idx)
          character(len=*), intent(in) :: vname
          integer, intent(in) :: idx
-         if (nAccum > 0) then
-            fld_remap(:, 1) = remap_accum(:, idx) / real(nAccum, r8)
-         else
-            fld_remap(:, 1) = real(SHR_FILL_VALUE, r8)
-         end if
+         integer :: ib
+         do ib = 1, remap_nb_local
+            if (remap_accum_count(ib, idx) > 0.0_r8) then
+               fld_remap(ib, 1) = remap_accum(ib, idx) / remap_accum_count(ib, idx)
+            else
+               fld_remap(ib, 1) = real(SHR_FILL_VALUE, r8)
+            end if
+         end do
          call remap_outfile%write_var(vname, fld_remap, 1, ierr)
       end subroutine write_avg_field
+
+      subroutine compute_mask_levels_remap()
+         ! Build per-level static wet masks in remap space. The source-side
+         ! mask comes from layerThicknessCoarsened (just filled above):
+         ! cells where thickness != fillValue at level k are valid sources.
+         ! Remap a constant-1 field through apply_masked once per level —
+         ! result is 1.0 on target cells with any valid source, fill
+         ! elsewhere. Threshold to a hard 0.0/1.0.
+         integer :: ic, ib, kLvl
+         allocate(mask_levels_remap(remap_nb_local, nCoarsenLevels))
+         allocate(mask_write_buf(remap_nb_local, 1))
+         do kLvl = 0, nCoarsenLevels - 1
+            do ic = 1, nCells
+               if (layerThicknessCoarsened(kLvl + 1, ic) < fillValue * 0.5_RKIND) then
+                  levelMask(ic) = 1
+                  field_1lev(1, ic) = 1.0_RKIND
+               else
+                  levelMask(ic) = 0
+                  field_1lev(1, ic) = 0.0_RKIND
+               end if
+            end do
+            call ocn_fme_horiz_remap_field(domain, field_1lev, 1, &
+                 fld_remap, ierr, mask=levelMask)
+            do ib = 1, remap_nb_local
+               if (abs(fld_remap(ib, 1)) < MASK_FILL_THRESH) then
+                  mask_levels_remap(ib, kLvl + 1) = 1.0_r8
+               else
+                  mask_levels_remap(ib, kLvl + 1) = 0.0_r8
+               end if
+            end do
+         end do
+      end subroutine compute_mask_levels_remap
+
+      subroutine write_static_masks_if_needed()
+         ! Static masks are written once per file at the first record on
+         ! a freshly created file. Append-mode reopens skip this — masks
+         ! are already in the file from the original create.
+         integer :: kLvl
+         character(len=128) :: maskName
+         if (remap_outfile%existing_file_reopened) return
+         if (remap_outfile%time_record /= 1) return
+         if (.not. allocated(mask_levels_remap)) return
+         do kLvl = 0, nCoarsenLevels - 1
+            mask_write_buf(:, 1) = mask_levels_remap(:, kLvl + 1)
+            write(maskName, '(A,I0)') 'mask_', kLvl
+            call remap_outfile%write_var(trim(maskName), mask_write_buf, 1, ierr)
+         end do
+      end subroutine write_static_masks_if_needed
 
       subroutine remap_and_write_inst(srcArray, kLevel, vname)
          ! Remap one (level of one) field into fld_remap, then write under
@@ -847,7 +964,10 @@ contains
       if (allocated(depthBounds)) deallocate(depthBounds)
       if (allocated(coarsenFieldNames)) deallocate(coarsenFieldNames)
       if (allocated(remap_accum)) deallocate(remap_accum)
+      if (allocated(remap_accum_count)) deallocate(remap_accum_count)
       if (allocated(remap_latest_inst)) deallocate(remap_latest_inst)
+      if (allocated(mask_levels_remap)) deallocate(mask_levels_remap)
+      if (allocated(mask_write_buf)) deallocate(mask_write_buf)
 
    end subroutine ocn_finalize_fme_depth_coarsening!}}}
 
