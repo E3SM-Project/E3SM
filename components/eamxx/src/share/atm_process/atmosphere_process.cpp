@@ -265,16 +265,18 @@ void AtmosphereProcess::setup_step_tendencies (const std::string& default_grid) 
     auto fn = tokens.first;
     auto gn = tokens.second;
 
-    auto f = get_field_out(fn,gn);
+    const auto& f = get_field_out(fn,gn);
+    const auto& fid = f.get_header().get_identifier();
 
     const auto& tname = this->name() + "_" + fn + "_tend";
+    auto tfid = fid.clone(tname).reset_units (fid.get_units() / ekat::units::s);
 
     const auto fn_gn = fn + "@" + f.get_header().get_identifier().get_grid_name();
 
     // Create tend and start-of-step fields
-    auto& tend = m_proc_tendencies[fn_gn] = f.clone(tname);
     m_start_of_step_fields[fn_gn] = f.clone();
-    add_internal_field(tend,{"ACCUMULATED","DIVIDE_BY_DT"});
+    auto it_bool = m_proc_tendencies.try_emplace(fn_gn,tfid,true); // returns a pair <iter,bool>
+    add_internal_field(it_bool.first->second,{"ACCUMULATED","DIVIDE_BY_DT"});
   }
 }
 
