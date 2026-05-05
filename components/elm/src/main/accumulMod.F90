@@ -614,7 +614,7 @@ contains
 
        varname = trim(accum(nf)%name) // '_PERIOD'
        call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_int, &
-            long_name='', units='time steps', &
+            long_name=trim(accum(nf)%desc), units='time steps', &
             imissing_value=ispval, ifill_value=huge(1), &
             interpinic_flag='copy', &
             data=accum(nf)%period, readvar=readvar)

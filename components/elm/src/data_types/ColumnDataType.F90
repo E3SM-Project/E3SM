@@ -2025,7 +2025,7 @@ contains
 
     call restartvar(ncid=ncid, flag=flag, varname='FH2OSFC', xtype=ncd_double,  &
          dim1name='column',&
-         long_name='fraction of ground covered by h2osfc (0 to 1)', units='', &
+         long_name='fraction of ground covered by h2osfc (0 to 1)', units='1', &
          interpinic_flag='interp', readvar=readvar, data=this%frac_h2osfc)
     if (flag == 'read' .and. .not. readvar) then
        this%frac_h2osfc(bounds%begc:bounds%endc) = 0.0_r8
