@@ -348,4 +348,56 @@ TEST_CASE ("subcycling") {
   }
 }
 
+TEST_CASE ("tendency_units") {
+  using namespace scream;
+  using namespace ekat::units;
+
+  // A world comm
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  // A time stamp
+  util::TimeStamp t0 ({2022,1,1},{0,0,0});
+
+  // Create a grids manager
+  const int nlcols = 3;
+  const int nlevs = 10;
+  auto grid = create_point_grid ("point_grid",nlcols*comm.size(),nlevs,comm);
+  auto gm = std::make_shared<LibraryGridsManager>(grid);
+
+  using strvec_t = std::vector<std::string>;
+  ekat::ParameterList params;
+  params.set<std::string>("grid_name", "point_grid");
+  params.set<strvec_t>("compute_tendencies", {"Field A"});
+
+  auto ap = std::make_shared<AddOne>(comm,params);
+  ap->set_grids(gm);
+
+  // Set up fields and call setup_step_tendencies
+  for (const auto& req : ap->get_field_requests()) {
+    Field f(req.fid);
+    f.allocate_view();
+    f.deep_copy(0);
+    f.get_header().get_tracking().update_time_stamp(t0);
+    ap->set_required_field(f.get_const());
+    ap->set_computed_field(f);
+  }
+
+  ap->setup_step_tendencies("point_grid");
+
+  // Check that the tendency field has units K/s (not K)
+  const auto& int_fields = ap->get_internal_fields();
+  REQUIRE (int_fields.size() > 0);
+
+  const auto expected_units = K / s;
+  bool found_tend = false;
+  for (const auto& f : int_fields) {
+    const auto& fid = f.get_header().get_identifier();
+    if (fid.name().find("_tend") != std::string::npos) {
+      found_tend = true;
+      REQUIRE (fid.get_units() == expected_units);
+    }
+  }
+  REQUIRE (found_tend);
+}
+
 } // empty namespace
