@@ -3995,7 +3995,11 @@ module VegetationDataType
           this%storvegn(p)           = 0._r8
           this%totvegn(p)            = 0._r8
           this%totpftn(p)            = 0._r8
-          this%plant_n_buffer(p)     = 1._r8
+          if (veg_pp%itype(p) == noveg) then
+             this%plant_n_buffer(p)     = 0._r8
+          else
+             this%plant_n_buffer(p)     = 1._r8
+          endif
        end if
 
        this%npimbalance(p) = 0.0_r8
