@@ -43,6 +43,7 @@ module seq_map_type_mod
      ! source and target app ids also make sense only on the coupler pes
      integer                 :: src_mbid, tgt_mbid, intx_mbid, src_context, intx_context
      character*32            :: weight_identifier ! 'state' OR 'flux'
+     character*32            :: howeight_identifier ! high order flux
      character*16            :: mbname
      integer                 :: tag_entity_type
      integer                 :: nentities ! this should be used only if copy_only is true
@@ -173,6 +174,7 @@ contains
     mapper%intx_mbid = -1
     mapper%tag_entity_type = 1 ! cells most of the time when we need it
     mapper%mbname    = "undefined"
+    mapper%howeight_identifier = "undefined"
     ! Initialize MOAB coordinate pointers
     nullify(mapper%slon_s_moab)
     nullify(mapper%clon_s_moab)

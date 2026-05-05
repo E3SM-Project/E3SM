@@ -21,6 +21,7 @@ module seq_map_mod
   use seq_comm_mct
   use component_type_mod
   use seq_map_type_mod
+  use seq_nlmap_mod
   use shr_moab_mod
 
   implicit none
@@ -203,10 +204,14 @@ contains
     !type(mct_gsmap), pointer    :: gsmap_s ! temporary pointers
     !type(mct_gsmap), pointer    :: gsmap_d ! temporary pointers
     integer(IN)                 :: mpicom
-    character(CX)               :: mapfile
+    character(CX)               :: mapfile, nl_mapfile
     character(CX)               :: mapfile_term
     character(CL)               :: maptype
     integer(IN)                 :: mapid
+    character(CL)               :: nlmap_id
+    character(len=128)          :: nl_label
+    logical                     :: nl_found, nl_conservative
+    character(len=*),parameter  :: nl_strategy = 'X'
     integer                     :: ierr
 
     character(len=*),parameter  :: subname = "(moab_map_init_rcfile) "
@@ -218,36 +223,72 @@ contains
 
     call seq_comm_setptrs(CPLID, mpicom=mpicom)
 
-   ! --- Initialize Smatp
-   call shr_mct_queryConfigFile(mpicom,maprcfile,maprcname,mapfile,maprctype,maptype)
-   if (mapfile == 'idmap' .or. mapfile == 'idmap_ignore') then
+    ! --- Initialize Smatp
+    call shr_mct_queryConfigFile(mpicom,maprcfile,maprcname,mapfile,maprctype,maptype)
+
+    ! if this routine is called, there should be a mapfile present
+    if (mapfile == 'idmap' .or. mapfile == 'idmap_ignore') then
       if (present(fallback_map_identifier)) then
          map_identifier = fallback_map_identifier
-         write(logunit,*) subname,' do not want to load backup identifier - ' // mapfile
-         call shr_sys_abort(subname//' ERROR in not wanting to load backup identifier - ' // mapfile)
+         write(logunit,*) subname,' got idmap. do not want to load backup identifier - ' // maprcname
+         call shr_sys_abort(subname//' ERROR in not wanting to load backup identifier - ' // maprcname)
       else
-         write(logunit,*) subname,' error in loading map file - ' // mapfile
-         call shr_sys_abort(subname//' ERROR in loading map file - ' // mapfile)
+         write(logunit,*) subname,' got idmap. expecting map file name for - ' // maprcname
+         call shr_sys_abort(subname//' ERROR in finding map file - ' // maprcname)
       end if
-   else
-      mapfile_term = trim(mapfile)//CHAR(0)
-      if (seq_comm_iamroot(CPLID)) then
-         write(logunit,*) subname,' reading map file with iMOAB: ', trim(mapfile_term)
-      endif
-
-      ierr = iMOAB_LoadMapFile( mapper%src_mbid, mapper%tgt_mbid, mapper%intx_mbid, discretization_type, &
-                                 discretization_type, arearead, map_identifier, mapfile_term)
-      if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in loading map file - ' // mapfile
-         call shr_sys_abort(subname//' ERROR in loading map file - ' // mapfile)
-      endif
-      if (seq_comm_iamroot(CPLID)) then
-         write(logunit,'(2A,I10,6A)') subname, ': iMOAB appID: ', &
-            mapper%intx_mbid, ', maptype: ', trim(maptype), ', mapfile: ', &
-            trim(mapfile), ', identifier: ', trim(map_identifier)
-         call shr_sys_flush(logunit)
-      endif
     endif
+
+    mapfile_term = trim(mapfile)//CHAR(0)
+    if (seq_comm_iamroot(CPLID)) then
+        write(logunit,*) subname,' reading map file with iMOAB: ', trim(mapfile_term)
+    endif
+
+    ierr = iMOAB_LoadMapFile( mapper%src_mbid, mapper%tgt_mbid, mapper%intx_mbid, discretization_type, &
+                                 discretization_type, arearead, map_identifier, mapfile_term)
+    if (ierr .ne. 0) then
+       write(logunit,*) subname,' error in loading map file - ' // mapfile
+       call shr_sys_abort(subname//' ERROR in loading map file - ' // mapfile)
+    endif
+
+   mapper%nl_available = .false.
+!  Look for nonlinear map
+    nl_label = maprcname(1:len(maprcname)-1)//'_nonlinear:'
+    call shr_mct_queryConfigFile(mpicom, maprcfile, trim(nl_label), nl_mapfile, &
+          Label1Found=nl_found)
+    if (nl_found) nl_found = nl_mapfile /= "idmap_ignore"
+    nl_conservative = .false.
+
+    ! initially any fmap will be set to be conservative
+    ! this can be overriden by the the nlmaps_atm2srf_conserve namelist variable
+    if (nl_found) nl_conservative = seq_map_should_nonlinear_map_conserve(maprcname)
+
+    mapper%nl_available = nl_found
+    if (nl_found) then
+         mapper%nl_available = .true.
+         mapper%nl_conservative = nl_conservative
+         mapper%nl_mapfile = trim(nl_mapfile)
+         nlmap_id = 'ho'//map_identifier
+         mapper%howeight_identifier = nlmap_id
+         mapfile_term = trim(nl_mapfile)//CHAR(0)
+         ierr = iMOAB_LoadMapFile( mapper%src_mbid, mapper%tgt_mbid, mapper%intx_mbid, discretization_type, &
+                                 discretization_type, 0, nlmap_id, mapfile_term)
+         if (ierr .ne. 0) then
+           write(logunit,*) subname,' error in loading nlmap file - ' // nl_mapfile
+           call shr_sys_abort(subname//' ERROR in loading nlmap file - ' // nl_mapfile)
+         endif
+    endif
+
+    if (seq_comm_iamroot(CPLID)) then
+       write(logunit,'(2A,I6,4A)') subname,' mapper counter, strategy, mapfile = ', &
+            mapper%counter,' ',trim(mapper%strategy),' ',trim(mapper%mapfile)
+       if (mapper%nl_available) then
+          write(logunit,'(2A,I6,3A,L1,2A)') subname, &
+               ' mapper counter, nl_strategy, nl_conservative, nlmap_id,  nl_mapfile = ', &
+               mapper%counter,' ',nl_strategy,' ',nl_conservative,' ',trim(nlmap_id),' ',trim(mapper%nl_mapfile)
+       end if
+       call shr_sys_flush(logunit)
+    endif
+
 
   end subroutine moab_map_init_rcfile
 
@@ -633,7 +674,12 @@ contains
           !***   weight_identifier: Name of the weight matrix (e.g., "scalar", "flux")
           !***   fldlist_moab: Input and output field names (can be different)
           filter_type = 0 ! no filter
-          ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%weight_identifier, fldlist_moab, fldlist_moab)
+
+          if(.not.mapper%nl_available) then
+             ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%weight_identifier, fldlist_moab, fldlist_moab)
+          else
+             ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%howeight_identifier, fldlist_moab, fldlist_moab)
+          endif
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in applying weights '
              call shr_sys_abort(subname//' ERROR in applying weights')
