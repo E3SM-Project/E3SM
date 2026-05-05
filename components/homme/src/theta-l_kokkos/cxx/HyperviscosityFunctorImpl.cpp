@@ -153,12 +153,14 @@ void HyperviscosityFunctorImpl::setup(const ElementsGeometry&     geometry,
   m_sphere_ops = Context::singleton().get<SphereOperators>();
 
   // Update nu_scale_top from Fortran-initialized ref states if available.
-  // This handles the case where the functor was created via the (num_elems, params)
-  // constructor (before init_reference_states_c ran) and is later setup() with
-  // the fully-initialized state.
   if (m_data.nu_top > 0 && m_state.m_ref_states.nu_scale_top.data() != nullptr && m_data.tom_sponge_start > 0.0) {
     m_nu_scale_top = m_state.m_ref_states.nu_scale_top;
     m_nu_scale_top_ilev_pack_lim = m_state.m_ref_states.nu_scale_top_ilev_pack_lim;
+    if (m_nu_scale_top_ilev_pack_lim == 0) {
+      std::string msg = "[HyperviscosityFunctorImpl::setup] Error! m_nu_scale_top_ilev_pack_lim is zero. \n \
+                         Try increasing tom_sponge_start, or set tom_sponge_start to zero. \n";
+      Errors::runtime_abort(msg);
+    }
   }
 
   // Make sure the sphere operators have buffers large enough to accommodate this functor's needs
