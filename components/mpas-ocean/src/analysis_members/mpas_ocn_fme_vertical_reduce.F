@@ -40,7 +40,7 @@ module ocn_fme_vertical_reduce
    use shr_kind_mod, only: r8 => shr_kind_r8
    use shr_horiz_remap_mod, only: SHR_FILL_VALUE
    use ocn_fme_horiz_remap, only: ocn_fme_horiz_remap_init, &
-        ocn_fme_horiz_remap_set_time_epoch, &
+        ocn_fme_horiz_remap_init_time_epoch, &
         ocn_fme_horiz_remap_field, ocn_fme_horiz_remap_active, &
         ocn_fme_horiz_remap_get_dims, ocn_fme_remap_file_t, &
         ocn_fme_remap_build_filename, &
@@ -99,7 +99,6 @@ contains
       character(len=StrKIND), pointer :: config_AM_fmeVerticalReduce_fields
       character(len=StrKIND), pointer :: config_AM_fmeVerticalReduce_methods
       character(len=StrKIND), pointer :: config_AM_fmeVerticalReduce_horiz_remap_file
-      character(len=StrKIND), pointer :: config_AM_fmeVerticalReduce_time_reference_date
       logical, pointer :: config_time_averaging
       character(len=StrKIND), pointer :: config_stream_output_interval
       character(len=StrKIND) :: tempStr, methodStr
@@ -224,12 +223,9 @@ contains
                     messageType=MPAS_LOG_WARN)
                do_horiz_remap = .false.
             else
-               ! Plumb the CF time epoch from this AM's namelist option.
-               call mpas_pool_get_config(domain % configs, &
-                    'config_AM_fmeVerticalReduce_time_reference_date', &
-                    config_AM_fmeVerticalReduce_time_reference_date)
-               call ocn_fme_horiz_remap_set_time_epoch( &
-                    trim(config_AM_fmeVerticalReduce_time_reference_date), ierr)
+               ! Auto-discover the CF time epoch.
+               call ocn_fme_horiz_remap_init_time_epoch(domain, &
+                    'fmeVerticalReduce', ierr)
                if (ierr /= 0) then
                   call mpas_log_write('fmeVerticalReduce: time epoch ' // &
                        'setup failed, disabling horiz remap', &

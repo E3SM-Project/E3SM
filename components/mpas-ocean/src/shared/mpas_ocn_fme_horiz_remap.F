@@ -23,7 +23,7 @@
 !>
 !>  Usage:
 !>    call ocn_fme_horiz_remap_init(domain, mapfile, err)
-!>    call ocn_fme_horiz_remap_set_time_epoch(epoch_str, err)
+!>    call ocn_fme_horiz_remap_init_time_epoch(domain, amName, err)
 !>    call ocn_fme_horiz_remap_field(domain, field2d, numlev, fld_out, err)
 !>    call ocn_fme_horiz_remap_open_file(domain, filename, err)
 !>    call ocn_fme_horiz_remap_def_var(varname, units, long_name, numlev, err)
@@ -63,7 +63,7 @@ module ocn_fme_horiz_remap
    save
 
    public :: ocn_fme_horiz_remap_init
-   public :: ocn_fme_horiz_remap_set_time_epoch
+   public :: ocn_fme_horiz_remap_init_time_epoch
    public :: ocn_fme_horiz_remap_field
    public :: ocn_fme_horiz_remap_active
    public :: ocn_fme_horiz_remap_get_dims
@@ -86,14 +86,21 @@ module ocn_fme_horiz_remap
    ! compare-copy that didn't get cleared.
    logical :: is_restart_run = .false.
 
-   ! CF time-coordinate epoch shared across all output files. Set once
-   ! by an AM at init from config_AM_*_time_reference_date (plumbed from
-   ! CIME RUN_STARTDATE in the FME testmod's shell_commands so MPAS
-   ! `time:units` matches EAM exactly). All FME output files write
-   ! `time(time)` numeric values as days since this epoch and stamp
-   ! `time:units = "days since {time_epoch_cf} 00:00:00"`. The four
-   ! FME AMs each call set_time_epoch with the same value; second and
-   ! later callers validate they match the first.
+   ! CF time-coordinate epoch shared across all FME output files for
+   ! this component. Auto-discovered at AM init via init_time_epoch:
+   !   1. If a `<amName>.fme_accum_restart.nc` sidecar exists (warm
+   !      restart), read its `time_reference_date` global attribute.
+   !   2. Otherwise capture `MPAS_START_TIME` from the MPAS clock. On
+   !      cold start MPAS_START_TIME == CIME RUN_STARTDATE (verified at
+   !      ocn_comp_mct.F:611-614 -- the driver sets MPAS_START_TIME from
+   !      seq_timemgr_EClockGetData(EClock, ECurrTime=...) for
+   !      runtype=='initial').
+   ! On warm restart, sidecar persistence wins so the epoch never
+   ! drifts to leg-start-time even though MPAS_START_TIME gets reset on
+   ! each restart leg. Each *_write_accum call rewrites the current
+   ! time_epoch_str into the sidecar so subsequent restarts can recover
+   ! it. All FME output files write time(time) as days since this epoch
+   ! and stamp time:units = "days since {time_epoch_cf}".
    type(MPAS_Time_Type) :: time_epoch
    character(len=64)    :: time_epoch_str = ''   ! `YYYY-MM-DD_HH:MM:SS` (MPAS form)
    character(len=64)    :: time_epoch_cf  = ''   ! `YYYY-MM-DD HH:MM:SS` (CF form, space)
@@ -502,39 +509,128 @@ contains
    ! CF time-coordinate epoch
    !-----------------------------------------------------------------
 
-   subroutine ocn_fme_horiz_remap_set_time_epoch(epoch_str, err)!{{{
-   !> Set the CF time-coordinate epoch shared by all FME output files.
-   !> Each FME AM calls this once at init from its
-   !> config_AM_*_time_reference_date namelist value (plumbed from
-   !> CIME RUN_STARTDATE in shell_commands). All four AMs should pass
-   !> the same value -- the second and later callers validate that
-   !> their value matches the first; mismatch is a hard error.
+   subroutine ocn_fme_horiz_remap_init_time_epoch(domain, amName, err)!{{{
+   !> Auto-discover the CF time-coordinate epoch and populate module state.
+   !> Idempotent across the four FME AMs: only the first caller does work;
+   !> later AMs see time_epoch_set=.true. and no-op.
    !>
-   !> epoch_str format: "YYYY-MM-DD_HH:MM:SS" (MPAS xtime form). The
-   !> CF "days since" units string uses a SPACE separator instead of
-   !> the underscore, which we substitute on the fly.
+   !> Discovery order (sidecar wins so warm-restart legs preserve the
+   !> original cold-start epoch):
+   !>   1. Try to read time_reference_date global attribute from
+   !>      `<amName>.fme_accum_restart.nc`. Present iff the sidecar was
+   !>      written by a prior leg with the new format.
+   !>   2. Fall back to MPAS_START_TIME from the MPAS clock. On cold
+   !>      start this equals CIME RUN_STARTDATE (driver sets it from
+   !>      EClock for runtype='initial', see ocn_comp_mct.F:611-614).
+   !>      On warm restart with no sidecar fallback (rare), this would
+   !>      be the leg-start time -- the wrong value. Logged as WARN.
+      type(domain_type),    intent(inout) :: domain
+      character(len=*),     intent(in)    :: amName
+      integer,              intent(out)   :: err
+      character(len=64)    :: epoch_str
+      character(len=StrKIND) :: epoch_str_buf  ! mpas_get_time requires StrKIND
+      logical              :: from_sidecar
+      type(MPAS_Time_Type) :: start_time
+      integer              :: ierr
+
+      err = 0
+      if (time_epoch_set) return
+
+      epoch_str = ''
+      from_sidecar = .false.
+      call try_read_epoch_from_sidecar(amName, epoch_str, from_sidecar)
+
+      if (.not. from_sidecar) then
+         start_time = mpas_get_clock_time(domain % clock, MPAS_START_TIME, ierr)
+         call mpas_get_time(start_time, dateTimeString=epoch_str_buf, ierr=ierr)
+         epoch_str = trim(epoch_str_buf)
+         if (ierr /= 0) then
+            call mpas_log_write('ocn_fme_horiz_remap_init_time_epoch: failed ' // &
+                 'to read MPAS_START_TIME from clock', messageType=MPAS_LOG_CRIT)
+            err = ierr
+            return
+         end if
+         if (is_restart_run) then
+            call mpas_log_write('ocn_fme_horiz_remap_init_time_epoch: warm ' // &
+                 'restart but no sidecar epoch found; falling back to ' // &
+                 'MPAS_START_TIME = "' // trim(epoch_str) // '". This is ' // &
+                 'the LEG start time, not the case start -- the resulting ' // &
+                 '`time:units` may not align with EAM. Investigate why ' // &
+                 'sidecar `' // trim(amName) // '.fme_accum_restart.nc` ' // &
+                 'lacks `time_reference_date`.', messageType=MPAS_LOG_WARN)
+         end if
+      end if
+
+      call set_time_epoch(epoch_str, err)
+
+      if (err == 0) then
+         if (from_sidecar) then
+            call mpas_log_write('ocn_fme_horiz_remap_init_time_epoch: epoch ' // &
+                 'restored from sidecar = "' // trim(time_epoch_cf) // '"')
+         else
+            call mpas_log_write('ocn_fme_horiz_remap_init_time_epoch: epoch ' // &
+                 'captured from MPAS_START_TIME = "' // trim(time_epoch_cf) // '"')
+         end if
+      end if
+
+   end subroutine ocn_fme_horiz_remap_init_time_epoch!}}}
+
+   subroutine try_read_epoch_from_sidecar(amName, epoch_str, success)!{{{
+   !> Read the time_reference_date global attribute from an existing
+   !> accumulator sidecar file (if any). Returns success=.false. when
+   !> the sidecar is absent or lacks the attribute.
+      character(len=*), intent(in)  :: amName
+      character(len=*), intent(out) :: epoch_str
+      logical,          intent(out) :: success
+      character(len=512)            :: filename
+      type(file_desc_t)             :: pio_acc_file
+      logical                       :: file_exists
+      integer                       :: ierr
+
+      success = .false.
+      epoch_str = ''
+      if (.not. is_initialized) return
+
+      call fme_accum_filename(trim(amName), filename)
+      inquire(file=trim(filename), exist=file_exists)
+      if (.not. file_exists) return
+
+      ierr = pio_openfile(pio_sys, pio_acc_file, PIO_IOTYPE_PNETCDF, &
+           trim(filename), PIO_WRITE)
+      if (ierr /= PIO_NOERR) return
+
+      ierr = pio_get_att(pio_acc_file, PIO_GLOBAL, 'time_reference_date', &
+           epoch_str)
+      call pio_closefile(pio_acc_file)
+      if (ierr == PIO_NOERR .and. len_trim(epoch_str) > 0) then
+         success = .true.
+      end if
+
+   end subroutine try_read_epoch_from_sidecar!}}}
+
+   subroutine set_time_epoch(epoch_str, err)!{{{
+   !> Internal helper. Stores the epoch in module state (string, MPAS
+   !> Time_Type, and CF-form string with space separator). Validates
+   !> against any previously-set value; mismatch is a hard error so two
+   !> AMs can't disagree on the epoch.
       character(len=*), intent(in) :: epoch_str
-      integer, intent(out) :: err
+      integer,          intent(out) :: err
       integer :: ierr, idx
       character(len=64) :: cf_str
 
       err = 0
 
-      if (len_trim(epoch_str) == 0 .or. trim(epoch_str) == 'none') then
-         call mpas_log_write('ocn_fme_horiz_remap_set_time_epoch: ' // &
-              'time_reference_date must be set in shell_commands ' // &
-              '(got "' // trim(epoch_str) // '"). The FME testmod plumbs ' // &
-              'CIME RUN_STARTDATE for this.', messageType=MPAS_LOG_CRIT)
-         err = 1
-         return
+      if (len_trim(epoch_str) == 0) then
+         call mpas_log_write('set_time_epoch: empty epoch string', &
+              messageType=MPAS_LOG_CRIT)
+         err = 1; return
       end if
 
       if (time_epoch_set) then
          if (trim(epoch_str) /= trim(time_epoch_str)) then
-            call mpas_log_write('ocn_fme_horiz_remap_set_time_epoch: epoch ' // &
-                 'already set to "' // trim(time_epoch_str) // &
-                 '"; subsequent caller passed "' // trim(epoch_str) // &
-                 '". All FME AMs must use the same value.', &
+            call mpas_log_write('set_time_epoch: epoch already set to "' // &
+                 trim(time_epoch_str) // '"; rejecting reset to "' // &
+                 trim(epoch_str) // '". Did sidecars get out of sync?', &
                  messageType=MPAS_LOG_CRIT)
             err = 2
          end if
@@ -543,11 +639,10 @@ contains
 
       call mpas_set_time(time_epoch, dateTimeString=trim(epoch_str), ierr=ierr)
       if (ierr /= 0) then
-         call mpas_log_write('ocn_fme_horiz_remap_set_time_epoch: failed to ' // &
-              'parse "' // trim(epoch_str) // '" as YYYY-MM-DD_HH:MM:SS', &
+         call mpas_log_write('set_time_epoch: failed to parse "' // &
+              trim(epoch_str) // '" as YYYY-MM-DD_HH:MM:SS', &
               messageType=MPAS_LOG_CRIT)
-         err = ierr
-         return
+         err = ierr; return
       end if
 
       ! CF requires `days since YYYY-MM-DD HH:MM:SS` with a space, not '_'.
@@ -558,11 +653,7 @@ contains
       time_epoch_str = trim(epoch_str)
       time_epoch_cf  = trim(cf_str)
       time_epoch_set = .true.
-
-      call mpas_log_write('ocn_fme_horiz_remap_set_time_epoch: epoch = "' // &
-           trim(time_epoch_cf) // '" (CF form)')
-
-   end subroutine ocn_fme_horiz_remap_set_time_epoch!}}}
+   end subroutine set_time_epoch!}}}
 
    subroutine time_to_days_since_epoch(t, days, err)!{{{
    !> Convert an MPAS_Time_Type to days since the configured epoch.
@@ -1254,6 +1345,13 @@ contains
       ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, 'n_avg_fields', n_avg_fields)
       ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, &
            'avg_last_output_time', trim(avg_last_output_time_str))
+      ! Persist the CF time epoch so init_time_epoch can recover it on
+      ! warm restart -- MPAS_START_TIME from the clock would otherwise
+      ! return the leg-start time on restart, not the case start.
+      if (time_epoch_set) then
+         ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, &
+              'time_reference_date', trim(time_epoch_str))
+      end if
       ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, 'source', &
            'E3SM FME accumulator restart sidecar')
 

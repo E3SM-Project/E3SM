@@ -36,7 +36,7 @@ module ocn_fme_depth_coarsening
    use shr_horiz_remap_mod, only: SHR_FILL_VALUE
    use mpas_log, only: mpas_log_write
    use ocn_fme_horiz_remap, only: ocn_fme_horiz_remap_init, &
-        ocn_fme_horiz_remap_set_time_epoch, &
+        ocn_fme_horiz_remap_init_time_epoch, &
         ocn_fme_horiz_remap_field, ocn_fme_horiz_remap_active, &
         ocn_fme_horiz_remap_get_dims, ocn_fme_remap_file_t, &
         ocn_fme_remap_build_filename, &
@@ -119,7 +119,6 @@ contains
       character(len=StrKIND), pointer :: config_AM_fmeDepthCoarsening_depth_bounds
       character(len=StrKIND), pointer :: config_AM_fmeDepthCoarsening_fields
       character(len=StrKIND), pointer :: config_AM_fmeDepthCoarsening_horiz_remap_file
-      character(len=StrKIND), pointer :: config_AM_fmeDepthCoarsening_time_reference_date
       logical, pointer :: config_time_averaging
       logical, pointer :: config_write_inst_companion
       character(len=StrKIND), pointer :: config_stream_output_interval
@@ -249,15 +248,12 @@ contains
                  messageType=MPAS_LOG_WARN)
             do_horiz_remap = .false.
          else
-            ! Plumb the CF time epoch from this AM's namelist option to
-            ! the shared horiz_remap module. Plumbing is per-AM so each
-            ! AM is self-contained, but the values must agree across
-            ! AMs (validated inside set_time_epoch).
-            call mpas_pool_get_config(domain % configs, &
-                 'config_AM_fmeDepthCoarsening_time_reference_date', &
-                 config_AM_fmeDepthCoarsening_time_reference_date)
-            call ocn_fme_horiz_remap_set_time_epoch( &
-                 trim(config_AM_fmeDepthCoarsening_time_reference_date), ierr)
+            ! Auto-discover the CF time epoch -- sidecar lookup first
+            ! (warm restart), MPAS_START_TIME fallback (cold start).
+            ! Idempotent across the four FME AMs; only the first caller
+            ! does work, the rest see time_epoch_set=.true. and no-op.
+            call ocn_fme_horiz_remap_init_time_epoch(domain, &
+                 'fmeDepthCoarsening', ierr)
             if (ierr /= 0) then
                call mpas_log_write('fmeDepthCoarsening: time epoch setup ' // &
                     'failed, disabling horiz remap', &

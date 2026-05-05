@@ -666,6 +666,5 @@
 <config_AM_fmeSeaiceDerivedFields_stream_output_interval>'00-00-01_00:00:00'</config_AM_fmeSeaiceDerivedFields_stream_output_interval>
 <config_AM_fmeSeaiceDerivedFields_horiz_remap_file>'none'</config_AM_fmeSeaiceDerivedFields_horiz_remap_file>
 <config_AM_fmeSeaiceDerivedFields_time_averaging>false</config_AM_fmeSeaiceDerivedFields_time_averaging>
-<config_AM_fmeSeaiceDerivedFields_time_reference_date>'none'</config_AM_fmeSeaiceDerivedFields_time_reference_date>
 
 </namelist_defaults>

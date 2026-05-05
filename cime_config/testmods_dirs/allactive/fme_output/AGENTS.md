@@ -680,7 +680,9 @@ These are hard-won lessons. Read before modifying FME code.
     unused for now (renumbering the 24 indices was deemed not worth
     the churn risk). Reusable for any future field at index 12.
 
-39. **MPAS FME files use CF time variables matching EAM (ADDED 2026-05-04).**
+39. **MPAS FME files use CF time variables matching EAM (ADDED 2026-05-04;
+    epoch plumbing simplified to runtime auto-discovery later that
+    same day -- see "Epoch plumbing" subsection below for the why).**
     The legacy `xtime(StrLen, Time)` character timestamp was replaced
     with the EAM-style trio:
 
@@ -702,26 +704,65 @@ These are hard-won lessons. Read before modifying FME code.
     `xtime` was redundant given `time + time_bnds` (CF-canonical) and
     a footgun: legacy MPAS `timeSeriesStatsCustom` stamps xtime at the
     START of an averaging window while our FME code stamps at the END,
-    so anyone applying MPAS muscle memory to our files got it wrong by
-    one window. Dropping xtime eliminates that trap. See the design
-    discussion archived in the 2026-05-04 conversation.
+    so anyone applying MPAS muscle memory to our files got it wrong
+    by one window. Dropping xtime eliminates that trap.
 
     **Time stamp convention**: numeric `time` is the END of the
     averaging window (matches EAM); `time_bnds = [t_lo, t_hi]` carries
     both endpoints. For instantaneous records (`*_inst` companion
     fields and inst-mode AMs), `time_bnds = [t, t]`.
 
-    **Epoch plumbing**: each FME AM reads its
-    `config_AM_*_time_reference_date` namelist option (added to all
-    four AM Registries) and calls
-    `ocn_fme_horiz_remap_set_time_epoch` /
-    `seaice_fme_horiz_remap_set_time_epoch` once at init. The four
-    AMs each pass the same value -- the second and later callers
-    validate they match the first; mismatch is `MPAS_LOG_CRIT`.
-    The testmod's `shell_commands` reads `RUN_STARTDATE` via
-    xmlquery and writes the four namelist values. If the option is
-    `'none'` or missing, AM init aborts at the first file open with
-    a critical error (fail-fast, not silent).
+    **Epoch plumbing -- auto-discovered at runtime, no namelist needed.**
+    Each FME AM calls `ocn_fme_horiz_remap_init_time_epoch(domain,
+    amName)` (or the seaice equivalent) once at init. The first caller
+    populates the module-scope epoch state; subsequent AMs see
+    `time_epoch_set=.true.` and no-op. Discovery order:
+
+    1. **Sidecar lookup** (`try_read_epoch_from_sidecar`): if the
+       per-AM accumulator sidecar `<amName>.fme_accum_restart.nc`
+       exists and has a `time_reference_date` global attribute,
+       use that. This is the warm-restart path -- the epoch baked
+       into the sidecar by the prior cold leg is the case start
+       date, and reading it back ensures legs after a restart use
+       the same epoch they started with.
+    2. **Clock fallback**: query `MPAS_START_TIME` from
+       `domain%clock` and convert to a date-time string. On a cold
+       run this equals CIME `RUN_STARTDATE` -- verified at
+       `ocn_comp_mct.F:611-614` where the driver calls
+       `seq_timemgr_EClockGetData(EClock, ECurrTime=...)` for
+       `runtype == 'initial'` and stores the result as
+       MPAS_START_TIME. On warm restart the same code path runs
+       but with `runtype == 'continue'` and the current restart
+       time -- which is why the sidecar lookup wins on warm legs.
+
+    The sidecar persistence is automatic: each
+    `*_write_accum` call (which fires on every coupler-driven
+    restart-write, see gotcha #11) writes the current
+    `time_epoch_str` as a global attribute alongside `nAccum` and
+    `avg_last_output_time`. Cost: one PIO put_att per restart write,
+    negligible.
+
+    **Failure mode** (warm restart with no sidecar): if the
+    sidecar is absent on a warm restart (e.g., user nuked the run
+    dir between legs), the AM falls back to MPAS_START_TIME =
+    leg-start time, NOT case start. The result would be MPAS files
+    with `time:units` shifted relative to EAM. Logged as a loud
+    `MPAS_LOG_WARN` so the issue surfaces in mpaso/mpassi.log.
+
+    **Why we replaced the namelist plumbing (2026-05-04 evening,
+    same day as initial CF time rewrite):** an earlier revision
+    used per-AM `config_AM_*_time_reference_date` namelist options
+    set by `shell_commands` from `xmlquery RUN_STARTDATE`. That
+    plumbing had two real problems: (1) four near-duplicate flags
+    that had to agree, validated at runtime; (2) the production
+    script `run_e3sm.fme.sh` runs `xmlchange RUN_STARTDATE` AFTER
+    `create_newcase` -- which is when shell_commands fires and
+    bakes the (then-default) epoch into `user_nl_mpa*`. Production
+    runs would have silently shipped MPAS files with a bogus
+    epoch (e.g., `0001-01-01` from the WCYCL1850NS compset
+    default) while EAM used the correct case start date. The
+    auto-discovery design eliminates both problems by not needing
+    case-construction-time knowledge of the epoch at all.
 
     **Numeric conversion**: `MPAS_Time_Type` to days-since-epoch goes
     through `mpas_get_timeInterval(t - epoch, StartTimeIn=epoch,
@@ -734,8 +775,9 @@ These are hard-won lessons. Read before modifying FME code.
 
     **CF units underscore-vs-space**: MPAS xtime form is
     `YYYY-MM-DD_HH:MM:SS`; CF "days since" requires
-    `YYYY-MM-DD HH:MM:SS`. `set_time_epoch` substitutes the underscore
-    on the fly into the `time_epoch_cf` string used in attributes.
+    `YYYY-MM-DD HH:MM:SS`. The internal `set_time_epoch` /
+    `set_time_epoch_si` helper substitutes the underscore on the fly
+    into the `time_epoch_cf` string used in attributes.
 
     **Append-mode reopen**: see gotcha #29 point 2 for the parallel
     update -- frame tracking now uses numeric `time` instead of
@@ -746,36 +788,6 @@ These are hard-won lessons. Read before modifying FME code.
     `write_time(time_lo, time_hi)` taking two `MPAS_Time_Type`
     arguments. AM call sites at all 8 locations (avg path + inst
     path × 4 AMs) updated.
-
-    **Known shortcoming -- 4 namelist options for one shared value.**
-    Each FME AM has its own `config_AM_*_time_reference_date`
-    namelist option (one per AM × 4 AMs = 4 options), all set to the
-    same value by `shell_commands` and validated to agree at runtime
-    inside `set_time_epoch`. This is silly -- four knobs to turn and
-    keep in sync for a value that should be a single source-of-truth.
-    Cleaner alternatives considered but deferred:
-    - **Single shared option per component** (`config_FME_time_reference_date`
-      in `namelist_definition_mpaso.xml` and `namelist_definition_mpassi.xml`):
-      drops from 4 to 2. Mechanical refactor, no behavior change.
-    - **Auto-capture from MPAS_START_TIME on cold init + persist via
-      sidecar**: zero namelist options. On cold start, `MPAS_START_TIME`
-      from `domain%clock` equals `RUN_STARTDATE` (verified at
-      `ocn_comp_mct.F:611-614` -- driver sets it from
-      `seq_timemgr_EClockGetData(EClock, ECurrTime=...)` for
-      `runtype=='initial'`). Capture once, persist as a global attribute
-      in the existing accumulator sidecar files (gotcha #11), read on
-      warm restart. Eliminates the need for shell_commands plumbing
-      entirely. Failure mode: if a user nukes the sidecars between
-      cold and warm legs, the warm leg falls back to MPAS_START_TIME
-      = leg-start-time = wrong epoch (would need a loud WARN).
-    - **Plumb case-start through MPAS driver from EClock**: cleanest
-      semantically (single source of truth at the coupler-clock level)
-      but touches the shared MPAS driver layer (`ocn_comp_mct.F`,
-      `ice_comp_mct.F`), more upstream-review friction.
-    Current 4-option implementation works and is explicit about what's
-    being set; the validation in `set_time_epoch` (CRIT on mismatch)
-    catches the most likely user error. Refactor is a follow-up nice-
-    to-have, not blocking production.
 
 ## Runtime Configuration
 
@@ -860,22 +872,18 @@ production run script is `run_e3sm.fme.sh` at the repo root with
 5-yr restart cadence aligned to the monthly file boundary --
 mitigates the file-clobber-on-restart concern (gotcha #29).
 
-**One open EAM question (design decision, not a bug):**
-- **Topographic fill validation** for vcoarsen layers 5-7 (lower
-  troposphere) shows 0% actual fill where the script expects
-  0.22-13.4% (cells where the entire layer's pressure range is below
-  PS). `eam_vcoarsen.F90` produces physical values everywhere -- it
-  averages the atmospheric mass that exists, even when the requested
-  pressure range is partially or fully below terrain. SamudrACE
-  preprocessing convention determines which is right:
-    * If ACE wants NaN/fill below terrain (standard ML practice; the
-      network learns to ignore those cells): fix the Fortran to mark
-      fully-sub-terrain cells as `SHR_FILL_VALUE` and the verify
-      check is correct as-is.
-    * If ACE wants filled-with-something values (no NaN handling in
-      the network input tensor): the Fortran is correct and the
-      verify's `Expected` lookup should be set to 0%.
-  Email SamudrACE team before the 100-yr run.
+**EAM topographic-fill question -- RESOLVED.** The earlier concern
+about lower-troposphere vcoarsen layers (5-7) showing zero fill
+where pressure-range coarsening would put cells below terrain no
+longer applies: production switched to **level-index-based**
+coarsening (`vcoarsen_level_bounds = 0,25,38,46,52,56,61,69,80` in
+`shell_commands`, defining 8 layers by EAM hybrid level indices),
+not pressure ranges. Every column has all 80 model levels by
+construction, so every output layer always has valid samples on
+every column. No below-terrain cells, no fill expected, no
+inconsistency between Fortran and verify. The pressure-bounded
+code path in `eam_vcoarsen.F90` is still available for users who
+prefer it; production just doesn't use it.
 
 **One open MPAS question (likely physical):**
 - Latent/sensible heat flux extremes at Gulf Stream / Kuroshio winter
@@ -892,18 +900,15 @@ mitigates the file-clobber-on-restart concern (gotcha #29).
 Cross-reference of `shell_commands` (testmod) vs the SamudrACE
 Confluence spec ("case run options for v3 LR piControl SamudrACE",
 p3ai/6154289880, last edited 2026-04-25) was done 2026-05-01.
-Three items need explicit confirmation from the SamudrACE team
-before submit:
+Items needing explicit confirmation from the SamudrACE team before
+submit (one resolved 2026-05-05; two remain):
 
-1. **STW formula: spec `Q + LIQ + ICE + RIME` vs ours `Q + CLDLIQ
-   + CLDICE + RAINQM`.** P3 microphysics has `RAINQM` (rain mixing
-   ratio) and `RIMEM` (rime mass on snow) as separate prognostic
-   species. The spec literal "RIME" most naturally maps to `RIMEM`,
-   not `RAINQM`. Either the spec wording is loose (and `RAINQM` is
-   what they actually want — it's what the offline pipeline used)
-   or our `derived_fld_defs` needs to change to include `RIMEM`.
-   `eam_derived` can chain expressions, so a 5-term sum is easy if
-   needed. Email the SamudrACE team.
+1. **STW formula -- RESOLVED 2026-05-05.** Spec wording "RIME" was
+   loose; the actual desired field is `Q + CLDLIQ + CLDICE + RAINQM`
+   (i.e., total water including rain, NOT rime mass on snow).
+   Confirmed with the SamudrACE team. Our `derived_fld_defs =
+   'STW=Q+CLDICE+CLDLIQ+RAINQM'` in `shell_commands` is correct as
+   written; no change needed.
 
 2. **`uVelocityGeoCell` (cell-centered) vs spec `uVelocityGeo`
    (vertex-located).** The existing `geographicalVectors` AM
@@ -929,11 +934,6 @@ before submit:
    preference, then rename in `mpas_seaice_fme_derived_fields.F`
    (register_var calls + local target arrays + verify_mpas.py
    expected names).
-
-Plus the open question that's been there for a while:
-
-4. **Topographic fill convention** for vcoarsen layers 5-7 (lower
-   troposphere) — see "Production-readiness assessment" above.
 
 ### Near-term
 - Add CI test variant (SMS_Ld2, ne4pg2_oQU480 for fast builds)

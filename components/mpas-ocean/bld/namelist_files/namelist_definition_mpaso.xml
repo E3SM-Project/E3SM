@@ -6598,17 +6598,6 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_fmeDepthCoarsening_time_reference_date" type="char*1024"
-	category="AM_fmeDepthCoarsening" group="AM_fmeDepthCoarsening">
-Reference epoch for the CF numeric time coordinate in remapped output files.
-Format: YYYY-MM-DD_HH:MM:SS. Plumbed from CIME RUN_STARTDATE by the FME
-testmod's shell_commands so MPAS time:units matches EAM exactly. Setting
-'none' aborts FME init at file open.
-
-Valid values: A YYYY-MM-DD_HH:MM:SS string or 'none'
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <!-- AM_fmeDerivedFields -->
 
 <entry id="config_AM_fmeDerivedFields_enable" type="logical"
@@ -6673,17 +6662,6 @@ If true, remapped output fields are time-averaged over the output interval.
 Set compute_interval to 'dt' or a frequent value when enabling.
 
 Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_AM_fmeDerivedFields_time_reference_date" type="char*1024"
-	category="AM_fmeDerivedFields" group="AM_fmeDerivedFields">
-Reference epoch for the CF numeric time coordinate in remapped output files.
-Format: YYYY-MM-DD_HH:MM:SS. Plumbed from CIME RUN_STARTDATE by the FME
-testmod's shell_commands so MPAS time:units matches EAM exactly. Setting
-'none' aborts FME init at file open.
-
-Valid values: A YYYY-MM-DD_HH:MM:SS string or 'none'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -6775,17 +6753,6 @@ If true, remapped output fields are time-averaged over the output interval.
 Set compute_interval to 'dt' or a frequent value when enabling.
 
 Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_AM_fmeVerticalReduce_time_reference_date" type="char*1024"
-	category="AM_fmeVerticalReduce" group="AM_fmeVerticalReduce">
-Reference epoch for the CF numeric time coordinate in remapped output files.
-Format: YYYY-MM-DD_HH:MM:SS. Plumbed from CIME RUN_STARTDATE by the FME
-testmod's shell_commands so MPAS time:units matches EAM exactly. Setting
-'none' aborts FME init at file open.
-
-Valid values: A YYYY-MM-DD_HH:MM:SS string or 'none'
 Default: Defined in namelist_defaults.xml
 </entry>
 

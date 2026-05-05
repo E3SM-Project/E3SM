@@ -25,7 +25,7 @@ module seaice_fme_derived_fields
    use shr_kind_mod, only: r8 => shr_kind_r8
    use shr_horiz_remap_mod, only: SHR_FILL_VALUE
    use seaice_fme_horiz_remap, only: seaice_fme_horiz_remap_init, &
-        seaice_fme_horiz_remap_set_time_epoch, &
+        seaice_fme_horiz_remap_init_time_epoch, &
         seaice_fme_horiz_remap_field, seaice_fme_horiz_remap_active, &
         seaice_fme_horiz_remap_write_var, seaice_fme_horiz_remap_write_time, &
         seaice_fme_horiz_remap_close_file, seaice_fme_horiz_remap_get_dims, &
@@ -188,7 +188,6 @@ contains
       !-----------------------------------------------------------------
 
       character(len=StrKIND), pointer :: config_horiz_remap_file
-      character(len=StrKIND), pointer :: config_time_reference_date
       logical, pointer :: config_time_averaging
       character(len=StrKIND), pointer :: config_stream_output_interval
       integer :: ierr
@@ -206,12 +205,9 @@ contains
             call seaice_fme_horiz_remap_init(domain, &
                  trim(config_horiz_remap_file), ierr)
             if (ierr == 0) then
-               ! Plumb the CF time epoch from this AM's namelist option.
-               call mpas_pool_get_config(domain % configs, &
-                    'config_AM_fmeSeaiceDerivedFields_time_reference_date', &
-                    config_time_reference_date)
-               call seaice_fme_horiz_remap_set_time_epoch( &
-                    trim(config_time_reference_date), ierr)
+               ! Auto-discover the CF time epoch.
+               call seaice_fme_horiz_remap_init_time_epoch(domain, &
+                    'fmeSeaiceDerivedFields', ierr)
                if (ierr /= 0) then
                   call mpas_log_write('fmeSeaiceDerivedFields: time epoch ' // &
                        'setup failed, disabling horiz remap', &

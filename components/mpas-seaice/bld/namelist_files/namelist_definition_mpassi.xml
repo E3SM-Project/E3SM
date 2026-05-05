@@ -4027,15 +4027,4 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_fmeSeaiceDerivedFields_time_reference_date" type="char*1024"
-	category="AM_fmeSeaiceDerivedFields" group="AM_fmeSeaiceDerivedFields">
-Reference epoch for the CF numeric time coordinate in remapped output files.
-Format: YYYY-MM-DD_HH:MM:SS. Plumbed from CIME RUN_STARTDATE by the FME
-testmod's shell_commands so MPAS time:units matches EAM exactly. Setting
-'none' aborts FME init at file open.
-
-Valid values: A YYYY-MM-DD_HH:MM:SS string or 'none'
-Default: Defined in namelist_defaults.xml
-</entry>
-
 </namelist_definition>
