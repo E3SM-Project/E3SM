@@ -406,9 +406,10 @@ contains
 
           if (iamroot_CPLID) then
              write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Fa2o'
+             write(logunit,F00) 'Initializing a2o mappers'
           end if
           call seq_map_mapinit(mapper_Fa2o, mpicom_CPLID)
+          call seq_map_mapinit(mapper_Sa2o, mpicom_CPLID)
           if (samegrid_ao) then
              mapper_Fa2o%rearrange_only = .true.
              mapper_Fa2o%strategy = "rearrange"
@@ -609,7 +610,6 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Sa2o'
           end if
-          call seq_map_mapinit(mapper_Sa2o, mpicom_CPLID)
           if (samegrid_ao) then
              mapper_Sa2o%rearrange_only = .true.
              mapper_Sa2o%strategy = "rearrange"
