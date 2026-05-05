@@ -71,6 +71,15 @@ module eam_vcoarsen
   ! Namelist variables
   real(r8) :: vcoarsen_pbounds(max_pbounds)
   integer  :: vcoarsen_level_bounds(max_pbounds)
+
+  ! Per-vcoarsen-interface hybrid sigma-pressure coefficients, written to
+  ! the h0 file as scalar metadata (`ak_0..ak_N`, `bk_0..bk_N`) so a
+  ! reader can reconstruct pressure at each layer interface via
+  ! `p = ak * P0 + bk * PS`. `add_hist_coord` keeps a pointer into
+  ! these arrays for the lifetime of the run, so they MUST be
+  ! module-scope `target` storage.
+  real(r8), save, target :: vcoarsen_ak_arr(max_pbounds) = 0.0_r8
+  real(r8), save, target :: vcoarsen_bk_arr(max_pbounds) = 0.0_r8
   character(len=max_name_len) :: vcoarsen_avg_flds(max_flds)
   integer  :: vcoarsen_select_levs(max_select_vals)
   character(len=max_name_len) :: vcoarsen_select_lev_flds(max_flds)
@@ -272,14 +281,19 @@ contains
 
   !============================================================================
   subroutine eam_vcoarsen_register()
-    use cam_history, only: addfld, horiz_only
-    use constituents, only: cnst_get_ind
-    use ppgrid,       only: begchunk, endchunk
+    use cam_history,         only: addfld, horiz_only
+    use cam_history_support, only: add_hist_coord
+    use constituents,        only: cnst_get_ind
+    use hycoef,              only: hyai, hybi
+    use ppgrid,              only: begchunk, endchunk
 
-    integer :: i, k, idx
+    integer :: i, k, idx, lvl_idx
     character(len=max_fname_len) :: fname
+    character(len=max_fname_len) :: scalar_name
     character(len=256) :: lname
     character(len=32) :: src_units, int_units, dint_units
+    real(r8) :: lo_frac, hi_frac, p_target
+    integer :: native_lo, native_hi
     logical :: found
 
     if (.not. has_avg .and. .not. has_sel_lev .and. .not. has_sel_pres &
@@ -307,6 +321,51 @@ contains
           call addfld(trim(fname), horiz_only, 'A', trim(src_units), trim(lname), &
                flag_xyfill=.true.)
         end do
+      end do
+
+      ! Register per-vcoarsen-interface hybrid coefficients ak_k / bk_k as
+      ! scalar metadata. There are n_avg_levs+1 interfaces (one more than
+      ! layers). A reader reconstructs pressure at interface k via
+      !   p = ak_k * P0 + bk_k * PS.
+      ! Index-based mode: pull straight from native interface arrays.
+      ! Pressure-based mode: linearly interpolate against
+      ! interface_pressure(k) = hyai(k)*P0 + hybi(k)*PS_ref using a
+      ! standard reference PS so coefficients are PS-independent.
+      do k = 0, n_avg_levs
+         if (use_level_bounds) then
+            ! 0-based level index stored in vcoarsen_level_bounds; hyai/hybi
+            ! are dimensioned 1:plev+1 in Fortran 1-based convention.
+            lvl_idx = vcoarsen_level_bounds(k+1) + 1
+            vcoarsen_ak_arr(k+1) = hyai(lvl_idx)
+            vcoarsen_bk_arr(k+1) = hybi(lvl_idx)
+         else
+            ! Pressure-bounded mode: locate vcoarsen_pbounds(k+1) (Pa)
+            ! between two native interfaces (using P0=100000 Pa as the
+            ! reference for the dimensionless coefficient interpolation;
+            ! the *actual* pressure at this interface still depends on PS
+            ! via the formula above).
+            p_target = vcoarsen_pbounds(k+1)
+            call interp_native_interface(p_target, native_lo, native_hi, &
+                 lo_frac, hi_frac)
+            vcoarsen_ak_arr(k+1) = lo_frac * hyai(native_lo) &
+                                 + hi_frac * hyai(native_hi)
+            vcoarsen_bk_arr(k+1) = lo_frac * hybi(native_lo) &
+                                 + hi_frac * hybi(native_hi)
+         end if
+
+         write(scalar_name, '(A,I0)') 'ak_', k
+         write(lname, '(A,I0,A)') &
+              'Hybrid sigma-pressure A coefficient at vcoarsen interface ', k, &
+              ' (dimensionless; pressure = ak*P0 + bk*PS)'
+         call add_hist_coord(trim(scalar_name), 1, trim(lname), '1', &
+              vcoarsen_ak_arr(k+1:k+1))
+
+         write(scalar_name, '(A,I0)') 'bk_', k
+         write(lname, '(A,I0,A)') &
+              'Hybrid sigma-pressure B coefficient at vcoarsen interface ', k, &
+              ' (dimensionless; pressure = ak*P0 + bk*PS)'
+         call add_hist_coord(trim(scalar_name), 1, trim(lname), '1', &
+              vcoarsen_bk_arr(k+1:k+1))
       end do
     end if
 
@@ -836,5 +895,54 @@ contains
     out_name = trim(base_name) // '_at_z' // trim(hstr)
 
   end subroutine make_sel_height_name
+
+  !============================================================================
+  subroutine interp_native_interface(p_target, native_lo, native_hi, &
+       lo_frac, hi_frac)
+    !--------------------------------------------------------------------------
+    ! Locate p_target (Pa) between two native interface pressures using
+    ! the PS_ref-independent piece of the hybrid coordinate
+    !   p_iface(k) = hyai(k)*P0 + hybi(k)*PS_ref.
+    ! Returns the bracketing native interface indices (Fortran 1-based)
+    ! and linear-interp fractions: result = lo_frac*x(lo) + hi_frac*x(hi).
+    !
+    ! Used to derive ak_k/bk_k for pressure-bounded vcoarsen mode. In
+    ! production we run level-index mode so this code path is unused;
+    ! kept for completeness so the metadata is correct in either mode.
+    !--------------------------------------------------------------------------
+    use hycoef,   only: hyai, hybi, ps0
+    use ppgrid,   only: pverp
+
+    real(r8), intent(in)  :: p_target
+    integer,  intent(out) :: native_lo, native_hi
+    real(r8), intent(out) :: lo_frac, hi_frac
+
+    real(r8), parameter :: ps_ref = 100000.0_r8   ! Pa, standard atmosphere
+    real(r8) :: p_iface(pverp)
+    integer  :: kk
+
+    do kk = 1, pverp
+       p_iface(kk) = hyai(kk) * ps0 + hybi(kk) * ps_ref
+    end do
+
+    ! Find first native interface whose pressure exceeds p_target
+    native_lo = 1
+    native_hi = pverp
+    do kk = 1, pverp - 1
+       if (p_iface(kk) <= p_target .and. p_iface(kk+1) >= p_target) then
+          native_lo = kk
+          native_hi = kk + 1
+          exit
+       end if
+    end do
+
+    if (p_iface(native_hi) > p_iface(native_lo)) then
+       hi_frac = (p_target - p_iface(native_lo)) / &
+                 (p_iface(native_hi) - p_iface(native_lo))
+    else
+       hi_frac = 0.0_r8
+    end if
+    lo_frac = 1.0_r8 - hi_frac
+  end subroutine interp_native_interface
 
 end module eam_vcoarsen

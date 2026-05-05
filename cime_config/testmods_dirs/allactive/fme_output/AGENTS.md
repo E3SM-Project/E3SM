@@ -863,6 +863,58 @@ These are hard-won lessons. Read before modifying FME code.
     plus this AGENTS.md gotcha. Verified end-to-end with ERS_Ld4
     test 52484623 (RUN + COMPARE_base_rest BFB-clean).
 
+41. **Per-layer-interface vertical coordinate scalars (ADDED 2026-05-05).**
+    The flat `Q_k`/`T_k`/`temperatureCoarsened_k` data fields have no
+    per-layer hint about *which pressure or depth they correspond to*.
+    Added scalar metadata fields so downstream consumers can reconstruct
+    pressure (atm) or depth (ocn) directly from the file.
+
+    **EAM h0**: `ak_0..ak_N` and `bk_0..bk_N` (N = `n_avg_levs`).
+    Production: 9 of each (interfaces of the 8 vcoarsen layers).
+    Dimensionless `units='1'`. Pressure at vcoarsen interface k:
+    `p = ak_k * P0 + bk_k * PS`. In level-index mode (the production
+    setting), values come straight from `hyai`/`hybi` at the native
+    interface index `vcoarsen_level_bounds(k)`. In pressure-bounded
+    mode, an `interp_native_interface` helper does linear interpolation
+    against `p_iface(k) = hyai(k)*P0 + hybi(k)*PS_ref` so the
+    coefficients are still PS-independent. Stored in module-scope
+    `vcoarsen_ak_arr`/`vcoarsen_bk_arr` (target arrays — `add_hist_coord`
+    keeps a pointer for the run lifetime).
+
+    **MPAS-O fmeDepthCoarsening**: `idepth_0..idepth_N`
+    (N = `nCoarsenLevels`). Production: 20 (interfaces of the 19
+    coarsened layers). `units='m'`, `positive='down'`,
+    `standard_name='depth'`. Layer k spans `idepth_k → idepth_{k+1}`;
+    thickness equals `layerThicknessCoarsened_k` (sanity invariant).
+
+    **Plumbing**: `ocn_fme_remap_file_t` gained an `is_scalar` shape
+    option in `register_var` / `def_var`, parallel to the existing
+    `is_static`. Scalars are netCDF-scalar (no dim) PIO_DOUBLE vars
+    written via `pio_put_var(file, desc, value)` at define-time;
+    PIO transitions from def-mode to data-mode automatically. The
+    `stored_scalar_value` array carries the constant across rotation
+    so `check_rotate` re-emits each scalar in every fresh file.
+    `write_var` errors gracefully if accidentally invoked on a scalar.
+    Sea-ice horiz_remap module has no `is_scalar` plumbing (no scalar
+    metadata required there).
+
+    **Why interfaces, not midpoints**: interfaces are what vcoarsen /
+    depth-coarsen actually integrate over. With N+1 interface values
+    a downstream tool can derive layer means, midpoints, and
+    thicknesses; with N midpoint values it cannot recover interfaces.
+    Interface form has zero aggregation logic — values come straight
+    from the source's interface arrays.
+
+    **What it does NOT cover**: `*_at_z2` / `*_at_z10` height-interp
+    fields keep the height in their `long_name` only (per user
+    direction) — no scalar `height_2m`/`height_10m` companion. Add
+    later if a CF-strict reader needs it.
+
+    **Verification example**: `ds.ak_0.values.item() ≈ 0.0001` (TOA),
+    `ds.bk_8.values.item() == 1.0` (surface), `ds.idepth_0.item() ==
+    0.0`, `ds.idepth_19.item() == 6380.0`. Reconstruct any layer's
+    top pressure: `p_top = ds.ak_k.item()*ds.P0 + ds.bk_k.item()*ds.PS`.
+
 ## Runtime Configuration
 
 Both `fme_output` and `fme_legacy_output` testmods accept environment variables:
