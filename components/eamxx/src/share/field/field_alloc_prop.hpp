@@ -148,6 +148,8 @@ public:
   // Get the largest pack size that this allocation was requested to accommodate
   int get_largest_pack_size () const;
 
+  int get_scalar_size () const { return m_scalar_type_size; }
+
   // Wether this allocation is contiguous
   bool contiguous () const { return m_contiguous; }
 
