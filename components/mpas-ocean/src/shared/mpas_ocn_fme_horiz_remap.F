@@ -104,11 +104,18 @@ module ocn_fme_horiz_remap
       integer :: n_pio_vars = 0
       character(len=64)  :: pio_var_names(max_pio_vars)
       type(var_desc_t)   :: pio_var_descs(max_pio_vars)
+      ! Per-active-def is_static flag, parallel to pio_var_descs. True
+      ! for vars defined with shape (lon, lat) only — no Time dim, written
+      ! once per file. Used by write_var to skip pio_setframe.
+      logical            :: pio_var_is_static(max_pio_vars) = .false.
       type(var_desc_t)   :: pio_lon_var, pio_lat_var, pio_xtime_var
       integer :: dim_strlen_id = 0
       ! Stored metadata for replaying var definitions after rotation
       character(len=64)  :: stored_units(max_pio_vars)
       character(len=128) :: stored_long_names(max_pio_vars)
+      ! Per-registered-var is_static flag, replayed by check_rotate so
+      ! every fresh file's def_var calls reproduce the original shape.
+      logical            :: stored_is_static(max_pio_vars) = .false.
       integer :: n_registered_vars = 0
       ! Current open filename and stream name for rotation
       character(len=512) :: current_filename = ''
@@ -655,20 +662,30 @@ contains
       end if
    end subroutine check_pio
 
-   subroutine remap_file_def_var(self, varname, units, long_name, numlev, err)!{{{
+   subroutine remap_file_def_var(self, varname, units, long_name, numlev, err, &
+        is_static)!{{{
    !> Register an output variable. On a freshly created file, defines the
    !> variable + attributes. On a reopened (append-mode) file, looks up
    !> the existing var_desc — definitions and attributes are already
    !> persisted on disk from the first create.
+   !>
+   !> When is_static=.true., the var is defined with (lon, lat) only (no
+   !> Time dim) and gets no _FillValue attribute. Static vars are written
+   !> once per file via write_var, which skips pio_setframe for these.
       class(ocn_fme_remap_file_t), intent(inout) :: self
       character(len=*), intent(in) :: varname, units, long_name
       integer, intent(in) :: numlev
       integer, intent(out) :: err
+      logical, optional, intent(in) :: is_static
       integer :: ierr
       real(kind=4) :: fill_val
+      logical :: is_static_local
 
       err = 0
       if (.not. self%file_is_open) then; err = 1; return; end if
+
+      is_static_local = .false.
+      if (present(is_static)) is_static_local = is_static
 
       self%n_pio_vars = self%n_pio_vars + 1
       if (self%n_pio_vars > max_pio_vars) then
@@ -680,6 +697,7 @@ contains
       end if
 
       self%pio_var_names(self%n_pio_vars) = varname
+      self%pio_var_is_static(self%n_pio_vars) = is_static_local
 
       if (self%existing_file_reopened) then
          ierr = pio_inq_varid(self%pio_file, trim(varname), &
@@ -693,9 +711,15 @@ contains
          return
       end if
 
-      ierr = pio_def_var(self%pio_file, trim(varname), PIO_REAL, &
-           (/self%dim_lon_id, self%dim_lat_id, self%dim_time_id/), &
-           self%pio_var_descs(self%n_pio_vars))
+      if (is_static_local) then
+         ierr = pio_def_var(self%pio_file, trim(varname), PIO_REAL, &
+              (/self%dim_lon_id, self%dim_lat_id/), &
+              self%pio_var_descs(self%n_pio_vars))
+      else
+         ierr = pio_def_var(self%pio_file, trim(varname), PIO_REAL, &
+              (/self%dim_lon_id, self%dim_lat_id, self%dim_time_id/), &
+              self%pio_var_descs(self%n_pio_vars))
+      end if
       if (ierr /= PIO_NOERR) then
          call mpas_log_write('ocn_fme_remap_file: pio_def_var failed for ' &
               // trim(varname) // ' (code $i)', messageType=MPAS_LOG_ERR, &
@@ -706,11 +730,15 @@ contains
            'units', trim(units))
       ierr = pio_put_att(self%pio_file, self%pio_var_descs(self%n_pio_vars), &
            'long_name', trim(long_name))
-      fill_val = real(SHR_FILL_VALUE, 4)
-      ierr = pio_put_att(self%pio_file, self%pio_var_descs(self%n_pio_vars), &
-           '_FillValue', fill_val)
-      ierr = pio_put_att(self%pio_file, self%pio_var_descs(self%n_pio_vars), &
-           'missing_value', fill_val)
+      ! Fill-value attributes only on time-varying vars; masks contain
+      ! literal 0.0/1.0 with no missing data semantics.
+      if (.not. is_static_local) then
+         fill_val = real(SHR_FILL_VALUE, 4)
+         ierr = pio_put_att(self%pio_file, self%pio_var_descs(self%n_pio_vars), &
+              '_FillValue', fill_val)
+         ierr = pio_put_att(self%pio_file, self%pio_var_descs(self%n_pio_vars), &
+              'missing_value', fill_val)
+      end if
 
    end subroutine remap_file_def_var!}}}
 
@@ -731,8 +759,13 @@ contains
 
       do iv = 1, self%n_pio_vars
          if (trim(self%pio_var_names(iv)) == trim(varname)) then
-            call pio_setframe(self%pio_file, self%pio_var_descs(iv), &
-                 int(self%time_record, PIO_OFFSET_KIND))
+            ! Static (no Time dim) vars: skip setframe — there's no
+            ! UNLIMITED dim to advance, and pio_setframe on a 2D var
+            ! errors on some PIO versions.
+            if (.not. self%pio_var_is_static(iv)) then
+               call pio_setframe(self%pio_file, self%pio_var_descs(iv), &
+                    int(self%time_record, PIO_OFFSET_KIND))
+            end if
             fld_1d_r4(1:remap_data%n_b_local) = &
                  real(fld_out(1:remap_data%n_b_local, 1), 4)
             call pio_write_darray(self%pio_file, self%pio_var_descs(iv), &
@@ -788,14 +821,18 @@ contains
       end if
    end subroutine remap_file_close!}}}
 
-   subroutine remap_file_register_var(self, varname, units, long_name, err)!{{{
+   subroutine remap_file_register_var(self, varname, units, long_name, err, &
+        is_static)!{{{
    !> Register a variable for output. Stores metadata so that def_var can
    !> be replayed automatically when a file is opened or rotated.
    !> Silently skips if the variable is already registered (MPAS framework
    !> may call init twice: once for setup, once for compute_on_startup).
+   !> When is_static=.true., the variable is defined with shape (lon, lat)
+   !> only (no Time dim) and written once per file (used for masks).
       class(ocn_fme_remap_file_t), intent(inout) :: self
       character(len=*), intent(in) :: varname, units, long_name
       integer, intent(out) :: err
+      logical, optional, intent(in) :: is_static
       integer :: iv
 
       err = 0
@@ -816,6 +853,10 @@ contains
       self%pio_var_names(self%n_registered_vars) = varname
       self%stored_units(self%n_registered_vars) = units
       self%stored_long_names(self%n_registered_vars) = long_name
+      self%stored_is_static(self%n_registered_vars) = .false.
+      if (present(is_static)) then
+         self%stored_is_static(self%n_registered_vars) = is_static
+      end if
    end subroutine remap_file_register_var!}}}
 
    subroutine remap_file_check_rotate(self, domain, err)!{{{
@@ -850,11 +891,13 @@ contains
          if (ierr /= 0) then; err = ierr; return; end if
          self%current_filename = new_filename
 
-         ! Replay all registered variable definitions
+         ! Replay all registered variable definitions, preserving
+         ! static-var shape across rotation.
          do iv = 1, self%n_registered_vars
             call self%def_var(trim(self%pio_var_names(iv)), &
                  trim(self%stored_units(iv)), &
-                 trim(self%stored_long_names(iv)), 1, ierr)
+                 trim(self%stored_long_names(iv)), 1, ierr, &
+                 is_static=self%stored_is_static(iv))
          end do
       end if
 
@@ -963,7 +1006,8 @@ contains
 !***********************************************************************
 
    subroutine ocn_fme_horiz_remap_write_accum(amName, accum_arr, &
-        n_avg_fields, nAccum, avg_last_output_time_str, latest_inst_arr, err)!{{{
+        n_avg_fields, nAccum, avg_last_output_time_str, latest_inst_arr, &
+        count_arr, err)!{{{
    !> Persist the remap-space accumulator state for one AM to its sidecar
    !> file. Called from the MPAS-O driver at the moment the coupler has
    !> requested a restart write (see `seq_timemgr_RestartAlarmIsOn` branch
@@ -972,16 +1016,22 @@ contains
    !> accum_arr has shape (n_b_local, n_avg_fields). latest_inst_arr is
    !> optional and matches accum_arr; pass it for AMs that maintain
    !> instantaneous companions (depth-coarsening) and omit otherwise.
+   !> count_arr is the per-cell valid-sample counter parallel to
+   !> accum_arr; passing it preserves the time-averaging mask across
+   !> restart so warm-leg output continues to weight intensive
+   !> fill-prone fields correctly (see AGENTS.md gotcha on
+   !> time-averaging fill pollution).
       character(len=*), intent(in) :: amName
       integer,          intent(in) :: n_avg_fields
       real(r8),         intent(in) :: accum_arr(:,:)
       integer,          intent(in) :: nAccum
       character(len=*), intent(in) :: avg_last_output_time_str
       real(r8), optional, intent(in) :: latest_inst_arr(:,:)
+      real(r8), optional, intent(in) :: count_arr(:,:)
       integer,          intent(out) :: err
 
       type(file_desc_t)        :: pio_acc_file
-      type(var_desc_t)         :: var_accum, var_inst
+      type(var_desc_t)         :: var_accum, var_inst, var_count
       integer                  :: dim_lon, dim_lat, dim_field
       integer                  :: ierr, idx
       character(len=512)       :: filename
@@ -1017,6 +1067,11 @@ contains
               pio_def_var(pio_acc_file, 'remap_latest_inst', PIO_DOUBLE, &
                           (/dim_lon, dim_lat, dim_field/), var_inst), err)
       end if
+      if (present(count_arr)) then
+         call check_pio('accum def_var remap_accum_count', &
+              pio_def_var(pio_acc_file, 'remap_accum_count', PIO_DOUBLE, &
+                          (/dim_lon, dim_lat, dim_field/), var_count), err)
+      end if
 
       ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, 'nAccum', nAccum)
       ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, 'n_avg_fields', n_avg_fields)
@@ -1046,6 +1101,14 @@ contains
                  slab, ierr)
             if (ierr /= PIO_NOERR) err = ierr
          end if
+         if (present(count_arr)) then
+            call pio_setframe(pio_acc_file, var_count, &
+                 int(idx, PIO_OFFSET_KIND))
+            slab(:) = count_arr(:, idx)
+            call pio_write_darray(pio_acc_file, var_count, iodesc_2d_dbl, &
+                 slab, ierr)
+            if (ierr /= PIO_NOERR) err = ierr
+         end if
       end do
       deallocate(slab)
 
@@ -1057,7 +1120,7 @@ contains
 
    subroutine ocn_fme_horiz_remap_read_accum(amName, accum_arr, &
         n_avg_fields, nAccum, avg_last_output_time_str, latest_inst_arr, &
-        success)!{{{
+        count_arr, success)!{{{
    !> Restore an AM's remap-space accumulator state from its sidecar file.
    !> Called from the AM's *_init_* when config_do_restart=.true.
    !>
@@ -1072,15 +1135,16 @@ contains
       integer,            intent(out)   :: nAccum
       character(len=*),   intent(out)   :: avg_last_output_time_str
       real(r8), optional, intent(inout) :: latest_inst_arr(:,:)
+      real(r8), optional, intent(inout) :: count_arr(:,:)
       logical,            intent(out)   :: success
 
       type(file_desc_t)     :: pio_acc_file
-      type(var_desc_t)      :: var_accum, var_inst
+      type(var_desc_t)      :: var_accum, var_inst, var_count
       integer               :: ierr, idx, n_avg_on_disk
       character(len=512)    :: filename
       logical               :: file_exists
       real(r8), allocatable :: slab(:)
-      real(r8), allocatable :: tmp_accum(:,:), tmp_inst(:,:)
+      real(r8), allocatable :: tmp_accum(:,:), tmp_inst(:,:), tmp_count(:,:)
 
       success = .false.
       nAccum = 0
@@ -1150,6 +1214,26 @@ contains
             end do
             latest_inst_arr(:,:) = tmp_inst(:,:)
             deallocate(tmp_inst)
+         end if
+      end if
+
+      if (present(count_arr)) then
+         ierr = pio_inq_varid(pio_acc_file, 'remap_accum_count', var_count)
+         if (ierr == PIO_NOERR) then
+            allocate(tmp_count(remap_data%n_b_local, n_avg_fields))
+            do idx = 1, n_avg_fields
+               call pio_setframe(pio_acc_file, var_count, &
+                    int(idx, PIO_OFFSET_KIND))
+               call pio_read_darray(pio_acc_file, var_count, iodesc_2d_dbl, &
+                    slab, ierr)
+               if (ierr /= PIO_NOERR) then
+                  deallocate(tmp_accum, tmp_count, slab)
+                  call pio_closefile(pio_acc_file); return
+               end if
+               tmp_count(:, idx) = slab(:)
+            end do
+            count_arr(:,:) = tmp_count(:,:)
+            deallocate(tmp_count)
          end if
       end if
 

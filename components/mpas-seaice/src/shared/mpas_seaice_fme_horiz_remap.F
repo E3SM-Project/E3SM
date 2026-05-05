@@ -716,19 +716,22 @@ contains
 !***********************************************************************
 
    subroutine seaice_fme_horiz_remap_write_accum(amName, accum_arr, &
-        n_avg_fields, nAccum, avg_last_output_time_str, err)!{{{
-   !> Persist remap-space accumulator state to a sidecar file. Mirror of
-   !> ocn_fme_horiz_remap_write_accum; sea-ice has no instantaneous-companion
-   !> arrays, so the optional latest_inst slot is omitted here.
+        n_avg_fields, nAccum, avg_last_output_time_str, count_arr, err)!{{{
+   !> Persist remap-space accumulator state to a sidecar file. count_arr
+   !> is the per-cell valid-sample counter parallel to accum_arr — passing
+   !> it preserves the time-averaging mask across restart so the warm-leg
+   !> output continues to weight intensive fill-prone fields correctly
+   !> (see AGENTS.md gotcha on time-averaging fill pollution).
       character(len=*), intent(in) :: amName
       integer,          intent(in) :: n_avg_fields
       real(r8),         intent(in) :: accum_arr(:,:)
       integer,          intent(in) :: nAccum
       character(len=*), intent(in) :: avg_last_output_time_str
+      real(r8), optional, intent(in) :: count_arr(:,:)
       integer,          intent(out) :: err
 
       type(file_desc_t)        :: pio_acc_file
-      type(var_desc_t)         :: var_accum
+      type(var_desc_t)         :: var_accum, var_count
       integer                  :: dim_lon, dim_lat, dim_field
       integer                  :: ierr, idx
       character(len=512)       :: filename
@@ -757,6 +760,11 @@ contains
       call check_pio_si('accum def_var remap_accum', &
            pio_def_var(pio_acc_file, 'remap_accum', PIO_DOUBLE, &
                        (/dim_lon, dim_lat, dim_field/), var_accum), err)
+      if (present(count_arr)) then
+         call check_pio_si('accum def_var remap_accum_count', &
+              pio_def_var(pio_acc_file, 'remap_accum_count', PIO_DOUBLE, &
+                          (/dim_lon, dim_lat, dim_field/), var_count), err)
+      end if
 
       ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, 'nAccum', nAccum)
       ierr = pio_put_att(pio_acc_file, PIO_GLOBAL, 'n_avg_fields', n_avg_fields)
@@ -778,6 +786,14 @@ contains
          call pio_write_darray(pio_acc_file, var_accum, iodesc_2d_dbl, &
               slab, ierr)
          if (ierr /= PIO_NOERR) err = ierr
+         if (present(count_arr)) then
+            call pio_setframe(pio_acc_file, var_count, &
+                 int(idx, PIO_OFFSET_KIND))
+            slab(:) = count_arr(:, idx)
+            call pio_write_darray(pio_acc_file, var_count, iodesc_2d_dbl, &
+                 slab, ierr)
+            if (ierr /= PIO_NOERR) err = ierr
+         end if
       end do
       deallocate(slab)
       call pio_closefile(pio_acc_file)
@@ -786,21 +802,22 @@ contains
 !***********************************************************************
 
    subroutine seaice_fme_horiz_remap_read_accum(amName, accum_arr, &
-        n_avg_fields, nAccum, avg_last_output_time_str, success)!{{{
+        n_avg_fields, nAccum, avg_last_output_time_str, count_arr, success)!{{{
       character(len=*),   intent(in)    :: amName
       integer,            intent(in)    :: n_avg_fields
       real(r8),           intent(inout) :: accum_arr(:,:)
       integer,            intent(out)   :: nAccum
       character(len=*),   intent(out)   :: avg_last_output_time_str
+      real(r8), optional, intent(inout) :: count_arr(:,:)
       logical,            intent(out)   :: success
 
       type(file_desc_t)     :: pio_acc_file
-      type(var_desc_t)      :: var_accum
+      type(var_desc_t)      :: var_accum, var_count
       integer               :: ierr, idx, n_avg_on_disk
       character(len=512)    :: filename
       logical               :: file_exists
       real(r8), allocatable :: slab(:)
-      real(r8), allocatable :: tmp_accum(:,:)
+      real(r8), allocatable :: tmp_accum(:,:), tmp_count(:,:)
 
       success = .false.
       nAccum = 0
@@ -852,6 +869,26 @@ contains
          end if
          tmp_accum(:, idx) = slab(:)
       end do
+
+      if (present(count_arr)) then
+         ierr = pio_inq_varid(pio_acc_file, 'remap_accum_count', var_count)
+         if (ierr == PIO_NOERR) then
+            allocate(tmp_count(remap_data%n_b_local, n_avg_fields))
+            do idx = 1, n_avg_fields
+               call pio_setframe(pio_acc_file, var_count, &
+                    int(idx, PIO_OFFSET_KIND))
+               call pio_read_darray(pio_acc_file, var_count, iodesc_2d_dbl, &
+                    slab, ierr)
+               if (ierr /= PIO_NOERR) then
+                  deallocate(tmp_accum, tmp_count, slab)
+                  call pio_closefile(pio_acc_file); return
+               end if
+               tmp_count(:, idx) = slab(:)
+            end do
+            count_arr(:,:) = tmp_count(:,:)
+            deallocate(tmp_count)
+         end if
+      end if
 
       accum_arr(:,:) = tmp_accum(:,:)
       deallocate(tmp_accum, slab)

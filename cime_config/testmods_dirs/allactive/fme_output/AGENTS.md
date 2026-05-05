@@ -94,7 +94,10 @@ These are hard-won lessons. Read before modifying FME code.
 5. **Fill value flow.** All FME code uses `SHR_FILL_VALUE` (1e20) consistently.
    AMs set fill at source -> remap caller zeros field + sets mask=0 ->
    `apply_masked` normalizes by valid_frac -> output gets `SHR_FILL_VALUE`.
-   Detection threshold is `SHR_FILL_VALUE * 0.1` (1e19).
+   Detection threshold is `SHR_FILL_VALUE * 0.1` (1e19). Note: this only
+   handles the *spatial* dimension. Time-averaging accumulators need
+   per-cell valid-sample counts to avoid summing fill into the mean —
+   see gotcha #36.
 
 6. **MPAS remapped output bypasses the stream manager.** The stream manager only
    supports `nCells`/`nEdges`/`nVertices` decomposed dims (hardcoded in
@@ -131,6 +134,7 @@ These are hard-won lessons. Read before modifying FME code.
     in the run dir whenever the coupler-driven restart alarm fires
     (`seq_timemgr_RestartAlarmIsOn(EClock)` branch in `ocn_comp_mct.F`
     and `ice_comp_mct.F`). The sidecar holds `remap_accum`,
+    `remap_accum_count` (added 2026-05-04 — gotcha #36),
     `remap_latest_inst` (depth-coarsening only), `nAccum`, and
     `avg_last_output_time` as a global string attribute. PIO writes use
     a dedicated `iodesc_2d_dbl` (PIO_DOUBLE) with `n_avg_fields` as the
@@ -521,7 +525,149 @@ These are hard-won lessons. Read before modifying FME code.
     The `_inst` channel is otherwise unused by `verify_mpas.py` (open
     hardening item: add presence/range check for `*_inst` companions).
 
-36. **`totalFreshWaterTemperatureFlux` removed from `fmeDerivedFields`.**
+36. **MPAS time-averaging needed per-cell valid-sample counts, not a
+    global `nAccum`. FIXED 2026-05-04 (sea-ice AM had observable
+    pollution; ocean AMs fixed defensively).** The original pattern was
+
+    ```
+    remap_accum(:, idx) = remap_accum(:, idx) + fld_remap(:)   ! per timestep
+    fld_out             = remap_accum(:, idx) / nAccum         ! at output trigger
+    ```
+
+    `apply_masked` (gotcha #5) sets a target cell to `SHR_FILL_VALUE`
+    when *all* its source cells are fill. For ocean cells whose source
+    mask is static (land), this means the cell is fill on *every*
+    timestep, and `nAccum * 1e20 / nAccum` cleanly preserves fill.
+    But for **sea ice**, the source-side ice-presence mask flips
+    day-to-day at the ice edge: a target cell can be valid on day 1
+    (some ice present), fill on day 2 (no ice), valid on day 3, etc.
+    The accumulator then ends up with `k * 1e20 + (nAccum - k) * v`,
+    and dividing by `nAccum` produces *fractional-of-fill* values
+    like `1e20/24 = 4.17e18` — outside the fill-detection threshold
+    used by `verify_mpas.py` (`1e18`) but very much not physical.
+
+    **Empirical signature**: in
+    `*.fmeSeaiceDerivedFields.YYYY-MM.remapped.nc`, the six
+    intensive fields (`iceThicknessMean`, `surfaceTemperatureMean`,
+    `airStress{Zonal,Meridional}`, `{u,v}VelocityGeoCell` — all set
+    to `fillValue` in the AM when `iceAreaTotal == 0`) had ~3000 cells
+    per file with `1e18 < |x| < 1e20` whose values were exact
+    multiples of `1e20/nAccum`. The three extensive sums
+    (`iceAreaTotal`, `iceVolumeTotal`, `snowVolumeTotal`) were
+    pollution-free because the AM keeps them at `0.0` (not
+    `fillValue`) when no ice is present.
+
+    **Fix**: parallel `remap_accum_count(:, :)` real(r8) array.
+    Each `remap_*` subroutine detects fill in `fld_remap`
+    (`abs(val) < SHR_FILL_VALUE * 0.1_r8`) and only accumulates
+    valid samples, incrementing the per-cell count. The write path
+    divides by the per-cell count and emits fill where count == 0.
+    Sidecar restart-state files now also persist the count array
+    so warm-restart BFB still holds (gotcha #29) — both
+    `ocn_fme_horiz_remap_{read,write}_accum` and the seaice
+    counterparts gained an optional `count_arr=` argument.
+
+    **Sidecar format**: the new variable is `remap_accum_count`,
+    same shape and PIO decomposition as `remap_accum`. It is
+    optional: callers that omit `count_arr=` get the legacy
+    behavior (no count read/write). The sea-ice and ocean AMs all
+    pass `count_arr=remap_accum_count`.
+
+    **Consequence for cold runs**: cells that flip valid↔fill
+    within an averaging window now produce a true average over
+    only the valid samples rather than a fill-polluted ratio.
+    Spatial coverage of the averaged field can change very
+    slightly at the ice edge (an ice-edge cell that previously
+    showed `2e19` will now show its actual mean over the valid
+    days); this is a correctness improvement, not a regression.
+
+    **Defensive fix on ocean side**: `mpas_ocn_fme_derived_fields.F`,
+    `mpas_ocn_fme_depth_coarsening.F`, and
+    `mpas_ocn_fme_vertical_reduce.F` were also converted to the
+    per-cell-count pattern even though their masks are static
+    (land / per-layer bathymetry). This keeps the four AMs
+    coherent and protects against future fields whose validity
+    flips in time (e.g., ice-shelf cavity exposure if SSH masking
+    is added under cavities).
+
+    **What it does NOT fix**: sub-window pollution of the *source*
+    field before remap (the AM still sets ice-free cells to
+    `fillValue` on the native mesh, and `apply_masked` still
+    correctly handles that at the spatial level). The fix is purely
+    in the time-axis accumulator step.
+
+37. **Static `mask_2d` / `mask_<k>` written into ocean FME files for
+    SamudrACE compatibility (ADDED 2026-05-04).** Each ocean output file
+    now ships canonical wet masks alongside the data:
+
+    - `fmeDerivedFields*.remapped.nc` -> `mask_2d(lon, lat)`
+    - `fmeDepthCoarsening*.remapped.nc` -> `mask_0(lon, lat)`,
+      `mask_1(lon, lat)`, ..., `mask_{nCoarsenLevels-1}(lon, lat)`
+      (production: `mask_0` through `mask_18`)
+
+    Values: `1.0` = valid ocean cell, `0.0` = land/below seafloor.
+    Stored as `PIO_REAL` (float32). No `Time` dim — the masks are
+    static for the AM's lifetime.
+
+    **Why these specific names**: the SamudrACE preprocessing script
+    `compute_ocean_dataset_e3sm.py` (lines 46-65) constructs masks with
+    exactly this naming -- `mask_2d` for any 2D variable, `mask_<k>` for
+    any 3D variable ending in `_<k>`. By emitting the masks in the FME
+    output directly, we let the downstream training pipeline read them
+    as-is and skip the `~ds[var].isnull().any(dim="time")` derivation
+    step. The dataloader's lookup is `re.compile(r"_(\d+)$")` then
+    `f"mask_{level}"` for 3D / `"mask_2d"` for 2D
+    (`compute_ocean_dataset_e3sm.py:get_mask_for`).
+
+    **How they're computed**: in each AM, on the first compute call
+    after `do_horiz_remap` is active, a constant-1 native field is
+    remapped through `apply_masked` (gotcha #5) with the correct
+    source-side mask:
+
+    - `fmeDerivedFields`: `mask=maxLevelCell` (static land mask).
+    - `fmeDepthCoarsening`: per level, `mask=levelMask` derived from
+      `layerThicknessCoarsened_k != fillValue` (static bathymetry mask).
+
+    The remapped value is `1.0` on target cells with any valid source
+    coverage and `SHR_FILL_VALUE` elsewhere. Threshold to a hard
+    `1.0`/`0.0` and cache in module-scope arrays
+    (`mask_2d_remap`, `mask_levels_remap`).
+
+    **When they're written**: at the first time record of every fresh
+    file, gated on `time_record == 1 .and. .not. existing_file_reopened`
+    (warm-restart reopens skip — masks are already in the file from
+    leg 1). Helper `write_static_masks_if_needed()` lives inside the
+    compute routine of each AM.
+
+    **PIO/file-format pieces**: `ocn_fme_remap_file_t` gained
+    `stored_is_static(:)` and `pio_var_is_static(:)` boolean arrays
+    plus an optional `is_static=` keyword on `register_var` and
+    `def_var`. Static vars are defined with shape `(lon, lat)` only
+    (no Time dim), have no `_FillValue` attribute, and `write_var`
+    skips `pio_setframe` for them. Append-mode reopen (warm restart)
+    looks them up via `pio_inq_varid` like any other var.
+
+    **Storage cost** (production, 100 yr):
+    - 1 `mask_2d` × 6000 files × 256 KB = ~1.5 GB total.
+    - 19 `mask_k` × 6000 files × 256 KB = ~29 GB total.
+    Combined ~30 GB; negligible vs. the ~6 TB total tape volume.
+
+    **Sea-ice and fmeVerticalReduce are not covered** — Elynn's request
+    was explicit ocean-only (Slack 2026-05-04). The same mechanism
+    transfers cleanly if needed later: in seaice, `mask_2d` would be
+    derived from `iceAreaTotal`'s ocean-mask pattern; for vertical
+    reduce, from `maxLevelCell`. The horiz_remap helper's
+    `is_static` plumbing is ocean-side only — the seaice helper would
+    need the parallel addition.
+
+    **What it does NOT include**: `mask_2d` is the *land* mask only.
+    Time-varying validity (e.g., sea-ice presence at the ice edge,
+    SSH below ice shelves) is encoded in the data variables' fill
+    pattern itself, not in the static mask. The per-cell-count
+    accumulator (gotcha #36) handles that correctly during time
+    averaging.
+
+38. **`totalFreshWaterTemperatureFlux` removed from `fmeDerivedFields`.**
     The SamudrACE Confluence spec strikes through this field. Removed
     2026-04-30 from `mpas_ocn_fme_derived_fields.F` (register_var,
     pointer declaration, mpas_pool_get_array, mask_and_remap call,
