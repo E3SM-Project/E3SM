@@ -330,7 +330,7 @@ contains
   !=======================================================================
 
   subroutine seq_map_map( mapper, av_s, av_d, fldlist, norm, avwts_s, avwtsfld_s, &
-       string, msgtag )
+       string, msgtag, omit_nonlinear  )
 
     use iso_c_binding
     use iMOAB, only: iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, iMOAB_SetDoubleTagStorage, &
@@ -352,6 +352,7 @@ contains
     character(len=*),intent(in),optional :: avwtsfld_s
     character(len=*),intent(in),optional :: string
     integer(IN)     ,intent(in),optional :: msgtag
+    logical         ,intent(in),optional :: omit_nonlinear
     logical  :: valid_moab_context
     integer  :: ierr, nfields, lsize_src, lsize_tgt, arrsize_tgt, j, arrsize_src
     character(len=CXX) :: fldlist_moab
@@ -368,6 +369,7 @@ contains
     !
     logical :: lnorm  ! true if normalization is to be done
     logical :: mbnorm ! moab copy of lnorm
+    logical :: use_nonlinear_map
     logical :: mbpresent ! moab logical for presence of norm weight string
     integer(IN),save :: ltag    ! message tag for rearrange
     character(len=*),parameter :: subname = "(seq_map_map) "
@@ -376,6 +378,14 @@ contains
     if (seq_comm_iamroot(CPLID) .and. present(string)) then
        write(logunit,'(A)') subname//' called for '//trim(string)
     endif
+
+    use_nonlinear_map = .false.
+    if (mapper%nl_available) then
+       use_nonlinear_map = .true.
+       if (present(omit_nonlinear)) then
+          if (omit_nonlinear) use_nonlinear_map = .false.
+       end if
+    end if
 
     lnorm = .true.
     if (present(norm)) then
@@ -675,10 +685,12 @@ contains
           !***   fldlist_moab: Input and output field names (can be different)
           filter_type = 0 ! no filter
 
-          if(.not.mapper%nl_available) then
+          if(.not.use_nonlinear_map) then
              ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%weight_identifier, fldlist_moab, fldlist_moab)
           else
-             ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%howeight_identifier, fldlist_moab, fldlist_moab)
+             ! no difference until high order map is working
+             ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%weight_identifier, fldlist_moab, fldlist_moab)
+             !ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%howeight_identifier, fldlist_moab, fldlist_moab)
           endif
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in applying weights '
