@@ -111,6 +111,8 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
     }
   });
 
+  team.team_barrier();
+
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, init.ktop+1, tend_level+1), [&] (const int k) {
     // Serialize the sum so it's repeatable
@@ -129,8 +131,6 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
       vtgw(k) = ubt * yv * effgw * ptaper;
     }
   });
-
-  team.team_barrier();
 
   // Release temporary variables from the workspace
   workspace.release(work_1d);

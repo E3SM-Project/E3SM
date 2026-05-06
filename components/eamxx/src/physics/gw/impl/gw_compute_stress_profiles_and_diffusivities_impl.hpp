@@ -16,8 +16,7 @@ namespace gw {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-// void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
-void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities_serial(
+void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
   // Inputs
   const MemberType& team,
   const Workspace& workspace,
@@ -163,8 +162,7 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities_serial(
 // elements.
 template<typename S, typename D>
 KOKKOS_FUNCTION
-// void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities_serial(
-void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
+void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities_serial(
   // Inputs
   const MemberType& team,
   const Workspace& workspace,

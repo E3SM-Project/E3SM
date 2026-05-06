@@ -104,12 +104,13 @@ void Functions<S,D>::gw_ediff(
       tmpi2(k) = dt * bfb_square(C::gravit.value * rho(k)) / (pmid(k) - pmid(k-1));
   });
 
+  team.team_barrier();
+  
   // Decompose the diffusion matrix.
   // Note that [ktop,kbot] are model interfaces (beginning at zero), whereas
   // in vd_lu_decomp they are expected as midpoints.
   vd_lu_decomp(team, pver,
                zero, egwdffi, tmpi2, rdpm, dt, zero, ktop+1, kbot+1, decomp_ca, decomp_cc, decomp_dnom, decomp_ze);
-  team.team_barrier();
   
   workspace.template release_many_contiguous<2>(
     {&egwdffm, &tmpi2});

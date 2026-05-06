@@ -57,9 +57,8 @@ void Functions<S,D>::gw_prof(
   // B-V frequency.
   team.team_barrier();
   Kokkos::single(Kokkos::PerTeam(team), [&] {
-    Real ti_bot = t(pver-1);
-    ti(pver)   = ti_bot;
-    rhoi(pver) = pint(pver) / (C::Rair.value*ti_bot);
+    ti(pver) = t(pver-1);
+    rhoi(pver) = pint(pver) / (C::Rair.value*ti(pver));
     ni(pver) = ni(pver-1);
   });
 
