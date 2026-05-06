@@ -36,10 +36,10 @@ void GWDrag::create_requests() {
 
   m_lat = m_grid->get_geometry_data("lat");
 
-  const auto nondim = Units::nondimensional();
+  const auto nondim = ekat::units::none;
   const auto m2     = pow(m,2);
   const auto s2     = pow(s,2);
-  const auto K2     = pow(K,2);
+  // const auto K2     = pow(K,2);
 
   FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();        // 2D variables
   FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(LEV);    // 3D variables at mid-levels
@@ -61,10 +61,6 @@ void GWDrag::create_requests() {
   add_tracer<Updated>("qc",                   m_grid,       kg/kg,             pack_size);
   add_tracer<Updated>("qi",                   m_grid,       kg/kg,             pack_size);
   add_field <Updated>("horiz_winds",          vector3d_mid, m/s,    grid_name, pack_size);
-
-  // // Output variables
-  // add_field <Updated>("precip_liq_surf_mass", scalar2d,     kg/m2,  grid_name, "ACCUMULATED");
-  // add_field <Updated>("precip_ice_surf_mass", scalar2d,     kg/m2,  grid_name, "ACCUMULATED");
 
   // Diagnostic Outputs
   add_field<Computed>("gw_activity",          scalar2d,     nondim, grid_name);
@@ -117,7 +113,7 @@ void GWDrag::initialize_impl (const RunType) {
 
   // Set property checks for fields in this process
   using Interval = FieldWithinIntervalCheck;
-  using LowerBound = FieldLowerBoundCheck;
+  // using LowerBound = FieldLowerBoundCheck;
   add_postcondition_check<Interval>(get_field_out("T_mid"),       m_grid,100.0,400.0,false);
   add_postcondition_check<Interval>(get_field_out("horiz_winds"), m_grid,-200.0, 200.0,false);
 }
@@ -126,16 +122,17 @@ void GWDrag::initialize_impl (const RunType) {
 void GWDrag::run_impl (const double dt) {
   using PC = scream::physics::Constants<Real>;
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
-  const int nlev_mid_packs = ekat::npack<Pack>(m_nlev);
-  const int nlev_int_packs = ekat::npack<Pack>(m_nlev+1);
+  const int nlev_mid = m_nlev;
+  const int nlev_int = m_nlev+1;
+  const int nlev_mid_packs = ekat::npack<Pack>(nlev_mid);
+  // const int nlev_int_packs = ekat::npack<Pack>(nlev_int);
   const auto team_policy = TPF::get_default_team_policy(m_ncol, nlev_mid_packs);
   const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(m_ncol, nlev_mid_packs);
   // Use one workspace with the biggest size or use two, one for pver, one for pver*2*pgwv?
   WSM wsm( (m_nlev+1)*m_npgw, 9, team_policy);
   //----------------------------------------------------------------------------
-  // get fields
-
-  // variables not updated by GWD
+  // get fields not updated by GWD
+  auto m_lat_v = m_lat.get_view<const Real*>();
   const auto& phis        = get_field_in("phis")          .get_view<const Real*>();
   const auto& p_mid       = get_field_in("p_mid")         .get_view<const Pack**>();
   const auto& p_int       = get_field_in("p_int")         .get_view<const Pack**>();
@@ -143,8 +140,7 @@ void GWDrag::run_impl (const double dt) {
   const auto& omega       = get_field_in("omega")         .get_view<const Pack**>();
   const auto& landfrac    = get_field_in("landfrac")      .get_view<const Real*>();
   const auto& sgh         = get_field_in("sgh")           .get_view<const Real*>();
-
-  // variables updated by GWD
+  // get fields updated by GWD
   const auto& T_mid       = get_field_out("T_mid")        .get_view<Pack**>();
   const auto& qv          = get_field_out("qv")           .get_view<Pack**>();
   const auto& qc          = get_field_out("qc")           .get_view<Pack**>();
@@ -152,15 +148,12 @@ void GWDrag::run_impl (const double dt) {
   const auto& hwinds_fld  = get_field_out("horiz_winds");
   const auto& uwind       = hwinds_fld.get_component(0)   .get_view<Pack**>();
   const auto& vwind       = hwinds_fld.get_component(1)   .get_view<Pack**>();
-
-  auto m_lat_v = m_lat.get_view<const Real*>();
   //----------------------------------------------------------------------------
   // create local temporaries to avoid "Implicit capture" warning
   const auto loc_phis  = phis;
   const auto loc_p_mid = p_mid;
   const auto loc_p_int = p_int;
   const auto loc_p_del = p_del;
-
   auto loc_T_mid       = T_mid;
   auto loc_qv          = qv;
   auto loc_qc          = qc;
@@ -168,7 +161,7 @@ void GWDrag::run_impl (const double dt) {
   auto loc_uwind       = uwind;
   auto loc_vwind       = vwind;
   auto loc_landfrac    = landfrac;
-
+  // local temporaries of buffer variables
   auto loc_z_mid       = m_buffer.z_mid;
   auto loc_z_del       = m_buffer.z_del;
   auto loc_z_int       = m_buffer.z_int;
@@ -200,21 +193,25 @@ void GWDrag::run_impl (const double dt) {
   auto loc_dttke       = m_buffer.dttke;
   //----------------------------------------------------------------------------
   // populate q_combined
-  Kokkos::parallel_for(KT::RangePolicy(0, m_ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int idx) {
-    const int i = idx/nlev_mid_packs;
-    const int k = idx%nlev_mid_packs;
-    loc_q_combined(i, k, 0) = loc_qv(i,k);
-    loc_q_combined(i, k, 1) = loc_qc(i,k);
-    loc_q_combined(i, k, 2) = loc_qi(i,k);
+  Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
+    const Int i = team.league_rank();
+    const auto qv_i = ekat::scalarize(ekat::subview(loc_qv, i));
+    const auto qc_i = ekat::scalarize(ekat::subview(loc_qc, i));
+    const auto qi_i = ekat::scalarize(ekat::subview(loc_qi, i));
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, m_nlev), [&] (const int k) {
+      loc_q_combined(i,k,0) = qv_i(k);
+      loc_q_combined(i,k,1) = qc_i(k);
+      loc_q_combined(i,k,2) = qi_i(k);
+    });
   });
   //----------------------------------------------------------------------------
   // calculate altitude on interfaces (z_int) and mid-points (z_mid)
   Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
-    const auto p_mid_i = ekat::subview(loc_p_mid, i);
-    const auto p_del_i = ekat::subview(loc_p_del, i);
-    const auto T_mid_i = ekat::subview(loc_T_mid, i);
-    const auto qv_i = ekat::subview(loc_qv,    i);
+    const auto p_mid_i = ekat::scalarize(ekat::subview(loc_p_mid, i));
+    const auto p_del_i = ekat::scalarize(ekat::subview(loc_p_del, i));
+    const auto T_mid_i = ekat::scalarize(ekat::subview(loc_T_mid, i));
+    const auto qv_i    = ekat::scalarize(ekat::subview(loc_qv,    i));
     auto z_mid_i = ekat::subview(loc_z_mid, i);
     auto z_del_i = ekat::subview(loc_z_del, i);
     auto z_int_i = ekat::subview(loc_z_int, i);
@@ -228,25 +225,18 @@ void GWDrag::run_impl (const double dt) {
   });
   //----------------------------------------------------------------------------
   // miscellaneous calculations
-  Kokkos::parallel_for(KT::RangePolicy(0, m_ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int idx) {
-    const int i = idx/nlev_mid_packs;
-    const int k = idx%nlev_mid_packs;
-    loc_dse(i,k) = PF::calculate_dse(loc_T_mid(i,k),loc_z_mid(i,k),loc_phis(i));
-    loc_p_del_rcp(i,k) = 1.0/loc_p_del(i,k);
-  });
-  Kokkos::parallel_for(KT::RangePolicy(0, m_ncol*nlev_int_packs), KOKKOS_LAMBDA (const int idx) {
-    const int i = idx/nlev_int_packs;
-    const int k = idx%nlev_int_packs;
-    loc_p_int_log(i,k) = ekat::log(loc_p_int(i,k));
-  });
-  //----------------------------------------------------------------------------
-  // populate q_combined
-  Kokkos::parallel_for(KT::RangePolicy(0, m_ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int idx) {
-    const int i = idx/nlev_mid_packs;
-    const int k = idx%nlev_mid_packs;
-    loc_q_combined(i, k, 0) = loc_qv(i,k);
-    loc_q_combined(i, k, 1) = loc_qc(i,k);
-    loc_q_combined(i, k, 2) = loc_qi(i,k);
+  Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
+    const Int i = team.league_rank();
+    const auto T_mid_i = ekat::scalarize(ekat::subview(loc_T_mid, i));
+    const auto p_del_i = ekat::scalarize(ekat::subview(loc_p_del, i));
+    const auto p_int_i = ekat::scalarize(ekat::subview(loc_p_int, i));
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
+      loc_dse(i,k) = PF::calculate_dse(T_mid_i(k),loc_z_mid(i,k),loc_phis(i));
+      loc_p_del_rcp(i,k) = 1.0/p_del_i(k);
+    });
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_int), [&] (const int k) {
+      loc_p_int_log(i,k) = Kokkos::log(p_int_i(k));
+    });
   });
   //----------------------------------------------------------------------------
   // initialize output tendencies
@@ -255,16 +245,15 @@ void GWDrag::run_impl (const double dt) {
   Kokkos::deep_copy(loc_gw_tend_t,0.0);
   Kokkos::deep_copy(loc_gw_tend_q,0.0);
   // initialize intermediate per-source tendency and diffusivity buffers;
-  // gw_drag_prof may not write all levels (e.g., above the source level), so
-  // uninitialized memory would corrupt the accumulation into gw_tend_*
+  // gw_drag_prof may not write all levels (e.g., above the source level), 
+  // so uninitialized memory would corrupt the accumulation into gw_tend_*
   Kokkos::deep_copy(loc_tau,  0.0);
   Kokkos::deep_copy(loc_utgw, 0.0);
   Kokkos::deep_copy(loc_vtgw, 0.0);
   Kokkos::deep_copy(loc_ttgw, 0.0);
-  // Kokkos::deep_copy(loc_gwut, 0.0);
+  Kokkos::deep_copy(loc_gwut, 0.0);
   Kokkos::deep_copy(loc_qtgw, 0.0);
   Kokkos::deep_copy(loc_kvtt, 0.0);
-
   //----------------------------------------------------------------------------
   // Compute profiles of background state
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
@@ -275,82 +264,17 @@ void GWDrag::run_impl (const double dt) {
     const auto p_mid_s   = ekat::scalarize(ekat::subview(loc_p_mid,  i));
     const auto p_int_s   = ekat::scalarize(ekat::subview(loc_p_int,  i));
     const auto T_int_s   = ekat::scalarize(ekat::subview(loc_T_int,  i));
-    const auto N_mid_s   = ekat::scalarize(ekat::subview(loc_N_mid,  i));
-    const auto N_int_s   = ekat::scalarize(ekat::subview(loc_N_int,  i));
-    const auto rho_int_s = ekat::scalarize(ekat::subview(loc_rho_int,i));
-
     // Slice to exclude padding: mid levels = [0, m_nlev), int levels = [0, m_nlev+1)
-    const auto T_mid_i   = ekat::subview(T_mid_s,   Kokkos::pair<int, int>{0, m_nlev});
-    const auto p_mid_i   = ekat::subview(p_mid_s,   Kokkos::pair<int, int>{0, m_nlev});
-    const auto p_int_i   = ekat::subview(p_int_s,   Kokkos::pair<int, int>{0, m_nlev+1});
-    // const auto T_int_i   = ekat::subview(T_int_s,   Kokkos::pair<int, int>{0, m_nlev}); // note: interface data w/ m_nlev dimension
-    const auto T_int_i   = ekat::subview(T_int_s,   Kokkos::pair<int, int>{0, m_nlev+1});
-    const auto N_mid_i   = ekat::subview(N_mid_s,   Kokkos::pair<int, int>{0, m_nlev});
-    const auto N_int_i   = ekat::subview(N_int_s,   Kokkos::pair<int, int>{0, m_nlev+1});
-    const auto rho_int_i = ekat::subview(rho_int_s, Kokkos::pair<int, int>{0, m_nlev+1});
-
-    GWF::gw_prof(team, m_nlev, PC::Cpair.value,
-                 T_mid_i, p_mid_i, p_int_i,
+    const auto T_mid_i   = Kokkos::subview(T_mid_s,   Kokkos::pair<int, int>{0, m_nlev});
+    const auto p_mid_i   = Kokkos::subview(p_mid_s,   Kokkos::pair<int, int>{0, m_nlev});
+    const auto p_int_i   = Kokkos::subview(p_int_s,   Kokkos::pair<int, int>{0, m_nlev+1});
+    const auto T_int_i   = Kokkos::subview(T_int_s,   Kokkos::pair<int, int>{0, m_nlev+1});
+    const auto N_mid_i   = ekat::subview(loc_N_mid,  i);
+    const auto N_int_i   = ekat::subview(loc_N_int,  i);
+    const auto rho_int_i = ekat::subview(loc_rho_int,i);
+    // compute profiles
+    GWF::gw_prof(team, m_nlev, PC::Cpair.value, T_mid_i, p_mid_i, p_int_i,
                  rho_int_i, T_int_i, N_mid_i, N_int_i);
-
-    // // NaN check after gw_prof
-    // Kokkos::single(Kokkos::PerTeam(team), [&]() {
-    //   int nan_count = 0, inf_count = 0;
-
-    //   // --- inputs ---
-    //   nan_count = 0; inf_count = 0;
-    //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(T_mid_i(k))) nan_count++; if (Kokkos::isinf(T_mid_i(k))) inf_count++; }
-    //   if (nan_count > 0 || inf_count > 0) { printf("[gw_prof  IN ] col %d: T_mid  NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-    //   nan_count = 0; inf_count = 0;
-    //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(p_mid_i(k))) nan_count++; if (Kokkos::isinf(p_mid_i(k))) inf_count++; }
-    //   if (nan_count > 0 || inf_count > 0) { printf("[gw_prof  IN ] col %d: p_mid  NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-    //   nan_count = 0; inf_count = 0;
-    //   for (int k = 0; k <= m_nlev; k++) { if (Kokkos::isnan(p_int_i(k))) nan_count++; if (Kokkos::isinf(p_int_i(k))) inf_count++; }
-    //   if (nan_count > 0 || inf_count > 0) { printf("[gw_prof  IN ] col %d: p_int  NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-    //   // --- outputs ---
-    //   nan_count = 0; inf_count = 0;
-    //   for (int k = 0; k <= m_nlev; k++) { if (Kokkos::isnan(T_int_i(k))) nan_count++; if (Kokkos::isinf(T_int_i(k))) inf_count++; }
-    //   if (nan_count > 0 || inf_count > 0) {
-    //     printf("[gw_prof  OUT] col %d: T_int  NaN=%d Inf=%d\n", i, nan_count, inf_count);
-    //     // for (int k = 0; k <= m_nlev; k++) {
-    //     //   if (Kokkos::isnan(T_int_i(k))) { printf("  T_int[%d]=NaN\n", k); }
-    //     // }
-    //   }
-    //   // Print boundary values to detect OOB corruption
-    //   printf("[gw_prof  DBG] col %d: T_int[%d]=%e T_int[%d]=%e\n",
-    //          i, m_nlev-1, (double)T_int_i(m_nlev-1), m_nlev, (double)T_int_i(m_nlev));
-
-    //   nan_count = 0; inf_count = 0;
-    //   for (int k = 0; k <= m_nlev; k++) { if (Kokkos::isnan(rho_int_i(k))) nan_count++; if (Kokkos::isinf(rho_int_i(k))) inf_count++; }
-    //   if (nan_count > 0 || inf_count > 0) {
-    //     printf("[gw_prof  OUT] col %d: rho_int NaN=%d Inf=%d\n", i, nan_count, inf_count);
-    //     // for (int k = 0; k <= m_nlev; k++) {
-    //     //   if (Kokkos::isnan(rho_int_i(k))) { printf("  rho_int[%d]=NaN\n", k); }
-    //     // }
-    //   }
-
-    //   nan_count = 0; inf_count = 0;
-    //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(N_mid_i(k))) nan_count++; if (Kokkos::isinf(N_mid_i(k))) inf_count++; }
-    //   if (nan_count > 0 || inf_count > 0) {
-    //     printf("[gw_prof  OUT] col %d: N_mid  NaN=%d Inf=%d\n", i, nan_count, inf_count);
-    //     // for (int k = 0; k < m_nlev; k++) {
-    //     //   if (Kokkos::isnan(N_mid_i(k))) { printf("  N_mid[%d]=NaN\n", k); }
-    //     // }
-    //   }
-
-    //   nan_count = 0; inf_count = 0;
-    //   for (int k = 0; k <= m_nlev; k++) { if (Kokkos::isnan(N_int_i(k))) nan_count++; if (Kokkos::isinf(N_int_i(k))) inf_count++; }
-    //   if (nan_count > 0 || inf_count > 0) {
-    //     printf("[gw_prof  OUT] col %d: N_int  NaN=%d Inf=%d\n", i, nan_count, inf_count);
-    //     // for (int k = 0; k <= m_nlev; k++) {
-    //     //   if (Kokkos::isnan(N_int_i(k))) { printf("  N_int[%d]=NaN\n", k); }
-    //     // }
-    //   }
-    // });
-
   });
 
   //----------------------------------------------------------------------------
@@ -421,37 +345,35 @@ void GWDrag::run_impl (const double dt) {
       const auto p_mid_i      = ekat::scalarize(ekat::subview(loc_p_mid, i));
       const auto p_int_i      = ekat::scalarize(ekat::subview(loc_p_int, i));
       const auto p_del_i      = ekat::scalarize(ekat::subview(loc_p_del, i));
-      const auto p_del_rcp_i  = ekat::scalarize(ekat::subview(loc_p_del_rcp, i));
-      const auto p_int_log_i  = ekat::scalarize(ekat::subview(loc_p_int_log, i));
-      const auto z_mid_i      = ekat::scalarize(ekat::subview(loc_z_mid, i));
-      const auto N_mid_i      = ekat::scalarize(ekat::subview(loc_N_mid, i));
-      const auto N_int_i      = ekat::scalarize(ekat::subview(loc_N_int, i));
-      const auto rho_int_i    = ekat::scalarize(ekat::subview(loc_rho_int,i));
-      const auto tau_i        = ekat::scalarize(ekat::subview(loc_tau, i));
-      const auto ubm_i        = ekat::scalarize(ekat::subview(loc_ubm, i));
-      const auto ubi_i        = ekat::scalarize(ekat::subview(loc_ubi, i));
-      const auto c_i          = ekat::scalarize(ekat::subview(loc_c, i));
-      const auto kvtt_i       = ekat::scalarize(ekat::subview(loc_kvtt, i));
-      const auto dse_i        = ekat::scalarize(ekat::subview(loc_dse, i));
-      const auto utgw_i       = ekat::scalarize(ekat::subview(loc_utgw, i));
-      const auto vtgw_i       = ekat::scalarize(ekat::subview(loc_vtgw, i));
-      const auto ttgw_i       = ekat::scalarize(ekat::subview(loc_ttgw, i));
-      const auto qtgw_i       = ekat::scalarize(ekat::subview(loc_qtgw, i));
-      const auto gw_tend_u_i  = ekat::scalarize(ekat::subview(loc_gw_tend_u, i));
-      const auto gw_tend_v_i  = ekat::scalarize(ekat::subview(loc_gw_tend_v, i));
-      const auto gw_tend_t_i  = ekat::scalarize(ekat::subview(loc_gw_tend_t, i));
-      const auto gw_tend_q_i  = ekat::scalarize(ekat::subview(loc_gw_tend_q, i));
-      const auto taucd_i      = ekat::scalarize(ekat::subview(loc_taucd, i));
-      const auto egwdffi_i    = ekat::scalarize(ekat::subview(loc_egwdffi, i));
-      const auto gwut_i       = ekat::scalarize(ekat::subview(loc_gwut, i));
-      const auto dttdf_i      = ekat::scalarize(ekat::subview(loc_dttdf, i));
-      const auto dttke_i      = ekat::scalarize(ekat::subview(loc_dttke, i));
+      const auto p_del_rcp_i  = ekat::subview(loc_p_del_rcp, i);
+      const auto p_int_log_i  = ekat::subview(loc_p_int_log, i);
+      const auto z_mid_i      = ekat::subview(loc_z_mid, i);
+      const auto N_mid_i      = ekat::subview(loc_N_mid, i);
+      const auto N_int_i      = ekat::subview(loc_N_int, i);
+      const auto rho_int_i    = ekat::subview(loc_rho_int,i);
+      const auto tau_i        = ekat::subview(loc_tau, i);
+      const auto ubm_i        = ekat::subview(loc_ubm, i);
+      const auto ubi_i        = ekat::subview(loc_ubi, i);
+      const auto c_i          = ekat::subview(loc_c, i);
+      const auto kvtt_i       = ekat::subview(loc_kvtt, i);
+      const auto dse_i        = ekat::subview(loc_dse, i);
+      const auto utgw_i       = ekat::subview(loc_utgw, i);
+      const auto vtgw_i       = ekat::subview(loc_vtgw, i);
+      const auto ttgw_i       = ekat::subview(loc_ttgw, i);
+      const auto qtgw_i       = ekat::subview(loc_qtgw, i);
+      const auto gw_tend_u_i  = ekat::subview(loc_gw_tend_u, i);
+      const auto gw_tend_v_i  = ekat::subview(loc_gw_tend_v, i);
+      const auto gw_tend_t_i  = ekat::subview(loc_gw_tend_t, i);
+      const auto gw_tend_q_i  = ekat::subview(loc_gw_tend_q, i);
+      const auto taucd_i      = ekat::subview(loc_taucd, i);
+      const auto egwdffi_i    = ekat::subview(loc_egwdffi, i);
+      const auto gwut_i       = ekat::subview(loc_gwut, i);
+      const auto dttdf_i      = ekat::subview(loc_dttdf, i);
+      const auto dttke_i      = ekat::subview(loc_dttke, i);
+      const auto q_2d         = ekat::subview(loc_q_combined, i);
 
-      const auto q_comb_s = ekat::scalarize(ekat::subview(loc_q_combined, i));
-      const auto q_2d = Kokkos::subview(q_comb_s,Kokkos::pair<int,int>{0, m_nlev},Kokkos::ALL);
-
-      Int src_lev; // level index of gravity wave source
-      Int tnd_lev; // lowest level index where tendencies are allowed
+      Int src_lev;  // level index of gravity wave source
+      Int tnd_lev;  // lowest level index where tendencies are allowed
       Real xv;      // zonal unit vector of source wind
       Real yv;      // meridional unit vector of source wind
 
@@ -462,153 +384,11 @@ void GWDrag::run_impl (const double dt) {
                       src_lev, tnd_lev,
                       tau_i, ubm_i, ubi_i, xv, yv, c_i );
 
-      // Kokkos::fence();
-
-      // // NaN check after gw_oro_src
-      // Kokkos::single(Kokkos::PerTeam(team), [&]() {
-      //   int nan_count = 0, inf_count = 0;
-      //   printf("[oro_src  DBG] col %d: src_lev=%d tnd_lev=%d xv=%e yv=%e\n",
-      //          i, (int)src_lev, (int)tnd_lev, (double)xv, (double)yv);
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(uwind_i(k))) nan_count++; if (Kokkos::isinf(uwind_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[oro_src  IN ] col %d: uwind  NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(vwind_i(k))) nan_count++; if (Kokkos::isinf(vwind_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[oro_src  IN ] col %d: vwind  NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(T_mid_i(k))) nan_count++; if (Kokkos::isinf(T_mid_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[oro_src  IN ] col %d: T_mid  NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(N_mid_i(k))) nan_count++; if (Kokkos::isinf(N_mid_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[oro_src  IN ] col %d: N_mid  NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   // tau: shape (m_npgw, lev) - interface levels
-      //   nan_count = 0; inf_count = 0;
-      //   for (int pg = 0; pg < m_npgw; pg++) {
-      //     for (int k = 0; k <= m_nlev; k++) { if (Kokkos::isnan(tau_i(pg,k))) nan_count++; if (Kokkos::isinf(tau_i(pg,k))) inf_count++; }
-      //   }
-      //   if (nan_count > 0 || inf_count > 0) {
-      //     printf("[oro_src  OUT] col %d: tau    NaN=%d Inf=%d\n", i, nan_count, inf_count);
-      //     for (int pg = 0; pg < m_npgw; pg++) {
-      //       for (int k = 0; k <= m_nlev; k++) {
-      //         if (Kokkos::isnan(tau_i(pg,k))) { printf("  tau[pg=%d,lev=%d]=NaN\n", pg, k); }
-      //       }
-      //     }
-      //   }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(ubm_i(k))) nan_count++; if (Kokkos::isinf(ubm_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) {
-      //     printf("[oro_src  OUT] col %d: ubm    NaN=%d Inf=%d\n", i, nan_count, inf_count);
-      //     // for (int k = 0; k < m_nlev; k++) {
-      //     //   if (Kokkos::isnan(ubm_i(k))) { printf("  ubm[%d]=NaN\n", k); }
-      //     // }
-      //   }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k <= m_nlev; k++) { if (Kokkos::isnan(ubi_i(k))) nan_count++; if (Kokkos::isinf(ubi_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) {
-      //     printf("[oro_src  OUT] col %d: ubi    NaN=%d Inf=%d\n", i, nan_count, inf_count);
-      //     // for (int k = 0; k <= m_nlev; k++) {
-      //     //   if (Kokkos::isnan(ubi_i(k))) { printf("  ubi[%d]=NaN\n", k); }
-      //     // }
-      //   }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k <= m_nlev; k++) { if (Kokkos::isnan(T_int_i(k))) nan_count++; if (Kokkos::isinf(T_int_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) {
-      //     printf("[oro_src  IN ] col %d: T_int  NaN=%d Inf=%d\n", i, nan_count, inf_count);
-      //     // for (int k = 0; k <= m_nlev; k++) {
-      //     //   if (Kokkos::isnan(T_int_i(k))) { printf("  T_int[%d]=NaN\n", k); }
-      //     // }
-      //   }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k <= m_nlev; k++) { if (Kokkos::isnan(p_int_i(k))) nan_count++; if (Kokkos::isinf(p_int_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[oro_src  IN ] col %d: p_int  NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(p_del_i(k))) nan_count++; if (Kokkos::isinf(p_del_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[oro_src  IN ] col %d: p_del  NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k <= m_nlev; k++) { if (Kokkos::isnan(N_int_i(k))) nan_count++; if (Kokkos::isinf(N_int_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[oro_src  IN ] col %d: N_int  NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k <= m_nlev; k++) { if (Kokkos::isnan(rho_int_i(k))) nan_count++; if (Kokkos::isinf(rho_int_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[oro_src  IN ] col %d: rho_int NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      // });
-
       // Solve for the drag profile with orographic sources
       Int max_lev = tnd_lev; // ???
 
-      // // NaN check: gw_drag_prof inputs
-      // Kokkos::single(Kokkos::PerTeam(team), [&]() {
-      //   int nan_count = 0, inf_count = 0;
-      //   printf("[drag_prof IN ] col %d: src_lev=%d max_lev=%d tnd_lev=%d\n",
-      //          i, (int)src_lev, (int)max_lev, (int)tnd_lev);
+      for (int k = 0; k < m_nlev  ; k++) { printf("[run_impl before gw_drag_prof] k=%d N_mid_i=%e\n", k, N_mid_i(k)); }
 
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(T_mid_i(k))) nan_count++; if (Kokkos::isinf(T_mid_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[drag_prof IN ] col %d: T_mid  NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k <= m_nlev; k++) { if (Kokkos::isnan(T_int_i(k))) nan_count++; if (Kokkos::isinf(T_int_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) {
-      //     printf("[drag_prof IN ] col %d: T_int  NaN=%d Inf=%d\n", i, nan_count, inf_count);
-      //     // for (int k = 0; k <= m_nlev; k++) {
-      //     //   if (Kokkos::isnan(T_int_i(k))) { printf("  T_int[%d]=NaN\n", k); }
-      //     // }
-      //   }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(N_mid_i(k))) nan_count++; if (Kokkos::isinf(N_mid_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) {
-      //     printf("[drag_prof IN ] col %d: N_mid  NaN=%d Inf=%d\n", i, nan_count, inf_count);
-      //     // for (int k = 0; k < m_nlev; k++) {
-      //     //   if (Kokkos::isnan(N_mid_i(k))) { printf("  N_mid[%d]=NaN\n", k); }
-      //     // }
-      //   }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k <= m_nlev; k++) { if (Kokkos::isnan(N_int_i(k))) nan_count++; if (Kokkos::isinf(N_int_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[drag_prof IN ] col %d: N_int  NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k <= m_nlev; k++) { if (Kokkos::isnan(rho_int_i(k))) nan_count++; if (Kokkos::isinf(rho_int_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[drag_prof IN ] col %d: rho_int NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k <= m_nlev; k++) { if (Kokkos::isnan(ubi_i(k))) nan_count++; if (Kokkos::isinf(ubi_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[drag_prof IN ] col %d: ubi    NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(ubm_i(k))) nan_count++; if (Kokkos::isinf(ubm_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[drag_prof IN ] col %d: ubm    NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   // tau: shape (m_npgw, lev)
-      //   nan_count = 0; inf_count = 0;
-      //   for (int pg = 0; pg < m_npgw; pg++) {
-      //     for (int k = 0; k <= m_nlev; k++) { if (Kokkos::isnan(tau_i(pg,k))) nan_count++; if (Kokkos::isinf(tau_i(pg,k))) inf_count++; }
-      //   }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[drag_prof IN ] col %d: tau    NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(dse_i(k))) nan_count++; if (Kokkos::isinf(dse_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[drag_prof IN ] col %d: dse    NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-      // });
-
-      // std::cout << "WHDEBUG 1" << std::endl;
-      // std::cout.flush();
-      // Kokkos::fence();
-      // std::cout << "WHDEBUG 2" << std::endl;
-      // std::cout.flush();
       GWF::gw_drag_prof(team, wsm.get_workspace(team), GWF::s_common_init,
                         m_nlev, GWF::s_common_init.pgwv, src_lev, max_lev, tnd_lev,
                         GWF::s_common_init.do_taper, dt, m_lat_v(i),
@@ -619,94 +399,6 @@ void GWDrag::run_impl (const double dt) {
                         c_i, kvtt_i, q_2d, dse_i, tau_i,
                         utgw_i, vtgw_i, ttgw_i, qtgw_i,
                         taucd_i, egwdffi_i, gwut_i, dttdf_i, dttke_i);
-      // Kokkos::fence();
-      // std::cout << "WHDEBUG 3" << std::endl;
-      // std::cout.flush();
-
-      // // NaN check: gw_drag_prof outputs
-      // Kokkos::single(Kokkos::PerTeam(team), [&]() {
-      //   int nan_count = 0, inf_count = 0;
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(utgw_i(k))) nan_count++; if (Kokkos::isinf(utgw_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) {
-      //     printf("[drag_prof OUT] col %d: utgw   NaN=%d Inf=%d\n", i, nan_count, inf_count);
-      //     // for (int k = 0; k < m_nlev; k++) {
-      //     //   if (Kokkos::isnan(utgw_i(k))) { printf("  utgw[%d]=NaN\n", k); }
-      //     // }
-      //   }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(vtgw_i(k))) nan_count++; if (Kokkos::isinf(vtgw_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) {
-      //     printf("[drag_prof OUT] col %d: vtgw   NaN=%d Inf=%d\n", i, nan_count, inf_count);
-      //     // for (int k = 0; k < m_nlev; k++) {
-      //     //   if (Kokkos::isnan(vtgw_i(k))) { printf("  vtgw[%d]=NaN\n", k); }
-      //     // }
-      //   }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(ttgw_i(k))) nan_count++; if (Kokkos::isinf(ttgw_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) {
-      //     printf("[drag_prof OUT] col %d: ttgw   NaN=%d Inf=%d\n", i, nan_count, inf_count);
-      //     // for (int k = 0; k < m_nlev; k++) {
-      //     //   if (Kokkos::isnan(ttgw_i(k))) { printf("  ttgw[%d]=NaN\n", k); }
-      //     // }
-      //   }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(dttdf_i(k))) nan_count++; if (Kokkos::isinf(dttdf_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) {
-      //     printf("[drag_prof OUT] col %d: dttdf  NaN=%d Inf=%d\n", i, nan_count, inf_count);
-      //     // for (int k = 0; k < m_nlev; k++) {
-      //     //   if (Kokkos::isnan(dttdf_i(k))) { printf("  dttdf[%d]=NaN\n", k); }
-      //     // }
-      //   }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(dttke_i(k))) nan_count++; if (Kokkos::isinf(dttke_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[drag_prof OUT] col %d: dttke  NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(kvtt_i(k))) nan_count++; if (Kokkos::isinf(kvtt_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[drag_prof OUT] col %d: kvtt   NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(egwdffi_i(k))) nan_count++; if (Kokkos::isinf(egwdffi_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[drag_prof OUT] col %d: egwdffi NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   // taucd: shape (lev, 4) - interface levels
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k <= m_nlev; k++) {
-      //     for (int m = 0; m < 4; m++) { if (Kokkos::isnan(taucd_i(k,m))) nan_count++; if (Kokkos::isinf(taucd_i(k,m))) inf_count++; }
-      //   }
-      //   if (nan_count > 0 || inf_count > 0) {
-      //     printf("[drag_prof OUT] col %d: taucd  NaN=%d Inf=%d\n", i, nan_count, inf_count);
-      //     // for (int k = 0; k <= m_nlev; k++) {
-      //     //   for (int m = 0; m < 4; m++) {
-      //     //     if (Kokkos::isnan(taucd_i(k,m))) { printf("  taucd[lev=%d,m=%d]=NaN\n", k, m); }
-      //     //   }
-      //     // }
-      //   }
-
-      //   // tau after drag_prof
-      //   nan_count = 0; inf_count = 0;
-      //   for (int pg = 0; pg < m_npgw; pg++) {
-      //     for (int k = 0; k <= m_nlev; k++) { if (Kokkos::isnan(tau_i(pg,k))) nan_count++; if (Kokkos::isinf(tau_i(pg,k))) inf_count++; }
-      //   }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[drag_prof OUT] col %d: tau    NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   // N_mid after drag_prof (should be unchanged but check for corruption)
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(N_mid_i(k))) nan_count++; if (Kokkos::isinf(N_mid_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[drag_prof OUT] col %d: N_mid  NaN=%d Inf=%d (CORRUPTED)\n", i, nan_count, inf_count); }
-
-      //   // T_mid after drag_prof (should be unchanged)
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(T_mid_i(k))) nan_count++; if (Kokkos::isinf(T_mid_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[drag_prof OUT] col %d: T_mid  NaN=%d Inf=%d (CORRUPTED)\n", i, nan_count, inf_count); }
-
-      // });
 
       // add tendencies to aggregate output tendencies
       team.team_barrier();
@@ -719,38 +411,19 @@ void GWDrag::run_impl (const double dt) {
         gw_tend_q_i(k,2) += qtgw_i(k,2) * landfrac_i;
       });
 
-      // // NaN check after tendency accumulation
-      // team.team_barrier();
-      // Kokkos::single(Kokkos::PerTeam(team), [&]() {
-      //   int nan_count = 0, inf_count = 0;
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(gw_tend_u_i(k))) nan_count++; if (Kokkos::isinf(gw_tend_u_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[tend_accum  ] col %d: gw_tend_u NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(gw_tend_v_i(k))) nan_count++; if (Kokkos::isinf(gw_tend_v_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[tend_accum  ] col %d: gw_tend_v NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      //   nan_count = 0; inf_count = 0;
-      //   for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(gw_tend_t_i(k))) nan_count++; if (Kokkos::isinf(gw_tend_t_i(k))) inf_count++; }
-      //   if (nan_count > 0 || inf_count > 0) { printf("[tend_accum  ] col %d: gw_tend_t NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-      // });
-
     });
 
     //----------------------------------------------------------------------------
     // GW energy fixer
     Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
       const Int i = team.league_rank();
-
-      const auto p_del_i = ekat::scalarize(ekat::subview(loc_p_del,      i));
-      const auto p_int_i = ekat::scalarize(ekat::subview(loc_p_int,      i));
       const auto uwind_i = ekat::scalarize(ekat::subview(loc_uwind,      i));
       const auto vwind_i = ekat::scalarize(ekat::subview(loc_vwind,      i));
-      const auto gw_tend_u_i = ekat::scalarize(ekat::subview(loc_gw_tend_u, i));
-      const auto gw_tend_v_i = ekat::scalarize(ekat::subview(loc_gw_tend_v, i));
-      const auto gw_tend_t_i = ekat::scalarize(ekat::subview(loc_gw_tend_t, i));
+      const auto p_int_i = ekat::scalarize(ekat::subview(loc_p_int,      i));
+      const auto p_del_i = ekat::scalarize(ekat::subview(loc_p_del,      i));
+      const auto gw_tend_u_i = ekat::subview(loc_gw_tend_u, i);
+      const auto gw_tend_v_i = ekat::subview(loc_gw_tend_v, i);
+      const auto gw_tend_t_i = ekat::subview(loc_gw_tend_t, i);
 
       Real dE = 0;
       Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, 0, m_nlev), [&] (const int k, Real& lsum) {
@@ -786,103 +459,22 @@ void GWDrag::run_impl (const double dt) {
   // end do
 
   //----------------------------------------------------------------------------
-  // NaN check before applying tendencies to prognostic fields
-  Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
-    const Int i = team.league_rank();
-    const auto uwind_s = ekat::scalarize(ekat::subview(loc_uwind, i));
-    const auto vwind_s = ekat::scalarize(ekat::subview(loc_vwind, i));
-    const auto T_mid_s = ekat::scalarize(ekat::subview(loc_T_mid, i));
-    const auto tend_u_s = ekat::scalarize(ekat::subview(loc_gw_tend_u, i));
-    const auto tend_v_s = ekat::scalarize(ekat::subview(loc_gw_tend_v, i));
-    const auto tend_t_s = ekat::scalarize(ekat::subview(loc_gw_tend_t, i));
-    Kokkos::single(Kokkos::PerTeam(team), [&]() {
-      int nan_count = 0, inf_count = 0;
-
-      nan_count = 0; inf_count = 0;
-      for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(uwind_s(k))) nan_count++; if (Kokkos::isinf(uwind_s(k))) inf_count++; }
-      if (nan_count > 0 || inf_count > 0) {
-        printf("[pre_update  ] col %d: uwind  NaN=%d Inf=%d\n", i, nan_count, inf_count);
-        // for (int k = 0; k < m_nlev; k++) {
-        //   if (Kokkos::isnan(uwind_s(k))) { printf("  uwind[%d]=NaN\n", k); }
-        // }
-      }
-
-      nan_count = 0; inf_count = 0;
-      for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(vwind_s(k))) nan_count++; if (Kokkos::isinf(vwind_s(k))) inf_count++; }
-      if (nan_count > 0 || inf_count > 0) {
-        printf("[pre_update  ] col %d: vwind  NaN=%d Inf=%d\n", i, nan_count, inf_count);
-        // for (int k = 0; k < m_nlev; k++) {
-        //   if (Kokkos::isnan(vwind_s(k))) { printf("  vwind[%d]=NaN\n", k); }
-        // }
-      }
-
-      nan_count = 0; inf_count = 0;
-      for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(T_mid_s(k))) nan_count++; if (Kokkos::isinf(T_mid_s(k))) inf_count++; }
-      if (nan_count > 0 || inf_count > 0) { printf("[pre_update  ] col %d: T_mid  NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      nan_count = 0; inf_count = 0;
-      for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(tend_u_s(k))) nan_count++; if (Kokkos::isinf(tend_u_s(k))) inf_count++; }
-      if (nan_count > 0 || inf_count > 0) { printf("[pre_update  ] col %d: tend_u NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      nan_count = 0; inf_count = 0;
-      for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(tend_v_s(k))) nan_count++; if (Kokkos::isinf(tend_v_s(k))) inf_count++; }
-      if (nan_count > 0 || inf_count > 0) { printf("[pre_update  ] col %d: tend_v NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-
-      nan_count = 0; inf_count = 0;
-      for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(tend_t_s(k))) nan_count++; if (Kokkos::isinf(tend_t_s(k))) inf_count++; }
-      if (nan_count > 0 || inf_count > 0) { printf("[pre_update  ] col %d: tend_t NaN=%d Inf=%d\n", i, nan_count, inf_count); }
-    });
-  });
-
-  //----------------------------------------------------------------------------
   // update prognostic fields
-  Kokkos::parallel_for(KT::RangePolicy(0, m_ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int idx) {
-    const int i = idx/nlev_mid_packs;
-    const int k = idx%nlev_mid_packs;
-    T_mid(i,k) += loc_gw_tend_t(i,k) / PC::Cpair.value * dt;
-    uwind(i,k) += loc_gw_tend_u(i,k) * dt;
-    vwind(i,k) += loc_gw_tend_v(i,k) * dt;
-    qv(i,k) += loc_gw_tend_q(i,k,0) * dt;
-    qc(i,k) += loc_gw_tend_q(i,k,1) * dt;
-    qi(i,k) += loc_gw_tend_q(i,k,2) * dt;
-  });
-
-  //----------------------------------------------------------------------------
-  // NaN check after applying tendencies to prognostic fields
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
     const Int i = team.league_rank();
-    const auto uwind_s = ekat::scalarize(ekat::subview(uwind, i));
-    const auto vwind_s = ekat::scalarize(ekat::subview(vwind, i));
-    const auto T_mid_s = ekat::scalarize(ekat::subview(T_mid, i));
-    Kokkos::single(Kokkos::PerTeam(team), [&]() {
-      int nan_count = 0, inf_count = 0;
-
-      nan_count = 0; inf_count = 0;
-      for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(uwind_s(k))) nan_count++; if (Kokkos::isinf(uwind_s(k))) inf_count++; }
-      if (nan_count > 0 || inf_count > 0) {
-        printf("[post_update ] col %d: uwind  NaN=%d Inf=%d\n", i, nan_count, inf_count);
-        // for (int k = 0; k < m_nlev; k++) {
-        //   if (Kokkos::isnan(uwind_s(k))) { printf("  uwind[%d]=NaN\n", k); }
-        // }
-      }
-
-      nan_count = 0; inf_count = 0;
-      for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(vwind_s(k))) nan_count++; if (Kokkos::isinf(vwind_s(k))) inf_count++; }
-      if (nan_count > 0 || inf_count > 0) {
-        printf("[post_update ] col %d: vwind  NaN=%d Inf=%d\n", i, nan_count, inf_count);
-        // for (int k = 0; k < m_nlev; k++) {
-        //   if (Kokkos::isnan(vwind_s(k))) { printf("  vwind[%d]=NaN\n", k); }
-        // }
-      }
-
-      nan_count = 0; inf_count = 0;
-      for (int k = 0; k < m_nlev; k++) { if (Kokkos::isnan(T_mid_s(k))) nan_count++; if (Kokkos::isinf(T_mid_s(k))) inf_count++; }
-      if (nan_count > 0 || inf_count > 0) {
-        printf("[post_update ] col %d: T_mid  NaN=%d Inf=%d\n", i, nan_count, inf_count);
-        // for (int k = 0; k < m_nlev; k++) {
-        //   if (Kokkos::isnan(T_mid_s(k))) { printf("  T_mid[%d]=NaN\n", k); }
-        // }
-      }
+    const auto uwind_i = ekat::scalarize(ekat::subview(loc_uwind, i));
+    const auto vwind_i = ekat::scalarize(ekat::subview(loc_vwind, i));
+    const auto T_mid_i = ekat::scalarize(ekat::subview(loc_T_mid, i));
+    const auto qv_i    = ekat::scalarize(ekat::subview(loc_qv, i));
+    const auto qc_i    = ekat::scalarize(ekat::subview(loc_qc, i));
+    const auto qi_i    = ekat::scalarize(ekat::subview(loc_qi, i));
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, m_nlev), [&] (const int k) {
+      uwind_i(k) += loc_gw_tend_u(i,k) * dt;
+      vwind_i(k) += loc_gw_tend_v(i,k) * dt;
+      T_mid_i(k) += loc_gw_tend_t(i,k) / PC::Cpair.value * dt;
+      qv_i(k)    += loc_gw_tend_q(i,k,0) * dt;
+      qc_i(k)    += loc_gw_tend_q(i,k,1) * dt;
+      qi_i(k)    += loc_gw_tend_q(i,k,2) * dt;
     });
   });
 
@@ -890,20 +482,20 @@ void GWDrag::run_impl (const double dt) {
 /*------------------------------------------------------------------------------------------------*/
 size_t GWDrag::requested_buffer_size_in_bytes() const
 {
-  const int nlev_mid_packs = ekat::npack<Pack>(m_nlev);
-  const int nlev_int_packs = ekat::npack<Pack>(m_nlev+1);
+  const int nlev_mid = m_nlev;
+  const int nlev_int = m_nlev+1;
   constexpr int pcnst = Buffer::pcnst;
   size_t gw_buffer_size = 0;
 
-  gw_buffer_size += Buffer::num_3d_int_views*m_ncol*m_npgw*nlev_int_packs*sizeof(Pack);
-  gw_buffer_size += Buffer::num_3d_pcnst_views*m_ncol*nlev_mid_packs*pcnst*sizeof(Pack);
-  gw_buffer_size += Buffer::num_3d_cd_int_views*m_ncol*nlev_int_packs*4*sizeof(Pack);
-  gw_buffer_size += Buffer::num_3d_pgw_views*m_ncol*nlev_mid_packs*m_npgw*sizeof(Pack);
-  gw_buffer_size += Buffer::num_2d_mid_views*m_ncol*nlev_mid_packs*sizeof(Pack);
-  gw_buffer_size += Buffer::num_2d_int_views*m_ncol*nlev_int_packs*sizeof(Pack);
-  gw_buffer_size += Buffer::num_2d_pgw_views*m_ncol*m_npgw*sizeof(Pack);
+  gw_buffer_size += Buffer::num_3d_int_gw_views * m_ncol * nlev_int * m_npgw;
+  gw_buffer_size += Buffer::num_3d_int_cd_views * m_ncol * nlev_int * 4;
+  gw_buffer_size += Buffer::num_3d_mid_pc_views * m_ncol * nlev_mid * pcnst;
+  gw_buffer_size += Buffer::num_3d_mid_gw_views * m_ncol * nlev_mid * m_npgw;
+  gw_buffer_size += Buffer::num_2d_mid_views    * m_ncol * nlev_mid;
+  gw_buffer_size += Buffer::num_2d_int_views    * m_ncol * nlev_int;
+  gw_buffer_size += Buffer::num_2d_pgw_views    * m_ncol * m_npgw;
 
-  return gw_buffer_size;
+  return gw_buffer_size*sizeof(Real);
 }
 /*------------------------------------------------------------------------------------------------*/
 void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
@@ -911,42 +503,42 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
   auto buffer_chk = ( buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes() );
   EKAT_REQUIRE_MSG(buffer_chk,"Error! Buffers size not sufficient.\n");
   //----------------------------------------------------------------------------
-  Pack* mem = reinterpret_cast<Pack*>(buffer_manager.get_memory());
-  const int nlev_mid_packs = ekat::npack<Pack>(m_nlev);
-  const int nlev_int_packs = ekat::npack<Pack>(m_nlev+1);
+  auto mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
+  const int nlev_mid = m_nlev;
+  const int nlev_int = m_nlev+1;
   constexpr int pcnst = Buffer::pcnst;
   //----------------------------------------------------------------------------
-  uview_3d* buffer_3d_int_view_ptrs[Buffer::num_3d_int_views] = {
+  uview_3d* buffer_3d_int_view_ptrs[Buffer::num_3d_int_gw_views] = {
     &m_buffer.tau
   };
-  for (int i=0; i<Buffer::num_3d_int_views; ++i) {
-    *buffer_3d_int_view_ptrs[i] = uview_3d(mem, m_ncol, m_npgw, nlev_int_packs);
+  for (int i=0; i<Buffer::num_3d_int_gw_views; ++i) {
+    *buffer_3d_int_view_ptrs[i] = uview_3d(mem, m_ncol, m_npgw, nlev_int);
     mem += buffer_3d_int_view_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
-  uview_3d* buffer_3d_pcnst_view_ptrs[Buffer::num_3d_pcnst_views] = {
+  uview_3d* buffer_3d_cd_int_view_ptrs[Buffer::num_3d_int_cd_views] = {
+    &m_buffer.taucd
+  };
+  for (int i=0; i<Buffer::num_3d_int_cd_views; ++i) {
+    *buffer_3d_cd_int_view_ptrs[i] = uview_3d(mem, m_ncol, nlev_int, 4);
+    mem += buffer_3d_cd_int_view_ptrs[i]->size();
+  }
+  //----------------------------------------------------------------------------
+  uview_3d* buffer_3d_pcnst_view_ptrs[Buffer::num_3d_mid_pc_views] = {
     &m_buffer.q_combined,
     &m_buffer.qtgw,
     &m_buffer.gw_tend_q
   };
-  for (int i=0; i<Buffer::num_3d_pcnst_views; ++i) {
-    *buffer_3d_pcnst_view_ptrs[i] = uview_3d(mem, m_ncol, nlev_mid_packs, pcnst);
+  for (int i=0; i<Buffer::num_3d_mid_pc_views; ++i) {
+    *buffer_3d_pcnst_view_ptrs[i] = uview_3d(mem, m_ncol, nlev_mid, pcnst);
     mem += buffer_3d_pcnst_view_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
-  uview_3d* buffer_3d_cd_int_view_ptrs[Buffer::num_3d_cd_int_views] = {
-    &m_buffer.taucd
-  };
-  for (int i=0; i<Buffer::num_3d_cd_int_views; ++i) {
-    *buffer_3d_cd_int_view_ptrs[i] = uview_3d(mem, m_ncol, nlev_int_packs, 4);
-    mem += buffer_3d_cd_int_view_ptrs[i]->size();
-  }
-  //----------------------------------------------------------------------------
-  uview_3d* buffer_3d_pgw_view_ptrs[Buffer::num_3d_pgw_views] = {
+  uview_3d* buffer_3d_pgw_view_ptrs[Buffer::num_3d_mid_gw_views] = {
     &m_buffer.gwut
   };
-  for (int i=0; i<Buffer::num_3d_pgw_views; ++i) {
-    *buffer_3d_pgw_view_ptrs[i] = uview_3d(mem, m_ncol, nlev_mid_packs, m_npgw);
+  for (int i=0; i<Buffer::num_3d_mid_gw_views; ++i) {
+    *buffer_3d_pgw_view_ptrs[i] = uview_3d(mem, m_ncol, nlev_mid, m_npgw);
     mem += buffer_3d_pgw_view_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
@@ -967,7 +559,7 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
     &m_buffer.p_del_rcp
   };
   for (int i=0; i<Buffer::num_2d_mid_views; ++i) {
-    *buffer_2d_mid_view_ptrs[i] = uview_2d(mem, m_ncol, nlev_mid_packs);
+    *buffer_2d_mid_view_ptrs[i] = uview_2d(mem, m_ncol, nlev_mid);
     mem += buffer_2d_mid_view_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
@@ -982,7 +574,7 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
     &m_buffer.p_int_log
   };
   for (int i=0; i<Buffer::num_2d_int_views; ++i) {
-    *buffer_2d_int_view_ptrs[i] = uview_2d(mem, m_ncol, nlev_int_packs);
+    *buffer_2d_int_view_ptrs[i] = uview_2d(mem, m_ncol, nlev_int);
     mem += buffer_2d_int_view_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
@@ -994,7 +586,8 @@ void GWDrag::init_buffers(const ATMBufferManager &buffer_manager)
     mem += buffer_2d_pgw_view_ptrs[i]->size();
   }
   //----------------------------------------------------------------------------
-  size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
+  // size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
+  size_t used_mem = (mem - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
                    "Error! Used memory != requested memory for GWDrag.");
 }

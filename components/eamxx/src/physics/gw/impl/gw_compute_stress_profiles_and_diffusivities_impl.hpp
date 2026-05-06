@@ -117,12 +117,6 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities_serial(
 
     team.team_barrier();
 
-    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, -pgwv, pgwv+1), [&] (const int l) {
-      const int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-      if (Kokkos::isnan(tau(pl_idx,k  ))) { printf("[gwd_stress 0] tau k+0 NaN @ k=%d  pl_idx=%d\n", k, pl_idx); }
-      if (Kokkos::isinf(tau(pl_idx,k  ))) { printf("[gwd_stress 0] tau k+0 Inf @ k=%d  pl_idx=%d\n", k, pl_idx); }
-    });
-
     // Compute stress for each wave. The stress at this level is the min of
     // the saturation stress and the stress at the level below reduced by
     // damping. The sign of the stress must be the same as at the level below.
@@ -148,10 +142,6 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities_serial(
         }
         if (taudmp <= GWC::taumin) taudmp = 0;
         tau(pl_idx, k) = ekat::impl::min(taudmp, tausat(k, pl_idx));
-
-        if (Kokkos::isnan(tau(pl_idx,k  ))) { printf("[gwd_stress 1] tau NaN @ k=%d  pl_idx=%d  taudmp=%f tausat=%f wrk=%f\n", k, pl_idx, taudmp, tausat(k,pl_idx), wrk); }
-        if (Kokkos::isinf(tau(pl_idx,k  ))) { printf("[gwd_stress 1] tau Inf @ k=%d  pl_idx=%d  taudmp=%f tausat=%f wrk=%f\n", k, pl_idx, taudmp, tausat(k,pl_idx), wrk); }
-
       });
     }
     else {
@@ -161,13 +151,6 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities_serial(
         tau(pl_idx, k) = ekat::impl::min(tau(pl_idx, k+1), tausat(k, pl_idx));
       });
     }
-
-    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, -pgwv, pgwv+1), [&] (const int l) {
-      const int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-      if (Kokkos::isnan(tau(pl_idx,k  ))) { printf("[gwd_stress 2] tau k+0 NaN @ k=%d  pl_idx=%d\n", k, pl_idx); }
-      if (Kokkos::isinf(tau(pl_idx,k  ))) { printf("[gwd_stress 2] tau k+0 Inf @ k=%d  pl_idx=%d\n", k, pl_idx); }
-    });
-
     team.team_barrier();
   }
 
@@ -295,9 +278,6 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
 
         if (taudmp <= GWC::taumin) taudmp = 0;
         tau(pl_idx, k) = ekat::impl::min(taudmp, tausat(pl_idx));
-
-        if (Kokkos::isnan(tau(pl_idx,k))) { printf("[gwd_stress 1] tau NaN @ k=%d  pl_idx=%d  taudmp=%f tau(k+1)=%f wrk=%f\n", k, pl_idx, taudmp, tau(pl_idx, k+1), wrk); }
-        if (Kokkos::isinf(tau(pl_idx,k))) { printf("[gwd_stress 1] tau Inf @ k=%d  pl_idx=%d  taudmp=%f tau(k+1)=%f wrk=%f\n", k, pl_idx, taudmp, tau(pl_idx, k+1), wrk); }
 
       });
     } else {

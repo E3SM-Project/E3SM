@@ -33,8 +33,8 @@ class GWDrag : public AtmosphereProcess
   using Pack     = typename GWF::Pack;
   using IntPack  = typename GWF::IntPack;
 
-  using uview_2d = GWF::uview_2d<Pack>;
-  using uview_3d = GWF::uview_3d<Pack>;
+  using uview_2d = GWF::uview_2d<Real>;
+  using uview_3d = GWF::uview_3d<Real>;
 
   public:
     // Constructors
@@ -52,10 +52,10 @@ class GWDrag : public AtmosphereProcess
     // Structure for storing local variables initialized using the ATMBufferManager
     struct Buffer {
       static constexpr int pcnst               = 3; // number of constituents (qv, qc, qi)
-      static constexpr int num_3d_int_views    = 1; // tau uses interface levels (pver+1)
-      static constexpr int num_3d_pcnst_views  = 3;
-      static constexpr int num_3d_cd_int_views = 1; // taucd uses interface levels (pver+1)
-      static constexpr int num_3d_pgw_views    = 1;
+      static constexpr int num_3d_int_gw_views = 1; // tau uses interface levels (pver+1)
+      static constexpr int num_3d_int_cd_views = 1; // taucd uses interface levels (pver+1)
+      static constexpr int num_3d_mid_pc_views = 3;
+      static constexpr int num_3d_mid_gw_views = 1;
       static constexpr int num_2d_mid_views    = 14;
       static constexpr int num_2d_int_views    = 8;
       static constexpr int num_2d_pgw_views    = 1;
