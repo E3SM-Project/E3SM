@@ -11,7 +11,6 @@
 #include "Pacer.h"
 #include "TimeMgr.h"
 #include "TimeStepper.h"
-#include <cstdio>
 #include <mpi.h>
 
 extern "C" {
@@ -69,4 +68,50 @@ void omega_ocn_init(
    int ErrAll;
 }
 
+int omega_get_ncells_local() {
+   OMEGA::Decomp *OcnDecomp = OMEGA::Decomp::getDefault();
+
+   return static_cast<int>(OcnDecomp->NCellsOwned);
+}
+
+int omega_get_ncells_global() {
+   OMEGA::Decomp *OcnDecomp = OMEGA::Decomp::getDefault();
+
+   return static_cast<int>(OcnDecomp->NCellsGlobal);
+}
+
+void omega_get_index_to_cell_id(int *CellID) {
+   OMEGA::Decomp *OcnDecomp = OMEGA::Decomp::getDefault();
+
+   // Sync device array back to host mirror
+   OMEGA::deepCopy(OcnDecomp->CellIDH, OcnDecomp->CellID);
+
+   for (int Cell = 0; Cell < OcnDecomp->NCellsOwned; ++Cell) {
+      CellID[Cell] = static_cast<int>(OcnDecomp->CellIDH[Cell]);
+   }
+}
+
+void omega_get_lonlat_cell(double *LonCell, double *LatCell) {
+   OMEGA::HorzMesh *HMesh = OMEGA::HorzMesh::getDefault();
+
+   for (int Cell = 0; Cell < HMesh->NCellsOwned; ++Cell) {
+      LonCell[Cell] =
+          static_cast<double>(HMesh->LonCellH[Cell] * OMEGA::Rad2Deg);
+      LatCell[Cell] =
+          static_cast<double>(HMesh->LatCellH[Cell] * OMEGA::Rad2Deg);
+   }
+}
+
+void omega_get_area_cell(double *AreaCell) {
+   OMEGA::HorzMesh *HMesh = OMEGA::HorzMesh::getDefault();
+
+   // Sync device array back to host mirror
+   OMEGA::deepCopy(HMesh->AreaCellH, HMesh->AreaCell);
+
+   for (int Cell = 0; Cell < HMesh->NCellsOwned; ++Cell) {
+      // TODO: Use the HMesh->SphereRadius attribute once PR#382 is merged
+      AreaCell[Cell] = static_cast<double>(HMesh->AreaCellH[Cell] /
+                                           (OMEGA::REarth * OMEGA::REarth));
+   }
+}
 } // extern "C"

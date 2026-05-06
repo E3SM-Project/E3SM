@@ -14,7 +14,7 @@ module ocn_comp_mct
 
    ! toolkits mods
    use esmf, only: ESMF_Clock
-   use mct_mod, only: mct_aVect, mct_gsMap, mct_gGrid
+   use mct_mod, only: mct_aVect, mct_gsMap, mct_gGrid, mct_aVect_init
 
    ! MPI
    ! allow(use-all)
@@ -35,7 +35,8 @@ module ocn_comp_mct
    ! Private module data
    !--------------------------------------------------------------------------
    integer :: ocn_log_unit
-   integer(IN), parameter :: master_task = 0       ! task number of master task
+   integer(IN) :: my_task ! my task in mpi communicator mpicom
+   integer(IN), parameter :: master_task = 0 ! task number of master task
 
 contains
    subroutine ocn_init_mct(EClock, cdata, x2o, o2x, NLFilename)
@@ -43,7 +44,9 @@ contains
       use, intrinsic :: iso_c_binding, only: c_null_char
       use, intrinsic :: iso_c_binding, only: c_ptr, c_loc, c_int, c_char
 
+      use mct_mod, only: mct_gsMap_lsize
       use seq_comm_mct, only: seq_comm_suffix
+      use seq_flds_mod, only: seq_flds_o2x_fields, seq_flds_x2o_fields
       use seq_infodata_mod, only: &
          seq_infodata_start_type_start, &
          seq_infodata_start_type_cont, &
@@ -60,7 +63,6 @@ contains
 
       !--- local variables ---
       integer           :: mpicom_ocn  ! mpi communicator
-      integer(IN)       :: my_task     ! my task in mpi communicator mpicom
       integer           :: inst_index  ! number of current instance (ie. 1)
       character(len=16), save :: &
          inst_suffix = ""  ! char str for instance (ie. "_0001" or "")
@@ -73,7 +75,8 @@ contains
 
       type(seq_infodata_type), pointer :: infodata
       type(mct_gsMap), pointer :: gsMap_ocn
-      type(mct_gGrid), pointer :: dom_ocn
+      type(mct_gGrid), pointer :: gGrid_ocn
+      integer :: lsize
       integer(IN) :: ierr, mpi_ierr  ! error codes
       integer(IN) :: case_start_tod, case_start_ymd, cur_tod, cur_ymd
       integer(kind=c_int) :: start_type_c
@@ -86,7 +89,7 @@ contains
          ID=OCN_ID, &
          mpicom=mpicom_ocn, &
          gsMap=gsMap_ocn, &
-         dom=dom_ocn, &
+         dom=gGrid_ocn, &
          infodata=infodata &
          )
 
@@ -129,7 +132,7 @@ contains
       end if
 
       !------------------------------------------------------------------------
-      ! Initialize atm
+      ! Initialize ocn
       !------------------------------------------------------------------------
       if (trim(start_type) == trim(seq_infodata_start_type_start)) then
          start_type_c = 0
@@ -172,6 +175,25 @@ contains
          case_start_tod &
          )
 
+      !-------------------------------------------------------------------------
+      ! initialize MCT gsmap, domain, and attribute vectors
+      !-------------------------------------------------------------------------
+      call ocn_set_gsmap_mct(mpicom_ocn, ocn_id, gsMap_ocn)
+
+      lsize = mct_gsMap_lsize(gsMap_ocn, mpicom_ocn)
+
+      ! TODO: Remove print statement after debugging
+      if (my_task == master_task) then
+         print *, "[omega] gsMap initialization done"
+         print *, "[omega] lsize = ", lsize
+      end if
+
+      call ocn_set_domain_mct(lsize, gsMap_ocn, gGrid_ocn)
+
+      ! Init import/export mct attribute vectors
+      call mct_aVect_init(x2o, rList=seq_flds_x2o_fields, lsize=lsize)
+      call mct_aVect_init(o2x, rList=seq_flds_o2x_fields, lsize=lsize)
+
    end subroutine ocn_init_mct
 
    subroutine ocn_run_mct(EClock, cdata, x2o, o2x)
@@ -187,4 +209,121 @@ contains
       type(seq_cdata), intent(inout) :: cdata
       type(mct_aVect), intent(inout) :: x2o, o2x
    end subroutine ocn_final_mct
+
+   subroutine ocn_set_gsmap_mct(mpicom_ocn, ocn_id, gsMap_ocn)
+      use, intrinsic :: iso_c_binding, only: c_int
+      use mct_mod, only: mct_gsMap_init
+      use omega_f2cxx_mod, only: &
+         omega_get_ncells_local, &
+         omega_get_ncells_global, &
+         omega_get_index_to_cell_id
+
+      ! !INPUT/OUTPUT PARAMETERS:
+      integer(IN), intent(in) :: mpicom_ocn
+      integer(in), intent(in) :: OCN_ID
+      type(mct_gsMap), intent(out) :: gsMap_ocn
+
+      !--- local variables ---
+      integer(kind=c_int), allocatable, target :: index_to_cell_id(:)
+      integer(kind=c_int) :: ncells_local, ncells_global
+
+      ! build the ocn cell numbering scheme for mct
+
+      ncells_local = omega_get_ncells_local()
+      ncells_global = omega_get_ncells_global()
+
+      ! TODO: Remove print statement after debugging
+      print *, "[omega] ncells_local = ", ncells_local
+      print *, "[omega] ncells_global = ", ncells_global
+
+      allocate (index_to_cell_id(ncells_local))
+
+      call omega_get_index_to_cell_id(index_to_cell_id)
+
+      ! TODO: Remove print statement after debugging
+      print *, "[omega] index_to_cell_id[ 1] =", index_to_cell_id(1)
+      print *, "[omega] index_to_cell_id[-1] =", index_to_cell_id(ncells_local)
+
+      call mct_gsMap_init( &
+         gsmap_ocn, &
+         index_to_cell_id, &
+         mpicom_ocn, &
+         ocn_id, &
+         ncells_local, &
+         ncells_global &
+         )
+
+      deallocate (index_to_cell_id)
+   end subroutine ocn_set_gsmap_mct
+
+   subroutine ocn_set_domain_mct(lsize, gsmap_ocn, ggrid_ocn)
+      use, intrinsic :: iso_c_binding, only: c_int, c_double
+      use mct_mod, only: &
+         mct_gsMap, &
+         mct_gGrid, &
+         mct_gGrid_init, &
+         mct_gGrid_importIAttr, &
+         mct_gGrid_importRAttr, &
+         mct_gsMap_orderedPoints
+      use omega_f2cxx_mod, only: &
+         omega_get_area_cell, &
+         omega_get_lonlat_cell
+      use seq_flds_mod, only: seq_flds_dom_coord, seq_flds_dom_other
+
+      ! !INPUT/OUTPUT PARAMETERS:
+      integer(IN), intent(in) :: lsize
+      type(mct_gsMap), intent(in) :: gsmap_ocn
+      type(mct_gGrid), intent(out) :: ggrid_ocn
+
+      !--- local variables ---
+      integer, pointer :: idata(:)
+      real(kind=c_double), pointer :: data1(:), data2(:)
+
+      allocate (data1(lsize))
+      allocate (data2(lsize))
+
+      ! initialize mct ocn domain
+      call mct_gGrid_init( &
+         GGrid=ggrid_ocn, &
+         CoordChars=trim(seq_flds_dom_coord), &
+         OtherChars=trim(seq_flds_dom_other), &
+         lsize=lsize &
+         )
+
+      ! Initialize attribute vector with special value
+      call mct_gsMap_orderedPoints(gsmap_ocn, my_task, idata)
+      call mct_gGrid_importIAttr(ggrid_ocn, "GlobGridNum", idata, lsize)
+
+      ! Fill in correct values for domain components
+      call omega_get_lonlat_cell(data1, data2)
+      call mct_gGrid_importRAttr(ggrid_ocn, "lon", data1, lsize)
+      call mct_gGrid_importRAttr(ggrid_ocn, "lat", data2, lsize)
+
+      ! TODO: Remove print statement after debugging
+      if (my_task == master_task) then
+         print *, "[omega] lon[ 1] = ", data1(1)
+         print *, "[omega] lon[-1] = ", data1(lsize)
+         print *, "[omega] lat[ 1] = ", data2(1)
+         print *, "[omega] lat[-1] = ", data2(lsize)
+      end if
+
+      call omega_get_area_cell(data1)
+      call mct_gGrid_importRAttr(ggrid_ocn, "area", data1, lsize)
+
+      ! TODO: Remove print statement after debugging
+      if (my_task == master_task) then
+         print *, "[omega] area[ 1] = ", data1(1)
+         print *, "[omega] area[-1] = ", data1(lsize)
+      end if
+
+      ! mask and frac are both exactly 1, until landIceMask is suported
+      data1(:) = real(1.0, kind=c_double)
+      call mct_gGrid_importRAttr(ggrid_ocn, "mask", data1, lsize)
+      call mct_gGrid_importRAttr(ggrid_ocn, "frac", data1, lsize)
+
+      ! aream is computed by mct, so give invalid initial value
+      data1(:) = real(-9999.0, kind=c_double)
+      call mct_gGrid_importRAttr(ggrid_ocn, "aream", data1, lsize)
+
+   end subroutine ocn_set_domain_mct
 end module ocn_comp_mct
