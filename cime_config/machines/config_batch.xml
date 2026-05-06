@@ -588,7 +588,6 @@
       </directives>
       <queues>
         <queue walltimemax="01:00:00"  nodemin="1"    nodemax="2"     strict="true" default="true">debug</queue>
-        <queue walltimemax="01:00:00"  nodemin="129"    nodemax="4096"  strict="true" >gpu_hack_large</queue>
         <queue walltimemax="01:00:00"  nodemin="3"    nodemax="255"   strict="true">debug-scaling</queue>
         <queue walltimemax="168:00:00" nodemin="1"    nodemax="16"    strict="true">capacity</queue>
         <queue walltimemax="12:00:00"  nodemin="256"  nodemax="1024"  strict="true">prod</queue>
