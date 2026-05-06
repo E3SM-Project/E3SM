@@ -3,6 +3,6 @@
 
 namespace scream {
 
-template void Field::deep_copy_impl<double>(const double);
+template void Field::deep_copy_impl<double>(const double) const;
 
 } // namespace scream

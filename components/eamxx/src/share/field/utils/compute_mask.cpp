@@ -34,7 +34,7 @@ bool compare (const ST lhs, const ST rhs, Comparison CMP)
 }
 
 template<int N, typename ST>
-void compute_mask (const Field& f, const ST value, Comparison CMP, Field& mask)
+void compute_mask (const Field& f, const ST value, Comparison CMP, const Field& mask)
 {
   using scalar_ND = typename ekat::DataND<const ST,N>::type;
   using int_ND    = typename ekat::DataND<int,N>::type;
@@ -149,7 +149,7 @@ void compute_mask (const Field& f, const ST value, Comparison CMP, Field& mask)
 }
 
 template<int N, typename ST>
-void compute_mask (const Field& lhs, const Field& rhs, Comparison CMP, Field& mask)
+void compute_mask (const Field& lhs, const Field& rhs, Comparison CMP, const Field& mask)
 {
   using scalar_ND = typename ekat::DataND<const ST,N>::type;
   using int_ND    = typename ekat::DataND<int,N>::type;
@@ -269,7 +269,7 @@ void compute_mask (const Field& lhs, const Field& rhs, Comparison CMP, Field& ma
 
 } // namespace impl
 
-void compute_mask (const Field& f, const ScalarWrapper value, Comparison CMP, Field& mask)
+void compute_mask (const Field& f, const ScalarWrapper value, Comparison CMP, const Field& mask)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (f.is_allocated(),
@@ -342,7 +342,7 @@ void compute_mask (const Field& f, const ScalarWrapper value, Comparison CMP, Fi
   }
 }
 
-void compute_mask (const Field& lhs, const Field& rhs, Comparison CMP, Field& mask)
+void compute_mask (const Field& lhs, const Field& rhs, Comparison CMP, const Field& mask)
 {
   // Sanity checks
   const auto& lhs_layout = lhs.get_header().get_identifier().get_layout();

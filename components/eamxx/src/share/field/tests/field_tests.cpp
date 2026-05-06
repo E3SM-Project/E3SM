@@ -291,6 +291,43 @@ TEST_CASE("field", "") {
     REQUIRE_THROWS (f.allocate_view());
   }
 
+  SECTION ("shallow_const") {
+    // Manipulation methods should be callable on const Field objects,
+    // since Field uses a "shallow const" design (like Kokkos::View).
+    Field f(fid, true);
+
+    // Bind a const reference to the allocated field
+    const Field& cf = f;
+
+    // All manipulation methods should compile and run on a const Field
+    cf.deep_copy(1.0);
+    cf.scale(2.0);
+    cf.add_scalar(-1.0);
+    cf.update(cf, 0.0, 1.0);
+
+    // Verify effect: f started at 1.0, scale(2.0) -> 2.0,
+    // add_scalar(-1.0) -> 1.0, update(cf,0,1) -> 1.0
+    cf.sync_to_host();
+    {
+      auto v = cf.get_view<Real**,Host>();
+      for (int i=0; i<dims[0]; ++i)
+        for (int j=0; j<dims[1]; ++j)
+          REQUIRE (v(i,j)==1.0);
+    }
+
+    // A read-only field should throw on any manipulation method
+    const Field ro = f.get_const();
+    REQUIRE_THROWS (ro.deep_copy(0.0));
+    REQUIRE_THROWS (ro.deep_copy(f));
+    REQUIRE_THROWS (ro.scale(1.0));
+    REQUIRE_THROWS (ro.scale(f));
+    REQUIRE_THROWS (ro.scale_inv(f));
+    REQUIRE_THROWS (ro.update(f, 1.0, 0.0));
+    REQUIRE_THROWS (ro.add_scalar(0.0));
+    REQUIRE_THROWS (ro.max(f));
+    REQUIRE_THROWS (ro.min(f));
+  }
+
   SECTION ("valid_mask") {
     auto mfid = fid.clone("mask").reset_dtype(DataType::IntType);
     auto ml = mfid.get_layout();

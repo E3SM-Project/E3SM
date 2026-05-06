@@ -83,7 +83,7 @@ cvh (LhsView lhs, RhsView rhs,
 
 template<CombineMode CM, typename ST, typename XST>
 void Field::
-update_impl (const Field& x, const ST alpha, const ST beta, const ST gamma)
+update_impl (const Field& x, const ST alpha, const ST beta, const ST gamma) const
 {
   const auto& layout = x.get_header().get_identifier().get_layout();
   const auto& dims = layout.dims();
@@ -227,7 +227,7 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST gamma)
 }
 
 template<typename ST>
-void Field::deep_copy_impl (const ST value)
+void Field::deep_copy_impl (const ST value) const
 {
   const auto rank = get_header().get_identifier().get_layout().rank();
   const auto lr_ok = get_header().get_alloc_properties().allows_layout_right();
