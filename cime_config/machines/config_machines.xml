@@ -240,8 +240,11 @@
         <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
-      <modules>
+      <modules compiler="!nvidia">
         <command name="load">craype-accel-host</command>
+      </modules>
+
+      <modules>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
         <command name="load">cmake/3.30.2</command>
@@ -619,8 +622,11 @@
         <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
-      <modules>
+      <modules compiler="!nvidia">
         <command name="load">craype-accel-host</command>
+      </modules>
+
+      <modules>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
         <command name="load">cmake/3.30.2</command>
@@ -995,8 +1001,11 @@
         <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
-      <modules>
+      <modules compiler="!nvidia">
         <command name="load">craype-accel-host</command>
+      </modules>
+
+      <modules>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
         <command name="load">cmake/3.30.2</command>
