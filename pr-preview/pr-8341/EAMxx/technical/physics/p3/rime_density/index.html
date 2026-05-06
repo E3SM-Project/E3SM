@@ -5061,6 +5061,21 @@ and temperature. Denser rime is expected for:</p>
 implementation maps these controls through the impact parameter <span class="arithmatex">\(Ri\)</span>, clamps
 that parameter to the interval <span class="arithmatex">\([1, 12]\)</span>, and then maps it to
 <code>rho_qm_cloud</code>.</p>
+<p>The closure can also be interpreted through a Macklin-type impact/freezing
+parameter. For active cloud-liquid riming, the fitted density depends on</p>
+<div class="arithmatex">\[
+Ri_{\mathrm{raw}} =
+5 \times 10^5 \frac{D_c V_{\mathrm{impact}}}
+{T_{\mathrm{zerodegc}} - T_{\mathrm{atm}}},
+\]</div>
+<p>subject to the temperature floor and the clamp <span class="arithmatex">\(1 \le Ri \le 12\)</span>. This P3
+parameter is proportional in structure to the classic droplet-size times
+impact-speed over temperature-depression ratio used in laboratory rime-density
+fits, but it is not identical to Macklin's original definition because P3 uses
+its own droplet-size measure, geometry assumptions, units, and fitted
+constants. In the P3 closure, different active-riming states with the same
+value of this combined ratio diagnose the same rime density because the fit is
+a univariate function of the clamped parameter.</p>
 <h2 id="governing-local-formulas">Governing Local Formulas</h2>
 <p>The active collection mask is</p>
 <div class="arithmatex">\[
@@ -5151,6 +5166,10 @@ at exactly <code>T_zerodegc</code> because the active mask uses <code>T_atm &lt;
 <li><code>Ri = 10</code> gives <code>rho_qm_cloud = 755.5 kg m^-3</code></li>
 <li><code>Ri = 12</code> gives <code>rho_qm_cloud = 900.0 kg m^-3</code></li>
 </ul>
+<p>The lower active dry-growth limit is therefore <code>159.5 kg m^-3</code> at the
+<code>Ri = 1</code> clamp. That limit is distinct from the inactive default
+<code>rho_qm_cloud = 400 kg m^-3</code>, which applies when the collection gates are not
+active or when cloud liquid is too small.</p>
 <h2 id="property-test-strategy">Property-Test Strategy</h2>
 <p>The unit tests live in
 <code>components/eamxx/src/physics/p3/tests/p3_calc_rime_density_unit_tests.cpp</code>.</p>
@@ -5164,7 +5183,10 @@ the diagnosed rime density.</p>
 <li><code>targeted_ri_density_regimes</code></li>
 <li><code>rime_density_increases_with_impact_speed</code></li>
 <li><code>rime_density_increases_with_droplet_size</code></li>
+<li><code>rime_regime_parameter_collapse</code></li>
 <li><code>rime_density_increases_toward_freezing</code></li>
+<li><code>wet_growth_limit_independent_of_path</code></li>
+<li><code>dry_growth_limit_independent_of_path</code></li>
 <li><code>impact_speed_symmetry</code></li>
 <li><code>rime_density_bounds</code></li>
 <li><code>temperature_floor_prevents_singularity</code></li>
@@ -5173,6 +5195,20 @@ the diagnosed rime density.</p>
 <p>These tests construct deterministic lanes, run the production
 <code>Functions::calc_rime_density</code> kernel, and compare against independent helper
 formulas or one-sided bounds. The BFB path remains separate in <code>run_bfb()</code>.</p>
+<p>The rime-regime parameter-collapse test varies droplet size, impact speed, and
+temperature together while holding the combined impact/freezing parameter
+fixed. This checks the physical parameterization assumption behind the fit,
+rather than a single-variable monotonic trend.</p>
+<p>The wet-growth limit test reaches the upper density clamp through multiple
+physical pathways, verifying that dense-rime or wet-growth-like conditions
+saturate at the same endpoint.</p>
+<p>The exact-target tests set <code>acn = 0</code>, so <code>Vt_qc = 0</code>. This avoids subtracting
+nearly equal fall speeds when constructing a target impact speed, which keeps
+the tests robust in single-precision builds.</p>
+<p>The dry-growth limit test reaches the lower active density clamp through
+multiple weak/cold collection pathways, verifying that active dry-rime
+conditions saturate at the lower fitted density rather than falling back to the
+inactive default.</p>
 <h2 id="tolerance-philosophy">Tolerance Philosophy</h2>
 <p>The tests use identity tolerances for exact algebraic formulas such as the
 <code>vtrmi1</code> identity and the default-value branches. One-sided inequality
