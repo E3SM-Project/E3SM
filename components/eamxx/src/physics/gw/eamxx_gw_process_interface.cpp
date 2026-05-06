@@ -289,88 +289,86 @@ void GWDrag::run_impl (const double dt) {
   // is needed (i.e. WACCM), but currently this is not a priority for EAMxx.
   // if (do_molec_diff) { ??? }
   //----------------------------------------------------------------------------
-  // Convective gravity waves (Beres scheme)
-  if (GWF::s_common_init.use_gw_convect) {
+  // Calculate GW tendencies
+  Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
+    const Int i = team.league_rank();
 
-    // // Determine wave sources
-    // GWF::gw_beres_src();
+    const Real landfrac_i = loc_landfrac(i);
 
-    // // Solve for the drag profile
-    // GWF::gw_drag_prof();
+    // Get single-column subviews of all inputs
+    const auto uwind_i      = ekat::scalarize(ekat::subview(loc_uwind, i));
+    const auto vwind_i      = ekat::scalarize(ekat::subview(loc_vwind, i));
+    const auto T_mid_i      = ekat::scalarize(ekat::subview(loc_T_mid, i));
+    const auto T_int_i      = ekat::scalarize(ekat::subview(loc_T_int, i));
+    const auto p_mid_i      = ekat::scalarize(ekat::subview(loc_p_mid, i));
+    const auto p_int_i      = ekat::scalarize(ekat::subview(loc_p_int, i));
+    const auto p_del_i      = ekat::scalarize(ekat::subview(loc_p_del, i));
+    const auto p_del_rcp_i  = ekat::subview(loc_p_del_rcp, i);
+    const auto p_int_log_i  = ekat::subview(loc_p_int_log, i);
+    const auto z_mid_i      = ekat::subview(loc_z_mid, i);
+    const auto N_mid_i      = ekat::subview(loc_N_mid, i);
+    const auto N_int_i      = ekat::subview(loc_N_int, i);
+    const auto rho_int_i    = ekat::subview(loc_rho_int,i);
+    const auto tau_i        = ekat::subview(loc_tau, i);
+    const auto ubm_i        = ekat::subview(loc_ubm, i);
+    const auto ubi_i        = ekat::subview(loc_ubi, i);
+    const auto c_i          = ekat::subview(loc_c, i);
+    const auto kvtt_i       = ekat::subview(loc_kvtt, i);
+    const auto dse_i        = ekat::subview(loc_dse, i);
+    const auto utgw_i       = ekat::subview(loc_utgw, i);
+    const auto vtgw_i       = ekat::subview(loc_vtgw, i);
+    const auto ttgw_i       = ekat::subview(loc_ttgw, i);
+    const auto qtgw_i       = ekat::subview(loc_qtgw, i);
+    const auto gw_tend_u_i  = ekat::subview(loc_gw_tend_u, i);
+    const auto gw_tend_v_i  = ekat::subview(loc_gw_tend_v, i);
+    const auto gw_tend_t_i  = ekat::subview(loc_gw_tend_t, i);
+    const auto gw_tend_q_i  = ekat::subview(loc_gw_tend_q, i);
+    const auto taucd_i      = ekat::subview(loc_taucd, i);
+    const auto egwdffi_i    = ekat::subview(loc_egwdffi, i);
+    const auto gwut_i       = ekat::subview(loc_gwut, i);
+    const auto dttdf_i      = ekat::subview(loc_dttdf, i);
+    const auto dttke_i      = ekat::subview(loc_dttke, i);
+    const auto q_2d         = ekat::subview(loc_q_combined, i);
+    
+    // Convective gravity waves (Beres scheme)
+    if (GWF::s_common_init.use_gw_convect) {
 
-    // add the diffusion coefficients
-    // do k = 0, pver
-    //   egwdffi_tot(:,k) = egwdffi_tot(:,k) + egwdffi(:,k)
-    // end do
+      // // Determine wave sources
+      // GWF::gw_beres_src();
 
-    // Store constituents tendencies
-    // do m=1, pcnst
-    //    do k = 1, pver
-    //       ptend%q(:ncol,k,m) = qtgw(:,k,m)
-    //    end do
-    // end do
+      // // Solve for the drag profile
+      // GWF::gw_drag_prof();
 
-    // ! add the momentum tendencies to the output tendency arrays
-    // do k = 1, pver
-    //    ptend%u(:ncol,k) = utgw(:,k)
-    //    ptend%v(:ncol,k) = vtgw(:,k)
-    //    ptend%s(:ncol,k) = ttgw(:,k)
-    // end do
+      // add the diffusion coefficients
+      // do k = 0, pver
+      //   egwdffi_tot(:,k) = egwdffi_tot(:,k) + egwdffi(:,k)
+      // end do
 
-    // // Momentum & energy conservation
-    // GWF::momentum_energy_conservation();
+      // // add tendencies to aggregate output tendencies
+      // team.team_barrier();
+      // Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, m_nlev), [&] (const int k) {
+      //   gw_tend_u_i(k)   += utgw_i(k)   * landfrac_i;
+      //   gw_tend_v_i(k)   += vtgw_i(k)   * landfrac_i;
+      //   gw_tend_t_i(k)   += ttgw_i(k)   * landfrac_i;
+      //   gw_tend_q_i(k,0) += qtgw_i(k,0) * landfrac_i;
+      //   gw_tend_q_i(k,1) += qtgw_i(k,1) * landfrac_i;
+      //   gw_tend_q_i(k,2) += qtgw_i(k,2) * landfrac_i;
+      // });
 
-  }
+      // // Momentum & energy conservation
+      // GWF::momentum_energy_conservation();
 
-  // Frontally generated gravity waves
-  if (GWF::s_common_init.use_gw_frontal) {
-    // GWF::gw_cm_src();
-    // GWF::gw_drag_prof();
-    // GWF::momentum_energy_conservation();
-  }
+    }
 
-  // Orographic stationary gravity waves
-  if (GWF::s_common_init.use_gw_orographic) {
+    // Frontally generated gravity waves
+    if (GWF::s_common_init.use_gw_frontal) {
+        // GWF::gw_cm_src();
+        // GWF::gw_drag_prof();
+        // GWF::momentum_energy_conservation();
+    }
 
-    Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
-      const Int i = team.league_rank();
-
-      const Real landfrac_i = loc_landfrac(i);
-
-      // Get single-column subviews of all inputs
-      const auto uwind_i      = ekat::scalarize(ekat::subview(loc_uwind, i));
-      const auto vwind_i      = ekat::scalarize(ekat::subview(loc_vwind, i));
-      const auto T_mid_i      = ekat::scalarize(ekat::subview(loc_T_mid, i));
-      const auto T_int_i      = ekat::scalarize(ekat::subview(loc_T_int, i));
-      const auto p_mid_i      = ekat::scalarize(ekat::subview(loc_p_mid, i));
-      const auto p_int_i      = ekat::scalarize(ekat::subview(loc_p_int, i));
-      const auto p_del_i      = ekat::scalarize(ekat::subview(loc_p_del, i));
-      const auto p_del_rcp_i  = ekat::subview(loc_p_del_rcp, i);
-      const auto p_int_log_i  = ekat::subview(loc_p_int_log, i);
-      const auto z_mid_i      = ekat::subview(loc_z_mid, i);
-      const auto N_mid_i      = ekat::subview(loc_N_mid, i);
-      const auto N_int_i      = ekat::subview(loc_N_int, i);
-      const auto rho_int_i    = ekat::subview(loc_rho_int,i);
-      const auto tau_i        = ekat::subview(loc_tau, i);
-      const auto ubm_i        = ekat::subview(loc_ubm, i);
-      const auto ubi_i        = ekat::subview(loc_ubi, i);
-      const auto c_i          = ekat::subview(loc_c, i);
-      const auto kvtt_i       = ekat::subview(loc_kvtt, i);
-      const auto dse_i        = ekat::subview(loc_dse, i);
-      const auto utgw_i       = ekat::subview(loc_utgw, i);
-      const auto vtgw_i       = ekat::subview(loc_vtgw, i);
-      const auto ttgw_i       = ekat::subview(loc_ttgw, i);
-      const auto qtgw_i       = ekat::subview(loc_qtgw, i);
-      const auto gw_tend_u_i  = ekat::subview(loc_gw_tend_u, i);
-      const auto gw_tend_v_i  = ekat::subview(loc_gw_tend_v, i);
-      const auto gw_tend_t_i  = ekat::subview(loc_gw_tend_t, i);
-      const auto gw_tend_q_i  = ekat::subview(loc_gw_tend_q, i);
-      const auto taucd_i      = ekat::subview(loc_taucd, i);
-      const auto egwdffi_i    = ekat::subview(loc_egwdffi, i);
-      const auto gwut_i       = ekat::subview(loc_gwut, i);
-      const auto dttdf_i      = ekat::subview(loc_dttdf, i);
-      const auto dttke_i      = ekat::subview(loc_dttke, i);
-      const auto q_2d         = ekat::subview(loc_q_combined, i);
+    // Orographic stationary gravity waves
+    if (GWF::s_common_init.use_gw_orographic) {
 
       Int src_lev;  // level index of gravity wave source
       Int tnd_lev;  // lowest level index where tendencies are allowed
@@ -387,8 +385,6 @@ void GWDrag::run_impl (const double dt) {
       // Solve for the drag profile with orographic sources
       Int max_lev = tnd_lev; // ???
 
-      for (int k = 0; k < m_nlev  ; k++) { printf("[run_impl before gw_drag_prof] k=%d N_mid_i=%e\n", k, N_mid_i(k)); }
-
       GWF::gw_drag_prof(team, wsm.get_workspace(team), GWF::s_common_init,
                         m_nlev, GWF::s_common_init.pgwv, src_lev, max_lev, tnd_lev,
                         GWF::s_common_init.do_taper, dt, m_lat_v(i),
@@ -401,7 +397,6 @@ void GWDrag::run_impl (const double dt) {
                         taucd_i, egwdffi_i, gwut_i, dttdf_i, dttke_i);
 
       // add tendencies to aggregate output tendencies
-      team.team_barrier();
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, m_nlev), [&] (const int k) {
         gw_tend_u_i(k)   += utgw_i(k)   * landfrac_i;
         gw_tend_v_i(k)   += vtgw_i(k)   * landfrac_i;
@@ -411,20 +406,8 @@ void GWDrag::run_impl (const double dt) {
         gw_tend_q_i(k,2) += qtgw_i(k,2) * landfrac_i;
       });
 
-    });
-
-    //----------------------------------------------------------------------------
-    // GW energy fixer
-    Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
-      const Int i = team.league_rank();
-      const auto uwind_i = ekat::scalarize(ekat::subview(loc_uwind,      i));
-      const auto vwind_i = ekat::scalarize(ekat::subview(loc_vwind,      i));
-      const auto p_int_i = ekat::scalarize(ekat::subview(loc_p_int,      i));
-      const auto p_del_i = ekat::scalarize(ekat::subview(loc_p_del,      i));
-      const auto gw_tend_u_i = ekat::subview(loc_gw_tend_u, i);
-      const auto gw_tend_v_i = ekat::subview(loc_gw_tend_v, i);
-      const auto gw_tend_t_i = ekat::subview(loc_gw_tend_t, i);
-
+      //----------------------------------------------------------------------------
+      // GW energy fixer
       Real dE = 0;
       Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, 0, m_nlev), [&] (const int k, Real& lsum) {
         lsum -= p_del_i(k) * ( gw_tend_u_i(k) * (uwind_i(k) + gw_tend_u_i(k) * GWF::GWC::half * dt)
@@ -437,9 +420,10 @@ void GWDrag::run_impl (const double dt) {
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, m_nlev), [&] (const int k) {
         gw_tend_t_i(k) += dE;
       });
-    });
 
-  } // use_gw_orographic
+    } // use_gw_orographic
+
+  });
 
   //----------------------------------------------------------------------------
   // Convert the tendencies for the dry constituents to dry air basis
@@ -453,10 +437,6 @@ void GWDrag::run_impl (const double dt) {
   //       do k = 1, pver
   //          do i = 1, ncol
   //             ptend%q(i,k,m) = ptend%q(i,k,m)*state1%pdel(i,k)/state1%pdeldry(i,k)
-  //          end do
-  //       end do
-  //    end if
-  // end do
 
   //----------------------------------------------------------------------------
   // update prognostic fields
