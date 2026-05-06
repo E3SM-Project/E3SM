@@ -520,7 +520,7 @@ def evaluate_selectors(element, case, ez_selectors):
                 if all_match:
                     if child_name in selected_child.keys():
                         orig_child = selected_child[child_name]
-                        # Compute the new text first (validate before modifying child).
+                        # Compute new_text before modifying child's attributes below.
                         # We replace orig_child with child (rather than updating orig_child
                         # in-place) so that the surviving element retains the selector
                         # attributes of the matching variant, e.g. for diagnostics.
