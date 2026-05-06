@@ -119,7 +119,7 @@ void AbstractRemapper::registration_ends ()
 void AbstractRemapper::remap_fwd ()
 {
   if (m_timers_enabled)
-    start_timer(name()+" remap_fwd");
+    start_timer(name()+" fwd");
   EKAT_REQUIRE_MSG(m_state!=RepoState::Open,
       "Error! Cannot perform remapping at this time.\n"
       "       Did you forget to call 'registration_ends'?\n");
@@ -130,13 +130,13 @@ void AbstractRemapper::remap_fwd ()
       "Error! Forward remap IS allowed by this remapper, but some of the tgt fields are read-only\n");
   remap_fwd_impl ();
   if (m_timers_enabled)
-    stop_timer(name()+" remap_fwd");
+    stop_timer(name()+" fwd");
 }
 
 void AbstractRemapper::remap_bwd ()
 {
   if (m_timers_enabled)
-    start_timer(name()+" remap_bwd");
+    start_timer(name()+" bwd");
   EKAT_REQUIRE_MSG(m_state!=RepoState::Open,
       "Error! Cannot perform remapping at this time.\n"
       "       Did you forget to call 'registration_ends'?\n");
@@ -147,7 +147,7 @@ void AbstractRemapper::remap_bwd ()
       "Error! Backward remap IS allowed by this remapper, but some of the src fields are read-only\n");
   remap_bwd_impl ();
   if (m_timers_enabled)
-    stop_timer(name()+" remap_bwd");
+    stop_timer(name()+" bwd");
 }
 
 void AbstractRemapper::

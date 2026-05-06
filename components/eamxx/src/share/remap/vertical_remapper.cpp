@@ -14,6 +14,7 @@
 #include <ekat_pack_kokkos.hpp>
 
 #include <numeric>
+#include <filesystem>
 
 namespace scream
 {
@@ -27,7 +28,7 @@ create_tgt_grid (const grid_ptr_type& src_grid,
   scorpio::register_file(map_file,scorpio::FileMode::Read);
   auto nlevs_tgt = scorpio::get_dimlen(map_file,"lev");
 
-  auto tgt_grid = src_grid->clone("vertical_remap_tgt_grid",true);
+  auto tgt_grid = src_grid->clone(src_grid->name()+"_vremap_tgt",true);
   tgt_grid->reset_vertical_configuration(nlevs_tgt, AbstractGrid::VKind::Pressure);
 
   // Gather the pressure level data for vertical remapping
@@ -53,13 +54,16 @@ VerticalRemapper (const grid_ptr_type& src_grid,
  : VerticalRemapper(src_grid,create_tgt_grid(src_grid,map_file))
 {
   set_target_pressure (m_tgt_grid->get_geometry_data("p_levs"),Both);
+  std::filesystem::path p(map_file);
+
+  set_name("VRemap " + p.filename().string());
 }
 
 VerticalRemapper::
 VerticalRemapper (const grid_ptr_type& src_grid,
                   const grid_ptr_type& tgt_grid)
 {
-  set_name("Vertical " + tgt_grid->name());
+  set_name("VRemap " + tgt_grid->name());
 
   // We only go in one direction for simplicity, since we need to setup some
   // infrsatructures, and we don't want to setup 2x as many "just in case".
