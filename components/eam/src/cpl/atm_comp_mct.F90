@@ -362,7 +362,7 @@ CONTAINS
        ! First phase of cam initialization
        ! Initialize mpicom_atm, allocate cam_in and cam_out and determine
        ! atm decomposition (needed to initialize gsmap)
-       ! for an initial run, cam_in and cam_out are allocated in is called the second time in atm_initial
+       ! for an initial run, cam_in and cam_out are allocated in cam_initial
        ! for a restart/branch run, cam_in and cam_out are allocated in restart
        ! Set defaults then override with user-specified input and initialize time manager
        ! Note that the following arguments are needed to cam_init for timemgr_restart only
@@ -508,7 +508,7 @@ CONTAINS
 
 
          ! for examining surface cflx update timing - aldivi
-         if (masterproc) write(iulog,*)'cflx-log: atm_import and cam_run1 for StepNo=0 in atm_init_mct'
+         if (masterproc) write(iulog,*)'cflx-log: after atm_import and before cam_run1 for StepNo=0 in atm_init_mct'
          if (masterproc) write(iulog,*)'sync ymd=',CurrentYMD
 
 
@@ -565,7 +565,7 @@ CONTAINS
           call t_stopf('cam_run1')
 
          ! for examining surface cflx update timing - aldivi
-         if (masterproc) write(iulog,*)'cflx-log: atm_import and cam_run1 for restart in atm_init_mct'
+         if (masterproc) write(iulog,*)'cflx-log: after atm_import and after cam_run1 for restart in atm_init_mct'
          if (masterproc) write(iulog,*)'sync ymd=',CurrentYMD
 
        end if

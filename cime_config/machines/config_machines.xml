@@ -226,6 +226,7 @@
       <modules compiler="intel">
         <command name="load">PrgEnv-intel/8.6.0</command>
         <command name="load">intel/2025.3</command>
+        <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
       <modules compiler="nvidia">

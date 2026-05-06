@@ -7,6 +7,10 @@
 # You may consider setting a more specific CASE_NAME below
 # If desired, the user can change other things below, but this script will perform as desired
 
+# Note that the RUN_REFCASE below works, but is not scientifically valid because of the low
+#   co2 and temperature; we are generating a new reference now, and the land feedback
+#   baseline files will need to be recreated and updated in namelist defaults
+
 main() {
 
 # For debugging, uncomment libe below
@@ -48,10 +52,10 @@ readonly MYDATE=$(date '+%Y%m%d%H') # use current date if MYDATE is not set to a
 # export COMPSET=SSP245_EAM%CMIP6_ELM%TOPCNPRDCTCBCPHS_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM_BGC%LNDATM
 readonly COMPSET="SSP245_ZATM_BGC" # see long name above
 readonly RESOLUTION="ne30pg2_f09_oEC60to30v3" 
-readonly CASE_NAME="${COMPSET}_${RESOLUTION}_${MYDATE}_v3_pr_test"
+readonly CASE_NAME="${COMPSET}_${RESOLUTION}_${MYDATE}_v3_pr_test_fin"
 # readonly CASE_GROUP="E3SM_GCAM"
 
-# Code and compilation
+# Code and compilation - these are the 'main' branches
 #readonly BRANCH="master" 
 #readonly giac_branch="master"
 #readonly gcam_branch="e3sm-integration"
@@ -133,9 +137,9 @@ else
   readonly CASE_SCRIPTS_DIR=${CASE_ROOT}/case_scripts
   readonly CASE_RUN_DIR=${CASE_ROOT}/run
   readonly PELAYOUT="EHC-ELM-EAM"
-  readonly WALLTIME="14:00:00"
+  readonly WALLTIME="24:00:00"
   readonly STOP_OPTION="nyears"
-  readonly STOP_N="6"
+  readonly STOP_N="12"
   readonly REST_OPTION="nyears"
   readonly REST_N="1"
   readonly RESUBMIT="0"

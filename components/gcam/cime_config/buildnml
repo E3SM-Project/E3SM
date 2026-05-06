@@ -289,8 +289,12 @@ def buildnml(case, caseroot, compname):
     # expect(os.path.isdir(gcam_rdir), "GCAM restart dir missing: {}".format(gcam_rdir))
 
     # === Symlinks formerly created by the run script ===
+    # this one is used by the regular GCAM configuration files
     _ensure_symlink(os.path.join(gcam_idir, "input"),
                     os.path.join(os.path.dirname(caseroot), "input"))
+    # this one is used by SMS/ERS tests
+    _ensure_symlink(os.path.join(gcam_idir, "input"),
+                    os.path.join(os.path.dirname(rundir), "input"))
     _ensure_symlink(os.path.join(gcam_idir, "configuration", "log_conf.xml"),
                     os.path.join(rundir, "log_conf.xml"))
     _ensure_symlink(os.path.join(glm_idir, "glm.fut.conf.{}".format(mach)),

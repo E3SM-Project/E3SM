@@ -1917,7 +1917,7 @@ end if ! l_tracer_aero
           call cflx_tend( state, cam_in, ztodt, ptend)       
          call physics_update(state, ptend, ztodt, tend)
          !!!! todo: delete !!!
-         if (masterproc) write(iulog,*) 'clfx-log: surface flux tendencies applied in tphysac after clubb_surface'
+         if (masterproc) write(iulog,*) 'cflx-log: surface flux tendencies applied in tphysac after clubb_surface'
        end if
 
        call cnd_diag_checkpoint( diag, 'CFLXAPP', state, pbuf, cam_in, cam_out )

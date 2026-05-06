@@ -4197,6 +4197,12 @@
       <map name="ATM2IAC_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_TO_r0125_aave.241125.nc</map>
     </gridmap>
 
+    <gridmap atm_grid="ne30np4.pg2" iac_grid="r025">
+      <map name="IAC2ATM_FMAPNAME">cpl/gridmaps/r0125/map_r0125_TO_ne30pg2_aave.241125.nc</map>
+      <map name="IAC2ATM_SMAPNAME">cpl/gridmaps/r0125/map_r0125_TO_ne30pg2_aave.241125.nc</map>
+      <map name="ATM2IAC_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_TO_r0125_aave.241125.nc</map>
+    </gridmap>
+
     <gridmap atm_grid="ne30np4.pg2" iac_grid="r05">
       <map name="IAC2ATM_FMAPNAME">cpl/gridmaps/r05/map_r05_to_ne30pg2_traave.20231130.nc</map>
       <map name="IAC2ATM_SMAPNAME">cpl/gridmaps/r05/map_r05_to_ne30pg2_traave.20231130.nc</map>

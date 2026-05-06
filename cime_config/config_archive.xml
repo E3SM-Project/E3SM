@@ -163,4 +163,8 @@
     </rpointer>
   </comp_archive_spec>
 
+  <comp_archive_spec compname="gcam" compclass="iac">
+    <rest_history_varname>unset</rest_history_varname>
+  </comp_archive_spec>
+
 </components>
