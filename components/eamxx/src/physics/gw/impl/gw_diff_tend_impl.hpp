@@ -35,11 +35,9 @@ void Functions<S,D>::gw_diff_tend(
     Kokkos::TeamVectorRange(team, pver), [&] (const int k) {
       qnew(k) = q(k);
     });
-  team.team_barrier();
 
   // Solve the diffusion matrix.
   vd_lu_solve(team, workspace, pver, decomp_ca, decomp_cc, decomp_dnom, decomp_ze, ktop+1, kbot+1, 0, qnew);
-  team.team_barrier();
 
   // Evaluate tendency to be reported back.
   Kokkos::parallel_for(

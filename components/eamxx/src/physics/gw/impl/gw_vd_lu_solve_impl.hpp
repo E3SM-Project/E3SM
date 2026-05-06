@@ -33,10 +33,6 @@ void Functions<S,D>::vd_lu_solve(
   // All the loops have dependencies on prior iterations of the loop, no parallelism possible here
   Kokkos::single(Kokkos::PerTeam(team), [&] {
 
-    for (int k = 0; k < pver; k++) {
-      zf(k) = 0;
-    }
-
     // Calculate zf(k). Terms zf(k) and ze(k) are required in solution of
     // tridiagonal matrix defined by implicit diffusion equation.
     // Note that only levels ntop through nbot need be solved for.
@@ -53,7 +49,6 @@ void Functions<S,D>::vd_lu_solve(
     for (int k = ntop + 1; k <= nbot; ++k) {
       q(k) = zf(k) + decomp_ze(k)*q(k-1);
     }
-
   });
 
   workspace.release(zf);

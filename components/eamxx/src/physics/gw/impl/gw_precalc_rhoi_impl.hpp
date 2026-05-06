@@ -41,7 +41,6 @@ void Functions<S,D>::gwd_precalc_rhoi(
   const uview_1d<Real>& dttke,
   const uview_1d<Real>& ttgw)
 {
-  
   // rhoi_kludge: Recalculated rhoi to preserve answers.
   uview_1d<Real> rhoi_kludge, decomp_ca, decomp_cc, decomp_dnom, decomp_ze, q_nostride, qtgw_nostride;
   workspace.template take_many_contiguous_unsafe<7>(
@@ -70,10 +69,10 @@ void Functions<S,D>::gwd_precalc_rhoi(
       Kokkos::TeamVectorRange(team, pver), [&] (const int k) {
         q_nostride(k) = q_stride(k);
       });
-    team.team_barrier();
+
     gw_diff_tend(team, workspace, pver, init.kbotbg, init.ktop, q_nostride, dt,
                  decomp_ca, decomp_cc, decomp_dnom, decomp_ze, qtgw_nostride);
-    team.team_barrier();
+
     Kokkos::parallel_for(
       Kokkos::TeamVectorRange(team, pver), [&] (const int k) {
         qtgw_stride(k) = qtgw_nostride(k);

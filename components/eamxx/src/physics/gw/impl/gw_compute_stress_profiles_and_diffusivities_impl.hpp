@@ -88,11 +88,6 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities_serial(
       const Real et = -2 * GWC::rog * t(k) * (piln(k + 1) - piln(k));
       wrk1(k, l) = at*bt*et;
       wrk2(k, l) = at*ct*et;
-
-              // ubmc2 = max(ubmc(:,l)**2, ubmc2mn)
-              // mi = ni(:,k) / (2._r8 * kwv * ubmc2) * (alpha(k) + ni(:,k)**2/ubmc2 * d)
-              // wrk = -2._r8*mi*rog*t(:,k+1) * (piln(:,k+1) - piln(:,k))
-
     }
   });
 
@@ -129,10 +124,6 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities_serial(
         const int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
 
         const Real wrk = wrk1(k, pl_idx) + wrk2(k, pl_idx) * d;
-
-              // ubmc2 = max(ubmc(:,l)**2, ubmc2mn)
-              // mi = ni(:,k) / (2._r8 * kwv * ubmc2) * (alpha(k) + ni(:,k)**2/ubmc2 * d)
-              // wrk = -2._r8*mi*rog*t(:,k+1)*(piln(:,k+1) - piln(:,k))
 
         Real taudmp;
         if (wrk >= -150 || !init.do_molec_diff) {

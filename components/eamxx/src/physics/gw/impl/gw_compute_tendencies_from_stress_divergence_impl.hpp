@@ -51,9 +51,6 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
   auto work_1d = workspace.take("work_1d");
   uview_2d<Real> work(work_1d.data(), pver, 2*pgwv + 1);
 
-  // check for zeros
-  for (int k = 0; k < pver  ; k++) { printf("[gwd_compute_tend-IN] k=%d nm=%e\n", k, nm(k)); }
-
   // Loop waves
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, -pgwv, pgwv+1), [&] (const int l) {
@@ -89,13 +86,9 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
       ubtl = ekat::impl::min(ubtl, init.tndmax);
 
       if (k <= tend_level) {
-
         // Save tendency for each wave (for later computation of kzz),
         // applying efficiency and taper:
         gwut(k,pl_idx) = Kokkos::copysign(ubtl, c(pl_idx)-ubm(k)) * effgw * ptaper;
-
-        if (Kokkos::isnan(gwut(k,pl_idx))) { printf("[gwd_compute_tend] (after) gwut(k,pl_idx) NaN @ k=%d  pl_idx=%d\n", k, pl_idx); }
-        if (Kokkos::isinf(gwut(k,pl_idx))) { printf("[gwd_compute_tend] (after) gwut(k,pl_idx) Inf @ k=%d  pl_idx=%d\n", k, pl_idx); }
 
         // atomic_sum for a workspace item ubt(k) are another option here. It works
         // but, since the order of operations is non-deterministic, there are
@@ -117,8 +110,6 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
       }
     }
   });
-
-  team.team_barrier();
 
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, init.ktop+1, tend_level+1), [&] (const int k) {
