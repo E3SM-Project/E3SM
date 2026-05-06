@@ -520,22 +520,28 @@ def evaluate_selectors(element, case, ez_selectors):
                 if all_match:
                     if child_name in selected_child.keys():
                         orig_child = selected_child[child_name]
+                        # Compute the new text first (validate before modifying child).
+                        # We replace orig_child with child (rather than updating orig_child
+                        # in-place) so that the surviving element retains the selector
+                        # attributes of the matching variant, e.g. for diagnostics.
+                        if append=="base":
+                            expect(child_name in child_base_value,
+                                   f"'append=base' used for '{child_name}' but no default "
+                                   f"(base) element was defined. "
+                                   f"Selector element attributes: {dict(child.attrib)}")
+                            new_text = child_base_value[child_name] + "," + child.text
+                        elif append=="last":
+                            new_text = orig_child.text + "," + child.text
+                        else:
+                            new_text = child.text
                         # Copy non-selector metadata from the previously selected element
                         # to the newly selected one (if not already set on the new element).
                         # This allows metadata (e.g. constraints, doc) to be defined only
                         # on the default element and inherited by all selector-specific variants.
-                        # We replace orig_child with child (rather than updating orig_child
-                        # in-place) so that the surviving element retains the selector
-                        # attributes of the matching variant, e.g. for diagnostics.
                         for attr in METADATA_ATTRIBS:
                             if attr in orig_child.attrib and attr not in child.attrib:
                                 child.attrib[attr] = orig_child.attrib[attr]
-                        if append=="base":
-                            expect(child_name in child_base_value,
-                                   f"'append=base' used for '{child_name}' but no default (base) element was defined")
-                            child.text = child_base_value[child_name] + "," + child.text
-                        elif append=="last":
-                            child.text = orig_child.text + "," + child.text
+                        child.text = new_text
                         children_to_remove.append(orig_child)
                         selected_child[child_name] = child
 
