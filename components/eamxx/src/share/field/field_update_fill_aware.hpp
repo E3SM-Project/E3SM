@@ -85,7 +85,7 @@ cvfah (LhsView lhs, RhsView rhs,
 
 template<CombineMode CM, typename ST, typename XST>
 void Field::
-update_fill_aware (const Field& x, const ST alpha, const ST beta, const ST gamma)
+update_fill_aware (const Field& x, const ST alpha, const ST beta, const ST gamma) const
 {
   const auto& layout = x.get_header().get_identifier().get_layout();
   const auto& dims = layout.dims();

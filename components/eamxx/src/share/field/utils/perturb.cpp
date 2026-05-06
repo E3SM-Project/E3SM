@@ -5,7 +5,7 @@ namespace scream {
 namespace impl {
 
 template<typename ST>
-void perturb (Field& f, const ST perturb_level,
+void perturb (const Field& f, const ST perturb_level,
               const int base_seed,
               const Field& level_mask,
               const Field& dof_gids)
@@ -116,7 +116,7 @@ void perturb (Field& f, const ST perturb_level,
 
 } // namespace impl
 
-void perturb (Field& f, const ScalarWrapper perturb_level,
+void perturb (const Field& f, const ScalarWrapper perturb_level,
               const int base_seed,
               const Field& level_mask,
               const Field& dof_gids)

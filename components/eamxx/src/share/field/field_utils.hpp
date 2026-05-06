@@ -40,7 +40,7 @@ void randomize_discrete (const Field& f, int seed,
 //   - level_mask:    A 1d int field (size of the level dimension of f) where f(i0,...,k) is
 //                    perturbed if level_mask(k)=1
 //   - dof_gids:      Field containing global DoF IDs for columns of f (if applicable)
-void perturb (Field& f,
+void perturb (const Field& f,
               const ScalarWrapper perturb_level,
               const int base_seed,
               const Field& level_mask,
@@ -78,12 +78,12 @@ void print_field_hyperslab (const Field& f,
                             std::ostream& out = std::cout);
 
 // Compute where input field comparese correctly to given value
-void compute_mask (const Field& x, const ScalarWrapper value, Comparison CMP, Field& mask);
+void compute_mask (const Field& x, const ScalarWrapper value, Comparison CMP, const Field& mask);
 Field compute_mask (const Field& x, const ScalarWrapper value, Comparison CMP);
-void compute_mask (const Field& lhs, const Field& rhs, Comparison CMP, Field& mask);
+void compute_mask (const Field& lhs, const Field& rhs, Comparison CMP, const Field& mask);
 
 // Transpose a field layout
-void transpose (const Field& src, Field& tgt);
+void transpose (const Field& src, const Field& tgt);
 Field transpose (const Field& src);
 
 } // namespace scream

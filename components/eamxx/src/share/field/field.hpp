@@ -226,50 +226,53 @@ public:
         Field& get_valid_mask ();
 
   // --------- Field manipulation methods ------------- //
+  // NOTE: these methods are const (shallow-const, like Kokkos::View): the
+  //       Field handle is const, but the underlying data is not. A runtime
+  //       check via EKAT_REQUIRE_MSG enforces that the field is not read-only.
   // NOTE: the versions with a mask field only perform the manip where mask!=0, except
   //       for deep_copy(value,mask,true), which performs the deep copy where mask==0.
   //       The mask field MUST have data type IntType
 
   // Set the field to a constant value (on device view ONLY)
-  void deep_copy (const ScalarWrapper value);
-  void deep_copy (const ScalarWrapper value, const Field& mask, const bool negate_mask = false);
+  void deep_copy (const ScalarWrapper value) const;
+  void deep_copy (const ScalarWrapper value, const Field& mask, const bool negate_mask = false) const;
 
   // Copy the data from one field to this field (on device ONLY)
-  void deep_copy (const Field& src);
-  void deep_copy (const Field& src, const Field& mask);
+  void deep_copy (const Field& src) const;
+  void deep_copy (const Field& src, const Field& mask) const;
 
   // Updates this field y as y=beta*y + alpha*x
   // See share/util/eamxx_combine_ops.hpp for more details on CombineMode options
-  void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta);
-  void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const Field& mask);
+  void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta) const;
+  void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const Field& mask) const;
 
   // Same as the above, but adds the scalar value gamma as well (i.e., does an affine transformation)
-  void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma);
-  void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask);
+  void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma) const;
+  void update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask) const;
 
   // Short-hand to update with alpha=0,beta=1
-  void add_scalar (const ScalarWrapper gamma);
-  void add_scalar (const ScalarWrapper gamma, const Field& mask);
+  void add_scalar (const ScalarWrapper gamma) const;
+  void add_scalar (const ScalarWrapper gamma, const Field& mask) const;
 
   // Special case of update for particular choices of the combine mode
-  void scale (const ScalarWrapper beta);
-  void scale (const ScalarWrapper beta, const Field& mask);
+  void scale (const ScalarWrapper beta) const;
+  void scale (const ScalarWrapper beta, const Field& mask) const;
 
   // Scale a field y as y=y*x where x is also a field
-  void scale (const Field& x);
-  void scale (const Field& x, const Field& mask);
+  void scale (const Field& x) const;
+  void scale (const Field& x, const Field& mask) const;
 
   // Scale a field y as y=y/x where x is also a field
-  void scale_inv (const Field& x);
-  void scale_inv (const Field& x, const Field& mask);
+  void scale_inv (const Field& x) const;
+  void scale_inv (const Field& x, const Field& mask) const;
 
   // Replace *this with max(*this, x)
-  void max (const Field& x);
-  void max (const Field& x, const Field& mask);
+  void max (const Field& x) const;
+  void max (const Field& x, const Field& mask) const;
 
   // Replace *this with min(*this, x)
-  void min (const Field& x);
-  void min (const Field& x, const Field& mask);
+  void min (const Field& x) const;
+  void min (const Field& x, const Field& mask) const;
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
@@ -356,24 +359,24 @@ protected:
 
   // The field manipulation methods call these, with ST matching this field data type.
   template<typename ST>
-  void deep_copy_impl (const ST value);
+  void deep_copy_impl (const ST value) const;
 
   template<bool negate_mask, typename ST>
-  void deep_copy_masked (const ST value, const Field& mask);
+  void deep_copy_masked (const ST value, const Field& mask) const;
 
   template<CombineMode CM>
-  void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma);
+  void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma) const;
   template<CombineMode CM>
-  void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask);
+  void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask) const;
 
   template<CombineMode CM, typename ST, typename STX>
-  void update_impl (const Field& x, const ST alpha, const ST beta, const ST gamma);
+  void update_impl (const Field& x, const ST alpha, const ST beta, const ST gamma) const;
 
   template<CombineMode CM, typename ST, typename STX>
-  void update_fill_aware (const Field& x, const ST alpha, const ST beta, const ST gamma);
+  void update_fill_aware (const Field& x, const ST alpha, const ST beta, const ST gamma) const;
 
   template<CombineMode CM, typename ST, typename STX>
-  void update_masked (const Field& x, const ST alpha, const ST beta, const ST gamma, const Field& mask);
+  void update_masked (const Field& x, const ST alpha, const ST beta, const ST gamma, const Field& mask) const;
 
   template<HostOrDevice HD>
   const get_view_type<char*,HD>&
