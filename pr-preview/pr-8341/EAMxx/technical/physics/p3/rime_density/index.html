@@ -5068,7 +5068,8 @@ Ri_{\mathrm{raw}} =
 5 \times 10^5 \frac{D_c V_{\mathrm{impact}}}
 {T_{\mathrm{zerodegc}} - T_{\mathrm{atm}}},
 \]</div>
-<p>subject to the temperature floor and the clamp <span class="arithmatex">\(1 \le Ri \le 12\)</span>. This P3
+<p>with the denominator interpreted using the same <code>0.001 K</code> temperature floor
+described below, and subject to the clamp <span class="arithmatex">\(1 \le Ri \le 12\)</span>. This P3
 parameter is proportional in structure to the classic droplet-size times
 impact-speed over temperature-depression ratio used in laboratory rime-density
 fits, but it is not identical to Macklin's original definition because P3 uses
@@ -5121,6 +5122,8 @@ density using a piecewise fit.</p>
 <div class="arithmatex">\[
 \rho_{qm,\mathrm{cloud}} = 611 + 72.25(Ri - 8).
 \]</div>
+<p>The diagnosed density is not multiplied by <code>rhofaci</code>; <code>rhofaci</code> only scales
+the ice fall speed used to compute <span class="arithmatex">\(V_{\mathrm{impact}}\)</span>.</p>
 <p>When the lane is active but <span class="arithmatex">\(qc_{\mathrm{incld}} &lt; Q_{\mathrm{small}}\)</span>,</p>
 <div class="arithmatex">\[
 \rho_{qm,\mathrm{cloud}} = 400.
