@@ -911,19 +911,19 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_partmethod>4</se_partmethod>
     <se_topology>cube</se_topology>
     <se_topology COMPSET=".*DP-EAMxx">plane</se_topology>
-    <se_tstep type="real">UNSET</se_tstep>
-    <se_tstep hgrid="ne4np4" constraints="gt 0">600</se_tstep>
-    <se_tstep hgrid="ne30np4" constraints="gt 0">300</se_tstep>
-    <se_tstep hgrid="ne32np4" constraints="gt 0">300</se_tstep>
-    <se_tstep hgrid="ne64np4" constraints="gt 0">150</se_tstep>
-    <se_tstep hgrid="ne128np4" constraints="gt 0">75</se_tstep>
-    <se_tstep hgrid="ne120np4" constraints="gt 0">75</se_tstep>
-    <se_tstep hgrid="ne256np4" constraints="gt 0">33.33333333333</se_tstep>
-    <se_tstep hgrid="ne512np4" constraints="gt 0">16.6666666666666</se_tstep>
-    <se_tstep hgrid="ne1024np4" constraints="gt 0">8.3333333333333</se_tstep>
-    <se_tstep hgrid="ne0np4_CAx32v1" constraints="gt 0">8.3333333333333</se_tstep>
-    <se_tstep COMPSET=".*DP-EAMxx" constraints="gt 0">8.3333333333333</se_tstep>
-    <se_tstep hgrid="ne0np4_conus_x4v1_lowcon" constraints="gt 0">75</se_tstep>
+    <se_tstep type="real" constraints="gt 0">UNSET</se_tstep>
+    <se_tstep hgrid="ne4np4">600</se_tstep>
+    <se_tstep hgrid="ne30np4">300</se_tstep>
+    <se_tstep hgrid="ne32np4">300</se_tstep>
+    <se_tstep hgrid="ne64np4">150</se_tstep>
+    <se_tstep hgrid="ne128np4">75</se_tstep>
+    <se_tstep hgrid="ne120np4">75</se_tstep>
+    <se_tstep hgrid="ne256np4">33.33333333333</se_tstep>
+    <se_tstep hgrid="ne512np4">16.6666666666666</se_tstep>
+    <se_tstep hgrid="ne1024np4">8.3333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_CAx32v1">8.3333333333333</se_tstep>
+    <se_tstep COMPSET=".*DP-EAMxx">8.3333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_conus_x4v1_lowcon">75</se_tstep>
     <statefreq>9999</statefreq>
     <theta_advect_form>1</theta_advect_form>
     <theta_hydrostatic_mode>false</theta_hydrostatic_mode>
@@ -937,7 +937,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- pg2 settings -->
     <cubed_sphere_map hgrid=".*pg2">2</cubed_sphere_map>
     <!-- SL transport settings. SL defaults to on for pg2 configs. -->
-    <dt_tracer_factor constraints="ge 1" hgrid=".*pg2">6</dt_tracer_factor>
+    <dt_tracer_factor hgrid=".*pg2">6</dt_tracer_factor>
     <hypervis_subcycle_q hgrid=".*pg2">6</hypervis_subcycle_q>
     <transport_alg hgrid=".*pg2" doc="0 (Eulerian) or 12 (semi-Lagrangian) tracer transport">12</transport_alg>
     <semi_lagrange_trajectory_nsubstep doc="Controls trajectory method. 0: original method. 1: New method. 2 or more: New method with this many trajectory substeps per tracer time step.">0</semi_lagrange_trajectory_nsubstep>
