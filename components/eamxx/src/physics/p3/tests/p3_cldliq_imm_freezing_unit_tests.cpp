@@ -62,16 +62,7 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
          / cube_host(lamc);
   }
 
-  static Mask uniform_context(const bool value)
-  {
-    Mask context;
-    for (Int s = 0; s < Pack::n; ++s) {
-      context.set(s, value);
-    }
-    return context;
-  }
-
-  static ImmFreezeResult run_case(
+  ImmFreezeResult run_case(
     const Scalar T_atm,
     const Scalar lamc,
     const Scalar mu_c,
@@ -81,23 +72,35 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
     const Scalar exponent,
     const bool context_value,
     const Scalar mass_seed = 0,
-    const Scalar number_seed = 0)
+    const Scalar number_seed = 0) const
   {
-    typename Functions::P3Runtime runtime_options;
-    runtime_options.immersion_freezing_exponent = exponent;
+    auto lanes = make_lanes();
 
-    Pack T_atm_p(T_atm), lamc_p(lamc), mu_c_p(mu_c), cdist1_p(cdist1);
-    Pack qc_incld_p(qc_incld), inv_qc_relvar_p(inv_qc_relvar);
-    Pack qc2qi_hetero_freeze_tend(mass_seed);
-    Pack nc2ni_immers_freeze_tend(number_seed);
-    const auto context = uniform_context(context_value);
+    lanes[0].T_atm = T_atm;
+    lanes[0].lamc = lamc;
+    lanes[0].mu_c = mu_c;
+    lanes[0].cdist1 = cdist1;
+    lanes[0].qc_incld = qc_incld;
+    lanes[0].inv_qc_relvar = inv_qc_relvar;
+    lanes[0].context = context_value;
+    lanes[0].mass_in = mass_seed;
+    lanes[0].number_in = number_seed;
 
-    Functions::cldliq_immersion_freezing(
-      T_atm_p, lamc_p, mu_c_p, cdist1_p, qc_incld_p, inv_qc_relvar_p,
-      qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend,
-      runtime_options, context);
+    for (Int s = 1; s < max_pack_size; ++s) {
+      lanes[s].context = false;
+      lanes[s].mass_in = Scalar(0.0);
+      lanes[s].number_in = Scalar(0.0);
+      lanes[s].T_atm = C::T_rainfrz.value - Scalar(1.0);
+      lanes[s].lamc = Scalar(5.0);
+      lanes[s].mu_c = Scalar(2.0);
+      lanes[s].cdist1 = Scalar(1.0);
+      lanes[s].qc_incld = Scalar(2.0) * C::QSMALL;
+      lanes[s].inv_qc_relvar = Scalar(2.0);
+    }
 
-    return {qc2qi_hetero_freeze_tend[0], nc2ni_immers_freeze_tend[0]};
+    run_kernel(lanes, exponent);
+
+    return {lanes[0].mass_out, lanes[0].number_out};
   }
 
   std::array<ImmFreezeLane, max_pack_size> make_lanes() const
@@ -122,10 +125,14 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
   void run_kernel(std::array<ImmFreezeLane, max_pack_size>& lanes,
                   const Scalar exponent) const
   {
-    typename Functions::P3Runtime runtime_options;
-    runtime_options.immersion_freezing_exponent = exponent;
+    using KTH = KokkosTypes<HostDevice>;
 
-    for (Int i = 0; i < num_test_itrs; ++i) {
+    KTH::view_1d<ImmFreezeLane> lanes_host("lanes_host", max_pack_size);
+    view_1d<ImmFreezeLane> lanes_device("lanes_device", max_pack_size);
+    std::copy(lanes.begin(), lanes.end(), lanes_host.data());
+    Kokkos::deep_copy(lanes_device, lanes_host);
+
+    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
       const Int offset = i * Pack::n;
       Pack T_atm, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar;
       Pack qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend;
@@ -133,16 +140,19 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
 
       for (Int s = 0; s < Pack::n; ++s) {
         const Int vs = offset + s;
-        T_atm[s] = lanes[vs].T_atm;
-        lamc[s] = lanes[vs].lamc;
-        mu_c[s] = lanes[vs].mu_c;
-        cdist1[s] = lanes[vs].cdist1;
-        qc_incld[s] = lanes[vs].qc_incld;
-        inv_qc_relvar[s] = lanes[vs].inv_qc_relvar;
-        qc2qi_hetero_freeze_tend[s] = lanes[vs].mass_in;
-        nc2ni_immers_freeze_tend[s] = lanes[vs].number_in;
-        context.set(s, lanes[vs].context);
+        T_atm[s] = lanes_device(vs).T_atm;
+        lamc[s] = lanes_device(vs).lamc;
+        mu_c[s] = lanes_device(vs).mu_c;
+        cdist1[s] = lanes_device(vs).cdist1;
+        qc_incld[s] = lanes_device(vs).qc_incld;
+        inv_qc_relvar[s] = lanes_device(vs).inv_qc_relvar;
+        qc2qi_hetero_freeze_tend[s] = lanes_device(vs).mass_in;
+        nc2ni_immers_freeze_tend[s] = lanes_device(vs).number_in;
+        context.set(s, lanes_device(vs).context);
       }
+
+      typename Functions::P3Runtime runtime_options;
+      runtime_options.immersion_freezing_exponent = exponent;
 
       Functions::cldliq_immersion_freezing(
         T_atm, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar,
@@ -151,10 +161,13 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
 
       for (Int s = 0; s < Pack::n; ++s) {
         const Int vs = offset + s;
-        lanes[vs].mass_out = qc2qi_hetero_freeze_tend[s];
-        lanes[vs].number_out = nc2ni_immers_freeze_tend[s];
+        lanes_device(vs).mass_out = qc2qi_hetero_freeze_tend[s];
+        lanes_device(vs).number_out = nc2ni_immers_freeze_tend[s];
       }
-    }
+    });
+
+    Kokkos::deep_copy(lanes_host, lanes_device);
+    std::copy(lanes_host.data(), lanes_host.data() + max_pack_size, lanes.begin());
   }
 
   // For active lanes, cloud-liquid immersion freezing computes two moments of

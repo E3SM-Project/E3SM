@@ -242,10 +242,11 @@ The `run_phys()` implementation uses separate Catch2 sections for:
 - `context_mask_preserves_inactive_lanes`
 - `finite_nonnegative_outputs`
 
-These tests use deterministic inputs, run the production
-`Functions::cldliq_immersion_freezing` kernel, and compare the outputs against
-independent identities, exact ratios, and one-sided physical inequalities.
-The BFB regression path remains separate in `run_bfb()`.
+These tests use deterministic inputs, launch the production
+`Functions::cldliq_immersion_freezing` kernel through Kokkos, copy the results
+back to host, and compare the outputs against independent identities, exact
+ratios, and one-sided physical inequalities. The BFB regression path remains
+separate in `run_bfb()`.
 
 ## Tolerance Philosophy
 
