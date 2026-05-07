@@ -63,7 +63,6 @@ void GWDrag::create_requests() {
   add_field <Updated>("horiz_winds",          vector3d_mid, m/s,    grid_name, pack_size);
 
   // Diagnostic Outputs
-  add_field<Computed>("gw_activity",          scalar2d,     nondim, grid_name);
   add_field<Computed>("gw_T_mid_tend",        scalar3d_mid, K/s,    grid_name, pack_size);
   add_field<Computed>("gw_qv_tend",           scalar3d_mid, kg/kg/s,grid_name, pack_size);
   add_field<Computed>("gw_u_tend",            scalar3d_mid, m/s/s,  grid_name, pack_size);
@@ -455,6 +454,29 @@ void GWDrag::run_impl (const double dt) {
       qv_i(k)    += loc_gw_tend_q(i,k,0) * dt;
       qc_i(k)    += loc_gw_tend_q(i,k,1) * dt;
       qi_i(k)    += loc_gw_tend_q(i,k,2) * dt;
+    });
+  });
+  //----------------------------------------------------------------------------
+  // Update diagnostic outputs
+  const auto& gw_u_tend_out     = get_field_out("gw_u_tend")    .get_view<Real*>();
+  const auto& gw_v_tend_out     = get_field_out("gw_v_tend")    .get_view<Real*>();
+  const auto& gw_T_mid_tend_out = get_field_out("gw_T_mid_tend").get_view<Real*>();
+  const auto& gw_qv_tend_out    = get_field_out("gw_qv_tend")   .get_view<Real*>();
+  auto loc_gw_u_tend_out     = gw_u_tend_out;
+  auto loc_gw_v_tend_out     = gw_v_tend_out;
+  auto loc_gw_T_mid_tend_out = gw_T_mid_tend_out;
+  auto loc_gw_qv_tend_out    = gw_qv_tend_out;
+  Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
+    const Int i = team.league_rank();
+    const auto loc_gw_u_tend_out_i     = ekat::scalarize(ekat::subview(loc_gw_u_tend_out, i));
+    const auto loc_gw_v_tend_out_i     = ekat::scalarize(ekat::subview(loc_gw_v_tend_out, i));
+    const auto loc_gw_T_mid_tend_out_i = ekat::scalarize(ekat::subview(loc_gw_T_mid_tend_out, i));
+    const auto loc_gw_qv_tend_out_i    = ekat::scalarize(ekat::subview(loc_gw_qv_tend_out, i));
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, m_nlev), [&] (const int k) {
+      gw_u_tend_out_i(k)     = loc_gw_tend_u(i,k);
+      gw_v_tend_out_i(k)     = loc_gw_tend_v(i,k);
+      gw_T_mid_tend_out_i(k) = loc_gw_tend_t(i,k) / PC::Cpair.value;
+      gw_qv_tend_out_i(k)    = loc_gw_tend_q(i,k,0);
     });
   });
 
