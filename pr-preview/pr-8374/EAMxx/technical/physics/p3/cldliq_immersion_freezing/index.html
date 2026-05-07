@@ -5284,10 +5284,11 @@ identities:</p>
 <li><code>context_mask_preserves_inactive_lanes</code></li>
 <li><code>finite_nonnegative_outputs</code></li>
 </ul>
-<p>These tests use deterministic inputs, run the production
-<code>Functions::cldliq_immersion_freezing</code> kernel, and compare the outputs against
-independent identities, exact ratios, and one-sided physical inequalities.
-The BFB regression path remains separate in <code>run_bfb()</code>.</p>
+<p>These tests use deterministic inputs, launch the production
+<code>Functions::cldliq_immersion_freezing</code> kernel through Kokkos, copy the results
+back to host, and compare the outputs against independent identities, exact
+ratios, and one-sided physical inequalities. The BFB regression path remains
+separate in <code>run_bfb()</code>.</p>
 <h2 id="tolerance-philosophy">Tolerance Philosophy</h2>
 <p>The tests use identity tolerances for exact algebraic relations such as the
 moment identity and the separable scaling ratios. Exact equality is used for
