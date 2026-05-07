@@ -48,7 +48,7 @@ a = \texttt{runtime\_options.immersion\_freezing\_exponent},
 $$
 
 $$
-\expAimmDt = e^{a\theta},
+\mathrm{expAimmDt} = e^{a\theta},
 \qquad
 \lambda = \lambda_c,
 \qquad
