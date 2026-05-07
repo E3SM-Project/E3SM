@@ -5161,7 +5161,7 @@ N = nc2ni_{\mathrm{immers\_freeze\_tend}}.
 <p>Then the mass-to-number ratio simplifies exactly to</p>
 <div class="arithmatex">\[
 \frac{M}{N} =
-\frac{CONS6}{CONS5}
+\frac{\mathrm{CONS6}}{\mathrm{CONS5}}
 \frac{(\mu_c + 4)(\mu_c + 5)(\mu_c + 6)}{\lambda_c^3}.
 \]</div>
 <p>This follows from</p>
@@ -5171,21 +5171,21 @@ N = nc2ni_{\mathrm{immers\_freeze\_tend}}.
 \]</div>
 <p>Using</p>
 <div class="arithmatex">\[
-CONS5 = \frac{\pi}{6} BIMM,
+\mathrm{CONS5} = \frac{\pi}{6}\mathrm{BIMM},
 \qquad
-CONS6 = \left(\frac{\pi}{6}\right)^2 \rho_w BIMM,
+\mathrm{CONS6} = \left(\frac{\pi}{6}\right)^2 \rho_w\mathrm{BIMM},
 \]</div>
 <p>the constant ratio is</p>
 <div class="arithmatex">\[
-\frac{CONS6}{CONS5} = \frac{\pi \rho_w}{6}.
+\frac{\mathrm{CONS6}}{\mathrm{CONS5}} = \frac{\pi \rho_w}{6}.
 \]</div>
 <p>This ratio is the mean mass per newly frozen droplet implied by the assumed
-cloud-droplet size distribution. Since <span class="arithmatex">\(CONS6 / CONS5 = \pi \rho_w / 6\)</span>, the
-ratio has the same structure as the mass of a spherical water droplet, with
-the effective droplet-volume factor supplied by the Gamma-distribution moment
-ratio. Temperature, the runtime exponent, and the distribution prefactor
-<code>cdist1</code> cancel out because they multiply the mass and number moments
-identically.</p>
+cloud-droplet size distribution. Since
+<span class="arithmatex">\(\mathrm{CONS6} / \mathrm{CONS5} = \pi \rho_w / 6\)</span>, the ratio has the same
+structure as the mass of a spherical water droplet, with the effective
+droplet-volume factor supplied by the Gamma-distribution moment ratio.
+Temperature, the runtime exponent, and the distribution prefactor <code>cdist1</code>
+cancel out because they multiply the mass and number moments identically.</p>
 <h2 id="volume-weighted-freezing-interpretation">Volume-Weighted Freezing Interpretation</h2>
 <p>The implemented mass-to-number tendency ratio can be interpreted as the mean
 mass per newly frozen droplet. Because</p>
@@ -5193,7 +5193,7 @@ mass per newly frozen droplet. Because</p>
 \frac{CONS6}{CONS5} = \frac{\pi \rho_w}{6},
 \]</div>
 <p>the ratio has the structure of the mass of a spherical water droplet,
-<span class="arithmatex">\(m = (\pi \rho_w / 6) D^3\)</span>.</p>
+<span class="arithmatex">\(m = (\pi \rho_w / 6)D^3\)</span>.</p>
 <p>For an ordinary Gamma cloud droplet number distribution, the ordinary mean
 cloud droplet mass is</p>
 <div class="arithmatex">\[
