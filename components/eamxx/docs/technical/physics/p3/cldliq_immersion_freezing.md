@@ -257,18 +257,3 @@ inactive preservation and positive-tendency assertions are not conflated. The
 volume-weighted size-bias test also uses this identity tolerance, because the
 comparison still goes through production-kernel outputs involving `tgamma`,
 `exp`, and ratio formation.
-
-## Validation
-
-Build and run the targeted test with:
-
-```bash
-cd /pscratch/sd/k/kylepres/e3sm_scratch/pm-cpu/full_debug
-module load python
-eval "$(/global/homes/k/kylepres/EAMXX/components/eamxx/scripts/eamxx-env-cmd pm-cpu)"
-module load PrgEnv-gnu cray-mpich
-export CC=mpicc CXX=mpicxx FC=mpifort
-export MPICH_GPU_SUPPORT_ENABLED=0
-make -j 8 p3_tests
-./src/physics/p3/tests/p3_tests "p3_cldliq_immersion_freezing"
-```
