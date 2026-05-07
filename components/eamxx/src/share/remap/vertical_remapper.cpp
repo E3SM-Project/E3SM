@@ -89,37 +89,59 @@ set_interp_type (const InterpType itype)
 {
   if (itype == m_interp_type) return;
 
-  // For TARGET pressure fields: always do in-place log/exp transformation
-  // (they are fixed frozen clones).
+  // For TARGET pressure fields (owned clones): apply log/exp in-place.
   auto transform_tgt = [&](Field& f) {
     if (not f.is_allocated()) return;
     if (itype == LogLinear) {
-      f = log_pressure(f);
+      log_pressure(f);
     } else {
       EKAT_REQUIRE_MSG (itype == Linear,
           "[VerticalRemapper::set_interp_type] Unrecognized interpolation type.\n");
-      f = exp_pressure(f);
+      exp_pressure(f);
     }
   };
   transform_tgt(m_tgt_pmid);
   transform_tgt(m_tgt_pint);
 
   // For SOURCE pressure fields: m_src_pmid/m_src_pint always hold the raw field.
-  // When switching to LogLinear, allocate log workspaces (refreshed each remap).
-  // When switching to Linear, clear the log workspaces.
-  if (itype == LogLinear) {
-    if (m_src_pmid.is_allocated()) {
-      m_src_pmid_log = log_pressure(m_src_pmid);
-    }
-    if (m_src_pint.is_allocated()) {
-      m_src_pint_log = log_pressure(m_src_pint);
-    }
+  // When switching to LogLinear (and source is in linear space), allocate log workspaces
+  // (refreshed each remap). When switching to Linear, or when source is already
+  // in log-space, clear any workspaces.
+  if (itype == LogLinear && !m_src_log_space) {
+    create_src_log_workspaces();
   } else {
     m_src_pmid_log = Field{};
     m_src_pint_log = Field{};
   }
 
   m_interp_type = itype;
+}
+
+void VerticalRemapper::
+set_src_log_space (bool v)
+{
+  m_src_log_space = v;
+  // If clearing the flag while in LogLinear mode, we now need log workspaces.
+  // If setting the flag, clear any existing workspaces (source is used directly).
+  if (v) {
+    m_src_pmid_log = Field{};
+    m_src_pint_log = Field{};
+  } else if (m_interp_type == LogLinear) {
+    create_src_log_workspaces();
+  }
+}
+
+void VerticalRemapper::
+create_src_log_workspaces ()
+{
+  if (m_src_pmid.is_allocated()) {
+    m_src_pmid_log = m_src_pmid.clone("log_" + m_src_pmid.name());
+    log_pressure(m_src_pmid_log);
+  }
+  if (m_src_pint.is_allocated()) {
+    m_src_pint_log = m_src_pint.clone("log_" + m_src_pint.name());
+    log_pressure(m_src_pint_log);
+  }
 }
 
 void VerticalRemapper::
@@ -156,13 +178,22 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
   const auto vtag = p_layout.tags().back();
   const auto vdim = p_layout.dims().back();
 
-  // For log-linear interpolation on the TARGET (fixed) pressure, clone and store log(p).
-  // For the SOURCE pressure (which changes every timestep), keep the raw shared
-  // reference and allocate a separate log-workspace (m_src_pmid_log / m_src_pint_log)
-  // that will be refreshed at the start of every remap_fwd_impl call.
-  // For linear interpolation, always keep the raw shared reference.
+  // For log-linear interpolation on the TARGET (fixed) pressure, clone p and
+  // apply log in-place. For SOURCE pressure (which changes every timestep when
+  // m_src_log_space==false), keep the raw shared reference and allocate a separate
+  // log-workspace that is refreshed at the start of every remap_fwd_impl call.
+  // When m_src_log_space==true, the source field is already in log-space; use it
+  // directly with no workspace. For linear interpolation, always store raw refs.
   const bool use_log = (m_interp_type == LogLinear);
-  const Field p_stored = (use_log && !src) ? log_pressure(p) : p;
+
+  // For target: clone once here, then apply log in-place; reuse for both mid/int.
+  Field p_tgt_clone;
+  if (use_log && !src) {
+    p_tgt_clone = p.clone("log_" + p.name());
+    log_pressure(p_tgt_clone);
+  } else if (!src) {
+    p_tgt_clone = p;
+  }
 
   FieldTag expected_tag = FieldTag::Invalid;
   int      expected_dim = -1;
@@ -172,14 +203,14 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
     expected_tag = is_pressure_grid ? LEVP : LEV;
     expected_dim = nlevs;
     if (src) {
-      m_src_pmid = p;               // keep raw shared reference
-      if (use_log) {
-        // Pre-allocate the log workspace (initial values are log(p); will be
-        // refreshed from the live p_mid every timestep in remap_fwd_impl).
-        m_src_pmid_log = log_pressure(p);
+      m_src_pmid = p;  // keep raw shared reference (or log ref when m_src_log_space)
+      if (use_log && !m_src_log_space) {
+        // Pre-allocate the log workspace; will be refreshed from live p_mid each timestep.
+        m_src_pmid_log = m_src_pmid.clone("log_" + m_src_pmid.name());
+        log_pressure(m_src_pmid_log);
       }
     } else {
-      m_tgt_pmid = p_stored;
+      m_tgt_pmid = p_tgt_clone;
     }
     m_mid_packs_supported &= pack_compatible;
   }
@@ -187,12 +218,13 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
     expected_tag = is_pressure_grid ? LEVP : ILEV;
     expected_dim = is_pressure_grid ? nlevs : nlevs+1;
     if (src) {
-      m_src_pint = p;               // keep raw shared reference
-      if (use_log) {
-        m_src_pint_log = log_pressure(p);
+      m_src_pint = p;  // keep raw shared reference (or log ref when m_src_log_space)
+      if (use_log && !m_src_log_space) {
+        m_src_pint_log = m_src_pint.clone("log_" + m_src_pint.name());
+        log_pressure(m_src_pint_log);
       }
     } else {
-      m_tgt_pint = p_stored;
+      m_tgt_pint = p_tgt_clone;
     }
     m_int_packs_supported &= pack_compatible;
   }
@@ -204,79 +236,15 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
       "  - expected last layout dim: " + std::to_string(expected_dim) + "\n");
 }
 
-Field VerticalRemapper::
-log_pressure (const Field& p) const
-{
-  // Clone the field: deep copies device data, then syncs to host
-  auto log_p = p.clone("log_" + p.name());
-
-  const auto& layout = log_p.get_header().get_identifier().get_layout();
-  const int nlevs = layout.dims().back();
-
-  // Apply log element-wise on device
-  if (log_p.rank()==1) {
-    auto v = log_p.get_view<Real*>();
-    Kokkos::parallel_for("VerticalRemapper::log_pressure",
-                         Kokkos::RangePolicy<>(0,nlevs),
-                         KOKKOS_LAMBDA(int k) {
-      v(k) = Kokkos::log(v(k));
-    });
-  } else { // rank == 2
-    const int ncols = layout.dims().front();
-    auto v = log_p.get_view<Real**>();
-    Kokkos::parallel_for("VerticalRemapper::log_pressure",
-                         Kokkos::RangePolicy<>(0,ncols*nlevs),
-                         KOKKOS_LAMBDA(int idx) {
-      const int i = idx / nlevs;
-      const int k = idx % nlevs;
-      v(i,k) = Kokkos::log(v(i,k));
-    });
-  }
-  Kokkos::fence();
-  return log_p;
-}
-
-Field VerticalRemapper::
-exp_pressure (const Field& p) const
-{
-  // Clone the field: deep copies device data, then syncs to host
-  auto exp_p = p.clone("exp_" + p.name());
-
-  const auto& layout = exp_p.get_header().get_identifier().get_layout();
-  const int nlevs = layout.dims().back();
-
-  // Apply exp element-wise on device
-  if (exp_p.rank()==1) {
-    auto v = exp_p.get_view<Real*>();
-    Kokkos::parallel_for("VerticalRemapper::exp_pressure",
-                         Kokkos::RangePolicy<>(0,nlevs),
-                         KOKKOS_LAMBDA(int k) {
-      v(k) = Kokkos::exp(v(k));
-    });
-  } else { // rank == 2
-    const int ncols = layout.dims().front();
-    auto v = exp_p.get_view<Real**>();
-    Kokkos::parallel_for("VerticalRemapper::exp_pressure",
-                         Kokkos::RangePolicy<>(0,ncols*nlevs),
-                         KOKKOS_LAMBDA(int idx) {
-      const int i = idx / nlevs;
-      const int k = idx % nlevs;
-      v(i,k) = Kokkos::exp(v(i,k));
-    });
-  }
-  Kokkos::fence();
-  return exp_p;
-}
-
 void VerticalRemapper::
-apply_log_in_place (Field& f) const
+log_pressure (Field& f) const
 {
   const auto& layout = f.get_header().get_identifier().get_layout();
   const int nlevs = layout.dims().back();
 
   if (f.rank()==1) {
     auto v = f.get_view<Real*>();
-    Kokkos::parallel_for("VerticalRemapper::apply_log",
+    Kokkos::parallel_for("VerticalRemapper::log_pressure",
                          Kokkos::RangePolicy<>(0,nlevs),
                          KOKKOS_LAMBDA(int k) {
       v(k) = Kokkos::log(v(k));
@@ -284,12 +252,39 @@ apply_log_in_place (Field& f) const
   } else { // rank == 2
     const int ncols = layout.dims().front();
     auto v = f.get_view<Real**>();
-    Kokkos::parallel_for("VerticalRemapper::apply_log",
+    Kokkos::parallel_for("VerticalRemapper::log_pressure",
                          Kokkos::RangePolicy<>(0,ncols*nlevs),
                          KOKKOS_LAMBDA(int idx) {
       const int i = idx / nlevs;
       const int k = idx % nlevs;
       v(i,k) = Kokkos::log(v(i,k));
+    });
+  }
+  Kokkos::fence();
+}
+
+void VerticalRemapper::
+exp_pressure (Field& f) const
+{
+  const auto& layout = f.get_header().get_identifier().get_layout();
+  const int nlevs = layout.dims().back();
+
+  if (f.rank()==1) {
+    auto v = f.get_view<Real*>();
+    Kokkos::parallel_for("VerticalRemapper::exp_pressure",
+                         Kokkos::RangePolicy<>(0,nlevs),
+                         KOKKOS_LAMBDA(int k) {
+      v(k) = Kokkos::exp(v(k));
+    });
+  } else { // rank == 2
+    const int ncols = layout.dims().front();
+    auto v = f.get_view<Real**>();
+    Kokkos::parallel_for("VerticalRemapper::exp_pressure",
+                         Kokkos::RangePolicy<>(0,ncols*nlevs),
+                         KOKKOS_LAMBDA(int idx) {
+      const int i = idx / nlevs;
+      const int k = idx % nlevs;
+      v(i,k) = Kokkos::exp(v(i,k));
     });
   }
   Kokkos::fence();
@@ -539,14 +534,15 @@ void VerticalRemapper::remap_fwd_impl ()
 {
   using namespace ShortFieldTagsNames;
 
-  // 0. For log-linear mode, refresh the log-space source pressure fields from
-  //    the current raw p_mid/p_int values (which change every model timestep).
+  // 0. For log-linear mode with linear-space source pressure, refresh the log-space
+  //    workspaces from the current raw p_mid/p_int (which change every model timestep).
+  //    When m_src_log_space==true the source is already in log-space, so no refresh.
   //    Target pressures are fixed (from a remap file), so they never need refreshing.
-  if (m_interp_type == LogLinear) {
+  if (m_interp_type == LogLinear && !m_src_log_space) {
     auto refresh = [&](const Field& p_raw, Field& p_log) {
       if (p_log.is_allocated()) {
         p_log.deep_copy(p_raw);
-        apply_log_in_place(p_log);
+        log_pressure(p_log);
       }
     };
     refresh(m_src_pmid, m_src_pmid_log);
@@ -558,6 +554,8 @@ void VerticalRemapper::remap_fwd_impl ()
     start_timer(name() + " setup LI");
 
   // For log-linear mode, use the log workspaces (refreshed above) instead of raw pressure.
+  // When m_src_log_space==true, m_src_pmid_log is not allocated, so m_src_pmid is used
+  // directly (it already holds log-pressure provided by the caller).
   const Field& src_pmid_use = m_src_pmid_log.is_allocated() ? m_src_pmid_log : m_src_pmid;
   const Field& src_pint_use = m_src_pint_log.is_allocated() ? m_src_pint_log : m_src_pint;
 

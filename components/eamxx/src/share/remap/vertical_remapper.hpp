@@ -55,6 +55,13 @@ public:
   // LogLinear->Linear applies exp to recover raw pressure values.
   void set_interp_type (const InterpType itype);
 
+  // Declare that the source pressure passed to set_source_pressure is already
+  // in log-space (i.e., values are log(Pa), not Pa). When true, no further log
+  // transformation is applied to the source pressure at remap time. Useful when
+  // the source grid has a logarithmic pressure coordinate.
+  // Should be called before set_interp_type and set_source_pressure.
+  void set_src_log_space (bool v = true);
+
   void set_source_pressure (const Field& p, const ProfileType ptype);
   void set_target_pressure (const Field& p, const ProfileType ptype);
 
@@ -96,12 +103,10 @@ protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  // Clone p and return a field with log(p) values
-  Field log_pressure (const Field& p) const;
-  // Clone p and return a field with exp(p) values
-  Field exp_pressure (const Field& p) const;
-  // Apply log in-place to an already-allocated field (rank 1 or 2)
-  void apply_log_in_place (Field& f) const;
+  // Apply log element-wise in-place to f (rank 1 or 2). Caller must clone first if a copy is needed.
+  void log_pressure (Field& f) const;
+  // Apply exp element-wise in-place to f (rank 1 or 2). Caller must clone first if a copy is needed.
+  void exp_pressure (Field& f) const;
 
   template<int N>
   void apply_vertical_interpolation (const ekat::LinInterp<Real,N>& lin_interp,
@@ -117,6 +122,11 @@ public:
 protected:
 
   void create_lin_interp ();
+
+  // Allocate and initialise m_src_pmid_log / m_src_pint_log from the current
+  // raw source pressure fields.  Called whenever LogLinear mode is enabled and
+  // m_src_log_space is false.
+  void create_src_log_workspaces ();
   
   using KT = KokkosTypes<DefaultDevice>;
 
@@ -160,6 +170,11 @@ protected:
 
   // Interpolation type: linear or log-linear
   InterpType            m_interp_type = Linear;
+
+  // When true, the source pressure provided by the user is already in log-space
+  // (log(Pa)), and no further log transformation is applied in remap_fwd_impl.
+  // This supports source grids whose vertical coordinate is logarithmic pressure.
+  bool                  m_src_log_space = false;
 
   // We need to remap mid/int fields separately, and we want to use packs if possible,
   // so we need to divide input fields into 4 separate categories
