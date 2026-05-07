@@ -726,6 +726,24 @@ get_remote_pids_and_lids (const gid_view_h& gids,
       "  - num unique gids in: " + std::to_string(num_unique_gids) + "\n");
 }
 
+void AbstractGrid::reset_field_tag_name(const FieldTag t, const std::string &s)
+{
+  m_special_tag_names[t] = s;
+
+  // Rename the tag also in any field stored by the class
+  std::vector<Field*> fields = {
+    &m_dofs_gids,
+    &m_partitioned_dim_gids,
+    &m_lid_to_idx
+  };
+  for (auto& it : m_geo_fields) {
+    fields.push_back(&it.second);
+  }
+  for (auto f : fields) {
+    *f = f->alias(f->name(),m_special_tag_names);
+  }
+}
+
 void AbstractGrid::create_dof_fields (const int scalar2d_layout_rank)
 {
   using namespace ShortFieldTagsNames;

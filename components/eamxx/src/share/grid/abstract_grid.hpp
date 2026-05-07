@@ -254,13 +254,9 @@ public:
     return true;
   }
 
-  void
-  reset_field_tag_name(const FieldTag t, const std::string &s)
-  {
-    m_special_tag_names[t] = s;
-  }
-  bool
-  has_special_tag_name(const FieldTag t) const
+  void reset_field_tag_name(const FieldTag t, const std::string &s);
+
+  bool has_special_tag_name(const FieldTag t) const
   {
     return m_special_tag_names.count(t) == 1;
   }
