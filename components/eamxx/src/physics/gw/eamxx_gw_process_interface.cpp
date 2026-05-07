@@ -328,51 +328,84 @@ void GWDrag::run_impl (const double dt) {
     const auto dttdf_i      = ekat::subview(loc_dttdf, i);
     const auto dttke_i      = ekat::subview(loc_dttke, i);
     const auto q_2d         = ekat::subview(loc_q_combined, i);
+
+    Int src_lev;  // level index of gravity wave source
+    Int tnd_lev;  // lowest level index where tendencies are allowed
+    Real xv;      // zonal unit vector of source wind
+    Real yv;      // meridional unit vector of source wind
     
     // Convective gravity waves (Beres scheme)
     if (GWF::s_common_init.use_gw_convect) {
 
-      // // Determine wave sources
+      // // Determine convective wave sources
       // GWF::gw_beres_src();
 
-      // // Solve for the drag profile
-      // GWF::gw_drag_prof();
+      // Solve for the drag profile with convective sources
+      GWF::gw_drag_prof(team, wsm.get_workspace(team), GWF::s_common_init,
+                        m_nlev, GWF::s_common_init.pgwv, src_lev, tnd_lev, tnd_lev,
+                        GWF::s_common_init.do_taper, dt, m_lat_v(i),
+                        T_mid_i, T_int_i, p_mid_i, p_int_i,
+                        p_del_i, p_del_rcp_i, p_int_log_i, rho_int_i,
+                        N_mid_i, N_int_i, ubm_i, ubi_i, xv, yv,
+                        GWF::s_common_init.gw_convect_eff,
+                        c_i, kvtt_i, q_2d, dse_i, tau_i,
+                        utgw_i, vtgw_i, ttgw_i, qtgw_i,
+                        taucd_i, egwdffi_i, gwut_i, dttdf_i, dttke_i);
 
-      // add the diffusion coefficients
-      // do k = 0, pver
-      //   egwdffi_tot(:,k) = egwdffi_tot(:,k) + egwdffi(:,k)
-      // end do
+      // add convective tendencies to aggregate output tendencies
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, m_nlev), [&] (const int k) {
+        gw_tend_u_i(k)   += utgw_i(k)   * landfrac_i;
+        gw_tend_v_i(k)   += vtgw_i(k)   * landfrac_i;
+        gw_tend_t_i(k)   += ttgw_i(k)   * landfrac_i;
+        gw_tend_q_i(k,0) += qtgw_i(k,0) * landfrac_i;
+        gw_tend_q_i(k,1) += qtgw_i(k,1) * landfrac_i;
+        gw_tend_q_i(k,2) += qtgw_i(k,2) * landfrac_i;
+      });
 
-      // // add tendencies to aggregate output tendencies
-      // team.team_barrier();
-      // Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, m_nlev), [&] (const int k) {
-      //   gw_tend_u_i(k)   += utgw_i(k)   * landfrac_i;
-      //   gw_tend_v_i(k)   += vtgw_i(k)   * landfrac_i;
-      //   gw_tend_t_i(k)   += ttgw_i(k)   * landfrac_i;
-      //   gw_tend_q_i(k,0) += qtgw_i(k,0) * landfrac_i;
-      //   gw_tend_q_i(k,1) += qtgw_i(k,1) * landfrac_i;
-      //   gw_tend_q_i(k,2) += qtgw_i(k,2) * landfrac_i;
-      // });
-
-      // // Momentum & energy conservation
-      // GWF::momentum_energy_conservation();
+      // Momentum & energy conservation for convective tendencies
+      GWF::momentum_energy_conservation(team, m_nlev, tnd_lev, dt,
+                                        taucd_i, p_int_i, p_del_i, uwind_i, vwind_i,
+                                        gw_tend_u_i, gw_tend_v_i, gw_tend_t_i,
+                                        utgw_i, vtgw_i, ttgw_i );
 
     }
 
     // Frontally generated gravity waves
     if (GWF::s_common_init.use_gw_frontal) {
-        // GWF::gw_cm_src();
-        // GWF::gw_drag_prof();
-        // GWF::momentum_energy_conservation();
-    }
+
+      // // Determine frontal wave sources
+      // GWF::gw_cm_src();
+
+      // Solve for the drag profile with frontal sources
+      GWF::gw_drag_prof(team, wsm.get_workspace(team), GWF::s_common_init,
+                        m_nlev, GWF::s_common_init.pgwv, src_lev, tnd_lev, tnd_lev,
+                        GWF::s_common_init.do_taper, dt, m_lat_v(i),
+                        T_mid_i, T_int_i, p_mid_i, p_int_i,
+                        p_del_i, p_del_rcp_i, p_int_log_i, rho_int_i,
+                        N_mid_i, N_int_i, ubm_i, ubi_i, xv, yv,
+                        GWF::s_common_init.gw_frontal_eff,
+                        c_i, kvtt_i, q_2d, dse_i, tau_i,
+                        utgw_i, vtgw_i, ttgw_i, qtgw_i,
+                        taucd_i, egwdffi_i, gwut_i, dttdf_i, dttke_i);
+
+      // add frontal tendencies to aggregate output tendencies
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, m_nlev), [&] (const int k) {
+        gw_tend_u_i(k)   += utgw_i(k)   * landfrac_i;
+        gw_tend_v_i(k)   += vtgw_i(k)   * landfrac_i;
+        gw_tend_t_i(k)   += ttgw_i(k)   * landfrac_i;
+        gw_tend_q_i(k,0) += qtgw_i(k,0) * landfrac_i;
+        gw_tend_q_i(k,1) += qtgw_i(k,1) * landfrac_i;
+        gw_tend_q_i(k,2) += qtgw_i(k,2) * landfrac_i;
+      });
+
+      // Momentum & energy conservation for frontal tendencies
+      GWF::momentum_energy_conservation(team, m_nlev, tnd_lev, dt,
+                                        taucd_i, p_int_i, p_del_i, uwind_i, vwind_i,
+                                        gw_tend_u_i, gw_tend_v_i, gw_tend_t_i,
+                                        utgw_i, vtgw_i, ttgw_i );
 
     // Orographic stationary gravity waves
     if (GWF::s_common_init.use_gw_orographic) {
-
-      Int src_lev;  // level index of gravity wave source
-      Int tnd_lev;  // lowest level index where tendencies are allowed
-      Real xv;      // zonal unit vector of source wind
-      Real yv;      // meridional unit vector of source wind
 
       // Determine the orographic wave source
       GWF::gw_oro_src(team, GWF::s_common_init, m_nlev, GWF::s_common_init.pgwv,
