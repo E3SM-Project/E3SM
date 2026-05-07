@@ -458,10 +458,10 @@ void GWDrag::run_impl (const double dt) {
   });
   //----------------------------------------------------------------------------
   // Update diagnostic outputs
-  const auto& gw_u_tend_out     = get_field_out("gw_u_tend")    .get_view<Real*>();
-  const auto& gw_v_tend_out     = get_field_out("gw_v_tend")    .get_view<Real*>();
-  const auto& gw_T_mid_tend_out = get_field_out("gw_T_mid_tend").get_view<Real*>();
-  const auto& gw_qv_tend_out    = get_field_out("gw_qv_tend")   .get_view<Real*>();
+  const auto& gw_u_tend_out     = get_field_out("gw_u_tend")    .get_view<Pack**>();
+  const auto& gw_v_tend_out     = get_field_out("gw_v_tend")    .get_view<Pack**>();
+  const auto& gw_T_mid_tend_out = get_field_out("gw_T_mid_tend").get_view<Pack**>();
+  const auto& gw_qv_tend_out    = get_field_out("gw_qv_tend")   .get_view<Pack**>();
   auto loc_gw_u_tend_out     = gw_u_tend_out;
   auto loc_gw_v_tend_out     = gw_v_tend_out;
   auto loc_gw_T_mid_tend_out = gw_T_mid_tend_out;
@@ -473,10 +473,10 @@ void GWDrag::run_impl (const double dt) {
     const auto loc_gw_T_mid_tend_out_i = ekat::scalarize(ekat::subview(loc_gw_T_mid_tend_out, i));
     const auto loc_gw_qv_tend_out_i    = ekat::scalarize(ekat::subview(loc_gw_qv_tend_out, i));
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, m_nlev), [&] (const int k) {
-      gw_u_tend_out_i(k)     = loc_gw_tend_u(i,k);
-      gw_v_tend_out_i(k)     = loc_gw_tend_v(i,k);
-      gw_T_mid_tend_out_i(k) = loc_gw_tend_t(i,k) / PC::Cpair.value;
-      gw_qv_tend_out_i(k)    = loc_gw_tend_q(i,k,0);
+      loc_gw_u_tend_out_i(k)     = loc_gw_tend_u(i,k);
+      loc_gw_v_tend_out_i(k)     = loc_gw_tend_v(i,k);
+      loc_gw_T_mid_tend_out_i(k) = loc_gw_tend_t(i,k) / PC::Cpair.value;
+      loc_gw_qv_tend_out_i(k)    = loc_gw_tend_q(i,k,0);
     });
   });
 

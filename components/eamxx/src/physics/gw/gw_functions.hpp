@@ -10,6 +10,7 @@
 #include <ekat_parameter_list.hpp>
 
 #include <array>
+#include <algorithm>
 
 namespace scream {
 namespace gw {
