@@ -258,7 +258,7 @@ struct Functions
     // Inputs
     ekat::ParameterList& params,
     const Int& pver_in,
-    Kokkos::View<Real*, Kokkos::HostSpace> pref_int,
+    const uview_1d<const Real>& pref_int,
     const bool& do_molec_diff_in,
     const Int& nbot_molec_in,
     const Int& ktop_in,
@@ -272,7 +272,7 @@ struct Functions
   static void gw_convect_init(
     // Inputs
     ekat::ParameterList& params,
-    const Kokkos::View<Real***, Kokkos::HostSpace>& mfcc_in);
+    const uview_3d<const Real>& mfcc_in);
 
   static void gw_front_init(
     // Inputs
@@ -283,7 +283,7 @@ struct Functions
   static void gw_front_init(
     // Inputs
     ekat::ParameterList& params,
-    const Kokkos::View<Real*, Kokkos::HostSpace>& pref_int);
+    const uview_1d<const Real>& pref_int);
 
   static void gw_finalize()
   {

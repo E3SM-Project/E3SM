@@ -66,7 +66,7 @@ void Functions<S,D>::gw_common_init(
   // Inputs
   ekat::ParameterList& params,
   const Int& pver_in,
-  Kokkos::View<Real*, Kokkos::HostSpace> pref_int,
+  const uview_1d<const Real>& pref_int,
   const bool& do_molec_diff_in,
   const Int& nbot_molec_in,
   const Int& ktop_in,
@@ -84,6 +84,8 @@ void Functions<S,D>::gw_common_init(
 
   EKAT_REQUIRE_MSG(static_cast<int>(pref_int.size())==pver_in+1, "Error! pref_int size is incorrect.\n");
 
+  using exe_space_t = typename KT::ExeSpace;
+
   s_common_init.initialized = true;
   s_common_init.pver = pver_in;
 
@@ -98,12 +100,15 @@ void Functions<S,D>::gw_common_init(
 
   // Set phase speeds
   const int num_pgwv = s_common_init.pgwv * 2 + 1;
+  const int pgwv = s_common_init.pgwv;
+  const Real dc = s_common_init.dc;
   s_common_init.cref = view_1d<Real>("cref", num_pgwv);
-  auto cref_h = Kokkos::create_mirror_view(Kokkos::HostSpace(), s_common_init.cref);
-  for (int l = -s_common_init.pgwv; l <= s_common_init.pgwv; ++l) {
-    cref_h[l + s_common_init.pgwv] = s_common_init.dc * l;
-  }
-  Kokkos::deep_copy(s_common_init.cref, cref_h);
+  auto cref = s_common_init.cref;
+  Kokkos::parallel_for("gw_common_init_cref",
+    Kokkos::RangePolicy<exe_space_t>(0, num_pgwv),
+    KOKKOS_LAMBDA(const int i) {
+      cref(i) = dc * (i - pgwv);
+    });
 
   s_common_init.orographic_only = !s_common_init.use_gw_convect && !s_common_init.use_gw_frontal;
 
@@ -116,28 +121,24 @@ void Functions<S,D>::gw_common_init(
     //     * convert alpha0 from 1/day to 1/s
     //     * ensure alpha0 is not smaller than 1e-6
     //     * convert alpha_pressure_mb to pa
-    // Create Host Views
-    Kokkos::View<Real*, Kokkos::HostSpace> alpha0_per_sec("alpha0_per_sec", GWC::nalph);
-    Kokkos::View<Real*, Kokkos::HostSpace> alpha_pressure_pa("alpha_pressure_pa", GWC::nalph);
-    // Newtonian damping calculation in a parallel kernel (on Host)
-    Kokkos::parallel_for("gw_common_init_calculate_newtonian_damping", 
-      Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, GWC::nalph), 
-      KOKKOS_LAMBDA (const int k) {
-        alpha0_per_sec(k) = std::max(GWC::alpha0[k] / 86400.0, 1.0e-6);
-        alpha_pressure_pa(k) = GWC::alpha_pressure_mb[k] * 1.0e2;
-      }
-    );
-    // Interpolate directly into the Host View
-    Kokkos::View<Real*, Kokkos::HostSpace> alpha_tmp("alpha_tmp", pver_in+1);
-    simple_linear_interp(alpha_pressure_pa, alpha0_per_sec, pref_int, alpha_tmp);
-    // copy to device struct
-    Kokkos::deep_copy(s_common_init.alpha, alpha_tmp);
+    view_1d<Real> alpha0_per_sec("alpha0_per_sec", GWC::nalph);
+    view_1d<Real> alpha_pressure_pa("alpha_pressure_pa", GWC::nalph);
+    auto alpha0_per_sec_h   = Kokkos::create_mirror_view(alpha0_per_sec);
+    auto alpha_pressure_pa_h = Kokkos::create_mirror_view(alpha_pressure_pa);
+    for (int k = 0; k < GWC::nalph; ++k) {
+      alpha0_per_sec_h(k)    = std::max(GWC::alpha0[k] / 86400.0, 1.0e-6);
+      alpha_pressure_pa_h(k) = GWC::alpha_pressure_mb[k] * 1.0e2;
+    }
+    Kokkos::deep_copy(alpha0_per_sec,   alpha0_per_sec_h);
+    Kokkos::deep_copy(alpha_pressure_pa, alpha_pressure_pa_h);
+    simple_linear_interp(alpha_pressure_pa, alpha0_per_sec, pref_int, s_common_init.alpha);
   }
 
-  // set bottom index for background spectrum
+  // set bottom index for background spectrum (small serial scan; do on host)
+  auto pref_int_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), pref_int);
   int kbotbg_tmp = -1;
-  for (int i = 0; i < static_cast<int>(pref_int.size()); ++i) {
-    if (pref_int[i] < GWC::kbotbg_pref_max) {
+  for (int i = 0; i < static_cast<int>(pref_int_h.size()); ++i) {
+    if (pref_int_h[i] < GWC::kbotbg_pref_max) {
       kbotbg_tmp = i;
     }
   }

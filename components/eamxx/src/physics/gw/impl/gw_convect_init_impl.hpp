@@ -40,7 +40,7 @@ template<typename S, typename D>
 void Functions<S,D>::gw_convect_init(
   // Inputs
   ekat::ParameterList& params,
-  const Kokkos::View<Real***, Kokkos::HostSpace>& mfcc_in)
+  const uview_3d<const Real>& mfcc_in)
 {
   static bool s_convect_init_constructed = false;
   if (!s_convect_init_constructed) {

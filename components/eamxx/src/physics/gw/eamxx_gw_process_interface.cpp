@@ -78,18 +78,17 @@ void GWDrag::initialize_impl (const RunType) {
   int ktop_default = 0;               // Top level for gravity waves.
   Real kwv_default = 6.28e-5;         // Effective horizontal wave number (100 km wavelength)
 
-  // calculate interface reference pressures
+  // calculate interface reference pressures (on device)
   const auto hyai = m_grid->get_geometry_data("hyai").get_view<const Real*>();
   const auto hybi = m_grid->get_geometry_data("hybi").get_view<const Real*>();
-  Kokkos::View<Real*, Kokkos::HostSpace> pref_int("pref_int", hyai.size());
-  Kokkos::parallel_for("calculate_pref_int", 
-    Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, hyai.size()), 
+  GWF::view_1d<Real> pref_int("pref_int", hyai.size());
+  Kokkos::parallel_for("calculate_pref_int",
+    Kokkos::RangePolicy<KT::ExeSpace>(0, hyai.size()),
     KOKKOS_LAMBDA (const int k) {
       pref_int(k) = PC::P0.value * hyai(k) + PC::P0.value * hybi(k);
   });
-  Kokkos::fence();
 
-  GWF::gw_common_init( m_params, 
+  GWF::gw_common_init( m_params,
                        m_nlev,
                        pref_int,
                        do_molec_diff_default,
@@ -102,11 +101,14 @@ void GWDrag::initialize_impl (const RunType) {
   const int PS_dim_size = scorpio::get_dimlen(gw_drag_file, "PS"); // Phase Speed [m/s]
   const int MW_dim_size = scorpio::get_dimlen(gw_drag_file, "MW"); // Mean Wind in Heating [m/s]
   const int HD_dim_size = scorpio::get_dimlen(gw_drag_file, "HD"); // Heating Depth [km]
-  Kokkos::View<Real***, Kokkos::HostSpace> mfcc_host("mfcc_host", HD_dim_size, MW_dim_size, PS_dim_size);
-  scorpio::read_var(gw_drag_file,"mfcc",mfcc_host.data());
+  // scorpio reads into host memory; stage to a device view before passing to init.
+  GWF::view_3d<Real> mfcc("mfcc", HD_dim_size, MW_dim_size, PS_dim_size);
+  auto mfcc_h = Kokkos::create_mirror_view(mfcc);
+  scorpio::read_var(gw_drag_file,"mfcc",mfcc_h.data());
   scorpio::release_file(gw_drag_file);
+  Kokkos::deep_copy(mfcc, mfcc_h);
 
-  GWF::gw_convect_init( m_params, mfcc_host );
+  GWF::gw_convect_init( m_params, mfcc );
 
   GWF::gw_front_init( m_params, pref_int );
 

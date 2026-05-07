@@ -65,7 +65,7 @@ template<typename S, typename D>
 void Functions<S,D>::gw_front_init(
   // Inputs
   ekat::ParameterList& params,
-  const Kokkos::View<Real*, Kokkos::HostSpace>& pref_int)
+  const uview_1d<const Real>& pref_int)
 {
   static bool s_front_init_constructed = false;
   if (!s_front_init_constructed) {
@@ -79,9 +79,11 @@ void Functions<S,D>::gw_front_init(
   s_front_init.frontgfc       = params.get<Real>("gw_frontal_fgfc",s_front_init.frontgfc);
   s_front_init.gw_frontal_eff = params.get<Real>("gw_frontal_eff",s_front_init.gw_frontal_eff);
 
+  // small serial scan for kfront — mirror to host
+  auto pref_int_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), pref_int);
   int kfront_tmp = -1;
-  for (int i = 0; i < pref_int.size(); ++i) {
-    if (pref_int[i] < GWC::kfront_pref_max) {
+  for (int i = 0; i < static_cast<int>(pref_int_h.size()); ++i) {
+    if (pref_int_h[i] < GWC::kfront_pref_max) {
       kfront_tmp = i;
     }
   }
