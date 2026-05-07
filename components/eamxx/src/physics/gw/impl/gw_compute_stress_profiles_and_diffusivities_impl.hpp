@@ -255,15 +255,11 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities_serial(
         const Real wrk   = -2 * mi * GWC::rog * t(k) * (piln(k + 1) - piln(k));
 
         Real taudmp;
-        // if (wrk >= -150 || !init.do_molec_diff) {
-        //   taudmp = tau(pl_idx, k+1) * std::exp(wrk);
-        // } else {
-        //   taudmp = 0;
-        // }
-        
-        // let's just skip over the issues created by large wrk values
-        taudmp = 0;
-
+        if (wrk >= -150 || !init.do_molec_diff) {
+          taudmp = tau(pl_idx, k+1) * std::exp(wrk);
+        } else {
+          taudmp = 0;
+        }
 
         if (taudmp <= GWC::taumin) taudmp = 0;
         tau(pl_idx, k) = ekat::impl::min(taudmp, tausat(pl_idx));
