@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <filesystem>
 
 namespace scream {
 
@@ -85,7 +86,9 @@ build (const std::shared_ptr<const AbstractGrid>& src_grid,
        const std::shared_ptr<const AbstractGrid>& tgt_grid,
        const std::string& map_file)
 {
-  start_timer ("Build HorizRemap data (two grids)" + map_file);
+  std::filesystem::path p(map_file);
+  // The "2" stands for "2 grids bld"
+  start_timer ("HRemap2 " + p.filename().string() + " bld");
 
   EKAT_REQUIRE_MSG (src_grid->type()==GridType::Point,
       "Error! Horizontal interpolatory remap only works on PointGrid grids.\n"
@@ -144,13 +147,15 @@ build (const std::shared_ptr<const AbstractGrid>& src_grid,
   } else {
     m_imp_exp = std::make_shared<GridImportExport>(src_grid,m_overlap_grid);
   }
-  stop_timer ("Build HorizRemap data (two grids)" + map_file);
+  stop_timer ("HRemap2 " + p.filename().string() + " bld");
 }
 void HorizRemapperData::
 build (const std::shared_ptr<const AbstractGrid>& grid,
        const std::string& map_file)
 {
-  start_timer ("Build HorizRemap data (one grid)" + map_file);
+  std::filesystem::path p(map_file);
+  // The "1" stands for "build from 1 grid"
+  start_timer ("HRemap1 " + p.filename().string() + " bld");
 
   EKAT_REQUIRE_MSG (grid,
       "[HorizRemapperDataRepo::build_data_from_src] Error! Invalid src grid pointer.\n");
@@ -210,7 +215,7 @@ build (const std::shared_ptr<const AbstractGrid>& grid,
     build(gen_grid,grid,map_file);
   }
 
-  stop_timer ("Build HorizRemap data (one grid)" + map_file);
+  stop_timer ("HRemap1 " + p.filename().string() + " bld");
 }
 
 std::vector<Triplet>

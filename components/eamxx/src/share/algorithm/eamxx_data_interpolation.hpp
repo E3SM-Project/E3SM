@@ -75,6 +75,8 @@ public:
 
   std::shared_ptr<AbstractGrid> get_grid_after_hremap () const { return m_grid_after_hremap; }
 
+  void set_name (const std::string& name) { m_name = name; }
+
 protected:
 
   void shift_data_interval ();
@@ -144,6 +146,8 @@ protected:
   bool                  m_fields_have_col_dim = false;
   bool                  m_fields_have_lev_dim = false;
   bool                  m_fields_have_ilev_dim = false;
+
+  std::string           m_name = "DataInterp";
 
   std::shared_ptr<ekat::logger::LoggerBase> m_logger;
 };
