@@ -9,6 +9,8 @@
 #include <ekat_workspace.hpp>
 #include <ekat_parameter_list.hpp>
 
+#include <array>
+
 namespace scream {
 namespace gw {
 
