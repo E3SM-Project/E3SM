@@ -18,9 +18,11 @@ namespace unit_test {
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::UnitTest<D>::Base {
 
+  // These identities involve exp, tgamma, and ratio formation, so use a
+  // modestly loose epsilon-scaled tolerance that remains robust in SP builds.
   static constexpr Scalar identity_tol =
     1000 * std::numeric_limits<Scalar>::epsilon();
-  static constexpr Scalar zero_tol = 1e-30;
+  static constexpr Scalar zero_tol = Scalar(1e-30);
 
   static_assert(max_pack_size >= 8,
                 "This test assumes at least 8 scenario slots.");
@@ -191,19 +193,19 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
     };
 
     SECTION("activation_and_thresholds") {
-      const Scalar lamc = 5.0;
-      const Scalar mu_c = 2.0;
-      const Scalar cdist1 = 0.75;
-      const Scalar inv_qc_relvar = 2.0;
-      const Scalar exponent = 0.65;
-      const Scalar seed_mass = -123.0;
-      const Scalar seed_number = -456.0;
-      const Scalar t_cold = C::T_rainfrz.value - 5.0;
+      const Scalar lamc = Scalar(5.0);
+      const Scalar mu_c = Scalar(2.0);
+      const Scalar cdist1 = Scalar(0.75);
+      const Scalar inv_qc_relvar = Scalar(2.0);
+      const Scalar exponent = Scalar(0.65);
+      const Scalar seed_mass = Scalar(-123.0);
+      const Scalar seed_number = Scalar(-456.0);
+      const Scalar t_cold = C::T_rainfrz.value - Scalar(5.0);
       const Scalar t_threshold = C::T_rainfrz.value;
-      const Scalar t_warm = C::T_rainfrz.value + 1.0;
-      const Scalar qc_small = 0.9 * C::QSMALL;
+      const Scalar t_warm = C::T_rainfrz.value + Scalar(1.0);
+      const Scalar qc_small = Scalar(0.9) * C::QSMALL;
       const Scalar qc_edge = C::QSMALL;
-      const Scalar qc_active = 2.0 * C::QSMALL;
+      const Scalar qc_active = Scalar(2.0) * C::QSMALL;
 
       const auto below_qsmall = run_case(t_cold, lamc, mu_c, cdist1, qc_small,
                                          inv_qc_relvar, exponent, true,
@@ -240,14 +242,14 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
     }
 
     SECTION("temperature_supercooling_scaling") {
-      const Scalar lamc = 5.0;
-      const Scalar mu_c = 2.0;
-      const Scalar cdist1 = 0.75;
-      const Scalar qc_incld = 2.0 * C::QSMALL;
-      const Scalar inv_qc_relvar = 2.0;
-      const Scalar exponent = 0.65;
+      const Scalar lamc = Scalar(5.0);
+      const Scalar mu_c = Scalar(2.0);
+      const Scalar cdist1 = Scalar(0.75);
+      const Scalar qc_incld = Scalar(2.0) * C::QSMALL;
+      const Scalar inv_qc_relvar = Scalar(2.0);
+      const Scalar exponent = Scalar(0.65);
       const Scalar t_warm = C::T_rainfrz.value;
-      const Scalar t_cold = C::T_rainfrz.value - 10.0;
+      const Scalar t_cold = C::T_rainfrz.value - Scalar(10.0);
 
       const auto warm = run_case(t_warm, lamc, mu_c, cdist1, qc_incld,
                                  inv_qc_relvar, exponent, true);
@@ -262,14 +264,14 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
     }
 
     SECTION("runtime_exponent_sensitivity") {
-      const Scalar T_atm = C::T_rainfrz.value - 5.0;
-      const Scalar lamc = 5.0;
-      const Scalar mu_c = 2.0;
-      const Scalar cdist1 = 0.75;
-      const Scalar qc_incld = 2.0 * C::QSMALL;
-      const Scalar inv_qc_relvar = 2.0;
-      const Scalar a1 = 0.2;
-      const Scalar a2 = 1.1;
+      const Scalar T_atm = C::T_rainfrz.value - Scalar(5.0);
+      const Scalar lamc = Scalar(5.0);
+      const Scalar mu_c = Scalar(2.0);
+      const Scalar cdist1 = Scalar(0.75);
+      const Scalar qc_incld = Scalar(2.0) * C::QSMALL;
+      const Scalar inv_qc_relvar = Scalar(2.0);
+      const Scalar a1 = Scalar(0.2);
+      const Scalar a2 = Scalar(1.1);
 
       const auto r1 = run_case(T_atm, lamc, mu_c, cdist1, qc_incld,
                                inv_qc_relvar, a1, true);
@@ -284,22 +286,23 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
       require_rel_close(r2.number / r1.number, expected_ratio);
 
       const auto z1 = run_case(C::T_rainfrz.value, lamc, mu_c, cdist1, qc_incld,
-                               inv_qc_relvar, 0.0, true);
-      const auto z2 = run_case(C::T_rainfrz.value - 10.0, lamc, mu_c, cdist1,
-                               qc_incld, inv_qc_relvar, 0.0, true);
+               inv_qc_relvar, Scalar(0.0), true);
+      const auto z2 = run_case(C::T_rainfrz.value - Scalar(10.0), lamc, mu_c,
+               cdist1, qc_incld, inv_qc_relvar, Scalar(0.0),
+               true);
       REQUIRE(z1.mass == z2.mass);
       REQUIRE(z1.number == z2.number);
     }
 
     SECTION("lambda_power_law_scaling") {
-      const Scalar T_atm = C::T_rainfrz.value - 5.0;
-      const Scalar mu_c = 2.0;
-      const Scalar cdist1 = 0.75;
-      const Scalar qc_incld = 2.0 * C::QSMALL;
-      const Scalar inv_qc_relvar = 2.0;
-      const Scalar exponent = 0.65;
-      const Scalar lam1 = 2.5;
-      const Scalar lam2 = 5.0;
+      const Scalar T_atm = C::T_rainfrz.value - Scalar(5.0);
+      const Scalar mu_c = Scalar(2.0);
+      const Scalar cdist1 = Scalar(0.75);
+      const Scalar qc_incld = Scalar(2.0) * C::QSMALL;
+      const Scalar inv_qc_relvar = Scalar(2.0);
+      const Scalar exponent = Scalar(0.65);
+      const Scalar lam1 = Scalar(2.5);
+      const Scalar lam2 = Scalar(5.0);
 
       const auto r1 = run_case(T_atm, lam1, mu_c, cdist1, qc_incld,
                                inv_qc_relvar, exponent, true);
@@ -311,13 +314,17 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
     }
 
     SECTION("mass_number_moment_identity") {
-      constexpr std::array<Scalar, 3> mus = {0.0, 2.0, 5.0};
-      constexpr std::array<Scalar, 3> lams = {2.0, 5.0, 10.0};
-      const Scalar T_atm = C::T_rainfrz.value - 5.0;
-      const Scalar cdist1 = 0.75;
-      const Scalar qc_incld = 2.0 * C::QSMALL;
-      const Scalar inv_qc_relvar = 2.0;
-      const Scalar exponent = 0.65;
+      constexpr std::array<Scalar, 3> mus = {
+        Scalar(0.0), Scalar(2.0), Scalar(5.0)
+      };
+      constexpr std::array<Scalar, 3> lams = {
+        Scalar(2.0), Scalar(5.0), Scalar(10.0)
+      };
+      const Scalar T_atm = C::T_rainfrz.value - Scalar(5.0);
+      const Scalar cdist1 = Scalar(0.75);
+      const Scalar qc_incld = Scalar(2.0) * C::QSMALL;
+      const Scalar inv_qc_relvar = Scalar(2.0);
+      const Scalar exponent = Scalar(0.65);
 
       for (const auto mu : mus) {
         for (const auto lam : lams) {
@@ -331,13 +338,17 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
     }
 
     SECTION("frozen_droplet_size_bias") {
-      constexpr std::array<Scalar, 3> mus = {0.0, 2.0, 5.0};
-      constexpr std::array<Scalar, 3> lams = {2.0, 5.0, 10.0};
-      const Scalar T_atm = C::T_rainfrz.value - 5.0;
-      const Scalar cdist1 = 0.75;
-      const Scalar qc_incld = 2.0 * C::QSMALL;
-      const Scalar inv_qc_relvar = 2.0;
-      const Scalar exponent = 0.65;
+      constexpr std::array<Scalar, 3> mus = {
+        Scalar(0.0), Scalar(2.0), Scalar(5.0)
+      };
+      constexpr std::array<Scalar, 3> lams = {
+        Scalar(2.0), Scalar(5.0), Scalar(10.0)
+      };
+      const Scalar T_atm = C::T_rainfrz.value - Scalar(5.0);
+      const Scalar cdist1 = Scalar(0.75);
+      const Scalar qc_incld = Scalar(2.0) * C::QSMALL;
+      const Scalar inv_qc_relvar = Scalar(2.0);
+      const Scalar exponent = Scalar(0.65);
 
       for (const auto mu : mus) {
         for (const auto lam : lams) {
@@ -357,14 +368,14 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
     }
 
     SECTION("distribution_prefactor_scaling") {
-      const Scalar T_atm = C::T_rainfrz.value - 5.0;
-      const Scalar lamc = 5.0;
-      const Scalar mu_c = 2.0;
-      const Scalar qc_incld = 2.0 * C::QSMALL;
-      const Scalar inv_qc_relvar = 2.0;
-      const Scalar exponent = 0.65;
-      const Scalar c1 = 0.25;
-      const Scalar c2 = 1.25;
+      const Scalar T_atm = C::T_rainfrz.value - Scalar(5.0);
+      const Scalar lamc = Scalar(5.0);
+      const Scalar mu_c = Scalar(2.0);
+      const Scalar qc_incld = Scalar(2.0) * C::QSMALL;
+      const Scalar inv_qc_relvar = Scalar(2.0);
+      const Scalar exponent = Scalar(0.65);
+      const Scalar c1 = Scalar(0.25);
+      const Scalar c2 = Scalar(1.25);
 
       const auto r1 = run_case(T_atm, lamc, mu_c, c1, qc_incld,
                                inv_qc_relvar, exponent, true);
@@ -376,33 +387,33 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
     }
 
     SECTION("zero_distribution_prefactor_gives_zero") {
-      const Scalar T_atm = C::T_rainfrz.value - 5.0;
-      const Scalar lamc = 5.0;
-      const Scalar mu_c = 2.0;
-      const Scalar cdist1 = 0.0;
-      const Scalar qc_incld = 2.0 * C::QSMALL;
-      const Scalar inv_qc_relvar = 2.0;
-      const Scalar exponent = 0.65;
+      const Scalar T_atm = C::T_rainfrz.value - Scalar(5.0);
+      const Scalar lamc = Scalar(5.0);
+      const Scalar mu_c = Scalar(2.0);
+      const Scalar cdist1 = Scalar(0.0);
+      const Scalar qc_incld = Scalar(2.0) * C::QSMALL;
+      const Scalar inv_qc_relvar = Scalar(2.0);
+      const Scalar exponent = Scalar(0.65);
 
       const auto result = run_case(T_atm, lamc, mu_c, cdist1, qc_incld,
                                    inv_qc_relvar, exponent, true,
-                                   -123.0, -456.0);
+                                   Scalar(-123.0), Scalar(-456.0));
 
       REQUIRE(result.mass == 0);
       REQUIRE(result.number == 0);
     }
 
     SECTION("scalar_multiplier_cancellation_in_mass_number_ratio") {
-      const Scalar T_base = C::T_rainfrz.value - 5.0;
-      const Scalar T_cold = C::T_rainfrz.value - 10.0;
-      const Scalar lamc = 5.0;
-      const Scalar mu_c = 2.0;
-      const Scalar qc_incld = 2.0 * C::QSMALL;
-      const Scalar inv_qc_relvar = 2.0;
-      const Scalar c_base = 0.5;
-      const Scalar c_bigger = 1.4;
-      const Scalar a_base = 0.65;
-      const Scalar a_bigger = 1.1;
+      const Scalar T_base = C::T_rainfrz.value - Scalar(5.0);
+      const Scalar T_cold = C::T_rainfrz.value - Scalar(10.0);
+      const Scalar lamc = Scalar(5.0);
+      const Scalar mu_c = Scalar(2.0);
+      const Scalar qc_incld = Scalar(2.0) * C::QSMALL;
+      const Scalar inv_qc_relvar = Scalar(2.0);
+      const Scalar c_base = Scalar(0.5);
+      const Scalar c_bigger = Scalar(1.4);
+      const Scalar a_base = Scalar(0.65);
+      const Scalar a_bigger = Scalar(1.1);
 
       const auto base = run_case(T_base, lamc, mu_c, c_base, qc_incld,
                                  inv_qc_relvar, a_base, true);
@@ -420,14 +431,14 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
     }
 
     SECTION("qc_gate_only_behavior") {
-      const Scalar T_atm = C::T_rainfrz.value - 5.0;
-      const Scalar lamc = 5.0;
-      const Scalar mu_c = 2.0;
-      const Scalar cdist1 = 0.75;
-      const Scalar inv_qc_relvar = 2.0;
-      const Scalar exponent = 0.65;
+      const Scalar T_atm = C::T_rainfrz.value - Scalar(5.0);
+      const Scalar lamc = Scalar(5.0);
+      const Scalar mu_c = Scalar(2.0);
+      const Scalar cdist1 = Scalar(0.75);
+      const Scalar inv_qc_relvar = Scalar(2.0);
+      const Scalar exponent = Scalar(0.65);
       const Scalar qc1 = C::QSMALL;
-      const Scalar qc2 = 10.0 * C::QSMALL;
+      const Scalar qc2 = Scalar(10.0) * C::QSMALL;
 
       const auto r1 = run_case(T_atm, lamc, mu_c, cdist1, qc1,
                                inv_qc_relvar, exponent, true);
@@ -439,17 +450,17 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
     }
 
     SECTION("inv_qc_relvar_currently_inactive") {
-      const Scalar T_atm = C::T_rainfrz.value - 5.0;
-      const Scalar lamc = 5.0;
-      const Scalar mu_c = 2.0;
-      const Scalar cdist1 = 0.75;
-      const Scalar qc_incld = 2.0 * C::QSMALL;
-      const Scalar exponent = 0.65;
+      const Scalar T_atm = C::T_rainfrz.value - Scalar(5.0);
+      const Scalar lamc = Scalar(5.0);
+      const Scalar mu_c = Scalar(2.0);
+      const Scalar cdist1 = Scalar(0.75);
+      const Scalar qc_incld = Scalar(2.0) * C::QSMALL;
+      const Scalar exponent = Scalar(0.65);
 
       const auto low_r = run_case(T_atm, lamc, mu_c, cdist1, qc_incld,
-                                  0.5, exponent, true);
+                                  Scalar(0.5), exponent, true);
       const auto high_r = run_case(T_atm, lamc, mu_c, cdist1, qc_incld,
-                                   10.0, exponent, true);
+                                   Scalar(10.0), exponent, true);
 
       REQUIRE(low_r.mass == high_r.mass);
       REQUIRE(low_r.number == high_r.number);
@@ -457,23 +468,30 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
 
     SECTION("context_mask_preserves_inactive_lanes") {
       auto lanes = make_lanes();
-      const Scalar exponent = 0.65;
+      const Scalar exponent = Scalar(0.65);
       for (Int s = 0; s < max_pack_size; ++s) {
         lanes[s].context = false;
-        lanes[s].mass_in = -1000.0 - s;
-        lanes[s].number_in = -2000.0 - s;
+        lanes[s].mass_in = Scalar(-1000.0) - s;
+        lanes[s].number_in = Scalar(-2000.0) - s;
       }
 
-      lanes[0].context = true;
-      lanes[1].context = true;
-      lanes[2].context = true;
-      lanes[2].T_atm = C::T_rainfrz.value + 1.0;
-      lanes[3].context = true;
-      lanes[3].qc_incld = 0.9 * C::QSMALL;
-      lanes[4].T_atm = C::T_rainfrz.value - 5.0;
-      lanes[4].qc_incld = 5.0 * C::QSMALL;
-      lanes[5].context = true;
-      lanes[7].context = true;
+      // These are scenario slots in a max_pack_size host array, not assumptions
+      // about Pack::n. run_kernel processes them in chunks of Pack::n, so this
+      // remains valid when SCREAM_PACK_SIZE == 1.
+      lanes[0].context = true; // active
+      lanes[1].context = true; // active
+
+      lanes[2].context = true; // warm but context true: threshold-inactive
+      lanes[2].T_atm = C::T_rainfrz.value + Scalar(1.0);
+
+      lanes[3].context = true; // below QSMALL but context true: threshold-inactive
+      lanes[3].qc_incld = Scalar(0.9) * C::QSMALL;
+
+      lanes[4].T_atm = C::T_rainfrz.value - Scalar(5.0); // context false but otherwise active
+      lanes[4].qc_incld = Scalar(5.0) * C::QSMALL;
+
+      lanes[5].context = true; // active
+      lanes[7].context = true; // active at inclusive temperature threshold
       lanes[7].T_atm = C::T_rainfrz.value;
 
       run_kernel(lanes, exponent);
@@ -498,13 +516,17 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
     }
 
     SECTION("finite_nonnegative_outputs") {
-      constexpr std::array<Scalar, 3> mus = {0.0, 2.0, 5.0};
-      constexpr std::array<Scalar, 3> lams = {2.0, 5.0, 10.0};
-      const Scalar exponent = 0.65;
-      const Scalar cdist1 = 0.75;
-      const Scalar qc_incld = 2.0 * C::QSMALL;
-      const Scalar inv_qc_relvar = 2.0;
-      const Scalar T_atm = C::T_rainfrz.value - 5.0;
+      constexpr std::array<Scalar, 3> mus = {
+        Scalar(0.0), Scalar(2.0), Scalar(5.0)
+      };
+      constexpr std::array<Scalar, 3> lams = {
+        Scalar(2.0), Scalar(5.0), Scalar(10.0)
+      };
+      const Scalar exponent = Scalar(0.65);
+      const Scalar cdist1 = Scalar(0.75);
+      const Scalar qc_incld = Scalar(2.0) * C::QSMALL;
+      const Scalar inv_qc_relvar = Scalar(2.0);
+      const Scalar T_atm = C::T_rainfrz.value - Scalar(5.0);
 
       for (Int i = 0; i < static_cast<Int>(mus.size()); ++i) {
         const auto result = run_case(T_atm, lams[i], mus[i], cdist1, qc_incld,
@@ -578,7 +600,7 @@ void run_bfb()
     const Int offset = i * Pack::n;
 
     // Init pack inputs
-    Pack T_atm, lamc, mu_c, cdist1, qc_incld,inv_qc_relvar;
+    Pack T_atm, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar;
     for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {
       T_atm[s]        = device_data(vs).T_atm;
       lamc[s]         = device_data(vs).lamc;
