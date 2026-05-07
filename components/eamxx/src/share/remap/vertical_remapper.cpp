@@ -89,23 +89,35 @@ set_interp_type (const InterpType itype)
 {
   if (itype == m_interp_type) return;
 
-  // Transform any already-stored pressure fields to match the new interp type
-  auto transform = [&](Field& f) {
+  // For TARGET pressure fields: always do in-place log/exp transformation
+  // (they are fixed frozen clones).
+  auto transform_tgt = [&](Field& f) {
     if (not f.is_allocated()) return;
     if (itype == LogLinear) {
-      // Linear -> LogLinear: store log(p) instead of p
       f = log_pressure(f);
     } else {
-      // LogLinear -> Linear: recover raw p from stored log(p)
       EKAT_REQUIRE_MSG (itype == Linear,
           "[VerticalRemapper::set_interp_type] Unrecognized interpolation type.\n");
       f = exp_pressure(f);
     }
   };
-  transform(m_src_pmid);
-  transform(m_src_pint);
-  transform(m_tgt_pmid);
-  transform(m_tgt_pint);
+  transform_tgt(m_tgt_pmid);
+  transform_tgt(m_tgt_pint);
+
+  // For SOURCE pressure fields: m_src_pmid/m_src_pint always hold the raw field.
+  // When switching to LogLinear, allocate log workspaces (refreshed each remap).
+  // When switching to Linear, clear the log workspaces.
+  if (itype == LogLinear) {
+    if (m_src_pmid.is_allocated()) {
+      m_src_pmid_log = log_pressure(m_src_pmid);
+    }
+    if (m_src_pint.is_allocated()) {
+      m_src_pint_log = log_pressure(m_src_pint);
+    }
+  } else {
+    m_src_pmid_log = Field{};
+    m_src_pint_log = Field{};
+  }
 
   m_interp_type = itype;
 }
@@ -144,8 +156,13 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
   const auto vtag = p_layout.tags().back();
   const auto vdim = p_layout.dims().back();
 
-  // For log-linear interpolation, clone the pressure field and store log(p)
-  const Field p_stored = (m_interp_type==LogLinear) ? log_pressure(p) : p;
+  // For log-linear interpolation on the TARGET (fixed) pressure, clone and store log(p).
+  // For the SOURCE pressure (which changes every timestep), keep the raw shared
+  // reference and allocate a separate log-workspace (m_src_pmid_log / m_src_pint_log)
+  // that will be refreshed at the start of every remap_fwd_impl call.
+  // For linear interpolation, always keep the raw shared reference.
+  const bool use_log = (m_interp_type == LogLinear);
+  const Field p_stored = (use_log && !src) ? log_pressure(p) : p;
 
   FieldTag expected_tag = FieldTag::Invalid;
   int      expected_dim = -1;
@@ -155,7 +172,12 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
     expected_tag = is_pressure_grid ? LEVP : LEV;
     expected_dim = nlevs;
     if (src) {
-      m_src_pmid = p_stored;
+      m_src_pmid = p;               // keep raw shared reference
+      if (use_log) {
+        // Pre-allocate the log workspace (initial values are log(p); will be
+        // refreshed from the live p_mid every timestep in remap_fwd_impl).
+        m_src_pmid_log = log_pressure(p);
+      }
     } else {
       m_tgt_pmid = p_stored;
     }
@@ -165,7 +187,10 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
     expected_tag = is_pressure_grid ? LEVP : ILEV;
     expected_dim = is_pressure_grid ? nlevs : nlevs+1;
     if (src) {
-      m_src_pint = p_stored;
+      m_src_pint = p;               // keep raw shared reference
+      if (use_log) {
+        m_src_pint_log = log_pressure(p);
+      }
     } else {
       m_tgt_pint = p_stored;
     }
@@ -241,6 +266,33 @@ exp_pressure (const Field& p) const
   }
   Kokkos::fence();
   return exp_p;
+}
+
+void VerticalRemapper::
+apply_log_in_place (Field& f) const
+{
+  const auto& layout = f.get_header().get_identifier().get_layout();
+  const int nlevs = layout.dims().back();
+
+  if (f.rank()==1) {
+    auto v = f.get_view<Real*>();
+    Kokkos::parallel_for("VerticalRemapper::apply_log",
+                         Kokkos::RangePolicy<>(0,nlevs),
+                         KOKKOS_LAMBDA(int k) {
+      v(k) = Kokkos::log(v(k));
+    });
+  } else { // rank == 2
+    const int ncols = layout.dims().front();
+    auto v = f.get_view<Real**>();
+    Kokkos::parallel_for("VerticalRemapper::apply_log",
+                         Kokkos::RangePolicy<>(0,ncols*nlevs),
+                         KOKKOS_LAMBDA(int idx) {
+      const int i = idx / nlevs;
+      const int k = idx % nlevs;
+      v(i,k) = Kokkos::log(v(i,k));
+    });
+  }
+  Kokkos::fence();
 }
 
 void VerticalRemapper::
@@ -487,21 +539,39 @@ void VerticalRemapper::remap_fwd_impl ()
 {
   using namespace ShortFieldTagsNames;
 
+  // 0. For log-linear mode, refresh the log-space source pressure fields from
+  //    the current raw p_mid/p_int values (which change every model timestep).
+  //    Target pressures are fixed (from a remap file), so they never need refreshing.
+  if (m_interp_type == LogLinear) {
+    auto refresh = [&](const Field& p_raw, Field& p_log) {
+      if (p_log.is_allocated()) {
+        p_log.deep_copy(p_raw);
+        apply_log_in_place(p_log);
+      }
+    };
+    refresh(m_src_pmid, m_src_pmid_log);
+    refresh(m_src_pint, m_src_pint_log);
+  }
+
   // 1. Setup any interp object that was created (if nullptr, no fields need it)
   if (m_timers_enabled)
     start_timer(name() + " setup LI");
 
+  // For log-linear mode, use the log workspaces (refreshed above) instead of raw pressure.
+  const Field& src_pmid_use = m_src_pmid_log.is_allocated() ? m_src_pmid_log : m_src_pmid;
+  const Field& src_pint_use = m_src_pint_log.is_allocated() ? m_src_pint_log : m_src_pint;
+
   if (m_lin_interp_mid_packed) {
-    setup_lin_interp(*m_lin_interp_mid_packed,m_src_pmid,m_tgt_pmid);
+    setup_lin_interp(*m_lin_interp_mid_packed,src_pmid_use,m_tgt_pmid);
   }
   if (m_lin_interp_int_packed) {
-    setup_lin_interp(*m_lin_interp_int_packed,m_src_pint,m_tgt_pint);
+    setup_lin_interp(*m_lin_interp_int_packed,src_pint_use,m_tgt_pint);
   }
   if (m_lin_interp_mid_scalar) {
-    setup_lin_interp(*m_lin_interp_mid_scalar,m_src_pmid,m_tgt_pmid);
+    setup_lin_interp(*m_lin_interp_mid_scalar,src_pmid_use,m_tgt_pmid);
   }
   if (m_lin_interp_int_scalar) {
-    setup_lin_interp(*m_lin_interp_int_scalar,m_src_pint,m_tgt_pint);
+    setup_lin_interp(*m_lin_interp_int_scalar,src_pint_use,m_tgt_pint);
   }
   if (m_timers_enabled)
     stop_timer(name() + " setup LI");
@@ -521,18 +591,18 @@ void VerticalRemapper::remap_fwd_impl ()
       // Dispatch interpolation to the proper lin interp object
       if (type.midpoints) {
         if (type.packed) {
-          apply_vertical_interpolation(*m_lin_interp_mid_packed,f_src,f_tgt,m_src_pmid,m_tgt_pmid);
+          apply_vertical_interpolation(*m_lin_interp_mid_packed,f_src,f_tgt,src_pmid_use,m_tgt_pmid);
         } else {
-          apply_vertical_interpolation(*m_lin_interp_mid_scalar,f_src,f_tgt,m_src_pmid,m_tgt_pmid);
+          apply_vertical_interpolation(*m_lin_interp_mid_scalar,f_src,f_tgt,src_pmid_use,m_tgt_pmid);
         }
-        extrapolate(f_src,f_tgt,m_src_pmid,m_tgt_pmid);
+        extrapolate(f_src,f_tgt,src_pmid_use,m_tgt_pmid);
       } else {
         if (type.packed) {
-          apply_vertical_interpolation(*m_lin_interp_int_packed,f_src,f_tgt,m_src_pint,m_tgt_pint);
+          apply_vertical_interpolation(*m_lin_interp_int_packed,f_src,f_tgt,src_pint_use,m_tgt_pint);
         } else {
-          apply_vertical_interpolation(*m_lin_interp_int_scalar,f_src,f_tgt,m_src_pint,m_tgt_pint);
+          apply_vertical_interpolation(*m_lin_interp_int_scalar,f_src,f_tgt,src_pint_use,m_tgt_pint);
         }
-        extrapolate(f_src,f_tgt,m_src_pint,m_tgt_pint);
+        extrapolate(f_src,f_tgt,src_pint_use,m_tgt_pint);
       }
     } else {
       // There is nothing to do, this field does not need vertical interpolation,

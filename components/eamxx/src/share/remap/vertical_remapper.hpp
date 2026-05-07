@@ -100,6 +100,8 @@ public:
   Field log_pressure (const Field& p) const;
   // Clone p and return a field with exp(p) values
   Field exp_pressure (const Field& p) const;
+  // Apply log in-place to an already-allocated field (rank 1 or 2)
+  void apply_log_in_place (Field& f) const;
 
   template<int N>
   void apply_vertical_interpolation (const ekat::LinInterp<Real,N>& lin_interp,
@@ -128,11 +130,24 @@ protected:
   // Tgt grid masks (in case extrap type at top or bot is Mask)
   std::map<std::string,Field>    m_masks;
 
-  // Vertical profile fields, both for source and target
+  // Vertical profile fields, both for source and target.
+  // NOTE: m_src_pmid/m_src_pint ALWAYS hold the raw (non-log) pressure values,
+  //       regardless of the interpolation type. Log transformation for the source
+  //       is handled at remap time via the m_src_pmid_log/m_src_pint_log workspaces.
   Field                 m_src_pmid;
   Field                 m_src_pint;
   Field                 m_tgt_pmid;
   Field                 m_tgt_pint;
+
+  // For log-linear mode: pre-allocated workspaces that hold log(p_src) at
+  // remap time. The source pressure fields (p_mid, p_int) change every model
+  // timestep, so we cannot freeze a log-clone at construction time.  Instead
+  // we keep the raw shared reference in m_src_pmid / m_src_pint and refresh
+  // these workspaces (copy raw values then apply log) at the start of every
+  // remap_fwd_impl call. The initial values set during construction are
+  // overwritten at the first remap call.
+  Field                 m_src_pmid_log;
+  Field                 m_src_pint_log;
 
   // If user provides pressure profiles that are NOT compatible with SCREAM_PACK_SIZE,
   // we will set these booleans to false, and use ONLY the "scalar" LinInterp structures
