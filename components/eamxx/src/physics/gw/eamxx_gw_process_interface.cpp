@@ -337,6 +337,9 @@ void GWDrag::run_impl (const double dt) {
     // Convective gravity waves (Beres scheme)
     if (GWF::s_common_init.use_gw_convect) {
 
+      // NOTE the call to gw_beres_src() below is a placeholder that will be
+      // filled in later when the ZM convective tendencies is available
+
       // // Determine convective wave sources
       // GWF::gw_beres_src();
 
@@ -372,6 +375,9 @@ void GWDrag::run_impl (const double dt) {
 
     // Frontally generated gravity waves
     if (GWF::s_common_init.use_gw_frontal) {
+
+      // NOTE the call to gw_cm_src() below is a placeholder that will be
+      // filled in later when the fronotogensis calculation is active
 
       // // Determine frontal wave sources
       // GWF::gw_cm_src();
