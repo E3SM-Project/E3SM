@@ -3805,17 +3805,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Validation
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -4957,17 +4946,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Validation
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -5319,17 +5297,6 @@ inactive preservation and positive-tendency assertions are not conflated. The
 volume-weighted size-bias test also uses this identity tolerance, because the
 comparison still goes through production-kernel outputs involving <code>tgamma</code>,
 <code>exp</code>, and ratio formation.</p>
-<h2 id="validation">Validation</h2>
-<p>Build and run the targeted test with:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>/pscratch/sd/k/kylepres/e3sm_scratch/pm-cpu/full_debug
-module<span class="w"> </span>load<span class="w"> </span>python
-<span class="nb">eval</span><span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>/global/homes/k/kylepres/EAMXX/components/eamxx/scripts/eamxx-env-cmd<span class="w"> </span>pm-cpu<span class="k">)</span><span class="s2">&quot;</span>
-module<span class="w"> </span>load<span class="w"> </span>PrgEnv-gnu<span class="w"> </span>cray-mpich
-<span class="nb">export</span><span class="w"> </span><span class="nv">CC</span><span class="o">=</span>mpicc<span class="w"> </span><span class="nv">CXX</span><span class="o">=</span>mpicxx<span class="w"> </span><span class="nv">FC</span><span class="o">=</span>mpifort
-<span class="nb">export</span><span class="w"> </span><span class="nv">MPICH_GPU_SUPPORT_ENABLED</span><span class="o">=</span><span class="m">0</span>
-make<span class="w"> </span>-j<span class="w"> </span><span class="m">8</span><span class="w"> </span>p3_tests
-./src/physics/p3/tests/p3_tests<span class="w"> </span><span class="s2">&quot;p3_cldliq_immersion_freezing&quot;</span>
-</code></pre></div>
 
 
 
