@@ -173,8 +173,10 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
   // For active lanes, cloud-liquid immersion freezing computes two moments of
   // the same cloud droplet size distribution:
   //
-  //   M = CONS6 * cdist1 * Gamma(mu_c + 7) * exp(a * (T0 - T)) * lamc^-6
-  //   N = CONS5 * cdist1 * Gamma(mu_c + 4) * exp(a * (T0 - T)) * lamc^-3
+  //   M = CONS6 * cdist1 * Gamma(mu_c + 7)
+  //     * exp(a * (T_zerodegc - T_atm)) * lamc^-6
+  //   N = CONS5 * cdist1 * Gamma(mu_c + 4)
+  //     * exp(a * (T_zerodegc - T_atm)) * lamc^-3
   //
   // The property tests below avoid duplicating the full production formula.
   // They instead check scaling identities, activation behavior, and the
