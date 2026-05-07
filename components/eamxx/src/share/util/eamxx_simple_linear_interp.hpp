@@ -32,13 +32,13 @@ void simple_linear_interp(
   const V1D& x2,
         V1D& y2)
 {
-  const std::size_t N1 = x1.size();
-  const std::size_t N2 = x2.size();
+  const std::size_t N1 = x1.extent(0);
+  const std::size_t N2 = x2.extent(0);
 
   // Runtime checks only valid on host
   KOKKOS_IF_ON_HOST((
-    EKAT_REQUIRE_MSG(N1 == (int)y1.extent(0), "Variable sizes do not match");
-    EKAT_REQUIRE_MSG(N2 == (int)y2.extent(0), "Variable sizes do not match");
+    EKAT_REQUIRE_MSG(N1 == y1.extent(0), "Variable sizes do not match");
+    EKAT_REQUIRE_MSG(N2 == y2.extent(0), "Variable sizes do not match");
     EKAT_REQUIRE_MSG(N1 >= 2, "Source grid must have at least 2 points");
     EKAT_REQUIRE_MSG(N2 >= 1, "Target grid must have at least 1 point");
   ))
