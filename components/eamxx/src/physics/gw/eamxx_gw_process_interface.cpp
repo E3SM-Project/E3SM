@@ -347,7 +347,7 @@ void GWDrag::run_impl (const double dt) {
                         T_mid_i, T_int_i, p_mid_i, p_int_i,
                         p_del_i, p_del_rcp_i, p_int_log_i, rho_int_i,
                         N_mid_i, N_int_i, ubm_i, ubi_i, xv, yv,
-                        GWF::s_common_init.gw_convect_eff,
+                        GWF::s_convect_init.gw_convect_eff,
                         c_i, kvtt_i, q_2d, dse_i, tau_i,
                         utgw_i, vtgw_i, ttgw_i, qtgw_i,
                         taucd_i, egwdffi_i, gwut_i, dttdf_i, dttke_i);
@@ -368,7 +368,7 @@ void GWDrag::run_impl (const double dt) {
                                         gw_tend_u_i, gw_tend_v_i, gw_tend_t_i,
                                         utgw_i, vtgw_i, ttgw_i );
 
-    }
+    } // use_gw_convect
 
     // Frontally generated gravity waves
     if (GWF::s_common_init.use_gw_frontal) {
@@ -383,7 +383,7 @@ void GWDrag::run_impl (const double dt) {
                         T_mid_i, T_int_i, p_mid_i, p_int_i,
                         p_del_i, p_del_rcp_i, p_int_log_i, rho_int_i,
                         N_mid_i, N_int_i, ubm_i, ubi_i, xv, yv,
-                        GWF::s_common_init.gw_frontal_eff,
+                        GWF::s_front_init.gw_frontal_eff,
                         c_i, kvtt_i, q_2d, dse_i, tau_i,
                         utgw_i, vtgw_i, ttgw_i, qtgw_i,
                         taucd_i, egwdffi_i, gwut_i, dttdf_i, dttke_i);
@@ -403,6 +403,8 @@ void GWDrag::run_impl (const double dt) {
                                         taucd_i, p_int_i, p_del_i, uwind_i, vwind_i,
                                         gw_tend_u_i, gw_tend_v_i, gw_tend_t_i,
                                         utgw_i, vtgw_i, ttgw_i );
+
+    } // use_gw_frontal
 
     // Orographic stationary gravity waves
     if (GWF::s_common_init.use_gw_orographic) {
@@ -424,7 +426,7 @@ void GWDrag::run_impl (const double dt) {
                         GWF::s_common_init.gw_orographic_eff,
                         c_i, kvtt_i, q_2d, dse_i, tau_i,
                         utgw_i, vtgw_i, ttgw_i, qtgw_i,
-                        taucd_i, egwdffi_i, gwut_i, dttdf_i, dttke_i);
+                        taucd_i, egwdffi_i, gwut_i, dttdf_i, dttke_i );
 
       // add tendencies to aggregate output tendencies
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, m_nlev), [&] (const int k) {
