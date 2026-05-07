@@ -382,10 +382,8 @@ void GWDrag::run_impl (const double dt) {
                       tau_i, ubm_i, ubi_i, xv, yv, c_i );
 
       // Solve for the drag profile with orographic sources
-      Int max_lev = tnd_lev; // ???
-
       GWF::gw_drag_prof(team, wsm.get_workspace(team), GWF::s_common_init,
-                        m_nlev, GWF::s_common_init.pgwv, src_lev, max_lev, tnd_lev,
+                        m_nlev, GWF::s_common_init.pgwv, src_lev, tnd_lev, tnd_lev,
                         GWF::s_common_init.do_taper, dt, m_lat_v(i),
                         T_mid_i, T_int_i, p_mid_i, p_int_i,
                         p_del_i, p_del_rcp_i, p_int_log_i, rho_int_i,
