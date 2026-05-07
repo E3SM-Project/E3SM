@@ -36,6 +36,7 @@ module ocn_vmix
    use ocn_vmix_coefs_redi
    use ocn_diagnostics_variables
    use ocn_surface_land_ice_fluxes
+   use ocn_subgrid
 
    implicit none
    private
@@ -466,6 +467,7 @@ contains
 
       real (kind=RKIND), dimension(:), allocatable :: bTemp, C, rTemp
       real (kind=RKIND) :: A, m
+      real (kind=RKIND) :: wetFraction, sshMean, implicitCd
 
       err = 0
 
@@ -494,8 +496,20 @@ contains
 
          ! one active layer
          if (N .eq. Nsurf) then
+           if (config_use_subgrid_wetting_drying) then 
+              sshMean = 0.5_RKIND * (subgridSSH(cell1) + subgridSSH(cell2))
+    
+              call ocn_subgrid_wet_fraction_lookup(sshMean, &
+                                                   subgridWetFractionEdgeTable(:,iEdge), &
+                                                   subgridSshEdgeTableRange(:,iEdge), &
+                                                   wetFraction)
+              implicitCd = wetFraction * implicitBottomDragCoef
+           else
+              implicitCd = implicitBottomDragCoef
+           endif
+
             normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
-                / (1.0_RKIND + dt*(implicitTopDragCoef * landIceEdgeFraction(iEdge) + implicitBottomDragCoef) &
+                / (1.0_RKIND + dt*(implicitTopDragCoef * landIceEdgeFraction(iEdge) + implicitCd) &
                    * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) )
          else
 
@@ -812,6 +826,8 @@ contains
       real (kind=RKIND) :: old_bottom_Cd, lambda, beta, alpha, total_h
       real (kind=RKIND) :: inundation_depth, von_karman, cff1, cff2, cff3, cff4
       integer :: iCell
+      real (kind=RKIND) :: wetFraction, sshMean
+      real (kind=RKIND) :: Cd1, Cd2
 
       err = 0
       von_karman = 0.4_RKIND
@@ -881,13 +897,15 @@ contains
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
 
-         if (thickEdgeDragChoice == thickEdgeDragHarMean) then
-           columnThicknessDrag = 2.0_RKIND * (ssh(cell1) + bottomDepth(cell1)) * &
-                                             (ssh(cell2) + bottomDepth(cell2)) / &
-                                 (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
-         else
-           columnThicknessDrag = 0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
-         endif
+         !if (thickEdgeDragChoice == thickEdgeDragHarMean) then
+         !  columnThicknessDrag = 2.0_RKIND * (ssh(cell1) + bottomDepth(cell1)) * &
+         !                                    (ssh(cell2) + bottomDepth(cell2)) / &
+         !                        (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
+         !else
+         !  columnThicknessDrag = 0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
+         !endif
+
+         columnThicknessDrag = layerThickEdgeMean(N,iEdge)
 
          ! average cell-based implicit bottom drag to edges and convert Mannings n to Cd
          if (config_use_vegetation_drag) then
@@ -900,6 +918,23 @@ contains
 
          ! one active layer
          if (N .eq. Nsurf) then
+           if (config_use_subgrid_wetting_drying) then 
+              sshMean = 0.5_RKIND * (subgridSSH(cell1) + subgridSSH(cell2))
+    
+              !call ocn_subgrid_wet_fraction_lookup(sshMean, &
+              !                                     subgridWetFractionEdgeTable(:,iEdge), &
+              !                                     subgridSshEdgeTableRange(:,iEdge), &
+              !                                     wetFraction)
+              !implicitCd = wetFraction*implicitCd
+
+              call ocn_subgrid_drag_lookup(sshMean, &
+                                           subgridDragEdgeTable(:,iEdge), &
+                                           subgridSshDragEdgeTableRange(:,iEdge), &
+                                           0.5_RKIND*(bottomDrag(cell1) + bottomDrag(cell2)), &
+                                           columnThicknessDrag, &
+                                           implicitCd)
+           endif
+           
            normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
                 / (1.0_RKIND + dt*implicitCd &
                    * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) )
@@ -1038,6 +1073,7 @@ contains
 
       real (kind=RKIND) :: von_karman, von_karman_sq
       real (kind=RKIND) :: kineticEnergyTopOfEdge, zMidEdge
+      real (kind=RKIND) :: wetFraction, sshMean
       integer :: iCell
 
       err = 0
@@ -1077,8 +1113,20 @@ contains
                                  (zMidEdge/bottom_roughness)))**2))
          enddo
 
+
          ! one active layer
          if (N .eq. Nsurf) then
+           if (config_use_subgrid_wetting_drying) then
+              sshMean = 0.5_RKIND * (subgridSSH(cell1) + subgridSSH(cell2))
+    
+              call ocn_subgrid_wet_fraction_lookup(sshMean, &
+                                                   subgridWetFractionEdgeTable(:,iEdge), &
+                                                   subgridSshEdgeTableRange(:,iEdge), &
+                                                   wetFraction)
+
+                CdTemp(N)= wetFraction*CdTemp(N)
+           endif
+
            normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
                 / (1.0_RKIND + dt*CdTemp(N) &
                    * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) )
@@ -1780,7 +1828,10 @@ contains
         case ('mannings')
           dragType = dragTypeMannings
           call mpas_log_write(' Implicit bottom drag type is: Mannings')
-
+          if (.not. config_use_variable_drag) &
+            call mpas_log_write('bottomDrag may not be available for Mannings '// &
+              'implicit bottom drag because config_use_variable_drag is False', &
+              MPAS_LOG_WARN)
         case default
           call mpas_log_write( &
              ' Incorrect choice of config_implicit_bottom_drag_type.', &

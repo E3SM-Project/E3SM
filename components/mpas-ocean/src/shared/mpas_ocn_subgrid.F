@@ -62,16 +62,25 @@ module ocn_subgrid
       subgridWetFractionVertexTable, &
       subgridSshCellTableRange, &
       subgridSshEdgeTableRange, &
-      subgridSshVertexTableRange
+      subgridSshVertexTableRange, &
+      subgridSshDragEdgeTableRange, &
+      subgridDragEdgeTable
    real(kind=RKIND), public, dimension(:), pointer :: &
       subgridEdgeBathymetryMean, &
       subgridVertexBathymetryMean, &
       subgridCellBathymetryMin, &
       subgridEdgeBathymetryMin, &
       subgridVertexBathymetryMin, &
-      subgridLayerThicknessDebug
+      subgridLayerThicknessDebug, &
+      subgridEdgeArea
+   real(kind=RKIND), public, dimension(:), pointer :: &
+      subgridSSH
 
    integer, public, pointer :: nSubgridTableLevels
+
+   real(kind=RKIND), public, dimension(:), pointer :: &
+      wetFractionCell, &
+      wetFractionEdge
 
    !--------------------------------------------------------------------
    !
@@ -86,7 +95,9 @@ module ocn_subgrid
    public :: ocn_subgrid_layer_thickness_lookup, &
              ocn_subgrid_wet_fraction_lookup, &
              ocn_subgrid_ssh_lookup, &
-             ocn_subgrid_init
+             ocn_subgrid_drag_lookup, &
+             ocn_subgrid_init, &
+             bisection_index
 
    !--------------------------------------------------------------------
    !
@@ -172,7 +183,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(in) :: ssh
-      real (kind=RKIND), dimension(:,:), intent(in) :: normalVelocity
+      real (kind=RKIND), dimension(:,:), intent(inout) :: normalVelocity
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness
 
       !-----------------------------------------------------------------
@@ -185,33 +196,56 @@ contains
       ! local variables
       !-----------------------------------------------------------------
 
-      integer :: iEdge
+      integer :: iEdge, k
       integer :: cell1, cell2
       real (kind=RKIND) :: sshMean
       real(kind=RKIND):: eps = 1.0e-10_RKIND
+      real (kind=RKIND) :: hCrit
 
       do iEdge = 1, nEdgesAll
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-         if (normalVelocity(1,iEdge) > 0.0_RKIND) then
-            call ocn_subgrid_layer_thickness_lookup(ssh(cell1), &
-                                                    subgridWetVolumeEdgeTable(:,iEdge), &
-                                                    subgridSshEdgeTableRange(:,iEdge), &
-                                                    subgridEdgeBathymetryMean(iEdge), &
-                                                    layerThickEdgeFlux(1,iEdge))
-         elseif (normalVelocity(1,iEdge) < 0.0_RKIND) then
-            call ocn_subgrid_layer_thickness_lookup(ssh(cell2), &
-                                                    subgridWetVolumeEdgeTable(:,iEdge), &
-                                                    subgridSshEdgeTableRange(:,iEdge), &
-                                                    subgridEdgeBathymetryMean(iEdge), &
-                                                    layerThickEdgeFlux(1,iEdge))
+
+         if ( abs( subgridSshEdgeTableRange(2,iEdge) + 1.0e10 ) < 1.0e-9 ) then
+           ! in non-subgrid zone !
+           cell1 = cellsOnEdge(1,iEdge)
+           cell2 = cellsOnEdge(2,iEdge)
+          
+           do k = 1,1
+              if (normalVelocity(k,iEdge) > 0.0_RKIND) then
+                 layerThickEdgeFlux(k,iEdge) = layerThickness(k,cell1)
+              elseif (normalVelocity(k,iEdge) < 0.0_RKIND) then
+                 layerThickEdgeFlux(k,iEdge) = layerThickness(k,cell2)
+              else
+                 layerThickEdgeFlux(k,iEdge) = &
+                                     max(layerThickness(k,cell1), &
+                                         layerThickness(k,cell2))
+              end if
+           end do
+ 
          else
-            sshMean = 0.5_RKIND*(ssh(cell1) + ssh(cell2))
-            call ocn_subgrid_layer_thickness_lookup(sshMean, &
-                                                    subgridWetVolumeEdgeTable(:,iEdge), &
-                                                    subgridSshEdgeTableRange(:,iEdge), &
-                                                    subgridEdgeBathymetryMean(iEdge), &
-                                                    layerThickEdgeFlux(1,iEdge))
+           ! in subgrid zone !     
+           cell1 = cellsOnEdge(1,iEdge)
+           cell2 = cellsOnEdge(2,iEdge)
+           if (normalVelocity(1,iEdge) > 0.0_RKIND) then
+              call ocn_subgrid_layer_thickness_lookup(ssh(cell1), &
+                                                      subgridWetVolumeEdgeTable(:,iEdge), &
+                                                      subgridSshEdgeTableRange(:,iEdge), &
+                                                      subgridEdgeBathymetryMean(iEdge), &
+                                                      layerThickEdgeFlux(1,iEdge))
+           elseif (normalVelocity(1,iEdge) < 0.0_RKIND) then
+              call ocn_subgrid_layer_thickness_lookup(ssh(cell2), &
+                                                      subgridWetVolumeEdgeTable(:,iEdge), &
+                                                      subgridSshEdgeTableRange(:,iEdge), &
+                                                      subgridEdgeBathymetryMean(iEdge), &
+                                                      layerThickEdgeFlux(1,iEdge))
+           else
+              sshMean = 0.5_RKIND*(ssh(cell1) + ssh(cell2))
+              call ocn_subgrid_layer_thickness_lookup(sshMean, &
+                                                      subgridWetVolumeEdgeTable(:,iEdge), &
+                                                      subgridSshEdgeTableRange(:,iEdge), &
+                                                      subgridEdgeBathymetryMean(iEdge), &
+                                                      layerThickEdgeFlux(1,iEdge))
+           end if
+           !
          end if
 
          if ( layerThickEdgeFlux(1,iEdge) < eps ) then
@@ -223,6 +257,14 @@ contains
                                        layerThickness(1,cell2) )
          end if
       end do
+
+
+      hCrit = (config_drying_min_cell_height + config_drying_safety_height)
+      do iEdge = 1, nEdgesAll
+        if ( layerThickEdgeFlux(1,iEdge) < hCrit ) then
+            normalVelocity(1,iEdge) = 0.0_RKIND
+        endif             
+      enddo     
 
    end subroutine ocn_subgrid_layerThickEdgeFlux_upwind!}}}
 
@@ -342,16 +384,13 @@ contains
       else if (zeta <= tableMin) then
         layerThick = 0.0_RKIND
       else
-        do lev = 1, nSubgridTableLevels-1
-          zeta0 = (real(lev,RKIND)-1.0_RKIND)*deltaZ + tableMin
-          zeta1 = zeta0 + deltaZ
 
-          if ((zeta <= zeta1) .and. (zeta >= zeta0)) then
-            layerThick = ((zeta-zeta0)*subgridTable(lev+1) - (zeta-zeta1)*subgridTable(lev))/deltaZ
-            return
-          end if
+        lev = int((zeta - tableMin)/deltaZ) + 1
+        zeta0 = (real(lev,RKIND)-1.0_RKIND)*deltaZ + tableMin
+        zeta1 = zeta0 + deltaZ
 
-        end do
+        layerThick = ((zeta-zeta0)*subgridTable(lev+1) - (zeta-zeta1)*subgridTable(lev))/deltaZ
+
       end if
 
    end subroutine ocn_subgrid_layer_thickness_lookup!}}}
@@ -407,19 +446,81 @@ contains
       else if (zeta <= tableMin) then
         wetFraction = 0.0_RKIND
       else
-        do lev = 1, nSubgridTableLevels-1
-          zeta0 = (real(lev,RKIND)-1.0_RKIND)*deltaZ + tableMin
-          zeta1 = zeta0 + deltaZ
+        lev = int((zeta - tableMin)/deltaZ) + 1
 
-          if ((zeta <= zeta1) .and. (zeta >= zeta0)) then
-            wetFraction = ((zeta-zeta0)*subgridTable(lev+1) - (zeta-zeta1)*subgridTable(lev))/deltaZ
-            return
-          end if
+        zeta0 = (real(lev,RKIND)-1.0_RKIND)*deltaZ + tableMin
+        zeta1 = zeta0 + deltaZ
 
-        end do
+        wetFraction = ((zeta-zeta0)*subgridTable(lev+1) - (zeta-zeta1)*subgridTable(lev))/deltaZ
       end if
 
    end subroutine ocn_subgrid_wet_fraction_lookup!}}}
+
+!***********************************************************************
+!
+!  routine ocn_subgrid_drag_lookup
+!
+!> \brief   Drag coefficient lookup
+!> \author  Steven Brus, Damrongsak Wirasaet
+!> \date    September 2025
+!> \details Returns the drag coefficient for a given ssh (defined over the
+!>          wet fraction) value based on subgrid lookup table information
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_subgrid_drag_lookup(zeta, &
+                                       subgridTable, &
+                                       subgridTableRange, &
+                                       mannings_n, &
+                                       columnThickness, &
+                                       dragCoefficient)!{{{
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), intent(in) :: zeta
+      real (kind=RKIND), dimension(:), intent(in) :: subgridTable
+      real (kind=RKIND), dimension(:), intent(in) :: subgridTableRange
+      real (kind=RKIND), intent(in) :: mannings_n
+      real (kind=RKIND), intent(in) :: columnThickness
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), intent(out) :: dragCoefficient
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      integer :: lev
+
+      real (kind=RKIND) :: tableMin
+      real (kind=RKIND) :: tableMax
+      real (kind=RKIND) :: deltaZ
+      real (kind=RKIND) :: zeta0, zeta1
+
+      tableMin = subgridTableRange(1)
+      tableMax = subgridTableRange(2)
+      deltaZ = (tableMax - tableMin)/real(nSubgridTableLevels-1,RKIND)
+
+      dragCoefficient = gravity*mannings_n**2 / (columnThickness**(1.0_RKIND/3.0_RKIND))
+      if (zeta >= tableMax) then
+         return 
+      else if (zeta <= tableMin) then
+         return
+      else
+        lev = int((zeta - tableMin)/deltaZ) + 1
+
+        zeta0 = (real(lev,RKIND)-1.0_RKIND)*deltaZ + tableMin
+        zeta1 = zeta0 + deltaZ
+
+        dragCoefficient = ((zeta-zeta0)*subgridTable(lev+1) - (zeta-zeta1)*subgridTable(lev))/deltaZ
+      end if
+
+   end subroutine ocn_subgrid_drag_lookup!}}}
 
 !***********************************************************************
 !
@@ -478,26 +579,22 @@ contains
 
       if (layerThick >= layerThickMax) then
         zeta = layerThick - bathymetryMean
-
       else if (layerThick <= layerThickMin) then
         zeta = - bathymetryMin ! prevent_drying likely fails to ensure positive water columbn
       else
 
-       do lev = 1, nSubgridTableLevels-1
-          zeta0 = (real(lev,RKIND)-1.0_RKIND)*deltaZ + tableMin
-          zeta1 = zeta0 + deltaZ
+         lev = bisection_index(layerThick, subgridTable, nSubgridTableLevels)
 
-          layerThick0 = subgridTable(lev)
-          layerThick1 = subgridTable(lev+1)
+         zeta0 = (real(lev,RKIND)-1.0_RKIND)*deltaZ + tableMin
+         zeta1 = zeta0 + deltaZ
 
-          if ((layerThick <= layerThick1) .and. (layerThick >= layerThick0)) then
-            phi0 = (layerThick-layerThick1)/(layerThick0-layerThick1)
-            phi1 = (layerThick-layerThick0)/(layerThick1-layerThick0)
-            zeta = phi0*zeta0 + phi1*zeta1
-            return
-          end if
+         layerThick0 = subgridTable(lev)
+         layerThick1 = subgridTable(lev+1)
 
-        end do
+         phi0 = (layerThick-layerThick1)/(layerThick0-layerThick1)
+         phi1 = (layerThick-layerThick0)/(layerThick1-layerThick0)
+         zeta = phi0*zeta0 + phi1*zeta1
+
       end if
 
    end subroutine ocn_subgrid_ssh_lookup!}}}
@@ -533,7 +630,9 @@ contains
       !-----------------------------------------------------------------
 
       type(block_type), pointer :: block
-      type(mpas_pool_type), pointer :: meshPool
+      type(mpas_pool_type), pointer :: meshPool, statePool
+
+      integer :: timeLevel
 
       err = 0
       if (.not. config_use_subgrid_wetting_drying) then
@@ -577,11 +676,57 @@ contains
                                subgridVertexBathymetryMin)
       call mpas_pool_get_array(meshPool, 'subgridLayerThicknessDebug', &
                                subgridLayerThicknessDebug)
+      call mpas_pool_get_array(meshPool, 'subgridSshDragEdgeTableRange', &
+                               subgridSshDragEdgeTableRange)
+      call mpas_pool_get_array(meshPool, 'subgridDragEdgeTable', &
+                               subgridDragEdgeTable)
+      call mpas_pool_get_array(meshPool, 'subgridEdgeArea', &
+                               subgridEdgeArea)
 
       call mpas_pool_get_dimension(meshPool, 'nSubgridTableLevels', &
                                      nSubgridTableLevels)
 
+      timeLevel = 1
+      call mpas_pool_get_subpool(block%structs, 'state', statePool)
+      call mpas_pool_get_array(statePool, 'ssh', subgridSSH, timeLevel)
+      call mpas_pool_get_array(statePool, 'wetFractionCell', wetFractionCell, timeLevel)
+      call mpas_pool_get_array(statePool, 'wetFractionEdge', wetFractionEdge, timeLevel)
+
    end subroutine ocn_subgrid_init!}}}
+
+   !--------------------------------------------------------------------
+   ! Bisection search to find index such that:
+   !   arr(index) <= value < arr(index+1)
+   ! If value is outside the grid, -9999 is returned.
+   !--------------------------------------------------------------------
+   integer function bisection_index(value, arr, n) result(idx)
+      implicit none 
+      integer, intent(in) :: n 
+      real(kind=RKIND), intent(in) :: value
+      real(kind=RKIND), intent(in) :: arr(n)
+      integer :: low, high, mid
+
+      if (value < arr(1)) then 
+         idx = -9999
+         return
+      end if
+      if (value > arr(n)) then 
+         idx = -9999 
+         return
+      end if
+
+      low = 1
+      high = n
+      do while (high - low > 1) 
+         mid = (low + high) / 2
+         if (value < arr(mid)) then 
+            high = mid
+         else 
+            low = mid
+         end if
+      end do
+      idx = low
+   end function bisection_index
 
 end module ocn_subgrid
 

@@ -30,6 +30,13 @@ module ocn_init_hurricane
    use ocn_config
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
+   use ocn_subgrid
+   use ocn_init_subgrid
+
+   use mpas_io
+   use mpas_io_streams
+   use mpas_stream_manager
+
 
    implicit none
    private
@@ -55,6 +62,14 @@ module ocn_init_hurricane
    ! Private module variables
    !
    !--------------------------------------------------------------------
+
+   !! For netcdf topobathy input variables
+   !integer :: nLatTopo, nLonTopo
+
+   !type (field1DReal) :: topoLat, topoLon
+   !type (field2DReal) :: topoIC
+
+   !real(kind=RKIND), parameter:: eps = 1.0e-10_RKIND ;
 
 !***********************************************************************
 
@@ -89,12 +104,13 @@ contains
     type (mpas_pool_type), pointer :: verticalMeshPool
 
     ! local variables
-    integer :: iCell, k, idx, iEdge, iVertex
+    integer :: iCell, k, idx, iEdge, iVertex, slice
     real (kind=RKIND) :: dlon, dlat, dw
     real (kind=RKIND) :: maxBottomDepth, globalMaxBottomDepth, globalMinBottomDepth
     real (kind=RKIND), dimension(:), pointer :: interfaceLocations
     real (kind=RKIND), parameter :: eps=1.0e-12
     real (kind=RKIND), parameter :: pi = 4.0_RKIND*ATAN(1.0_RKIND)
+    real (kind=RKIND):: edgeBathyValue
 
     ! Define dimension pointers
     integer, pointer :: nCellsSolve, nEdgesSolve, nVerticesSolve, nVertLevels, nVertLevelsP1
@@ -110,8 +126,10 @@ contains
          fCell, fEdge, fVertex, &
          latCell, latEdge, latVertex, &
          lonCell
+    integer, dimension(:,:), pointer :: cellsOnEdge
     real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
     real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+    real (kind=RKIND), dimension(:), allocatable :: uVelocityAverage, vVelocityAverage
 
     iErr = 0
 
@@ -121,6 +139,9 @@ contains
     call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
     call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
     call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
+    call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+    call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+    call mpas_pool_get_dimension(meshPool, 'nVerticesSolve', nVerticesSolve)
     call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
     ! you may restrict your case geometry as follows:
@@ -161,6 +182,14 @@ contains
     do while(associated(block_ptr))
       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
       call mpas_pool_get_array(meshPool, 'bottomDepthObserved', bottomDepthObserved)
+      call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+
+      call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+      call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
 
       if (MAXVAL(bottomDepthObserved) > maxBottomDepth) then
         maxBottomDepth = MAXVAL(bottomDepthObserved)
@@ -171,8 +200,118 @@ contains
     maxBottomDepth = -1.0_RKIND*maxBottomDepth
 
     call mpas_dmpar_max_real(domain % dminfo, maxBottomDepth, globalMinBottomDepth)
-    !write(*,*) globalMaxBottomDepth, globalMinBottomDepth
+    !write(*,*) globalMaxBottomDepth, globzalMinBottomDepth
 
+    !------------------------
+    do iCell = 1, nCellsSolve
+       bottomDepth(iCell) = -1.0_RKIND*bottomDepthObserved(iCell)
+
+       if ( .not. ( config_use_subgrid_wetting_drying .and. &
+            MPAS_stream_mgr_stream_exists(domain%streamManager, 'subgrid_init') )  ) then
+          ! sea level rise adjustment
+          bottomDepth(iCell) = bottomDepth(iCell) + config_hurricane_sea_level_rise_adjustment
+
+
+         ! enforce minimum and maximum bottom depth
+          bottomDepth(iCell) = max(bottomDepth(iCell), config_hurricane_min_depth)
+          bottomDepth(iCell) = min(bottomDepth(iCell), globalMaxBottomDepth)
+          ssh(iCell) = 0.0_RKIND ; 
+        end if    
+    end do
+
+    if (config_use_subgrid_wetting_drying) then
+       call ocn_subgrid_init(domain,iErr)
+    end if
+    if ( config_use_wetting_drying .and. config_use_subgrid_wetting_drying ) then   
+      if ( .not. MPAS_stream_mgr_stream_exists(domain%streamManager, 'subgrid_init') )then       
+        do iEdge = 1, nEdgesSolve
+          !
+          edgeBathyValue = 1.0e10_RKIND ;
+          do slice = 1, 2
+
+           if ( cellsOnEdge(slice,iEdge) <= nCellsSolve ) then
+               edgeBathyValue = min( edgeBathyValue, bottomDepth(cellsOnEdge(slice,iEdge)) ) ;
+           end if
+          end do
+          subgridEdgeBathymetryMean(iEdge) = edgeBathyValue ; 
+          !
+        end do
+      end if
+    end if
+    !-----------------------
+
+
+    if (config_use_subgrid_wetting_drying) then
+
+       !   call ocn_subgrid_init(domain,iErr)
+       if (MPAS_stream_mgr_stream_exists(domain%streamManager, 'subgrid_init')) then
+
+          allocate(uVelocityAverage(nEdgesSolve))
+          allocate(vVelocityAverage(nEdgesSolve))
+
+          if (config_subgrid_topography_source == 'latlon_file' .or. &
+                   config_subgrid_topography_source == 'xy_file' ) then
+             call mpas_log_write( 'Reading subgrid topography data from file.')
+             call ocn_init_read_subgrid_data(domain, topoLon, topoLat, topoData, &
+                                             config_subgrid_topography_file, &
+                                             config_subgrid_topography_source, &
+                                             config_subgrid_topography_latlon_degrees, &
+                                             config_subgrid_topography_positive, &
+                                             config_subgrid_topography_lon_varname, &
+                                             config_subgrid_topography_lat_varname, &
+                                             config_subgrid_topography_nlon_dimname, &
+                                             config_subgrid_topography_nlat_dimname, &
+                                             config_subgrid_topography_varname, &
+                                             iErr)
+          endif
+          if (config_subgrid_lulc_source == 'latlon_file' .or. &
+                   config_subgrid_lulc_source == 'xy_file' ) then
+             call mpas_log_write( 'Reading subgrid LULC data from file.')
+             call ocn_init_read_subgrid_data(domain, lulcLon, lulcLat, lulcData, &
+                                             config_subgrid_lulc_file, &
+                                             config_subgrid_lulc_source, &
+                                             config_subgrid_lulc_latlon_degrees, &
+                                             "down", &
+                                             config_subgrid_lulc_lon_varname, &
+                                             config_subgrid_lulc_lat_varname, &
+                                             config_subgrid_lulc_nlon_dimname, &
+                                             config_subgrid_lulc_nlat_dimname, &
+                                             config_subgrid_lulc_varname, &
+                                             iErr)
+          endif
+
+          call ocn_init_subgrid_calculations(domain, &
+                                             ocn_init_subgrid_interpolate_topo, &
+                                             ocn_init_subgrid_interpolate_drag, &
+                                             ocn_init_hurricane_velocity, &
+                                             ocn_init_hurricane_ssh, &
+                                             config_subgrid_refinement_level, &
+                                             config_subgrid_edge_bathymetry_max_pixel, &
+                                             config_subgrid_use_thin_layer, &
+                                             uVelocityAverage, &
+                                             vVelocityAverage, &
+                                             iErr) !
+       else
+
+         call mpas_log_write( 'Setting default subgrid table values')
+         do iCell = 1, nCellsSolve
+            subgridWetVolumeCellTable(nSubgridTableLevels,iCell) = -1e10
+            subgridSshCellTableRange(2,iCell) = -1e10
+         end do
+         do iEdge = 1, nEdgesSolve
+            subgridWetVolumeEdgeTable(nSubgridTableLevels,iEdge) = -1e10
+            subgridSshEdgeTableRange(2,iEdge) = -1e10
+            subgridSshDragEdgeTableRange(2,iEdge) = -1e10
+            subgridDragEdgeTable(nSubgridTableLevels,iEdge) = -1e10
+         end do
+         do iVertex = 1, nVerticesSolve
+            subgridWetVolumeVertexTable(nSubgridTableLevels,iVertex) = -1e10
+            subgridSshVertexTableRange(2,iVertex) = -1e10
+         end do
+
+       end if
+    end if
+ 
     !--------------------------------------------------------------------
     ! Use this section to set initial values
     !--------------------------------------------------------------------
@@ -221,6 +360,7 @@ contains
        vertCoordMovementWeights(:) = 1.0_RKIND
 
 
+
        ! Set ssh
        if (config_hurricane_use_gaussian_hump) then
          do iCell = 1, nCellsSolve
@@ -233,64 +373,76 @@ contains
              (2.0_RKIND*dw**2.0_RKIND))
          end do
        else
-         do iCell = 1, nCellsSolve
-           ssh(iCell) = 0.0_RKIND
-         end do
+         !do iCell = 1, nCellsSolve
+         !  ssh(iCell) = 0.0_RKIND
+         !end do
        end if
 
 
-       do iCell = 1, nCellsSolve
-
-          bottomDepth(iCell) = -1.0_RKIND*bottomDepthObserved(iCell)
-
-          ! sea level rise adjustment
-          bottomDepth(iCell) = bottomDepth(iCell) + config_hurricane_sea_level_rise_adjustment
-
-          ! enforce minimum and maximum bottom depth
-          bottomDepth(iCell) = max(bottomDepth(iCell), config_hurricane_min_depth)
-          bottomDepth(iCell) = min(bottomDepth(iCell), globalMaxBottomDepth)
-
-        end do
+!       do iCell = 1, nCellsSolve       
+!          bottomDepth(iCell) = -1.0_RKIND*bottomDepthObserved(iCell)
+!          ! sea level rise adjustment
+!          bottomDepth(iCell) = bottomDepth(iCell) + config_hurricane_sea_level_rise_adjustment
+!
+!          ! enforce minimum and maximum bottom depth
+!          bottomDepth(iCell) = max(bottomDepth(iCell), config_hurricane_min_depth)
+!          bottomDepth(iCell) = min(bottomDepth(iCell), globalMaxBottomDepth)
+!        end do
 
         if (config_use_wetting_drying) then
           do iCell = 1, nCellsSolve
             ! Set up vertical grid
             maxLevelCell(iCell) = nVertLevels
-            ! ensures only 3 layers can be obtained on mesh
-            if (bottomDepth(iCell) < 0 .or. bottomDepth(iCell) < refBottomDepth(3)) then
-              maxLevelCell(iCell) = 3
-            else
-              ! snap to zstar coordinate
-              do k = 1, nVertLevels
-                if (bottomDepth(iCell) < refBottomDepth(k)) then
-                  maxLevelCell(iCell) = k-1
-                  bottomDepth(iCell) = refBottomDepth(k-1)
-                  exit
-                end if
-              end do
-            end if
+            !! ensures only 3 layers can be obtained on mesh
+            !if (bottomDepth(iCell) < 0 .or. bottomDepth(iCell) < refBottomDepth(3)) then
+            !  maxLevelCell(iCell) = 3
+            !else
+            !  ! snap to zstar coordinate
+            !  do k = 1, nVertLevels
+            !    if (bottomDepth(iCell) < refBottomDepth(k)) then
+            !      maxLevelCell(iCell) = k-1
+            !      bottomDepth(iCell) = refBottomDepth(k-1)
+            !      exit
+            !    end if
+            !  end do
+            !end if
           end do
 
           do iCell = 1, nCellsSolve
 
-            ! make sure depth is thick enough via ssh = TOTAL_DEPTH - bottomDepth
-            ssh(iCell) = - bottomDepth(iCell) + &
-              max(ssh(iCell) + bottomDepth(iCell), &
-              maxLevelCell(iCell)*(config_drying_min_cell_height + eps))
+            if (config_use_subgrid_wetting_drying .and. MPAS_stream_mgr_stream_exists(domain%streamManager, 'subgrid_init')) then
+              ! Initial contion for a subgrid run
+              !call ocn_subgrid_ssh_lookup(layerThickness(1,iCell),&
+              !                            subgridWetVolumeCellTable(:,iCell),&
+              !                            subgridSshCellTableRange(:,iCell),&
+              !                            bottomDepth(iCell),&
+              !                            subgridCellBathymetryMin(iCell),&
+              !                            ssh(iCell))
+              ! if ( ssh(iCell) < subgridSshCellTableRange(3,iCell) ) then
+              !    ssh(iCell) = subgridSshCellTableRange(3,iCell) ;   
+              ! end if 
 
-            do k = 1, maxLevelCell(iCell)
-              layerThickness(k,iCell) = max(config_drying_min_cell_height + eps, &
-                (ssh(iCell) + bottomDepth(iCell))/maxLevelCell(iCell))
-              if (layerThickness(k,iCell) < config_drying_min_cell_height) then
-                call mpas_log_write('layerThickness($i,$i)=$r', MPAS_LOG_CRIT, &
-                  intArgs=(/k,iCell/), &
-                  realArgs=(/layerThickness(k,iCell)/))
-              end if
-            end do
+            else
+              ! make sure depth is thick enough via ssh = TOTAL_DEPTH - bottomDepth
+              ssh(iCell) = - bottomDepth(iCell) + &
+                max(ssh(iCell) + bottomDepth(iCell), &
+                maxLevelCell(iCell)*(config_drying_min_cell_height + eps))
+
+              do k = 1, maxLevelCell(iCell)
+                layerThickness(k,iCell) = max(config_drying_min_cell_height + eps, &
+                  (ssh(iCell) + bottomDepth(iCell))/maxLevelCell(iCell))
+                if (layerThickness(k,iCell) < config_drying_min_cell_height) then
+                  call mpas_log_write('layerThickness($i,$i)=$r', MPAS_LOG_CRIT, &
+                    intArgs=(/k,iCell/), &
+                    realArgs=(/layerThickness(k,iCell)/))
+                end if
+              end do
+            endif
 
             do k = 1, maxLevelCell(iCell)
               restingThickness(k,iCell) = bottomDepth(iCell)/maxLevelCell(iCell)
             end do
+
           end do
         else
           ! case without wetting and drying
@@ -321,8 +473,8 @@ contains
               restingThickness(k, iCell) = layerThickness(k, iCell)
             end do
           end do
+          !
         end if
-
 
         do iCell = 1, nCellsSolve
           ! Set temperature
@@ -337,7 +489,7 @@ contains
              activeTracers(idx, k, iCell) = 33.0_RKIND
           end do
 
-       end do
+        end do
 
 
        ! Set Coriolis parameters
@@ -370,6 +522,21 @@ contains
        end if
 
 
+       ! Set bottomDepthObserved to -bottomDepth so that the values of
+       ! the cell-averaged bottomDepth of cells with subgrid bathymetry are not
+       ! overwrtten by the base values in base mesh file in the multiple
+       ! stages setup                                                 
+       if ( config_use_subgrid_wetting_drying ) then
+         do iCell = 1, nCellsSolve
+            bottomDepthObserved(iCell) = -1.0_RKIND*bottomDepth(iCell) ; 
+         end do  
+       endif        
+       
+!       do iCell = 1, nCellsSolve
+!         if ( ssh(iCell) < 0 ) then
+!            write(*,*) "after = ", iCell, ssh(iCell) ; 
+!          end if
+!       end do
        block_ptr => block_ptr % next
     end do
 
@@ -394,18 +561,24 @@ contains
 
    !--------------------------------------------------------------------
       type (mpas_pool_type), intent(inout) :: configPool, packagePool
-      type (mpas_io_context_type), intent(inout) :: iocontext
+      type (mpas_io_context_type), intent(inout), target :: iocontext
 
       integer, intent(out) :: iErr
 
       character (len=StrKIND), pointer :: config_init_configuration
       integer, pointer :: config_vert_levels, config_hurricane_vert_levels
+      integer, pointer :: config_subgrid_table_levels 
+
+      type (mpas_io_context_type), pointer :: iocontext_ptr
+      type (MPAS_IO_Handle_type) :: inputFile
 
       iErr = 0
 
       call mpas_pool_get_config(configPool, 'config_init_configuration', config_init_configuration)
 
       if(config_init_configuration .ne. trim('hurricane')) return
+
+      iocontext_ptr => iocontext
 
       call mpas_pool_get_config(configPool, 'config_vert_levels', config_vert_levels)
       call mpas_pool_get_config(configPool, 'config_hurricane_vert_levels', config_hurricane_vert_levels)
@@ -417,12 +590,141 @@ contains
          iErr = 1
       end if
 
+      !call mpas_pool_get_config(configPool, 'config_subgrid_table_levels', config_subgrid_table_levels)
+      !call mpas_pool_get_config(configPool, &
+      !                          'config_Buttermilk_bay_subgrid_table_levels', &
+      !                          config_Buttermilk_bay_subgrid_table_levels)
+      !if (config_subgrid_table_levels <=0 .and. config_Buttermilk_bay_subgrid_table_levels >0) then
+      !   config_subgrid_table_levels = config_Buttermilk_bay_subgrid_table_levels
+      !else if (config_subgrid_table_levels <=0) then
+      !   call mpas_log_write( 'Validation failed for Buttermilk bay.'// &
+      !     'Not given a usable value for subgrid table levels.', MPAS_LOG_CRIT)
+      !   iErr = 1 
+      !end if
+
+      !!---------- adapted from ocn_init_validate_global_ocean
+      !call mpas_pool_get_config(configPool, 'config_Buttermilk_bay_topography_source', &
+      !                          config_Buttermilk_bay_topography_source)
+      !call mpas_pool_get_config(configPool, 'config_Buttermilk_bay_topography_file', &
+      !                          config_Buttermilk_bay_topography_file)
+      !call mpas_pool_get_config(configPool, 'config_Buttermilk_bay_topography_nlat_dimname', &
+      !                          config_Buttermilk_bay_topography_nlat_dimname)
+      !call mpas_pool_get_config(configPool, 'config_Buttermilk_bay_topography_nlon_dimname', &
+      !                          config_Buttermilk_bay_topography_nlon_dimname)
+
+
+      !call mpas_log_write( config_Buttermilk_bay_topography_source  )
+      !call mpas_log_write( config_Buttermilk_bay_topography_file )
+      !call mpas_log_write( config_Buttermilk_bay_topography_nlat_dimname )
+      !call mpas_log_write( config_Buttermilk_bay_topography_nlon_dimname )
+
+      !if (config_Buttermilk_bay_topography_source /= 'latlon_file' .and. &
+      !    config_Buttermilk_bay_topography_source /= 'xy_file') then
+      !   call mpas_log_write( 'Unexpected value for &
+      !             config_Buttermilk_bay_topography_source: ' &
+      !       // trim(config_Buttermilk_bay_topography_source), MPAS_LOG_CRIT)
+      !   iErr = 1 
+      !   return
+      !end if
+
+      !if (config_Buttermilk_bay_topography_file == 'none' .and. &
+      !    (config_Buttermilk_bay_topography_source == 'latlon_file' .or. &
+      !    config_Buttermilk_bay_topography_source == 'xy_file') ) then
+      !   call mpas_log_write( 'Validation failed for Buttermilk bay test case. ' &
+      !     // 'Invalid filename for config_Buttermilk_bay_topography_file ' &
+      !     // config_Buttermilk_bay_topography_file // '  ' &
+      !     // config_Buttermilk_bay_topography_source , MPAS_LOG_CRIT)
+      !   iErr = 1 
+      !   return
+      !end if
+
+      !call mpas_log_write( ' in ocn_init_validate_buttermilk_bay '//config_Buttermilk_bay_topography_source )
+
+      !if (config_Buttermilk_bay_topography_source == 'latlon_file' .or. &
+      !     config_Buttermilk_bay_topography_source == 'xy_file'  ) then
+
+      !   inputFile = MPAS_io_open(trim(config_Buttermilk_bay_topography_file), &
+      !                  MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
+      !   if (iErr /= 0) then
+      !      call mpas_log_write( 'could not open file '// &
+      !             trim(config_Buttermilk_bay_topography_file), MPAS_LOG_CRIT)
+      !      return
+      !   end if
+
+      !   call MPAS_io_inq_dim(inputFile, config_Buttermilk_bay_topography_nlat_dimname, nLatTopo, iErr)
+      !   call MPAS_io_inq_dim(inputFile, config_Buttermilk_bay_topography_nlon_dimname, nLonTopo, iErr)
+
+      !   call MPAS_io_close(inputFile, iErr)
+
+      !end if
+      !----------
+
+
    !--------------------------------------------------------------------
 
    end subroutine ocn_init_validate_hurricane!}}}
 
+!***********************************************************************
+!
+!  routine ocn_init_hurricane_ssh
+!
+!> \brief   Compute initial ssh field
+!> \author  Steven Brus
+!> \date    September 2025
+!> \details Compute ssh field for initial conditions
+!>
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_init_hurricane_ssh(x, y, bottomDepth, ssh)!{{{
+
+      implicit none
+
+      real (kind=RKIND), intent(in) :: x, y
+      real (kind=RKIND), intent(in) :: bottomDepth
+      real (kind=RKIND), intent(out) :: ssh
+      real (kind=RKIND) :: RR
+
+   !--------------------------------------------------------------------
+
+      ssh = 0.0_RKIND ;
+      ssh = - bottomDepth + max( ssh + bottomDepth, 0.0_RKIND ) ;
+
+      return
+   !--------------------------------------------------------------------
+
+   end subroutine ocn_init_hurricane_ssh!}}}
+
 
 !***********************************************************************
+
+!***********************************************************************
+!
+!  routine ocn_init_hurricane_velocity
+!
+!> \brief   Compute initial velocity field
+!> \author  Steven Brus
+!> \date    September 2025
+!> \details Compute velocity field for initial conditions
+!>
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_init_hurricane_velocity(x, y, u, v)!{{{
+
+      implicit none
+
+      real (kind=RKIND), intent(in) :: x, y
+      real (kind=RKIND), intent(out) :: u, v
+      real (kind=RKIND) :: RR, HH
+
+   !--------------------------------------------------------------------
+
+      u = 0.0_RKIND ;
+      v = 0.0_RKIND ;
+   !--------------------------------------------------------------------
+
+   end subroutine ocn_init_hurricane_velocity!}}}
 
 end module ocn_init_hurricane
 
