@@ -1063,6 +1063,7 @@ contains
   real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)  ! vertical velocity at interfaces
   real (kind=real_kind) :: KE(np,np,nlev)             ! Kinetic energy
   real (kind=real_kind) :: gradexner(np,np,2,nlev)    ! grad(p^kappa)
+  real (kind=real_kind) :: gradpterm(np,np,2,nlev)    ! gradp term in momentum equation
   real (kind=real_kind) :: gradphinh_i(np,np,2,nlevp) ! gradphi at interfaces
   real (kind=real_kind) :: mgrad(np,np,2,nlev)        ! gradphi metric term at cell centers
   real (kind=real_kind) :: gradKE(np,np,2,nlev)       ! grad(0.5 u^T u )
@@ -1372,12 +1373,23 @@ contains
            v_theta(:,:,1,k)=elem(ie)%state%v(:,:,1,k,n0)*vtheta_dp(:,:,k)
            v_theta(:,:,2,k)=elem(ie)%state%v(:,:,2,k,n0)*vtheta_dp(:,:,k)
            div_v_theta(:,:,k)=divergence_sphere(v_theta(:,:,:,k),deriv,elem(ie))
-        else
+        else if (theta_advect_form==1) then
            ! alternate form, non-conservative, better HS topography results
            v_theta(:,:,:,k) = gradient_sphere(vtheta(:,:,k),deriv,elem(ie)%Dinv)
            div_v_theta(:,:,k)=vtheta(:,:,k)*divdp(:,:,k) + &
                 dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,n0)*v_theta(:,:,1,k) + &
                 dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,n0)*v_theta(:,:,2,k) 
+        else
+           v_theta(:,:,1,k)=elem(ie)%state%v(:,:,1,k,n0)*vtheta_dp(:,:,k)
+           v_theta(:,:,2,k)=elem(ie)%state%v(:,:,2,k,n0)*vtheta_dp(:,:,k)
+           div_v_theta(:,:,k)=divergence_sphere(v_theta(:,:,:,k),deriv,elem(ie))/2
+
+           v_theta(:,:,:,k) = gradient_sphere(vtheta(:,:,k),deriv,elem(ie)%Dinv)
+           div_v_theta(:,:,k)=div_v_theta(:,:,k) + (  &
+                vtheta(:,:,k)*divdp(:,:,k) + &
+                dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,n0)*v_theta(:,:,1,k) + &
+                dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,n0)*v_theta(:,:,2,k)  ) /2
+
         endif
 #ifdef HOMMEXX_BFB_TESTING
         theta_tens(:,:,k)=(-theta_vadv(:,:,k)-div_v_theta(:,:,k))
@@ -1397,6 +1409,9 @@ contains
         KE(:,:,k) = ( elem(ie)%state%v(:,:,1,k,n0)**2 + elem(ie)%state%v(:,:,2,k,n0)**2)/2
         gradKE(:,:,:,k) = gradient_sphere(KE(:,:,k),deriv,elem(ie)%Dinv)
         gradexner(:,:,:,k) = gradient_sphere(exner(:,:,k),deriv,elem(ie)%Dinv)
+
+! Some experimental calculations for gradexner, leaving here to document.
+! TODO: Clean up and remove from codebase if not used.
 #if 0
         ! another form: (good results in dcmip2012 test2.0)  max=0.195
         ! but bad results with HS topo
@@ -1425,6 +1440,17 @@ contains
         gradexner(:,:,2,k) = gradexner(:,:,2,k)*(Rgas/Cp)*exner(:,:,k)/pnh(:,:,k)
 #endif
 
+        gradpterm(:,:,1,k) = Cp*vtheta(:,:,k)*gradexner(:,:,1,k)
+        gradpterm(:,:,2,k) = Cp*vtheta(:,:,k)*gradexner(:,:,2,k)
+
+        if (theta_advect_form==2) then
+           ! split form. average of default and above
+           vtemp(:,:,:,k) = gradient_sphere(vtheta(:,:,k)*exner(:,:,k),deriv,elem(ie)%Dinv)
+           v_theta(:,:,:,k) = gradient_sphere(vtheta(:,:,k),deriv,elem(ie)%Dinv)
+           gradpterm(:,:,1,k) = (gradpterm(:,:,1,k) + Cp*(vtemp(:,:,1,k)-exner(:,:,k)*v_theta(:,:,1,k)))/2
+           gradpterm(:,:,2,k) = (gradpterm(:,:,2,k) + Cp*(vtemp(:,:,2,k)-exner(:,:,k)*v_theta(:,:,2,k)))/2
+        endif
+
         ! special averaging of dpnh/dpi grad(phi) for E conservation
         mgrad(:,:,1,k) = (dpnh_dp_i(:,:,k)*gradphinh_i(:,:,1,k)+ &
               dpnh_dp_i(:,:,k+1)*gradphinh_i(:,:,1,k+1))/2
@@ -1450,19 +1476,18 @@ contains
            mgrad(:,:,2,k)=mgrad(:,:,2,k) + Cp*T0*(vtemp(:,:,2,k)-gradexner(:,:,2,k)/exner(:,:,k))
         endif
 
-
         do j=1,np
            do i=1,np
               v1     = elem(ie)%state%v(i,j,1,k,n0)
               v2     = elem(ie)%state%v(i,j,2,k,n0)
 
 #ifdef HOMMEXX_BFB_TESTING
-              vtens1(i,j,k) = ( - Cp*vtheta(i,j,k)*gradexner(i,j,1,k) &
+              vtens1(i,j,k) = ( - gradpterm(i,j,1,k) &
                                 - (v_vadv(i,j,1,k) + gradKE(i,j,1,k)) &
                                 - (mgrad(i,j,1,k) + wvor(i,j,1,k))    &
                                 + v2*(elem(ie)%fcor(i,j) + vort(i,j,k)) )
 
-              vtens2(i,j,k) = ( - Cp*vtheta(i,j,k)*gradexner(i,j,2,k) &
+              vtens2(i,j,k) = ( - gradpterm(i,j,2,k) &
                                 - (v_vadv(i,j,2,k) + gradKE(i,j,2,k)) &
                                 - (mgrad(i,j,2,k) + wvor(i,j,2,k))    &
                                 - v1*(elem(ie)%fcor(i,j) + vort(i,j,k)) )
@@ -1470,14 +1495,14 @@ contains
               vtens1(i,j,k) = (-v_vadv(i,j,1,k) &
                    + v2*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
                    - gradKE(i,j,1,k) - mgrad(i,j,1,k) &
-                  -Cp*vtheta(i,j,k)*gradexner(i,j,1,k)&
+                  -gradpterm(i,j,1,k)&
                   -wvor(i,j,1,k) )*scale1
 
 
               vtens2(i,j,k) = (-v_vadv(i,j,2,k) &
                    - v1*(elem(ie)%fcor(i,j) + vort(i,j,k)) &
                    - gradKE(i,j,2,k) - mgrad(i,j,2,k) &
-                  -Cp*vtheta(i,j,k)*gradexner(i,j,2,k) &
+                  -gradpterm(i,j,2,k) &
                   -wvor(i,j,2,k) )*scale1
 #endif
            end do
@@ -1585,9 +1610,9 @@ contains
                
                !  Form T01
                elem(ie)%accum%T01(i,j)=elem(ie)%accum%T01(i,j)               &
-                    -(Cp*elem(ie)%state%vtheta_dp(i,j,k,n0))                       &
-                    *(gradexner(i,j,1,k)*elem(ie)%state%v(i,j,1,k,n0) +           &
-                    gradexner(i,j,2,k)*elem(ie)%state%v(i,j,2,k,n0))              
+                    -(elem(ie)%state%dp3d(i,j,k,n0))                       &
+                    *(gradpterm(i,j,1,k)*elem(ie)%state%v(i,j,1,k,n0) +           &
+                    gradpterm(i,j,2,k)*elem(ie)%state%v(i,j,2,k,n0))              
                !  Form S1 
                elem(ie)%accum%S1(i,j)=elem(ie)%accum%S1(i,j)                 &
                     -Cp*exner(i,j,k)*div_v_theta(i,j,k)
