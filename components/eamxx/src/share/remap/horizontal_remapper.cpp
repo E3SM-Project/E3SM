@@ -10,6 +10,7 @@
 #include <ekat_pack_utils.hpp>
 
 #include <numeric>
+#include <filesystem>
 
 namespace scream
 {
@@ -21,7 +22,8 @@ HorizontalRemapper (const grid_ptr_type& src_grid,
                     const bool track_mask)
  : m_track_mask (track_mask)
 {
-  set_name("HorizRemapper " + map_file);
+  std::filesystem::path p(map_file);
+  set_name("HRemap " + p.filename().string());
 
   m_remap_data = HorizRemapperDataRepo::instance().get_data(src_grid,tgt_grid,map_file);
 
@@ -45,7 +47,8 @@ HorizontalRemapper (const grid_ptr_type& grid,
                     const bool track_mask)
  : m_track_mask (track_mask)
 {
-  set_name("HorizRemapper " + map_file);
+  std::filesystem::path p(map_file);
+  set_name("HRemap " + p.filename().string());
 
   m_remap_data = HorizRemapperDataRepo::instance().get_data(grid,map_file);
 
@@ -358,7 +361,7 @@ void HorizontalRemapper::
 local_mat_vec (const Field& x, const Field& y) const
 {
   if (m_timers_enabled)
-    start_timer(name()+" mat-vec");
+    start_timer(name()+" matvec");
 
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
@@ -476,7 +479,7 @@ local_mat_vec (const Field& x, const Field& y) const
       EKAT_ERROR_MSG("[HorizInterpRemapperBase::local_mat_vec] Error! Fields of rank 4 or greater are not supported.\n");
   }
   if (m_timers_enabled)
-    stop_timer(name()+" mat-vec");
+    stop_timer(name()+" matvec");
 }
 
 template<int PackSize>
@@ -615,7 +618,7 @@ void HorizontalRemapper::
 local_mat_vec_masked (const Field& x, const Field& y) const
 {
   if (m_timers_enabled)
-    start_timer(name()+" mat-vec (masked)");
+    start_timer(name()+" matvec masked");
 
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
@@ -738,7 +741,7 @@ local_mat_vec_masked (const Field& x, const Field& y) const
     }
   }
   if (m_timers_enabled)
-    stop_timer(name()+" mat-vec (masked)");
+    stop_timer(name()+" matvec masked");
 }
 
 void HorizontalRemapper::pack_and_send ()

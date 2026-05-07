@@ -442,8 +442,8 @@ create_horiz_remappers (const std::string& map_file)
     nlevs_data = get_input_files_dimlen(m_input_files_dimnames[ILEV]);
   }
 
-  m_data_grid = create_point_grid("data",ncols_data,nlevs_data,m_model_grid->get_comm(),1);
-  m_grid_after_hremap = m_model_grid->clone("after_hremap",true);
+  m_data_grid = create_point_grid(m_name+"_data",ncols_data,nlevs_data,m_model_grid->get_comm(),1);
+  m_grid_after_hremap = m_model_grid->clone(m_name+"_post_hremap",true);
   m_grid_after_hremap->reset_vertical_configuration(nlevs_data, AbstractGrid::VKind::Model);
 
   if (map_file!="") {
@@ -485,7 +485,7 @@ create_horiz_remappers (const Real iop_lat, const Real iop_lon)
   int ncols_data = m_fields_have_col_dim ? get_input_files_dimlen (m_input_files_dimnames[COL]) : ncols_model;
 
   // Create grid for IO and load lat/lon field in IO grid from any data file
-  m_data_grid = create_point_grid("data",ncols_data,nlevs_data,m_model_grid->get_comm());
+  m_data_grid = create_point_grid(m_name+"_data",ncols_data,nlevs_data,m_model_grid->get_comm());
   std::vector<Field> latlon = {
     m_data_grid->create_geometry_data("lat",m_data_grid->get_2d_scalar_layout()),
     m_data_grid->create_geometry_data("lon",m_data_grid->get_2d_scalar_layout())
@@ -494,7 +494,7 @@ create_horiz_remappers (const Real iop_lat, const Real iop_lon)
   latlon_reader.read_variables();
 
   // Create iop remap tgt grid
-  m_grid_after_hremap = m_model_grid->clone("after_hremap",true);
+  m_grid_after_hremap = m_model_grid->clone(m_name+"_post_hremap",true);
   m_grid_after_hremap->reset_vertical_configuration(nlevs_data, AbstractGrid::VKind::Model);
   m_horiz_remapper_beg = std::make_shared<IOPRemapper>(m_data_grid,m_grid_after_hremap,iop_lat,iop_lon);
   m_horiz_remapper_end = std::make_shared<IOPRemapper>(m_data_grid,m_grid_after_hremap,iop_lat,iop_lon);
