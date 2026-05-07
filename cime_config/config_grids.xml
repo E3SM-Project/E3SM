@@ -1312,6 +1312,16 @@
       <mask>MAB45to5rr1</mask>
     </model_grid>
 
+    <model_grid alias="ne0vr28natlref_r0125_MAB45to5rr1">
+      <grid name="atm">ne0np4_vr28natlref</grid>
+      <grid name="lnd">r0125</grid>
+      <grid name="ocnice">MAB45to5rr1</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>MAB45to5rr1</mask>
+    </model_grid>
+
     <model_grid alias="svalbardx8v1_svalbardx8v1" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne0np4_svalbard_x8v1_lowcon</grid>
       <grid name="lnd">ne0np4_svalbard_x8v1_lowcon</grid>
