@@ -548,9 +548,9 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
 
 void run_bfb()
 {
-  // Cloud-liquid immersion freezing is active only when cloud liquid is
-  // present above QSMALL and the temperature is at or below the
-  // rain-freezing threshold.
+  // This BFB path uses the default all-true context, so cloud-liquid
+  // immersion freezing is active only when cloud liquid is present above
+  // QSMALL and the temperature is at or below the rain-freezing threshold.
   constexpr Scalar qsmall = C::QSMALL;
 
   constexpr Scalar t_freezing = 0.9 * C::T_rainfrz.value,
