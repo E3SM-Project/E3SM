@@ -119,23 +119,49 @@ ratio. Temperature, the runtime exponent, and the distribution prefactor
 `cdist1` cancel out because they multiply the mass and number moments
 identically.
 
-The same identity implies a size-bias interpretation. If
+## Volume-Weighted Freezing Interpretation
+
+The implemented mass-to-number tendency ratio can be interpreted as the mean
+mass per newly frozen droplet. Because
 
 $$
-D_{\mathrm{mean}} = \frac{\mu_c + 4}{\lambda_c}
+\frac{CONS6}{CONS5} = \frac{\pi \rho_w}{6},
 $$
 
-is the mean diameter of the freezing-weighted droplet population, then
+the ratio has the structure of the mass of a spherical water droplet,
+$m = (\pi \rho_w / 6) D^3$.
+
+For an ordinary Gamma cloud droplet number distribution, the ordinary mean
+cloud droplet mass is
 
 $$
-\frac{D_{\mathrm{eff}}^3}{D_{\mathrm{mean}}^3}
-= \frac{(\mu_c + 5)(\mu_c + 6)}{(\mu_c + 4)^2} > 1
+m_{\mathrm{cloud}} =
+\frac{\pi \rho_w}{6}
+\frac{(\mu_c + 1)(\mu_c + 2)(\mu_c + 3)}{\lambda_c^3}.
+$$
+
+For the newly frozen droplets implied by the P3 immersion-freezing closure,
+
+$$
+m_{\mathrm{frozen}} =
+\frac{\pi \rho_w}{6}
+\frac{(\mu_c + 4)(\mu_c + 5)(\mu_c + 6)}{\lambda_c^3}.
+$$
+
+Therefore,
+
+$$
+\frac{m_{\mathrm{frozen}}}{m_{\mathrm{cloud}}}
+= \frac{(\mu_c + 4)(\mu_c + 5)(\mu_c + 6)}
+  {(\mu_c + 1)(\mu_c + 2)(\mu_c + 3)}
+> 1
 \qquad \text{for } \mu_c \ge 0.
 $$
 
-So the implied mean mass per newly frozen droplet corresponds to a
-larger-than-mean droplet, consistent with larger droplets being preferentially
-represented in the freezing-weighted moments.
+This expresses a general microphysical property of volume-proportional
+immersion freezing: newly frozen droplets are biased toward larger droplets
+than the ordinary cloud droplet population, because larger droplets have more
+volume in which to contain an immersed ice-nucleating site.
 
 ## Implementation Notes
 
@@ -207,7 +233,7 @@ The `run_phys()` implementation uses separate Catch2 sections for:
 - `runtime_exponent_sensitivity`
 - `lambda_power_law_scaling`
 - `mass_number_moment_identity`
-- `frozen_droplet_size_bias`
+- `volume_nucleation_prefers_larger_than_mean_droplets`
 - `distribution_prefactor_scaling`
 - `zero_distribution_prefactor_gives_zero`
 - `scalar_multiplier_cancellation_in_mass_number_ratio`
@@ -227,7 +253,10 @@ The tests use identity tolerances for exact algebraic relations such as the
 moment identity and the separable scaling ratios. Exact equality is used for
 inactive-lane preservation checks because the kernel should not touch those
 lanes. Near-zero floors remain separate from scaled relative checks so that
-inactive preservation and positive-tendency assertions are not conflated.
+inactive preservation and positive-tendency assertions are not conflated. The
+volume-weighted size-bias test also uses this identity tolerance, because the
+comparison still goes through production-kernel outputs involving `tgamma`,
+`exp`, and ratio formation.
 
 ## Validation
 

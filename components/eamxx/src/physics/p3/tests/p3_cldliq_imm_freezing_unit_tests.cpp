@@ -337,7 +337,7 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
       }
     }
 
-    SECTION("frozen_droplet_size_bias") {
+    SECTION("volume_nucleation_prefers_larger_than_mean_droplets") {
       constexpr std::array<Scalar, 3> mus = {
         Scalar(0.0), Scalar(2.0), Scalar(5.0)
       };
@@ -355,14 +355,18 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
           const auto result = run_case(T_atm, lam, mu, cdist1, qc_incld,
                                        inv_qc_relvar, exponent, true);
           require_positive_finite(result);
-          const Scalar d_eff_cubed =
-            (result.mass / result.number) / (C::CONS6 / C::CONS5);
-          const Scalar d_mean = (mu + 4) / lam;
+          const Scalar frozen_mean_mass = result.mass / result.number;
+          const Scalar cloud_mean_mass =
+            (C::CONS6 / C::CONS5)
+            * (mu + 1) * (mu + 2) * (mu + 3)
+            / cube_host(lam);
           const Scalar expected_ratio =
-            ((mu + 5) * (mu + 6)) / ((mu + 4) * (mu + 4));
+            ((mu + 4) * (mu + 5) * (mu + 6))
+            / ((mu + 1) * (mu + 2) * (mu + 3));
 
-          REQUIRE(d_eff_cubed > cube_host(d_mean));
-          require_rel_close(d_eff_cubed / cube_host(d_mean), expected_ratio);
+          REQUIRE(frozen_mean_mass > cloud_mean_mass);
+          require_rel_close(frozen_mean_mass / cloud_mean_mass,
+                            expected_ratio);
         }
       }
     }
