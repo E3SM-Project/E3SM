@@ -240,7 +240,7 @@ contains
 
     call restartvar(ncid=ncid, flag=flag, varname='land1d_ityplun', xtype=ncd_int, &
          dim1name='landunit',                                                      &
-         long_name='landunit type (see global attributes)', units=' ',             &
+         long_name='landunit type (see global attributes)',                        &
          interpinic_flag='skip', readvar=readvar, data=lun_pp%itype)
 
     do l=bounds%begl,bounds%endl
@@ -284,7 +284,7 @@ contains
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_ixy', xtype=ncd_int,      &
          dim1name='column',                                                         &
-         long_name='2d longitude index of corresponding column', units=' ',         &
+         long_name='2d longitude index of corresponding column',                    &
          interpinic_flag='skip', readvar=readvar, data=icarr)
 
     do c= bounds%begc, bounds%endc
@@ -292,7 +292,7 @@ contains
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_jxy', xtype=ncd_int,      &
          dim1name='column',                                                         &
-         long_name='2d latitude index of corresponding column', units=' ',          &
+         long_name='2d latitude index of corresponding column',              &
          interpinic_flag='skip', readvar=readvar, data=icarr)
 
     icarr = GetGlobalIndexArray(col_pp%gridcell(bounds%begc:bounds%endc), bounds%begc, bounds%endc, elmlevel=nameg)
@@ -318,12 +318,12 @@ contains
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_ityplun', xtype=ncd_int,  &
          dim1name='column',                                                         &
-         long_name='column landunit type (see global attributes)', units=' ',       &
+         long_name='column landunit type (see global attributes)',                  &
          interpinic_flag='skip', readvar=readvar, data=icarr)
 
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_ityp', xtype=ncd_int,     &
          dim1name='column',                                                         &
-         long_name='column type (see global attributes)', units=' ',                &
+         long_name='column type (see global attributes)',                           &
          interpinic_flag='skip', readvar=readvar, data=col_pp%itype)
 
     do c=bounds%begc,bounds%endc
@@ -335,7 +335,7 @@ contains
     end do
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_active', xtype=ncd_int,   &
          dim1name='column',                                                         &
-         long_name='column active flag (1=active, 0=inactive)', units=' ',          &
+         long_name='column active flag (1=active, 0=inactive)',                     &
          interpinic_flag='skip', readvar=readvar, data=icarr)
 
     deallocate(rcarr, icarr)
@@ -367,7 +367,7 @@ contains
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_ixy', xtype=ncd_int, &
          dim1name='pft',                                                       &
-         long_name='2d longitude index of corresponding pft', units='',        &
+         long_name='2d longitude index of corresponding pft',                  &
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
     do p=bounds%begp,bounds%endp
@@ -375,7 +375,7 @@ contains
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_jxy', xtype=ncd_int, &
          dim1name='pft',                                                       &
-         long_name='2d latitude index of corresponding pft', units='',         &
+         long_name='2d latitude index of corresponding pft',                   &
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
     iparr = GetGlobalIndexArray(veg_pp%gridcell(bounds%begp:bounds%endp), bounds%begp, bounds%endp, elmlevel=nameg)
@@ -404,7 +404,7 @@ contains
 
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_itypveg', xtype=ncd_int,  &
          dim1name='pft',                                                            &
-         long_name='pft vegetation type', units='',                                 &
+         long_name='pft vegetation type',                                           &
          interpinic_flag='skip', readvar=readvar, data=veg_pp%itype)
 
     do p=bounds%begp,bounds%endp
@@ -412,7 +412,7 @@ contains
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_itypcol', xtype=ncd_int, &
          dim1name='pft',                                                           &
-         long_name='pft column type (see global attributes)', units='',          &
+         long_name='pft column type (see global attributes)',                      &
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
     do p=bounds%begp,bounds%endp
@@ -420,7 +420,7 @@ contains
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_ityplun', xtype=ncd_int, &
          dim1name='pft',                                                           &
-         long_name='pft landunit type (see global attributes)', units='',          &
+         long_name='pft landunit type (see global attributes)',                    &
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
     do p=bounds%begp,bounds%endp
@@ -432,7 +432,7 @@ contains
     enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_active', xtype=ncd_int, &
          dim1name='pft',                                                          &
-         long_name='pft active flag (1=active, 0=inactive)', units='',            &
+         long_name='pft active flag (1=active, 0=inactive)',                     &
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
     do p=bounds%begp,bounds%endp
@@ -481,7 +481,7 @@ contains
     
     call restartvar(ncid=ncid, flag=flag, varname='land1d_wttopounit', xtype=ncd_double, &
          dim1name='landunit',                                                            &
-         long_name='landunit weight relative to corresponding topounit', units='',         &
+         long_name='landunit weight relative to corresponding topounit',                  &
          interpinic_flag='skip', readvar=readvar, data=lun_pp%wttopounit)
 
     ! this ensures land consistency with restart, rather than whatever fsurdat
@@ -496,12 +496,12 @@ contains
 
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_wtxy', xtype=ncd_double,  &
          dim1name='column',                                                         &
-         long_name='column weight relative to corresponding gridcell', units=' ',   &
+         long_name='column weight relative to corresponding gridcell',              &
          interpinic_flag='skip', readvar=readvar, data=col_pp%wtgcell)
 
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_wtlnd', xtype=ncd_double, &
          dim1name='column',                                                         &
-         long_name='column weight relative to corresponding landunit', units=' ',   &
+         long_name='column weight relative to corresponding landunit',              &
          interpinic_flag='skip', readvar=readvar, data=col_pp%wtlunit)
 
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_topoglc', xtype=ncd_double,   &
@@ -511,27 +511,27 @@ contains
     
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_wttopounit', xtype=ncd_double, &
          dim1name='column',                                                            &
-         long_name='column weight relative to corresponding topounit', units='',         &
+         long_name='column weight relative to corresponding topounit',                 &
          interpinic_flag='skip', readvar=readvar, data=col_pp%wttopounit)
 
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_wtxy', xtype=ncd_double,  &
          dim1name='pft',                                                            &
-         long_name='pft weight relative to corresponding gridcell', units='',       &  
+         long_name='pft weight relative to corresponding gridcell',                  &  
          interpinic_flag='skip', readvar=readvar, data=veg_pp%wtgcell)
 
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_wtlnd', xtype=ncd_double, &
          dim1name='pft',                                                            &
-         long_name='pft weight relative to corresponding landunit', units='',       & 
+         long_name='pft weight relative to corresponding landunit',                 & 
          interpinic_flag='skip', readvar=readvar, data=veg_pp%wtlunit)
 
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_wtcol', xtype=ncd_double, &
          dim1name='pft',                                                            &
-         long_name='pft weight relative to corresponding column', units='',         &
+         long_name='pft weight relative to corresponding column',                   &
          interpinic_flag='skip', readvar=readvar, data=veg_pp%wtcol)
 
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_wttopounit', xtype=ncd_double, &
          dim1name='pft',                                                            &
-         long_name='pft weight relative to corresponding topounit', units='',         &
+         long_name='pft weight relative to corresponding topounit',              &
          interpinic_flag='skip', readvar=readvar, data=veg_pp%wttopounit)
     ! Snow column variables
 
