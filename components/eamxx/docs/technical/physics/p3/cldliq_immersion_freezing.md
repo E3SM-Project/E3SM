@@ -86,7 +86,7 @@ Then the mass-to-number ratio simplifies exactly to
 
 $$
 \frac{M}{N} =
-\frac{CONS6}{CONS5}
+\frac{\mathrm{CONS6}}{\mathrm{CONS5}}
 \frac{(\mu_c + 4)(\mu_c + 5)(\mu_c + 6)}{\lambda_c^3}.
 $$
 
@@ -100,24 +100,24 @@ $$
 Using
 
 $$
-CONS5 = \frac{\pi}{6} BIMM,
+\mathrm{CONS5} = \frac{\pi}{6}\mathrm{BIMM},
 \qquad
-CONS6 = \left(\frac{\pi}{6}\right)^2 \rho_w BIMM,
+\mathrm{CONS6} = \left(\frac{\pi}{6}\right)^2 \rho_w\mathrm{BIMM},
 $$
 
 the constant ratio is
 
 $$
-\frac{CONS6}{CONS5} = \frac{\pi \rho_w}{6}.
+\frac{\mathrm{CONS6}}{\mathrm{CONS5}} = \frac{\pi \rho_w}{6}.
 $$
 
 This ratio is the mean mass per newly frozen droplet implied by the assumed
-cloud-droplet size distribution. Since $CONS6 / CONS5 = \pi \rho_w / 6$, the
-ratio has the same structure as the mass of a spherical water droplet, with
-the effective droplet-volume factor supplied by the Gamma-distribution moment
-ratio. Temperature, the runtime exponent, and the distribution prefactor
-`cdist1` cancel out because they multiply the mass and number moments
-identically.
+cloud-droplet size distribution. Since
+\(\mathrm{CONS6} / \mathrm{CONS5} = \pi \rho_w / 6\), the ratio has the same
+structure as the mass of a spherical water droplet, with the effective
+droplet-volume factor supplied by the Gamma-distribution moment ratio.
+Temperature, the runtime exponent, and the distribution prefactor `cdist1`
+cancel out because they multiply the mass and number moments identically.
 
 ## Volume-Weighted Freezing Interpretation
 
@@ -129,7 +129,7 @@ $$
 $$
 
 the ratio has the structure of the mass of a spherical water droplet,
-$m = (\pi \rho_w / 6) D^3$.
+\(m = (\pi \rho_w / 6)D^3\).
 
 For an ordinary Gamma cloud droplet number distribution, the ordinary mean
 cloud droplet mass is
