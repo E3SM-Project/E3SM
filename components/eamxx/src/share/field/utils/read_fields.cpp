@@ -53,9 +53,14 @@ void setup_file_and_vars (const std::string& filename,
     const auto& var = scorpio::get_var(filename, fname);
     std::vector<int> vardims;
     for (auto d : var.dims) {
-      vardims.push_back(d->length);
-      if (d->decomp_rank==1) {
-        vardims.back() = var.decomp->dim_decomp->dims[0]->length;
+      switch (d->decomp_rank) {
+        case 0: vardims.push_back(d->length); break;
+        case 1: vardims.push_back(var.decomp->dim_decomp->offsets.size()); break;
+        default:
+          EKAT_ERROR_MSG ("[read_fields] Error! Unsupported (and unexpected) decomposition rank\n"
+                          " - var name: " + var.name + "\n"
+                          " - decomp  : " + var.decomp->name + "\n"
+                          " - rank    : " + std::to_string(d->decomp_rank) + "\n");
       }
     }
     EKAT_REQUIRE_MSG (vardims == fdims,
@@ -144,12 +149,13 @@ void read_fields (const std::string& filename,
   }
 
   scorpio::register_file(filename, scorpio::Read);
-  auto io_fields = make_io_fields(fields);
-  setup_file_and_vars(filename, io_fields);
 
   // Register the distributed decomposition along the requested dimension.
   const auto& decomp_dim = decomp_dim_gids.get_header().get_identifier().get_layout().name(0);
   scorpio::set_dim_decomp(filename, decomp_dim, offsets);
+
+  auto io_fields = make_io_fields(fields);
+  setup_file_and_vars(filename, io_fields);
 
   do_read_and_copy(filename, fields, io_fields, time_index);
   scorpio::release_file(filename);
