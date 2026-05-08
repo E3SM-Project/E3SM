@@ -266,17 +266,21 @@ void AtmosphereProcess::setup_step_tendencies (const std::string& default_grid) 
     auto gn = tokens.second;
 
     const auto& f = get_field_out(fn,gn);
-    const auto& fid = f.get_header().get_identifier();
+    const auto& fap = f.get_header().get_alloc_properties();
 
     const auto& tname = this->name() + "_" + fn + "_tend";
+    const auto& fid = f.get_header().get_identifier();
     auto tfid = fid.clone(tname).reset_units (fid.get_units() / ekat::units::s);
 
     const auto fn_gn = fn + "@" + f.get_header().get_identifier().get_grid_name();
 
     // Create tend and start-of-step fields
+    auto& tend = m_proc_tendencies[fn_gn] = Field(tfid);
+    auto& tfap = tend.get_header().get_alloc_properties();
+    tfap.request_allocation(fap);
+    tend.allocate_view();
+    add_internal_field(tend,{"ACCUMULATED","DIVIDE_BY_DT"});
     m_start_of_step_fields[fn_gn] = f.clone();
-    auto it_bool = m_proc_tendencies.try_emplace(fn_gn,tfid,true); // returns a pair <iter,bool>
-    add_internal_field(it_bool.first->second,{"ACCUMULATED","DIVIDE_BY_DT"});
   }
 }
 
