@@ -178,11 +178,13 @@ class VertCoord {
    std::string MaxLayerCellFldName;   ///< Field name for MaxLayerCell
    std::string BottomDepthFldName;    ///< Field name for BottomDepth
    std::string RefPseudoThickFldName; ///< Field name for RefPseudoThickness
-   std::string PressInterfFldName;    ///< Field name for interface pressure
-   std::string PressMidFldName;       ///< Field name for midpoint pressure
-   std::string ZInterfFldName;        ///< Field name for interface Z height
-   std::string ZMidFldName;           ///< Field name for midpoint Z height
-   std::string GeopotFldName;         ///< Field name for geopotential
+   std::string
+       VCoordMvmtWgtsFldName;      ///< Field name for VertCoordMovementWeights
+   std::string PressInterfFldName; ///< Field name for interface pressure
+   std::string PressMidFldName;    ///< Field name for midpoint pressure
+   std::string ZInterfFldName;     ///< Field name for interface Z height
+   std::string ZMidFldName;        ///< Field name for midpoint Z height
+   std::string GeopotFldName;      ///< Field name for geopotential
    std::string LyrThickTargetFldName; ///< Field name for target thickness
 
    // methods
