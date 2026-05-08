@@ -2393,14 +2393,12 @@ Error IOStream::readStream(
          }
       } else if (MetaTmp.type() == typeid(std::string)) {
          ErrRead = IO::readMeta(MetaName, MetaValStr, InFileID, IO::GlobalID);
-         LOG_ERROR("IOStream: reading MetaVal string {}", MetaValStr);
          if (ErrRead.isSuccess())
             ReqMetadata[MetaName] = MetaValStr;
          // If ReqMetadata was initialized with a string literal, we detect
          // the type but replace it with a std::string
       } else if (MetaTmp.type() == typeid(const char *)) {
          ErrRead = IO::readMeta(MetaName, MetaValStr, InFileID, IO::GlobalID);
-         LOG_ERROR("IOStream: reading MetaVal char {}", MetaValStr);
          if (ErrRead.isSuccess())
             ReqMetadata[MetaName] = MetaValStr;
       } else {

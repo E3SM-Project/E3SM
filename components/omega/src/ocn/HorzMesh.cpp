@@ -15,6 +15,7 @@
 #include "Dimension.h"
 #include "Error.h"
 #include "Field.h"
+#include "GlobalConstants.h"
 #include "Halo.h"
 #include "IOStream.h"
 #include "OmegaKokkos.h"
@@ -166,6 +167,12 @@ HorzMesh::HorzMesh(const std::string &Name, //< [in] Name for new mesh
       } else {
          ABORT_ERROR("Mesh is on sphere but sphere radius either missing or 0");
       }
+      // This tolerance should be tightened once we have appropriate test
+      // mesh files that were generated with the same Earth radius
+      if (std::abs((REarth - SphereRadius) / REarth) > 1.e-4)
+         ABORT_ERROR("Input mesh has inaccurate earth radius: "
+                     "REarth = {}  input SphereRadius = {}",
+                     REarth, SphereRadius);
       IsPeriodic = false;
       XPeriod    = 0.0;
       YPeriod    = 0.0;
