@@ -1271,10 +1271,6 @@ Calendar::~Calendar(void) {}
 // This should only be used during testing as it will invalidate most
 // time instants and other time manager functions
 void Calendar::reset() {
-
-   LOG_WARN("Removing Omega calendar");
-   LOG_WARN("This invalidates all prior time manager values"
-            "and should only be used in testing");
    Calendar::OmegaCal.reset(); // Resets the calendar pointer
 }
 
@@ -3020,11 +3016,6 @@ TimeInterval::operator/(const I4 Divisor) const { //! [in] integer divisor
    // for calendar-dependent intervals, divide the
    // year, month or day intervals
    if (Quotient.IsCalendar) {
-      // generate warning if divisor does not divide evenly
-      if (Quotient.CalInterval != 0 && Quotient.CalInterval % Divisor != 0) {
-         LOG_WARN("TimeMgr: TimeInterval::operator/ (int) interval does not "
-                  "divide evenly");
-      }
       // return the result of the integer division
       Quotient.CalInterval /= Divisor;
 
