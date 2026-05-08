@@ -2276,8 +2276,10 @@ Error IOStream::readFieldData(
 
    } // end switch data type
 
-   // Clean up the decomp
-   IO::destroyDecomp(DecompID);
+   if (IsDistributed) {
+      // Clean up the decomp if necessary
+      IO::destroyDecomp(DecompID);
+   }
 
    return Err;
 
