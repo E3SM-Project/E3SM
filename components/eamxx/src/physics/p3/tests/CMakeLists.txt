@@ -62,7 +62,8 @@ else()
   set(P3_THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC})
 endif()
 
-CreateUnitTest(p3_tests "${P3_TESTS_SRCS}"
+CreateUnitTest(p3_tests
+  SOURCES ${P3_TESTS_SRCS}
   LIBS p3 p3_test_infra
   EXE_ARGS "--args ${BASELINE_FILE_ARG}"
   THREADS ${P3_THREADS}
@@ -71,12 +72,14 @@ CreateUnitTest(p3_tests "${P3_TESTS_SRCS}"
 # Make sure that a diff in the two implementation triggers a failed test (in debug only)
 # No need to run lots of different thread counts.
 if (SCREAM_ENABLE_BASELINE_TESTS)
-  CreateUnitTest (p3_tests_fail p3_rain_sed_unit_tests.cpp
+  CreateUnitTest(p3_tests_fail
+    SOURCES p3_rain_sed_unit_tests.cpp
     LIBS p3 p3_test_infra
     EXE_ARGS "--args ${BASELINE_FILE_ARG}"
     COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
-    LABELS "p3;physics;fail"
-    ${FORCE_RUN_DIFF_FAILS})
+    LABELS p3 physics fail
+    ${FORCE_RUN_DIFF_FAILS}
+  )
 endif()
 
 # If small kernels are ON, we don't need a separate executable to test them.
@@ -86,20 +89,24 @@ if (NOT SCREAM_P3_SMALL_KERNELS AND NOT SCREAM_ONLY_GENERATE_BASELINES)
   # small kernels are on. The SK dispatch routines are mostly trivial
   # and it's not worth adding tons of test infrastructure to support
   # BFB unit tests for these.
-  CreateUnitTest(p3_sk_tests "p3_main_unit_tests.cpp"
+  CreateUnitTest(p3_sk_tests
+    SOURCES p3_main_unit_tests.cpp
     LIBS p3_sk p3_test_infra
     EXE_ARGS "--args ${BASELINE_FILE_ARG}"
     THREADS ${P3_THREADS}
-    LABELS "p3_sk;physics;baseline_cmp")
+    LABELS p3_sk physics baseline_cmp
+  )
 endif()
 
 # Note: the baseline_gen label label is really only used if SCREAM_ONLY_GENERATE_BASELINES=ON, but no harm adding it
-CreateUnitTest(p3_run_and_cmp "p3_run_and_cmp.cpp"
+CreateUnitTest(p3_run_and_cmp
+  SOURCES p3_run_and_cmp.cpp
   LIBS p3 p3_test_infra
   EXCLUDE_MAIN_CPP
   THREADS ${SCREAM_TEST_MAX_THREADS}
   EXE_ARGS "${BASELINE_FILE_ARG}"
-  LABELS "p3;physics;baseline_gen;baseline_cmp")
+  LABELS p3 physics baseline_gen baseline_cmp
+)
 
 # This executable can be used to re-generate tables in ${SCREAM_DATA_DIR}
 add_executable(p3_tables_setup EXCLUDE_FROM_ALL p3_tables_setup.cpp)
@@ -107,12 +114,14 @@ target_link_libraries(p3_tables_setup p3)
 
 # Make sure that a diff from baselines triggers a failed test (in debug only)
 if (SCREAM_ENABLE_BASELINE_TESTS)
-  CreateUnitTest(p3_run_and_cmp_fail "p3_run_and_cmp.cpp"
+  CreateUnitTest(p3_run_and_cmp_fail
+    SOURCES p3_run_and_cmp.cpp
     LIBS p3 p3_test_infra
     COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
     THREADS ${SCREAM_TEST_MAX_THREADS}
     EXE_ARGS "${BASELINE_FILE_ARG}"
-    LABELS "p3;physics;fail"
+    LABELS p3 physics fail
     EXCLUDE_MAIN_CPP
-    ${FORCE_RUN_DIFF_FAILS})
+    ${FORCE_RUN_DIFF_FAILS}
+  )
 endif()

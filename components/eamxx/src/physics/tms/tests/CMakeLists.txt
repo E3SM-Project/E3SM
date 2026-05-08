@@ -2,10 +2,6 @@ include(ScreamUtils)
 
 add_subdirectory(infra)
 
-set(TMS_TESTS_SRCS
-  compute_tms_tests.cpp
-) # TMS_TESTS_SRCS
-
 # All tests should understand the same baseline args
 if (SCREAM_ENABLE_BASELINE_TESTS)
   if (SCREAM_ONLY_GENERATE_BASELINES)
@@ -22,8 +18,10 @@ else()
   set(TMS_THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC})
 endif()
 
-CreateUnitTest(tms_tests "${TMS_TESTS_SRCS}"
+CreateUnitTest(tms_tests
+  SOURCES compute_tms_tests.cpp
   LIBS tms tms_test_infra
   EXE_ARGS "--args ${BASELINE_FILE_ARG}"
   THREADS ${TMS_THREADS}
-  LABELS "tms;physics;baseline_gen;baseline_cmp")
+  LABELS tms physics baseline_gen baseline_cmp
+)
