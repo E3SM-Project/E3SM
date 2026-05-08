@@ -230,7 +230,8 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
     auto p_mid = fm_model->get_field("p_mid");
     auto p_int = fm_model->get_field("p_int");
     auto vert_remapper = std::make_shared<VerticalRemapper>(fm_model->get_grid(),vert_remap_file);
-    vert_remapper->set_source_pressure (p_mid,p_int);
+    vert_remapper->set_source_pressure(p_mid);
+    vert_remapper->set_source_pressure(p_int);
     vert_remapper->set_extrapolation_type(VerticalRemapper::Mask); // both Top AND Bot
     m_vert_remapper = vert_remapper;
     m_vert_remapper->set_name(m_stream_name + " VertRemap");
