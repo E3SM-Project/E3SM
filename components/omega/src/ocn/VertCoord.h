@@ -26,11 +26,6 @@
 
 namespace OMEGA {
 
-enum class MovementWeightType {
-   Fixed,  /// Distribute perturbations in top level
-   Uniform /// Uniform stretching
-};
-
 KOKKOS_INLINE_FUNCTION int vertRange(int KMin, int KMax) {
    return KMax - KMin + 1;
 }
@@ -69,9 +64,6 @@ class VertCoord {
    I4 VertexDegree;
    Array2DI4 CellsOnEdge;
    Array2DI4 CellsOnVertex;
-
-   // Choice of VertCoorMovementWeight type
-   MovementWeightType MvmtWgtChoice;
 
    static VertCoord *DefaultVertCoord;
    static std::map<std::string, std::unique_ptr<VertCoord>> AllVertCoords;
@@ -228,7 +220,6 @@ class VertCoord {
    void setStreamArrays(const bool ReadStream, Halo *MeshHalo);
    void minMaxLayerEdge(Halo *MeshHalo);
    void minMaxLayerVertex(Halo *MeshHalo);
-   void initMovementWeights();
 
    /// Initialize computational masks
    void setMasks();

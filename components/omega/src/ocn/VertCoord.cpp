@@ -65,24 +65,6 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
                   "is explicitly provided, which is not a valid combination");
    }
 
-   // Read Config for movement weight type, store in enum
-   Config VCoordConfig("VertCoord");
-   Err += Options->get(VCoordConfig);
-   CHECK_ERROR_ABORT(Err, "VertCoord: VertCoord group not found in Config");
-
-   std::string MovementWeightStr;
-   Err += VCoordConfig.get("MovementWeightType", MovementWeightStr);
-   CHECK_ERROR_ABORT(Err,
-                     "VertCoord: MovementWeightType not found in VertCoord");
-
-   if (MovementWeightStr == "Fixed") {
-      MvmtWgtChoice = MovementWeightType::Fixed;
-   } else if (MovementWeightStr == "Uniform") {
-      MvmtWgtChoice = MovementWeightType::Uniform;
-   } else {
-      ABORT_ERROR("VertCoord: Unknown MovementWeightType requested");
-   }
-
    // Store name suffix
    Name = Name_;
 
@@ -197,9 +179,6 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
 
    // Set computational masks
    setMasks();
-
-   // Initialize movement weights
-   initMovementWeights();
 
 } // end constructor
 
@@ -912,29 +891,6 @@ void VertCoord::setMasks() {
    VertexMaskH = createHostMirrorCopy(VertexMask);
 
 } // end setMasks()
-
-//------------------------------------------------------------------------------
-// Store VertCoordMovementWeights based on config choice
-void VertCoord::initMovementWeights() {
-
-   Error Err; // default successful error code
-
-   VertCoordMovementWeights =
-       Array1DReal("VertCoordMovementWeights", NVertLayers);
-
-   OMEGA_SCOPE(LocVertCoordMovementWeights, VertCoordMovementWeights);
-   if (MvmtWgtChoice == MovementWeightType::Fixed) {
-      deepCopy(VertCoordMovementWeights, 0._Real);
-      parallelFor(
-          {1}, KOKKOS_LAMBDA(const int &) {
-             LocVertCoordMovementWeights(0) = 1._Real;
-          });
-   } else if (MvmtWgtChoice == MovementWeightType::Uniform) {
-      deepCopy(VertCoordMovementWeights, 1._Real);
-   }
-
-   VertCoordMovementWeightsH = createHostMirrorCopy(VertCoordMovementWeights);
-}
 
 //------------------------------------------------------------------------------
 // Compute the pressure at each layer interface and midpoint given the
