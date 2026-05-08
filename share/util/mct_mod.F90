@@ -138,6 +138,7 @@ module mct_mod
    use m_SparseMatrixPlus   ,only: mct_sMatP_Init         => init
    use m_SparseMatrixPlus   ,only: mct_sMatP_Vecinit      => vecinit
    use m_SparseMatrixPlus   ,only: mct_sMatP_clean        => clean
+   use m_SparseMatrixPlus   ,only: mct_sMatP_Yprimloc     => YPrimeToYLocalOnly 
    use m_MatAttrVectMul     ,only: mct_sMat_avMult        => sMatAvMult
    use m_GlobalToLocal      ,only: mct_sMat_g2lMat        => GlobalToLocalMatrix
 
