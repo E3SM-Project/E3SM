@@ -72,8 +72,8 @@ void Functions<S,D>::shoc_tke(
     linear_interp(team,zi_grid,zt_grid,sterm,sterm_zt,nlevi,nlev,0);
   } else {
     // eddy_diffusivities still needs a midpoint shear magnitude for the
-    // cold-surface fallback path. In 3D mode, use the supplied 3D strain
-    // term rather than leaving the 1D shear workspace undefined.
+    // cold-surface fallback path. In 3D mode, use the SHOC-grid strain term
+    // instead of leaving the old 1D shear workspace uninitialized.
     static constexpr Scalar Ck_sh = 0.1;
     const Int nlev_pack = ekat::npack<Pack>(nlev);
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {

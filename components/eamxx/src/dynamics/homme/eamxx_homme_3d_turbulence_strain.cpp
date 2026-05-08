@@ -94,7 +94,7 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
 
   const auto w_int_dyn = state.m_w_i;
 
-  using MidColumn = decltype(Homme::subview(elems.m_derived.m_turb_shear_strain3d, 0, 0, 0));
+  using MidColumn = decltype(Homme::subview(elems.m_derived.m_turb_diff_mom, 0, 0, 0));
   using IntColumn = decltype(Homme::subview(state.m_w_i, 0, 0, 0, 0));
 
   auto grad_Ux_dyn = m_helper_fields.at("grad_Ux_dyn").template get_view<Real*****>();
@@ -279,154 +279,7 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
   Kokkos::fence();
 }
 
-void HommeDynamics::compute_vertical_derivs ()
-{
-  using namespace Homme;
-
-  constexpr int NGP  = HOMMEXX_NP;
-  constexpr int VLEN = VECTOR_SIZE;
-
-  const auto& c      = Context::singleton();
-  const auto& state  = c.get<ElementsState>();
-  const auto& tl     = c.get<TimeLevel>();
-  const auto& elems  = c.get<Elements>();
-
-  const int nelem       = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
-  const int n0          = tl.n0;
-  const int nlev_pack   = state.m_v.extent_int(5);
-  const int nlev_scalar = m_helper_fields.at("grad_dz_dyn")
-                            .template get_view<Real*****>().extent_int(4);
-
-  const auto v_dyn        = state.m_v;
-  const auto w_int_dyn    = state.m_w_i;
-  const auto phinh_i_dyn  = state.m_phinh_i;
-
-  using MidColumn = decltype(Homme::subview(elems.m_derived.m_turb_shear_strain3d, 0, 0, 0));
-  using IntColumn = decltype(Homme::subview(state.m_w_i, 0, 0, 0, 0));
-
-  auto grad_vertical = m_helper_fields.at("grad_dz_dyn").template get_view<Real*****>();
-
-  using TeamPolicy = Kokkos::TeamPolicy<KT::ExeSpace>;
-  using MemberType = typename TeamPolicy::member_type;
-
-  Kokkos::parallel_for(
-      "compute_vertical_derivs",
-      TeamPolicy(nelem, Kokkos::AUTO()),
-      KOKKOS_LAMBDA (const MemberType& team) {
-
-    const int ie = team.league_rank();
-
-    KernelVariables kv(team, ie);
-
-    Kokkos::parallel_for(
-        Kokkos::TeamThreadRange(team, NGP*NGP),
-        [&] (const int idx) {
-
-      const int igp = idx / NGP;
-      const int jgp = idx % NGP;
-
-      // Column views
-      const auto u_mid = Homme::subview(v_dyn,     ie, n0, 0, igp, jgp);
-      const auto v_mid = Homme::subview(v_dyn,     ie, n0, 1, igp, jgp);
-      const auto w_int = Homme::subview(w_int_dyn, ie, n0,    igp, jgp);
-      const auto phi_int = Homme::subview(phinh_i_dyn, ie, n0, igp, jgp);
-
-      // Temporary midpoint and interface columns.
-      Scalar w_mid_buf[NUM_LEV];
-      Scalar grad_u_int_buf[NUM_LEV_P];
-      Scalar grad_v_int_buf[NUM_LEV_P];
-      Scalar grad_w_int_buf[NUM_LEV_P];
-      Scalar grad_u_mid_buf[NUM_LEV];
-      Scalar grad_v_mid_buf[NUM_LEV];
-      Scalar grad_w_mid_buf[NUM_LEV];
-
-      MidColumn w_mid(w_mid_buf);
-      IntColumn grad_u_int(grad_u_int_buf);
-      IntColumn grad_v_int(grad_v_int_buf);
-      IntColumn grad_w_int(grad_w_int_buf);
-      MidColumn grad_u_mid(grad_u_mid_buf);
-      MidColumn grad_v_mid(grad_v_mid_buf);
-      MidColumn grad_w_mid(grad_w_mid_buf);
-
-      // ------------------------------------------
-      // 1) Put w on midpoint levels
-      // ------------------------------------------
-      ColumnOps::compute_midpoint_values(kv, w_int, w_mid);
-
-      team.team_barrier();
-
-      // ------------------------------------------
-      // 2) Compute vertical gradients on interface levels
-      // ------------------------------------------
-      //
-      // Use HOMME's interface geopotential to define the distance between
-      // adjacent midpoint levels, matching SHOC's interface-gradient staggering.
-      constexpr Real gravit = PhysicalConstants::g;
-
-      for (int ilev = 0; ilev <= nlev_scalar; ++ilev) {
-        const int ilev_pack = ilev / VLEN;
-        const int s = ilev % VLEN;
-
-        if (ilev == 0 || ilev == nlev_scalar) {
-          grad_u_int(ilev_pack)[s] = 0.0;
-          grad_v_int(ilev_pack)[s] = 0.0;
-          grad_w_int(ilev_pack)[s] = 0.0;
-        } else {
-          const int ilev_above = ilev - 1;
-          const int pack_above = ilev_above / VLEN;
-          const int s_above = ilev_above % VLEN;
-
-          const Real phi_int_above = phi_int(pack_above)[s_above];
-          const Real phi_int_below = (s < VLEN-1) ? phi_int(ilev_pack)[s+1] : phi_int(ilev_pack+1)[0];
-          const Real dz_int = (phi_int_above - phi_int_below) / (2.0*gravit);
-          const Real inv_dz_int = 1.0 / dz_int;
-
-          // HOMME levels are indexed top to bottom, so the numerator is
-          // above-minus-below for derivatives with respect to increasing height.
-          grad_u_int(ilev_pack)[s] =
-            (u_mid(pack_above)[s_above] - u_mid(ilev_pack)[s]) * inv_dz_int;
-
-          grad_v_int(ilev_pack)[s] =
-            (v_mid(pack_above)[s_above] - v_mid(ilev_pack)[s]) * inv_dz_int;
-
-          grad_w_int(ilev_pack)[s] =
-            (w_mid(pack_above)[s_above] - w_mid(ilev_pack)[s]) * inv_dz_int;
-        }
-      }
-
-      team.team_barrier();
-
-      // ------------------------------------------
-      // 3) Interpolate interface gradients back to midpoints
-      // ------------------------------------------
-      ColumnOps::compute_midpoint_values(kv, grad_u_int, grad_u_mid);
-      ColumnOps::compute_midpoint_values(kv, grad_v_int, grad_v_mid);
-      ColumnOps::compute_midpoint_values(kv, grad_w_int, grad_w_mid);
-
-      team.team_barrier();
-
-      Kokkos::parallel_for(
-          Kokkos::ThreadVectorRange(team, nlev_pack),
-          [&] (const int ilev_pack) {
-
-        for (int s = 0; s < VLEN; ++s) {
-          const int ilev = ilev_pack*VLEN + s;
-
-          if (ilev < nlev_scalar) {
-            grad_vertical(ie,0,igp,jgp,ilev) = grad_u_mid(ilev_pack)[s];
-            grad_vertical(ie,1,igp,jgp,ilev) = grad_v_mid(ilev_pack)[s];
-            grad_vertical(ie,2,igp,jgp,ilev) = grad_w_mid(ilev_pack)[s];
-          }
-        }
-      });
-
-    });
-  });
-
-  Kokkos::fence();
-}
-
-void HommeDynamics::contract_to_local_strain3d ()
+void HommeDynamics::compute_local_strain_components3d ()
 {
   using namespace Homme;
 
@@ -443,21 +296,18 @@ void HommeDynamics::contract_to_local_strain3d ()
   auto grad_Uy_dyn = m_helper_fields.at("grad_Uy_dyn").template get_view<Real*****>();
   auto grad_Uz_dyn = m_helper_fields.at("grad_Uz_dyn").template get_view<Real*****>();
 
-  auto grad_vertical = m_helper_fields.at("grad_dz_dyn").template get_view<Real*****>();
+  auto shear_components_dyn = m_helper_fields.at("shear_strain3d_components_dyn").template get_view<Real*****>();
 
-  auto shear_strain3d_dyn = m_helper_fields.at("shear_strain3d_dyn").template get_view<Real****>();
-
-  const auto turb_shear_strain3d = elems.m_derived.m_turb_shear_strain3d;
   const auto vec_sph2cart = geom.m_vec_sph2cart;
 
   const int nlev_scalar = grad_Ux_dyn.extent_int(4);
-  const int nlev_pack   = turb_shear_strain3d.extent_int(3);
+  const int nlev_pack   = elems.m_derived.m_turb_diff_mom.extent_int(3);
 
   using TeamPolicy = Kokkos::TeamPolicy<KT::ExeSpace>;
   using MemberType = typename TeamPolicy::member_type;
 
   Kokkos::parallel_for(
-      "contract_to_local_strain3d",
+      "compute_local_strain_components3d",
       TeamPolicy(nelem, Kokkos::AUTO()),
       KOKKOS_LAMBDA (const MemberType& team) {
 
@@ -473,8 +323,6 @@ void HommeDynamics::contract_to_local_strain3d ()
       Kokkos::parallel_for(
           Kokkos::ThreadVectorRange(team, nlev_pack),
           [&] (const int ilev_pack) {
-
-        Scalar shear_strain3d_pack(0.0);
 
         for (int s = 0; s < VLEN; ++s) {
           const int ilev = ilev_pack*VLEN + s;
@@ -506,34 +354,14 @@ void HommeDynamics::contract_to_local_strain3d ()
                 grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
                 vec_sph2cart, ie, 2, 1, igp, jgp, ilev);
 
-            const Real A02 = grad_vertical(ie,0,igp,jgp,ilev); // du/dz
-            const Real A12 = grad_vertical(ie,1,igp,jgp,ilev); // dv/dz
-            const Real A22 = grad_vertical(ie,2,igp,jgp,ilev); // dw/dz
-
-            const Real S00 = A00;
-            const Real S11 = A11;
-            const Real S22 = A22;
-
-            const Real S01 = 0.5 * (A01 + A10);
-            const Real S02 = 0.5 * (A02 + A20);
-            const Real S12 = 0.5 * (A12 + A21);
-
-            // Form 2*S_ij*S_ij, the shear-strain invariant that enters the
-            // turbulence production term passed from dynamics to physics.
-            const Real shear_strain3d_val =
-                2.0 * (S00*S00 + S11*S11 + S22*S22
-                     + 2.0*S01*S01
-                     + 2.0*S02*S02
-                     + 2.0*S12*S12);
-
-            shear_strain3d_pack[s] = shear_strain3d_val;
-            shear_strain3d_dyn(ie,igp,jgp,ilev) = shear_strain3d_val;
-          } else {
-            shear_strain3d_pack[s] = 0.0;
+            shear_components_dyn(ie,0,igp,jgp,ilev) = A00;
+            shear_components_dyn(ie,1,igp,jgp,ilev) = A01;
+            shear_components_dyn(ie,2,igp,jgp,ilev) = A10;
+            shear_components_dyn(ie,3,igp,jgp,ilev) = A11;
+            shear_components_dyn(ie,4,igp,jgp,ilev) = A20;
+            shear_components_dyn(ie,5,igp,jgp,ilev) = A21;
           }
         }
-
-        turb_shear_strain3d(ie,igp,jgp,ilev_pack) = shear_strain3d_pack;
       });
     });
   });

@@ -166,6 +166,7 @@ void HommeDynamics::create_requests ()
   auto pg_scalar3d_mid = m_phys_grid->get_3d_scalar_layout(true);
   auto pg_scalar3d_int = m_phys_grid->get_3d_scalar_layout(false);
   auto pg_vector3d_mid = m_phys_grid->get_3d_vector_layout(true,2);
+  auto pg_shear_components_mid = m_phys_grid->get_3d_vector_layout(true,6);
   add_field<Updated> ("horiz_winds",        pg_vector3d_mid, m/s,   pgn,N);
   add_field<Updated> ("T_mid",              pg_scalar3d_mid, K,     pgn,N);
   add_field<Computed>("pseudo_density",     pg_scalar3d_mid, Pa,    pgn,N);
@@ -179,7 +180,7 @@ void HommeDynamics::create_requests ()
   add_field<Computed>("omega",              pg_scalar3d_mid, Pa/s,  pgn,N);
   add_field<Required>("eddy_diff_heat",     pg_scalar3d_mid, m2/s,  pgn,N);
   add_field<Required>("eddy_diff_mom",      pg_scalar3d_mid, m2/s,  pgn,N);
-  add_field<Computed>("tke_shear_strain3d", pg_scalar3d_mid, nondim/s2,   pgn,N);
+  add_field<Computed>("tke_shear_strain3d_components", pg_shear_components_mid, nondim/s, pgn,N);
 
   add_tracer<Updated >("qv", m_phys_grid, kg/kg, N);
   add_group<Updated>("tracers",pgn,N, MonolithicAlloc::Required);
@@ -219,8 +220,7 @@ void HommeDynamics::create_requests ()
   create_helper_field("grad_Ux_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
   create_helper_field("grad_Uy_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
   create_helper_field("grad_Uz_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
-  create_helper_field("grad_dz_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,3,    NP,NP,nlev_mid}, dgn);
-  create_helper_field("shear_strain3d_dyn", {EL, GP,GP,LEV}, {nelem, NP,NP,nlev_mid}, dgn);
+  create_helper_field("shear_strain3d_components_dyn", {EL,CMP,GP,GP,LEV}, {nelem,6,NP,NP,nlev_mid}, dgn);
 
   // For BFB restart, we need to read in the state on the dyn grid. The state above has NTL time slices,
   // but only one is really needed for restart. Therefore, we create "dynamic" subfields for
@@ -359,9 +359,12 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   const auto& c       = Homme::Context::singleton();
   const auto& params  = c.get<Homme::SimulationParams>();
 
-  if (!params.do_3d_turbulence) {
-    get_field_out("tke_shear_strain3d").deep_copy(0.0);
-  }
+  // The first fv_phys D->P remap during initialization happens before the
+  // dycore has computed these diagnostic components, so start from a benign
+  // value. Homme overwrites them after each dynamics step when 3D turbulence is
+  // enabled.
+  m_helper_fields.at("shear_strain3d_components_dyn").deep_copy(0.0);
+  get_field_out("tke_shear_strain3d_components").deep_copy(0.0);
 
   // Complete Homme prim_init1_xyz sequence
   prim_complete_init1_phase_f90 ();
@@ -441,8 +444,8 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     m_p2d_remapper->register_field(get_field_in("eddy_diff_mom",pgn),m_helper_fields.at("Km_dyn"));
     m_p2d_remapper->register_field(get_field_in("eddy_diff_heat",pgn),m_helper_fields.at("Kh_dyn"));
 
-    // Remap strain term of TKE Shear production from dynamics to physics grid
-    m_d2p_remapper->register_field(m_helper_fields.at("shear_strain3d_dyn"), get_field_out("tke_shear_strain3d"));
+    // Remap horizontal/local strain tensor components from dynamics to physics grid.
+    m_d2p_remapper->register_field(m_helper_fields.at("shear_strain3d_components_dyn"), get_field_out("tke_shear_strain3d_components"));
 
     m_p2d_remapper->registration_ends();
     m_d2p_remapper->registration_ends();
@@ -540,10 +543,9 @@ void HommeDynamics::run_impl (const double dt)
     // This is where we will compute the strain term needed for Shear Production of TKE
     if (params.do_3d_turbulence){
       compute_horizontal_derivs_of_car_velocity();
-      compute_vertical_derivs();
-      contract_to_local_strain3d();
+      compute_local_strain_components3d();
     } else {
-      m_helper_fields.at("shear_strain3d_dyn").deep_copy(0.0);
+      m_helper_fields.at("shear_strain3d_components_dyn").deep_copy(0.0);
     }
 
     // Update nstep in the restart extra data, so it can be written to restart if needed.
@@ -976,10 +978,10 @@ void HommeDynamics::init_homme_views () {
   using turb_type_heat = std::remove_reference<decltype(derived.m_turb_diff_heat)>::type;
   derived.m_turb_diff_heat = turb_type_heat(Kh_in.data(), nelem);
 
-  // SGS TKE strain term
-  auto strain3d_in = m_helper_fields.at("shear_strain3d_dyn").template get_view<Homme::Scalar*[NP][NP][NVL]>();
-  using turb_type_strain3d = std::remove_reference<decltype(derived.m_turb_shear_strain3d)>::type;
-  derived.m_turb_shear_strain3d = turb_type_strain3d(strain3d_in.data(), nelem);
+  // SGS TKE shear-strain tensor components
+  auto strain_components_in = m_helper_fields.at("shear_strain3d_components_dyn").template get_view<Homme::Scalar*[6][NP][NP][NVL]>();
+  using turb_type_strain_components = std::remove_reference<decltype(derived.m_turb_shear_strain3d_components)>::type;
+  derived.m_turb_shear_strain3d_components = turb_type_strain_components(strain_components_in.data(), nelem);
 
 }
 

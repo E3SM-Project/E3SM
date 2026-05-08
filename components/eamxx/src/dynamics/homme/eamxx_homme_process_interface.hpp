@@ -80,8 +80,7 @@ protected:
   void initialize_impl (const RunType run_type);
 
   void compute_horizontal_derivs_of_car_velocity ();
-  void compute_vertical_derivs ();
-  void contract_to_local_strain3d ();
+  void compute_local_strain_components3d ();
 
   // fv_phys refers to the horizontal finite volume (FV) grid for column
   // parameterizations nested inside the horizontal element grid. The grid names

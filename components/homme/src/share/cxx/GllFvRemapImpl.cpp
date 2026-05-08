@@ -339,7 +339,7 @@ f2g_scalar_dp (const KernelVariables& kv, const int nf2, const int np2, const in
 
 void GllFvRemapImpl
 ::run_dyn_to_fv_phys (const int timeidx, const Phys1T& ps, const Phys1T& phis, const Phys2T& Ts,
-                      const Phys2T& omegas, const Phys2T& shear_strain3d_values, const Phys3T& uvs, const Phys3T& qs,
+                      const Phys2T& omegas, const Phys3T& shear_strain3d_components, const Phys3T& uvs, const Phys3T& qs,
                       const Phys2T* dp_fv_out_ptr) {
   // Impl only for theta-l until ElementOps is provided in preqx_kokkos.
 #ifdef MODEL_THETA_L
@@ -362,6 +362,8 @@ void GllFvRemapImpl
   assert(Ts.extent_int(0) >= nelemd && Ts.extent_int(1) >= nf2 && Ts.extent_int(2) % packn == 0);
   assert(omegas.extent_int(0) >= nelemd && omegas.extent_int(1) >= nf2 &&
          omegas.extent_int(2) % packn == 0);
+  assert(shear_strain3d_components.extent_int(0) >= nelemd && shear_strain3d_components.extent_int(1) >= nf2 &&
+         shear_strain3d_components.extent_int(2) == 6 && shear_strain3d_components.extent_int(3) % packn == 0);
   assert(uvs.extent_int(0) >= nelemd && uvs.extent_int(1) >= nf2 && uvs.extent_int(2) == 2 &&
          uvs.extent_int(3) % packn == 0);
   assert(qs.extent_int(0) >= nelemd && qs.extent_int(1) >= nf2 && qs.extent_int(2) >= qsize &&
@@ -371,10 +373,11 @@ void GllFvRemapImpl
   VPhys2T
     T(real2pack(Ts), Ts.extent_int(0), Ts.extent_int(1), Ts.extent_int(2)/packn),
     omega(real2pack(omegas), omegas.extent_int(0), omegas.extent_int(1),
-          omegas.extent_int(2)/packn),
-    strain3d(real2pack(shear_strain3d_values), shear_strain3d_values.extent_int(0), shear_strain3d_values.extent_int(1),
-             shear_strain3d_values.extent_int(2)/packn);
+          omegas.extent_int(2)/packn);
   VPhys3T
+    strain_components(real2pack(shear_strain3d_components), shear_strain3d_components.extent_int(0),
+                      shear_strain3d_components.extent_int(1), shear_strain3d_components.extent_int(2),
+                      shear_strain3d_components.extent_int(3)/packn),
     uv(real2pack(uvs), uvs.extent_int(0), uvs.extent_int(1), uvs.extent_int(2),
        uvs.extent_int(3)/packn),
     q(real2pack(qs), qs.extent_int(0), qs.extent_int(1), qs.extent_int(2),
@@ -386,8 +389,11 @@ void GllFvRemapImpl
   const auto ps_v = m_state.m_ps_v;
   const auto phis_g = m_geometry.m_phis;
   const auto v = m_state.m_v;
-  const auto omega_g = m_derived.m_omega_p;
-  const auto strain3d_g = m_derived.m_turb_shear_strain3d;
+  // EAMxx rebinds the turbulence strain-components view to its helper field
+  // after GllFvRemapImpl is constructed, so fetch the current derived state here.
+  const auto current_derived = Context::singleton().get<Elements>().m_derived;
+  const auto omega_g = current_derived.m_omega_p;
+  const auto strain_components_g = current_derived.m_turb_shear_strain3d_components;
   const auto q_g = m_tracers.Q;
   const auto gll_metdet = m_geometry.m_metdet;
   const auto fv_metdet = m_data.fv_metdet;
@@ -395,7 +401,7 @@ void GllFvRemapImpl
   const auto g2f_remapd = m_data.g2f_remapd;
   const auto Dinv = m_data.Dinv;
   const auto D_f = m_data.D_f;
-  const auto dp_fv = m_derived.m_divdp_proj; // store dp_fv between kernels
+  const auto dp_fv = current_derived.m_divdp_proj; // store dp_fv between kernels
   const auto hvcoord = m_hvcoord;
   
   const bool use_moisture = m_data.use_moisture;
@@ -526,16 +532,24 @@ void GllFvRemapImpl
                   evur3(&Dinv(ie,0,0,0), np2, 2, 2), w_ff, evur3(&D_f(ie,0,0,0), nf2, 2, 2),
                   evucs_2_np2_nlev(&v(ie,timeidx,0,0,0,0)), evus_2_np2_nlev(r2w.data()),
                   evus3(&uv(ie,0,0,0), uv.extent_int(1), uv.extent_int(2), uv.extent_int(3)));
+    kv.team_barrier(); // r2w scratch is reused below
 
     // omega
     remapd(team, nf2, np2, nlevpk, g2f_remapd, gll_metdet_ie, w_ff, fv_metdet_ie,
            evucs_np2_nlev(&omega_g(ie,0,0,0)), evus_np2_nlev(rw1.data()),
            evus2(&omega(ie,0,0), nf2, nlevpk));
+    kv.team_barrier(); // rw1 scratch is reused below
 
-    // strain3d
-    remapd(team, nf2, np2, nlevpk, g2f_remapd, gll_metdet_ie, w_ff, fv_metdet_ie,
-           evucs_np2_nlev(&strain3d_g(ie,0,0,0)), evus_np2_nlev(rw1.data()),
-           evus2(&strain3d(ie,0,0), nf2, nlevpk));
+    // shear-strain tensor components
+    const EVU<Scalar*[NUM_LEV]> comp_f(&r2w(0,0,0,0), nf2);
+    for (int icomp = 0; icomp < 6; ++icomp) {
+      remapd(team, nf2, np2, nlevpk, g2f_remapd, gll_metdet_ie, w_ff, fv_metdet_ie,
+             evucs_np2_nlev(&strain_components_g(ie,icomp,0,0,0)), evus_np2_nlev(rw1.data()),
+             evus2(comp_f.data(), nf2, nlevpk));
+      kv.team_barrier();
+      loop_ik(ttrf, tvr, [&] (int i, int k) { strain_components(ie,i,icomp,k) = comp_f(i,k); });
+      kv.team_barrier();
+    }
 
   };
   Kokkos::fence();
