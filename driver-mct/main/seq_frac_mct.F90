@@ -337,7 +337,7 @@ contains
     debug_old = seq_frac_debug
     seq_frac_debug = 2
 
-iamroot = seq_comm_iamroot(CPLID)
+    iamroot = seq_comm_iamroot(CPLID)
 
     ! Initialize fractions on atm grid/decomp (initialize ice fraction to zero)
 
@@ -384,9 +384,9 @@ iamroot = seq_comm_iamroot(CPLID)
           mapper_l2a => prep_atm_get_mapper_Fl2a()
           mapper_a2l => prep_lnd_get_mapper_Fa2l()
           call seq_map_map(mapper_l2a, fractions_l, fractions_a, fldlist='lfrin', norm=.false., &
-               omit_nonlinear=.true.)
+               omit_nonlinear=.true.,string="fracFl2a")
           call seq_map_map(mapper_a2l, fractions_a, fractions_l, fldlist='afrac', norm=.false., &
-               omit_nonlinear=.true.)
+               omit_nonlinear=.true.,string="fracFa2l")
        endif
 
     end if
@@ -458,7 +458,7 @@ iamroot = seq_comm_iamroot(CPLID)
        if (atm_present) then
           mapper_i2a => prep_atm_get_mapper_Fi2a()
           call seq_map_map(mapper_i2a,fractions_i,fractions_a,fldlist='ofrac',norm=.false., &
-               omit_nonlinear=.true.)
+               omit_nonlinear=.true.,string='fracFi2a')
        endif
     end if
 
@@ -473,26 +473,26 @@ iamroot = seq_comm_iamroot(CPLID)
        if (ice_present) then
           mapper_i2o => prep_ocn_get_mapper_SFi2o()
           call seq_map_map(mapper_i2o,fractions_i,fractions_o,fldlist='ofrac',norm=.false., &
-               omit_nonlinear=.true.)
+               omit_nonlinear=.true.,string='fracSFi2o')
        else
           ko = mct_aVect_indexRa(fractions_o,"ofrac",perrWith=subName)
           kf = mct_aVect_indexRA(dom_o%data ,"frac" ,perrWith=subName)
           fractions_o%rAttr(ko,:) = dom_o%data%rAttr(kf,:)
           mapper_o2a => prep_atm_get_mapper_Fo2a()
           call seq_map_map(mapper_o2a, fractions_o, fractions_a, fldlist='ofrac',norm=.false., &
-               omit_nonlinear=.true.)
+               omit_nonlinear=.true.,string='fracFo2a')
        endif
 
        if (atm_present) then
           mapper_a2o => prep_ocn_get_mapper_Fa2o()
           call seq_map_map(mapper_a2o, fractions_a, fractions_o, fldlist='afrac',norm=.false., &
-               omit_nonlinear=.true.)
+               omit_nonlinear=.true.,string='fracFa2o')
        endif
        if (ice_present) then
           ! --- this should be an atm2ice call above, but atm2ice doesn't work
           mapper_o2i => prep_ice_get_mapper_SFo2i()
           call seq_map_map(mapper_o2i,fractions_o,fractions_i,fldlist='afrac',norm=.false., &
-               omit_nonlinear=.true.)
+               omit_nonlinear=.true.,string='fracSFo2i')
        endif
     end if
 
@@ -541,7 +541,7 @@ iamroot = seq_comm_iamroot(CPLID)
        if (atm_present) then
           mapper_a2l => prep_lnd_get_mapper_Fa2l()
           call seq_map_map(mapper_a2l, fractions_a, fractions_l, fldlist='lfrac', norm=.false., &
-               omit_nonlinear=.true.)
+               omit_nonlinear=.true.,string='fracFa2l')
        else
           ! If the atmosphere is absent, then simply set fractions_l(lfrac) = fractions_l(lfrin)
           kk = mct_aVect_indexRA(fractions_l,"lfrin",perrWith=subName)
@@ -567,7 +567,7 @@ iamroot = seq_comm_iamroot(CPLID)
     if (lnd_present .and. rof_present) then
        mapper_l2r => prep_rof_get_mapper_Fl2r()
        call seq_map_map(mapper_l2r, fractions_l, fractions_r, fldlist='lfrac:lfrin', norm=.false., &
-            omit_nonlinear=.true.)
+            omit_nonlinear=.true.,string='fracFl2r')
     endif
     if (lnd_present .and. glc_present) then
        mapper_l2g => prep_glc_get_mapper_Fl2g()
@@ -662,14 +662,14 @@ iamroot = seq_comm_iamroot(CPLID)
        if (ocn_present) then
           mapper_i2o => prep_ocn_get_mapper_SFi2o()
           call seq_map_map(mapper_i2o, fractions_i, fractions_o, &
-               fldlist='ofrac:ifrac',norm=.false., omit_nonlinear=.true.)
+               fldlist='ofrac:ifrac',norm=.false., omit_nonlinear=.true.,string='sfracSFi2o')
           call seq_frac_check(fractions_o, 'ocn set')
        endif
 
        if (atm_present) then
           mapper_i2a => prep_atm_get_mapper_Fi2a()
           call seq_map_map(mapper_i2a, fractions_i, fractions_a, &
-               fldlist='ofrac:ifrac', norm=.false., omit_nonlinear=.true.)
+               fldlist='ofrac:ifrac', norm=.false., omit_nonlinear=.true.,string='sfracFi2a')
 
           !tcx---  fraction correction, this forces the fractions_a to sum to 1.0_r8.
           !   ---  but it introduces a conservation error in mapping
