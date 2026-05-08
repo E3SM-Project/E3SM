@@ -45,7 +45,7 @@ void ForwardBackwardStepper::doStep(
    if (AuxState == nullptr)
       LOG_CRITICAL("Invalid AuxState");
 
-   prescribeVelocity(State, CurLevel, State, CurLevel, SimTime);
+   prescribeVelocity(State, VelCurLevel, State, VelCurLevel, SimTime);
 
    // R_u^{n} = RHS_u(u^{n}, h^{n}, t^{n})
    Tend->computeVelocityTendencies(State, AuxState, CurTracerArray,
@@ -55,6 +55,11 @@ void ForwardBackwardStepper::doStep(
    // u^{n+1} = u^{n} + R_u^{n}
    updateVelocityByTend(State, VelNextLevel, State, VelCurLevel, TimeStep);
 
+   updateVelocityByTend(State, VelNextLevel, State, VelCurLevel, TimeStep);
+
+   prescribeVelocity(State, VelNextLevel, State, VelCurLevel,
+                     SimTime + TimeStep);
+
    // R_h^{n} = RHS_h(u^{n+1}, h^{n}, t^{n})
    Tend->computeThicknessTendencies(State, AuxState, ThickCurLevel,
                                     VelNextLevel, SimTime);
@@ -62,7 +67,7 @@ void ForwardBackwardStepper::doStep(
    // h^{n+1} = h^{n} + R_h^{n}
    updateThicknessByTend(State, ThickNextLevel, State, ThickCurLevel, TimeStep);
 
-   prescribeThickness(State, CurLevel, State, CurLevel);
+   prescribeThickness(State, ThickNextLevel, State, ThickCurLevel);
 
    // R_phi^{n} = RHS_phi(u^{n+1}, h^{n+1}, phi^{n}, t^{n})
    Tend->computeTracerTendencies(State, AuxState, CurTracerArray,
