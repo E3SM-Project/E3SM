@@ -215,7 +215,7 @@ class Mappy(Machine):
         super().setup_base("mappy")
 
         cls.env_setup = ["module purge",
-                          "module load sems-cmake/3.27.9 sems-git/2.42.0 sems-gcc/11.4.0 sems-openmpi-no-cuda/4.1.6 sems-netcdf-c/4.9.2 sems-netcdf-cxx/4.2 sems-netcdf-fortran/4.6.1 sems-parallel-netcdf/1.12.3 sems-openblas",
+                          "module load sems-cmake/3.27.9 sems-git/2.42.0 sems-gcc/13.2.0 sems-openmpi-no-cuda/4.1.6 sems-netcdf-c/4.9.2 sems-netcdf-cxx/4.2 sems-netcdf-fortran/4.6.1 sems-parallel-netcdf/1.12.3 sems-openblas",
                           "export GATOR_INITIAL_MB=4000MB",
                          ]
         cls.baselines_dir = "/sems-data-store/ACME/baselines/scream/master-baselines"

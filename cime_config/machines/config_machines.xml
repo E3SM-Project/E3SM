@@ -1763,7 +1763,7 @@
         <command name="load">sems-cmake/3.27.9</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">sems-gcc/11.4.0</command>
+        <command name="load">sems-gcc/13.2.0</command>
         <command name="load">sems-openblas</command>
       </modules>
       <modules mpilib="mpi-serial">
