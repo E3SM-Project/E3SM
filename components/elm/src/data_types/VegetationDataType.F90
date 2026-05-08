@@ -1903,7 +1903,7 @@ module VegetationDataType
 
     call restartvar(ncid=ncid, flag=flag, varname='FWET', xtype=ncd_double,  &
          dim1name='pft', &
-         long_name='fraction of canopy that is wet (0 to 1)', units='', &
+         long_name='fraction of canopy that is wet (0 to 1)', units='1', &
          interpinic_flag='interp', readvar=readvar, data=this%fwet)
 
   end subroutine veg_ws_restart
