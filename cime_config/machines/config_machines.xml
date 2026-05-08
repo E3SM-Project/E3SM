@@ -1772,6 +1772,7 @@
       </modules>
       <modules mpilib="!mpi-serial">
         <command name="load">sems-openmpi-no-cuda/4.1.6</command>
+        <command name="load">sems-hdf5/1.14.5</command>
         <command name="load">sems-netcdf-c/4.9.2</command>
         <command name="load">sems-netcdf-cxx/4.2</command>
         <command name="load">sems-netcdf-fortran/4.6.1</command>
@@ -1795,6 +1796,9 @@
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">$ENV{PARALLEL_NETCDF_ROOT}</env>
+    </environment_variables>
+    <environment_variables compiler="gnu">
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /sems-data-store/ACME/mappy/moab; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
