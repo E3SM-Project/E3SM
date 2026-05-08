@@ -1,6 +1,6 @@
 module thetal_test_interface
 
-  use iso_c_binding,  only: c_int, c_bool, c_double, c_ptr, c_f_pointer
+  use iso_c_binding,  only: c_int, c_bool, c_double, c_ptr, c_f_pointer, c_loc
   use derivative_mod, only: derivative_t
   use element_mod,    only: element_t
   use kinds,          only: real_kind
