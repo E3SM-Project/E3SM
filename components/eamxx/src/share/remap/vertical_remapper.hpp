@@ -76,7 +76,7 @@ public:
 protected:
 
   void create_lin_interp ();
-  
+
   using KT = KokkosTypes<DefaultDevice>;
 
   template<typename T>
@@ -101,12 +101,15 @@ protected:
   ExtrapType            m_etype_top = P0;
   ExtrapType            m_etype_bot = P0;
 
-  // Map field name to whether it's packed/scalar and what vertical dim tag we use.
-  // vtag is the key used to look up the pressure field and LinInterp objects for this field:
-  //   - For Model-grid fields it equals the field's own vertical tag (LEV or ILEV).
-  //   - For Pressure-grid fields it is LEVP.
-  // If the src and tgt grids have different kind (Model vs Pressure), for the LinInterp phase
-  // we store the vtag of the Model grid fields.
+  // Small struct holding metadata for a field's vertical remapping:
+  //  - packs_supported: true if both field and pressure data allow SIMD packing.
+  //  - src_vtag/tgt_vtag: the vertical FieldTag for source/target (Invalid for 2D fields).
+  //  - li_vtag: used to select the correct LinInterp object. To ensure midpoints (LEV)
+  //    and interfaces (ILEV) fields (if present) use separate LinInterp objects,
+  //    this tag follows the "most specific" vertical identity available:
+  //      1. If either src or tgt field has LEV or ILEV, li_vtag takes that tag.
+  //      2. If neither field has it (i.e., both src and tgt grids have vkind=Pressure),
+  //         li_vtag defaults to LEVP.
   struct FType {
     bool packs_supported = false;
     FieldTag li_vtag  = FieldTag::Invalid;
@@ -115,10 +118,9 @@ protected:
   };
   std::map<std::string,FType> m_field2type;
 
-  // One LinInterp object per vertical tag category (LEV, ILEV, LEVP).
-  // Packed and scalar variants are stored separately to use SIMD packs when possible.
-  // NOTE: if src and tgt grid kind differ (Model vs Pressure), the tag used in these
-  //       maps is the tag of the Model grid fields
+  // Maps to store the interpolation operators, keyed by the logical 'li_vtag'.
+  // We maintain separate packed and scalar variants to maximize SIMD usage.
+  // See FType::li_vtag for how the FieldTag key is determined in mixed-grid cases.
   std::map<FieldTag, ekat::LinInterp<Real,SCREAM_PACK_SIZE>> m_lin_interp_packed;
   std::map<FieldTag, ekat::LinInterp<Real,1>>                m_lin_interp_scalar;
 };
