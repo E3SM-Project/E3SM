@@ -23,6 +23,14 @@ SET (PIO_INTERP TRUE)
 
 HommeConfigFile (${THIS_CONFIG_IN} ${THIS_CONFIG_HC} ${THIS_CONFIG_H} )
 
+IF (Kokkos_ENABLE_CUDA)
+  IF (Kokkos_ENABLE_COMPILE_AS_CMAKE_LANGUAGE)
+    SET (THETAL_UT_CUDA_FLAGS "$<$<COMPILE_LANGUAGE:CUDA>:--fmad=false>")
+  ELSE ()
+    SET (THETAL_UT_CUDA_FLAGS "$<$<COMPILE_LANGUAGE:CXX>:--fmad=false>")
+  ENDIF ()
+ENDIF ()
+
 # All unit tests here use ne=2, giving 6*ne*ne=24 elements max.
 # Cap the number of MPI tasks to avoid "too many MPI tasks" aborts.
 # THETAL_UT_NE is only used in the MATH() expression below; it is defined as a
@@ -51,6 +59,9 @@ ADD_LIBRARY(thetal_kokkos_ut_lib
 TARGET_INCLUDE_DIRECTORIES(thetal_kokkos_ut_lib PUBLIC ${EXEC_INCLUDE_DIRS})
 TARGET_INCLUDE_DIRECTORIES(thetal_kokkos_ut_lib PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 TARGET_COMPILE_DEFINITIONS(thetal_kokkos_ut_lib PUBLIC "HAVE_CONFIG_H")
+IF (Kokkos_ENABLE_CUDA)
+  TARGET_COMPILE_OPTIONS(thetal_kokkos_ut_lib PRIVATE "${THETAL_UT_CUDA_FLAGS}")
+ENDIF ()
 TARGET_LINK_LIBRARIES(thetal_kokkos_ut_lib Kokkos::kokkos)
 TARGET_LINK_LIBRARIES(thetal_kokkos_ut_lib timing csm_share ${COMPOSE_LIBRARY_CPP} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 IF (HOMME_USE_MKL)
@@ -273,6 +284,9 @@ SET (DIRK_UT_INCLUDE_DIRS
 set_mpi_num_cpus()
 cxx_unit_test (dirk_ut "${DIRK_UT_F90_SRCS}" "${DIRK_UT_CXX_SRCS}" "${DIRK_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
 TARGET_LINK_LIBRARIES(dirk_ut thetal_kokkos_ut_lib)
+IF (Kokkos_ENABLE_CUDA)
+  TARGET_COMPILE_OPTIONS(dirk_ut PRIVATE "${THETAL_UT_CUDA_FLAGS}")
+ENDIF ()
 
 # ### Compose semi-Lagrangian transport unit tests
 
