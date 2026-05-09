@@ -8192,7 +8192,7 @@ Default: none
 <entry id="vcoarsen_select_levs" type="integer(50)" category="physics"
        group="eam_vcoarsen_nl" valid_values="" >
 Model level indices for level-index selection (e.g., 1,5,10).
-Output fields named BASE_at_L{index}. Unused entries should be -1.
+Output fields named BASEatL{index}. Unused entries should be -1.
 Default: -1 (inactive)
 </entry>
 
@@ -8206,7 +8206,7 @@ Default: none
 <entry id="vcoarsen_select_pres" type="real(50)" category="physics"
        group="eam_vcoarsen_nl" valid_values="" >
 Pressure values (hPa) for nearest-pressure-level selection (e.g., 850,500,200).
-Output fields named BASE_at_P{value}. Unused entries should be -1.
+Output fields named BASEat{value}hPa. Unused entries should be -1.
 Default: -1.0 (inactive)
 </entry>
 
@@ -8221,7 +8221,7 @@ Default: none
        group="eam_vcoarsen_nl" valid_values="" >
 Heights above surface (m) for linear interpolation in geometric height (e.g.,
 2.0, 10.0 for 2 m and 10 m diagnostics). Uses state%zm (height-above-surface
-at midpoints). Output fields named BASE_at_z{value}. Targets outside the
+at midpoints). Output fields named BASEat{value}m. Targets outside the
 column z-range collapse to the nearest level (no extrapolation).
 Unused entries should be -1.
 Default: -1.0 (inactive)

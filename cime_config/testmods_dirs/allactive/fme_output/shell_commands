@@ -23,6 +23,10 @@ FME_EAM_STORAGE=${FME_EAM_STORAGE:-one_month}
 FME_EAM_MFILT=${FME_EAM_MFILT:-1500}
 # MPAS compute/output interval (MPAS time interval string)
 FME_MPAS_INTERVAL=${FME_MPAS_INTERVAL:-00-00-01_00:00:00}
+# Optional 5-day-mean companion stream interval. Set to 'none' (or empty)
+# to disable. When set, each FME AM writes a parallel *5D.YYYY-MM.remapped.nc
+# file alongside the primary 1-day stream, sharing per-step samples.
+FME_MPAS_INTERVAL_5D=${FME_MPAS_INTERVAL_5D:-00-00-05_00:00:00}
 # NOTE: the CF time-coordinate epoch is auto-discovered at runtime by the
 # MPAS FME AMs (see AGENTS.md gotcha #39). On cold start the AMs read it
 # from MPAS_START_TIME (== CIME RUN_STARTDATE on initial runs); on warm
@@ -37,7 +41,7 @@ FME_MAPS_DIR=${FME_MAPS_DIR:-$(./xmlquery --value DIN_LOC_ROOT)/fme}
 
 echo "FME output configuration:"
 echo "  EAM: ${FME_EAM_OUTPUT_HOURS}-hourly, avgflag=${FME_EAM_AVGFLAG}, mfilt=${FME_EAM_MFILT}, storage=${FME_EAM_STORAGE}"
-echo "  MPAS: interval=${FME_MPAS_INTERVAL}"
+echo "  MPAS: interval=${FME_MPAS_INTERVAL}, 5D companion=${FME_MPAS_INTERVAL_5D}"
 echo "  MPAS time epoch: auto-discovered at runtime from MPAS_START_TIME / sidecar"
 #
 # ---------------------------------------------------------------------------
@@ -99,8 +103,9 @@ OCN_GRID=$(./xmlquery --value OCN_GRID)
 # Rule: strip npN. (e.g. np4.) from the middle of the name.
 ATM_GRID_NORM=$(echo "$ATM_GRID" | sed 's/np[0-9]*\.//')
 
-EAM_MAP="${FME_MAPS_DIR}/map_${ATM_GRID_NORM}_to_gaussian_180by360_shifted.nc"
-OCN_MAP="${FME_MAPS_DIR}/map_${OCN_GRID}_to_gaussian_180by360_shifted.nc"
+# use trfv2 maps
+EAM_MAP="${FME_MAPS_DIR}/map_${ATM_GRID_NORM}_to_gaussian_180by360_shifted_trfv2.nc"
+OCN_MAP="${FME_MAPS_DIR}/map_${OCN_GRID}_to_gaussian_180by360_shifted_trfv2.nc"
 
 echo "FME map detection:"
 echo "  ATM_GRID=${ATM_GRID} -> normalized: ${ATM_GRID_NORM}"
@@ -174,10 +179,10 @@ vcoarsen_select_height_flds = 'T','U','V','STW','Q'
 
 ! Tape 1: ${FME_EAM_OUTPUT_HOURS}-hourly output.
 ! State variables are instantaneous; fluxes/tendencies use :A (time-averaged).
-! 10 m wind speed and direction are derived offline from U_at_z10 and V_at_z10.
+! 10 m wind speed and direction are derived offline from Uat10m and Vat10m.
 ! Q is vcoarsened to 8 layers (Q_0..Q_7) like the other state fields, plus
-! Q_at_z2 from the height-interp path; QREFHT is the standard CAM 2 m
-! specific humidity diagnostic (kept for cross-comparison with Q_at_z2).
+! Qat2m from the height-interp path; QREFHT is the standard CAM 2 m
+! specific humidity diagnostic (kept for cross-comparison with Qat2m).
 fincl1 = 'SOLIN:A', 'PHIS',
           'LANDFRAC', 'OCNFRAC', 'ICEFRAC',
           'PS', 'TS',
@@ -186,8 +191,8 @@ fincl1 = 'SOLIN:A', 'PHIS',
           'U_0','U_1','U_2','U_3','U_4','U_5','U_6','U_7',
           'V_0','V_1','V_2','V_3','V_4','V_5','V_6','V_7',
           'Q_0','Q_1','Q_2','Q_3','Q_4','Q_5','Q_6','Q_7',
-          'T_at_z2', 'STW_at_z2','Q_at_z2',
-          'U_at_z10', 'V_at_z10',
+          'Tat2m', 'STWat2m','Qat2m',
+          'Uat10m', 'Vat10m',
           'TREFHT', 'QREFHT',
           'FLUT:A', 'FLNT:A', 'FSNTOA:A', 'FSUTOA:A',
           'FLDS:A', 'FLUS:A', 'FSDS:A', 'FSUS:A', 'FSNS:A', 'FLNS:A',
@@ -271,6 +276,9 @@ config_AM_fmeDepthCoarsening_time_averaging = .true.
 ! the cost of regenerating a non-conforming tape is much higher.
 config_AM_fmeDepthCoarsening_write_instantaneous_companion = .true.
 config_AM_fmeDepthCoarsening_stream_output_interval = '${FME_MPAS_INTERVAL}'
+! 5-day-mean companion stream (averaged-only, no _inst). Disabled when
+! FME_MPAS_INTERVAL_5D='none'.
+config_AM_fmeDepthCoarsening_stream_output_interval_5D = '${FME_MPAS_INTERVAL_5D}'
 ! 19 depth layers matching ACE ocean interface levels
 config_AM_fmeDepthCoarsening_depth_bounds = '0,20,30,40,50,80,110,140,170,230,410,530,1020,1080,1720,1980,2820,3380,4620,6380'
 config_AM_fmeDepthCoarsening_fields = 'temperature,salinity,velocityZonal,velocityMeridional'
@@ -280,6 +288,7 @@ config_AM_fmeDerivedFields_compute_interval = 'dt'
 config_AM_fmeDerivedFields_compute_on_startup = .false.
 config_AM_fmeDerivedFields_time_averaging = .true.
 config_AM_fmeDerivedFields_stream_output_interval = '${FME_MPAS_INTERVAL}'
+config_AM_fmeDerivedFields_stream_output_interval_5D = '${FME_MPAS_INTERVAL_5D}'
 
 ! fmeVerticalReduce disabled: oceanHeatContent / freshwaterContent /
 ! kineticEnergy are not requested by SamudrACE (Confluence p3ai/6154289880).
@@ -323,6 +332,7 @@ config_AM_fmeSeaiceDerivedFields_compute_interval = 'dt'
 config_AM_fmeSeaiceDerivedFields_compute_on_startup = .false.
 config_AM_fmeSeaiceDerivedFields_time_averaging = .true.
 config_AM_fmeSeaiceDerivedFields_stream_output_interval = '${FME_MPAS_INTERVAL}'
+config_AM_fmeSeaiceDerivedFields_stream_output_interval_5D = '${FME_MPAS_INTERVAL_5D}'
 
 ! Disable non-FME sea-ice analysis members (storage overhead only;
 ! see comment in user_nl_mpaso block above).

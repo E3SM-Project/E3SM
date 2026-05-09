@@ -63,7 +63,7 @@ readonly DEBUG_COMPILE=false
 # (cold start would discard ~50 yr of ocean spinup). 'branch' = exact restart,
 # bit-identical model evolution, just with FME diagnostics added on top.
 # Use 'hybrid' instead if the source case had different physics/forcing.
-readonly MODEL_START_TYPE="hybrid"   # 'initial', 'continue', 'branch', 'hybrid'
+readonly MODEL_START_TYPE="branch"   # 'initial', 'continue', 'branch', 'hybrid'
 
 # BEFORE RUNNING (branch/hybrid only): fill in the three RUN_REF* values
 # below to match the spun-up piControl restart you're branching from.
