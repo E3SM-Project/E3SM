@@ -31,6 +31,10 @@
 			description="If true, remapped output fields are time-averaged over the output interval instead of instantaneous. Set compute_interval to a frequent value (e.g. dt) when enabling."
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_AM_fmeDerivedFields_stream_output_interval_5D" type="character" default_value="none"
+			description="Optional output interval for an additional 5-day-average companion stream (fmeDerivedFieldsOutput5D). Same fields as the primary stream, accumulated from the same per-step samples but written at this longer cadence to a separate file. Set to 'none' or empty to disable. Requires time_averaging=.true.; 5D path is averaged-only."
+			possible_values="Any valid MPAS time interval string or 'none'"
+		/>
 	</nml_record>
 	<packages>
 		<package name="fmeDerivedFieldsAMPKG" description="This package includes variables required for the fmeDerivedFields analysis member."/>
@@ -63,6 +67,46 @@
 				filename_template="analysis_members/fmeDerivedFields.$Y-$M.nc"
 				filename_interval="00-01-00_00:00:00"
 				output_interval="00-00-01_00:00:00"
+				reference_time="0001-01-01_00:00:00"
+				packages="fmeDerivedFieldsAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+			<var name="xtime"/>
+			<var name="sst"/>
+			<var name="sss"/>
+			<var name="surfaceHeatFluxTotal"/>
+			<var name="pressureAdjustedSSH"/>
+			<var name="windStressZonal"/>
+			<var name="windStressMeridional"/>
+			<var name="latentHeatFlux"/>
+			<var name="sensibleHeatFlux"/>
+			<var name="shortWaveHeatFlux"/>
+			<var name="longWaveHeatFluxUp"/>
+			<var name="longWaveHeatFluxDown"/>
+			<var name="surfaceThicknessFlux"/>
+			<var name="rainFlux"/>
+			<var name="snowFlux"/>
+			<var name="evaporationFlux"/>
+			<var name="frazilIceFreshwaterFlux"/>
+			<var name="surfaceFrictionVelocity"/>
+			<var name="seaIceHeatFlux"/>
+			<var name="icebergHeatFlux"/>
+			<var name="seaIceFreshWaterFlux"/>
+			<var name="seaIceSalinityFlux"/>
+			<var name="riverRunoffFlux"/>
+			<var name="iceRunoffFlux"/>
+			<var name="snowFluxLf"/>
+			<var name="iceRunoffFluxLf"/>
+			<var name="riverRunoffFluxTemperature"/>
+		</stream>
+		<!-- 5-day-average companion stream (output_interval emitted as
+		     "none" by buildnml; AM uses the filename template only). -->
+		<stream name="fmeDerivedFieldsOutput5D" type="output"
+				mode="forward;analysis"
+				precision="single"
+				filename_template="analysis_members/fmeDerivedFields5D.$Y-$M.nc"
+				filename_interval="00-01-00_00:00:00"
+				output_interval="00-00-05_00:00:00"
 				reference_time="0001-01-01_00:00:00"
 				packages="fmeDerivedFieldsAMPKG"
 				clobber_mode="truncate"

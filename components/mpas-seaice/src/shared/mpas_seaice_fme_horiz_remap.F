@@ -63,6 +63,17 @@ module seaice_fme_horiz_remap
    public :: seaice_fme_horiz_remap_write_accum
    public :: seaice_fme_horiz_remap_read_accum
    public :: remap_stream_name, file_is_open
+   ! 5D-companion analogues -- parallel state-and-routine set so the
+   ! AM can drive a second output file (longer cadence) alongside the
+   ! primary stream without touching the primary path.
+   public :: seaice_fme_horiz_remap_register_var_5D
+   public :: seaice_fme_horiz_remap_check_rotate_5D
+   public :: seaice_fme_horiz_remap_write_var_5D
+   public :: seaice_fme_horiz_remap_write_time_5D
+   public :: seaice_fme_horiz_remap_close_file_5D
+   public :: seaice_fme_horiz_remap_write_accum_5D
+   public :: seaice_fme_horiz_remap_read_accum_5D
+   public :: remap_stream_name_5D, file_is_open_5D
 
    type(shr_horiz_remap_t) :: remap_data
    integer, allocatable :: send_local_cell(:)
@@ -127,6 +138,31 @@ module seaice_fme_horiz_remap
    character(len=StrKIND) :: prov_model_version = ''
    character(len=StrKIND) :: prov_history       = ''
    logical                :: provenance_set     = .false.
+
+   ! ---- 5D companion state (parallel to the primary stream above) ----
+   ! Independent PIO file context so the AM can drive two output files at
+   ! different cadences. iodesc_2d/_dbl, remap_data, time_epoch_*, and
+   ! provenance are all shared with the primary path (single mesh, single
+   ! time epoch, single provenance — only the file handle and per-file
+   ! var IDs differ).
+   type(file_desc_t)  :: pio_file_5D
+   logical            :: file_is_open_5D = .false.
+   integer            :: dim_lon_id_5D, dim_lat_id_5D, dim_time_id_5D
+   integer            :: dim_nbnd_id_5D = 0
+   integer            :: time_record_5D = 0
+   logical            :: existing_file_reopened_5D = .false.
+   integer            :: n_pio_vars_5D = 0
+   character(len=64)  :: pio_var_names_5D(max_pio_vars)
+   type(var_desc_t)   :: pio_var_descs_5D(max_pio_vars)
+   type(var_desc_t)   :: pio_lon_var_5D, pio_lat_var_5D
+   type(var_desc_t)   :: pio_time_var_5D, pio_time_bnds_var_5D
+   type(var_desc_t)   :: pio_date_var_5D, pio_datesec_var_5D
+   integer            :: n_registered_vars_5D = 0
+   character(len=64)  :: stored_units_5D(max_pio_vars)
+   character(len=128) :: stored_long_names_5D(max_pio_vars)
+   character(len=64)  :: stored_cell_methods_5D(max_pio_vars) = ''
+   character(len=512) :: current_filename_5D = ''
+   character(len=128) :: remap_stream_name_5D = ''
 
 contains
 
@@ -1197,5 +1233,384 @@ contains
       prov_history       = history_str
       provenance_set     = .true.
    end subroutine seaice_fme_horiz_remap_set_provenance!}}}
+
+!***********************************************************************
+!  5D companion procedures.
+!
+!  Parallel set of register/open/def/write/close procedures that operate
+!  on the `*_5D` module-level state declared near the top of this module.
+!  Mirrors the primary procedures line-for-line apart from the file
+!  context. The accumulator sidecar routines (write_accum/read_accum)
+!  are NOT duplicated -- they are amName-keyed and the AM passes a
+!  distinct amName ('fmeSeaiceDerivedFields5D') for the 5D path.
+!***********************************************************************
+
+   subroutine seaice_fme_horiz_remap_register_var_5D(varname, units, long_name, &
+        err, cell_methods)!{{{
+      character(len=*), intent(in) :: varname, units, long_name
+      integer, intent(out) :: err
+      character(len=*), optional, intent(in) :: cell_methods
+      integer :: iv
+
+      err = 0
+
+      do iv = 1, n_registered_vars_5D
+         if (trim(pio_var_names_5D(iv)) == trim(varname)) return
+      end do
+
+      n_registered_vars_5D = n_registered_vars_5D + 1
+      if (n_registered_vars_5D > max_pio_vars) then
+         call mpas_log_write('seaice_fme_horiz_remap_5D: exceeded max_pio_vars=$i for var: ' &
+              // trim(varname), messageType=MPAS_LOG_ERR, &
+              intArgs=(/max_pio_vars/))
+         n_registered_vars_5D = n_registered_vars_5D - 1
+         err = 2; return
+      end if
+      pio_var_names_5D(n_registered_vars_5D) = varname
+      stored_units_5D(n_registered_vars_5D) = units
+      stored_long_names_5D(n_registered_vars_5D) = long_name
+      stored_cell_methods_5D(n_registered_vars_5D) = ''
+      if (present(cell_methods)) stored_cell_methods_5D(n_registered_vars_5D) = cell_methods
+   end subroutine seaice_fme_horiz_remap_register_var_5D!}}}
+
+   subroutine seaice_fme_horiz_remap_open_file_5D(domain, filename, err)!{{{
+      type(domain_type), intent(inout) :: domain
+      character(len=*), intent(in) :: filename
+      integer, intent(out) :: err
+      integer :: ierr, i, count_le_now
+      integer(PIO_OFFSET_KIND) :: time_len
+      logical :: file_exists
+      type(MPAS_Time_Type) :: now_time
+      character(len=StrKIND) :: now_str
+      real(r8) :: now_days
+      real(r8), allocatable :: existing_time(:)
+
+      err = 0
+      if (.not. time_epoch_set) then
+         call mpas_log_write('seaice_fme_horiz_remap_5D: time epoch not set', &
+              messageType=MPAS_LOG_CRIT)
+         err = 1; return
+      end if
+
+      inquire(file=trim(filename), exist=file_exists)
+      if (file_exists .and. is_restart_run) then
+         ierr = pio_openfile(pio_sys, pio_file_5D, PIO_IOTYPE_PNETCDF, &
+              trim(filename), PIO_WRITE)
+         if (ierr /= PIO_NOERR) then
+            call mpas_log_write('seaice_fme_horiz_remap_5D: failed to reopen ' &
+                 // trim(filename), messageType=MPAS_LOG_ERR)
+            err = ierr; return
+         end if
+
+         call check_pio_si('5D inq_dimid lon', &
+              pio_inq_dimid(pio_file_5D, 'lon', dim_lon_id_5D), err)
+         call check_pio_si('5D inq_dimid lat', &
+              pio_inq_dimid(pio_file_5D, 'lat', dim_lat_id_5D), err)
+         call check_pio_si('5D inq_dimid time', &
+              pio_inq_dimid(pio_file_5D, 'time', dim_time_id_5D), err)
+         call check_pio_si('5D inq_dimid nbnd', &
+              pio_inq_dimid(pio_file_5D, 'nbnd', dim_nbnd_id_5D), err)
+         call check_pio_si('5D inq_varid lon', pio_inq_varid(pio_file_5D, &
+              'lon', pio_lon_var_5D), err)
+         call check_pio_si('5D inq_varid lat', pio_inq_varid(pio_file_5D, &
+              'lat', pio_lat_var_5D), err)
+         call check_pio_si('5D inq_varid time', pio_inq_varid(pio_file_5D, &
+              'time', pio_time_var_5D), err)
+         call check_pio_si('5D inq_varid time_bnds', pio_inq_varid(pio_file_5D, &
+              'time_bnds', pio_time_bnds_var_5D), err)
+         call check_pio_si('5D inq_varid date', pio_inq_varid(pio_file_5D, &
+              'date', pio_date_var_5D), err)
+         call check_pio_si('5D inq_varid datesec', pio_inq_varid(pio_file_5D, &
+              'datesec', pio_datesec_var_5D), err)
+         call check_pio_si('5D inq_dimlen time', &
+              pio_inq_dimlen(pio_file_5D, dim_time_id_5D, time_len), err)
+
+         now_time = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
+         call mpas_get_time(now_time, dateTimeString=now_str, ierr=ierr)
+         call si_time_to_days_since_epoch(now_time, now_days, ierr)
+
+         allocate(existing_time(int(time_len)))
+         ierr = pio_get_var(pio_file_5D, pio_time_var_5D, existing_time)
+         if (ierr /= PIO_NOERR) then
+            time_record_5D = int(time_len)
+         else
+            count_le_now = 0
+            do i = 1, int(time_len)
+               if (existing_time(i) < now_days) count_le_now = count_le_now + 1
+            end do
+            time_record_5D = count_le_now
+         end if
+         deallocate(existing_time)
+
+         n_pio_vars_5D = 0
+         file_is_open_5D = .true.
+         existing_file_reopened_5D = .true.
+         return
+      end if
+
+      ierr = pio_createfile(pio_sys, pio_file_5D, PIO_IOTYPE_PNETCDF, &
+           trim(filename), PIO_CLOBBER)
+      if (ierr /= PIO_NOERR) then; err = ierr; return; end if
+
+      call check_pio_si('5D def_dim lon',  pio_def_dim(pio_file_5D, 'lon',  remap_data%nlon, dim_lon_id_5D), err)
+      call check_pio_si('5D def_dim lat',  pio_def_dim(pio_file_5D, 'lat',  remap_data%nlat, dim_lat_id_5D), err)
+      call check_pio_si('5D def_dim time', pio_def_dim(pio_file_5D, 'time', PIO_UNLIMITED, dim_time_id_5D), err)
+      call check_pio_si('5D def_dim nbnd', pio_def_dim(pio_file_5D, 'nbnd', 2, dim_nbnd_id_5D), err)
+
+      call check_pio_si('5D def_var lon', pio_def_var(pio_file_5D, 'lon', PIO_DOUBLE, &
+           (/dim_lon_id_5D/), pio_lon_var_5D), err)
+      ierr = pio_put_att(pio_file_5D, pio_lon_var_5D, 'units', 'degrees_east')
+      ierr = pio_put_att(pio_file_5D, pio_lon_var_5D, 'long_name', 'longitude')
+      ierr = pio_put_att(pio_file_5D, pio_lon_var_5D, 'axis', 'X')
+      call check_pio_si('5D def_var lat', pio_def_var(pio_file_5D, 'lat', PIO_DOUBLE, &
+           (/dim_lat_id_5D/), pio_lat_var_5D), err)
+      ierr = pio_put_att(pio_file_5D, pio_lat_var_5D, 'units', 'degrees_north')
+      ierr = pio_put_att(pio_file_5D, pio_lat_var_5D, 'long_name', 'latitude')
+      ierr = pio_put_att(pio_file_5D, pio_lat_var_5D, 'axis', 'Y')
+
+      call check_pio_si('5D def_var time', pio_def_var(pio_file_5D, 'time', PIO_DOUBLE, &
+           (/dim_time_id_5D/), pio_time_var_5D), err)
+      ierr = pio_put_att(pio_file_5D, pio_time_var_5D, 'long_name', 'time')
+      ierr = pio_put_att(pio_file_5D, pio_time_var_5D, 'units', &
+           'days since ' // trim(time_epoch_cf))
+      ierr = pio_put_att(pio_file_5D, pio_time_var_5D, 'calendar', 'noleap')
+      ierr = pio_put_att(pio_file_5D, pio_time_var_5D, 'bounds', 'time_bnds')
+      ierr = pio_put_att(pio_file_5D, pio_time_var_5D, 'axis', 'T')
+
+      call check_pio_si('5D def_var time_bnds', pio_def_var(pio_file_5D, 'time_bnds', PIO_DOUBLE, &
+           (/dim_nbnd_id_5D, dim_time_id_5D/), pio_time_bnds_var_5D), err)
+      ierr = pio_put_att(pio_file_5D, pio_time_bnds_var_5D, 'long_name', 'time interval endpoints')
+
+      call check_pio_si('5D def_var date', pio_def_var(pio_file_5D, 'date', PIO_INT, &
+           (/dim_time_id_5D/), pio_date_var_5D), err)
+      ierr = pio_put_att(pio_file_5D, pio_date_var_5D, 'long_name', 'current date (YYYYMMDD)')
+
+      call check_pio_si('5D def_var datesec', pio_def_var(pio_file_5D, 'datesec', PIO_INT, &
+           (/dim_time_id_5D/), pio_datesec_var_5D), err)
+      ierr = pio_put_att(pio_file_5D, pio_datesec_var_5D, 'long_name', &
+           'current seconds of current date')
+
+      ierr = pio_put_att(pio_file_5D, PIO_GLOBAL, 'title', &
+           'MPAS-Seaice FME training tape (5-day mean)')
+      ierr = pio_put_att(pio_file_5D, PIO_GLOBAL, 'source', 'E3SM FME online remapping')
+      ierr = pio_put_att(pio_file_5D, PIO_GLOBAL, 'Conventions', 'CF-1.8')
+      ierr = pio_put_att(pio_file_5D, PIO_GLOBAL, 'calendar', 'noleap')
+      ierr = pio_put_att(pio_file_5D, PIO_GLOBAL, 'time_reference_date', trim(time_epoch_cf))
+      ierr = pio_put_att(pio_file_5D, PIO_GLOBAL, 'realm', 'seaIce')
+      ierr = pio_put_att(pio_file_5D, PIO_GLOBAL, 'product', 'model-output')
+      ierr = pio_put_att(pio_file_5D, PIO_GLOBAL, 'institution_id', 'E3SM-Project')
+      ierr = pio_put_att(pio_file_5D, PIO_GLOBAL, 'contact', 'e3sm-data-support@llnl.gov')
+      if (provenance_set) then
+         if (len_trim(prov_case)          > 0) ierr = pio_put_att(pio_file_5D, PIO_GLOBAL, &
+              'case',          trim(prov_case))
+         if (len_trim(prov_username)      > 0) ierr = pio_put_att(pio_file_5D, PIO_GLOBAL, &
+              'username',      trim(prov_username))
+         if (len_trim(prov_hostname)      > 0) ierr = pio_put_att(pio_file_5D, PIO_GLOBAL, &
+              'hostname',      trim(prov_hostname))
+         if (len_trim(prov_model_version) > 0) ierr = pio_put_att(pio_file_5D, PIO_GLOBAL, &
+              'git_version',   trim(prov_model_version))
+         if (len_trim(prov_history)       > 0) ierr = pio_put_att(pio_file_5D, PIO_GLOBAL, &
+              'history',       trim(prov_history))
+      end if
+
+      if (err /= 0) then
+         call mpas_log_write('seaice_fme_horiz_remap_5D: define-mode error opening ' &
+              // trim(filename), messageType=MPAS_LOG_ERR)
+         return
+      end if
+
+      n_pio_vars_5D = 0
+      time_record_5D = 0
+      file_is_open_5D = .true.
+      existing_file_reopened_5D = .false.
+   end subroutine seaice_fme_horiz_remap_open_file_5D!}}}
+
+   subroutine seaice_fme_horiz_remap_def_var_5D(varname, units, long_name, numlev, err, &
+        cell_methods)!{{{
+      character(len=*), intent(in) :: varname, units, long_name
+      integer, intent(in) :: numlev
+      integer, intent(out) :: err
+      character(len=*), optional, intent(in) :: cell_methods
+      integer :: ierr
+      real(kind=4) :: fill_val
+
+      err = 0
+      n_pio_vars_5D = n_pio_vars_5D + 1
+      if (n_pio_vars_5D > max_pio_vars) then
+         n_pio_vars_5D = n_pio_vars_5D - 1
+         err = 2; return
+      end if
+
+      pio_var_names_5D(n_pio_vars_5D) = varname
+
+      if (existing_file_reopened_5D) then
+         ierr = pio_inq_varid(pio_file_5D, trim(varname), pio_var_descs_5D(n_pio_vars_5D))
+         if (ierr /= PIO_NOERR) then; err = ierr; return; end if
+         return
+      end if
+
+      ierr = pio_def_var(pio_file_5D, trim(varname), PIO_REAL, &
+           (/dim_lon_id_5D, dim_lat_id_5D, dim_time_id_5D/), pio_var_descs_5D(n_pio_vars_5D))
+      if (ierr /= PIO_NOERR) then; err = ierr; return; end if
+      ierr = pio_put_att(pio_file_5D, pio_var_descs_5D(n_pio_vars_5D), 'units', trim(units))
+      ierr = pio_put_att(pio_file_5D, pio_var_descs_5D(n_pio_vars_5D), 'long_name', trim(long_name))
+      if (present(cell_methods)) then
+         if (len_trim(cell_methods) > 0) then
+            ierr = pio_put_att(pio_file_5D, pio_var_descs_5D(n_pio_vars_5D), &
+                 'cell_methods', trim(cell_methods))
+         end if
+      end if
+      fill_val = real(SHR_FILL_VALUE, 4)
+      ierr = pio_put_att(pio_file_5D, pio_var_descs_5D(n_pio_vars_5D), '_FillValue', fill_val)
+      ierr = pio_put_att(pio_file_5D, pio_var_descs_5D(n_pio_vars_5D), 'missing_value', fill_val)
+   end subroutine seaice_fme_horiz_remap_def_var_5D!}}}
+
+   subroutine seaice_fme_horiz_remap_write_var_5D(varname, fld_out, numlev, err)!{{{
+      character(len=*), intent(in) :: varname
+      real(r8), intent(in) :: fld_out(:)
+      integer, intent(in) :: numlev
+      integer, intent(out) :: err
+      integer :: iv, ierr
+      real(4) :: fld_out_r4(remap_data%n_b_local)
+
+      err = 0
+      do iv = 1, n_pio_vars_5D
+         if (trim(pio_var_names_5D(iv)) == trim(varname)) then
+            call pio_setframe(pio_file_5D, pio_var_descs_5D(iv), &
+                 int(time_record_5D, PIO_OFFSET_KIND))
+            fld_out_r4(1:remap_data%n_b_local) = &
+                 real(fld_out(1:remap_data%n_b_local), 4)
+            call pio_write_darray(pio_file_5D, pio_var_descs_5D(iv), iodesc_2d, &
+                 fld_out_r4, ierr)
+            err = ierr
+            return
+         end if
+      end do
+      err = 3
+   end subroutine seaice_fme_horiz_remap_write_var_5D!}}}
+
+   subroutine seaice_fme_horiz_remap_write_time_5D(time_lo, time_hi, err)!{{{
+      type(MPAS_Time_Type), intent(in) :: time_lo, time_hi
+      integer, intent(out) :: err
+      integer :: ierr, yr, mo, dy, hr, mn, sc
+      real(r8) :: t_lo_days, t_hi_days
+      real(r8) :: time_buf(1)
+      real(r8) :: bnds_buf(2, 1)
+      integer  :: date_buf(1), datesec_buf(1)
+
+      err = 0
+      if (.not. file_is_open_5D) then; err = 1; return; end if
+
+      if (time_record_5D == 0 .and. .not. existing_file_reopened_5D) then
+         ierr = pio_enddef(pio_file_5D)
+         ierr = pio_put_var(pio_file_5D, pio_lon_var_5D, remap_data%lon(1:remap_data%nlon))
+         ierr = pio_put_var(pio_file_5D, pio_lat_var_5D, remap_data%lat(1:remap_data%nlat))
+      end if
+      time_record_5D = time_record_5D + 1
+
+      call si_time_to_days_since_epoch(time_lo, t_lo_days, ierr)
+      call si_time_to_days_since_epoch(time_hi, t_hi_days, ierr)
+
+      time_buf(1) = t_hi_days
+      bnds_buf(1, 1) = t_lo_days
+      bnds_buf(2, 1) = t_hi_days
+
+      call mpas_get_time(time_hi, YYYY=yr, MM=mo, DD=dy, &
+           H=hr, M=mn, S=sc, ierr=ierr)
+      date_buf(1)    = yr * 10000 + mo * 100 + dy
+      datesec_buf(1) = hr * 3600  + mn * 60  + sc
+
+      ierr = pio_put_var(pio_file_5D, pio_time_var_5D, &
+           (/time_record_5D/), (/1/), time_buf)
+      ierr = pio_put_var(pio_file_5D, pio_time_bnds_var_5D, &
+           (/1, time_record_5D/), (/2, 1/), bnds_buf)
+      ierr = pio_put_var(pio_file_5D, pio_date_var_5D, &
+           (/time_record_5D/), (/1/), date_buf)
+      ierr = pio_put_var(pio_file_5D, pio_datesec_var_5D, &
+           (/time_record_5D/), (/1/), datesec_buf)
+   end subroutine seaice_fme_horiz_remap_write_time_5D!}}}
+
+   subroutine seaice_fme_horiz_remap_close_file_5D(err)!{{{
+      integer, intent(out) :: err
+      err = 0
+      if (file_is_open_5D) then
+         call pio_closefile(pio_file_5D)
+         file_is_open_5D = .false.
+         current_filename_5D = ''
+         existing_file_reopened_5D = .false.
+      end if
+   end subroutine seaice_fme_horiz_remap_close_file_5D!}}}
+
+   subroutine seaice_fme_horiz_remap_check_rotate_5D(domain, err)!{{{
+      type(domain_type), intent(inout) :: domain
+      integer, intent(out) :: err
+      character(len=512) :: new_filename
+      integer :: ierr, iv
+
+      err = 0
+      if (n_registered_vars_5D == 0) return
+      if (len_trim(remap_stream_name_5D) == 0) return
+
+      call seaice_fme_remap_build_filename(domain, &
+           trim(remap_stream_name_5D), new_filename, ierr)
+      if (ierr /= 0) then; err = ierr; return; end if
+
+      if (.not. file_is_open_5D .or. &
+           trim(new_filename) /= trim(current_filename_5D)) then
+
+         if (file_is_open_5D) then
+            call seaice_fme_horiz_remap_close_file_5D(ierr)
+         end if
+
+         call seaice_fme_horiz_remap_open_file_5D(domain, trim(new_filename), ierr)
+         if (ierr /= 0) then; err = ierr; return; end if
+         current_filename_5D = new_filename
+
+         do iv = 1, n_registered_vars_5D
+            call seaice_fme_horiz_remap_def_var_5D(trim(pio_var_names_5D(iv)), &
+                 trim(stored_units_5D(iv)), trim(stored_long_names_5D(iv)), 1, ierr, &
+                 cell_methods=trim(stored_cell_methods_5D(iv)))
+         end do
+      end if
+   end subroutine seaice_fme_horiz_remap_check_rotate_5D!}}}
+
+   subroutine seaice_fme_horiz_remap_write_accum_5D(amName, accum_arr, &
+        n_avg_fields, nAccum, avg_last_output_time_str, count_arr, err)!{{{
+   !> Thin alias around the primary write_accum -- the routine is
+   !> amName-keyed and shares iodesc_2d_dbl across both channels, so
+   !> all that's needed is a distinct sidecar filename via amName.
+      character(len=*), intent(in) :: amName
+      integer,          intent(in) :: n_avg_fields
+      real(r8),         intent(in) :: accum_arr(:,:)
+      integer,          intent(in) :: nAccum
+      character(len=*), intent(in) :: avg_last_output_time_str
+      real(r8), optional, intent(in) :: count_arr(:,:)
+      integer,          intent(out) :: err
+      if (present(count_arr)) then
+         call seaice_fme_horiz_remap_write_accum(amName, accum_arr, n_avg_fields, &
+              nAccum, avg_last_output_time_str, count_arr=count_arr, err=err)
+      else
+         call seaice_fme_horiz_remap_write_accum(amName, accum_arr, n_avg_fields, &
+              nAccum, avg_last_output_time_str, err=err)
+      end if
+   end subroutine seaice_fme_horiz_remap_write_accum_5D!}}}
+
+   subroutine seaice_fme_horiz_remap_read_accum_5D(amName, accum_arr, &
+        n_avg_fields, nAccum, avg_last_output_time_str, count_arr, success)!{{{
+      character(len=*),   intent(in)    :: amName
+      integer,            intent(in)    :: n_avg_fields
+      real(r8),           intent(inout) :: accum_arr(:,:)
+      integer,            intent(out)   :: nAccum
+      character(len=*),   intent(out)   :: avg_last_output_time_str
+      real(r8), optional, intent(inout) :: count_arr(:,:)
+      logical,            intent(out)   :: success
+      if (present(count_arr)) then
+         call seaice_fme_horiz_remap_read_accum(amName, accum_arr, n_avg_fields, &
+              nAccum, avg_last_output_time_str, count_arr=count_arr, success=success)
+      else
+         call seaice_fme_horiz_remap_read_accum(amName, accum_arr, n_avg_fields, &
+              nAccum, avg_last_output_time_str, success=success)
+      end if
+   end subroutine seaice_fme_horiz_remap_read_accum_5D!}}}
 
 end module seaice_fme_horiz_remap

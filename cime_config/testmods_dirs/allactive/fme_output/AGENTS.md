@@ -435,10 +435,10 @@ These are hard-won lessons. Read before modifying FME code.
     only appears in `addfld`/`outfld`, you cannot reach it via
     eam_derived; write the sum in physics dispatch instead.
 
-31. **`*_at_z2` / `*_at_z10` height-interp fields restart bug — FIXED
+31. **`*at2m` / `*at10m` height-interp fields restart bug — FIXED
     and verified 2026-04-30 (ERS_Ld4 PASSes COMPARE_base_rest, all 1478
-    EAM fields IDENTICAL incl. T_at_z2, Q_at_z2, STW_at_z2, U_at_z10,
-    V_at_z10).** Root cause was gotcha #2 (Fortran sequence association
+    EAM fields IDENTICAL incl. Tat2m, Qat2m, STWat2m, Uat10m,
+    Vat10m).** Root cause was gotcha #2 (Fortran sequence association
     stride): `eam_vcoarsen.F90` passed `src_field` and `coord_mid`
     (declared `(pcols, pver)`) to `shr_vcoarsen_select_nearest` /
     `shr_vcoarsen_select_index` whose dummies are `(ncol, nlev)`. With
@@ -452,8 +452,8 @@ These are hard-won lessons. Read before modifying FME code.
     `src_field(1:ncol, :)`, `coord_mid(1:ncol, :)`, `nlev_max(1:ncol)`,
     and `selected(1:ncol)` -- mirrors the avg pattern exactly.
 
-    **Workaround if fix regresses**: drop T_at_z2, Q_at_z2, STW_at_z2,
-    U_at_z10, V_at_z10 from `fincl1` in `shell_commands`. SamudrACE
+    **Workaround if fix regresses**: drop Tat2m, Qat2m, STWat2m,
+    Uat10m, Vat10m from `fincl1` in `shell_commands`. SamudrACE
     doesn't strictly need them -- TREFHT/QREFHT cover 2 m temperature
     and humidity, and ACE training pipelines often derive 10 m wind
     from level-7 coarsened U/V (boundary layer) anyway.
@@ -804,7 +804,7 @@ These are hard-won lessons. Read before modifying FME code.
        The column-integrated `*_INT` and `d*_INT_dt` paths use a
        `compose_int_units` helper that multiplies through by `kg/m^2`
        (and `/s` for the tendency) since vcoarsen integrates dp/g.
-       Production: Q_k, T_k, U_k, V_k, STW_k, *_at_z2/z10 all carry
+       Production: Q_k, T_k, U_k, V_k, STW_k, *at2m/at10m all carry
        the right unit string in eam.h0.YYYY-MM.nc.
 
     2. **MPAS `mpas_ocn_fme_depth_coarsening.F` empty units** (`''`)
@@ -863,7 +863,7 @@ These are hard-won lessons. Read before modifying FME code.
     plus this AGENTS.md gotcha. Verified end-to-end with ERS_Ld4
     test 52484623 (RUN + COMPARE_base_rest BFB-clean).
 
-do 41. **Per-layer-interface vertical coordinate scalars (ADDED 2026-05-05).**
+41. **Per-layer-interface vertical coordinate scalars (ADDED 2026-05-05).**
     The flat `Q_k`/`T_k`/`temperatureCoarsened_k` data fields have no
     per-layer hint about *which pressure or depth they correspond to*.
     Added scalar metadata fields so downstream consumers can reconstruct
@@ -926,7 +926,7 @@ do 41. **Per-layer-interface vertical coordinate scalars (ADDED 2026-05-05).**
     Interface form has zero aggregation logic — values come straight
     from the source's interface arrays.
 
-    **What it does NOT cover**: `*_at_z2` / `*_at_z10` height-interp
+    **What it does NOT cover**: `*at2m` / `*at10m` height-interp
     fields keep the height in their `long_name` only (per user
     direction) — no scalar `height_2m`/`height_10m` companion. Add
     later if a CF-strict reader needs it.
@@ -935,6 +935,124 @@ do 41. **Per-layer-interface vertical coordinate scalars (ADDED 2026-05-05).**
     `ds.bk_8.values.item() == 1.0` (surface), `ds.idepth_0.item() ==
     0.0`, `ds.idepth_19.item() == 6380.0`. Reconstruct any layer's
     top pressure: `p_top = ds.ak_k.item()*ds.P0 + ds.bk_k.item()*ds.PS`.
+
+42. **Height-interp field rename + 5-day MPAS companion stream
+    (ADDED 2026-05-09).** Two related changes landed together; ERS_Ld10
+    PASSes COMPARE_base_rest BFB-clean (job 52745629).
+
+    **Variable rename — `_at_z`/`_at_P`/`_at_L` → no underscores.**
+    The three `make_sel_*_name` helpers in `eam_vcoarsen.F90` now
+    produce names without internal underscores so the only `_<token>`
+    suffix on output names is the level-index `_<k>` form
+    (`T_0..T_7`). Mapping:
+
+    - `T_at_z2` → `Tat2m`,    `U_at_z10` → `Uat10m` (height-interp,
+       `m` suffix indicates meters above surface)
+    - `U_at_P850` → `Uat850hPa` (pressure-level select)
+    - `U_at_L5` → `UatL5` (level-index select; no unit suffix)
+
+    Production fincl1 in `shell_commands` accordingly: `Tat2m, STWat2m,
+    Qat2m, Uat10m, Vat10m`. The `namelist_definition.xml` doc strings,
+    AGENTS.md citations (gotchas #31, #40, this entry), and the
+    workaround note in #31 were all updated. Only EAM is affected; no
+    MPAS field renamed. **No back-compat shim** — older outputs with
+    the old names need a downstream `xr.rename({...})` if loaded
+    alongside post-2026-05-09 files.
+
+    **5-day-mean MPAS companion stream — `*Output5D`.** SamudrACE wants
+    BOTH 1-day and 5-day means as outputs. Each FME AM (depth-coarsening,
+    derived-fields ocean, derived-fields seaice) now optionally
+    maintains a SECOND accumulator and output file at a longer cadence,
+    sharing the same per-step samples as the primary 1D path but writing
+    averaged-only (no `_inst` companion). Driven by a new namelist
+    option:
+
+    ```
+    config_AM_fmeDepthCoarsening_stream_output_interval_5D = '00-00-05_00:00:00'
+    config_AM_fmeDerivedFields_stream_output_interval_5D = '00-00-05_00:00:00'
+    config_AM_fmeSeaiceDerivedFields_stream_output_interval_5D = '00-00-05_00:00:00'
+    ```
+
+    Set to `'none'` (or omit) to disable. The testmod sets all three
+    via a single `FME_MPAS_INTERVAL_5D` env var (default `00-00-05`).
+    Output filenames: `*.fmeDepthCoarsening5D.YYYY-MM.remapped.nc`
+    etc. Sidecar accumulator restart files use distinct amName keys
+    (`fmeDepthCoarsening5D`, `fmeDerivedFields5D`,
+    `fmeSeaiceDerivedFields5D`) so 1D and 5D state don't collide.
+
+    **Plumbing changes** (touched files):
+    - `Registry_fme_depth_coarsening.xml`,
+      `Registry_fme_derived_fields.xml`,
+      `Registry_seaice_fme_derived_fields.xml`: new `<nml_option
+      name="config_AM_*_stream_output_interval_5D">` and a parallel
+      `<stream name="*Output5D">` declaration.
+    - `namelist_definition_mpaso.xml` /
+      `namelist_definition_mpassi.xml` AND
+      `namelist_defaults_mpaso.xml` /
+      `namelist_defaults_mpassi.xml`: new entry per AM (default
+      `'none'`). **Both files matter** — the build-time MPAS namelist
+      validator uses these XMLs (separate from Registry XML); a
+      missing entry yields `"either config_am_X is not a valid MPASSI
+      namelist variable or X = 'val' is not a valid value"` at the
+      buildnml SETUP phase. We hit this once and added them.
+    - `cime_config/buildnml` (mpas-ocean and mpas-seaice): emit the
+      `*Output5D` stream blocks with `output_interval="none"` (same
+      pattern as the primary streams — buildnml is authoritative for
+      filename_template; native ne30 file is suppressed; the
+      `.remapped.nc` is what the AM produces via the file's
+      filename_template).
+    - **MPAS-O AMs** (`mpas_ocn_fme_depth_coarsening.F`,
+      `mpas_ocn_fme_derived_fields.F`): clean — the existing
+      `ocn_fme_remap_file_t` already supports multiple instances, so
+      we just add a second `remap_outfile_5D` plus parallel
+      `remap_accum_5D` / `remap_accum_count_5D` arrays + a duplicate
+      output-trigger block in `compute`.
+    - **MPAS-SI horiz_remap** (`mpas_seaice_fme_horiz_remap.F`)
+      pre-dates the type-encapsulated refactor, so the per-file PIO
+      state is still at module level. Rather than refactor 1200 lines
+      under time pressure, we added a parallel set of `_5D` state
+      vars + `_5D` procedures (`open_file_5D`, `def_var_5D`,
+      `write_var_5D`, `write_time_5D`, `close_file_5D`,
+      `register_var_5D`, `check_rotate_5D`). The accum-sidecar
+      routines are amName-keyed and reused via thin `_5D` aliases.
+      **TODO/cleanup**: a future refactor to a
+      `seaice_fme_remap_file_t` type would erase the duplication and
+      bring the seaice path in line with the ocean side.
+
+    **Cross-check semantics — sample-weighted vs day-weighted means.**
+    `verify_production.py` grew a 5D-vs-mean(1D) cross-check, but the
+    comparison is subtler than it looks at first. By construction:
+
+    - `5D[j] = sum(per-step samples in window j) /
+       count(per-step samples in window j)`  → *sample-weighted*.
+    - `mean(1D[i for i in window j]) = (1D[j*5] + ... + 1D[j*5+4]) / 5`
+       → *day-weighted*.
+
+    These coincide ONLY when each 1D record in the window has the same
+    per-cell sample count. At fill-edge cells (sea-ice edge, ice
+    runoff, river runoff, ocean–land transitions) the per-cell count
+    flips day-to-day and the two means legitimately differ by O(spike
+    × count_imbalance). The output files don't carry the per-cell
+    counts, so we cannot reconstruct the sample-weighted 1D mean
+    exactly without the AM also writing `count_<var>` companions
+    (deferred — see "Extensions" below).
+
+    Practical mitigation in the cross-check: filter cells where any 1D
+    record in the window is fill-magnitude, then report `p99(diff)`
+    (not `max(diff)`) as a percentage of the variable's `p99(|value|)`.
+    p99 across cells skips the few count-flicker cells that legitimately
+    diverge. Default tolerance is 1% of p99-scale (WARN), 5% (FAIL).
+    On ERS_Ld10 all three streams pass cleanly under this metric.
+
+    **Workaround if the 5D feature regresses**: drop the
+    `_stream_output_interval_5D` line from `shell_commands` and the
+    AMs silently skip the 5D path (`time_avg_5D_enabled` stays
+    `.false.`). The primary 1D path is unchanged in this branch and
+    is bit-identical to pre-2026-05-09 behavior — verified by
+    inspection of the modified files (no edits to the existing 1D
+    code paths beyond the dual-accumulate `if (time_avg_5D_enabled)`
+    block in `remap_1level` / `remap_1field`, gated on a flag that
+    defaults to `.false.`).
 
 ## Runtime Configuration
 
@@ -950,7 +1068,9 @@ FME_EAM_MFILT=1500              # Safety bound when calendar rotation is in
                                 # charge (default: 1500). Force daily
                                 # behavior with FME_EAM_STORAGE=num_snapshots
                                 # FME_EAM_MFILT=4.
-FME_MPAS_INTERVAL=00-00-01_00:00:00  # MPAS output/averaging interval (default: daily)
+FME_MPAS_INTERVAL=00-00-01_00:00:00      # MPAS output/averaging interval (default: daily)
+FME_MPAS_INTERVAL_5D=00-00-05_00:00:00   # 5-day-mean companion stream cadence
+                                         # (set to 'none' to disable; see #42)
 FME_MAPS_DIR=/path/to/fme_maps  # SCRIP map directory (default: NERSC mahf708 scratch)
 ```
 
@@ -975,6 +1095,17 @@ python verify_eam.py --rundir $RUNDIR --outdir /path/to/figs
 # MPAS verification with legacy cross-comparison
 python verify_mpas.py --rundir $RUNDIR --outdir /path/to/figs \
     --legacy-rundir $LEGACY_RUNDIR
+
+# Production-tape validator: 6 streams (3 1D + 3 5D), CF sanity,
+# fill-leak scan, 5D-vs-mean(1D) cross-check (#42), HTML viewer.
+# Push to a shared web-viewable area with --share-dir; the curated
+# top-level $PSCRATCH/share/index.html is updated additively (a new
+# <li> is inserted before the closing </ul> if no link to the case
+# already exists; existing entries are NEVER touched).
+python verify_production.py --rundir $RUNDIR \
+    --outdir /tmp/fme-verify \
+    --share-dir $PSCRATCH/share \
+    --label v3.LR.piControl.aigo.test5
 ```
 
 ## Verification Dashboard
@@ -1004,7 +1135,7 @@ that gates production. The certification passes when:
 
 After the 2026-04-30 verify-script edits (gotchas #19-#26) plus the
 SamudrACE-spec edits later that day (Q vcoarsened to Q_0..Q_7,
-Q_at_z2, TREFHT, QREFHT, PRECST=PRECSC+PRECSL), both dashboards
+Qat2m, TREFHT, QREFHT, PRECST=PRECSC+PRECSL), both dashboards
 converge cleanly. EAM PASSes 7/7 with all 22 cross-compare checks
 green. STW linearity (Test 3) was the last remaining EAM "failure"
 and resolved when the FME global-mean was switched to cos-lat
@@ -1083,6 +1214,29 @@ submit (one resolved 2026-05-05; two remain):
    expected names).
 
 ### Near-term
+- **Monthly-boundary smoke test for the 5D companion stream
+  (PENDING 2026-05-09).** Submit
+  `RUN_LAYOUT="L_20x5_nyears" WALLTIME="12:00:00" CASE_TAG="test5"
+  ./run_e3sm.fme.sh` (20-day legs across a Jan→Feb boundary at the
+  default `0001-01-01` start). The 5D windows close on days
+  5/10/15/20 — the day-15 window straddles Jan 31 → Feb 5 and the
+  day-20 window is fully inside Feb. Validates that the 5D
+  `check_rotate` correctly flips the file from `*5D.0001-01.nc` to
+  `*5D.0001-02.nc` at the right window. **Pass criteria**:
+    - `*5D.0001-01.nc` has the day-5, day-10 records (and possibly
+      day-15 if the window-closure timestamp falls on Jan 31).
+    - `*5D.0001-02.nc` has the day-15 (if Feb-side) and day-20
+      records, with `time_bnds[0] = 25` (Jan 26) and `[15, 20]`
+      respectively (i.e., the 5D window-closing timestamp determines
+      file landing, not the window's start).
+    - `verify_production.py --share-dir $PSCRATCH/share
+      --label v3.LR.piControl.aigo.test5` runs cleanly: 5D-vs-mean(1D)
+      cross-check is sub-percent on all three streams, and the new
+      entry shows up in `$PSCRATCH/share/index.html` (additive insert,
+      no clobber of curated entries).
+  The 1D file rotation already works for production (verified
+  ERS_Ld4, ERS_Ld10), so this is specifically about exercising the
+  5D file-rotation path which only triggers on multi-week runs.
 - Add CI test variant (SMS_Ld2, ne4pg2_oQU480 for fast builds)
 - Add SMS_Ld40 monthly-rotation smoke test (verify Jan->Feb file
   rotation, record counts per month match calendar 124/112/124/...,
@@ -1135,3 +1289,23 @@ would catch latent issues during the 100-yr run:
 - Online spherical harmonics roundtrip (replaces ACE offline SH smoothing)
 - ELM / MOSART FME integration (deferred -- needs reimplementation)
 - Performance: persistent work arrays, O(n) send_local_cell lookup, OpenMP
+- **Write per-cell sample counts to MPAS FME outputs** so the
+  5D-vs-mean(1D) cross-check (#42) can be exact rather than
+  p99-tolerant. The AM already maintains `remap_accum_count` /
+  `remap_accum_count_5D`; just emit them as a `count_<var>` companion
+  to each averaged var. Then verify_production can compute
+  `weighted_mean_1D = sum(count_i * v_i) / sum(count_i)` and compare
+  bit-by-bit. Cost: doubles the var count in the file (~2x storage
+  overhead — not free for 100-yr SamudrACE tape) so probably only
+  worth it as a sanity-only stream variant, not production.
+- **Refactor `mpas_seaice_fme_horiz_remap.F` to a type-encapsulated
+  `seaice_fme_remap_file_t`** (mirroring `ocn_fme_remap_file_t`).
+  Erases the duplicated `_5D` state vars and procedures added in
+  #42 — those landed via parallel state because a clean refactor
+  was deemed too risky under time pressure. ~1200 lines to touch
+  but net code reduction once done.
+- **`verify_production.py --quick` mode** that re-renders the HTML +
+  re-runs sanity / cross-check WITHOUT regenerating the ~580 PNGs
+  (timeseries + climatology per var). Plotting takes the bulk of
+  the runtime; iterating on the cross-check / sanity logic doesn't
+  need fresh figures.

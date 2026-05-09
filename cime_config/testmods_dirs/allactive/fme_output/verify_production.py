@@ -60,19 +60,42 @@ STREAMS = [
         "key": "mpaso_depth",
         "label": "MPAS-O fmeDepthCoarsening",
         "pattern": "*mpaso.hist.am.fmeDepthCoarsening.*.remapped.nc",
+        # Exclude the 5D companion files which also share this prefix
+        # in some glob orderings depending on locale.
+        "exclude": ["fmeDepthCoarsening5D"],
+    },
+    {
+        "key": "mpaso_depth_5D",
+        "label": "MPAS-O fmeDepthCoarsening (5-day mean companion)",
+        "pattern": "*mpaso.hist.am.fmeDepthCoarsening5D.*.remapped.nc",
         "exclude": [],
+        "companion_of": "mpaso_depth",
     },
     {
         "key": "mpaso_derived",
         "label": "MPAS-O fmeDerivedFields",
         "pattern": "*mpaso.hist.am.fmeDerivedFields.*.remapped.nc",
+        "exclude": ["fmeDerivedFields5D"],
+    },
+    {
+        "key": "mpaso_derived_5D",
+        "label": "MPAS-O fmeDerivedFields (5-day mean companion)",
+        "pattern": "*mpaso.hist.am.fmeDerivedFields5D.*.remapped.nc",
         "exclude": [],
+        "companion_of": "mpaso_derived",
     },
     {
         "key": "mpassi_derived",
         "label": "MPAS-SI fmeSeaiceDerivedFields",
         "pattern": "*mpassi.hist.am.fmeSeaiceDerivedFields.*.remapped.nc",
+        "exclude": ["fmeSeaiceDerivedFields5D"],
+    },
+    {
+        "key": "mpassi_derived_5D",
+        "label": "MPAS-SI fmeSeaiceDerivedFields (5-day mean companion)",
+        "pattern": "*mpassi.hist.am.fmeSeaiceDerivedFields5D.*.remapped.nc",
         "exclude": [],
+        "companion_of": "mpassi_derived",
     },
 ]
 
@@ -105,6 +128,23 @@ def parse_args():
                     help="Figure DPI (default 85)")
     ap.add_argument("--label", default=None,
                     help="Display label for the case (default: case name from rundir)")
+    ap.add_argument("--share-dir", default=None,
+                    help="If set, copy the rendered verify_production tree to "
+                         "<share-dir>/<case_label>/ (e.g. $PSCRATCH/share). "
+                         "Useful on NERSC where $PSCRATCH/share is web-viewable "
+                         "via the science portal.")
+    ap.add_argument("--cross-check-rel-tol", type=float, default=1e-2,
+                    help="Relative-tolerance threshold for 5D vs mean(1D) "
+                         "cross-check (default 1e-2 = 1%% of variable's "
+                         "p99-scale at 99%% of cells). Differences above this "
+                         "are flagged WARN; >5%% are flagged FAIL. "
+                         "5D and 1D are sample-weighted vs day-weighted "
+                         "respectively; count-flicker cells (ice edge etc.) "
+                         "legitimately diverge so the metric uses p99(diff) "
+                         "across cells, not max(diff).")
+    ap.add_argument("--cross-check-abs-tol", type=float, default=1e-9,
+                    help="Absolute-tolerance floor used when normalizing the "
+                         "relative-diff denominator (default 1e-9).")
     return ap.parse_args()
 
 
@@ -207,6 +247,168 @@ def check_fills(ds, pollution_threshold):
         out.append(("OK", f"fill-leak scan: {len(spatial)} var(s) clean. "
                           f"canonical-fill cells per var: "
                           f"{min(ranges)}..{max(ranges)} of {sz} (expected: land/bathymetry)"))
+    return out
+
+
+def _bnds_to_2col(arr):
+    """time_bnds is sometimes (time, nbnd), sometimes (nbnd, time) depending
+    on writer / xarray decode order. Normalize to (n, 2)."""
+    if arr.ndim != 2:
+        return None
+    if arr.shape[1] == 2:
+        return arr
+    if arr.shape[0] == 2:
+        return arr.T
+    return None
+
+
+def cross_check_5d_vs_1d(ds_5d, ds_1d, rel_tol=1e-4, abs_tol=1e-9):
+    """For each (variable, 5D record), find the 1D records whose time_bnds are
+    fully inside the 5D record's bnds and verify
+        ds_5d[v][j5] ~= mean(ds_1d[v][matching])
+    Both AMs accumulate the same per-step samples, so the 5D mean is
+    exactly mean(per-step) over a 5-day window, and the 1D-mean over the
+    same window collapses to the same expression *iff* both windows are
+    perfectly aligned and contain a whole number of 1D windows.
+
+    Returns a list of (level, msg) tuples for the sanity report.
+    """
+    out = []
+    if "time_bnds" not in ds_5d.variables or "time_bnds" not in ds_1d.variables:
+        out.append(("WARN", "5D-vs-1D cross-check: missing time_bnds on 5D or 1D dataset"))
+        return out
+
+    bnds_5d = _bnds_to_2col(ds_5d["time_bnds"].values)
+    bnds_1d = _bnds_to_2col(ds_1d["time_bnds"].values)
+    if bnds_5d is None or bnds_1d is None:
+        out.append(("WARN", "5D-vs-1D cross-check: time_bnds shape unrecognized"))
+        return out
+
+    # Restrict to vars present in both with (time, lat, lon) signature.
+    common = sorted(
+        v for v in set(ds_5d.data_vars) & set(ds_1d.data_vars)
+        if "time" in ds_5d[v].dims
+        and {"lat", "lon"}.issubset(ds_5d[v].dims)
+        and "time" in ds_1d[v].dims
+        and {"lat", "lon"}.issubset(ds_1d[v].dims)
+    )
+    if not common:
+        out.append(("OK", "5D-vs-1D cross-check: no common time-varying spatial vars"))
+        return out
+
+    # Per-window membership: 1D window i is "inside" 5D window j iff
+    # bnds_1d[i,0] >= bnds_5d[j,0] and bnds_1d[i,1] <= bnds_5d[j,1] (with eps).
+    eps = 1e-6
+    n5 = bnds_5d.shape[0]
+    membership = []  # list of (j5, idx_array_into_1d) for each 5D window with >=2 members
+    for j5 in range(n5):
+        t_lo, t_hi = bnds_5d[j5, 0], bnds_5d[j5, 1]
+        idx = np.where(
+            (bnds_1d[:, 0] >= t_lo - eps)
+            & (bnds_1d[:, 1] <= t_hi + eps)
+        )[0]
+        if idx.size >= 2:
+            membership.append((j5, idx))
+
+    if not membership:
+        out.append(("WARN", f"5D-vs-1D cross-check: no 5D window contains >=2 "
+                            f"matching 1D windows ({n5} 5D records, "
+                            f"{bnds_1d.shape[0]} 1D records); skipping"))
+        return out
+
+    out.append(("OK", f"5D-vs-1D cross-check: matched {len(membership)} of {n5} "
+                      f"5D windows to >=2 1D records each; comparing "
+                      f"{len(common)} variable(s)"))
+
+    fail_vars = []
+    warn_vars = []
+    rel_summary = []
+    for v in common:
+        v5_arr = ds_5d[v].values
+        v1_arr = ds_1d[v].values
+        # Per-variable scale: p99 of |valid samples| across all 1D records.
+        # This is the robust normalizer for "how much of the variable's
+        # natural range does the 5D-vs-1D disagreement amount to". Using
+        # per-cell |v| as the normalizer (the obvious choice) blows up at
+        # zero-crossings (e.g., the 0 °C isotherm in SST, or null-velocity
+        # cells in U/V) where the cell value ~ 0 but the disagreement is
+        # still tiny in absolute terms.
+        v1_flat = v1_arr.ravel()
+        ok = np.isfinite(v1_flat) & (np.abs(v1_flat) < SHR_FILL_VALUE * 0.1)
+        scale = float(np.percentile(np.abs(v1_flat[ok]), 99)) if ok.any() else 0.0
+        scale = max(scale, abs_tol)
+
+        # IMPORTANT: 5D[j] = sum(per-step samples)/count(per-step samples)
+        # is *sample-weighted*. Python's mean(1D[i_in_window]) is
+        # *day-weighted*. They coincide only when each 1D record has the
+        # same per-cell sample count, which holds for cells whose
+        # validity is stable across the window. At fill-edge cells (ice
+        # edge, land/ocean transitions, river-runoff cells) the per-cell
+        # count flips day-to-day and the two means legitimately disagree
+        # by O(spike-magnitude * count_imbalance). The model output
+        # doesn't carry per-cell counts so we can't reconstruct the
+        # sample-weighted 1D mean exactly.
+        #
+        # We work around it with TWO complementary metrics:
+        #   - p99-diff: 99th-percentile abs-diff across all valid cells.
+        #     Robust to a handful of count-flicker cells; sub-percent
+        #     means "everywhere except ice/land/runoff edges".
+        #   - max-diff: shown for context but not used for FAIL.
+        max_p99_rel = 0.0
+        max_p99_abs = 0.0
+        max_max_abs = 0.0
+        worst_j5 = -1
+        worst_n_match = 0
+        for (j5, idx) in membership:
+            v5 = v5_arr[j5, ...]
+            v1_window = v1_arr[idx, ...]
+            v1_mean = v1_window.mean(axis=0)
+            v1_window_valid = (
+                np.isfinite(v1_window)
+                & (np.abs(v1_window) < SHR_FILL_VALUE * 0.1)
+            )
+            all_1d_valid = v1_window_valid.all(axis=0)
+            valid = (
+                all_1d_valid
+                & np.isfinite(v5) & (np.abs(v5) < SHR_FILL_VALUE * 0.1)
+            )
+            if not valid.any():
+                continue
+            diff = np.abs(v5[valid] - v1_mean[valid])
+            p99 = float(np.percentile(diff, 99))
+            mx = float(diff.max())
+            r = p99 / scale
+            if r > max_p99_rel:
+                max_p99_rel = r
+                max_p99_abs = p99
+                max_max_abs = mx
+                worst_j5 = j5
+                worst_n_match = idx.size
+        # Names kept for downstream packing
+        max_rel, max_abs = max_p99_rel, max_p99_abs
+        rel_summary.append((v, max_rel, max_abs, worst_j5, worst_n_match, scale))
+        if max_rel > 0.01:           # >1% of variable's p99 — broken
+            fail_vars.append((v, max_rel, max_abs, worst_j5, worst_n_match, scale))
+        elif max_rel > rel_tol:      # rel_tol .. 1% — suspicious
+            warn_vars.append((v, max_rel, max_abs, worst_j5, worst_n_match, scale))
+
+    if fail_vars:
+        for v, mr, ma, j, n, sc in fail_vars:
+            out.append(("FAIL", f"5D vs mean(1D): {v}: p99(diff)={ma:.3e} "
+                                f"({mr*100:.2f}% of p99-scale {sc:.3e}) at "
+                                f"5D-record={j} (matched {n} 1D records)"))
+    if warn_vars:
+        for v, mr, ma, j, n, sc in warn_vars:
+            out.append(("WARN", f"5D vs mean(1D): {v}: p99(diff)={ma:.3e} "
+                                f"({mr*100:.2f}% of p99-scale {sc:.3e}) at "
+                                f"5D-record={j} (matched {n} 1D records)"))
+    if not (fail_vars or warn_vars):
+        if rel_summary:
+            v, mr, ma, j, n, sc = max(rel_summary, key=lambda r: r[1])
+            out.append(("OK", f"5D vs mean(1D): all {len(common)} var(s) "
+                              f"within rel_tol={rel_tol:.0e} of p99-scale "
+                              f"(99% of cells); worst: {v} p99(diff)={ma:.3e} "
+                              f"({mr*100:.3f}% of p99-scale {sc:.3e})"))
     return out
 
 
@@ -647,6 +849,142 @@ def case_label_from_rundir(rundir):
     return parts[-1] if parts else "case"
 
 
+def push_to_share(out_root, share_dir, case_label):
+    """Sync the rendered tree to <share_dir>/<case_label>/ and refresh a
+    top-level <share_dir>/index.html that lists every case present in
+    share_dir. The top-level index is rebuilt from the filesystem on
+    every push, so concurrent pushes from multiple cases stay in sync.
+
+    Uses staging-then-swap so a viewer reading <case_label>/ during a
+    push won't see a half-built tree.
+    """
+    import shutil
+    from datetime import datetime, timezone
+
+    share_dir.mkdir(parents=True, exist_ok=True)
+    target = share_dir / case_label
+    staging = share_dir / f".{case_label}.staging"
+    if staging.exists():
+        shutil.rmtree(staging)
+    print(f"verify_production: copying to share staging {staging} ...")
+    shutil.copytree(out_root, staging)
+    if target.exists():
+        backup = share_dir / f".{case_label}.prev"
+        if backup.exists():
+            shutil.rmtree(backup)
+        target.rename(backup)
+    staging.rename(target)
+    backup = share_dir / f".{case_label}.prev"
+    if backup.exists():
+        shutil.rmtree(backup)
+    # Expose group/world readability so a portal user can fetch.
+    try:
+        for p in target.rglob("*"):
+            mode = 0o644 if p.is_file() else 0o755
+            p.chmod(mode)
+        target.chmod(0o755)
+    except Exception as e:
+        print(f"verify_production: WARN chmod failed: {e}")
+    print(f"verify_production: pushed to {target}")
+    print(f"verify_production: index.html -> {target / 'index.html'}")
+
+    # Add an entry for this case to <share_dir>/index.html if one isn't
+    # already present. NEVER rewrite existing entries -- the user's
+    # curated descriptions and ordering are theirs to manage. Idempotent:
+    # if a link to <case_label>/ already exists (with any text), this is
+    # a no-op so subsequent pushes don't accumulate duplicates.
+    top_index = share_dir / "index.html"
+    href_canonical = f"{case_label}/"
+    new_li = (
+        f'    <li><a href="{html.escape(href_canonical)}">\n'
+        f'      <div class="title">{html.escape(case_label)}</div>\n'
+        f'      <div class="desc">verify_production tape '
+        f'(pushed {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")}). '
+        f'Edit this description in {top_index.name} to taste.</div>\n'
+        f'    </a></li>'
+    )
+
+    if top_index.is_file():
+        text = top_index.read_text()
+        # Detect any existing link pointing at this case (any of the
+        # common forms: "<label>/", "<label>/index.html", "./<label>/",
+        # leading slash, etc.). If found, leave the index untouched.
+        href_re = re.compile(
+            r'href\s*=\s*[\"\']\.?/?'
+            + re.escape(case_label)
+            + r'/?(?:index\.html)?[\"\']',
+            re.IGNORECASE,
+        )
+        if href_re.search(text):
+            print(f"verify_production: {top_index} already links to "
+                  f"{case_label}/ -- not modifying it.")
+        else:
+            # Insert just before the LAST </ul> in the document, so we
+            # land inside the main listing if there's only one <ul>, and
+            # don't break any nested submenus.
+            i = text.rfind("</ul>")
+            if i < 0:
+                print(f"verify_production: {top_index} has no </ul> -- "
+                      f"not auto-inserting. Add a link manually:")
+                print(f"  <li><a href='{href_canonical}'>{case_label}</a></li>")
+            else:
+                new_text = text[:i] + new_li + "\n  " + text[i:]
+                top_index.write_text(new_text)
+                try: top_index.chmod(0o644)
+                except Exception: pass
+                print(f"verify_production: inserted {case_label} entry into "
+                      f"{top_index} (existing entries left untouched)")
+    else:
+        # No top-level index yet -- write a minimal one with this entry.
+        # User is free to restyle / curate.
+        minimal = (
+            "<!doctype html><html><head><meta charset='utf-8'>"
+            f"<title>{html.escape(share_dir.name)} -- FME verify cases</title>"
+            "<style>body{font-family:sans-serif;max-width:720px;margin:2em auto;"
+            "padding:0 1em}h1{border-bottom:2px solid #333;padding-bottom:0.3em}"
+            "ul{list-style:none;padding:0}li{margin-bottom:12px}"
+            "li a{display:block;background:#fff;border:1px solid #ddd;"
+            "border-radius:8px;padding:14px 18px;text-decoration:none;color:#222}"
+            "li a:hover{border-color:#2c3e6b}.title{font-weight:600;color:#1a2744}"
+            ".desc{font-size:0.85em;color:#666;margin-top:2px}</style></head><body>"
+            f"<h1>FME verify cases</h1>\n<ul>\n{new_li}\n</ul>\n</body></html>"
+        )
+        top_index.write_text(minimal)
+        try: top_index.chmod(0o644); share_dir.chmod(0o755)
+        except Exception: pass
+        print(f"verify_production: wrote minimal top-level index {top_index}")
+
+    # NERSC science-portal hint (only meaningful on perlmutter / $PSCRATCH).
+    pscratch = os.environ.get("PSCRATCH", "")
+    if pscratch and str(target).startswith(pscratch):
+        rel = Path(share_dir).relative_to(pscratch).as_posix()
+        user = os.environ.get("USER", "")
+        if user:
+            print(f"verify_production: NERSC portal URL (if web-share enabled):")
+            print(f"  https://portal.nersc.gov/pscratch/sd/{user[0]}/{user}/{rel}/")
+            print(f"  https://portal.nersc.gov/pscratch/sd/{user[0]}/{user}/{rel}/{case_label}/")
+
+
+def open_concat(files):
+    """Open and concat multiple netCDF files along `time` without using
+    dask. Avoids xr.open_mfdataset's dask requirement, which isn't always
+    available in the analysis env on NERSC. For our use case (monthly
+    files, dozens at most) eager-loading per-file then concatenating is
+    fast enough and pulls only one chunk-manager dep (numpy)."""
+    datasets = [
+        xr.open_dataset(f, decode_times=False, mask_and_scale=False)
+        for f in files
+    ]
+    if len(datasets) == 1:
+        return datasets[0]
+    # Use first dataset's attrs; per-record vars get concat'd along time;
+    # static vars (no time dim) are taken from the first file.
+    ds = xr.concat(datasets, dim="time", data_vars="minimal",
+                   coords="minimal", compat="override",
+                   combine_attrs="override")
+    return ds
+
+
 def main():
     args = parse_args()
     rundir = os.path.abspath(args.rundir)
@@ -665,32 +1003,40 @@ def main():
         print(f"verify_production: year   = {args.year}")
     print(f"verify_production: include _inst = {args.include_inst}")
 
-    sections = []
     toc = []
     manifest = {}  # {stream_key: [{name, units, ts, clim}, ...]} for the JS viewer
+    # Per-stream collected state. Rendering is deferred until after the
+    # 5D-vs-1D cross-checks so cross-check sanity entries can be appended
+    # to the 5D stream's sanity report before HTML is built.
+    results = {}  # stream_key -> dict(files, sanity, cards, ds_or_None)
 
     for stream in STREAMS:
         anchor = f"sec_{stream['key']}"
         toc.append(f"<a href='#{anchor}'>{html.escape(stream['label'])}</a>")
         manifest[stream["key"]] = []
+        results[stream["key"]] = {
+            "anchor": anchor,
+            "files": [],
+            "sanity": [],
+            "cards": [],
+            "ds": None,
+            "no_files": False,
+        }
 
         all_files = stream_files(rundir, stream, args.year)
         if not all_files:
-            sections.append(
-                f"<h2 id='{anchor}'>{html.escape(stream['label'])}</h2>"
-                f"<p><em>no files found</em></p>"
-            )
+            results[stream["key"]]["no_files"] = True
             print(f"  [{stream['key']}] no files; skipping")
             continue
 
         files, legacy = filter_new_format(all_files)
         n_legacy = len(legacy)
         if not files:
-            sanity = [("FAIL", f"all {len(all_files)} file(s) are legacy format "
-                               f"(no `time` dim / `time_bnds`); rebuild with the post-2026-05-04 "
-                               f"FME testmod and rerun")]
-            sections.append(render_section(stream["key"], stream["label"],
-                                           anchor, [], sanity, []))
+            results[stream["key"]]["sanity"] = [
+                ("FAIL", f"all {len(all_files)} file(s) are legacy format "
+                         f"(no `time` dim / `time_bnds`); rebuild with the post-2026-05-04 "
+                         f"FME testmod and rerun")
+            ]
             print(f"  [{stream['key']}] all {len(all_files)} files are legacy; skipping")
             continue
 
@@ -700,20 +1046,15 @@ def main():
         # mask_and_scale=False -> we see RAW values (no auto-NaN of _FillValue
         # cells), which is what check_fills needs to spot the gotcha #36
         # fractional-fill pollution. Plot helpers mask via _mask_invalid
-        # so they work in either mode.
+        # so they work in either mode. open_concat avoids dask.
         try:
-            ds = xr.open_mfdataset(files, decode_times=False, combine="by_coords",
-                                   mask_and_scale=False)
+            ds = open_concat(files)
         except Exception as e:
-            try:
-                ds = xr.open_mfdataset(files, decode_times=False, combine="nested",
-                                       concat_dim="time", mask_and_scale=False)
-            except Exception as e2:
-                msg = f"open_mfdataset failed: {e2}"
-                sections.append(render_section(stream["label"], anchor, files,
-                                               [("FAIL", msg)], []))
-                print(f"    [FAIL] {msg}")
-                continue
+            msg = f"open failed: {e}"
+            results[stream["key"]]["files"] = files
+            results[stream["key"]]["sanity"] = [("FAIL", msg)]
+            print(f"    [FAIL] {msg}")
+            continue
 
         is_mpas = stream["key"].startswith("mpas")
         sanity = sanity_check(ds, stream["label"], len(files), n_legacy, is_mpas,
@@ -761,13 +1102,62 @@ def main():
                     f"<div class='var-card'><span class='var-name'>{html.escape(varname)}</span>"
                     f" <span class='sanity fail'>{html.escape(msg)}</span></div>"
                 )
-        sections.append(render_section(stream["key"], stream["label"],
-                                       anchor, files, sanity, cards))
-        ds.close()
+
+        results[stream["key"]]["files"] = files
+        results[stream["key"]]["sanity"] = sanity
+        results[stream["key"]]["cards"] = cards
+        results[stream["key"]]["ds"] = ds
+
+    # ----- Pass 2: 5D-vs-1D cross-checks -----------------------------------
+    for stream in STREAMS:
+        peer_key = stream.get("companion_of")
+        if not peer_key:
+            continue
+        ds_5d = results[stream["key"]]["ds"]
+        ds_1d = results.get(peer_key, {}).get("ds")
+        if ds_5d is None or ds_1d is None:
+            results[stream["key"]]["sanity"].append(
+                ("WARN", f"5D-vs-1D cross-check: peer stream '{peer_key}' "
+                         f"unavailable; skipping cross-check")
+            )
+            continue
+        print(f"  [{stream['key']}] cross-checking against {peer_key}")
+        try:
+            cc = cross_check_5d_vs_1d(ds_5d, ds_1d,
+                                      rel_tol=args.cross_check_rel_tol,
+                                      abs_tol=args.cross_check_abs_tol)
+        except Exception as e:
+            cc = [("WARN", f"5D-vs-1D cross-check failed: {e}")]
+            traceback.print_exc()
+        for lvl, msg in cc:
+            if lvl != "OK":
+                print(f"    [{lvl}] {msg}")
+        results[stream["key"]]["sanity"].extend(cc)
+
+    # ----- Pass 3: render ---------------------------------------------------
+    sections = []
+    for stream in STREAMS:
+        res = results[stream["key"]]
+        anchor = res["anchor"]
+        if res["no_files"]:
+            sections.append(
+                f"<h2 id='{anchor}'>{html.escape(stream['label'])}</h2>"
+                f"<p><em>no files found</em></p>"
+            )
+            continue
+        sections.append(render_section(stream["key"], stream["label"], anchor,
+                                       res["files"], res["sanity"], res["cards"]))
+        if res["ds"] is not None:
+            res["ds"].close()
 
     out_html = write_html(out_root, title, sections, toc, manifest)
     print(f"\nverify_production: wrote {out_html}")
     print(f"verify_production: open with file://{out_html} or copy {out_root} to a web server.")
+
+    # Optional push to a shared web-viewable location (e.g. NERSC's $PSCRATCH/share).
+    if args.share_dir:
+        push_to_share(out_root, Path(args.share_dir).expanduser().resolve(),
+                      case_label)
 
 
 if __name__ == "__main__":

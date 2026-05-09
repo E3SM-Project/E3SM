@@ -48,6 +48,10 @@
 			description="If true (and time_averaging is also true), the remapped output stream also includes instantaneous companion variables suffixed _inst. Each averaged variable BASE has an instantaneous twin BASE_inst sampled at the output trigger. No effect when time_averaging is false."
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_AM_fmeDepthCoarsening_stream_output_interval_5D" type="character" default_value="none"
+			description="Optional output interval for an additional 5-day-average companion stream (fmeDepthCoarseningOutput5D). Same fields as the primary stream, accumulated from the same per-step samples but written at this longer cadence to a separate file. Set to 'none' or empty to disable. Requires time_averaging=.true.; 5D path is averaged-only (no _inst companions)."
+			possible_values="Any valid MPAS time interval string or 'none'"
+		/>
 	</nml_record>
 	<packages>
 		<package name="fmeDepthCoarseningAMPKG" description="This package includes variables required for the fmeDepthCoarsening analysis member."/>
@@ -82,6 +86,28 @@
 				filename_template="analysis_members/fmeDepthCoarsening.$Y-$M.nc"
 				filename_interval="00-01-00_00:00:00"
 				output_interval="00-00-01_00:00:00"
+				reference_time="0001-01-01_00:00:00"
+				packages="fmeDepthCoarseningAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+			<var name="xtime"/>
+			<var name="temperatureCoarsened"/>
+			<var name="salinityCoarsened"/>
+			<var name="velocityZonalCoarsened"/>
+			<var name="velocityMeridionalCoarsened"/>
+			<var name="layerThicknessCoarsened"/>
+		</stream>
+		<!-- 5-day-average companion stream. Same fields and Registry binding
+		     as the primary stream; only the cadence and filename differ.
+		     buildnml emits this as output_interval="none" so the native
+		     ne30 file is not written; the AM uses it solely to query the
+		     filename template for the .remapped.nc output. -->
+		<stream name="fmeDepthCoarseningOutput5D" type="output"
+				mode="forward;analysis"
+				precision="single"
+				filename_template="analysis_members/fmeDepthCoarsening5D.$Y-$M.nc"
+				filename_interval="00-01-00_00:00:00"
+				output_interval="00-00-05_00:00:00"
 				reference_time="0001-01-01_00:00:00"
 				packages="fmeDepthCoarseningAMPKG"
 				clobber_mode="truncate"

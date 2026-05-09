@@ -9,10 +9,10 @@ module eam_vcoarsen
   !
   ! Supports five modes of vertical coarsening:
   !   1. Overlap-weighted averaging onto coarser pressure layers (pdel-weighted)
-  !   2. Level selection by index (e.g., U_at_L5)
-  !   3. Level selection by nearest pressure value (e.g., U_at_P850)
+  !   2. Level selection by index (e.g., UatL5)
+  !   3. Level selection by nearest pressure value (e.g., Uat850hPa)
   !   4. Column integration: sum(field * pdel / g) producing a 2D field (e.g., TOTAL_WATER_INT)
-  !   5. Linear interpolation to height above surface (e.g., U_at_z10 for 10 m wind)
+  !   5. Linear interpolation to height above surface (e.g., Uat10m for 10 m wind)
   !
   ! Configuration via namelist (eam_vcoarsen_nl):
   !   vcoarsen_pbounds         - pressure boundaries (Pa), top to surface
@@ -829,7 +829,7 @@ contains
 
   !============================================================================
   subroutine make_sel_lev_name(base_name, lev_idx, out_name)
-    ! E.g., base_name="U", lev_idx=5 => out_name="U_at_L5"
+    ! E.g., base_name="U", lev_idx=5 => out_name="UatL5"
     character(len=*), intent(in)  :: base_name
     integer,          intent(in)  :: lev_idx
     character(len=*), intent(out) :: out_name
@@ -837,13 +837,13 @@ contains
     character(len=4) :: idx_str
 
     write(idx_str, '(I0)') lev_idx
-    out_name = trim(base_name) // '_at_L' // trim(idx_str)
+    out_name = trim(base_name) // 'atL' // trim(idx_str)
 
   end subroutine make_sel_lev_name
 
   !============================================================================
   subroutine make_sel_pres_name(base_name, pres_hpa, out_name)
-    ! E.g., base_name="U", pres_hpa=850.0 => out_name="U_at_P850"
+    ! E.g., base_name="U", pres_hpa=850.0 => out_name="Uat850hPa"
     ! For integer-like values, omit decimal. For fractional, include one decimal.
     character(len=*), intent(in)  :: base_name
     real(r8),         intent(in)  :: pres_hpa
@@ -858,13 +858,13 @@ contains
     else
       write(pstr, '(F0.1)') pres_hpa
     end if
-    out_name = trim(base_name) // '_at_P' // trim(pstr)
+    out_name = trim(base_name) // 'at' // trim(pstr) // 'hPa'
 
   end subroutine make_sel_pres_name
 
   !============================================================================
   subroutine make_sel_height_name(base_name, height_m, out_name)
-    ! E.g., base_name="U", height_m=10.0 => out_name="U_at_z10"
+    ! E.g., base_name="U", height_m=10.0 => out_name="Uat10m"
     ! For integer-like values, omit decimal. For fractional, include one decimal.
     character(len=*), intent(in)  :: base_name
     real(r8),         intent(in)  :: height_m
@@ -879,7 +879,7 @@ contains
     else
       write(hstr, '(F0.1)') height_m
     end if
-    out_name = trim(base_name) // '_at_z' // trim(hstr)
+    out_name = trim(base_name) // 'at' // trim(hstr) // 'm'
 
   end subroutine make_sel_height_name
 

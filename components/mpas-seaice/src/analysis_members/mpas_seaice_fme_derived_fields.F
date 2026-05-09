@@ -31,7 +31,12 @@ module seaice_fme_derived_fields
         seaice_fme_horiz_remap_close_file, seaice_fme_horiz_remap_get_dims, &
         seaice_fme_horiz_remap_register_var, seaice_fme_horiz_remap_check_rotate, &
         seaice_fme_horiz_remap_write_accum, seaice_fme_horiz_remap_read_accum, &
-        remap_stream_name, file_is_open
+        remap_stream_name, file_is_open, &
+        seaice_fme_horiz_remap_register_var_5D, seaice_fme_horiz_remap_check_rotate_5D, &
+        seaice_fme_horiz_remap_write_var_5D, seaice_fme_horiz_remap_write_time_5D, &
+        seaice_fme_horiz_remap_close_file_5D, &
+        seaice_fme_horiz_remap_write_accum_5D, seaice_fme_horiz_remap_read_accum_5D, &
+        remap_stream_name_5D, file_is_open_5D
 
    implicit none
    private
@@ -62,6 +67,18 @@ module seaice_fme_derived_fields
    ! (k * 1e20 / nAccum) at the ice edge. See AGENTS.md gotcha on
    ! time-averaging fill pollution.
    real(r8), allocatable :: remap_accum_count(:,:)  ! (remap_nb_local, N_AVG_FIELDS)
+
+   ! Optional 5-day-average companion stream. Same fields as the
+   ! primary stream, accumulated from the same per-step samples but
+   ! written at a longer cadence to a separate file. Disabled when
+   ! config_AM_fmeSeaiceDerivedFields_stream_output_interval_5D is
+   ! empty or 'none' (or when time_averaging is .false.).
+   logical :: time_avg_5D_enabled = .false.
+   integer :: nAccum_5D = 0
+   type(MPAS_TimeInterval_type) :: avg_output_interval_5D
+   type(MPAS_Time_type) :: avg_last_output_time_5D
+   real(r8), allocatable :: remap_accum_5D(:,:)        ! (remap_nb_local, N_AVG_FIELDS)
+   real(r8), allocatable :: remap_accum_count_5D(:,:)  ! (remap_nb_local, N_AVG_FIELDS)
 
    !--------------------------------------------------------------------
    !
@@ -190,6 +207,7 @@ contains
       character(len=StrKIND), pointer :: config_horiz_remap_file
       logical, pointer :: config_time_averaging
       character(len=StrKIND), pointer :: config_stream_output_interval
+      character(len=StrKIND), pointer :: config_stream_output_interval_5D
       character(len=16) :: cm   ! CF cell_methods choice
       integer :: ierr
 
@@ -293,6 +311,65 @@ contains
                         time_avg_enabled = .true.
                         call mpas_log_write( &
                              'fmeSeaiceDerivedFields: time averaging enabled')
+
+                        ! Optional 5-day-average companion stream.
+                        call mpas_pool_get_config(domain % configs, &
+                             'config_AM_fmeSeaiceDerivedFields_stream_output_interval_5D', &
+                             config_stream_output_interval_5D)
+                        if (associated(config_stream_output_interval_5D)) then
+                           if (len_trim(config_stream_output_interval_5D) > 0 .and. &
+                               trim(config_stream_output_interval_5D) /= 'none') then
+                              remap_stream_name_5D = 'fmeSeaiceDerivedFieldsOutput5D'
+                              call seaice_fme_horiz_remap_register_var_5D('iceAreaTotal', &
+                                   '1', 'Total ice area fraction', ierr, &
+                                   cell_methods='time: mean')
+                              call seaice_fme_horiz_remap_register_var_5D('iceVolumeTotal', &
+                                   'm', 'Total ice volume per unit area', ierr, &
+                                   cell_methods='time: mean')
+                              call seaice_fme_horiz_remap_register_var_5D('snowVolumeTotal', &
+                                   'm', 'Total snow volume per unit area', ierr, &
+                                   cell_methods='time: mean')
+                              call seaice_fme_horiz_remap_register_var_5D('iceThicknessMean', &
+                                   'm', 'Area-weighted mean ice thickness', ierr, &
+                                   cell_methods='time: mean')
+                              call seaice_fme_horiz_remap_register_var_5D('surfaceTemperatureMean', &
+                                   'degC', 'Area-weighted mean surface temperature', ierr, &
+                                   cell_methods='time: mean')
+                              call seaice_fme_horiz_remap_register_var_5D('airStressZonal', &
+                                   'N m^-2', 'Zonal air stress on ice', ierr, &
+                                   cell_methods='time: mean')
+                              call seaice_fme_horiz_remap_register_var_5D('airStressMeridional', &
+                                   'N m^-2', 'Meridional air stress on ice', ierr, &
+                                   cell_methods='time: mean')
+                              call seaice_fme_horiz_remap_register_var_5D('uVelocityGeoCell', &
+                                   'm s^-1', 'True eastwards ice velocity at cell centers', ierr, &
+                                   cell_methods='time: mean')
+                              call seaice_fme_horiz_remap_register_var_5D('vVelocityGeoCell', &
+                                   'm s^-1', 'True northwards ice velocity at cell centers', ierr, &
+                                   cell_methods='time: mean')
+
+                              call mpas_set_timeInterval(avg_output_interval_5D, &
+                                   timeString=trim(config_stream_output_interval_5D), &
+                                   ierr=ierr)
+                              avg_last_output_time_5D = mpas_get_clock_time( &
+                                   domain % clock, MPAS_NOW, ierr)
+                              if (.not. allocated(remap_accum_5D)) then
+                                 allocate(remap_accum_5D(remap_nb_local, N_AVG_FIELDS))
+                              end if
+                              if (.not. allocated(remap_accum_count_5D)) then
+                                 allocate(remap_accum_count_5D(remap_nb_local, N_AVG_FIELDS))
+                              end if
+                              remap_accum_5D = 0.0_r8
+                              remap_accum_count_5D = 0.0_r8
+                              nAccum_5D = 0
+                              time_avg_5D_enabled = .true.
+                              call mpas_log_write( &
+                                   'fmeSeaiceDerivedFields: 5-day average companion ' // &
+                                   'stream enabled (interval=' // &
+                                   trim(config_stream_output_interval_5D) // ')')
+                           end if
+                        end if
+
                         call seaice_fme_derived_fields_read_restart(domain, ierr)
                      end if
                   end if
@@ -339,6 +416,24 @@ contains
          end if
       end if
 
+      if (time_avg_5D_enabled) then
+         call seaice_fme_horiz_remap_read_accum_5D('fmeSeaiceDerivedFields5D', &
+              remap_accum_5D, N_AVG_FIELDS, nAccum_5D, ts_str, &
+              count_arr=remap_accum_count_5D, success=ok)
+         if (ok .and. len_trim(ts_str) > 0) then
+            call mpas_set_time(avg_last_output_time_5D, &
+                 dateTimeString=trim(ts_str), ierr=ierr_local)
+            if (ierr_local /= 0) then
+               call mpas_log_write('fmeSeaiceDerivedFields: failed to parse ' // &
+                    'persisted avg_last_output_time_5D="' // trim(ts_str) // &
+                    '"; falling back to MPAS_NOW baseline.', &
+                    messageType=MPAS_LOG_WARN)
+               avg_last_output_time_5D = mpas_get_clock_time( &
+                    domain % clock, MPAS_NOW, ierr_local)
+            end if
+         end if
+      end if
+
    end subroutine seaice_fme_derived_fields_read_restart!}}}
 
 !***********************************************************************
@@ -359,6 +454,14 @@ contains
       call seaice_fme_horiz_remap_write_accum('fmeSeaiceDerivedFields', &
            remap_accum, N_AVG_FIELDS, nAccum, trim(ts_str), &
            count_arr=remap_accum_count, err=err)
+
+      if (time_avg_5D_enabled .and. allocated(remap_accum_5D)) then
+         call mpas_get_time(avg_last_output_time_5D, &
+              dateTimeString=ts_str, ierr=ierr_local)
+         call seaice_fme_horiz_remap_write_accum_5D('fmeSeaiceDerivedFields5D', &
+              remap_accum_5D, N_AVG_FIELDS, nAccum_5D, trim(ts_str), &
+              count_arr=remap_accum_count_5D, err=err)
+      end if
 
    end subroutine seaice_fme_derived_fields_write_restart!}}}
 
@@ -664,6 +767,7 @@ contains
                call remap_1field(uVelocityGeoCell, 8)
                call remap_1field(vVelocityGeoCell, 9)
                nAccum = nAccum + 1
+               if (time_avg_5D_enabled) nAccum_5D = nAccum_5D + 1
 
                ! Check if output interval elapsed
                currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr_remap)
@@ -688,6 +792,31 @@ contains
                   nAccum = 0
                   ! Advance by exact interval to avoid drift.
                   avg_last_output_time = avg_last_output_time + avg_output_interval
+               end if
+
+               ! 5-day-average companion: parallel to the 1D path above,
+               ! shares per-step samples but uses its own accumulator,
+               ! last-output-time, output_interval, and output file.
+               if (time_avg_5D_enabled .and. &
+                    currTime - avg_last_output_time_5D >= avg_output_interval_5D) then
+                  call seaice_fme_horiz_remap_check_rotate_5D(domain, ierr_remap)
+                  if (file_is_open_5D) then
+                     call seaice_fme_horiz_remap_write_time_5D( &
+                          avg_last_output_time_5D, currTime, ierr_remap)
+                     call write_avg_field_5D('iceAreaTotal', 1)
+                     call write_avg_field_5D('iceVolumeTotal', 2)
+                     call write_avg_field_5D('snowVolumeTotal', 3)
+                     call write_avg_field_5D('iceThicknessMean', 4)
+                     call write_avg_field_5D('surfaceTemperatureMean', 5)
+                     call write_avg_field_5D('airStressZonal', 6)
+                     call write_avg_field_5D('airStressMeridional', 7)
+                     call write_avg_field_5D('uVelocityGeoCell', 8)
+                     call write_avg_field_5D('vVelocityGeoCell', 9)
+                  end if
+                  remap_accum_5D = 0.0_r8
+                  remap_accum_count_5D = 0.0_r8
+                  nAccum_5D = 0
+                  avg_last_output_time_5D = avg_last_output_time_5D + avg_output_interval_5D
                end if
             else
                ! Instantaneous path: remap and write each field one at a time
@@ -740,6 +869,14 @@ contains
                   remap_accum_count(ib, idx) = remap_accum_count(ib, idx) + 1.0_r8
                end if
             end do
+            if (time_avg_5D_enabled) then
+               do ib = 1, remap_nb_local
+                  if (abs(fld_remap(ib)) < fill_thresh) then
+                     remap_accum_5D(ib, idx)       = remap_accum_5D(ib, idx)       + fld_remap(ib)
+                     remap_accum_count_5D(ib, idx) = remap_accum_count_5D(ib, idx) + 1.0_r8
+                  end if
+               end do
+            end if
          end if
       end subroutine remap_1field
 
@@ -760,6 +897,20 @@ contains
          end do
          call seaice_fme_horiz_remap_write_var(varname, fld_remap, 1, ierr_remap)
       end subroutine write_avg_field
+
+      subroutine write_avg_field_5D(varname, idx)
+         character(len=*), intent(in) :: varname
+         integer, intent(in) :: idx
+         integer :: ib
+         do ib = 1, remap_nb_local
+            if (remap_accum_count_5D(ib, idx) > 0.0_r8) then
+               fld_remap(ib) = remap_accum_5D(ib, idx) / remap_accum_count_5D(ib, idx)
+            else
+               fld_remap(ib) = real(SHR_FILL_VALUE, r8)
+            end if
+         end do
+         call seaice_fme_horiz_remap_write_var_5D(varname, fld_remap, 1, ierr_remap)
+      end subroutine write_avg_field_5D
 
       subroutine remap_and_write_inst(varname, native_fld)
          ! Remap one field to fld_remap, then write under varname.
@@ -874,8 +1025,11 @@ contains
       err = 0
 
       call seaice_fme_horiz_remap_close_file(ierr)
+      if (time_avg_5D_enabled) call seaice_fme_horiz_remap_close_file_5D(ierr)
       if (allocated(remap_accum)) deallocate(remap_accum)
       if (allocated(remap_accum_count)) deallocate(remap_accum_count)
+      if (allocated(remap_accum_5D)) deallocate(remap_accum_5D)
+      if (allocated(remap_accum_count_5D)) deallocate(remap_accum_count_5D)
 
    end subroutine seaice_finalize_fme_derived_fields!}}}
 

@@ -91,6 +91,21 @@ module ocn_fme_depth_coarsening
    logical :: write_inst_companion = .false.
    real(r8), allocatable :: remap_latest_inst(:,:)  ! (remap_nb_local, n_avg_fields)
 
+   !> Optional 5-day-average companion stream. Mirrors the primary
+   !> averaging path but writes to a separate output file at a longer
+   !> cadence. Both averages share the same per-step samples; the 5D
+   !> path is averaged-only (no _inst companions). Disabled when
+   !> config_AM_fmeDepthCoarsening_stream_output_interval_5D is empty
+   !> or 'none', or when time_averaging is .false. (the 5D path
+   !> assumes the AM is sampling at compute_interval='dt').
+   type(ocn_fme_remap_file_t) :: remap_outfile_5D
+   logical :: time_avg_5D_enabled = .false.
+   integer :: nAccum_5D = 0
+   type(MPAS_TimeInterval_type) :: avg_output_interval_5D
+   type(MPAS_Time_type) :: avg_last_output_time_5D
+   real(r8), allocatable :: remap_accum_5D(:,:)        ! (remap_nb_local, n_avg_fields)
+   real(r8), allocatable :: remap_accum_count_5D(:,:)  ! (remap_nb_local, n_avg_fields)
+
    ! Static per-level bathymetry masks in remap space, written as
    ! `mask_0` ... `mask_{nCoarsenLevels-1}` in every output file. 1.0 on
    ! cells where the depth-coarsened layer is between surface and seafloor,
@@ -122,6 +137,7 @@ contains
       logical, pointer :: config_time_averaging
       logical, pointer :: config_write_inst_companion
       character(len=StrKIND), pointer :: config_stream_output_interval
+      character(len=StrKIND), pointer :: config_stream_output_interval_5D
       character(len=StrKIND) :: tempStr
       character(len=128) :: varName, longName
       character(len=16)  :: cm   ! CF cell_methods choice
@@ -402,6 +418,77 @@ contains
                         end if
                      end if
 
+                     ! 5-day-average companion stream. Optional; gated on
+                     ! a non-empty/non-'none' interval. Shares the per-step
+                     ! samples already computed for the primary average.
+                     ! Averaged-only: no _inst companion variables.
+                     call mpas_pool_get_config(domain % configs, &
+                          'config_AM_fmeDepthCoarsening_stream_output_interval_5D', &
+                          config_stream_output_interval_5D)
+                     if (associated(config_stream_output_interval_5D)) then
+                        if (len_trim(config_stream_output_interval_5D) > 0 .and. &
+                            trim(config_stream_output_interval_5D) /= 'none') then
+                           remap_outfile_5D%stream_name = 'fmeDepthCoarseningOutput5D'
+                           do iField = 1, nCoarsenFields
+                              do kOut = 0, nCoarsenLevels - 1
+                                 write(varName, '(A,A,I0)') &
+                                      trim(coarsenFieldNames(iField)), 'Coarsened_', kOut
+                                 write(longName, '(A,I0)') &
+                                      'Depth-coarsened ' // &
+                                      trim(coarsenFieldNames(iField)) // ' level ', kOut
+                                 call remap_outfile_5D%register_var(trim(varName), &
+                                      trim(coarsen_field_units(coarsenFieldNames(iField))), &
+                                      trim(longName), ierr, cell_methods='time: mean')
+                              end do
+                           end do
+                           do kOut = 0, nCoarsenLevels - 1
+                              write(varName, '(A,I0)') 'layerThicknessCoarsened_', kOut
+                              write(longName, '(A,I0)') &
+                                   'Depth-coarsened layer thickness level ', kOut
+                              call remap_outfile_5D%register_var(trim(varName), 'm', &
+                                   trim(longName), ierr, cell_methods='time: mean')
+                           end do
+                           do kOut = 0, nCoarsenLevels - 1
+                              write(varName, '(A,I0)') 'mask_', kOut
+                              write(longName, '(A,I0,A)') &
+                                   'Wet mask for depth level ', kOut, &
+                                   ' (1=valid ocean, 0=below seafloor or land)'
+                              call remap_outfile_5D%register_var(trim(varName), '1', &
+                                   trim(longName), ierr, is_static=.true.)
+                           end do
+                           do kOut = 0, nCoarsenLevels
+                              write(varName, '(A,I0)') 'idepth_', kOut
+                              write(longName, '(A,I0,A)') &
+                                   'Depth at coarsened layer interface ', kOut, &
+                                   ' (m below sea surface)'
+                              call remap_outfile_5D%register_var(trim(varName), 'm', &
+                                   trim(longName), ierr, is_scalar=.true., &
+                                   scalar_value=depthBounds(kOut+1), &
+                                   positive='down', standard_name='depth')
+                           end do
+
+                           call mpas_set_timeInterval(avg_output_interval_5D, &
+                                timeString=trim(config_stream_output_interval_5D), &
+                                ierr=ierr)
+                           avg_last_output_time_5D = mpas_get_clock_time( &
+                                domain % clock, MPAS_NOW, ierr)
+                           if (.not. allocated(remap_accum_5D)) then
+                              allocate(remap_accum_5D(remap_nb_local, n_avg_fields))
+                           end if
+                           if (.not. allocated(remap_accum_count_5D)) then
+                              allocate(remap_accum_count_5D(remap_nb_local, n_avg_fields))
+                           end if
+                           remap_accum_5D = 0.0_r8
+                           remap_accum_count_5D = 0.0_r8
+                           nAccum_5D = 0
+                           time_avg_5D_enabled = .true.
+                           call mpas_log_write( &
+                                'fmeDepthCoarsening: 5-day average companion ' // &
+                                'stream enabled (interval=' // &
+                                trim(config_stream_output_interval_5D) // ')')
+                        end if
+                     end if
+
                      ! Restore accumulator state on warm restart.
                      call ocn_fme_depth_coarsening_read_restart(domain, ierr)
                   end if
@@ -460,6 +547,28 @@ contains
          end if
       end if
 
+      ! Restore the 5-day companion accumulator from its own sidecar.
+      ! Independent of the 1D path's success: a missing 5D sidecar (e.g.,
+      ! 5D was just enabled on this restart) silently no-ops here and
+      ! the 5D path simply starts a fresh window from MPAS_NOW.
+      if (time_avg_5D_enabled) then
+         call ocn_fme_horiz_remap_read_accum('fmeDepthCoarsening5D', &
+              remap_accum_5D, n_avg_fields, nAccum_5D, ts_str, &
+              count_arr=remap_accum_count_5D, success=ok)
+         if (ok .and. len_trim(ts_str) > 0) then
+            call mpas_set_time(avg_last_output_time_5D, &
+                 dateTimeString=trim(ts_str), ierr=ierr_local)
+            if (ierr_local /= 0) then
+               call mpas_log_write('fmeDepthCoarsening: failed to parse ' // &
+                    'persisted avg_last_output_time_5D="' // trim(ts_str) // &
+                    '"; falling back to MPAS_NOW baseline.', &
+                    messageType=MPAS_LOG_WARN)
+               avg_last_output_time_5D = mpas_get_clock_time( &
+                    domain % clock, MPAS_NOW, ierr_local)
+            end if
+         end if
+      end if
+
    end subroutine ocn_fme_depth_coarsening_read_restart!}}}
 
 !***********************************************************************
@@ -490,6 +599,14 @@ contains
          call ocn_fme_horiz_remap_write_accum('fmeDepthCoarsening', &
               remap_accum, n_avg_fields, nAccum, trim(ts_str), &
               count_arr=remap_accum_count, err=err)
+      end if
+
+      if (time_avg_5D_enabled .and. allocated(remap_accum_5D)) then
+         call mpas_get_time(avg_last_output_time_5D, &
+              dateTimeString=ts_str, ierr=ierr_local)
+         call ocn_fme_horiz_remap_write_accum('fmeDepthCoarsening5D', &
+              remap_accum_5D, n_avg_fields, nAccum_5D, trim(ts_str), &
+              count_arr=remap_accum_count_5D, err=err)
       end if
 
    end subroutine ocn_fme_depth_coarsening_write_restart!}}}
@@ -731,6 +848,7 @@ contains
                        nCoarsenFields * nCoarsenLevels + kOut + 1)
                end do
                nAccum = nAccum + 1
+               if (time_avg_5D_enabled) nAccum_5D = nAccum_5D + 1
 
                ! Check if output interval elapsed
                currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
@@ -782,6 +900,40 @@ contains
                   nAccum = 0
                   ! Advance by exact interval to avoid drift.
                   avg_last_output_time = avg_last_output_time + avg_output_interval
+               end if
+
+               ! 5-day-average companion: parallel to the 1D path above,
+               ! sharing currTime and per-step samples but using its own
+               ! accumulator, last-output-time, output_interval, and
+               ! output file. Written averaged-only (no _inst companion).
+               if (time_avg_5D_enabled .and. &
+                    currTime - avg_last_output_time_5D >= avg_output_interval_5D) then
+                  call remap_outfile_5D%check_rotate(domain, ierr)
+                  if (remap_outfile_5D%file_is_open) then
+                     call remap_outfile_5D%write_time(avg_last_output_time_5D, &
+                          currTime, ierr)
+                     call write_static_masks_5D_if_needed()
+
+                     do ifld = 1, nCoarsenFields
+                        do kOut = 0, nCoarsenLevels - 1
+                           write(varName, '(A,A,I0)') &
+                                trim(coarsenFieldNames(ifld)), &
+                                'Coarsened_', kOut
+                           call write_avg_field_5D(trim(varName), &
+                                (ifld - 1) * nCoarsenLevels + kOut + 1)
+                        end do
+                     end do
+                     do kOut = 0, nCoarsenLevels - 1
+                        write(varName, '(A,I0)') &
+                             'layerThicknessCoarsened_', kOut
+                        call write_avg_field_5D(trim(varName), &
+                             nCoarsenFields * nCoarsenLevels + kOut + 1)
+                     end do
+                  end if
+                  remap_accum_5D = 0.0_r8
+                  remap_accum_count_5D = 0.0_r8
+                  nAccum_5D = 0
+                  avg_last_output_time_5D = avg_last_output_time_5D + avg_output_interval_5D
                end if
             else
                ! Instantaneous: remap each field/level and write under its
@@ -863,6 +1015,14 @@ contains
             if (write_inst_companion) then
                remap_latest_inst(:, idx) = fld_remap(:, 1)
             end if
+            if (time_avg_5D_enabled) then
+               do ib = 1, remap_nb_local
+                  if (abs(fld_remap(ib, 1)) < fill_thresh) then
+                     remap_accum_5D(ib, idx)       = remap_accum_5D(ib, idx)       + fld_remap(ib, 1)
+                     remap_accum_count_5D(ib, idx) = remap_accum_count_5D(ib, idx) + 1.0_r8
+                  end if
+               end do
+            end if
          end if
       end subroutine remap_1level
 
@@ -879,6 +1039,20 @@ contains
          end do
          call remap_outfile%write_var(vname, fld_remap, 1, ierr)
       end subroutine write_avg_field
+
+      subroutine write_avg_field_5D(vname, idx)
+         character(len=*), intent(in) :: vname
+         integer, intent(in) :: idx
+         integer :: ib
+         do ib = 1, remap_nb_local
+            if (remap_accum_count_5D(ib, idx) > 0.0_r8) then
+               fld_remap(ib, 1) = remap_accum_5D(ib, idx) / remap_accum_count_5D(ib, idx)
+            else
+               fld_remap(ib, 1) = real(SHR_FILL_VALUE, r8)
+            end if
+         end do
+         call remap_outfile_5D%write_var(vname, fld_remap, 1, ierr)
+      end subroutine write_avg_field_5D
 
       subroutine compute_mask_levels_remap()
          ! Build per-level static wet masks in remap space. The source-side
@@ -927,6 +1101,19 @@ contains
             call remap_outfile%write_var(trim(maskName), mask_write_buf, 1, ierr)
          end do
       end subroutine write_static_masks_if_needed
+
+      subroutine write_static_masks_5D_if_needed()
+         integer :: kLvl
+         character(len=128) :: maskName
+         if (remap_outfile_5D%existing_file_reopened) return
+         if (remap_outfile_5D%time_record /= 1) return
+         if (.not. allocated(mask_levels_remap)) return
+         do kLvl = 0, nCoarsenLevels - 1
+            mask_write_buf(:, 1) = mask_levels_remap(:, kLvl + 1)
+            write(maskName, '(A,I0)') 'mask_', kLvl
+            call remap_outfile_5D%write_var(trim(maskName), mask_write_buf, 1, ierr)
+         end do
+      end subroutine write_static_masks_5D_if_needed
 
       subroutine remap_and_write_inst(srcArray, kLevel, vname)
          ! Remap one (level of one) field into fld_remap, then write under
@@ -1003,12 +1190,15 @@ contains
       err = 0
 
       call remap_outfile%close_file(ierr)
+      if (time_avg_5D_enabled) call remap_outfile_5D%close_file(ierr)
 
       if (allocated(depthBounds)) deallocate(depthBounds)
       if (allocated(coarsenFieldNames)) deallocate(coarsenFieldNames)
       if (allocated(remap_accum)) deallocate(remap_accum)
       if (allocated(remap_accum_count)) deallocate(remap_accum_count)
       if (allocated(remap_latest_inst)) deallocate(remap_latest_inst)
+      if (allocated(remap_accum_5D)) deallocate(remap_accum_5D)
+      if (allocated(remap_accum_count_5D)) deallocate(remap_accum_count_5D)
       if (allocated(mask_levels_remap)) deallocate(mask_levels_remap)
       if (allocated(mask_write_buf)) deallocate(mask_write_buf)
 

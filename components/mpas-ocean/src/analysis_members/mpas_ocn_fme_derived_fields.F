@@ -105,6 +105,19 @@ module ocn_fme_derived_fields
    ! AGENTS.md gotcha on time-averaging fill pollution.
    real(r8), allocatable :: remap_accum_count(:,:)  ! (n_b_local, N_AVG_FIELDS)
 
+   !> Optional 5-day-average companion stream. Mirrors the primary
+   !> averaging path with its own accumulator/output_file at a longer
+   !> cadence. Disabled when
+   !> config_AM_fmeDerivedFields_stream_output_interval_5D is empty
+   !> or 'none' (or when time_averaging is .false.).
+   type(ocn_fme_remap_file_t) :: remap_outfile_5D
+   logical :: time_avg_5D_enabled = .false.
+   integer :: nAccum_5D = 0
+   type(MPAS_TimeInterval_type) :: avg_output_interval_5D
+   type(MPAS_Time_type) :: avg_last_output_time_5D
+   real(r8), allocatable :: remap_accum_5D(:,:)        ! (n_b_local, N_AVG_FIELDS)
+   real(r8), allocatable :: remap_accum_count_5D(:,:)  ! (n_b_local, N_AVG_FIELDS)
+
 !***********************************************************************
 
 contains
@@ -118,6 +131,7 @@ contains
 
       character(len=StrKIND), pointer :: config_AM_fmeDerivedFields_horiz_remap_file
       character(len=StrKIND), pointer :: config_stream_output_interval
+      character(len=StrKIND), pointer :: config_stream_output_interval_5D
       logical, pointer :: config_time_averaging
       character(len=16) :: cm   ! CF cell_methods choice -- 'time: mean' / 'time: point'
       integer :: ierr
@@ -252,6 +266,90 @@ contains
                         nAccum = 0
                         time_avg_enabled = .true.
                         call mpas_log_write('fmeDerivedFields: time averaging enabled')
+
+                        ! Optional 5-day-average companion stream. Same
+                        ! field set as the primary stream; averaged-only.
+                        call mpas_pool_get_config(domain % configs, &
+                             'config_AM_fmeDerivedFields_stream_output_interval_5D', &
+                             config_stream_output_interval_5D)
+                        if (associated(config_stream_output_interval_5D)) then
+                           if (len_trim(config_stream_output_interval_5D) > 0 .and. &
+                               trim(config_stream_output_interval_5D) /= 'none') then
+                              remap_outfile_5D%stream_name = 'fmeDerivedFieldsOutput5D'
+                              call remap_outfile_5D%register_var('sst', 'degC', &
+                                   'Sea surface temperature', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('sss', 'PSU', &
+                                   'Sea surface salinity', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('surfaceHeatFluxTotal', 'W m^-2', &
+                                   'Total surface heat flux', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('ssh', 'm', &
+                                   'Sea surface height', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('shortWaveHeatFlux', 'W m^-2', &
+                                   'Shortwave heat flux into ocean', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('longWaveHeatFluxDown', 'W m^-2', &
+                                   'Downward longwave heat flux', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('latentHeatFlux', 'W m^-2', &
+                                   'Latent heat flux into ocean', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('sensibleHeatFlux', 'W m^-2', &
+                                   'Sensible heat flux into ocean', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('windStressZonal', 'N m^-2', &
+                                   'Zonal wind stress on ocean', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('windStressMeridional', 'N m^-2', &
+                                   'Meridional wind stress on ocean', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('longWaveHeatFluxUp', 'W m^-2', &
+                                   'Upward longwave heat flux from ocean', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('rainFlux', 'kg m^-2 s^-1', &
+                                   'Rain mass flux into ocean', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('snowFlux', 'kg m^-2 s^-1', &
+                                   'Snow mass flux into ocean', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('evaporationFlux', 'kg m^-2 s^-1', &
+                                   'Evaporation mass flux from ocean', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('seaIceHeatFlux', 'W m^-2', &
+                                   'Sea-ice heat flux into ocean', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('icebergHeatFlux', 'W m^-2', &
+                                   'Iceberg heat flux into ocean', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('seaIceFreshWaterFlux', 'kg m^-2 s^-1', &
+                                   'Sea-ice fresh water mass flux into ocean', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('seaIceSalinityFlux', 'kg m^-2 s^-1', &
+                                   'Sea-ice salt flux into ocean', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('riverRunoffFlux', 'kg m^-2 s^-1', &
+                                   'River runoff mass flux into ocean', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('iceRunoffFlux', 'kg m^-2 s^-1', &
+                                   'Land-ice runoff mass flux into ocean', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('snowFluxLf', 'W m^-2', &
+                                   'snowFlux times latent heat of fusion', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('iceRunoffFluxLf', 'W m^-2', &
+                                   'iceRunoffFlux times latent heat of fusion', ierr, cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('riverRunoffFluxTemperature', &
+                                   'kg degC m^-2 s^-1', &
+                                   'riverRunoffFlux times top-layer temperature', ierr, &
+                                   cell_methods='time: mean')
+                              call remap_outfile_5D%register_var('mask_2d', '1', &
+                                   'Surface ocean wet mask (1=ocean, 0=land/invalid)', ierr, &
+                                   is_static=.true.)
+
+                              call mpas_set_timeInterval(avg_output_interval_5D, &
+                                   timeString=trim(config_stream_output_interval_5D), &
+                                   ierr=ierr)
+                              avg_last_output_time_5D = mpas_get_clock_time( &
+                                   domain % clock, MPAS_NOW, ierr)
+                              if (.not. allocated(remap_accum_5D)) then
+                                 allocate(remap_accum_5D(remap_nb_local, N_AVG_FIELDS))
+                              end if
+                              if (.not. allocated(remap_accum_count_5D)) then
+                                 allocate(remap_accum_count_5D(remap_nb_local, N_AVG_FIELDS))
+                              end if
+                              remap_accum_5D = 0.0_r8
+                              remap_accum_count_5D = 0.0_r8
+                              nAccum_5D = 0
+                              time_avg_5D_enabled = .true.
+                              call mpas_log_write( &
+                                   'fmeDerivedFields: 5-day average companion ' // &
+                                   'stream enabled (interval=' // &
+                                   trim(config_stream_output_interval_5D) // ')')
+                           end if
+                        end if
+
                         call ocn_fme_derived_fields_read_restart(domain, ierr)
                      end if
                   end if
@@ -299,6 +397,24 @@ contains
          end if
       end if
 
+      if (time_avg_5D_enabled) then
+         call ocn_fme_horiz_remap_read_accum('fmeDerivedFields5D', &
+              remap_accum_5D, N_AVG_FIELDS, nAccum_5D, ts_str, &
+              count_arr=remap_accum_count_5D, success=ok)
+         if (ok .and. len_trim(ts_str) > 0) then
+            call mpas_set_time(avg_last_output_time_5D, &
+                 dateTimeString=trim(ts_str), ierr=ierr_local)
+            if (ierr_local /= 0) then
+               call mpas_log_write('fmeDerivedFields: failed to parse ' // &
+                    'persisted avg_last_output_time_5D="' // trim(ts_str) // &
+                    '"; falling back to MPAS_NOW baseline.', &
+                    messageType=MPAS_LOG_WARN)
+               avg_last_output_time_5D = mpas_get_clock_time( &
+                    domain % clock, MPAS_NOW, ierr_local)
+            end if
+         end if
+      end if
+
    end subroutine ocn_fme_derived_fields_read_restart!}}}
 
 !***********************************************************************
@@ -321,6 +437,14 @@ contains
       call ocn_fme_horiz_remap_write_accum('fmeDerivedFields', remap_accum, &
            N_AVG_FIELDS, nAccum, trim(ts_str), &
            count_arr=remap_accum_count, err=err)
+
+      if (time_avg_5D_enabled .and. allocated(remap_accum_5D)) then
+         call mpas_get_time(avg_last_output_time_5D, &
+              dateTimeString=ts_str, ierr=ierr_local)
+         call ocn_fme_horiz_remap_write_accum('fmeDerivedFields5D', &
+              remap_accum_5D, N_AVG_FIELDS, nAccum_5D, trim(ts_str), &
+              count_arr=remap_accum_count_5D, err=err)
+      end if
 
    end subroutine ocn_fme_derived_fields_write_restart!}}}
 
@@ -536,6 +660,7 @@ contains
                call remap_1field(iceRunoffFluxLf, 23)
                call remap_1field(riverRunoffFluxTemperature, 24)
                nAccum = nAccum + 1
+               if (time_avg_5D_enabled) nAccum_5D = nAccum_5D + 1
 
                ! Check if output interval elapsed
                currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
@@ -576,6 +701,47 @@ contains
                   nAccum = 0
                   ! Advance by exact interval to avoid drift.
                   avg_last_output_time = avg_last_output_time + avg_output_interval
+               end if
+
+               ! 5-day-average companion: parallel to the 1D path above,
+               ! shares per-step samples but uses its own accumulator,
+               ! last-output-time, output_interval, and output file.
+               if (time_avg_5D_enabled .and. &
+                    currTime - avg_last_output_time_5D >= avg_output_interval_5D) then
+                  call remap_outfile_5D%check_rotate(domain, ierr)
+                  if (remap_outfile_5D%file_is_open) then
+                     call remap_outfile_5D%write_time(avg_last_output_time_5D, &
+                          currTime, ierr)
+                     call write_static_masks_5D_if_needed()
+                     call write_avg_field_5D('sst', 1)
+                     call write_avg_field_5D('sss', 2)
+                     call write_avg_field_5D('surfaceHeatFluxTotal', 3)
+                     call write_avg_field_5D('ssh', 4)
+                     call write_avg_field_5D('shortWaveHeatFlux', 5)
+                     call write_avg_field_5D('longWaveHeatFluxDown', 6)
+                     call write_avg_field_5D('latentHeatFlux', 7)
+                     call write_avg_field_5D('sensibleHeatFlux', 8)
+                     call write_avg_field_5D('windStressZonal', 9)
+                     call write_avg_field_5D('windStressMeridional', 10)
+                     call write_avg_field_5D('longWaveHeatFluxUp', 11)
+                     ! idx=12 unused (matches primary stream)
+                     call write_avg_field_5D('rainFlux', 13)
+                     call write_avg_field_5D('snowFlux', 14)
+                     call write_avg_field_5D('evaporationFlux', 15)
+                     call write_avg_field_5D('seaIceHeatFlux', 16)
+                     call write_avg_field_5D('icebergHeatFlux', 17)
+                     call write_avg_field_5D('seaIceFreshWaterFlux', 18)
+                     call write_avg_field_5D('seaIceSalinityFlux', 19)
+                     call write_avg_field_5D('riverRunoffFlux', 20)
+                     call write_avg_field_5D('iceRunoffFlux', 21)
+                     call write_avg_field_5D('snowFluxLf', 22)
+                     call write_avg_field_5D('iceRunoffFluxLf', 23)
+                     call write_avg_field_5D('riverRunoffFluxTemperature', 24)
+                  end if
+                  remap_accum_5D = 0.0_r8
+                  remap_accum_count_5D = 0.0_r8
+                  nAccum_5D = 0
+                  avg_last_output_time_5D = avg_last_output_time_5D + avg_output_interval_5D
                end if
             else
                ! Instantaneous: remap and write each field one at a time so
@@ -660,6 +826,14 @@ contains
                   remap_accum_count(ib, idx) = remap_accum_count(ib, idx) + 1.0_r8
                end if
             end do
+            if (time_avg_5D_enabled) then
+               do ib = 1, remap_nb_local
+                  if (abs(fld_remap(ib, 1)) < fill_thresh) then
+                     remap_accum_5D(ib, idx)       = remap_accum_5D(ib, idx)       + fld_remap(ib, 1)
+                     remap_accum_count_5D(ib, idx) = remap_accum_count_5D(ib, idx) + 1.0_r8
+                  end if
+               end do
+            end if
          end if
       end subroutine remap_1field
 
@@ -698,6 +872,20 @@ contains
          call remap_outfile%write_var(varname, fld_remap, 1, ierr)
       end subroutine write_avg_field
 
+      subroutine write_avg_field_5D(varname, idx)
+         character(len=*), intent(in) :: varname
+         integer, intent(in) :: idx
+         integer :: ib
+         do ib = 1, remap_nb_local
+            if (remap_accum_count_5D(ib, idx) > 0.0_r8) then
+               fld_remap(ib, 1) = remap_accum_5D(ib, idx) / remap_accum_count_5D(ib, idx)
+            else
+               fld_remap(ib, 1) = real(SHR_FILL_VALUE, r8)
+            end if
+         end do
+         call remap_outfile_5D%write_var(varname, fld_remap, 1, ierr)
+      end subroutine write_avg_field_5D
+
       subroutine compute_mask_2d_remap()
          ! Build the static surface ocean mask in remap space by remapping
          ! a constant-1 ocean field through apply_masked. Land cells
@@ -734,6 +922,13 @@ contains
          if (.not. allocated(mask_2d_remap)) return
          call remap_outfile%write_var('mask_2d', mask_2d_remap, 1, ierr)
       end subroutine write_static_masks_if_needed
+
+      subroutine write_static_masks_5D_if_needed()
+         if (remap_outfile_5D%existing_file_reopened) return
+         if (remap_outfile_5D%time_record /= 1) return
+         if (.not. allocated(mask_2d_remap)) return
+         call remap_outfile_5D%write_var('mask_2d', mask_2d_remap, 1, ierr)
+      end subroutine write_static_masks_5D_if_needed
 
       subroutine inst_remap_and_write(native_fld, varname, do_mask)
          ! Remap one field into fld_remap, then write under varname.
@@ -783,7 +978,10 @@ contains
       err = 0
 
       call remap_outfile%close_file(ierr)
+      if (time_avg_5D_enabled) call remap_outfile_5D%close_file(ierr)
       if (allocated(mask_2d_remap)) deallocate(mask_2d_remap)
+      if (allocated(remap_accum_5D)) deallocate(remap_accum_5D)
+      if (allocated(remap_accum_count_5D)) deallocate(remap_accum_count_5D)
 
    end subroutine ocn_finalize_fme_derived_fields!}}}
 

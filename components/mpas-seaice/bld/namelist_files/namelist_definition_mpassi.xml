@@ -4010,6 +4010,18 @@ Valid values: Any valid MPAS time interval string
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_AM_fmeSeaiceDerivedFields_stream_output_interval_5D" type="char*1024"
+	category="AM_fmeSeaiceDerivedFields" group="AM_fmeSeaiceDerivedFields">
+Optional output interval for an additional 5-day-average companion stream
+(fmeSeaiceDerivedFieldsOutput5D). Same fields as the primary stream,
+accumulated from the same per-step samples but written at this longer
+cadence to a separate file. Set to 'none' or empty to disable. Requires
+time_averaging=true; 5D path is averaged-only.
+
+Valid values: Any valid MPAS time interval string or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_AM_fmeSeaiceDerivedFields_horiz_remap_file" type="char*1024"
 	category="AM_fmeSeaiceDerivedFields" group="AM_fmeSeaiceDerivedFields">
 Path to ESMF/TempestRemap weight file for horizontal remapping of sea ice derived fields to lat-lon grid.
