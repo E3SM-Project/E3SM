@@ -250,7 +250,7 @@ fetch_code() {
     echo $'\n----- Starting fetch_code -----\n'
     # recall that CODE_ROOT is set to the root of the cloned repository, not the parent directory of the clone
     local path=${CODE_ROOT}
-    local repo=e3sm
+    local repo=E3SM
 
     echo "Cloning $repo repository branch $BRANCH into $path"
     if [ -d "${path}" ]; then

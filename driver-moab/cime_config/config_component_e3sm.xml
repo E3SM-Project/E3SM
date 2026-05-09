@@ -662,10 +662,11 @@
 
   <entry id="IAC_NCPL">
     <type>integer</type>
-     <values>
-       <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM">1</value>
-       <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM">1</value>
-     </values>
+    <default_value>$ATM_NCPL</default_value>
+    <values>
+      <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM">1</value>
+      <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM">1</value>
+    </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
     <desc>Number of iac coupling intervals per NCPL_BASE_PERIOD.
