@@ -356,6 +356,15 @@ These are hard-won lessons. Read before modifying FME code.
     (`eam.h0.0001-01.nc`) but the MPAS files don't, the buildnml
     edits are missing.
 
+    **Live-run gotcha (2026-05-10)**: PIO buffers writes to the
+    UNLIMITED time dim. If you `xarray.open_dataset` the *current*
+    month's file mid-leg, you'll see `time_dim=0` (and a header-only
+    file size, ~3-60 KB depending on stream) even though the AM has
+    been writing records for days. The counter doesn't materialize
+    on disk until file close — which happens at month rotation,
+    restart-write, or run end. Don't panic; the previous-month file
+    is already closed and authoritative for what's been written.
+
 29. **MPAS FME restart now works correctly via append-mode reopen +
     accumulator sidecar (FIXED 2026-05-01; ERS_Ld4 PASSes
     COMPARE_base_rest BFB-clean for all FME files).** The original
@@ -1215,28 +1224,31 @@ submit (one resolved 2026-05-05; two remain):
 
 ### Near-term
 - **Monthly-boundary smoke test for the 5D companion stream
-  (PENDING 2026-05-09).** Submit
-  `RUN_LAYOUT="L_20x5_nyears" WALLTIME="12:00:00" CASE_TAG="test5"
-  ./run_e3sm.fme.sh` (20-day legs across a Jan→Feb boundary at the
-  default `0001-01-01` start). The 5D windows close on days
-  5/10/15/20 — the day-15 window straddles Jan 31 → Feb 5 and the
-  day-20 window is fully inside Feb. Validates that the 5D
-  `check_rotate` correctly flips the file from `*5D.0001-01.nc` to
-  `*5D.0001-02.nc` at the right window. **Pass criteria**:
-    - `*5D.0001-01.nc` has the day-5, day-10 records (and possibly
-      day-15 if the window-closure timestamp falls on Jan 31).
-    - `*5D.0001-02.nc` has the day-15 (if Feb-side) and day-20
-      records, with `time_bnds[0] = 25` (Jan 26) and `[15, 20]`
-      respectively (i.e., the 5D window-closing timestamp determines
-      file landing, not the window's start).
-    - `verify_production.py --share-dir $PSCRATCH/share
-      --label v3.LR.piControl.aigo.test5` runs cleanly: 5D-vs-mean(1D)
-      cross-check is sub-percent on all three streams, and the new
-      entry shows up in `$PSCRATCH/share/index.html` (additive insert,
-      no clobber of curated entries).
-  The 1D file rotation already works for production (verified
-  ERS_Ld4, ERS_Ld10), so this is specifically about exercising the
-  5D file-rotation path which only triggers on multi-week runs.
+  (RESOLVED 2026-05-10).** Verified empirically on
+  `v3.LR.piControl.aigo.ppl_test6` `PM_2x5_nyears` running from
+  `0401-01-01`. All seven streams (EAM h0 + 3 MPAS 1D + 3 MPAS 5D)
+  rotated cleanly across both the Jan→Feb and Feb→Mar boundaries.
+  Observed counts and the rule that drives them — month-N's file
+  holds records whose *closing timestamp* falls in month N, so the
+  window straddling the month boundary lands in month N+1:
+    - **EAM h0 (6h inst): Jan=123, Feb=112.** Jan loses the t=0
+      initial state (first sample is at Jan 1 06:00). Feb is the
+      full 28×4=112 because the Feb 1 00:00 sample has
+      `date=4010201` → Feb file.
+    - **MPAS 1D: Jan=30, Feb=28.** The `[day 30, day 31]` window
+      (Jan 31 → Feb 1) end-stamps Feb 1 → lands in Feb. The
+      `[day 58, day 59]` window (Feb 28 → Mar 1) end-stamps Mar 1
+      → lands in Mar. So month-N's daily file holds windows
+      *closing* in month N, which is one window short of "all
+      windows whose data is in month N" (the last day's window
+      is in month N+1).
+    - **MPAS 5D: Jan=6, Feb=5.** Boundary-straddling first-Feb
+      record: `time=35`, `time_bnds=[30, 35]`
+      (Jan 31 00:00 → Feb 5 00:00), `date=4010205`.
+  Continuity Δ between Jan-last and Feb-first time stamps: 0.25
+  (EAM 6h), 1.0 (1D), 5.0 (5D) — exact, no gaps, no overlaps.
+  `verify_production.py` cross-check deferred until production
+  submit.
 - Add CI test variant (SMS_Ld2, ne4pg2_oQU480 for fast builds)
 - Add SMS_Ld40 monthly-rotation smoke test (verify Jan->Feb file
   rotation, record counts per month match calendar 124/112/124/...,
