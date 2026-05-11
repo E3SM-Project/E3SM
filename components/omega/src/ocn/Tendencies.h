@@ -85,7 +85,7 @@ class Tendencies {
                                   const Array3DReal &TracerArray,
                                   int ThickTimeLevel, int VelTimeLevel,
                                   int TracerTimeLevel, TimeInstant Time,
-                                  TimeInterval ProjCoeff);
+                                  TimeInterval ProjDt);
    void computeTracerTendencies(const OceanState *State,
                                 const AuxiliaryState *AuxState,
                                 const Array3DReal &TracerArray,
@@ -95,7 +95,7 @@ class Tendencies {
                              const AuxiliaryState *AuxState,
                              const Array3DReal &TracerArray, int ThickTimeLevel,
                              int VelTimeLevel, int TracerTimeLevel,
-                             TimeInstant Time, TimeInterval ProjCoeff);
+                             TimeInstant Time, TimeInterval ProjDt);
    void computeThicknessTendenciesOnly(const OceanState *State,
                                        const AuxiliaryState *AuxState,
                                        int ThickTimeLevel, int VelTimeLevel,

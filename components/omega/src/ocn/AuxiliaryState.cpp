@@ -109,7 +109,7 @@ void AuxiliaryState::computeMomVertAux(const OceanState *State,
 void AuxiliaryState::computeMomAux(const OceanState *State,
                                    const Array3DReal &TracerArray,
                                    int ThickTimeLevel, int VelTimeLevel,
-                                   const TimeInterval ProjCoeff) const {
+                                   const TimeInterval ProjDt) const {
    Array2DReal LayerThickCell = State->getLayerThickness(ThickTimeLevel);
    Array2DReal NormalVelEdge  = State->getNormalVelocity(VelTimeLevel);
 
@@ -132,8 +132,8 @@ void AuxiliaryState::computeMomAux(const OceanState *State,
 
    R8 TimeStepSeconds;
    TimeStep.get(TimeStepSeconds, TimeUnits::Seconds);
-   R8 ProjDt;
-   ProjCoeff.get(ProjDt, TimeUnits::Seconds);
+   R8 ProjDtSeconds;
+   ProjDt.get(ProjDtSeconds, TimeUnits::Seconds);
 
    Pacer::start("AuxState:computeMomAux", 1);
 
@@ -262,7 +262,7 @@ void AuxiliaryState::computeMomAux(const OceanState *State,
 
    const auto &FluxLayerThickEdge = LayerThicknessAux.FluxLayerThickEdge;
    VAdv->computeVerticalVelocity(NormalVelEdge, FluxLayerThickEdge,
-                                 LayerThickCell, ProjDt);
+                                 LayerThickCell, ProjDtSeconds);
 
    Pacer::stop("AuxState:computeVerticalVelocity", 2);
 
@@ -273,7 +273,7 @@ void AuxiliaryState::computeMomAux(const OceanState *State,
 void AuxiliaryState::computeAll(const OceanState *State,
                                 const Array3DReal &TracerArray,
                                 int ThickTimeLevel, int VelTimeLevel,
-                                const TimeInterval ProjCoeff) const {
+                                const TimeInterval ProjDt) const {
    Array2DReal LayerThickCell = State->getLayerThickness(ThickTimeLevel);
    Array2DReal NormalVelEdge  = State->getNormalVelocity(VelTimeLevel);
 
@@ -291,7 +291,7 @@ void AuxiliaryState::computeAll(const OceanState *State,
 
    Pacer::start("AuxState:computeAll", 1);
 
-   computeMomAux(State, TracerArray, ThickTimeLevel, VelTimeLevel, ProjCoeff);
+   computeMomAux(State, TracerArray, ThickTimeLevel, VelTimeLevel, ProjDt);
 
    Pacer::start("AuxState:cellAuxState3", 2);
    parallelForOuter(
@@ -333,8 +333,8 @@ void AuxiliaryState::computeAll(const OceanState *State,
 
 void AuxiliaryState::computeAll(const OceanState *State,
                                 const Array3DReal &TracerArray, int TimeLevel,
-                                const TimeInterval ProjCoeff) const {
-   computeAll(State, TracerArray, TimeLevel, TimeLevel, ProjCoeff);
+                                const TimeInterval ProjDt) const {
+   computeAll(State, TracerArray, TimeLevel, TimeLevel, ProjDt);
 }
 
 // Create a non-default auxiliary state
