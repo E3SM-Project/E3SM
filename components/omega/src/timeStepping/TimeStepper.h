@@ -339,7 +339,7 @@ class TimeStepper {
        const TimeInterval &InTimeStep, ///< [in] time step
        const TimeInstant &InStartTime, ///< [in] start time for time stepping
        ///< [in] stop time for time stepping, missing in coupled mode
-       std::optional<TimeInstant> InStopTime = std::nullopt);
+       std::optional<TimeInstant> InStopTime);
 
    // Disable copy constructor
    TimeStepper(const TimeStepper &) = delete;
