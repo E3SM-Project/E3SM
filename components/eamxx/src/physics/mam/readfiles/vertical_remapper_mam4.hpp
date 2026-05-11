@@ -31,6 +31,8 @@ public:
 
   ~VerticalRemapperMAM4 () = default;
 
+  // This remapper is a bit tricky, as it stores an ILEV field as a LEV one,
+  // since it needs to use a special type of interpolation
   void set_target_pressure (const Field& p);
   void set_source_pressure (const std::string& file_name);
 

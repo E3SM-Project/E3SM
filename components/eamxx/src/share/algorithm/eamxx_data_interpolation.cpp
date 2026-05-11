@@ -639,13 +639,13 @@ create_vert_remapper (const VertRemapData& data)
       AtmosphereInput p_data_reader (m_time_database.files.front(),m_grid_after_hremap,fields,true);
       p_data_reader.read_variables();
     }
-    vremap->set_source_pressure (m_helper_pressure_fields["p_data"],VerticalRemapper::Both);
+    vremap->set_source_pressure (m_helper_pressure_fields["p_data"]);
 
     if (data.pint.is_allocated()) {
-      vremap->set_target_pressure(data.pint,VerticalRemapper::Interfaces);
+      vremap->set_target_pressure(data.pint);
     }
     if (data.pmid.is_allocated()) {
-      vremap->set_target_pressure(data.pmid,VerticalRemapper::Midpoints);
+      vremap->set_target_pressure(data.pmid);
     }
   }
 }
