@@ -7,6 +7,7 @@ add_library(eamxx_field
   field.cpp
   field_group.cpp
   field_sync.cpp
+  field_reader.cpp
   eti/field_get_strided_view_double_device.cpp
   eti/field_get_strided_view_float_device.cpp
   eti/field_get_strided_view_int_device.cpp
@@ -66,7 +67,8 @@ endif()
 
 target_link_libraries (eamxx_field PUBLIC
   eamxx_core
-  eamxx_utils)
+  eamxx_utils
+  eamxx_scorpio_interface)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
