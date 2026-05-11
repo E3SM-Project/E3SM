@@ -1,5 +1,6 @@
 #include "vertical_remapper_elevated_emissions_mam4.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
+#include <ekat_team_policy_utils.hpp>
 #include <mam4xx/mam4.hpp>
 
 namespace scream

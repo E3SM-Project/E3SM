@@ -81,6 +81,9 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
         mam4::vertical_interpolation::vert_interp(
             team, levsiz, nlevs_tgt, p_src_c, pmid_at_icol, datain_at_icol,
             dataout_at_icol, unit_factor_pin);
-          });}
+          });
+  }
+
+}
 
 } // namespace scream
