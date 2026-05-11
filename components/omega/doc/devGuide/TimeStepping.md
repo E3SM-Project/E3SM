@@ -66,7 +66,7 @@ TimeStepper* DefTimeStepper = TimeStepper::getDefault();
 
 In standalone simulations, `TimeStepper::init1();` will read the StartTime from
 the configuration file. For coupled simulations the StartTime is provided by
-coupler, overriding the value defined in the configuration file.
+the coupler, overriding the value defined in the configuration file.
 In this case, the first phase of time stepper initialization would look like:
 ```c++
 // coupled simulations have a start time but no stop time

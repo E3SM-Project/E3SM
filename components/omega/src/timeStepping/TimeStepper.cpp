@@ -317,7 +317,7 @@ void TimeStepper::init1() {
              getPrescribeVelocityTypeFromStr(VelocityMode);
       }
    }
-   
+
    TimeInitParams TimeParams{StartTime, StopTime};
 
    init1(TimeParams);
