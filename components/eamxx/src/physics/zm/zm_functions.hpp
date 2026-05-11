@@ -44,8 +44,8 @@ struct Functions {
   template <typename S> using uview_2d          = typename ekat::template Unmanaged<view_2d<S> >;
   template <typename S> using uview_2dl         = typename ekat::template Unmanaged<view_2dl<S> >;
   template <typename S> using uview_3d          = typename ekat::template Unmanaged<view_3d<S> >;
-  template <typename S> using view_2dh          = typename view_2dl<S>::HostMirror;
-  template <typename S> using view_1dh          = typename view_1d<S>::HostMirror;
+  template <typename S> using view_2dh          = typename view_2dl<S>::host_mirror_type;
+  template <typename S> using view_1dh          = typename view_1d<S>::host_mirror_type;
 
   using MemberType = typename KT::MemberType;
 

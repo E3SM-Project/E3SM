@@ -238,10 +238,10 @@ void MAMOptics::initialize_impl(const RunType run_type) {
       auto refindex_fields = mam_coupling::create_refindex_fields (surname_aero,grid_);
 
       constexpr int maxd_aspectype = mam4::ndrop::maxd_aspectype;
-      auto specrefndxsw_host       = mam_coupling::complex_view_2d::HostMirror(
+      auto specrefndxsw_host       = mam_coupling::complex_view_2d::host_mirror_type(
                 "specrefndxsw_host", nswbands_, maxd_aspectype);
 
-      auto specrefndxlw_host = mam_coupling::complex_view_2d::HostMirror(
+      auto specrefndxlw_host = mam_coupling::complex_view_2d::host_mirror_type(
           "specrefndxlw_host", nlwbands_, maxd_aspectype);
 
       // read physical properties data for aerosol species
@@ -291,7 +291,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   // rrtmgp index
   std::vector<int> temporal = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 0};
   auto get_idx_rrtmgp_from_rrtmg_swbands_host =
-      mam_coupling::view_int_1d::HostMirror(temporal.data(), nswbands_);
+      mam_coupling::view_int_1d::host_mirror_type(temporal.data(), nswbands_);
   get_idx_rrtmgp_from_rrtmg_swbands_ =
       mam_coupling::view_int_1d("rrtmg_to_rrtmgp_swbands", nswbands_);
   Kokkos::deep_copy(get_idx_rrtmgp_from_rrtmg_swbands_,

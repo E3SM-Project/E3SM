@@ -35,7 +35,7 @@ enum MemoryUnits {
 };
 
 template<typename VT>
-typename VT::HostMirror
+typename VT::host_mirror_type
 cmvdc (const VT& v)
 {
   auto vh = Kokkos::create_mirror_view(v);
