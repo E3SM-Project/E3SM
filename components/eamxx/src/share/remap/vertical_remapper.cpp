@@ -4,6 +4,7 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/field/field_tag.hpp"
 #include "share/field/field_identifier.hpp"
+#include "share/field/field_reader.hpp"
 #include "share/util/eamxx_timing.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
@@ -25,7 +26,6 @@ create_tgt_grid (const grid_ptr_type& src_grid,
                  const std::string& map_file)
 {
   // Create tgt_grid as a clone of src_grid with different nlevs
-  scorpio::register_file(map_file,scorpio::FileMode::Read);
   auto nlevs_tgt = scorpio::get_dimlen(map_file,"lev");
 
   auto tgt_grid = src_grid->clone(src_grid->name()+"_vremap_tgt",true);
@@ -34,12 +34,10 @@ create_tgt_grid (const grid_ptr_type& src_grid,
   // Gather the pressure level data for vertical remapping
   using namespace ShortFieldTagsNames;
   auto layout = tgt_grid->get_vertical_layout(LEVP);
+
   // Add tgt pressure levels to the tgt grid
   auto p_tgt = tgt_grid->create_geometry_data<Real>("p_levs",layout,ekat::units::Pa,SCREAM_PACK_SIZE);
-  scorpio::read_var(map_file,"p_levs",p_tgt.get_view<Real*,Host>().data());
-  p_tgt.sync_to_dev();
-
-  scorpio::release_file(map_file);
+  read_fields(map_file,{p_tgt});
 
   return tgt_grid;
 }
