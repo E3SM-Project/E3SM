@@ -81,8 +81,8 @@ module elm_cpl_indices
   integer, public ::index_l2x_Sl_hr(0:iac_npft_max)  = 0
   integer, public ::index_l2x_Sl_npp(0:iac_npft_max)  = 0
   integer, public ::index_l2x_Sl_pftwgt(0:iac_npft_max)  = 0
-  integer, public ::index_l2x_Sl_HDD_accum(0:iac_npft_max) = 0  ! cumulative heating degree days per PFT
-  integer, public ::index_l2x_Sl_CDD_accum(0:iac_npft_max) = 0  ! cumulative cooling degree days per PFT
+  integer, public ::index_l2x_Sl_hdd = 0  ! lnd->iac heating degree days
+  integer, public ::index_l2x_Sl_cdd = 0  ! lnd->iac cooling degree days
   integer, public ::index_l2x_Sl_forc_hdm  = 0  ! human population density (per-gridcell)
 
   ! drv -> lnd (required)
@@ -381,8 +381,6 @@ contains
          index_l2x_Sl_hr(p) = mct_avect_indexra(l2x,trim('Sl_hr_pft' // cpft))
          index_l2x_Sl_npp(p) = mct_avect_indexra(l2x,trim('Sl_npp_pft' // cpft))
          index_l2x_Sl_pftwgt(p) = mct_avect_indexra(l2x,trim('Sl_pftwgt_pft' // cpft))
-         index_l2x_Sl_HDD_accum(p) = mct_avect_indexra(l2x,trim('Sl_HDD_accum_pft' // cpft))
-         index_l2x_Sl_CDD_accum(p) = mct_avect_indexra(l2x,trim('Sl_CDD_accum_pft' // cpft))
        
          ! iac pfts to land
          name = 'Sz_pct_pft' // cpft
@@ -396,9 +394,10 @@ contains
             index_x2l_Sz_harvest_frac(p) = mct_avect_indexra(x2l,trim(name))
          end if
       enddo
-
       ! Scalar per-gridcell field
       index_l2x_Sl_forc_hdm = mct_avect_indexra(l2x, 'Sl_forc_hdm')
+      index_l2x_Sl_hdd = mct_avect_indexra(l2x,'Sl_hdd')
+      index_l2x_Sl_cdd = mct_avect_indexra(l2x,'Sl_cdd')
 
     endif
 
