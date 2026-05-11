@@ -6,12 +6,14 @@ set (EAMXX_AD_TEST_CPP ${CMAKE_CURRENT_LIST_DIR}/eamxx_ad_test.cpp)
 # These functions call the equivalent ones in ScreamUtils with some hardcoded
 # libs/sources, like IO, diags, and control
 function(CreateADUnitTestExec exec_name)
-  CreateUnitTestExec("${exec_name}" "${EAMXX_AD_TEST_CPP}"
+  CreateUnitTestExec("${exec_name}"
+    SOURCES ${EAMXX_AD_TEST_CPP}
     LIBS scream_control eamxx_io eamxx_diagnostics ${ARGN})
 endfunction(CreateADUnitTestExec)
 
 function(CreateADUnitTest test_name)
-  CreateUnitTest("${test_name}" "${EAMXX_AD_TEST_CPP}"
+  CreateUnitTest("${test_name}"
+    SOURCES ${EAMXX_AD_TEST_CPP}
     LABELS driver LIBS scream_control eamxx_io eamxx_diagnostics ${ARGN})
 endfunction(CreateADUnitTest)
 

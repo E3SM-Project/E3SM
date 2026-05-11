@@ -56,7 +56,8 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
   CreateBaselineTest(${TEST_BASE_NAME} ${TEST_RANK_END} ${OUT_FILE} ${FIXTURES_BASE_NAME}) 
 
   # Grab all bfb hash lines into a text file (only np1_omp1 test)
-  CreateUnitTest (${TEST_BASE_NAME}_bfb_hash "p3_bfb_hash.cpp"
+  CreateUnitTest(${TEST_BASE_NAME}_bfb_hash
+    SOURCES p3_bfb_hash.cpp
     FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np1_omp1
     FIXTURES_SETUP ${TEST_BASE_NAME}_gen_bfb_hash
     EXE_ARGS "--args --log-file atm.log.np1 --output-file p3_bfb_hash.txt"
