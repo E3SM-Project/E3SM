@@ -356,7 +356,10 @@ contains
     logical  :: valid_moab_context
     integer  :: ierr, nfields, lsize_src, lsize_tgt, arrsize_tgt, j, arrsize_src
     character(len=CXX) :: fldlist_moab
+    character(len=CXX) :: fldlist_data    ! data fields only (no norm8wt) for nlmap CAAS path
+    character(len=CXX) :: norm8wt_only    ! "norm8wt" alone, for separate low-order pass
     character(len=CXX) :: tagname
+    character(len=CXX) :: lo_weights_identifier
     integer    :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
     type(mct_list) :: temp_list
     integer, dimension(:), allocatable  :: globalIds
@@ -452,6 +455,15 @@ contains
           fldlist_moab = ''
           if ( nfields /= 0 ) fldlist_moab = trim(mct_aVect_exportRList2c(av_s))
        endif
+
+       ! Snapshot the data-only field list (no norm8wt). Used in the nlmap
+       ! path so the dual-map CAAS only sees real data fields. norm8wt has to
+       ! be mapped LOW-order separately (see Step 5 below) — putting it in the
+       ! CAAS list mishandles it: the high-order map of constant 1.0 is not
+       ! row-sum-1, so the CAAS-clipped result no longer matches MCT's
+       ! mct_sMat_avMult-mapped target norm8wt that the post-divide expects.
+       fldlist_data = trim(fldlist_moab)//C_NULL_CHAR
+       norm8wt_only = "norm8wt"//C_NULL_CHAR
 
        if (mbnorm) then
           fldlist_moab = trim(fldlist_moab)//":norm8wt"//C_NULL_CHAR
@@ -683,18 +695,52 @@ contains
           !***   filter_type: 0=no filter, other values for CAAS projection
           !***   weight_identifier: Name of the weight matrix (e.g., "scalar", "flux")
           !***   fldlist_moab: Input and output field names (can be different)
-          filter_type = 0 ! no filter
+          lo_weights_identifier = ''//C_NULL_CHAR
 
           if(.not.use_nonlinear_map) then
-             ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%weight_identifier, fldlist_moab, fldlist_moab)
+             filter_type = 0 ! CAAS_NONE: plain low-order projection
+             ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%weight_identifier, &
+               fldlist_moab, fldlist_moab, lo_weights_identifier)
+             if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in applying weights '
+                call shr_sys_abort(subname//' ERROR in applying weights')
+             endif
           else
-             ! no difference until high order map is working
-             ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%weight_identifier, fldlist_moab, fldlist_moab)
-             !ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%howeight_identifier, fldlist_moab, fldlist_moab)
-          endif
-          if (ierr .ne. 0) then
-             write(logunit,*) subname,' error in applying weights '
-             call shr_sys_abort(subname//' ERROR in applying weights')
+             ! Dual-map nonlinear remapping path. To match MCT's
+             ! seq_nlmap_avNormArr exactly we split the work in two:
+             !   (a) DATA fields go through the dual-map CAAS so they get the
+             !       high-order interpolation with low-order CAAS bounds.
+             !       filter_type must be != CAAS_NONE for ApplyWeightsWithDualMap
+             !       to actually run (otherwise iMOAB falls through to plain
+             !       high-order without bounds — produces OOB values that
+             !       crash icepack).
+             !   (b) norm8wt goes through a SEPARATE low-order projection so
+             !       the target norm8wt = row-sum of the low-order map
+             !       (matching MCT's mct_sMat_avMult on the appended ffld
+             !       column). The post-norm divide below then divides data by
+             !       this low-order row-sum, which is what MCT does and what
+             !       restores correct normalization at partial-coverage cells.
+             filter_type = 2 ! CAAS_LOCAL
+             ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%howeight_identifier, &
+               fldlist_data, fldlist_data, mapper%weight_identifier)
+             if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in applying weights (data fields, dual-map CAAS)'
+                call shr_sys_abort(subname//' ERROR in applying weights (data fields, dual-map CAAS)')
+             endif
+             if (mbnorm) then
+                ! Map norm8wt low-order only — gives target norm8wt = row sum
+                ! of the low-order map (≈ 1 for full coverage, < 1 for partial).
+                ! lo_weights_identifier is empty so iMOAB takes the plain
+                ! ApplyWeights branch (no dual-map CAAS) regardless of
+                ! filter_type.
+                filter_type = 0
+                ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%weight_identifier, &
+                  norm8wt_only, norm8wt_only, lo_weights_identifier)
+                if (ierr .ne. 0) then
+                   write(logunit,*) subname,' error in applying weights (norm8wt, low-order)'
+                   call shr_sys_abort(subname//' ERROR in applying weights (norm8wt, low-order)')
+                endif
+             endif
           endif
 
           !*** MOAB: Post-normalization (target side)
