@@ -840,7 +840,7 @@ contains
        ! changes should be made in map_lnd2rof_irrig.
        call seq_map_map(mapper_Fl2r, l2racc_lx(eli), l2r_rx(eri), &
             fldlist=lnd2rof_normal_fluxes, norm=.true., &
-            avwts_s=fractions_lx(efi), avwtsfld_s='lfrin')
+            avwts_s=fractions_lx(efi), avwtsfld_s='lfrin', string=timer//':preprFl2r')
 
        if (have_irrig_field) then
           r2x_rx => component_get_c2x_cx(rof(eri))
@@ -880,8 +880,10 @@ contains
     do eri = 1,num_inst_rof
        eai = mod((eri-1),num_inst_atm) + 1
        r2x_rx => component_get_c2x_cx(rof(eri))
-       call seq_map_map(mapper_Sa2r, a2racc_ax(eai), a2r_rx(eri), fldlist=seq_flds_a2x_states_to_rof, norm=.true.)
-       call seq_map_map(mapper_Fa2r, a2racc_ax(eai), a2r_rx(eri), fldlist=seq_flds_a2x_fluxes_to_rof, norm=.true.)
+       call seq_map_map(mapper_Sa2r, a2racc_ax(eai), a2r_rx(eri), fldlist=seq_flds_a2x_states_to_rof,&
+          norm=.true.,string=timer//':preprSa2r')
+       call seq_map_map(mapper_Fa2r, a2racc_ax(eai), a2r_rx(eri), fldlist=seq_flds_a2x_fluxes_to_rof, &
+           norm=.true.,string=timer//':preprFa2r')
     end do
     call t_drvstopf  (trim(timer))
 
@@ -906,7 +908,8 @@ contains
     do eri = 1,num_inst_rof
        eoi = mod((eri-1),num_inst_ocn) + 1
        r2x_rx => component_get_c2x_cx(rof(eri))
-       call seq_map_map(mapper_So2r, o2racc_ox(eoi), o2r_rx(eri), fldlist=seq_flds_o2x_states_to_rof, norm=.true.)
+       call seq_map_map(mapper_So2r, o2racc_ox(eoi), o2r_rx(eri), fldlist=seq_flds_o2x_states_to_rof, &
+           norm=.true.,string=timer//':preprSo2r')
     end do
     call t_drvstopf  (trim(timer))
 

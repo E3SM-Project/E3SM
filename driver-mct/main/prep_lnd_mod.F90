@@ -520,7 +520,7 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eai = 1,num_inst_atm
        a2x_ax => component_get_c2x_cx(atm(eai))
-       call seq_map_map(mapper_Fa2l, a2x_ax, a2x_lx(eai), norm=.true.)
+       call seq_map_map(mapper_Fa2l, a2x_ax, a2x_lx(eai), norm=.true.,string=timer//':preplFa2l')
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -552,7 +552,7 @@ contains
        ! equivalent r2l mapping in map_lnd2rof_irrig_mod should be changed to keep the two
        ! equivalent.
        call seq_map_map(mapper_Fr2l, r2x_rx, r2x_lx(eri), &
-            fldlist=seq_flds_r2x_fluxes, norm=.true.)
+            fldlist=seq_flds_r2x_fluxes, norm=.true.,string=timer//':preplFr2l')
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -651,7 +651,8 @@ contains
     do eli = 1,num_inst_lnd
        eoi = mod((eli-1),num_inst_ocn) + 1
        l2x_lx => component_get_c2x_cx(lnd(eli))
-       call seq_map_map(mapper_So2l, o2lacc_ox(eoi), o2x_lx(eli), fldlist=seq_flds_o2x_states_to_lnd, norm=.true.)
+       call seq_map_map(mapper_So2l, o2lacc_ox(eoi), o2x_lx(eli), fldlist=seq_flds_o2x_states_to_lnd, &
+            norm=.true., string=timer//':preplSo2l')
     end do
     call t_drvstopf  (trim(timer))
 

@@ -1306,15 +1306,19 @@ contains
     do eai = 1,num_inst_atm
        a2x_ax => component_get_c2x_cx(atm(eai))
 
-       call seq_map_map(mapper_Sa2o, a2x_ax, a2x_ox(eai), fldlist=seq_flds_a2x_states, norm=.true.)
+       call seq_map_map(mapper_Sa2o, a2x_ax, a2x_ox(eai), fldlist=seq_flds_a2x_states, &
+       norm=.true.,string=timer//':prepoSa2o')
 
-       call seq_map_map(mapper_Fa2o, a2x_ax, a2x_ox(eai), fldlist=seq_flds_a2x_fluxes, norm=.true.)
+       call seq_map_map(mapper_Fa2o, a2x_ax, a2x_ox(eai), fldlist=seq_flds_a2x_fluxes, &
+         norm=.true.,string=timer//':prepoFa2o')
 
 #ifdef COMPARE_TO_NUOPC
-       call seq_map_mapvect(mapper_Va2o, vect_map, a2x_ax, a2x_ox(eai), 'Sa_u', 'Sa_v', norm=.true.)
+       call seq_map_mapvect(mapper_Va2o, vect_map, a2x_ax, a2x_ox(eai), 'Sa_u', 'Sa_v', &
+          norm=.true.,string=timer//':prepoVa2o')
 #else 
        !--- tcx the norm should be true below, it's false for bfb backwards compatability
-       call seq_map_mapvect(mapper_Va2o, vect_map, a2x_ax, a2x_ox(eai), 'Sa_u', 'Sa_v', norm=.false.)
+       call seq_map_mapvect(mapper_Va2o, vect_map, a2x_ax, a2x_ox(eai), 'Sa_u', 'Sa_v', &
+           norm=.false.,string=timer//':prepoVa2o')
 #endif
 
     enddo
@@ -1341,7 +1345,7 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eii = 1,num_inst_ice
        i2x_ix => component_get_c2x_cx(ice(eii))
-       call seq_map_map(mapper_SFi2o, i2x_ix, i2x_ox(eii), norm=.true.)
+       call seq_map_map(mapper_SFi2o, i2x_ix, i2x_ox(eii), norm=.true.,string=timer//':prepoSFi2o')
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -1367,14 +1371,14 @@ contains
     do eri = 1,num_inst_rof
        r2x_rx => component_get_c2x_cx(rof(eri))
        call seq_map_map(mapper_Rr2o_liq, r2x_rx, r2x_ox(eri), &
-            fldlist=seq_flds_r2o_liq_fluxes, norm=.false.)
+            fldlist=seq_flds_r2o_liq_fluxes, norm=.false.,string=timer//':prepoRr2ol')
 
        call seq_map_map(mapper_Rr2o_ice, r2x_rx, r2x_ox(eri), &
-            fldlist=seq_flds_r2o_ice_fluxes, norm=.false.)
+            fldlist=seq_flds_r2o_ice_fluxes, norm=.false.,string=timer//':prepoRl2oi')
 
        if (flood_present) then
           call seq_map_map(mapper_Fr2o, r2x_rx, r2x_ox(eri), &
-               fldlist='Flrr_flood', norm=.true.)
+               fldlist='Flrr_flood', norm=.true.,string=timer//':prepoFr2o')
        endif
     enddo
     call t_drvstopf  (trim(timer))
@@ -1401,10 +1405,10 @@ contains
     do egi = 1,num_inst_glc
        g2x_gx => component_get_c2x_cx(glc(egi))
        call seq_map_map(mapper_Rg2o_liq, g2x_gx, g2x_ox(egi), &
-            fldlist=seq_flds_g2o_liq_fluxes, norm=.false.)
+            fldlist=seq_flds_g2o_liq_fluxes, norm=.false.,string=timer//':prepoRg2ol')
 
        call seq_map_map(mapper_Rg2o_ice, g2x_gx, g2x_ox(egi), &
-            fldlist=seq_flds_g2o_ice_fluxes, norm=.false.)
+            fldlist=seq_flds_g2o_ice_fluxes, norm=.false.,string=timer//':prepoRg2oi')
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_ocn_calc_g2x_ox
@@ -1429,9 +1433,9 @@ contains
     do egi = 1,num_inst_glc
        g2x_gx => component_get_c2x_cx(glc(egi))
 
-       call seq_map_map(mapper_Sg2o, g2x_gx, g2x_ox(egi), norm=.true.)
+       call seq_map_map(mapper_Sg2o, g2x_gx, g2x_ox(egi), norm=.true.,string=timer//':prepoSg2o')
 
-       call seq_map_map(mapper_Fg2o, g2x_gx, g2x_ox(egi),norm=.true.)
+       call seq_map_map(mapper_Fg2o, g2x_gx, g2x_ox(egi),norm=.true.,string=timer//':prepoFg2o')
 
 
     enddo
@@ -1457,8 +1461,10 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do ewi = 1,num_inst_wav
        w2x_wx => component_get_c2x_cx(wav(ewi))
-       call seq_map_map(mapper_Sw2o, w2x_wx, w2x_ox(ewi),fldlist=seq_flds_w2x_states, norm=.true.)
-       call seq_map_map(mapper_Fw2o, w2x_wx, w2x_ox(ewi),fldlist=seq_flds_w2x_fluxes, norm=.true.)
+       call seq_map_map(mapper_Sw2o, w2x_wx, w2x_ox(ewi),fldlist=seq_flds_w2x_states, &
+         norm=.true., string=timer//':prepoSw2o')
+       call seq_map_map(mapper_Fw2o, w2x_wx, w2x_ox(ewi),fldlist=seq_flds_w2x_fluxes, &
+         norm=.true., string=timer//':prepoFw2o')
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_ocn_calc_w2x_ox

@@ -525,7 +525,7 @@ contains
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eai = 1,num_inst_atm
-       call seq_map_map(mapper_SFo2i, a2x_ox(eai), a2x_ix(eai), norm=.true.)
+       call seq_map_map(mapper_SFo2i, a2x_ox(eai), a2x_ix(eai), norm=.true.,string=timer//':prepiSFo2i')
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -550,7 +550,7 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eoi = 1,num_inst_ocn
        o2x_ox => component_get_c2x_cx(ocn(eoi))
-       call seq_map_map(mapper_SFo2i, o2x_ox, o2x_ix(eoi), norm=.true.)
+       call seq_map_map(mapper_SFo2i, o2x_ox, o2x_ix(eoi), norm=.true.,string=timer//':prepiSFo2i')
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -577,7 +577,7 @@ contains
        r2x_rx => component_get_c2x_cx(rof(eri))
 
        call seq_map_map(mapper_Rr2i, r2x_rx, r2x_ix(eri), &
-            fldlist='Firr_rofi', norm=.false.)
+            fldlist='Firr_rofi', norm=.false.,string=timer//':prepiFr2i')
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -603,7 +603,7 @@ contains
     do egi = 1,num_inst_glc
        g2x_gx => component_get_c2x_cx(glc(egi))
        call seq_map_map(mapper_Rg2i, g2x_gx, g2x_ix(egi), &
-                        fldlist='Fixx_rofi', norm=.true.)
+                        fldlist='Fixx_rofi', norm=.true.,string=timer//':prepiRg2i')
     enddo
     call t_drvstopf  (trim(timer))
 
