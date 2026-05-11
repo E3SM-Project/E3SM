@@ -129,10 +129,10 @@ class TimeStepper {
    /// and tendencies are defined. It creates an instance and only fills
    /// the time information. Data pointers are attached later.
    static TimeStepper *
-   create(const std::string &InName, ///< [in] name of time stepper
-          TimeStepperType InType,    ///< [in] type (time stepping method)
-          TimeInterval &InTimeStep,  ///< [in] time step
-          TimeInstant &InStartTime,  ///< [in] start time for time stepping
+   create(const std::string &InName,      ///< [in] name of time stepper
+          TimeStepperType InType,         ///< [in] type (time stepping method)
+          const TimeInterval &InTimeStep, ///< [in] time step
+          const TimeInstant &InStartTime, ///< [in] start time for time stepping
           ///< [in] stop time for time stepping, missing in coupled mode
           std::optional<TimeInstant> InStopTime = std::nullopt);
 

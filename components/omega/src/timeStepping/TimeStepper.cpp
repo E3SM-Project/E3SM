@@ -127,46 +127,15 @@ TimeStepper *TimeStepper::create(
     Halo *InMeshHalo                ///< [in] ptr to halos
 ) {
 
-   // Check for duplicates
-   if (AllTimeSteppers.find(InName) != AllTimeSteppers.end()) {
-      LOG_ERROR("Attempted to create a new TimeStepper with name {} but it "
-                "already exists",
-                InName);
-      return nullptr;
-   }
-
-   TimeStepper *NewTimeStepper;
-
-   // Call specific constructor with time info
-   // These constructors mostly just call the constructor above with some
-   // additional info (NTimeLevels)
-   switch (InType) {
-   case TimeStepperType::ForwardBackward:
-      NewTimeStepper = new ForwardBackwardStepper(InName, InTimeStep,
-                                                  InStartTime, InStopTime);
-      break;
-   case TimeStepperType::RungeKutta4:
-      NewTimeStepper =
-          new RungeKutta4Stepper(InName, InTimeStep, InStartTime, InStopTime);
-      break;
-   case TimeStepperType::RungeKutta2:
-      NewTimeStepper =
-          new RungeKutta2Stepper(InName, InTimeStep, InStartTime, InStopTime);
-      break;
-   case TimeStepperType::Invalid:
-      ABORT_ERROR("Invalid time stepping method");
-   default:
-      ABORT_ERROR("Unknown time stepping method");
-   }
+   // Start by calling the two-phase create function
+   TimeStepper *NewTimeStepper =
+       create(InName, InType, InTimeStep, InStartTime, InStopTime);
 
    NewTimeStepper->PrescribeThicknessMode = DefaultPrescribeThicknessMode;
    NewTimeStepper->PrescribeVelocityMode  = DefaultPrescribeVelocityMode;
 
    // Attach data pointers
    NewTimeStepper->attachData(InTend, InAuxState, InMesh, InVCoord, InMeshHalo);
-
-   // Store instance
-   AllTimeSteppers.emplace(InName, NewTimeStepper);
 
    return NewTimeStepper;
 }
@@ -176,10 +145,10 @@ TimeStepper *TimeStepper::create(
 // and tendencies are defined. It creates an instance and only fills
 // the time information. Data pointers are attached later.
 TimeStepper *TimeStepper::create(
-    const std::string &InName, // [in] name of time stepper
-    TimeStepperType InType,    // [in] type (time stepping method)
-    TimeInterval &InTimeStep,  // [in] time step
-    TimeInstant &InStartTime,  // [in] start time for time stepping
+    const std::string &InName,      // [in] name of time stepper
+    TimeStepperType InType,         // [in] type (time stepping method)
+    const TimeInterval &InTimeStep, // [in] time step
+    const TimeInstant &InStartTime, // [in] start time for time stepping
     ///< [in] stop time for time stepping, missing in coupled mode
     std::optional<TimeInstant> InStopTime) {
 
@@ -382,14 +351,12 @@ void TimeStepper::init1(const TimeInitParams &TimeParams) {
    CHECK_ERROR_ABORT(Err, "TimeStep not found in TimeIntegration Config");
    TimeInterval TimeStep(TimeStepStr);
 
-   // Local non-const copies required by the 2-phase create() signature
-   TimeInstant StartTime = TimeParams.StartTime;
-
    // Now that all the inputs are defined, create the default time stepper
    // Use the partial creation function for only the time info. Data
    // pointers will be attached in phase 2 initialization
-   TimeStepper::DefaultTimeStepper = create(
-       "Default", TimeStepperChoice, TimeStep, StartTime, TimeParams.StopTime);
+   TimeStepper::DefaultTimeStepper =
+       create("Default", TimeStepperChoice, TimeStep, TimeParams.StartTime,
+              TimeParams.StopTime);
 }
 
 //------------------------------------------------------------------------------
