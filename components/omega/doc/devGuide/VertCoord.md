@@ -55,7 +55,7 @@ A list of member variables along with their types and dimension sizes is below:
 | ZInterface | Real | NCellsSize, NVertLayersP1|
 | ZMid | Real | NCellsSize, NVertLayers |
 | GeopotentialMid | Real | NCellsSize, NVertLayers |
-| LayerThicknessPStar | Real | NCellsSize, NVertLayers|
+| LayerThicknessTarget | Real | NCellsSize, NVertLayers|
 | MinLayerCell | Integer | NCellsSize |
 | MaxLayerCell | Integer | NCellsSize |
 | MinLayerEdgeTop | Integer| NEdgesSize |
@@ -67,7 +67,7 @@ A list of member variables along with their types and dimension sizes is below:
 | MinLayerVertexBot | Integer | NVerticesSize |
 | MaxLayerVertexBot | Integer | NVerticesSize |
 | VertCoordMovementWeights | Real | NCellsSize, NVertLayers |
-| RefLayerThickness | Real | NCellsSize, NVertLayers |
+| RefPseudoThickness | Real | NCellsSize, NVertLayers |
 | BottomDepth | Real | NCellsSize |
 
 ### Removal

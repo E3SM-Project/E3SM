@@ -32,7 +32,7 @@ Multiple instances of the vertical coordinate class can be created and accessed 
 | ZInterface | z height of layer interfaces | m |
 | ZMid | z height of layer midpoint | m |
 | GeopotentialMid | geopotential at layer mid points | m$^2$/s$^2$|
-| LayerThicknessPStar | desired layer thickness based on total perturbation from the reference thickness | - |
+| LayerThicknessTarget | desired layer thickness based on total perturbation from the reference thickness | m |
 | MinLayerCell | first active layer for cell | - |
 | MaxLayerCell | last active layer for cell | - |
 | MinLayerEdgeTop | min of the first active layers for cells on edge | - |
@@ -44,18 +44,5 @@ Multiple instances of the vertical coordinate class can be created and accessed 
 | MinLayerVertexBot | max of the first active layer for cells on vertex | - |
 | MaxLayerVertexBot | max of the last active layer for cells on vertex | - |
 | VertCoordMovementWeights | weights to specify how total column thickness changes are distributed across layers | - |
-| RefLayerThickness | reference layer thickness used to distribute total column thickness changes | m |
+| RefPseudoThickness | reference layer thickness used to distribute total column thickness changes | m |
 | BottomDepth | positive down distance from the reference geoid to the bottom | m |
-
-### Configuration options
-
-The vertical coordinate movement can be specified by the `MovementWeightType` option in the configuration file.
-```yaml
-omega:
-   VertCoord:
-      MovementWeightType: [Fixed,Uniform]
-```
-The option `Uniform` specifies that perturbations to the total pseudo-thickness of the water column is distributed evenly to all vertical layers.
-This is similar to the standard "z-star" coordinate in Boussinesq models.
-The option `Fixed` means that total pseudo-thickness perturbations are confined to the top layer, while all others remain constant.
-This is similar to the traditional "z" coordinate in Boussinesq models.
