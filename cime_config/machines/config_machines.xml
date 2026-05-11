@@ -342,6 +342,9 @@
     <environment_variables compiler="gnu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnu; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
+    <environment_variables compiler="nvidia">
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/nvidia; else echo "$MOAB_ROOT"; fi}</env>
+    </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
     </resource_limits>
