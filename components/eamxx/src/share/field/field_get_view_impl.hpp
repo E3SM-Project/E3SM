@@ -192,6 +192,8 @@ auto Field::get_ND_view () const
     }
   }
 
+  auto ptr = get_internal_view_data<T,HD>();
+
   // Compute extents from FieldLayout
   const auto& alloc_prop = m_header->get_alloc_properties();
   auto num_values = alloc_prop.get_alloc_size() / sizeof(T);
@@ -204,7 +206,6 @@ auto Field::get_ND_view () const
       num_values = fl.dim(i)==0 ? 0 : num_values/fl.dim(i);
     }
   }
-  auto ptr = reinterpret_cast<T*>(get_view_impl<HD>().data());
 
   using ret_type = get_view_type<data_nd_t<T,N>,HD>;
 
@@ -226,6 +227,8 @@ auto Field::get_ND_view () const
   EKAT_REQUIRE_MSG (m_header->get_parent()==nullptr,
       "Error! A view of rank " + std::to_string(MaxRank) + " should not be the subview of another field.\n");
 
+  auto ptr = get_internal_view_data<T,HD>();
+
   // Compute extents from FieldLayout
   const auto& alloc_prop = m_header->get_alloc_properties();
   auto num_values = alloc_prop.get_alloc_size() / sizeof(T);
@@ -235,7 +238,6 @@ auto Field::get_ND_view () const
     num_values /= fl.dim(i);
   }
   kl.dimension[N-1] = num_values;
-  auto ptr = reinterpret_cast<T*>(get_view_impl<HD>().data());
 
   using ret_type = get_view_type<data_nd_t<T,N>,HD>;
   return ret_type (ptr,kl);
