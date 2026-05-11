@@ -169,6 +169,7 @@ module seq_nlmap_mod
   public :: seq_nlmap_init_a2oi_cons
   public :: seq_nlmap_init_a2l_cons
   public :: seq_nlmap_check_matrices
+  public :: seq_nlmap_field_is_excluded
 
   ! Measure and print information about nonlinearly mapped fields. 0 means no
   ! analysis is done or printed. >= 1 triggers analysis written to cpl.log.
@@ -221,6 +222,36 @@ contains
     end if
 
   end subroutine seq_nlmap_setopts
+
+  function seq_nlmap_field_is_excluded(fldname) result(is_excluded)
+    ! True if fldname appears in the namelist nlmaps_exclude_fields list, in
+    ! which case the nonlinear map must NOT be applied (the LOW-order map
+    ! result is kept). This mirrors the loop in MCT's seq_nlmap_avNormArr at
+    ! driver-mct/main/seq_nlmap_mod.F90 lines 691-698: for excluded fields
+    ! avp_o keeps the mct_sMat_avMult low-order value rather than being
+    ! overwritten with the nonlinear-fixer result.
+    !
+    ! When nlmaps_atm2srf_conserve is on, the exclude list is ignored
+    ! (matches MCT's warning at the end of seq_nlmap_setopts).
+    character(len=*), intent(in) :: fldname
+    logical :: is_excluded
+
+    integer :: i, n
+
+    is_excluded = .false.
+    if (atm2srf_conserve) return
+    if (nlmaps_exclude_n_fields <= 0) return
+
+    n = len_trim(fldname)
+    if (n <= 0) return
+
+    do i = 1, nlmaps_exclude_n_fields
+       if ( trim(fldname) == trim(nlmaps_exclude_fields(i)) ) then
+          is_excluded = .true.
+          return
+       end if
+    end do
+  end function seq_nlmap_field_is_excluded
 
   subroutine seq_nlmap_init_a2oi_cons(mapper, fractions_ax)
     ! Initialize frac_s, frac_d for the atm2ocn map.

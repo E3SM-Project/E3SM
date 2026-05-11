@@ -357,7 +357,9 @@ contains
     integer  :: ierr, nfields, lsize_src, lsize_tgt, arrsize_tgt, j, arrsize_src
     character(len=CXX) :: fldlist_moab
     character(len=CXX) :: fldlist_data    ! data fields only (no norm8wt) for nlmap CAAS path
-    character(len=CXX) :: norm8wt_only    ! "norm8wt" alone, for separate low-order pass
+    character(len=CXX) :: fldlist_caas    ! non-excluded data fields → dual-map CAAS
+    character(len=CXX) :: fldlist_lo_only ! excluded data + norm8wt → low-order projection
+    integer            :: ncaas_fields, nlo_fields  ! field counts for the two sub-lists
     character(len=CXX) :: tagname
     character(len=CXX) :: lo_weights_identifier
     integer    :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
@@ -463,7 +465,6 @@ contains
        ! row-sum-1, so the CAAS-clipped result no longer matches MCT's
        ! mct_sMat_avMult-mapped target norm8wt that the post-divide expects.
        fldlist_data = trim(fldlist_moab)//C_NULL_CHAR
-       norm8wt_only = "norm8wt"//C_NULL_CHAR
 
        if (mbnorm) then
           fldlist_moab = trim(fldlist_moab)//":norm8wt"//C_NULL_CHAR
@@ -707,40 +708,57 @@ contains
              endif
           else
              ! Dual-map nonlinear remapping path. To match MCT's
-             ! seq_nlmap_avNormArr exactly we split the work in two:
-             !   (a) DATA fields go through the dual-map CAAS so they get the
-             !       high-order interpolation with low-order CAAS bounds.
-             !       filter_type must be != CAAS_NONE for ApplyWeightsWithDualMap
-             !       to actually run (otherwise iMOAB falls through to plain
-             !       high-order without bounds — produces OOB values that
-             !       crash icepack).
-             !   (b) norm8wt goes through a SEPARATE low-order projection so
-             !       the target norm8wt = row-sum of the low-order map
-             !       (matching MCT's mct_sMat_avMult on the appended ffld
-             !       column). The post-norm divide below then divides data by
-             !       this low-order row-sum, which is what MCT does and what
-             !       restores correct normalization at partial-coverage cells.
-             filter_type = 2 ! CAAS_LOCAL
-             ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%howeight_identifier, &
-               fldlist_data, fldlist_data, mapper%weight_identifier)
-             if (ierr .ne. 0) then
-                write(logunit,*) subname,' error in applying weights (data fields, dual-map CAAS)'
-                call shr_sys_abort(subname//' ERROR in applying weights (data fields, dual-map CAAS)')
-             endif
-             if (mbnorm) then
-                ! Map norm8wt low-order only — gives target norm8wt = row sum
-                ! of the low-order map (≈ 1 for full coverage, < 1 for partial).
+             ! seq_nlmap_avNormArr exactly we split the data fields by
+             ! whether they appear in the namelist nlmaps_exclude_fields list:
+             !
+             !   (a) NON-EXCLUDED data fields (`fldlist_caas`): high-order
+             !       interpolation with low-order CAAS bounds via the dual-map
+             !       call. filter_type must be != CAAS_NONE for
+             !       ApplyWeightsWithDualMap to actually run (otherwise iMOAB
+             !       falls through to plain high-order without bounds —
+             !       produces OOB values that crash icepack).
+             !   (b) EXCLUDED data fields (`fldlist_lo_only`): low-order map
+             !       only, matching MCT seq_nlmap_avNormArr's behavior at
+             !       lines 691-698 of driver-mct/main/seq_nlmap_mod.F90 — for
+             !       these fields avp_o keeps the low-order mct_sMat_avMult
+             !       result and is NOT overwritten with the nonlinear-fixer
+             !       output. Examples: Faxa_rainc/rainl/snowc/snowl.
+             !   (c) `norm8wt` (when mbnorm): low-order map only, joined into
+             !       the same low-order pass as (b) since both use the same
+             !       weight matrix. Gives target norm8wt = low-order row sum.
+             !       The post-norm divide below then divides data by this
+             !       low-order row-sum, restoring correct normalization at
+             !       partial-coverage cells (matches MCT outer
+             !       seq_map_avNormArr post-divide).
+             call build_nlmap_sublists( fldlist_data, mbnorm, &
+                                        fldlist_caas, ncaas_fields, &
+                                        fldlist_lo_only, nlo_fields )
+
+             if (ncaas_fields > 0) then
+                filter_type = 2 ! CAAS_LOCAL
+                ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, &
+                       mapper%howeight_identifier, fldlist_caas, fldlist_caas, &
+                       mapper%weight_identifier )
+                if (ierr .ne. 0) then
+                   write(logunit,*) subname,' error in applying weights (data fields, dual-map CAAS)'
+                   call shr_sys_abort(subname//' ERROR in applying weights (data fields, dual-map CAAS)')
+                endif
+             end if
+
+             if (nlo_fields > 0) then
+                ! Excluded data fields + (optionally) norm8wt — plain low-order.
                 ! lo_weights_identifier is empty so iMOAB takes the plain
                 ! ApplyWeights branch (no dual-map CAAS) regardless of
                 ! filter_type.
                 filter_type = 0
-                ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%weight_identifier, &
-                  norm8wt_only, norm8wt_only, lo_weights_identifier)
+                ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, &
+                       mapper%weight_identifier, fldlist_lo_only, fldlist_lo_only, &
+                       lo_weights_identifier )
                 if (ierr .ne. 0) then
-                   write(logunit,*) subname,' error in applying weights (norm8wt, low-order)'
-                   call shr_sys_abort(subname//' ERROR in applying weights (norm8wt, low-order)')
+                   write(logunit,*) subname,' error in applying weights (excluded fields + norm8wt, low-order)'
+                   call shr_sys_abort(subname//' ERROR in applying weights (excluded fields + norm8wt, low-order)')
                 endif
-             endif
+             end if
           endif
 
           !*** MOAB: Post-normalization (target side)
@@ -1308,6 +1326,119 @@ contains
        endif
 
   end subroutine seq_map_cart3d
+
+  !=======================================================================
+  ! build_nlmap_sublists -- split a colon-separated tag list into two
+  ! sub-lists for the dual-map nlmap path:
+  !
+  !   fldlist_caas    : data fields NOT in the nlmaps_exclude_fields list,
+  !                     which go through the high-order CAAS dual-map call.
+  !   fldlist_lo_only : data fields IN the exclude list, plus the special
+  !                     "norm8wt" tag when mbnorm is true. These are mapped
+  !                     with the LOW-order weight matrix only — same as MCT
+  !                     seq_nlmap_avNormArr's behavior of leaving avp_o at
+  !                     the mct_sMat_avMult result for excluded fields, and
+  !                     of mapping the norm8wt column via the low-order map.
+  !
+  ! Both output strings are colon-separated, terminated with C_NULL_CHAR
+  ! (so they can be passed straight to iMOAB). The corresponding field
+  ! counts are also returned. The input fldlist must be C_NULL-terminated.
+  !=======================================================================
+  subroutine build_nlmap_sublists(fldlist_in, mbnorm, &
+                                  fldlist_caas, ncaas, &
+                                  fldlist_lo_only, nlo)
+    use iso_c_binding, only : C_NULL_CHAR
+    use seq_nlmap_mod, only : seq_nlmap_field_is_excluded
+
+    character(len=*), intent(in)  :: fldlist_in
+    logical,          intent(in)  :: mbnorm
+    character(len=*), intent(out) :: fldlist_caas
+    integer,          intent(out) :: ncaas
+    character(len=*), intent(out) :: fldlist_lo_only
+    integer,          intent(out) :: nlo
+
+    integer :: i, n, start, ipos
+    character(len=128) :: name
+    character(len=*), parameter :: subname = '(build_nlmap_sublists) '
+
+    fldlist_caas    = ''
+    fldlist_lo_only = ''
+    ncaas = 0
+    nlo   = 0
+
+    ! Trim trailing C_NULL_CHAR(s) before parsing.
+    n = len_trim(fldlist_in)
+    do while (n > 0)
+       if (fldlist_in(n:n) /= C_NULL_CHAR) exit
+       n = n - 1
+    end do
+    if (n <= 0) then
+       fldlist_caas    = C_NULL_CHAR
+       fldlist_lo_only = C_NULL_CHAR
+       if (mbnorm) then
+          fldlist_lo_only = 'norm8wt'//C_NULL_CHAR
+          nlo = 1
+       end if
+       return
+    end if
+
+    ! Walk the colon-separated list.
+    start = 1
+    do i = 1, n+1
+       if (i == n+1 .or. fldlist_in(i:i) == ':') then
+          if (i > start) then
+             name = fldlist_in(start:i-1)
+             if (seq_nlmap_field_is_excluded(name)) then
+                if (nlo > 0) then
+                   ipos = len_trim(fldlist_lo_only)
+                   fldlist_lo_only(ipos+1:ipos+1) = ':'
+                   fldlist_lo_only(ipos+2:) = trim(name)
+                else
+                   fldlist_lo_only = trim(name)
+                end if
+                nlo = nlo + 1
+             else
+                if (ncaas > 0) then
+                   ipos = len_trim(fldlist_caas)
+                   fldlist_caas(ipos+1:ipos+1) = ':'
+                   fldlist_caas(ipos+2:) = trim(name)
+                else
+                   fldlist_caas = trim(name)
+                end if
+                ncaas = ncaas + 1
+             end if
+          end if
+          start = i + 1
+       end if
+    end do
+
+    ! Append norm8wt to the low-order list when normalization is requested.
+    if (mbnorm) then
+       if (nlo > 0) then
+          ipos = len_trim(fldlist_lo_only)
+          fldlist_lo_only(ipos+1:ipos+1) = ':'
+          fldlist_lo_only(ipos+2:) = 'norm8wt'
+       else
+          fldlist_lo_only = 'norm8wt'
+       end if
+       nlo = nlo + 1
+    end if
+
+    ! Null-terminate for iMOAB.
+    if (ncaas > 0) then
+       ipos = len_trim(fldlist_caas)
+       fldlist_caas(ipos+1:ipos+1) = C_NULL_CHAR
+    else
+       fldlist_caas = C_NULL_CHAR
+    end if
+
+    if (nlo > 0) then
+       ipos = len_trim(fldlist_lo_only)
+       fldlist_lo_only(ipos+1:ipos+1) = C_NULL_CHAR
+    else
+       fldlist_lo_only = C_NULL_CHAR
+    end if
+  end subroutine build_nlmap_sublists
 
   !=======================================================================
 
