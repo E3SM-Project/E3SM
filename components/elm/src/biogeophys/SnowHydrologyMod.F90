@@ -2439,8 +2439,11 @@ contains
         if (qflx_snwcp_ice(c) <= 0._r8) cycle
         if (snl(c) >= 0) cycle
 
-        ! Latitude-band gate
-        apply_cooling = .true.
+        ! Latitude-band gate: only extract latent heat locally when the
+        ! lat-band feature is active and this column is within the band.
+        ! When disabled, snowcapped ice goes to the ocean as ice runoff
+        ! and the ocean handles the latent heat — no local cooling needed.
+        apply_cooling = .false.
         if (convert_ice_to_river_runoff_latband) then
            g = col_pp%gridcell(c)
            lat_abs_deg = abs(grc_pp%lat(g)) * 180._r8 / (4._r8 * atan(1._r8))
