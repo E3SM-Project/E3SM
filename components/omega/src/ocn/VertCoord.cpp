@@ -938,7 +938,8 @@ void VertCoord::computePressure(
           const I4 KMax               = LocMaxLayerCell(ICell);
           LocPressInterf(ICell, KMin) = SurfacePressure(ICell);
           parallelScanInner(
-              Team, Range{KMin, KMax}, INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
+              Team, Range{KMin, KMax},
+              INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
                  Real Increment = Gravity * RhoSw * LayerThickness(ICell, K);
                  Accum += Increment;
 
