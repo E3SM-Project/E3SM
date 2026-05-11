@@ -498,6 +498,7 @@ void update_host_dse_host(Int shcol, Int nlev, Real* thlm, Real* shoc_ql, Real* 
   using Pack      = typename SHF::Pack;
   using view_1d    = typename SHF::view_1d<Scalar>;
   using view_2d    = typename SHF::view_2d<Pack>;
+  using view_3d    = typename SHF::view_3d<Pack>;
   using KT         = typename SHF::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using TPF        = ekat::TeamPolicyFactory<ExeSpace>;
@@ -2974,10 +2975,17 @@ void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, bool shoc_1p5tke,
 
   const Int nlev_packs = ekat::npack<Pack>(nlev);
   const Int nlevi_packs = ekat::npack<Pack>(nlevi);
+
+  view_2d w_field_d("w_field_d", shcol, nlev_packs);
+  view_2d shear_strain3d_d("shear_strain3d_d", shcol, nlev_packs);
+  view_3d shear_strain3d_components_d("shear_strain3d_components_d", shcol, 6, nlev_packs);
+  Kokkos::deep_copy(w_field_d, 0);
+  Kokkos::deep_copy(shear_strain3d_d, 0);
+  Kokkos::deep_copy(shear_strain3d_components_d, 0);
   const auto policy = TPF::get_default_team_policy(shcol, nlev_packs);
 
   // Local variable workspace
-  ekat::WorkspaceManager<Pack, KT::Device> workspace_mgr(nlevi_packs, 3, policy);
+  ekat::WorkspaceManager<Pack, KT::Device> workspace_mgr(nlevi_packs, 6, policy);
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
@@ -2990,6 +2998,7 @@ void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, bool shoc_1p5tke,
     const auto shoc_mix_s = ekat::subview(shoc_mix_d, i);
     const auto u_wind_s = ekat::subview(u_wind_d, i);
     const auto v_wind_s = ekat::subview(v_wind_d, i);
+    const auto w_field_s = ekat::subview(w_field_d, i);
     const auto dz_zi_s = ekat::subview(dz_zi_d, i);
     const auto dz_zt_s = ekat::subview(dz_zt_d, i);
     const auto pres_s = ekat::subview(pres_d, i);
@@ -3001,6 +3010,8 @@ void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, bool shoc_1p5tke,
     const auto tk_s = ekat::subview(tk_d, i);
     const auto tkh_s = ekat::subview(tkh_d, i);
     const auto isotropy_s = ekat::subview(isotropy_d, i);
+    const auto shear_strain3d_s = ekat::subview(shear_strain3d_d, i);
+    const auto shear_strain3d_components_s = ekat::subview(shear_strain3d_components_d, i);
 
     // Hardcode for F90 testing
     const Real lambda_low    = 0.001;
@@ -3009,11 +3020,12 @@ void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, bool shoc_1p5tke,
     const Real lambda_thresh = 0.02;
     const Real Ckh           = 0.1;
     const Real Ckm           = 0.1;
+    const bool do_3d_turb    = false;
     
     SHF::shoc_tke(team,nlev,nlevi,dtime,lambda_low,lambda_high,lambda_slope,lambda_thresh,
-                  Ckh, Ckm, shoc_1p5tke,
-		  wthv_sec_s,shoc_mix_s,dz_zi_s,dz_zt_s,pres_s,
-                  tabs_s,u_wind_s,v_wind_s,brunt_s,zt_grid_s,zi_grid_s,pblh_s,
+                  Ckh, Ckm, shoc_1p5tke, do_3d_turb,
+		  wthv_sec_s,shear_strain3d_components_s,shear_strain3d_s,shoc_mix_s,dz_zi_s,dz_zt_s,pres_s,
+                  tabs_s,u_wind_s,v_wind_s,w_field_s,brunt_s,zt_grid_s,zi_grid_s,pblh_s,
                   workspace,
                   tke_s,tk_s,tkh_s,isotropy_s);
   });

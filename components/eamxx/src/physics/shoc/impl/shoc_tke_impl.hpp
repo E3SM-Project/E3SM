@@ -33,7 +33,8 @@ void Functions<S,D>::shoc_tke(
   const bool&                  shoc_1p5tke,
   const bool&                  do_3d_turb,
   const uview_1d<const Pack>& wthv_sec,
-  const uview_1d<const Pack>& shear_strain3d,
+  const uview_2d<const Pack>& shear_strain3d_components,
+  const uview_1d<Pack>&       shear_strain3d,
   const uview_1d<const Pack>& shoc_mix,
   const uview_1d<const Pack>& dz_zi,
   const uview_1d<const Pack>& dz_zt,
@@ -41,6 +42,7 @@ void Functions<S,D>::shoc_tke(
   const uview_1d<const Pack>& tabs,
   const uview_1d<const Pack>& u_wind,
   const uview_1d<const Pack>& v_wind,
+  const uview_1d<const Pack>& w_field,
   const uview_1d<const Pack>& brunt,
   const uview_1d<const Pack>& zt_grid,
   const uview_1d<const Pack>& zi_grid,
@@ -52,10 +54,10 @@ void Functions<S,D>::shoc_tke(
   const uview_1d<Pack>&       isotropy)
 {
   // Define temporary variables
-  uview_1d<Pack> sterm_zt, a_diss, sterm;
-  workspace.template take_many_contiguous_unsafe<3>(
-    {"sterm_zt", "a_diss", "sterm"},
-    {&sterm_zt, &a_diss, &sterm});
+  uview_1d<Pack> sterm_zt, a_diss, sterm, du_dz_m, dv_dz_m, dw_dz_m;
+  workspace.template take_many_contiguous_unsafe<6>(
+    {"sterm_zt", "a_diss", "sterm", "du_dz_m", "dv_dz_m", "dw_dz_m"},
+    {&sterm_zt, &a_diss, &sterm, &du_dz_m, &dv_dz_m, &dw_dz_m});
 
   // Compute integrated column stability in lower troposphere
   Scalar brunt_int(0);
@@ -71,6 +73,18 @@ void Functions<S,D>::shoc_tke(
     team.team_barrier();
     linear_interp(team,zi_grid,zt_grid,sterm,sterm_zt,nlevi,nlev,0);
   } else {
+    compute_vertical_shear_terms(team,nlev,nlevi,
+                                 dz_zi,u_wind,v_wind,w_field,
+                                 zt_grid,zi_grid,workspace,
+                                 du_dz_m,dv_dz_m,dw_dz_m);
+    team.team_barrier();
+
+    assemble_shoc_shear_strain3d(team,nlev,
+                                 shear_strain3d_components,
+                                 du_dz_m,dv_dz_m,dw_dz_m,
+                                 shear_strain3d);
+    team.team_barrier();
+
     // eddy_diffusivities still needs a midpoint shear magnitude for the
     // cold-surface fallback path. In 3D mode, use the SHOC-grid strain term
     // instead of leaving the old 1D shear workspace uninitialized.
@@ -92,8 +106,8 @@ void Functions<S,D>::shoc_tke(
   eddy_diffusivities(team,nlev,shoc_1p5tke,Ckh,Ckm,pblh,zt_grid,tabs,shoc_mix,sterm_zt,isotropy,tke,tkh,tk);
 
   // Release temporary variables from the workspace
-  workspace.template release_many_contiguous<3>(
-    {&sterm_zt, &a_diss, &sterm});
+  workspace.template release_many_contiguous<6>(
+    {&sterm_zt, &a_diss, &sterm, &du_dz_m, &dv_dz_m, &dw_dz_m});
 }
 
 } // namespace shoc

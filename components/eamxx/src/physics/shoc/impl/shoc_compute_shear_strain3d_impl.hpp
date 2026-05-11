@@ -8,11 +8,10 @@ namespace shoc {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::compute_shear_strain3d(
+void Functions<S,D>::compute_vertical_shear_terms(
   const MemberType&              team,
   const Int&                     nlev,
   const Int&                     nlevi,
-  const uview_2d<const Pack>&    shear_strain3d_components,
   const uview_1d<const Pack>&    dz_zi,
   const uview_1d<const Pack>&    u_wind,
   const uview_1d<const Pack>&    v_wind,
@@ -20,14 +19,16 @@ void Functions<S,D>::compute_shear_strain3d(
   const uview_1d<const Pack>&    zt_grid,
   const uview_1d<const Pack>&    zi_grid,
   const Workspace&               workspace,
-  const uview_1d<Pack>&          shear_strain3d)
+  const uview_1d<Pack>&          du_dz_m,
+  const uview_1d<Pack>&          dv_dz_m,
+  const uview_1d<Pack>&          dw_dz_m)
 {
-  // Allocate local scratch for vertical shear components on the interface and
-  // midpoint grids. These are combined with the dycore-provided horizontal pieces below.
-  uview_1d<Pack> du_dz_i, dv_dz_i, dw_dz_i, du_dz_m, dv_dz_m, dw_dz_m;
-  workspace.template take_many_contiguous_unsafe<6>(
-    {"du_dz_i", "dv_dz_i", "dw_dz_i", "du_dz_m", "dv_dz_m", "dw_dz_m"},
-    {&du_dz_i, &dv_dz_i, &dw_dz_i, &du_dz_m, &dv_dz_m, &dw_dz_m});
+  // Compute the SHOC-column vertical gradients on interfaces, then
+  // interpolate them back to midpoint levels.
+  uview_1d<Pack> du_dz_i, dv_dz_i, dw_dz_i;
+  workspace.template take_many_contiguous_unsafe<3>(
+    {"du_dz_i", "dv_dz_i", "dw_dz_i"},
+    {&du_dz_i, &dv_dz_i, &dw_dz_i});
 
   const Int nlev_pack = ekat::npack<Pack>(nlev);
   const Int nlevi_pack = ekat::npack<Pack>(nlevi);
@@ -88,6 +89,23 @@ void Functions<S,D>::compute_shear_strain3d(
   linear_interp(team, zi_grid, zt_grid, dv_dz_i, dv_dz_m, nlevi, nlev, 0);
   linear_interp(team, zi_grid, zt_grid, dw_dz_i, dw_dz_m, nlevi, nlev, 0);
 
+  workspace.template release_many_contiguous<3>(
+    {&du_dz_i, &dv_dz_i, &dw_dz_i});
+}
+
+template<typename S, typename D>
+KOKKOS_FUNCTION
+void Functions<S,D>::assemble_shoc_shear_strain3d(
+  const MemberType&              team,
+  const Int&                     nlev,
+  const uview_2d<const Pack>&    shear_strain3d_components,
+  const uview_1d<const Pack>&    du_dz_m,
+  const uview_1d<const Pack>&    dv_dz_m,
+  const uview_1d<const Pack>&    dw_dz_m,
+  const uview_1d<Pack>&          shear_strain3d)
+{
+  const Int nlev_pack = ekat::npack<Pack>(nlev);
+
   // Assemble the full local velocity-gradient tensor from dycore horizontal
   // components and SHOC-computed vertical components, then form the symmetric strain invariant.
   team.team_barrier();
@@ -114,9 +132,6 @@ void Functions<S,D>::compute_shear_strain3d(
       2.0 * (S00*S00 + S11*S11 + S22*S22
            + 2.0*S01*S01 + 2.0*S02*S02 + 2.0*S12*S12);
   });
-
-  workspace.template release_many_contiguous<6>(
-    {&du_dz_i, &dv_dz_i, &dw_dz_i, &du_dz_m, &dv_dz_m, &dw_dz_m});
 }
 
 #ifdef SCREAM_SHOC_SMALL_KERNELS
@@ -143,18 +158,28 @@ void Functions<S,D>::compute_shear_strain3d_disp(
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
     auto workspace = workspace_mgr.get_workspace(team);
+    uview_1d<Pack> du_dz_m, dv_dz_m, dw_dz_m;
+    workspace.template take_many_contiguous_unsafe<3>(
+      {"du_dz_m", "dv_dz_m", "dw_dz_m"},
+      {&du_dz_m, &dv_dz_m, &dw_dz_m});
 
-    // Dispatch the column routine over SHOC columns for the small-kernel path.
-    compute_shear_strain3d(team, nlev, nlevi,
-                           Kokkos::subview(shear_strain3d_components, i, Kokkos::ALL(), Kokkos::ALL()),
-                           Kokkos::subview(dz_zi, i, Kokkos::ALL()),
-                           Kokkos::subview(u_wind, i, Kokkos::ALL()),
-                           Kokkos::subview(v_wind, i, Kokkos::ALL()),
-                           Kokkos::subview(w_field, i, Kokkos::ALL()),
-                           Kokkos::subview(zt_grid, i, Kokkos::ALL()),
-                           Kokkos::subview(zi_grid, i, Kokkos::ALL()),
-                           workspace,
-                           Kokkos::subview(shear_strain3d, i, Kokkos::ALL()));
+    compute_vertical_shear_terms(team, nlev, nlevi,
+                                 Kokkos::subview(dz_zi, i, Kokkos::ALL()),
+                                 Kokkos::subview(u_wind, i, Kokkos::ALL()),
+                                 Kokkos::subview(v_wind, i, Kokkos::ALL()),
+                                 Kokkos::subview(w_field, i, Kokkos::ALL()),
+                                 Kokkos::subview(zt_grid, i, Kokkos::ALL()),
+                                 Kokkos::subview(zi_grid, i, Kokkos::ALL()),
+                                 workspace,
+                                 du_dz_m, dv_dz_m, dw_dz_m);
+
+    assemble_shoc_shear_strain3d(team, nlev,
+                                 Kokkos::subview(shear_strain3d_components, i, Kokkos::ALL(), Kokkos::ALL()),
+                                 du_dz_m, dv_dz_m, dw_dz_m,
+                                 Kokkos::subview(shear_strain3d, i, Kokkos::ALL()));
+
+    workspace.template release_many_contiguous<3>(
+      {&du_dz_m, &dv_dz_m, &dw_dz_m});
   });
 }
 #endif

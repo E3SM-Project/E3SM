@@ -542,9 +542,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                           const uview_1d<Pack> &tke, const uview_1d<Pack> &a_diss);
 
   KOKKOS_FUNCTION
-  static void compute_shear_strain3d(
+  static void compute_vertical_shear_terms(
       const MemberType &team, const Int &nlev, const Int &nlevi,
-      const uview_2d<const Pack> &shear_strain3d_components,
       const uview_1d<const Pack> &dz_zi,
       const uview_1d<const Pack> &u_wind,
       const uview_1d<const Pack> &v_wind,
@@ -552,6 +551,17 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_1d<const Pack> &zt_grid,
       const uview_1d<const Pack> &zi_grid,
       const Workspace &workspace,
+      const uview_1d<Pack> &du_dz_m,
+      const uview_1d<Pack> &dv_dz_m,
+      const uview_1d<Pack> &dw_dz_m);
+
+  KOKKOS_FUNCTION
+  static void assemble_shoc_shear_strain3d(
+      const MemberType &team, const Int &nlev,
+      const uview_2d<const Pack> &shear_strain3d_components,
+      const uview_1d<const Pack> &du_dz_m,
+      const uview_1d<const Pack> &dv_dz_m,
+      const uview_1d<const Pack> &dw_dz_m,
       const uview_1d<Pack> &shear_strain3d);
 #ifdef SCREAM_SHOC_SMALL_KERNELS
   static void compute_shear_strain3d_disp(
@@ -893,11 +903,14 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                        const Scalar &dtime, const Scalar &lambda_low, const Scalar &lambda_high,
                        const Scalar &lambda_slope, const Scalar &lambda_thresh, const Scalar &Ckh,
                        const Scalar &Ckm, const bool &shoc_1p5tke, const bool &do_3d_turb,
-                       const uview_1d<const Pack> &wthv_sec, const uview_1d<const Pack> &shear_strain3d,
+                       const uview_1d<const Pack> &wthv_sec,
+                       const uview_2d<const Pack> &shear_strain3d_components,
+                       const uview_1d<Pack> &shear_strain3d,
                        const uview_1d<const Pack> &shoc_mix,
                        const uview_1d<const Pack> &dz_zi, const uview_1d<const Pack> &dz_zt,
                        const uview_1d<const Pack> &pres, const uview_1d<const Pack> &tabs,
                        const uview_1d<const Pack> &u_wind, const uview_1d<const Pack> &v_wind,
+                       const uview_1d<const Pack> &w_field,
                        const uview_1d<const Pack> &brunt, const uview_1d<const Pack> &zt_grid,
                        const uview_1d<const Pack> &zi_grid, const Scalar &pblh,
                        const Workspace &workspace, const uview_1d<Pack> &tke,
@@ -909,11 +922,14 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                             const Scalar &lambda_high, const Scalar &lambda_slope,
                             const Scalar &lambda_thresh, const Scalar &Ckh, const Scalar &Ckm,
                             const bool &shoc_1p5tke, const bool &do_3d_turb,
-                            const view_2d<const Pack> &wthv_sec, const view_2d<const Pack> &shear_strain3d,
+                            const view_2d<const Pack> &wthv_sec,
+                            const view_3d<const Pack> &shear_strain3d_components,
+                            const view_2d<Pack> &shear_strain3d,
                             const view_2d<const Pack> &shoc_mix, const view_2d<const Pack> &dz_zi,
                             const view_2d<const Pack> &dz_zt, const view_2d<const Pack> &pres,
                             const view_2d<const Pack> &tabs, const view_2d<const Pack> &u_wind,
-                            const view_2d<const Pack> &v_wind, const view_2d<const Pack> &brunt,
+                            const view_2d<const Pack> &v_wind, const view_2d<const Pack> &w_field,
+                            const view_2d<const Pack> &brunt,
                             const view_2d<const Pack> &zt_grid,
                             const view_2d<const Pack> &zi_grid, const view_1d<const Scalar> &pblh,
                             const WorkspaceMgr &workspace_mgr, const view_2d<Pack> &tke,

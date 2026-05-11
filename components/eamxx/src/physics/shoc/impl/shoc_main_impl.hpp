@@ -223,24 +223,15 @@ void Functions<S,D>::shoc_main_internal(
                 workspace,             // Workspace
                 brunt,shoc_mix);       // Output
 
-    // If 3d turbulence then assemble the strain tensor term
-    if (do_3d_turb) {
-      compute_shear_strain3d(team,nlev,nlevi,                   // Input
-                             shear_strain3d_components,dz_zi,   // Input
-                             u_wind,v_wind,w_field,             // Input
-                             zt_grid,zi_grid,workspace,         // Input/Workspace
-                             shear_strain3d);                   // Output
-      team.team_barrier();
-    }
-
     // Advance the SGS TKE equation
     shoc_tke(team,nlev,nlevi,dtime,               // Input
 	     lambda_low,lambda_high,lambda_slope, // Runtime options
 	     lambda_thresh,Ckh,Ckm,shoc_1p5tke,   // Runtime options
              do_3d_turb,                          // Runtime options
-	     wthv_sec,shear_strain3d,             // Input
+	     wthv_sec,shear_strain3d_components,  // Input
+             shear_strain3d,                      // Input/Output
              shoc_mix,dz_zi,dz_zt,pres,shoc_tabs, // Input
-             u_wind,v_wind,brunt,zt_grid,         // Input
+             u_wind,v_wind,w_field,brunt,zt_grid, // Input
              zi_grid,pblh,                        // Input
              workspace,                           // Workspace
              tke,tk,tkh,                          // Input/Output
@@ -504,22 +495,14 @@ void Functions<S,D>::shoc_main_internal(
                      workspace_mgr,         // Workspace mgr
                      brunt,shoc_mix);       // Output
 
-    // Advance the SGS TKE equation
-    if (do_3d_turb) {
-      compute_shear_strain3d_disp(shcol,nlev,nlevi,               // Input
-                                  shear_strain3d_components,dz_zi,// Input
-                                  u_wind,v_wind,w_field,          // Input
-                                  zt_grid,zi_grid,workspace_mgr,  // Input/Workspace
-                                  shear_strain3d);                // Output
-    }
-
     shoc_tke_disp(shcol,nlev,nlevi,dtime,               // Input
 	          lambda_low,lambda_high,lambda_slope,  // Runtime options
 		  lambda_thresh,Ckh,Ckm,shoc_1p5tke,    // Runtime options
                   do_3d_turb,                           // Runtime options
-                  wthv_sec,shear_strain3d,              // Input
+                  wthv_sec,shear_strain3d_components,   // Input
+                  shear_strain3d,                       // Input/Output
                   shoc_mix,dz_zi,dz_zt,pres,shoc_tabs,  // Input
-                  u_wind,v_wind,brunt,zt_grid,          // Input
+                  u_wind,v_wind,w_field,brunt,zt_grid,  // Input
                   zi_grid,pblh,                         // Input
                   workspace_mgr,                        // Workspace mgr
                   tke,tk,tkh,                           // Input/Output
