@@ -53,6 +53,8 @@ ICE_TEST_VARS = [
     "shear",
     "latCell",
     "lonCell",
+    "latVertex",
+    "lonVertex",
 ]
 
 
@@ -414,11 +416,11 @@ class MVKO(SystemTestsCommon):
                         "        https://github.com/E3SM-Project/E3SM/blob/master/cime/scripts/"
                         "climate_reproducibility/README.md#test-passfail-and-extended-output\n"
                     )
-                comments = (
+                log_comments = (
                     f"{CIME.test_status.BASELINE_PHASE} {status} for test '{test_name}': {component}.\n"
                     f"    {comments[component]}\n"
                     "    EVV results can be viewed at:\n"
                     f"        {viewing}"
                 )
 
-                append_testlog(comments, self._orig_caseroot)
+                append_testlog(log_comments, self._orig_caseroot)
