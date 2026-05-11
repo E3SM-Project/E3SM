@@ -3,22 +3,30 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   include(ScreamUtils)
 
   # Test iop remap
-  CreateUnitTest(iop_remapper "iop_remapper_tests.cpp"
+  CreateUnitTest(iop_remapper
+    SOURCES iop_remapper_tests.cpp
     LIBS eamxx_remap
-    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
 
   # Test coarsening remap
-  CreateUnitTest(coarsening_remapper "coarsening_remapper_tests.cpp"
+  CreateUnitTest(coarsening_remapper
+    SOURCES coarsening_remapper_tests.cpp
     LIBS eamxx_remap
-    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
 
   # Test refining remap
-  CreateUnitTest(refining_remapper "refining_remapper_tests.cpp"
+  CreateUnitTest(refining_remapper
+    SOURCES refining_remapper_tests.cpp
     LIBS eamxx_remap
-    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
 
   # Test vertical remap
-  CreateUnitTest(vertical_remapper "vertical_remapper_tests.cpp"
+  CreateUnitTest(vertical_remapper
+    SOURCES vertical_remapper_tests.cpp
     LIBS eamxx_remap
-    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
 endif()
