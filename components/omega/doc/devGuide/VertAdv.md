@@ -39,33 +39,33 @@ The following arrays are stored as members of the `VertAdv` class.
 
 | Variable Name | Type | Dimensions |
 | ------------- | ---- | ---------- |
-| VerticalVelocity | Real | NCellsSize, NVertLayersP1 |
-| TotalVerticalVelocity | Real | NCellsSize, NVertLayersP1 |
+| VerticalPseudoVelocity | Real | NCellsSize, NVertLayersP1 |
+| TotalVerticalPseudoVelocity | Real | NCellsSize, NVertLayersP1 |
 | VertFlux | Real | NTracers, NCellsSize, NVertLayersP1 |
 | LowOrderVertFlux | Real | NTracers, NCellsSize, NVertLayersP1 |
 
-The `VerticalVelocity` represents the raw vertical pseudovelocity through the
-top interfaces of cell layers, computed from the divergence of the horizontal
-velocity. The `TotalVerticalVelocity` is the transport velocity and includes
-corrections applied to the `VerticalVelocity`. The `VertFlux` and
+The `VerticalPseudoVelocity` represents the raw vertical pseudo-velocity through
+the top interfaces of cell layers, computed from the divergence of the horizontal
+velocity. The `TotalVerticalPseudoVelocity` is the transport pseudo-velocity and
+includes corrections applied to the `VerticalPseudoVelocity`. The `VertFlux` and
 `LowOrderVertFlux` store tracer fluxes at layer interfaces. The specific
 numerical algorithms to compute these fluxes are chosen by the user through
 configuration options.
 
 ### Methods
 
-The `VerticalVelocity` and `TotalVerticalVelocity` arrays are computed by
-calling the `computeVerticalVelocity` method:
+The `VerticalPseudoVelocity` and `TotalVerticalPseudoVelocity` arrays are
+computed by calling the `computeVerticalPseudoVelocity` method:
 ```
-VertAdv::computeVerticalVelocity(NormalVelocity, FluxPseudoThickEdge);
+VertAdv::computeVerticalPseudoVelocity(NormalVelocity, FluxPseudoThickEdge);
 ```
 This method takes as input the `NormalVelocity` field from the `OceanState`
 object, and the `FluxPseudoThickEdge` field from the `AuxiliaryState`. At
-present, `TotalVerticalVelocity` is equivalent to `VerticalVelocity`;
-additional corrections will be added in subsequent updates. The
-`TotalVerticalVelocity` array is used by each of the tendency methods,
-therefore `computeVerticalVelocity` must be called before any tendency
-computations.
+present, `TotalVerticalPseudoVelocity` is equivalent to
+`VerticalPseudoVelocity`; additional corrections will be added in subsequent
+updates. The `TotalVerticalPseudoVelocity` array is used by each of the
+tendency methods, therefore `computeVerticalPseudoVelocity` must be called
+before any tendency computations.
 
 There are three methods for computing vertical advection tendencies of
 thickness, horizontal velocity and tracers that are called from the time
