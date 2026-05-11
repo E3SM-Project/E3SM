@@ -491,8 +491,10 @@ TEST_CASE ("vertical_remapper") {
 
             print (" -> creating and initializing remapper ...\n",comm);
             auto remap = std::make_shared<VerticalRemapper>(src_grid,tgt_grid);
-            remap->set_source_pressure (pmid_src, pint_src);
-            remap->set_target_pressure (pmid_tgt, pint_tgt);
+            remap->set_source_pressure (pmid_src);
+            remap->set_source_pressure (pint_src);
+            remap->set_target_pressure (pmid_tgt);
+            remap->set_target_pressure (pint_tgt);
             remap->set_extrapolation_type(etype_top,Top);
             remap->set_extrapolation_type(etype_bot,Bot);
 
