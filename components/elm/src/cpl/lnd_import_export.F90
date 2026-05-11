@@ -1549,8 +1549,6 @@ contains
              l2x(index_l2x_Sl_hr(p),i)        = lnd2iac_vars%hr(g,p)
              l2x(index_l2x_Sl_npp(p),i)       = lnd2iac_vars%npp(g,p)
              l2x(index_l2x_Sl_pftwgt(p),i)    = lnd2iac_vars%pftwgt(g,p)
-             l2x(index_l2x_Sl_HDD_accum(p),i) = lnd2iac_vars%HDD_accum(g,p)
-             l2x(index_l2x_Sl_CDD_accum(p),i) = lnd2iac_vars%CDD_accum(g,p)
           end do
           ! Scalar per-gridcell fields
           ! forc_hdm is time-interpolated from stream file (FireMod in non-CPL_BYPASS,
@@ -1558,6 +1556,8 @@ contains
           ! copy here into lnd2iac_vars and pack into the coupler vector.
           lnd2iac_vars%forc_hdm(g)          = forc_hdm(g)
           l2x(index_l2x_Sl_forc_hdm, i)     = lnd2iac_vars%forc_hdm(g)
+          l2x(index_l2x_Sl_hdd,i)           = lnd2iac_vars%hdd(g)
+          l2x(index_l2x_Sl_cdd,i)           = lnd2iac_vars%cdd(g)
        end if
     end do
 

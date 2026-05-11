@@ -2847,23 +2847,6 @@ contains
        attname  = 'Sl_pftwgt_pft' //pftstr
        call metadata_set(attname, longname, stdname, units)
 
-       ! Cumulative heating and cooling degree days for EHC (K-days, accumulated since model start)
-       if(add_iac_to_cplstate)call seq_flds_add(l2x_states,'Sl_HDD_accum_pft' // pftstr)
-       call seq_flds_add(x2z_states,'Sl_HDD_accum_pft' // pftstr)
-       longname = 'Cumulative heating degree days for pft ' // pftstr
-       stdname  = 'lnd_HDD_accum_pft' // pftstr
-       units    = 'K-days'
-       attname  = 'Sl_HDD_accum_pft' // pftstr
-       call metadata_set(attname, longname, stdname, units)
-
-       if(add_iac_to_cplstate)call seq_flds_add(l2x_states,'Sl_CDD_accum_pft' // pftstr)
-       call seq_flds_add(x2z_states,'Sl_CDD_accum_pft' // pftstr)
-       longname = 'Cumulative cooling degree days for pft ' // pftstr
-       stdname  = 'lnd_CDD_accum_pft' // pftstr
-       units    = 'K-days'
-       attname  = 'Sl_CDD_accum_pft' // pftstr
-       call metadata_set(attname, longname, stdname, units)
-
        ! iac->lnd 
 
        ! This is pft for beginning of model year + 1
@@ -2912,6 +2895,24 @@ contains
     units    = 'ind/km2'
     attname  = 'Sl_forc_hdm'
     call metadata_set(attname, longname, stdname, units)
+
+    ! heating and cooling degree days for EHC
+    if(add_iac_to_cplstate)call seq_flds_add(l2x_states,'Sl_hdd')
+    call seq_flds_add(x2z_states,'Sl_hdd')
+    longname = 'heating degree days'
+    stdname  = 'lnd_hdd'
+    units    = 'K-days'
+    attname  = 'Sl_hdd'
+    call metadata_set(attname, longname, stdname, units)
+
+    if(add_iac_to_cplstate)call seq_flds_add(l2x_states,'Sl_cdd')
+    call seq_flds_add(x2z_states,'Sl_cdd')
+    longname = 'cooling degree days'
+    stdname  = 'lnd_cdd'
+    units    = 'K-days'
+    attname  = 'Sl_cdd'
+    call metadata_set(attname, longname, stdname, units)
+
     ! iac->atm flux.
     ! Monthly values of surface, low alt, high alt co2 fluxes, so we
     ! loop over 36 total fields.
