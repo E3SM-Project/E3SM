@@ -37,6 +37,7 @@
 #include "TimeMgr.h"
 #include "Tracers.h"
 #include "VertCoord.h"
+#include "VertMix.h"
 #include "mpi.h"
 
 #include <cmath>
@@ -187,6 +188,7 @@ int initTimeStepperTest(const std::string &mesh) {
    AuxiliaryState::init();
    Eos::init();
    PressureGrad::init();
+   VertMix::init();
    Tendencies::init();
 
    // finish initializing default time stepper
@@ -205,6 +207,7 @@ int initTimeStepperTest(const std::string &mesh) {
    auto *DefHalo  = Halo::getDefault();
    auto *DefEos   = Eos::getInstance();
    auto *DefPGrad = PressureGrad::getDefault();
+   auto *DefVMix  = VertMix::getInstance();
 
    int NTracers          = Tracers::getNumTracers();
    const int NTimeLevels = 2;
@@ -233,8 +236,8 @@ int initTimeStepperTest(const std::string &mesh) {
    // Creating non-default tendencies with custom velocity tendencies
    auto *TestTendencies = Tendencies::create(
        "TestTendencies", DefMesh, DefVertCoord, DefVAdv, DefPGrad, DefEos,
-       NTracers, ZeroTimeStep, &Options, Tendencies::CustomTendencyType{},
-       DecayVelocityTendency{});
+       DefVMix, NTracers, ZeroTimeStep, &Options,
+       Tendencies::CustomTendencyType{}, DecayVelocityTendency{});
    if (!TestTendencies) {
       Err++;
       LOG_ERROR("TimeStepperTest: error creating test tendencies");
@@ -256,6 +259,8 @@ int initTimeStepperTest(const std::string &mesh) {
    DefVAdv->ThickVertAdvEnabled                   = false;
    DefVAdv->VelVertAdvEnabled                     = false;
    DefVAdv->TracerVertAdvEnabled                  = false;
+   DefVMix->VelVertMixSetup.Enabled               = false;
+   DefVMix->TracerVertMixSetup.Enabled            = false;
 
    return Err;
 }
@@ -295,6 +300,7 @@ void finalizeTimeStepperTest() {
    Tracers::clear();
    TimeStepper::clear();
    PressureGrad::clear();
+   VertMix::destroyInstance();
    Eos::destroyInstance();
    Tendencies::clear();
    AuxiliaryState::clear();

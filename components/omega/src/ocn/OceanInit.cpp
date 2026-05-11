@@ -31,6 +31,7 @@
 #include "Tracers.h"
 #include "VertAdv.h"
 #include "VertCoord.h"
+#include "VertMix.h"
 
 #include "mpi.h"
 
@@ -106,6 +107,44 @@ int ocnInit(MPI_Comm Comm ///< [in] ocean MPI communicator
    TimeStepper *DefStepper = TimeStepper::getDefault();
    Clock *ModelClock       = DefStepper->getClock();
 
+   // Initialize IOStreams - this does not yet validate the contents
+   // of each file, only creates streams from Config
+   IOStream::init(ModelClock);
+
+   IO::init(Comm);
+   Field::init(ModelClock);
+   Decomp::init();
+
+   Err = Halo::init();
+   if (Err != 0) {
+      ABORT_ERROR("ocnInit: Error initializing default halo");
+   }
+
+   HorzMesh::init();
+   VertCoord::init();
+   Tracers::init();
+   VertAdv::init();
+   AuxiliaryState::init();
+   Eos::init();
+   PressureGrad::init();
+   VertMix::init();
+   Tendencies::init();
+
+   // Validate SurfaceTracerRestoring configuration
+   Tendencies *DefTend = Tendencies::getDefault();
+   if (DefTend->SurfaceTracerRestoring.Enabled &&
+       DefTend->SurfaceTracerRestoring.NTracersToRestore == 0) {
+      ABORT_ERROR("OceanInit: SurfaceTracerRestoring is enabled but "
+                  "TracersToRestore is empty");
+   }
+
+   TimeStepper::init2();
+
+   Err = OceanState::init();
+   if (Err != 0) {
+      ABORT_ERROR("ocnInit: Error initializing default state");
+   }
+
    // Now that all fields have been defined, validate all the streams
    // contents
    bool StreamsValid = IOStream::validateAll();
@@ -163,6 +202,55 @@ int ocnInit(MPI_Comm Comm ///< [in] ocean MPI communicator
       ABORT_ERROR("Error updating tracer halo after restart");
    }
    Tracers::copyToHost(CurTimeLevel);
+
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+
+   // For initial GeometricThick -> PseudoThick
+   HorzMesh *Mesh = HorzMesh::getDefault();
+   VertCoord *VCoord = VertCoord::getDefault();
+   Eos *EosInstance = Eos::getInstance();
+
+   // get temperature and salinity
+   I4 ConservTempIdx;
+   I4 AbsSalinityIdx;
+   Array3DReal TracerArray = Tracers::getAll(0);
+
+   Tracers::getIndex(ConservTempIdx, "Temperature");
+   Tracers::getIndex(AbsSalinityIdx, "Salinity");
+
+   const auto ConservTemp =
+       Kokkos::subview(TracerArray, ConservTempIdx, Kokkos::ALL, Kokkos::ALL);
+   const auto AbsSalinity =
+       Kokkos::subview(TracerArray, AbsSalinityIdx, Kokkos::ALL, Kokkos::ALL);
+
+   Array2DReal PressureMidDbar("PressureMidDbar", VCoord->PressureMid.layout());
+   deepCopy(PressureMidDbar, 0.0);
+   EosInstance->computeSpecVol(ConservTemp, AbsSalinity, PressureMidDbar);
+   const auto &SpecVol  = EosInstance->SpecVol;
+
+   // get layer thickness
+   Array2DReal LayerThickCell = DefState->getLayerThickness(0);
+   OMEGA_SCOPE(LocMinLayerCell, VCoord->MinLayerCell);
+   OMEGA_SCOPE(LocMaxLayerCell, VCoord->MaxLayerCell);
+   OMEGA_SCOPE(LocNCellsAll, Mesh->NCellsAll);
+
+   parallelForOuter(
+       "GtoP", {LocNCellsAll},
+       KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
+          const int KMin   = LocMinLayerCell(ICell);
+          const int KMax   = LocMaxLayerCell(ICell);
+          const int KRange = vertRange(KMin, KMax);
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 const int K               = KMin + KChunk;
+                 LayerThickCell(ICell,K) = LayerThickCell(ICell,K) / (SpecVol(ICell,K)*1026.0);
+
+              });
+       });
+
+////////////////////////////////////////////////
+//////////////////////////////////////////////////
 
    return Err;
 

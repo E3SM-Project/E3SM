@@ -22,6 +22,7 @@
 #include "Pacer.h"
 #include "TimeStepper.h"
 #include "VertCoord.h"
+#include "VertMix.h"
 #include "mpi.h"
 
 #include <cmath>
@@ -142,6 +143,7 @@ int initTendenciesTest(const std::string &mesh) {
    PressureGrad::init();
    Eos::init();
    Forcing::init();
+   VertMix::init();
 
    int StateErr = OceanState::init();
    if (StateErr != 0) {
@@ -177,6 +179,7 @@ int testTendencies() {
    const auto VAdv     = VertAdv::getDefault();
    const auto PGrad    = PressureGrad::getDefault();
    const auto EqState  = Eos::getInstance();
+   const auto VMix     = VertMix::getInstance();
    VCoord->NVertLayers = 12;
 
    // test creation of another tendencies
@@ -188,7 +191,7 @@ int testTendencies() {
    int NTracersTest = 3;
 
    Tendencies::create("TestTendencies", Mesh, VCoord, VAdv, PGrad, EqState,
-                      NTracersTest, ZeroTimeStep, &TendConfig);
+                      VMix, NTracersTest, ZeroTimeStep, &TendConfig);
 
    // test retrievel of another tendencies
    if (Tendencies::get("TestTendencies")) {
@@ -340,6 +343,7 @@ void finalizeTendenciesTest() {
    Forcing::clear();
    Tracers::clear();
    PressureGrad::clear();
+   VertMix::destroyInstance();
    Eos::destroyInstance();
    AuxiliaryState::clear();
    OceanState::clear();

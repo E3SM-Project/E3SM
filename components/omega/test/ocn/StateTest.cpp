@@ -28,6 +28,7 @@
 #include "Tendencies.h"
 #include "TimeStepper.h"
 #include "VertCoord.h"
+#include "VertMix.h"
 #include "mpi.h"
 
 #include <iostream>
@@ -94,6 +95,9 @@ void initStateTest() {
 
    // Initialize pressure gradient
    PressureGrad::init();
+
+   // Create tendencies
+   VertMix::init();
 
    // Create tendencies
    Tendencies::init();
@@ -408,6 +412,7 @@ int main(int argc, char *argv[]) {
       Tracers::clear();
       AuxiliaryState::clear();
       PressureGrad::clear();
+      VertMix::destroyInstance();
       Tendencies::clear();
       TimeStepper::clear();
       HorzMesh::clear();

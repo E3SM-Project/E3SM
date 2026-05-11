@@ -12,7 +12,12 @@
 
 #include "VertMix.h"
 #include "DataTypes.h"
+#include "Eos.h"
+#include "GlobalConstants.h"
 #include "HorzMesh.h"
+#include "HorzOperators.h"
+#include "TriDiagSolvers.h"
+#include "TimeStepper.h"
 
 namespace OMEGA {
 
@@ -36,6 +41,19 @@ GradRichardsonNum::GradRichardsonNum(const HorzMesh *Mesh,
 OneTwoOneFilter::OneTwoOneFilter(const VertCoord *VCoord)
     : MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell) {}
 
+VelVertMixSetupOnEdge::VelVertMixSetupOnEdge(const HorzMesh *Mesh,
+                                             const VertCoord *VCoord)
+    : Enabled(false), LocRhoSw(RhoSw), NVertLayers(VCoord->NVertLayers),
+      CellsOnEdge(Mesh->CellsOnEdge), EdgeMask(VCoord->EdgeMask),
+      MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
+      MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop) {}
+
+TracerVertMixSetupOnCell::TracerVertMixSetupOnCell(const HorzMesh *Mesh,
+                                                   const VertCoord *VCoord)
+    : Enabled(false), LocRhoSw(RhoSw), NVertLayers(VCoord->NVertLayers),
+      MinLayerCell(VCoord->MinLayerCell),
+      MaxLayerCell(VCoord->MaxLayerCell) {}
+
 /// Constructor for VertMix
 VertMix::VertMix(const std::string &Name, ///< [in] Name for VertMix object
                  const HorzMesh *Mesh,    ///< [in] Horizontal mesh
@@ -43,13 +61,18 @@ VertMix::VertMix(const std::string &Name, ///< [in] Name for VertMix object
                  )
     : ComputeVertMixConv(VCoord), ComputeVertMixShear(VCoord),
       ComputeGradRichardsonNum(Mesh, VCoord), ComputeOneTwoOneFilter(VCoord),
-      Name(Name), Mesh(Mesh), VCoord(VCoord) {
+      Name(Name), Mesh(Mesh), VCoord(VCoord), VelVertMixSetup(Mesh, VCoord),
+      TracerVertMixSetup(Mesh, VCoord) {
    VertDiff = Array2DReal("VertDiff", Mesh->NCellsSize, VCoord->NVertLayersP1);
    VertVisc = Array2DReal("VertVisc", Mesh->NCellsSize, VCoord->NVertLayersP1);
    GradRichNum =
        Array2DReal("GradRichNum", Mesh->NCellsSize, VCoord->NVertLayersP1);
    GradRichNumSmoothed = Array2DReal("GradRichNumSmoothed", Mesh->NCellsSize,
                                      VCoord->NVertLayersP1);
+
+   //TODO: Temporary handling of TangentialVelocity
+   TangentialVelocity = Array2DReal("TangentialVelocity", Mesh->NEdgesSize,
+                                    VCoord->NVertLayers);
 
    defineFields();
 }
@@ -497,5 +520,261 @@ void VertMix::defineFields() {
    GradRichNumSmoothedField->attachData<Array2DReal>(GradRichNumSmoothed);
 
 } // end defineIOFields
+
+
+// Dpply implicit velocity vertical mixing
+void VertMix::applyVelVertMixImplicit(
+    OceanState *State,              ///< [in] State variables
+    const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
+    int ThickTimeLevel,             ///< [in] Time level
+    int VelTimeLevel                ///< [in] Time level
+) {
+
+   OMEGA_SCOPE(LocNEdgesAll, Mesh->NEdgesAll);
+   OMEGA_SCOPE(LocVelVertMixSetup, VelVertMixSetup);
+   OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
+   OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
+
+   const Array2DReal &NormalVelEdge = State->NormalVelocity[VelTimeLevel];
+
+   // Compute velocity vertical mixing
+   if (LocVelVertMixSetup.Enabled) {
+      Pacer::start("Tend:velocityVertMix", 1);
+
+      Eos *EosInstance         = Eos::getInstance();
+      VertMix *VertMixInstance = VertMix::getInstance();
+
+      if (!EosInstance) {
+         LOG_WARN("Eos has not been initialized. Skipping calculation of "
+                  "VelVertMix tendency");
+      } else if (!VertMixInstance) {
+         LOG_WARN("VertMix has not been initialized. Skipping calculation of "
+                  "VelVertMix tendency");
+      } else {
+
+         // Obtain TimeStep
+         const auto *DefTimeStepper  = TimeStepper::getDefault();
+         const TimeInterval TimeStep = DefTimeStepper->getTimeStep();
+         R8 DT;
+         TimeStep.get(DT, TimeUnits::Seconds);
+
+         const auto &SpecVol  = EosInstance->SpecVol;
+         const auto &VertVisc = VertMixInstance->VertVisc;
+         const auto &LayerThickEdge =
+             AuxState->LayerThicknessAux.MeanLayerThickEdge;
+
+         const I4 NVertLayers = VCoord->NVertLayers;
+         TeamPolicy Policy =
+             TriDiagDiffSolver::makeTeamPolicy(Mesh->NEdgesAll, NVertLayers);
+
+         Kokkos::parallel_for(
+             Policy, KOKKOS_LAMBDA(const TeamMember &Team) {
+                const int IStart = Team.league_rank() * VecLength;
+
+                TriDiagDiffScratch Scratch(Team, NVertLayers);
+
+                Kokkos::parallel_for(
+                    TeamThreadRange(Team, NVertLayers), [=](int K) {
+                       for (int IVec = 0; IVec < VecLength; ++IVec) {
+                          const int IEdge = IStart + IVec;
+
+                          if (IEdge >= LocNEdgesAll) {
+                             Scratch.G(K, IVec) = 0._Real;
+                             Scratch.H(K, IVec) = 1._Real;
+                             Scratch.X(K, IVec) = 0._Real;
+                             continue;
+                          }
+
+                          Real G, H, X;
+                          LocVelVertMixSetup(IEdge, K, DT, SpecVol,
+                                             LayerThickEdge, VertVisc,
+                                             NormalVelEdge, G, H, X);
+                          Scratch.G(K, IVec) = G;
+                          Scratch.H(K, IVec) = H;
+                          Scratch.X(K, IVec) = X;
+                       }
+                    });
+
+                Team.team_barrier();
+                TriDiagDiffSolver::solve(Team, Scratch);
+                Team.team_barrier();
+
+                Kokkos::parallel_for(
+                    TeamThreadRange(Team, NVertLayers), [=](int K) {
+                       for (int IVec = 0; IVec < VecLength; ++IVec) {
+                          const int IEdge = IStart + IVec;
+                          if (IEdge < LocNEdgesAll &&
+                              K >= MinLayerEdgeBot(IEdge) &&
+                              K <= MaxLayerEdgeTop(IEdge)) {
+                             NormalVelEdge(IEdge, K) = Scratch.X(K, IVec);
+                          }
+                       }
+                    });
+             });
+      }
+      Pacer::stop("Tend:velocityVertMix", 1);
+   }
+}
+
+// Apply implicit tracer vertical mixing
+void VertMix::applyTracerVertMixImplicit(
+    OceanState *State,              ///< [in] State variables
+    const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
+    Array3DReal &TracerArray,       ///< [in] Tracer array
+    int NTracers,                   ///< [in] Number of tracers
+    int ThickTimeLevel,             ///< [in] Time level
+    int VelTimeLevel                ///< [in] Time level
+) {
+
+   OMEGA_SCOPE(LocNCellsAll, Mesh->NCellsAll);
+   OMEGA_SCOPE(LocTracerVertMixSetup, TracerVertMixSetup);
+   OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
+   OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
+
+   const Array2DReal &LayerThickCell = State->LayerThickness[ThickTimeLevel];
+
+   if (LocTracerVertMixSetup.Enabled) {
+      Pacer::start("Tend:tracerVertMix", 1);
+
+      Eos *EosInstance         = Eos::getInstance();
+      VertMix *VertMixInstance = VertMix::getInstance();
+
+      if (!EosInstance) {
+         LOG_WARN("Eos has not been initialized. Skipping calculation of "
+                  "PresGradZ tendency");
+      } else if (!VertMixInstance) {
+         LOG_WARN("VertMix has not been initialized. Skipping calculation of "
+                  "VelVertMix tendency");
+      } else {
+
+         // Obtain TimeStep
+         const auto *DefTimeStepper  = TimeStepper::getDefault();
+         const TimeInterval TimeStep = DefTimeStepper->getTimeStep();
+         R8 DT;
+         TimeStep.get(DT, TimeUnits::Seconds);
+
+         const auto &SpecVol  = EosInstance->SpecVol;
+         const auto &VertDiff = VertMixInstance->VertDiff;
+
+         const I4 NVertLayers = VCoord->NVertLayers;
+         TeamPolicy Policy =
+             TriDiagDiffSolver::makeTeamPolicy(Mesh->NCellsAll, NVertLayers);
+
+         for (int LT = 0; LT < NTracers; ++LT) {
+            const I4 L = LT;
+
+            Kokkos::parallel_for(
+                Policy, KOKKOS_LAMBDA(const TeamMember &Team) {
+                   const int IStart = Team.league_rank() * VecLength;
+
+                   TriDiagDiffScratch Scratch(Team, NVertLayers);
+
+                   Kokkos::parallel_for(
+                       TeamThreadRange(Team, NVertLayers), [=](int K) {
+                          for (int IVec = 0; IVec < VecLength; ++IVec) {
+                             const int ICell = IStart + IVec;
+
+                             if (ICell >= LocNCellsAll) {
+                                Scratch.G(K, IVec) = 0._Real;
+                                Scratch.H(K, IVec) = 1._Real;
+                                Scratch.X(K, IVec) = 0._Real;
+                                continue;
+                             }
+
+                             Real G, H, X;
+                             LocTracerVertMixSetup(L, ICell, K, DT, SpecVol,
+                                                   LayerThickCell, VertDiff,
+                                                   TracerArray, G, H, X);
+                             Scratch.G(K, IVec) = G;
+                             Scratch.H(K, IVec) = H;
+                             Scratch.X(K, IVec) = X;
+                          }
+                       });
+
+                   Team.team_barrier();
+                   TriDiagDiffSolver::solve(Team, Scratch);
+                   Team.team_barrier();
+
+                   Kokkos::parallel_for(
+                       TeamThreadRange(Team, NVertLayers), [=](int K) {
+                          for (int IVec = 0; IVec < VecLength; ++IVec) {
+                             const int ICell = IStart + IVec;
+                             if (ICell < LocNCellsAll &&
+                                 K >= MinLayerCell(ICell) &&
+                                 K <= MaxLayerCell(ICell)) {
+                                TracerArray(L, ICell, K) = Scratch.X(K, IVec);
+                             }
+                          }
+                       });
+                });
+
+         } // for LT
+      }
+      Pacer::stop("Tend:tracerVertMix", 1);
+   }
+
+} // end all tendency compute
+
+/// Apply implicit vertical mixing to velocities and tracers
+void VertMix::applyVertMixImplicit(OceanState *State, AuxiliaryState *AuxState,
+                                   Array3DReal &TracerArray, int NTracers,
+                                   int TimeLevel) {
+
+   // get NormalVelocity
+   Array2DReal NormalVelEdge = State->getNormalVelocity(TimeLevel);
+
+   // get temperature and salinity
+   I4 ConservTempIdx;
+   I4 AbsSalinityIdx;
+   Tracers::getIndex(ConservTempIdx, "Temperature");
+   Tracers::getIndex(AbsSalinityIdx, "Salinity");
+
+   const auto ConservTemp =
+       Kokkos::subview(TracerArray, ConservTempIdx, Kokkos::ALL, Kokkos::ALL);
+   const auto AbsSalinity =
+       Kokkos::subview(TracerArray, AbsSalinityIdx, Kokkos::ALL, Kokkos::ALL);
+
+   // TODO: Temporary handling of computation of tangential velocity
+   // Compute tangential velocity
+   OMEGA_SCOPE(MinLayerEdgeTop, VCoord->MinLayerEdgeTop);
+   OMEGA_SCOPE(MaxLayerEdgeBot, VCoord->MaxLayerEdgeBot);
+   OMEGA_SCOPE(LocTangentialVelocity, TangentialVelocity);
+
+   TangentialReconOnEdge TanReconEdge(Mesh);
+
+   parallelForOuter({Mesh->NEdgesAll},
+       KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
+          const int KMin   = MinLayerEdgeTop(IEdge);
+          const int KMax   = MaxLayerEdgeBot(IEdge);
+          const int KRange = vertRangeChunked(KMin, KMax);
+          parallelForInner(
+              Team, KRange, INNER_LAMBDA(int KChunk) {
+                 TanReconEdge(LocTangentialVelocity, IEdge, KChunk,
+                              NormalVelEdge);
+              });
+       });
+
+
+   // Update Pressure, SpecVol
+   AuxState->computeMomVertAux(State, TracerArray, TimeLevel,
+                               TimeLevel);
+
+   // Compute Brunt-Vaisala frequency squared
+   Eos *EqState = Eos::getInstance();
+   EqState->computeBruntVaisalaFreqSq(ConservTemp, AbsSalinity,
+                                      VCoord->PressureInterface,
+                                      EqState->SpecVol);
+
+   // Compute vertical mixing coefficients
+   computeVertMix(NormalVelEdge, TangentialVelocity,
+                  EqState->BruntVaisalaFreqSq);
+
+   // Apply implicit mixing to velocities
+   applyVelVertMixImplicit(State, AuxState, TimeLevel, TimeLevel);
+
+   // Apply implicit mixing to tracers
+   applyTracerVertMixImplicit(State, AuxState, TracerArray, NTracers,
+                              TimeLevel, TimeLevel);
+}
 
 } // namespace OMEGA
