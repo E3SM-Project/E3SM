@@ -173,13 +173,13 @@ public:
   template<typename ST, HostOrDevice HD = Device>
   ST* get_internal_view_data () const {
     // Check that the scalar type is correct
-    using nonconst_ST = typename std::remove_const<ST>::type;
-    EKAT_REQUIRE_MSG ((field_valid_data_types().at<nonconst_ST>()==m_header->get_identifier().data_type()
-                       or std::is_same<nonconst_ST,char>::value),
+    using scalar_t = typename ekat::ScalarTraits<ST>::scalar_type;
+    EKAT_REQUIRE_MSG (field_valid_data_types().has_t<scalar_t>() and
+                      get_data_type<scalar_t>()==m_header->get_identifier().data_type(),
         "Error! Attempt to access raw field pointer with the wrong scalar type.\n"
         " - field name: " + name() + "\n"
-        " - field data type: " + e2str(data_type()) + "\n"
-        " - requested type : " + e2str(field_valid_data_types().at<nonconst_ST>()) + "\n");
+        " - field data type: " + e2str(data_type()) + "\n");
+
     EKAT_REQUIRE_MSG (not m_is_read_only || std::is_const<ST>::value,
         "Error! Cannot get a non-const raw pointer to the field data if the field is read-only.\n"
         " - field name: " + name() + "\n");
@@ -197,14 +197,13 @@ public:
   template<typename ST, HostOrDevice HD = Device>
   ST* get_internal_view_data_unsafe () const {
     // Check that the scalar type is correct
-    using nonconst_ST = typename std::remove_const<ST>::type;
-    EKAT_REQUIRE_MSG ((std::is_same<nonconst_ST,char>::value or std::is_same<nonconst_ST,void>::value or
-                       (field_valid_data_types().has_t<nonconst_ST>() and
-                        get_data_type<nonconst_ST>()==m_header->get_identifier().data_type())),
-        "Error! Attempt to access raw field pointer with the wrong scalar type.\n"
-        " - field name: " + name() + "\n"
-        " - field data type: " + e2str(data_type()) + "\n"
-        " - requested type : " + e2str(field_valid_data_types().at<nonconst_ST>()) + "\n");
+    using scalar_t = typename ekat::ScalarTraits<ST>::scalar_type;
+    EKAT_REQUIRE_MSG (field_valid_data_types().has_t<scalar_t>() and
+                      get_data_type<scalar_t>()==m_header->get_identifier().data_type(),
+      "Error! Attempt to access raw field pointer with the wrong scalar type.\n"
+      " - field name: " + name() + "\n"
+      " - field data type: " + e2str(data_type()) + "\n"
+      " - requested type : " + e2str(field_valid_data_types().at<scalar_t>()) + "\n");
 
     return reinterpret_cast<ST*>(get_view_impl<HD>().data());
   }
