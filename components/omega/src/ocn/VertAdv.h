@@ -6,7 +6,7 @@
 /// \brief Contains methods and variables for vertical advection
 ///
 /// This header defines the VertAdv class which contains methods and variables
-/// for calculating the vertical velocity and for vertical transport of
+/// for calculating the vertical pseudo-velocity and for vertical transport of
 /// thickness, velocity, and tracers.
 //
 //===----------------------------------------------------------------------===//
@@ -62,15 +62,15 @@ class VertAdv {
    // 3rd-order, Coef3rdOrder = 0 gives purely 4th-order.
    Real Coef3rdOrder;
 
-   Array2DReal VerticalVelocity; ///< pseudovelocity through top of cell
-   Array2DReal
-       TotalVerticalVelocity;    ///< transport velocity through top of Cell
-   Array3DReal VertFlux;         ///< fluxes at vertical interfaces
-   Array3DReal LowOrderVertFlux; ///< low-order fluxes for FCT
+   Array2DReal VerticalPseudoVelocity; ///< pseudo-velocity through top of cell
+   Array2DReal TotalVerticalPseudoVelocity; ///< transport pseudo-velocity
+                                            ///< through top of cell
+   Array3DReal VertFlux;                    ///< fluxes at vertical interfaces
+   Array3DReal LowOrderVertFlux;            ///< low-order fluxes for FCT
 
    // Arrays on host
-   HostArray2DReal VerticalVelocityH;
-   HostArray2DReal TotalVerticalVelocityH;
+   HostArray2DReal VerticalPseudoVelocityH;
+   HostArray2DReal TotalVerticalPseudoVelocityH;
    HostArray3DReal VertFluxH;
    HostArray3DReal LowOrderVertFluxH;
 
@@ -79,8 +79,8 @@ class VertAdv {
    std::string GroupName;
 
    // Field names
-   std::string VerticalVelocityFldName;
-   std::string TotalVertVelocityFldName;
+   std::string VerticalPseudoVelocityFldName;
+   std::string TotalVertPseudoVelocityFldName;
    std::string VertFluxFldName;
    std::string LowOrderVertFluxFldName;
 
@@ -124,7 +124,7 @@ class VertAdv {
 
    /// Determine transport due to vertical advection from divergence of
    /// horizontal advection and movement of vertical interfaces.
-   void computeVerticalVelocity(
+   void computeVerticalPseudoVelocity(
        const Array2DReal &NormalVelocity, ///< [in] horizontal velocity
        const Array2DReal
            &FluxPseudoThickEdge,           ///< [in] pseudo-thickness at edges

@@ -64,16 +64,17 @@ VertAdv::VertAdv(const std::string &Name_,  //< [in] name for new VertAdv
    NTracers      = Tracers::getNumTracers();
 
    // Allocate member arrays
-   VerticalVelocity =
-       Array2DReal("VerticalVelocity", NCellsSize, NVertLayersP1);
-   TotalVerticalVelocity =
-       Array2DReal("TotalVerticalVelocity", NCellsSize, NVertLayersP1);
+   VerticalPseudoVelocity =
+       Array2DReal("VerticalPseudoVelocity", NCellsSize, NVertLayersP1);
+   TotalVerticalPseudoVelocity =
+       Array2DReal("TotalVerticalPseudoVelocity", NCellsSize, NVertLayersP1);
    VertFlux = Array3DReal("VertFlux", NTracers, NCellsSize, NVertLayersP1);
 
    // Allocate host copies
-   VerticalVelocityH      = createHostMirrorCopy(VerticalVelocity);
-   TotalVerticalVelocityH = createHostMirrorCopy(TotalVerticalVelocity);
-   VertFluxH              = createHostMirrorCopy(VertFlux);
+   VerticalPseudoVelocityH = createHostMirrorCopy(VerticalPseudoVelocity);
+   TotalVerticalPseudoVelocityH =
+       createHostMirrorCopy(TotalVerticalPseudoVelocity);
+   VertFluxH = createHostMirrorCopy(VertFlux);
 
    // Low-order flux array only needed for flux-corrected transport
    if (VertAdvChoice == VertAdvOption::FCT) {
@@ -114,14 +115,14 @@ VertAdv *VertAdv::create(const std::string &Name, //< [in] name for new VertAdv
 void VertAdv::defineFields() {
 
    // set field names (append Name if not default)
-   VerticalVelocityFldName  = "VerticalVelocity";
-   TotalVertVelocityFldName = "TotalVerticalVelocity";
-   VertFluxFldName          = "VertFlux";
-   LowOrderVertFluxFldName  = "LowOrderVertFlux";
+   VerticalPseudoVelocityFldName  = "VerticalPseudoVelocity";
+   TotalVertPseudoVelocityFldName = "TotalVerticalPseudoVelocity";
+   VertFluxFldName                = "VertFlux";
+   LowOrderVertFluxFldName        = "LowOrderVertFlux";
 
    if (Name != "Default") {
-      VerticalVelocityFldName.append(Name);
-      TotalVertVelocityFldName.append(Name);
+      VerticalPseudoVelocityFldName.append(Name);
+      TotalVertPseudoVelocityFldName.append(Name);
       VertFluxFldName.append(Name);
       LowOrderVertFluxFldName.append(Name);
    }
@@ -132,8 +133,8 @@ void VertAdv::defineFields() {
    DimNames[0] = "NCells";
    DimNames[1] = "NVertLayersP1";
 
-   auto VerticalVelocityField = Field::create(
-       VerticalVelocityFldName,                                 // field name
+   auto VerticalPseudoVelocityField = Field::create(
+       VerticalPseudoVelocityFldName,                           // field name
        "Vertical pseudovelocity across a pseudoheight surface", // long name or
                                                                 // description
        "m s^-1",                                                // units
@@ -145,8 +146,8 @@ void VertAdv::defineFields() {
        DimNames                          // dimension names
    );
 
-   auto TotalVertVelocityField =
-       Field::create(TotalVertVelocityFldName, // field name
+   auto TotalVertPseudoVelocityField =
+       Field::create(TotalVertPseudoVelocityFldName, // field name
                      "Total vertical pseudovelocity across a moving, tilted "
                      "pseudoheight surface", // long name or description
                      "m s^-1",               // units
@@ -196,14 +197,15 @@ void VertAdv::defineFields() {
    // Create a field group for VertAdv fields
    auto VertAdvGroup = FieldGroup::create(GroupName);
 
-   VertAdvGroup->addField(VerticalVelocityFldName);
-   VertAdvGroup->addField(TotalVertVelocityFldName);
+   VertAdvGroup->addField(VerticalPseudoVelocityFldName);
+   VertAdvGroup->addField(TotalVertPseudoVelocityFldName);
    VertAdvGroup->addField(VertFluxFldName);
    VertAdvGroup->addField(LowOrderVertFluxFldName);
 
    // Associate Fields with data
-   VerticalVelocityField->attachData<Array2DReal>(VerticalVelocity);
-   TotalVertVelocityField->attachData<Array2DReal>(TotalVerticalVelocity);
+   VerticalPseudoVelocityField->attachData<Array2DReal>(VerticalPseudoVelocity);
+   TotalVertPseudoVelocityField->attachData<Array2DReal>(
+       TotalVerticalPseudoVelocity);
    VertFluxField->attachData<Array3DReal>(VertFlux);
    LowOrderVertFluxField->attachData<Array3DReal>(LowOrderVertFlux);
 
@@ -214,8 +216,8 @@ void VertAdv::defineFields() {
 VertAdv::~VertAdv() {
 
    if (FieldGroup::exists(GroupName)) {
-      Field::destroy(VerticalVelocityFldName);
-      Field::destroy(TotalVertVelocityFldName);
+      Field::destroy(VerticalPseudoVelocityFldName);
+      Field::destroy(TotalVertPseudoVelocityFldName);
       Field::destroy(VertFluxFldName);
       Field::destroy(LowOrderVertFluxFldName);
       FieldGroup::destroy(GroupName);
@@ -243,8 +245,8 @@ void VertAdv::erase(std::string Name) {
 // Perform deepCopy for each variable array from device to host
 void VertAdv::copyToHost() {
 
-   deepCopy(VerticalVelocityH, VerticalVelocity);
-   deepCopy(TotalVerticalVelocityH, TotalVerticalVelocity);
+   deepCopy(VerticalPseudoVelocityH, VerticalPseudoVelocity);
+   deepCopy(TotalVerticalPseudoVelocityH, TotalVerticalPseudoVelocity);
    deepCopy(VertFluxH, VertFlux);
    if (VertAdvChoice == VertAdvOption::FCT) {
       deepCopy(LowOrderVertFluxH, LowOrderVertFlux);
@@ -255,8 +257,8 @@ void VertAdv::copyToHost() {
 // Perform deepCopy for each variable array from host to device
 void VertAdv::copyToDevice() {
 
-   deepCopy(VerticalVelocity, VerticalVelocityH);
-   deepCopy(TotalVerticalVelocity, TotalVerticalVelocityH);
+   deepCopy(VerticalPseudoVelocity, VerticalPseudoVelocityH);
+   deepCopy(TotalVerticalPseudoVelocity, TotalVerticalPseudoVelocityH);
    deepCopy(VertFlux, VertFluxH);
    if (VertAdvChoice == VertAdvOption::FCT) {
       deepCopy(LowOrderVertFlux, LowOrderVertFluxH);
@@ -354,10 +356,10 @@ void VertAdv::readConfigOptions(Config *OmegaConfig) {
 } // end readConfigOptions
 
 //------------------------------------------------------------------------------
-// Compute VerticalVelocity and TotalVerticalVelocity from the horizontal
-// velocity (NormalVelocity), the layer thickness used for fluxes through
-// edges (FluxLayerThickEdge), and the cell-based PseudoThickness.
-void VertAdv::computeVerticalVelocity(
+// Compute VerticalPseudoVelocity and TotalVerticalPseudoVelocity from the
+// horizontal velocity (NormalVelocity), the pseudo-thickness used for fluxes
+// through edges (FluxPseudoThickEdge), and the cell-based PseudoThickness.
+void VertAdv::computeVerticalPseudoVelocity(
     const Array2DReal &NormalVelocity,      //< [in] horizontal velocity
     const Array2DReal &FluxPseudoThickEdge, //< [in] pseudo-thickness at edges
     const Array2DReal &PseudoThickness,     //< [in] pseudo-thickness of layer
@@ -368,8 +370,8 @@ void VertAdv::computeVerticalVelocity(
    if (NVertLayers == 1)
       return;
 
-   OMEGA_SCOPE(LocVertVel, VerticalVelocity);
-   OMEGA_SCOPE(LocTotVertVel, TotalVerticalVelocity);
+   OMEGA_SCOPE(LocVertVel, VerticalPseudoVelocity);
+   OMEGA_SCOPE(LocTotVertVel, TotalVerticalPseudoVelocity);
    OMEGA_SCOPE(LocPseudoThickTarget, VCoord->PseudoThicknessTarget);
    OMEGA_SCOPE(LocNVertLayers, NVertLayers);
    OMEGA_SCOPE(LocAreaCell, Mesh->AreaCell);
@@ -382,7 +384,7 @@ void VertAdv::computeVerticalVelocity(
 
    // Loop over all cells owned by the task
    parallelForOuter(
-       "computeVerticalVelocity",
+       "computeVerticalPseudoVelocity",
        LaunchConfig({NCellsHalo0}, TeamScratch<Real>(NVertLayers)),
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
           ScratchArray1DReal DivHU(teamScratch(Team), LocNVertLayers);
@@ -440,8 +442,8 @@ void VertAdv::computeVerticalVelocity(
                  }
               });
 
-          // Add contribution to transport velocity from movement of layer
-          // interfaces, store in TotalVerticalVelocity.
+          // Add contribution to transport pseudo-velocity from movement of
+          // layer interfaces, store in TotalVerticalPseudoVelocity.
           parallelScanInner(
               Team, KRange, INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
                  const I4 KRev      = KMax - K;
@@ -457,7 +459,7 @@ void VertAdv::computeVerticalVelocity(
               });
        });
 
-} // end computeVerticalVelocity
+} // end computeVerticalPseudoVelocity
 
 //------------------------------------------------------------------------------
 // Compute thickness tendency due to vertical advection
@@ -475,7 +477,7 @@ void VertAdv::computeThicknessVAdvTend(
 
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
-   OMEGA_SCOPE(LocTotVertVelocity, TotalVerticalVelocity);
+   OMEGA_SCOPE(LocTotVertVelocity, TotalVerticalPseudoVelocity);
 
    // Loop over every owned cell, pseudo thickness tendency is simply
    // difference in pseudo velocity between bottom and top interface for
@@ -520,7 +522,7 @@ void VertAdv::computeVelocityVAdvTend(
    OMEGA_SCOPE(LocCOnE, Mesh->CellsOnEdge);
    OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
    OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
-   OMEGA_SCOPE(LocTotVertVelocity, TotalVerticalVelocity);
+   OMEGA_SCOPE(LocTotVertVelocity, TotalVerticalPseudoVelocity);
    OMEGA_SCOPE(EdgeMask, VCoord->EdgeMask);
    OMEGA_SCOPE(LocNVertLayersP1, NVertLayersP1);
 
@@ -631,7 +633,7 @@ void VertAdv::computeVerticalFluxes(
 
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
-   OMEGA_SCOPE(LocTotVertVel, TotalVerticalVelocity);
+   OMEGA_SCOPE(LocTotVertVel, TotalVerticalPseudoVelocity);
    OMEGA_SCOPE(LocVertFlux, VertFlux);
    OMEGA_SCOPE(LocLowOrderVertFlux, LowOrderVertFlux);
    OMEGA_SCOPE(LocCoef3rdOrder, Coef3rdOrder);
@@ -833,7 +835,7 @@ void VertAdv::computeFCTVAdvTend(
 
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
-   OMEGA_SCOPE(LocTotVertVel, TotalVerticalVelocity);
+   OMEGA_SCOPE(LocTotVertVel, TotalVerticalPseudoVelocity);
    OMEGA_SCOPE(LocVertFlux, VertFlux);
    OMEGA_SCOPE(LocLowOrderVertFlux, LowOrderVertFlux);
    OMEGA_SCOPE(LocNVertLayers, NVertLayers);

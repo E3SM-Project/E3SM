@@ -241,13 +241,13 @@ void AuxiliaryState::computeMomAux(const OceanState *State,
        });
    Pacer::stop("AuxState:cellAuxState2", 2);
 
-   Pacer::start("AuxState:computeVerticalVelocity", 2);
+   Pacer::start("AuxState:computeVerticalPseudoVelocity", 2);
 
-   const auto &FluxPseudoThickEdge = PseudoThicknessAux.FluxLayerThickEdge;
-   VAdv->computeVerticalVelocity(NormalVelEdge, FluxPseudoThickEdge,
-                                 LayerThickCell, ProjDtSeconds);
+   const auto &FluxPseudoThickEdge = PseudoThicknessAux.FluxPseudoThickEdge;
+   VAdv->computeVerticalPseudoVelocity(NormalVelEdge, FluxPseudoThickEdge,
+                                       PseudoThickCell, ProjDtSeconds);
 
-   Pacer::stop("AuxState:computeVerticalVelocity", 2);
+   Pacer::stop("AuxState:computeVerticalPseudoVelocity", 2);
 
    Pacer::stop("AuxState:computeMomAux", 1);
 }
