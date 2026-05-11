@@ -18,9 +18,10 @@ gantt
     INT-020 Centered pgrad complete   :milestone, pgrad_done, 2026-04-15, 0d
     INT-030 SSH fix integrated        :milestone, ssh_done, 2026-04-24, 0d
     INT-040 Const EOS integrated      :milestone, eos_done, 2026-04-24, 0d
-    INT-050 Timestep-EOS integrated  :milestone, tt_done, 2026-05-01, 0d
+    INT-050 Timestep-EOS integrated  :milestone, teos_done, 2026-05-01, 0d
+    INT-051 Pseudothickness integrated  :milestone, pt_done, 2026-05-08, 0d
     INT-055 Timestep-Tend integrated  :milestone, tt_done, 2026-05-14, 0d
-    INT-060 Prescribe vel integrated  :milestone, pv_done, 2026-05-21, 0d
+    INT-060 Prescribe vel integrated  :milestone, pv_done, 2026-05-01, 0d
     INT-070 FCT integrated            :milestone, fct_done, 2026-05-28, 0d
     INT-080 KPP integrated            :milestone, kpp_done, 2026-05-28, 0d
     INT-090 Submeso eddy integrated   :milestone, submeso_done, 2026-05-28, 0d
@@ -38,7 +39,7 @@ gantt
     VER-101 Prep RK2 test suite                     :ver101, 2026-04-15, 3d
     VER-102 Prep FB test suite                      :ver102, 2026-04-15, 3d
     VER-103 Run RK2                                 :ver103, after ver101, 4d
-    VER-104 Run RK4                                 :ver104, after ver102, 4d
+    VER-104 Run FB                                :ver104, after ver102, 4d
 
     DEV-401/VER-401 Sphere transport prescribed velocity :devver401, 2026-04-15, 8d
 
@@ -47,6 +48,7 @@ gantt
     section Omega-Dev1
     DEV-301/VER-301 Implement and test SSH fix      :devver301, after pgrad_done, 7d
     DEV-302/VER-301 Implement and test constant EOS :devver302, after pgrad_done, 7d
+    DEV-303 Implement pseudothickness :: dev303, after teos_done, 5d
 
     DEV-101/VER-402 Implement and test Timestep-Tend:devver101, after pgrad_done, 9d
 
@@ -100,6 +102,8 @@ flowchart LR
         B ---> C@{ shape: circ, label: "Centered pgrad ✔" }
         C --> E@{ shape: circ, label: "SSH fix" }
         C --> D@{ shape: circ, label: "Const EOS" }
+        C --> FF@{ shape: circ, label: "Timestep EOS" }
+        FF --> GG@{ shape: circ, label: "Pseudothickness" }
         C --> F@{ shape: circ, label: "Timestep-Tend" }
         F --> G@{ shape: circ, label: "Prescribe vel" }
         G --> H@{ shape: circ, label: "FCT" }
@@ -135,7 +139,7 @@ flowchart LR
             A --> VER101[Prep RK2 test suite]
             A --> VER102[Prep FB test suite]
             VER101 --> VER103[Run RK2]
-            VER102 --> VER104[Run RK4]
+            VER102 --> VER104[Run FB]
             class VER101,VER102,VER103,VER104 VER
             end
         subgraph Surface restoring
@@ -148,10 +152,12 @@ flowchart LR
     subgraph O1 ["Omega-DEV1"]
         style O1 fill:#FFF,stroke:#333,stroke-width:2px
         subgraph Timestep-Tend
-            C --> DEV101[Implement Timestep-Tend]
-            DEV101 --> VER402(Run overflow, seamount)
+            C --> DEV101[Implement Timestep-EOS]
+            FF --> DEV303[Implement Pseudothickness]
+            C --> DEV102[Implement Timestep-Tend]
+            DEV102 --> VER402(Run overflow, seamount)
             VER402 --> F
-            class DEV101 DEV
+            class DEV101,DEV102,DEV303 DEV
             class VER402 VER
             end
 
