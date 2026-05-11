@@ -583,17 +583,26 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
                            "from {}",
                            StreamName);
             }
-            Real Sum5 = 0.;
+            Real Sum5     = 0.;
+            I4 NumNonZero = 0;
             parallelReduce(
                 {VertCoordMovementWeights.extent_int(0)},
-                KOKKOS_LAMBDA(int I, Real &Accum) {
-                   Accum += LocVCoordMvmtWgts(I);
+                KOKKOS_LAMBDA(int I, Real &Accum, I4 &NonZeroCount) {
+                   Real W = LocVCoordMvmtWgts(I);
+                   Accum += W;
+                   if (W != 0) {
+                      NonZeroCount += 1;
+                   }
                 },
-                Sum5);
+                Sum5, NumNonZero);
             if (Sum5 < 0.) {
                ABORT_ERROR("VertCoord: Error reading VertCoordMovementWeights "
                            "from {}",
                            StreamName);
+            }
+            if (NumNonZero == 0) {
+               // TODO: ABORT_ERROR when all weights equal 0
+               deepCopy(VertCoordMovementWeights, 1._Real);
             }
          }
       } else {
@@ -602,6 +611,7 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
    } else {
       deepCopy(MinLayerCell, 1);
       deepCopy(MaxLayerCell, NVertLayers);
+      deepCopy(VertCoordMovementWeights, 1._Real);
    }
 
    // Subtract 1 to convert to zero-based indexing
