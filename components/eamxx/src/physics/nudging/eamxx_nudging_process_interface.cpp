@@ -291,8 +291,8 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
     // For static 1D profile, we can read p_mid now
     auto pmid_ext = create_helper_field("p_mid_ext", grid_ext->get_vertical_layout(LEVP), grid_ext->name());
-    AtmosphereInput src_input(m_static_vertical_pressure_file,grid_ext,{pmid_ext.alias("p_levs")},true);
-    src_input.read_variables(-1);
+    auto gids = grid_ext->get_partitioned_dim_gids();
+    read_fields(m_static_vertical_pressure_file,{pmid_ext.alias("p_levs")},gids,m_comm);
 
     // For static 1d profile, p_mid_tmp is an alias of p_mid_ext
     m_helper_fields["p_mid_tmp"] = pmid_ext.alias("p_mid_tmp");
@@ -311,8 +311,8 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   // do the interpolation.
   if (m_use_weights) {
     auto nudging_weights = create_helper_field("nudging_weights", layout_atm, m_grid->name());
-    AtmosphereInput src_weights_input(m_weights_file, m_grid, {nudging_weights},true);
-    src_weights_input.read_variables();
+    auto gids = m_grid->get_partitioned_dim_gids();
+    read_fields(m_weights_file,{nudging_weights},gids,m_comm);
   }
 }
 

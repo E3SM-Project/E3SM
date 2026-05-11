@@ -1,8 +1,10 @@
 #include "share/data_managers/mesh_free_grids_manager.hpp"
+
 #include "share/grid/point_grid.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/property_checks/field_nan_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
+#include "share/field/field_reader.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include "share/physics/physics_constants.hpp"
@@ -208,36 +210,13 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
 void MeshFreeGridsManager::
 load_lat_lon (const nonconstgrid_ptr_type& grid, const std::string& filename) const
 {
-  using gid_type = AbstractGrid::gid_type;
-
   auto degN = ekat::units::none.rename("degrees_north");
   auto degE = ekat::units::none.rename("degrees_east");
 
   auto lat = grid->create_geometry_data("lat" , grid->get_2d_scalar_layout(), degN);
   auto lon = grid->create_geometry_data("lon" , grid->get_2d_scalar_layout(), degE);
 
-  auto lat_v = lat.get_view<Real*,Host>();
-  auto lon_v = lon.get_view<Real*,Host>();
-
-  auto min_gid = grid->get_global_min_partitioned_dim_gid();
-  auto gids_h = grid->get_dofs_gids().get_view<const gid_type*,Host>();
-  std::vector<scorpio::offset_t> offsets(gids_h.size());
-  for (size_t i=0; i<gids_h.size(); ++i) {
-    offsets[i] = gids_h[i]-min_gid;
-  }
-  const auto decomp_tag  = grid->get_partitioned_dim_tag();
-  std::string decomp_dim = grid->has_special_tag_name(decomp_tag)
-                         ? grid->get_special_tag_name(decomp_tag)
-                         : e2str(decomp_tag);
-
-  scorpio::register_file(filename,scorpio::Read);
-  scorpio::set_dim_decomp(filename,decomp_dim,offsets);
-  scorpio::read_var(filename,"lat",lat_v.data());
-  scorpio::read_var(filename,"lon",lon_v.data());
-  scorpio::release_file(filename);
-
-  lat.sync_to_dev();
-  lon.sync_to_dev();
+  read_fields(filename,{lat,lon},grid->get_partitioned_dim_gids(),grid->get_comm());
 
 #ifndef NDEBUG
   auto lat_check = std::make_shared<FieldNaNCheck>(lat,grid)->check();
@@ -266,21 +245,7 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
   auto lev  = grid->create_geometry_data("lev",  layout_mid, mbar);
   auto ilev = grid->create_geometry_data("ilev", layout_int, mbar);
 
-  auto hyam_v  = hyam.get_view<Real*,Host>();
-  auto hybm_v  = hybm.get_view<Real*,Host>();
-  auto hyai_v  = hyai.get_view<Real*,Host>();
-  auto hybi_v  = hybi.get_view<Real*,Host>();
-  auto lev_v   = lev.get_view<Real*,Host>();
-  auto ilev_v  = ilev.get_view<Real*,Host>();
-
-  scorpio::register_file(filename,scorpio::Read);
-  scorpio::read_var(filename,"hyam",hyam_v.data());
-  scorpio::read_var(filename,"hybm",hybm_v.data());
-  scorpio::read_var(filename,"hyai",hyai_v.data());
-  scorpio::read_var(filename,"hybi",hybi_v.data());
-  scorpio::read_var(filename,"lev", lev_v.data());
-  scorpio::read_var(filename,"ilev",ilev_v.data());
-  scorpio::release_file(filename);
+  read_fields(filename,{hyam,hybm,hyai,hybi});
 
   using stratts_t = std::map<std::string,std::string>;
   auto& lev_io_atts  = lev.get_header().get_extra_data<stratts_t>("io: string attributes");
@@ -294,21 +259,12 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
   using PC       = scream::physics::Constants<Real>;
   const Real ps0 = PC::P0.value;
 
-  auto num_lev = grid->get_num_vertical_levels();
-  for (int ii=0;ii<num_lev;ii++) {
-    lev_v(ii)  = 0.01*ps0*(hyam_v(ii)+hybm_v(ii));
-    ilev_v(ii) = 0.01*ps0*(hyai_v(ii)+hybi_v(ii));
-  }
-  // Note, ilev is just 1 more level than the number of midpoint levs
-  ilev_v(num_lev) = 0.01*ps0*(hyai_v(num_lev)+hybi_v(num_lev));
-
-  // Sync to dev
-  hyam.sync_to_dev();
-  hybm.sync_to_dev();
-  hyai.sync_to_dev();
-  hybi.sync_to_dev();
-  lev.sync_to_dev();
-  ilev.sync_to_dev();
+  ilev.deep_copy(hyai);
+  ilev.update(hybi,1,1);
+  ilev.scale(0.01*ps0);
+  lev.deep_copy(hyam);
+  lev.update(hybm,1,1);
+  lev.scale(0.01*ps0);
 
 #ifndef NDEBUG
   for (auto f : {hyam, hybm, hyai, hybi}) {
