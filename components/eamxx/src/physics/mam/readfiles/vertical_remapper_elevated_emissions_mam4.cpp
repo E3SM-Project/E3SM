@@ -33,7 +33,7 @@ void VerticalRemapperElevatedEmissionsMAM4::remap_fwd_impl ()
 /* Reads altitude_int from an NC file and stores it as m_alt_int_src.
  * altitude_int is a 1D field (same for all columns) in km. */
 void VerticalRemapperElevatedEmissionsMAM4::
-set_source_pressure (const std::string& file_name)
+set_source_interface_height (const std::string& file_name)
 {
   using namespace ShortFieldTagsNames;
   auto layout = m_src_grid->get_vertical_layout(ILEV);
@@ -49,7 +49,7 @@ set_source_pressure (const std::string& file_name)
 
 /* Stores the model interface height field (z_mam4_int) as m_z_iface_tgt. */
 void VerticalRemapperElevatedEmissionsMAM4::
-set_target_pressure (const Field& z_iface)
+set_target_interface_height (const Field& z_iface)
 {
   m_z_iface_tgt = z_iface;
 }

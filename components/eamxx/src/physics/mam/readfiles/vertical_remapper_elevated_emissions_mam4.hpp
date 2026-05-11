@@ -22,8 +22,8 @@ public:
 
   ~VerticalRemapperElevatedEmissionsMAM4 () = default;
 
-  void set_source_pressure (const std::string& file_name);
-  void set_target_pressure (const Field& z_iface);
+  void set_source_interface_height (const std::string& file_name);
+  void set_target_interface_height (const Field& z_iface);
 
 protected:
 
