@@ -109,11 +109,11 @@ int main(int argc, char *argv[]) {
       R8 MinBathy = 1e10;
 
       for (int ICell = 0; ICell < NCellsOwned; ++ICell) {
-         if (DefVertCoord->BottomDepthH(ICell) < MinBathy) {
-            MinBathy = DefVertCoord->BottomDepthH(ICell);
+         if (DefVertCoord->BottomGeomDepthH(ICell) < MinBathy) {
+            MinBathy = DefVertCoord->BottomGeomDepthH(ICell);
          }
-         if (DefVertCoord->BottomDepthH(ICell) > MaxBathy) {
-            MaxBathy = DefVertCoord->BottomDepthH(ICell);
+         if (DefVertCoord->BottomGeomDepthH(ICell) > MaxBathy) {
+            MaxBathy = DefVertCoord->BottomGeomDepthH(ICell);
          }
       }
 
@@ -219,11 +219,11 @@ int main(int argc, char *argv[]) {
       // Tests for computeZHeight
 
       Array2DReal SpecVol("SpecVol", NCellsSize, NVertLayers);
-      Array1DReal BottomDepth("BottomDepth", NCellsSize);
+      Array1DReal BottomGeomDepth("BottomGeomDepth", NCellsSize);
       Array1DReal MaxLyrCellReal("MaxLyrCellReal", NCellsSize);
       deepCopy(MaxLyrCellReal, DefVertCoord->MaxLayerCell);
 
-      auto &BotDepth = DefVertCoord->BottomDepth;
+      auto &BotDepth = DefVertCoord->BottomGeomDepth;
 
       /// Initialize bottom depth, pseudo-thickness and specific volume so that
       /// the resulting interface z value is the negative layer number

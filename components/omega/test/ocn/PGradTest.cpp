@@ -161,17 +161,17 @@ int main(int argc, char *argv[]) {
          Array2DReal Salinity    = Tracers::getByName(TimeLevel, "Salinity");
 
          // set Z interface and mid-point locations
-         Real ZBottom         = -1000.0_Real;
-         Real DZ              = 2.0_Real * (-ZBottom / NVertLayers);
-         auto &BottomDepth    = VCoord->BottomDepth;
-         auto &GeomZInterface = VCoord->GeomZInterface;
-         auto &GeomZMid       = VCoord->GeomZMid;
-         Real TiltFactor      = 0.495_Real;
+         Real ZBottom          = -1000.0_Real;
+         Real DZ               = 2.0_Real * (-ZBottom / NVertLayers);
+         auto &BottomGeomDepth = VCoord->BottomGeomDepth;
+         auto &GeomZInterface  = VCoord->GeomZInterface;
+         auto &GeomZMid        = VCoord->GeomZMid;
+         Real TiltFactor       = 0.495_Real;
          parallelFor(
              {NCellsAll}, KOKKOS_LAMBDA(int i) {
                 GeomZInterface(i, NVertLayers) = ZBottom;
                 SurfacePressure(i)             = 0.0_Real;
-                BottomDepth(i)                 = 0.0_Real;
+                BottomGeomDepth(i)             = 0.0_Real;
                 for (int k = NVertLayers - 1; k >= 0; --k) {
                    Real X  = (k + i) % 2;
                    Real Dz = (2.0_Real * TiltFactor - 1.0_Real) * X * DZ +
@@ -182,7 +182,7 @@ int main(int argc, char *argv[]) {
                        GeomZInterface(i, k) - GeomZInterface(i, k + 1);
                    GeomZMid(i, k) = 0.5_Real * (GeomZInterface(i, k) +
                                                 GeomZInterface(i, k + 1));
-                   BottomDepth(i) += Dz;
+                   BottomGeomDepth(i) += Dz;
                 }
              });
 
