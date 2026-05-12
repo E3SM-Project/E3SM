@@ -45,4 +45,4 @@ Multiple instances of the vertical coordinate class can be created and accessed 
 | MaxLayerVertexBot | max of the last active layer for cells on vertex | - |
 | VertCoordMovementWeights | weights to specify how total column thickness changes are distributed across layers | - |
 | RefPseudoThickness | reference pseudo-thickness used to distribute total column thickness changes | m |
-| BottomDepth | positive down distance from the reference geoid to the bottom | m |
+| BottomGeomDepth | positive down distance from the reference geoid to the bottom | m |
