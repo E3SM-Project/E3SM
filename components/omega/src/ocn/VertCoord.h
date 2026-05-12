@@ -152,10 +152,10 @@ class VertCoord {
    HostArray2DReal VertexMaskH; ///< Mask to determine if computations should be
                                 ///  done on vertex
 
-   // BottomDepth read from mesh file
-   Array1DReal BottomDepth;
+   // BottomGeomDepth read from mesh file
+   Array1DReal BottomGeomDepth;
 
-   HostArray1DReal BottomDepthH;
+   HostArray1DReal BottomGeomDepthH;
 
    // TODO: Temporary handling of SurfacePressure
    Array1DReal SurfacePressure;
@@ -168,10 +168,10 @@ class VertCoord {
    std::string GroupName;
 
    // Field names
-   std::string MinLayerCellFldName;   ///< Field name for MinLayerCell
-   std::string MaxLayerCellFldName;   ///< Field name for MaxLayerCell
-   std::string BottomDepthFldName;    ///< Field name for BottomDepth
-   std::string RefPseudoThickFldName; ///< Field name for RefPseudoThickness
+   std::string MinLayerCellFldName;    ///< Field name for MinLayerCell
+   std::string MaxLayerCellFldName;    ///< Field name for MaxLayerCell
+   std::string BottomGeomDepthFldName; ///< Field name for BottomGeomDepth
+   std::string RefPseudoThickFldName;  ///< Field name for RefPseudoThickness
    std::string
        VCoordMvmtWgtsFldName;      ///< Field name for VertCoordMovementWeights
    std::string PressInterfFldName; ///< Field name for interface pressure

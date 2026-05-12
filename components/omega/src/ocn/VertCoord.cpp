@@ -139,9 +139,9 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    CellsOnVertex = Decomp->CellsOnVertex;
 
    // Allocate device arrays
-   MaxLayerCell = Array1DI4("MaxLayerCell", NCellsSize);
-   MinLayerCell = Array1DI4("MinLayerCell", NCellsSize);
-   BottomDepth  = Array1DReal("BottomDepth", NCellsSize);
+   MaxLayerCell    = Array1DI4("MaxLayerCell", NCellsSize);
+   MinLayerCell    = Array1DI4("MinLayerCell", NCellsSize);
+   BottomGeomDepth = Array1DReal("BottomGeomDepth", NCellsSize);
    PressureInterface =
        Array2DReal("PressureInterface", NCellsSize, NVertLayersP1);
    PressureMid     = Array2DReal("PressureMid", NCellsSize, NVertLayers);
@@ -172,7 +172,7 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    // Define field metadata
    defineFields();
 
-   // Set MinLayerCell, MaxLayerCell, and BottomDepth arrays
+   // Set MinLayerCell, MaxLayerCell, and BottomGeomDepth arrays
    setStreamArrays(ReadStream, MeshHalo);
 
    // Compute Edge and Vertex vertical ranges
@@ -219,7 +219,7 @@ void VertCoord::defineFields() {
    // Set field names (append Name if not default)
    MinLayerCellFldName          = "MinLayerCell";
    MaxLayerCellFldName          = "MaxLayerCell";
-   BottomDepthFldName           = "BottomDepth";
+   BottomGeomDepthFldName       = "BottomGeomDepth";
    RefPseudoThickFldName        = "RefPseudoThickness";
    VCoordMvmtWgtsFldName        = "VertCoordMovementWeights";
    PressInterfFldName           = "PressureInterface";
@@ -233,7 +233,7 @@ void VertCoord::defineFields() {
    if (Name != "Default") {
       MinLayerCellFldName.append(Name);
       MaxLayerCellFldName.append(Name);
-      BottomDepthFldName.append(Name);
+      BottomGeomDepthFldName.append(Name);
       RefPseudoThickFldName.append(Name);
       VCoordMvmtWgtsFldName.append(Name);
       PressInterfFldName.append(Name);
@@ -276,8 +276,8 @@ void VertCoord::defineFields() {
        DimNames     // dimension names
    );
 
-   auto BottomDepthField = Field::create(
-       BottomDepthFldName, // field name
+   auto BottomGeomDepthField = Field::create(
+       BottomGeomDepthFldName, // field name
        "Depth of the bottom of the ocean. Given as a positive distance from"
        "sea level",                      // long name or description
        "m",                              // units
@@ -424,13 +424,13 @@ void VertCoord::defineFields() {
 
    InitVCoordGroup->addField(MinLayerCellFldName);
    InitVCoordGroup->addField(MaxLayerCellFldName);
-   InitVCoordGroup->addField(BottomDepthFldName);
+   InitVCoordGroup->addField(BottomGeomDepthFldName);
    InitVCoordGroup->addField(RefPseudoThickFldName);
    InitVCoordGroup->addField(VCoordMvmtWgtsFldName);
 
    MinLayerCellField->attachData<Array1DI4>(MinLayerCell);
    MaxLayerCellField->attachData<Array1DI4>(MaxLayerCell);
-   BottomDepthField->attachData<Array1DReal>(BottomDepth);
+   BottomGeomDepthField->attachData<Array1DReal>(BottomGeomDepth);
    RefPseudoThickField->attachData<Array2DReal>(RefPseudoThickness);
    VertCoordMvmtWgtsField->attachData<Array1DReal>(VertCoordMovementWeights);
 
@@ -467,7 +467,7 @@ VertCoord::~VertCoord() {
    if (FieldGroup::exists(InitGroupName)) {
       Field::destroy(MinLayerCellFldName);
       Field::destroy(MaxLayerCellFldName);
-      Field::destroy(BottomDepthFldName);
+      Field::destroy(BottomGeomDepthFldName);
       Field::destroy(RefPseudoThickFldName);
       Field::destroy(VCoordMvmtWgtsFldName);
       FieldGroup::destroy(InitGroupName);
@@ -504,23 +504,23 @@ void VertCoord::clear() {
 } // end clear
 
 //------------------------------------------------------------------------------
-// If ReadStream = true, read MinLayerCell, MaxLayerCell, and BottomDepth from
-// the initial stream. If ReadStream = false, default values are used.
+// If ReadStream = true, read MinLayerCell, MaxLayerCell, and BottomGeomDepth
+// from the initial stream. If ReadStream = false, default values are used.
 void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
 
    Error Err; // Error code
 
    OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
    OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
-   OMEGA_SCOPE(LocBottomDepth, BottomDepth);
+   OMEGA_SCOPE(LocBottomGeomDepth, BottomGeomDepth);
    OMEGA_SCOPE(LocPseudoThick, RefPseudoThickness);
    OMEGA_SCOPE(LocVCoordMvmtWgts, VertCoordMovementWeights);
 
    // If ReadStream is true (default) attempt to read values for MinLayerCell,
-   // MaxLayerCell, and BottomDepth from the InitialVertCoord stream. Otherwise,
-   // MinLayerCell and MaxLayerCell will be set to the first and last indices of
-   // the vertical range, BottomDepth will remain uninitialized and will need
-   // to be initialized explicitly if needed.
+   // MaxLayerCell, and BottomGeomDepth from the InitialVertCoord stream.
+   // Otherwise, MinLayerCell and MaxLayerCell will be set to the first and
+   // last indices of the vertical range, BottomGeomDepth will remain
+   // uninitialized and will need to be initialized explicitly if needed.
    if (ReadStream) {
 
       I4 FillValueI4     = -1;
@@ -528,7 +528,7 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
 
       deepCopy(MinLayerCell, FillValueI4);
       deepCopy(MaxLayerCell, FillValueI4);
-      deepCopy(BottomDepth, FillValueReal);
+      deepCopy(BottomGeomDepth, FillValueReal);
       deepCopy(RefPseudoThickness, FillValueReal);
       deepCopy(VertCoordMovementWeights, FillValueReal);
 
@@ -547,8 +547,8 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
          // Attempt to read stream, an error will be raised if any field fails
          // to be read. Determine which fields may not have been read properly.
          // If MinLayerCell or MaxLayerCell were not read properly default
-         // values will be used. If BottomDepth was not read properly, abort
-         // with error.
+         // values will be used. If BottomGeomDepth was not read properly,
+         // abort with error.
          Err = IOStream::read(StreamName);
          if (Err.isFail()) {
             LOG_INFO("VertCoord: Error while reading {} stream", StreamName);
@@ -580,13 +580,13 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
             }
             Real Sum3 = 0.;
             parallelReduce(
-                {BottomDepth.extent_int(0)},
+                {BottomGeomDepth.extent_int(0)},
                 KOKKOS_LAMBDA(int I, Real &Accum) {
-                   Accum += LocBottomDepth(I);
+                   Accum += LocBottomGeomDepth(I);
                 },
                 Sum3);
             if (Sum3 < 0.) {
-               ABORT_ERROR("VertCoord: Error reading bottomDepth from {}",
+               ABORT_ERROR("VertCoord: Error reading bottomGeomDepth from {}",
                            StreamName);
             }
             Real Sum4 = 0.;
@@ -643,7 +643,7 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
    // Exchange halos since stream only reads owned cells
    MeshHalo->exchangeFullArrayHalo(MinLayerCell, OnCell);
    MeshHalo->exchangeFullArrayHalo(MaxLayerCell, OnCell);
-   MeshHalo->exchangeFullArrayHalo(BottomDepth, OnCell);
+   MeshHalo->exchangeFullArrayHalo(BottomGeomDepth, OnCell);
    MeshHalo->exchangeFullArrayHalo(RefPseudoThickness, OnCell);
 
    // The index ICell = NCellsAll represents an inactive cell
@@ -658,7 +658,7 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
    // Make host copies for device arrays read from mesh file
    MaxLayerCellH             = createHostMirrorCopy(MaxLayerCell);
    MinLayerCellH             = createHostMirrorCopy(MinLayerCell);
-   BottomDepthH              = createHostMirrorCopy(BottomDepth);
+   BottomGeomDepthH          = createHostMirrorCopy(BottomGeomDepth);
    RefPseudoThicknessH       = createHostMirrorCopy(RefPseudoThickness);
    VertCoordMovementWeightsH = createHostMirrorCopy(VertCoordMovementWeights);
 }
@@ -952,10 +952,10 @@ void VertCoord::computePressure(
 
 //------------------------------------------------------------------------------
 // Compute geometric height z at layer interfaces and midpoints given the
-// PseudoThickness, SpecVol, and BottomDepth. Hierarchical parallelism is used
-// with a parallel_for loop over cells and a parallel_scan performing a prefix
-// sum in each column to compute z from the bottom-most active layer to the
-// top-most active layer
+// PseudoThickness, SpecVol, and BottomGeomDepth. Hierarchical parallelism is
+// used with a parallel_for loop over cells and a parallel_scan performing a
+// prefix sum in each column to compute z from the bottom-most active layer to
+// the top-most active layer
 void VertCoord::computeZHeight(
     const Array2DReal &PseudoThickness, // [in] pseudo thickness
     const Array2DReal &SpecVol          // [in] specific volume
@@ -965,7 +965,7 @@ void VertCoord::computeZHeight(
    OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
    OMEGA_SCOPE(LocZInterf, GeomZInterface);
    OMEGA_SCOPE(LocZMid, GeomZMid);
-   OMEGA_SCOPE(LocBotDepth, BottomDepth);
+   OMEGA_SCOPE(LocBotGeomDepth, BottomGeomDepth);
    OMEGA_SCOPE(LocSshCell, SshCell);
 
    parallelForOuter(
@@ -975,7 +975,7 @@ void VertCoord::computeZHeight(
           const I4 KMax   = LocMaxLayerCell(ICell);
           const I4 KRange = vertRange(KMin, KMax);
 
-          LocZInterf(ICell, KMax + 1) = -LocBotDepth(ICell);
+          LocZInterf(ICell, KMax + 1) = -LocBotGeomDepth(ICell);
           parallelScanInner(
               Team, KRange, INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
                  const I4 KLyr = KMax - K;
@@ -983,9 +983,9 @@ void VertCoord::computeZHeight(
                            PseudoThickness(ICell, KLyr);
                  Accum += DZ;
                  if (IsFinal) {
-                    LocZInterf(ICell, KLyr) = -LocBotDepth(ICell) + Accum;
+                    LocZInterf(ICell, KLyr) = -LocBotGeomDepth(ICell) + Accum;
                     LocZMid(ICell, KLyr) =
-                        -LocBotDepth(ICell) + Accum - 0.5 * DZ;
+                        -LocBotGeomDepth(ICell) + Accum - 0.5 * DZ;
                     if (KLyr == KMin) {
                        LocSshCell(ICell) = LocZInterf(ICell, KLyr);
                     }
