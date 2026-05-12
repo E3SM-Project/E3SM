@@ -23,6 +23,7 @@ module LakeFluxesMod
   use ColumnDataType       , only : col_es, col_ws
   use VegetationType       , only : veg_pp
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
+  use abortutils           , only : endrun
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -379,12 +380,14 @@ contains
       fncopy = num_lakep
       fpcopy(1:num_lakep) = filter_lakep(1:num_lakep)
 
-      ! Begin stability iteration
-      if (implicit_stress) then
-         itmax = itmax_impl
-      else
-         itmax = itmax_expl
-      end if
+      ! ! Begin stability iteration
+      ! if (implicit_stress) then
+      !    itmax = itmax_impl
+      ! else
+      !    itmax = itmax_expl
+      ! end if
+
+      itmax = itmax_impl ! WH - special test to understand implicit_stress instability
 
       ITERATION : do while (iter <= itmax .and. fncopy > 0)
 
@@ -597,6 +600,29 @@ contains
             t_grnd(c) = t_lake(c,1)
             eflx_sh_grnd(p) = forc_rho(t)*cpair*(t_grnd(c)-thm(p))/rah(p)
             qflx_evap_soi(p) = forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-t_grnd_temp) - forc_q(t))/raw(p)
+         end if
+
+         if (abs(eflx_sh_grnd(p)) > 1200.) then
+            write(iulog,*) "ERROR: LakeFluxesMod - Sensible heat flux exceeds 1000 W/m^2."
+            write(iulog,*) "Sensible heat flux: ", eflx_sh_grnd(p), &
+                 ", wind_speed0: ", wind_speed0(p), &
+                 ", wind_speed_adj: ", wind_speed_adj(p), &
+                 ! ", ugust: ", ugust(t), &
+                 ", dth: ", dth(p), &
+                 ", dqh: ", dqh(p), &
+                 ", ustar: ", ustar(p), &
+                 ", tstar: ", temp1(p)*dth(p), &
+                 ", qstar: ", temp2(p)*dqh(p), &
+                 ", tau: ", tau(p), &
+                 ", thm: ", thm(p), &
+                 ", forc_q: ", forc_q(t), &
+                 ", forc_u: ", forc_u(t), &
+                 ", forc_v: ", forc_v(t), &
+                 ", tau_diff: ", tau_diff(p)!, &
+                 ! ", prev_tau_diff: ", prev_tau_diff(p), &
+                 ! ", wsresp: ", wsresp(t), &
+                 ! ", tau_est: ", tau_est(t)
+            ! call endrun("Error in LakeFluxesMod: Unrealistically huge sensible heat flux encountered")
          end if
 
          ! Update htvp

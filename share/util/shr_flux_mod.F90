@@ -493,6 +493,19 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         !--- water flux ---
         evap(n) = lat(n)/loc_latvap
 
+        if (abs(sen(n)) > 1200.) then
+           write(s_logunit,*) "ERROR: shr_flux_atmOcn - Sensible heat flux exceeds 1000 W/m^2."
+           write(s_logunit,*) "Sensible heat flux: ", sen(n), &
+                ", wind0: ", wind0, ", vmag: ", vmag, &
+                ! ", ugust: ", ugust(n), &
+                ", delt: ", delt, ",  delq: ", delq, ", ustar: ", ustar, &
+                ", tstar: ", tstar, ", qstar: ", qstar, ", tau: ", tau, &
+                ", thbot: ", thbot(n), ", qbot: ", qbot(n), ", tau_diff: ", tau_diff!, &
+                ! ", prev_tau_diff: ", prev_tau_diff, ", wsresp: ", wsresp(n), &
+                ! ", tau_est: ", tau_est(n)
+           ! call shr_sys_abort("Error in shr_flux_atmOcn in shr_flux_mod: Unrealistically huge sensible heat flux encountered")
+        end if
+
         !---water isotope flux ---
 
         call wiso_flxoce(2,rbot(n),zbot(n),s16O(n),ts(n),r16O(n),ustar,re,ssq,evap_16O(n), &
@@ -2522,7 +2535,10 @@ subroutine shr_flux_update_stress(wind0, wsresp, tau_est, tau, prev_tau, &
 
   ! Using wsresp_applied = 0.5 * wsresp improves accuracy somewhat, similar to
   ! using the trapezoidal method rather than backward Euler.
-  wsresp_applied = 0.5 * wsresp
+  ! wsresp_applied = 0.5 * wsresp
+
+  ! test if this fixes instability issues
+  wsresp_applied = 1.0 * wsresp
 
   ! Forbid removing more than 99% of wind speed.
   ! This is applied before anything else to ensure that the applied stress is
@@ -2540,7 +2556,8 @@ subroutine shr_flux_update_stress(wind0, wsresp, tau_est, tau, prev_tau, &
      ! this should not be set below 0.5
      tau_diff_fac = 0.6_r8
   else
-     tau_diff_fac = 0.95_r8
+     ! tau_diff_fac = 0.95_r8 <= original value
+     tau_diff_fac = 1.e100_r8 ! <= debug value
   end if
 
   if (abs(tau_diff) > abs(tau_diff_fac*prev_tau_diff)) then

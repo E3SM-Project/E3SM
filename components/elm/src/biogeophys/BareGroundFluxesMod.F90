@@ -20,6 +20,7 @@ module BareGroundFluxesMod
   use ColumnDataType       , only : col_es, col_ef, col_ws
   use VegetationType       , only : veg_pp
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
+  use abortutils           , only : endrun
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -263,11 +264,13 @@ contains
       fn0 = fn
       filterp0(1:fn) = filterp(1:fn)
 
-      if (implicit_stress) then
-         loopmax = itmax
-      else
-         loopmax = itmin
-      end if
+      ! if (implicit_stress) then
+      !    loopmax = itmax
+      ! else
+      !    loopmax = itmin
+      ! end if
+
+      loopmax = itmax ! WH - special test to understand implicit_stress instability
 
       ITERATION: do iter = 1, loopmax
 
@@ -417,6 +420,29 @@ contains
          if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
             rh_ref2m_r(p) = rh_ref2m(p)
             t_ref2m_r(p) = t_ref2m(p)
+         end if
+
+         if (abs(eflx_sh_tot(p)) > 1200.) then
+            write(iulog,*) "ERROR: BareGroundFluxesMod - Sensible heat flux exceeds 1000 W/m^2."
+            write(iulog,*) "Sensible heat flux: ", eflx_sh_tot(p), &
+                 ", wind_speed0: ", wind_speed0(p), &
+                 ", wind_speed_adj: ", wind_speed_adj(p), &
+                 ! ", ugust: ", ugust(t), &
+                 ", dth: ", dth(p), &
+                 ", dqh: ", dqh(p), &
+                 ", ustar: ", ustar(p), &
+                 ", tstar: ", temp1(p)*dth(p), &
+                 ", qstar: ", temp2(p)*dqh(p), &
+                 ", tau: ", tau(p), &
+                 ", thm: ", thm(p), &
+                 ", forc_q: ", forc_q(t), &
+                 ", forc_u: ", forc_u(t), &
+                 ", forc_v: ", forc_v(t), &
+                 ", tau_diff: ", tau_diff(p)!, &
+                 ! ", prev_tau_diff: ", prev_tau_diff(p), &
+                 ! ", wsresp: ", wsresp(t), &
+                 ! ", tau_est: ", tau_est(t)
+            ! call endrun("Error in BareGroundFluxesMod: Unrealistically huge sensible heat flux encountered")
          end if
 
          ! Check for convergence of stress.

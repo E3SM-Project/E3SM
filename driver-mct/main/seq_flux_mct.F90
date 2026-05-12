@@ -1386,7 +1386,8 @@ contains
           case('implicit_stress')
              flux_max_iteration = 30
           case default
-             flux_max_iteration = 2
+            flux_max_iteration = 30 ! WH - special test to understand implicit_stress instability
+             ! flux_max_iteration = 2
           end select
        end if
 

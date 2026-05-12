@@ -399,11 +399,13 @@ contains
       filterl_copy(1:num_urbanl) = filter_urbanl(1:num_urbanl)
       filterc_copy(1:num_urbanc) = filter_urbanc(1:num_urbanc)
 
-      if (implicit_stress) then
-         loopmax = itmax
-      else
-         loopmax = itmin
-      end if
+      ! if (implicit_stress) then
+      !    loopmax = itmax
+      ! else
+      !    loopmax = itmin
+      ! end if
+
+      loopmax = itmax ! WH - special test to understand implicit_stress instability
 
       ITERATION: do iter = 1, loopmax
 
@@ -885,6 +887,29 @@ contains
          ! SCALED sensible and latent heat flux for error check
          eflx_sh_grnd_scale(p)  = -forc_rho(t)*cpair*wtus(c)*dth(l)
          qflx_evap_soi_scale(p) = -forc_rho(t)*wtuq(c)*dqh(l)
+
+         if (abs(eflx_sh_grnd(p)) > 1200.) then
+            write(iulog,*) "ERROR: UrbanFluxesMod - Sensible heat flux exceeds 1000 W/m^2."
+            write(iulog,*) "Sensible heat flux: ", eflx_sh_grnd(p), &
+                 ", wind_speed0: ", wind_speed0(l), &
+                 ", wind_speed_adj: ", wind_speed_adj(l), &
+                 ! ", ugust: ", ugust(t), &
+                 ", dth: ", dth(l), &
+                 ", dqh: ", dqh(l), &
+                 ", ustar: ", ustar(l), &
+                 ", tstar: ", temp1(l)*dth(l), &
+                 ", qstar: ", temp2(l)*dqh(l), &
+                 ", tau: ", tau(l), &
+                 ", thm_g: ", thm_g(l), &
+                 ", forc_q: ", forc_q(t), &
+                 ", forc_u: ", forc_u(t), &
+                 ", forc_v: ", forc_v(t), &
+                 ", tau_diff: ", tau_diff(l)!, &
+                 ! ", prev_tau_diff: ", prev_tau_diff(l), &
+                 ! ", wsresp: ", wsresp(t), &
+                 ! ", tau_est: ", tau_est(t)
+            ! call endrun("Error in UrbanFluxesMod: Unrealistically huge sensible heat flux encountered")
+         end if
 
       end do
 

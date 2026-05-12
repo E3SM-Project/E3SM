@@ -1236,6 +1236,27 @@ contains
          end if
          eflx_sh_grnd(p) = cpair*forc_rho(t)*wtg(p)*delt
 
+         if (abs(eflx_sh_grnd(p)) > 1200.) then
+            write(iulog,*) "ERROR: CanopyFluxesMod - Sensible heat flux exceeds 1000 W/m^2."
+            write(iulog,*) "Sensible heat flux: ", eflx_sh_grnd(p), &
+                 ", wind_speed0: ", wind_speed0(p), &
+                 ", wind_speed_adj: ", wind_speed_adj(p), &
+                 ! ", ugust: ", ugust(t), &
+                 ", dth: ", dth(p), &
+                 ", dqh: ", dqh(p), &
+                 ", ustar: ", ustar(p), &
+                 ", tstar: ", temp1(p)*dth(p), &
+                 ", qstar: ", temp2(p)*dqh(p), &
+                 ", tau: ", tau(p), &
+                 ", thm: ", thm(p), &
+                 ", forc_q: ", forc_q(t), &
+                 ", tau_diff: ", tau_diff(p)!, &
+                 ! ", prev_tau_diff: ", prev_tau_diff(p), &
+                 ! ", wsresp: ", wsresp(t), &
+                 ! ", tau_est: ", tau_est(t)
+            ! call endrun("Error in CanopyFluxesMod: Unrealistically huge sensible heat flux encountered")
+         end if
+
          ! compute individual sensible heat fluxes
          delt_snow = wtal(p)*t_soisno(c,snl(c)+1)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
          eflx_sh_snow(p) = cpair*forc_rho(t)*wtg(p)*delt_snow
