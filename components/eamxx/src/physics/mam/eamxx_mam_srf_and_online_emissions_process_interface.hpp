@@ -2,7 +2,6 @@
 #define EAMXX_MAM_SRF_ONLINE_EMISS_HPP
 
 #include "share/remap/abstract_remapper.hpp"
-#include "share/io/scorpio_input.hpp"
 
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
@@ -10,6 +9,8 @@
 
 // For reading marine organics file
 #include <physics/mam/readfiles/marine_organics.hpp>
+
+#include "share/field/field_reader.hpp"
 
 // For declaring surface and online emission class derived from atm process
 // class
@@ -51,7 +52,7 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
 
   // For reading soil erodibility file
   std::shared_ptr<AbstractRemapper> serod_horizInterp_;
-  std::shared_ptr<AtmosphereInput> serod_dataReader_;
+  std::shared_ptr<FieldReader> serod_dataReader_;
   const_view_1d soil_erodibility_;
 
  public:
@@ -67,7 +68,7 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   // AtmosphereProcess overrides (see share/atm_process/atmosphere_process.hpp)
   // --------------------------------------------------------------------------
   // The name of the subcomponent
-  std::string name() const { return "mam_srf_online_emissions"; }
+  std::string name() const override { return "mam_srf_online_emissions"; }
 
   // grid
   void create_requests() override;
@@ -83,7 +84,7 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   void run_impl(const double dt) override;
 
   // Finalize
-  void finalize_impl(){/*Do nothing*/};
+  void finalize_impl() override {/*Do nothing*/};
   // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.
   // This functor implements this step, which is called during run_impl.
@@ -150,7 +151,7 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
 
     // Data structure for reading interpolation
     std::shared_ptr<AbstractRemapper> horizInterp_;
-    std::shared_ptr<AtmosphereInput> dataReader_;
+    std::shared_ptr<FieldReader> dataReader_;
     srfEmissFunc::srfEmissTimeState timeState_;
     srfEmissFunc::srfEmissInput data_start_, data_end_;
     srfEmissFunc::srfEmissOutput data_out_;
@@ -161,7 +162,7 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
 
   // For reading marine organics file
   std::shared_ptr<AbstractRemapper> morg_horizInterp_;
-  std::shared_ptr<AtmosphereInput> morg_dataReader_;
+  std::shared_ptr<FieldReader> morg_dataReader_;
   marineOrganicsFunc::marineOrganicsTimeState morg_timeState_;
   marineOrganicsFunc::marineOrganicsInput morg_data_start_, morg_data_end_;
   marineOrganicsFunc::marineOrganicsOutput morg_data_out_;

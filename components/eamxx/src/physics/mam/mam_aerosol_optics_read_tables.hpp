@@ -4,9 +4,8 @@
 #include "mam_coupling.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
-#include "share/data_managers/grids_manager.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/field/field_reader.hpp"
 
 #include <ekat_parameter_list.hpp>
 
@@ -94,9 +93,9 @@ inline void read_rrtmg_table(
   view_3d_host temp_lw_3d_host("temp_absplw_host", coef_number, refindex_real,
                                refindex_im);
 
-  AtmosphereInput rrtmg(table_filename, grid, aerosol_optics_fields, true);
-  rrtmg.read_variables();
-  rrtmg.finalize();
+  auto gids = grid->get_partitioned_dim_gids();
+  auto comm = grid->get_comm();
+  read_fields(table_filename,aerosol_optics_fields, gids, comm);
 
   // copy data from host to device for mode 1
   // TODO: why can't we copy device data directly?
@@ -223,9 +222,7 @@ inline void read_water_refindex(const std::string &table_filename,
   };
 
   // create a object to read data
-  AtmosphereInput refindex_water(table_filename, grid, fields, true);
-  refindex_water.read_variables();
-  refindex_water.finalize();
+  read_fields(table_filename, fields, grid->get_partitioned_dim_gids(), grid->get_comm());
 
   //  maybe make a 1D vied of Kokkos::complex<Real>
   const auto crefwlw_host = Kokkos::create_mirror_view(crefwlw);

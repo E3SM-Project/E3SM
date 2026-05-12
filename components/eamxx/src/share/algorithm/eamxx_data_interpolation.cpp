@@ -6,8 +6,8 @@
 #include "share/remap/iop_remapper.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/io/scorpio_input.hpp"
 #include "share/io/eamxx_io_utils.hpp"
+#include "share/field/field_reader.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/physics/physics_constants.hpp"
@@ -168,18 +168,37 @@ update_end_fields ()
   for (int i=0; i<m_nfields; ++i) {
     fields.push_back(m_horiz_remapper_end->get_src_field(i));
   }
-
   if (m_vr_type==Dynamic3D or m_vr_type==Dynamic3DRef) {
     // We also need to read the src pressure profile
     fields.push_back(m_horiz_remapper_end->get_src_field(m_nfields));
   }
-  m_reader->set_fields(fields);
 
   // If we're also changing the file, must (re)init the scorpio structures
   const auto& slice_beg = m_time_database.slices[m_curr_interval_idx.first];
   const auto& slice_end = m_time_database.slices[m_curr_interval_idx.second];
-  if (m_reader->get_filename()!=slice_end.filename) {
-    m_reader->reset_filename(slice_end.filename);
+
+  if (not m_reader) {
+    // NOTE: Sometimes the original data does not use the same field tags as eamxx.
+    // For these cases, we need to perform a shallow clone of
+    // io_grid because the tags are constant in this object.
+    using namespace ShortFieldTagsNames;
+    auto grid = m_horiz_remapper_beg->get_src_grid()->clone(m_horiz_remapper_beg->get_src_grid()->name(), true);
+    grid->reset_field_tag_name(COL, m_input_files_dimnames[COL]);
+    grid->reset_field_tag_name(LEV, m_input_files_dimnames[LEV]);
+    grid->reset_field_tag_name(ILEV, m_input_files_dimnames[ILEV]);
+
+    auto gids = grid->get_partitioned_dim_gids();
+    auto comm = grid->get_comm();
+    m_reader = std::make_shared<FieldReader>();
+    m_reader->set_file_specs(slice_end.filename,m_input_files_dimnames);
+    m_reader->set_fields(fields);
+    m_reader->set_dim_decomp(gids,comm);
+    m_reader->init_scorpio_structures();
+  } else  {
+    m_reader->set_fields(fields);
+
+    // If the filename is the same, this is a no-op. Otherwise, it opens a new file
+    m_reader->set_file_specs(slice_end.filename,m_input_files_dimnames);
   }
 
   // Read and interpolate fields
@@ -187,7 +206,7 @@ update_end_fields ()
   m_logger->info(" - interval: [" + slice_beg.time.to_string() + ", " + slice_end.time.to_string() + "]");
   m_logger->info(" - filename: " + slice_end.filename);
   m_logger->info(" - file time idx: " + std::to_string(slice_end.time_idx));
-  m_reader->read_variables(slice_end.time_idx);
+  m_reader->read(slice_end.time_idx);
   m_horiz_remapper_end->remap_fwd();
 }
 
@@ -198,24 +217,6 @@ init_data_interval (const util::TimeStamp& t0)
       "[DataInterpolation] Error! Cannot call 'init_data_interval' until after remappers creation.\n");
 
   register_fields_in_remappers ();
-
-  // Create a bare reader. Fields and filename are set inside the update_end_fields call
-  strvec_t fnames;
-  for (auto f : m_fields) {
-    fnames.push_back(f.name());
-  }
-
-  // NOTE: Sometimes the original data does not use the same field tags as eamxx.
-  // For these cases, we need to perform a shallow clone of
-  // io_grid because the tags are constant in this object.
-  using namespace ShortFieldTagsNames;
-  auto horiz_interp_src_grid =
-        m_horiz_remapper_beg->get_src_grid()->clone(m_horiz_remapper_beg->get_src_grid()->name(), true);
-  horiz_interp_src_grid->reset_field_tag_name(COL, m_input_files_dimnames[COL]);
-  horiz_interp_src_grid->reset_field_tag_name(LEV, m_input_files_dimnames[LEV]);
-  horiz_interp_src_grid->reset_field_tag_name(ILEV, m_input_files_dimnames[ILEV]);
-
-  m_reader = std::make_shared<AtmosphereInput>(fnames,horiz_interp_src_grid);
 
   // Loop over all stored time slices to find an interval that contains t0
   auto t0_interval = m_time_database.find_interval(t0);
@@ -486,12 +487,11 @@ create_horiz_remappers (const Real iop_lat, const Real iop_lon)
 
   // Create grid for IO and load lat/lon field in IO grid from any data file
   m_data_grid = create_point_grid(m_name+"_data",ncols_data,nlevs_data,m_model_grid->get_comm());
-  std::vector<Field> latlon = {
-    m_data_grid->create_geometry_data("lat",m_data_grid->get_2d_scalar_layout()),
-    m_data_grid->create_geometry_data("lon",m_data_grid->get_2d_scalar_layout())
-  };
-  AtmosphereInput latlon_reader (m_time_database.files.front(),m_data_grid,latlon);
-  latlon_reader.read_variables();
+  auto lat  = m_data_grid->create_geometry_data("lat",m_data_grid->get_2d_scalar_layout());
+  auto lon  = m_data_grid->create_geometry_data("lon",m_data_grid->get_2d_scalar_layout());
+  auto gids = m_data_grid->get_partitioned_dim_gids();
+  auto comm = m_data_grid->get_comm();
+  read_fields(m_time_database.files.front(),{lat,lon},gids,comm);
 
   // Create iop remap tgt grid
   m_grid_after_hremap = m_model_grid->clone(m_name+"_post_hremap",true);
@@ -627,17 +627,14 @@ create_vert_remapper (const VertRemapData& data)
       // We read and store hyam/hybm in the vremap src grid
       auto layout = m_grid_after_hremap->get_vertical_layout(LEVP);
       DataType real_t = DataType::RealType;
-      std::vector<Field> fields = {
-        m_grid_after_hremap->create_geometry_data("hyam",layout,ekat::units::none,real_t,SCREAM_PACK_SIZE),
-        m_grid_after_hremap->create_geometry_data("hybm",layout,ekat::units::none,real_t,SCREAM_PACK_SIZE)
-      };
-      AtmosphereInput hvcoord_reader (m_time_database.files.front(),m_grid_after_hremap,fields,true);
-      hvcoord_reader.read_variables();
+      auto hyam = m_grid_after_hremap->create_geometry_data("hyam",layout,ekat::units::none,real_t,SCREAM_PACK_SIZE);
+      auto hybm = m_grid_after_hremap->create_geometry_data("hybm",layout,ekat::units::none,real_t,SCREAM_PACK_SIZE);
+      read_fields (m_time_database.files.front(),{hyam,hybm});
     } else if (m_vr_type==Static1D) {
       // Can load p now, since it's static
       std::vector<Field> fields = {p_data.alias(data.pname)};
-      AtmosphereInput p_data_reader (m_time_database.files.front(),m_grid_after_hremap,fields,true);
-      p_data_reader.read_variables();
+      auto gids = m_grid_after_hremap->get_partitioned_dim_gids();
+      read_fields(m_time_database.files.front(),fields,gids,m_comm);
     }
     vremap->set_source_pressure (m_helper_pressure_fields["p_data"]);
 

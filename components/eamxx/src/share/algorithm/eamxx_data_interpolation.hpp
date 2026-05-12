@@ -5,13 +5,12 @@
 #include "share/remap/abstract_remapper.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/field/field.hpp"
+#include "share/field/field_reader.hpp"
 
 #include <ekat_logger.hpp>
 
 namespace scream
 {
-
-class AtmosphereInput;
 
 class DataInterpolation
 {
@@ -106,7 +105,7 @@ protected:
 
   // --------------- Internal data ------------- //
 
-  std::shared_ptr<AtmosphereInput> m_reader;
+  std::shared_ptr<FieldReader> m_reader;
 
   std::shared_ptr<const AbstractGrid> m_model_grid;
 

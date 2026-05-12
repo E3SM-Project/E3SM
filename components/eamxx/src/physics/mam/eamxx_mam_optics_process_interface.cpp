@@ -3,7 +3,7 @@
 #include <share/property_checks/field_within_interval_check.hpp>
 
 #include "share/grid/point_grid.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/field/field_reader.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_assert.hpp>
@@ -262,9 +262,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
         const auto &fname = m_params.get<std::string>(table_name);
         // read data
         // need to update table name
-        AtmosphereInput refindex_aerosol(fname, grid_, refindex_fields);
-        refindex_aerosol.read_variables();
-        refindex_aerosol.finalize();
+        read_fields(fname, refindex_fields, grid_->get_partitioned_dim_gids(),m_comm);
         // copy data to device
         mam_coupling::set_refindex_aerosol(
             species_id, refindex_fields,

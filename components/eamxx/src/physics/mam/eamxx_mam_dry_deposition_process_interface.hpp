@@ -7,8 +7,7 @@
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
 
-// For AtmosphereInput
-#include "share/io/scorpio_input.hpp"
+#include "share/field/field_reader.hpp"
 
 // For component name
 #include <string>
@@ -92,7 +91,7 @@ class MAMDryDep final : public MAMGenericInterface {
 
   // For reading fractional land use file
   std::shared_ptr<AbstractRemapper> horizInterp_;
-  std::shared_ptr<AtmosphereInput> dataReader_;
+  std::shared_ptr<FieldReader> dataReader_;
   const_view_2d frac_landuse_;
   view_2d frac_landuse_fm_;
   // aerosol state variables
