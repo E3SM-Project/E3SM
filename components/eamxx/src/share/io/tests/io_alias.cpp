@@ -5,8 +5,8 @@
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/io/scorpio_input.hpp"
 #include "share/diagnostics/register_diagnostics.hpp"
+#include "share/field/field_reader.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
@@ -101,7 +101,6 @@ create_test_field_manager(const std::shared_ptr<const AbstractGrid> &grid,
 TEST_CASE("io_with_aliases") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
-  using strvec_t = std::vector<std::string>;
   
   // This test uses diagnostics, so make sure they are registered
   register_diagnostics();
@@ -185,9 +184,6 @@ TEST_CASE("io_with_aliases") {
   file_check.close();
 
   // Now verify the file was created and contains the correct aliased field names
-  // Create a new field manager with fields using aliased names for reading
-  auto read_fm = std::make_shared<FieldManager>(grid);
-
   // Create fields with aliased names for reading back
   FieldIdentifier qv_read_id("qv", {{COL, LEV}, {ncols, nlevs}}, kg / kg, grid->name());
   FieldIdentifier temp_read_id("TEMP", {{COL, LEV}, {ncols, nlevs}}, K, grid->name());
@@ -209,52 +205,28 @@ TEST_CASE("io_with_aliases") {
   psurf_read.get_header().get_tracking().update_time_stamp(t0);
   surf_temp_read.get_header().get_tracking().update_time_stamp(t0);
 
-  read_fm->add_field(qv_read);
-  read_fm->add_field(temp_read);
-  read_fm->add_field(psurf_read);
-  read_fm->add_field(surf_temp_read);
-
-  // Set up reader parameter list
-  ekat::ParameterList reader_pl;
-  reader_pl.set("filename", expected_filename);
-
-  // Use the aliased names in the field list for reading
-  reader_pl.set<strvec_t>("field_names", {"qv", "TEMP", "PSURF", "surf_temp"});
-
   // Try to read the file - this will fail if the aliases weren't written correctly
-  AtmosphereInput reader(reader_pl, read_fm);
+  FieldReader reader(expected_filename);
+  reader.set_dim_decomp(grid->get_partitioned_dim_gids(),comm);
+  reader.set_fields({qv_read,temp_read,psurf_read,surf_temp_read});
 
-  reader.set_logger(console_logger(ekat::logger::LogLevel::trace));
-  auto qv_field_read        = read_fm->get_field("qv");
-  auto temp_field_read      = read_fm->get_field("TEMP");
-  auto psurf_field_read     = read_fm->get_field("PSURF");
-  auto surf_temp_field_read = read_fm->get_field("surf_temp");
-
-  auto qv_tgt    = qv_field_read.clone();
-  auto T_mid_tgt = temp_field_read.clone();
-  auto ps_tgt    = psurf_field_read.clone();
+  auto qv_tgt    = qv_read.clone();
+  auto T_mid_tgt = temp_read.clone();
+  auto ps_tgt    = psurf_read.clone();
   auto T_mid_bot_tgt = T_mid_tgt.subfield(LEV,nlevs-1);
   for (int n=0; n<=nsteps; ++n) {
-    reader.read_variables(n); // Read n-th timestamp
+    reader.read(n); // Read n-th timestamp
 
     calc_fields (qv_tgt, T_mid_tgt, ps_tgt, col, n);
 
-    if (not views_are_equal(qv_tgt,qv_field_read)) {
-      print_field_hyperslab(qv_tgt.alias("qv_tgt"));
-      print_field_hyperslab(qv_field_read.alias("qv_field_read"));
-    }
-    REQUIRE (views_are_equal(qv_tgt,qv_field_read));
-    REQUIRE (views_are_equal(T_mid_tgt,temp_field_read));
-    REQUIRE (views_are_equal(ps_tgt,psurf_field_read));
-    if (not views_are_equal(T_mid_bot_tgt,surf_temp_field_read)) {
-      print_field_hyperslab(T_mid_bot_tgt.alias("T_mid_bot_tgt"));
-      print_field_hyperslab(surf_temp_read.alias("surf_temp_read"));
-    }
-    REQUIRE (views_are_equal(T_mid_bot_tgt,surf_temp_field_read));
+    REQUIRE (views_are_equal(qv_tgt,qv_read));
+    REQUIRE (views_are_equal(T_mid_tgt,temp_read));
+    REQUIRE (views_are_equal(ps_tgt,psurf_read));
+    REQUIRE (views_are_equal(T_mid_bot_tgt,surf_temp_read));
   }
-  reader.finalize();
 
   // Clean up PIO subsystem
+  reader.clean_up();
   scorpio::finalize_subsystem();
 }
 
