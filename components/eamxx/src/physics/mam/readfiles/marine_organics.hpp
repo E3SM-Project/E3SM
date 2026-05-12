@@ -1,8 +1,11 @@
 #ifndef MARINE_ORGANICS_HPP
 #define MARINE_ORGANICS_HPP
 
-// For AtmosphereInput
-#include "share/io/scorpio_input.hpp"
+#include "share/remap/abstract_remapper.hpp"
+#include "share/field/field_reader.hpp"
+#include "share/core/eamxx_types.hpp"
+
+#include <memory>
 
 namespace scream {
 namespace marine_organics {
@@ -74,13 +77,13 @@ struct marineOrganicsFunctions {
       const std::vector<std::string> &field_name, const std::string &dim_name1);
 
   // -------------------------------------------------------------------------------------------
-  static std::shared_ptr<AtmosphereInput> create_data_reader(
+  static std::shared_ptr<FieldReader> create_data_reader(
       const std::shared_ptr<AbstractRemapper> &horiz_remapper,
       const std::string &data_file);
 
   // -------------------------------------------------------------------------------------------
   static void update_marine_organics_data_from_file(
-      std::shared_ptr<AtmosphereInput> &scorpio_reader,
+      std::shared_ptr<FieldReader> &reader,
       const util::TimeStamp &ts,
       const int &time_index,  // zero-based
       AbstractRemapper &horiz_interp,
@@ -88,7 +91,7 @@ struct marineOrganicsFunctions {
 
   // -------------------------------------------------------------------------------------------
   static void update_marine_organics_timestate(
-      std::shared_ptr<AtmosphereInput> &scorpio_reader,
+      std::shared_ptr<FieldReader> &reader,
       const util::TimeStamp &ts, AbstractRemapper &horiz_interp,
       marineOrganicsTimeState &time_state, marineOrganicsInput &beg,
       marineOrganicsInput &end);
@@ -122,7 +125,7 @@ struct marineOrganicsFunctions {
       std::shared_ptr<AbstractRemapper> &marineOrganicsHorizInterp,
       marineOrganicsInput &morg_data_start_,
       marineOrganicsInput &morg_data_end_, marineOrganicsData &morg_data_out_,
-      std::shared_ptr<AtmosphereInput> &marineOrganicsDataReader);
+      std::shared_ptr<FieldReader> &marineOrganicsDataReader);
 
 };  // struct marineOrganicsFunctions
 

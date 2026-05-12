@@ -21,7 +21,6 @@ fracLandUseFunctions<S, D>::create_horiz_remapper(
   scorpio::register_file(data_file, scorpio::Read);
   const int ncols_data  = scorpio::get_dimlen(data_file, dim_name1);
   const int nclass_data = scorpio::get_dimlen(data_file, dim_name2);
-
   scorpio::release_file(data_file);
 
   // We could use model_grid directly if using same num levels,
@@ -71,7 +70,7 @@ fracLandUseFunctions<S, D>::create_horiz_remapper(
 // -------------------------------------------------------------------------------------------
 
 template <typename S, typename D>
-std::shared_ptr<AtmosphereInput> fracLandUseFunctions<S, D>::create_data_reader(
+std::shared_ptr<FieldReader> fracLandUseFunctions<S, D>::create_data_reader(
     const std::shared_ptr<AbstractRemapper> &horiz_remapper,
     const std::string &data_file) {
   std::vector<Field> io_fields;
@@ -79,7 +78,12 @@ std::shared_ptr<AtmosphereInput> fracLandUseFunctions<S, D>::create_data_reader(
     io_fields.push_back(horiz_remapper->get_src_field(i));
   }
   const auto io_grid = horiz_remapper->get_src_grid();
-  return std::make_shared<AtmosphereInput>(data_file, io_grid, io_fields, true);
+  auto gids = io_grid->get_partitioned_dim_gids();
+  auto comm = io_grid->get_comm();
+  auto reader = std::make_shared<FieldReader>(data_file);
+  reader->set_dim_decomp(gids, comm);
+  reader->set_fields(io_fields);
+  return reader;
 }  // create_data_reader
 
 // -------------------------------------------------------------------------------------------
@@ -87,14 +91,14 @@ std::shared_ptr<AtmosphereInput> fracLandUseFunctions<S, D>::create_data_reader(
 
 template <typename S, typename D>
 void fracLandUseFunctions<S, D>::update_frac_land_use_data_from_file(
-    std::shared_ptr<AtmosphereInput> &scorpio_reader,
+    std::shared_ptr<FieldReader> &reader,
     AbstractRemapper &horiz_interp, const_view_2d &input) {
   start_timer("EAMxx::FracLandUse::update_frac_land_use_data_from_file");
 
   // 1. Read from file
   start_timer(
       "EAMxx::FracLandUse::update_frac_land_use_data_from_file::read_data");
-  scorpio_reader->read_variables();
+  reader->read();
   stop_timer(
       "EAMxx::FracLandUse::update_frac_land_use_data_from_file::read_data");
 
@@ -130,12 +134,12 @@ void fracLandUseFunctions<S, D>::init_frac_landuse_file_read(
     const std::string &data_file, const std::string &mapping_file,
     // output
     std::shared_ptr<AbstractRemapper> &FracLandUseHorizInterp,
-    std::shared_ptr<AtmosphereInput> &FracLandUseDataReader) {
+    std::shared_ptr<FieldReader> &FracLandUseDataReader) {
   // Init horizontal remap
   FracLandUseHorizInterp = create_horiz_remapper(
       grid, data_file, mapping_file, field_name, dim_name1, dim_name2);
 
-  // Create reader (an AtmosphereInput object)
+  // Create reader (an FieldReader object)
   FracLandUseDataReader = create_data_reader(FracLandUseHorizInterp, data_file);
 }  // init_frac_landuse_file_read
 

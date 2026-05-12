@@ -1,8 +1,8 @@
 #include "share/io/scorpio_output.hpp"
 
 #include "share/field/field_utils.hpp"
+#include "share/field/field_reader.hpp"
 #include "share/io/eamxx_io_utils.hpp"
-#include "share/io/scorpio_input.hpp"
 #include "share/remap/horizontal_remapper.hpp"
 #include "share/remap/vertical_remapper.hpp"
 #include "share/util/eamxx_timing.hpp"
@@ -324,8 +324,7 @@ void AtmosphereOutput::restart (const std::string& filename)
     fields.push_back(f.alias(f.name(),fm->get_grid()->name()));
   }
 
-  AtmosphereInput hist_restart (filename, fm->get_grid(), fields);
-  hist_restart.read_variables();
+  read_fields(filename, fields, fm->get_grid()->get_partitioned_dim_gids(), m_comm );
 }
 
 void AtmosphereOutput::init()
