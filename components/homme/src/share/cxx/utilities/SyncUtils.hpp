@@ -58,7 +58,7 @@ typename std::enable_if
   >::type
 sync_to_host(Source_T source, Dest_T dest)
 {
-  typename Source_T::HostMirror source_mirror = Kokkos::create_mirror_view(source);
+  typename Source_T::host_mirror_type source_mirror = Kokkos::create_mirror_view(source);
   Kokkos::deep_copy(source_mirror, source);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int tl = 0; tl < NUM_TIME_LEVELS; ++tl) {
@@ -84,7 +84,7 @@ typename std::enable_if
   >::type
 sync_to_host(Source_T source, Dest_T dest)
 {
-  typename Source_T::HostMirror source_mirror = Kokkos::create_mirror_view(source);
+  typename Source_T::host_mirror_type source_mirror = Kokkos::create_mirror_view(source);
   Kokkos::deep_copy(source_mirror, source);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int tl = 0; tl < source.extent_int(1); ++tl) {
@@ -110,7 +110,7 @@ typename std::enable_if
   >::type
 sync_to_host(Source_T source, Dest_T dest)
 {
-  typename Source_T::HostMirror source_mirror = Kokkos::create_mirror_view(source);
+  typename Source_T::host_mirror_type source_mirror = Kokkos::create_mirror_view(source);
   Kokkos::deep_copy(source_mirror, source);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int tl = 0; tl < NUM_TIME_LEVELS; ++tl) {
@@ -138,7 +138,7 @@ typename std::enable_if
   >::type
 sync_to_host(Source_T source, Dest_T dest)
 {
-  typename Source_T::HostMirror source_mirror = Kokkos::create_mirror_view(source);
+  typename Source_T::host_mirror_type source_mirror = Kokkos::create_mirror_view(source);
   Kokkos::deep_copy(source_mirror, source);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int level = 0; level < NUM_PHYSICAL_LEV; ++level) {
@@ -162,7 +162,7 @@ typename std::enable_if
   >::type
 sync_to_host(Source_T source, Dest_T dest)
 {
-  typename Source_T::HostMirror source_mirror = Kokkos::create_mirror_view(source);
+  typename Source_T::host_mirror_type source_mirror = Kokkos::create_mirror_view(source);
   Kokkos::deep_copy(source_mirror, source);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int igp = 0; igp < NP; ++igp) {
@@ -179,7 +179,7 @@ typename std::enable_if<
          host_view_mappable<Dest_T, Real[NUM_PHYSICAL_LEV][NP][NP]>::value),
     void>::type
 sync_to_host(Source_T source, Dest_T dest) {
-  typename Source_T::HostMirror source_mirror =
+  typename Source_T::host_mirror_type source_mirror =
       Kokkos::create_mirror_view(source);
   Kokkos::deep_copy(source_mirror, source);
   for (int level = 0; level < NUM_PHYSICAL_LEV; ++level) {
@@ -202,7 +202,7 @@ typename std::enable_if
   >::type
 sync_to_host(Source_T source, Dest_T dest)
 {
-  typename Source_T::HostMirror source_mirror = Kokkos::create_mirror_view(source);
+  typename Source_T::host_mirror_type source_mirror = Kokkos::create_mirror_view(source);
   Kokkos::deep_copy(source_mirror, source);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int level = 0; level < NUM_PHYSICAL_LEV; ++level) {
@@ -228,7 +228,7 @@ typename std::enable_if
   >::type
 sync_to_host(Source_T source, Dest_T dest)
 {
-  typename Source_T::HostMirror source_mirror = Kokkos::create_mirror_view(source);
+  typename Source_T::host_mirror_type source_mirror = Kokkos::create_mirror_view(source);
   Kokkos::deep_copy(source_mirror, source);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int time = 0; time < Q_NUM_TIME_LEVELS; ++time) {
@@ -253,7 +253,7 @@ typename std::enable_if<
          host_view_mappable<Dest_T, Real[NUM_PHYSICAL_LEV + 2][10]>::value),
     void>::type
 sync_to_host(Source_T source, Dest_T dest) {
-  typename Source_T::HostMirror source_mirror =
+  typename Source_T::host_mirror_type source_mirror =
       Kokkos::create_mirror_view(source);
   Kokkos::deep_copy(source_mirror, source);
   for (int i = 0; i < 10; ++i) {
@@ -275,7 +275,7 @@ typename std::enable_if
   >::type
 sync_to_host(Source_T source, Dest_T dest)
 {
-  typename Source_T::HostMirror source_mirror = Kokkos::create_mirror_view(source);
+  typename Source_T::host_mirror_type source_mirror = Kokkos::create_mirror_view(source);
   Kokkos::deep_copy(source_mirror, source);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int level = 0; level < NUM_INTERFACE_LEV; ++level) {
@@ -299,7 +299,7 @@ typename std::enable_if
   >::type
 sync_to_host_p2i(Source_T source, Dest_T dest)
 {
-  typename Source_T::HostMirror source_mirror = Kokkos::create_mirror_view(source);
+  typename Source_T::host_mirror_type source_mirror = Kokkos::create_mirror_view(source);
   Kokkos::deep_copy(source_mirror, source);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int level = 0; level < NUM_PHYSICAL_LEV; ++level) {
@@ -324,7 +324,7 @@ typename std::enable_if
     void
   >::type
 sync_to_device(Source_T source, Dest_T dest) {
-  typename Dest_T::HostMirror dest_mirror = Kokkos::create_mirror_view(dest);
+  typename Dest_T::host_mirror_type dest_mirror = Kokkos::create_mirror_view(dest);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     // The second dim might be time level, in which case source and dest agree,
     // or qsize in one case and qsize_d in the other, in which case they
@@ -353,7 +353,7 @@ typename std::enable_if
     void
   >::type
 sync_to_device(Source_T source, Dest_T dest) {
-  typename Dest_T::HostMirror dest_mirror = Kokkos::create_mirror_view(dest);
+  typename Dest_T::host_mirror_type dest_mirror = Kokkos::create_mirror_view(dest);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int tl=0; tl < NUM_TIME_LEVELS; ++tl) {
       for (int level = 0; level < NUM_INTERFACE_LEV; ++level) {
@@ -378,7 +378,7 @@ typename std::enable_if
     void
   >::type
 sync_to_device(Source_T source, Dest_T dest) {
-  typename Dest_T::HostMirror dest_mirror = Kokkos::create_mirror_view(dest);
+  typename Dest_T::host_mirror_type dest_mirror = Kokkos::create_mirror_view(dest);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int tl=0; tl < NUM_TIME_LEVELS; ++tl) {
       for (int level = 0; level < NUM_PHYSICAL_LEV; ++level) {
@@ -404,7 +404,7 @@ typename std::enable_if
     void
   >::type
 sync_to_device(Source_T source, Dest_T dest) {
-  typename Dest_T::HostMirror dest_mirror = Kokkos::create_mirror_view(dest);
+  typename Dest_T::host_mirror_type dest_mirror = Kokkos::create_mirror_view(dest);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int level = 0; level < NUM_PHYSICAL_LEV; ++level) {
       const int ilev = level / VECTOR_SIZE;
@@ -429,7 +429,7 @@ typename std::enable_if
   >::type
 sync_to_device(Source_T source, Dest_T dest)
 {
-  typename Dest_T::HostMirror dest_mirror = Kokkos::create_mirror_view(dest);
+  typename Dest_T::host_mirror_type dest_mirror = Kokkos::create_mirror_view(dest);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int level = 0; level < NUM_PHYSICAL_LEV; ++level) {
       const int ilev = level / VECTOR_SIZE;
@@ -455,7 +455,7 @@ typename std::enable_if
   >::type
 sync_to_device(Source_T source, Dest_T dest)
 {
-  typename Dest_T::HostMirror dest_mirror = Kokkos::create_mirror_view(dest);
+  typename Dest_T::host_mirror_type dest_mirror = Kokkos::create_mirror_view(dest);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int igp = 0; igp < NP; ++igp) {
       for (int jgp = 0; jgp < NP; ++jgp) {
@@ -475,7 +475,7 @@ typename std::enable_if
   >::type
 sync_to_device(Source_T source, Dest_T dest)
 {
-  typename Dest_T::HostMirror dest_mirror = Kokkos::create_mirror_view(dest);
+  typename Dest_T::host_mirror_type dest_mirror = Kokkos::create_mirror_view(dest);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int igp = 0; igp < NP; ++igp) {
       for (int jgp = 0; jgp < NP; ++jgp) {
@@ -496,7 +496,7 @@ typename std::enable_if
   >::type
 sync_to_device(Source_T source, Dest_T dest)
 {
-  typename Dest_T::HostMirror dest_mirror = Kokkos::create_mirror_view(dest);
+  typename Dest_T::host_mirror_type dest_mirror = Kokkos::create_mirror_view(dest);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int q_tl = 0; q_tl < Q_NUM_TIME_LEVELS; ++q_tl) {
       for (int q = 0; q < QSIZE_D; ++q) {
@@ -524,7 +524,7 @@ typename std::enable_if
   >::type
 sync_to_device(Source_T source, Dest_T dest)
 {
-  typename Dest_T::HostMirror dest_mirror = Kokkos::create_mirror_view(dest);
+  typename Dest_T::host_mirror_type dest_mirror = Kokkos::create_mirror_view(dest);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int level = 0; level < NUM_PHYSICAL_LEV; ++level) {
       const int ilev = level / VECTOR_SIZE;
@@ -551,7 +551,7 @@ typename std::enable_if
   >::type
 sync_to_device(Source_T source, Dest_T dest)
 {
-  typename Dest_T::HostMirror dest_mirror = Kokkos::create_mirror_view(dest);
+  typename Dest_T::host_mirror_type dest_mirror = Kokkos::create_mirror_view(dest);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int level = 0; level < NUM_INTERFACE_LEV; ++level) {
       const int ilev = level / VECTOR_SIZE;
@@ -575,7 +575,7 @@ typename std::enable_if
   >::type
 sync_to_device_i2p(Source_T source, Dest_T dest)
 {
-  typename Dest_T::HostMirror dest_mirror = Kokkos::create_mirror_view(dest);
+  typename Dest_T::host_mirror_type dest_mirror = Kokkos::create_mirror_view(dest);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
     for (int level = 0; level < NUM_PHYSICAL_LEV; ++level) {
       const int ilev = level / VECTOR_SIZE;

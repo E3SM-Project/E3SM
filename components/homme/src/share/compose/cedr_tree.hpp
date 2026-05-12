@@ -110,8 +110,8 @@ struct NodeSetsDeviceData {
 
 template <typename ExeSpace>
 struct NodeSetsHostData {
-  typedef typename NodeSetsDeviceData<ExeSpace>::NodeList::HostMirror NodeList;
-  typedef typename NodeSetsDeviceData<ExeSpace>::IntList::HostMirror IntList;
+  typedef typename NodeSetsDeviceData<ExeSpace>::NodeList::host_mirror_type NodeList;
+  typedef typename NodeSetsDeviceData<ExeSpace>::IntList::host_mirror_type IntList;
 
   NodeList node;
   IntList lvl, lvlptr;

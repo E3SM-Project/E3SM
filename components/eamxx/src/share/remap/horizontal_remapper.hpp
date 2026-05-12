@@ -118,7 +118,7 @@ protected:
   template<typename T>
   using view_1d = typename KT::template view_1d<T>;
   template<typename T>
-  using hview_1d = typename view_1d<T>::HostMirror;
+  using hview_1d = typename view_1d<T>::host_mirror_type;
 
   template<typename T>
   using view_2d = typename KT::template view_2d<T>;

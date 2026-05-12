@@ -26,9 +26,9 @@ namespace Homme {
 struct DirkFunctorImpl {
   enum : int { packn = VECTOR_SIZE };
   enum : int { scaln = NP*NP };
-  enum : int { npack = (scaln + packn - 1)/packn };
+  enum : int { npack = ((int)scaln + (int)packn - 1)/(int)packn };
   enum : int { max_num_lev_pack = NUM_LEV_P };
-  enum : int { num_lev_aligned = max_num_lev_pack*packn };
+  enum : int { num_lev_aligned = (int)max_num_lev_pack*(int)packn };
   enum : int { num_phys_lev = NUM_PHYSICAL_LEV };
   enum : int { num_work = 12 };
   enum : bool { calc_initial_guess_in_newton_kernel = false };
@@ -454,7 +454,7 @@ struct DirkFunctorImpl {
           gk = gk0 + s,
           gi = gk / NP,
           gj = gk % NP;
-          if (scaln % packn != 0 && // try to compile out this conditional when possible
+          if ((int)scaln % (int)packn != 0 && // try to compile out this conditional when possible
               gk >= scaln) break;
           dst(k,i)[s] = src(gi,gj,pk)[sk];
         }
@@ -533,7 +533,7 @@ struct DirkFunctorImpl {
           idx = packn*i + s,
           gi = idx / NP,
           gj = idx % NP;
-          if (scaln % packn != 0 && idx >= scaln) break;
+          if ((int)scaln % (int)packn != 0 && idx >= scaln) break;
           dp3dkm1[s] = dp3d(gi,gj,pkm1)[skm1];
           dp3dk  [s] = dp3d(gi,gj,pk  )[sk];
           v1km1  [s] = v (0,gi,gj,pkm1)[skm1];
@@ -646,7 +646,7 @@ struct DirkFunctorImpl {
   set_phis (const int i, const Rphis& phis, const W& phi_i) {
     for (int s = 0; s < packn; ++s) {
       const int idx = i*packn + s, gi = idx / NP, gj = idx % NP;
-      if (scaln % packn != 0 && idx >= scaln) break;
+      if ((int)scaln % (int)packn != 0 && idx >= scaln) break;
       phi_i(num_phys_lev,i)[s] = phis(gi,gj);
     }    
   }
@@ -662,7 +662,7 @@ struct DirkFunctorImpl {
       const auto g = [&] (int i, Real& lmaxval) {
         const auto v = w(k,i);
         for (int s = 0; s < packn; ++s) {
-          if (scaln % packn != 0 && i*packn + s >= scaln) break;
+          if ((int)scaln % (int)packn != 0 && i*packn + s >= scaln) break;
           lmaxval = max(lmaxval, std::abs(v[s]));
         }
       };
@@ -690,7 +690,7 @@ struct DirkFunctorImpl {
       const auto g = [&] (int i, Real& lmaxval) {
         const auto v = x(k,i);
         for (int s = 0; s < packn; ++s) {
-          if (scaln % packn != 0 && i*packn + s >= scaln) break;
+          if ((int)scaln % (int)packn != 0 && i*packn + s >= scaln) break;
           lmaxval = max(lmaxval, std::abs(v[s]));
         }
       };
@@ -804,7 +804,7 @@ struct DirkFunctorImpl {
     kv.team_barrier();
     loop_ki(kv, nlev, nvec, [&] (int k, int i) {
       for (int s = 0; s < packn; ++s) {
-        if (scaln % packn != 0 && i*packn + s >= scaln) break;
+        if ((int)scaln % (int)packn != 0 && i*packn + s >= scaln) break;
         if (wrk(0,i)[s] == 0) {
           // Indicate this column is already good.
           wrk(nlev,i)[s] = 0;
@@ -859,7 +859,7 @@ struct DirkFunctorImpl {
     kv.team_barrier();
     loop_ki(kv, nlev, nvec, [&] (int k, int i) {
       for (int s = 0; s < packn; ++s) {
-        if (scaln % packn != 0 && i*packn + s >= scaln) break;
+        if ((int)scaln % (int)packn != 0 && i*packn + s >= scaln) break;
         if (dphi(k,i)[s] > threshold) {
           dphi(k,i)[s] = threshold;
           wrk(0,i)[s] = 1; // benign write race
@@ -882,7 +882,7 @@ struct DirkFunctorImpl {
     kv.team_barrier();
     loop_ki(kv, nlev, nvec, [&] (int k, int i) {
       for (int s = 0; s < packn; ++s) {
-        if (scaln % packn != 0 && i*packn + s >= scaln) break;
+        if ((int)scaln % (int)packn != 0 && i*packn + s >= scaln) break;
         if (dphi(k,i)[s] >= threshold) {
           wrk(0,i)[s] = 1; // benign write race
           wrk(1,0)[0] = 1; // benign write race

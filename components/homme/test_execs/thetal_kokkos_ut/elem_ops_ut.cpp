@@ -39,7 +39,7 @@ TEST_CASE("elem_ops", "elem_ops") {
   HybridVCoord hvcoord;
   hvcoord.random_init(seed);
 
-  decltype(hvcoord.hybrid_ai)::HostMirror hyai = Kokkos::create_mirror_view(hvcoord.hybrid_ai);
+  decltype(hvcoord.hybrid_ai)::host_mirror_type hyai = Kokkos::create_mirror_view(hvcoord.hybrid_ai);
   Kokkos::deep_copy(hyai,hvcoord.hybrid_ai);
   const Real* hyai_ptr = hyai.data();
   init_f90(hyai_ptr,hvcoord.ps0);
