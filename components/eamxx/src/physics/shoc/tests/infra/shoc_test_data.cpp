@@ -664,6 +664,7 @@ void compute_shoc_mix_shoc_length_host(Int nlev, Int shcol, bool shoc_1p5tke, Re
   using Pack      = typename SHF::Pack;
   using view_1d    = typename SHF::view_1d<Scalar>;
   using view_2d    = typename SHF::view_2d<Pack>;
+  using view_3d    = typename SHF::view_3d<Pack>;
   using KT         = typename SHF::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using TPF        = ekat::TeamPolicyFactory<ExeSpace>;
@@ -834,6 +835,7 @@ void shoc_energy_integrals_host(Int shcol, Int nlev, Real *host_dse, Real *pdel,
   using Pack      = typename SHF::Pack;
   using view_1d    = typename SHF::view_1d<Scalar>;
   using view_2d    = typename SHF::view_2d<Pack>;
+  using view_3d    = typename SHF::view_3d<Pack>;
   using KT         = typename SHF::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using TPF        = ekat::TeamPolicyFactory<ExeSpace>;
@@ -1228,6 +1230,7 @@ void compute_l_inf_shoc_length_host(Int nlev, Int shcol, Real *zt_grid, Real *dz
   using Pack      = typename SHF::Pack;
   using view_1d    = typename SHF::view_1d<Scalar>;
   using view_2d    = typename SHF::view_2d<Pack>;
+  using view_3d    = typename SHF::view_3d<Pack>;
   using KT         = typename SHF::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using TPF        = ekat::TeamPolicyFactory<ExeSpace>;
@@ -1273,9 +1276,10 @@ void check_length_scale_shoc_length_host(Int nlev, Int shcol, Real* host_dx, Rea
   using SHF = Functions<Real, DefaultDevice>;
 
   using Scalar     = typename SHF::Scalar;
-  using Pack      = typename SHF::Pack;
+  using Pack       = typename SHF::Pack;
   using view_1d    = typename SHF::view_1d<Scalar>;
   using view_2d    = typename SHF::view_2d<Pack>;
+  using view_3d    = typename SHF::view_3d<Pack>;
   using KT         = typename SHF::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using TPF        = ekat::TeamPolicyFactory<ExeSpace>;
@@ -1868,6 +1872,8 @@ void adv_sgs_tke_host(Int nlev, Int shcol, Real dtime, bool shoc_1p5tke, Real* s
     a_diss_d   (temp_d[5]); //out
 
   const Int nk_pack = ekat::npack<Pack>(nlev);
+  view_2d shear_strain3d_d("shear_strain3d_d", shcol, nk_pack);
+  Kokkos::deep_copy(shear_strain3d_d, 0);
   const auto policy = TPF::get_default_team_policy(shcol, nk_pack);
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -1879,10 +1885,14 @@ void adv_sgs_tke_host(Int nlev, Int shcol, Real dtime, bool shoc_1p5tke, Real* s
       const auto sterm_zt_s = ekat::subview(sterm_zt_d ,i);
       const auto tk_s       = ekat::subview(tk_d ,i);
       const auto brunt_s    = ekat::subview(brunt_d, i);
+      const auto shear_strain3d_s = ekat::subview(shear_strain3d_d, i);
       const auto tke_s      = ekat::subview(tke_d ,i);
       const auto a_diss_s   = ekat::subview(a_diss_d ,i);
+      const bool do_3d_turb = false;
 
-      SHF::adv_sgs_tke(team, nlev, dtime, shoc_1p5tke, shoc_mix_s, wthv_sec_s, sterm_zt_s, tk_s, brunt_s, tke_s, a_diss_s);
+      SHF::adv_sgs_tke(team, nlev, dtime, shoc_1p5tke, do_3d_turb,
+                       shoc_mix_s, wthv_sec_s, sterm_zt_s, tk_s, brunt_s,
+                       shear_strain3d_s, tke_s, a_diss_s);
     });
 
   // Sync back to host
@@ -2930,9 +2940,10 @@ void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, bool shoc_1p5tke,
   using SHF = Functions<Real, DefaultDevice>;
 
   using Scalar     = typename SHF::Scalar;
-  using Pack      = typename SHF::Pack;
+  using Pack       = typename SHF::Pack;
   using view_1d    = typename SHF::view_1d<Scalar>;
   using view_2d    = typename SHF::view_2d<Pack>;
+  using view_3d    = typename SHF::view_3d<Pack>;
   using KT         = typename SHF::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using TPF        = ekat::TeamPolicyFactory<ExeSpace>;
