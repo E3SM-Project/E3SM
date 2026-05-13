@@ -385,7 +385,7 @@ void VertAdv::computeVerticalVelocity(
        "computeVerticalVelocity",
        LaunchConfig({NCellsHalo0}, TeamScratch<Real>(NVertLayers)),
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
-          ArrayScratch1DReal DivHU(teamScratch(Team), LocNVertLayers);
+          ScratchArray1DReal DivHU(teamScratch(Team), LocNVertLayers);
 
           const Real InvAreaCell = 1._Real / LocAreaCell(ICell);
 
@@ -537,7 +537,7 @@ void VertAdv::computeVelocityVAdvTend(
 
           // Allocate scratch space for W times Du/Dz at vertical interfaces
           // between edges
-          ArrayScratch1DReal WDuDzEdge(teamScratch(Team), LocNVertLayersP1);
+          ScratchArray1DReal WDuDzEdge(teamScratch(Team), LocNVertLayersP1);
 
           // Flux is zero at top and bottom
           Kokkos::single(
@@ -847,11 +847,11 @@ void VertAdv::computeFCTVAdvTend(
           const I4 KMax = MaxLayerCell(ICell);
           I4 KRange     = vertRangeChunked(KMin, KMax);
 
-          ArrayScratch1DReal InvNewProvThick(teamScratch(Team), LocNVertLayers);
-          ArrayScratch1DReal WorkTend(teamScratch(Team), LocNVertLayers);
-          ArrayScratch1DReal FlxIn(teamScratch(Team), LocNVertLayers);
-          ArrayScratch1DReal FlxOut(teamScratch(Team), LocNVertLayers);
-          ArrayScratch1DReal RescaledFlux(teamScratch(Team),
+          ScratchArray1DReal InvNewProvThick(teamScratch(Team), LocNVertLayers);
+          ScratchArray1DReal WorkTend(teamScratch(Team), LocNVertLayers);
+          ScratchArray1DReal FlxIn(teamScratch(Team), LocNVertLayers);
+          ScratchArray1DReal FlxOut(teamScratch(Team), LocNVertLayers);
+          ScratchArray1DReal RescaledFlux(teamScratch(Team),
                                           LocNVertLayers + 1);
 
           parallelForInner(

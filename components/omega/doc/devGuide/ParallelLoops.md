@@ -358,7 +358,7 @@ To enable scratch memory, the outer loops needs to be launched with the `LaunchC
 configured with the requested number of scratch values.
 Inside the outer loop, unmanaged scratch arrays can be created from a pool of memory accessible
 by calling the `teamScratch(Team)` function.
-Scratch arrays have a different type than normal Omega arrays, for example `ArrayScratch1DReal` is the
+Scratch arrays have a different type than normal Omega arrays, for example `ScratchArray1DReal` is the
 type of a 1D scratch array of Reals. They also cannot have labels.
 
 As an example, the following code uses scratch memory to compute an expensive function on elements of a 2D array `A`.
@@ -370,7 +370,7 @@ By using scratch memory, the expensive function is only computed once for every 
        LaunchConfig({N1}, TeamScratch<Real>(N2)),
        KOKKOS_LAMBDA(int J1, const TeamMember &Team) {
 
-        ArrayScratch1DReal SA(teamScratch(Team), N2);
+        ScratchArray1DReal SA(teamScratch(Team), N2);
 
         parallelForInner(Team, N2, INNER_LAMBDA (int J2) {
             SA(J2) = expensiveFunc(A(J1, J2));
@@ -392,8 +392,8 @@ You can create multiple scratch arrays of different types, as in the following c
    parallelForOuter(
        LaunchConfig({N1}, TeamScratch<Real, I4>(4, 8)),
        KOKKOS_LAMBDA(int J1, const TeamMember &Team) {
-        ArrayScratch1DI4 ScratchI4(teamScratch(Team), 8);
-        ArrayScratch1DReal ScratchReal(teamScratch(Team), 4);
+        ScratchArray1DI4 ScratchI4(teamScratch(Team), 8);
+        ScratchArray1DReal ScratchReal(teamScratch(Team), 4);
    });
 ```
 As the above example illustrates, the order in which the arrays are created inside the outer region
