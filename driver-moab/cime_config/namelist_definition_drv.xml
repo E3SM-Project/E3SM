@@ -1867,11 +1867,10 @@
       mapped. For these excluded fields, the low-order linear map is used,
       instead. Modify user_nl_cpl to edit this. This option is ignored if
       nlmaps_atm2srf_conserve is .true.
-      v3.0-3.1 default: 'Faxa_rainc', 'Faxa_rainl', 'Faxa_snowc', 'Faxa_snowl'
-      default: '', '', '', ''
+      default: 'Faxa_rainc', 'Faxa_rainl', 'Faxa_snowc', 'Faxa_snowl'
     </desc>
     <values>
-      <value>'', '', '', ''</value>
+      <value>'Faxa_rainc', 'Faxa_rainl', 'Faxa_snowc', 'Faxa_snowl'</value>
     </values>
   </entry>
 
