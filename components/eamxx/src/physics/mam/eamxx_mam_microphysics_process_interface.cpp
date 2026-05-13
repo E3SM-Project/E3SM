@@ -7,6 +7,7 @@
 #include "readfiles/photo_table_utils.cpp"
 #include "physics/mam/readfiles/vertical_remapper_mam4.hpp"
 #include "physics/mam/readfiles/vertical_remapper_exo_coldens.hpp"
+#include "physics/mam/readfiles/vertical_remapper_elevated_emissions_mam4.hpp"
 #include "share/algorithm/eamxx_data_interpolation.hpp"
 
 #include <ekat_team_policy_utils.hpp>
@@ -600,11 +601,10 @@ void MAMMicrophysics::set_elevated_emissions_reader()
     remap_data_vertical.pmid = z_iface;
     auto grid_after_hremap_vertical = di_vertical->get_grid_after_hremap();
     // we create elevated emission remapper
-    auto vertical_remapper_elevated = std::make_shared<VerticalRemapperMAM4>(grid_after_hremap_vertical, grid_,
-    VerticalRemapperMAM4::VertRemapType::MAM4_ELEVATED_EMISSIONS);
+    auto vertical_remapper_elevated = std::make_shared<VerticalRemapperElevatedEmissionsMAM4>(grid_after_hremap_vertical, grid_);
     // we set source and target variables for interpolation
-    vertical_remapper_elevated->set_source_pressure(file_name);
-    vertical_remapper_elevated->set_target_pressure(z_iface);
+    vertical_remapper_elevated->set_source_interface_height(file_name);
+    vertical_remapper_elevated->set_target_interface_height(z_iface);
     remap_data_vertical.custom_remapper=vertical_remapper_elevated;
     di_vertical->create_vert_remapper (remap_data_vertical);
     di_vertical->init_data_interval (start_of_step_ts());
