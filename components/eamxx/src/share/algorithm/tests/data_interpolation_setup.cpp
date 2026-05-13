@@ -29,10 +29,13 @@ TEST_CASE ("data_interpolation_setup")
   auto p_grid = grid->clone("pressure_grid",true);
   p_grid->reset_vertical_configuration(nlevs, AbstractGrid::VKind::Pressure);
 
-  // Create and setup two files, so we can test both YearlyPeriodic and LinearHistory
+  // Create and setup three files:
+  //  - the first two cover the original 12-month dataset
+  //  - the third extends the periodic database beyond one year for start_ts tests
   std::vector<std::string> files = {
     "data_interpolation_0",
-    "data_interpolation_1"
+    "data_interpolation_1",
+    "data_interpolation_2"
   };
 
   for (auto use_p_grid : {true, false}) {
@@ -50,7 +53,6 @@ TEST_CASE ("data_interpolation_setup")
 
       std::string ilev = use_p_grid ? "lev" : "ilev";
 
-      scorpio::define_var(fname+suffix,"s2d",  {"ncol"},             "real", true);
       scorpio::define_var(fname+suffix,"s2d",  {"ncol"},             "real", true);
       scorpio::define_var(fname+suffix,"v2d",  {"ncol","dim2"},      "real", true);
       scorpio::define_var(fname+suffix,"s3d_m",{"ncol","lev"},       "real", true);
@@ -80,9 +82,8 @@ TEST_CASE ("data_interpolation_setup")
     // Loop over time, and add 30 to the value for the first 6 months,
     // and subtract 30 for the last 6 months. This guarantees that the data
     // is indeed periodic. We'll write at the 15th of each month
-    // Generate three files:
-    //   - one to be used for yearly-periodic interp
-    //   - two to be used for linear-hystory interp
+    // Generate 18 months of data starting in July.
+    // Files 0 and 1 cover the original 12 months; file 2 adds 6 extra months.
     util::TimeStamp time = get_first_slice_time ();
 
     // We keep pressures fields NOT time-dep, so we write outside the loop. Also write hyam/hybm here
@@ -104,7 +105,7 @@ TEST_CASE ("data_interpolation_setup")
     }
 
     int nfields = fields.size() - 1; // Don't handle p1d, since it's done above
-    for (int mm=0; mm<12; ++mm) {
+    for (int mm=0; mm<18; ++mm) {
       std::string file_name = "data_interpolation_" + std::to_string(mm/6) + suffix;
 
       // We start the files with July
@@ -113,7 +114,11 @@ TEST_CASE ("data_interpolation_setup")
       for (int i=0; i<nfields; ++i) {
         auto& f = fields[i];
         f.deep_copy(base_fields[i]);
-        f.update(ones[i],delta_data[ mm_index % 12],1.0);
+        auto delta = delta_data[mm_index % 12];
+        if (mm>=12) {
+          delta += 1000.0;
+        }
+        f.update(ones[i],delta,1.0);
         f.sync_to_host();
         scorpio::write_var(file_name,f.name(),f.get_internal_view_data<Real,Host>());
       }
