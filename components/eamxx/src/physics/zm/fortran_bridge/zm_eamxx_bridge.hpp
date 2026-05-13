@@ -14,8 +14,8 @@ namespace zm {
 using ZMF = zm::Functions<Real, DefaultDevice>;
 
 // Glue functions to call fortran from from C++ with the Data struct
-void zm_eamxx_bridge_init( Int pver );
-void zm_eamxx_bridge_run( Int ncol, Int pver,
+void zm_eamxx_bridge_init( Int pver_in, Int ncol_in );
+void zm_eamxx_bridge_run( Int ncol, Int pver, Real max_vert_growth_rate,
                           ZMF::ZmInputState& zm_input,
                           ZMF::ZmOutputTend& zm_output,
                           ZMF::ZmRuntimeOpt& zm_opts

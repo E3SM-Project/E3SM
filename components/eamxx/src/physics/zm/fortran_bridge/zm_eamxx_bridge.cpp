@@ -7,11 +7,12 @@ using scream::Int;
 
 extern "C" {
 
-void zm_eamxx_bridge_init_c( Int  pver_in );
+void zm_eamxx_bridge_init_c( Int pver, Int ncol );
 
 void zm_eamxx_bridge_run_c( Int  ncol,                // 01
                             Real dtime,               // 02
                             bool is_first_step,       // 03
+                            Real max_vert_growth_rate,
                             const Real *state_phis,         // 04
                             Real *state_z_mid,        // 05
                             Real *state_z_int,        // 06
@@ -46,11 +47,11 @@ void zm_eamxx_bridge_run_c( Int  ncol,                // 01
 namespace scream {
 namespace zm {
 
-void zm_eamxx_bridge_init( Int pver ){
-  zm_eamxx_bridge_init_c( pver );
+void zm_eamxx_bridge_init( Int pver, Int ncol ){
+  zm_eamxx_bridge_init_c( pver, ncol );
 }
 
-void zm_eamxx_bridge_run( Int ncol, Int pver,
+void zm_eamxx_bridge_run( Int ncol, Int pver, Real max_vert_growth_rate,
                           ZMF::ZmInputState& zm_input,
                           ZMF::ZmOutputTend& zm_output,
                           ZMF::ZmRuntimeOpt& zm_opts
@@ -61,6 +62,7 @@ void zm_eamxx_bridge_run( Int ncol, Int pver,
   zm_eamxx_bridge_run_c( ncol,                            // 01
                          zm_input.dtime,                  // 02
                          zm_input.is_first_step,          // 03
+                         max_vert_growth_rate,
                          zm_input.h_phis        .data(),  // 04
                          zm_input.h_z_mid       .data(),  // 05
                          zm_input.h_z_int       .data(),  // 06

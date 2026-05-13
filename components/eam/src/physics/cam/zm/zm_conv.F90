@@ -58,10 +58,14 @@ module zm_conv
    ! private variables
    real(r8), parameter :: cape_threshold_old = 70._r8       ! threshold value of cape for deep convection (old value before DCAPE)
    real(r8), parameter :: cape_threshold_new = 0._r8        ! threshold value of cape for deep convection
+   ! real(r8), parameter :: cape_threshold_old = 200._r8
+   ! real(r8), parameter :: cape_threshold_new = 200._r8
    real(r8), parameter :: dcape_threshold    = 0._r8        ! threshold value of dcape for deep convection
    real(r8), parameter :: interp_diff_min    = 1.E-6_r8     ! minimum threshold for interpolation method - see eq (4.109), (4.118), (4.119)
    real(r8), parameter :: omsm               = 0.99999_r8   ! to prevent problems due to round off error
    real(r8), parameter :: small              = 1.e-20_r8    ! small number to limit blowup when normalizing by mass flux
+
+   ! real(r8), parameter :: max_vert_growth_rate = 10.
 
 #ifndef SCREAM_CONFIG_IS_CMAKE
    integer,parameter,public :: btype = kind(.true.)
@@ -132,6 +136,7 @@ subroutine zm_get_gather_index(pcols, ncol, pver, pverp, is_first_step, cape, dc
    !----------------------------------------------------------------------------
    ! determine number of active columns
    lengath = 0
+   gather_index(:) = -1
    do i = 1,ncol
       if ( zm_param%trig_dcape .and. (.not.is_first_step) ) then
          if ( cape(i)>cape_threshold_loc .and. dcape(i)>dcape_threshold ) then
@@ -158,6 +163,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
                         geos, z_mid_in, z_int_in, pbl_hgt, &
                         tpert, landfrac, t_star, q_star, &
                         lengath, gather_index, msemax_klev_g, jctop, jcbot, jt, &
+                        jt_prev, max_vert_growth_rate, &
                         prec, heat, qtnd, cape, dcape, &
                         mcon, pflx, zdu, mflx_up, entr_up, detr_up, mflx_dn, entr_dn, p_del, dsubcld, &
                         ql, rliq, rprd, dlf, aero, microp_st )
@@ -169,7 +175,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    integer,                         intent(in   ) :: ncol            ! actual number of columns
    integer,                         intent(in   ) :: pver            ! number of mid-point levels
    integer,                         intent(in   ) :: pverp           ! number of interface levels
-   logical(btype),                         intent(in   ) :: is_first_step   ! flag for first step of run
+   logical(btype),                  intent(in   ) :: is_first_step   ! flag for first step of run
    real(r8),                        intent(in   ) :: time_step       ! model time-step                         [s]
    real(r8), dimension(pcols,pver), intent(in   ) :: t_mid           ! temperature                             [K]
    real(r8), dimension(pcols,pver), intent(in   ) :: q_mid_in        ! specific humidity                       [kg/kg]
@@ -183,14 +189,18 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
    real(r8), dimension(pcols),      intent(in   ) :: pbl_hgt         ! boundary layer height                   [m]
    real(r8), dimension(pcols),      intent(in   ) :: tpert           ! parcel temperature perturbation         [K]
    real(r8), dimension(pcols),      intent(in   ) :: landfrac        ! land fraction                           []
-   real(r8),pointer,dimension(:,:), intent(in   ) :: t_star          ! for DCAPE - prev temperature            [K]
-   real(r8),pointer,dimension(:,:), intent(in   ) :: q_star          ! for DCAPE - prev sp. humidity           [kg/kg]
+   ! real(r8),pointer,dimension(:,:), intent(in   ) :: t_star          ! for DCAPE - prev temperature            [K]
+   ! real(r8),pointer,dimension(:,:), intent(in   ) :: q_star          ! for DCAPE - prev sp. humidity           [kg/kg]
+   real(r8), dimension(pcols,pver), intent(in   ) :: t_star          ! for DCAPE - prev temperature            [K]
+   real(r8), dimension(pcols,pver), intent(in   ) :: q_star          ! for DCAPE - prev sp. humidity           [kg/kg]
    integer,                         intent(  out) :: lengath         ! number of active columns in chunk for gathering
    integer,  dimension(pcols),      intent(  out) :: gather_index    ! flag for active columns
    integer,  dimension(pcols),      intent(  out) :: msemax_klev_g   ! gathered level indices of max MSE (msemax_klev)
    integer,  dimension(pcols),      intent(  out) :: jctop           ! top-of-deep-convection indices
    integer,  dimension(pcols),      intent(  out) :: jcbot           ! base of cloud indices
    integer,  dimension(pcols),      intent(  out) :: jt              ! gathered top level index of convection
+   integer,  dimension(pcols),      intent(inout) :: jt_prev
+   real(r8),                        intent(in   ) :: max_vert_growth_rate
    real(r8), dimension(pcols),      intent(  out) :: prec            ! output precipitation                    [m/s]
    real(r8), dimension(pcols,pver), intent(  out) :: heat            ! dry static energy tendency              [W/kg]
    real(r8), dimension(pcols,pver), intent(  out) :: qtnd            ! specific humidity tendency              [kg/kg/s]
@@ -329,6 +339,7 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
       dsubcld(i)     = 0._r8
       jctop(i)       = pver
       jcbot(i)       = 1
+      jt(i)          = pver
    end do
 
    !----------------------------------------------------------------------------
@@ -518,10 +529,10 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
 
    !----------------------------------------------------------------------------
    ! calculate updraft and downdraft properties
-   call zm_cloud_properties(pcols, lengath, pver, pverp, msg, zm_param%limcnv, &
+   call zm_cloud_properties(time_step, pcols, lengath, pver, pverp, msg, zm_param%limcnv, &
                             p_mid_g, z_mid_g, z_int_g, t_mid_g, s_mid_g, s_int_g, q_mid_g, &
                             landfrac_g, tpert_g, &
-                            msemax_klev_g, lel_g, jt, jlcl, j0, jd, &
+                            msemax_klev_g, lel_g, jt, jt_prev, max_vert_growth_rate, jlcl, j0, jd, &
                             mflx_up, entr_up, detr_up, mflx_dn, entr_dn, mflx_net, &
                             s_upd, q_upd, ql_g, s_dnd, q_dnd,  &
                             q_mid_sat_g, cu_g, evp_g, pflx_g, rprd_g, &
@@ -1231,10 +1242,10 @@ end subroutine zm_downdraft_properties
 
 !===================================================================================================
 
-subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
+subroutine zm_cloud_properties(time_step, pcols, ncol, pver, pverp, msg, limcnv, &
                                p_mid, z_mid, z_int, t_mid, s_mid, s_int, q_mid, &
                                landfrac, tpert_g, &
-                               jb, lel, jt, jlcl, j0, jd, &
+                               jb, lel, jt, jt_prev, max_vert_growth_rate, jlcl, j0, jd, &
                                mflx_up, entr_up, detr_up, mflx_dn, entr_dn, mflx_net, &
                                s_upd, q_upd, ql, s_dnd, q_dnd,  &
                                qst, cu, evp, pflx, rprd, &
@@ -1245,6 +1256,7 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
    implicit none
    !----------------------------------------------------------------------------
    ! Arguments
+   real(r8),                        intent(in ) :: time_step      ! model time-step [s]
    integer,                         intent(in ) :: pcols          ! declared number of columns
    integer,                         intent(in ) :: ncol           ! actual number of columns for iteration
    integer,                         intent(in ) :: pver           ! number of mid-point vertical levels
@@ -1263,6 +1275,8 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
    integer,  dimension(pcols),      intent(in ) :: jb             ! updraft base level
    integer,  dimension(pcols),      intent(in ) :: lel            ! updraft parcel launch level
    integer,  dimension(pcols),      intent(out) :: jt             ! updraft plume top
+   integer,  dimension(pcols),      intent(inout) :: jt_prev
+   real(r8),                        intent( in) :: max_vert_growth_rate
    integer,  dimension(pcols),      intent(out) :: jlcl           ! updraft lifting cond level
    integer,  dimension(pcols),      intent(out) :: j0             ! level where detrainment begins (starting at h_env_min)
    integer,  dimension(pcols),      intent(out) :: jd             ! level of downdraft
@@ -1330,6 +1344,12 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
 
    logical(btype), dimension(pcols) :: doit ! flag to reset cloud
    logical(btype), dimension(pcols) :: done ! flag for LCL determination
+
+   ! variables for testing experimental feature
+   real(r8) :: z_top_curr
+   real(r8) :: z_top_prev
+   real(r8) :: z_top_max
+   logical(btype) :: found
 
    real(r8), parameter :: mu_min       = 0.02_r8      ! minimum value of mu
    real(r8), parameter :: t_homofrz    = 233.15_r8    ! homogeneous freezing temperature
@@ -1420,6 +1440,38 @@ subroutine zm_cloud_properties(pcols, ncol, pver, pverp, msg, limcnv, &
       jd(i) = pver
       jlcl(i) = lel(i)
       h_env_min(i) = 1.E6_r8
+   end do ! i
+
+   !----------------------------------------------------------------------------
+   ! put a limit on jt based on previous timestep (jt_prev)
+
+   do i = 1,ncol
+      ! when ZM is inactive we reset jt_prev to -1,
+      ! and if this is the case reset jt_prev to current cloud base index
+      if (jt_prev(i)<0) jt_prev(i) = jb(i)
+      ! check if new cloud top is higher than previous (or cloud base)
+      if ( jt(i) < jt_prev(i) ) then
+         ! calculate max cloud top altitude based on assumed max vertical growth rate
+         z_top_curr = z_mid(i,jt(i))
+         z_top_prev = z_mid(i,jt_prev(i))
+         z_top_max = z_top_prev + max_vert_growth_rate * time_step
+         ! check if new jt is above the allowable limit
+         if ( z_top_curr > z_top_max ) then
+            ! find level between current and previous jt closest to z_top_max
+            found = .false.
+            do k = jt(i), jt_prev(i)
+               if (.not.found) then
+                  if (z_mid(i,k) <= z_top_max) then
+                     jt(i) = k
+                     found = .true.
+                  end if
+               end if
+            end do
+            ! if (.not.found) then
+            !    ! print a error message?
+            ! end if
+         end if ! z_top_curr > z_top_max
+      end if ! jt(i) < jt_prev(i)
    end do ! i
 
    !----------------------------------------------------------------------------

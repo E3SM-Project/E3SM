@@ -7,6 +7,7 @@ module zm_eamxx_bridge_main
   use cam_logfile,   only: iulog
   use shr_sys_mod,   only: shr_sys_flush
   use zm_eamxx_bridge_params, only: masterproc, r8, pver, pverp, top_lev
+  use cam_abortutils,   only: endrun
   !-----------------------------------------------------------------------------
   implicit none
   private
@@ -14,6 +15,13 @@ module zm_eamxx_bridge_main
   ! public methods
   public :: zm_eamxx_bridge_init_c
   public :: zm_eamxx_bridge_run_c
+
+  integer, allocatable, dimension(:) :: jt_prev
+  real(r8), allocatable, dimension(:) :: seconds_since_last_active
+  real(r8), parameter :: inactive_seconds_max = 60.
+
+  real(r8),  allocatable, dimension(:,:) :: t_star ! DCAPE T from time step n-1
+  real(r8),  allocatable, dimension(:,:) :: q_star ! DCAPE q from time step n-1
 
 !===================================================================================================
 #include "eamxx_config.f"
@@ -26,7 +34,7 @@ module zm_eamxx_bridge_main
 contains
 !===================================================================================================
 
-subroutine zm_eamxx_bridge_init_c( pver_in ) bind(C)
+subroutine zm_eamxx_bridge_init_c( pver_in, ncol_in ) bind(C)
   use mpi
   use zm_conv,       only: zm_const, zm_param
   use zm_conv_types, only: zm_const_set_for_testing, zm_param_set_for_testing
@@ -35,6 +43,7 @@ subroutine zm_eamxx_bridge_init_c( pver_in ) bind(C)
   !-----------------------------------------------------------------------------
   ! Arguments
   integer(kind=c_int), value, intent(in) :: pver_in
+  integer,             value, intent(in) :: ncol_in
   !-----------------------------------------------------------------------------
   ! Local variables
   integer :: mpi_rank, ierror
@@ -52,24 +61,35 @@ subroutine zm_eamxx_bridge_init_c( pver_in ) bind(C)
   call zm_const_set_for_testing(zm_const)
   call zm_param_set_for_testing(zm_param)
   call zm_param_mpi_broadcast(zm_param)
-  call zm_param_print(zm_param)
   !-----------------------------------------------------------------------------
   ! make sure we are turning off the extra stuff
   zm_param%zm_microp       = .false.
   zm_param%old_snow        = .true.
-  zm_param%trig_dcape      = .false.
+  ! zm_param%trig_dcape      = .false.
+  zm_param%trig_dcape      = .true.
   zm_param%trig_ull        = .true.
-  zm_param%clos_dyn_adj    = .true.
+  ! zm_param%clos_dyn_adj    = .true.
+  zm_param%clos_dyn_adj    = .false.
   zm_param%mcsp_enabled    = .true.
   !-----------------------------------------------------------------------------
+  call zm_param_print(zm_param)
+  !-----------------------------------------------------------------------------
   call wv_sat_init()
+  !-----------------------------------------------------------------------------
+  allocate(jt_prev(ncol_in))
+  allocate(seconds_since_last_active(ncol_in))
+  jt_prev(1:ncol_in) = -1
+  seconds_since_last_active(1:ncol_in) = 0
+
+  allocate(t_star(ncol_in,pver_in))
+  allocate(q_star(ncol_in,pver_in))
   !-----------------------------------------------------------------------------
   return
 end subroutine zm_eamxx_bridge_init_c
 
 !===================================================================================================
 
-subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
+subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, max_vert_growth_rate, &
                                   state_phis, state_zm, state_zi, &
                                   state_p_mid, state_p_int, state_p_del, &
                                   state_t, state_qv, state_u, state_v, &
@@ -92,6 +112,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   integer(kind=c_int),               value, intent(in   ) :: ncol               ! 01 number of columns on rank
   real(kind=c_real),                 value, intent(in   ) :: dtime              ! 02 time step
   logical(kind=c_bool),              value, intent(in   ) :: is_first_step      ! 03 flag for first step
+  real(kind=c_real),                 value, intent(in   ) :: max_vert_growth_rate
   real(kind=c_real),  dimension(ncol),      intent(in   ) :: state_phis         ! 04 input state surface geopotential height
   real(kind=c_real),  dimension(ncol,pver), intent(in   ) :: state_zm           ! 05 input state altitude at mid-levels
   real(kind=c_real),  dimension(ncol,pverp),intent(in   ) :: state_zi           ! 06 input state altitude at interfaces
@@ -143,8 +164,8 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   integer,  dimension(ncol)      :: ideep          ! flag to indicate ZM is active
   integer                        :: lengath        ! number of gathered columns per chunk
   real(r8), dimension(ncol)      :: rliq           ! reserved liquid (not yet in cldliq) for energy integrals
-  real(r8), dimension(ncol,pver), target :: t_star ! DCAPE T from time step n-1
-  real(r8), dimension(ncol,pver), target :: q_star ! DCAPE q from time step n-1
+  ! real(r8), dimension(ncol,pver), target :: t_star ! DCAPE T from time step n-1
+  ! real(r8), dimension(ncol,pver), target :: q_star ! DCAPE q from time step n-1
   real(r8), dimension(ncol)      :: dcape          ! DCAPE cape change
   type(zm_aero_t)                :: aero           ! derived type for aerosol information
   type(zm_microp_st)             :: microp_st      ! ZM microphysics data structure
@@ -229,17 +250,54 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   !-----------------------------------------------------------------------------
   ! Call the primary Zhang-McFarlane convection parameterization
 
+  if (loc_is_first_step) then
+    t_star(1:ncol,1:pver) = state_t(1:ncol,1:pver)
+    q_star(1:ncol,1:pver) = state_qv(1:ncol,1:pver)
+  end if
+
+
   call zm_conv_main(ncol, ncol, pver, pverp, loc_is_first_step, dtime, &
                     state_t, state_qv, state_omega, &
                     state_p_mid, state_p_int, state_p_del, &
                     state_phis, state_zm, state_zi, state_pblh, &
                     tpert, landfrac, t_star, q_star, &
                     lengath, ideep, maxg, jctop, jcbot, jt, &
+                    jt_prev, max_vert_growth_rate, &
                     output_prec, output_tend_s, output_tend_q, &
                     output_cape, dcape, output_mass_flux, output_prec_flux, &
                     zdu, mu, eu, du, md, ed, dp, dsubcld, &
                     zm_qc, rliq, output_rain_prod, dlf, &
                     aero, microp_st )
+
+  t_star(1:ncol,1:pver) = state_t(1:ncol,1:pver)
+  q_star(1:ncol,1:pver) = state_qv(1:ncol,1:pver)
+
+  ! pre-emtively populate deep convection activity flag for jt_prev
+  if (lengath.gt.0) then
+    do i=1,lengath
+      output_activity(ideep(i)) = 1
+    end do
+  end if
+
+  ! update seconds_since_last_active
+  do i = 1,ncol
+    if (output_activity(i)==0) seconds_since_last_active(i) = seconds_since_last_active(i) + dtime
+    if (output_activity(i)==1) seconds_since_last_active(i) = 0
+  end do
+
+  do i = 1,ncol
+    if (output_activity(i)==1) then
+      if ( jt(i)>0 .and. jt(i)<=pver) then
+        jt_prev(i) = jt(i)
+      else
+        call endrun('zm_eamxx_bridge_run_c:: ERROR - jt is invalid')
+      end if
+    else
+      ! jt_prev(i) = -1
+      ! only reset after specified time interval
+      if ( seconds_since_last_active(i) > inactive_seconds_max ) jt_prev(i) = -1
+    end if
+  end do
 
   !-----------------------------------------------------------------------------
   ! mesoscale coherent structure parameterization (MCSP)- modifies tendencies from zm_conv_main() prior to updating the state

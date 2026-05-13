@@ -81,10 +81,10 @@ void ZMDeepConvection::create_requests ()
   add_field<Computed>("zm_cape",              scalar2d,     J/kg,   grid_name);
   add_field<Computed>("zm_activity",          scalar2d,     nondim, grid_name);
 
-  add_field<Computed>("zm_T_mid_tend",        scalar3d_mid, K/s,    grid_name, pack_size);
-  add_field<Computed>("zm_qv_tend",           scalar3d_mid, kg/kg/s,grid_name, pack_size);
-  add_field<Computed>("zm_u_tend",            scalar3d_mid, m/s/s,  grid_name, pack_size);
-  add_field<Computed>("zm_v_tend",            scalar3d_mid, m/s/s,  grid_name, pack_size);
+  // add_field<Computed>("zm_T_mid_tend",        scalar3d_mid, K/s,    grid_name, pack_size);
+  // add_field<Computed>("zm_qv_tend",           scalar3d_mid, kg/kg/s,grid_name, pack_size);
+  // add_field<Computed>("zm_u_tend",            scalar3d_mid, m/s/s,  grid_name, pack_size);
+  // add_field<Computed>("zm_v_tend",            scalar3d_mid, m/s/s,  grid_name, pack_size);
 
 }
 
@@ -133,7 +133,7 @@ void ZMDeepConvection::initialize_impl (const RunType)
 
   //----------------------------------------------------------------------------
   // initialize variables on the fortran side
-  zm::zm_eamxx_bridge_init(m_nlev);
+  zm::zm_eamxx_bridge_init(m_nlev,m_ncol);
 
 }
 
@@ -236,7 +236,9 @@ void ZMDeepConvection::run_impl (const double dt)
   //----------------------------------------------------------------------------
   // run the ZM scheme
 
-  zm_eamxx_bridge_run(m_ncol, m_nlev, zm_input, zm_output, zm_opts);
+  auto max_vert_growth_rate = m_params.get<Real>("max_vert_growth_rate", 1000.);
+
+  zm_eamxx_bridge_run(m_ncol, m_nlev, max_vert_growth_rate, zm_input, zm_output, zm_opts);
 
   //----------------------------------------------------------------------------
   // create temporaries of output variables to avoid "Implicit capture" warning
@@ -287,19 +289,19 @@ void ZMDeepConvection::run_impl (const double dt)
     zm_activity(i) = loc_zm_output_activity(i);
   });
 
-  // 3D output (vertically resolved)
-  const auto& zm_T_mid_tend = get_field_out("zm_T_mid_tend")  .get_view<Pack**>();
-  const auto& zm_qv_tend    = get_field_out("zm_qv_tend")     .get_view<Pack**>();
-  const auto& zm_u_tend     = get_field_out("zm_u_tend")      .get_view<Pack**>();
-  const auto& zm_v_tend     = get_field_out("zm_v_tend")      .get_view<Pack**>();
-  Kokkos::parallel_for("zm_update_precip",KT::RangePolicy(0, m_ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int idx) {
-    const int i = idx/nlev_mid_packs;
-    const int k = idx%nlev_mid_packs;
-    zm_T_mid_tend(i,k) = loc_zm_output_tend_t (i,k);
-    zm_qv_tend   (i,k) = loc_zm_output_tend_qv(i,k);
-    zm_u_tend    (i,k) = loc_zm_output_tend_u (i,k);
-    zm_v_tend    (i,k) = loc_zm_output_tend_v (i,k);
-  });
+  // // 3D output (vertically resolved)
+  // const auto& zm_T_mid_tend = get_field_out("zm_T_mid_tend")  .get_view<Pack**>();
+  // const auto& zm_qv_tend    = get_field_out("zm_qv_tend")     .get_view<Pack**>();
+  // const auto& zm_u_tend     = get_field_out("zm_u_tend")      .get_view<Pack**>();
+  // const auto& zm_v_tend     = get_field_out("zm_v_tend")      .get_view<Pack**>();
+  // Kokkos::parallel_for("zm_update_precip",KT::RangePolicy(0, m_ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int idx) {
+  //   const int i = idx/nlev_mid_packs;
+  //   const int k = idx%nlev_mid_packs;
+  //   zm_T_mid_tend(i,k) = loc_zm_output_tend_t (i,k);
+  //   zm_qv_tend   (i,k) = loc_zm_output_tend_qv(i,k);
+  //   zm_u_tend    (i,k) = loc_zm_output_tend_u (i,k);
+  //   zm_v_tend    (i,k) = loc_zm_output_tend_v (i,k);
+  // });
 
 }
 

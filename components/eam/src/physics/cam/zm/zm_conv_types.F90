@@ -190,7 +190,8 @@ subroutine zm_param_set_for_testing(zm_param)
    !----------------------------------------------------------------------------
    type(zm_param_t), intent(inout) :: zm_param
    !----------------------------------------------------------------------------
-   zm_param%tau             = 3600.0_r8
+   ! zm_param%tau             = 3600.0_r8
+   zm_param%tau             = 600.0_r8
    zm_param%alfa            = 0.14D0
    zm_param%ke              = 2.5E-6
    zm_param%dmpdz           = -0.7e-3
