@@ -22,6 +22,7 @@ module seq_map_mod
   use component_type_mod
   use seq_map_type_mod
   use shr_moab_mod
+  use perf_mod
 
   implicit none
   save
@@ -334,9 +335,9 @@ contains
     character(len=*),parameter :: subname = "(seq_map_map) "
     !-----------------------------------------------------
 
-    if (seq_comm_iamroot(CPLID) .and. present(string)) then
-       write(logunit,'(A)') subname//' called for '//trim(string)
-    endif
+    !if (seq_comm_iamroot(CPLID) .and. present(string)) then
+    !   write(logunit,'(A)') subname//' called for '//trim(string)
+    !endif
 
     lnorm = .true.
     if (present(norm)) then
@@ -497,6 +498,7 @@ contains
           !*** When normalization is requested (mbnorm=.true.) or a weight field
           !*** is provided (mbpresent=.true.), we prepare source data for mapping.
           if (mbnorm .or. mbpresent) then
+             call t_startf(string//':prenorm')
              !*** MOAB: iMOAB_GetMeshInfo - Get source mesh dimensions
              !*** nvise(1) returns the number of visible (owned) elements
              ierr  = iMOAB_GetMeshInfo ( mapper%src_mbid, nvert, nvise, nbl, nsurf, nvisBC );
@@ -512,7 +514,7 @@ contains
              allocate(wghts(lsize_src))
              wghts = 1.0_r8
              tagname = "norm8wt"//C_NULL_CHAR
-             !*** MOAB: iMOAB_SetDoubleTagStorage - Set tag values on mesh elements
+             !*** MOAB: iMOAB_SetDoubleTagStorage - Set values for norm8wt
              ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, tagname, lsize_src , mapper%tag_entity_type, wghts)
              if (ierr .ne. 0) then
                 write(logunit,*) subname,' error setting init value for mapping norm factor ',ierr,trim(tagname)
@@ -525,10 +527,12 @@ contains
                 call shr_sys_flush(logunit)
              endif
 #endif
+             call t_stopf(string//':prenorm')
              !*** MOAB: Optional pre-multiplication by user-specified weights
              !*** If avwtsfld_s was provided, multiply all source fields by this weight.
              !*** This is used for flux-weighted mapping (e.g., area-weighted averages).
              if(mbpresent) then
+                call t_startf(string//':weight')
                 !*** MOAB: iMOAB_GetDoubleTagStorage - Get weight field values
                 tagname = avwtsfld_s//C_NULL_CHAR
                 ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, tagname, lsize_src , mapper%tag_entity_type, wghts)
@@ -575,6 +579,7 @@ contains
                    call shr_sys_abort(subname//' ERROR setting normed source tag values') ! serious enough
                 endif
                 deallocate(targtags)
+                call t_stopf(string//':weight')
              endif ! end multiplication by norm factor
              deallocate(wghts)
           endif  ! end NORMALIZATION
@@ -582,6 +587,7 @@ contains
           !*** MOAB: Send source data to intersection/coverage mesh
           !*** For full mapping, data goes to the intersection app (intx_context)
           !*** where projection weights will be applied.
+          call t_startf(string//':matcommx')
           ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context )
           if (ierr .ne. 0) then
              write(logunit, *) subname,' iMOAB mapper error in sending tags ', mapper%mbname,  trim(fldlist_moab)
@@ -614,6 +620,7 @@ contains
              write(logunit,*) subname,' error in freeing buffers ', trim(fldlist_moab)
              call shr_sys_abort(subname//' ERROR in freeing buffers') ! serious enough
           endif
+          call t_stopf(string//':matcommx')
        endif
 
        !*** MOAB: Apply projection weights to interpolate source data to target grid
@@ -634,18 +641,21 @@ contains
           !***   filter_type: 0=no filter, other values for CAAS projection
           !***   weight_identifier: Name of the weight matrix (e.g., "scalar", "flux")
           !***   fldlist_moab: Input and output field names (can be different)
+          call t_startf(string//':matmultx')
           filter_type = 0 ! no filter
           ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%weight_identifier, fldlist_moab, fldlist_moab)
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in applying weights '
              call shr_sys_abort(subname//' ERROR in applying weights')
           endif
+          call t_stopf(string//':matmultx')
 
           !*** MOAB: Post-normalization (target side)
           !*** After mapping, we need to divide by the mapped normalization weight.
           !*** This completes the conservative mapping: mapped_field / mapped_weight
           !*** gives the properly normalized field value on the target grid.
           if (mbnorm) then
+             call t_startf(string//':denorm')
              !*** MOAB: Get target mesh dimensions
              ierr  = iMOAB_GetMeshInfo ( mapper%tgt_mbid, nvert, nvise, nbl, nsurf, nvisBC );
              if (ierr .ne. 0) then
@@ -693,10 +703,12 @@ contains
              endif
 
              deallocate(wghts, targtags)
+             call t_stopf(string//':denorm')
              !*** MOAB: Restore original source field values
              !*** If we multiplied source fields by weights before mapping,
              !*** restore the original values so the source mesh is unchanged.
              if (mbpresent) then
+                call t_startf(string//':unweight')
 #ifdef MOABDEBUG
                 if (seq_comm_iamroot(CPLID)) then
                    write(logunit, *) subname,' iMOAB projection mapper: ', mapper%mbname, ' shape(targtags_ini)=', shape(targtags_ini)
@@ -710,6 +722,7 @@ contains
                    call shr_sys_abort(subname//' ERROR setting source tag values') ! serious enough
                 endif
                 deallocate(targtags_ini)
+                call t_stopf(string//':unweight')
              endif
 
           endif ! end normalization
@@ -955,7 +968,7 @@ contains
        endif
        call seq_map_cart3d(mapper, type, av_s, av_d, fldu, fldv, norm=lnorm, string=string)
     elseif (trim(type) == 'none') then
-       call seq_map_map(mapper, av_s, av_d, fldlist=trim(fldu)//':'//trim(fldv), norm=lnorm)
+       call seq_map_map(mapper, av_s, av_d, fldlist=trim(fldu)//':'//trim(fldv), norm=lnorm, string=string)
     else
        write(logunit,*) subname,' ERROR: type unsupported ',trim(type)
        call shr_sys_abort(trim(subname)//' ERROR in type='//trim(type))
@@ -1074,7 +1087,7 @@ contains
 
     endif
 
-    call seq_map_map(mapper, av3_s, av3_d, norm=lnorm)
+    call seq_map_map(mapper, av3_s, av3_d, norm=lnorm, string=string//':cart3d')
 
     if (ku /= 0 .and. kv /= 0) then
        kux = mct_aVect_indexRA(av3_d,'ux')
