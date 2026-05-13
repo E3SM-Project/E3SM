@@ -2367,8 +2367,12 @@ Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npb
   // shoc_main treats u/v_wind as 1 array and
   // CXX version of shoc qtracers is the transpose of the fortran version..
   const auto nlev_packs = ekat::npack<Pack>(nlev);
+  view_2d shear_strain3d_d("shear_strain3d_d", shcol, nlev_packs);
+  view_3d shear_strain3d_components_d("shear_strain3d_components_d", shcol, 6, nlev_packs);
   view_3d horiz_wind_d("horiz_wind",shcol,2,nlev_packs);
   view_3d qtracers_cxx_d("qtracers",shcol,num_qtracers,nlev_packs);
+  Kokkos::deep_copy(shear_strain3d_d, 0);
+  Kokkos::deep_copy(shear_strain3d_components_d, 0);
 
   // scalarize each view
   const auto u_wind_d_s = ekat::scalarize(u_wind_d);
@@ -2394,7 +2398,8 @@ Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npb
   SHF::SHOCInput shoc_input{host_dx_d,  host_dy_d,     zt_grid_d,   zi_grid_d,
                              pres_d,    presi_d,       pdel_d,      thv_d,
                              w_field_d, wthl_sfc_d,    wqw_sfc_d,   uw_sfc_d,
-                             vw_sfc_d,  wtracer_sfc_d, inv_exner_d, phis_d};
+                             vw_sfc_d,  wtracer_sfc_d, inv_exner_d, phis_d,
+                             shear_strain3d_components_d, shear_strain3d_d};
   SHF::SHOCInputOutput shoc_input_output{host_dse_d,   tke_d,      thetal_d,       qw_d,
                                          horiz_wind_d, wthv_sec_d, qtracers_cxx_d,
                                          tk_d,         shoc_cldfrac_d, shoc_ql_d};

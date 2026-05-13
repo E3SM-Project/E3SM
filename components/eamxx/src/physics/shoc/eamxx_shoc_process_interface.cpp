@@ -55,6 +55,7 @@ void SHOCMacrophysics::create_requests()
   const auto m2 = pow(m,2);
   const auto s2 = pow(s,2);
   const auto nondim = Units::nondimensional();
+  const bool do_3d_turb = m_params.get<bool>("do_3d_turbulence_shoc", false);
 
   // These variables are needed by the interface, but not actually passed to shoc_main.
   add_field<Required>("omega",          scalar3d_mid, Pa/s, grid_name, ps);
@@ -75,8 +76,10 @@ void SHOCMacrophysics::create_requests()
   add_field<Required>("p_int",          scalar3d_int, Pa,    grid_name, ps);
   add_field<Required>("pseudo_density", scalar3d_mid, Pa,    grid_name, ps);
   add_field<Required>("phis",           scalar2d    , m2/s2, grid_name);
-  const auto vector3d_mid_6 = m_grid->get_3d_vector_layout(LEV,6);
-  add_field<Required>("tke_shear_strain3d_components", vector3d_mid_6,nondim/s, grid_name, ps);
+  if (do_3d_turb) {
+    const auto vector3d_mid_6 = m_grid->get_3d_vector_layout(LEV,6);
+    add_field<Required>("tke_shear_strain3d_components", vector3d_mid_6,nondim/s, grid_name, ps);
+  }
   add_field<Computed>("tke_shear_strain3d", scalar3d_mid,nondim/s2, grid_name, ps);
 
   // Input/Output variables
@@ -205,6 +208,8 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   const int nlev_packs       = ekat::npack<Pack>(m_num_levs);
   const int nlevi_packs      = ekat::npack<Pack>(m_num_levs+1);
   const int num_tracer_packs = ekat::npack<Pack>(m_num_tracers);
+  m_dummy_shear_strain3d_components = view_3d("dummy_shear_strain3d_components", m_num_cols, 6, nlev_packs);
+  Kokkos::deep_copy(m_dummy_shear_strain3d_components, 0);
 
   m_buffer.pref_mid = decltype(m_buffer.pref_mid)(s_mem, nlev_packs);
   s_mem += m_buffer.pref_mid.size();
@@ -274,7 +279,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.Ckh           = m_params.get<double>("coeff_kh");
   runtime_options.Ckm           = m_params.get<double>("coeff_km");
   runtime_options.shoc_1p5tke   = m_params.get<bool>("shoc_1p5tke");
-  runtime_options.do_3d_turb    = m_params.get<bool>("do_3d_turbulence_shoc");
+  runtime_options.do_3d_turb    = m_params.get<bool>("do_3d_turbulence_shoc", false);
   runtime_options.extra_diags   = m_params.get<bool>("extra_shoc_diags");
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
@@ -287,8 +292,11 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto& surf_sens_flux      = get_field_in("surf_sens_flux").get_view<const Real*>();
   const auto& surf_evap           = get_field_in("surf_evap").get_view<const Real*>();
   const auto& surf_mom_flux       = get_field_in("surf_mom_flux").get_view<const Real**>();
-  const auto& shear_strain3d_components = get_field_in("tke_shear_strain3d_components").get_view<const Pack***>();
   const auto& shear_strain3d            = get_field_out("tke_shear_strain3d").get_view<Pack**>();
+  const auto shear_strain3d_components =
+    runtime_options.do_3d_turb
+      ? get_field_in("tke_shear_strain3d_components").get_view<const Pack***>()
+      : view_3d_const(m_dummy_shear_strain3d_components);
   const auto& qtracers            = get_group_out("turbulence_advected_tracers").m_monolithic_field->get_strided_view<Pack***>();
   const auto& qc                  = get_field_out("qc").get_view<Pack**>();
   const auto& qv                  = get_field_out("qv").get_view<Pack**>();
