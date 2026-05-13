@@ -497,7 +497,7 @@ contains
           dom_s%data%rAttr(km,:) = dom_s%data%rAttr(ka,:)
 
           call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream', &
-               omit_nonlinear=.true.)
+               omit_nonlinear=.true.,string='init:areamFa2o')
        else
           gsmap_s => component_get_gsmap_cx(ocn(1)) ! gsmap_ox
           gsmap_d => component_get_gsmap_cx(atm(1)) ! gsmap_ax
@@ -519,7 +519,7 @@ contains
        dom_d  => component_get_dom_cx(ice(1))   !dom_ix
 
        call seq_map_map(mapper_SFo2i, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream', &
-            omit_nonlinear=.true.)
+            omit_nonlinear=.true.,string='init:areamSFo2i')
     endif
 
     if (rof_c2_ocn) then
@@ -548,7 +548,7 @@ contains
           dom_d  => component_get_dom_cx(lnd(1))   !dom_lx
 
           call seq_map_map(mapper_Sa2l, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream', &
-               omit_nonlinear=.true.)
+               omit_nonlinear=.true.,string='init:areamFa2l')
        else
           gsmap_d => component_get_gsmap_cx(lnd(1)) ! gsmap_lx
           dom_d   => component_get_dom_cx(lnd(1))   ! dom_lx
@@ -568,7 +568,7 @@ contains
           dom_d  => component_get_dom_cx(glc(1))   !dom_gx
 
           call seq_map_map(mapper_Sl2g, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream', &
-               omit_nonlinear=.true.)
+               omit_nonlinear=.true.,string='init:areamSl2g')
        else
           gsmap_d => component_get_gsmap_cx(glc(1)) ! gsmap_gx
           dom_d   => component_get_dom_cx(glc(1))   ! dom_gx
