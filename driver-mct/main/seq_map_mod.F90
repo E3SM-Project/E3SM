@@ -21,6 +21,7 @@ module seq_map_mod
   use component_type_mod
   use seq_map_type_mod
   use seq_nlmap_mod
+  use perf_mod
 
   implicit none
   save
@@ -467,10 +468,10 @@ contains
     !-----------------------------------------------------
 
     lstring = ' '
-    if (present(string)) then
-       if (seq_comm_iamroot(CPLID)) write(logunit,'(A)') subname//' called for '//trim(string)
-       lstring = trim(string)
-    endif
+    !if (present(string)) then
+    !   if (seq_comm_iamroot(CPLID)) write(logunit,'(A)') subname//' called for '//trim(string)
+    !   lstring = trim(string)
+    !endif
 
     if (mapper%copy_only .or. mapper%rearrange_only) then
        return
@@ -487,7 +488,7 @@ contains
        endif
        call seq_map_cart3d(mapper, type, av_s, av_d, fldu, fldv, norm=lnorm, string=string)
     elseif (trim(type) == 'none') then
-       call seq_map_map(mapper, av_s, av_d, fldlist=trim(fldu)//':'//trim(fldv), norm=lnorm)
+       call seq_map_map(mapper, av_s, av_d, fldlist=trim(fldu)//':'//trim(fldv), norm=lnorm, string=string)
     else
        write(logunit,*) subname,' ERROR: type unsupported ',trim(type)
        call shr_sys_abort(trim(subname)//' ERROR in type='//trim(type))
@@ -562,7 +563,7 @@ contains
           av3_s%rAttr(kuz,n) = uz
        enddo
 
-       call seq_map_map(mapper, av3_s, av3_d, norm=lnorm)
+       call seq_map_map(mapper, av3_s, av3_d, norm=lnorm,string=string//':cart3d')
 
        kux = mct_aVect_indexRA(av3_d,'ux')
        kuy = mct_aVect_indexRA(av3_d,'uy')
@@ -836,13 +837,14 @@ contains
        write(logunit,*) subname,' ERROR: lsize_i ne lsize_f ',lsize_i,lsize_f
        call shr_sys_abort(subname//' ERROR size_i ne lsize_f')
     endif
-
+    call t_startf(string//":weight")
     !--- extract frac_i field from avf_i to pass to seq_map_avNormArr ---
     allocate(frac_i(lsize_i))
     do j = 1,lsize_i
        kf = mct_aVect_indexRA(avf_i,trim(avfifld))
        frac_i(j) = avf_i%rAttr(kf,j)
     enddo
+    call t_stopf(string//":weight")
 
     if (present(rList)) then
        call seq_map_avNormArr(mapper, av_i, av_o, frac_i, rList=rList, norm=lnorm, &
@@ -912,6 +914,7 @@ contains
 
     !--- create temporary avs for mapping ---
 
+    call t_startf(string//':premap')
     if (lnorm .or. present(norm_i)) then
        appnd = ':'//ffld
     else
@@ -934,7 +937,10 @@ contains
     !--- this will do the right thing for the norm_i normalization
 
     call mct_aVect_copy(aVin=av_i, aVout=avp_i, VECTOR=mct_usevector)
+    call t_stopf(string//':premap')
+
     if (lnorm .or. present(norm_i)) then
+       call t_startf(string//':norm')
        kf = mct_aVect_indexRA(avp_i,ffld)
        do j = 1,lsize_i
           avp_i%rAttr(kf,j) = 1.0_r8
@@ -946,6 +952,7 @@ contains
              avp_i%rAttr(:,j) = avp_i%rAttr(:,j)*norm_i(j)
           enddo
        endif
+       call t_stopf(string//':norm')
     endif
 
     !--- map ---
@@ -964,6 +971,7 @@ contains
     !--- renormalize avp_o by mapped norm_i  ---
 
     if (lnorm) then
+       call t_startf(string//':denorm')
        kf = mct_aVect_indexRA(avp_o,ffld)
        !$omp simd
        do j = 1,lsize_o
@@ -973,6 +981,7 @@ contains
           endif
           avp_o%rAttr(:,j) = avp_o%rAttr(:,j)*normval
        enddo
+       call t_stopf(string//':denorm')
     endif
 
     !--- copy back into av_o and we are done ---
