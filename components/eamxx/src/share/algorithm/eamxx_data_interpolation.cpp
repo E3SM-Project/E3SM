@@ -38,7 +38,7 @@ DataInterpolation (const std::shared_ptr<const AbstractGrid>& model_grid,
     const auto& fl = f.get_header().get_identifier().get_layout();
     m_fields_have_col_dim |= fl.has_tag(COL);
     m_fields_have_lev_dim |= fl.has_tag(LEV);
-    m_fields_have_lev_dim |= fl.has_tag(ILEV);
+    m_fields_have_ilev_dim |= fl.has_tag(ILEV);
   }
 
   for (auto t : {COL,LEV,ILEV})
@@ -63,8 +63,13 @@ set_logger (const std::shared_ptr<ekat::logger::LoggerBase>& logger)
 
 void DataInterpolation::run (const util::TimeStamp& ts)
 {
+  // Read and interpolate fields
+  m_logger->info("[DataInterpolation] Interpolating fields.");
+  m_logger->info(" - ts: " + ts.to_string());
+  m_logger->info(" - interval: [" + m_data_interval.beg.to_string() + ", " + m_data_interval.end.to_string() + "]");
+
   EKAT_REQUIRE_MSG (m_data_initialized,
-      "[DataInterpolation] Error! You must call 'init_data_interval' before calling 'run'.\n");
+      "[DataInterpolation] Error! You must initialize the data before calling 'run'.\n");
 
   // If we went past the current interval end, we need to update the end state
   if (not m_data_interval.contains(ts)) {
@@ -102,9 +107,9 @@ void DataInterpolation::run (const util::TimeStamp& ts)
     }
   }
 
-  // For Dynamic3D/Dynamic3D profile we also need to compute the source pressure profile
+  // For Dynamic3D/Dynamic3DRef profile we also need to compute the source pressure profile
   // NOTE: this can't be done in the loop above, since p_data is not a "remapped"
-  //       field in the vertical remapper (also, we need to use ad different ptr)
+  //       field in the vertical remapper (also, we need to use a different ptr)
   if (m_vr_type==Dynamic3D) {
     // The pressure field is THE LAST registered in the horiz remappers
     const auto p_beg = m_horiz_remapper_beg->get_tgt_field(m_nfields);
@@ -232,13 +237,69 @@ init_data_interval (const util::TimeStamp& t0)
 }
 
 void DataInterpolation::
-setup_time_database (const strvec_t& input_files,
-                     const util::TimeLine timeline,
-                     const TimeInterpType interp_type,
-                     const util::TimeStamp& ref_ts)
+setup_linear_time_database (const strvec_t& input_files,
+                            const TimeInterpType interp_type,
+                            const util::TimeStamp& ref_ts)
+{
+  m_time_interp_type = interp_type;
+
+  build_time_database_slices(input_files,util::TimeLine::Linear,ref_ts);
+}
+
+void DataInterpolation::
+setup_periodic_time_database (const strvec_t& input_files,
+                              const TimeInterpType interp_type,
+                              const util::TimeStamp& start_ts,
+                              const util::TimeStamp& ref_ts)
+{
+  m_time_interp_type = interp_type;
+
+  build_time_database_slices(input_files,util::TimeLine::YearlyPeriodic,ref_ts);
+
+  // To avoid bugs at runtime, we want to retain AT MOST one year worth of time slices.
+  // If input start_ts is invalid, we pick the 1st slice in the files
+
+  auto& slices = m_time_database.slices;
+  auto first_ts = start_ts.is_valid () ? start_ts : slices[0].time;
+
+  // We need to:
+  //  - remove all slices ahead of start_ts by 1yy or more.
+  //  - call LVF the last valid slice in the future after the prev step
+  //  - remove all slices that are more than 1yy in the past compared to LVF
+  int one_year = first_ts.days_in_curr_year()*86400;
+  auto it_end = slices.begin();
+  auto start_ts_plus_1_year = first_ts + one_year;
+  for (++it_end; it_end != slices.end();) {
+    if (start_ts_plus_1_year <= it_end->time) {
+      it_end = slices.erase(it_end); // too far in the future
+    } else {
+      ++it_end;
+    }
+  }
+
+  auto first_valid_past = slices.back().time - one_year;
+  it_end = slices.begin();
+  for (++it_end; it_end != slices.end();) {
+    if (it_end->time <= first_valid_past) {
+      it_end = slices.erase(it_end); // too far in the past
+    } else {
+      ++it_end;
+    }
+  }
+
+  EKAT_REQUIRE_MSG (slices.size()>=2,
+      "[DataInterpolation] Error! Not enough time slices in the database within 1 (periodic) year from start_ts.\n"
+      " - start_ts        : " + first_ts.to_string() + "\n"
+      " - retained slices : " + std::to_string(slices.size()) + "\n");
+}
+
+void DataInterpolation::
+build_time_database_slices (const strvec_t& input_files,
+                            util::TimeLine timeline,
+                            const util::TimeStamp& ref_ts)
 {
   // Log the final list of files, so the user know if something went wrong (e.g. a bad regex)
-  m_logger->debug("Setting up DataInerpolation object. List of input files:");
+  m_logger->debug("Setting up DataInterpolation object. List of input files:");
   for (const auto& fname : input_files) {
     m_logger->debug("  - " + fname);
   }
@@ -250,8 +311,6 @@ setup_time_database (const strvec_t& input_files,
       " - input_files:\n     " + ekat::join(input_files,"\n     ") + "\n");
 
   // We perform a bunch of checks on the input files
-  namespace fs = std::filesystem;
-
   auto file_readable = [] (const std::string& fileName) {
     std::ifstream file(fileName);
     return file.good(); // Check if the file can be opened
@@ -336,8 +395,6 @@ setup_time_database (const strvec_t& input_files,
   // we must ensure we have 2+ time slices overall
   EKAT_REQUIRE_MSG (m_time_database.size()>=2,
       "[DataInterpolation] Error! Input file(s) only contain 1 time slice overall.\n");
-
-  m_time_interp_type = interp_type;
 
   m_time_db_created = true;
 }
@@ -437,7 +494,7 @@ create_horiz_remappers (const std::string& map_file)
   if (m_fields_have_lev_dim) {
     nlevs_data = get_input_files_dimlen (m_input_files_dimnames[e2str(LEV)]);
   } else if (m_fields_have_ilev_dim) {
-    nlevs_data = get_input_files_dimlen(m_input_files_dimnames[e2str(ILEV)]);
+    nlevs_data = get_input_files_dimlen(m_input_files_dimnames[e2str(ILEV)]) - 1;
   }
 
   m_data_grid = create_point_grid(m_name+"_data",ncols_data,nlevs_data,m_model_grid->get_comm(),1);
@@ -633,7 +690,7 @@ create_vert_remapper (const VertRemapData& data)
       auto gids = m_grid_after_hremap->get_partitioned_dim_gids();
       read_fields(m_time_database.files.front(),fields);
     }
-    vremap->set_source_pressure (m_helper_pressure_fields["p_data"]);
+    vremap->set_source_pressure (p_data);
 
     if (data.pint.is_allocated()) {
       vremap->set_target_pressure(data.pint);

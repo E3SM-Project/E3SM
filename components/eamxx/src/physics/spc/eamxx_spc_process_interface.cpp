@@ -54,22 +54,17 @@ void SPC::initialize_impl (const RunType /* run_type */)
 
   auto pmid = get_field_in("p_mid");
   
-  auto timeline = util::TimeLine::Linear;
+  m_data_interpolation = std::make_shared<DataInterpolation>(m_model_grid,spc_fields);
   util::TimeStamp ref_ts;
   if (time_interpolation_method=="yearly_periodic") {
-    timeline = util::TimeLine::YearlyPeriodic;
-    ref_ts = util::TimeStamp(1,1,1,0,0,0); // Beg of any year, since we use yearly periodic timeline
+    m_data_interpolation->setup_periodic_time_database ({spc_data_file}, DataInterpolation::Linear);
   } else if (time_interpolation_method=="linear") {
-    timeline = util::TimeLine::Linear;
-    // For linear interpolation we read reference timestamp from the input file's time var units
+    m_data_interpolation->setup_linear_time_database ({spc_data_file}, DataInterpolation::Linear);
   } else {
     EKAT_ERROR_MSG("Error! Invalid time_interpolation_method: " + 
                    time_interpolation_method + 
                    ". Valid options are: yearly_periodic, linear.\n");
   }
-
-  m_data_interpolation = std::make_shared<DataInterpolation>(m_model_grid,spc_fields);
-  m_data_interpolation->setup_time_database ({spc_data_file},timeline, DataInterpolation::Linear, ref_ts);
 
   if (m_iop_data_manager!=nullptr) {
     // IOP cases cannot have a remap file. We will create a IOPRemapper as the horiz remapper

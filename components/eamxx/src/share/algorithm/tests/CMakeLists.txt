@@ -44,6 +44,14 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     LIBS eamxx_algorithm
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
     FIXTURES_REQUIRED data_interpolation_setup)
+
+  # YearlyPeriodic with custom start_ts (slice rotation)
+  CreateUnitTest(data_interpolation_start_ts
+    SOURCES data_interpolation_start_ts_tests.cpp
+    LIBS eamxx_algorithm
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    FIXTURES_REQUIRED data_interpolation_setup)
+
   # Time interpolation
   CreateUnitTest(time_interpolation
     SOURCES time_interpolation_tests.cpp

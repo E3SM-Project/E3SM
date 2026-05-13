@@ -275,7 +275,10 @@ void run_tests (const std::shared_ptr<const AbstractGrid>& grid,
 
   int nfields = fields.size();
   auto interp = create_interp(grid,fields);
-  interp->setup_time_database(input_files,timeline,time_interp_type);
+  if (timeline==util::TimeLine::Linear)
+    interp->setup_linear_time_database(input_files,time_interp_type);
+  else
+    interp->setup_periodic_time_database(input_files,time_interp_type);
   interp->create_horiz_remappers (map_file);
   interp->create_vert_remapper (vremap_data);
   interp->init_data_interval(t0);

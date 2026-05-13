@@ -53,10 +53,18 @@ public:
 
   void set_logger (const std::shared_ptr<ekat::logger::LoggerBase>& logger);
 
-  void setup_time_database (const strvec_t& input_files,
-                            const util::TimeLine timeline,
-                            const TimeInterpType interp_type = Linear,
-                            const util::TimeStamp& ref_ts = util::TimeStamp());
+  // Setup time database for LinearHistory time-dependent data interpolation
+  void setup_linear_time_database (const strvec_t& input_files,
+                                   const TimeInterpType interp_type = Linear,
+                                   const util::TimeStamp& ref_ts = util::TimeStamp());
+
+  // Setup time database for YearlyPeriodic time-dependent data interpolation
+  // ref_ts shifts raw file time values; start_ts selects the first logical
+  // slice (the slice at or after start_ts becomes index 0 via rotation).
+  void setup_periodic_time_database (const strvec_t& input_files,
+                                     const TimeInterpType interp_type = Linear,
+                                     const util::TimeStamp& start_ts = util::TimeStamp(),
+                                     const util::TimeStamp& ref_ts = util::TimeStamp());
 
   // In case the input files store dims with exhotic names, the user can provide them here
   void set_input_files_dimname (const std::string& name, const std::string& nc_name);
@@ -81,6 +89,11 @@ protected:
   void shift_data_interval ();
   void update_end_fields ();
 
+  // Common body shared by setup_linear/periodic_time_database.
+  // Reads timestamps from the given files and builds m_time_database.slices/files.
+  void build_time_database_slices (const strvec_t& input_files,
+                                   util::TimeLine timeline,
+                                   const util::TimeStamp& ref_ts);
   int get_input_files_dimlen (const std::string& dimname) const;
 
   // ----------- Internal data types ---------- //

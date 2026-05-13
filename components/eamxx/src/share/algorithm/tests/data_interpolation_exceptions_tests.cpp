@@ -22,9 +22,9 @@ TEST_CASE ("exceptions")
   auto interp = create_interp(grid,fields);
 
   strvec_t files = {"/etc/shadow"};
-  REQUIRE_THROWS (interp->setup_time_database(files,util::TimeLine::Linear)); // Input file not readable
+  REQUIRE_THROWS (interp->setup_linear_time_database(files)); // Input file not readable
 
-  interp->setup_time_database({"./data_interpolation_0.nc"},util::TimeLine::Linear);
+  interp->setup_linear_time_database({"./data_interpolation_0.nc"});
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
   REQUIRE_THROWS (interp->init_data_interval(t0)); // linear timeline, but t0<first_slice
 
