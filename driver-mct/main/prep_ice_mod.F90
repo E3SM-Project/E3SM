@@ -525,7 +525,7 @@ contains
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eai = 1,num_inst_atm
-       call seq_map_map(mapper_SFo2i, a2x_ox(eai), a2x_ix(eai), norm=.true.,string=timer//':prepiSFo2i')
+       call seq_map_map(mapper_SFo2i, a2x_ox(eai), a2x_ix(eai), norm=.true.,string=timer//':mapiSFo2i')
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -550,7 +550,7 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eoi = 1,num_inst_ocn
        o2x_ox => component_get_c2x_cx(ocn(eoi))
-       call seq_map_map(mapper_SFo2i, o2x_ox, o2x_ix(eoi), norm=.true.,string=timer//':prepiSFo2i')
+       call seq_map_map(mapper_SFo2i, o2x_ox, o2x_ix(eoi), norm=.true.,string=timer//':mapiSFo2i')
     enddo
     call t_drvstopf  (trim(timer))
 

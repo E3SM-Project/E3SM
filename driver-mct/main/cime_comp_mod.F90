@@ -3026,14 +3026,14 @@ contains
        !  atm/ocn flux calculation
        !----------------------------------------------------------
        if (iamin_CPLID .and. (atm_c2_ocn .or. atm_c2_ice)) then
-          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE1_BARRIER')
-          call t_drvstartf ('CPL:OCNPRE1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
+          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPREP_BARRIER')
+          call t_drvstartf ('CPL:OCNPREP',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-          call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre1_atm2ocn')
+          call prep_ocn_calc_a2x_ox(timer='CPL:ocnprep_atm2ocn')
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-          call t_drvstopf  ('CPL:OCNPRE1',cplrun=.true.,hashint=hashint(3))
+          call t_drvstopf  ('CPL:OCNPREP',cplrun=.true.,hashint=hashint(3))
        endif
 
        !----------------------------------------------------------

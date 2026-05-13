@@ -1307,18 +1307,18 @@ contains
        a2x_ax => component_get_c2x_cx(atm(eai))
 
        call seq_map_map(mapper_Sa2o, a2x_ax, a2x_ox(eai), fldlist=seq_flds_a2x_states, &
-       norm=.true.,string=timer//':prepoSa2o')
+       norm=.true.,string=timer//':mapoSa2o')
 
        call seq_map_map(mapper_Fa2o, a2x_ax, a2x_ox(eai), fldlist=seq_flds_a2x_fluxes, &
-         norm=.true.,string=timer//':prepoFa2o')
+         norm=.true.,string=timer//':mapoFa2o')
 
 #ifdef COMPARE_TO_NUOPC
        call seq_map_mapvect(mapper_Va2o, vect_map, a2x_ax, a2x_ox(eai), 'Sa_u', 'Sa_v', &
-          norm=.true.,string=timer//':prepoVa2o')
+          norm=.true.,string=timer//':mapoVa2o')
 #else 
        !--- tcx the norm should be true below, it's false for bfb backwards compatability
        call seq_map_mapvect(mapper_Va2o, vect_map, a2x_ax, a2x_ox(eai), 'Sa_u', 'Sa_v', &
-           norm=.false.,string=timer//':prepoVa2o')
+           norm=.false.,string=timer//':mapoVa2o')
 #endif
 
     enddo
@@ -1345,7 +1345,7 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eii = 1,num_inst_ice
        i2x_ix => component_get_c2x_cx(ice(eii))
-       call seq_map_map(mapper_SFi2o, i2x_ix, i2x_ox(eii), norm=.true.,string=timer//':prepoSFi2o')
+       call seq_map_map(mapper_SFi2o, i2x_ix, i2x_ox(eii), norm=.true.,string=timer//':mapoSFi2o')
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -1433,9 +1433,9 @@ contains
     do egi = 1,num_inst_glc
        g2x_gx => component_get_c2x_cx(glc(egi))
 
-       call seq_map_map(mapper_Sg2o, g2x_gx, g2x_ox(egi), norm=.true.,string=timer//':prepoSg2o')
+       call seq_map_map(mapper_Sg2o, g2x_gx, g2x_ox(egi), norm=.true.,string=timer//':mapoSg2o')
 
-       call seq_map_map(mapper_Fg2o, g2x_gx, g2x_ox(egi),norm=.true.,string=timer//':prepoFg2o')
+       call seq_map_map(mapper_Fg2o, g2x_gx, g2x_ox(egi),norm=.true.,string=timer//':mapoFg2o')
 
 
     enddo
