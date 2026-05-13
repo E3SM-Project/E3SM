@@ -22,6 +22,8 @@ Omega:
     IODefaultFormat: pnetcdf
   State:
     NTimeLevels: 2
+    PrescribeThicknessType: None
+    PrescribeVelocityType: None
   Advection:
     Coef3rdOrder: 0.25
     FluxThicknessType: Center

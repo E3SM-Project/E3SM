@@ -74,8 +74,9 @@ void RungeKutta4Stepper::doStep(OceanState *State,   // model state
    const int CurLevel  = 0;
    const int NextLevel = 1;
 
-   Array3DReal CurTracerArray  = Tracers::getAll(CurLevel);
-   Array3DReal NextTracerArray = Tracers::getAll(NextLevel);
+   Array3DReal CurTracerArray   = Tracers::getAll(CurLevel);
+   Array3DReal NextTracerArray  = Tracers::getAll(NextLevel);
+   TimeInstant ForcingStageTime = SimTime;
 
    for (int Stage = 0; Stage < NStages; ++Stage) {
       const TimeInstant StageTime = SimTime + RKC[Stage] * TimeStep;
@@ -84,6 +85,7 @@ void RungeKutta4Stepper::doStep(OceanState *State,   // model state
       // q^{n+1} = q^{n} + dt * RKB[0] * R^{(0)}
       if (Stage == 0) {
          weightTracers(NextTracerArray, CurTracerArray, State, CurLevel);
+         prescribeState(State, CurLevel, State, CurLevel, ForcingStageTime);
          Tend->computeAllTendencies(State, AuxState, CurTracerArray, CurLevel,
                                     CurLevel, CurLevel, StageTime);
          updateStateByTend(State, NextLevel, State, CurLevel,
@@ -96,6 +98,9 @@ void RungeKutta4Stepper::doStep(OceanState *State,   // model state
          // q^{n+1} += RKB[stage] * dt * R^{(s)}
          updateStateByTend(ProvisState, CurLevel, State, CurLevel,
                            RKA[Stage] * TimeStep);
+         ForcingStageTime += RKA[Stage] * TimeStep;
+         prescribeState(ProvisState, CurLevel, ProvisState, CurLevel,
+                        ForcingStageTime);
          updateTracersByTend(ProvisTracers, CurTracerArray, ProvisState,
                              CurLevel, State, CurLevel, RKA[Stage] * TimeStep);
 

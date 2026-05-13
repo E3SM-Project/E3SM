@@ -62,11 +62,20 @@ enum class TimeStepperType {
    Invalid
 };
 
+/// An enum describing how a state variable should be prescribed from the
+/// reference time level
+enum class PrescribeStateType { None, Init, NonDivergent, Divergent, Invalid };
+
 //------------------------------------------------------------------------------
 // Utility routine
 /// Translate string for time stepper type into enum
 TimeStepperType getTimeStepperFromStr(
     const std::string &InString ///< [in] choice of time stepping method
+);
+
+/// Translate string for prescribe state type into enum
+PrescribeStateType getPrescribeStateTypeFromStr(
+    const std::string &InString ///< [in] choice of prescribe method
 );
 
 //------------------------------------------------------------------------------
@@ -204,6 +213,33 @@ class TimeStepper {
        TimeInterval Coeff  ///< [in] time-related coeff for tendency
    ) const;
 
+   /// Resets the layer thickness at the working time level to the initial
+   /// condition stored at the reference time level.
+   void prescribeThickness(
+       OceanState *State1, ///< [out] destination state
+       int TimeLevel1,     ///< [in] time level index of the reference data
+       OceanState *State2, ///< [in] source state (initial condition)
+       int TimeLevel2      ///< [in] time level index of the destination data
+   ) const;
+
+   /// Resets the velocity at the working time level to the initial condition.
+   void prescribeVelocity(
+       OceanState *State1, ///< [out] destination state
+       int TimeLevel1,     ///< [in] time level index of the reference data
+       OceanState *State2, ///< [in] source state (initial condition)
+       int TimeLevel2,     ///< [in] time level index of the destination data
+       const TimeInstant &SimTime ///< [in] current simulation time
+   ) const;
+
+   /// Reset thickness and velocity to their initial values
+   void prescribeState(
+       OceanState *State1, ///< [out] destination state
+       int TimeLevel1,     ///< [in] time level index of the reference data
+       OceanState *State2, ///< [in] source state (initial condition)
+       int TimeLevel2,     ///< [in] time level index of the destination data
+       const TimeInstant &SimTime ///< [in] current simulation time
+   ) const;
+
    /// Updates tracers
    /// NextTracers = (CurTracers * LayerThickness2(TimeLevel2)) +
    ///               Coeff * TracersTend) / LayerThickness1(TimeLevel1)
@@ -252,6 +288,10 @@ class TimeStepper {
    /// Time step
    TimeInterval TimeStep;
 
+   /// Prescribe state configuration
+   PrescribeStateType PrescribeThicknessMode;
+   PrescribeStateType PrescribeVelocityMode;
+
    /// Start time
    TimeInstant StartTime;
 
@@ -295,6 +335,9 @@ class TimeStepper {
    static TimeStepper *DefaultTimeStepper;
    /// All defined time steppers
    static std::map<std::string, std::unique_ptr<TimeStepper>> AllTimeSteppers;
+   /// Prescribe modes parsed from config
+   static PrescribeStateType DefaultPrescribeThicknessMode;
+   static PrescribeStateType DefaultPrescribeVelocityMode;
 };
 
 } // namespace OMEGA
