@@ -268,7 +268,7 @@ contains
           mapper_Sof2a => prep_atm_get_mapper_Sof2a()
           call seq_map_map(mapper_Sof2a, xao_ox(exi), xao_ax(exi), &
                fldlist=seq_flds_xao_albedo, norm=.true., &
-               avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
+               avwts_s=fractions_ox(efi),avwtsfld_s='ofrac',string=timer//':mapaSo2a')
        enddo
     end if
 
@@ -279,12 +279,12 @@ contains
           mapper_Sof2a => prep_atm_get_mapper_Sof2a()
           call seq_map_map(mapper_Sof2a, xao_ox(exi), xao_ax(exi), &
                fldlist=seq_flds_xao_states, norm=.true., &
-               avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
+               avwts_s=fractions_ox(efi),avwtsfld_s='ofrac',string=timer//':mapfSo2a')
 
           mapper_Fof2a => prep_atm_get_mapper_Fof2a()
           call seq_map_map(mapper_Fof2a, xao_ox(exi), xao_ax(exi),&
                fldlist=seq_flds_xao_fluxes, norm=.true., &
-               avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
+               avwts_s=fractions_ox(efi),avwtsfld_s='ofrac',string=timer//':mapfFo2a')
        enddo
     end if
 #ifdef MOABDEBUG
@@ -345,7 +345,7 @@ contains
        !       end if
 
        mapper_Fa2o => prep_ocn_get_mapper_Fa2o()
-       call seq_map_map(mapper_Fa2o, xao_ax(exi), xao_ox(exi), norm=.true.)
+       call seq_map_map(mapper_Fa2o, xao_ax(exi), xao_ox(exi), norm=.true.,string=timer//':mapFa2o')
     enddo
     call t_drvstopf  (trim(timer))
 

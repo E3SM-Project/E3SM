@@ -1612,13 +1612,13 @@ contains
        if (present(fractions_ox)) then
           call seq_map_map(mapper_So2a, o2x_ox, o2x_ax(emi),&
                fldlist=seq_flds_o2x_states,norm=.true., &
-               avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
+               avwts_s=fractions_ox(efi),avwtsfld_s='ofrac',string=timer//':mapaSo2a')
        else
           call seq_map_map(mapper_So2a, o2x_ox, o2x_ax(emi),&
-               fldlist=seq_flds_o2x_states,norm=.true.)
+               fldlist=seq_flds_o2x_states,norm=.true.,string=timer//':mapaSo2a')
        endif
        call seq_map_map(mapper_Fo2a, o2x_ox, o2x_ax(emi),&
-            fldlist=seq_flds_o2x_fluxes,norm=.true.)
+            fldlist=seq_flds_o2x_fluxes,norm=.true.,string=timer//':mapaFo2a')
     enddo
 
     call t_drvstopf  (trim(timer))
@@ -1650,10 +1650,10 @@ contains
        i2x_ix => component_get_c2x_cx(ice(eii))
        call seq_map_map(mapper_Si2a, i2x_ix, i2x_ax(eii), &
             fldlist=seq_flds_i2x_states, &
-            avwts_s=fractions_ix(eii), avwtsfld_s='ifrac')
+            avwts_s=fractions_ix(eii), avwtsfld_s='ifrac', string=timer//':mapaSi2a')
        call seq_map_map(mapper_Fi2a, i2x_ix, i2x_ax(eii), &
             fldlist=seq_flds_i2x_fluxes, &
-            avwts_s=fractions_ix(eii), avwtsfld_s='ifrac')
+            avwts_s=fractions_ix(eii), avwtsfld_s='ifrac', string=timer//':mapaFi2a')
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -1684,10 +1684,10 @@ contains
        l2x_lx => component_get_c2x_cx(lnd(eli))
        call seq_map_map(mapper_Sl2a, l2x_lx, l2x_ax(eli), &
             fldlist=seq_flds_l2x_states, norm=.true., &
-            avwts_s=fractions_lx(efi), avwtsfld_s='lfrin')
+            avwts_s=fractions_lx(efi), avwtsfld_s='lfrin', string=timer//':mapaSl2a')
        call seq_map_map(mapper_Fl2a, l2x_lx, l2x_ax(eli), &
             fldlist=seq_flds_l2x_fluxes, norm=.true., &
-            avwts_s=fractions_lx(efi), avwtsfld_s='lfrin')
+            avwts_s=fractions_lx(efi), avwtsfld_s='lfrin', string=timer//':mapaFl2a')
     enddo
 
     call t_drvstopf  (trim(timer))

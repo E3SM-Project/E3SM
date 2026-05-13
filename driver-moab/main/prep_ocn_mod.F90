@@ -2030,12 +2030,12 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
     do eai = 1,num_inst_atm
        a2x_ax => component_get_c2x_cx(atm(eai))
 
-       call seq_map_map(mapper_Sa2o, a2x_ax, a2x_ox(eai), fldlist=seq_flds_a2x_states, norm=.true.)
+       call seq_map_map(mapper_Sa2o, a2x_ax, a2x_ox(eai), fldlist=seq_flds_a2x_states, norm=.true., string=timer//':mapoSa2o')
 
-       call seq_map_map(mapper_Fa2o, a2x_ax, a2x_ox(eai), fldlist=seq_flds_a2x_fluxes, norm=.true.)
+       call seq_map_map(mapper_Fa2o, a2x_ax, a2x_ox(eai), fldlist=seq_flds_a2x_fluxes, norm=.true., string=timer//':mapoFa2o')
 
        !--- tcx the norm should be true below, it's false for bfb backwards compatability
-       call seq_map_mapvect(mapper_Va2o, vect_map, a2x_ax, a2x_ox(eai), 'Sa_u', 'Sa_v', norm=.false.)
+       call seq_map_mapvect(mapper_Va2o, vect_map, a2x_ax, a2x_ox(eai), 'Sa_u', 'Sa_v', norm=.false.,string=timer//':mapoVa2o')
 
     enddo
 
@@ -2060,7 +2060,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eii = 1,num_inst_ice
        i2x_ix => component_get_c2x_cx(ice(eii))
-       call seq_map_map(mapper_SFi2o, i2x_ix, i2x_ox(eii), norm=.true.)
+       call seq_map_map(mapper_SFi2o, i2x_ix, i2x_ox(eii), norm=.true., string=timer//':mapoSFi2o')
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -2103,9 +2103,9 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
     do eri = 1,num_inst_rof
        r2x_rx => component_get_c2x_cx(rof(eri))
        call seq_map_map(mapper_Rr2o_liq, r2x_rx, r2x_ox(eri), &
-            fldlist=seq_flds_r2o_liq_fluxes, norm=.false.)
+            fldlist=seq_flds_r2o_liq_fluxes, norm=.false., string=timer//':mapoRr2ol')
        call seq_map_map(mapper_Rr2o_ice, r2x_rx, r2x_ox(eri), &
-            fldlist=seq_flds_r2o_ice_fluxes, norm=.false.)
+            fldlist=seq_flds_r2o_ice_fluxes, norm=.false., string=timer//':mapoRl2oi')
        if (flood_present) then
           call seq_map_map(mapper_Fr2o, r2x_rx, r2x_ox(eri), &
                fldlist='Flrr_flood', norm=.true.)
