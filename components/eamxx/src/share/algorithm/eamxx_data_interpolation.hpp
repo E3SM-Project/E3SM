@@ -69,6 +69,16 @@ public:
   // In case the input files store dims with exhotic names, the user can provide them here
   void set_input_files_dimname (const std::string& name, const std::string& nc_name);
 
+  // Setup for time-independent (static) data: data is read once at init and
+  // only horiz+vert remapping is performed.
+  // time_index = -1: the file has no time dimension (or variables are not
+  //                  time-dependent in the file).
+  // time_index >= 0: select this specific time snapshot from the file.
+  void setup_static_database (const strvec_t& input_files,
+                               int time_index = -1);
+
+  bool is_time_dependent () const { return m_time_dependent; }
+
   void create_horiz_remappers (const std::string& map_file = "");
   void create_horiz_remappers (const Real iop_lat, const Real iop_lon);
   void create_vert_remapper ();
@@ -76,7 +86,10 @@ public:
 
   void register_fields_in_remappers ();
 
+  // For time-dependent data: find the interval containing t0 and load beg/end
   void init_data_interval (const util::TimeStamp& t0);
+  // For static (time-independent) data: load data once; no timestamp needed
+  void init ();
 
   void run (const util::TimeStamp& ts);
 
@@ -88,12 +101,27 @@ protected:
 
   void shift_data_interval ();
   void update_end_fields ();
+  void load_static_fields ();
+
+  // Load static (time-independent) data through hremap and (for Dynamic3DRef)
+  // reconstruct the 3D source pressure from the surface pressure.
+  void load_static_fields ();
+
+#ifdef KOKKOS_ENABLE_CUDA
+public:
+#endif
+  // Reconstruct 3D source pressure from surface pressure via
+  //   p_data(icol,k) = p_file(icol) * hybm(k) + P0 * hyam(k)
+  // Used for VRemapType::Dynamic3DRef in both static and time-dep paths.
+  void reconstruct_p_from_ps ();
+protected:
 
   // Common body shared by setup_linear/periodic_time_database.
   // Reads timestamps from the given files and builds m_time_database.slices/files.
   void build_time_database_slices (const strvec_t& input_files,
                                    util::TimeLine timeline,
                                    const util::TimeStamp& ref_ts);
+
   int get_input_files_dimlen (const std::string& dimname) const;
 
   // ----------- Internal data types ---------- //
@@ -152,7 +180,10 @@ protected:
 
   ekat::Comm            m_comm;
 
-  bool                  m_time_db_created   = false;
+  bool                  m_time_dependent    = true;  // false for static (time-indep) data
+  int                   m_static_time_idx   = -1;    // time index for static reads
+
+  bool                  m_input_db_created  = false;
   bool                  m_data_initialized  = false;
 
   bool                  m_fields_have_col_dim = false;

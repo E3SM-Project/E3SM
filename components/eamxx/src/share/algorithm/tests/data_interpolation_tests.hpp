@@ -380,6 +380,128 @@ void run_tests (const std::shared_ptr<const AbstractGrid>& grid,
   }
 }
 
+// Run tests for static (time-independent) data.
+// expected_delta: the delta that was added to base_fields when writing the file
+//                 (0.0 for a no-time-dep file; delta_data[mm_idx] for a timed snapshot).
+void run_static_tests (const std::shared_ptr<const AbstractGrid>& grid,
+                       const std::string& input_file,
+                       int time_index,
+                       double expected_delta,
+                       const DataInterpolation::VRemapType vr_type = DataInterpolation::None)
+{
+  using namespace ShortFieldTagsNames;
+
+  auto ncols = grid->get_num_local_dofs();
+  auto nlevs = grid->get_num_vertical_levels();
+
+  auto vcoarse_grid = grid->clone("vcoarse_s",true);
+  auto vcoarse_vkind = vr_type==NOP ? AbstractGrid::VKind::Model
+                                    : AbstractGrid::VKind::Pressure;
+  vcoarse_grid->reset_vertical_configuration(data_nlevs, vcoarse_vkind);
+
+  auto fields = create_fields(grid, false);
+  fields.pop_back(); // Don't interpolate p1d
+
+  std::string map_file = grid->get_num_global_dofs()==data_ngcols ? "" : map_file_name;
+
+  auto base     = create_fields(grid, true);
+  auto ones     = create_fields(grid, false);
+  auto diff     = create_fields(grid, false);
+  auto expected = create_fields(grid, false);
+  for (auto& f : ones) { f.deep_copy(1); }
+
+  auto model_pmid = base[2].clone("pmid",CloneFlags::CopyData | CloneFlags::MatchPacking);
+  auto model_pint = base[4].clone("pint",CloneFlags::CopyData | CloneFlags::MatchPacking);
+  if (vr_type==P1D) {
+    auto comm = grid->get_comm();
+    for (const Field& p : {model_pmid, model_pint}) {
+      auto col_0 = p.subfield(0,0);
+      auto len = col_0.get_header().get_identifier().get_layout().size();
+      comm.broadcast(col_0.get_internal_view_data<Real,Host>(), len, 0);
+      col_0.sync_to_dev();
+      for (int icol=0; icol<ncols; ++icol) {
+        p.subfield(0,icol).deep_copy(col_0);
+      }
+    }
+  }
+
+  std::vector<Field> expected_vcoarse, base_vcoarse, ones_vcoarse;
+  if (vr_type!=NOP) {
+    expected_vcoarse = create_fields(vcoarse_grid, false);
+    base_vcoarse     = create_fields(vcoarse_grid, true);
+    ones_vcoarse     = create_fields(vcoarse_grid, false);
+    for (auto& f : ones_vcoarse) { f.deep_copy(1); }
+  }
+
+  DataInterpolation::VertRemapData vremap_data;
+  vremap_data.vr_type = vr_type;
+  vremap_data.pname   = vr_type==P1D ? "p1d" : (vr_type==P3D ? "p3d" : "p2d");
+  vremap_data.pmid    = model_pmid;
+  vremap_data.pint    = model_pint;
+
+  int nfields = fields.size();
+  auto interp = create_interp(grid, fields);
+  interp->setup_static_database({input_file}, time_index);
+  interp->create_horiz_remappers(map_file);
+  interp->create_vert_remapper(vremap_data);
+  interp->init();
+
+  // Run at several timestamps: output must equal expected_delta regardless of time
+  std::vector<util::TimeStamp> test_times = {
+    util::TimeStamp({2010,  1,  1},{0,0,0}),
+    util::TimeStamp({2010,  6, 15},{12,0,0}),
+    util::TimeStamp({2010, 12, 31},{23,59,0}),
+  };
+
+  for (const auto& ts : test_times) {
+    interp->run(ts);
+
+    for (int i=0; i<nfields; ++i) {
+      const auto& layout = fields[i].get_header().get_identifier().get_layout();
+      bool midpoints  = layout.has_tag(LEV);
+      bool interfaces = layout.has_tag(ILEV);
+      bool has_levels = midpoints or interfaces;
+
+      expected[i].update(base[i],  1, 0);
+      expected[i].update(ones[i], expected_delta, 1.0);
+
+      if (vr_type!=NOP and has_levels) {
+        auto vlen   = midpoints ? nlevs : nlevs+1;
+        auto scalar = not layout.is_vector_layout();
+
+        expected_vcoarse[i].update(base_vcoarse[i],  1, 0);
+        expected_vcoarse[i].update(ones_vcoarse[i], expected_delta, 1.0);
+
+        expected[i].sync_to_host();
+        expected_vcoarse[i].sync_to_host();
+        if (scalar) {
+          auto e        = expected[i].get_view<Real**,Host>();
+          auto e_coarse = expected_vcoarse[i].get_view<const Real**,Host>();
+          for (int icol=0; icol<ncols; ++icol) {
+            e(icol,0)      = e_coarse(icol,0);
+            e(icol,vlen-1) = e_coarse(icol,data_nlevs-1);
+          }
+        } else {
+          auto e        = expected[i].get_view<Real***,Host>();
+          auto e_coarse = expected_vcoarse[i].get_view<const Real***,Host>();
+          for (int icol=0; icol<ncols; ++icol) {
+            for (int idim=0; idim<layout.get_vector_dim(); ++idim) {
+              e(icol,idim,0)      = e_coarse(icol,idim,0);
+              e(icol,idim,vlen-1) = e_coarse(icol,idim,data_nlevs-1);
+            }
+          }
+        }
+        expected[i].sync_to_dev();
+      }
+
+      diff[i].update(fields[i],   1, 1);
+      diff[i].update(expected[i], -1, 1);
+      diff[i].scale(1.0 / frobenius_norm(expected[i]).as<Real>());
+      REQUIRE (frobenius_norm(diff[i]).as<Real>() < tol);
+    }
+  }
+}
+
 } // namespace scream
 
 #endif // EAMXX_DATA_INTERPOLATION_TESTS_HPP

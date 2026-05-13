@@ -181,6 +181,70 @@ TEST_CASE ("data_interpolation_setup")
 
   scorpio::release_file(filename);
 
+  // Write static (time-independent) test files.
+  // These files have NO time dimension; all fields are stored as constants
+  // (base field values, no delta offset).
+  for (auto use_p_grid : {true, false}) {
+    std::string suffix = use_p_grid ? "_no_ilev.nc" : ".nc";
+    std::string fname = "data_interpolation_static" + suffix;
+
+    scorpio::register_file(fname, scorpio::Write);
+
+    scorpio::define_dim(fname, "ncol", ngcols);
+    scorpio::define_dim(fname, "lev",  nlevs);
+    scorpio::define_dim(fname, "dim2", ncmps);
+    if (not use_p_grid) {
+      scorpio::define_dim(fname, "ilev", nlevs+1);
+    }
+
+    std::string ilev = use_p_grid ? "lev" : "ilev";
+
+    // All fields are NOT time-dependent (last arg = false)
+    scorpio::define_var(fname, "s2d",   {"ncol"},             "real", false);
+    scorpio::define_var(fname, "v2d",   {"ncol","dim2"},      "real", false);
+    scorpio::define_var(fname, "s3d_m", {"ncol","lev"},       "real", false);
+    scorpio::define_var(fname, "v3d_m", {"ncol","dim2","lev"},"real", false);
+    scorpio::define_var(fname, "s3d_i", {"ncol",ilev},        "real", false);
+    scorpio::define_var(fname, "v3d_i", {"ncol","dim2",ilev}, "real", false);
+    scorpio::define_var(fname, "p1d",   {"lev"},              "real", false);
+    scorpio::define_var(fname, "p2d",   {"ncol"},             "real", false);
+    scorpio::define_var(fname, "p3d",   {"ncol","lev"},       "real", false);
+    scorpio::define_var(fname, "hyam",  {"lev"},              "real", false);
+    scorpio::define_var(fname, "hybm",  {"lev"},              "real", false);
+
+    scorpio::enddef(fname);
+
+    // Write base field values (no time offset / delta)
+    auto field_grid = use_p_grid ? p_grid : grid;
+    auto base_fields = create_fields(field_grid, true, false);
+
+    auto p1d  = base_fields[6];
+    auto p3d  = base_fields[2].alias("p3d");
+    auto p2d  = base_fields[0].alias("p2d");
+    auto hybm = p1d.alias("hybm");
+    auto hyam = hybm.clone("hyam");
+    hyam.deep_copy(0);
+
+    p1d.sync_to_host();
+    p2d.sync_to_host();
+    p3d.sync_to_host();
+    hyam.sync_to_host();
+
+    int nf_static = 6; // s2d, v2d, s3d_m, v3d_m, s3d_i, v3d_i
+    for (int i=0; i<nf_static; ++i) {
+      base_fields[i].sync_to_host();
+      scorpio::write_var(fname, base_fields[i].name(),
+                         base_fields[i].get_internal_view_data<Real,Host>());
+    }
+    scorpio::write_var(fname, p1d.name(),  p1d.get_internal_view_data<Real,Host>());
+    scorpio::write_var(fname, p2d.name(),  p2d.get_internal_view_data<Real,Host>());
+    scorpio::write_var(fname, p3d.name(),  p3d.get_internal_view_data<Real,Host>());
+    scorpio::write_var(fname, hyam.name(), hyam.get_internal_view_data<Real,Host>());
+    scorpio::write_var(fname, hybm.name(), hybm.get_internal_view_data<Real,Host>());
+
+    scorpio::release_file(fname);
+  }
+
   scorpio::finalize_subsystem();
 }
 
