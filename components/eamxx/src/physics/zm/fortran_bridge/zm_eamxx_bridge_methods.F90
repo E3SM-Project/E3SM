@@ -1,6 +1,6 @@
 module zm_eamxx_bridge_methods
   !-----------------------------------------------------------------------------
-  use zm_eamxx_bridge_params, only: r8, pver, pverp, top_lev
+  use zm_eamxx_bridge_params, only: r8
   !-----------------------------------------------------------------------------
   implicit none
   private
@@ -16,19 +16,19 @@ contains
 !===================================================================================================
 
 ! Copied from cloud_fraction.F90 (and adjusted indentation)
-subroutine cldfrc_fice(ncol, t, fice, fsnow)
+subroutine cldfrc_fice(ncol, pver, top_lev, t, fice, fsnow)
   !
   ! Compute the fraction of the total cloud water which is in ice phase.
-  ! The fraction depends on temperature only. 
+  ! The fraction depends on temperature only.
   ! This is the form that was used for radiation, the code came from cldefr originally
-  ! 
+  !
   ! Author: B. A. Boville Sept 10, 2002
   !  modified: PJR 3/13/03 (added fsnow to ascribe snow production for convection )
   !-----------------------------------------------------------------------
   use zm_eamxx_bridge_physconst, only: tmelt
 
   ! Arguments
-  integer,  intent(in)  :: ncol                 ! number of active columns
+  integer,  intent(in)  :: ncol, pver, top_lev  ! number of active columns
   real(r8), intent(in)  :: t(ncol,pver)         ! temperature
 
   real(r8), intent(out) :: fice(ncol,pver)      ! Fractional ice content within cloud
@@ -61,7 +61,7 @@ subroutine cldfrc_fice(ncol, t, fice, fsnow)
       else if (t(i,k) < tmin_fice) then
         fice(i,k) = 1.0_r8
       ! Otherwise mixed phase, with ice fraction decreasing linearly from tmin to tmax
-      else 
+      else
         fice(i,k) =(tmax_fice - t(i,k)) / (tmax_fice - tmin_fice)
       end if
       ! snow fraction partitioning
@@ -72,7 +72,7 @@ subroutine cldfrc_fice(ncol, t, fice, fsnow)
       else if (t(i,k) < tmin_fsnow) then
         fsnow(i,k) = 1.0_r8
       ! Otherwise mixed phase, with ice fraction decreasing linearly from tmin to tmax
-      else 
+      else
         fsnow(i,k) =(tmax_fsnow - t(i,k)) / (tmax_fsnow - tmin_fsnow)
       end if
     end do
@@ -115,6 +115,7 @@ subroutine zm_physics_update( ncol, dt, state_phis, state_zm, state_zi, &
                               state_p_mid, state_p_int, state_p_del, &
                               state_t, state_qv, ptend_s, ptend_q)
   use zm_eamxx_bridge_physconst, only: cpair
+  use zm_eamxx_bridge_params, only: pverp, pver
   !-----------------------------------------------------------------------------
   ! Arguments
   integer,                        intent(in   ) :: ncol             ! number of local columns
@@ -142,7 +143,7 @@ subroutine zm_physics_update( ncol, dt, state_phis, state_zm, state_zi, &
       state_t(i,k) = state_t(i,k) + ptend_s(i,k)/cpair * dt
     end do
   end do
-    
+
   call zm_geopotential_t( ncol, state_p_int, state_p_mid, state_p_del, state_t, state_qv, state_zi, state_zm )
 
   ! skip DSE update for EAMxx
@@ -152,7 +153,7 @@ subroutine zm_physics_update( ncol, dt, state_phis, state_zm, state_zi, &
   !     state_dse(i,k) = state_t(i,k)*cpair + gravit*state_zm(i,k) + state_phis(i)
   !   end do
   ! end do
-  
+
 end subroutine zm_physics_update
 
 !===================================================================================================
@@ -160,7 +161,8 @@ end subroutine zm_physics_update
 ! copied and modified from geopotential.F90
 subroutine zm_geopotential_t( ncol, pint, pmid, pdel, t, q, zi, zm )
   use zm_eamxx_bridge_physconst, only: zvir, rair, gravit
-  !----------------------------------------------------------------------- 
+  use zm_eamxx_bridge_params, only: pverp, pver
+  !-----------------------------------------------------------------------
   ! Purpose: Compute the geopotential height (above the surface) at the
   ! midpoints and interfaces using the input temperatures and pressures
   !-----------------------------------------------------------------------------
@@ -187,7 +189,7 @@ subroutine zm_geopotential_t( ncol, pint, pmid, pdel, t, q, zi, zm )
   end do
   ! Compute zi, zm from bottom up
   do k = pver, 1, -1
-    ! First set hydrostatic elements consistent with dynamics   
+    ! First set hydrostatic elements consistent with dynamics
     do i = 1,ncol
       hkl(i) = pdel(i,k) / pmid(i,k)
       hkk(i) = 0.5_r8 * hkl(i)

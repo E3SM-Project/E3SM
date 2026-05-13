@@ -5,7 +5,9 @@
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_timing.hpp"
 
+#include <algorithm>
 #include <numeric>
+#include <filesystem>
 
 namespace scream {
 
@@ -20,6 +22,36 @@ struct RealsClose {
     return std::round(a * 10000) < std::round(b * 10000);
   }
 };
+
+// Check whether two grids store the same GID values on every rank.
+// Fast path: if the dofs_gids fields alias each other (same allocation), return true immediately.
+// Fallback: compare global dof counts, then compare local GID arrays element-by-element.
+bool grids_have_same_gids (const std::shared_ptr<const AbstractGrid>& g1,
+                           const std::shared_ptr<const AbstractGrid>& g2)
+{
+  using gid_type = AbstractGrid::gid_type;
+
+  const auto gids1 = g1->get_dofs_gids();
+  const auto gids2 = g2->get_dofs_gids();
+
+  // Fast path: identical backing allocation
+  if (gids1.is_aliasing(gids2)) {
+    return true;
+  }
+
+  // Different allocations: verify sizes then compare values
+  if (g1->get_num_global_dofs() != g2->get_num_global_dofs()) {
+    return false;
+  }
+  if (g1->get_num_local_dofs() != g2->get_num_local_dofs()) {
+    return false;
+  }
+
+  const auto h1 = gids1.get_view<const gid_type*, Host>();
+  const auto h2 = gids2.get_view<const gid_type*, Host>();
+  const int n = g1->get_num_local_dofs();
+  return std::equal(h1.data(), h1.data()+n, h2.data());
+}
 
 // Helper fcn to gather the union of sets across MPI ranks
 std::vector<Real> allgatherv_vec (const std::vector<Real>& my_vals, const ekat::Comm& comm)
@@ -50,12 +82,80 @@ std::vector<Real> allgatherv_vec (const std::vector<Real>& my_vals, const ekat::
 // -------------------------------------------------------------
 
 void HorizRemapperData::
+build (const std::shared_ptr<const AbstractGrid>& src_grid,
+       const std::shared_ptr<const AbstractGrid>& tgt_grid,
+       const std::string& map_file)
+{
+  std::filesystem::path p(map_file);
+  // The "2" stands for "2 grids bld"
+  start_timer ("HRemap2 " + p.filename().string() + " bld");
+
+  EKAT_REQUIRE_MSG (src_grid->type()==GridType::Point,
+      "Error! Horizontal interpolatory remap only works on PointGrid grids.\n"
+      "  - src_grid name: " + src_grid->name() + "\n"
+      "  - src_grid_type: " + e2str(src_grid->type()) + "\n");
+  EKAT_REQUIRE_MSG (tgt_grid->type()==GridType::Point,
+      "Error! Horizontal interpolatory remap only works on PointGrid grids.\n"
+      "  - tgt_grid name: " + tgt_grid->name() + "\n"
+      "  - tgt_grid_type: " + e2str(tgt_grid->type()) + "\n");
+  EKAT_REQUIRE_MSG (src_grid->is_unique(),
+      "Error! Horizontal interpolatory remap requires a unique src grid.\n"
+      "  - src_grid name: " + src_grid->name() + "\n");
+  EKAT_REQUIRE_MSG (tgt_grid->is_unique(),
+      "Error! Horizontal interpolatory remap requires a unique tgt grid.\n"
+      "  - tgt_grid name: " + tgt_grid->name() + "\n");
+
+  // First, check that src/tgt grids are compatible with map file
+  int n_a = scorpio::get_dimlen(map_file,"n_a");
+  int n_b = scorpio::get_dimlen(map_file,"n_b");
+
+  m_coarsening = n_a>=n_b;
+
+  // Figure out which direction the remap is going (to or from the input grid)
+  int src_ncol = src_grid->get_num_global_dofs();
+  int tgt_ncol = tgt_grid->get_num_global_dofs();
+  EKAT_REQUIRE_MSG (src_ncol==n_a,
+    "Error! The number of cols on the src grid does not match the map file 'n_a' dim.\n"
+    " - map file: " + map_file + "\n"
+    " - src grid name: " + src_grid->name() +"\n"
+    " - src grid ncol: " + std::to_string(src_ncol) + "\n"
+    " - n_a: " + std::to_string(n_a) + "\n");
+  EKAT_REQUIRE_MSG (tgt_ncol==n_b,
+    "Error! The number of cols on the tgt grid does not match the map file 'n_b' dim.\n"
+    " - map file: " + map_file + "\n"
+    " - tgt grid name: " + tgt_grid->name() +"\n"
+    " - tgt grid ncol: " + std::to_string(tgt_ncol) + "\n"
+    " - n_b: " + std::to_string(n_b) + "\n");
+
+  m_src_grid = src_grid;
+  m_tgt_grid = tgt_grid;
+
+  // Load sparse matrix triplets, splitting evenly across ranks
+  auto triplets = read_mat_triplets(map_file);
+
+  // Gather sparse matrix triplets needed by this rank
+  auto my_triplets = get_my_triplets (triplets);
+
+  // Create aux and ov grids
+  create_ov_grid (my_triplets);
+
+  // Create crs matrix
+  create_crs_matrix_structures (my_triplets);
+
+  if (m_coarsening) {
+    m_imp_exp = std::make_shared<GridImportExport>(tgt_grid,m_overlap_grid);
+  } else {
+    m_imp_exp = std::make_shared<GridImportExport>(src_grid,m_overlap_grid);
+  }
+  stop_timer ("HRemap2 " + p.filename().string() + " bld");
+}
+void HorizRemapperData::
 build (const std::shared_ptr<const AbstractGrid>& grid,
        const std::string& map_file)
 {
-  start_timer ("Build HorizRemap data " + map_file);
-
-  m_input_grid = grid;
+  std::filesystem::path p(map_file);
+  // The "1" stands for "build from 1 grid"
+  start_timer ("HRemap1 " + p.filename().string() + " bld");
 
   EKAT_REQUIRE_MSG (grid,
       "[HorizRemapperDataRepo::build_data_from_src] Error! Invalid src grid pointer.\n");
@@ -80,56 +180,42 @@ build (const std::shared_ptr<const AbstractGrid>& grid,
     " - n_a: " + std::to_string(ncol_a) + "\n"
     " - n_b: " + std::to_string(ncol_b) + "\n");
 
-  m_coarsening = ncol_a>=ncol_b;
-  m_built_from_src   = grid_ncol==ncol_a;
+  auto built_from_src = grid_ncol==ncol_a;
 
   const int nlev = grid->get_num_vertical_levels();
   const auto& comm = grid->get_comm();
-  const auto nondim = ekat::units::Units::nondimensional();
-  ekat::units::Units deg(nondim,"deg");
-  std::string suffix = m_built_from_src ? "_b" : "_a";
+  std::string suffix = built_from_src ? "_b" : "_a";
 
-  m_generated_grid = create_point_grid(m_built_from_src ? "tgt_grid" : "src_grid",m_built_from_src ? ncol_b : ncol_a,nlev,comm,1);
+  auto gen_grid = create_point_grid(built_from_src ? "tgt_grid" : "src_grid",built_from_src ? ncol_b : ncol_a,nlev,comm,1);
 
   // Only read the lat/lon/area vars if they are present. If one is present, we assume they all are
   if (scorpio::has_var(map_file,"yc"+suffix)) {
-    m_generated_grid->create_geometry_data("lat", m_generated_grid->get_2d_scalar_layout(),deg);
-    m_generated_grid->create_geometry_data("lon", m_generated_grid->get_2d_scalar_layout(),deg);
-    m_generated_grid->create_geometry_data("area",m_generated_grid->get_2d_scalar_layout(),nondim);
-    m_generated_grid->read_geometry_data(map_file,
-                                  {"lat","lon","area"},
-                                  {"yc"+suffix,"xc"+suffix,"area"+suffix},
-                                  {{"ncol","n"+suffix}});
+    auto deg = ekat::units::none.rename("deg");
+
+    gen_grid->create_geometry_data("lat", gen_grid->get_2d_scalar_layout(),deg);
+    gen_grid->create_geometry_data("lon", gen_grid->get_2d_scalar_layout(),deg);
+    gen_grid->create_geometry_data("area",gen_grid->get_2d_scalar_layout(),ekat::units::sr);
+    gen_grid->read_geometry_data(map_file,
+                                 {"lat","lon","area"},
+                                 {"yc"+suffix,"xc"+suffix,"area"+suffix},
+                                 {{"ncol","n"+suffix}});
 
     // If this is a remap TO a lat-lon grid, setup some geo data that our output classes
     // will use to write to file using (lat,lon) layout rather than (ncol)
-    if (m_built_from_src and
+    if (built_from_src and
         scorpio::has_dim(map_file,"dst_grid_rank") and
         scorpio::get_dimlen(map_file,"dst_grid_rank")==2) {
-      setup_latlon_data_in_generated_grid(map_file);
+      setup_latlon_data(gen_grid,map_file);
     }
   }
 
-  // Load sparse matrix triplets, splitting evenly across ranks
-  auto triplets = read_mat_triplets(map_file);
-
-  // Gather sparse matrix triplets needed by this rank
-  auto my_triplets = get_my_triplets (triplets);
-
-  // Create aux and ov grids
-  create_ov_grid (my_triplets);
-
-  // Create crs matrix
-  create_crs_matrix_structures (my_triplets);
-
-  auto src_grid = m_built_from_src ? m_input_grid : m_generated_grid;
-  auto tgt_grid = m_built_from_src ? m_generated_grid : m_input_grid;
-  if (m_coarsening) {
-    m_imp_exp = std::make_shared<GridImportExport>(tgt_grid,m_overlap_grid);
+  if (built_from_src) {
+    build(grid,gen_grid,map_file);
   } else {
-    m_imp_exp = std::make_shared<GridImportExport>(src_grid,m_overlap_grid);
+    build(gen_grid,grid,map_file);
   }
-  stop_timer ("Build HorizRemap data " + map_file);
+
+  stop_timer ("HRemap1 " + p.filename().string() + " bld");
 }
 
 std::vector<Triplet>
@@ -139,7 +225,7 @@ read_mat_triplets (const std::string& map_file)
   using gid_type = AbstractGrid::gid_type;
   using namespace ShortFieldTagsNames;
 
-  const auto& comm = m_input_grid->get_comm();
+  const auto& comm = m_src_grid->get_comm();
 
   // Split the triplets evenly across ranks, and read them
   int n_s = scorpio::get_dimlen(map_file,"n_s");
@@ -173,7 +259,7 @@ get_my_triplets (const std::vector<Triplet>& triplets)
   for (const auto& t : triplets) {
     unique_gids.insert(m_coarsening ? t.col : t.row);
   }
-  auto io_grid = std::make_shared<PointGrid> ("helper",unique_gids.size(),0,m_input_grid->get_comm());
+  auto io_grid = std::make_shared<PointGrid> ("helper",unique_gids.size(),0,m_src_grid->get_comm());
   auto io_grid_gids_h = io_grid->get_dofs_gids().get_view<gid_type*,Host>();
   int k = 0;
   for (auto gid : unique_gids) {
@@ -200,8 +286,7 @@ get_my_triplets (const std::vector<Triplet>& triplets)
   MPI_Type_commit(&mpi_triplet_t);
 
   // Create import-export and gather the triplets we need for our local mat-vec
-  auto fine_grid = m_coarsening ? (m_built_from_src ? m_input_grid : m_generated_grid)
-                                : (m_built_from_src ? m_generated_grid : m_input_grid);
+  auto fine_grid = m_coarsening ? m_src_grid : m_tgt_grid;
   std::map<int,std::vector<Triplet>> my_triplets_map;
   GridImportExport imp_exp (fine_grid,io_grid);
   imp_exp.gather(mpi_triplet_t,io_triplets,my_triplets_map);
@@ -228,7 +313,7 @@ create_ov_grid (const std::vector<Triplet>& my_triplets)
   }
   int num_ov_gids = ov_gid2lid.size();
 
-  m_overlap_grid = std::make_shared<PointGrid>("ov_coarse_grid",num_ov_gids,0,m_input_grid->get_comm());
+  m_overlap_grid = std::make_shared<PointGrid>("ov_coarse_grid",num_ov_gids,0,m_src_grid->get_comm());
   auto gids_h = m_overlap_grid->get_dofs_gids().get_view<gid_type*,Host>();
   for (const auto& it : ov_gid2lid) {
     gids_h[it.second] = it.first;
@@ -242,8 +327,7 @@ create_ov_grid (const std::vector<Triplet>& my_triplets)
 void HorizRemapperData::
 create_crs_matrix_structures (std::vector<Triplet>& triplets)
 {
-  auto fine_grid = m_coarsening ? (m_built_from_src ? m_input_grid : m_generated_grid)
-                                : (m_built_from_src ? m_generated_grid : m_input_grid);
+  auto fine_grid = m_coarsening ? m_src_grid : m_tgt_grid;
 
   auto src_grid = m_coarsening ? fine_grid : m_overlap_grid;
   auto tgt_grid = m_coarsening ? m_overlap_grid : fine_grid;
@@ -299,40 +383,42 @@ create_crs_matrix_structures (std::vector<Triplet>& triplets)
   Kokkos::deep_copy(m_row_offsets,row_offsets_h);
 }
 
-void HorizRemapperData::setup_latlon_data_in_generated_grid(const std::string& map_file)
+void HorizRemapperData::
+setup_latlon_data(const std::shared_ptr<AbstractGrid>& grid,
+                  const std::string& map_file)
 {
   using namespace ShortFieldTagsNames;
 
   // Add lat/lon to the temp grid, and read from map file
-  auto nondim = ekat::units::Units::nondimensional();
+  auto nondim = ekat::units::none;
   ekat::units::Units deg(nondim,"degrees");
 
   // Declare lat/lon and read them from the map file.
   // WARNING: the vars/dims names are different from what eamxx uses
-  auto pt_lat = m_generated_grid->get_geometry_data("lat");
-  auto pt_lon = m_generated_grid->get_geometry_data("lon");
+  auto pt_lat = grid->get_geometry_data("lat");
+  auto pt_lon = grid->get_geometry_data("lon");
 
   RealsClose cmp;
   std::set<Real,RealsClose> my_lats(cmp), my_lons(cmp);
 
   auto pt_lat_h = pt_lat.get_view<const Real*,Host>();
   auto pt_lon_h = pt_lon.get_view<const Real*,Host>();
-  for (int i=0; i<m_generated_grid->get_num_local_dofs(); ++i) {
+  for (int i=0; i<grid->get_num_local_dofs(); ++i) {
     my_lats.insert(pt_lat_h(i));
     my_lons.insert(pt_lon_h(i));
   }
 
-  const auto& comm = m_generated_grid->get_comm();
+  const auto& comm = grid->get_comm();
   auto lats = allgatherv_vec(std::vector<Real>(my_lats.begin(),my_lats.end()),comm);
   auto lons = allgatherv_vec(std::vector<Real>(my_lons.begin(),my_lons.end()),comm);
   int nlat = lats.size();
   int nlon = lons.size();
   
   // Re-create lat/lon geometry data with only lat (or lon) dim
-  m_generated_grid->delete_geometry_data("lat");
-  m_generated_grid->delete_geometry_data("lon");
-  auto lat = m_generated_grid->create_geometry_data("lat",FieldLayout({CMP},{nlat},{"lat"}),deg);
-  auto lon = m_generated_grid->create_geometry_data("lon",FieldLayout({CMP},{nlon},{"lon"}),deg);
+  grid->delete_geometry_data("lat");
+  grid->delete_geometry_data("lon");
+  auto lat = grid->create_geometry_data("lat",FieldLayout({CMP},{nlat},{"lat"}),deg);
+  auto lon = grid->create_geometry_data("lon",FieldLayout({CMP},{nlon},{"lon"}),deg);
   
   auto lat_h = lat.get_view<Real*,Host>();
   auto lon_h = lon.get_view<Real*,Host>();
@@ -341,9 +427,9 @@ void HorizRemapperData::setup_latlon_data_in_generated_grid(const std::string& m
   lat.sync_to_dev();
   lon.sync_to_dev();
 
-  auto scalar2d = m_generated_grid->get_2d_scalar_layout();
-  auto lat_idx = m_generated_grid->create_geometry_data("lat_idx",scalar2d,nondim,DataType::IntType);
-  auto lon_idx = m_generated_grid->create_geometry_data("lon_idx",scalar2d,nondim,DataType::IntType);
+  auto scalar2d = grid->get_2d_scalar_layout();
+  auto lat_idx = grid->create_geometry_data("lat_idx",scalar2d,nondim,DataType::IntType);
+  auto lon_idx = grid->create_geometry_data("lon_idx",scalar2d,nondim,DataType::IntType);
   lat_idx.get_header().set_extra_data("save_as_geo_data",false);
   lon_idx.get_header().set_extra_data("save_as_geo_data",false);
 
@@ -352,7 +438,7 @@ void HorizRemapperData::setup_latlon_data_in_generated_grid(const std::string& m
   constexpr Real tol = 1e-3;
   const auto lat_beg = lat_h.data();
   const auto lon_beg = lon_h.data();
-  for (int i=0; i<m_generated_grid->get_num_local_dofs(); ++i) {
+  for (int i=0; i<grid->get_num_local_dofs(); ++i) {
     auto lat_it = std::upper_bound(lat_beg,lat_beg+nlat,pt_lat_h(i));
     auto lon_it = std::upper_bound(lon_beg,lon_beg+nlon,pt_lon_h(i));
     if (lat_it == lat_beg) {
@@ -401,11 +487,52 @@ void HorizRemapperData::setup_latlon_data_in_generated_grid(const std::string& m
 
 std::shared_ptr<const HorizRemapperData>
 HorizRemapperDataRepo::
+get_data (const std::shared_ptr<const AbstractGrid>& src_grid,
+          const std::shared_ptr<const AbstractGrid>& tgt_grid,
+          const std::string& map_file)
+{
+  auto& data = m_repo[map_file];
+  if (auto shared_data = data.lock()) {
+    // To prevent hard-to-find errors, we must guarantee that the passed grids
+    // are compatible with the src/tgt grids of shared_data. Two grids are
+    // considered compatible if they store the same GID values on every rank
+    // (they may or may not share the same backing allocation).
+    EKAT_REQUIRE_MSG (grids_have_same_gids(src_grid, shared_data->m_src_grid) and
+                      grids_have_same_gids(tgt_grid, shared_data->m_tgt_grid),
+        "Error! Trying to retrieve remap data using a grid that is unrelated to the one(s) used before.\n"
+        " - map file: " + map_file + "\n"
+        " - src grid name: " + src_grid->name() + "\n"
+        " - tgt grid name: " + tgt_grid->name() + "\n");
+    return shared_data;
+  }
+  
+  // Either there was no data for this map file, or the existing weak_ptr was expired.
+  // E.g., there WAS a remapper that used this data, but the remapper has since been
+  // destroyed. Either way, we can safely (re-)create the data
+
+  auto shared_data = std::make_shared<HorizRemapperData>();
+  shared_data->build(src_grid,tgt_grid,map_file);
+  data = shared_data;
+
+  return shared_data;
+}
+
+std::shared_ptr<const HorizRemapperData>
+HorizRemapperDataRepo::
 get_data (const std::shared_ptr<const AbstractGrid>& grid,
           const std::string& map_file)
 {
   auto& data = m_repo[map_file];
   if (auto shared_data = data.lock()) {
+    // To prevent hard-to-find errors, we must guarantee that the passed grid
+    // is compatible with the src or tgt grid of shared_data. Two grids are
+    // considered compatible if they store the same GID values on every rank
+    // (they may or may not share the same backing allocation).
+    EKAT_REQUIRE_MSG (grids_have_same_gids(grid, shared_data->m_src_grid) or
+                      grids_have_same_gids(grid, shared_data->m_tgt_grid),
+        "Error! Trying to retrieve remap data using a grid that is unrelated to the one(s) used before.\n"
+        " - map file: " + map_file + "\n"
+        " - grid name: " + grid->name() + "\n");
     return shared_data;
   }
   

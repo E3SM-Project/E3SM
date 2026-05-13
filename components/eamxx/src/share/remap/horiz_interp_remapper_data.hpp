@@ -35,6 +35,12 @@ public:
   template<typename T>
   using view_1d = typename KT::template view_1d<T>;
 
+  // If src/tgt grids are already avail, use them
+  void build (const std::shared_ptr<const AbstractGrid>& src_grid,
+              const std::shared_ptr<const AbstractGrid>& tgt_grid,
+              const std::string& map_file);
+
+  // Builds a tgt grid from map_file info, then calls the above one
   void build (const std::shared_ptr<const AbstractGrid>& grid,
               const std::string& map_file);
 
@@ -45,10 +51,9 @@ public:
 
   // Allow to retrieve how the remap was built
   bool m_coarsening;      // The src grid is finer than the tgt grid
-  bool m_built_from_src;  // The input grid was the src grid
 
-  std::shared_ptr<const AbstractGrid> m_input_grid;     // The grid that was passed to build
-  std::shared_ptr<AbstractGrid>       m_generated_grid; // The grid we generated during build
+  std::shared_ptr<const AbstractGrid> m_src_grid;
+  std::shared_ptr<const AbstractGrid> m_tgt_grid;
 
   std::shared_ptr<GridImportExport>   m_imp_exp;
 
@@ -64,7 +69,8 @@ private:
   // its local part of the mat-vec product
   std::vector<Triplet>  get_my_triplets (const std::vector<Triplet>& triplets);
 
-  void setup_latlon_data_in_generated_grid (const std::string& map_file);
+  void setup_latlon_data(const std::shared_ptr<AbstractGrid>& grid,
+                         const std::string& map_file);
 
   void create_ov_grid (const std::vector<Triplet>& triplets);
 
@@ -84,6 +90,10 @@ public:
     return repo;
   };
 
+  std::shared_ptr<const HorizRemapperData>
+  get_data (const std::shared_ptr<const AbstractGrid>& src_grid,
+            const std::shared_ptr<const AbstractGrid>& tgt_grid,
+            const std::string& map_file);
   std::shared_ptr<const HorizRemapperData>
   get_data (const std::shared_ptr<const AbstractGrid>& grid,
             const std::string& map_file);

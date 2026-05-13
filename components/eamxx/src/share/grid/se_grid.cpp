@@ -27,11 +27,10 @@ SEGrid (const std::string& grid_name,
 
   // Create the cg dofs field
   using namespace ShortFieldTagsNames;
-  const auto units = ekat::units::Units::nondimensional();
-  m_cg_dofs_gids = Field(FieldIdentifier("cg_gids",FieldLayout({CMP},{get_num_local_dofs()}),units,this->name(),DataType::IntType));
+  m_cg_dofs_gids = Field(FieldIdentifier("cg_gids",FieldLayout({CMP},{get_num_local_dofs()}),ekat::units::none,this->name(),DataType::IntType));
   m_cg_dofs_gids.allocate_view();
 
-  m_partitioned_dim_gids = Field(FieldIdentifier("el_gids",FieldLayout({EL},{m_num_local_elem}),units,this->name(),DataType::IntType));
+  m_partitioned_dim_gids = Field(FieldIdentifier("el_gids",FieldLayout({EL},{m_num_local_elem}),ekat::units::none,this->name(),DataType::IntType));
   m_partitioned_dim_gids.allocate_view();
 }
 
@@ -78,32 +77,32 @@ SEGrid::get_2d_tensor_layout (const std::vector<int>& cmp_dims,
 }
 
 FieldLayout
-SEGrid::get_3d_scalar_layout (const bool midpoints) const
+SEGrid::get_3d_scalar_layout (const FieldTag vtag) const
 {
   using namespace ShortFieldTagsNames;
 
-  int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
-  auto VL = midpoints ? LEV : ILEV;
+  check_tag_vkind_compatibility(vtag);
+  int nvl = this->get_num_vertical_levels() + (vtag==ILEV ? 1 : 0);
 
-  return FieldLayout({EL,GP,GP,VL},{m_num_local_elem,m_num_gp,m_num_gp,nvl}).rename_dims(m_special_tag_names);
+  return FieldLayout({EL,GP,GP,vtag},{m_num_local_elem,m_num_gp,m_num_gp,nvl}).rename_dims(m_special_tag_names);
 }
 
 FieldLayout
-SEGrid::get_3d_vector_layout (const bool midpoints, const int vector_dim,
+SEGrid::get_3d_vector_layout (const FieldTag vtag, const int vector_dim,
                               const std::string& vec_dim_name) const
 {
   using namespace ShortFieldTagsNames;
 
-  int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
-  auto VL = midpoints ? LEV : ILEV;
+  check_tag_vkind_compatibility(vtag);
+  int nvl = this->get_num_vertical_levels() + (vtag==ILEV ? 1 : 0);
 
-  FieldLayout fl({EL,CMP,GP,GP,VL},{m_num_local_elem,vector_dim,m_num_gp,m_num_gp,nvl});
+  FieldLayout fl({EL,CMP,GP,GP,vtag},{m_num_local_elem,vector_dim,m_num_gp,m_num_gp,nvl});
   fl.rename_dim(1,vec_dim_name);
   return fl.rename_dims(m_special_tag_names);
 }
 
 FieldLayout
-SEGrid::get_3d_tensor_layout (const bool midpoints,
+SEGrid::get_3d_tensor_layout (const FieldTag vtag,
                               const std::vector<int>& cmp_dims,
                               const std::vector<std::string>& cmp_names) const
 {
@@ -115,8 +114,8 @@ SEGrid::get_3d_tensor_layout (const bool midpoints,
 
   using namespace ShortFieldTagsNames;
 
-  int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
-  auto VL = midpoints ? LEV : ILEV;
+  check_tag_vkind_compatibility(vtag);
+  int nvl = this->get_num_vertical_levels() + (vtag==ILEV ? 1 : 0);
 
   FieldLayout fl;
 
@@ -126,7 +125,7 @@ SEGrid::get_3d_tensor_layout (const bool midpoints,
     fl.append_dim(CMP,cmp_dims[i],cmp_names[i]);
   }
   fl.append_dim(GP,m_num_gp);
-  fl.append_dim(VL,nvl);
+  fl.append_dim(vtag,nvl);
 
   return fl.rename_dims(m_special_tag_names);
 }

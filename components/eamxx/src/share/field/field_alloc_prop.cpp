@@ -27,6 +27,7 @@ FieldAllocProp& FieldAllocProp::operator= (const FieldAllocProp& src)
     m_alloc_size = src.m_alloc_size;
     m_subview_info = src.m_subview_info;
     m_contiguous = src.m_contiguous;
+    m_allows_layout_right = src.m_allows_layout_right;
     m_committed = src.m_committed;
   }
   return *this;
@@ -58,6 +59,15 @@ subview (const int idim, const int k, const bool dynamic) const {
                        || m_layout.rank()==1
                        || std::all_of(m_layout.dims().begin(),m_layout.dims().begin()+idim,is_one);
 
+  // LayoutRight is preserved if:
+  //  - parent allows LayoutRight AND subview is at dim 0 (pointer shift, rest contiguous), OR
+  //  - parent allows LayoutRight AND subview is at dim 1 AND parent rank >= 3
+  //    (subview_1 returns ViewLR with non-trivial stride_0, but dims 1..N-1 remain contiguous), OR
+  //  - parent rank == 1 (result is rank-0, no stride issues)
+  props.m_allows_layout_right = m_layout.rank()==1
+                                 || (m_allows_layout_right and idim==0)
+                                 || (m_allows_layout_right and idim==1 and m_layout.rank()>=3);
+
   props.m_subview_info = SubviewInfo(idim,k,m_layout.dim(idim),dynamic);
 
   // Figure out strides/packs
@@ -68,9 +78,10 @@ subview (const int idim, const int k, const bool dynamic) const {
     props.m_last_extent = m_layout.dim(idim);
     props.m_pack_size_max = 1;
   } else {
-    // We are keeping the last dim, so same last extent and max pack size
+    // We are keeping the last dim, so same value sizes, last extent, and max pack size
     props.m_last_extent = m_last_extent;
     props.m_pack_size_max = m_pack_size_max;
+    props.m_value_type_sizes = m_value_type_sizes;
   }
   // give it an invalid value because subviews don't get allocated
   props.m_alloc_size = -1;
@@ -100,6 +111,8 @@ FieldAllocProp FieldAllocProp::subview(const int idim,
 
   // we do not currently have the capability for contiguous multi-slice views
   props.m_contiguous = false;
+  // Multi-slice subviews always use LayoutStride, so get_view (LayoutRight) is not valid
+  props.m_allows_layout_right = false;
 
   props.m_subview_info =
       SubviewInfo(idim, index_beg, index_end, m_layout.dim(idim));
@@ -169,6 +182,10 @@ void FieldAllocProp::commit (const layout_type& layout)
   }
 
   // Sanity checks: we must have requested at least one value type, and the identifier needs all dimensions set by now.
+  EKAT_REQUIRE_MSG(m_scalar_type_size>0,
+      "Error! Cannot commit allocation for a field with invalid (zero) scalar type size.\n"
+      "  This likely means the field was created with DataType::Invalid.\n"
+      "  Ensure the field is properly initialized with a valid DataType before allocating.\n");
   EKAT_REQUIRE_MSG(m_value_type_sizes.size()>0,
       "Error! No value types requested for the allocation.\n");
   EKAT_REQUIRE_MSG(layout.are_dimensions_set(),
@@ -213,6 +230,7 @@ void FieldAllocProp::commit (const layout_type& layout)
   }
 
   m_contiguous = true;
+  m_allows_layout_right = true;
 
   m_committed = true;
 }

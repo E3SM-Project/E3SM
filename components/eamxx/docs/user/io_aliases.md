@@ -65,6 +65,34 @@ alias of the former.
 are preserved from the original fields, and `alias_of`
 is added to the netcdf files to document aliasing
 
+## Intermediate-only fields (`aliases` section)
+
+Sometimes a diagnostic is only needed as a building block for another
+diagnostic, and you do not want it written to the NetCDF output file.
+Declare such fields in an `aliases` subsection of the per-grid block:
+
+```yaml
+fields:
+  physics_pg2:
+    aliases:
+      - "MyDiag:=T_mid_times_p_mid"       # computed but NOT written to NC
+    field_names:
+      - "MyDiagSqrd:=MyDiag_times_MyDiag" # uses MyDiag; IS written to NC
+```
+
+`MyDiag` is created and registered in the internal field manager so that
+`MyDiagSqrd` can depend on it, but it does not appear in the output file.
+Only `MyDiagSqrd` is written.
+
+The `aliases` section uses the same `alias:=original` syntax as
+`field_names` entries, and the expression on the right-hand side is
+resolved with the same composable-diagnostic parser.
+
+Rules:
+
+- A name declared in `aliases` must not also appear in `field_names`.
+- The same alias name cannot appear in both `aliases` and `field_names`.
+
 ## Caveats
 
 Currently, a field can be requested only once in a single stream,

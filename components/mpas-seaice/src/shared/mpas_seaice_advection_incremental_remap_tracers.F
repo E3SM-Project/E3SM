@@ -195,7 +195,8 @@ contains
          pkgTracerZAerosolsActive
 
     logical, pointer :: &
-         config_use_level_meltponds
+         config_use_level_meltponds, &
+         config_use_floe_size_distribution
 
     type (mpas_pool_type), pointer :: configPool
 
@@ -291,6 +292,7 @@ contains
 
     configPool => domain % blocklist % configs
     call MPAS_pool_get_config(configPool, "config_use_level_meltponds", config_use_level_meltponds)
+    call MPAS_pool_get_config(configPool, "config_use_floe_size_distribution", config_use_floe_size_distribution)
 
     if (pkgColumnTracerIceAgeActive) then
        call add_tracer_to_tracer_linked_list(tracersHead, 'iceAge',               'iceVolumeCategory')
@@ -298,6 +300,10 @@ contains
 
     if (pkgColumnTracerFirstYearIceActive) then
        call add_tracer_to_tracer_linked_list(tracersHead, 'firstYearIceArea',     'iceAreaCategory')
+    endif
+
+    if (config_use_floe_size_distribution) then
+       call add_tracer_to_tracer_linked_list(tracersHead, 'floeSizeDist',        'iceAreaCategory')
     endif
 
     if (pkgColumnTracerLevelIceActive) then
@@ -308,7 +314,7 @@ contains
     if (pkgColumnTracerPondsActive) then
        if (config_use_level_meltponds) then
           call add_tracer_to_tracer_linked_list(tracersHead, 'pondArea',             'levelIceArea')
-       else
+       else ! topo and sea-level ponds
           call add_tracer_to_tracer_linked_list(tracersHead, 'pondArea',             'iceAreaCategory')
        endif
        call add_tracer_to_tracer_linked_list(tracersHead, 'pondDepth',            'pondArea')

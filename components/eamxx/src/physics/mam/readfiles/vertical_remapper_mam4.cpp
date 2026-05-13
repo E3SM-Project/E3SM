@@ -9,19 +9,23 @@ VerticalRemapperMAM4 (const grid_ptr_type& src_grid,
                   const grid_ptr_type& tgt_grid,
                   const VertRemapType& vremp_type)
 :VerticalRemapper(src_grid,
-                  tgt_grid,
-                  true,
-                  false) {
+                  tgt_grid) {
   m_vremap_type=vremp_type;
 }
 
 void VerticalRemapperMAM4::remap_fwd_impl ()
 {
+  using namespace ShortFieldTagsNames;
+
+  auto src_vtag = m_src_grid->get_vkind()==AbstractGrid::VKind::Pressure ? LEVP : LEV;
+
+  const auto& src_p = m_src_pressure.at(src_vtag);
+  const auto& tgt_p = m_tgt_pressure.at(LEV);
   for (int i=0; i<m_num_fields; ++i) {
     const auto& f_src    = m_src_fields[i];
           auto& f_tgt    = m_tgt_fields[i];
-    apply_vertical_interpolation(f_src, f_tgt, m_src_pmid, m_tgt_pmid);
 
+    apply_vertical_interpolation(f_src, f_tgt, src_p, tgt_p);
   }
 }
 /* The DataInterpolation class only uses this method if the Custom type is employed.
@@ -29,7 +33,8 @@ void VerticalRemapperMAM4::remap_fwd_impl ()
 void VerticalRemapperMAM4::
 set_target_pressure (const Field& p)
 {
-  m_tgt_pmid=p;
+  using namespace ShortFieldTagsNames;
+  m_tgt_pressure[LEV] = p;
 }
 /* It reads altitude from an NC file and sets m_src_pmid as altitude_int_src.
 * DataInterpolation assumes that pressure is the variable for interpolation.
@@ -39,15 +44,16 @@ void VerticalRemapperMAM4::
 set_source_pressure (const std::string& file_name )
 {
   if (m_vremap_type == MAM4_ELEVATED_EMISSIONS) {
-    auto layout = m_src_grid->get_vertical_layout(false);
+    using namespace ShortFieldTagsNames;
+    auto layout = m_src_grid->get_vertical_layout(ILEV);
     auto mbar = ekat::units::Units(100*ekat::units::Pa,"mbar");
-    Field altitude_int_src(FieldIdentifier("altitude_int_field",layout,mbar,m_src_grid->name()));
-    altitude_int_src.allocate_view();
+    Field altitude_src(FieldIdentifier("altitude_int",layout,mbar,m_src_grid->name()));
+    altitude_src.allocate_view();
     scorpio::register_file(file_name,scorpio::FileMode::Read);
-    scorpio::read_var(file_name,"altitude_int",altitude_int_src.get_view<Real*,Host>().data());
-    altitude_int_src.sync_to_dev();
+    scorpio::read_var(file_name,"altitude_int",altitude_src.get_view<Real*,Host>().data());
+    altitude_src.sync_to_dev();
     scorpio::release_file(file_name);
-    m_src_pmid=altitude_int_src;
+    m_src_pressure[LEV] = altitude_src;
   }
 }
 /* Invokes MAM4XX routines for vertical interpolation.*/

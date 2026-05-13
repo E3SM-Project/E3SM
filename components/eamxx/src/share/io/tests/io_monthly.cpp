@@ -75,10 +75,9 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
 
   auto fm = std::make_shared<FieldManager>(grid);
 
-  const auto units = ekat::units::Units::nondimensional();
   int count=0;
   for (const auto& fl : layouts) {
-    FID fid("f_"+std::to_string(count),fl,units,grid->name());
+    FID fid("f_"+std::to_string(count),fl,ekat::units::none,grid->name());
     Field f(fid);
     f.allocate_view();
     randomize_discrete (f,seed++,values);

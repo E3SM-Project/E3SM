@@ -15,8 +15,7 @@ inline std::shared_ptr<AbstractGrid>
 create_grid(const ekat::Comm& comm, const std::string& map_file, const std::string& name, bool src)
 {
   // Note: map files are 1-based, so create pt grid with 1-based gids
-  auto nondim = ekat::units::Units::nondimensional();
-  ekat::units::Units deg(nondim,"degrees");
+  auto deg = ekat::units::none.rename("degrees");
   std::string suffix = src ? "_a" : "_b";
   int ncols = scorpio::get_dimlen(map_file,"n"+suffix);
   auto grid = create_point_grid(name,ncols,1,comm,1);

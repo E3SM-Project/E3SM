@@ -37,7 +37,11 @@ auto Field::get_view () const
 
   // Check the reinterpret cast makes sense for the Dst value types (need integer sizes ratio)
   EKAT_REQUIRE_MSG(alloc_prop.template is_compatible<DstValueType>(),
-      "Error! Source field allocation is not compatible with the requested value type.\n");
+      "Error! Source field allocation is not compatible with the requested value type.\n"
+      " - field name: " + name() + "\n"
+      " - field data type: " + e2str(data_type()) + "\n"
+      " - alloc pack size: " + std::to_string(alloc_prop.get_largest_pack_size()) + "\n"
+      " - DstValueType: " + std::string(typeid(DstValueType).name()) + "\n");
 
   // Start by reshaping into a ND view with all dynamic extents
   const auto view_ND = get_ND_view<HD,DstValueType,DstRank>();
@@ -249,54 +253,6 @@ auto Field::get_ND_view () const
                  "Please contact developer if this functionality is required\n");
   return get_view_type<data_nd_t<T,N>,HD>();
 }
-
-// Inform the compiler that we will instantiate some template methods in some translation unit (TU).
-// This prevents the decl in field_impl.hpp from being compiled for every TU.
-
-#define EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(T1,T2) \
-extern template void Field::update_impl<CombineMode::Update,  true, T1, T2>(const Field&, const T1, const T1);  \
-extern template void Field::update_impl<CombineMode::Multiply,true, T1, T2>(const Field&, const T1, const T1);  \
-extern template void Field::update_impl<CombineMode::Divide,  true, T1, T2>(const Field&, const T1, const T1);  \
-extern template void Field::update_impl<CombineMode::Update,  false, T1, T2>(const Field&, const T1, const T1); \
-extern template void Field::update_impl<CombineMode::Multiply,false, T1, T2>(const Field&, const T1, const T1); \
-extern template void Field::update_impl<CombineMode::Divide,  false, T1, T2>(const Field&, const T1, const T1); \
-extern template void Field::update_impl<CombineMode::Max, true, T1, T2>(const Field&, const T1, const T1);      \
-extern template void Field::update_impl<CombineMode::Min, true, T1, T2>(const Field&, const T1, const T1);      \
-extern template void Field::update_impl<CombineMode::Max, false, T1, T2>(const Field&, const T1, const T1);     \
-extern template void Field::update_impl<CombineMode::Min, false, T1, T2>(const Field&, const T1, const T1)
-
-#define EAMXX_FIELD_ETI_DECL_DEEP_COPY(T) \
-extern template void Field::deep_copy_impl<true,T>(const T, const Field&); \
-extern template void Field::deep_copy_impl<false,T>(const T, const Field&)
-
-#define EAMXX_FIELD_ETI_DECL_GET_VIEW(S,T) \
-extern template Field::get_view_type<T,S> Field::get_view<T,S> () const; \
-extern template Field::get_view_type<T*,S> Field::get_view<T*,S> () const; \
-extern template Field::get_view_type<T**,S> Field::get_view<T**,S> () const; \
-extern template Field::get_view_type<T***,S> Field::get_view<T***,S> () const; \
-extern template Field::get_view_type<T****,S> Field::get_view<T****,S> () const; \
-extern template Field::get_view_type<T*****,S> Field::get_view<T*****,S> () const; \
-extern template Field::get_view_type<T******,S> Field::get_view<T******,S> () const; \
-extern template Field::get_strided_view_type<T,S> Field::get_strided_view<T,S> () const; \
-extern template Field::get_strided_view_type<T*,S> Field::get_strided_view<T*,S> () const; \
-extern template Field::get_strided_view_type<T**,S> Field::get_strided_view<T**,S> () const; \
-extern template Field::get_strided_view_type<T***,S> Field::get_strided_view<T***,S> () const; \
-extern template Field::get_strided_view_type<T****,S> Field::get_strided_view<T****,S> () const; \
-extern template Field::get_strided_view_type<T*****,S> Field::get_strided_view<T*****,S> () const; \
-extern template Field::get_strided_view_type<T******,S> Field::get_strided_view<T******,S> () const
-
-#define EAMXX_FIELD_ETI_DECL_FOR_SCALAR_TYPE(T) \
-EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,T);        \
-EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,T);          \
-EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,const T);  \
-EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,const T)
-
-// TODO: should we ETI other scalar types too? E.g. Pack<Real,SCREAM_PACK_SIZE??
-//       Real is by far the most common, so it'd be nice to just to that. But
-//       all the update/update_impl methods use get_view for all 3 types, so just ETI all of them
-EAMXX_FIELD_ETI_DECL_FOR_SCALAR_TYPE(double);
-EAMXX_FIELD_ETI_DECL_FOR_SCALAR_TYPE(float);
-EAMXX_FIELD_ETI_DECL_FOR_SCALAR_TYPE(int);
 
 } // namespace scream
 

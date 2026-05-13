@@ -389,17 +389,17 @@ contains
 
     call restartvar(ncid=ncid, flag=flag, varname='btran2', xtype=ncd_double,  &
          dim1name='pft', &
-         long_name='', units='', &
+         long_name='root zone soil wetness factor', units='1', &
          interpinic_flag='interp', readvar=readvar, data=this%btran2_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='BTRAN_MIN', xtype=ncd_double,  &
          dim1name='pft', &
-         long_name='daily minimum of transpiration wetness factor', units='', &
+         long_name='daily minimum of transpiration wetness factor', units='1', &
          interpinic_flag='interp', readvar=readvar, data=this%btran_min_patch) 
 
     call restartvar(ncid=ncid, flag=flag, varname='BTRAN_MIN_INST', xtype=ncd_double,  &
          dim1name='pft', &
-         long_name='instantaneous daily minimum of transpiration wetness factor', units='', &
+         long_name='instantaneous daily minimum of transpiration wetness factor', units='1', &
          interpinic_flag='interp', readvar=readvar, data=this%btran_min_inst_patch) 
 
     call this%eflx_dynbal_dribbler%Restart(bounds, ncid, flag)

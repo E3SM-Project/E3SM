@@ -25,7 +25,7 @@ class MAMWetscav : public MAMGenericInterface
 {
   using KT           = ekat::KokkosTypes<DefaultDevice>;
   using view_2d      = typename KT::template view_2d<Real>;
-  using view_2d_host = typename KT::template view_2d<Real>::HostMirror;
+  using view_2d_host = typename KT::template view_2d<Real>::host_mirror_type;
   using int_view_2d  = typename KT::template view_2d<int>;
 
   // a thread team dispatched to a single vertical column
@@ -122,7 +122,7 @@ private:
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
   // parameters for calcsize
-  mam4::modal_aer_opt::CalcsizeData calsize_data_;
+  mam4::modal_aero_opt::CalcsizeData calcsize_data_;
   int get_len_temporary_views();
   void init_temporary_views();
   int len_temporary_views_{0};

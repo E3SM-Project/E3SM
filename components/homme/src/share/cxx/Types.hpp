@@ -53,7 +53,7 @@ using MemoryUnmanaged = Kokkos::MemoryTraits<Kokkos::Unmanaged | Kokkos::Restric
 // The memory spaces
 using ExecMemSpace    = ExecSpace::memory_space;
 using ScratchMemSpace = ExecSpace::scratch_memory_space;
-using HostMemSpace    = Kokkos::HostSpace;
+using HostMemSpace    = typename Kokkos::View<Real, ExecMemSpace>::host_mirror_type::memory_space;
 // Selecting the memory space for the MPI buffers, that is, where the MPI
 // buffers will be allocated. In a CPU build, this is always going to be
 // the same as ExecMemSpace, i.e., HostSpace. In a GPU build, one can choose
@@ -92,7 +92,7 @@ using ExecView = ViewType<DataType, ExecMemSpace, Properties...>;
 template <typename DataType, typename... Properties>
 using MPIView = typename std::conditional<std::is_same<MPIMemSpace,ExecMemSpace>::value,
                                           ExecView<DataType,Properties...>,
-                                          typename ExecView<DataType,Properties...>::HostMirror>::type;
+                                          typename ExecView<DataType,Properties...>::host_mirror_type>::type;
 #else
 # if HOMMEXX_MPI_ON_DEVICE
 template <typename DataType, typename... Properties>
@@ -101,7 +101,7 @@ using MPIView = ExecView<DataType,Properties...>;
 /// A Cuda 9.1.85 (and probably other 9.1.* versions) parse bug requires us to
 /// spell out this type rather than rely on our layers of abstraction.
 template <typename DataType, typename... Properties>
-using MPIView = typename Kokkos::View<DataType, Kokkos::LayoutRight, ExecMemSpace, Properties...>::HostMirror;
+using MPIView = typename Kokkos::View<DataType, Kokkos::LayoutRight, ExecMemSpace, Properties...>::host_mirror_type;
 # endif
 #endif
 
@@ -145,7 +145,7 @@ template <typename View>
 template <typename View>
 using Unmanaged =
   // Provide a full View type specification, augmented with Unmanaged.
-  Kokkos::View<typename View::traits::scalar_array_type,
+  Kokkos::View<typename View::traits::data_type,
                typename View::traits::array_layout,
                typename View::traits::device_type,
                Kokkos::MemoryTraits<
@@ -153,7 +153,7 @@ using Unmanaged =
                  Impl::MemoryTraitsMask<View>::value |
                  // ... |ed with the one we want, whether or not it's
                  // already there.
-                 Kokkos::Unmanaged> >;
+                 unsigned(Kokkos::Unmanaged)> >;
 
 
 // To view the fully expanded name of a complicated template type T,

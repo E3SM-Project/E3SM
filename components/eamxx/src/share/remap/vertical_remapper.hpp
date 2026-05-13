@@ -26,46 +26,18 @@ public:
     TopAndBot = Top | Bot
   };
 
-  // When setting src/tgt pressure profiles, we may not care to distinguish
-  // between midpoints/interface. E.g., in output, we may remap both midpoints
-  // and interface quantities to the SAME set of pressure levels.
-  enum ProfileType {
-    Midpoints,
-    Interfaces,
-    Both
-  };
+  VerticalRemapper (const grid_ptr_type& src_grid,
+                    const std::string& map_file);
 
   VerticalRemapper (const grid_ptr_type& src_grid,
-                    const std::string& map_file,
-                    const bool src_int_same_as_mid = false);
-
-  VerticalRemapper (const grid_ptr_type& src_grid,
-                    const grid_ptr_type& tgt_grid,
-                    const bool src_int_same_as_mid = false,
-                    const bool tgt_int_same_as_mid = false);
+                    const grid_ptr_type& tgt_grid);
 
   ~VerticalRemapper () = default;
 
   void set_extrapolation_type (const ExtrapType etype, const TopBot where = TopAndBot);
 
-  void set_source_pressure (const Field& p, const ProfileType ptype);
-  void set_target_pressure (const Field& p, const ProfileType ptype);
-
-  void set_source_pressure (const Field& pmid, const Field& pint) {
-    set_source_pressure (pmid, Midpoints);
-    set_source_pressure (pint, Interfaces);
-  }
-  void set_target_pressure (const Field& pmid, const Field& pint) {
-    set_target_pressure (pmid, Midpoints);
-    set_target_pressure (pint, Interfaces);
-  }
-
-  Field get_source_pressure (bool midpoints) const {
-    return midpoints ? m_src_pmid : m_src_pint;
-  }
-  Field get_target_pressure (bool midpoints) const {
-    return midpoints ? m_tgt_pmid : m_tgt_pint;
-  }
+  void set_source_pressure (const Field& p);
+  void set_target_pressure (const Field& p);
 
   // This method simply creates the tgt grid from a map file
   static std::shared_ptr<AbstractGrid>
@@ -77,7 +49,8 @@ public:
   bool is_valid_src_layout (const FieldLayout& layout) const override;
 protected:
 
-  void set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType ptype);
+  void set_pressure (const Field& p, const std::string& src_or_tgt);
+
   FieldLayout create_layout (const FieldLayout& from_layout,
                              const std::shared_ptr<const AbstractGrid>& to_grid) const override;
 
@@ -88,6 +61,7 @@ protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
+
   template<int N>
   void apply_vertical_interpolation (const ekat::LinInterp<Real,N>& lin_interp,
                                      const Field& f_src, const Field& f_tgt,
@@ -102,7 +76,7 @@ public:
 protected:
 
   void create_lin_interp ();
-  
+
   using KT = KokkosTypes<DefaultDevice>;
 
   template<typename T>
@@ -115,38 +89,40 @@ protected:
   // Tgt grid masks (in case extrap type at top or bot is Mask)
   std::map<std::string,Field>    m_masks;
 
-  // Vertical profile fields, both for source and target
-  Field                 m_src_pmid;
-  Field                 m_src_pint;
-  Field                 m_tgt_pmid;
-  Field                 m_tgt_pint;
-
-  bool m_src_int_same_as_mid = false;
-  bool m_tgt_int_same_as_mid = false;
+  // Vertical profile fields, both for source and target.
+  std::map<FieldTag,Field> m_src_pressure;
+  std::map<FieldTag,Field> m_tgt_pressure;
 
   // If user provides pressure profiles that are NOT compatible with SCREAM_PACK_SIZE,
-  // we will set these boolean to false, and use ONLY the "scalar" LinInterp structures
-  bool m_int_packs_supported = true;
-  bool m_mid_packs_supported = true;
+  // we will set these booleans to false, and use ONLY the "scalar" LinInterp structures
+  std::map<FieldTag, bool> m_packs_supported;
 
   // Extrapolation settings at top/bottom. Default to P0 extrapolation
   ExtrapType            m_etype_top = P0;
   ExtrapType            m_etype_bot = P0;
 
-  // We need to remap mid/int fields separately, and we want to use packs if possible,
-  // so we need to divide input fields into 4 separate categories
-
-  // Map field id to whether it's packed/scalar and midpoint/interface
+  // Small struct holding metadata for a field's vertical remapping:
+  //  - packs_supported: true if both field and pressure data allow SIMD packing.
+  //  - src_vtag/tgt_vtag: the vertical FieldTag for source/target (Invalid for 2D fields).
+  //  - li_vtag: used to select the correct LinInterp object. To ensure midpoints (LEV)
+  //    and interfaces (ILEV) fields (if present) use separate LinInterp objects,
+  //    this tag follows the "most specific" vertical identity available:
+  //      1. If either src or tgt field has LEV or ILEV, li_vtag takes that tag.
+  //      2. If neither field has it (i.e., both src and tgt grids have vkind=Pressure),
+  //         li_vtag defaults to LEVP.
   struct FType {
-    bool packed = false;
-    bool midpoints = true;
+    bool packs_supported = false;
+    FieldTag li_vtag  = FieldTag::Invalid;
+    FieldTag src_vtag = FieldTag::Invalid;
+    FieldTag tgt_vtag = FieldTag::Invalid;
   };
   std::map<std::string,FType> m_field2type;
 
-  std::shared_ptr<ekat::LinInterp<Real,SCREAM_PACK_SIZE>> m_lin_interp_mid_packed;
-  std::shared_ptr<ekat::LinInterp<Real,SCREAM_PACK_SIZE>> m_lin_interp_int_packed;
-  std::shared_ptr<ekat::LinInterp<Real,1>>                m_lin_interp_mid_scalar;
-  std::shared_ptr<ekat::LinInterp<Real,1>>                m_lin_interp_int_scalar;
+  // Maps to store the interpolation operators, keyed by the logical 'li_vtag'.
+  // We maintain separate packed and scalar variants to maximize SIMD usage.
+  // See FType::li_vtag for how the FieldTag key is determined in mixed-grid cases.
+  std::map<FieldTag, ekat::LinInterp<Real,SCREAM_PACK_SIZE>> m_lin_interp_packed;
+  std::map<FieldTag, ekat::LinInterp<Real,1>>                m_lin_interp_scalar;
 };
 
 } // namespace scream

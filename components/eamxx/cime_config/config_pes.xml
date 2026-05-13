@@ -184,6 +184,19 @@
         </ntasks>
       </pes>
     </mach>
+    <mach name="bebop">
+      <pes compset="any" pesize="any">
+        <comment>bebop: ne30 eamxx 6 nodes</comment>
+        <ntasks>
+          <ntasks_atm>-6</ntasks_atm>
+          <ntasks_cpl>-6</ntasks_cpl>
+          <ntasks_ice>-6</ntasks_ice>
+          <ntasks_lnd>-6</ntasks_lnd>
+          <ntasks_rof>-6</ntasks_rof>
+          <ntasks_ocn>-6</ntasks_ocn>
+        </ntasks>
+      </pes>
+    </mach>
   </grid>
   <grid name="a%ne120np4">
     <mach name="pm-gpu|muller-gpu|alvarez-gpu">
@@ -314,6 +327,19 @@
           <nthrds_ocn>1</nthrds_ocn>
           <nthrds_cpl>1</nthrds_cpl>
         </nthrds>
+      </pes>
+    </mach>
+    <mach name="bebop">
+      <pes compset="any" pesize="any">
+        <comment>bebop: LR conus eamxx 8 nodes</comment>
+        <ntasks>
+          <ntasks_atm>-8</ntasks_atm>
+          <ntasks_cpl>-8</ntasks_cpl>
+          <ntasks_ice>-8</ntasks_ice>
+          <ntasks_lnd>-8</ntasks_lnd>
+          <ntasks_rof>-8</ntasks_rof>
+          <ntasks_ocn>-8</ntasks_ocn>
+        </ntasks>
       </pes>
     </mach>
   </grid>

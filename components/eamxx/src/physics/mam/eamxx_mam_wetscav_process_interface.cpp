@@ -35,6 +35,7 @@ void
 MAMWetscav::create_requests()
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   grid_                 = m_grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
@@ -50,15 +51,15 @@ MAMWetscav::create_requests()
 
   // layout for 3D (2d horiz X 1d vertical) variables at level
   // midpoints/interfaces
-  FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
-  FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
+  FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(LEV);
+  FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(ILEV);
 
   // layout for 2D (1d horiz X 1d vertical) variables
   FieldLayout scalar2d = grid_->get_2d_scalar_layout();
 
   // layout for 3D (ncol, nmodes, nlevs)
   FieldLayout scalar3d_mid_nmodes =
-      grid_->get_3d_vector_layout(true, nmodes, mam_coupling::num_modes_tag_name());
+      grid_->get_3d_vector_layout(LEV, nmodes, mam_coupling::num_modes_tag_name());
 
   // layout for 2D (ncol, pcnst)
   FieldLayout scalar2d_pcnst = grid_->get_2d_vector_layout(pcnst, "num_phys_constituents");
@@ -90,13 +91,10 @@ MAMWetscav::create_requests()
   // Stratiform rain production rate [kg/kg/s]
   add_field<Required>("precip_total_tend", scalar3d_mid, kg / kg / s, grid_name);
 
-  // For variables that are non dimensional (e.g., fractions etc.)
-  static constexpr auto nondim = Units::nondimensional();
-
   //----------- Variables from macrophysics scheme -------------
 
   // Total cloud fraction [fraction]
-  add_field<Required>("cldfrac_liq", scalar3d_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_liq", scalar3d_mid, none, grid_name);
 
   // ---------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
@@ -159,7 +157,7 @@ MAMWetscav::create_requests()
   add_field<Computed>("dgnumwet", scalar3d_mid_nmodes, m, grid_name);
 
   // Fraction of transported species that are insoluble [fraction]
-  add_field<Computed>("fracis", scalar3d_mid, nondim, grid_name);
+  add_field<Computed>("fracis", scalar3d_mid, none, grid_name);
 
   // Aerosol wet deposition (interstitial) [kg/m2/s]
   add_field<Computed>("aerdepwetis", scalar2d_pcnst, kg / m2 / s, grid_name);
@@ -314,9 +312,9 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // Detraining cld H20 from deep convection [kg/kg/s]
   dlf_ = view_2d("dlf_", ncol_, nlev_);
 
-  calsize_data_.initialize();
+  calcsize_data_.initialize();
   // wetscav uses update_mmr=true;
-  calsize_data_.set_update_mmr(true);
+  calcsize_data_.set_update_mmr(true);
 
   view_2d_host scavimptblvol_host("scavimptblvol_host",
                                   mam4::aero_model::nimptblgrow_total,
@@ -428,7 +426,7 @@ void MAMWetscav::run_impl(const double dt) {
     }
   }
 
-  const auto &calsize_data  = calsize_data_;
+  const auto &calsize_data  = calcsize_data_;
   const auto &scavimptblnum = scavimptblnum_;
   const auto &scavimptblvol = scavimptblvol_;
   const Real scav_fraction_in_cloud_strat  = scav_fraction_in_cloud_strat_;   
@@ -436,7 +434,7 @@ void MAMWetscav::run_impl(const double dt) {
   const Real scav_fraction_below_cloud_strat  = scav_fraction_below_cloud_strat_;
   const Real activation_fraction_in_cloud_conv = activation_fraction_in_cloud_conv_;
   // Loop over atmosphere columns
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("MAMWetscav::run_impl::aero_model_wetdep",
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int icol = team.league_rank();  // column index
 

@@ -240,8 +240,11 @@
         <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
-      <modules>
+      <modules compiler="!nvidia">
         <command name="load">craype-accel-host</command>
+      </modules>
+
+      <modules>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
         <command name="load">cmake/3.30.2</command>
@@ -619,8 +622,11 @@
         <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
-      <modules>
+      <modules compiler="!nvidia">
         <command name="load">craype-accel-host</command>
+      </modules>
+
+      <modules>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
         <command name="load">cmake/3.30.2</command>
@@ -995,8 +1001,11 @@
         <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
-      <modules>
+      <modules compiler="!nvidia">
         <command name="load">craype-accel-host</command>
+      </modules>
+
+      <modules>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
         <command name="load">cmake/3.30.2</command>
@@ -1387,16 +1396,16 @@
         <!-- PrgEnv-gnu before cpe, or cray-mpich module doesn't update correctly -->
         <command name="load">Core/25.03</command>
         <command name="load">PrgEnv-gnu</command>
-        <command name="load">cpe/24.11</command>
-        <command name="load">gcc-native/12.3</command>
+        <command name="load">cpe/25.09</command>
+        <command name="load">gcc-native/14.2</command>
         <command name="load">libunwind</command>
         <command name="load">cray-python/3.11.7</command>
         <command name="load">subversion</command>
         <command name="load">git</command>
         <command name="load">cmake</command>
-        <command name="load">cray-hdf5-parallel/1.14.3.3</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.15</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.15</command>
+        <command name="load">cray-hdf5-parallel/1.14.3.7</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.19</command>
         <command name="unload">darshan-runtime</command>
       </modules>
       <modules compiler="craygnu-mphipcc">
@@ -1638,51 +1647,6 @@
     </environment_variables>
   </machine>
 
-  <machine MACH="ghci-oci">
-    <DESC>OCI-based container</DESC>
-    <NODENAME_REGEX>ghci-oci</NODENAME_REGEX>
-    <OS>LINUX</OS>
-    <COMPILERS>gnu</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>/projects/e3sm/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/projects/e3sm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/projects/e3sm/ptclm-data</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/projects/e3sm/scratch/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/projects/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/usr/local/packages/bin/cprnc</CCSM_CPRNC>
-    <GMAKE>make</GMAKE>
-    <GMAKE_J>4</GMAKE_J>
-    <TESTS>e3sm_developer</TESTS>
-    <BATCH_SYSTEM>none</BATCH_SYSTEM>
-    <SUPPORTED_BY>e3sm-team</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
-    <mpirun mpilib="default">
-      <executable>mpirun</executable>
-      <arguments>
-        <arg name="num_tasks"> -launcher fork -hosts localhost -np {{ total_tasks }}</arg>
-      </arguments>
-    </mpirun>
-    <module_system type="none"/>
-    <RUNDIR>/projects/e3sm/scratch/$CASE/run</RUNDIR>
-    <EXEROOT>/projects/e3sm/scratch/$CASE/bld</EXEROOT>
-    <environment_variables>
-      <env name="E3SM_SRCROOT">$SRCROOT</env>
-    </environment_variables>
-    <environment_variables mpilib="mpi-serial">
-      <env name="NETCDF_PATH">/usr/local/packages</env>
-      <env name="PATH">/usr/local/packages/bin:$ENV{PATH}</env>
-      <env name="LD_LIBRARY_PATH">/usr/local/packages/lib</env>
-    </environment_variables>
-    <environment_variables mpilib="!mpi-serial">
-      <env name="NETCDF_PATH">/usr/local/packages</env>
-      <env name="PNETCDF_PATH">/usr/local/packages</env>
-      <env name="HDF5_ROOT">/usr/local/packages</env>
-      <env name="PATH">/usr/local/packages/bin:$ENV{PATH}</env>
-      <env name="LD_LIBRARY_PATH">/usr/local/packages/lib</env>
-    </environment_variables>
-  </machine>
-
   <machine MACH="melvin">
     <DESC>Linux workstation for Jenkins testing</DESC>
     <NODENAME_REGEX>(melvin|watson|s999964|climate|penn|sems)</NODENAME_REGEX>
@@ -1799,7 +1763,7 @@
         <command name="load">sems-cmake/3.27.9</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">sems-gcc/11.4.0</command>
+        <command name="load">sems-gcc/13.2.0</command>
         <command name="load">sems-openblas</command>
       </modules>
       <modules mpilib="mpi-serial">
@@ -1808,6 +1772,7 @@
       </modules>
       <modules mpilib="!mpi-serial">
         <command name="load">sems-openmpi-no-cuda/4.1.6</command>
+        <command name="load">sems-hdf5/1.14.5</command>
         <command name="load">sems-netcdf-c/4.9.2</command>
         <command name="load">sems-netcdf-cxx/4.2</command>
         <command name="load">sems-netcdf-fortran/4.6.1</command>
@@ -1832,6 +1797,12 @@
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">$ENV{PARALLEL_NETCDF_ROOT}</env>
     </environment_variables>
+    <environment_variables compiler="gnu">
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /sems-data-store/ACME/mappy/moab; else echo "$MOAB_ROOT"; fi}</env>
+    </environment_variables>
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
   </machine>
 
   <machine MACH="ghci-snl-cpu">
@@ -2930,120 +2901,64 @@
   </machine>
 
   <machine MACH="bebop">
-    <DESC>ANL/LCRC Cluster, Cray CS400, 352-nodes Xeon Phi 7230 KNLs 64C/1.3GHz + 672-nodes Xeon E5-2695v4 Broadwells 36C/2.10GHz, Intel Omni-Path network, SLURM batch system, Lmod module environment.</DESC>
+    <DESC>ANL-LCRC, 672-nodes Xeon E5-2695v4 Broadwell 36C/2.10GHz, Intel Omni-Path OPA 100G network, PBS Pro</DESC>
     <NODENAME_REGEX>beboplogin.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,gnu</COMPILERS>
-    <MPILIBS>impi,mvapich</MPILIBS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <CIME_OUTPUT_ROOT>/lcrc/group/e3sm/$USER/scratch/bebop</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lcrc/group/e3sm/data/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lcrc/group/e3sm/data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lcrc/group/e3sm/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/lcrc/group/e3sm/baselines/bebop/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lcrc/group/e3sm/soft/tools/cprnc/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/lcrc/group/e3sm/tools/cprnc/cprnc.bebop</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_integration</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
-    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
     <SUPPORTED_BY>E3SM</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <mpirun mpilib="impi">
+    <mpirun mpilib="openmpi">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -l -n {{ total_tasks }}</arg>
+        <arg name="num_tasks">--tag-output -n {{ total_tasks }}</arg>
+        <arg name="tasks_per_node">--map-by slot:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
       </arguments>
-    </mpirun>
-    <mpirun mpilib="mvapich">
-      <executable>srun</executable>
-      <arguments>
-        <arg name="num_tasks"> -l -n {{ total_tasks }} -N {{ num_nodes }} --kill-on-bad-exit </arg>
-        <arg name="binding">--cpu_bind=cores</arg>
-        <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
-        <arg name="placement">-m plane=$SHELL{echo 36/$OMP_NUM_THREADS|bc}</arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="mpi-serial">
-      <executable/>
     </mpirun>
     <module_system type="module">
-      <init_path lang="sh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/csh</init_path>
-      <init_path lang="python">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/env_modules_python.py</init_path>
-      <cmd_path lang="python">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="sh">/gpfs/fs1/soft/bebop/software/spack-built/linux-rocky8-x86_64/gcc-8.5.0/lmod-8.7.37-rxz3nx5/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/gpfs/fs1/soft/bebop/software/spack-built/linux-rocky8-x86_64/gcc-8.5.0/lmod-8.7.37-rxz3nx5/lmod/lmod/init/csh</init_path>
+      <init_path lang="python">/gpfs/fs1/soft/bebop/software/spack-built/linux-rocky8-x86_64/gcc-8.5.0/lmod-8.7.37-rxz3nx5/lmod/lmod/init/env_modules_python.py</init_path>
+      <cmd_path lang="python">/gpfs/fs1/soft/bebop/software/spack-built/linux-rocky8-x86_64/gcc-8.5.0/lmod-8.7.37-rxz3nx5/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
-        <command name="purge"/>
-        <command name="load">cmake/3.20.3-vedypwm</command>
-        <command name="load">anaconda3/5.2.0</command>
-      </modules>
-      <modules compiler="intel">
-        <command name="load">gcc/7.4.0</command>
-        <command name="load">intel/20.0.4-lednsve</command>
-        <command name="load">intel-mkl/2020.4.304-voqlapk</command>
-      </modules>
-      <modules compiler="intel" mpilib="impi">
-        <command name="load">intel-mpi/2019.9.304-i42whlw</command>
-        <command name="load">hdf5/1.10.7-ugvomvt</command>
-        <command name="load">netcdf-c/4.4.1-blyisdg</command>
-        <command name="load">netcdf-cxx/4.2-gkqc6fq</command>
-        <command name="load">netcdf-fortran/4.4.4-eanrh5t</command>
-        <command name="load">parallel-netcdf/1.11.0-y3nmmej</command>
-      </modules>
-      <modules compiler="intel" mpilib="mvapich">
-        <command name="load">mvapich2/2.3.6-verbs-x4iz7lq</command>
-        <command name="load">hdf5/1.10.7-igh6foh</command>
-        <command name="load">netcdf-c/4.4.1-gei7x7w</command>
-        <command name="load">netcdf-cxx/4.2-db2f5or</command>
-        <command name="load">netcdf-fortran/4.4.4-b4ldb3a</command>
-        <command name="load">parallel-netcdf/1.11.0-kj4jsvt</command>
-      </modules>
-      <modules compiler="gnu">
-        <command name="load">gcc/8.2.0-xhxgy33</command>
-        <command name="load">intel-mkl/2020.4.304-d6zw4xa</command>
-      </modules>
-      <modules compiler="gnu" mpilib="impi">
-        <command name="load">intel-mpi/2019.9.304-rxpzd6p</command>
-        <command name="load">hdf5/1.10.7-oy6d2nm</command>
-        <command name="load">netcdf-c/4.4.1-fysjgfx</command>
-        <command name="load">netcdf-cxx/4.2-oaiw2v6</command>
-        <command name="load">netcdf-fortran/4.4.4-kxgkaop</command>
-        <command name="load">parallel-netcdf/1.11.0-fce7akl</command>
-      </modules>
-      <modules compiler="gnu" mpilib="mvapich">
-        <command name="load">mvapich2/2.3-bebop-a66r4jf</command>
-        <command name="load">hdf5/1.10.5-ejeshwh</command>
-        <command name="load">netcdf/4.4.1-ve2zfkw</command>
-        <command name="load">netcdf-cxx/4.2-2rkopdl</command>
-        <command name="load">netcdf-fortran/4.4.4-thtylny</command>
-        <command name="load">parallel-netcdf/1.11.0-kozyofv</command>
+        <command name="load">cmake/3.29.2</command>
+        <command name="load">gcc/13.2.0-xk53apo</command>
+        <command name="load">openmpi/5.0.5-ohr7u5x</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
-      <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
-      <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
-      <env name="PATH">/lcrc/group/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
-    </environment_variables>
-    <environment_variables mpilib="!mpi-serial">
-      <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
-    </environment_variables>
-    <environment_variables>
-      <env name="HDF5_ROOT">$SHELL{which h5dump | xargs dirname | xargs dirname}</env>
+      <env name="NETCDF_C_PATH">/lcrc/group/e3sm/soft/bebop/netcdf-c/4.9.3/gcc-13.2.0/openmpi-5.0.5</env>
+      <env name="NETCDF_FORTRAN_PATH">/lcrc/group/e3sm/soft/bebop/netcdf-fortran/4.6.2/gcc-13.2.0/openmpi-5.0.5</env>
+      <env name="PNETCDF_PATH">/lcrc/group/e3sm/soft/bebop/pnetcdf/1.14.1/gcc-13.2.0/openmpi-5.0.5</env>
+      <env name="PATH">/lcrc/group/e3sm/soft/bebop/pnetcdf/1.14.1/gcc-13.2.0/openmpi-5.0.5/bin:/lcrc/group/e3sm/soft/bebop/netcdf-fortran/4.6.2/gcc-13.2.0/openmpi-5.0.5/bin:/lcrc/group/e3sm/soft/bebop/netcdf-c/4.9.3/gcc-13.2.0/openmpi-5.0.5/bin:/lcrc/group/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
+      <env name="LD_LIBRARY_PATH">/lcrc/group/e3sm/soft/bebop/pnetcdf/1.14.1/gcc-13.2.0/openmpi-5.0.5/lib:/lcrc/group/e3sm/soft/bebop/netcdf-fortran/4.6.2/gcc-13.2.0/openmpi-5.0.5/lib:/lcrc/group/e3sm/soft/bebop/netcdf-c/4.9.3/gcc-13.2.0/openmpi-5.0.5/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="LAPACK_ROOT">$SHELL{if [ -z "$LAPACK_ROOT" ]; then echo /lcrc/group/e3sm/soft/bebop/netlib-lapack/3.12.0/gcc-13.2.0; else echo "$LAPACK_ROOT"; fi}</env>
+      <env name="BLAS_ROOT">$SHELL{if [ -z "$BLAS_ROOT" ]; then echo /lcrc/group/e3sm/soft/bebop/netlib-lapack/3.12.0/gcc-13.2.0; else echo "$BLAS_ROOT"; fi}</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/improv/gnu; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="OMPI_MCA_sharedfp">^lockedfile,individual</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
-      <env name="OMP_PLACES">threads</env>
-    </environment_variables>
-    <environment_variables mpilib="impi">
-      <env name="I_MPI_FABRICS">shm:tmi</env>
+      <env name="OMP_PLACES">cores</env>
     </environment_variables>
   </machine>
 
@@ -3091,14 +3006,13 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <TEST_TPUT_TOLERANCE>0.05</TEST_TPUT_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <environment_variables compiler="gnu" mpilib="openmpi">
       <env name="NETCDF_C_PATH">/lcrc/group/e3sm/soft/improv/netcdf-c/4.9.2b/gcc-12.3.0/openmpi-4.1.6</env>
       <env name="NETCDF_FORTRAN_PATH">/lcrc/group/e3sm/soft/improv/netcdf-fortran/4.6.1b/gcc-12.3.0/openmpi-4.1.6</env>
       <env name="PNETCDF_PATH">/lcrc/group/e3sm/soft/improv/pnetcdf/1.14.1/gcc-12.3.0/openmpi-4.1.6</env>
       <env name="PATH">/lcrc/group/e3sm/soft/improv/pnetcdf/1.14.1/gcc-12.3.0/openmpi-4.1.6/bin:/lcrc/group/e3sm/soft/improv/netcdf-fortran/4.6.1b/gcc-12.3.0/openmpi-4.1.6/bin:/lcrc/group/e3sm/soft/improv/netcdf-c/4.9.2b/gcc-12.3.0/openmpi-4.1.6/bin:/lcrc/group/e3sm/soft/improv/openmpi/4.1.6/gcc-12.3.0/bin:/lcrc/group/e3sm/soft/perl/improv/bin:$ENV{PATH}</env>
-      <env name="LD_LIBRARY_PATH">$SHELL{lp=/lcrc/group/e3sm/soft/improv/netlib-lapack/3.12.0/gcc-12.3.0:/lcrc/group/e3sm/soft/improv/pnetcdf/1.14.1/gcc-12.3.0/openmpi-4.1.6/lib:/lcrc/group/e3sm/soft/improv/netcdf-fortran/4.6.1b/gcc-12.3.0/openmpi-4.1.6/lib:/lcrc/group/e3sm/soft/improv/netcdf-c/4.9.2b/gcc-12.3.0/openmpi-4.1.6/lib:/opt/pbs/lib:/lcrc/group/e3sm/soft/improv/openmpi/4.1.6/gcc-12.3.0/lib; if [ -z "$LD_LIBRARY_PATH" ]; then echo $lp; else echo "$lp:$LD_LIBRARY_PATH"; fi}</env>
+      <env name="LD_LIBRARY_PATH">$SHELL{lp=/lcrc/group/e3sm/soft/improv/pnetcdf/1.14.1/gcc-12.3.0/openmpi-4.1.6/lib:/lcrc/group/e3sm/soft/improv/netcdf-fortran/4.6.1b/gcc-12.3.0/openmpi-4.1.6/lib:/lcrc/group/e3sm/soft/improv/netcdf-c/4.9.2b/gcc-12.3.0/openmpi-4.1.6/lib:/opt/pbs/lib:/lcrc/group/e3sm/soft/improv/openmpi/4.1.6/gcc-12.3.0/lib; if [ -z "$LD_LIBRARY_PATH" ]; then echo $lp; else echo "$lp:$LD_LIBRARY_PATH"; fi}</env>
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/improv/gnu; else echo "$MOAB_ROOT"; fi}</env>
       <env name="LAPACK_ROOT">$SHELL{if [ -z "$LAPACK_ROOT" ]; then echo /lcrc/group/e3sm/soft/improv/netlib-lapack/3.12.0/gcc-12.3.0; else echo "$LAPACK_ROOT"; fi}</env>
       <env name="BLAS_ROOT">$SHELL{if [ -z "$BLAS_ROOT" ]; then echo /lcrc/group/e3sm/soft/improv/netlib-lapack/3.12.0/gcc-12.3.0; else echo "$BLAS_ROOT"; fi}</env>
@@ -3655,13 +3569,11 @@
       <cmd_path lang="sh">module</cmd_path> 
       <cmd_path lang="csh">module</cmd_path>
       <modules>
-        <command name="reset"></command>
         <command name="use">/grand/E3SMinput/soft/modulefiles/crux</command>
         <command name="load">cmake/3.27.9</command>
-        <command name="load">cray-python/3.11.7</command>
         <command name="load">craype-accel-host</command>
-        <command name="load">PrgEnv-gnu/8.5.0</command>   
-        <command name="load">cray-libsci/24.03.0</command>
+        <command name="load">PrgEnv-gnu/8.6.0</command>   
+        <command name="load">cray-libsci/25.09.0</command>
         <command name="load">cray-hdf5-parallel/1.12.2.11</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.11</command>
         <command name="load">cray-parallel-netcdf/1.12.3.11</command>
@@ -3676,6 +3588,8 @@
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env>
       <env name="FI_CXI_RX_MATCH_MODE">hybrid</env>
+      <env name="PALS_PING_PERIOD">240</env>
+      <env name="PALS_RPC_TIMEOUT">240</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>  

@@ -4,6 +4,9 @@
 using scream::Real;
 extern "C" void cosp_c2f_init(int ncol, int nsubcol, int nlay);
 extern "C" void cosp_c2f_final();
+extern "C" void cosp_c2f_get_bins(Real* tau_centers, Real* tau_edges,
+                                   Real* prs_centers, Real* prs_edges,
+                                   Real* cth_centers, Real* cth_edges);
 extern "C" void cosp_c2f_run(const int ncol, const int nsubcol, const int nlay, const int ntau, const int nctp, const int ncth,
     const Real emsfc_lw, const Real* sunlit, const Real* skt,
     const Real* T_mid, const Real* p_mid, const Real* p_int, const Real* z_mid, const Real* qv, const Real* qc, const Real* qi,

@@ -385,7 +385,7 @@ module li_iceshelf_melt
               growMask(iCell) = 1
          end if
       end do
-      call li_flood_fill(seedMask, growMask, domain)
+      call li_flood_fill(domain)
       connectedOceanMask = seedMask
       ! deallocate scratch fields used for flood fill
       call mpas_deallocate_scratch_field(seedMaskField, single_block_in=.true.)

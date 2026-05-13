@@ -48,22 +48,25 @@ inline util::TimeStamp get_last_slice_time () {
 std::vector<Field>
 create_fields (const std::shared_ptr<const AbstractGrid>& grid,
                const bool init_values,
-               const bool int_same_as_mid = false,
                const bool pad_for_packing = true)
 {
+  using namespace ShortFieldTagsNames;
   constexpr auto m  = ekat::units::m;
   const auto& gn = grid->name();
 
   int ncols = grid->get_num_local_dofs();
   int nlevs = grid->get_num_vertical_levels();
+  bool p_grid = grid->get_vkind()==AbstractGrid::VKind::Pressure;
 
   // Create fields
+  auto tag_mid = p_grid ? LEVP : LEV;
+  auto tag_int = p_grid ? LEVP : ILEV;
   auto layout_s2d   = grid->get_2d_scalar_layout();
   auto layout_v2d   = grid->get_2d_vector_layout(ncmps);
-  auto layout_s3d_m = grid->get_3d_scalar_layout(true);
-  auto layout_v3d_m = grid->get_3d_vector_layout(true,ncmps);
-  auto layout_s3d_i = grid->get_3d_scalar_layout(int_same_as_mid);
-  auto layout_v3d_i = grid->get_3d_vector_layout(int_same_as_mid,ncmps);
+  auto layout_s3d_m = grid->get_3d_scalar_layout(tag_mid);
+  auto layout_v3d_m = grid->get_3d_vector_layout(tag_mid, ncmps);
+  auto layout_s3d_i = grid->get_3d_scalar_layout(tag_int);
+  auto layout_v3d_i = grid->get_3d_vector_layout(tag_int, ncmps);
 
   Field s2d  (FieldIdentifier("s2d",   layout_s2d,   m, gn));
   Field v2d  (FieldIdentifier("v2d",   layout_v2d,   m, gn));
@@ -109,21 +112,21 @@ create_fields (const std::shared_ptr<const AbstractGrid>& grid,
         v_value = ilev*dv;
         for (int icmp=0; icmp<ncmps; ++icmp) {
           v3d_m.get_view<Real***,Host>()(icol,icmp,ilev) = h_value*(v_value + dv/2) + icmp;
-          if (int_same_as_mid) {
+          if (p_grid) {
             v3d_i.get_view<Real***,Host>()(icol,icmp,ilev) = h_value*(v_value + dv/2) + icmp;
           } else {
             v3d_i.get_view<Real***,Host>()(icol,icmp,ilev) = h_value*(v_value) + icmp;
           }
         }
         s3d_m.get_view<Real**,Host>()(icol,ilev) = h_value*(v_value + dv/2);
-        if (int_same_as_mid) {
+        if (p_grid) {
           s3d_i.get_view<Real**,Host>()(icol,ilev) = h_value*(v_value + dv/2);
         } else {
           s3d_i.get_view<Real**,Host>()(icol,ilev) = h_value*(v_value);
         }
       }
       // Last interface (if mid!=int), where v_value=1
-      if (not int_same_as_mid) {
+      if (not p_grid) {
         s3d_i.get_view<Real**,Host>()(icol,nlevs) = h_value;
         for (int icmp=0; icmp<ncmps; ++icmp) {
           v3d_i.get_view<Real***,Host>()(icol,icmp,nlevs) = h_value + icmp;

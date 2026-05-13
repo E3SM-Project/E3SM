@@ -143,7 +143,7 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
     bool use_separate_ice_liq_frac;
     Real identity_tol;
     Real absolute_floor;
-    typename view_1d<BackToCellAverageCase>::HostMirror cases;
+    typename view_1d<BackToCellAverageCase>::host_mirror_type cases;
   };
 
   using Runtime = typename Functions::P3Runtime;

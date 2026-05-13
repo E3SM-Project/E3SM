@@ -45,7 +45,7 @@ class GridImportExport {
 public:
   using KT = KokkosTypes<DefaultDevice>;
   using view_d = typename KT::view_1d<int>;
-  using view_h = typename view_d::HostMirror;
+  using view_h = typename view_d::host_mirror_type;
 
   GridImportExport (const std::shared_ptr<const AbstractGrid>& unique,
                     const std::shared_ptr<const AbstractGrid>& overlapped);
@@ -134,7 +134,7 @@ scatter (const MPI_Datatype mpi_data_t,
   const auto tag = 0;
 
   std::vector<MPI_Request> send_req, recv_req;
-  
+
   auto mpi_comm = m_comm.mpi_comm();
   auto mpi_gid_t = ekat::get_mpi_type<gid_type>();
 
@@ -168,7 +168,7 @@ scatter (const MPI_Datatype mpi_data_t,
                  "GridImportExport::scatter, waiting on recv requests (step 1)");
   send_req.clear();
   recv_req.clear();
-  
+
   // 2. Communicate T's count for each GID to recv pids
   std::map<int,std::vector<int>> send_pid2count;
   for (int i=0; i<m_num_exports; ++i) {
@@ -260,7 +260,7 @@ gather (const MPI_Datatype mpi_data_t,
   const auto tag = 0;
 
   std::vector<MPI_Request> send_req, recv_req;
-  
+
   auto mpi_comm = m_comm.mpi_comm();
   auto mpi_gid_t = ekat::get_mpi_type<gid_type>();
 
@@ -294,7 +294,7 @@ gather (const MPI_Datatype mpi_data_t,
                  "GridImportExport::gather, waiting on recv requests (step 1)");
   send_req.clear();
   recv_req.clear();
-  
+
   // 2. Communicate T's count for each GID to recv pids
   std::map<int,std::vector<int>> send_pid2count;
   for (int i=0; i<m_num_imports; ++i) {

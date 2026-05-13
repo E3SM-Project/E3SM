@@ -64,10 +64,12 @@ struct UnitWrap {
 
     struct Base : public UnitBase {
 
+      const typename Functions::P3LookupTables lookup_tables;
+
       Base() :
-        UnitBase()
+        UnitBase(),
+        lookup_tables(Functions::p3_init())
       {
-        Functions::p3_init(); // many tests will need table data
       }
 
       ~Base() = default;

@@ -78,12 +78,10 @@ void MAMAci::create_requests() {
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and
   // interfaces
-  const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
+  const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(LEV);
 
   using namespace ekat::units;
   constexpr auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
-
-  constexpr auto nondim = ekat::units::Units::nondimensional();
 
   add_tracers_wet_atm();
   add_fields_dry_atm();
@@ -109,10 +107,10 @@ void MAMAci::create_requests() {
   // "shoc_cldfrac" and in the F90 code it is called "cloud_frac"
 
   // Liquid stratiform cloud fraction at midpoints
-  add_field<Required>("cldfrac_liq", scalar3d_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_liq", scalar3d_mid, none, grid_name);
 
   // Previous value of liquid stratiform cloud fraction at midpoints
-  add_field<Required>("cldfrac_liq_prev", scalar3d_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_liq_prev", scalar3d_mid, none, grid_name);
 
   // Eddy diffusivity for heat
   add_field<Required>("eddy_diff_heat", scalar3d_mid, m2 / s, grid_name);
@@ -122,7 +120,7 @@ void MAMAci::create_requests() {
 
   // layout for 3D (ncol, nmodes, nlevs)
   FieldLayout scalar3d_mid_nmodes =
-      grid_->get_3d_vector_layout(true, nmodes, "nmodes");
+      grid_->get_3d_vector_layout(LEV, nmodes, "nmodes");
 
   // dry diameter of aerosols [m]
   add_field<Required>("dgnum", scalar3d_mid_nmodes, m, grid_name);
@@ -217,6 +215,10 @@ int MAMAci::get_len_temporary_views() {
   work_len += ncol_ * nlev_ * mam4::ndrop::psat;
   // raercol_cw_ and raercol_
   work_len += 2 * ncol_ * mam4::ndrop::ncnst_tot * nlev_ * 2;
+  // qqcw_fld_work_
+  work_len += ncol_ * nlev_ * mam4::ndrop::ncnst_tot;
+  // coltend_ & coltend_cw_
+  work_len += 2 *  ncol_ * nlev_ * mam4::ndrop::ncnst_tot;
   // factnum_, nact_, mact_
   work_len += 3 * ncol_ * mam_coupling::num_aero_modes() * nlev_;
   // kvh_int_, w_sec_int_
@@ -237,16 +239,21 @@ void MAMAci::init_temporary_views() {
   ccn_ = view_3d(work_ptr, ncol_, nlev_, mam4::ndrop::psat);
   work_ptr += ncol_ * nlev_ * mam4::ndrop::psat;
 
-  for(int i = 0; i < nlev_; ++i) {
-    for(int j = 0; j < 2; ++j) {
-      // Kokkos::resize(raercol_cw_[i][j], ncol_, mam4::ndrop::ncnst_tot);
-      raercol_cw_[i][j] = view_2d(work_ptr, ncol_, mam4::ndrop::ncnst_tot);
-      work_ptr += ncol_ * mam4::ndrop::ncnst_tot;
-      // Kokkos::resize(raercol_[i][j], ncol_, mam4::ndrop::ncnst_tot);
-      raercol_[i][j] = view_2d(work_ptr, ncol_, mam4::ndrop::ncnst_tot);
-      work_ptr += ncol_ * mam4::ndrop::ncnst_tot;
-    }
-  }
+  raercol_cw_ = view_4d(work_ptr, ncol_, nlev_, 2, mam4::ndrop::ncnst_tot);
+  work_ptr += raercol_cw_.size();
+  raercol_ = view_4d(work_ptr, ncol_, nlev_, 2, mam4::ndrop::ncnst_tot);
+  work_ptr += raercol_.size();
+
+  qqcw_fld_work_ = view_3d(work_ptr, ncol_, mam4::ndrop::ncnst_tot, nlev_);
+  work_ptr += qqcw_fld_work_.size();
+
+  // column tendency for diagnostic output
+  coltend_ = view_3d(work_ptr, ncol_, mam4::ndrop::ncnst_tot, nlev_);
+  work_ptr += coltend_.size();
+  // column tendency
+  coltend_cw_ = view_3d(work_ptr, ncol_, mam4::ndrop::ncnst_tot, nlev_);
+  work_ptr += coltend_cw_.size();
+
   // activation fraction for aerosol number [fraction]
   // Kokkos::resize(factnum_, ncol_, num_aero_modes, nlev_);
   factnum_ = view_3d(work_ptr, ncol_, mam_coupling::num_aero_modes(), nlev_);
@@ -449,28 +456,16 @@ void MAMAci::initialize_impl(const RunType run_type) {
     dropmixnuc_scratch_mem_[i] =
         view_2d("dropmixnuc_scratch_mem_", ncol_, nlev_);
   }
-  for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
-    // column tendency for diagnostic output
-    set_field_w_scratch_buffer(coltend_[i], buffer_, true);
-    // column tendency
-    set_field_w_scratch_buffer(coltend_cw_[i], buffer_, true);
-  }
   // NOTE: If we use buffer_ to initialize ptend_q_,
   //  we must reset these values to zero each time run_impl is called.
-  for(int i = 0; i < mam4::aero_model::pcnst; ++i) {
-    ptend_q_[i] = view_2d("ptend_q_", ncol_, nlev_);
-  }
-  // Allocate work arrays
-  for(int icnst = 0; icnst < mam4::ndrop::ncnst_tot; ++icnst) {
-    set_field_w_scratch_buffer(qqcw_fld_work_[icnst], buffer_, true);
-  }
+  ptend_q_ = view_3d("ptend_q_", ncol_, mam4::aero_model::pcnst, nlev_);
+
   //---------------------------------------------------------------------------------
   // Diagnotics variables from the hetrozenous ice nucleation scheme
   //---------------------------------------------------------------------------------
   // NOTE: If we use buffer_ to initialize diagnostic_scratch_,
   // we must reset these values to zero each time run_impl is called.
-  for(int i = 0; i < hetro_scratch_; ++i)
-    diagnostic_scratch_[i] = view_2d("diagnostic_scratch_", ncol_, nlev_);
+  diagnostic_scratch_ = view_3d("diagnostic_scratch_", ncol_, mam4::Diagnostics::number_of_hetfrz_diag, nlev_);
   //---------------------------------------------------------------------------------
   // Initialize the processes
   //---------------------------------------------------------------------------------
@@ -507,13 +502,13 @@ void MAMAci::run_impl(const double dt) {
 
   Kokkos::fence();
 
-  haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
+  mam4::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
 
   // FIXME: Temporary assignment of nc
   mam_coupling::copy_view_lev_slice(team_policy, wet_atm_.nc, nlev_,  // inputs
                                     nc_inp_to_aci_);                  // output
 
-  compute_w0_and_rho(team_policy, dry_atm_, top_lev_, nlev_,
+  compute_w0_and_rho(ncol_, dry_atm_, top_lev_, nlev_,
                      // output
                      w0_, rho_);
 
@@ -523,7 +518,7 @@ void MAMAci::run_impl(const double dt) {
                             tke_);
 
   Kokkos::fence();  // wait for tke_ to be computed.
-  compute_subgrid_scale_velocities(team_policy, tke_, wsubmin_, top_lev_, nlev_,
+  compute_subgrid_scale_velocities(ncol_, tke_, wsubmin_, top_lev_, nlev_,
                                    // output
                                    wsub_, wsubice_, wsig_);
 
@@ -546,7 +541,7 @@ void MAMAci::run_impl(const double dt) {
       naai_);
 
   // Compute cloud fractions based on cloud threshold
-  store_liquid_cloud_fraction(team_policy, dry_atm_, liqcldf_, liqcldf_prev_,
+  store_liquid_cloud_fraction(ncol_, dry_atm_, liqcldf_, liqcldf_prev_,
                               top_lev_, nlev_,
                               // output
                               cloud_frac_, cloud_frac_prev_);
@@ -561,6 +556,7 @@ void MAMAci::run_impl(const double dt) {
   //  Compute activated CCN number tendency (tendnd_) and updated
   //  cloud borne aerosols (stored in a work array) and interstitial
   //  aerosols tendencies
+  Kokkos::deep_copy(ccn_, 0.0);
   call_function_dropmixnuc(
       team_policy, dt, dry_atm_, rpdel_, kvh_mid_, kvh_int_, wsub_, cloud_frac_,
       cloud_frac_prev_, dry_aero_, nlev_, top_lev_, enable_aero_vertical_mix_,
@@ -606,12 +602,12 @@ void MAMAci::run_impl(const double dt) {
   //---------------------------------------------------------------
 
   // Update cloud borne aerosols
-  update_cloud_borne_aerosols(qqcw_fld_work_, nlev_,
+  update_cloud_borne_aerosols(qqcw_fld_work_,
                               // output
                               dry_aero_);
 
   // Update interstitial aerosols using tendencies
-  update_interstitial_aerosols(team_policy, ptend_q_, nlev_, dt,
+  update_interstitial_aerosols(ncol_, ptend_q_, nlev_, dt,
                                // output
                                dry_aero_);
 

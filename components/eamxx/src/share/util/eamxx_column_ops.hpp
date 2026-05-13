@@ -90,7 +90,7 @@ public:
 
   using TeamMember = typename KT::MemberType;
 
-  template <typename ScalarT, typename MT = Kokkos::MemoryManaged>
+  template <typename ScalarT, typename MT = Kokkos::MemoryTraits<0>>
   using view_1d = typename KT::template view_1d<ScalarT, MT>;
 
   KOKKOS_INLINE_FUNCTION

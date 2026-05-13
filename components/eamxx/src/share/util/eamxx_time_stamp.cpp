@@ -399,6 +399,18 @@ TimeStamp str_to_time_stamp (const std::string& s)
   }
 };
 
+void hash (const TimeStamp& ts,
+           bfbhash::HashType& accum_out)
+{
+  bfbhash::hash(ts.get_year(),accum_out);
+  bfbhash::hash(ts.get_month(),accum_out);
+  bfbhash::hash(ts.get_day(),accum_out);
+
+  bfbhash::hash(ts.get_hours(),accum_out);
+  bfbhash::hash(ts.get_minutes(),accum_out);
+  bfbhash::hash(ts.get_seconds(),accum_out);
+}
+
 } // namespace util
 
 } // namespace scream

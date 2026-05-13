@@ -10,7 +10,6 @@ module SoilLittDecompMod
   use shr_const_mod          , only : SHR_CONST_TKFRZ
   use decompMod              , only : bounds_type
   use perf_mod               , only : t_startf, t_stopf
-  use perfMod_GPU
   use elm_varctl             , only : iulog, use_lch4, use_century_decomp
   use elm_varcon             , only : dzsoi_decomp
   use elm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
@@ -142,7 +141,6 @@ contains
     real(r8):: phr_vr(bounds%begc:bounds%endc,1:nlevdecomp)                                            !potential HR (gC/m3/s)
     real(r8):: hrsum(bounds%begc:bounds%endc,1:nlevdecomp)                                             !sum of HR (gC/m2/s)
 
-    character(len=256) :: event
     !-----------------------------------------------------------------------
 
     associate(                                                                                           &
@@ -388,14 +386,13 @@ contains
       ! to resolve the competition between plants and soil heterotrophs
       ! for available soil mineral N resource.
       ! in addition, calculate fpi_vr, fpi_p_vr, & fgp
-      event = 'CNAllocation - phase-2'
-      call t_start_lnd(event)
+      call t_startf('CNAllocation - phase-2')
       call Allocation2_ResolveNPLimit(bounds,                       &
                num_soilc, filter_soilc, num_soilp, filter_soilp,    &
                cnstate_vars,                                        &
                soilstate_vars, dtime,                               &
                alm_fates)
-      call t_stop_lnd(event)
+      call t_stopf('CNAllocation - phase-2')
 
 
       ! column loop to calculate actual immobilization and decomp rates, following
@@ -607,7 +604,6 @@ contains
     ! For methane code
     real(r8):: hrsum(bounds%begc:bounds%endc,1:nlevdecomp)                                             !sum of HR (gC/m2/s)
 
-    character(len=256) :: event
     !-----------------------------------------------------------------------
 
     associate(                                                                                      &
@@ -760,8 +756,7 @@ contains
       !------------------------------------------------------------------
       ! phase-3 Allocation for plants
       if(.not.use_fates)then
-        event = 'CNAllocation - phase-3'
-        call t_start_lnd(event)
+        call t_startf('CNAllocation - phase-3')
         if(nu_com .eq. 'RD') then
            call PlantCNPAlloc_RD(bounds                      , &
                   num_soilc, filter_soilc, num_soilp, filter_soilp    , &
@@ -773,7 +768,7 @@ contains
                      canopystate_vars                                    , &
                      cnstate_vars, crop_vars, dt)
          endif 
-        call t_stop_lnd(event)
+        call t_stopf('CNAllocation - phase-3')
       end if
       !------------------------------------------------------------------
 

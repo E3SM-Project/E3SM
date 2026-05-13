@@ -6,19 +6,40 @@ namespace scream
 
 namespace
 {
-void update_checks (const Field& y, const Field* x = nullptr,
-                    const ScalarWrapper* alpha = nullptr,
-                    const ScalarWrapper* beta = nullptr)
+void update_checks (const std::string& caller,
+                    const Field& y, const Field& x,
+                    const ScalarWrapper& alpha,
+                    const ScalarWrapper& beta,
+                    const ScalarWrapper gamma = 0,
+                    const Field* mask = nullptr)
 {
   // Check output field is writable
   EKAT_REQUIRE_MSG (not y.is_read_only(),
-      "Error! Cannot update field, as it is read-only.\n"
+      "[" + caller + "] Error! Cannot modify field, as it is read-only.\n"
       " - field name: " + y.name() + "\n");
 
   const auto& y_dt = y.data_type();
-  const auto& x_dt = x==nullptr ? y_dt : x->data_type();
-  const auto& a_dt = alpha==nullptr ? y_dt : alpha->type;
-  const auto& b_dt = beta==nullptr ? y_dt : beta->type;
+  const auto& x_dt = x.data_type();
+  const auto& a_dt = alpha.type;
+  const auto& b_dt = beta.type;
+  const auto& g_dt = gamma.type;
+
+  // Ensure data types are not somehow invalid
+  EKAT_REQUIRE_MSG (y_dt!=DataType::Invalid,
+      "[" + caller + "] Error! Lhs data type is invalid.\n"
+      " - lhs name: " + y.name() + "\n");
+  EKAT_REQUIRE_MSG (x_dt!=DataType::Invalid,
+      "[" + caller + "] Error! Rhs data type is invalid.\n"
+      " - rhs name: " + x.name() + "\n");
+  EKAT_REQUIRE_MSG (a_dt!=DataType::Invalid,
+      "[" + caller + "] Error! Alpha coeff data type is invalid.\n"
+      " - lhs name: " + y.name() + "\n");
+  EKAT_REQUIRE_MSG (b_dt!=DataType::Invalid,
+      "[" + caller + "] Error! Beta coeff data type is invalid.\n"
+      " - lhs name: " + y.name() + "\n");
+  EKAT_REQUIRE_MSG (g_dt!=DataType::Invalid,
+      "[" + caller + "] Error! Gamma coeff data type is invalid.\n"
+      " - lhs name: " + y.name() + "\n");
 
   // If user passes, say, double alpha/beta for an int field, we should error out, warning about
   // a potential narrowing rounding. The other way around, otoh, is allowed (even though
@@ -27,41 +48,83 @@ void update_checks (const Field& y, const Field* x = nullptr,
   // Similarly, we allow updating a field Y with another X as long as converting the data type of X
   // to the data type of Y does not require narrowing
   EKAT_REQUIRE_MSG (not is_narrowing_conversion(x_dt,y_dt),
-      "Error! Right hand side data type may be narrowed when converted to x data type.\n"
+      "[" + caller + "] Error! Rhs data type may be narrowed when converted to lhs data type.\n"
+      " - lhs name: " + y.name() + "\n"
+      " - rhs name: " + x.name() + "\n"
       " - rhs data type: " + e2str(x_dt) + "\n"
       " - lhs data type: " + e2str(y_dt) + "\n");
   EKAT_REQUIRE_MSG (not is_narrowing_conversion(a_dt,y_dt),
-      "Error! Coefficient alpha may be narrowed when converted to x/y data type.\n"
+      "[" + caller + "] Error! Coefficient alpha may be narrowed when converted to lhs data type.\n"
+      " - lhs name: " + y.name() + "\n"
       " - lhs data type  : " + e2str(y_dt) + "\n"
       " - alpha data type: " + e2str(a_dt) + "\n");
   EKAT_REQUIRE_MSG (not is_narrowing_conversion(b_dt,y_dt),
-      "Error! Coefficient beta may be narrowed when converted to x/y data type.\n"
+      "[" + caller + "] Error! Coefficient beta may be narrowed when converted to lhs data type.\n"
+      " - lhs name: " + y.name() + "\n"
       " - lhs data type  : " + e2str(y_dt) + "\n"
       " - beta data type: " + e2str(b_dt) + "\n");
+  EKAT_REQUIRE_MSG (not is_narrowing_conversion(g_dt,y_dt),
+      "[" + caller + "] Error! Coefficient gamma may be narrowed when converted to lhs data type.\n"
+      " - lhs name: " + y.name() + "\n"
+      " - lhs data type  : " + e2str(y_dt) + "\n"
+      " - gamma data type: " + e2str(g_dt) + "\n");
 
   // Check x/y are allocated
   EKAT_REQUIRE_MSG (y.is_allocated(),
-      "Error! Cannot update field, since it is not allocated.\n"
+      "[" + caller + "] Error! Lhs field is not yet allocated.\n"
       " - field name: " + y.name() + "\n");
-  EKAT_REQUIRE_MSG (x==nullptr or x->is_allocated(),
-      "Error! Cannot update field, since rhs field is not allocated.\n"
-      " - field name: " + x->name() + "\n");
+  EKAT_REQUIRE_MSG (x.is_allocated(),
+      "[" + caller + "] Error! Rhs field is not yet allocated.\n"
+      " - field name: " + x.name() + "\n");
 
   const auto& y_l = y.get_header().get_identifier().get_layout();
-  const auto& x_l = x==nullptr ? y_l : x->get_header().get_identifier().get_layout();
+  const auto& x_l = x.get_header().get_identifier().get_layout();
   EKAT_REQUIRE_MSG (y_l==x_l,
-      "Error! Incompatible layouts for update_field.\n"
-      " - x name: " + x->name() + "\n"
-      " - y name: " + y.name() + "\n"
-      " - x layout: " + x_l.to_string() + "\n"
-      " - y layout: " + y_l.to_string() + "\n");
+      "[" + caller + "] Error! Incompatible fields layouts.\n"
+      " - rhs name: " + x.name() + "\n"
+      " - lhs name: " + y.name() + "\n"
+      " - rhs layout: " + x_l.to_string() + "\n"
+      " - lhs layout: " + y_l.to_string() + "\n");
+
+  // Now check mask
+  if (mask) {
+    EKAT_REQUIRE_MSG (mask->is_allocated(),
+        "[" + caller + "] Error! Mask field was not yet allocated.\n"
+        " - mask name: " + mask->name() + "\n");
+
+    EKAT_REQUIRE_MSG (mask->data_type()==DataType::IntType,
+        "[" + caller + "] Error! Mask data type MUST be IntType.\n"
+        " - mask name: " + mask->name() + "\n"
+        " - mask data type: " + e2str(mask->data_type()) + "\n");
+
+    const auto& m_l = mask->get_header().get_identifier().get_layout();
+    EKAT_REQUIRE_MSG (y_l.congruent(m_l),
+      "[" + caller + "] Error! Incompatible mask layout.\n"
+      " - lhs name: " + y.name() + "\n"
+      " - mask name: " + mask->name() + "\n"
+      " - lhs layout: " + y_l.to_string() + "\n"
+      " - mask layout: " + m_l.to_string() + "\n");
+  }
 }
 } // anonymous namespace
+
+
+Field::
+Field ()
+ : Field (identifier_type("UNSET",
+                          FieldLayout::invalid(),
+                          ekat::units::Units::invalid(),
+                          "UNKNOWN",
+                          DataType::Invalid))
+{
+  // Nothing to do here
+}
 
 Field::
 Field (const identifier_type& id, bool allocate)
 {
   m_header = std::make_shared<FieldHeader>(id);
+  m_data = std::make_shared<dual_view_t<char*>>();
   if (allocate) {
     allocate_view();
   }
@@ -81,8 +144,27 @@ Field::clone() const {
 
 Field
 Field::alias (const std::string& name) const {
+  return alias(name,get_header().get_identifier().get_grid_name());
+}
+
+Field
+Field::alias (const std::string& name,const std::string& grid_name) const {
   Field f;
-  f.m_header = get_header().alias(name);
+  f.m_header = get_header().alias(name,grid_name);
+  f.m_data = m_data;
+  f.m_is_read_only = m_is_read_only;
+  return f;
+}
+
+Field
+Field::alias (const std::string& name, const std::map<FieldTag,std::string>& tag_names) const {
+  return alias(name, get_header().get_identifier().get_grid_name(), tag_names);
+}
+
+Field
+Field::alias (const std::string& name, const std::string& grid_name, const std::map<FieldTag,std::string>& tag_names) const {
+  Field f;
+  f.m_header = get_header().alias(name, grid_name, tag_names);
   f.m_data = m_data;
   f.m_is_read_only = m_is_read_only;
   return f;
@@ -97,8 +179,7 @@ Field
 Field::clone(const std::string& name, const std::string& grid_name) const {
   // Create new field
   const auto& my_fid = get_header().get_identifier();
-  FieldIdentifier fid(name,my_fid.get_layout(),my_fid.get_units(),
-                      grid_name,my_fid.data_type());
+  auto fid = my_fid.clone(name).reset_grid(grid_name);
   Field f(fid);
 
   // Ensure alloc props match
@@ -149,6 +230,16 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
     // share a memory space, we must initialize the helper field
     // for sync_to functions.
     sf.initialize_contiguous_helper_field();
+  }
+
+  if (has_valid_mask()) {
+    EKAT_REQUIRE_MSG (not dynamic,
+        "Error! We do not support getting a dynamic subview of a masked field. It's too much work...\n"
+        " - field name: " + name() + "\n"
+        "NOTE: if this is REALLY needed, contact developers, and we can accommodate it.\n");
+
+    const auto& mask = get_valid_mask();
+    sf.set_valid_mask(mask.subfield(mask.name(),idim,index,dynamic));
   }
 
   return sf;
@@ -269,7 +360,7 @@ bool Field::is_aliasing(const Field& rhs) const
 
   // NOTE: I'm not sure we NEED to check m_data, but we might as well
   return m_header->is_aliasing(rhs.get_header()) and
-         m_data.d_view==rhs.m_data.d_view;
+         m_data==rhs.m_data;
 }
 
 void Field::allocate_view ()
@@ -292,346 +383,287 @@ void Field::allocate_view ()
   // Create the view, by quering allocation properties for the allocation size
   const auto view_dim = alloc_prop.get_alloc_size();
 
-  m_data.d_view = decltype(m_data.d_view)(id.name(),view_dim);
-  m_data.h_view = Kokkos::create_mirror_view(m_data.d_view);
+  m_data->d_view = decltype(m_data->d_view)(id.name(),view_dim);
+  m_data->h_view = Kokkos::create_mirror_view(m_data->d_view);
 }
 
+bool Field::has_valid_mask () const {
+  return m_header->has_extra_data("valid_mask");
+}
 
-void Field::deep_copy (const ScalarWrapper value) {
-  EKAT_REQUIRE_MSG (not m_is_read_only,
-      "Error! Cannot call deep_copy on read-only fields.\n");
+void Field::set_valid_mask (const Field& mask)
+{
+  EKAT_REQUIRE_MSG (not has_valid_mask(),
+      "Error! Cannot reset the mask field.\n"
+      " - field name: " + name() + "\n");
+
+  // Check that the input field has the expected properties
+  EKAT_REQUIRE_MSG (mask.data_type()==DataType::IntType,
+      "Error! Input mask field must have IntType data type.\n"
+      " - field name: " + name() + "\n"
+      " - mask name : " + mask.name() + "\n"
+      " - mask data type: " + e2str(mask.data_type()) + "\n");
+  EKAT_REQUIRE_MSG (mask.get_header().get_identifier().get_layout()==get_header().get_identifier().get_layout(),
+      "Error! Input mask field must have same layout as this field.\n"
+      " - field name: " + name() + "\n"
+      " - mask name : " + mask.name() + "\n"
+      " - field layout: " + get_header().get_identifier().get_layout().to_string() + "\n"
+      " - mask layout: " + mask.get_header().get_identifier().get_layout().to_string() + "\n");
+
+  m_header->set_extra_data("valid_mask",mask);
+}
+
+Field& Field::create_valid_mask (const std::string& mask_name, const MaskInit init)
+{
+  EKAT_REQUIRE_MSG (not has_valid_mask(),
+      "Error! Cannot create mask field, as it was already created.\n"
+      " - field name: " + name() + "\n");
+
+  EKAT_REQUIRE_MSG (is_allocated(),
+      "Error! You cannot create the mask field until the field has been allocated.\n"
+      " - field name: " + name() + "\n");
+
+  const auto& fid = m_header->get_identifier();
+  const auto& props = m_header->get_alloc_properties();
+
+  auto mfid = fid.clone(mask_name).reset_units(ekat::units::none).reset_dtype(DataType::IntType);
+  Field mask(mfid);
+  mask.get_header().get_alloc_properties().request_allocation(props.get_largest_pack_size());
+  mask.allocate_view();
+  if (init==MaskInit::Valid) {
+    mask.deep_copy(1);
+  } else if (init==MaskInit::Invalid) {
+    mask.deep_copy(0);
+  }
+  set_valid_mask(mask);
+
+  return get_valid_mask();
+}
+
+Field& Field::get_valid_mask ()
+{
+  return m_header->get_extra_data<Field>("valid_mask");
+}
+
+const Field& Field::get_valid_mask () const
+{
+  return m_header->get_extra_data<Field>("valid_mask");
+}
+
+void Field::deep_copy (const ScalarWrapper value) const
+{
+  // Check consistency of inputs
+  update_checks("Field::deep_copy (scalar)",*this,*this,value,value);
 
   const auto my_data_type = data_type();
   switch (my_data_type) {
     case DataType::IntType:
-      deep_copy_impl<false>(value.as<int>(),*this); // 2nd arg unused
+      deep_copy_impl(value.as<int>());
       break;
     case DataType::FloatType:
-      deep_copy_impl<false>(value.as<float>(),*this); // 2nd arg unused
+      deep_copy_impl(value.as<float>());
       break;
     case DataType::DoubleType:
-      deep_copy_impl<false>(value.as<double>(),*this); // 2nd arg unused
+      deep_copy_impl(value.as<double>());
       break;
     default:
       EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");
   }
 }
 
-void Field::deep_copy (const Field& x)
+void Field::deep_copy (const ScalarWrapper value, const Field& mask, const bool negate_mask) const
 {
-  // Check consistency of inputs
-  update_checks(*this,&x,nullptr,nullptr);
+  update_checks("Field::deep_copy (scalar, masked)",*this,*this,value,value,0,&mask);
 
-  // We do an update with y = 0*y + 1*x
-  // NOTE: we do NOT use fill_aware, so we end up with y=x REGARDLESS of x's content
+  const auto my_data_type = data_type();
+  switch (my_data_type) {
+    case DataType::IntType:
+      negate_mask ? deep_copy_masked<true>(value.as<int>(),mask)
+                  : deep_copy_masked<false>(value.as<int>(),mask);
+      break;
+    case DataType::FloatType:
+      negate_mask ? deep_copy_masked<true>(value.as<float>(),mask)
+                  : deep_copy_masked<false>(value.as<float>(),mask);
+      break;
+    case DataType::DoubleType:
+      negate_mask ? deep_copy_masked<true>(value.as<double>(),mask)
+                  : deep_copy_masked<false>(value.as<double>(),mask);
+      break;
+    default:
+      EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");
+  }
+}
+
+void Field::deep_copy (const Field& x) const
+{
+  if (&x==this)
+    return;
+
   constexpr auto CM = CombineMode::Replace;
-  if (data_type()==DataType::IntType) {
-    update_impl<CM,false,int,int>(x,1,0);
-  } else if (data_type()==DataType::FloatType) {
-    if (x.data_type()==DataType::FloatType)
-      update_impl<CM,false,float,float>(x,1,0);
-    else
-      update_impl<CM,false,float,int>(x,1,0);
-  } else if (data_type()==DataType::DoubleType) {
-    if (x.data_type()==DataType::DoubleType)
-      update_impl<CM,false,double,double>(x,1,0);
-    else if (x.data_type()==DataType::FloatType)
-      update_impl<CM,false,double,float>(x,1,0);
-    else
-      update_impl<CM,false,double,int>(x,1,0);
-  } else {
-    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
-  }
+  update_cm<CM>("Field::deep_copy",x,1,0,0);
 }
 
-void Field::deep_copy (const ScalarWrapper value, const Field& mask)
+void Field::deep_copy (const Field& x, const Field& mask) const
 {
-  update_checks(*this,nullptr,&value,nullptr);
+  if (&x==this)
+    return;
 
-  const auto my_data_type = data_type();
-  switch (my_data_type) {
-    case DataType::IntType:
-      deep_copy_impl<true>(value.as<int>(),mask);
-      break;
-    case DataType::FloatType:
-      deep_copy_impl<true>(value.as<float>(),mask);
-      break;
-    case DataType::DoubleType:
-      deep_copy_impl<true>(value.as<double>(),mask);
-      break;
-    default:
-      EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");
-  }
+  constexpr auto CM = CombineMode::Replace;
+  update_cm<CM>("Field::deep_copy (masked)",x,1,0,0,mask);
 }
 
-void Field::scale (const ScalarWrapper beta)
+void Field::scale (const ScalarWrapper beta) const
 {
-  // Check consistency of inputs
-  update_checks(*this,nullptr,nullptr,&beta);
-
-  // update_impl expects an input field, even if it's not really used
-  const auto& x = *this;
-
-  // We do an update with y = beta*y + 0*x (with x=y)
   constexpr auto CM = CombineMode::Update;
-  if (data_type()==DataType::IntType) {
-    auto b = beta.as<int>();
-    update_impl<CM,false,int,int>(x,0,b);
-  } else if (data_type()==DataType::FloatType) {
-    auto b = beta.as<float>();
-    update_impl<CM,false,float,float>(x,0,b);
-  } else if (data_type()==DataType::DoubleType) {
-    auto b = beta.as<double>();
-    update_impl<CM,false,double,double>(x,0,b);
-  } else {
-    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
-  }
+  update_cm<CM>("Field::scale (scalar)",*this,0,beta,0);
 }
 
-void Field::scale (const Field& x)
+void Field::scale (const ScalarWrapper beta, const Field& mask) const
 {
-  // Check consistency of inputs
-  update_checks(*this,&x,nullptr,nullptr);
+  constexpr auto CM = CombineMode::Update;
+  update_cm<CM>("Field::scale (scalar, masked)",*this,0,beta,0,mask);
+}
 
-  // Determine if the RHS can contain fill_value entries
-  bool fill_aware = x.get_header().may_be_filled();
-
+void Field::scale (const Field& x) const
+{
   constexpr auto CM = CombineMode::Multiply;
-  if (data_type()==DataType::IntType) {
-    if (fill_aware) {
-      return update_impl<CM,true,int,int>(x,1,1);
-    } else {
-      return update_impl<CM,false,int,int>(x,1,1);
-    }
-  } else if (data_type()==DataType::FloatType) {
-    if (fill_aware) {
-      if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,true,float,float>(x,1,1);
-      else
-        return update_impl<CM,true,float,int>(x,1,1);
-    } else {
-      if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,false,float,float>(x,1,1);
-      else
-        return update_impl<CM,false,float,int>(x,1,1);
-    }
-  } else if (data_type()==DataType::DoubleType) {
-    if (fill_aware) {
-      if (x.data_type()==DataType::DoubleType)
-        return update_impl<CM,true,double,double>(x,1,1);
-      else if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,true,double,float>(x,1,1);
-      else
-        return update_impl<CM,true,double,int>(x,1,1);
-    } else {
-      if (x.data_type()==DataType::DoubleType)
-        return update_impl<CM,false,double,double>(x,1,1);
-      else if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,false,double,float>(x,1,1);
-      else
-        return update_impl<CM,false,double,int>(x,1,1);
-    }
-  } else {
-    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
-  }
+  update_cm<CM>("Field::scale",x,1,1,0);
 }
 
-void Field::scale_inv (const Field& x)
+void Field::scale (const Field& x, const Field& mask) const
 {
-  // Check consistency of inputs
-  update_checks(*this,&x,nullptr,nullptr);
+  constexpr auto CM = CombineMode::Multiply;
+  update_cm<CM>("Field::scale (masked)",x,1,1,0,mask);
+}
 
-  // Determine if the RHS can contain fill_value entries
-  bool fill_aware = x.get_header().may_be_filled();
-
+void Field::scale_inv (const Field& x) const
+{
   constexpr auto CM = CombineMode::Divide;
-  if (data_type()==DataType::IntType) {
-    if (fill_aware) {
-      return update_impl<CM,true,int,int>(x,1,1);
-    } else {
-      return update_impl<CM,false,int,int>(x,1,1);
-    }
-  } else if (data_type()==DataType::FloatType) {
-    if (fill_aware) {
-      if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,true,float,float>(x,1,1);
-      else
-        return update_impl<CM,true,float,int>(x,1,1);
-    } else {
-      if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,false,float,float>(x,1,1);
-      else
-        return update_impl<CM,false,float,int>(x,1,1);
-    }
-  } else if (data_type()==DataType::DoubleType) {
-    if (fill_aware) {
-      if (x.data_type()==DataType::DoubleType)
-        return update_impl<CM,true,double,double>(x,1,1);
-      else if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,true,double,float>(x,1,1);
-      else
-        return update_impl<CM,true,double,int>(x,1,1);
-    } else {
-      if (x.data_type()==DataType::DoubleType)
-        return update_impl<CM,false,double,double>(x,1,1);
-      else if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,false,double,float>(x,1,1);
-      else
-        return update_impl<CM,false,double,int>(x,1,1);
-    }
-  } else {
-    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
-  }
+  update_cm<CM>("Field::scale_inv",x,1,1,0);
 }
 
-void Field::max (const Field& x)
+void Field::scale_inv (const Field& x, const Field& mask) const
 {
-  // Check consistency of inputs
-  update_checks(*this,&x,nullptr,nullptr);
+  constexpr auto CM = CombineMode::Divide;
+  update_cm<CM>("Field::scale_inv (masked)",x,1,1,0,mask);
+}
 
-  // Determine if the RHS can contain fill_value entries
-  bool fill_aware = x.get_header().may_be_filled();
-
+void Field::max (const Field& x) const
+{
   constexpr auto CM = CombineMode::Max;
-  if (data_type()==DataType::IntType) {
-    if (fill_aware) {
-      return update_impl<CM,true,int,int>(x,1,1);
-    } else {
-      return update_impl<CM,false,int,int>(x,1,1);
-    }
-  } else if (data_type()==DataType::FloatType) {
-    if (fill_aware) {
-      if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,true,float,float>(x,1,1);
-      else
-        return update_impl<CM,true,float,int>(x,1,1);
-    } else {
-      if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,false,float,float>(x,1,1);
-      else
-        return update_impl<CM,false,float,int>(x,1,1);
-    }
-  } else if (data_type()==DataType::DoubleType) {
-    if (fill_aware) {
-      if (x.data_type()==DataType::DoubleType)
-        return update_impl<CM,true,double,double>(x,1,1);
-      else if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,true,double,float>(x,1,1);
-      else
-        return update_impl<CM,true,double,int>(x,1,1);
-    } else {
-      if (x.data_type()==DataType::DoubleType)
-        return update_impl<CM,false,double,double>(x,1,1);
-      else if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,false,double,float>(x,1,1);
-      else
-        return update_impl<CM,false,double,int>(x,1,1);
-    }
-  } else {
-    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
-  }
+  update_cm<CM>("Field::max",x,1,1,0);
 }
 
-void Field::min (const Field& x)
+void Field::max (const Field& x, const Field& mask) const
 {
-  // Check consistency of inputs
-  update_checks(*this,&x,nullptr,nullptr);
+  constexpr auto CM = CombineMode::Max;
+  update_cm<CM>("Field::max (masked)",x,1,1,0,mask);
+}
 
-  // Determine if the RHS can contain fill_value entries
-  bool fill_aware = x.get_header().may_be_filled();
-
+void Field::min (const Field& x) const
+{
   constexpr auto CM = CombineMode::Min;
-  if (data_type()==DataType::IntType) {
-    if (fill_aware) {
-      return update_impl<CM,true,int,int>(x,1,1);
-    } else {
-      return update_impl<CM,false,int,int>(x,1,1);
-    }
-  } else if (data_type()==DataType::FloatType) {
-    if (fill_aware) {
-      if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,true,float,float>(x,1,1);
-      else
-        return update_impl<CM,true,float,int>(x,1,1);
-    } else {
-      if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,false,float,float>(x,1,1);
-      else
-        return update_impl<CM,false,float,int>(x,1,1);
-    }
-  } else if (data_type()==DataType::DoubleType) {
-    if (fill_aware) {
-      if (x.data_type()==DataType::DoubleType)
-        return update_impl<CM,true,double,double>(x,1,1);
-      else if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,true,double,float>(x,1,1);
-      else
-        return update_impl<CM,true,double,int>(x,1,1);
-    } else {
-      if (x.data_type()==DataType::DoubleType)
-        return update_impl<CM,false,double,double>(x,1,1);
-      else if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,false,double,float>(x,1,1);
-      else
-        return update_impl<CM,false,double,int>(x,1,1);
-    }
-  } else {
-    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
-  }
+  update_cm<CM>("Field::min",x,1,1,0);
+}
+
+void Field::min (const Field& x, const Field& mask) const
+{
+  constexpr auto CM = CombineMode::Min;
+  update_cm<CM>("Field::min (masked)",x,1,1,0,mask);
+}
+
+void Field::add_scalar (const ScalarWrapper gamma) const
+{
+  update(*this,0,1,gamma);
+}
+
+void Field::add_scalar (const ScalarWrapper gamma, const Field& mask) const
+{
+  update(*this,0,1,gamma,mask);
 }
 
 void Field::
-update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta)
+update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma) const
+{
+  constexpr auto CM = CombineMode::Update;
+  update_cm<CM>("Field::update",x,alpha,beta,gamma);
+}
+
+void Field::
+update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const Field& mask) const
+{
+  constexpr auto CM = CombineMode::Update;
+  update_cm<CM>("Field::update (masked)",x,alpha,beta,0,mask);
+}
+
+void Field::
+update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta) const
+{
+  constexpr auto CM = CombineMode::Update;
+  update_cm<CM>("Field::update",x,alpha,beta,0);
+}
+
+void Field::
+update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask) const
+{
+  constexpr auto CM = CombineMode::Update;
+  update_cm<CM>("Field::update (masked)",x,alpha,beta,gamma,mask);
+}
+
+template<CombineMode CM>
+void Field::
+update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma) const
 {
   // Check consistency of inputs
-  update_checks(*this,&x,&alpha,&beta);
+  update_checks(caller,*this,x,alpha,beta,gamma);
 
   // Determine if the RHS can contain fill_value entries
   bool fill_aware = x.get_header().may_be_filled();
 
-  constexpr auto CM = CombineMode::Update;
   if (data_type()==DataType::IntType) {
-    auto a = alpha.as<int>();
-    auto b = beta.as<int>();
-    if (fill_aware) {
-      return update_impl<CM,true,int,int>(x,a,b);
-    } else {
-      return update_impl<CM,false,int,int>(x,a,b);
-    }
+    return fill_aware ? update_fill_aware<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),gamma.as<int>())
+                      : update_impl<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),gamma.as<int>());
   } else if (data_type()==DataType::FloatType) {
-    auto a = alpha.as<float>();
-    auto b = beta.as<float>();
-    if (fill_aware) {
-      if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,true,float,float>(x,a,b);
-      else
-        return update_impl<CM,true,float,int>(x,a,b);
-    } else {
-      if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,false,float,float>(x,a,b);
-      else
-        return update_impl<CM,false,float,int>(x,a,b);
-    }
+    if (x.data_type()==DataType::FloatType)
+      return fill_aware ? update_fill_aware<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>())
+                        : update_impl<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>());
+    else
+      return fill_aware ? update_fill_aware<CM,float,int>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>())
+                        : update_impl<CM,float,int>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>());
   } else if (data_type()==DataType::DoubleType) {
-    auto a = alpha.as<double>();
-    auto b = beta.as<double>();
-    if (fill_aware) {
-      if (x.data_type()==DataType::DoubleType)
-        return update_impl<CM,true,double,double>(x,a,b);
-      else if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,true,double,float>(x,a,b);
-      else
-        return update_impl<CM,true,double,int>(x,a,b);
-    } else {
-      if (x.data_type()==DataType::DoubleType)
-        return update_impl<CM,false,double,double>(x,a,b);
-      else if (x.data_type()==DataType::FloatType)
-        return update_impl<CM,false,double,float>(x,a,b);
-      else
-        return update_impl<CM,false,double,int>(x,a,b);
-    }
-  } else {
-    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
+    if (x.data_type()==DataType::DoubleType)
+      return fill_aware ? update_fill_aware<CM,double,double>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>())
+                        : update_impl<CM,double,double>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
+    else if (x.data_type()==DataType::FloatType)
+      return fill_aware ? update_fill_aware<CM,double,float>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>())
+                        : update_impl<CM,double,float>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
+    else
+      return fill_aware ? update_fill_aware<CM,double,int>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>())
+                        : update_impl<CM,double,int>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
+  }
+}
+
+template<CombineMode CM>
+void Field::
+update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask) const
+{
+  // Check consistency of inputs
+  update_checks(caller,*this,x,alpha,beta,gamma,&mask);
+
+  if (data_type()==DataType::IntType) {
+    return update_masked<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),gamma.as<int>(),mask);
+  } else if (data_type()==DataType::FloatType) {
+    if (x.data_type()==DataType::FloatType)
+      return update_masked<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>(),mask);
+    else
+      return update_masked<CM,float,int>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>(),mask);
+  } else if (data_type()==DataType::DoubleType) {
+    if (x.data_type()==DataType::DoubleType)
+      return update_masked<CM,double,double>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>(),mask);
+    else if (x.data_type()==DataType::FloatType)
+      return update_masked<CM,double,float>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>(),mask);
+    else
+      return update_masked<CM,double,int>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>(),mask);
   }
 }
 

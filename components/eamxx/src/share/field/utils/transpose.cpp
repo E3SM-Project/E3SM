@@ -7,7 +7,7 @@ namespace scream {
 namespace impl {
 
 template<typename ST>
-void transpose (const Field& src, Field& tgt) {
+void transpose (const Field& src, const Field& tgt) {
   using exec_space = Field::device_t::execution_space;
   constexpr auto Right = Kokkos::Iterate::Right;
 
@@ -61,7 +61,7 @@ void transpose (const Field& src, Field& tgt) {
 
 } // namespace impl
 
-void transpose (const Field& src, Field& tgt)
+void transpose (const Field& src, const Field& tgt)
 {
   // Check tgt field has the right layout
   const auto& src_id = src.get_header().get_identifier();
@@ -73,12 +73,17 @@ void transpose (const Field& src, Field& tgt)
       " - src field layout: " + src_id.get_layout().to_string() + "\n"
       " - tgt field layout: " + tgt_id.get_layout().to_string() + "\n");
 
-  EKAT_REQUIRE_MSG (src_id.get_units()==tgt_id.get_units(),
-      "Error! Input transpose field units are incompatible with src field.\n"
-      " - src field name: " + src.name() + "\n"
-      " - tgt field name: " + tgt.name() + "\n"
-      " - src field units: " + src_id.get_units().get_si_string() + "\n"
-      " - tgt field units: " + tgt_id.get_units().get_si_string() + "\n");
+  // Check that the source and target field have the same units.  We skip this check if
+  // the units for either field are INVALID
+  using namespace ekat::units;
+  if (src_id.get_units() != Units::invalid() and tgt_id.get_units() != Units::invalid()) {
+    EKAT_REQUIRE_MSG (src_id.get_units()==tgt_id.get_units(),
+        "Error! Input transpose field units are incompatible with src field.\n"
+        " - src field name: " + src.name() + "\n"
+        " - tgt field name: " + tgt.name() + "\n"
+        " - src field units: " + src_id.get_units().get_si_string() + "\n"
+        " - tgt field units: " + tgt_id.get_units().get_si_string() + "\n");
+  }
 
   EKAT_REQUIRE_MSG (src_id.data_type()==tgt_id.data_type(),
       "Error! Input transpose field data type is incompatible with src field.\n"
@@ -113,9 +118,7 @@ void transpose (const Field& src, Field& tgt)
 Field transpose (const Field& src)
 {
   const auto& src_id = src.get_header().get_identifier();
-  FieldIdentifier id(src_id.name()+"_transpose", src_id.get_layout().transpose(),
-                     src_id.get_units(), src_id.get_grid_name(),
-                     src_id.data_type());
+  auto id = src_id.clone(src_id.name()+"_transpose").reset_layout(src_id.get_layout().transpose());
   Field ft (id,true);
   transpose(src,ft);
   return ft;

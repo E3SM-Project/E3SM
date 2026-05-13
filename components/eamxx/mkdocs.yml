@@ -58,6 +58,9 @@ nav:
       - 'P3':
         - 'Autoconversion': 'technical/physics/p3/autoconversion.md'
         - 'Back to Cell Average': 'technical/physics/p3/back_to_cell_average.md'
+        - 'Liquid Relaxation Timescale': 'technical/physics/p3/liq_relaxation_timescale.md'
+        - 'Rime Density': 'technical/physics/p3/rime_density.md'
+        - 'Cloud-Liquid Immersion Freezing': 'technical/physics/p3/cldliq_immersion_freezing.md'
     - 'AeroCom cloud top': 'technical/aerocom_cldtop.md'
 
 edit_uri: ""
