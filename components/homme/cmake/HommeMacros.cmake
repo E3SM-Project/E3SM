@@ -370,16 +370,79 @@ macro (setUpTestDir TEST_DIR)
     MESSAGE(FATAL_ERROR "In test ${TEST_NAME} NUM_CPUS not defined. Quitting")
   ENDIF ()
   IF (NOT ${HOMME_QUEUING})
-    IF (NOT ${USE_NUM_PROCS} STREQUAL "")
-    #IF (USE_NUM_PROCS)
-      #FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${USE_NUM_PROCS}\n") # new line
-      SET(NUM_CPUS ${USE_NUM_PROCS})
-    ELSEIF (${NUM_CPUS} GREATER ${MAX_NUM_PROCS})
-      ##MESSAGE(STATUS "For ${TEST_NAME} the requested number of CPU processes is larger than the number available")
-      ##MESSAGE(STATUS "  Changing NUM_CPU from ${NUM_CPUS} to ${MAX_NUM_PROCS}")
-      ##SET(NUM_CPUS ${MAX_NUM_PROCS})
-      #FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${MAX_NUM_PROCS}\n") # new line
+    IF (${NUM_CPUS} GREATER ${MAX_NUM_PROCS})
+      # Cap NUM_CPUS at MAX_NUM_PROCS.  When CIME passes USE_NUM_PROCS (e.g.
+      # from a _P96 test option), test_execs/CMakeLists.txt maps it to
+      # MAX_NUM_PROCS so it is treated as "up to N ranks available" rather than
+      # "every test must use exactly N ranks".
       SET(NUM_CPUS ${MAX_NUM_PROCS})
+    ENDIF ()
+    # Raise NUM_CPUS toward MAX_NUM_PROCS when there is headroom.  Find the
+    # largest valid MPI count for this test's problem size: the largest divisor
+    # of the total element count that is <= MAX_NUM_PROCS.  For a cube-sphere
+    # grid (topology "cube" or no topology set) total_elements = 6*ne^2; for a
+    # planar grid total_elements = ne_x*ne_y.  We read ne/ne_x/ne_y from the
+    # first namelist file so that both hard-coded values (e.g. ne = 10) and
+    # CMake-variable references (e.g. ne = ${HOMME_TEST_NE}) are handled.
+    IF (${NUM_CPUS} LESS ${MAX_NUM_PROCS} AND NAMELIST_FILES)
+      LIST(GET NAMELIST_FILES 0 _HOMME_FIRST_NL)
+      IF (EXISTS "${_HOMME_FIRST_NL}")
+        FILE(READ "${_HOMME_FIRST_NL}" _HOMME_NL_CONTENTS)
+        # Determine topology: planar if ne_x/ne_y present, cube otherwise.
+          IF ("${_HOMME_NL_CONTENTS}" MATCHES "ne_x[ \t]*=[ \t]*([0-9]+)")
+          SET(_HOMME_NE_X "${CMAKE_MATCH_1}")
+          IF ("${_HOMME_NL_CONTENTS}" MATCHES "ne_y[ \t]*=[ \t]*([0-9]+)")
+            SET(_HOMME_NE_Y "${CMAKE_MATCH_1}")
+          ELSE ()
+            # ne_y not found; assume square domain (ne_y = ne_x).
+            # Note: this silently produces total_elem = ne_x^2, which is correct
+            # for square planar grids.  For non-square grids the namelist should
+            # always define ne_y explicitly to avoid miscalculation.
+            SET(_HOMME_NE_Y "${_HOMME_NE_X}")
+            MESSAGE(STATUS "Test ${TEST_NAME}: ne_y not found in namelist; assuming ne_y = ne_x = ${_HOMME_NE_X} for MPI-count computation")
+          ENDIF ()
+          MATH(EXPR _HOMME_TOTAL_ELEM "${_HOMME_NE_X} * ${_HOMME_NE_Y}")
+        ELSE ()
+          # Cube-sphere: look for ne = <literal> or ne = ${HOMME_TEST_NE}
+          IF ("${_HOMME_NL_CONTENTS}" MATCHES "[\n\t ]ne[ \t]*=[ \t]*([0-9]+)")
+            SET(_HOMME_NE_VAL "${CMAKE_MATCH_1}")
+          ELSEIF ("${_HOMME_NL_CONTENTS}" MATCHES "[\n\t ]ne[ \t]*=[ \t]*\\$\\{HOMME_TEST_NE\\}")
+            SET(_HOMME_NE_VAL "${HOMME_TEST_NE}")
+          ELSE ()
+            SET(_HOMME_NE_VAL "")
+          ENDIF ()
+          IF (_HOMME_NE_VAL)
+            MATH(EXPR _HOMME_TOTAL_ELEM "6 * ${_HOMME_NE_VAL} * ${_HOMME_NE_VAL}")
+          ELSE ()
+            SET(_HOMME_TOTAL_ELEM 0)
+          ENDIF ()
+        ENDIF ()
+        # Find the largest divisor of _HOMME_TOTAL_ELEM that is <= MAX_NUM_PROCS.
+        # Algorithm: linear scan downward from MAX_NUM_PROCS to NUM_CPUS+1,
+        # stopping at the first candidate that evenly divides total_elem.
+        # This is O(MAX_NUM_PROCS - NUM_CPUS) at configure time -- harmless in
+        # practice (MAX_NUM_PROCS is typically <= 128) but worth noting.
+        IF (_HOMME_TOTAL_ELEM GREATER 0)
+          # _HOMME_BEST_CPUS starts at NUM_CPUS (the current value).  If no
+          # larger divisor is found the WHILE loop exits naturally and the
+          # subsequent IF(_HOMME_BEST_CPUS GREATER ...) is false, so NUM_CPUS
+          # is left unchanged -- which is the correct "no improvement" outcome.
+          SET(_HOMME_BEST_CPUS ${NUM_CPUS})
+          SET(_HOMME_CANDIDATE ${MAX_NUM_PROCS})
+          WHILE (_HOMME_CANDIDATE GREATER ${NUM_CPUS})
+            MATH(EXPR _HOMME_REM "${_HOMME_TOTAL_ELEM} % ${_HOMME_CANDIDATE}")
+            IF (_HOMME_REM EQUAL 0)
+              SET(_HOMME_BEST_CPUS ${_HOMME_CANDIDATE})
+              BREAK()
+            ENDIF ()
+            MATH(EXPR _HOMME_CANDIDATE "${_HOMME_CANDIDATE} - 1")
+          ENDWHILE ()
+          IF (_HOMME_BEST_CPUS GREATER ${NUM_CPUS})
+            MESSAGE(STATUS "Test ${TEST_NAME}: raising NUM_CPUS from ${NUM_CPUS} to ${_HOMME_BEST_CPUS} (total_elem=${_HOMME_TOTAL_ELEM}, MAX_NUM_PROCS=${MAX_NUM_PROCS})")
+            SET(NUM_CPUS ${_HOMME_BEST_CPUS})
+          ENDIF ()
+        ENDIF ()
+      ENDIF ()
     ENDIF ()
   ENDIF ()
   FILE(APPEND ${THIS_TEST_SCRIPT} "NUM_CPUS=${NUM_CPUS}\n") # new line
@@ -921,3 +984,31 @@ macro(setSrcMods SRCMODS_PATH SRCS_ALL)
   ENDFOREACH()
   SET(${SRCS_ALL} ${TMP_SRCS_ALL} CACHE INTERNAL "modified sources")
 endmacro(setSrcMods)
+
+# Sets NUM_CPUS = min(USE_NUM_PROCS, MPI_MAX_PROCS).
+# MPI_MAX_PROCS: maximum MPI ranks this test supports (default: 24).
+# Override by setting MPI_MAX_PROCS before calling this macro.
+#
+# Implicit inputs  (read from calling scope, CMake macro convention):
+#   USE_NUM_PROCS  -- the total MPI rank budget allocated by CIME (e.g. from a
+#                     _P24 test option).  If unset or 0, MPI_MAX_PROCS is used
+#                     as the rank count.
+#   MPI_MAX_PROCS  -- per-test rank ceiling (max ranks the problem can use
+#                     without wasting tasks or triggering "too many MPI tasks"
+#                     aborts).  Defaults to 24 if not set before the call.
+# Output (written to calling scope):
+#   NUM_CPUS       -- the resolved MPI rank count: min(USE_NUM_PROCS, MPI_MAX_PROCS).
+macro(set_mpi_num_cpus)
+  if(NOT DEFINED MPI_MAX_PROCS)
+    set(MPI_MAX_PROCS 24)
+  endif()
+  IF (USE_NUM_PROCS)
+    IF (${USE_NUM_PROCS} GREATER ${MPI_MAX_PROCS})
+      SET (NUM_CPUS ${MPI_MAX_PROCS})
+    ELSE ()
+      SET (NUM_CPUS ${USE_NUM_PROCS})
+    ENDIF ()
+  ELSE ()
+    SET (NUM_CPUS ${MPI_MAX_PROCS})
+  ENDIF ()
+endmacro()

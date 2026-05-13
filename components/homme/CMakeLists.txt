@@ -483,6 +483,17 @@ IF (HOMME_USE_KOKKOS)
     # For instance, if HOMME is built inside EAMxx, Kokkos will already be available
     include (EkatBuildKokkos)
   endif()
+
+  # Add --fmad=false for BFB and CUDA
+  if (HOMMEXX_BFB_TESTING AND Kokkos_ENABLE_CUDA AND TARGET kokkoscore)
+    include (EkatSetCompilerFlags)
+    if (Kokkos_ENABLE_COMPILE_AS_CMAKE_LANGUAGE)
+      SetCudaFlags(kokkoscore CUDA_LANG FLAGS --fmad=false)
+    else()
+      SetCudaFlags(kokkoscore FLAGS --fmad=false)
+    endif()
+  endif()
+
 ENDIF ()
 
 # This folder contains the CMake macro used to build cxx unit tests
