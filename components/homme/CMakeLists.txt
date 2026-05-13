@@ -4,6 +4,9 @@ IF (NOT DEFINED PROJECT_NAME)
   # Best practice to put cmake required version at the top
   CMAKE_MINIMUM_REQUIRED(VERSION 3.16)
 
+  # For standalone, set cmake version to C++20. This will be required by Kokkos when switching to v5.
+  set(CMAKE_CXX_STANDARD 20)
+
   # Print the sha of the last commit,
   # useful to double check which version was build in the build folder.
   EXECUTE_PROCESS (COMMAND git rev-parse HEAD
