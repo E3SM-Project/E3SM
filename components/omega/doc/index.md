@@ -110,6 +110,7 @@ design/OmegaV0ShallowWater
 design/OmegaV1GoverningEqns
 design/Broadcast
 design/Config
+design/Coupling
 design/DataTypes
 design/Decomp
 design/Driver
