@@ -54,6 +54,7 @@ void SHOCMacrophysics::create_requests()
 
   const auto m2 = pow(m,2);
   const auto s2 = pow(s,2);
+  const auto nondim = Units::nondimensional();
 
   // These variables are needed by the interface, but not actually passed to shoc_main.
   add_field<Required>("omega",          scalar3d_mid, Pa/s, grid_name, ps);
@@ -74,7 +75,7 @@ void SHOCMacrophysics::create_requests()
   add_field<Required>("p_int",          scalar3d_int, Pa,    grid_name, ps);
   add_field<Required>("pseudo_density", scalar3d_mid, Pa,    grid_name, ps);
   add_field<Required>("phis",           scalar2d    , m2/s2, grid_name);
-  const auto vector3d_mid_6 = m_grid->get_3d_vector_layout(true,6);
+  const auto vector3d_mid_6 = m_grid->get_3d_vector_layout(LEV,6);
   add_field<Required>("tke_shear_strain3d_components", vector3d_mid_6,nondim/s, grid_name, ps);
   add_field<Computed>("tke_shear_strain3d", scalar3d_mid,nondim/s2, grid_name, ps);
 
