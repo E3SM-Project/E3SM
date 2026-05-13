@@ -165,6 +165,7 @@ struct Functions {
 
     void load_runtime_options(ekat::ParameterList& params) {
       apply_tendencies = params.get<bool>("apply_tendencies", apply_tendencies);
+      use_fortran_bridge = params.get<bool>("use_fortran_bridge", use_fortran_bridge);
     }
 
     Real tau;           // convective adjustment time scale
@@ -184,6 +185,7 @@ struct Functions {
     bool clos_dyn_adj;  // flag for mass flux adjustment to CAPE closure
     bool no_deep_pbl;   // flag to eliminate deep convection within PBL
     bool apply_tendencies;
+    bool use_fortran_bridge;
     // ZM micro parameters
     bool zm_microp;     // switch for convective microphysics
     bool old_snow;      // switch to calculate snow prod in zm_conv_evap() (old treatment before zm_microp was implemented)
