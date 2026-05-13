@@ -164,8 +164,36 @@ struct Functions {
     ZmRuntimeOpt() = default;
 
     void load_runtime_options(ekat::ParameterList& params) {
-      apply_tendencies = params.get<bool>("apply_tendencies", apply_tendencies);
-      use_fortran_bridge = params.get<bool>("use_fortran_bridge", use_fortran_bridge);
+      apply_tendencies    = params.get<bool>("apply_tendencies",   false);
+      use_fortran_bridge  = params.get<bool>("use_fortran_bridge", true);
+      tau                 = params.get<Real>("tau", 3600);
+      alfa                = params.get<Real>("alfa", ZMC::alfa);
+      ke                  = params.get<Real>("ke", ZMC::ke);
+      dmpdz               = params.get<Real>("dmpdz", ZMC::dmpdz);
+      tpert_fix           = params.get<bool>("tpert_fix", true);
+      tpert_fac           = params.get<Real>("tpert_fac", 2);
+      tiedke_add          = params.get<Real>("tiedke_add", ZMC::tiedke_add);
+      c0_lnd              = params.get<Real>("c0_lnd", ZMC::c0);
+      c0_ocn              = params.get<Real>("c0_ocn", ZMC::c0);
+      num_cin             = params.get<int>("num_cin", 1);
+      limcnv              = params.get<int>("limcnv", 23); // note - default for E3SMv3 => ne30pg2 w/ L80
+      mx_bot_lyr_adj      = params.get<int>("mx_bot_lyr_adj", 1);
+      trig_dcape          = params.get<bool>("trig_dcape", true);
+      trig_ull            = params.get<bool>("trig_ull", true);
+      clos_dyn_adj        = params.get<bool>("clos_dyn_adj", true);
+      no_deep_pbl         = params.get<bool>("no_deep_pbl", false);
+      // ZM micro parameters
+      zm_microp           = params.get<bool>("zm_microp", false);
+      old_snow            = params.get<bool>("old_snow", false);
+      auto_fac            = params.get<Real>("auto_fac", 7);
+      accr_fac            = params.get<Real>("accr_fac", ZMC::accr_fac);
+      micro_dcs           = params.get<Real>("micro_dcs", 150.E-6);
+      // MCSP parameters
+      mcsp_enabled        = params.get<bool>("mcsp_enabled", true);
+      mcsp_t_coeff        = params.get<Real>("mcsp_t_coeff", ZMC::mcsp_t_coeff);
+      mcsp_q_coeff        = params.get<Real>("mcsp_q_coeff", 0);
+      mcsp_u_coeff        = params.get<Real>("mcsp_u_coeff", 0);
+      mcsp_v_coeff        = params.get<Real>("mcsp_v_coeff", 0);
     }
 
     Real tau;           // convective adjustment time scale
