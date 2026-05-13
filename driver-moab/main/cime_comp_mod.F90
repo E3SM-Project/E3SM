@@ -3040,15 +3040,15 @@ contains
        !  BUT for some sequencing options, have to wait to modify ocean mesh values
        !----------------------------------------------------------
        if (iamin_CPLID .and. (atm_c2_ocn .or. atm_c2_ice)) then
-          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE1_BARRIER')
-          call t_drvstartf ('CPL:OCNPRE1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
+          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPREP_BARRIER')
+          call t_drvstartf ('CPL:OCNPREP',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
           ! save current values of a2x fields on ocean mesh
           call mbGetCellTagVals(mboxid, seq_flds_a2x_fields,a2x_ox_tag_vals,a2x_ox_size)
 
           ! do all a2o mappings which updates mboxid
-          call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre1_atm2ocn')
+          call prep_ocn_calc_a2x_ox(timer='CPL:ocnprep_atm2ocn')
 
           ! move the proj of atm to ice right after calc of a2x_ox
           ! make a2x_ix using a2x_ox so its just a rearrange
@@ -3068,7 +3068,7 @@ contains
           endif
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-          call t_drvstopf  ('CPL:OCNPRE1',cplrun=.true.,hashint=hashint(3))
+          call t_drvstopf  ('CPL:OCNPREP',cplrun=.true.,hashint=hashint(3))
        endif
 
        !----------------------------------------------------------
@@ -3105,11 +3105,11 @@ contains
        if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
            trim(cpl_seq_option) == 'CESM1_MOD_TIGHT') then
        if (iamin_CPLID .and. (atm_c2_ocn .or. atm_c2_ice)) then
-          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE2_BARRIER')
-          call t_drvstartf ('CPL:OCNPRE2',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
+          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPREP2_BARRIER')
+          call t_drvstartf ('CPL:OCNPREP2',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-          call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre2_atm2ocn')
+          call prep_ocn_calc_a2x_ox(timer='CPL:ocnprep2_atm2ocn')
           ! move the proj of atm to ice right after calc of a2x_ox
           if (atm_c2_ice .and. ice_prognostic ) then
              call t_drvstartf ('CPL:ICEPREP',cplrun=.true.,barrier=mpicom_CPLID)
@@ -3121,7 +3121,7 @@ contains
           endif
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-          call t_drvstopf  ('CPL:OCNPRE2',cplrun=.true.,hashint=hashint(3))
+          call t_drvstopf  ('CPL:OCNPREP2',cplrun=.true.,hashint=hashint(3))
        endif
        endif
 
