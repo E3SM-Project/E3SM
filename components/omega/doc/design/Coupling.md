@@ -55,7 +55,7 @@ per-coupling-interval operations should occur.
 
 Private conversion methods must handle unit conversions and state
 variable transformations between Omega's internal representation and
-coupler expectations (e.g., conservative temperature ↔ potential
+coupler expectations (e.g., conservative temperature ↔ in situ
 temperature).
 
 ### 2.8 Requirement: Extensible design
@@ -172,7 +172,7 @@ SurfaceCoupling *SurfaceCoupling::get(const std::string &Name);
 `importFromCoupler` unpacks the driver array into typed member arrays using
 the name→column-index map. The stride calculation is layout-dependent: MCT
 uses `col*NCells + i`, MOAB uses `i*NFields + col`. Unit conversions (e.g.,
-potential → conservative temperature, shortwave clamping) are applied inline.
+in situ → conservative temperature, shortwave clamping) are applied inline.
 
 `exportToCoupler` packs export arrays into the driver array. State fields
 are divided by `NAccumSteps` (interval mean); flux fields are packed directly
@@ -188,7 +188,7 @@ timestep.
 
 #### 4.2.4 Conversion Methods
 
-Temperature conversions between conservative (Omega internal) and potential
+Temperature conversions between conservative (Omega internal) and in situ
 (coupler expectation) are handled as private static methods. Simple
 constant-factor conversions are applied directly in import/export methods.
 
