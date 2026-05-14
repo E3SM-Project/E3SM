@@ -29,13 +29,12 @@ TEST_CASE ("data_interpolation_setup")
   auto p_grid = grid->clone("pressure_grid",true);
   p_grid->reset_vertical_configuration(nlevs, AbstractGrid::VKind::Pressure);
 
-  // Create and setup three files:
-  //  - the first two cover the original 12-month dataset
-  //  - the third extends the periodic database beyond one year for start_ts tests
+  // Create and setup four files (one every 6 months)
   std::vector<std::string> files = {
     "data_interpolation_0",
     "data_interpolation_1",
-    "data_interpolation_2"
+    "data_interpolation_2",
+    "data_interpolation_3"
   };
 
   for (auto use_p_grid : {true, false}) {
@@ -105,19 +104,15 @@ TEST_CASE ("data_interpolation_setup")
     }
 
     int nfields = fields.size() - 1; // Don't handle p1d, since it's done above
-    for (int mm=0; mm<18; ++mm) {
+    for (int mm=0; mm<num_data_months; ++mm) {
       std::string file_name = "data_interpolation_" + std::to_string(mm/6) + suffix;
 
-      // We start the files with July
-      int mm_index = mm+6;
+      // We start the files with June
       scorpio::update_time(file_name,time.days_from(t_ref));
       for (int i=0; i<nfields; ++i) {
         auto& f = fields[i];
         f.deep_copy(base_fields[i]);
-        auto delta = delta_data[mm_index % 12];
-        if (mm>=12) {
-          delta += 1000.0;
-        }
+        auto delta = delta_data[mm];
         f.update(ones[i],delta,1.0);
         f.sync_to_host();
         scorpio::write_var(file_name,f.name(),f.get_internal_view_data<Real,Host>());

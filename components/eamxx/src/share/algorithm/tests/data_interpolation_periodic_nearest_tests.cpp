@@ -27,8 +27,8 @@ TEST_CASE ("interpolation_periodic_nearest")
 
   // We assume we start with t0 sometime between the first and second input slice.
   auto t_beg = reset_year(get_last_slice_time(),2019);
-  strvec_t files         = {"data_interpolation_0.nc",        "data_interpolation_1.nc"};
-  strvec_t files_no_ilev = {"data_interpolation_0_no_ilev.nc","data_interpolation_1_no_ilev.nc"};
+  strvec_t files         = {"data_interpolation_0.nc",        "data_interpolation_1.nc",        "data_interpolation_2.nc"        };
+  strvec_t files_no_ilev = {"data_interpolation_0_no_ilev.nc","data_interpolation_1_no_ilev.nc","data_interpolation_2_no_ilev.nc"};
 
   SECTION ("no-horiz") {
     SECTION ("no-vert") {

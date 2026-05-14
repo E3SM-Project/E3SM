@@ -24,7 +24,12 @@ constexpr int fine_nlevs = 64;
 const std::string map_file_name = "map_file_for_data_interp.nc";
 
 // At each month in the input data, we are adding a delta to the "base" value of the fields.
-constexpr double delta_data[12] = {0, 30, 60, 90, 120, 150, 180, 150, 120, 90, 60, 30};
+// The delta is almost periodic, but the 2nd year it adds 1 to the 1st year values
+constexpr int num_data_months = 24;
+constexpr double delta_data[num_data_months] = {
+  0, 30, 60, 90, 120, 150, 180, 150, 120, 90, 60, 30,
+  1, 31, 61, 91, 121, 151, 181, 151, 121, 91, 61, 31
+};
 
 // Give ourselves some room for roundoff errors, since our manual
 // evaluation may be different (in finite prec) from the one in the class.
@@ -38,24 +43,19 @@ constexpr auto P3D = DataInterpolation::Dynamic3D;
 using strvec_t = std::vector<std::string>;
 
 inline util::TimeStamp get_t_ref () {
-  return util::TimeStamp ({2010,1,1},{0,0,0});
+  return util::TimeStamp ({0001,1,1},{0,0,0});
 }
 
 // Slices are at midnight between 15th and 16th of each month
-// First slice is Jul 15th
+// First slice is Jun 15th
 inline util::TimeStamp get_first_slice_time () {
-  // 15 days after the reference time
-  auto t = get_t_ref() + spd*15;      // Mid Jan
-  for (int mm=0; mm<6; ++mm) {
-    t += spd*t.days_in_curr_month();
-  }
-  return t;
+  return get_t_ref() + spd*15; // Mid of the month
 }
 
 inline util::TimeStamp get_last_slice_time () {
   // 11 months after the 1st slice
   auto t = get_first_slice_time();
-  for (int mm=0; mm<11; ++mm) {
+  for (int mm=0; mm<(num_data_months-1); ++mm) {
     t += spd*t.days_in_curr_month();
   }
   return t;
@@ -289,6 +289,7 @@ void run_tests (const std::shared_ptr<const AbstractGrid>& grid,
   REQUIRE_THROWS (interp->run(t0+60*spd));
 
   // Loop for two year at a 20 day increment
+  bool periodic = timeline==util::TimeLine::YearlyPeriodic;
   int dt = 20*spd;
   for (auto time = t0+dt; time.days_from(t0)<365; time+=dt) {
     if (t_end<time) {
@@ -307,22 +308,12 @@ void run_tests (const std::shared_ptr<const AbstractGrid>& grid,
     util::TimeInterval time_from_beg(t_beg,time,timeline);
     double alpha = time_from_beg.length / t_beg.days_in_curr_month();
 
-    // Just in case our testing logic is buggy, the run call below should print
-    // similar information, so we can more easily debug.
-    if (alpha<0 or alpha>1) {
-      std::cout << "TEST ERROR:\n"
-                << " t beg: " << t_beg.to_string() << "\n"
-                << " t end: " << t_end.to_string() << "\n"
-                << " time : " << time.to_string() << "\n"
-                << " t-beg: " << time_from_beg.length << "\n"
-                << " days in mm_beg: " << t_beg.days_in_curr_month() << "\n"
-                << " alpha: " << alpha << "\n";
-    }
-
     if (time_interp_type==DataInterpolation::Nearest) {
       alpha = alpha>0.5 ? 1 : 0;
     }
-    double delta = delta_data[mm_beg]*(1-alpha) + delta_data[mm_end]*alpha;
+    int data_mm_beg = mm_beg + (periodic ? 0 : 12*(t_beg.get_year()-get_t_ref().get_year()));
+    int data_mm_end = mm_end + (periodic ? 0 : 12*(t_end.get_year()-get_t_ref().get_year()));
+    double delta = delta_data[data_mm_beg]*(1-alpha) + delta_data[data_mm_end]*alpha;
 
     // Compute expected difference from base value
     interp->run(time);
