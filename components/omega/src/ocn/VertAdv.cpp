@@ -355,11 +355,13 @@ void VertAdv::readConfigOptions(Config *OmegaConfig) {
 
 //------------------------------------------------------------------------------
 // Compute VerticalVelocity and TotalVerticalVelocity from the horizontal
-// velocity (NormalVelocity) and the layer thickness used for fluxes through
-// edges (FluxLayerThickEdge)
+// velocity (NormalVelocity), the layer thickness used for fluxes through
+// edges (FluxLayerThickEdge), and the cell-based LayerThickness.
 void VertAdv::computeVerticalVelocity(
-    const Array2DReal &NormalVelocity,    //< [in] horizontal velocity
-    const Array2DReal &FluxLayerThickEdge //< [in] layer thickness at edges
+    const Array2DReal &NormalVelocity,     //< [in] horizontal velocity
+    const Array2DReal &FluxLayerThickEdge, //< [in] layer thickness at edges
+    const Array2DReal &LayerThickness,     //< [in] pseudo thickness of layer
+    const Real Dt                          //< [in] time interval
 ) {
 
    // Return if mesh only has a single vertical layer
@@ -367,6 +369,8 @@ void VertAdv::computeVerticalVelocity(
       return;
 
    OMEGA_SCOPE(LocVertVel, VerticalVelocity);
+   OMEGA_SCOPE(LocTotVertVel, TotalVerticalVelocity);
+   OMEGA_SCOPE(LocThickTarget, VCoord->LayerThicknessTarget);
    OMEGA_SCOPE(LocNVertLayers, NVertLayers);
    OMEGA_SCOPE(LocAreaCell, Mesh->AreaCell);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
@@ -416,8 +420,10 @@ void VertAdv::computeVerticalVelocity(
           // Set velocity through top and bottom interfaces to zero
           Kokkos::single(
               PerTeam(Team), INNER_LAMBDA() {
-                 LocVertVel(ICell, KMin)     = 0.;
-                 LocVertVel(ICell, KMax + 1) = 0.;
+                 LocVertVel(ICell, KMin)        = 0.;
+                 LocVertVel(ICell, KMax + 1)    = 0.;
+                 LocTotVertVel(ICell, KMin)     = 0.;
+                 LocTotVertVel(ICell, KMax + 1) = 0.;
               });
           KRange = vertRange(KMin + 1, KMax);
 
@@ -432,15 +438,24 @@ void VertAdv::computeVerticalVelocity(
                     LocVertVel(ICell, KRev) = Accum;
                  }
               });
+
+          // Add contribution to transport velocity from movement of layer
+          // interfaces, store in TotalVerticalVelocity.
+          parallelScanInner(
+              Team, KRange, INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
+                 const I4 KRev      = KMax - K;
+                 const Real AleTerm = (LocThickTarget(ICell, KRev) -
+                                       LayerThickness(ICell, KRev)) /
+                                      Dt;
+
+                 Accum -= DivHU(KRev) + AleTerm;
+
+                 if (IsFinal) {
+                    LocTotVertVel(ICell, KRev) = Accum;
+                 }
+              });
        },
        NVertLayers);
-
-   // TODO: currently assuming TotalVerticalVelocity = VerticalVelocity, i.e.
-   //  purely from divergence of horizontal velocity. Need to add optional
-   //  corrections to transport velocity from other contributions, e.g.
-   //  movement of vertical interfaces, contribution of horizontal velocity
-   //  through tilted interface.
-   deepCopy(TotalVerticalVelocity, VerticalVelocity);
 
 } // end computeVerticalVelocity
 

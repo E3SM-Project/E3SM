@@ -73,6 +73,11 @@ void IOStream::init(Clock *&ModelClock //< [inout] Omega model clock
 /// Initialize with no clock. Convenience overload for testing.
 void IOStream::init(void) {
 
+   // Create a calendar if one is not already defined
+   if (!Calendar::isDefined()) {
+      Calendar::init("No Leap");
+   }
+
    // Create an empty dummy clock on the stack (no heap alloc)
    Clock ModelClockObj;
    Clock *ModelClock = &ModelClockObj;
@@ -134,6 +139,15 @@ IOStream::get(const std::string &StreamName ///< [in] name of stream to retrieve
    return AllStreams[StreamName];
 
 } // End get stream
+
+//------------------------------------------------------------------------------
+// Retrieves a string with the filename for the stream with the input name
+std::string
+IOStream::getFilename(const std::string &StreamName ///< [in] name of stream
+) {
+   auto StreamPtr = get(StreamName);
+   return StreamPtr->Filename;
+} // End getFilename
 
 //------------------------------------------------------------------------------
 // Adds a field to the contents of a stream. Because streams may be created
@@ -1619,6 +1633,11 @@ Error IOStream::readFieldData(
    if (pos != std::string::npos) {
       OldFieldName.replace(pos, OmegaSubStr.length(), MPASSubStr);
    }
+   // Analog of RefPseudoThickness in MPAS is restingThickness
+   std::string OmegaStr = "RefPseudoThickness";
+   if (FieldName == OmegaStr) {
+      OldFieldName = "restingThickness";
+   }
    bool OnHost          = FieldPtr->isOnHost();
    bool IsDistributed   = FieldPtr->isDistributed();
    bool IsTimeDependent = FieldPtr->isTimeDependent();
@@ -2257,8 +2276,10 @@ Error IOStream::readFieldData(
 
    } // end switch data type
 
-   // Clean up the decomp
-   IO::destroyDecomp(DecompID);
+   if (IsDistributed) {
+      // Clean up the decomp if necessary
+      IO::destroyDecomp(DecompID);
+   }
 
    return Err;
 

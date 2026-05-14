@@ -867,11 +867,14 @@ void Tendencies::computeVelocityTendencies(
     int ThickTimeLevel,             ///< [in] Time level
     int VelTimeLevel,               ///< [in] Time level
     int TracerTimeLevel,            ///< [in] Time level
-    TimeInstant Time                ///< [in] Time
+    TimeInstant Time,               ///< [in] Time
+    TimeInterval ProjDt ///< [in] Time interval for projection over the current
+                        ///< time stepper stage
 ) {
    Pacer::start("Tend:computeVelocityTendencies", 1);
 
-   AuxState->computeMomAux(State, TracerArray, ThickTimeLevel, VelTimeLevel);
+   AuxState->computeMomAux(State, TracerArray, ThickTimeLevel, VelTimeLevel,
+                           ProjDt);
    computeVelocityTendenciesOnly(State, AuxState, TracerArray, ThickTimeLevel,
                                  VelTimeLevel, TracerTimeLevel, Time);
 
@@ -929,9 +932,12 @@ void Tendencies::computeAllTendencies(
     int ThickTimeLevel,             ///< [in] Time level
     int VelTimeLevel,               ///< [in] Time level
     int TracerTimeLevel,            ///< [in] Time level
-    TimeInstant Time                ///< [in] Time
+    TimeInstant Time,               ///< [in] Time
+    TimeInterval ProjDt ///< [in] Time interval for projection over the current
+                        ///< time stepper stage
 ) {
-   AuxState->computeAll(State, TracerArray, ThickTimeLevel, VelTimeLevel);
+   AuxState->computeAll(State, TracerArray, ThickTimeLevel, VelTimeLevel,
+                        ProjDt);
 
    computeThicknessTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
                                   Time);

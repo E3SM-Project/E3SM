@@ -123,10 +123,12 @@ class VertAdv {
    void readConfigOptions(Config *Options);
 
    /// Determine transport due to vertical advection from divergence of
-   /// horizontal advection.
+   /// horizontal advection and movement of vertical interfaces.
    void computeVerticalVelocity(
-       const Array2DReal &NormalVelocity,    ///< [in] horizontal velocity
-       const Array2DReal &FluxLayerThickEdge ///< [in] layer thickness at edges
+       const Array2DReal &NormalVelocity,     ///< [in] horizontal velocity
+       const Array2DReal &FluxLayerThickEdge, ///< [in] layer thickness at edges
+       const Array2DReal &LayerThickness, ///< [in] pseudo thickness of layer
+       const Real Dt                      ///< [in] time interval
    );
 
    /// Compute pseudo thickness tendency due to vertical advection

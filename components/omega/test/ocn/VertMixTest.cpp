@@ -16,6 +16,7 @@
 #include "Field.h"
 #include "HorzMesh.h"
 #include "IO.h"
+#include "IOStream.h"
 #include "Logging.h"
 #include "MachEnv.h"
 #include "OceanTestCommon.h"
@@ -79,6 +80,9 @@ void initVertMixTest() {
 
    /// Initialize decomposition
    Decomp::init();
+
+   /// Initialize streams
+   IOStream::init();
 
    /// Initialize Halo
    Halo::init();

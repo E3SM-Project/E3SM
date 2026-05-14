@@ -83,14 +83,16 @@ class AuxiliaryState {
 
    // Compute all auxiliary variables needed for momentum equation
    void computeMomAux(const OceanState *State, const Array3DReal &TracerArray,
-                      int ThickTimeLevel, int VelTimeLevel) const;
+                      int ThickTimeLevel, int VelTimeLevel,
+                      const TimeInterval ProjDt) const;
 
    /// Compute all auxiliary variables based on an ocean state at a given time
    /// level
    void computeAll(const OceanState *State, const Array3DReal &TracerArray,
-                   int ThickTimeLevel, int VelTimeLevel) const;
+                   int ThickTimeLevel, int VelTimeLevel,
+                   const TimeInterval ProjDt) const;
    void computeAll(const OceanState *State, const Array3DReal &TracerArray,
-                   int TimeLevel) const;
+                   int TimeLevel, const TimeInterval ProjDt) const;
 
  private:
    AuxiliaryState(const std::string &Name, const HorzMesh *Mesh, Halo *MeshHalo,

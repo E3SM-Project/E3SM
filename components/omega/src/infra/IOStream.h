@@ -295,6 +295,12 @@ class IOStream {
    );
 
    //---------------------------------------------------------------------------
+   // Retrieve the filename for a given stream
+   static std::string
+   getFilename(const std::string &StreamName ///< [in] name of stream
+   );
+
+   //---------------------------------------------------------------------------
    /// Adds a field to the contents of a stream. Because streams may be created
    /// before all Fields have been defined, we only store the name. Validity
    /// is either checked during read/write or can be checked using the validate

@@ -65,29 +65,8 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
                   "is explicitly provided, which is not a valid combination");
    }
 
-   // Read Config for movement weight type, store in enum
-   Config VCoordConfig("VertCoord");
-   Err += Options->get(VCoordConfig);
-   CHECK_ERROR_ABORT(Err, "VertCoord: VertCoord group not found in Config");
-
-   std::string MovementWeightStr;
-   Err += VCoordConfig.get("MovementWeightType", MovementWeightStr);
-   CHECK_ERROR_ABORT(Err,
-                     "VertCoord: MovementWeightType not found in VertCoord");
-
-   if (MovementWeightStr == "Fixed") {
-      MvmtWgtChoice = MovementWeightType::Fixed;
-   } else if (MovementWeightStr == "Uniform") {
-      MvmtWgtChoice = MovementWeightType::Uniform;
-   } else {
-      ABORT_ERROR("VertCoord: Unknown MovementWeightType requested");
-   }
-
    // Store name suffix
    Name = Name_;
-
-   // Retrieve mesh filename from Decomp
-   MeshFileName = Decomp->MeshFileName;
 
    // If InNVertlayers is 0 (default), attempt to read the dimension from the
    // mesh file. If the mesh file does not define a vertical dimension, use
@@ -95,18 +74,23 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    // use that value is instead.
    if (InNVertLayers == 0) {
 
+      // Retrieve filename from stream
+      std::string Filename = IOStream::getFilename("InitialVertCoord");
+      int FileID;
+
       std::string OmegaDimName = "NVertLayers";
       std::string MPASDimName  = "nVertLevels";
 
-      // Open the mesh file for reading (assume IO has already been initialized)
-      IO::openFileRead(MeshFileID, MeshFileName);
+      // Open the file for reading (assume IO has already been initialized)
+      IO::openFileRead(FileID, Filename);
 
       // Set NVertLayers
       I4 NVertLayersID;
-      Err = IO::getDimFromFile(MeshFileID, OmegaDimName, NVertLayersID,
-                               NVertLayers);
+      Err =
+          IO::getDimFromFile(FileID, OmegaDimName, NVertLayersID, NVertLayers);
+
       if (Err.isFail()) { // dim not found, try again with older MPAS name
-         Err = IO::getDimFromFile(MeshFileID, MPASDimName, NVertLayersID,
+         Err = IO::getDimFromFile(FileID, MPASDimName, NVertLayersID,
                                   NVertLayers);
          if (Err.isFail()) {
             LOG_INFO("VertCoord: vertical dimension not found in mesh file, "
@@ -114,6 +98,9 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
             NVertLayers = 1;
          }
       }
+
+      IO::closeFile(FileID);
+
    } else {
       NVertLayers = InNVertLayers;
    }
@@ -163,8 +150,10 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    GeopotentialMid = Array2DReal("GeopotentialMid", NCellsSize, NVertLayers);
    LayerThicknessTarget =
        Array2DReal("LayerThicknessTarget", NCellsSize, NVertLayers);
-   RefLayerThickness =
-       Array2DReal("RefLayerThickness", NCellsSize, NVertLayers);
+   RefPseudoThickness =
+       Array2DReal("RefPseudoThickness", NCellsSize, NVertLayers);
+   VertCoordMovementWeights =
+       Array1DReal("VertCoordMovementWeights", NVertLayers);
 
    // TODO: Temporary handling of SurfacePressure
    SurfacePressure = Array1DReal("SurfacePressure", NCellsSize);
@@ -177,7 +166,6 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    ZMidH                 = createHostMirrorCopy(ZMid);
    GeopotentialMidH      = createHostMirrorCopy(GeopotentialMid);
    LayerThicknessTargetH = createHostMirrorCopy(LayerThicknessTarget);
-   RefLayerThicknessH    = createHostMirrorCopy(RefLayerThickness);
 
    // Define field metadata
    defineFields();
@@ -191,9 +179,6 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
 
    // Set computational masks
    setMasks();
-
-   // Initialize movement weights
-   initMovementWeights();
 
 } // end constructor
 
@@ -233,6 +218,8 @@ void VertCoord::defineFields() {
    MinLayerCellFldName   = "MinLayerCell";
    MaxLayerCellFldName   = "MaxLayerCell";
    BottomDepthFldName    = "BottomDepth";
+   RefPseudoThickFldName = "RefPseudoThickness";
+   VCoordMvmtWgtsFldName = "VertCoordMovementWeights";
    PressInterfFldName    = "PressureInterface";
    PressMidFldName       = "PressureMid";
    ZInterfFldName        = "ZInterface";
@@ -244,6 +231,8 @@ void VertCoord::defineFields() {
       MinLayerCellFldName.append(Name);
       MaxLayerCellFldName.append(Name);
       BottomDepthFldName.append(Name);
+      RefPseudoThickFldName.append(Name);
+      VCoordMvmtWgtsFldName.append(Name);
       PressInterfFldName.append(Name);
       PressMidFldName.append(Name);
       ZInterfFldName.append(Name);
@@ -298,6 +287,41 @@ void VertCoord::defineFields() {
 
    NDims = 2;
    DimNames.resize(NDims);
+   DimNames[1] = "NVertLayers";
+
+   auto RefPseudoThickField = Field::create(
+       RefPseudoThickFldName, // field name
+       "Reference pseudo thickness of ocean layers without SSH or internal "
+       "perturbation",                   // long name or description
+       "m",                              // units
+       "",                               // CF standard Name
+       0.0,                              // min valid value
+       std::numeric_limits<Real>::max(), // max valid value
+       FillValueReal,                    // scalar for undefined entries
+       NDims,                            // number of dimensions
+       DimNames                          // dimension names
+   );
+
+   NDims = 1;
+   DimNames.resize(NDims);
+   DimNames[0] = "NVertLayers";
+
+   auto VertCoordMvmtWgtsField = Field::create(
+       VCoordMvmtWgtsFldName, // field name
+       "Weights for distributing changes in total column thickness across "
+       "layers",                         // long name or description
+       "",                               // units
+       "",                               // CF standard Name
+       0.0,                              // min valid value
+       std::numeric_limits<Real>::max(), // max valid value
+       FillValueReal,                    // scalar for undefined entries
+       NDims,                            // number of dimensions
+       DimNames                          // dimension names
+   );
+
+   NDims = 2;
+   DimNames.resize(NDims);
+   DimNames[0] = "NCells";
    DimNames[1] = "NVertLayersP1";
 
    auto PressureInterfaceField = Field::create(
@@ -385,10 +409,14 @@ void VertCoord::defineFields() {
    InitVCoordGroup->addField(MinLayerCellFldName);
    InitVCoordGroup->addField(MaxLayerCellFldName);
    InitVCoordGroup->addField(BottomDepthFldName);
+   InitVCoordGroup->addField(RefPseudoThickFldName);
+   InitVCoordGroup->addField(VCoordMvmtWgtsFldName);
 
    MinLayerCellField->attachData<Array1DI4>(MinLayerCell);
    MaxLayerCellField->attachData<Array1DI4>(MaxLayerCell);
    BottomDepthField->attachData<Array1DReal>(BottomDepth);
+   RefPseudoThickField->attachData<Array2DReal>(RefPseudoThickness);
+   VertCoordMvmtWgtsField->attachData<Array1DReal>(VertCoordMovementWeights);
 
    // Create a field group for VertCoord fields
    GroupName = "VertCoord";
@@ -422,6 +450,8 @@ VertCoord::~VertCoord() {
       Field::destroy(MinLayerCellFldName);
       Field::destroy(MaxLayerCellFldName);
       Field::destroy(BottomDepthFldName);
+      Field::destroy(RefPseudoThickFldName);
+      Field::destroy(VCoordMvmtWgtsFldName);
       FieldGroup::destroy(InitGroupName);
    }
 
@@ -464,6 +494,8 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
    OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
    OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
    OMEGA_SCOPE(LocBottomDepth, BottomDepth);
+   OMEGA_SCOPE(LocPseudoThick, RefPseudoThickness);
+   OMEGA_SCOPE(LocVCoordMvmtWgts, VertCoordMovementWeights);
 
    // If ReadStream is true (default) attempt to read values for MinLayerCell,
    // MaxLayerCell, and BottomDepth from the InitialVertCoord stream. Otherwise,
@@ -478,6 +510,8 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
       deepCopy(MinLayerCell, FillValueI4);
       deepCopy(MaxLayerCell, FillValueI4);
       deepCopy(BottomDepth, FillValueReal);
+      deepCopy(RefPseudoThickness, FillValueReal);
+      deepCopy(VertCoordMovementWeights, FillValueReal);
 
       // Fetch input stream and validate
       std::string StreamName = "InitialVertCoord";
@@ -536,6 +570,40 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
                ABORT_ERROR("VertCoord: Error reading bottomDepth from {}",
                            StreamName);
             }
+            Real Sum4 = 0.;
+            parallelReduce(
+                {RefPseudoThickness.extent_int(0),
+                 RefPseudoThickness.extent_int(1)},
+                KOKKOS_LAMBDA(int I, int J, Real &Accum) {
+                   Accum += LocPseudoThick(I, J);
+                },
+                Sum4);
+            if (Sum4 < 0.) {
+               ABORT_ERROR("VertCoord: Error reading RefPseudoThickness "
+                           "from {}",
+                           StreamName);
+            }
+            Real Sum5     = 0.;
+            I4 NumNonZero = 0;
+            parallelReduce(
+                {VertCoordMovementWeights.extent_int(0)},
+                KOKKOS_LAMBDA(int I, Real &Accum, I4 &NonZeroCount) {
+                   Real W = LocVCoordMvmtWgts(I);
+                   Accum += W;
+                   if (W != 0) {
+                      NonZeroCount += 1;
+                   }
+                },
+                Sum5, NumNonZero);
+            if (Sum5 < 0.) {
+               ABORT_ERROR("VertCoord: Error reading VertCoordMovementWeights "
+                           "from {}",
+                           StreamName);
+            }
+            if (NumNonZero == 0) {
+               // TODO: ABORT_ERROR when all weights equal 0
+               deepCopy(VertCoordMovementWeights, 1._Real);
+            }
          }
       } else {
          ABORT_ERROR("Error validating IO stream {}", StreamName);
@@ -543,6 +611,7 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
    } else {
       deepCopy(MinLayerCell, 1);
       deepCopy(MaxLayerCell, NVertLayers);
+      deepCopy(VertCoordMovementWeights, 1._Real);
    }
 
    // Subtract 1 to convert to zero-based indexing
@@ -556,6 +625,7 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
    MeshHalo->exchangeFullArrayHalo(MinLayerCell, OnCell);
    MeshHalo->exchangeFullArrayHalo(MaxLayerCell, OnCell);
    MeshHalo->exchangeFullArrayHalo(BottomDepth, OnCell);
+   MeshHalo->exchangeFullArrayHalo(RefPseudoThickness, OnCell);
 
    // The index ICell = NCellsAll represents an inactive cell
    OMEGA_SCOPE(LocNCellsAll, NCellsAll);
@@ -567,9 +637,11 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
        });
 
    // Make host copies for device arrays read from mesh file
-   MaxLayerCellH = createHostMirrorCopy(MaxLayerCell);
-   MinLayerCellH = createHostMirrorCopy(MinLayerCell);
-   BottomDepthH  = createHostMirrorCopy(BottomDepth);
+   MaxLayerCellH             = createHostMirrorCopy(MaxLayerCell);
+   MinLayerCellH             = createHostMirrorCopy(MinLayerCell);
+   BottomDepthH              = createHostMirrorCopy(BottomDepth);
+   RefPseudoThicknessH       = createHostMirrorCopy(RefPseudoThickness);
+   VertCoordMovementWeightsH = createHostMirrorCopy(VertCoordMovementWeights);
 }
 
 //------------------------------------------------------------------------------
@@ -831,29 +903,6 @@ void VertCoord::setMasks() {
 } // end setMasks()
 
 //------------------------------------------------------------------------------
-// Store VertCoordMovementWeights based on config choice
-void VertCoord::initMovementWeights() {
-
-   Error Err; // default successful error code
-
-   VertCoordMovementWeights =
-       Array1DReal("VertCoordMovementWeights", NVertLayers);
-
-   OMEGA_SCOPE(LocVertCoordMovementWeights, VertCoordMovementWeights);
-   if (MvmtWgtChoice == MovementWeightType::Fixed) {
-      deepCopy(VertCoordMovementWeights, 0._Real);
-      parallelFor(
-          {1}, KOKKOS_LAMBDA(const int &) {
-             LocVertCoordMovementWeights(0) = 1._Real;
-          });
-   } else if (MvmtWgtChoice == MovementWeightType::Uniform) {
-      deepCopy(VertCoordMovementWeights, 1._Real);
-   }
-
-   VertCoordMovementWeightsH = createHostMirrorCopy(VertCoordMovementWeights);
-}
-
-//------------------------------------------------------------------------------
 // Compute the pressure at each layer interface and midpoint given the
 // LayerThickness and SurfacePressure. Hierarchical parallelism is used with a
 // parallel_for loop over all cells and a parallel_scan performing a prefix sum
@@ -971,7 +1020,7 @@ void VertCoord::computeGeopotential(
 
 //------------------------------------------------------------------------------
 // Compute the desired target thickness, given PressureInterface,
-// RefLayerThickness, and VertCoordMovementWeights. Hierarchical parallelsim is
+// RefPseudoThickness, and VertCoordMovementWeights. Hierarchical parallelsim is
 // used with an outer parallel_for loop over cells, and 2 paralel_reduce
 // reductions and a parallel_for over the active layers within a column.
 void VertCoord::computeTargetThickness() {
@@ -980,7 +1029,7 @@ void VertCoord::computeTargetThickness() {
    OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
    OMEGA_SCOPE(LocLayerThickTarget, LayerThicknessTarget);
    OMEGA_SCOPE(LocPressInterf, PressureInterface);
-   OMEGA_SCOPE(LocRefLayerThick, RefLayerThickness);
+   OMEGA_SCOPE(LocRefPseudoThick, RefPseudoThickness);
    OMEGA_SCOPE(LocVertCoordMvmtWgts, VertCoordMovementWeights);
 
    parallelForOuter(
@@ -999,10 +1048,10 @@ void VertCoord::computeTargetThickness() {
           parallelReduceInner(
               Team, KRange,
               INNER_LAMBDA(const int K, Real &LocalWh, Real &LocalSum) {
-                 const I4 KLyr            = K + KMin;
-                 const Real RefLayerThick = LocRefLayerThick(ICell, KLyr);
-                 LocalWh += LocVertCoordMvmtWgts(KLyr) * RefLayerThick;
-                 LocalSum += RefLayerThick;
+                 const I4 KLyr             = K + KMin;
+                 const Real RefPseudoThick = LocRefPseudoThick(ICell, KLyr);
+                 LocalWh += LocVertCoordMvmtWgts(KLyr) * RefPseudoThick;
+                 LocalSum += RefPseudoThick;
               },
               SumWh, SumRefH);
           Coeff -= SumRefH;
@@ -1016,7 +1065,7 @@ void VertCoord::computeTargetThickness() {
                  for (int KVec = 0; KVec < KLen; ++KVec) {
                     const I4 K = KStart + KVec;
                     LocLayerThickTarget(ICell, K) =
-                        LocRefLayerThick(ICell, K) *
+                        LocRefPseudoThick(ICell, K) *
                         (1._Real + Coeff * LocVertCoordMvmtWgts(K) / SumWh);
                  }
               });
@@ -1033,7 +1082,7 @@ void VertCoord::copyToHost() {
    deepCopy(ZMidH, ZMid);
    deepCopy(GeopotentialMidH, GeopotentialMid);
    deepCopy(LayerThicknessTargetH, LayerThicknessTarget);
-   deepCopy(RefLayerThicknessH, RefLayerThickness);
+   deepCopy(RefPseudoThicknessH, RefPseudoThickness);
 }
 
 //------------------------------------------------------------------------------
@@ -1046,7 +1095,7 @@ void VertCoord::copyToDevice() {
    deepCopy(ZMid, ZMidH);
    deepCopy(GeopotentialMid, GeopotentialMidH);
    deepCopy(LayerThicknessTarget, LayerThicknessTargetH);
-   deepCopy(RefLayerThickness, RefLayerThicknessH);
+   deepCopy(RefPseudoThickness, RefPseudoThicknessH);
 }
 
 //------------------------------------------------------------------------------

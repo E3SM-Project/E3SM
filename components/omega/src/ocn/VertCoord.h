@@ -26,11 +26,6 @@
 
 namespace OMEGA {
 
-enum class MovementWeightType {
-   Fixed,  /// Distribute perturbations in top level
-   Uniform /// Uniform stretching
-};
-
 KOKKOS_INLINE_FUNCTION int vertRange(int KMin, int KMax) {
    return KMax - KMin + 1;
 }
@@ -69,12 +64,6 @@ class VertCoord {
    I4 VertexDegree;
    Array2DI4 CellsOnEdge;
    Array2DI4 CellsOnVertex;
-
-   // Choice of VertCoorMovementWeight type
-   MovementWeightType MvmtWgtChoice;
-
-   std::string MeshFileName;
-   int MeshFileID;
 
    static VertCoord *DefaultVertCoord;
    static std::map<std::string, std::unique_ptr<VertCoord>> AllVertCoords;
@@ -142,10 +131,10 @@ class VertCoord {
 
    // p star coordinate variables
    Array1DReal VertCoordMovementWeights;
-   Array2DReal RefLayerThickness;
+   Array2DReal RefPseudoThickness;
 
    HostArray1DReal VertCoordMovementWeightsH;
-   HostArray2DReal RefLayerThicknessH;
+   HostArray2DReal RefPseudoThicknessH;
 
    // Masks
    Array2DReal EdgeMask;        ///< Mask to determine if computations should be
@@ -180,11 +169,14 @@ class VertCoord {
    std::string MinLayerCellFldName;   ///< Field name for MinLayerCell
    std::string MaxLayerCellFldName;   ///< Field name for MaxLayerCell
    std::string BottomDepthFldName;    ///< Field name for BottomDepth
-   std::string PressInterfFldName;    ///< Field name for interface pressure
-   std::string PressMidFldName;       ///< Field name for midpoint pressure
-   std::string ZInterfFldName;        ///< Field name for interface Z height
-   std::string ZMidFldName;           ///< Field name for midpoint Z height
-   std::string GeopotFldName;         ///< Field name for geopotential
+   std::string RefPseudoThickFldName; ///< Field name for RefPseudoThickness
+   std::string
+       VCoordMvmtWgtsFldName;      ///< Field name for VertCoordMovementWeights
+   std::string PressInterfFldName; ///< Field name for interface pressure
+   std::string PressMidFldName;    ///< Field name for midpoint pressure
+   std::string ZInterfFldName;     ///< Field name for interface Z height
+   std::string ZMidFldName;        ///< Field name for midpoint Z height
+   std::string GeopotFldName;      ///< Field name for geopotential
    std::string LyrThickTargetFldName; ///< Field name for target thickness
 
    // methods
@@ -228,7 +220,6 @@ class VertCoord {
    void setStreamArrays(const bool ReadStream, Halo *MeshHalo);
    void minMaxLayerEdge(Halo *MeshHalo);
    void minMaxLayerVertex(Halo *MeshHalo);
-   void initMovementWeights();
 
    /// Initialize computational masks
    void setMasks();

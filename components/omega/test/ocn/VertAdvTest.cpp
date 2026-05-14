@@ -193,6 +193,8 @@ int main(int argc, char *argv[]) {
                                      DefDecomp->NEdgesSize, NVertLayers);
       Array2DReal NormalVelEdge("NormalVelEdge", DefDecomp->NEdgesSize,
                                 NVertLayers);
+      Array2DReal LayerThickCell("LayerThickCell", DefDecomp->NCellsSize,
+                                 NVertLayers);
 
       const I4 ICell0        = 0;
       const I4 NEdgesOnCell0 = DefDecomp->NEdgesOnCellH(ICell0);
@@ -202,6 +204,7 @@ int main(int argc, char *argv[]) {
 
       OMEGA_SCOPE(LocEOnC, DefDecomp->EdgesOnCell);
       OMEGA_SCOPE(LocESOnC, DefMesh->EdgeSignOnCell);
+      OMEGA_SCOPE(LocTargetThick, DefVCoord->LayerThicknessTarget);
 
       // Set uniform values for layer thickness and velocity on edges of column
       parallelFor(
@@ -210,11 +213,15 @@ int main(int argc, char *argv[]) {
                 const I4 JEdge               = LocEOnC(ICell0, J);
                 FluxLayerThickEdge(JEdge, K) = 1._Real;
                 NormalVelEdge(JEdge, K)      = 1._Real * LocESOnC(ICell0, J);
+                LayerThickCell(ICell0, K)    = 1._Real;
+                LocTargetThick(ICell0, K)    = 1._Real;
              }
           });
 
+      Real ProjDt = 1._Real;
       // Compute vertical velocity
-      DefVertAdv->computeVerticalVelocity(NormalVelEdge, FluxLayerThickEdge);
+      DefVertAdv->computeVerticalVelocity(NormalVelEdge, FluxLayerThickEdge,
+                                          LayerThickCell, ProjDt);
 
       HostArray2DReal VertVelH =
           createHostMirrorCopy(DefVertAdv->VerticalVelocity);

@@ -99,13 +99,17 @@ void AuxiliaryState::computeMomVertAux(const OceanState *State,
    // compute geometric height
    VCoord->computeZHeight(LayerThickCell, EosInstance->SpecVol);
 
+   // compute target thickness
+   VCoord->computeTargetThickness();
+
    Pacer::stop("AuxState:computeMomVertAux", 2);
 }
 
 // Compute the auxiliary variables needed for momentum equation
 void AuxiliaryState::computeMomAux(const OceanState *State,
                                    const Array3DReal &TracerArray,
-                                   int ThickTimeLevel, int VelTimeLevel) const {
+                                   int ThickTimeLevel, int VelTimeLevel,
+                                   const TimeInterval ProjDt) const {
    Array2DReal LayerThickCell = State->getLayerThickness(ThickTimeLevel);
    Array2DReal NormalVelEdge  = State->getNormalVelocity(VelTimeLevel);
 
@@ -128,6 +132,8 @@ void AuxiliaryState::computeMomAux(const OceanState *State,
 
    R8 TimeStepSeconds;
    TimeStep.get(TimeStepSeconds, TimeUnits::Seconds);
+   R8 ProjDtSeconds;
+   ProjDt.get(ProjDtSeconds, TimeUnits::Seconds);
 
    Pacer::start("AuxState:computeMomAux", 1);
 
@@ -255,7 +261,8 @@ void AuxiliaryState::computeMomAux(const OceanState *State,
    Pacer::start("AuxState:computeVerticalVelocity", 2);
 
    const auto &FluxLayerThickEdge = LayerThicknessAux.FluxLayerThickEdge;
-   VAdv->computeVerticalVelocity(NormalVelEdge, FluxLayerThickEdge);
+   VAdv->computeVerticalVelocity(NormalVelEdge, FluxLayerThickEdge,
+                                 LayerThickCell, ProjDtSeconds);
 
    Pacer::stop("AuxState:computeVerticalVelocity", 2);
 
@@ -265,7 +272,8 @@ void AuxiliaryState::computeMomAux(const OceanState *State,
 // Compute the auxiliary variables
 void AuxiliaryState::computeAll(const OceanState *State,
                                 const Array3DReal &TracerArray,
-                                int ThickTimeLevel, int VelTimeLevel) const {
+                                int ThickTimeLevel, int VelTimeLevel,
+                                const TimeInterval ProjDt) const {
    Array2DReal LayerThickCell = State->getLayerThickness(ThickTimeLevel);
    Array2DReal NormalVelEdge  = State->getNormalVelocity(VelTimeLevel);
 
@@ -283,7 +291,7 @@ void AuxiliaryState::computeAll(const OceanState *State,
 
    Pacer::start("AuxState:computeAll", 1);
 
-   computeMomAux(State, TracerArray, ThickTimeLevel, VelTimeLevel);
+   computeMomAux(State, TracerArray, ThickTimeLevel, VelTimeLevel, ProjDt);
 
    Pacer::start("AuxState:cellAuxState3", 2);
    parallelForOuter(
@@ -324,9 +332,9 @@ void AuxiliaryState::computeAll(const OceanState *State,
 }
 
 void AuxiliaryState::computeAll(const OceanState *State,
-                                const Array3DReal &TracerArray,
-                                int TimeLevel) const {
-   computeAll(State, TracerArray, TimeLevel, TimeLevel);
+                                const Array3DReal &TracerArray, int TimeLevel,
+                                const TimeInterval ProjDt) const {
+   computeAll(State, TracerArray, TimeLevel, TimeLevel, ProjDt);
 }
 
 // Create a non-default auxiliary state
