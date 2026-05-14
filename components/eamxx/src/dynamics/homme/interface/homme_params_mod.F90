@@ -229,7 +229,7 @@ contains
     endif
     tstep = atm_dt
 
-    if (dt_remap_factor .ne. 1 .or. dt_tracer_factor .ne. 1) then
+    if (dt_remap_factor .ne. 1 .and. dt_remap_factor .ne. 0 .or. dt_tracer_factor .ne. 1) then
       call abortmp ("[get_homme_nsplit_f90] Error! Must specify all dt_*_factor to 1 to use non-integer atm timestep." )
     endif
     nsplit_out = 1
