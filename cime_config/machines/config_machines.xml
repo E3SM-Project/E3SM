@@ -3935,7 +3935,7 @@
         <command name="purge"/>
       </modules>
       <modules>
-        <command name="load">cmake/3.19.6</command>
+        <command name="load">cmake/3.31.9</command>
       </modules>
 
        <modules mpilib="mvapich2">
@@ -3956,13 +3956,12 @@
         <command name="load">netcdf-c</command>
         <command name="load">netcdf-fortran</command>
         <command name="load">parallel-netcdf</command>
-        <command name="load">mkl</command>
+        <command name="load">mkl/2025.2</command>
       </modules>
       <modules>
-        <command name="load">python/3.11.5</command>
-        <command name="load">netcdf/4.6.3</command>
-        <command name="load">pnetcdf/1.9.0</command>
-        <command name="load">mkl/2020</command>
+        <command name="load">python/3.11.13</command>
+        <command name="load">netcdf/4.9.3</command>
+        <command name="load">pnetcdf/1.14.1</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
