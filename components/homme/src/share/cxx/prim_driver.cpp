@@ -151,7 +151,7 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
     // if rsplit>0:  also remap dynamics and compute reference level ps_v
     ////////////////////////////////////////////////////////////////////////
     GPTLstart("tl-sc vertical_remap");
-    vertical_remap(dt_remap);
+//    vertical_remap(dt_remap);
     GPTLstop("tl-sc vertical_remap");
 
     ////////////////////////////////////////////////////////////////////////
