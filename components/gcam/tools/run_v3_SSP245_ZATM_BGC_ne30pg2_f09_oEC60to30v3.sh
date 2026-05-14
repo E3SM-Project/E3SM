@@ -33,6 +33,9 @@ readonly PROJECT="e3sm"
 #readonly MACHINE="compy"
 readonly MACHINE="pm-cpu"
 
+# E3SM-GCAM works only with MCT driver for now
+readonly DRIVER="mct"
+
 # if true this increases the active component ntasks to ~5400 from ~3200
 ehc_pe_xl=false
 
@@ -46,7 +49,8 @@ ehc_pe_xl=false
 #     so that CODE_ROOT points to the root of the cloned repository,
 #     and not to a parent directory containing multiple clones
 readonly CLONE_DATE=$(date '+%d%B%Y')
-readonly CLONE_NAME="e3sm_gcam_${CLONE_DATE}"
+#readonly CLONE_NAME="e3sm_gcam_${CLONE_DATE}"
+readonly CLONE_NAME="e3sm_gcam_april2026_for_rebase"
 readonly CODE_PARENT="${HOME}/e3sm"
 readonly CODE_ROOT="${CODE_PARENT}/${CLONE_NAME}"
 
@@ -55,7 +59,7 @@ readonly MYDATE=$(date '+%Y%m%d%H') # use current date if MYDATE is not set to a
 # export COMPSET=SSP245_EAM%CMIP6_ELM%TOPCNPRDCTCBCPHS_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM_BGC%LNDATM
 readonly COMPSET="SSP245_ZATM_BGC" # see long name above
 readonly RESOLUTION="ne30pg2_f09_oEC60to30v3"
-readonly CASE_NAME="${COMPSET}_${RESOLUTION}_${MYDATE}"
+readonly CASE_NAME="${COMPSET}_${RESOLUTION}_${MYDATE}_test_driver_mct"
 # readonly CASE_GROUP="E3SM_GCAM"
 
 # set the machine inputdata directory, scratch directory, and queue names
@@ -316,7 +320,8 @@ create_newcase() {
         --project ${PROJECT} \
         --walltime ${WALLTIME} \
 	    --queue ${IFDEBUG} \
-        --pecount ${PELAYOUT}
+        --pecount ${PELAYOUT} \
+        --driver ${DRIVER}
 
     if [ $? != 0 ]; then
       echo $'\nNote: if create_newcase failed because sub-directory already exists:'
