@@ -3952,10 +3952,8 @@
       </modules>
       <modules compiler="oneapi-ifx" mpilib="openmpi">
         <command name="load">openmpi/5.0.10</command>
-        <command name="load">hdf5</command>
-        <command name="load">netcdf-c</command>
-        <command name="load">netcdf-fortran</command>
-        <command name="load">parallel-netcdf</command>
+        <command name="load">netcdf/4.9.3</command>
+        <command name="load">pnetcdf/1.14.1</command>
         <command name="load">mkl/2025.2</command>
       </modules>
       <modules>
@@ -3966,9 +3964,9 @@
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.05</TEST_TPUT_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
-    <environment_variables>
-      <env name="NETCDF_PATH">$ENV{NETCDF_ROOT}/</env>
-      <env name="PNETCDF_PATH">$ENV{PNETCDF_ROOT}/</env>
+    <environment_variables compiler="oneapi-ifx">
+      <env name="NETCDF_PATH">$ENV{NETCDF_ROOT}</env>
+      <env name="PNETCDF_PATH">$ENV{PNETCDF_ROOT}</env>
       <env name="MKL_PATH">$ENV{MKLROOT}</env>
     </environment_variables>
     <environment_variables compiler="intel">
