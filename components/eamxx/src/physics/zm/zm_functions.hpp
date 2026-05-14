@@ -66,7 +66,7 @@ struct Functions {
 
     static inline constexpr Real omeps = 1 - PC::ep_2.value;
 
-    static inline constexpr Real pref = 1000;
+    static inline constexpr Real pref = 1000; // reference pressure [hPa]
 
     static inline constexpr Real cpwv = 1.810e3; // specific heat of water vapor (J/K/kg)
 
@@ -142,8 +142,12 @@ struct Functions {
     static inline constexpr Real dmpdz             = -0.7e-3;  // default convective entrainment parameter [1/m]
     static inline constexpr Real tiedke_add        = 0.8;      // default Tiedke temperature perturbation addition [K]
     static inline constexpr Real c0                = 0.0020;   // default autoconversion coefficient
+    static inline constexpr Real auto_fac          = 7;        // enhancement factor for droplet-rain autoconversion
     static inline constexpr Real accr_fac          = 1.5;      // default accretion factor
+    static inline constexpr Real micro_dcs         = 150.E-6;  // default size threshold for cloud ice to snow autoconversion
     static inline constexpr Real mcsp_t_coeff      = 0.3;      // default MCSP temperature coefficient
+
+    static inline constexpr Real upper_limit_pref = 40e2;      // pressure limit above which deep convection is not allowed [Pa] (used to set limcnv)
 
     // Table of saturation vapor pressure values (estbl) from tmin to
     // tmax+1 Kelvin, in one degree increments.  ttrice defines the
@@ -164,36 +168,35 @@ struct Functions {
     ZmRuntimeOpt() = default;
 
     void load_runtime_options(ekat::ParameterList& params) {
-      apply_tendencies    = params.get<bool>("apply_tendencies",   false);
-      use_fortran_bridge  = params.get<bool>("use_fortran_bridge", true);
-      tau                 = params.get<Real>("tau", 3600);
-      alfa                = params.get<Real>("alfa", ZMC::alfa);
-      ke                  = params.get<Real>("ke", ZMC::ke);
-      dmpdz               = params.get<Real>("dmpdz", ZMC::dmpdz);
-      tpert_fix           = params.get<bool>("tpert_fix", true);
-      tpert_fac           = params.get<Real>("tpert_fac", 2);
-      tiedke_add          = params.get<Real>("tiedke_add", ZMC::tiedke_add);
-      c0_lnd              = params.get<Real>("c0_lnd", ZMC::c0);
-      c0_ocn              = params.get<Real>("c0_ocn", ZMC::c0);
-      num_cin             = params.get<int>("num_cin", 1);
-      limcnv              = params.get<int>("limcnv", 23); // note - default for E3SMv3 => ne30pg2 w/ L80
-      mx_bot_lyr_adj      = params.get<int>("mx_bot_lyr_adj", 1);
-      trig_dcape          = params.get<bool>("trig_dcape", true);
-      trig_ull            = params.get<bool>("trig_ull", true);
-      clos_dyn_adj        = params.get<bool>("clos_dyn_adj", true);
-      no_deep_pbl         = params.get<bool>("no_deep_pbl", false);
+      apply_tendencies    = params.get<bool>("apply_tendencies",    false);
+      use_fortran_bridge  = params.get<bool>("use_fortran_bridge",  true);
+      tau                 = params.get<Real>("tau",                 3600);
+      alfa                = params.get<Real>("alfa",                ZMC::alfa);
+      ke                  = params.get<Real>("ke",                  ZMC::ke);
+      dmpdz               = params.get<Real>("dmpdz",               ZMC::dmpdz);
+      tpert_fix           = params.get<bool>("tpert_fix",           true);
+      tpert_fac           = params.get<Real>("tpert_fac",           2);
+      tiedke_add          = params.get<Real>("tiedke_add",          ZMC::tiedke_add);
+      c0_lnd              = params.get<Real>("c0_lnd",              ZMC::c0);
+      c0_ocn              = params.get<Real>("c0_ocn",              ZMC::c0);
+      num_cin             = params.get<int>("num_cin",              1);
+      mx_bot_lyr_adj      = params.get<int>("mx_bot_lyr_adj",       1);
+      trig_dcape          = params.get<bool>("trig_dcape",          true);
+      trig_ull            = params.get<bool>("trig_ull",            true);
+      clos_dyn_adj        = params.get<bool>("clos_dyn_adj",        true);
+      no_deep_pbl         = params.get<bool>("no_deep_pbl",         false);
       // ZM micro parameters
-      zm_microp           = params.get<bool>("zm_microp", false);
-      old_snow            = params.get<bool>("old_snow", false);
-      auto_fac            = params.get<Real>("auto_fac", 7);
-      accr_fac            = params.get<Real>("accr_fac", ZMC::accr_fac);
-      micro_dcs           = params.get<Real>("micro_dcs", 150.E-6);
+      zm_microp           = params.get<bool>("zm_microp",           false);
+      old_snow            = params.get<bool>("old_snow",            false);
+      auto_fac            = params.get<Real>("auto_fac",            ZMC::auto_fac);
+      accr_fac            = params.get<Real>("accr_fac",            ZMC::accr_fac);
+      micro_dcs           = params.get<Real>("micro_dcs",           ZMC::micro_dcs);
       // MCSP parameters
-      mcsp_enabled        = params.get<bool>("mcsp_enabled", true);
-      mcsp_t_coeff        = params.get<Real>("mcsp_t_coeff", ZMC::mcsp_t_coeff);
-      mcsp_q_coeff        = params.get<Real>("mcsp_q_coeff", 0);
-      mcsp_u_coeff        = params.get<Real>("mcsp_u_coeff", 0);
-      mcsp_v_coeff        = params.get<Real>("mcsp_v_coeff", 0);
+      mcsp_enabled        = params.get<bool>("mcsp_enabled",        true);
+      mcsp_t_coeff        = params.get<Real>("mcsp_t_coeff",        ZMC::mcsp_t_coeff);
+      mcsp_q_coeff        = params.get<Real>("mcsp_q_coeff",        0);
+      mcsp_u_coeff        = params.get<Real>("mcsp_u_coeff",        0);
+      mcsp_v_coeff        = params.get<Real>("mcsp_v_coeff",        0);
     }
 
     Real tau;           // convective adjustment time scale
@@ -227,6 +230,7 @@ struct Functions {
     Real mcsp_u_coeff;  // MCSP coefficient for zonal momentum tendencies
     Real mcsp_v_coeff;  // MCSP coefficient for meridional momentum tendencies
     view_1d<Real> estbl; // table values of saturation vapor pressure
+
   };
 
   // -----------------------------------------------------------------------------------------------
