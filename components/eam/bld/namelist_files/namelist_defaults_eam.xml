@@ -25,6 +25,7 @@
 <dtime dyn="se"    hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >600</dtime>
 <dtime dyn="se"    hgrid="ne0np4_enax4v1">900</dtime>
 <dtime dyn="se"    hgrid="ne0np4_twpx4v1">900</dtime>
+<dtime dyn="se"    hgrid="ne0np4_vr28natlref">900</dtime>
 
 <dtime dyn="sld"                   >3600</dtime>
 
@@ -741,6 +742,7 @@
 <drydep_srf_file hgrid="ne0np4_svalbard_x8v1_lowcon">atm/cam/chem/trop_mam/atmsrf_svalbardx8v1.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_sooberingoa_x4x8v1_lowcon">atm/cam/chem/trop_mam/atmsrf_sooberingoax4x8v1.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_twpx4v1">atm/cam/chem/trop_mam/atmsrf_twpx4v1_170629.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_vr28natlref">atm/cam/chem/trop_mam/atmsrf_ne0np4natlanticref.ne30x4_190829.nc</drydep_srf_file>
 <!-- NOTE: ENA dry deposition file interpolated from existing rather than created new -->
 <drydep_srf_file hgrid="ne0np4_enax4v1">atm/cam/chem/trop_mam/atmsrf_enax4v1_170517.nc</drydep_srf_file>
 
@@ -1547,6 +1549,15 @@
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_twpx4v1"   > 2 </hypervis_subcycle>
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_enax4v1"   > 2 </hypervis_subcycle>
 
+<hypervis_subcycle_q   dyn_target="theta-l" hgrid="ne0np4_vr28natlref"  >  1 </hypervis_subcycle_q>
+<hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_vr28natlref"  >  0 </hypervis_subcycle_tom>
+<se_limiter_option     dyn_target="theta-l" hgrid="ne0np4_vr28natlref"  >  8 </se_limiter_option>
+<dt_remap_factor       dyn_target="theta-l" hgrid="ne0np4_vr28natlref"  > -1 </dt_remap_factor>
+<dt_tracer_factor      dyn_target="theta-l" hgrid="ne0np4_vr28natlref"  > -1 </dt_tracer_factor>
+<qsplit                dyn_target="theta-l" hgrid="ne0np4_vr28natlref"  >  1 </qsplit>
+<rsplit                dyn_target="theta-l" hgrid="ne0np4_vr28natlref"  >  2 </rsplit>
+<se_tstep              dyn_target="theta-l" hgrid="ne0np4_vr28natlref"  > -1 </se_tstep>
+
 <!-- Modifications for MMF, which uses a shorter physics time step for stability (20 min for ne4, ne30)-->
 <dt_tracer_factor    use_MMF="1" dyn_target="theta-l" hgrid="ne4np4"> 2 </dt_tracer_factor>
 <hypervis_subcycle_q use_MMF="1" dyn_target="theta-l" hgrid="ne4np4"> 2 </hypervis_subcycle_q>
@@ -1688,6 +1699,14 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <hypervis_subcycle hgrid="ne0np4_enax4v1" dyn_target="preqx">7</hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_twpx4v1" dyn_target="preqx"> 7 </hypervis_subcycle>
 
+<hypervis_subcycle_q   dyn_target="preqx" hgrid="ne0np4_vr28natlref"  >  1 </hypervis_subcycle_q>
+<hypervis_subcycle_tom dyn_target="preqx" hgrid="ne0np4_vr28natlref"  >  0 </hypervis_subcycle_tom>
+<se_limiter_option     dyn_target="preqx" hgrid="ne0np4_vr28natlref"  >  8 </se_limiter_option>
+<dt_remap_factor       dyn_target="preqx" hgrid="ne0np4_vr28natlref"  > -1 </dt_remap_factor>
+<dt_tracer_factor      dyn_target="preqx" hgrid="ne0np4_vr28natlref"  > -1 </dt_tracer_factor>
+<qsplit                dyn_target="preqx" hgrid="ne0np4_vr28natlref"  >  1 </qsplit>
+<rsplit                dyn_target="preqx" hgrid="ne0np4_vr28natlref"  >  2 </rsplit>
+<se_tstep              dyn_target="preqx" hgrid="ne0np4_vr28natlref"  > -1 </se_tstep>
 
 <!-- ================================================================== -->
 <!-- Defaults for driver namelist seq_infodata_inparm                   -->

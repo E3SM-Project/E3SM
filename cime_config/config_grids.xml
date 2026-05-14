@@ -4941,20 +4941,20 @@
     </gridmap>
 
     <gridmap atm_grid="ne0np4_vr28natlref" lnd_grid="r0125">
-      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/vr28natlref/map_ne0np4natlanticref_to_r0125_esmfaave.20260204.nc</map>
-      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/vr28natlref/map_ne0np4natlanticref_to_r0125_esmfbilin.20260204.nc</map>
-      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/r0125/map_r0125_to_ne0np4natlanticref_esmfaave.20260204.nc</map>
-      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/r0125/map_r0125_to_ne0np4natlanticref_esmfaave.20260204.nc</map>
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne0np4natlanticref.ne30x4/map_ne0np4natlanticref_to_r0125_esmfaave.20260204.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne0np4natlanticref.ne30x4/map_ne0np4natlanticref_to_r0125_esmfbilin.20260204.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne0np4natlanticref.ne30x4/map_r0125_to_ne0np4natlanticref_esmfaave.20260204.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne0np4natlanticref.ne30x4/map_r0125_to_ne0np4natlanticref_esmfaave.20260204.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne0np4_vr28natlref" rof_grid="r0125">
-      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/vr28natlref/map_ne0np4natlanticref_to_r0125_esmfaave.20260204.nc</map>
-      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/vr28natlref/map_ne0np4natlanticref_to_r0125_esmfaave.20260204.nc</map>
+      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/ne0np4natlanticref.ne30x4/map_ne0np4natlanticref_to_r0125_esmfaave.20260204.nc</map>
+      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/ne0np4natlanticref.ne30x4/map_ne0np4natlanticref_to_r0125_esmfaave.20260204.nc</map>
     </gridmap>
 
     <gridmap lnd_grid="ne0np4_vr28natlref" rof_grid="r0125">
-      <map name="LND2ROF_FMAPNAME">cpl/gridmaps/vr28natlref/map_ne0np4natlanticref_to_r0125_esmfaave.20260204.nc</map>
-      <map name="ROF2LND_FMAPNAME">cpl/gridmaps/r0125/map_r0125_to_ne0np4natlanticref_esmfaave.20260204.nc</map>
+      <map name="LND2ROF_FMAPNAME">cpl/gridmaps/ne0np4natlanticref.ne30x4/map_ne0np4natlanticref_to_r0125_esmfaave.20260204.nc</map>
+      <map name="ROF2LND_FMAPNAME">cpl/gridmaps/ne0np4natlanticref.ne30x4/map_r0125_to_ne0np4natlanticref_esmfaave.20260204.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne0np4_arcticx4v1.pg2" lnd_grid="r0125">
