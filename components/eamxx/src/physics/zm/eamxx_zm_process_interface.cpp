@@ -98,6 +98,24 @@ void ZMDeepConvection::initialize_impl (const RunType)
   add_postcondition_check<FieldLowerBoundCheck>(get_field_out("precip_ice_surf_mass"),m_grid,0.0,false);
 
   //----------------------------------------------------------------------------
+  // initialize run-time variables
+
+  // // Limit deep convection to regions below ZM_upper_limit_pref
+  // zm_opts.limcnv = 0 ! initialize to null value to check against below
+  // if (pref_edge(1) >= ZM_upper_limit_pref) then
+  //    zm_opts.limcnv = 1
+  // else
+  //    do k = 1,plev
+  //       if (pref_edge(k)   <  ZM_upper_limit_pref .and. &
+  //           pref_edge(k+1) >= ZM_upper_limit_pref) then
+  //          zm_opts.limcnv = k
+  //          exit
+  //       end if
+  //    end do
+  //    if ( zm_opts.limcnv == 0 ) { zm_opts.limcnv = plevp; }
+  // end if
+
+  //----------------------------------------------------------------------------
   // allocate host mirror variables
 
   zm_input.h_phis       = ZMF::view_1dh<Scalar>("zm_input.h_phis",       m_ncol);
@@ -235,7 +253,102 @@ void ZMDeepConvection::run_impl (const double dt)
   //----------------------------------------------------------------------------
   // run the ZM scheme
 
-  zm_eamxx_bridge_run(m_ncol, m_nlev, zm_input, zm_output, zm_opts);
+  if (zm_opts.use_fortran_bridge) {
+
+    zm_eamxx_bridge_run(m_ncol, m_nlev, zm_input, zm_output, zm_opts);
+
+  } else {
+
+    // zm_conv_main
+
+    // !-----------------------------------------------------------------------------
+    // // MCSP modifies tendencies from zm_conv_main() prior to updating the state
+
+    // // initialize local output tendencies for MCSP
+    // zm_tend_init( ncol, pver, local_tend_s, local_tend_q, local_tend_u, local_tend_v )
+
+    // // perform the MCSP calculations
+    // call zm_conv_mcsp_tend( ncol, ncol, pver, pverp, &
+    //                         dtime, jctop, zm_const, zm_param, &
+    //                         state_p_mid, state_p_int, state_p_del, &
+    //                         state_s, state_qv, state_u, state_v, &
+    //                         output_tend_s, output_tend_q, &
+    //                         local_tend_s, local_tend_q, &
+    //                         local_tend_u, local_tend_v, &
+    //                         mcsp_dt_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, &
+    //                         mcsp_freq, mcsp_shear, zm_depth )
+
+    // ! add MCSP tendencies to ZM convective tendencies
+    // do i = 1,ncol
+    //   do k = 1,pver
+    //     output_tend_s(i,k) = output_tend_s(i,k) + local_tend_s(i,k)
+    //     output_tend_q(i,k) = output_tend_q(i,k) + local_tend_q(i,k)
+    //     output_tend_u(i,k) = output_tend_u(i,k) + local_tend_u(i,k)
+    //     output_tend_v(i,k) = output_tend_v(i,k) + local_tend_v(i,k)
+    //   end do
+    // end do
+
+    // ! apply tendencies from zm_conv_main() & MCSP to local copy of state variables
+
+    // call zm_physics_update( ncol, dtime, &
+    //                         state_phis, local_state_zm, local_state_zi, &
+    //                         state_p_mid, state_p_int, state_p_del, &
+    //                         local_state_t, local_state_qv, &
+    //                         output_tend_s, output_tend_q)
+
+    // !-----------------------------------------------------------------------------
+    // ! convective momentum transport
+
+    // ! initialize local output tendencies for zm_conv_evap()
+    // call zm_tend_init( ncol, pver, local_tend_s, local_tend_q, tx_wind_tend(:,:,1), tx_wind_tend(:,:,2) )
+
+    // do i = 1,ncol
+    //   do k = 1,pver
+    //     tx_winds(i,k,1) = state_u(i,k)
+    //     tx_winds(i,k,2) = state_v(i,k)
+    //   end do
+    // end do
+
+    // call zm_transport_momentum( ncol, ncol, pver, pverp, tx_winds, 2, &
+    //                             mu, md, du, eu, ed, dp, &
+    //                             jt, maxg, ideep, 1, lengath, &
+    //                             tx_wind_tend, tx_pguall, tx_pgdall, &
+    //                             tx_icwu, tx_icwd, dtime, local_tend_s )
+
+    // ! add tendencies from zm_transport_momentum() to output tendencies
+    // do i = 1,ncol
+    //   do k = 1,pver
+    //     output_tend_s(i,k) = output_tend_s(i,k) + local_tend_s(i,k)
+    //     output_tend_u(i,k) = output_tend_u(i,k) + tx_wind_tend(i,k,1)
+    //     output_tend_v(i,k) = output_tend_v(i,k) + tx_wind_tend(i,k,2)
+    //   end do
+    // end do
+
+    // !-----------------------------------------------------------------------------
+    // ! convective tracer transport
+
+    // ! this is just a placeholder for now
+    // ! call zm_transport_tracer(...)
+
+    // !-----------------------------------------------------------------------------
+    // ! populate deep convection activity flag
+
+    // if (lengath.gt.0) then
+    //   do i=1,lengath
+    //     output_activity(ideep(i)) = 1
+    //   end do
+    // end if
+
+    // !-----------------------------------------------------------------------------
+    // ! convert dry static energy tendency to temperature tendency
+
+    // do i = 1,ncol
+    //   do k = 1,pver
+    //     output_tend_t(i,k) = output_tend_s(i,k)/zm_const%cpair
+    //   end do
+    // end do
+
+  }
 
   //----------------------------------------------------------------------------
   // create temporaries of output variables to avoid "Implicit capture" warning
