@@ -3878,8 +3878,8 @@
    <DESC>PNL E3SM Intel Xeon Gold 6148(Skylake) nodes, OS is Linux, SLURM</DESC>
     <NODENAME_REGEX>compy</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,pgi,oneapi-ifx</COMPILERS>
-    <MPILIBS>openmpi,impi,mvapich2</MPILIBS>
+    <COMPILERS>oneapi-ifx</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
     <SAVE_TIMING_DIR>/compyfs</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/compyfs/$USER/e3sm_scratch</CIME_OUTPUT_ROOT>
