@@ -3936,6 +3936,7 @@
       </modules>
       <modules>
         <command name="load">cmake/3.31.9</command>
+        <command name="load">python/3.11.13</command>
       </modules>
 
        <modules mpilib="mvapich2">
@@ -3952,12 +3953,9 @@
       </modules>
       <modules compiler="oneapi-ifx" mpilib="openmpi">
         <command name="load">openmpi/5.0.10</command>
-        <command name="load">netcdf/4.9.3</command>
+        <command name="load">netcdf/4.8.1-2</command>
         <command name="load">pnetcdf/1.14.1</command>
         <command name="load">mkl/2025.2</command>
-      </modules>
-      <modules>
-        <command name="load">python/3.11.13</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
