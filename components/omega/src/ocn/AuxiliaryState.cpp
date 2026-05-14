@@ -244,7 +244,8 @@ void AuxiliaryState::computeMomAux(const OceanState *State,
    Pacer::start("AuxState:computeVerticalVelocity", 2);
 
    const auto &FluxLayerThickEdge = LayerThicknessAux.FluxLayerThickEdge;
-   VAdv->computeVerticalVelocity(NormalVelEdge, FluxLayerThickEdge);
+   VAdv->computeVerticalVelocity(NormalVelEdge, FluxLayerThickEdge,
+                                 LayerThickCell, ProjDtSeconds); 
 
    Pacer::stop("AuxState:computeVerticalVelocity", 2);
 
