@@ -3960,8 +3960,6 @@
       </modules>
       <modules>
         <command name="load">python/3.11.13</command>
-        <command name="load">netcdf/4.9.3</command>
-        <command name="load">pnetcdf/1.14.1</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
