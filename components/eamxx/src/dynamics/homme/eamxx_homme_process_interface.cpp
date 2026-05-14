@@ -157,7 +157,7 @@ void HommeDynamics::create_requests ()
 
   const auto m2 = pow(m,2);
   const auto s2 = pow(s,2);
-  const auto nondim = Units::nondimensional();
+  const auto nondim = ekat::units::none;
 
   // Note: qv is needed to transform T<->Theta
 

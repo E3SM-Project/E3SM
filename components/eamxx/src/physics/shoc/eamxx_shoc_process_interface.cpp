@@ -54,7 +54,7 @@ void SHOCMacrophysics::create_requests()
 
   const auto m2 = pow(m,2);
   const auto s2 = pow(s,2);
-  const auto nondim = Units::nondimensional();
+  const auto nondim = none;
   const bool do_3d_turb = m_params.get<bool>("do_3d_turbulence_shoc", false);
 
   // These variables are needed by the interface, but not actually passed to shoc_main.
