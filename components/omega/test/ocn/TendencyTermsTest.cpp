@@ -532,8 +532,7 @@ int testSSHGrad(int NVertLayers, Real RTol) {
        },
        ExactSSHGrad, EdgeComponent::Normal, Geom, Mesh, ExchangeHalos::No);
 
-   // Set input array
-   Array2DReal SSHCell("SSHCell", Mesh->NCellsSize, NVertLayers);
+   Array1DReal SSHCell("SSHCell", Mesh->NCellsSize);
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalar(X, Y); }, SSHCell,

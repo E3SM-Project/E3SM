@@ -504,6 +504,7 @@ void Tendencies::computeVelocityTendenciesOnly(
    OMEGA_SCOPE(LocBottomDrag, BottomDrag);
    OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
    OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
+   OMEGA_SCOPE(LocSshCell, VCoord->SshCell);
 
    Pacer::start("Tend:computeVelocityTendenciesOnly", 1);
 
@@ -562,7 +563,7 @@ void Tendencies::computeVelocityTendenciesOnly(
    }
 
    // Compute sea surface height gradient
-   const Array2DReal &SSHCell = AuxState->LayerThicknessAux.SshCell;
+   const Array1DReal &SSHCell = LocSshCell; 
    if (LocSSHGrad.Enabled) {
       Pacer::start("Tend:SSHGrad", 2);
       parallelForOuter(
