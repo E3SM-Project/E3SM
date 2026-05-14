@@ -144,10 +144,10 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    BottomDepth  = Array1DReal("BottomDepth", NCellsSize);
    PressureInterface =
        Array2DReal("PressureInterface", NCellsSize, NVertLayersP1);
-   PressureMid     = Array2DReal("PressureMid", NCellsSize, NVertLayers);
-   ZInterface      = Array2DReal("ZInterface", NCellsSize, NVertLayersP1);
-   ZMid            = Array2DReal("ZMid", NCellsSize, NVertLayers);
-   SshCell         = Array1DReal("SshCell", NCellsSize);
+   PressureMid = Array2DReal("PressureMid", NCellsSize, NVertLayers);
+   ZInterface  = Array2DReal("ZInterface", NCellsSize, NVertLayersP1);
+   ZMid        = Array2DReal("ZMid", NCellsSize, NVertLayers);
+   SshCell     = Array1DReal("SshCell", NCellsSize);
 
    GeopotentialMid = Array2DReal("GeopotentialMid", NCellsSize, NVertLayers);
    LayerThicknessTarget =
@@ -162,11 +162,11 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    deepCopy(SurfacePressure, 0);
 
    // Make host copies for device arrays not being read from file
-   PressureInterfaceH    = createHostMirrorCopy(PressureInterface);
-   PressureMidH          = createHostMirrorCopy(PressureMid);
-   ZInterfaceH           = createHostMirrorCopy(ZInterface);
-   ZMidH                 = createHostMirrorCopy(ZMid);
-   SshCellH              = createHostMirrorCopy(SshCellH);
+   PressureInterfaceH = createHostMirrorCopy(PressureInterface);
+   PressureMidH       = createHostMirrorCopy(PressureMid);
+   ZInterfaceH        = createHostMirrorCopy(ZInterface);
+   ZMidH              = createHostMirrorCopy(ZMid);
+   SshCellH           = createHostMirrorCopy(SshCellH);
 
    GeopotentialMidH      = createHostMirrorCopy(GeopotentialMid);
    LayerThicknessTargetH = createHostMirrorCopy(LayerThicknessTarget);
@@ -293,17 +293,16 @@ void VertCoord::defineFields() {
    );
 
    auto SshField = Field::create(
-       SshFldName,                     // field name
+       SshFldName,                          // field name
        "sea surface height at cell center", // long Name or description
        "m",                                 // units
        "sea_surface_height",                // CF standard Name
        std::numeric_limits<Real>::min(),    // min valid value
        std::numeric_limits<Real>::max(),    // max valid value
-       FillValueReal,                           // scalar for undefined entries
+       FillValueReal,                       // scalar for undefined entries
        NDims,                               // number of dimensions
-       DimNames                          // dimension names
+       DimNames                             // dimension names
    );
-
 
    NDims = 2;
    DimNames.resize(NDims);
@@ -1001,8 +1000,8 @@ void VertCoord::computeZHeight(
                     LocZInterf(ICell, KLyr) = -LocBotDepth(ICell) + Accum;
                     LocZMid(ICell, KLyr) =
                         -LocBotDepth(ICell) + Accum - 0.5 * DZ;
-                    if (KLyr == 0) {
-                       LocSshCell(ICell) = LocZInterf(ICell,KLyr);
+                    if (KLyr == KMin) {
+                       LocSshCell(ICell) = LocZInterf(ICell, KLyr);
                     }
                  }
               });
