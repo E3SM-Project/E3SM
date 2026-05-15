@@ -2713,6 +2713,8 @@ contains
        read(nUnit) n_gvd        !      sample of greatest valid date
        read(nUnit) found_gvd    ! T <=> k_gvd,n_gvd have been set
        ! tcraig, april 2012, only overwrite if restart read is ok
+       ! force the code to look for the gvd in the file because some
+       ! files do not set this correctly
        if (readok) then
           write(s_logunit,F05) "setting k n and found lvd gvd on restart ",k,n,' ',trim(name)
           strm(k)%k_lvd     = k_lvd
@@ -2720,7 +2722,7 @@ contains
           strm(k)%found_lvd = found_lvd
           strm(k)%k_gvd     = k_gvd
           strm(k)%n_gvd     = n_gvd
-          strm(k)%found_gvd = found_gvd
+          strm(k)%found_gvd = .false.   ! found_gvd
        endif
 
        ! tcraig, april 2012, don't overwrite these from input
