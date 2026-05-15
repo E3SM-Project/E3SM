@@ -3962,12 +3962,12 @@
       </modules>
       <modules compiler="gcc">
         <command name="load">gcc/12.5.0</command>
-      </modules>
-      <modules compiler="gcc" mpilib="openmpi">
-        <command name="load">openmpi/4.1.8</command>
         <command name="load">netcdf/4.8.1-2</command>
         <command name="load">pnetcdf/1.14.1</command>
         <command name="load">mkl/2023.0.0</command>
+      </modules>
+      <modules mpilib="openmpi">
+        <command name="load">openmpi/4.1.8</command>
       </modules>
       <modules mpilib="mvapich">
         <command name="load">mvapich/4.1</command>
