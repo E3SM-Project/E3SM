@@ -3463,8 +3463,6 @@
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
         <env name="FI_CXI_RX_MATCH_MODE">hybrid</env>
         <env name="FI_MR_CACHE_MONITOR">disabled</env>
-        <env name="FI_LOG_PROV">cxi</env>
-        <env name="FI_LOG_LEVEL">warn</env>
         <env name="FI_CXI_DEFAULT_TX_SIZE">$SHELL{if [ 2048 -lt `./xmlquery --value NUM_NODES` ]; then echo "4096 FI_CXI_DEFAULT_RX_SIZE=4096"; else echo $FI_CXI_DEFAULT_TX_SIZE; fi;}</env>
         <env name="PALS_PING_PERIOD">240</env>
         <env name="PALS_RPC_TIMEOUT">240</env>
@@ -3498,6 +3496,8 @@
         <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
     <environment_variables DEBUG="TRUE">
+        <env name="FI_LOG_PROV">cxi</env><!--log cassini fabric interface events-->
+        <env name="FI_LOG_LEVEL">warn</env>
         <env name="RLIMITS">--rlimits CORE</env>
     </environment_variables>
     <resource_limits DEBUG="TRUE">
