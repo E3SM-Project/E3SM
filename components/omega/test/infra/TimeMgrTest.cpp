@@ -25,7 +25,8 @@ using namespace OMEGA;
 
 void testTimeFrac(void) {
 
-   LOG_INFO("TimeMgrTest: TimeFrac tests ------------------------------------");
+   LOG_INFO("----- TimeMgr Unit Tests -----");
+   LOG_INFO("----- TimeMgrTest: TimeFrac tests -----");
 
    // Initialize error codes
    Error ErrAll;
@@ -404,7 +405,7 @@ void testTimeFrac(void) {
 
 void testCalendar(void) {
 
-   LOG_INFO("TimeMgrTest: Calendar tests ------------------------------------");
+   LOG_INFO("----- TimeMgrTest: Calendar tests -----");
 
    // Initialize error codes
    Error ErrAll;
@@ -1330,7 +1331,7 @@ void testCalendar(void) {
 
 void testTimeInterval(void) {
 
-   LOG_INFO("TimeMgrTest: TimeInterval tests --------------------------------");
+   LOG_INFO("----- TimeMgrTest: TimeInterval tests -----");
 
    // Initialize error codes
    Error ErrAll;
@@ -2330,7 +2331,7 @@ void testTimeInterval(void) {
 
 void testTimeInstant(void) {
 
-   LOG_INFO("TimeMgrTest: TimeInstant tests ---------------------------------");
+   LOG_INFO("----- TimeMgrTest: TimeInstant tests -----");
 
    // Initialize error codes
    Error ErrAll;
@@ -2841,7 +2842,7 @@ void testTimeInstant(void) {
 
 void testAlarm(void) {
 
-   LOG_INFO("TimeMgrTest: Alarm tests ---------------------------------------");
+   LOG_INFO("----- TimeMgrTest: Alarm tests -----");
 
    // Initialize error codes
    Error ErrAll;
@@ -3183,7 +3184,7 @@ void testAlarm(void) {
 
 void testClock(void) {
 
-   LOG_INFO("TimeMgrTest: Clock tests ---------------------------------------");
+   LOG_INFO("----- TimeMgrTest: Clock tests -----");
 
    // Initialize error codes
    Error ErrAll;
@@ -3479,6 +3480,7 @@ int main(int argc, char *argv[]) {
    testClock();
 
    // if it made it here, all tests successful
+   LOG_INFO("----- TimeMgr Unit Tests Successful -----");
 
    MPI_Finalize();
    return 0;

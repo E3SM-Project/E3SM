@@ -129,8 +129,7 @@ void Broadcast(std::string &Value, const MachEnv *InEnv, const int RankBcast) {
          Value.resize(StrSize);
 
       // Now broadcast the string
-      RetVal =
-          MPI_Bcast((void *)Value.c_str(), Value.size(), MPI_CHAR, Root, Comm);
+      RetVal = MPI_Bcast(&Value[0], Value.size(), MPI_CHAR, Root, Comm);
       if (RetVal != MPI_SUCCESS)
          ABORT_ERROR("Broadcast string: Error in MPI Broadcast");
    }
@@ -230,7 +229,6 @@ void Broadcast(std::vector<R8> &Value, const int RankBcast) {
 // Broadcast bool array
 void Broadcast(std::vector<bool> &Value, const MachEnv *InEnv,
                const int RankBcast) {
-   int RetVal;
 
    // Due to special packing of std::vector<bool> we convert to an integer
    I4 VecSize = Value.size();
