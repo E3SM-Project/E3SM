@@ -3878,8 +3878,8 @@
    <DESC>PNL E3SM Intel Xeon Gold 6148(Skylake) nodes, OS is Linux, SLURM</DESC>
     <NODENAME_REGEX>compy</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>oneapi-ifx</COMPILERS>
-    <MPILIBS>openmpi</MPILIBS>
+    <COMPILERS>gcc,oneapi-ifx</COMPILERS>
+    <MPILIBS>openmpi,mvapich</MPILIBS>
     <SAVE_TIMING_DIR>/compyfs</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/compyfs/$USER/e3sm_scratch</CIME_OUTPUT_ROOT>
@@ -3898,6 +3898,9 @@
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="mpi-serial">
       <executable/>
+    </mpirun>
+    <mpirun mpilib="mvapich">
+      <executable>mpiexec</executable>
     </mpirun>
     <mpirun mpilib="openmpi">
       <executable>srun</executable>
@@ -3957,6 +3960,18 @@
         <command name="load">pnetcdf/1.14.1</command>
         <command name="load">mkl/2025.2</command>
       </modules>
+      <modules compiler="gcc">
+        <command name="load">gcc/12.5.0</command>
+      </modules>
+      <modules compiler="gcc" mpilib="openmpi">
+        <command name="load">openmpi/4.1.8</command>
+        <command name="load">netcdf/4.8.1-2</command>
+        <command name="load">pnetcdf/1.14.1</command>
+        <command name="load">mkl/2023.0.0</command>
+      </modules>
+      <modules mpilib="mvapich">
+        <command name="load">mvapich/4.1</command>
+      </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
@@ -3967,12 +3982,28 @@
       <env name="PNETCDF_PATH">$ENV{PNETCDF_ROOT}</env>
       <env name="MKL_PATH">$ENV{MKLROOT}</env>
     </environment_variables>
+    <environment_variables compiler="gcc">
+      <env name="NETCDF_PATH">$ENV{NETCDF_ROOT}</env>
+      <env name="PNETCDF_PATH">$ENV{PNETCDF_ROOT}</env>
+      <env name="MKL_PATH">$ENV{MKLROOT}</env>
+      <env name="LD_LIBRARY_PATH">/share/apps/gcc/12.5.0/lib:/share/apps/gcc/12.5.0/lib64:$ENV{LD_LIBRARY_PATH}</env>
+    </environment_variables>
     <environment_variables compiler="intel">
       <env name="LD_LIBRARY_PATH">/share/apps/gcc/8.1.0/lib:/share/apps/gcc/8.1.0/lib64:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables mpilib="mvapich2">
       <env name="MV2_ENABLE_AFFINITY">0</env>
       <env name="MV2_SHOW_CPU_BINDING">1</env>
+    </environment_variables>
+    <environment_variables mpilib="mvapich">
+      <env name="MV2_ENABLE_AFFINITY">0</env>
+      <env name="MV2_SHOW_CPU_BINDING">1</env>
+    </environment_variables>
+    <environment_variables mpilib="openmpi">
+      <env name="PNETCDF_PATH">/share/apps/pnetcdf/1.14.1/gcc/12.5.0/openmpi/4.1.8/</env>
+    </environment_variables>
+    <environment_variables mpilib="mvapich">
+      <env name="PNETCDF_PATH">/share/apps/pnetcdf/1.14.1/gcc/12.5.0/mvapich/4.1/</env>
     </environment_variables>
     <environment_variables mpilib="impi">
       <env name="I_MPI_ADJUST_ALLREDUCE">1</env>
