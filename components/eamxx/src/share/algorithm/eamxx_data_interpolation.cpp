@@ -63,20 +63,15 @@ set_logger (const std::shared_ptr<ekat::logger::LoggerBase>& logger)
 
 void DataInterpolation::run (const util::TimeStamp& ts)
 {
+  EKAT_REQUIRE_MSG (m_data_initialized,
+      "[DataInterpolation] Error! You must initialize the data before calling 'run'.\n");
+  EKAT_REQUIRE_MSG (m_time_dependent,
+      "[DataInterpolation] Error! run(TimeStamp) can only be called for time-dependent data.\n");
+
   // Read and interpolate fields
   m_logger->info("[DataInterpolation] Interpolating fields.");
   m_logger->info(" - ts: " + ts.to_string());
   m_logger->info(" - interval: [" + m_data_interval.beg.to_string() + ", " + m_data_interval.end.to_string() + "]");
-
-  EKAT_REQUIRE_MSG (m_data_initialized,
-      "[DataInterpolation] Error! You must initialize the data before calling 'run'.\n");
-
-  // Static (time-independent) path: data was already loaded at init time.
-  // Only re-run the vertical remap, since model pressure may have changed.
-  if (not m_time_dependent) {
-    m_vert_remapper->remap_fwd();
-    return;
-  }
 
   // If we went past the current interval end, we need to update the end state
   if (not m_data_interval.contains(ts)) {
@@ -140,6 +135,61 @@ void DataInterpolation::run (const util::TimeStamp& ts)
   m_vert_remapper->remap_fwd();
 }
 
+void DataInterpolation::run ()
+{
+  EKAT_REQUIRE_MSG (not m_time_dependent,
+      "[DataInterpolation] Error! run() can only be called for static (time-independent) data.\n");
+
+  // We don't foresee the static reader being called 2+ times, but we'll allow it
+  if (m_data_initialized) {
+    return;
+  }
+
+  register_fields_in_remappers ();
+
+  auto reader_grid = m_horiz_remapper_beg->get_src_grid();
+  auto gids = reader_grid->get_partitioned_dim_gids();
+  m_reader = std::make_shared<FieldReader>();
+  m_reader->set_dim_decomp(gids,reader_grid->get_comm());
+
+  // Assemble the list of fields the reader must load (src fields of hremap_beg)
+  std::vector<Field> fields;
+  for (int i=0; i<m_nfields; ++i) {
+    fields.push_back(m_horiz_remapper_beg->get_src_field(i));
+  }
+  if (m_vr_type==Dynamic3D or m_vr_type==Dynamic3DRef) {
+    fields.push_back(m_horiz_remapper_beg->get_src_field(m_nfields));
+  }
+  m_reader->set_fields(fields);
+  m_reader->set_file_specs(m_time_database.files.front(),m_input_files_dimnames);
+
+  m_logger->info("[DataInterpolation] Reading static (time-independent) fields.");
+  m_logger->info(" - filename: " + m_time_database.files.front());
+  if (m_static_time_idx >= 0) {
+    m_logger->info(" - file time idx: " + std::to_string(m_static_time_idx));
+  }
+  m_reader->read(m_static_time_idx);
+  m_horiz_remapper_beg->remap_fwd();
+
+  for (int i=0; i<m_nfields; ++i) {
+    m_vert_remapper->get_src_field(i).deep_copy(m_horiz_remapper_beg->get_tgt_field(i));
+  }
+
+  // For Dynamic3DRef, p_file (=PS) has been filled by hremap; reconstruct p_data.
+  // For Dynamic3D, p_file==p_data and is filled by hremap directly.
+  // For Static1D, p_data was already loaded in create_vert_remapper.
+  if (m_vr_type==Dynamic3D) {
+    m_helper_pressure_fields["p_data"].deep_copy(m_horiz_remapper_beg->get_tgt_field(m_nfields));
+  } else if (m_vr_type==Dynamic3DRef) {
+    m_helper_pressure_fields["p_file"].deep_copy(m_horiz_remapper_beg->get_tgt_field(m_nfields));
+    reconstruct_p_from_ps();
+  }
+
+  m_vert_remapper->remap_fwd();
+
+  m_data_initialized = true;
+}
+
 void DataInterpolation::shift_data_interval ()
 {
   m_curr_interval_idx.first = m_curr_interval_idx.second;
@@ -167,18 +217,6 @@ update_end_fields ()
   const auto& slice_beg = m_time_database.slices[m_curr_interval_idx.first];
   const auto& slice_end = m_time_database.slices[m_curr_interval_idx.second];
 
-  if (not m_reader) {
-    // NOTE: Sometimes the original data does not use the same field tags as eamxx.
-    // For these cases, we need to perform a shallow clone of
-    // io_grid because the tags are constant in this object.
-    using namespace ShortFieldTagsNames;
-    auto grid = m_horiz_remapper_beg->get_src_grid()->clone(m_horiz_remapper_beg->get_src_grid()->name(), true);
-
-    auto gids = grid->get_partitioned_dim_gids();
-    auto comm = grid->get_comm();
-    m_reader = std::make_shared<FieldReader>();
-    m_reader->set_dim_decomp(gids,comm);
-  }
   // This triggers opening of a new file at read time ONLY if the filename/fields have changed
   m_reader->set_file_specs(slice_end.filename,m_input_files_dimnames);
   m_reader->set_fields(fields);
@@ -193,11 +231,9 @@ update_end_fields ()
 }
 
 void DataInterpolation::
-init_data_interval (const util::TimeStamp& t0)
+init_time_interpolation (const util::TimeStamp& t0,
+                         const TimeInterpType interp_type)
 {
-  EKAT_REQUIRE_MSG (m_vert_remapper!=nullptr,
-      "[DataInterpolation] Error! Cannot call 'init_data_interval' until after remappers creation.\n");
-
   register_fields_in_remappers ();
 
   auto reader_grid = m_horiz_remapper_beg->get_src_grid();
@@ -205,16 +241,10 @@ init_data_interval (const util::TimeStamp& t0)
   m_reader = std::make_shared<FieldReader>();
   m_reader->set_dim_decomp(gids,reader_grid->get_comm());
 
-  // Static path: load data once and return early
-  if (not m_time_dependent) {
-    load_static_fields ();
-    m_data_initialized = true;
-    return;
-  }
-
   // Loop over all stored time slices to find an interval that contains t0
   auto t0_interval = m_time_database.find_interval(t0);
   const auto& t_beg = m_time_database.slices[t0_interval].time;
+  m_time_interp_type = interp_type;
 
   // We need to read in the beg/end fields for the initial interval. However, our generic
   // framework can only load the end slice (since that's what we need at runtime).
@@ -229,32 +259,17 @@ init_data_interval (const util::TimeStamp& t0)
 }
 
 void DataInterpolation::
-init ()
-{
-  EKAT_REQUIRE_MSG (not m_time_dependent,
-      "[DataInterpolation] Error! init() can only be called for "
-      "static (time-independent) data. Call setup_static_database() first.\n");
-  init_data_interval (util::TimeStamp());
-}
-
-void DataInterpolation::
 setup_linear_time_database (const strvec_t& input_files,
-                            const TimeInterpType interp_type,
                             const util::TimeStamp& ref_ts)
 {
-  m_time_interp_type = interp_type;
-
   build_time_database_slices(input_files,util::TimeLine::Linear,ref_ts);
 }
 
 void DataInterpolation::
 setup_periodic_time_database (const strvec_t& input_files,
-                              const TimeInterpType interp_type,
                               const util::TimeStamp& start_ts,
                               const util::TimeStamp& ref_ts)
 {
-  m_time_interp_type = interp_type;
-
   build_time_database_slices(input_files,util::TimeLine::YearlyPeriodic,ref_ts);
 
   // To avoid bugs at runtime, we want to retain AT MOST one year worth of time slices.
@@ -292,6 +307,18 @@ setup_periodic_time_database (const strvec_t& input_files,
       "[DataInterpolation] Error! Not enough time slices in the database within 1 (periodic) year from start_ts.\n"
       " - start_ts        : " + first_ts.to_string() + "\n"
       " - retained slices : " + std::to_string(slices.size()) + "\n");
+
+  // Prune file names in the TimeDatabase that own none of the retained slices
+  std::set<std::string> keep_files;
+  for (const auto& s : slices)
+    keep_files.insert(s.filename);
+
+  for (auto it=m_time_database.files.begin(); it!=m_time_database.files.end(); ) {
+    if (keep_files.count(*it)>0)
+      ++it;
+    else
+      it = m_time_database.files.erase(it);
+  }
 }
 
 void DataInterpolation::
@@ -431,44 +458,8 @@ build_time_database_slices (const strvec_t& input_files,
   EKAT_REQUIRE_MSG (m_time_database.size()>=2,
       "[DataInterpolation] Error! Input file(s) only contain 1 time slice overall.\n");
 
+  m_time_dependent   = true;
   m_input_db_created = true;
-}
-
-void DataInterpolation::
-load_static_fields ()
-{
-  // Assemble the list of fields the reader must load (src fields of hremap_beg)
-  std::vector<Field> fields;
-  for (int i=0; i<m_nfields; ++i) {
-    fields.push_back(m_horiz_remapper_beg->get_src_field(i));
-  }
-  if (m_vr_type==Dynamic3D or m_vr_type==Dynamic3DRef) {
-    fields.push_back(m_horiz_remapper_beg->get_src_field(m_nfields));
-  }
-  m_reader->set_file_specs(m_time_database.files.front(),m_input_files_dimnames);
-  m_reader->set_fields(fields);
-
-  m_logger->info("[DataInterpolation] Reading static (time-independent) fields.");
-  m_logger->info(" - filename: " + m_time_database.files.front());
-  if (m_static_time_idx >= 0) {
-    m_logger->info(" - file time idx: " + std::to_string(m_static_time_idx));
-  }
-  m_reader->read(m_static_time_idx);
-  m_horiz_remapper_beg->remap_fwd();
-
-  for (int i=0; i<m_nfields; ++i) {
-    m_vert_remapper->get_src_field(i).deep_copy(m_horiz_remapper_beg->get_tgt_field(i));
-  }
-
-  // For Dynamic3DRef, p_file (=PS) has been filled by hremap; reconstruct p_data.
-  // For Dynamic3D, p_file==p_data and is filled by hremap directly.
-  // For Static1D, p_data was already loaded in create_vert_remapper.
-  if (m_vr_type==Dynamic3D) {
-    m_helper_pressure_fields["p_data"].deep_copy(m_horiz_remapper_beg->get_tgt_field(m_nfields));
-  } else if (m_vr_type==Dynamic3DRef) {
-    m_helper_pressure_fields["p_file"].deep_copy(m_horiz_remapper_beg->get_tgt_field(m_nfields));
-    reconstruct_p_from_ps();
-  }
 }
 
 void DataInterpolation::
@@ -814,12 +805,16 @@ create_vert_remapper (const VertRemapData& data)
 
 void DataInterpolation::register_fields_in_remappers ()
 {
+  EKAT_REQUIRE_MSG (m_vert_remapper!=nullptr,
+      "[DataInterpolation] Error! Cannot register fields in remappers until after remappers creation.\n");
+
   // Register fields in the remappers. Vertical first, since we only have model-grid fields
   for (int i=0; i<m_nfields; ++i) {
     m_vert_remapper->register_field_from_tgt(m_fields[i]);
   }
   m_vert_remapper->registration_ends();
 
+  // Horiz remapper(s)
   for (int i=0; i<m_nfields; ++i) {
     const auto& f = m_vert_remapper->get_src_field(i);
     m_horiz_remapper_beg->register_field_from_tgt(f.clone(f.name(), m_horiz_remapper_beg->get_src_grid()->name(), CloneFlags::MatchPacking));

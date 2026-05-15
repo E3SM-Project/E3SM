@@ -276,12 +276,12 @@ void run_tests (const std::shared_ptr<const AbstractGrid>& grid,
   int nfields = fields.size();
   auto interp = create_interp(grid,fields);
   if (timeline==util::TimeLine::Linear)
-    interp->setup_linear_time_database(input_files,time_interp_type);
+    interp->setup_linear_time_database(input_files);
   else
-    interp->setup_periodic_time_database(input_files,time_interp_type);
+    interp->setup_periodic_time_database(input_files);
   interp->create_horiz_remappers (map_file);
   interp->create_vert_remapper (vremap_data);
-  interp->init_data_interval(t0);
+  interp->init_time_interpolation(t0,time_interp_type);
 
   // We jump ahead by 2 months, but the shift interval logic cannot keep up with
   // a dt that long, so we should get an error due to the interpolation param being
@@ -435,17 +435,10 @@ void run_static_tests (const std::shared_ptr<const AbstractGrid>& grid,
   interp->setup_static_database({input_file}, time_index);
   interp->create_horiz_remappers(map_file);
   interp->create_vert_remapper(vremap_data);
-  interp->init();
 
-  // Run at several timestamps: output must equal expected_delta regardless of time
-  std::vector<util::TimeStamp> test_times = {
-    util::TimeStamp({2010,  1,  1},{0,0,0}),
-    util::TimeStamp({2010,  6, 15},{12,0,0}),
-    util::TimeStamp({2010, 12, 31},{23,59,0}),
-  };
-
-  for (const auto& ts : test_times) {
-    interp->run(ts);
+  // Run multiple times: output should always be the same
+  for (int irun=0; irun<3; ++irun) {
+    interp->run();
 
     for (int i=0; i<nfields; ++i) {
       const auto& layout = fields[i].get_header().get_identifier().get_layout();

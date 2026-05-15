@@ -55,42 +55,38 @@ public:
 
   // Setup time database for LinearHistory time-dependent data interpolation
   void setup_linear_time_database (const strvec_t& input_files,
-                                   const TimeInterpType interp_type = Linear,
                                    const util::TimeStamp& ref_ts = util::TimeStamp());
 
   // Setup time database for YearlyPeriodic time-dependent data interpolation
-  // ref_ts shifts raw file time values; start_ts selects the first logical
-  // slice (the slice at or after start_ts becomes index 0 via rotation).
+  // ref_ts shifts raw file time values; start_ts selects the start of the
+  // twelve months period
   void setup_periodic_time_database (const strvec_t& input_files,
-                                     const TimeInterpType interp_type = Linear,
                                      const util::TimeStamp& start_ts = util::TimeStamp(),
                                      const util::TimeStamp& ref_ts = util::TimeStamp());
 
   // In case the input files store dims with exhotic names, the user can provide them here
   void set_input_files_dimname (const std::string& name, const std::string& nc_name);
 
-  // Setup for time-independent (static) data: data is read once at init and
-  // only horiz+vert remapping is performed.
+  // Setup for time-independent (static) data
   // time_index = -1: the file has no time dimension (or variables are not
   //                  time-dependent in the file).
   // time_index >= 0: select this specific time snapshot from the file.
   void setup_static_database (const strvec_t& input_files,
-                               int time_index = -1);
-
-  bool is_time_dependent () const { return m_time_dependent; }
+                              int time_index = -1);
 
   void create_horiz_remappers (const std::string& map_file = "");
   void create_horiz_remappers (const Real iop_lat, const Real iop_lon);
   void create_vert_remapper ();
   void create_vert_remapper (const VertRemapData& data);
 
-  void register_fields_in_remappers ();
-
   // For time-dependent data: find the interval containing t0 and load beg/end
-  void init_data_interval (const util::TimeStamp& t0);
-  // For static (time-independent) data: load data once; no timestamp needed
-  void init ();
+  void init_time_interpolation (const util::TimeStamp& t0,
+                                const TimeInterpType interp_type = Linear);
 
+  // For static (time-independent) data: load data once; no timestamp needed
+  void run ();
+
+  // For time-dependent data
   void run (const util::TimeStamp& ts);
 
   std::shared_ptr<AbstractGrid> get_grid_after_hremap () const { return m_grid_after_hremap; }
@@ -99,13 +95,10 @@ public:
 
 protected:
 
+  void create_reader ();
+  void register_fields_in_remappers ();
   void shift_data_interval ();
   void update_end_fields ();
-  void load_static_fields ();
-
-  // Load static (time-independent) data through hremap and (for Dynamic3DRef)
-  // reconstruct the 3D source pressure from the surface pressure.
-  void load_static_fields ();
 
 #ifdef KOKKOS_ENABLE_CUDA
 public:

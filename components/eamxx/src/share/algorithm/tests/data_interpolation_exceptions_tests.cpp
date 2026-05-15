@@ -26,10 +26,10 @@ TEST_CASE ("exceptions")
 
   interp->setup_linear_time_database({"./data_interpolation_0.nc"});
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
-  REQUIRE_THROWS (interp->init_data_interval(t0)); // linear timeline, but t0<first_slice
+  REQUIRE_THROWS (interp->init_time_interpolation(t0,DataInterpolation::Linear)); // linear timeline, but t0<first_slice
 
   util::TimeStamp t1 ({2020,1,1},{0,0,0});
-  REQUIRE_THROWS (interp->init_data_interval(t1)); // linear timeline, but t0>last_slice
+  REQUIRE_THROWS (interp->init_time_interpolation(t1,DataInterpolation::Linear)); // linear timeline, but t0>last_slice
 
   scorpio::finalize_subsystem();
 }

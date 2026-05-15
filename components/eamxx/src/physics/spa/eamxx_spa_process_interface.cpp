@@ -88,9 +88,9 @@ void SPA::initialize_impl (const RunType /* run_type */)
 
   m_data_interpolation = std::make_shared<DataInterpolation>(m_model_grid,spa_fields);
   if (time_interpolation_method=="yearly_periodic") {
-    m_data_interpolation->setup_periodic_time_database ({spa_data_file},DataInterpolation::Linear);
+    m_data_interpolation->setup_periodic_time_database ({spa_data_file});
   } else if (time_interpolation_method=="linear") {
-    m_data_interpolation->setup_linear_time_database ({spa_data_file},DataInterpolation::Linear);
+    m_data_interpolation->setup_linear_time_database ({spa_data_file});
   } else {
     EKAT_ERROR_MSG("Error! Invalid time_interpolation_method: " +
                    time_interpolation_method +
@@ -117,7 +117,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
   vremap_data.pmid = pmid;
   vremap_data.pint = pint;
   m_data_interpolation->create_vert_remapper (vremap_data);
-  m_data_interpolation->init_data_interval (start_of_step_ts());
+  m_data_interpolation->init_time_interpolation (start_of_step_ts(),DataInterpolation::Linear);
 
   // Set property checks for fields in this process
   using FWI = FieldWithinIntervalCheck;

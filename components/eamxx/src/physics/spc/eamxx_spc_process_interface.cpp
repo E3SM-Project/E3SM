@@ -55,11 +55,10 @@ void SPC::initialize_impl (const RunType /* run_type */)
   auto pmid = get_field_in("p_mid");
   
   m_data_interpolation = std::make_shared<DataInterpolation>(m_model_grid,spc_fields);
-  util::TimeStamp ref_ts;
   if (time_interpolation_method=="yearly_periodic") {
-    m_data_interpolation->setup_periodic_time_database ({spc_data_file}, DataInterpolation::Linear);
+    m_data_interpolation->setup_periodic_time_database ({spc_data_file});
   } else if (time_interpolation_method=="linear") {
-    m_data_interpolation->setup_linear_time_database ({spc_data_file}, DataInterpolation::Linear);
+    m_data_interpolation->setup_linear_time_database ({spc_data_file});
   } else {
     EKAT_ERROR_MSG("Error! Invalid time_interpolation_method: " + 
                    time_interpolation_method + 
@@ -85,7 +84,7 @@ void SPC::initialize_impl (const RunType /* run_type */)
   vremap_data.pname = "PS";
   vremap_data.pmid = pmid;
   m_data_interpolation->create_vert_remapper (vremap_data);
-  m_data_interpolation->init_data_interval (start_of_step_ts());
+  m_data_interpolation->init_time_interpolation (start_of_step_ts(), DataInterpolation::Linear);
 
   // Set property checks for fields in this process
   using FWI = FieldWithinIntervalCheck;

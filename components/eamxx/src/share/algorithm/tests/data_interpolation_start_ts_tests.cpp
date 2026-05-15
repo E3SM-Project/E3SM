@@ -52,12 +52,10 @@ TEST_CASE ("start_ts_rotation")
     fields.pop_back(); // Don't interpolate p1d
 
     auto interp = create_interp(data_grid, fields);
-    interp->setup_periodic_time_database(files,
-        DataInterpolation::Linear,
-        start_ts);     // start_ts: rotate so Oct is first slice
+    interp->setup_periodic_time_database(files, start_ts);     // start_ts: rotate so Oct is first slice
     interp->create_horiz_remappers("");  // no hremap (data_grid == src_grid)
     interp->create_vert_remapper();      // no vremap (VRemapType::None)
-    interp->init_data_interval(t0);
+    interp->init_time_interpolation(t0,DataInterpolation::Linear);
 
     auto base     = create_fields(data_grid, true);
     auto ones     = create_fields(data_grid, false);
