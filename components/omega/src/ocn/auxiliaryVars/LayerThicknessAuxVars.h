@@ -16,7 +16,6 @@ class LayerThicknessAuxVars {
  public:
    Array2DReal FluxLayerThickEdge;
    Array2DReal MeanLayerThickEdge;
-   Array2DReal SshCell;
    Array2DReal ProvThickness;
 
    FluxThickEdgeOption FluxThickEdgeChoice;
@@ -73,11 +72,6 @@ class LayerThicknessAuxVars {
       const int KStart = chunkStart(KChunk, MinLayerCell(ICell));
       const int KLen   = chunkLength(KChunk, KStart, MaxLayerCell(ICell));
 
-      for (int KVec = 0; KVec < KLen; ++KVec) {
-         const int K       = KStart + KVec;
-         SshCell(ICell, K) = LayerThickCell(ICell, K) - BottomDepth(ICell);
-      }
-
       Real TmpProv[VecLength] = {0.};
 
       Real DtInvAreaCell = Dt / AreaCell(ICell);
@@ -109,7 +103,6 @@ class LayerThicknessAuxVars {
    Array2DI4 EdgesOnCell;
    Array2DReal EdgeSignOnCell;
    Array2DI4 CellsOnEdge;
-   Array1DReal BottomDepth;
    Array1DI4 MinLayerEdgeBot;
    Array1DI4 MaxLayerEdgeTop;
    Array1DI4 MinLayerCell;

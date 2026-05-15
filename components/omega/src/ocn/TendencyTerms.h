@@ -173,7 +173,7 @@ class SSHGradOnEdge {
    /// The functor takes edge index, vertical chunk index, and array of
    /// layer thickness/SSH, outputs tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
-                                   const Array2DReal &SshCell) const {
+                                   const Array1DReal &SshCell) const {
 
       const I4 KStart = chunkStart(KChunk, MinLayerEdgeBot(IEdge));
       const I4 KLen   = chunkLength(KChunk, KStart, MaxLayerEdgeTop(IEdge));
@@ -184,8 +184,7 @@ class SSHGradOnEdge {
       for (int KVec = 0; KVec < KLen; ++KVec) {
          const I4 K = KStart + KVec;
          Tend(IEdge, K) -= EdgeMask(IEdge, K) * Gravity *
-                           (SshCell(ICell1, K) - SshCell(ICell0, K)) *
-                           InvDcEdge;
+                           (SshCell(ICell1) - SshCell(ICell0)) * InvDcEdge;
       }
    }
 

@@ -12,14 +12,11 @@ LayerThicknessAuxVars::LayerThicknessAuxVars(const std::string &AuxStateSuffix,
                          Mesh->NEdgesSize, VCoord->NVertLayers),
       MeanLayerThickEdge("MeanLayerThickEdge" + AuxStateSuffix,
                          Mesh->NEdgesSize, VCoord->NVertLayers),
-      SshCell("SshCell" + AuxStateSuffix, Mesh->NCellsSize,
-              VCoord->NVertLayers),
       ProvThickness("ProvThickness" + AuxStateSuffix, Mesh->NCellsSize,
                     VCoord->NVertLayers),
       AreaCell(Mesh->AreaCell), DvEdge(Mesh->DvEdge),
       NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
       EdgeSignOnCell(Mesh->EdgeSignOnCell), CellsOnEdge(Mesh->CellsOnEdge),
-      BottomDepth(VCoord->BottomDepth),
       MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
       MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop),
       MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell) {}
@@ -69,20 +66,6 @@ void LayerThicknessAuxVars::registerFields(const std::string &AuxGroupName,
        DimNames   // dimension names
    );
 
-   // Sea surface height
-   DimNames[0]       = "NCells" + DimSuffix;
-   auto SshCellField = Field::create(
-       SshCell.label(),                     // field name
-       "sea surface height at cell center", // long Name or description
-       "m",                                 // units
-       "sea_surface_height",                // CF standard Name
-       0,                                   // min valid value
-       std::numeric_limits<Real>::max(),    // max valid value
-       FillValue,                           // scalar for undefined entries
-       NDims,                               // number of dimensions
-       DimNames                             // dimension names
-   );
-
    // Provisional Thickness
    auto ProvThicknessField = Field::create(
        ProvThickness.label(),                   // field name
@@ -99,20 +82,17 @@ void LayerThicknessAuxVars::registerFields(const std::string &AuxGroupName,
    // Add fields to Aux field group
    FieldGroup::addFieldToGroup(FluxLayerThickEdge.label(), AuxGroupName);
    FieldGroup::addFieldToGroup(MeanLayerThickEdge.label(), AuxGroupName);
-   FieldGroup::addFieldToGroup(SshCell.label(), AuxGroupName);
    FieldGroup::addFieldToGroup(ProvThickness.label(), AuxGroupName);
 
    // Attach field data
    FluxLayerThickEdgeField->attachData<Array2DReal>(FluxLayerThickEdge);
    MeanLayerThickEdgeField->attachData<Array2DReal>(MeanLayerThickEdge);
-   SshCellField->attachData<Array2DReal>(SshCell);
    ProvThicknessField->attachData<Array2DReal>(ProvThickness);
 }
 
 void LayerThicknessAuxVars::unregisterFields() const {
    Field::destroy(FluxLayerThickEdge.label());
    Field::destroy(MeanLayerThickEdge.label());
-   Field::destroy(SshCell.label());
    Field::destroy(ProvThickness.label());
 }
 

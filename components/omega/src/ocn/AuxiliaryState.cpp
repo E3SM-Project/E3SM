@@ -241,23 +241,6 @@ void AuxiliaryState::computeMomAux(const OceanState *State,
        });
    Pacer::stop("AuxState:cellAuxState2", 2);
 
-   Pacer::start("AuxState:cellAuxState3", 2);
-   parallelForOuter(
-       "cellAuxState3", {Mesh->NCellsAll},
-       KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
-          const int KMin   = MinLayerCell(ICell);
-          const int KMax   = MaxLayerCell(ICell);
-          const int KRange = vertRangeChunked(KMin, KMax);
-
-          parallelForInner(
-              Team, KRange, INNER_LAMBDA(int KChunk) {
-                 LocLayerThicknessAux.computeVarsOnCells(
-                     ICell, KChunk, LayerThickCell, NormalVelEdge,
-                     TimeStepSeconds);
-              });
-       });
-   Pacer::stop("AuxState:cellAuxState3", 2);
-
    Pacer::start("AuxState:computeVerticalVelocity", 2);
 
    const auto &FluxLayerThickEdge = LayerThicknessAux.FluxLayerThickEdge;

@@ -144,9 +144,11 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    BottomDepth  = Array1DReal("BottomDepth", NCellsSize);
    PressureInterface =
        Array2DReal("PressureInterface", NCellsSize, NVertLayersP1);
-   PressureMid     = Array2DReal("PressureMid", NCellsSize, NVertLayers);
-   ZInterface      = Array2DReal("ZInterface", NCellsSize, NVertLayersP1);
-   ZMid            = Array2DReal("ZMid", NCellsSize, NVertLayers);
+   PressureMid = Array2DReal("PressureMid", NCellsSize, NVertLayers);
+   ZInterface  = Array2DReal("ZInterface", NCellsSize, NVertLayersP1);
+   ZMid        = Array2DReal("ZMid", NCellsSize, NVertLayers);
+   SshCell     = Array1DReal("SshCell", NCellsSize);
+
    GeopotentialMid = Array2DReal("GeopotentialMid", NCellsSize, NVertLayers);
    LayerThicknessTarget =
        Array2DReal("LayerThicknessTarget", NCellsSize, NVertLayers);
@@ -160,10 +162,12 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    deepCopy(SurfacePressure, 0);
 
    // Make host copies for device arrays not being read from file
-   PressureInterfaceH    = createHostMirrorCopy(PressureInterface);
-   PressureMidH          = createHostMirrorCopy(PressureMid);
-   ZInterfaceH           = createHostMirrorCopy(ZInterface);
-   ZMidH                 = createHostMirrorCopy(ZMid);
+   PressureInterfaceH = createHostMirrorCopy(PressureInterface);
+   PressureMidH       = createHostMirrorCopy(PressureMid);
+   ZInterfaceH        = createHostMirrorCopy(ZInterface);
+   ZMidH              = createHostMirrorCopy(ZMid);
+   SshCellH           = createHostMirrorCopy(SshCellH);
+
    GeopotentialMidH      = createHostMirrorCopy(GeopotentialMid);
    LayerThicknessTargetH = createHostMirrorCopy(LayerThicknessTarget);
 
@@ -224,6 +228,8 @@ void VertCoord::defineFields() {
    PressMidFldName       = "PressureMid";
    ZInterfFldName        = "ZInterface";
    ZMidFldName           = "ZMid";
+   SshFldName            = "SshCell";
+
    GeopotFldName         = "GeopotentialMid";
    LyrThickTargetFldName = "LayerThicknessTarget";
 
@@ -239,6 +245,7 @@ void VertCoord::defineFields() {
       ZMidFldName.append(Name);
       GeopotFldName.append(Name);
       LyrThickTargetFldName.append(Name);
+      SshFldName.append(Name);
    }
 
    // Create fields for VertCoord variables
@@ -283,6 +290,18 @@ void VertCoord::defineFields() {
        FillValueReal,                    // scalar for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
+   );
+
+   auto SshField = Field::create(
+       SshFldName,                          // field name
+       "sea surface height at cell center", // long Name or description
+       "m",                                 // units
+       "sea_surface_height",                // CF standard Name
+       std::numeric_limits<Real>::min(),    // min valid value
+       std::numeric_limits<Real>::max(),    // max valid value
+       FillValueReal,                       // scalar for undefined entries
+       NDims,                               // number of dimensions
+       DimNames                             // dimension names
    );
 
    NDims = 2;
@@ -431,6 +450,7 @@ void VertCoord::defineFields() {
    VCoordGroup->addField(ZMidFldName);
    VCoordGroup->addField(GeopotFldName);
    VCoordGroup->addField(LyrThickTargetFldName);
+   VCoordGroup->addField(SshFldName);
 
    // Associate Field with data
    PressureInterfaceField->attachData<Array2DReal>(PressureInterface);
@@ -439,6 +459,7 @@ void VertCoord::defineFields() {
    ZMidField->attachData<Array2DReal>(ZMid);
    GeopotentialMidField->attachData<Array2DReal>(GeopotentialMid);
    LayerThicknessTargetField->attachData<Array2DReal>(LayerThicknessTarget);
+   SshField->attachData<Array1DReal>(SshCell);
 
 } // end defineFields
 
@@ -462,6 +483,7 @@ VertCoord::~VertCoord() {
       Field::destroy(ZMidFldName);
       Field::destroy(GeopotFldName);
       Field::destroy(LyrThickTargetFldName);
+      Field::destroy(SshFldName);
       FieldGroup::destroy(GroupName);
    }
 
@@ -958,6 +980,7 @@ void VertCoord::computeZHeight(
    OMEGA_SCOPE(LocZInterf, ZInterface);
    OMEGA_SCOPE(LocZMid, ZMid);
    OMEGA_SCOPE(LocBotDepth, BottomDepth);
+   OMEGA_SCOPE(LocSshCell, SshCell);
 
    parallelForOuter(
        "computeZHeight", {NCellsAll},
@@ -977,6 +1000,9 @@ void VertCoord::computeZHeight(
                     LocZInterf(ICell, KLyr) = -LocBotDepth(ICell) + Accum;
                     LocZMid(ICell, KLyr) =
                         -LocBotDepth(ICell) + Accum - 0.5 * DZ;
+                    if (KLyr == KMin) {
+                       LocSshCell(ICell) = LocZInterf(ICell, KLyr);
+                    }
                  }
               });
        });
@@ -1080,6 +1106,8 @@ void VertCoord::copyToHost() {
    deepCopy(PressureMidH, PressureMid);
    deepCopy(ZInterfaceH, ZInterface);
    deepCopy(ZMidH, ZMid);
+   deepCopy(SshCellH, SshCell);
+
    deepCopy(GeopotentialMidH, GeopotentialMid);
    deepCopy(LayerThicknessTargetH, LayerThicknessTarget);
    deepCopy(RefPseudoThicknessH, RefPseudoThickness);
@@ -1093,6 +1121,8 @@ void VertCoord::copyToDevice() {
    deepCopy(PressureMid, PressureMidH);
    deepCopy(ZInterface, ZInterfaceH);
    deepCopy(ZMid, ZMidH);
+   deepCopy(SshCell, SshCellH);
+
    deepCopy(GeopotentialMid, GeopotentialMidH);
    deepCopy(LayerThicknessTarget, LayerThicknessTargetH);
    deepCopy(RefPseudoThickness, RefPseudoThicknessH);
