@@ -528,14 +528,13 @@ void AtmosphereDriver::setup_shoc_3d_turbulence_link ()
                    "Error! Attempting to setup 3D turbulence link for "
                    "SHOC, but SHOC is not defined.\n");
 
-  bool do_3d_turbulence = false;
   if (m_atm_process_group->has_process("homme")) {
     auto homme_process = m_atm_process_group->get_process_nonconst("homme");
-    do_3d_turbulence = homme_process->get_params().get("do_3d_turbulence", false);
-  }
+    const bool do_3d_turbulence = homme_process->get_params().get("do_3d_turbulence", false);
 
-  auto shoc_process = m_atm_process_group->get_process_nonconst("shoc");
-  shoc_process->get_params().set<bool>("do_3d_turbulence_shoc", do_3d_turbulence);
+    auto shoc_process = m_atm_process_group->get_process_nonconst("shoc");
+    shoc_process->get_params().set<bool>("do_3d_turbulence_shoc", do_3d_turbulence);
+  }
 }
 
 void AtmosphereDriver::add_additional_column_data_to_property_checks () {

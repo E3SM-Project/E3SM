@@ -35,8 +35,6 @@ void Functions<S,D>
   static constexpr Scalar basetemp = C::basetemp;
   static constexpr Scalar mintke   = scream::shoc::Constants<Real>::mintke;
   static constexpr Scalar maxtke   = scream::shoc::Constants<Real>::maxtke;
-  Pack a_prod_bu;
-  Pack a_prod_sh;
 
   //declare some constants
   static constexpr Scalar Cs  = 0.15;
@@ -48,6 +46,8 @@ void Functions<S,D>
 
   const Int nlev_pack = ekat::npack<Pack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
+    Pack a_prod_bu;
+    Pack a_prod_sh;
 
     // Compute buoyant production term
     if (shoc_1p5tke){

@@ -72,6 +72,13 @@ void Functions<S,D>::shoc_tke(
     // Interpolate shear term from interface to thermo grid
     team.team_barrier();
     linear_interp(team,zi_grid,zt_grid,sterm,sterm_zt,nlevi,nlev,0);
+
+    // In the legacy 1D path this diagnostic is not used to drive TKE, but the
+    // field is still part of SHOC's output contract and must not retain stale data.
+    const Int nlev_pack = ekat::npack<Pack>(nlev);
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
+      shear_strain3d(k) = 0;
+    });
   } else {
     compute_vertical_shear_terms(team,nlev,nlevi,
                                  dz_zi,u_wind,v_wind,w_field,
