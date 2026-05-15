@@ -93,12 +93,18 @@ void Functions<S,D>::gw_front_init(
   const Int num_pgwv = s_common_init.pgwv*2 + 1;
   s_front_init.fav = view_1d<Real>("front.fav", num_pgwv);
 
-  auto cref = s_common_init.cref;
-  auto fav  = s_front_init.fav;
-  auto dc   = s_common_init.dc;
-  auto pgwv = s_common_init.pgwv;
+  auto cref    = s_common_init.cref;
+  auto fav     = s_front_init.fav;
+  auto dc      = s_common_init.dc;
+  auto pgwv    = s_common_init.pgwv;
+  auto taubgnd = s_front_init.taubgnd;
 
   Kokkos::parallel_for(Kokkos::RangePolicy<exe_space_t>(0, num_pgwv), KOKKOS_LAMBDA(const Int l) {
+    // Prohibit wavenumber 0
+    if (l == pgwv) {
+      fav(l) = 0; // only this thread writes fav(pgwv)
+      return;
+    }
     if (num_pgwv > 1) {
       // Lower bound of bin
       const Real cmn = cref(l) - GWC::half*dc;
@@ -113,11 +119,9 @@ void Functions<S,D>::gw_front_init(
         fav(l) = fav(l) + GWC::dca * std::exp(-(temp*temp));
       }
       // Multiply by source strength
-      fav(l) = s_front_init.taubgnd * (fav(l)/dc);
+      fav(l) = taubgnd * (fav(l)/dc);
     }
 
-    // Prohibit wavenumber 0.
-    fav(pgwv) = 0;
   });
 }
 

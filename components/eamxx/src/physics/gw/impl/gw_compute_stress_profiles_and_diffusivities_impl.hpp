@@ -37,6 +37,11 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
 {
   static const auto ubmc2mn = GWC::ubmc2mn;
 
+  const bool dbg = (team.league_rank() == 0) && (team.team_rank() == 0);
+  if (dbg) Kokkos::printf("[stress_prof] enter pver=%d pgwv=%d src_level=%d ktop=%d nbot_molec=%d do_molec_diff=%d\n",
+                          (int)pver, (int)pgwv, (int)src_level,
+                          (int)init.ktop, (int)init.nbot_molec, (int)init.do_molec_diff);
+
   const int num_pgwv = 2*pgwv + 1;
 
   // Get temporary workspaces and change them to desired dimensions
@@ -44,12 +49,16 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
   workspace.template take_many_contiguous_unsafe<4>(
     {"tausat_1d", "dsat_1d", "wrk1_1d", "wrk2_1d"},
     {&tausat_1d, &dsat_1d, &wrk1_1d, &wrk2_1d});
+  if (dbg) Kokkos::printf("[stress_prof] after workspace take_many_contiguous_unsafe<4>\n");
+
   uview_2d<Real>
     tausat(tausat_1d.data(), pver+1, num_pgwv),
     dsat(dsat_1d.data(), pver+1, num_pgwv),
     wrk1(wrk1_1d.data(), pver+1, num_pgwv),
     wrk2(wrk2_1d.data(), pver+1, num_pgwv);
 
+  if (dbg) Kokkos::printf("[stress_prof] precompute parallel_for range=[%d,%d)\n",
+                          (int)((init.ktop+1)*num_pgwv), (int)((src_level+1)*num_pgwv));
   // Loop from bottom to top to get stress profiles. Instead of having 2 levels
   // of parallelism, we collapse all the parallelism into the top level by multiplying
   // the level by num_pgwv.
@@ -91,10 +100,14 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
   });
 
   team.team_barrier();
+  if (dbg) Kokkos::printf("[stress_prof] after precompute parallel_for + barrier\n");
 
+  if (dbg) Kokkos::printf("[stress_prof] entering serial k-loop: k from %d down to %d\n",
+                          (int)src_level, (int)(init.ktop+1));
   // The outer loop is serial because tau(k) depends on tau(k+1), which eliminates
   // parallelism in the vertical levels. We can still parallelize over pgwvs though.
   for (Int k = src_level; k > init.ktop; --k) {
+    if (dbg) Kokkos::printf("[stress_prof] k=%d start\n", (int)k);
     // Determine the diffusivity for each column.
     Real d = GWC::dback;
     if (init.do_molec_diff) {
@@ -102,14 +115,14 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
     }
     else {
       Kokkos::parallel_reduce(
-        Kokkos::TeamVectorRange(team, -pgwv, pgwv+1), [&] (const int l, Real& lmax) {
-        const int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
+        Kokkos::TeamVectorRange(team, num_pgwv), [&] (const int pl_idx, Real& lmax) {
         const Real dscal = ekat::impl::min((Real)1.0, tau(pl_idx, k+1) / (tausat(k, pl_idx) + GWC::taumin));
         lmax = ekat::impl::max(lmax, dscal * dsat(k, pl_idx));
       }, Kokkos::Max<Real>(d));
     }
 
     team.team_barrier();
+    if (dbg) Kokkos::printf("[stress_prof] k=%d after reduce+barrier d=%g\n", (int)k, (double)d);
 
     // Compute stress for each wave. The stress at this level is the min of
     // the saturation stress and the stress at the level below reduced by
@@ -119,8 +132,7 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
     // diffusion. Otherwise, do it everywhere.
     if (k <= init.nbot_molec || !init.do_molec_diff) {
       Kokkos::parallel_for(
-        Kokkos::TeamVectorRange(team, -pgwv, pgwv+1), [&] (const int l) {
-        const int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
+        Kokkos::TeamVectorRange(team, num_pgwv), [&] (const int pl_idx) {
 
         const Real wrk = wrk1(k, pl_idx) + wrk2(k, pl_idx) * d;
 
@@ -136,17 +148,19 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
     }
     else {
       Kokkos::parallel_for(
-        Kokkos::TeamVectorRange(team, -pgwv, pgwv+1), [&] (const int l) {
-        int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
+        Kokkos::TeamVectorRange(team, num_pgwv), [&] (const int pl_idx) {
         tau(pl_idx, k) = ekat::impl::min(tau(pl_idx, k+1), tausat(k, pl_idx));
       });
     }
     team.team_barrier();
+    if (dbg) Kokkos::printf("[stress_prof] k=%d done\n", (int)k);
   }
+  if (dbg) Kokkos::printf("[stress_prof] after k-loop\n");
 
   // Release temporary variables from the workspace
   workspace.template release_many_contiguous<4>(
     {&tausat_1d, &dsat_1d, &wrk1_1d, &wrk2_1d});
+  if (dbg) Kokkos::printf("[stress_prof] exit (after release)\n");
 }
 
 // Serial version: follows the Fortran gwd_compute_stress_profiles_and_diffusivities
