@@ -59,8 +59,7 @@ module seq_map_type_mod
      real(R8), pointer       :: clat_d_moab(:)
      !
      !---- optional nonlinear map; see seq_nlmap_mod.F90
-     logical                 :: nl_available, nl_conservative
-     character(CX)           :: nl_mapfile
+     logical                 :: nl_available
      real(R8), allocatable   :: frac_s(:), frac_d(:)
 
   end type seq_map
@@ -224,18 +223,5 @@ contains
     endif
 
   end subroutine seq_map_gsmapcheck
-
-  function seq_map_should_nonlinear_map_conserve(maprcname) result(conserve)
-    character(len=*),intent(in) :: maprcname
-
-    logical :: conserve
-    integer :: idx
-
-    ! smap and vmap do not conserve.
-    idx = index(maprcname, 'smap')
-    if (idx == 0) idx = index(maprcname, 'vmap')
-    ! Conserve if not an smap or vmap, meaning this is an fmap.
-    conserve = idx == 0
-  end function seq_map_should_nonlinear_map_conserve
 
 end module seq_map_type_mod

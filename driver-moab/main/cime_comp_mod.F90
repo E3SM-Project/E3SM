@@ -1243,8 +1243,7 @@ contains
          repro_sum_rel_diff_max_in = reprosum_diffmax, &
          repro_sum_recompute_in    = reprosum_recompute)
 
-    call seq_nlmap_setopts(nlmaps_verbosity_in = nlmaps_verbosity, &
-         nlmaps_exclude_fields_in = nlmaps_exclude_fields, &
+    call seq_nlmap_setopts(nlmaps_exclude_fields_in = nlmaps_exclude_fields, &
          nlmaps_atm2srf_conserve_in = nlmaps_atm2srf_conserve)
 
     ! Check cpl_seq_option

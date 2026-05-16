@@ -210,8 +210,7 @@ contains
     integer(IN)                 :: mapid
     character(CL)               :: nlmap_id
     character(len=128)          :: nl_label
-    logical                     :: nl_found, nl_conservative
-    character(len=*),parameter  :: nl_strategy = 'X'
+    logical                     :: nl_found
     integer                     :: ierr
 
     character(len=*),parameter  :: subname = "(moab_map_init_rcfile) "
@@ -250,23 +249,15 @@ contains
        call shr_sys_abort(subname//' ERROR in loading map file - ' // mapfile)
     endif
 
-   mapper%nl_available = .false.
-!  Look for nonlinear map
+    mapper%nl_available = .false.
+    ! Look for an optional nonlinear (high-order) map paired with this one.
     nl_label = maprcname(1:len(maprcname)-1)//'_nonlinear:'
     call shr_mct_queryConfigFile(mpicom, maprcfile, trim(nl_label), nl_mapfile, &
           Label1Found=nl_found)
     if (nl_found) nl_found = nl_mapfile /= "idmap_ignore"
-    nl_conservative = .false.
 
-    ! initially any fmap will be set to be conservative
-    ! this can be overriden by the the nlmaps_atm2srf_conserve namelist variable
-    if (nl_found) nl_conservative = seq_map_should_nonlinear_map_conserve(maprcname)
-
-    mapper%nl_available = nl_found
     if (nl_found) then
          mapper%nl_available = .true.
-         mapper%nl_conservative = nl_conservative
-         mapper%nl_mapfile = trim(nl_mapfile)
          nlmap_id = 'ho'//map_identifier
          mapper%howeight_identifier = nlmap_id
          mapfile_term = trim(nl_mapfile)//CHAR(0)
@@ -282,13 +273,12 @@ contains
        write(logunit,'(2A,I6,4A)') subname,' mapper counter, strategy, mapfile = ', &
             mapper%counter,' ',trim(mapper%strategy),' ',trim(mapper%mapfile)
        if (mapper%nl_available) then
-          write(logunit,'(2A,I6,3A,L1,2A)') subname, &
-               ' mapper counter, nl_strategy, nl_conservative, nlmap_id,  nl_mapfile = ', &
-               mapper%counter,' ',nl_strategy,' ',nl_conservative,' ',trim(nlmap_id),' ',trim(mapper%nl_mapfile)
+          write(logunit,'(2A,I6,3A)') subname, &
+               ' mapper counter, nlmap_id = ', &
+               mapper%counter,' ',trim(nlmap_id)
        end if
        call shr_sys_flush(logunit)
     endif
-
 
   end subroutine moab_map_init_rcfile
 

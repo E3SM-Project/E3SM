@@ -143,7 +143,7 @@ module seq_nlmap_mod
   !
   !-----------------------------------------------------------------------------
   
-  use shr_kind_mod     , only: R8 => SHR_KIND_R8, IN => SHR_KIND_IN, I8 => SHR_KIND_I8, &
+  use shr_kind_mod     , only: R8 => SHR_KIND_R8, IN => SHR_KIND_IN, &
                                SHR_KIND_CS, CX => SHR_KIND_CX
   use shr_sys_mod
   use shr_const_mod
@@ -151,13 +151,10 @@ module seq_nlmap_mod
   use seq_comm_mct
   use component_type_mod
   use seq_map_type_mod
-  use shr_reprosum_mod , only: shr_reprosum_calc
-  use shr_infnan_mod   , only: shr_infnan_isnan, shr_infnan_isinf
   use seq_infodata_mod , only: nlmaps_exclude_max_number, nlmaps_exclude_nchar
   use shr_moab_mod     , only: mbGetnCells
   use iMOAB            , only: iMOAB_GetDoubleTagStorage
   use iso_c_binding    , only: C_NULL_CHAR
-  use perf_mod
 
   implicit none
   save
@@ -168,44 +165,34 @@ module seq_nlmap_mod
   public :: seq_nlmap_setopts
   public :: seq_nlmap_init_a2oi_cons
   public :: seq_nlmap_init_a2l_cons
-  public :: seq_nlmap_check_matrices
   public :: seq_nlmap_field_is_excluded
 
-  ! Measure and print information about nonlinearly mapped fields. 0 means no
-  ! analysis is done or printed. >= 1 triggers analysis written to cpl.log.
-  integer :: nlmaps_verbosity
   ! List of fields that are to be excluded from the set that are nonlinearly
   ! mapped. For these excluded fields, the low-order linear map is used,
   ! instead.
   character(nlmaps_exclude_nchar) :: nlmaps_exclude_fields(nlmaps_exclude_max_number)
-  integer :: nlmaps_exclude_n_fields, nlmaps_exclude_max_nchar
+  integer :: nlmaps_exclude_n_fields
   logical :: atm2srf_conserve
-  logical :: atm2srf_a2oi_inited = .false., atm2srf_a2l_inited = .false.
 
 contains
 
-  subroutine seq_nlmap_setopts(nlmaps_verbosity_in, nlmaps_exclude_fields_in, &
+  subroutine seq_nlmap_setopts(nlmaps_exclude_fields_in, &
        nlmaps_atm2srf_conserve_in)
     ! Options in drv_in.
-    
-    integer, optional, intent(in) :: nlmaps_verbosity_in
+
     character(nlmaps_exclude_nchar), optional, intent(in) :: &
          nlmaps_exclude_fields_in(nlmaps_exclude_max_number)
     logical, optional, intent(in) :: nlmaps_atm2srf_conserve_in
 
     integer :: i, n
 
-    if (present(nlmaps_verbosity_in)) nlmaps_verbosity = nlmaps_verbosity_in
-
     nlmaps_exclude_n_fields = 0
-    nlmaps_exclude_max_nchar = 0
     if (present(nlmaps_exclude_fields_in)) then
        do i = 1, nlmaps_exclude_max_number
           n = len(trim(nlmaps_exclude_fields_in(i)))
           if (n > 0) then
              nlmaps_exclude_n_fields = nlmaps_exclude_n_fields + 1
              nlmaps_exclude_fields(nlmaps_exclude_n_fields) = nlmaps_exclude_fields_in(i)
-             nlmaps_exclude_max_nchar = max(nlmaps_exclude_max_nchar, n)
           end if
        end do
     end if
@@ -286,8 +273,6 @@ contains
        call shr_sys_abort('seq_nlmap_init_a2oi_cons ERROR: Failed to get frac tag from target MOAB mesh.')
     end if
 
-    atm2srf_a2oi_inited = .true.
-    
   end subroutine seq_nlmap_init_a2oi_cons
 
   subroutine seq_nlmap_init_a2l_cons(mapper, fractions_ax)
@@ -323,17 +308,6 @@ contains
        call shr_sys_abort('seq_nlmap_init_a2l_cons ERROR: Failed to get frac tag from target MOAB mesh.')
     end if
 
-    atm2srf_a2l_inited = .true.
-
   end subroutine seq_nlmap_init_a2l_cons
-
-  subroutine seq_nlmap_check_matrices(m)
-    ! Check that m%sMatp%Matrix's non-0 pattern is a subset of the pattern of
-    ! m%nl_sMatp%Matrix. This assures that the second will provide data to every
-    ! target index that the first does, regardless of source mask.
-    
-    type(seq_map), intent(in) :: m
-
-  end subroutine seq_nlmap_check_matrices
 
 end module seq_nlmap_mod
