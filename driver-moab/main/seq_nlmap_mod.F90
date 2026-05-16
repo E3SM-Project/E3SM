@@ -259,7 +259,13 @@ contains
     k_sfrac = mct_aVect_indexRA(fractions_ax(1), 'lfrac')
     lsize_s = mct_aVect_lsize(fractions_ax(1))
     lsize_d = mbGetnCells(mapper%tgt_mbid)
-    
+
+    ! Guard against double-allocate on mapper re-init (would abort otherwise).
+    ! mapper points into the static seq_maps(:) array (seq_map_type_mod), so
+    ! it has program lifetime; releasing/re-claiming here also avoids a leak
+    ! if a caller re-initializes the same mapper with a different source size.
+    if (allocated(mapper%frac_s)) deallocate(mapper%frac_s)
+    if (allocated(mapper%frac_d)) deallocate(mapper%frac_d)
     allocate(mapper%frac_s(lsize_s), mapper%frac_d(lsize_d))
 
     do j = 1,lsize_s
@@ -294,7 +300,11 @@ contains
     k_sfrac = mct_aVect_indexRA(fractions_ax(1), 'lfrac')
     lsize_s = mct_aVect_lsize(fractions_ax(1))
     lsize_d = mbGetnCells(mapper%tgt_mbid)
-    
+
+    ! Guard against double-allocate on mapper re-init; see comment in
+    ! seq_nlmap_init_a2oi_cons.
+    if (allocated(mapper%frac_s)) deallocate(mapper%frac_s)
+    if (allocated(mapper%frac_d)) deallocate(mapper%frac_d)
     allocate(mapper%frac_s(lsize_s), mapper%frac_d(lsize_d))
 
     do j = 1,lsize_s
