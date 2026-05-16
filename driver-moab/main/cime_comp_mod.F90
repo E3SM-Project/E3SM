@@ -171,9 +171,6 @@ module cime_comp_mod
   use seq_flds_mod, only : seq_flds_set
   use seq_flds_mod, only : seq_flds_z2x_fluxes, seq_flds_x2z_fluxes
 
-  ! nonlinear maps
-  use seq_nlmap_mod, only : seq_nlmap_setopts, seq_nlmap_init_a2oi_cons, seq_nlmap_init_a2l_cons
-
   ! component type and accessor functions
   use component_type_mod, only: component_get_iamin_compid, component_get_suffix
   use component_type_mod, only: component_get_iamroot_compid
@@ -1071,10 +1068,8 @@ contains
     integer(i8) :: beg_count          ! start time
     integer(i8) :: end_count          ! end time
     integer(i8) :: irtc_rate          ! factor to convert time to seconds
-    integer :: nlmaps_verbosity
     logical :: nlmaps_atm2srf_conserve
     character(nlmaps_exclude_nchar) :: nlmaps_exclude_fields(nlmaps_exclude_max_number)
-    type(seq_map), pointer :: mapper_lcl
 
     !----------------------------------------------------------
     !| Timer initialization (has to be after mpi init)
@@ -1228,7 +1223,6 @@ contains
          reprosum_diffmax=reprosum_diffmax         , &
          reprosum_recompute=reprosum_recompute     , &
          max_cplstep_time=max_cplstep_time         , &
-         nlmaps_verbosity=nlmaps_verbosity         , &
          nlmaps_atm2srf_conserve=nlmaps_atm2srf_conserve, &
          nlmaps_exclude_fields=nlmaps_exclude_fields)
 
