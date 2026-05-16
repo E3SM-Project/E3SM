@@ -1349,7 +1349,6 @@ contains
 
     integer :: i, n, start, ipos
     character(len=128) :: name
-    character(len=*), parameter :: subname = '(build_nlmap_sublists) '
 
     fldlist_caas    = ''
     fldlist_lo_only = ''
@@ -1370,6 +1369,21 @@ contains
           nlo = 1
        end if
        return
+    end if
+
+    ! Defense-in-depth: upper-bound buffer-size check. If every input field
+    ! landed in one output list, that list would hold the entire input string
+    ! (n chars including the colons between fields) plus the final
+    ! C_NULL_CHAR -> n+1 chars. fldlist_lo_only additionally may need
+    ! ':norm8wt' (8 chars) appended when mbnorm is true. If either output
+    ! buffer is smaller than that worst case, abort with a clear message
+    ! instead of silently truncating (which would manifest as an opaque
+    ! "tag not found" error downstream in iMOAB).
+    if (len(fldlist_caas) < n + 1) then
+       call shr_sys_abort('(build_nlmap_sublists) ERROR: fldlist_caas buffer too small for input field list')
+    end if
+    if (len(fldlist_lo_only) < n + 1 + merge(8, 0, mbnorm)) then
+       call shr_sys_abort('(build_nlmap_sublists) ERROR: fldlist_lo_only buffer too small for input field list')
     end if
 
     ! Walk the colon-separated list.
