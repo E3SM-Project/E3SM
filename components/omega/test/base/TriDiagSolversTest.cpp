@@ -154,15 +154,15 @@ Real runDiffManufactured(int NCells) {
        });
 
    Array1DReal XCell("XCell", NCells);
-   Array1DReal LayerThick("LayerThick", NCells);
+   Array1DReal PseudoThick("PseudoThick", NCells);
    Array1DReal U("U", NCells);
 
    // Create initial condition
    parallelFor(
        {NCells}, KOKKOS_LAMBDA(int ICell) {
-          XCell(ICell)      = (XVertex(ICell + 1) + XVertex(ICell)) / 2;
-          LayerThick(ICell) = XVertex(ICell + 1) - XVertex(ICell);
-          U(ICell)          = manufacturedSolution(XCell(ICell), 0);
+          XCell(ICell)       = (XVertex(ICell + 1) + XVertex(ICell)) / 2;
+          PseudoThick(ICell) = XVertex(ICell + 1) - XVertex(ICell);
+          U(ICell)           = manufacturedSolution(XCell(ICell), 0);
        });
 
    auto LConfig = TriDiagDiffSolver::makeLaunchConfig(1, NCells);
@@ -183,7 +183,7 @@ Real runDiffManufactured(int NCells) {
                    // Forcing term from the manufactured solution
                    const Real F = manufacturedForcing(XCell(ICell), TimeNext);
 
-                   Scratch.H(ICell, IVec) = LayerThick(ICell);
+                   Scratch.H(ICell, IVec) = PseudoThick(ICell);
 
                    if (ICell == NCells - 1) {
                       // Boundary condition
@@ -193,14 +193,14 @@ Real runDiffManufactured(int NCells) {
                       Scratch.H(ICell, IVec) -= TimeStep * BoundaryCoeff;
                       Scratch.G(ICell, IVec) = 0;
                    } else {
-                      const Real AvgLayerThick =
-                          (LayerThick(ICell + 1) + LayerThick(ICell)) / 2;
+                      const Real AvgPseudoThick =
+                          (PseudoThick(ICell + 1) + PseudoThick(ICell)) / 2;
                       Scratch.G(ICell, IVec) =
-                          Diffusivity(ICell + 1) * TimeStep / AvgLayerThick;
+                          Diffusivity(ICell + 1) * TimeStep / AvgPseudoThick;
                    }
                    // RHS
                    Scratch.X(ICell, IVec) =
-                       LayerThick(ICell) * (U(ICell) + TimeStep * F);
+                       PseudoThick(ICell) * (U(ICell) + TimeStep * F);
                 }
              });
 
@@ -223,7 +223,7 @@ Real runDiffManufactured(int NCells) {
        KOKKOS_LAMBDA(int ICell, Real &Accum) {
           const Real UExact = manufacturedSolution(XCell(ICell), TimeEnd);
           const Real DU     = U(ICell) - UExact;
-          Accum += LayerThick(ICell) * DU * DU;
+          Accum += PseudoThick(ICell) * DU * DU;
        },
        L2Error);
 
@@ -290,16 +290,16 @@ Real runDiffusionStability(bool UseGeneralSolver, Real DiffValue) {
        });
 
    Array1DReal XCell("XCell", NCells);
-   Array1DReal LayerThick("LayerThick", NCells);
+   Array1DReal PseudoThick("PseudoThick", NCells);
    Array1DReal U("U", NCells);
 
    // Create initial condition
    parallelFor(
        {NCells}, KOKKOS_LAMBDA(int ICell) {
-          XCell(ICell)      = ICell * DX + DX / 2;
-          LayerThick(ICell) = DX;
-          const Real Tmp    = XCell(ICell) - 0.5_Real;
-          U(ICell)          = Kokkos::exp(-Tmp * Tmp);
+          XCell(ICell)       = ICell * DX + DX / 2;
+          PseudoThick(ICell) = DX;
+          const Real Tmp     = XCell(ICell) - 0.5_Real;
+          U(ICell)           = Kokkos::exp(-Tmp * Tmp);
        });
 
    // Compute initial condition norm
@@ -307,7 +307,7 @@ Real runDiffusionStability(bool UseGeneralSolver, Real DiffValue) {
    parallelReduce(
        {NCells},
        KOKKOS_LAMBDA(int ICell, Real &Accum) {
-          Accum += LayerThick(ICell) * U(ICell) * U(ICell);
+          Accum += PseudoThick(ICell) * U(ICell) * U(ICell);
        },
        NormInit);
    NormInit = std::sqrt(NormInit);
@@ -328,28 +328,28 @@ Real runDiffusionStability(bool UseGeneralSolver, Real DiffValue) {
                    for (int IVec = 0; IVec < VecLength; ++IVec) {
 
                       if (ICell < NCells - 1) {
-                         const Real AvgLayerThick =
-                             (LayerThick(ICell + 1) + LayerThick(ICell)) / 2;
-                         Scratch.DU(ICell, IVec) =
-                             -Diffusivity(ICell + 1) * TimeStep / AvgLayerThick;
+                         const Real AvgPseudoThick =
+                             (PseudoThick(ICell + 1) + PseudoThick(ICell)) / 2;
+                         Scratch.DU(ICell, IVec) = -Diffusivity(ICell + 1) *
+                                                   TimeStep / AvgPseudoThick;
                       } else {
                          Scratch.DU(ICell, IVec) = 0;
                       }
 
                       if (ICell > 0) {
-                         const Real AvgLayerThick =
-                             (LayerThick(ICell) + LayerThick(ICell - 1)) / 2;
+                         const Real AvgPseudoThick =
+                             (PseudoThick(ICell) + PseudoThick(ICell - 1)) / 2;
                          Scratch.DL(ICell, IVec) =
-                             -Diffusivity(ICell) * TimeStep / AvgLayerThick;
+                             -Diffusivity(ICell) * TimeStep / AvgPseudoThick;
                       } else {
                          Scratch.DL(ICell, IVec) = 0;
                       }
 
-                      Scratch.D(ICell, IVec) = LayerThick(ICell) -
+                      Scratch.D(ICell, IVec) = PseudoThick(ICell) -
                                                Scratch.DU(ICell, IVec) -
                                                Scratch.DL(ICell, IVec);
 
-                      Scratch.X(ICell, IVec) = LayerThick(ICell) * U(ICell);
+                      Scratch.X(ICell, IVec) = PseudoThick(ICell) * U(ICell);
                    }
                 });
 
@@ -375,18 +375,18 @@ Real runDiffusionStability(bool UseGeneralSolver, Real DiffValue) {
                 parallelForInner(Team, NCells, [=](int ICell) {
                    for (int IVec = 0; IVec < VecLength; ++IVec) {
 
-                      Scratch.H(ICell, IVec) = LayerThick(ICell);
+                      Scratch.H(ICell, IVec) = PseudoThick(ICell);
 
                       if (ICell < NCells - 1) {
-                         const Real AvgLayerThick =
-                             (LayerThick(ICell + 1) + LayerThick(ICell)) / 2;
+                         const Real AvgPseudoThick =
+                             (PseudoThick(ICell + 1) + PseudoThick(ICell)) / 2;
                          Scratch.G(ICell, IVec) =
-                             Diffusivity(ICell + 1) * TimeStep / AvgLayerThick;
+                             Diffusivity(ICell + 1) * TimeStep / AvgPseudoThick;
                       } else {
                          Scratch.G(ICell, IVec) = 0;
                       }
 
-                      Scratch.X(ICell, IVec) = LayerThick(ICell) * U(ICell);
+                      Scratch.X(ICell, IVec) = PseudoThick(ICell) * U(ICell);
                    }
                 });
 
@@ -408,7 +408,7 @@ Real runDiffusionStability(bool UseGeneralSolver, Real DiffValue) {
    parallelReduce(
        {NCells},
        KOKKOS_LAMBDA(int ICell, Real &Accum) {
-          Accum += LayerThick(ICell) * U(ICell) * U(ICell);
+          Accum += PseudoThick(ICell) * U(ICell) * U(ICell);
        },
        Norm);
    Norm = std::sqrt(Norm);

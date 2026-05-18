@@ -225,10 +225,10 @@ int testTendencies() {
    int NEdgesOwned = Mesh->NEdgesOwned;
    int NTracers    = Tracers::getNumTracers();
 
-   const Real LayerThickTendSum =
+   const Real PseudoThickTendSum =
        sum(DefTendencies->PseudoThicknessTend, NCellsOwned,
            VCoord->MinLayerCell, VCoord->MaxLayerCell);
-   if (!Kokkos::isfinite(LayerThickTendSum) || LayerThickTendSum == 0) {
+   if (!Kokkos::isfinite(PseudoThickTendSum) || PseudoThickTendSum == 0) {
       Err++;
       LOG_ERROR("TendenciesTest: PseudoThickTend FAIL");
    }

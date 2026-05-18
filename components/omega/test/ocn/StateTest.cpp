@@ -236,17 +236,17 @@ int main(int argc, char *argv[]) {
       }
 
       // Get default state arrays and check for reasonable values
-      HostArray2DReal LayerThickHDef = DefState->getPseudoThicknessH(CurTime);
+      HostArray2DReal PseudoThickHDef = DefState->getPseudoThicknessH(CurTime);
       HostArray2DReal NormalVelocityHDef =
           DefState->getNormalVelocityH(CurTime);
-      Array2DReal LayerThickDef     = DefState->getPseudoThickness(CurTime);
+      Array2DReal PseudoThickDef    = DefState->getPseudoThickness(CurTime);
       Array2DReal NormalVelocityDef = DefState->getNormalVelocity(CurTime);
 
       int Count1 = 0;
       int Count2 = 0;
       for (int Cell = 0; Cell < NCellsAll; Cell++) {
          for (int Layer = 0; Layer < NVertLayers; Layer++) {
-            R8 val = LayerThickHDef(Cell, Layer);
+            R8 val = PseudoThickHDef(Cell, Layer);
             if (val != 0.0)
                ++Count1;                     // check for all-zero array
             if (val < 0.0 and val > 300.0) { // out of range
@@ -283,9 +283,9 @@ int main(int argc, char *argv[]) {
 
          // Create test arrays and fill reference and test states at current
          // time with Default state
-         HostArray2DReal LayerThickHRef =
+         HostArray2DReal PseudoThickHRef =
              RefState->getPseudoThicknessH(CurTime);
-         HostArray2DReal LayerThickHTst =
+         HostArray2DReal PseudoThickHTst =
              TstState->getPseudoThicknessH(CurTime);
          HostArray2DReal NormalVelocityHRef =
              RefState->getNormalVelocityH(CurTime);
@@ -294,8 +294,8 @@ int main(int argc, char *argv[]) {
 
          for (int Cell = 0; Cell < NCellsAll; Cell++) {
             for (int Layer = 0; Layer < NVertLayers; Layer++) {
-               LayerThickHRef(Cell, Layer) = LayerThickHDef(Cell, Layer);
-               LayerThickHTst(Cell, Layer) = LayerThickHDef(Cell, Layer);
+               PseudoThickHRef(Cell, Layer) = PseudoThickHDef(Cell, Layer);
+               PseudoThickHTst(Cell, Layer) = PseudoThickHDef(Cell, Layer);
             }
          }
          for (int Edge = 0; Edge < NEdgesAll; Edge++) {
@@ -311,14 +311,14 @@ int main(int argc, char *argv[]) {
 
          // Fill reference and test states at next time levels with the
          // Default state + 1
-         LayerThickHRef     = RefState->getPseudoThicknessH(NewTime);
-         LayerThickHTst     = TstState->getPseudoThicknessH(NewTime);
+         PseudoThickHRef    = RefState->getPseudoThicknessH(NewTime);
+         PseudoThickHTst    = TstState->getPseudoThicknessH(NewTime);
          NormalVelocityHRef = RefState->getNormalVelocityH(NewTime);
          NormalVelocityHTst = TstState->getNormalVelocityH(NewTime);
          for (int Cell = 0; Cell < NCellsAll; Cell++) {
             for (int Layer = 0; Layer < NVertLayers; Layer++) {
-               LayerThickHRef(Cell, Layer) = LayerThickHDef(Cell, Layer) + 1;
-               LayerThickHTst(Cell, Layer) = LayerThickHDef(Cell, Layer) + 1;
+               PseudoThickHRef(Cell, Layer) = PseudoThickHDef(Cell, Layer) + 1;
+               PseudoThickHTst(Cell, Layer) = PseudoThickHDef(Cell, Layer) + 1;
             }
          }
 
