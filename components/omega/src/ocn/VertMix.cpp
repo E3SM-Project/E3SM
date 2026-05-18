@@ -520,7 +520,7 @@ void VertMix::defineFields() {
 
 } // end defineIOFields
 
-// Dpply implicit velocity vertical mixing
+// Apply implicit velocity vertical mixing
 void VertMix::applyVelVertMixImplicit(
     OceanState *State,              ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
@@ -567,9 +567,12 @@ void VertMix::applyVelVertMixImplicit(
          Kokkos::parallel_for(
              Policy, KOKKOS_LAMBDA(const TeamMember &Team) {
                 const int IStart = Team.league_rank() * VecLength;
+                const int ILen =
+                    Kokkos::max(0, Kokkos::min(VecLength, LocNEdgesAll - IStart));
 
                 TriDiagDiffScratch Scratch(Team, NVertLayers);
 
+                // Construct a tri-diag diffusion matrix and RHS
                 Kokkos::parallel_for(
                     TeamThreadRange(Team, NVertLayers), [=](int K) {
                        for (int IVec = 0; IVec < VecLength; ++IVec) {
@@ -583,31 +586,34 @@ void VertMix::applyVelVertMixImplicit(
                           }
 
                           Real G, H, X;
-                          LocVelVertMixSetup(IEdge, K, DT, SpecVol,
-                                             LayerThickCell, VertVisc,
-                                             NormalVelEdge, G, H, X);
+                          LocVelVertMixSetup(IEdge, K, DT, SpecVol, LayerThickCell,
+                                             VertVisc, NormalVelEdge, G, H, X);
+
                           Scratch.G(K, IVec) = G;
                           Scratch.H(K, IVec) = H;
                           Scratch.X(K, IVec) = X;
                        }
                     });
 
+                // Solve the tri-diag diffusion system
                 Team.team_barrier();
                 TriDiagDiffSolver::solve(Team, Scratch);
                 Team.team_barrier();
 
+                // Store the solution vector X
                 Kokkos::parallel_for(
                     TeamThreadRange(Team, NVertLayers), [=](int K) {
-                       for (int IVec = 0; IVec < VecLength; ++IVec) {
+                       for (int IVec = 0; IVec < ILen; ++IVec) {
                           const int IEdge = IStart + IVec;
-                          if (IEdge < LocNEdgesAll &&
-                              K >= MinLayerEdgeBot(IEdge) &&
+
+                          if (K >= MinLayerEdgeBot(IEdge) &&
                               K <= MaxLayerEdgeTop(IEdge)) {
                              NormalVelEdge(IEdge, K) = Scratch.X(K, IVec);
                           }
                        }
                     });
              });
+
       }
       Pacer::stop("Tend:velocityVertMix", 1);
    }
@@ -657,15 +663,16 @@ void VertMix::applyTracerVertMixImplicit(
          TeamPolicy Policy =
              TriDiagDiffSolver::makeTeamPolicy(Mesh->NCellsAll, NVertLayers);
 
-         for (int LT = 0; LT < NTracers; ++LT) {
-            const I4 L = LT;
-
+         for (int L = 0; L < NTracers; ++L) {
             Kokkos::parallel_for(
                 Policy, KOKKOS_LAMBDA(const TeamMember &Team) {
                    const int IStart = Team.league_rank() * VecLength;
+                   const int ILen =
+                       Kokkos::max(0, Kokkos::min(VecLength, LocNCellsAll - IStart));
 
                    TriDiagDiffScratch Scratch(Team, NVertLayers);
 
+                   // Construct a tri-diag diffusion matrix and RHS
                    Kokkos::parallel_for(
                        TeamThreadRange(Team, NVertLayers), [=](int K) {
                           for (int IVec = 0; IVec < VecLength; ++IVec) {
@@ -688,16 +695,18 @@ void VertMix::applyTracerVertMixImplicit(
                           }
                        });
 
+                   // Solve the tri-diag diffusion system
                    Team.team_barrier();
                    TriDiagDiffSolver::solve(Team, Scratch);
                    Team.team_barrier();
 
+                   // Store the solution vector X
                    Kokkos::parallel_for(
                        TeamThreadRange(Team, NVertLayers), [=](int K) {
-                          for (int IVec = 0; IVec < VecLength; ++IVec) {
+                          for (int IVec = 0; IVec < ILen; ++IVec) {
                              const int ICell = IStart + IVec;
-                             if (ICell < LocNCellsAll &&
-                                 K >= MinLayerCell(ICell) &&
+
+                             if (K >= MinLayerCell(ICell) &&
                                  K <= MaxLayerCell(ICell)) {
                                 TracerArray(L, ICell, K) = Scratch.X(K, IVec);
                              }
@@ -705,7 +714,7 @@ void VertMix::applyTracerVertMixImplicit(
                        });
                 });
 
-         } // for LT
+         } // for L
       }
       Pacer::stop("Tend:tracerVertMix", 1);
    }

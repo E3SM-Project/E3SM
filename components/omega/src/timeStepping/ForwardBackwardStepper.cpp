@@ -92,9 +92,10 @@ void ForwardBackwardStepper::doStep(
    Pacer::stop("ForwardBackward:haloExch", 3);
 
    // Apply implicit vertical mixing
+   CurTracerArray = Tracers::getAll(VelCurLevel);
    if (VMix->VelVertMixSetup.Enabled or VMix->TracerVertMixSetup.Enabled) {
-      VMix->VertMixImplicit(State, AuxState, NextTracerArray, NTracers,
-                            VelNextLevel);
+      VMix->VertMixImplicit(State, AuxState, CurTracerArray, NTracers,
+                            State->CurTimeIndex);
    }
 
    validateOceanState(State, AuxState, VertCoord::getDefault(), 0);
