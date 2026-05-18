@@ -129,6 +129,7 @@ struct UnitWrap {
     struct TestPblintd;
     struct TestComputeShocTemp;
     struct TestComputeVerticalShearTerms;
+    struct TestAssembleShocShearStrain3d;
   };
 
 };
