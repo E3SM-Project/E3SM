@@ -94,22 +94,6 @@ jobs:
           submodules: recursive
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
-      - name: Set CA certificates env var
-        run: |
-          # Ensure the operating system is Linux
-          if [ "$(uname)" != "Linux" ]; then
-            echo "This action only supports Linux."
-            exit 1
-          fi
-          # Set env var to be used in upload-artifacts phase
-          if [ -f /etc/debian_version ]; then
-            echo "NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt" >> $GITHUB_ENV
-          elif [ -f /etc/redhat-release ] || [ -f /etc/centos-release ] || [ -f /etc/fedora-release ]; then
-            echo "NODE_EXTRA_CA_CERTS=/etc/pki/tls/certs/ca-bundle.crt" >> $GITHUB_ENV
-          else
-            echo "Unsupported Linux distribution"
-            exit 1
-          fi
       - name: Run test
         id: run-tests
         run: |
@@ -126,8 +110,6 @@ jobs:
             /tmp/${{ matrix.test.full_name }}*/run/**/*.log.*
             /tmp/${{ matrix.test.full_name }}*/run/**/*.cprnc.out
           retention-days: 14
-        env:
-          NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}
       - name: Upload nc files
         if: ${{ failure() && steps.run-tests.outcome == 'failure' }}
         uses: actions/upload-artifact@v7
@@ -136,5 +118,3 @@ jobs:
           path: |
             /tmp/${{ matrix.test.full_name }}*/run/**/*.nc*
           retention-days: 14
-        env:
-          NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}
