@@ -242,7 +242,7 @@ class VelVertMixSetupOnEdge {
    /// interface pressure, and outputs tendency array
    KOKKOS_FUNCTION void operator()(I4 IEdge, I4 K, Real DT,
                                    const Array2DReal &SpecVol,
-                                   const Array2DReal &LayerThickEdge,
+                                   const Array2DReal &LayerThickCell,
                                    const Array2DReal &VertVisc,
                                    const Array2DReal &NormalVelEdge, Real &G,
                                    Real &H, Real &X) const {
@@ -260,8 +260,11 @@ class VelVertMixSetupOnEdge {
          X = 0.0_Real;
       } else {
          if (K < KMax) {
-            const Real LayerThickEdgeK   = LayerThickEdge(IEdge, K);
-            const Real LayerThickEdgeKp1 = LayerThickEdge(IEdge, K + 1);
+            const Real LayerThickEdgeK = 0.5_Real * (LayerThickCell(JCell0, K) +
+                                                     LayerThickCell(JCell1, K));
+            const Real LayerThickEdgeKp1 =
+                0.5_Real *
+                (LayerThickCell(JCell0, K + 1) + LayerThickCell(JCell1, K + 1));
 
             const Real LayerThickEdgeTop =
                 0.5_Real * (LayerThickEdgeK + LayerThickEdgeKp1);
@@ -279,8 +282,7 @@ class VelVertMixSetupOnEdge {
                 0.5_Real * (VertVisc(JCell0, K + 1) + VertVisc(JCell1, K + 1)) /
                 (LocRhoSw * SpecVolEdgeTop);
 
-            G = DT * ViscAlphaEdgeTop /
-                (LayerThickEdgeTop * LayerThickEdge(IEdge, K));
+            G = DT * ViscAlphaEdgeTop / (LayerThickEdgeTop * LayerThickEdgeK);
          }
          X = NormalVelEdge(IEdge, K);
       }
@@ -348,7 +350,6 @@ class TracerVertMixSetupOnCell {
    Array1DI4 MaxLayerCell;
 };
 
-
 /// Class for Vertical Mixing Coefficient (VertMix) calculations
 class VertMix {
  public:
@@ -364,7 +365,7 @@ class VertMix {
    Array2DReal
        GradRichNumSmoothed; ///< Smoothed Gradient Richardson number field
 
-   //TODO: Temporary handling of TangentialVelocity
+   // TODO: Temporary handling of TangentialVelocity
    Array2DReal TangentialVelocity; ///< Tangential velocity
 
    std::string VertDiffFldName; ///< Field name for vertical diffusivity
@@ -408,9 +409,8 @@ class VertMix {
                                    int ThickTimeLevel, int VelTimeLevel);
 
    /// Apply implicit vertical mixing to velocities and tracers
-   void applyVertMixImplicit(OceanState *State, AuxiliaryState *AuxState,
-                             Array3DReal &TracerArray, int NTracers,
-                             int TimeLevel);
+   void VertMixImplicit(OceanState *State, AuxiliaryState *AuxState,
+                        Array3DReal &TracerArray, int NTracers, int TimeLevel);
 
  private:
    /// Private constructor

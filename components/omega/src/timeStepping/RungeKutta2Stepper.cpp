@@ -37,6 +37,8 @@ void RungeKutta2Stepper::doStep(OceanState *State,   // model state
    Array3DReal CurTracerArray  = Tracers::getAll(CurLevel);
    Array3DReal NextTracerArray = Tracers::getAll(NextLevel);
 
+   VertMix *VMix = VertMix::getInstance();
+
    prescribeState(State, CurLevel, State, CurLevel, SimTime);
 
    // q = (h,u,phi)
@@ -74,10 +76,9 @@ void RungeKutta2Stepper::doStep(OceanState *State,   // model state
    Pacer::stop("RK2:haloExch", 3);
 
    // Apply implicit vertical mixing
-   if (VMix->VelVertMixSetup.Enabled or
-       VMix->TracerVertMixSetup.Enabled) {
-      VMix->applyVertMixImplicit(State, AuxState, NextTracerArray,
-                                 NTracers, State->CurTimeIndex);
+   if (VMix->VelVertMixSetup.Enabled or VMix->TracerVertMixSetup.Enabled) {
+      VMix->VertMixImplicit(State, AuxState, NextTracerArray, NTracers,
+                            NextLevel);
    }
 
    validateOceanState(State, AuxState, VertCoord::getDefault(), CurLevel);

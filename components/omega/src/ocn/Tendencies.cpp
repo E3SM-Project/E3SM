@@ -40,7 +40,7 @@ void Tendencies::init() {
    TimeStepper *DefTimeStepper = TimeStepper::getDefault();
    Eos *DefEos                 = Eos::getInstance();
    PressureGrad *DefPGrad      = PressureGrad::getDefault();
-   VertMix  *DefVertMix        = VertMix::getInstance();
+   VertMix *DefVertMix         = VertMix::getInstance();
 
    I4 NTracers = Tracers::getNumTracers();
 
@@ -80,10 +80,10 @@ void Tendencies::init() {
    TimeInterval TimeStep = DefTimeStepper->getTimeStep();
 
    // Ceate default tendencies
-   Tendencies::DefaultTendencies = create(
-       "Default", DefHorzMesh, DefVertCoord, DefVertAdv, DefPGrad, DefEos,
-       DefVertMix, NTracers, TimeStep, &TendConfig, CustomThickTend,
-       CustomVelTend);
+   Tendencies::DefaultTendencies =
+       create("Default", DefHorzMesh, DefVertCoord, DefVertAdv, DefPGrad,
+              DefEos, DefVertMix, NTracers, TimeStep, &TendConfig,
+              CustomThickTend, CustomVelTend);
 
    DefaultTendencies->readConfig(OmegaConfig);
 
@@ -330,7 +330,6 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
                          this->VMix->TracerVertMixSetup.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: TracerVertMixTendencyEnable not found in TendConfig");
-
 }
 
 //------------------------------------------------------------------------------
@@ -451,9 +450,9 @@ Tendencies::Tendencies(const std::string &Name_, ///< [in] Name for tendencies
                        int NTracersIn,           ///< [in] Number of tracers
                        TimeInterval TimeStepIn,  ///< [in] Time step
                        Config *Options)          ///< [in] Configuration options
-    : Tendencies(Name_, Mesh, VCoord, VAdv, PGrad, EqState, VertMix::getInstance(),
-                 NTracersIn, TimeStepIn, Options, CustomTendencyType{},
-                 CustomTendencyType{}) {}
+    : Tendencies(Name_, Mesh, VCoord, VAdv, PGrad, EqState,
+                 VertMix::getInstance(), NTracersIn, TimeStepIn, Options,
+                 CustomTendencyType{}, CustomTendencyType{}) {}
 
 //------------------------------------------------------------------------------
 // Compute tendencies for the pseudo-thickness equation
