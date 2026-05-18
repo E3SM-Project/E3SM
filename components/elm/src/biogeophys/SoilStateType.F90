@@ -1099,12 +1099,19 @@ contains
     real(r8), pointer , intent(inout) :: data_g_out(:,:)
     !
     integer :: c, g, j
+    integer :: ncols_per_gcell(bounds_proc%begg:bounds_proc%endg)
 
     data_g_out(:,:) = 0._r8
+    ncols_per_gcell(:) = 0
 
     do c = bounds_proc%begc, bounds_proc%endc
        if (col_pp%itype(c) == col_itype) then
           g = col_pp%gridcell(c)
+          ncols_per_gcell(g) = ncols_per_gcell(g) + 1
+          if (ncols_per_gcell(g) > 1) then
+             call endrun('PackOwnedGridLevelDataForMOAB: more than one matching '// &
+                  'column per grid cell; one-nat-veg-column invariant violated.')
+          end if
           do j = 1, nlevgrnd
              data_g_out(g, j) = data_c_in(c, j)
           end do
@@ -1137,35 +1144,73 @@ contains
   end subroutine UnpackGhostGridLevelDataFromMOAB
 
   !------------------------------------------------------------------------
-  subroutine ExchangeAFieldUsingMOAB(bounds_proc, col_itype, field_col)
+  subroutine BatchExchangeFieldsUsingMOAB(bounds_proc, col_itype, watsat, hksat, bsw, sucsat)
     !
-    use domainLateralMod , only : ldomain_lateral, GridLevelSoilLayerDataHaloExchange
+    ! Pack all four fields into a single grid-level buffer, perform one MPI
+    ! round via GridLevelRealDataHaloExchange, then unpack.
+    ! Field layout: field f (1..4), soil layer j (1..nlevgrnd) →
+    !   component index (f-1)*nlevgrnd + j.
+    !
+    use domainLateralMod , only : GridLevelRealDataHaloExchange
+    use domainLateralMod , only : setup_twoD_real_data_for_moab, twoD_real_data_for_moab
+    use MOABGridType     , only : moab_gcell, mlndghostid
     !
     implicit none
     !
     ! !ARGUMENTS:
     type(bounds_type) , intent(in)    :: bounds_proc
     integer           , intent(in)    :: col_itype
-    real(r8), pointer          , intent(inout) :: field_col(:,:)
+    real(r8), pointer , intent(inout) :: watsat(:,:)
+    real(r8), pointer , intent(inout) :: hksat(:,:)
+    real(r8), pointer , intent(inout) :: bsw(:,:)
+    real(r8), pointer , intent(inout) :: sucsat(:,:)
     !
-    real(r8), pointer                :: data(:,:)
+    integer, parameter               :: nfields = 4
+    real(r8), pointer                :: data(:,:)   ! (begg:endg_all, nfields*nlevgrnd)
+    type(twoD_real_data_for_moab)    :: data_moab
+    integer :: c, g, j
 
-    ! allocate memory for owned+ghost cells
-    allocate(data(bounds_proc%begg:bounds_proc%endg_all, nlevgrnd))
+    ! allocate grid-level buffer for all fields
+    allocate(data(bounds_proc%begg:bounds_proc%endg_all, nfields*nlevgrnd))
+    data(:,:) = 0._r8
 
-    ! pack data
-    call PackOwnedGridLevelDataForMOAB(bounds_proc, col_itype, field_col, data)
+    ! --- pack owned columns ---
+    do c = bounds_proc%begc, bounds_proc%endc
+       if (col_pp%itype(c) == col_itype) then
+          g = col_pp%gridcell(c)
+          do j = 1, nlevgrnd
+             data(g, 0*nlevgrnd + j) = watsat(c, j)
+             data(g, 1*nlevgrnd + j) = hksat(c, j)
+             data(g, 2*nlevgrnd + j) = bsw(c, j)
+             data(g, 3*nlevgrnd + j) = sucsat(c, j)
+          end do
+       end if
+    end do
 
-    ! do the halo exchange
-    call GridLevelSoilLayerDataHaloExchange(ldomain_lateral, bounds_proc%begg, bounds_proc%endg, bounds_proc%endg_all, data)
+    ! --- single MPI halo exchange ---
+    call setup_twoD_real_data_for_moab(mlndghostid, 'batch_soil_data', nfields*nlevgrnd, &
+                                       moab_gcell%num_ghosted, data_moab)
+    call GridLevelRealDataHaloExchange(data_moab, bounds_proc%begg, bounds_proc%endg, &
+                                       bounds_proc%endg_all, data)
 
-    ! unpack data
-    call UnpackGhostGridLevelDataFromMOAB(bounds_proc, col_itype, data, field_col)
+    ! --- unpack ghost columns ---
+    do c = bounds_proc%endc + 1, bounds_proc%endc_all
+       if (col_pp%itype(c) == col_itype) then
+          g = col_pp%gridcell(c)
+          do j = 1, nlevgrnd
+             watsat(c, j) = data(g, 0*nlevgrnd + j)
+             hksat(c, j)  = data(g, 1*nlevgrnd + j)
+             bsw(c, j)    = data(g, 2*nlevgrnd + j)
+             sucsat(c, j) = data(g, 3*nlevgrnd + j)
+          end do
+       end if
+    end do
 
     ! free memory
+    deallocate(data_moab%values)
     deallocate(data)
 
-  end subroutine ExchangeAFieldUsingMOAB
+  end subroutine BatchExchangeFieldsUsingMOAB
 
   !------------------------------------------------------------------------
   subroutine InitColdGhost(this, bounds_proc)
@@ -1183,10 +1228,8 @@ contains
     !
     integer, parameter               :: nat_veg_col_itype = 1
 
-    call ExchangeAFieldUsingMOAB(bounds_proc, nat_veg_col_itype, this%watsat_col)
-    call ExchangeAFieldUsingMOAB(bounds_proc, nat_veg_col_itype, this%hksat_col )
-    call ExchangeAFieldUsingMOAB(bounds_proc, nat_veg_col_itype, this%bsw_col   )
-    call ExchangeAFieldUsingMOAB(bounds_proc, nat_veg_col_itype, this%sucsat_col)
+    call BatchExchangeFieldsUsingMOAB(bounds_proc, nat_veg_col_itype, &
+         this%watsat_col, this%hksat_col, this%bsw_col, this%sucsat_col)
 
   end subroutine InitColdGhost
 

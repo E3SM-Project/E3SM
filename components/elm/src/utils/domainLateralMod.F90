@@ -591,15 +591,15 @@ contains
 
   type, public :: domainlateral_type
      type(oneD_int_data_for_moab)  :: grid_level_count
-     type(twoD_real_data_for_moab) :: soil_lyr_data_real
   end type domainlateral_type
 
   type(domainlateral_type)    , public :: ldomain_lateral
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public domainlateral_init                 ! initializes
+  public setup_twoD_real_data_for_moab
   public GridLevelIntegerDataHaloExchange
-  public GridLevelSoilLayerDataHaloExchange !
+  public GridLevelRealDataHaloExchange
   !
   !EOP
   !------------------------------------------------------------------------------
@@ -685,8 +685,6 @@ contains
     ! DESCRIPTION:
     ! Creates data structure for doing halo exchanges using MOAB
     !
-    use elm_varpar, only :  nlevgrnd
-    !
     implicit none
     !
     ! ARGUMENTS:
@@ -694,9 +692,6 @@ contains
 
     ! creates the MOAB tag 1D data at grid level
     call setup_oneD_int_data_for_moab(mlndghostid, 'grid_level_count', moab_gcell%num_ghosted, domain_l%grid_level_count)
-
-    ! creates the MOAB tag for exchanging vertically distributed soil dataset
-    call setup_twoD_real_data_for_moab(mlndghostid, 'soil_data', nlevgrnd, moab_gcell%num_ghosted, domain_l%soil_lyr_data_real)
 
   end subroutine domainlateral_init
 
@@ -798,49 +793,46 @@ contains
   end subroutine GridLevelIntegerDataHaloExchange
 
   !------------------------------------------------------------------------------
-  subroutine GridLevelSoilLayerDataHaloExchange(domain_l, begg, endg_owned, endg_all, elm_data)
+  subroutine GridLevelRealDataHaloExchange(data_moab, begg, endg_owned, endg_all, elm_data)
     !
     ! DESCRIPTION:
-    ! Performs halo exchange of real data. It is assumed that there are nlevgrnd values
-    ! per grid cell. elm_data has data in ELM-format such that owned grid cells at the beginning
-    ! followed by ghost grid cells. After MOAB-based halo exchange values are filled in
-    ! elm_data corresponding to ghost cells.
+    ! Performs halo exchange of real data. elm_data has data in ELM-format such that
+    ! owned grid cells are at the beginning followed by ghost grid cells. After
+    ! MOAB-based halo exchange, values in elm_data are filled for ghost cells.
+    ! data_moab must be pre-set up by the caller via setup_twoD_real_data_for_moab.
     !
-    !
-    ! !ARGUMENTS:
     implicit none
     !
-    type(domainlateral_type)          :: domain_l      ! domain datatype
-    integer, intent(in)               :: begg    ! beginning index of grid cell
-    integer, intent(in)               :: endg_owned    ! ending index for owned grid cells
-    integer, intent(in)               :: endg_all    ! ending index for all (owned + ghost) grid cells
-    real(r8), intent(inout) , pointer :: elm_data(:,:) ! data packed in ELM's format
+    type(twoD_real_data_for_moab) , intent(inout) :: data_moab     ! caller-owned MOAB tag struct
+    integer, intent(in)                           :: begg          ! beginning index of grid cell
+    integer, intent(in)                           :: endg_owned    ! ending index for owned grid cells
+    integer, intent(in)                           :: endg_all      ! ending index for all (owned + ghost) grid cells
+    real(r8), intent(inout), pointer              :: elm_data(:,:) ! data packed in ELM's format
     !
     integer :: g, j, idx
-    integer :: ierr
 
     ! convert data from ELM format to MOAB format
     do g = begg, endg_owned
        idx = moab_gcell%elm2moab(g)
-       do j = 1, domain_l%soil_lyr_data_real%num_comp
-          domain_l%soil_lyr_data_real%values(j, idx) = elm_data(g, j)
+       do j = 1, data_moab%num_comp
+          data_moab%values(j, idx) = elm_data(g, j)
        end do
     end do
 
     ! perform halo exchange
-    call do_haloexchange_twoD_real_data_for_moab(domain_l%soil_lyr_data_real)
+    call do_haloexchange_twoD_real_data_for_moab(data_moab)
 
     ! convert data from MOAB format to ELM format
     do idx = 1, moab_gcell%num_ghosted
        if (.not.moab_gcell%is_owned(idx)) then
           g = moab_gcell%moab2elm(idx)
-          do j = 1, domain_l%soil_lyr_data_real%num_comp
-             elm_data(g, j) = domain_l%soil_lyr_data_real%values(j, idx)
+          do j = 1, data_moab%num_comp
+             elm_data(g, j) = data_moab%values(j, idx)
           end do
        end if
     end do
 
-  end subroutine GridLevelSoilLayerDataHaloExchange
+  end subroutine GridLevelRealDataHaloExchange
 
 #else
 
