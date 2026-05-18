@@ -302,6 +302,14 @@ void compute_shoc_temperature(ComputeShocTempData& d)
   compute_shoc_temperature_host(d.shcol, d.nlev, d.thetal, d.ql, d.inv_exner, d.tabs);
 }
 
+void compute_vertical_shear_terms(ComputeVerticalShearTermsData& d)
+{
+  compute_vertical_shear_terms_host(d.nlev, d.nlevi, d.shcol,
+                                    d.dz_zi, d.u_wind, d.v_wind, d.w_field,
+                                    d.zt_grid, d.zi_grid,
+                                    d.du_dz_m, d.dv_dz_m, d.dw_dz_m);
+}
+
 // end _c impls
 
 //
@@ -2039,6 +2047,72 @@ void compute_shr_prod_host(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_
   // Sync back to host
   std::vector<view_2d> inout_views = {sterm_d};
   ekat::device_to_host({sterm}, shcol, nlevi, inout_views);
+}
+
+void compute_vertical_shear_terms_host(Int nlev, Int nlevi, Int shcol,
+                                       Real* dz_zi, Real* u_wind, Real* v_wind, Real* w_field,
+                                       Real* zt_grid, Real* zi_grid,
+                                       Real* du_dz_m, Real* dv_dz_m, Real* dw_dz_m)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Pack      = typename SHF::Pack;
+  using view_2d   = typename SHF::view_2d<Pack>;
+  using KT        = typename SHF::KT;
+  using ExeSpace  = typename KT::ExeSpace;
+  using TPF       = ekat::TeamPolicyFactory<ExeSpace>;
+  using MemberType = typename SHF::MemberType;
+
+  static constexpr Int num_arrays = 9;
+
+  std::vector<view_2d> temp_d(num_arrays);
+  std::vector<Int> dim1_sizes(num_arrays, shcol);
+  std::vector<Int> dim2_sizes = {nlevi, nlev, nlev, nlev, nlev, nlevi, nlev, nlev, nlev};
+  std::vector<const Real*> ptr_array = {dz_zi, u_wind, v_wind, w_field, zt_grid, zi_grid,
+                                        du_dz_m, dv_dz_m, dw_dz_m};
+
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d);
+
+  view_2d
+    dz_zi_d (temp_d[0]),
+    u_wind_d(temp_d[1]),
+    v_wind_d(temp_d[2]),
+    w_field_d(temp_d[3]),
+    zt_grid_d(temp_d[4]),
+    zi_grid_d(temp_d[5]),
+    du_dz_m_d(temp_d[6]),
+    dv_dz_m_d(temp_d[7]),
+    dw_dz_m_d(temp_d[8]);
+
+  const Int nlev_packs = ekat::npack<Pack>(nlev);
+  const Int nlevi_packs = ekat::npack<Pack>(nlevi);
+  const auto policy = TPF::get_default_team_policy(shcol, nlev_packs);
+
+  ekat::WorkspaceManager<Pack, KT::Device> workspace_mgr(nlevi_packs, 3, policy);
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    auto workspace = workspace_mgr.get_workspace(team);
+
+    const auto dz_zi_s = ekat::subview(dz_zi_d, i);
+    const auto u_wind_s = ekat::subview(u_wind_d, i);
+    const auto v_wind_s = ekat::subview(v_wind_d, i);
+    const auto w_field_s = ekat::subview(w_field_d, i);
+    const auto zt_grid_s = ekat::subview(zt_grid_d, i);
+    const auto zi_grid_s = ekat::subview(zi_grid_d, i);
+    const auto du_dz_m_s = ekat::subview(du_dz_m_d, i);
+    const auto dv_dz_m_s = ekat::subview(dv_dz_m_d, i);
+    const auto dw_dz_m_s = ekat::subview(dw_dz_m_d, i);
+
+    SHF::compute_vertical_shear_terms(team, nlev, nlevi,
+                                      dz_zi_s, u_wind_s, v_wind_s, w_field_s,
+                                      zt_grid_s, zi_grid_s, workspace,
+                                      du_dz_m_s, dv_dz_m_s, dw_dz_m_s);
+  });
+
+  std::vector<view_2d> out_views = {du_dz_m_d, dv_dz_m_d, dw_dz_m_d};
+  ekat::device_to_host({du_dz_m, dv_dz_m, dw_dz_m}, shcol, nlev, out_views);
 }
 
 void compute_tmpi_host(Int nlevi, Int shcol, Real dtime, Real *rho_zi, Real *dz_zi, Real *tmpi)

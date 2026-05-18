@@ -128,6 +128,7 @@ struct UnitWrap {
     struct TestPblintdCheckPblh;
     struct TestPblintd;
     struct TestComputeShocTemp;
+    struct TestComputeVerticalShearTerms;
   };
 
 };

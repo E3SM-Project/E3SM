@@ -37,6 +37,8 @@ void Functions<S,D>::compute_vertical_shear_terms(
     du_dz_i(k) = 0;
     dv_dz_i(k) = 0;
     dw_dz_i(k) = 0;
+  });
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     du_dz_m(k) = 0;
     dv_dz_m(k) = 0;
     dw_dz_m(k) = 0;
