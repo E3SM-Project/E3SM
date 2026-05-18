@@ -713,7 +713,7 @@ void TimeStepper::updateTracersByTend(const Array3DReal &NextTracers,
 }
 
 //------------------------------------------------------------------------------
-// couple tracer array to layer thickness
+// couple tracer array to pseudo-thickness
 void TimeStepper::weightTracers(const Array3DReal &NextTracers,
                                 const Array3DReal &CurTracers,
                                 OceanState *CurState, int TimeLevel1) const {

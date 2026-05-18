@@ -195,7 +195,7 @@ class TimeStepper {
    /// PseudoThickness1(TimeLevel1) = PseudoThickness2(TimeLevel2) +
    ///                               Coeff * PseudoThicknessTend
    void updateThicknessByTend(
-       OceanState *State1, ///< [out] updated layer thickness in state
+       OceanState *State1, ///< [out] updated pseudo-thickness in state
        int TimeLevel1,     ///< [in] time level index for new time
        OceanState *State2, ///< [in] state (thickness) for current time
        int TimeLevel2,     ///< [in] time level index for current time
@@ -213,7 +213,7 @@ class TimeStepper {
        TimeInterval Coeff  ///< [in] time-related coeff for tendency
    ) const;
 
-   /// Resets the layer thickness at the working time level to the initial
+   /// Resets the pseudo-thickness at the working time level to the initial
    /// condition stored at the reference time level.
    void prescribeThickness(
        OceanState *State1, ///< [out] destination state
@@ -253,7 +253,7 @@ class TimeStepper {
        TimeInterval Coeff  ///< [in] time-related coeff for tendency
    ) const;
 
-   /// couple tracer array to layer thickness
+   /// couple tracer array to pseudo-thickness
    void weightTracers(
        const Array3DReal &NextTracers, ///< [inout] tracers to modify
        const Array3DReal &CurTracers,  ///< [inout] tracers at current time
