@@ -200,6 +200,10 @@ inline void parallelReduceOuter(const int (&UpperBounds)[N], F &&Functor,
 struct Range {
    int First;
    int Last;
+
+   // Clamp Last to ensure zero iterations if First > Last.
+   KOKKOS_FUNCTION Range(int First, int Last)
+       : First(First), Last(Kokkos::max(Last, First - 1)) {}
 };
 
 // parallelForInner
