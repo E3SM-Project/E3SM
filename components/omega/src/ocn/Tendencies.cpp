@@ -416,7 +416,7 @@ Tendencies::Tendencies(const std::string &Name_, ///< [in] Name for tendencies
 
 //------------------------------------------------------------------------------
 // Compute tendencies for the pseudo-thickness equation
-void Tendencies::computeThicknessTendenciesOnly(
+void Tendencies::computePseudoThicknessTendenciesOnly(
     const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
     int ThickTimeLevel,             ///< [in] Time level
@@ -431,7 +431,7 @@ void Tendencies::computeThicknessTendenciesOnly(
 
    Array2DReal NormalVelEdge = State->getNormalVelocity(VelTimeLevel);
 
-   Pacer::start("Tend:computeThicknessTendenciesOnly", 1);
+   Pacer::start("Tend:computePseudoThicknessTendenciesOnly", 1);
 
    parallelForOuter(
        {Mesh->NCellsAll}, KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
@@ -476,7 +476,7 @@ void Tendencies::computeThicknessTendenciesOnly(
       Pacer::stop("Tend:customThicknessTend", 2);
    }
 
-   Pacer::stop("Tend:computeThicknessTendenciesOnly", 1);
+   Pacer::stop("Tend:computePseudoThicknessTendenciesOnly", 1);
 
 } // end thickness tendency compute
 
@@ -813,7 +813,7 @@ void Tendencies::computeTracerTendenciesOnly(
    Pacer::stop("Tend:computeTracerTendenciesOnly", 1);
 } // end tracer tendency compute
 
-void Tendencies::computeThicknessTendencies(
+void Tendencies::computePseudoThicknessTendencies(
     const OceanState *State,        ///< [in] State variables
     const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
     int ThickTimeLevel,             ///< [in] Time level
@@ -829,7 +829,7 @@ void Tendencies::computeThicknessTendencies(
    OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
    OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
 
-   Pacer::start("Tend:computeThicknessTendencies", 1);
+   Pacer::start("Tend:computePseudoThicknessTendencies", 1);
 
    Pacer::start("Tend:computePseudoThickAux", 2);
    parallelForOuter(
@@ -847,10 +847,10 @@ void Tendencies::computeThicknessTendencies(
        });
    Pacer::stop("Tend:computePseudoThickAux", 2);
 
-   computeThicknessTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
-                                  Time);
+   computePseudoThicknessTendenciesOnly(State, AuxState, ThickTimeLevel,
+                                        VelTimeLevel, Time);
 
-   Pacer::stop("Tend:computeThicknessTendencies", 1);
+   Pacer::stop("Tend:computePseudoThicknessTendencies", 1);
 }
 
 void Tendencies::computeVelocityTendencies(
@@ -932,8 +932,8 @@ void Tendencies::computeAllTendencies(
    AuxState->computeAll(State, TracerArray, ThickTimeLevel, VelTimeLevel,
                         ProjDt);
 
-   computeThicknessTendenciesOnly(State, AuxState, ThickTimeLevel, VelTimeLevel,
-                                  Time);
+   computePseudoThicknessTendenciesOnly(State, AuxState, ThickTimeLevel,
+                                        VelTimeLevel, Time);
    computeVelocityTendenciesOnly(State, AuxState, TracerArray, ThickTimeLevel,
                                  VelTimeLevel, TracerTimeLevel, Time);
    computeTracerTendenciesOnly(State, AuxState, TracerArray, ThickTimeLevel,

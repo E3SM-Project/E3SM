@@ -55,7 +55,7 @@ Tendencies.computeAllTendencies(State, AuxState, TracerArray, ThickTimeLevel, Ve
 ```
 To call only the pseudo-thickness tendency terms:
 ```c++
-Tendencies.computeThicknessTendencies(State, AuxState, ThickTimeLevel, VelTimeLevel, Time);
+Tendencies.computePseudoThicknessTendencies(State, AuxState, ThickTimeLevel, VelTimeLevel, Time);
 ```
 To call only the normal velocity tendency terms:
 ```c++
