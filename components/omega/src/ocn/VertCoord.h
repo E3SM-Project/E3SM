@@ -232,14 +232,14 @@ class VertCoord {
    /// Sums the mass thickness times g from the top layer down, starting with
    /// the surface pressure
    void computePressure(
-       const Array2DReal &PseudoThickness, ///< [in] pseudo thickness
+       const Array2DReal &PseudoThickness, ///< [in] pseudo-thickness
        const Array1DReal &SurfacePressure  ///< [in] surface pressure
    );
 
    /// Sum the mass thickness times specific volume from the bottom layer up,
    /// starting with the bottom elevation
    void
-   computeZHeight(const Array2DReal &PseudoThickness, ///< [in] pseudo thickness
+   computeZHeight(const Array2DReal &PseudoThickness, ///< [in] pseudo-thickness
                   const Array2DReal &SpecVol);        ///< [in] specific volume
 
    /// Sum the geometric height times g, the tidal potential, and self

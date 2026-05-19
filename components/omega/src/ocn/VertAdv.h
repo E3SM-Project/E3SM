@@ -132,7 +132,7 @@ class VertAdv {
        const Real Dt                       ///< [in] time interval
    );
 
-   /// Compute pseudo thickness tendency due to vertical advection
+   /// Compute pseudo-thickness tendency due to vertical advection
    void computeThicknessVAdvTend(
        const Array2DReal &ThickTend ///< [inout] thickness tendency
    );

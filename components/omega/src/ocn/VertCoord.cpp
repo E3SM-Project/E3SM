@@ -307,7 +307,7 @@ void VertCoord::defineFields() {
 
    auto RefPseudoThickField = Field::create(
        RefPseudoThickFldName, // field name
-       "Reference pseudo thickness of ocean layers without SSH or internal "
+       "Reference pseudo-thickness of ocean layers without SSH or internal "
        "perturbation",                   // long name or description
        "m",                              // units
        "",                               // CF standard Name
@@ -919,7 +919,7 @@ void VertCoord::setMasks() {
 // in each column to compute pressure from the top-most active layer to the
 // bottom-most active layer.
 void VertCoord::computePressure(
-    const Array2DReal &PseudoThickness, // [in] pseudo thickness
+    const Array2DReal &PseudoThickness, // [in] pseudo-thickness
     const Array1DReal &SurfacePressure  // [in] surface pressure
 ) {
 
@@ -957,7 +957,7 @@ void VertCoord::computePressure(
 // prefix sum in each column to compute z from the bottom-most active layer to
 // the top-most active layer
 void VertCoord::computeZHeight(
-    const Array2DReal &PseudoThickness, // [in] pseudo thickness
+    const Array2DReal &PseudoThickness, // [in] pseudo-thickness
     const Array2DReal &SpecVol          // [in] specific volume
 ) {
 
@@ -980,7 +980,7 @@ void VertCoord::computeZHeight(
               Team, KRange, INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
                  const I4 KLyr = KMax - K;
                  Real DZ       = RhoSw * SpecVol(ICell, KLyr) *
-                           PseudoThickness(ICell, KLyr);
+                                 PseudoThickness(ICell, KLyr);
                  Accum += DZ;
                  if (IsFinal) {
                     LocZInterf(ICell, KLyr) = -LocBotGeomDepth(ICell) + Accum;

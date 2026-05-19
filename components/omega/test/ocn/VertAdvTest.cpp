@@ -228,9 +228,9 @@ int main(int argc, char *argv[]) {
 
       Real Tol = 1e-10;
 
-      // Divergence is equal in each layer. Expected vertical velocity through
-      // each interface is sum over negative divergence starting from bottom
-      // layer
+      // Divergence is equal in each layer. Expected vertical pseudo-velocity
+      // through each interface is sum over negative divergence starting from
+      // bottom layer
       Real Perim0 = 0.;
       for (int J = 0; J < NEdgesOnCell0; ++J) {
          Perim0 += DefMesh->DvEdgeH(DefMesh->EdgesOnCellH(ICell0, J));
@@ -277,7 +277,7 @@ int main(int argc, char *argv[]) {
       // Test for computeVelocityVAdvTend
       Err = 0;
 
-      // Set uniform vertical velocity in each column along the edge and
+      // Set uniform vertical pseudo-velocity in each column along the edge and
       // uniform pseudo-thickness at the edge. Horizontal velocity is set
       // to a periodic function
       Array2DReal TendEdge2D("TendEdge2D", DefMesh->NEdgesSize, NVertLayers);

@@ -1,9 +1,10 @@
 //===-- ocn/VertAdv.cpp - vertical advection --------------------*- C++ -*-===//
 //
-// The VertAdv class contains methods for calculating the vertical velocity and
-// the tendencies of thickness, horizontal velocity, and tracers due to vertical
-// advective transport, and member variables for storing the vertical velocity
-// and the fluxes of tracers at vertical interfaces in each column.
+// The VertAdv class contains methods for calculating the vertical
+// pseudo-velocity and the tendencies of thickness, horizontal velocity, and
+// tracers due to vertical advective transport, and member variables for storing
+// the vertical pseudo-velocity and the fluxes of tracers at vertical interfaces
+// in each column.
 //
 //===----------------------------------------------------------------------===//
 
@@ -479,7 +480,7 @@ void VertAdv::computeThicknessVAdvTend(
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
    OMEGA_SCOPE(LocTotVertVelocity, TotalVerticalPseudoVelocity);
 
-   // Loop over every owned cell, pseudo thickness tendency is simply
+   // Loop over every owned cell, pseudo-thickness tendency is simply
    // difference in pseudo velocity between bottom and top interface for
    // each layer
    parallelForOuter(
