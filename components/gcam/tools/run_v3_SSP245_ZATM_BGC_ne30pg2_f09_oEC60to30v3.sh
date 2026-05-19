@@ -130,7 +130,7 @@ if [ "${run}" != "production" ]; then
   readonly DO_SHORT_TERM_ARCHIVING=false
   
   readonly WALLTIME="4:00:00"
-  readonly IFDEBUG="debug"
+  readonly RUN_QUEUE=${MACH_QUEUE_DEBUG}
 else
 
   # Production simulation
@@ -144,7 +144,7 @@ else
   readonly REST_N="1"
   readonly RESUBMIT="0"
   readonly DO_SHORT_TERM_ARCHIVING=false
-  readonly IFDEBUG="regular"
+  readonly RUN_QUEUE=${MACH_QUEUE}
 fi
 
 # Coupler history 
@@ -318,7 +318,7 @@ create_newcase() {
         --machine ${MACHINE} \
         --project ${PROJECT} \
         --walltime ${WALLTIME} \
-	    --queue ${IFDEBUG} \
+	    --queue ${RUN_QUEUE} \
         --pecount ${PELAYOUT} \
         --driver ${DRIVER}
 
