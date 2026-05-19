@@ -443,7 +443,7 @@ void Tendencies::computeThicknessTendenciesOnly(
               INNER_LAMBDA(int K) { LocPseudoThicknessTend(ICell, K) = 0; });
        });
 
-   // Compute thickness flux divergence
+   // Compute pseudo-thickness flux divergence
    const Array2DReal &ThickFluxEdge =
        AuxState->PseudoThicknessAux.FluxPseudoThickEdge;
 

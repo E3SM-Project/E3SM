@@ -21,8 +21,8 @@
 
 namespace OMEGA {
 
-/// Divergence of thickness flux at cell centers, for updating pseudo-thickness
-/// arrays
+/// Divergence of pseudo-thickness flux at cell centers, for updating
+/// pseudo-thickness arrays
 class PseudoThicknessFluxDivOnCell {
  public:
    bool Enabled = false;
@@ -30,8 +30,8 @@ class PseudoThicknessFluxDivOnCell {
    /// constructor declaration
    PseudoThicknessFluxDivOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
 
-   /// The functor takes cell index, vertical chunk index, and thickness flux
-   /// array as inputs, outputs the tendency array
+   /// The functor takes cell index, vertical chunk index, and pseudo-thickness
+   /// flux array as inputs, outputs the tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 ICell, I4 KChunk,
                                    const Array2DReal &PseudoThicknessFlux,
                                    const Array2DReal &NormalVelEdge) const {

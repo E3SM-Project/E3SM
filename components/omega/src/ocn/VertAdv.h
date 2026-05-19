@@ -147,9 +147,9 @@ class VertAdv {
 
    /// Compute tracer tendency due to vertical advection, The PseudoThickness at
    /// the beginning of the time step is passed for standard advection, while
-   /// the provisional thickness including horizontal thickness flux is passed
-   /// for flux-corrected transport. The TimeStep is only needed as an argument
-   /// for flux-corrected transport
+   /// the provisional thickness including horizontal pseudo-thickness flux is
+   /// passed for flux-corrected transport. The TimeStep is only needed as an
+   /// argument for flux-corrected transport
    void computeTracerVAdvTend(
        const Array3DReal &TracerTend,      ///< [inout] tracer tendencies
        const Array3DReal &Tracers,         ///< [in] tracer array

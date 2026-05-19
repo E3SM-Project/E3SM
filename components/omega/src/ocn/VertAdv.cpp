@@ -825,7 +825,7 @@ void VertAdv::computeStdVAdvTend(
 //------------------------------------------------------------------------------
 // Compute tracer tendencies due to vertical advection using flux-corrected
 // transport scheme. ProvPseudoThickness input is provisional pseudo-thickness
-// after horizontal thickness flux
+// after horizontal pseudo-thickness flux
 void VertAdv::computeFCTVAdvTend(
     const Array3DReal &TracerTend, //< [inout] tracer tendencies
     const Array3DReal &Tracers,    //< [in] tracer array
