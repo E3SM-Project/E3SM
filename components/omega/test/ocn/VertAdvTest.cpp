@@ -395,7 +395,8 @@ int main(int argc, char *argv[]) {
          Array3DReal TendCell3D("TendCell3D", 1, 1, NVertLayers);
          deepCopy(PseudoThick, 1._Real);
          DefVertAdv->NVertLayers = NVertLayers;
-         LocVertVel = Array2DReal("TotalVerticaVelocity", 1, NVertLayers + 1);
+         LocVertVel =
+             Array2DReal("TotalVerticalPseudoVelocity", 1, NVertLayers + 1);
          deepCopy(LocVertVel, TestVel[IMono]);
          parallelFor(
              {1}, KOKKOS_LAMBDA(const int &) {
