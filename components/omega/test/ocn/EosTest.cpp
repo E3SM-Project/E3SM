@@ -84,9 +84,6 @@ void initEosTest(const std::string &mesh) {
    /// Initialize parallel IO
    IO::init(DefComm);
 
-   /// Initialize streams
-   IOStream::init();
-
    /// Initialize decomposition
    Decomp::init(mesh);
 

@@ -81,9 +81,6 @@ void initVertMixTest() {
    /// Initialize decomposition
    Decomp::init();
 
-   /// Initialize streams
-   IOStream::init();
-
    /// Initialize Halo
    Halo::init();
 

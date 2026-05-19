@@ -65,9 +65,6 @@ I4 initTracersTest() {
    // Create the default decomposition (initializes the decomposition)
    Decomp::init();
 
-   // Initialize streams
-   IOStream::init();
-
    // Initialize the default halo
    Err = Halo::init();
    if (Err != 0) {
