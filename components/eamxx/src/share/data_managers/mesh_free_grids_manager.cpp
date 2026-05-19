@@ -136,6 +136,9 @@ build_point_grid (const std::string& name, ekat::ParameterList& params)
 void MeshFreeGridsManager::
 add_geo_data (const nonconstgrid_ptr_type& grid) const
 {
+  using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
+
   if (!m_params.isParameter("geo_data_source")) {
     return;
   }
@@ -143,9 +146,6 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
   // Load geo data fields if geo data filename is present, and file contains them
   const auto& geo_data_source = m_params.get<std::string>("geo_data_source");
   if (geo_data_source=="CREATE_EMPTY_DATA") {
-    using namespace ShortFieldTagsNames;
-    using namespace ekat::units;
-
     auto layout_mid = grid->get_vertical_layout(LEV);
     auto layout_int = grid->get_vertical_layout(ILEV);
 
@@ -189,6 +189,12 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
       load_vertical_coordinates(grid,filename);
     }
   }
+
+  // This is to ensure output streams will save P0 among the geo data.
+  // NOTE: MeshFreeGridsManager is mostly for unit tests, so this is somewhat moot,
+  //       but it helps to have consistent treatment of geo data across GM's
+  auto P0 = grid->create_geometry_data("P0", FieldLayout::scalar(), Pa);
+  P0.deep_copy(physics::Constants<Real>::P0.value);
 }
 
 void MeshFreeGridsManager::
