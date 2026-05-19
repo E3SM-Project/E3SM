@@ -17,7 +17,7 @@ The `VertCoord` class contains variables and functions relevant to keeping track
  - pressure (computed from the pseudo-thickness and surface pressure)
  - geometric height (computed from the bottom depth, specific volume, and pseudo-thickness)
  - geopotential (computed from the geometric height and tidal forcing)
- - desired vertical interface locations (computed from pressure, reference layer pseudo thickness, and user-specified weights)
+ - desired vertical interface locations (computed from pressure, reference layer pseudo-thickness, and user-specified weights)
 
 Multiple instances of the vertical coordinate class can be created and accessed by a unique name.
 
