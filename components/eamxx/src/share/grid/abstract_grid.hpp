@@ -186,8 +186,7 @@ public:
   void set_geometry_data(const Field &f) const;
   void delete_geometry_data(const std::string &name);
 
-  bool
-  has_geometry_data(const std::string &name) const
+  bool has_geometry_data(const std::string &name) const
   {
     return m_geo_fields.find(name) != m_geo_fields.end();
   }
@@ -245,13 +244,9 @@ public:
     return true;
   }
 
-  void
-  reset_field_tag_name(const FieldTag t, const std::string &s)
-  {
-    m_special_tag_names[t] = s;
-  }
-  bool
-  has_special_tag_name(const FieldTag t) const
+  void reset_field_tag_name(const FieldTag t, const std::string &s);
+
+  bool has_special_tag_name(const FieldTag t) const
   {
     return m_special_tag_names.count(t) == 1;
   }
