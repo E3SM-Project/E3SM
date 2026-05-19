@@ -135,10 +135,11 @@ void VertAdv::defineFields() {
    DimNames[1] = "NVertLayersP1";
 
    auto VerticalPseudoVelocityField = Field::create(
-       VerticalPseudoVelocityFldName,                           // field name
-       "Vertical pseudovelocity across a pseudoheight surface", // long name or
-                                                                // description
-       "m s^-1",                                                // units
+       VerticalPseudoVelocityFldName,                             // field name
+       "Vertical pseudo-velocity across a pseudo-height surface", // long name
+                                                                  // or
+                                                                  // description
+       "m s^-1",                                                  // units
        "",                               // CF standard Name
        std::numeric_limits<Real>::min(), // min valid value
        std::numeric_limits<Real>::max(), // max valid value
@@ -149,10 +150,10 @@ void VertAdv::defineFields() {
 
    auto TotalVertPseudoVelocityField =
        Field::create(TotalVertPseudoVelocityFldName, // field name
-                     "Total vertical pseudovelocity across a moving, tilted "
-                     "pseudoheight surface", // long name or description
-                     "m s^-1",               // units
-                     "",                     // CF standard Name
+                     "Total vertical pseudo-velocity across a moving, tilted "
+                     "pseudo-height surface", // long name or description
+                     "m s^-1",                // units
+                     "",                      // CF standard Name
                      std::numeric_limits<Real>::min(), // min valid value
                      std::numeric_limits<Real>::max(), // max valid value
                      FillValueReal, // scalar for undefined entries
@@ -165,10 +166,11 @@ void VertAdv::defineFields() {
    DimNames[2] = "NTracers";
 
    auto VertFluxField = Field::create(
-       VertFluxFldName,                                          // field name
-       "Vertical flux of tracers across a pseudoheight surface", // long name or
-                                                                 // description
-       "",                                                       // units
+       VertFluxFldName,                                           // field name
+       "Vertical flux of tracers across a pseudo-height surface", // long name
+                                                                  // or
+                                                                  // description
+       "",                                                        // units
        "",                               // CF standard Name
        std::numeric_limits<Real>::min(), // min valid value
        std::numeric_limits<Real>::max(), // max valid value
@@ -177,18 +179,18 @@ void VertAdv::defineFields() {
        DimNames                          // dimension names
    );
 
-   auto LowOrderVertFluxField =
-       Field::create(LowOrderVertFluxFldName, // field name
-                     "Low-order vertical flux of tracers across a pseudoheight "
-                     "surface", // long name or description
-                     "",        // units
-                     "",        // CF standard Name
-                     std::numeric_limits<Real>::min(), // min valid value
-                     std::numeric_limits<Real>::max(), // max valid value
-                     FillValueReal, // scalar for undefined entries
-                     NDims,         // number of dimensions
-                     DimNames       // dimension names
-       );
+   auto LowOrderVertFluxField = Field::create(
+       LowOrderVertFluxFldName, // field name
+       "Low-order vertical flux of tracers across a pseudo-height "
+       "surface",                        // long name or description
+       "",                               // units
+       "",                               // CF standard Name
+       std::numeric_limits<Real>::min(), // min valid value
+       std::numeric_limits<Real>::max(), // max valid value
+       FillValueReal,                    // scalar for undefined entries
+       NDims,                            // number of dimensions
+       DimNames                          // dimension names
+   );
 
    GroupName = "VertAdv";
    if (Name != "Default") {
