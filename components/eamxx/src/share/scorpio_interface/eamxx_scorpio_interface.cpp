@@ -980,6 +980,7 @@ void set_dim_decomp (const std::string& filename,
 
   dim_decomp = std::make_shared<DimDecomp>();
   dim_decomp->offsets = my_offsets;
+  dim_decomp->dims = {f.dims.at(dimname)};
   dim.decomp_rank = 1;
 
   // If vars were already defined, we need to process them,
