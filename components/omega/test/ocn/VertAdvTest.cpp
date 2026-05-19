@@ -250,13 +250,13 @@ int main(int argc, char *argv[]) {
                          "VertAdvTest: computeVerticalPseudoVelocity FAIL");
       }
 
-      // Test for computeThicknessVAdvTend
+      // Test for computePseudoThicknessVAdvTend
       Err = 0;
 
       Array2DReal TendCell2D("TendCell2D", DefMesh->NCellsSize, NVertLayers);
       // Compute thickness tendencies for each layer using velocities from
       // previous tests
-      DefVertAdv->computeThicknessVAdvTend(TendCell2D);
+      DefVertAdv->computePseudoThicknessVAdvTend(TendCell2D);
       HostArray2DReal TendCell2DH = createHostMirrorCopy(TendCell2D);
 
       // Expected thickness tendency for each layer is difference between
@@ -271,7 +271,7 @@ int main(int argc, char *argv[]) {
 
       if (Err != 0) {
          ErrAll += Error(ErrorCode::Fail,
-                         "VertAdvTest: computeThicknessVAdvTend FAIL");
+                         "VertAdvTest: computePseudoThicknessVAdvTend FAIL");
       }
 
       // Test for computeVelocityVAdvTend

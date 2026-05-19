@@ -69,14 +69,14 @@ before any tendency computations.
 
 There are three methods for computing vertical advection tendencies of
 thickness, horizontal velocity and tracers that are called from the time
-stepper: `computeThicknessVAdvTend`, `computeVelocityVAdvTend`, and
+stepper: `computePseudoThicknessVAdvTend`, `computeVelocityVAdvTend`, and
 `computeTracerVAdvTend`. Each method updates the corresponding tendency array
 in place (inout).
 
-Only the thickness tendency array is passed to the `computeThicknessVAdvTend`
+Only the thickness tendency array is passed to the `computePseudoThicknessVAdvTend`
 method:
 ```
-VertAdv::computeThicknessVAdvTend(ThickTend);
+VertAdv::computePseudoThicknessVAdvTend(ThickTend);
 ```
 
 The `computeVelocityVAdvTend` method requires the `NormalVelocity` and

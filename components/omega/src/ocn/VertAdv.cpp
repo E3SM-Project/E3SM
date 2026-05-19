@@ -466,7 +466,7 @@ void VertAdv::computeVerticalPseudoVelocity(
 
 //------------------------------------------------------------------------------
 // Compute thickness tendency due to vertical advection
-void VertAdv::computeThicknessVAdvTend(
+void VertAdv::computePseudoThicknessVAdvTend(
     const Array2DReal &ThickTend //< [inout] thickness tendency
 ) {
 
@@ -486,7 +486,7 @@ void VertAdv::computeThicknessVAdvTend(
    // difference in pseudo velocity between bottom and top interface for
    // each layer
    parallelForOuter(
-       "computeThicknessVAdvTend", {NCellsOwned},
+       "computePseudoThicknessVAdvTend", {NCellsOwned},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
           const I4 KMin   = MinLayerCell(ICell);
           const I4 KMax   = MaxLayerCell(ICell);
@@ -504,7 +504,7 @@ void VertAdv::computeThicknessVAdvTend(
               });
        });
 
-} // end computeThicknessVAdvTend
+} // end computePseudoThicknessVAdvTend
 
 //------------------------------------------------------------------------------
 // Compute velocity tendency due to vertical advection

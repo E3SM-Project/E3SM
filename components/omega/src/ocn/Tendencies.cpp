@@ -464,10 +464,10 @@ void Tendencies::computePseudoThicknessTendenciesOnly(
       Pacer::stop("Tend:thicknessFluxDiv", 2);
    }
 
-   Pacer::start("Tend:computeThicknessVAdvTend", 2);
+   Pacer::start("Tend:computePseudoThicknessVAdvTend", 2);
    // Compute thickness tendency from vertical advection
-   VAdv->computeThicknessVAdvTend(PseudoThicknessTend);
-   Pacer::stop("Tend:computeThicknessVAdvTend", 2);
+   VAdv->computePseudoThicknessVAdvTend(PseudoThicknessTend);
+   Pacer::stop("Tend:computePseudoThicknessVAdvTend", 2);
 
    if (CustomThicknessTend) {
       Pacer::start("Tend:customThicknessTend", 2);
