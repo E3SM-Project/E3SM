@@ -16,7 +16,7 @@ VertCoord::init(const bool ReadStream = true, const int NVertLayers = 0)
 These arguments provide flexibility, particularly for unit testing. When `init(false)` is used, the method skips reading
 the `InitialVertCoord` stream. This is useful for unit tests that rely on meshes lacking the fields required by that stream.
 In this case, the min/max layer arrays are initialized with default values based on the number of vertical layers, and
-`bottomGeomDepth` remains uninitialized. Some tests may utilize a specific number of vertical layers that differs from what is
+`BottomGeomDepth` remains uninitialized. Some tests may utilize a specific number of vertical layers that differs from what is
 defined in the mesh file. To handle this, the `VertCoord` can be initialized with `init(false, LocNVertLayers)` to explicitly
 set the number of vertical layers. An argument for `ReadStream` must be provided in order to explicitly set `NVertLayers`.
 For example, `init(42)` is invalid, `init(false, 42)` must be called instead.

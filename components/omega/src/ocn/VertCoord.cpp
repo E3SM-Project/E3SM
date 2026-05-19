@@ -586,7 +586,7 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
                 },
                 Sum3);
             if (Sum3 < 0.) {
-               ABORT_ERROR("VertCoord: Error reading bottomGeomDepth from {}",
+               ABORT_ERROR("VertCoord: Error reading BottomGeomDepth from {}",
                            StreamName);
             }
             Real Sum4 = 0.;
