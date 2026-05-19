@@ -111,9 +111,9 @@ public:
 
   // Creates a deep copy version of this field.
   // It is created with a pristine header (no providers/customers)
-  Field clone () const;
-  Field clone (const std::string& name) const;
-  Field clone (const std::string& name, const std::string& grid_name) const;
+  Field clone (const bool copy = true) const;
+  Field clone (const std::string& name, const bool copy = true) const;
+  Field clone (const std::string& name, const std::string& grid_name, const bool copy = true) const;
 
   Field alias (const std::string& name) const;
   Field alias (const std::string& name, const std::string& grid_name) const;

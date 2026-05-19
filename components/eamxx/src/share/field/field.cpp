@@ -138,8 +138,8 @@ Field::get_const() const {
 }
 
 Field
-Field::clone() const {
-  return clone(name());
+Field::clone(const  bool copy) const {
+  return clone(name(), copy);
 }
 
 Field
@@ -171,12 +171,12 @@ Field::alias (const std::string& name, const std::string& grid_name, const std::
 }
 
 Field
-Field::clone(const std::string& name) const {
-  return clone(name, get_header().get_identifier().get_grid_name());
+Field::clone(const std::string& name, const bool copy) const {
+  return clone(name, get_header().get_identifier().get_grid_name(), copy);
 }
 
 Field
-Field::clone(const std::string& name, const std::string& grid_name) const {
+Field::clone(const std::string& name, const std::string& grid_name, const bool copy) const {
   // Create new field
   const auto& my_fid = get_header().get_identifier();
   auto fid = my_fid.clone(name).reset_grid(grid_name);
@@ -194,10 +194,11 @@ Field::clone(const std::string& name, const std::string& grid_name) const {
   const auto& ts = get_header().get_tracking().get_time_stamp();
   f.get_header().get_tracking().update_time_stamp(ts);
 
-  // Deep copy
-  f.deep_copy(*this);
-  f.sync_to_host();
-
+  if (copy) {
+    // Deep copy
+    f.deep_copy(*this);
+    f.sync_to_host();
+  }
   return f;
 }
 
