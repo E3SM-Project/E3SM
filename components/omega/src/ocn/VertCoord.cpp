@@ -980,7 +980,7 @@ void VertCoord::computeGeomZHeight(
               Team, KRange, INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
                  const I4 KLyr = KMax - K;
                  Real DZ       = RhoSw * SpecVol(ICell, KLyr) *
-                                 PseudoThickness(ICell, KLyr);
+                           PseudoThickness(ICell, KLyr);
                  Accum += DZ;
                  if (IsFinal) {
                     LocZInterf(ICell, KLyr) = -LocBotGeomDepth(ICell) + Accum;

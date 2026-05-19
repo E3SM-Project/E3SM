@@ -640,7 +640,7 @@ int main(int argc, char *argv[]) {
          /// layers in that column
          Real Expected = DefVertCoord->MaxLayerCellH(ICell) -
                          DefVertCoord->MinLayerCellH(ICell) + 1._Real;
-         Real Sum      = 0.;
+         Real Sum = 0.;
          for (int K = 0; K < NVertLayers; ++K) {
             Sum += DefVertCoord->CellMaskH(ICell, K);
          }
