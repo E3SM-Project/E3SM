@@ -260,7 +260,7 @@ int main(int argc, char *argv[]) {
          VCoord->computePressure(PseudoThick, SurfacePressure);
 
          // compute z levels
-         VCoord->computeZHeight(PseudoThick, SpecVol);
+         VCoord->computeGeomZHeight(PseudoThick, SpecVol);
 
          // get PressureGrad instance
          PressureGrad *DefPGrad = PressureGrad::getDefault();

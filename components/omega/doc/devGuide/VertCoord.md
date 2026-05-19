@@ -83,7 +83,7 @@ VertCoord.clear();
 
 ### Use of hierarchical parallelism
 
-The methods `computePressure` and `computeZHeight` are similar in that they use hierarchical parallelism to split the work for horizontal cells over teams of threads, with a `parallel_for`.
+The methods `computePressure` and `computeGeomZHeight` are similar in that they use hierarchical parallelism to split the work for horizontal cells over teams of threads, with a `parallel_for`.
 This is done with a `TeamPolicy`:
 ```c++
 const auto Policy = TeamPolicy(NCellsAll, OMEGA_TEAMSIZE, 1);

@@ -238,9 +238,9 @@ class VertCoord {
 
    /// Sum the mass thickness times specific volume from the bottom layer up,
    /// starting with the bottom elevation
-   void
-   computeZHeight(const Array2DReal &PseudoThickness, ///< [in] pseudo-thickness
-                  const Array2DReal &SpecVol);        ///< [in] specific volume
+   void computeGeomZHeight(
+       const Array2DReal &PseudoThickness, ///< [in] pseudo-thickness
+       const Array2DReal &SpecVol);        ///< [in] specific volume
 
    /// Sum the geometric height times g, the tidal potential, and self
    /// attraction and loading

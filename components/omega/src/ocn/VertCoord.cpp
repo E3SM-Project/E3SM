@@ -956,7 +956,7 @@ void VertCoord::computePressure(
 // used with a parallel_for loop over cells and a parallel_scan performing a
 // prefix sum in each column to compute z from the bottom-most active layer to
 // the top-most active layer
-void VertCoord::computeZHeight(
+void VertCoord::computeGeomZHeight(
     const Array2DReal &PseudoThickness, // [in] pseudo-thickness
     const Array2DReal &SpecVol          // [in] specific volume
 ) {
@@ -969,7 +969,7 @@ void VertCoord::computeZHeight(
    OMEGA_SCOPE(LocSshCell, SshCell);
 
    parallelForOuter(
-       "computeZHeight", {NCellsAll},
+       "computeGeomZHeight", {NCellsAll},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
           const I4 KMin   = LocMinLayerCell(ICell);
           const I4 KMax   = LocMaxLayerCell(ICell);
@@ -992,7 +992,7 @@ void VertCoord::computeZHeight(
                  }
               });
        });
-} // end computeZHeight
+} // end computeGeomZHeight
 
 //------------------------------------------------------------------------------
 // Compute geopotential given GeomZMid, TidalPotential, and

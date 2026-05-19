@@ -216,7 +216,7 @@ int main(int argc, char *argv[]) {
              "FAIL");
       }
 
-      // Tests for computeZHeight
+      // Tests for computeGeomZHeight
 
       Array2DReal SpecVol("SpecVol", NCellsSize, NVertLayers);
       Array1DReal BottomGeomDepth("BottomGeomDepth", NCellsSize);
@@ -238,7 +238,7 @@ int main(int argc, char *argv[]) {
       Kokkos::fence();
 
       /// Call functions and get host copy of output
-      DefVertCoord->computeZHeight(PseudoThickness, SpecVol);
+      DefVertCoord->computeGeomZHeight(PseudoThickness, SpecVol);
       auto GeomZInterfH = createHostMirrorCopy(DefVertCoord->GeomZInterface);
       auto GeomZMidH    = createHostMirrorCopy(DefVertCoord->GeomZMid);
 
@@ -264,12 +264,11 @@ int main(int argc, char *argv[]) {
 
       /// Determine test pass/fail
       if (Err == 0) {
-         LOG_INFO(
-             "VertCoordTest: computeZHeight with uniform PseudoThickness PASS");
+         LOG_INFO("VertCoordTest: computeGeomZHeight with uniform "
+                  "PseudoThickness PASS");
       } else {
-         ErrAll += Error(
-             ErrorCode::Fail,
-             "VertCoordTest: computeZHeight with uniform PseudoThickness FAIL");
+         ErrAll += Error(ErrorCode::Fail, "VertCoordTest: computeGeomZHeight "
+                                          "with uniform PseudoThickness FAIL");
       }
 
       /// Initialize bottom depth, pseudo-thickness and specific volume so that
@@ -286,7 +285,7 @@ int main(int argc, char *argv[]) {
       Kokkos::fence();
 
       /// Call functions and get host copy of output
-      DefVertCoord->computeZHeight(PseudoThickness, SpecVol);
+      DefVertCoord->computeGeomZHeight(PseudoThickness, SpecVol);
       auto ZInterfH2 = createHostMirrorCopy(DefVertCoord->GeomZInterface);
 
       /// Check results
@@ -305,13 +304,12 @@ int main(int argc, char *argv[]) {
 
       /// Determine test pass/fail
       if (Err == 0) {
-         LOG_INFO("VertCoordTest: computeZHeight with non-uniform "
+         LOG_INFO("VertCoordTest: computeGeomZHeight with non-uniform "
                   "PseudoThickness PASS");
       } else {
-         ErrAll += Error(
-             ErrorCode::Fail,
-             "VertCoordTest: computeZHeight with non-uniform PseudoThickness "
-             "FAIL");
+         ErrAll += Error(ErrorCode::Fail, "VertCoordTest: computeGeomZHeight "
+                                          "with non-uniform PseudoThickness "
+                                          "FAIL");
       }
 
       // Tests for computeGeopotential
@@ -642,7 +640,7 @@ int main(int argc, char *argv[]) {
          /// layers in that column
          Real Expected = DefVertCoord->MaxLayerCellH(ICell) -
                          DefVertCoord->MinLayerCellH(ICell) + 1._Real;
-         Real Sum = 0.;
+         Real Sum      = 0.;
          for (int K = 0; K < NVertLayers; ++K) {
             Sum += DefVertCoord->CellMaskH(ICell, K);
          }
