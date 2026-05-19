@@ -77,6 +77,9 @@ public:
   // Create invalid layout
   static FieldLayout invalid () { return FieldLayout({FieldTag::Invalid},{0}); }
 
+  // Create scalar layout
+  static FieldLayout scalar () { return FieldLayout({},{}); }
+
   // ----- Getters ----- //
 
   LayoutType type () const { return m_type; }
