@@ -1654,7 +1654,7 @@ contains
 
     if (present(do_i2x)) then
        allocate(fld_melth(lSize), fld_meltw(lSize), fld_swpen(lSize), fld_swnet(lSize))
-       allocate(fld_lwup(lSize), fld_lat(lSize), fld_sen(lSize), fld_evap(lSize))
+       allocate(fld_lwup(lSize), fld_lat(lSize), fld_sen(lSize), fld_evap(lSize), fld_salt(lSize))
        call mbGetCellTagVals(mbixid, 'Fioi_melth', fld_melth, lSize)
        call mbGetCellTagVals(mbixid, 'Fioi_meltw', fld_meltw, lSize)
        call mbGetCellTagVals(mbixid, 'Fioi_swpen', fld_swpen, lSize)
@@ -1690,7 +1690,7 @@ contains
           nf = f_hsen  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*fld_sen(n)
           nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*fld_meltw(n)
           nf = f_wevap ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*fld_evap(n)
-          nf = f_salt  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*fld_salt(n)
+          nf = f_salt  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*fld_salt(n)
           if ( flds_wiso_ice ) then
              nf = f_wmelt_16O;
              budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*fld_meltw_16O(n)
