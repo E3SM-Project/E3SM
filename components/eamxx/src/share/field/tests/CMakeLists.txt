@@ -68,7 +68,15 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   CreateUnitTest(field_reader
     SOURCES field_reader_tests.cpp
     LIBS eamxx_field
-    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
+  # Test field_writer
+  CreateUnitTest(field_writer
+    SOURCES field_writer_tests.cpp
+    LIBS eamxx_field
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
 
   if (EAMXX_ENABLE_PYTHON)
     CreateUnitTest(pyfield
