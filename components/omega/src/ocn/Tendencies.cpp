@@ -434,15 +434,12 @@ void Tendencies::computeThicknessTendenciesOnly(
 
    parallelForOuter(
        {Mesh->NCellsAll}, KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
-          const int KMin   = MinLayerCell(ICell);
-          const int KMax   = MaxLayerCell(ICell);
-          const int KRange = vertRange(KMin, KMax);
+          const int KMin = MinLayerCell(ICell);
+          const int KMax = MaxLayerCell(ICell);
 
           parallelForInner(
-              Team, KRange, INNER_LAMBDA(int KChunk) {
-                 const int K                     = KMin + KChunk;
-                 LocLayerThicknessTend(ICell, K) = 0;
-              });
+              Team, Range{KMin, KMax},
+              INNER_LAMBDA(int K) { LocLayerThicknessTend(ICell, K) = 0; });
        });
 
    // Compute thickness flux divergence
@@ -510,15 +507,12 @@ void Tendencies::computeVelocityTendenciesOnly(
 
    parallelForOuter(
        {Mesh->NEdgesAll}, KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
-          const int KMin   = MinLayerEdgeBot(IEdge);
-          const int KMax   = MaxLayerEdgeTop(IEdge);
-          const int KRange = vertRange(KMin, KMax);
+          const int KMin = MinLayerEdgeBot(IEdge);
+          const int KMax = MaxLayerEdgeTop(IEdge);
 
           parallelForInner(
-              Team, KRange, INNER_LAMBDA(int KChunk) {
-                 const int K                     = KMin + KChunk;
-                 LocNormalVelocityTend(IEdge, K) = 0;
-              });
+              Team, Range{KMin, KMax},
+              INNER_LAMBDA(int K) { LocNormalVelocityTend(IEdge, K) = 0; });
        });
 
    // Compute potential vorticity horizontal advection
@@ -704,14 +698,11 @@ void Tendencies::computeTracerTendenciesOnly(
    parallelForOuter(
        {NTracers, Mesh->NCellsAll},
        KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
-          const int KMin   = MinLayerCell(ICell);
-          const int KMax   = MaxLayerCell(ICell);
-          const int KRange = vertRange(KMin, KMax);
+          const int KMin = MinLayerCell(ICell);
+          const int KMax = MaxLayerCell(ICell);
           parallelForInner(
-              Team, KRange, INNER_LAMBDA(int KChunk) {
-                 const int K                = KMin + KChunk;
-                 LocTracerTend(L, ICell, K) = 0;
-              });
+              Team, Range{KMin, KMax},
+              INNER_LAMBDA(int K) { LocTracerTend(L, ICell, K) = 0; });
        });
 
    // compute tracer horizotal advection

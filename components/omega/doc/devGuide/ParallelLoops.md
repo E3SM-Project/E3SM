@@ -115,6 +115,7 @@ The following inner iteration patterns are supported in Omega:
 - `parallelForInner`
 - `parallelReduceInner`
 - `parallelScanInner`
+- `parallelSearchInner`
 
 To provide even more flexibility, the outer loops support iterating over a multi-dimensional range.
 Currently, the inner loops are limited to one dimension.
@@ -148,6 +149,26 @@ To do that Kokkos provides the `single` function. To execute a statement once pe
       // executed once per team (by one of the team threads)
   });
 ```
+
+### Inner Iteration Ranges
+
+There are two ways of specifying the iteration range of an inner loop.
+The first takes the total number of iterations `N` as the second argument
+```c++
+   parallelForInner(Team, N, INNER_LAMBDA (int K) {
+   });
+```
+and the loop index `K` takes values from `0` up to and including `N - 1`.
+The second way uses a helper struct `Range` to provide a range of valid indices
+```c++
+   parallelForInner(Team, Range{N1, N2}, INNER_LAMBDA (int K) {
+   });
+```
+Note that this range is inclusive, i.e. the loop index `K` takes values from `N1` up to and including `N2`.
+This means that `Range{0, N}` specifies a different range than the first example.
+For simplicity, most examples in this document use the first way of specifying the range,
+but a `Range` argument can be passed to all inner iteration patterns.
+
 
 ### parallelForOuter
 To start outer iterations over a multidimensional index range the `parallelForOuter` wrapper is available.
@@ -191,7 +212,7 @@ a 3D array in parallel using hierarchical parallelism.
    Array3DReal A("A", N1, N2, N3);
    parallelForOuter(
        {N1, N2}, KOKKOS_LAMBDA(int J1, int J2, const TeamMember &Team) {
-        parallelForInner(Team, N3, INNER_LAMBDA(Int J3) {
+        parallelForInner(Team, N3, INNER_LAMBDA(int J3) {
           A(J1, J2, J3) = J1 + J2 + J3;
         });
     });
@@ -203,7 +224,7 @@ diagonal of a square matrix one can do:
    Array2DReal M("M", N, N);
    parallelForOuter(
        {N}, KOKKOS_LAMBDA(int J1, const TeamMember &Team) {
-        parallelForInner(Team, J1, INNER_LAMBDA(Int J2) {
+        parallelForInner(Team, J1, INNER_LAMBDA(int J2) {
           M(J1, J2) = J1 + J2;
         });
     });
@@ -219,7 +240,7 @@ in a 2D array might be done as follows.
    parallelForOuter(
        {N1, N2}, KOKKOS_LAMBDA(int J1, int J2, const TeamMember &Team) {
         Real SumD3;
-        parallelReduceInner(Team, N3, INNER_LAMBDA(Int J3, Real &Accum) {
+        parallelReduceInner(Team, N3, INNER_LAMBDA(int J3, Real &Accum) {
             Accum += A(J1, J2, J3);
         }, SumD3);
         B(J1, J2) = SumD3;
@@ -233,10 +254,10 @@ For example, to additionally compute and store maxima along the third dimension 
    parallelForOuter(
        {N1, N2}, KOKKOS_LAMBDA(int J1, int J2, const TeamMember &Team) {
         Real SumD3, MaxD3;
-        parallelReduceInner(Team, N3, INNER_LAMBDA(Int J3, Real &AccumSum, Real &AccumMax) {
+        parallelReduceInner(Team, N3, INNER_LAMBDA(int J3, Real &AccumSum, Real &AccumMax) {
             AccumSum += A(J1, J2, J3);
-            AccumMax = Kokkos::Max(AccumMax, A(J1, J2, J3));
-        }, SumN3, MaxN3);
+            AccumMax = Kokkos::max(AccumMax, A(J1, J2, J3));
+        }, SumD3, Kokkos::Max<Real>(MaxD3));
         B(J1, J2) = SumD3;
         C(J1, J2) = MaxD3;
     });
@@ -253,7 +274,7 @@ be done as follows.
    Array3DReal D("D", N1, N2, N3);
    parallelForOuter(
        {N1, N2}, KOKKOS_LAMBDA(int J1, int J2, const TeamMember &Team) {
-       parallelScanInner(Team, N1, INNER_LAMBDA(Int J3, Real &Accum, bool IsFinal) {
+       parallelScanInner(Team, N3, INNER_LAMBDA(int J3, Real &Accum, bool IsFinal) {
             Accum += A(J1, J2, J3);
             if (IsFinal) {
               D(J1, J2, J3) = Accum;
@@ -266,7 +287,7 @@ before the `if` statement. That is, it performs an inclusive scan. To compute an
 simply move the addition after the `if` statement.
 ```c++
   Real FinalScanValue;
-  parallelScanInner(Team, N1, INNER_LAMBDA(Int J3, Real &Accum, bool IsFinal) {
+  parallelScanInner(Team, N3, INNER_LAMBDA(int J3, Real &Accum, bool IsFinal) {
        if (IsFinal) {
          D(J1, J2, J3) = Accum;
        }
@@ -277,3 +298,103 @@ Moreover, this example illustrates that the final scan value can be obtained by 
 an additional argument `FinalScanValue`. Labels are not supported by `parallelScanInner`
 and only one-dimensional index range can be used. In contrast to `parallelReduceInner`,
 `parallelScanInner` supports only sum-based scans and only one scan variable.
+
+### parallelSearchInner
+To search an index range in parallel for the first index at which a given condition occurs,
+Omega provides the `parallelSearchInner` function.
+For example, the following code finds, for each row of a matrix, the first column index where
+the matrix element is above a certain threshold. If no element matches the condition then
+`parallelSearchInner` returns `-1`.
+```c++
+   Array2DReal M("M", N1, N2);
+   Array1DI4 ThresholdIdx("ThresholdIdx", N1);
+   const Real Threshold = 0.5;
+   parallelForOuter(
+       {N1}, KOKKOS_LAMBDA(int J1, const TeamMember &Team) {
+
+       int Idx;
+       parallelSearchInner(Team, N2, INNER_LAMBDA(int J2) {
+            return M(J1, J2) > Threshold;
+       }, Idx);
+
+       ThresholdIdx(J1) = Idx;
+   });
+```
+Labels are not supported by `parallelSearchInner` and only one-dimensional index range can be used.
+
+### Launch Config
+
+While specifying loop bounds is enough to start an outer parallel loop, sometimes more control over the underlying
+Kokkos `TeamPolicy` is desired. The most common use case is utilizing scratch memory, a concept discussed more
+thoroughly in the next sub-section. To enable more control, outer loops can be launched by providing
+a `LaunchConfig` struct as the first argument, which is composed of three parts:
+- loop bounds,
+- team size,
+- amount of scratch memory.
+
+For example, the following snippet launches a loop iterating over a two-dimensional index range
+with team size of 32 and enough scratch memory for 8 `Real` values and 4 `I4` values per team.
+```c++
+   auto LConfig = LaunchConfig({N1, N2}, 32, TeamScratch<Real, I4>(8, 4));
+   parallelForOuter(LConfig,
+       KOKKOS_LAMBDA(int J1, int J2, const TeamMember &Team) {
+   });
+```
+It is not necessary to provide all three arguments to `LaunchConfig`. If you want the default team size,
+or you don't need any scratch memory, you can use the following constructors.
+```c++
+   auto LConfig1 = LaunchConfig({N1, N2}, TeamScratch<Real, I4>(8, 4));
+   auto LConfig2 = LaunchConfig({N1, N2}, 32);
+```
+For simplicity, most examples in this document use the simple form of launching outer loops with just the bounds,
+but `LaunchConfig` can be used for all types of outer parallel loops.
+Inner parallel loops cannot use `LaunchConfig`.
+
+### Team Scratch Memory
+
+In hierarchical code, it is often useful to have some amount of scratch memory private to each team.
+Scratch memory enables reuse of expensive to compute data in inner loops.
+To enable scratch memory, the outer loops needs to be launched with the `LaunchConfig` parameter described above,
+configured with the requested number of scratch values.
+Inside the outer loop, unmanaged scratch arrays can be created from a pool of memory accessible
+by calling the `teamScratch(Team)` function.
+Scratch arrays have a different type than normal Omega arrays, for example `ScratchArray1DReal` is the
+type of a 1D scratch array of Reals. They also cannot have labels.
+
+As an example, the following code uses scratch memory to compute an expensive function on elements of a 2D array `A`.
+It then computes finite differences along the second dimension of the scratch array, and stores them in `A`.
+By using scratch memory, the expensive function is only computed once for every element, and there is no need for global memory allocation.
+```c++
+   Array2DReal A("A", N1, N2);
+   parallelForOuter(
+       LaunchConfig({N1}, TeamScratch<Real>(N2)),
+       KOKKOS_LAMBDA(int J1, const TeamMember &Team) {
+
+        ScratchArray1DReal SA(teamScratch(Team), N2);
+
+        parallelForInner(Team, N2, INNER_LAMBDA (int J2) {
+            SA(J2) = expensiveFunc(A(J1, J2));
+        });
+
+        teamBarrier(Team);
+
+        parallelForInner(Team, N2, INNER_LAMBDA (int J2) {
+
+            const int J2M1 = Kokkos::max(J2 - 1, 0);
+            const int J2P1 = Kokkos::min(J2 + 1, N2 - 1);
+
+            A(J1, J2) = SA(J2P1) - SA(J2M1);
+        });
+   });
+```
+You can create multiple scratch arrays of different types, as in the following code.
+```c++
+   parallelForOuter(
+       LaunchConfig({N1}, TeamScratch<Real, I4>(4, 8)),
+       KOKKOS_LAMBDA(int J1, const TeamMember &Team) {
+        ScratchArray1DI4 ScratchI4(teamScratch(Team), 8);
+        ScratchArray1DReal ScratchReal(teamScratch(Team), 4);
+   });
+```
+As the above example illustrates, the order in which the arrays are created inside the outer region
+doesn't need to match the order of arguments to `TeamScratch`.

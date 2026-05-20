@@ -382,9 +382,10 @@ void VertAdv::computeVerticalVelocity(
 
    // Loop over all cells owned by the task
    parallelForOuter(
-       "computeVerticalVelocity", {NCellsHalo0},
+       "computeVerticalVelocity",
+       LaunchConfig({NCellsHalo0}, TeamScratch<Real>(NVertLayers)),
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
-          RealScratchArray DivHU(Team.team_scratch(0), LocNVertLayers);
+          ScratchArray1DReal DivHU(teamScratch(Team), LocNVertLayers);
 
           const Real InvAreaCell = 1._Real / LocAreaCell(ICell);
 
@@ -415,7 +416,7 @@ void VertAdv::computeVerticalVelocity(
                  }
               });
 
-          Team.team_barrier();
+          teamBarrier(Team);
 
           // Set velocity through top and bottom interfaces to zero
           Kokkos::single(
@@ -454,8 +455,7 @@ void VertAdv::computeVerticalVelocity(
                     LocTotVertVel(ICell, KRev) = Accum;
                  }
               });
-       },
-       NVertLayers);
+       });
 
 } // end computeVerticalVelocity
 
@@ -526,7 +526,8 @@ void VertAdv::computeVelocityVAdvTend(
 
    // Loop over every owned edge
    parallelForOuter(
-       "computeVelocityVAdvTend", {NEdgesOwned},
+       "computeVelocityVAdvTend",
+       LaunchConfig({NEdgesOwned}, TeamScratch<Real>(NVertLayersP1)),
        KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
           const I4 Cell1 = LocCOnE(IEdge, 0);
           const I4 Cell2 = LocCOnE(IEdge, 1);
@@ -536,7 +537,7 @@ void VertAdv::computeVelocityVAdvTend(
 
           // Allocate scratch space for W times Du/Dz at vertical interfaces
           // between edges
-          RealScratchArray WDuDzEdge(Team.team_scratch(0), LocNVertLayersP1);
+          ScratchArray1DReal WDuDzEdge(teamScratch(Team), LocNVertLayersP1);
 
           // Flux is zero at top and bottom
           Kokkos::single(
@@ -566,7 +567,7 @@ void VertAdv::computeVelocityVAdvTend(
                  }
               });
 
-          Team.team_barrier();
+          teamBarrier(Team);
 
           KRange = vertRangeChunked(KMin, KMax);
           // Average W*Du/Dz from interfaces to layer midpoints
@@ -581,8 +582,7 @@ void VertAdv::computeVelocityVAdvTend(
                                          (WDuDzEdge(K) + WDuDzEdge(K + 1));
                  }
               });
-       },
-       NVertLayersP1);
+       });
 
 } // end computeVelocityVAdvTend
 
@@ -839,19 +839,20 @@ void VertAdv::computeFCTVAdvTend(
    OMEGA_SCOPE(LocEps, Eps);
 
    parallelForOuter(
-       "computeFCTVAdvTend", {NTracers, NCellsOwned},
+       "computeFCTVAdvTend",
+       LaunchConfig({NTracers, NCellsOwned},
+                    TeamScratch<Real>(5 * NVertLayers + 1)),
        KOKKOS_LAMBDA(int L, int ICell, const TeamMember &Team) {
           const I4 KMin = MinLayerCell(ICell);
           const I4 KMax = MaxLayerCell(ICell);
           I4 KRange     = vertRangeChunked(KMin, KMax);
 
-          RealScratchArray InvNewProvThick(Team.team_scratch(0),
-                                           LocNVertLayers);
-          RealScratchArray WorkTend(Team.team_scratch(0), LocNVertLayers);
-          RealScratchArray FlxIn(Team.team_scratch(0), LocNVertLayers);
-          RealScratchArray FlxOut(Team.team_scratch(0), LocNVertLayers);
-          RealScratchArray RescaledFlux(Team.team_scratch(0),
-                                        LocNVertLayers + 1);
+          ScratchArray1DReal InvNewProvThick(teamScratch(Team), LocNVertLayers);
+          ScratchArray1DReal WorkTend(teamScratch(Team), LocNVertLayers);
+          ScratchArray1DReal FlxIn(teamScratch(Team), LocNVertLayers);
+          ScratchArray1DReal FlxOut(teamScratch(Team), LocNVertLayers);
+          ScratchArray1DReal RescaledFlux(teamScratch(Team),
+                                          LocNVertLayers + 1);
 
           parallelForInner(
               Team, KRange, INNER_LAMBDA(int KChunk) {
@@ -928,7 +929,7 @@ void VertAdv::computeFCTVAdvTend(
                  }
               });
 
-          Team.team_barrier();
+          teamBarrier(Team);
 
           KRange = vertRangeChunked(KMin + 1, KMax);
 
@@ -951,7 +952,7 @@ void VertAdv::computeFCTVAdvTend(
                  }
               });
 
-          Team.team_barrier();
+          teamBarrier(Team);
 
           // Accumulate total FCT vertical advection tendency
           KRange = vertRangeChunked(KMin, KMax);
@@ -967,8 +968,7 @@ void VertAdv::computeFCTVAdvTend(
                  }
               });
           // TODO: Monotonicity and diagnostic checks
-       },
-       5 * NVertLayers + 1);
+       });
 
 } // end computeFTCVAdvTend
 

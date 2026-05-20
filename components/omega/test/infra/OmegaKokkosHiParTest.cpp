@@ -262,6 +262,177 @@ Error testHiparReduce1DReduce1D(int N1) {
    return Err;
 }
 
+Error testHiparFor1DSearch1D(int N2) {
+   Error Err;
+
+   const int Threshold = N2 / 2;
+   const int N1        = 3 * N2 + 3;
+
+   HostArray2DI4 DataH("DataH", N1, N2);
+
+   for (int J1 = 0; J1 < 3 * N2; ++J1) {
+      if (J1 < N2 + 10) {
+         for (int J2 = 0; J2 < N2; ++J2) {
+            DataH(J1, J2) = Threshold - (J1 - J2);
+         }
+      } else {
+         for (int J2 = 0; J2 < N2; ++J2) {
+            DataH(J1, J2) = Threshold - (J1 / 4 - J2);
+         }
+      }
+   }
+
+   // Ensure these patterns are in the input data
+   for (int J2 = 0; J2 < N2; ++J2) {
+      // Everything above threshold
+      DataH(3 * N2, J2) = Threshold + 1;
+      // Everything below threshold
+      DataH(3 * N2 + 1, J2) = Threshold - 1;
+      // Multiple non-consecutive values above threshold
+      DataH(3 * N2 + 2, J2) = Threshold - 3 + J2 % 4;
+   }
+
+   auto DataD = createDeviceMirrorCopy(DataH);
+
+   HostArray1DI4 RefIdxH("RefIdxH", N1);
+   Array1DI4 IdxD("IdxD", N1);
+
+   // test searching full range
+
+   for (int J1 = 0; J1 < N1; ++J1) {
+      int Idx = -1;
+      for (int J2 = 0; J2 < N2; ++J2) {
+         if (DataH(J1, J2) >= Threshold) {
+            Idx = J2;
+            break;
+         }
+      }
+      RefIdxH(J1) = Idx;
+   }
+
+   parallelForOuter(
+       {N1}, KOKKOS_LAMBDA(int J1, const TeamMember &Team) {
+          parallelSearchInner(
+              Team, N2,
+              INNER_LAMBDA(int J2) { return DataD(J1, J2) >= Threshold; },
+              IdxD(J1));
+       });
+
+   if (!arraysEqual(IdxD, RefIdxH)) {
+      Err += Error(ErrorCode::Fail,
+                   errorMsg("parallelFor1DSearch1D Full FAIL", N1));
+   }
+
+   deepCopy(RefIdxH, 0);
+   deepCopy(IdxD, 0);
+
+   // test searching limited range
+
+   if (N2 / 4 > 0) {
+
+      for (int J1 = 0; J1 < N1; ++J1) {
+         int Idx         = -1;
+         const int Start = N2 / 4 - J1 % (N2 / 4);
+         const int End   = 3 * N2 / 4 + J1 % (N2 / 4);
+         for (int J2 = Start; J2 < End; ++J2) {
+            if (DataH(J1, J2) >= Threshold) {
+               Idx = J2;
+               break;
+            }
+         }
+         RefIdxH(J1) = Idx;
+      }
+
+      parallelForOuter(
+          {N1}, KOKKOS_LAMBDA(int J1, const TeamMember &Team) {
+             const int Start = N2 / 4 - J1 % (N2 / 4);
+             const int End   = 3 * N2 / 4 + J1 % (N2 / 4);
+             int SearchIdx;
+             parallelSearchInner(
+                 Team, Range{Start, End - 1},
+                 INNER_LAMBDA(int J2) { return DataD(J1, J2) >= Threshold; },
+                 SearchIdx);
+             IdxD(J1) = SearchIdx;
+          });
+
+      if (!arraysEqual(IdxD, RefIdxH)) {
+         Err += Error(ErrorCode::Fail,
+                      errorMsg("parallelFor1DSearch1D Limited FAIL", N1));
+      }
+   }
+
+   return Err;
+}
+
+Error testHiparLaunchConfig1D(int N1, int N2) {
+   Error Err;
+
+   HostArray2DReal RefOutH("RefOutH", N1, N2 - 3);
+
+   for (int J1 = 0; J1 < N1; ++J1) {
+      HostArray1DI4 ScratchAH("ScratchAH", N2);
+
+      for (int J2 = 0; J2 < N2; ++J2) {
+         ScratchAH(J2) = f2(J1, J2, N1, N2) * f2(J1, J2, N1, N2);
+      }
+
+      HostArray1DReal ScratchBH("ScratchBH", N2 - 2);
+
+      for (int J2 = 1; J2 < N2 - 1; ++J2) {
+         ScratchBH(J2 - 1) =
+             1._Real / (1._Real + ScratchAH(J2 + 1) - ScratchAH(J2 - 1));
+      }
+
+      for (int J2 = 0; J2 < N2 - 3; ++J2) {
+         RefOutH(J1, J2) = ScratchBH(J2) / ScratchBH(J2 + 1);
+      }
+   }
+
+   Array2DReal OutD("OutD", N1, N2 - 3);
+
+#ifdef OMEGA_TARGET_DEVICE
+   const int TeamSize = 32;
+#else
+   const int TeamSize = 1;
+#endif
+
+   auto LConfig =
+       LaunchConfig({N1}, TeamSize, TeamScratch<Real, I4>(N2 - 2, N2));
+   parallelForOuter(
+       LConfig, KOKKOS_LAMBDA(int J1, const TeamMember &Team) {
+          ScratchArray1DI4 ScratchA(teamScratch(Team), N2);
+
+          parallelForInner(
+              Team, N2, INNER_LAMBDA(int J2) {
+                 ScratchA(J2) = f2(J1, J2, N1, N2) * f2(J1, J2, N1, N2);
+              });
+
+          teamBarrier(Team);
+
+          ScratchArray1DReal ScratchB(teamScratch(Team), N2 - 2);
+
+          parallelForInner(
+              Team, Range{1, N2 - 2}, INNER_LAMBDA(int J2) {
+                 ScratchB(J2 - 1) =
+                     1._Real / (1._Real + ScratchA(J2 + 1) - ScratchA(J2 - 1));
+              });
+
+          teamBarrier(Team);
+
+          parallelForInner(
+              Team, N2 - 3, INNER_LAMBDA(int J2) {
+                 OutD(J1, J2) = ScratchB(J2) / ScratchB(J2 + 1);
+              });
+       });
+
+   if (!arraysEqual(OutD, RefOutH)) {
+      Err += Error(ErrorCode::Fail,
+                   errorMsg("parallelForLaunchConfig1D FAIL", N1, N2));
+   }
+
+   return Err;
+}
+
 Error testHiparFor1DMultiple1D(int N1, int N2) {
    Error Err;
 
@@ -355,7 +526,7 @@ Error testHiparFor2DFor1D(int N1, int N2) {
    HostArray3DI4 RefAH("RefA3H", N1, N2, N3);
    for (int J1 = 0; J1 < N1; ++J1) {
       for (int J2 = 0; J2 < N2; ++J2) {
-         for (int J3 = 0; J3 < J1 + J2; ++J3) {
+         for (int J3 = J1; J3 <= J1 + J2; ++J3) {
             RefAH(J1, J2, J3) = f3(J1, J2, J3, N1, N2, N3);
          }
       }
@@ -365,7 +536,7 @@ Error testHiparFor2DFor1D(int N1, int N2) {
    parallelForOuter(
        {N1, N2}, KOKKOS_LAMBDA(int J1, int J2, const TeamMember &Team) {
           parallelForInner(
-              Team, J1 + J2, INNER_LAMBDA(int J3) {
+              Team, Range{J1, J1 + J2}, INNER_LAMBDA(int J3) {
                  A(J1, J2, J3) = f3(J1, J2, J3, N1, N2, N3);
               });
        });
@@ -389,7 +560,7 @@ Error testHiparFor2DReduce1D(int N1, int N2) {
       for (int J2 = 0; J2 < N2; ++J2) {
          I4 Sum = 0;
          I4 Max = std::numeric_limits<I4>::min();
-         for (int J3 = 0; J3 < J1 + J2; ++J3) {
+         for (int J3 = J1; J3 <= J1 + J2; ++J3) {
             Sum += f3(J1, J2, J3, N1, N2, N3);
             Max = std::max(Max, f3(J1, J2, J3, N1, N2, N3));
          }
@@ -404,7 +575,7 @@ Error testHiparFor2DReduce1D(int N1, int N2) {
        {N1, N2}, KOKKOS_LAMBDA(int J1, int J2, const TeamMember &Team) {
           I4 Sum;
           parallelReduceInner(
-              Team, J1 + J2,
+              Team, Range{J1, J1 + J2},
               INNER_LAMBDA(int J3, I4 &Accum) {
                  Accum += f3(J1, J2, J3, N1, N2, N3);
               },
@@ -413,7 +584,7 @@ Error testHiparFor2DReduce1D(int N1, int N2) {
 
           I4 Max;
           parallelReduceInner(
-              Team, J1 + J2,
+              Team, Range{J1, J1 + J2},
               INNER_LAMBDA(int J3, I4 &Accum) {
                  Accum = Kokkos::max(Accum, f3(J1, J2, J3, N1, N2, N3));
               },
@@ -437,7 +608,7 @@ Error testHiparFor2DReduce1D(int N1, int N2) {
        {N1, N2}, KOKKOS_LAMBDA(int J1, int J2, const TeamMember &Team) {
           I4 Sum, Max;
           parallelReduceInner(
-              Team, J1 + J2,
+              Team, Range{J1, J1 + J2},
               INNER_LAMBDA(int J3, I4 &AccumSum, I4 &AccumMax) {
                  AccumSum += f3(J1, J2, J3, N1, N2, N3);
                  AccumMax = Kokkos::max(AccumMax, f3(J1, J2, J3, N1, N2, N3));
@@ -464,7 +635,7 @@ Error testHiparFor2DScan1D(int N1, int N2) {
    for (int J1 = 0; J1 < N1; ++J1) {
       for (int J2 = 0; J2 < N2; ++J2) {
          I4 RSum = 0;
-         for (int J3 = 0; J3 < J1 + J2; ++J3) {
+         for (int J3 = J1; J3 <= J1 + J2; ++J3) {
             RefRSumH(J1, J2, J3) = RSum;
             RSum += f3(J1, J2, J3, N1, N2, N3);
          }
@@ -475,7 +646,8 @@ Error testHiparFor2DScan1D(int N1, int N2) {
    parallelForOuter(
        {N1, N2}, KOKKOS_LAMBDA(int J1, int J2, const TeamMember &Team) {
           parallelScanInner(
-              Team, J1 + J2, INNER_LAMBDA(int J3, I4 &Accum, bool IsFinal) {
+              Team, Range{J1, J1 + J2},
+              INNER_LAMBDA(int J3, I4 &Accum, bool IsFinal) {
                  if (IsFinal) {
                     RSum(J1, J2, J3) = Accum;
                  }
@@ -500,7 +672,7 @@ Error testHiparReduce2DReduce1D(int N1, int N2) {
    I4 RefMax = std::numeric_limits<I4>::min();
    for (int J1 = 0; J1 < N1; ++J1) {
       for (int J2 = 0; J2 < N2; ++J2) {
-         for (int J3 = 0; J3 < J1 + J2; ++J3) {
+         for (int J3 = J1; J3 <= J1 + J2; ++J3) {
             RefSum += f3(J1, J2, J3, N1, N2, N3);
             RefMax = std::max(RefMax, f3(J1, J2, J3, N1, N2, N3));
          }
@@ -513,7 +685,7 @@ Error testHiparReduce2DReduce1D(int N1, int N2) {
        KOKKOS_LAMBDA(int J1, int J2, const TeamMember &Team, I4 &AccumOuter) {
           I4 SumInner;
           parallelReduceInner(
-              Team, J1 + J2,
+              Team, Range{J1, J1 + J2},
               INNER_LAMBDA(int J3, I4 &AccumInner) {
                  AccumInner += f3(J1, J2, J3, N1, N2, N3);
               },
@@ -534,7 +706,7 @@ Error testHiparReduce2DReduce1D(int N1, int N2) {
        KOKKOS_LAMBDA(int J1, int J2, const TeamMember &Team, I4 &AccumOuter) {
           I4 MaxInner;
           parallelReduceInner(
-              Team, J1 + J2,
+              Team, Range{J1, J1 + J2},
               INNER_LAMBDA(int J3, I4 &AccumInner) {
                  AccumInner =
                      Kokkos::max(AccumInner, f3(J1, J2, J3, N1, N2, N3));
@@ -556,7 +728,7 @@ Error testHiparReduce2DReduce1D(int N1, int N2) {
                      I4 &AccumMaxOuter) {
           I4 SumInner, MaxInner;
           parallelReduceInner(
-              Team, J1 + J2,
+              Team, Range{J1, J1 + J2},
               INNER_LAMBDA(int J3, I4 &AccumSumInner, I4 &AccumMaxInner) {
                  AccumSumInner += f3(J1, J2, J3, N1, N2, N3);
                  AccumMaxInner =
@@ -687,6 +859,9 @@ int main(int argc, char **argv) {
 #if !defined(KOKKOS_ENABLE_SYCL) || KOKKOS_VERSION_GREATER_EQUAL(4, 7, 1)
             Err += testHiparReduce1DReduce1D(N1);
 #endif
+            Err += testHiparFor1DSearch1D(N1);
+
+            Err += testHiparLaunchConfig1D(2 * N1, N1 + 3);
 
             Err += testHiparFor1DMultiple1D(1, N1);
             Err += testHiparFor1DMultiple1D((N1 + 1) / 2, N1);
