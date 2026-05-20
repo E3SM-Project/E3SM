@@ -267,25 +267,25 @@ setup_linear_time_database (const strvec_t& input_files,
 
 void DataInterpolation::
 setup_periodic_time_database (const strvec_t& input_files,
-                              const util::TimeStamp& start_ts,
-                              const util::TimeStamp& ref_ts)
+                              const util::TimeStamp& year_start_ts)
 {
-  build_time_database_slices(input_files,util::TimeLine::YearlyPeriodic,ref_ts);
+  build_time_database_slices(input_files,util::TimeLine::YearlyPeriodic,{});
 
   // To avoid bugs at runtime, we want to retain AT MOST one year worth of time slices.
   // If input start_ts is invalid, we pick the 1st slice in the files
 
   auto& slices = m_time_database.slices;
-  auto first_ts = start_ts.is_valid () ? start_ts : slices[0].time;
+  auto start_ts = year_start_ts.is_valid () ? year_start_ts : slices[0].time;
 
   // We need to:
   //  - remove all slices ahead of start_ts by 1yy or more.
   //  - call LVF the last valid slice in the future after the prev step
   //  - remove all slices that are more than 1yy in the past compared to LVF
-  int one_year = first_ts.days_in_curr_year()*86400;
   auto it_end = slices.begin();
-  auto start_ts_plus_1_year = first_ts + one_year;
-  for (++it_end; it_end != slices.end();) {
+  auto start_date_p1y = start_ts.get_date();
+  start_date_p1y[0] += 1;
+  util::TimeStamp start_ts_plus_1_year(start_date_p1y,start_ts.get_time());
+  for (; it_end != slices.end();) {
     if (start_ts_plus_1_year <= it_end->time) {
       it_end = slices.erase(it_end); // too far in the future
     } else {
@@ -293,9 +293,12 @@ setup_periodic_time_database (const strvec_t& input_files,
     }
   }
 
-  auto first_valid_past = slices.back().time - one_year;
+  auto last_valid_date = slices.back().time;
+  auto last_valid_date_m1y = last_valid_date.get_date();
+  last_valid_date_m1y[0] -= 1;
+  util::TimeStamp first_valid_past(last_valid_date_m1y, last_valid_date.get_time());
   it_end = slices.begin();
-  for (++it_end; it_end != slices.end();) {
+  for (; it_end != slices.end();) {
     if (it_end->time <= first_valid_past) {
       it_end = slices.erase(it_end); // too far in the past
     } else {
@@ -304,8 +307,8 @@ setup_periodic_time_database (const strvec_t& input_files,
   }
 
   EKAT_REQUIRE_MSG (slices.size()>=2,
-      "[DataInterpolation] Error! Not enough time slices in the database within 1 (periodic) year from start_ts.\n"
-      " - start_ts        : " + first_ts.to_string() + "\n"
+      "[DataInterpolation] Error! Not enough time slices in the database within 12 months from year_start_ts.\n"
+      " - year_start_ts   : " + start_ts.to_string() + "\n"
       " - retained slices : " + std::to_string(slices.size()) + "\n");
 
   // Prune file names in the TimeDatabase that own none of the retained slices

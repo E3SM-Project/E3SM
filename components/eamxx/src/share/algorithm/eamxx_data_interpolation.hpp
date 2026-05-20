@@ -58,11 +58,10 @@ public:
                                    const util::TimeStamp& ref_ts = util::TimeStamp());
 
   // Setup time database for YearlyPeriodic time-dependent data interpolation
-  // ref_ts shifts raw file time values; start_ts selects the start of the
-  // twelve months period
+  // year_start_ts allows to select the 12 months window from a multi-year database.
+  // If unset, we pick the first timestamp from the first file
   void setup_periodic_time_database (const strvec_t& input_files,
-                                     const util::TimeStamp& start_ts = util::TimeStamp(),
-                                     const util::TimeStamp& ref_ts = util::TimeStamp());
+                                     const util::TimeStamp& year_start_ts = util::TimeStamp());
 
   // In case the input files store dims with exhotic names, the user can provide them here
   void set_input_files_dimname (const std::string& name, const std::string& nc_name);
