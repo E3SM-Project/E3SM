@@ -33,32 +33,57 @@ readonly PROJECT="e3sm"
 #readonly MACHINE="compy"
 readonly MACHINE="pm-cpu"
 
+# E3SM-GCAM works only with MCT driver for now
+readonly DRIVER="mct"
+
 # if true this increases the active component ntasks to ~5400 from ~3200
 ehc_pe_xl=false
-
-# set the machine inputdata directory
-if [ "${MACHINE}" == "chrysalis" ]; then
-   readonly din_loc_root=/lcrc/group/e3sm/data/inputdata
-fi
-if [ "${MACHINE}" == "compy" ]; then
-   readonly din_loc_root=/compyfs/inputdata
-fi
-if [ "${MACHINE}" == "pm-cpu" ]; then
-   din_loc_root=/global/cfs/cdirs/e3sm/inputdata
-fi
-
-# Simulation
-readonly MYDATE=$(date '+%Y%m%d%H') # use current date if MYDATE is not set to a specific date
-# export COMPSET=SSP245_EAM%CMIP6_ELM%TOPCNPRDCTCBCPHS_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM_BGC%LNDATM
-readonly COMPSET="SSP245_ZATM_BGC" # see long name above
-readonly RESOLUTION="ne30pg2_f09_oEC60to30v3" 
-readonly CASE_NAME="${COMPSET}_${RESOLUTION}_${MYDATE}"
-# readonly CASE_GROUP="E3SM_GCAM"
 
 # Code and compilation - these are the 'main' branches
 #readonly BRANCH="master" 
 #readonly giac_branch="master"
 #readonly gcam_branch="e3sm-integration"
+
+# clone name and code path
+# note that fetch_code below will use CLONE_NAME in place of the default 'E3SM',
+#     so that CODE_ROOT points to the root of the cloned repository,
+#     and not to a parent directory containing multiple clones
+readonly CLONE_DATE=$(date '+%d%B%Y')
+readonly CLONE_NAME="e3sm_gcam_${CLONE_DATE}"
+readonly CODE_PARENT="${HOME}/e3sm"
+readonly CODE_ROOT="${CODE_PARENT}/${CLONE_NAME}"
+
+# case name and compset
+readonly MYDATE=$(date '+%Y%m%d%H') # use current date if MYDATE is not set to a specific date
+# export COMPSET=SSP245_EAM%CMIP6_ELM%TOPCNPRDCTCBCPHS_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM_BGC%LNDATM
+readonly COMPSET="SSP245_ZATM_BGC" # see long name above
+readonly RESOLUTION="ne30pg2_f09_oEC60to30v3"
+readonly CASE_NAME="${COMPSET}_${RESOLUTION}_${MYDATE}"
+# readonly CASE_GROUP="E3SM_GCAM"
+
+# set the machine inputdata directory, scratch directory, and queue names
+if [ "${MACHINE}" == "chrysalis" ]; then
+   readonly din_loc_root=/lcrc/group/e3sm/data/inputdata
+   readonly CASE_ROOT="/lcrc/group/e3sm/$USER/e3sm_scratch/${CASE_NAME}"
+   readonly MACH_QUEUE='compute'
+   readonly MACH_QUEUE_DEBUG='debug'
+fi
+if [ "${MACHINE}" == "compy" ]; then
+   readonly din_loc_root=/compyfs/inputdata
+   readonly CASE_ROOT="/compyfs/${USER}/e3sm_scratch/${CASE_NAME}"
+   readonly MACH_QUEUE='slurm'
+   readonly MACH_QUEUE_DEBUG='short'
+fi
+if [ "${MACHINE}" == "pm-cpu" ]; then
+   din_loc_root=/global/cfs/cdirs/e3sm/inputdata
+   readonly CASE_ROOT="${SCRATCH}/e3sm_scratch/${CASE_NAME}"
+   readonly MACH_QUEUE='regular'
+   readonly MACH_QUEUE_DEBUG='debug'
+fi
+
+# Sub-directories
+readonly CASE_BUILD_DIR=${CASE_ROOT}/build
+readonly CASE_ARCHIVE_DIR=${CASE_ROOT}/archive
 
 # compile with debug?
 readonly DEBUG_COMPILE=FALSE
@@ -73,30 +98,6 @@ readonly RUN_REFCASE="20260303_I20TREAMELMCNPRDCTCBCPHSBGC_${RESOLUTION}"
 readonly RUN_REFDATE="2015-01-01"
 readonly RUN_REFDIR="$din_loc_root/e3sm_init/${RUN_REFCASE}/${RUN_REFDATE}-00000"
 readonly MPASSI_CONFIG_START=2015-01-01_0
-
-# Set paths
-# note that fetch_code below will use CLONE_NAME in place of E3SM, so that CODE_ROOT points to the root of the cloned repository, and not to a parent directory containing multiple clones
-readonly CLONE_DATE=$(date '+%d%B%Y')
-
-readonly CLONE_NAME="e3sm_gcam_${CLONE_DATE}"
-
-readonly CODE_PARENT="${HOME}/e3sm"
-readonly CODE_ROOT="${CODE_PARENT}/${CLONE_NAME}"
-
-# set the machine scratch directory
-if [ "${MACHINE}" == "chrysalis" ]; then
-   readonly CASE_ROOT="/lcrc/group/e3sm/$USER/e3sm_scratch/${CASE_NAME}"
-fi
-if [ "${MACHINE}" == "compy" ]; then
-   readonly CASE_ROOT="/compyfs/${USER}/e3sm_scratch/${CASE_NAME}"
-fi
-if [ "${MACHINE}" == "pm-cpu" ]; then
-   readonly CASE_ROOT="${SCRATCH}/e3sm_scratch/${CASE_NAME}"
-fi
-
-# Sub-directories
-readonly CASE_BUILD_DIR=${CASE_ROOT}/build
-readonly CASE_ARCHIVE_DIR=${CASE_ROOT}/archive
 
 # Define type of run
 #  short tests: 'XS_2x5_ndays', 'XS_1x10_ndays', 'S_1x10_ndays', 
@@ -129,7 +130,7 @@ if [ "${run}" != "production" ]; then
   readonly DO_SHORT_TERM_ARCHIVING=false
   
   readonly WALLTIME="4:00:00"
-  readonly IFDEBUG="debug"
+  readonly RUN_QUEUE=${MACH_QUEUE_DEBUG}
 else
 
   # Production simulation
@@ -143,7 +144,7 @@ else
   readonly REST_N="1"
   readonly RESUBMIT="0"
   readonly DO_SHORT_TERM_ARCHIVING=false
-  readonly IFDEBUG="regular"
+  readonly RUN_QUEUE=${MACH_QUEUE}
 fi
 
 # Coupler history 
@@ -250,7 +251,7 @@ fetch_code() {
     echo $'\n----- Starting fetch_code -----\n'
     # recall that CODE_ROOT is set to the root of the cloned repository, not the parent directory of the clone
     local path=${CODE_ROOT}
-    local repo=e3sm
+    local repo=E3SM
 
     echo "Cloning $repo repository branch $BRANCH into $path"
     if [ -d "${path}" ]; then
@@ -317,8 +318,9 @@ create_newcase() {
         --machine ${MACHINE} \
         --project ${PROJECT} \
         --walltime ${WALLTIME} \
-	    --queue ${IFDEBUG} \
-        --pecount ${PELAYOUT}
+	    --queue ${RUN_QUEUE} \
+        --pecount ${PELAYOUT} \
+        --driver ${DRIVER}
 
     if [ $? != 0 ]; then
       echo $'\nNote: if create_newcase failed because sub-directory already exists:'
