@@ -375,19 +375,25 @@ macro (setUpTestDir TEST_DIR)
       # from a _P96 test option), test_execs/CMakeLists.txt maps it to
       # MAX_NUM_PROCS so it is treated as "up to N ranks available" rather than
       # "every test must use exactly N ranks".
+      MESSAGE(STATUS "Test ${TEST_NAME}: lowering NUM_CPUS from ${NUM_CPUS} to ${MAX_NUM_PROCS} (MAX_NUM_PROCS=${MAX_NUM_PROCS})")
       SET(NUM_CPUS ${MAX_NUM_PROCS})
     ENDIF ()
     # Raise NUM_CPUS toward MAX_NUM_PROCS when there is headroom.  Find the
     # largest valid MPI count for this test's problem size: the largest divisor
     # of the total element count that is <= MAX_NUM_PROCS.  For a cube-sphere
     # grid (topology "cube" or no topology set) total_elements = 6*ne^2; for a
-    # planar grid total_elements = ne_x*ne_y.  We read ne/ne_x/ne_y from the
-    # first namelist file so that both hard-coded values (e.g. ne = 10) and
-    # CMake-variable references (e.g. ne = ${HOMME_TEST_NE}) are handled.
+    # planar grid total_elements = ne_x*ne_y.  We scan all namelist files for
+    # ne/ne_x/ne_y, using the first file that contains a non-zero value.  This
+    # is necessary because FILE(GLOB) sorts files alphabetically, so a mesh-file
+    # namelist with "ne = 0" may sort ahead of the regular namelist with a
+    # non-zero ne (e.g. swtc6-short-exodus.nl sorts before swtc6-short.nl).
+    # Both hard-coded values (e.g. ne = 10) and CMake-variable references
+    # (e.g. ne = ${HOMME_TEST_NE}) are handled.
     IF (${NUM_CPUS} LESS ${MAX_NUM_PROCS} AND NAMELIST_FILES)
-      LIST(GET NAMELIST_FILES 0 _HOMME_FIRST_NL)
-      IF (EXISTS "${_HOMME_FIRST_NL}")
-        FILE(READ "${_HOMME_FIRST_NL}" _HOMME_NL_CONTENTS)
+      SET(_HOMME_TOTAL_ELEM 0)
+      FOREACH (_HOMME_NL_FILE ${NAMELIST_FILES})
+       IF (EXISTS "${_HOMME_NL_FILE}" AND _HOMME_TOTAL_ELEM EQUAL 0)
+        FILE(READ "${_HOMME_NL_FILE}" _HOMME_NL_CONTENTS)
         # Determine topology: planar if ne_x/ne_y present, cube otherwise.
           IF ("${_HOMME_NL_CONTENTS}" MATCHES "ne_x[ \t]*=[ \t]*([0-9]+)")
           SET(_HOMME_NE_X "${CMAKE_MATCH_1}")
@@ -403,7 +409,9 @@ macro (setUpTestDir TEST_DIR)
           ENDIF ()
           MATH(EXPR _HOMME_TOTAL_ELEM "${_HOMME_NE_X} * ${_HOMME_NE_Y}")
         ELSE ()
-          # Cube-sphere: look for ne = <literal> or ne = ${HOMME_TEST_NE}
+          # Cube-sphere: look for ne = <literal> or ne = ${HOMME_TEST_NE}.
+          # Skip ne = 0, which means the namelist uses a mesh file; a later
+          # namelist in the list may supply the actual (non-zero) ne value.
           IF ("${_HOMME_NL_CONTENTS}" MATCHES "[\n\t ]ne[ \t]*=[ \t]*([0-9]+)")
             SET(_HOMME_NE_VAL "${CMAKE_MATCH_1}")
           ELSEIF ("${_HOMME_NL_CONTENTS}" MATCHES "[\n\t ]ne[ \t]*=[ \t]*\\$\\{HOMME_TEST_NE\\}")
@@ -413,34 +421,51 @@ macro (setUpTestDir TEST_DIR)
           ENDIF ()
           IF (_HOMME_NE_VAL)
             MATH(EXPR _HOMME_TOTAL_ELEM "6 * ${_HOMME_NE_VAL} * ${_HOMME_NE_VAL}")
-          ELSE ()
-            SET(_HOMME_TOTAL_ELEM 0)
           ENDIF ()
+          # If _HOMME_NE_VAL is empty or "0", _HOMME_TOTAL_ELEM stays 0 and
+          # the FOREACH loop continues to the next namelist file.
         ENDIF ()
-        # Find the largest divisor of _HOMME_TOTAL_ELEM that is <= MAX_NUM_PROCS.
-        # Algorithm: linear scan downward from MAX_NUM_PROCS to NUM_CPUS+1,
-        # stopping at the first candidate that evenly divides total_elem.
-        # This is O(MAX_NUM_PROCS - NUM_CPUS) at configure time -- harmless in
-        # practice (MAX_NUM_PROCS is typically <= 128) but worth noting.
-        IF (_HOMME_TOTAL_ELEM GREATER 0)
-          # _HOMME_BEST_CPUS starts at NUM_CPUS (the current value).  If no
-          # larger divisor is found the WHILE loop exits naturally and the
-          # subsequent IF(_HOMME_BEST_CPUS GREATER ...) is false, so NUM_CPUS
-          # is left unchanged -- which is the correct "no improvement" outcome.
-          SET(_HOMME_BEST_CPUS ${NUM_CPUS})
-          SET(_HOMME_CANDIDATE ${MAX_NUM_PROCS})
-          WHILE (_HOMME_CANDIDATE GREATER ${NUM_CPUS})
-            MATH(EXPR _HOMME_REM "${_HOMME_TOTAL_ELEM} % ${_HOMME_CANDIDATE}")
-            IF (_HOMME_REM EQUAL 0)
-              SET(_HOMME_BEST_CPUS ${_HOMME_CANDIDATE})
-              BREAK()
-            ENDIF ()
-            MATH(EXPR _HOMME_CANDIDATE "${_HOMME_CANDIDATE} - 1")
-          ENDWHILE ()
-          IF (_HOMME_BEST_CPUS GREATER ${NUM_CPUS})
-            MESSAGE(STATUS "Test ${TEST_NAME}: raising NUM_CPUS from ${NUM_CPUS} to ${_HOMME_BEST_CPUS} (total_elem=${_HOMME_TOTAL_ELEM}, MAX_NUM_PROCS=${MAX_NUM_PROCS})")
-            SET(NUM_CPUS ${_HOMME_BEST_CPUS})
+       ENDIF ()
+      ENDFOREACH ()
+      # Determine the best MPI count to use, up to MAX_NUM_PROCS.
+      #
+      # When total_elem is still 0 after scanning all namelists (e.g. a pure
+      # RRM mesh-file test with no regular namelist), or when
+      # total_elem >= MAX_NUM_PROCS (every rank gets at least one element),
+      # raise directly to MAX_NUM_PROCS.  HOMME's SFC partitioner handles
+      # uneven distributions, so exact divisibility is not required.
+      #
+      # Only apply the divisor search when total_elem < MAX_NUM_PROCS, where
+      # we must cap at total_elem to avoid giving some ranks zero elements.
+      IF (_HOMME_TOTAL_ELEM EQUAL 0)
+        # Unknown grid size (e.g., RRM mesh file): raise to MAX_NUM_PROCS.
+        SET(_HOMME_BEST_CPUS ${MAX_NUM_PROCS})
+        MESSAGE(STATUS "Test ${TEST_NAME}: raising NUM_CPUS from ${NUM_CPUS} to ${_HOMME_BEST_CPUS} (total_elem unknown/mesh-file, MAX_NUM_PROCS=${MAX_NUM_PROCS})")
+        SET(NUM_CPUS ${_HOMME_BEST_CPUS})
+      ELSEIF (_HOMME_TOTAL_ELEM GREATER_EQUAL ${MAX_NUM_PROCS})
+        # Large grid: every rank gets >= 1 element at MAX_NUM_PROCS.
+        SET(_HOMME_BEST_CPUS ${MAX_NUM_PROCS})
+        MESSAGE(STATUS "Test ${TEST_NAME}: raising NUM_CPUS from ${NUM_CPUS} to ${_HOMME_BEST_CPUS} (total_elem=${_HOMME_TOTAL_ELEM}, MAX_NUM_PROCS=${MAX_NUM_PROCS})")
+        SET(NUM_CPUS ${_HOMME_BEST_CPUS})
+      ELSE ()
+        # Small grid (total_elem < MAX_NUM_PROCS): find the largest divisor
+        # of total_elem that is <= MAX_NUM_PROCS so no rank gets 0 elements.
+        # Algorithm: linear scan downward from total_elem (the natural cap)
+        # to NUM_CPUS+1, stopping at the first candidate that evenly divides
+        # total_elem.
+        SET(_HOMME_BEST_CPUS ${NUM_CPUS})
+        SET(_HOMME_CANDIDATE ${_HOMME_TOTAL_ELEM})
+        WHILE (_HOMME_CANDIDATE GREATER ${NUM_CPUS})
+          MATH(EXPR _HOMME_REM "${_HOMME_TOTAL_ELEM} % ${_HOMME_CANDIDATE}")
+          IF (_HOMME_REM EQUAL 0)
+            SET(_HOMME_BEST_CPUS ${_HOMME_CANDIDATE})
+            BREAK()
           ENDIF ()
+          MATH(EXPR _HOMME_CANDIDATE "${_HOMME_CANDIDATE} - 1")
+        ENDWHILE ()
+        IF (_HOMME_BEST_CPUS GREATER ${NUM_CPUS})
+          MESSAGE(STATUS "Test ${TEST_NAME}: raising NUM_CPUS from ${NUM_CPUS} to ${_HOMME_BEST_CPUS} (total_elem=${_HOMME_TOTAL_ELEM}, MAX_NUM_PROCS=${MAX_NUM_PROCS})")
+          SET(NUM_CPUS ${_HOMME_BEST_CPUS})
         ENDIF ()
       ENDIF ()
     ENDIF ()
@@ -1004,6 +1029,7 @@ macro(set_mpi_num_cpus)
   endif()
   IF (USE_NUM_PROCS)
     IF (${USE_NUM_PROCS} GREATER ${MPI_MAX_PROCS})
+      MESSAGE(STATUS "Test ${TEST_NAME}: lowering NUM_CPUS from ${USE_NUM_PROCS} to ${MPI_MAX_PROCS} (MPI_MAX_PROCS=${MPI_MAX_PROCS})")
       SET (NUM_CPUS ${MPI_MAX_PROCS})
     ELSE ()
       SET (NUM_CPUS ${USE_NUM_PROCS})
