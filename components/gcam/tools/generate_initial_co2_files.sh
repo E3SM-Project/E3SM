@@ -1,14 +1,19 @@
 #!/bin/bash
 
+# Create baseline (2014) gridded CO2 emission files for E3SM-GCAM
+# One input argument determines resolution (see below)
+# Three main output csv files: aircraft, shipment, surface
+# Also generates ssociated netcdf files and some intermediate files
+
 # this script starts with the 0.5x0.5 CMIP6 CEDS files for historical CO2 emissions
 # the final 12 months of 2014 are extracted and processed
 # the output is three text files that contain:
 #    surface co2 emissions (excluding international shipping) at the surface
-#    aircraft co2 emissions for the defined aggregate levels (currently two) 
+#    aircraft co2 emissions for the defined aggregate levels (currently two)
 #    international shipping co2 emissions at the surface
 # the text files are csv tables with date,lon,lat,value
 #    values are in co2_kg/m^2/s
-#    lat,lon are in degrees, cell center
+#    lat,lon are degrees, cell center
 # the aircraft text file date includes a level label (yyyymmll)
 #    this starts at zero for the lowest level
 
@@ -21,7 +26,7 @@
 # the defined aircraft output levels are:
 #    lo: 15 bottom levels including 8.845km
 #    hi: 10 upper levels from 9.455 to 14.945
-# note that GCAM outputs data up to ~11km, ?which is distributed to these 25 levels by ceds? 
+# note that GCAM outputs data up to ~11km, ?which is distributed to these 25 levels by ceds?
 #    11.285 is the highest large emission level
 #    9.455 is where long-range emissions become noticable in the plots
 
@@ -31,6 +36,29 @@
 
 # the final netcdf files that the text is extracted from are retained
 
+# five output resolutions currently available:
+# 0.9x1.25 (aka f09)
+# 1.9x2.5 (aka f19)
+# 0.5x0.5 (aka r05)
+# 0.25x0.25 (aka r025)  
+# 0.125x0.125 (aka r0125)
+# note that no grid remapping is needed for 0.5x0.5 output
+
+# The desired output resolution is selected by a single argument: 
+# f09 = 0.9x1.25
+# f19 = 1.9x2.5
+# r05 = 0.5x0.5
+# r025 = 0.25x0.25
+# r0125 = 0.125x0.125
+
+if [ "$#" != 1 ]; then
+   echo "Usage: $0 <output resolution>"
+   echo "Currently supported resolutions are: f09, f19, r05, r025, and r0215"
+   exit
+fi
+
+RES=$1
+
 date
 
 # needed modules
@@ -39,8 +67,6 @@ date
 
 # this gets what is needed also
 source /share/apps/E3SM/conda_envs/load_latest_e3sm_unified_compy.sh
-
-# eventually create options for the other three resolutions if needed and make arguments to the script
 
 # some useful bash functions
 
@@ -53,20 +79,103 @@ function ncmin { ncap2 -O -C -v -s "foo=${1}.min();print(foo)" ${2} ~/foo.nc | c
 
 proc_dir='/compyfs/inputdata/iac/giac/gcam/gcam_6_0/data/emission_processing/'
 
-# set the desired output resolution here
-# the original data are at 0.5x0.5 res with origin at -180,-90; and corners aligned with these limits 
+# the original data are at 0.5x0.5 res with origin at -180,-90; and corners aligned with these limits
 # this is also how the nomask scrip file is defined for 0.5x0.5
-map_file="/compyfs/inputdata/lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_nomask_to_0.9x1.25_nomask_aave_da_c121019.nc"
 
-# output nc file names - make sure they match the map file out resolution
-sfc_file_out=${proc_dir}'CO2-em-SFC-anthro_0.9x1.25_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_2014.nc'
-air_file_out=${proc_dir}'CO2-em-AIR-2lvl-anthro_0.9x1.25_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_2014.nc'
-ship_file_out=${proc_dir}'CO2-em-SHIP-anthro_0.9x1.25_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_2014.nc'
+# can add more resolutions here
 
-# final output text file names
-sfc_text_out=${proc_dir}'CO2-em-SFC-anthro_0.9x1.25_input4MIPs_2014.csv'
-air_text_out=${proc_dir}'CO2-em-AIR-2lvl-anthro_0.9x1.25_input4MIPs_2014.csv'
-ship_text_out=${proc_dir}'CO2-em-SHIP-anthro_0.9x1.25_input4MIPs_2014.csv'
+if [ $RES == 'f09' ]; then
+
+   # f09
+
+   # grid mapping
+   map_file="/compyfs/inputdata/lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_nomask_to_0.9x1.25_nomask_aave_da_c121019.nc"
+
+   # output nc file names - make sure they match the map file out resolution
+   sfc_file_out=${proc_dir}'CO2-em-SFC-anthro_0.9x1.25_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_2014.nc'
+   air_file_out=${proc_dir}'CO2-em-AIR-2lvl-anthro_0.9x1.25_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_2014.nc'
+   ship_file_out=${proc_dir}'CO2-em-SHIP-anthro_0.9x1.25_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_2014.nc'
+
+   # final output text file names
+   sfc_text_out=${proc_dir}'CO2-em-SFC-anthro_0.9x1.25_input4MIPs_2014.csv'
+   air_text_out=${proc_dir}'CO2-em-AIR-2lvl-anthro_0.9x1.25_input4MIPs_2014.csv'
+   ship_text_out=${proc_dir}'CO2-em-SHIP-anthro_0.9x1.25_input4MIPs_2014.csv'
+
+elif [ $RES == 'f19' ]; then
+
+   # f19
+
+   # grid mapping
+   map_file="/compyfs/inputdata/lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_nomask_to_1.9x2.5_nomask_aave_da_c120709.nc"
+
+   # output nc file names - make sure they match the map file out resolution
+   sfc_file_out=${proc_dir}'CO2-em-SFC-anthro_1.9x2.5_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_2014.nc'
+   air_file_out=${proc_dir}'CO2-em-AIR-2lvl-anthro_1.9x2.5_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_2014.nc'
+   ship_file_out=${proc_dir}'CO2-em-SHIP-anthro_1.9x2.5_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_2014.nc'
+
+   # final output text file names
+   sfc_text_out=${proc_dir}'CO2-em-SFC-anthro_1.9x2.5_input4MIPs_2014.csv'
+   air_text_out=${proc_dir}'CO2-em-AIR-2lvl-anthro_1.9x2.5_input4MIPs_2014.csv'
+   ship_text_out=${proc_dir}'CO2-em-SHIP-anthro_1.9x2.5_input4MIPs_2014.csv'
+
+elif [ $RES == 'r0125' ]; then
+
+   # r0125
+
+   # grid mapping
+   map_file="/compyfs/inputdata/lnd/clm2/mappingdata/maps/0.125x0.125/map_0.5x0.5_nomask_to_0.125x0.125_nomask_aave_da_c241205.nc"
+
+   # output nc file names - make sure they match the map file out resolution
+   sfc_file_out=${proc_dir}'CO2-em-SFC-anthro_0.125x0.125_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_2014.nc'
+   air_file_out=${proc_dir}'CO2-em-AIR-2lvl-anthro_0.125x0.125_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_2014.nc'
+   ship_file_out=${proc_dir}'CO2-em-SHIP-anthro_0.125x0.125_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_2014.nc'
+
+   # final output text file names
+   sfc_text_out=${proc_dir}'CO2-em-SFC-anthro_0.125x0.125_input4MIPs_2014.csv'
+   air_text_out=${proc_dir}'CO2-em-AIR-2lvl-anthro_0.125x0.125_input4MIPs_2014.csv'
+   ship_text_out=${proc_dir}'CO2-em-SHIP-anthro_0.125x0.125_input4MIPs_2014.csv'
+
+elif [ $RES == 'r05' ]; then
+
+   # r05
+
+   # no grid mapping
+   map_file=""
+
+   # output nc file names - make sure they match the map file out resolution
+   sfc_file_out=${proc_dir}'CO2-em-SFC-anthro_0.5x0.5_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_2014.nc'
+   air_file_out=${proc_dir}'CO2-em-AIR-2lvl-anthro_0.5x0.5_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_2014.nc'
+   ship_file_out=${proc_dir}'CO2-em-SHIP-anthro_0.5x0.5_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_2014.nc'
+
+   # final output text file names
+   sfc_text_out=${proc_dir}'CO2-em-SFC-anthro_0.5x0.5_input4MIPs_2014.csv'
+   air_text_out=${proc_dir}'CO2-em-AIR-2lvl-anthro_0.5x0.5_input4MIPs_2014.csv'
+   ship_text_out=${proc_dir}'CO2-em-SHIP-anthro_0.5x0.5_input4MIPs_2014.csv'
+
+elif [ $RES == 'r025' ]; then
+
+   # r025
+
+   # grid mapping
+   map_file="/compyfs/inputdata/lnd/clm2/mappingdata/maps/0.25x0.25/map_0.5x0.5_nomask_to_0.25x0.25_nomask_aave_da_c250313.nc"
+
+   # output nc file names - make sure they match the map file out resolution
+   sfc_file_out=${proc_dir}'CO2-em-SFC-anthro_0.25x0.25_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_2014.nc'
+   air_file_out=${proc_dir}'CO2-em-AIR-2lvl-anthro_0.25x0.25_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_2014.nc'
+   ship_file_out=${proc_dir}'CO2-em-SHIP-anthro_0.25x0.25_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gn_2014.nc'
+
+   # final output text file names
+   sfc_text_out=${proc_dir}'CO2-em-SFC-anthro_0.25x0.25_input4MIPs_2014.csv'
+   air_text_out=${proc_dir}'CO2-em-AIR-2lvl-anthro_0.25x0.25_input4MIPs_2014.csv'
+   ship_text_out=${proc_dir}'CO2-em-SHIP-anthro_0.25x0.25_input4MIPs_2014.csv'
+
+else
+        echo "$RES is not supported"
+        echo "f09, f19, r0125, r025, and r05 are the currently supported output resolutions"
+        exit
+fi
+
+#####
 
 # source files
 air_file="/compyfs/inputdata/atm/cam/ggas/CO2-em-AIR-anthro_input4MIPs_emissions_CMIP_CEDS-2017-08-30_gn_200001-201412.nc"
@@ -97,7 +206,7 @@ ncwa -O -N -b -v CO2_em_AIR_anthro -a level -d level,15,24 ${air_file_1y} ${air_
 ncks -O --fix_rec_dmn time ${air_file_lo} ${air_file_lo_level}
 ncks -O --mk_rec_dmn level ${air_file_lo_level} ${air_file_lo_level}
 ncpdq -O -a level,time,lat,lon ${air_file_lo_level} ${air_file_lo_level}
-# Make level record dimension 
+# Make level record dimension
 ncks -O --fix_rec_dmn time ${air_file_hi} ${air_file_hi_level}
 ncks -O --mk_rec_dmn level ${air_file_hi_level} ${air_file_hi_level}
 ncpdq -O -a level,time,lat,lon ${air_file_hi_level} ${air_file_hi_level}
@@ -120,9 +229,16 @@ ncea -O -d sector,7,7 ${other_file_1y} ${ship_file_1y}
 ncwa -O -N -v CO2_em_anthro -a sector -d sector,0,6 ${other_file_1y} ${sfc_file_1y}
 
 # remap the data to the desired grid
-ncremap -m ${map_file} ${sfc_file_1y} ${sfc_file_out}
-ncremap -m ${map_file} ${air_file_1y_agg} ${air_file_out}
-ncremap -m ${map_file} ${ship_file_1y} ${ship_file_out}
+# not needed for 0.5x0.5
+if [ $RES != 'r05' ]; then
+   ncremap -m ${map_file} ${sfc_file_1y} ${sfc_file_out}
+   ncremap -m ${map_file} ${air_file_1y_agg} ${air_file_out}
+   ncremap -m ${map_file} ${ship_file_1y} ${ship_file_out}
+elif [ $RES == 'r05' ]; then
+   cp ${sfc_file_1y} ${sfc_file_out}
+   cp ${air_file_1y_agg} ${air_file_out}
+   cp ${ship_file_1y} ${ship_file_out}
+fi
 
 # convert time variable from days since 1750-01-01 to month in yyyymm format
 # the time value is the day in the middle of the month, so the simple math below works
@@ -148,18 +264,20 @@ ncks -O -C -H -v lon -s "%f\n" ${sfc_file_out} > ${proc_dir}'temp1_lon.txt'
 tr -s '\n' < ${proc_dir}'temp1_lon.txt' > ${proc_dir}'temp_lon.txt'
 rm ${proc_dir}'temp1_lon.txt'
 
-ncks -O -C -H -v CO2_em_anthro -s "%22.20f\n" ${sfc_file_out} > ${proc_dir}'temp_value.txt' 
+# the values are floats but  we need full double precision in text to get the values (17 decimals for double)
+
+ncks -O -C -H -v CO2_em_anthro -s "%.17f\n" ${sfc_file_out} > ${proc_dir}'temp_value.txt'
 tr -s '\n' < ${proc_dir}'temp_value.txt' > ${proc_dir}'sfc_value.txt'
 
-ncks -O -C -H -v CO2_em_anthro -s "%22.20f\n" ${ship_file_out} > ${proc_dir}'temp_value.txt' 
+ncks -O -C -H -v CO2_em_anthro -s "%.17f\n" ${ship_file_out} > ${proc_dir}'temp_value.txt'
 tr -s '\n' < ${proc_dir}'temp_value.txt' > ${proc_dir}'ship_value.txt'
 
 # lo air level
-ncks -O -d level,0,0 -C -H -v CO2_em_AIR_anthro -s "%22.20f\n" ${air_file_out} > ${proc_dir}'temp_value.txt' 
+ncks -O -d level,0,0 -C -H -v CO2_em_AIR_anthro -s "%.17f\n" ${air_file_out} > ${proc_dir}'temp_value.txt'
 tr -s '\n' < ${proc_dir}'temp_value.txt' > ${proc_dir}'air_lo_value.txt'
 
 # hi air level
-ncks -O -d level,1,1 -C -H -v CO2_em_AIR_anthro -s "%22.20f\n" ${air_file_out} > ${proc_dir}'temp_value.txt' 
+ncks -O -d level,1,1 -C -H -v CO2_em_AIR_anthro -s "%.17f\n" ${air_file_out} > ${proc_dir}'temp_value.txt'
 tr -s '\n' < ${proc_dir}'temp_value.txt' > ${proc_dir}'air_hi_value.txt'
 
 # this is the spacer for the time and lat variables
@@ -185,7 +303,7 @@ do
       dd if=${proc_dir}'temp_lon.txt' bs=1M status=none >> ${proc_dir}'lon.txt'
 
    done
-   
+
 done
 
 wc -l ${proc_dir}'sfc_value.txt'
