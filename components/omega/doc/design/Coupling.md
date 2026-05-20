@@ -35,8 +35,9 @@ diagnostic output.
 
 ### 2.4 Requirement: Per-coupling-interval operations
 
-The class must provide methods to import fields, apply them to forcing
-state, accumulate export quantities each ocean timestep, export
+The class must provide methods to import fields, pass the received
+import fields to the appropriate forcing class member variables,
+accumulate export quantities each ocean timestep, export
 accumulated fields, and reset accumulators.
 
 ### 2.5 Requirement: Driver architecture agnosticism
@@ -89,26 +90,26 @@ enum class CouplingLayout { MCT, MOAB };
 class SurfaceCoupling {
  public:
    // Import fields (x2o): coupler → ocean
-   Array1DReal WindStressZonal;        ///< Foxx_taux  [N m⁻²]
-   Array1DReal WindStressMeridional;   ///< Foxx_tauy  [N m⁻²]
-   Array1DReal SWHeatFlux;             ///< Foxx_swnet [W m⁻²]
-   Array1DReal LatentHeatFlux;         ///< Foxx_lat   [W m⁻²]
-   Array1DReal SensibleHeatFlux;       ///< Foxx_sen   [W m⁻²]
-   Array1DReal LWHeatFluxUp;           ///< Foxx_lwup  [W m⁻²]
-   Array1DReal LWHeatFluxDown;         ///< Faxa_lwdn  [W m⁻²]
-   Array1DReal SeaIceHeatFlux;         ///< Fioi_melth [W m⁻²]
-   Array1DReal IcebergHeatFlux;        ///< Fioi_bergh [W m⁻²]
-   Array1DReal SnowFlux;               ///< Faxa_snow  [kg m⁻² s⁻¹]
-   Array1DReal RainFlux;               ///< Faxa_rain  [kg m⁻² s⁻¹]
-   Array1DReal EvaporationFlux;        ///< Foxx_evap  [kg m⁻² s⁻¹]
-   Array1DReal SeaIceFreshWaterFlux;   ///< Fioi_meltw [kg m⁻² s⁻¹]
-   Array1DReal IcebergFreshWaterFlux;  ///< Fioi_bergw [kg m⁻² s⁻¹]
-   Array1DReal SeaIceSalinityFlux;     ///< Fioi_salt  [kg m⁻² s⁻¹]
-   Array1DReal RiverRunoffFlux;        ///< Foxx_rofl  [kg m⁻² s⁻¹]
-   Array1DReal IceRunoffFlux;          ///< Foxx_rofi  [kg m⁻² s⁻¹]
-   Array1DReal IceFraction;            ///< Si_ifrac   [-]
-   Array1DReal SeaIcePressure;         ///< Si_bpress  [Pa]
-   Array1DReal AtmosphericPressure;    ///< Sa_pslv    [Pa]
+   Array1DReal SurfaceStressZonal;      ///< Foxx_taux  [N m⁻²]
+   Array1DReal SurfaceStressMeridional; ///< Foxx_tauy  [N m⁻²]
+   Array1DReal SWHeatFlux;              ///< Foxx_swnet [W m⁻²]
+   Array1DReal LatentHeatFlux;          ///< Foxx_lat   [W m⁻²]
+   Array1DReal SensibleHeatFlux;        ///< Foxx_sen   [W m⁻²]
+   Array1DReal LWHeatFluxUp;            ///< Foxx_lwup  [W m⁻²]
+   Array1DReal LWHeatFluxDown;          ///< Faxa_lwdn  [W m⁻²]
+   Array1DReal SeaIceHeatFlux;          ///< Fioi_melth [W m⁻²]
+   Array1DReal IcebergHeatFlux;         ///< Fioi_bergh [W m⁻²]
+   Array1DReal SnowFlux;                ///< Faxa_snow  [kg m⁻² s⁻¹]
+   Array1DReal RainFlux;                ///< Faxa_rain  [kg m⁻² s⁻¹]
+   Array1DReal EvaporationFlux;         ///< Foxx_evap  [kg m⁻² s⁻¹]
+   Array1DReal SeaIceFreshWaterFlux;    ///< Fioi_meltw [kg m⁻² s⁻¹]
+   Array1DReal IcebergFreshWaterFlux;   ///< Fioi_bergw [kg m⁻² s⁻¹]
+   Array1DReal SeaIceSalinityFlux;      ///< Fioi_salt  [kg m⁻² s⁻¹]
+   Array1DReal RiverRunoffFlux;         ///< Foxx_rofl  [kg m⁻² s⁻¹]
+   Array1DReal IceRunoffFlux;           ///< Foxx_rofi  [kg m⁻² s⁻¹]
+   Array1DReal IceFraction;             ///< Si_ifrac   [-]
+   Array1DReal SeaIcePressure;          ///< Si_bpress  [Pa]
+   Array1DReal AtmosphericPressure;     ///< Sa_pslv    [Pa]
 
    // Export fields (o2x): ocean → coupler
    Array1DReal SurfaceTemperature;        ///< So_t    [°C]
@@ -147,7 +148,7 @@ class SurfaceCoupling {
 
 #### 4.2.1 Creation
 
-The `create` method allocates import/export arrays sized to `NCellsAll`, stores
+The `create` method allocates import/export arrays sized to `NCellsOwned`, stores
 the field index maps and `DataLayout`, creates the coupling `Alarm`, and calls
 `registerFields`. After creation, `create` internally calls
 `accumulateExportState` once to populate the initial export state.
@@ -172,7 +173,10 @@ SurfaceCoupling *SurfaceCoupling::get(const std::string &Name);
 `importFromCoupler` unpacks the driver array into typed member arrays using
 the name→column-index map. The stride calculation is layout-dependent: MCT
 uses `col*NCells + i`, MOAB uses `i*NFields + col`. Unit conversions (e.g.,
-in situ → conservative temperature, shortwave clamping) are applied inline.
+in situ → conservative temperature) and corrections (e.g. forcing shortwave
+radiation to be positive) are applied inline. The corrections are applied to
+address numerical issues, not and physical one, in the off chance monotonicity
+is not preserved during remapping.
 
 `exportToCoupler` packs export arrays into the driver array. State fields
 are divided by `NAccumSteps` (interval mean); flux fields are packed directly
@@ -188,9 +192,10 @@ timestep.
 
 #### 4.2.4 Conversion Methods
 
-Temperature conversions between conservative (Omega internal) and in situ
-(coupler expectation) are handled as private static methods. Simple
-constant-factor conversions are applied directly in import/export methods.
+Temperature conversion between conservative (Omega internal) and in situ
+(coupler expectation) is handled as private static methods. Similar handling
+will occur for salinity with conversion between absolute (Omega internal) and
+practical (MPAS-Seaice expectation).
 
 #### 4.2.5 Destruction and removal
 
@@ -202,9 +207,10 @@ void SurfaceCoupling::clear();
 ### 4.3 Driver Interface Bridge
 
 The bridge layer in `src/drivers/coupled/` provides `extern "C"` entry points
-called from the Fortran driver (`ocn_comp_mct.F90` or `ocn_comp_moab.F90`).
-The coupling interval and ocean timestep are independent: the driver calls
-run once per coupling interval; the ocean takes many timesteps within it.
+called from the Fortran driver (`ocn_comp_mct.F90`). The coupling interval
+and ocean timestep are independent: the driver calls `ocn_run_mct` once per
+coupling interval; the ocean *can* take multiple timesteps within the coupling
+interval.
 
 #### 4.3.1 Name-based Field Index Mapping
 
