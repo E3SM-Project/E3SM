@@ -600,10 +600,6 @@ void define_dim (const std::string& filename, const std::string& dimname, const 
   bool unlimited = length==0;
 
   if (dim==nullptr) {
-    EKAT_REQUIRE_MSG (f.mode!=Append,
-        "Error! Cannot add a new dim when the file is open in append mode.\n"
-        " - filename: " + filename + "\n"
-        " - dimname : " + dimname + "\n");
     // Create new dimension
     dim = std::make_shared<PIODim>();
     dim->name = dimname;
@@ -1120,10 +1116,6 @@ void define_var (const std::string& filename, const std::string& varname,
       " - varname : " + varname + "\n");
 
   if (f.vars.count(varname)==0) {
-    EKAT_REQUIRE_MSG (f.mode!=Append,
-        "Error! Cannot add a new var when the file is open in append mode.\n"
-        " - filename: " + filename + "\n"
-        " - varname : " + varname + "\n");
     // Create new variable
     auto var = std::make_shared<PIOVar>();
     var->name = varname;

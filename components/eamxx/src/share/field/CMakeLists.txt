@@ -8,6 +8,7 @@ add_library(eamxx_field
   field_group.cpp
   field_sync.cpp
   field_reader.cpp
+  field_writer.cpp
   eti/field_get_strided_view_double_device.cpp
   eti/field_get_strided_view_float_device.cpp
   eti/field_get_strided_view_int_device.cpp
