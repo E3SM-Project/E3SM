@@ -1125,6 +1125,9 @@ void define_var (const std::string& filename, const std::string& varname,
     var->dtype = refine_dtype(dtype);
     var->nc_dtype = refine_dtype(nc_dtype);
     var->time_dep = time_dep;
+    if (time_dep) {
+      var->num_records = f.time_dim->length;
+    }
     int ndims = dimensions.size() + (time_dep ? 1 : 0);
     std::vector<int> dimids;
     if (time_dep) {

@@ -271,4 +271,50 @@ TEST_CASE ("write_fields_append_and_time_behavior_mismatch")
   scorpio::finalize_subsystem();
 }
 
+TEST_CASE ("write_fields_append_new_time_dep_var")
+{
+  using namespace ShortFieldTagsNames;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+  scorpio::init_subsystem(comm);
+
+  const std::string filename =
+      "field_writer_test_append_time_np" + std::to_string(comm.size()) + ".nc";
+
+  const int nlevs  = 3;
+  const int ntimes = 2;
+  FieldLayout lay({LEV}, {nlevs});
+
+  Field f1 = make_field("f1", lay);
+  FieldWriter w1;
+  w1.set_fields({f1});
+  w1.set_time_dependent(true,"s","time");
+  w1.set_file_specs(filename);
+  w1.init_scorpio_structures();
+  for (int t=0; t<ntimes; ++t) {
+    f1.deep_copy(Real(10+t));
+    w1.write(double(t));
+  }
+
+  Field f2 = make_field("f2", lay, DataType::IntType);
+  FieldWriter w2;
+  w2.set_fields({f2});
+  w2.set_time_dependent(true,"s","time");
+  w2.set_file_specs(filename);
+  w2.init_scorpio_structures();
+  iota(f2,100);
+  w2.write(double(ntimes));
+
+  Field f2_in = make_field("f2", lay, DataType::IntType);
+  f2_in.deep_copy(-1);
+  read_fields(filename,{f2_in},ntimes);
+  f2_in.sync_to_host();
+  auto v = f2_in.get_view<const int*, Host>();
+  for (int i=0; i<nlevs; ++i) {
+    REQUIRE(v(i)==100+i);
+  }
+
+  scorpio::finalize_subsystem();
+}
+
 } // namespace scream
