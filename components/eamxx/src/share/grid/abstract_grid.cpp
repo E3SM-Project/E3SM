@@ -469,13 +469,13 @@ read_geometry_data(const std::string& filename,
 
     switch (f.data_type()) {
       case DataType::DoubleType:
-        scorpio::read_var(filename,nc_names[i],f.get_internal_view_data<double,Host>());
+        scorpio::read_var_flexible(filename,nc_names[i],f.get_internal_view_data<double,Host>(),fl.size());
         break;
       case DataType::FloatType:
-        scorpio::read_var(filename,nc_names[i],f.get_internal_view_data<float,Host>());
+        scorpio::read_var_flexible(filename,nc_names[i],f.get_internal_view_data<float,Host>(),fl.size());
         break;
       case DataType::IntType:
-        scorpio::read_var(filename,nc_names[i],f.get_internal_view_data<int,Host>());
+        scorpio::read_var_flexible(filename,nc_names[i],f.get_internal_view_data<int,Host>(),fl.size());
         break;
       default:
         EKAT_ERROR_MSG (

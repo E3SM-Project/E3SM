@@ -37,7 +37,7 @@ void VerticalRemapperExoColdensMAM4::set_delta_pressure(const std::string& file_
     scorpio::register_file(file_name,scorpio::FileMode::Read);
     const int n_exo_levs = scorpio::get_dimlen(file_name,"lev");
     std::vector<Real> lev_src(n_exo_levs);
-    scorpio::read_var(file_name,"lev",lev_src.data());
+    scorpio::read_var_flexible(file_name,"lev",lev_src.data(),lev_src.size());
     scorpio::release_file(file_name);
 
     m_exo_ki=-1;

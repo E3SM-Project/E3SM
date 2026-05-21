@@ -36,7 +36,7 @@ create_tgt_grid (const grid_ptr_type& src_grid,
   auto layout = tgt_grid->get_vertical_layout(LEVP);
   // Add tgt pressure levels to the tgt grid
   auto p_tgt = tgt_grid->create_geometry_data<Real>("p_levs",layout,ekat::units::Pa,SCREAM_PACK_SIZE);
-  scorpio::read_var(map_file,"p_levs",p_tgt.get_view<Real*,Host>().data());
+  scorpio::read_var_flexible(map_file,"p_levs",p_tgt.get_view<Real*,Host>().data(),nlevs_tgt);
   p_tgt.sync_to_dev();
 
   scorpio::release_file(map_file);

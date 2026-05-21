@@ -232,8 +232,8 @@ load_lat_lon (const nonconstgrid_ptr_type& grid, const std::string& filename) co
 
   scorpio::register_file(filename,scorpio::Read);
   scorpio::set_dim_decomp(filename,decomp_dim,offsets);
-  scorpio::read_var(filename,"lat",lat_v.data());
-  scorpio::read_var(filename,"lon",lon_v.data());
+  scorpio::read_var_flexible(filename,"lat",lat_v.data(),lat_v.size());
+  scorpio::read_var_flexible(filename,"lon",lon_v.data(),lon_v.size());
   scorpio::release_file(filename);
 
   lat.sync_to_dev();
@@ -273,13 +273,13 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
   auto lev_v   = lev.get_view<Real*,Host>();
   auto ilev_v  = ilev.get_view<Real*,Host>();
 
+  auto num_lev = grid->get_num_vertical_levels();
+
   scorpio::register_file(filename,scorpio::Read);
-  scorpio::read_var(filename,"hyam",hyam_v.data());
-  scorpio::read_var(filename,"hybm",hybm_v.data());
-  scorpio::read_var(filename,"hyai",hyai_v.data());
-  scorpio::read_var(filename,"hybi",hybi_v.data());
-  scorpio::read_var(filename,"lev", lev_v.data());
-  scorpio::read_var(filename,"ilev",ilev_v.data());
+  scorpio::read_var_flexible(filename,"hyam",hyam_v.data(),num_lev);
+  scorpio::read_var_flexible(filename,"hybm",hybm_v.data(),num_lev);
+  scorpio::read_var_flexible(filename,"hyai",hyai_v.data(),num_lev+1);
+  scorpio::read_var_flexible(filename,"hybi",hybi_v.data(),num_lev+1);
   scorpio::release_file(filename);
 
   using stratts_t = std::map<std::string,std::string>;
@@ -294,7 +294,6 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
   using PC       = scream::physics::Constants<Real>;
   const Real ps0 = PC::P0.value;
 
-  auto num_lev = grid->get_num_vertical_levels();
   for (int ii=0;ii<num_lev;ii++) {
     lev_v(ii)  = 0.01*ps0*(hyam_v(ii)+hybm_v(ii));
     ilev_v(ii) = 0.01*ps0*(hyai_v(ii)+hybi_v(ii));

@@ -58,7 +58,7 @@ inline void create_linoz_chlorine_reader(
     scorpio::read_var(linoz_chlorine_file, "date", &date, itime);
     if(date >= chlorine_loading_ymd) {
       Real value;
-      scorpio::read_var(linoz_chlorine_file, "chlorine_loading", &value, itime);
+      scorpio::read_var_flexible(linoz_chlorine_file, "chlorine_loading", &value, 1, itime);
       values.push_back(value);
       auto time_stamp = convert_date(date);
       time_secs.push_back(compute_number_days_from_zero(time_stamp) -

@@ -76,27 +76,26 @@ mam4::mo_photo::PhotoTableData read_photo_table(
   auto prs_h = Kokkos::create_mirror_view(table.prs);
 
   // read file data into our host views
-  scorpio::read_var(rsf_file, "pm", press_h.data());
-  scorpio::read_var(rsf_file, "sza", sza_h.data());
-  scorpio::read_var(rsf_file, "alb", alb_h.data());
-  scorpio::read_var(rsf_file, "colo3fact", o3rat_h.data());
-  scorpio::read_var(rsf_file, "colo3", colo3_h.data());
-  // it produces an error.
-  scorpio::read_var(rsf_file, "RSF", rsf_tab_h.data());
-  scorpio::read_var(xs_long_file, "pressure", prs_h.data());
+  scorpio::read_var_flexible(rsf_file, "pm", press_h.data(), press_h.size());
+  scorpio::read_var_flexible(rsf_file, "sza", sza_h.data(), sza_h.size());
+  scorpio::read_var_flexible(rsf_file, "alb", alb_h.data(), alb_h.size());
+  scorpio::read_var_flexible(rsf_file, "colo3fact", o3rat_h.data(), o3rat_h.size());
+  scorpio::read_var_flexible(rsf_file, "colo3", colo3_h.data(), colo3_h.size());
+  scorpio::read_var_flexible(rsf_file, "RSF", rsf_tab_h.data(), rsf_tab_h.size());
+  scorpio::read_var_flexible(xs_long_file, "pressure", prs_h.data(), prs_h.size());
 
   // read xsqy data (using lng_indexer_h for the first index)
   // FIXME: hard-coded for only one photo reaction.
   for(int m = 0; m < phtcnt; ++m) {
     auto xsqy_ndx_h = ekat::subview(xsqy_h, m);
-    scorpio::read_var(xs_long_file, rxt_names[m], xsqy_h.data());
+    scorpio::read_var_flexible(xs_long_file, rxt_names[m], xsqy_h.data(), xsqy_h.size());
   }
 
   // populate etfphot by rebinning solar data
   HostView1D wc_h("wc", nw), wlintv_h("wlintv", nw), we_h("we", nw + 1);
 
-  scorpio::read_var(rsf_file, "wc", wc_h.data());
-  scorpio::read_var(rsf_file, "wlintv", wlintv_h.data());
+  scorpio::read_var_flexible(rsf_file, "wc", wc_h.data(), wc_h.size());
+  scorpio::read_var_flexible(rsf_file, "wlintv", wlintv_h.data(), wlintv_h.size());
   for(int i = 0; i < nw; ++i) {
     we_h(i) = wc_h(i) - 0.5 * wlintv_h(i);
   }

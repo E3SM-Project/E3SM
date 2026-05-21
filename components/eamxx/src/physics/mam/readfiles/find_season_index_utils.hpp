@@ -40,7 +40,7 @@ inline void find_season_index_reader(const std::string &season_wes_file,
   view_int_2d_host wk_lai_temp("wk_lai", npft_lai, nlat_lai);
   view_int_3d_host wk_lai("wk_lai", nlat_lai, npft_lai, 12);
 
-  scorpio::read_var(season_wes_file, "lat", lat_lai.data());
+  scorpio::read_var_flexible(season_wes_file, "lat", lat_lai.data(), lat_lai.size());
 
   Kokkos::MDRangePolicy<Kokkos::HostSpace::execution_space, Kokkos::Rank<2>>
       policy_wk_lai({0, 0}, {nlat_lai, npft_lai});

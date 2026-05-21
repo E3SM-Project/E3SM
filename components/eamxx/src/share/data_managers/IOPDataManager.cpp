@@ -48,14 +48,15 @@ void read_fields (const std::string& filename,
         " - field name: " + f.name() + "\n"
         " - parent field name: " + f.get_header().get_parent()->get_identifier().name() + "\n");
 
+    int sz = f.get_header().get_identifier().get_layout().size();
     if (f.get_header().get_alloc_properties().get_padding()==0 and
         f.get_header().get_alloc_properties().contiguous()) {
-      scorpio::read_var(filename,f.name(),f.get_internal_view_data<Real,Host>());
+      scorpio::read_var_flexible(filename,f.name(),f.get_internal_view_data<Real,Host>(),sz);
       f.sync_to_dev();
     } else {
-      // Create non-padded, contiguous clone
+      // Create non-padded clone
       auto f_no_padding = f.clone();
-      scorpio::read_var(filename,f.name(),f_no_padding.get_internal_view_data<Real,Host>());
+      scorpio::read_var_flexible(filename,f.name(),f_no_padding.get_internal_view_data<Real,Host>(),sz);
       f_no_padding.sync_to_dev();
       f.deep_copy(f_no_padding);
     }
@@ -276,7 +277,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   else if (scorpio::has_var(iop_file, "nbdate"))   bdate_name = "nbdate";
   else EKAT_ERROR_MSG("Error! No valid name for bdate in "+iop_file+".\n");
 
-  scorpio::read_var(iop_file, bdate_name, &bdate);
+  scorpio::read_var_flexible(iop_file, bdate_name, &bdate,1);
 
   int yr=bdate/10000;
   int mo=(bdate/100) - yr*100;
@@ -298,7 +299,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   const auto ntimes = scorpio::get_dimlen(iop_file, time_dimname);
   m_time_info.iop_file_times_in_sec = view_1d_host<int>("iop_file_times", ntimes);
   for (int t=0; t<ntimes; ++t) {
-    scorpio::read_var(iop_file,"tsec",&m_time_info.iop_file_times_in_sec(t),t);
+    scorpio::read_var_flexible(iop_file,"tsec",&m_time_info.iop_file_times_in_sec(t),1,t);
   }
 
   // Check that lat/lon from iop file match the targets in parameters. Note that
@@ -308,8 +309,8 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   EKAT_REQUIRE_MSG(nlats==1 and nlons==1, "Error! IOP data file requires a single lat/lon pair.\n");
   Real iop_file_lat, iop_file_lon;
 
-  scorpio::read_var(iop_file,"lat",&iop_file_lat);
-  scorpio::read_var(iop_file,"lon",&iop_file_lon);
+  scorpio::read_var_flexible(iop_file,"lat",&iop_file_lat,1);
+  scorpio::read_var_flexible(iop_file,"lon",&iop_file_lon,1);
 
   const Real rel_lat_err = std::fabs(iop_file_lat - m_params.get<Real>("target_latitude"))/
                              std::max(std::fabs(m_params.get<Real>("target_latitude")),(Real)0.1);
@@ -334,7 +335,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   iop_file_pressure.get_header().get_alloc_properties().request_allocation(Pack::n);
   iop_file_pressure.allocate_view();
   auto data = iop_file_pressure.get_view<Real*, Host>().data();
-  scorpio::read_var(iop_file,"lev",data);
+  scorpio::read_var_flexible(iop_file,"lev",data,file_levs+1);
 
   // Convert to pressure to millibar (file gives pressure in Pa)
   for (int ilev=0; ilev<file_levs; ++ilev) data[ilev] /= 100;
@@ -460,12 +461,13 @@ read_iop_file_data (const util::TimeStamp& current_ts)
     // Load surface pressure (Ps) from iop file
     auto ps_data = surface_pressure.get_view<Real, Host>().data();
 
-    scorpio::read_var(iop_file,"Ps",ps_data,iop_file_time_idx);
+    scorpio::read_var_flexible(iop_file,"Ps",ps_data,1,iop_file_time_idx);
     surface_pressure.sync_to_dev();
 
     // Read in IOP lev data
-    auto data = iop_file_pressure.get_view<Real*, Host>().data();
-    scorpio::read_var(iop_file,"lev",data);
+    auto p_h = iop_file_pressure.get_view<Real*, Host>();
+    auto data = p_h.data();
+    scorpio::read_var_flexible(iop_file,"lev",data,p_h.size());
 
     // Convert to pressure to millibar (file gives pressure in Pa)
     for (int ilev=0; ilev<file_levs; ++ilev) data[ilev] /= 100;
@@ -555,7 +557,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
     if (field.rank()==0) {
       // For scalar data, read iop file variable directly into field data
       auto data = field.get_view<Real, Host>().data();
-      scorpio::read_var(iop_file,file_varname,data,iop_file_time_idx);
+      scorpio::read_var_flexible(iop_file,file_varname,data,1,iop_file_time_idx);
       field.sync_to_dev();
     } else if (field.rank()==1) {
       // Create temporary fields for reading iop file variables. We use
@@ -572,7 +574,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
 
       // Read data from iop file.
       std::vector<Real> data(file_levs);
-      scorpio::read_var(iop_file,file_varname,data.data(),iop_file_time_idx);
+      scorpio::read_var_flexible(iop_file,file_varname,data.data(),file_levs,iop_file_time_idx);
 
       // Copy first adjusted_file_levs-1 values to field
       auto iop_file_v_h = iop_file_field.get_view<Real*,Host>();
@@ -582,7 +584,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
       const auto has_srf = m_iop_field_surface_varnames.count(fname)>0;
       if (has_srf) {
         const auto srf_varname = m_iop_field_surface_varnames[fname];
-        scorpio::read_var(iop_file,srf_varname,&iop_file_v_h(adjusted_file_levs-1),iop_file_time_idx);
+        scorpio::read_var_flexible(iop_file,srf_varname,&iop_file_v_h(adjusted_file_levs-1),1,iop_file_time_idx);
       } else {
         // No surface value exists, compute surface value
         const auto dx = iop_file_v_h(adjusted_file_levs-2) - iop_file_v_h(adjusted_file_levs-3);

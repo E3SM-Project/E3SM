@@ -41,7 +41,7 @@ set_source_interface_height (const std::string& file_name)
   Field altitude_int_src(FieldIdentifier("altitude_int_field",layout,mbar,m_src_grid->name()));
   altitude_int_src.allocate_view();
   scorpio::register_file(file_name,scorpio::FileMode::Read);
-  scorpio::read_var(file_name,"altitude_int",altitude_int_src.get_view<Real*,Host>().data());
+  scorpio::read_var_flexible(file_name,"altitude_int",altitude_int_src.get_view<Real*,Host>().data(),layout.size());
   altitude_int_src.sync_to_dev();
   scorpio::release_file(file_name);
   m_alt_int_src = altitude_int_src;

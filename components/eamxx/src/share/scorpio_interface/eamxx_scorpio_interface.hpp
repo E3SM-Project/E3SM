@@ -8,6 +8,7 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 
 /*
  * This file contains interfaces to scorpio C library routines
@@ -197,6 +198,39 @@ void read_var (const std::string &filename, const std::string &varname, T* buf, 
 // NOTE: ETI in the cpp file for int, float, double.
 template<typename T>
 void write_var (const std::string &filename, const std::string &varname, const T* buf, const T* fillValue = nullptr);
+
+// Helpers to read/write if the var has a diff data type than nc
+// NOTE: you should NOT use these in production. They are helpful for one-off reads/writes,
+// where the price of creating the temp on the customer side would not be amortized anyways
+template<typename T>
+void read_var_flexible (const std::string &filename, const std::string &varname, T* buf, const int buf_len, const int time_index = -1)
+{
+  const auto& dt_buf = get_dtype<T>();
+  const auto& dt_var = get_var(filename,varname).dtype;
+  if (dt_buf==dt_var) {
+    read_var(filename,varname,buf,time_index);
+  } else {
+    if (dt_var=="int") {
+      std::vector<int> data(buf_len);
+      read_var(filename,varname,data.data(),time_index);
+      std::copy_n(data.data(),buf_len,buf);
+    } else if (dt_var=="float") {
+      std::vector<float> data(buf_len);
+      read_var(filename,varname,data.data(),time_index);
+      std::copy_n(data.data(),buf_len,buf);
+    } else if (dt_var=="double") {
+      std::vector<double> data(buf_len);
+      read_var(filename,varname,data.data(),time_index);
+      std::copy_n(data.data(),buf_len,buf);
+    } else {
+      EKAT_ERROR_MSG ("Unsupported scenario for read_var_flexible.\n"
+          " - file name: " + filename + "\n"
+          " - var name : " + varname + "\n"
+          " - var dtype: " + dt_var + "\n"
+          " - buf dtype: " + dt_buf + "\n");
+    }
+  }
+}
 
 // =============== Attributes operations ================== //
 
