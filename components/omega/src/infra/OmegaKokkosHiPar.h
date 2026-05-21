@@ -34,6 +34,43 @@ constexpr int OMEGA_TEAMSIZE = 1;
 #define INNER_LAMBDA [=]
 // #define INNER_LAMBDA [&]
 
+// Workaround for ICE with the Intel classic compiler
+// To be removed as soon as Omega stops supporting it
+#define OMEGA_ISSUE_413_WORKAROUND 1
+#ifdef OMEGA_ISSUE_413_WORKAROUND
+
+template <class T> size_t TeamScratch(int N1) {
+   return ScratchArray1D<T>::shmem_size(N1);
+}
+
+template <class T1, class T2> size_t TeamScratch(int N1, int N2) {
+   return ScratchArray1D<T1>::shmem_size(N1) +
+          ScratchArray1D<T2>::shmem_size(N2);
+}
+
+template <int N> struct LaunchConfig {
+   std::array<int, N> UpperBounds;
+   int TeamSize;
+   size_t ScratchBytesPerTeam;
+
+   LaunchConfig(const int (&UpperBoundsIn)[N], int TeamSize,
+                size_t ScratchBytes)
+       : TeamSize(TeamSize), ScratchBytesPerTeam(ScratchBytes) {
+      std::copy(std::begin(UpperBoundsIn), std::end(UpperBoundsIn),
+                std::begin(UpperBounds));
+   }
+
+   LaunchConfig(const int (&UpperBounds)[N], size_t ScratchBytes)
+       : LaunchConfig(UpperBounds, OMEGA_TEAMSIZE, ScratchBytes) {}
+
+   LaunchConfig(const int (&UpperBounds)[N], int TeamSize)
+       : LaunchConfig(UpperBounds, TeamSize, 0) {}
+
+   LaunchConfig(const int (&UpperBounds)[N])
+       : LaunchConfig(UpperBounds, OMEGA_TEAMSIZE, 0) {}
+};
+#else
+
 // Helper struct for providing information about scratch memory requirements
 // TeamScratch<Real, I4>(4, 8) stores the number of bytes needed for
 // 4 values of type Real and 8 vals of type I4
@@ -71,6 +108,7 @@ template <int N> struct LaunchConfig {
    LaunchConfig(const int (&UpperBounds)[N])
        : LaunchConfig(UpperBounds, OMEGA_TEAMSIZE, TeamScratch<>{}) {}
 };
+#endif
 
 KOKKOS_INLINE_FUNCTION void teamBarrier(const TeamMember &Team) {
    Team.team_barrier();
