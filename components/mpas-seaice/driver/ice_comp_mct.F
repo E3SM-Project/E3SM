@@ -2815,6 +2815,7 @@ contains
       oceanFreshWaterFlux,         &
       oceanSaltFlux,               &
       frazilMassAdjust,            &
+      frazilEnergyAdjustment,      &
       bergFreshwaterFlux,          &
       bergLatentHeatFlux,          &
       oceanNitrateFlux,            &
@@ -2896,6 +2897,7 @@ contains
       call MPAS_pool_get_array(atmosCoupling, 'atmosReferenceHumidity2m', atmosReferenceHumidity2m)
 
       call MPAS_pool_get_array(oceanCoupling, 'frazilMassAdjust', frazilMassAdjust)
+      call mpas_pool_get_array(oceanCoupling, 'frazilEnergyAdjustment', frazilEnergyAdjustment)
 
       if (config_use_floe_size_distribution) then
          call MPAS_pool_get_subpool(block_ptr % structs, "floe_size_distribution", floe_size_distribution)
