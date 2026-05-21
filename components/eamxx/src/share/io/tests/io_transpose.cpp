@@ -36,7 +36,7 @@ void add (const Field& f, const double v) {
 }
 
 int get_dt (const std::string& freq_units) {
-  int dt;
+  int dt = -1;
   if (freq_units=="nsteps") {
     dt = 1;
   } else if (freq_units=="nsecs") {
@@ -185,7 +185,6 @@ void write (const std::string& avg_type, const std::string& freq_units,
 void verify_transpose(const std::string& avg_type, const ekat::Comm& comm) {
   using namespace scorpio;
   
-  const int freq = 3;
   std::string prefix_N = "io_transpose_N";
   std::string prefix_T = "io_transpose_T";
   std::string suffix = avg_type + ".nsteps_x3.np" + std::to_string(comm.size()) + ".2023-02-17-00000.nc";
