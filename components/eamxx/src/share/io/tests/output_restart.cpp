@@ -89,7 +89,7 @@ TEST_CASE("output_restart","io")
                  const int nsteps)
   {
     OutputManager output_manager;
-    output_manager.initialize(comm, output_params, run_t0, case_t0, false);
+    output_manager.initialize(comm, output_params, run_t0, case_t0);
     output_manager.setup(fm,gm->get_grid_names());
 
     // We advance the fields, by adding dt to each entry of the fields at each time step

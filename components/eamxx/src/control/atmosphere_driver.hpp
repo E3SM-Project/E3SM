@@ -181,6 +181,10 @@ protected:
   void create_logger ();
   void set_initial_conditions ();
   void restart_model ();
+  void setup_restart_writer ();
+  void write_restart_if_needed ();
+  std::string compute_restart_filename (const util::TimeStamp& ts) const;
+  void set_restart_header (const std::string& filename) const;
 
   // Read fields from a file
   void read_fields_from_file (const std::vector<Field>& fields,
@@ -200,8 +204,11 @@ protected:
 
   ekat::ParameterList                       m_atm_params;
 
-  std::shared_ptr<OutputManager>            m_restart_output_manager;
   std::list<OutputManager>                  m_output_managers;
+  IOControl                                 m_restart_control;
+  std::string                               m_restart_filename_prefix;
+  std::vector<Field>                        m_restart_fields;
+  std::vector<Field>                        m_restart_decomp_fields;
 
   std::shared_ptr<ATMBufferManager>         m_memory_buffer;
   std::shared_ptr<SCDataManager>            m_surface_coupling_import_data_manager;

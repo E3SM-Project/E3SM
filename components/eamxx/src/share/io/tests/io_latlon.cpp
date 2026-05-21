@@ -97,7 +97,7 @@ TEST_CASE("io_latlon")
   params.set<strvec_t>("field_names",{"f_lat","f_lon"});
   params.set<std::string>("horiz_remap_file",map_file);
 
-  om.initialize(comm,params,t0,false);
+  om.initialize(comm,params,t0);
   om.setup(fm,{src_grid->name()});
   om.finalize();
   print (" -> Write remapped putput ... done!\n",comm);

@@ -64,7 +64,6 @@ class OutputManager
 public:
   using fm_type = FieldManager;
   using gm_type = GridsManager;
-  using globals_map_t = std::map<std::string,std::shared_ptr<std::any>>;
 
   // Constructor(s) & Destructor
   OutputManager() = default;
@@ -76,24 +75,21 @@ public:
   //  - run_t0: the timestamp of the start of the current simulation
   //  - case_t0: the timestamp of the start of the overall simulation (precedes run_r0 for
   //             a restarted simulation. Restart logic is triggered *only* if case_t0<run_t0.
-  //  - is_model_restart_output: whether this output stream is to write a model restart file
   void initialize (const ekat::Comm& io_comm, const ekat::ParameterList& params,
                    const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
-                   const bool is_model_restart_output, const RunType run_type);
+                   const RunType run_type);
 
   // This overloads are to make certain unit tests easier
   void initialize (const ekat::Comm& io_comm, const ekat::ParameterList& params,
-                   const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
-                   const bool is_model_restart_output)
+                   const util::TimeStamp& run_t0, const util::TimeStamp& case_t0)
   {
     auto run_type = case_t0<run_t0 ? RunType::Restart : RunType::Initial;
-    initialize(io_comm,params,run_t0,case_t0,is_model_restart_output,run_type);
+    initialize(io_comm,params,run_t0,case_t0,run_type);
   }
   void initialize (const ekat::Comm& io_comm, const ekat::ParameterList& params,
-                   const util::TimeStamp& run_t0,
-                   const bool is_model_restart_output)
+                   const util::TimeStamp& run_t0)
   {
-    initialize(io_comm, params, run_t0, run_t0, is_model_restart_output, RunType::Initial);
+    initialize(io_comm, params, run_t0, run_t0, RunType::Initial);
   }
 
   // Setup manager by creating the internal output streams using grids/field data
@@ -104,15 +100,12 @@ public:
               const std::set<std::string>& grid_names);
 
   void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger);
-  void add_global (const std::string& name, const std::shared_ptr<std::any>& global);
 
   void init_timestep (const util::TimeStamp& start_of_step, const Real dt);
   void run (const util::TimeStamp& current_ts);
   void finalize();
 
   long long res_dep_memory_footprint () const;
-
-  bool is_restart () const { return m_is_model_restart_output; }
 
   // For debug and testing purposes
   const IOControl&   output_control    () const { return m_output_control;    }
@@ -124,8 +117,6 @@ protected:
 
   void set_file_header(const IOFileSpecs& file_specs);
 
-  // Set internal class variables and processes the field_mgr for restart fields
-  // to add to the parameter list for a model restart managers.
   void setup_internals (const std::shared_ptr<fm_type>& field_mgr,
                         const std::set<std::string>& grid_names);
 
@@ -145,8 +136,6 @@ protected:
   std::vector<output_ptr_type>   m_output_streams;
   std::vector<output_ptr_type>   m_geo_data_streams;
 
-  globals_map_t                  m_globals;
-
   ekat::Comm                     m_io_comm;
   ekat::ParameterList            m_params;
 
@@ -157,9 +146,6 @@ protected:
 
   // How to combine multiple snapshots in the output: instant, Max, Min, Average
   OutputAvgType     m_avg_type;
-
-  // Whether this OutputManager handles a model restart file, or normal model output.
-  bool m_is_model_restart_output;
 
   // Frequency of output and checkpointing
   // See eamxx_io_utils.hpp for details.

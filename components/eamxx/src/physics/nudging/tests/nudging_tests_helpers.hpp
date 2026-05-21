@@ -157,7 +157,7 @@ create_om (const std::string& filename_prefix,
   ctrl_pl.set("save_grid_data",false);
 
   auto om = std::make_shared<OutputManager>();
-  om->initialize(comm,params,t0,false);
+  om->initialize(comm,params,t0);
   om->setup(fm,gm->get_grid_names());
   return om;
 }

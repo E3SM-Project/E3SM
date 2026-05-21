@@ -69,7 +69,7 @@ TEST_CASE("se_grid_io")
   ctl_pl.set<std::string>("frequency_units","nsteps");
 
   OutputManager om;
-  om.initialize(io_comm,params,t0,false);
+  om.initialize(io_comm,params,t0);
   om.setup(fm0,gm->get_grid_names());
   om.init_timestep(t0,dt);
   om.run(t0+dt);

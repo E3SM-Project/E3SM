@@ -33,7 +33,11 @@
 #endif
 
 #include <fstream>
+#include <chrono>
+#include <ctime>
+#include <cstring>
 #include <random>
+#include <sstream>
 
 namespace scream {
 
@@ -715,27 +719,23 @@ void AtmosphereDriver::create_output_managers () {
   checkpoint_params.set("frequency_units",std::string("never"));
   checkpoint_params.set("frequency",-1);
 
-  // Create model restart OutputManager first. This OM will be in charge
-  // of creating rpointer.atm, while other OM's will simply append to it.
-  // If this assumption is not verified, we must always append to rpointer, which
-  // can make the rpointer file a bit confusing.
+  // Configure model restart output first, since it determines the checkpoint
+  // cadence for history restart files.
   if (io_params.isSublist("model_restart")) {
-    // Create model restart manager
     auto params = io_params.sublist("model_restart");
-    params.set<std::string>("filename_prefix",m_casename+".scream");
-    params.set<std::string>("averaging_type","instant");
-    params.sublist("provenance") = m_atm_params.sublist("provenance");
-
-    m_restart_output_manager = std::make_shared<OutputManager>();
-    m_restart_output_manager->initialize(m_atm_comm,
-                                         params,
-                                         m_run_t0,
-                                         m_case_t0,
-                                         /*is_model_restart_output*/ true);
+    m_restart_filename_prefix = m_casename + ".scream";
+    auto& restart_control = params.sublist("output_control");
+    m_restart_control.set_frequency_units(restart_control.get<std::string>("frequency_units"));
+    if (m_restart_control.output_enabled()) {
+      m_restart_control.frequency = restart_control.get<int>("frequency");
+      EKAT_REQUIRE_MSG (m_restart_control.frequency>0,
+          "Error! Invalid restart frequency (" + std::to_string(m_restart_control.frequency) + ").\n");
+      m_restart_control.last_write_ts = m_run_t0;
+    }
 
     // Store the "Output Control" pl of the model restart as the "checkpoint_control" for all other output streams
-    checkpoint_params.set<std::string>("frequency_units",params.sublist("output_control").get<std::string>("frequency_units"));
-    checkpoint_params.set("frequency",params.sublist("output_control").get<int>("frequency"));
+    checkpoint_params.set<std::string>("frequency_units",restart_control.get<std::string>("frequency_units"));
+    checkpoint_params.set("frequency",restart_control.get<int>("frequency"));
   }
 
   // Create one output manager per output yaml file
@@ -763,8 +763,7 @@ void AtmosphereDriver::create_output_managers () {
     om.initialize(m_atm_comm,
                   params,
                   m_run_t0,
-                  m_case_t0,
-                  /*is_model_restart_output*/ false);
+                  m_case_t0);
   }
 
   m_ad_status |= s_output_created;
@@ -783,28 +782,10 @@ void AtmosphereDriver::initialize_output_managers () {
 
   check_ad_status (s_output_created | s_grids_created | s_fields_created);
 
-  // Check for model restart output manager and setup if it exists.
-  if (m_restart_output_manager) {
-    auto output_grids = m_grids_manager->get_grid_names();
-
-    // Don't save CGLL fields from ICs to the restart file if we are running with PG2.
-    if (fvphyshack and output_grids.find("physics_gll")!=output_grids.end()) {
-      output_grids.erase("physics_gll");
-    }
-
-    m_restart_output_manager->set_logger(m_atm_logger);
-    m_restart_output_manager->setup(m_field_mgr, output_grids);
-    for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
-      m_restart_output_manager->add_global(it.first,it.second);
-    }
-  }
+  setup_restart_writer();
 
   // Setup output managers
   for (auto& om : m_output_managers) {
-    EKAT_REQUIRE_MSG(not om.is_restart(),
-                     "Error! No restart output should be in m_output_managers. Model restart "
-                     "output should be setup in m_restart_output_manager./n");
-
     om.set_logger(m_atm_logger);
     om.setup(m_field_mgr,m_grids_manager->get_grid_names());
   }
@@ -815,6 +796,156 @@ void AtmosphereDriver::initialize_output_managers () {
   stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMxx] initialize_output_managers ... done!");
   m_atm_logger->flush(); // During init, flush often (to help debug crashes)
+}
+
+void AtmosphereDriver::setup_restart_writer ()
+{
+  m_restart_fields.clear();
+  m_restart_decomp_fields.clear();
+
+  if (not m_restart_control.output_enabled()) {
+    return;
+  }
+
+  auto output_grids = m_grids_manager->get_grid_names();
+
+  // Don't save CGLL fields from ICs to the restart file if we are running with PG2.
+  if (fvphyshack and output_grids.find("physics_gll")!=output_grids.end()) {
+    output_grids.erase("physics_gll");
+  }
+
+  for (const auto& gn : output_grids) {
+    if (not m_field_mgr->has_group("RESTART", gn)) {
+      continue;
+    }
+
+    auto grid = m_grids_manager->get_grid(gn);
+    EKAT_REQUIRE_MSG (grid->is_unique(),
+        "Error! Restart output requires unique grids.\n"
+        " - grid name: " + gn + "\n");
+
+    const auto& restart_fnames = m_field_mgr->get_group_info("RESTART", gn).m_fields_names;
+    for (const auto& fn : restart_fnames) {
+      auto f = m_field_mgr->get_field(fn,gn);
+      auto p = f.get_header().get_parent();
+      if (p and ekat::contains(p->get_tracking().get_groups_names(),"RESTART")) {
+        continue;
+      }
+      m_restart_fields.push_back(f);
+    }
+
+    m_restart_decomp_fields.push_back(grid->get_partitioned_dim_gids());
+  }
+}
+
+std::string AtmosphereDriver::
+compute_restart_filename (const util::TimeStamp& ts) const
+{
+  auto filename = m_restart_filename_prefix + ".r";
+  filename += ".INSTANT";
+  filename += "." + m_restart_control.frequency_units + "_x" + std::to_string(m_restart_control.frequency);
+
+  if (is_scream_standalone()) {
+    filename += ".np" + std::to_string(m_atm_comm.size());
+  }
+
+  filename += "." + ts.to_string().substr(0,16);
+  filename += ".nc";
+  return filename;
+}
+
+void AtmosphereDriver::
+set_restart_header (const std::string& filename) const
+{
+  auto set_str_att = [&](const std::string& name, const std::string& val) {
+    scorpio::set_attribute(filename,"GLOBAL",name,val);
+  };
+
+  const auto& provenance = m_atm_params.sublist("provenance");
+  auto now = std::chrono::system_clock::now();
+  std::time_t time = std::chrono::system_clock::to_time_t(now);
+  std::stringstream timestamp;
+  timestamp << "created on " << std::ctime(&time);
+  std::string ts_str = timestamp.str();
+  ts_str = std::strtok(&ts_str[0],"\n");
+
+  write_timestamp(filename,"case_t0",m_case_t0);
+  write_timestamp(filename,"run_t0",m_run_t0);
+
+  set_str_att("case",provenance.get<std::string>("caseid","NONE"));
+  set_str_att("source","E3SM Atmosphere Model (EAMxx)");
+  set_str_att("eamxx_version",eamxx_version());
+  set_str_att("git_version",provenance.get<std::string>("git_version",eamxx_git_version()));
+  set_str_att("hostname",provenance.get<std::string>("hostname","UNKNOWN"));
+  set_str_att("username",provenance.get<std::string>("username","UNKNOWN"));
+  set_str_att("atm_initial_conditions_file",provenance.get<std::string>("initial_conditions_file","NONE"));
+  set_str_att("topography_file",provenance.get<std::string>("topography_file","NONE"));
+  set_str_att("contact","e3sm-data-support@llnl.gov");
+  set_str_att("institution_id","E3SM-Project");
+  set_str_att("realm","atmos");
+  set_str_att("history",ts_str);
+  set_str_att("Conventions","CF-1.8");
+  set_str_att("product",e2str(FileType::ModelRestart));
+
+  scorpio::set_attribute(filename,"GLOBAL","averaging_type",e2str(OutputAvgType::Instant));
+  scorpio::set_attribute(filename,"GLOBAL","averaging_frequency_units",m_restart_control.frequency_units);
+  scorpio::set_attribute(filename,"GLOBAL","averaging_frequency",m_restart_control.frequency);
+  scorpio::set_attribute(filename,"GLOBAL","file_max_storage_type",e2str(NumSnaps));
+  scorpio::set_attribute(filename,"GLOBAL","max_snapshots_per_file",1);
+  scorpio::set_attribute(filename,"GLOBAL","fp_precision","real");
+  scorpio::set_attribute(filename,"GLOBAL","nsteps",m_current_ts.get_num_steps());
+
+  for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
+    const auto& name = it.first;
+    const auto& any = *it.second;
+    if (any.type()==typeid(int)) {
+      scorpio::set_attribute(filename,"GLOBAL",name,std::any_cast<const int&>(any));
+    } else if (any.type()==typeid(std::int64_t)) {
+      scorpio::set_attribute(filename,"GLOBAL",name,std::any_cast<const std::int64_t&>(any));
+    } else if (any.type()==typeid(float)) {
+      scorpio::set_attribute(filename,"GLOBAL",name,std::any_cast<const float&>(any));
+    } else if (any.type()==typeid(double)) {
+      scorpio::set_attribute(filename,"GLOBAL",name,std::any_cast<const double&>(any));
+    } else if (any.type()==typeid(std::string)) {
+      scorpio::set_attribute(filename,"GLOBAL",name,std::any_cast<const std::string&>(any));
+    } else {
+      EKAT_ERROR_MSG (
+          "Error! Unrecognized/unsupported concrete type for restart extra data.\n"
+          " - extra data name  : " + name + "\n"
+          " - extra data typeid: " + std::string(any.type().name()) + "\n");
+    }
+  }
+}
+
+void AtmosphereDriver::write_restart_if_needed ()
+{
+  if (not m_restart_control.output_enabled()) {
+    return;
+  }
+
+  if (m_restart_control.next_write_ts.is_valid() and
+      not m_restart_control.is_write_step(m_current_ts)) {
+    return;
+  }
+  if (m_restart_fields.empty()) {
+    return;
+  }
+
+  const auto filename = compute_restart_filename(m_current_ts);
+  write_fields(filename,m_restart_fields,m_atm_comm,m_restart_decomp_fields);
+
+  scorpio::register_file(filename,scorpio::Append);
+  set_restart_header(filename);
+  scorpio::release_file(filename);
+
+  if (m_atm_comm.am_i_root()) {
+    std::ofstream rpointer("rpointer.atm");
+    rpointer << filename << "\n";
+  }
+
+  m_restart_control.last_write_ts = m_current_ts;
+  m_restart_control.compute_next_write_ts();
+  m_restart_control.nsamples_since_last_write = 0;
 }
 
 void AtmosphereDriver::
@@ -1683,7 +1814,15 @@ void AtmosphereDriver::run (const int dt) {
   // that quantity at the beginning of the timestep. Or they may need to store
   // the timestamp at the beginning of the timestep, so that we can compute
   // dt at the end.
-  if (m_restart_output_manager) m_restart_output_manager->init_timestep(m_current_ts, dt);
+  if (m_restart_control.output_enabled()) {
+    if (m_restart_control.dt==0) {
+      m_restart_control.set_dt(dt);
+      m_restart_control.compute_next_write_ts();
+    } else {
+      EKAT_REQUIRE_MSG (m_restart_control.dt==dt,
+          "Error! Restart IOControl assumes a constant dt.\n");
+    }
+  }
   for (auto& it : m_output_managers) {
     it.init_timestep(m_current_ts,dt);
   }
@@ -1709,7 +1848,7 @@ void AtmosphereDriver::run (const int dt) {
 
   // Update output streams
   m_atm_logger->debug("[EAMxx::run] running output managers...");
-  if (m_restart_output_manager) m_restart_output_manager->run(m_current_ts);
+  write_restart_if_needed();
   for (auto& out_mgr : m_output_managers) {
     out_mgr.run(m_current_ts);
   }
@@ -1740,10 +1879,6 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_atm_logger->info("[EAMxx] Finalize ...");
 
   // Finalize and destroy output streams, make sure files are closed
-  if (m_restart_output_manager) {
-    m_restart_output_manager->finalize();
-    m_restart_output_manager = nullptr;
-  }
   for (auto& out_mgr : m_output_managers) {
     out_mgr.finalize();
   }
@@ -1849,11 +1984,6 @@ void AtmosphereDriver::report_res_dep_memory_footprint () const {
   // Atm buffer
   my_dev_mem_usage += m_memory_buffer->allocated_bytes();
   // Output
-  if (m_restart_output_manager) {
-    const auto om_footprint = m_restart_output_manager->res_dep_memory_footprint();
-    my_dev_mem_usage += om_footprint;
-    my_host_mem_usage += om_footprint;
-  }
   for (const auto& om : m_output_managers) {
     const auto om_footprint = om.res_dep_memory_footprint ();
     my_dev_mem_usage += om_footprint;

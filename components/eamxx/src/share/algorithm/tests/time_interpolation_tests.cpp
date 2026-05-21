@@ -383,7 +383,7 @@ std::vector<std::string> create_test_data_files(
   // Create an output manager, note we use a subclass defined in this test so we can extract
   // the list of files created by the output manager.
   OutputManager4Test om;
-  om.initialize(comm,om_pl,t0,false);
+  om.initialize(comm,om_pl,t0);
   om.setup(fm,gm->get_grid_names());
 
   // Time loop to create and write data

@@ -113,7 +113,7 @@ void write (const int freq, const int seed, const int ps, const ekat::Comm& comm
 
   // Create Output manager
   OutputManager om;
-  om.initialize(comm,om_pl,t0,false);
+  om.initialize(comm,om_pl,t0);
   om.setup(fm,gm->get_grid_names());
 
   // Run output manager

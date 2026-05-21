@@ -46,6 +46,7 @@ add_library(eamxx_field
   utils/transpose.cpp
   utils/vert_contraction.cpp
   utils/views_are_equal.cpp
+  utils/write_fields.cpp
 )
 
 if (EAMXX_ENABLE_GPU)

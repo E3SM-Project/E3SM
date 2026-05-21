@@ -143,7 +143,7 @@ TEST_CASE("dyn_grid_io")
   out_params.set<std::string>("floating_point_precision","real");
 
   OutputManager output;
-  output.initialize(comm, out_params, t0, false);
+  output.initialize(comm, out_params, t0);
   output.setup (fm, {dyn_grid->name()});
   output.run(t0);
   output.finalize();

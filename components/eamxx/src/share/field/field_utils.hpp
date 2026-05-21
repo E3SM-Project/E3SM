@@ -3,6 +3,9 @@
 
 #include "share/util/eamxx_scalar_wrapper.hpp"
 #include "share/field/field.hpp"
+#include "share/field/field_group.hpp"
+
+#include <ekat_comm.hpp>
 
 namespace scream {
 
@@ -85,6 +88,36 @@ void compute_mask (const Field& lhs, const Field& rhs, Comparison CMP, const Fie
 // Transpose a field layout
 void transpose (const Field& src, const Field& tgt);
 Field transpose (const Field& src);
+
+// Write fields to file as instantaneous snapshots.
+// The file is always recreated from scratch.
+void write_fields (const std::string& filename,
+                   const std::vector<Field>& fields);
+
+// Same as above, but for fields partitioned across ranks. The gids fields identify
+// the global offsets for one or more partitioned dimensions in the input fields.
+void write_fields (const std::string& filename,
+                   const std::vector<Field>& fields,
+                   const ekat::Comm& comm,
+                   const std::vector<Field>& gids_fields);
+
+// Convenience overload for a single partitioned dimension.
+void write_fields (const std::string& filename,
+                   const std::vector<Field>& fields,
+                   const ekat::Comm& comm,
+                   const Field& gids_field);
+
+// Convenience overloads for field groups.
+void write_fields (const std::string& filename,
+                   const FieldGroup& group);
+void write_fields (const std::string& filename,
+                   const FieldGroup& group,
+                   const ekat::Comm& comm,
+                   const std::vector<Field>& gids_fields);
+void write_fields (const std::string& filename,
+                   const FieldGroup& group,
+                   const ekat::Comm& comm,
+                   const Field& gids_field);
 
 } // namespace scream
 

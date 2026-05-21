@@ -23,7 +23,7 @@ OutputManager::~OutputManager() { finalize(); }
 void
 OutputManager::initialize(const ekat::Comm &io_comm, const ekat::ParameterList &params,
                           const util::TimeStamp &run_t0, const util::TimeStamp &case_t0,
-                          const bool is_model_restart_output, const RunType run_type)
+                          const RunType run_type)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (run_t0.is_valid(),
@@ -40,7 +40,6 @@ OutputManager::initialize(const ekat::Comm &io_comm, const ekat::ParameterList &
   m_run_t0 = run_t0;
   m_case_t0 = case_t0;
   m_run_type = run_type;
-  m_is_model_restart_output = is_model_restart_output;
 
   // This works if we are not restarting the stream.
   // If we are, it will get adjusted later
@@ -183,14 +182,14 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
     }
   }
 
-  // If this is model output (not model restart) we need to restart the output history.
+  // If this is model output we need to restart the output history.
   // For instant output, this just entails restarting timestamps and counters, while
   // for average output we also need to restore the accumulation state of the output fields
   // Note: the user might decide *not* to restart the output, so give the option
   //       of disabling the restart. Also, the user might want to change the
   //       filename_prefix, so allow to specify a different filename_prefix for the restart file.
   bool branch_run = m_params.sublist("restart").get("branch_run",false);
-  if (m_run_type==RunType::Restart and not m_is_model_restart_output and not branch_run) {
+  if (m_run_type==RunType::Restart and not branch_run) {
     // Allow to skip history restart, or to specify a filename_prefix for the restart file
     // that is different from the filename_prefix of the current output.
     auto& restart_pl = m_params.sublist("restart");
@@ -300,7 +299,6 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
     m_time_bnds[0] = m_run_t0.days_from(m_case_t0);
   } else if (m_output_control.output_enabled() and
              m_run_type==RunType::Initial and
-             not m_is_model_restart_output and
              not m_params.sublist("output_control").get<bool>("skip_t0_output",false)) // This will be true for ERS/ERP tests
   {
     // In order to trigger a t0 write, we need to have next_write_ts matching run_t0
@@ -320,15 +318,6 @@ void OutputManager::
 set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
   EKAT_REQUIRE_MSG (atm_logger, "Error! Invalid logger pointer.\n");
   m_atm_logger = atm_logger;
-}
-
-void OutputManager::
-add_global (const std::string& name, const std::shared_ptr<std::any>& global) {
-  EKAT_REQUIRE_MSG (m_globals.find(name)==m_globals.end(),
-      "Error! Global attribute was already set in this output manager.\n"
-      "  - global att name: " + name + "\n");
-
-  m_globals[name] = global;
 }
 
 /*===============================================================================================*/
@@ -396,7 +385,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
   using namespace scorpio;
 
-  std::string timer_root = m_is_model_restart_output ? "EAMxx::IO::restart" : "EAMxx::IO::standard";
+  std::string timer_root = "EAMxx::IO::standard";
   start_timer(timer_root);
   start_timer("EAMxx::IO::" + m_params.name());
 
@@ -437,26 +426,21 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       setup_file(filespecs,control);
     }
 
-    // If we are going to write an output checkpoint file, or a model restart file,
-    // we need to append to the filename ".rhist" or ".r" respectively, and add
-    // the filename to the rpointer.atm file.
+    // If we are going to write an output checkpoint file, we need to append
+    // the filename to rpointer.atm.
     if (m_io_comm.am_i_root() and filespecs.is_restart_file()) {
       std::ofstream rpointer;
-      if (m_is_model_restart_output) {
-        rpointer.open("rpointer.atm");  // Open rpointer and nuke its content
-      } else if (is_checkpoint_step) {
+      if (is_checkpoint_step) {
         // Output restart unit tests do not have a model-output stream that generates rpointer.atm,
         // so allow to skip the next check for them.
         auto is_unit_testing = m_params.sublist("checkpoint_control").get("is_unit_testing",false);
         EKAT_REQUIRE_MSG (is_unit_testing || std::ifstream("rpointer.atm").good(),
             "Error! Cannot find rpointer.atm file to append history restart file in.\n"
-            " Model restart output is supposed to be in charge of creating rpointer.atm.\n"
+            " The atmosphere driver is supposed to create rpointer.atm through model restart output.\n"
             " There are two possible causes:\n"
             "   1. You have a 'checkpoint_control' list in your output stream, but no Scorpio::model_restart\n"
             "      section in the input yaml file. This makes no sense, please correct.\n"
-            "   2. The current implementation assumes that the model restart OutputManager runs\n"
-            "      *before* any other output stream (so it can nuke rpointer.atm if already existing).\n"
-            "      If this has changed, we need to revisit this piece of the code.\n");
+            "   2. The atmosphere driver did not write the model restart file before this checkpoint step.\n");
         rpointer.open("rpointer.atm",std::ofstream::app);  // Open rpointer file and append to it
       }
       rpointer << filespecs.filename << std::endl;
@@ -512,55 +496,28 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       control.compute_next_write_ts();
       control.nsamples_since_last_write = 0;
 
-      if (m_is_model_restart_output) {
-        // Only write nsteps on model restart
-        set_attribute(filespecs.filename,"GLOBAL","nsteps",timestamp.get_num_steps());
-      } else {
-        if (filespecs.ftype==FileType::HistoryRestart) {
-          // Update the date of last write and sample size
-          write_timestamp (filespecs.filename,"last_write",m_output_control.last_write_ts,true);
-          scorpio::set_attribute (filespecs.filename,"GLOBAL","num_snapshots_since_last_write",m_output_control.nsamples_since_last_write);
-          if (m_output_file_specs.is_open) {
-            scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_file_num_snaps",m_output_file_specs.storage.num_snapshots_in_file);
-            scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_filename",m_output_file_specs.filename);
-          } else {
-            scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_filename","");
-          }
-        }
-        // Write these in both output and rhist file. The former, b/c we need these info when we postprocess
-        // output, and the latter b/c we want to make sure these params don't change across restarts
-        set_attribute(filespecs.filename,"GLOBAL","averaging_type",e2str(m_avg_type));
-        set_attribute(filespecs.filename,"GLOBAL","averaging_frequency_units",m_output_control.frequency_units);
-        set_attribute(filespecs.filename,"GLOBAL","averaging_frequency",m_output_control.frequency);
-        set_attribute(filespecs.filename,"GLOBAL","file_max_storage_type",e2str(m_output_file_specs.storage.type));
-        if (m_output_file_specs.storage.type==NumSnaps) {
-          set_attribute(filespecs.filename,"GLOBAL","max_snapshots_per_file",m_output_file_specs.storage.max_snapshots_in_file);
-        }
-        const auto& fp_precision = m_params.get<std::string>("floating_point_precision");
-        set_attribute(filespecs.filename,"GLOBAL","fp_precision",fp_precision);
-      }
-
-      // Write all stored globals
-      for (const auto& it : m_globals) {
-        const auto& name = it.first;
-        const auto& any = *it.second;
-        if (any.type()==typeid(int)) {
-          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<const int&>(any));
-        } else if (any.type()==typeid(std::int64_t)) {
-          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<const std::int64_t&>(any));
-        } else if (any.type()==typeid(float)) {
-          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<const float&>(any));
-        } else if (any.type()==typeid(double)) {
-          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<const double&>(any));
-        } else if (any.type()==typeid(std::string)) {
-          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<const std::string&>(any));
+      if (filespecs.ftype==FileType::HistoryRestart) {
+        // Update the date of last write and sample size
+        write_timestamp (filespecs.filename,"last_write",m_output_control.last_write_ts,true);
+        scorpio::set_attribute (filespecs.filename,"GLOBAL","num_snapshots_since_last_write",m_output_control.nsamples_since_last_write);
+        if (m_output_file_specs.is_open) {
+          scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_file_num_snaps",m_output_file_specs.storage.num_snapshots_in_file);
+          scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_filename",m_output_file_specs.filename);
         } else {
-          EKAT_ERROR_MSG (
-              "Error! Invalid concrete type for IO global.\n"
-              " - global name: " + it.first + "\n"
-              " - type id    : " + std::string(any.type().name()) + "\n");
+          scorpio::set_attribute (filespecs.filename,"GLOBAL","last_output_filename","");
         }
       }
+      // Write these in both output and rhist file. The former, b/c we need these info when we postprocess
+      // output, and the latter b/c we want to make sure these params don't change across restarts
+      set_attribute(filespecs.filename,"GLOBAL","averaging_type",e2str(m_avg_type));
+      set_attribute(filespecs.filename,"GLOBAL","averaging_frequency_units",m_output_control.frequency_units);
+      set_attribute(filespecs.filename,"GLOBAL","averaging_frequency",m_output_control.frequency);
+      set_attribute(filespecs.filename,"GLOBAL","file_max_storage_type",e2str(m_output_file_specs.storage.type));
+      if (m_output_file_specs.storage.type==NumSnaps) {
+        set_attribute(filespecs.filename,"GLOBAL","max_snapshots_per_file",m_output_file_specs.storage.max_snapshots_in_file);
+      }
+      const auto& fp_precision = m_params.get<std::string>("floating_point_precision");
+      set_attribute(filespecs.filename,"GLOBAL","fp_precision",fp_precision);
 
       // We're adding one snapshot to the file
       ++filespecs.storage.num_snapshots_in_file;
@@ -617,7 +574,6 @@ void OutputManager::finalize()
   //       which in turns calls finalize, causing endless recursion.
   m_output_streams = {};
   m_geo_data_streams = {};
-  m_globals.clear();
   m_io_comm = {};
   m_params  = {};
   m_filename_prefix = {};
@@ -682,70 +638,44 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
                  const std::set<std::string>& grid_names)
 {
   using vos_t = std::vector<std::string>;
+  (void) field_mgr;
+  (void) grid_names;
 
-  if (m_is_model_restart_output) {
-    // We build some restart parameters internally
-    m_avg_type = OutputAvgType::Instant;
-    m_output_file_specs.storage.type = NumSnaps;
-    m_output_file_specs.storage.max_snapshots_in_file = 1;
-    m_output_file_specs.flush_frequency = 1;
+  auto avg_type = m_params.get<std::string>("averaging_type");
+  m_avg_type = str2avg(avg_type);
+  EKAT_REQUIRE_MSG (m_avg_type!=OutputAvgType::Invalid,
+      "Error! Unsupported averaging type '" + avg_type + "'.\n"
+      "       Valid options: instant, Max, Min, Average. Case insensitive.\n");
 
-    auto& fields_pl = m_params.sublist("fields");
-    for (const auto& gname : grid_names) {
-      vos_t fnames;
-      // There may be no RESTART group on this grid
-      if (field_mgr->has_group("RESTART", gname)) {
-        auto restart_group = field_mgr->get_group_info("RESTART", gname);
-        EKAT_REQUIRE_MSG (not fields_pl.isParameter(gname),
-          "Error! For restart output, don't specify the fields names. We will create this info internally.\n");
-        for (const auto& n : restart_group.m_fields_names) {
-          fnames.push_back(n);
-        }
-      }
-      fields_pl.sublist(gname).set("field_names",fnames);
-      fields_pl.sublist(gname).set<std::string>("output_data_layout","native");
-    }
-    m_filename_prefix = m_params.get<std::string>("filename_prefix");
-
-    // Hard code some parameters in case we access them later
-    m_params.set<std::string>("floating_point_precision","real");
+  const auto& storage_type = m_params.get<std::string>("file_max_storage_type","num_snapshots");
+  auto& storage = m_output_file_specs.storage;
+  constexpr auto large_int = std::numeric_limits<int>::max();
+  if (storage_type=="num_snapshots") {
+    storage.type = NumSnaps;
+    storage.max_snapshots_in_file = m_params.get<int>("max_snapshots_per_file",large_int);
+    EKAT_REQUIRE_MSG (storage.max_snapshots_in_file>0,
+        "Error! Value for 'max_snapshots_per_file' should be positive.\n"
+        "       To request 'unlimited' storage, leave parameter unset.\n");
+  } else if (storage_type=="one_year") {
+    storage.type = Yearly;
+  } else if (storage_type=="one_month") {
+    storage.type = Monthly;
+  } else if (storage_type=="one_day") {
+    storage.type = Daily;
   } else {
-    auto avg_type = m_params.get<std::string>("averaging_type");
-    m_avg_type = str2avg(avg_type);
-    EKAT_REQUIRE_MSG (m_avg_type!=OutputAvgType::Invalid,
-        "Error! Unsupported averaging type '" + avg_type + "'.\n"
-        "       Valid options: instant, Max, Min, Average. Case insensitive.\n");
-
-    const auto& storage_type = m_params.get<std::string>("file_max_storage_type","num_snapshots");
-    auto& storage = m_output_file_specs.storage;
-    constexpr auto large_int = std::numeric_limits<int>::max();
-    if (storage_type=="num_snapshots") {
-      storage.type = NumSnaps;
-      storage.max_snapshots_in_file = m_params.get<int>("max_snapshots_per_file",large_int);
-      EKAT_REQUIRE_MSG (storage.max_snapshots_in_file>0,
-          "Error! Value for 'max_snapshots_per_file' should be positive.\n"
-          "       To request 'unlimited' storage, leave parameter unset.\n");
-    } else if (storage_type=="one_year") {
-      storage.type = Yearly;
-    } else if (storage_type=="one_month") {
-      storage.type = Monthly;
-    } else if (storage_type=="one_day") {
-      storage.type = Daily;
-    } else {
-      EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
-    }
-    m_filename_prefix = m_params.get<std::string>("filename_prefix");
-    m_output_file_specs.flush_frequency = m_params.get("flush_frequency",1);
-
-    // Allow user to ask for higher precision for normal model output,
-    // but default to single to save on storage
-    const auto& prec = m_params.get<std::string>("floating_point_precision", "single");
-    vos_t valid_prec = {"single", "float", "double", "real"};
-    EKAT_REQUIRE_MSG (ekat::contains(valid_prec,prec),
-        "Error! Invalid/unsupported value for 'floating_point_precision'.\n"
-        "  - input value: " + prec + "\n"
-        "  - supported values: float, single, double, real\n");
+    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
   }
+  m_filename_prefix = m_params.get<std::string>("filename_prefix");
+  m_output_file_specs.flush_frequency = m_params.get("flush_frequency",1);
+
+  // Allow user to ask for higher precision for normal model output,
+  // but default to single to save on storage
+  const auto& prec = m_params.get<std::string>("floating_point_precision", "single");
+  vos_t valid_prec = {"single", "float", "double", "real"};
+  EKAT_REQUIRE_MSG (ekat::contains(valid_prec,prec),
+      "Error! Invalid/unsupported value for 'floating_point_precision'.\n"
+      "  - input value: " + prec + "\n"
+      "  - supported values: float, single, double, real\n");
 
   // Output control
   EKAT_REQUIRE_MSG(m_params.isSublist("output_control"),
@@ -762,8 +692,8 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
       "Error! Invalid frequency (" + std::to_string(m_output_control.frequency) + ") in Output Control. Please, use positive number.\n");
 
   // File specs
-  m_save_grid_data = out_control_pl.get("save_grid_data",!m_is_model_restart_output);
-  m_output_file_specs.ftype = m_is_model_restart_output ? FileType::ModelRestart : FileType::ModelOutput;
+  m_save_grid_data = out_control_pl.get("save_grid_data",true);
+  m_output_file_specs.ftype = FileType::ModelOutput;
 
   if (m_params.isSublist("checkpoint_control")) {
     auto& pl = m_params.sublist("checkpoint_control");
@@ -999,7 +929,6 @@ push_to_logger()
   m_atm_logger->info("                    Run t0: " + m_run_t0.to_string());
   m_atm_logger->info("                   Case t0: " + m_case_t0.to_string());
   m_atm_logger->info("              Reference t0: " + m_output_control.last_write_ts.to_string());
-  m_atm_logger->info("         Is Restart File ?: " + bool_to_string(m_is_model_restart_output));
   m_atm_logger->info("                 Run type : " + rt_to_string(m_run_type));
   m_atm_logger->info("            averaging_type: " + e2str(m_avg_type));
   m_atm_logger->info("          Output Frequency: " + std::to_string(m_output_control.frequency) + " " + m_output_control.frequency_units);

@@ -155,7 +155,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
   // Create Output manager
   OutputManager om;
   om_pl.set("floating_point_precision",std::string("single"));
-  om.initialize(comm,om_pl,t0,false);
+  om.initialize(comm,om_pl,t0);
   om.setup(fm,gm->get_grid_names());
 
   // Time loop

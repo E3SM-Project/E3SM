@@ -143,7 +143,7 @@ TEST_CASE("io_with_aliases") {
   params.set<std::string>("floating_point_precision", "single");
 
   OutputManager om;
-  om.initialize(comm, params, t0, false);
+  om.initialize(comm, params, t0);
   om.setup(fm, gm->get_grid_names());
 
   // Run enough timesteps to fill the file and force it to be written

@@ -160,10 +160,10 @@ void write (const std::string& avg_type, const std::string& freq_units,
 
   // Attempt to use invalid fp precision string
   om_pl.set("floating_point_precision",std::string("triple"));
-  om.initialize(comm,om_pl,t0,false);
+  om.initialize(comm,om_pl,t0);
   REQUIRE_THROWS (om.setup(fm,gm->get_grid_names()));
   om_pl.set("floating_point_precision",std::string("single"));
-  om.initialize(comm,om_pl,t0,false);
+  om.initialize(comm,om_pl,t0);
   om.setup(fm,gm->get_grid_names());
 
   // Time loop: ensure we always hit 3 output steps

@@ -139,7 +139,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
 
   // Create Output manager
   OutputManager om;
-  om.initialize(comm,om_pl,t0,false);
+  om.initialize(comm,om_pl,t0);
   om.setup(fm,gm->get_grid_names());
 
   // Time loop: ensure we always hit 3 output steps
