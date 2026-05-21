@@ -1084,6 +1084,13 @@ void set_dims_decomp (const std::string& filename,
   }
 }
 
+std::map<std::string,std::shared_ptr<DimDecomp>>
+get_dim_decomps (const std::string& filename)
+{
+  auto& f = impl::get_file(filename,"scorpio::get_dim_decomps");
+  return f.dim_decomps;
+}
+
 void clear_unused_decomps ()
 {
   auto& s = ScorpioSession::instance();

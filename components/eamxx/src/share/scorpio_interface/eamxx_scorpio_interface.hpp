@@ -149,6 +149,12 @@ void set_dims_decomp (const std::string& filename,
                       const std::vector<std::string>& dimnames,
                       const std::vector<offset_t>& my_offsets);
 
+// Retrieve currently stored dim decompositions. Useful for debugging but also
+// to agnostically transfer decomps from one file to another (e.g., when changing
+// file to read in FieldReader).
+std::map<std::string,std::shared_ptr<DimDecomp>>
+get_dim_decomps (const std::string& filename);
+
 // Clears all decompositions not currently in use
 // This helps in some unit tests, where the same file is used
 // in two different moments, with different grid decompositions
