@@ -13,6 +13,7 @@
 
 #include "Config.h"
 #include "TimeMgr.h"
+#include "TimeStepper.h"
 
 #include "mpi.h"
 
@@ -33,6 +34,9 @@ int ocnFinalize(const TimeInstant &CurrTime);
 
 /// Initialize Omega modules needed to run ocean model
 int initOmegaModules(MPI_Comm Comm);
+
+/// Initialize Omega modules with coupler-provided time parameters
+int initOmegaModules(MPI_Comm Comm, const TimeInitParams &TParams);
 
 } // end namespace OMEGA
 

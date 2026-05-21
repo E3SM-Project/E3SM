@@ -15,12 +15,12 @@ namespace OMEGA {
 // Mostly passes relevant info to the base constructor.
 ForwardBackwardStepper::ForwardBackwardStepper(
     const std::string &InName,      ///< [in] name of time stepper
+    const TimeInterval &InTimeStep, ///< [in] time step
     const TimeInstant &InStartTime, ///< [in] start time for time stepping
-    const TimeInstant &InStopTime,  ///< [in] stop  time for time stepping
-    const TimeInterval &InTimeStep  ///< [in] time step
-    )
-    : TimeStepper(InName, TimeStepperType::ForwardBackward, 2, InStartTime,
-                  InStopTime, InTimeStep) {}
+    ///< [in] stop time for time stepping, missing in coupled mode
+    std::optional<TimeInstant> InStopTime)
+    : TimeStepper(InName, TimeStepperType::ForwardBackward, 2, InTimeStep,
+                  InStartTime, InStopTime) {}
 
 //------------------------------------------------------------------------------
 // Advance the state by one step of the forward-backward scheme

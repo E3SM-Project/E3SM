@@ -23,6 +23,9 @@ int ocnRun(TimeInstant &CurrTime ///< [inout] current sim time
    OceanState *DefOceanState   = OceanState::getDefault();
    TimeStepper *DefTimeStepper = TimeStepper::getDefault();
 
+   // EndAlarm must be set before calling ocnRun
+   OMEGA_REQUIRE(DefTimeStepper->hasEndAlarm(), "ocnRun: no EndAlarm");
+
    // get simulation time and other time info
    Clock *OmegaClock     = DefTimeStepper->getClock();
    Alarm *EndAlarm       = DefTimeStepper->getEndAlarm();

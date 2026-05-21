@@ -20,12 +20,14 @@ enum class TimeStepperType { ForwardBackward, RungeKutta4, RungeKutta2 };
 The `TimeStepper` class is a base class for all Omega time steppers. It stores
 as members common data needed by every time stepper. These include a name and
 time stepping method as well as some time tracking variables, including
-StartTime, StopTime, TimeStep, a Clock and an EndAlarm. Its `doStep` method
-defines the interface that every time stepper needs to implement. In addition to this
-method, it provides a number of other methods that can divided into two groups.
-The first group is for general time stepper management. The second group is
-utility functions that provide common functionality that can be re-used in
-implementation of different time steppers.
+a Clock, TimeStep, StartTime, StopTime (optional) and an EndAlarm (optional).
+The StopTime and EndAlarm are optional, because in coupled E3SM simulations the
+components do not know the StopTime and therefore no EndAlarm can be created.
+Its `doStep` method defines the interface that every time stepper needs to
+implement. In addition to this method, it provides a number of other methods
+that can divided into two groups. The first group is for general time stepper
+management. The second group is utility functions that provide common
+functionality that can be re-used in implementation of different time steppers.
 
 ### Do step method
 The `doStep` method is the main method of every time stepper class. It exists
@@ -62,14 +64,26 @@ retrieved at any time using:
 TimeStepper* DefTimeStepper = TimeStepper::getDefault();
 ```
 
+In standalone simulations, `TimeStepper::init1();` will read the StartTime from
+the configuration file. For coupled simulations the StartTime is provided by
+the coupler, overriding the value defined in the configuration file.
+In this case, the first phase of time stepper initialization would look like:
+```c++
+// coupled simulations have a start time but no stop time
+TimeInitParams TimeParams{StartTime, std::nullopt};
+
+// initialize TimeStepper with coupler provided start time
+TimeStepper::init1(TimeParams);
+```
+
 #### Creation of non-default time steppers
 
 A non-default time stepper can be created from a string `Name`, time stepper
 type `Type`, `TimeStep`, `StartTime`, `EndTime`, tendencies `Tend`,
 auxiliary state `AuxState`, horizontal mesh `Mesh`, and halo layer `MyHalo`
 ```c++
-TimeStepper*  NewTimeStepper = TimeStepper::create(Name, Type, StartTime,
-         EndTime, TimeStep, Tend, AuxState, Mesh, MyHalo);
+TimeStepper*  NewTimeStepper = TimeStepper::create(Name, Type, TimeStep,
+          StartTime, EndTime, Tend, AuxState, Mesh, MyHalo);
 ```
 For convenience, this returns a pointer to the newly created time stepper.
 Given its name, a pointer to a named time stepper can be obtained at any time

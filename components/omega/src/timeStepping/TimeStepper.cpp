@@ -85,29 +85,31 @@ getPrescribeVelocityTypeFromStr(const std::string &InString) {
 //------------------------------------------------------------------------------
 // Constructors and creation methods.
 
-// Constructor creates a new instance and fills in the time
-// related data. attachData function is used to add the data pointers
+/// Constructor creates a new instance and fills in the time
+/// related data. attachData function is used to add the data pointers
 TimeStepper::TimeStepper(
-    const std::string &InName,      // [in] name of time stepper
-    TimeStepperType InType,         // [in] type (time stepping method)
-    I4 InNTimeLevels,               // [in] num time levels needed by method
-    const TimeInstant &InStartTime, // [in] start time for time stepping
-    const TimeInstant &InStopTime,  // [in] stop  time for time stepping
-    const TimeInterval &InTimeStep  // [in] time step
-    )
+    const std::string &InName,      ///< [in] name of time stepper
+    TimeStepperType InType,         ///< [in] type (time stepping method)
+    I4 InNTimeLevels,               ///< [in] num time levels for method
+    const TimeInterval &InTimeStep, ///< [in] time step
+    const TimeInstant &InStartTime, ///< [in] start time for time stepping
+    ///< [in] stop time for time stepping, missing in coupled mode
+    std::optional<TimeInstant> InStopTime)
     : Name(InName), Type(InType), NTimeLevels(InNTimeLevels),
-      StartTime(InStartTime), StopTime(InStopTime), TimeStep(InTimeStep) {
+      TimeStep(InTimeStep), StartTime(InStartTime), StopTime(InStopTime) {
    // Most variables initialized via initializer list
 
    // Set up clock associated with this time stepper
    StepClock = std::make_unique<Clock>(Clock(InStartTime, InTimeStep));
 
-   // Create an EndAlarm associated with the StopTime
-   std::string AlarmName = "EndAlarm";
-   if (InName != "Default")
-      AlarmName += InName;
-   EndAlarm = std::make_unique<Alarm>(Alarm(AlarmName, InStopTime));
-   StepClock->attachAlarm(EndAlarm.get());
+   if (InStopTime.has_value()) {
+      // Create an EndAlarm associated with the StopTime
+      std::string AlarmName = "EndAlarm";
+      if (InName != "Default")
+         AlarmName += InName;
+      EndAlarm = std::make_unique<Alarm>(Alarm(AlarmName, *InStopTime));
+      StepClock->attachAlarm(EndAlarm.get());
+   }
 }
 
 //------------------------------------------------------------------------------
@@ -115,9 +117,9 @@ TimeStepper::TimeStepper(
 TimeStepper *TimeStepper::create(
     const std::string &InName,      ///< [in] name of time stepper
     TimeStepperType InType,         ///< [in] type (time stepping method)
+    const TimeInterval &InTimeStep, ///< [in] time step
     const TimeInstant &InStartTime, ///< [in] start time for time stepping
     const TimeInstant &InStopTime,  ///< [in] stop  time for time stepping
-    const TimeInterval &InTimeStep, ///< [in] time step
     Tendencies *InTend,             ///< [in] ptr to tendencies
     AuxiliaryState *InAuxState,     ///< [in] ptr to aux state variables
     HorzMesh *InMesh,               ///< [in] ptr to mesh information
@@ -125,46 +127,15 @@ TimeStepper *TimeStepper::create(
     Halo *InMeshHalo                ///< [in] ptr to halos
 ) {
 
-   // Check for duplicates
-   if (AllTimeSteppers.find(InName) != AllTimeSteppers.end()) {
-      LOG_ERROR("Attempted to create a new TimeStepper with name {} but it "
-                "already exists",
-                InName);
-      return nullptr;
-   }
-
-   TimeStepper *NewTimeStepper;
-
-   // Call specific constructor with time info
-   // These constructors mostly just call the constructor above with some
-   // additional info (NTimeLevels)
-   switch (InType) {
-   case TimeStepperType::ForwardBackward:
-      NewTimeStepper = new ForwardBackwardStepper(InName, InStartTime,
-                                                  InStopTime, InTimeStep);
-      break;
-   case TimeStepperType::RungeKutta4:
-      NewTimeStepper =
-          new RungeKutta4Stepper(InName, InStartTime, InStopTime, InTimeStep);
-      break;
-   case TimeStepperType::RungeKutta2:
-      NewTimeStepper =
-          new RungeKutta2Stepper(InName, InStartTime, InStopTime, InTimeStep);
-      break;
-   case TimeStepperType::Invalid:
-      ABORT_ERROR("Invalid time stepping method");
-   default:
-      ABORT_ERROR("Unknown time stepping method");
-   }
+   // Start by calling the two-phase create function
+   TimeStepper *NewTimeStepper =
+       create(InName, InType, InTimeStep, InStartTime, InStopTime);
 
    NewTimeStepper->PrescribeThicknessMode = DefaultPrescribeThicknessMode;
    NewTimeStepper->PrescribeVelocityMode  = DefaultPrescribeVelocityMode;
 
    // Attach data pointers
    NewTimeStepper->attachData(InTend, InAuxState, InMesh, InVCoord, InMeshHalo);
-
-   // Store instance
-   AllTimeSteppers.emplace(InName, NewTimeStepper);
 
    return NewTimeStepper;
 }
@@ -174,12 +145,12 @@ TimeStepper *TimeStepper::create(
 // and tendencies are defined. It creates an instance and only fills
 // the time information. Data pointers are attached later.
 TimeStepper *TimeStepper::create(
-    const std::string &InName, // [in] name of time stepper
-    TimeStepperType InType,    // [in] type (time stepping method)
-    TimeInstant &InStartTime,  // [in] start time for time stepping
-    TimeInstant &InStopTime,   // [in] stop  time for time stepping
-    TimeInterval &InTimeStep   // [in] time step
-) {
+    const std::string &InName,      // [in] name of time stepper
+    TimeStepperType InType,         // [in] type (time stepping method)
+    const TimeInterval &InTimeStep, // [in] time step
+    const TimeInstant &InStartTime, // [in] start time for time stepping
+    ///< [in] stop time for time stepping, missing in coupled mode
+    std::optional<TimeInstant> InStopTime) {
 
    // Check for duplicates
    if (AllTimeSteppers.find(InName) != AllTimeSteppers.end()) {
@@ -194,16 +165,16 @@ TimeStepper *TimeStepper::create(
    // Call specific constructor with time info
    switch (InType) {
    case TimeStepperType::ForwardBackward:
-      NewTimeStepper = new ForwardBackwardStepper(InName, InStartTime,
-                                                  InStopTime, InTimeStep);
+      NewTimeStepper = new ForwardBackwardStepper(InName, InTimeStep,
+                                                  InStartTime, InStopTime);
       break;
    case TimeStepperType::RungeKutta4:
       NewTimeStepper =
-          new RungeKutta4Stepper(InName, InStartTime, InStopTime, InTimeStep);
+          new RungeKutta4Stepper(InName, InTimeStep, InStartTime, InStopTime);
       break;
    case TimeStepperType::RungeKutta2:
       NewTimeStepper =
-          new RungeKutta2Stepper(InName, InStartTime, InStopTime, InTimeStep);
+          new RungeKutta2Stepper(InName, InTimeStep, InStartTime, InStopTime);
       break;
    case TimeStepperType::Invalid:
       ABORT_ERROR("Invalid time stepping method");
@@ -270,7 +241,7 @@ void TimeStepper::clear() {
 // Initialize the default time stepper in two phases
 
 // Begin initialization of the default time stepper (phase 1)
-// This is primarily the time information.
+// This is primarily the time information read directly from the config file
 void TimeStepper::init1() {
 
    Error Err; // error code - default to success
@@ -281,23 +252,11 @@ void TimeStepper::init1() {
    Err = OmegaConfig->get(TimeIntConfig);
    CHECK_ERROR_ABORT(Err, "TimeIntegration group not found in Config");
 
-   // Must initialize the calendar first
+   // Must initialize the calendar first, before any TimeInstant objects
    std::string CalendarStr;
    Err += TimeIntConfig.get("CalendarType", CalendarStr);
    CHECK_ERROR_ABORT(Err, "CalendarType not found in TimeIntegration Config");
    Calendar::init(CalendarStr);
-
-   // Initialize choice of time stepper
-   std::string TimeStepperStr;
-   Err += TimeIntConfig.get("TimeStepper", TimeStepperStr);
-   CHECK_ERROR_ABORT(Err, "TimeStepper not found in TimeIntegration Config");
-   TimeStepperType TimeStepperChoice = getTimeStepperFromStr(TimeStepperStr);
-
-   // Initialize time step
-   std::string TimeStepStr;
-   Err += TimeIntConfig.get("TimeStep", TimeStepStr);
-   CHECK_ERROR_ABORT(Err, "TimeStep not found in TimeIntegration Config");
-   TimeInterval TimeStep(TimeStepStr);
 
    // Initialize start time
    std::string StartTimeStr;
@@ -359,11 +318,45 @@ void TimeStepper::init1() {
       }
    }
 
+   TimeInitParams TimeParams{StartTime, StopTime};
+
+   init1(TimeParams);
+}
+
+void TimeStepper::init1(const TimeInitParams &TimeParams) {
+
+   // Calendar must be initialized before this is called — the no-arg init1()
+   // does this internally. In coupled mode, the caller (ocnInit) is responsible
+   // for calling Calendar::init() before constructing TimeInitParams.
+   OMEGA_REQUIRE(Calendar::isDefined(),
+                 "Calendar must be initialized before TimeStepper::init1");
+
+   Error Err; // error code - default to success
+
+   // TimeStepper and TimeStep are always read from the Config
+   Config *OmegaConfig = Config::getOmegaConfig();
+   Config TimeIntConfig("TimeIntegration");
+   Err = OmegaConfig->get(TimeIntConfig);
+   CHECK_ERROR_ABORT(Err, "TimeIntegration group not found in Config");
+
+   // Initialize choice of time stepper
+   std::string TimeStepperStr;
+   Err += TimeIntConfig.get("TimeStepper", TimeStepperStr);
+   CHECK_ERROR_ABORT(Err, "TimeStepper not found in TimeIntegration Config");
+   TimeStepperType TimeStepperChoice = getTimeStepperFromStr(TimeStepperStr);
+
+   // Initialize time step
+   std::string TimeStepStr;
+   Err += TimeIntConfig.get("TimeStep", TimeStepStr);
+   CHECK_ERROR_ABORT(Err, "TimeStep not found in TimeIntegration Config");
+   TimeInterval TimeStep(TimeStepStr);
+
    // Now that all the inputs are defined, create the default time stepper
    // Use the partial creation function for only the time info. Data
    // pointers will be attached in phase 2 initialization
    TimeStepper::DefaultTimeStepper =
-       create("Default", TimeStepperChoice, StartTime, StopTime, TimeStep);
+       create("Default", TimeStepperChoice, TimeStep, TimeParams.StartTime,
+              TimeParams.StopTime);
 }
 
 //------------------------------------------------------------------------------
@@ -431,10 +424,13 @@ TimeInterval TimeStepper::getTimeStep() const { return TimeStep; }
 TimeInstant TimeStepper::getStartTime() const { return StartTime; }
 
 // Get stop time from instance
-TimeInstant TimeStepper::getStopTime() const { return StopTime; }
+std::optional<TimeInstant> TimeStepper::getStopTime() const { return StopTime; }
 
 // Get clock (ptr) from instance
 Clock *TimeStepper::getClock() { return StepClock.get(); }
+
+// Check if time stepper has an end alarm (i.e. if stop time is defined)
+bool TimeStepper::hasEndAlarm() const { return EndAlarm != nullptr; }
 
 // Get end alarm (ptr) from instance
 Alarm *TimeStepper::getEndAlarm() { return EndAlarm.get(); }

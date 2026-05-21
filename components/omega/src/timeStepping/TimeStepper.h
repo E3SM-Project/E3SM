@@ -49,6 +49,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace OMEGA {
@@ -65,6 +66,16 @@ enum class TimeStepperType {
 /// An enum describing how a state variable should be prescribed from the
 /// reference time level
 enum class PrescribeStateType { None, Init, NonDivergent, Divergent, Invalid };
+
+/// Parameters required by TimeStepper::init1 for time setup.
+/// In standalone mode all fields are populated from config.
+/// In coupled mode, StartTime comes from the coupler and StopTime is absent
+/// (the coupler controls run length externally).
+/// Calendar::init() must be called before constructing this struct.
+struct TimeInitParams {
+   TimeInstant StartTime;               ///< Simulation start time
+   std::optional<TimeInstant> StopTime; ///< Absent in coupled mode
+};
 
 //------------------------------------------------------------------------------
 // Utility routine
@@ -95,6 +106,7 @@ class TimeStepper {
 
    /// 1st phase of Initialization for the default time stepper
    static void init1();
+   static void init1(const TimeInitParams &TimeParams);
 
    /// 2nd phase of Initialization for the default time stepper
    static void init2();
@@ -103,9 +115,9 @@ class TimeStepper {
    static TimeStepper *
    create(const std::string &InName,      ///< [in] name of time stepper
           TimeStepperType InType,         ///< [in] type (time stepping method)
+          const TimeInterval &InTimeStep, ///< [in] time step
           const TimeInstant &InStartTime, ///< [in] start time for time stepping
           const TimeInstant &InStopTime,  ///< [in] stop  time for time stepping
-          const TimeInterval &InTimeStep, ///< [in] time step
           Tendencies *InTend,             ///< [in] ptr to tendencies
           AuxiliaryState *InAuxState,     ///< [in] ptr to aux state variables
           HorzMesh *InMesh,               ///< [in] ptr to mesh information
@@ -117,12 +129,12 @@ class TimeStepper {
    /// and tendencies are defined. It creates an instance and only fills
    /// the time information. Data pointers are attached later.
    static TimeStepper *
-   create(const std::string &InName, ///< [in] name of time stepper
-          TimeStepperType InType,    ///< [in] type (time stepping method)
-          TimeInstant &InStartTime,  ///< [in] start time for time stepping
-          TimeInstant &InStopTime,   ///< [in] stop  time for time stepping
-          TimeInterval &InTimeStep   ///< [in] time step
-   );
+   create(const std::string &InName,      ///< [in] name of time stepper
+          TimeStepperType InType,         ///< [in] type (time stepping method)
+          const TimeInterval &InTimeStep, ///< [in] time step
+          const TimeInstant &InStartTime, ///< [in] start time for time stepping
+          ///< [in] stop time for time stepping, missing in coupled mode
+          std::optional<TimeInstant> InStopTime = std::nullopt);
 
    /// For 2-step creation, this attaches all the data pointers to an instance
    /// once the data and tendencies have been created.
@@ -166,7 +178,10 @@ class TimeStepper {
    TimeInstant getStartTime() const;
 
    /// Get stop time
-   TimeInstant getStopTime() const;
+   std::optional<TimeInstant> getStopTime() const;
+
+   /// Check if time stepper has an end alarm (i.e. if stop time is defined)
+   bool hasEndAlarm() const;
 
    /// Get a pointer to the clock
    Clock *getClock();
@@ -296,7 +311,7 @@ class TimeStepper {
    TimeInstant StartTime;
 
    /// Stop time
-   TimeInstant StopTime;
+   std::optional<TimeInstant> StopTime; // std::nullopt in coupled mode
 
    /// Alarm that rings at StopTime
    std::unique_ptr<Alarm> EndAlarm;
@@ -321,10 +336,10 @@ class TimeStepper {
        const std::string &InName,      ///< [in] name of time stepper
        TimeStepperType InType,         ///< [in] type (time stepping method)
        I4 InNTimeLevels,               ///< [in] num time levels for method
+       const TimeInterval &InTimeStep, ///< [in] time step
        const TimeInstant &InStartTime, ///< [in] start time for time stepping
-       const TimeInstant &InStopTime,  ///< [in] stop  time for time stepping
-       const TimeInterval &InTimeStep  ///< [in] time step
-   );
+       ///< [in] stop time for time stepping, missing in coupled mode
+       std::optional<TimeInstant> InStopTime);
 
    // Disable copy constructor
    TimeStepper(const TimeStepper &) = delete;
