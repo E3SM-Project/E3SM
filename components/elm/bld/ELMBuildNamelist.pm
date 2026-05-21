@@ -841,7 +841,8 @@ sub setup_cmdl_fates_mode {
                      "fates_regeneration_model",
                      "fates_hydro_solver",
                      "fates_radiation_model",
-                     "fates_electron_transport_model");
+                     "fates_electron_transport_model",
+                     "fates_lu_transition_logic");
 
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
@@ -3453,7 +3454,8 @@ sub setup_logic_fates {
                    "fates_regeneration_model",
                    "fates_hydro_solver",
                    "fates_radiation_model",
-	                 "fates_electron_transport_model");
+	               "fates_electron_transport_model",
+                   "fates_lu_transition_logic");
 
     foreach my $var (@list) {
        add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,'use_fates'=>$nl_flags->{'use_fates'},
@@ -3464,6 +3466,7 @@ sub setup_logic_fates {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_luh', 'use_fates'=>$nl_flags->{'use_fates'},
                                                                                       'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
                                                                                       'use_fates_potentialveg'=>$nl->get_value('use_fates_potentialveg'),
+                                                                                      'fates_lu_transition_logic'=>$nl->get_value('fates_lu_transition_logic'),
                                                                                       'fates_harvest_mode'=>remove_leading_and_trailing_quotes($nl->get_value('fates_harvest_mode')) );
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_nocomp', 'use_fates'=>$nl_flags->{'use_fates'},
 	                                                                              'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
