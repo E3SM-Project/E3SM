@@ -258,7 +258,7 @@ contains
 
     if (nl_found) then
          mapper%nl_available = .true.
-         nlmap_id = 'ho'//map_identifier
+         nlmap_id = 'ho_'//map_identifier
          mapper%howeight_identifier = nlmap_id
          mapfile_term = trim(nl_mapfile)//CHAR(0)
          ierr = iMOAB_LoadMapFile( mapper%src_mbid, mapper%tgt_mbid, mapper%intx_mbid, discretization_type, &
@@ -351,7 +351,6 @@ contains
     character(len=CXX) :: fldlist_lo_only ! excluded data + norm8wt → low-order projection
     integer            :: ncaas_fields, nlo_fields  ! field counts for the two sub-lists
     character(len=CXX) :: tagname
-    character(len=CXX) :: lo_weights_identifier
     integer    :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
     type(mct_list) :: temp_list
     integer, dimension(:), allocatable  :: globalIds
@@ -686,12 +685,10 @@ contains
           !***   filter_type: 0=no filter, other values for CAAS projection
           !***   weight_identifier: Name of the weight matrix (e.g., "scalar", "flux")
           !***   fldlist_moab: Input and output field names (can be different)
-          lo_weights_identifier = ''//C_NULL_CHAR
-
           if(.not.use_nonlinear_map) then
              filter_type = 0 ! CAAS_NONE: plain low-order projection
              ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%weight_identifier, &
-               fldlist_moab, fldlist_moab, lo_weights_identifier)
+               fldlist_moab, fldlist_moab)
              if (ierr .ne. 0) then
                 write(logunit,*) subname,' error in applying weights '
                 call shr_sys_abort(subname//' ERROR in applying weights')
@@ -727,8 +724,7 @@ contains
              if (ncaas_fields > 0) then
                 filter_type = 2 ! CAAS_LOCAL
                 ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, &
-                       mapper%howeight_identifier, fldlist_caas, fldlist_caas, &
-                       mapper%weight_identifier )
+                       mapper%howeight_identifier, fldlist_caas, fldlist_caas )
                 if (ierr .ne. 0) then
                    write(logunit,*) subname,' error in applying weights (data fields, dual-map CAAS)'
                    call shr_sys_abort(subname//' ERROR in applying weights (data fields, dual-map CAAS)')
@@ -737,13 +733,10 @@ contains
 
              if (nlo_fields > 0) then
                 ! Excluded data fields + (optionally) norm8wt — plain low-order.
-                ! lo_weights_identifier is empty so iMOAB takes the plain
-                ! ApplyWeights branch (no dual-map CAAS) regardless of
-                ! filter_type.
+                ! iMOAB takes the plain ApplyWeights branch (no dual-map CAAS)
                 filter_type = 0
                 ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, &
-                       mapper%weight_identifier, fldlist_lo_only, fldlist_lo_only, &
-                       lo_weights_identifier )
+                       mapper%weight_identifier, fldlist_lo_only, fldlist_lo_only )
                 if (ierr .ne. 0) then
                    write(logunit,*) subname,' error in applying weights (excluded fields + norm8wt, low-order)'
                    call shr_sys_abort(subname//' ERROR in applying weights (excluded fields + norm8wt, low-order)')
