@@ -329,6 +329,18 @@ void VertMix::computeVertMix(const Array2DReal &NormalVelocity,
                  Team, KRange, INNER_LAMBDA(int KChunk) {
                     LocComputeVertMixShear(LocVertDiff, LocVertVisc, ICell,
                                            KChunk, GradRichNumSmoothed);
+
+             teamBarrier(Team);
+
+             // Fill Richardson number at vertical boundaries using the
+             // closest valid value. This is equivalent to doing one-sided
+             // differencing at the boundary.
+             Kokkos::single(
+                 PerTeam(Team), INNER_LAMBDA() {
+                    LocGradRichNum(ICell, MinLayerCell(ICell)) =
+                        LocGradRichNum(ICell, KMin);
+                    LocGradRichNum(ICell, MaxLayerCell(ICell) + 1) =
+                        LocGradRichNum(ICell, KMax);
                  });
           });
       /// Smooth Richardson number with 1-2-1 filter the number of times
