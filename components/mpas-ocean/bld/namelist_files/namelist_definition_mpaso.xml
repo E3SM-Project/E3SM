@@ -2164,6 +2164,97 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- wetting_drying -->
+
+<entry id="config_use_wetting_drying" type="logical"
+	category="wetting_drying" group="wetting_drying">
+If true, use wetting and drying algorithm to allow for dry cells to config_min_cell_height.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_prevent_drying" type="logical"
+	category="wetting_drying" group="wetting_drying">
+If true, prevent cells from drying past config_min_cell_height.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_drying_min_cell_height" type="real"
+	category="wetting_drying" group="wetting_drying">
+Minimum allowable cell height under drying.  Cell to be kept wet to at least this thickness. When ramp is applied this is the min edge height
+
+Valid values: any positive real, typically 1.0e-3
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_zero_drying_velocity" type="logical"
+	category="wetting_drying" group="wetting_drying">
+If true, just zero out velocity that is contributing to drying for cell that is drying.  This option can be used to estimate acceptable minimum thicknesses for a run.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_zero_drying_velocity_ramp" type="logical"
+	category="wetting_drying" group="wetting_drying">
+If true, ramp velocities and tendencies to zero rather than applying a simple on/off switch.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_zero_drying_velocity_ramp_hmin" type="real"
+	category="wetting_drying" group="wetting_drying">
+Minimum layer thickness at which velocities and tendencies are ramped toward zero. Recommended value equal to config_drying_min_cell_height.
+
+Valid values: Any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_zero_drying_velocity_ramp_hmax" type="real"
+	category="wetting_drying" group="wetting_drying">
+Maximum layer thickness at which velocities and tendencies are ramped toward zero. Recommended values between 2x and 10x config_drying_min_cell_height.
+
+Valid values: Any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_verify_not_dry" type="logical"
+	category="wetting_drying" group="wetting_drying">
+If true, verify that cells are at least config_min_cell_height thick.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_drying_safety_height" type="real"
+	category="wetting_drying" group="wetting_drying">
+Safety factor on minimum cell height to ensure the minimum height is not violated due to round-off.
+
+Valid values: Real value greater or equal to 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_subgrid_wetting_drying" type="logical"
+	category="wetting_drying" group="wetting_drying">
+If true, use subgrid wetting and drying algorithm
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ssh_gradient_wetting_drying" type="logical"
+	category="wetting_drying" group="wetting_drying">
+If true, use take into account the ssh gradient across previously flux-limited edges in the wetting and drying algorithm
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- ocean_constants -->
 
 <entry id="config_density0" type="real"
@@ -2960,6 +3051,214 @@ Default: Defined in namelist_defaults.xml
 Number of levels in subgrid lookup tables
 
 Valid values: Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations subgrid table levels definition.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_topography_extrapolation_method" type="char*1024"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+extrapolation method
+
+Valid values: nearest/constant
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_topography_extrapolation_constant_value" type="real"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+value to be used in the extrapolcation method if it is set to constant
+
+Valid values: any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_use_thin_layer" type="logical"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+Whether to include thin layer in subgrid tables
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_edge_bathymetry_max_pixel" type="logical"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+Use maximum elevation pixels as subgrid bathymetry on cell edges
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_refinement_level" type="integer"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+Level of refinement to evaluate subgrid bathymety
+
+Valid values: Any positive integer number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_ssh_table_min" type="real"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+value to be used in the minimum sea surface height in the subgrid lookup table
+
+Valid values: any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_ssh_table_max" type="real"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+value to be used in the maximum sea surface height in the subgrid lookup table
+
+Valid values: any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_topography_source" type="char*1024"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+If 'latlon_file/xy_file', reads in topography from file specified in config_subgrid_topography_file
+
+Valid values: 'latlon_file' or 'xy_file'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_topography_file" type="char*1024"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+Path to the topography initial condition file.
+
+Valid values: path/to/topography/file.nc
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_topography_latlon_degrees" type="logical"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+Logical flag that controls if the Lat/Lon fields for topography should be converted to radians. True means input is degrees, false means input is radians.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_topography_nlat_dimname" type="char*1024"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+Dimension name for the latitude in the topography file.
+
+Valid values: Dimension name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_topography_nlon_dimname" type="char*1024"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+Dimension name for the longitude in the topography file.
+
+Valid values: Dimension name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_topography_lat_varname" type="char*1024"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+Variable name for the latitude in the topography file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_topography_lon_varname" type="char*1024"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+Variable name for the longitude in the topography file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_topography_varname" type="char*1024"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+Variable name for the topography in the topography file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_topography_fill_value" type="real"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+fill value in the topography file.
+
+Valid values: any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_topography_positive" type="char*1024"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+direction in which the topo value is positive
+
+Valid values: up/down
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_lulc_source" type="char*1024"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+If 'latlon_file/xy_file', reads in lulc from file specified in config_subgrid_lulc_file
+
+Valid values: 'latlon_file' or 'xy_file'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_lulc_file" type="char*1024"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+Path to the lulc initial condition file.
+
+Valid values: path/to/lulc/file.nc
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_lulc_latlon_degrees" type="logical"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+Logical flag that controls if the Lat/Lon fields for lulc should be converted to radians. True means input is degrees, false means input is radians.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_lulc_nlat_dimname" type="char*1024"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+Dimension name for the latitude in the lulc file.
+
+Valid values: Dimension name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_lulc_nlon_dimname" type="char*1024"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+Dimension name for the longitude in the lulc file.
+
+Valid values: Dimension name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_lulc_lat_varname" type="char*1024"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+Variable name for the latitude in the lulc file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_lulc_lon_varname" type="char*1024"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+Variable name for the longitude in the lulc file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_lulc_varname" type="char*1024"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+Variable name for the lulc in the lulc file.
+
+Valid values: Variable name from input file.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_subgrid_lulc_fill_value" type="real"
+	category="init_mode_subgrid" group="init_mode_subgrid">
+fill value in the lulc file.
+
+Valid values: any real number
 Default: Defined in namelist_defaults.xml
 </entry>
 

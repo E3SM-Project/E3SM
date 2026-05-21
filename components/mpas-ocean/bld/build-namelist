@@ -949,6 +949,22 @@ add_default($nl, 'config_Rayleigh_bottom_damping_coeff');
 add_default($nl, 'config_use_vegetation_drag');
 add_default($nl, 'config_vegetation_drag_coefficient');
 
+##################################
+# Namelist group: wetting_drying #
+##################################
+
+add_default($nl, 'config_use_wetting_drying');
+add_default($nl, 'config_prevent_drying');
+add_default($nl, 'config_drying_min_cell_height');
+add_default($nl, 'config_zero_drying_velocity');
+add_default($nl, 'config_zero_drying_velocity_ramp');
+add_default($nl, 'config_zero_drying_velocity_ramp_hmin');
+add_default($nl, 'config_zero_drying_velocity_ramp_hmax');
+add_default($nl, 'config_verify_not_dry');
+add_default($nl, 'config_drying_safety_height');
+add_default($nl, 'config_use_subgrid_wetting_drying');
+add_default($nl, 'config_use_ssh_gradient_wetting_drying');
+
 ###################################
 # Namelist group: ocean_constants #
 ###################################
@@ -1122,6 +1138,32 @@ add_default($nl, 'config_manufactured_solution_amplitude');
 #####################################
 
 add_default($nl, 'config_subgrid_table_levels');
+add_default($nl, 'config_subgrid_topography_extrapolation_method');
+add_default($nl, 'config_subgrid_topography_extrapolation_constant_value');
+add_default($nl, 'config_subgrid_use_thin_layer');
+add_default($nl, 'config_subgrid_edge_bathymetry_max_pixel');
+add_default($nl, 'config_subgrid_refinement_level');
+add_default($nl, 'config_subgrid_ssh_table_min');
+add_default($nl, 'config_subgrid_ssh_table_max');
+add_default($nl, 'config_subgrid_topography_source');
+add_default($nl, 'config_subgrid_topography_file');
+add_default($nl, 'config_subgrid_topography_latlon_degrees');
+add_default($nl, 'config_subgrid_topography_nlat_dimname');
+add_default($nl, 'config_subgrid_topography_nlon_dimname');
+add_default($nl, 'config_subgrid_topography_lat_varname');
+add_default($nl, 'config_subgrid_topography_lon_varname');
+add_default($nl, 'config_subgrid_topography_varname');
+add_default($nl, 'config_subgrid_topography_fill_value');
+add_default($nl, 'config_subgrid_topography_positive');
+add_default($nl, 'config_subgrid_lulc_source');
+add_default($nl, 'config_subgrid_lulc_file');
+add_default($nl, 'config_subgrid_lulc_latlon_degrees');
+add_default($nl, 'config_subgrid_lulc_nlat_dimname');
+add_default($nl, 'config_subgrid_lulc_nlon_dimname');
+add_default($nl, 'config_subgrid_lulc_lat_varname');
+add_default($nl, 'config_subgrid_lulc_lon_varname');
+add_default($nl, 'config_subgrid_lulc_varname');
+add_default($nl, 'config_subgrid_lulc_fill_value');
 
 ################################################
 # Namelist group: tracer_forcing_activeTracers #
@@ -1927,6 +1969,7 @@ my @groups = qw(run_modes
                 bottom_drag
                 rayleigh_damping
                 vegetation_drag
+                wetting_drying
                 ocean_constants
                 pressure_gradient
                 eos
