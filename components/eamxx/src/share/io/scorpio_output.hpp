@@ -131,16 +131,18 @@ public:
 
   // Constructor
   AtmosphereOutput(const ekat::Comm &comm, const ekat::ParameterList &params,
-                   const std::shared_ptr<const fm_type> &field_mgr, const std::string &grid_name);
+                   const std::shared_ptr<const fm_type> &field_mgr, const std::string &grid_name,
+                   const std::string& fp_precision = "real");
 
   // Short version for outputing a list of fields (no remapping supported)
   AtmosphereOutput(const ekat::Comm &comm, const std::vector<Field> &fields,
-                   const std::shared_ptr<const grid_type> &grid);
+                   const std::shared_ptr<const grid_type> &grid,
+                   const std::string& fp_precision = "real");
 
   // Main Functions
   void restart(const std::string &filename);
-  void init();
-  void reset_scorpio_fields();
+  void init(const std::string& fp_precision);
+  void reset_tally_fields();
   void setup_output_file(const std::string &filename, const std::string &fp_precision,
                          const scorpio::FileMode mode);
 
@@ -176,7 +178,7 @@ protected:
   void computes(const util::TimeStamp& ts, const bool allow_invalid_fields);
   void process_requested_fields();
   strvec_t get_var_dimnames(const FieldLayout &layout) const;
-  void reset_scorpio_field_manager(const std::string& fp_precision);
+  void create_scorpio_field_manager(const std::string& fp_precision);
 
   // Tracking the averaging of any filled values:
   void set_avg_cnt_tracking(const FieldIdentifier& fid);
@@ -213,7 +215,7 @@ protected:
     AfterVertRemap,  // Output fields after vertical remap
     AfterHorizRemap, // Output fields after horiz remap
     AfterTally,      // Output fields after tally update (full model precision)
-    Scorpio          // Output fields to pass to scorpio (may differ from the above in case of packing)
+    Scorpio          // Output fields to pass to scorpio (may differ from the above in case of reduced precision)
   };
   std::map<Phase, std::shared_ptr<fm_type>> m_field_mgrs;
   std::map<std::string, Field> m_helper_fields;

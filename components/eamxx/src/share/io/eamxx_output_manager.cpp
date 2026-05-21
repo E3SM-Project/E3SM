@@ -66,7 +66,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
   for (const auto& sname : fields_pl.sublist_names()) {
     if (sname == "physics_pg2") pg2_grid_in_io_streams = true;
   }
-
+  const auto& fp_precision = m_params.get<std::string>("floating_point_precision");
   if (m_params.isParameter("field_names")) {
     // This is the simple case where the output parameters do not
     // list fields on grids, but just a list of fields.
@@ -79,7 +79,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
     EKAT_REQUIRE_MSG(grid_names.size()==1,
       "Error! Output requested on multiple grids but no grid information exists in output params.\n");
 
-    auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgr,*grid_names.begin());
+    auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgr,*grid_names.begin(),fp_precision);
     output->set_logger(m_atm_logger);
     m_output_streams.push_back(output);
   } else {
@@ -121,7 +121,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
         }
       }
 
-      auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgr,gname);
+      auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgr,gname,fp_precision);
       output->set_logger(m_atm_logger);
       m_output_streams.push_back(output);
     }
@@ -178,7 +178,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
         }
       }
 
-      auto output = std::make_shared<output_type>(m_io_comm,fields,grid);
+      auto output = std::make_shared<output_type>(m_io_comm,fields,grid,fp_precision);
       m_geo_data_streams.push_back(output);
     }
   }
@@ -500,7 +500,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     // If we write output, reset local views
     if (is_output_step and m_avg_type!=OutputAvgType::Instant) {
       for (auto& it : m_output_streams) {
-        it->reset_scorpio_fields();
+        it->reset_tally_fields();
       }
     }
 

@@ -62,8 +62,10 @@ has_duplicates(const std::vector<T> &c)
   return c.size() > s.size();
 }
 
-AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const std::vector<Field> &fields,
-                                   const std::shared_ptr<const grid_type> &grid)
+AtmosphereOutput::
+AtmosphereOutput(const ekat::Comm &comm, const std::vector<Field> &fields,
+                 const std::shared_ptr<const grid_type> &grid,
+                 const std::string& fp_precision)
  : m_comm(comm)
 {
   // This version of AtmosphereOutput is for quick output of fields (no remaps, no time dim)
@@ -81,15 +83,17 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const std::vector<Fie
   m_field_mgrs[FromModel] = m_field_mgrs[AfterVertRemap] = m_field_mgrs[AfterHorizRemap] = m_field_mgrs[AfterTally] = fm;
 
   // Setup I/O structures
-  init();
+  init(fp_precision);
 
   auto fname = [](const Field& f) { return f.name(); };
   m_stream_name = ekat::join(fields,fname,",");
 }
 
-AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::ParameterList &params,
-                                   const std::shared_ptr<const fm_type> &field_mgr,
-                                   const std::string &grid_name)
+AtmosphereOutput::
+AtmosphereOutput(const ekat::Comm &comm, const ekat::ParameterList &params,
+                 const std::shared_ptr<const fm_type> &field_mgr,
+                 const std::string &grid_name,
+                 const std::string& fp_precision)
  : m_comm(comm),
    m_add_time_dim(true)
 {
@@ -281,7 +285,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   }
 
   // Setup I/O structures (including the scorpio FM)
-  init ();
+  init (fp_precision);
 }
 
 AtmosphereOutput::
@@ -321,7 +325,7 @@ void AtmosphereOutput::restart (const std::string& filename)
   hist_restart.read_variables();
 }
 
-void AtmosphereOutput::init()
+void AtmosphereOutput::init(const std::string& fp_precision)
 {
   auto fm_after_hr = m_field_mgrs[AfterHorizRemap];
   auto& fm_after_tally = m_field_mgrs[AfterTally];
@@ -359,12 +363,6 @@ void AtmosphereOutput::init()
     // Store the field layout, so that calls to setup_output_file are easier
     const auto& layout = fid.get_layout();
     m_vars_dims[fname] = get_var_dimnames(m_transpose ? layout.transpose() : layout);
-
-    // Initialize a helper_field for each unique layout.  This can be used for operations
-    // such as writing transposed output.
-    if (m_transpose) {
-      create_transpose_helper(f);
-    }
 
     // Now check that all the dims of this field are already set to be registered.
     const auto& tags = layout.tags();
@@ -417,13 +415,23 @@ void AtmosphereOutput::init()
     }
   }
 
-  // By default, scorpio fields alias post-tally fields.
-  m_field_mgrs[Scorpio] = fm_after_tally;
-
   // For non-instantaneous output, ensure tally fields are
   // inited with correct value for accumulation
   if (m_avg_type!=OutputAvgType::Instant)
-    reset_scorpio_fields();
+    reset_tally_fields();
+
+  // This creates the FM containing the fields that scorpio will write during output steps
+  // (checkpoints use the AfterTally FM), which can alias the AfterTally FM fields if
+  // the requested precision is the same, and will be clones otherwise
+  create_scorpio_field_manager (fp_precision);
+
+  // Initialize a helper_field for each unique layout. These are used for computing transpose
+  if (m_transpose) {
+    for (const auto& name : m_fields_names) {
+      const auto& f = m_field_mgrs[Scorpio]->get_field(name);
+      create_transpose_helper(f);
+    }
+  }
 }
 
 void AtmosphereOutput::
@@ -600,50 +608,58 @@ run (const std::string& filename, const util::TimeStamp& ts,
     }
 
     if (is_write_step) {
-      auto& f_out = fm_scorpio->get_field(field_name);
-      f_out.deep_copy(f_tally); // If f_out aliases f_tally, this is a no-op
+      auto write = [&](const Field& f) {
+        // Write to file
+        auto func_start = std::chrono::steady_clock::now();
 
-      // NOTE: we don't divide by the avg cnt for checkpoint output
-      if (output_step and m_avg_type==OutputAvgType::Average) {
-        // Even if m_track_avg_cnt=true, this field may not need it
-        if (m_track_avg_cnt) {
-          auto avg_count = m_field_to_avg_count.at(field_name);
-
-          f_out.scale_inv(avg_count);
-
-          const auto& mask = avg_count.get_valid_mask();
-          f_out.deep_copy(constants::fill_value<Real>,mask);
-        } else {
-          // Divide by steps count only when the summation is complete
-          f_out.scale(1.0 / nsteps_since_last_output);
+        // Bring data to host and write
+        f.sync_to_host();
+        switch (f.data_type()) {
+          case DataType::FloatType:
+            scorpio::write_var(filename,field_name,f.get_internal_view_data<float,Host>());
+            break;
+          case DataType::DoubleType:
+            scorpio::write_var(filename,field_name,f.get_internal_view_data<double,Host>());
+            break;
+          case DataType::IntType:
+            scorpio::write_var(filename,field_name,f.get_internal_view_data<int,Host>());
+            break;
+          default:
+            EKAT_ERROR_MSG ("Unexpected field dtype while writing output.\n");
         }
-      }
+        auto func_finish = std::chrono::steady_clock::now();
+        auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
+        duration_write += duration_loc.count();
+      };
 
-      // Write to file
-      auto func_start = std::chrono::steady_clock::now();
-      auto& f_write = m_transpose ? m_helper_fields.at(f_out.name()) : f_out;
-      if (m_transpose) {
-        transpose(f_out,f_write);
-      }
+      if (output_step) {
+        auto& f_out = fm_scorpio->get_field(field_name);
+        f_out.deep_copy(f_tally); // If f_out aliases f_tally, this is a no-op
 
-      // Bring data to host and write
-      f_write.sync_to_host();
-      switch (f_write.data_type()) {
-        case DataType::FloatType:
-          scorpio::write_var(filename,field_name,f_write.get_internal_view_data<float,Host>());
-          break;
-        case DataType::DoubleType:
-          scorpio::write_var(filename,field_name,f_write.get_internal_view_data<double,Host>());
-          break;
-        case DataType::IntType:
-          scorpio::write_var(filename,field_name,f_write.get_internal_view_data<int,Host>());
-          break;
-        default:
-          EKAT_ERROR_MSG ("Unexpected field dtype while writing output.\n");
+        // NOTE: we don't divide by the avg cnt for checkpoint output
+        if (output_step and m_avg_type==OutputAvgType::Average) {
+          // Even if m_track_avg_cnt=true, this field may not need it
+          if (m_track_avg_cnt) {
+            auto avg_count = m_field_to_avg_count.at(field_name);
+
+            f_out.scale_inv(avg_count);
+
+            const auto& mask = avg_count.get_valid_mask();
+            f_out.deep_copy(constants::fill_value<Real>,mask);
+          } else {
+            // Divide by steps count only when the summation is complete
+            f_out.scale(1.0 / nsteps_since_last_output);
+          }
+        }
+        auto& f_write = m_transpose ? m_helper_fields.at(f_out.name()) : f_out;
+        if (m_transpose) {
+          transpose(f_out,f_write);
+        }
+        write (f_write);
+      } else {
+        // For checkpoints, write the tally field directly
+        write(f_tally);
       }
-      auto func_finish = std::chrono::steady_clock::now();
-      auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
-      duration_write += duration_loc.count();
     }
   }
 
@@ -734,7 +750,7 @@ void AtmosphereOutput::set_avg_cnt_tracking(const FieldIdentifier& fid)
 }
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::
-reset_scorpio_fields()
+reset_tally_fields()
 {
   // Reset the fields for scorpio to whatever is the proper accumulation value (if avg!=Instant)
   Real value;
@@ -759,7 +775,7 @@ reset_scorpio_fields()
 }
 
 void AtmosphereOutput::
-reset_scorpio_field_manager (const std::string& fp_precision)
+create_scorpio_field_manager (const std::string& fp_precision)
 {
   auto fm_after_tally = m_field_mgrs[AfterTally];
   auto& fm_scorpio = m_field_mgrs[Scorpio];
@@ -1019,7 +1035,6 @@ setup_output_file(const std::string& filename,
   }
 
   // Register variables with netCDF file.  Must come after dimensions are registered.
-  reset_scorpio_field_manager(fp_precision);
   register_variables(filename,fp_precision,mode);
 
   // Set the offsets of the local dofs in the global vector.
