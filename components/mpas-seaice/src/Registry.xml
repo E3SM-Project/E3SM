@@ -4364,6 +4364,12 @@
 		     dimensions="nCells Time"
 		     units="kg m-2 s-1"
 		/>
+		<var name="frazilEnergyAdjustment"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="W m-2"
+		     description="Energy adjustment for thermodynamic consistency in frazil ice coupling"
+		/>
 		<var name="uOceanVelocity"
 		     type="real"
 		     dimensions="nCells Time"

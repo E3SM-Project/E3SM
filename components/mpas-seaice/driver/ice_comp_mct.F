@@ -2126,7 +2126,8 @@ contains
 
    real (kind=RKIND) :: &
       frazilMassFlux, &
-      frazilMassFluxRev
+      frazilMassFluxRev, &
+      freezingMeltingPotentialNeeded
 
    type (block_type), pointer :: block_ptr
 
@@ -2209,6 +2210,7 @@ contains
       seaFreezingTemperature,      &
       freezingMeltingPotential,    &
       frazilMassAdjust,            &
+      frazilEnergyAdjustment,      &
       uOceanVelocity,              &
       vOceanVelocity,              &
       seaSurfaceTiltU,             &
@@ -2293,6 +2295,7 @@ contains
       call mpas_pool_get_array(oceanCoupling, 'seaFreezingTemperature', seaFreezingTemperature)
       call mpas_pool_get_array(oceanCoupling, 'freezingMeltingPotential', freezingMeltingPotential)
       call mpas_pool_get_array(oceanCoupling, 'frazilMassAdjust', frazilMassAdjust)
+      call mpas_pool_get_array(oceanCoupling, 'frazilEnergyAdjustment', frazilEnergyAdjustment)
       call mpas_pool_get_array(oceanCoupling, 'uOceanVelocity', uOceanVelocity)
       call mpas_pool_get_array(oceanCoupling, 'vOceanVelocity', vOceanVelocity)
       call mpas_pool_get_array(oceanCoupling, 'seaSurfaceTiltU', seaSurfaceTiltU)
@@ -2385,16 +2388,29 @@ contains
 
            frazilMassFlux              = x2i_i(index_x2i_Fioo_frazil, n)
 
-           ! Now determine the sea ice mass associated with the frazil heat flux given when
-           ! freezingMeltingPotential(i) is positive. This produces a revised mass flux, given
-           ! in frazilMassFluxRev for the given sea surface salinity. The resulting difference
-           ! is assigned to frazilMassAdjust(i) which is exported to the ocean in the subsequent
-           ! coupling step as a freshwater and salt flux. This step is required to balance mass
-           ! and heat with the ocean.
+           ! Thermodynamic consistency fix: Calculate the energy sea ice actually needs
+           ! to create the mass of frazil sent by ocean, accounting for mushy layer
+           ! thermodynamics (sensible heat + liquid brine fraction). The difference
+           ! between what ocean sent and what sea ice needs is balanced via the
+           ! interface heat flux instead of returning mass.
 
-           call frazil_mass(freezingMeltingPotential(i), frazilMassFluxRev, seaSurfaceSalinity(i))
+           if (frazilMassFlux > 0.0_RKIND) then
+              ! Calculate energy sea ice needs for the mass ocean sent
+              call frazil_energy_needed(frazilMassFlux, freezingMeltingPotentialNeeded, seaSurfaceSalinity(i))
 
-           frazilMassAdjust(i) = frazilMassFlux-frazilMassFluxRev
+              ! Store energy adjustment to apply to interface heat flux
+              frazilEnergyAdjustment(i) = freezingMeltingPotentialNeeded - freezingMeltingPotential(i)
+
+              ! Use adjusted energy for frazil mass calculation
+              ! Now frazilMassFluxRev will equal frazilMassFlux (no mass discrepancy!)
+              call frazil_mass(freezingMeltingPotentialNeeded, frazilMassFluxRev, seaSurfaceSalinity(i))
+           else
+              frazilEnergyAdjustment(i) = 0.0_RKIND
+              call frazil_mass(freezingMeltingPotential(i), frazilMassFluxRev, seaSurfaceSalinity(i))
+           endif
+
+           ! No mass adjustment needed with thermodynamic consistency fix
+           frazilMassAdjust(i) = 0.0_RKIND
 
         else ! non-free surface (SOM)
 
@@ -3022,13 +3038,14 @@ contains
                i2x_i(index_i2x_Faii_swnet,n) = absorbedShortwaveFlux(i)
             endif
 
-            ! i/o fluxes computed by ice, as well as additional freshwater and salt calculated at the last
-            ! coupling import and needed to grow sea ice from frazil passed from the ocean model in the
-            ! field frazilMassAdjust.
-            i2x_i(index_i2x_Fioi_melth,n) = oceanHeatFlux(i)
+            ! i/o fluxes computed by ice, with energy adjustment for thermodynamic consistency.
+            ! The frazilEnergyAdjustment accounts for the difference between ocean's simple
+            ! latent heat formulation and sea ice's mushy layer thermodynamics, ensuring
+            ! proper energy balance without spurious mass fluxes.
+            i2x_i(index_i2x_Fioi_melth,n) = oceanHeatFlux(i) - frazilEnergyAdjustment(i)/ailohi
             i2x_i(index_i2x_Fioi_swpen,n) = oceanShortwaveFlux(i)
-            i2x_i(index_i2x_Fioi_meltw,n) = oceanFreshWaterFlux(i) + frazilMassAdjust(i)/ailohi
-            i2x_i(index_i2x_Fioi_salt ,n) = oceanSaltFlux(i) + seaiceReferenceSalinity*0.001_RKIND*frazilMassAdjust(i)/ailohi
+            i2x_i(index_i2x_Fioi_meltw,n) = oceanFreshWaterFlux(i)
+            i2x_i(index_i2x_Fioi_salt ,n) = oceanSaltFlux(i)
             i2x_i(index_i2x_Fioi_taux ,n) = tauxo
             i2x_i(index_i2x_Fioi_tauy ,n) = tauyo
 
@@ -3277,6 +3294,86 @@ contains
 !EOC
 
    end subroutine frazil_mass!}}}
+
+!***********************************************************************
+!BOP
+!
+! !IROUTINE: frazil_energy_needed
+!
+! !INTERFACE
+   subroutine frazil_energy_needed(frazilMass, energyNeeded, seaSurfaceSalinity)
+!
+! !DESCRIPTION:
+! Calculate the energy (freezing potential) that sea ice thermodynamics needs
+! to create a given mass of frazil ice. This accounts for mushy layer thermodynamics
+! including sensible heat and liquid brine fraction, ensuring thermodynamic consistency
+! between ocean and sea ice models.
+!
+! !USES:
+      use icepack_intfc, only:  &
+         icepack_liquidus_temperature, &
+         icepack_enthalpy_mush
+
+! !INPUT PARAMETERS:
+      real (kind=RKIND),      intent(in)   :: frazilMass
+      real (kind=RKIND),      intent(in)   :: seaSurfaceSalinity
+
+! !OUTPUT PARAMETERS:
+      real (kind=RKIND),      intent(out)  :: energyNeeded
+
+      character(len=strKIND), pointer   :: config_thermodynamics_type
+      character(len=strKIND), pointer   :: config_column_physics_type
+
+!EOP
+!BOC
+!-----------------------------------------------------------------------
+!
+!  local variables
+!
+!-----------------------------------------------------------------------
+   real(kind=RKIND) :: &
+      Si0new,          &
+      Ti,              &
+      qi0new,          &
+      vi0new
+
+   call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)
+   call MPAS_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)
+
+   if (frazilMass > 0.0_RKIND) then
+
+      if (trim(config_thermodynamics_type) == "mushy") then  ! mushy
+         if (seaSurfaceSalinity > 2.0_RKIND * seaiceFrazilSalinityReduction) then
+             Si0new = seaSurfaceSalinity - seaiceFrazilSalinityReduction
+         else
+             Si0new = seaSurfaceSalinity**2 / (4.0_RKIND*seaiceFrazilSalinityReduction)
+         endif
+
+!         if (trim(config_column_physics_type) == "icepack") then
+            Ti = icepack_liquidus_temperature(Si0new/seaiceFrazilIcePorosity)
+            qi0new = icepack_enthalpy_mush(Ti, Si0new)
+!         endif ! config_column_physics_type
+
+      else
+         qi0new = -seaiceDensityIce*seaiceLatentHeatMelting
+      endif    ! ktherm
+
+      ! Calculate energy needed: E = (M / rho) * qi0new
+      ! Rearranging from: M = -E * rho / qi0new
+      energyNeeded = -frazilMass * qi0new / seaiceDensityIce
+
+   else
+
+      energyNeeded = 0.0_RKIND
+
+   endif
+
+! REVISION HISTORY:
+! Added for thermodynamic consistency fix - December 2024
+!-----------------------------------------------------------------------
+!EOC
+
+   end subroutine frazil_energy_needed!}}}
 
 !***********************************************************************
 !BOP
