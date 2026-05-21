@@ -10,7 +10,7 @@
 <solar_data_type>FIXED</solar_data_type>
 
 <!-- 1950 GHG values from CMIP7 input4MIPS -->
-<!-- <co2vmr>313.079e-6</co2vmr> The CMIP7 concentration set by CCSM_CO2_PPMV in drivers-mct/cime_config/config_component_e3sm.xml -->
+<!-- <co2vmr>313.079e-6</co2vmr> The CMIP7 concentration set by CCSM_CO2_PPMV in the coupler's cime_config/config_component_e3sm.xml -->
 <ch4vmr>1165.016e-9</ch4vmr>
 <n2ovmr>290.567e-9</n2ovmr>
 <f11vmr>45.454e-12</f11vmr>
@@ -49,7 +49,7 @@
 <isop_vbs_emis_file   >atm/cam/chem/trop_mozart_aero/emis/CMIP7_0.5deg/F1950/cmip7_ISOP_surf_1950_clim_0.5x0.63_c20260407.nc </isop_vbs_emis_file>
 <c10h16_emis_file     >atm/cam/chem/trop_mozart_aero/emis/CMIP7_0.5deg/F1950/cmip7_MTERP_surf_1950_clim_0.5x0.63_c20260407.nc </c10h16_emis_file>
 <nox_emis_file        >atm/cam/chem/trop_mozart_aero/emis/CMIP7_0.5deg/F1950/cmip7_NO_surf_1950_clim_0.5x0.63_c20260407.nc </nox_emis_file>
-<dms_emis_file	      >atm/cam/chem/trop_mozart_aero/emis/DMSflux.2010.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20190220.nc</dms_emis_file>
+<dms_emis_file	      >atm/cam/chem/trop_mozart_aero/emis/DMSflux.1950.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20171210.nc </dms_emis_file>
 <soag0_emis_file      >atm/cam/chem/trop_mozart_aero/emis/CMIP7_0.5deg/F1950/cmip7_SOAG0_surf_1950_clim_0.5x0.63_c20260407.nc </soag0_emis_file>
 <so2_emis_file	      >atm/cam/chem/trop_mozart_aero/emis/CMIP7_0.5deg/F1950/cmip7_so2_surf_1950_clim_0.5x0.63_c20260407.nc </so2_emis_file>
 <bc_a4_emis_file      >atm/cam/chem/trop_mozart_aero/emis/CMIP7_0.5deg/F1950/cmip7_mam5_bc_a4_surf_1950_clim_0.5x0.63_c20260407.nc </bc_a4_emis_file>
@@ -110,7 +110,6 @@
 <linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            >CYCLICAL</linoz_data_type>
 
-<!-- Turn off ozone dry deposition, as Linoz O3v2 and ozone are not separated for now. Need to turn on ozone dry deposition when interactive tropospheric chemistry is implemented -->
 <drydep_method       >'xactive_lnd'</drydep_method>
 <drydep_list         >'O3','H2O2','CH2O','CH3OOH','NO','NO2','HNO3','HO2NO2','PAN','CO','CH3COCH3','C2H5OOH','CH3CHO','H2SO4','SO2','NO3','N2O5','SOAG0','SOAG15','SOAG24','SOAG35','SOAG34','SOAG33','SOAG32','SOAG31'</drydep_list>
 <gas_wetdep_method   >'NEU'</gas_wetdep_method>
