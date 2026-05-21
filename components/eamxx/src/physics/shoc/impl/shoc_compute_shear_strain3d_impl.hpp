@@ -112,6 +112,9 @@ void Functions<S,D>::assemble_shoc_shear_strain3d(
   // components and SHOC-computed vertical components, then form the symmetric strain invariant.
   team.team_barrier();
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
+    constexpr Scalar one_half = Scalar(0.5);
+    constexpr Scalar two = Scalar(2.0);
+
     const Pack A00 = shear_strain3d_components(0,k);
     const Pack A01 = shear_strain3d_components(1,k);
     const Pack A10 = shear_strain3d_components(2,k);
@@ -126,13 +129,13 @@ void Functions<S,D>::assemble_shoc_shear_strain3d(
     const Pack S00 = A00;
     const Pack S11 = A11;
     const Pack S22 = A22;
-    const Pack S01 = 0.5 * (A01 + A10);
-    const Pack S02 = 0.5 * (A02 + A20);
-    const Pack S12 = 0.5 * (A12 + A21);
+    const Pack S01 = one_half * (A01 + A10);
+    const Pack S02 = one_half * (A02 + A20);
+    const Pack S12 = one_half * (A12 + A21);
 
     shear_strain3d(k) =
-      2.0 * (S00*S00 + S11*S11 + S22*S22
-           + 2.0*S01*S01 + 2.0*S02*S02 + 2.0*S12*S12);
+      two * (S00*S00 + S11*S11 + S22*S22
+           + two*S01*S01 + two*S02*S02 + two*S12*S12);
   });
 }
 
