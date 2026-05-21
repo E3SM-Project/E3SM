@@ -110,7 +110,7 @@ void testBackVertMix() {
    I4 NCellsSize       = Mesh->NCellsSize;
    I4 NEdgesSize       = Mesh->NEdgesSize;
    I4 NEdgesAll        = Mesh->NEdgesAll;
-   OMEGA_SCOPE(ZMid, VCoord->ZMid);
+   OMEGA_SCOPE(GeomZMid, VCoord->GeomZMid);
 
    /// Get VertMix instance to test
    VertMix *TestVertMix = VertMix::getInstance();
@@ -130,7 +130,7 @@ void testBackVertMix() {
 
    parallelFor(
        "populateArrays", {Mesh->NCellsAll, NVertLayers},
-       KOKKOS_LAMBDA(I4 ICell, I4 K) { ZMid(ICell, K) = -K; });
+       KOKKOS_LAMBDA(I4 ICell, I4 K) { GeomZMid(ICell, K) = -K; });
 
    parallelFor(
        "populateArrays", {NEdgesAll, NVertLayers},
@@ -236,7 +236,7 @@ void testConvVertMix() {
    VCoord->NVertLayers = NVertLayers;
    I4 NCellsSize       = Mesh->NCellsSize;
    I4 NEdgesAll        = Mesh->NEdgesAll;
-   OMEGA_SCOPE(ZMid, VCoord->ZMid);
+   OMEGA_SCOPE(GeomZMid, VCoord->GeomZMid);
 
    /// Get VertMix instance to test
    VertMix *TestVertMix = VertMix::getInstance();
@@ -256,7 +256,7 @@ void testConvVertMix() {
 
    parallelFor(
        "populateArrays", {Mesh->NCellsAll, NVertLayers},
-       KOKKOS_LAMBDA(I4 ICell, I4 K) { ZMid(ICell, K) = -K; });
+       KOKKOS_LAMBDA(I4 ICell, I4 K) { GeomZMid(ICell, K) = -K; });
 
    parallelFor(
        "populateArrays", {NEdgesAll, NVertLayers},
@@ -363,7 +363,7 @@ void testShearVertMix() {
    VCoord->NVertLayers = NVertLayers;
    I4 NCellsSize       = Mesh->NCellsSize;
    I4 NEdgesAll        = Mesh->NEdgesAll;
-   OMEGA_SCOPE(ZMid, VCoord->ZMid);
+   OMEGA_SCOPE(GeomZMid, VCoord->GeomZMid);
    OMEGA_SCOPE(NEdgesOnCell, Mesh->NEdgesOnCell);
    OMEGA_SCOPE(AreaCell, Mesh->AreaCell);
    OMEGA_SCOPE(DcEdge, Mesh->DcEdge);
@@ -388,7 +388,7 @@ void testShearVertMix() {
    parallelFor(
        "populateArrays", {Mesh->NCellsAll, NVertLayers},
        KOKKOS_LAMBDA(I4 ICell, I4 K) {
-          ZMid(ICell, K)      = -K;
+          GeomZMid(ICell, K)  = -K;
           NEdgesOnCell(ICell) = 5;
           AreaCell(ICell)     = 3.6e10_Real;
        });
@@ -513,7 +513,7 @@ void testTotalVertMix() {
    VCoord->NVertLayers = NVertLayers;
    I4 NCellsSize       = Mesh->NCellsSize;
    I4 NEdgesAll        = Mesh->NEdgesAll;
-   OMEGA_SCOPE(ZMid, VCoord->ZMid);
+   OMEGA_SCOPE(GeomZMid, VCoord->GeomZMid);
    OMEGA_SCOPE(NEdgesOnCell, Mesh->NEdgesOnCell);
    OMEGA_SCOPE(AreaCell, Mesh->AreaCell);
    OMEGA_SCOPE(DcEdge, Mesh->DcEdge);
@@ -540,7 +540,7 @@ void testTotalVertMix() {
    parallelFor(
        "populateArrays", {Mesh->NCellsAll, NVertLayers},
        KOKKOS_LAMBDA(I4 ICell, I4 K) {
-          ZMid(ICell, K)      = -K;
+          GeomZMid(ICell, K)  = -K;
           NEdgesOnCell(ICell) = 5;
           AreaCell(ICell)     = 3.6e10_Real;
        });

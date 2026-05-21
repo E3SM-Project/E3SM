@@ -22,7 +22,7 @@ namespace OMEGA {
 
 /// A class for the ocean prognostic variable information
 
-/// The OceanState class provides a container for the layer thickness,
+/// The OceanState class provides a container for the pseudo-thickness,
 /// and normal velocity variables. It contains methods which handle
 /// IO and time level updates.
 class OceanState {
@@ -82,16 +82,17 @@ class OceanState {
 
    // Prognostic variables
 
-   std::vector<Array2DReal> LayerThickness; ///< Device LayerThickness array
-   std::vector<HostArray2DReal> LayerThicknessH; ///< Host LayerThickness array
+   std::vector<Array2DReal> PseudoThickness; ///< Device PseudoThickness array
+   std::vector<HostArray2DReal>
+       PseudoThicknessH; ///< Host PseudoThickness array
 
    std::vector<Array2DReal> NormalVelocity; ///< Device NormalVelocity array
    std::vector<HostArray2DReal> NormalVelocityH; ///< Host NormalVelocity array
 
    // Field names
    // These are appended with the State name for non-Default state instances
-   std::string LayerThicknessFldName; ///< Field name for LayerThickness
-   std::string NormalVelocityFldName; ///< Field name for NormalVelocity
+   std::string PseudoThicknessFldName; ///< Field name for PseudoThickness
+   std::string NormalVelocityFldName;  ///< Field name for NormalVelocity
    std::string StateGroupName;
 
    // Methods
@@ -109,11 +110,11 @@ class OceanState {
           const int NTimeLevels    ///< [in] Number of time levels
    );
 
-   /// Get layer thickness device array at given time level
-   Array2DReal getLayerThickness(const I4 TimeLevel) const;
+   /// Get pseudo-thickness device array at given time level
+   Array2DReal getPseudoThickness(const I4 TimeLevel) const;
 
-   /// Get layer thickness host array at given time level
-   HostArray2DReal getLayerThicknessH(const I4 TimeLevel) const;
+   /// Get pseudo-thickness host array at given time level
+   HostArray2DReal getPseudoThicknessH(const I4 TimeLevel) const;
 
    /// Get normal velocity device array at given time level
    Array2DReal getNormalVelocity(const I4 TimeLevel) const;

@@ -94,18 +94,18 @@ class VertCoord {
    // Variables computed
    Array2DReal PressureInterface;
    Array2DReal PressureMid;
-   Array2DReal ZInterface;
-   Array2DReal ZMid;
+   Array2DReal GeomZInterface;
+   Array2DReal GeomZMid;
    Array2DReal GeopotentialMid;
-   Array2DReal LayerThicknessTarget;
+   Array2DReal PseudoThicknessTarget;
    Array1DReal SshCell;
 
    HostArray2DReal PressureInterfaceH;
    HostArray2DReal PressureMidH;
-   HostArray2DReal ZInterfaceH;
-   HostArray2DReal ZMidH;
+   HostArray2DReal GeomZInterfaceH;
+   HostArray2DReal GeomZMidH;
    HostArray2DReal GeopotentialMidH;
-   HostArray2DReal LayerThicknessTargetH;
+   HostArray2DReal PseudoThicknessTargetH;
    HostArray1DReal SshCellH;
 
    // Vertical loop bounds
@@ -152,10 +152,10 @@ class VertCoord {
    HostArray2DReal VertexMaskH; ///< Mask to determine if computations should be
                                 ///  done on vertex
 
-   // BottomDepth read from mesh file
-   Array1DReal BottomDepth;
+   // BottomGeomDepth read from mesh file
+   Array1DReal BottomGeomDepth;
 
-   HostArray1DReal BottomDepthH;
+   HostArray1DReal BottomGeomDepthH;
 
    // TODO: Temporary handling of SurfacePressure
    Array1DReal SurfacePressure;
@@ -168,19 +168,21 @@ class VertCoord {
    std::string GroupName;
 
    // Field names
-   std::string MinLayerCellFldName;   ///< Field name for MinLayerCell
-   std::string MaxLayerCellFldName;   ///< Field name for MaxLayerCell
-   std::string BottomDepthFldName;    ///< Field name for BottomDepth
-   std::string RefPseudoThickFldName; ///< Field name for RefPseudoThickness
+   std::string MinLayerCellFldName;    ///< Field name for MinLayerCell
+   std::string MaxLayerCellFldName;    ///< Field name for MaxLayerCell
+   std::string BottomGeomDepthFldName; ///< Field name for BottomGeomDepth
+   std::string RefPseudoThickFldName;  ///< Field name for RefPseudoThickness
    std::string
        VCoordMvmtWgtsFldName;      ///< Field name for VertCoordMovementWeights
    std::string PressInterfFldName; ///< Field name for interface pressure
    std::string PressMidFldName;    ///< Field name for midpoint pressure
-   std::string ZInterfFldName;     ///< Field name for interface Z height
-   std::string ZMidFldName;        ///< Field name for midpoint Z height
-   std::string GeopotFldName;      ///< Field name for geopotential
-   std::string LyrThickTargetFldName; ///< Field name for target thickness
-   std::string SshFldName;            ///< Field name for sea surface height
+   std::string
+       GeomZInterfFldName;      ///< Field name for interface geometric height
+   std::string GeomZMidFldName; ///< Field name for midpoint geometric height
+   std::string GeopotFldName;   ///< Field name for geopotential
+   std::string
+       PseudoThicknessTargetFldName; ///< Field name for target thickness
+   std::string SshFldName;           ///< Field name for sea surface height
 
    // methods
 
@@ -229,19 +231,19 @@ class VertCoord {
 
    /// Sums the mass thickness times g from the top layer down, starting with
    /// the surface pressure
-   void
-   computePressure(const Array2DReal &LayerThickness, ///< [in] pseudo thickness
-                   const Array1DReal &SurfacePressure ///< [in] surface pressure
+   void computePressure(
+       const Array2DReal &PseudoThickness, ///< [in] pseudo-thickness
+       const Array1DReal &SurfacePressure  ///< [in] surface pressure
    );
 
    /// Sum the mass thickness times specific volume from the bottom layer up,
    /// starting with the bottom elevation
-   void
-   computeZHeight(const Array2DReal &LayerThickness, ///< [in] pseudo thickness
-                  const Array2DReal &SpecVol);       ///< [in] specific volume
+   void computeGeomZHeight(
+       const Array2DReal &PseudoThickness, ///< [in] pseudo-thickness
+       const Array2DReal &SpecVol);        ///< [in] specific volume
 
-   /// Sum the z height times g, the tidal potential, and self attraction and
-   /// loading
+   /// Sum the geometric height times g, the tidal potential, and self
+   /// attraction and loading
    void computeGeopotential(
        const Array1DReal &TidalPotential, ///< [in] tidal potential
        const Array1DReal

@@ -54,7 +54,7 @@ void RungeKutta4Stepper::finalizeInit() {
    if (!MeshHalo)
       LOG_CRITICAL("Invalid MeshHalo");
 
-   int NVertLayers = Tend->LayerThicknessTend.extent_int(1);
+   int NVertLayers = Tend->PseudoThicknessTend.extent_int(1);
    int NTracers    = Tracers::getNumTracers();
    int NCellsSize  = Mesh->NCellsSize;
    int NTimeLevels = 1; // for provisional tracer

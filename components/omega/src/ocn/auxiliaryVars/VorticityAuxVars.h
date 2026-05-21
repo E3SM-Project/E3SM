@@ -24,7 +24,7 @@ class VorticityAuxVars {
 
    KOKKOS_FUNCTION void
    computeVarsOnVertex(int IVertex, int KChunk,
-                       const Array2DReal &LayerThickCell,
+                       const Array2DReal &PseudoThickCell,
                        const Array2DReal &NormalVelEdge) const {
 
       const int KStartVertex = chunkStart(KChunk, MinLayerVertexTop(IVertex));
@@ -34,8 +34,8 @@ class VorticityAuxVars {
 
       const Real InvAreaTriangle = 1._Real / AreaTriangle(IVertex);
 
-      Real LayerThickVertex[VecLength] = {0};
-      Real RelVortVertexTmp[VecLength] = {0};
+      Real PseudoThickVertex[VecLength] = {0};
+      Real RelVortVertexTmp[VecLength]  = {0};
 
       for (int J = 0; J < VertexDegree; ++J) {
          const int JCell = CellsOnVertex(IVertex, J);
@@ -45,9 +45,9 @@ class VorticityAuxVars {
 
          for (int K = KStartCell; K <= KEndCell; ++K) {
             const int KVec = K - KStartVertex;
-            LayerThickVertex[KVec] += InvAreaTriangle *
-                                      KiteAreasOnVertex(IVertex, J) *
-                                      LayerThickCell(JCell, K);
+            PseudoThickVertex[KVec] += InvAreaTriangle *
+                                       KiteAreasOnVertex(IVertex, J) *
+                                       PseudoThickCell(JCell, K);
          }
 
          const int JEdge = EdgesOnVertex(IVertex, J);
@@ -64,14 +64,14 @@ class VorticityAuxVars {
       }
 
       for (int KVec = 0; KVec < KLenVertex; ++KVec) {
-         const int K                    = KStartVertex + KVec;
-         const Real InvLayerThickVertex = 1._Real / LayerThickVertex[KVec];
+         const int K                     = KStartVertex + KVec;
+         const Real InvPseudoThickVertex = 1._Real / PseudoThickVertex[KVec];
 
          RelVortVertex(IVertex, K) = RelVortVertexTmp[KVec];
          NormRelVortVertex(IVertex, K) =
-             RelVortVertexTmp[KVec] * InvLayerThickVertex;
+             RelVortVertexTmp[KVec] * InvPseudoThickVertex;
          NormPlanetVortVertex(IVertex, K) =
-             FVertex(IVertex) * InvLayerThickVertex;
+             FVertex(IVertex) * InvPseudoThickVertex;
       }
    }
 

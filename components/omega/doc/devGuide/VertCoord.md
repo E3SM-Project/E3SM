@@ -16,7 +16,7 @@ VertCoord::init(const bool ReadStream = true, const int NVertLayers = 0)
 These arguments provide flexibility, particularly for unit testing. When `init(false)` is used, the method skips reading
 the `InitialVertCoord` stream. This is useful for unit tests that rely on meshes lacking the fields required by that stream.
 In this case, the min/max layer arrays are initialized with default values based on the number of vertical layers, and
-`bottomDepth` remains uninitialized. Some tests may utilize a specific number of vertical layers that differs from what is
+`BottomGeomDepth` remains uninitialized. Some tests may utilize a specific number of vertical layers that differs from what is
 defined in the mesh file. To handle this, the `VertCoord` can be initialized with `init(false, LocNVertLayers)` to explicitly
 set the number of vertical layers. An argument for `ReadStream` must be provided in order to explicitly set `NVertLayers`.
 For example, `init(42)` is invalid, `init(false, 42)` must be called instead.
@@ -52,10 +52,10 @@ A list of member variables along with their types and dimension sizes is below:
 | ------------- | ---- | ---------- |
 | PressureInterface | Real | NCellsSize, NVertLayersP1 |
 | PressureMid | Real | NCellsSize, NVertLayers |
-| ZInterface | Real | NCellsSize, NVertLayersP1|
-| ZMid | Real | NCellsSize, NVertLayers |
+| GeomZInterface | Real | NCellsSize, NVertLayersP1|
+| GeomZMid | Real | NCellsSize, NVertLayers |
 | GeopotentialMid | Real | NCellsSize, NVertLayers |
-| LayerThicknessTarget | Real | NCellsSize, NVertLayers|
+| PseudoThicknessTarget | Real | NCellsSize, NVertLayers|
 | MinLayerCell | Integer | NCellsSize |
 | MaxLayerCell | Integer | NCellsSize |
 | MinLayerEdgeTop | Integer| NEdgesSize |
@@ -68,7 +68,7 @@ A list of member variables along with their types and dimension sizes is below:
 | MaxLayerVertexBot | Integer | NVerticesSize |
 | VertCoordMovementWeights | Real | NCellsSize, NVertLayers |
 | RefPseudoThickness | Real | NCellsSize, NVertLayers |
-| BottomDepth | Real | NCellsSize |
+| BottomGeomDepth | Real | NCellsSize |
 
 ### Removal
 
@@ -83,7 +83,7 @@ VertCoord.clear();
 
 ### Use of hierarchical parallelism
 
-The methods `computePressure` and `computeZHeight` are similar in that they use hierarchical parallelism to split the work for horizontal cells over teams of threads, with a `parallel_for`.
+The methods `computePressure` and `computeGeomZHeight` are similar in that they use hierarchical parallelism to split the work for horizontal cells over teams of threads, with a `parallel_for`.
 This is done with a `TeamPolicy`:
 ```c++
 const auto Policy = TeamPolicy(NCellsAll, OMEGA_TEAMSIZE, 1);
@@ -106,14 +106,14 @@ Kokkos::parallel_scan(
 }
 ```
 where `KMax` and `KMin` are the maximum and minimum active vertical layer indices.
-In `computeTargetThickness` an outer loop divides the horizontal cells over teams of threads as above, however, there is a nested `parallel_reduce` that computes the column sum of the reference layer thicknesses times the vertical coordinate movement weights among threads in a team:
+In `computeTargetThickness` an outer loop divides the horizontal cells over teams of threads as above, however, there is a nested `parallel_reduce` that computes the column sum of the reference pseudo-thicknesses times the vertical coordinate movement weights among threads in a team:
 ```c++
 Real SumWh 0= 0;
 Kokkos::parallel_reduce(
     Kokkos::TeamThreadRange(Member, KMin, KMax + 1),
     [=](const int K, Real &LocalWh) {
        LocalWh += VertCoordMovementWeights(ICell, K) *
-                  RefLayerThickness(ICell, K);
+                  RefPseudoThickness(ICell, K);
     },
     SumWh);
 ```

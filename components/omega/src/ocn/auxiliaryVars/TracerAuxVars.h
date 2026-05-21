@@ -20,7 +20,7 @@ class TracerAuxVars {
 
    KOKKOS_FUNCTION void
    computeVarsOnCells(int L, int ICell, int KChunk,
-                      const Array2DReal &LayerThickEdgeMean,
+                      const Array2DReal &MeanPseudoThickEdge,
                       const Array3DReal &TrCell) const {
 
       const int KStartCell = chunkStart(KChunk, MinLayerCell(ICell));
@@ -47,7 +47,7 @@ class TracerAuxVars {
             const Real TracerGrad = TrCell(L, JCell1, K) - TrCell(L, JCell0, K);
             Del2TrCellTmp[KVec] -= EdgeMask(JEdge, K) *
                                    EdgeSignOnCell(ICell, J) * DvDcEdge *
-                                   LayerThickEdgeMean(JEdge, K) * TracerGrad;
+                                   MeanPseudoThickEdge(JEdge, K) * TracerGrad;
          }
       }
       for (int KVec = 0; KVec < KLenCell; ++KVec) {

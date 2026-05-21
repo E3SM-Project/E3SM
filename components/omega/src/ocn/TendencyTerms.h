@@ -21,19 +21,19 @@
 
 namespace OMEGA {
 
-/// Divergence of thickness flux at cell centers, for updating layer thickness
-/// arrays
-class ThicknessFluxDivOnCell {
+/// Divergence of pseudo-thickness flux at cell centers, for updating
+/// pseudo-thickness arrays
+class PseudoThicknessFluxDivOnCell {
  public:
    bool Enabled = false;
 
    /// constructor declaration
-   ThicknessFluxDivOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
+   PseudoThicknessFluxDivOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
 
-   /// The functor takes cell index, vertical chunk index, and thickness flux
-   /// array as inputs, outputs the tendency array
+   /// The functor takes cell index, vertical chunk index, and pseudo-thickness
+   /// flux array as inputs, outputs the tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 ICell, I4 KChunk,
-                                   const Array2DReal &ThicknessFlux,
+                                   const Array2DReal &PseudoThicknessFlux,
                                    const Array2DReal &NormalVelEdge) const {
 
       const I4 KStartCell = chunkStart(KChunk, MinLayerCell(ICell));
@@ -52,8 +52,8 @@ class ThicknessFluxDivOnCell {
          for (int K = KStartEdge; K <= KEndEdge; ++K) {
             const I4 KVec = K - KStartCell;
             DivTmp[KVec] -= DvEdge(JEdge) * EdgeSignOnCell(ICell, J) *
-                            ThicknessFlux(JEdge, K) * NormalVelEdge(JEdge, K) *
-                            InvAreaCell;
+                            PseudoThicknessFlux(JEdge, K) *
+                            NormalVelEdge(JEdge, K) * InvAreaCell;
          }
       }
 
@@ -91,7 +91,7 @@ class PotentialVortHAdvOnEdge {
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
                                    const Array2DReal &NormRVortEdge,
                                    const Array2DReal &NormFEdge,
-                                   const Array2DReal &FluxLayerThickEdge,
+                                   const Array2DReal &FluxPseudoThickEdge,
                                    const Array2DReal &NormVelEdge) const {
 
       const I4 KStart = chunkStart(KChunk, MinLayerEdgeBot(IEdge));
@@ -107,7 +107,7 @@ class PotentialVortHAdvOnEdge {
                             0.5_Real;
 
             VortTmp[KVec] += WeightsOnEdge(IEdge, J) *
-                             FluxLayerThickEdge(JEdge, K) *
+                             FluxPseudoThickEdge(JEdge, K) *
                              NormVelEdge(JEdge, K) * NormVort;
          }
       }
@@ -171,7 +171,7 @@ class SSHGradOnEdge {
    SSHGradOnEdge(const HorzMesh *Mesh, const VertCoord *VCoord);
 
    /// The functor takes edge index, vertical chunk index, and array of
-   /// layer thickness/SSH, outputs tendency array
+   /// pseudo-thickness/SSH, outputs tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
                                    const Array1DReal &SshCell) const {
 
@@ -309,14 +309,14 @@ class WindForcingOnEdge {
    WindForcingOnEdge(const HorzMesh *Mesh, const VertCoord *VCoord);
 
    /// The functor takes the edge index, vertical chunk index, and arrays for
-   /// normal wind stress and edge layer thickness, outputs tendency array
+   /// normal wind stress and edge pseudo-thickness, outputs tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
                                    const Array1DReal &NormalStressEdge,
-                                   const Array2DReal &LayerThickEdge) const {
+                                   const Array2DReal &PseudoThickEdge) const {
       if (KChunk == 0) {
          const I4 K = MinLayerEdgeBot(IEdge);
 
-         const Real InvThickEdge = 1._Real / LayerThickEdge(IEdge, K);
+         const Real InvThickEdge = 1._Real / PseudoThickEdge(IEdge, K);
          Tend(IEdge, K) += EdgeMask(IEdge, K) * InvThickEdge *
                            NormalStressEdge(IEdge) / RhoSw;
       }
@@ -338,11 +338,11 @@ class BottomDragOnEdge {
 
    /// The functor takes the edge index and arrays for
    /// horizontal velocity, kinetic energy,
-   /// and edge layer thickness, outputs tendency array
+   /// and edge pseudo-thickness, outputs tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge,
                                    const Array2DReal &NormalVelEdge,
                                    const Array2DReal &KECell,
-                                   const Array2DReal &LayerThickEdge) const {
+                                   const Array2DReal &PseudoThickEdge) const {
       const I4 KBot = MaxLayerEdgeTop(IEdge);
 
       const I4 JCell0 = CellsOnEdge(IEdge, 0);
@@ -351,7 +351,7 @@ class BottomDragOnEdge {
       const Real VelNormEdge =
           Kokkos::sqrt(KECell(JCell0, KBot) + KECell(JCell1, KBot));
 
-      const Real InvThickEdge = 1._Real / LayerThickEdge(IEdge, KBot);
+      const Real InvThickEdge = 1._Real / PseudoThickEdge(IEdge, KBot);
       Tend(IEdge, KBot) -= EdgeMask(IEdge, KBot) * Coeff * VelNormEdge *
                            InvThickEdge * NormalVelEdge(IEdge, KBot);
    }
@@ -374,7 +374,7 @@ class TracerHorzAdvOnCell {
    void init();
    KOKKOS_FUNCTION void operator()(const I4 L, const I4 IEdge, const I4 KChunk,
                                    const Array3DReal &TracerCell,
-                                   const Array2DReal &FluxLayerThickEdge,
+                                   const Array2DReal &FluxPseudoThickEdge,
                                    const Array2DReal &NormVelEdge) const {
       const I4 KStart = KChunk * VecLength;
       const I4 KEnd   = KStart + VecLength;
@@ -384,13 +384,14 @@ class TracerHorzAdvOnCell {
          for (int I = 0; I < NAdvCellsForEdge(IEdge); ++I) {
             const I4 ICell = AdvCellsForEdge(IEdge, I);
             for (int K = KStart; K < KEnd; ++K) {
-               const Real NormalThicknessFlux =
-                   FluxLayerThickEdge(IEdge, K) * NormVelEdge(IEdge, K);
+               const Real NormalPseudoThicknessFlux =
+                   FluxPseudoThickEdge(IEdge, K) * NormVelEdge(IEdge, K);
                const Real TracerWgt =
                    (AdvCoefs(I, IEdge) +
-                    Coef3rdOrder * std::copysign(1._Real, NormalThicknessFlux) *
+                    Coef3rdOrder *
+                        std::copysign(1._Real, NormalPseudoThicknessFlux) *
                         AdvCoefs3rd(I, IEdge)) *
-                   NormalThicknessFlux;
+                   NormalPseudoThicknessFlux;
                HighOrderFlxHorz(L, IEdge, K) +=
                    TracerWgt * TracerCell(L, ICell, K);
             }
@@ -399,10 +400,10 @@ class TracerHorzAdvOnCell {
          for (int K = KStart; K < KEnd; ++K) {
             const I4 JCell0 = CellsOnEdge(IEdge, 0);
             const I4 JCell1 = CellsOnEdge(IEdge, 1);
-            const Real NormalThicknessFlux =
-                FluxLayerThickEdge(IEdge, K) * NormVelEdge(IEdge, K);
+            const Real NormalPseudoThicknessFlux =
+                FluxPseudoThickEdge(IEdge, K) * NormVelEdge(IEdge, K);
             const Real TracerWgt =
-                DvEdge(IEdge) * 0.5_Real * NormalThicknessFlux;
+                DvEdge(IEdge) * 0.5_Real * NormalPseudoThicknessFlux;
             HighOrderFlxHorz(L, IEdge, K) +=
                 TracerWgt *
                 (TracerCell(L, JCell1, K) + TracerCell(L, JCell0, K));
@@ -456,7 +457,7 @@ class TracerDiffOnCell {
    KOKKOS_FUNCTION void
    operator()(const Array3DReal &Tend, I4 L, I4 ICell, I4 KChunk,
               const Array3DReal &TracerCell,
-              const Array2DReal &MeanLayerThickEdge) const {
+              const Array2DReal &MeanPseudoThickEdge) const {
 
       const I4 KStartCell = chunkStart(KChunk, MinLayerCell(ICell));
       const I4 KLenCell = chunkLength(KChunk, KStartCell, MaxLayerCell(ICell));
@@ -482,7 +483,7 @@ class TracerDiffOnCell {
                 (TracerCell(L, JCell1, K) - TracerCell(L, JCell0, K));
 
             DiffTmp[KVec] -= EdgeMask(JEdge, K) * EdgeSignOnCell(ICell, J) *
-                             RTemp * MeanLayerThickEdge(JEdge, K) * TracerGrad;
+                             RTemp * MeanPseudoThickEdge(JEdge, K) * TracerGrad;
          }
       }
       for (int KVec = 0; KVec < KLenCell; ++KVec) {

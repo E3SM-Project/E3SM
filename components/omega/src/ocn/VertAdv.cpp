@@ -1,9 +1,10 @@
 //===-- ocn/VertAdv.cpp - vertical advection --------------------*- C++ -*-===//
 //
-// The VertAdv class contains methods for calculating the vertical velocity and
-// the tendencies of thickness, horizontal velocity, and tracers due to vertical
-// advective transport, and member variables for storing the vertical velocity
-// and the fluxes of tracers at vertical interfaces in each column.
+// The VertAdv class contains methods for calculating the vertical
+// pseudo-velocity and the tendencies of thickness, horizontal velocity, and
+// tracers due to vertical advective transport, and member variables for storing
+// the vertical pseudo-velocity and the fluxes of tracers at vertical interfaces
+// in each column.
 //
 //===----------------------------------------------------------------------===//
 
@@ -64,16 +65,17 @@ VertAdv::VertAdv(const std::string &Name_,  //< [in] name for new VertAdv
    NTracers      = Tracers::getNumTracers();
 
    // Allocate member arrays
-   VerticalVelocity =
-       Array2DReal("VerticalVelocity", NCellsSize, NVertLayersP1);
-   TotalVerticalVelocity =
-       Array2DReal("TotalVerticalVelocity", NCellsSize, NVertLayersP1);
+   VerticalPseudoVelocity =
+       Array2DReal("VerticalPseudoVelocity", NCellsSize, NVertLayersP1);
+   TotalVerticalPseudoVelocity =
+       Array2DReal("TotalVerticalPseudoVelocity", NCellsSize, NVertLayersP1);
    VertFlux = Array3DReal("VertFlux", NTracers, NCellsSize, NVertLayersP1);
 
    // Allocate host copies
-   VerticalVelocityH      = createHostMirrorCopy(VerticalVelocity);
-   TotalVerticalVelocityH = createHostMirrorCopy(TotalVerticalVelocity);
-   VertFluxH              = createHostMirrorCopy(VertFlux);
+   VerticalPseudoVelocityH = createHostMirrorCopy(VerticalPseudoVelocity);
+   TotalVerticalPseudoVelocityH =
+       createHostMirrorCopy(TotalVerticalPseudoVelocity);
+   VertFluxH = createHostMirrorCopy(VertFlux);
 
    // Low-order flux array only needed for flux-corrected transport
    if (VertAdvChoice == VertAdvOption::FCT) {
@@ -114,14 +116,14 @@ VertAdv *VertAdv::create(const std::string &Name, //< [in] name for new VertAdv
 void VertAdv::defineFields() {
 
    // set field names (append Name if not default)
-   VerticalVelocityFldName  = "VerticalVelocity";
-   TotalVertVelocityFldName = "TotalVerticalVelocity";
-   VertFluxFldName          = "VertFlux";
-   LowOrderVertFluxFldName  = "LowOrderVertFlux";
+   VerticalPseudoVelocityFldName  = "VerticalPseudoVelocity";
+   TotalVertPseudoVelocityFldName = "TotalVerticalPseudoVelocity";
+   VertFluxFldName                = "VertFlux";
+   LowOrderVertFluxFldName        = "LowOrderVertFlux";
 
    if (Name != "Default") {
-      VerticalVelocityFldName.append(Name);
-      TotalVertVelocityFldName.append(Name);
+      VerticalPseudoVelocityFldName.append(Name);
+      TotalVertPseudoVelocityFldName.append(Name);
       VertFluxFldName.append(Name);
       LowOrderVertFluxFldName.append(Name);
    }
@@ -132,11 +134,12 @@ void VertAdv::defineFields() {
    DimNames[0] = "NCells";
    DimNames[1] = "NVertLayersP1";
 
-   auto VerticalVelocityField = Field::create(
-       VerticalVelocityFldName,                                 // field name
-       "Vertical pseudovelocity across a pseudoheight surface", // long name or
-                                                                // description
-       "m s^-1",                                                // units
+   auto VerticalPseudoVelocityField = Field::create(
+       VerticalPseudoVelocityFldName,                             // field name
+       "Vertical pseudo-velocity across a pseudo-height surface", // long name
+                                                                  // or
+                                                                  // description
+       "m s^-1",                                                  // units
        "",                               // CF standard Name
        std::numeric_limits<Real>::min(), // min valid value
        std::numeric_limits<Real>::max(), // max valid value
@@ -145,12 +148,12 @@ void VertAdv::defineFields() {
        DimNames                          // dimension names
    );
 
-   auto TotalVertVelocityField =
-       Field::create(TotalVertVelocityFldName, // field name
-                     "Total vertical pseudovelocity across a moving, tilted "
-                     "pseudoheight surface", // long name or description
-                     "m s^-1",               // units
-                     "",                     // CF standard Name
+   auto TotalVertPseudoVelocityField =
+       Field::create(TotalVertPseudoVelocityFldName, // field name
+                     "Total vertical pseudo-velocity across a moving, tilted "
+                     "pseudo-height surface", // long name or description
+                     "m s^-1",                // units
+                     "",                      // CF standard Name
                      std::numeric_limits<Real>::min(), // min valid value
                      std::numeric_limits<Real>::max(), // max valid value
                      FillValueReal, // scalar for undefined entries
@@ -163,10 +166,11 @@ void VertAdv::defineFields() {
    DimNames[2] = "NTracers";
 
    auto VertFluxField = Field::create(
-       VertFluxFldName,                                          // field name
-       "Vertical flux of tracers across a pseudoheight surface", // long name or
-                                                                 // description
-       "",                                                       // units
+       VertFluxFldName,                                           // field name
+       "Vertical flux of tracers across a pseudo-height surface", // long name
+                                                                  // or
+                                                                  // description
+       "",                                                        // units
        "",                               // CF standard Name
        std::numeric_limits<Real>::min(), // min valid value
        std::numeric_limits<Real>::max(), // max valid value
@@ -175,18 +179,18 @@ void VertAdv::defineFields() {
        DimNames                          // dimension names
    );
 
-   auto LowOrderVertFluxField =
-       Field::create(LowOrderVertFluxFldName, // field name
-                     "Low-order vertical flux of tracers across a pseudoheight "
-                     "surface", // long name or description
-                     "",        // units
-                     "",        // CF standard Name
-                     std::numeric_limits<Real>::min(), // min valid value
-                     std::numeric_limits<Real>::max(), // max valid value
-                     FillValueReal, // scalar for undefined entries
-                     NDims,         // number of dimensions
-                     DimNames       // dimension names
-       );
+   auto LowOrderVertFluxField = Field::create(
+       LowOrderVertFluxFldName, // field name
+       "Low-order vertical flux of tracers across a pseudo-height "
+       "surface",                        // long name or description
+       "",                               // units
+       "",                               // CF standard Name
+       std::numeric_limits<Real>::min(), // min valid value
+       std::numeric_limits<Real>::max(), // max valid value
+       FillValueReal,                    // scalar for undefined entries
+       NDims,                            // number of dimensions
+       DimNames                          // dimension names
+   );
 
    GroupName = "VertAdv";
    if (Name != "Default") {
@@ -196,14 +200,15 @@ void VertAdv::defineFields() {
    // Create a field group for VertAdv fields
    auto VertAdvGroup = FieldGroup::create(GroupName);
 
-   VertAdvGroup->addField(VerticalVelocityFldName);
-   VertAdvGroup->addField(TotalVertVelocityFldName);
+   VertAdvGroup->addField(VerticalPseudoVelocityFldName);
+   VertAdvGroup->addField(TotalVertPseudoVelocityFldName);
    VertAdvGroup->addField(VertFluxFldName);
    VertAdvGroup->addField(LowOrderVertFluxFldName);
 
    // Associate Fields with data
-   VerticalVelocityField->attachData<Array2DReal>(VerticalVelocity);
-   TotalVertVelocityField->attachData<Array2DReal>(TotalVerticalVelocity);
+   VerticalPseudoVelocityField->attachData<Array2DReal>(VerticalPseudoVelocity);
+   TotalVertPseudoVelocityField->attachData<Array2DReal>(
+       TotalVerticalPseudoVelocity);
    VertFluxField->attachData<Array3DReal>(VertFlux);
    LowOrderVertFluxField->attachData<Array3DReal>(LowOrderVertFlux);
 
@@ -214,8 +219,8 @@ void VertAdv::defineFields() {
 VertAdv::~VertAdv() {
 
    if (FieldGroup::exists(GroupName)) {
-      Field::destroy(VerticalVelocityFldName);
-      Field::destroy(TotalVertVelocityFldName);
+      Field::destroy(VerticalPseudoVelocityFldName);
+      Field::destroy(TotalVertPseudoVelocityFldName);
       Field::destroy(VertFluxFldName);
       Field::destroy(LowOrderVertFluxFldName);
       FieldGroup::destroy(GroupName);
@@ -243,8 +248,8 @@ void VertAdv::erase(std::string Name) {
 // Perform deepCopy for each variable array from device to host
 void VertAdv::copyToHost() {
 
-   deepCopy(VerticalVelocityH, VerticalVelocity);
-   deepCopy(TotalVerticalVelocityH, TotalVerticalVelocity);
+   deepCopy(VerticalPseudoVelocityH, VerticalPseudoVelocity);
+   deepCopy(TotalVerticalPseudoVelocityH, TotalVerticalPseudoVelocity);
    deepCopy(VertFluxH, VertFlux);
    if (VertAdvChoice == VertAdvOption::FCT) {
       deepCopy(LowOrderVertFluxH, LowOrderVertFlux);
@@ -255,8 +260,8 @@ void VertAdv::copyToHost() {
 // Perform deepCopy for each variable array from host to device
 void VertAdv::copyToDevice() {
 
-   deepCopy(VerticalVelocity, VerticalVelocityH);
-   deepCopy(TotalVerticalVelocity, TotalVerticalVelocityH);
+   deepCopy(VerticalPseudoVelocity, VerticalPseudoVelocityH);
+   deepCopy(TotalVerticalPseudoVelocity, TotalVerticalPseudoVelocityH);
    deepCopy(VertFlux, VertFluxH);
    if (VertAdvChoice == VertAdvOption::FCT) {
       deepCopy(LowOrderVertFlux, LowOrderVertFluxH);
@@ -354,23 +359,23 @@ void VertAdv::readConfigOptions(Config *OmegaConfig) {
 } // end readConfigOptions
 
 //------------------------------------------------------------------------------
-// Compute VerticalVelocity and TotalVerticalVelocity from the horizontal
-// velocity (NormalVelocity), the layer thickness used for fluxes through
-// edges (FluxLayerThickEdge), and the cell-based LayerThickness.
-void VertAdv::computeVerticalVelocity(
-    const Array2DReal &NormalVelocity,     //< [in] horizontal velocity
-    const Array2DReal &FluxLayerThickEdge, //< [in] layer thickness at edges
-    const Array2DReal &LayerThickness,     //< [in] pseudo thickness of layer
-    const Real Dt                          //< [in] time interval
+// Compute VerticalPseudoVelocity and TotalVerticalPseudoVelocity from the
+// horizontal velocity (NormalVelocity), the pseudo-thickness used for fluxes
+// through edges (FluxPseudoThickEdge), and the cell-based PseudoThickness.
+void VertAdv::computeVerticalPseudoVelocity(
+    const Array2DReal &NormalVelocity,      //< [in] horizontal velocity
+    const Array2DReal &FluxPseudoThickEdge, //< [in] pseudo-thickness at edges
+    const Array2DReal &PseudoThickness,     //< [in] pseudo-thickness of layer
+    const Real Dt                           //< [in] time interval
 ) {
 
    // Return if mesh only has a single vertical layer
    if (NVertLayers == 1)
       return;
 
-   OMEGA_SCOPE(LocVertVel, VerticalVelocity);
-   OMEGA_SCOPE(LocTotVertVel, TotalVerticalVelocity);
-   OMEGA_SCOPE(LocThickTarget, VCoord->LayerThicknessTarget);
+   OMEGA_SCOPE(LocVertVel, VerticalPseudoVelocity);
+   OMEGA_SCOPE(LocTotVertVel, TotalVerticalPseudoVelocity);
+   OMEGA_SCOPE(LocPseudoThickTarget, VCoord->PseudoThicknessTarget);
    OMEGA_SCOPE(LocNVertLayers, NVertLayers);
    OMEGA_SCOPE(LocAreaCell, Mesh->AreaCell);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
@@ -382,7 +387,7 @@ void VertAdv::computeVerticalVelocity(
 
    // Loop over all cells owned by the task
    parallelForOuter(
-       "computeVerticalVelocity",
+       "computeVerticalPseudoVelocity",
        LaunchConfig({NCellsHalo0}, TeamScratch<Real>(NVertLayers)),
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
           ScratchArray1DReal DivHU(teamScratch(Team), LocNVertLayers);
@@ -406,7 +411,7 @@ void VertAdv::computeVerticalVelocity(
                     for (int KVec = 0; KVec < KLen; ++KVec) {
                        const I4 K = KStart + KVec;
                        DivHUTmp[KVec] -= LocDvE(JEdge) * LocESOnC(ICell, J) *
-                                         FluxLayerThickEdge(JEdge, K) *
+                                         FluxPseudoThickEdge(JEdge, K) *
                                          NormalVelocity(JEdge, K) * InvAreaCell;
                     }
                  }
@@ -440,13 +445,13 @@ void VertAdv::computeVerticalVelocity(
                  }
               });
 
-          // Add contribution to transport velocity from movement of layer
-          // interfaces, store in TotalVerticalVelocity.
+          // Add contribution to transport pseudo-velocity from movement of
+          // layer interfaces, store in TotalVerticalPseudoVelocity.
           parallelScanInner(
               Team, KRange, INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
                  const I4 KRev      = KMax - K;
-                 const Real AleTerm = (LocThickTarget(ICell, KRev) -
-                                       LayerThickness(ICell, KRev)) /
+                 const Real AleTerm = (LocPseudoThickTarget(ICell, KRev) -
+                                       PseudoThickness(ICell, KRev)) /
                                       Dt;
 
                  Accum -= DivHU(KRev) + AleTerm;
@@ -457,11 +462,11 @@ void VertAdv::computeVerticalVelocity(
               });
        });
 
-} // end computeVerticalVelocity
+} // end computeVerticalPseudoVelocity
 
 //------------------------------------------------------------------------------
 // Compute thickness tendency due to vertical advection
-void VertAdv::computeThicknessVAdvTend(
+void VertAdv::computePseudoThicknessVAdvTend(
     const Array2DReal &ThickTend //< [inout] thickness tendency
 ) {
 
@@ -475,13 +480,13 @@ void VertAdv::computeThicknessVAdvTend(
 
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
-   OMEGA_SCOPE(LocTotVertVelocity, TotalVerticalVelocity);
+   OMEGA_SCOPE(LocTotVertVelocity, TotalVerticalPseudoVelocity);
 
-   // Loop over every owned cell, pseudo thickness tendency is simply
+   // Loop over every owned cell, pseudo-thickness tendency is simply
    // difference in pseudo velocity between bottom and top interface for
    // each layer
    parallelForOuter(
-       "computeThicknessVAdvTend", {NCellsOwned},
+       "computePseudoThicknessVAdvTend", {NCellsOwned},
        KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
           const I4 KMin   = MinLayerCell(ICell);
           const I4 KMax   = MaxLayerCell(ICell);
@@ -499,14 +504,14 @@ void VertAdv::computeThicknessVAdvTend(
               });
        });
 
-} // end computeThicknessVAdvTend
+} // end computePseudoThicknessVAdvTend
 
 //------------------------------------------------------------------------------
 // Compute velocity tendency due to vertical advection
 void VertAdv::computeVelocityVAdvTend(
     const Array2DReal &VelTend,        //< [inout] horizontal velocity tendency
     const Array2DReal &NormalVelocity, //< [in] horizontal velocity
-    const Array2DReal &FluxLayerThickEdge //< [in] layer thickness at edges
+    const Array2DReal &FluxPseudoThickEdge //< [in] pseudo-thickness at edges
 ) {
 
    // Return if vertical advection velocity tendency not enabled
@@ -520,7 +525,7 @@ void VertAdv::computeVelocityVAdvTend(
    OMEGA_SCOPE(LocCOnE, Mesh->CellsOnEdge);
    OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
    OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
-   OMEGA_SCOPE(LocTotVertVelocity, TotalVerticalVelocity);
+   OMEGA_SCOPE(LocTotVertVelocity, TotalVerticalPseudoVelocity);
    OMEGA_SCOPE(EdgeMask, VCoord->EdgeMask);
    OMEGA_SCOPE(LocNVertLayersP1, NVertLayersP1);
 
@@ -562,8 +567,8 @@ void VertAdv::computeVelocityVAdvTend(
                         WAvg *
                         (NormalVelocity(IEdge, K - 1) -
                          NormalVelocity(IEdge, K)) /
-                        (0.5_Real * (FluxLayerThickEdge(IEdge, K - 1) +
-                                     FluxLayerThickEdge(IEdge, K)));
+                        (0.5_Real * (FluxPseudoThickEdge(IEdge, K - 1) +
+                                     FluxPseudoThickEdge(IEdge, K)));
                  }
               });
 
@@ -590,10 +595,10 @@ void VertAdv::computeVelocityVAdvTend(
 // Compute tracer tendency due to vertical advection, TimeStep is only needed
 // as an argument for flux-corrected transport
 void VertAdv::computeTracerVAdvTend(
-    const Array3DReal &TracerTend,     //< [inout] tracer tendencies
-    const Array3DReal &Tracers,        //< [in] tracer array
-    const Array2DReal &LayerThickness, //< [in] layer thickness
-    const TimeInterval TimeStep        //< [in] time step
+    const Array3DReal &TracerTend,      //< [inout] tracer tendencies
+    const Array3DReal &Tracers,         //< [in] tracer array
+    const Array2DReal &PseudoThickness, //< [in] pseudo-thickness
+    const TimeInterval TimeStep         //< [in] time step
 ) {
 
    // Return if vertical advection tracer tendency not enabled
@@ -605,7 +610,7 @@ void VertAdv::computeTracerVAdvTend(
       return;
 
    // Compute tracer fluxes at the interfaces
-   computeVerticalFluxes(Tracers, LayerThickness);
+   computeVerticalFluxes(Tracers, PseudoThickness);
 
    // Dispatch to appropriate algorithm based on configuration settings
    switch (VertAdvChoice) {
@@ -615,7 +620,7 @@ void VertAdv::computeTracerVAdvTend(
    case VertAdvOption::FCT:
       R8 Dt;
       TimeStep.get(Dt, TimeUnits::Seconds);
-      computeFCTVAdvTend(TracerTend, Tracers, LayerThickness, Dt);
+      computeFCTVAdvTend(TracerTend, Tracers, PseudoThickness, Dt);
       break;
    }
 
@@ -625,13 +630,13 @@ void VertAdv::computeTracerVAdvTend(
 // Compute tracer fluxes due to vertical advection, the particular scheme used
 // is chosen via configuration settings
 void VertAdv::computeVerticalFluxes(
-    const Array3DReal &Tracers,       //< [in] tracer array
-    const Array2DReal &LayerThickness //< [in] layer thickness
+    const Array3DReal &Tracers,        //< [in] tracer array
+    const Array2DReal &PseudoThickness //< [in] pseudo-thickness
 ) {
 
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
-   OMEGA_SCOPE(LocTotVertVel, TotalVerticalVelocity);
+   OMEGA_SCOPE(LocTotVertVel, TotalVerticalPseudoVelocity);
    OMEGA_SCOPE(LocVertFlux, VertFlux);
    OMEGA_SCOPE(LocLowOrderVertFlux, LowOrderVertFlux);
    OMEGA_SCOPE(LocCoef3rdOrder, Coef3rdOrder);
@@ -653,13 +658,13 @@ void VertAdv::computeVerticalFluxes(
                     const I4 KLen   = chunkLength(KChunk, KStart, KMax - 1);
                     for (int KVec = 0; KVec < KLen; ++KVec) {
                        const I4 K = KStart + KVec;
-                       const Real InvLayerThickSum =
-                           1._Real / (LayerThickness(ICell, K - 1) +
-                                      LayerThickness(ICell, K));
+                       const Real InvPseudoThickSum =
+                           1._Real / (PseudoThickness(ICell, K - 1) +
+                                      PseudoThickness(ICell, K));
                        const Real VerticalWeightK =
-                           LayerThickness(ICell, K - 1) * InvLayerThickSum;
+                           PseudoThickness(ICell, K - 1) * InvPseudoThickSum;
                        const Real VerticalWeightKm1 =
-                           LayerThickness(ICell, K) * InvLayerThickSum;
+                           PseudoThickness(ICell, K) * InvPseudoThickSum;
                        LocVertFlux(L, ICell, K) =
                            LocTotVertVel(ICell, K) *
                            (VerticalWeightK * Tracers(L, ICell, K) +
@@ -738,13 +743,13 @@ void VertAdv::computeVerticalFluxes(
              LocVertFlux(L, ICell, K) = 0._Real;
           }
           for (int K : {KMin + 1, KMax}) {
-             const Real InvLayerThickSum =
+             const Real InvPseudoThickSum =
                  1._Real /
-                 (LayerThickness(ICell, K - 1) + LayerThickness(ICell, K));
+                 (PseudoThickness(ICell, K - 1) + PseudoThickness(ICell, K));
              const Real VerticalWeightK =
-                 LayerThickness(ICell, K - 1) * InvLayerThickSum;
+                 PseudoThickness(ICell, K - 1) * InvPseudoThickSum;
              const Real VerticalWeightKm1 =
-                 LayerThickness(ICell, K) * InvLayerThickSum;
+                 PseudoThickness(ICell, K) * InvPseudoThickSum;
              LocVertFlux(L, ICell, K) =
                  LocTotVertVel(ICell, K) *
                  (VerticalWeightK * Tracers(L, ICell, K) +
@@ -821,18 +826,19 @@ void VertAdv::computeStdVAdvTend(
 
 //------------------------------------------------------------------------------
 // Compute tracer tendencies due to vertical advection using flux-corrected
-// transport scheme. ProvThickness input is provisional layer thickness after
-// horizontal thickness flux
+// transport scheme. ProvPseudoThickness input is provisional pseudo-thickness
+// after horizontal pseudo-thickness flux
 void VertAdv::computeFCTVAdvTend(
-    const Array3DReal &TracerTend,    //< [inout] tracer tendencies
-    const Array3DReal &Tracers,       //< [in] tracer array
-    const Array2DReal &ProvThickness, //< [in] provisional layer thickness
-    const Real Dt                     //< [in] time step
+    const Array3DReal &TracerTend, //< [inout] tracer tendencies
+    const Array3DReal &Tracers,    //< [in] tracer array
+    const Array2DReal
+        &ProvPseudoThickness, //< [in] provisional pseudo-thickness
+    const Real Dt             //< [in] time step
 ) {
 
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
-   OMEGA_SCOPE(LocTotVertVel, TotalVerticalVelocity);
+   OMEGA_SCOPE(LocTotVertVel, TotalVerticalPseudoVelocity);
    OMEGA_SCOPE(LocVertFlux, VertFlux);
    OMEGA_SCOPE(LocLowOrderVertFlux, LowOrderVertFlux);
    OMEGA_SCOPE(LocNVertLayers, NVertLayers);
@@ -862,7 +868,7 @@ void VertAdv::computeFCTVAdvTend(
                  for (int KVec = 0; KVec < KLen; ++KVec) {
                     const I4 K = KStart + KVec;
                     InvNewProvThick(K) =
-                        1._Real / (ProvThickness(ICell, K) +
+                        1._Real / (ProvPseudoThickness(ICell, K) +
                                    Dt * (LocTotVertVel(ICell, K + 1) -
                                          LocTotVertVel(ICell, K)));
                     Real TracerMax;
@@ -906,15 +912,15 @@ void VertAdv::computeFCTVAdvTend(
                     // values. Factors are stored in FlxIn and FlxOut
                     // scratch space.
                     Real TracerMinNew =
-                        (Tracers(L, ICell, K) * ProvThickness(ICell, K) +
+                        (Tracers(L, ICell, K) * ProvPseudoThickness(ICell, K) +
                          Dt * (WorkTend(K) + FlxOut(K))) *
                         InvNewProvThick(K);
                     Real TracerMaxNew =
-                        (Tracers(L, ICell, K) * ProvThickness(ICell, K) +
+                        (Tracers(L, ICell, K) * ProvPseudoThickness(ICell, K) +
                          Dt * (WorkTend(K) + FlxIn(K))) *
                         InvNewProvThick(K);
                     Real TracerUpwindNew =
-                        (Tracers(L, ICell, K) * ProvThickness(ICell, K) +
+                        (Tracers(L, ICell, K) * ProvPseudoThickness(ICell, K) +
                          Dt * WorkTend(K)) *
                         InvNewProvThick(K);
                     Real ScaleFactor =

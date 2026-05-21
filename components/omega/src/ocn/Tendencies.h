@@ -55,12 +55,12 @@ class Tendencies {
        std::function<void(Array2DReal, const OceanState *,
                           const AuxiliaryState *, int, int, TimeInstant)>;
    // Arrays for accumulating tendencies
-   Array2DReal LayerThicknessTend;
+   Array2DReal PseudoThicknessTend;
    Array2DReal NormalVelocityTend;
    Array3DReal TracerTend;
 
    // Instances of tendency terms
-   ThicknessFluxDivOnCell ThicknessFluxDiv;
+   PseudoThicknessFluxDivOnCell PseudoThicknessFluxDiv;
    PotentialVortHAdvOnEdge PotentialVortHAdv;
    KEGradOnEdge KEGrad;
    SSHGradOnEdge SSHGrad;
@@ -76,10 +76,10 @@ class Tendencies {
    std::string Name;
 
    // Methods to compute tendency groups
-   void computeThicknessTendencies(const OceanState *State,
-                                   const AuxiliaryState *AuxState,
-                                   int ThickTimeLevel, int VelTimeLevel,
-                                   TimeInstant Time);
+   void computePseudoThicknessTendencies(const OceanState *State,
+                                         const AuxiliaryState *AuxState,
+                                         int ThickTimeLevel, int VelTimeLevel,
+                                         TimeInstant Time);
    void computeVelocityTendencies(const OceanState *State,
                                   const AuxiliaryState *AuxState,
                                   const Array3DReal &TracerArray,
@@ -96,10 +96,11 @@ class Tendencies {
                              const Array3DReal &TracerArray, int ThickTimeLevel,
                              int VelTimeLevel, int TracerTimeLevel,
                              TimeInstant Time, TimeInterval ProjDt);
-   void computeThicknessTendenciesOnly(const OceanState *State,
-                                       const AuxiliaryState *AuxState,
-                                       int ThickTimeLevel, int VelTimeLevel,
-                                       TimeInstant Time);
+   void computePseudoThicknessTendenciesOnly(const OceanState *State,
+                                             const AuxiliaryState *AuxState,
+                                             int ThickTimeLevel,
+                                             int VelTimeLevel,
+                                             TimeInstant Time);
    void computeVelocityTendenciesOnly(const OceanState *State,
                                       const AuxiliaryState *AuxState,
                                       const Array3DReal &TracerArray,

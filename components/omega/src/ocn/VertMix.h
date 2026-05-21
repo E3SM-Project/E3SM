@@ -104,7 +104,7 @@ class ShearMix {
                ShearSquared = ShearSquared + Factor * (DelNormVel * DelNormVel +
                                                        DelTangVel * DelTangVel);
             }
-            Real DelZMid = ZMid(ICell, K - 1) - ZMid(ICell, K);
+            Real DelZMid = GeomZMid(ICell, K - 1) - GeomZMid(ICell, K);
             ShearSquared = ShearSquared / (DelZMid * DelZMid);
 
             Real RichardsonNum = BruntVaisalaFreqSq(ICell, K) /
@@ -124,7 +124,7 @@ class ShearMix {
    Array1DReal DcEdge;
    Array1DReal DvEdge;
    Array1DReal AreaCell;
-   Array2DReal ZMid;
+   Array2DReal GeomZMid;
    Array1DI4 NEdgesOnCell;
    Array2DI4 EdgesOnCell;
    Array1DI4 MinLayerCell;

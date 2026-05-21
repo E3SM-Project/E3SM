@@ -28,7 +28,7 @@ using namespace OMEGA;
 struct TestSetup {
    Real Radius = REarth;
 
-   KOKKOS_FUNCTION Real layerThickness(Real Lon, Real Lat) const {
+   KOKKOS_FUNCTION Real pseudoThickness(Real Lon, Real Lat) const {
       return (2 + std::cos(Lon) * std::pow(std::cos(Lat), 4));
    }
 
@@ -56,15 +56,15 @@ int initState() {
    auto *State  = OceanState::getDefault();
    auto *VCoord = VertCoord::getDefault();
 
-   Array2DReal LayerThickCell = State->getLayerThickness(0);
-   Array2DReal NormalVelEdge  = State->getNormalVelocity(0);
-   Array3DReal TracerArray    = Tracers::getAll(0);
+   Array2DReal PseudoThickCell = State->getPseudoThickness(0);
+   Array2DReal NormalVelEdge   = State->getNormalVelocity(0);
+   Array3DReal TracerArray     = Tracers::getAll(0);
 
    int NTracers = Tracers::getNumTracers();
 
    Err += setScalar(
-       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.layerThickness(X, Y); },
-       LayerThickCell, Geom, Mesh, OnCell, VCoord->MinLayerCell,
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.pseudoThickness(X, Y); },
+       PseudoThickCell, Geom, Mesh, OnCell, VCoord->MinLayerCell,
        VCoord->MaxLayerCell);
 
    Err += setScalar(
@@ -180,8 +180,8 @@ int testAuxState() {
    deepCopy(DefAuxState->KineticAux.KineticEnergyCell, NAN);
    deepCopy(DefAuxState->KineticAux.VelocityDivCell, NAN);
 
-   deepCopy(DefAuxState->LayerThicknessAux.FluxLayerThickEdge, NAN);
-   deepCopy(DefAuxState->LayerThicknessAux.MeanLayerThickEdge, NAN);
+   deepCopy(DefAuxState->PseudoThicknessAux.FluxPseudoThickEdge, NAN);
+   deepCopy(DefAuxState->PseudoThicknessAux.MeanPseudoThickEdge, NAN);
 
    deepCopy(DefAuxState->VorticityAux.RelVortVertex, NAN);
    deepCopy(DefAuxState->VorticityAux.NormRelVortVertex, NAN);
@@ -223,20 +223,20 @@ int testAuxState() {
       LOG_ERROR("AuxStateTest: VelocityDivCell FAIL");
    }
 
-   const Real FluxLayerThickSum =
-       sum(DefAuxState->LayerThicknessAux.FluxLayerThickEdge, NEdgesOwned,
+   const Real FluxPseudoThickSum =
+       sum(DefAuxState->PseudoThicknessAux.FluxPseudoThickEdge, NEdgesOwned,
            VCoord->MinLayerEdgeBot, VCoord->MaxLayerEdgeTop);
-   if (!Kokkos::isfinite(FluxLayerThickSum)) {
+   if (!Kokkos::isfinite(FluxPseudoThickSum)) {
       Err++;
-      LOG_ERROR("AuxStateTest: FluxLayerThickEdge FAIL");
+      LOG_ERROR("AuxStateTest: FluxPseudoThickEdge FAIL");
    }
 
-   const Real MeanLayerThickSum =
-       sum(DefAuxState->LayerThicknessAux.MeanLayerThickEdge, NEdgesOwned,
+   const Real MeanPseudoThickSum =
+       sum(DefAuxState->PseudoThicknessAux.MeanPseudoThickEdge, NEdgesOwned,
            VCoord->MinLayerEdgeBot, VCoord->MaxLayerEdgeTop);
-   if (!Kokkos::isfinite(MeanLayerThickSum)) {
+   if (!Kokkos::isfinite(MeanPseudoThickSum)) {
       Err++;
-      LOG_ERROR("AuxStateTest: MeanLayerThickEdge FAIL");
+      LOG_ERROR("AuxStateTest: MeanPseudoThickEdge FAIL");
    }
 
    const Real RelVortVSum =

@@ -46,16 +46,16 @@ OMEGA::Tendencies* NewTendencies = OMEGA::Tendencies::get(Name);
 ```
 
 ## Computation of tendencies
-To compute all tendencies for layer thickness, normal velocity, and tracer equations,
+To compute all tendencies for pseudo-thickness, normal velocity, and tracer equations,
 given ocean state, `State`, a group of auxiliary variables, `AuxState`, an array of tracers,
 `TracerArray`, thickness time level `ThickTimeLevel`, velocity time level `VelTimeLevel`,
 and time instant `Time` do:
 ```c++
 Tendencies.computeAllTendencies(State, AuxState, TracerArray, ThickTimeLevel, VelTimeLevel, Time);
 ```
-To call only the layer thickness tendency terms:
+To call only the pseudo-thickness tendency terms:
 ```c++
-Tendencies.computeThicknessTendencies(State, AuxState, ThickTimeLevel, VelTimeLevel, Time);
+Tendencies.computePseudoThicknessTendencies(State, AuxState, ThickTimeLevel, VelTimeLevel, Time);
 ```
 To call only the normal velocity tendency terms:
 ```c++

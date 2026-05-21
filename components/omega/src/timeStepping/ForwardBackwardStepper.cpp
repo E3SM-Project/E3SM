@@ -61,8 +61,8 @@ void ForwardBackwardStepper::doStep(
                      SimTime + TimeStep);
 
    // R_h^{n} = RHS_h(u^{n+1}, h^{n}, t^{n})
-   Tend->computeThicknessTendencies(State, AuxState, ThickCurLevel,
-                                    VelNextLevel, SimTime);
+   Tend->computePseudoThicknessTendencies(State, AuxState, ThickCurLevel,
+                                          VelNextLevel, SimTime);
 
    // h^{n+1} = h^{n} + R_h^{n}
    updateThicknessByTend(State, ThickNextLevel, State, ThickCurLevel, TimeStep);

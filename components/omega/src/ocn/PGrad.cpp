@@ -164,8 +164,8 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
                                        const Array2DReal &PressureMid,
                                        const Array2DReal &PressureInterface,
                                        const Array2DReal &SpecVol,
-                                       const Array2DReal &ZInterface,
-                                       const Array2DReal &LayerThick) const {
+                                       const Array2DReal &GeomZInterface,
+                                       const Array2DReal &PseudoThick) const {
 
    OMEGA_SCOPE(LocCenteredPGrad, CenteredPGrad);
    OMEGA_SCOPE(LocHighOrderPGrad, HighOrderPGrad);
@@ -187,7 +187,7 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
                     LocCenteredPGrad(Tend, IEdge, KChunk, PressureMid,
-                                     PressureInterface, ZInterface,
+                                     PressureInterface, GeomZInterface,
                                      LocTidalPotential,
                                      LocSelfAttractionLoading, SpecVol);
                  });
@@ -206,7 +206,7 @@ void PressureGrad::computePressureGrad(Array2DReal &Tend,
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
                     LocHighOrderPGrad(Tend, IEdge, KChunk, PressureMid,
-                                      PressureInterface, ZInterface,
+                                      PressureInterface, GeomZInterface,
                                       LocTidalPotential,
                                       LocSelfAttractionLoading, SpecVol);
                  });

@@ -439,20 +439,20 @@ Alarm *TimeStepper::getEndAlarm() { return EndAlarm.get(); }
 // Update functions
 
 //------------------------------------------------------------------------------
-// Updates layer thickness using tendency terms
-// LayerThickness1(TimeLevel1) = LayerThickness2(TimeLevel2) +
-//                               Coeff * LayerThicknessTend
+// Updates pseudo-thickness using tendency terms
+// PseudoThickness1(TimeLevel1) = PseudoThickness2(TimeLevel2) +
+//                               Coeff * PseudoThicknessTend
 void TimeStepper::updateThicknessByTend(OceanState *State1, int TimeLevel1,
                                         OceanState *State2, int TimeLevel2,
                                         TimeInterval Coeff) const {
 
-   Array2DReal LayerThick1 = State1->getLayerThickness(TimeLevel1);
-   Array2DReal LayerThick2 = State2->getLayerThickness(TimeLevel2);
+   Array2DReal PseudoThick1 = State1->getPseudoThickness(TimeLevel1);
+   Array2DReal PseudoThick2 = State2->getPseudoThickness(TimeLevel2);
 
    R8 CoeffSeconds;
    Coeff.get(CoeffSeconds, TimeUnits::Seconds);
 
-   OMEGA_SCOPE(LayerThickTend, Tend->LayerThicknessTend);
+   OMEGA_SCOPE(PseudoThickTend, Tend->PseudoThicknessTend);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
 
@@ -464,9 +464,9 @@ void TimeStepper::updateThicknessByTend(OceanState *State1, int TimeLevel1,
 
           parallelForInner(
               Team, Range{KMin, KMax}, INNER_LAMBDA(int K) {
-                 LayerThick1(ICell, K) =
-                     LayerThick2(ICell, K) +
-                     CoeffSeconds * LayerThickTend(ICell, K);
+                 PseudoThick1(ICell, K) =
+                     PseudoThick2(ICell, K) +
+                     CoeffSeconds * PseudoThickTend(ICell, K);
               });
        });
 }
@@ -523,8 +523,8 @@ void TimeStepper::prescribeThickness(OceanState *State1, int TimeLevel1,
    }
 
    if (PrescribeThicknessMode == PrescribeStateType::Init) {
-      Array2DReal LayerThick1 = State1->getLayerThickness(TimeLevel1);
-      Array2DReal LayerThick2 = State2->getLayerThickness(TimeLevel2);
+      Array2DReal PseudoThick1 = State1->getPseudoThickness(TimeLevel1);
+      Array2DReal PseudoThick2 = State2->getPseudoThickness(TimeLevel2);
 
       OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
       OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
@@ -538,8 +538,8 @@ void TimeStepper::prescribeThickness(OceanState *State1, int TimeLevel1,
 
              parallelForInner(
                  Team, KRange, INNER_LAMBDA(int KChunk) {
-                    const int K           = KMin + KChunk;
-                    LayerThick1(ICell, K) = LayerThick2(ICell, K);
+                    const int K            = KMin + KChunk;
+                    PseudoThick1(ICell, K) = PseudoThick2(ICell, K);
                  });
           });
       return;
@@ -674,16 +674,16 @@ void TimeStepper::prescribeState(OceanState *State1, int TimeLevel1,
 
 //------------------------------------------------------------------------------
 // Updates tracers
-// NextTracers = (CurTracers * LayerThickness2(TimeLevel2)) +
-//               Coeff * TracersTend) / LayerThickness1(TimeLevel1)
+// NextTracers = (CurTracers * PseudoThickness2(TimeLevel2)) +
+//               Coeff * TracersTend) / PseudoThickness1(TimeLevel1)
 void TimeStepper::updateTracersByTend(const Array3DReal &NextTracers,
                                       const Array3DReal &CurTracers,
                                       OceanState *State1, int TimeLevel1,
                                       OceanState *State2, int TimeLevel2,
                                       TimeInterval Coeff) const {
 
-   Array2DReal LayerThick1 = State1->getLayerThickness(TimeLevel1);
-   Array2DReal LayerThick2 = State2->getLayerThickness(TimeLevel2);
+   Array2DReal PseudoThick1 = State1->getPseudoThickness(TimeLevel1);
+   Array2DReal PseudoThick2 = State2->getPseudoThickness(TimeLevel2);
 
    OMEGA_SCOPE(TracerTend, Tend->TracerTend);
    const int NTracers = TracerTend.extent(0);
@@ -701,20 +701,20 @@ void TimeStepper::updateTracersByTend(const Array3DReal &NextTracers,
           parallelForInner(
               Team, Range{KMin, KMax}, INNER_LAMBDA(int K) {
                  NextTracers(L, ICell, K) =
-                     (CurTracers(L, ICell, K) * LayerThick2(ICell, K) +
+                     (CurTracers(L, ICell, K) * PseudoThick2(ICell, K) +
                       CoeffSeconds * TracerTend(L, ICell, K)) /
-                     LayerThick1(ICell, K);
+                     PseudoThick1(ICell, K);
               });
        });
 }
 
 //------------------------------------------------------------------------------
-// couple tracer array to layer thickness
+// couple tracer array to pseudo-thickness
 void TimeStepper::weightTracers(const Array3DReal &NextTracers,
                                 const Array3DReal &CurTracers,
                                 OceanState *CurState, int TimeLevel1) const {
 
-   Array2DReal CurThickness = CurState->getLayerThickness(TimeLevel1);
+   Array2DReal CurThickness = CurState->getPseudoThickness(TimeLevel1);
    const int NTracers       = NextTracers.extent(0);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
@@ -765,7 +765,7 @@ void TimeStepper::finalizeTracersUpdate(const Array3DReal &NextTracers,
                                         OceanState *State,
                                         int TimeLevel) const {
 
-   Array2DReal NextThick = State->getLayerThickness(TimeLevel);
+   Array2DReal NextThick = State->getPseudoThickness(TimeLevel);
    const int NTracers    = NextTracers.extent(0);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);

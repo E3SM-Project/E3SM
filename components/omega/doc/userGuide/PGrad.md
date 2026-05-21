@@ -63,6 +63,6 @@ initialized first:
 - [**Horizontal Mesh**](omega-user-horz-mesh): provides mesh geometry including
   distances between cell centers and edge connectivity
 - [**Vertical Coordinate**](omega-user-vert-coord): provides pressure at layer
-  mid-points and interfaces, interface heights ($z$), and geopotential
+  mid-points and interfaces, geometric interface heights ($z$), and geopotential
 - [**Equation of State**](omega-user-eos): provides the specific volume field
-- [**Ocean State**](omega-user-state): provides the current layer thicknesses
+- [**Ocean State**](omega-user-state): provides the current pseudo-thicknesses

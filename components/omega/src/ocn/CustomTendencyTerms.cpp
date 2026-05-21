@@ -73,12 +73,12 @@ void ManufacturedSolution::init() {
    ManufacturedThickTend.ReferenceTime = ModelClock->getCurrentTime();
    ManufacturedVelTend.ReferenceTime   = ManufacturedThickTend.ReferenceTime;
 
-   // Get BottomDepth for the resting thickness
+   // Get BottomGeomDepth for the resting thickness
    /// This test case assumes that the restingThickness is horizontally uniform
    /// and that only one vertical level is used so only one set of indices is
    /// used here.
    VertCoord *DefVCoord = VertCoord::getDefault();
-   R8 H0                = DefVCoord->BottomDepthH(0);
+   R8 H0                = DefVCoord->BottomGeomDepthH(0);
 
    // Define and compute common constants
    R8 Kx      = TwoPi / WavelengthX;                      // Wave in X-dir

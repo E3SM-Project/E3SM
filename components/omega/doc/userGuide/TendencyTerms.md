@@ -8,7 +8,7 @@ Kokkos parallel loops to compute the full tendency arrays. The following
 tendency terms are currently implemented:
 | Name | Description |
 | ---------------- | ---------------- |
-| ThicknessFluxDivOnCell | divergence of layer thickness flux, defined at cell center
+| PseudoThicknessFluxDivOnCell | divergence of pseudo-pseudo-thickness flux, defined at cell center
 | PotentialVortHAdvOnEdge | horizontal advection of potential vorticity, defined on edges
 | KEGradOnEdge | gradient of kinetic energy, defined on edges
 | SSHGradOnEdge | gradient of sea-surface height, multiplied by gravitational acceleration, defined on edges
@@ -35,7 +35,7 @@ configuration file. The following are all the user-configurable parameters for
 the currently available tendency terms:
 | Term | Parameter | Description
 | ------------ | ------------ | ------------ |
-| ThicknessFluxDivOnCell | ThicknessFluxTendencyEnable | enable/disable term
+| PseudoThicknessFluxDivOnCell | ThicknessFluxTendencyEnable | enable/disable term
 | PotentialVortHAdvOnEdge | PVTendencyEnable | enable/disable term
 | KEGradOnEdge | KETendencyEnable | enable/disable term
 | SSHGradONEdge | SSHTendencyEnable | enable/disable term

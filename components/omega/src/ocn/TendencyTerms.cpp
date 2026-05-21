@@ -18,8 +18,8 @@
 
 namespace OMEGA {
 
-ThicknessFluxDivOnCell::ThicknessFluxDivOnCell(const HorzMesh *Mesh,
-                                               const VertCoord *VCoord)
+PseudoThicknessFluxDivOnCell::PseudoThicknessFluxDivOnCell(
+    const HorzMesh *Mesh, const VertCoord *VCoord)
     : NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
       DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell),
       EdgeSignOnCell(Mesh->EdgeSignOnCell), MinLayerCell(VCoord->MinLayerCell),

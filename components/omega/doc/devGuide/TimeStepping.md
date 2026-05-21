@@ -137,7 +137,7 @@ updateStateByTend(State1, TimeLevel1, State2, TimeLevel2, Coeff);
 conceptually performs the following update
 `State1(TimeLevel1) = State2(TimeLevel2) + Coeff * Tend`
 element-wise for every state variable. To perform this update only for
-layer thickness do
+pseudo-thickness do
 ```c++
 updateThicknessByTend(State1, TimeLevel1, *State2, TimeLevel2, Coeff);
 ```

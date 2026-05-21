@@ -14,10 +14,10 @@ The `VertCoord` class contains variables and functions relevant to keeping track
  - the location of active vertical layers (used to set extents of vertical loop bounds):
    - the max and min indices of active layers in each cell (read in from the mesh file)
    - the max and min indices of active layers for edges and vertices at the bottom and top of the water column (computed from min/max cell layers)
- - pressure (computed from the layer thickness and surface pressure)
- - $z$ height (computed from the bottom depth, specific volume, and layer thickness)
- - geopotential (computed from the z height and tidal forcing)
- - desired vertical interface locations (computed from pressure, reference layer pseudo thickness, and user-specified weights)
+ - pressure (computed from the pseudo-thickness and surface pressure)
+ - geometric height (computed from the bottom depth, specific volume, and pseudo-thickness)
+ - geopotential (computed from the geometric height and tidal forcing)
+ - desired vertical interface locations (computed from pressure, reference layer pseudo-thickness, and user-specified weights)
 
 Multiple instances of the vertical coordinate class can be created and accessed by a unique name.
 
@@ -29,10 +29,10 @@ Multiple instances of the vertical coordinate class can be created and accessed 
 | NVertLayersP1 | maximum number of vertical layers plus 1 | - |
 | PressureInterface | pressure at layer interfaces | force per unit area at layer interfaces | kg m$^{-1}$ s$^{-2}$ |
 | PressureMid | pressure at layer mid points | force per unit area at layer mid point | kg m$^{-1}$ s$^{-2}$ |
-| ZInterface | z height of layer interfaces | m |
-| ZMid | z height of layer midpoint | m |
+| GeomZInterface | geometric height of layer interfaces | m |
+| GeomZMid | geometric height of layer midpoint | m |
 | GeopotentialMid | geopotential at layer mid points | m$^2$/s$^2$|
-| LayerThicknessTarget | desired layer thickness based on total perturbation from the reference thickness | m |
+| PseudoThicknessTarget | desired pseudo-thickness based on total perturbation from the reference pseudo-thickness | - |
 | MinLayerCell | first active layer for cell | - |
 | MaxLayerCell | last active layer for cell | - |
 | MinLayerEdgeTop | min of the first active layers for cells on edge | - |
@@ -44,5 +44,5 @@ Multiple instances of the vertical coordinate class can be created and accessed 
 | MinLayerVertexBot | max of the first active layer for cells on vertex | - |
 | MaxLayerVertexBot | max of the last active layer for cells on vertex | - |
 | VertCoordMovementWeights | weights to specify how total column thickness changes are distributed across layers | - |
-| RefPseudoThickness | reference layer thickness used to distribute total column thickness changes | m |
-| BottomDepth | positive down distance from the reference geoid to the bottom | m |
+| RefPseudoThickness | reference pseudo-thickness used to distribute total column thickness changes | m |
+| BottomGeomDepth | positive down distance from the reference geoid to the bottom | m |

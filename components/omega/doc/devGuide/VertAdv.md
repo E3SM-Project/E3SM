@@ -39,50 +39,50 @@ The following arrays are stored as members of the `VertAdv` class.
 
 | Variable Name | Type | Dimensions |
 | ------------- | ---- | ---------- |
-| VerticalVelocity | Real | NCellsSize, NVertLayersP1 |
-| TotalVerticalVelocity | Real | NCellsSize, NVertLayersP1 |
+| VerticalPseudoVelocity | Real | NCellsSize, NVertLayersP1 |
+| TotalVerticalPseudoVelocity | Real | NCellsSize, NVertLayersP1 |
 | VertFlux | Real | NTracers, NCellsSize, NVertLayersP1 |
 | LowOrderVertFlux | Real | NTracers, NCellsSize, NVertLayersP1 |
 
-The `VerticalVelocity` represents the raw vertical pseudovelocity through the
-top interfaces of cell layers, computed from the divergence of the horizontal
-velocity. The `TotalVerticalVelocity` is the transport velocity and includes
-corrections applied to the `VerticalVelocity`. The `VertFlux` and
+The `VerticalPseudoVelocity` represents the raw vertical pseudo-velocity through
+the top interfaces of cell layers, computed from the divergence of the horizontal
+velocity. The `TotalVerticalPseudoVelocity` is the transport pseudo-velocity and
+includes corrections applied to the `VerticalPseudoVelocity`. The `VertFlux` and
 `LowOrderVertFlux` store tracer fluxes at layer interfaces. The specific
 numerical algorithms to compute these fluxes are chosen by the user through
 configuration options.
 
 ### Methods
 
-The `VerticalVelocity` and `TotalVerticalVelocity` arrays are computed by
-calling the `computeVerticalVelocity` method:
+The `VerticalPseudoVelocity` and `TotalVerticalPseudoVelocity` arrays are
+computed by calling the `computeVerticalPseudoVelocity` method:
 ```
-VertAdv::computeVerticalVelocity(NormalVelocity, FluxLayerThickEdge);
+VertAdv::computeVerticalPseudoVelocity(NormalVelocity, FluxPseudoThickEdge);
 ```
 This method takes as input the `NormalVelocity` field from the `OceanState`
-object, and the `FluxLayerThickEdge` field from the `AuxiliaryState`. At
-present, `TotalVerticalVelocity` is equivalent to `VerticalVelocity`;
-additional corrections will be added in subsequent updates. The
-`TotalVerticalVelocity` array is used by each of the tendency methods,
-therefore `computeVerticalVelocity` must be called before any tendency
-computations.
+object, and the `FluxPseudoThickEdge` field from the `AuxiliaryState`. At
+present, `TotalVerticalPseudoVelocity` is equivalent to
+`VerticalPseudoVelocity`; additional corrections will be added in subsequent
+updates. The `TotalVerticalPseudoVelocity` array is used by each of the
+tendency methods, therefore `computeVerticalPseudoVelocity` must be called
+before any tendency computations.
 
 There are three methods for computing vertical advection tendencies of
 thickness, horizontal velocity and tracers that are called from the time
-stepper: `computeThicknessVAdvTend`, `computeVelocityVAdvTend`, and
+stepper: `computePseudoThicknessVAdvTend`, `computeVelocityVAdvTend`, and
 `computeTracerVAdvTend`. Each method updates the corresponding tendency array
 in place (inout).
 
-Only the thickness tendency array is passed to the `computeThicknessVAdvTend`
+Only the thickness tendency array is passed to the `computePseudoThicknessVAdvTend`
 method:
 ```
-VertAdv::computeThicknessVAdvTend(ThickTend);
+VertAdv::computePseudoThicknessVAdvTend(ThickTend);
 ```
 
 The `computeVelocityVAdvTend` method requires the `NormalVelocity` and
-`FluxLayerThickEdge` fields, in addition to the velocity tendency array:
+`FluxPseudoThickEdge` fields, in addition to the velocity tendency array:
 ```
-VertAdv::computeVelocityVAdvTend(VelTend, NormalVelocity, FluxLayerThickEdge);
+VertAdv::computeVelocityVAdvTend(VelTend, NormalVelocity, FluxPseudoThickEdge);
 ```
 
 The tracer vertical advection tendency depends on the configured settings.
@@ -93,8 +93,8 @@ tracer tendency array:
 ```
 VertAdv::computeTracerVAdvTend(TracerTend, TracerArray, Thickness, TimeStep);
 ```
-For the standard advection algorithm, `LayerThickness` from the `OceanState` is
-passed as the thickness argument; for the FCT algorithm, the `ProvThickness`
+For the standard advection algorithm, `PseudoThickness` from the `OceanState` is
+passed as the thickness argument; for the FCT algorithm, the `ProvPseudoThickness`
 from the `AuxiliaryState` is used instead.
 
 This method first calls `computeVerticalFluxes` to compute the tracer fluxes at
