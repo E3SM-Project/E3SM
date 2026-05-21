@@ -56,6 +56,14 @@ inline std::string e2str (const DataType data_type) {
   return "";
 }
 
+inline DataType str2dtype (const std::string& s) {
+  for (auto dt : {DataType::IntType,DataType::FloatType,DataType::DoubleType}) {
+    if (e2str(dt)==s)
+      return dt;
+  }
+  return DataType::Invalid;
+}
+
 inline int get_type_size (const DataType data_type) {
   switch (data_type) {
     case DataType::IntType:    return sizeof(int);
