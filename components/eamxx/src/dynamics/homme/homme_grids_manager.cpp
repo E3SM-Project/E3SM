@@ -198,7 +198,8 @@ void HommeGridsManager::build_dynamics_grid () {
 }
 
 void HommeGridsManager::
-build_physics_grid (const ci_string& type, const ci_string& rebalance) {
+build_physics_grid (const ci_string& type, const ci_string& rebalance)
+{
   std::string name = "physics_" + type;
   if (rebalance != "none") {
     name += " " + rebalance;
@@ -285,7 +286,15 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
       f.deep_copy(f_d);
       f.sync_to_host();
     }
-  
+
+    using stratts_t = std::map<std::string,std::string>;
+    auto& lev_io_atts  = lev.get_header().get_extra_data<stratts_t>("io: string attributes");
+    auto& ilev_io_atts = ilev.get_header().get_extra_data<stratts_t>("io: string attributes");
+    lev_io_atts["formula_terms"] = "a: hyam b: hybm p0: P0 ps: ps" ;
+    ilev_io_atts["formula_terms"] = "a: hyai b: hybi p0: P0 ps: ps" ;
+    lev_io_atts["positive"] = "down";
+    ilev_io_atts["positive"] = "down";
+
     // Build lev from hyam and hybm
     auto hyam_v = hyam.get_view<const Real*,Host>();
     auto hybm_v = hybm.get_view<const Real*,Host>();

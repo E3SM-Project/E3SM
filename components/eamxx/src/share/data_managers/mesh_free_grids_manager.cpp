@@ -162,6 +162,14 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
     auto lev  = grid->create_geometry_data("lev" ,  layout_mid, mbar);
     auto ilev = grid->create_geometry_data("ilev" , layout_int, mbar);
 
+    using stratts_t = std::map<std::string,std::string>;
+    auto& lev_io_atts  = lev.get_header().get_extra_data<stratts_t>("io: string attributes");
+    auto& ilev_io_atts = ilev.get_header().get_extra_data<stratts_t>("io: string attributes");
+    lev_io_atts["formula_terms"] = "a: hyam b: hybm p0: P0 ps: ps" ;
+    ilev_io_atts["formula_terms"] = "a: hyai b: hybi p0: P0 ps: ps" ;
+    lev_io_atts["positive"] = "down";
+    ilev_io_atts["positive"] = "down";
+
     const auto invalid = ekat::invalid<Real>();
     lat.deep_copy(invalid);;
     lon.deep_copy(invalid);
@@ -273,6 +281,14 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
   scorpio::read_var(filename,"lev", lev_v.data());
   scorpio::read_var(filename,"ilev",ilev_v.data());
   scorpio::release_file(filename);
+
+  using stratts_t = std::map<std::string,std::string>;
+  auto& lev_io_atts  = lev.get_header().get_extra_data<stratts_t>("io: string attributes");
+  auto& ilev_io_atts = ilev.get_header().get_extra_data<stratts_t>("io: string attributes");
+  lev_io_atts["formula_terms"] = "a: hyam b: hybm p0: P0 ps: ps" ;
+  ilev_io_atts["formula_terms"] = "a: hyai b: hybi p0: P0 ps: ps" ;
+  lev_io_atts["positive"] = "down";
+  ilev_io_atts["positive"] = "down";
 
   // Build lev and ilev from hyam and hybm, and ilev from hyai and hybi
   using PC       = scream::physics::Constants<Real>;
